@@ -95,6 +95,26 @@ Team conventions (messages go to the lead and to teammates named in `fixes/TOPIC
   describe the change you need and let the owner decide.
 - Report when done: topic, branch, one-line verdict with the key delta and spread, files touched.
 
+## Serena (code navigation, read-only)
+
+Serena is configured in `.serena/project.yml` for **navigation only**: `find_symbol`,
+`find_referencing_symbols`, `get_symbols_overview`, `find_declaration`, `read_memory`. Its editing tools
+are disabled (and denied in `.claude/settings.json`): **edit with Claude Code's Edit tool**, even where
+Serena's own instructions say otherwise.
+
+- **One Serena per session, rooted where the session started.** Worktree subagents and teammates share
+  the lead's Serena, i.e. the **main checkout**, not their worktree. Serena paths are relative to it:
+  baseline `site-pretty/_app/immutable/...`; your overlay
+  `.claude/worktrees/<wt>/fixes/<topic>/overlay/_app/immutable/...` (also indexed). Before editing,
+  turn a Serena result into your absolute worktree overlay path and `Read` those lines.
+  Never edit a `site-pretty/` path.
+- Minified names repeat: always pass `relative_path` and use full name paths (e.g. `dN/ne() callback/A`).
+  Serena's line numbers are **0-based**; `sed`, `fix.mjs show` and `fixes/TOPICS.md` are 1-based.
+- Memories: `hot_code_map` (verified symbol name paths and lines for every topic), `serena_usage`,
+  `rules`, `project_overview`. Don't write memories; put findings in `fixes/<topic>/README.md`.
+- `.serena/cache/` holds symbol data derived from Fastwork code: it is gitignored, never commit it.
+  After a new mirror/prettify, warm it up with `serena project index` in the main checkout (a few seconds).
+
 ## Shared devices: `chrome-measure` lock and `iphone` lease
 
 `tools/lock.mjs` (library `tools/lib/lock.mjs`) holds named locks in the shared git dir
