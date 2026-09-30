@@ -138,6 +138,15 @@ Full report: [`data/kpi-baseline.md`](data/kpi-baseline.md). Script: `tools/kpi.
 | Arch | scorecard members with adoption 0 or pending; E1/E3/E4/N1/N9/N10 started | 3 of 5; 1 of 6 (anim-ablation) | ≥ 4 of 6 |
 | Learn | EXPERIMENTS.md rows / clean / diff kept / benchmark runnable | 72 / 14 / 36 / 0 | all landed topics runnable |
 | Learn | findings board posts | 0 | ≥ 1 per owner |
+
+Iteration 2 interim values (recorded by mgmt-ops, 2026-09-30 23:55Z; mgmt-lead re-measures all rows):
+
+| area | KPI | now | source |
+|---|---|---|---|
+| Goal | combined-overlay A/Bs (clean) | 1: `wave1-partial` (5 landed wave-1 topics, unreviewed partial combine), load1 3.0-4.4, mobile 6x n=5: fps 74.9 [73.8-78.5] -> 95.4 [93.2-95.7], >20 ms 65 [55-75] -> 24 [21-28] (disjoint), >34 ms 10 -> 6 and >50 ms 4 -> 5 within noise | `fixes/wave1-partial/` (4494f0c) |
+| Goal | clean single-run mechanism check | E1 nav-morph-all at load1 2.9-4.3: morph IO LoAF 5/5 -> 0/5, fps 74.9 -> 87.3, >20 ms 70 -> 36 | `fixes/nav-morph-all/` (branch) |
+| Goal | what remains > 50 ms in Chrome | gtag `onscrollend` (N11), the #13 mount (lands with countdown), `iE` (scroll-engine diagnostics name it) | F-005, wave1-partial README |
+| Flow | topics landed | 5 of wave 1 (phone-invisible-shrink, commission, pain, nav-hit-test, large-area-blur) | main |
 | Agents | worktrees / landed-or-empty / > 20 commits behind main | 28 / 13 / 9 | ≤ active + 3 / 0 / 0 |
 | User | process questions per hour | 4.6 (6.0 in wave 1) | ≤ 1 |
 | Lead | messages handled per hour (all) / max in 10 min | 133 (303 in wave 1) / 103 | ≤ 25 |

@@ -6,7 +6,7 @@
 **Status:** measured, **clean** (load1 3.0-4.4 throughout, <= 6 at every sample)
 **Topics (apply order):** phone-invisible-shrink, commission-forced-layout, pain-offscreen-notes, nav-hit-test,
 large-area-blur. These are the wave-1 patches landed on `main` at `7d86d96`, **without layout-animations**:
-its 03 patch on main has the broken RTL flip, and 05 is not landed yet. Also without the unlanded
+it was held out while its RTL flip was thought broken (review-layout05 later showed 03's flip is correct and 05 broke RTL; variant 10 = 05's teardown + 03's flip is pending). Also without the unlanded
 countdown-idle-raf and the two nav-morph patches.
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`, `/_app/immutable/assets/2.gBuqKVzi.css` (union of the
 five patches, see each topic's README).

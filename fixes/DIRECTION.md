@@ -43,6 +43,11 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    **N11 vendor-scrollend first** (lead decision 2026-10-01: gtag `onscrollend` is the only Chrome frame
    > 50 ms left; until all-wave1 exists N11 runs short-lane validation only), then hero-exit,
    scroll-engine (+ un-skip-once/hysteresis, W1), E4.
+   **wave1-partial done** (2026-09-30 ~23:50Z, clean, load1 3.0-4.4; unreviewed partial combine of the
+   5 landed topics, `fixes/wave1-partial/`, 4494f0c): fps 74.9 → 95.4, frames > 20 ms 65 → 24 (disjoint),
+   > 34 ms 10 → 6 and > 50 ms 4 → 5 within noise. Still > 50 ms: gtag `onscrollend` (N11), the #13 mount
+   (lands with countdown), iE (scroll-engine diagnostic names what remains on top of wave1-partial).
+   Full review at the all-wave1 stage.
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N3 / N4 / N10 fixes as their prototypes pass Tier A.
