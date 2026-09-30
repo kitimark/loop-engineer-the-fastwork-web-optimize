@@ -126,6 +126,35 @@ don't overlap over >= 3 runs; otherwise "within noise". Check `regressions` (new
 new 404s, screenshot pixel diff: 0-0.4 % is countdown/orbit phase noise, more means a visual change,
 `morphReached`) before claiming a win.
 
+## Tooling is guarded by tests
+
+`tools/`, `tests/`, `.githooks/`, `.claude/hooks/`, `package.json` and `.claude/settings.json` are
+shared infrastructure, covered by an automated test suite (`tests/`, Node's built-in `node --test`, no
+dependencies). The tests are the hardening, not permission prompts:
+
+```sh
+npm test              # default: unit + e2e + hook tests on a tiny fixture baseline; no Chrome, network or iPhone (~30 s)
+npm run test:chrome   # opt-in: real Chrome, short runs, queues on the real chrome-measure lock (~2 min)
+npm run test:all      # both
+```
+
+- Agents **may fix bugs in `tools/`** (or work around them) when needed. Every change to `tools/`
+  comes with a test that covers it (new or updated in `tests/`), and `npm test` must pass.
+- If a test fails after an accidental edit, **revert the edit**. Change a test only to reflect a
+  genuine, intended behaviour change; never weaken a test just to go green.
+- Tool fixes go in **their own commit**, separate from fix deliverables, and are reported to the lead,
+  who lands them on main (rebase + ff-only) so every worktree gets them.
+- Changes to measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`; `serve.mjs` and
+  `vendor-shim.js` where they change what is served) must be called out explicitly: they affect the
+  comparability of A/B results measured before and after. Run `npm run test:chrome` after them.
+- `.githooks/pre-commit` (enable once per clone: `npm run setup`, i.e.
+  `git config core.hooksPath .githooks`, shared by all worktrees) runs `npm test` when a commit
+  touches the paths above and blocks the commit if it fails; it also blocks staged `site/`,
+  `site-pretty/`, `out/`, `fixes/*/overlay/`, `.serena/cache/` and `*.pem`. Never bypass it
+  (`--no-verify`, `-c core.hooksPath=...`).
+- Tests point the tools at a fixture baseline via `$FW_MIRROR_HOME` and at a temp lock dir via
+  `$FW_STATE_DIR`; they never use port 5173, the iPhone or the live site.
+
 ## Agent roles (`.claude/agents/`)
 
 - `fix-owner` (opus/high, `isolation: worktree`): one topic or conflict cluster end to end; spawn it

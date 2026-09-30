@@ -33,7 +33,7 @@ test('non-tooling commits pass without running the tests', () => {
   assert.equal(existsSync(marker(repo.wt)), false);
 });
 
-for (const bad of ['site/index.html', 'site-pretty/_app/x.js', 'out/ab/t/verify.json', 'fixes/demo/overlay/_app/x.js', 'certs/lan-key.pem', 'tools/some.PEM']) {
+for (const bad of ['site/index.html', 'site-pretty/_app/x.js', 'out/ab/t/verify.json', 'fixes/demo/overlay/_app/x.js', '.serena/cache/typescript/document_symbols.pkl', 'certs/lan-key.pem', 'tools/some.PEM']) {
   test(`blocks force-added ${bad}`, () => {
     put(repo.wt, bad);
     git(repo.wt, 'add', '-f', bad);
@@ -70,7 +70,7 @@ test('tooling change + failing tests: commit blocked; passing tests: committed; 
 });
 
 test('every protected tooling path triggers the tests, deletions included', () => {
-  for (const [rel, del] of [['tests/x.test.mjs', false], ['package.json', false], ['.claude/settings.json', false], ['.githooks/pre-commit', false], ['tools/extra.mjs', true]]) {
+  for (const [rel, del] of [['tests/x.test.mjs', false], ['package.json', false], ['.claude/settings.json', false], ['.claude/hooks/guard.mjs', false], ['.githooks/pre-commit', false], ['tools/extra.mjs', true]]) {
     if (del) git(repo.wt, 'rm', '-q', rel);
     else { put(repo.wt, rel, readFileSyncSafe(join(repo.wt, rel)) + '\n'); git(repo.wt, 'add', rel); }
     const r = commit(repo.wt, 'exit 3');

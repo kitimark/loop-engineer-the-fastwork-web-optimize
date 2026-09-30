@@ -34,7 +34,11 @@
       "Edit(/.claude/hooks/**)",
       "Edit(/.claude/worktrees/*/.claude/hooks/**)",
       "Bash(node tools/mirror.mjs *)",
-      "Bash(node tools/prettify.mjs *)"
+      "Bash(node tools/prettify.mjs *)",
+      "Bash(git commit *--no-verify*)",
+      "Bash(git commit * -n *)",
+      "Bash(git commit * -n)",
+      "Bash(git config *core.hooksPath*)"
     ],
     "deny": [
       "mcp__chrome-devtools__performance_start_trace",

@@ -4,9 +4,9 @@
 // worktree runs the .githooks/ of its own checked-out branch).
 //
 // 1. Blocks committing mirrored Fastwork assets and secrets, even if someone used `git add -f`:
-//      site/  site-pretty/  out/  fixes/<topic>/overlay/  *.pem
+//      site/  site-pretty/  out/  fixes/<topic>/overlay/  .serena/cache/  *.pem
 // 2. When the commit touches the tooling (tools/, tests/, package.json, .claude/settings.json,
-//    .githooks/), runs the test suite (`npm test`) and blocks the commit if it fails.
+//    .claude/hooks/, .githooks/), runs the test suite (`npm test`) and blocks the commit if it fails.
 //    FW_PRECOMMIT_TEST_CMD overrides the command (used by the hook's own tests).
 //
 // Tests run against the working tree, not only the staged snapshot: commit what you tested.
@@ -17,8 +17,8 @@ const git = (...a) => spawnSync('git', a, { encoding: 'utf8' });
 const top = git('rev-parse', '--show-toplevel').stdout.trim();
 const list = (filter) => git('diff', '--cached', '--name-only', '-z', `--diff-filter=${filter}`).stdout.split('\0').filter(Boolean);
 
-const FORBIDDEN = [/^site\//, /^site-pretty\//, /^out\//, /^fixes\/[^/]+\/overlay\//, /\.pem$/i];
-const TOOLING = [/^tools\//, /^tests\//, /^package\.json$/, /^\.claude\/settings\.json$/, /^\.githooks\//];
+const FORBIDDEN = [/^site\//, /^site-pretty\//, /^out\//, /^fixes\/[^/]+\/overlay\//, /^\.serena\/cache\//, /\.pem$/i];
+const TOOLING = [/^tools\//, /^tests\//, /^package\.json$/, /^\.claude\/settings\.json$/, /^\.claude\/hooks\//, /^\.githooks\//];
 
 const added = list('ACMRT'); // deleting a forbidden path that slipped in earlier is always allowed
 const bad = added.filter((f) => FORBIDDEN.some((re) => re.test(f)));

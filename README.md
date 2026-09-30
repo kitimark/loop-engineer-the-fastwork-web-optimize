@@ -289,6 +289,30 @@ stays byte-identical. To profile with readable line numbers, run
 `node tools/serve.mjs --root site-pretty --port 5180`. Formatting doesn't change behaviour, but parse
 and compile time and LoAF char positions will differ from production.
 
+## Tests
+
+The tools have an automated test suite (Node's built-in test runner, no dependencies). It runs on a
+tiny fixture baseline in temp directories, so it needs neither the real mirror nor the network:
+
+```sh
+npm test              # unit + e2e + hook tests, no Chrome (a fake CDP endpoint stands in), ~30 s
+npm run test:chrome   # opt-in: real Chrome (verify.mjs, fix.mjs ab --runs 1, vendor-shim egress), ~2 min,
+                      # waits for the chrome-measure lock like any measurement
+npm run test:all      # both
+npm run setup         # once per clone: git config core.hooksPath .githooks (versioned pre-commit hook)
+node --test tests/e2e/serve.test.mjs   # a single file
+```
+
+`tests/unit/` covers `lib/paths`, `lib/lock`, `lib/cdp`, `vendor-shim.js` and the guard-rail config;
+`tests/e2e/` runs the CLIs (`serve`, `fix`, `lock`, `verify` and `fix ab` against a fake Chrome,
+`iphone` lease gating with no phone, `mirror` against a local fixture origin, `prettify`), the
+pre-commit hook, the fix-agent workflow in a real temp worktree, and a read-only smoke test of the
+real baseline (skipped when `site/` is absent). `tests/chrome/` is the opt-in real-browser suite.
+The pre-commit hook blocks staged `site/`, `site-pretty/`, `out/`, `fixes/*/overlay/`,
+`.serena/cache/` and `*.pem`, and runs `npm test` when a commit touches `tools/`, `tests/`,
+`.githooks/`, `.claude/hooks/`, `package.json` or `.claude/settings.json`. Tool changes are allowed
+but must come with tests (CLAUDE.md "Tooling is guarded by tests").
+
 ## Files
 
 ```
@@ -304,6 +328,8 @@ tools/lib/cdp.mjs      tiny dependency-free Chrome DevTools Protocol client
 tools/lib/paths.mjs    finds the baseline from any worktree, per-checkout ports
 tools/lib/lock.mjs     named lock/lease/queue implementation (state in .git/fastwork-mirror/locks/)
 tools/lib/wip.mjs      WebKit Inspector Protocol client for iOS Safari (ios_webkit_debug_proxy)
+tests/                 node:test suite (unit/, e2e/, opt-in chrome/, fixtures/: fixture baseline, fake Chrome)
+.githooks/pre-commit   blocks Fastwork assets; runs npm test on tooling changes (npm run setup to enable)
 research/              write-ups and one-off tools of each study
 fixes/                 per-fix deliverables (README.md, patch.diff, results.json), TOPICS.md, AGENT_PROMPT.md
 CLAUDE.md              rules and workflow for Claude Code agents (worktrees, teams, locks)
