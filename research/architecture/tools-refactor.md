@@ -324,7 +324,7 @@ Tests: `unit/incident|finding.test.mjs`, `e2e/*-cli`.
    | ts-bench | `bench.mjs`, `lib/bench-*`, **`lib/cdp.mjs`**, `lib/host.mjs`, `package.json`, `fixtures/fake-chrome.mjs` | F (`cdp.mjs`), follow-ups |
    | ts-i021 | `scope.mjs`, `lib/scope.mjs`, `package.json`, `unit/guardrails.test.mjs` | none (P1 adds a unit test file only) |
    | ts-i002 | `tests/chrome/*`, `e2e/chrome-lock.test.mjs` | none |
-   | arch-tools (proposals, not built) | `verify.mjs` sleep time-scale knob + screenshots after lock release (`measure` 163-176, `main` 218-240); lock polling (`acquire` 257-288, CLI 110-113); grant rule in `nextIndex`/`headOk` (150-155, 196) | F, G, D (see §7) |
+   | arch-tools (proposals, not built) | `verify.mjs` sleep time-scale knob + baseline screenshot cache inside the lock (`measure` 163-176, `main` 238-245); lock polling (`acquire` 257-288, CLI 110-113); grant rule in `nextIndex`/`headOk` (150-155, 196) | F, G, D (see §7) |
 
    **Untouched now:** `serve.mjs`, `iphone.mjs`, `incident.mjs`, `finding.mjs`, `lib/incident.mjs`,
    `lib/finding.mjs`, `lib/store.mjs`, `lib/paths.mjs`, `lib/wip.mjs`, `lib/iphone-url.mjs`,
