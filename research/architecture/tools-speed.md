@@ -76,6 +76,21 @@ Chrome answers at once (tests/fixtures/fake-chrome.mjs:61-76), so nothing forces
 Postmortem item (b) caps concurrency at 3, which it projects at 60-70 s. Most of that projection is these
 sleeps.
 
+**Update from ts-i021** (measured 2026-09-30 23:37Z, main 0392757 plus its scope tests, load ~3.7, default
+concurrency, per part with `/usr/bin/time`):
+
+| part | wall | CPU (user + sys) | slowest files, summed |
+|---|---|---|---|
+| unit | 2.9 s | 6.5 s | lock-repair 2.7, lock 1.6, cdp 1.5 |
+| hooks | 16.9 s | 14.7 s | git-hooks 16.8 (it sets the wall) |
+| e2e | 72.4 s | 34.1 s | **verify-fake 66.9 (serial: the e2e wall)**, ab-fake 36.2, lock-cli 22.6, iphone 15.9 |
+
+- The full suite didn't finish inside its 120 s short lease. ts-i021 estimates ~70 s wall and ~55 s CPU.
+- On this newer main, verify-fake alone is 67 s. So the ~35 s CPU in CLAUDE.md and "the full suite
+  fits `--max-seconds 120`" are both stale.
+- #3 below is therefore worth more than I first estimated: wall ~70 s → ~20 s.
+- `test:unit` (ts-i021's scoped unit-only run, I-021) takes ~3 s and needs none of this.
+
 ### 1.4 `npm run test:chrome` queues four times
 
 `vendor-shim.chrome` acquires in `before()` with no bound (:18) and releases in `after()` (:22).
@@ -95,7 +110,7 @@ wait (package.json, fix-ab.chrome:21). I-022's run took 49.5 min wall, failed 4 
 | 2 | **`test:chrome` in one short-lane hold:** `lock.mjs run chrome-measure --short --max-seconds 300 --owner test-chrome-<pid> -- node --test …`. The inner verify/ab/shim acquires then re-enter through `FW_LOCK_HELD` (the shim's `acquire()` already defaults to it; **but `tests/helpers.mjs`
 `cleanEnv()` strips `FW_LOCK_HELD` from spawned tools**, so the chrome tests must pass it through
 explicitly, or the nested verify deadlocks behind the wrapper), and test timeouts no longer include the wait. For ts-i002 (I-022). It is a mechanism check, not a timing measurement, so the short lane fits; confirm it runs in under 300 s. | 1.4; I-022: 49.5 min wall, 10.4 min idle hold, 4 queue entries | ~10 min of slot and ~45 min of a toolsmith's wall per run (1-2 runs/day) | low; if it takes over 300 s, trim the ab test to `--idle 0` or split into two short jobs | no (package.json, tests) |
-| 3 | **Remove the sleeps from the fake-Chrome tests.** A test-only `FW_TIME_SCALE` (e.g. 0.02) multiplies verify.mjs's `sleep()`s, `gotoAndSettle`'s `quietMs` and `--idle` (verify.mjs:125-171, cdp.mjs:152). `verify.json` records `timeScale`, and `fix.mjs ab` refuses or stains a run when it isn't 1. Tests assert ratios ("idle window ≈ idle x scale"), and one test keeps the default 6 s. Also `FW_LOCK_POLL_MS` for the lock tests (queue test, `--wait` test). | 1.3: verify-fake 39.9 s + ab-fake 35.0 s are sleeps; they set the 43 s wall | wall 43 → ~20 s (git-hooks becomes the critical path); ~23 s less short-lane hold per suite, ~19 min of slot + agent wall a day | low-medium: the default path must stay identical (scale 1 = today's constants). Reviewer and `test:chrome` required; no A/A needed if the diff only wraps constants | **yes**, touches verify.mjs + cdp.mjs (default timing unchanged; say so in the commit) |
+| 3 | **Remove the sleeps from the fake-Chrome tests.** A test-only `FW_TIME_SCALE` (e.g. 0.02) multiplies verify.mjs's `sleep()`s, `gotoAndSettle`'s `quietMs` and `--idle` (verify.mjs:125-171, cdp.mjs:152). `verify.json` records `timeScale`, and `fix.mjs ab` refuses or stains a run when it isn't 1. Tests assert ratios ("idle window ≈ idle x scale"), and one test keeps the default 6 s. Also `FW_LOCK_POLL_MS` for the lock tests (queue test, `--wait` test). | 1.3: verify-fake 39.9 s + ab-fake 35.0 s are sleeps; they set the 43 s wall (ts-i021 on newer main: verify-fake 66.9 s, suite ~70 s) | wall 43-70 → ~20 s (git-hooks becomes the critical path); 23-50 s less short-lane hold per suite, ~20-40 min of slot + agent wall a day | low-medium: the default path must stay identical (scale 1 = today's constants). Reviewer and `test:chrome` required; no A/A needed if the diff only wraps constants | **yes**, touches verify.mjs + cdp.mjs (default timing unchanged; say so in the commit) |
 | 4 | **Faster hand-over.** The waiter that is `next` polls every ~0.5-1 s, or wakes on `fs.watch(lockDir)`. The others keep the backoff. At the hand-over, skip a head waiter whose `lastSeen` is older than ~30 s (a CLI `acquire` without `--wait` that retries every 2-5 min can today keep a free lock unused for up to its 10-min queue TTL, lock.mjs:196 + CLI:118) and serve the next live waiter. It keeps its place for the next hand-over. | gaps 8/12/15 s (1.2); code lock.mjs:257-288, CLI:110-113 (5 s → 30 s) | ~7 s x ~140 grants ≈ 15 min; the skip bounds a rare 5-10 min stall | low. **Interacts with I-020 (ts-prio):** A/Bs that yield to short jobs at run boundaries add hand-overs, so a fast hand-over matters more. Build after I-020 lands, in the grant policy (arch-refactor R3 splits it out) | no |
 | 5 | **Cheaper screenshot pass, inside the lock.** (a) Cache the baseline's top/middle/bottom PNGs per baseline manifest hash + viewport + serve args + tools version, and shoot only the patched side. (b) Measure whether the 2.5 s per-shot sleep can be 1 s (compare diffs on the A/A). Don't move screenshots after the release: an unthrottled Chrome loading pages would load the next holder's run. | 1.1: ~38 s per A/B, ~19 s per side | ~19 s (a) + ~9 s (b) per A/B ≈ 10-15 min | medium: countdown digits differ across days (the 0-0.4 % noise band may widen); A/A the diff numbers | **yes** (verify.mjs run-0 order: run0-B no longer follows A's screenshot load) → A/A |
 | 6 | **Cheaper test fixtures.** git-hooks: build the diverged base repo once per file and `cpSync` it per test (today ~6 hooked git spawns per test). fix/lock-cli: one `makeTempRepo` per file where tests don't mutate shared state. `{ concurrency: true }` only on the heaviest file, only if the cap in postmortem (b) still holds peak processes. | 1.3: git-hooks 19.6 s, fix 7.3 s, lock-cli 10.2 s | wall ~20 → ~12 s after #3; ~5 min/day | low; test isolation must stay (each test still gets its own copy) | no |
