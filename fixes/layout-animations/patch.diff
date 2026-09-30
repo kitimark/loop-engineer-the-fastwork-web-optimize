@@ -97,7 +97,15 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -2587,7 +2587,7 @@
+@@ -20,6 +20,7 @@
+   V as v,
+   W as y,
+   Y as b,
++  X as PMpre,
+   Z as x,
+   _ as S,
+   a as C,
+@@ -2587,7 +2588,7 @@
                t(te, s(a).commission.earnedFrom),
                t(B, `$${e ?? ``}`),
                t(H, `${n ?? ``}%`),
@@ -106,7 +114,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            },
            [() => Math.round(s(b)), () => Math.round(s(x))],
          ),
-@@ -3669,7 +3669,8 @@
+@@ -3669,7 +3670,8 @@
    );
  function HE(t, n) {
    D(n, !0);
@@ -116,7 +124,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      i = N(`idle`),
      a,
      o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
-@@ -3782,9 +3783,37 @@
+@@ -3782,10 +3784,44 @@
            bottom: s(o).paintBottom,
            left: s(o).paintLeft,
          })));
@@ -128,10 +136,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      }),
      f(t, d),
      H());
-+}
+ }
 +function HEflip(d, dw) {
 +  if (typeof d.animate != `function`) return;
-+  let x = ((document.documentElement.getAttribute(`dir`) === `rtl` ? -1 : 1) * dw) / 128,
++  // no RTL flip: under html[dir=rtl] .hero-title is row-reverse, so previous siblings still sit on the left
++  let x = dw / 128,
 +    o = { duration: 900, easing: `cubic-bezier(0.4, 0, 0.2, 1)` };
 +  for (let e = d.previousElementSibling; e; e = e.previousElementSibling)
 +    e.animate([{ transform: `translateX(${x}em)` }, { transform: `none` }], o);
@@ -147,14 +156,20 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  PMsweepIO ||= new IntersectionObserver((es) => {
 +    for (let e of es) e.target.toggleAttribute(`data-sweep-paused`, !e.isIntersecting);
 +  });
-+  for (let e of row.querySelectorAll(
++  let ts = row.querySelectorAll(
 +    `.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized`,
-+  ))
-+    PMsweepIO.observe(e);
- }
++  );
++  for (let e of ts) PMsweepIO.observe(e);
++  // unobserve when the row's each-block item is destroyed ($effect.pre attaches to the row's branch effect;
++  // its returned function is the effect's teardown)
++  PMpre(() => () => {
++    for (let e of ts) PMsweepIO.unobserve(e);
++  });
++}
  var UE = { stiffness: 280, damping: 18, mass: 0.3 },
    WE = 16;
-@@ -12652,6 +12681,7 @@
+ function GE(e, t, n, r = UE) {
+@@ -12652,6 +12688,7 @@
                "is-secure-mesh": s(r).id === `document`,
              })));
          }),

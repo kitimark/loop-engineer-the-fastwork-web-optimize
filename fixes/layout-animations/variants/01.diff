@@ -1,0 +1,131 @@
+# fastwork mirror fix: layout-animations (variant 01, rebuilt from 05: no sweep gate, RTL flip kept)
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply layout-animations (copy this file to patch.diff first)
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -564,9 +564,16 @@
+   height: 12px;
+   overflow: hidden;
+ }
++/* layout-animations: the bar keeps its full width; the count-up writes --fee-progress (0-1) and the
++   fill is revealed with clip-path (same pill shape: inset round clamps like border-radius) while the
++   gradient is sized to the visible part, as it was sized to the old width. min 4px = old padding box */
+ .fee-progress > span {
++  --fee-progress-w: max(4px, calc(var(--fee-progress, 0) * 100%));
+   box-sizing: border-box;
+-  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%);
++  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%) 0 0 / var(--fee-progress-w) 100%
++    no-repeat;
++  clip-path: inset(0 calc(100% - var(--fee-progress-w)) 0 0 round 999px);
++  width: 100% !important;
+   border-radius: 999px;
+   flex-direction: column;
+   height: 100%;
+@@ -1227,9 +1234,8 @@
+   position: relative;
+   overflow: visible;
+ }
+-.script-accent.is-drawing-in.svelte-1fn2go6 {
+-  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+-}
++/* layout-animations: no width transition (0.9s of h1 layout per cycle); the width now changes at once
++   and the neighbouring words slide with a transform animation (JS HE, same duration and easing) */
+ .sizer.svelte-1fn2go6 {
+   visibility: hidden;
+   width: 100%;
+@@ -2884,21 +2890,37 @@
+ }
+ .start-selling-avatars.is-carousel img.is-enter {
+   animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++/* layout-animations: the leaving avatar keeps its 32px box; instead of shrinking width/flex-basis/
++   margin-right (layout every frame), it is cropped with clip-path and the followers slide left by its
++   advance (32px - 8px overlap) with the same easing, via the independent translate property */
++.start-selling-avatars.is-carousel img.is-exit ~ img {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
++}
++.start-selling-avatars.is-carousel img.is-exit ~ img.is-enter {
++  animation:
++    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
++    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
+ }
++@keyframes avatars-shift {
++  0% {
++    translate: 0;
++  }
++  to {
++    translate: -24px;
++  }
++}
+ @keyframes avatars-exit {
+   0% {
+     opacity: 1;
+-    flex-basis: 32px;
+-    width: 32px;
+-    margin-right: -8px;
++    translate: 0;
++    clip-path: ellipse(16px 16px at 50% 50%);
+     transform: scale(1);
+   }
+   to {
+     opacity: 0;
+-    border-width: 0;
+-    flex-basis: 0;
+-    width: 0;
+-    margin-right: 0;
++    translate: -16px;
++    clip-path: ellipse(0px 16px at 50% 50%);
+     transform: scale(0.35);
+   }
+ }
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2587,7 +2587,7 @@
+               t(te, s(a).commission.earnedFrom),
+               t(B, `$${e ?? ``}`),
+               t(H, `${n ?? ``}%`),
+-              (oe = S(ae, ``, oe, { width: `${s(C) * 100}%` })));
++              (oe = S(ae, ``, oe, { "--fee-progress": `${s(C)}` })));
+           },
+           [() => Math.round(s(b)), () => Math.round(s(x))],
+         ),
+@@ -3669,7 +3669,8 @@
+   );
+ function HE(t, n) {
+   D(n, !0);
+-  let r = N(-1),
++  let pwAccent,
++    r = N(-1),
+     i = N(`idle`),
+     a,
+     o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
+@@ -3782,10 +3783,24 @@
+           bottom: s(o).paintBottom,
+           left: s(o).paintLeft,
+         })));
++      // layout-animations: the width changes at once (no 0.9 s width transition, i.e. no h1 layout
++      // every frame); the other words of the centred row slide from where they were with a transform,
++      // as the width transition moved them: the accent's centre stays, each side moves half the change.
++      let we = s(o).width;
++      (pwAccent !== void 0 && we !== pwAccent && HEflip(d, we - pwAccent), (pwAccent = we));
+     }),
+     f(t, d),
+     H());
+ }
++function HEflip(d, dw) {
++  if (typeof d.animate != `function`) return;
++  let x = ((document.documentElement.getAttribute(`dir`) === `rtl` ? -1 : 1) * dw) / 128,
++    o = { duration: 900, easing: `cubic-bezier(0.4, 0, 0.2, 1)` };
++  for (let e = d.previousElementSibling; e; e = e.previousElementSibling)
++    e.animate([{ transform: `translateX(${x}em)` }, { transform: `none` }], o);
++  for (let e = d.nextElementSibling; e; e = e.nextElementSibling)
++    e.animate([{ transform: `translateX(${-x}em)` }, { transform: `none` }], o);
++}
+ var UE = { stiffness: 280, damping: 18, mass: 0.3 },
+   WE = 16;
+ function GE(e, t, n, r = UE) {

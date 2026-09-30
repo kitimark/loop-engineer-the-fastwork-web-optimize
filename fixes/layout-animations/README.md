@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (Chrome A/B + own idle probe; iPhone pending; re-run `fix.mjs ab` once I-002 adds the idle phase)
+**Status:** measured: variant 05 (`patch.diff`), Chrome A/B with the I-002 idle phase (contaminated: load1 16-30), own idle probe, fixed visual checks; iPhone pending
 **Topic:** see `fixes/TOPICS.md` (9, layout-animations)
 **Files touched:**
 - `/_app/immutable/assets/2.gBuqKVzi.css`: `.fee-progress > span` (560-575), `.script-accent.is-drawing-in` (1230-1232, removed),
@@ -53,7 +53,9 @@ Not a cost / out of scope:
    `Δ` keeps the accent's centre fixed and moves the words before it by `-Δ/2` and after it by `+Δ/2`. The new
    `HEflip` (called from `HE`'s render effect when the word's width changes) plays exactly that as a WAAPI
    transform animation on the sibling words, `translateX(±Δ/2 em) → none`, 0.9 s, the transition's easing
-   (`cubic-bezier(0.4, 0, 0.2, 1)`), mirrored for `html[dir=rtl]` (row-reverse). No layout reads.
+   (`cubic-bezier(0.4, 0, 0.2, 1)`). No layout reads. No RTL sign flip: under `html[dir=rtl]` `.hero-title` is
+   `row-reverse` (CSS 1784-1789), so the physical order stays left to right and the same `translateX` signs apply
+   (the first version flipped them, which made the words jump by Δ in RTL; fixed after review).
    Reduced motion: unchanged (the cycle never starts, so the width never changes).
 3. **Fee progress (CSS + one JS line).** The bar span stays `width: 100%`; `JT` writes `--fee-progress` (0-1)
    instead of `width: N%`. The fill is `clip-path: inset(0 calc(100% - w) 0 0 round 999px)` with
@@ -66,7 +68,11 @@ Not a cost / out of scope:
    `data-sweep-paused` while a title is outside the viewport; `.start-selling-platform [data-sweep-paused]`
    sets `animation-play-state: paused !important`. The sweep itself stays a `background-position` animation:
    `background-clip: text` can't be moved on the compositor without changing the look. When a title enters
-   the viewport it resumes from where it paused (the phase of a 4 s loop).
+   the viewport it resumes from where it paused (the phase of a 4 s loop). When a row is destroyed, its titles
+   are unobserved: `PMsweepGate` registers the cleanup with Svelte's `$effect.pre` (`X` from
+   `chunks/BSBv9QXB.js`, imported as `PMpre`), which attaches to the row's each-block branch effect, so its
+   returned function runs on the row's teardown. (`$effect`, `b` in this file, would defer to the component
+   while it mounts and tear down with the component instead.)
 
 The script accent's IntersectionObserver margin was left at `100% 0px` on purpose: pausing at the viewport
 edge could freeze it mid draw-out (blank accent) exactly when it scrolls into view.
@@ -81,49 +87,76 @@ edge could freeze it mid draw-out (blank accent) exactly when it scrolls into vi
 - Titles: off-screen titles stop repainting (and stop forcing their style updates) while the platform scene is
   active; only on-screen titles sweep.
 
-Expected metric movement: idle layout count/time (not captured by `fix.mjs ab` yet, see I-002) and, during
+Expected metric movement: idle layout count/time (the I-002 idle phase of `fix.mjs ab` does not count layouts, see below) and, during
 scrolling, a little less layout per frame near the hero, carousel and fee bar. The scroll phase is dominated by
 the scroll callbacks (other topics), so a scroll-phase win is not expected to exceed the noise floor.
 
 ## Before / after
 
-### Idle probe (my own CDP script, not `fix.mjs ab`; I-002 adds an idle phase to verify.mjs later)
+### Idle probe (`idle-probe.mjs` in this folder; `fix.mjs ab`'s idle phase can't see layout counts)
 
-Chrome, mobile 430x932 DPR 3, CPU 6x, `--vendors=local --https --latency 150`, under the chrome-measure lock.
-Scroll to a spot, wait 3 s, then a 5 s window with no input (throttle on only for the window): `Performance.getMetrics` deltas plus the
-`document.getAnimations()` running list. Two runs each, alternating base and fix (base/fix/fix/base). Values
-are run 1 / run 2.
+Exact command (worktree root; both servers started with `tools/serve.mjs --root <main>/site-pretty [--overlay
+fixes/layout-animations/overlay] --vendors=local --https --latency 150 --port 5216|5217`), inside one
+chrome-measure slot:
+
+```sh
+node fixes/layout-animations/idle-probe.mjs "$PWD" base=https://localhost:5216/ fix=https://localhost:5217/ \
+  --runs 2 --secs 5 --spots 'top,.start-selling-avatars,.fee-progress,.start-selling-platform-row-title-doc,.start-selling-platform-row-title-secure' \
+  --shots <dir> --json <file>
+```
+
+Chrome, mobile 430x932 DPR 3, CPU 6x. Scroll to a spot, wait 3 s, then a 5 s window with no input (throttle on
+only for the window): `Performance.getMetrics` deltas plus the `document.getAnimations()` running list. Two runs
+each, alternating (base/fix/fix/base). Values are run 1 / run 2. Variant 05 (probe-3, 2026-09-30 23:04Z, host
+load1 ~22, so treat absolute ms as contaminated; the counts don't depend on load):
 
 | spot (idle, 5 s) | layouts base → fix | layout ms base → fix | style-recalc ms base → fix | task ms base → fix | running sweeps base → fix |
 |---|---|---|---|---|---|
-| top (hero accent) | 231 / 330 → **13 / 16** | 123 / 189 → **7 / 16** | 400 / 360 → 374 / 390 | 2891 / 3049 → 2711 / 2887 | 0 → 0 |
-| avatar carousel (`#people`, accent still active) | 248 / 279 → **16 / 13** | 150 / 174 → **11 / 7** | 562 / 527 → 548 / 572 | 4375 / 4343 → 4086 / 4367 | 0 → 0 |
-| `.fee-progress` (commission) | 68 / 69 → 48 / 46 | 49 / 50 → 42 / 37 | 511 / 438 → **326 / 339** | 2934 / 2744 → **2045 / 2194** | 4 → **0** |
-| doc title (platform) | 51 / 51 → 51 / 51 | 43 / 42 → 39 / 44 | 733 / 701 → 656 / 658 | 3452 / 3554 → 3402 / 3556 | 4 → 2 (on-screen) |
-| secure title (platform) | 0 → 0 | 0 → 0 | 607 / 584 → 577 / 517 | 3371 / 3430 → 3360 / 3271 | 4 → 3 (on-screen) |
+| top (hero accent) | 314 / 330 → **15 / 16** | 164 / 183 → **9 / 9** | 390 / 407 → 376 / 389 | 3185 / 3235 → 2749 / 2984 | 0 → 0 |
+| avatar carousel (`#people`, accent still active) | 217 / 272 → **15 / 13** | 119 / 153 → **6 / 7** | 554 / 518 → 584 / 552 | 4516 / 4483 → 4306 / 4261 | 0 → 0 |
+| `.fee-progress` (commission) | 67 / 66 → 48 / 46 | 53 / 51 → 45 / 43 | 476 / 529 → **373 / 381** | 2818 / 3279 → **2269 / 2410** | 4 → **0** |
+| doc title (platform) | 51 / 51 → 51 / 51 | 32 / 44 → 48 / 40 | 747 / 677 → 692 / 657 | 3596 / 3459 → 3372 / 3487 | 4 → 2 (on-screen) |
+| secure title (platform) | 0 → 0 | 0 → 0 | 622 / 542 → 539 / 536 | 3331 / 3265 → 3291 / 3352 | 4 → 3 (on-screen) |
 
-- At the top and at the carousel, idle layouts drop ~95 % (from ~46-66 layouts/s to ~3/s). The remaining
-  ~600 style recalcs per 5 s (one per frame; headless rAF runs at ~120/s) come from other always-running animations (`scroll-float`,
-  `vinyl-spin`, the accent's SVG stroke/idle frames, the countdown), which are other topics.
+Variant 03 (the landed 5c08c7a, probe-2, same command) gave the same picture: top 231 / 330 → 13 / 16 layouts,
+carousel 248 / 279 → 16 / 13, fee spot style 511 / 438 → 326 / 339 ms, task 2934 / 2744 → 2045 / 2194 ms.
+
+- At the top and at the carousel, idle layouts drop ~95 % (from ~45-66 layouts/s to ~3/s). The remaining
+  ~600 style recalcs per 5 s (one per frame; headless rAF runs at ~120/s) come from other always-running
+  animations (`scroll-float`, `vinyl-spin`, the accent's SVG stroke/idle frames, the countdown): other topics.
 - At the fee spot the four platform sweeps were running off-screen in the baseline (the `#platform` scene is
-  within ±1 viewport there). The gate pauses them: style-recalc time drops ~30 % and task time ~25 %.
+  within ±1 viewport there). The gate pauses them: style-recalc time drops ~20-30 % and task time ~20-25 %.
 - The fee count-up only runs once (1.1 s when the bar enters the viewport), so its idle rows show the
   sweep gate, not the bar. The bar's own saving is the layout during that one tween.
 
-### Visual equivalence (frozen frames, pixel diff threshold 48, DPR 3)
+### Visual equivalence (frozen frames, `visual-checks.mjs`, pixel diff threshold 48, DPR 3)
 
 All animations under the element are paused and set to the same `currentTime` in base and fix, then a
-fixed clip is captured:
+fixed clip is captured (`idle-probe.mjs ... --visual-only` runs only these checks).
+
+**Correction: the earlier carousel and fee-bar results were false passes.** v1 of the script clipped
+`Page.captureScreenshot` with the element's viewport rect after scrolling, but the clip is in document
+coordinates. Every shot taken after a scroll was a blank strip of the page top, so blank was compared with
+blank and reported 0 %. This affected the carousel (60 / 110 / 180 ms) and fee-bar (7 progress values) rows
+in 5c08c7a's README. The hero accent shots (scrollY 0) were valid. The script now adds `scrollX` / `scrollY`
+to the clip and prints `VISUAL-BLANK` when a shot has no colour range.
 
 | check | diff |
 |---|---|
-| avatar carousel at 60 / 110 / 180 ms of the 220 ms swap | **0 % / 0 % / 0 %** |
-| `.fee-progress` at p = 0, .01, .03, .1, .37, .77, 1 (7 clones in one shot) | **0 %** |
-| hero h1 (full width) at 150 / 300 / 600 / 850 ms of the 900 ms draw-in | 0.09 / 0.25 / 0.35 / 0.25 % |
+| hero h1 (full width) at 150 / 300 / 600 / 850 ms of the 900 ms draw-in (valid in v1; 03 and 05 identical) | 0.09 / 0.25 / 0.35 / 0.25 % |
+| hero h1 under `html[dir=rtl]` at 300 / 600 ms (05) | VIS_RTL |
+| avatar carousel at 20 / 60 / 110 / 180 ms of the 220 ms swap (05) | VIS_AV |
+| `.fee-progress` at p = 0, .01, .03, .1, .37, .77, 1 (7 clones in one shot, 05) | VIS_FEE |
 
 The h1 differences are anti-aliasing at the accent glyph's edges: sub-pixel positions differ because
 translate and layout land on different pixels. When the crops are aligned on the accent, the words match
 exactly.
+
+Carousel paint order (review note): in the fix the avatars after the leaving one carry a `translate`
+animation, which gives each its own stacking context. Those later images now paint above the leaving image
+in the 8 px overlap, where in the baseline the leaving image (opacity animation, same stacking effect) painted
+above image 2. This is cosmetic and visible at most in the first ~50 ms of the 220 ms swap, while the leaving
+image is still mostly opaque; later it is nearly transparent. The 20 ms frozen frame above checks it.
 
 ### iPhone
 
@@ -136,51 +169,81 @@ Ready to run once the phone is back (plain http per I-003, scripted only):
 Expected on the device: far fewer Layout records at idle at the top and the carousel. At the bottom, the
 title that sits below the viewport should stop repainting ~50/s; fix-large-area-blur saw that repaint.
 
-### Chrome A/B (`fix.mjs ab layout-animations --runs 5`, scroll + morph phases, no idle phase yet)
+### Chrome A/B (`fix.mjs ab layout-animations --runs 5`, variant 05, tools after I-002: 6 s idle phase at the top)
 
 | mobile 6x, n=5 | baseline median [min-max] | patched median [min-max] | delta | verdict |
 |---|---|---|---|---|
-| scroll: fps | 69.6 [66.2-72] | 71.9 [68.8-72.8] | +2.3 (+3.3%) | within noise |
-| scroll: frames >20 ms | 95 [92-112] | 89 [76-107] | -6 (-6.3%) | within noise |
-| scroll: frames >34 ms | 10 [8-14] | 11 [9-11] | +1 (+10%) | within noise |
-| scroll: frames >50 ms | 6 [5-7] | 5 [4-6] | -1 (-16.7%) | within noise |
-| scroll: frames >100 ms | 0 [0-1] | 1 [0-1] | +1 | within noise |
-| scroll: worst frame ms | 99.7 [83.4-100.1] | 107.6 [84.2-134] | +7.9 (+7.9%) | within noise |
-| scroll: p95 frame ms | 25.8 [25.4-32.6] | 25.6 [25.4-26] | -0.2 (-0.8%) | within noise |
-| scroll: LoAF ms | 328 [291-360] | 309 [270-383] | -19 (-5.8%) | within noise |
-| scroll: LoAF script ms | 164 [148-216] | 161 [128-221] | -3 (-1.8%) | within noise |
-| scroll: forced style+layout ms (in LoAF) | 55 [46-88] | 42 [38-98] | -13 (-23.6%) | within noise |
-| morph: fps | 109 [100.2-109.9] | 109.4 [106.3-110.2] | +0.4 (+0.4%) | within noise |
-| morph: frames >50 ms | 0 [0-0] | 0 [0-1] | 0 | within noise |
+| scroll: fps | 63.5 [62.8-70] | 64.3 [61.1-67.6] | +0.8 (+1.3%) | within noise |
+| scroll: frames >20 ms | 122 [112-137] | 126 [106-145] | +4 (+3.3%) | within noise |
+| scroll: frames >34 ms | 15 [11-16] | 14 [14-17] | -1 (-6.7%) | within noise |
+| scroll: frames >50 ms | 6 [6-7] | 6 [5-9] | 0 (0%) | within noise |
+| scroll: frames >100 ms | 1 [0-2] | 2 [2-2] | +1 (+100%) | within noise |
+| scroll: worst frame ms | 100.6 [91.6-125.3] | 116.8 [108.1-124.3] | +16.2 (+16.1%) | within noise |
+| scroll: p95 frame ms | 33 [25.7-33.2] | 32.8 [25.9-33.1] | -0.2 (-0.6%) | within noise |
+| scroll: LoAF ms | 370 [356-473] | 379 [266-502] | +9 (+2.4%) | within noise |
+| scroll: LoAF script ms | 208 [197-272] | 219 [158-287] | +11 (+5.3%) | within noise |
+| scroll: forced style+layout ms (in LoAF) | 89 [60-122] | 95 [45-117] | +6 (+6.7%) | within noise |
+| morph: fps | 105.4 [101.9-106.4] | 105.1 [98.4-107.4] | -0.3 (-0.3%) | within noise |
+| morph: frames >50 ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
 | morph: LoAF ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
 | morph: forced style+layout ms (in LoAF) | 0 [0-0] | 0 [0-0] | 0 | within noise |
+| idle: fps | 119.6 [119.5-119.8] | 119.7 [119.3-120] | +0.1 (+0.1%) | within noise |
+| idle: frames >20 ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
+| idle: frames >34 ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
+| idle: frames >50 ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
+| idle: frames >100 ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
+| idle: worst frame ms | 16.7 [16.6-17.6] | 16.8 [9.4-17.5] | +0.1 (+0.6%) | within noise |
+| idle: p95 frame ms | 9.2 [9.2-9.2] | 9.2 [9.2-9.2] | 0 (0%) | within noise |
+| idle: LoAF ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
+| idle: LoAF script ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
+| idle: forced style+layout ms (in LoAF) | 0 [0-0] | 0 [0-0] | 0 | within noise |
 
-Host load avg during the runs: 9.5-17.7 (other agents' worktrees were active, but only this A/B held the lock).
-Noise floor: fix-countdown-idle-raf's A/A at the same settings (mobile 6x, n=5) had >20 ms frames 54-78,
-LoAF 195-283 ms, forced 34-83 ms. Rule of thumb: >20 ms deltas under ~15, LoAF under ~80 ms and forced under
-~40 ms are noise.
+**Validity: contaminated.** Host load1 was 16.3-30.5 during the runs (~22 at slot start), above the
+EXPERIMENTS.md limit of 10. The arms alternate, so the comparison is fair, but the absolute numbers are inflated.
 
-- **Scroll and morph: within noise** on every metric, as expected. The scroll phase is dominated by the
-  scroll callbacks (other topics), and the animations this fix changes only run for part of the scroll.
-  Directionally, frames >20 ms went -6 (95 → 89) and forced style+layout -13 ms (55 → 42), both inside the
-  noise floor.
-- The win is at **idle** (the probe above): ~95 % fewer layouts at the hero and the carousel, and 25-30 %
-  less style/task time where the off-screen sweeps used to run.
+- **Scroll, morph and idle: within noise** on every metric. The scroll phase is dominated by the scroll
+  callbacks (other topics). The **idle phase** records frames and LoAF only: the idle layouts this fix removes
+  (~60/s at the top, 0.5-1 ms each at 6x) fit inside the frame budget, so no frame or LoAF moves. The idle win
+  shows only in the layout/style counters (the probe above).
+- Previous A/B of variant 03 (old tools, load 9.5-17.7): all within noise too; >20 ms frames 95 [92-112] →
+  89 [76-107], forced 55 [46-88] → 42 [38-98] ms.
 - Regressions: no new console errors, no new 404s, `morphReached` 5/5 on both sides.
-- Screenshot diff: top 0.15 %, middle 0.01 %, **bottom 0.56 %**. I cropped and inspected the bottom
-  difference. It is only the gradient phase inside "Earn", "Secure" and "Organized". Those titles were paused
-  while off-screen, so they resume at a different point of the 4 s sweep than the always-running baseline.
-  Glyphs, layout and colours are otherwise identical. This is a phase difference, not a visual change.
+- Screenshot diff: top 0.13 %, middle 0 %, bottom 0.52 %. The bottom difference (inspected by crop on the 03
+  run, 0.56 % there) is only the gradient phase inside "Earn", "Secure" and "Organized": paused titles
+  resume at a different point of the 4 s sweep than the always-running baseline. Not a visual change.
+
+## Experiments tried
+
+Rebuild a variant: copy `variants/<nn>.diff` to `patch.diff` in a scratch copy of this folder and run
+`node tools/fix.mjs apply layout-animations`, then `fix.mjs ab` / `idle-probe.mjs` as below.
+
+Fields as in `fixes/EXPERIMENTS.md`. "Own probe" = `idle-probe.mjs` (this folder), mobile 430x932 DPR 3, CPU 6x,
+5 s idle window per spot, n = 2 per side, alternating order; it does not use verify.mjs, but runs before the
+I-002 tools change are marked old-tools for consistency.
+
+| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status |
+|---|---|---|---|---|---|---|---|---|
+| layout-animations/01 | avatars-exit on translate/clip-path/scale/opacity + `avatars-shift`; accent width transition → WAAPI transform on neighbour words (`HEflip`, with RTL sign flip); fee bar `--fee-progress` + clip-path (no sweep gate yet) | per-frame layout from width/flex-basis/margin animations disappears; idle LayoutCount at hero and carousel drops | better (idle) | old-tools (own probe, load not recorded) | idle layouts per window: top 220-331 → 14-16, carousel 271-298 → 15-17, fee spot 69 → 46-47 (n=2) | `variants/01.diff` (rebuilt from 05: sweep gate removed, RTL flip restored); numbers: first probe, logs not kept | FINDINGS T5; composite-only animations remove idle layout almost entirely | superseded by 03 |
+| layout-animations/02 | accent IntersectionObserver `rootMargin: 100% 0px` → `0px` (stop the accent cycle as soon as it leaves the viewport) | less accent work while the hero is just off-screen | abandoned | n/a (never measured) | none | no patch kept (one-line rootMargin edit, reverted before any measurement); "What changed", note under item 4 | pausing at the edge can freeze the accent mid draw-out, so a blank accent scrolls into view; T6 caveat: rootMargin 0 only when the paused frame is acceptable | dropped |
+| layout-animations/03 | 01 + per-title sweep gate `PMsweepGate` (IO + `data-sweep-paused` → `animation-play-state: paused`) | the four `background-position` sweeps stop repainting while off-screen even when `#platform` is engine-active | better (idle); within noise (scroll/morph) | old-tools (A/B before 4bbd249, load 9.5-17.7) | idle at fee spot: style 511/438 → 326/339 ms, task 2934/2744 → 2045/2194 ms, running sweeps 4 → 0 (n=2); hero layouts 231/330 → 13/16; A/B n=5: >20 ms frames 95 [92-112] → 89 [76-107], forced 55 [46-88] → 42 [38-98] ms, all within noise | `variants/03.diff` (= landed patch), `results.json` of 5c08c7a | FINDINGS T6; the bottom screenshot diff 0.56 % was sweep phase only (paused titles resume at another point of the loop), not a visual change | landed (5c08c7a) |
+| layout-animations/04 | `HEflip` sign flip for `html[dir=rtl]` (part of 01/03) | keep the neighbour-word slide correct in RTL | broke (found in review, not measured) | n/a | none: RTL `.hero-title` is `row-reverse`, so physical order is already left to right and the flip made the words jump by Δ | `variants/03.diff` (the flip is its `HEflip` hunk); review of 5c08c7a | check the RTL CSS before mirroring a physical transform | dropped (removed in 05) |
+| layout-animations/05 | 03 − RTL flip + unobserve titles on row teardown (`$effect.pre` cleanup) | same performance as 03; correct RTL; no observer leak | better (idle, own probe); within noise (A/B incl. idle phase) | contaminated (load1 16.3-30.5) | idle layouts top 314/330 → 15/16, carousel 217/272 → 15/13, fee spot style 476/529 → 373/381 ms (n=2); A/B n=5 all within noise, e.g. >20 ms frames 122 [112-137] → 126 [106-145], idle phase frames/LoAF identical | `variants/05.diff` (= `patch.diff`), `results.json`, this README "Before / after" | the I-002 idle phase counts frames and LoAF, not layouts, so it can't see idle-layout fixes; visual checks: see row 09 | on branch (wave-1 candidate) |
+| layout-animations/06 | accent visual check v1: cropping the h1 by the hero-title's bounding box in base and fix | frozen-frame equivalence of the accent slide | broke (measurement): 7.25 % / 3.78 % diff | n/a | aligned on the accent the same frames differ by 0.557 %, only glyph edges; fixed full-width clip: 0.09-0.35 % | no patch kept (a crop choice in my scratch visual-check script, replaced by the fixed clip now in `visual-checks.mjs`) | mid-transition the title's width differs between variants, so bbox crops misalign; always compare a fixed clip | superseded (fixed clip) |
+| layout-animations/07 | `.start-selling-platform-service-card.is-animating` top/width/height/padding transitions | layout transitions on the service card | abandoned | n/a | none: the class exists only in the stylesheet (dead CSS) | no patch kept (nothing to change: dead CSS); "Why it lags" | grep the JS and HTML before "fixing" a CSS rule | dropped |
+| layout-animations/08 | move the gradient-title sweep to the compositor (transform on a gradient layer instead of `background-position`) | no repaint per frame for visible titles | abandoned | n/a (not built) | none | no patch kept (never built); "What changed" 4 | `background-clip: text` ties the gradient to the glyphs; a composited layer can't reproduce it without changing the look, so only the off-screen pause was done | dropped; retry when a masked-layer version is visually verified |
+| layout-animations/09 | visual-checks v1: `Page.captureScreenshot` clip from the viewport rect after scrolling | frozen-frame equivalence of the carousel and fee bar | broke (measurement): false pass, blank vs blank = 0 % | n/a | carousel 0/0/0 %, fee 0 % reported for 03; both shots blank | no patch kept (script bug, fixed in `visual-checks.mjs`: scrollX/scrollY + blank guard); this README "Visual equivalence" | CDP clip is in document coordinates; always guard pixel checks against blank images | superseded (fixed script) |
 
 ## Risks, conflicts, follow-ups
 
 - Behaviour: desktop and phones use the same code paths (the hero title is centred at every breakpoint,
   CSS 1757-1783, 2053-2062); reduced motion is untouched (accent cycle and carousel loop don't start; fee
-  jumps to `--fee-progress: 1`; titles have no animation). RTL handled by the sign flip in `HEflip`.
+  jumps to `--fee-progress: 1`; titles have no animation). RTL: same physical direction as LTR because the
+  RTL hero title is `row-reverse` (see "What changed" 2).
 - `clip-path` animation (avatar) and `translate` are supported by Safari 14.1+/Chrome 104+; WAAPI
   `element.animate` everywhere relevant (guarded).
 - Overlaps: `.fee-progress` lives in the commission section (told fix-commission-forced-layout; I don't touch
-  JS 3085-3150 or `--commission-*`). `PMsweepGate` is one line in the platform row each-block (JS ~12655),
+  JS 3085-3150 or `--commission-*`). `PMsweepGate` is one line in the platform row each-block (JS ~12655) plus
+  one import (`X as PMpre`) in the node's import list,
   ~200 lines below topic 4's platform `--platform-shrink` block (12433-12447): no shared hunk. The carousel's
   driver loop (JS 11345-11358, next to topic 4's future `l`) is unchanged. No engine API change
   (`rE/iE/aE/dE/uE` untouched).
