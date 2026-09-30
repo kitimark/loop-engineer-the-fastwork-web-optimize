@@ -6,20 +6,21 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { tempDir, startServe, sleep } from '../helpers.mjs';
+import { tempDir, startServe, sleep, chromeLock } from '../helpers.mjs';
 import { makeFixtureHome } from '../fixtures/baseline.mjs';
 
 const { launchChrome, CDP, gotoAndSettle } = await import('../../tools/lib/cdp.mjs');
-const { acquire } = await import('../../tools/lib/lock.mjs');
-let fx, d, ch, cdp, lock;
+// the chrome-measure queue wait gets its own budget, not the per-test timeout (incident I-022)
+const lock = chromeLock(`test-chrome-shim-${process.pid}`, { cmd: 'vendor-shim test' });
+before(() => lock.acquire(), { timeout: Infinity });
+let fx, d, ch, cdp;
 before(async () => {
   d = tempDir('fw-shim-');
   fx = makeFixtureHome(join(d, 'home'));
-  lock = await acquire('chrome-measure', { owner: `test-chrome-shim-${process.pid}`, kind: 'process', meta: { cmd: 'vendor-shim test' } });
   ch = await launchChrome({ port: 0, profileDir: join(d, 'profile'), headless: true });
   cdp = await CDP.connect(ch.wsUrl);
 });
-after(async () => { try { cdp?.close(); await ch?.close(); } finally { lock?.release(); } });
+after(async () => { try { cdp?.close(); await ch?.close(); } finally { lock.release(); } });
 
 async function load(url, expr) {
   const page = await cdp.newIsolatedPage();
