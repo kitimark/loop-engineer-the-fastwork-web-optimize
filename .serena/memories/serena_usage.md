@@ -17,3 +17,11 @@
   `/jsconfig.json`; `find_referencing_symbols` on lib/lock.mjs `acquire` returns tools/lock.mjs + tools/verify.mjs.
   `get_diagnostics_for_file` is excluded (no types; timed out at 240 s on the bundle): use `node --check`.
 - Lines: Serena is 0-based, editors/sed are 1-based. See `hot_code_map` for verified symbol name paths.
+- When to use Serena: `find_declaration` (regex on a call site) to resolve import aliases and duplicated
+  short names, and `find_referencing_symbols` with a full name path. Use grep/Read for everything else (CSS,
+  strings, census, reading bodies). Benchmark: research/code-navigation-benchmark/.
+- Line numbers: `body_location` AND the `NNNN:` prefixes in `content_around_reference` are 0-based.
+- Locals inside `ne(() => …)` blocks are `<Component>/ne() callback/<name>`; `find_symbol <Component>/<name>`
+  returns the component-level symbol of that name instead.
+- `get_symbols_overview` on `nodes/2.DyWL8TcE.js` is about 11.5k chars of top-level names without ranges.
+  Prefer `find_symbol` with a name path, or `hot_code_map`.

@@ -164,9 +164,9 @@ agents, path mapping to your overlay, 0-based lines, memories) are in the `CLAUD
   `node tools/fix.mjs grep/show`. If present, call `mcp__serena__initial_instructions` first (the
   server asks for it), then `read_memory hot_code_map` for the verified symbol map. A missing
   Serena is an `env` incident only if it blocks you; `fix.mjs grep/show` usually suffices.
-- **When it helps:** `get_symbols_overview` of `nodes/2.DyWL8TcE.js` (13.5k lines) to see the
-  component functions; `find_symbol` with a full name path to jump to a minified closure;
-  `find_referencing_symbols` for "who calls `dE` / reads this variable". Plain grep is better for
-  strings, CSS (not indexed) and custom-property names such as `--future-shrink`.
+- **When it helps:** `find_declaration` on a call site (resolve `S`/`z`/`ce`-style aliases in one call) and
+  `find_referencing_symbols` with a full name path (every hit with its enclosing function). **When it
+  doesn't:** CSS, strings, custom properties, "every line that…", reading a function body, tooling flow: use
+  `fix.mjs grep/show` or the Grep/Read tools (`research/code-navigation-benchmark/`).
 - **Never** use Serena to edit or to write memories, even if such a tool is offered; findings go in
   `fixes/<topic>/README.md` or your report.

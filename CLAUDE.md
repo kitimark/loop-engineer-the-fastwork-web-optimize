@@ -246,14 +246,30 @@ Serena is configured in `.serena/project.yml` for **navigation only**: `find_sym
 are disabled (and denied in `.claude/settings.json`): **edit with Claude Code's Edit tool**, even where
 Serena's own instructions say otherwise.
 
+**When to use it** (benchmark: `research/code-navigation-benchmark/`): text search (Grep/Read,
+`fix.mjs grep|show`) is as accurate and cheaper for most questions on the prettified bundle and is the
+default. Serena earns its cost for two things:
+- `find_declaration` on a call site, to resolve what a short name or import alias really is (`S` →
+  `$i` in `chunks/BSBv9QXB.js`);
+- `find_referencing_symbols` with a full name path for "all references to X".
+
+It cannot see CSS, string arguments (`setProperty('--x')`), child processes or namespace-destructured
+imports. Its line numbers, including the `NNNN:` snippet prefixes, are 0-based: add 1 and Read the lines
+before relying on them (the most common error in the benchmark).
+
 - **One Serena per session, rooted where the session started.** Worktree subagents and teammates share
   the lead's Serena, i.e. the **main checkout**, not their worktree. Serena paths are relative to it:
   baseline `site-pretty/_app/immutable/...`; your overlay
   `.claude/worktrees/<wt>/fixes/<topic>/overlay/_app/immutable/...` (also indexed). Before editing,
   turn a Serena result into your absolute worktree overlay path and `Read` those lines.
   Never edit a `site-pretty/` path.
-- Minified names repeat: always pass `relative_path` and use full name paths (e.g. `dN/ne() callback/A`).
+- Minified names repeat: always pass `relative_path` and full name paths. Locals inside effects are
+  `<Component>/ne() callback/<name>`. `AE/a` finds the component-level `a`, not the effect's `a`. Never run
+  `find_referencing_symbols` on tiny runtime helpers (`Ln`, `z`, `s`): 30 s+ on the shared, serial server.
   Serena's line numbers are **0-based**; `sed`, `fix.mjs show` and `fixes/TOPICS.md` are 1-based.
+- Serena does not index `site/` (ignored in `.serena/project.yml`); use `site-pretty/` or your overlay
+  (`.claude/worktrees/<wt>/fixes/<topic>/overlay/...`, relative to the main checkout). Haiku helpers did not
+  benefit from Serena either; `hot_code_map` orients, it does not replace the verifying read.
 - Memories: `hot_code_map` (verified symbol name paths and lines for every topic), `serena_usage`,
   `rules`, `project_overview`. Don't write memories; put findings in `fixes/<topic>/README.md`.
 - `.serena/cache/` holds symbol data derived from Fastwork code: it is gitignored, never commit it.
