@@ -1,0 +1,93 @@
+# fastwork mirror fix: morph-panel-lazy-mount
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply morph-panel-lazy-mount
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13099,6 +13099,41 @@
+           ne(),
+           e.removeEventListener(`change`, m),
+           t.removeEventListener(`change`, m));
++      }
++    );
++  });
++  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
++  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
++  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
++  // 64px nav) and inert, and its images get their src only when the original would have mounted it (b / E).
++  // The mount waits while the user is scrolling (a scroll event in the last 300 ms): it re-arms a 300 ms timer,
++  // so a scroll that starts right after load doesn't get the mount in its first frames (Safari has no rIC).
++  let __mnt = N(!1);
++  ne(() => {
++    let e = 0,
++      t = 0,
++      o = -1e9,
++      i = () => {
++        o = performance.now();
++      },
++      n = () => {
++        performance.now() - o < 300
++          ? (t = window.setTimeout(n, 300))
++          : (window.removeEventListener(`scroll`, i), z(__mnt, !0));
++      },
++      r = () => {
++        window.requestIdleCallback
++          ? (e = window.requestIdleCallback(n, { timeout: 4e3 }))
++          : (t = window.setTimeout(n, 2e3));
++      };
++    return (
++      window.addEventListener(`scroll`, i, { passive: !0 }),
++      document.readyState === `complete` ? r() : window.addEventListener(`load`, r, { once: !0 }),
++      () => {
++        (window.removeEventListener(`load`, r),
++          window.removeEventListener(`scroll`, i),
++          e && window.cancelIdleCallback(e),
++          window.clearTimeout(t));
+       }
+     );
+   });
+@@ -13140,7 +13175,7 @@
+               var n = sN();
+               let r;
+               (l(() => {
+-                (k(n, `src`, s(t)[0]), (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
++                (k(n, `src`, s(b) || s(E) ? s(t)[0] : void 0), (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
+               }),
+                 f(e, n));
+             },
+@@ -13157,7 +13192,13 @@
+         m = e(p, !0);
+       M(p);
+       var h = V(p, 2);
+-      (cD(e(h), { inverse: !0 }), M(h));
++      (cD(e(h), {
++        inverse: !0,
++        get active() {
++          return s(E);
++        },
++      }),
++        M(h));
+       var g = V(h, 2),
+         v = e(g),
+         __ctaBellC = e(v),
+@@ -13193,7 +13234,8 @@
+         M(w),
+         M(a),
+         l(() => {
+-          (k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
++          ((a.inert = !(s(b) || s(E))),
++            k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
+             k(a, `aria-hidden`, s(x) < 0.35),
+             t(m, s(o).header.future),
+             k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
+@@ -13210,7 +13252,7 @@
+         f(n, a));
+     };
+   (m(W, (e) => {
+-    (s(b) || s(E)) && e(ue);
++    (s(b) || s(E) || s(__mnt)) && e(ue);
+   }),
+     M(I),
+     P(

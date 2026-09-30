@@ -1,0 +1,552 @@
+{
+ "topic": "nav-morph-all-v2",
+ "kind": "A/B",
+ "createdAt": "2026-09-30T23:53:17.073Z",
+ "git": {
+  "branch": "worktree-agent-a277ea00c8773c1ea",
+  "head": "05c17cb",
+  "checkout": "agent-a277ea00c8773c1ea-968b1d"
+ },
+ "config": {
+  "cpu": 6,
+  "viewport": "mobile",
+  "runs": 3,
+  "idle": 0,
+  "serveArgs": [
+   "--vendors=local",
+   "--https",
+   "--latency",
+   "150"
+  ],
+  "baseline": "site-pretty",
+  "stackedOn": null,
+  "order": "ABBA (alternating per run)"
+ },
+ "patch": {
+  "file": "fixes/nav-morph-all-v2/patch.diff",
+  "sha256": "6d5c17bbf6dba388382ac2246bf52e711bcff92364386722c30d9091eab6f98d",
+  "files": 2,
+  "added": 126,
+  "removed": 31
+ },
+ "servedCheck": [
+  {
+   "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+   "baseline": {
+    "status": 200,
+    "sha256": "27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c",
+    "source": "base"
+   },
+   "patched": {
+    "status": 200,
+    "sha256": "6bbdefb17712484d4ef78fa0f9a3096b33f150f8bc0a661fecc4a03207d971d1",
+    "source": "overlay"
+   },
+   "overlaySha256": "6bbdefb17712484d4ef78fa0f9a3096b33f150f8bc0a661fecc4a03207d971d1"
+  },
+  {
+   "path": "/_app/immutable/nodes/2.DyWL8TcE.js",
+   "baseline": {
+    "status": 200,
+    "sha256": "4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5",
+    "source": "base"
+   },
+   "patched": {
+    "status": 200,
+    "sha256": "c53b697e416477edcd7da997505ac7be9c1ac290f62aa7557c9b78f34590e42c",
+    "source": "overlay"
+   },
+   "overlaySha256": "c53b697e416477edcd7da997505ac7be9c1ac290f62aa7557c9b78f34590e42c"
+  }
+ ],
+ "metrics": {
+  "scroll": {
+   "fps": {
+    "name": "fps",
+    "higherIsBetter": true,
+    "baseline": {
+     "median": 77,
+     "min": 76.2,
+     "max": 77.9,
+     "runs": [
+      77.9,
+      76.2,
+      77
+     ]
+    },
+    "patched": {
+     "median": 87.7,
+     "min": 87.4,
+     "max": 90.3,
+     "runs": [
+      87.4,
+      90.3,
+      87.7
+     ]
+    },
+    "delta": 10.7,
+    "deltaPct": 13.9,
+    "pairedDeltas": [
+     9.5,
+     14.1,
+     10.7
+    ],
+    "verdict": "better (ranges do not overlap)"
+   },
+   "gt20": {
+    "name": "frames >20 ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 62,
+     "min": 60,
+     "max": 67,
+     "runs": [
+      67,
+      60,
+      62
+     ]
+    },
+    "patched": {
+     "median": 36,
+     "min": 31,
+     "max": 37,
+     "runs": [
+      37,
+      31,
+      36
+     ]
+    },
+    "delta": -26,
+    "deltaPct": -41.9,
+    "pairedDeltas": [
+     -30,
+     -29,
+     -26
+    ],
+    "verdict": "better (ranges do not overlap)"
+   },
+   "gt34": {
+    "name": "frames >34 ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 7,
+     "min": 6,
+     "max": 8,
+     "runs": [
+      8,
+      6,
+      7
+     ]
+    },
+    "patched": {
+     "median": 6,
+     "min": 5,
+     "max": 8,
+     "runs": [
+      8,
+      5,
+      6
+     ]
+    },
+    "delta": -1,
+    "deltaPct": -14.3,
+    "pairedDeltas": [
+     0,
+     -1,
+     -1
+    ],
+    "verdict": "within noise"
+   },
+   "gt50": {
+    "name": "frames >50 ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 4,
+     "min": 4,
+     "max": 4,
+     "runs": [
+      4,
+      4,
+      4
+     ]
+    },
+    "patched": {
+     "median": 3,
+     "min": 3,
+     "max": 4,
+     "runs": [
+      3,
+      4,
+      3
+     ]
+    },
+    "delta": -1,
+    "deltaPct": -25,
+    "pairedDeltas": [
+     -1,
+     0,
+     -1
+    ],
+    "verdict": "within noise"
+   },
+   "gt100": {
+    "name": "frames >100 ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "within noise"
+   },
+   "max": {
+    "name": "worst frame ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 83.3,
+     "min": 83.2,
+     "max": 83.5,
+     "runs": [
+      83.5,
+      83.2,
+      83.3
+     ]
+    },
+    "patched": {
+     "median": 84.2,
+     "min": 84.1,
+     "max": 84.3,
+     "runs": [
+      84.1,
+      84.2,
+      84.3
+     ]
+    },
+    "delta": 0.9,
+    "deltaPct": 1.1,
+    "pairedDeltas": [
+     0.6,
+     1,
+     1
+    ],
+    "verdict": "WORSE (ranges do not overlap)"
+   },
+   "p95": {
+    "name": "p95 frame ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 25,
+     "min": 25,
+     "max": 25.2,
+     "runs": [
+      25,
+      25,
+      25.2
+     ]
+    },
+    "patched": {
+     "median": 17.6,
+     "min": 17.6,
+     "max": 17.7,
+     "runs": [
+      17.7,
+      17.6,
+      17.6
+     ]
+    },
+    "delta": -7.4,
+    "deltaPct": -29.6,
+    "pairedDeltas": [
+     -7.3,
+     -7.4,
+     -7.6
+    ],
+    "verdict": "better (ranges do not overlap)"
+   },
+   "loafMs": {
+    "name": "LoAF ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 258,
+     "min": 201,
+     "max": 259,
+     "runs": [
+      201,
+      258,
+      259
+     ]
+    },
+    "patched": {
+     "median": 183,
+     "min": 178,
+     "max": 188,
+     "runs": [
+      183,
+      178,
+      188
+     ]
+    },
+    "delta": -75,
+    "deltaPct": -29.1,
+    "pairedDeltas": [
+     -18,
+     -80,
+     -71
+    ],
+    "verdict": "better (ranges do not overlap)"
+   },
+   "loafScriptMs": {
+    "name": "LoAF script ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 132,
+     "min": 125,
+     "max": 133,
+     "runs": [
+      132,
+      133,
+      125
+     ]
+    },
+    "patched": {
+     "median": 69,
+     "min": 65,
+     "max": 71,
+     "runs": [
+      69,
+      65,
+      71
+     ]
+    },
+    "delta": -63,
+    "deltaPct": -47.7,
+    "pairedDeltas": [
+     -63,
+     -68,
+     -54
+    ],
+    "verdict": "better (ranges do not overlap)"
+   },
+   "forcedLayoutMs": {
+    "name": "forced style+layout ms (in LoAF)",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 39,
+     "min": 38,
+     "max": 39,
+     "runs": [
+      38,
+      39,
+      39
+     ]
+    },
+    "patched": {
+     "median": 8,
+     "min": 6,
+     "max": 11,
+     "runs": [
+      8,
+      6,
+      11
+     ]
+    },
+    "delta": -31,
+    "deltaPct": -79.5,
+    "pairedDeltas": [
+     -30,
+     -33,
+     -28
+    ],
+    "verdict": "better (ranges do not overlap)"
+   }
+  },
+  "morph": {
+   "fps": {
+    "name": "fps",
+    "higherIsBetter": true,
+    "baseline": {
+     "median": 112,
+     "min": 111.2,
+     "max": 112.7,
+     "runs": [
+      112.7,
+      112,
+      111.2
+     ]
+    },
+    "patched": {
+     "median": 111,
+     "min": 109.9,
+     "max": 112.7,
+     "runs": [
+      109.9,
+      112.7,
+      111
+     ]
+    },
+    "delta": -1,
+    "deltaPct": -0.9,
+    "pairedDeltas": [
+     -2.8,
+     0.7,
+     -0.2
+    ],
+    "verdict": "within noise"
+   },
+   "gt50": {
+    "name": "frames >50 ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "within noise"
+   },
+   "loafMs": {
+    "name": "LoAF ms",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "within noise"
+   },
+   "forcedLayoutMs": {
+    "name": "forced style+layout ms (in LoAF)",
+    "higherIsBetter": false,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "within noise"
+   }
+  }
+ },
+ "regressions": {
+  "newErrors": [],
+  "fixedErrors": [],
+  "errorsBothSides": [],
+  "new404s": [],
+  "screenshotDiffPct": {
+   "top": 0.11,
+   "middle": 0,
+   "bottom": 0
+  },
+  "morphReached": {
+   "baseline": [
+    true,
+    true,
+    true
+   ],
+   "patched": [
+    true,
+    true,
+    true
+   ]
+  }
+ },
+ "host": {
+  "cpus": 8,
+  "model": "Apple M1 Pro",
+  "loadavg": [
+   3.9931640625,
+   3.7451171875,
+   5.064453125
+  ],
+  "loadavg1Min": 2.9,
+  "loadavg1Max": 4.6
+ },
+ "raw": "out/ab/nav-morph-all-v2/2026-09-30T23-50-22-142Z/verify.json",
+ "markdown": "| mobile 6x, n=3 | baseline median [min-max] | patched median [min-max] | delta | verdict |\n|---|---|---|---|---|\n| scroll: fps | 77 [76.2-77.9] | 87.7 [87.4-90.3] | +10.7 (+13.9%) | better (ranges do not overlap) |\n| scroll: frames >20 ms | 62 [60-67] | 36 [31-37] | -26 (-41.9%) | better (ranges do not overlap) |\n| scroll: frames >34 ms | 7 [6-8] | 6 [5-8] | -1 (-14.3%) | within noise |\n| scroll: frames >50 ms | 4 [4-4] | 3 [3-4] | -1 (-25%) | within noise |\n| scroll: frames >100 ms | 0 [0-0] | 0 [0-0] | 0 | within noise |\n| scroll: worst frame ms | 83.3 [83.2-83.5] | 84.2 [84.1-84.3] | +0.9 (+1.1%) | WORSE (ranges do not overlap) |\n| scroll: p95 frame ms | 25 [25-25.2] | 17.6 [17.6-17.7] | -7.4 (-29.6%) | better (ranges do not overlap) |\n| scroll: LoAF ms | 258 [201-259] | 183 [178-188] | -75 (-29.1%) | better (ranges do not overlap) |\n| scroll: LoAF script ms | 132 [125-133] | 69 [65-71] | -63 (-47.7%) | better (ranges do not overlap) |\n| scroll: forced style+layout ms (in LoAF) | 39 [38-39] | 8 [6-11] | -31 (-79.5%) | better (ranges do not overlap) |\n| morph: fps | 112 [111.2-112.7] | 111 [109.9-112.7] | -1 (-0.9%) | within noise |\n| morph: frames >50 ms | 0 [0-0] | 0 [0-0] | 0 | within noise |\n| morph: LoAF ms | 0 [0-0] | 0 [0-0] | 0 | within noise |\n| morph: forced style+layout ms (in LoAF) | 0 [0-0] | 0 [0-0] | 0 | within noise |"
+}

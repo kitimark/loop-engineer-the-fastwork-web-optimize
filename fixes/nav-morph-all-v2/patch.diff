@@ -1,0 +1,328 @@
+# fastwork mirror fix: nav-morph-all-v2
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply nav-morph-all-v2
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -5385,6 +5385,13 @@
+     transform: translateY(0);
+   }
+ }
++/* perf(morph-scrolljack-passive): only .start-selling-platform itself reads --morph-fade (filter, opacity);
++   non-inherited, so the per-frame write in the morph doesn't restyle the section's descendants. */
++@property --morph-fade {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 1;
++}
+ .start-selling-platform {
+   --morph-fade: 1;
+   box-sizing: border-box;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3824,10 +3824,13 @@
+   D(r, !0);
+   let i = R(() => qE(r.value, r.place)),
+     a = N(I(o(() => s(i)))),
+-    c = N(0);
++    c = N(0),
++    /*countdown-idle-raf: false while the countdown is off-screen*/
++    __cdAnimate = R(() => r.animate !== !1);
+   b(() => {
+     let e = s(i);
+-    if (YE.current) {
++    /*countdown-idle-raf: no spring while off-screen; snap like reduced motion*/
++    if (YE.current || !s(__cdAnimate)) {
+       z(a, e, !0);
+       return;
+     }
+@@ -3859,7 +3862,8 @@
+               (e) => {
+                 ((o = S(i, ``, o, e)), t(u, r));
+               },
+-              [() => ({ transform: `translateY(${KE(r, s(a)) * s(c)}px)` })],
++              /*countdown-idle-raf: faces >= 1 cell away are clipped by .digit{overflow:hidden}; park them at +-1 cell so only the faces in view get a style write per frame*/
++              [() => ({ transform: `translateY(${Math.max(-1, Math.min(1, KE(r, s(a)))) * s(c)}px)` })],
+             ),
+             f(n, i));
+         },
+@@ -3894,6 +3898,9 @@
+         get place() {
+           return s(n);
+         },
++        get animate() {
++          return t.animate;
++        },
+       });
+     },
+   ),
+@@ -3920,6 +3927,9 @@
+   let a = C(r, `inverse`, 3, !1),
+     o = R(WT),
+     c = N(null),
++    __cdVisible = N(!0),
++    /*countdown-idle-raf: optional `active` prop from the call site (false = mounted but not shown, e.g. opacity 0)*/
++    __cdActive = R(() => r.active !== !1),
+     u = R(() => (s(c) === null ? null : rD(s(c)))),
+     d = R(() => s(o).waitlist.units),
+     p = R(
+@@ -3933,11 +3943,22 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    let t = window.setInterval(e, 1e3);
++    let t = window.setInterval(e, 1e3),
++      /*countdown-idle-raf: digits spring only while the countdown is on screen*/
++      __cdIo =
++        typeof IntersectionObserver == `function`
++          ? new IntersectionObserver(
++              (e) => {
++                z(__cdVisible, e[e.length - 1].isIntersecting, !0);
++              },
++              { rootMargin: `64px 0px` },
++            )
++          : null;
+     return (
++      __cdIo?.observe(h),
+       document.addEventListener(`visibilitychange`, e),
+       () => {
+-        (window.clearInterval(t), document.removeEventListener(`visibilitychange`, e));
++        (window.clearInterval(t), __cdIo?.disconnect(), document.removeEventListener(`visibilitychange`, e));
+       }
+     );
+   });
+@@ -3958,6 +3979,9 @@
+               return s(u)[i];
+             },
+             padStart: i > 0,
++            get animate() {
++              return s(__cdVisible) && s(__cdActive);
++            },
+           });
+         },
+         p = (e) => {
+@@ -12952,17 +12976,27 @@
+       ? !1
+       : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
+   }
++  // perf(nav-hit-test): same answer as "nav pointer-events:none -> elementFromPoint -> restore", but
++  // without the two inline-style writes (each invalidated the style of the whole nav subtree and forced
++  // a recalc inside the scroll frame). elementsFromPoint lists every hit box top-down; skip the nav's
++  // own boxes except those that stay hit-testable under pointer-events:none on the nav because they set
++  // pointer-events:auto themselves (.start-selling-top-nav-actions, the expanded .start-selling-morph-panel).
+   function F() {
+     let e = T.getBoundingClientRect(),
+       t = e.left + e.width / 2,
+-      n = e.top + Math.min(e.height, 64) / 2,
+-      r = T.style.pointerEvents;
+-    T.style.pointerEvents = `none`;
+-    let i = document.elementFromPoint(t, n);
+-    return ((T.style.pointerEvents = r), j(i));
++      n = e.top + Math.min(e.height, 64) / 2;
++    for (let r of document.elementsFromPoint(t, n))
++      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
++    return j(null);
+   }
++  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
++  let __navEls = {};
++  function __navEl(e) {
++    let t = __navEls[e];
++    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
++  }
+   function ee() {
+-    let e = document.querySelector(`.start-selling-profile-sticky`);
++    let e = __navEl(`.start-selling-profile-sticky`);
+     if (!e) return !1;
+     let t = window.getComputedStyle(e);
+     if (t.position !== `sticky`) return !1;
+@@ -12987,7 +13021,9 @@
+       c = 0,
+       l = 0,
+       u = !1,
+-      d = !1,
++      d = 0,
++      __atEnd = !1,
++      __pf = null,
+       f = () => {
+         z(h, !0);
+       },
+@@ -12999,7 +13035,7 @@
+     e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
+     let _ = () => {
+         (z(v, ee(), !0), z(g, F(), !0));
+-        let t = document.querySelector(`.hero-track`);
++        let t = __navEl(`.hero-track`);
+         if (!t || e.matches) {
+           z(p, !0);
+           return;
+@@ -13009,7 +13045,7 @@
+           i = Math.min(r, Math.max(0, -n.top));
+         z(p, i / r >= 0.72);
+       },
+-      y = () => document.querySelector(`.start-selling-platform`),
++      y = () => (__pf?.isConnected ? __pf : (__pf = document.querySelector(`.start-selling-platform`))),
+       S = () => {
+         let e = y();
+         if (!e) return;
+@@ -13023,7 +13059,7 @@
+       },
+       E = (t) => {
+         if (w !== t || a !== t) {
+-          if (((w = t), z(b, !0), e.matches)) {
++          if (((w = t), z(b, !0), I(), e.matches)) {
+             ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
+             return;
+           }
+@@ -13047,7 +13083,7 @@
+       },
+       k = (e) => C() || (e > 0 && O()),
+       A = (e) => {
+-        k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
++        k(e.deltaY) && (C() || (s = window.scrollY), d === 2 && e.cancelable && e.preventDefault(), D(e.deltaY));
+       },
+       j = (e) => {
+         c = e.touches[0]?.clientY ?? 0;
+@@ -13055,33 +13091,43 @@
+       M = (e) => {
+         let t = e.touches[0]?.clientY ?? c,
+           n = c - t;
+-        ((c = t), k(n) && (C() || (s = window.scrollY), e.preventDefault(), D(n)));
++        ((c = t), k(n) && (C() || (s = window.scrollY), d === 2 && e.cancelable && e.preventDefault(), D(n)));
+       },
+-      N = () => {
+-        d ||
+-          ((d = !0),
+-          window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
+-          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
+-          window.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++      // perf(morph-scrolljack-passive): d = 0 off, 1 passive, 2 blocking. Blocking wheel/touchmove
++      // listeners (which make every touch wait for the main thread) only while the jack can engage:
++      // morph active, or #platform's end in view (__atEnd, same test O() as the handlers). Elsewhere in
++      // the 200% zone the same handlers run passive, so a drag that reaches the end still starts the morph.
++      N = (t) => {
++        if (d === t) return;
++        d
++          ? (window.removeEventListener(`wheel`, A, !0), window.removeEventListener(`touchmove`, M, !0))
++          : window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 });
++        d = t;
++        window.addEventListener(`wheel`, A, { passive: t === 1, capture: !0 });
++        window.addEventListener(`touchmove`, M, { passive: t === 1, capture: !0 });
+       },
+       P = () => {
+         d &&
+-          ((d = !1),
++          ((d = 0),
+           window.removeEventListener(`wheel`, A, !0),
+           window.removeEventListener(`touchstart`, j, !0),
+           window.removeEventListener(`touchmove`, M, !0));
+       },
+       I = () => {
+-        u || C() ? N() : P();
++        C() || (u && __atEnd) ? N(2) : u ? N(1) : P();
+       },
++      __end = () => {
++        let e = O();
++        e !== __atEnd && ((__atEnd = e), I());
++      },
+       L = () => {
+-        (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
++        (_(), u && !C() && __end(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
+       },
+       R = y(),
+       te = R
+         ? new IntersectionObserver(
+             ([e]) => {
+-              ((u = !!e?.isIntersecting), u && z(b, !0), I());
++              ((u = !!e?.isIntersecting), u && z(b, !0), (__atEnd = u && O()), I());
+             },
+             { rootMargin: `200% 0px` },
+           )
+@@ -13099,6 +13145,41 @@
+           ne(),
+           e.removeEventListener(`change`, m),
+           t.removeEventListener(`change`, m));
++      }
++    );
++  });
++  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
++  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
++  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
++  // 64px nav) and inert, and its images get their src only when the original would have mounted it (b / E).
++  // The mount waits while the user is scrolling (a scroll event in the last 300 ms): it re-arms a 300 ms timer,
++  // so a scroll that starts right after load doesn't get the mount in its first frames (Safari has no rIC).
++  let __mnt = N(!1);
++  ne(() => {
++    let e = 0,
++      t = 0,
++      o = -1e9,
++      i = () => {
++        o = performance.now();
++      },
++      n = () => {
++        performance.now() - o < 300
++          ? (t = window.setTimeout(n, 300))
++          : (window.removeEventListener(`scroll`, i), z(__mnt, !0));
++      },
++      r = () => {
++        window.requestIdleCallback
++          ? (e = window.requestIdleCallback(n, { timeout: 4e3 }))
++          : (t = window.setTimeout(n, 2e3));
++      };
++    return (
++      window.addEventListener(`scroll`, i, { passive: !0 }),
++      document.readyState === `complete` ? r() : window.addEventListener(`load`, r, { once: !0 }),
++      () => {
++        (window.removeEventListener(`load`, r),
++          window.removeEventListener(`scroll`, i),
++          e && window.cancelIdleCallback(e),
++          window.clearTimeout(t));
+       }
+     );
+   });
+@@ -13140,7 +13221,7 @@
+               var n = sN();
+               let r;
+               (l(() => {
+-                (k(n, `src`, s(t)[0]), (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
++                (k(n, `src`, s(b) || s(E) ? s(t)[0] : void 0), (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
+               }),
+                 f(e, n));
+             },
+@@ -13157,7 +13238,13 @@
+         m = e(p, !0);
+       M(p);
+       var h = V(p, 2);
+-      (cD(e(h), { inverse: !0 }), M(h));
++      (cD(e(h), {
++        inverse: !0,
++        get active() {
++          return s(E);
++        },
++      }),
++        M(h));
+       var g = V(h, 2),
+         v = e(g),
+         __ctaBellC = e(v),
+@@ -13193,7 +13280,8 @@
+         M(w),
+         M(a),
+         l(() => {
+-          (k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
++          ((a.inert = !(s(b) || s(E))),
++            k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
+             k(a, `aria-hidden`, s(x) < 0.35),
+             t(m, s(o).header.future),
+             k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
+@@ -13210,7 +13298,7 @@
+         f(n, a));
+     };
+   (m(W, (e) => {
+-    (s(b) || s(E)) && e(ue);
++    (s(b) || s(E) || s(__mnt)) && e(ue);
+   }),
+     M(I),
+     P(
