@@ -209,3 +209,31 @@ export function makeTempRepo({ worktree = 'fix-wt', withHooks = false } = {}) {
   }
   return { root, main, wt };
 }
+
+// ---- tests/chrome: one chrome-measure hold per file (incident I-022) ---------------------------------
+/**
+ * The real-Chrome tests queue on chrome-measure behind agents' A/B runs, often for longer than the
+ * per-test timeout. So a chrome test file takes the lock once, in a before() hook with its own wait
+ * budget (`{ timeout: Infinity }` there; the per-test clock starts after it), runs every tool it spawns
+ * under that hold (pass `lock.env` in their env: FW_LOCK_HELD lets verify.mjs / fix.mjs ab re-enter it
+ * instead of queueing behind it), and releases it in after(), which also runs when tests fail.
+ *
+ *   const lock = chromeLock(`test-chrome-x-${process.pid}`, { cmd: 'x test' });
+ *   before(() => lock.acquire(), { timeout: Infinity });   // first hook of the file
+ *   after(() => lock.release());
+ */
+export function chromeLock(owner, meta = {}, { waitSec = Number(process.env.FW_TEST_CHROME_LOCK_WAIT_SEC || 4 * 3600) } = {}) {
+  let handle = null;
+  const lock = {
+    owner, env: {},
+    async acquire() {
+      const { acquire, heldEnv } = await import('../tools/lib/lock.mjs');
+      handle = await acquire('chrome-measure', { owner, kind: 'process', meta, timeoutSec: waitSec });
+      lock.env = { FW_LOCK_HELD: heldEnv('chrome-measure', handle.holder.token) };
+      if (process.env.FW_STATE_DIR) lock.env.FW_STATE_DIR = process.env.FW_STATE_DIR;
+      return handle;
+    },
+    release() { try { handle?.release(); } finally { handle = null; } },
+  };
+  return lock;
+}

@@ -25,6 +25,8 @@ test('package.json has the test scripts and the hook setup', () => {
   const s = JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')).scripts;
   assert.match(s.test, /node --test .*tests\/unit.*tests\/e2e.*tests\/hooks/);
   assert.match(s['test:chrome'], /tests\/chrome/);
+  // one short-lane hold for the whole run: the files re-enter it, no queue wait inside test timeouts (I-022)
+  assert.match(s['test:chrome'], /^node tools\/lock\.mjs run chrome-measure --short --max-seconds 300 --owner test-chrome -- node --test /);
   assert.match(s['test:all'], /npm test && npm run test:chrome/);
   assert.equal(s.setup, 'git config core.hooksPath .githooks');
   assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')).dependencies || {}), [], 'no runtime deps');

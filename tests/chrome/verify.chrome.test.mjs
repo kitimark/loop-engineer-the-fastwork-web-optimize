@@ -1,13 +1,16 @@
 // OPT-IN (npm run test:chrome): real Chrome, short runs, through the REAL cross-worktree chrome-measure
 // lock (so it queues behind agents' measurements instead of disturbing them). Fixture baseline only.
+// The file holds the lock once (chromeLock: the queue wait is outside the per-test timeouts, I-022) and
+// verify.mjs re-enters that hold through FW_LOCK_HELD.
 //   1. verify.mjs: one mobile run at CPU 2x against the fixture served like `fix.mjs ab` serves it
-//      (--vendors=local --https, --root site-pretty); frames/LoAF fields present (idle, scroll, morph); lock held; SRI ok.
-//   2. SIGTERM during a real run: lock released, the dedicated Chrome (its profile) is gone.
+//      (--vendors=local --https, --root site-pretty); frames/LoAF fields present (idle, scroll, morph);
+//      ran under the lock without queueing; SRI ok.
+//   2. SIGTERM during a real run: the dedicated Chrome (its profile) is gone; the file's hold stays.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, nodeAsync, tool, startServe, startProc, run, sleep, REPO } from '../helpers.mjs';
+import { tempDir, nodeAsync, tool, startServe, startProc, run, sleep, REPO, chromeLock } from '../helpers.mjs';
 import { makeFixtureHome, VENDOR_KEY, PAGE_JS } from '../fixtures/baseline.mjs';
 
 const OWNER = `test-chrome-${process.pid}`;
@@ -16,6 +19,9 @@ const REAL_HOST = { FW_TEST_HOST: '', FW_GATE_MAX_WAIT: '60' };
 const common = run('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: REPO }).stdout.trim();
 const LOCKFILE = join(common, 'fastwork-mirror', 'locks', 'chrome-measure.json');
 const holder = () => { try { return JSON.parse(readFileSync(LOCKFILE, 'utf8')); } catch { return null; } };
+const lock = chromeLock(OWNER, { cmd: 'verify.chrome test' });
+before(() => lock.acquire(), { timeout: Infinity });
+after(() => lock.release());
 let fx, srv, d;
 before(async () => {
   d = tempDir('fw-chrome-');
@@ -25,16 +31,18 @@ before(async () => {
 after(() => srv?.stop());
 
 test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', async () => {
-  const p = nodeAsync(tool('verify.mjs'), [`fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out'), '--result', join(d, 'r.json'), '--profile', join(d, 'profile'), '--owner', OWNER, '--max-wait', '10'], { env: REAL_HOST, timeout: 600000 });
-  let seen = null, done = false;
+  const p = nodeAsync(tool('verify.mjs'), [`fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out'), '--result', join(d, 'r.json'), '--profile', join(d, 'profile'), '--owner', OWNER + '-verify', '--max-wait', '10'], { env: { ...REAL_HOST, ...lock.env }, timeout: 600000 });
+  let seen = null, other = null, done = false;
   p.then(() => (done = true));
-  while (!done) { const h = holder(); if (h?.owner === OWNER) seen = h; await sleep(200); }
+  while (!done) { const h = holder(); if (h?.owner === OWNER) seen = h; else if (h) other = h; await sleep(200); }
   const r = await p;
   assert.equal(r.code, 0, r.out);
-  assert.ok(seen, 'held the real chrome-measure lock while measuring');
+  assert.ok(seen, 'the real chrome-measure lock was held (by this file) while measuring');
   assert.equal(seen.kind, 'process');
-  assert.equal(seen.meta.cpu, 2);
-  assert.notEqual(holder()?.owner, OWNER, 'released afterwards');
+  assert.equal(seen.pid, process.pid);
+  assert.equal(other, null, `nobody else held it meanwhile: ${JSON.stringify(other)}`);
+  assert.doesNotMatch(r.out, /\[lock chrome-measure\] busy/, 'verify.mjs re-entered the hold instead of queueing');
+  assert.equal(holder()?.owner, OWNER, "verify.mjs's exit does not release the file's hold");
 
   const res = JSON.parse(readFileSync(join(d, 'r.json'), 'utf8'));
   const x = res.results[0];
@@ -67,9 +75,9 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
   assert.deepEqual(Object.keys(x.origins).filter((o) => !/^https:\/\/localhost:\d+/.test(o) && !o.startsWith('data:')), [], 'no request left the machine');
 });
 
-test('verify.mjs: SIGTERM mid-run releases the lock and closes the dedicated Chrome', async () => {
+test('verify.mjs: SIGTERM mid-run closes the dedicated Chrome', async () => {
   const profile = join(d, 'profile-kill');
-  const v = await startProc(process.execPath, [tool('verify.mjs'), `fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out2'), '--profile', profile, '--owner', OWNER + '-kill', '--max-wait', '0'], { env: REAL_HOST, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 600000 });
+  const v = await startProc(process.execPath, [tool('verify.mjs'), `fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out2'), '--profile', profile, '--owner', OWNER + '-kill', '--max-wait', '0'], { env: { ...REAL_HOST, ...lock.env }, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 600000 });
   const chromeUp = () => run('pgrep', ['-f', `user-data-dir=${profile}`]).stdout.trim();
   assert.ok(chromeUp(), 'Chrome is running with the dedicated profile');
   await v.stop('SIGTERM');
@@ -77,6 +85,6 @@ test('verify.mjs: SIGTERM mid-run releases the lock and closes the dedicated Chr
   for (let i = 0; i < 60 && left; i++) { await sleep(100); left = chromeUp(); }
   if (left) run('pkill', ['-f', `user-data-dir=${profile}`]);
   assert.equal(left, '', 'Chrome must not outlive verify.mjs');
-  assert.notEqual(holder()?.owner, OWNER + '-kill');
+  assert.equal(holder()?.owner, OWNER, "killing verify.mjs leaves the file's hold (released in after())");
   assert.equal(existsSync(join(d, 'r2.json')), false);
 });
