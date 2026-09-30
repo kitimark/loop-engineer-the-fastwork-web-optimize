@@ -10,7 +10,11 @@
 //      FAKE_CHROME_HANG_AT=<method>   never answer this CDP method (a hung browser; verify's watchdog, I-023)
 //      FAKE_CHROME_EXIT_AFTER=<method>  answer it, then exit at the next command (a browser gone between runs, I-023)
 //      FAKE_CHROME_IGNORE_SIGTERM=1     ignore SIGTERM (a browser that will not quit; close() must SIGKILL it)
+//      FAKE_CHROME_BENCH=1  tools/bench.mjs mode: on Page.navigate, fetch <origin>/bench-fake.json from the
+//        served page (so the baseline and the overlay can differ) and answer the bench probes from it:
+//        {windows: {label: {probeId: n}}, probes: {probe: n} (any window), frames, snapshot, capped, errors, listeners, metricsStep: {name: n}}
 import http from 'node:http';
+import https from 'node:https';
 import { createHash } from 'node:crypto';
 import { writeFileSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -32,6 +36,35 @@ export const IDLE_FRAMES = [...Array(100).fill(16.7), 30, 55];
 export const IDLE_LOAF = [{ start: 50, duration: 55, blocking: 5, render: 10, styleLayout: 8,
   scripts: [{ url: 'http://localhost:1234/_app/immutable/nodes/2.fixture.js', fn: 'spring', pos: 42, invoker: 'FrameRequestCallback', type: 'user-callback', dur: 40, forced: 6, pause: 0 }] }];
 let input = false; // any scroll script / Input.* event since the last recorder reset?
+
+// ---- tools/bench.mjs mode (FAKE_CHROME_BENCH=1) ------------------------------------------------------
+const BENCH = process.env.FAKE_CHROME_BENCH === '1';
+const bench = new Map(); // sessionId -> {data, metrics}
+function fetchJson(url) {
+  return new Promise((res) => {
+    const mod = url.startsWith('https:') ? https : http;
+    const req = mod.get(url, { rejectUnauthorized: false, headers: { 'accept-encoding': 'identity' } }, (r) => {
+      const c = []; r.on('data', (d) => c.push(d)); r.on('end', () => { try { res(r.statusCode === 200 ? JSON.parse(Buffer.concat(c).toString()) : {}); } catch { res({}); } });
+    });
+    req.on('error', () => res({}));
+  });
+}
+function benchEvaluate(expr, sessionId) {
+  const st = bench.get(sessionId) || { data: {} };
+  const d = st.data;
+  let m;
+  if ((m = expr.match(/^window\.__bench\.reset\((.*)\)$/))) return true;
+  if ((m = expr.match(/^window\.__bench\.read\((.*)\)$/))) { const label = JSON.parse(m[1]); const topic = label.split(':')[0]; return { label, counts: (d.windows || {})[label] || Object.fromEntries(Object.entries(d.probes || {}).map(([k, v]) => [`${topic}:${k}`, v])), frames: d.frames ?? 60, errors: [] }; }
+  if (expr.startsWith('window.__bench.quiesce(')) return { frames: 2, capped: !!d.capped };
+  if (expr.includes('function benchGeometry')) {
+    const g = JSON.parse(expr.slice(expr.lastIndexOf('})(') + 3, -1));
+    return { maxY: 2000, innerHeight: 900, segments: Object.fromEntries(Object.keys(g.segments || {}).map((k) => [k, { start: 0, end: 300 }])), spots: Object.fromEntries(Object.keys(g.spots || {}).map((k) => [k, { y: 0 }])) };
+  }
+  if (expr.includes('function benchSnapshot')) return d.snapshot || {};
+  if (expr.includes('function benchSettle')) return { pendingImages: 0 };
+  if (expr.startsWith('window.__bench ? window.__bench.errors')) return d.errors || [];
+  return undefined;
+}
 
 function evaluate(expr) {
   if (expr.includes('kit: Object.keys(window)')) return { kit: ['__sveltekit_fake'], nav: 'start-selling-top-nav', hero: 'hero', h: 3000, shim: null, vendors: { gtag: 'undefined', amplitude: 'undefined', hj: 'undefined', dataLayer: 1 } };
@@ -66,21 +99,31 @@ function handle(msg, send) {
     case 'Target.createTarget': return reply({ targetId: `target${++n}` });
     case 'Target.attachToTarget': return reply({ sessionId: `session${++n}` });
     case 'Page.captureScreenshot': return reply({ data: PNG });
+    case 'Browser.getVersion': return reply({ product: 'FakeChrome/1.0' });
+    case 'Performance.getMetrics': {
+      const st = bench.get(sessionId) || { data: {} };
+      st.calls = (st.calls || 0) + 1;
+      const step = st.data.metricsStep || {};
+      return reply({ metrics: ['LayoutCount', 'RecalcStyleCount', 'LayoutDuration', 'RecalcStyleDuration', 'ScriptDuration', 'TaskDuration'].map((name) => ({ name, value: st.calls * (step[name] || 0) })) });
+    }
+    case 'DOMDebugger.getEventListeners': return reply({ listeners: (bench.get(sessionId)?.data.listeners) || [] });
     case 'Runtime.evaluate': {
-      const v = evaluate(params.expression);
+      if (params.returnByValue === false) return reply({ result: { type: 'object', objectId: `obj${++n}` } });
+      const v = (BENCH ? benchEvaluate(params.expression, sessionId) : undefined) ?? evaluate(params.expression);
       return reply({ result: v === undefined ? { type: 'undefined' } : { type: typeof v, value: v } });
     }
     case 'Page.navigate': {
       reply({ frameId: 'frame' });
       const u = params.url;
-      setTimeout(() => {
+      const ready = BENCH ? fetchJson(new URL('/bench-fake.json', u).href).then((data) => { bench.set(sessionId, { data }); log({ method: '(bench-fake)', params: { url: u, data } , sessionId }); }) : Promise.resolve();
+      ready.then(() => setTimeout(() => {
         event('Network.requestWillBeSent', { requestId: 'r1', request: { url: u, method: 'GET' }, type: 'Document' });
         event('Network.responseReceived', { requestId: 'r1', response: { status: 200 } });
         event('Network.requestWillBeSent', { requestId: 'r2', request: { url: new URL('/_app/immutable/nodes/2.fixture.js', u).href, method: 'GET' }, type: 'Script' });
         event('Network.responseReceived', { requestId: 'r2', response: { status: 200 } });
         event('Network.loadingFinished', { requestId: 'r2' });
         event('Page.loadEventFired', { timestamp: Date.now() / 1000 });
-      }, 10);
+      }, 10));
       return;
     }
     default: return reply({});

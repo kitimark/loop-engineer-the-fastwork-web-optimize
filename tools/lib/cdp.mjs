@@ -182,3 +182,31 @@ export async function gotoAndSettle(page, url, { quietMs = 1500, maxMs = 45000 }
 }
 
 export { sleep };
+
+// ---- additive helpers for tools/bench.mjs (never called on the verify.mjs path) ------------------------
+/** Performance.enable with a time domain: 'timeTicks' (wall) or 'threadTicks' (main-thread running time). */
+export async function enablePerformance(page, timeDomain = 'timeTicks') {
+  if (!['timeTicks', 'threadTicks'].includes(timeDomain)) throw new Error(`bad timeDomain ${timeDomain}`);
+  await page.send('Performance.enable', { timeDomain });
+}
+/** Performance.getMetrics as {name: value} (LayoutCount, RecalcStyleCount, LayoutDuration s, ...). */
+export async function getMetrics(page) {
+  const { metrics } = await page.send('Performance.getMetrics');
+  return Object.fromEntries((metrics || []).map((m) => [m.name, m.value]));
+}
+/** Event listeners on the object `expr` evaluates to (e.g. 'window'): [{type, passive, useCapture, once}]. */
+export async function eventListeners(page, expr) {
+  const { result, exceptionDetails } = await page.send('Runtime.evaluate', { expression: expr, returnByValue: false });
+  if (exceptionDetails || !result?.objectId) throw new Error(`eventListeners: ${expr} is not an object`);
+  try {
+    const { listeners } = await page.send('DOMDebugger.getEventListeners', { objectId: result.objectId });
+    return (listeners || []).map((l) => ({ type: l.type, passive: !!l.passive, useCapture: !!l.useCapture, once: !!l.once }));
+  } finally {
+    await page.send('Runtime.releaseObject', { objectId: result.objectId }).catch(() => {});
+  }
+}
+/** Browser product string, e.g. "Chrome/140.0.7339.80" (a browser-level command). */
+export async function browserVersion(cdp) {
+  const v = await cdp.send('Browser.getVersion');
+  return v.product || null;
+}

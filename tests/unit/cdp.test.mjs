@@ -97,3 +97,29 @@ test('killTree(): SIGKILLs a process and all its descendants, read before the ro
   for (let i = 0; i < 40 && (left = pids.filter(alive)).length; i++) await new Promise((r) => setTimeout(r, 50));
   assert.deepEqual(left, [], 'descendants survived');
 });
+
+test('bench helpers: enablePerformance, getMetrics, eventListeners, browserVersion against the fake Chrome', async () => {
+  const d = tempDir('fw-cdp-');
+  process.env.CHROME = FAKE;
+  process.env.FAKE_CHROME_LOG = join(d, 'log.jsonl');
+  const ch = await cdp.launchChrome({ port: 0, profileDir: join(d, 'profile') });
+  try {
+    const c = await cdp.CDP.connect(ch.wsUrl);
+    assert.equal(await cdp.browserVersion(c), 'FakeChrome/1.0');
+    const page = await c.newIsolatedPage();
+    await cdp.enablePerformance(page, 'threadTicks');
+    await assert.rejects(cdp.enablePerformance(page, 'wallTicks'), /bad timeDomain/);
+    const m = await cdp.getMetrics(page);
+    assert.deepEqual(Object.keys(m), ['LayoutCount', 'RecalcStyleCount', 'LayoutDuration', 'RecalcStyleDuration', 'ScriptDuration', 'TaskDuration']);
+    assert.deepEqual(await cdp.eventListeners(page, 'window'), []);
+    await page.close();
+    c.close();
+    const log = readFileSync(process.env.FAKE_CHROME_LOG, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    assert.deepEqual(log.find((l) => l.method === 'Performance.enable').params, { timeDomain: 'threadTicks' });
+    assert.ok(log.some((l) => l.method === 'DOMDebugger.getEventListeners' && /^obj\d+$/.test(l.params.objectId)));
+    assert.ok(log.some((l) => l.method === 'Runtime.releaseObject'), 'the remote object is released');
+  } finally {
+    await ch.close();
+    delete process.env.FAKE_CHROME_LOG;
+  }
+});
