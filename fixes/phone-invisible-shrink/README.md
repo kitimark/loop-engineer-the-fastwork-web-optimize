@@ -175,6 +175,18 @@ both sides (59.1-59.5).
 (mobile and desktop). Screenshot diff is mobile 0.12/0/0 % and desktop 0.1/0/0 % (countdown/orbit phase
 noise).
 
+## Experiments tried
+
+Drafted by mgmt-ops from this README and `results.json` after landing (the owner's worktree is idle);
+the full rows, with evidence paths and bench columns, are in [`../EXPERIMENTS.md`](../EXPERIMENTS.md).
+
+| id | variant | result | validity | key numbers | status |
+|---|---|---|---|---|---|
+| 01 | Gate future `l` and platform `n` on the CSS phone media query (no `--future-shrink` / `--platform-shrink` writes, no easing rAF, no read-after-write); cache the MQLs in profile `oe`/`ce` | better (scroll and morph fps; other metrics within noise) | old-tools, contaminated (load 8-20.2) | mobile 6x n=5: fps 66.5 [62.7-69.9] -> 71.6 [70.7-74.1]; >20 ms 104 [94-133] -> 82 [68-94]; forced 94 [46-116] -> 31 [27-83] ms | landed |
+| 02 | /01 on the desktop viewport (no-regression check) | within noise | old-tools, contaminated (load 7.5-17.6) | desktop 6x n=5: fps 70.7 [66.3-73.4] -> 68.5 [68.4-72]; >20 ms 125 [111-156] -> 148 [127-150] | landed |
+| 03 | /01 on the real iPhone (scripted scroll, plain http, 3+3) | better | clean (device) | fps 52.4-53.2 -> 55.0-56.1; >20 ms 60-64 -> 40-43; >34 ms 14-22 -> 10-13; >50 ms unchanged | landed |
+| 04 | `.hero-track` threshold test as an IntersectionObserver (T7), skip profile `d()` reset re-writes | abandoned (not built: out of scope) | n/a | none | retry after wave 1 lands |
+
 ## Risks, conflicts, follow-ups
 
 - **Visual parity on phones depends on the CSS override.** The gate uses the exact query of CSS
