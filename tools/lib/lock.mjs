@@ -55,7 +55,10 @@ export function staleReason(h, now = Date.now()) {
 
 // mkdir is atomic: whoever creates the guard dir owns the critical section (a few ms). A guard older
 // than 10 s belongs to a process that died inside the critical section and is removed.
-async function withGuard(r, fn) {
+// Exported for other shared stores in the same state dir (tools/lib/incident.mjs); `fn` must be
+// synchronous and short.
+export async function withGuard(r, fn) {
+  checkName(r);
   mkdirSync(lockDir(), { recursive: true });
   const g = guardDir(r);
   for (let i = 0; ; i++) {
