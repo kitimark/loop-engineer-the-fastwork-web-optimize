@@ -1,0 +1,401 @@
+{
+ "task": "T04",
+ "arm": "S-haiku",
+ "model": "haiku",
+ "batch": "b7-haiku-more",
+ "rep": 3,
+ "agentId": "ac7ad3e1564c3f677",
+ "wallSec": 221.8,
+ "start": "2026-09-30T21:58:32.730Z",
+ "end": "2026-09-30T22:02:14.515Z",
+ "turns": 52,
+ "tokens": {
+  "input": 422,
+  "cacheRead": 2496212,
+  "cacheCreate": 40362,
+  "output": 81,
+  "total": 2537077,
+  "ctxPeak": 67306
+ },
+ "toolCalls": 49,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__initial_instructions": 1,
+  "mcp__serena__get_symbols_overview": 1,
+  "mcp__serena__find_symbol": 2,
+  "mcp__serena__find_referencing_symbols": 1,
+  "Bash": 28,
+  "Read": 16
+ },
+ "serenaCalls": 4,
+ "serenaResultChars": 2524,
+ "serenaMs": 404,
+ "textResultChars": 32222,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 7,
+   "chars": 0
+  },
+  {
+   "name": "serena.initial_instructions",
+   "ms": 46,
+   "chars": 7501
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 24,
+   "chars": 2182
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 115,
+   "chars": 170
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 93,
+   "chars": 2
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 172,
+   "chars": 170
+  },
+  {
+   "name": "Bash",
+   "ms": 119,
+   "chars": 239
+  },
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 239
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 544
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 461
+  },
+  {
+   "name": "Bash",
+   "ms": 80,
+   "chars": 82
+  },
+  {
+   "name": "Bash",
+   "ms": 68,
+   "chars": 20
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 85,
+   "chars": 38
+  },
+  {
+   "name": "Bash",
+   "ms": 70,
+   "chars": 83
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 1042
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 3408
+  },
+  {
+   "name": "Bash",
+   "ms": 117,
+   "chars": 239
+  },
+  {
+   "name": "Bash",
+   "ms": 162,
+   "chars": 6071
+  },
+  {
+   "name": "Bash",
+   "ms": 134,
+   "chars": 245
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 630
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 474
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 1294
+  },
+  {
+   "name": "Bash",
+   "ms": 64,
+   "chars": 550
+  },
+  {
+   "name": "Bash",
+   "ms": 172,
+   "chars": 135
+  },
+  {
+   "name": "Bash",
+   "ms": 149,
+   "chars": 71
+  },
+  {
+   "name": "Bash",
+   "ms": 71,
+   "chars": 51
+  },
+  {
+   "name": "Bash",
+   "ms": 73,
+   "chars": 1745
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 168
+  },
+  {
+   "name": "Read",
+   "ms": 19,
+   "chars": 712
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 313,
+   "chars": 8
+  },
+  {
+   "name": "Bash",
+   "ms": 210,
+   "chars": 562
+  },
+  {
+   "name": "Bash",
+   "ms": 2381,
+   "chars": 669
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 2804
+  },
+  {
+   "name": "Bash",
+   "ms": 197,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 38
+  },
+  {
+   "name": "Bash",
+   "ms": 201,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 118,
+   "chars": 82
+  },
+  {
+   "name": "Bash",
+   "ms": 92,
+   "chars": 328
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 471
+  },
+  {
+   "name": "Read",
+   "ms": 23,
+   "chars": 2033
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 2778
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 1221
+  },
+  {
+   "name": "Read",
+   "ms": 27,
+   "chars": 957
+  },
+  {
+   "name": "Bash",
+   "ms": 83,
+   "chars": 865
+  },
+  {
+   "name": "Bash",
+   "ms": 73,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 115
+  },
+  {
+   "name": "Bash",
+   "ms": 319,
+   "chars": 260
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 335
+  }
+ ],
+ "answer": {
+  "definition": {
+   "name": "onMount",
+   "line": 3420
+  },
+  "uses": [
+   {
+    "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+    "line": 3440,
+    "localName": "Ra"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 0.1,
+  "recall": 0.05263157894736842,
+  "precision": 1,
+  "misses": [
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   },
+   {
+    "file": "entry/app.HSR43Bkx.js",
+    "line": 3880,
+    "localName": "ie"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2424,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2927,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3100,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3680,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3931,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4155,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4689,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 6225,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 10913,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11294,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11606,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11860,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11994,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12196,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12433,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12978,
+    "localName": "ne"
+   }
+  ],
+  "extras": [],
+  "found540": false,
+  "offByOne": 0
+ }
+}

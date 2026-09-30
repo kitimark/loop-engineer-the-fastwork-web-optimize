@@ -1,0 +1,90 @@
+{
+ "task": "T01",
+ "arm": "SN",
+ "model": "sonnet",
+ "batch": "b5b-notes-required",
+ "rep": 1,
+ "agentId": "a4509b3ad8c99742d",
+ "wallSec": 16.3,
+ "start": "2026-09-30T21:56:09.996Z",
+ "end": "2026-09-30T21:56:26.273Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 137929,
+  "cacheCreate": 21623,
+  "output": 110,
+  "total": 159670,
+  "ctxPeak": 44363
+ },
+ "toolCalls": 6,
+ "toolSearch": 1,
+ "byName": {
+  "Read": 2,
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 3,
+  "Bash": 1
+ },
+ "serenaCalls": 3,
+ "serenaResultChars": 495,
+ "serenaMs": 297,
+ "textResultChars": 14915,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 2497
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 9118
+  },
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 140,
+   "chars": 165
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 78,
+   "chars": 165
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 79,
+   "chars": 165
+  },
+  {
+   "name": "Bash",
+   "ms": 100,
+   "chars": 3300
+  }
+ ],
+ "answer": {
+  "iE": [
+   2670,
+   2673
+  ],
+  "dE": [
+   2749,
+   2783
+  ],
+  "uE": [
+   2719,
+   2748
+  ],
+  "defaultRootMargin": "100% 0px"
+ },
+ "handbackPlaceholder": false,
+ "formatFail": "T01 SN r1 gave the JSON object without a ```json fence; transcribed from its final message",
+ "stored": {
+  "score": 1,
+  "offByOne": 0
+ }
+}

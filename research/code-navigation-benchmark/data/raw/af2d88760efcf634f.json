@@ -1,0 +1,120 @@
+{
+ "task": "T07",
+ "arm": "SN",
+ "model": "sonnet",
+ "batch": "b5b-notes-required",
+ "rep": 1,
+ "agentId": "af2d88760efcf634f",
+ "wallSec": 33.9,
+ "start": "2026-09-30T21:56:17.503Z",
+ "end": "2026-09-30T21:56:51.385Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 193958,
+  "cacheCreate": 29078,
+  "output": 59,
+  "total": 223105,
+  "ctxPeak": 51818
+ },
+ "toolCalls": 6,
+ "toolSearch": 1,
+ "byName": {
+  "Read": 2,
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 1,
+  "Bash": 3
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 11748,
+ "serenaMs": 114,
+ "textResultChars": 19725,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2497
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 9118
+  },
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 114,
+   "chars": 11748
+  },
+  {
+   "name": "Bash",
+   "ms": 5552,
+   "chars": 332
+  },
+  {
+   "name": "Bash",
+   "ms": 2599,
+   "chars": 6465
+  },
+  {
+   "name": "Bash",
+   "ms": 2145,
+   "chars": 1313
+  }
+ ],
+ "answer": {
+  "perScrollFrame": [
+   {
+    "line": 13007,
+    "api": "getBoundingClientRect",
+    "function": "dN/ne() callback/_ (.hero-track rect)"
+   },
+   {
+    "line": 12956,
+    "api": "getBoundingClientRect",
+    "function": "dN/F (called from _ at 13001)"
+   },
+   {
+    "line": 12961,
+    "api": "elementFromPoint",
+    "function": "dN/F (called from _ at 13001)"
+   },
+   {
+    "line": 12967,
+    "api": "getComputedStyle",
+    "function": "dN/ee (called from _ at 13001)"
+   },
+   {
+    "line": 12972,
+    "api": "getBoundingClientRect",
+    "function": "dN/ee (called from _ at 13001; only if the element is sticky)"
+   },
+   {
+    "line": 12973,
+    "api": "getBoundingClientRect",
+    "function": "dN/ee (called from _ at 13001; only if the element is sticky)"
+   }
+  ],
+  "notFromScrollCallback": [
+   {
+    "line": 13044,
+    "api": "getBoundingClientRect",
+    "function": "dN/ne() callback/O (via k, from wheel handler A 13049 and touchmove handler M 13055)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0
+ }
+}

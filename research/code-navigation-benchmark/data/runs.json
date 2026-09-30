@@ -19143,5 +19143,3825 @@
    }
   },
   "handbackPlaceholder": true
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "GN",
+  "model": "sonnet",
+  "batch": "b5b-notes-required",
+  "rep": 1,
+  "agentId": "a8a7a0ae5e0605591",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 8.2,
+  "start": "2026-09-30T21:55:10.968Z",
+  "end": "2026-09-30T21:55:19.165Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 91435,
+   "cacheCreate": 17697,
+   "output": 698,
+   "total": 109836,
+   "ctxPeak": 40437
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 16271,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 2497
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 9118
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 4656
+   }
+  ],
+  "answer": {
+   "iE": [
+    2670,
+    2673
+   ],
+   "dE": [
+    2749,
+    2783
+   ],
+   "uE": [
+    2719,
+    2748
+   ],
+   "defaultRootMargin": "100% 0px"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T13",
+  "type": "locate by behaviour in the runtime",
+  "arm": "GN",
+  "model": "sonnet",
+  "batch": "b5b-notes-required",
+  "rep": 1,
+  "agentId": "a021982deabf95ffe",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 18.7,
+  "start": "2026-09-30T21:55:19.735Z",
+  "end": "2026-09-30T21:55:38.482Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 171839,
+   "cacheCreate": 18665,
+   "output": 82,
+   "total": 190596,
+   "ctxPeak": 41405
+  },
+  "toolCalls": 7,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 4,
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 17093,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2497
+   },
+   {
+    "name": "Read",
+    "ms": 68,
+    "chars": 9118
+   },
+   {
+    "name": "Read",
+    "ms": 35,
+    "chars": 2291
+   },
+   {
+    "name": "Bash",
+    "ms": 94,
+    "chars": 313
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 1701
+   },
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 325
+   },
+   {
+    "name": "Bash",
+    "ms": 2088,
+    "chars": 848
+   }
+  ],
+  "answer": {
+   "name": "ai",
+   "start": 2054,
+   "end": 2110,
+   "attachLine": 2275,
+   "attachFunction": "d (arrow fn inside Qn callback inside bi, the mount function 2238-2298)"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T07",
+  "type": "API usage scoped by call graph",
+  "arm": "GN",
+  "model": "sonnet",
+  "batch": "b5b-notes-required",
+  "rep": 1,
+  "agentId": "a20d3f6e0218e77d5",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0,
+  "wallSec": 23.7,
+  "start": "2026-09-30T21:55:16.833Z",
+  "end": "2026-09-30T21:55:40.579Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 136728,
+   "cacheCreate": 25375,
+   "output": 212,
+   "total": 162323,
+   "ctxPeak": 48115
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 2,
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 31429,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2497
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 9118
+   },
+   {
+    "name": "Bash",
+    "ms": 2056,
+    "chars": 14844
+   },
+   {
+    "name": "Bash",
+    "ms": 1876,
+    "chars": 4970
+   }
+  ],
+  "answer": {
+   "perScrollFrame": [
+    {
+     "line": 12967,
+     "api": "getComputedStyle",
+     "function": "ee"
+    },
+    {
+     "line": 12972,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 12973,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 12956,
+     "api": "getBoundingClientRect",
+     "function": "F"
+    },
+    {
+     "line": 12961,
+     "api": "elementFromPoint",
+     "function": "F"
+    },
+    {
+     "line": 13007,
+     "api": "getBoundingClientRect",
+     "function": "_ (scroll callback helper)"
+    }
+   ],
+   "notFromScrollCallback": [
+    {
+     "line": 13044,
+     "api": "getBoundingClientRect",
+     "function": "O (called from wheel/touchmove handlers via k)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "GN",
+  "model": "sonnet",
+  "batch": "b5b-notes-required",
+  "rep": 1,
+  "agentId": "aebc4bbeb12fcd977",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 41.3,
+  "start": "2026-09-30T21:55:13.468Z",
+  "end": "2026-09-30T21:55:54.801Z",
+  "turns": 8,
+  "tokens": {
+   "input": 18,
+   "cacheRead": 292177,
+   "cacheCreate": 20242,
+   "output": 1131,
+   "total": 313568,
+   "ctxPeak": 42984
+  },
+  "toolCalls": 7,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 2,
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 16180,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 2497
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 9118
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 525
+   },
+   {
+    "name": "Bash",
+    "ms": 2879,
+    "chars": 1058
+   },
+   {
+    "name": "Bash",
+    "ms": 2534,
+    "chars": 1187
+   },
+   {
+    "name": "Bash",
+    "ms": 2262,
+    "chars": 849
+   },
+   {
+    "name": "Bash",
+    "ms": 2594,
+    "chars": 946
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "SN",
+  "model": "sonnet",
+  "batch": "b5b-notes-required",
+  "rep": 1,
+  "agentId": "a4509b3ad8c99742d",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 16.3,
+  "start": "2026-09-30T21:56:09.996Z",
+  "end": "2026-09-30T21:56:26.273Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 137929,
+   "cacheCreate": 21623,
+   "output": 110,
+   "total": 159670,
+   "ctxPeak": 44363
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "Read": 2,
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 3,
+   "Bash": 1
+  },
+  "serenaCalls": 3,
+  "serenaResultChars": 495,
+  "serenaMs": 297,
+  "textResultChars": 14915,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2497
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 9118
+   },
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 140,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 78,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 79,
+    "chars": 165
+   },
+   {
+    "name": "Bash",
+    "ms": 100,
+    "chars": 3300
+   }
+  ],
+  "answer": {
+   "iE": [
+    2670,
+    2673
+   ],
+   "dE": [
+    2749,
+    2783
+   ],
+   "uE": [
+    2719,
+    2748
+   ],
+   "defaultRootMargin": "100% 0px"
+  },
+  "handbackPlaceholder": false,
+  "formatFail": "T01 SN r1 gave the JSON object without a ```json fence; transcribed from its final message"
+ },
+ {
+  "task": "T30",
+  "type": "open discovery: census of IntersectionObservers",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 1,
+  "agentId": "accf210ce0bb5e038",
+  "score": 0.9767441860465117,
+  "recall": 0.9545454545454546,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 81.6,
+  "start": "2026-09-30T21:55:19.485Z",
+  "end": "2026-09-30T21:56:41.119Z",
+  "turns": 20,
+  "tokens": {
+   "input": 162,
+   "cacheRead": 745630,
+   "cacheCreate": 22517,
+   "output": 55,
+   "total": 768364,
+   "ctxPeak": 44024
+  },
+  "toolCalls": 35,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 22,
+   "Bash": 13
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 22216,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 197,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 95,
+    "chars": 469
+   },
+   {
+    "name": "Read",
+    "ms": 57,
+    "chars": 567
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 418
+   },
+   {
+    "name": "Read",
+    "ms": 24,
+    "chars": 596
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 470
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 584
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 443
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 631
+   },
+   {
+    "name": "Read",
+    "ms": 49,
+    "chars": 480
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 571
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 484
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 548
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 1167
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 1106
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 1704
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 1358
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 1755
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 1228
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 1316
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 1248
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 1501
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 1262
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 535
+   },
+   {
+    "name": "Bash",
+    "ms": 147,
+    "chars": 284
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 120
+   },
+   {
+    "name": "Bash",
+    "ms": 292,
+    "chars": 115
+   },
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 118
+   },
+   {
+    "name": "Bash",
+    "ms": 89,
+    "chars": 158
+   },
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 132
+   },
+   {
+    "name": "Bash",
+    "ms": 94,
+    "chars": 129
+   },
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 129
+   },
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 129
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 129
+   },
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 135
+   }
+  ],
+  "answer": {
+   "observers": [
+    {
+     "line": 2504,
+     "component": "WT",
+     "options": "{ threshold: [0, 0.05, 0.2] }"
+    },
+    {
+     "line": 2725,
+     "component": "uE",
+     "options": "{ rootMargin: n }"
+    },
+    {
+     "line": 3130,
+     "component": "AE",
+     "options": "{ threshold: [0, 0.45, 0.75] }"
+    },
+    {
+     "line": 3709,
+     "component": "HE",
+     "options": "{ rootMargin: `100% 0px` }"
+    },
+    {
+     "line": 4698,
+     "component": "hD",
+     "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+    },
+    {
+     "line": 6261,
+     "component": "WD",
+     "options": "{ threshold: 0.35 }"
+    },
+    {
+     "line": 11609,
+     "component": "yM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 11862,
+     "component": "SM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12024,
+     "component": "EM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12216,
+     "component": "NM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 13082,
+     "component": "dN",
+     "options": "{ rootMargin: `200% 0px` }"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "SN",
+  "model": "sonnet",
+  "batch": "b5b-notes-required",
+  "rep": 1,
+  "agentId": "a349260276203d3b5",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 32,
+  "start": "2026-09-30T21:56:13.462Z",
+  "end": "2026-09-30T21:56:45.483Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 226554,
+   "cacheCreate": 22578,
+   "output": 1200,
+   "total": 250344,
+   "ctxPeak": 45318
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "Read": 2,
+   "ToolSearch": 1,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Bash": 3
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 2117,
+  "serenaMs": 791,
+  "textResultChars": 13452,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 2497
+   },
+   {
+    "name": "Read",
+    "ms": 48,
+    "chars": 9118
+   },
+   {
+    "name": "ToolSearch",
+    "ms": 10,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 791,
+    "chars": 2117
+   },
+   {
+    "name": "Bash",
+    "ms": 1963,
+    "chars": 841
+   },
+   {
+    "name": "Bash",
+    "ms": 2329,
+    "chars": 394
+   },
+   {
+    "name": "Bash",
+    "ms": 2176,
+    "chars": 602
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T07",
+  "type": "API usage scoped by call graph",
+  "arm": "SN",
+  "model": "sonnet",
+  "batch": "b5b-notes-required",
+  "rep": 1,
+  "agentId": "af2d88760efcf634f",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0,
+  "wallSec": 33.9,
+  "start": "2026-09-30T21:56:17.503Z",
+  "end": "2026-09-30T21:56:51.385Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 193958,
+   "cacheCreate": 29078,
+   "output": 59,
+   "total": 223105,
+   "ctxPeak": 51818
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "Read": 2,
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "Bash": 3
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 11748,
+  "serenaMs": 114,
+  "textResultChars": 19725,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2497
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 9118
+   },
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 114,
+    "chars": 11748
+   },
+   {
+    "name": "Bash",
+    "ms": 5552,
+    "chars": 332
+   },
+   {
+    "name": "Bash",
+    "ms": 2599,
+    "chars": 6465
+   },
+   {
+    "name": "Bash",
+    "ms": 2145,
+    "chars": 1313
+   }
+  ],
+  "answer": {
+   "perScrollFrame": [
+    {
+     "line": 13007,
+     "api": "getBoundingClientRect",
+     "function": "dN/ne() callback/_ (.hero-track rect)"
+    },
+    {
+     "line": 12956,
+     "api": "getBoundingClientRect",
+     "function": "dN/F (called from _ at 13001)"
+    },
+    {
+     "line": 12961,
+     "api": "elementFromPoint",
+     "function": "dN/F (called from _ at 13001)"
+    },
+    {
+     "line": 12967,
+     "api": "getComputedStyle",
+     "function": "dN/ee (called from _ at 13001)"
+    },
+    {
+     "line": 12972,
+     "api": "getBoundingClientRect",
+     "function": "dN/ee (called from _ at 13001; only if the element is sticky)"
+    },
+    {
+     "line": 12973,
+     "api": "getBoundingClientRect",
+     "function": "dN/ee (called from _ at 13001; only if the element is sticky)"
+    }
+   ],
+   "notFromScrollCallback": [
+    {
+     "line": 13044,
+     "api": "getBoundingClientRect",
+     "function": "dN/ne() callback/O (via k, from wheel handler A 13049 and touchmove handler M 13055)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 2,
+  "agentId": "ab7616325da374ed4",
+  "score": 0,
+  "note": "no parsable answer",
+  "wallSec": 108,
+  "start": "2026-09-30T21:55:07.472Z",
+  "end": "2026-09-30T21:56:55.437Z",
+  "turns": 22,
+  "tokens": {
+   "input": 178,
+   "cacheRead": 1408035,
+   "cacheCreate": 61471,
+   "output": 37,
+   "total": 1469721,
+   "ctxPeak": 83200
+  },
+  "toolCalls": 21,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 6,
+   "Bash": 15
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 106817,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 633,
+    "chars": 49068
+   },
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 62
+   },
+   {
+    "name": "Read",
+    "ms": 25,
+    "chars": 1451
+   },
+   {
+    "name": "Bash",
+    "ms": 293,
+    "chars": 1150
+   },
+   {
+    "name": "Bash",
+    "ms": 89,
+    "chars": 133
+   },
+   {
+    "name": "Bash",
+    "ms": 93,
+    "chars": 82
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 38
+   },
+   {
+    "name": "Bash",
+    "ms": 188,
+    "chars": 386
+   },
+   {
+    "name": "Read",
+    "ms": 736,
+    "chars": 49033
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 132,
+    "chars": 38
+   },
+   {
+    "name": "Bash",
+    "ms": 1856,
+    "chars": 189
+   },
+   {
+    "name": "Bash",
+    "ms": 122,
+    "chars": 99
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 420
+   },
+   {
+    "name": "Bash",
+    "ms": 355,
+    "chars": 2397
+   },
+   {
+    "name": "Bash",
+    "ms": 2573,
+    "chars": 36
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 492
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 787
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 143
+   },
+   {
+    "name": "Bash",
+    "ms": 163,
+    "chars": 446
+   },
+   {
+    "name": "Bash",
+    "ms": 97,
+    "chars": 336
+   }
+  ],
+  "answer": null,
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T13",
+  "type": "locate by behaviour in the runtime",
+  "arm": "SN",
+  "model": "sonnet",
+  "batch": "b5b-notes-required",
+  "rep": 1,
+  "agentId": "a4ea5ce86d21641b0",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 24.9,
+  "start": "2026-09-30T21:56:40.351Z",
+  "end": "2026-09-30T21:57:05.239Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 270152,
+   "cacheCreate": 22591,
+   "output": 1257,
+   "total": 294014,
+   "ctxPeak": 45331
+  },
+  "toolCalls": 8,
+  "toolSearch": 1,
+  "byName": {
+   "Read": 2,
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 2,
+   "Bash": 4
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 1646,
+  "serenaMs": 216,
+  "textResultChars": 14943,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 2497
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 9118
+   },
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 127,
+    "chars": 1482
+   },
+   {
+    "name": "Bash",
+    "ms": 109,
+    "chars": 600
+   },
+   {
+    "name": "Bash",
+    "ms": 111,
+    "chars": 1640
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 89,
+    "chars": 164
+   },
+   {
+    "name": "Bash",
+    "ms": 2526,
+    "chars": 701
+   },
+   {
+    "name": "Bash",
+    "ms": 86,
+    "chars": 387
+   }
+  ],
+  "answer": {
+   "name": "ai",
+   "start": 2054,
+   "end": 2110,
+   "attachLine": 2275,
+   "attachFunction": "bi"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T28",
+  "type": "open discovery: self-rescheduling rAF loops",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 1,
+  "agentId": "ab3fc49511c087851",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 135.1,
+  "start": "2026-09-30T21:55:13.398Z",
+  "end": "2026-09-30T21:57:28.468Z",
+  "turns": 32,
+  "tokens": {
+   "input": 258,
+   "cacheRead": 1326785,
+   "cacheCreate": 33007,
+   "output": 52,
+   "total": 1360102,
+   "ctxPeak": 54976
+  },
+  "toolCalls": 31,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 20,
+   "Bash": 11
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 39170,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 197,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 160,
+    "chars": 1759
+   },
+   {
+    "name": "Read",
+    "ms": 17,
+    "chars": 1008
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 1726
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 1955
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 617
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 3970
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 1954
+   },
+   {
+    "name": "Read",
+    "ms": 33,
+    "chars": 1087
+   },
+   {
+    "name": "Read",
+    "ms": 17,
+    "chars": 2570
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 1575
+   },
+   {
+    "name": "Read",
+    "ms": 20,
+    "chars": 760
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 947
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2128
+   },
+   {
+    "name": "Read",
+    "ms": 24,
+    "chars": 2550
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 712
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 1480
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 2796
+   },
+   {
+    "name": "Bash",
+    "ms": 181,
+    "chars": 232
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 462
+   },
+   {
+    "name": "Bash",
+    "ms": 4230,
+    "chars": 2586
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 12
+   },
+   {
+    "name": "Bash",
+    "ms": 2157,
+    "chars": 1639,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 95,
+    "chars": 404
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 245
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 2029
+   },
+   {
+    "name": "Bash",
+    "ms": 118,
+    "chars": 19
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 699
+   },
+   {
+    "name": "Bash",
+    "ms": 1963,
+    "chars": 802
+   },
+   {
+    "name": "Bash",
+    "ms": 65,
+    "chars": 219
+   }
+  ],
+  "answer": {
+   "loops": [
+    {
+     "line": 2458,
+     "component": "JT",
+     "callback": "d"
+    },
+    {
+     "line": 3125,
+     "component": "AE",
+     "callback": "a"
+    },
+    {
+     "line": 3838,
+     "component": "$E",
+     "callback": "i"
+    },
+    {
+     "line": 4201,
+     "component": "fD",
+     "callback": "f"
+    },
+    {
+     "line": 10969,
+     "component": "uM",
+     "callback": "f"
+    },
+    {
+     "line": 11319,
+     "component": "mM",
+     "callback": "l"
+    },
+    {
+     "line": 12019,
+     "component": "EM",
+     "callback": "n"
+    },
+    {
+     "line": 13022,
+     "component": "dN",
+     "callback": "T"
+    }
+   ]
+  },
+  "handbackPlaceholder": true
+ },
+ {
+  "task": "T29",
+  "type": "open discovery: classify scroll-engine callbacks",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 1,
+  "agentId": "add19047ea96dc165",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 157.4,
+  "start": "2026-09-30T21:55:16.996Z",
+  "end": "2026-09-30T21:57:54.346Z",
+  "turns": 46,
+  "tokens": {
+   "input": 370,
+   "cacheRead": 2204585,
+   "cacheCreate": 40583,
+   "output": 85,
+   "total": 2245623,
+   "ctxPeak": 62090
+  },
+  "toolCalls": 45,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 31,
+   "Bash": 14
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 52281,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 197,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 97,
+    "chars": 4978
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 2995
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 314
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 3164
+   },
+   {
+    "name": "Bash",
+    "ms": 3465,
+    "chars": 631
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 2890
+   },
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 525
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 2466
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 1425
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 3563
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 1982
+   },
+   {
+    "name": "Read",
+    "ms": 20,
+    "chars": 2029
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2324
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 2940
+   },
+   {
+    "name": "Bash",
+    "ms": 155,
+    "chars": 72
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 496
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2248
+   },
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 64
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 22
+   },
+   {
+    "name": "Read",
+    "ms": 36,
+    "chars": 824
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 1759
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 1619
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 41
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 569
+   },
+   {
+    "name": "Read",
+    "ms": 23,
+    "chars": 2412
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 16
+   },
+   {
+    "name": "Bash",
+    "ms": 94,
+    "chars": 22
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 394
+   },
+   {
+    "name": "Read",
+    "ms": 20,
+    "chars": 2041
+   },
+   {
+    "name": "Bash",
+    "ms": 101,
+    "chars": 38
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 566
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 2341
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 2220
+   },
+   {
+    "name": "Bash",
+    "ms": 82,
+    "chars": 15
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 22
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 699
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 153
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 88
+   },
+   {
+    "name": "Read",
+    "ms": 67,
+    "chars": 195
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 456
+   },
+   {
+    "name": "Read",
+    "ms": 35,
+    "chars": 91
+   },
+   {
+    "name": "Read",
+    "ms": 56,
+    "chars": 91
+   },
+   {
+    "name": "Read",
+    "ms": 53,
+    "chars": 84
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 200
+   }
+  ],
+  "answer": {
+   "callbacks": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d",
+     "kind": "direct-read",
+     "readLine": 4730
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A",
+     "kind": "direct-read",
+     "readLine": 6206
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L",
+     "kind": "calls-helper",
+     "readLine": 0
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 3,
+  "agentId": "af76934d48e9a8080",
+  "score": 0.9473684210526315,
+  "recall": 0.9473684210526315,
+  "precision": 0.9473684210526315,
+  "misses": [
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   }
+  ],
+  "extras": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13099,
+    "localName": "ne"
+   }
+  ],
+  "found540": false,
+  "offByOne": 0,
+  "wallSec": 177.4,
+  "start": "2026-09-30T21:55:10.893Z",
+  "end": "2026-09-30T21:58:08.319Z",
+  "turns": 44,
+  "tokens": {
+   "input": 356,
+   "cacheRead": 2712298,
+   "cacheCreate": 47558,
+   "output": 90,
+   "total": 2760302,
+   "ctxPeak": 74366
+  },
+  "toolCalls": 42,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 35,
+   "Read": 7
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 76517,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 132,
+    "chars": 1150
+   },
+   {
+    "name": "Read",
+    "ms": 620,
+    "chars": 49068
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 62
+   },
+   {
+    "name": "Read",
+    "ms": 155,
+    "chars": 1451
+   },
+   {
+    "name": "Bash",
+    "ms": 1808,
+    "chars": 277
+   },
+   {
+    "name": "Bash",
+    "ms": 2237,
+    "chars": 608,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 86,
+    "chars": 596
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 710
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 323
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 107
+   },
+   {
+    "name": "Bash",
+    "ms": 2627,
+    "chars": 96
+   },
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 244
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 2342
+   },
+   {
+    "name": "Read",
+    "ms": 28,
+    "chars": 9644
+   },
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 67,
+    "chars": 54
+   },
+   {
+    "name": "Bash",
+    "ms": 163,
+    "chars": 112
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 305
+   },
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 142,
+    "chars": 329
+   },
+   {
+    "name": "Bash",
+    "ms": 74,
+    "chars": 408
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 564
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 1093
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 810
+   },
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 631
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 320
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 8
+   },
+   {
+    "name": "Bash",
+    "ms": 109,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 37,
+    "chars": 2298
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 17
+   },
+   {
+    "name": "Bash",
+    "ms": 102,
+    "chars": 93
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 46
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 121
+   },
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 141
+   },
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 327
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 191,
+    "chars": 26
+   },
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 234
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 631
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 19
+   },
+   {
+    "name": "Bash",
+    "ms": 94,
+    "chars": 648
+   },
+   {
+    "name": "Bash",
+    "ms": 252,
+    "chars": 480
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "Ra",
+    "line": 3430
+   },
+   "uses": [
+    {
+     "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+     "line": 3440,
+     "localName": "Ra"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2424,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2927,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3100,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3680,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3931,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4155,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4689,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 6225,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 10913,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11294,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11606,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11860,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11994,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12196,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12433,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12978,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 13099,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+     "line": 3880,
+     "localName": "ie"
+    }
+   ]
+  },
+  "handbackPlaceholder": true
+ },
+ {
+  "task": "T28",
+  "type": "open discovery: self-rescheduling rAF loops",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 1,
+  "agentId": "aec075afc2e1cfb55",
+  "score": 0.6666666666666666,
+  "recall": 0.5,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 165.7,
+  "start": "2026-09-30T21:58:37.116Z",
+  "end": "2026-09-30T22:01:22.792Z",
+  "turns": 31,
+  "tokens": {
+   "input": 254,
+   "cacheRead": 1242101,
+   "cacheCreate": 33106,
+   "output": 49,
+   "total": 1275510,
+   "ctxPeak": 54615
+  },
+  "toolCalls": 28,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 23,
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 29106,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 197,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 91,
+    "chars": 1379
+   },
+   {
+    "name": "Read",
+    "ms": 43,
+    "chars": 814
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 686
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 1528
+   },
+   {
+    "name": "Read",
+    "ms": 35,
+    "chars": 517
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 368
+   },
+   {
+    "name": "Read",
+    "ms": 29,
+    "chars": 873
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 1685
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 442
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 1185
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 655
+   },
+   {
+    "name": "Read",
+    "ms": 42,
+    "chars": 927
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2250
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 890
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 1771
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 1025
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 1579
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 710
+   },
+   {
+    "name": "Bash",
+    "ms": 2527,
+    "chars": 2510
+   },
+   {
+    "name": "Bash",
+    "ms": 82,
+    "chars": 8
+   },
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 1759
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 515
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 556
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 831
+   },
+   {
+    "name": "Read",
+    "ms": 28,
+    "chars": 1757
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 1178
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 511
+   }
+  ],
+  "answer": {
+   "loops": [
+    {
+     "line": 2458,
+     "component": "d",
+     "callback": "d"
+    },
+    {
+     "line": 3125,
+     "component": "a",
+     "callback": "a"
+    },
+    {
+     "line": 3838,
+     "component": "i",
+     "callback": "i"
+    },
+    {
+     "line": 4201,
+     "component": "f",
+     "callback": "f"
+    },
+    {
+     "line": 10969,
+     "component": "f",
+     "callback": "f"
+    },
+    {
+     "line": 11319,
+     "component": "l",
+     "callback": "l"
+    },
+    {
+     "line": 12019,
+     "component": "n",
+     "callback": "n"
+    },
+    {
+     "line": 13022,
+     "component": "T",
+     "callback": "T"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 3,
+  "agentId": "ac7ad3e1564c3f677",
+  "score": 0.1,
+  "recall": 0.05263157894736842,
+  "precision": 1,
+  "misses": [
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   },
+   {
+    "file": "entry/app.HSR43Bkx.js",
+    "line": 3880,
+    "localName": "ie"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2424,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2927,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3100,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3680,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3931,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4155,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4689,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 6225,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 10913,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11294,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11606,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11860,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11994,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12196,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12433,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12978,
+    "localName": "ne"
+   }
+  ],
+  "extras": [],
+  "found540": false,
+  "offByOne": 0,
+  "wallSec": 221.8,
+  "start": "2026-09-30T21:58:32.730Z",
+  "end": "2026-09-30T22:02:14.515Z",
+  "turns": 52,
+  "tokens": {
+   "input": 422,
+   "cacheRead": 2496212,
+   "cacheCreate": 40362,
+   "output": 81,
+   "total": 2537077,
+   "ctxPeak": 67306
+  },
+  "toolCalls": 49,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__initial_instructions": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_symbol": 2,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Bash": 28,
+   "Read": 16
+  },
+  "serenaCalls": 4,
+  "serenaResultChars": 2524,
+  "serenaMs": 404,
+  "textResultChars": 32222,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "serena.initial_instructions",
+    "ms": 46,
+    "chars": 7501
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 24,
+    "chars": 2182
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 115,
+    "chars": 170
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 93,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 172,
+    "chars": 170
+   },
+   {
+    "name": "Bash",
+    "ms": 119,
+    "chars": 239
+   },
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 239
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 544
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 461
+   },
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 82
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 20
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 85,
+    "chars": 38
+   },
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 83
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 1042
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 3408
+   },
+   {
+    "name": "Bash",
+    "ms": 117,
+    "chars": 239
+   },
+   {
+    "name": "Bash",
+    "ms": 162,
+    "chars": 6071
+   },
+   {
+    "name": "Bash",
+    "ms": 134,
+    "chars": 245
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 630
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 474
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 1294
+   },
+   {
+    "name": "Bash",
+    "ms": 64,
+    "chars": 550
+   },
+   {
+    "name": "Bash",
+    "ms": 172,
+    "chars": 135
+   },
+   {
+    "name": "Bash",
+    "ms": 149,
+    "chars": 71
+   },
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 51
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 1745
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 168
+   },
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 712
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 313,
+    "chars": 8
+   },
+   {
+    "name": "Bash",
+    "ms": 210,
+    "chars": 562
+   },
+   {
+    "name": "Bash",
+    "ms": 2381,
+    "chars": 669
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 2804
+   },
+   {
+    "name": "Bash",
+    "ms": 197,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 38
+   },
+   {
+    "name": "Bash",
+    "ms": 201,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 118,
+    "chars": 82
+   },
+   {
+    "name": "Bash",
+    "ms": 92,
+    "chars": 328
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 471
+   },
+   {
+    "name": "Read",
+    "ms": 23,
+    "chars": 2033
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 2778
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 1221
+   },
+   {
+    "name": "Read",
+    "ms": 27,
+    "chars": 957
+   },
+   {
+    "name": "Bash",
+    "ms": 83,
+    "chars": 865
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 115
+   },
+   {
+    "name": "Bash",
+    "ms": 319,
+    "chars": 260
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 335
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "onMount",
+    "line": 3420
+   },
+   "uses": [
+    {
+     "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+     "line": 3440,
+     "localName": "Ra"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 2,
+  "agentId": "a67ae16c0365021d1",
+  "score": 0.918918918918919,
+  "recall": 0.8947368421052632,
+  "precision": 0.9444444444444444,
+  "misses": [
+   {
+    "file": "chunks/BSBv9QXB.js",
+    "line": 3440,
+    "localName": "Ra"
+   },
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   }
+  ],
+  "extras": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13099,
+    "localName": "ne"
+   }
+  ],
+  "found540": false,
+  "offByOne": 0,
+  "wallSec": 266.2,
+  "start": "2026-09-30T21:58:30.090Z",
+  "end": "2026-09-30T22:02:56.245Z",
+  "turns": 66,
+  "tokens": {
+   "input": 534,
+   "cacheRead": 3064587,
+   "cacheCreate": 45471,
+   "output": 113,
+   "total": 3110705,
+   "ctxPeak": 67088
+  },
+  "toolCalls": 63,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_symbol": 2,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Read": 25,
+   "Bash": 34
+  },
+  "serenaCalls": 4,
+  "serenaResultChars": 2524,
+  "serenaMs": 374,
+  "textResultChars": 28530,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 75,
+    "chars": 2182
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 105,
+    "chars": 170
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 120,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 74,
+    "chars": 170
+   },
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 819
+   },
+   {
+    "name": "Bash",
+    "ms": 89,
+    "chars": 372
+   },
+   {
+    "name": "Bash",
+    "ms": 114,
+    "chars": 386
+   },
+   {
+    "name": "Read",
+    "ms": 143,
+    "chars": 615
+   },
+   {
+    "name": "Bash",
+    "ms": 277,
+    "chars": 20
+   },
+   {
+    "name": "Bash",
+    "ms": 237,
+    "chars": 38
+   },
+   {
+    "name": "Bash",
+    "ms": 2034,
+    "chars": 189
+   },
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 1404
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 1688
+   },
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 13
+   },
+   {
+    "name": "Read",
+    "ms": 20,
+    "chars": 1170
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 670
+   },
+   {
+    "name": "Bash",
+    "ms": 3053,
+    "chars": 346
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 195
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 103
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 82
+   },
+   {
+    "name": "Bash",
+    "ms": 1898,
+    "chars": 179
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 58
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 195
+   },
+   {
+    "name": "Bash",
+    "ms": 93,
+    "chars": 131
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 561
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 2799
+   },
+   {
+    "name": "Bash",
+    "ms": 89,
+    "chars": 23
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 1004
+   },
+   {
+    "name": "Bash",
+    "ms": 66,
+    "chars": 82
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 119
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 551
+   },
+   {
+    "name": "Read",
+    "ms": 20,
+    "chars": 291
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 382
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 658
+   },
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 320
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 1538
+   },
+   {
+    "name": "Bash",
+    "ms": 219,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 570
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 1121
+   },
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 244
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 17
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 772
+   },
+   {
+    "name": "Bash",
+    "ms": 355,
+    "chars": 70
+   },
+   {
+    "name": "Bash",
+    "ms": 2379,
+    "chars": 186
+   },
+   {
+    "name": "Bash",
+    "ms": 2448,
+    "chars": 209,
+    "err": true
+   },
+   {
+    "name": "Read",
+    "ms": 36,
+    "chars": 985
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 106
+   },
+   {
+    "name": "Read",
+    "ms": 33,
+    "chars": 1028
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 100
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 181
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 127
+   },
+   {
+    "name": "Bash",
+    "ms": 2067,
+    "chars": 230
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 270
+   },
+   {
+    "name": "Bash",
+    "ms": 400,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 91,
+    "chars": 98
+   },
+   {
+    "name": "Bash",
+    "ms": 1890,
+    "chars": 1251
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 596
+   },
+   {
+    "name": "Bash",
+    "ms": 2863,
+    "chars": 358
+   },
+   {
+    "name": "Bash",
+    "ms": 174,
+    "chars": 93
+   },
+   {
+    "name": "Bash",
+    "ms": 74,
+    "chars": 2500
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 293
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "onMount",
+    "line": 3420
+   },
+   "uses": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2424,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2927,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3100,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3680,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3931,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4155,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4689,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 6225,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 10913,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11294,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11606,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11860,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11994,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12196,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12433,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12978,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 13099,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+     "line": 3880,
+     "localName": "ie"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T29",
+  "type": "open discovery: classify scroll-engine callbacks",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 1,
+  "agentId": "a5f83a7dd2611896f",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 144.4,
+  "start": "2026-09-30T22:01:33.947Z",
+  "end": "2026-09-30T22:03:58.377Z",
+  "turns": 34,
+  "tokens": {
+   "input": 276,
+   "cacheRead": 1749223,
+   "cacheCreate": 45663,
+   "output": 46,
+   "total": 1795208,
+   "ctxPeak": 67170
+  },
+  "toolCalls": 32,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__initial_instructions": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_symbol": 9,
+   "Bash": 3,
+   "Read": 17,
+   "mcp__serena__find_referencing_symbols": 1
+  },
+  "serenaCalls": 11,
+  "serenaResultChars": 15108,
+  "serenaMs": 1777,
+  "textResultChars": 36745,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "serena.initial_instructions",
+    "ms": 122,
+    "chars": 7501
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 34,
+    "chars": 11486
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 63,
+    "chars": 177
+   },
+   {
+    "name": "Bash",
+    "ms": 112,
+    "chars": 104
+   },
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 6315
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 5583
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 923,
+    "chars": 2117
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 737
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2969
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 902
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 60,
+    "chars": 165
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 607
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 2543
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 1858
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 90,
+    "chars": 165
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 2045
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 212,
+    "chars": 165
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 1051
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 1908
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 43
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 594
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 57,
+    "chars": 165
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 888
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 117,
+    "chars": 167
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 1214
+   },
+   {
+    "name": "Read",
+    "ms": 30,
+    "chars": 1943
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 24,
+    "chars": 167
+   },
+   {
+    "name": "Read",
+    "ms": 23,
+    "chars": 946
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 98,
+    "chars": 167
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 1405
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 99,
+    "chars": 167
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 3090
+   }
+  ],
+  "answer": {
+   "callbacks": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d",
+     "kind": "direct-read",
+     "readLine": 4730
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A",
+     "kind": "direct-read",
+     "readLine": 6206
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L",
+     "kind": "calls-helper",
+     "readLine": 0
+    }
+   ]
+  },
+  "handbackPlaceholder": true
+ },
+ {
+  "task": "T30",
+  "type": "open discovery: census of IntersectionObservers",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b7-haiku-more",
+  "rep": 1,
+  "agentId": "a9aee02e6d36b5b74",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 144.2,
+  "start": "2026-09-30T22:02:24.537Z",
+  "end": "2026-09-30T22:04:48.749Z",
+  "turns": 41,
+  "tokens": {
+   "input": 334,
+   "cacheRead": 1774912,
+   "cacheCreate": 33049,
+   "output": 64,
+   "total": 1808359,
+   "ctxPeak": 54558
+  },
+  "toolCalls": 38,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 27,
+   "Bash": 11
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 30850,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 197,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 469
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 567
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 2176
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2536
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 349
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 738
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 521
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 382
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 2399
+   },
+   {
+    "name": "Read",
+    "ms": 58,
+    "chars": 1174
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2520
+   },
+   {
+    "name": "Read",
+    "ms": 34,
+    "chars": 384
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2340
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 442
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2181
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 2535
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 3007
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 22
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 332
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 41
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 507
+   },
+   {
+    "name": "Bash",
+    "ms": 89,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 2104
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 22
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 419
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 22
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 462
+   },
+   {
+    "name": "Bash",
+    "ms": 124,
+    "chars": 22
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 398
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 22
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 453
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 213,
+    "chars": 22
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 224
+   },
+   {
+    "name": "Bash",
+    "ms": 1848,
+    "chars": 323
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 252
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 224
+   }
+  ],
+  "answer": {
+   "observers": [
+    {
+     "line": 2504,
+     "component": "JT",
+     "options": "{ threshold: [0, 0.05, 0.2] }"
+    },
+    {
+     "line": 2725,
+     "component": "uE",
+     "options": "{ rootMargin: n }"
+    },
+    {
+     "line": 3130,
+     "component": "AE",
+     "options": "{ threshold: [0, 0.45, 0.75] }"
+    },
+    {
+     "line": 3709,
+     "component": "HE",
+     "options": "{ rootMargin: `100% 0px` }"
+    },
+    {
+     "line": 4698,
+     "component": "hD",
+     "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+    },
+    {
+     "line": 6261,
+     "component": "WD",
+     "options": "{ threshold: 0.35 }"
+    },
+    {
+     "line": 11609,
+     "component": "yM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 11862,
+     "component": "SM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12024,
+     "component": "EM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12216,
+     "component": "NM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 13082,
+     "component": "dN",
+     "options": "{ rootMargin: `200% 0px` }"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
  }
 ]

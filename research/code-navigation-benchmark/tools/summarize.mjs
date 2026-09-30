@@ -16,7 +16,7 @@ const agg = (rs) => ({
   offByOne: rs.reduce((a, r) => a + (r.offByOne || 0), 0),
 });
 const tasks = [...new Set(runs.map((r) => r.task))].sort();
-const arms = ['G', 'S', 'SO'];
+const arms = ['G', 'S', 'SO']; // original study arms; follow-up arms (GR GM SM GN SN GU SU *-haiku) are listed in allArms below
 const byTask = tasks.map((t) => ({ task: t, type: runs.find((r) => r.task === t).type,
   ...Object.fromEntries(arms.map((a) => [a, agg(runs.filter((r) => r.task === t && r.arm === a))])) }));
 const byArm = Object.fromEntries(arms.map((a) => [a, agg(runs.filter((r) => r.arm === a))]));
@@ -28,7 +28,11 @@ fs.writeFileSync(path.join(root, 'data/summary.json'), JSON.stringify(out, null,
 const fmt = (x) => (x.n ? `${x.score.toFixed(2)} (${x.perfect}/${x.n}) ${x.calls}c ${x.wallSec}s ${x.tokensK}k` : '-');
 console.log('task | type | G | S | SO   (score (perfect/n) calls medianWall medianTotalTokens)');
 for (const r of byTask) console.log(`${r.task} | ${r.type} | ${fmt(r.G)} | ${fmt(r.S)} | ${fmt(r.SO)}`);
-console.log('\nby arm:'); console.table(byArm);
+console.log('\nby arm (original study arms, all tasks):'); console.table(byArm);
+const allLabels = [...new Set(runs.map((r) => r.arm))];
+const allArms = Object.fromEntries(allLabels.map((a) => [a, agg(runs.filter((r) => r.arm === a))]));
+out.allArms = allArms; fs.writeFileSync(path.join(root, 'data/summary.json'), JSON.stringify(out, null, 1));
+console.log('all arm labels (different task sets: compare with tools/compare.mjs):'); console.table(allArms);
 console.log('paired on SO tasks:'); console.table(paired);
 
 // Per-tool latency and result size as seen by the agents (tool_use -> tool_result timestamps, so it
@@ -57,10 +61,14 @@ const GROUPS = {
   'G CSS (rules, width animations, @media context)': ['T09', 'T10', 'T26'],
   'H text census (every line containing X)': ['T15'],
   'I tooling control flow across processes': ['T16'],
+  'L open discovery, no names given (follow-up)': ['T28', 'T29', 'T30'],
+  'M overlay copy paths (follow-up)': ['T31', 'T32', 'T33'],
+  'N unprettified site/ (follow-up)': ['T34', 'T35', 'T36'],
 };
 const byGroup = Object.entries(GROUPS).map(([g, ts]) => ({ group: g,
   ...Object.fromEntries(arms.map((a) => [a, agg(runs.filter((r) => r.arm === a && ts.includes(r.task)))])) }));
 const s2 = JSON.parse(fs.readFileSync(path.join(root, 'data/summary.json'), 'utf8'));
+s2.allArms = allArms;
 s2.byGroup = byGroup;
 s2.compliance = { S_runsUsingSerena: runs.filter((r) => r.arm === 'S' && r.serenaCalls > 0).length, S_runs: runs.filter((r) => r.arm === 'S').length,
   S_serenaShareOfCalls: +(runs.filter((r) => r.arm === 'S').reduce((a, r) => a + r.serenaCalls, 0) / runs.filter((r) => r.arm === 'S').reduce((a, r) => a + r.toolCalls, 0)).toFixed(2) };

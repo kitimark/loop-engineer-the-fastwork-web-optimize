@@ -23,5 +23,23 @@
       },
       "onlyChanged": true
     }
+  },
+  "a4509b3ad8c99742d": {
+    "note": "T01 SN r1 gave the JSON object without a ```json fence; transcribed from its final message",
+    "answer": {
+      "iE": [
+        2670,
+        2673
+      ],
+      "dE": [
+        2749,
+        2783
+      ],
+      "uE": [
+        2719,
+        2748
+      ],
+      "defaultRootMargin": "100% 0px"
+    }
   }
 }

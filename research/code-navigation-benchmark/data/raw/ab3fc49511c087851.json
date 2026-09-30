@@ -1,0 +1,242 @@
+{
+ "task": "T28",
+ "arm": "G-haiku",
+ "model": "haiku",
+ "batch": "b7-haiku-more",
+ "rep": 1,
+ "agentId": "ab3fc49511c087851",
+ "wallSec": 135.1,
+ "start": "2026-09-30T21:55:13.398Z",
+ "end": "2026-09-30T21:57:28.468Z",
+ "turns": 32,
+ "tokens": {
+  "input": 258,
+  "cacheRead": 1326785,
+  "cacheCreate": 33007,
+  "output": 52,
+  "total": 1360102,
+  "ctxPeak": 54976
+ },
+ "toolCalls": 31,
+ "toolSearch": 0,
+ "byName": {
+  "Read": 20,
+  "Bash": 11
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 39170,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 197,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 160,
+   "chars": 1759
+  },
+  {
+   "name": "Read",
+   "ms": 17,
+   "chars": 1008
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 1726
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 1955
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 617
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 3970
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 1954
+  },
+  {
+   "name": "Read",
+   "ms": 33,
+   "chars": 1087
+  },
+  {
+   "name": "Read",
+   "ms": 17,
+   "chars": 2570
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 1575
+  },
+  {
+   "name": "Read",
+   "ms": 20,
+   "chars": 760
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 947
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 2128
+  },
+  {
+   "name": "Read",
+   "ms": 24,
+   "chars": 2550
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 712
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 1480
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 2796
+  },
+  {
+   "name": "Bash",
+   "ms": 181,
+   "chars": 232
+  },
+  {
+   "name": "Bash",
+   "ms": 68,
+   "chars": 462
+  },
+  {
+   "name": "Bash",
+   "ms": 4230,
+   "chars": 2586
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 12
+  },
+  {
+   "name": "Bash",
+   "ms": 2157,
+   "chars": 1639,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 88,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 95,
+   "chars": 404
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 245
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 2029
+  },
+  {
+   "name": "Bash",
+   "ms": 118,
+   "chars": 19
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 699
+  },
+  {
+   "name": "Bash",
+   "ms": 1963,
+   "chars": 802
+  },
+  {
+   "name": "Bash",
+   "ms": 65,
+   "chars": 219
+  }
+ ],
+ "answer": {
+  "loops": [
+   {
+    "line": 2458,
+    "component": "JT",
+    "callback": "d"
+   },
+   {
+    "line": 3125,
+    "component": "AE",
+    "callback": "a"
+   },
+   {
+    "line": 3838,
+    "component": "$E",
+    "callback": "i"
+   },
+   {
+    "line": 4201,
+    "component": "fD",
+    "callback": "f"
+   },
+   {
+    "line": 10969,
+    "component": "uM",
+    "callback": "f"
+   },
+   {
+    "line": 11319,
+    "component": "mM",
+    "callback": "l"
+   },
+   {
+    "line": 12019,
+    "component": "EM",
+    "callback": "n"
+   },
+   {
+    "line": 13022,
+    "component": "dN",
+    "callback": "T"
+   }
+  ]
+ },
+ "handbackPlaceholder": true,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

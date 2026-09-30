@@ -1,0 +1,276 @@
+{
+ "task": "T30",
+ "arm": "G-haiku",
+ "model": "haiku",
+ "batch": "b7-haiku-more",
+ "rep": 1,
+ "agentId": "accf210ce0bb5e038",
+ "wallSec": 81.6,
+ "start": "2026-09-30T21:55:19.485Z",
+ "end": "2026-09-30T21:56:41.119Z",
+ "turns": 20,
+ "tokens": {
+  "input": 162,
+  "cacheRead": 745630,
+  "cacheCreate": 22517,
+  "output": 55,
+  "total": 768364,
+  "ctxPeak": 44024
+ },
+ "toolCalls": 35,
+ "toolSearch": 0,
+ "byName": {
+  "Read": 22,
+  "Bash": 13
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 22216,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 197,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 95,
+   "chars": 469
+  },
+  {
+   "name": "Read",
+   "ms": 57,
+   "chars": 567
+  },
+  {
+   "name": "Read",
+   "ms": 22,
+   "chars": 418
+  },
+  {
+   "name": "Read",
+   "ms": 24,
+   "chars": 596
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 470
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 584
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 443
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 631
+  },
+  {
+   "name": "Read",
+   "ms": 49,
+   "chars": 480
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 571
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 484
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 548
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 1167
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 1106
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 1704
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 1358
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 1755
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 1228
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 1316
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 1248
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 1501
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 1262
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 535
+  },
+  {
+   "name": "Bash",
+   "ms": 147,
+   "chars": 284
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 120
+  },
+  {
+   "name": "Bash",
+   "ms": 292,
+   "chars": 115
+  },
+  {
+   "name": "Bash",
+   "ms": 75,
+   "chars": 118
+  },
+  {
+   "name": "Bash",
+   "ms": 89,
+   "chars": 158
+  },
+  {
+   "name": "Bash",
+   "ms": 80,
+   "chars": 132
+  },
+  {
+   "name": "Bash",
+   "ms": 94,
+   "chars": 129
+  },
+  {
+   "name": "Bash",
+   "ms": 80,
+   "chars": 129
+  },
+  {
+   "name": "Bash",
+   "ms": 80,
+   "chars": 129
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 129
+  },
+  {
+   "name": "Bash",
+   "ms": 71,
+   "chars": 135
+  }
+ ],
+ "answer": {
+  "observers": [
+   {
+    "line": 2504,
+    "component": "WT",
+    "options": "{ threshold: [0, 0.05, 0.2] }"
+   },
+   {
+    "line": 2725,
+    "component": "uE",
+    "options": "{ rootMargin: n }"
+   },
+   {
+    "line": 3130,
+    "component": "AE",
+    "options": "{ threshold: [0, 0.45, 0.75] }"
+   },
+   {
+    "line": 3709,
+    "component": "HE",
+    "options": "{ rootMargin: `100% 0px` }"
+   },
+   {
+    "line": 4698,
+    "component": "hD",
+    "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+   },
+   {
+    "line": 6261,
+    "component": "WD",
+    "options": "{ threshold: 0.35 }"
+   },
+   {
+    "line": 11609,
+    "component": "yM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 11862,
+    "component": "SM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12024,
+    "component": "EM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12216,
+    "component": "NM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 13082,
+    "component": "dN",
+    "options": "{ rootMargin: `200% 0px` }"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 0.9767441860465117,
+  "recall": 0.9545454545454546,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

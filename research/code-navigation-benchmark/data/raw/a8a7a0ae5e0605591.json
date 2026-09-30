@@ -1,0 +1,66 @@
+{
+ "task": "T01",
+ "arm": "GN",
+ "model": "sonnet",
+ "batch": "b5b-notes-required",
+ "rep": 1,
+ "agentId": "a8a7a0ae5e0605591",
+ "wallSec": 8.2,
+ "start": "2026-09-30T21:55:10.968Z",
+ "end": "2026-09-30T21:55:19.165Z",
+ "turns": 3,
+ "tokens": {
+  "input": 6,
+  "cacheRead": 91435,
+  "cacheCreate": 17697,
+  "output": 698,
+  "total": 109836,
+  "ctxPeak": 40437
+ },
+ "toolCalls": 3,
+ "toolSearch": 0,
+ "byName": {
+  "Read": 3
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 16271,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 2497
+  },
+  {
+   "name": "Read",
+   "ms": 18,
+   "chars": 9118
+  },
+  {
+   "name": "Read",
+   "ms": 18,
+   "chars": 4656
+  }
+ ],
+ "answer": {
+  "iE": [
+   2670,
+   2673
+  ],
+  "dE": [
+   2749,
+   2783
+  ],
+  "uE": [
+   2719,
+   2748
+  ],
+  "defaultRootMargin": "100% 0px"
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "offByOne": 0
+ }
+}

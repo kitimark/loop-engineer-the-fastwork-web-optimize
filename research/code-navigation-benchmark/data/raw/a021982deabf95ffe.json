@@ -1,0 +1,86 @@
+{
+ "task": "T13",
+ "arm": "GN",
+ "model": "sonnet",
+ "batch": "b5b-notes-required",
+ "rep": 1,
+ "agentId": "a021982deabf95ffe",
+ "wallSec": 18.7,
+ "start": "2026-09-30T21:55:19.735Z",
+ "end": "2026-09-30T21:55:38.482Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 171839,
+  "cacheCreate": 18665,
+  "output": 82,
+  "total": 190596,
+  "ctxPeak": 41405
+ },
+ "toolCalls": 7,
+ "toolSearch": 0,
+ "byName": {
+  "Read": 4,
+  "Bash": 3
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 17093,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 2497
+  },
+  {
+   "name": "Read",
+   "ms": 68,
+   "chars": 9118
+  },
+  {
+   "name": "Read",
+   "ms": 35,
+   "chars": 2291
+  },
+  {
+   "name": "Bash",
+   "ms": 94,
+   "chars": 313
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 1701
+  },
+  {
+   "name": "Bash",
+   "ms": 75,
+   "chars": 325
+  },
+  {
+   "name": "Bash",
+   "ms": 2088,
+   "chars": 848
+  }
+ ],
+ "answer": {
+  "name": "ai",
+  "start": 2054,
+  "end": 2110,
+  "attachLine": 2275,
+  "attachFunction": "d (arrow fn inside Qn callback inside bi, the mount function 2238-2298)"
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

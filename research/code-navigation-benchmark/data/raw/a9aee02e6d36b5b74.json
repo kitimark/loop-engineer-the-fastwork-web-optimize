@@ -1,0 +1,297 @@
+{
+ "task": "T30",
+ "arm": "S-haiku",
+ "model": "haiku",
+ "batch": "b7-haiku-more",
+ "rep": 1,
+ "agentId": "a9aee02e6d36b5b74",
+ "wallSec": 144.2,
+ "start": "2026-09-30T22:02:24.537Z",
+ "end": "2026-09-30T22:04:48.749Z",
+ "turns": 41,
+ "tokens": {
+  "input": 334,
+  "cacheRead": 1774912,
+  "cacheCreate": 33049,
+  "output": 64,
+  "total": 1808359,
+  "ctxPeak": 54558
+ },
+ "toolCalls": 38,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 27,
+  "Bash": 11
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 30850,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 197,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 70,
+   "chars": 469
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 567
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 2176
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2536
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 349
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 738
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 521
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 382
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 2399
+  },
+  {
+   "name": "Read",
+   "ms": 58,
+   "chars": 1174
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2520
+  },
+  {
+   "name": "Read",
+   "ms": 34,
+   "chars": 384
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 2340
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 442
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2181
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 2535
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 3007
+  },
+  {
+   "name": "Bash",
+   "ms": 81,
+   "chars": 22
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 332
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 41
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 507
+  },
+  {
+   "name": "Bash",
+   "ms": 89,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 14,
+   "chars": 2104
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 22
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 419
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 22
+  },
+  {
+   "name": "Read",
+   "ms": 14,
+   "chars": 462
+  },
+  {
+   "name": "Bash",
+   "ms": 124,
+   "chars": 22
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 398
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 22
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 453
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 213,
+   "chars": 22
+  },
+  {
+   "name": "Read",
+   "ms": 14,
+   "chars": 224
+  },
+  {
+   "name": "Bash",
+   "ms": 1848,
+   "chars": 323
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 252
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 224
+  }
+ ],
+ "answer": {
+  "observers": [
+   {
+    "line": 2504,
+    "component": "JT",
+    "options": "{ threshold: [0, 0.05, 0.2] }"
+   },
+   {
+    "line": 2725,
+    "component": "uE",
+    "options": "{ rootMargin: n }"
+   },
+   {
+    "line": 3130,
+    "component": "AE",
+    "options": "{ threshold: [0, 0.45, 0.75] }"
+   },
+   {
+    "line": 3709,
+    "component": "HE",
+    "options": "{ rootMargin: `100% 0px` }"
+   },
+   {
+    "line": 4698,
+    "component": "hD",
+    "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+   },
+   {
+    "line": 6261,
+    "component": "WD",
+    "options": "{ threshold: 0.35 }"
+   },
+   {
+    "line": 11609,
+    "component": "yM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 11862,
+    "component": "SM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12024,
+    "component": "EM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12216,
+    "component": "NM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 13082,
+    "component": "dN",
+    "options": "{ rootMargin: `200% 0px` }"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

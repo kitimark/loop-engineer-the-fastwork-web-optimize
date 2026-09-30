@@ -1,0 +1,143 @@
+{
+ "task": "T04",
+ "arm": "G-haiku",
+ "model": "haiku",
+ "batch": "b7-haiku-more",
+ "rep": 2,
+ "agentId": "ab7616325da374ed4",
+ "wallSec": 108,
+ "start": "2026-09-30T21:55:07.472Z",
+ "end": "2026-09-30T21:56:55.437Z",
+ "turns": 22,
+ "tokens": {
+  "input": 178,
+  "cacheRead": 1408035,
+  "cacheCreate": 61471,
+  "output": 37,
+  "total": 1469721,
+  "ctxPeak": 83200
+ },
+ "toolCalls": 21,
+ "toolSearch": 0,
+ "byName": {
+  "Read": 6,
+  "Bash": 15
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 106817,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 633,
+   "chars": 49068
+  },
+  {
+   "name": "Bash",
+   "ms": 71,
+   "chars": 62
+  },
+  {
+   "name": "Read",
+   "ms": 25,
+   "chars": 1451
+  },
+  {
+   "name": "Bash",
+   "ms": 293,
+   "chars": 1150
+  },
+  {
+   "name": "Bash",
+   "ms": 89,
+   "chars": 133
+  },
+  {
+   "name": "Bash",
+   "ms": 93,
+   "chars": 82
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 38
+  },
+  {
+   "name": "Bash",
+   "ms": 188,
+   "chars": 386
+  },
+  {
+   "name": "Read",
+   "ms": 736,
+   "chars": 49033
+  },
+  {
+   "name": "Bash",
+   "ms": 81,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 132,
+   "chars": 38
+  },
+  {
+   "name": "Bash",
+   "ms": 1856,
+   "chars": 189
+  },
+  {
+   "name": "Bash",
+   "ms": 122,
+   "chars": 99
+  },
+  {
+   "name": "Bash",
+   "ms": 72,
+   "chars": 420
+  },
+  {
+   "name": "Bash",
+   "ms": 355,
+   "chars": 2397
+  },
+  {
+   "name": "Bash",
+   "ms": 2573,
+   "chars": 36
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 492
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 787
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 143
+  },
+  {
+   "name": "Bash",
+   "ms": 163,
+   "chars": 446
+  },
+  {
+   "name": "Bash",
+   "ms": 97,
+   "chars": 336
+  }
+ ],
+ "answer": null,
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 0,
+  "note": "no parsable answer"
+ }
+}

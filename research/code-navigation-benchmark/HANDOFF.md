@@ -150,3 +150,15 @@ at a time.
   the Grep tool (2 ms). If you measure speed, say which one you mean.
 - **Ceiling effect.** Sonnet on prettified code with named symbols is near 100 % in every arm. Differences
   show up only with weaker models, unprettified code or open-ended questions (batches B2-B4).
+
+## 6. Follow-up status (2026-10-01)
+
+Batches b1-b7 answered the open questions in section 4 (B1 policy arm, B2 haiku, B3 minified, B4 discovery, B5
+memory, B6 overlay, B7 haiku reps): see README "Follow-up study". Sonnet stayed at the ceiling in every
+condition; haiku showed no Serena benefit (T04 is the only task that separates the arms). The decision rule is
+unchanged. Extra arms in `tools/prompt.mjs`: GR, GM/SM (notes allowed), GN/SN (notes required), GU/SU
+(minified `site/`), and `-haiku` labels; `runs-index.tsv` has optional columns 6 (model) and 7 (batch id). Batch
+specs are in `batches/`. The overlay tasks T31-T33 read `fixes/nb-overlay/overlay/` inside the nav-bench worktree
+(gitignored, not committed): recreate it by inserting 12 comment lines after line 2000 of the baseline bundle and
+appending the `NB1` function described in tasks.json before re-running them.
+Untested: a much larger codebase; other wordings of the GR rule.

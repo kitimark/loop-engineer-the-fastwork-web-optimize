@@ -1,0 +1,327 @@
+{
+ "task": "T29",
+ "arm": "G-haiku",
+ "model": "haiku",
+ "batch": "b7-haiku-more",
+ "rep": 1,
+ "agentId": "add19047ea96dc165",
+ "wallSec": 157.4,
+ "start": "2026-09-30T21:55:16.996Z",
+ "end": "2026-09-30T21:57:54.346Z",
+ "turns": 46,
+ "tokens": {
+  "input": 370,
+  "cacheRead": 2204585,
+  "cacheCreate": 40583,
+  "output": 85,
+  "total": 2245623,
+  "ctxPeak": 62090
+ },
+ "toolCalls": 45,
+ "toolSearch": 0,
+ "byName": {
+  "Read": 31,
+  "Bash": 14
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 52281,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 197,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 97,
+   "chars": 4978
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 2995
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 314
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 3164
+  },
+  {
+   "name": "Bash",
+   "ms": 3465,
+   "chars": 631
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 2890
+  },
+  {
+   "name": "Bash",
+   "ms": 75,
+   "chars": 525
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 2466
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 1425
+  },
+  {
+   "name": "Read",
+   "ms": 22,
+   "chars": 3563
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 1982
+  },
+  {
+   "name": "Read",
+   "ms": 20,
+   "chars": 2029
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 2324
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 2940
+  },
+  {
+   "name": "Bash",
+   "ms": 155,
+   "chars": 72
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 496
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2248
+  },
+  {
+   "name": "Bash",
+   "ms": 71,
+   "chars": 64
+  },
+  {
+   "name": "Bash",
+   "ms": 72,
+   "chars": 22
+  },
+  {
+   "name": "Read",
+   "ms": 36,
+   "chars": 824
+  },
+  {
+   "name": "Read",
+   "ms": 18,
+   "chars": 1759
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 1619
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 41
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 569
+  },
+  {
+   "name": "Read",
+   "ms": 23,
+   "chars": 2412
+  },
+  {
+   "name": "Bash",
+   "ms": 72,
+   "chars": 16
+  },
+  {
+   "name": "Bash",
+   "ms": 94,
+   "chars": 22
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 394
+  },
+  {
+   "name": "Read",
+   "ms": 20,
+   "chars": 2041
+  },
+  {
+   "name": "Bash",
+   "ms": 101,
+   "chars": 38
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 566
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 2341
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 2220
+  },
+  {
+   "name": "Bash",
+   "ms": 82,
+   "chars": 15
+  },
+  {
+   "name": "Bash",
+   "ms": 73,
+   "chars": 22
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 699
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 153
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 88
+  },
+  {
+   "name": "Read",
+   "ms": 67,
+   "chars": 195
+  },
+  {
+   "name": "Read",
+   "ms": 22,
+   "chars": 456
+  },
+  {
+   "name": "Read",
+   "ms": 35,
+   "chars": 91
+  },
+  {
+   "name": "Read",
+   "ms": 56,
+   "chars": 91
+  },
+  {
+   "name": "Read",
+   "ms": 53,
+   "chars": 84
+  },
+  {
+   "name": "Read",
+   "ms": 22,
+   "chars": 200
+  }
+ ],
+ "answer": {
+  "callbacks": [
+   {
+    "line": 3143,
+    "component": "AE",
+    "callback": "o",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 4239,
+    "component": "fD",
+    "callback": "c",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 4736,
+    "component": "hD",
+    "callback": "d",
+    "kind": "direct-read",
+    "readLine": 4730
+   },
+   {
+    "line": 6269,
+    "component": "WD",
+    "callback": "A",
+    "kind": "direct-read",
+    "readLine": 6206
+   },
+   {
+    "line": 10977,
+    "component": "uM",
+    "callback": "m",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 11359,
+    "component": "mM",
+    "callback": "u",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 12448,
+    "component": "GM",
+    "callback": "r",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 13090,
+    "component": "dN",
+    "callback": "L",
+    "kind": "calls-helper",
+    "readLine": 0
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

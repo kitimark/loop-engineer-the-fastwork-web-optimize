@@ -1,0 +1,482 @@
+{
+ "task": "T04",
+ "arm": "S-haiku",
+ "model": "haiku",
+ "batch": "b7-haiku-more",
+ "rep": 2,
+ "agentId": "a67ae16c0365021d1",
+ "wallSec": 266.2,
+ "start": "2026-09-30T21:58:30.090Z",
+ "end": "2026-09-30T22:02:56.245Z",
+ "turns": 66,
+ "tokens": {
+  "input": 534,
+  "cacheRead": 3064587,
+  "cacheCreate": 45471,
+  "output": 113,
+  "total": 3110705,
+  "ctxPeak": 67088
+ },
+ "toolCalls": 63,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__get_symbols_overview": 1,
+  "mcp__serena__find_symbol": 2,
+  "mcp__serena__find_referencing_symbols": 1,
+  "Read": 25,
+  "Bash": 34
+ },
+ "serenaCalls": 4,
+ "serenaResultChars": 2524,
+ "serenaMs": 374,
+ "textResultChars": 28530,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 75,
+   "chars": 2182
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 105,
+   "chars": 170
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 120,
+   "chars": 2
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 74,
+   "chars": 170
+  },
+  {
+   "name": "Read",
+   "ms": 19,
+   "chars": 819
+  },
+  {
+   "name": "Bash",
+   "ms": 89,
+   "chars": 372
+  },
+  {
+   "name": "Bash",
+   "ms": 114,
+   "chars": 386
+  },
+  {
+   "name": "Read",
+   "ms": 143,
+   "chars": 615
+  },
+  {
+   "name": "Bash",
+   "ms": 277,
+   "chars": 20
+  },
+  {
+   "name": "Bash",
+   "ms": 237,
+   "chars": 38
+  },
+  {
+   "name": "Bash",
+   "ms": 2034,
+   "chars": 189
+  },
+  {
+   "name": "Bash",
+   "ms": 90,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 1404
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 1688
+  },
+  {
+   "name": "Bash",
+   "ms": 71,
+   "chars": 13
+  },
+  {
+   "name": "Read",
+   "ms": 20,
+   "chars": 1170
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 670
+  },
+  {
+   "name": "Bash",
+   "ms": 3053,
+   "chars": 346
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 195
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 103
+  },
+  {
+   "name": "Bash",
+   "ms": 81,
+   "chars": 82
+  },
+  {
+   "name": "Bash",
+   "ms": 1898,
+   "chars": 179
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 58
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 195
+  },
+  {
+   "name": "Bash",
+   "ms": 93,
+   "chars": 131
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 561
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 2799
+  },
+  {
+   "name": "Bash",
+   "ms": 89,
+   "chars": 23
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 1004
+  },
+  {
+   "name": "Bash",
+   "ms": 66,
+   "chars": 82
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 119
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 551
+  },
+  {
+   "name": "Read",
+   "ms": 20,
+   "chars": 291
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 382
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 658
+  },
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 320
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 1538
+  },
+  {
+   "name": "Bash",
+   "ms": 219,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 570
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 1121
+  },
+  {
+   "name": "Bash",
+   "ms": 70,
+   "chars": 244
+  },
+  {
+   "name": "Bash",
+   "ms": 73,
+   "chars": 17
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 772
+  },
+  {
+   "name": "Bash",
+   "ms": 355,
+   "chars": 70
+  },
+  {
+   "name": "Bash",
+   "ms": 2379,
+   "chars": 186
+  },
+  {
+   "name": "Bash",
+   "ms": 2448,
+   "chars": 209,
+   "err": true
+  },
+  {
+   "name": "Read",
+   "ms": 36,
+   "chars": 985
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 106
+  },
+  {
+   "name": "Read",
+   "ms": 33,
+   "chars": 1028
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 100
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 181
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 127
+  },
+  {
+   "name": "Bash",
+   "ms": 2067,
+   "chars": 230
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 270
+  },
+  {
+   "name": "Bash",
+   "ms": 400,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 91,
+   "chars": 98
+  },
+  {
+   "name": "Bash",
+   "ms": 1890,
+   "chars": 1251
+  },
+  {
+   "name": "Bash",
+   "ms": 81,
+   "chars": 596
+  },
+  {
+   "name": "Bash",
+   "ms": 2863,
+   "chars": 358
+  },
+  {
+   "name": "Bash",
+   "ms": 174,
+   "chars": 93
+  },
+  {
+   "name": "Bash",
+   "ms": 74,
+   "chars": 2500
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 293
+  }
+ ],
+ "answer": {
+  "definition": {
+   "name": "onMount",
+   "line": 3420
+  },
+  "uses": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 2424,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 2927,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3100,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3680,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3931,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4155,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4689,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 6225,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 10913,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11294,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11606,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11860,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11994,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12196,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12433,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12978,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13099,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+    "line": 3880,
+    "localName": "ie"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 0.918918918918919,
+  "recall": 0.8947368421052632,
+  "precision": 0.9444444444444444,
+  "misses": [
+   {
+    "file": "chunks/BSBv9QXB.js",
+    "line": 3440,
+    "localName": "Ra"
+   },
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   }
+  ],
+  "extras": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13099,
+    "localName": "ne"
+   }
+  ],
+  "found540": false,
+  "offByOne": 0
+ }
+}

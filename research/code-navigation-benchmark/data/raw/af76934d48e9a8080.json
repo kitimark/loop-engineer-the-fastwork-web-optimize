@@ -1,0 +1,368 @@
+{
+ "task": "T04",
+ "arm": "G-haiku",
+ "model": "haiku",
+ "batch": "b7-haiku-more",
+ "rep": 3,
+ "agentId": "af76934d48e9a8080",
+ "wallSec": 177.4,
+ "start": "2026-09-30T21:55:10.893Z",
+ "end": "2026-09-30T21:58:08.319Z",
+ "turns": 44,
+ "tokens": {
+  "input": 356,
+  "cacheRead": 2712298,
+  "cacheCreate": 47558,
+  "output": 90,
+  "total": 2760302,
+  "ctxPeak": 74366
+ },
+ "toolCalls": 42,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 35,
+  "Read": 7
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 76517,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 132,
+   "chars": 1150
+  },
+  {
+   "name": "Read",
+   "ms": 620,
+   "chars": 49068
+  },
+  {
+   "name": "Bash",
+   "ms": 81,
+   "chars": 62
+  },
+  {
+   "name": "Read",
+   "ms": 155,
+   "chars": 1451
+  },
+  {
+   "name": "Bash",
+   "ms": 1808,
+   "chars": 277
+  },
+  {
+   "name": "Bash",
+   "ms": 2237,
+   "chars": 608,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 86,
+   "chars": 596
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 710
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 323
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 107
+  },
+  {
+   "name": "Bash",
+   "ms": 2627,
+   "chars": 96
+  },
+  {
+   "name": "Bash",
+   "ms": 88,
+   "chars": 244
+  },
+  {
+   "name": "Bash",
+   "ms": 73,
+   "chars": 2342
+  },
+  {
+   "name": "Read",
+   "ms": 28,
+   "chars": 9644
+  },
+  {
+   "name": "Bash",
+   "ms": 75,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 67,
+   "chars": 54
+  },
+  {
+   "name": "Bash",
+   "ms": 163,
+   "chars": 112
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 305
+  },
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 142,
+   "chars": 329
+  },
+  {
+   "name": "Bash",
+   "ms": 74,
+   "chars": 408
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 564
+  },
+  {
+   "name": "Bash",
+   "ms": 81,
+   "chars": 1093
+  },
+  {
+   "name": "Bash",
+   "ms": 68,
+   "chars": 810
+  },
+  {
+   "name": "Bash",
+   "ms": 80,
+   "chars": 631
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 320
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 8
+  },
+  {
+   "name": "Bash",
+   "ms": 109,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 37,
+   "chars": 2298
+  },
+  {
+   "name": "Bash",
+   "ms": 72,
+   "chars": 17
+  },
+  {
+   "name": "Bash",
+   "ms": 102,
+   "chars": 93
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 46
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 121
+  },
+  {
+   "name": "Bash",
+   "ms": 70,
+   "chars": 141
+  },
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 327
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 191,
+   "chars": 26
+  },
+  {
+   "name": "Bash",
+   "ms": 75,
+   "chars": 234
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 631
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 19
+  },
+  {
+   "name": "Bash",
+   "ms": 94,
+   "chars": 648
+  },
+  {
+   "name": "Bash",
+   "ms": 252,
+   "chars": 480
+  }
+ ],
+ "answer": {
+  "definition": {
+   "name": "Ra",
+   "line": 3430
+  },
+  "uses": [
+   {
+    "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+    "line": 3440,
+    "localName": "Ra"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 2424,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 2927,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3100,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3680,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3931,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4155,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4689,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 6225,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 10913,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11294,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11606,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11860,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11994,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12196,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12433,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12978,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13099,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+    "line": 3880,
+    "localName": "ie"
+   }
+  ]
+ },
+ "handbackPlaceholder": true,
+ "stored": {
+  "score": 0.9473684210526315,
+  "recall": 0.9473684210526315,
+  "precision": 0.9473684210526315,
+  "misses": [
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   }
+  ],
+  "extras": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13099,
+    "localName": "ne"
+   }
+  ],
+  "found540": false,
+  "offByOne": 0
+ }
+}

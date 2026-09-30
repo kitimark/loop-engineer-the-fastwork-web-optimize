@@ -48,6 +48,34 @@ What the table means:
   different symbol than intended. On hot runtime helpers, `find_referencing_symbols` costs 30 s+ on the
   shared, serial server.
 
+## Follow-up study: the open questions (64 more runs, batches b1-b7)
+
+Run by an orchestrator that planned 8 batches (specs in `batches/`); flat batch agents spawned the helpers and
+recorded agent ids; all scoring came from `tools/score.mjs`. 197 runs in total, 4 invalid (same four).
+Everything else in this README is the first 133 runs; this section adds 64 (44 sonnet, 20 haiku). New tasks T28-T36 have ground truth in `tasks.json`; new
+arms are in `tools/prompt.mjs`; paired tables come from `tools/compare.mjs`.
+
+| question (batch) | design | result |
+|---|---|---|
+| Does the written decision rule match text search? (b1) | arm **GR** (text first, Serena only for alias and named-symbol references) on T03 T04 T12 T19 T21 T24 T25, n=7, sonnet | GR 1.00 (7/7), 7.3 calls, 212k tokens. G on the same tasks 0.98 (12/14), 7.9 calls, 240k; S 1.00 (14/14), 8.0 calls, 237k. **GR made 0 Serena calls in 7 runs**, even on the two alias tasks (T19, T24) where the rule says to. It solved them with grep (G lost 2 of 4 T19/T24 reps on a range end). So GR = G, a touch cheaper. |
+| Weaker model (b2, b7) | **haiku**, G vs S, T04 T11 T17 T19 T24 n=1 each, T04 +2 reps, T28-T30 n=1 each (20 runs) | G-haiku 0.89 (6/10), S-haiku 0.77 (6/10). Both cost ~10x a sonnet run (28 calls, 1.1-1.3M tokens, 100-130 s). All of the gap is T04 (aliased runtime export across 5 files): G-haiku 0.95 / 0.00 / 0.95, S-haiku 0.00 / 0.92 / 0.10. The two 0.00 runs returned `uses: []` after 20 calls. S-haiku used Serena in 6 of 10 runs, median 2-4 calls, and did not recover T04. On the other 7 tasks both arms are 0.97-1.00 except T28 S-haiku (0.67). **No evidence that Serena helps a weaker model**; if anything it adds calls. |
+| Unprettified `site/` (b3) | 3 name-only tasks (T34 callers of `dE`, T35 spring params/names, T36 delegated handler) on the 366 KB one-line bundle; G (GU) vs Serena-first (SU), sonnet | both 1.00 (3/3). GU 3.3 calls, 108k tokens, 19 s. SU 4 calls, 184k, 31 s. **Serena cannot navigate `site/`**: `.serena/project.yml` ignores it and `find_symbol` returns "Explicitly requested symbols in 'site/...' while the path is ignored" (2 of 3 SU runs hit that error, then fell back to grep -o). Grep handled the single line without trouble. |
+| Open-ended discovery, no names given (b4) | T28 self-rescheduling rAF loops (8), T29 classify the 8 scroll-engine callbacks, T30 census of 11 IntersectionObservers; G / GR / S, sonnet | all 1.00 (9/9). G 6.3 calls, 186k tokens; GR 6.7 calls, 228k; S 9 calls, 284k (Serena in 2 of 3 runs, 1 call each). Text search is enough and cheapest even when no symbol is named. |
+| Do the project notes shortcut both arms? (b5, b5b) | `hot_code_map` + `fixes/TOPICS.md` offered (GM/SM) and then required as the first read (GN/SN), on T01 T03 T07 T13, sonnet | **Offered: 0 of 8 helpers read them** (arms GM/SM are effectively G/S). **Required: all 8 read them, and it did not help**: GN 5.3 calls / 176k tokens vs G 5.0 / 183k; SN 6.5 calls / 237k vs S 5.0 / 185k. Helpers still verified by grep, so the notes cost one or two extra calls. All 1.00 (one SN run emitted an unfenced JSON object; transcribed, see `manual-answers.json`). |
+| Overlay copy paths (b6) | T31 callers, T32 definition ranges, T33 writers of a custom property, asked about a stable overlay copy (`.claude/worktrees/nav-bench/fixes/nb-overlay/overlay/...`, 12 lines inserted, one component added); G vs S | both 1.00 (3/3), no wrong-root or baseline-line answers. G 3.3 calls, 131k tokens; S 5.7 calls, 224k (Serena in 2 of 3). Serena does index a new overlay directory on the first call with the worktree-relative path, so the wrong-path risk did not show. |
+
+Reading of the follow-up:
+
+- **Ceiling again on sonnet**: all 44 new sonnet runs scored 1.00 (one after transcribing an unfenced JSON answer) across policy, minified, open-ended, notes and
+  overlay conditions. Nothing in these conditions separates the arms on accuracy. Text search is cheaper or equal
+  in every paired cell except b1 (GR 212k vs G 240k, not significant).
+- **Compliance is the main finding for the policy arms**: told "text first, Serena for these two cases" (GR),
+  sonnet never called Serena. Told "Serena first" (S), it called Serena in 60 % of runs, at about 1 call per run.
+- **The only real divergence is haiku on T04**, and there Serena did not rescue it. 2-3 reps per cell, so treat it
+  as "no sign Serena helps", not as "Serena hurts".
+- **Serena is off for `site/`** (and for CSS, `research/**/data`): fix agents must work on `site-pretty/` or an
+  overlay, which they already do.
+
 ## Setup
 
 - **Code**:
@@ -214,8 +242,15 @@ Each cell: mean score, (perfect/n), mean tool calls, median wall time, median to
    - CSS, string literals, census questions, cross-process flow, namespace-destructured imports;
    - `find_referencing_symbols` on tiny runtime helpers (`Ln`, `z`, `s`, `e`, `ne`): 30 s+ on a shared,
      serial server.
-4. **For known hot spots, read `hot_code_map` / `fixes/TOPICS.md` first.** They answer several of these
-   questions outright and cost one Read.
+4. **`hot_code_map` / `fixes/TOPICS.md` are for orientation, not a shortcut.** Follow-up b5b: when the notes were
+   required reading they did not cut calls or tokens (helpers verified by grep anyway). Offered but not required,
+   no helper read them. Read them when you do not know which component you need; do not expect them to replace
+   the verification read.
+5. **Weaker models (haiku) get no extra benefit from Serena** in the follow-up (n=20): same text-search default.
+6. **`site/` (the minified original) is invisible to Serena** by config: navigate `site-pretty/` or your overlay.
+   Overlay copies are indexed; use the worktree-relative path
+   `.claude/worktrees/<wt>/fixes/<topic>/overlay/_app/immutable/...`.
+7. **Final decision rule after the follow-up: unchanged.** Rules 1-3 stand; no batch moved them, so the study stops.
 
 ## Proposed doc wording (not applied)
 
@@ -238,6 +273,12 @@ and change the bullet "Minified names repeat: …" to:
 >   `<Component>/ne() callback/<name>`. `AE/a` finds the component-level `a`, not the effect's `a`. Never run
 >   `find_referencing_symbols` on tiny runtime helpers (`Ln`, `z`, `s`): 30 s+ on the shared, serial server.
 
+Add one more bullet to the same CLAUDE.md block (follow-up findings):
+
+> - Serena does not index `site/` (ignored in `.serena/project.yml`); use `site-pretty/` or your overlay
+>   (`.claude/worktrees/<wt>/fixes/<topic>/overlay/...`, relative to the main checkout). Haiku helpers did not
+>   benefit from Serena either; `hot_code_map` orients, it does not replace the verifying read.
+
 **`.serena/memories/serena_usage.md`**: append:
 
 > - When to use Serena: `find_declaration` (regex on a call site) to resolve import aliases and duplicated
@@ -259,26 +300,29 @@ and change the bullet "Minified names repeat: …" to:
 ## Limits of this study
 
 - **Ceiling effect**: questions name the symbols and the code is prettified, so a strong model reading blocks
-  of 50-400 lines rarely errs. Weaker models (haiku), unprettified code or open-ended discovery across many
-  files may favour Serena more.
+  of 50-400 lines rarely errs. The follow-up tested the three suggested escapes (haiku, unprettified `site/`,
+  open-ended discovery): sonnet stayed at the ceiling in all of them and haiku did not improve with Serena.
+  Not tested: a much larger or unfamiliar codebase, where name-path navigation might matter more.
 - **Wall times**: measured with 5-12 concurrent helpers sharing one machine and one Serena server, so they
   are indicative only. Total tokens are dominated by cache reads; also compare peak context and output.
 - **Arm S measures the advice "Serena first"**, not Serena itself. Arm SO isolates the tool.
-- **Sample size**: 2 reps per G/S cell and 1 per SO cell. One-run differences are not significant; the
-  failure modes are the stronger evidence.
+- **Sample size**: 2 reps per G/S cell and 1 per SO cell; the follow-up cells are n=1-3 (haiku T04 n=3). One-run
+  differences are not significant; the failure modes are the stronger evidence.
+- **New arms GR/GN/SN** reflect one wording of the rule/notes prompt; other wordings could change compliance.
 
 ## Files and reproduction
 
-- `tasks.json`: 27 questions, answer schemas, ground truth and traps.
+- `tasks.json`: 36 questions (T28-T36 are the follow-up tasks), answer schemas, ground truth and traps.
 - `data/`:
   - `runs-index.tsv`: task, arm, rep, agent id, invalid flag.
   - `raw/<agentId>.json`: one sanitised record per run (metrics, tool calls, answer, stored score).
     Re-scoring works from these alone.
   - `runs.json`, `score-table.tsv`, `summary.json`/`.txt`, `agent-call-stats.json`,
     `serena-server-calls.json`, `manual-answers.json`.
+- `batches/*.md`: the batch specs the follow-up used (one per batch, self-contained).
 - `HANDOFF.md`: how to continue (task schema, one-run protocol, scoring, open batches, pitfalls).
 - `tools/`:
-  - Benchmark harness: `prompt.mjs`, `transcript.mjs`, `score.mjs`, `summarize.mjs`, `serena-log.mjs`,
+  - Benchmark harness: `prompt.mjs`, `transcript.mjs`, `score.mjs`, `summarize.mjs`, `compare.mjs` (paired arm tables), `serena-log.mjs`,
     `gt.mjs` (needs `NAV_BENCH_TS=/path/to/typescript`).
   - Helpers for fix agents: `css-context.mjs`, `off2line.mjs` (run in the main checkout, or set
     `FW_MIRROR_HOME`).

@@ -1,0 +1,271 @@
+{
+ "task": "T29",
+ "arm": "S-haiku",
+ "model": "haiku",
+ "batch": "b7-haiku-more",
+ "rep": 1,
+ "agentId": "a5f83a7dd2611896f",
+ "wallSec": 144.4,
+ "start": "2026-09-30T22:01:33.947Z",
+ "end": "2026-09-30T22:03:58.377Z",
+ "turns": 34,
+ "tokens": {
+  "input": 276,
+  "cacheRead": 1749223,
+  "cacheCreate": 45663,
+  "output": 46,
+  "total": 1795208,
+  "ctxPeak": 67170
+ },
+ "toolCalls": 32,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__initial_instructions": 1,
+  "mcp__serena__get_symbols_overview": 1,
+  "mcp__serena__find_symbol": 9,
+  "Bash": 3,
+  "Read": 17,
+  "mcp__serena__find_referencing_symbols": 1
+ },
+ "serenaCalls": 11,
+ "serenaResultChars": 15108,
+ "serenaMs": 1777,
+ "textResultChars": 36745,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 7,
+   "chars": 0
+  },
+  {
+   "name": "serena.initial_instructions",
+   "ms": 122,
+   "chars": 7501
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 34,
+   "chars": 11486
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 63,
+   "chars": 177
+  },
+  {
+   "name": "Bash",
+   "ms": 112,
+   "chars": 104
+  },
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 6315
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 5583
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 923,
+   "chars": 2117
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 737
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2969
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 902
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 60,
+   "chars": 165
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 607
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 2543
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 1858
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 90,
+   "chars": 165
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 2045
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 212,
+   "chars": 165
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 1051
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 1908
+  },
+  {
+   "name": "Bash",
+   "ms": 81,
+   "chars": 43
+  },
+  {
+   "name": "Read",
+   "ms": 18,
+   "chars": 594
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 57,
+   "chars": 165
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 888
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 117,
+   "chars": 167
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 1214
+  },
+  {
+   "name": "Read",
+   "ms": 30,
+   "chars": 1943
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 24,
+   "chars": 167
+  },
+  {
+   "name": "Read",
+   "ms": 23,
+   "chars": 946
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 98,
+   "chars": 167
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 1405
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 99,
+   "chars": 167
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 3090
+  }
+ ],
+ "answer": {
+  "callbacks": [
+   {
+    "line": 3143,
+    "component": "AE",
+    "callback": "o",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 4239,
+    "component": "fD",
+    "callback": "c",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 4736,
+    "component": "hD",
+    "callback": "d",
+    "kind": "direct-read",
+    "readLine": 4730
+   },
+   {
+    "line": 6269,
+    "component": "WD",
+    "callback": "A",
+    "kind": "direct-read",
+    "readLine": 6206
+   },
+   {
+    "line": 10977,
+    "component": "uM",
+    "callback": "m",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 11359,
+    "component": "mM",
+    "callback": "u",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 12448,
+    "component": "GM",
+    "callback": "r",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 13090,
+    "component": "dN",
+    "callback": "L",
+    "kind": "calls-helper",
+    "readLine": 0
+   }
+  ]
+ },
+ "handbackPlaceholder": true,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}
