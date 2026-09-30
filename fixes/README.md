@@ -38,6 +38,9 @@ A fix is done when its branch has exactly `fixes/<topic>/README.md`, `patch.diff
 6. `patch.diff` and `results.json` come from the same overlay (`results.json` `patch.sha256`), i.e.
    the patch wasn't edited after the A/B.
 7. **Risks and overlaps** with other topics, and iPhone notes if the lease was used.
+7a. **Experiments tried, all of them** (user decision 2026-09-30): every variant measured, probed or
+   abandoned, including the ones that lost or broke something, in the fields of
+   [`EXPERIMENTS.md`](EXPERIMENTS.md). The lead copies them into that ledger on landing.
 8. **Automated benchmark (required, user decision 2026-10-01).** Every fix ships a benchmark that
    re-confirms it without a human: a deterministic *mechanism check* (exact counters, e.g. "no layout
    or property writes from this callback on phones") plus a statistical *gain check* (throttled timing
