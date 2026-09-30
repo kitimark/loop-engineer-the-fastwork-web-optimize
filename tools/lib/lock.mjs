@@ -19,9 +19,11 @@
 //
 // Short lane (incident I-007): a waiter that asks for `short` with a `maxSec` (<= SHORT_MAX_SEC; the
 // pre-commit `npm test`, ~35 s) still waits for the current holder (never preempts), but at the next
-// hand-over it is served before earlier normal waiters (5-min A/Bs). At most one short job runs between
-// two normal holders while a normal job is waiting (<resource>.last-grant.json remembers whether the
-// last grant was short), so shorts can't starve the queue. A short holder expires at acquiredAt + maxSec
+// hand-over it is served before earlier normal waiters (5-min A/Bs). Queued short jobs drain back to
+// back while the run of consecutive short grants still fits SHORT_DRAIN_SEC (from the first short
+// grant, counting the next job's max-seconds); then the next normal waiter goes first
+// (<resource>.last-grant.json records the last grant and when the short run started), so shorts
+// can't starve the queue: a waiting normal job is delayed by at most SHORT_DRAIN_SEC. A short holder expires at acquiredAt + maxSec
 // (no --ttl, re-acquire or renew stretches it); `lock.mjs run --short` also kills its command then.
 // A short waiter must keep polling: its queue entry is dropped after SHORT_QUEUE_TTL_SEC without a
 // refresh, so a short job that stopped waiting never holds up the hand-over.
@@ -43,6 +45,7 @@ const guardDir = (r) => join(lockDir(), `${r}.guard`);
 const lastGrantFile = (r) => join(lockDir(), `${r}.last-grant.json`);
 export const SHORT_MAX_SEC = 300;
 const SHORT_QUEUE_TTL_SEC = 60;
+export const SHORT_DRAIN_SEC = 300; // a run of back-to-back short jobs ends within this (incident I-011)
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
 function checkName(r) {
@@ -93,7 +96,7 @@ export function status(r) {
   checkName(r);
   const h = readJson(holderFile(r), null);
   const q = pruneQueue(readJson(queueFile(r), []));
-  const next = q.length ? q[nextIndex(q, !!readJson(lastGrantFile(r), {}).short)].owner : null;
+  const next = q.length ? q[nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h))].owner : null;
   return { resource: r, holder: h, stale: h ? staleReason(h) : null, queue: q, next };
 }
 
@@ -103,10 +106,29 @@ export function allStatus() {
   return [...names].map(status);
 }
 
+// last-grant.json can lag behind reality: clients on lock code from before the short lane grant by plain
+// FIFO and never write it (incident I-011). So (1) a live holder not recorded there (another token) *is*
+// the last grant, and whoever sees it records it; (2) a short record only counts while that short hold
+// could still be running (+ a grace for the hand-over): after that, a normal job must have had its turn.
+function effectiveLastGrant(lg, h) {
+  if (h && h.token && h.token !== lg.token) return { owner: h.owner, short: !!h.short, maxSec: h.maxSec, at: h.acquiredAt, token: h.token };
+  return lg;
+}
+function lastGrantShort(lg, now = Date.now()) {
+  return !!lg.short && now - Date.parse(lg.at) < ((lg.maxSec || SHORT_MAX_SEC) + 5 + 30) * 1000;
+}
+
+/** When the current run of back-to-back short grants started (ms), or null after a normal grant. */
+function shortRunStart(lg, now = Date.now()) {
+  return lastGrantShort(lg, now) ? Date.parse(lg.runStart || lg.at) : null;
+}
+
 /** Index of the waiter served at the next hand-over: FIFO, except the short lane (see header). */
-function nextIndex(q, lastGrantShort) {
-  const i = q.findIndex((w) => (lastGrantShort ? !w.short : w.short));
-  return i < 0 ? 0 : i;
+function nextIndex(q, lg, now = Date.now()) {
+  const s = q.findIndex((w) => w.short), n = q.findIndex((w) => !w.short);
+  if (s < 0 || n < 0) return 0;
+  const start = shortRunStart(lg, now) ?? now;
+  return now - start + (q[s].maxSec || SHORT_MAX_SEC) * 1000 <= SHORT_DRAIN_SEC * 1000 ? s : n;
 }
 
 /**
@@ -140,8 +162,10 @@ export async function tryAcquire(r, opts) {
       return { ok: true, holder: h, reentrant: true };
     }
     const mine = q.findIndex((w) => w.owner === owner);
-    const lastGrantShort = !!readJson(lastGrantFile(r), {}).short;
-    const headOk = q.length === 0 || mine === nextIndex(q, lastGrantShort);
+    const lg = readJson(lastGrantFile(r), {});
+    const seen = effectiveLastGrant(lg, h);
+    if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
+    const headOk = q.length === 0 || mine === nextIndex(q, seen, now);
     if (!h && headOk) {
       h = {
         resource: r, owner, kind, pid: kind === 'process' ? pid : undefined, token: randomBytes(6).toString('hex'),
@@ -150,7 +174,8 @@ export async function tryAcquire(r, opts) {
         ...(short ? { short: true, maxSec } : {}),
       };
       writeJson(holderFile(r), h);
-      writeJson(lastGrantFile(r), { owner, short, at: h.acquiredAt });
+      const runStart = short ? new Date(shortRunStart(seen, now) ?? now).toISOString() : undefined;
+      writeJson(lastGrantFile(r), { owner, short, maxSec, at: h.acquiredAt, token: h.token, runStart });
       if (mine >= 0) q.splice(mine, 1);
       writeJson(queueFile(r), q);
       return { ok: true, holder: h };
@@ -159,7 +184,7 @@ export async function tryAcquire(r, opts) {
     const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}) };
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     writeJson(queueFile(r), q);
-    return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, lastGrantShort)].owner };
+    return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, seen, now)].owner };
   });
 }
 

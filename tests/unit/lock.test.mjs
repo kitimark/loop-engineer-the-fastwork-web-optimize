@@ -228,7 +228,7 @@ test('short lane: a short job queued behind long ones is served at the next hand
   assert.equal((await L.tryAcquire(R, { owner: 'ab2' })).ok, true);
 });
 
-test('short lane cannot starve normal waiters: at most one short job between two normal holders', async () => {
+test('short lane drains: queued short jobs go back to back at a hand-over, then the normal waiter (I-011)', async () => {
   assert.equal((await L.tryAcquire(R, { owner: 'n1' })).ok, true);
   await L.tryAcquire(R, { owner: 'n2' });
   await L.tryAcquire(R, { owner: 's1', ...SHORT });
@@ -246,7 +246,9 @@ test('short lane cannot starve normal waiters: at most one short job between two
     assert.equal(won.length, 1, `exactly one winner at hand-over ${i + 1}: ${won}`);
     order.push(won[0]);
   }
-  assert.deepEqual(order, ['s1', 'n2', 's2', 's3'], 'short, normal, short, then shorts back to back once no normal job waits');
+  // was ['s1', 'n2', 's2', 's3'] (one short job per normal holder): with 30-45 min A/B holds that made
+  // four 1-min test jobs wait ~2 h; now the three shorts (3 x 90 s <= SHORT_DRAIN_SEC) drain first
+  assert.deepEqual(order, ['s1', 's2', 's3', 'n2']);
 });
 
 test('short lane: max-seconds is required and bounded, cannot be stretched, and an overrunning short holder is replaced', async () => {
@@ -270,4 +272,65 @@ test('short lane: max-seconds is required and bounded, cannot be stretched, and 
   const n = await L.tryAcquire(R, { owner: 'n' });
   assert.equal(n.ok, true, 'an overrunning short holder is released at max-seconds');
   assert.equal(readJson(`${R}.last-stale.json`).owner, 's');
+});
+
+// Incident I-011: clients on lock code from before the short lane grant by plain FIFO and never write
+// last-grant.json, so a `short: true` record outlived the normal grants that followed it and short
+// waiters deferred to normal ones for good.
+const oldClientGrant = (owner) => {
+  // what pre-25391a2 code writes: a holder record, no last-grant, no `short`
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  const now = new Date().toISOString();
+  writeFileSync(lockFile(`${R}.json`), JSON.stringify({ resource: R, owner, kind: 'lease', token: 'a1b2c3d4e5f6', acquiredAt: now, expiresAt: new Date(Date.now() + 600000).toISOString(), meta: {} }));
+};
+
+test('short lane with old clients: a normal grant made by old code (no last-grant write) counts once any new client sees it', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 's0', ...SHORT })).ok, true);
+  await L.release(R, { owner: 's0' });
+  assert.equal(readJson(`${R}.last-grant.json`).short, true);
+  oldClientGrant('old-ab');
+  const n1 = await L.tryAcquire(R, { owner: 'n1' });
+  const s1 = await L.tryAcquire(R, { owner: 's1', ...SHORT });
+  assert.equal(s1.ok, false, 'never preempts the old client');
+  assert.equal(s1.next, 's1', 'the last grant (old-ab) was normal, so the short job is next');
+  assert.equal(L.status(R).next, 's1');
+  await L.release(R, { owner: 'old-ab' });
+  assert.equal((await L.tryAcquire(R, { owner: 'n1' })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 's1', ...SHORT })).ok, true);
+  assert.equal(n1.position, 1);
+});
+
+test('short lane with old clients: a short last-grant record older than any short hold cannot block short waiters', async () => {
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  const old = new Date(Date.now() - 10 * 60 * 1000).toISOString(), now = new Date().toISOString();
+  // the stuck record from the incident (no maxSec/token), then old clients came and went unseen
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'lead-land-i007', short: true, at: old }));
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([
+    { owner: 'n1', kind: 'lease', since: old, lastSeen: now },
+    { owner: 's1', kind: 'lease', since: now, lastSeen: now, short: true, maxSec: 90, queueTtlSec: 60 },
+  ]));
+  assert.equal(L.status(R).next, 's1');
+  assert.equal((await L.tryAcquire(R, { owner: 'n1' })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 's1', ...SHORT })).ok, true);
+});
+
+test('short lane cannot starve normal waiters: a short run ends within SHORT_DRAIN_SEC, then the normal waiter goes', async () => {
+  assert.ok(L.SHORT_DRAIN_SEC >= L.SHORT_MAX_SEC && L.SHORT_DRAIN_SEC <= 600);
+  assert.equal((await L.tryAcquire(R, { owner: 's1', ...SHORT })).ok, true);
+  const lg = readJson(`${R}.last-grant.json`);
+  assert.equal(lg.short, true);
+  assert.equal(lg.runStart, lg.at, 'the first short grant after a normal one starts a run');
+  await L.tryAcquire(R, { owner: 'n1' });
+  await L.tryAcquire(R, { owner: 's2', ...SHORT });
+  // the run started 250 s ago (s1 was its latest job): s2's 90 s would end it past the budget
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ ...lg, runStart: new Date(Date.now() - 250000).toISOString() }));
+  assert.equal(L.status(R).next, 'n1');
+  await L.release(R, { owner: 's1' });
+  assert.equal((await L.tryAcquire(R, { owner: 's2', ...SHORT })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 'n1' })).ok, true);
+  assert.equal(readJson(`${R}.last-grant.json`).runStart, undefined, 'a normal grant ends the run');
+  await L.release(R, { owner: 'n1' });
+  const s2 = await L.tryAcquire(R, { owner: 's2', ...SHORT });
+  assert.equal(s2.ok, true);
+  assert.equal(readJson(`${R}.last-grant.json`).runStart, s2.holder.acquiredAt, 'a new run');
 });

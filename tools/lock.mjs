@@ -11,8 +11,8 @@
 //   node tools/lock.mjs acquire chrome-measure --owner <topic> --short --max-seconds 180 --wait 1800
 //
 // --short --max-seconds N (N <= 300; default 120): the short lane for jobs like `npm test` (~35 s).
-// Waits for the current holder, then is served before earlier normal waiters (at most one short job
-// between two normal holders). The hold ends at N s: `run` kills the command (and its children) and
+// Waits for the current holder, then is served before earlier normal waiters (queued short jobs run
+// back to back while the run fits 300 s, SHORT_DRAIN_SEC; then a normal waiter). The hold ends at N s: `run` kills the command (and its children) and
 // exits 124; a short lease just expires (it cannot be renewed). Keep polling while you wait (`run`
 // and `acquire --wait` do): a short queue place is dropped after 60 s without a retry.
 //
