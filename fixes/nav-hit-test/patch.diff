@@ -1,0 +1,51 @@
+# fastwork mirror fix: nav-hit-test
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply nav-hit-test
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -12952,17 +12952,27 @@
+       ? !1
+       : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
+   }
++  // perf(nav-hit-test): same answer as "nav pointer-events:none -> elementFromPoint -> restore", but
++  // without the two inline-style writes (each invalidated the style of the whole nav subtree and forced
++  // a recalc inside the scroll frame). elementsFromPoint lists every hit box top-down; skip the nav's
++  // own boxes except those that stay hit-testable under pointer-events:none on the nav because they set
++  // pointer-events:auto themselves (.start-selling-top-nav-actions, the expanded .start-selling-morph-panel).
+   function F() {
+     let e = T.getBoundingClientRect(),
+       t = e.left + e.width / 2,
+-      n = e.top + Math.min(e.height, 64) / 2,
+-      r = T.style.pointerEvents;
+-    T.style.pointerEvents = `none`;
+-    let i = document.elementFromPoint(t, n);
+-    return ((T.style.pointerEvents = r), j(i));
++      n = e.top + Math.min(e.height, 64) / 2;
++    for (let r of document.elementsFromPoint(t, n))
++      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
++    return j(null);
+   }
++  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
++  let __navEls = {};
++  function __navEl(e) {
++    let t = __navEls[e];
++    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
++  }
+   function ee() {
+-    let e = document.querySelector(`.start-selling-profile-sticky`);
++    let e = __navEl(`.start-selling-profile-sticky`);
+     if (!e) return !1;
+     let t = window.getComputedStyle(e);
+     if (t.position !== `sticky`) return !1;
+@@ -12999,7 +13009,7 @@
+     e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
+     let _ = () => {
+         (z(v, ee(), !0), z(g, F(), !0));
+-        let t = document.querySelector(`.hero-track`);
++        let t = __navEl(`.hero-track`);
+         if (!t || e.matches) {
+           z(p, !0);
+           return;
