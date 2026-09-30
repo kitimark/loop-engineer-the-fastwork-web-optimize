@@ -1,7 +1,7 @@
 // OPT-IN (npm run test:chrome): real Chrome, short runs, through the REAL cross-worktree chrome-measure
 // lock (so it queues behind agents' measurements instead of disturbing them). Fixture baseline only.
 //   1. verify.mjs: one mobile run at CPU 2x against the fixture served like `fix.mjs ab` serves it
-//      (--vendors=local --https, --root site-pretty); frames/LoAF fields present; lock held; SRI ok.
+//      (--vendors=local --https, --root site-pretty); frames/LoAF fields present (idle, scroll, morph); lock held; SRI ok.
 //   2. SIGTERM during a real run: lock released, the dedicated Chrome (its profile) is gone.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -39,7 +39,8 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
   assert.equal(x.viewport, 'mobile');
   assert.ok(x.scroll.y > 0, 'the page scrolled');
   assert.equal(x.state.nav, 'start-selling-top-nav');
-  for (const ph of ['scrollSummary', 'morphSummary']) {
+  assert.equal(res.idle, 5, 'default idle phase');
+  for (const ph of ['idleSummary', 'scrollSummary', 'morphSummary']) {
     const s = x[ph];
     assert.ok(s.frames > 10, `${ph}.frames ${s.frames}`);
     assert.ok(s.fps > 0);

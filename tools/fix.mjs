@@ -11,7 +11,7 @@
 //   node tools/fix.mjs apply <topic> [--from a,b] [--reset] [--check]   # rebuild the overlay from patch.diff(s)
 //   node tools/fix.mjs combine <name> <topicA> <topicB>...  # apply several patches in order, report conflicts
 //   node tools/fix.mjs serve <topic> [-- serve.mjs args]  # baseline + overlay on a per-worktree port
-//   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--no-screens] [-- serve.mjs args]
+//   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--idle 5] [--no-screens] [-- serve.mjs args]
 //   node tools/fix.mjs ab --aa [--runs 5]             # baseline vs baseline: the noise floor
 //   --on <other>   (edit, diff, serve, ab) stack this fix on another fix's overlay, e.g. a combined wave:
 //                  edit copies from <other>'s overlay, diff is against it, ab compares <other> vs <other>+this
@@ -35,7 +35,7 @@ const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const passthrough = dd >= 0 ? argv.slice(dd + 1) : null;
-const VALUED = ['--runs', '--cpu', '--viewport', '--lines', '--from', '--max', '--on'];
+const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on'];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
@@ -297,13 +297,16 @@ const METRICS = {
   scroll: [['fps', 'fps', +1], ['gt20', 'frames >20 ms', -1], ['gt34', 'frames >34 ms', -1], ['gt50', 'frames >50 ms', -1], ['gt100', 'frames >100 ms', -1], ['max', 'worst frame ms', -1], ['p95', 'p95 frame ms', -1], ['loafMs', 'LoAF ms', -1], ['loafScriptMs', 'LoAF script ms', -1], ['forcedLayoutMs', 'forced style+layout ms (in LoAF)', -1]],
   morph: [['fps', 'fps', +1], ['gt50', 'frames >50 ms', -1], ['loafMs', 'LoAF ms', -1], ['forcedLayoutMs', 'forced style+layout ms (in LoAF)', -1]],
 };
+// idle phase (verify.mjs --idle, before scrolling): the same metrics as the scroll phase
+METRICS.idle = METRICS.scroll;
 function stats(results, vp, labelA, labelB) {
   const out = {};
   for (const [phase, list] of Object.entries(METRICS)) {
-    out[phase] = {};
-    const key = phase === 'scroll' ? 'scrollSummary' : 'morphSummary';
+    const key = `${phase}Summary`;
     const A = results.filter((r) => !r.diff && r.viewport === vp && r.label === labelA).sort((a, b) => a.run - b.run);
     const B = results.filter((r) => !r.diff && r.viewport === vp && r.label === labelB).sort((a, b) => a.run - b.run);
+    if (phase === 'idle' && ![...A, ...B].some((r) => r[key])) continue; // --idle 0: no idle phase recorded
+    out[phase] = {};
     for (const [m, name, dir] of list) {
       const a = A.map((r) => r[key][m]), b = B.map((r) => r[key][m]);
       const ma = median(a), mb = median(b);
@@ -339,8 +342,9 @@ async function cmdAb(t) {
   requireBase();
   const topic = aa ? (t ? checkTopic(t) : '_aa') : t;
   if (!aa && !overlayFiles(t).length) die(`fixes/${t}/overlay is empty`);
-  const runs = Number(opt('runs', 5)), cpu = Number(opt('cpu', 6)), viewport = opt('viewport', 'mobile');
+  const runs = Number(opt('runs', 5)), cpu = Number(opt('cpu', 6)), viewport = opt('viewport', 'mobile'), idle = Number(opt('idle', 5));
   if (!['mobile', 'desktop'].includes(viewport)) die('--viewport must be mobile or desktop for ab (run twice for both)');
+  if (!Number.isFinite(idle) || idle < 0) die(`--idle must be a number of seconds >= 0 (got "${opt('idle')}")`);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const outDir = join(REPO, 'out', 'ab', topic, stamp);
   mkdirSync(outDir, { recursive: true });
@@ -369,7 +373,7 @@ async function cmdAb(t) {
   }
 
   const verifyFile = join(outDir, 'verify.json');
-  const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : [])];
+  const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--idle', String(idle), '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : [])];
   verifyProc = spawn(process.execPath, vArgs, { stdio: 'inherit' });
   const code = await new Promise((res) => verifyProc.on('exit', (c) => res(c)));
   kill();
@@ -391,7 +395,7 @@ async function cmdAb(t) {
     morphReached: { baseline: runsOf(lb).map((r) => /is-morph/.test(r.morphState || '')), patched: runsOf(lf).map((r) => /is-morph/.test(r.morphState || '')) },
   };
   const loads = v.results.filter((r) => r.loadavg1).map((r) => r.loadavg1.before);
-  const cfg = { cpu, viewport, runs, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), stackedOn: ON, order: 'ABBA (alternating per run)' };
+  const cfg = { cpu, viewport, runs, idle, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), stackedOn: ON, order: 'ABBA (alternating per run)' };
   const result = {
     topic, kind: aa ? 'A/A noise floor' : 'A/B', createdAt: new Date().toISOString(),
     git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD'), checkout: checkoutId() },

@@ -23,12 +23,18 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAY
 export const FRAMES = [...Array(50).fill(16.7), 25, 40, 60, 120];
 export const LOAF = [{ start: 100, duration: 120, blocking: 70, render: 30, styleLayout: 20,
   scripts: [{ url: 'http://localhost:1234/_app/immutable/nodes/2.fixture.js', fn: 'tick', pos: 10, invoker: 'FrameRequestCallback', type: 'user-callback', dur: 80, forced: 25, pause: 0 }] }];
+// Returned instead of FRAMES/LOAF when a recording saw no input (no scroll script, no Input.* event)
+// between its reset and its read-out, i.e. verify.mjs's idle phase.
+export const IDLE_FRAMES = [...Array(100).fill(16.7), 30, 55];
+export const IDLE_LOAF = [{ start: 50, duration: 55, blocking: 5, render: 10, styleLayout: 8,
+  scripts: [{ url: 'http://localhost:1234/_app/immutable/nodes/2.fixture.js', fn: 'spring', pos: 42, invoker: 'FrameRequestCallback', type: 'user-callback', dur: 40, forced: 6, pause: 0 }] }];
+let input = false; // any scroll script / Input.* event since the last recorder reset?
 
 function evaluate(expr) {
   if (expr.includes('kit: Object.keys(window)')) return { kit: ['__sveltekit_fake'], nav: 'start-selling-top-nav', hero: 'hero', h: 3000, shim: null, vendors: { gtag: 'undefined', amplitude: 'undefined', hj: 'undefined', dataLayer: 1 } };
-  if (expr.includes('window.__perf.frames.length=0')) return true;
-  if (expr.includes("window.scrollBy({ top: 250, behavior: 'smooth' })") && expr.includes('still >= 4')) return { ms: 5000, ticks: 16, y: 2068, h: 3000 };
-  if (expr.includes('p.on = false')) return { frames: FRAMES, loaf: LOAF, on: false };
+  if (expr.includes('window.__perf.frames.length=0')) { input = false; return true; }
+  if (expr.includes("window.scrollBy({ top: 250, behavior: 'smooth' })") && expr.includes('still >= 4')) { input = true; return { ms: 5000, ticks: 16, y: 2068, h: 3000 }; }
+  if (expr.includes('p.on = false')) return input ? { frames: FRAMES, loaf: LOAF, on: false } : { frames: IDLE_FRAMES, loaf: IDLE_LOAF, on: false };
   if (expr.includes("document.querySelector('.start-selling-top-nav')?.className")) return 'start-selling-top-nav is-morph';
   if (expr.includes('document.documentElement.scrollHeight - innerHeight')) return 2068;
   if (expr.includes('OffscreenCanvas')) return { w: 430, h: 932, diffPct: 0.12 };
@@ -43,6 +49,7 @@ function handle(msg, send) {
   if (process.env.FAKE_CHROME_CRASH_AT === method) { log({ method: '(crash)', params: {} }); process.exit(1); }
   const reply = (result) => send({ id, result, ...(sessionId ? { sessionId } : {}) });
   const event = (m, p) => send({ method: m, params: p, sessionId });
+  if (method.startsWith('Input.')) input = true;
   switch (method) {
     case 'Target.createBrowserContext': return reply({ browserContextId: `ctx${++n}` });
     case 'Target.createTarget': return reply({ targetId: `target${++n}` });

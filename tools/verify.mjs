@@ -4,6 +4,7 @@
 //   node tools/verify.mjs live=https://fastwork.com/ block=http://localhost:5173/ local=http://localhost:5174/
 //        [--viewport desktop|mobile|both] [--cpu 4] [--runs 3] [--out out/verify] [--no-screens]
 //        [--port 0] [--profile out/chrome-verify-profile] [--result file.json] [--owner name] [--no-lock]
+//        [--idle 5]
 //
 // Parallel worktrees: the DevTools port defaults to 0 (Chrome picks a free one) and the profile dir
 // is under this checkout's out/, so runs from different worktrees never collide. Every run takes the
@@ -12,7 +13,9 @@
 // With several targets, the order alternates per run (A B, B A, A B, ...) so drift hits all equally.
 //
 // For every target and run: fresh isolated browser context (cold cache), load, settle, then with
-// CPU throttling a rAF frame logger + PerformanceObserver('long-animation-frame') record while the
+// CPU throttling a rAF frame logger + PerformanceObserver('long-animation-frame') record first for
+// --idle seconds (default 5) at the top of the page without any input ("idle" phase: timers, rAF
+// loops and animations that run while nobody scrolls; --idle 0 skips it), then while the
 // page is smooth-scrolled with window.scrollBy({top:250,behavior:'smooth'}) every 300 ms to the
 // bottom ("scroll" phase), and then pushed past the end with wheel / touch gestures ("morph" phase,
 // the scroll-jacked header morph). Screenshots at top/middle/bottom are compared pixel-wise.
@@ -37,6 +40,10 @@ const vpSel = opt('viewport', 'desktop');
 const vpList = vpSel === 'both' ? ['desktop', 'mobile'] : [vpSel];
 const OUT = resolve(ROOT, opt('out', 'out/verify'));
 const SCREENS = !flag('no-screens');
+// Idle phase length in seconds, recorded after settle + throttle and before the scroll phase; 0 = off.
+// The scroll and morph phases run exactly as without it, just IDLE seconds later.
+const IDLE = Number(opt('idle', 5));
+if (!Number.isFinite(IDLE) || IDLE < 0) { console.error(`--idle must be a number of seconds >= 0 (got "${opt('idle')}")`); process.exit(2); }
 mkdirSync(OUT, { recursive: true });
 
 // ---- injected before any page script ------------------------------------------------------------
@@ -144,6 +151,13 @@ async function measure(cdp, t, vpName, run) {
 
   await page.send('Emulation.setCPUThrottlingRate', { rate: CPU });
   await sleep(1000);
+  // idle phase: same logger, no input, at the top of the page (before any scrolling)
+  let idlePerf = null;
+  if (IDLE > 0) {
+    await page.eval('window.__perf.frames.length=0; window.__perf.loaf.length=0; window.__perf.on=true');
+    await sleep(IDLE * 1000);
+    idlePerf = await page.eval('(() => { const p = window.__perf; p.on = false; return JSON.parse(JSON.stringify(p)); })()');
+  }
   await page.eval('window.__perf.frames.length=0; window.__perf.loaf.length=0; window.__perf.on=true');
   const scroll = await page.eval(SCROLL, { timeout: 600000 });
   await sleep(500);
@@ -185,7 +199,7 @@ async function measure(cdp, t, vpName, run) {
   const firstParty = requests.filter((r) => { try { const u = new URL(r.url); return u.origin === new URL(t.url).origin; } catch { return false; } });
   return {
     label: t.label, url: t.url, viewport: vpName, run, loadavg1: { before: r1(loadBefore), after: r1(os.loadavg()[0]) }, state, scroll, morphState, shots, shimStats,
-    scrollSummary: summarize(scrollPerf), morphSummary: summarize(morphPerf),
+    idleSummary: idlePerf ? summarize(idlePerf) : null, scrollSummary: summarize(scrollPerf), morphSummary: summarize(morphPerf),
     requests: requests.length, origins,
     notFound: firstParty.filter((r) => r.status >= 400).map((r) => `${r.status} ${new URL(r.url).pathname}`),
     scripts: [...new Set(firstParty.filter((r) => r.type === 'Script').map((r) => new URL(r.url).pathname))].sort(),
@@ -234,7 +248,7 @@ async function main() {
           const r = await measure(cdp, t, vpName, run);
           results.push(r);
           const s = r.scrollSummary;
-          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms  morph LoAF ${r.morphSummary.loafMs}ms  (${r.notFound.length} 404s, ${r.errors.length} errors)`);
+          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)`);
         }
       }
       if (SCREENS && targets.length > 1) {
@@ -259,15 +273,16 @@ async function main() {
       loafMs: m('scrollSummary', 'loafMs'), loafScriptMs: m('scrollSummary', 'loafScriptMs'), forcedMs: m('scrollSummary', 'forcedLayoutMs'),
       morphFps: m('morphSummary', 'fps'), morphGt50: m('morphSummary', 'gt50'), morphLoafMs: m('morphSummary', 'loafMs'),
       scrollS: Math.round(median(rs.map((r) => r.scroll.ms)) / 100) / 10,
+      ...(IDLE > 0 ? { idleFps: m('idleSummary', 'fps'), idleGt50: m('idleSummary', 'gt50'), idleLoafMs: m('idleSummary', 'loafMs'), idleScriptMs: m('idleSummary', 'loafScriptMs'), idleForcedMs: m('idleSummary', 'forcedLayoutMs') } : {}),
     });
   }
-  console.log('\nmedians (scroll phase unless "morph"):');
+  console.log(`\nmedians (scroll phase unless "morph"/"idle"; idle = ${IDLE} s at the top before scrolling):`);
   console.table(rows);
   const diffs = results.filter((r) => r.diff);
   if (diffs.length) { console.log('screenshot pixel diff vs ' + targets[0].label + ' (% of pixels differing):'); console.table(diffs.map(({ viewport, b, shot, diffPct, error }) => ({ viewport, target: b, shot, diffPct, error }))); }
   const file = opt('result') ? resolve(process.cwd(), opt('result')) : join(OUT, `verify-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, JSON.stringify({ cpu: CPU, viewports: vpList, runs: RUNS, targets, host: { cpus: os.cpus().length, model: os.cpus()[0]?.model, loadavg: os.loadavg() }, rows, results }, null, 1));
+  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, host: { cpus: os.cpus().length, model: os.cpus()[0]?.model, loadavg: os.loadavg() }, rows, results }, null, 1));
   console.log('details: ' + file);
 }
 

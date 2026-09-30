@@ -29,6 +29,9 @@ test('fix.mjs ab --runs 1 --cpu 2 with real Chrome', async () => {
     assert.equal(res.metrics.scroll.fps[side].runs.length, 1);
   }
   assert.match(res.metrics.scroll.fps.verdict, /^n=1/);
+  assert.equal(res.config.idle, 5, 'default idle phase');
+  for (const side of ['baseline', 'patched']) assert.ok(res.metrics.idle.fps[side].median > 0, `idle ${side} fps`);
+  assert.match(res.markdown, /^\| idle: fps \|/m);
   assert.deepEqual(res.regressions.newErrors, []);
   assert.deepEqual(res.regressions.new404s, []);
   assert.deepEqual(Object.keys(res.regressions.screenshotDiffPct).sort(), ['bottom', 'middle', 'top']);

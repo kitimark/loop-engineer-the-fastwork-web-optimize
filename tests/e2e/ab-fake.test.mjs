@@ -30,8 +30,8 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   const envB = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'ab.jsonl') };
   const envA = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'aa.jsonl') };
   const [ab, aa] = await Promise.all([
-    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--no-screens'], { cwd: repo.wt, env: envB }),
-    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', '--aa', '--runs', '1', '--no-screens'], { cwd: repo.wt, env: envA }),
+    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens'], { cwd: repo.wt, env: envB }),
+    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', '--aa', '--runs', '1', '--idle', '0', '--no-screens'], { cwd: repo.wt, env: envA }),
   ]);
   assert.equal(ab.code, 0, ab.out);
   assert.equal(aa.code, 0, aa.out);
@@ -41,7 +41,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(res.topic, 'fast-nav');
   assert.equal(res.kind, 'A/B');
   assert.equal(res.git.branch, 'wt/ab-wt');
-  assert.deepEqual(res.config, { cpu: 6, viewport: 'mobile', runs: 1, serveArgs: ['--vendors=local', '--https', '--latency', '150'], baseline: 'site-pretty', stackedOn: null, order: 'ABBA (alternating per run)' });
+  assert.deepEqual(res.config, { cpu: 6, viewport: 'mobile', runs: 1, idle: 1, serveArgs: ['--vendors=local', '--https', '--latency', '150'], baseline: 'site-pretty', stackedOn: null, order: 'ABBA (alternating per run)' });
   assert.equal(res.patch.file, 'fixes/fast-nav/patch.diff');
   assert.equal(res.patch.sha256, sha256(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'patch.diff'))));
   assert.deepEqual([res.patch.files, res.patch.added, res.patch.removed], [1, 1, 1]);
@@ -54,6 +54,20 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(sc.baseline.sha256, sha256(fx.prettyFiles[PAGE_JS]));
   assert.deepEqual(Object.keys(res.metrics.scroll), ['fps', 'gt20', 'gt34', 'gt50', 'gt100', 'max', 'p95', 'loafMs', 'loafScriptMs', 'forcedLayoutMs']);
   assert.deepEqual(Object.keys(res.metrics.morph), ['fps', 'gt50', 'loafMs', 'forcedLayoutMs']);
+  // idle phase (--idle 1): the same metrics as the scroll phase, from the fake's no-input recording
+  assert.deepEqual(Object.keys(res.metrics), ['scroll', 'morph', 'idle']);
+  assert.deepEqual(Object.keys(res.metrics.idle), Object.keys(res.metrics.scroll));
+  const ifps = res.metrics.idle.fps;
+  assert.equal(ifps.name, 'fps');
+  assert.equal(ifps.higherIsBetter, true);
+  assert.deepEqual(ifps.baseline, { median: 58.1, min: 58.1, max: 58.1, runs: [58.1] });
+  assert.deepEqual(ifps.patched, { median: 58.1, min: 58.1, max: 58.1, runs: [58.1] });
+  assert.deepEqual([ifps.delta, ifps.deltaPct, ifps.pairedDeltas, ifps.verdict], [0, 0, [0], 'n=1 (need >=3 runs for a verdict)']);
+  assert.deepEqual(Object.fromEntries(Object.entries(res.metrics.idle).map(([k, v]) => [k, v.baseline.median])),
+    { fps: 58.1, gt20: 2, gt34: 1, gt50: 1, gt100: 0, max: 55, p95: 16.7, loafMs: 55, loafScriptMs: 40, forcedLayoutMs: 6 });
+  assert.match(res.markdown, /^\| idle: fps \| 58\.1 \[58\.1-58\.1\] \| 58\.1 \[58\.1-58\.1\] \| 0 \(0%\) \| n=1/m);
+  assert.match(res.markdown, /^\| idle: forced style\+layout ms \(in LoAF\) \| 6 \[6-6\] \| 6 \[6-6\] \| 0 \(0%\) \| n=1/m);
+  assert.equal(JSON.parse(readFileSync(join(repo.wt, res.raw), 'utf8')).idle, 1, 'ab passes --idle to verify.mjs');
   const fps = res.metrics.scroll.fps;
   assert.deepEqual(fps.baseline, { median: 50, min: 50, max: 50, runs: [50] });
   assert.deepEqual(fps.patched, { median: 50, min: 50, max: 50, runs: [50] });
@@ -83,6 +97,11 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(aaRes.patch, null);
   assert.deepEqual(aaRes.servedCheck, []);
   assert.equal(aaRes.metrics.scroll.fps.delta, 0);
+  // --idle 0: no idle phase measured, none reported
+  assert.equal(aaRes.config.idle, 0);
+  assert.deepEqual(Object.keys(aaRes.metrics), ['scroll', 'morph']);
+  assert.doesNotMatch(aaRes.markdown, /\| idle:/);
+  assert.equal(aaRes.metrics.scroll.fps.baseline.median, 50);
   // no lock left behind
   assert.equal(existsSync(join(repo.root, 'state', 'locks', 'chrome-measure.json')), false);
 });
