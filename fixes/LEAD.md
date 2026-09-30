@@ -131,6 +131,12 @@ names you are giving them, A/A numbers, and `--on <combined>` for wave 2).
   shared code, the other adapts.
 - **Check in** every ~20-30 minutes: `lock.mjs status` (is the queue moving?), `incident.mjs list`,
   idle teammates. An owner stuck on the same step twice gets a question, not a replacement.
+- **Host load budget (I-016).** The host has 8 cores. Check `uptime` at every check-in. Above ~8, find
+  the cause (`ps` by process kind) before starting anything. Never grant an exception that runs heavy
+  work (`npm test`, Chrome, builds) outside `chrome-measure`: route it through the short lane. An
+  experiment that is heavy by design (several Chromes at once) gets a quiet window with no tests, and a
+  stop rule ("stop at load > N"). Each `npm test` runs ~7 files in parallel, so two suites at once already
+  exceed 8 cores.
 - Wait for owners; don't do their work in the lead session.
 
 ## 4. Review
