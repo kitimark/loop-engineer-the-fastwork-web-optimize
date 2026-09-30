@@ -1,0 +1,1524 @@
+{
+ "conditions": {
+  "c1": {
+   "meta": {
+    "tag": "c1",
+    "conc": 1,
+    "runs": 3,
+    "stagger": 0,
+    "startedAt": "2026-09-30T22:31:57.252Z",
+    "loadStart": [
+     24.435546875,
+     17.60302734375,
+     13.9912109375
+    ],
+    "procs": [
+     {
+      "i": 0,
+      "start": "2026-09-30T22:31:57.254Z",
+      "end": "2026-09-30T22:34:59.646Z",
+      "code": 0
+     }
+    ],
+    "endedAt": "2026-09-30T22:34:59.646Z",
+    "loadEnd": [
+     25.29931640625,
+     21.2705078125,
+     16.2900390625
+    ]
+   },
+   "load": {
+    "n": 35,
+    "load1Med": 26.6,
+    "load1Max": 36.4,
+    "cpuMed": 34.7,
+    "cpuP90": 43.6,
+    "measuredRendererMed": 9.5,
+    "measuredGpuMed": 3.1,
+    "windowServerMed": 5.9,
+    "freeGBMin": 0.07,
+    "pageinsMed": 3498,
+    "decompMed": 238,
+    "maxChromeRoots": 1
+   },
+   "pooled": {
+    "fps": {
+     "n": 6,
+     "median": 64,
+     "min": 59.8,
+     "max": 70.2,
+     "sd": 4.1,
+     "mad": 3
+    },
+    "gt20": {
+     "n": 6,
+     "median": 126.5,
+     "min": 94,
+     "max": 148,
+     "sd": 23.6,
+     "mad": 21
+    },
+    "gt34": {
+     "n": 6,
+     "median": 16,
+     "min": 11,
+     "max": 22,
+     "sd": 3.8,
+     "mad": 2
+    },
+    "gt50": {
+     "n": 6,
+     "median": 7.5,
+     "min": 5,
+     "max": 13,
+     "sd": 2.8,
+     "mad": 1
+    },
+    "max": {
+     "n": 6,
+     "median": 112.1,
+     "min": 99.3,
+     "max": 125,
+     "sd": 10.3,
+     "mad": 8.3
+    },
+    "p95": {
+     "n": 6,
+     "median": 32.9,
+     "min": 25.8,
+     "max": 33.7,
+     "sd": 3.8,
+     "mad": 0.6
+    },
+    "loafMs": {
+     "n": 6,
+     "median": 391,
+     "min": 367,
+     "max": 524,
+     "sd": 58.1,
+     "mad": 20
+    },
+    "forcedLayoutMs": {
+     "n": 6,
+     "median": 97,
+     "min": 63,
+     "max": 153,
+     "sd": 29.2,
+     "mad": 5
+    }
+   },
+   "pooledMorph": {
+    "fps": {
+     "median": 106.1,
+     "min": 104.1,
+     "max": 108.6
+    },
+    "gt50": {
+     "median": 0,
+     "min": 0,
+     "max": 1
+    },
+    "loafMs": {
+     "median": 0,
+     "min": 0,
+     "max": 0
+    }
+   },
+   "perProc": [
+    {
+     "proc": "p0",
+     "n": 6,
+     "fps": {
+      "median": 63.949999999999996,
+      "min": 59.8,
+      "max": 70.2
+     },
+     "gt20": {
+      "median": 126.5,
+      "min": 94,
+      "max": 148
+     },
+     "gt34": {
+      "median": 16,
+      "min": 11,
+      "max": 22
+     },
+     "gt50": {
+      "median": 7.5,
+      "min": 5,
+      "max": 13
+     },
+     "max": {
+      "median": 112.05,
+      "min": 99.3,
+      "max": 125
+     },
+     "p95": {
+      "median": 32.85,
+      "min": 25.8,
+      "max": 33.7
+     },
+     "loafMs": {
+      "median": 391,
+      "min": 367,
+      "max": 524
+     },
+     "forcedLayoutMs": {
+      "median": 97,
+      "min": 63,
+      "max": 153
+     },
+     "aaFalsePositive": [],
+     "baseMinusBase2": {
+      "fps": -2,
+      "gt20": 25,
+      "gt34": 3,
+      "gt50": 1,
+      "max": 9.1,
+      "p95": 0.7,
+      "loafMs": 29,
+      "forcedLayoutMs": 10
+     },
+     "durationS": 182
+    }
+   ],
+   "runs": [
+    {
+     "proc": "p0",
+     "label": "base",
+     "run": 0,
+     "seq": 0,
+     "start": "2026-09-30T22:31:58.291Z",
+     "end": "2026-09-30T22:32:41.086Z",
+     "loadBefore": 24.4,
+     "loadAfter": 35.6,
+     "fps": 62.1,
+     "gt20": 147,
+     "gt34": 18,
+     "gt50": 8,
+     "max": 125,
+     "p95": 33.3,
+     "loafMs": 415,
+     "forcedLayoutMs": 102,
+     "morph_fps": 104.1,
+     "morph_gt50": 1,
+     "morph_loafMs": 0,
+     "scrollMs": 8384.199999988079
+    },
+    {
+     "proc": "p0",
+     "label": "base2",
+     "run": 0,
+     "seq": 1,
+     "end": "2026-09-30T22:33:26.572Z",
+     "loadBefore": 35.6,
+     "loadAfter": 26.7,
+     "fps": 63.8,
+     "gt20": 122,
+     "gt34": 17,
+     "gt50": 7,
+     "max": 100.1,
+     "p95": 32.6,
+     "loafMs": 386,
+     "forcedLayoutMs": 92,
+     "morph_fps": 106.3,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8401.300000011921
+    },
+    {
+     "proc": "p0",
+     "label": "base2",
+     "run": 1,
+     "seq": 2,
+     "end": "2026-09-30T22:33:49.346Z",
+     "loadBefore": 26.7,
+     "loadAfter": 21.2,
+     "fps": 70.2,
+     "gt20": 97,
+     "gt34": 11,
+     "gt50": 5,
+     "max": 116.7,
+     "p95": 25.8,
+     "loafMs": 367,
+     "forcedLayoutMs": 63,
+     "morph_fps": 108.6,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8384.899999976158
+    },
+    {
+     "proc": "p0",
+     "label": "base",
+     "run": 1,
+     "seq": 3,
+     "end": "2026-09-30T22:34:12.050Z",
+     "loadBefore": 21.2,
+     "loadAfter": 17.5,
+     "fps": 69.3,
+     "gt20": 94,
+     "gt34": 14,
+     "gt50": 6,
+     "max": 99.3,
+     "p95": 25.9,
+     "loafMs": 375,
+     "forcedLayoutMs": 95,
+     "morph_fps": 105.8,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8383.899999976158
+    },
+    {
+     "proc": "p0",
+     "label": "base",
+     "run": 2,
+     "seq": 4,
+     "end": "2026-09-30T22:34:35.270Z",
+     "loadBefore": 17.5,
+     "loadAfter": 29,
+     "fps": 59.8,
+     "gt20": 148,
+     "gt34": 22,
+     "gt50": 13,
+     "max": 116.6,
+     "p95": 33.7,
+     "loafMs": 524,
+     "forcedLayoutMs": 153,
+     "morph_fps": 104.4,
+     "morph_gt50": 1,
+     "morph_loafMs": 0,
+     "scrollMs": 8400.100000023842
+    },
+    {
+     "proc": "p0",
+     "label": "base2",
+     "run": 2,
+     "seq": 5,
+     "end": "2026-09-30T22:34:58.247Z",
+     "loadBefore": 29,
+     "loadAfter": 25.3,
+     "fps": 64.1,
+     "gt20": 131,
+     "gt34": 15,
+     "gt50": 8,
+     "max": 107.5,
+     "p95": 33.1,
+     "loafMs": 396,
+     "forcedLayoutMs": 99,
+     "morph_fps": 106.9,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8401.899999976158
+    }
+   ]
+  },
+  "c2": {
+   "meta": {
+    "tag": "c2",
+    "conc": 2,
+    "runs": 3,
+    "stagger": 0,
+    "startedAt": "2026-09-30T22:35:00.416Z",
+    "loadStart": [
+     25.99560546875,
+     21.4814453125,
+     16.3935546875
+    ],
+    "procs": [
+     {
+      "i": 1,
+      "start": "2026-09-30T22:35:00.419Z",
+      "end": "2026-09-30T22:38:25.408Z",
+      "code": 0
+     },
+     {
+      "i": 0,
+      "start": "2026-09-30T22:35:00.418Z",
+      "end": "2026-09-30T22:38:25.734Z",
+      "code": 0
+     }
+    ],
+    "endedAt": "2026-09-30T22:38:25.734Z",
+    "loadEnd": [
+     40.76416015625,
+     32.70654296875,
+     22.46484375
+    ]
+   },
+   "load": {
+    "n": 37,
+    "load1Med": 40.7,
+    "load1Max": 61,
+    "cpuMed": 53,
+    "cpuP90": 61,
+    "measuredRendererMed": 13.5,
+    "measuredGpuMed": 5.9,
+    "windowServerMed": 6.4,
+    "freeGBMin": 0.05,
+    "pageinsMed": 3059,
+    "decompMed": 1496,
+    "maxChromeRoots": 2
+   },
+   "pooled": {
+    "fps": {
+     "n": 12,
+     "median": 63.5,
+     "min": 59.5,
+     "max": 66.5,
+     "sd": 2.1,
+     "mad": 0.6
+    },
+    "gt20": {
+     "n": 12,
+     "median": 129.5,
+     "min": 104,
+     "max": 139,
+     "sd": 11,
+     "mad": 5.5
+    },
+    "gt34": {
+     "n": 12,
+     "median": 15,
+     "min": 10,
+     "max": 19,
+     "sd": 2.5,
+     "mad": 1.5
+    },
+    "gt50": {
+     "n": 12,
+     "median": 6.5,
+     "min": 5,
+     "max": 9,
+     "sd": 1.2,
+     "mad": 0.5
+    },
+    "max": {
+     "n": 12,
+     "median": 121.1,
+     "min": 108.4,
+     "max": 133.5,
+     "sd": 8.4,
+     "mad": 4.4
+    },
+    "p95": {
+     "n": 12,
+     "median": 32.6,
+     "min": 25.7,
+     "max": 33.3,
+     "sd": 3.5,
+     "mad": 0.7
+    },
+    "loafMs": {
+     "n": 12,
+     "median": 440.5,
+     "min": 347,
+     "max": 487,
+     "sd": 51.5,
+     "mad": 43.5
+    },
+    "forcedLayoutMs": {
+     "n": 12,
+     "median": 112,
+     "min": 47,
+     "max": 129,
+     "sd": 26.9,
+     "mad": 8.5
+    }
+   },
+   "pooledMorph": {
+    "fps": {
+     "median": 104.1,
+     "min": 98.6,
+     "max": 106.9
+    },
+    "gt50": {
+     "median": 0,
+     "min": 0,
+     "max": 1
+    },
+    "loafMs": {
+     "median": 0,
+     "min": 0,
+     "max": 153
+    }
+   },
+   "perProc": [
+    {
+     "proc": "p0",
+     "n": 6,
+     "fps": {
+      "median": 63,
+      "min": 60.4,
+      "max": 64
+     },
+     "gt20": {
+      "median": 129.5,
+      "min": 109,
+      "max": 135
+     },
+     "gt34": {
+      "median": 15,
+      "min": 10,
+      "max": 19
+     },
+     "gt50": {
+      "median": 7,
+      "min": 6,
+      "max": 9
+     },
+     "max": {
+      "median": 117,
+      "min": 108.7,
+      "max": 125.6
+     },
+     "p95": {
+      "median": 32.6,
+      "min": 25.9,
+      "max": 33.1
+     },
+     "loafMs": {
+      "median": 430,
+      "min": 347,
+      "max": 487
+     },
+     "forcedLayoutMs": {
+      "median": 119,
+      "min": 47,
+      "max": 129
+     },
+     "aaFalsePositive": [],
+     "baseMinusBase2": {
+      "fps": 3.3,
+      "gt20": -5,
+      "gt34": 2,
+      "gt50": 0,
+      "max": -0.4,
+      "p95": -0.2,
+      "loafMs": -77,
+      "forcedLayoutMs": 2
+     },
+     "durationS": 205
+    },
+    {
+     "proc": "p1",
+     "n": 6,
+     "fps": {
+      "median": 63.849999999999994,
+      "min": 59.5,
+      "max": 66.5
+     },
+     "gt20": {
+      "median": 131,
+      "min": 104,
+      "max": 139
+     },
+     "gt34": {
+      "median": 15.5,
+      "min": 14,
+      "max": 18
+     },
+     "gt50": {
+      "median": 6,
+      "min": 5,
+      "max": 7
+     },
+     "max": {
+      "median": 125.30000000000001,
+      "min": 108.4,
+      "max": 133.5
+     },
+     "p95": {
+      "median": 29.599999999999998,
+      "min": 25.7,
+      "max": 33.3
+     },
+     "loafMs": {
+      "median": 440.5,
+      "min": 372,
+      "max": 485
+     },
+     "forcedLayoutMs": {
+      "median": 110,
+      "min": 54,
+      "max": 129
+     },
+     "aaFalsePositive": [],
+     "baseMinusBase2": {
+      "fps": -0.8,
+      "gt20": 11,
+      "gt34": 3,
+      "gt50": 1,
+      "max": -0.2,
+      "p95": 7.4,
+      "loafMs": 78,
+      "forcedLayoutMs": 0
+     },
+     "durationS": 205
+    }
+   ],
+   "runs": [
+    {
+     "proc": "p0",
+     "label": "base",
+     "run": 0,
+     "seq": 0,
+     "start": "2026-09-30T22:35:01.661Z",
+     "end": "2026-09-30T22:35:47.405Z",
+     "loadBefore": 26,
+     "loadAfter": 29.6,
+     "fps": 62.9,
+     "gt20": 109,
+     "gt34": 18,
+     "gt50": 6,
+     "max": 108.7,
+     "p95": 32.4,
+     "loafMs": 347,
+     "forcedLayoutMs": 47,
+     "morph_fps": 99,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8419
+    },
+    {
+     "proc": "p0",
+     "label": "base2",
+     "run": 0,
+     "seq": 1,
+     "end": "2026-09-30T22:36:50.476Z",
+     "loadBefore": 29.6,
+     "loadAfter": 48.4,
+     "fps": 60.4,
+     "gt20": 132,
+     "gt34": 19,
+     "gt50": 7,
+     "max": 125,
+     "p95": 33.1,
+     "loafMs": 483,
+     "forcedLayoutMs": 121,
+     "morph_fps": 99.8,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8415.900000035763
+    },
+    {
+     "proc": "p0",
+     "label": "base2",
+     "run": 1,
+     "seq": 2,
+     "end": "2026-09-30T22:37:13.291Z",
+     "loadBefore": 48.4,
+     "loadAfter": 44.5,
+     "fps": 63.1,
+     "gt20": 127,
+     "gt34": 14,
+     "gt50": 6,
+     "max": 117.2,
+     "p95": 32.6,
+     "loafMs": 459,
+     "forcedLayoutMs": 118,
+     "morph_fps": 99.9,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8403.700000047684
+    },
+    {
+     "proc": "p0",
+     "label": "base",
+     "run": 1,
+     "seq": 3,
+     "end": "2026-09-30T22:37:36.463Z",
+     "loadBefore": 44.5,
+     "loadAfter": 40.7,
+     "fps": 64,
+     "gt20": 127,
+     "gt34": 16,
+     "gt50": 7,
+     "max": 116.8,
+     "p95": 32.9,
+     "loafMs": 382,
+     "forcedLayoutMs": 120,
+     "morph_fps": 106.6,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8397.099999964237
+    },
+    {
+     "proc": "p0",
+     "label": "base",
+     "run": 2,
+     "seq": 4,
+     "end": "2026-09-30T22:38:00.087Z",
+     "loadBefore": 40.7,
+     "loadAfter": 36.5,
+     "fps": 63.7,
+     "gt20": 133,
+     "gt34": 14,
+     "gt50": 9,
+     "max": 125.6,
+     "p95": 25.9,
+     "loafMs": 487,
+     "forcedLayoutMs": 129,
+     "morph_fps": 105.9,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8393
+    },
+    {
+     "proc": "p0",
+     "label": "base2",
+     "run": 2,
+     "seq": 5,
+     "end": "2026-09-30T22:38:23.634Z",
+     "loadBefore": 36.5,
+     "loadAfter": 36.3,
+     "fps": 60.4,
+     "gt20": 135,
+     "gt34": 10,
+     "gt50": 8,
+     "max": 116.8,
+     "p95": 32.6,
+     "loafMs": 401,
+     "forcedLayoutMs": 97,
+     "morph_fps": 99.6,
+     "morph_gt50": 1,
+     "morph_loafMs": 0,
+     "scrollMs": 8415.199999988079
+    },
+    {
+     "proc": "p1",
+     "label": "base",
+     "run": 0,
+     "seq": 0,
+     "start": "2026-09-30T22:35:01.291Z",
+     "end": "2026-09-30T22:35:47.617Z",
+     "loadBefore": 26,
+     "loadAfter": 29.6,
+     "fps": 66.5,
+     "gt20": 104,
+     "gt34": 14,
+     "gt50": 7,
+     "max": 108.4,
+     "p95": 25.7,
+     "loafMs": 454,
+     "forcedLayoutMs": 110,
+     "morph_fps": 104.3,
+     "morph_gt50": 1,
+     "morph_loafMs": 153,
+     "scrollMs": 8386.5
+    },
+    {
+     "proc": "p1",
+     "label": "base2",
+     "run": 0,
+     "seq": 1,
+     "end": "2026-09-30T22:36:50.086Z",
+     "loadBefore": 29.6,
+     "loadAfter": 46.6,
+     "fps": 63.6,
+     "gt20": 127,
+     "gt34": 14,
+     "gt50": 5,
+     "max": 125.4,
+     "p95": 33.3,
+     "loafMs": 478,
+     "forcedLayoutMs": 129,
+     "morph_fps": 103.8,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8390
+    },
+    {
+     "proc": "p1",
+     "label": "base2",
+     "run": 1,
+     "seq": 2,
+     "end": "2026-09-30T22:37:13.006Z",
+     "loadBefore": 46.6,
+     "loadAfter": 44.5,
+     "fps": 66.1,
+     "gt20": 122,
+     "gt34": 14,
+     "gt50": 5,
+     "max": 115.9,
+     "p95": 25.9,
+     "loafMs": 376,
+     "forcedLayoutMs": 110,
+     "morph_fps": 105.8,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8401.200000047684
+    },
+    {
+     "proc": "p1",
+     "label": "base",
+     "run": 1,
+     "seq": 3,
+     "end": "2026-09-30T22:37:36.343Z",
+     "loadBefore": 44.5,
+     "loadAfter": 40.7,
+     "fps": 59.5,
+     "gt20": 139,
+     "gt34": 18,
+     "gt50": 6,
+     "max": 133.3,
+     "p95": 33.3,
+     "loafMs": 427,
+     "forcedLayoutMs": 114,
+     "morph_fps": 98.6,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8401.899999976158
+    },
+    {
+     "proc": "p1",
+     "label": "base",
+     "run": 2,
+     "seq": 4,
+     "end": "2026-09-30T22:37:59.992Z",
+     "loadBefore": 40.7,
+     "loadAfter": 36.5,
+     "fps": 63.3,
+     "gt20": 138,
+     "gt34": 17,
+     "gt50": 6,
+     "max": 125.2,
+     "p95": 33.3,
+     "loafMs": 485,
+     "forcedLayoutMs": 108,
+     "morph_fps": 105.4,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8400.5
+    },
+    {
+     "proc": "p1",
+     "label": "base2",
+     "run": 2,
+     "seq": 5,
+     "end": "2026-09-30T22:38:23.388Z",
+     "loadBefore": 36.5,
+     "loadAfter": 36.3,
+     "fps": 64.1,
+     "gt20": 135,
+     "gt34": 17,
+     "gt50": 7,
+     "max": 133.5,
+     "p95": 25.7,
+     "loafMs": 372,
+     "forcedLayoutMs": 54,
+     "morph_fps": 106.9,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8399
+    }
+   ]
+  },
+  "c3": {
+   "meta": {
+    "tag": "c3",
+    "conc": 3,
+    "runs": 3,
+    "stagger": 0,
+    "startedAt": "2026-09-30T22:38:26.687Z",
+    "loadStart": [
+     40.76416015625,
+     32.70654296875,
+     22.46484375
+    ],
+    "procs": [
+     {
+      "i": 2,
+      "start": "2026-09-30T22:38:26.690Z",
+      "end": "2026-09-30T22:41:40.515Z",
+      "code": 0
+     },
+     {
+      "i": 0,
+      "start": "2026-09-30T22:38:26.688Z",
+      "end": "2026-09-30T22:41:40.791Z",
+      "code": 0
+     },
+     {
+      "i": 1,
+      "start": "2026-09-30T22:38:26.690Z",
+      "end": "2026-09-30T22:41:41.373Z",
+      "code": 0
+     }
+    ],
+    "endedAt": "2026-09-30T22:41:41.373Z",
+    "loadEnd": [
+     55.90380859375,
+     40.48046875,
+     27.642578125
+    ]
+   },
+   "load": {
+    "n": 34,
+    "load1Med": 43.9,
+    "load1Max": 55.9,
+    "cpuMed": 65.4,
+    "cpuP90": 79.2,
+    "measuredRendererMed": 23.6,
+    "measuredGpuMed": 10.2,
+    "windowServerMed": 7.2,
+    "freeGBMin": 0.07,
+    "pageinsMed": 1736,
+    "decompMed": 3919,
+    "maxChromeRoots": 3
+   },
+   "pooled": {
+    "fps": {
+     "n": 18,
+     "median": 68.2,
+     "min": 14,
+     "max": 76.4,
+     "sd": 13.4,
+     "mad": 2.1
+    },
+    "gt20": {
+     "n": 18,
+     "median": 109,
+     "min": 14,
+     "max": 126,
+     "sd": 26.1,
+     "mad": 13
+    },
+    "gt34": {
+     "n": 18,
+     "median": 15,
+     "min": 8,
+     "max": 20,
+     "sd": 3.6,
+     "mad": 2.5
+    },
+    "gt50": {
+     "n": 18,
+     "median": 6.5,
+     "min": 4,
+     "max": 10,
+     "sd": 1.7,
+     "mad": 1
+    },
+    "max": {
+     "n": 18,
+     "median": 108.9,
+     "min": 84.2,
+     "max": 1275.6,
+     "sd": 278.9,
+     "mad": 8.9
+    },
+    "p95": {
+     "n": 18,
+     "median": 32.7,
+     "min": 25.2,
+     "max": 449.9,
+     "sd": 99,
+     "mad": 0.7
+    },
+    "loafMs": {
+     "n": 18,
+     "median": 389,
+     "min": 291,
+     "max": 2021,
+     "sd": 397.5,
+     "mad": 45.5
+    },
+    "forcedLayoutMs": {
+     "n": 18,
+     "median": 98,
+     "min": 66,
+     "max": 138,
+     "sd": 19.3,
+     "mad": 10.5
+    }
+   },
+   "pooledMorph": {
+    "fps": {
+     "median": 103.6,
+     "min": 20.7,
+     "max": 108.1
+    },
+    "gt50": {
+     "median": 0.5,
+     "min": 0,
+     "max": 23
+    },
+    "loafMs": {
+     "median": 0,
+     "min": 0,
+     "max": 14973
+    }
+   },
+   "perProc": [
+    {
+     "proc": "p0",
+     "n": 6,
+     "fps": {
+      "median": 68,
+      "min": 65.1,
+      "max": 74.7
+     },
+     "gt20": {
+      "median": 115.5,
+      "min": 82,
+      "max": 125
+     },
+     "gt34": {
+      "median": 15,
+      "min": 8,
+      "max": 20
+     },
+     "gt50": {
+      "median": 6.5,
+      "min": 4,
+      "max": 10
+     },
+     "max": {
+      "median": 108,
+      "min": 99.5,
+      "max": 116.5
+     },
+     "p95": {
+      "median": 29.25,
+      "min": 25.2,
+      "max": 33.4
+     },
+     "loafMs": {
+      "median": 376,
+      "min": 297,
+      "max": 454
+     },
+     "forcedLayoutMs": {
+      "median": 96.5,
+      "min": 77,
+      "max": 138
+     },
+     "aaFalsePositive": [
+      "fps",
+      "gt50",
+      "p95",
+      "loafMs",
+      "forcedLayoutMs"
+     ],
+     "baseMinusBase2": {
+      "fps": 5.3,
+      "gt20": -13,
+      "gt34": -6,
+      "gt50": -4,
+      "max": -0.6,
+      "p95": -6.9,
+      "loafMs": -84,
+      "forcedLayoutMs": -26
+     },
+     "durationS": 194
+    },
+    {
+     "proc": "p1",
+     "n": 6,
+     "fps": {
+      "median": 67.65,
+      "min": 14,
+      "max": 72.6
+     },
+     "gt20": {
+      "median": 108,
+      "min": 14,
+      "max": 123
+     },
+     "gt34": {
+      "median": 15,
+      "min": 9,
+      "max": 19
+     },
+     "gt50": {
+      "median": 7,
+      "min": 5,
+      "max": 9
+     },
+     "max": {
+      "median": 204.10000000000002,
+      "min": 84.2,
+      "max": 1275.6
+     },
+     "p95": {
+      "median": 32.900000000000006,
+      "min": 25.6,
+      "max": 449.9
+     },
+     "loafMs": {
+      "median": 510.5,
+      "min": 358,
+      "max": 2021
+     },
+     "forcedLayoutMs": {
+      "median": 100.5,
+      "min": 66,
+      "max": 129
+     },
+     "aaFalsePositive": [
+      "gt34",
+      "forcedLayoutMs"
+     ],
+     "baseMinusBase2": {
+      "fps": 1.3,
+      "gt20": -27,
+      "gt34": -8,
+      "gt50": 0,
+      "max": 157,
+      "p95": -7.3,
+      "loafMs": 215,
+      "forcedLayoutMs": -27
+     },
+     "durationS": 195
+    },
+    {
+     "proc": "p2",
+     "n": 6,
+     "fps": {
+      "median": 68.44999999999999,
+      "min": 65.4,
+      "max": 76.4
+     },
+     "gt20": {
+      "median": 108.5,
+      "min": 87,
+      "max": 126
+     },
+     "gt34": {
+      "median": 14,
+      "min": 11,
+      "max": 17
+     },
+     "gt50": {
+      "median": 5.5,
+      "min": 4,
+      "max": 7
+     },
+     "max": {
+      "median": 113.1,
+      "min": 91.4,
+      "max": 183.4
+     },
+     "p95": {
+      "median": 32.85,
+      "min": 25.3,
+      "max": 33.4
+     },
+     "loafMs": {
+      "median": 343.5,
+      "min": 291,
+      "max": 415
+     },
+     "forcedLayoutMs": {
+      "median": 95,
+      "min": 71,
+      "max": 107
+     },
+     "aaFalsePositive": [
+      "fps",
+      "gt34",
+      "max",
+      "p95",
+      "forcedLayoutMs"
+     ],
+     "baseMinusBase2": {
+      "fps": 3.7,
+      "gt20": -11,
+      "gt34": -4,
+      "gt50": -1,
+      "max": -17.2,
+      "p95": -7.2,
+      "loafMs": -70,
+      "forcedLayoutMs": -28
+     },
+     "durationS": 194
+    }
+   ],
+   "runs": [
+    {
+     "proc": "p0",
+     "label": "base",
+     "run": 0,
+     "seq": 0,
+     "start": "2026-09-30T22:38:27.617Z",
+     "end": "2026-09-30T22:39:16.010Z",
+     "loadBefore": 40.8,
+     "loadAfter": 43.1,
+     "fps": 74.7,
+     "gt20": 82,
+     "gt34": 8,
+     "gt50": 5,
+     "max": 108.5,
+     "p95": 25.2,
+     "loafMs": 297,
+     "forcedLayoutMs": 77,
+     "morph_fps": 105.5,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8383.5
+    },
+    {
+     "proc": "p0",
+     "label": "base2",
+     "run": 0,
+     "seq": 1,
+     "end": "2026-09-30T22:40:01.717Z",
+     "loadBefore": 43.1,
+     "loadAfter": 32.9,
+     "fps": 67.7,
+     "gt20": 115,
+     "gt34": 19,
+     "gt50": 9,
+     "max": 116.5,
+     "p95": 32.6,
+     "loafMs": 399,
+     "forcedLayoutMs": 103,
+     "morph_fps": 105.8,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8401.100000023842
+    },
+    {
+     "proc": "p0",
+     "label": "base2",
+     "run": 1,
+     "seq": 2,
+     "end": "2026-09-30T22:40:25.648Z",
+     "loadBefore": 32.9,
+     "loadAfter": 41.8,
+     "fps": 65.1,
+     "gt20": 125,
+     "gt34": 14,
+     "gt50": 7,
+     "max": 108.3,
+     "p95": 32.8,
+     "loafMs": 400,
+     "forcedLayoutMs": 104,
+     "morph_fps": 100.5,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8403.399999976158
+    },
+    {
+     "proc": "p0",
+     "label": "base",
+     "run": 1,
+     "seq": 3,
+     "end": "2026-09-30T22:40:49.732Z",
+     "loadBefore": 41.8,
+     "loadAfter": 44.1,
+     "fps": 71.3,
+     "gt20": 103,
+     "gt34": 16,
+     "gt50": 4,
+     "max": 99.5,
+     "p95": 25.9,
+     "loafMs": 316,
+     "forcedLayoutMs": 78,
+     "morph_fps": 108.1,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8393
+    },
+    {
+     "proc": "p0",
+     "label": "base",
+     "run": 2,
+     "seq": 4,
+     "end": "2026-09-30T22:41:13.368Z",
+     "loadBefore": 44.1,
+     "loadAfter": 46.4,
+     "fps": 68.3,
+     "gt20": 123,
+     "gt34": 13,
+     "gt50": 6,
+     "max": 107.7,
+     "p95": 25.9,
+     "loafMs": 353,
+     "forcedLayoutMs": 90,
+     "morph_fps": 101,
+     "morph_gt50": 1,
+     "morph_loafMs": 0,
+     "scrollMs": 8390.700000047684
+    },
+    {
+     "proc": "p0",
+     "label": "base2",
+     "run": 2,
+     "seq": 5,
+     "end": "2026-09-30T22:41:37.682Z",
+     "loadBefore": 46.4,
+     "loadAfter": 50.2,
+     "fps": 66,
+     "gt20": 116,
+     "gt34": 20,
+     "gt50": 10,
+     "max": 100.4,
+     "p95": 33.4,
+     "loafMs": 454,
+     "forcedLayoutMs": 138,
+     "morph_fps": 104.5,
+     "morph_gt50": 3,
+     "morph_loafMs": 80,
+     "scrollMs": 8398.400000035763
+    },
+    {
+     "proc": "p1",
+     "label": "base",
+     "run": 0,
+     "seq": 0,
+     "start": "2026-09-30T22:38:29.138Z",
+     "end": "2026-09-30T22:39:21.360Z",
+     "loadBefore": 40.8,
+     "loadAfter": 40.2,
+     "fps": 14,
+     "gt20": 14,
+     "gt34": 9,
+     "gt50": 9,
+     "max": 1275.6,
+     "p95": 449.9,
+     "loafMs": 2021,
+     "forcedLayoutMs": 83,
+     "morph_fps": 20.7,
+     "morph_gt50": 23,
+     "morph_loafMs": 14973,
+     "scrollMs": 4485.300000011921
+    },
+    {
+     "proc": "p1",
+     "label": "base2",
+     "run": 0,
+     "seq": 1,
+     "start": "2026-09-30T22:40:05.853Z",
+     "end": "2026-09-30T22:40:05.851Z",
+     "loadBefore": 40.2,
+     "loadAfter": 36.2,
+     "fps": 60.7,
+     "gt20": 123,
+     "gt34": 17,
+     "gt50": 7,
+     "max": 391.6,
+     "p95": 33.3,
+     "loafMs": 745,
+     "forcedLayoutMs": 105,
+     "morph_fps": 94,
+     "morph_gt50": 2,
+     "morph_loafMs": 555,
+     "scrollMs": 8706.100000023842
+    },
+    {
+     "proc": "p1",
+     "label": "base2",
+     "run": 1,
+     "seq": 2,
+     "start": "2026-09-30T22:40:29.270Z",
+     "end": "2026-09-30T22:40:29.268Z",
+     "loadBefore": 36.2,
+     "loadAfter": 41.8,
+     "fps": 69.2,
+     "gt20": 108,
+     "gt34": 19,
+     "gt50": 7,
+     "max": 84.2,
+     "p95": 33.1,
+     "loafMs": 403,
+     "forcedLayoutMs": 129,
+     "morph_fps": 104.7,
+     "morph_gt50": 1,
+     "morph_loafMs": 315,
+     "scrollMs": 8396.100000023842
+    },
+    {
+     "proc": "p1",
+     "label": "base",
+     "run": 1,
+     "seq": 3,
+     "end": "2026-09-30T22:40:52.563Z",
+     "loadBefore": 41.8,
+     "loadAfter": 44.6,
+     "fps": 72.6,
+     "gt20": 96,
+     "gt34": 9,
+     "gt50": 7,
+     "max": 282.6,
+     "p95": 25.6,
+     "loafMs": 618,
+     "forcedLayoutMs": 66,
+     "morph_fps": 104.8,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8696.600000023842
+    },
+    {
+     "proc": "p1",
+     "label": "base",
+     "run": 2,
+     "seq": 4,
+     "end": "2026-09-30T22:41:15.705Z",
+     "loadBefore": 44.6,
+     "loadAfter": 47.1,
+     "fps": 68.3,
+     "gt20": 108,
+     "gt34": 14,
+     "gt50": 5,
+     "max": 100.9,
+     "p95": 25.8,
+     "loafMs": 358,
+     "forcedLayoutMs": 96,
+     "morph_fps": 98.8,
+     "morph_gt50": 1,
+     "morph_loafMs": 0,
+     "scrollMs": 8392.400000035763
+    },
+    {
+     "proc": "p1",
+     "label": "base2",
+     "run": 2,
+     "seq": 5,
+     "end": "2026-09-30T22:41:39.010Z",
+     "loadBefore": 47.1,
+     "loadAfter": 50.2,
+     "fps": 67,
+     "gt20": 123,
+     "gt34": 16,
+     "gt50": 7,
+     "max": 125.6,
+     "p95": 32.7,
+     "loafMs": 379,
+     "forcedLayoutMs": 110,
+     "morph_fps": 102.7,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8394.5
+    },
+    {
+     "proc": "p2",
+     "label": "base",
+     "run": 0,
+     "seq": 0,
+     "start": "2026-09-30T22:38:27.707Z",
+     "end": "2026-09-30T22:39:16.175Z",
+     "loadBefore": 40.8,
+     "loadAfter": 43.1,
+     "fps": 76.4,
+     "gt20": 87,
+     "gt34": 12,
+     "gt50": 5,
+     "max": 109.2,
+     "p95": 25.3,
+     "loafMs": 336,
+     "forcedLayoutMs": 71,
+     "morph_fps": 106.3,
+     "morph_gt50": 1,
+     "morph_loafMs": 50,
+     "scrollMs": 8392.600000023842
+    },
+    {
+     "proc": "p2",
+     "label": "base2",
+     "run": 0,
+     "seq": 1,
+     "end": "2026-09-30T22:40:01.749Z",
+     "loadBefore": 43.1,
+     "loadAfter": 32.9,
+     "fps": 66.2,
+     "gt20": 126,
+     "gt34": 16,
+     "gt50": 5,
+     "max": 125.5,
+     "p95": 33.1,
+     "loafMs": 334,
+     "forcedLayoutMs": 100,
+     "morph_fps": 106,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8407.900000035763
+    },
+    {
+     "proc": "p2",
+     "label": "base2",
+     "run": 1,
+     "seq": 2,
+     "end": "2026-09-30T22:40:26.405Z",
+     "loadBefore": 32.9,
+     "loadAfter": 41.8,
+     "fps": 65.4,
+     "gt20": 107,
+     "gt34": 17,
+     "gt50": 7,
+     "max": 117,
+     "p95": 33.4,
+     "loafMs": 406,
+     "forcedLayoutMs": 107,
+     "morph_fps": 101.4,
+     "morph_gt50": 4,
+     "morph_loafMs": 0,
+     "scrollMs": 8400.100000023842
+    },
+    {
+     "proc": "p2",
+     "label": "base",
+     "run": 1,
+     "seq": 3,
+     "end": "2026-09-30T22:40:50.057Z",
+     "loadBefore": 41.8,
+     "loadAfter": 44.1,
+     "fps": 69.9,
+     "gt20": 99,
+     "gt34": 11,
+     "gt50": 4,
+     "max": 108.3,
+     "p95": 25.9,
+     "loafMs": 291,
+     "forcedLayoutMs": 90,
+     "morph_fps": 101.5,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8399.300000011921
+    },
+    {
+     "proc": "p2",
+     "label": "base",
+     "run": 2,
+     "seq": 4,
+     "end": "2026-09-30T22:41:13.655Z",
+     "loadBefore": 44.1,
+     "loadAfter": 46.4,
+     "fps": 68.8,
+     "gt20": 122,
+     "gt34": 12,
+     "gt50": 6,
+     "max": 91.4,
+     "p95": 32.6,
+     "loafMs": 351,
+     "forcedLayoutMs": 75,
+     "morph_fps": 100.8,
+     "morph_gt50": 0,
+     "morph_loafMs": 0,
+     "scrollMs": 8391.400000035763
+    },
+    {
+     "proc": "p2",
+     "label": "base2",
+     "run": 2,
+     "seq": 5,
+     "end": "2026-09-30T22:41:37.564Z",
+     "loadBefore": 46.4,
+     "loadAfter": 50.2,
+     "fps": 68.1,
+     "gt20": 110,
+     "gt34": 16,
+     "gt50": 6,
+     "max": 183.4,
+     "p95": 33.1,
+     "loafMs": 415,
+     "forcedLayoutMs": 103,
+     "morph_fps": 105.6,
+     "morph_gt50": 1,
+     "morph_loafMs": 0,
+     "scrollMs": 8382.5
+    }
+   ]
+  }
+ }
+}
