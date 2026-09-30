@@ -13,7 +13,32 @@ fixes/<topic>/
 
 Other files here: `TOPICS.md` (proposed topics, code locations, conflict clusters, waves),
 `AGENT_PROMPT.md` (prompt template for a fix agent/teammate), `_template/README.md` (deliverable
-template, copied by `fix.mjs new`).
+template, copied by `fix.mjs new`), `AGENT_ROLES.md` (lead / fix owner / helper / reviewer, how
+agents spawn helpers, model and effort per task), `LEAD.md` (the lead's playbook). Agent
+definitions: `.claude/agents/`.
+
+## Definition of done
+
+A fix is done when its branch has exactly `fixes/<topic>/README.md`, `patch.diff` and
+`results.json` committed (nothing else), and the README, written from
+[`_template/README.md`](_template/README.md), shows:
+
+1. **Why it lags, with evidence:** the mechanism, 1-based line refs in the baseline, and the
+   measurement or research finding that shows the cost (LoAF script/char position, forced
+   style+layout, iPhone symptom).
+2. **What changed**, hunk by hunk in words, and what is visually identical or different.
+3. **Why that is faster:** the mechanism removed, and which metrics it should move.
+4. **Before/after** from `fix.mjs ab <topic> --runs 5` or more at the calibrated setting, pasted from
+   `results.json` `markdown`, with the noise context: min-max ranges, verdicts, the A/A floor if
+   known. "Within noise" is reported as such; no run is dropped or picked.
+5. **Regressions triaged:** no new console errors or 404s, `morphReached` on both sides, screenshot
+   diff <= 0.4 % per shot or explained; behaviour kept on desktop, phones and reduced motion.
+6. `patch.diff` and `results.json` come from the same overlay (`results.json` `patch.sha256`), i.e.
+   the patch wasn't edited after the A/B.
+7. **Risks and overlaps** with other topics, and iPhone notes if the lease was used.
+
+The lead has each fix checked against this list by a `fix-reviewer` agent
+([`AGENT_ROLES.md`](AGENT_ROLES.md), [`LEAD.md`](LEAD.md)).
 
 ## Why an overlay instead of a copy of the site
 
@@ -45,6 +70,6 @@ Run `node tools/fix.mjs ab --aa --runs 5` once per session to know the noise flo
 ## Merging
 
 `node tools/fix.mjs combine all-wave1 <topicA> <topicB> ...` (in a worktree that has the patches, e.g.
-after merging the fix branches locally) applies the patches in order, reports which ones conflict, and
+after landing the fix branches with rebase + `--ff-only`, see [`LEAD.md`](LEAD.md)) applies the patches in order, reports which ones conflict, and
 leaves a combined overlay that `fix.mjs ab all-wave1` can measure. `--on <combined>` lets a later fix
 build on top of it (`edit`, `diff`, `serve`, `ab` all accept it).

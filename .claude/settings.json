@@ -32,6 +32,9 @@
       "Bash(node tools/prettify.mjs *)"
     ],
     "deny": [
+      "mcp__chrome-devtools__performance_start_trace",
+      "mcp__chrome-devtools__performance_stop_trace",
+      "mcp__chrome-devtools__performance_analyze_insight",
       "Bash(git push *)",
       "Bash(git add -f *)",
       "Bash(git add --force *)",

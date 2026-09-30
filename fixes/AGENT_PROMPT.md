@@ -1,12 +1,15 @@
 # Fix-agent prompt template
 
-The lead fills in `{{…}}` and passes the block below as the spawn prompt, either
+The lead fills in `{{…}}` and passes the block below as the spawn prompt, with
+`subagent_type: "fix-owner"` (`.claude/agents/fix-owner.md` adds the working method, helper and
+messaging rules), either
 - as a **worktree subagent**: Agent tool with `isolation: "worktree"` and `name: "fix-{{topic}}"`, or
 - as an **agent-team teammate**: Agent tool with `name: "fix-{{topic}}"` and no `isolation` (the
   teammate starts in the main checkout and must enter its worktree first, step 0).
 
 Pick topics from `fixes/TOPICS.md`; give topics in the same conflict cluster to one agent, or tell each
-agent who the other owners are (`{{related_owners}}`).
+agent who the other owners are (`{{related_owners}}`). Append the A/A noise floor and, in wave 2, the
+`--on <combined>` base to the block (`fixes/LEAD.md`).
 
 ---
 

@@ -69,6 +69,18 @@ don't overlap over >= 3 runs; otherwise "within noise". Check `regressions` (new
 new 404s, screenshot pixel diff: 0-0.4 % is countdown/orbit phase noise, more means a visual change,
 `morphReached`) before claiming a win.
 
+## Agent roles (`.claude/agents/`)
+
+- `fix-owner` (opus/high, `isolation: worktree`): one topic or conflict cluster end to end; spawn it
+  with `subagent_type: "fix-owner"` and the filled-in prompt from `fixes/AGENT_PROMPT.md`. It may spawn
+  `bundle-mapper` helpers.
+- `bundle-mapper` (sonnet/medium, read-only): map bundle code, find callers, summarize data; pass
+  `model: "haiku"` for mechanical jobs. `fix-reviewer` (opus/high, read-only): adversarial review of a
+  finished fix against `fixes/README.md` "Definition of done", spawned by the lead.
+- Only fix owners measure; helpers and reviewers never run Chrome, the iPhone or the locks.
+- Lead procedure: `fixes/LEAD.md`. Nesting limits, what teammates take from a definition (not
+  `effort`, not `isolation`), model/effort per task, Serena use: `fixes/AGENT_ROLES.md`.
+
 ## Parallel agents: worktree subagents or an agent team
 
 Agent teams are enabled for this project (`env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in
