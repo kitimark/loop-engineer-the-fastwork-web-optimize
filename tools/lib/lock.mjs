@@ -270,7 +270,10 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       };
       if (kind === 'process') {
         process.on('exit', rel);
-        for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(sig, () => { rel(); process.exit(130); });
+        // process.on, not once: a once-listener is removed before it runs, which restores the default
+        // action, so a second signal (fix.mjs ab forwards SIGTERM twice) killed the process midway through
+        // process.exit() and skipped later 'exit' listeners such as lib/cdp.mjs killOnExit (incident I-008).
+        for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { rel(); process.exit(130); });
       }
       return { holder: res.holder, release: rel };
     }

@@ -424,3 +424,37 @@ test('short lane cannot starve normal waiters: a short run ends within SHORT_DRA
   assert.equal(s2.ok, true);
   assert.equal(readJson(`${R}.last-grant.json`).runStart, s2.holder.acquiredAt, 'a new run');
 });
+
+test('a second SIGTERM while the lock\'s signal handler exits does not skip the other exit handlers (incident I-008)', async () => {
+  // verify.mjs holds chrome-measure (kind 'process') and kills its browser in an 'exit' listener
+  // (lib/cdp.mjs killOnExit). fix.mjs ab forwards SIGTERM to verify.mjs twice (signal handler, then its
+  // own 'exit' listener). With process.once the SIGTERM listener was gone after the first signal, so the
+  // default action killed verify.mjs midway through process.exit(): lock released, browser orphaned.
+  // Deterministic: the child's exit listener announces itself and spins until the second signal is sent.
+  const { spawn } = await import('node:child_process');
+  const started = join(state, 'exit-started'), sent = join(state, 'second-sent'), done = join(state, 'exit-done');
+  const child = `
+    import { writeFileSync, existsSync } from 'node:fs';
+    const L = await import(${JSON.stringify(new URL('../../tools/lib/lock.mjs', import.meta.url).href)});
+    await L.acquire(${JSON.stringify(R)}, { owner: 'sig', kind: 'process', log: () => {} });
+    process.on('exit', () => {
+      writeFileSync(${JSON.stringify(started)}, '');
+      for (const t = Date.now() + 5000; Date.now() < t && !existsSync(${JSON.stringify(sent)});) {}
+      for (const t = Date.now() + 200; Date.now() < t;) {} // let the second signal land
+      writeFileSync(${JSON.stringify(done)}, '');
+    });
+    console.log('ready');
+    setInterval(() => {}, 1000);`;
+  const p = spawn(process.execPath, ['--input-type=module', '-e', child], { env: { ...process.env, FW_STATE_DIR: state }, stdio: ['ignore', 'pipe', 'inherit'] });
+  const exited = new Promise((r) => p.on('exit', (code, signal) => r({ code, signal })));
+  await new Promise((r) => p.stdout.once('data', r));
+  assert.equal(L.status(R).holder.owner, 'sig');
+  p.kill('SIGTERM');
+  for (const t = Date.now() + 5000; Date.now() < t && !existsSync(started);) await new Promise((r) => setTimeout(r, 5));
+  assert.ok(existsSync(started), 'exit listeners started');
+  p.kill('SIGTERM');
+  writeFileSync(sent, '');
+  assert.deepEqual(await exited, { code: 130, signal: null }, 'exited via the handler, not killed by the second SIGTERM');
+  assert.ok(existsSync(done), 'the later exit listener (the browser kill) ran to completion');
+  assert.equal(L.status(R).holder, null, 'lock released');
+});
