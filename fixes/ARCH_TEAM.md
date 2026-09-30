@@ -10,8 +10,8 @@ they choose the right technique the first time, and to find what the team is mis
 | name | model | focus |
 |---|---|---|
 | `arch-lead` | opus | principal: reviews each topic's approach against best practice, synthesises the specialists' research into guidance, proposes new topics for the remaining jank, keeps `research/architecture/README.md` |
-| `arch-webkit` | sonnet | iOS Safari 26 / WebKit: scroll-driven animations, compositing and layers, filter/backdrop-filter raster cost, `content-visibility`, the toolbar resize and `visualViewport`, passive touch and overscroll |
-| `arch-render` | sonnet | style/layout/paint pipeline and Svelte 5: style recalc from custom-property writes (`@property`, containment, write scope), forced layout, LoAF reading, reactive cost in per-frame code |
+| `arch-webkit` | opus | iOS Safari 26 / WebKit: scroll-driven animations, compositing and layers, filter/backdrop-filter raster cost, `content-visibility`, the toolbar resize and `visualViewport`, passive touch and overscroll |
+| `arch-render` | opus | style/layout/paint pipeline and Svelte 5: style recalc from custom-property writes (`@property`, containment, write scope), forced layout, LoAF reading, reactive cost in per-frame code |
 
 ## Rules
 
