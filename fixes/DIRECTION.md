@@ -47,3 +47,25 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
 - N11 `vendor-scrollend`: new owner, research first (can the page avoid gtag's 45-74 ms `onscrollend`
   without breaking analytics? Label any vendor-config change as "needs the site's GA setting").
 - W1-W3 / R1-R3 answers (arch-research2) feed N10 and the touch-path metrics.
+
+## Adoption ledger: every review item has an owner and a slot, or a recorded "no" (mgmt-lead item 7, 2026-10-01)
+
+Sources: E1-E5 `research/architecture/measurement-review.md`; W1-W3 / R1-R3 `research/architecture/answers-2.md`.
+"Ticket" = target frame class, expected change, parity + mechanism checks passed (slot entry ticket, item 3).
+
+| item | decision | owner | slot / ticket |
+|---|---|---|---|
+| E1 lazy mount + hit test + passive + countdown `active` | yes | fix-nav-morph | normal slot, priority 1; ticket: morph IO LoAF (>50 ms) gone; mechanism/attribution run at current load, timing not claimed |
+| E2 state-flip probe | yes | fix-scroll-engine | diagnostic slot, priority 2; uses R3 (capture-phase `contentvisibilityautostatechange` + MutationObserver); iPhone part when the phone is back |
+| E3 animation ablation | yes | fix-scroll-engine (N3 reads the result) | diagnostic slot, priority 2; N3's cheaper first-reader probe (R2) goes in the short lane |
+| E4 `.hero-track` IO (T7) | yes, wave 2 | fix-nav-morph | after E1, `--on all-wave1` |
+| E5 per-frame log + getMetrics deltas | yes | ts-i017 (after the host gate) | tool, no slot; `--frame-log` opt-in (a per-rAF scrollY read can force layout), getMetrics deltas on by default |
+| W1 WebKit content-visibility un-skip at 0 margin + layer rebuild | yes -> N10 | N10 owner after the wave-1 combine (no new N-topics before it); fix-scroll-engine applies it in its hysteresis variant now | wave 2, biggest expected iPhone gain; iPhone check: R3 capture-phase logger |
+| W2 iPhone rAF gaps are main-thread frame gaps | yes (metric naming) | everyone writing iPhone results | iPhone check: 300 ms busy loop mid-scroll (page keeps moving, scrollY jumps) |
+| W3 background flips on an empty composited child | yes -> N10 (N9 candidate 3) | as W1 | wave 2 |
+| R1 touch latency histograms | **no** for now | - | not a goal metric, and it needs a measurement-code toolsmith; revisit only if N7 input-listener-diet becomes a topic |
+| R2 animation update runs before rAF | yes | fix-infinite-anims (N3) | short lane: early rAF loop timing one `getBoundingClientRect`, animations running vs paused |
+| R3 statechange event timing | yes | fix-scroll-engine (E2) | inside the E2 slot |
+
+iPhone scripted-check queue (when the phone is back, lease per CLAUDE.md): R3 capture-phase logger on the plain baseline;
+W2 busy-loop check; then the wave-1 combined confirmation.
