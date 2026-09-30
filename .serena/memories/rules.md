@@ -8,7 +8,9 @@
 4. The baseline (`site/`, `site-pretty/`) is read-only. Change code only in `fixes/<topic>/overlay/` copies made with
    `node tools/fix.mjs edit <topic> <file>`; don't run mirror/prettify while agents work.
 5. Work in your own worktree under `.claude/worktrees/`; only the lead uses the main checkout and lands on main.
-6. Fix agents never modify `tools/`, `tests/`, `.githooks/`, `.claude/hooks/`, `.claude/settings.json`: report to the lead.
+6. Agents may fix `tools/`, with a covering test in `tests/`, `npm test` passing, no weakened tests, in a separate
+   commit reported to the lead (who lands it first); call out measurement-code changes in the fix README/results.
+   `.githooks/`, `.claude/hooks/`, `.claude/settings.json` stay user-approved.
 7. Chrome A/B only via `tools/verify.mjs` / `tools/fix.mjs ab` under the `chrome-measure` lock; never `--no-lock`.
 8. No chrome-devtools MCP performance traces (they hang on throttled traces).
 9. The iPhone only while holding the `iphone` lease (`tools/lock.mjs`).

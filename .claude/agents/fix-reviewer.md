@@ -22,7 +22,11 @@ done criteria are `fixes/README.md` "Definition of done"; check each one.
 
 1. **Hygiene.** `git -C <wt> diff --stat main...HEAD` and `git -C <wt> log --oneline main..HEAD`:
    only `fixes/<topic>/README.md`, `patch.diff`, `results.json` (and cited ablation topics). Nothing
-   under `site/`, `site-pretty/`, `out/`, `overlay/`, `tools/`, `tests/`, no `*.pem`.
+   under `site/`, `site-pretty/`, `out/`, `overlay/`, no `*.pem`. Changes to `tools/`/`tests/` are
+   allowed only as separate commits (no deliverables in them), each `tools/` change with a covering
+   test, no test weakened to pass, `npm test` passing (`CLAUDE.md` "Hard rules" 6); a change to
+   measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`) must be called out in the README and
+   results, and both A/B sides must have run with the same tool version.
 2. **Patch = overlay = what was measured.** `results.json` `patch.sha256` matches
    `shasum -a 256 <wt>/fixes/<topic>/patch.diff`; `servedCheck` shows every overlay file served from
    the overlay; each hunk in `patch.diff` matches `diff -u` of the baseline file against the overlay

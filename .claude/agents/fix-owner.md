@@ -37,16 +37,20 @@ you were given. This file adds how to work; it doesn't repeat the steps or the r
    prompt first. Use absolute paths in every tool call and in every prompt you give a helper.
 2. **Edit only `fixes/<topic>/overlay/` copies**, made with `node tools/fix.mjs edit`. Never
    `site/`, `site-pretty/`, and never through Serena.
-3. **Never modify `tools/` or `tests/`**, not even a local copy to work around a bug. When a tool
-   fails or its output looks wrong: stop using that path, message the lead with the exact command,
-   the output and your diagnosis, and continue with work that doesn't need it.
+3. **Fix broken tools properly** (`CLAUDE.md` "Hard rules" 6). When a tool fails or its output looks
+   wrong, you may fix it in `tools/`: add or update a covering test in `tests/`, run `npm test` until it
+   passes, revert any edit a test shows was accidental, never weaken a test to go green. Commit the
+   tool fix separately (`tools: …`, with its test) from your deliverables and message the lead the
+   command, the bug, the fix and the commit so it lands on `main` for everyone. If you changed
+   measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`), say so in your README and results.
 4. **No chrome-devtools MCP**, for anything. Chrome is driven only by `fix.mjs ab` / `verify.mjs`.
 5. **You are the only one who measures** for your topic. Queue `fix.mjs ab` in the background
    (Bash `run_in_background`) and read, plan or write while it waits for the `chrome-measure` lock.
    Keep the machine quiet while anyone holds the lock (no builds, `npx`, extra Chromes, big greps in
    loops): the holder's numbers depend on it, and `results.json` records the host load.
-6. **Commit only** `fixes/<topic>/README.md`, `patch.diff`, `results.json` (check `git status`
-   first; never `git add -A`, `-f`, or anything under `overlay/`, `out/`, `site*/`, `tools/`).
+6. **Commit only** `fixes/<topic>/README.md`, `patch.diff`, `results.json`, plus tool fixes with
+   their tests in their own commits (rule 3). Check `git status` first; never `git add -A`, `-f`, or
+   anything under `overlay/`, `out/`, `site*/`.
 7. **Rebase, never merge.** To pick up a newer `main` (e.g. a tool fix), `git rebase main` in your
    worktree; never `git merge main`. You never merge into `main` yourself: the lead lands your branch
    with rebase + `git merge --ff-only` (`CLAUDE.md` "Hard rules").

@@ -8,7 +8,7 @@ local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling
 
 | | path | in git? | who writes it |
 |---|---|---|---|
-| (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `mirror`, `prettify`, `lib/`) | yes | infra changes only, not fix agents |
+| (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `mirror`, `prettify`, `lib/`) | yes | any agent, with a covering test (Hard rule 6) |
 | (b) research write-ups | `research/<nn-topic>/` (README, data, one-off tools) | yes | append new studies; don't rewrite history |
 | (c) private mirror baseline | `site/` (byte-identical), `site-pretty/` (Prettier copy) — **main checkout only** | **never** (gitignored) | only `mirror.mjs` / `prettify.mjs`, run by the user |
 | (d) per-fix experiments | `fixes/<topic>/` `README.md`, `patch.diff`, `results.json` (+ gitignored `overlay/`) | deliverables only, local branches | one fix agent per topic, in its own worktree |
@@ -20,7 +20,7 @@ local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling
 
 For the lead and every agent. **Enforced** names what stops you mechanically ("convention": only
 you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=…`, `--no-lock`,
-`git add -f`, a patched copy of a tool): if a rule blocks legitimate work, stop and ask the lead.
+`git add -f`): if a rule blocks legitimate work, stop and ask the lead.
 
 1. **Rebase + fast-forward only.** Land a branch on `main` (or any shared branch) with `git rebase main`
    on the branch, then `git merge --ff-only <branch>` in the main checkout; if the fast-forward fails,
@@ -50,11 +50,17 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    *Why:* the main checkout holds `main`, the baseline and port 5173. *Enforced:* `fix.mjs` refuses to
    write fixes in the main checkout, `fix.mjs doctor`; otherwise convention. Details: "Parallel agents",
    roles and who may do what: `fixes/AGENT_ROLES.md`.
-6. **Tooling is protected.** Fix agents MUST NOT modify `tools/`, `tests/`, `.githooks/`,
-   `.claude/hooks/` or `.claude/settings.json`, not even a local copy to work around a bug: report the
-   command, its output and your diagnosis to the lead. *Why:* every agent's numbers and guards depend
-   on the same tools. *Enforced:* ask rules on `Edit` of those paths (`.claude/` is also a Claude Code
-   protected path); `pre-commit` runs `npm test` when tooling is staged. Details: "Tooling is protected".
+6. **Tooling is guarded by tests.** Agents MAY change `tools/` to fix a bug or unblock work. Such a
+   change MUST come with a covering test (new or updated in `tests/`) and `npm test` MUST pass; an
+   accidental edit caught by a failing test MUST be reverted; tests MUST NOT be weakened to go green
+   (change a test only for a genuine, intended behaviour change). Tool fixes go in a separate commit
+   from fix deliverables and are reported to the lead, who lands them on `main` first (rule 1) for
+   everyone. Changes to measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`) MUST be called
+   out in the fix's README and `results.json` notes: they affect A/B comparability. The enforcement
+   layer (`.githooks/`, `.claude/hooks/`, `.claude/settings.json`) is not tooling: edits ask the user.
+   *Why:* tools have bugs; tests, not a ban, keep them right for every agent. *Enforced:* the
+   `pre-commit` hook runs `npm test` when tooling is staged; `fix-reviewer` checks tests and commit
+   separation; ask rules on the enforcement layer. Details: "Tooling is guarded by tests".
 7. **Chrome measurements only through the `chrome-measure` lock:** `tools/verify.mjs` or
    `tools/fix.mjs ab`, never `--no-lock`, and no CPU-heavy work (builds, `npx`, other Chromes) while
    anyone holds the lock. *Why:* A/B numbers only compare on a quiet machine. *Enforced:* both tools

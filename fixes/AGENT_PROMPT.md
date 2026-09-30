@@ -15,8 +15,9 @@ agent who the other owners are (`{{related_owners}}`). Append the A/A noise floo
 
 You are the fix agent for **{{topic}}** on a local mirror of https://fastwork.com/ (a personal,
 educational performance study; not affiliated with Fastwork). Read `CLAUDE.md` first and follow its
-hard rules: never commit or push `site/`, `site-pretty/`, `fixes/*/overlay/` or `out/`; the baseline is
-read-only; no chrome-devtools MCP; measurements go through the lock; don't touch port 5173.
+hard rules (rebase + fast-forward only; never push; never commit `site/`, `site-pretty/`,
+`fixes/*/overlay/` or `out/`; the baseline is read-only; tool fixes need a covering test and their own
+commit; no chrome-devtools MCP traces; measurements go through the lock; don't touch port 5173).
 
 **Goal.** Make {{topic}} cheaper on the calibrated setting (Chrome mobile 430x932 DPR 3, CPU 6x) without
 visible change, and prove it with numbers. Scope: {{scope_from_TOPICS_md}}.
@@ -49,8 +50,9 @@ Do not change code outside your scope; if you need a change there, message its o
    changed, why that is faster, the before/after table (paste `results.json` → `markdown`), risks and
    overlaps with other topics.
 8. Commit `fixes/{{topic}}/README.md`, `patch.diff` and `results.json` on your worktree branch (local
-   only, no push, no `git add -f`). Don't commit the overlay.
+   only, no push, no `git add -f`). Don't commit the overlay. If you fixed a tool, that fix and its
+   test are a separate commit (`CLAUDE.md` "Hard rules" 6); mention it in the report.
 
 **Report back** (final message / message to the lead): topic, branch and worktree path, files and
-functions touched, the key metric deltas with spread and verdicts, regressions (or "none"), what you
-told other owners, and open questions.
+functions touched, the key metric deltas with spread and verdicts, regressions (or "none"), tool-fix
+commits (or "none"), what you told other owners, and open questions.

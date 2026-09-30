@@ -6,8 +6,8 @@ file links to them instead of repeating them.
 
 | role | definition | reads first | owns / writes |
 |---|---|---|---|
-| **lead** (main session, main checkout) | none (you) | `CLAUDE.md`, [`LEAD.md`](LEAD.md), [`TOPICS.md`](TOPICS.md) | spawning, the iPhone finger-test channel to the user, reviews, `combine`, landing; infra fixes to `tools/` |
-| **fix owner** (one topic or conflict cluster, own worktree) | [`.claude/agents/fix-owner.md`](../.claude/agents/fix-owner.md) | its spawn prompt ([`AGENT_PROMPT.md`](AGENT_PROMPT.md)), `CLAUDE.md` | `fixes/<topic>/` in its worktree only; measurements for its topic |
+| **lead** (main session, main checkout) | none (you) | `CLAUDE.md`, [`LEAD.md`](LEAD.md), [`TOPICS.md`](TOPICS.md) | spawning, the iPhone finger-test channel to the user, reviews, `combine`, landing (tool fixes first); changes to the enforcement layer |
+| **fix owner** (one topic or conflict cluster, own worktree) | [`.claude/agents/fix-owner.md`](../.claude/agents/fix-owner.md) | its spawn prompt ([`AGENT_PROMPT.md`](AGENT_PROMPT.md)), `CLAUDE.md` | `fixes/<topic>/` in its worktree; tool fixes with tests in separate commits (`CLAUDE.md` "Hard rules" 6); measurements for its topic |
 | **mapper** (helper, read-only) | [`.claude/agents/bundle-mapper.md`](../.claude/agents/bundle-mapper.md) | the question it was given | nothing; returns file:line answers |
 | **reviewer** (adversarial, read-only) | [`.claude/agents/fix-reviewer.md`](../.claude/agents/fix-reviewer.md) | the fix's deliverables, [`README.md` "Definition of done"](README.md#definition-of-done) | nothing; returns ACCEPT / NEEDS-WORK / REJECT |
 

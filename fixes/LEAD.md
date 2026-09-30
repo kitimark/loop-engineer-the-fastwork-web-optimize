@@ -39,16 +39,17 @@ Per-call `model: "fable"` is available for L-size topics (cluster A, `morph-scro
 ## 3. While owners work
 
 - **Permission prompts** from teammates and background subagents surface here. Deny any write to
-  `site/`, `site-pretty/`, `tools/`, `tests/`, `.serena/`, any `git push`/`git add -f`, any
+  `site/`, `site-pretty/`, `.githooks/`, `.claude/hooks/`, `.claude/settings.json`, `.serena/`, any `git push`/`git add -f`, any
   chrome-devtools MCP call, and any `git merge` by an owner.
 - **iPhone finger tests** (only you can talk to the user): an owner holding the `iphone` lease
   messages "need a finger scroll on <URL>…" → tell the user the URL and what to do (top to bottom,
   then push past the end) and ask them to say when ready → message the owner "user ready, start
   `iphone.mjs record` now" → relay the user's remarks afterwards. One test at a time; the lease queue
   decides the order. You never navigate the phone without holding the lease yourself.
-- **Broken tools:** owners report and don't patch. Reproduce, fix in your own infra worktree
-  (`tools/` and `tests/` are protected; run the tests), land with rebase + ff-only, then tell the
-  owners to `git rebase main`.
+- **Broken tools:** owners may fix `tools/` themselves under `CLAUDE.md` "Hard rules" 6 (covering
+  test, `npm test` green, separate commit) and report it. Land such tool-fix commits first (section 5),
+  then tell every owner to `git rebase main`. A tool bug nobody owns: fix it the same way in your own
+  infra worktree.
 - **Cross-topic disputes:** decide with the conflict table in `TOPICS.md`; one owner changes the
   shared code, the other adapts.
 - Wait for owners; don't do their work in the lead session.
@@ -63,6 +64,18 @@ landing.
 ## 5. Land a fix (rebase + fast-forward only)
 
 `git worktree list` shows each owner's worktree and branch.
+
+Tool-fix commits land first, on their own, so every owner gets them. With the tool commits
+`<first>..<last>` contiguous in the owner's branch (ask the owner to keep them so):
+
+```sh
+git -C <owner worktree> diff --stat <first>~1 <last>             # only tools/, tests/; review them and their tests
+git branch land-tool <last> && git rebase --onto main <first>~1 land-tool   # rebase just the tool commits onto main
+npm test                                                         # on land-tool, in the main checkout
+git switch main && git merge --ff-only land-tool && git branch -d land-tool
+```
+
+Then every owner runs `git rebase main` (already-landed commits drop out). The fix itself:
 
 ```sh
 git -C <owner worktree> rebase main
