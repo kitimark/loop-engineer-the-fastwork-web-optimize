@@ -1,0 +1,16 @@
+# fastwork mirror fix: countdown-idle-raf variant 04 (drop .face.svelte-1quva9c will-change only; rebuilt, never measured)
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay: save as fixes/countdown-idle-raf-v04/patch.diff, then node tools/fix.mjs apply countdown-idle-raf-v04
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -1406,7 +1406,6 @@
+   display: block;
+ }
+ .face.svelte-1quva9c {
+-  will-change: transform;
+   justify-content: center;
+   align-items: center;
+   display: flex;
