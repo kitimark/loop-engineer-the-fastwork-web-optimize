@@ -26,6 +26,7 @@ impression and the numbers into the fix's README.
 | # | topic | branch / worktree | what to look for | added |
 |---|---|---|---|---|
 | 1 | nav-morph (topics 3+6, 13) | worktree of `fix-nav-morph` | the bottom of the page: push past the end, the morph panel opening; no stall when the platform section comes in | 2026-10-01 |
-| 2 | wave-1 combined | wave-integrator (not yet) | the whole page, top to bottom and past the end | after wave 1 lands |
+| 2 | hero-exit-scroll-timeline (topic 7, wave 2) | worktree of `fix-hero-exit` | scroll slowly out of the hero, then fling: copy, orbit cards and scroll cue fade and scatter smoothly (no stepping, the cue never stays invisible); after scrolling back up, the hero is tappable again; same look as the baseline | 2026-10-01 |
+| 3 | wave-1 combined | wave-integrator (not yet) | the whole page, top to bottom and past the end | after wave 1 lands |
 
 Agents: send the lead one line to add a row (topic, what to look for). Only the lead edits this file.
