@@ -133,6 +133,44 @@ test('run waits in the FIFO queue and times out with --timeout', () => {
   assert.deepEqual(statusJson('chrome-measure').queue, [], 'gave up its queue place');
 });
 
+test('short lane (I-007): acquire --short is served before earlier normal waiters; BUSY names who is next', () => {
+  assert.equal(lock('acquire', 'chrome-measure', '--owner', 'ab-a').code, 0);
+  assert.equal(lock('acquire', 'chrome-measure', '--owner', 'ab-b').code, 3);
+  const s = lock('acquire', 'chrome-measure', '--owner', 'commit', '--short', '--max-seconds', '120');
+  assert.equal(s.code, 3, s.out);
+  assert.match(s.stdout, /BUSY chrome-measure: held by "ab-a"/);
+  assert.match(lock('status', 'chrome-measure').stdout, /commit \(short/);
+  assert.equal(lock('release', 'chrome-measure', '--owner', 'ab-a').code, 0);
+  const st = lock('status', 'chrome-measure').stdout;
+  assert.match(st, /free, handing over to "commit"/, 'status during a hand-over names who is next');
+  assert.doesNotMatch(st, /undefined/);
+  const b = lock('acquire', 'chrome-measure', '--owner', 'ab-b');
+  assert.equal(b.code, 3);
+  assert.match(b.stdout, /free, but "commit" is next/);
+  const win = lock('acquire', 'chrome-measure', '--owner', 'commit', '--short', '--max-seconds', '120');
+  assert.equal(win.code, 0, win.out);
+  assert.match(win.stdout, /ACQUIRED chrome-measure for "commit" until .* \(short, max 120 s\)/);
+  assert.equal(holder('chrome-measure').short, true);
+  assert.equal(lock('acquire', 'x', '--owner', 'y', '--short', '--max-seconds', '9999').code, 1, 'max-seconds is bounded');
+});
+
+test('run --short --max-seconds: a command that overruns is killed (with its children) and the lock released', async () => {
+  const marker = join(state, 'grandchild-survived');
+  const gc = `setTimeout(() => require('fs').writeFileSync(${JSON.stringify(marker)}, 'x'), 3000);`;
+  const child = `require('child_process').spawn(process.execPath, ['-e', ${JSON.stringify(gc)}], { stdio: 'inherit' }); console.log('CHILD UP'); setInterval(() => {}, 1000);`;
+  const t0 = Date.now();
+  const r = await lockAsync('run', 'chrome-measure', '--owner', 'slow', '--short', '--max-seconds', '1', '--', process.execPath, '-e', child);
+  assert.equal(r.code, 124, r.out);
+  assert.match(r.stdout, /CHILD UP/);
+  assert.match(r.stderr, /exceeded --max-seconds 1/);
+  assert.ok(Date.now() - t0 < 9000, 'killed at max-seconds, not when it finished');
+  assert.equal(holder('chrome-measure'), null, 'released');
+  await sleep(3500);
+  assert.ok(!existsSync(marker), "the command's child processes are killed too");
+  const ok = lock('run', 'chrome-measure', '--owner', 'fast', '--short', '--max-seconds', '30', '--', process.execPath, '-e', 'process.exit(5)');
+  assert.equal(ok.code, 5, 'a short run within its max propagates the exit code');
+});
+
 test('run: killing the lock holder also stops the command (the lock never outlives the work)', async () => {
   const pidFile = join(state, 'child.pid');
   const child = `require('fs').writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); console.log('CHILD UP'); setInterval(() => {}, 1000);`;

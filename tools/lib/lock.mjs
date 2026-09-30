@@ -16,6 +16,15 @@
 // A stale holder is replaced by the next acquirer. Waiters are served first-come-first-served:
 // each waiter has a queue entry that it refreshes whenever it retries; an entry not refreshed for
 // `queueTtlSec` (default 10 min) is dropped, so a crashed waiter never blocks the queue.
+//
+// Short lane (incident I-007): a waiter that asks for `short` with a `maxSec` (<= SHORT_MAX_SEC; the
+// pre-commit `npm test`, ~35 s) still waits for the current holder (never preempts), but at the next
+// hand-over it is served before earlier normal waiters (5-min A/Bs). At most one short job runs between
+// two normal holders while a normal job is waiting (<resource>.last-grant.json remembers whether the
+// last grant was short), so shorts can't starve the queue. A short holder expires at acquiredAt + maxSec
+// (no --ttl, re-acquire or renew stretches it); `lock.mjs run --short` also kills its command then.
+// A short waiter must keep polling: its queue entry is dropped after SHORT_QUEUE_TTL_SEC without a
+// refresh, so a short job that stopped waiting never holds up the hand-over.
 import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
@@ -31,6 +40,9 @@ export const lockDir = () => join(sharedStateDir(), 'locks');
 const holderFile = (r) => join(lockDir(), `${r}.json`);
 const queueFile = (r) => join(lockDir(), `${r}.queue.json`);
 const guardDir = (r) => join(lockDir(), `${r}.guard`);
+const lastGrantFile = (r) => join(lockDir(), `${r}.last-grant.json`);
+export const SHORT_MAX_SEC = 300;
+const SHORT_QUEUE_TTL_SEC = 60;
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
 function checkName(r) {
@@ -76,12 +88,13 @@ function pruneQueue(q, now = Date.now(), queueTtlSec = 600) {
   return q.filter((w) => now - Date.parse(w.lastSeen) < (w.queueTtlSec ?? queueTtlSec) * 1000 && (!w.pid || w.kind !== 'process' || pidAlive(w.pid)));
 }
 
-/** Snapshot of one resource: {resource, holder, stale, queue}. */
+/** Snapshot of one resource: {resource, holder, stale, queue, next} (next: the waiter served at the next hand-over). */
 export function status(r) {
   checkName(r);
   const h = readJson(holderFile(r), null);
   const q = pruneQueue(readJson(queueFile(r), []));
-  return { resource: r, holder: h, stale: h ? staleReason(h) : null, queue: q };
+  const next = q.length ? q[nextIndex(q, !!readJson(lastGrantFile(r), {}).short)].owner : null;
+  return { resource: r, holder: h, stale: h ? staleReason(h) : null, queue: q, next };
 }
 
 export function allStatus() {
@@ -90,14 +103,26 @@ export function allStatus() {
   return [...names].map(status);
 }
 
+/** Index of the waiter served at the next hand-over: FIFO, except the short lane (see header). */
+function nextIndex(q, lastGrantShort) {
+  const i = q.findIndex((w) => (lastGrantShort ? !w.short : w.short));
+  return i < 0 ? 0 : i;
+}
+
 /**
- * One acquisition attempt. Returns {ok:true, holder} or {ok:false, holder, position}.
- * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec}
+ * One acquisition attempt. Returns {ok:true, holder} or {ok:false, holder, position, queue, next}.
+ * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec}
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', ttlSec, pid = process.pid, meta = {}, queueTtlSec = 600 } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec } = opts;
+  let { ttlSec, queueTtlSec = 600 } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
+  if (short) {
+    if (!(maxSec > 0 && maxSec <= SHORT_MAX_SEC)) throw new Error(`a short job needs --max-seconds between 1 and ${SHORT_MAX_SEC} (got ${maxSec})`);
+    ttlSec = kind === 'process' ? maxSec + 5 : maxSec; // + the grace `lock.mjs run` gives the command after SIGTERM
+    queueTtlSec = Math.min(queueTtlSec, SHORT_QUEUE_TTL_SEC);
+  }
   return withGuard(r, () => {
     const now = Date.now();
     let h = readJson(holderFile(r), null);
@@ -110,28 +135,31 @@ export async function tryAcquire(r, opts) {
     }
     if (h && h.owner === owner && (h.kind === 'lease' || h.pid === pid)) {
       // re-entrant for the same owner: refresh the TTL
-      if (ttlSec) h.expiresAt = new Date(now + ttlSec * 1000).toISOString();
+      if (ttlSec && !h.short) h.expiresAt = new Date(now + ttlSec * 1000).toISOString();
       writeJson(holderFile(r), h);
       return { ok: true, holder: h, reentrant: true };
     }
     const mine = q.findIndex((w) => w.owner === owner);
-    const headOk = q.length === 0 || mine === 0;
+    const lastGrantShort = !!readJson(lastGrantFile(r), {}).short;
+    const headOk = q.length === 0 || mine === nextIndex(q, lastGrantShort);
     if (!h && headOk) {
       h = {
         resource: r, owner, kind, pid: kind === 'process' ? pid : undefined, token: randomBytes(6).toString('hex'),
         checkout: REPO, host: os.hostname(), acquiredAt: new Date(now).toISOString(),
         expiresAt: ttlSec ? new Date(now + ttlSec * 1000).toISOString() : undefined, meta,
+        ...(short ? { short: true, maxSec } : {}),
       };
       writeJson(holderFile(r), h);
-      if (mine === 0) q.shift();
+      writeJson(lastGrantFile(r), { owner, short, at: h.acquiredAt });
+      if (mine >= 0) q.splice(mine, 1);
       writeJson(queueFile(r), q);
       return { ok: true, holder: h };
     }
-    // busy (or someone queued earlier): join / refresh the queue
-    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec };
+    // busy (or someone else is served first): join / refresh the queue
+    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}) };
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     writeJson(queueFile(r), q);
-    return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q };
+    return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, lastGrantShort)].owner };
   });
 }
 
@@ -159,6 +187,7 @@ export async function renew(r, { owner, ttlSec }) {
   return withGuard(r, () => {
     const h = readJson(holderFile(r), null);
     if (!h || h.owner !== owner || staleReason(h)) throw new Error(`${r} is not held by "${owner}"${h ? ` (holder: ${h.owner}${staleReason(h) ? ', stale' : ''})` : ''}`);
+    if (h.short) throw new Error(`${r} is held by "${owner}" as a short job (max ${h.maxSec} s); a short job cannot be renewed`);
     h.expiresAt = new Date(Date.now() + ttlSec * 1000).toISOString();
     writeJson(holderFile(r), h);
     return h;
@@ -170,11 +199,11 @@ export async function renew(r, { owner, ttlSec }) {
  * Process-kind locks are also released automatically on exit / SIGINT / SIGTERM.
  * Returns {holder, release()}.
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, timeoutSec = 3600, pollMs = 2000, maxPollMs = 15000, log = (s) => console.error(s) } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s) } = {}) {
   const t0 = Date.now();
   let lastLog = 0, wait = pollMs;
   for (;;) {
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta });
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec });
     if (res.ok) {
       if (Date.now() - t0 > 1500) log(`[lock ${r}] acquired after ${Math.round((Date.now() - t0) / 1000)} s`);
       let done = false;
@@ -189,10 +218,11 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, timeou
       }
       return { holder: res.holder, release: rel };
     }
-    if (Date.now() - t0 > timeoutSec * 1000) { await dequeue(r, owner); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s; held by ${res.holder?.owner}`); }
+    // no holder but not our turn: the lock is being handed over to the waiter served next
+    const h = res.holder, handover = `free, handing over to "${res.next}"`;
+    if (Date.now() - t0 > timeoutSec * 1000) { await dequeue(r, owner); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s; ${h ? `held by ${h.owner}` : handover}`); }
     if (Date.now() - lastLog > 30000) {
-      const h = res.holder;
-      log(`[lock ${r}] busy: held by "${h?.owner}" (${h?.kind}${h?.pid ? ' pid ' + h.pid : ''}, since ${h?.acquiredAt}${h?.expiresAt ? ', expires ' + h.expiresAt : ''}); you are #${res.position} in queue`);
+      log(`[lock ${r}] busy: ${h ? `held by "${h.owner}" (${h.kind}${h.pid ? ' pid ' + h.pid : ''}, since ${h.acquiredAt}${h.expiresAt ? ', expires ' + h.expiresAt : ''})` : handover}; you are #${res.position} in queue`);
       lastLog = Date.now();
     }
     await sleep(wait + Math.random() * 500);

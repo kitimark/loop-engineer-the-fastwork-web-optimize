@@ -41,15 +41,15 @@ measurement code is likely involved.
    changed output formats other agents parse (`OPENED`, `ACQUIRED`, `BUSY`, `MIRROR_URL=`, exit
    codes) unless that is the bug. Never weaken or delete a test to go green; change a test only for a
    genuine, intended behaviour change and say so in the commit message.
-5. **Full suite, quietly.** `node tools/lock.mjs run chrome-measure --owner <your name> -- npm test`
-   (about 35 s of CPU; holding the lock keeps it from skewing someone's A/B, and it queues behind
-   one). If you changed measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`, and `serve.mjs`
+5. **Full suite, quietly.** `node tools/lock.mjs run chrome-measure --owner <your name> --short --max-seconds 120 -- npm test`
+   (about 35 s of CPU; holding the lock keeps it from skewing someone's A/B; the short lane waits
+   for the current holder only, not for the whole queue). If you changed measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`, and `serve.mjs`
    / `vendor-shim.js` where the served bytes change), also run `npm run test:chrome` directly (it
    takes the lock itself; inside `lock.mjs run` it would wait for itself).
 6. **Commit** one commit with only `tools/`, `tests/` (and `package.json` if a script changed),
    subject `tools: <what was wrong> (incident <id>)`, trailer as in your system instructions. The
    pre-commit hook runs `npm test` again; hold the lock around it as a lease:
-   `node tools/lock.mjs acquire chrome-measure --owner <your name> --ttl 300 --wait 1800`, then
+   `node tools/lock.mjs acquire chrome-measure --owner <your name> --short --max-seconds 180 --wait 1800`, then
    `git commit`, then `node tools/lock.mjs release chrome-measure --owner <your name>`. Never
    `--no-verify`, and never run git through `lock.mjs run` (that hides it from the git guard).
 7. **Report.** `node tools/incident.mjs update <id> --by <your name> --note "fix <sha> on <branch>;

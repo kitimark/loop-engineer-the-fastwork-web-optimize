@@ -154,7 +154,7 @@ git -C <toolsmith worktree> rebase main
 git -C <toolsmith worktree> diff --stat main...HEAD      # tools/ and tests/ only, one commit
 git status --short                                        # main checkout must be clean
 git switch --detach <toolsmith branch>                    # test the exact commit where site/ exists
-node tools/lock.mjs run chrome-measure --owner land-i004 -- npm test
+node tools/lock.mjs run chrome-measure --owner land-i004 --short --max-seconds 120 -- npm test
 git switch main && git merge --ff-only <toolsmith branch>
 node tools/incident.mjs resolve I-004 --by lead --commit <sha> [--remeasure]
 ```

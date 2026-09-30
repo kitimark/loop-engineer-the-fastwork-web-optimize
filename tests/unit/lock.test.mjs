@@ -182,3 +182,92 @@ test('allStatus lists the known resources and any ad-hoc ones', async () => {
   const names = L.allStatus().map((s) => s.resource);
   for (const n of ['chrome-measure', 'iphone', R]) assert.ok(names.includes(n), names.join(','));
 });
+
+test('acquire() during a hand-over (free, another waiter is next) says so instead of "held by undefined"', async () => {
+  await L.tryAcquire(R, { owner: 'a' });
+  await L.tryAcquire(R, { owner: 'b' });
+  await L.release(R, { owner: 'a' });
+  const logs = [];
+  await assert.rejects(L.acquire(R, { owner: 'c', timeoutSec: 0.2, pollMs: 50, log: (s) => logs.push(s) }), (e) => {
+    assert.doesNotMatch(e.message, /undefined/);
+    assert.match(e.message, /handing over to "b"/);
+    return true;
+  });
+  assert.ok(logs.length > 0);
+  for (const l of logs) assert.doesNotMatch(l, /undefined/);
+  assert.match(logs[0], /handing over to "b"/);
+});
+
+// Short lane (incident I-007): a short job (the pre-commit `npm test`, ~35 s) waits for the current
+// holder, but is served before earlier normal waiters (5-min A/Bs) at the next hand-over; at most one
+// short job runs between two normal holders; a short holder is bounded by its max-seconds.
+const SHORT = { short: true, maxSec: 90 };
+test('short lane: a short job queued behind long ones is served at the next hand-over, never preempts', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'ab1' })).ok, true);
+  assert.equal((await L.tryAcquire(R, { owner: 'ab2' })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 'ab3' })).ok, false);
+  const s = await L.tryAcquire(R, { owner: 'commit', ...SHORT });
+  assert.equal(s.ok, false, 'a short job never preempts the current holder');
+  assert.equal(s.holder.owner, 'ab1');
+  assert.equal(s.queue.find((w) => w.owner === 'commit').short, true);
+  assert.equal(s.next, 'commit', 'the short job is next at the hand-over');
+
+  await L.release(R, { owner: 'ab1' });
+  const ab2 = await L.tryAcquire(R, { owner: 'ab2' });
+  assert.equal(ab2.ok, false, 'the queue head waits for the short job');
+  assert.equal(ab2.next, 'commit');
+  const win = await L.tryAcquire(R, { owner: 'commit', ...SHORT });
+  assert.equal(win.ok, true);
+  assert.equal(win.holder.short, true);
+  assert.equal(win.holder.maxSec, 90);
+  assert.ok(Math.abs(Date.parse(win.holder.expiresAt) - Date.now() - 90000) < 5000, 'a short holder expires at max-seconds');
+  assert.deepEqual(L.status(R).queue.map((w) => w.owner), ['ab2', 'ab3']);
+
+  await L.release(R, { owner: 'commit' });
+  assert.equal((await L.tryAcquire(R, { owner: 'ab3' })).ok, false, 'FIFO again among normal waiters');
+  assert.equal((await L.tryAcquire(R, { owner: 'ab2' })).ok, true);
+});
+
+test('short lane cannot starve normal waiters: at most one short job between two normal holders', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'n1' })).ok, true);
+  await L.tryAcquire(R, { owner: 'n2' });
+  await L.tryAcquire(R, { owner: 's1', ...SHORT });
+  await L.tryAcquire(R, { owner: 's2', ...SHORT });
+  await L.tryAcquire(R, { owner: 's3', ...SHORT });
+  const order = [];
+  for (let i = 0; i < 4; i++) {
+    await L.release(R, { owner: L.status(R).holder.owner });
+    // every waiter polls; exactly one of them wins
+    const won = [];
+    for (const w of L.status(R).queue) {
+      const r = await L.tryAcquire(R, { owner: w.owner, ...(w.short ? SHORT : {}) });
+      if (r.ok) won.push(w.owner);
+    }
+    assert.equal(won.length, 1, `exactly one winner at hand-over ${i + 1}: ${won}`);
+    order.push(won[0]);
+  }
+  assert.deepEqual(order, ['s1', 'n2', 's2', 's3'], 'short, normal, short, then shorts back to back once no normal job waits');
+});
+
+test('short lane: max-seconds is required and bounded, cannot be stretched, and an overrunning short holder is replaced', async () => {
+  await assert.rejects(L.tryAcquire(R, { owner: 'x', short: true }), /max-seconds/);
+  await assert.rejects(L.tryAcquire(R, { owner: 'x', short: true, maxSec: 0 }), /max-seconds/);
+  await assert.rejects(L.tryAcquire(R, { owner: 'x', short: true, maxSec: L.SHORT_MAX_SEC + 1 }), /max-seconds/);
+  assert.ok(L.SHORT_MAX_SEC <= 300, 'the lane stays short');
+
+  const s = await L.tryAcquire(R, { owner: 's', kind: 'lease', ttlSec: 3600, ...SHORT });
+  assert.equal(s.ok, true);
+  assert.ok(Date.parse(s.holder.expiresAt) - Date.now() < 95000, '--ttl does not stretch a short lease');
+  const again = await L.tryAcquire(R, { owner: 's', kind: 'lease', ttlSec: 3600 });
+  assert.equal(again.ok, true);
+  assert.ok(Date.parse(again.holder.expiresAt) - Date.now() < 95000, 're-acquiring does not stretch a short lease');
+  await assert.rejects(L.renew(R, { owner: 's', ttlSec: 900 }), /short/);
+
+  await L.tryAcquire(R, { owner: 'n' });
+  const h = readJson(`${R}.json`);
+  h.expiresAt = new Date(Date.now() - 1000).toISOString();
+  writeFileSync(lockFile(`${R}.json`), JSON.stringify(h));
+  const n = await L.tryAcquire(R, { owner: 'n' });
+  assert.equal(n.ok, true, 'an overrunning short holder is released at max-seconds');
+  assert.equal(readJson(`${R}.last-stale.json`).owner, 's');
+});

@@ -147,9 +147,12 @@ npm run test:all      # both
 - Tool fixes go in **their own commit**, separate from fix deliverables, and are reported to the lead
   as an incident, who lands them on main (rebase + ff-only) so every worktree gets them. The lead
   runs `npm test` on the exact commit in the **main checkout** too: it has `site/`, worktrees don't.
-- `npm test` is about 35 s of CPU: while others may be measuring, run it under the lock,
-  `node tools/lock.mjs run chrome-measure --owner <you> -- npm test` (not `test:chrome`: it takes the
-  lock itself), and hold the lock as a lease around a commit whose hook runs it (`fixes/INCIDENTS.md`).
+- `npm test` is about 35 s of CPU: while others may be measuring, run it under the lock in the
+  short lane, `node tools/lock.mjs run chrome-measure --owner <you> --short --max-seconds 120 -- npm test`
+  (not `test:chrome`: it takes the lock itself), and hold a short lease around a commit whose hook
+  runs it: `node tools/lock.mjs acquire chrome-measure --owner <you> --short --max-seconds 180 --wait 1800`,
+  `git commit`, `node tools/lock.mjs release chrome-measure --owner <you>` (`fixes/INCIDENTS.md`). A
+  short job waits for the current holder only, not for the queued 5-min A/Bs (incident I-007).
 - Changes to measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`; `serve.mjs` and
   `vendor-shim.js` where they change what is served) must be called out explicitly: they affect the
   comparability of A/B results measured before and after. Run `npm run test:chrome` after them.
@@ -265,7 +268,11 @@ Serena's own instructions say otherwise.
 `tools/lock.mjs` (library `tools/lib/lock.mjs`) holds named locks in the shared git dir
 (`.git/fastwork-mirror/locks/`), visible from every worktree. Holders are either a live process
 (stale when its pid dies) or a lease with a TTL (stale when it expires). Waiters queue FIFO; a
-queue entry not refreshed for 10 min is dropped.
+queue entry not refreshed for 10 min is dropped. Short lane: `--short --max-seconds N` (N <= 300, on
+`run` and `acquire`) is served before earlier normal waiters at the next hand-over, never preempts
+the holder, alternates with normal waiters (at most one short job between two normal holders), and
+ends at N s (`run` kills the command, exit 124; a short lease expires and can't be renewed). Only for
+short, bounded jobs such as `npm test`; never for a measurement.
 
 ```sh
 node tools/lock.mjs status                                   # who holds what, who is queued

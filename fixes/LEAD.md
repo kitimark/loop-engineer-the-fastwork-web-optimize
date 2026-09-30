@@ -148,7 +148,7 @@ once passed in a worktree and hung in the main checkout, `7abd290`) and under th
 git -C <toolsmith worktree> rebase main
 git -C <toolsmith worktree> diff --stat main...HEAD              # only tools/, tests/; review them and their tests
 git switch --detach <toolsmith branch>
-node tools/lock.mjs run chrome-measure --owner land-i<nnn> -- npm test
+node tools/lock.mjs run chrome-measure --owner land-i<nnn> --short --max-seconds 120 -- npm test
 git switch main && git merge --ff-only <toolsmith branch>
 node tools/incident.mjs resolve I-<nnn> --by lead --commit <sha> [--remeasure]   # prints the announcement
 ```
