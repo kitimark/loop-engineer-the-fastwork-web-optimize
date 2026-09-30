@@ -6,7 +6,43 @@
 **Status:** dry combine only. No Chrome, no `fix.mjs ab`, no locks (host overloaded, incident I-016).
 **Purpose:** find patch conflicts between the wave-1 topics now, so the real `all-wave1` combine is
 mechanical. Wave 2 (`hero-exit-scroll-timeline`, `scroll-engine`) waits for it.
-**Date:** 2026-10-01, on `main` at `9c43258`.
+**Date:** 2026-10-01, on `main` at `9c43258`; re-checked with layout-animations 05 on `main` at `e99bcc5`.
+
+## Re-check 2: layout-animations 05 (supersedes the input table below)
+
+**Clean.** All 9 apply, reverse order gives byte-identical output (JS sha256 `89924417…1384b`, CSS
+`b1858ae2…e6c`), and `node --check` passes. Inputs (sha256 of `patch.diff`):
+
+| topic | source | sha256 |
+|---|---|---|
+| phone-invisible-shrink | `main` | `5e42555d4191d0a72dbfdb0f5a0c6c6567408d320bc11ed8ecaaad835fc7aede` |
+| commission-forced-layout | `main` (`1cbe7b6`) | `9897e36c47d7a357fce1a05e3002d2cb91e6b8cc507c3403edf68ce2e9704099` |
+| layout-animations **05** | `worktree-agent-a7da36df115c2e662` @ `9705825` | `6504253b4d37620e0847c4aad494640c83eb95296cf655cb069bb2f2317d8593` |
+| pain-offscreen-notes | `main` (`e26f7f3`) | `71f64449e9e6723fcee4437e24600452a4542e28d604af5dd7a94a3097e67895` |
+| countdown-idle-raf | `worktree-agent-a03218c7c8f9587ed` @ `b6fdbff` (variant 03) | `160d69a043f1bcee9d86bf3c02fc9197907253ce2be9ff0b768b8bfb92fd9d17` |
+| large-area-blur | `main` (`3a79f4b`) | `db12ccec57a1e93afb5c8dccd57f6597a822ceb9c032d0125cbae0b86a28e840` |
+| nav-hit-test | `main` (`8b325c5`) | `e1f84630d19abc1a8c7cf146818eb10a56c824c00b75b2efc8f22be2ba36b211` |
+| morph-scrolljack-passive | `worktree-agent-a277ea00c8773c1ea` @ `4eac79f` (variant 04) | `5f116f817edde26fe3483f5a6b5d9d8d568ade4efbc184b0e32e8d1cc3f532b0` |
+| morph-panel-lazy-mount | `worktree-agent-a277ea00c8773c1ea` @ `4eac79f` | `39072167b15d04693d356b125c93a4e8c2d06e9bf9049b014b1a99a3f3367b79` |
+
+Changes against the first dry run:
+
+- **layout-animations 05 vs 03.** Three changes. (1) New JS hunk at 20-25, the chunk import list: `X as PMpre`
+  (Svelte `$effect.pre`, per the owner). `X` was not imported before, and `PMpre` occurs 0 times in the
+  baseline. No other patch touches the import block. (2) The accent hunk grows from 3782-3790 to 3782-3791
+  (the context now runs to `function GE`): `HEflip` has no RTL flip, and `PMsweepGate` unobserves on teardown.
+  countdown-idle-raf's first hunk still starts at 3824, 33 lines below, in another component; no overlap.
+  (3) The other hunks (2587, 3669, 12652, and CSS 564, 1226, 2884, 5799) are unchanged apart from +1 line
+  offsets.
+- **morph-scrolljack-passive is now variant 04** (sha `5f116f81`; the first run used variant 01, `5f60b7a6`).
+  The JS is identical. It adds one CSS hunk at 5385-5390: `@property --morph-fade { inherits: false }` before
+  `.start-selling-platform`. Its nearest neighbour is layout-animations CSS 5799; large-area-blur doesn't touch
+  it (conflict D: the `--morph*` rules belong to topic 6). In the baseline, `--morph-fade` is read only by
+  `.start-selling-platform` itself (CSS 5392-5393) and written by JS 13017.
+- **countdown-idle-raf:** the committed version (`b6fdbff`) now equals the working copy used before
+  (`160d69a0`, with `__cdActive`). Coupling 1 below is satisfied by the committed version.
+- **commission:** the landed version is the fixed one (`_cc`); the stale `_cy` note under "Inputs" no longer
+  applies.
 
 ## Result
 
