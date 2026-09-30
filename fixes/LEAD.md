@@ -262,3 +262,26 @@ back to mgmt-ops.
 - a digest at most every 30 min (a 5-line status).
 
 `mgmt-lead` keeps the principles and KPIs loop, and mgmt-ops executes its plan.
+
+## Team sizing (lead decision; the user asked the lead to measure workload and size the team)
+
+The lead measures workload at each 30-min check-in, from mgmt-ops' digest. It counts agents by state:
+- waiting on the Chrome lock;
+- working without the lock;
+- idle or done.
+
+It also tracks the Chrome backlog (normal queue entries x ~30 min) and host memory, then sizes the team
+by these rules:
+- **The Chrome slot is the constraint.** When the backlog is > 2 h, add no agent that needs a normal slot.
+  New fix ideas wait, or are measured `--on` the combined base later, in one slot.
+- **Memory is the second constraint** (16 GB host; a measured Chrome needs 1.5-2 GB, compressed memory
+  inflates frame times). Keep at most ~12 concurrently active agents; finish done agents instead of leaving
+  them open.
+- **Add capacity only where it raises throughput without Chrome.** Toolsmiths that make measurement cheaper
+  qualify: the host gate, benchmark Tier A in the short lane, queue reorder. So does research the queue
+  waits on.
+- **Remove** an agent when its work is landed or parked. Research and review agents end after their report.
+
+| time (UTC) | waiting on lock | working (no lock) | idle/done | Chrome backlog | memory free | decision |
+|---|---|---|---|---|---|---|
+| 2026-09-30 23:10 | 7 (large-area-blur, nav-morph E1, pain, countdown, scroll-engine diag, layout-animations measuring, ts-i002 test:chrome) | 9 (N3, N11, ts-i017, ts-bench, ts-prio, arch-research2, mgmt-lead, mgmt-ops, reviewer) | 2 (commission awaiting review, hero-exit awaiting combined base) + exp-ledger done | ~7 normal entries ≈ 3.5 h | 0.26 GB (15 GB used, 4.5 GB compressed) | **Decrease: 18 → ~12 active.** No new fix owners until backlog < 2 h. End arch-research2, the reviewer and mgmt-lead after their reports; end commission after landing. hero-exit stays parked (costs nothing until messaged). Keep the 3 toolsmiths (they cut Chrome demand). N3/N11 run their final A/B `--on` the combined base (one slot each, not two). Next spawn: one wave-integrator once the wave-1 finals are in, replacing the owners that finish. |
