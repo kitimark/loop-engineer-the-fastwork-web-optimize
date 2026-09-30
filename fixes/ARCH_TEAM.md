@@ -38,6 +38,8 @@ lead scales: add a specialist where questions queue up, and drop one whose advic
 | 1 (2026-09-30 22:47Z) | arch-render | 12 (arch-lead's questions) | 0 | 0 | 0 so far; corrected 2 team claims ("frames >20 ms are style/paint" unproven; T3 saves only call overhead in Blink) | 3: vars-inherits-false, frame-attribution (tool), morph-composited | 153k | keep; relay recs 1-2 to owners via arch-lead's packet; landed render.md (e2a69d2) |
 | 1 (2026-09-30 22:50Z) | arch-webkit | 12 of 12 (2 unverified: toolbar resize timing, touchmove cancelability) | 0 | 0 | 0 so far | 0 new; sharpened nav-morph (clip-path + WAAPI `linear()` spring), hero-exit (Safari 26.4+ off-thread only for matching filter lists) | ~30 cited sources | keep; landed webkit.md; relay recs 1-4 via arch-lead's packet |
 | 1 (2026-09-30 22:55Z) | arch-lead | review of all topics + synthesis of 24 specialist answers | 6 packets (hero-exit, nav-morph, countdown, large-area-blur, scroll-engine, pain) | pending | caught 1 wrong figure (render.md 8x -> ~850x) | 8 ranked (N1-N8) + FINDINGS correction | - | keep; landed README.md; N1 -> I-018 |
+| 1 (2026-09-30 23:00Z) | arch-ops | postmortem (7 ranked causes, fix list P0-P3) | all | process rules adopted (LEAD.md, fix-reviewer 476a9fd); tool spec -> ts-i017 | corrected the lead's "51 % free" (reclaimable pages) | 0 | 164k | keep for the gate review; landed 080cdd4 |
+| 1 (2026-09-30 23:00Z) | arch-bench | benchmark design + bench-author draft, 14 open questions | all | 14 decided (below); runner toolsmith next | found CLAUDE.md idle-phase sentence wrong (fixed) and n=3 disjoint = p 0.05 only | 0 | 250k | keep until the pilot; landed design |
 
 ## Automated benchmarks per topic (user request, 2026-10-01)
 
@@ -51,3 +53,21 @@ and tool changes can't silently undo its gain. Pipeline:
    the runner test-first (Hard rule 6) and the lead lands it.
 3. The lead installs `.claude/agents/bench-author.md` and spawns one `bench-author` per done topic
    (landed or reviewed). Each writes the topic's benchmark on its own branch; the lead lands it.
+
+### Lead decisions on the benchmark design (2026-09-30, `research/architecture/automated-benchmarks.md` §7)
+
+- Q1/Q2: Tier A (`bench mech`, counts only) may use the short lane, capped at 180 s. `bench-author` is a measuring
+  role: Tier A in the short lane, one normal slot for Tier B. CLAUDE.md is amended.
+- Q3: the runner toolsmith picks Tier B's main metric from 2 A/As on a quiet host (smallest spread).
+- Q4: `bench lint` in `npm test`; `npm run test:bench` = Tier A on everything landed; `test:chrome` stays fixture-only.
+- Q5: yes, `status: superseded` + reason, in the same branch as the superseding topic; the reviewer checks it.
+- Q6: validate the read-after-write counter once against a trace; traces stay optional.
+- Q7: yes, the baseline manifest hash, and `BASELINE-CHANGED` instead of FAIL.
+- Q8: yes, `device: iphone` gains are skipped by the suite; Tier A still guards the mechanism.
+- Q9: yes, repeat twice, FLAKY on disagreement, never retry until green.
+- Q10: pilot on phone-invisible-shrink, layout-animations and commission-forced-layout first.
+- Q12 (the user wants every fix re-confirmed): after every landing, Tier A on all landed topics plus Tier B for
+  the landed topic; the full Tier B suite once per wave (the wave's combined A/B slot).
+- Q13: one shared host library, `tools/lib/host.mjs`, built first by the I-017 toolsmith; the runner imports it.
+- Q14: no budgets copied from existing results (load 6-20); author on a quiet host or ship Tier A only,
+  "gain pending quiet host".

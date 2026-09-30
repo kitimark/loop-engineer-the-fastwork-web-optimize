@@ -96,8 +96,8 @@ pre-approved and git-guard doesn't look inside it: never run git through it.
 
 Chrome, mobile viewport 430x932 DPR 3 with touch, **CPU 6x** ≈ iPhone 15 Pro Max jank on this page
 (`research/cpu-throttle-calibration/`). Serve with `--vendors=local --https --latency 150` ("lags like
-live"). These are the `fix.mjs ab` defaults, plus a 6 s idle phase after the scroll and morph phases
-(`--idle 6`, I-002; `--idle 0` reproduces the pre-I-002 sequence). Compare A/B results only when both
+live"). These are the `fix.mjs ab` defaults, plus a 6 s idle phase at the top of the page before
+scrolling (`--idle 6`, I-002; `--idle 0` reproduces the pre-I-002 sequence). Compare A/B results only when both
 sides were measured with the same tools version (I-002 changed phase boundaries). Confirm winners on
 the real iPhone when possible.
 
@@ -297,7 +297,8 @@ queue entry not refreshed for 10 min is dropped. Short lane: `--short --max-seco
 the holder, drains queued short jobs back to back while they fit a 300 s budget, then serves the next
 normal waiter (I-011), and
 ends at N s (`run` kills the command, exit 124; a short lease expires and can't be renewed). Only for
-short, bounded jobs such as `npm test`; never for a measurement.
+short, bounded jobs such as `npm test` and benchmark mechanism checks (`bench mech`, counts only,
+<= 180 s); never for a timing measurement.
 
 ```sh
 node tools/lock.mjs status                                   # who holds what, who is queued
