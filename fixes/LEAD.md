@@ -7,6 +7,18 @@ in [`INCIDENTS.md`](INCIDENTS.md); rules in `CLAUDE.md` "Hard rules". Merges int
 **rebase + `git merge --ff-only` only**: no merge commits, no `--no-ff`, no squash; if ff-only fails,
 rebase again.
 
+## Standing authority
+
+The user made the lead the orchestrator until the job is done (2026-10-01): triage incidents, spawn
+toolsmiths, fix owners, integrators and reviewers, start new topic owners for new findings, land work
+(rebase + ff-only) and announce fixes **without asking the user for each step**. The project goal is
+"ultra smooth" scrolling: on the calibrated setting, frames >50 ms → 0 and >34 ms → ~0; on the real
+iPhone a steady 60 fps under a finger scroll with no frame >50 ms.
+
+Still ask the user for what only they can do or approve: iPhone finger tests, edits to the
+enforcement layer (`.claude/settings.json`, `.claude/hooks/`, `.githooks/`) when Claude Code's
+safety check blocks them, and anything that leaves this machine.
+
 ## The loop
 
 ```mermaid
