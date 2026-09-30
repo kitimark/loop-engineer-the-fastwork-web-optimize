@@ -41,7 +41,7 @@ Sources: [sub-agents](https://code.claude.com/docs/en/sub-agents.md),
   `hooks`, `memory`, `background`, `omitClaudeMd`, `effort`, `isolation`, `color`, `initialPrompt`,
   `experimental`. This project uses `name`, `description`, `tools`, `model`, `effort`, `isolation`,
   `maxTurns`, `color`, nothing else. Not used on purpose: `memory` (a `project` memory dir is committed
-  and would collect Fastwork code excerpts, rule 1), `permissionMode` (ignored whenever the lead runs
+  and would collect Fastwork code excerpts, hard rule 3), `permissionMode` (ignored whenever the lead runs
   in auto/acceptEdits/bypass mode, and not settable per teammate), `mcpServers` (Serena is already a
   session server; subagents inherit it).
 - **What a teammate honours from a definition:** `tools` (plus `SendMessage` and task tools added),

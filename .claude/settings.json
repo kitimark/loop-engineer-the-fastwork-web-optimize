@@ -28,12 +28,11 @@
       "mcp__serena__initial_instructions"
     ],
     "ask": [
-      "Bash(git config core.hooksPath *)",
       "Bash(git config merge.ff *)",
       "Bash(git config pull.rebase *)",
       "Bash(git remote add *)",
-      "Edit(**/.githooks/**)",
-      "Edit(**/.claude/hooks/**)",
+      "Edit(/.claude/hooks/**)",
+      "Edit(/.claude/worktrees/*/.claude/hooks/**)",
       "Bash(node tools/mirror.mjs *)",
       "Bash(node tools/prettify.mjs *)"
     ],
@@ -56,9 +55,6 @@
       "Bash(gh pr merge *)",
       "Bash(gh gist create *)",
       "Bash(node tools/verify.mjs *--no-lock*)",
-      "mcp__chrome-devtools__performance_start_trace",
-      "mcp__chrome-devtools__performance_stop_trace",
-      "mcp__chrome-devtools__performance_analyze_insight",
       "Bash(git add -f *)",
       "Bash(git add --force *)",
       "Edit(/site/**)",

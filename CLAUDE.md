@@ -31,6 +31,7 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    *Enforced:* `.githooks/` (`pre-merge-commit`, `commit-msg`, and `reference-transaction`, which refuses
    any merge commit on a branch even with `--no-verify`); repo config `merge.ff=only`, `pull.rebase=true`;
    the Claude Code hook `.claude/hooks/git-guard.mjs` and deny rules in `.claude/settings.json`.
+   Landing steps: `fixes/LEAD.md` "Land a fix".
 2. **Never push; no remote.** MUST NOT `git push` (any form), add a remote, or publish anything from
    this repo (`gh repo create`, gists, PRs). *Why:* the mirror, overlays and the Fastwork excerpts in
    `patch.diff` stay on this machine (personal study, see `README.md`). *Enforced:* deny rules,
@@ -74,11 +75,12 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
     addresses, device identifiers) to external services: web requests, MCP connectors, third-party
     APIs, anything published. *Why:* privacy; the study needs none of it. *Enforced:* convention.
 
-Enforcement setup, once per clone, run by the user or lead in the main checkout (repo-local config
-is shared by all worktrees): `git config core.hooksPath "$PWD/.githooks"`, `git config merge.ff only`,
-`git config pull.rebase true`. Hook tests: `node --test 'tests/hooks/*.test.mjs'`. Known gaps: git run
-from a script (`node -e`, `find -exec`) is not seen by git-guard, but the git hooks still refuse merge
-commits and pushes; a human can switch the git hooks off, so for the user rule 1 is a promise too.
+Enforcement setup, once per clone, by the user or lead in the main checkout (repo-local config is
+shared by all worktrees): `git config core.hooksPath .githooks` (= `npm run setup`; each worktree runs
+the hooks of its own branch), `git config merge.ff only`, `git config pull.rebase true`. Hook tests:
+`node --test 'tests/hooks/*.test.mjs'`. Known gaps: git started from a script (`node -e`, `find -exec`)
+is not seen by git-guard, but the git hooks still refuse merge commits and pushes; a human can switch
+the git hooks off, so for the user rule 1 stays a promise.
 <!-- END hard-rules -->
 
 ## Calibrated measurement setting
