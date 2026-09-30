@@ -8,6 +8,9 @@ release the phone. The lead starts each test when you say you're ready.
 
 ## What you do (about 2 minutes per test)
 
+Before you start: the iPhone must not be in Low Power Mode (it caps animations at 30 fps).
+
+
 1. Tell the lead "ready for finger tests". The lead gets the iPhone lease, starts the servers and
    opens the first URL in Safari on the phone for you (plain `http://`, incident I-003).
 2. When the lead says "recording", scroll with your finger:
@@ -47,7 +50,7 @@ the pending scripted checks (each fix README marks them "iPhone pending") before
 
 | # | topic | branch / worktree | what to look for | added |
 |---|---|---|---|---|
-| 1 | nav-morph (topics 3+6, 13) | worktree of `fix-nav-morph` | the bottom of the page: push past the end, the morph panel opening; no stall when the platform section comes in; pushing past the end still starts the morph, dragging back up collapses it, and the page doesn't stick or rubber-band at the end | 2026-10-01 |
+| 1 | nav-morph (topics 3+6, 13) | worktree of `fix-nav-morph` | the bottom of the page: push past the end, the morph panel opening; no stall when the platform section comes in; pushing past the end still starts the morph, dragging back up collapses it, and the page doesn't stick or rubber-band at the end; also **one drag that starts above the end and continues into it without lifting the finger** (no source says Safari keeps later touchmoves cancelable once a scroll starts, `research/architecture/webkit.md`) | 2026-10-01 |
 | 2 | hero-exit-scroll-timeline (topic 7, wave 2) | worktree of `fix-hero-exit` | scroll slowly out of the hero, then fling: copy, orbit cards and scroll cue fade and scatter smoothly (no stepping, the cue never stays invisible); after scrolling back up, the hero is tappable again; same look as the baseline | 2026-10-01 |
 | 3 | scroll-engine: toolbar-resize (topics 2+10+12, wave 2) | worktree of `fix-scroll-engine` (URLs once its combined overlay exists) | from the very top, slowly through the hero until the URL bar collapses, then flick up so it expands again: no jump or stutter at the collapse; the hero, commission and future shrink effects still track after the bar settles (height-only resizes are debounced 120 ms) | 2026-10-01 |
 | 4 | wave-1 combined | wave-integrator (not yet) | the whole page, top to bottom and past the end | after wave 1 lands |
