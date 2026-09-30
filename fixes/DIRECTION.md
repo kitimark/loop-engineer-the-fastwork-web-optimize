@@ -67,5 +67,9 @@ Sources: E1-E5 `research/architecture/measurement-review.md`; W1-W3 / R1-R3 `res
 | R2 animation update runs before rAF | yes | fix-infinite-anims (N3) | short lane: early rAF loop timing one `getBoundingClientRect`, animations running vs paused |
 | R3 statechange event timing | yes | fix-scroll-engine (E2) | inside the E2 slot |
 
-iPhone scripted-check queue (when the phone is back, lease per CLAUDE.md): R3 capture-phase logger on the plain baseline;
-W2 busy-loop check; then the wave-1 combined confirmation.
+iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain http per I-003), in order:
+1. R3 capture-phase `contentvisibilityautostatechange` logger on the plain baseline.
+2. W2 busy-loop check (300 ms busy loop mid-scroll: the page keeps moving, scrollY jumps).
+3. Wave-1 combined confirmation (after the combined overlay exists).
+4. Combined wave-1 vs combined minus large-area-blur, /03 Timeline paint-area method, n=3, order B P P B B P: how much blur paint remains once phone-invisible-shrink is in (review-blur).
+5. large-area-blur final overlay (/06) scripted scroll + Timeline paint check, and a LayerTree count for the entry-animation part (owner's open items).
