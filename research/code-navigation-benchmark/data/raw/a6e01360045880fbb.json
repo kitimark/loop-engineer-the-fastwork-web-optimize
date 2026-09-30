@@ -1,0 +1,72 @@
+{
+ "task": "T25",
+ "arm": "G",
+ "rep": 2,
+ "agentId": "a6e01360045880fbb",
+ "wallSec": 23.2,
+ "start": "2026-09-30T21:21:38.609Z",
+ "end": "2026-09-30T21:22:01.857Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 129979,
+  "cacheCreate": 5160,
+  "output": 40,
+  "total": 135187,
+  "ctxPeak": 35784
+ },
+ "toolCalls": 5,
+ "toolSearch": 0,
+ "byName": {
+  "Read": 2,
+  "Bash": 3
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 4324,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 2022
+  },
+  {
+   "name": "Bash",
+   "ms": 81,
+   "chars": 300
+  },
+  {
+   "name": "Read",
+   "ms": 42,
+   "chars": 1660
+  },
+  {
+   "name": "Bash",
+   "ms": 2461,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 2070,
+   "chars": 311
+  }
+ ],
+ "answer": {
+  "start": 10782,
+  "end": 10784,
+  "returns": "!oe() && !s(T) && window.matchMedia('(min-width: 861px)').matches, i.e. true only when reduced-motion is off, the compact/phone state T is false, and the viewport is at least 861px wide",
+  "excludesPhones": true
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

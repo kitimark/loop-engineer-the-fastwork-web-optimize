@@ -1,0 +1,102 @@
+{
+ "task": "T14",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "a176a964076d945c1",
+ "wallSec": 18.2,
+ "start": "2026-09-30T21:02:04.952Z",
+ "end": "2026-09-30T21:02:23.148Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 199653,
+  "cacheCreate": 15774,
+  "output": 359,
+  "total": 215798,
+  "ctxPeak": 38514
+ },
+ "toolCalls": 5,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 1,
+  "mcp__serena__find_referencing_symbols": 1,
+  "mcp__serena__find_declaration": 1,
+  "Read": 2
+ },
+ "serenaCalls": 3,
+ "serenaResultChars": 1361,
+ "serenaMs": 558,
+ "textResultChars": 2123,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 11,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 44,
+   "chars": 253
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 350,
+   "chars": 945
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 164,
+   "chars": 163
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 732
+  },
+  {
+   "name": "Read",
+   "ms": 19,
+   "chars": 1391
+  }
+ ],
+ "answer": {
+  "variable": "$T",
+  "declLine": 2663,
+  "uses": [
+   {
+    "line": 2672,
+    "function": "iE",
+    "access": "read",
+    "how": "<omitted>"
+   },
+   {
+    "line": 2682,
+    "function": "oE",
+    "access": "read",
+    "how": "<omitted>"
+   },
+   {
+    "line": 2761,
+    "function": "dE",
+    "access": "write",
+    "how": "<omitted>"
+   },
+   {
+    "line": 2773,
+    "function": "anonymous cleanup arrow returned by dE",
+    "access": "write",
+    "how": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

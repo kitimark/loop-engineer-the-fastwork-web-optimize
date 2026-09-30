@@ -1,0 +1,124 @@
+{
+ "task": "T10",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "afab5d6f01916835c",
+ "wallSec": 35.1,
+ "start": "2026-09-30T20:58:12.177Z",
+ "end": "2026-09-30T20:58:47.252Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 207010,
+  "cacheCreate": 18703,
+  "output": 38,
+  "total": 225763,
+  "ctxPeak": 41443
+ },
+ "toolCalls": 5,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 5
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 12592,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 6531
+  },
+  {
+   "name": "Bash",
+   "ms": 1898,
+   "chars": 756
+  },
+  {
+   "name": "Bash",
+   "ms": 2172,
+   "chars": 2801
+  },
+  {
+   "name": "Bash",
+   "ms": 1884,
+   "chars": 2027
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 477
+  }
+ ],
+ "answer": {
+  "keyframes": [
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 2888,
+    "name": "avatars-exit"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 5332,
+    "name": "start-selling-people-o-peel"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 10412,
+    "name": "start-selling-avatars-exit"
+   }
+  ],
+  "transitions": [
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 1231,
+    "selector": ".script-accent.is-drawing-in.svelte-1fn2go6"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 2548,
+    "selector": ".start-selling-future-people-o-face"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 9188,
+    "selector": ".start-selling-platform-service-card.is-animating"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 9256,
+    "selector": ".start-selling-platform-service-card.is-animating .start-selling-platform-service-card-row img"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 11356,
+    "selector": ".start-selling-top-nav.svelte-1dcozpm:not(.is-morphing)"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 11399,
+    "selector": ".start-selling-top-nav.is-hero-pill.is-hero-chrome-ready.svelte-1dcozpm"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 11489,
+    "selector": ".start-selling-top-nav-btn.is-earn.svelte-1dcozpm"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 11501,
+    "selector": ".start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

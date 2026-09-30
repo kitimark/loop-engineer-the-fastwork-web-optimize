@@ -1,0 +1,50 @@
+{
+ "task": "T01",
+ "arm": "G",
+ "rep": 2,
+ "agentId": "acbf77c790dfa56fe",
+ "wallSec": 8.2,
+ "start": "2026-09-30T21:04:55.210Z",
+ "end": "2026-09-30T21:05:03.366Z",
+ "turns": 3,
+ "tokens": {
+  "input": 6,
+  "cacheRead": 93177,
+  "cacheCreate": 4859,
+  "output": 379,
+  "total": 98421,
+  "ctxPeak": 35332
+ },
+ "toolCalls": 3,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 3
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 6156,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 66,
+   "chars": 78
+  },
+  {
+   "name": "Bash",
+   "ms": 1857,
+   "chars": 6000
+  },
+  {
+   "name": "Bash",
+   "ms": 74,
+   "chars": 78
+  }
+ ],
+ "answer": null,
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 0,
+  "note": "no parsable answer"
+ }
+}

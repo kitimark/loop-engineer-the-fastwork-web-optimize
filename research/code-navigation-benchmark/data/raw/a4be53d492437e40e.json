@@ -1,0 +1,132 @@
+{
+ "task": "T03",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "a4be53d492437e40e",
+ "wallSec": 36.5,
+ "start": "2026-09-30T20:54:49.584Z",
+ "end": "2026-09-30T20:55:26.073Z",
+ "turns": 8,
+ "tokens": {
+  "input": 16,
+  "cacheRead": 284364,
+  "cacheCreate": 17756,
+  "output": 1299,
+  "total": 303435,
+  "ctxPeak": 40496
+ },
+ "toolCalls": 8,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Grep": 1,
+  "mcp__serena__find_referencing_symbols": 1,
+  "Bash": 6
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 2117,
+ "serenaMs": 685,
+ "textResultChars": 3301,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "Grep",
+   "ms": 1,
+   "chars": 169,
+   "err": true
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 685,
+   "chars": 2117
+  },
+  {
+   "name": "Bash",
+   "ms": 67,
+   "chars": 525
+  },
+  {
+   "name": "Bash",
+   "ms": 2354,
+   "chars": 776
+  },
+  {
+   "name": "Bash",
+   "ms": 2724,
+   "chars": 688
+  },
+  {
+   "name": "Bash",
+   "ms": 1897,
+   "chars": 41,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 2057,
+   "chars": 101
+  },
+  {
+   "name": "Bash",
+   "ms": 89,
+   "chars": 1001
+  }
+ ],
+ "answer": {
+  "callers": [
+   {
+    "line": 3143,
+    "component": "AE",
+    "callback": "o"
+   },
+   {
+    "line": 4239,
+    "component": "fD",
+    "callback": "c"
+   },
+   {
+    "line": 4736,
+    "component": "hD",
+    "callback": "d"
+   },
+   {
+    "line": 6269,
+    "component": "WD",
+    "callback": "A"
+   },
+   {
+    "line": 10977,
+    "component": "uM",
+    "callback": "m"
+   },
+   {
+    "line": 11359,
+    "component": "mM",
+    "callback": "u"
+   },
+   {
+    "line": 12448,
+    "component": "GM",
+    "callback": "r"
+   },
+   {
+    "line": 13090,
+    "component": "dN",
+    "callback": "L"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

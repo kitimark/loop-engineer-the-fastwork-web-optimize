@@ -1,0 +1,83 @@
+{
+ "task": "T11",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "ad340970277f7a7c0",
+ "wallSec": 23.5,
+ "start": "2026-09-30T20:58:17.001Z",
+ "end": "2026-09-30T20:58:40.547Z",
+ "turns": 5,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 166548,
+  "cacheCreate": 17009,
+  "output": 1964,
+  "total": 185533,
+  "ctxPeak": 39751
+ },
+ "toolCalls": 4,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 2,
+  "mcp__serena__find_declaration": 1,
+  "Bash": 1
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 142,
+ "serenaMs": 89,
+ "textResultChars": 3792,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 1681
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 89,
+   "chars": 142,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 1975,
+   "chars": 336
+  },
+  {
+   "name": "Read",
+   "ms": 21,
+   "chars": 1775
+  }
+ ],
+ "answer": {
+  "references": [
+   {
+    "line": 3125,
+    "use": "<omitted>"
+   },
+   {
+    "line": 3128,
+    "use": "<omitted>"
+   },
+   {
+    "line": 3142,
+    "use": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

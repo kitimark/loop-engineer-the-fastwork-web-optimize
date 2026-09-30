@@ -1,0 +1,90 @@
+{
+ "task": "T21",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "a758c736005dec5c7",
+ "wallSec": 18.2,
+ "start": "2026-09-30T21:20:47.947Z",
+ "end": "2026-09-30T21:21:06.122Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 191821,
+  "cacheCreate": 33223,
+  "output": 113,
+  "total": 225167,
+  "ctxPeak": 55963
+ },
+ "toolCalls": 6,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 2,
+  "mcp__serena__get_symbols_overview": 1,
+  "Read": 2,
+  "mcp__serena__find_referencing_symbols": 1
+ },
+ "serenaCalls": 4,
+ "serenaResultChars": 27572,
+ "serenaMs": 590,
+ "textResultChars": 7084,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 60,
+   "chars": 195
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 97,
+   "chars": 21932
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2938
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 60,
+   "chars": 4524
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 4146
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 373,
+   "chars": 921
+  }
+ ],
+ "answer": {
+  "classBindingLine": 11469,
+  "stateVar": "y",
+  "stateDeclLine": 11274,
+  "writes": [
+   11310,
+   11311
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

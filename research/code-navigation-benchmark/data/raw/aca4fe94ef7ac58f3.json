@@ -1,0 +1,116 @@
+{
+ "task": "T06",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "aca4fe94ef7ac58f3",
+ "wallSec": 39.5,
+ "start": "2026-09-30T20:56:58.597Z",
+ "end": "2026-09-30T20:57:38.105Z",
+ "turns": 7,
+ "tokens": {
+  "input": 16,
+  "cacheRead": 293653,
+  "cacheCreate": 35842,
+  "output": 1047,
+  "total": 330558,
+  "ctxPeak": 58584
+ },
+ "toolCalls": 9,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Bash": 4,
+  "Read": 2,
+  "mcp__serena__get_symbols_overview": 1,
+  "mcp__serena__find_symbol": 2
+ },
+ "serenaCalls": 3,
+ "serenaResultChars": 21091,
+ "serenaMs": 1463,
+ "textResultChars": 12879,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "Bash",
+   "ms": 1845,
+   "chars": 4290
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 2533
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 1489
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 42
+  },
+  {
+   "name": "Bash",
+   "ms": 1775,
+   "chars": 2617
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 1282,
+   "chars": 11486
+  },
+  {
+   "name": "Bash",
+   "ms": 2424,
+   "chars": 1908
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 112,
+   "chars": 6144
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 69,
+   "chars": 3461
+  }
+ ],
+ "answer": {
+  "exitOpacity": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4165,
+    "function": "fD/ne() callback/s",
+    "mechanism": "<omitted>"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4171,
+    "function": "fD/ne() callback/s",
+    "mechanism": "<omitted>"
+   }
+  ],
+  "morph": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13243,
+    "function": "dN/l() callback",
+    "mechanism": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

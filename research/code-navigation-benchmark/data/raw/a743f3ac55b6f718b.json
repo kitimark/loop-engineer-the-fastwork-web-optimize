@@ -1,0 +1,94 @@
+{
+ "task": "T09",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a743f3ac55b6f718b",
+ "wallSec": 15.4,
+ "start": "2026-09-30T21:06:27.263Z",
+ "end": "2026-09-30T21:06:42.647Z",
+ "turns": 3,
+ "tokens": {
+  "input": 6,
+  "cacheRead": 86330,
+  "cacheCreate": 11919,
+  "output": 37,
+  "total": 98292,
+  "ctxPeak": 34659
+ },
+ "toolCalls": 2,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 2
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 3369,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 1072
+  },
+  {
+   "name": "Bash",
+   "ms": 2015,
+   "chars": 2297
+  }
+ ],
+ "answer": {
+  "rules": [
+   {
+    "file": "DialogHeader.Qcgwm6ST.css",
+    "line": 671,
+    "selector": ".sb-dialog.svelte-1u79i78::backdrop",
+    "value": "blur(2px)"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 701,
+    "selector": ".why-bring-backdrop",
+    "value": "blur(16px)"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 4220,
+    "selector": ".price.svelte-18m48uz",
+    "value": "blur(6px)"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 10352,
+    "selector": ".start-selling-platform-agents-card-chat",
+    "value": "blur(6px)"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11116,
+    "selector": ".start-selling-language-switch.svelte-1lc7nmb",
+    "value": "blur(12px)"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11343,
+    "selector": ".start-selling-top-nav.svelte-1dcozpm",
+    "value": "blur(calc(20px * (1 - var(--morph))))"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11619,
+    "selector": "dialog.sb-dialog[data-modal-name=\"waitlist-signup\"]::backdrop",
+    "value": "blur(8px)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

@@ -1,0 +1,89 @@
+{
+ "task": "T23",
+ "arm": "G",
+ "rep": 2,
+ "agentId": "a35db88f3288885ac",
+ "wallSec": 40.8,
+ "start": "2026-09-30T21:21:30.473Z",
+ "end": "2026-09-30T21:22:11.308Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 202242,
+  "cacheCreate": 7729,
+  "output": 406,
+  "total": 210389,
+  "ctxPeak": 38401
+ },
+ "toolCalls": 7,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 7
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 9185,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 2145,
+   "chars": 2462
+  },
+  {
+   "name": "Bash",
+   "ms": 1854,
+   "chars": 376
+  },
+  {
+   "name": "Bash",
+   "ms": 1972,
+   "chars": 1144
+  },
+  {
+   "name": "Bash",
+   "ms": 3373,
+   "chars": 2231
+  },
+  {
+   "name": "Bash",
+   "ms": 1792,
+   "chars": 1914
+  },
+  {
+   "name": "Bash",
+   "ms": 2026,
+   "chars": 250
+  },
+  {
+   "name": "Bash",
+   "ms": 3899,
+   "chars": 808
+  }
+ ],
+ "answer": {
+  "refs": [
+   {
+    "name": "c",
+    "assignLine": 3281,
+    "element": "section.commission (root <section aria-labelledby=\"commission-heading\">)"
+   },
+   {
+    "name": "u",
+    "assignLine": 3267,
+    "element": "div.commission-card (inside div.commission-track > div.commission-sticky)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

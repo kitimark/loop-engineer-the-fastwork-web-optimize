@@ -1,0 +1,82 @@
+{
+ "task": "T12",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "addf3fc54be490b24",
+ "wallSec": 18.9,
+ "start": "2026-09-30T20:58:23.262Z",
+ "end": "2026-09-30T20:58:42.194Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 213314,
+  "cacheCreate": 19668,
+  "output": 779,
+  "total": 233773,
+  "ctxPeak": 42408
+ },
+ "toolCalls": 5,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 1,
+  "Read": 2,
+  "Bash": 2
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 3461,
+ "serenaMs": 122,
+ "textResultChars": 8257,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 10,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 122,
+   "chars": 3461
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 5971
+  },
+  {
+   "name": "Bash",
+   "ms": 1698,
+   "chars": 550
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 1639
+  },
+  {
+   "name": "Bash",
+   "ms": 90,
+   "chars": 97
+  }
+ ],
+ "answer": {
+  "declaredLine": 12946,
+  "assignedLine": 13218,
+  "holds": "<omitted>",
+  "sameAsRafT": false,
+  "otherTLine": 13020
+ },
+ "handbackPlaceholder": false,
+ "formatFail": "T12 S r1 ended without the json block; answer transcribed from its prose (12946 / 13218 / nav root element I / not the same / 13020)",
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

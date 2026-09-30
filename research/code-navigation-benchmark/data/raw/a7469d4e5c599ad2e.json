@@ -1,0 +1,106 @@
+{
+ "task": "T07",
+ "arm": "G",
+ "rep": 2,
+ "agentId": "a7469d4e5c599ad2e",
+ "wallSec": 29.9,
+ "start": "2026-09-30T21:03:10.065Z",
+ "end": "2026-09-30T21:03:39.992Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 178259,
+  "cacheCreate": 26523,
+  "output": 1828,
+  "total": 206620,
+  "ctxPeak": 49263
+ },
+ "toolCalls": 5,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 2,
+  "Read": 3
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 32286,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 75,
+   "chars": 590
+  },
+  {
+   "name": "Read",
+   "ms": 19,
+   "chars": 19417
+  },
+  {
+   "name": "Read",
+   "ms": 22,
+   "chars": 4516
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 7431
+  },
+  {
+   "name": "Bash",
+   "ms": 1938,
+   "chars": 332
+  }
+ ],
+ "answer": {
+  "perScrollFrame": [
+   {
+    "line": 12956,
+    "api": "getBoundingClientRect",
+    "function": "F"
+   },
+   {
+    "line": 12961,
+    "api": "elementFromPoint",
+    "function": "F"
+   },
+   {
+    "line": 12967,
+    "api": "getComputedStyle",
+    "function": "ee"
+   },
+   {
+    "line": 12972,
+    "api": "getBoundingClientRect",
+    "function": "ee"
+   },
+   {
+    "line": 12973,
+    "api": "getBoundingClientRect",
+    "function": "ee"
+   },
+   {
+    "line": 13007,
+    "api": "getBoundingClientRect",
+    "function": "_ (inside ne effect, called by L)"
+   }
+  ],
+  "notFromScrollCallback": [
+   {
+    "line": 13044,
+    "api": "getBoundingClientRect",
+    "function": "O (inside ne effect, called via k from wheel/touchmove handlers A/M)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0
+ }
+}

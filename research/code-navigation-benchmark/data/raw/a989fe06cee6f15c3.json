@@ -1,0 +1,119 @@
+{
+ "task": "T06",
+ "arm": "G",
+ "rep": 1,
+ "agentId": "a989fe06cee6f15c3",
+ "wallSec": 59,
+ "start": "2026-09-30T20:54:38.649Z",
+ "end": "2026-09-30T20:55:37.602Z",
+ "turns": 11,
+ "tokens": {
+  "input": 22,
+  "cacheRead": 407741,
+  "cacheCreate": 21570,
+  "output": 1795,
+  "total": 431128,
+  "ctxPeak": 44310
+ },
+ "toolCalls": 11,
+ "toolSearch": 0,
+ "byName": {
+  "Grep": 1,
+  "Bash": 10
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 16473,
+ "calls": [
+  {
+   "name": "Grep",
+   "ms": 2,
+   "chars": 169,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 143,
+   "chars": 6202
+  },
+  {
+   "name": "Bash",
+   "ms": 107,
+   "chars": 2747
+  },
+  {
+   "name": "Bash",
+   "ms": 2477,
+   "chars": 678
+  },
+  {
+   "name": "Bash",
+   "ms": 2021,
+   "chars": 1539
+  },
+  {
+   "name": "Bash",
+   "ms": 2535,
+   "chars": 195
+  },
+  {
+   "name": "Bash",
+   "ms": 2850,
+   "chars": 2263
+  },
+  {
+   "name": "Bash",
+   "ms": 2497,
+   "chars": 270
+  },
+  {
+   "name": "Bash",
+   "ms": 2022,
+   "chars": 586
+  },
+  {
+   "name": "Bash",
+   "ms": 1988,
+   "chars": 1172
+  },
+  {
+   "name": "Bash",
+   "ms": 88,
+   "chars": 652
+  }
+ ],
+ "answer": {
+  "exitOpacity": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4165,
+    "function": "fD/ne effect/s (reduced-motion branch)",
+    "mechanism": "<omitted>"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4171,
+    "function": "fD/ne effect/s (scroll handler, rAF)",
+    "mechanism": "<omitted>"
+   }
+  ],
+  "morph": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13243,
+    "function": "dN (template render effect l(...) values thunk)",
+    "mechanism": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

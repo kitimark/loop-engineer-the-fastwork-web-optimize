@@ -1,0 +1,81 @@
+{
+ "task": "T23",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "af29009d4932a9a6c",
+ "wallSec": 21,
+ "start": "2026-09-30T21:20:50.847Z",
+ "end": "2026-09-30T21:21:11.815Z",
+ "turns": 6,
+ "tokens": {
+  "input": 14,
+  "cacheRead": 208830,
+  "cacheCreate": 20467,
+  "output": 1341,
+  "total": 230652,
+  "ctxPeak": 43209
+ },
+ "toolCalls": 4,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 3,
+  "Read": 1
+ },
+ "serenaCalls": 3,
+ "serenaResultChars": 1968,
+ "serenaMs": 201,
+ "textResultChars": 8297,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 7,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 84,
+   "chars": 165
+  },
+  {
+   "name": "Read",
+   "ms": 23,
+   "chars": 8297
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 55,
+   "chars": 1638
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 62,
+   "chars": 165
+  }
+ ],
+ "answer": {
+  "refs": [
+   {
+    "name": "c",
+    "assignLine": 3281,
+    "element": "section.commission (root <section aria-labelledby=\"commission-heading\">; class added at line 3294)"
+   },
+   {
+    "name": "u",
+    "assignLine": 3267,
+    "element": "div.commission-card"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

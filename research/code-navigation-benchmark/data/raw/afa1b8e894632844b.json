@@ -1,0 +1,230 @@
+{
+ "task": "T04",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "afa1b8e894632844b",
+ "wallSec": 101.3,
+ "start": "2026-09-30T20:54:54.895Z",
+ "end": "2026-09-30T20:56:36.148Z",
+ "turns": 15,
+ "tokens": {
+  "input": 30,
+  "cacheRead": 606942,
+  "cacheCreate": 30364,
+  "output": 574,
+  "total": 637910,
+  "ctxPeak": 53104
+ },
+ "toolCalls": 15,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Grep": 1,
+  "Bash": 14
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 19876,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 7,
+   "chars": 0
+  },
+  {
+   "name": "Grep",
+   "ms": 1,
+   "chars": 169,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 68,
+   "chars": 90
+  },
+  {
+   "name": "Bash",
+   "ms": 99,
+   "chars": 1152
+  },
+  {
+   "name": "Bash",
+   "ms": 103,
+   "chars": 885
+  },
+  {
+   "name": "Bash",
+   "ms": 1887,
+   "chars": 690
+  },
+  {
+   "name": "Bash",
+   "ms": 87,
+   "chars": 1177
+  },
+  {
+   "name": "Bash",
+   "ms": 132,
+   "chars": 1246
+  },
+  {
+   "name": "Bash",
+   "ms": 1979,
+   "chars": 1612
+  },
+  {
+   "name": "Bash",
+   "ms": 104,
+   "chars": 1091
+  },
+  {
+   "name": "Bash",
+   "ms": 7396,
+   "chars": 3173
+  },
+  {
+   "name": "Bash",
+   "ms": 2230,
+   "chars": 253
+  },
+  {
+   "name": "Bash",
+   "ms": 2705,
+   "chars": 998
+  },
+  {
+   "name": "Bash",
+   "ms": 151,
+   "chars": 5652
+  },
+  {
+   "name": "Bash",
+   "ms": 91,
+   "chars": 718
+  },
+  {
+   "name": "Bash",
+   "ms": 87,
+   "chars": 970
+  }
+ ],
+ "answer": {
+  "definition": {
+   "name": "Ra",
+   "line": 3430
+  },
+  "uses": [
+   {
+    "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+    "line": 3440,
+    "localName": "Ra"
+   },
+   {
+    "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   },
+   {
+    "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+    "line": 540,
+    "localName": "ze"
+   },
+   {
+    "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+    "line": 3880,
+    "localName": "ie"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 2424,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 2927,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3100,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3680,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3931,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4155,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4689,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 6225,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 10913,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11294,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11606,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11860,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11994,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12196,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12433,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12978,
+    "localName": "ne"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "found540": true,
+  "offByOne": 0
+ }
+}

@@ -1,0 +1,91 @@
+{
+ "task": "T23",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a01d4631a31a6ea43",
+ "wallSec": 27.6,
+ "start": "2026-09-30T21:22:28.655Z",
+ "end": "2026-09-30T21:22:56.284Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 220930,
+  "cacheCreate": 11922,
+  "output": 184,
+  "total": 233048,
+  "ctxPeak": 42751
+ },
+ "toolCalls": 6,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Bash": 5,
+  "mcp__serena__find_referencing_symbols": 1
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 1899,
+ "serenaMs": 819,
+ "textResultChars": 9354,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "Bash",
+   "ms": 99,
+   "chars": 3914
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 819,
+   "chars": 1899
+  },
+  {
+   "name": "Bash",
+   "ms": 1988,
+   "chars": 226
+  },
+  {
+   "name": "Bash",
+   "ms": 87,
+   "chars": 1550
+  },
+  {
+   "name": "Bash",
+   "ms": 88,
+   "chars": 1074
+  },
+  {
+   "name": "Bash",
+   "ms": 82,
+   "chars": 2590
+  }
+ ],
+ "answer": {
+  "refs": [
+   {
+    "name": "c",
+    "assignLine": 3281,
+    "element": "section.commission (root <section aria-labelledby=\"commission-heading\">)"
+   },
+   {
+    "name": "u",
+    "assignLine": 3267,
+    "element": "div.commission-card (inside div.commission-track > div.commission-sticky)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

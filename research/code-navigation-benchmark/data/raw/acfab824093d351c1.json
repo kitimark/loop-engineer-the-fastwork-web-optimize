@@ -1,0 +1,240 @@
+{
+ "task": "T04",
+ "arm": "G",
+ "rep": 2,
+ "agentId": "acfab824093d351c1",
+ "wallSec": 103.6,
+ "start": "2026-09-30T21:02:22.549Z",
+ "end": "2026-09-30T21:04:06.121Z",
+ "turns": 18,
+ "tokens": {
+  "input": 36,
+  "cacheRead": 697294,
+  "cacheCreate": 27355,
+  "output": 575,
+  "total": 725260,
+  "ctxPeak": 50095
+ },
+ "toolCalls": 18,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 18
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 21470,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 71,
+   "chars": 105
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 1462
+  },
+  {
+   "name": "Bash",
+   "ms": 109,
+   "chars": 495
+  },
+  {
+   "name": "Bash",
+   "ms": 85,
+   "chars": 730
+  },
+  {
+   "name": "Bash",
+   "ms": 114,
+   "chars": 676
+  },
+  {
+   "name": "Bash",
+   "ms": 2022,
+   "chars": 33,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 1921,
+   "chars": 183,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 97,
+   "chars": 2345
+  },
+  {
+   "name": "Bash",
+   "ms": 101,
+   "chars": 1902
+  },
+  {
+   "name": "Bash",
+   "ms": 2852,
+   "chars": 693
+  },
+  {
+   "name": "Bash",
+   "ms": 103,
+   "chars": 1133
+  },
+  {
+   "name": "Bash",
+   "ms": 1866,
+   "chars": 5622
+  },
+  {
+   "name": "Bash",
+   "ms": 1918,
+   "chars": 1539
+  },
+  {
+   "name": "Bash",
+   "ms": 64,
+   "chars": 312
+  },
+  {
+   "name": "Bash",
+   "ms": 1964,
+   "chars": 593
+  },
+  {
+   "name": "Bash",
+   "ms": 2111,
+   "chars": 1292
+  },
+  {
+   "name": "Bash",
+   "ms": 2945,
+   "chars": 993,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 1911,
+   "chars": 1362
+  }
+ ],
+ "answer": {
+  "definition": {
+   "name": "Ra",
+   "line": 3430
+  },
+  "uses": [
+   {
+    "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+    "line": 3440,
+    "localName": "Ra"
+   },
+   {
+    "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   },
+   {
+    "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+    "line": 540,
+    "localName": "ze"
+   },
+   {
+    "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+    "line": 3880,
+    "localName": "ie"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 2424,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 2927,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3100,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3680,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 3931,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4155,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 4689,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 6225,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 10913,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11294,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11606,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11860,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 11994,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12196,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12433,
+    "localName": "ne"
+   },
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 12978,
+    "localName": "ne"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "found540": true,
+  "offByOne": 0
+ }
+}

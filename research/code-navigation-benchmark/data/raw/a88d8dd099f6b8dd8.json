@@ -1,0 +1,119 @@
+{
+ "task": "T10",
+ "arm": "G",
+ "rep": 1,
+ "agentId": "a88d8dd099f6b8dd8",
+ "wallSec": 30.8,
+ "start": "2026-09-30T20:56:39.398Z",
+ "end": "2026-09-30T20:57:10.219Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 165109,
+  "cacheCreate": 17828,
+  "output": 1739,
+  "total": 184686,
+  "ctxPeak": 40568
+ },
+ "toolCalls": 4,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 4
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 11252,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 99,
+   "chars": 6567
+  },
+  {
+   "name": "Bash",
+   "ms": 114,
+   "chars": 207
+  },
+  {
+   "name": "Bash",
+   "ms": 2131,
+   "chars": 2977
+  },
+  {
+   "name": "Bash",
+   "ms": 1960,
+   "chars": 1501
+  }
+ ],
+ "answer": {
+  "keyframes": [
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 2888,
+    "name": "avatars-exit"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 5332,
+    "name": "start-selling-people-o-peel"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 10412,
+    "name": "start-selling-avatars-exit"
+   }
+  ],
+  "transitions": [
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 1231,
+    "selector": ".script-accent.is-drawing-in.svelte-1fn2go6"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 2548,
+    "selector": ".start-selling-future-people-o-face"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 9188,
+    "selector": ".start-selling-platform-service-card.is-animating"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 9256,
+    "selector": ".start-selling-platform-service-card.is-animating .start-selling-platform-service-card-row img"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11356,
+    "selector": ".start-selling-top-nav.svelte-1dcozpm:not(.is-morphing)"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11399,
+    "selector": ".start-selling-top-nav.is-hero-pill.is-hero-chrome-ready.svelte-1dcozpm"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11489,
+    "selector": ".start-selling-top-nav-btn.is-earn.svelte-1dcozpm"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11502,
+    "selector": ".start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

@@ -1,0 +1,112 @@
+{
+ "task": "T19",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "addaa18a81e5628bb",
+ "wallSec": 32.3,
+ "start": "2026-09-30T21:20:31.844Z",
+ "end": "2026-09-30T21:21:04.139Z",
+ "turns": 10,
+ "tokens": {
+  "input": 20,
+  "cacheRead": 361199,
+  "cacheCreate": 20323,
+  "output": 252,
+  "total": 381794,
+  "ctxPeak": 43063
+ },
+ "toolCalls": 10,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 6,
+  "mcp__serena__find_declaration": 2,
+  "mcp__serena__find_symbol": 2
+ },
+ "serenaCalls": 4,
+ "serenaResultChars": 1205,
+ "serenaMs": 476,
+ "textResultChars": 7869,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 330
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 121,
+   "chars": 162
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 2090
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 99,
+   "chars": 529
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 101,
+   "chars": 352
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 155,
+   "chars": 162
+  },
+  {
+   "name": "Read",
+   "ms": 52,
+   "chars": 518
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 1078
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 132
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 3721
+  }
+ ],
+ "answer": {
+  "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+  "name": "$i",
+  "start": 2861,
+  "end": 2870,
+  "perPropertyHelper": {
+   "name": "Qi",
+   "start": 2855,
+   "end": 2860
+  },
+  "onlyChanged": true
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

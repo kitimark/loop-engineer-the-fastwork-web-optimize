@@ -1,0 +1,76 @@
+{
+ "task": "T01",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "a46c2d2c52924fe77",
+ "wallSec": 12.5,
+ "start": "2026-09-30T20:53:25.946Z",
+ "end": "2026-09-30T20:53:38.478Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 125854,
+  "cacheCreate": 15649,
+  "output": 595,
+  "total": 142106,
+  "ctxPeak": 38389
+ },
+ "toolCalls": 4,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 3,
+  "Bash": 1
+ },
+ "serenaCalls": 3,
+ "serenaResultChars": 495,
+ "serenaMs": 257,
+ "textResultChars": 3077,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 10,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 127,
+   "chars": 165
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 45,
+   "chars": 165
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 85,
+   "chars": 165
+  },
+  {
+   "name": "Bash",
+   "ms": 1872,
+   "chars": 3077
+  }
+ ],
+ "answer": {
+  "iE": [
+   2670,
+   2673
+  ],
+  "dE": [
+   2749,
+   2783
+  ],
+  "uE": [
+   2719,
+   2748
+  ],
+  "defaultRootMargin": "100% 0px"
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "offByOne": 0
+ }
+}

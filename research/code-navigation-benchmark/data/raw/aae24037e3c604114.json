@@ -1,0 +1,89 @@
+{
+ "task": "T22",
+ "arm": "G",
+ "rep": 1,
+ "agentId": "aae24037e3c604114",
+ "wallSec": 32.9,
+ "start": "2026-09-30T21:18:45.027Z",
+ "end": "2026-09-30T21:19:17.956Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 156948,
+  "cacheCreate": 14986,
+  "output": 471,
+  "total": 172415,
+  "ctxPeak": 37726
+ },
+ "toolCalls": 5,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 5
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 7959,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 2209,
+   "chars": 2260
+  },
+  {
+   "name": "Bash",
+   "ms": 121,
+   "chars": 223
+  },
+  {
+   "name": "Bash",
+   "ms": 4406,
+   "chars": 2855
+  },
+  {
+   "name": "Bash",
+   "ms": 2864,
+   "chars": 2295
+  },
+  {
+   "name": "Bash",
+   "ms": 2584,
+   "chars": 326
+  }
+ ],
+ "answer": {
+  "classes": [
+   {
+    "name": "start-selling-platform-service-bg",
+    "used": false,
+    "where": null
+   },
+   {
+    "name": "start-selling-platform-service-quote-bg",
+    "used": false,
+    "where": null
+   },
+   {
+    "name": "invoice-doc-wrap",
+    "used": false,
+    "where": null
+   },
+   {
+    "name": "start-selling-future-card",
+    "used": true,
+    "where": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js:11257"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

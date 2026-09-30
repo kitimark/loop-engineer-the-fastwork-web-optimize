@@ -1,0 +1,116 @@
+{
+ "task": "T05",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "af0c7ffe2b2d70479",
+ "wallSec": 22.5,
+ "start": "2026-09-30T21:01:55.289Z",
+ "end": "2026-09-30T21:02:17.827Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 202769,
+  "cacheCreate": 20216,
+  "output": 284,
+  "total": 223281,
+  "ctxPeak": 42956
+ },
+ "toolCalls": 8,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 1,
+  "mcp__serena__find_referencing_symbols": 2,
+  "mcp__serena__get_symbols_overview": 1,
+  "Read": 4
+ },
+ "serenaCalls": 4,
+ "serenaResultChars": 8153,
+ "serenaMs": 583,
+ "textResultChars": 4064,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 104,
+   "chars": 140
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 255,
+   "chars": 2751
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 183,
+   "chars": 4081
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 41,
+   "chars": 1181
+  },
+  {
+   "name": "Read",
+   "ms": 36,
+   "chars": 1452
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 628
+  },
+  {
+   "name": "Read",
+   "ms": 18,
+   "chars": 422
+  },
+  {
+   "name": "Read",
+   "ms": 22,
+   "chars": 1562
+  }
+ ],
+ "answer": {
+  "calls": [
+   {
+    "file": "tools/verify.mjs",
+    "line": 221,
+    "enclosing": "main"
+   },
+   {
+    "file": "tools/lock.mjs",
+    "line": 74,
+    "enclosing": "main"
+   },
+   {
+    "file": "tests/chrome/vendor-shim.chrome.test.mjs",
+    "line": 18,
+    "enclosing": "before() callback"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 157,
+    "enclosing": "test('acquire() waits for the holder and then takes the lock; release() of the handle is token-safe')"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 176,
+    "enclosing": "test('acquire() times out, leaves the queue and says who holds the lock')"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

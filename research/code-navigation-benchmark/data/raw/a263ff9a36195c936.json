@@ -1,0 +1,96 @@
+{
+ "task": "T22",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a263ff9a36195c936",
+ "wallSec": 29.8,
+ "start": "2026-09-30T21:22:23.774Z",
+ "end": "2026-09-30T21:22:53.529Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 199153,
+  "cacheCreate": 6072,
+  "output": 1001,
+  "total": 206238,
+  "ctxPeak": 36921
+ },
+ "toolCalls": 6,
+ "toolSearch": 0,
+ "byName": {
+  "Grep": 1,
+  "Bash": 5
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 5591,
+ "calls": [
+  {
+   "name": "Grep",
+   "ms": 1,
+   "chars": 169,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 134,
+   "chars": 1177
+  },
+  {
+   "name": "Bash",
+   "ms": 152,
+   "chars": 785
+  },
+  {
+   "name": "Bash",
+   "ms": 2218,
+   "chars": 308
+  },
+  {
+   "name": "Bash",
+   "ms": 2067,
+   "chars": 2940
+  },
+  {
+   "name": "Bash",
+   "ms": 1925,
+   "chars": 212
+  }
+ ],
+ "answer": {
+  "classes": [
+   {
+    "name": "start-selling-platform-service-bg",
+    "used": false,
+    "where": null
+   },
+   {
+    "name": "start-selling-platform-service-quote-bg",
+    "used": false,
+    "where": null
+   },
+   {
+    "name": "invoice-doc-wrap",
+    "used": false,
+    "where": null
+   },
+   {
+    "name": "start-selling-future-card",
+    "used": true,
+    "where": "site-pretty/index.html:64"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

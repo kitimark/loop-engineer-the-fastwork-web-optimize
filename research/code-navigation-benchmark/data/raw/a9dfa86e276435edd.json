@@ -1,0 +1,86 @@
+{
+ "task": "T11",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a9dfa86e276435edd",
+ "wallSec": 19.3,
+ "start": "2026-09-30T21:06:38.162Z",
+ "end": "2026-09-30T21:06:57.441Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 128203,
+  "cacheCreate": 15990,
+  "output": 43,
+  "total": 144244,
+  "ctxPeak": 38730
+ },
+ "toolCalls": 4,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 2,
+  "mcp__serena__find_referencing_symbols": 1,
+  "Bash": 1
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 236,
+ "serenaMs": 203,
+ "textResultChars": 3258,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 9,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 17,
+   "chars": 1572
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 1376
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 203,
+   "chars": 236
+  },
+  {
+   "name": "Bash",
+   "ms": 2044,
+   "chars": 310
+  }
+ ],
+ "answer": {
+  "references": [
+   {
+    "line": 3106,
+    "use": "<omitted>"
+   },
+   {
+    "line": 3125,
+    "use": "<omitted>"
+   },
+   {
+    "line": 3128,
+    "use": "<omitted>"
+   },
+   {
+    "line": 3142,
+    "use": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

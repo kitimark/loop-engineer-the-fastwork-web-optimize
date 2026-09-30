@@ -204,30 +204,48 @@ const scorers = {
   },
 };
 
-const idx = fs.readFileSync(path.join(root, 'data/runs-index.tsv'), 'utf8').trim().split('\n').map((l) => l.split('\t'));
-const out = [];
-const manual = fs.existsSync(path.join(root, 'data/manual-answers.json')) ? JSON.parse(fs.readFileSync(path.join(root, 'data/manual-answers.json'), 'utf8')) : {};
-for (const [task, arm, rep, id, flag] of idx) {
-  const f = path.join(dir, `${id}.output`);
-  if (!fs.existsSync(f)) { console.error(`missing ${task} ${arm} ${rep} ${id}`); continue; }
-  const s = summarise(f);
-  let sc;
-  if ((!s.answer || s.answer.parseError) && manual[id]) { s.answer = manual[id].answer; s.formatFail = manual[id].note; }
-  if (!s.answer || s.answer.parseError) sc = { score: 0, note: 'no parsable answer' };
-  else sc = scorers[task](s.answer, T[task].gt);
-  if (s.allAnswers.length > 1 && sc.score !== undefined) {
-    const first = scorers[task](s.allAnswers[0], T[task].gt);
-    if (first.score !== sc.score) { sc.firstAnswerScore = first.score; sc.firstAnswerOffByOne = first.offByOne; }
-  }
-  const { finalText, allAnswers, ...rest } = s; // calls kept for latency stats
-  out.push({ task, type: T[task].type, arm, rep: Number(rep), agentId: id, invalid: flag?.startsWith('invalid:') ? flag.slice(8) : undefined, ...sc, ...rest, finalText });
-  console.log([task, arm, rep, sc.score.toFixed(2), `P${(sc.precision ?? NaN).toFixed?.(2)} R${(sc.recall ?? NaN).toFixed?.(2)}`, `obo${sc.offByOne ?? ''}`,
-    `calls${s.toolCalls}`, `ser${s.serenaCalls}`, `${s.wallSec}s`, `${Math.round(s.tokens.total / 1000)}k`, `peak${Math.round(s.tokens.ctxPeak / 1000)}k`].join('\t'));
-}
 // Committed data keeps names and line numbers only (Hard rule 3): drop the agents' prose, free-text answer
 // fields and tool-call arguments, which can quote Fastwork code.
 const FREE = new Set(['what', 'use', 'how', 'mechanism', 'holds', 'raw']);
 const strip = (v) => (Array.isArray(v) ? v.map(strip) : v && typeof v === 'object'
   ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, FREE.has(k) ? '<omitted>' : strip(x)])) : v);
+const idx = fs.readFileSync(path.join(root, 'data/runs-index.tsv'), 'utf8').trim().split('\n').map((l) => l.split('\t'));
+const out = [];
+const manual = fs.existsSync(path.join(root, 'data/manual-answers.json')) ? JSON.parse(fs.readFileSync(path.join(root, 'data/manual-answers.json'), 'utf8')) : {};
+for (const [task, arm, rep, id, flag] of idx) {
+  // Raw per-run record: data/raw/<agentId>.json (written below from the transcript on first scoring, so later
+  // re-scoring works after the session's transcripts are gone). The transcript wins when it is available.
+  const rawFile = path.join(root, 'data/raw', `${id}.json`);
+  // NAV_BENCH_TASKS: the session's tasks dir (<id>.output) or its subagents dir
+  // (~/.claude/projects/<project>/<session>/subagents, agent-<id>.jsonl, which persists after the session).
+  const f = !dir ? '' : [path.join(dir, `${id}.output`), path.join(dir, `agent-${id}.jsonl`)].find((x) => fs.existsSync(x)) || '';
+  let s;
+  if (f && fs.existsSync(f)) {
+    s = summarise(f); s.fromTranscript = true;
+  } else if (fs.existsSync(rawFile)) {
+    // Raw records drop free-text answer fields (Hard rule 3), so reuse the score stored from the transcript.
+    s = { finalText: '', ...JSON.parse(fs.readFileSync(rawFile, 'utf8')) };
+  } else { console.error(`missing ${task} ${arm} ${rep} ${id}`); continue; }
+  let sc;
+  if (!s.fromTranscript && s.stored) sc = s.stored;
+  else {
+    if ((!s.answer || s.answer.parseError) && manual[id]) { s.answer = manual[id].answer; s.formatFail = manual[id].note; }
+    if (!s.answer || s.answer.parseError) sc = { score: 0, note: 'no parsable answer' };
+    else sc = scorers[task](s.answer, T[task].gt);
+  }
+  if (s.fromTranscript && s.allAnswers.length > 1 && sc.score !== undefined) {
+    const first = scorers[task](s.allAnswers[0], T[task].gt);
+    if (first.score !== sc.score) { sc.firstAnswerScore = first.score; sc.firstAnswerOffByOne = first.offByOne; }
+  }
+  const { finalText, allAnswers = [], stored, fromTranscript, ...rest } = s; // calls kept for latency stats
+  if (fromTranscript) {
+    fs.mkdirSync(path.dirname(rawFile), { recursive: true });
+    fs.writeFileSync(rawFile, JSON.stringify({ task, arm, rep: Number(rep), agentId: id, ...strip({ ...rest, calls: undefined }),
+      calls: rest.calls.map(({ arg, ...c }) => c), stored: strip(sc) }, null, 1));
+  }
+  out.push({ task, type: T[task].type, arm, rep: Number(rep), agentId: id, invalid: flag?.startsWith('invalid:') ? flag.slice(8) : undefined, ...sc, ...rest, finalText });
+  console.log([task, arm, rep, sc.score.toFixed(2), `P${(sc.precision ?? NaN).toFixed?.(2)} R${(sc.recall ?? NaN).toFixed?.(2)}`, `obo${sc.offByOne ?? ''}`,
+    `calls${s.toolCalls}`, `ser${s.serenaCalls}`, `${s.wallSec}s`, `${Math.round(s.tokens.total / 1000)}k`, `peak${Math.round(s.tokens.ctxPeak / 1000)}k`].join('\t'));
+}
 const clean = out.map(({ finalText, ...r }) => ({ ...strip(r), calls: r.calls.map(({ arg, ...c }) => c) }));
 if (process.argv.includes('--write')) fs.writeFileSync(path.join(root, 'data/runs.json'), JSON.stringify(clean, null, 1));

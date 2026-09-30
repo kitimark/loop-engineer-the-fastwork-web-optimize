@@ -1,0 +1,74 @@
+{
+ "task": "T02",
+ "arm": "G",
+ "rep": 1,
+ "agentId": "a2e268ae86e671f97",
+ "wallSec": 17.3,
+ "start": "2026-09-30T20:54:21.102Z",
+ "end": "2026-09-30T20:54:38.396Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 121656,
+  "cacheCreate": 14450,
+  "output": 249,
+  "total": 136363,
+  "ctxPeak": 37190
+ },
+ "toolCalls": 4,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 4
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 8348,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 71,
+   "chars": 1908
+  },
+  {
+   "name": "Bash",
+   "ms": 1966,
+   "chars": 3241
+  },
+  {
+   "name": "Bash",
+   "ms": 1857,
+   "chars": 223
+  },
+  {
+   "name": "Bash",
+   "ms": 1410,
+   "chars": 2976
+  }
+ ],
+ "answer": {
+  "digitComponent": {
+   "name": "$E",
+   "start": 3823,
+   "end": 3876
+  },
+  "rafCallbackLine": 3836,
+  "springStep": {
+   "name": "GE",
+   "start": 3791,
+   "end": 3803
+  },
+  "springParams": {
+   "name": "UE",
+   "line": 3789,
+   "stiffness": 280,
+   "damping": 18,
+   "mass": 0.3
+  }
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "offByOne": 0
+ }
+}

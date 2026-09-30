@@ -1,0 +1,78 @@
+{
+ "task": "T17",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a0187f85e76b9ddd7",
+ "wallSec": 18.2,
+ "start": "2026-09-30T21:07:59.131Z",
+ "end": "2026-09-30T21:08:17.354Z",
+ "turns": 3,
+ "tokens": {
+  "input": 6,
+  "cacheRead": 90683,
+  "cacheCreate": 16926,
+  "output": 34,
+  "total": 107649,
+  "ctxPeak": 39666
+ },
+ "toolCalls": 2,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 2
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 7388,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 2594
+  },
+  {
+   "name": "Read",
+   "ms": 17,
+   "chars": 4794
+  }
+ ],
+ "answer": {
+  "references": [
+   {
+    "line": 10918,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10929,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10975,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10980,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10989,
+    "use": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

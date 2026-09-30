@@ -1,0 +1,112 @@
+{
+ "task": "T16",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "af48ea3e91e3d60c4",
+ "wallSec": 23.3,
+ "start": "2026-09-30T20:58:58.743Z",
+ "end": "2026-09-30T20:59:22.072Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 211250,
+  "cacheCreate": 21171,
+  "output": 123,
+  "total": 232556,
+  "ctxPeak": 43911
+ },
+ "toolCalls": 6,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Bash": 5,
+  "mcp__serena__get_symbols_overview": 1
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 614,
+ "serenaMs": 199,
+ "textResultChars": 13757,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 9,
+   "chars": 0
+  },
+  {
+   "name": "Bash",
+   "ms": 83,
+   "chars": 189
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 199,
+   "chars": 614
+  },
+  {
+   "name": "Bash",
+   "ms": 103,
+   "chars": 2328
+  },
+  {
+   "name": "Bash",
+   "ms": 133,
+   "chars": 6381
+  },
+  {
+   "name": "Bash",
+   "ms": 95,
+   "chars": 3094
+  },
+  {
+   "name": "Bash",
+   "ms": 68,
+   "chars": 1765
+  }
+ ],
+ "answer": {
+  "chain": [
+   {
+    "file": "tools/fix.mjs",
+    "line": 420,
+    "function": "cmds table (ab entry) -> cmdAb dispatch",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/fix.mjs",
+    "line": 336,
+    "function": "cmdAb",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/verify.mjs",
+    "line": 219,
+    "function": "main",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/lib/lock.mjs",
+    "line": 170,
+    "function": "acquire",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/lib/lock.mjs",
+    "line": 94,
+    "function": "tryAcquire",
+    "what": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "keys": {
+   "C1": true,
+   "C2": true,
+   "C3": true,
+   "C4": true
+  },
+  "wrongClaim": false,
+  "offByOne": 0
+ }
+}

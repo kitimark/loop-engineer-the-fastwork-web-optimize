@@ -4,39 +4,39 @@
  "summary": [
   {
    "tool": "FindSymbolTool",
-   "n": 68,
-   "medSec": 0.02,
+   "n": 87,
+   "medSec": 0.018,
    "p90Sec": 0.038,
    "maxSec": 0.151,
-   "medChars": 167,
+   "medChars": 185,
    "maxChars": 25165
   },
   {
    "tool": "GetSymbolsOverviewTool",
-   "n": 18,
+   "n": 22,
    "medSec": 0.01,
-   "p90Sec": 0.016,
+   "p90Sec": 0.015,
    "maxSec": 0.162,
-   "medChars": 2182,
-   "maxChars": 11486
+   "medChars": 11486,
+   "maxChars": 21932
   },
   {
    "tool": "FindReferencingSymbolsTool",
-   "n": 23,
-   "medSec": 0.119,
-   "p90Sec": 0.593,
+   "n": 27,
+   "medSec": 0.201,
+   "p90Sec": 0.6,
    "maxSec": 1.391,
-   "medChars": 1436,
+   "medChars": 1392,
    "maxChars": 6366
   },
   {
    "tool": "FindDeclarationTool",
-   "n": 10,
-   "medSec": 0.117,
-   "p90Sec": 0.133,
+   "n": 13,
+   "medSec": 0.113,
+   "p90Sec": 0.128,
    "maxSec": 0.133,
    "medChars": 167,
-   "maxChars": 182
+   "maxChars": 279
   }
  ],
  "calls": [
@@ -872,7 +872,217 @@
    "ts": "2026-10-01 04:09:32,631",
    "resultChars": 25165,
    "sec": 0.021
+  },
+  {
+   "task": "Task-166",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:19:37,089",
+   "resultChars": 500,
+   "sec": 0.201
+  },
+  {
+   "task": "Task-167",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:19:45,715",
+   "resultChars": 529,
+   "sec": 0.004
+  },
+  {
+   "task": "Task-168",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:19:48,001",
+   "resultChars": 349,
+   "sec": 0.004
+  },
+  {
+   "task": "Task-169",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:19:55,977",
+   "resultChars": 7328,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-170",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:24,352",
+   "resultChars": 281,
+   "sec": 0.016
+  },
+  {
+   "task": "Task-171",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:30,033",
+   "resultChars": 277,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-172",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:33,874",
+   "resultChars": 110,
+   "sec": 0.045
+  },
+  {
+   "task": "Task-173",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:20:37,936",
+   "resultChars": 162,
+   "sec": 0.061
+  },
+  {
+   "task": "Task-174",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:40,977",
+   "resultChars": 529,
+   "sec": 0.003
+  },
+  {
+   "task": "Task-175",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:43,795",
+   "resultChars": 352,
+   "sec": 0.016
+  },
+  {
+   "task": "Task-176",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:20:44,740",
+   "resultChars": 162,
+   "sec": 0.043
+  },
+  {
+   "task": "Task-178",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:20:46,249",
+   "resultChars": 11486,
+   "sec": 0.009
+  },
+  {
+   "task": "Task-179",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:20:51,191",
+   "resultChars": 279,
+   "sec": 0.128
+  },
+  {
+   "task": "Task-180",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:51,941",
+   "resultChars": 195,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-181",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:20:52,264",
+   "resultChars": 21932,
+   "sec": 0.013
+  },
+  {
+   "task": "Task-182",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:52,791",
+   "resultChars": 204,
+   "sec": 0.003
+  },
+  {
+   "task": "Task-183",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:20:53,206",
+   "resultChars": 2182,
+   "sec": 0.002
+  },
+  {
+   "task": "Task-184",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:53,831",
+   "resultChars": 277,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-185",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:54,369",
+   "resultChars": 165,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-186",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:55,315",
+   "resultChars": 4524,
+   "sec": 0.014
+  },
+  {
+   "task": "Task-187",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:56,162",
+   "resultChars": 190,
+   "sec": 0.019
+  },
+  {
+   "task": "Task-188",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:20:58,377",
+   "resultChars": 921,
+   "sec": 0.256
+  },
+  {
+   "task": "Task-189",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:58,636",
+   "resultChars": 1638,
+   "sec": 0.014
+  },
+  {
+   "task": "Task-190",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:20:59,071",
+   "resultChars": 165,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-191",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:21:00,569",
+   "resultChars": 355,
+   "sec": 0.003
+  },
+  {
+   "task": "Task-192",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:21:03,039",
+   "resultChars": 626,
+   "sec": 0.003
+  },
+  {
+   "task": "Task-193",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:22:16,190",
+   "resultChars": 500,
+   "sec": 0.333
+  },
+  {
+   "task": "Task-194",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:22:33,227",
+   "resultChars": 1899,
+   "sec": 0.719
+  },
+  {
+   "task": "Task-195",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:22:45,469",
+   "resultChars": 2470,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-196",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:22:53,623",
+   "resultChars": 11486,
+   "sec": 0.011
   }
  ],
- "note": "Server-side durations from the shared Serena MCP log during the benchmark window (all arms plus a few direct calls by the benchmark lead)."
+ "note": "Server-side durations from the shared Serena MCP log during the benchmark window (all arms plus a few direct calls by the benchmark lead; other sessions may contribute)."
 }

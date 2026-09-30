@@ -1,0 +1,157 @@
+{
+ "task": "T06",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "a8b9cadca178083d9",
+ "wallSec": 52.8,
+ "start": "2026-09-30T21:03:33.843Z",
+ "end": "2026-09-30T21:04:26.602Z",
+ "turns": 11,
+ "tokens": {
+  "input": 22,
+  "cacheRead": 450680,
+  "cacheCreate": 30474,
+  "output": 112,
+  "total": 481288,
+  "ctxPeak": 53214
+ },
+ "toolCalls": 18,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 13,
+  "Read": 4,
+  "mcp__serena__get_symbols_overview": 1
+ },
+ "serenaCalls": 14,
+ "serenaResultChars": 9825,
+ "serenaMs": 1524,
+ "textResultChars": 15170,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 81,
+   "chars": 2
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 117,
+   "chars": 386
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 4783
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 97,
+   "chars": 2
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 203,
+   "chars": 2
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 140,
+   "chars": 1036
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 127,
+   "chars": 3461
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 72,
+   "chars": 2809
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 3601
+  },
+  {
+   "name": "Read",
+   "ms": 14,
+   "chars": 2042
+  },
+  {
+   "name": "Read",
+   "ms": 27,
+   "chars": 4744
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 91,
+   "chars": 1036
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 142,
+   "chars": 2
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 135,
+   "chars": 2
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 130,
+   "chars": 233
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 48,
+   "chars": 237
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 99,
+   "chars": 136,
+   "err": true
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 42,
+   "chars": 481
+  }
+ ],
+ "answer": {
+  "exitOpacity": [],
+  "morph": [
+   {
+    "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13243,
+    "function": "dN/l() callback (value thunk at dN/<function>; applied by S(I, '', te, e) at line 13234)",
+    "mechanism": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 0.5,
+  "recall": 0.3333333333333333,
+  "precision": 1,
+  "misses": [
+   {
+    "k": "exit",
+    "line": 4165
+   },
+   {
+    "k": "exit",
+    "line": 4171
+   }
+  ],
+  "extras": [],
+  "offByOne": 0
+ }
+}

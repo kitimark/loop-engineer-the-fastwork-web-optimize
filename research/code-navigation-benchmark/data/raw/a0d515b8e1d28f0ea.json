@@ -1,0 +1,106 @@
+{
+ "task": "T02",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "a0d515b8e1d28f0ea",
+ "wallSec": 23.5,
+ "start": "2026-09-30T21:03:28.993Z",
+ "end": "2026-09-30T21:03:52.492Z",
+ "turns": 7,
+ "tokens": {
+  "input": 14,
+  "cacheRead": 270157,
+  "cacheCreate": 25402,
+  "output": 221,
+  "total": 295794,
+  "ctxPeak": 48142
+ },
+ "toolCalls": 8,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__get_symbols_overview": 1,
+  "mcp__serena__find_declaration": 4,
+  "Read": 2,
+  "mcp__serena__find_symbol": 1
+ },
+ "serenaCalls": 6,
+ "serenaResultChars": 12168,
+ "serenaMs": 655,
+ "textResultChars": 4457,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 10,
+   "chars": 0
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 99,
+   "chars": 11486
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 71,
+   "chars": 124,
+   "err": true
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 97,
+   "chars": 111,
+   "err": true
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 206,
+   "chars": 173
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 124,
+   "chars": 109,
+   "err": true
+  },
+  {
+   "name": "Read",
+   "ms": 49,
+   "chars": 3046
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 1411
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 58,
+   "chars": 165
+  }
+ ],
+ "answer": {
+  "digitComponent": {
+   "name": "$E",
+   "start": 3823,
+   "end": 3876
+  },
+  "rafCallbackLine": 3836,
+  "springStep": {
+   "name": "GE",
+   "start": 3791,
+   "end": 3803
+  },
+  "springParams": {
+   "name": "UE",
+   "line": 3789,
+   "stiffness": 280,
+   "damping": 18,
+   "mass": 0.3
+  }
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "offByOne": 0
+ }
+}

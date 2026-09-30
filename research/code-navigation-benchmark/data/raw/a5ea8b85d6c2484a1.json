@@ -1,0 +1,94 @@
+{
+ "task": "T22",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "a5ea8b85d6c2484a1",
+ "wallSec": 44.9,
+ "start": "2026-09-30T21:19:44.790Z",
+ "end": "2026-09-30T21:20:29.682Z",
+ "turns": 7,
+ "tokens": {
+  "input": 14,
+  "cacheRead": 231660,
+  "cacheCreate": 15581,
+  "output": 1249,
+  "total": 248504,
+  "ctxPeak": 38321
+ },
+ "toolCalls": 6,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 6
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 7642,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 2435,
+   "chars": 2300
+  },
+  {
+   "name": "Bash",
+   "ms": 1873,
+   "chars": 133
+  },
+  {
+   "name": "Bash",
+   "ms": 3588,
+   "chars": 2045
+  },
+  {
+   "name": "Bash",
+   "ms": 2580,
+   "chars": 2071
+  },
+  {
+   "name": "Bash",
+   "ms": 4709,
+   "chars": 516
+  },
+  {
+   "name": "Bash",
+   "ms": 3948,
+   "chars": 577
+  }
+ ],
+ "answer": {
+  "classes": [
+   {
+    "name": "start-selling-platform-service-bg",
+    "used": false,
+    "where": null
+   },
+   {
+    "name": "start-selling-platform-service-quote-bg",
+    "used": false,
+    "where": null
+   },
+   {
+    "name": "invoice-doc-wrap",
+    "used": false,
+    "where": null
+   },
+   {
+    "name": "start-selling-future-card",
+    "used": true,
+    "where": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js:11257"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

@@ -1,0 +1,150 @@
+{
+ "task": "T08",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "ae94ab3c82b07d62d",
+ "wallSec": 39.6,
+ "start": "2026-09-30T21:06:49.156Z",
+ "end": "2026-09-30T21:07:28.790Z",
+ "turns": 6,
+ "tokens": {
+  "input": 14,
+  "cacheRead": 209470,
+  "cacheCreate": 22012,
+  "output": 2440,
+  "total": 233936,
+  "ctxPeak": 44754
+ },
+ "toolCalls": 3,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 1,
+  "Read": 2
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 4524,
+ "serenaMs": 90,
+ "textResultChars": 6941,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 7,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 90,
+   "chars": 4524
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 4114
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 2827
+  }
+ ],
+ "answer": {
+  "reads": [
+   {
+    "line": 11305,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11307,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11308,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11309,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11310,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11313,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11314,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11315,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11321,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11323,
+    "what": "<omitted>"
+   }
+  ],
+  "writes": [
+   {
+    "line": 11304,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11310,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11311,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11315,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11316,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11317,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11318,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11319,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11324,
+    "what": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "keys": {
+   "R1": true,
+   "R2": true,
+   "R3": true,
+   "R4": true,
+   "R5": true,
+   "R6": true,
+   "W1": true,
+   "W2": true,
+   "W3": true,
+   "W4": true
+  },
+  "offByOne": 0
+ }
+}

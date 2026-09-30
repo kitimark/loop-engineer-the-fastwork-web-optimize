@@ -1,0 +1,150 @@
+{
+ "task": "T03",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "ae2ecf445f86252ae",
+ "wallSec": 27.2,
+ "start": "2026-09-30T21:01:45.626Z",
+ "end": "2026-09-30T21:02:12.819Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 202518,
+  "cacheCreate": 17660,
+  "output": 256,
+  "total": 220446,
+  "ctxPeak": 40400
+ },
+ "toolCalls": 12,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 2,
+  "mcp__serena__find_referencing_symbols": 1,
+  "Read": 9
+ },
+ "serenaCalls": 3,
+ "serenaResultChars": 2447,
+ "serenaMs": 828,
+ "textResultChars": 2382,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 7,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 109,
+   "chars": 165
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 670,
+   "chars": 2117
+  },
+  {
+   "name": "Read",
+   "ms": 21,
+   "chars": 1493
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 147
+  },
+  {
+   "name": "Read",
+   "ms": 14,
+   "chars": 173
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 216
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 127
+  },
+  {
+   "name": "Read",
+   "ms": 33,
+   "chars": 38
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 77
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 60
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 51
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 49,
+   "chars": 165
+  }
+ ],
+ "answer": {
+  "callers": [
+   {
+    "line": 3143,
+    "component": "AE",
+    "callback": "o"
+   },
+   {
+    "line": 4239,
+    "component": "fD",
+    "callback": "c"
+   },
+   {
+    "line": 4736,
+    "component": "hD",
+    "callback": "d"
+   },
+   {
+    "line": 6269,
+    "component": "WD",
+    "callback": "A"
+   },
+   {
+    "line": 10977,
+    "component": "uM",
+    "callback": "m"
+   },
+   {
+    "line": 11359,
+    "component": "mM",
+    "callback": "u"
+   },
+   {
+    "line": 12448,
+    "component": "GM",
+    "callback": "r"
+   },
+   {
+    "line": 13090,
+    "component": "dN",
+    "callback": "L"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

@@ -1,0 +1,93 @@
+{
+ "task": "T05",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "aa635badb2a275f83",
+ "wallSec": 17.8,
+ "start": "2026-09-30T20:56:53.411Z",
+ "end": "2026-09-30T20:57:11.196Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 172510,
+  "cacheCreate": 22877,
+  "output": 183,
+  "total": 195580,
+  "ctxPeak": 45617
+ },
+ "toolCalls": 4,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Bash": 4
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 17355,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "Bash",
+   "ms": 70,
+   "chars": 39
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 8336
+  },
+  {
+   "name": "Bash",
+   "ms": 90,
+   "chars": 3798
+  },
+  {
+   "name": "Bash",
+   "ms": 110,
+   "chars": 5182
+  }
+ ],
+ "answer": {
+  "calls": [
+   {
+    "file": "tools/lock.mjs",
+    "line": 74,
+    "enclosing": "main"
+   },
+   {
+    "file": "tools/verify.mjs",
+    "line": 221,
+    "enclosing": "main"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 157,
+    "enclosing": "acquire() waits for the holder and then takes the lock; release() of the handle is token-safe"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 176,
+    "enclosing": "acquire() times out, leaves the queue and says who holds the lock"
+   },
+   {
+    "file": "tests/chrome/vendor-shim.chrome.test.mjs",
+    "line": 18,
+    "enclosing": "before (anonymous async hook)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

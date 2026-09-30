@@ -1,0 +1,112 @@
+{
+ "task": "T07",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "a58eae4be420174ed",
+ "wallSec": 36.6,
+ "start": "2026-09-30T20:57:03.947Z",
+ "end": "2026-09-30T20:57:40.556Z",
+ "turns": 6,
+ "tokens": {
+  "input": 14,
+  "cacheRead": 227057,
+  "cacheCreate": 30433,
+  "output": 1357,
+  "total": 258861,
+  "ctxPeak": 53175
+ },
+ "toolCalls": 5,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 1,
+  "Bash": 4
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 167,
+ "serenaMs": 82,
+ "textResultChars": 29435,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 6,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 82,
+   "chars": 167
+  },
+  {
+   "name": "Bash",
+   "ms": 80,
+   "chars": 2235
+  },
+  {
+   "name": "Bash",
+   "ms": 1931,
+   "chars": 12854
+  },
+  {
+   "name": "Bash",
+   "ms": 3396,
+   "chars": 9860
+  },
+  {
+   "name": "Bash",
+   "ms": 2000,
+   "chars": 4486
+  }
+ ],
+ "answer": {
+  "perScrollFrame": [
+   {
+    "line": 12967,
+    "api": "getComputedStyle",
+    "function": "ee"
+   },
+   {
+    "line": 12972,
+    "api": "getBoundingClientRect",
+    "function": "ee"
+   },
+   {
+    "line": 12973,
+    "api": "getBoundingClientRect",
+    "function": "ee"
+   },
+   {
+    "line": 12956,
+    "api": "getBoundingClientRect",
+    "function": "F"
+   },
+   {
+    "line": 12961,
+    "api": "elementFromPoint",
+    "function": "F"
+   },
+   {
+    "line": 13007,
+    "api": "getBoundingClientRect",
+    "function": "_"
+   }
+  ],
+  "notFromScrollCallback": [
+   {
+    "line": 13044,
+    "api": "getBoundingClientRect",
+    "function": "O"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0
+ }
+}

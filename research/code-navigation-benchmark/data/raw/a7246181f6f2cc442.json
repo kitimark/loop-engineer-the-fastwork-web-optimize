@@ -1,0 +1,104 @@
+{
+ "task": "T19",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a7246181f6f2cc442",
+ "wallSec": 39,
+ "start": "2026-09-30T21:22:09.366Z",
+ "end": "2026-09-30T21:22:48.363Z",
+ "turns": 9,
+ "tokens": {
+  "input": 18,
+  "cacheRead": 332895,
+  "cacheCreate": 4264,
+  "output": 352,
+  "total": 337529,
+  "ctxPeak": 40788
+ },
+ "toolCalls": 8,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 1,
+  "Grep": 1,
+  "Bash": 6
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 5239,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 6,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 534
+  },
+  {
+   "name": "Grep",
+   "ms": 2,
+   "chars": 169,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 86,
+   "chars": 715
+  },
+  {
+   "name": "Bash",
+   "ms": 2208,
+   "chars": 393
+  },
+  {
+   "name": "Bash",
+   "ms": 1851,
+   "chars": 526
+  },
+  {
+   "name": "Bash",
+   "ms": 2181,
+   "chars": 51
+  },
+  {
+   "name": "Bash",
+   "ms": 1917,
+   "chars": 114
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 2737
+  }
+ ],
+ "answer": {
+  "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+  "name": "$i",
+  "start": 2861,
+  "end": 2870,
+  "perPropertyHelper": {
+   "name": "Qi",
+   "start": 2855,
+   "end": 2860
+  },
+  "onlyChanged": true
+ },
+ "handbackPlaceholder": false,
+ "formatFail": "T19 S r2 ended without the json block; answer transcribed from its prose ($i 2861-2870, Qi 2855-2860, only changed after the first call)",
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

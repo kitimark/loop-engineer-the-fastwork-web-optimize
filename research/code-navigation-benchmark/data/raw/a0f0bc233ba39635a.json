@@ -1,0 +1,88 @@
+{
+ "task": "T27",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a0f0bc233ba39635a",
+ "wallSec": 31.7,
+ "start": "2026-09-30T21:22:49.532Z",
+ "end": "2026-09-30T21:23:21.215Z",
+ "turns": 7,
+ "tokens": {
+  "input": 14,
+  "cacheRead": 283498,
+  "cacheCreate": 27454,
+  "output": 96,
+  "total": 311062,
+  "ctxPeak": 50194
+ },
+ "toolCalls": 7,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Grep": 1,
+  "mcp__serena__get_symbols_overview": 1,
+  "Bash": 5
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 11486,
+ "serenaMs": 40,
+ "textResultChars": 9171,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 6,
+   "chars": 0
+  },
+  {
+   "name": "Grep",
+   "ms": 1,
+   "chars": 169,
+   "err": true
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 40,
+   "chars": 11486
+  },
+  {
+   "name": "Bash",
+   "ms": 233,
+   "chars": 2809
+  },
+  {
+   "name": "Bash",
+   "ms": 89,
+   "chars": 4357
+  },
+  {
+   "name": "Bash",
+   "ms": 2470,
+   "chars": 1646
+  },
+  {
+   "name": "Bash",
+   "ms": 1854,
+   "chars": 156
+  },
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 34
+  }
+ ],
+ "answer": {
+  "line": 2590,
+  "component": "JT",
+  "mechanism": "<omitted>"
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

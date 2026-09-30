@@ -1,0 +1,141 @@
+{
+ "task": "T05",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a864a5d84d1326ee0",
+ "wallSec": 18.2,
+ "start": "2026-09-30T21:06:05.641Z",
+ "end": "2026-09-30T21:06:23.848Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 211754,
+  "cacheCreate": 21112,
+  "output": 1014,
+  "total": 233892,
+  "ctxPeak": 43852
+ },
+ "toolCalls": 5,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_referencing_symbols": 1,
+  "Bash": 4
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 2751,
+ "serenaMs": 106,
+ "textResultChars": 11277,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 106,
+   "chars": 2751
+  },
+  {
+   "name": "Bash",
+   "ms": 85,
+   "chars": 39
+  },
+  {
+   "name": "Bash",
+   "ms": 110,
+   "chars": 8077
+  },
+  {
+   "name": "Bash",
+   "ms": 102,
+   "chars": 2415
+  },
+  {
+   "name": "Bash",
+   "ms": 91,
+   "chars": 746
+  }
+ ],
+ "answer": {
+  "calls": [
+   {
+    "file": "tools/verify.mjs",
+    "line": 220,
+    "enclosing": "main"
+   },
+   {
+    "file": "tools/lock.mjs",
+    "line": 73,
+    "enclosing": "main"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 156,
+    "enclosing": "test: acquire() waits for the holder and then takes the lock; release() of the handle is token-safe"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 175,
+    "enclosing": "test: acquire() times out, leaves the queue and says who holds the lock"
+   },
+   {
+    "file": "tests/chrome/vendor-shim.chrome.test.mjs",
+    "line": 18,
+    "enclosing": "before hook"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 0.20000000000000004,
+  "recall": 0.2,
+  "precision": 0.2,
+  "misses": [
+   {
+    "file": "tools/lock.mjs",
+    "line": 74,
+    "enclosing": "main"
+   },
+   {
+    "file": "tools/verify.mjs",
+    "line": 221,
+    "enclosing": "main"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 157,
+    "enclosing": "test acquire() waits for the holder..."
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 176,
+    "enclosing": "test acquire() times out..."
+   }
+  ],
+  "extras": [
+   {
+    "file": "tools/verify.mjs",
+    "line": 220,
+    "enclosing": "main"
+   },
+   {
+    "file": "tools/lock.mjs",
+    "line": 73,
+    "enclosing": "main"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 156,
+    "enclosing": "test: acquire() waits for the holder and then takes the lock; release() of the handle is token-safe"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 175,
+    "enclosing": "test: acquire() times out, leaves the queue and says who holds the lock"
+   }
+  ],
+  "offByOne": 4
+ }
+}

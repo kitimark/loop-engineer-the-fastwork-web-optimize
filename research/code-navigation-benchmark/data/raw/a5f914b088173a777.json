@@ -1,0 +1,146 @@
+{
+ "task": "T08",
+ "arm": "G",
+ "rep": 1,
+ "agentId": "a5f914b088173a777",
+ "wallSec": 30.8,
+ "start": "2026-09-30T20:56:31.618Z",
+ "end": "2026-09-30T20:57:02.427Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 121106,
+  "cacheCreate": 16378,
+  "output": 336,
+  "total": 137828,
+  "ctxPeak": 39118
+ },
+ "toolCalls": 4,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 3,
+  "Read": 1
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 11815,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 2040,
+   "chars": 103,
+   "err": true
+  },
+  {
+   "name": "Read",
+   "ms": 21,
+   "chars": 6099
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 333
+  },
+  {
+   "name": "Bash",
+   "ms": 93,
+   "chars": 5280
+  }
+ ],
+ "answer": {
+  "reads": [
+   {
+    "line": 11305,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11307,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11308,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11310,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11313,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11314,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11315,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11321,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11323,
+    "what": "<omitted>"
+   }
+  ],
+  "writes": [
+   {
+    "line": 11304,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11310,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11311,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11315,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11316,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11317,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11318,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11319,
+    "what": "<omitted>"
+   },
+   {
+    "line": 11324,
+    "what": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "keys": {
+   "R1": true,
+   "R2": true,
+   "R3": true,
+   "R4": true,
+   "R5": true,
+   "R6": true,
+   "W1": true,
+   "W2": true,
+   "W3": true,
+   "W4": true
+  },
+  "offByOne": 0
+ }
+}

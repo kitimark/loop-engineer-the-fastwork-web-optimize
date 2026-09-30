@@ -1,0 +1,132 @@
+{
+ "task": "T15",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a963231a2f3ef1411",
+ "wallSec": 21.3,
+ "start": "2026-09-30T21:07:48.766Z",
+ "end": "2026-09-30T21:08:10.028Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 179415,
+  "cacheCreate": 22966,
+  "output": 76,
+  "total": 202467,
+  "ctxPeak": 45706
+ },
+ "toolCalls": 5,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Grep": 1,
+  "Bash": 3,
+  "mcp__serena__get_symbols_overview": 1
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 11486,
+ "serenaMs": 124,
+ "textResultChars": 1701,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "Grep",
+   "ms": 2,
+   "chars": 169,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 920
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 124,
+   "chars": 11486
+  },
+  {
+   "name": "Bash",
+   "ms": 2208,
+   "chars": 488
+  },
+  {
+   "name": "Bash",
+   "ms": 2300,
+   "chars": 124
+  }
+ ],
+ "answer": {
+  "lines": [
+   {
+    "line": 2717,
+    "topLevelFunction": "lE"
+   },
+   {
+    "line": 3108,
+    "topLevelFunction": "AE"
+   },
+   {
+    "line": 4169,
+    "topLevelFunction": "fD"
+   },
+   {
+    "line": 4600,
+    "topLevelFunction": "hD"
+   },
+   {
+    "line": 4730,
+    "topLevelFunction": "hD"
+   },
+   {
+    "line": 6211,
+    "topLevelFunction": "WD"
+   },
+   {
+    "line": 10786,
+    "topLevelFunction": "uM"
+   },
+   {
+    "line": 10787,
+    "topLevelFunction": "uM"
+   },
+   {
+    "line": 11308,
+    "topLevelFunction": "mM"
+   },
+   {
+    "line": 11313,
+    "topLevelFunction": "mM"
+   },
+   {
+    "line": 12439,
+    "topLevelFunction": "GM"
+   },
+   {
+    "line": 12440,
+    "topLevelFunction": "GM"
+   },
+   {
+    "line": 13008,
+    "topLevelFunction": "dN"
+   },
+   {
+    "line": 13045,
+    "topLevelFunction": "dN"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

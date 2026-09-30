@@ -1,0 +1,91 @@
+{
+ "task": "T24",
+ "arm": "G",
+ "rep": 1,
+ "agentId": "a94de9f712d4a3521",
+ "wallSec": 26.8,
+ "start": "2026-09-30T21:18:52.942Z",
+ "end": "2026-09-30T21:19:19.785Z",
+ "turns": 8,
+ "tokens": {
+  "input": 16,
+  "cacheRead": 255939,
+  "cacheCreate": 13180,
+  "output": 1442,
+  "total": 270577,
+  "ctxPeak": 35920
+ },
+ "toolCalls": 8,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 8
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 4080,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 990
+  },
+  {
+   "name": "Bash",
+   "ms": 159,
+   "chars": 27
+  },
+  {
+   "name": "Bash",
+   "ms": 2411,
+   "chars": 415
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 66
+  },
+  {
+   "name": "Bash",
+   "ms": 72,
+   "chars": 226
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 1914
+  },
+  {
+   "name": "Bash",
+   "ms": 1873,
+   "chars": 411
+  }
+ ],
+ "answer": {
+  "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+  "name": "F",
+  "start": 1229,
+  "end": 1234,
+  "equalityCheckIn": {
+   "name": "wn",
+   "line": 1235
+  }
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

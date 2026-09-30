@@ -1,0 +1,111 @@
+{
+ "task": "T09",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "a2c8912fb475f3c3c",
+ "wallSec": 18.9,
+ "start": "2026-09-30T21:08:09.835Z",
+ "end": "2026-09-30T21:08:28.705Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 198168,
+  "cacheCreate": 14280,
+  "output": 121,
+  "total": 212581,
+  "ctxPeak": 37020
+ },
+ "toolCalls": 5,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 4,
+  "mcp__serena__get_symbols_overview": 1
+ },
+ "serenaCalls": 5,
+ "serenaResultChars": 220,
+ "serenaMs": 428,
+ "textResultChars": 0,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 107,
+   "chars": 2
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 97,
+   "chars": 137,
+   "err": true
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 84,
+   "chars": 77,
+   "err": true
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 68,
+   "chars": 2
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 72,
+   "chars": 2
+  }
+ ],
+ "answer": {
+  "rules": []
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 0,
+  "recall": 0,
+  "precision": 0,
+  "misses": [
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 701,
+    "selector": ".why-bring-backdrop"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 4220,
+    "selector": ".price.svelte-18m48uz"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 10352,
+    "selector": ".start-selling-platform-agents-card-chat"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11116,
+    "selector": ".start-selling-language-switch.svelte-1lc7nmb"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11343,
+    "selector": ".start-selling-top-nav.svelte-1dcozpm"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11619,
+    "selector": "dialog.sb-dialog[data-modal-name=\"waitlist-signup\"]::backdrop"
+   },
+   {
+    "file": "DialogHeader.Qcgwm6ST.css",
+    "line": 671,
+    "selector": ".sb-dialog.svelte-1u79i78::backdrop"
+   }
+  ],
+  "extras": [],
+  "offByOne": 0
+ }
+}

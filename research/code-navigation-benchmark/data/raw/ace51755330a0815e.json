@@ -1,0 +1,78 @@
+{
+ "task": "T12",
+ "arm": "G",
+ "rep": 1,
+ "agentId": "ace51755330a0815e",
+ "wallSec": 33.8,
+ "start": "2026-09-30T20:56:48.934Z",
+ "end": "2026-09-30T20:57:22.731Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 201858,
+  "cacheCreate": 16421,
+  "output": 1483,
+  "total": 219774,
+  "ctxPeak": 39161
+ },
+ "toolCalls": 6,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 6
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 11630,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 1819,
+   "chars": 6186
+  },
+  {
+   "name": "Bash",
+   "ms": 1953,
+   "chars": 1630
+  },
+  {
+   "name": "Bash",
+   "ms": 2056,
+   "chars": 2111
+  },
+  {
+   "name": "Bash",
+   "ms": 3378,
+   "chars": 1048
+  },
+  {
+   "name": "Bash",
+   "ms": 2250,
+   "chars": 274
+  },
+  {
+   "name": "Bash",
+   "ms": 1902,
+   "chars": 381
+  }
+ ],
+ "answer": {
+  "declaredLine": 12946,
+  "assignedLine": 13218,
+  "holds": "<omitted>",
+  "sameAsRafT": false,
+  "otherTLine": 13020
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

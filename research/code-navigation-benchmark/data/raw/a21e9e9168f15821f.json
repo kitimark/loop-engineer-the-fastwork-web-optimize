@@ -1,0 +1,74 @@
+{
+ "task": "T25",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "a21e9e9168f15821f",
+ "wallSec": 18,
+ "start": "2026-09-30T21:20:19.234Z",
+ "end": "2026-09-30T21:20:37.283Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 128245,
+  "cacheCreate": 15709,
+  "output": 35,
+  "total": 143997,
+  "ctxPeak": 38449
+ },
+ "toolCalls": 4,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 1,
+  "mcp__serena__find_symbol": 2,
+  "Bash": 1
+ },
+ "serenaCalls": 2,
+ "serenaResultChars": 558,
+ "serenaMs": 1985,
+ "textResultChars": 2545,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 14,
+   "chars": 2022
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 39,
+   "chars": 281
+  },
+  {
+   "name": "Bash",
+   "ms": 2120,
+   "chars": 523
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 1946,
+   "chars": 277
+  }
+ ],
+ "answer": {
+  "start": 10782,
+  "end": 10784,
+  "returns": "boolean: !oe() (not prefers-reduced-motion) && !s(T) (not phone/coarse-pointer small viewport per the max-width:860px / max-device-width:500px / hover:none+pointer:coarse+max-width:1200px query) && matchMedia('(min-width: 861px)').matches",
+  "excludesPhones": true
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

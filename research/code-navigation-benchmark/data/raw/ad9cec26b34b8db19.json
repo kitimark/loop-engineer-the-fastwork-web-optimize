@@ -1,0 +1,107 @@
+{
+ "task": "T16",
+ "arm": "G",
+ "rep": 2,
+ "agentId": "ad9cec26b34b8db19",
+ "wallSec": 29.5,
+ "start": "2026-09-30T21:05:20.153Z",
+ "end": "2026-09-30T21:05:49.631Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 122693,
+  "cacheCreate": 19859,
+  "output": 366,
+  "total": 142926,
+  "ctxPeak": 42599
+ },
+ "toolCalls": 4,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 4
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 20669,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 85,
+   "chars": 380
+  },
+  {
+   "name": "Bash",
+   "ms": 95,
+   "chars": 9590
+  },
+  {
+   "name": "Bash",
+   "ms": 1857,
+   "chars": 9095
+  },
+  {
+   "name": "Bash",
+   "ms": 1470,
+   "chars": 1604
+  }
+ ],
+ "answer": {
+  "chain": [
+   {
+    "file": "tools/fix.mjs",
+    "line": 423,
+    "function": "top-level dispatch (cmds.ab at line 420 -> cmdAb)",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/fix.mjs",
+    "line": 336,
+    "function": "cmdAb",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/fix.mjs",
+    "line": 373,
+    "function": "cmdAb",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/verify.mjs",
+    "line": 219,
+    "function": "main",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/verify.mjs",
+    "line": 221,
+    "function": "main",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/lib/lock.mjs",
+    "line": 170,
+    "function": "acquire",
+    "what": "<omitted>"
+   },
+   {
+    "file": "tools/lib/lock.mjs",
+    "line": 94,
+    "function": "tryAcquire",
+    "what": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "keys": {
+   "C1": true,
+   "C2": true,
+   "C3": true,
+   "C4": true
+  },
+  "wrongClaim": false,
+  "offByOne": 0
+ }
+}

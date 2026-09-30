@@ -1,0 +1,67 @@
+{
+ "task": "T18",
+ "arm": "G",
+ "rep": 2,
+ "agentId": "a868c1aa1601bef0b",
+ "wallSec": 14.8,
+ "start": "2026-09-30T21:05:28.892Z",
+ "end": "2026-09-30T21:05:43.691Z",
+ "turns": 2,
+ "tokens": {
+  "input": 4,
+  "cacheRead": 60966,
+  "cacheCreate": 4238,
+  "output": 202,
+  "total": 65410,
+  "ctxPeak": 34723
+ },
+ "toolCalls": 1,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 1
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 5471,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 1857,
+   "chars": 5471
+  }
+ ],
+ "answer": {
+  "references": [
+   {
+    "line": 10946,
+    "access": "both"
+   },
+   {
+    "line": 10947,
+    "access": "read"
+   },
+   {
+    "line": 10950,
+    "access": "both"
+   },
+   {
+    "line": 10954,
+    "access": "read"
+   },
+   {
+    "line": 10957,
+    "access": "read"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

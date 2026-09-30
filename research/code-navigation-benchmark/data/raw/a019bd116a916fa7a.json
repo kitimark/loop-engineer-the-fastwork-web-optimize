@@ -1,0 +1,84 @@
+{
+ "task": "T14",
+ "arm": "G",
+ "rep": 1,
+ "agentId": "a019bd116a916fa7a",
+ "wallSec": 17.4,
+ "start": "2026-09-30T20:57:47.831Z",
+ "end": "2026-09-30T20:58:05.265Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 121409,
+  "cacheCreate": 14318,
+  "output": 316,
+  "total": 136051,
+  "ctxPeak": 37058
+ },
+ "toolCalls": 3,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 2,
+  "Read": 1
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 8198,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 99,
+   "chars": 72
+  },
+  {
+   "name": "Read",
+   "ms": 24,
+   "chars": 6585
+  },
+  {
+   "name": "Bash",
+   "ms": 2085,
+   "chars": 1541
+  }
+ ],
+ "answer": {
+  "variable": "$T",
+  "declLine": 2663,
+  "uses": [
+   {
+    "line": 2672,
+    "function": "iE",
+    "access": "read",
+    "how": "<omitted>"
+   },
+   {
+    "line": 2682,
+    "function": "oE",
+    "access": "read",
+    "how": "<omitted>"
+   },
+   {
+    "line": 2761,
+    "function": "dE",
+    "access": "write",
+    "how": "<omitted>"
+   },
+   {
+    "line": 2773,
+    "function": "anonymous cleanup closure returned by dE (lines 2770-2781)",
+    "access": "write",
+    "how": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

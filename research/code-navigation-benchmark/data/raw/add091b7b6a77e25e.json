@@ -1,0 +1,99 @@
+{
+ "task": "T09",
+ "arm": "S",
+ "rep": 1,
+ "agentId": "add091b7b6a77e25e",
+ "wallSec": 17.7,
+ "start": "2026-09-30T20:58:06.179Z",
+ "end": "2026-09-30T20:58:23.912Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 120075,
+  "cacheCreate": 11767,
+  "output": 1268,
+  "total": 133118,
+  "ctxPeak": 34507
+ },
+ "toolCalls": 3,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 3
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 2460,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 105,
+   "chars": 1072
+  },
+  {
+   "name": "Bash",
+   "ms": 2096,
+   "chars": 588
+  },
+  {
+   "name": "Bash",
+   "ms": 100,
+   "chars": 800
+  }
+ ],
+ "answer": {
+  "rules": [
+   {
+    "file": "site-pretty/_app/immutable/assets/DialogHeader.Qcgwm6ST.css",
+    "line": 671,
+    "selector": ".sb-dialog.svelte-1u79i78::backdrop",
+    "value": "blur(2px)"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 701,
+    "selector": ".why-bring-backdrop",
+    "value": "blur(16px)"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 4220,
+    "selector": ".price.svelte-18m48uz",
+    "value": "blur(6px)"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 10352,
+    "selector": ".start-selling-platform-agents-card-chat",
+    "value": "blur(6px)"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 11116,
+    "selector": ".start-selling-language-switch.svelte-1lc7nmb",
+    "value": "blur(12px)"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 11343,
+    "selector": ".start-selling-top-nav.svelte-1dcozpm",
+    "value": "blur(calc(20px * (1 - var(--morph))))"
+   },
+   {
+    "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+    "line": 11619,
+    "selector": "dialog.sb-dialog[data-modal-name=\"waitlist-signup\"]::backdrop",
+    "value": "blur(8px)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

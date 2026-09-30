@@ -1,0 +1,87 @@
+{
+ "task": "T24",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a43ea685bbbdf9e9e",
+ "wallSec": 23.2,
+ "start": "2026-09-30T21:22:35.177Z",
+ "end": "2026-09-30T21:22:58.342Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 209877,
+  "cacheCreate": 8355,
+  "output": 335,
+  "total": 218579,
+  "ctxPeak": 39159
+ },
+ "toolCalls": 6,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Bash": 6
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 3181,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 11,
+   "chars": 0
+  },
+  {
+   "name": "Bash",
+   "ms": 75,
+   "chars": 198
+  },
+  {
+   "name": "Bash",
+   "ms": 2027,
+   "chars": 49
+  },
+  {
+   "name": "Bash",
+   "ms": 157,
+   "chars": 875
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 79
+  },
+  {
+   "name": "Bash",
+   "ms": 141,
+   "chars": 176
+  },
+  {
+   "name": "Bash",
+   "ms": 95,
+   "chars": 1804
+  }
+ ],
+ "answer": {
+  "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+  "name": "F",
+  "start": 1229,
+  "end": 1234,
+  "equalityCheckIn": {
+   "name": "wn",
+   "line": 1235
+  }
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

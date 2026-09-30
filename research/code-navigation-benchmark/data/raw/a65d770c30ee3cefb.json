@@ -1,0 +1,66 @@
+{
+ "task": "T25",
+ "arm": "G",
+ "rep": 1,
+ "agentId": "a65d770c30ee3cefb",
+ "wallSec": 18.8,
+ "start": "2026-09-30T21:18:57.447Z",
+ "end": "2026-09-30T21:19:16.289Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 120420,
+  "cacheCreate": 11874,
+  "output": 31,
+  "total": 132333,
+  "ctxPeak": 34614
+ },
+ "toolCalls": 4,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 4
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 3027,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 84,
+   "chars": 1444
+  },
+  {
+   "name": "Bash",
+   "ms": 2002,
+   "chars": 1244
+  },
+  {
+   "name": "Bash",
+   "ms": 1951,
+   "chars": 305
+  },
+  {
+   "name": "Bash",
+   "ms": 1529,
+   "chars": 34
+  }
+ ],
+ "answer": {
+  "start": 10782,
+  "end": 10784,
+  "returns": "boolean: !oe() (not prefers-reduced-motion) && !s(T) (not the mobile/touch media-query flag) && matchMedia('(min-width: 861px)').matches",
+  "excludesPhones": true
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

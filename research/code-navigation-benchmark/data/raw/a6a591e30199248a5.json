@@ -1,0 +1,74 @@
+{
+ "task": "T25",
+ "arm": "S",
+ "rep": 2,
+ "agentId": "a6a591e30199248a5",
+ "wallSec": 17.6,
+ "start": "2026-09-30T21:22:39.471Z",
+ "end": "2026-09-30T21:22:57.040Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 129928,
+  "cacheCreate": 16879,
+  "output": 36,
+  "total": 146851,
+  "ctxPeak": 39619
+ },
+ "toolCalls": 4,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 1,
+  "mcp__serena__find_symbol": 1,
+  "Bash": 2
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 2470,
+ "serenaMs": 101,
+ "textResultChars": 2839,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 6,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 29,
+   "chars": 2022
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 101,
+   "chars": 2470
+  },
+  {
+   "name": "Bash",
+   "ms": 80,
+   "chars": 490
+  },
+  {
+   "name": "Bash",
+   "ms": 2123,
+   "chars": 327
+  }
+ ],
+ "answer": {
+  "start": 10782,
+  "end": 10784,
+  "returns": "!oe() && !s(T) && matchMedia('(min-width: 861px)').matches, i.e. true only when prefers-reduced-motion is not set, the phone/coarse-pointer media query state T is false, and the viewport is at least 861px wide",
+  "excludesPhones": true
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

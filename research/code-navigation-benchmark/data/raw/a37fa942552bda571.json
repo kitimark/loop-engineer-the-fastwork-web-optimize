@@ -1,0 +1,84 @@
+{
+ "task": "T25",
+ "arm": "SO",
+ "rep": 1,
+ "agentId": "a37fa942552bda571",
+ "wallSec": 17.2,
+ "start": "2026-09-30T21:20:45.295Z",
+ "end": "2026-09-30T21:21:02.487Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 200583,
+  "cacheCreate": 15800,
+  "output": 1014,
+  "total": 217409,
+  "ctxPeak": 38540
+ },
+ "toolCalls": 6,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 3,
+  "mcp__serena__find_declaration": 1,
+  "mcp__serena__find_symbol": 2
+ },
+ "serenaCalls": 3,
+ "serenaResultChars": 746,
+ "serenaMs": 335,
+ "textResultChars": 2029,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 9,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 692
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 163,
+   "chars": 279
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 764
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 79,
+   "chars": 277
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 93,
+   "chars": 190
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 573
+  }
+ ],
+ "answer": {
+  "start": 10782,
+  "end": 10784,
+  "returns": "!oe() && !s(T) && window.matchMedia('(min-width: 861px)').matches, i.e. true only when prefers-reduced-motion is not set, the mobile flag T is false, and the viewport is at least 861px wide",
+  "excludesPhones": true
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}
