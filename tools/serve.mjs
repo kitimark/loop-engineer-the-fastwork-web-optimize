@@ -6,6 +6,9 @@
 //   node tools/serve.mjs --vendors=local       # run saved GTM/GA4/Amplitude/Hotjar/CF-beacon code, beacons neutered
 //   node tools/serve.mjs --vendors=off         # also no-op the first-party /analytics.js
 //   node tools/serve.mjs --https [--cert c.pem --key k.pem]  # HTTPS + HTTP/2 (mkcert certs, or auto self-signed)
+//                                              # + a plain-http twin on a second port (same files) for the iPhone:
+//                                              # iOS Safari stops at the self-signed cert warning on every new port
+//                                              # (incident I-003); --no-http-twin turns it off
 //   node tools/serve.mjs --compress=none|gzip|br           # default br (what production sends)
 //   node tools/serve.mjs --no-cache            # send Cache-Control: no-store instead of production's
 //   node tools/serve.mjs --root site-pretty    # serve another tree (e.g. an edited copy)
@@ -54,6 +57,9 @@ const COMPRESS = opt('compress', 'br'); // br | gzip | none
 const NO_CACHE = flag('no-cache');
 const QUIET = flag('quiet');
 const HTTPS = flag('https');
+const HTTP_TWIN = HTTPS && !flag('no-http-twin'); // plain-http listener next to --https, for the iPhone (I-003)
+let SELF_SIGNED = false; // --https without --cert/--key: the auto-created cert no phone trusts
+let TWIN_PORT = null;
 const LATENCY = Number(opt('latency', 0)); // ms added before every response (rough CDN RTT emulation)
 if (!['block', 'local', 'off'].includes(VENDORS)) { console.error('--vendors must be block|local|off'); process.exit(2); }
 
@@ -218,7 +224,7 @@ function handler(req, res) {
   }
   if (pathname === '/__mirror/info') {
     done(200);
-    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, root: ROOT, overlays: OVERLAYS.map((d) => ({ dir: d, files: listFiles(d) })), latency: LATENCY, https: HTTPS, rewrites: REWRITES }, null, 1)));
+    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, root: ROOT, overlays: OVERLAYS.map((d) => ({ dir: d, files: listFiles(d) })), latency: LATENCY, https: HTTPS, selfSigned: SELF_SIGNED, httpTwin: TWIN_PORT, rewrites: REWRITES }, null, 1)));
   }
   if (pathname.startsWith('/cdn-cgi/')) { done(204); return send(req, res, 204, {}, null); }
 
@@ -311,6 +317,7 @@ if (HTTPS) {
       if (!pair) { console.error(`${cert} and ${key} do not form a valid key/cert pair; pass --cert/--key instead`); process.exit(2); }
     }
     console.log(`using self-signed certificate ${cert} (browsers will warn; see README for mkcert)`);
+    SELF_SIGNED = true;
     server = http2.createSecureServer({ ...pair, allowHTTP1: true }, handler);
   } else {
     server = http2.createSecureServer({ cert: readFileSync(cert), key: readFileSync(key), allowHTTP1: true }, handler);
@@ -318,7 +325,15 @@ if (HTTPS) {
 } else {
   server = http.createServer(handler);
 }
+// The plain-http twin: same handler, any free port, started before the URLs are printed so the
+// announcement (and the --state file) can name it. If it can't listen, serve on without it.
 function onListening() {
+  if (!HTTP_TWIN) return announce();
+  const twin = http.createServer(handler);
+  twin.once('error', (e) => { console.error(`plain-http twin not started (${e.code || e.message}); serving https only`); announce(); });
+  twin.listen(0, HOST, () => { TWIN_PORT = twin.address().port; announce(); });
+}
+function announce() {
   const PORT = server.address().port;
   const proto = HTTPS ? 'https' : 'http';
   const url = `${proto}://localhost:${PORT}/`;
@@ -327,16 +342,18 @@ function onListening() {
   console.log(`  vendors=${VENDORS}  compress=${COMPRESS}  cache=${NO_CACHE ? 'no-store' : 'production headers'}${HTTPS ? '  (HTTP/2 + TLS)' : ''}${LATENCY ? `  latency=+${LATENCY}ms` : ''}`);
   if (REWRITES.length) console.log('  rewrites: ' + REWRITES.join(' | '));
   console.log(`\n  local:  ${url}`);
+  if (TWIN_PORT) console.log(`  http twin: http://localhost:${TWIN_PORT}/  (plain http, same files: for the iPhone, whose Safari stops at the ${SELF_SIGNED ? 'self-signed ' : ''}certificate warning)`);
   if (HOST === '0.0.0.0' || HOST === '::') {
     const all = lanAddresses().filter((a) => !a.address.startsWith('169.254.'));
     const lan = all.filter((a) => /^(192\.168|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address) && !/^(utun|tun|tap|ppp|wg)/.test(a.name));
-    for (const a of lan) console.log(`  LAN:    ${proto}://${a.address}:${PORT}/   (${a.name})  <- open this on the iPhone (same Wi-Fi)`);
+    for (const a of lan) console.log(`  LAN:    ${proto}://${a.address}:${PORT}/   (${a.name})${TWIN_PORT ? '' : '  <- open this on the iPhone (same Wi-Fi)'}`);
+    if (TWIN_PORT) for (const a of lan) console.log(`  iPhone: http://${a.address}:${TWIN_PORT}/   (${a.name})  <- open this on the iPhone (same Wi-Fi; iphone.mjs open also switches an https URL of this server to it)`);
     for (const a of all.filter((x) => !lan.includes(x))) console.log(`  other:  ${proto}://${a.address}:${PORT}/   (${a.name}, VPN/other interface)`);
   }
   console.log(`\nMIRROR_URL=${url}`); // machine-readable (tools/fix.mjs and agents grep for it)
   if (STATE_FILE) {
     mkdirSync(dirname(STATE_FILE), { recursive: true });
-    writeFileSync(STATE_FILE, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, latency: LATENCY, checkout: ROOT_DIR, startedAt: new Date().toISOString() }, null, 1));
+    writeFileSync(STATE_FILE, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, httpTwin: TWIN_PORT, latency: LATENCY, checkout: ROOT_DIR, startedAt: new Date().toISOString() }, null, 1));
     const cleanup = () => { try { if (JSON.parse(readFileSync(STATE_FILE, 'utf8')).pid === process.pid) unlinkSync(STATE_FILE); } catch {} };
     process.on('exit', cleanup);
     for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(sig, () => process.exit(0));

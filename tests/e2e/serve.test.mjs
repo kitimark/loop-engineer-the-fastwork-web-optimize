@@ -257,6 +257,35 @@ test('--https: self-signed cert created under the mirror home, HTTP/1.1 fallback
   await s.stop();
 });
 
+test('--https also serves a plain-http twin of the same files for the iPhone; --no-http-twin turns it off (incident I-003)', async () => {
+  // iOS Safari stops at its certificate warning for a self-signed cert on every new port, so the
+  // iPhone needs a plain-http URL of the same server (tools/iphone.mjs open switches to it).
+  const stateFile = join(fx.home, 'out', 'serve-twin.json');
+  const s = await serve(['--port', '0', '--https', '--state', stateFile]);
+  const info = JSON.parse((await request(s.url + '__mirror/info')).text);
+  assert.equal(info.https, true);
+  assert.equal(info.selfSigned, true);
+  assert.ok(Number.isInteger(info.httpTwin) && info.httpTwin > 0 && info.httpTwin !== s.port, JSON.stringify(info));
+  assert.equal(JSON.parse(readFileSync(stateFile, 'utf8')).httpTwin, info.httpTwin);
+  const twin = `http://localhost:${info.httpTwin}/`;
+  assert.match(s.stdout(), new RegExp(`^  http twin: ${twin.replace(/[./]/g, '\\$&')} `, 'm'));
+  assert.match(s.stdout(), /^MIRROR_URL=https:/m); // the machine-readable URL stays the https one (Chrome A/B)
+  const [a, b] = await Promise.all([request(s.url + PAGE_JS.slice(1)), request(twin + PAGE_JS.slice(1))]);
+  assert.equal(b.status, 200);
+  assert.equal(b.text, a.text);
+  assert.equal(JSON.parse((await request(twin + '__mirror/info')).text).httpTwin, info.httpTwin);
+  await s.stop();
+  await assert.rejects(request(twin), (e) => e.code === 'ECONNREFUSED'); // the twin goes away with the server
+
+  const off = await serve(['--port', '0', '--https', '--quiet', '--no-http-twin']);
+  assert.equal(JSON.parse((await request(off.url + '__mirror/info')).text).httpTwin, null);
+  const plain = await serve(['--port', '0', '--quiet']);
+  const pi = JSON.parse((await request(plain.url + '__mirror/info')).text);
+  assert.equal(pi.httpTwin, null);
+  assert.equal(pi.selfSigned, false);
+  await Promise.all([off.stop(), plain.stop()]);
+});
+
 test('--latency N delays every response by about N ms', async () => {
   const [fast, slow] = await Promise.all([serve(['--port', '0', '--quiet']), serve(['--port', '0', '--quiet', '--latency', '300'])]);
   await request(fast.url); await request(slow.url); // warm up

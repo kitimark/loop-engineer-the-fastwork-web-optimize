@@ -14,15 +14,21 @@
 // reload, settle 8 s, rAF frame logger, 3 s idle, scrollBy({top:250, behavior:'smooth'}) every 300 ms to
 // the bottom, 3 s at the bottom. It does NOT exercise the touch-only paths (non-passive touchmove
 // scroll-jack, toolbar-collapse resize); those need a human finger (ask the lead / user).
-// Serve with --https and use the LAN URL; accept the self-signed cert once in Safari (or use mkcert).
+// Self-signed https (incident I-003): iOS Safari stops at its certificate warning for the mirror's
+// self-signed cert on every new port, and nothing here can click through it. `serve.mjs --https` (and
+// `fix.mjs serve`) therefore also serve a plain-http twin port; `open <https mirror URL>` switches to
+// it (--keep-https opts out, for a phone that trusts the cert) and after navigating fails loudly if
+// Safari is not on the mirror page (certificate warning), instead of leaving it there to be measured.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, sleep } from './lib/wip.mjs';
 import { status as lockStatus } from './lib/lock.mjs';
 import { REPO } from './lib/paths.mjs';
+import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE } from './lib/iphone-url.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
+const flag = (n) => argv.includes(`--${n}`);
 const VALUED = ['--owner', '--out', '--label', '--seconds'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
@@ -81,10 +87,20 @@ async function main() {
   if (cmd === 'open') {
     requireLease();
     if (!/^https?:\/\//.test(arg || '')) throw new Error('usage: node tools/iphone.mjs open <url> --owner <topic>');
+    const info = await mirrorInfo(arg);
+    const target = iphoneTarget(arg, info, { keepHttps: flag('keep-https') });
+    if (target.note) console.log(target.note);
     const c = await openTab(() => true);
-    const c2 = await navigate(c, arg, new URL(arg).host);
-    console.log(`Safari now on ${await c2.evaluate('location.href')}`);
+    let c2;
+    try { c2 = await navigate(c, target.url, new URL(target.url).host); } catch (e) {
+      if (target.url.startsWith('https:')) e.message += ` (Safari never listed ${target.url}; if it shows "This Connection Is Not Private", that is the certificate warning: open the http:// URL instead, incident I-003)`;
+      throw e;
+    }
+    const landed = await c2.evaluate(LANDED_JS);
     c2.close();
+    const problem = landedProblem(landed, target.url, info);
+    if (problem) throw new Error(problem);
+    console.log(`Safari now on ${landed.href}`);
     return;
   }
   if (cmd === 'scroll') {
@@ -93,7 +109,10 @@ async function main() {
     const list = await tabs();
     const tab = list[0];
     if (!tab) throw new Error('no Safari tab (unlock the iPhone, bring Safari to the front)');
-    if (holder.meta?.url && !tab.url.startsWith(holder.meta.url)) console.error(`warning: Safari shows ${tab.url}, your lease says ${holder.meta.url} (run: node tools/iphone.mjs open ${holder.meta.url} --owner ${owner})`);
+    if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (it opens a self-signed https mirror over its plain-http twin, incident I-003)`);
+    let leaseUrl = holder.meta?.url;
+    if (leaseUrl && !tab.url.startsWith(leaseUrl)) { try { leaseUrl = iphoneTarget(leaseUrl, await mirrorInfo(leaseUrl)).url; } catch {} } // https lease URL, Safari on its http twin
+    if (leaseUrl && !tab.url.startsWith(leaseUrl)) console.error(`warning: Safari shows ${tab.url}, your lease says ${holder.meta.url} (run: node tools/iphone.mjs open ${holder.meta.url} --owner ${owner})`);
     let c = await openTab(() => true);
     const host = new URL(await c.evaluate('location.href')).host;
     await c.evaluate(`scrollTo(0, 0); setTimeout(() => location.reload(), 400); 'ok'`);
@@ -143,6 +162,6 @@ async function main() {
     console.log(`saved ${out}`);
     return;
   }
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25]');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25]');
 }
 main().then(() => process.exit(0), (e) => { console.error(e.message || e); process.exit(1); });
