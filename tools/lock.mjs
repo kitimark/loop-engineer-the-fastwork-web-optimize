@@ -24,8 +24,21 @@
 // probe, another `lock.mjs run`) uses this one hold instead of queueing behind it; e.g.
 //   node tools/lock.mjs run chrome-measure --owner <topic> -- sh -c 'node tools/fix.mjs ab <topic> --runs 5 && node probe.mjs'
 // Resources: chrome-measure (verify.mjs takes it automatically), iphone (lease, TTL default 900 s).
+//
+// Lock state looks wrong (a stale "short" last grant starving the short lane, a queue entry that never
+// goes away, a leftover guard dir)? Never edit the lock JSON by hand (incident I-012); use:
+//   node tools/lock.mjs doctor [resource] [--json]      # read-only; exit 0 clean, 1 problems (each with its fix)
+//   node tools/lock.mjs repair <resource> [--force-holder]                        # dry run: before/after per change
+//   node tools/lock.mjs repair <resource> --by <who> --reason "<why>" --apply     # the lead applies it
+// --apply takes the resource's guard (the mutex of every acquire/release), re-checks under it, applies
+// only the doctor's fixes (atomic writes), and appends one JSON line per change to locks/audit.log. A
+// live holder is never removed unless --force-holder (which prints it first); the iphone lease of a live
+// holder never. Checks: stale holder; unparsable files; stale, dead or duplicate queue entries; last grant
+// missing or not matching the live holder (I-011); a short last grant, no holder, older than its hold
+// could run; a guard dir older than --guard-age (10 s); *.tmp older than 60 s. Library: lib/lock-repair.mjs.
 import { spawn } from 'node:child_process';
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES } from './lib/lock.mjs';
+import { doctor, repair, auditFile } from './lib/lock-repair.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -33,7 +46,7 @@ const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const rest = dd >= 0 ? argv.slice(dd + 1) : [];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
-const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds'];
+const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age'];
 const [cmd, resource] = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 const owner = opt('owner', process.env.FW_LOCK_OWNER);
 const short = flag('short');
@@ -49,11 +62,39 @@ function fmt(s) {
   return line;
 }
 
+function fmtProblem(p, withValues) {
+  let s = `  - [${p.code}] ${p.file}: ${p.message}\n    fix: ${p.fix}`;
+  if (withValues) s += `\n    before: ${JSON.stringify(p.before)}\n    after:  ${JSON.stringify(p.after)}`;
+  return s;
+}
+function fmtDoctor(d) {
+  const h = d.holder ? `held by "${d.holder.owner}"${sh(d.holder)}` : 'no live holder';
+  if (!d.problems.length) return `OK ${d.resource}: ${h}`;
+  return `PROBLEMS ${d.resource}: ${d.problems.length} (${h})\n${d.problems.map((p) => fmtProblem(p, false)).join('\n')}\n  dry run: node tools/lock.mjs repair ${d.resource}`;
+}
+
 async function main() {
   if (!cmd || cmd === 'help' || flag('help')) { console.log(Object.entries(RESOURCES).map(([k, v]) => `  ${k}: ${v}`).join('\n')); console.log('\nsee header of tools/lock.mjs for usage'); return 0; }
   if (cmd === 'status') {
     const list = resource ? [status(resource)] : allStatus();
     if (flag('json')) console.log(JSON.stringify(list, null, 1)); else for (const s of list) console.log(fmt(s));
+    return 0;
+  }
+  if (cmd === 'doctor') {
+    const list = doctor(resource, { guardAgeSec: Number(opt('guard-age', 10)) });
+    if (flag('json')) console.log(JSON.stringify(list, null, 1)); else for (const d of list) console.log(fmtDoctor(d));
+    return list.some((d) => d.problems.length) ? 1 : 0;
+  }
+  if (cmd === 'repair') {
+    if (!resource) throw new Error('usage: node tools/lock.mjs repair <resource> [--by <who> --reason "<why>" --apply] [--force-holder]');
+    const apply = flag('apply'), forceHolder = flag('force-holder');
+    if (forceHolder) { const h = status(resource).holder; console.log(`holder: ${h ? JSON.stringify(h) : 'none'}`); }
+    const d = await repair(resource, { by: opt('by'), reason: opt('reason'), apply, forceHolder, guardAgeSec: Number(opt('guard-age', 10)) });
+    const n = d.problems.length;
+    if (flag('json')) { console.log(JSON.stringify(d, null, 1)); return 0; }
+    if (!apply) console.log(`REPAIR ${resource} (dry run, nothing changed): ${n} change(s)${n ? '; apply with --by <who> --reason "<why>" --apply' : ''}`);
+    else console.log(`REPAIRED ${resource}: ${n} change(s)${n ? ` by "${opt('by')}", logged to ${auditFile()}` : ''}`);
+    for (const p of d.problems) console.log(fmtProblem(p, true));
     return 0;
   }
   if (!resource) throw new Error(`usage: node tools/lock.mjs ${cmd} <resource> --owner <name>`);
