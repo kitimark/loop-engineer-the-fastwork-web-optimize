@@ -139,7 +139,15 @@ names you are giving them, A/A numbers, and `--on <combined>` for wave 2).
   work (`npm test`, Chrome, builds) outside `chrome-measure`: route it through the short lane. An
   experiment that is heavy by design (several Chromes at once) gets a quiet window with no tests, and a
   stop rule ("stop at load > N"). Each `npm test` runs ~7 files in parallel, so two suites at once already
-  exceed 8 cores.
+  exceed 8 cores. From the postmortem (`research/architecture/postmortem-2026-09-30-overload.md`):
+  - any exception that bypasses a lock is written into its incident with a load budget and an expiry
+    (<= 30 min), never granted by message alone;
+  - heavy-by-design experiments run only in an announced quiet window (2 min quiet host before start,
+    self-abort rule, leases <= 15 min per condition);
+  - at most ~6 agents doing CPU work while anyone measures; the rest wait or do read-only work;
+  - before a clean-numbers window (A/A floor, combined wave A/B), ask the user to close heavy desktop
+    apps; macOS load average counts memory stalls, so also check CPU idle (`top -l 1`) and memory pressure;
+  - results measured above the gate are tagged, not deleted; the wave's combined A/B must be clean.
 - Wait for owners; don't do their work in the lead session.
 
 ## 4. Review

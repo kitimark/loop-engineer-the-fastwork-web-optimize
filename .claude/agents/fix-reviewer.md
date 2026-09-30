@@ -48,7 +48,12 @@ done criteria are `fixes/README.md` "Definition of done"; check each one.
    --https --latency 150`) with `runs` >= 5. A "better" claim needs non-overlapping ranges; compare
    the deltas with the A/A noise floor if one is cited. The README table equals `results.json`
    `markdown`. Metrics that got worse are mentioned. `host.loadavg1Min/Max` are low and similar
-   (compare with other topics' runs if they look high).
+   (compare with other topics' runs if they look high). **Host contamination (I-016/I-017,
+   `research/architecture/postmortem-2026-09-30-overload.md`):** reject a claimed win whose runs are
+   flagged contaminated (`host` contaminated/`loadInvalid` runs, or load1 > 10 at start where no flag
+   exists yet). A "better" verdict measured above load 6 stands only as *provisional* (ranges disjoint
+   and delta beyond an A/A at similar load); "within noise" above load 6 is *inconclusive*, not a null
+   result; absolute numbers and comparisons with the load-3-6 A/A floor are void.
 6. **Regressions.** `regressions.newErrors`, `new404s` empty; `morphReached` all true on both sides;
    `screenshotDiffPct` <= 0.4 per shot, otherwise `Read` the PNGs in the run directory next to
    `results.json` `raw` (`mobile-base-*.png` vs `mobile-fix-*.png`) and judge the difference.
