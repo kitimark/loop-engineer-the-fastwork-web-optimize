@@ -56,12 +56,13 @@ Times UTC, 2026-09-30 (commit times in `git log` are UTC+7). "Intent" is the goa
 | D38 | 22:54-22:56 | record every experiment, even bad ones, each with a benchmark | EXPERIMENTS.md (bba2d7d, e0bdffb, 2c94e26: 72 rows) | no repeated dead ends; reproducible |
 | D39 | 22:59 | management team: understand my decisions, principles, improve, measure, loop | this directory (37a3a48) | a feedback loop on how the team works |
 | D40 | ~23:05 | delegate as much as possible; lead keeps important decisions ("you were interrupted a lot") | `mgmt-ops` operator (6ab6820) | protect the lead's attention |
+| D41 | ~23:25 | "for design team who didn't touch the tools, should run only unittest. we could make the unittest can ensure they won't touch tools by accident. delegate to the roles that need to do investigation, distinguish, make decision and implement." | I-021; toolsmith ts-i021 (short lane only): tooling vs non-tooling roles, a fast unit-only run plus a guard that no tooling was touched, docs; hook changes go to the user via the lead | stop spending the lock slot and CPU on the full suite for agents that never touch tools |
 
 **Themes.** (a) *Evidence and validity* D1, D4, D5, D7, D16, D34-D38: numbers must be real, reproducible
 and comparable. (b) *Throughput by parallelism* D8, D9, D12, D19, D26. (c) *Resource discipline* D23, D26,
 D28, D35: context, CPU, the one Chrome slot, the one phone. (d) *Autonomy / don't block* D15, D18, D20, D28,
 D29, D30, D40: neither the lead nor the user may be the bottleneck. (e) *Team structure and roles* D13, D17,
-D24, D33, D39, D40. (f) *Knowledge sharing* D21, D32, D38. (g) *Tooling reliability* D6, D11, D15, D31.
+D24, D33, D39, D40, D41. (f) *Knowledge sharing* D21, D32, D38. (g) *Tooling reliability* D6, D11, D15, D31, D41.
 (h) *iPhone is the truth, Chrome the proxy* D1-D4, D7, D9, D29. (i) *Safety and privacy* D2, D14, D31.
 (j) *Continuous improvement* D27, D30, D33, D39.
 
