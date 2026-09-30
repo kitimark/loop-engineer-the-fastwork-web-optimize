@@ -1,0 +1,142 @@
+# fastwork mirror fix: scroll-engine--engine-only
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply scroll-engine--engine-only
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2663,26 +2663,90 @@
+ var $T = new Set(),
+   eE = new Map(),
+   tE = 0,
+-  nE = !1;
+-function rE() {
+-  tE ||= window.requestAnimationFrame(iE);
++  nE = !1,
++  // [scroll-engine] full = next frame runs every active effect (scroll / resize / activation);
++  // otherwise only effects that asked for another frame (easing) or a final run (deactivation).
++  fwFull = !1,
++  fwW = -1,
++  fwRT = 0,
++  // Per-frame viewport cache, read lazily (at most once per frame, and before any mutate() write).
++  fwF = {
++    _vh: -1,
++    _vw: -1,
++    _y: -1,
++    t: 0,
++    get vh() {
++      return this._vh < 0 ? (this._vh = window.innerHeight) : this._vh;
++    },
++    get vw() {
++      return this._vw < 0 ? (this._vw = window.innerWidth) : this._vw;
++    },
++    get y() {
++      return this._y < 0 ? (this._y = window.scrollY) : this._y;
++    },
++  },
++  // Same shape, uncached: for calling a measure()/mutate() pair directly, outside an engine frame.
++  fwNow = {
++    t: 0,
++    get vh() {
++      return window.innerHeight;
++    },
++    get vw() {
++      return window.innerWidth;
++    },
++    get y() {
++      return window.scrollY;
++    },
++  };
++// Run a two-phase effect right now (mount, matchMedia change); true = not settled.
++function fwRun(e) {
++  return e.mutate(e.measure(fwNow), fwNow) === !0;
+ }
+-function iE() {
++function rE() {
++  ((fwFull = !0), (tE ||= window.requestAnimationFrame(iE)));
++}
++function fwWake(e) {
++  ((e.wake = !0), (tE ||= window.requestAnimationFrame(iE)));
++}
++// [toolbar-resize] iOS fires `resize` ~36 times while the URL bar collapses. Those are height-only:
++// the scroll that collapses the bar already schedules frames, which read a fresh innerHeight
++// (fwF.vh). Width changes (rotation, desktop resize) still re-run everything at once; a height-only
++// resize with no scroll re-runs once, after the resizes stop.
++function fwResize() {
++  let e = window.innerWidth;
++  if (e !== fwW) {
++    ((fwW = e), fwRT && (window.clearTimeout(fwRT), (fwRT = 0)), rE());
++    return;
++  }
++  (fwRT && window.clearTimeout(fwRT), (fwRT = window.setTimeout(() => ((fwRT = 0), rE()), 120)));
++}
++function iE(t) {
+   tE = 0;
+-  for (let e of $T) e.active && e.callback();
++  let n = fwFull;
++  ((fwFull = !1), (fwF._vh = fwF._vw = fwF._y = -1), (fwF.t = t));
++  let r = [];
++  for (let e of $T) (e.wake || e.final || (n && e.active)) && ((e.wake = e.final = !1), r.push(e));
++  // 1. legacy dE(fn) callbacks (they read and write themselves), in registration order
++  for (let e of r) e.measure || e.callback();
++  // 2. every two-phase effect reads (one style+layout at most for all of them) ...
++  for (let e of r) e.measure && (e.m = e.measure(fwF));
++  // 3. ... then every two-phase effect writes; `true` = not settled, run it again next frame
++  for (let e of r) e.measure && e.mutate(e.m, fwF) === !0 && fwWake(e);
+ }
+ function aE() {
+   nE ||
+     ((nE = !0),
++    (fwW = window.innerWidth),
+     window.addEventListener(`scroll`, rE, { passive: !0 }),
+-    window.addEventListener(`resize`, rE, { passive: !0 }));
++    window.addEventListener(`resize`, fwResize, { passive: !0 }));
+ }
+ function oE() {
+   !nE ||
+     $T.size ||
+     ((nE = !1),
+     window.removeEventListener(`scroll`, rE),
+-    window.removeEventListener(`resize`, rE),
++    window.removeEventListener(`resize`, fwResize),
++    fwRT && (window.clearTimeout(fwRT), (fwRT = 0)),
+     tE && window.cancelAnimationFrame(tE),
+     (tE = 0));
+ }
+@@ -2707,10 +2771,14 @@
+   }
+ }
+ function cE(e, t) {
++  // [scene-gating] only touch the attribute when it changes (it restyles the whole section subtree);
++  // on deactivation run the effect once more so it writes its clamped end state.
++  let n = t ? `active` : `paused`;
+   (e.manageAnimations &&
+     e.element &&
+-    e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
+-    e.active !== t && ((e.active = t), sE(e, t), e.onActiveChange?.(t), t && rE()));
++    e.element.getAttribute(`data-start-selling-scene`) !== n &&
++    e.element.setAttribute(`data-start-selling-scene`, n),
++    e.active !== t && ((e.active = t), sE(e, t), e.onActiveChange?.(t), t ? rE() : ((e.final = !0), fwWake(e))));
+ }
+ function lE(e) {
+   let t = e.getBoundingClientRect();
+@@ -2747,9 +2815,17 @@
+   );
+ }
+ function dE(e, t = {}) {
++  // [scroll-engine] e is either a callback (legacy: reads and writes itself) or a two-phase
++  // effect { measure(f), mutate(m, f) }: measure only reads (f = per-frame fwF cache), mutate only
++  // writes and returns true while it is still easing.
+   let n = {
+       active: !t.element || lE(t.element),
+-      callback: e,
++      callback: typeof e == `function` ? e : void 0,
++      measure: typeof e == `function` ? void 0 : e.measure,
++      mutate: typeof e == `function` ? void 0 : e.mutate,
++      m: void 0,
++      wake: !1,
++      final: !1,
+       deferRendering: t.deferRendering ?? !1,
+       element: t.element,
+       manageAnimations: t.manageAnimations ?? !!t.element,
