@@ -33,8 +33,12 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
 
 1. E1 nav-morph-all (lazy mount + hit test + passive + countdown active): removes the morph IO LoAF.
 2. scroll-engine diagnostic slot: E2 state-change probe (explains the iPhone clusters), N9 idle probe, E3 animation ablation (decides N3's rank).
-3. Final A/Bs that gate the wave-1 combine (commission, layout-animations follow-up, countdown, pain, large-area-blur re-run).
-4. Wave-1 combined A/B on a quiet host (the number for the goal), then wave 2 `--on` it: hero-exit, scroll-engine (+ hysteresis), E4.
+3. Wave-1 combined A/B on a quiet host (the number for the goal). Changed 2026-10-01 per mgmt-lead plan item 2:
+   it moves ahead of the single-topic finals. Wave-1 topics land on mechanism evidence + review
+   ("gain pending combined"), and the combined A/B is the gain check. Then wave 2 `--on` it: hero-exit,
+   scroll-engine (+ hysteresis), E4.
+4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
+   only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N3 / N4 / N10 fixes as their prototypes pass Tier A.
 
 ## Started now (prototype while the queue drains)
