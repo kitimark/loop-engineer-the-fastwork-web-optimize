@@ -80,6 +80,15 @@ test('FW_MIRROR_HOME overrides discovery, even in a checkout that has its own si
   assert.equal(probe(repo.wt, { FW_MIRROR_HOME: other }).custom, join(repo.wt, 'custom-root'));
 });
 
+test('FW_MIRROR_HOME without a baseline never falls back to the checkout\'s own site/', () => {
+  // Regression: from a main checkout that has site/, an empty FW_MIRROR_HOME used to resolve to the
+  // checkout's site/, so `serve.mjs` started instead of failing on the missing manifest.
+  const empty = tempDir('fw-empty-home-');
+  const p = probe(repo.main, { FW_MIRROR_HOME: empty });
+  assert.equal(p.site, join(empty, 'site'));
+  assert.equal(p.pretty, join(empty, 'site-pretty'));
+});
+
 test('FW_STATE_DIR overrides the lock/state directory', () => {
   const d = tempDir('fw-state-');
   assert.equal(probe(repo.wt, { FW_STATE_DIR: d }).state, d);

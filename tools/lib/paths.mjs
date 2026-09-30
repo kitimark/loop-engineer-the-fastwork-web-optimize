@@ -46,6 +46,7 @@ export function mainCheckout() {
 }
 
 const hasMirror = (dir) => existsSync(join(dir, 'site', '.mirror', 'manifest.json'));
+const BASELINE_TREES = new Set(['site', 'site-pretty']);
 
 /** Directory holding the shared, read-only baseline (site/, site-pretty/) and shared out/certs. */
 export function mirrorHome() {
@@ -62,7 +63,12 @@ export function resolveTree(p) {
   if (isAbsolute(p)) return p;
   // An explicit $FW_MIRROR_HOME wins over a site/ that happens to exist in this checkout (tests point
   // the tools at a fixture baseline this way, even when run from the main checkout).
-  if (process.env.FW_MIRROR_HOME) { const h = resolve(process.env.FW_MIRROR_HOME, p); if (existsSync(h)) return h; }
+  // The baseline trees never fall back: with FW_MIRROR_HOME set, a missing site/ must fail loudly rather
+  // than silently serve this checkout's own copy. Other names (custom roots) may still fall back.
+  if (process.env.FW_MIRROR_HOME) {
+    const h = resolve(process.env.FW_MIRROR_HOME, p);
+    if (existsSync(h) || BASELINE_TREES.has(p)) return h;
+  }
   const local = resolve(REPO, p);
   if (existsSync(local)) return local;
   return resolve(mirrorHome(), p);
