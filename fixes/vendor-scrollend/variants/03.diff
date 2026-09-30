@@ -1,0 +1,130 @@
+# fastwork mirror fix: vendor-scrollend--drop
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply vendor-scrollend--drop
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 analytics.js a2ceb9775ea7e3186bd915c14b659d9edab915905d48a064f95d16490f4982ab
+diff --git a/analytics.js b/analytics.js
+--- a/analytics.js
++++ b/analytics.js
+@@ -53,6 +53,121 @@
+   }
+   tidyUrl();
+ 
++  /* ---- Google tag scroll-depth check: VARIANT 03 WHAT-IF, listener dropped ------ */
++  // GA4 enhanced measurement ("scroll", 90 %) adds a window 'scrollend' listener
++  // (plus 'resize' with the same function). The call that crosses 90 % pushes
++  // gtm.scrollDepth and processes the GA4 'scroll' event synchronously, inside
++  // the scrollend dispatch: one ~60 ms frame at 6x CPU. Run those calls when
++  // nobody interacts instead (IDLE_MS after the last scroll/touch/wheel/key/
++  // pointer input, in an idle callback), and at the latest when the page is
++  // hidden, before the tag's own unload flush (this listener is registered
++  // first). The depth is taken at the event, as the tag would have read it:
++  // while the deferred call runs, the scrolling element reports the deepest
++  // scrollTop seen at those events. Only listeners added from a
++  // googletagmanager.com script are touched; the page's own listeners are not.
++  (function deferTagScrollDepth() {
++    var IDLE_MS = 1500;
++    if (!("onscrollend" in w) || !w.addEventListener) return;
++    var add = w.addEventListener;
++    var remove = w.removeEventListener;
++    var wrapped = []; // { fn, wrapper, type }
++    var pending = [];
++    var deepest = -1;
++    var lastInput = 0;
++    var timer = 0;
++    var now = function () {
++      return w.performance && w.performance.now ? w.performance.now() : Date.now();
++    };
++    var fromTag = function () {
++      var s = "";
++      try {
++        s = String(new Error().stack || "");
++      } catch (e) {}
++      return /googletagmanager\.com\//.test(s);
++    };
++    var find = function (fn, type) {
++      for (var i = 0; i < wrapped.length; i++) if (wrapped[i].fn === fn && wrapped[i].type === type) return wrapped[i];
++      return null;
++    };
++    var scroller = function () {
++      return d.scrollingElement || d.documentElement;
++    };
++
++    function runPending() {
++      if (timer) clearTimeout(timer);
++      timer = 0;
++      if (!pending.length) return;
++      var calls = pending;
++      pending = [];
++      var el = scroller();
++      var snap = deepest;
++      deepest = -1;
++      var shadow = el && snap > el.scrollTop;
++      if (shadow) Object.defineProperty(el, "scrollTop", { configurable: true, get: function () { return snap; } });
++      try {
++        for (var i = 0; i < calls.length; i++) {
++          try {
++            calls[i].fn.call(w, calls[i].ev);
++          } catch (e) {
++            setTimeout(function () { throw e; });
++          }
++        }
++      } finally {
++        if (shadow) delete el.scrollTop;
++      }
++    }
++
++    function schedule() {
++      if (timer) return;
++      var wait = Math.max(0, lastInput + IDLE_MS - now());
++      timer = setTimeout(function () {
++        timer = 0;
++        if (now() - lastInput < IDLE_MS) return schedule();
++        if (w.requestIdleCallback) {
++          timer = -1; // an idle callback is queued
++          w.requestIdleCallback(function () {
++            timer = 0;
++            if (now() - lastInput < IDLE_MS) schedule();
++            else runPending();
++          }, { timeout: 1000 });
++        } else runPending();
++      }, wait);
++    }
++
++    var input = function (ev) {
++      // element scrolls (carousels) are not the visitor scrolling the page
++      if (ev.type !== "scroll" || ev.target === d || ev.target === w) lastInput = now();
++    };
++    var opts = { capture: true, passive: true };
++    ["scroll", "wheel", "touchstart", "pointerdown", "keydown"].forEach(function (t) {
++      add.call(w, t, input, opts);
++    });
++    d.addEventListener("visibilitychange", function () {
++      if (d.visibilityState === "hidden") runPending();
++    }, true);
++    add.call(w, "pagehide", runPending, true);
++
++    w.addEventListener = function (type, fn, o) {
++      if ((this === w || this == null) && typeof fn === "function" && (type === "scrollend" || (type === "resize" && find(fn, "scrollend"))) && !find(fn, type) && fromTag()) {
++        // variant 03 (what-if, needs the site's GA setting: enhanced measurement "Scrolls" off):
++        // the tag's scroll-depth listener is not registered at all, so no GA4 'scroll' event.
++        var rec = { fn: fn, type: type, wrapper: function () {} };
++        wrapped.push(rec);
++        (w.__n11Dropped = w.__n11Dropped || []).push(type);
++        return;
++      }
++      return add.apply(this == null ? w : this, arguments);
++    };
++    w.removeEventListener = function (type, fn, o) {
++      var rec = (this === w || this == null) && typeof fn === "function" ? find(fn, type) : null;
++      if (rec) {
++        wrapped.splice(wrapped.indexOf(rec), 1);
++        return remove.call(w, type, rec.wrapper, o);
++      }
++      return remove.apply(this == null ? w : this, arguments);
++    };
++  })();
++
+   /* ---- GTM container (snippet from the ticket, id inlined) ---------------- */
+   w.dataLayer = w.dataLayer || [];
+   w.dataLayer.push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
