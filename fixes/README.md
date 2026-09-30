@@ -31,12 +31,20 @@ A fix is done when its branch has exactly `fixes/<topic>/README.md`, `patch.diff
 3. **Why that is faster:** the mechanism removed, and which metrics it should move.
 4. **Before/after** from `fix.mjs ab <topic> --runs 5` or more at the calibrated setting, pasted from
    `results.json` `markdown`, with the noise context: min-max ranges, verdicts, the A/A floor if
-   known. "Within noise" is reported as such; no run is dropped or picked.
+   known, and the host load1 range of the runs (`results.json` `host`; above ~6 the numbers are
+   inflated, I-017). "Within noise" is reported as such; no run is dropped or picked.
 5. **Regressions triaged:** no new console errors or 404s, `morphReached` on both sides, screenshot
    diff <= 0.4 % per shot or explained; behaviour kept on desktop, phones and reduced motion.
 6. `patch.diff` and `results.json` come from the same overlay (`results.json` `patch.sha256`), i.e.
    the patch wasn't edited after the A/B.
 7. **Risks and overlaps** with other topics, and iPhone notes if the lease was used.
+8. **Automated benchmark (required, user decision 2026-10-01).** Every fix ships a benchmark that
+   re-confirms it without a human: a deterministic *mechanism check* (exact counters, e.g. "no layout
+   or property writes from this callback on phones") plus a statistical *gain check* (throttled timing
+   vs baseline and the A/A floor, with the host load recorded). It must pass against the fix's own
+   overlay and every later combined overlay (`--on`), so a later wave or tool change can't silently undo
+   the gain. Format, runner and role: `research/architecture/automated-benchmarks.md` (arch-bench,
+   in progress). Until the runner lands, a fix is done without it, but gets a `bench-author` afterwards.
 
 The lead has each fix checked against this list by a `fix-reviewer` agent
 ([`AGENT_ROLES.md`](AGENT_ROLES.md), [`LEAD.md`](LEAD.md)).

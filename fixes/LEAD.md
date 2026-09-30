@@ -56,11 +56,14 @@ flowchart TD
 
 - **Topic:** `fixes/README.md` "Definition of done" holds; `fix-reviewer` said ACCEPT (or the README
   says `Status: rejected` with the evidence); landed on `main`; its tool fixes landed before it;
-  no active incident assigned to its owner; its locks released; its worktree and branch removed.
+  no active incident assigned to its owner; its locks released; its worktree and branch removed;
+  **its automated benchmark (mechanism + gain check, `fixes/README.md` item 8) is landed and passes on
+  the current combined overlay** (required by the user; topics finished before the runner exists get a
+  `bench-author` as soon as it lands).
 - **Wave:** every topic of the wave is done (landed or rejected-with-evidence); every incident
   opened during the wave is resolved or parked with a reason (`incident.mjs list`, which shows only
   active ones, is empty); `fixes/all-wave<N>/` has the combined patch, a combined A/B with `--runs 5` or more, and
-  a README that `fix-reviewer` accepted; the iPhone confirmation is done (scripted scroll baseline vs
+  a README that `fix-reviewer` accepted; every topic's benchmark passes on the combined overlay; the iPhone confirmation is done (scripted scroll baseline vs
   combined, finger test for touch-only topics) or its absence is stated; the write-up
   `research/<nn>-wave<N>-results/README.md` is landed.
 - **Project:** all 12 topics of [`TOPICS.md`](TOPICS.md) are landed or rejected with evidence; the
