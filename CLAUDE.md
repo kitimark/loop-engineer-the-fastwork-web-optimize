@@ -126,6 +126,10 @@ Serena's own instructions say otherwise.
   `rules`, `project_overview`. Don't write memories; put findings in `fixes/<topic>/README.md`.
 - `.serena/cache/` holds symbol data derived from Fastwork code: it is gitignored, never commit it.
   After a new mirror/prettify, warm it up with `serena project index` in the main checkout (a few seconds).
+- Serena reads `.serena/project.yml` (and its tool list) only at startup: after changing it or
+  `jsconfig.json` (the JS project that gives cross-file references), the user reconnects with `/mcp`.
+  Never use the Serena dashboard's add/remove language: it rewrites the tracked `project.yml` from the
+  running server's config. After a Serena upgrade, check `git diff .serena/project.yml`.
 
 ## Shared devices: `chrome-measure` lock and `iphone` lease
 

@@ -42,6 +42,10 @@
 # Note that when using the JetBrains backend, language servers are not used and this list is correspondingly ignored.
 # [fastwork] typescript serves .js/.mjs/.cjs: tools/, research/**/tools and the prettified
 # SvelteKit bundles in site-pretty/_app/. Python (a few research scripts) and CSS are not worth an LS.
+# /jsconfig.json puts tools/, tests/, research/*/tools/ and site-pretty/_app/ into one JS project; without it
+# tsserver only builds per-file inferred projects and find_referencing_symbols misses every cross-file
+# reference (e.g. lib/lock.mjs `acquire` from tools/lock.mjs + verify.mjs, Svelte runtime exports from
+# chunks/*.js used in nodes/2.*.js), and the first reference query takes ~5 s instead of <1 s.
 language_servers:
 - typescript
 
@@ -124,7 +128,8 @@ ls_additional_workspace_folders: []
 #   * site-pretty/_app/ (first-party SvelteKit bundles, ~1.4 MB JS) IS indexed; the rest of site-pretty/
 #     (images, fonts, third-party __vendor/ scripts) is not;
 #   * fix overlays inside Claude Code worktrees (.claude/worktrees/<wt>/fixes/<topic>/overlay/) ARE indexed,
-#     everything else in a worktree (its copy of tools/, research/, ...) is not, so symbols aren't duplicated.
+#     everything else in a worktree (its copy of tools/, research/, ...) is not, so symbols aren't duplicated;
+#   * fixes/*/overlay/ in the checkout itself (e.g. a combined overlay the lead builds) IS indexed as well.
 # Patterns are matched with pathspec (last match wins); a "!dir/" re-include works as long as the parent
 # directory itself is not ignored, hence the "dir/*" + "!dir/child/" pairs.
 ignored_paths:
@@ -163,6 +168,9 @@ read_only: true
 # [fastwork] read_only only deactivates editing tools (calls then error); listing them here also hides them
 # from Claude Code in single-project mode, so agents don't try them. read_memory / list_memories stay;
 # curate memories by editing .serena/memories/*.md directly.
+# get_diagnostics_for_file is excluded too: the JS here has no type info (only noise such as "Cannot find
+# module 'node:fs'"), and on nodes/2.DyWL8TcE.js it ran into the 240 s tool timeout, blocking Serena's
+# single task queue, and thus every other Serena call of the session, for 4 minutes. Use `node --check`.
 excluded_tools:
 - replace_symbol_body
 - insert_after_symbol
@@ -177,6 +185,7 @@ excluded_tools:
 - delete_memory
 - rename_memory
 - onboarding
+- get_diagnostics_for_file
 
 # list of tools to include that would otherwise be disabled (particularly optional tools that are disabled by default).
 # This extends the existing inclusions (e.g. from the global configuration).

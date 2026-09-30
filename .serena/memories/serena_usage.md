@@ -13,4 +13,7 @@
   at that worktree (no site-pretty there; only tools/, research/ and the overlay are indexed; index takes ~2 s).
 - Index/cache: `.serena/cache/` per checkout, untracked. Warm-up for the main checkout: `serena project index`
   (35 files, ~1 s after LS start).
+- Cross-file references (tools/ importers, Svelte runtime exports in chunks/*.js used by nodes/*.js) come from
+  `/jsconfig.json`; `find_referencing_symbols` on lib/lock.mjs `acquire` returns tools/lock.mjs + tools/verify.mjs.
+  `get_diagnostics_for_file` is excluded (no types; timed out at 240 s on the bundle): use `node --check`.
 - Lines: Serena is 0-based, editors/sed are 1-based. See `hot_code_map` for verified symbol name paths.
