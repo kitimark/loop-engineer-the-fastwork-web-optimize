@@ -48,7 +48,8 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
 5. **Your own worktree, never the main checkout.** Every agent works in its own git worktree under
    `.claude/worktrees/` on its own branch; only the lead works in the main checkout and lands on `main`.
    *Why:* the main checkout holds `main`, the baseline and port 5173. *Enforced:* `fix.mjs` refuses to
-   write fixes in the main checkout, `fix.mjs doctor`; otherwise convention. Details: "Parallel agents".
+   write fixes in the main checkout, `fix.mjs doctor`; otherwise convention. Details: "Parallel agents",
+   roles and who may do what: `fixes/AGENT_ROLES.md`.
 6. **Tooling is protected.** Fix agents MUST NOT modify `tools/`, `tests/`, `.githooks/`,
    `.claude/hooks/` or `.claude/settings.json`, not even a local copy to work around a bug: report the
    command, its output and your diagnosis to the lead. *Why:* every agent's numbers and guards depend
