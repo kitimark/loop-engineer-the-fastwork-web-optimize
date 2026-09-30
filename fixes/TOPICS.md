@@ -31,6 +31,20 @@ the same behaviour), listed per topic and summarised in the conflict table at th
 | 12 | `scene-gating-tighten` | IO gate `rootMargin: "100% 0px"`: a tall section counts as active whenever any part is within one viewport, so its effects keep running; `content-visibility` / `will-change` toggling churn at ±1 viewport | Gate per effect element (not per section), smaller margins | JS 2690-2780 (`sE`, `cE`, `lE`, `uE`, `dE`) | M |
 | 13 | `morph-panel-lazy-mount` | *Found in wave 1 by fix-nav-morph.* When `#platform` comes within 200 %, the `dN` IntersectionObserver callback (JS 13082-13084, `u && z(b, !0)`) mounts the whole morph panel (`lN` template at 12878: 5 columns of ~21 `loading=eager` imgs, a second countdown `cD`, CTAs, footer) synchronously inside one scroll frame: 42-75 ms LoAF at 6x (15-24 ms forced style+layout), the largest first-party LoAF of the scroll phase in 9/10 runs. The panel stays invisible (opacity from `--morph`) until the morph starts, and its countdown then springs invisibly | Mount in an idle callback after load (or on the IO with a wider margin via `requestIdleCallback`, sync fallback when the morph starts); lazy images; pass the panel's shown state to its countdown so it pauses while hidden (with `countdown-idle-raf`) | JS 12878 (`lN`), 13082-13084 (`dN` IO), countdown mount 13160 | M; owner fix-nav-morph (cluster B) |
 
+**Candidate topics from the architecture team** (`research/architecture/README.md`, ranked; not yet scheduled.
+Each needs a lead decision and an owner; N1 first, because it tells which of the others move the >20 ms frames):
+
+| # | topic | idea | kind |
+|---|---|---|---|
+| N1 | `frame-attribution` | per-frame script / style / layout split (`Performance.getMetrics` deltas, trace of elements touched per style recalc) for the 20-50 ms frames LoAF can't see | toolsmith, I-018 (with I-017 in `verify.mjs`) |
+| N2 | `morph-composited` | morph panel mounted at full size, revealed by `clip-path: inset(... round)`, opacity cross-fades, fixed backdrop-blur radius; spring as WAAPI with `linear()` easing | fix, cluster B (after nav-morph lands) |
+| N3 | `main-thread-infinite-animations` | hero CTA orbit animates a registered angle in a conic gradient: style + repaint every frame, also off-screen; static conic on a child rotated with `transform`, IO pause | fix |
+| N4 | `custom-property-scope` | register per-frame custom properties `inherits: false` and write them on the element that uses them (~850x cheaper per change on a large subtree) | fix, touches every `setProperty` caller: cluster A |
+| N5 | `layer-diet` | leftover `will-change` / `blur(0)` layers (countdown faces, stages); count in the Layers tab | fix |
+| N6 | `nav-backdrop-budget` | always-on nav backdrop-filters re-blur per frame on the iPhone GPU; size with a semi-opaque-solid variant | iPhone only |
+| N7 | `input-listener-diet` | `pointermove` only between pointerdown/up, passive where possible | fix |
+| N8 | `morph-scroll-driven` | drive `--morph` from a scroll timeline instead of the touch spring | needs a design decision |
+
 Other wave-1 findings, folded into existing topics: the `start-selling-platform-i-doc-sweep`
 `background-position` text sweep (CSS ~11103) repaints ~50/s at idle at the page bottom on iPhone
 (topic 9); the hero `.scroll-cue` keeps `filter: blur(calc(var(--exit-scatter)*18px))` = `blur(0)` at

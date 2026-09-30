@@ -37,6 +37,7 @@ lead scales: add a specialist where questions queue up, and drop one whose advic
 |---|---|---|---|---|---|---|---|---|
 | 1 (2026-09-30 22:47Z) | arch-render | 12 (arch-lead's questions) | 0 | 0 | 0 so far; corrected 2 team claims ("frames >20 ms are style/paint" unproven; T3 saves only call overhead in Blink) | 3: vars-inherits-false, frame-attribution (tool), morph-composited | 153k | keep; relay recs 1-2 to owners via arch-lead's packet; landed render.md (e2a69d2) |
 | 1 (2026-09-30 22:50Z) | arch-webkit | 12 of 12 (2 unverified: toolbar resize timing, touchmove cancelability) | 0 | 0 | 0 so far | 0 new; sharpened nav-morph (clip-path + WAAPI `linear()` spring), hero-exit (Safari 26.4+ off-thread only for matching filter lists) | ~30 cited sources | keep; landed webkit.md; relay recs 1-4 via arch-lead's packet |
+| 1 (2026-09-30 22:55Z) | arch-lead | review of all topics + synthesis of 24 specialist answers | 6 packets (hero-exit, nav-morph, countdown, large-area-blur, scroll-engine, pain) | pending | caught 1 wrong figure (render.md 8x -> ~850x) | 8 ranked (N1-N8) + FINDINGS correction | - | keep; landed README.md; N1 -> I-018 |
 
 ## Automated benchmarks per topic (user request, 2026-10-01)
 
