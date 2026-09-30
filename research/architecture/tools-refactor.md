@@ -660,6 +660,14 @@ Reply received 2026-10-01. Its proposals are not built yet:
 4. The lock contract in CLAUDE.md "Shared devices" duplicates `lib/lock.mjs:1-40`. Can CLAUDE.md shrink
    to a pointer after D7? CLAUDE.md is lead-only.
 
+### Lead decisions (2026-10-01)
+
+1. M1: the 6-question version (one haiku run each, ~2M tokens), before P1 and after F; M2 stays the running estimate.
+2. G's `measure()` split: deferred until a planned tools-version break with an A/A (bundle with tools-speed #5/#8); G keeps only the exit helper.
+3. `bench.mjs` adopts `lib/cli.mjs` as a follow-up after P1; bench is not blocked on it.
+4. CLAUDE.md's lock section becomes a pointer after D; Hard rule 7, the short-lane rules and the one-run-hold rule stay in CLAUDE.md.
+5. Staffing: P1 goes to the first free toolsmith (ts-i002 after I-022); D/E/F are follow-ups of ts-prio, ts-bench/ts-prio and ts-i017; A/B/C are parked until wave 1 is combined.
+
 ## Appendix A: M3 static proxy script (research-only; run with `node <script> <checkout>`)
 
 ```js
