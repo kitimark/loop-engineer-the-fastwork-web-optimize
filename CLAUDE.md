@@ -204,6 +204,17 @@ Team conventions (messages go to the lead and to teammates named in `fixes/TOPIC
   nav-hit-test" or "future `l` also toggles `.pain is-pain-dark`". Don't edit code another topic owns;
   describe the change you need and let the owner decide.
 - Report when done: topic, branch, one-line verdict with the key delta and spread, files touched.
+- **Scratch files go in `<scratchpad>/<your-topic>/`** (or your worktree's `out/`), never in the
+  scratchpad root: all agents of a session share one scratchpad, and same-named files overwrote each
+  other (incident I-006). Any Chrome `--user-data-dir` is per topic too.
+- **One `chrome-measure` queue entry per agent.** Iterate with `--runs 3`, final `--runs 5` once;
+  put visual checks in the same slot (a lease slot: `lock.mjs acquire chrome-measure --owner <you>`,
+  then run as that owner). Don't SIGTERM a waiting `fix.mjs ab`: it drops your queue place.
+  Hold the lock only while a run is executing: never while editing or debugging; release as soon as
+  the run ends. Until I-005 is fixed, a same-owner `fix.mjs ab` deletes your lease when it exits: run
+  other checks first and `fix.mjs ab` last.
+- **Use the iPhone while you wait for Chrome.** The phone renders by itself, so an iPhone check barely
+  loads the Mac and runs in parallel with Chrome measurements (lease, plain http per I-003).
 
 ## Unexpected problems: incidents
 
