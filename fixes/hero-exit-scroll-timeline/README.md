@@ -215,6 +215,27 @@ that matches the baseline.
   mode logic (`heCss`/`heMode`, the IntersectionObserver, `d()`/`p()` switching) and gate
   scroll-engine's measure/mutate on `!heMode`. That form is then the JS fallback path (desktop entrance,
   browsers without scroll-driven animations).
+
+  **Proposed resolution, hunk by hunk** (for the integrator; checked against scroll-engine's
+  `patch.diff` at c72b759, hunks `@@ -4160,15` and `@@ -4236,7`):
+  1. **`let` list after `o = !1,` (both patches add lines here):** keep both. First this patch's block
+     (`heCss`, `heMode`, `heIn`, `heIO`, `hePE`), then scroll-engine's `fwE = { measure, mutate }`.
+     No name clashes (`he*` vs `fw*`).
+  2. **Body of `s`:** take scroll-engine's (`(i = 0), fwRun(fwE)`). This patch leaves `s` unchanged.
+  3. **`d()` and `p()` (this patch's hunks at 4181 and 4205):** take this patch's. Scroll-engine doesn't
+     touch them. `d()` still cancels a pending `i` rAF and removes `--exit-opacity`. `p()` calls `c()`,
+     which reaches scroll-engine's `s` → `fwRun(fwE)`. Both work unchanged.
+  4. **Registration (`let g = dE(…)`):** neither side as-is. Pass scroll-engine's two-phase object,
+     gated on this patch's mode:
+     `dE({ measure: (F) => (heMode ? null : fwE.measure(F)), mutate: (r) => { r === null || fwE.mutate(r); } }, { deferRendering: !0, element: b })`.
+     In CSS mode that does no rect read and no write, but keeps the registration (P12). `fwE.measure`
+     returns a number (`-1` under reduced motion), so `null` is free to mean "skip". Then keep this
+     patch's `heSync` after it.
+  5. **The `return (` block:** take this patch's (IntersectionObserver setup, `heMode || s()`, `heIO`
+     cleanup). Scroll-engine only kept `s()` there.
+  6. **Check after stacking:** Tier A `no-exit-opacity-writes-*` must pass (== 0 on the combined
+     overlay), and on desktop the first ~1.8 s must still write `--exit-opacity` through `fwE` (JS path
+     during the entrance).
 - large-area-blur: its proposal for the hero blur (no permanent `blur(0)`, blur only while exiting) is
   implemented here; it doesn't touch the hero rules.
 
@@ -230,15 +251,21 @@ The header's "rebuild with" line names the scratch topic it was generated from:
 - `02.diff` came from `hero-exit-scroll-timeline--v2names`, a temporary topic made by exactly reversing
   the rename.
 - `06.diff` came from `hero-exit-scroll-timeline--noblur`.
+- `01.diff` (v1, +174 -2) was rebuilt afterwards from the session transcript. It applies the only two v1
+  edits recorded there to the baseline: the JS registration edit and the first CSS block. Both were
+  written before the v2 edits began (21:30-21:32 UTC, v2 from 21:39). v1 already kept the `dE`
+  registration with a no-op callback (see /08). Its local names `hx`/`hq`/`hp` shadow module names
+  (P1), as in 02.
 
 `bench.json` `experiments[]` entries are left to the bench-author (runner not landed yet).
 
 | id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status |
 |---|---|---|---|---|---|---|---|---|
-| hero-exit-scroll-timeline/01 | v1: exit as a CSS view-timeline animation from mount; keyframes use `var(--copy-in)` / `var(--entered)` (animated by the entrance) | remove the per-frame rect read + `--exit-opacity` write; same visuals | broke | clean (probe) | iPhone iOS 26.6.1: `.scroll-cue` stayed at opacity 0 (baseline 1) at rest | no patch kept (the v1 overlay was edited in place into v2; the v1 CSS survives only as fragments in the session transcript); README "What changed" (why only after the entrance); iPhone probe safari1.json (scratch) | Safari resolves keyframe `var()` of an animated custom property against its base value: FINDINGS P3. The first re-test also showed v1 because Safari cached the immutable CSS; re-test on a new port with `--no-cache` | superseded by 02 |
+| hero-exit-scroll-timeline/01 | v1: exit as a CSS view-timeline animation from mount; keyframes use `var(--copy-in)` / `var(--entered)` (animated by the entrance) | remove the per-frame rect read + `--exit-opacity` write; same visuals | broke | clean (probe) | iPhone iOS 26.6.1: `.scroll-cue` stayed at opacity 0 (baseline 1) at rest | patch `variants/01.diff` (rebuilt from the session transcript, see above); README "What changed" (why only after the entrance); iPhone probe safari1.json (scratch) | Safari resolves keyframe `var()` of an animated custom property against its base value: FINDINGS P3. The first re-test also showed v1 because Safari cached the immutable CSS; re-test on a new port with `--no-cache` | superseded by 02 |
 | hero-exit-scroll-timeline/02 | v2: CSS exit attached only after `is-splash-done` / `is-ring-splash-done` (JS path until `d()`), phone cue exit on `.scroll-float`, separate blur animation `blur(0px)→blur(18px)` (fill none), IntersectionObserver for pointer-events; iPhone parity probe | same visuals as the baseline on Safari | within noise (parity) | clean (probe) | copy opacity .901/.501/.03 at p .1/.5/.97 on both; cue blur 1.78 vs 1.79 px at .1; deck `.is-e` .825 at `103.08px 89.55px` on both; pointer-events none from .95; 7 ViewTimeline animations, n=1 | patch `variants/02.diff` (v2 with the original names, rebuilt by exactly reversing the rename); README "Visual / behaviour parity" (iPhone); safari2.json (scratch) | parity on Safari 26.6.1 (threaded SDA) | on branch |
 | hero-exit-scroll-timeline/03 | 02, Chrome visual/computed-style check: mobile + desktop, each ± reduced motion, 9 progress points | same visuals as the baseline on Chrome | within noise (parity) | clean (probe; load not recorded) | visible exit values equal to 3 decimals; pixel diff 0-0.94 % (0.54-0.94 % at 4 points = rotating word/countdown/vinyl/avatars phase), 0 errors, n=1 | patch `variants/02.diff` (the check ran on the pre-rename code, functionally identical to 04); README "Visual / behaviour parity" (Chrome); vis1/report.json (scratch) | invisible diffs only: `display:none` layout's cards no longer animated, no blur at rest / at opacity 0 | on branch |
 | hero-exit-scroll-timeline/04 | 02 with the six new names renamed (`hA/hm/hq/hx/hp/hr` → `heCss/heMode/heIn/heIO/hePE/heSync`) | P1 hygiene: the first names shadowed unrelated module names (Zod `hA`, i18n `hm/hp/hx`, `hr` at 323) | superseded | n/a (no measurement) | 0 functional change (the closure never used the outer names); `node --check` OK; diff still +169 -3 | patch `variants/04.diff` (= `patch.diff`); README "What changed"; patch.diff | pick names absent from the file (`grep -c`) before editing: FINDINGS P1 | on branch (all later rows measure the renamed code) |
 | hero-exit-scroll-timeline/05 | 04, `fix.mjs ab --runs 3` vs plain baseline, mobile 6x | per-frame style/paint down → frames >20 ms, fps | better | old-tools, provisional (load1 9.1-19.1 > 6, ranges disjoint) | fps 63.7 [62.7-66.7] → 69.5 [67.7-71.4]; frames >20 ms 115 [114-139] → 91 [89-111]; worst frame 117.5 → 99.4 ms; >50 ms 7 → 5, LoAF, forced: within noise; n=3 | patch `variants/04.diff`; `fixes/hero-exit-scroll-timeline/results.json` (branch worktree-agent-a77e2ec753b6381fb); README "Before / after" | at 6x mobile `s` isn't in the top LoAF, so the gain is per-frame style/paint, not LoAF | on branch; re-measure `--runs 5 --on <combined>` with current tools |
 | hero-exit-scroll-timeline/06 | `--noblur`: 04 without the two blur animations (attribution: how much the cue/copy blur costs) | the exit blur's paint is part of the remaining cost | abandoned | n/a (never measured) | none | patch `variants/06.diff`; overlay `fixes/hero-exit-scroll-timeline--noblur/` (uncommitted, gitignored) | dropped from the slot: one queue entry per agent, and I-005 (a same-owner `ab` deletes the lease) meant ab had to run last. P5: Chrome can't show GPU blur cost anyway, so attribute on the iPhone | retry when the iPhone is back (scripted A/B, blur vs noblur) |
 | hero-exit-scroll-timeline/07 | 04, `fix.mjs ab --runs 5` vs plain baseline | confirm 05 with n=5 | abandoned | n/a (stopped while queued, #7) | none | patch `variants/04.diff` (never run); this README (status) | the lead stopped it: Chrome is the bottleneck, and the final number must be on the combined wave-1 base with the I-002 tools | superseded by the `--runs 5 --on <combined>` run (pending) |
+| hero-exit-scroll-timeline/08 | Unregister the hero `dE` callback once CSS takes over (the prompt allowed it: "you may unregister your own dE callback") | with the exit on a scroll timeline, the engine callback has nothing to do, so dropping the registration saves its per-frame dispatch | abandoned | n/a (design only: never built, run or probed) | none measured. Code reading (baseline): registration sets `data-start-selling-scene` on `.hero-track` (JS 2765) and `data-start-selling-render=deferred` via `deferRendering` (JS 2703). Its cleanup removes both (JS 2774-2779). CSS 11754-11762 hang the scene pause (`animation-play-state: paused !important`, `will-change: auto`) and `content-visibility: auto` on those attributes | no patch kept (never built: rejected at design time, before v1). README "What changed" (why `dE` stays registered) | unregistering would silently drop the off-screen pause and the render deferral of `.hero-track`. Keep the registration with a mode-gated callback: FINDINGS P12. The claim is from code reading, not from an observed breakage | dropped (01, 02 and 04 all keep the registration) |

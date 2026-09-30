@@ -123,9 +123,9 @@
     {
       "id": "hero-exit-scroll-timeline/01",
       "variant": "v1: keyframes use animated custom properties",
-      "patch": null,
+      "patch": "variants/01.diff",
       "expected": "broke",
-      "why": "no patch kept: the overlay was edited in place into v2. The failure is Safari-only (P3), so a Chrome mechanism run couldn't confirm it anyway."
+      "why": "Rebuilt from the session transcript. The breakage (cue stuck at opacity 0) is Safari-only (P3): confirm it with device iphone. Chrome parity may pass."
     },
     {
       "id": "hero-exit-scroll-timeline/02",
@@ -147,6 +147,13 @@
       "patch": "variants/06.diff",
       "expected": "broke",
       "why": "Visual change on purpose (no exit blur). Mechanism checks pass except cue-exit-is-a-scroll-animation-mobile (no filter). The gain against 04 is unmeasured."
+    },
+    {
+      "id": "hero-exit-scroll-timeline/08",
+      "variant": "unregister the hero dE callback in CSS mode",
+      "patch": null,
+      "expected": "broke",
+      "why": "no patch kept: rejected at design time, never built. Predicted: .hero-track loses data-start-selling-scene and data-start-selling-render (P12)."
     }
   ]
 }

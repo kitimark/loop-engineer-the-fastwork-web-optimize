@@ -1,0 +1,209 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--v1
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--v1
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2124,6 +2124,155 @@
+     right: -45px;
+   }
+ }
++/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
++   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
++   Range `contain 0% contain 100%` = the JS formula 1 - clamp(-top, 0, h - innerHeight) / (h - innerHeight).
++   opacity/transform/translate are in their own animations (compositable); the exit blur is a separate
++   animation that starts just after 0 (fill none), so at rest filter is none instead of blur(0).
++   Where unsupported, the JS keeps writing --exit-opacity and the rules above apply unchanged. */
++@supports (animation-timeline: view()) and (animation-range: contain 0% contain 100%) {
++  @keyframes svelte-1p2vpne-hero-exit-card {
++    from {
++      opacity: 1;
++      translate: calc((1 - var(--entered)) * var(--orbit-enter-x)) calc((1 - var(--entered)) * var(--orbit-enter-y));
++    }
++    to {
++      opacity: 0.65;
++      translate: calc((1 - var(--entered)) * var(--orbit-enter-x) + var(--scatter-x))
++        calc((1 - var(--entered)) * var(--orbit-enter-y) + var(--scatter-y));
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-copy {
++    from {
++      opacity: var(--copy-in);
++      transform: translateY(calc((1 - var(--copy-in)) * 12px));
++    }
++    to {
++      opacity: 0;
++      transform: translateY(calc((1 - var(--copy-in)) * 12px - 10px));
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-copy-m {
++    from {
++      opacity: 1;
++      transform: translate(-50%, 0px);
++    }
++    to {
++      opacity: 0;
++      transform: translate(-50%, -8px);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-cue {
++    from {
++      opacity: var(--copy-in);
++      transform: translate(-50%, calc((1 - var(--copy-in)) * 12px));
++    }
++    to {
++      opacity: 0;
++      transform: translate(-50%, calc((1 - var(--copy-in)) * 12px - 10px));
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade {
++    from {
++      opacity: 1;
++    }
++    to {
++      opacity: 0;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-blur {
++    from {
++      filter: blur(0px);
++    }
++    to {
++      filter: blur(18px);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-blur-in {
++    from {
++      filter: blur(calc((1 - var(--copy-in)) * 16px));
++    }
++    to {
++      filter: blur(calc((1 - var(--copy-in)) * 16px + 18px));
++    }
++  }
++  @media (prefers-reduced-motion: no-preference) {
++    .hero-track.svelte-1p2vpne {
++      view-timeline-name: --hero-exit;
++      view-timeline-axis: block;
++    }
++    @media (width>600px) {
++      .orbit-card.svelte-1p2vpne {
++        animation:
++          1ms linear both svelte-1p2vpne-hero-exit-card,
++          svelte-1p2vpne-ring-appear 0.12s ease-out backwards,
++          svelte-1p2vpne-card-from-ring 1.7s cubic-bezier(0.2, 0.9, 0.2, 1) var(--orbit-enter-delay) both;
++        animation-timeline: --hero-exit, auto, auto;
++        animation-range: contain 0% contain 100%, normal, normal;
++      }
++      .is-splash-done .orbit-card.svelte-1p2vpne,
++      .is-splash-done .orbit-card.float.svelte-1p2vpne {
++        animation: 1ms linear both svelte-1p2vpne-hero-exit-card;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0% contain 100%;
++      }
++      .hero-copy.svelte-1p2vpne {
++        animation:
++          1ms linear both svelte-1p2vpne-hero-exit-copy,
++          1ms linear svelte-1p2vpne-hero-exit-blur-in,
++          0.7s cubic-bezier(0.16, 1, 0.3, 1) 1.14s forwards svelte-1p2vpne-copy-from-ring;
++        animation-timeline: --hero-exit, --hero-exit, auto;
++        animation-range: contain 0% contain 100%, contain 0.05% contain 100%, normal;
++      }
++      .is-ring-splash-done .hero-copy.svelte-1p2vpne {
++        filter: none;
++        animation:
++          1ms linear both svelte-1p2vpne-hero-exit-copy,
++          1ms linear svelte-1p2vpne-hero-exit-blur;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0% contain 100%, contain 0.05% contain 100%;
++      }
++      .scroll-cue.svelte-1p2vpne {
++        animation:
++          1ms linear both svelte-1p2vpne-hero-exit-cue,
++          1ms linear svelte-1p2vpne-hero-exit-blur-in,
++          0.7s cubic-bezier(0.16, 1, 0.3, 1) 1.14s forwards svelte-1p2vpne-copy-from-ring;
++        animation-timeline: --hero-exit, --hero-exit, auto;
++        animation-range: contain 0% contain 100%, contain 0.05% contain 100%, normal;
++      }
++      .is-ring-splash-done .scroll-cue.svelte-1p2vpne {
++        filter: none;
++        animation:
++          1ms linear both svelte-1p2vpne-hero-exit-fade,
++          1ms linear svelte-1p2vpne-hero-exit-blur;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0% contain 100%, contain 0.05% contain 100%;
++      }
++    }
++    @media (width<=600px) {
++      .mobile-deck.svelte-1p2vpne .orbit-card:where(.svelte-1p2vpne) {
++        animation: 1ms linear both svelte-1p2vpne-hero-exit-card;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0% contain 100%;
++      }
++      .hero-copy.svelte-1p2vpne,
++      .is-ring-splash-done .hero-copy.svelte-1p2vpne {
++        animation: 1ms linear both svelte-1p2vpne-hero-exit-copy-m;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0% contain 100%;
++      }
++      .scroll-cue.svelte-1p2vpne {
++        filter: none;
++        animation:
++          1ms linear both svelte-1p2vpne-hero-exit-cue,
++          1ms linear svelte-1p2vpne-hero-exit-blur,
++          0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards svelte-1p2vpne-copy-in;
++        animation-timeline: --hero-exit, --hero-exit, auto;
++        animation-range: contain 0% contain 100%, contain 0.05% contain 100%, normal;
++      }
++    }
++  }
++}
+ @media (prefers-reduced-motion: reduce) {
+   .hero-track.svelte-1p2vpne {
+     height: auto;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4236,15 +4236,38 @@
+       t.matches && d();
+     };
+     (t.addEventListener(`change`, h), window.addEventListener(`pageshow`, m));
+-    let g = dE(c, { deferRendering: !0, element: b });
++    // hero-exit-scroll-timeline: where CSS scroll-driven animations are supported, the exit
++    // (--exit-opacity / --exit-scatter) is a CSS animation on the `--hero-exit` view timeline of
++    // .hero-track (see the matching @supports block in 2.gBuqKVzi.css), so no per-frame rect read or
++    // style write. dE stays registered with a no-op for its side effects on the track (scene pause +
++    // render deferral). pointer-events (r < 0.05, i.e. track bottom < ~1.05 viewport heights) comes
++    // from an IntersectionObserver instead. Otherwise: the original per-frame path (c -> s).
++    let g,
++      hx = null,
++      hq = !0,
++      hp = () => {
++        x.style.pointerEvents = hq || e.matches ? `` : `none`;
++      };
+     return (
+-      s(),
++      window.CSS?.supports?.(`(animation-timeline: view()) and (animation-range: contain 0% contain 100%)`)
++        ? ((g = dE(() => {}, { deferRendering: !0, element: b })),
++          (hx = new IntersectionObserver(
++            (n) => {
++              for (let e of n) hq = e.isIntersecting;
++              hp();
++            },
++            { rootMargin: `-105% 0px 200% 0px` },
++          )),
++          hx.observe(b),
++          e.addEventListener(`change`, hp))
++        : ((g = dE(c, { deferRendering: !0, element: b })), s()),
+       () => {
+         (l(),
+           window.clearTimeout(r),
+           i && window.cancelAnimationFrame(i),
+           t.removeEventListener(`change`, h),
+           window.removeEventListener(`pageshow`, m),
++          hx && (hx.disconnect(), e.removeEventListener(`change`, hp)),
+           g());
+       }
+     );
