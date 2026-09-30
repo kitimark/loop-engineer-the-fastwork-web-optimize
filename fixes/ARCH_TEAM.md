@@ -35,6 +35,7 @@ lead scales: add a specialist where questions queue up, and drop one whose advic
 
 | check-in | member | answered | relayed | adopted | wrong | new topics | tokens | decision |
 |---|---|---|---|---|---|---|---|---|
+| 1 (2026-09-30 22:47Z) | arch-render | 12 (arch-lead's questions) | 0 | 0 | 0 so far; corrected 2 team claims ("frames >20 ms are style/paint" unproven; T3 saves only call overhead in Blink) | 3: vars-inherits-false, frame-attribution (tool), morph-composited | 153k | keep; relay recs 1-2 to owners via arch-lead's packet; landed render.md (e2a69d2) |
 
 ## Automated benchmarks per topic (user request, 2026-10-01)
 
