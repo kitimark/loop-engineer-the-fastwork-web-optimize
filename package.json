@@ -1,0 +1,16 @@
+{
+  "name": "fastwork-com-web-optimize",
+  "private": true,
+  "description": "Local, personal-use mirror of the fastwork.com homepage for scroll-performance experiments",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "mirror": "node tools/mirror.mjs",
+    "mirror:full": "node tools/mirror.mjs --crawl --vendors",
+    "serve": "node tools/serve.mjs",
+    "serve:vendors": "node tools/serve.mjs --vendors=local",
+    "serve:https": "node tools/serve.mjs --https",
+    "prettify": "node tools/prettify.mjs",
+    "verify": "node tools/verify.mjs live=https://fastwork.com/ local=http://localhost:5173/"
+  }
+}
