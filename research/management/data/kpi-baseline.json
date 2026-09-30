@@ -1,0 +1,1505 @@
+{
+ "lead": {
+  "windowH": 6.1,
+  "incoming": 813,
+  "incomingPerH": 132.9,
+  "max10min": 103,
+  "byKind": {
+   "user": 93,
+   "agent": 142,
+   "teammate": 0,
+   "notification": 578,
+   "interrupt": 0
+  },
+  "interimNotifications": 170,
+  "incomingNeedingDecision": 113,
+  "incomingDecisionPct": 14,
+  "outgoing": {
+   "spawn": 61,
+   "land": 28,
+   "triage": 31,
+   "relay": 178,
+   "status": 146,
+   "other-bash": 128,
+   "other": 86
+  },
+  "decisionsOut": 120,
+  "routineOut": 324,
+  "decisionSharePct": 27,
+  "relaysPerH": 29.1
+ },
+ "generatedAt": "2026-09-30T23:12:04.555Z",
+ "since": null,
+ "repo": "fastwork-com-web-optimize",
+ "goal": {
+  "target": {
+   "chromeGt50": 0,
+   "chromeGt34": "~0",
+   "iphoneFps": 60,
+   "iphoneGt50": 0
+  },
+  "aaFloor": {
+   "createdAt": "2026-09-30T21:16:21.233Z",
+   "load": [
+    2.8,
+    5.8
+   ],
+   "gt50": 4,
+   "gt34": 8,
+   "gt20": 64,
+   "fps": 74.5
+  },
+  "bestChromeGt50": {
+   "topic": "pain-offscreen-notes",
+   "value": 5,
+   "baseline": 6,
+   "clean": false
+  },
+  "bestChromeGt34": {
+   "topic": "pain-offscreen-notes",
+   "value": 10,
+   "baseline": 15,
+   "clean": false
+  },
+  "bestCleanGt34": null,
+  "gt50BetterVerdicts": 0,
+  "gt34BetterVerdicts": 1,
+  "combinedMeasured": 0,
+  "combinedClean": 0,
+  "iphoneBaseMedian": {
+   "fps": 52.5,
+   "gt34": 17,
+   "gt50": 6,
+   "n": 15
+  },
+  "iphoneBestPatched": {
+   "owner": "phone-invisible-shrink",
+   "fps": 55.1,
+   "gt34": 12,
+   "gt50": 5
+  }
+ },
+ "lock": {
+  "abSessions": 24,
+  "abCompleted": 14,
+  "abAborted": 10,
+  "serviceMinPerRun": 0.4,
+  "waitMin": {
+   "median": 17.3,
+   "max": 44.5
+  },
+  "utilizationPct": 51,
+  "windowH": 1.8,
+  "now": {
+   "chrome-measure": {
+    "holder": "layout-animations",
+    "heldMin": 7.9,
+    "kind": "lease",
+    "queue": 10,
+    "shortQueued": 4,
+    "waitMin": {
+     "median": 10.9,
+     "max": 25
+    }
+   },
+   "iphone": {
+    "holder": "lead-iphone-offline",
+    "heldMin": 58.1,
+    "kind": "lease",
+    "queue": 0,
+    "shortQueued": 0,
+    "waitMin": {
+     "median": 0,
+     "max": null
+    }
+   },
+   "auditLines": 0
+  }
+ },
+ "clean": {
+  "runsClean": 14,
+  "runs": 128,
+  "runsCleanPct": 11,
+  "runsContaminated": 77,
+  "resultsClean": 1,
+  "results": 10,
+  "medianRunLoad": 11.8,
+  "hostNow": {
+   "load1": 30.4,
+   "cpuBusyPct": 91
+  }
+ },
+ "incidents": {
+  "opened": 19,
+  "resolved": 15,
+  "active": 4,
+  "fixed": 11,
+  "duplicates": 2,
+  "resolveMin": {
+   "median": 39.3,
+   "max": 85.2
+  },
+  "readyToResolveMin": {
+   "median": 10.6
+  },
+  "staleInStore": [],
+  "activeUnassigned": [
+   "I-016",
+   "I-017",
+   "I-018",
+   "I-019"
+  ],
+  "rows": [
+   {
+    "id": "I-001",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": null,
+    "openedAt": "2026-09-30T21:02:26.197Z",
+    "resolveMin": 61.9,
+    "readyToResolveMin": 12.3,
+    "toolCommitOnMain": "2a2169e",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-002",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": null,
+    "openedAt": "2026-09-30T21:14:46.599Z",
+    "resolveMin": 85.2,
+    "readyToResolveMin": 10.6,
+    "toolCommitOnMain": "4bbd249",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-003",
+    "cls": "env",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": "ts-i003",
+    "openedAt": "2026-09-30T21:32:52.919Z",
+    "resolveMin": 61.6,
+    "readyToResolveMin": 2.7,
+    "toolCommitOnMain": "e20a981",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-004",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "duplicate",
+    "assignee": null,
+    "openedAt": "2026-09-30T21:39:09.353Z",
+    "resolveMin": 0.1,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-005",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": "ts-i005",
+    "openedAt": "2026-09-30T21:43:42.823Z",
+    "resolveMin": 58.5,
+    "readyToResolveMin": 4.6,
+    "toolCommitOnMain": "0921549",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-006",
+    "cls": "env",
+    "status": "resolved",
+    "resolution": "workaround",
+    "assignee": null,
+    "openedAt": "2026-09-30T21:44:01.898Z",
+    "resolveMin": 0,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-007",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": "ts-i007",
+    "openedAt": "2026-09-30T21:49:46.141Z",
+    "resolveMin": 14.6,
+    "readyToResolveMin": 5.7,
+    "toolCommitOnMain": "25391a2",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-008",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": "ts-i008",
+    "openedAt": "2026-09-30T21:58:34.359Z",
+    "resolveMin": 65.7,
+    "readyToResolveMin": 11.7,
+    "toolCommitOnMain": "b9d5ee8",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-009",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": "ts-i008",
+    "openedAt": "2026-09-30T22:03:57.526Z",
+    "resolveMin": 60.3,
+    "readyToResolveMin": 11.7,
+    "toolCommitOnMain": "5360625",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-010",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "not-a-bug",
+    "assignee": "ts-i005",
+    "openedAt": "2026-09-30T22:08:28.863Z",
+    "resolveMin": 30.6,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-011",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": "ts-i005",
+    "openedAt": "2026-09-30T22:20:20.857Z",
+    "resolveMin": 21.8,
+    "readyToResolveMin": 19.2,
+    "toolCommitOnMain": "e280c98",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-012",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": "ts-i012",
+    "openedAt": "2026-09-30T22:22:04.704Z",
+    "resolveMin": 42.2,
+    "readyToResolveMin": 21.2,
+    "toolCommitOnMain": "ba10fd0",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-013",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": "ts-i013",
+    "openedAt": "2026-09-30T22:25:00.192Z",
+    "resolveMin": 39.3,
+    "readyToResolveMin": 5.9,
+    "toolCommitOnMain": "c2c660c",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-014",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "fixed",
+    "assignee": "ts-i003",
+    "openedAt": "2026-09-30T22:31:02.080Z",
+    "resolveMin": 5.4,
+    "readyToResolveMin": 1.3,
+    "toolCommitOnMain": "19f25cd",
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-015",
+    "cls": "tool",
+    "status": "resolved",
+    "resolution": "duplicate",
+    "assignee": null,
+    "openedAt": "2026-09-30T22:32:08.239Z",
+    "resolveMin": 4.4,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": null
+   },
+   {
+    "id": "I-016",
+    "cls": "env",
+    "status": "triaged",
+    "resolution": null,
+    "assignee": null,
+    "openedAt": "2026-09-30T22:41:49.544Z",
+    "resolveMin": null,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": 30.3
+   },
+   {
+    "id": "I-017",
+    "cls": "tool",
+    "status": "triaged",
+    "resolution": null,
+    "assignee": null,
+    "openedAt": "2026-09-30T22:43:58.643Z",
+    "resolveMin": null,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": 28.1
+   },
+   {
+    "id": "I-018",
+    "cls": "tool",
+    "status": "open",
+    "resolution": null,
+    "assignee": null,
+    "openedAt": "2026-09-30T22:49:39.148Z",
+    "resolveMin": null,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": 22.4
+   },
+   {
+    "id": "I-019",
+    "cls": "tool",
+    "status": "open",
+    "resolution": null,
+    "assignee": null,
+    "openedAt": "2026-09-30T23:03:04.604Z",
+    "resolveMin": null,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": 9
+   }
+  ]
+ },
+ "landings": {
+  "commitsOnMain": 87,
+  "toolCommits": 18,
+  "fixCommits": 2,
+  "docCommits": 53,
+  "researchCommits": 14,
+  "topicsLanded": 2,
+  "topics": 24,
+  "topicsInProgress": 11,
+  "leadTimeMin": [
+   "phone-invisible-shrink: 56.1",
+   "layout-animations: 62.9"
+  ],
+  "wipAgeMin": {
+   "median": 112.85,
+   "max": 116.6
+  }
+ },
+ "topics": [
+  {
+   "id": "1",
+   "name": "countdown-idle-raf",
+   "status": "in progress",
+   "firstAB": "2026-09-30T21:17:34.202Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 114.5
+  },
+  {
+   "id": "2",
+   "name": "scroll-engine-batching",
+   "status": "in progress",
+   "firstAB": "2026-09-30T22:22:05.405Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 50
+  },
+  {
+   "id": "3",
+   "name": "nav-hit-test",
+   "status": "in progress",
+   "firstAB": "2026-09-30T21:19:14.853Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 112.8
+  },
+  {
+   "id": "4",
+   "name": "phone-invisible-shrink",
+   "status": "landed",
+   "firstAB": "2026-09-30T21:16:44.132Z",
+   "leadTimeMin": 56.1,
+   "wipAgeMin": null
+  },
+  {
+   "id": "5",
+   "name": "commission-forced-layout",
+   "status": "in progress",
+   "firstAB": "2026-09-30T21:15:46.797Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 116.3
+  },
+  {
+   "id": "6",
+   "name": "morph-scrolljack-passive",
+   "status": "in progress",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "7",
+   "name": "hero-exit-scroll-timeline",
+   "status": "in progress",
+   "firstAB": "2026-09-30T21:42:51.677Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 89.2
+  },
+  {
+   "id": "8",
+   "name": "large-area-blur",
+   "status": "in progress",
+   "firstAB": "2026-09-30T21:19:11.624Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 112.9
+  },
+  {
+   "id": "9",
+   "name": "layout-animations",
+   "status": "landed",
+   "firstAB": "2026-09-30T21:22:59.766Z",
+   "leadTimeMin": 62.9,
+   "wipAgeMin": null
+  },
+  {
+   "id": "10",
+   "name": "toolbar-resize",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "11",
+   "name": "pain-offscreen-notes",
+   "status": "in progress",
+   "firstAB": "2026-09-30T21:15:27.113Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 116.6
+  },
+  {
+   "id": "12",
+   "name": "scene-gating-tighten",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "13",
+   "name": "morph-panel-lazy-mount",
+   "status": "in progress",
+   "firstAB": "2026-09-30T22:51:30.017Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 20.6
+  },
+  {
+   "id": "N1",
+   "name": "frame-attribution",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N2",
+   "name": "morph-composited",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N3",
+   "name": "main-thread-infinite-animations",
+   "status": "in progress",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N4",
+   "name": "custom-property-scope",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N5",
+   "name": "layer-diet",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N6",
+   "name": "nav-backdrop-budget",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N7",
+   "name": "input-listener-diet",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N8",
+   "name": "morph-scroll-driven",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N9",
+   "name": "scene-gate-flap",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N10",
+   "name": "transition-frames",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N11",
+   "name": "vendor-scrollend",
+   "status": "in progress",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  }
+ ],
+ "fixDirsInFlight": [
+  "countdown-idle-raf",
+  "scroll-engine",
+  "nav-hit-test",
+  "commission-forced-layout",
+  "hero-exit-scroll-timeline",
+  "countdown-idle-raf--layers",
+  "main-thread-infinite-animations",
+  "anim-ablation",
+  "scroll-engine--engine-only",
+  "scroll-engine--hyst",
+  "morph-panel-lazy-mount",
+  "morph-scrolljack-passive",
+  "large-area-blur",
+  "large-area-blur--platform-none",
+  "vendor-scrollend",
+  "vendor-scrollend--drop",
+  "vendor-scrollend--task",
+  "pain-offscreen-notes",
+  "hero-exit-scroll-timeline--noblur"
+ ],
+ "agents": {
+  "worktrees": 28,
+  "landedOrEmpty": 12,
+  "readyWaiting30": 0,
+  "withCommitsAhead": 6,
+  "dirtyNoCommit": 10,
+  "staleBehind20": 9,
+  "rows": [
+   {
+    "branch": "worktree-agent-a03218c7c8f9587ed",
+    "ahead": 2,
+    "behind": 31,
+    "dirty": 2,
+    "lastCommitAgeMin": 3.6,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a0a197b74a8dd40a4",
+    "ahead": 0,
+    "behind": 38,
+    "dirty": 0,
+    "lastCommitAgeMin": 38,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a0b5fe94cfd97f3aa",
+    "ahead": 0,
+    "behind": 3,
+    "dirty": 1,
+    "lastCommitAgeMin": 9.9,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a13d7bfa5a75e0fed",
+    "ahead": 0,
+    "behind": 11,
+    "dirty": 3,
+    "lastCommitAgeMin": 17.1,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a1722cf5058e25591",
+    "ahead": 5,
+    "behind": 4,
+    "dirty": 3,
+    "lastCommitAgeMin": 8.2,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a1db8fc585fd1ab7a",
+    "ahead": 0,
+    "behind": 5,
+    "dirty": 0,
+    "lastCommitAgeMin": 11.5,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a1ecf91dac9344dc2",
+    "ahead": 0,
+    "behind": 5,
+    "dirty": 1,
+    "lastCommitAgeMin": 11.5,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a1fe6184cf27dbe99",
+    "ahead": 0,
+    "behind": 36,
+    "dirty": 0,
+    "lastCommitAgeMin": 35.2,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a277ea00c8773c1ea",
+    "ahead": 3,
+    "behind": 4,
+    "dirty": 3,
+    "lastCommitAgeMin": 11.1,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a304ca7f869d9823f",
+    "ahead": 0,
+    "behind": 18,
+    "dirty": 7,
+    "lastCommitAgeMin": 20,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a3d5fe536bc00aaaf",
+    "ahead": 0,
+    "behind": 7,
+    "dirty": 0,
+    "lastCommitAgeMin": 13.2,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a4091af4a88270aa0",
+    "ahead": 0,
+    "behind": 28,
+    "dirty": 2,
+    "lastCommitAgeMin": 25.2,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a53f4ec08506b7442",
+    "ahead": 1,
+    "behind": 3,
+    "dirty": 0,
+    "lastCommitAgeMin": 7.6,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a58b544571d084ffd",
+    "ahead": 0,
+    "behind": 29,
+    "dirty": 0,
+    "lastCommitAgeMin": 25.3,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a60136f2e6656de92",
+    "ahead": 0,
+    "behind": 51,
+    "dirty": 0,
+    "lastCommitAgeMin": 59.2,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a6a570e184a2f6eba",
+    "ahead": 0,
+    "behind": 3,
+    "dirty": 3,
+    "lastCommitAgeMin": 9.9,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a700c6e710c364d49",
+    "ahead": 0,
+    "behind": 11,
+    "dirty": 1,
+    "lastCommitAgeMin": 17.1,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a77e2ec753b6381fb",
+    "ahead": 5,
+    "behind": 2,
+    "dirty": 1,
+    "lastCommitAgeMin": 1.8,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a7c32893a83e22c72",
+    "ahead": 0,
+    "behind": 4,
+    "dirty": 0,
+    "lastCommitAgeMin": 11.5,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a7da36df115c2e662",
+    "ahead": 0,
+    "behind": 32,
+    "dirty": 5,
+    "lastCommitAgeMin": 33.2,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a7fad4cb1a3bb1d34",
+    "ahead": 0,
+    "behind": 0,
+    "dirty": 5,
+    "lastCommitAgeMin": 2.6,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a803a03397b4d1b2a",
+    "ahead": 0,
+    "behind": 23,
+    "dirty": 0,
+    "lastCommitAgeMin": 23.9,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a9d21060514191d07",
+    "ahead": 0,
+    "behind": 33,
+    "dirty": 0,
+    "lastCommitAgeMin": 33.8,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-ac1fe54025bf80d6c",
+    "ahead": 0,
+    "behind": 1,
+    "dirty": 0,
+    "lastCommitAgeMin": 4,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-ac3dd7811b6861c73",
+    "ahead": 2,
+    "behind": 0,
+    "dirty": 0,
+    "lastCommitAgeMin": -0.2,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-ad4c3143bc0e9c5b6",
+    "ahead": 0,
+    "behind": 15,
+    "dirty": 0,
+    "lastCommitAgeMin": 19.1,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-ad57dbcaaef308061",
+    "ahead": 0,
+    "behind": 9,
+    "dirty": 11,
+    "lastCommitAgeMin": 14.3,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-aed31cb2797d47701",
+    "ahead": 0,
+    "behind": 13,
+    "dirty": 0,
+    "lastCommitAgeMin": 18.5,
+    "kind": "none"
+   }
+  ]
+ },
+ "experiments": {
+  "ledgerRows": 72,
+  "abResults": 10,
+  "abSessions": 24,
+  "ledgerClean": 14,
+  "ledgerBenchPassing": 0,
+  "ledgerDiffKept": 36,
+  "benchFiles": 1,
+  "variantDiffs": 24,
+  "benchRunnerOnMain": false,
+  "findings": 0,
+  "findingsOpen": 0,
+  "archScoreRows": 5,
+  "archAdoptedNumeric": 14,
+  "archAdoptedPending": 3,
+  "archRecsStarted": [
+   "anim-ablation"
+  ],
+  "archRecsKnown": [
+   "nav-morph-all",
+   "anim-ablation",
+   "hero-track-io",
+   "transition-frames",
+   "frame-attribution",
+   "scene-gate-flap"
+  ]
+ },
+ "user": {
+  "prompts": 93,
+  "loopPrompts": 14,
+  "typed": 79,
+  "processQuestions": 28,
+  "windowH": 6.1,
+  "processQuestionsPerH": 4.6
+ },
+ "resultRows": [
+  {
+   "topic": "_aa",
+   "kind": "A/A noise floor",
+   "createdAt": "2026-09-30T21:16:21.233Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 2.8,
+   "loadMax": 5.8,
+   "clean": true,
+   "gt50": [
+    4,
+    4
+   ],
+   "gt34": [
+    8,
+    9
+   ],
+   "gt20": [
+    64,
+    70
+   ],
+   "fps": [
+    74.5,
+    74.5
+   ],
+   "verdicts": {
+    "fps": "within noise",
+    "gt20": "within noise",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "pain-offscreen-notes",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T21:21:40.694Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 5.1,
+   "loadMax": 12.9,
+   "clean": false,
+   "gt50": [
+    6,
+    5
+   ],
+   "gt34": [
+    15,
+    10
+   ],
+   "gt20": [
+    95,
+    79
+   ],
+   "fps": [
+    66.2,
+    72.6
+   ],
+   "verdicts": {
+    "fps": "within noise",
+    "gt20": "within noise",
+    "gt34": "better (ranges do not overlap)",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "countdown-idle-raf",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T21:43:23.650Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 9.6,
+   "loadMax": 19.5,
+   "clean": false,
+   "gt50": [
+    5,
+    5
+   ],
+   "gt34": [
+    12,
+    12
+   ],
+   "gt20": [
+    82,
+    99
+   ],
+   "fps": [
+    71.3,
+    68.7
+   ],
+   "verdicts": {
+    "fps": "within noise",
+    "gt20": "within noise",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "nav-hit-test",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T22:01:02.843Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 11.3,
+   "loadMax": 17.5,
+   "clean": false,
+   "gt50": [
+    5,
+    5
+   ],
+   "gt34": [
+    14,
+    11
+   ],
+   "gt20": [
+    98,
+    62
+   ],
+   "fps": [
+    69.1,
+    75.3
+   ],
+   "verdicts": {
+    "fps": "within noise",
+    "gt20": "within noise",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "phone-invisible-shrink",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T22:07:33.760Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 8,
+   "loadMax": 20.2,
+   "clean": false,
+   "gt50": [
+    6,
+    5
+   ],
+   "gt34": [
+    15,
+    10
+   ],
+   "gt20": [
+    104,
+    82
+   ],
+   "fps": [
+    66.5,
+    71.6
+   ],
+   "verdicts": {
+    "fps": "better (ranges do not overlap)",
+    "gt20": "within noise",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "layout-animations",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T22:16:10.627Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 9.5,
+   "loadMax": 17.7,
+   "clean": false,
+   "gt50": [
+    6,
+    5
+   ],
+   "gt34": [
+    10,
+    11
+   ],
+   "gt20": [
+    95,
+    89
+   ],
+   "fps": [
+    69.6,
+    71.9
+   ],
+   "verdicts": {
+    "fps": "within noise",
+    "gt20": "within noise",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "scroll-engine",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T22:25:03.589Z",
+   "viewport": "mobile",
+   "runs": 3,
+   "stackedOn": null,
+   "loadMin": 6.7,
+   "loadMax": 11.7,
+   "clean": false,
+   "gt50": [
+    5,
+    5
+   ],
+   "gt34": [
+    13,
+    12
+   ],
+   "gt20": [
+    102,
+    98
+   ],
+   "fps": [
+    69.2,
+    66.6
+   ],
+   "verdicts": {
+    "fps": "within noise",
+    "gt20": "within noise",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "WORSE (ranges do not overlap)",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "hero-exit-scroll-timeline",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T22:29:56.319Z",
+   "viewport": "mobile",
+   "runs": 3,
+   "stackedOn": null,
+   "loadMin": 9.1,
+   "loadMax": 19.1,
+   "clean": false,
+   "gt50": [
+    7,
+    5
+   ],
+   "gt34": [
+    14,
+    12
+   ],
+   "gt20": [
+    115,
+    91
+   ],
+   "fps": [
+    63.7,
+    69.5
+   ],
+   "verdicts": {
+    "fps": "better (ranges do not overlap)",
+    "gt20": "better (ranges do not overlap)",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "better (ranges do not overlap)",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "large-area-blur",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T22:46:42.958Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 19,
+   "loadMax": 48.8,
+   "clean": false,
+   "gt50": [
+    6,
+    5
+   ],
+   "gt34": [
+    14,
+    14
+   ],
+   "gt20": [
+    108,
+    108
+   ],
+   "fps": [
+    68.2,
+    66
+   ],
+   "verdicts": {
+    "fps": "within noise",
+    "gt20": "within noise",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "commission-forced-layout",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T23:02:41.630Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 12.2,
+   "loadMax": 27.6,
+   "clean": false,
+   "gt50": [
+    6,
+    5
+   ],
+   "gt34": [
+    16,
+    12
+   ],
+   "gt20": [
+    104,
+    78
+   ],
+   "fps": [
+    66.5,
+    70.2
+   ],
+   "verdicts": {
+    "fps": "within noise",
+    "gt20": "within noise",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  }
+ ],
+ "iphoneRows": [
+  {
+   "owner": "nav-morph",
+   "nBase": 3,
+   "nPatched": 3,
+   "fps": [
+    52.7,
+    52.5
+   ],
+   "gt34": [
+    16,
+    17
+   ],
+   "gt50": [
+    5,
+    7
+   ]
+  },
+  {
+   "owner": "large-area-blur",
+   "nBase": 3,
+   "nPatched": 3,
+   "fps": [
+    52.7,
+    53.1
+   ],
+   "gt34": [
+    16,
+    15
+   ],
+   "gt50": [
+    4,
+    2
+   ]
+  },
+  {
+   "owner": "commission-forced-layout",
+   "nBase": 3,
+   "nPatched": 3,
+   "fps": [
+    51.9,
+    52.4
+   ],
+   "gt34": [
+    17,
+    16
+   ],
+   "gt50": [
+    6,
+    5
+   ]
+  },
+  {
+   "owner": "phone-invisible-shrink",
+   "nBase": 3,
+   "nPatched": 3,
+   "fps": [
+    52.5,
+    55.1
+   ],
+   "gt34": [
+    18,
+    12
+   ],
+   "gt50": [
+    6,
+    5
+   ]
+  },
+  {
+   "owner": "pain-offscreen-notes",
+   "nBase": 3,
+   "nPatched": 3,
+   "fps": [
+    30.9,
+    36.3
+   ],
+   "gt34": [
+    63,
+    54
+   ],
+   "gt50": [
+    35,
+    30
+   ]
+  }
+ ],
+ "table": {
+  "Chrome frames >50 ms, A/A floor (median, quiet host)": 4,
+  "Chrome frames >34 ms, A/A floor": 8,
+  "best patched Chrome >50 ms (single topic)": 5,
+  "best patched Chrome >34 ms (single topic)": 10,
+  "A/Bs with a disjoint \"better\" on frames >50 ms / >34 ms": [
+   0,
+   1
+  ],
+  "combined-overlay A/Bs measured / clean": 0,
+  "iPhone baseline scroll fps / >34 / >50 (median)": {
+   "fps": 52.5,
+   "gt34": 17,
+   "gt50": 6,
+   "n": 15
+  },
+  "iPhone best patched (single topic)": {
+   "owner": "phone-invisible-shrink",
+   "fps": 55.1,
+   "gt34": 12,
+   "gt50": 5
+  },
+  "topics landed / total (TOPICS.md incl. N-list)": 2,
+  "topics in progress (branch or worktree)": 11,
+  "topic lead time, first A/B -> landed (min)": [
+   "phone-invisible-shrink: 56.1",
+   "layout-animations: 62.9"
+  ],
+  "in-progress topics: age since first A/B, median / max (min)": {
+   "median": 112.85,
+   "max": 116.6
+  },
+  "commits on main: tool / fix / research / docs": [
+   18,
+   2,
+   14,
+   53
+  ],
+  "A/B sessions started / completed / not completed (queued, running or killed)": [
+   24,
+   14,
+   10
+  ],
+  "queue wait per A/B, median / max (min, estimated)": {
+   "median": 17.3,
+   "max": 44.5
+  },
+  "chrome-measure utilization over the A/B window (%, lower bound)": 51,
+  "queue now: length / short / max wait (min)": [
+   10,
+   4,
+   25
+  ],
+  "runs started at load1 <= 6 (%)": 11,
+  "runs started at load1 > 10 (contaminated)": 77,
+  "median load1 at run start": 11.8,
+  "host now: load1 / CPU busy %": [
+   30.4,
+   91
+  ],
+  "opened / resolved / active": [
+   19,
+   15,
+   4
+  ],
+  "time to resolve, median / max (min)": {
+   "median": 39.3,
+   "max": 85.2
+  },
+  "fix ready -> resolved, median (min)": 10.6,
+  "landed on main but not resolved in the store": [],
+  "scorecard rows / rows with adopted 0 or pending": [
+   5,
+   3
+  ],
+  "measurement-review experiments started (E1, E3, E4, N9, N1)": [
+   "anim-ablation"
+  ],
+  "EXPERIMENTS.md rows / clean validity / diff kept / benchmark runnable": [
+   72,
+   14,
+   36,
+   0
+  ],
+  "bench.json files / variant diffs / runner on main": [
+   1,
+   24,
+   false
+  ],
+  "findings on the board / open": [
+   0,
+   0
+  ],
+  "worktrees / landed-or-empty (cleanup debt) / committed & untouched >30 min / >20 commits behind main": [
+   28,
+   12,
+   0,
+   9
+  ],
+  "user prompts / loop prompts / process questions per hour": [
+   93,
+   14,
+   4.6
+  ],
+  "messages the lead handled per hour (all incoming) / max in any 10 min": [
+   132.9,
+   103
+  ],
+  "incoming: agent+teammate / notifications (of which interim noise) / user / interrupts": [
+   142,
+   "578 (170)",
+   93,
+   0
+  ],
+  "incoming that needed a lead decision (%)": 14,
+  "lead actions: decisions (spawn+land+triage) / routine (relay+status) / decision share %": [
+   120,
+   324,
+   27
+  ],
+  "relays (SendMessage) per hour": 29.1
+ }
+}
