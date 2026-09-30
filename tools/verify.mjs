@@ -2,7 +2,14 @@
 // Compare scroll jank of the live site vs. the local mirror in a dedicated Chrome (CDP, no deps).
 //
 //   node tools/verify.mjs live=https://fastwork.com/ block=http://localhost:5173/ local=http://localhost:5174/
-//        [--viewport desktop|mobile|both] [--cpu 4] [--runs 3] [--out out/verify] [--no-screens] [--port 9333]
+//        [--viewport desktop|mobile|both] [--cpu 4] [--runs 3] [--out out/verify] [--no-screens]
+//        [--port 0] [--profile out/chrome-verify-profile] [--result file.json] [--owner name] [--no-lock]
+//
+// Parallel worktrees: the DevTools port defaults to 0 (Chrome picks a free one) and the profile dir
+// is under this checkout's out/, so runs from different worktrees never collide. Every run takes the
+// cross-worktree "chrome-measure" lock (tools/lib/lock.mjs, FIFO) before launching Chrome, so only one
+// throttled measurement uses the Mac's CPU at a time; --no-lock skips that (don't, when agents run).
+// With several targets, the order alternates per run (A B, B A, A B, ...) so drift hits all equally.
 //
 // For every target and run: fresh isolated browser context (cold cache), load, settle, then with
 // CPU throttling a rAF frame logger + PerformanceObserver('long-animation-frame') record while the
@@ -12,10 +19,12 @@
 // No Tracing is used (in-page LoAF attribution only).
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import os from 'node:os';
 import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
+import { REPO, checkoutId } from './lib/paths.mjs';
+import { acquire } from './lib/lock.mjs';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = REPO;
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
@@ -86,7 +95,8 @@ function summarize(perf) {
     seconds: r1(total / 1000),
     fps: r1(f.length / (total / 1000 || 1)),
     p50: r1(pct(f, 50)), p95: r1(pct(f, 95)), max: r1(Math.max(0, ...f)),
-    gt20: f.filter((x) => x > 20).length, gt33: f.filter((x) => x > 33.4).length, gt50: f.filter((x) => x > 50).length,
+    gt20: f.filter((x) => x > 20).length, gt33: f.filter((x) => x > 33.4).length, gt34: f.filter((x) => x > 34).length,
+    gt50: f.filter((x) => x > 50).length, gt100: f.filter((x) => x > 100).length,
     droppedPct: r1((100 * f.filter((x) => x > 20).length) / (f.length || 1)),
     loafCount: loaf.length,
     loafMs: Math.round(loaf.reduce((a, e) => a + e.duration, 0)),
@@ -102,6 +112,7 @@ function summarize(perf) {
 
 async function measure(cdp, t, vpName, run) {
   const vp = VIEWPORTS[vpName];
+  const loadBefore = os.loadavg()[0];
   const page = await cdp.newIsolatedPage();
   const requests = [];
   const errors = [];
@@ -173,7 +184,7 @@ async function measure(cdp, t, vpName, run) {
   for (const r of requests) { try { const o = new URL(r.url).origin; const k = o + (r.failed ? ' (blocked/failed)' : ''); origins[k] = (origins[k] || 0) + 1; } catch {} }
   const firstParty = requests.filter((r) => { try { const u = new URL(r.url); return u.origin === new URL(t.url).origin; } catch { return false; } });
   return {
-    label: t.label, url: t.url, viewport: vpName, run, state, scroll, morphState, shots, shimStats,
+    label: t.label, url: t.url, viewport: vpName, run, loadavg1: { before: r1(loadBefore), after: r1(os.loadavg()[0]) }, state, scroll, morphState, shots, shimStats,
     scrollSummary: summarize(scrollPerf), morphSummary: summarize(morphPerf),
     requests: requests.length, origins,
     notFound: firstParty.filter((r) => r.status >= 400).map((r) => `${r.status} ${new URL(r.url).pathname}`),
@@ -206,7 +217,10 @@ async function diffImages(cdp, a, b) {
 function median(xs) { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; }
 
 async function main() {
-  const ch = await launchChrome({ port: Number(opt('port', 9333)), profileDir: resolve(ROOT, opt('profile', 'out/chrome-verify-profile')) });
+  if (!flag('no-lock')) {
+    await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel } });
+  }
+  const ch = await launchChrome({ port: Number(opt('port', 0)), profileDir: resolve(ROOT, opt('profile', 'out/chrome-verify-profile')) });
   const cdp = await CDP.connect(ch.wsUrl);
   // allow the mirror's self-signed --https certificate (this dedicated Chrome only)
   await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true }).catch(() => {});
@@ -214,12 +228,13 @@ async function main() {
   try {
     for (const vpName of vpList) {
       for (let run = 0; run < RUNS; run++) {
-        for (const t of targets) {
+        const order = run % 2 ? [...targets].reverse() : targets; // ABBA: cancel slow drift across a session
+        for (const t of order) {
           process.stdout.write(`[${vpName} run ${run + 1}/${RUNS}] ${t.label} ${t.url} ... `);
           const r = await measure(cdp, t, vpName, run);
           results.push(r);
           const s = r.scrollSummary;
-          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >50ms ${s.gt50}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms  morph LoAF ${r.morphSummary.loafMs}ms  (${r.notFound.length} 404s, ${r.errors.length} errors)`);
+          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms  morph LoAF ${r.morphSummary.loafMs}ms  (${r.notFound.length} 404s, ${r.errors.length} errors)`);
         }
       }
       if (SCREENS && targets.length > 1) {
@@ -240,7 +255,7 @@ async function main() {
     const m = (phase, k) => median(rs.map((r) => r[phase][k]));
     rows.push({
       viewport: vpName, target: t.label, runs: rs.length,
-      fps: m('scrollSummary', 'fps'), p95: m('scrollSummary', 'p95'), gt20: m('scrollSummary', 'gt20'), gt50: m('scrollSummary', 'gt50'),
+      fps: m('scrollSummary', 'fps'), p95: m('scrollSummary', 'p95'), gt20: m('scrollSummary', 'gt20'), gt34: m('scrollSummary', 'gt34'), gt50: m('scrollSummary', 'gt50'), gt100: m('scrollSummary', 'gt100'), max: m('scrollSummary', 'max'),
       loafMs: m('scrollSummary', 'loafMs'), loafScriptMs: m('scrollSummary', 'loafScriptMs'), forcedMs: m('scrollSummary', 'forcedLayoutMs'),
       morphFps: m('morphSummary', 'fps'), morphGt50: m('morphSummary', 'gt50'), morphLoafMs: m('morphSummary', 'loafMs'),
       scrollS: Math.round(median(rs.map((r) => r.scroll.ms)) / 100) / 10,
@@ -250,8 +265,9 @@ async function main() {
   console.table(rows);
   const diffs = results.filter((r) => r.diff);
   if (diffs.length) { console.log('screenshot pixel diff vs ' + targets[0].label + ' (% of pixels differing):'); console.table(diffs.map(({ viewport, b, shot, diffPct, error }) => ({ viewport, target: b, shot, diffPct, error }))); }
-  const file = join(OUT, `verify-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
-  writeFileSync(file, JSON.stringify({ cpu: CPU, targets, rows, results }, null, 1));
+  const file = opt('result') ? resolve(process.cwd(), opt('result')) : join(OUT, `verify-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify({ cpu: CPU, viewports: vpList, runs: RUNS, targets, host: { cpus: os.cpus().length, model: os.cpus()[0]?.model, loadavg: os.loadavg() }, rows, results }, null, 1));
   console.log('details: ' + file);
 }
 

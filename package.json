@@ -11,6 +11,9 @@
     "serve:vendors": "node tools/serve.mjs --vendors=local",
     "serve:https": "node tools/serve.mjs --https",
     "prettify": "node tools/prettify.mjs",
-    "verify": "node tools/verify.mjs live=https://fastwork.com/ local=http://localhost:5173/"
+    "verify": "node tools/verify.mjs live=https://fastwork.com/ local=http://localhost:5173/",
+    "fix": "node tools/fix.mjs",
+    "lock": "node tools/lock.mjs",
+    "iphone": "node tools/iphone.mjs"
   }
 }

@@ -1,8 +1,13 @@
 # Mirrored third-party content (Fastwork's property) - never commit or push.
 site/
 site-pretty/
+# Per-fix overlays hold full copies of modified Fastwork files: only patch.diff is committed (locally).
+fixes/*/overlay/
 # measurement output, Chrome profiles, generated certificates
 out/
 *.pem
 node_modules/
 .DS_Store
+# Claude Code: worktrees created by --worktree / isolation: "worktree" / EnterWorktree, and personal settings
+.claude/worktrees/
+.claude/settings.local.json

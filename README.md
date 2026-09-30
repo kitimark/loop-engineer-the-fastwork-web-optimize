@@ -14,6 +14,12 @@ optimizations locally, on desktop Chrome or on an iPhone on the same Wi-Fi.
 > honours it anyway. It downloads one file at a time with a delay between requests and caches
 > everything it already has.
 
+**Repository layout.** `tools/` is the shared tooling, `research/` holds the write-ups, `site/` and
+`site-pretty/` are the private mirror baseline (gitignored, main checkout only), and `fixes/<topic>/`
+holds per-fix experiments developed in parallel git worktrees. The per-fix workflow (overlays, A/B
+measurement, locks, the shared iPhone) is in [`fixes/README.md`](fixes/README.md) and
+[`CLAUDE.md`](CLAUDE.md); proposed fixes are in [`fixes/TOPICS.md`](fixes/TOPICS.md).
+
 ## What gets mirrored
 
 `node tools/mirror.mjs` stores each resource under `site/` at its URL path
@@ -71,7 +77,18 @@ node tools/serve.mjs --https            # HTTP/2 + TLS (auto self-signed cert, o
 node tools/serve.mjs --latency 120      # add 120 ms before every response (rough CDN RTT)
 node tools/serve.mjs --no-cache         # Cache-Control: no-store (handy while editing files)
 node tools/serve.mjs --root site-pretty # serve the prettified copy (or your own edited copy)
+node tools/serve.mjs --root site-pretty --overlay fixes/<topic>/overlay   # baseline + one fix's changed files
+node tools/serve.mjs --port auto        # per-checkout port in 5200-5999 (default inside a git worktree)
+node tools/serve.mjs --port 0 --state out/serve.json   # any free port; URL/port/pid written to the file
 ```
+
+Every start prints a machine-readable `MIRROR_URL=…` line. A fixed `--port` that is taken fails
+loudly instead of moving. `--root site` / `--root site-pretty` are looked up in this checkout first
+and then in the main checkout (`git rev-parse --git-common-dir`, or `$FW_MIRROR_HOME`), so a git
+worktree serves the shared baseline without a copy. `--overlay` directories (comma-separated, first
+wins) are checked before the root for every path, and their responses carry `x-mirror-source`.
+Vendor scripts are always served from the byte-identical `site/` (some load with SRI `integrity`, so
+`site-pretty/`'s reformatted copies would be refused).
 
 What the server does to stay close to production:
 - **MIME types and cache headers** come from the live responses stored in the manifest. For example,
@@ -168,12 +185,16 @@ at the end.
 
 ## Verification
 
-`tools/verify.mjs` drives its **own** Chrome over CDP (port 9333, profile in `out/`). It uses no
-DevTools tracing, so throttled runs don't hang. For each target and run it does this:
+`tools/verify.mjs` drives its **own** Chrome over CDP (a free DevTools port picked by Chrome unless
+`--port N`; profile in this checkout's `out/`). It uses no DevTools tracing, so throttled runs don't
+hang. Before launching Chrome it waits for the cross-worktree `chrome-measure` lock
+(`tools/lock.mjs status` shows the holder and queue), so parallel agents never measure at the same
+time; with several targets the order alternates per run (A B, B A, …). For each target and run it does this:
 
 1. Opens a fresh isolated browser context, so the cache is cold.
 2. Loads the page and waits until it settles.
-3. Applies `CPU x4`.
+3. Applies the CPU throttle (`--cpu`, default 4; the calibrated iPhone-like setting is 6 on the
+   mobile viewport).
 4. Injects a rAF frame logger and `PerformanceObserver('long-animation-frame')` with script
    attribution (`sourceURL`, `sourceCharPosition`, `forcedStyleAndLayoutDuration`).
 5. Smooth-scrolls with `scrollBy({top:250, behavior:'smooth'})` every 300 ms down to the bottom
@@ -274,9 +295,18 @@ and compile time and LoAF char positions will differ from production.
 tools/mirror.mjs       downloader (static discovery + optional --crawl/--vendors)
 tools/serve.mjs        local server (MIME/cache/CSP/Link like production, br/gzip, LAN, https, vendor modes)
 tools/vendor-shim.js   --vendors=local runtime shim (script URL rewrite + beacon neutering)
-tools/verify.mjs       live-vs-local jank comparison over CDP (frames, LoAF, screenshots)
+tools/verify.mjs       live-vs-local jank comparison over CDP (frames, LoAF, screenshots), under the measurement lock
 tools/prettify.mjs     readable copy -> site-pretty/
+tools/fix.mjs          per-fix workflow: new/edit/grep/show/diff/apply/combine/serve/ab (see fixes/README.md)
+tools/lock.mjs         cross-worktree locks: chrome-measure (automatic) and the iphone lease
+tools/iphone.mjs       drive the shared iPhone under the lease: status/open/scroll/record
 tools/lib/cdp.mjs      tiny dependency-free Chrome DevTools Protocol client
+tools/lib/paths.mjs    finds the baseline from any worktree, per-checkout ports
+tools/lib/lock.mjs     named lock/lease/queue implementation (state in .git/fastwork-mirror/locks/)
+tools/lib/wip.mjs      WebKit Inspector Protocol client for iOS Safari (ios_webkit_debug_proxy)
+research/              write-ups and one-off tools of each study
+fixes/                 per-fix deliverables (README.md, patch.diff, results.json), TOPICS.md, AGENT_PROMPT.md
+CLAUDE.md              rules and workflow for Claude Code agents (worktrees, teams, locks)
 site/                  the mirror (gitignored); site/.mirror/manifest.json = headers, hashes, 404s, vendors
 site-pretty/           prettified copy (gitignored)
 out/                   verify results, screenshots, Chrome profiles, certs (gitignored)

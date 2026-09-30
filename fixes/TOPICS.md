@@ -1,0 +1,53 @@
+# Proposed fix topics
+
+Derived from `research/01-initial-investigation/` (README findings + `motion-inventory.md`) and
+`research/cpu-throttle-calibration/` (top LoAF scripts at every throttle rate). Line numbers are in the
+**prettified baseline** (`site-pretty/`, see with `node tools/fix.mjs show <file> --lines a-b`):
+
+- `JS` = `/_app/immutable/nodes/2.DyWL8TcE.js` (13,510 lines pretty; every first-party scroll effect)
+- `CSS` = `/_app/immutable/assets/2.gBuqKVzi.css` (all page CSS)
+
+Minified offsets from the research map to these pretty locations: `iE` @75155 → JS 2670 (engine),
+`a` @87539 → JS 3106 (commission), `s` @135943 → JS 4163 (hero exit), `f` @296345 → JS 10928
+(profile shrink), `l` @302796 → JS 11303 (future shrink), `:342565 T` / `:343804` → JS 12950-13100 (nav/morph).
+
+All JS topics patch the same file. That is fine: patches are hunk-level, and `node tools/fix.mjs combine`
+proves which ones apply together. What matters is overlapping **functions** (same hunks, or
+the same behaviour), listed per topic and summarised in the conflict table at the end.
+
+| # | topic | what is slow (evidence) | direction | where | size |
+|---|---|---|---|---|---|
+| 1 | `countdown-idle-raf` | Countdown digit spring runs rAF every frame even at idle; ~51 repaints/s of a 60x60 hero region on iPhone (research README "Idle work", JS@126303); ~75 `.face{will-change:transform}` layers; not paused off-screen | CSS `transition: transform` per digit instead of the rAF spring; pause (IntersectionObserver / `visibilitychange`) when off-screen; fewer layers | JS 3800-3990 (`$E` digit spring 3823-3845, `setInterval` 3936), CSS `.countdown.svelte-1666oc5` / `.digit.svelte-1quva9c` rules | S |
+| 2 | `scroll-engine-batching` | Shared engine `iE` calls every callback in one rAF; callbacks interleave `getBoundingClientRect` reads with `setProperty` writes, forcing style+layout several times per frame (motion-inventory "Ranked suspects" 1-2; `iE` is the #1 LoAF script at every rate) | Two-phase engine: all callbacks `measure()` first, then `mutate()`; cache `innerHeight`; skip inactive work | JS 2663-2780 (`rE`, `iE`, `aE`, `dE`, `uE`) and the API every `dE(...)` caller uses (3143, 4239, 4736, 6269, 10977, 11359, 12448, 13090) | L |
+| 3 | `nav-hit-test` | Fixed-nav callback runs on every scroll frame, not IO-gated: `getComputedStyle`, 3-4 rects, `style.pointerEvents='none'` → `elementFromPoint` → restore, i.e. write-read-write forced layout each frame (JS@341290-343746) | Decide the nav theme from IntersectionObserver / section boundaries computed once (and on resize) instead of hit-testing per frame | JS 12940-13000 (`j`, `F`, `ee`) and the nav `ne(() => …)` block that calls them | M |
+| 4 | `phone-invisible-shrink` | `--future-shrink`, `--commission-*`, `--platform-shrink`, `--profile-scale` are eased every frame (22 % per frame, ~20 frames after scroll stops) even on phones where CSS forces scale 1 / radius 0: cost with no visual (motion-inventory "Ranked suspects" 3) | `matchMedia` gate: on breakpoints where the effect is disabled, don't read rects or write the property; stop the easing loop | JS 11295-11330 (future `l`), 12433-12447 (platform), 10928-10975 (profile `f`), 3101-3128 (commission `a`); must keep the `.pain` `is-pain-dark` toggle and `.hero-track` read inside `l` | M |
+| 5 | `commission-forced-layout` | Commission callback: two rects → `setProperty('--commission-*')` → `d.style.height` write → `Range.getClientRects()` (`j`), a forced layout right after style writes, every frame | Read everything first; move the line-count check (`j`) to the existing ResizeObserver only | JS 3085-3150 (`A`, `j`, `a`) | S |
+| 6 | `morph-scrolljack-passive` | While `#platform` is within 200 %, `wheel`/`touchmove` listeners `{passive:false, capture:true}` on window, `preventDefault()`, spring on `--morph`, `scrollTo({behavior:'instant'})` pinning: every touch waits for the main thread (iPhone bottom-of-page 16-37 fps, ~110 touch/pointer events/s to JS) | Passive listeners + `overscroll-behavior` / scroll-snap or a sentinel section; drive `--morph` from scroll position | JS 13000-13100 (listeners 13063-13072, pin 13078) and the morph spring; CSS `--morph` / `--morph-fade` / `--pill-out` rules (5392, 10500, 10545, 11342) | L |
+| 7 | `hero-exit-scroll-timeline` | Hero exit: per-frame `getBoundingClientRect` → `--exit-opacity` (`s`, JS@136172), drives 4 orbit cards, `.hero-copy`, and `.scroll-cue` `filter: blur(calc(var(--exit-scatter)*18px))` (repaint every frame) | CSS scroll-driven animation (`animation-timeline: view()` on `.hero-track`) animating only `transform`/`opacity`; JS fallback where unsupported | JS 4155-4240 (`s`, `c`, ring splash `f`/`p`), CSS hero rules ~1700-1940 (`--exit-*`, 1735, 1911, 1927, 1933) | L |
+| 8 | `large-area-blur` | Blur on large layers: future-card reveal `filter: blur(14px)` (CSS 2396), section-wide `filter: blur(calc((1 - var(--morph-fade)) * 12px))` on `#platform` (5392, permanent `blur(0px)` when idle), `blur(16px)` stage backgrounds (6370, 7900-7912), nested `backdrop-filter`s on the fixed nav (11115, 11342), `blur(8px)` entry animations. Raster cost shows on the iPhone GPU, not in Chrome CPU throttling | Pre-blurred layers cross-faded with `opacity`; drop `filter` when the value is 0; remove nested backdrop-filter | CSS only (the lines listed) | M |
+| 9 | `layout-animations` | Main-thread/layout animations during scroll: avatar carousel `avatars-exit` animates `width`, `flex-basis`, `margin-right`, `border-width` (CSS 2888) every ~1 s; h1 `.script-accent` inline `width` transition (0.9 s layout per cycle); `.fee-progress` `width` count-up; `.service-card.is-animating` transitions `top/width/height/padding`; `background-position` gradient text (5804, 7631) | `transform`/`opacity`/`clip-path`/`scaleX` equivalents; pause when off-screen | CSS 2888 + the listed rules; small JS touches for `.script-accent` / `.fee-progress` | M |
+| 10 | `toolbar-resize` | iOS toolbar collapse fires `resize` (36 in the first seconds on iPhone); the engine re-runs every callback on `resize`, and each re-measures | Ignore height-only resizes (compare `innerWidth`), use `svh`/`lvh` in CSS, `visualViewport` where needed | JS 2672-2687 (`aE`/`oE` `resize` listener) + callbacks that read `innerHeight` (14 sites) | S-M, needs the iPhone finger test (Chrome can't collapse a toolbar) |
+| 11 | `pain-offscreen-notes` | `section.pain`: `setInterval(3 s)` adds notes that are `display:none` at <= 860 px (DOM churn for nothing on phones); scroll callback reads `.commission-card` rect | Don't start the interval when the notes are hidden / off-screen | JS 4540-4740 (interval 4696, `dE` 4736) | S |
+| 12 | `scene-gating-tighten` | IO gate `rootMargin: "100% 0px"`: a tall section counts as active whenever any part is within one viewport, so its effects keep running; `content-visibility` / `will-change` toggling churn at ±1 viewport | Gate per effect element (not per section), smaller margins | JS 2690-2780 (`sE`, `cE`, `lE`, `uE`, `dE`) | M |
+
+Not fixable here: GA4 `onscrollend` (gtag, ~45 ms once per run) and Hotjar's MutationObserver cost
+(it drops by itself when the page writes fewer styles). Page-load weight (desktop-only hero covers
+fetched on mobile, ~1 MB) is real but not scroll jank; a separate topic if wanted (`hero-cover-mobile`).
+
+## Conflicts (touching the same functions / rules)
+
+| cluster | topics | shared code | recommendation |
+|---|---|---|---|
+| A. scroll engine | 2, 10, 12 | JS 2663-2780 (`rE`/`iE`/`aE`/`dE`/`uE`), and 2 changes the callback contract used by 3, 4, 5, 7, 11 | One owner for 2+10+12, or run 2 alone in a later wave. Wave-1 topics must **not** change the engine API; they fix their own callback. 2 then rebases onto them. |
+| B. nav / morph component | 3, 6 | the same `ne(() => …)` block (JS 12940-13250): hit test, scroll-jack listeners, morph spring | Same teammate, or sequence 3 → 6. |
+| C. commission callback | 4, 5 | commission `a` (JS 3101-3128) | Topic 4 leaves commission to topic 5 (or one owner does both). |
+| D. blur CSS | 6, 7, 8 | CSS hero blur (1735-1933) with 7; morph blur (5392, 10500-10545, 11342) with 6 | 8 must not touch the hero `--exit-*` rules (7 owns them) or the `--morph*` rules (6 owns them); 8 posts to 6/7 what it would change there. |
+| E. future callback coupling | 4, 7 | future `l` (JS 11303) reads `.hero-track` and toggles `.pain` `is-pain-dark`; 7 changes the hero track | 4 keeps those two side jobs intact; 7 tells 4 if `.hero-track` geometry changes. |
+| F. `innerHeight` reads | 2, 10 | 14 call sites | cluster A |
+
+Independent (safe in parallel with anything): 1 `countdown-idle-raf`, 9 `layout-animations`,
+11 `pain-offscreen-notes`.
+
+**Suggested waves** (3-5 teammates at a time, per the agent-teams guidance):
+- Wave 1: 1, 3+6 (one owner), 4 (without commission), 5, 8, 9, 11
+- Wave 2 (after merging wave 1 with `fix.mjs combine`): 7, 10, then 2+12 on top of the combined overlay

@@ -10,6 +10,16 @@
 //   node tools/serve.mjs --no-cache            # send Cache-Control: no-store instead of production's
 //   node tools/serve.mjs --root site-pretty    # serve another tree (e.g. an edited copy)
 //   node tools/serve.mjs --latency 120         # add N ms before every response (rough CDN RTT emulation)
+//   node tools/serve.mjs --root site-pretty --overlay fixes/<topic>/overlay   # baseline + one fix's files on top
+//   node tools/serve.mjs --port auto|0|N       # auto = per-checkout port from 5200-5999 (default in a git worktree);
+//                                              # 0 = any free port; N = exactly N (default 5173 in the main checkout)
+//   node tools/serve.mjs --state out/serve.json  # write {url, port, pid, root, overlay, ...} once listening
+//
+// Baseline lookup: site/ and site-pretty/ are gitignored, so a git worktree has neither. `--root` names
+// are resolved against this checkout first, then against the main checkout (tools/lib/paths.mjs), so a
+// worktree serves the shared read-only baseline without copying it. `--overlay` dirs (comma-separated,
+// first wins) are checked before the root for every path: that is how a fix is served on top of the
+// baseline. Overlay responses carry `x-mirror-source: overlay`.
 //
 // Served files are byte-identical to production except for the documented HTML rewrites
 // in --vendors=local mode (see README "Rewrites").
@@ -18,20 +28,25 @@ import http2 from 'node:http2';
 import os from 'node:os';
 import zlib from 'node:zlib';
 import { createHash } from 'node:crypto';
-import { readFileSync, statSync, existsSync, appendFileSync, mkdirSync } from 'node:fs';
-import { resolve, join, extname, dirname } from 'node:path';
+import { readFileSync, statSync, existsSync, appendFileSync, mkdirSync, writeFileSync, unlinkSync, readdirSync } from 'node:fs';
+import { resolve, join, extname, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { REPO, mirrorHome, resolveTree, isLinkedWorktree, autoPortBase } from './lib/paths.mjs';
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
-const ROOT_DIR = resolve(TOOLS, '..');
+const ROOT_DIR = REPO;
+const HOME = mirrorHome(); // where the shared baseline (site/, site-pretty/) and out/certs live
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(`--${n}`);
 const opt = (n, d) => { const i = args.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = args[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : args[i + 1]; };
 
-const ROOT = resolve(ROOT_DIR, opt('root', 'site'));
-const MANIFEST_ROOT = resolve(ROOT_DIR, 'site'); // headers/vendors always come from the mirror
-const PORT = Number(opt('port', process.env.PORT || 5173));
+const ROOT = resolveTree(opt('root', 'site'));
+const MANIFEST_ROOT = resolveTree('site'); // headers/vendors always come from the byte-identical mirror
+const OVERLAYS = (opt('overlay', '') || '').split(',').filter(Boolean).map((d) => resolve(process.cwd(), d));
+for (const d of OVERLAYS) if (!existsSync(d)) { console.error(`--overlay ${d} does not exist`); process.exit(2); }
+const PORT_OPT = String(opt('port', process.env.PORT || (isLinkedWorktree() ? 'auto' : 5173)));
+const STATE_FILE = opt('state') ? resolve(process.cwd(), opt('state')) : null;
 const HOST = opt('host', '0.0.0.0');
 const VENDORS = opt('vendors', 'block'); // block | local | off
 const COMPRESS = opt('compress', 'br'); // br | gzip | none
@@ -42,7 +57,8 @@ const LATENCY = Number(opt('latency', 0)); // ms added before every response (ro
 if (!['block', 'local', 'off'].includes(VENDORS)) { console.error('--vendors must be block|local|off'); process.exit(2); }
 
 const manifestPath = join(MANIFEST_ROOT, '.mirror', 'manifest.json');
-if (!existsSync(manifestPath)) { console.error('No site/.mirror/manifest.json — run `node tools/mirror.mjs` first.'); process.exit(1); }
+if (!existsSync(manifestPath)) { console.error(`No ${manifestPath} — run \`node tools/mirror.mjs\` in the main checkout first (or set FW_MIRROR_HOME).`); process.exit(1); }
+if (!existsSync(ROOT)) { console.error(`--root ${ROOT} does not exist (site-pretty/ is built by \`node tools/prettify.mjs\` in the main checkout)`); process.exit(1); }
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
 const MIME = {
@@ -157,11 +173,21 @@ function resolveFile(pathname) {
   try { p = decodeURIComponent(pathname); } catch { return null; }
   const candidates = p.endsWith('/') ? [p + 'index.html'] : [p, p + '.html', p + '/index.html'];
   for (const c of candidates) {
-    const f = resolve(ROOT, '.' + c);
-    if (!f.startsWith(ROOT)) return null;
-    if (existsSync(f) && statSync(f).isFile()) return { file: f, path: c };
+    for (const [dir, source] of [...OVERLAYS.map((d) => [d, 'overlay']), [ROOT, 'base']]) {
+      const f = resolve(dir, '.' + c);
+      if (f !== dir && !f.startsWith(dir + sep)) return null;
+      if (existsSync(f) && statSync(f).isFile()) return { file: f, path: c, source };
+    }
   }
   return null;
+}
+
+function listFiles(dir, base = dir, out = []) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const f = join(dir, e.name);
+    if (e.isDirectory()) listFiles(f, base, out); else out.push('/' + relative(base, f).split(sep).join('/'));
+  }
+  return out;
 }
 
 function handler(req, res) {
@@ -191,14 +217,18 @@ function handler(req, res) {
   }
   if (pathname === '/__mirror/info') {
     done(200);
-    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, root: ROOT, rewrites: REWRITES }, null, 1)));
+    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, root: ROOT, overlays: OVERLAYS.map((d) => ({ dir: d, files: listFiles(d) })), latency: LATENCY, https: HTTPS, rewrites: REWRITES }, null, 1)));
   }
   if (pathname.startsWith('/cdn-cgi/')) { done(204); return send(req, res, 204, {}, null); }
 
   if (pathname.startsWith('/__vendor/')) {
     const v = VENDORS === 'local' ? vendorLookup(pathname + url.search) : null;
     if (!v) { if (VENDORS === 'local') recordMissing(pathname + url.search); done(404); return send(req, res, 404, { 'content-type': 'text/plain' }, Buffer.from('vendor script not mirrored (run mirror.mjs --crawl --vendors) or --vendors!=local')); }
-    const c = load(existsSync(resolve(ROOT, v.file)) ? resolve(ROOT, v.file) : resolve(MANIFEST_ROOT, v.file));
+    // Vendor scripts always come from the byte-identical mirror (or an overlay): some are loaded with
+    // SRI `integrity` (Cloudflare beacon, Amplitude via GTM), so site-pretty's reformatted copies would
+    // be refused by the browser and silently drop that vendor's cost from the measurement.
+    const vf = [...OVERLAYS.map((d) => resolve(d, v.file)), resolve(MANIFEST_ROOT, v.file)].find((f) => existsSync(f)) || resolve(MANIFEST_ROOT, v.file);
+    const c = load(vf);
     done(200);
     return send(req, res, 200, { 'content-type': v.type || 'text/javascript', 'cache-control': NO_CACHE ? 'no-store' : 'public, max-age=900', 'access-control-allow-origin': '*' }, { __c: c }, { compressible: true, etag: c.etag });
   }
@@ -221,6 +251,7 @@ function handler(req, res) {
   const isHtml = extname(hit.file) === '.html';
   const type = (info.type && !isHtml ? info.type : null) || MIME[extname(hit.file).toLowerCase()] || 'application/octet-stream';
   const headers = { 'content-type': type };
+  if (OVERLAYS.length) headers['x-mirror-source'] = hit.source;
   headers['cache-control'] = NO_CACHE ? 'no-store' : info.cacheControl || (isHtml ? 'public, max-age=0, must-revalidate' : 'public, max-age=0, must-revalidate');
   if (isHtml) {
     Object.assign(headers, DOC_HEADERS);
@@ -245,7 +276,7 @@ if (HTTPS) {
   if (!cert || !key) {
     // No cert given: use (or create once) a self-signed cert for localhost + this machine's LAN IPs.
     // Browsers will warn; prefer mkcert (see README) so the iPhone trusts it without a warning.
-    const dir = resolve(ROOT_DIR, 'out', 'certs');
+    const dir = resolve(HOME, 'out', 'certs'); // shared by every worktree
     cert = join(dir, 'selfsigned-cert.pem'); key = join(dir, 'selfsigned-key.pem');
     if (!existsSync(cert) || !existsSync(key)) {
       mkdirSync(dir, { recursive: true });
@@ -260,17 +291,49 @@ if (HTTPS) {
 } else {
   server = http.createServer(handler);
 }
-server.listen(PORT, HOST, () => {
+function onListening() {
+  const PORT = server.address().port;
   const proto = HTTPS ? 'https' : 'http';
+  const url = `${proto}://localhost:${PORT}/`;
   console.log(`\nfastwork mirror  root=${ROOT}`);
+  for (const d of OVERLAYS) console.log(`  overlay: ${d}  (${listFiles(d).length} files, served before the root)`);
   console.log(`  vendors=${VENDORS}  compress=${COMPRESS}  cache=${NO_CACHE ? 'no-store' : 'production headers'}${HTTPS ? '  (HTTP/2 + TLS)' : ''}${LATENCY ? `  latency=+${LATENCY}ms` : ''}`);
   if (REWRITES.length) console.log('  rewrites: ' + REWRITES.join(' | '));
-  console.log(`\n  local:  ${proto}://localhost:${PORT}/`);
+  console.log(`\n  local:  ${url}`);
   if (HOST === '0.0.0.0' || HOST === '::') {
     const all = lanAddresses().filter((a) => !a.address.startsWith('169.254.'));
     const lan = all.filter((a) => /^(192\.168|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address) && !/^(utun|tun|tap|ppp|wg)/.test(a.name));
     for (const a of lan) console.log(`  LAN:    ${proto}://${a.address}:${PORT}/   (${a.name})  <- open this on the iPhone (same Wi-Fi)`);
     for (const a of all.filter((x) => !lan.includes(x))) console.log(`  other:  ${proto}://${a.address}:${PORT}/   (${a.name}, VPN/other interface)`);
   }
+  console.log(`\nMIRROR_URL=${url}`); // machine-readable (tools/fix.mjs and agents grep for it)
+  if (STATE_FILE) {
+    mkdirSync(dirname(STATE_FILE), { recursive: true });
+    writeFileSync(STATE_FILE, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, latency: LATENCY, checkout: ROOT_DIR, startedAt: new Date().toISOString() }, null, 1));
+    const cleanup = () => { try { if (JSON.parse(readFileSync(STATE_FILE, 'utf8')).pid === process.pid) unlinkSync(STATE_FILE); } catch {} };
+    process.on('exit', cleanup);
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(sig, () => process.exit(0));
+  }
   console.log('');
-});
+}
+
+// Ports: a fixed port fails loudly if taken (never silently serve on another one); "auto" starts at
+// a port derived from this checkout's path and walks up until one is free; 0 lets the OS pick.
+let candidates;
+if (PORT_OPT === 'auto') { const b = autoPortBase(); candidates = Array.from({ length: 60 }, (_, i) => b + i); }
+else if (/^\d+$/.test(PORT_OPT)) candidates = [Number(PORT_OPT)];
+else { console.error(`--port must be a number, 0 or auto (got ${PORT_OPT})`); process.exit(2); }
+function tryListen(i) {
+  const port = candidates[i];
+  const onErr = (e) => {
+    server.off('listening', onOk);
+    if (e.code === 'EADDRINUSE' && i + 1 < candidates.length) return tryListen(i + 1);
+    console.error(e.code === 'EADDRINUSE' ? `port ${port} is already in use (another mirror server?). Use --port auto or --port 0.` : e.message);
+    process.exit(1);
+  };
+  const onOk = () => { server.off('error', onErr); onListening(); };
+  server.once('error', onErr);
+  server.once('listening', onOk);
+  server.listen(port, HOST);
+}
+tryListen(0);

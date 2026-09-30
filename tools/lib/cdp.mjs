@@ -1,7 +1,8 @@
 // Minimal Chrome DevTools Protocol client (Node >= 22: built-in fetch + WebSocket).
 // No dependencies. Used by tools/mirror.mjs --crawl and tools/verify.mjs.
 import { spawn } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 export const CHROME_MAC = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -13,9 +14,15 @@ export function chromePath() {
   return 'google-chrome';
 }
 
-/** Launch a dedicated Chrome (own profile dir + port) and return {proc, wsUrl, close}. */
+/**
+ * Launch a dedicated Chrome (own profile dir + port) and return {proc, port, wsUrl, close}.
+ * port 0 = let Chrome pick a free DevTools port (read back from <profileDir>/DevToolsActivePort), so
+ * parallel worktrees never collide. A profile dir can only be used by one Chrome at a time.
+ */
 export async function launchChrome({ port = 9333, profileDir, headless = false, windowSize = '1440,900' } = {}) {
   mkdirSync(profileDir, { recursive: true });
+  const activePortFile = join(profileDir, 'DevToolsActivePort');
+  rmSync(activePortFile, { force: true });
   const args = [
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${profileDir}`,
@@ -33,15 +40,19 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
   ];
   const proc = spawn(chromePath(), args, { stdio: 'ignore', detached: false });
   let version;
-  for (let i = 0; i < 100; i++) {
+  let exited = false;
+  proc.on('exit', () => { exited = true; });
+  for (let i = 0; i < 150 && !exited; i++) {
     try {
-      version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
-      break;
-    } catch { await sleep(100); }
+      if (!port) port = Number(readFileSync(activePortFile, 'utf8').split('\n')[0]) || 0;
+      if (port) { version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json(); break; }
+    } catch {}
+    await sleep(100);
   }
-  if (!version) { proc.kill(); throw new Error(`Chrome did not open DevTools port ${port}`); }
+  if (!version) { proc.kill(); throw new Error(`Chrome did not open a DevTools port (${port || 'auto'})${exited ? ': it exited at once — is another Chrome already using profile ' + profileDir + '?' : ''}`); }
   return {
     proc,
+    port,
     wsUrl: version.webSocketDebuggerUrl,
     async close() {
       try { proc.kill('SIGTERM'); } catch {}

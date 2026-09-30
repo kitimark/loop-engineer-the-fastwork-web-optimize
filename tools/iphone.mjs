@@ -1,0 +1,148 @@
+#!/usr/bin/env node
+// Drive the ONE shared iPhone (iOS Safari over ios_webkit_debug_proxy, :9221 device list, :9222 tabs).
+// The phone shows one page at a time, so every command that touches it requires the caller to hold
+// the "iphone" lease (tools/lock.mjs); read-only `status` does not.
+//
+//   node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://192.168.0.55:<port>/
+//   node tools/iphone.mjs status                                  # device + open tab (no lease needed)
+//   node tools/iphone.mjs open  https://192.168.0.55:<port>/ --owner <topic>   # navigate Safari (location.href)
+//   node tools/iphone.mjs scroll --owner <topic> [--out out/iphone/<topic>-<label>.json] [--label patched]
+//   node tools/iphone.mjs record --owner <topic> [--seconds 25] [--label finger-patched]   # human scrolls meanwhile
+//   node tools/lock.mjs release iphone --owner <topic>
+//
+// `scroll` is the calibrated scripted scroll (research/cpu-throttle-calibration/tools/iphone_scroll.mjs):
+// reload, settle 8 s, rAF frame logger, 3 s idle, scrollBy({top:250, behavior:'smooth'}) every 300 ms to
+// the bottom, 3 s at the bottom. It does NOT exercise the touch-only paths (non-passive touchmove
+// scroll-jack, toolbar-collapse resize); those need a human finger (ask the lead / user).
+// Serve with --https and use the LAN URL; accept the self-signed cert once in Safari (or use mkcert).
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve, dirname, join } from 'node:path';
+import { openTab, navigate, sleep } from './lib/wip.mjs';
+import { status as lockStatus } from './lib/lock.mjs';
+import { REPO } from './lib/paths.mjs';
+
+const argv = process.argv.slice(2);
+const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
+const VALUED = ['--owner', '--out', '--label', '--seconds'];
+const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
+const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
+const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
+
+function requireLease() {
+  const owner = opt('owner', process.env.FW_LOCK_OWNER);
+  const s = lockStatus('iphone');
+  if (!owner) throw new Error('--owner <topic> is required');
+  if (!s.holder || s.stale || s.holder.owner !== owner) {
+    throw new Error(`you ("${owner}") don't hold the iphone lease${s.holder ? ` (holder: "${s.holder.owner}"${s.stale ? ', stale' : ''})` : ''}. Run: node tools/lock.mjs acquire iphone --owner ${owner}`);
+  }
+  return owner;
+}
+
+async function tabs() {
+  return (await (await fetch(`http://localhost:${PORT}/json`, { signal: AbortSignal.timeout(4000) })).json());
+}
+
+const PROBE = `(async () => {
+  const fp = window.__fp = {frames: []};
+  let last = performance.now();
+  const loop = t => { fp.frames.push([Math.round(t * 10) / 10, Math.round((t - last) * 10) / 10, Math.round(scrollY)]); last = t; requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const marks = {}; const vh0 = innerHeight;
+  marks.idle = [performance.now()]; await sleep(3000); marks.idle.push(performance.now());
+  marks.scroll = [performance.now()];
+  const maxY = document.documentElement.scrollHeight - innerHeight;
+  while (scrollY < maxY - 5 && performance.now() - marks.scroll[0] < 45000) { window.scrollBy({top: 250, behavior: 'smooth'}); await sleep(300); }
+  marks.scroll.push(performance.now());
+  marks.bottom = [performance.now()]; await sleep(3000); marks.bottom.push(performance.now());
+  return {marks, maxY, finalY: Math.round(scrollY), docH: document.documentElement.scrollHeight, vw: innerWidth, vh0, vh: innerHeight, dpr: devicePixelRatio, ua: navigator.userAgent, href: location.href, frames: fp.frames};
+})()`;
+
+function summarize(res) {
+  const out = {};
+  for (const phase of ['idle', 'scroll', 'bottom']) {
+    const [a, b] = res.marks[phase];
+    const f = res.frames.filter(([t]) => t >= a && t <= b).map(([, dt]) => dt);
+    const total = f.reduce((x, y) => x + y, 0);
+    out[phase] = { frames: f.length, fps: Math.round((10 * f.length) / (total / 1000 || 1)) / 10, gt20: f.filter((x) => x > 20).length, gt34: f.filter((x) => x > 34).length, gt50: f.filter((x) => x > 50).length, gt100: f.filter((x) => x > 100).length, max: Math.max(0, ...f) };
+  }
+  return out;
+}
+
+async function main() {
+  if (cmd === 'status') {
+    const dev = await (await fetch(`http://localhost:${DEVICE_PORT}/json`, { signal: AbortSignal.timeout(4000) })).json().catch((e) => ({ error: e.message }));
+    console.log('device:', JSON.stringify(dev));
+    console.log('tabs:', JSON.stringify((await tabs().catch((e) => [{ error: e.message }])).map((t) => ({ url: t.url, title: t.title, error: t.error }))));
+    const s = lockStatus('iphone');
+    console.log('lease:', s.holder ? `${s.holder.owner}${s.stale ? ' (stale: ' + s.stale + ')' : ''} until ${s.holder.expiresAt}` : 'free', s.queue.length ? `queue: ${s.queue.map((w) => w.owner).join(', ')}` : '');
+    return;
+  }
+  if (cmd === 'open') {
+    requireLease();
+    if (!/^https?:\/\//.test(arg || '')) throw new Error('usage: node tools/iphone.mjs open <url> --owner <topic>');
+    const c = await openTab(() => true);
+    const c2 = await navigate(c, arg, new URL(arg).host);
+    console.log(`Safari now on ${await c2.evaluate('location.href')}`);
+    c2.close();
+    return;
+  }
+  if (cmd === 'scroll') {
+    const owner = requireLease();
+    const holder = lockStatus('iphone').holder;
+    const list = await tabs();
+    const tab = list[0];
+    if (!tab) throw new Error('no Safari tab (unlock the iPhone, bring Safari to the front)');
+    if (holder.meta?.url && !tab.url.startsWith(holder.meta.url)) console.error(`warning: Safari shows ${tab.url}, your lease says ${holder.meta.url} (run: node tools/iphone.mjs open ${holder.meta.url} --owner ${owner})`);
+    let c = await openTab(() => true);
+    const host = new URL(await c.evaluate('location.href')).host;
+    await c.evaluate(`scrollTo(0, 0); setTimeout(() => location.reload(), 400); 'ok'`);
+    c.close();
+    await sleep(2500);
+    c = await openTab(host);
+    for (let i = 0; i < 60; i++) { if ((await c.evaluate('document.readyState')) === 'complete') break; await sleep(500); }
+    await sleep(8000);
+    await c.evaluate(`window.__iphRes = undefined; ${PROBE}.then(v => { window.__iphRes = JSON.stringify(v); }, e => { window.__iphRes = JSON.stringify({err: String(e)}); }); 'started'`);
+    let res = null;
+    const t0 = Date.now();
+    while (!res && Date.now() - t0 < 90000) { await sleep(1500); const v = await c.evaluate('window.__iphRes || null'); if (v) res = JSON.parse(v); }
+    c.close();
+    if (!res) throw new Error('probe did not finish in 90 s');
+    if (res.err) throw new Error(res.err);
+    res.summary = summarize(res);
+    res.meta = { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', owner, label: opt('label', ''), date: new Date().toISOString() };
+    const out = resolve(REPO, opt('out', join('out', 'iphone', `${owner}-${opt('label', 'run')}-${Date.now()}.json`)));
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, JSON.stringify(res));
+    console.log(JSON.stringify(res.summary, null, 1));
+    console.log(`saved ${out}`);
+    return;
+  }
+  if (cmd === 'record') {
+    // Finger test: log rAF frames + scrollY while a human scrolls (touch-only paths: non-passive
+    // touchmove scroll-jack, toolbar-collapse resize). The lead asks the user to scroll; see CLAUDE.md.
+    const owner = requireLease();
+    const secs = Number(opt('seconds', 25));
+    const c = await openTab(() => true);
+    await c.evaluate(`(() => { const r = window.__fr = {frames: [], href: location.href, vw: innerWidth, vh0: innerHeight}; let last = performance.now();
+      const loop = (t) => { r.frames.push([Math.round(t * 10) / 10, Math.round((t - last) * 10) / 10, Math.round(scrollY), innerHeight]); last = t; if (!r.stop) requestAnimationFrame(loop); };
+      requestAnimationFrame(loop); return 'ok'; })()`);
+    console.log(`RECORDING ${secs} s on ${await c.evaluate('location.href')} - the human should scroll now (top to bottom, then push past the end)`);
+    await sleep(secs * 1000);
+    const res = JSON.parse(await c.evaluate('(() => { window.__fr.stop = true; return JSON.stringify(window.__fr); })()'));
+    c.close();
+    const moving = res.frames.filter((f, i) => i > 0 && f[2] !== res.frames[i - 1][2]).map((f) => f[1]);
+    const all = res.frames.map((f) => f[1]);
+    const sum = (f) => ({ frames: f.length, gt20: f.filter((x) => x > 20).length, gt34: f.filter((x) => x > 34).length, gt50: f.filter((x) => x > 50).length, gt100: f.filter((x) => x > 100).length, max: Math.max(0, ...f) });
+    res.summary = { all: sum(all), whileScrollYChanges: sum(moving), innerHeightChanges: new Set(res.frames.map((f) => f[3])).size - 1 };
+    res.meta = { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', owner, label: opt('label', 'finger'), seconds: secs, date: new Date().toISOString() };
+    const out = resolve(REPO, opt('out', join('out', 'iphone', `${owner}-${opt('label', 'finger')}-${Date.now()}.json`)));
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, JSON.stringify(res));
+    console.log(JSON.stringify(res.summary, null, 1));
+    console.log(`saved ${out}`);
+    return;
+  }
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25]');
+}
+main().then(() => process.exit(0), (e) => { console.error(e.message || e); process.exit(1); });
