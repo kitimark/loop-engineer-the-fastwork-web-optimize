@@ -1,0 +1,42 @@
+// A fake host for tools/lib/host.mjs, loaded through $FW_TEST_HOST=<this file> (process-wide stub of the
+// samplers) so CLI tests of the lock gate, verify.mjs and fix.mjs ab get a deterministic host instead of
+// the real, busy Mac. Default: a quiet host (load1 1, 5 % busy, pressure normal).
+//
+// Clock: real time plus every sleep() taken through the stub (sleep resolves at once and advances the
+// clock), so a 10 s quiet window costs no wall time in a test.
+// Env (each value may be a timeline "v1:untilMs,v2:untilMs,v3": v1 until untilMs of fake time after this
+// module loaded, then the next):
+//   FAKE_HOST_LOAD1          load1 (default 1)
+//   FAKE_HOST_BUSY           host CPU busy fraction 0-1 (default 0.05); sys = 30 % of it
+//   FAKE_HOST_PRESSURE       memory pressure level 1 normal, 2 warn, 4 critical (default 1)
+//   FAKE_HOST_CHROME_CORES   CPU cores used by any process tree asked about with treeCpu (default 0.4)
+//   FAKE_HOST_DECOMP         decompressions per second (default 10)
+const T0 = Date.now();
+let offset = 0;
+export const now = () => Date.now() + offset;
+export const sleep = (ms) => { offset += ms; return new Promise((r) => setImmediate(r)); };
+
+function timeline(name, d) {
+  const spec = String(process.env[name] ?? d).split(',').map((p) => { const [v, until] = p.split(':'); return { v: Number(v), until: until === undefined ? Infinity : Number(until) }; });
+  return () => { const t = now() - T0; return (spec.find((s) => t < s.until) || spec[spec.length - 1]).v; };
+}
+const load1 = timeline('FAKE_HOST_LOAD1', 1), busy = timeline('FAKE_HOST_BUSY', 0.05), pres = timeline('FAKE_HOST_PRESSURE', 1);
+const chromeCores = timeline('FAKE_HOST_CHROME_CORES', 0.4), decomp = timeline('FAKE_HOST_DECOMP', 10);
+
+const N = 8;
+let last = T0, busyMs = 0, totalMs = 0, chromeSec = 0, decompN = 0;
+function advance() {
+  const t = now(), dt = Math.max(0, t - last);
+  last = t;
+  totalMs += dt; busyMs += dt * busy(); chromeSec += (dt / 1000) * chromeCores(); decompN += (dt / 1000) * decomp();
+}
+export function cpus() {
+  advance();
+  const b = busyMs, s = b * 0.3;
+  return Array.from({ length: N }, () => ({ model: 'FakeCPU', speed: 1, times: { user: b - s, nice: 0, sys: s, idle: totalMs - b, irq: 0 } }));
+}
+export const loadavg = () => [load1(), load1(), load1()];
+export const freemem = () => 2 * 1024 ** 3;
+export const pressure = () => pres();
+export const decompressions = () => { advance(); return Math.round(decompN); };
+export const treeCpu = () => { advance(); return Math.round(chromeSec * 1000) / 1000; };
