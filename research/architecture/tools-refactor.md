@@ -574,8 +574,9 @@ Expected: Q7 unchanged (control). M3: argv copies -2, functions over 40 lines -3
    1.5k**. Risk: **medium to high**: signal ordering is subtle, and this touches measurement lifetimes.
 2. **Long Method → Extract Method** on `verify.mjs measure()`:
    - `setupPage`, `settle`, `idlePhase`, `scrollPhase`, `morphPhase`, `screenshots`, `census`;
-   - combined with arch-tools' "screenshots after lock release" move, if the lead accepts it, so there
-     is one timing-path change and one A/A, not two.
+   - combined with arch-tools' screenshot change (baseline PNG cache, maybe a shorter per-shot sleep;
+     screenshots stay inside the lock, §7), if the lead accepts it, so there is one timing-path change
+     and one A/A, not two.
 
    It needs:
    - `fix.mjs ab --aa --runs 5` before and after, on a quiet host;
@@ -618,8 +619,15 @@ Reply received 2026-10-01. Its proposals are not built yet:
   Overlap: **D2 and D5**. Recommendation: land D2's pure policy split first. The grant-rule change then
   becomes a small, reviewable diff in `lib/lock-policy.mjs` with direct unit tests. ts-prio's I-020 lands
   before both.
-- **verify:** move the run-0 screenshot pass + `diffImages` after the lock release (`measure` 163-176,
-  `main` 218-240). Overlap: **F3 and G2**. Do it in G2's A/A slot so the timing path changes once.
+- **verify:** arch-tools withdrew its first idea, moving screenshots after the lock release. An
+  unthrottled Chrome shooting screenshots would load the next holder's measured run, so screenshots stay
+  inside the lock (`tools-speed.md` 74103dc, item #5). The replacement has two parts:
+  - (a) cache the baseline's top/middle/bottom PNGs, keyed by baseline manifest hash + viewport + serve
+    args + tools version, and shoot only the patched side;
+  - (b) maybe cut the 2.5 s per-shot sleep, checked on an A/A.
+
+  Overlap: **F3** (`diffImages` → `lib/screenshot-diff.mjs`) and **G2** (the `screenshots` step of
+  `measure()`). Pair it with G2 in one A/A slot so the timing path changes once.
 - **serve:** no startup change is proposed, so there is no overlap with B.
 
 ## 8. How to measure before and after
