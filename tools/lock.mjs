@@ -36,9 +36,17 @@
 // holder never. Checks: stale holder; unparsable files; stale, dead or duplicate queue entries; last grant
 // missing or not matching the live holder (I-011); a short last grant, no holder, older than its hold
 // could run; a guard dir older than --guard-age (10 s); *.tmp older than 60 s. Library: lib/lock-repair.mjs.
+//
+// The lead reorders the queue by expected gain (fixes/DIRECTION.md; incident I-019):
+//   node tools/lock.mjs repair chrome-measure --move <owner> --to <position> --by lead --reason "<why>" [--apply]
+// Dry run by default (before/after queue). --apply moves that waiting entry under the guard and appends one
+// "queue-move" line to locks/audit.log. Only waiting entries move (never the holder); only --by lead; the
+// entry keeps its `since` and records movedBy/movedAt (status: "moved by lead"). Positions are the live
+// queue as status shows it. Waiters keep their entries (and pids) and are granted in the new order; the
+// short lane still serves queued short jobs first within its drain budget (I-007/I-011).
 import { spawn } from 'node:child_process';
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES } from './lib/lock.mjs';
-import { doctor, repair, auditFile } from './lib/lock-repair.mjs';
+import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -46,7 +54,7 @@ const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const rest = dd >= 0 ? argv.slice(dd + 1) : [];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
-const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age'];
+const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to'];
 const [cmd, resource] = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 const owner = opt('owner', process.env.FW_LOCK_OWNER);
 const short = flag('short');
@@ -58,9 +66,11 @@ function fmt(s) {
   let line = `${s.resource.padEnd(15)} `;
   if (!h) line += s.next ? `free, handing over to "${s.next}"` : 'free';
   else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}\n${' '.repeat(16)}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + ' '.repeat(16) + JSON.stringify(h.meta) : ''}`;
-  if (s.queue.length) line += `\n${' '.repeat(16)}queue: ${s.queue.map((w, i) => `${i + 1}. ${w.owner}${w.short ? ` (short, max ${w.maxSec} s, since ${w.since})` : ` (since ${w.since})`}`).join(', ')}`;
+  if (s.queue.length) line += `\n${' '.repeat(16)}queue: ${fmtQueue(s.queue)}`;
   return line;
 }
+const moved = (w) => (w.movedBy ? `, moved by ${w.movedBy}` : '');
+const fmtQueue = (q) => q.map((w, i) => `${i + 1}. ${w.owner}${w.short ? ` (short, max ${w.maxSec} s, since ${w.since}${moved(w)})` : ` (since ${w.since}${moved(w)})`}`).join(', ');
 
 function fmtProblem(p, withValues) {
   let s = `  - [${p.code}] ${p.file}: ${p.message}\n    fix: ${p.fix}`;
@@ -88,6 +98,20 @@ async function main() {
   if (cmd === 'repair') {
     if (!resource) throw new Error('usage: node tools/lock.mjs repair <resource> [--by <who> --reason "<why>" --apply] [--force-holder]');
     const apply = flag('apply'), forceHolder = flag('force-holder');
+    if (opt('move') !== undefined) {
+      if (forceHolder) throw new Error('--move reorders waiting entries only; it does not combine with --force-holder');
+      if (opt('to') === undefined) throw new Error('usage: node tools/lock.mjs repair <resource> --move <owner> --to <position> --by lead --reason "<why>" [--apply]');
+      const m = await moveWaiter(resource, { owner: opt('move'), to: Number(opt('to')), by: opt('by'), reason: opt('reason'), apply });
+      if (flag('json')) { console.log(JSON.stringify(m, null, 1)); return 0; }
+      const what = `"${m.owner}" #${m.from} -> #${m.to}`;
+      if (!m.changed) console.log(`MOVE ${resource}: "${m.owner}" is already #${m.from}, nothing to do`);
+      else if (!apply) console.log(`MOVE ${resource} (dry run, nothing changed): ${what}; apply with --apply`);
+      else console.log(`MOVED ${resource}: ${what} by "${opt('by')}", logged to ${auditFile()}`);
+      console.log(`  holder: ${m.holder ? `"${m.holder.owner}"${sh(m.holder)} (not touched)` : 'none'}`);
+      console.log(`  before: ${fmtQueue(m.before)}\n  after:  ${fmtQueue(m.after)}`);
+      if (m.note) console.log(`  note: ${m.note}`);
+      return 0;
+    }
     if (forceHolder) { const h = status(resource).holder; console.log(`holder: ${h ? JSON.stringify(h) : 'none'}`); }
     const d = await repair(resource, { by: opt('by'), reason: opt('reason'), apply, forceHolder, guardAgeSec: Number(opt('guard-age', 10)) });
     const n = d.problems.length;

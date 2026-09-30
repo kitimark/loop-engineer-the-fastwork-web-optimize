@@ -300,3 +300,131 @@ test('repair --apply while another process acquires and releases does not corrup
   assert.ok(lines.length > 0);
   assert.ok(lines.every((l) => !(l.before && l.before.owner === 'child' && /^holder/.test(l.code))), 'the live child holder was never removed');
 });
+
+// ---- queue reorder by the lead (incident I-019) -------------------------------------------------------
+/** A holder "h" and waiters queued in the given order by the real lock code. */
+async function queueOf(...owners) {
+  assert.equal((await L.tryAcquire(R, { owner: 'h', kind: 'lease' })).ok, true);
+  for (const o of owners) assert.equal((await L.tryAcquire(R, { owner: o, kind: 'lease' })).ok, false);
+}
+const order = () => L.status(R).queue.map((w) => w.owner);
+
+test('move (I-019): a waiter moves up and down, keeps its since, records movedBy/movedAt, one audit line', async () => {
+  await queueOf('a', 'b', 'c', 'd');
+  const since = Object.fromEntries(L.status(R).queue.map((w) => [w.owner, w.since]));
+  const up = await X.moveWaiter(R, { owner: 'd', to: 1, by: 'lead', reason: 'E1 is priority 1', apply: true });
+  assert.equal(up.applied, true);
+  assert.equal(up.from, 4);
+  assert.equal(up.to, 1);
+  assert.deepEqual(up.before.map((w) => w.owner), ['a', 'b', 'c', 'd']);
+  assert.deepEqual(up.after.map((w) => w.owner), ['d', 'a', 'b', 'c']);
+  assert.deepEqual(order(), ['d', 'a', 'b', 'c']);
+  const d = L.status(R).queue[0];
+  assert.equal(d.since, since.d, 'since is kept: waiting-time KPIs stay honest');
+  assert.equal(d.movedBy, 'lead');
+  assert.ok(Math.abs(Date.parse(d.movedAt) - Date.now()) < 5000);
+  assert.equal(L.status(R).holder.owner, 'h', 'the holder is untouched');
+  const lines = auditLines();
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].code, 'queue-move');
+  assert.equal(lines[0].by, 'lead');
+  assert.equal(lines[0].reason, 'E1 is priority 1');
+  assert.equal(lines[0].resource, R);
+  assert.equal(lines[0].owner, 'd');
+  assert.equal(lines[0].from, 4);
+  assert.equal(lines[0].to, 1);
+  assert.deepEqual(lines[0].before, ['a', 'b', 'c', 'd']);
+  assert.deepEqual(lines[0].after, ['d', 'a', 'b', 'c']);
+
+  await X.moveWaiter(R, { owner: 'a', to: 4, by: 'lead', reason: 'down', apply: true });
+  assert.deepEqual(order(), ['d', 'b', 'c', 'a']);
+  assert.equal(L.status(R).queue[3].since, since.a);
+  assert.equal(auditLines().length, 2);
+  await X.moveWaiter(R, { owner: 'c', to: 2, by: 'lead', reason: 'middle', apply: true });
+  assert.deepEqual(order(), ['d', 'c', 'b', 'a']);
+  assert.deepEqual(codes(), [], 'a moved queue is a consistent state for doctor');
+});
+
+test('move (I-019): waiters keep their places when they refresh; the moved one is granted first; nobody loses its entry', async () => {
+  await queueOf('a', 'b', 'c');
+  await X.moveWaiter(R, { owner: 'c', to: 1, by: 'lead', reason: 'x', apply: true });
+  // every waiter polls again (acquire() / `lock.mjs run` / `acquire --wait` retry tryAcquire)
+  for (const o of ['a', 'b', 'c']) {
+    const r = await L.tryAcquire(R, { owner: o, kind: 'lease' });
+    assert.equal(r.ok, false);
+    assert.equal(r.position, { c: 1, a: 2, b: 3 }[o]);
+  }
+  assert.deepEqual(order(), ['c', 'a', 'b']);
+  const c = L.status(R).queue[0];
+  assert.equal(c.movedBy, 'lead', 'a refresh keeps the move record');
+  assert.ok(c.movedAt);
+  await L.release(R, { owner: 'h' });
+  assert.equal(L.status(R).next, 'c');
+  assert.equal((await L.tryAcquire(R, { owner: 'a', kind: 'lease' })).ok, false, 'the old head waits');
+  assert.equal((await L.tryAcquire(R, { owner: 'c', kind: 'lease' })).ok, true, 'the moved waiter is granted in its new place');
+  assert.deepEqual(order(), ['a', 'b']);
+  await L.release(R, { owner: 'c' });
+  assert.equal((await L.tryAcquire(R, { owner: 'a', kind: 'lease' })).ok, true);
+  assert.deepEqual(order(), ['b']);
+});
+
+test('move (I-019): refuses the holder, a non-waiter, a bad position, and --by other than lead; changes nothing', async () => {
+  await queueOf('a', 'b');
+  const before = snapshot();
+  await assert.rejects(X.moveWaiter(R, { owner: 'h', to: 1, by: 'lead', reason: 'x', apply: true }), /"h" holds test-res; --move only reorders waiting entries/);
+  await assert.rejects(X.moveWaiter(R, { owner: 'zz', to: 1, by: 'lead', reason: 'x', apply: true }), /"zz" is not waiting for test-res/);
+  await assert.rejects(X.moveWaiter(R, { owner: 'b', to: 3, by: 'lead', reason: 'x', apply: true }), /--to must be a position from 1 to 2/);
+  await assert.rejects(X.moveWaiter(R, { owner: 'b', to: 0, by: 'lead', reason: 'x', apply: true }), /--to must be a position from 1 to 2/);
+  for (const by of ['ts-prio', undefined, 'Lead']) {
+    await assert.rejects(X.moveWaiter(R, { owner: 'b', to: 1, by, reason: 'x', apply: true }), /only the lead reorders the queue \(--by lead\)/);
+    await assert.rejects(X.moveWaiter(R, { owner: 'b', to: 1, by }), /only the lead/, 'also in a dry run');
+  }
+  await assert.rejects(X.moveWaiter(R, { owner: 'b', to: 1, by: 'lead', apply: true }), /needs --reason/);
+  assert.deepEqual(snapshot(), before);
+  assert.deepEqual(auditLines(), []);
+});
+
+test('move (I-019): the dry run shows before/after and leaves the files byte-identical', async () => {
+  await queueOf('a', 'b', 'c');
+  const before = snapshot();
+  const d = await X.moveWaiter(R, { owner: 'c', to: 1, by: 'lead', reason: 'x' });
+  assert.equal(d.applied, false);
+  assert.deepEqual(d.before.map((w) => w.owner), ['a', 'b', 'c']);
+  assert.deepEqual(d.after.map((w) => w.owner), ['c', 'a', 'b']);
+  assert.equal(d.after[0].movedBy, 'lead');
+  assert.deepEqual(snapshot(), before);
+  assert.ok(!existsSync(lf('audit.log')));
+  const same = await X.moveWaiter(R, { owner: 'a', to: 1, by: 'lead', reason: 'x', apply: true });
+  assert.equal(same.changed, false, 'already there: nothing to do');
+  assert.deepEqual(snapshot(), before);
+});
+
+test('move (I-019): positions count live waiters only (as status shows them); stale entries stay for the acquirers to prune', async () => {
+  const now = new Date().toISOString();
+  put(`${R}.json`, { resource: R, owner: 'h', kind: 'lease', token: 'abcdef012345', acquiredAt: now, expiresAt: new Date(Date.now() + 600000).toISOString() });
+  put(`${R}.queue.json`, [
+    { owner: 'a', kind: 'lease', since: now, lastSeen: now, queueTtlSec: 600 },
+    { owner: 'gone', kind: 'lease', since: ago(700), lastSeen: ago(700), queueTtlSec: 600 },
+    { owner: 'b', kind: 'lease', since: now, lastSeen: now, queueTtlSec: 600 },
+    { owner: 'c', kind: 'lease', since: now, lastSeen: now, queueTtlSec: 600 },
+  ]);
+  assert.deepEqual(order(), ['a', 'b', 'c']);
+  const d = await X.moveWaiter(R, { owner: 'c', to: 2, by: 'lead', reason: 'x', apply: true });
+  assert.equal(d.from, 3);
+  assert.deepEqual(order(), ['a', 'c', 'b']);
+  assert.deepEqual(get(`${R}.queue.json`).map((w) => w.owner), ['a', 'gone', 'c', 'b']);
+  await assert.rejects(X.moveWaiter(R, { owner: 'gone', to: 1, by: 'lead', reason: 'x', apply: true }), /"gone" is not waiting/);
+});
+
+test('move (I-019): the short lane drain rule still applies to a moved normal waiter', async () => {
+  await queueOf('a', 'b');
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, false);
+  const d = await X.moveWaiter(R, { owner: 'b', to: 1, by: 'lead', reason: 'x', apply: true });
+  assert.deepEqual(order(), ['b', 'a', 's']);
+  assert.match(d.note, /short lane/);
+  await L.release(R, { owner: 'h' });
+  assert.equal(L.status(R).next, 's', 'a queued short job still goes first at the hand-over (I-007/I-011)');
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, true);
+  await L.release(R, { owner: 's' });
+  assert.equal(L.status(R).next, 'b', 'then the moved normal waiter, ahead of a');
+});

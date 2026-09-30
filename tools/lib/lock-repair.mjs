@@ -30,7 +30,7 @@
 import { readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, statSync, appendFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, RESOURCES } from './lock.mjs';
+import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, SHORT_DRAIN_SEC, RESOURCES } from './lock.mjs';
 
 export const auditFile = () => join(lockDir(), 'audit.log');
 const files = (r) => ({ holder: `${r}.json`, queue: `${r}.queue.json`, lastGrant: `${r}.last-grant.json`, lastStale: `${r}.last-stale.json`, guard: `${r}.guard` });
@@ -230,5 +230,75 @@ export async function repair(r, { by, reason, apply = false, forceHolder = false
     for (const p of d.problems) log(p);
     const { ops: __, ...rest } = d;
     return { ...rest, applied: true };
+  });
+}
+
+// ---- queue reorder by the lead (incident I-019) --------------------------------------------------------
+// The queue is FIFO by position in <r>.queue.json: tryAcquire finds a waiter's entry by owner, refreshes it
+// in place (keeping `since` and, since I-019, `movedBy`/`movedAt`) and grants the entry nextIndex() picks
+// among the live entries. So moving an entry inside that array is all a reorder needs: under the guard no
+// acquirer can interleave, every waiter keeps its entry, and the moved one is granted in its new place.
+// The short lane (I-007/I-011) still picks the first short waiter over normal ones within its drain budget.
+
+/** A queue entry an acquirer would keep (the same test as pruneQueue in lib/lock.mjs). */
+const liveWaiter = (w, now) => isObj(w) && typeof w.owner === 'string' && !!w.owner && !Number.isNaN(Date.parse(w.lastSeen))
+  && now - Date.parse(w.lastSeen) < (w.queueTtlSec ?? 600) * 1000 && (!w.pid || w.kind !== 'process' || pidAlive(w.pid));
+
+/** The move as a plan on the files as they are now (throws when it must be refused). */
+function planMove(r, { owner, to, by, now }) {
+  const dir = lockDir(), F = files(r);
+  const qr = readRaw(join(dir, F.queue));
+  if (qr.exists && !Array.isArray(qr.value)) throw new Error(`${F.queue} is not a JSON array; run node tools/lock.mjs doctor ${r} first`);
+  const raw = qr.exists ? qr.value : [];
+  const live = raw.filter((w) => liveWaiter(w, now));
+  const hr = readRaw(join(dir, F.holder));
+  const holder = validHolder(hr.value) && !staleReason(hr.value, now) ? hr.value : null;
+  const hits = live.filter((w) => w.owner === owner);
+  if (!hits.length) {
+    if (holder && holder.owner === owner) throw new Error(`"${owner}" holds ${r}; --move only reorders waiting entries (the holder is never touched)`);
+    throw new Error(`"${owner}" is not waiting for ${r} (queue: ${live.map((w) => w.owner).join(', ') || 'empty'})`);
+  }
+  if (hits.length > 1) throw new Error(`"${owner}" is queued more than once; fix that first: node tools/lock.mjs repair ${r}`);
+  if (!Number.isInteger(to) || to < 1 || to > live.length) throw new Error(`--to must be a position from 1 to ${live.length} (the live queue as status shows it), got ${to}`);
+  const target = hits[0], from = live.indexOf(target) + 1;
+  const moved = { ...target, movedBy: by, movedAt: iso(now) };
+  const others = live.filter((w) => w !== target);
+  const after = [...others.slice(0, to - 1), moved, ...others.slice(to - 1)];
+  // the file keeps entries acquirers will prune (stale, dead) where they are; the moved entry goes right
+  // before the live entry it now precedes, or right after the last live one
+  const rest = raw.filter((w) => w !== target);
+  const at = to - 1 < others.length ? rest.indexOf(others[to - 1]) : rest.indexOf(others[others.length - 1]) + 1;
+  const queue = [...rest.slice(0, at), moved, ...rest.slice(at)];
+  const shorts = live.filter((w) => w.short).map((w) => w.owner);
+  const note = !target.short && shorts.length
+    ? `short lane: queued short jobs (${shorts.join(', ')}) are still served before normal waiters at a hand-over while their ${SHORT_DRAIN_SEC} s drain budget lasts (I-007/I-011)`
+    : target.short && live.some((w) => !w.short) ? 'short lane: a short job is served by the short-lane rule; its place only orders it among other short jobs' : null;
+  return { resource: r, owner, from, to, changed: from !== to, holder, before: live, after, queue, file: F.queue, note };
+}
+
+/**
+ * The lead reorders the queue: move waiting `owner` to live position `to` (1-based, as `status` shows it).
+ * opts: {owner, to, by, reason, apply=false}. Dry run by default (reads only). With apply: under the
+ * resource's guard, re-plans, writes the queue atomically and appends one audit line (code "queue-move").
+ * Only a waiting entry moves; its `since` is kept and `movedBy`/`movedAt` are recorded in it. Refuses the
+ * holder, a non-waiter, a position outside the live queue, and `by` other than "lead".
+ * Returns {resource, owner, from, to, changed, applied, holder, before, after, file, note}.
+ */
+export async function moveWaiter(r, { owner, to, by, reason, apply = false } = {}) {
+  checkName(r);
+  if (by !== 'lead') throw new Error(`only the lead reorders the queue (--by lead), got --by ${by === undefined ? '(none)' : `"${by}"`}`);
+  if (!owner) throw new Error('--move <owner> names the waiting entry to move');
+  if (apply && !reason) throw new Error('repair --move --apply needs --reason "<why>" (it goes into the audit log)');
+  to = Number(to);
+  const strip = ({ queue, ...p }) => p;
+  if (!apply) return { ...strip(planMove(r, { owner, to, by, now: Date.now() })), applied: false };
+  return withGuard(r, () => {
+    const now = Date.now();
+    const p = planMove(r, { owner, to, by, now });
+    if (!p.changed) return { ...strip(p), applied: false };
+    writeJsonAtomic(join(lockDir(), p.file), p.queue);
+    audit({ ts: iso(now), by, reason, resource: r, code: 'queue-move', file: p.file, owner, from: p.from, to: p.to,
+      fix: `move "${owner}" from #${p.from} to #${p.to} (since ${p.after[p.to - 1].since} kept)`, before: p.before.map((w) => w.owner), after: p.after.map((w) => w.owner) });
+    return { ...strip(p), applied: true };
   });
 }

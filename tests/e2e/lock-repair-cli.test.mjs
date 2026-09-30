@@ -1,11 +1,12 @@
 // tools/lock.mjs doctor / repair (incident I-012): exit codes, output, dry run by default, --apply needs
 // --by/--reason and writes locks/audit.log, --force-holder prints the holder and never removes a live
-// iphone lease.
+// iphone lease; repair --move (I-019): the lead reorders waiting entries, audited, and the moved waiter is
+// granted first.
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, node, tool } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, tool, sleep } from '../helpers.mjs';
 
 const LOCK = tool('lock.mjs');
 let state, env;
@@ -81,4 +82,50 @@ test('repair --force-holder prints the holder; refuses the live iphone lease; re
   assert.match(f.stdout, /\[holder-live-forced\]/);
   assert.equal(existsSync(lf('chrome-measure.json')), false);
   assert.match(lock('status', 'chrome-measure').stdout, /free/);
+});
+
+test('repair --move (I-019): two real waiting runs; the lead moves the later one to #1 and it is granted first', async (t) => {
+  assert.equal(lock('acquire', 'chrome-measure', '--owner', 'holder').code, 0);
+  t.after(() => lock('release', 'chrome-measure', '--owner', 'holder')); // on a failure, let the waiting runs finish
+  const orderFile = join(state, 'order.log');
+  const cmd = (name) => [process.execPath, '-e', `require('fs').appendFileSync(${JSON.stringify(orderFile)}, ${JSON.stringify(name + '\n')}); setTimeout(() => {}, 300);`];
+  const queue = () => JSON.parse(lock('status', 'chrome-measure', '--json').stdout)[0].queue.map((w) => w.owner);
+  const queued = async (o) => { for (let i = 0; i < 200 && !queue().includes(o); i++) await sleep(50); assert.ok(queue().includes(o), `${o} queued`); };
+  const first = nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'first', '--', ...cmd('first')], { env });
+  await queued('first');
+  const prio = nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'e1-prio', '--', ...cmd('e1-prio')], { env });
+  await queued('e1-prio');
+  assert.deepEqual(queue(), ['first', 'e1-prio']);
+
+  const args = ['repair', 'chrome-measure', '--move', 'e1-prio', '--to', '1', '--by', 'lead', '--reason', 'E1 is priority 1 (DIRECTION.md)'];
+  const dry = lock(...args);
+  assert.equal(dry.code, 0, dry.out);
+  assert.match(dry.stdout, /^MOVE chrome-measure \(dry run, nothing changed\): "e1-prio" #2 -> #1; apply with --apply/);
+  assert.match(dry.stdout, /before: 1\. first \(since [^)]*\), 2\. e1-prio \(since [^)]*\)$/m);
+  assert.match(dry.stdout, /after: {2}1\. e1-prio \(since [^)]*, moved by lead\), 2\. first \(since [^)]*\)$/m);
+  assert.deepEqual(queue(), ['first', 'e1-prio'], 'the dry run moved nothing');
+  const notLead = lock(...args.map((a) => (a === 'lead' ? 'ts-prio' : a)), '--apply');
+  assert.equal(notLead.code, 1);
+  assert.match(notLead.stderr, /only the lead reorders the queue/);
+  const holderMove = lock('repair', 'chrome-measure', '--move', 'holder', '--to', '1', '--by', 'lead', '--reason', 'x', '--apply');
+  assert.equal(holderMove.code, 1);
+  assert.match(holderMove.stderr, /"holder" holds chrome-measure; --move only reorders waiting entries/);
+  assert.ok(!existsSync(lf('audit.log')), 'refusals are not audited changes');
+
+  const ap = lock(...args, '--apply');
+  assert.equal(ap.code, 0, ap.out);
+  assert.match(ap.stdout, /^MOVED chrome-measure: "e1-prio" #2 -> #1 by "lead", logged to .*audit\.log/);
+  assert.match(lock('status', 'chrome-measure').stdout, /queue: 1\. e1-prio \(since [^)]*, moved by lead\), 2\. first \(since [^)]*\)$/m);
+  const audit = readFileSync(lf('audit.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(audit.length, 1);
+  assert.equal(audit[0].code, 'queue-move');
+  assert.equal(audit[0].reason, 'E1 is priority 1 (DIRECTION.md)');
+  assert.deepEqual([audit[0].before, audit[0].after], [['first', 'e1-prio'], ['e1-prio', 'first']]);
+
+  assert.equal(lock('release', 'chrome-measure', '--owner', 'holder').code, 0);
+  const [a, b] = await Promise.all([prio, first]);
+  assert.equal(a.code, 0, a.out);
+  assert.equal(b.code, 0, b.out);
+  assert.equal(readFileSync(orderFile, 'utf8'), 'e1-prio\nfirst\n', 'the moved waiter ran first, the other one kept its entry and ran next');
+  assert.deepEqual(queue(), []);
 });

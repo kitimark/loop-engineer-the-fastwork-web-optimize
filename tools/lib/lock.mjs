@@ -210,6 +210,7 @@ export async function tryAcquire(r, opts) {
     }
     // busy (or someone else is served first): join / refresh the queue
     const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}) };
+    if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     writeJson(queueFile(r), q);
     return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, seen, now)].owner };
