@@ -96,7 +96,10 @@ pre-approved and git-guard doesn't look inside it: never run git through it.
 
 Chrome, mobile viewport 430x932 DPR 3 with touch, **CPU 6x** ≈ iPhone 15 Pro Max jank on this page
 (`research/cpu-throttle-calibration/`). Serve with `--vendors=local --https --latency 150` ("lags like
-live"). These are the `fix.mjs ab` defaults. Confirm winners on the real iPhone when possible.
+live"). These are the `fix.mjs ab` defaults, plus a 6 s idle phase after the scroll and morph phases
+(`--idle 6`, I-002; `--idle 0` reproduces the pre-I-002 sequence). Compare A/B results only when both
+sides were measured with the same tools version (I-002 changed phase boundaries). Confirm winners on
+the real iPhone when possible.
 
 ## Fix workflow in a worktree (start to finish)
 
@@ -218,8 +221,9 @@ Team conventions (messages go to the lead and to teammates named in `fixes/TOPIC
   put visual checks in the same slot (a lease slot: `lock.mjs acquire chrome-measure --owner <you>`,
   then run as that owner). Don't SIGTERM a waiting `fix.mjs ab`: it drops your queue place.
   Hold the lock only while a run is executing: never while editing or debugging; release as soon as
-  the run ends. Until I-005 is fixed, a same-owner `fix.mjs ab` deletes your lease when it exits: run
-  other checks first and `fix.mjs ab` last.
+  the run ends. One slot for the A/B plus a probe (I-005): `node tools/lock.mjs run chrome-measure
+  --owner <topic> -- sh -c 'node tools/fix.mjs ab <topic> --runs 5 && node <probe>'`; tools started
+  inside `run` re-enter its hold instead of queueing behind it.
 - **Use the iPhone while you wait for Chrome.** The phone renders by itself, so an iPhone check barely
   loads the Mac and runs in parallel with Chrome measurements (lease, plain http per I-003).
 
@@ -290,7 +294,8 @@ before relying on them (the most common error in the benchmark).
 (stale when its pid dies) or a lease with a TTL (stale when it expires). Waiters queue FIFO; a
 queue entry not refreshed for 10 min is dropped. Short lane: `--short --max-seconds N` (N <= 300, on
 `run` and `acquire`) is served before earlier normal waiters at the next hand-over, never preempts
-the holder, alternates with normal waiters (at most one short job between two normal holders), and
+the holder, drains queued short jobs back to back while they fit a 300 s budget, then serves the next
+normal waiter (I-011), and
 ends at N s (`run` kills the command, exit 124; a short lease expires and can't be renewed). Only for
 short, bounded jobs such as `npm test`; never for a measurement.
 

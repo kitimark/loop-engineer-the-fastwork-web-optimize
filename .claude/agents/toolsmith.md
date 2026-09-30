@@ -45,7 +45,7 @@ measurement code is likely involved.
    (about 35 s of CPU; holding the lock keeps it from skewing someone's A/B; the short lane waits
    for the current holder only, not for the whole queue). If you changed measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`, and `serve.mjs`
    / `vendor-shim.js` where the served bytes change), also run `npm run test:chrome` directly (it
-   takes the lock itself; inside `lock.mjs run` it would wait for itself).
+   takes the lock itself; inside `lock.mjs run` it re-enters that hold, I-005).
 6. **Commit** one commit with only `tools/`, `tests/` (and `package.json` if a script changed),
    subject `tools: <what was wrong> (incident <id>)`, trailer as in your system instructions. The
    pre-commit hook runs `npm test` again; hold the lock around it as a lease:

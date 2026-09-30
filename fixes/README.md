@@ -66,7 +66,8 @@ values, delta, and a verdict that only says better/worse when the ranges don't o
 It also lists console errors/404s that only the patched page has, the screenshot pixel diff, and the
 host load average during the runs.
 
-Run `node tools/fix.mjs ab --aa --runs 5` once per session to know the noise floor.
+Run `node tools/fix.mjs ab --aa --runs 5` once per session to know the noise floor, and again after
+a measurement-code change (I-002 added the idle phase and changed phase boundaries).
 
 ## Merging
 
