@@ -143,6 +143,53 @@ const scorers = {
     const s = listScore(g.references, ans, (x, y) => num(y.line) === x.line, (x, y) => (String(y.access).toLowerCase().startsWith(x.access) || (x.access === 'both' && /read.*write|write.*read/i.test(y.access)) ? 1 : 0.5));
     return { ...s, offByOne: offByOne(g.references.map((x) => x.line), ans.map((x) => num(x.line))) };
   },
+  T19(a, g) {
+    const h = a.perPropertyHelper || {};
+    const items = [fileEq(a.file || '', g.file), a.name === '$i', num(a.start) === 2861, num(a.end) === 2870,
+      h.name === 'Qi' && num(h.start) === 2855, a.onlyChanged === true];
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: offByOne([2861, 2855], [num(a.start), num(h.start)]) };
+  },
+  T20(a, g) {
+    const ans = a.calls || [];
+    const s = listScore(g.calls, ans, (x, y) => num(y.line) === x.line, (x, y) => (String(y.component).startsWith(x.component) ? 1 : 0.5));
+    return { ...s, offByOne: offByOne(g.calls.map((c) => c.line), ans.map((c) => num(c.line))) };
+  },
+  T21(a) {
+    const w = (a.writes || []).map(num);
+    const items = [num(a.classBindingLine) === 11469, a.stateVar === 'y', num(a.stateDeclLine) === 11274, w.includes(11310), w.includes(11311),
+      w.every((x) => [11310, 11311].includes(x))];
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: offByOne([11469, 11274, 11310, 11311], [num(a.classBindingLine), num(a.stateDeclLine), ...w]) };
+  },
+  T22(a, g) {
+    const items = g.classes.map((c) => { const x = (a.classes || []).find((y) => y.name === c.name || String(y.name).replace(/^\./, '') === c.name);
+      return !!x && x.used === c.used; });
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: 0 };
+  },
+  T23(a) {
+    const r = (n) => (a.refs || []).find((x) => x.name === n) || {};
+    const c = r('c'), u = r('u');
+    const items = [num(c.assignLine) === 3281, /^\W*section/i.test(c.element || ''),
+      num(u.assignLine) === 3267, /commission-card/.test(u.element || '')];
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: offByOne([3281, 3267], [num(c.assignLine), num(u.assignLine)]) };
+  },
+  T24(a) {
+    const e = a.equalityCheckIn || {};
+    const items = [fileEq(a.file || '', 'chunks/BSBv9QXB.js'), a.name === 'F', num(a.start) === 1229, num(a.end) === 1234, e.name === 'wn' && [1235, 1236].includes(num(e.line))];
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: offByOne([1229, 1235], [num(a.start), num(e.line)]) };
+  },
+  T25(a) {
+    const items = [num(a.start) === 10782, num(a.end) === 10784, a.excludesPhones === true, /861/.test(a.returns || '')];
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: offByOne([10782], [num(a.start)]) };
+  },
+  T26(a) {
+    const x = a.line5700 || {}, y = a.line11090 || {};
+    const items = [num(x.mediaLine) === 5672, /860/.test(x.condition || ''), num(y.mediaLine) === 11081, /no-preference/.test(y.condition || '')];
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: offByOne([5672, 11081], [num(x.mediaLine), num(y.mediaLine)]) };
+  },
+  T27(a) {
+    const items = [num(a.line) === 2590, /^JT\b/.test(a.component || ''), /S\(|set_?style|style directive|inline/i.test(a.mechanism || '')];
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: offByOne([2590], [num(a.line)]) };
+  },
   T16(a) {
     const ch = (a.chain || []).map((x) => ({ ...x, line: num(x.line) }));
     const has = (file, lines, re) => ch.some((x) => fileEq(x.file, file) && (lines.includes(x.line) || (re && re.test(`${x.function} ${x.what}`))));

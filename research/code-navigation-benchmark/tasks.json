@@ -821,6 +821,174 @@
         ],
         "traps": "uM's parameter r; `r` appears on 57 lines of uM"
       }
+    },
+    {
+      "id": "T19",
+      "type": "cross-file definition through an import alias",
+      "source": "real question from fix-countdown-idle-raf",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js line 3860, the countdown digit face calls `S(i, ``, o, e)` to apply its transform style. Where is the function that `S` refers to defined (file, name in that file, 1-based line range), and which helper does it use to apply individual style properties (name, line range)? Does it write every property on every call, or only changed ones?",
+      "schema": "{\"file\":\"\",\"name\":\"\",\"start\":0,\"end\":0,\"perPropertyHelper\":{\"name\":\"\",\"start\":0,\"end\":0},\"onlyChanged\":true}",
+      "gt": {
+        "file": "chunks/BSBv9QXB.js",
+        "name": "$i",
+        "start": 2861,
+        "end": 2870,
+        "perPropertyHelper": {
+          "name": "Qi",
+          "start": 2855,
+          "end": 2860
+        },
+        "onlyChanged": true,
+        "chain": "nodes/2 line 24 imports `_ as S` from ../chunks/BSBv9QXB.js; the chunk exports `$i as _` (line 3499)"
+      }
+    },
+    {
+      "id": "T20",
+      "type": "callers of a function",
+      "source": "real question from fix-countdown-idle-raf",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, the countdown component is `cD` (line 3918). List every place that mounts it (calls `cD(`), with the 1-based line and the top-level component that contains the call.",
+      "schema": "{\"calls\":[{\"line\":0,\"component\":\"\"}]}",
+      "gt": {
+        "calls": [
+          {
+            "line": 4333,
+            "component": "fD"
+          },
+          {
+            "line": 13160,
+            "component": "dN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T21",
+      "type": "who toggles a class (state behind a class binding)",
+      "source": "real question from fix-large-area-blur",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, what JavaScript toggles the `is-visible` class on the `.start-selling-future` section? Give the 1-based line where the class binding is applied, the Svelte state variable behind it (local name and declaration line), and every line that writes that state.",
+      "schema": "{\"classBindingLine\":0,\"stateVar\":\"\",\"stateDeclLine\":0,\"writes\":[0]}",
+      "gt": {
+        "classBindingLine": 11469,
+        "stateVar": "y",
+        "stateDeclLine": 11274,
+        "writes": [
+          11310,
+          11311
+        ]
+      }
+    },
+    {
+      "id": "T22",
+      "type": "dead-CSS check (class used by any markup?)",
+      "source": "real question from fix-large-area-blur",
+      "question": "Four CSS classes appear in site-pretty/_app/immutable/assets/2.gBuqKVzi.css: `start-selling-platform-service-bg`, `start-selling-platform-service-quote-bg`, `invoice-doc-wrap` and `start-selling-future-card`. For each, can it ever be applied, i.e. does the class name occur anywhere in the JS or HTML under site-pretty/ (templates, class strings, selectors)? Give one 1-based file:line where it occurs, or null.",
+      "schema": "{\"classes\":[{\"name\":\"\",\"used\":true,\"where\":\"file:line or null\"}]}",
+      "gt": {
+        "classes": [
+          {
+            "name": "start-selling-platform-service-bg",
+            "used": false
+          },
+          {
+            "name": "start-selling-platform-service-quote-bg",
+            "used": false
+          },
+          {
+            "name": "invoice-doc-wrap",
+            "used": false
+          },
+          {
+            "name": "start-selling-future-card",
+            "used": true,
+            "where": [
+              "nodes/2.DyWL8TcE.js:11257",
+              "nodes/2.DyWL8TcE.js:12936"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "T23",
+      "type": "which DOM element does a bind:this ref hold",
+      "source": "real question from fix-commission-forced-layout",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, the commission component `AE` declares component-level refs `c` and `u` (around line 3056) that its scroll code measures with getBoundingClientRect. Which DOM element does each hold? Give the 1-based line of the bind:this-style assignment for each, and identify the element by its tag and class from the component's HTML template.",
+      "schema": "{\"refs\":[{\"name\":\"c\",\"assignLine\":0,\"element\":\"\"},{\"name\":\"u\",\"assignLine\":0,\"element\":\"\"}]}",
+      "gt": {
+        "refs": [
+          {
+            "name": "c",
+            "assignLine": 3281,
+            "element": "section (aria-labelledby=commission-heading), the template root"
+          },
+          {
+            "name": "u",
+            "assignLine": 3267,
+            "element": "div.commission-card"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T24",
+      "type": "cross-file definition through an import alias",
+      "source": "real question from fix-pain-offscreen-notes",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, Svelte state is written with calls like `z(T, [], !0)`. Which runtime function does `z` refer to (file, its name in that file, 1-based line range), and in which function (name, first line) is the equality check that decides whether a write marks the state dirty?",
+      "schema": "{\"file\":\"\",\"name\":\"\",\"start\":0,\"end\":0,\"equalityCheckIn\":{\"name\":\"\",\"line\":0}}",
+      "gt": {
+        "file": "chunks/BSBv9QXB.js",
+        "name": "F",
+        "start": 1229,
+        "end": 1234,
+        "equalityCheckIn": {
+          "name": "wn",
+          "line": 1235
+        },
+        "chain": "nodes/2 line 44 `rt as z`; chunk exports `F as rt` (3531); F calls wn, which starts with `if (!e.equals(t))`"
+      }
+    },
+    {
+      "id": "T25",
+      "type": "definition of a repeated short name from a call site",
+      "source": "real question from fix-phone-invisible-shrink",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js line 10929 (inside the profile component `uM`), the per-frame function calls `ce()`. Where is that particular `ce` defined (1-based line range), and what does it return, i.e. does it already exclude phone-width viewports?",
+      "schema": "{\"start\":0,\"end\":0,\"returns\":\"\",\"excludesPhones\":true}",
+      "gt": {
+        "start": 10782,
+        "end": 10784,
+        "excludesPhones": true,
+        "returns": "!oe() && !s(T) && matchMedia('(min-width: 861px)').matches",
+        "traps": "another `function ce` at 4555 (hD); `ce` also used as a var name at 3295, 4292, 6389, 11100, 11396"
+      }
+    },
+    {
+      "id": "T26",
+      "type": "CSS context (@media enclosing a line)",
+      "source": "real question from fix-layout-animations",
+      "question": "In site-pretty/_app/immutable/assets/2.gBuqKVzi.css, which @media block (its condition and 1-based line) encloses line 5700, and which encloses line 11090? Say null if a line is not inside any @media.",
+      "schema": "{\"line5700\":{\"mediaLine\":0,\"condition\":\"\"},\"line11090\":{\"mediaLine\":0,\"condition\":\"\"}}",
+      "gt": {
+        "line5700": {
+          "mediaLine": 5672,
+          "condition": "(width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px)"
+        },
+        "line11090": {
+          "mediaLine": 11081,
+          "condition": "(prefers-reduced-motion: no-preference)"
+        }
+      }
+    },
+    {
+      "id": "T27",
+      "type": "who writes an inline style",
+      "source": "real question from fix-layout-animations",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, what code sets the inline `width` of the `.fee-progress` bar during its count-up? Give the 1-based line, the enclosing top-level component, and the mechanism.",
+      "schema": "{\"line\":0,\"component\":\"\",\"mechanism\":\"\"}",
+      "gt": {
+        "line": 2590,
+        "component": "JT",
+        "mechanism": "Svelte set_style S(ae, '', oe, {width: `${s(C)*100}%`}) in a template effect"
+      }
     }
   ]
 }

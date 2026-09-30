@@ -1,4 +1,27 @@
 {
-  "addf3fc54be490b24": {"note": "T12 S r1 ended without the json block; answer transcribed from its prose (12946 / 13218 / nav root element I / not the same / 13020)",
-    "answer": {"declaredLine": 12946, "assignedLine": 13218, "holds": "the nav root DOM element I (bind:this)", "sameAsRafT": false, "otherTLine": 13020}}
+  "addf3fc54be490b24": {
+    "note": "T12 S r1 ended without the json block; answer transcribed from its prose (12946 / 13218 / nav root element I / not the same / 13020)",
+    "answer": {
+      "declaredLine": 12946,
+      "assignedLine": 13218,
+      "holds": "the nav root DOM element I (bind:this)",
+      "sameAsRafT": false,
+      "otherTLine": 13020
+    }
+  },
+  "a7246181f6f2cc442": {
+    "note": "T19 S r2 ended without the json block; answer transcribed from its prose ($i 2861-2870, Qi 2855-2860, only changed after the first call)",
+    "answer": {
+      "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+      "name": "$i",
+      "start": 2861,
+      "end": 2870,
+      "perPropertyHelper": {
+        "name": "Qi",
+        "start": 2855,
+        "end": 2860
+      },
+      "onlyChanged": true
+    }
+  }
 }

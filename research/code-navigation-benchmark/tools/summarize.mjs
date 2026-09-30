@@ -47,12 +47,14 @@ console.log('agent-side call stats:'); console.table(callStats);
 // Task-type groups used in the README.
 const GROUPS = {
   'A locate a definition (by name / by behaviour)': ['T01', 'T02', 'T13'],
-  'B callers / references of a named symbol': ['T03', 'T05', 'T14'],
-  'C cross-file references through bundle aliases': ['T04'],
-  'D disambiguate short / shadowed locals': ['T11', 'T12', 'T17', 'T18'],
+  'B callers / references of a named symbol': ['T03', 'T05', 'T14', 'T20'],
+  'C cross-file refs through bundle import aliases': ['T04'],
+  'J resolve an import alias to its runtime definition': ['T19', 'T24'],
+  'D disambiguate short / shadowed names and bindings': ['T11', 'T12', 'T17', 'T18', 'T23', 'T25'],
   'E call-graph scoped API use, read a function body': ['T07', 'T08'],
-  'F string / custom-property writers': ['T06'],
-  'G CSS': ['T09', 'T10'],
+  'K who writes a class / inline style / state': ['T21', 'T27'],
+  'F strings, custom properties, class usage': ['T06', 'T22'],
+  'G CSS (rules, width animations, @media context)': ['T09', 'T10', 'T26'],
   'H text census (every line containing X)': ['T15'],
   'I tooling control flow across processes': ['T16'],
 };
@@ -62,7 +64,12 @@ const s2 = JSON.parse(fs.readFileSync(path.join(root, 'data/summary.json'), 'utf
 s2.byGroup = byGroup;
 s2.compliance = { S_runsUsingSerena: runs.filter((r) => r.arm === 'S' && r.serenaCalls > 0).length, S_runs: runs.filter((r) => r.arm === 'S').length,
   S_serenaShareOfCalls: +(runs.filter((r) => r.arm === 'S').reduce((a, r) => a + r.serenaCalls, 0) / runs.filter((r) => r.arm === 'S').reduce((a, r) => a + r.toolCalls, 0)).toFixed(2) };
+const real = new Set(['T19', 'T20', 'T21', 'T22', 'T23', 'T24', 'T25', 'T26', 'T27']);
+s2.bySource = { synthetic: Object.fromEntries(arms.map((a) => [a, agg(runs.filter((r) => r.arm === a && !real.has(r.task)))])),
+  ownerQuestions: Object.fromEntries(arms.map((a) => [a, agg(runs.filter((r) => r.arm === a && real.has(r.task)))])) };
 fs.writeFileSync(path.join(root, 'data/summary.json'), JSON.stringify(s2, null, 1));
+console.log('\nby source (synthetic T01-T18 vs owner questions T19-T27):');
+for (const [k, v] of Object.entries(s2.bySource)) console.log(k, '|', fmt(v.G), '|', fmt(v.S), '|', fmt(v.SO));
 console.log('\nby group:');
 for (const r of byGroup) console.log(`${r.group} | ${fmt(r.G)} | ${fmt(r.S)} | ${fmt(r.SO)}`);
 console.log(s2.compliance);
