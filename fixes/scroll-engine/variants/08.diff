@@ -1,0 +1,32 @@
+# fastwork mirror fix: anim-ablation
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply anim-ablation
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11768,3 +11768,10 @@
+     scroll-behavior: auto;
+   }
+ }
++
++/* [anim-ablation] diagnostic only: remove every CSS animation */
++*,
++*::before,
++*::after {
++  animation: none !important;
++}
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3933,7 +3933,7 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    let t = window.setInterval(e, 1e3);
++    let t = 0; // [anim-ablation] diagnostic: countdown frozen (no 1 s tick, so no digit spring)
+     return (
+       document.addEventListener(`visibilitychange`, e),
+       () => {

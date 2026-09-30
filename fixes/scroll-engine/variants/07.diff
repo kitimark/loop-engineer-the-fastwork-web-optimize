@@ -1,0 +1,75 @@
+# fastwork mirror fix: scroll-engine--hyst
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply scroll-engine--hyst
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2710,7 +2710,37 @@
+   (e.manageAnimations &&
+     e.element &&
+     e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
+-    e.active !== t && ((e.active = t), sE(e, t), e.onActiveChange?.(t), t && rE()));
++    e.active !== t && ((e.active = t), t && sE(e, !0), e.onActiveChange?.(t), t && rE()));
++}
++// [scene-gating] render deferral with hysteresis (N9 scene-gate-flap): a section starts rendering when
++// it becomes active (scene gate, e.g. 100%), but is deferred (content-visibility) only once it is also
++// outside a wider band (+50%). Deferring changes the section's own geometry; at the scene gate's edge
++// that flipped the gate back, i.e. activate -> render -> deactivate -> defer ... every frame.
++var fwRG = new Map();
++function fwRM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%/, (e, t) => `${+t + 50}%`);
++}
++function fwRender(e, t, n) {
++  let r = fwRG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e) if (!t.isIntersecting) for (let e of r.elements.get(t.target) ?? []) e.active || sE(e, !1);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwRG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
+ }
+ function lE(e) {
+   let t = e.getBoundingClientRect();
+@@ -2756,19 +2786,25 @@
+       onActiveChange: t.onActiveChange,
+       renderFrame: 0,
+     },
+-    r;
++    r,
++    fwRd;
+   return (
+     $T.add(n),
+     aE(),
+     n.manageAnimations &&
+       n.element &&
+       n.element.setAttribute(`data-start-selling-scene`, n.active ? `active` : `paused`),
+-    sE(n, n.active),
++    n.active && sE(n, !0),
+     t.onActiveChange?.(n.active),
+     t.element && `IntersectionObserver` in window && (r = uE(n, t.element, t.rootMargin ?? `100% 0px`)),
++    n.deferRendering &&
++      t.element &&
++      `IntersectionObserver` in window &&
++      (fwRd = fwRender(n, t.element, fwRM(t.rootMargin ?? `100% 0px`))),
+     rE(),
+     () => {
+       (r?.(),
++        fwRd?.(),
+         n.renderFrame && window.cancelAnimationFrame(n.renderFrame),
+         $T.delete(n),
+         n.manageAnimations && n.element && n.element.removeAttribute(`data-start-selling-scene`),
