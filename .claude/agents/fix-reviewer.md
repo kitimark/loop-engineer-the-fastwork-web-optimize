@@ -30,7 +30,9 @@ done criteria are `fixes/README.md` "Definition of done"; check each one.
 2. **Patch = overlay = what was measured.** `results.json` `patch.sha256` matches
    `shasum -a 256 <wt>/fixes/<topic>/patch.diff`; `servedCheck` shows every overlay file served from
    the overlay; each hunk in `patch.diff` matches `diff -u` of the baseline file against the overlay
-   copy. A patch edited after the A/B invalidates the numbers.
+   copy. A patch edited after the A/B invalidates the numbers. **Every hunk must sit inside the
+   functions/rules the README names**: a hunk elsewhere is usually a replace-all accident
+   (`fixes/FINDINGS.md` P1: `cy` → `_cy` broke SVG circles).
 3. **Behaviour parity.** Read each hunk in context. Look for: changed initial state or first frame,
    desktop breakpoints and `matchMedia` paths, `prefers-reduced-motion`, resize/orientation, IO
    gating, teardown (listeners, observers, rAF, intervals removed on destroy), side jobs a callback

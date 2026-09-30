@@ -202,6 +202,10 @@ the local `HEAD`, so **commit the tooling first**: a worktree only has committed
 
 Team conventions (messages go to the lead and to teammates named in `fixes/TOPICS.md` conflicts):
 - One teammate owns one topic (or one conflict cluster from `fixes/TOPICS.md`) and one worktree.
+- **Read `fixes/FINDINGS.md` before you edit** (techniques that won, pitfalls that cost a review round,
+  measurement lessons) and `node tools/finding.mjs list` when it exists (I-013). **Post every finding that
+  could help another topic**: a technique that won, a pitfall, a code coupling, a measurement surprise.
+  Post it to the board (`finding.mjs post`, or `SendMessage` the lead until then), not only in your README.
 - **Post cross-topic findings** as soon as you find them, to the owners of the affected topics, e.g.
   "scroll engine `iE` also drives the nav callback, so changing `dE`'s contract touches
   nav-hit-test" or "future `l` also toggles `.pain is-pain-dark`". Don't edit code another topic owns;

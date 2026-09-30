@@ -31,7 +31,8 @@ Do not change code outside your scope; if you need a change there, message its o
    `fix-{{topic}}` (or run `git worktree add .claude/worktrees/fix-{{topic}} -b fix/{{topic}}` and
    `EnterWorktree` with that path). Then run `node tools/fix.mjs doctor`: it must say
    `linked worktree yes` and `baseline … OK`. `node tools/incident.mjs list` shows known open
-   problems and their workarounds.
+   problems and their workarounds. Read `fixes/FINDINGS.md` (the team's techniques and pitfalls) and
+   `node tools/finding.mjs list` (live findings, once it exists).
 1. Evidence. Read the relevant parts of `research/01-initial-investigation/README.md`,
    `motion-inventory.md` and `research/cpu-throttle-calibration/README.md`. Find the code with
    `node tools/fix.mjs grep …` / `show … --lines a-b` (locations are in `fixes/TOPICS.md`).
