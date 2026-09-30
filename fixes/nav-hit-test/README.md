@@ -57,6 +57,8 @@ move frames >20 ms / fps (many small per-frame savings) more than LoAF (which on
 
 `node tools/fix.mjs ab nav-hit-test --runs 5` (Chrome, mobile 430x932 DPR3, CPU 6x, ABBA, cold cache,
 `--vendors=local --https --latency 150`); host load avg 11.3-17.5 during the runs (busy machine: other agents).
+**Validity: contaminated (load1 > 10) and old-tools (before I-002)**. Re-measure on a quiet host with current
+tools; the wave integrator's combined run is the other place to confirm it.
 
 | mobile 6x, n=5 | baseline median [min-max] | patched median [min-max] | delta | verdict |
 |---|---|---|---|---|
@@ -99,6 +101,14 @@ the morph (pushing past the end). It compares the element each returns and the `
 
 So the patched `F()` returns the same element at every sampled point, including the dark sections (hero,
 pain, platform) and the actions/expanded-panel boxes that keep `pointer-events: auto`.
+
+## Experiments tried
+
+| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status |
+|---|---|---|---|---|---|---|---|---|
+| nav-hit-test/01 | `F()` via `elementsFromPoint` (no inline `pointer-events` writes) + cached `querySelector` in `ee`/`_` | removes 2 subtree style invalidations + forced recalcs per scroll frame; frames >20 ms and fps should move | within noise | contaminated (host load 11.3-17.5 at start) + old-tools (before I-002) | frames >20 ms 98 [85-135] -> 62 [60-104], fps 69.1 [61.1-71.4] -> 75.3 [69.9-77.8], LoAF/forced flat, n=5 | `results.json`, out/ab/nav-hit-test/2026-09-30T21-19-14-853Z | direction consistent in 4 of 5 patched runs; LoAF only sees >50 ms frames, so a per-frame saving shows in >20 ms first | on branch; retry the A/B on a quiet host with current tools |
+| nav-hit-test/02 | equivalence probe: original toggle + `elementFromPoint` vs patched filter, same frame, 10 x per step, mobile + desktop + morph | the patched filter returns the same element / `j()` everywhere | better (0 mismatches) | clean (deterministic check, timing-independent) | 0 / 680 points mobile, 0 / 1010 desktop | README "Equivalence check"; probe log `scratchpad/nav-morph/probe-1.log` | explicit `pointer-events:auto` descendants (actions, expanded panel) are the only nav boxes that stay hit-testable | done |
+| nav-hit-test/03 | architecture review: IO-gate `ee()` on `#profile-showcase`, `.hero-track` 0.72 test as IO (T7) | drop the per-frame `getComputedStyle` + 3 rects in `_` | abandoned (not built) | - | - | README "Next iteration" | after #01, `_` still needs one forced layout for `F()` (nav rect + `elementsFromPoint`); the other reads then hit clean layout and cost little, so the gain needs wave-2 scroll-engine batching (reads before writes) first | retry when scroll-engine batching lands |
 
 ## Risks, conflicts, follow-ups
 
