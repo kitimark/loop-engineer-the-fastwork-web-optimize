@@ -1,0 +1,66 @@
+# fastwork mirror fix: commission-forced-layout
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply commission-forced-layout
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3103,8 +3103,22 @@
+       n = 1,
+       r = 0,
+       i = 0,
++      // fix(commission-forced-layout): the three A() queries, parsed once instead of 3 matchMedia() per frame
++      _cq = [
++        `(max-width: 1000px)`,
++        `(max-device-width: 500px)`,
++        `(hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ].map((e) => window.matchMedia(e)),
++      _cc, // last compact value j() ran for
++      _ce, // last written --commission-enter-shrink
++      _cs, // last written --commission-shrink
++      _ch, // last written runway height
+       a = () => {
+-        if (((t = 0), z(y, A(), !0), !u || !c)) return;
++        t = 0;
++        let k = _cq.some((e) => e.matches);
++        // line-count check j() (Range.getClientRects) only when compact flips; the ResizeObserver on the
++        // h2 covers width/font/text changes. It no longer runs after the style writes every frame.
++        if ((z(y, k, !0), k !== _cc && ((_cc = k), j()), !u || !c)) return;
+         let i = window.innerHeight,
+           o = u.getBoundingClientRect(),
+           l = c.getBoundingClientRect(),
+@@ -3112,16 +3126,24 @@
+           p = E(l, i),
+           m = e.matches ? +(f >= 0.5) : w(f),
+           h = e.matches ? +(p >= 0.5) : w(p);
+-        (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
+-          (r += (h - r) * (e.matches ? 1 : 0.22)),
+-          Math.abs(m - n) < 8e-4 && (n = m),
+-          Math.abs(h - r) < 8e-4 && (r = h),
+-          c.style.setProperty(`--commission-enter-shrink`, String(n)),
+-          c.style.setProperty(`--commission-shrink`, String(Math.max(n, r))),
++        // compact: CSS forces --commission-shrink-scale:1 / radius 0 and hides the runway, so the eased
++        // values are invisible; snap them (no easing loop) and skip the --commission-* writes.
++        (k
++          ? ((n = m), (r = h))
++          : (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
++            (r += (h - r) * (e.matches ? 1 : 0.22)),
++            Math.abs(m - n) < 8e-4 && (n = m),
++            Math.abs(h - r) < 8e-4 && (r = h)),
+           z(g, o.top < i * 0.995 && f > 0.04, !0),
+-          z(v, p > 0.04),
+-          (d.style.height = s(y) || e.matches ? `` : `${i * 0.06}px`),
+-          j(),
++          z(v, p > 0.04));
++        // writes only when the value changed (same values as before, no redundant style mutations)
++        let _ve = String(n),
++          _vs = String(Math.max(n, r)),
++          _vh = k || e.matches ? `` : `${i * 0.06}px`;
++        (k ||
++          (_ve !== _ce && c.style.setProperty(`--commission-enter-shrink`, (_ce = _ve)),
++          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs))),
++          _vh !== _ch && (d.style.height = _ch = _vh),
+           (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
+       },
+       o = () => {

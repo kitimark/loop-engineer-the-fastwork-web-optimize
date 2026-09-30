@@ -1,0 +1,135 @@
+# fastwork mirror fix: commission-forced-layout
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply commission-forced-layout
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -1623,12 +1623,12 @@
+   },
+   oy = () => `30-day content plan`,
+   sy = () => `แผนคอนเทนต์ 30 วัน`,
+-  cy = () => `Rencana konten 30 hari`,
++  _cy = () => `Rencana konten 30 hari`,
+   ly = () => `Kế hoạch nội dung 30 ngày`,
+   uy = () => `خطة محتوى لـ 30 يومًا`,
+   dy = (e = {}, t = {}) => {
+     let n = t.locale ?? W();
+-    return n === `en` ? oy(e) : n === `th` ? sy(e) : n === `id` ? cy(e) : n === `vi` ? ly(e) : uy(e);
++    return n === `en` ? oy(e) : n === `th` ? sy(e) : n === `id` ? _cy(e) : n === `vi` ? ly(e) : uy(e);
+   },
+   fy = () => `Hooks, captions, and a calendar that make posting simple.`,
+   py = () => `ฮุก แคปชัน และปฏิทินที่ทำให้การโพสต์ง่ายขึ้น`,
+@@ -3103,8 +3103,22 @@
+       n = 1,
+       r = 0,
+       i = 0,
++      // fix(commission-forced-layout): the three A() queries, parsed once instead of 3 matchMedia() per frame
++      _cq = [
++        `(max-width: 1000px)`,
++        `(max-device-width: 500px)`,
++        `(hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ].map((e) => window.matchMedia(e)),
++      _cy, // last compact value j() ran for
++      _ce, // last written --commission-enter-shrink
++      _cs, // last written --commission-shrink
++      _ch, // last written runway height
+       a = () => {
+-        if (((t = 0), z(y, A(), !0), !u || !c)) return;
++        t = 0;
++        let k = _cq.some((e) => e.matches);
++        // line-count check j() (Range.getClientRects) only when compact flips; the ResizeObserver on the
++        // h2 covers width/font/text changes. It no longer runs after the style writes every frame.
++        if ((z(y, k, !0), k !== _cy && ((_cy = k), j()), !u || !c)) return;
+         let i = window.innerHeight,
+           o = u.getBoundingClientRect(),
+           l = c.getBoundingClientRect(),
+@@ -3112,16 +3126,24 @@
+           p = E(l, i),
+           m = e.matches ? +(f >= 0.5) : w(f),
+           h = e.matches ? +(p >= 0.5) : w(p);
+-        (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
+-          (r += (h - r) * (e.matches ? 1 : 0.22)),
+-          Math.abs(m - n) < 8e-4 && (n = m),
+-          Math.abs(h - r) < 8e-4 && (r = h),
+-          c.style.setProperty(`--commission-enter-shrink`, String(n)),
+-          c.style.setProperty(`--commission-shrink`, String(Math.max(n, r))),
++        // compact: CSS forces --commission-shrink-scale:1 / radius 0 and hides the runway, so the eased
++        // values are invisible; snap them (no easing loop) and skip the --commission-* writes.
++        (k
++          ? ((n = m), (r = h))
++          : (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
++            (r += (h - r) * (e.matches ? 1 : 0.22)),
++            Math.abs(m - n) < 8e-4 && (n = m),
++            Math.abs(h - r) < 8e-4 && (r = h)),
+           z(g, o.top < i * 0.995 && f > 0.04, !0),
+-          z(v, p > 0.04),
+-          (d.style.height = s(y) || e.matches ? `` : `${i * 0.06}px`),
+-          j(),
++          z(v, p > 0.04));
++        // writes only when the value changed (same values as before, no redundant style mutations)
++        let _ve = String(n),
++          _vs = String(Math.max(n, r)),
++          _vh = k || e.matches ? `` : `${i * 0.06}px`;
++        (k ||
++          (_ve !== _ce && c.style.setProperty(`--commission-enter-shrink`, (_ce = _ve)),
++          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs))),
++          _vh !== _ch && (d.style.height = _ch = _vh),
+           (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
+       },
+       o = () => {
+@@ -9956,7 +9978,7 @@
+     `<picture><source type="image/avif"/> <img alt="" loading="lazy" decoding="async" draggable="false"/></picture>`,
+   ),
+   fj = h(
+-    `<span class="cover svelte-18m48uz"><!></span> <span class="byline svelte-18m48uz"><span class="avatar svelte-18m48uz"><!></span> <span class="author svelte-18m48uz"> </span> <span class="dot" aria-hidden="true">·</span> <span class="read svelte-18m48uz"><svg class="clock svelte-18m48uz" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25"></circle><path d="M8 4.5V8l2.5 1.5"></path></svg> </span></span> <span class="title svelte-18m48uz"> </span> <span class="excerpt svelte-18m48uz"> </span>`,
++    `<span class="cover svelte-18m48uz"><!></span> <span class="byline svelte-18m48uz"><span class="avatar svelte-18m48uz"><!></span> <span class="author svelte-18m48uz"> </span> <span class="dot" aria-hidden="true">·</span> <span class="read svelte-18m48uz"><svg class="clock svelte-18m48uz" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" _cy="8" r="6.25"></circle><path d="M8 4.5V8l2.5 1.5"></path></svg> </span></span> <span class="title svelte-18m48uz"> </span> <span class="excerpt svelte-18m48uz"> </span>`,
+     1,
+   ),
+   pj = h(`<span class="price svelte-18m48uz"> </span>`),
+@@ -10252,7 +10274,7 @@
+     `<svg viewBox="0 0 24 24" class="svelte-19hdikk"><path d="M12 3.5 14.6 9l5.9.7-4.4 4 1.2 5.8L12 16.6l-5.3 2.9 1.2-5.8-4.4-4L9.4 9 12 3.5Z"></path></svg>`,
+   ),
+   Ij = a(
+-    `<svg viewBox="0 0 24 24" class="svelte-19hdikk"><path d="M3.5 12.5v-7a2 2 0 0 1 2-2h7l8 8-9 9-8-8Z"></path><circle cx="8" cy="8" r="1.25"></circle></svg>`,
++    `<svg viewBox="0 0 24 24" class="svelte-19hdikk"><path d="M3.5 12.5v-7a2 2 0 0 1 2-2h7l8 8-9 9-8-8Z"></path><circle cx="8" _cy="8" r="1.25"></circle></svg>`,
+   ),
+   Lj = h(
+     `<div class="dimension svelte-19hdikk"><dt class="svelte-19hdikk"><span aria-hidden="true"><!></span> </dt> <dd class="svelte-19hdikk"> </dd></div>`,
+@@ -11491,7 +11513,7 @@
+   ),
+   _M = h(`<div class="start-selling-platform-agents-ask-list-out"></div>`),
+   vM = h(
+-    `<div aria-hidden="true"><div class="start-selling-platform-agents-ask"><div class="start-selling-platform-agents-ask-hero"><p class="start-selling-platform-agents-ask-title"> </p> <div class="start-selling-platform-agents-ask-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg> <span> </span></div></div> <div class="start-selling-platform-agents-ask-list"><!> <!></div></div></div>`,
++    `<div aria-hidden="true"><div class="start-selling-platform-agents-ask"><div class="start-selling-platform-agents-ask-hero"><p class="start-selling-platform-agents-ask-title"> </p> <div class="start-selling-platform-agents-ask-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="11" _cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg> <span> </span></div></div> <div class="start-selling-platform-agents-ask-list"><!> <!></div></div></div>`,
+   );
+ function yM(n, r) {
+   D(r, !0);
+@@ -11956,7 +11978,7 @@
+   ),
+   wM = h(`<div class="start-selling-platform-cred-set"></div>`),
+   TM = h(
+-    `<div aria-hidden="true"><div class="start-selling-platform-profile-phone"><div class="start-selling-platform-profile-head"><div class="start-selling-platform-profile-id"><img loading="lazy" decoding="async" class="start-selling-platform-profile-avatar" src="/selling/media/avatar-cat.png" alt="" width="57" height="57"/> <div><p class="is-name">boldddd</p> <p class="is-handle">@bolddddd <span> </span></p></div></div> <p class="is-bio"> </p> <p class="is-loc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.25 6-11a6 6 0 1 0-12 0c0 5.75 6 11 6 11Z"></path><circle cx="12" cy="10" r="2.25"></circle></svg> </p></div> <div class="start-selling-platform-profile-stats"><div><strong> </strong> <span> </span></div> <span class="is-rule"></span> <div><strong> </strong> <span> </span></div> <span class="is-rule"></span> <div><strong> </strong> <span> </span></div> <span class="is-rule"></span> <div><strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.68 6.27.91-4.53 4.42 1.07 6.24L12 17.1l-5.61 2.95 1.07-6.24-4.53-4.42 6.27-.91L12 2.8Z"></path></svg> </strong> <span> </span></div></div> <div class="start-selling-platform-profile-masonry"><div class="start-selling-platform-profile-col"><div class="start-selling-platform-profile-tile is-short"><img loading="lazy" decoding="async" src="/selling/media/post-2.png" alt=""/> <span class="is-price">฿6,500</span></div> <div class="start-selling-platform-profile-tile is-mid"><img loading="lazy" decoding="async" src="/selling/media/service-kitchen.png" alt=""/> <span class="is-price">฿8,900</span></div></div> <div class="start-selling-platform-profile-col"><div class="start-selling-platform-profile-tile is-tall"><img loading="lazy" decoding="async" src="/selling/media/post-3.png" alt=""/> <span class="is-price">฿6,500</span></div></div></div></div> <div class="start-selling-platform-profile-reviews"><div class="start-selling-platform-profile-reviews-track"></div></div></div>`,
++    `<div aria-hidden="true"><div class="start-selling-platform-profile-phone"><div class="start-selling-platform-profile-head"><div class="start-selling-platform-profile-id"><img loading="lazy" decoding="async" class="start-selling-platform-profile-avatar" src="/selling/media/avatar-cat.png" alt="" width="57" height="57"/> <div><p class="is-name">boldddd</p> <p class="is-handle">@bolddddd <span> </span></p></div></div> <p class="is-bio"> </p> <p class="is-loc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.25 6-11a6 6 0 1 0-12 0c0 5.75 6 11 6 11Z"></path><circle cx="12" _cy="10" r="2.25"></circle></svg> </p></div> <div class="start-selling-platform-profile-stats"><div><strong> </strong> <span> </span></div> <span class="is-rule"></span> <div><strong> </strong> <span> </span></div> <span class="is-rule"></span> <div><strong> </strong> <span> </span></div> <span class="is-rule"></span> <div><strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.68 6.27.91-4.53 4.42 1.07 6.24L12 17.1l-5.61 2.95 1.07-6.24-4.53-4.42 6.27-.91L12 2.8Z"></path></svg> </strong> <span> </span></div></div> <div class="start-selling-platform-profile-masonry"><div class="start-selling-platform-profile-col"><div class="start-selling-platform-profile-tile is-short"><img loading="lazy" decoding="async" src="/selling/media/post-2.png" alt=""/> <span class="is-price">฿6,500</span></div> <div class="start-selling-platform-profile-tile is-mid"><img loading="lazy" decoding="async" src="/selling/media/service-kitchen.png" alt=""/> <span class="is-price">฿8,900</span></div></div> <div class="start-selling-platform-profile-col"><div class="start-selling-platform-profile-tile is-tall"><img loading="lazy" decoding="async" src="/selling/media/post-3.png" alt=""/> <span class="is-price">฿6,500</span></div></div></div></div> <div class="start-selling-platform-profile-reviews"><div class="start-selling-platform-profile-reviews-track"></div></div></div>`,
+   );
+ function EM(n, r) {
+   D(r, !0);
+@@ -12404,7 +12426,7 @@
+     1,
+   ),
+   VM = h(
+-    `<li class="start-selling-platform-row-check"><span class="start-selling-platform-row-check-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16.5 9"></path></svg></span> </li>`,
++    `<li class="start-selling-platform-row-check"><span class="start-selling-platform-row-check-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" _cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16.5 9"></path></svg></span> </li>`,
+   ),
+   HM = h(`<ul class="start-selling-platform-row-checks"></ul>`),
+   UM = h(
+@@ -12723,7 +12745,7 @@
+   ),
+   iN = h(`<div role="listbox"></div>`),
+   aN = h(
+-    `<div><button class="start-selling-language-switch svelte-1lc7nmb" type="button" aria-haspopup="listbox"><span class="start-selling-language-switch__icon svelte-1lc7nmb" aria-hidden="true"><svg viewBox="0 0 24 24" class="svelte-1lc7nmb"><circle cx="12" cy="12" r="8.5"></circle><path d="M3.8 12h16.4M12 3.5c2.3 2.3 3.5 5.1 3.5 8.5S14.3 18.2 12 20.5M12 3.5C9.7 5.8 8.5 8.6 8.5 12s1.2 6.2 3.5 8.5"></path></svg></span> <span class="start-selling-language-switch__code svelte-1lc7nmb"> </span> <svg class="start-selling-language-switch__chevron svelte-1lc7nmb" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6 3.5 3.5L11.5 6"></path></svg></button> <!></div>`,
++    `<div><button class="start-selling-language-switch svelte-1lc7nmb" type="button" aria-haspopup="listbox"><span class="start-selling-language-switch__icon svelte-1lc7nmb" aria-hidden="true"><svg viewBox="0 0 24 24" class="svelte-1lc7nmb"><circle cx="12" _cy="12" r="8.5"></circle><path d="M3.8 12h16.4M12 3.5c2.3 2.3 3.5 5.1 3.5 8.5S14.3 18.2 12 20.5M12 3.5C9.7 5.8 8.5 8.6 8.5 12s1.2 6.2 3.5 8.5"></path></svg></span> <span class="start-selling-language-switch__code svelte-1lc7nmb"> </span> <svg class="start-selling-language-switch__chevron svelte-1lc7nmb" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6 3.5 3.5L11.5 6"></path></svg></button> <!></div>`,
+   );
+ function oN(n, r) {
+   let i = c();
