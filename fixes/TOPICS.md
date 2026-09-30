@@ -44,6 +44,7 @@ Each needs a lead decision and an owner; N1 first, because it tells which of the
 | N6 | `nav-backdrop-budget` | always-on nav backdrop-filters re-blur per frame on the iPhone GPU; size with a semi-opaque-solid variant | iPhone only |
 | N7 | `input-listener-diet` | `pointermove` only between pointerdown/up, passive where possible | fix |
 | N8 | `morph-scroll-driven` | drive `--morph` from a scroll timeline instead of the touch spring | needs a design decision |
+| N9 | `scene-gate-flap` | *Found by fix-pain-offscreen-notes.* Desktop 1440x900: parked idle at scrollY = `.pain` top (`.commission-card` top = exactly 2.0 x innerHeight), the engine `iE` keeps running at ~33 Hz with no input (pain callback 314 runs / 10 s, 632 `.commission-card` rect reads); ±0.5 vh away only 3-4. Suspected: an IO scene gate flapping at its rootMargin edge (`deferRendering` toggles render attr / intrinsic size → IO flips → `cE` → `rE`). Mobile at the same offset: 0 runs | fix, cluster A (topic 12 scene-gating; owner scroll-engine) |
 
 Other wave-1 findings, folded into existing topics: the `start-selling-platform-i-doc-sweep`
 `background-position` text sweep (CSS ~11103) repaints ~50/s at idle at the page bottom on iPhone
