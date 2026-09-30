@@ -166,6 +166,44 @@ test('waits in the chrome-measure FIFO queue while someone else measures', async
   assert.ok(existsSync(join(d, 'result.json')));
 });
 
+test('inside `lock.mjs run chrome-measure`: verify re-enters the wrapper\'s hold (no deadlock), which outlives it (incident I-005)', async () => {
+  const { d, env, args } = setup();
+  const lockFile = join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json');
+  // the wrapped command runs verify (a different pid and owner than the wrapper), then a probe that
+  // must still be covered by the wrapper's hold
+  const script = `const { spawnSync } = require('child_process'); const fs = require('fs');
+    const v = spawnSync(process.execPath, ${JSON.stringify([VERIFY, ...args('inner-topic')])}, { stdio: 'inherit' });
+    console.log('VERIFY EXIT ' + v.status);
+    console.log('AFTER ' + fs.readFileSync(${JSON.stringify(lockFile)}, 'utf8').replace(/\\s+/g, ' '));`;
+  const r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'wrapper', '--', process.execPath, '-e', script], { env, timeout: 40000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^VERIFY EXIT 0$/m);
+  assert.ok(existsSync(join(d, 'result.json')), 'verify measured');
+  assert.ok(readLog(env.FAKE_CHROME_LOG).some((l) => l.method === '(exit)'), 'Chrome ran and was closed');
+  const after = JSON.parse(r.stdout.match(/^AFTER (.*)$/m)[1]);
+  assert.equal(after.owner, 'wrapper', 'verify exiting must not release the wrapper\'s hold');
+  assert.equal(after.kind, 'process');
+  assert.equal(holder(env.FW_STATE_DIR), null, 'released when the wrapper finishes');
+  assert.deepEqual(JSON.parse(node(LOCK, ['status', 'chrome-measure', '--json'], { env }).stdout)[0].queue, [], 'verify never queued');
+});
+
+test('a forged or stale FW_LOCK_HELD token does not let verify past someone else\'s hold', async () => {
+  const { env, args } = setup();
+  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'other-agent'], { env }).code, 0);
+  const token = holder(env.FW_STATE_DIR).token;
+  for (const held of ['chrome-measure:0123456789ab', `iphone:${token}`, `chrome-measure:${token}x`, '']) {
+    const p = nodeAsync(VERIFY, args('forger'), { env: { ...env, FW_LOCK_HELD: held }, timeout: 3000 }); // SIGTERMed after 3 s
+    await sleep(1200);
+    assert.equal(readLog(env.FAKE_CHROME_LOG).length, 0, `Chrome must not start with FW_LOCK_HELD=${held}`);
+    const st = JSON.parse(node(LOCK, ['status', 'chrome-measure', '--json'], { env }).stdout)[0];
+    assert.equal(st.holder.owner, 'other-agent');
+    assert.deepEqual(st.queue.map((w) => w.owner), ['forger'], 'it queues like anyone else');
+    await p;
+    assert.equal(readLog(env.FAKE_CHROME_LOG).length, 0);
+    assert.deepEqual(JSON.parse(node(LOCK, ['status', 'chrome-measure', '--json'], { env }).stdout)[0].queue, [], 'a killed waiter leaves the queue');
+  }
+});
+
 test('SIGTERM mid-run: lock released and the browser does not outlive verify.mjs', async () => {
   const { env, args } = setup();
   const v = await startProc(process.execPath, [VERIFY, ...args('killed')], { env, ready: (s) => /\[mobile run 1\/1\]/.test(s) });

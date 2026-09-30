@@ -117,6 +117,96 @@ test('a live process holder is not stale; the same owner in another pid queues',
   assert.equal(other.position, 1);
 });
 
+// incident I-005: `lock.mjs run` holds the lock in its own pid and exports FW_LOCK_HELD=<resource>:<token>
+// to its command; a descendant (verify.mjs, fix.mjs ab) presenting it re-enters instead of queueing
+// behind its own ancestor forever.
+test('held token: a descendant presenting the holder\'s token re-enters (any owner/pid), touching neither holder nor queue', async () => {
+  const a = await L.tryAcquire(R, { owner: 'wrapper', kind: 'process', pid: process.ppid, ttlSec: 600 });
+  assert.equal(a.ok, true);
+  assert.equal((await L.tryAcquire(R, { owner: 'b' })).position, 1);
+  const before = readJson(`${R}.json`);
+  for (const held of [`${R}:${a.holder.token}`, `iphone:ffffffffffff,${R}:${a.holder.token}`]) {
+    const c = await L.tryAcquire(R, { owner: 'child', kind: 'process', ttlSec: 5, held });
+    assert.equal(c.ok, true, held);
+    assert.equal(c.reentrant, true);
+    assert.equal(c.inherited, true);
+    assert.equal(c.holder.owner, 'wrapper');
+  }
+  assert.deepEqual(readJson(`${R}.json`), before, 'the ancestor\'s holder record (pid, TTL) is unchanged');
+  assert.deepEqual(L.status(R).queue.map((w) => w.owner), ['b'], 'FIFO queue unchanged; the child never joined it');
+});
+
+test('held token: forged, truncated, other-resource or empty tokens queue like anyone else', async () => {
+  const a = await L.tryAcquire(R, { owner: 'wrapper', kind: 'process', pid: process.ppid });
+  const t = a.holder.token;
+  const bad = [`${R}:0123456789ab`, `${R}:${t.slice(1)}`, `${R}:${t}0`, `iphone:${t}`, `${R}x:${t}`, t, `${R}:`, '', undefined];
+  for (const [i, held] of bad.entries()) {
+    const c = await L.tryAcquire(R, { owner: `forger-${i}`, kind: 'process', held });
+    assert.equal(c.ok, false, String(held));
+    assert.equal(c.position, i + 1);
+  }
+  assert.equal(L.status(R).holder.owner, 'wrapper');
+});
+
+test('held token: a stale holder\'s token grants nothing (the queue head still goes first)', async () => {
+  const pid = deadPid();
+  const a = await L.tryAcquire(R, { owner: 'crashed', kind: 'process', pid });
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  const now = new Date().toISOString();
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([{ owner: 'b', kind: 'lease', since: now, lastSeen: now }]));
+  const c = await L.tryAcquire(R, { owner: 'orphan', kind: 'process', held: `${R}:${a.holder.token}` });
+  assert.equal(c.ok, false);
+  assert.equal(c.position, 2);
+  assert.equal((await L.tryAcquire(R, { owner: 'b' })).ok, true);
+});
+
+test('acquire() with FW_LOCK_HELD from the environment: returns at once, its release() and exit leave the ancestor\'s hold', async () => {
+  const a = await L.tryAcquire(R, { owner: 'wrapper', kind: 'process', pid: process.ppid });
+  const exitListeners = process.listenerCount('exit'), termListeners = process.listenerCount('SIGTERM');
+  const saved = process.env.FW_LOCK_HELD;
+  process.env.FW_LOCK_HELD = `${R}:${a.holder.token}`;
+  try {
+    const h = await L.acquire(R, { owner: 'verify', kind: 'process', timeoutSec: 1, pollMs: 30, log: () => {} });
+    assert.equal(h.holder.owner, 'wrapper');
+    assert.equal(process.listenerCount('exit'), exitListeners, 'no exit handler that would release the ancestor\'s hold');
+    assert.equal(process.listenerCount('SIGTERM'), termListeners);
+    h.release();
+    assert.equal(L.status(R).holder.owner, 'wrapper');
+    assert.equal(L.status(R).holder.token, a.holder.token);
+  } finally {
+    if (saved === undefined) delete process.env.FW_LOCK_HELD; else process.env.FW_LOCK_HELD = saved;
+  }
+});
+
+test('re-entering a lease of the same owner (the FW_LOCK_OWNER workaround): the inner handle does not release the lease', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'topic', kind: 'lease', ttlSec: 600 })).ok, true);
+  const h = await L.acquire(R, { owner: 'topic', kind: 'process', timeoutSec: 1, pollMs: 30, log: () => {} });
+  h.release();
+  assert.equal(L.status(R).holder?.owner, 'topic', 'only `lock.mjs release` (or the TTL) ends the lease');
+});
+
+test('a re-entrant child process (same-owner lease, or FW_LOCK_HELD token) never releases the outer hold on exit or SIGTERM', async () => {
+  const lib = JSON.stringify(new URL('../../tools/lib/lock.mjs', import.meta.url).href);
+  const child = (owner, env, sig) => spawnSync(process.execPath, ['--input-type=module', '-e',
+    `const L = await import(${lib}); await L.acquire(${JSON.stringify(R)}, { owner: ${JSON.stringify(owner)}, kind: 'process', timeoutSec: 2, pollMs: 50, log: () => {} }); console.log('IN'); ${sig ? `process.kill(process.pid, '${sig}'); setTimeout(() => {}, 5000);` : ''}`],
+    { env: { ...process.env, FW_STATE_DIR: state, ...env }, encoding: 'utf8', timeout: 15000 });
+  // same-owner lease (the pre-I-005 workaround: FW_LOCK_OWNER=<lease owner> fix.mjs ab)
+  const lease = await L.tryAcquire(R, { owner: 'topic', kind: 'lease', ttlSec: 600 });
+  for (const sig of [null, 'SIGTERM']) {
+    const r = child('topic', { FW_LOCK_HELD: '' }, sig);
+    assert.match(r.stdout, /^IN$/m, r.stderr);
+    assert.equal(L.status(R).holder?.token, lease.holder.token, `lease survives a re-entrant child's ${sig || 'exit'}`);
+  }
+  await L.release(R, { owner: 'topic' });
+  // token re-entry into a process hold (lock.mjs run -> verify.mjs)
+  const run = await L.tryAcquire(R, { owner: 'wrapper', kind: 'process', pid: process.ppid });
+  for (const sig of [null, 'SIGTERM']) {
+    const r = child('verify', { FW_LOCK_HELD: `${R}:${run.holder.token}` }, sig);
+    assert.match(r.stdout, /^IN$/m, r.stderr);
+    assert.equal(L.status(R).holder?.token, run.holder.token, `the wrapper's hold survives a re-entrant child's ${sig || 'exit'}`);
+  }
+});
+
 test('expired lease is taken over', async () => {
   const past = new Date(Date.now() - 1000).toISOString();
   mkdirSync(join(state, 'locks'), { recursive: true });

@@ -15,7 +15,10 @@
 //     minutes across many commands). Stale when `expiresAt` passes; `renew` extends it.
 // A stale holder is replaced by the next acquirer. Waiters are served first-come-first-served:
 // each waiter has a queue entry that it refreshes whenever it retries; an entry not refreshed for
-// `queueTtlSec` (default 10 min) is dropped, so a crashed waiter never blocks the queue.
+// `queueTtlSec` (default 10 min) is dropped, so a crashed waiter never blocks the queue. A queue place
+// belongs to the waiting process: killing a waiting verify.mjs / fix.mjs ab / `lock.mjs run` (SIGTERM,
+// Ctrl-C) gives it up, and a restart queues at the back. To keep a place without a live process, queue
+// a lease with `lock.mjs acquire` (retry within 10 min).
 //
 // Short lane (incident I-007): a waiter that asks for `short` with a `maxSec` (<= SHORT_MAX_SEC; the
 // pre-commit `npm test`, ~35 s) still waits for the current holder (never preempts), but at the next
@@ -27,6 +30,14 @@
 // (no --ttl, re-acquire or renew stretches it); `lock.mjs run --short` also kills its command then.
 // A short waiter must keep polling: its queue entry is dropped after SHORT_QUEUE_TTL_SEC without a
 // refresh, so a short job that stopped waiting never holds up the hand-over.
+//
+// Re-entry. The same owner re-enters its own lease (any pid) or its own process lock (same pid). A
+// descendant process re-enters its ancestor's hold through FW_LOCK_HELD=<resource>:<token>[,...], which
+// `lock.mjs run` exports to its command (incident I-005: `lock.mjs run chrome-measure -- fix.mjs ab`
+// would otherwise wait forever for itself, since verify.mjs is another pid). The token must equal the
+// live holder's random token; a stale holder's token grants nothing. A re-entrant acquire never
+// changes the holder record or the queue, and its release (and exit) leaves the outer hold alone.
+// Nested in a short `run`, it is bounded by that run's --max-seconds too.
 import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
@@ -47,6 +58,18 @@ export const SHORT_MAX_SEC = 300;
 const SHORT_QUEUE_TTL_SEC = 60;
 export const SHORT_DRAIN_SEC = 300; // a run of back-to-back short jobs ends within this (incident I-011)
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+/** Parse FW_LOCK_HELD ("<resource>:<token>,...") into {resource: token}. */
+export function parseHeld(s) {
+  const out = {};
+  for (const part of String(s || '').split(',')) { const m = part.trim().match(/^([a-z0-9][a-z0-9-]{0,40}):([0-9a-f]{12})$/); if (m) out[m[1]] = m[2]; }
+  return out;
+}
+
+/** FW_LOCK_HELD value for a child of a process that holds `r` with `token` (keeps other resources' entries). */
+export function heldEnv(r, token, prev = process.env.FW_LOCK_HELD) {
+  return Object.entries({ ...parseHeld(prev), [r]: token }).map(([k, v]) => `${k}:${v}`).join(',');
+}
 
 function checkName(r) {
   if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(r)) throw new Error(`bad resource name "${r}"`);
@@ -133,11 +156,12 @@ function nextIndex(q, lg, now = Date.now()) {
 
 /**
  * One acquisition attempt. Returns {ok:true, holder} or {ok:false, holder, position, queue, next}.
- * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec}
+ * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held}
+ * `held`: an FW_LOCK_HELD string; a token matching the live holder re-enters it ({reentrant, inherited}).
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec, held } = opts;
   let { ttlSec, queueTtlSec = 600 } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
   if (short) {
@@ -154,6 +178,10 @@ export async function tryAcquire(r, opts) {
       writeJson(join(lockDir(), `${r}.last-stale.json`), { ...h, staleBecause: reason, clearedAt: new Date(now).toISOString(), clearedBy: owner });
       try { unlinkSync(holderFile(r)); } catch {}
       h = null;
+    }
+    if (h && h.token && parseHeld(held)[r] === h.token) {
+      // a descendant of the holder (FW_LOCK_HELD from `lock.mjs run`): runs under the ancestor's hold
+      return { ok: true, holder: h, reentrant: true, inherited: true };
     }
     if (h && h.owner === owner && (h.kind === 'lease' || h.pid === pid)) {
       // re-entrant for the same owner: refresh the TTL
@@ -222,13 +250,16 @@ export async function renew(r, { owner, ttlSec }) {
 /**
  * Wait (FIFO) and acquire. Polls with backoff; logs who is holding every 30 s.
  * Process-kind locks are also released automatically on exit / SIGINT / SIGTERM.
- * Returns {holder, release()}.
+ * A re-entrant acquire (the same owner's lease, or an ancestor's hold via `held`, default
+ * $FW_LOCK_HELD) returns at once, and its release() is a no-op: the outer holder releases.
+ * Returns {holder, release(), reentrant}.
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s) } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, held = process.env.FW_LOCK_HELD, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s) } = {}) {
   const t0 = Date.now();
   let lastLog = 0, wait = pollMs;
   for (;;) {
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec });
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held });
+    if (res.ok && res.reentrant) return { holder: res.holder, release: () => {}, reentrant: true };
     if (res.ok) {
       if (Date.now() - t0 > 1500) log(`[lock ${r}] acquired after ${Math.round((Date.now() - t0) / 1000)} s`);
       let done = false;

@@ -19,9 +19,13 @@
 // acquire exit codes: 0 = you hold it (prints the holder JSON), 3 = busy (you are queued; prints
 // holder + your queue position; call acquire again later to keep your place, every <= 5 min).
 // --wait N blocks up to N seconds (polling with backoff) before giving up with exit code 3.
+// run: waits in the FIFO queue (as a process: killing a waiting run gives up its place), then runs the
+// command with FW_LOCK_HELD=<resource>:<token>, so everything inside it (verify.mjs, fix.mjs ab, a
+// probe, another `lock.mjs run`) uses this one hold instead of queueing behind it; e.g.
+//   node tools/lock.mjs run chrome-measure --owner <topic> -- sh -c 'node tools/fix.mjs ab <topic> --runs 5 && node probe.mjs'
 // Resources: chrome-measure (verify.mjs takes it automatically), iphone (lease, TTL default 900 s).
 import { spawn } from 'node:child_process';
-import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, RESOURCES } from './lib/lock.mjs';
+import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES } from './lib/lock.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -82,9 +86,10 @@ async function main() {
   if (cmd === 'dequeue') { const q = await dequeue(resource, owner); console.log(`left the ${resource} queue; ${q.length} waiting`); return 0; }
   if (cmd === 'run') {
     if (!rest.length) throw new Error('usage: node tools/lock.mjs run <resource> --owner X -- <cmd> [args]');
-    const { release: rel } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, timeoutSec: Number(opt('timeout', 3600)) });
-    // a short job runs in its own process group, so reaching --max-seconds stops the whole tree (npm test -> node --test -> ...)
-    const child = spawn(rest[0], rest.slice(1), { stdio: 'inherit', detached: short });
+    const { release: rel, holder } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, timeoutSec: Number(opt('timeout', 3600)) });
+    // a short job runs in its own process group, so reaching --max-seconds stops the whole tree (npm test -> node --test -> ...);
+    // FW_LOCK_HELD: the command's own verify.mjs / fix.mjs ab / nested run re-enter this hold instead of queueing behind it
+    const child = spawn(rest[0], rest.slice(1), { stdio: 'inherit', detached: short, env: { ...process.env, FW_LOCK_HELD: heldEnv(resource, holder.token) } });
     const kill = (sig) => { try { if (short) process.kill(-child.pid, sig); else child.kill(sig); } catch {} };
     // acquire() releases the lock and exits on these signals; stop the command first, or it would keep
     // running (e.g. a throttled measurement) after the lock was handed to the next waiter.

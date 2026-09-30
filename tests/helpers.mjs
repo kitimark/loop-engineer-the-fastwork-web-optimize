@@ -56,7 +56,7 @@ export function unregisterRealWorktree(p) { realWorktrees.delete(p); }
 /** A clean env for tool subprocesses: no inherited mirror/lock/port overrides unless given. */
 export function cleanEnv(extra = {}) {
   const env = { ...process.env };
-  for (const k of ['FW_MIRROR_HOME', 'FW_STATE_DIR', 'FW_BASE', 'FW_ALLOW_MAIN', 'FW_LOCK_OWNER', 'PORT', 'CHROME', 'FW_IPHONE_PORT', 'FW_IPHONE_DEVICE_PORT', 'NODE_TEST_CONTEXT', 'FW_PRECOMMIT_TEST_CMD']) delete env[k];
+  for (const k of ['FW_MIRROR_HOME', 'FW_STATE_DIR', 'FW_BASE', 'FW_ALLOW_MAIN', 'FW_LOCK_OWNER', 'FW_LOCK_HELD', 'PORT', 'CHROME', 'FW_IPHONE_PORT', 'FW_IPHONE_DEVICE_PORT', 'NODE_TEST_CONTEXT', 'FW_PRECOMMIT_TEST_CMD']) delete env[k];
   // a git hook exports GIT_DIR / GIT_INDEX_FILE / ...: never let them redirect the temp repos' git calls
   for (const k of Object.keys(env)) if (/^GIT_/.test(k)) delete env[k];
   return { ...env, GIT_AUTHOR_NAME: 'fw-test', GIT_AUTHOR_EMAIL: 'fw-test@example.invalid', GIT_COMMITTER_NAME: 'fw-test', GIT_COMMITTER_EMAIL: 'fw-test@example.invalid', ...extra };

@@ -185,3 +185,36 @@ test('run: killing the lock holder also stops the command (the lock never outliv
   assert.ok(gone, 'the command must not keep running after the lock was released');
   assert.ok(!existsSync(join(state, 'locks', 'chrome-measure.guard')));
 });
+
+test('run exports FW_LOCK_HELD=<resource>:<token>; a nested run re-enters without queueing and leaves the outer hold (incident I-005)', () => {
+  const lockFile = join(state, 'locks', 'chrome-measure.json');
+  // inner: another owner, another pid; it must run at once (--timeout 2 fails it otherwise)
+  const inner = `const fs = require('fs'); const h = JSON.parse(fs.readFileSync(${JSON.stringify(lockFile)}, 'utf8')); console.log('INNER ' + process.env.FW_LOCK_HELD + ' ' + h.owner);`;
+  const outer = `const { spawnSync } = require('child_process'); const fs = require('fs');
+    console.log('OUTER ' + process.env.FW_LOCK_HELD);
+    const r = spawnSync(process.execPath, [${JSON.stringify(LOCK)}, 'run', 'chrome-measure', '--owner', 'nested', '--timeout', '2', '--', process.execPath, '-e', ${JSON.stringify(inner)}], { stdio: 'inherit' });
+    console.log('NESTED EXIT ' + r.status);
+    console.log('AFTER ' + JSON.parse(fs.readFileSync(${JSON.stringify(lockFile)}, 'utf8')).owner);`;
+  const r = lock('run', 'chrome-measure', '--owner', 'outer', '--', process.execPath, '-e', outer);
+  assert.equal(r.code, 0, r.out);
+  const [, token] = r.stdout.match(/^OUTER chrome-measure:([0-9a-f]{12})$/m) || [];
+  assert.ok(token, r.out);
+  assert.match(r.stdout, new RegExp(`^INNER chrome-measure:${token} outer$`, 'm'), 'the inner command runs under the outer hold');
+  assert.match(r.stdout, /^NESTED EXIT 0$/m);
+  assert.match(r.stdout, /^AFTER outer$/m, 'the nested run must not release the outer hold');
+  assert.equal(holder('chrome-measure'), null);
+  assert.deepEqual(statusJson('chrome-measure').queue, []);
+});
+
+test('run with a forged, stale or other-resource FW_LOCK_HELD still queues behind the real holder', () => {
+  assert.equal(lock('acquire', 'chrome-measure', '--owner', 'busy').code, 0);
+  const token = holder('chrome-measure').token;
+  for (const held of ['chrome-measure:0123456789ab', `iphone:${token}`, `chrome-measure:${token}0`]) {
+    const r = node(LOCK, ['run', 'chrome-measure', '--owner', 'late', '--timeout', '1', '--', process.execPath, '-e', 'console.log("RAN")'], { env: { ...env, FW_LOCK_HELD: held } });
+    assert.equal(r.code, 1, `${held}: ${r.out}`);
+    assert.doesNotMatch(r.stdout, /RAN/);
+    assert.match(r.stderr, /timed out after 1 s; held by busy/);
+  }
+  assert.equal(holder('chrome-measure').owner, 'busy');
+  assert.deepEqual(statusJson('chrome-measure').queue, []);
+});
