@@ -109,15 +109,15 @@ Reading:
   complete; the probe only lost its final JSON write.
 
 iPhone 15 Pro Max (Safari 26.6, plain http, `iphone.mjs scroll`, scripted, alternating base/patched 3x each;
-patched = `nav-morph` = this fix + #3 `nav-hit-test`). Scroll phase, median [min-max]:
+patched = `nav-morph` = this fix + #3 `nav-hit-test`). Scroll phase, median [min-max]. These are rAF main-thread frame gaps, not scroll smoothness (W2):
 
 | iPhone scripted, n=3 | baseline | patched (nav-morph) |
 |---|---|---|
-| fps | 52.7 [52.6-53.9] | 52.5 [52.2-53.2] |
-| frames > 20 ms | 60 [57-63] | 59 [58-61] |
-| frames > 34 ms | 16 [14-17] | 17 [13-20] |
-| frames > 50 ms | 5 [3-7] | 7 [6-7] |
-| worst frame ms | 99 [96-119] | 101 [97-105] |
+| rAF rate (fps) | 52.7 [52.6-53.9] | 52.5 [52.2-53.2] |
+| rAF gaps > 20 ms | 60 [57-63] | 59 [58-61] |
+| rAF gaps > 34 ms | 16 [14-17] | 17 [13-20] |
+| rAF gaps > 50 ms | 5 [3-7] | 7 [6-7] |
+| worst rAF gap ms | 99 [96-119] | 101 [97-105] |
 
 Flat, as expected: the scripted scroll drives `scrollTo`, not touch, so it doesn't exercise the input path this
 fix changes (and the phone's main thread is not the bottleneck the way 6x Chrome is). Idle and bottom phases
@@ -130,7 +130,7 @@ end).
 | id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status |
 |---|---|---|---|---|---|---|---|---|
 | morph-scrolljack-passive/01 | listener modes off / passive / blocking (blocking only while morph active or platform end in view) | the compositor no longer waits for the main thread on touch/wheel in the 200 % zone | better (touchstart ack) / within noise (touchmove ack); behaviour equivalent | provisional (own CDP probe, host load not recorded, n=3) | zone touchstart ack 31.4 [27.5-35.7] -> 19.2 [17.9-24.1] ms; touchmove ack 41.3 -> 41.2 ms; morph expands 3/3, collapses 3/3 both | `variants/01.diff`; README "Before / after" probe table; `scratchpad/nav-morph/probe-1.log` | CDP touch acks appear to wait for main-thread dispatch even when passive, so Chrome can check equivalence but not the latency gain | on branch; finger test pending (user) |
-| morph-scrolljack-passive/02 | iPhone scripted scroll, `nav-morph` (#3 + #6) vs baseline, alternating 3 + 3 | per-frame cost on the phone | within noise | clean (phone-side, plain http) | scroll fps 52.7 [52.6-53.9] -> 52.5 [52.2-53.2]; frames >20 ms 60 [57-63] -> 59 [58-61] | `variants/02.diff` (combined #3 + #6 overlay); README iPhone table; out/iphone/nav-morph-*.json | `iphone.mjs scroll` scrolls by script, not touch: blind to input-handler changes (FINDINGS measurement lessons) | done |
+| morph-scrolljack-passive/02 | iPhone scripted scroll, `nav-morph` (#3 + #6) vs baseline, alternating 3 + 3 | main-thread per-frame cost on the phone | within noise | clean (phone-side, plain http) | main-thread frame gaps: rAF rate 52.7 [52.6-53.9] -> 52.5 [52.2-53.2]; frames >20 ms 60 [57-63] -> 59 [58-61] | `variants/02.diff` (combined #3 + #6 overlay); README iPhone table; out/iphone/nav-morph-*.json | `iphone.mjs scroll` scrolls by script, not touch: blind to input-handler changes (FINDINGS measurement lessons) | done |
 | morph-scrolljack-passive/03 | `filter: none` on `#platform` outside the morph | no permanent `blur(0)` layer on the platform section | abandoned | - | - | README "Risks"; no patch kept (not built here; large-area-blur measured its own `large-area-blur--platform-none` variant) | large-area-blur's iPhone check found no paint gain; changes the containing block / stacking of the section | dropped (large-area-blur / P4 owns blur(0)) |
 | morph-scrolljack-passive/04 | `@property --morph-fade { <number>; inherits: false; initial-value: 1 }` | the per-frame `--morph-fade` write in `S` stops restyling the section's descendants; morph-phase style time should drop | pending | - | - | `variants/04.diff` (= #01 + the `@property` rule) | only `.start-selling-platform` itself reads it (CSS 5392-5393) | in the overlay; A/B queued |
 
