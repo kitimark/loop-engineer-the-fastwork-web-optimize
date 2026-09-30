@@ -38,11 +38,23 @@
 // live holder's random token; a stale holder's token grants nothing. A re-entrant acquire never
 // changes the holder record or the queue, and its release (and exit) leaves the outer hold alone.
 // Nested in a short `run`, it is bounded by that run's --max-seconds too.
-import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync } from 'node:fs';
+//
+// Host admission gate (incident I-016, postmortem 2026-09-30 §3 (a)): for a gated resource
+// (chrome-measure), the waiter served next that is a *normal* job is granted only when the host is quiet
+// (tools/lib/host.mjs quiet(): CPU <= 20 % busy over a >= 10 s window, load1 <= 6, memory pressure
+// normal). Until then it keeps its place (the queue entry records `gate: {since, at, reasons, load1,
+// busyPct, pressure}`) and samples the host. Short jobs are exempt: they may be granted while the head
+// normal waiter waits for quiet. After THRESHOLDS.gateMaxWaitSec (600 s; env FW_GATE_MAX_WAIT) the
+// waiter is granted anyway: the holder record gets `gateTimeout: true`, a line goes to
+// locks/host-alerts.log, and verify.mjs marks every run of that hold contaminated. Every gated grant
+// records `gate: {quiet, waitedSec, reasons, load1, busyPct, sysPct, pressure}` in the holder. The host
+// sample is passed in by the caller (tryAcquire's `host`); acquire() and `lock.mjs acquire` take it.
+import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { sharedStateDir, REPO } from './paths.mjs';
+import { THRESHOLDS, sample, quiet } from './host.mjs';
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -57,6 +69,10 @@ const lastGrantFile = (r) => join(lockDir(), `${r}.last-grant.json`);
 export const SHORT_MAX_SEC = 300;
 const SHORT_QUEUE_TTL_SEC = 60;
 export const SHORT_DRAIN_SEC = 300; // a run of back-to-back short jobs ends within this (incident I-011)
+/** Resources whose normal waiters pass the host admission gate (I-016). */
+export const GATED = Object.freeze({ 'chrome-measure': true });
+export const hostAlertsFile = () => join(lockDir(), 'host-alerts.log');
+const GATE_FRESH_MS = 60000; // a waiter's gate record counts as "waiting for quiet" while refreshed within this
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
 /** Parse FW_LOCK_HELD ("<resource>:<token>,...") into {resource: token}. */
@@ -154,14 +170,20 @@ function nextIndex(q, lg, now = Date.now()) {
   return now - start + (q[s].maxSec || SHORT_MAX_SEC) * 1000 <= SHORT_DRAIN_SEC * 1000 ? s : n;
 }
 
+/** The head normal waiter is held back by the host gate right now (so short jobs may pass it). */
+function gateHolding(w, now) { return !!(w && !w.short && w.gate && w.gate.quiet !== true && now - Date.parse(w.gate.at) < GATE_FRESH_MS); }
+
 /**
- * One acquisition attempt. Returns {ok:true, holder} or {ok:false, holder, position, queue, next}.
- * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held}
+ * One acquisition attempt. Returns {ok:true, holder} or {ok:false, holder, position, queue, next, gated}.
+ * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held, host, thresholds}
  * `held`: an FW_LOCK_HELD string; a token matching the live holder re-enters it ({reentrant, inherited}).
+ * `host`: for a GATED resource, the caller's latest host reading {quiet: true|false|null, reasons, sample}
+ * (null quiet = not measured yet). Omitted: no gate (library callers that don't sample). A normal waiter
+ * whose turn it is gets {ok:false, gated:true, gate} until host.quiet, or until the gate times out.
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec, held } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec, held, host, thresholds: T = THRESHOLDS } = opts;
   let { ttlSec, queueTtlSec = 600 } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
   if (short) {
@@ -193,14 +215,34 @@ export async function tryAcquire(r, opts) {
     const lg = readJson(lastGrantFile(r), {});
     const seen = effectiveLastGrant(lg, h);
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
-    const headOk = q.length === 0 || mine === nextIndex(q, seen, now);
+    const ni = q.length ? nextIndex(q, seen, now) : -1;
+    // short jobs are exempt from the host gate: the first short waiter may pass a head normal waiter held by it
+    const headOk = q.length === 0 || mine === ni || (short && GATED[r] && gateHolding(q[ni], now) && mine === q.findIndex((w) => w.short));
+    let gateRec;
+    if (!h && headOk && GATED[r] && !short && host !== undefined) {
+      const since = (mine >= 0 && q[mine].gate?.since) || new Date(now).toISOString();
+      const waitedSec = Math.round((now - Date.parse(since)) / 1000);
+      const x = host?.sample || {};
+      const g = { since, at: new Date(now).toISOString(), quiet: host?.quiet ?? null, reasons: host?.reasons || [], load1: x.load1 ?? null, busyPct: x.busyPct ?? null, sysPct: x.sysPct ?? null, pressure: x.pressureMax ?? x.pressure ?? null, ...(x.stub ? { stub: x.stub } : {}) };
+      if (host?.quiet === true) gateRec = { quiet: true, waitedSec, reasons: [], load1: g.load1, busyPct: g.busyPct, sysPct: g.sysPct, pressure: g.pressure, ...(x.stub ? { stub: x.stub } : {}) };
+      else if (now - Date.parse(since) >= T.gateMaxWaitSec * 1000) gateRec = { quiet: false, timeout: true, waitedSec, reasons: g.reasons, load1: g.load1, busyPct: g.busyPct, sysPct: g.sysPct, pressure: g.pressure, ...(x.stub ? { stub: x.stub } : {}) };
+      else {
+        // not quiet (or not measured yet): keep the head place, record why for `status`
+        const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, gate: g };
+        if (mine >= 0) q[mine] = entry; else q.push(entry);
+        writeJson(queueFile(r), q);
+        return { ok: false, gated: true, gate: g, holder: null, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: owner };
+      }
+    }
     if (!h && headOk) {
       h = {
         resource: r, owner, kind, pid: kind === 'process' ? pid : undefined, token: randomBytes(6).toString('hex'),
         checkout: REPO, host: os.hostname(), acquiredAt: new Date(now).toISOString(),
         expiresAt: ttlSec ? new Date(now + ttlSec * 1000).toISOString() : undefined, meta,
         ...(short ? { short: true, maxSec } : {}),
+        ...(gateRec ? { gate: gateRec, ...(gateRec.timeout ? { gateTimeout: true } : {}) } : {}),
       };
+      if (gateRec?.timeout) { try { appendFileSync(hostAlertsFile(), JSON.stringify({ at: h.acquiredAt, resource: r, owner, event: 'gate-timeout', ...gateRec }) + '\n'); } catch {} }
       writeJson(holderFile(r), h);
       const runStart = short ? new Date(shortRunStart(seen, now) ?? now).toISOString() : undefined;
       writeJson(lastGrantFile(r), { owner, short, maxSec, at: h.acquiredAt, token: h.token, runStart });
@@ -209,12 +251,23 @@ export async function tryAcquire(r, opts) {
       return { ok: true, holder: h };
     }
     // busy (or someone else is served first): join / refresh the queue
-    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}) };
+    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}),
+      // a gate wait survives a short job granted in between, so short jobs can't stretch the gate's cap
+      ...(mine >= 0 && q[mine].gate ? { gate: q[mine].gate } : {}) };
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     writeJson(queueFile(r), q);
     return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, seen, now)].owner };
   });
+}
+
+/**
+ * The host reading for a gated waiter whose turn it is: one quiet() window (default 10 s) through
+ * tools/lib/host.mjs, so the host is judged while the lock is free (the window restarts at every try).
+ */
+export async function gateSample({ thresholds: T = THRESHOLDS, samplers } = {}) {
+  const x = await sample({ windowSec: T.quietMinWindowSec, samplers });
+  return { ...quiet(x, T), sample: x };
 }
 
 /** Leave the queue without acquiring (e.g. an agent gives up waiting). */
@@ -255,11 +308,24 @@ export async function renew(r, { owner, ttlSec }) {
  * $FW_LOCK_HELD) returns at once, and its release() is a no-op: the outer holder releases.
  * Returns {holder, release(), reentrant}.
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, held = process.env.FW_LOCK_HELD, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s) } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, held = process.env.FW_LOCK_HELD, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers } = {}) {
   const t0 = Date.now();
   let lastLog = 0, wait = pollMs;
+  const gated = !!GATED[r] && !short;
+  let host = gated ? { quiet: null, reasons: ['not measured yet'] } : undefined;
   for (;;) {
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held });
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T });
+    if (res.gated) {
+      // our turn, but the host is not (known to be) quiet: measure one window, then try again at once
+      if (host.quiet === false && Date.now() - lastLog > 30000) {
+        log(`[lock ${r}] free, but the host is not quiet (${host.reasons.join(', ')}); waiting since ${res.gate.since}, granted anyway after ${T.gateMaxWaitSec} s`);
+        lastLog = Date.now();
+      }
+      if (Date.now() - t0 > timeoutSec * 1000) { await dequeue(r, owner); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s waiting for a quiet host`); }
+      host = await gateSample({ thresholds: T, samplers: hostSamplers });
+      continue;
+    }
+    if (gated) host = { quiet: null, reasons: ['not measured yet'] }; // the window restarts at the next hand-over
     if (res.ok && res.reentrant) return { holder: res.holder, release: () => {}, reentrant: true };
     if (res.ok) {
       if (Date.now() - t0 > 1500) log(`[lock ${r}] acquired after ${Math.round((Date.now() - t0) / 1000)} s`);

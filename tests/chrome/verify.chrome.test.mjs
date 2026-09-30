@@ -11,6 +11,8 @@ import { tempDir, nodeAsync, tool, startServe, startProc, run, sleep, REPO } fro
 import { makeFixtureHome, VENDOR_KEY, PAGE_JS } from '../fixtures/baseline.mjs';
 
 const OWNER = `test-chrome-${process.pid}`;
+// the real host (not tests/fixtures/fake-host.mjs), with a short gate cap: the numbers don't matter here, the samplers do
+const REAL_HOST = { FW_TEST_HOST: '', FW_GATE_MAX_WAIT: '60' };
 const common = run('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: REPO }).stdout.trim();
 const LOCKFILE = join(common, 'fastwork-mirror', 'locks', 'chrome-measure.json');
 const holder = () => { try { return JSON.parse(readFileSync(LOCKFILE, 'utf8')); } catch { return null; } };
@@ -23,7 +25,7 @@ before(async () => {
 after(() => srv?.stop());
 
 test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', async () => {
-  const p = nodeAsync(tool('verify.mjs'), [`fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out'), '--result', join(d, 'r.json'), '--profile', join(d, 'profile'), '--owner', OWNER], { timeout: 600000 });
+  const p = nodeAsync(tool('verify.mjs'), [`fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out'), '--result', join(d, 'r.json'), '--profile', join(d, 'profile'), '--owner', OWNER, '--max-wait', '10'], { env: REAL_HOST, timeout: 600000 });
   let seen = null, done = false;
   p.then(() => (done = true));
   while (!done) { const h = holder(); if (h?.owner === OWNER) seen = h; await sleep(200); }
@@ -52,12 +54,22 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
   assert.ok(x.scripts.includes('/__vendor/' + VENDOR_KEY), 'CF beacon rewritten to the local vendor copy');
   assert.deepEqual(x.notFound, []);
   assert.deepEqual(x.errors.filter((e) => /integrity|digest/i.test(e)), [], 'vendor script passed SRI (served from site/, not site-pretty/)');
+  // host record from the real samplers (I-017): the measured Chrome's process tree used CPU in every phase
+  assert.equal(x.host.stub, undefined);
+  for (const [ph, p] of Object.entries(x.host.phases)) {
+    for (const k of ['windowSec', 'busyPct', 'sysPct', 'chromeCpuPct', 'otherBusyPct', 'load1Start']) assert.equal(typeof p[k], 'number', `host.phases.${ph}.${k}`);
+    assert.ok(p.chromeCpuPct > 0, `${ph}: Chrome tree CPU ${p.chromeCpuPct} %`);
+    assert.ok(p.busyPct >= p.chromeCpuPct - 2, `${ph}: host busy ${p.busyPct} % >= Chrome ${p.chromeCpuPct} %`);
+    if (process.platform === 'darwin') assert.ok([1, 2, 4].includes(p.pressureMax));
+  }
+  assert.equal(typeof x.host.loadInvalid, 'boolean');
+  assert.equal(x.host.recheck.windows >= 1, true);
   assert.deepEqual(Object.keys(x.origins).filter((o) => !/^https:\/\/localhost:\d+/.test(o) && !o.startsWith('data:')), [], 'no request left the machine');
 });
 
 test('verify.mjs: SIGTERM mid-run releases the lock and closes the dedicated Chrome', async () => {
   const profile = join(d, 'profile-kill');
-  const v = await startProc(process.execPath, [tool('verify.mjs'), `fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out2'), '--profile', profile, '--owner', OWNER + '-kill'], { ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 600000 });
+  const v = await startProc(process.execPath, [tool('verify.mjs'), `fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out2'), '--profile', profile, '--owner', OWNER + '-kill', '--max-wait', '0'], { env: REAL_HOST, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 600000 });
   const chromeUp = () => run('pgrep', ['-f', `user-data-dir=${profile}`]).stdout.trim();
   assert.ok(chromeUp(), 'Chrome is running with the dedicated profile');
   await v.stop('SIGTERM');

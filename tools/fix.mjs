@@ -13,6 +13,9 @@
 //   node tools/fix.mjs serve <topic> [-- serve.mjs args]  # baseline + overlay on a per-worktree port
 //   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--idle 6] [--no-screens] [-- serve.mjs args]
 //   node tools/fix.mjs ab --aa [--runs 5]             # baseline vs baseline: the noise floor
+//   ab host guard (I-017): [--max-wait 60] [--max-load 6] [--max-busy 20] go to verify.mjs (recheck before
+//                  each run); a run started at load1 > 10, other CPU > 25 %, memory pressure >= warn or
+//                  after a gate-timeout grant contaminates the result: verdicts get "CONTAMINATED (host): "
 //   --on <other>   (edit, diff, serve, ab) stack this fix on another fix's overlay, e.g. a combined wave:
 //                  edit copies from <other>'s overlay, diff is against it, ab compares <other> vs <other>+this
 //
@@ -35,7 +38,7 @@ const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const passthrough = dd >= 0 ? argv.slice(dd + 1) : null;
-const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on'];
+const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on', '--max-wait', '--max-load', '--max-busy'];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
@@ -328,11 +331,39 @@ function stats(results, vp, labelA, labelB) {
   }
   return out;
 }
+/** Host state of an A/B from verify's per-run records (tools/lib/host.mjs classifyRun). */
+function hostSummary(v) {
+  const rs = v.results.filter((r) => !r.diff);
+  const loads = rs.filter((r) => r.loadavg1).flatMap((r) => [r.loadavg1.before, r.loadavg1.after]).filter((x) => x != null);
+  const withHost = rs.filter((r) => r.host);
+  const invalid = withHost.filter((r) => r.host.loadInvalid), warn = withHost.filter((r) => !r.host.loadInvalid && r.host.loadWarn);
+  const other = withHost.map((r) => r.host.phases?.scroll?.otherBusyPct).filter((x) => x != null);
+  return {
+    ...v.host,
+    loadavg1Min: loads.length ? r1(Math.min(...loads)) : null, loadavg1Max: loads.length ? r1(Math.max(...loads)) : null,
+    otherCpuPctMax: other.length ? Math.max(...other) : null,
+    recorded: withHost.length === rs.length, // false: verify.mjs from before I-017, no host record
+    contaminated: invalid.length > 0, contaminatedRuns: invalid.length, runsTotal: rs.length,
+    invalidRuns: invalid.map((r) => ({ label: r.label, run: r.run, reasons: r.host.reasons })),
+    warnRuns: warn.map((r) => ({ label: r.label, run: r.run, warnings: r.host.warnings })),
+  };
+}
+const CONTAMINATED = 'CONTAMINATED (host): ';
+function hostLine(h) {
+  const range = `load1 ${h.loadavg1Min}-${h.loadavg1Max}, other CPU max ${h.otherCpuPctMax ?? '?'} %`;
+  const why = (xs, k) => [...new Set(xs.flatMap((x) => x[k]))].join('; ');
+  if (!h.recorded) return `host: not recorded (verify.mjs without the I-017 host record); ${range}`;
+  let s = h.contaminated ? `**host: ${h.contaminatedRuns} of ${h.runsTotal} runs contaminated (${why(h.invalidRuns, 'reasons')}); verdicts provisional** (${range})` : `host: 0 of ${h.runsTotal} runs contaminated (${range})`;
+  if (h.warnRuns.length) s += `; ${h.warnRuns.length} warn: ${why(h.warnRuns, 'warnings')} (absolute numbers not comparable with an A/A floor from a quiet host)`;
+  if (h.stub) s += ` [host STUBBED: ${h.stub}]`;
+  return s;
+}
 function markdown(metrics, cfg) {
   const rows = [`| ${cfg.viewport} ${cfg.cpu}x, n=${cfg.runs} | baseline median [min-max] | patched median [min-max] | delta | verdict |`, '|---|---|---|---|---|'];
   for (const [phase, ms] of Object.entries(metrics)) for (const v of Object.values(ms)) {
     rows.push(`| ${phase}: ${v.name} | ${v.baseline.median} [${v.baseline.min}-${v.baseline.max}] | ${v.patched.median} [${v.patched.min}-${v.patched.max}] | ${v.delta > 0 ? '+' : ''}${v.delta}${v.deltaPct != null ? ` (${v.deltaPct > 0 ? '+' : ''}${v.deltaPct}%)` : ''} | ${v.verdict} |`);
   }
+  if (cfg.host) rows.push('', hostLine(cfg.host));
   return rows.join('\n');
 }
 
@@ -376,7 +407,8 @@ async function cmdAb(t) {
   }
 
   const verifyFile = join(outDir, 'verify.json');
-  const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--idle', String(idle), '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : [])];
+  const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--idle', String(idle), '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : []),
+    ...['max-wait', 'max-load', 'max-busy'].flatMap((k) => (opt(k) !== undefined ? [`--${k}`, String(opt(k))] : []))];
   verifyProc = spawn(process.execPath, vArgs, { stdio: 'inherit' });
   const code = await new Promise((res) => verifyProc.on('exit', (c) => res(c)));
   kill();
@@ -397,8 +429,10 @@ async function cmdAb(t) {
     screenshotDiffPct: Object.fromEntries(v.results.filter((r) => r.diff).map((r) => [r.shot, r.diffPct ?? r.error])),
     morphReached: { baseline: runsOf(lb).map((r) => /is-morph/.test(r.morphState || '')), patched: runsOf(lf).map((r) => /is-morph/.test(r.morphState || '')) },
   };
-  const loads = v.results.filter((r) => r.loadavg1).map((r) => r.loadavg1.before);
-  const cfg = { cpu, viewport, runs, idle, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), stackedOn: ON, order: 'ABBA (alternating per run)' };
+  const host = hostSummary(v);
+  if (host.contaminated) for (const ms of Object.values(metrics)) for (const x of Object.values(ms)) x.verdict = CONTAMINATED + x.verdict;
+  const cfg = { cpu, viewport, runs, idle, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), stackedOn: ON, order: 'ABBA (alternating per run)',
+    hostThresholds: v.host.thresholds ?? null, hostRecheck: v.host.recheck ?? null };
   const result = {
     topic, kind: aa ? 'A/A noise floor' : 'A/B', createdAt: new Date().toISOString(),
     git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD'), checkout: checkoutId() },
@@ -406,17 +440,17 @@ async function cmdAb(t) {
     patch: patchInfo ? { file: relative(REPO, patchInfo.file), sha256: sha256File(patchInfo.file), files: patchInfo.files, added: patchInfo.add, removed: patchInfo.del } : null,
     servedCheck: served,
     metrics, regressions,
-    host: { ...v.host, loadavg1Min: r1(Math.min(...loads)), loadavg1Max: r1(Math.max(...loads)) },
+    host,
     raw: relative(REPO, verifyFile),
   };
-  result.markdown = markdown(metrics, cfg);
+  result.markdown = markdown(metrics, { ...cfg, host });
   const resFile = aa ? join(outDir, 'results-aa.json') : join(topicDir(t), 'results.json');
   writeFileSync(resFile, JSON.stringify(result, null, 1));
   console.log('\n' + result.markdown + '\n');
   if (regressions.newErrors.length) console.log('NEW ERRORS on the patched page:\n  ' + regressions.newErrors.join('\n  '));
   if (regressions.new404s.length) console.log('NEW 404s on the patched page: ' + regressions.new404s.join(', '));
   console.log(`screenshot diff patched vs baseline (% pixels): ${JSON.stringify(regressions.screenshotDiffPct)}  (0-0.4 % is countdown/orbit phase noise)`);
-  console.log(`host load avg during runs: ${result.host.loadavg1Min}-${result.host.loadavg1Max}`);
+  console.log(hostLine(host));
   console.log(`wrote ${relative(REPO, resFile)} (raw: ${result.raw})`);
 }
 

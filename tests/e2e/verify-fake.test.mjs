@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, tool, TESTS, sleep, startProc } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, tool, TESTS, sleep, startProc, FAKE_HOST } from '../helpers.mjs';
 import { LOGGER, RESET, COLLECT, COLLECT_AT } from '../../tools/lib/perf-page.mjs';
 
 const FAKE = join(TESTS, 'fixtures', 'fake-chrome.mjs');
@@ -72,10 +72,11 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
   assert.deepEqual(res.viewports, ['mobile']);
   assert.equal(res.runs, 1);
   assert.deepEqual(res.targets, [{ label: 'a', url: 'http://127.0.0.1:9/' }]);
-  assert.deepEqual(Object.keys(res.host).sort(), ['cpus', 'loadavg', 'model']);
+  assert.deepEqual(Object.keys(res.host).sort(), ['contaminated', 'contaminatedRuns', 'cpus', 'gate', 'loadavg', 'model', 'recheck', 'runsTotal', 'stub', 'thresholds', 'warnRuns']);
+  assert.equal(res.host.stub, FAKE_HOST, 'the tests run on the fake host, and the result says so');
   assert.equal(res.results.length, 1);
   const r = res.results[0];
-  assert.deepEqual(Object.keys(r).sort(), ['errors', 'idleSummary', 'label', 'loadavg1', 'morphState', 'morphSummary', 'notFound', 'origins', 'requests', 'run', 'scripts', 'scroll', 'scrollSummary', 'shimStats', 'shots', 'state', 'url', 'viewport'].sort());
+  assert.deepEqual(Object.keys(r).sort(), ['errors', 'host', 'idleSummary', 'label', 'loadavg1', 'morphState', 'morphSummary', 'notFound', 'origins', 'requests', 'run', 'scripts', 'scroll', 'scrollSummary', 'shimStats', 'shots', 'state', 'url', 'viewport'].sort());
   assert.equal(r.viewport, 'mobile');
   assert.equal(r.run, 0);
   assert.equal(r.morphState, 'start-selling-top-nav is-morph');
@@ -226,4 +227,87 @@ test('browser crash mid-run: verify.mjs fails fast (no hang) and releases the lo
   assert.match(r.stderr, /CDP connection closed/);
   assert.ok(Date.now() - t0 < 30000, 'failed fast');
   assert.equal(holder(env.FW_STATE_DIR), null, 'lock released');
+});
+
+// ---- host record, contamination flags, recheck before each run (incident I-017) -----------------------
+test('host record per run and phase on a quiet host: CPU busy/sys, Chrome tree, other CPU, load, pressure; clean', async () => {
+  const { d, env, args } = setup();
+  // fake host: 10 % busy, the measured Chrome tree 0.4 of 8 cores = 5 % -> other CPU 5 %
+  const r = await nodeAsync(VERIFY, args('hostrec', ['--idle', '1']), { env: { ...env, FAKE_HOST_BUSY: '0.1', FAKE_HOST_LOAD1: '3.5' } });
+  assert.equal(r.code, 0, r.out);
+  const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  const h = res.results[0].host;
+  assert.deepEqual(Object.keys(h).sort(), ['freeMemMB', 'freeMemMBEnd', 'gate', 'load1End', 'load1Start', 'loadInvalid', 'loadWarn', 'phases', 'reasons', 'recheck', 'stub', 'warnings']);
+  assert.deepEqual(Object.keys(h.phases), ['idle', 'scroll', 'morph']);
+  for (const [name, p] of Object.entries(h.phases)) {
+    assert.ok(p.windowSec > 0, `${name} window ${p.windowSec}`);
+    assert.deepEqual({ busy: p.busyPct, sys: p.sysPct, chrome: p.chromeCpuPct, other: p.otherBusyPct, src: p.otherSource, l0: p.load1Start, l1: p.load1End, pr: p.pressureMax },
+      { busy: 10, sys: 3, chrome: 5, other: 5, src: 'host - Chrome tree', l0: 3.5, l1: 3.5, pr: 1 }, name);
+    assert.ok(p.decompPerSec >= 5 && p.decompPerSec <= 15, `${name} decompressions/s ${p.decompPerSec}`);
+  }
+  assert.ok(h.phases.idle.windowSec >= 1 && h.phases.idle.windowSec < 3, 'idle window = the 1 s idle phase');
+  assert.deepEqual([h.load1Start, h.load1End, h.loadInvalid, h.loadWarn, h.reasons, h.warnings], [3.5, 3.5, false, false, [], []]);
+  // the lock's host gate (I-016) admitted this hold on a quiet reading; verify copies the holder's record
+  assert.deepEqual({ ...h.gate, stub: undefined }, { quiet: true, waitedSec: 0, reasons: [], load1: 3.5, busyPct: 10, sysPct: 3, pressure: 1, stub: undefined, gateTimeout: false });
+  assert.deepEqual(res.host.gate, h.gate);
+  assert.deepEqual(res.results[0].loadavg1, { before: 3.5, after: 3.5 }, 'legacy loadavg1 comes from the same (stubbed) reading');
+  assert.equal(h.recheck.quiet, true);
+  assert.equal(h.recheck.windows, 1, 'a quiet host passes the first 10 s window');
+  assert.deepEqual([res.host.contaminated, res.host.contaminatedRuns, res.host.warnRuns, res.host.runsTotal], [false, 0, 0, 1]);
+  assert.deepEqual(res.host.recheck, { maxWaitSec: 60, maxLoad1: 6, maxBusyPct: 20 });
+  assert.equal(res.host.thresholds.invalidLoad1, 10);
+  assert.match(r.stdout, /host: load1 3\.5, other CPU 5 %\n/);
+  assert.match(r.stdout, /^host: 0 of 1 runs contaminated {2}\[host STUBBED: .*fake-host\.mjs\]$/m);
+});
+
+test('contaminated runs: load1 > 10 at run start, other CPU > 25 %, memory pressure warn; load1 > 6 only warns', async () => {
+  const cases = [
+    [{ FAKE_HOST_LOAD1: '12' }, true, ['load1 12 > 10 at run start'], []],
+    [{ FAKE_HOST_BUSY: '0.4' }, true, ['other CPU 35 % > 25 %'], []],
+    [{ FAKE_HOST_PRESSURE: '2' }, true, ['mem pressure warn'], []],
+    [{ FAKE_HOST_LOAD1: '7' }, false, [], ['load1 7 > 6 at run start']],
+    [{ FAKE_HOST_BUSY: '0.22' }, false, [], ['other CPU 17 % > 15 %']],
+  ];
+  await Promise.all(cases.map(async ([fake, invalid, reasons, warnings]) => {
+    const { d, env, args } = setup();
+    // --no-lock: this is about the run record, not the lock's gate (which would hold a busy host back, I-016)
+    const r = await nodeAsync(VERIFY, args('dirty', ['--idle', '0', '--max-wait', '0', '--no-lock']), { env: { ...env, ...fake } });
+    assert.equal(r.code, 0, r.out);
+    const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+    const h = res.results[0].host;
+    assert.deepEqual([h.loadInvalid, h.reasons, h.warnings], [invalid, reasons, warnings], JSON.stringify(fake));
+    assert.equal(h.recheck, null, '--max-wait 0: no recheck');
+    assert.equal(res.host.contaminated, invalid);
+    if (invalid) assert.match(r.stdout, new RegExp(`CONTAMINATED: ${reasons[0]}`));
+    if (invalid) assert.match(r.stdout, /^host: 1 of 1 runs contaminated \(.*\): verdicts provisional/m);
+    else assert.match(r.stdout, /^host: 0 of 1 runs contaminated; 1 warn/m);
+  }));
+});
+
+test('recheck before each run: waits (holding the lock) until the host is quiet, or runs anyway after --max-wait and says so', async () => {
+  // busy 60 % for the first 25 s of (fake) time, then quiet: two failed 10 s windows, then quiet
+  const A = setup();
+  const ra = await nodeAsync(VERIFY, A.args('rewait', ['--idle', '0', '--no-lock']), { env: { ...A.env, FAKE_HOST_BUSY: '0.6:25000,0.05' } });
+  assert.equal(ra.code, 0, ra.out);
+  const ha = JSON.parse(readFileSync(join(A.d, 'result.json'), 'utf8')).results[0].host;
+  assert.equal(ha.recheck.quiet, true);
+  assert.ok(ha.recheck.windows >= 2 && ha.recheck.windows <= 3, `windows ${ha.recheck.windows}`);
+  assert.match(ra.stdout, /\(waited \d+(\.\d)? s for a quiet host\)/);
+  assert.deepEqual([ha.loadInvalid, ha.loadWarn], [false, false]);
+  // never quiet: gives up after --max-wait 30 (3 windows), measures anyway, flags a warning (and the busy phases)
+  const B = setup();
+  const rb = await nodeAsync(VERIFY, B.args('regive', ['--idle', '0', '--max-wait', '30', '--max-busy', '50', '--no-lock']), { env: { ...B.env, FAKE_HOST_BUSY: '0.6' } });
+  assert.equal(rb.code, 0, rb.out);
+  const resB = JSON.parse(readFileSync(join(B.d, 'result.json'), 'utf8'));
+  const hb = resB.results[0].host;
+  assert.deepEqual([hb.recheck.quiet, hb.recheck.windows, hb.recheck.waitedSec, hb.recheck.reasons], [false, 3, 30, ['cpu 60 % > 50 %']]);
+  assert.ok(hb.warnings.includes('host not quiet after the recheck before the run'));
+  assert.ok(hb.reasons.includes('other CPU 55 % > 25 %'));
+  assert.deepEqual(resB.host.recheck, { maxWaitSec: 30, maxLoad1: 6, maxBusyPct: 50 });
+  assert.match(rb.stdout, /\(host not quiet after 30 s: cpu 60 % > 50 %; measuring anyway\)/);
+  assert.equal(resB.results[0].scrollSummary.frames, 54, 'the run was measured, not skipped');
+  // bad values
+  const bad = node(VERIFY, B.args('bad', ['--max-wait', 'x']), { env: B.env });
+  assert.equal(bad.code, 2);
+  assert.match(bad.stderr, /--max-wait must be a number >= 0/);
 });

@@ -44,8 +44,16 @@
 // entry keeps its `since` and records movedBy/movedAt (status: "moved by lead"). Positions are the live
 // queue as status shows it. Waiters keep their entries (and pids) and are granted in the new order; the
 // short lane still serves queued short jobs first within its drain budget (I-007/I-011).
+//
+// Host gate (I-016): a normal waiter of chrome-measure whose turn it is is granted only on a quiet host
+// (lib/host.mjs quiet(): CPU <= 20 % over 10 s, load1 <= 6, memory pressure normal), or after 600 s
+// anyway (holder `gateTimeout: true`, a line in locks/host-alerts.log; verify.mjs marks those runs
+// contaminated). Short jobs are exempt. `acquire` samples one 10 s window when it is its turn, so a
+// single acquire may take ~10 s; BUSY then says "host not quiet". `status` samples the host for 3 s and
+// prints a host line with the gate state (--no-host skips it).
 import { spawn } from 'node:child_process';
-import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES } from './lib/lock.mjs';
+import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample } from './lib/lock.mjs';
+import { sample, describe, THRESHOLDS } from './lib/host.mjs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
 
 const argv = process.argv.slice(2);
@@ -72,6 +80,18 @@ function fmt(s) {
 const moved = (w) => (w.movedBy ? `, moved by ${w.movedBy}` : '');
 const fmtQueue = (q) => q.map((w, i) => `${i + 1}. ${w.owner}${w.short ? ` (short, max ${w.maxSec} s, since ${w.since}${moved(w)})` : ` (since ${w.since}${moved(w)})`}`).join(', ');
 
+/** host: load1 30.4 | cpu 68 % busy (sys 33 %) over 3 s | mem pressure warn | gate CLOSED (...) since ... */
+function hostLine(host, list) {
+  const gates = list.filter((s) => GATED[s.resource]).map((s) => {
+    const w = s.queue.find((x) => x.gate && x.gate.quiet !== true && Date.now() - Date.parse(x.gate.at) < 60000);
+    if (w) return `${s.resource} gate CLOSED for "${w.owner}" (${w.gate.reasons.join(', ') || 'measuring'}) since ${w.gate.since}, opens when quiet or after ${THRESHOLDS.gateMaxWaitSec} s`;
+    const h = s.holder && !s.stale ? s.holder : null;
+    if (h?.gateTimeout) return `${s.resource} held after a gate TIMEOUT (host was not quiet: runs contaminated)`;
+    return `${s.resource} gate open`;
+  });
+  return `host: ${describe(host)}${gates.length ? ' | ' + gates.join(' | ') : ''}`;
+}
+
 function fmtProblem(p, withValues) {
   let s = `  - [${p.code}] ${p.file}: ${p.message}\n    fix: ${p.fix}`;
   if (withValues) s += `\n    before: ${JSON.stringify(p.before)}\n    after:  ${JSON.stringify(p.after)}`;
@@ -87,7 +107,10 @@ async function main() {
   if (!cmd || cmd === 'help' || flag('help')) { console.log(Object.entries(RESOURCES).map(([k, v]) => `  ${k}: ${v}`).join('\n')); console.log('\nsee header of tools/lock.mjs for usage'); return 0; }
   if (cmd === 'status') {
     const list = resource ? [status(resource)] : allStatus();
-    if (flag('json')) console.log(JSON.stringify(list, null, 1)); else for (const s of list) console.log(fmt(s));
+    const host = flag('no-host') ? null : await sample({ windowSec: 3 });
+    if (flag('json')) { console.log(JSON.stringify(host ? list.map((s) => (GATED[s.resource] ? { ...s, host } : s)) : list, null, 1)); return 0; }
+    for (const s of list) console.log(fmt(s));
+    if (host) console.log(hostLine(host, list));
     return 0;
   }
   if (cmd === 'doctor') {
@@ -129,16 +152,25 @@ async function main() {
   if (cmd === 'acquire') {
     const ttlSec = Number(opt('ttl', resource === 'iphone' ? 900 : 0)) || undefined;
     const waitSec = Number(opt('wait', 0));
-    let res = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec });
+    // gated resource, normal lease: pass the latest host reading; when it is our turn, measure one window and retry
+    let host = GATED[resource] && !short ? { quiet: null, reasons: ['not measured yet'] } : undefined;
+    const attempt = async () => {
+      let r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host });
+      if (r.gated) { host = await gateSample(); r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host }); }
+      else if (host) host = { quiet: null, reasons: ['not measured yet'] };
+      return r;
+    };
+    let res = await attempt();
     const t0 = Date.now();
     let pause = short ? 1000 : 5000;
     while (!res.ok && (Date.now() - t0) / 1000 < waitSec) {
-      await new Promise((r) => setTimeout(r, Math.min(pause, waitSec * 1000 - (Date.now() - t0) + 10)));
+      if (!res.gated) await new Promise((r) => setTimeout(r, Math.min(pause, waitSec * 1000 - (Date.now() - t0) + 10)));
       pause = Math.min(short ? 3000 : 30000, pause * 1.5);
-      res = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec });
+      res = await attempt();
     }
-    if (res.ok) { console.log(`ACQUIRED ${resource} for "${owner}"${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}${res.reentrant ? ' (renewed)' : ''}${sh(res.holder)}`); console.log(JSON.stringify(res.holder, null, 1)); return 0; }
-    const who = res.holder ? `held by "${res.holder.owner}" since ${res.holder.acquiredAt}${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}` : `free, but "${res.next}" is next`;
+    if (res.ok) { console.log(`ACQUIRED ${resource} for "${owner}"${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}${res.reentrant ? ' (renewed)' : ''}${sh(res.holder)}${res.holder.gateTimeout ? ' after a host-gate TIMEOUT: the host was not quiet, measurements in this hold are contaminated' : ''}`); console.log(JSON.stringify(res.holder, null, 1)); return 0; }
+    const who = res.holder ? `held by "${res.holder.owner}" since ${res.holder.acquiredAt}${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}`
+      : res.gated ? `free, but the host is not quiet (${res.gate.reasons.join(', ')}; waiting since ${res.gate.since}, granted anyway after ${THRESHOLDS.gateMaxWaitSec} s)` : `free, but "${res.next}" is next`;
     console.log(`BUSY ${resource}: ${who}. You ("${owner}") are #${res.position} in the queue; run acquire again within 10 min to keep your place.`);
     return 3;
   }

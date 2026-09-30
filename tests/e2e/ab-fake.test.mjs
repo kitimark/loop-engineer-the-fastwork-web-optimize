@@ -28,9 +28,11 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   // Both runs share one lock dir, as in real use: they serialize through chrome-measure (they also share
   // the checkout's Chrome profile dir, so running them unserialized would make them fight over one browser).
   const envB = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'ab.jsonl') };
-  const envA = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'aa.jsonl') };
+  // the A/A runs on a loaded (fake) host: load1 12 > 10 contaminates every run (I-017)
+  const envA = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'aa.jsonl'), FAKE_HOST_LOAD1: '12',
+    FW_GATE_MAX_LOAD1: '20' }; // ... which the lock's host gate (I-016) admits only with its load1 limit raised
   const [ab, aa] = await Promise.all([
-    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens'], { cwd: repo.wt, env: envB }),
+    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens', '--max-wait', '20'], { cwd: repo.wt, env: envB }),
     nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', '--aa', '--runs', '1', '--idle', '0', '--no-screens'], { cwd: repo.wt, env: envA }),
   ]);
   assert.equal(ab.code, 0, ab.out);
@@ -41,7 +43,10 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(res.topic, 'fast-nav');
   assert.equal(res.kind, 'A/B');
   assert.equal(res.git.branch, 'wt/ab-wt');
-  assert.deepEqual(res.config, { cpu: 6, viewport: 'mobile', runs: 1, idle: 1, serveArgs: ['--vendors=local', '--https', '--latency', '150'], baseline: 'site-pretty', stackedOn: null, order: 'ABBA (alternating per run)' });
+  const { hostThresholds, hostRecheck, ...cfgRest } = res.config;
+  assert.deepEqual(cfgRest, { cpu: 6, viewport: 'mobile', runs: 1, idle: 1, serveArgs: ['--vendors=local', '--https', '--latency', '150'], baseline: 'site-pretty', stackedOn: null, order: 'ABBA (alternating per run)' });
+  assert.equal(hostThresholds.invalidLoad1, 10, 'thresholds copied into config');
+  assert.deepEqual(hostRecheck, { maxWaitSec: 20, maxLoad1: 6, maxBusyPct: 20 }, 'ab passes --max-wait to verify.mjs');
   assert.equal(res.patch.file, 'fixes/fast-nav/patch.diff');
   assert.equal(res.patch.sha256, sha256(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'patch.diff'))));
   assert.deepEqual([res.patch.files, res.patch.added, res.patch.removed], [1, 1, 1]);
@@ -82,6 +87,11 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.match(res.markdown, /^\| scroll: fps \| 50 \[50-50\] \| 50 \[50-50\] \| 0 \(0%\) \| n=1/m);
   assert.ok(existsSync(join(repo.wt, res.raw)), 'raw verify.json kept under out/ab/');
   assert.equal(typeof res.host.loadavg1Min, 'number');
+  // host guard (I-017): clean on the quiet fake host
+  assert.deepEqual([res.host.contaminated, res.host.contaminatedRuns, res.host.runsTotal, res.host.invalidRuns, res.host.warnRuns, res.host.recorded], [false, 0, 2, [], [], true]);
+  assert.deepEqual([res.host.loadavg1Min, res.host.loadavg1Max, res.host.otherCpuPctMax], [1, 1, 0]);
+  assert.match(res.markdown, /^host: 0 of 2 runs contaminated \(load1 1-1, other CPU max 0 %\) \[host STUBBED: .*fake-host\.mjs\]$/m);
+  assert.match(ab.stdout, /^host: 0 of 2 runs contaminated/m);
 
   // the two servers really were baseline vs baseline+overlay over https (ABBA with 1 run: base then fix)
   const nav = readLog(envB.FAKE_CHROME_LOG).filter((l) => l.method === 'Page.navigate').map((l) => l.params.url);
@@ -102,6 +112,13 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.deepEqual(Object.keys(aaRes.metrics), ['scroll', 'morph']);
   assert.doesNotMatch(aaRes.markdown, /\| idle:/);
   assert.equal(aaRes.metrics.scroll.fps.baseline.median, 50);
+  // contaminated: every verdict carries the prefix, the summary names the runs and the reason
+  assert.deepEqual([aaRes.host.contaminated, aaRes.host.contaminatedRuns, aaRes.host.runsTotal], [true, 2, 2]);
+  assert.deepEqual(aaRes.host.invalidRuns, [{ label: 'base', run: 0, reasons: ['load1 12 > 10 at run start'] }, { label: 'base2', run: 0, reasons: ['load1 12 > 10 at run start'] }]);
+  for (const ms of Object.values(aaRes.metrics)) for (const x of Object.values(ms)) assert.equal(x.verdict, 'CONTAMINATED (host): n=1 (need >=3 runs for a verdict)');
+  assert.match(aaRes.markdown, /^\| scroll: fps \| 50 \[50-50\] \| 50 \[50-50\] \| 0 \(0%\) \| CONTAMINATED \(host\): n=1/m);
+  assert.match(aaRes.markdown, /^\*\*host: 2 of 2 runs contaminated \(load1 12 > 10 at run start\); verdicts provisional\*\* \(load1 12-12, other CPU max 0 %\)/m);
+  assert.match(aa.stdout, /^\*\*host: 2 of 2 runs contaminated/m);
   // no lock left behind
   assert.equal(existsSync(join(repo.root, 'state', 'locks', 'chrome-measure.json')), false);
 });

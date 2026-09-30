@@ -18,7 +18,7 @@ test('fix.mjs ab --runs 1 --cpu 2 with real Chrome', async () => {
   assert.equal(fix('edit', 'nav-cache', PAGE_JS).code, 0);
   const f = join(repo.wt, 'fixes', 'nav-cache', 'overlay', PAGE_JS.slice(1));
   writeFileSync(f, readFileSync(f, 'utf8').replace('function tick() {\n  const n = document.querySelector(".start-selling-top-nav");', 'const nav = document.querySelector(".start-selling-top-nav");\nfunction tick() {\n  const n = nav;'));
-  const r = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'nav-cache', '--runs', '1', '--cpu', '2'], { cwd: repo.wt, env: { FW_STATE_DIR: join(common, 'fastwork-mirror'), FW_LOCK_OWNER: `test-chrome-ab-${process.pid}` }, timeout: 600000 });
+  const r = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'nav-cache', '--runs', '1', '--cpu', '2', '--max-wait', '10'], { cwd: repo.wt, env: { FW_STATE_DIR: join(common, 'fastwork-mirror'), FW_LOCK_OWNER: `test-chrome-ab-${process.pid}`, FW_TEST_HOST: '', FW_GATE_MAX_WAIT: '60' }, timeout: 600000 });
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(repo.wt, 'fixes', 'nav-cache', 'results.json'), 'utf8'));
   assert.equal(res.kind, 'A/B');
@@ -38,4 +38,9 @@ test('fix.mjs ab --runs 1 --cpu 2 with real Chrome', async () => {
   for (const v of Object.values(res.regressions.screenshotDiffPct)) assert.equal(typeof v, 'number', 'pixel diff computed');
   assert.equal(res.regressions.morphReached.baseline.length, 1);
   assert.match(res.markdown, /^\| mobile 2x, n=1 \|/m);
+  // host guard on the real host (I-017): recorded for both runs, summarised, printed
+  assert.equal(res.host.recorded, true);
+  assert.equal(res.host.runsTotal, 2);
+  assert.equal(typeof res.host.otherCpuPctMax, 'number');
+  assert.match(res.markdown, /host: \d+ of 2 runs contaminated/);
 });

@@ -20,6 +20,18 @@
 // bottom ("scroll" phase), and then pushed past the end with wheel / touch gestures ("morph" phase,
 // the scroll-jacked header morph). Screenshots at top/middle/bottom are compared pixel-wise.
 // No Tracing is used (in-page LoAF attribution only).
+//
+// Host state (incident I-017, postmortem 2026-09-30 (d); rules in tools/lib/host.mjs):
+//   [--max-wait 60] [--max-load 6] [--max-busy 20]
+// Before each run (each target of each run) verify waits, still holding the lock, until the host is
+// quiet (host CPU <= --max-busy % over a 10 s window, load1 <= --max-load, memory pressure normal) or
+// --max-wait seconds have passed (0 = no recheck); then it runs anyway and records that. Every run gets
+// `host`: load1 at start/end, free memory, the recheck, the lock's admission gate (from the holder
+// record), and per phase (idle, scroll, morph) host CPU busy/sys % from os.cpus() tick deltas, the
+// measured Chrome's CPU (its process tree, ps, read outside the timed window), other CPU = busy - Chrome,
+// max memory pressure and decompressions/s. `host.loadInvalid` (contaminated) when load1 at start > 10,
+// other CPU in the scroll phase > 25 %, memory pressure >= warn, or the lock was granted by the gate's
+// timeout; `host.loadWarn` at load1 > 6 or other CPU > 15 %.
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import os from 'node:os';
@@ -27,6 +39,7 @@ import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
 import { LOGGER, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
+import { THRESHOLDS, snapshot, waitQuiet, treeCpuSec, classifyRun } from './lib/host.mjs';
 
 const ROOT = REPO;
 const argv = process.argv.slice(2);
@@ -46,7 +59,31 @@ const SCREENS = !flag('no-screens');
 // carousel ticks every 3 s, so a 5 s window caught 1 or 2 ticks and idle LoAF ms went bimodal.
 const IDLE = Number(opt('idle', 6));
 if (!Number.isFinite(IDLE) || IDLE < 0) { console.error(`--idle must be a number of seconds >= 0 (got "${opt('idle')}")`); process.exit(2); }
+// recheck before each run (host.mjs quiet(); --max-load / --max-busy override its load1 / CPU limits)
+const num = (n, d) => { const v = Number(opt(n, d)); if (!Number.isFinite(v) || v < 0) { console.error(`--${n} must be a number >= 0 (got "${opt(n)}")`); process.exit(2); } return v; };
+const MAX_WAIT = num('max-wait', THRESHOLDS.recheckMaxWaitSec);
+const QUIET = { ...THRESHOLDS, quietMaxLoad1: num('max-load', THRESHOLDS.quietMaxLoad1), quietMaxBusyPct: num('max-busy', THRESHOLDS.quietMaxBusyPct) };
 mkdirSync(OUT, { recursive: true });
+
+// ---- host record per phase (tools/lib/host.mjs) ---------------------------------------------------
+// start: Chrome's tree CPU (ps) first, then the tick snapshot; end: ticks first, then ps. So the ps and
+// sysctl/vm_stat spawns stay outside the tick window, and the Chrome window covers the tick window.
+async function hostStart(chromePid) { const chrome = await treeCpuSec(chromePid); return { chrome, snap: await snapshot() }; }
+async function hostEnd(start, chromePid) {
+  const snap = await snapshot(), chrome = await treeCpuSec(chromePid);
+  const a = start.snap, b = snap, dt = b.ticks.total - a.ticks.total, sec = (b.at - a.at) / 1000;
+  const pct = (x) => (dt > 0 ? Math.round((1000 * x) / dt) / 10 : null); // x in ms of CPU time -> % of all CPUs
+  const busyPct = pct(b.ticks.busy - a.ticks.busy);
+  const chromeCpuPct = start.chrome != null && chrome != null ? pct((chrome - start.chrome) * 1000) : null;
+  const pr = [a.pressure, b.pressure].filter((x) => x != null);
+  return {
+    windowSec: Math.round(sec * 10) / 10, busyPct, sysPct: pct(b.ticks.sys - a.ticks.sys), chromeCpuPct,
+    otherBusyPct: busyPct == null ? null : chromeCpuPct == null ? busyPct : Math.round(Math.max(0, busyPct - chromeCpuPct) * 10) / 10,
+    otherSource: chromeCpuPct == null ? 'host (Chrome CPU unknown)' : 'host - Chrome tree',
+    load1Start: a.load1, load1End: b.load1, pressureMax: pr.length ? Math.max(...pr) : null,
+    decompPerSec: a.decompressions != null && b.decompressions != null && sec > 0 ? Math.round((b.decompressions - a.decompressions) / sec) : null,
+  };
+}
 
 // ---- page side: LOGGER (injected before any page script), RESET / COLLECT per phase: lib/perf-page.mjs
 
@@ -101,9 +138,18 @@ function summarize(perf) {
   };
 }
 
-async function measure(cdp, t, vpName, run) {
+async function measure(cdp, t, vpName, run, { chromePid, gate } = {}) {
   const vp = VIEWPORTS[vpName];
-  const loadBefore = os.loadavg()[0];
+  let recheck = null;
+  if (MAX_WAIT > 0) {
+    const w = await waitQuiet({ maxWaitSec: MAX_WAIT, thresholds: QUIET });
+    recheck = { quiet: w.quiet, waitedSec: w.waitedSec, windows: w.windows, reasons: w.reasons, last: w.last };
+    if (!w.quiet) process.stdout.write(`(host not quiet after ${w.waitedSec} s: ${w.reasons.join(', ')}; measuring anyway) `);
+    else if (w.windows > 1) process.stdout.write(`(waited ${w.waitedSec} s for a quiet host) `);
+  }
+  const hostPhases = {};
+  const runStart = await snapshot();
+  const loadBefore = runStart.load1;
   const page = await cdp.newIsolatedPage();
   const requests = [];
   const errors = [];
@@ -138,16 +184,21 @@ async function measure(cdp, t, vpName, run) {
   // idle phase: same logger, no input, at the top of the page (before any scrolling)
   let idlePerf = null;
   if (IDLE > 0) {
+    const h = await hostStart(chromePid);
     await page.eval(RESET);
     await sleep(IDLE * 1000);
     idlePerf = await page.eval(COLLECT_AT);
+    hostPhases.idle = await hostEnd(h, chromePid);
   }
+  let h = await hostStart(chromePid);
   await page.eval(RESET);
   const scroll = await page.eval(SCROLL, { timeout: 600000 });
   await sleep(500);
   const scrollPerf = await page.eval(COLLECT);
+  hostPhases.scroll = await hostEnd(h, chromePid);
 
   // morph phase: push past the end (wheel on desktop, touch drag on mobile)
+  h = await hostStart(chromePid);
   await page.eval(RESET);
   if (vp.mobile) {
     for (let i = 0; i < 4; i++) await page.send('Input.synthesizeScrollGesture', { x: 215, y: 700, yDistance: -500, speed: 1200, gestureSourceType: 'touch', repeatCount: 1 });
@@ -156,6 +207,7 @@ async function measure(cdp, t, vpName, run) {
   }
   await sleep(2000);
   const morphPerf = await page.eval(COLLECT);
+  hostPhases.morph = await hostEnd(h, chromePid);
   const morphState = await page.eval(`document.querySelector('.start-selling-top-nav')?.className`);
   await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
 
@@ -181,8 +233,16 @@ async function measure(cdp, t, vpName, run) {
   const origins = {};
   for (const r of requests) { try { const o = new URL(r.url).origin; const k = o + (r.failed ? ' (blocked/failed)' : ''); origins[k] = (origins[k] || 0) + 1; } catch {} }
   const firstParty = requests.filter((r) => { try { const u = new URL(r.url); return u.origin === new URL(t.url).origin; } catch { return false; } });
+  const runEnd = await snapshot();
+  const pressures = Object.values(hostPhases).map((p) => p.pressureMax).filter((x) => x != null);
+  const hostRec = {
+    load1Start: runStart.load1, load1End: runEnd.load1, freeMemMB: runStart.freeMemMB, freeMemMBEnd: runEnd.freeMemMB,
+    recheck, gate: gate || null, phases: hostPhases,
+    ...(runStart.stub ? { stub: runStart.stub } : {}),
+  };
+  Object.assign(hostRec, classifyRun({ load1Start: runStart.load1, otherBusyPct: hostPhases.scroll?.otherBusyPct, pressureMax: pressures.length ? Math.max(...pressures) : null, gateTimeout: !!gate?.gateTimeout, recheckQuiet: recheck ? recheck.quiet : undefined }));
   return {
-    label: t.label, url: t.url, viewport: vpName, run, loadavg1: { before: r1(loadBefore), after: r1(os.loadavg()[0]) }, state, scroll, morphState, shots, shimStats,
+    label: t.label, url: t.url, viewport: vpName, run, loadavg1: { before: r1(loadBefore), after: r1(runEnd.load1) }, host: hostRec, state, scroll, morphState, shots, shimStats,
     idleSummary: idlePerf ? { ...summarize(idlePerf), scrollY: idlePerf.scrollY } : null, scrollSummary: summarize(scrollPerf), morphSummary: summarize(morphPerf),
     requests: requests.length, origins,
     notFound: firstParty.filter((r) => r.status >= 400).map((r) => `${r.status} ${new URL(r.url).pathname}`),
@@ -215,9 +275,12 @@ async function diffImages(cdp, a, b) {
 function median(xs) { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; }
 
 async function main() {
+  let lockHolder = null;
   if (!flag('no-lock')) {
-    await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel } });
+    ({ holder: lockHolder } = await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel } }));
   }
+  // the lock's host admission gate (tools/lib/lock.mjs): how this hold (or the outer one we re-entered) was granted
+  const gate = lockHolder?.gate ? { ...lockHolder.gate, gateTimeout: !!lockHolder.gateTimeout } : null;
   const ch = await launchChrome({ port: Number(opt('port', 0)), profileDir: resolve(ROOT, opt('profile', 'out/chrome-verify-profile')) });
   const cdp = await CDP.connect(ch.wsUrl);
   // allow the mirror's self-signed --https certificate (this dedicated Chrome only)
@@ -229,10 +292,10 @@ async function main() {
         const order = run % 2 ? [...targets].reverse() : targets; // ABBA: cancel slow drift across a session
         for (const t of order) {
           process.stdout.write(`[${vpName} run ${run + 1}/${RUNS}] ${t.label} ${t.url} ... `);
-          const r = await measure(cdp, t, vpName, run);
+          const r = await measure(cdp, t, vpName, run, { chromePid: ch.proc.pid, gate });
           results.push(r);
           const s = r.scrollSummary;
-          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)`);
+          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}`);
         }
       }
       if (SCREENS && targets.length > 1) {
@@ -266,7 +329,16 @@ async function main() {
   if (diffs.length) { console.log('screenshot pixel diff vs ' + targets[0].label + ' (% of pixels differing):'); console.table(diffs.map(({ viewport, b, shot, diffPct, error }) => ({ viewport, target: b, shot, diffPct, error }))); }
   const file = opt('result') ? resolve(process.cwd(), opt('result')) : join(OUT, `verify-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, host: { cpus: os.cpus().length, model: os.cpus()[0]?.model, loadavg: os.loadavg() }, rows, results }, null, 1));
+  const measured = results.filter((r) => !r.diff);
+  const invalid = measured.filter((r) => r.host.loadInvalid), warn = measured.filter((r) => !r.host.loadInvalid && r.host.loadWarn);
+  const hostSum = {
+    cpus: os.cpus().length, model: os.cpus()[0]?.model, loadavg: os.loadavg(),
+    thresholds: THRESHOLDS, recheck: { maxWaitSec: MAX_WAIT, maxLoad1: QUIET.quietMaxLoad1, maxBusyPct: QUIET.quietMaxBusyPct }, gate,
+    contaminated: invalid.length > 0, contaminatedRuns: invalid.length, warnRuns: warn.length, runsTotal: measured.length,
+    ...(measured[0]?.host.stub ? { stub: measured[0].host.stub } : {}),
+  };
+  console.log(`host: ${invalid.length} of ${measured.length} runs contaminated${invalid.length ? ` (${[...new Set(invalid.flatMap((r) => r.host.reasons))].join('; ')}): verdicts provisional` : ''}${warn.length ? `; ${warn.length} warn (${[...new Set(warn.flatMap((r) => r.host.warnings))].join('; ')})` : ''}${hostSum.stub ? `  [host STUBBED: ${hostSum.stub}]` : ''}`);
+  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, host: hostSum, rows, results }, null, 1));
   console.log('details: ' + file);
 }
 
