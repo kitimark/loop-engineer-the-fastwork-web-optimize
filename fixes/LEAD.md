@@ -227,3 +227,38 @@ share, incidents, adoption, experiments with a benchmark, idle agents) with a re
 `research/management/tools/`, and proposes a ranked improvement plan. Loop: the lead executes the plan (the
 lead stays the only one who dispatches and lands), then re-runs `mgmt-lead` to re-measure the KPIs against the
 baseline and plan the next iteration.
+
+### Delegation: `mgmt-ops` runs the day-to-day (user request, 2026-09-30)
+
+The user asked the lead to delegate as much as possible and keep only the important decisions.
+`mgmt-ops` (opus, worktree) is the team's operator. Owners, toolsmiths, reviewers and the architecture
+team report to **mgmt-ops**, not to the lead. When mgmt-ops messages an agent, that agent's hand-back comes
+back to mgmt-ops.
+
+**mgmt-ops does:**
+- agent check-ins, including catching up stalled agents;
+- relays and mentoring packets;
+- collecting experiment rows, and keeping `EXPERIMENTS.md`, `FINGER_TESTS.md`, `FINDINGS.md` (via
+  `finding.mjs digest`) and the scorecard up to date on its branch;
+- first-pass checks of results (contamination, patch sha, README items 7a/8);
+- dispatching reviewers;
+- incident first triage (recommendation only);
+- keeping the lock queue in the `DIRECTION.md` order (recommend moves).
+
+**Only the lead:**
+- landing on main: mgmt-ops prepares **land batches** (branch, sha, tests passed, reviewer verdict,
+  incidents to resolve with their announcements), and the lead lands a batch in one go;
+- resolving incidents;
+- lock reorders (`lock.mjs repair --move`);
+- spawning new owners or toolsmiths (on mgmt-ops' request);
+- scope and priority decisions, `DIRECTION.md`;
+- anything user-facing: iPhone, finger tests, settings and enforcement files.
+
+**mgmt-ops messages the lead only for:**
+- a land batch;
+- a decision it can't take (with a recommendation);
+- a user-facing need;
+- a blocker older than 30 min;
+- a digest at most every 30 min (a 5-line status).
+
+`mgmt-lead` keeps the principles and KPIs loop, and mgmt-ops executes its plan.
