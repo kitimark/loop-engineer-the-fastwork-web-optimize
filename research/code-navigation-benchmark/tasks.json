@@ -1,5 +1,5 @@
 {
-  "note": "Ground truth established 2026-10-01 on the prettified baseline (site-pretty/, prettify of the current mirror) and main 49d337b (tools/, tests/). Lines are 1-based. GT derived with grep + the TypeScript compiler (tools/gt.mjs) and checked by reading the code.",
+  "note": "Ground truth established 2026-10-01 on the prettified baseline (site-pretty/, prettify of the current mirror) and main 49d337b (tools/, tests/). Lines are 1-based. GT derived with grep + the TypeScript compiler (tools/gt.mjs) and checked by reading the code. T28-T36 added 2026-10-01 (main 54a8298): T28-T30 open discovery (prettified), T31-T33 on the stable overlay copy fixes/nb-overlay/overlay (nav-bench worktree, gitignored; 12 comment lines inserted after baseline line 2000, NB1 appended), T34-T36 on unprettified site/ (names only; Serena ignores site/).",
   "tasks": [
     {
       "id": "T01",
@@ -988,6 +988,346 @@
         "line": 2590,
         "component": "JT",
         "mechanism": "Svelte set_style S(ae, '', oe, {width: `${s(C)*100}%`}) in a template effect"
+      }
+    },
+    {
+      "id": "T28",
+      "type": "open discovery: self-rescheduling rAF loops",
+      "source": "synthetic, open-ended (no names given)",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, find every requestAnimationFrame loop that re-schedules itself: a callback that, from inside its own body, calls requestAnimationFrame again with itself as the callback (unconditionally, or under a condition such as 'not finished yet'). Do NOT count code that only schedules a callback once, double-rAF nesting, or a scroll/resize handler that schedules a separate frame function. For each loop give the 1-based line of the self-rescheduling call, the top-level function that contains it, and the callback's local name. You are not given any function names.",
+      "schema": "{\"loops\":[{\"line\":0,\"component\":\"\",\"callback\":\"\"}]}",
+      "gt": {
+        "loops": [
+          {
+            "line": 2458,
+            "component": "JT",
+            "callback": "d"
+          },
+          {
+            "line": 3125,
+            "component": "AE",
+            "callback": "a"
+          },
+          {
+            "line": 3838,
+            "component": "$E",
+            "callback": "i"
+          },
+          {
+            "line": 4201,
+            "component": "fD",
+            "callback": "f"
+          },
+          {
+            "line": 10969,
+            "component": "uM",
+            "callback": "f"
+          },
+          {
+            "line": 11319,
+            "component": "mM",
+            "callback": "l"
+          },
+          {
+            "line": 12019,
+            "component": "EM",
+            "callback": "n"
+          },
+          {
+            "line": 13022,
+            "component": "dN",
+            "callback": "T"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T29",
+      "type": "open discovery: classify scroll-engine callbacks",
+      "source": "synthetic, open-ended (no names given)",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, a shared scroll engine lets components register a per-scroll-frame callback through one registration function (you are not told its name; find it, then find every component that calls it). For each registration call site give: the 1-based line of the call, the top-level component containing it, the local name of the callback passed as the first argument, and classify that callback function's OWN body (not the functions it calls) as exactly one of: `direct-read` (its own body directly calls getBoundingClientRect or getClientRects; give that 1-based line as readLine), `schedules-raf` (its own body only (re)schedules a requestAnimationFrame of another function; readLine 0), or `calls-helper` (neither; it calls other local functions; readLine 0).",
+      "schema": "{\"callbacks\":[{\"line\":0,\"component\":\"\",\"callback\":\"\",\"kind\":\"direct-read|schedules-raf|calls-helper\",\"readLine\":0}]}",
+      "gt": {
+        "callbacks": [
+          {
+            "line": 3143,
+            "component": "AE",
+            "callback": "o",
+            "kind": "schedules-raf",
+            "readLine": 0
+          },
+          {
+            "line": 4239,
+            "component": "fD",
+            "callback": "c",
+            "kind": "schedules-raf",
+            "readLine": 0
+          },
+          {
+            "line": 4736,
+            "component": "hD",
+            "callback": "d",
+            "kind": "direct-read",
+            "readLine": 4730
+          },
+          {
+            "line": 6269,
+            "component": "WD",
+            "callback": "A",
+            "kind": "direct-read",
+            "readLine": 6206
+          },
+          {
+            "line": 10977,
+            "component": "uM",
+            "callback": "m",
+            "kind": "schedules-raf",
+            "readLine": 0
+          },
+          {
+            "line": 11359,
+            "component": "mM",
+            "callback": "u",
+            "kind": "schedules-raf",
+            "readLine": 0
+          },
+          {
+            "line": 12448,
+            "component": "GM",
+            "callback": "r",
+            "kind": "schedules-raf",
+            "readLine": 0
+          },
+          {
+            "line": 13090,
+            "component": "dN",
+            "callback": "L",
+            "kind": "calls-helper",
+            "readLine": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "T30",
+      "type": "open discovery: census of IntersectionObservers",
+      "source": "synthetic, open-ended (no names given)",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, list every `new IntersectionObserver(` construction: the 1-based line of the `new IntersectionObserver(` token, the top-level function that contains it, and the observer options exactly as written (the `threshold` value or the `rootMargin` string).",
+      "schema": "{\"observers\":[{\"line\":0,\"component\":\"\",\"options\":\"\"}]}",
+      "gt": {
+        "observers": [
+          {
+            "line": 2504,
+            "component": "JT",
+            "options": "0,0.05,0.2"
+          },
+          {
+            "line": 2725,
+            "component": "uE",
+            "options": "rootMargin:n"
+          },
+          {
+            "line": 3130,
+            "component": "AE",
+            "options": "0,0.45,0.75"
+          },
+          {
+            "line": 3709,
+            "component": "HE",
+            "options": "100%0px"
+          },
+          {
+            "line": 4698,
+            "component": "hD",
+            "options": "0,0.12,0.25,0.5"
+          },
+          {
+            "line": 6261,
+            "component": "WD",
+            "options": "0.35"
+          },
+          {
+            "line": 11609,
+            "component": "yM",
+            "options": "0,0.35,0.6"
+          },
+          {
+            "line": 11862,
+            "component": "SM",
+            "options": "0,0.35,0.6"
+          },
+          {
+            "line": 12024,
+            "component": "EM",
+            "options": "0,0.35,0.6"
+          },
+          {
+            "line": 12216,
+            "component": "NM",
+            "options": "0,0.35,0.6"
+          },
+          {
+            "line": 13082,
+            "component": "dN",
+            "options": "200%0px"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T31",
+      "type": "overlay path: callers of a function",
+      "source": "synthetic, fix-overlay copy (stable, nb-overlay)",
+      "overlay": true,
+      "question": "A fix agent's overlay copy of the bundle is at /Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/nav-bench/fixes/nb-overlay/overlay/_app/immutable/nodes/2.DyWL8TcE.js (it differs from the baseline: 12 lines were inserted near line 2000 and a component was added at the end). In THAT file, `dE` registers a scroll callback with the shared scroll engine. List every call site of `dE` (1-based line in the overlay file), the top-level component function that contains it, and the local name of the callback passed as its first argument (empty string if the callback is an inline anonymous function).",
+      "schema": "{\"callers\":[{\"line\":0,\"component\":\"\",\"callback\":\"\"}]}",
+      "gt": {
+        "callers": [
+          {
+            "line": 3155,
+            "component": "AE",
+            "callback": "o"
+          },
+          {
+            "line": 4251,
+            "component": "fD",
+            "callback": "c"
+          },
+          {
+            "line": 4748,
+            "component": "hD",
+            "callback": "d"
+          },
+          {
+            "line": 6281,
+            "component": "WD",
+            "callback": "A"
+          },
+          {
+            "line": 10989,
+            "component": "uM",
+            "callback": "m"
+          },
+          {
+            "line": 11371,
+            "component": "mM",
+            "callback": "u"
+          },
+          {
+            "line": 12460,
+            "component": "GM",
+            "callback": "r"
+          },
+          {
+            "line": 13102,
+            "component": "dN",
+            "callback": "L"
+          },
+          {
+            "line": 13525,
+            "component": "NB1",
+            "callback": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "T32",
+      "type": "overlay path: locate definitions",
+      "source": "synthetic, fix-overlay copy (stable, nb-overlay)",
+      "overlay": true,
+      "question": "A fix agent's overlay copy of the bundle is at /Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/nav-bench/fixes/nb-overlay/overlay/_app/immutable/nodes/2.DyWL8TcE.js (it differs from the baseline: 12 lines were inserted near line 2000 and a component was added at the end). In THAT file give the 1-based line ranges (first and last line) of the top-level functions `iE`, `dE`, `uE` and `NB1`, and the 1-based line inside `NB1` that writes the `--exit-opacity` custom property.",
+      "schema": "{\"iE\":[0,0],\"dE\":[0,0],\"uE\":[0,0],\"NB1\":[0,0],\"exitOpacityLine\":0}",
+      "gt": {
+        "iE": [
+          2682,
+          2685
+        ],
+        "dE": [
+          2761,
+          2795
+        ],
+        "uE": [
+          2731,
+          2760
+        ],
+        "NB1": [
+          13523,
+          13534
+        ],
+        "exitOpacityLine": 13528
+      }
+    },
+    {
+      "id": "T33",
+      "type": "overlay path: who writes a custom property",
+      "source": "synthetic, fix-overlay copy (stable, nb-overlay)",
+      "overlay": true,
+      "question": "A fix agent's overlay copy of the bundle is at /Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/nav-bench/fixes/nb-overlay/overlay/_app/immutable/nodes/2.DyWL8TcE.js (it differs from the baseline: 12 lines were inserted near line 2000 and a component was added at the end). In THAT file, which lines write the `--exit-opacity` custom property with `setProperty`, and in which top-level component is each?",
+      "schema": "{\"writes\":[{\"line\":0,\"component\":\"\"}]}",
+      "gt": {
+        "writes": [
+          {
+            "line": 4177,
+            "component": "fD"
+          },
+          {
+            "line": 4183,
+            "component": "fD"
+          },
+          {
+            "line": 13528,
+            "component": "NB1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T34",
+      "type": "minified bundle: callers of a function",
+      "source": "synthetic, unprettified site/",
+      "minified": true,
+      "question": "In the ORIGINAL minified bundle site/_app/immutable/nodes/2.DyWL8TcE.js (a single line of about 366 KB), the function `dE` registers a scroll callback with the shared scroll engine. Which top-level component functions call `dE(...)`? Give their names (each call site is inside one top-level function; there is one call per component).",
+      "schema": "{\"callers\":[\"\"]}",
+      "gt": {
+        "callers": [
+          "AE",
+          "fD",
+          "hD",
+          "WD",
+          "uM",
+          "mM",
+          "GM",
+          "dN"
+        ]
+      }
+    },
+    {
+      "id": "T35",
+      "type": "minified bundle: locate by behaviour",
+      "source": "synthetic, unprettified site/",
+      "minified": true,
+      "question": "In the ORIGINAL minified bundle site/_app/immutable/nodes/2.DyWL8TcE.js (a single line of about 366 KB), the countdown digit animation uses a spring-physics animation. Give the spring's numeric parameters (stiffness, damping, mass), the name of the variable that holds those parameters, the name of the function that advances the spring state by elapsed time (the physics step that takes the state, target and elapsed ms), and the name of the digit component function whose requestAnimationFrame loop calls that step.",
+      "schema": "{\"stiffness\":0,\"damping\":0,\"mass\":0,\"paramsVar\":\"\",\"stepFunction\":\"\",\"digitComponent\":\"\"}",
+      "gt": {
+        "stiffness": 280,
+        "damping": 18,
+        "mass": 0.3,
+        "paramsVar": "UE",
+        "stepFunction": "GE",
+        "digitComponent": "$E"
+      }
+    },
+    {
+      "id": "T36",
+      "type": "minified bundle: locate by behaviour",
+      "source": "synthetic, unprettified site/",
+      "minified": true,
+      "question": "In the ORIGINAL minified Svelte runtime site/_app/immutable/chunks/BSBv9QXB.js (2 lines, about 54 KB), find the delegated event handler: the function that receives native events on the root/document, walks `event.composedPath()` and invokes the handlers Svelte stored on elements. Give its name, and the name of the function in which it is attached with addEventListener.",
+      "schema": "{\"handler\":\"\",\"attachFunction\":\"\"}",
+      "gt": {
+        "handler": "ai",
+        "attachFunction": "bi"
       }
     }
   ]

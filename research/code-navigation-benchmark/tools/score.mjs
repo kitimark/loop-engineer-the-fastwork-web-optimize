@@ -6,6 +6,7 @@
 // lines that are exactly one below a ground-truth line and match nothing (0-based leakage).
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { summarise } from './transcript.mjs';
 const here = path.dirname(new URL(import.meta.url).pathname);
 const root = path.join(here, '..');
@@ -190,6 +191,52 @@ const scorers = {
     const items = [num(a.line) === 2590, /^JT\b/.test(a.component || ''), /S\(|set_?style|style directive|inline/i.test(a.mechanism || '')];
     return { score: items.filter(Boolean).length / items.length, items, offByOne: offByOne([2590], [num(a.line)]) };
   },
+  T28(a, g) {
+    const ans = a.loops || [];
+    const s = listScore(g.loops, ans, (x, y) => num(y.line) === x.line, (x, y) => ((y.component === x.component) + (y.callback === x.callback)) / 2);
+    return { ...s, offByOne: offByOne(g.loops.map((c) => c.line), ans.map((c) => num(c.line))) };
+  },
+  T29(a, g) {
+    const ans = a.callbacks || [];
+    const credit = (x, y) => 0.2 * (y.component === x.component) + 0.6 * (y.kind === x.kind) + 0.2 * (x.kind === 'direct-read' ? num(y.readLine) === x.readLine : !num(y.readLine));
+    const s = listScore(g.callbacks, ans, (x, y) => num(y.line) === x.line, credit);
+    return { ...s, offByOne: offByOne(g.callbacks.map((c) => c.line), ans.map((c) => num(c.line))) };
+  },
+  T30(a, g) {
+    const ans = a.observers || [];
+    const credit = (x, y) => 0.5 * (y.component === x.component) + 0.5 * (norm(y.options).replace(/[\[\]]/g, '').replace(/threshold:|rootmargin:/g, '').includes(x.options.toLowerCase()) || (x.options === 'rootMargin:n' && /rootmargin/i.test(y.options)));
+    const s = listScore(g.observers, ans, (x, y) => num(y.line) === x.line, credit);
+    return { ...s, offByOne: offByOne(g.observers.map((c) => c.line), ans.map((c) => num(c.line))) };
+  },
+  T31(a, g) {
+    const ans = a.callers || [];
+    const s = listScore(g.callers, ans, (x, y) => num(y.line) === x.line, (x, y) => ((y.component === x.component) + (x.callback === '' || y.callback === x.callback)) / 2);
+    const baselineLines = ans.filter((c) => g.callers.every((x) => x.line !== num(c.line)) && [3143, 4239, 4736, 6269, 10977, 11359, 12448, 13090].includes(num(c.line))).length;
+    return { ...s, baselineLines, offByOne: offByOne(g.callers.map((c) => c.line), ans.map((c) => num(c.line))) };
+  },
+  T32(a, g) {
+    const r = (k) => (Array.isArray(a[k]) ? (num(a[k][0]) === g[k][0] ? (num(a[k][1]) === g[k][1] ? 1 : 0.5) : 0) : 0);
+    const items = [r('iE'), r('dE'), r('uE'), r('NB1'), num(a.exitOpacityLine) === g.exitOpacityLine ? 1 : 0];
+    return { score: items.reduce((x, y) => x + y) / 5, offByOne: offByOne([2682, 2761, 2731, 13523, 13528], ['iE', 'dE', 'uE', 'NB1'].map((k) => num(a[k]?.[0])).concat(num(a.exitOpacityLine))) };
+  },
+  T33(a, g) {
+    const ans = a.writes || [];
+    const s = listScore(g.writes, ans, (x, y) => num(y.line) === x.line, (x, y) => (y.component === x.component ? 1 : 0.5));
+    return { ...s, offByOne: offByOne(g.writes.map((c) => c.line), ans.map((c) => num(c.line))) };
+  },
+  T34(a, g) {
+    const ans = (a.callers || []).map((x) => String(x).trim());
+    const s = listScore(g.callers, ans, (x, y) => x === y);
+    return { ...s, offByOne: 0 };
+  },
+  T35(a, g) {
+    const items = [a.stiffness == 280, a.damping == 18, a.mass == 0.3, a.paramsVar === 'UE', a.stepFunction === 'GE', a.digitComponent === '$E'];
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: 0 };
+  },
+  T36(a, g) {
+    const items = [a.handler === 'ai', a.attachFunction === 'bi'];
+    return { score: items.filter(Boolean).length / items.length, items, offByOne: 0 };
+  },
   T16(a) {
     const ch = (a.chain || []).map((x) => ({ ...x, line: num(x.line) }));
     const has = (file, lines, re) => ch.some((x) => fileEq(x.file, file) && (lines.includes(x.line) || (re && re.test(`${x.function} ${x.what}`))));
@@ -212,13 +259,18 @@ const strip = (v) => (Array.isArray(v) ? v.map(strip) : v && typeof v === 'objec
 const idx = fs.readFileSync(path.join(root, 'data/runs-index.tsv'), 'utf8').trim().split('\n').map((l) => l.split('\t'));
 const out = [];
 const manual = fs.existsSync(path.join(root, 'data/manual-answers.json')) ? JSON.parse(fs.readFileSync(path.join(root, 'data/manual-answers.json'), 'utf8')) : {};
-for (const [task, arm, rep, id, flag] of idx) {
+for (const [task, arm, rep, id, flag, model = 'sonnet', batch = ''] of idx) {
   // Raw per-run record: data/raw/<agentId>.json (written below from the transcript on first scoring, so later
   // re-scoring works after the session's transcripts are gone). The transcript wins when it is available.
   const rawFile = path.join(root, 'data/raw', `${id}.json`);
   // NAV_BENCH_TASKS: the session's tasks dir (<id>.output) or its subagents dir
   // (~/.claude/projects/<project>/<session>/subagents, agent-<id>.jsonl, which persists after the session).
-  const f = !dir ? '' : [path.join(dir, `${id}.output`), path.join(dir, `agent-${id}.jsonl`)].find((x) => fs.existsSync(x)) || '';
+  // Batch agents' helpers may be stored under any session's subagents dir: fall back to a search of ~/.claude/projects.
+  let f = !dir ? '' : [path.join(dir, `${id}.output`), path.join(dir, `agent-${id}.jsonl`)].find((x) => fs.existsSync(x)) || '';
+  if (dir && !f && !fs.existsSync(rawFile)) {
+    const hit = spawnSync('find', [path.join(process.env.HOME, '.claude/projects'), '-name', `agent-${id}.jsonl`, '-not', '-path', '*/worktrees/*'], { encoding: 'utf8' }).stdout.trim().split('\n')[0];
+    if (hit) f = hit;
+  }
   let s;
   if (f && fs.existsSync(f)) {
     s = summarise(f); s.fromTranscript = true;
@@ -240,10 +292,10 @@ for (const [task, arm, rep, id, flag] of idx) {
   const { finalText, allAnswers = [], stored, fromTranscript, ...rest } = s; // calls kept for latency stats
   if (fromTranscript) {
     fs.mkdirSync(path.dirname(rawFile), { recursive: true });
-    fs.writeFileSync(rawFile, JSON.stringify({ task, arm, rep: Number(rep), agentId: id, ...strip({ ...rest, calls: undefined }),
+    fs.writeFileSync(rawFile, JSON.stringify({ task, arm, model, batch, rep: Number(rep), agentId: id, ...strip({ ...rest, calls: undefined }),
       calls: rest.calls.map(({ arg, ...c }) => c), stored: strip(sc) }, null, 1));
   }
-  out.push({ task, type: T[task].type, arm, rep: Number(rep), agentId: id, invalid: flag?.startsWith('invalid:') ? flag.slice(8) : undefined, ...sc, ...rest, finalText });
+  out.push({ task, type: T[task].type, arm, model, batch, rep: Number(rep), agentId: id, invalid: flag?.startsWith('invalid:') ? flag.slice(8) : undefined, ...sc, ...rest, finalText });
   console.log([task, arm, rep, sc.score.toFixed(2), `P${(sc.precision ?? NaN).toFixed?.(2)} R${(sc.recall ?? NaN).toFixed?.(2)}`, `obo${sc.offByOne ?? ''}`,
     `calls${s.toolCalls}`, `ser${s.serenaCalls}`, `${s.wallSec}s`, `${Math.round(s.tokens.total / 1000)}k`, `peak${Math.round(s.tokens.ctxPeak / 1000)}k`].join('\t'));
 }
