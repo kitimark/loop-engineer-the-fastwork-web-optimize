@@ -216,3 +216,14 @@ in their worktree and pass `--on all-wave<N>` to `edit`, `diff`, `serve` and `ab
 Shut down idle teammates, `node tools/lock.mjs status` shows no holder of yours,
 `node tools/incident.mjs list` is empty (parked ones are named in the write-up), remove landed
 worktrees and branches, and leave port 5173 alone.
+
+## Management team (user request, 2026-09-30)
+
+`mgmt-lead` (opus, read-only, writes only `research/management/`) studies the user's decisions (their own
+messages in the session transcript, never sent anywhere), separates the literal request from the intent
+behind it, and derives ranked **execution principles** for the goal. It keeps a KPI baseline computed from
+local data (goal numbers vs target and how many were measured clean, lead time to land, queue wait, clean-run
+share, incidents, adoption, experiments with a benchmark, idle agents) with a re-runnable script under
+`research/management/tools/`, and proposes a ranked improvement plan. Loop: the lead executes the plan (the
+lead stays the only one who dispatches and lands), then re-runs `mgmt-lead` to re-measure the KPIs against the
+baseline and plan the next iteration.
