@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (provisional; quiet-host final run pending)
+**Status:** measured. Mechanism plus iPhone paint evidence (/03); Chrome A/B provisional and within noise; gain pending the combined wave A/B
 **Topic:** `fixes/TOPICS.md` #8 (large-area-blur), conflict cluster D
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only. Rules (1-based, pretty baseline):
 `.start-selling-future:not(.is-visible) > .start-selling-future-card` (2393-2404),
@@ -71,7 +71,7 @@ and at opacity 0 (hide). Screenshot diffs: see Before / after.
 
 ## Before / after
 
-**Provisional, contaminated:** host load1 was 19-48.8 during these runs (I-016), so no verdict can be drawn. It is replaced by the gated quiet-host re-run (experiment /07). Tools: before I-002 (no idle phase).
+**Provisional, contaminated:** host load1 was 19-48.8 during these runs (I-016), so no verdict can be drawn. The quiet-host re-run (/07) was abandoned by lead decision: this is GPU-only work that Chrome can't show (FINDINGS P5). Tools: before I-002 (no idle phase).
 
 `node tools/fix.mjs ab large-area-blur --runs 5` (Chrome, mobile 430x932 DPR3, CPU 6x, ABBA order, cold cache, serve `--vendors=local --https --latency 150`):
 
@@ -159,7 +159,7 @@ fix-layout-animations.
 | large-area-blur/04 | `#platform` `filter: none` instead of the permanent `blur(0px)` (CSS 5392, nav-morph's rule), iPhone Timeline, 6 s idle at the bottom | blur(0) repaints at rest | within noise | clean (phone) | paints 1809/1762 -> 1676/1766; area 4.9/7.8 -> 4.5/4.7 Mpx, n=2 | `variants/04.diff`; worktree `out/iphone-timeline/*-bottomidle-*.json` | no paint cost at rest (layers not counted); nav-morph dropped the change | dropped |
 | large-area-blur/05 | lang-switch nested backdrop-filter removed (CSS 11115) | one backdrop pass fewer per frame on the fixed nav; visually a no-op (Backdrop Root) | broke (visual) | old-tools | screenshot diff 0.51 % on the pill, which renders darker | `variants/01.diff`, the CSS 11115 hunk only (no separate patch kept: never measured alone) | theory wrong in practice; needs a design-approved fill | retry when a replacement fill is agreed (N6 nav-backdrop-budget) |
 | large-area-blur/06 | final overlay (/01 minus /05) | as /01 | within noise | contaminated (load 19-48.8, I-016) | fps 68.2 [61.9-69.6] -> 66 [64.8-68.8]; >20 ms 108 -> 108; LoAF 353 -> 399 ms, all ranges overlap, n=5; screenshots 0.13 / 0 / 0.09 % | `variants/06.diff` (= `patch.diff`); worktree `out/ab-first-run/results-final-provisional-load19-49.json` | host overload; no verdict | superseded by /07 |
-| large-area-blur/07 | final overlay, quiet-host re-run | as /01 | pending | - | queued behind fix-scroll-engine, gated on ts-i017 host gate | `patch.diff` (= `variants/06.diff`), `results.json` | - | on branch |
+| large-area-blur/07 | final overlay, quiet-host Chrome re-run | as /01 | abandoned | - | never ran: GPU-only, Chrome is blind to it (FINDINGS P5); the gain is shown on the iPhone (/03) and is left to the combined wave A/B (lead decision, via mgmt-ops) | `patch.diff` (= `variants/06.diff`) | a Chrome slot can't show raster cost | dropped |
 | large-area-blur/08 | own CDP trace script (GPU/viz event counts, filter census) under the lock | a GPU-side metric Chrome's CPU throttle can't hide | abandoned | - | never ran | no patch kept (a measurement script, not an overlay; it stays in the scratchpad) | dropped for the one-queue-entry budget | retry when the lock queue is short |
 | large-area-blur/09 | pre-blurred `.start-selling-platform-stage-bg` images instead of `filter: blur(16px)` | static blur paid on every tile repaint | abandoned | - | not built | no patch kept (never built) | needs new binary assets, and CSS blur's edge fade differs per responsive size; Timeline showed only 2-5 stage-sized repaints per run | dropped |
 
