@@ -28,6 +28,12 @@
       "mcp__serena__initial_instructions"
     ],
     "ask": [
+      "Bash(git config core.hooksPath *)",
+      "Bash(git config merge.ff *)",
+      "Bash(git config pull.rebase *)",
+      "Bash(git remote add *)",
+      "Edit(**/.githooks/**)",
+      "Edit(**/.claude/hooks/**)",
       "Bash(node tools/mirror.mjs *)",
       "Bash(node tools/prettify.mjs *)"
     ],
@@ -36,6 +42,23 @@
       "mcp__chrome-devtools__performance_stop_trace",
       "mcp__chrome-devtools__performance_analyze_insight",
       "Bash(git push *)",
+      "Bash(git -C * push *)",
+      "Bash(git merge --no-ff *)",
+      "Bash(git merge --squash *)",
+      "Bash(git merge --continue *)",
+      "Bash(git merge --no-verify *)",
+      "Bash(git pull --no-rebase *)",
+      "Bash(git commit --no-verify *)",
+      "Bash(git commit -n *)",
+      "Bash(git -c core.hooksPath*)",
+      "Bash(gh repo create *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr merge *)",
+      "Bash(gh gist create *)",
+      "Bash(node tools/verify.mjs *--no-lock*)",
+      "mcp__chrome-devtools__performance_start_trace",
+      "mcp__chrome-devtools__performance_stop_trace",
+      "mcp__chrome-devtools__performance_analyze_insight",
       "Bash(git add -f *)",
       "Bash(git add --force *)",
       "Edit(/site/**)",
@@ -53,6 +76,21 @@
       "mcp__serena__edit_memory",
       "mcp__serena__delete_memory",
       "mcp__serena__rename_memory"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/git-guard.mjs"],
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

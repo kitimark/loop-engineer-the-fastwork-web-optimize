@@ -1,0 +1,3 @@
+#!/bin/sh
+# Rebase-only guard (CLAUDE.md "Hard rules"); logic in lib/rebase-only.sh.
+exec sh "$(dirname "$0")/lib/rebase-only.sh" commit-msg "$@"

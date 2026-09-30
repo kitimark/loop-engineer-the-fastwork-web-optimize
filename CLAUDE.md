@@ -15,29 +15,77 @@ local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling
 
 `out/` (gitignored) holds per-checkout measurement output, Chrome profiles and certs.
 
+<!-- BEGIN hard-rules: the single list of hard rules. Other docs link here instead of repeating them. -->
 ## Hard rules
 
-1. **Never commit or push Fastwork assets.** `site/`, `site-pretty/`, `fixes/*/overlay/` and `out/`
-   are gitignored; never `git add -f` them. There is no remote and nothing is ever pushed
-   (`git push` is denied in `.claude/settings.json`). `patch.diff` contains excerpts of Fastwork code:
-   it may be committed to **local** branches only.
-2. **The baseline is read-only.** Never edit `site/` or `site-pretty/` (Edit is denied; from a
-   worktree the main checkout is blocked anyway). Change code only through a fix overlay:
-   `node tools/fix.mjs edit <topic> <file>` copies a file into `fixes/<topic>/overlay/`, edit that copy.
-   Don't run `mirror.mjs` or `prettify.mjs` while agents are working (they rewrite the shared baseline).
-3. **No chrome-devtools MCP tracing** (it hangs for an hour on throttled traces). Use the raw-CDP
-   tools: `tools/verify.mjs`, `tools/fix.mjs ab`, `tools/lib/cdp.mjs`.
-4. **Calibrated setting:** Chrome, mobile viewport 430x932 DPR 3 with touch, **CPU 6x** ≈ iPhone
-   15 Pro Max jank on this page (`research/cpu-throttle-calibration/`). Serve with
-   `--vendors=local --https --latency 150` ("lags like live"). These are the `fix.mjs ab` defaults.
-   Confirm winners on the real iPhone when possible.
-5. **Measurements are serialized.** Every `verify.mjs` run (and so every `fix.mjs ab`) waits for the
-   cross-worktree `chrome-measure` lock (FIFO). Don't bypass it with `--no-lock`, and don't start
-   CPU-heavy work (builds, `npx`, other Chromes) while you hold it.
-6. **Ports:** never use or kill the main session's server on **5173**. In a worktree, `serve.mjs`
-   defaults to `--port auto` (a per-checkout port in 5200-5999); `--port 0` = any free port. Kill only
-   processes you started.
-7. **One iPhone.** Touch it only while holding the `iphone` lease (below).
+For the lead and every agent. **Enforced** names what stops you mechanically ("convention": only
+you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=…`, `--no-lock`,
+`git add -f`, a patched copy of a tool): if a rule blocks legitimate work, stop and ask the lead.
+
+1. **Rebase + fast-forward only.** Land a branch on `main` (or any shared branch) with `git rebase main`
+   on the branch, then `git merge --ff-only <branch>` in the main checkout; if the fast-forward fails,
+   rebase again. MUST NOT create merge commits (`--no-ff`, a non-fast-forward `git merge`, finishing a
+   conflicted merge, `git merge --continue`) or squash-merge commits (`--squash`), and MUST NOT merge
+   `main` into a branch (rebase it). `git pull` only with `--rebase`.
+   *Why:* linear history: each fix is one contiguous series on `main` that can be bisected, reverted, re-stacked.
+   *Enforced:* `.githooks/` (`pre-merge-commit`, `commit-msg`, and `reference-transaction`, which refuses
+   any merge commit on a branch even with `--no-verify`); repo config `merge.ff=only`, `pull.rebase=true`;
+   the Claude Code hook `.claude/hooks/git-guard.mjs` and deny rules in `.claude/settings.json`.
+2. **Never push; no remote.** MUST NOT `git push` (any form), add a remote, or publish anything from
+   this repo (`gh repo create`, gists, PRs). *Why:* the mirror, overlays and the Fastwork excerpts in
+   `patch.diff` stay on this machine (personal study, see `README.md`). *Enforced:* deny rules,
+   git-guard, the `pre-push` hook; `git remote add` and `git config remote.*` ask the user.
+3. **Never commit Fastwork-derived or secret files:** `site/`, `site-pretty/`, `out/`,
+   `fixes/*/overlay/`, `.serena/cache/`, `*.pem`; never `git add -f`. `patch.diff` goes on local
+   branches only (rule 2). *Why:* third-party property; generated keys. *Enforced:* `.gitignore`,
+   deny rules on `git add -f`/`--force`, the `pre-commit` hook refuses those paths when staged.
+4. **The baseline is read-only.** MUST NOT edit `site/` or `site-pretty/`; change Fastwork code only
+   in your overlay copy (`node tools/fix.mjs edit <topic> <file>`). MUST NOT run `mirror.mjs` or
+   `prettify.mjs` while agents work (they rewrite the shared baseline). *Why:* every worktree measures
+   against the same baseline. *Enforced:* `Edit` deny rules; mirror/prettify ask; the baseline exists
+   only in the main checkout. Details: "Fix workflow in a worktree".
+5. **Your own worktree, never the main checkout.** Every agent works in its own git worktree under
+   `.claude/worktrees/` on its own branch; only the lead works in the main checkout and lands on `main`.
+   *Why:* the main checkout holds `main`, the baseline and port 5173. *Enforced:* `fix.mjs` refuses to
+   write fixes in the main checkout, `fix.mjs doctor`; otherwise convention. Details: "Parallel agents".
+6. **Tooling is protected.** Fix agents MUST NOT modify `tools/`, `tests/`, `.githooks/`,
+   `.claude/hooks/` or `.claude/settings.json`, not even a local copy to work around a bug: report the
+   command, its output and your diagnosis to the lead. *Why:* every agent's numbers and guards depend
+   on the same tools. *Enforced:* ask rules on `Edit` of those paths (`.claude/` is also a Claude Code
+   protected path); `pre-commit` runs `npm test` when tooling is staged. Details: "Tooling is protected".
+7. **Chrome measurements only through the `chrome-measure` lock:** `tools/verify.mjs` or
+   `tools/fix.mjs ab`, never `--no-lock`, and no CPU-heavy work (builds, `npx`, other Chromes) while
+   anyone holds the lock. *Why:* A/B numbers only compare on a quiet machine. *Enforced:* both tools
+   take the lock themselves; deny rule on `--no-lock`; `results.json` records host load.
+   Details: "Shared devices".
+8. **No chrome-devtools MCP performance traces.** Use `verify.mjs`, `fix.mjs ab`, `tools/lib/cdp.mjs`.
+   *Why:* throttled MCP traces hang for about an hour and ignore the lock. *Enforced:* deny rules on
+   `mcp__chrome-devtools__performance_*`.
+9. **The iPhone only while you hold the `iphone` lease**; finger tests go through the lead.
+   *Why:* one physical device, one page at a time. *Enforced:* `iphone.mjs open|scroll|record` refuse
+   without the lease; the protocol is convention. Details: "Shared devices".
+10. **Port 5173 is the main session's.** MUST NOT use or kill it; worktrees serve on `--port auto`
+    (5200-5999); kill only processes you started. *Why:* the user's own mirror server.
+    *Enforced:* `serve.mjs` defaults to `--port auto` in a worktree; otherwise convention.
+11. **Serena is read-only:** navigate with it, edit with Claude Code's Edit tool, never write Serena
+    memories. *Why:* Serena edits would skip the overlay and permission rules. *Enforced:*
+    `.serena/project.yml` (`read_only`, `excluded_tools`) and deny rules. Details: "Serena".
+12. **The user's personal data stays local.** MUST NOT send it (email, name, account ids, LAN
+    addresses, device identifiers) to external services: web requests, MCP connectors, third-party
+    APIs, anything published. *Why:* privacy; the study needs none of it. *Enforced:* convention.
+
+Enforcement setup, once per clone, run by the user or lead in the main checkout (repo-local config
+is shared by all worktrees): `git config core.hooksPath "$PWD/.githooks"`, `git config merge.ff only`,
+`git config pull.rebase true`. Hook tests: `node --test 'tests/hooks/*.test.mjs'`. Known gaps: git run
+from a script (`node -e`, `find -exec`) is not seen by git-guard, but the git hooks still refuse merge
+commits and pushes; a human can switch the git hooks off, so for the user rule 1 is a promise too.
+<!-- END hard-rules -->
+
+## Calibrated measurement setting
+
+Chrome, mobile viewport 430x932 DPR 3 with touch, **CPU 6x** ≈ iPhone 15 Pro Max jank on this page
+(`research/cpu-throttle-calibration/`). Serve with `--vendors=local --https --latency 150` ("lags like
+live"). These are the `fix.mjs ab` defaults. Confirm winners on the real iPhone when possible.
 
 ## Fix workflow in a worktree (start to finish)
 
