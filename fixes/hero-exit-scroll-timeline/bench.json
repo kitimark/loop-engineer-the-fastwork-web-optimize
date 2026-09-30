@@ -1,0 +1,152 @@
+{
+  "schema": 1,
+  "topic": "hero-exit-scroll-timeline",
+  "status": "authored",
+  "supersededBy": null,
+  "draft": "Tier A draft by the fix owner, written before tools/bench.mjs landed. Counts are predicted from the code, not measured by the runner. The bench-author calibrates and proves each check discriminates.",
+  "evidence": "README 'Before / after' (mobile 6x n=3, old tools: fps 63.7 -> 69.5, frames >20 ms 115 -> 91, disjoint) and 'Visual / behaviour parity' (exit values equal to 3 decimals)",
+  "segments": {
+    "hero": {
+      "from": ".hero-track",
+      "to": ".hero-track",
+      "step": 100,
+      "before": 0,
+      "why": "Exit progress 0 to past 1 over .hero-track (200vh). Start after the desktop entrance (about 1.8 s, class is-ring-splash-done on .hero): the JS path runs until then on purpose."
+    }
+  },
+  "probes": {
+    "exitOpacityWrites": {
+      "kind": "setProperty",
+      "prop": "--exit-opacity",
+      "selector": ".hero",
+      "why": "Baseline s (JS 4163) writes --exit-opacity on .hero once per engine frame. Patched CSS mode writes none (it removes the property once in d)."
+    },
+    "heroPointerEventsWrites": {
+      "kind": "styleWrite",
+      "prop": "pointerEvents",
+      "selector": ".hero",
+      "why": "Baseline s writes style.pointerEvents every frame. Patched writes it only when the IntersectionObserver flips (track bottom crosses 1.05 viewport heights)."
+    },
+    "cueFloatAnimations": {
+      "kind": "animations",
+      "selector": ".scroll-float",
+      "output": "animatedProperties",
+      "why": "On phones the patched cue exit runs as scroll-driven animations on .scroll-float (opacity, translate, filter). The baseline only has the idle bob (transform) there."
+    },
+    "exitAnimatedProps": {
+      "kind": "animations",
+      "selector": ".hero-copy, .scroll-cue, .scroll-float, .orbit .orbit-card, .mobile-deck .orbit-card",
+      "output": "animatedProperties",
+      "why": "Architecture review (webkit.md 1): scroll-driven keyframes only on threaded properties, no custom properties (FINDINGS P3)."
+    }
+  },
+  "mechanism": [
+    {
+      "id": "no-exit-opacity-writes-mobile",
+      "viewport": "mobile",
+      "segment": "hero",
+      "probe": "exitOpacityWrites",
+      "baseline": ">= 5",
+      "patched": "== 0",
+      "why": "Phones enter CSS mode at mount. Predicted baseline about 10 writes (about 10 steps of 100 px over 932 px of progress, at least 1 write per step)."
+    },
+    {
+      "id": "no-exit-opacity-writes-desktop",
+      "viewport": "desktop",
+      "segment": "hero",
+      "probe": "exitOpacityWrites",
+      "baseline": ">= 5",
+      "patched": "== 0",
+      "why": "Desktop enters CSS mode after the entrance (d). The segment starts after it."
+    },
+    {
+      "id": "pointer-events-only-on-flip-mobile",
+      "viewport": "mobile",
+      "segment": "hero",
+      "probe": "heroPointerEventsWrites",
+      "baseline": ">= 5",
+      "patched": "<= 2",
+      "why": "Patched: at most one write per IntersectionObserver flip (one near the end, one more if the scroll comes back)."
+    },
+    {
+      "id": "cue-exit-is-a-scroll-animation-mobile",
+      "viewport": "mobile",
+      "segment": "hero",
+      "probe": "cueFloatAnimations",
+      "baseline": "not contains filter",
+      "patched": "contains filter, opacity, translate",
+      "why": "Proves the CSS path is live (supported and attached). If it isn't, the JS fallback runs and the exitOpacityWrites check fails too."
+    },
+    {
+      "id": "exit-animates-threaded-properties-only",
+      "viewport": "both",
+      "segment": "hero",
+      "probe": "exitAnimatedProps",
+      "baseline": "n/a",
+      "patched": "contains none of --exit-opacity, --exit-scatter, --copy-in, --entered, width, height, top, left, margin-*, clip-path",
+      "why": "A compliance guard, not a discriminating check: a later edit must not move the exit back to custom properties or layout properties."
+    }
+  ],
+  "parity": [
+    {
+      "viewport": "mobile",
+      "segment": "hero",
+      "classes": [".hero", ".orbit"],
+      "props": [
+        [".hero-copy", "opacity", 0.01],
+        [".mobile-deck .is-e", "opacity", 0.01],
+        [".hero", "pointer-events", null]
+      ],
+      "why": "The cue's opacity and blur move from .scroll-cue to .scroll-float on phones, so compare the product in the visual check, not per element here."
+    },
+    {
+      "viewport": "desktop",
+      "segment": "hero",
+      "classes": [".hero", ".orbit"],
+      "props": [
+        [".hero-copy", "opacity", 0.01],
+        [".scroll-cue", "opacity", 0.01],
+        [".orbit .orbit-card", "opacity", 0.01],
+        [".hero", "pointer-events", null]
+      ]
+    }
+  ],
+  "gain": {
+    "scenario": { "viewport": "mobile", "segment": "hero" },
+    "metric": "styleLayoutMs",
+    "direction": "lower",
+    "device": "chrome",
+    "status": "pending-quiet-host",
+    "why": "Whole-page A/B showed the gain in per-frame style/paint (frames >20 ms, fps), not LoAF. The iPhone check (device iphone) is pending: the phone is disconnected."
+  },
+  "experiments": [
+    {
+      "id": "hero-exit-scroll-timeline/01",
+      "variant": "v1: keyframes use animated custom properties",
+      "patch": null,
+      "expected": "broke",
+      "why": "no patch kept: the overlay was edited in place into v2. The failure is Safari-only (P3), so a Chrome mechanism run couldn't confirm it anyway."
+    },
+    {
+      "id": "hero-exit-scroll-timeline/02",
+      "variant": "v2 with the original local names",
+      "patch": "variants/02.diff",
+      "expected": "within noise",
+      "why": "Parity: all mechanism and parity checks pass, the same as 04."
+    },
+    {
+      "id": "hero-exit-scroll-timeline/04",
+      "variant": "v2 with renamed locals (= patch.diff)",
+      "patch": "variants/04.diff",
+      "expected": "better",
+      "why": "The fix. All mechanism checks pass, and styleLayoutMs is lower in the gain scenario."
+    },
+    {
+      "id": "hero-exit-scroll-timeline/06",
+      "variant": "--noblur attribution (04 without the exit blur)",
+      "patch": "variants/06.diff",
+      "expected": "broke",
+      "why": "Visual change on purpose (no exit blur). Mechanism checks pass except cue-exit-is-a-scroll-animation-mobile (no filter). The gain against 04 is unmeasured."
+    }
+  ]
+}
