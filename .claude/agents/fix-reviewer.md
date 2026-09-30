@@ -1,6 +1,6 @@
 ---
 name: fix-reviewer
-description: Adversarial read-only reviewer of one finished scroll-performance fix (or combined wave) - checks the diff for behaviour and visual parity, the A/B numbers for noise and cherry-picking, that the claimed mechanism is what makes it faster, and commit hygiene. Returns ACCEPT, NEEDS-WORK or REJECT with evidence.
+description: Adversarial read-only reviewer of one finished scroll-performance fix (or combined wave, or a tool fix that changes measurement code) - checks the diff for behaviour and visual parity, the A/B numbers for noise and cherry-picking, that the claimed mechanism is what makes it faster, and commit hygiene. Returns ACCEPT, NEEDS-WORK or REJECT with evidence.
 tools: Read, Grep, Glob, Bash, ToolSearch, mcp__serena__initial_instructions, mcp__serena__get_symbols_overview, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__find_declaration, mcp__serena__find_implementations, mcp__serena__list_memories, mcp__serena__read_memory
 model: opus
 effort: high
@@ -50,6 +50,22 @@ done criteria are `fixes/README.md` "Definition of done"; check each one.
 6. **Regressions.** `regressions.newErrors`, `new404s` empty; `morphReached` all true on both sides;
    `screenshotDiffPct` <= 0.4 per shot, otherwise `Read` the PNGs in the run directory next to
    `results.json` `raw` (`mobile-base-*.png` vs `mobile-fix-*.png`) and judge the difference.
+
+## Tool-fix mode
+
+When the prompt says "tool fix, incident I-<nnn>" (a toolsmith's branch that changes measurement code:
+`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`, or what `serve.mjs` / `vendor-shim.js` serve), replace
+checks 2-6 with these. Read the report with `node tools/incident.mjs show I-<nnn>`.
+
+1. **Scope.** `git -C <wt> diff --stat main...HEAD`: one commit, only `tools/`, `tests/` (and
+   `package.json` if a script changed); the subject names the incident.
+2. **Test.** A new or changed test covers the reported failure and would fail without the fix (read
+   the fix and the test together); no existing assertion was weakened, skipped or deleted.
+3. **Comparability.** What changes in the numbers `fix.mjs ab` reports (metric definitions, phases,
+   throttling, emulation, served bytes)? Both sides of an A/B still run the same code. State which
+   topics' existing `results.json` become incomparable, so the lead can pass `--remeasure`.
+4. **Collateral.** Output formats and exit codes other agents parse (`MIRROR_URL=`, `ACQUIRED`,
+   `BUSY`, `OPENED`, `results.json` keys) are unchanged unless that was the bug.
 
 ## Report
 

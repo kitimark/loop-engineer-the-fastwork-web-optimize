@@ -13,9 +13,10 @@ fixes/<topic>/
 
 Other files here: `TOPICS.md` (proposed topics, code locations, conflict clusters, waves),
 `AGENT_PROMPT.md` (prompt template for a fix agent/teammate), `_template/README.md` (deliverable
-template, copied by `fix.mjs new`), `AGENT_ROLES.md` (lead / fix owner / helper / reviewer, how
-agents spawn helpers, model and effort per task), `LEAD.md` (the lead's playbook). Agent
-definitions: `.claude/agents/`.
+template, copied by `fix.mjs new`), `AGENT_ROLES.md` (roster: lead, fix owner, toolsmith, wave
+integrator, mapper, reviewer; who may do what, model and effort per task), `LEAD.md` (the lead's
+playbook: the project loop, definitions of done, landing), `INCIDENTS.md` (reporting and fixing
+unexpected problems during parallel work). Agent definitions: `.claude/agents/`.
 
 ## Definition of done
 

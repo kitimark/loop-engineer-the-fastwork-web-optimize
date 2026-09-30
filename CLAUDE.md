@@ -8,7 +8,7 @@ local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling
 
 | | path | in git? | who writes it |
 |---|---|---|---|
-| (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `mirror`, `prettify`, `lib/`) | yes | any agent, with a covering test (Hard rule 6) |
+| (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `incident`, `mirror`, `prettify`, `lib/`) | yes | any agent, with a covering test (Hard rule 6); usually a `toolsmith` per incident |
 | (b) research write-ups | `research/<nn-topic>/` (README, data, one-off tools) | yes | append new studies; don't rewrite history |
 | (c) private mirror baseline | `site/` (byte-identical), `site-pretty/` (Prettier copy) — **main checkout only** | **never** (gitignored) | only `mirror.mjs` / `prettify.mjs`, run by the user |
 | (d) per-fix experiments | `fixes/<topic>/` `README.md`, `patch.diff`, `results.json` (+ gitignored `overlay/`) | deliverables only, local branches | one fix agent per topic, in its own worktree |
@@ -54,9 +54,10 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    change MUST come with a covering test (new or updated in `tests/`) and `npm test` MUST pass; an
    accidental edit caught by a failing test MUST be reverted; tests MUST NOT be weakened to go green
    (change a test only for a genuine, intended behaviour change). Tool fixes go in a separate commit
-   from fix deliverables and are reported to the lead, who lands them on `main` first (rule 1) for
-   everyone. Changes to measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`) MUST be called
-   out in the fix's README and `results.json` notes: they affect A/B comparability. The enforcement
+   from fix deliverables and are reported to the lead as an incident ("Unexpected problems"), who
+   lands them on `main` first (rule 1) for everyone. Changes to measurement code (`verify.mjs`,
+   `lib/cdp.mjs`, `fix.mjs ab`) MUST be called out in the fix's README and `results.json` notes: they
+   affect A/B comparability. The enforcement
    layer (`.githooks/`, `.claude/hooks/`, `.claude/settings.json`) is not tooling: edits ask the user.
    *Why:* tools have bugs; tests, not a ban, keep them right for every agent. *Enforced:* the
    `pre-commit` hook runs `npm test` when tooling is staged; `fix-reviewer` checks tests and commit
@@ -87,7 +88,8 @@ shared by all worktrees): `git config core.hooksPath .githooks` (= `npm run setu
 the hooks of its own branch), `git config merge.ff only`, `git config pull.rebase true`. Hook tests:
 `node --test 'tests/hooks/*.test.mjs'`. Known gaps: git started from a script (`node -e`, `find -exec`)
 is not seen by git-guard, but the git hooks still refuse merge commits and pushes; a human can switch
-the git hooks off, so for the user rule 1 stays a promise.
+the git hooks off, so for the user rule 1 stays a promise. `node tools/lock.mjs run … -- <cmd>` is
+pre-approved and git-guard doesn't look inside it: never run git through it.
 <!-- END hard-rules -->
 
 ## Calibrated measurement setting
@@ -142,8 +144,12 @@ npm run test:all      # both
   comes with a test that covers it (new or updated in `tests/`), and `npm test` must pass.
 - If a test fails after an accidental edit, **revert the edit**. Change a test only to reflect a
   genuine, intended behaviour change; never weaken a test just to go green.
-- Tool fixes go in **their own commit**, separate from fix deliverables, and are reported to the lead,
-  who lands them on main (rebase + ff-only) so every worktree gets them.
+- Tool fixes go in **their own commit**, separate from fix deliverables, and are reported to the lead
+  as an incident, who lands them on main (rebase + ff-only) so every worktree gets them. The lead
+  runs `npm test` on the exact commit in the **main checkout** too: it has `site/`, worktrees don't.
+- `npm test` is about 35 s of CPU: while others may be measuring, run it under the lock,
+  `node tools/lock.mjs run chrome-measure --owner <you> -- npm test` (not `test:chrome`: it takes the
+  lock itself), and hold the lock as a lease around a commit whose hook runs it (`fixes/INCIDENTS.md`).
 - Changes to measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`; `serve.mjs` and
   `vendor-shim.js` where they change what is served) must be called out explicitly: they affect the
   comparability of A/B results measured before and after. Run `npm run test:chrome` after them.
@@ -160,12 +166,18 @@ npm run test:all      # both
 - `fix-owner` (opus/high, `isolation: worktree`): one topic or conflict cluster end to end; spawn it
   with `subagent_type: "fix-owner"` and the filled-in prompt from `fixes/AGENT_PROMPT.md`. It may spawn
   `bundle-mapper` helpers.
-- `bundle-mapper` (sonnet/medium, read-only): map bundle code, find callers, summarize data; pass
-  `model: "haiku"` for mechanical jobs. `fix-reviewer` (opus/high, read-only): adversarial review of a
-  finished fix against `fixes/README.md` "Definition of done", spawned by the lead.
-- Only fix owners measure; helpers and reviewers never run Chrome, the iPhone or the locks.
-- Lead procedure: `fixes/LEAD.md`. Nesting limits, what teammates take from a definition (not
-  `effort`, not `isolation`), model/effort per task, Serena use: `fixes/AGENT_ROLES.md`.
+- `toolsmith` (opus/high, worktree subagent): one incident in `tools/`/`tests/`, test-first, one
+  separate commit; spawned by the lead per incident. `wave-integrator` (opus/high, worktree
+  subagent): combines a landed wave, measures it, writes it up; spawned by the lead.
+- `bundle-mapper` (sonnet/medium, read-only): map bundle code, find callers, summarize data, answer
+  web-platform questions; pass `model: "haiku"` for mechanical jobs. `fix-reviewer` (opus/high,
+  read-only): adversarial review of a finished fix, a combined wave or a measurement-code tool fix,
+  spawned by the lead.
+- Only fix owners and the integrator measure; the toolsmith runs tests; helpers and reviewers never
+  run Chrome, the iPhone or the locks. The lead coordinates incidents and is the only one who lands.
+- Roster, who may do what, nesting limits, what teammates take from a definition (not `effort`, not
+  `isolation`), model/effort per task, Serena use: `fixes/AGENT_ROLES.md`. The project loop and
+  landing: `fixes/LEAD.md`. Incidents: `fixes/INCIDENTS.md`.
 
 ## Parallel agents: worktree subagents or an agent team
 
@@ -192,6 +204,26 @@ Team conventions (messages go to the lead and to teammates named in `fixes/TOPIC
   nav-hit-test" or "future `l` also toggles `.pain is-pain-dark`". Don't edit code another topic owns;
   describe the change you need and let the owner decide.
 - Report when done: topic, branch, one-line verdict with the key delta and spread, files touched.
+
+## Unexpected problems: incidents
+
+Anything that breaks outside your own topic's code (a tool crashes or reports odd numbers; Chrome,
+ports, locks, the iPhone or Serena misbehave; the baseline looks wrong; a web-platform question
+blocks a decision) is an **incident**: report it once, keep working, rebase when it is announced
+fixed. Report fields, triage, escalation and the lead's side: `fixes/INCIDENTS.md`.
+
+```sh
+node tools/incident.mjs list                       # open problems and their workarounds (at start and on resume)
+node tools/incident.mjs open --by <you> --title "<what failed>" --error "<first error line>" \
+  --cmd "<command>" --class tool|env|baseline|research|fix|unknown --blocking yes|no
+#   OPENED <id>: message the lead | JOINED <id>: already reported, use its workaround | KNOWN <id>: git rebase main, retry
+node tools/incident.mjs wait <id> --timeout 3600   # in the background: exits with the announcement when resolved
+```
+
+The store lives in the shared git dir (`.git/fastwork-mirror/incidents/`), so every worktree sees a
+report at once. Only the lead triages, sends a `toolsmith`, lands the fix and resolves. "incident
+<id> RESOLVED … fixed in <sha>" means: `git rebase main` between steps (never mid-A/B) and
+continue; re-measure if it says "Re-measure".
 
 ## Serena (code navigation, read-only)
 

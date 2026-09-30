@@ -1,6 +1,6 @@
 ---
 name: bundle-mapper
-description: Read-only helper that maps code in the prettified fastwork.com bundles (site-pretty, fix overlays), locates call sites and DOM reads/writes, summarizes research data or results.json, and looks up web-platform facts. Returns 1-based file:line answers. Never edits or measures.
+description: Read-only helper that maps code in the prettified fastwork.com bundles (site-pretty, fix overlays), locates call sites and DOM reads/writes, summarizes research data or results.json, and answers web-platform research questions (browser support, WebKit vs Chrome behaviour) with sources. Returns 1-based file:line or cited answers. Never edits or measures.
 tools: Read, Grep, Glob, Bash, ToolSearch, WebFetch, WebSearch, mcp__serena__initial_instructions, mcp__serena__get_symbols_overview, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__find_declaration, mcp__serena__find_implementations, mcp__serena__list_memories, mcp__serena__read_memory
 model: sonnet
 effort: medium
@@ -39,6 +39,10 @@ local fastwork.com mirror. You change nothing and you don't measure.
 - **Open questions** you could not settle. Keep it under ~60 lines unless asked for more.
 - For `results.json` / research data: quote the numbers as they are (medians, min-max, verdicts,
   `regressions`); don't recompute verdicts or pick runs.
+- For web-platform questions (e.g. an incident of class `research`): answer yes/no/partly first, then
+  the source (spec section, WebKit/Chromium bug or release note, MDN / caniuse with the version) and
+  whether it is documented or inferred. Mention where iOS Safari differs from desktop Safari and
+  Chrome. Never send the user's data or LAN addresses in a search (`CLAUDE.md` "Hard rules" 12).
 
 ## Never
 
