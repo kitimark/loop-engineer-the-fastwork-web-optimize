@@ -3,10 +3,10 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (within noise at n=5, consistent direction); equivalence probe: 0 mismatches in 1690 points
+**Status:** mechanism by construction (2 inline `pointer-events` writes per scroll frame -> 0), gain pending combined; timing void (contaminated, load 11.3-17.5, and old-tools, before I-002 4bbd249). Equivalence probe: 0 mismatches in 1690 points.
 **Topic:** `fixes/TOPICS.md` #3 `nav-hit-test` (cluster B with #6 `morph-scrolljack-passive`, same owner)
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`, component `dN` (fixed top nav): `F` (pretty 12955-12963),
-`ee` (12964-12966), the nav scroll callback `_` (13002). No CSS.
+`ee` (12964-12977; the patch changes its lookup, line 12965), the nav scroll callback `_` (13002). No CSS.
 
 ## Why it lags
 
@@ -77,14 +77,9 @@ tools; the wave integrator's combined run is the other place to confirm it.
 | morph: LoAF ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
 | morph: forced style+layout ms (in LoAF) | 0 [0-0] | 0 [0-0] | 0 | within noise |
 
-A/A noise floor (fix-countdown-idle-raf, same setting, n=5, 413a293): scroll fps 71.4-77, frames >20 ms 54-78
-(median delta +6), LoAF 195-283 ms, forced 34-83 ms; ">20 ms deltas under ~15 are noise".
-
-Reading: no metric clears the strict "ranges don't overlap" bar. fps (+6.2) and frames >20 ms (-36, i.e. -37 %)
-move in the expected direction and by more than the A/A median delta, and the overlap comes from one patched run
-(run 1: 69.9 fps / 104 frames; runs 2-5: 73.5-77.8 fps / 60-78 frames). LoAF and forced style+layout (which only
-count frames > 50 ms) don't move. Verdict: **within noise, likely small win in the per-frame cost**; the combined
-`nav-morph` A/B is the place to re-check it.
+Reading: no metric clears the strict "ranges don't overlap" bar, and the run is void for timing (contaminated,
+old-tools, see above). Verdict: **within noise; gain pending the combined A/B** (E1 `nav-morph-all`, then the
+quiet-host wave run). The mechanism (no inline style writes on the nav from `F()`) holds by code.
 
 ## Equivalence check
 
@@ -104,11 +99,11 @@ pain, platform) and the actions/expanded-panel boxes that keep `pointer-events: 
 
 ## Experiments tried
 
-| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status |
-|---|---|---|---|---|---|---|---|---|
-| nav-hit-test/01 | `F()` via `elementsFromPoint` (no inline `pointer-events` writes) + cached `querySelector` in `ee`/`_` | removes 2 subtree style invalidations + forced recalcs per scroll frame; frames >20 ms and fps should move | within noise | contaminated (host load 11.3-17.5 at start) + old-tools (before I-002) | frames >20 ms 98 [85-135] -> 62 [60-104], fps 69.1 [61.1-71.4] -> 75.3 [69.9-77.8], LoAF/forced flat, n=5 | `results.json`, `variants/01.diff`, out/ab/nav-hit-test/2026-09-30T21-19-14-853Z | direction consistent in 4 of 5 patched runs; LoAF only sees >50 ms frames, so a per-frame saving shows in >20 ms first | on branch; retry the A/B on a quiet host with current tools |
-| nav-hit-test/02 | equivalence probe: original toggle + `elementFromPoint` vs patched filter, same frame, 10 x per step, mobile + desktop + morph | the patched filter returns the same element / `j()` everywhere | better (0 mismatches) | clean (deterministic check, timing-independent) | 0 / 680 points mobile, 0 / 1010 desktop | README "Equivalence check"; probe log `scratchpad/nav-morph/probe-1.log`; no patch kept (a probe of #01, not a site change: `variants/01.diff`) | explicit `pointer-events:auto` descendants (actions, expanded panel) are the only nav boxes that stay hit-testable | done |
-| nav-hit-test/03 | architecture review: IO-gate `ee()` on `#profile-showcase`, `.hero-track` 0.72 test as IO (T7) | drop the per-frame `getComputedStyle` + 3 rects in `_` | abandoned (not built) | - | - | README "Next iteration"; no patch kept (never built) | after #01, `_` still needs one forced layout for `F()` (nav rect + `elementsFromPoint`); the other reads then hit clean layout and cost little, so the gain needs wave-2 scroll-engine batching (reads before writes) first | retry when scroll-engine batching lands |
+| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status | bench |
+|---|---|---|---|---|---|---|---|---|---|
+| nav-hit-test/01 | `F()` via `elementsFromPoint` (no inline `pointer-events` writes) + cached `querySelector` in `ee`/`_` | removes 2 subtree style invalidations + forced recalcs per scroll frame; frames >20 ms and fps should move | within noise | contaminated (host load 11.3-17.5 at start) + old-tools (before I-002) | frames >20 ms 98 [85-135] -> 62 [60-104], fps 69.1 [61.1-71.4] -> 75.3 [69.9-77.8], LoAF/forced flat, n=5 | `results.json`, `variants/01.diff`, out/ab/nav-hit-test/2026-09-30T21-19-14-853Z | direction consistent in 4 of 5 patched runs; LoAF only sees >50 ms frames, so a per-frame saving shows in >20 ms first | on branch; retry the A/B on a quiet host with current tools | pending runner: `variants/01.diff`; suggested Tier A mech: MutationObserver `style` attribute records on the nav `<header>` during scroll (baseline ~2 per frame, patched 0) |
+| nav-hit-test/02 | equivalence probe: original toggle + `elementFromPoint` vs patched filter, same frame, 10 x per step, mobile + desktop + morph | the patched filter returns the same element / `j()` everywhere | pass (probe) | clean (deterministic check, timing-independent) | 0 / 680 points mobile, 0 / 1010 desktop | README "Equivalence check"; probe log `scratchpad/nav-morph/probe-1.log`; no patch kept (a probe of #01, not a site change: `variants/01.diff`) | explicit `pointer-events:auto` descendants (actions, expanded panel) are the only nav boxes that stay hit-testable | done | no patch kept (a probe of /01, not a site change) |
+| nav-hit-test/03 | architecture review: IO-gate `ee()` on `#profile-showcase`, `.hero-track` 0.72 test as IO (T7) | drop the per-frame `getComputedStyle` + 3 rects in `_` | abandoned (not built) | - | - | README "Next iteration"; no patch kept (never built) | after #01, `_` still needs one forced layout for `F()` (nav rect + `elementsFromPoint`); the other reads then hit clean layout and cost little, so the gain needs wave-2 scroll-engine batching (reads before writes) first | retry when scroll-engine batching lands | no patch kept (never built) |
 
 ## Risks, conflicts, follow-ups
 
