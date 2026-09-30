@@ -29,6 +29,14 @@ the same behaviour), listed per topic and summarised in the conflict table at th
 | 10 | `toolbar-resize` | iOS toolbar collapse fires `resize` (36 in the first seconds on iPhone); the engine re-runs every callback on `resize`, and each re-measures | Ignore height-only resizes (compare `innerWidth`), use `svh`/`lvh` in CSS, `visualViewport` where needed | JS 2672-2687 (`aE`/`oE` `resize` listener) + callbacks that read `innerHeight` (14 sites) | S-M, needs the iPhone finger test (Chrome can't collapse a toolbar) |
 | 11 | `pain-offscreen-notes` | `section.pain`: `setInterval(3 s)` adds notes that are `display:none` at <= 860 px (DOM churn for nothing on phones); scroll callback reads `.commission-card` rect | Don't start the interval when the notes are hidden / off-screen | JS 4540-4740 (interval 4696, `dE` 4736) | S |
 | 12 | `scene-gating-tighten` | IO gate `rootMargin: "100% 0px"`: a tall section counts as active whenever any part is within one viewport, so its effects keep running; `content-visibility` / `will-change` toggling churn at ±1 viewport | Gate per effect element (not per section), smaller margins | JS 2690-2780 (`sE`, `cE`, `lE`, `uE`, `dE`) | M |
+| 13 | `morph-panel-lazy-mount` | *Found in wave 1 by fix-nav-morph.* When `#platform` comes within 200 %, the `dN` IntersectionObserver callback (JS 13082-13084, `u && z(b, !0)`) mounts the whole morph panel (`lN` template at 12878: 5 columns of ~21 `loading=eager` imgs, a second countdown `cD`, CTAs, footer) synchronously inside one scroll frame: 42-75 ms LoAF at 6x (15-24 ms forced style+layout), the largest first-party LoAF of the scroll phase in 9/10 runs. The panel stays invisible (opacity from `--morph`) until the morph starts, and its countdown then springs invisibly | Mount in an idle callback after load (or on the IO with a wider margin via `requestIdleCallback`, sync fallback when the morph starts); lazy images; pass the panel's shown state to its countdown so it pauses while hidden (with `countdown-idle-raf`) | JS 12878 (`lN`), 13082-13084 (`dN` IO), countdown mount 13160 | M; owner fix-nav-morph (cluster B) |
+
+Other wave-1 findings, folded into existing topics: the `start-selling-platform-i-doc-sweep`
+`background-position` text sweep (CSS ~11103) repaints ~50/s at idle at the page bottom on iPhone
+(topic 9); the hero `.scroll-cue` keeps `filter: blur(calc(var(--exit-scatter)*18px))` = `blur(0)` at
+rest and repaints every frame while scattering (topic 7); the second countdown inside the morph panel
+(topics 1 + 13). Safari 26 pitfall for topic 7: keyframes that reference an animated custom property
+resolve against its base value.
 
 Not fixable here: GA4 `onscrollend` (gtag, ~45 ms once per run) and Hotjar's MutationObserver cost
 (it drops by itself when the page writes fewer styles). Page-load weight (desktop-only hero covers
