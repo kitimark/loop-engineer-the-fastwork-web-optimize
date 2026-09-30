@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, startServe, node, request, freePort, sha256, REPO } from '../helpers.mjs';
+import { tempDir, startServe, startProc, node, tool, request, freePort, sha256, REPO, TESTS } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS, PAGE_CSS, CHUNK_JS, VENDOR_KEY, CSP_LOCAL, LINK, PNG } from '../fixtures/baseline.mjs';
 
 let fx, env, ovA, ovB;
@@ -39,6 +39,21 @@ test('--port 0 --state: MIRROR_URL line and state file agree; state file removed
   assert.equal(st.https, false);
   assert.equal((await request(s.url)).status, 200);
   await s.stop();
+  assert.equal(existsSync(stateFile), false);
+});
+
+test('--state is complete on disk before MIRROR_URL is printed, even when the write is slow (incident I-014)', async () => {
+  // Contract: MIRROR_URL= is the readiness line agents and tests wait for; the state file must already
+  // exist (and be whole JSON) at that moment. The preload makes the state write take 1.5 s.
+  const stateFile = join(fx.home, 'out', 'slow-state.json');
+  const p = await startProc(process.execPath, ['--import', join(TESTS, 'fixtures', 'slow-state-write.mjs'), tool('serve.mjs'), '--port', '0', '--quiet', '--state', stateFile],
+    { env: { ...env, SLOW_STATE_MS: '1500' } });
+  servers.push(p);
+  const seen = existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, 'utf8')) : null; // checked the moment MIRROR_URL appeared
+  assert.ok(seen, 'state file missing when MIRROR_URL was printed');
+  assert.equal(seen.url, p.url);
+  assert.equal(seen.pid, p.proc.pid);
+  await p.stop();
   assert.equal(existsSync(stateFile), false);
 });
 

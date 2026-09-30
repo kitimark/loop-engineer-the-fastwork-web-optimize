@@ -350,14 +350,18 @@ function announce() {
     if (TWIN_PORT) for (const a of lan) console.log(`  iPhone: http://${a.address}:${TWIN_PORT}/   (${a.name})  <- open this on the iPhone (same Wi-Fi; iphone.mjs open also switches an https URL of this server to it)`);
     for (const a of all.filter((x) => !lan.includes(x))) console.log(`  other:  ${proto}://${a.address}:${PORT}/   (${a.name}, VPN/other interface)`);
   }
-  console.log(`\nMIRROR_URL=${url}`); // machine-readable (tools/fix.mjs and agents grep for it)
+  // The state file is complete on disk before MIRROR_URL (the readiness line) is printed, and written
+  // via a temp file + rename so a poller never reads half a JSON (incident I-014).
   if (STATE_FILE) {
     mkdirSync(dirname(STATE_FILE), { recursive: true });
-    writeFileSync(STATE_FILE, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, httpTwin: TWIN_PORT, latency: LATENCY, checkout: ROOT_DIR, startedAt: new Date().toISOString() }, null, 1));
+    const tmp = `${STATE_FILE}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, httpTwin: TWIN_PORT, latency: LATENCY, checkout: ROOT_DIR, startedAt: new Date().toISOString() }, null, 1));
+    renameSync(tmp, STATE_FILE);
     const cleanup = () => { try { if (JSON.parse(readFileSync(STATE_FILE, 'utf8')).pid === process.pid) unlinkSync(STATE_FILE); } catch {} };
     process.on('exit', cleanup);
     for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(sig, () => process.exit(0));
   }
+  console.log(`\nMIRROR_URL=${url}`); // machine-readable (tools/fix.mjs and agents grep for it)
   console.log('');
 }
 
