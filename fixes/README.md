@@ -7,7 +7,12 @@ baseline, measured A/B against that baseline under a cross-worktree lock, and de
 fixes/<topic>/
   README.md      why it lags (evidence), what changed, why that is faster, before/after table
   patch.diff     unified diff of overlay vs baseline (URL paths; Fastwork excerpts: local branches only)
-  results.json   fix.mjs ab output: medians, min-max spread, per-run values, deltas, verdicts, regressions
+  results.json   fix.mjs ab output: medians, min-max spread, per-run values, deltas, verdicts, regressions;
+                 since I-002 (c1124ec + 4bbd249) also `config.idle` and `metrics.idle` (the same 10 metrics for
+                 a 6 s idle phase at the top before scrolling, "idle: …" rows in `markdown`; absent with
+                 `--idle 0`). Compare A/B, A/A and bench numbers only within one tools version: I-002 also
+                 moved the scroll/morph start by 6 s and drops the frame and late LoAF entries that straddle
+                 a phase reset
   overlay/       GITIGNORED full copies of the modified files (rebuild: node tools/fix.mjs apply <topic>)
 ```
 
