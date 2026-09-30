@@ -19,6 +19,12 @@ Still ask the user for what only they can do or approve: iPhone finger tests, ed
 enforcement layer (`.claude/settings.json`, `.claude/hooks/`, `.githooks/`) when Claude Code's
 safety check blocks them, and anything that leaves this machine.
 
+Interventions on shared state go through a tool, never raw writes: fixing lock, queue or incident state
+by hand (`node -e writeFileSync(...)` on `.git/fastwork-mirror/`) is unaudited, can race a live acquire,
+and Claude Code's safety check rightly blocks it (I-012). Use `lock.mjs doctor` / `lock.mjs repair … --apply`
+(dry-run by default, audited in `locks/audit.log`) and `incident.mjs`. If no subcommand covers the case,
+open an incident and have a toolsmith add one rather than editing the file.
+
 ## The loop
 
 ```mermaid
