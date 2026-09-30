@@ -1,0 +1,223 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--noblur
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--noblur
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2124,6 +2124,125 @@
+     right: -45px;
+   }
+ }
++/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
++   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
++   Range `contain 0% contain 100%` = the JS formula 1 - clamp(-top, 0, h - innerHeight) / (h - innerHeight).
++   Only once the entrance is over (desktop: .is-splash-done / .is-ring-splash-done; phones: always), the
++   same moment the JS stops writing --exit-opacity (hm in 2.DyWL8TcE.js), because keyframes must not
++   reference the entrance's animated --entered / --copy-in. On phones the scroll cue's own entrance
++   animates --copy-in, so its exit runs on its only child, .scroll-float (same pixels).
++   opacity/transform/translate animations are separate from the blur ones (compositable); the exit blur
++   starts just after 0 with fill none, so at rest filter is none instead of blur(0).
++   Where unsupported, the JS keeps writing --exit-opacity and the rules above apply unchanged. */
++@supports (animation-timeline: view()) and (animation-range: contain 0% contain 100%) {
++  @keyframes svelte-1p2vpne-hero-exit-card {
++    from {
++      opacity: 1;
++      translate: 0px 0px;
++    }
++    to {
++      opacity: 0.65;
++      translate: var(--scatter-x) var(--scatter-y);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-copy {
++    from {
++      opacity: 1;
++      transform: translateY(0px);
++    }
++    to {
++      opacity: 0;
++      transform: translateY(-10px);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-copy-m {
++    from {
++      opacity: 1;
++      transform: translate(-50%, 0px);
++    }
++    to {
++      opacity: 0;
++      transform: translate(-50%, -8px);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade {
++    from {
++      opacity: 1;
++    }
++    to {
++      opacity: 0;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade-up {
++    from {
++      opacity: 1;
++      translate: 0px 0px;
++    }
++    to {
++      opacity: 0;
++      translate: 0px -10px;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-blur {
++    from {
++      filter: blur(0px);
++    }
++    to {
++      filter: blur(18px);
++    }
++  }
++  @media (prefers-reduced-motion: no-preference) {
++    .hero-track.svelte-1p2vpne {
++      view-timeline-name: --hero-exit;
++      view-timeline-axis: block;
++    }
++    @media (width>600px) {
++      .is-splash-done .orbit-card.svelte-1p2vpne,
++      .is-splash-done .orbit-card.float.svelte-1p2vpne {
++        animation: 1ms linear both svelte-1p2vpne-hero-exit-card;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0% contain 100%;
++      }
++      .is-ring-splash-done .hero-copy.svelte-1p2vpne {
++        filter: none;
++        animation:
++          1ms linear both svelte-1p2vpne-hero-exit-copy;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0% contain 100%;
++      }
++      .is-ring-splash-done .scroll-cue.svelte-1p2vpne {
++        filter: none;
++        animation:
++          1ms linear both svelte-1p2vpne-hero-exit-fade;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0% contain 100%;
++      }
++    }
++    @media (width<=600px) {
++      .mobile-deck.svelte-1p2vpne .orbit-card:where(.svelte-1p2vpne) {
++        animation: 1ms linear both svelte-1p2vpne-hero-exit-card;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0% contain 100%;
++      }
++      .hero-copy.svelte-1p2vpne,
++      .is-ring-splash-done .hero-copy.svelte-1p2vpne {
++        animation: 1ms linear both svelte-1p2vpne-hero-exit-copy-m;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0% contain 100%;
++      }
++      .scroll-cue.svelte-1p2vpne {
++        filter: none;
++      }
++      .scroll-float.svelte-1p2vpne {
++        animation:
++          1ms linear both svelte-1p2vpne-hero-exit-fade-up,
++          2.2s ease-in-out infinite svelte-1p2vpne-scroll-float;
++        animation-timeline: --hero-exit, auto;
++        animation-range: contain 0% contain 100%, normal;
++      }
++    }
++  }
++}
+ @media (prefers-reduced-motion: reduce) {
+   .hero-track.svelte-1p2vpne {
+     height: auto;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4160,6 +4160,22 @@
+       i = 0,
+       a = 0,
+       o = !1,
++      // hero-exit-scroll-timeline: once the entrance is over (is-splash-done / is-ring-splash-done;
++      // at mount on phones and with reduced motion), and where CSS scroll-driven animations are
++      // supported, the exit (--exit-opacity / --exit-scatter) is a CSS animation on the `--hero-exit`
++      // view timeline of .hero-track (@supports block in 2.gBuqKVzi.css): heMode = CSS mode, no per-frame
++      // rect read / style write. During the desktop entrance (first ~1.8 s) the entrance animates
++      // --entered / --copy-in, which exit keyframes can't reference (Safari resolves keyframe var()
++      // against the base value), so the original per-frame path (c -> s) runs until d().
++      // pointer-events (r < 0.05, i.e. track bottom < ~1.05 viewport heights) comes from an
++      // IntersectionObserver in CSS mode.
++      heCss = !!window.CSS?.supports?.(`(animation-timeline: view()) and (animation-range: contain 0% contain 100%)`),
++      heMode = !1,
++      heIn = !0,
++      heIO = null,
++      hePE = () => {
++        x.style.pointerEvents = heIn || e.matches ? `` : `none`;
++      },
+       s = () => {
+         if (((i = 0), e.matches)) {
+           (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
+@@ -4181,7 +4197,13 @@
+           window.clearTimeout(r),
+           (r = 0),
+           C.classList.add(`is-splash-done`),
+-          x.classList.add(`is-ring-splash-done`));
++          x.classList.add(`is-ring-splash-done`),
++          heCss &&
++            ((heMode = !0),
++            i && window.cancelAnimationFrame(i),
++            (i = 0),
++            x.style.removeProperty(`--exit-opacity`),
++            hePE()));
+       },
+       f = (e) => {
+         let t = e - a,
+@@ -4205,6 +4227,7 @@
+           window.clearTimeout(r),
+           (r = 0),
+           (o = !1),
++          heCss && ((heMode = !1), c()),
+           C.classList.add(`is-preparing`),
+           x.classList.add(`is-preparing`),
+           C.classList.remove(`is-splash-done`, `is-expanding`),
+@@ -4236,15 +4259,36 @@
+       t.matches && d();
+     };
+     (t.addEventListener(`change`, h), window.addEventListener(`pageshow`, m));
+-    let g = dE(c, { deferRendering: !0, element: b });
++    // hero-exit-scroll-timeline: in CSS mode (heMode) the dE callback is a no-op; dE stays registered for
++    // its side effects on the track (scene pause + render deferral).
++    let g = dE(
++        () => {
++          heMode || c();
++        },
++        { deferRendering: !0, element: b },
++      ),
++      heSync = () => {
++        heMode && hePE();
++      };
+     return (
+-      s(),
++      heCss &&
++        ((heIO = new IntersectionObserver(
++          (n) => {
++            for (let e of n) heIn = e.isIntersecting;
++            heSync();
++          },
++          { rootMargin: `-105% 0px 200% 0px` },
++        )),
++        heIO.observe(b),
++        e.addEventListener(`change`, heSync)),
++      heMode || s(),
+       () => {
+         (l(),
+           window.clearTimeout(r),
+           i && window.cancelAnimationFrame(i),
+           t.removeEventListener(`change`, h),
+           window.removeEventListener(`pageshow`, m),
++          heIO && (heIO.disconnect(), e.removeEventListener(`change`, heSync)),
+           g());
+       }
+     );
