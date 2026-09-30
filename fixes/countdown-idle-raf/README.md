@@ -3,7 +3,11 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (scroll phase within noise). The idle-phase measurement is pending incident I-002.
+**Status:** draft. `patch.diff` is variant 03 (sha256 160d69a0…); **the committed `results.json` predates it**:
+it measured variant 02 (no `active` prop; `results.json` `patch.sha256` 2feaf189…), with old tools (before
+I-002) at host load 9.6-19.5. It will be replaced by the final `ab --runs 5`, which is held for the host-load
+gate (ts-i017) or a quiet window. The only difference between 02 and 03 is the `active` prop (hunk 4 below),
+which is inert unless a call site passes it.
 **Topic:** see `fixes/TOPICS.md` (countdown-idle-raf)
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`. Pretty lines: `$E` (digit) 3823-3876,
 `tD` (number) 3878-3904, `cD` (countdown) 3918-3943. No CSS.
@@ -30,7 +34,7 @@
 
 ## What changed
 
-Three hunks in `patch.diff`:
+Four changes in `patch.diff`:
 
 1. **Off-screen pause (`cD`).** An `IntersectionObserver` (`rootMargin: 64px 0px`) on the countdown
    root sets a new `__cdVisible` state. The observer is disconnected in the same cleanup as the
@@ -46,6 +50,11 @@ Three hunks in `patch.diff`:
    changed properties, so while a spring runs only the ~2 faces inside the cell get a style write
    per frame instead of 10. Visible pixels are identical: the in-cell faces are unchanged, and the
    faces at exactly +-1 are where the original already puts the neighbours at rest.
+4. **`active` prop (`cD`, variant 03).** `cD` accepts an optional `active` prop (`__cdActive =
+   R(() => r.active !== !1)`) and hands `animate = visible && active` to the digits. An
+   IntersectionObserver can't see `opacity: 0`, so a countdown that is mounted but invisible (the morph
+   panel's second countdown at 13160, which sits in the viewport at opacity ~0) would keep springing;
+   the call site can now pause it. Without the prop (the hero at 4333) nothing changes.
 
 The spring itself is kept rather than replaced by a CSS `transition` (the TOPICS.md suggestion). The
 spring moves a continuous value, and the 0->9 wrap sweeps through all the digits. A per-face CSS
@@ -125,10 +134,12 @@ iPhone: not used.
 - Behaviour: desktop and phones run the same code. Reduced motion is unchanged: the `YE` check comes
   first. Off-screen digit changes snap, which the user can't see. At the IO edge (64 px margin), a
   digit could snap instead of spring during the frame before the observer callback arrives.
-- Overlap: `cD` is mounted from the nav/morph block (13160, owned by fix-nav-morph), but only
-  `cD`'s body changed, not the call site. It is independent of the scroll engine.
+- Overlap: **this patch defines the `active` contract that nav-morph's `morph-panel-lazy-mount` uses**:
+  its call site at 13160 passes `cD(…, { inverse: !0, get active() { return s(E); } })`. Without this
+  patch (e.g. 630d944, variant 02) that prop is ignored, and the panel's countdown animates invisibly
+  for the whole visit (found by the wave-1 dry combine, wave1-dry 6d71548). Land both together, or this
+  one first. Only `cD`'s body changed here, not the call site. It is independent of the scroll engine.
 - Follow-ups:
-  1. Re-measure with the idle phase once I-002 lands. That is where this fix should show.
-  2. Optional: an attribution variant `countdown-idle-raf--layers` (drop
-     `.face.svelte-1quva9c{will-change:transform}`, ~160 layers across both countdowns) is prepared
-     in the worktree but was not measured (lock budget).
+  1. Final `ab --runs 5` of variant 03 with the idle phase (I-002), after the host-load gate.
+  2. Probe queued (count-only: layers, face style writes, digit parity, idle counters for base / 03 /
+     05). Variant 05 (one `will-change` strip per digit, architecture review) is in `variants/05.diff`.

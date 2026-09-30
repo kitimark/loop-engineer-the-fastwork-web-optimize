@@ -1,0 +1,89 @@
+# fastwork mirror fix: countdown-idle-raf
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply countdown-idle-raf
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3824,10 +3824,13 @@
+   D(r, !0);
+   let i = R(() => qE(r.value, r.place)),
+     a = N(I(o(() => s(i)))),
+-    c = N(0);
++    c = N(0),
++    /*countdown-idle-raf: false while the countdown is off-screen*/
++    __cdAnimate = R(() => r.animate !== !1);
+   b(() => {
+     let e = s(i);
+-    if (YE.current) {
++    /*countdown-idle-raf: no spring while off-screen; snap like reduced motion*/
++    if (YE.current || !s(__cdAnimate)) {
+       z(a, e, !0);
+       return;
+     }
+@@ -3859,7 +3862,8 @@
+               (e) => {
+                 ((o = S(i, ``, o, e)), t(u, r));
+               },
+-              [() => ({ transform: `translateY(${KE(r, s(a)) * s(c)}px)` })],
++              /*countdown-idle-raf: faces >= 1 cell away are clipped by .digit{overflow:hidden}; park them at +-1 cell so only the faces in view get a style write per frame*/
++              [() => ({ transform: `translateY(${Math.max(-1, Math.min(1, KE(r, s(a)))) * s(c)}px)` })],
+             ),
+             f(n, i));
+         },
+@@ -3894,6 +3898,9 @@
+         get place() {
+           return s(n);
+         },
++        get animate() {
++          return t.animate;
++        },
+       });
+     },
+   ),
+@@ -3920,6 +3927,9 @@
+   let a = C(r, `inverse`, 3, !1),
+     o = R(WT),
+     c = N(null),
++    __cdVisible = N(!0),
++    /*countdown-idle-raf: optional `active` prop from the call site (false = mounted but not shown, e.g. opacity 0)*/
++    __cdActive = R(() => r.active !== !1),
+     u = R(() => (s(c) === null ? null : rD(s(c)))),
+     d = R(() => s(o).waitlist.units),
+     p = R(
+@@ -3933,11 +3943,22 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    let t = window.setInterval(e, 1e3);
++    let t = window.setInterval(e, 1e3),
++      /*countdown-idle-raf: digits spring only while the countdown is on screen*/
++      __cdIo =
++        typeof IntersectionObserver == `function`
++          ? new IntersectionObserver(
++              (e) => {
++                z(__cdVisible, e[e.length - 1].isIntersecting, !0);
++              },
++              { rootMargin: `64px 0px` },
++            )
++          : null;
+     return (
++      __cdIo?.observe(h),
+       document.addEventListener(`visibilitychange`, e),
+       () => {
+-        (window.clearInterval(t), document.removeEventListener(`visibilitychange`, e));
++        (window.clearInterval(t), __cdIo?.disconnect(), document.removeEventListener(`visibilitychange`, e));
+       }
+     );
+   });
+@@ -3958,6 +3979,9 @@
+               return s(u)[i];
+             },
+             padStart: i > 0,
++            get animate() {
++              return s(__cdVisible) && s(__cdActive);
++            },
+           });
+         },
+         p = (e) => {

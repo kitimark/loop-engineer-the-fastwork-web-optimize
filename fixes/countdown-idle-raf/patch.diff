@@ -42,15 +42,17 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        });
      },
    ),
-@@ -3920,6 +3927,7 @@
+@@ -3920,6 +3927,9 @@
    let a = C(r, `inverse`, 3, !1),
      o = R(WT),
      c = N(null),
 +    __cdVisible = N(!0),
++    /*countdown-idle-raf: optional `active` prop from the call site (false = mounted but not shown, e.g. opacity 0)*/
++    __cdActive = R(() => r.active !== !1),
      u = R(() => (s(c) === null ? null : rD(s(c)))),
      d = R(() => s(o).waitlist.units),
      p = R(
-@@ -3933,11 +3941,22 @@
+@@ -3933,11 +3943,22 @@
        z(c, Date.now(), !0);
      };
      e();
@@ -75,12 +77,12 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        }
      );
    });
-@@ -3958,6 +3977,9 @@
+@@ -3958,6 +3979,9 @@
                return s(u)[i];
              },
              padStart: i > 0,
 +            get animate() {
-+              return s(__cdVisible);
++              return s(__cdVisible) && s(__cdActive);
 +            },
            });
          },
