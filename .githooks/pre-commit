@@ -1,0 +1,48 @@
+#!/usr/bin/env node
+// Versioned git pre-commit hook (enable once per clone: `npm run setup`, i.e.
+// `git config core.hooksPath .githooks`; the setting is shared by every worktree of the repo, and each
+// worktree runs the .githooks/ of its own checked-out branch).
+//
+// 1. Blocks committing mirrored Fastwork assets and secrets, even if someone used `git add -f`:
+//      site/  site-pretty/  out/  fixes/<topic>/overlay/  *.pem
+// 2. When the commit touches the tooling (tools/, tests/, package.json, .claude/settings.json,
+//    .githooks/), runs the test suite (`npm test`) and blocks the commit if it fails.
+//    FW_PRECOMMIT_TEST_CMD overrides the command (used by the hook's own tests).
+//
+// Tests run against the working tree, not only the staged snapshot: commit what you tested.
+// `git commit --no-verify` skips this hook; that is for humans in an emergency, never for agents.
+import { spawnSync } from 'node:child_process';
+
+const git = (...a) => spawnSync('git', a, { encoding: 'utf8' });
+const top = git('rev-parse', '--show-toplevel').stdout.trim();
+const list = (filter) => git('diff', '--cached', '--name-only', '-z', `--diff-filter=${filter}`).stdout.split('\0').filter(Boolean);
+
+const FORBIDDEN = [/^site\//, /^site-pretty\//, /^out\//, /^fixes\/[^/]+\/overlay\//, /\.pem$/i];
+const TOOLING = [/^tools\//, /^tests\//, /^package\.json$/, /^\.claude\/settings\.json$/, /^\.githooks\//];
+
+const added = list('ACMRT'); // deleting a forbidden path that slipped in earlier is always allowed
+const bad = added.filter((f) => FORBIDDEN.some((re) => re.test(f)));
+if (bad.length) {
+  console.error('pre-commit: refusing to commit mirrored Fastwork assets / certificates / measurement output:');
+  for (const f of bad.slice(0, 20)) console.error('  ' + f);
+  if (bad.length > 20) console.error(`  ... and ${bad.length - 20} more`);
+  console.error('Unstage them: git restore --staged <path>   (these paths are gitignored for a reason; see CLAUDE.md)');
+  process.exit(1);
+}
+
+const tooling = list('ACDMRT').filter((f) => TOOLING.some((re) => re.test(f)));
+if (!tooling.length) process.exit(0);
+
+// git exports GIT_DIR / GIT_INDEX_FILE / ... to hooks; the tests create their own temp repos, so these
+// must not leak into them (they would point every temp `git` call at this repository).
+const env = { ...process.env };
+for (const k of Object.keys(env)) if (/^GIT_/.test(k) && !/^GIT_(AUTHOR|COMMITTER)_/.test(k)) delete env[k];
+const cmd = process.env.FW_PRECOMMIT_TEST_CMD || 'npm test';
+console.error(`pre-commit: tooling changed (${tooling.slice(0, 5).join(', ')}${tooling.length > 5 ? ', ...' : ''}); running: ${cmd}`);
+const t0 = Date.now();
+const r = spawnSync(cmd, { cwd: top, env, stdio: 'inherit', shell: true });
+if (r.status !== 0) {
+  console.error(`pre-commit: "${cmd}" failed (exit ${r.status ?? r.signal}); commit blocked. Fix the tools or the tests first.`);
+  process.exit(1);
+}
+console.error(`pre-commit: tests passed in ${Math.round((Date.now() - t0) / 1000)} s`);
