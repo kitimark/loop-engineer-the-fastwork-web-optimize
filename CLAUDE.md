@@ -312,6 +312,9 @@ node tools/lock.mjs renew iphone --owner <topic> --ttl 900                   # i
 node tools/lock.mjs release iphone --owner <topic>
 ```
 
+- Lock state looks wrong: `lock.mjs doctor`; the lead repairs with `lock.mjs repair … --apply` (audited).
+  Never edit the lock JSON by hand.
+
 iPhone protocol on top of the lease:
 1. Acquire the lease, then message the lead: "iPhone acquired for <topic>: <LAN URL>".
 2. Scripted checks: `iphone.mjs scroll` for baseline and patched URLs (`fix.mjs serve` for each, or
