@@ -32,11 +32,17 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
 ## Lock-slot priority (the lead reorders owners' queue entries by this, not by arrival)
 
 1. E1 nav-morph-all (lazy mount + hit test + passive + countdown active): removes the morph IO LoAF.
+   **Done 2026-09-30 23:37Z, clean host (load1 2.9-4.3), mobile 6x n=5:** morph IO LoAF 5/5 -> 0/5, frames >50 ms
+   4 [4-5] -> 3 [2-4], >20 ms 70 [57-89] -> 36 [29-40], fps 74.9 -> 87.3, forced 41 -> 13 ms; iE's 43-45 ms forced
+   entry gone 5/5. Only gtag `onscrollend` (59-66 ms) is left above 50 ms in Chrome (F-005). `fixes/nav-morph-all/`.
 2. scroll-engine diagnostic slot: E2 state-change probe (explains the iPhone clusters), N9 idle probe, E3 animation ablation (decides N3's rank).
 3. Wave-1 combined A/B on a quiet host (the number for the goal). Changed 2026-10-01 per mgmt-lead plan item 2:
    it moves ahead of the single-topic finals. Wave-1 topics land on mechanism evidence + review
-   ("gain pending combined"), and the combined A/B is the gain check. Then wave 2 `--on` it: hero-exit,
-   scroll-engine (+ hysteresis), E4.
+   ("gain pending combined"), and the combined A/B is the gain check. Before it, a partial combine of the
+   5 landed topics (`wave1-partial`) takes the first quiet slot after E1. Then wave 2 `--on` it, in this order:
+   **N11 vendor-scrollend first** (lead decision 2026-10-01: gtag `onscrollend` is the only Chrome frame
+   > 50 ms left; until all-wave1 exists N11 runs short-lane validation only), then hero-exit,
+   scroll-engine (+ un-skip-once/hysteresis, W1), E4.
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N3 / N4 / N10 fixes as their prototypes pass Tier A.
