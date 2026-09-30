@@ -18,6 +18,11 @@ Fields:
 - **evidence**: a path to results.json, a README section or a research dir (branch if not landed).
 - **lesson**: why it won or lost; link FINDINGS T/P entries.
 - **status**: `landed`, `on branch`, `dropped`, `retry when <condition>`.
+- **bench** (user decision 2026-09-30: every experiment, not only the winner, ships a benchmark that can
+  re-verify its result): the check id in `fixes/<topic>/bench.json` `experiments[]` (its variant diff lives
+  in `fixes/<topic>/variants/<nn>.diff`), so `bench mech|gain --experiment <topic>/<nn>` reproduces the row,
+  a failure included. `pending runner` until `tools/bench.mjs` lands; `no patch kept` when the variant can't
+  be rebuilt (say why).
 
-| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status |
-|---|---|---|---|---|---|---|---|---|
+| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status | bench |
+|---|---|---|---|---|---|---|---|---|---|
