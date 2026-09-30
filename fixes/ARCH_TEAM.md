@@ -12,6 +12,7 @@ they choose the right technique the first time, and to find what the team is mis
 | `arch-lead` | opus | principal: reviews each topic's approach against best practice, synthesises the specialists' research into guidance, proposes new topics for the remaining jank, keeps `research/architecture/README.md` |
 | `arch-webkit` | opus | iOS Safari 26 / WebKit: scroll-driven animations, compositing and layers, filter/backdrop-filter raster cost, `content-visibility`, the toolbar resize and `visualViewport`, passive touch and overscroll |
 | `arch-render` | opus | style/layout/paint pipeline and Svelte 5: style recalc from custom-property writes (`@property`, containment, write scope), forced layout, LoAF reading, reactive cost in per-frame code |
+| `arch-bench` | opus | added 2026-10-01 at the user's request: automated per-topic benchmark tests (deterministic mechanism checks + statistical gain checks), the runner the toolsmith builds, and the `bench-author` role that writes one benchmark per finished topic (`research/architecture/automated-benchmarks.md`) |
 
 ## Rules
 
@@ -34,3 +35,16 @@ lead scales: add a specialist where questions queue up, and drop one whose advic
 
 | check-in | member | answered | relayed | adopted | wrong | new topics | tokens | decision |
 |---|---|---|---|---|---|---|---|---|
+
+## Automated benchmarks per topic (user request, 2026-10-01)
+
+Every finished topic should ship an automated benchmark test, so that later waves, combined overlays
+and tool changes can't silently undo its gain. Pipeline:
+
+1. `arch-bench` researches and designs it: `research/architecture/automated-benchmarks.md` covers the
+   tiers (exact mechanism counters, statistical gain budgets), the per-topic contract, the runner, and
+   worked examples. It also drafts the `bench-author` role.
+2. The lead reviews the design with the fix owners concerned (design catch-up). A `toolsmith` builds
+   the runner test-first (Hard rule 6) and the lead lands it.
+3. The lead installs `.claude/agents/bench-author.md` and spawns one `bench-author` per done topic
+   (landed or reviewed). Each writes the topic's benchmark on its own branch; the lead lands it.
