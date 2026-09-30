@@ -6,7 +6,7 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { makeTempRepo, node, nodeAsync, startProc, TESTS, sleep, sha256 } from '../helpers.mjs';
+import { makeTempRepo, node, nodeAsync, startProc, tempDir, TESTS, SLOW_EXIT, signalTwiceDuringExit, sleep, sha256 } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
 
 const FAKE = join(TESTS, 'fixtures', 'fake-chrome.mjs');
@@ -115,6 +115,24 @@ test('SIGTERM on ab: no server, verify.mjs or browser left running, lock release
   const stamp = readdirSync(join(repo.wt, 'out', 'ab', 'fast-nav')).sort().pop();
   const serverPids = ['serve-base.json', 'serve-fix.json'].map((f) => JSON.parse(readFileSync(join(repo.wt, 'out', 'ab', 'fast-nav', stamp, f), 'utf8')).pid);
   await p.stop('SIGTERM');
+  const pids = { verify: verifyPid, chrome: chromePid, base: serverPids[0], fix: serverPids[1] };
+  const left = () => Object.entries(pids).filter(([, pid]) => alive(pid)).map(([k]) => k);
+  for (let i = 0; i < 60 && left().length; i++) await sleep(50);
+  const survivors = left();
+  for (const pid of Object.values(pids)) { try { process.kill(pid, 'SIGKILL'); } catch {} }
+  assert.deepEqual(survivors, [], `still running after SIGTERM: ${survivors.join(', ')}`);
+  assert.equal(existsSync(lockFile), false, 'lock released');
+});
+
+test('two SIGTERMs on ab, the second during its exit: ab still exits via its handler and leaves nothing running (incident I-009)', async () => {
+  const env = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state-kill2'), FAKE_CHROME_LOG: join(repo.root, 'kill2.jsonl'), SLOW_EXIT_DIR: tempDir('fw-2sig-') };
+  const p = await startProc(process.execPath, ['--import', SLOW_EXIT, join(repo.wt, 'tools', 'fix.mjs'), 'ab', 'fast-nav', '--runs', '1', '--no-screens'], { cwd: repo.wt, env, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 30000 });
+  const chromePid = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === '(started)').pid;
+  const lockFile = join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json');
+  const verifyPid = JSON.parse(readFileSync(lockFile, 'utf8')).pid;
+  const stamp = readdirSync(join(repo.wt, 'out', 'ab', 'fast-nav')).sort().pop();
+  const serverPids = ['serve-base.json', 'serve-fix.json'].map((f) => JSON.parse(readFileSync(join(repo.wt, 'out', 'ab', 'fast-nav', stamp, f), 'utf8')).pid);
+  assert.deepEqual(await signalTwiceDuringExit(p.proc, env.SLOW_EXIT_DIR), { code: 130, signal: null }, 'fix.mjs exited via its handler, not killed by the second SIGTERM');
   const pids = { verify: verifyPid, chrome: chromePid, base: serverPids[0], fix: serverPids[1] };
   const left = () => Object.entries(pids).filter(([, pid]) => alive(pid)).map(([k]) => k);
   for (let i = 0; i < 60 && left().length; i++) await sleep(50);

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, startServe, startProc, node, tool, request, freePort, sha256, REPO, TESTS } from '../helpers.mjs';
+import { tempDir, startServe, startProc, node, tool, SLOW_EXIT, signalTwiceDuringExit, request, freePort, sha256, REPO, TESTS } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS, PAGE_CSS, CHUNK_JS, VENDOR_KEY, CSP_LOCAL, LINK, PNG } from '../fixtures/baseline.mjs';
 
 let fx, env, ovA, ovB;
@@ -55,6 +55,18 @@ test('--state is complete on disk before MIRROR_URL is printed, even when the wr
   assert.equal(seen.pid, p.proc.pid);
   await p.stop();
   assert.equal(existsSync(stateFile), false);
+});
+
+test('--state: a second SIGTERM while serve.mjs is exiting does not skip the state-file cleanup (incident I-009)', async () => {
+  // fix.mjs ab signals its servers twice (signal handler, then its 'exit' listener). With process.once the
+  // listener was gone after the first signal, so the second one killed serve.mjs before cleanup ran.
+  const stateFile = join(fx.home, 'out', 'serve-state-2sig.json');
+  const dir = tempDir('fw-2sig-');
+  const s = await startProc(process.execPath, ['--import', SLOW_EXIT, tool('serve.mjs'), '--port', '0', '--state', stateFile], { env: { ...env, SLOW_EXIT_DIR: dir } });
+  servers.push(s);
+  assert.equal(JSON.parse(readFileSync(stateFile, 'utf8')).pid, s.proc.pid);
+  assert.deepEqual(await signalTwiceDuringExit(s.proc, dir), { code: 0, signal: null }, 'exited via its handler, not killed by the second SIGTERM');
+  assert.equal(existsSync(stateFile), false, 'state file removed');
 });
 
 test('--port auto: per-checkout port in 5200-5999; two servers from one checkout do not collide', async () => {

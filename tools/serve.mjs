@@ -357,9 +357,12 @@ function announce() {
     const tmp = `${STATE_FILE}.${process.pid}.tmp`;
     writeFileSync(tmp, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, httpTwin: TWIN_PORT, latency: LATENCY, checkout: ROOT_DIR, startedAt: new Date().toISOString() }, null, 1));
     renameSync(tmp, STATE_FILE);
-    const cleanup = () => { try { if (JSON.parse(readFileSync(STATE_FILE, 'utf8')).pid === process.pid) unlinkSync(STATE_FILE); } catch {} };
+    let cleaned = false;
+    const cleanup = () => { if (cleaned) return; cleaned = true; try { if (JSON.parse(readFileSync(STATE_FILE, 'utf8')).pid === process.pid) unlinkSync(STATE_FILE); } catch {} };
     process.on('exit', cleanup);
-    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(sig, () => process.exit(0));
+    // process.on, not once: a once-listener is removed before it runs, restoring the default action, so a
+    // second signal (fix.mjs ab signals its servers twice) killed us before cleanup ran (incident I-009).
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => process.exit(0));
   }
   console.log(`\nMIRROR_URL=${url}`); // machine-readable (tools/fix.mjs and agents grep for it)
   console.log('');

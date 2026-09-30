@@ -5,7 +5,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, realpathSync, cpSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import os from 'node:os';
 import net from 'node:net';
@@ -121,6 +121,24 @@ export async function startProc(cmd, args, { cwd = REPO, env = {}, ready, timeou
       children.delete(proc);
     },
   };
+}
+/**
+ * Signal tests (incidents I-008, I-009): start the tool as `node --import SLOW_EXIT <script>` with
+ * env SLOW_EXIT_DIR=<dir> (tests/fixtures/slow-exit.mjs), then call this: it sends `sig`, waits until
+ * the process is inside its 'exit' listeners, sends `sig` again and lets the exit finish. Resolves
+ * with {code, signal}; {signal: 'SIGTERM'} means the second signal killed it before its cleanup ran.
+ */
+export const SLOW_EXIT = pathToFileURL(join(TESTS, 'fixtures', 'slow-exit.mjs')).href;
+export async function signalTwiceDuringExit(proc, dir, sig = 'SIGTERM') {
+  const exited = proc.exitCode !== null || proc.signalCode !== null
+    ? Promise.resolve({ code: proc.exitCode, signal: proc.signalCode })
+    : new Promise((r) => proc.once('exit', (code, signal) => r({ code, signal })));
+  proc.kill(sig);
+  for (const t = Date.now() + 10000; Date.now() < t && !existsSync(join(dir, 'exit-started'));) await sleep(5);
+  if (!existsSync(join(dir, 'exit-started'))) throw new Error('the process never reached its exit listeners');
+  try { proc.kill(sig); } catch {}
+  writeFileSync(join(dir, 'second-sent'), '');
+  return exited;
 }
 export const startServe = (args, opts = {}) => startProc(process.execPath, [opts.script || tool('serve.mjs'), ...args], opts);
 

@@ -354,9 +354,12 @@ async function cmdAb(t) {
   const base = await startServer('baseline', join(outDir, 'serve-base.json'), onOv);
   const fix = await startServer('patched', join(outDir, 'serve-fix.json'), aa ? onOv : ['--overlay', [overlayDir(t), ...(ON ? [overlayDir(ON)] : [])].join(',')]);
   let verifyProc = null; // killed with the servers, so a SIGTERM'd ab leaves no measurement (or Chrome) running
-  const kill = () => { for (const p of [base.proc, fix.proc, verifyProc]) try { p?.kill(); } catch {} };
+  const signalled = new Set(); // each child gets one SIGTERM from us, however often kill() runs
+  const kill = () => { for (const p of [base.proc, fix.proc, verifyProc]) if (p && !signalled.has(p)) { signalled.add(p); try { p.kill(); } catch {} } };
   process.on('exit', kill);
-  for (const s of ['SIGINT', 'SIGTERM']) process.once(s, () => { kill(); process.exit(130); });
+  // process.on, not once: a once-listener is removed before it runs, restoring the default action, so a
+  // second signal killed ab midway through process.exit() (incident I-009, same mechanism as I-008).
+  for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => { kill(); process.exit(130); });
   console.log(`baseline ${base.url}   patched ${fix.url}${aa ? '   (A/A: both baseline)' : ''}`);
 
   // prove what each server serves: overlay files from the overlay, everything else from the baseline
