@@ -32,7 +32,7 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
 ## Lock-slot priority (the lead reorders owners' queue entries by this, not by arrival)
 
 1. E1 nav-morph-all (lazy mount + hit test + passive + countdown active): removes the morph IO LoAF.
-   **Done 2026-09-30 23:37Z, clean host (load1 2.9-4.3), mobile 6x n=5:** morph IO LoAF 5/5 -> 0/5, frames >50 ms
+   **Done 2026-09-30 23:37Z, clean host (load1 2.9-4.3), mobile 6x n=5:** morph IO LoAF 5/5 -> 0/5, frames >50 ms (within noise)
    4 [4-5] -> 3 [2-4], >20 ms 70 [57-89] -> 36 [29-40], fps 74.9 -> 87.3, forced 41 -> 13 ms; iE's 43-45 ms forced
    entry gone 5/5. Only gtag `onscrollend` (59-66 ms) is left above 50 ms in Chrome (F-005). `fixes/nav-morph-all/`.
 2. scroll-engine diagnostic slot: E2 state-change probe (explains the iPhone clusters), N9 idle probe, E3 animation ablation (decides N3's rank).
