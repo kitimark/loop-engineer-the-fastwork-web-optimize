@@ -1,0 +1,92 @@
+{
+ "iPhone 15 Pro Max Safari": {
+  "dropped_pct": 13.6,
+  "gt34": 15.7,
+  "gt50": 5.7,
+  "gt100": 0.7,
+  "max_ms": 104.3,
+  "scroll_s": 6.7,
+  "runs": 3,
+  "distance_to_iphone": 0.0
+ },
+ "Chrome mobile 1x": {
+  "dropped_pct": 0.2,
+  "gt34": 0,
+  "gt50": 0,
+  "gt100": 0,
+  "max_ms": 16.3,
+  "scroll_s": 6.6,
+  "runs": 3,
+  "distance_to_iphone": 0.76
+ },
+ "Chrome mobile 4x": {
+  "dropped_pct": 27.3,
+  "gt34": 3.3,
+  "gt50": 0.7,
+  "gt100": 0,
+  "max_ms": 52.4,
+  "scroll_s": 6.9,
+  "runs": 3,
+  "distance_to_iphone": 0.6
+ },
+ "Chrome mobile 6x": {
+  "dropped_pct": 55.8,
+  "gt34": 12.3,
+  "gt50": 5,
+  "gt100": 0.3,
+  "max_ms": 88.9,
+  "scroll_s": 7.2,
+  "runs": 3,
+  "distance_to_iphone": 0.17
+ },
+ "Chrome mobile 20x": {
+  "dropped_pct": 92.1,
+  "gt34": 108.3,
+  "gt50": 97.7,
+  "gt100": 52.3,
+  "max_ms": 428.0,
+  "scroll_s": 12.7,
+  "runs": 3,
+  "distance_to_iphone": 13.18
+ },
+ "Chrome desktop 1x": {
+  "dropped_pct": 1.1,
+  "gt34": 0.3,
+  "gt50": 0,
+  "gt100": 0,
+  "max_ms": 31.2,
+  "scroll_s": 10.6,
+  "runs": 3,
+  "distance_to_iphone": 0.72
+ },
+ "Chrome desktop 4x": {
+  "dropped_pct": 25.6,
+  "gt34": 4.3,
+  "gt50": 1,
+  "gt100": 0,
+  "max_ms": 55.5,
+  "scroll_s": 11.0,
+  "runs": 3,
+  "distance_to_iphone": 0.56
+ },
+ "Chrome desktop 6x": {
+  "dropped_pct": 52.5,
+  "gt34": 18.3,
+  "gt50": 9.3,
+  "gt100": 0.7,
+  "max_ms": 99.6,
+  "scroll_s": 11.4,
+  "runs": 3,
+  "distance_to_iphone": 0.18
+ },
+ "Chrome desktop 20x": {
+  "dropped_pct": 92.4,
+  "gt34": 169,
+  "gt50": 157,
+  "gt100": 86,
+  "max_ms": 525.2,
+  "scroll_s": 20.7,
+  "runs": 3,
+  "distance_to_iphone": 21.48
+ }
+}

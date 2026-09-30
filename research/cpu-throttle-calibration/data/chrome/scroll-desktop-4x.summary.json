@@ -1,0 +1,1257 @@
+{
+ "meta": {
+  "tool": "chrome_scroll.mjs",
+  "url": "https://fastwork.com/",
+  "viewport": "desktop",
+  "vp": {
+   "width": 1440,
+   "height": 900,
+   "deviceScaleFactor": 1,
+   "mobile": false
+  },
+  "rate": 4,
+  "chrome": "Chrome/154.0.8037.58",
+  "host": "Apple M1 Pro x8",
+  "date": "2026-09-30T18:46:15.177Z",
+  "loadMs": 2432,
+  "scrollCapMs": 60000,
+  "wallMs": 17042,
+  "profile": "fresh temp profile per run (cold cache)",
+  "traceFile": null,
+  "page": {
+   "vw": 1440,
+   "vh": 900,
+   "dpr": 1,
+   "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+  },
+  "runs": 3
+ },
+ "aggregate": {
+  "idle": {
+   "duration_ms": {
+    "mean": 3002.3,
+    "sd": 3.2,
+    "values": [
+     3001,
+     3000,
+     3006
+    ]
+   },
+   "fps": {
+    "mean": 120,
+    "sd": 0.1,
+    "values": [
+     120,
+     120,
+     120.1
+    ]
+   },
+   "median_ms": {
+    "mean": 8.3,
+    "sd": 0,
+    "values": [
+     8.3,
+     8.3,
+     8.3
+    ]
+   },
+   "p95_ms": {
+    "mean": 9.9,
+    "sd": 0.1,
+    "values": [
+     9.8,
+     9.9,
+     9.9
+    ]
+   },
+   "p99_ms": {
+    "mean": 10.2,
+    "sd": 0,
+    "values": [
+     10.2,
+     10.2,
+     10.2
+    ]
+   },
+   "max_ms": {
+    "mean": 10.3,
+    "sd": 0,
+    "values": [
+     10.3,
+     10.3,
+     10.3
+    ]
+   },
+   "gt20": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "gt34": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "gt50": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "gt100": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "smooth_pct": {
+    "mean": 100,
+    "sd": 0,
+    "values": [
+     100,
+     100,
+     100
+    ]
+   },
+   "jank_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "time_in_gt50_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_count": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_total_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_blocking_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_max_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_styleLayout_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  "scroll": {
+   "duration_ms": {
+    "mean": 10964,
+    "sd": 68.8,
+    "values": [
+     11026,
+     10890,
+     10976
+    ]
+   },
+   "fps": {
+    "mean": 89.3,
+    "sd": 0.5,
+    "values": [
+     89.7,
+     89.3,
+     88.8
+    ]
+   },
+   "median_ms": {
+    "mean": 8.7,
+    "sd": 0.1,
+    "values": [
+     8.7,
+     8.8,
+     8.7
+    ]
+   },
+   "p95_ms": {
+    "mean": 18.1,
+    "sd": 0.1,
+    "values": [
+     18.2,
+     18.2,
+     18
+    ]
+   },
+   "p99_ms": {
+    "mean": 30.7,
+    "sd": 3.5,
+    "values": [
+     32.4,
+     26.7,
+     33.1
+    ]
+   },
+   "max_ms": {
+    "mean": 55.5,
+    "sd": 12.7,
+    "values": [
+     59.4,
+     41.3,
+     65.7
+    ]
+   },
+   "gt20": {
+    "mean": 34.7,
+    "sd": 2.5,
+    "values": [
+     37,
+     35,
+     32
+    ]
+   },
+   "gt34": {
+    "mean": 4.3,
+    "sd": 1.5,
+    "values": [
+     6,
+     3,
+     4
+    ]
+   },
+   "gt50": {
+    "mean": 1,
+    "sd": 1,
+    "values": [
+     1,
+     0,
+     2
+    ]
+   },
+   "gt100": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "smooth_pct": {
+    "mean": 96.5,
+    "sd": 0.2,
+    "values": [
+     96.3,
+     96.4,
+     96.7
+    ]
+   },
+   "jank_ms": {
+    "mean": 501.3,
+    "sd": 30.5,
+    "values": [
+     532,
+     471,
+     501
+    ]
+   },
+   "time_in_gt50_ms": {
+    "mean": 58.3,
+    "sd": 58,
+    "values": [
+     59,
+     0,
+     116
+    ]
+   },
+   "loaf_count": {
+    "mean": 0.3,
+    "sd": 0.6,
+    "values": [
+     0,
+     0,
+     1
+    ]
+   },
+   "loaf_total_ms": {
+    "mean": 20,
+    "sd": 34.6,
+    "values": [
+     0,
+     0,
+     60
+    ]
+   },
+   "loaf_blocking_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_max_ms": {
+    "mean": 20,
+    "sd": 34.6,
+    "values": [
+     0,
+     0,
+     60
+    ]
+   },
+   "loaf_styleLayout_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  "bottom": {
+   "duration_ms": {
+    "mean": 3001.3,
+    "sd": 0.6,
+    "values": [
+     3001,
+     3002,
+     3001
+    ]
+   },
+   "fps": {
+    "mean": 119.9,
+    "sd": 0.1,
+    "values": [
+     120,
+     119.9,
+     119.9
+    ]
+   },
+   "median_ms": {
+    "mean": 8.3,
+    "sd": 0,
+    "values": [
+     8.3,
+     8.3,
+     8.3
+    ]
+   },
+   "p95_ms": {
+    "mean": 10,
+    "sd": 0.1,
+    "values": [
+     10,
+     10,
+     9.9
+    ]
+   },
+   "p99_ms": {
+    "mean": 10.2,
+    "sd": 0.1,
+    "values": [
+     10.2,
+     10.3,
+     10.2
+    ]
+   },
+   "max_ms": {
+    "mean": 10.3,
+    "sd": 0.1,
+    "values": [
+     10.3,
+     10.4,
+     10.3
+    ]
+   },
+   "gt20": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "gt34": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "gt50": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "gt100": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "smooth_pct": {
+    "mean": 100,
+    "sd": 0,
+    "values": [
+     100,
+     100,
+     100
+    ]
+   },
+   "jank_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "time_in_gt50_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_count": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_total_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_blocking_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_max_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "loaf_styleLayout_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ },
+ "runs": [
+  {
+   "meta": {
+    "tool": "chrome_scroll.mjs",
+    "url": "https://fastwork.com/",
+    "viewport": "desktop",
+    "vp": {
+     "width": 1440,
+     "height": 900,
+     "deviceScaleFactor": 1,
+     "mobile": false
+    },
+    "rate": 4,
+    "run": 1,
+    "chrome": "Chrome/154.0.8037.58",
+    "host": "Apple M1 Pro x8",
+    "date": "2026-09-30T18:46:15.177Z",
+    "loadMs": 2432,
+    "scrollCapMs": 60000,
+    "wallMs": 17042,
+    "profile": "fresh temp profile per run (cold cache)",
+    "traceFile": null,
+    "page": {
+     "vw": 1440,
+     "vh": 900,
+     "dpr": 1,
+     "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+    }
+   },
+   "marks": {
+    "idle": [
+     10437.399999976158,
+     13438
+    ],
+    "scroll": [
+     13438.099999964237,
+     24464.099999964237
+    ],
+    "bottom": [
+     24464.799999952316,
+     27465.399999976158
+    ]
+   },
+   "secs": [
+    {
+     "id": "",
+     "cls": "hero-track",
+     "h2": "Show the world what   can do",
+     "top": 0,
+     "h": 1800
+    },
+    {
+     "id": "people",
+     "cls": "start-selling-future is-visible is-futur",
+     "h2": "People still need pe  o ple",
+     "top": 901,
+     "h": 4084
+    },
+    {
+     "id": "profile-showcase",
+     "cls": "start-selling-profile",
+     "h2": "BigzWeb",
+     "top": 1475,
+     "h": 3350
+    },
+    {
+     "id": "",
+     "cls": "feed",
+     "h2": "Services",
+     "top": 4308,
+     "h": 492
+    },
+    {
+     "id": "",
+     "cls": "pain is-pain-dark",
+     "h2": "Freelancing is hard enough...",
+     "top": 4085,
+     "h": 2700
+    },
+    {
+     "id": "",
+     "cls": "commission shrinking",
+     "h2": "Other platforms keep taking fee. We let ",
+     "top": 5885,
+     "h": 1002
+    },
+    {
+     "id": "platform",
+     "cls": "start-selling-platform is-platform-shrin",
+     "h2": "Document your portfolio and reviews",
+     "top": 6887,
+     "h": 2461
+    }
+   ],
+   "phases": {
+    "idle": {
+     "duration_ms": 3001,
+     "frames": 360,
+     "fps": 120,
+     "median_ms": 8.3,
+     "p95_ms": 9.8,
+     "p99_ms": 10.2,
+     "max_ms": 10.3,
+     "gt20": 0,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "smooth_pct": 100,
+     "jank_ms": 0,
+     "time_in_gt50_ms": 0,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    },
+    "scroll": {
+     "duration_ms": 11026,
+     "frames": 989,
+     "fps": 89.7,
+     "median_ms": 8.7,
+     "p95_ms": 18.2,
+     "p99_ms": 32.4,
+     "max_ms": 59.4,
+     "gt20": 37,
+     "gt34": 6,
+     "gt50": 1,
+     "gt100": 0,
+     "smooth_pct": 96.3,
+     "jank_ms": 532,
+     "time_in_gt50_ms": 59,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    },
+    "bottom": {
+     "duration_ms": 3001,
+     "frames": 360,
+     "fps": 120,
+     "median_ms": 8.3,
+     "p95_ms": 10,
+     "p99_ms": 10.2,
+     "max_ms": 10.3,
+     "gt20": 0,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "smooth_pct": 100,
+     "jank_ms": 0,
+     "time_in_gt50_ms": 0,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    }
+   },
+   "sections": [
+    {
+     "section": "Show the world what   can do",
+     "frames": 115,
+     "gt34": 2,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 43.1,
+     "jank_ms": 195,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "profile-showcase",
+     "frames": 292,
+     "gt34": 1,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 42.5,
+     "jank_ms": 107,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "Freelancing is hard enough...",
+     "frames": 159,
+     "gt34": 1,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 34.9,
+     "jank_ms": 53,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "Services",
+     "frames": 58,
+     "gt34": 1,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 42,
+     "jank_ms": 29,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "Other platforms keep taking fee. We let ",
+     "frames": 101,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 33.6,
+     "jank_ms": 61,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "platform",
+     "frames": 264,
+     "gt34": 1,
+     "gt50": 1,
+     "gt100": 0,
+     "max_ms": 59.4,
+     "jank_ms": 86,
+     "loaf": 0,
+     "loaf_ms": 0
+    }
+   ],
+   "topScriptsAll": [],
+   "scroll": {
+    "steps": 35,
+    "capped": false,
+    "maxY": 8448,
+    "finalY": 8448,
+    "scrollHeight": 9348
+   }
+  },
+  {
+   "meta": {
+    "tool": "chrome_scroll.mjs",
+    "url": "https://fastwork.com/",
+    "viewport": "desktop",
+    "vp": {
+     "width": 1440,
+     "height": 900,
+     "deviceScaleFactor": 1,
+     "mobile": false
+    },
+    "rate": 4,
+    "run": 2,
+    "chrome": "Chrome/154.0.8037.58",
+    "host": "Apple M1 Pro x8",
+    "date": "2026-09-30T18:46:43.735Z",
+    "loadMs": 2062,
+    "scrollCapMs": 60000,
+    "wallMs": 16903,
+    "profile": "fresh temp profile per run (cold cache)",
+    "traceFile": null,
+    "page": {
+     "vw": 1440,
+     "vh": 900,
+     "dpr": 1,
+     "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+    }
+   },
+   "marks": {
+    "idle": [
+     10063.100000023842,
+     13063.400000035763
+    ],
+    "scroll": [
+     13063.400000035763,
+     23953.200000047684
+    ],
+    "bottom": [
+     23953.200000047684,
+     26955.5
+    ]
+   },
+   "secs": [
+    {
+     "id": "",
+     "cls": "hero-track",
+     "h2": "Show the world what   can do",
+     "top": 0,
+     "h": 1800
+    },
+    {
+     "id": "people",
+     "cls": "start-selling-future is-visible is-futur",
+     "h2": "People still need pe  o ple",
+     "top": 901,
+     "h": 4084
+    },
+    {
+     "id": "profile-showcase",
+     "cls": "start-selling-profile",
+     "h2": "BigzWeb",
+     "top": 1475,
+     "h": 3350
+    },
+    {
+     "id": "",
+     "cls": "feed",
+     "h2": "Services",
+     "top": 4308,
+     "h": 492
+    },
+    {
+     "id": "",
+     "cls": "pain is-pain-dark",
+     "h2": "Freelancing is hard enough...",
+     "top": 4085,
+     "h": 2700
+    },
+    {
+     "id": "",
+     "cls": "commission shrinking",
+     "h2": "Other platforms keep taking fee. We let ",
+     "top": 5885,
+     "h": 1002
+    },
+    {
+     "id": "platform",
+     "cls": "start-selling-platform is-platform-shrin",
+     "h2": "Document your portfolio and reviews",
+     "top": 6887,
+     "h": 2461
+    }
+   ],
+   "phases": {
+    "idle": {
+     "duration_ms": 3000,
+     "frames": 360,
+     "fps": 120,
+     "median_ms": 8.3,
+     "p95_ms": 9.9,
+     "p99_ms": 10.2,
+     "max_ms": 10.3,
+     "gt20": 0,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "smooth_pct": 100,
+     "jank_ms": 0,
+     "time_in_gt50_ms": 0,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    },
+    "scroll": {
+     "duration_ms": 10890,
+     "frames": 973,
+     "fps": 89.3,
+     "median_ms": 8.8,
+     "p95_ms": 18.2,
+     "p99_ms": 26.7,
+     "max_ms": 41.3,
+     "gt20": 35,
+     "gt34": 3,
+     "gt50": 0,
+     "gt100": 0,
+     "smooth_pct": 96.4,
+     "jank_ms": 471,
+     "time_in_gt50_ms": 0,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    },
+    "bottom": {
+     "duration_ms": 3002,
+     "frames": 360,
+     "fps": 119.9,
+     "median_ms": 8.3,
+     "p95_ms": 10,
+     "p99_ms": 10.3,
+     "max_ms": 10.4,
+     "gt20": 0,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "smooth_pct": 100,
+     "jank_ms": 0,
+     "time_in_gt50_ms": 0,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    }
+   },
+   "sections": [
+    {
+     "section": "Show the world what   can do",
+     "frames": 115,
+     "gt34": 1,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 40.8,
+     "jank_ms": 169,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "profile-showcase",
+     "frames": 295,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 32.4,
+     "jank_ms": 74,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "Freelancing is hard enough...",
+     "frames": 155,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 33.2,
+     "jank_ms": 85,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "Services",
+     "frames": 59,
+     "gt34": 1,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 41.3,
+     "jank_ms": 27,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "Other platforms keep taking fee. We let ",
+     "frames": 97,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 32.4,
+     "jank_ms": 45,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "platform",
+     "frames": 252,
+     "gt34": 1,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 41,
+     "jank_ms": 71,
+     "loaf": 0,
+     "loaf_ms": 0
+    }
+   ],
+   "topScriptsAll": [],
+   "scroll": {
+    "steps": 35,
+    "capped": false,
+    "maxY": 8448,
+    "finalY": 8448,
+    "scrollHeight": 9348
+   }
+  },
+  {
+   "meta": {
+    "tool": "chrome_scroll.mjs",
+    "url": "https://fastwork.com/",
+    "viewport": "desktop",
+    "vp": {
+     "width": 1440,
+     "height": 900,
+     "deviceScaleFactor": 1,
+     "mobile": false
+    },
+    "rate": 4,
+    "run": 3,
+    "chrome": "Chrome/154.0.8037.58",
+    "host": "Apple M1 Pro x8",
+    "date": "2026-09-30T18:47:14.399Z",
+    "loadMs": 4148,
+    "scrollCapMs": 60000,
+    "wallMs": 16994,
+    "profile": "fresh temp profile per run (cold cache)",
+    "traceFile": null,
+    "page": {
+     "vw": 1440,
+     "vh": 900,
+     "dpr": 1,
+     "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+    }
+   },
+   "marks": {
+    "idle": [
+     12149.800000011921,
+     15155.699999988079
+    ],
+    "scroll": [
+     15155.699999988079,
+     26132
+    ],
+    "bottom": [
+     26132,
+     29133.400000035763
+    ]
+   },
+   "secs": [
+    {
+     "id": "",
+     "cls": "hero-track",
+     "h2": "Show the world what   can do",
+     "top": 0,
+     "h": 1800
+    },
+    {
+     "id": "people",
+     "cls": "start-selling-future is-visible is-futur",
+     "h2": "People still need pe  o ple",
+     "top": 901,
+     "h": 4084
+    },
+    {
+     "id": "profile-showcase",
+     "cls": "start-selling-profile",
+     "h2": "BigzWeb",
+     "top": 1475,
+     "h": 3350
+    },
+    {
+     "id": "",
+     "cls": "feed",
+     "h2": "Services",
+     "top": 4308,
+     "h": 492
+    },
+    {
+     "id": "",
+     "cls": "pain is-pain-dark",
+     "h2": "Freelancing is hard enough...",
+     "top": 4085,
+     "h": 2700
+    },
+    {
+     "id": "",
+     "cls": "commission shrinking",
+     "h2": "Other platforms keep taking fee. We let ",
+     "top": 5885,
+     "h": 1002
+    },
+    {
+     "id": "platform",
+     "cls": "start-selling-platform is-platform-shrin",
+     "h2": "Document your portfolio and reviews",
+     "top": 6887,
+     "h": 2461
+    }
+   ],
+   "phases": {
+    "idle": {
+     "duration_ms": 3006,
+     "frames": 361,
+     "fps": 120.1,
+     "median_ms": 8.3,
+     "p95_ms": 9.9,
+     "p99_ms": 10.2,
+     "max_ms": 10.3,
+     "gt20": 0,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "smooth_pct": 100,
+     "jank_ms": 0,
+     "time_in_gt50_ms": 0,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    },
+    "scroll": {
+     "duration_ms": 10976,
+     "frames": 975,
+     "fps": 88.8,
+     "median_ms": 8.7,
+     "p95_ms": 18,
+     "p99_ms": 33.1,
+     "max_ms": 65.7,
+     "gt20": 32,
+     "gt34": 4,
+     "gt50": 2,
+     "gt100": 0,
+     "smooth_pct": 96.7,
+     "jank_ms": 501,
+     "time_in_gt50_ms": 116,
+     "loaf": {
+      "count": 1,
+      "total_ms": 60,
+      "blocking_ms": 0,
+      "max_ms": 60,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    },
+    "bottom": {
+     "duration_ms": 3001,
+     "frames": 360,
+     "fps": 119.9,
+     "median_ms": 8.3,
+     "p95_ms": 9.9,
+     "p99_ms": 10.2,
+     "max_ms": 10.3,
+     "gt20": 0,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "smooth_pct": 100,
+     "jank_ms": 0,
+     "time_in_gt50_ms": 0,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    }
+   },
+   "sections": [
+    {
+     "section": "Show the world what   can do",
+     "frames": 134,
+     "gt34": 1,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 34.6,
+     "jank_ms": 117,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "profile-showcase",
+     "frames": 278,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 34,
+     "jank_ms": 85,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "Freelancing is hard enough...",
+     "frames": 165,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 33.4,
+     "jank_ms": 75,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "Services",
+     "frames": 54,
+     "gt34": 1,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 41.3,
+     "jank_ms": 36,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "Other platforms keep taking fee. We let ",
+     "frames": 96,
+     "gt34": 0,
+     "gt50": 0,
+     "gt100": 0,
+     "max_ms": 33.9,
+     "jank_ms": 54,
+     "loaf": 0,
+     "loaf_ms": 0
+    },
+    {
+     "section": "platform",
+     "frames": 248,
+     "gt34": 2,
+     "gt50": 2,
+     "gt100": 0,
+     "max_ms": 65.7,
+     "jank_ms": 133,
+     "loaf": 1,
+     "loaf_ms": 60
+    }
+   ],
+   "topScriptsAll": [],
+   "scroll": {
+    "steps": 35,
+    "capped": false,
+    "maxY": 8448,
+    "finalY": 8448,
+    "scrollHeight": 9348
+   }
+  }
+ ]
+}

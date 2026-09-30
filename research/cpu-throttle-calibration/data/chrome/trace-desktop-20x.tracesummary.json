@@ -1,0 +1,3017 @@
+{
+ "trace": "/private/tmp/claude-501/-Users-<user>-source-fastwork-com-web-optimize/391f6dee-c7ee-40f4-93c3-f4c2dce764ec/scratchpad/trace-desktop-20x.run1.trace.json",
+ "phases_ms": {
+  "idle": 3060,
+  "scroll": 20318,
+  "bottom": 3030
+ },
+ "threads": {
+  "GPU Process:CrGpuMain": {
+   "idle": {
+    "busy_ms": 194.1,
+    "busy_pct": 6.3,
+    "tasks": 2041,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 1.2,
+    "longest": [
+     {
+      "dur_ms": 1.2,
+      "at_ms": 1525,
+      "top_self": [
+       [
+        "CommandBufferService:PutChanged",
+        1.0
+       ],
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+        0.1
+       ],
+       [
+        "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+        0.0
+       ],
+       [
+        "GPUTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.1,
+      "at_ms": 674,
+      "top_self": [
+       [
+        "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+        0.4
+       ],
+       [
+        "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+        0.3
+       ],
+       [
+        "CommitPresentedFrameToCA",
+        0.2
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+        0.1
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.9,
+      "at_ms": 1467,
+      "top_self": [
+       [
+        "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+        0.4
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+        0.3
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+        0.1
+       ],
+       [
+        "CommitPresentedFrameToCA",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.9,
+      "at_ms": 842,
+      "top_self": [
+       [
+        "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+        0.4
+       ],
+       [
+        "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+        0.2
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+        0.1
+       ],
+       [
+        "CommitPresentedFrameToCA",
+        0.1
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.9,
+      "at_ms": 724,
+      "top_self": [
+       [
+        "CommitPresentedFrameToCA",
+        0.3
+       ],
+       [
+        "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+        0.2
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+        0.1
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+        0.1
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+      50.1
+     ],
+     [
+      "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+      44.5
+     ],
+     [
+      "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+      28.1
+     ],
+     [
+      "CommitPresentedFrameToCA",
+      22.9
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      6.6
+     ],
+     [
+      "CARendererLayerTree::CommitScheduledCALayers",
+      6.3
+     ],
+     [
+      "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+      5.7
+     ],
+     [
+      "Scheduler::RunTask",
+      5.5
+     ],
+     [
+      "SkiaOutputDevice->ScheduleOverlays()",
+      5.1
+     ],
+     [
+      "RunTask",
+      3.0
+     ],
+     [
+      "Graphics.Pipeline",
+      3.0
+     ],
+     [
+      "CommandBufferService:PutChanged",
+      2.3
+     ]
+    ],
+    "watch": {
+     "FinishPaintRenderPass": {
+      "count": 438,
+      "total_ms": 29.6,
+      "max_ms": 0.5,
+      "gt50": 0
+     },
+     "SwapBuffers": {
+      "count": 367,
+      "total_ms": 133.4,
+      "max_ms": 0.9,
+      "gt50": 0
+     },
+     "WaitForCommandsToBeScheduled": {
+      "count": 964,
+      "total_ms": 101.2,
+      "max_ms": 0.4,
+      "gt50": 0
+     },
+     "ApplyBackpressure": {
+      "count": 658,
+      "total_ms": 1.1,
+      "max_ms": 0.0,
+      "gt50": 0
+     },
+     "CommitPresentedFrameToCA": {
+      "count": 367,
+      "total_ms": 29.2,
+      "max_ms": 0.3,
+      "gt50": 0
+     },
+     "DoBeginRasterCHROMIUM": {
+      "count": 54,
+      "total_ms": 0.8,
+      "max_ms": 0.1,
+      "gt50": 0
+     },
+     "DoRasterCHROMIUM": {
+      "count": 108,
+      "total_ms": 4.1,
+      "max_ms": 0.2,
+      "gt50": 0
+     },
+     "DoEndRasterCHROMIUM::Flush": {
+      "count": 54,
+      "total_ms": 5.7,
+      "max_ms": 0.3,
+      "gt50": 0
+     }
+    }
+   },
+   "scroll": {
+    "busy_ms": 3457.1,
+    "busy_pct": 17.0,
+    "tasks": 21074,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 27.4,
+    "longest": [
+     {
+      "dur_ms": 27.4,
+      "at_ms": 1860,
+      "top_self": [
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+        27.2
+       ],
+       [
+        "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+        0.1
+       ],
+       [
+        "RasterDecoderImpl::DoBeginRasterCHROMIUM",
+        0.1
+       ],
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 24.7,
+      "at_ms": 18460,
+      "top_self": [
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+        23.9
+       ],
+       [
+        "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+        0.5
+       ],
+       [
+        "CommandBufferService:PutChanged",
+        0.2
+       ],
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM",
+        0.1
+       ]
+      ]
+     },
+     {
+      "dur_ms": 16.3,
+      "at_ms": 2530,
+      "top_self": [
+       [
+        "CALayerTreeCoordinator::ApplyBackpressure::Metal",
+        15.8
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+        0.2
+       ],
+       [
+        "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+        0.1
+       ],
+       [
+        "CommitPresentedFrameToCA",
+        0.1
+       ]
+      ]
+     },
+     {
+      "dur_ms": 15.5,
+      "at_ms": 282,
+      "top_self": [
+       [
+        "CALayerTreeCoordinator::ApplyBackpressure::Metal",
+        14.9
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+        0.3
+       ],
+       [
+        "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+        0.2
+       ],
+       [
+        "CommitPresentedFrameToCA",
+        0.1
+       ]
+      ]
+     },
+     {
+      "dur_ms": 15.5,
+      "at_ms": 2612,
+      "top_self": [
+       [
+        "CALayerTreeCoordinator::ApplyBackpressure::Metal",
+        14.8
+       ],
+       [
+        "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+        0.3
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+        0.1
+       ],
+       [
+        "CommitPresentedFrameToCA",
+        0.1
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+      1068.1
+     ],
+     [
+      "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+      596.8
+     ],
+     [
+      "CALayerTreeCoordinator::ApplyBackpressure::Metal",
+      391.7
+     ],
+     [
+      "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+      330.0
+     ],
+     [
+      "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+      293.4
+     ],
+     [
+      "Scheduler::RunTask",
+      157.7
+     ],
+     [
+      "CommitPresentedFrameToCA",
+      155.4
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      64.5
+     ],
+     [
+      "CARendererLayerTree::CommitScheduledCALayers",
+      62.2
+     ],
+     [
+      "CommandBufferService:PutChanged",
+      55.9
+     ],
+     [
+      "SkiaOutputDevice->ScheduleOverlays()",
+      45.2
+     ],
+     [
+      "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+      39.1
+     ]
+    ],
+    "watch": {
+     "FinishPaintRenderPass": {
+      "count": 9864,
+      "total_ms": 1087.5,
+      "max_ms": 3.0,
+      "gt50": 0
+     },
+     "WaitForCommandsToBeScheduled": {
+      "count": 6561,
+      "total_ms": 1200.4,
+      "max_ms": 5.1,
+      "gt50": 0
+     },
+     "SwapBuffers": {
+      "count": 2331,
+      "total_ms": 1575.8,
+      "max_ms": 16.3,
+      "gt50": 0
+     },
+     "ApplyBackpressure": {
+      "count": 4577,
+      "total_ms": 785.8,
+      "max_ms": 15.8,
+      "gt50": 0
+     },
+     "CommitPresentedFrameToCA": {
+      "count": 2331,
+      "total_ms": 217.7,
+      "max_ms": 0.4,
+      "gt50": 0
+     },
+     "DoBeginRasterCHROMIUM": {
+      "count": 1132,
+      "total_ms": 25.4,
+      "max_ms": 0.4,
+      "gt50": 0
+     },
+     "DoRasterCHROMIUM": {
+      "count": 2264,
+      "total_ms": 79.7,
+      "max_ms": 0.4,
+      "gt50": 0
+     },
+     "DoEndRasterCHROMIUM::Flush": {
+      "count": 1132,
+      "total_ms": 330.0,
+      "max_ms": 27.2,
+      "gt50": 0
+     }
+    }
+   },
+   "bottom": {
+    "busy_ms": 252.7,
+    "busy_pct": 8.3,
+    "tasks": 2099,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 1.5,
+    "longest": [
+     {
+      "dur_ms": 1.5,
+      "at_ms": 89,
+      "top_self": [
+       [
+        "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+        1.1
+       ],
+       [
+        "CommitPresentedFrameToCA",
+        0.2
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+        0.1
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.4,
+      "at_ms": 1383,
+      "top_self": [
+       [
+        "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+        0.6
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+        0.4
+       ],
+       [
+        "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+        0.1
+       ],
+       [
+        "CommitPresentedFrameToCA",
+        0.1
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.3,
+      "at_ms": 790,
+      "top_self": [
+       [
+        "CommandBufferService:PutChanged",
+        0.7
+       ],
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+        0.4
+       ],
+       [
+        "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+        0.1
+       ],
+       [
+        "RasterDecoderImpl::DoBeginRasterCHROMIUM",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.3,
+      "at_ms": 5,
+      "top_self": [
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+        1.1
+       ],
+       [
+        "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+        0.1
+       ],
+       [
+        "RasterDecoderImpl::DoBeginRasterCHROMIUM",
+        0.0
+       ],
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.2,
+      "at_ms": 90,
+      "top_self": [
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+        0.8
+       ],
+       [
+        "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+        0.3
+       ],
+       [
+        "RasterDecoderImpl::DoBeginRasterCHROMIUM",
+        0.1
+       ],
+       [
+        "RasterDecoderImpl::DoEndRasterCHROMIUM",
+        0.0
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+      68.8
+     ],
+     [
+      "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+      50.6
+     ],
+     [
+      "IOSurfaceImageBacking::WaitForCommandsToBeScheduled::Dawn",
+      30.7
+     ],
+     [
+      "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+      21.9
+     ],
+     [
+      "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+      14.7
+     ],
+     [
+      "Scheduler::RunTask",
+      12.5
+     ],
+     [
+      "CommitPresentedFrameToCA",
+      10.6
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      7.2
+     ],
+     [
+      "RasterDecoderImpl::DoBeginRasterCHROMIUM",
+      5.3
+     ],
+     [
+      "CommandBufferService:PutChanged",
+      3.8
+     ],
+     [
+      "SkiaOutputSurfaceImplOnGpu::BeginAccessImages",
+      3.3
+     ],
+     [
+      "RunTask",
+      3.2
+     ]
+    ],
+    "watch": {
+     "DoBeginRasterCHROMIUM": {
+      "count": 575,
+      "total_ms": 5.6,
+      "max_ms": 0.1,
+      "gt50": 0
+     },
+     "WaitForCommandsToBeScheduled": {
+      "count": 808,
+      "total_ms": 62.3,
+      "max_ms": 1.1,
+      "gt50": 0
+     },
+     "DoRasterCHROMIUM": {
+      "count": 1150,
+      "total_ms": 30.1,
+      "max_ms": 0.5,
+      "gt50": 0
+     },
+     "DoEndRasterCHROMIUM::Flush": {
+      "count": 575,
+      "total_ms": 50.6,
+      "max_ms": 0.8,
+      "gt50": 0
+     },
+     "FinishPaintRenderPass": {
+      "count": 644,
+      "total_ms": 72.4,
+      "max_ms": 1.0,
+      "gt50": 0
+     },
+     "SwapBuffers": {
+      "count": 149,
+      "total_ms": 70.5,
+      "max_ms": 1.4,
+      "gt50": 0
+     },
+     "ApplyBackpressure": {
+      "count": 279,
+      "total_ms": 0.4,
+      "max_ms": 0.0,
+      "gt50": 0
+     },
+     "CommitPresentedFrameToCA": {
+      "count": 149,
+      "total_ms": 13.5,
+      "max_ms": 0.3,
+      "gt50": 0
+     }
+    }
+   }
+  },
+  "GPU Process:VizCompositorThread": {
+   "idle": {
+    "busy_ms": 153.4,
+    "busy_pct": 5.0,
+    "tasks": 2214,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 0.8,
+    "longest": [
+     {
+      "dur_ms": 0.8,
+      "at_ms": 1774,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.5
+       ],
+       [
+        "Graphics.Pipeline",
+        0.2
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ],
+       [
+        "Scheduler::ScheduleTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.6,
+      "at_ms": 1582,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.3
+       ],
+       [
+        "Graphics.Pipeline",
+        0.2
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ],
+       [
+        "Scheduler::ScheduleTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.6,
+      "at_ms": 1532,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.3
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ],
+       [
+        "SkiaOutputSurfaceImpl::FlushGpuTasks",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.6,
+      "at_ms": 1782,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.3
+       ],
+       [
+        "Graphics.Pipeline",
+        0.2
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ],
+       [
+        "OverlayProcessorMac::ProcessForOverlays",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.5,
+      "at_ms": 1840,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.2
+       ],
+       [
+        "Graphics.Pipeline",
+        0.2
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ],
+       [
+        "SurfaceManager::GarbageCollectSurfaces",
+        0.0
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "Graphics.Pipeline",
+      44.9
+     ],
+     [
+      "DirectRenderer::DrawRenderPass",
+      37.3
+     ],
+     [
+      "Receive mojo message",
+      14.3
+     ],
+     [
+      "SimpleWatcher::OnHandleReady",
+      11.5
+     ],
+     [
+      "Surface::ActivateFrame",
+      9.3
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      6.5
+     ],
+     [
+      "DirectRenderer::DrawFrame",
+      5.6
+     ],
+     [
+      "RunTask",
+      4.0
+     ],
+     [
+      "ExternalBeginFrameSource::OnBeginFrame",
+      3.2
+     ],
+     [
+      "DisplayScheduler::BeginFrame",
+      2.3
+     ],
+     [
+      "Scheduler::ScheduleTask",
+      2.0
+     ],
+     [
+      "DisplayScheduler::ScheduleBeginFrameDeadline",
+      1.7
+     ]
+    ],
+    "watch": {
+     "Display::DrawAndSwap": {
+      "count": 367,
+      "total_ms": 82.6,
+      "max_ms": 0.8,
+      "gt50": 0
+     },
+     "DirectRenderer::DrawFrame": {
+      "count": 367,
+      "total_ms": 46.3,
+      "max_ms": 0.5,
+      "gt50": 0
+     },
+     "DirectRenderer::DrawRenderPass": {
+      "count": 957,
+      "total_ms": 38.1,
+      "max_ms": 0.3,
+      "gt50": 0
+     },
+     "SwapBuffers": {
+      "count": 367,
+      "total_ms": 4.0,
+      "max_ms": 0.2,
+      "gt50": 0
+     }
+    }
+   },
+   "scroll": {
+    "busy_ms": 1490.9,
+    "busy_pct": 7.3,
+    "tasks": 14386,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 4.2,
+    "longest": [
+     {
+      "dur_ms": 4.2,
+      "at_ms": 274,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        4.1
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ],
+       [
+        "Scheduler::ScheduleTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 4.0,
+      "at_ms": 13601,
+      "top_self": [
+       [
+        "SkiaRenderer::SwapBuffers",
+        3.6
+       ],
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.3
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 4.0,
+      "at_ms": 1864,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        3.8
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ],
+       [
+        "auto viz::SkiaRenderer::FlushOutputSurface()::(lambda)::operator()()::(lambda)::operator()(uint32_t) const",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 3.3,
+      "at_ms": 6040,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        3.1
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "SkiaRenderer::SwapBuffers",
+        0.1
+       ],
+       [
+        "SkiaRenderer::FinishDrawingFrame",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 3.2,
+      "at_ms": 2814,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        3.0
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ],
+       [
+        "Scheduler::ScheduleTask",
+        0.0
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "DirectRenderer::DrawRenderPass",
+      671.9
+     ],
+     [
+      "Graphics.Pipeline",
+      301.6
+     ],
+     [
+      "Receive mojo message",
+      86.0
+     ],
+     [
+      "SimpleWatcher::OnHandleReady",
+      73.8
+     ],
+     [
+      "Surface::ActivateFrame",
+      54.2
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      49.0
+     ],
+     [
+      "DirectRenderer::DrawFrame",
+      35.5
+     ],
+     [
+      "RunTask",
+      29.8
+     ],
+     [
+      "ExternalBeginFrameSource::OnBeginFrame",
+      22.7
+     ],
+     [
+      "SkiaOutputSurfaceImpl::FlushGpuTasks",
+      19.6
+     ],
+     [
+      "SkiaRenderer::FinishDrawingFrame",
+      18.5
+     ],
+     [
+      "SkiaRenderer::SwapBuffers",
+      17.0
+     ]
+    ],
+    "watch": {
+     "Display::DrawAndSwap": {
+      "count": 2331,
+      "total_ms": 999.2,
+      "max_ms": 4.2,
+      "gt50": 0
+     },
+     "DirectRenderer::DrawFrame": {
+      "count": 2331,
+      "total_ms": 782.9,
+      "max_ms": 4.1,
+      "gt50": 0
+     },
+     "DirectRenderer::DrawRenderPass": {
+      "count": 9658,
+      "total_ms": 709.9,
+      "max_ms": 4.0,
+      "gt50": 0
+     },
+     "SwapBuffers": {
+      "count": 2331,
+      "total_ms": 25.4,
+      "max_ms": 3.6,
+      "gt50": 0
+     }
+    }
+   },
+   "bottom": {
+    "busy_ms": 124.2,
+    "busy_pct": 4.1,
+    "tasks": 1702,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 1.8,
+    "longest": [
+     {
+      "dur_ms": 1.8,
+      "at_ms": 791,
+      "top_self": [
+       [
+        "SkiaRenderer::SwapBuffers",
+        1.2
+       ],
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.4
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.5,
+      "at_ms": 338,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        1.1
+       ],
+       [
+        "Graphics.Pipeline",
+        0.3
+       ],
+       [
+        "Scheduler::ScheduleTask",
+        0.0
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.4,
+      "at_ms": 658,
+      "top_self": [
+       [
+        "SkiaOutputSurfaceImpl::FlushGpuTasks",
+        0.6
+       ],
+       [
+        "Graphics.Pipeline",
+        0.4
+       ],
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.3
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.4,
+      "at_ms": 1035,
+      "top_self": [
+       [
+        "SkiaRenderer::SwapBuffers",
+        0.9
+       ],
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.3
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.3,
+      "at_ms": 64,
+      "top_self": [
+       [
+        "DirectRenderer::DrawRenderPass",
+        0.9
+       ],
+       [
+        "Graphics.Pipeline",
+        0.3
+       ],
+       [
+        "DirectRenderer::DrawFrame",
+        0.0
+       ],
+       [
+        "SkiaOutputSurfaceImpl::FlushGpuTasks",
+        0.0
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "DirectRenderer::DrawRenderPass",
+      53.1
+     ],
+     [
+      "Graphics.Pipeline",
+      25.6
+     ],
+     [
+      "Receive mojo message",
+      6.8
+     ],
+     [
+      "SimpleWatcher::OnHandleReady",
+      6.6
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      5.2
+     ],
+     [
+      "Surface::ActivateFrame",
+      4.1
+     ],
+     [
+      "SkiaRenderer::SwapBuffers",
+      3.4
+     ],
+     [
+      "RunTask",
+      3.4
+     ],
+     [
+      "DirectRenderer::DrawFrame",
+      2.4
+     ],
+     [
+      "ExternalBeginFrameSource::OnBeginFrame",
+      2.3
+     ],
+     [
+      "DisplayScheduler::BeginFrame",
+      2.1
+     ],
+     [
+      "SkiaOutputSurfaceImpl::FlushGpuTasks",
+      2.1
+     ]
+    ],
+    "watch": {
+     "Display::DrawAndSwap": {
+      "count": 149,
+      "total_ms": 77.8,
+      "max_ms": 1.8,
+      "gt50": 0
+     },
+     "DirectRenderer::DrawFrame": {
+      "count": 149,
+      "total_ms": 59.0,
+      "max_ms": 1.3,
+      "gt50": 0
+     },
+     "DirectRenderer::DrawRenderPass": {
+      "count": 777,
+      "total_ms": 55.5,
+      "max_ms": 0.5,
+      "gt50": 0
+     },
+     "SwapBuffers": {
+      "count": 149,
+      "total_ms": 3.8,
+      "max_ms": 1.2,
+      "gt50": 0
+     }
+    }
+   }
+  },
+  "Browser:CrBrowserMain": {
+   "idle": {
+    "busy_ms": 9.1,
+    "busy_pct": 0.3,
+    "tasks": 269,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 2.1,
+    "longest": [
+     {
+      "dur_ms": 2.1,
+      "at_ms": 2406,
+      "top_self": [
+       [
+        "Closed mojo endpoint",
+        2.1
+       ],
+       [
+        "RunTask",
+        0.0
+       ],
+       [
+        "SimpleWatcher::OnHandleReady",
+        0.0
+       ],
+       [
+        "ThreadControllerImpl::RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.3,
+      "at_ms": 777,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        0.9
+       ],
+       [
+        "Compositor::destructor",
+        0.2
+       ],
+       [
+        "RunTask",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::ReleaseLayerTreeFrameSink",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.2,
+      "at_ms": 267,
+      "top_self": [
+       [
+        "RunTask",
+        0.2
+       ],
+       [
+        "Receive mojo message",
+        0.0
+       ],
+       [
+        "ThreadControllerImpl::RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.1,
+      "at_ms": 2172,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        0.1
+       ],
+       [
+        "RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.1,
+      "at_ms": 1691,
+      "top_self": [
+       [
+        "Receive mojo message",
+        0.1
+       ],
+       [
+        "SimpleWatcher::OnHandleReady",
+        0.0
+       ],
+       [
+        "RunTask",
+        0.0
+       ],
+       [
+        "ThreadControllerImpl::RunTask",
+        0.0
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "ThreadControllerImpl::RunTask",
+      2.9
+     ],
+     [
+      "Closed mojo endpoint",
+      2.2
+     ],
+     [
+      "Receive mojo message",
+      2.1
+     ],
+     [
+      "RunTask",
+      0.9
+     ],
+     [
+      "SimpleWatcher::OnHandleReady",
+      0.6
+     ],
+     [
+      "Compositor::destructor",
+      0.2
+     ],
+     [
+      "LayerTreeHostImpl::ReleaseLayerTreeFrameSink",
+      0.0
+     ],
+     [
+      "SingleThreadProxy::stop",
+      0.0
+     ],
+     [
+      "Receive mojo reply",
+      0.0
+     ],
+     [
+      "UkmRecorderImpl::NotifyObserversWithNewEntry",
+      0.0
+     ],
+     [
+      "LayerTreeHostImpl::~LayerTreeHostImpl()",
+      0.0
+     ],
+     [
+      "RasterImplementation::SetAggressivelyFreeResources",
+      0.0
+     ]
+    ],
+    "watch": {}
+   },
+   "scroll": {
+    "busy_ms": 132.2,
+    "busy_pct": 0.7,
+    "tasks": 4226,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 11.4,
+    "longest": [
+     {
+      "dur_ms": 11.4,
+      "at_ms": 1868,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        11.4
+       ],
+       [
+        "RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 8.0,
+      "at_ms": 12447,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        8.0
+       ],
+       [
+        "RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 3.6,
+      "at_ms": 18471,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        3.6
+       ],
+       [
+        "RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 3.3,
+      "at_ms": 18479,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        3.3
+       ],
+       [
+        "RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.9,
+      "at_ms": 1895,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        1.9
+       ],
+       [
+        "RunTask",
+        0.0
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "ThreadControllerImpl::RunTask",
+      61.6
+     ],
+     [
+      "Receive mojo message",
+      44.9
+     ],
+     [
+      "RunTask",
+      11.6
+     ],
+     [
+      "SimpleWatcher::OnHandleReady",
+      10.6
+     ],
+     [
+      "GpuHostImpl::StoreBlobToDisk",
+      1.6
+     ],
+     [
+      "Closed mojo endpoint",
+      1.6
+     ],
+     [
+      "UkmRecorderImpl::NotifyObserversWithNewEntry",
+      0.2
+     ],
+     [
+      "Receive mojo reply",
+      0.0
+     ],
+     [
+      "CommandBufferHelper::Flush",
+      0.0
+     ],
+     [
+      "GpuHostImpl::DidDestroyChannel",
+      0.0
+     ]
+    ],
+    "watch": {}
+   },
+   "bottom": {
+    "busy_ms": 0.6,
+    "busy_pct": 0.0,
+    "tasks": 14,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 0.1,
+    "longest": [
+     {
+      "dur_ms": 0.1,
+      "at_ms": 1685,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        0.1
+       ],
+       [
+        "RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.1,
+      "at_ms": 480,
+      "top_self": [
+       [
+        "RunTask",
+        0.0
+       ],
+       [
+        "Receive mojo message",
+        0.0
+       ],
+       [
+        "ThreadControllerImpl::RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.1,
+      "at_ms": 2416,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        0.0
+       ],
+       [
+        "Receive mojo message",
+        0.0
+       ],
+       [
+        "RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.1,
+      "at_ms": 722,
+      "top_self": [
+       [
+        "RunTask",
+        0.0
+       ],
+       [
+        "Receive mojo message",
+        0.0
+       ],
+       [
+        "ThreadControllerImpl::RunTask",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 0.1,
+      "at_ms": 1297,
+      "top_self": [
+       [
+        "ThreadControllerImpl::RunTask",
+        0.0
+       ],
+       [
+        "Receive mojo message",
+        0.0
+       ],
+       [
+        "RunTask",
+        0.0
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "ThreadControllerImpl::RunTask",
+      0.3
+     ],
+     [
+      "Receive mojo message",
+      0.2
+     ],
+     [
+      "RunTask",
+      0.1
+     ]
+    ],
+    "watch": {}
+   }
+  },
+  "Renderer:CrRendererMain": {
+   "idle": {
+    "busy_ms": 3011.1,
+    "busy_pct": 98.4,
+    "tasks": 863,
+    "tasks_gt50": 2,
+    "tasks_gt100": 1,
+    "max_task_ms": 114.6,
+    "longest": [
+     {
+      "dur_ms": 114.6,
+      "at_ms": 267,
+      "top_self": [
+       [
+        "RunMicrotasks",
+        114.4
+       ],
+       [
+        "V8.BytecodeBudgetInterrupt",
+        0.1
+       ],
+       [
+        "RunTask",
+        0.0
+       ],
+       [
+        "V8.HandleInterrupts",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 64.4,
+      "at_ms": 108,
+      "top_self": [
+       [
+        "RunMicrotasks",
+        63.9
+       ],
+       [
+        "BlinkScheduler_PerformMicrotaskCheckpoint",
+        0.5
+       ],
+       [
+        "RunTask",
+        0.1
+       ],
+       [
+        "Receive mojo reply",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 47.0,
+      "at_ms": 1575,
+      "top_self": [
+       [
+        "UpdateLayoutTree",
+        23.7
+       ],
+       [
+        "Layerize",
+        8.6
+       ],
+       [
+        "PrePaint",
+        5.7
+       ],
+       [
+        "FunctionCall",
+        5.5
+       ]
+      ]
+     },
+     {
+      "dur_ms": 45.7,
+      "at_ms": 58,
+      "top_self": [
+       [
+        "ProxyMain::BeginMainFrame",
+        12.4
+       ],
+       [
+        "Layerize",
+        10.0
+       ],
+       [
+        "UpdateLayoutTree",
+        9.5
+       ],
+       [
+        "Layout",
+        3.7
+       ]
+      ]
+     },
+     {
+      "dur_ms": 42.6,
+      "at_ms": 794,
+      "top_self": [
+       [
+        "FunctionCall",
+        9.9
+       ],
+       [
+        "PrePaint",
+        7.2
+       ],
+       [
+        "Layerize",
+        5.4
+       ],
+       [
+        "LayerTreeHost::WaitForCommitCompletion",
+        5.2
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "Layerize",
+      504.7
+     ],
+     [
+      "FunctionCall",
+      406.5
+     ],
+     [
+      "RunMicrotasks",
+      329.6
+     ],
+     [
+      "UpdateLayoutTree",
+      301.0
+     ],
+     [
+      "PrePaint",
+      288.4
+     ],
+     [
+      "ProxyMain::BeginMainFrame",
+      247.4
+     ],
+     [
+      "IntersectionObserverController::computeIntersections",
+      123.7
+     ],
+     [
+      "Commit",
+      118.8
+     ],
+     [
+      "Paint",
+      116.1
+     ],
+     [
+      "LayerTreeHost::DoUpdateLayers",
+      98.5
+     ],
+     [
+      "Layout",
+      89.7
+     ],
+     [
+      "LocalFrameView::ScheduleAnimation",
+      69.7
+     ]
+    ],
+    "watch": {
+     "ProxyMain::BeginMainFrame": {
+      "count": 81,
+      "total_ms": 2312.0,
+      "max_ms": 47.0,
+      "gt50": 0
+     },
+     "FireAnimationFrame": {
+      "count": 197,
+      "total_ms": 672.9,
+      "max_ms": 19.7,
+      "gt50": 0
+     },
+     "FunctionCall": {
+      "count": 319,
+      "total_ms": 837.5,
+      "max_ms": 19.7,
+      "gt50": 0
+     },
+     "UpdateLayoutTree": {
+      "count": 114,
+      "total_ms": 301.0,
+      "max_ms": 19.5,
+      "gt50": 0
+     },
+     "Layout": {
+      "count": 35,
+      "total_ms": 89.7,
+      "max_ms": 7.7,
+      "gt50": 0
+     },
+     "PrePaint": {
+      "count": 81,
+      "total_ms": 288.4,
+      "max_ms": 19.3,
+      "gt50": 0
+     },
+     "Paint": {
+      "count": 154,
+      "total_ms": 175.2,
+      "max_ms": 12.3,
+      "gt50": 0
+     },
+     "Layerize": {
+      "count": 81,
+      "total_ms": 510.5,
+      "max_ms": 15.2,
+      "gt50": 0
+     },
+     "Commit": {
+      "count": 81,
+      "total_ms": 377.3,
+      "max_ms": 9.9,
+      "gt50": 0
+     },
+     "TimerFire": {
+      "count": 34,
+      "total_ms": 290.4,
+      "max_ms": 38.0,
+      "gt50": 0
+     },
+     "EventDispatch": {
+      "count": 24,
+      "total_ms": 0.1,
+      "max_ms": 0.0,
+      "gt50": 0
+     }
+    }
+   },
+   "scroll": {
+    "busy_ms": 20050.8,
+    "busy_pct": 98.7,
+    "tasks": 6006,
+    "tasks_gt50": 152,
+    "tasks_gt100": 54,
+    "max_task_ms": 345.5,
+    "longest": [
+     {
+      "dur_ms": 345.5,
+      "at_ms": 7038,
+      "top_self": [
+       [
+        "Layout",
+        153.9
+       ],
+       [
+        "FunctionCall",
+        62.8
+       ],
+       [
+        "UpdateLayoutTree",
+        45.3
+       ],
+       [
+        "Paint",
+        19.4
+       ]
+      ]
+     },
+     {
+      "dur_ms": 274.9,
+      "at_ms": 9532,
+      "top_self": [
+       [
+        "FunctionCall",
+        162.9
+       ],
+       [
+        "UpdateLayoutTree",
+        55.5
+       ],
+       [
+        "Layout",
+        48.8
+       ],
+       [
+        "V8.HandleInterrupts",
+        3.6
+       ]
+      ]
+     },
+     {
+      "dur_ms": 261.8,
+      "at_ms": 5764,
+      "top_self": [
+       [
+        "FunctionCall",
+        108.9
+       ],
+       [
+        "Layout",
+        54.0
+       ],
+       [
+        "UpdateLayoutTree",
+        22.2
+       ],
+       [
+        "PrePaint",
+        10.5
+       ]
+      ]
+     },
+     {
+      "dur_ms": 256.5,
+      "at_ms": 18848,
+      "top_self": [
+       [
+        "FunctionCall",
+        140.7
+       ],
+       [
+        "UpdateLayoutTree",
+        21.2
+       ],
+       [
+        "PrePaint",
+        19.1
+       ],
+       [
+        "V8.GC_SCAVENGER_SCAVENGE_PARALLEL",
+        11.5
+       ]
+      ]
+     },
+     {
+      "dur_ms": 234.4,
+      "at_ms": 1612,
+      "top_self": [
+       [
+        "UpdateLayoutTree",
+        130.4
+       ],
+       [
+        "Paint",
+        24.4
+       ],
+       [
+        "FunctionCall",
+        21.0
+       ],
+       [
+        "Layerize",
+        11.7
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "UpdateLayoutTree",
+      5609.0
+     ],
+     [
+      "FunctionCall",
+      3553.8
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      1405.7
+     ],
+     [
+      "ProxyMain::BeginMainFrame",
+      1332.7
+     ],
+     [
+      "Layerize",
+      1283.7
+     ],
+     [
+      "Layout",
+      1106.1
+     ],
+     [
+      "Paint",
+      1088.5
+     ],
+     [
+      "PrePaint",
+      1047.4
+     ],
+     [
+      "RunTask",
+      421.9
+     ],
+     [
+      "RunMicrotasks",
+      319.3
+     ],
+     [
+      "LocalFrameView::ScheduleAnimation",
+      269.4
+     ],
+     [
+      "IntersectionObserverController::computeIntersections",
+      252.3
+     ]
+    ],
+    "watch": {
+     "ProxyMain::BeginMainFrame": {
+      "count": 191,
+      "total_ms": 15354.7,
+      "max_ms": 328.8,
+      "gt50": 143
+     },
+     "FireAnimationFrame": {
+      "count": 1090,
+      "total_ms": 8991.9,
+      "max_ms": 128.4,
+      "gt50": 35
+     },
+     "FunctionCall": {
+      "count": 2479,
+      "total_ms": 11039.2,
+      "max_ms": 253.8,
+      "gt50": 43
+     },
+     "UpdateLayoutTree": {
+      "count": 707,
+      "total_ms": 5614.9,
+      "max_ms": 111.6,
+      "gt50": 18
+     },
+     "Layout": {
+      "count": 184,
+      "total_ms": 1111.9,
+      "max_ms": 91.5,
+      "gt50": 5
+     },
+     "PrePaint": {
+      "count": 398,
+      "total_ms": 1057.1,
+      "max_ms": 21.4,
+      "gt50": 0
+     },
+     "Paint": {
+      "count": 854,
+      "total_ms": 2709.6,
+      "max_ms": 45.1,
+      "gt50": 0
+     },
+     "Layerize": {
+      "count": 190,
+      "total_ms": 1341.5,
+      "max_ms": 25.6,
+      "gt50": 0
+     },
+     "Commit": {
+      "count": 191,
+      "total_ms": 650.1,
+      "max_ms": 16.7,
+      "gt50": 0
+     },
+     "TimerFire": {
+      "count": 210,
+      "total_ms": 1069.5,
+      "max_ms": 182.9,
+      "gt50": 3
+     },
+     "EventDispatch": {
+      "count": 448,
+      "total_ms": 450.8,
+      "max_ms": 134.7,
+      "gt50": 2
+     },
+     "MinorGC": {
+      "count": 6,
+      "total_ms": 72.4,
+      "max_ms": 31.6,
+      "gt50": 0
+     },
+     "PaintImage": {
+      "count": 876,
+      "total_ms": 192.3,
+      "max_ms": 12.6,
+      "gt50": 0
+     },
+     "MajorGC": {
+      "count": 3,
+      "total_ms": 307.5,
+      "max_ms": 173.4,
+      "gt50": 2
+     }
+    }
+   },
+   "bottom": {
+    "busy_ms": 2791.9,
+    "busy_pct": 92.2,
+    "tasks": 698,
+    "tasks_gt50": 1,
+    "tasks_gt100": 0,
+    "max_task_ms": 50.8,
+    "longest": [
+     {
+      "dur_ms": 50.8,
+      "at_ms": 564,
+      "top_self": [
+       [
+        "UpdateLayoutTree",
+        19.3
+       ],
+       [
+        "FunctionCall",
+        9.9
+       ],
+       [
+        "ProxyMain::BeginMainFrame",
+        5.0
+       ],
+       [
+        "Layerize",
+        3.7
+       ]
+      ]
+     },
+     {
+      "dur_ms": 47.9,
+      "at_ms": 2366,
+      "top_self": [
+       [
+        "FunctionCall",
+        9.2
+       ],
+       [
+        "Layerize",
+        7.3
+       ],
+       [
+        "UpdateLayoutTree",
+        7.2
+       ],
+       [
+        "ProxyMain::BeginMainFrame",
+        5.6
+       ]
+      ]
+     },
+     {
+      "dur_ms": 47.7,
+      "at_ms": 488,
+      "top_self": [
+       [
+        "FunctionCall",
+        15.2
+       ],
+       [
+        "Layerize",
+        7.5
+       ],
+       [
+        "PrePaint",
+        7.0
+       ],
+       [
+        "Paint",
+        6.8
+       ]
+      ]
+     },
+     {
+      "dur_ms": 44.0,
+      "at_ms": 615,
+      "top_self": [
+       [
+        "PrePaint",
+        7.9
+       ],
+       [
+        "Paint",
+        7.5
+       ],
+       [
+        "Layerize",
+        5.4
+       ],
+       [
+        "UpdateLayer",
+        4.8
+       ]
+      ]
+     },
+     {
+      "dur_ms": 43.2,
+      "at_ms": 2415,
+      "top_self": [
+       [
+        "ProxyMain::BeginMainFrame",
+        7.9
+       ],
+       [
+        "FunctionCall",
+        7.2
+       ],
+       [
+        "UpdateLayoutTree",
+        6.3
+       ],
+       [
+        "Paint",
+        5.2
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "ProxyMain::BeginMainFrame",
+      459.0
+     ],
+     [
+      "Paint",
+      370.5
+     ],
+     [
+      "FunctionCall",
+      359.5
+     ],
+     [
+      "Layerize",
+      318.6
+     ],
+     [
+      "UpdateLayoutTree",
+      317.5
+     ],
+     [
+      "PrePaint",
+      204.4
+     ],
+     [
+      "IntersectionObserverController::computeIntersections",
+      144.6
+     ],
+     [
+      "LocalFrameView::ScheduleAnimation",
+      89.4
+     ],
+     [
+      "Commit",
+      70.0
+     ],
+     [
+      "RunTask",
+      68.6
+     ],
+     [
+      "FireAnimationFrame",
+      63.9
+     ],
+     [
+      "LayerTreeHost::DoUpdateLayers",
+      63.8
+     ]
+    ],
+    "watch": {
+     "FunctionCall": {
+      "count": 440,
+      "total_ms": 710.8,
+      "max_ms": 19.3,
+      "gt50": 0
+     },
+     "ProxyMain::BeginMainFrame": {
+      "count": 114,
+      "total_ms": 2560.6,
+      "max_ms": 50.8,
+      "gt50": 1
+     },
+     "FireAnimationFrame": {
+      "count": 318,
+      "total_ms": 744.9,
+      "max_ms": 19.3,
+      "gt50": 0
+     },
+     "UpdateLayoutTree": {
+      "count": 152,
+      "total_ms": 317.5,
+      "max_ms": 19.3,
+      "gt50": 0
+     },
+     "PrePaint": {
+      "count": 114,
+      "total_ms": 204.4,
+      "max_ms": 14.4,
+      "gt50": 0
+     },
+     "Paint": {
+      "count": 228,
+      "total_ms": 701.9,
+      "max_ms": 19.9,
+      "gt50": 0
+     },
+     "PaintImage": {
+      "count": 456,
+      "total_ms": 39.8,
+      "max_ms": 5.1,
+      "gt50": 0
+     },
+     "Layerize": {
+      "count": 114,
+      "total_ms": 322.6,
+      "max_ms": 19.5,
+      "gt50": 0
+     },
+     "Commit": {
+      "count": 114,
+      "total_ms": 309.5,
+      "max_ms": 19.4,
+      "gt50": 0
+     },
+     "MinorGC": {
+      "count": 1,
+      "total_ms": 25.3,
+      "max_ms": 25.3,
+      "gt50": 0
+     },
+     "TimerFire": {
+      "count": 21,
+      "total_ms": 45.0,
+      "max_ms": 18.2,
+      "gt50": 0
+     }
+    }
+   }
+  },
+  "Renderer:Compositor": {
+   "idle": {
+    "busy_ms": 185.0,
+    "busy_pct": 6.0,
+    "tasks": 2855,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 3.7,
+    "longest": [
+     {
+      "dur_ms": 3.7,
+      "at_ms": 890,
+      "top_self": [
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        3.3
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::BuildHitTestData",
+        0.1
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.1
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.9,
+      "at_ms": 1682,
+      "top_self": [
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        1.6
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::BuildHitTestData",
+        0.1
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.0,
+      "at_ms": 2816,
+      "top_self": [
+       [
+        "GpuChannelHost::VerifyFlush",
+        0.3
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.2
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        0.1
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.0,
+      "at_ms": 2966,
+      "top_self": [
+       [
+        "GpuChannelHost::VerifyFlush",
+        0.3
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::BuildHitTestData",
+        0.1
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.0,
+      "at_ms": 2999,
+      "top_self": [
+       [
+        "GpuChannelHost::VerifyFlush",
+        0.3
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        0.1
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "Graphics.Pipeline",
+      38.6
+     ],
+     [
+      "LayerTreeHostImpl::BuildHitTestData",
+      21.5
+     ],
+     [
+      "LayerTreeHostImpl::CalculateRenderPasses",
+      19.2
+     ],
+     [
+      "LayerTreeImpl::UpdateTiles",
+      18.0
+     ],
+     [
+      "draw_property_utils::ComputeDrawPropertiesOfVisibleLayers",
+      11.5
+     ],
+     [
+      "SimpleWatcher::OnHandleReady",
+      8.8
+     ],
+     [
+      "Scheduler::BeginImplFrame",
+      7.9
+     ],
+     [
+      "LayerTreeImpl::UpdateDrawProperties::CalculateDrawProperties",
+      7.1
+     ],
+     [
+      "GpuChannelHost::VerifyFlush",
+      6.6
+     ],
+     [
+      "LayerTreeHostImpl::PrepareToDraw",
+      5.6
+     ],
+     [
+      "CalculateRenderSurfaceLayerList",
+      5.6
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      5.1
+     ]
+    ],
+    "watch": {
+     "LayerTreeHostImpl::PrepareToDraw": {
+      "count": 368,
+      "total_ms": 69.7,
+      "max_ms": 3.5,
+      "gt50": 0
+     },
+     "TileManager::AssignGpuMemoryToTiles": {
+      "count": 368,
+      "total_ms": 2.8,
+      "max_ms": 0.1,
+      "gt50": 0
+     }
+    }
+   },
+   "scroll": {
+    "busy_ms": 1171.9,
+    "busy_pct": 5.8,
+    "tasks": 18945,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 15.6,
+    "longest": [
+     {
+      "dur_ms": 15.6,
+      "at_ms": 18413,
+      "top_self": [
+       [
+        "LayerTreeHostImpl::BuildHitTestData",
+        15.2
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        0.0
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 4.4,
+      "at_ms": 8271,
+      "top_self": [
+       [
+        "TileManager::CheckForCompletedTasksAndIssueSignals",
+        4.4
+       ],
+       [
+        "ThreadControllerImpl::RunTask",
+        0.0
+       ],
+       [
+        "RunTask",
+        0.0
+       ],
+       [
+        "TileTaskManagerImpl::CheckForCompletedTasks",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 4.0,
+      "at_ms": 16781,
+      "top_self": [
+       [
+        "TileManager::ScheduleTasks",
+        3.6
+       ],
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        0.1
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 3.0,
+      "at_ms": 10529,
+      "top_self": [
+       [
+        "RunTask",
+        3.0
+       ],
+       [
+        "ThreadControllerImpl::RunTask",
+        0.0
+       ],
+       [
+        "TileManager::CheckForCompletedTasksAndIssueSignals",
+        0.0
+       ],
+       [
+        "TileManager::CheckPendingGpuWorkAndIssueSignals",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 2.8,
+      "at_ms": 10580,
+      "top_self": [
+       [
+        "ProxyImpl::ScheduledActionDraw",
+        2.6
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        0.0
+       ],
+       [
+        "LayerTreeImpl::UpdateDrawProperties::CalculateDrawProperties",
+        0.0
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "Graphics.Pipeline",
+      227.2
+     ],
+     [
+      "GpuChannelHost::VerifyFlush",
+      102.8
+     ],
+     [
+      "LayerTreeImpl::UpdateTiles",
+      100.8
+     ],
+     [
+      "LayerTreeHostImpl::CalculateRenderPasses",
+      74.0
+     ],
+     [
+      "AnimationHost::TickAnimations",
+      66.1
+     ],
+     [
+      "SimpleWatcher::OnHandleReady",
+      63.0
+     ],
+     [
+      "draw_property_utils::ComputeDrawPropertiesOfVisibleLayers",
+      60.7
+     ],
+     [
+      "LayerTreeHostImpl::BuildHitTestData",
+      56.7
+     ],
+     [
+      "LayerTreeImpl::UpdateDrawProperties::CalculateDrawProperties",
+      55.0
+     ],
+     [
+      "CalculateRenderSurfaceLayerList",
+      50.1
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      40.9
+     ],
+     [
+      "Scheduler::BeginImplFrame",
+      40.4
+     ]
+    ],
+    "watch": {
+     "LayerTreeHostImpl::PrepareToDraw": {
+      "count": 2394,
+      "total_ms": 379.4,
+      "max_ms": 0.9,
+      "gt50": 0
+     },
+     "TileManager::AssignGpuMemoryToTiles": {
+      "count": 2377,
+      "total_ms": 29.1,
+      "max_ms": 0.3,
+      "gt50": 0
+     }
+    }
+   },
+   "bottom": {
+    "busy_ms": 145.7,
+    "busy_pct": 4.8,
+    "tasks": 2357,
+    "tasks_gt50": 0,
+    "tasks_gt100": 0,
+    "max_task_ms": 18.0,
+    "longest": [
+     {
+      "dur_ms": 18.0,
+      "at_ms": 1075,
+      "top_self": [
+       [
+        "ProxyImpl::Commit",
+        17.7
+       ],
+       [
+        "LayerTreeImpl::PullProperties",
+        0.0
+       ],
+       [
+        "ProxyImpl::ReadyToCommit",
+        0.0
+       ],
+       [
+        "TileManager::AssignGpuMemoryToTiles",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 2.0,
+      "at_ms": 120,
+      "top_self": [
+       [
+        "Graphics.Pipeline",
+        1.7
+       ],
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        0.0
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.0
+       ],
+       [
+        "draw_property_utils::ComputeDrawPropertiesOfVisibleLayers",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.8,
+      "at_ms": 88,
+      "top_self": [
+       [
+        "GpuChannelHost::VerifyFlush",
+        1.5
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        0.0
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.8,
+      "at_ms": 1324,
+      "top_self": [
+       [
+        "GpuChannelHost::VerifyFlush",
+        1.6
+       ],
+       [
+        "Graphics.Pipeline",
+        0.1
+       ],
+       [
+        "LayerTreeHostImpl::CalculateRenderPasses",
+        0.0
+       ],
+       [
+        "TileTaskManagerImpl::CheckForCompletedTasks",
+        0.0
+       ]
+      ]
+     },
+     {
+      "dur_ms": 1.5,
+      "at_ms": 245,
+      "top_self": [
+       [
+        "LayerTreeImpl::UpdateDrawProperties::CalculateDrawProperties",
+        0.5
+       ],
+       [
+        "Graphics.Pipeline",
+        0.3
+       ],
+       [
+        "LayerTreeImpl::UpdateTiles",
+        0.1
+       ],
+       [
+        "draw_property_utils::ComputeDrawPropertiesOfVisibleLayers",
+        0.1
+       ]
+      ]
+     }
+    ],
+    "top_self_ms": [
+     [
+      "Graphics.Pipeline",
+      27.3
+     ],
+     [
+      "ProxyImpl::Commit",
+      20.2
+     ],
+     [
+      "GpuChannelHost::VerifyFlush",
+      18.6
+     ],
+     [
+      "SimpleWatcher::OnHandleReady",
+      7.8
+     ],
+     [
+      "LayerTreeHostImpl::CalculateRenderPasses",
+      5.7
+     ],
+     [
+      "Receive mojo message",
+      5.2
+     ],
+     [
+      "ThreadControllerImpl::RunTask",
+      5.0
+     ],
+     [
+      "TileManager::AssignGpuMemoryToTiles",
+      4.9
+     ],
+     [
+      "Scheduler::BeginImplFrame",
+      4.4
+     ],
+     [
+      "LayerTreeImpl::UpdateTiles",
+      4.0
+     ],
+     [
+      "TreeSynchronizer::PushLayerPropertiesTo.Active",
+      3.7
+     ],
+     [
+      "LayerTreeImpl::PullProperties",
+      3.6
+     ]
+    ],
+    "watch": {
+     "TileManager::AssignGpuMemoryToTiles": {
+      "count": 241,
+      "total_ms": 6.1,
+      "max_ms": 0.1,
+      "gt50": 0
+     },
+     "LayerTreeHostImpl::PrepareToDraw": {
+      "count": 149,
+      "total_ms": 14.8,
+      "max_ms": 0.5,
+      "gt50": 0
+     }
+    }
+   }
+  },
+  "Browser:ThreadPoolForegroundWorker (pool)": {
+   "idle": {
+    "busy_ms": 54.9,
+    "max_task_ms": 2.9,
+    "threads": 3
+   },
+   "scroll": {
+    "busy_ms": 41.2,
+    "max_task_ms": 8.3,
+    "threads": 3
+   },
+   "bottom": {
+    "busy_ms": 4.3,
+    "max_task_ms": 4.2,
+    "threads": 1
+   }
+  },
+  "Renderer:ThreadPoolForegroundWorker (pool)": {
+   "idle": {
+    "busy_ms": 12.1,
+    "max_task_ms": 1.0,
+    "threads": 2,
+    "watch": {
+     "RasterTask": {
+      "count": 54,
+      "total_ms": 2.5,
+      "max_ms": 0.7
+     }
+    }
+   },
+   "scroll": {
+    "busy_ms": 1057.2,
+    "max_task_ms": 26.1,
+    "threads": 7,
+    "watch": {
+     "RasterTask": {
+      "count": 1132,
+      "total_ms": 148.9,
+      "max_ms": 5.6
+     },
+     "ImageDecodeTask": {
+      "count": 76,
+      "total_ms": 370.9,
+      "max_ms": 25.9
+     },
+     "Decode Image": {
+      "count": 75,
+      "total_ms": 287.5,
+      "max_ms": 14.0
+     }
+    }
+   },
+   "bottom": {
+    "busy_ms": 80.5,
+    "max_task_ms": 25.4,
+    "threads": 2,
+    "watch": {
+     "RasterTask": {
+      "count": 575,
+      "total_ms": 39.8,
+      "max_ms": 12.3
+     }
+    }
+   }
+  },
+  "GPU Process:ThreadPoolForegroundWorker (pool)": {
+   "scroll": {
+    "busy_ms": 300.2,
+    "max_task_ms": 20.1,
+    "threads": 7
+   }
+  }
+ }
+}

@@ -1,0 +1,2447 @@
+{
+ "https://fastwork.com/": {
+  "summary": {
+   "ttfb": {
+    "median": 0,
+    "p90": 0,
+    "min": 0,
+    "max": 0
+   },
+   "fcp": {
+    "median": 488,
+    "p90": 529,
+    "min": 444,
+    "max": 529
+   },
+   "lcp": {
+    "median": 808,
+    "p90": 832.0,
+    "min": 708,
+    "max": 832.0
+   },
+   "cls": null,
+   "dcl": {
+    "median": 573.0,
+    "p90": 616,
+    "min": 531,
+    "max": 616
+   },
+   "load": {
+    "median": 2150,
+    "p90": 2311,
+    "min": 2029,
+    "max": 2311
+   },
+   "longtaskTotal": null,
+   "domNodes": {
+    "median": 1335,
+    "p90": 1335,
+    "min": 1335,
+    "max": 1335
+   }
+  },
+  "samples": [
+   {
+    "fp": null,
+    "cls": null,
+    "lcp": 820.0000000000001,
+    "origins": [
+     "https://fastwork.com",
+     "https://static.cloudflareinsights.com",
+     "https://www.googletagmanager.com",
+     "https://cdn.amplitude.com",
+     "https://static.hotjar.com",
+     "https://www.google-analytics.com",
+     "https://script.hotjar.com",
+     "https://sr-client-cfg.amplitude.com",
+     "https://api2.amplitude.com"
+    ],
+    "longtasks": null,
+    "navRaw": {
+     "responseStart": 0,
+     "requestStart": 0,
+     "connectEnd": 0,
+     "connectStart": 0,
+     "type": "navigate",
+     "domainLookupStart": 0,
+     "redirectStart": 0,
+     "workerStart": 0,
+     "fetchStart": 0,
+     "responseEnd": 64,
+     "startTime": 0,
+     "secureConnectionStart": 0
+    },
+    "supported": [
+     "event",
+     "first-input",
+     "largest-contentful-paint",
+     "mark",
+     "measure",
+     "navigation",
+     "paint",
+     "resource"
+    ],
+    "slowest": [
+     {
+      "transfer": 6011,
+      "dur": 1987,
+      "start": 46,
+      "url": "https://fastwork.com/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 71836,
+      "dur": 1920,
+      "start": 46,
+      "url": "https://fastwork.com/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 69840,
+      "dur": 1849,
+      "start": 46,
+      "url": "https://fastwork.com/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 97081,
+      "dur": 1789,
+      "start": 26,
+      "url": "https://fastwork.com/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 19203,
+      "dur": 1724,
+      "start": 20,
+      "url": "https://fastwork.com/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 389013,
+      "dur": 1654,
+      "start": 20,
+      "url": "https://fastwork.com/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 100094,
+      "dur": 1613,
+      "start": 432,
+      "url": "https://fastwork.com/selling/platform/grain.png",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 11750,
+      "dur": 1587,
+      "start": 18,
+      "url": "https://fastwork.com/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 338563,
+      "dur": 1538,
+      "start": 486,
+      "url": "https://fastwork.com/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 31746,
+      "dur": 1511,
+      "start": 18,
+      "url": "https://fastwork.com/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 545,
+      "dur": 1506,
+      "start": 485,
+      "url": "https://fastwork.com/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 0,
+      "dur": 1453,
+      "start": 3085,
+      "url": "https://api2.amplitude.com/2/httpapi",
+      "type": "fetch",
+      "blocking": null
+     }
+    ],
+    "lcpEl": {
+     "size": 16194,
+     "id": "",
+     "src": "https://fastwork.com/selling/hero/mod-cover.jpg",
+     "cls": "svelte-1p2vpne",
+     "tag": "IMG",
+     "text": ""
+    },
+    "fcp": 495,
+    "timeOrigin": 1790788932531.0002,
+    "resources": {
+     "script": {
+      "count": 8,
+      "transfer": 3992,
+      "decoded": 9475
+     },
+     "img": {
+      "count": 32,
+      "transfer": 2115606,
+      "decoded": 2105550
+     },
+     "fetch": {
+      "count": 4,
+      "transfer": 0,
+      "decoded": 0
+     },
+     "xmlhttprequest": {
+      "count": 1,
+      "transfer": 300,
+      "decoded": 0
+     },
+     "link": {
+      "count": 15,
+      "transfer": 248919,
+      "decoded": 881240
+     },
+     "other": {
+      "count": 1,
+      "transfer": 567,
+      "decoded": 553
+     },
+     "css": {
+      "count": 7,
+      "transfer": 779102,
+      "decoded": 776153
+     }
+    },
+    "domNodes": 1335,
+    "jsHeap": null,
+    "images": [
+     {
+      "transfer": 6011,
+      "end": 2033,
+      "url": "/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "start": 46
+     },
+     {
+      "transfer": 71836,
+      "end": 1966,
+      "url": "/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "start": 46
+     },
+     {
+      "transfer": 69840,
+      "end": 1895,
+      "url": "/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "start": 46
+     },
+     {
+      "transfer": 97081,
+      "end": 1815,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 26
+     },
+     {
+      "transfer": 19203,
+      "end": 1744,
+      "url": "/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 389013,
+      "end": 1674,
+      "url": "/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 100094,
+      "end": 2045,
+      "url": "/selling/platform/grain.png",
+      "type": "css",
+      "start": 432
+     },
+     {
+      "transfer": 11750,
+      "end": 1605,
+      "url": "/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 338563,
+      "end": 2024,
+      "url": "/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "start": 486
+     },
+     {
+      "transfer": 31746,
+      "end": 1529,
+      "url": "/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 545,
+      "end": 1991,
+      "url": "/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "start": 485
+     },
+     {
+      "transfer": 352287,
+      "end": 1448,
+      "url": "/selling/hero/peter-cover.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 4484,
+      "end": 1380,
+      "url": "/selling/hero/pakincht-avatar.jpg",
+      "type": "img",
+      "start": 16
+     },
+     {
+      "transfer": 318670,
+      "end": 1309,
+      "url": "/selling/hero/pakincht-cover.jpg",
+      "type": "img",
+      "start": 16
+     },
+     {
+      "transfer": 67695,
+      "end": 1232,
+      "url": "/selling/sellers/ux-ui-designer/avatar.jpg",
+      "type": "img",
+      "start": 15
+     },
+     {
+      "transfer": 16901,
+      "end": 1157,
+      "url": "/selling/hero/slayalldeep-avatar.jpg",
+      "type": "img",
+      "start": 15
+     },
+     {
+      "transfer": 78345,
+      "end": 1079,
+      "url": "/selling/hero/slayalldeep-cover.jpg",
+      "type": "img",
+      "start": 15
+     },
+     {
+      "transfer": 29255,
+      "end": 1007,
+      "url": "/selling/sellers/ai-video-editor/avatar.jpg",
+      "type": "img",
+      "start": 15
+     },
+     {
+      "transfer": 8456,
+      "end": 939,
+      "url": "/selling/hero/buttercup-avatar.jpg",
+      "type": "img",
+      "start": 14
+     },
+     {
+      "transfer": 47371,
+      "end": 866,
+      "url": "/selling/hero/buttercup-cover.jpg",
+      "type": "img",
+      "start": 14
+     },
+     {
+      "transfer": 77641,
+      "end": 741,
+      "url": "/selling/hero/bold-cover.jpg",
+      "type": "img",
+      "start": 15
+     },
+     {
+      "transfer": 524,
+      "end": 732,
+      "url": "/selling/profile/online.svg",
+      "type": "img",
+      "start": 13
+     },
+     {
+      "transfer": 57235,
+      "end": 732,
+      "url": "/selling/hero/weng-cover.jpg",
+      "type": "img",
+      "start": 16
+     },
+     {
+      "transfer": 20185,
+      "end": 732,
+      "url": "/selling/hero/weng-avatar.jpg",
+      "type": "img",
+      "start": 16
+     },
+     {
+      "transfer": 77546,
+      "end": 731,
+      "url": "/selling/hero/mod-cover.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 212852,
+      "end": 685,
+      "url": "/selling/hero/leobeer-cover.jpg",
+      "type": "img",
+      "start": 14
+     },
+     {
+      "transfer": 4206,
+      "end": 579,
+      "url": "/selling/hero/chapavich-avatar.jpg",
+      "type": "img",
+      "start": 13
+     },
+     {
+      "transfer": 45473,
+      "end": 476,
+      "url": "/selling/hero/chapavich-cover.jpg",
+      "type": "img",
+      "start": 13
+     },
+     {
+      "transfer": 26425,
+      "end": 704,
+      "url": "/_app/immutable/assets/google-sans-thai-normal.CD79Hmaw.woff2",
+      "type": "css",
+      "start": 490
+     },
+     {
+      "transfer": 197250,
+      "end": 787,
+      "url": "/selling/fonts/playpen-sans-latin.woff2",
+      "type": "css",
+      "start": 577
+     },
+     {
+      "transfer": 55448,
+      "end": 635,
+      "url": "/_app/immutable/assets/google-sans-latin-normal.BbZhqv4U.woff2",
+      "type": "css",
+      "start": 490
+     },
+     {
+      "transfer": 60777,
+      "end": 630,
+      "url": "/_app/immutable/assets/google-sans-latin-italic.XUjF_20c.woff2",
+      "type": "css",
+      "start": 490
+     },
+     {
+      "transfer": 0,
+      "end": 400,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 400
+     },
+     {
+      "transfer": 0,
+      "end": 495,
+      "url": "/selling/people-wordmark/o.svg",
+      "type": "img",
+      "start": 495
+     },
+     {
+      "transfer": 0,
+      "end": 495,
+      "url": "/selling/sellers/ai-automation/avatar.jpg",
+      "type": "img",
+      "start": 495
+     },
+     {
+      "transfer": 0,
+      "end": 495,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 495
+     },
+     {
+      "transfer": 0,
+      "end": 495,
+      "url": "/selling/sellers/sound-composer/avatar.jpg",
+      "type": "img",
+      "start": 495
+     },
+     {
+      "transfer": 0,
+      "end": 577,
+      "url": "/selling/sellers/photographer/cover.jpg",
+      "type": "img",
+      "start": 577
+     },
+     {
+      "transfer": 0,
+      "end": 622,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 622
+     }
+    ],
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "nav": {
+     "transferSize": 21823,
+     "encodedBody": 21523,
+     "decodedBody": 100070,
+     "protocol": "h2",
+     "domInteractive": 507,
+     "dcl": 581,
+     "dns": 0,
+     "ttfb": 0,
+     "connect": 0,
+     "download": 64,
+     "load": 2056,
+     "redirect": 0,
+     "request": 0
+    },
+    "wallLoad": 959.8841667175293
+   },
+   {
+    "fp": null,
+    "cls": null,
+    "lcp": 808,
+    "origins": [
+     "https://fastwork.com",
+     "https://static.cloudflareinsights.com",
+     "https://www.googletagmanager.com",
+     "https://cdn.amplitude.com",
+     "https://static.hotjar.com",
+     "https://www.google-analytics.com",
+     "https://script.hotjar.com",
+     "https://sr-client-cfg.amplitude.com",
+     "https://api2.amplitude.com"
+    ],
+    "longtasks": null,
+    "navRaw": {
+     "responseStart": 0,
+     "requestStart": 0,
+     "connectEnd": 0,
+     "connectStart": 0,
+     "type": "navigate",
+     "domainLookupStart": 0,
+     "redirectStart": 0,
+     "workerStart": 0,
+     "fetchStart": 0,
+     "responseEnd": 51.00000000000001,
+     "startTime": 0,
+     "secureConnectionStart": 0
+    },
+    "supported": [
+     "event",
+     "first-input",
+     "largest-contentful-paint",
+     "mark",
+     "measure",
+     "navigation",
+     "paint",
+     "resource"
+    ],
+    "slowest": [
+     {
+      "transfer": 71836,
+      "dur": 1983,
+      "start": 44,
+      "url": "https://fastwork.com/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 6002,
+      "dur": 1911,
+      "start": 44,
+      "url": "https://fastwork.com/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 69840,
+      "dur": 1820,
+      "start": 44,
+      "url": "https://fastwork.com/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 97081,
+      "dur": 1786,
+      "start": 19,
+      "url": "https://fastwork.com/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 19203,
+      "dur": 1720,
+      "start": 19,
+      "url": "https://fastwork.com/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 389013,
+      "dur": 1646,
+      "start": 19,
+      "url": "https://fastwork.com/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 100094,
+      "dur": 1594,
+      "start": 412,
+      "url": "https://fastwork.com/selling/platform/grain.png",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 11750,
+      "dur": 1564,
+      "start": 19,
+      "url": "https://fastwork.com/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 338563,
+      "dur": 1511,
+      "start": 437,
+      "url": "https://fastwork.com/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 545,
+      "dur": 1492,
+      "start": 437,
+      "url": "https://fastwork.com/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 31746,
+      "dur": 1486,
+      "start": 18,
+      "url": "https://fastwork.com/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 352287,
+      "dur": 1412,
+      "start": 18,
+      "url": "https://fastwork.com/selling/hero/peter-cover.jpg",
+      "type": "img",
+      "blocking": null
+     }
+    ],
+    "lcpEl": {
+     "size": 16194,
+     "id": "",
+     "src": "https://fastwork.com/selling/hero/mod-cover.jpg",
+     "cls": "svelte-1p2vpne",
+     "tag": "IMG",
+     "text": ""
+    },
+    "fcp": 444,
+    "timeOrigin": 1790788939274,
+    "resources": {
+     "script": {
+      "count": 8,
+      "transfer": 3992,
+      "decoded": 9475
+     },
+     "img": {
+      "count": 32,
+      "transfer": 2115624,
+      "decoded": 2105550
+     },
+     "fetch": {
+      "count": 4,
+      "transfer": 0,
+      "decoded": 0
+     },
+     "xmlhttprequest": {
+      "count": 1,
+      "transfer": 300,
+      "decoded": 0
+     },
+     "link": {
+      "count": 15,
+      "transfer": 248937,
+      "decoded": 881240
+     },
+     "other": {
+      "count": 1,
+      "transfer": 567,
+      "decoded": 553
+     },
+     "css": {
+      "count": 7,
+      "transfer": 779102,
+      "decoded": 776153
+     }
+    },
+    "domNodes": 1335,
+    "jsHeap": null,
+    "images": [
+     {
+      "transfer": 71836,
+      "end": 2027,
+      "url": "/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "start": 44
+     },
+     {
+      "transfer": 6002,
+      "end": 1955,
+      "url": "/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "start": 44
+     },
+     {
+      "transfer": 69840,
+      "end": 1864,
+      "url": "/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "start": 44
+     },
+     {
+      "transfer": 97081,
+      "end": 1805,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 19203,
+      "end": 1739,
+      "url": "/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 389013,
+      "end": 1665,
+      "url": "/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 100094,
+      "end": 2006,
+      "url": "/selling/platform/grain.png",
+      "type": "css",
+      "start": 412
+     },
+     {
+      "transfer": 11750,
+      "end": 1583,
+      "url": "/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 338563,
+      "end": 1948,
+      "url": "/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "start": 437
+     },
+     {
+      "transfer": 545,
+      "end": 1929,
+      "url": "/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "start": 437
+     },
+     {
+      "transfer": 31746,
+      "end": 1504,
+      "url": "/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 352287,
+      "end": 1430,
+      "url": "/selling/hero/peter-cover.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 4484,
+      "end": 1356,
+      "url": "/selling/hero/pakincht-avatar.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 318670,
+      "end": 1286,
+      "url": "/selling/hero/pakincht-cover.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 67695,
+      "end": 1213,
+      "url": "/selling/sellers/ux-ui-designer/avatar.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 16901,
+      "end": 1148,
+      "url": "/selling/hero/slayalldeep-avatar.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 78345,
+      "end": 1082,
+      "url": "/selling/hero/slayalldeep-cover.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 29255,
+      "end": 1010,
+      "url": "/selling/sellers/ai-video-editor/avatar.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 8456,
+      "end": 938,
+      "url": "/selling/hero/buttercup-avatar.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 47371,
+      "end": 866,
+      "url": "/selling/hero/buttercup-cover.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 4206,
+      "end": 784,
+      "url": "/selling/hero/chapavich-avatar.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 77546,
+      "end": 695,
+      "url": "/selling/hero/mod-cover.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 524,
+      "end": 671,
+      "url": "/selling/profile/online.svg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 57244,
+      "end": 671,
+      "url": "/selling/hero/weng-cover.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 20185,
+      "end": 628,
+      "url": "/selling/hero/weng-avatar.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 77641,
+      "end": 624,
+      "url": "/selling/hero/bold-cover.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 212870,
+      "end": 601,
+      "url": "/selling/hero/leobeer-cover.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 45473,
+      "end": 454,
+      "url": "/selling/hero/chapavich-cover.jpg",
+      "type": "img",
+      "start": 17
+     },
+     {
+      "transfer": 26425,
+      "end": 696,
+      "url": "/_app/immutable/assets/google-sans-thai-normal.CD79Hmaw.woff2",
+      "type": "css",
+      "start": 442
+     },
+     {
+      "transfer": 197250,
+      "end": 703,
+      "url": "/selling/fonts/playpen-sans-latin.woff2",
+      "type": "css",
+      "start": 526
+     },
+     {
+      "transfer": 55448,
+      "end": 552,
+      "url": "/_app/immutable/assets/google-sans-latin-normal.BbZhqv4U.woff2",
+      "type": "css",
+      "start": 442
+     },
+     {
+      "transfer": 60777,
+      "end": 539,
+      "url": "/_app/immutable/assets/google-sans-latin-italic.XUjF_20c.woff2",
+      "type": "css",
+      "start": 442
+     },
+     {
+      "transfer": 0,
+      "end": 381,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 381
+     },
+     {
+      "transfer": 0,
+      "end": 444,
+      "url": "/selling/sellers/sound-composer/avatar.jpg",
+      "type": "img",
+      "start": 444
+     },
+     {
+      "transfer": 0,
+      "end": 444,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 444
+     },
+     {
+      "transfer": 0,
+      "end": 444,
+      "url": "/selling/sellers/ai-automation/avatar.jpg",
+      "type": "img",
+      "start": 444
+     },
+     {
+      "transfer": 0,
+      "end": 444,
+      "url": "/selling/people-wordmark/o.svg",
+      "type": "img",
+      "start": 444
+     },
+     {
+      "transfer": 0,
+      "end": 527,
+      "url": "/selling/sellers/photographer/cover.jpg",
+      "type": "img",
+      "start": 527
+     },
+     {
+      "transfer": 0,
+      "end": 617,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 617
+     }
+    ],
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "nav": {
+     "transferSize": 21798,
+     "encodedBody": 21498,
+     "decodedBody": 100070,
+     "protocol": "h2",
+     "domInteractive": 457,
+     "dcl": 531,
+     "dns": 0,
+     "ttfb": 0,
+     "connect": 0,
+     "download": 51.00000000000001,
+     "load": 2029,
+     "redirect": 0,
+     "request": 0
+    },
+    "wallLoad": 836.5640640258789
+   },
+   {
+    "fp": null,
+    "cls": null,
+    "lcp": 760,
+    "origins": [
+     "https://fastwork.com",
+     "https://static.cloudflareinsights.com",
+     "https://www.googletagmanager.com",
+     "https://cdn.amplitude.com",
+     "https://static.hotjar.com",
+     "https://www.google-analytics.com",
+     "https://script.hotjar.com",
+     "https://sr-client-cfg.amplitude.com",
+     "https://vc.hotjar.io",
+     "https://api2.amplitude.com"
+    ],
+    "longtasks": null,
+    "navRaw": {
+     "responseStart": 0,
+     "requestStart": 0,
+     "connectEnd": 0,
+     "connectStart": 0,
+     "type": "navigate",
+     "domainLookupStart": 0,
+     "redirectStart": 0,
+     "workerStart": 0,
+     "fetchStart": 0,
+     "responseEnd": 51.00000000000001,
+     "startTime": 0,
+     "secureConnectionStart": 0
+    },
+    "supported": [
+     "event",
+     "first-input",
+     "largest-contentful-paint",
+     "mark",
+     "measure",
+     "navigation",
+     "paint",
+     "resource"
+    ],
+    "slowest": [
+     {
+      "transfer": 6002,
+      "dur": 2071,
+      "start": 48,
+      "url": "https://fastwork.com/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 71836,
+      "dur": 2008,
+      "start": 48,
+      "url": "https://fastwork.com/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 69840,
+      "dur": 1935,
+      "start": 47,
+      "url": "https://fastwork.com/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 97081,
+      "dur": 1879,
+      "start": 25,
+      "url": "https://fastwork.com/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 19203,
+      "dur": 1780,
+      "start": 25,
+      "url": "https://fastwork.com/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 389013,
+      "dur": 1704,
+      "start": 25,
+      "url": "https://fastwork.com/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 100094,
+      "dur": 1673,
+      "start": 465,
+      "url": "https://fastwork.com/selling/platform/grain.png",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 545,
+      "dur": 1627,
+      "start": 520,
+      "url": "https://fastwork.com/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 11750,
+      "dur": 1624,
+      "start": 24,
+      "url": "https://fastwork.com/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 338563,
+      "dur": 1618,
+      "start": 520,
+      "url": "https://fastwork.com/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 31746,
+      "dur": 1535,
+      "start": 24,
+      "url": "https://fastwork.com/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 352278,
+      "dur": 1454,
+      "start": 24,
+      "url": "https://fastwork.com/selling/hero/peter-cover.jpg",
+      "type": "img",
+      "blocking": null
+     }
+    ],
+    "lcpEl": {
+     "size": 16194,
+     "id": "",
+     "src": "https://fastwork.com/selling/hero/mod-cover.jpg",
+     "cls": "svelte-1p2vpne",
+     "tag": "IMG",
+     "text": ""
+    },
+    "fcp": 529,
+    "timeOrigin": 1790788947172,
+    "resources": {
+     "script": {
+      "count": 8,
+      "transfer": 3992,
+      "decoded": 9475
+     },
+     "img": {
+      "count": 32,
+      "transfer": 2115597,
+      "decoded": 2105550
+     },
+     "fetch": {
+      "count": 4,
+      "transfer": 0,
+      "decoded": 0
+     },
+     "xmlhttprequest": {
+      "count": 2,
+      "transfer": 300,
+      "decoded": 0
+     },
+     "link": {
+      "count": 15,
+      "transfer": 248919,
+      "decoded": 881240
+     },
+     "other": {
+      "count": 1,
+      "transfer": 567,
+      "decoded": 553
+     },
+     "css": {
+      "count": 7,
+      "transfer": 779102,
+      "decoded": 776153
+     }
+    },
+    "domNodes": 1335,
+    "jsHeap": null,
+    "images": [
+     {
+      "transfer": 6002,
+      "end": 2119,
+      "url": "/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "start": 48
+     },
+     {
+      "transfer": 71836,
+      "end": 2056,
+      "url": "/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "start": 48
+     },
+     {
+      "transfer": 69840,
+      "end": 1982,
+      "url": "/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "start": 47
+     },
+     {
+      "transfer": 97081,
+      "end": 1904,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 25
+     },
+     {
+      "transfer": 19203,
+      "end": 1805,
+      "url": "/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "start": 25
+     },
+     {
+      "transfer": 389013,
+      "end": 1729,
+      "url": "/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "start": 25
+     },
+     {
+      "transfer": 100094,
+      "end": 2138,
+      "url": "/selling/platform/grain.png",
+      "type": "css",
+      "start": 465
+     },
+     {
+      "transfer": 545,
+      "end": 2147,
+      "url": "/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "start": 520
+     },
+     {
+      "transfer": 11750,
+      "end": 1648,
+      "url": "/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "start": 24
+     },
+     {
+      "transfer": 338563,
+      "end": 2138,
+      "url": "/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "start": 520
+     },
+     {
+      "transfer": 31746,
+      "end": 1559,
+      "url": "/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "start": 24
+     },
+     {
+      "transfer": 352278,
+      "end": 1478,
+      "url": "/selling/hero/peter-cover.jpg",
+      "type": "img",
+      "start": 24
+     },
+     {
+      "transfer": 4484,
+      "end": 1398,
+      "url": "/selling/hero/pakincht-avatar.jpg",
+      "type": "img",
+      "start": 24
+     },
+     {
+      "transfer": 318670,
+      "end": 1317,
+      "url": "/selling/hero/pakincht-cover.jpg",
+      "type": "img",
+      "start": 24
+     },
+     {
+      "transfer": 67695,
+      "end": 1236,
+      "url": "/selling/sellers/ux-ui-designer/avatar.jpg",
+      "type": "img",
+      "start": 23
+     },
+     {
+      "transfer": 16901,
+      "end": 1173,
+      "url": "/selling/hero/slayalldeep-avatar.jpg",
+      "type": "img",
+      "start": 23
+     },
+     {
+      "transfer": 78345,
+      "end": 1103,
+      "url": "/selling/hero/slayalldeep-cover.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 29255,
+      "end": 1025,
+      "url": "/selling/sellers/ai-video-editor/avatar.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 47380,
+      "end": 948,
+      "url": "/selling/hero/buttercup-cover.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 8456,
+      "end": 886,
+      "url": "/selling/hero/buttercup-avatar.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 77641,
+      "end": 790,
+      "url": "/selling/hero/bold-cover.jpg",
+      "type": "img",
+      "start": 23
+     },
+     {
+      "transfer": 524,
+      "end": 785,
+      "url": "/selling/profile/online.svg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 57235,
+      "end": 785,
+      "url": "/selling/hero/weng-cover.jpg",
+      "type": "img",
+      "start": 23
+     },
+     {
+      "transfer": 20185,
+      "end": 786,
+      "url": "/selling/hero/weng-avatar.jpg",
+      "type": "img",
+      "start": 24
+     },
+     {
+      "transfer": 77546,
+      "end": 746,
+      "url": "/selling/hero/mod-cover.jpg",
+      "type": "img",
+      "start": 24
+     },
+     {
+      "transfer": 212852,
+      "end": 717,
+      "url": "/selling/hero/leobeer-cover.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 4206,
+      "end": 641,
+      "url": "/selling/hero/chapavich-avatar.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 45473,
+      "end": 520,
+      "url": "/selling/hero/chapavich-cover.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 197250,
+      "end": 795,
+      "url": "/selling/fonts/playpen-sans-latin.woff2",
+      "type": "css",
+      "start": 611
+     },
+     {
+      "transfer": 60777,
+      "end": 657,
+      "url": "/_app/immutable/assets/google-sans-latin-italic.XUjF_20c.woff2",
+      "type": "css",
+      "start": 524
+     },
+     {
+      "transfer": 26425,
+      "end": 652,
+      "url": "/_app/immutable/assets/google-sans-thai-normal.CD79Hmaw.woff2",
+      "type": "css",
+      "start": 524
+     },
+     {
+      "transfer": 55448,
+      "end": 640,
+      "url": "/_app/immutable/assets/google-sans-latin-normal.BbZhqv4U.woff2",
+      "type": "css",
+      "start": 524
+     },
+     {
+      "transfer": 0,
+      "end": 433,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 433
+     },
+     {
+      "transfer": 0,
+      "end": 529,
+      "url": "/selling/people-wordmark/o.svg",
+      "type": "img",
+      "start": 529
+     },
+     {
+      "transfer": 0,
+      "end": 529,
+      "url": "/selling/sellers/ai-automation/avatar.jpg",
+      "type": "img",
+      "start": 529
+     },
+     {
+      "transfer": 0,
+      "end": 529,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 529
+     },
+     {
+      "transfer": 0,
+      "end": 529,
+      "url": "/selling/sellers/sound-composer/avatar.jpg",
+      "type": "img",
+      "start": 529
+     },
+     {
+      "transfer": 0,
+      "end": 612,
+      "url": "/selling/sellers/photographer/cover.jpg",
+      "type": "img",
+      "start": 612
+     },
+     {
+      "transfer": 0,
+      "end": 703,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 703
+     }
+    ],
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "nav": {
+     "transferSize": 21798,
+     "encodedBody": 21498,
+     "decodedBody": 100070,
+     "protocol": "h2",
+     "domInteractive": 541,
+     "dcl": 616,
+     "dns": 0,
+     "ttfb": 0,
+     "connect": 0,
+     "download": 51.00000000000001,
+     "load": 2150,
+     "redirect": 0,
+     "request": 0
+    },
+    "wallLoad": 938.4117126464844
+   },
+   {
+    "fp": null,
+    "cls": null,
+    "lcp": 832.0000000000001,
+    "origins": [
+     "https://fastwork.com",
+     "https://static.cloudflareinsights.com",
+     "https://www.googletagmanager.com",
+     "https://cdn.amplitude.com",
+     "https://static.hotjar.com",
+     "https://www.google-analytics.com",
+     "https://script.hotjar.com",
+     "https://sr-client-cfg.amplitude.com",
+     "https://api2.amplitude.com"
+    ],
+    "longtasks": null,
+    "navRaw": {
+     "responseStart": 0,
+     "requestStart": 0,
+     "connectEnd": 0,
+     "connectStart": 0,
+     "type": "navigate",
+     "domainLookupStart": 0,
+     "redirectStart": 0,
+     "workerStart": 0,
+     "fetchStart": 0,
+     "responseEnd": 64,
+     "startTime": 0,
+     "secureConnectionStart": 0
+    },
+    "supported": [
+     "event",
+     "first-input",
+     "largest-contentful-paint",
+     "mark",
+     "measure",
+     "navigation",
+     "paint",
+     "resource"
+    ],
+    "slowest": [
+     {
+      "transfer": 6011,
+      "dur": 2107,
+      "start": 66,
+      "url": "https://fastwork.com/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 71845,
+      "dur": 2101,
+      "start": 66,
+      "url": "https://fastwork.com/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 69840,
+      "dur": 1983,
+      "start": 66,
+      "url": "https://fastwork.com/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 97090,
+      "dur": 1967,
+      "start": 22,
+      "url": "https://fastwork.com/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 19203,
+      "dur": 1884,
+      "start": 22,
+      "url": "https://fastwork.com/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 389022,
+      "dur": 1792,
+      "start": 22,
+      "url": "https://fastwork.com/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 11750,
+      "dur": 1714,
+      "start": 22,
+      "url": "https://fastwork.com/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 338563,
+      "dur": 1657,
+      "start": 481,
+      "url": "https://fastwork.com/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 31755,
+      "dur": 1649,
+      "start": 21,
+      "url": "https://fastwork.com/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 100094,
+      "dur": 1649,
+      "start": 454,
+      "url": "https://fastwork.com/selling/platform/grain.png",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 545,
+      "dur": 1576,
+      "start": 480,
+      "url": "https://fastwork.com/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 352287,
+      "dur": 1574,
+      "start": 21,
+      "url": "https://fastwork.com/selling/hero/peter-cover.jpg",
+      "type": "img",
+      "blocking": null
+     }
+    ],
+    "lcpEl": {
+     "size": 16194,
+     "id": "",
+     "src": "https://fastwork.com/selling/hero/mod-cover.jpg",
+     "cls": "svelte-1p2vpne",
+     "tag": "IMG",
+     "text": ""
+    },
+    "fcp": 488,
+    "timeOrigin": 1790788953965.0002,
+    "resources": {
+     "script": {
+      "count": 8,
+      "transfer": 3992,
+      "decoded": 9475
+     },
+     "img": {
+      "count": 32,
+      "transfer": 2115660,
+      "decoded": 2105550
+     },
+     "fetch": {
+      "count": 4,
+      "transfer": 0,
+      "decoded": 0
+     },
+     "xmlhttprequest": {
+      "count": 1,
+      "transfer": 300,
+      "decoded": 0
+     },
+     "link": {
+      "count": 15,
+      "transfer": 248919,
+      "decoded": 881240
+     },
+     "other": {
+      "count": 1,
+      "transfer": 567,
+      "decoded": 553
+     },
+     "css": {
+      "count": 7,
+      "transfer": 779102,
+      "decoded": 776153
+     }
+    },
+    "domNodes": 1335,
+    "jsHeap": null,
+    "images": [
+     {
+      "transfer": 6011,
+      "end": 2173,
+      "url": "/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "start": 66
+     },
+     {
+      "transfer": 71845,
+      "end": 2167,
+      "url": "/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "start": 66
+     },
+     {
+      "transfer": 69840,
+      "end": 2049,
+      "url": "/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "start": 66
+     },
+     {
+      "transfer": 97090,
+      "end": 1989,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 19203,
+      "end": 1906,
+      "url": "/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 389022,
+      "end": 1814,
+      "url": "/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 11750,
+      "end": 1736,
+      "url": "/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 338563,
+      "end": 2138,
+      "url": "/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "start": 481
+     },
+     {
+      "transfer": 31755,
+      "end": 1670,
+      "url": "/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 100094,
+      "end": 2103,
+      "url": "/selling/platform/grain.png",
+      "type": "css",
+      "start": 454
+     },
+     {
+      "transfer": 545,
+      "end": 2056,
+      "url": "/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "start": 480
+     },
+     {
+      "transfer": 352287,
+      "end": 1595,
+      "url": "/selling/hero/peter-cover.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 4484,
+      "end": 1520,
+      "url": "/selling/hero/pakincht-avatar.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 318670,
+      "end": 1438,
+      "url": "/selling/hero/pakincht-cover.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 67695,
+      "end": 1360,
+      "url": "/selling/sellers/ux-ui-designer/avatar.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 16901,
+      "end": 1287,
+      "url": "/selling/hero/slayalldeep-avatar.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 78345,
+      "end": 1218,
+      "url": "/selling/hero/slayalldeep-cover.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 29255,
+      "end": 1132,
+      "url": "/selling/sellers/ai-video-editor/avatar.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 8456,
+      "end": 1040,
+      "url": "/selling/hero/buttercup-avatar.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 47380,
+      "end": 964,
+      "url": "/selling/hero/buttercup-cover.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 4206,
+      "end": 872,
+      "url": "/selling/hero/chapavich-avatar.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 57235,
+      "end": 765,
+      "url": "/selling/hero/weng-cover.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 77546,
+      "end": 764,
+      "url": "/selling/hero/mod-cover.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 524,
+      "end": 709,
+      "url": "/selling/profile/online.svg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 20185,
+      "end": 703,
+      "url": "/selling/hero/weng-avatar.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 77641,
+      "end": 696,
+      "url": "/selling/hero/bold-cover.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 212861,
+      "end": 678,
+      "url": "/selling/hero/leobeer-cover.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 45473,
+      "end": 494,
+      "url": "/selling/hero/chapavich-cover.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 197250,
+      "end": 770,
+      "url": "/selling/fonts/playpen-sans-latin.woff2",
+      "type": "css",
+      "start": 568
+     },
+     {
+      "transfer": 60777,
+      "end": 605,
+      "url": "/_app/immutable/assets/google-sans-latin-italic.XUjF_20c.woff2",
+      "type": "css",
+      "start": 485
+     },
+     {
+      "transfer": 55448,
+      "end": 593,
+      "url": "/_app/immutable/assets/google-sans-latin-normal.BbZhqv4U.woff2",
+      "type": "css",
+      "start": 485
+     },
+     {
+      "transfer": 26425,
+      "end": 586,
+      "url": "/_app/immutable/assets/google-sans-thai-normal.CD79Hmaw.woff2",
+      "type": "css",
+      "start": 485
+     },
+     {
+      "transfer": 0,
+      "end": 422,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 422
+     },
+     {
+      "transfer": 0,
+      "end": 487,
+      "url": "/selling/people-wordmark/o.svg",
+      "type": "img",
+      "start": 487
+     },
+     {
+      "transfer": 0,
+      "end": 488,
+      "url": "/selling/sellers/sound-composer/avatar.jpg",
+      "type": "img",
+      "start": 488
+     },
+     {
+      "transfer": 0,
+      "end": 488,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 488
+     },
+     {
+      "transfer": 0,
+      "end": 488,
+      "url": "/selling/sellers/ai-automation/avatar.jpg",
+      "type": "img",
+      "start": 488
+     },
+     {
+      "transfer": 0,
+      "end": 569,
+      "url": "/selling/sellers/photographer/cover.jpg",
+      "type": "img",
+      "start": 569
+     },
+     {
+      "transfer": 0,
+      "end": 673,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 673
+     }
+    ],
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "nav": {
+     "transferSize": 21690,
+     "encodedBody": 21390,
+     "decodedBody": 100070,
+     "protocol": "h2",
+     "domInteractive": 500,
+     "dcl": 573.0000000000001,
+     "dns": 0,
+     "ttfb": 0,
+     "connect": 0,
+     "download": 64,
+     "load": 2176,
+     "redirect": 0,
+     "request": 0
+    },
+    "wallLoad": 864.9086952209473
+   },
+   {
+    "fp": null,
+    "cls": null,
+    "lcp": 708,
+    "origins": [
+     "https://fastwork.com",
+     "https://static.cloudflareinsights.com",
+     "https://www.googletagmanager.com",
+     "https://cdn.amplitude.com",
+     "https://static.hotjar.com",
+     "https://www.google-analytics.com",
+     "https://script.hotjar.com",
+     "https://sr-client-cfg.amplitude.com",
+     "https://api2.amplitude.com"
+    ],
+    "longtasks": null,
+    "navRaw": {
+     "responseStart": 0,
+     "requestStart": 0,
+     "connectEnd": 0,
+     "connectStart": 0,
+     "type": "navigate",
+     "domainLookupStart": 0,
+     "redirectStart": 0,
+     "workerStart": 0,
+     "fetchStart": 0,
+     "responseEnd": 62,
+     "startTime": 0,
+     "secureConnectionStart": 0
+    },
+    "supported": [
+     "event",
+     "first-input",
+     "largest-contentful-paint",
+     "mark",
+     "measure",
+     "navigation",
+     "paint",
+     "resource"
+    ],
+    "slowest": [
+     {
+      "transfer": 71836,
+      "dur": 2271,
+      "start": 39,
+      "url": "https://fastwork.com/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 69840,
+      "dur": 2213,
+      "start": 39,
+      "url": "https://fastwork.com/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 6011,
+      "dur": 2209,
+      "start": 39,
+      "url": "https://fastwork.com/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 97081,
+      "dur": 2112,
+      "start": 22,
+      "url": "https://fastwork.com/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 19203,
+      "dur": 2047,
+      "start": 22,
+      "url": "https://fastwork.com/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 389022,
+      "dur": 1974,
+      "start": 22,
+      "url": "https://fastwork.com/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 11750,
+      "dur": 1892,
+      "start": 22,
+      "url": "https://fastwork.com/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 100094,
+      "dur": 1742,
+      "start": 428,
+      "url": "https://fastwork.com/selling/platform/grain.png",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 338572,
+      "dur": 1718,
+      "start": 478,
+      "url": "https://fastwork.com/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 31746,
+      "dur": 1706,
+      "start": 21,
+      "url": "https://fastwork.com/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "blocking": null
+     },
+     {
+      "transfer": 545,
+      "dur": 1668,
+      "start": 478,
+      "url": "https://fastwork.com/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "blocking": null
+     },
+     {
+      "transfer": 352287,
+      "dur": 1556,
+      "start": 21,
+      "url": "https://fastwork.com/selling/hero/peter-cover.jpg",
+      "type": "img",
+      "blocking": null
+     }
+    ],
+    "lcpEl": {
+     "size": 16194,
+     "id": "",
+     "src": "https://fastwork.com/selling/hero/mod-cover.jpg",
+     "cls": "svelte-1p2vpne",
+     "tag": "IMG",
+     "text": ""
+    },
+    "fcp": 485,
+    "timeOrigin": 1790788962007,
+    "resources": {
+     "script": {
+      "count": 8,
+      "transfer": 3992,
+      "decoded": 9475
+     },
+     "img": {
+      "count": 32,
+      "transfer": 2115642,
+      "decoded": 2105550
+     },
+     "fetch": {
+      "count": 4,
+      "transfer": 0,
+      "decoded": 0
+     },
+     "xmlhttprequest": {
+      "count": 1,
+      "transfer": 300,
+      "decoded": 0
+     },
+     "link": {
+      "count": 15,
+      "transfer": 248928,
+      "decoded": 881240
+     },
+     "other": {
+      "count": 1,
+      "transfer": 567,
+      "decoded": 553
+     },
+     "css": {
+      "count": 7,
+      "transfer": 779111,
+      "decoded": 776153
+     }
+    },
+    "domNodes": 1335,
+    "jsHeap": null,
+    "images": [
+     {
+      "transfer": 71836,
+      "end": 2310,
+      "url": "/selling/optimized/media/post-5.avif",
+      "type": "img",
+      "start": 39
+     },
+     {
+      "transfer": 69840,
+      "end": 2252,
+      "url": "/selling/optimized/platform/service-bg.avif",
+      "type": "img",
+      "start": 39
+     },
+     {
+      "transfer": 6011,
+      "end": 2248,
+      "url": "/selling/optimized/external/lawyer-consult-cover-240.avif",
+      "type": "img",
+      "start": 39
+     },
+     {
+      "transfer": 97081,
+      "end": 2134,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 19203,
+      "end": 2069,
+      "url": "/selling/hero/nam-avatar.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 389022,
+      "end": 1996,
+      "url": "/selling/hero/nam-cover.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 11750,
+      "end": 1914,
+      "url": "/selling/hero/mod-avatar.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 100094,
+      "end": 2170,
+      "url": "/selling/platform/grain.png",
+      "type": "css",
+      "start": 428
+     },
+     {
+      "transfer": 338572,
+      "end": 2196,
+      "url": "/selling/platform/features/agents/mesh.jpg",
+      "type": "css",
+      "start": 478
+     },
+     {
+      "transfer": 31746,
+      "end": 1727,
+      "url": "/selling/hero/peter-avatar.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 545,
+      "end": 2146,
+      "url": "/selling/platform/features/secure/network/dash.svg",
+      "type": "css",
+      "start": 478
+     },
+     {
+      "transfer": 352287,
+      "end": 1577,
+      "url": "/selling/hero/peter-cover.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 4484,
+      "end": 1491,
+      "url": "/selling/hero/pakincht-avatar.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 318679,
+      "end": 1417,
+      "url": "/selling/hero/pakincht-cover.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 67695,
+      "end": 1342,
+      "url": "/selling/sellers/ux-ui-designer/avatar.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 16901,
+      "end": 1277,
+      "url": "/selling/hero/slayalldeep-avatar.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 78345,
+      "end": 1206,
+      "url": "/selling/hero/slayalldeep-cover.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 29255,
+      "end": 1129,
+      "url": "/selling/sellers/ai-video-editor/avatar.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 8465,
+      "end": 1061,
+      "url": "/selling/hero/buttercup-avatar.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 4206,
+      "end": 991,
+      "url": "/selling/hero/chapavich-avatar.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 47371,
+      "end": 932,
+      "url": "/selling/hero/buttercup-cover.jpg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 524,
+      "end": 736,
+      "url": "/selling/profile/online.svg",
+      "type": "img",
+      "start": 19
+     },
+     {
+      "transfer": 57235,
+      "end": 736,
+      "url": "/selling/hero/weng-cover.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 20185,
+      "end": 731,
+      "url": "/selling/hero/weng-avatar.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 77641,
+      "end": 724,
+      "url": "/selling/hero/bold-cover.jpg",
+      "type": "img",
+      "start": 21
+     },
+     {
+      "transfer": 77546,
+      "end": 685,
+      "url": "/selling/hero/mod-cover.jpg",
+      "type": "img",
+      "start": 22
+     },
+     {
+      "transfer": 212861,
+      "end": 667,
+      "url": "/selling/hero/leobeer-cover.jpg",
+      "type": "img",
+      "start": 20
+     },
+     {
+      "transfer": 45473,
+      "end": 487,
+      "url": "/selling/hero/chapavich-cover.jpg",
+      "type": "img",
+      "start": 18
+     },
+     {
+      "transfer": 26425,
+      "end": 737,
+      "url": "/_app/immutable/assets/google-sans-thai-normal.CD79Hmaw.woff2",
+      "type": "css",
+      "start": 482
+     },
+     {
+      "transfer": 197250,
+      "end": 762,
+      "url": "/selling/fonts/playpen-sans-latin.woff2",
+      "type": "css",
+      "start": 566
+     },
+     {
+      "transfer": 55448,
+      "end": 623,
+      "url": "/_app/immutable/assets/google-sans-latin-normal.BbZhqv4U.woff2",
+      "type": "css",
+      "start": 482
+     },
+     {
+      "transfer": 60777,
+      "end": 593,
+      "url": "/_app/immutable/assets/google-sans-latin-italic.XUjF_20c.woff2",
+      "type": "css",
+      "start": 482
+     },
+     {
+      "transfer": 0,
+      "end": 397,
+      "url": "/selling/sellers/sound-composer/cover.jpg",
+      "type": "img",
+      "start": 397
+     },
+     {
+      "transfer": 0,
+      "end": 484,
+      "url": "/selling/sellers/ai-automation/avatar.jpg",
+      "type": "img",
+      "start": 484
+     },
+     {
+      "transfer": 0,
+      "end": 484,
+      "url": "/selling/people-wordmark/o.svg",
+      "type": "img",
+      "start": 484
+     },
+     {
+      "transfer": 0,
+      "end": 485,
+      "url": "/selling/sellers/sound-composer/avatar.jpg",
+      "type": "img",
+      "start": 485
+     },
+     {
+      "transfer": 0,
+      "end": 485,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 485
+     },
+     {
+      "transfer": 0,
+      "end": 567,
+      "url": "/selling/sellers/photographer/cover.jpg",
+      "type": "img",
+      "start": 567
+     },
+     {
+      "transfer": 0,
+      "end": 658,
+      "url": "/selling/sellers/photographer/avatar.jpg",
+      "type": "img",
+      "start": 658
+     }
+    ],
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "nav": {
+     "transferSize": 21823,
+     "encodedBody": 21523,
+     "decodedBody": 100070,
+     "protocol": "h2",
+     "domInteractive": 498,
+     "dcl": 570.0000000000001,
+     "dns": 0,
+     "ttfb": 0,
+     "connect": 0,
+     "download": 62,
+     "load": 2311,
+     "redirect": 0,
+     "request": 0
+    },
+    "wallLoad": 965.1079177856445
+   }
+  ]
+ }
+}

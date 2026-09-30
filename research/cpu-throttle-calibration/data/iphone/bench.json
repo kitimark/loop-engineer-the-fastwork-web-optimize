@@ -1,0 +1,517 @@
+{
+ "device": "iPhone 15 Pro Max, iOS 26.6.1 Safari",
+ "date": "2026-09-30T18:43:02.558Z",
+ "summary": {
+  "quiet_median_of_run_medians": {
+   "js_numeric": 19,
+   "js_alloc": 25,
+   "dom_layout_thrash": 85,
+   "style_recalc_var": 101,
+   "dom_create": 31
+  },
+  "quiet_total_ms_median": 261,
+  "quiet_geomean_ms_median": 41.82,
+  "on_fastwork": {
+   "js_numeric": 19,
+   "js_alloc": 28,
+   "dom_layout_thrash": 91,
+   "style_recalc_var": 224,
+   "dom_create": 57
+  },
+  "on_fastwork_total_ms": 419,
+  "on_fastwork_geomean_ms": 57.31
+ },
+ "quietPage": {
+  "url": "about:blank",
+  "compatMode": "CSS1Compat"
+ },
+ "quiet": [
+  {
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 23,
+     "min_ms": 19,
+     "max_ms": 23,
+     "samples_ms": [
+      23,
+      23,
+      23,
+      21,
+      19
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 26,
+     "min_ms": 23,
+     "max_ms": 35,
+     "samples_ms": [
+      35,
+      23,
+      26,
+      23,
+      27
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 84,
+     "min_ms": 83,
+     "max_ms": 85,
+     "samples_ms": [
+      83,
+      85,
+      83,
+      85,
+      84
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 101,
+     "min_ms": 100,
+     "max_ms": 101,
+     "samples_ms": [
+      100,
+      100,
+      101,
+      101,
+      101
+     ]
+    },
+    "dom_create": {
+     "median_ms": 32,
+     "min_ms": 31,
+     "max_ms": 32,
+     "samples_ms": [
+      32,
+      31,
+      32,
+      32,
+      32
+     ]
+    }
+   },
+   "total_ms": 266,
+   "geomean_ms": 43.86,
+   "wall_ms": 2650,
+   "env": {
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "dpr": 3,
+    "vw": 980,
+    "vh": 1766,
+    "hwConcurrency": 4,
+    "url": "about:blank",
+    "timerResolutionHintMs": 1,
+    "date": "2026-09-30T18:42:19.307Z"
+   },
+   "_sink": -751.1874237060547
+  },
+  {
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 19,
+     "min_ms": 17,
+     "max_ms": 23,
+     "samples_ms": [
+      23,
+      20,
+      18,
+      19,
+      17
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 25,
+     "min_ms": 23,
+     "max_ms": 35,
+     "samples_ms": [
+      35,
+      24,
+      25,
+      23,
+      26
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 84,
+     "min_ms": 83,
+     "max_ms": 84,
+     "samples_ms": [
+      83,
+      84,
+      83,
+      84,
+      84
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 101,
+     "min_ms": 99,
+     "max_ms": 102,
+     "samples_ms": [
+      99,
+      102,
+      102,
+      101,
+      101
+     ]
+    },
+    "dom_create": {
+     "median_ms": 31,
+     "min_ms": 31,
+     "max_ms": 32,
+     "samples_ms": [
+      31,
+      32,
+      32,
+      31,
+      31
+     ]
+    }
+   },
+   "total_ms": 260,
+   "geomean_ms": 41.62,
+   "wall_ms": 2632,
+   "env": {
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "dpr": 3,
+    "vw": 980,
+    "vh": 1766,
+    "hwConcurrency": 4,
+    "url": "about:blank",
+    "timerResolutionHintMs": 1,
+    "date": "2026-09-30T18:42:25.319Z"
+   },
+   "_sink": -751.1874237060547
+  },
+  {
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 16,
+     "min_ms": 14,
+     "max_ms": 23,
+     "samples_ms": [
+      23,
+      16,
+      16,
+      14,
+      15
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 24,
+     "min_ms": 22,
+     "max_ms": 32,
+     "samples_ms": [
+      32,
+      22,
+      22,
+      29,
+      24
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 87,
+     "min_ms": 85,
+     "max_ms": 88,
+     "samples_ms": [
+      85,
+      88,
+      87,
+      87,
+      86
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 101,
+     "min_ms": 98,
+     "max_ms": 103,
+     "samples_ms": [
+      98,
+      101,
+      103,
+      101,
+      102
+     ]
+    },
+    "dom_create": {
+     "median_ms": 31,
+     "min_ms": 30,
+     "max_ms": 32,
+     "samples_ms": [
+      32,
+      30,
+      31,
+      31,
+      31
+     ]
+    }
+   },
+   "total_ms": 259,
+   "geomean_ms": 40.17,
+   "wall_ms": 2624,
+   "env": {
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "dpr": 3,
+    "vw": 980,
+    "vh": 1766,
+    "hwConcurrency": 4,
+    "url": "about:blank",
+    "timerResolutionHintMs": 1,
+    "date": "2026-09-30T18:42:31.328Z"
+   },
+   "_sink": -751.1874237060547
+  },
+  {
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 20,
+     "min_ms": 17,
+     "max_ms": 24,
+     "samples_ms": [
+      24,
+      21,
+      20,
+      20,
+      17
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 24,
+     "min_ms": 21,
+     "max_ms": 34,
+     "samples_ms": [
+      34,
+      21,
+      24,
+      24,
+      22
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 86,
+     "min_ms": 86,
+     "max_ms": 87,
+     "samples_ms": [
+      86,
+      86,
+      87,
+      86,
+      86
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 100,
+     "min_ms": 99,
+     "max_ms": 102,
+     "samples_ms": [
+      100,
+      99,
+      100,
+      102,
+      100
+     ]
+    },
+    "dom_create": {
+     "median_ms": 31,
+     "min_ms": 30,
+     "max_ms": 32,
+     "samples_ms": [
+      30,
+      32,
+      31,
+      31,
+      31
+     ]
+    }
+   },
+   "total_ms": 261,
+   "geomean_ms": 41.82,
+   "wall_ms": 2624,
+   "env": {
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "dpr": 3,
+    "vw": 980,
+    "vh": 1766,
+    "hwConcurrency": 4,
+    "url": "about:blank",
+    "timerResolutionHintMs": 1,
+    "date": "2026-09-30T18:42:37.439Z"
+   },
+   "_sink": -751.1874237060547
+  },
+  {
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 19,
+     "min_ms": 17,
+     "max_ms": 24,
+     "samples_ms": [
+      24,
+      20,
+      19,
+      19,
+      17
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 28,
+     "min_ms": 24,
+     "max_ms": 31,
+     "samples_ms": [
+      31,
+      28,
+      29,
+      25,
+      24
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 85,
+     "min_ms": 84,
+     "max_ms": 86,
+     "samples_ms": [
+      84,
+      85,
+      84,
+      86,
+      85
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 101,
+     "min_ms": 100,
+     "max_ms": 101,
+     "samples_ms": [
+      101,
+      100,
+      100,
+      101,
+      101
+     ]
+    },
+    "dom_create": {
+     "median_ms": 31,
+     "min_ms": 30,
+     "max_ms": 31,
+     "samples_ms": [
+      30,
+      31,
+      31,
+      31,
+      31
+     ]
+    }
+   },
+   "total_ms": 264,
+   "geomean_ms": 42.68,
+   "wall_ms": 2639,
+   "env": {
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "dpr": 3,
+    "vw": 980,
+    "vh": 1766,
+    "hwConcurrency": 4,
+    "url": "about:blank",
+    "timerResolutionHintMs": 1,
+    "date": "2026-09-30T18:42:43.575Z"
+   },
+   "_sink": -751.1874237060547
+  }
+ ],
+ "onPage": {
+  "version": "cpu_bench v1 (2026-10-01)",
+  "reps": 5,
+  "warmup": 1,
+  "results": {
+   "js_numeric": {
+    "median_ms": 19,
+    "min_ms": 17,
+    "max_ms": 23,
+    "samples_ms": [
+     23,
+     20,
+     19,
+     18,
+     17
+    ]
+   },
+   "js_alloc": {
+    "median_ms": 28,
+    "min_ms": 21,
+    "max_ms": 30,
+    "samples_ms": [
+     30,
+     28,
+     25,
+     30,
+     21
+    ]
+   },
+   "dom_layout_thrash": {
+    "median_ms": 91,
+    "min_ms": 89,
+    "max_ms": 93,
+    "samples_ms": [
+     89,
+     89,
+     93,
+     91,
+     93
+    ]
+   },
+   "style_recalc_var": {
+    "median_ms": 224,
+    "min_ms": 222,
+    "max_ms": 232,
+    "samples_ms": [
+     224,
+     222,
+     224,
+     232,
+     229
+    ]
+   },
+   "dom_create": {
+    "median_ms": 57,
+    "min_ms": 56,
+    "max_ms": 62,
+    "samples_ms": [
+     62,
+     58,
+     57,
+     56,
+     57
+    ]
+   }
+  },
+  "total_ms": 419,
+  "geomean_ms": 57.31,
+  "wall_ms": 3792,
+  "env": {
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+   "dpr": 3,
+   "vw": 430,
+   "vh": 775,
+   "hwConcurrency": 4,
+   "url": "https://fastwork.com/",
+   "timerResolutionHintMs": 1,
+   "date": "2026-09-30T18:43:02.065Z"
+  },
+  "_sink": -751.1874237060547
+ },
+ "bench_sha256_16": "9ad70feb206b9ccf"
+}

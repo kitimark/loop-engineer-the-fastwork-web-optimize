@@ -1,0 +1,1920 @@
+{
+ "meta": {
+  "tool": "chrome_scroll.mjs --bench",
+  "viewport": "desktop",
+  "runs": 3,
+  "date": "2026-09-30T18:42:59.839Z"
+ },
+ "curve": [
+  {
+   "rate": 1,
+   "total_ms": {
+    "mean": 254.7,
+    "sd": 1.1,
+    "values": [
+     254,
+     254.1,
+     256
+    ]
+   },
+   "geomean_ms": {
+    "mean": 40.9,
+    "sd": 0.1,
+    "values": [
+     41.02,
+     40.83,
+     40.95
+    ]
+   },
+   "js_numeric": {
+    "mean": 25.7,
+    "sd": 0.2,
+    "values": [
+     25.6,
+     25.9,
+     25.6
+    ]
+   },
+   "js_alloc": {
+    "mean": 34.6,
+    "sd": 0.5,
+    "values": [
+     34.8,
+     34,
+     35
+    ]
+   },
+   "dom_layout_thrash": {
+    "mean": 110.1,
+    "sd": 1.4,
+    "values": [
+     108.7,
+     110.1,
+     111.5
+    ]
+   },
+   "style_recalc_var": {
+    "mean": 66.7,
+    "sd": 0.3,
+    "values": [
+     67,
+     66.5,
+     66.6
+    ]
+   },
+   "dom_create": {
+    "mean": 17.6,
+    "sd": 0.3,
+    "values": [
+     17.9,
+     17.6,
+     17.3
+    ]
+   }
+  },
+  {
+   "rate": 2,
+   "total_ms": {
+    "mean": 575.5,
+    "sd": 22.9,
+    "values": [
+     562,
+     601.9,
+     562.5
+    ]
+   },
+   "geomean_ms": {
+    "mean": 93.7,
+    "sd": 3.1,
+    "values": [
+     90.53,
+     96.67,
+     93.78
+    ]
+   },
+   "js_numeric": {
+    "mean": 54.8,
+    "sd": 0.8,
+    "values": [
+     53.8,
+     55.2,
+     55.3
+    ]
+   },
+   "js_alloc": {
+    "mean": 89,
+    "sd": 5.9,
+    "values": [
+     83.1,
+     94.8,
+     89.1
+    ]
+   },
+   "dom_layout_thrash": {
+    "mean": 241.6,
+    "sd": 18.2,
+    "values": [
+     242,
+     259.6,
+     223.3
+    ]
+   },
+   "style_recalc_var": {
+    "mean": 148.8,
+    "sd": 4.1,
+    "values": [
+     144.1,
+     151.2,
+     151.2
+    ]
+   },
+   "dom_create": {
+    "mean": 41.2,
+    "sd": 2.3,
+    "values": [
+     39,
+     41.1,
+     43.6
+    ]
+   }
+  },
+  {
+   "rate": 4,
+   "total_ms": {
+    "mean": 1282.4,
+    "sd": 28.1,
+    "values": [
+     1302.7,
+     1250.3,
+     1294.3
+    ]
+   },
+   "geomean_ms": {
+    "mean": 212.4,
+    "sd": 3.9,
+    "values": [
+     215.66,
+     208.11,
+     213.3
+    ]
+   },
+   "js_numeric": {
+    "mean": 112.2,
+    "sd": 1.2,
+    "values": [
+     113.5,
+     111.2,
+     111.8
+    ]
+   },
+   "js_alloc": {
+    "mean": 206.8,
+    "sd": 6.7,
+    "values": [
+     209.9,
+     199.2,
+     211.4
+    ]
+   },
+   "dom_layout_thrash": {
+    "mean": 532.5,
+    "sd": 15.9,
+    "values": [
+     538.1,
+     514.6,
+     544.8
+    ]
+   },
+   "style_recalc_var": {
+    "mean": 322.5,
+    "sd": 7.7,
+    "values": [
+     331.4,
+     317.4,
+     318.7
+    ]
+   },
+   "dom_create": {
+    "mean": 108.4,
+    "sd": 1.2,
+    "values": [
+     109.8,
+     107.9,
+     107.6
+    ]
+   }
+  },
+  {
+   "rate": 6,
+   "total_ms": {
+    "mean": 1987.6,
+    "sd": 19.7,
+    "values": [
+     1986,
+     1968.7,
+     2008.1
+    ]
+   },
+   "geomean_ms": {
+    "mean": 320.4,
+    "sd": 2.7,
+    "values": [
+     320.71,
+     317.53,
+     322.9
+    ]
+   },
+   "js_numeric": {
+    "mean": 170.2,
+    "sd": 0.8,
+    "values": [
+     170.6,
+     169.2,
+     170.7
+    ]
+   },
+   "js_alloc": {
+    "mean": 322.8,
+    "sd": 3.7,
+    "values": [
+     321.8,
+     319.6,
+     326.9
+    ]
+   },
+   "dom_layout_thrash": {
+    "mean": 843.4,
+    "sd": 17.3,
+    "values": [
+     841.7,
+     827,
+     861.4
+    ]
+   },
+   "style_recalc_var": {
+    "mean": 507.8,
+    "sd": 3.8,
+    "values": [
+     507.1,
+     511.9,
+     504.3
+    ]
+   },
+   "dom_create": {
+    "mean": 143.5,
+    "sd": 2.2,
+    "values": [
+     144.8,
+     141,
+     144.8
+    ]
+   }
+  },
+  {
+   "rate": 10,
+   "total_ms": {
+    "mean": 3383.1,
+    "sd": 162.2,
+    "values": [
+     3441.2,
+     3199.8,
+     3508.3
+    ]
+   },
+   "geomean_ms": {
+    "mean": 536.9,
+    "sd": 17.6,
+    "values": [
+     532.09,
+     522.25,
+     556.5
+    ]
+   },
+   "js_numeric": {
+    "mean": 278.7,
+    "sd": 4.5,
+    "values": [
+     280.3,
+     273.7,
+     282.2
+    ]
+   },
+   "js_alloc": {
+    "mean": 565.2,
+    "sd": 45.9,
+    "values": [
+     597.8,
+     512.7,
+     585
+    ]
+   },
+   "dom_layout_thrash": {
+    "mean": 1435.9,
+    "sd": 111.5,
+    "values": [
+     1474.7,
+     1310.1,
+     1522.8
+    ]
+   },
+   "style_recalc_var": {
+    "mean": 876.1,
+    "sd": 19.6,
+    "values": [
+     895.7,
+     856.6,
+     875.9
+    ]
+   },
+   "dom_create": {
+    "mean": 227.3,
+    "sd": 30,
+    "values": [
+     192.7,
+     246.7,
+     242.4
+    ]
+   }
+  },
+  {
+   "rate": 20,
+   "total_ms": {
+    "mean": 7857.6,
+    "sd": 106.4,
+    "values": [
+     7948.2,
+     7884.3,
+     7740.4
+    ]
+   },
+   "geomean_ms": {
+    "mean": 1226.1,
+    "sd": 3.9,
+    "values": [
+     1230.4,
+     1222.66,
+     1225.2
+    ]
+   },
+   "js_numeric": {
+    "mean": 573,
+    "sd": 3.3,
+    "values": [
+     573.3,
+     569.6,
+     576.2
+    ]
+   },
+   "js_alloc": {
+    "mean": 1272.1,
+    "sd": 44.7,
+    "values": [
+     1244.9,
+     1247.7,
+     1323.7
+    ]
+   },
+   "dom_layout_thrash": {
+    "mean": 3601,
+    "sd": 126.2,
+    "values": [
+     3693.5,
+     3652.3,
+     3457.2
+    ]
+   },
+   "style_recalc_var": {
+    "mean": 1836.1,
+    "sd": 30.5,
+    "values": [
+     1862,
+     1843.8,
+     1802.4
+    ]
+   },
+   "dom_create": {
+    "mean": 575.4,
+    "sd": 5.1,
+    "values": [
+     574.5,
+     570.9,
+     580.9
+    ]
+   }
+  }
+ ],
+ "runs": [
+  {
+   "rate": 1,
+   "run": 1,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 25.6,
+     "min_ms": 25.3,
+     "max_ms": 26.2,
+     "samples_ms": [
+      26.2,
+      26,
+      25.3,
+      25.5,
+      25.6
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 34.8,
+     "min_ms": 34.5,
+     "max_ms": 41.1,
+     "samples_ms": [
+      41.1,
+      36.2,
+      34.8,
+      34.5,
+      34.7
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 108.7,
+     "min_ms": 83.1,
+     "max_ms": 117.1,
+     "samples_ms": [
+      113.1,
+      83.1,
+      108.7,
+      83.2,
+      117.1
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 67,
+     "min_ms": 66.3,
+     "max_ms": 67.6,
+     "samples_ms": [
+      66.3,
+      67,
+      66.7,
+      67.6,
+      67.1
+     ]
+    },
+    "dom_create": {
+     "median_ms": 17.9,
+     "min_ms": 17,
+     "max_ms": 18.5,
+     "samples_ms": [
+      17.7,
+      18.5,
+      17.9,
+      17,
+      18.2
+     ]
+    }
+   },
+   "total_ms": 254,
+   "geomean_ms": 41.02,
+   "wall_ms": 2502.9,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:36:52.196Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 1,
+   "run": 2,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 25.9,
+     "min_ms": 25.4,
+     "max_ms": 26.3,
+     "samples_ms": [
+      26.2,
+      25.9,
+      26.3,
+      25.6,
+      25.4
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 34,
+     "min_ms": 33.4,
+     "max_ms": 42.1,
+     "samples_ms": [
+      42.1,
+      34,
+      36,
+      33.6,
+      33.4
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 110.1,
+     "min_ms": 82.5,
+     "max_ms": 114.5,
+     "samples_ms": [
+      112.8,
+      83.8,
+      110.1,
+      82.5,
+      114.5
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 66.5,
+     "min_ms": 66,
+     "max_ms": 66.7,
+     "samples_ms": [
+      66,
+      66.7,
+      66.3,
+      66.5,
+      66.6
+     ]
+    },
+    "dom_create": {
+     "median_ms": 17.6,
+     "min_ms": 17,
+     "max_ms": 18,
+     "samples_ms": [
+      17.9,
+      17,
+      17.5,
+      17.6,
+      18
+     ]
+    }
+   },
+   "total_ms": 254.1,
+   "geomean_ms": 40.83,
+   "wall_ms": 2496.5,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:36:58.192Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 1,
+   "run": 3,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 25.6,
+     "min_ms": 25.4,
+     "max_ms": 25.7,
+     "samples_ms": [
+      25.6,
+      25.7,
+      25.6,
+      25.4,
+      25.4
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 35,
+     "min_ms": 33.3,
+     "max_ms": 41.8,
+     "samples_ms": [
+      41.8,
+      36.9,
+      34.4,
+      33.3,
+      35
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 111.5,
+     "min_ms": 82.6,
+     "max_ms": 117.4,
+     "samples_ms": [
+      112,
+      82.6,
+      111.5,
+      83.3,
+      117.4
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 66.6,
+     "min_ms": 65.3,
+     "max_ms": 67.3,
+     "samples_ms": [
+      65.9,
+      66.6,
+      66.7,
+      65.3,
+      67.3
+     ]
+    },
+    "dom_create": {
+     "median_ms": 17.3,
+     "min_ms": 17.1,
+     "max_ms": 18,
+     "samples_ms": [
+      17.1,
+      18,
+      17.2,
+      17.3,
+      17.5
+     ]
+    }
+   },
+   "total_ms": 256,
+   "geomean_ms": 40.95,
+   "wall_ms": 2505.9,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:37:04.135Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 2,
+   "run": 1,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 53.8,
+     "min_ms": 52.3,
+     "max_ms": 54.6,
+     "samples_ms": [
+      52.3,
+      54.6,
+      54,
+      53.8,
+      53.8
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 83.1,
+     "min_ms": 80.4,
+     "max_ms": 88.3,
+     "samples_ms": [
+      87.9,
+      83.1,
+      80.4,
+      88.3,
+      82.7
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 242,
+     "min_ms": 184.2,
+     "max_ms": 258.4,
+     "samples_ms": [
+      258.4,
+      184.2,
+      253.8,
+      184.2,
+      242
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 144.1,
+     "min_ms": 143.6,
+     "max_ms": 145.8,
+     "samples_ms": [
+      145.8,
+      143.6,
+      144,
+      144.1,
+      144.2
+     ]
+    },
+    "dom_create": {
+     "median_ms": 39,
+     "min_ms": 38.6,
+     "max_ms": 40.4,
+     "samples_ms": [
+      40.4,
+      38.6,
+      38.9,
+      39.5,
+      39
+     ]
+    }
+   },
+   "total_ms": 562,
+   "geomean_ms": 90.53,
+   "wall_ms": 4374.5,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:37:11.977Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 2,
+   "run": 2,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 55.2,
+     "min_ms": 53.2,
+     "max_ms": 57,
+     "samples_ms": [
+      57,
+      54,
+      53.2,
+      55.2,
+      55.6
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 94.8,
+     "min_ms": 92.5,
+     "max_ms": 96.1,
+     "samples_ms": [
+      96.1,
+      94.8,
+      94.3,
+      95.4,
+      92.5
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 259.6,
+     "min_ms": 198.1,
+     "max_ms": 285.1,
+     "samples_ms": [
+      285.1,
+      204.6,
+      270.6,
+      198.1,
+      259.6
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 151.2,
+     "min_ms": 149.8,
+     "max_ms": 152.7,
+     "samples_ms": [
+      151.2,
+      151,
+      149.8,
+      152,
+      152.7
+     ]
+    },
+    "dom_create": {
+     "median_ms": 41.1,
+     "min_ms": 40.4,
+     "max_ms": 41.5,
+     "samples_ms": [
+      41.1,
+      41.1,
+      41.5,
+      40.5,
+      40.4
+     ]
+    }
+   },
+   "total_ms": 601.9,
+   "geomean_ms": 96.67,
+   "wall_ms": 4622.2,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:37:20.244Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 2,
+   "run": 3,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 55.3,
+     "min_ms": 51.2,
+     "max_ms": 55.7,
+     "samples_ms": [
+      51.2,
+      55.4,
+      55.3,
+      55.3,
+      55.7
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 89.1,
+     "min_ms": 79.6,
+     "max_ms": 93.5,
+     "samples_ms": [
+      93.4,
+      79.6,
+      82.2,
+      89.1,
+      93.5
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 223.3,
+     "min_ms": 199.9,
+     "max_ms": 277.5,
+     "samples_ms": [
+      277.5,
+      200.2,
+      269.4,
+      199.9,
+      223.3
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 151.2,
+     "min_ms": 141.7,
+     "max_ms": 157.4,
+     "samples_ms": [
+      151.2,
+      141.7,
+      150.2,
+      157.1,
+      157.4
+     ]
+    },
+    "dom_create": {
+     "median_ms": 43.6,
+     "min_ms": 40.7,
+     "max_ms": 59.6,
+     "samples_ms": [
+      43.6,
+      59.6,
+      40.7,
+      41.9,
+      48.3
+     ]
+    }
+   },
+   "total_ms": 562.5,
+   "geomean_ms": 93.78,
+   "wall_ms": 4557.4,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:37:28.287Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 4,
+   "run": 1,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 113.5,
+     "min_ms": 108.2,
+     "max_ms": 115.4,
+     "samples_ms": [
+      113.5,
+      111.2,
+      108.2,
+      115.4,
+      114
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 209.9,
+     "min_ms": 181.8,
+     "max_ms": 216.9,
+     "samples_ms": [
+      216.9,
+      181.8,
+      209.9,
+      200.3,
+      215.2
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 538.1,
+     "min_ms": 446.7,
+     "max_ms": 676.4,
+     "samples_ms": [
+      676.4,
+      446.7,
+      612.7,
+      497.5,
+      538.1
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 331.4,
+     "min_ms": 310.6,
+     "max_ms": 343.1,
+     "samples_ms": [
+      343.1,
+      334.2,
+      331.4,
+      328.6,
+      310.6
+     ]
+    },
+    "dom_create": {
+     "median_ms": 109.8,
+     "min_ms": 107,
+     "max_ms": 114.9,
+     "samples_ms": [
+      114.9,
+      110.5,
+      109.8,
+      107.8,
+      107
+     ]
+    }
+   },
+   "total_ms": 1302.7,
+   "geomean_ms": 215.66,
+   "wall_ms": 9286.7,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:37:41.384Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 4,
+   "run": 2,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 111.2,
+     "min_ms": 111,
+     "max_ms": 112.5,
+     "samples_ms": [
+      112.5,
+      111,
+      111.2,
+      111.3,
+      111
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 199.2,
+     "min_ms": 185.7,
+     "max_ms": 209.5,
+     "samples_ms": [
+      209.5,
+      187.7,
+      185.7,
+      199.2,
+      208
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 514.6,
+     "min_ms": 418.5,
+     "max_ms": 653.9,
+     "samples_ms": [
+      653.9,
+      418.5,
+      611.9,
+      504.1,
+      514.6
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 317.4,
+     "min_ms": 316.4,
+     "max_ms": 330.2,
+     "samples_ms": [
+      324.5,
+      317.4,
+      316.4,
+      316.8,
+      330.2
+     ]
+    },
+    "dom_create": {
+     "median_ms": 107.9,
+     "min_ms": 107.4,
+     "max_ms": 108.9,
+     "samples_ms": [
+      108.9,
+      107.4,
+      107.6,
+      107.9,
+      108.5
+     ]
+    }
+   },
+   "total_ms": 1250.3,
+   "geomean_ms": 208.11,
+   "wall_ms": 8970.9,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.8,
+    "date": "2026-09-30T18:37:54.040Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 4,
+   "run": 3,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 111.8,
+     "min_ms": 110.7,
+     "max_ms": 114.2,
+     "samples_ms": [
+      111.8,
+      111.9,
+      111.1,
+      110.7,
+      114.2
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 211.4,
+     "min_ms": 201.6,
+     "max_ms": 213.7,
+     "samples_ms": [
+      204.7,
+      211.4,
+      212.5,
+      201.6,
+      213.7
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 544.8,
+     "min_ms": 395.8,
+     "max_ms": 631.7,
+     "samples_ms": [
+      631.7,
+      395.8,
+      605.7,
+      544.8,
+      522
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 318.7,
+     "min_ms": 318.2,
+     "max_ms": 323.4,
+     "samples_ms": [
+      323.4,
+      318.7,
+      322.5,
+      318.2,
+      318.6
+     ]
+    },
+    "dom_create": {
+     "median_ms": 107.6,
+     "min_ms": 104.9,
+     "max_ms": 109.1,
+     "samples_ms": [
+      108.2,
+      109.1,
+      104.9,
+      106.1,
+      107.6
+     ]
+    }
+   },
+   "total_ms": 1294.3,
+   "geomean_ms": 213.3,
+   "wall_ms": 9059.4,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:38:06.823Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 6,
+   "run": 1,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 170.6,
+     "min_ms": 168.7,
+     "max_ms": 171.1,
+     "samples_ms": [
+      170.7,
+      168.7,
+      169,
+      170.6,
+      171.1
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 321.8,
+     "min_ms": 317.9,
+     "max_ms": 345.6,
+     "samples_ms": [
+      345.6,
+      321.8,
+      317.9,
+      321.7,
+      324.7
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 841.7,
+     "min_ms": 745.7,
+     "max_ms": 1028.1,
+     "samples_ms": [
+      1028.1,
+      841.7,
+      846,
+      745.7,
+      760.6
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 507.1,
+     "min_ms": 478.6,
+     "max_ms": 526.4,
+     "samples_ms": [
+      495.8,
+      507.1,
+      526.4,
+      478.6,
+      523.3
+     ]
+    },
+    "dom_create": {
+     "median_ms": 144.8,
+     "min_ms": 135.8,
+     "max_ms": 153.4,
+     "samples_ms": [
+      144.8,
+      135.8,
+      150.4,
+      137.1,
+      153.4
+     ]
+    }
+   },
+   "total_ms": 1986,
+   "geomean_ms": 320.71,
+   "wall_ms": 13517.4,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:38:24.125Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 6,
+   "run": 2,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 169.2,
+     "min_ms": 131.8,
+     "max_ms": 171.2,
+     "samples_ms": [
+      171.2,
+      169.2,
+      170.7,
+      167.9,
+      131.8
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 319.6,
+     "min_ms": 313.3,
+     "max_ms": 333.8,
+     "samples_ms": [
+      333.8,
+      330,
+      316,
+      313.3,
+      319.6
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 827,
+     "min_ms": 806.9,
+     "max_ms": 1054.6,
+     "samples_ms": [
+      1054.6,
+      806.9,
+      827,
+      820.5,
+      833.3
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 511.9,
+     "min_ms": 439.3,
+     "max_ms": 535.9,
+     "samples_ms": [
+      514.7,
+      507.5,
+      511.9,
+      439.3,
+      535.9
+     ]
+    },
+    "dom_create": {
+     "median_ms": 141,
+     "min_ms": 110.5,
+     "max_ms": 148.3,
+     "samples_ms": [
+      148.3,
+      138.1,
+      146.9,
+      141,
+      110.5
+     ]
+    }
+   },
+   "total_ms": 1968.7,
+   "geomean_ms": 317.53,
+   "wall_ms": 13527.3,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:38:41.176Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 6,
+   "run": 3,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 170.7,
+     "min_ms": 168,
+     "max_ms": 172.4,
+     "samples_ms": [
+      172.3,
+      172.4,
+      168,
+      169.5,
+      170.7
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 326.9,
+     "min_ms": 313.5,
+     "max_ms": 346.6,
+     "samples_ms": [
+      346.6,
+      326.9,
+      318.3,
+      313.5,
+      339.9
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 861.4,
+     "min_ms": 753.7,
+     "max_ms": 1005.6,
+     "samples_ms": [
+      1005.6,
+      861.4,
+      858.3,
+      863.2,
+      753.7
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 504.3,
+     "min_ms": 483.7,
+     "max_ms": 525.9,
+     "samples_ms": [
+      483.7,
+      514,
+      504.3,
+      501.5,
+      525.9
+     ]
+    },
+    "dom_create": {
+     "median_ms": 144.8,
+     "min_ms": 133.7,
+     "max_ms": 148.4,
+     "samples_ms": [
+      148.4,
+      140.5,
+      146.8,
+      133.7,
+      144.8
+     ]
+    }
+   },
+   "total_ms": 2008.1,
+   "geomean_ms": 322.9,
+   "wall_ms": 13763.7,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:38:58.634Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 10,
+   "run": 1,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 280.3,
+     "min_ms": 240.1,
+     "max_ms": 286.1,
+     "samples_ms": [
+      240.1,
+      280.3,
+      286.1,
+      279.8,
+      281.7
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 597.8,
+     "min_ms": 539,
+     "max_ms": 629.2,
+     "samples_ms": [
+      597.8,
+      539,
+      554.4,
+      629.2,
+      629.1
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 1474.7,
+     "min_ms": 1308.3,
+     "max_ms": 1593.1,
+     "samples_ms": [
+      1488.7,
+      1308.3,
+      1474.7,
+      1449.1,
+      1593.1
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 895.7,
+     "min_ms": 865.8,
+     "max_ms": 906.3,
+     "samples_ms": [
+      880.5,
+      865.8,
+      906.3,
+      905.4,
+      895.7
+     ]
+    },
+    "dom_create": {
+     "median_ms": 192.7,
+     "min_ms": 161.3,
+     "max_ms": 220.8,
+     "samples_ms": [
+      161.3,
+      192.4,
+      216.4,
+      192.7,
+      220.8
+     ]
+    }
+   },
+   "total_ms": 3441.2,
+   "geomean_ms": 532.09,
+   "wall_ms": 22705.3,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 1.2,
+    "date": "2026-09-30T18:39:24.911Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 10,
+   "run": 2,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 273.7,
+     "min_ms": 271.4,
+     "max_ms": 277.4,
+     "samples_ms": [
+      275.3,
+      273.7,
+      277.4,
+      271.4,
+      272.1
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 512.7,
+     "min_ms": 468.4,
+     "max_ms": 551.2,
+     "samples_ms": [
+      519,
+      512.7,
+      490,
+      468.4,
+      551.2
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 1310.1,
+     "min_ms": 1224.9,
+     "max_ms": 1449.2,
+     "samples_ms": [
+      1286.6,
+      1310.1,
+      1449.2,
+      1429.3,
+      1224.9
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 856.6,
+     "min_ms": 822.2,
+     "max_ms": 904.5,
+     "samples_ms": [
+      904.5,
+      856.6,
+      822.2,
+      871.1,
+      833.3
+     ]
+    },
+    "dom_create": {
+     "median_ms": 246.7,
+     "min_ms": 226.2,
+     "max_ms": 344.5,
+     "samples_ms": [
+      248.5,
+      226.2,
+      344.5,
+      246.7,
+      236.8
+     ]
+    }
+   },
+   "total_ms": 3199.8,
+   "geomean_ms": 522.25,
+   "wall_ms": 21456.2,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 2.3,
+    "date": "2026-09-30T18:39:50.133Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 10,
+   "run": 3,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 282.2,
+     "min_ms": 273.9,
+     "max_ms": 283.1,
+     "samples_ms": [
+      282.7,
+      282.2,
+      273.9,
+      280.2,
+      283.1
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 585,
+     "min_ms": 538.8,
+     "max_ms": 605.1,
+     "samples_ms": [
+      599.8,
+      564.5,
+      538.8,
+      605.1,
+      585
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 1522.8,
+     "min_ms": 1314.7,
+     "max_ms": 1597.2,
+     "samples_ms": [
+      1548.4,
+      1522.8,
+      1314.7,
+      1518.4,
+      1597.2
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 875.9,
+     "min_ms": 866.7,
+     "max_ms": 883.3,
+     "samples_ms": [
+      883.3,
+      871.2,
+      866.7,
+      877.5,
+      875.9
+     ]
+    },
+    "dom_create": {
+     "median_ms": 242.4,
+     "min_ms": 231.9,
+     "max_ms": 257.2,
+     "samples_ms": [
+      231.9,
+      257.2,
+      242.4,
+      256.9,
+      239.1
+     ]
+    }
+   },
+   "total_ms": 3508.3,
+   "geomean_ms": 556.5,
+   "wall_ms": 23078.6,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:40:16.765Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 20,
+   "run": 1,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 573.3,
+     "min_ms": 568.4,
+     "max_ms": 577.2,
+     "samples_ms": [
+      572.7,
+      568.4,
+      573.3,
+      577.1,
+      577.2
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 1244.9,
+     "min_ms": 1158.9,
+     "max_ms": 1565.5,
+     "samples_ms": [
+      1288.9,
+      1565.5,
+      1158.9,
+      1244.9,
+      1227.7
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 3693.5,
+     "min_ms": 3491.1,
+     "max_ms": 3730.4,
+     "samples_ms": [
+      3693.5,
+      3710.3,
+      3730.4,
+      3491.1,
+      3540.7
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 1862,
+     "min_ms": 1746.2,
+     "max_ms": 1923.8,
+     "samples_ms": [
+      1746.2,
+      1862,
+      1804.4,
+      1923.8,
+      1902.2
+     ]
+    },
+    "dom_create": {
+     "median_ms": 574.5,
+     "min_ms": 551.4,
+     "max_ms": 851.2,
+     "samples_ms": [
+      606.8,
+      574.5,
+      851.2,
+      565.6,
+      551.4
+     ]
+    }
+   },
+   "total_ms": 7948.2,
+   "geomean_ms": 1230.4,
+   "wall_ms": 51261.3,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:41:11.609Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 20,
+   "run": 2,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 569.6,
+     "min_ms": 567.9,
+     "max_ms": 576.8,
+     "samples_ms": [
+      569.6,
+      567.9,
+      576.8,
+      568.5,
+      575.3
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 1247.7,
+     "min_ms": 1041.1,
+     "max_ms": 1619.4,
+     "samples_ms": [
+      1141,
+      1619.4,
+      1247.7,
+      1338.7,
+      1041.1
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 3652.3,
+     "min_ms": 3383.3,
+     "max_ms": 3739.2,
+     "samples_ms": [
+      3383.3,
+      3661.2,
+      3739.2,
+      3652.3,
+      3454.8
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 1843.8,
+     "min_ms": 1718.6,
+     "max_ms": 1970.2,
+     "samples_ms": [
+      1843.8,
+      1778.3,
+      1970.2,
+      1852.3,
+      1718.6
+     ]
+    },
+    "dom_create": {
+     "median_ms": 570.9,
+     "min_ms": 513.7,
+     "max_ms": 588.8,
+     "samples_ms": [
+      570.9,
+      588.8,
+      513.7,
+      572.3,
+      518.8
+     ]
+    }
+   },
+   "total_ms": 7884.3,
+   "geomean_ms": 1222.66,
+   "wall_ms": 50179.2,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:42:05.660Z"
+   },
+   "_sink": -925.9999237060547
+  },
+  {
+   "rate": 20,
+   "run": 3,
+   "chrome": "Chrome/154.0.8037.58",
+   "version": "cpu_bench v1 (2026-10-01)",
+   "reps": 5,
+   "warmup": 1,
+   "results": {
+    "js_numeric": {
+     "median_ms": 576.2,
+     "min_ms": 571.5,
+     "max_ms": 578.2,
+     "samples_ms": [
+      572.1,
+      578.2,
+      571.5,
+      576.2,
+      577.5
+     ]
+    },
+    "js_alloc": {
+     "median_ms": 1323.7,
+     "min_ms": 1043.3,
+     "max_ms": 1658.8,
+     "samples_ms": [
+      1323.7,
+      1658.8,
+      1043.3,
+      1352.9,
+      1220.7
+     ]
+    },
+    "dom_layout_thrash": {
+     "median_ms": 3457.2,
+     "min_ms": 2988.5,
+     "max_ms": 3649.1,
+     "samples_ms": [
+      3489.3,
+      3457.2,
+      3258.3,
+      3649.1,
+      2988.5
+     ]
+    },
+    "style_recalc_var": {
+     "median_ms": 1802.4,
+     "min_ms": 1704.2,
+     "max_ms": 1893.9,
+     "samples_ms": [
+      1762.7,
+      1802.4,
+      1810.9,
+      1704.2,
+      1893.9
+     ]
+    },
+    "dom_create": {
+     "median_ms": 580.9,
+     "min_ms": 541.1,
+     "max_ms": 632.7,
+     "samples_ms": [
+      604.3,
+      541.1,
+      580.9,
+      632.7,
+      551.9
+     ]
+    }
+   },
+   "total_ms": 7740.4,
+   "geomean_ms": 1225.2,
+   "wall_ms": 49432.1,
+   "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 1,
+    "vw": 1440,
+    "vh": 900,
+    "hwConcurrency": 8,
+    "url": "data:text/html,<!doctype html><meta charset=utf-8><title>bench</title><body></body>",
+    "timerResolutionHintMs": 0.1,
+    "date": "2026-09-30T18:42:59.168Z"
+   },
+   "_sink": -925.9999237060547
+  }
+ ]
+}

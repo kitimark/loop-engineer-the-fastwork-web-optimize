@@ -1,0 +1,8 @@
+# Mirrored third-party content (Fastwork's property) - never commit or push.
+site/
+site-pretty/
+# measurement output, Chrome profiles, generated certificates
+out/
+*.pem
+node_modules/
+.DS_Store

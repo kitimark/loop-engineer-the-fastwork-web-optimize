@@ -1,0 +1,2201 @@
+{
+ "meta": {
+  "tool": "chrome_scroll.mjs",
+  "url": "https://fastwork.com/",
+  "viewport": "desktop",
+  "vp": {
+   "width": 1440,
+   "height": 900,
+   "deviceScaleFactor": 1,
+   "mobile": false
+  },
+  "rate": 20,
+  "chrome": "Chrome/154.0.8037.58",
+  "host": "Apple M1 Pro x8",
+  "date": "2026-09-30T18:52:07.813Z",
+  "loadMs": 5827,
+  "scrollCapMs": 60000,
+  "wallMs": 26519,
+  "profile": "fresh temp profile per run (cold cache)",
+  "traceFile": null,
+  "page": {
+   "vw": 1440,
+   "vh": 900,
+   "dpr": 1,
+   "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+  },
+  "runs": 3
+ },
+ "aggregate": {
+  "idle": {
+   "duration_ms": {
+    "mean": 3029,
+    "sd": 25,
+    "values": [
+     3049,
+     3037,
+     3001
+    ]
+   },
+   "fps": {
+    "mean": 34,
+    "sd": 4.7,
+    "values": [
+     32.8,
+     39.2,
+     30
+    ]
+   },
+   "median_ms": {
+    "mean": 27.8,
+    "sd": 4.7,
+    "values": [
+     25,
+     25.1,
+     33.2
+    ]
+   },
+   "p95_ms": {
+    "mean": 63.5,
+    "sd": 18.8,
+    "values": [
+     74.9,
+     41.8,
+     73.9
+    ]
+   },
+   "p99_ms": {
+    "mean": 99.6,
+    "sd": 43.8,
+    "values": [
+     133.3,
+     50.1,
+     115.4
+    ]
+   },
+   "max_ms": {
+    "mean": 99.8,
+    "sd": 43.4,
+    "values": [
+     133.3,
+     50.8,
+     115.4
+    ]
+   },
+   "gt20": {
+    "mean": 74.7,
+    "sd": 9.9,
+    "values": [
+     68,
+     86,
+     70
+    ]
+   },
+   "gt34": {
+    "mean": 23,
+    "sd": 7.5,
+    "values": [
+     22,
+     16,
+     31
+    ]
+   },
+   "gt50": {
+    "mean": 10.3,
+    "sd": 6.4,
+    "values": [
+     14,
+     3,
+     14
+    ]
+   },
+   "gt100": {
+    "mean": 0.7,
+    "sd": 0.6,
+    "values": [
+     1,
+     0,
+     1
+    ]
+   },
+   "smooth_pct": {
+    "mean": 27.3,
+    "sd": 4.9,
+    "values": [
+     32,
+     27.7,
+     22.2
+    ]
+   },
+   "jank_ms": {
+    "mean": 1393.7,
+    "sd": 228.8,
+    "values": [
+     1408,
+     1158,
+     1615
+    ]
+   },
+   "time_in_gt50_ms": {
+    "mean": 684.7,
+    "sd": 462.2,
+    "values": [
+     959,
+     151,
+     944
+    ]
+   },
+   "loaf_count": {
+    "mean": 4.7,
+    "sd": 4.2,
+    "values": [
+     6,
+     0,
+     8
+    ]
+   },
+   "loaf_total_ms": {
+    "mean": 335.7,
+    "sd": 294.1,
+    "values": [
+     459,
+     0,
+     548
+    ]
+   },
+   "loaf_blocking_ms": {
+    "mean": 78.3,
+    "sd": 68.1,
+    "values": [
+     123,
+     0,
+     112
+    ]
+   },
+   "loaf_max_ms": {
+    "mean": 80.3,
+    "sd": 70.1,
+    "values": [
+     129,
+     0,
+     112
+    ]
+   },
+   "loaf_styleLayout_ms": {
+    "mean": 19.7,
+    "sd": 17.4,
+    "values": [
+     26,
+     0,
+     33
+    ]
+   }
+  },
+  "scroll": {
+   "duration_ms": {
+    "mean": 20653.7,
+    "sd": 665.9,
+    "values": [
+     20325,
+     20216,
+     21420
+    ]
+   },
+   "fps": {
+    "mean": 9.1,
+    "sd": 0.7,
+    "values": [
+     9.8,
+     9,
+     8.5
+    ]
+   },
+   "median_ms": {
+    "mean": 94.3,
+    "sd": 8.7,
+    "values": [
+     84.2,
+     99.2,
+     99.4
+    ]
+   },
+   "p95_ms": {
+    "mean": 250.7,
+    "sd": 22.8,
+    "values": [
+     242.1,
+     233.4,
+     276.5
+    ]
+   },
+   "p99_ms": {
+    "mean": 441.2,
+    "sd": 36.5,
+    "values": [
+     416.5,
+     483.1,
+     424
+    ]
+   },
+   "max_ms": {
+    "mean": 525.2,
+    "sd": 38.2,
+    "values": [
+     533.5,
+     558.6,
+     483.6
+    ]
+   },
+   "gt20": {
+    "mean": 179.3,
+    "sd": 3.5,
+    "values": [
+     183,
+     176,
+     179
+    ]
+   },
+   "gt34": {
+    "mean": 169,
+    "sd": 3.5,
+    "values": [
+     167,
+     167,
+     173
+    ]
+   },
+   "gt50": {
+    "mean": 157,
+    "sd": 4,
+    "values": [
+     153,
+     157,
+     161
+    ]
+   },
+   "gt100": {
+    "mean": 86,
+    "sd": 1,
+    "values": [
+     85,
+     86,
+     87
+    ]
+   },
+   "smooth_pct": {
+    "mean": 4,
+    "sd": 3.6,
+    "values": [
+     8,
+     2.8,
+     1.1
+    ]
+   },
+   "jank_ms": {
+    "mean": 17565,
+    "sd": 720.4,
+    "values": [
+     17091,
+     17210,
+     18394
+    ]
+   },
+   "time_in_gt50_ms": {
+    "mean": 19732.7,
+    "sd": 834.2,
+    "values": [
+     19075,
+     19452,
+     20671
+    ]
+   },
+   "loaf_count": {
+    "mean": 134,
+    "sd": 8,
+    "values": [
+     126,
+     134,
+     142
+    ]
+   },
+   "loaf_total_ms": {
+    "mean": 14873,
+    "sd": 833.7,
+    "values": [
+     14148,
+     14687,
+     15784
+    ]
+   },
+   "loaf_blocking_ms": {
+    "mean": 6166,
+    "sd": 440.5,
+    "values": [
+     5824,
+     6011,
+     6663
+    ]
+   },
+   "loaf_max_ms": {
+    "mean": 459.7,
+    "sd": 22.5,
+    "values": [
+     458,
+     483,
+     438
+    ]
+   },
+   "loaf_styleLayout_ms": {
+    "mean": 862,
+    "sd": 53.4,
+    "values": [
+     873,
+     804,
+     909
+    ]
+   }
+  },
+  "bottom": {
+   "duration_ms": {
+    "mean": 3041,
+    "sd": 11.4,
+    "values": [
+     3054,
+     3033,
+     3036
+    ]
+   },
+   "fps": {
+    "mean": 43.2,
+    "sd": 1.7,
+    "values": [
+     44.2,
+     41.2,
+     44.1
+    ]
+   },
+   "median_ms": {
+    "mean": 20.3,
+    "sd": 3.6,
+    "values": [
+     24.4,
+     17.8,
+     18.7
+    ]
+   },
+   "p95_ms": {
+    "mean": 38.5,
+    "sd": 4.1,
+    "values": [
+     33.8,
+     41.6,
+     40.1
+    ]
+   },
+   "p99_ms": {
+    "mean": 47.2,
+    "sd": 9.1,
+    "values": [
+     41.4,
+     57.7,
+     42.5
+    ]
+   },
+   "max_ms": {
+    "mean": 70.1,
+    "sd": 26,
+    "values": [
+     59.1,
+     99.8,
+     51.5
+    ]
+   },
+   "gt20": {
+    "mean": 67.7,
+    "sd": 7.6,
+    "values": [
+     76,
+     61,
+     66
+    ]
+   },
+   "gt34": {
+    "mean": 11.3,
+    "sd": 5.5,
+    "values": [
+     5,
+     15,
+     14
+    ]
+   },
+   "gt50": {
+    "mean": 1.3,
+    "sd": 0.6,
+    "values": [
+     1,
+     2,
+     1
+    ]
+   },
+   "gt100": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   },
+   "smooth_pct": {
+    "mean": 48.5,
+    "sd": 4.2,
+    "values": [
+     43.7,
+     51.2,
+     50.7
+    ]
+   },
+   "jank_ms": {
+    "mean": 916,
+    "sd": 81.7,
+    "values": [
+     862,
+     1010,
+     876
+    ]
+   },
+   "time_in_gt50_ms": {
+    "mean": 89.7,
+    "sd": 59.3,
+    "values": [
+     59,
+     158,
+     52
+    ]
+   },
+   "loaf_count": {
+    "mean": 0.3,
+    "sd": 0.6,
+    "values": [
+     0,
+     1,
+     0
+    ]
+   },
+   "loaf_total_ms": {
+    "mean": 19,
+    "sd": 32.9,
+    "values": [
+     0,
+     57,
+     0
+    ]
+   },
+   "loaf_blocking_ms": {
+    "mean": 2.3,
+    "sd": 4,
+    "values": [
+     0,
+     7,
+     0
+    ]
+   },
+   "loaf_max_ms": {
+    "mean": 19,
+    "sd": 32.9,
+    "values": [
+     0,
+     57,
+     0
+    ]
+   },
+   "loaf_styleLayout_ms": {
+    "mean": 0,
+    "sd": 0,
+    "values": [
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ },
+ "runs": [
+  {
+   "meta": {
+    "tool": "chrome_scroll.mjs",
+    "url": "https://fastwork.com/",
+    "viewport": "desktop",
+    "vp": {
+     "width": 1440,
+     "height": 900,
+     "deviceScaleFactor": 1,
+     "mobile": false
+    },
+    "rate": 20,
+    "run": 1,
+    "chrome": "Chrome/154.0.8037.58",
+    "host": "Apple M1 Pro x8",
+    "date": "2026-09-30T18:52:07.813Z",
+    "loadMs": 5827,
+    "scrollCapMs": 60000,
+    "wallMs": 26519,
+    "profile": "fresh temp profile per run (cold cache)",
+    "traceFile": null,
+    "page": {
+     "vw": 1440,
+     "vh": 900,
+     "dpr": 1,
+     "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+    }
+   },
+   "marks": {
+    "idle": [
+     13853.800000011921,
+     16902.5
+    ],
+    "scroll": [
+     16907.19999998808,
+     37232.39999997616
+    ],
+    "bottom": [
+     37232.5,
+     40286.19999998808
+    ]
+   },
+   "secs": [
+    {
+     "id": "",
+     "cls": "hero-track",
+     "h2": "Show the world what   can do",
+     "top": 0,
+     "h": 1800
+    },
+    {
+     "id": "people",
+     "cls": "start-selling-future is-visible is-futur",
+     "h2": "People still need pe  o ple",
+     "top": 901,
+     "h": 4084
+    },
+    {
+     "id": "profile-showcase",
+     "cls": "start-selling-profile",
+     "h2": "BigzWeb",
+     "top": 1475,
+     "h": 3350
+    },
+    {
+     "id": "",
+     "cls": "feed",
+     "h2": "Services",
+     "top": 4308,
+     "h": 492
+    },
+    {
+     "id": "",
+     "cls": "pain is-pain-dark",
+     "h2": "Freelancing is hard enough...",
+     "top": 4085,
+     "h": 2700
+    },
+    {
+     "id": "",
+     "cls": "commission shrinking",
+     "h2": "Other platforms keep taking fee. We let ",
+     "top": 5885,
+     "h": 1002
+    },
+    {
+     "id": "platform",
+     "cls": "start-selling-platform is-platform-shrin",
+     "h2": "Document your portfolio and reviews",
+     "top": 6887,
+     "h": 2461
+    }
+   ],
+   "phases": {
+    "idle": {
+     "duration_ms": 3049,
+     "frames": 100,
+     "fps": 32.8,
+     "median_ms": 25,
+     "p95_ms": 74.9,
+     "p99_ms": 133.3,
+     "max_ms": 133.3,
+     "gt20": 68,
+     "gt34": 22,
+     "gt50": 14,
+     "gt100": 1,
+     "smooth_pct": 32,
+     "jank_ms": 1408,
+     "time_in_gt50_ms": 959,
+     "loaf": {
+      "count": 6,
+      "total_ms": 459,
+      "blocking_ms": 123,
+      "max_ms": 129,
+      "styleLayout_ms": 26
+     },
+     "topScripts": [
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "",
+       "pos": 41873,
+       "type": "resolve-promise",
+       "inv": "CookieStore.getAll.then",
+       "count": 2,
+       "dur_ms": 156,
+       "forced_ms": 0,
+       "max_ms": 98
+      },
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "",
+       "pos": 72317,
+       "type": "resolve-promise",
+       "inv": "Response.json.then",
+       "count": 2,
+       "dur_ms": 58,
+       "forced_ms": 0,
+       "max_ms": 41
+      },
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "",
+       "pos": 10635,
+       "type": "user-callback",
+       "inv": "TimerHandler:setTimeout",
+       "count": 2,
+       "dur_ms": 55,
+       "forced_ms": 0,
+       "max_ms": 39
+      },
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "",
+       "pos": 27126,
+       "type": "user-callback",
+       "inv": "TimerHandler:setTimeout",
+       "count": 1,
+       "dur_ms": 41,
+       "forced_ms": 0,
+       "max_ms": 41
+      },
+      {
+       "src": "",
+       "fn": "",
+       "pos": -1,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 4,
+       "dur_ms": 37,
+       "forced_ms": 34,
+       "max_ms": 12
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "",
+       "pos": 303489,
+       "type": "user-callback",
+       "inv": "TimerHandler:setTimeout",
+       "count": 1,
+       "dur_ms": 15,
+       "forced_ms": 0,
+       "max_ms": 15
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "i",
+       "pos": 126302,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 2,
+       "dur_ms": 13,
+       "forced_ms": 0,
+       "max_ms": 7
+      }
+     ]
+    },
+    "scroll": {
+     "duration_ms": 20325,
+     "frames": 199,
+     "fps": 9.8,
+     "median_ms": 84.2,
+     "p95_ms": 242.1,
+     "p99_ms": 416.5,
+     "max_ms": 533.5,
+     "gt20": 183,
+     "gt34": 167,
+     "gt50": 153,
+     "gt100": 85,
+     "smooth_pct": 8,
+     "jank_ms": 17091,
+     "time_in_gt50_ms": 19075,
+     "loaf": {
+      "count": 126,
+      "total_ms": 14148,
+      "blocking_ms": 5824,
+      "max_ms": 458,
+      "styleLayout_ms": 873
+     },
+     "topScripts": [
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "iE",
+       "pos": 75155,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 87,
+       "dur_ms": 2566,
+       "forced_ms": 1497,
+       "max_ms": 116
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "f",
+       "pos": 296345,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 39,
+       "dur_ms": 1870,
+       "forced_ms": 1432,
+       "max_ms": 110
+      },
+      {
+       "src": "",
+       "fn": "",
+       "pos": -1,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 109,
+       "dur_ms": 1715,
+       "forced_ms": 1520,
+       "max_ms": 77
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "s",
+       "pos": 135943,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 21,
+       "dur_ms": 680,
+       "forced_ms": 645,
+       "max_ms": 72
+      },
+      {
+       "src": "/analytics.js",
+       "fn": "",
+       "pos": 7999,
+       "type": "user-callback",
+       "inv": "IntersectionObserverCallback",
+       "count": 5,
+       "dur_ms": 622,
+       "forced_ms": 0,
+       "max_ms": 163
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "n",
+       "pos": 329561,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 25,
+       "dur_ms": 609,
+       "forced_ms": 574,
+       "max_ms": 40
+      },
+      {
+       "src": "/gtag/js?id=G-ZHPMJ436RV&cx=c&gtm=4e69t0",
+       "fn": "",
+       "pos": -1,
+       "type": "event-listener",
+       "inv": "DOMWindow.onscrollend",
+       "count": 12,
+       "dur_ms": 591,
+       "forced_ms": 372,
+       "max_ms": 190
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "a",
+       "pos": 87539,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 10,
+       "dur_ms": 348,
+       "forced_ms": 311,
+       "max_ms": 53
+      }
+     ]
+    },
+    "bottom": {
+     "duration_ms": 3054,
+     "frames": 135,
+     "fps": 44.2,
+     "median_ms": 24.4,
+     "p95_ms": 33.8,
+     "p99_ms": 41.4,
+     "max_ms": 59.1,
+     "gt20": 76,
+     "gt34": 5,
+     "gt50": 1,
+     "gt100": 0,
+     "smooth_pct": 43.7,
+     "jank_ms": 862,
+     "time_in_gt50_ms": 59,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    }
+   },
+   "sections": [
+    {
+     "section": "Show the world what   can do",
+     "frames": 33,
+     "gt34": 27,
+     "gt50": 22,
+     "gt100": 13,
+     "max_ms": 283.3,
+     "jank_ms": 2754,
+     "loaf": 16,
+     "loaf_ms": 2163
+    },
+    {
+     "section": "profile-showcase",
+     "frames": 61,
+     "gt34": 46,
+     "gt50": 42,
+     "gt100": 11,
+     "max_ms": 391.1,
+     "jank_ms": 4081,
+     "loaf": 35,
+     "loaf_ms": 3519
+    },
+    {
+     "section": "Freelancing is hard enough...",
+     "frames": 26,
+     "gt34": 25,
+     "gt50": 25,
+     "gt100": 18,
+     "max_ms": 416.5,
+     "jank_ms": 3024,
+     "loaf": 24,
+     "loaf_ms": 2756
+    },
+    {
+     "section": "Services",
+     "frames": 10,
+     "gt34": 7,
+     "gt50": 6,
+     "gt100": 4,
+     "max_ms": 226,
+     "jank_ms": 734,
+     "loaf": 4,
+     "loaf_ms": 503
+    },
+    {
+     "section": "Other platforms keep taking fee. We let ",
+     "frames": 16,
+     "gt34": 16,
+     "gt50": 16,
+     "gt100": 15,
+     "max_ms": 257.5,
+     "jank_ms": 2157,
+     "loaf": 15,
+     "loaf_ms": 1818
+    },
+    {
+     "section": "platform",
+     "frames": 53,
+     "gt34": 46,
+     "gt50": 42,
+     "gt100": 24,
+     "max_ms": 533.5,
+     "jank_ms": 4341,
+     "loaf": 32,
+     "loaf_ms": 3389
+    }
+   ],
+   "topScriptsAll": [
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "iE",
+     "pos": 75155,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 87,
+     "dur_ms": 2566,
+     "forced_ms": 1497,
+     "max_ms": 116
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "f",
+     "pos": 296345,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 39,
+     "dur_ms": 1870,
+     "forced_ms": 1432,
+     "max_ms": 110
+    },
+    {
+     "src": "",
+     "fn": "",
+     "pos": -1,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 113,
+     "dur_ms": 1752,
+     "forced_ms": 1554,
+     "max_ms": 77
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "s",
+     "pos": 135943,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 21,
+     "dur_ms": 680,
+     "forced_ms": 645,
+     "max_ms": 72
+    },
+    {
+     "src": "/analytics.js",
+     "fn": "",
+     "pos": 7999,
+     "type": "user-callback",
+     "inv": "IntersectionObserverCallback",
+     "count": 5,
+     "dur_ms": 622,
+     "forced_ms": 0,
+     "max_ms": 163
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "n",
+     "pos": 329561,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 25,
+     "dur_ms": 609,
+     "forced_ms": 574,
+     "max_ms": 40
+    },
+    {
+     "src": "/gtag/js?id=G-ZHPMJ436RV&cx=c&gtm=4e69t0",
+     "fn": "",
+     "pos": -1,
+     "type": "event-listener",
+     "inv": "DOMWindow.onscrollend",
+     "count": 12,
+     "dur_ms": 591,
+     "forced_ms": 372,
+     "max_ms": 190
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "a",
+     "pos": 87539,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 10,
+     "dur_ms": 348,
+     "forced_ms": 311,
+     "max_ms": 53
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "l",
+     "pos": 302796,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 10,
+     "dur_ms": 330,
+     "forced_ms": 297,
+     "max_ms": 100
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "",
+     "pos": 343804,
+     "type": "user-callback",
+     "inv": "IntersectionObserverCallback",
+     "count": 1,
+     "dur_ms": 235,
+     "forced_ms": 80,
+     "max_ms": 235
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "",
+     "pos": 303489,
+     "type": "user-callback",
+     "inv": "TimerHandler:setTimeout",
+     "count": 17,
+     "dur_ms": 189,
+     "forced_ms": 0,
+     "max_ms": 17
+    },
+    {
+     "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+     "fn": "",
+     "pos": 41873,
+     "type": "resolve-promise",
+     "inv": "CookieStore.getAll.then",
+     "count": 2,
+     "dur_ms": 156,
+     "forced_ms": 0,
+     "max_ms": 98
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "e",
+     "pos": 127955,
+     "type": "user-callback",
+     "inv": "TimerHandler:setInterval",
+     "count": 11,
+     "dur_ms": 113,
+     "forced_ms": 0,
+     "max_ms": 43
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "i",
+     "pos": 126302,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 10,
+     "dur_ms": 63,
+     "forced_ms": 0,
+     "max_ms": 8
+    },
+    {
+     "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+     "fn": "",
+     "pos": 72317,
+     "type": "resolve-promise",
+     "inv": "Response.json.then",
+     "count": 2,
+     "dur_ms": 58,
+     "forced_ms": 0,
+     "max_ms": 41
+    }
+   ],
+   "scroll": {
+    "steps": 43,
+    "capped": false,
+    "maxY": 8448,
+    "finalY": 8448,
+    "scrollHeight": 9348
+   }
+  },
+  {
+   "meta": {
+    "tool": "chrome_scroll.mjs",
+    "url": "https://fastwork.com/",
+    "viewport": "desktop",
+    "vp": {
+     "width": 1440,
+     "height": 900,
+     "deviceScaleFactor": 1,
+     "mobile": false
+    },
+    "rate": 20,
+    "run": 2,
+    "chrome": "Chrome/154.0.8037.58",
+    "host": "Apple M1 Pro x8",
+    "date": "2026-09-30T18:52:57.784Z",
+    "loadMs": 13618,
+    "scrollCapMs": 60000,
+    "wallMs": 26374,
+    "profile": "fresh temp profile per run (cold cache)",
+    "traceFile": null,
+    "page": {
+     "vw": 1440,
+     "vh": 900,
+     "dpr": 1,
+     "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+    }
+   },
+   "marks": {
+    "idle": [
+     21634.69999998808,
+     24671.69999998808
+    ],
+    "scroll": [
+     24671.69999998808,
+     44887.39999997616
+    ],
+    "bottom": [
+     44887.39999997616,
+     47920.19999998808
+    ]
+   },
+   "secs": [
+    {
+     "id": "",
+     "cls": "hero-track",
+     "h2": "Show the world what   can do",
+     "top": 0,
+     "h": 1800
+    },
+    {
+     "id": "people",
+     "cls": "start-selling-future is-visible is-futur",
+     "h2": "People still need pe  o ple",
+     "top": 901,
+     "h": 4084
+    },
+    {
+     "id": "profile-showcase",
+     "cls": "start-selling-profile",
+     "h2": "BigzWeb",
+     "top": 1475,
+     "h": 3350
+    },
+    {
+     "id": "",
+     "cls": "feed",
+     "h2": "Services",
+     "top": 4308,
+     "h": 492
+    },
+    {
+     "id": "",
+     "cls": "pain is-pain-dark",
+     "h2": "Freelancing is hard enough...",
+     "top": 4085,
+     "h": 2700
+    },
+    {
+     "id": "",
+     "cls": "commission shrinking",
+     "h2": "Other platforms keep taking fee. We let ",
+     "top": 5885,
+     "h": 1002
+    },
+    {
+     "id": "platform",
+     "cls": "start-selling-platform is-platform-shrin",
+     "h2": "Document your portfolio and reviews",
+     "top": 6887,
+     "h": 2461
+    }
+   ],
+   "phases": {
+    "idle": {
+     "duration_ms": 3037,
+     "frames": 119,
+     "fps": 39.2,
+     "median_ms": 25.1,
+     "p95_ms": 41.8,
+     "p99_ms": 50.1,
+     "max_ms": 50.8,
+     "gt20": 86,
+     "gt34": 16,
+     "gt50": 3,
+     "gt100": 0,
+     "smooth_pct": 27.7,
+     "jank_ms": 1158,
+     "time_in_gt50_ms": 151,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    },
+    "scroll": {
+     "duration_ms": 20216,
+     "frames": 181,
+     "fps": 9,
+     "median_ms": 99.2,
+     "p95_ms": 233.4,
+     "p99_ms": 483.1,
+     "max_ms": 558.6,
+     "gt20": 176,
+     "gt34": 167,
+     "gt50": 157,
+     "gt100": 86,
+     "smooth_pct": 2.8,
+     "jank_ms": 17210,
+     "time_in_gt50_ms": 19452,
+     "loaf": {
+      "count": 134,
+      "total_ms": 14687,
+      "blocking_ms": 6011,
+      "max_ms": 483,
+      "styleLayout_ms": 804
+     },
+     "topScripts": [
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "iE",
+       "pos": 75155,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 92,
+       "dur_ms": 2968,
+       "forced_ms": 1555,
+       "max_ms": 348
+      },
+      {
+       "src": "",
+       "fn": "",
+       "pos": -1,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 124,
+       "dur_ms": 2126,
+       "forced_ms": 1900,
+       "max_ms": 132
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "f",
+       "pos": 296345,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 39,
+       "dur_ms": 1926,
+       "forced_ms": 1567,
+       "max_ms": 105
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "s",
+       "pos": 135943,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 21,
+       "dur_ms": 643,
+       "forced_ms": 597,
+       "max_ms": 75
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "n",
+       "pos": 329561,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 29,
+       "dur_ms": 620,
+       "forced_ms": 592,
+       "max_ms": 34
+      },
+      {
+       "src": "/analytics.js",
+       "fn": "",
+       "pos": 7999,
+       "type": "user-callback",
+       "inv": "IntersectionObserverCallback",
+       "count": 5,
+       "dur_ms": 562,
+       "forced_ms": 0,
+       "max_ms": 156
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "l",
+       "pos": 302796,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 19,
+       "dur_ms": 445,
+       "forced_ms": 340,
+       "max_ms": 102
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "a",
+       "pos": 87539,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 15,
+       "dur_ms": 419,
+       "forced_ms": 365,
+       "max_ms": 58
+      }
+     ]
+    },
+    "bottom": {
+     "duration_ms": 3033,
+     "frames": 125,
+     "fps": 41.2,
+     "median_ms": 17.8,
+     "p95_ms": 41.6,
+     "p99_ms": 57.7,
+     "max_ms": 99.8,
+     "gt20": 61,
+     "gt34": 15,
+     "gt50": 2,
+     "gt100": 0,
+     "smooth_pct": 51.2,
+     "jank_ms": 1010,
+     "time_in_gt50_ms": 158,
+     "loaf": {
+      "count": 1,
+      "total_ms": 57,
+      "blocking_ms": 7,
+      "max_ms": 57,
+      "styleLayout_ms": 0
+     },
+     "topScripts": [
+      {
+       "src": "",
+       "fn": "",
+       "pos": -1,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 1,
+       "dur_ms": 57,
+       "forced_ms": 0,
+       "max_ms": 57
+      }
+     ]
+    }
+   },
+   "sections": [
+    {
+     "section": "Show the world what   can do",
+     "frames": 29,
+     "gt34": 25,
+     "gt50": 21,
+     "gt100": 14,
+     "max_ms": 274.1,
+     "jank_ms": 2616,
+     "loaf": 18,
+     "loaf_ms": 2147
+    },
+    {
+     "section": "profile-showcase",
+     "frames": 42,
+     "gt34": 41,
+     "gt50": 41,
+     "gt100": 17,
+     "max_ms": 325,
+     "jank_ms": 3957,
+     "loaf": 35,
+     "loaf_ms": 3379
+    },
+    {
+     "section": "Freelancing is hard enough...",
+     "frames": 25,
+     "gt34": 24,
+     "gt50": 24,
+     "gt100": 17,
+     "max_ms": 391.4,
+     "jank_ms": 2789,
+     "loaf": 23,
+     "loaf_ms": 2712
+    },
+    {
+     "section": "Services",
+     "frames": 11,
+     "gt34": 9,
+     "gt50": 9,
+     "gt100": 7,
+     "max_ms": 483.1,
+     "jank_ms": 1475,
+     "loaf": 8,
+     "loaf_ms": 1122
+    },
+    {
+     "section": "Other platforms keep taking fee. We let ",
+     "frames": 20,
+     "gt34": 18,
+     "gt50": 18,
+     "gt100": 14,
+     "max_ms": 257.7,
+     "jank_ms": 2273,
+     "loaf": 18,
+     "loaf_ms": 2246
+    },
+    {
+     "section": "platform",
+     "frames": 54,
+     "gt34": 50,
+     "gt50": 44,
+     "gt100": 17,
+     "max_ms": 558.6,
+     "jank_ms": 4100,
+     "loaf": 32,
+     "loaf_ms": 3081
+    }
+   ],
+   "topScriptsAll": [
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "iE",
+     "pos": 75155,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 92,
+     "dur_ms": 2968,
+     "forced_ms": 1555,
+     "max_ms": 348
+    },
+    {
+     "src": "",
+     "fn": "",
+     "pos": -1,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 125,
+     "dur_ms": 2183,
+     "forced_ms": 1900,
+     "max_ms": 132
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "f",
+     "pos": 296345,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 39,
+     "dur_ms": 1926,
+     "forced_ms": 1567,
+     "max_ms": 105
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "s",
+     "pos": 135943,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 21,
+     "dur_ms": 643,
+     "forced_ms": 597,
+     "max_ms": 75
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "n",
+     "pos": 329561,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 29,
+     "dur_ms": 620,
+     "forced_ms": 592,
+     "max_ms": 34
+    },
+    {
+     "src": "/analytics.js",
+     "fn": "",
+     "pos": 7999,
+     "type": "user-callback",
+     "inv": "IntersectionObserverCallback",
+     "count": 5,
+     "dur_ms": 562,
+     "forced_ms": 0,
+     "max_ms": 156
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "l",
+     "pos": 302796,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 19,
+     "dur_ms": 445,
+     "forced_ms": 340,
+     "max_ms": 102
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "a",
+     "pos": 87539,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 15,
+     "dur_ms": 419,
+     "forced_ms": 365,
+     "max_ms": 58
+    },
+    {
+     "src": "/gtag/js?id=G-ZHPMJ436RV&cx=c&gtm=4e69t1h2",
+     "fn": "",
+     "pos": -1,
+     "type": "event-listener",
+     "inv": "DOMWindow.onscrollend",
+     "count": 12,
+     "dur_ms": 383,
+     "forced_ms": 187,
+     "max_ms": 177
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "",
+     "pos": 343804,
+     "type": "user-callback",
+     "inv": "IntersectionObserverCallback",
+     "count": 1,
+     "dur_ms": 216,
+     "forced_ms": 99,
+     "max_ms": 216
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "",
+     "pos": 303489,
+     "type": "user-callback",
+     "inv": "TimerHandler:setTimeout",
+     "count": 13,
+     "dur_ms": 171,
+     "forced_ms": 0,
+     "max_ms": 20
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "e",
+     "pos": 127955,
+     "type": "user-callback",
+     "inv": "TimerHandler:setInterval",
+     "count": 10,
+     "dur_ms": 82,
+     "forced_ms": 0,
+     "max_ms": 17
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "i",
+     "pos": 126302,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 5,
+     "dur_ms": 30,
+     "forced_ms": 0,
+     "max_ms": 9
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "le",
+     "pos": 144376,
+     "type": "user-callback",
+     "inv": "TimerHandler:setInterval",
+     "count": 2,
+     "dur_ms": 30,
+     "forced_ms": 0,
+     "max_ms": 25
+    },
+    {
+     "src": "/gtag/js?id=G-ZHPMJ436RV&cx=c&gtm=4e69t1h2",
+     "fn": "",
+     "pos": -1,
+     "type": "user-callback",
+     "inv": "TimerHandler:setTimeout",
+     "count": 2,
+     "dur_ms": 29,
+     "forced_ms": 0,
+     "max_ms": 15
+    }
+   ],
+   "scroll": {
+    "steps": 40,
+    "capped": false,
+    "maxY": 8448,
+    "finalY": 8448,
+    "scrollHeight": 9348
+   }
+  },
+  {
+   "meta": {
+    "tool": "chrome_scroll.mjs",
+    "url": "https://fastwork.com/",
+    "viewport": "desktop",
+    "vp": {
+     "width": 1440,
+     "height": 900,
+     "deviceScaleFactor": 1,
+     "mobile": false
+    },
+    "rate": 20,
+    "run": 3,
+    "chrome": "Chrome/154.0.8037.58",
+    "host": "Apple M1 Pro x8",
+    "date": "2026-09-30T18:53:41.245Z",
+    "loadMs": 6152,
+    "scrollCapMs": 60000,
+    "wallMs": 27560,
+    "profile": "fresh temp profile per run (cold cache)",
+    "traceFile": null,
+    "page": {
+     "vw": 1440,
+     "vh": 900,
+     "dpr": 1,
+     "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+    }
+   },
+   "marks": {
+    "idle": [
+     14181.5,
+     17182.600000023842
+    ],
+    "scroll": [
+     17182.700000047684,
+     38602.5
+    ],
+    "bottom": [
+     38606.200000047684,
+     41642.40000003576
+    ]
+   },
+   "secs": [
+    {
+     "id": "",
+     "cls": "hero-track",
+     "h2": "Show the world what   can do",
+     "top": 0,
+     "h": 1800
+    },
+    {
+     "id": "people",
+     "cls": "start-selling-future is-visible is-futur",
+     "h2": "People still need pe  o ple",
+     "top": 901,
+     "h": 4084
+    },
+    {
+     "id": "profile-showcase",
+     "cls": "start-selling-profile",
+     "h2": "BigzWeb",
+     "top": 1475,
+     "h": 3350
+    },
+    {
+     "id": "",
+     "cls": "feed",
+     "h2": "Services",
+     "top": 4308,
+     "h": 492
+    },
+    {
+     "id": "",
+     "cls": "pain is-pain-dark",
+     "h2": "Freelancing is hard enough...",
+     "top": 4085,
+     "h": 2700
+    },
+    {
+     "id": "",
+     "cls": "commission shrinking",
+     "h2": "Other platforms keep taking fee. We let ",
+     "top": 5885,
+     "h": 1002
+    },
+    {
+     "id": "platform",
+     "cls": "start-selling-platform is-platform-shrin",
+     "h2": "Document your portfolio and reviews",
+     "top": 6887,
+     "h": 2461
+    }
+   ],
+   "phases": {
+    "idle": {
+     "duration_ms": 3001,
+     "frames": 90,
+     "fps": 30,
+     "median_ms": 33.2,
+     "p95_ms": 73.9,
+     "p99_ms": 115.4,
+     "max_ms": 115.4,
+     "gt20": 70,
+     "gt34": 31,
+     "gt50": 14,
+     "gt100": 1,
+     "smooth_pct": 22.2,
+     "jank_ms": 1615,
+     "time_in_gt50_ms": 944,
+     "loaf": {
+      "count": 8,
+      "total_ms": 548,
+      "blocking_ms": 112,
+      "max_ms": 112,
+      "styleLayout_ms": 33
+     },
+     "topScripts": [
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "",
+       "pos": 41873,
+       "type": "resolve-promise",
+       "inv": "CookieStore.getAll.then",
+       "count": 3,
+       "dur_ms": 195,
+       "forced_ms": 0,
+       "max_ms": 102
+      },
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "",
+       "pos": 10635,
+       "type": "user-callback",
+       "inv": "TimerHandler:setTimeout",
+       "count": 3,
+       "dur_ms": 81,
+       "forced_ms": 0,
+       "max_ms": 49
+      },
+      {
+       "src": "",
+       "fn": "",
+       "pos": -1,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 5,
+       "dur_ms": 59,
+       "forced_ms": 40,
+       "max_ms": 20
+      },
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "",
+       "pos": 72317,
+       "type": "resolve-promise",
+       "inv": "Response.json.then",
+       "count": 1,
+       "dur_ms": 39,
+       "forced_ms": 0,
+       "max_ms": 39
+      },
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "r",
+       "pos": 44962,
+       "type": "user-callback",
+       "inv": "LockGrantedCallback",
+       "count": 1,
+       "dur_ms": 21,
+       "forced_ms": 0,
+       "max_ms": 21
+      },
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "",
+       "pos": 53692,
+       "type": "event-listener",
+       "inv": "IDBRequest.onsuccess",
+       "count": 1,
+       "dur_ms": 9,
+       "forced_ms": 0,
+       "max_ms": 9
+      },
+      {
+       "src": "/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495",
+       "fn": "",
+       "pos": 3258,
+       "type": "user-callback",
+       "inv": "PerformanceObserverCallback",
+       "count": 1,
+       "dur_ms": 9,
+       "forced_ms": 0,
+       "max_ms": 9
+      },
+      {
+       "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+       "fn": "",
+       "pos": 53076,
+       "type": "event-listener",
+       "inv": "IDBRequest.onsuccess",
+       "count": 1,
+       "dur_ms": 7,
+       "forced_ms": 0,
+       "max_ms": 7
+      }
+     ]
+    },
+    "scroll": {
+     "duration_ms": 21420,
+     "frames": 181,
+     "fps": 8.5,
+     "median_ms": 99.4,
+     "p95_ms": 276.5,
+     "p99_ms": 424,
+     "max_ms": 483.6,
+     "gt20": 179,
+     "gt34": 173,
+     "gt50": 161,
+     "gt100": 87,
+     "smooth_pct": 1.1,
+     "jank_ms": 18394,
+     "time_in_gt50_ms": 20671,
+     "loaf": {
+      "count": 142,
+      "total_ms": 15784,
+      "blocking_ms": 6663,
+      "max_ms": 438,
+      "styleLayout_ms": 909
+     },
+     "topScripts": [
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "iE",
+       "pos": 75155,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 104,
+       "dur_ms": 2826,
+       "forced_ms": 1655,
+       "max_ms": 73
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "f",
+       "pos": 296345,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 40,
+       "dur_ms": 2216,
+       "forced_ms": 1551,
+       "max_ms": 239
+      },
+      {
+       "src": "",
+       "fn": "",
+       "pos": -1,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 127,
+       "dur_ms": 2120,
+       "forced_ms": 1863,
+       "max_ms": 94
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "s",
+       "pos": 135943,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 25,
+       "dur_ms": 877,
+       "forced_ms": 850,
+       "max_ms": 113
+      },
+      {
+       "src": "/analytics.js",
+       "fn": "",
+       "pos": 7999,
+       "type": "user-callback",
+       "inv": "IntersectionObserverCallback",
+       "count": 5,
+       "dur_ms": 714,
+       "forced_ms": 0,
+       "max_ms": 175
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "n",
+       "pos": 329561,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 28,
+       "dur_ms": 677,
+       "forced_ms": 636,
+       "max_ms": 36
+      },
+      {
+       "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+       "fn": "a",
+       "pos": 87539,
+       "type": "user-callback",
+       "inv": "FrameRequestCallback",
+       "count": 14,
+       "dur_ms": 378,
+       "forced_ms": 319,
+       "max_ms": 76
+      },
+      {
+       "src": "/gtag/js?id=G-ZHPMJ436RV&cx=c&gtm=4e69t0",
+       "fn": "",
+       "pos": -1,
+       "type": "event-listener",
+       "inv": "DOMWindow.onscrollend",
+       "count": 10,
+       "dur_ms": 372,
+       "forced_ms": 134,
+       "max_ms": 219
+      }
+     ]
+    },
+    "bottom": {
+     "duration_ms": 3036,
+     "frames": 134,
+     "fps": 44.1,
+     "median_ms": 18.7,
+     "p95_ms": 40.1,
+     "p99_ms": 42.5,
+     "max_ms": 51.5,
+     "gt20": 66,
+     "gt34": 14,
+     "gt50": 1,
+     "gt100": 0,
+     "smooth_pct": 50.7,
+     "jank_ms": 876,
+     "time_in_gt50_ms": 52,
+     "loaf": {
+      "count": 0,
+      "total_ms": 0,
+      "blocking_ms": 0,
+      "max_ms": 0,
+      "styleLayout_ms": 0
+     },
+     "topScripts": []
+    }
+   },
+   "sections": [
+    {
+     "section": "Show the world what   can do",
+     "frames": 31,
+     "gt34": 26,
+     "gt50": 24,
+     "gt100": 15,
+     "max_ms": 306.8,
+     "jank_ms": 3057,
+     "loaf": 17,
+     "loaf_ms": 2359
+    },
+    {
+     "section": "profile-showcase",
+     "frames": 41,
+     "gt34": 40,
+     "gt50": 37,
+     "gt100": 15,
+     "max_ms": 308.4,
+     "jank_ms": 3882,
+     "loaf": 37,
+     "loaf_ms": 3576
+    },
+    {
+     "section": "Freelancing is hard enough...",
+     "frames": 27,
+     "gt34": 27,
+     "gt50": 27,
+     "gt100": 21,
+     "max_ms": 299.9,
+     "jank_ms": 3241,
+     "loaf": 25,
+     "loaf_ms": 2997
+    },
+    {
+     "section": "Services",
+     "frames": 9,
+     "gt34": 9,
+     "gt50": 9,
+     "gt100": 8,
+     "max_ms": 483.6,
+     "jank_ms": 1624,
+     "loaf": 8,
+     "loaf_ms": 1479
+    },
+    {
+     "section": "Other platforms keep taking fee. We let ",
+     "frames": 20,
+     "gt34": 20,
+     "gt50": 19,
+     "gt100": 11,
+     "max_ms": 326.4,
+     "jank_ms": 2368,
+     "loaf": 17,
+     "loaf_ms": 1801
+    },
+    {
+     "section": "platform",
+     "frames": 53,
+     "gt34": 51,
+     "gt50": 45,
+     "gt100": 17,
+     "max_ms": 424,
+     "jank_ms": 4222,
+     "loaf": 38,
+     "loaf_ms": 3572
+    }
+   ],
+   "topScriptsAll": [
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "iE",
+     "pos": 75155,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 104,
+     "dur_ms": 2826,
+     "forced_ms": 1655,
+     "max_ms": 73
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "f",
+     "pos": 296345,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 40,
+     "dur_ms": 2216,
+     "forced_ms": 1551,
+     "max_ms": 239
+    },
+    {
+     "src": "",
+     "fn": "",
+     "pos": -1,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 132,
+     "dur_ms": 2179,
+     "forced_ms": 1903,
+     "max_ms": 94
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "s",
+     "pos": 135943,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 25,
+     "dur_ms": 877,
+     "forced_ms": 850,
+     "max_ms": 113
+    },
+    {
+     "src": "/analytics.js",
+     "fn": "",
+     "pos": 7999,
+     "type": "user-callback",
+     "inv": "IntersectionObserverCallback",
+     "count": 5,
+     "dur_ms": 714,
+     "forced_ms": 0,
+     "max_ms": 175
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "n",
+     "pos": 329561,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 28,
+     "dur_ms": 677,
+     "forced_ms": 636,
+     "max_ms": 36
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "a",
+     "pos": 87539,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 14,
+     "dur_ms": 378,
+     "forced_ms": 319,
+     "max_ms": 76
+    },
+    {
+     "src": "/gtag/js?id=G-ZHPMJ436RV&cx=c&gtm=4e69t0",
+     "fn": "",
+     "pos": -1,
+     "type": "event-listener",
+     "inv": "DOMWindow.onscrollend",
+     "count": 10,
+     "dur_ms": 372,
+     "forced_ms": 134,
+     "max_ms": 219
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "l",
+     "pos": 302796,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 8,
+     "dur_ms": 290,
+     "forced_ms": 267,
+     "max_ms": 98
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "",
+     "pos": 343804,
+     "type": "user-callback",
+     "inv": "IntersectionObserverCallback",
+     "count": 1,
+     "dur_ms": 282,
+     "forced_ms": 107,
+     "max_ms": 282
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "",
+     "pos": 303489,
+     "type": "user-callback",
+     "inv": "TimerHandler:setTimeout",
+     "count": 18,
+     "dur_ms": 249,
+     "forced_ms": 0,
+     "max_ms": 24
+    },
+    {
+     "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+     "fn": "",
+     "pos": 41873,
+     "type": "resolve-promise",
+     "inv": "CookieStore.getAll.then",
+     "count": 3,
+     "dur_ms": 195,
+     "forced_ms": 0,
+     "max_ms": 102
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "e",
+     "pos": 127955,
+     "type": "user-callback",
+     "inv": "TimerHandler:setInterval",
+     "count": 20,
+     "dur_ms": 143,
+     "forced_ms": 0,
+     "max_ms": 13
+    },
+    {
+     "src": "/_app/immutable/nodes/2.DyWL8TcE.js",
+     "fn": "i",
+     "pos": 126302,
+     "type": "user-callback",
+     "inv": "FrameRequestCallback",
+     "count": 20,
+     "dur_ms": 126,
+     "forced_ms": 0,
+     "max_ms": 10
+    },
+    {
+     "src": "/libs/analytics-browser-gtm-2.45.3-min.js.gz",
+     "fn": "",
+     "pos": 10635,
+     "type": "user-callback",
+     "inv": "TimerHandler:setTimeout",
+     "count": 3,
+     "dur_ms": 81,
+     "forced_ms": 0,
+     "max_ms": 49
+    }
+   ],
+   "scroll": {
+    "steps": 42,
+    "capped": false,
+    "maxY": 8448,
+    "finalY": 8448,
+    "scrollHeight": 9348
+   }
+  }
+ ]
+}
