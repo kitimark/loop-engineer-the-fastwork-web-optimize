@@ -1,0 +1,294 @@
+# fastwork mirror fix: wave1-partial
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply wave1-partial
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2400,6 +2400,11 @@
+     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+     visibility 0s linear 1.6s;
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 1.6s;
+   transform: translateY(48px);
+ }
+ .start-selling-future.is-visible > .start-selling-future-card {
+@@ -2410,6 +2415,10 @@
+   transition:
+     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    filter 0.9s linear(0, 0.0688 2%, 0.1662 5%, 0.2560 8%, 0.3634 12%, 0.4570 16%, 0.5376 20%, 0.6219 25%, 0.6906 30%, 0.7565 36%, 0.8154 43%, 0.8599 50%, 0.9057 60%, 0.9370 70%, 0.9584 80%, 0.9732 90%, 0.9823 99%, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+ }
+ .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
+@@ -6513,16 +6522,24 @@
+   opacity: 0;
+ }
+ .start-selling-platform-cred:not(.is-static).is-enter .start-selling-platform-cred-card {
+-  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
++  animation:
++    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
++    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
+ }
+-@keyframes start-selling-cred-card-in {
++@keyframes start-selling-entry-blur-in {
+   0% {
+     filter: blur(8px);
++  }
++  to {
++    filter: blur();
++  }
++}
++@keyframes start-selling-cred-card-in {
++  0% {
+     opacity: 0;
+     transform: translateY(18px) scale(0.96);
+   }
+   to {
+-    filter: blur();
+     opacity: 1;
+     transform: translateY(0) scale(1);
+   }
+@@ -7509,21 +7526,23 @@
+   opacity: 0;
+ }
+ .start-selling-platform-profile:not(.is-static).is-enter .start-selling-platform-profile-phone {
+-  animation: 0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in;
++  animation:
++    0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in,
++    0.62s cubic-bezier(0.16, 1, 0.3, 1) backwards start-selling-entry-blur-in;
+ }
+ .start-selling-platform-profile:not(.is-static).is-enter
+   .start-selling-platform-profile-reviews
+   .start-selling-platform-cred-card {
+-  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
++  animation:
++    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
++    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
+ }
+ @keyframes start-selling-profile-phone-in {
+   0% {
+-    filter: blur(8px);
+     opacity: 0;
+     transform: translateY(18px) scale(0.96);
+   }
+   to {
+-    filter: blur();
+     opacity: 1;
+     transform: translateY(0) scale(1);
+   }
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3103,8 +3103,22 @@
+       n = 1,
+       r = 0,
+       i = 0,
++      // fix(commission-forced-layout): the three A() queries, parsed once instead of 3 matchMedia() per frame
++      _cq = [
++        `(max-width: 1000px)`,
++        `(max-device-width: 500px)`,
++        `(hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ].map((e) => window.matchMedia(e)),
++      _cc, // last compact value j() ran for
++      _ce, // last written --commission-enter-shrink
++      _cs, // last written --commission-shrink
++      _ch, // last written runway height
+       a = () => {
+-        if (((t = 0), z(y, A(), !0), !u || !c)) return;
++        t = 0;
++        let k = _cq.some((e) => e.matches);
++        // line-count check j() (Range.getClientRects) only when compact flips; the ResizeObserver on the
++        // h2 covers width/font/text changes. It no longer runs after the style writes every frame.
++        if ((z(y, k, !0), k !== _cc && ((_cc = k), j()), !u || !c)) return;
+         let i = window.innerHeight,
+           o = u.getBoundingClientRect(),
+           l = c.getBoundingClientRect(),
+@@ -3112,16 +3126,24 @@
+           p = E(l, i),
+           m = e.matches ? +(f >= 0.5) : w(f),
+           h = e.matches ? +(p >= 0.5) : w(p);
+-        (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
+-          (r += (h - r) * (e.matches ? 1 : 0.22)),
+-          Math.abs(m - n) < 8e-4 && (n = m),
+-          Math.abs(h - r) < 8e-4 && (r = h),
+-          c.style.setProperty(`--commission-enter-shrink`, String(n)),
+-          c.style.setProperty(`--commission-shrink`, String(Math.max(n, r))),
++        // compact: CSS forces --commission-shrink-scale:1 / radius 0 and hides the runway, so the eased
++        // values are invisible; snap them (no easing loop) and skip the --commission-* writes.
++        (k
++          ? ((n = m), (r = h))
++          : (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
++            (r += (h - r) * (e.matches ? 1 : 0.22)),
++            Math.abs(m - n) < 8e-4 && (n = m),
++            Math.abs(h - r) < 8e-4 && (r = h)),
+           z(g, o.top < i * 0.995 && f > 0.04, !0),
+-          z(v, p > 0.04),
+-          (d.style.height = s(y) || e.matches ? `` : `${i * 0.06}px`),
+-          j(),
++          z(v, p > 0.04));
++        // writes only when the value changed (same values as before, no redundant style mutations)
++        let _ve = String(n),
++          _vs = String(Math.max(n, r)),
++          _vh = k || e.matches ? `` : `${i * 0.06}px`;
++        (k ||
++          (_ve !== _ce && c.style.setProperty(`--commission-enter-shrink`, (_ce = _ve)),
++          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs))),
++          _vh !== _ch && (d.style.height = _ch = _vh),
+           (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
+       },
+       o = () => {
+@@ -4726,6 +4748,10 @@
+         ((O = null), z(E, null));
+       },
+       d = () => {
++        // fix(pain-offscreen-notes): nothing to clear -> skip the per-frame querySelector, the
++        // .commission-card rect read (forced layout after earlier writers) and the no-op reactive
++        // write z(T, []) that re-ran the notes each-block every scroll frame.
++        if (s(T).length === 0) return;
+         let e = document.querySelector(`.commission-card`);
+         e && e.getBoundingClientRect().top < window.innerHeight * 0.995 && z(T, [], !0);
+       };
+@@ -10776,11 +10802,14 @@
+     let t = ie(e);
+     return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+   }
++  // Cache the MediaQueryLists: .matches is live, so behaviour is unchanged, but the per-frame
++  // profile callback no longer builds (and leaves for GC) up to four new MediaQueryLists per frame.
++  let reducedMotionMq, desktopMq;
+   function oe() {
+-    return window.matchMedia(`(prefers-reduced-motion: reduce)`).matches;
++    return (reducedMotionMq ||= window.matchMedia(`(prefers-reduced-motion: reduce)`)).matches;
+   }
+   function ce() {
+-    return !oe() && !s(T) && window.matchMedia(`(min-width: 861px)`).matches;
++    return !oe() && !s(T) && (desktopMq ||= window.matchMedia(`(min-width: 861px)`)).matches;
+   }
+   function le() {
+     let e = window.innerHeight * 1.45,
+@@ -11294,6 +11323,10 @@
+   ne(() => {
+     let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
+       t = window.matchMedia(`(max-width: 860px)`),
++      // Same query as the CSS rule that forces --future-shrink-scale: 1 / --future-shrink-radius: 0px.
++      shrinkOffMq = window.matchMedia(
++        `(max-width: 860px), (max-device-width: 500px), (hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ),
+       n = [],
+       r = [],
+       i = 0,
+@@ -11312,6 +11345,10 @@
+         if (g) {
+           let t = T(g.getBoundingClientRect(), window.innerHeight),
+             n = e.matches ? +(t >= 0.5) : w(t);
++          // Phones/tablets: --future-shrink has no visible effect, so don't write it and don't
++          // keep an easing rAF loop alive. Track the target so a switch to desktop starts from it.
++          if (shrinkOffMq.matches) ((o = n), z(b, t > 0.04));
++          else
+           ((o += (n - o) * (e.matches ? 1 : 0.22)),
+             Math.abs(n - o) < 8e-4 && (o = n),
+             h.style.setProperty(`--future-shrink`, String(o)),
+@@ -11360,6 +11397,7 @@
+     return (
+       e.addEventListener(`change`, u),
+       t.addEventListener(`change`, u),
++      shrinkOffMq.addEventListener(`change`, u),
+       _(),
+       l(),
+       () => {
+@@ -11367,7 +11405,11 @@
+         for (let e of r) e();
+         ((r.length = 0), i && window.cancelAnimationFrame(i));
+         for (let e of n) window.clearTimeout(e);
+-        ((n.length = 0), C(), e.removeEventListener(`change`, u), t.removeEventListener(`change`, u));
++        ((n.length = 0),
++          C(),
++          e.removeEventListener(`change`, u),
++          t.removeEventListener(`change`, u),
++          shrinkOffMq.removeEventListener(`change`, u));
+       }
+     );
+   });
+@@ -12433,21 +12475,28 @@
+   ne(() => {
+     let e = 0,
+       t = matchMedia(`(prefers-reduced-motion: reduce)`),
++      // Same query as the CSS rule that forces --platform-shrink-scale: 1 / radius 0 / transform: none.
++      shrinkOffMq = matchMedia(
++        `(max-width: 860px), (max-device-width: 500px), (hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ),
+       n = () => {
+         e = 0;
+         let n = c.getBoundingClientRect(),
+           r = innerHeight * 0.85,
+           i = innerHeight * 0.35,
+           a = n.bottom >= r ? 0 : n.bottom <= i ? 1 : (r - n.bottom) / (r - i);
+-        (z(u, t.matches ? +(a >= 0.5) : p(a), !0), z(d, a > 0.04));
++        // Phones/tablets: the inline --platform-shrink has no visible effect; skip the per-frame
++        // style-attribute rewrite. is-platform-shrinking (background colour) stays live.
++        (shrinkOffMq.matches || z(u, t.matches ? +(a >= 0.5) : p(a), !0), z(d, a > 0.04));
+       },
+       r = () => {
+         e ||= requestAnimationFrame(n);
+       };
+     n();
+     let i = dE(r, { deferRendering: !0, element: o });
++    shrinkOffMq.addEventListener(`change`, r);
+     return () => {
+-      (e && cancelAnimationFrame(e), i());
++      (e && cancelAnimationFrame(e), i(), shrinkOffMq.removeEventListener(`change`, r));
+     };
+   });
+   var h = WM();
+@@ -12952,17 +13001,27 @@
+       ? !1
+       : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
+   }
++  // perf(nav-hit-test): same answer as "nav pointer-events:none -> elementFromPoint -> restore", but
++  // without the two inline-style writes (each invalidated the style of the whole nav subtree and forced
++  // a recalc inside the scroll frame). elementsFromPoint lists every hit box top-down; skip the nav's
++  // own boxes except those that stay hit-testable under pointer-events:none on the nav because they set
++  // pointer-events:auto themselves (.start-selling-top-nav-actions, the expanded .start-selling-morph-panel).
+   function F() {
+     let e = T.getBoundingClientRect(),
+       t = e.left + e.width / 2,
+-      n = e.top + Math.min(e.height, 64) / 2,
+-      r = T.style.pointerEvents;
+-    T.style.pointerEvents = `none`;
+-    let i = document.elementFromPoint(t, n);
+-    return ((T.style.pointerEvents = r), j(i));
++      n = e.top + Math.min(e.height, 64) / 2;
++    for (let r of document.elementsFromPoint(t, n))
++      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
++    return j(null);
++  }
++  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
++  let __navEls = {};
++  function __navEl(e) {
++    let t = __navEls[e];
++    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
+   }
+   function ee() {
+-    let e = document.querySelector(`.start-selling-profile-sticky`);
++    let e = __navEl(`.start-selling-profile-sticky`);
+     if (!e) return !1;
+     let t = window.getComputedStyle(e);
+     if (t.position !== `sticky`) return !1;
+@@ -12999,7 +13058,7 @@
+     e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
+     let _ = () => {
+         (z(v, ee(), !0), z(g, F(), !0));
+-        let t = document.querySelector(`.hero-track`);
++        let t = __navEl(`.hero-track`);
+         if (!t || e.matches) {
+           z(p, !0);
+           return;
