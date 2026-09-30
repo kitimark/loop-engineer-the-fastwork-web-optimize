@@ -10,13 +10,13 @@
 // Dedup key (`sig`): the reporter's --sig if given, otherwise the first line of the error text with
 // paths, URLs, hex ids and numbers replaced by placeholders. Same key as an active incident = join it.
 // Same key as a *resolved* incident whose fix commit is not in the reporter's HEAD = "known, rebase".
-import { mkdirSync, readFileSync, writeFileSync, renameSync, readdirSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
 import { sharedStateDir, REPO } from './paths.mjs';
 import { withGuard } from './lock.mjs';
+import { writeJson, readJson as readOne, readAll, nextId, idParser, iso, clip as clipText } from './store.mjs';
 
 export const CLASSES = ['tool', 'env', 'baseline', 'research', 'fix', 'unknown'];
 export const STATUSES = ['open', 'triaged', 'fixing', 'resolved', 'parked'];
@@ -28,14 +28,7 @@ const MAX_TEXT = 8000;
 
 export const incidentDir = () => join(sharedStateDir(), 'incidents');
 const fileOf = (id) => join(incidentDir(), `${id}.json`);
-const iso = (t = Date.now()) => new Date(t).toISOString();
-const clip = (s, n = MAX_TEXT) => (s == null ? undefined : String(s).length > n ? '…' + String(s).slice(-n) : String(s));
-
-function writeJson(f, v) {
-  const t = `${f}.${process.pid}.${randomBytes(3).toString('hex')}.tmp`;
-  writeFileSync(t, JSON.stringify(v, null, 1));
-  renameSync(t, f);
-}
+const clip = (s, n = MAX_TEXT) => clipText(s, n);
 
 function git(args, cwd = REPO) {
   const r = spawnSync('git', args, { cwd, encoding: 'utf8', timeout: 5000 });
@@ -43,11 +36,7 @@ function git(args, cwd = REPO) {
 }
 
 /** "3", "i-3", "I-003" -> "I-003". Throws on anything else. */
-export function parseId(s) {
-  const m = String(s ?? '').trim().match(/^(?:i-?)?0*(\d{1,6})$/i);
-  if (!m) throw new Error(`bad incident id "${s}" (expected e.g. I-003)`);
-  return `I-${m[1].padStart(3, '0')}`;
-}
+export const parseId = idParser('I', 'incident');
 
 /** First non-empty line of an error, with volatile parts (paths, URLs, hex, numbers) replaced. */
 export function normalizeError(text) {
@@ -70,14 +59,9 @@ export function signature({ sig, error } = {}) {
   return n ? 'err:' + n : '';
 }
 
-function readOne(f) { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return null; } }
-
 /** All incidents, oldest first; active ones only unless `all`. */
 export function list({ all = false } = {}) {
-  let names = [];
-  try { names = readdirSync(incidentDir()).filter((f) => /^I-\d+\.json$/.test(f)); } catch {}
-  const items = names.map((f) => readOne(join(incidentDir(), f))).filter(Boolean);
-  items.sort((a, b) => Number(a.id.slice(2)) - Number(b.id.slice(2)));
+  const items = readAll(incidentDir(), 'I');
   return all ? items : items.filter((i) => ACTIVE.has(i.status));
 }
 
@@ -137,9 +121,8 @@ export async function open(report, { cwd = REPO } = {}) {
         recurrenceOf = fixed.id; // the fix is in this HEAD and it still fails: a regression
       }
     }
-    const n = all.reduce((m, i) => Math.max(m, Number(i.id.slice(2)) || 0), 0) + 1;
     const inc = {
-      id: `I-${String(n).padStart(3, '0')}`,
+      id: nextId(all, 'I'),
       title: String(title).slice(0, 200),
       status: 'open',
       class: report.cls || 'unknown',
