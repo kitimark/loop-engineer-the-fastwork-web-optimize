@@ -1,0 +1,17 @@
+# fastwork mirror fix: large-area-blur--platform-none
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply large-area-blur--platform-none
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -5389,7 +5389,7 @@
+   --morph-fade: 1;
+   box-sizing: border-box;
+   color: #151a23;
+-  filter: blur(calc((1 - var(--morph-fade)) * 12px));
++  filter: none;
+   opacity: var(--morph-fade);
+   width: 100%;
+   padding: 0 56px 144px;
