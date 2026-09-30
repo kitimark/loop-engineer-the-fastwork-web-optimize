@@ -88,9 +88,17 @@ export class CDP {
         for (const l of this.listeners) l(msg);
       }
     };
+    // If the browser dies (crash, killed, profile taken over), fail every pending and later call instead
+    // of awaiting a reply forever: a hung verify.mjs would hold the chrome-measure lock indefinitely.
+    this.ws.onclose = () => {
+      this.closedError = new Error('CDP connection closed (did Chrome exit or crash?)');
+      for (const p of this.pending.values()) p.reject(this.closedError);
+      this.pending.clear();
+    };
     return new Promise((res, rej) => { this.ws.onopen = res; this.ws.onerror = rej; });
   }
   send(method, params = {}, sessionId) {
+    if (this.closedError) return Promise.reject(new Error(`${method}: ${this.closedError.message}`));
     const id = ++this.id;
     const msg = { id, method, params };
     if (sessionId) msg.sessionId = sessionId;

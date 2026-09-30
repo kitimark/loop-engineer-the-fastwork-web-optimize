@@ -25,8 +25,10 @@ before(() => {
 });
 
 test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async () => {
-  const envB = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state-ab'), FAKE_CHROME_LOG: join(repo.root, 'ab.jsonl') };
-  const envA = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state-aa'), FAKE_CHROME_LOG: join(repo.root, 'aa.jsonl') };
+  // Both runs share one lock dir, as in real use: they serialize through chrome-measure (they also share
+  // the checkout's Chrome profile dir, so running them unserialized would make them fight over one browser).
+  const envB = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'ab.jsonl') };
+  const envA = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'aa.jsonl') };
   const [ab, aa] = await Promise.all([
     nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--no-screens'], { cwd: repo.wt, env: envB }),
     nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', '--aa', '--runs', '1', '--no-screens'], { cwd: repo.wt, env: envA }),
@@ -81,8 +83,8 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(aaRes.patch, null);
   assert.deepEqual(aaRes.servedCheck, []);
   assert.equal(aaRes.metrics.scroll.fps.delta, 0);
-  // no lock left behind in either state dir
-  for (const e of [envA, envB]) assert.equal(existsSync(join(e.FW_STATE_DIR, 'locks', 'chrome-measure.json')), false);
+  // no lock left behind
+  assert.equal(existsSync(join(repo.root, 'state', 'locks', 'chrome-measure.json')), false);
 });
 
 test('SIGTERM on ab: no server, verify.mjs or browser left running, lock released', async () => {

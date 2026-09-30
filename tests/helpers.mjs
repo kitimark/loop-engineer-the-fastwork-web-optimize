@@ -77,7 +77,8 @@ export function runAsync(cmd, args, { cwd = REPO, env = {}, timeout = 120000 } =
     let stdout = '', stderr = '';
     c.stdout.on('data', (d) => (stdout += d));
     c.stderr.on('data', (d) => (stderr += d));
-    const t = setTimeout(() => c.kill('SIGKILL'), timeout);
+    // on timeout: SIGTERM first (the tools clean up their servers/Chrome/locks), SIGKILL if that fails
+    const t = setTimeout(() => { c.kill('SIGTERM'); setTimeout(() => c.kill('SIGKILL'), 5000).unref(); }, timeout);
     c.on('exit', (code, signal) => { clearTimeout(t); children.delete(c); res({ code, signal, stdout, stderr, out: stdout + stderr }); });
   });
 }

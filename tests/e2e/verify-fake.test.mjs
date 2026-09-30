@@ -115,3 +115,13 @@ test('SIGTERM mid-run: lock released and the browser does not outlive verify.mjs
   if (!gone) process.kill(chromePid, 'SIGKILL');
   assert.ok(gone, 'Chrome was left running (and would keep the profile dir locked for the next run)');
 });
+
+test('browser crash mid-run: verify.mjs fails fast (no hang) and releases the lock', async () => {
+  const { env, args } = setup();
+  const t0 = Date.now();
+  const r = await nodeAsync(VERIFY, args('crashy'), { env: { ...env, FAKE_CHROME_CRASH_AT: 'Emulation.setCPUThrottlingRate' }, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /CDP connection closed/);
+  assert.ok(Date.now() - t0 < 30000, 'failed fast');
+  assert.equal(holder(env.FW_STATE_DIR), null, 'lock released');
+});

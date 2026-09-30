@@ -6,6 +6,7 @@
 // the summaries in verify's result JSON can be checked exactly.
 //
 // Env: FAKE_CHROME_LOG=<file>  append one JSON line per CDP command ({pid, method, params, sessionId})
+//      FAKE_CHROME_CRASH_AT=<method>  exit abruptly (no reply) when this CDP method arrives, like a browser crash
 import http from 'node:http';
 import { createHash } from 'node:crypto';
 import { writeFileSync, appendFileSync } from 'node:fs';
@@ -39,6 +40,7 @@ let n = 0;
 function handle(msg, send) {
   const { id, method, params = {}, sessionId } = msg;
   log({ method, params: method === 'Runtime.evaluate' ? { expression: params.expression.slice(0, 120) } : params, sessionId });
+  if (process.env.FAKE_CHROME_CRASH_AT === method) { log({ method: '(crash)', params: {} }); process.exit(1); }
   const reply = (result) => send({ id, result, ...(sessionId ? { sessionId } : {}) });
   const event = (m, p) => send({ method: m, params: p, sessionId });
   switch (method) {
