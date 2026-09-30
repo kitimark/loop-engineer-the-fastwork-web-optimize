@@ -85,10 +85,38 @@ focus outline on the button would no longer blur/fade with it).
   style+layout per scroll frame fewer (the `s` @135943 LoAF entry disappears).
 - No per-frame write of an inherited custom property on `.hero`: the hero subtree is no longer
   restyled every frame (fewer `UpdateLayoutTree` / style recalc).
-- The exit itself runs as compositor animations (opacity/transform/translate on a scroll timeline:
-  Chrome 115+; Safari 26.4+ runs scroll-driven animations threaded), in sync with the scroll, not one
-  frame late as the rAF-in-rAF JS was.
+- The exit itself runs as scroll-driven animations of compositor-eligible properties, in sync with
+  the scroll instead of one frame late as the rAF-in-rAF JS was.
+  - Chrome 115+ runs them on the compositor.
+  - **Safari runs scroll-driven animations off the main thread only from 26.4.** 26.0-26.3 support them
+    but tick them on the main thread (`research/architecture/webkit.md` §1).
+  - The test iPhone runs **iOS 26.6.1**, so the threaded claim holds there. 26.5 also fixed the
+    view-timeline progress near 0 %/100 %, bfcache and `animation-play-state` bugs.
+  - On 26.0-26.3 the fix still removes the per-frame rect read, the forced layout and the inherited
+    custom-property write on `.hero`. The animations then cost a main-thread style update of the
+    animated elements only, instead of a compositor tick.
+  - `@supports (animation-timeline: view())` can't tell the two apart, so those versions take the
+    CSS path too. That's still cheaper than the baseline JS path (inference, not measured).
 - The scroll cue's blur exists only while exiting (no permanent `blur(0)` layer effect).
+
+### Engine checks (architecture review, `research/architecture/webkit.md`)
+
+- **Threaded properties only.** The exit keyframes animate only `opacity`, `transform`, `translate`
+  and `filter`. All of these are in WebKit's `acceleratedPropertyFromCSSProperty` list and are
+  compositor properties in Chrome.
+- **Matching filter lists.** The separate blur animation `svelte-1p2vpne-hero-exit-blur` goes
+  `blur(0px)` → `blur(18px)`, never from `none`, so WebKit can accelerate it.
+  - The element's base `filter: none` applies only outside the animation's active phase: fill `none`,
+    range `contain 0.05% contain 100%`. So at rest and at opacity 0 there is no filter at all, and
+    there's never an interpolation from `none`.
+  - Chrome still paints a blur whose radius changes (filter animations aren't composited there).
+    That's why the blur is its own animation, apart from the opacity/transform one.
+- **No `var()` of animated custom properties (P3).** The keyframes use no variables except
+  `translate: var(--scatter-x) var(--scatter-y)` in `hero-exit-card`. Those two are static per card:
+  set in CSS for the phone deck (2090-2109) and inline once per card by JS (4139). They aren't
+  animated or registered with `@property`. `--entered`, `--copy-in` and `--exit-*` are not referenced.
+- **Still to verify on the device:** the review asks for Web Inspector Timelines on the iPhone (no
+  per-frame style recalc attributed to the animation). iPhone pending.
 
 Expected movement: scroll-phase LoAF / forced layout ms down, frames > 20/34 ms down in the top part of
 the page; morph phase unchanged.
@@ -98,7 +126,8 @@ the page; morph phase unchanged.
 `node tools/fix.mjs ab hero-exit-scroll-timeline --runs 3`: **plain baseline** (the combined wave-1 base
 wasn't announced yet), mobile 430x932 DPR 3, CPU 6x, `--vendors=local --https --latency 150`.
 Host load was 9.1-19.1 during the runs, well above the A/A's; the final `--runs 5` on the combined
-base is still to do.
+base is still to do. These runs predate I-002 (idle phase). Compare them only with runs from the same
+tools version.
 
 | mobile 6x, n=3 | baseline median [min-max] | patched median [min-max] | delta | verdict |
 |---|---|---|---|---|
