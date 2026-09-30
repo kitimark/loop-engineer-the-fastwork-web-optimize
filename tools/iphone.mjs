@@ -71,9 +71,9 @@ function summarize(res) {
 
 async function main() {
   if (cmd === 'status') {
-    const dev = await (await fetch(`http://localhost:${DEVICE_PORT}/json`, { signal: AbortSignal.timeout(4000) })).json().catch((e) => ({ error: e.message }));
+    const dev = await fetch(`http://localhost:${DEVICE_PORT}/json`, { signal: AbortSignal.timeout(4000) }).then((r) => r.json()).catch((e) => ({ error: `proxy not reachable on :${DEVICE_PORT} (${e.cause?.code || e.message})` }));
     console.log('device:', JSON.stringify(dev));
-    console.log('tabs:', JSON.stringify((await tabs().catch((e) => [{ error: e.message }])).map((t) => ({ url: t.url, title: t.title, error: t.error }))));
+    console.log('tabs:', JSON.stringify((await tabs().catch((e) => [{ error: `proxy not reachable on :${PORT} (${e.cause?.code || e.message})` }])).map((t) => ({ url: t.url, title: t.title, error: t.error }))));
     const s = lockStatus('iphone');
     console.log('lease:', s.holder ? `${s.holder.owner}${s.stale ? ' (stale: ' + s.stale + ')' : ''} until ${s.holder.expiresAt}` : 'free', s.queue.length ? `queue: ${s.queue.map((w) => w.owner).join(', ')}` : '');
     return;

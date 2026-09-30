@@ -60,6 +60,9 @@ export function mirrorHome() {
  */
 export function resolveTree(p) {
   if (isAbsolute(p)) return p;
+  // An explicit $FW_MIRROR_HOME wins over a site/ that happens to exist in this checkout (tests point
+  // the tools at a fixture baseline this way, even when run from the main checkout).
+  if (process.env.FW_MIRROR_HOME) { const h = resolve(process.env.FW_MIRROR_HOME, p); if (existsSync(h)) return h; }
   const local = resolve(REPO, p);
   if (existsSync(local)) return local;
   return resolve(mirrorHome(), p);

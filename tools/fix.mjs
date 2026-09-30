@@ -150,8 +150,11 @@ function cmdShow(file) {
 function cmdGrep(pattern, files) {
   requireBase();
   if (!pattern) die('usage: node tools/fix.mjs grep <regex> [file...]');
-  const re = new RegExp(pattern, flag('i') ? 'i' : '');
+  const ci = flag('i') || files.includes('-i'); // `-i` like grep (it is not a --flag, so it lands in files)
+  files = files.filter((f) => f !== '-i');
+  const re = new RegExp(pattern, ci ? 'i' : '');
   const targets = files.length ? files.map((f) => join(BASE, relPath(f))) : [...walk(join(BASE, '_app')).filter((f) => /\.(js|css)$/.test(f)), join(BASE, 'index.html')];
+  for (const f of targets) if (!existsSync(f)) die(`not in baseline: ${relative(BASE, f)}`);
   const max = Number(opt('max', 200));
   let n = 0;
   for (const f of targets) {
@@ -346,7 +349,8 @@ async function cmdAb(t) {
   const onOv = ON ? ['--overlay', overlayDir(ON)] : [];
   const base = await startServer('baseline', join(outDir, 'serve-base.json'), onOv);
   const fix = await startServer('patched', join(outDir, 'serve-fix.json'), aa ? onOv : ['--overlay', [overlayDir(t), ...(ON ? [overlayDir(ON)] : [])].join(',')]);
-  const kill = () => { for (const s of [base, fix]) try { s.proc.kill(); } catch {} };
+  let verifyProc = null; // killed with the servers, so a SIGTERM'd ab leaves no measurement (or Chrome) running
+  const kill = () => { for (const p of [base.proc, fix.proc, verifyProc]) try { p?.kill(); } catch {} };
   process.on('exit', kill);
   for (const s of ['SIGINT', 'SIGTERM']) process.once(s, () => { kill(); process.exit(130); });
   console.log(`baseline ${base.url}   patched ${fix.url}${aa ? '   (A/A: both baseline)' : ''}`);
@@ -366,7 +370,8 @@ async function cmdAb(t) {
 
   const verifyFile = join(outDir, 'verify.json');
   const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : [])];
-  const code = await new Promise((res) => spawn(process.execPath, vArgs, { stdio: 'inherit' }).on('exit', (c) => res(c)));
+  verifyProc = spawn(process.execPath, vArgs, { stdio: 'inherit' });
+  const code = await new Promise((res) => verifyProc.on('exit', (c) => res(c)));
   kill();
   if (code !== 0 || !existsSync(verifyFile)) die(`verify.mjs failed (${code})`, 1);
 

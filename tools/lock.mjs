@@ -73,6 +73,9 @@ async function main() {
     if (!rest.length) throw new Error('usage: node tools/lock.mjs run <resource> --owner X -- <cmd> [args]');
     const { release: rel } = await acquire(resource, { owner, kind: 'process', meta, timeoutSec: Number(opt('timeout', 3600)) });
     const child = spawn(rest[0], rest.slice(1), { stdio: 'inherit' });
+    // acquire() releases the lock and exits on these signals; stop the command first, or it would keep
+    // running (e.g. a throttled measurement) after the lock was handed to the next waiter.
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { try { child.kill(sig); } catch {} });
     const code = await new Promise((r) => child.on('exit', (c, s) => r(c ?? (s ? 1 : 0))));
     rel();
     return code;
