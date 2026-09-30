@@ -194,3 +194,34 @@ the next plan (≤ 7 items).
 - a KPI alarm: clean-run share < 50 % over the last 5 A/Bs, queue wait > 30 min, lead incoming > 40/h,
   an incident active > 60 min, or the user asks a process question the digest should have answered;
 - a new user decision (add it to section 1 first: literal request, what it changed, intent).
+
+## Iteration 1.5: retro on the short-lane blockage (user question, 2026-09-30 23:30Z)
+
+**What happened.** Non-tooling agents ran the full `npm test` in the chrome-measure short lane, and short
+jobs waited behind 25-40 min A/B leases. ts-bench was queued from 23:01, and from 23:07 there were 4-6 short
+waiters at once. The user noticed first; the lead then opened I-020 and I-021.
+
+**Root cause: management watched throughput and order, not waiting time.**
+- The signals were visible:
+  - `lock.mjs status` listed the short waiters with their `since` times;
+  - agents wrote "queued short to commit";
+  - the baseline had queue wait 17/45 min with 9 in the queue.
+- Nobody had a threshold that turned them into a defect:
+  - kpi.mjs estimated wait per A/B, not per lane, and ran only on request;
+  - mgmt-ops read the waiters as queue order, because CLAUDE.md says short jobs "wait for the current holder only";
+  - the lead was saturated by relays (133 messages/h) and read the waits as expected.
+- No routine asked what each agent was waiting on, or checked a holder's age and CPU against its expected
+  length.
+
+**Detection change.** `node research/management/tools/kpi.mjs --friction` takes about 6 s, reads the store
+only and exits 2 on an alarm. For every holder and waiter it prints the lane, the age, the checkout's lag
+behind main, and the holder's process-tree CPU.
+- Alarms: SHORT-WAIT > 10 min, NORMAL-WAIT > 30 min, QUEUE-LONG > 3, HOLDER-OVERDUE > 2x expected,
+  HOLDER-IDLE (holder tree ~0 CPU while others wait), QUIET-WASTED (quiet host but blocked lock),
+  INCIDENT-UNOWNED > 60 min.
+- Warnings: OLD-TOOLS holder or waiter (> 20 commits behind), IPHONE-PARKED / IPHONE-STALE, TOOLS-TOUCHED
+  on fix branches, ORPHAN-SERVERS, STRAY-CHROME.
+- The routine (mgmt-ops, every check-in): paste the ALARM lines into the digest. An alarm present in two
+  consecutive check-ins becomes an incident candidate for the lead, with a recommendation.
+- First run (23:28Z): 5 SHORT-WAIT alarms (11-21 min) and QUEUE-LONG (9 waiting, 6 of them short) on a quiet
+  host (load1 3.3). It would have fired at about 23:12.

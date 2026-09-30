@@ -55,6 +55,92 @@ const worktrees = [];
 const checkouts = worktrees.map((w) => w.path).filter((p) => existsSync(p));
 const branches = G(['for-each-ref', '--format=%(refname:short)', 'refs/heads']).split('\n').filter(Boolean);
 
+// ---------------------------------------------------------------- friction scan (--friction): who waits on what, now
+// Retro 1.5: agents were blocked on process (short jobs behind 25-40 min A/Bs, I-020/I-021) and the signals
+// were in `lock.mjs status` for 20+ min before the user noticed. This mode is cheap (~6 s, no transcript,
+// no results scan) and is run at every mgmt-ops check-in; its ALARM lines go into the digest, and an alarm
+// older than one check-in becomes an incident candidate. Exit code 2 when any ALARM fires.
+if (argv.includes('--friction')) {
+  const LIM = { shortWaitMin: 10, normalWaitMin: 30, queueLen: 3, holderFactor: 2, incidentUnownedMin: 60, iphoneStaleMin: 60, behind: 20 };
+  const alarms = []; const warns = [];
+  const A = (code, msg) => alarms.push(`ALARM ${code}: ${msg}`);
+  const W = (code, msg) => warns.push(`warn  ${code}: ${msg}`);
+  const cpuTicks = () => os.cpus().reduce((a, c) => { const t = c.times; a.tot += t.user + t.nice + t.sys + t.idle + t.irq; a.idle += t.idle; return a; }, { tot: 0, idle: 0 });
+  const secs = (s) => { const m = String(s).trim().match(/^(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+(?:\.\d+)?)$/); return m ? (+(m[1] || 0)) * 86400 + (+(m[2] || 0)) * 3600 + (+m[3]) * 60 + (+m[4]) : 0; };
+  const procs = () => {
+    const rows = execFileSync('ps', ['-axo', 'pid=,ppid=,time=,etime=,command='], { encoding: 'utf8', maxBuffer: 32 << 20 }).split('\n').filter(Boolean)
+      .map((l) => { const m = l.trim().match(/^(\d+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.*)$/); return m && { pid: +m[1], ppid: +m[2], cpu: secs(m[3]), age: secs(m[4]), cmd: m[5] }; }).filter(Boolean);
+    return rows;
+  };
+  const treeCpu = (rows, root) => { const kids = {}; for (const r of rows) (kids[r.ppid] ||= []).push(r); let s = 0; const st = [root]; const seen = new Set();
+    while (st.length) { const p = st.pop(); if (seen.has(p)) continue; seen.add(p); const r = rows.find((x) => x.pid === p); if (r) s += r.cpu; for (const k of kids[p] || []) st.push(k.pid); } return s; };
+  const t0 = cpuTicks(); const p0 = procs();
+  await new Promise((r) => setTimeout(r, 5000));
+  const t1 = cpuTicks(); const p1 = procs();
+  const busyPct = Math.round(100 * (1 - (t1.idle - t0.idle) / Math.max(1, t1.tot - t0.tot)));
+  const load1 = r1(os.loadavg()[0]);
+  const quiet = load1 <= CLEAN_LOAD && busyPct <= 25;
+  const behindOf = (checkout) => { const w = worktrees.find((x) => x.path === checkout); return w?.branch && w.path !== REPO ? Number(G(['rev-list', '--count', `${w.branch}..main`]) || 0) : 0; };
+  const lines = [`# friction scan ${new Date(NOW).toISOString()}  host: load1 ${load1}, CPU ${busyPct} % busy${quiet ? ' (QUIET)' : ''}`, ''];
+  for (const res of ['chrome-measure', 'iphone']) {
+    const h = readJson(join(STATE, 'locks', `${res}.json`));
+    const q = readJson(join(STATE, 'locks', `${res}.queue.json`)) || [];
+    if (h) {
+      const age = (NOW - Date.parse(h.acquiredAt)) / 60000;
+      const runs = Number(h.meta?.runs) || 0;
+      const expected = h.meta?.cmd === 'verify' && runs ? runs * 2 * 1.1 + 2 : h.meta?.maxSec ? h.meta.maxSec / 60 : h.kind === 'lease' && h.expiresAt ? (Date.parse(h.expiresAt) - Date.parse(h.acquiredAt)) / 60000 : 10;
+      const cpu = h.kind === 'process' && h.pid ? r1(treeCpu(p1, h.pid) - treeCpu(p0, h.pid)) : null;
+      const beh = behindOf(h.checkout);
+      lines.push(`${res}: held by ${h.owner} [${h.kind}${h.meta?.cmd ? ' ' + h.meta.cmd : ''}] ${r1(age)} min (expected ~${r1(expected)})${cpu != null ? `, tree CPU ${cpu} s in 5 s` : ''}${beh ? `, checkout ${beh} commits behind main` : ''}`);
+      if (res === 'chrome-measure') {
+        if (age > LIM.holderFactor * expected) A('HOLDER-OVERDUE', `${h.owner} holds chrome-measure ${r1(age)} min, > ${LIM.holderFactor}x expected ${r1(expected)} min`);
+        if (cpu != null && cpu < 0.2 && q.length) (age > 5 ? A : W)('HOLDER-IDLE', `${h.owner} holds chrome-measure but its process tree used ${cpu} s CPU in 5 s (hung or waiting?) with ${q.length} queued${quiet ? '; host is QUIET: the quiet window is being wasted' : ''}`);
+        if (h.kind === 'lease' && expected > 30) W('LONG-LEASE', `${h.owner} lease of ${r1(expected)} min on chrome-measure`);
+        if (beh > LIM.behind) W('OLD-TOOLS-HOLDER', `${h.owner} runs from a checkout ${beh} commits behind main (old lock/tool code, cf. I-011)`);
+      } else if (h.owner && /offline/.test(h.owner)) W('IPHONE-PARKED', `iPhone lease parked by ${h.owner} until ${h.expiresAt}: nothing triggers the pending iPhone checks when the phone is back`);
+    } else lines.push(`${res}: free${q.length ? ` with ${q.length} queued (grant pending?)` : ''}`);
+    for (const e of q) {
+      const w = (NOW - Date.parse(e.since)) / 60000; const beh = behindOf(e.checkout);
+      lines.push(`  waiting: ${e.owner} [${e.short ? `short ${e.maxSec || '?'} s` : 'normal'}] ${r1(w)} min${beh ? `, ${beh} behind main` : ''}`);
+      if (e.short && w > LIM.shortWaitMin) A('SHORT-WAIT', `${e.owner} (short job) has waited ${r1(w)} min > ${LIM.shortWaitMin}`);
+      if (!e.short && w > LIM.normalWaitMin) A('NORMAL-WAIT', `${e.owner} has waited ${r1(w)} min > ${LIM.normalWaitMin}`);
+      if (beh > LIM.behind) W('OLD-TOOLS-WAITER', `${e.owner} queues from a checkout ${beh} commits behind main`);
+    }
+    if (res === 'chrome-measure' && q.length > LIM.queueLen) A('QUEUE-LONG', `${q.length} waiting on chrome-measure (> ${LIM.queueLen}); ${q.filter((e) => e.short).length} of them short jobs`);
+  }
+  // incidents: active and unowned, or blocking
+  for (const f of ls(join(STATE, 'incidents')).filter((f) => /^I-\d+\.json$/.test(f))) {
+    const i = readJson(join(STATE, 'incidents', f)); if (!i || i.status === 'resolved') continue;
+    const age = (NOW - Date.parse(i.openedAt)) / 60000;
+    if (!i.assignee && age > LIM.incidentUnownedMin) A('INCIDENT-UNOWNED', `${i.id} active ${r1(age)} min with no assignee: ${String(i.title).slice(0, 80)}`);
+    if (i.blocking) W('INCIDENT-BLOCKING', `${i.id} is blocking (${r1(age)} min)`);
+  }
+  // the goal's device: time since the last iPhone measurement anywhere
+  let lastPhone = 0;
+  for (const co of checkouts) for (const d of ls(join(co, 'out')).filter((d) => d.startsWith('iphone'))) for (const f of ls(join(co, 'out', d))) { try { lastPhone = Math.max(lastPhone, statSync(join(co, 'out', d, f)).mtimeMs); } catch {} }
+  if (lastPhone && (NOW - lastPhone) / 60000 > LIM.iphoneStaleMin) W('IPHONE-STALE', `no iPhone measurement for ${r1((NOW - lastPhone) / 60000)} min (the goal's device)`);
+  // tooling touched outside toolsmith branches (I-021: they then run the full suite in the short lane)
+  const onMain = new Set(G(['ls-tree', '-d', '--name-only', 'main', 'fixes/']).split('\n').map((x) => x.replace(/^fixes\//, '')));
+  const lockOwners = ['chrome-measure', 'iphone'].flatMap((r) => [readJson(join(STATE, 'locks', `${r}.json`)), ...(readJson(join(STATE, 'locks', `${r}.queue.json`)) || [])]).filter(Boolean);
+  for (const w of worktrees.filter((w) => w.path !== REPO)) {
+    // only fix-owner worktrees (a fixes/<topic>/ that main doesn't have); toolsmiths are meant to touch tools
+    const topics = ls(join(w.path, 'fixes')).filter((t) => !onMain.has(t) && existsSync(join(w.path, 'fixes', t, 'README.md')));
+    if (!topics.length || lockOwners.some((o) => o.checkout === w.path && /^ts-/.test(o.owner))) continue;
+    const ch = git(['status', '--porcelain'], w.path).split('\n').filter((l) => /^.. (tools|tests)\//.test(l));
+    const ahead = w.branch ? G(['diff', '--name-only', `main...${w.branch}`]).split('\n').filter((p) => /^(tools|tests)\//.test(p)) : [];
+    const subj = w.branch ? G(['log', '--format=%s', `main..${w.branch}`]) : '';
+    if ((ch.length || ahead.length) && !/^(tools|tests)/m.test(subj) && !/ts-|toolsmith/.test(w.branch)) W('TOOLS-TOUCHED', `${w.branch} (${topics.join(', ')}): ${ch.length + ahead.length} tools/tests path(s) changed on a non-tooling branch`);
+  }
+  // leftovers that cost memory and CPU: orphaned servers, stray automation Chromes
+  const orphans = p1.filter((r) => r.ppid === 1 && /serve\.mjs/.test(r.cmd) && !/--port 5173\b/.test(r.cmd));
+  if (orphans.length) W('ORPHAN-SERVERS', `${orphans.length} serve.mjs with parent 1 (not port 5173)`);
+  const mcpChrome = p1.filter((r) => /chrome-devtools-mcp\/chrome-profile/.test(r.cmd) && /Google Chrome\.app\/Contents\/MacOS\/Google Chrome /.test(r.cmd) && r.age > 3600);
+  if (mcpChrome.length) W('STRAY-CHROME', `${mcpChrome.length} chrome-devtools MCP Chrome running ${r1(mcpChrome[0].age / 3600)} h (unused since rule 8?)`);
+  if (quiet && alarms.some((a) => /HOLDER-(IDLE|OVERDUE)/.test(a))) A('QUIET-WASTED', `host is quiet (load1 ${load1}, CPU ${busyPct} %) but chrome-measure is blocked: use this window for the clean A/Bs`);
+  console.log([...lines, '', ...(alarms.length ? alarms : ['no alarms']), ...warns].join('\n'));
+  process.exit(alarms.length ? 2 : 0);
+}
+
 // ---------------------------------------------------------------- A/B sessions and results
 // One "session" per fix.mjs ab run: out/ab/<topic>/<stamp>/verify.json (stamp = start, before the lock wait;
 // verify.json mtime = end). results.json files add the metrics summary (deduped by topic+createdAt+viewport).
