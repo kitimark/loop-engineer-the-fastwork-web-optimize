@@ -27,12 +27,13 @@ import http from 'node:http';
 import http2 from 'node:http2';
 import os from 'node:os';
 import zlib from 'node:zlib';
-import { createHash } from 'node:crypto';
-import { readFileSync, statSync, existsSync, appendFileSync, mkdirSync, writeFileSync, unlinkSync, readdirSync } from 'node:fs';
+import { createHash, randomBytes, X509Certificate, createPrivateKey } from 'node:crypto';
+import { readFileSync, statSync, existsSync, appendFileSync, mkdirSync, writeFileSync, unlinkSync, readdirSync, renameSync } from 'node:fs';
 import { resolve, join, extname, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { REPO, mirrorHome, resolveTree, isLinkedWorktree, autoPortBase } from './lib/paths.mjs';
+import { withGuard } from './lib/lock.mjs';
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = REPO;
@@ -270,6 +271,14 @@ function lanAddresses() {
   return out;
 }
 
+/** {cert, key} buffers if both files exist and the key belongs to the certificate, else null. */
+function readSelfSigned(certFile, keyFile) {
+  try {
+    const pair = { cert: readFileSync(certFile), key: readFileSync(keyFile) };
+    return new X509Certificate(pair.cert).checkPrivateKey(createPrivateKey(pair.key)) ? pair : null;
+  } catch { return null; }
+}
+
 let server;
 if (HTTPS) {
   let cert = opt('cert'), key = opt('key');
@@ -278,16 +287,34 @@ if (HTTPS) {
     // Browsers will warn; prefer mkcert (see README) so the iPhone trusts it without a warning.
     const dir = resolve(HOME, 'out', 'certs'); // shared by every worktree
     cert = join(dir, 'selfsigned-cert.pem'); key = join(dir, 'selfsigned-key.pem');
-    if (!existsSync(cert) || !existsSync(key)) {
-      mkdirSync(dir, { recursive: true });
-      const san = ['DNS:localhost', 'IP:127.0.0.1', ...lanAddresses().map((a) => 'IP:' + a.address)].join(',');
-      const r = spawnSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '397', '-subj', '/CN=fastwork-mirror.local',
-        '-addext', `subjectAltName=${san}`, '-keyout', key, '-out', cert], { stdio: 'ignore' });
-      if (r.status !== 0) { console.error('openssl failed; pass --cert/--key (e.g. from mkcert) instead'); process.exit(2); }
+    // Several servers can start at once (fix.mjs ab starts two): read the pair once and use only bytes
+    // that belong together; create (or replace a missing/partial/mismatched pair) under a cross-process
+    // guard, generating into temp files that are renamed into place, so no reader sees a half-written pair.
+    let pair = readSelfSigned(cert, key);
+    if (!pair) {
+      const ok = await withGuard('selfsigned-cert', () => {
+        if (readSelfSigned(cert, key)) return true; // another server created it while we waited
+        mkdirSync(dir, { recursive: true });
+        const tag = `.${process.pid}.${randomBytes(3).toString('hex')}.tmp`, tmpKey = key + tag, tmpCert = cert + tag;
+        const san = ['DNS:localhost', 'IP:127.0.0.1', ...lanAddresses().map((a) => 'IP:' + a.address)].join(',');
+        const r = spawnSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '397', '-subj', '/CN=fastwork-mirror.local',
+          '-addext', `subjectAltName=${san}`, '-keyout', tmpKey, '-out', tmpCert], { stdio: 'ignore' });
+        if (r.status !== 0 || !readSelfSigned(tmpCert, tmpKey)) {
+          for (const f of [tmpKey, tmpCert]) try { unlinkSync(f); } catch {}
+          return false;
+        }
+        renameSync(tmpKey, key); renameSync(tmpCert, cert);
+        return true;
+      });
+      if (!ok) { console.error('openssl failed; pass --cert/--key (e.g. from mkcert) instead'); process.exit(2); }
+      pair = readSelfSigned(cert, key);
+      if (!pair) { console.error(`${cert} and ${key} do not form a valid key/cert pair; pass --cert/--key instead`); process.exit(2); }
     }
     console.log(`using self-signed certificate ${cert} (browsers will warn; see README for mkcert)`);
+    server = http2.createSecureServer({ ...pair, allowHTTP1: true }, handler);
+  } else {
+    server = http2.createSecureServer({ cert: readFileSync(cert), key: readFileSync(key), allowHTTP1: true }, handler);
   }
-  server = http2.createSecureServer({ cert: readFileSync(cert), key: readFileSync(key), allowHTTP1: true }, handler);
 } else {
   server = http.createServer(handler);
 }
