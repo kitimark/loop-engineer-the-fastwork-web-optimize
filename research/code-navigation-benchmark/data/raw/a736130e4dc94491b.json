@@ -1,0 +1,80 @@
+{
+ "task": "T17",
+ "arm": "S-haiku",
+ "model": "haiku",
+ "batch": "b2-haiku",
+ "rep": 1,
+ "agentId": "a736130e4dc94491b",
+ "wallSec": 46.9,
+ "start": "2026-09-30T21:50:28.765Z",
+ "end": "2026-09-30T21:51:15.669Z",
+ "turns": 4,
+ "tokens": {
+  "input": 36,
+  "cacheRead": 112653,
+  "cacheCreate": 14490,
+  "output": 6,
+  "total": 127185,
+  "ctxPeak": 35997
+ },
+ "toolCalls": 2,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 2
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 10261,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 6749
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 3512
+  }
+ ],
+ "answer": {
+  "references": [
+   {
+    "line": 10918,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10929,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10975,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10980,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10989,
+    "use": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

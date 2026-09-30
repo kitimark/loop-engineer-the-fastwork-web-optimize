@@ -1,0 +1,198 @@
+{
+ "task": "T24",
+ "arm": "S-haiku",
+ "model": "haiku",
+ "batch": "b2-haiku",
+ "rep": 1,
+ "agentId": "a602ef7eb916ba09b",
+ "wallSec": 110.4,
+ "start": "2026-09-30T21:51:29.991Z",
+ "end": "2026-09-30T21:53:20.405Z",
+ "turns": 30,
+ "tokens": {
+  "input": 246,
+  "cacheRead": 1375275,
+  "cacheCreate": 37031,
+  "output": 54,
+  "total": 1412606,
+  "ctxPeak": 58805
+ },
+ "toolCalls": 27,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__get_symbols_overview": 1,
+  "mcp__serena__find_symbol": 3,
+  "Bash": 15,
+  "Read": 8
+ },
+ "serenaCalls": 4,
+ "serenaResultChars": 12944,
+ "serenaMs": 306,
+ "textResultChars": 24285,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 3,
+   "chars": 0
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 63,
+   "chars": 11486
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 59,
+   "chars": 477
+  },
+  {
+   "name": "Bash",
+   "ms": 68,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 220,
+   "chars": 321
+  },
+  {
+   "name": "Bash",
+   "ms": 121,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 1649
+  },
+  {
+   "name": "Bash",
+   "ms": 70,
+   "chars": 1818
+  },
+  {
+   "name": "Bash",
+   "ms": 269,
+   "chars": 1732
+  },
+  {
+   "name": "Bash",
+   "ms": 132,
+   "chars": 1458
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 7737
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 2033
+  },
+  {
+   "name": "Bash",
+   "ms": 73,
+   "chars": 127,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 285,
+   "chars": 94
+  },
+  {
+   "name": "Bash",
+   "ms": 74,
+   "chars": 103
+  },
+  {
+   "name": "Bash",
+   "ms": 93,
+   "chars": 19
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2190
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 652
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 16
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 710
+  },
+  {
+   "name": "Read",
+   "ms": 21,
+   "chars": 1028
+  },
+  {
+   "name": "Bash",
+   "ms": 68,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 1425
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 267
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 106,
+   "chars": 355
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 78,
+   "chars": 626
+  },
+  {
+   "name": "Bash",
+   "ms": 72,
+   "chars": 782
+  }
+ ],
+ "answer": {
+  "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+  "name": "F",
+  "start": 1229,
+  "end": 1234,
+  "equalityCheckIn": {
+   "name": "wn",
+   "line": 1236
+  }
+ },
+ "handbackPlaceholder": true,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

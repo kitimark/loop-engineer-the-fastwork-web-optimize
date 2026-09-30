@@ -1,6 +1,8 @@
 {
  "task": "T12",
  "arm": "G",
+ "model": "sonnet",
+ "batch": "",
  "rep": 2,
  "agentId": "a832befa5af4e3022",
  "wallSec": 38.3,

@@ -1,0 +1,254 @@
+{
+ "task": "T04",
+ "arm": "S-haiku",
+ "model": "haiku",
+ "batch": "b2-haiku",
+ "rep": 1,
+ "agentId": "ae6600fef87831804",
+ "wallSec": 116.7,
+ "start": "2026-09-30T21:50:21.661Z",
+ "end": "2026-09-30T21:52:18.409Z",
+ "turns": 23,
+ "tokens": {
+  "input": 190,
+  "cacheRead": 802371,
+  "cacheCreate": 20594,
+  "output": 41,
+  "total": 823196,
+  "ctxPeak": 42484
+ },
+ "toolCalls": 20,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__find_symbol": 1,
+  "mcp__serena__find_referencing_symbols": 1,
+  "Read": 4,
+  "Bash": 14
+ },
+ "serenaCalls": 2,
+ "serenaResultChars": 172,
+ "serenaMs": 292,
+ "textResultChars": 5151,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 114,
+   "chars": 170
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 178,
+   "chars": 2
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 265
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 386
+  },
+  {
+   "name": "Bash",
+   "ms": 123,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 1856,
+   "chars": 323,
+   "err": true
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 919
+  },
+  {
+   "name": "Bash",
+   "ms": 73,
+   "chars": 20
+  },
+  {
+   "name": "Bash",
+   "ms": 134,
+   "chars": 38
+  },
+  {
+   "name": "Bash",
+   "ms": 1932,
+   "chars": 189
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 987
+  },
+  {
+   "name": "Bash",
+   "ms": 65,
+   "chars": 547
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 105
+  },
+  {
+   "name": "Bash",
+   "ms": 63,
+   "chars": 82
+  },
+  {
+   "name": "Bash",
+   "ms": 1890,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 38
+  },
+  {
+   "name": "Bash",
+   "ms": 70,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 2198,
+   "chars": 1098
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 53
+  },
+  {
+   "name": "Bash",
+   "ms": 67,
+   "chars": 8
+  }
+ ],
+ "answer": {
+  "definition": {
+   "name": "onMount",
+   "line": 3420
+  },
+  "uses": []
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 0,
+  "recall": 0,
+  "precision": 0,
+  "misses": [
+   {
+    "file": "chunks/BSBv9QXB.js",
+    "line": 3440,
+    "localName": "Ra"
+   },
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   },
+   {
+    "file": "entry/app.HSR43Bkx.js",
+    "line": 3880,
+    "localName": "ie"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2424,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2927,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3100,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3680,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3931,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4155,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4689,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 6225,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 10913,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11294,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11606,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11860,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11994,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12196,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12433,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12978,
+    "localName": "ne"
+   }
+  ],
+  "extras": [],
+  "found540": false,
+  "offByOne": 0
+ }
+}

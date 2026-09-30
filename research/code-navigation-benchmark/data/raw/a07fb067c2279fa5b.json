@@ -1,0 +1,124 @@
+{
+ "task": "T03",
+ "arm": "GM",
+ "model": "sonnet",
+ "batch": "b5-memory",
+ "rep": 1,
+ "agentId": "a07fb067c2279fa5b",
+ "wallSec": 43.9,
+ "start": "2026-09-30T21:46:36.930Z",
+ "end": "2026-09-30T21:47:20.805Z",
+ "turns": 8,
+ "tokens": {
+  "input": 16,
+  "cacheRead": 261887,
+  "cacheCreate": 15086,
+  "output": 1070,
+  "total": 278059,
+  "ctxPeak": 37826
+ },
+ "toolCalls": 8,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 8
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 6100,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 71,
+   "chars": 525
+  },
+  {
+   "name": "Bash",
+   "ms": 2484,
+   "chars": 279
+  },
+  {
+   "name": "Bash",
+   "ms": 2108,
+   "chars": 963
+  },
+  {
+   "name": "Bash",
+   "ms": 3328,
+   "chars": 211
+  },
+  {
+   "name": "Bash",
+   "ms": 2228,
+   "chars": 63
+  },
+  {
+   "name": "Bash",
+   "ms": 2147,
+   "chars": 897
+  },
+  {
+   "name": "Bash",
+   "ms": 2064,
+   "chars": 3131
+  },
+  {
+   "name": "Bash",
+   "ms": 2017,
+   "chars": 31
+  }
+ ],
+ "answer": {
+  "callers": [
+   {
+    "line": 3143,
+    "component": "AE",
+    "callback": "o"
+   },
+   {
+    "line": 4239,
+    "component": "fD",
+    "callback": "c"
+   },
+   {
+    "line": 4736,
+    "component": "hD",
+    "callback": "d"
+   },
+   {
+    "line": 6269,
+    "component": "WD",
+    "callback": "A"
+   },
+   {
+    "line": 10977,
+    "component": "uM",
+    "callback": "m"
+   },
+   {
+    "line": 11359,
+    "component": "mM",
+    "callback": "u"
+   },
+   {
+    "line": 12448,
+    "component": "GM",
+    "callback": "r"
+   },
+   {
+    "line": 13090,
+    "component": "dN",
+    "callback": "L"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

@@ -11,15 +11,18 @@ const ARMS = {
 // Extra arms added by the orchestrated follow-up study (see HANDOFF.md section 6).
 //   GR: text first + a written decision rule for when to call Serena (the policy proposed in README "Decision rule").
 //   GM / SM: G / S with the project's navigation notes (.serena/memories/hot_code_map.md, serena_usage.md, fixes/TOPICS.md) allowed.
+//   GN / SN: like GM / SM but the notes MUST be read first (GM/SM helpers were only allowed to, and none did).
 //   GU / SU: G / S on the ORIGINAL minified site/ bundle (Serena ignores site/ by config).
 // Arm labels may carry a model suffix (G-haiku): the suffix only labels the run; the model is chosen at spawn time.
 const GR_RULE = 'TOOLS: text search first: Grep, Glob, Read, and read-only Bash (grep, rg, sed, awk, wc, `node tools/fix.mjs grep <regex> [file]`, `node tools/fix.mjs show <file> --lines a-b`). Use these for almost everything: strings, CSS, class names, "every line containing X", reading a function body, tooling. You may load Serena (ToolSearch query "+serena") ONLY for two cases. (1) You need to know what a short name or import alias at a call site really is, or which of several same-named functions a call resolves to: call mcp__serena__find_declaration with relative_path = the file of the call site and a regex that captures the name at the call (e.g. `o = (S)\\(i, `). (2) You need every reference to ONE named symbol and you already know its full name path (e.g. `dE`, `mM/y`, `uM/ne() callback/e`): call mcp__serena__find_referencing_symbols with relative_path. Never call find_referencing_symbols on tiny runtime helpers used everywhere (`Ln`, `z`, `s`, `e`, `ne`): it takes 30 s+ on a shared server. Serena line numbers (and the NNNN: prefixes in its snippets) are 0-BASED: add 1, and Read the lines before you rely on them. Skip initial_instructions, list_memories and read_memory.';
 const NOTES = 'You MAY read the project navigation notes `.serena/memories/hot_code_map.md`, `.serena/memories/serena_usage.md` and `fixes/TOPICS.md` first (they describe hot code in the prettified bundle); still verify against the code. Do not read any other research/, fixes/ or README docs.';
+const NOTES_REQ = 'FIRST, before any searching, Read the project navigation notes `.serena/memories/hot_code_map.md` and `fixes/TOPICS.md` (they describe hot code in the prettified bundle with verified names and lines), then use them and verify against the code. Do not read any other research/, fixes/ or README docs.';
 const NODOCS = 'Answer from the code itself: do not read CLAUDE.md-linked docs such as research/, fixes/, .serena/memories/ or README files.';
 export function prompt(t, armLabel) {
   const arm = armLabel.replace(/-haiku$/, '');
-  const base = arm.replace(/^(GR)$/, 'G').replace(/^(GM|GU)$/, 'G').replace(/^(SM|SU)$/, 'S');
+  const base = arm.replace(/^(GR)$/, 'G').replace(/^(GM|GU|GN)$/, 'G').replace(/^(SM|SU|SN)$/, 'S');
   const mem = arm === 'GM' || arm === 'SM';
+  const memReq = arm === 'GN' || arm === 'SN';
   const minified = arm === 'GU' || arm === 'SU';
   let tools = arm === 'GR' ? GR_RULE : ARMS[base];
   if (minified) tools = tools.replace(/, and read-only Bash \(grep, rg, sed, awk, wc, `node tools\/fix.mjs grep <regex> \[file\]`, `node tools\/fix.mjs show <file> --lines a-b`\)/, ', and read-only Bash (grep, rg, sed, awk, wc, cut, head)');
@@ -28,7 +31,7 @@ export function prompt(t, armLabel) {
     t.overlay
       ? `Code-navigation question for this repo: /Users/<user>/source/fastwork-com-web-optimize (main checkout). This question is about a fix agent's OVERLAY copy of a file, which lives under .claude/worktrees/nav-bench/fixes/nb-overlay/overlay/ inside that checkout: answer about that overlay file, not about the baseline copy under site-pretty/ and not about other overlays.`
       : `Code-navigation question for this repo: /Users/<user>/source/fastwork-com-web-optimize (main checkout; ignore copies under .claude/worktrees/).`,
-    `READ-ONLY: do not edit/create/delete files, no git state changes, no servers, Chrome, locks or measurements. ${mem ? NOTES : NODOCS}`,
+    `READ-ONLY: do not edit/create/delete files, no git state changes, no servers, Chrome, locks or measurements. ${memReq ? NOTES_REQ : mem ? NOTES : NODOCS}`,
     minified
       ? `site/ holds the ORIGINAL minified bundles: files of one to a few lines, up to hundreds of KB per line, with 1-3 letter names that repeat across scopes. Answer only from site/ (do not use the prettified copy in site-pretty/). Avoid Read on a whole file: a line can be 366 KB; use grep -o with context, cut, or Read with small limits.`
       : `site-pretty/ holds prettified minified bundles (1-3 letter names that repeat across scopes). All line numbers in your answer must be 1-based file lines (as in sed -n / cat -n / the Read tool).`,

@@ -1,0 +1,151 @@
+{
+ "task": "T29",
+ "arm": "G",
+ "model": "sonnet",
+ "batch": "b4-discovery",
+ "rep": 1,
+ "agentId": "a2a9353357205ad99",
+ "wallSec": 40.6,
+ "start": "2026-09-30T21:38:21.360Z",
+ "end": "2026-09-30T21:39:01.923Z",
+ "turns": 9,
+ "tokens": {
+  "input": 18,
+  "cacheRead": 331597,
+  "cacheCreate": 26271,
+  "output": 1542,
+  "total": 359428,
+  "ctxPeak": 49011
+ },
+ "toolCalls": 10,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 8,
+  "Read": 2
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 30221,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 225,
+   "chars": 3369
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 3253
+  },
+  {
+   "name": "Read",
+   "ms": 44,
+   "chars": 2230
+  },
+  {
+   "name": "Bash",
+   "ms": 2049,
+   "chars": 884
+  },
+  {
+   "name": "Bash",
+   "ms": 88,
+   "chars": 5911
+  },
+  {
+   "name": "Bash",
+   "ms": 1965,
+   "chars": 211
+  },
+  {
+   "name": "Bash",
+   "ms": 77,
+   "chars": 4355
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 5739
+  },
+  {
+   "name": "Bash",
+   "ms": 81,
+   "chars": 4238
+  },
+  {
+   "name": "Bash",
+   "ms": 2621,
+   "chars": 31
+  }
+ ],
+ "answer": {
+  "callbacks": [
+   {
+    "line": 3143,
+    "component": "AE",
+    "callback": "o",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 4239,
+    "component": "fD",
+    "callback": "c",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 4736,
+    "component": "hD",
+    "callback": "d",
+    "kind": "direct-read",
+    "readLine": 4730
+   },
+   {
+    "line": 6269,
+    "component": "WD",
+    "callback": "A",
+    "kind": "direct-read",
+    "readLine": 6206
+   },
+   {
+    "line": 10977,
+    "component": "uM",
+    "callback": "m",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 11359,
+    "component": "mM",
+    "callback": "u",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 12448,
+    "component": "GM",
+    "callback": "r",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 13090,
+    "component": "dN",
+    "callback": "L",
+    "kind": "calls-helper",
+    "readLine": 0
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

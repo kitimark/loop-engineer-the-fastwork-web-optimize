@@ -1,0 +1,109 @@
+{
+ "task": "T30",
+ "arm": "GR",
+ "model": "sonnet",
+ "batch": "b4-discovery",
+ "rep": 1,
+ "agentId": "ab19113109df70416",
+ "wallSec": 23.2,
+ "start": "2026-09-30T21:38:37.415Z",
+ "end": "2026-09-30T21:39:00.571Z",
+ "turns": 3,
+ "tokens": {
+  "input": 6,
+  "cacheRead": 86655,
+  "cacheCreate": 12919,
+  "output": 125,
+  "total": 99705,
+  "ctxPeak": 35659
+ },
+ "toolCalls": 2,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 2
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 5708,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 66,
+   "chars": 579
+  },
+  {
+   "name": "Bash",
+   "ms": 2170,
+   "chars": 5129
+  }
+ ],
+ "answer": {
+  "observers": [
+   {
+    "line": 2504,
+    "component": "JT",
+    "options": "{ threshold: [0, 0.05, 0.2] }"
+   },
+   {
+    "line": 2725,
+    "component": "uE",
+    "options": "{ rootMargin: n }"
+   },
+   {
+    "line": 3130,
+    "component": "AE",
+    "options": "{ threshold: [0, 0.45, 0.75] }"
+   },
+   {
+    "line": 3709,
+    "component": "HE",
+    "options": "{ rootMargin: `100% 0px` }"
+   },
+   {
+    "line": 4698,
+    "component": "hD",
+    "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+   },
+   {
+    "line": 6261,
+    "component": "WD",
+    "options": "{ threshold: 0.35 }"
+   },
+   {
+    "line": 11609,
+    "component": "yM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 11862,
+    "component": "SM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12024,
+    "component": "EM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12216,
+    "component": "NM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 13082,
+    "component": "dN",
+    "options": "{ rootMargin: `200% 0px` }"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

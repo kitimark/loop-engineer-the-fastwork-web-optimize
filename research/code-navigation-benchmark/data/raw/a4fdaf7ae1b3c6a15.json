@@ -1,0 +1,119 @@
+{
+ "task": "T30",
+ "arm": "G",
+ "model": "sonnet",
+ "batch": "b4-discovery",
+ "rep": 1,
+ "agentId": "a4fdaf7ae1b3c6a15",
+ "wallSec": 26.7,
+ "start": "2026-09-30T21:38:24.113Z",
+ "end": "2026-09-30T21:38:50.835Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 119546,
+  "cacheCreate": 13164,
+  "output": 1383,
+  "total": 134101,
+  "ctxPeak": 35904
+ },
+ "toolCalls": 4,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 4
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 5452,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 2964,
+   "chars": 635
+  },
+  {
+   "name": "Bash",
+   "ms": 2371,
+   "chars": 823
+  },
+  {
+   "name": "Bash",
+   "ms": 2149,
+   "chars": 3700
+  },
+  {
+   "name": "Bash",
+   "ms": 3540,
+   "chars": 294
+  }
+ ],
+ "answer": {
+  "observers": [
+   {
+    "line": 2504,
+    "component": "JT",
+    "options": "{ threshold: [0, 0.05, 0.2] }"
+   },
+   {
+    "line": 2725,
+    "component": "uE",
+    "options": "{ rootMargin: n }"
+   },
+   {
+    "line": 3130,
+    "component": "AE",
+    "options": "{ threshold: [0, 0.45, 0.75] }"
+   },
+   {
+    "line": 3709,
+    "component": "HE",
+    "options": "{ rootMargin: `100% 0px` }"
+   },
+   {
+    "line": 4698,
+    "component": "hD",
+    "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+   },
+   {
+    "line": 6261,
+    "component": "WD",
+    "options": "{ threshold: 0.35 }"
+   },
+   {
+    "line": 11609,
+    "component": "yM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 11862,
+    "component": "SM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12024,
+    "component": "EM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12216,
+    "component": "NM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 13082,
+    "component": "dN",
+    "options": "{ rootMargin: `200% 0px` }"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

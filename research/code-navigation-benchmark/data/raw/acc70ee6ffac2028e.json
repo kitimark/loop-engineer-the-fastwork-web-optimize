@@ -1,0 +1,133 @@
+{
+ "task": "T30",
+ "arm": "S",
+ "model": "sonnet",
+ "batch": "b4-discovery",
+ "rep": 1,
+ "agentId": "acc70ee6ffac2028e",
+ "wallSec": 25.5,
+ "start": "2026-09-30T21:39:40.386Z",
+ "end": "2026-09-30T21:40:05.882Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 182249,
+  "cacheCreate": 25385,
+  "output": 1347,
+  "total": 208991,
+  "ctxPeak": 48125
+ },
+ "toolCalls": 5,
+ "toolSearch": 1,
+ "byName": {
+  "Grep": 1,
+  "ToolSearch": 1,
+  "Bash": 3,
+  "mcp__serena__get_symbols_overview": 1
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 11486,
+ "serenaMs": 74,
+ "textResultChars": 6166,
+ "calls": [
+  {
+   "name": "Grep",
+   "ms": 3,
+   "chars": 169,
+   "err": true
+  },
+  {
+   "name": "ToolSearch",
+   "ms": 10,
+   "chars": 0
+  },
+  {
+   "name": "Bash",
+   "ms": 190,
+   "chars": 602
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 74,
+   "chars": 11486
+  },
+  {
+   "name": "Bash",
+   "ms": 2275,
+   "chars": 5173
+  },
+  {
+   "name": "Bash",
+   "ms": 2151,
+   "chars": 222
+  }
+ ],
+ "answer": {
+  "observers": [
+   {
+    "line": 2504,
+    "component": "JT",
+    "options": "{ threshold: [0, 0.05, 0.2] }"
+   },
+   {
+    "line": 2725,
+    "component": "uE",
+    "options": "{ rootMargin: n }"
+   },
+   {
+    "line": 3130,
+    "component": "AE",
+    "options": "{ threshold: [0, 0.45, 0.75] }"
+   },
+   {
+    "line": 3709,
+    "component": "HE",
+    "options": "{ rootMargin: `100% 0px` }"
+   },
+   {
+    "line": 4698,
+    "component": "hD",
+    "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+   },
+   {
+    "line": 6261,
+    "component": "WD",
+    "options": "{ threshold: 0.35 }"
+   },
+   {
+    "line": 11609,
+    "component": "yM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 11862,
+    "component": "SM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12024,
+    "component": "EM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 12216,
+    "component": "NM",
+    "options": "{ threshold: [0, 0.35, 0.6] }"
+   },
+   {
+    "line": 13082,
+    "component": "dN",
+    "options": "{ rootMargin: `200% 0px` }"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

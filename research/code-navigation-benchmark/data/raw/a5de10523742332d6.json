@@ -1,0 +1,63 @@
+{
+ "task": "T25",
+ "arm": "GR",
+ "model": "sonnet",
+ "batch": "b1-policy",
+ "rep": 1,
+ "agentId": "a5de10523742332d6",
+ "wallSec": 21.7,
+ "start": "2026-09-30T21:44:01.796Z",
+ "end": "2026-09-30T21:44:23.461Z",
+ "turns": 4,
+ "tokens": {
+  "input": 8,
+  "cacheRead": 121229,
+  "cacheCreate": 12211,
+  "output": 184,
+  "total": 133632,
+  "ctxPeak": 34951
+ },
+ "toolCalls": 3,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 3
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 3292,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 1845,
+   "chars": 1014
+  },
+  {
+   "name": "Bash",
+   "ms": 1893,
+   "chars": 1590
+  },
+  {
+   "name": "Bash",
+   "ms": 3164,
+   "chars": 688
+  }
+ ],
+ "answer": {
+  "start": 10782,
+  "end": 10784,
+  "returns": "!oe() && !s(T) && window.matchMedia('(min-width: 861px)').matches, i.e. true only when reduced-motion is off, the mobile flag T is false, and the viewport is at least 861px wide",
+  "excludesPhones": true
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

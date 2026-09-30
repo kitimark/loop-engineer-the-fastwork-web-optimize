@@ -1,0 +1,225 @@
+{
+ "task": "T04",
+ "arm": "GR",
+ "model": "sonnet",
+ "batch": "b1-policy",
+ "rep": 1,
+ "agentId": "a81025d4fc0b587fb",
+ "wallSec": 149,
+ "start": "2026-09-30T21:38:17.290Z",
+ "end": "2026-09-30T21:40:46.333Z",
+ "turns": 15,
+ "tokens": {
+  "input": 30,
+  "cacheRead": 564424,
+  "cacheCreate": 23388,
+  "output": 1338,
+  "total": 589180,
+  "ctxPeak": 46128
+ },
+ "toolCalls": 15,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 15
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 13137,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 88,
+   "chars": 62
+  },
+  {
+   "name": "Bash",
+   "ms": 168,
+   "chars": 1332
+  },
+  {
+   "name": "Bash",
+   "ms": 339,
+   "chars": 373
+  },
+  {
+   "name": "Bash",
+   "ms": 360,
+   "chars": 571
+  },
+  {
+   "name": "Bash",
+   "ms": 2191,
+   "chars": 2075
+  },
+  {
+   "name": "Bash",
+   "ms": 468,
+   "chars": 1062
+  },
+  {
+   "name": "Bash",
+   "ms": 1946,
+   "chars": 2899
+  },
+  {
+   "name": "Bash",
+   "ms": 1975,
+   "chars": 229
+  },
+  {
+   "name": "Bash",
+   "ms": 2269,
+   "chars": 959
+  },
+  {
+   "name": "Bash",
+   "ms": 2291,
+   "chars": 821,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 294,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 58662,
+   "chars": 828
+  },
+  {
+   "name": "Bash",
+   "ms": 2398,
+   "chars": 672
+  },
+  {
+   "name": "Bash",
+   "ms": 2198,
+   "chars": 527
+  },
+  {
+   "name": "Bash",
+   "ms": 276,
+   "chars": 696
+  }
+ ],
+ "answer": {
+  "definition": {
+   "name": "Ra",
+   "line": 3430
+  },
+  "uses": [
+   {
+    "file": "chunks/BSBv9QXB.js",
+    "line": 3420,
+    "localName": "Ra"
+   },
+   {
+    "file": "chunks/BSBv9QXB.js",
+    "line": 3440,
+    "localName": "Ra"
+   },
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   },
+   {
+    "file": "entry/app.HSR43Bkx.js",
+    "line": 3880,
+    "localName": "ie"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2424,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2927,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3100,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3680,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3931,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4155,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4689,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 6225,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 10913,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11294,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11606,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11860,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11994,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12196,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12433,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12978,
+    "localName": "ne"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "found540": false,
+  "offByOne": 0
+ }
+}

@@ -1,0 +1,119 @@
+{
+ "task": "T07",
+ "arm": "SM",
+ "model": "sonnet",
+ "batch": "b5-memory",
+ "rep": 1,
+ "agentId": "a0930451e30d8860c",
+ "wallSec": 32.6,
+ "start": "2026-09-30T21:47:43.275Z",
+ "end": "2026-09-30T21:48:15.826Z",
+ "turns": 6,
+ "tokens": {
+  "input": 14,
+  "cacheRead": 224057,
+  "cacheCreate": 25126,
+  "output": 1206,
+  "total": 250403,
+  "ctxPeak": 47868
+ },
+ "toolCalls": 6,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Bash": 4,
+  "mcp__serena__find_symbol": 2
+ },
+ "serenaCalls": 2,
+ "serenaResultChars": 12566,
+ "serenaMs": 140,
+ "textResultChars": 6216,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 9,
+   "chars": 0
+  },
+  {
+   "name": "Bash",
+   "ms": 88,
+   "chars": 50
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 53,
+   "chars": 11217
+  },
+  {
+   "name": "Bash",
+   "ms": 65,
+   "chars": 1683
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 87,
+   "chars": 1349
+  },
+  {
+   "name": "Bash",
+   "ms": 94,
+   "chars": 1503
+  },
+  {
+   "name": "Bash",
+   "ms": 67,
+   "chars": 2980
+  }
+ ],
+ "answer": {
+  "perScrollFrame": [
+   {
+    "line": 12956,
+    "api": "getBoundingClientRect",
+    "function": "F"
+   },
+   {
+    "line": 12961,
+    "api": "elementFromPoint",
+    "function": "F"
+   },
+   {
+    "line": 12967,
+    "api": "getComputedStyle",
+    "function": "ee"
+   },
+   {
+    "line": 12972,
+    "api": "getBoundingClientRect",
+    "function": "ee"
+   },
+   {
+    "line": 12973,
+    "api": "getBoundingClientRect",
+    "function": "ee"
+   },
+   {
+    "line": 13007,
+    "api": "getBoundingClientRect",
+    "function": "_ (closure in ne effect, called by L)"
+   }
+  ],
+  "notFromScrollCallback": [
+   {
+    "line": 13044,
+    "api": "getBoundingClientRect",
+    "function": "O (called via k from wheel/touchmove handlers A/M)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0
+ }
+}

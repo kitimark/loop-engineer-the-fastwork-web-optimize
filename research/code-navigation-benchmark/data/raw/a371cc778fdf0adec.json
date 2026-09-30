@@ -1,0 +1,172 @@
+{
+ "task": "T19",
+ "arm": "S-haiku",
+ "model": "haiku",
+ "batch": "b2-haiku",
+ "rep": 1,
+ "agentId": "a371cc778fdf0adec",
+ "wallSec": 102.3,
+ "start": "2026-09-30T21:51:22.313Z",
+ "end": "2026-09-30T21:53:04.610Z",
+ "turns": 23,
+ "tokens": {
+  "input": 188,
+  "cacheRead": 837951,
+  "cacheCreate": 23209,
+  "output": 43,
+  "total": 861391,
+  "ctxPeak": 44758
+ },
+ "toolCalls": 21,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Read": 8,
+  "mcp__serena__find_declaration": 1,
+  "mcp__serena__find_symbol": 1,
+  "Bash": 11
+ },
+ "serenaCalls": 2,
+ "serenaResultChars": 445,
+ "serenaMs": 145,
+ "textResultChars": 14761,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 4,
+   "chars": 0
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 534
+  },
+  {
+   "name": "serena.find_declaration",
+   "ms": 92,
+   "chars": 92,
+   "err": true
+  },
+  {
+   "name": "serena.find_symbol",
+   "ms": 53,
+   "chars": 353
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 2033
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 110,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 128,
+   "chars": 94
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 5352
+  },
+  {
+   "name": "Bash",
+   "ms": 78,
+   "chars": 13
+  },
+  {
+   "name": "Read",
+   "ms": 23,
+   "chars": 1170
+  },
+  {
+   "name": "Bash",
+   "ms": 2474,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 1835,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 2174,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 1786,
+   "chars": 14
+  },
+  {
+   "name": "Bash",
+   "ms": 2071,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 158,
+   "chars": 103
+  },
+  {
+   "name": "Bash",
+   "ms": 316,
+   "chars": 1007
+  },
+  {
+   "name": "Bash",
+   "ms": 79,
+   "chars": 912
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 1599
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 995
+  },
+  {
+   "name": "Bash",
+   "ms": 83,
+   "chars": 108
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 593
+  }
+ ],
+ "answer": {
+  "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+  "name": "$i",
+  "start": 2861,
+  "end": 2870,
+  "perPropertyHelper": {
+   "name": "Qi",
+   "start": 2855,
+   "end": 2860
+  },
+  "onlyChanged": true
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

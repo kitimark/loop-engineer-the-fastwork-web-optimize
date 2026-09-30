@@ -1,0 +1,178 @@
+{
+ "task": "T19",
+ "arm": "G-haiku",
+ "model": "haiku",
+ "batch": "b2-haiku",
+ "rep": 1,
+ "agentId": "a5429b582d63c1a69",
+ "wallSec": 97.2,
+ "start": "2026-09-30T21:46:46.933Z",
+ "end": "2026-09-30T21:48:24.143Z",
+ "turns": 25,
+ "tokens": {
+  "input": 202,
+  "cacheRead": 877489,
+  "cacheCreate": 22437,
+  "output": 49,
+  "total": 900177,
+  "ctxPeak": 43944
+ },
+ "toolCalls": 24,
+ "toolSearch": 0,
+ "byName": {
+  "Read": 9,
+  "Bash": 15
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 17872,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 1320
+  },
+  {
+   "name": "Bash",
+   "ms": 93,
+   "chars": 984
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 31
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 2033
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 110,
+   "err": true
+  },
+  {
+   "name": "Bash",
+   "ms": 66,
+   "chars": 104
+  },
+  {
+   "name": "Bash",
+   "ms": 67,
+   "chars": 1139
+  },
+  {
+   "name": "Bash",
+   "ms": 70,
+   "chars": 231
+  },
+  {
+   "name": "Bash",
+   "ms": 73,
+   "chars": 332
+  },
+  {
+   "name": "Bash",
+   "ms": 80,
+   "chars": 548
+  },
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2685
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 107
+  },
+  {
+   "name": "Read",
+   "ms": 6,
+   "chars": 1792
+  },
+  {
+   "name": "Bash",
+   "ms": 68,
+   "chars": 1433
+  },
+  {
+   "name": "Bash",
+   "ms": 2450,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 1916,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 68,
+   "chars": 527
+  },
+  {
+   "name": "Read",
+   "ms": 17,
+   "chars": 1867
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 716
+  },
+  {
+   "name": "Bash",
+   "ms": 2163,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 2356,
+   "chars": 31
+  },
+  {
+   "name": "Bash",
+   "ms": 93,
+   "chars": 21
+  },
+  {
+   "name": "Read",
+   "ms": 15,
+   "chars": 1028
+  },
+  {
+   "name": "Read",
+   "ms": 23,
+   "chars": 740
+  }
+ ],
+ "answer": {
+  "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+  "name": "$i",
+  "start": 2861,
+  "end": 2870,
+  "perPropertyHelper": {
+   "name": "Qi",
+   "start": 2855,
+   "end": 2860
+  },
+  "onlyChanged": true
+ },
+ "handbackPlaceholder": true,
+ "stored": {
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0
+ }
+}

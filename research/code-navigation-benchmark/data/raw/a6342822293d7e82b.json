@@ -1,0 +1,188 @@
+{
+ "task": "T29",
+ "arm": "S",
+ "model": "sonnet",
+ "batch": "b4-discovery",
+ "rep": 1,
+ "agentId": "a6342822293d7e82b",
+ "wallSec": 44.8,
+ "start": "2026-09-30T21:39:37.853Z",
+ "end": "2026-09-30T21:40:22.659Z",
+ "turns": 12,
+ "tokens": {
+  "input": 24,
+  "cacheRead": 555538,
+  "cacheCreate": 44243,
+  "output": 334,
+  "total": 600139,
+  "ctxPeak": 66983
+ },
+ "toolCalls": 16,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "mcp__serena__get_symbols_overview": 1,
+  "Bash": 5,
+  "Read": 10
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 11486,
+ "serenaMs": 92,
+ "textResultChars": 41893,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 7,
+   "chars": 0
+  },
+  {
+   "name": "serena.get_symbols_overview",
+   "ms": 92,
+   "chars": 11486
+  },
+  {
+   "name": "Bash",
+   "ms": 298,
+   "chars": 1609
+  },
+  {
+   "name": "Bash",
+   "ms": 2467,
+   "chars": 3511
+  },
+  {
+   "name": "Read",
+   "ms": 22,
+   "chars": 1125
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 3315
+  },
+  {
+   "name": "Bash",
+   "ms": 2048,
+   "chars": 692
+  },
+  {
+   "name": "Bash",
+   "ms": 140,
+   "chars": 525
+  },
+  {
+   "name": "Bash",
+   "ms": 2115,
+   "chars": 279
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 2310
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 3967
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 7072
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 2662
+  },
+  {
+   "name": "Read",
+   "ms": 13,
+   "chars": 4036
+  },
+  {
+   "name": "Read",
+   "ms": 16,
+   "chars": 3159
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 1326
+  },
+  {
+   "name": "Read",
+   "ms": 9,
+   "chars": 6305
+  }
+ ],
+ "answer": {
+  "callbacks": [
+   {
+    "line": 3143,
+    "component": "AE",
+    "callback": "o",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 4239,
+    "component": "fD",
+    "callback": "c",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 4736,
+    "component": "hD",
+    "callback": "d",
+    "kind": "direct-read",
+    "readLine": 4730
+   },
+   {
+    "line": 6269,
+    "component": "WD",
+    "callback": "A",
+    "kind": "direct-read",
+    "readLine": 6206
+   },
+   {
+    "line": 10977,
+    "component": "uM",
+    "callback": "m",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 11359,
+    "component": "mM",
+    "callback": "u",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 12448,
+    "component": "GM",
+    "callback": "r",
+    "kind": "schedules-raf",
+    "readLine": 0
+   },
+   {
+    "line": 13090,
+    "component": "dN",
+    "callback": "L",
+    "kind": "calls-helper",
+    "readLine": 0
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

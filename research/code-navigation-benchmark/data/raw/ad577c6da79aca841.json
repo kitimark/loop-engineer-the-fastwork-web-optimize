@@ -1,0 +1,90 @@
+{
+ "task": "T17",
+ "arm": "G-haiku",
+ "model": "haiku",
+ "batch": "b2-haiku",
+ "rep": 1,
+ "agentId": "ad577c6da79aca841",
+ "wallSec": 52.5,
+ "start": "2026-09-30T21:46:43.747Z",
+ "end": "2026-09-30T21:47:36.248Z",
+ "turns": 7,
+ "tokens": {
+  "input": 60,
+  "cacheRead": 211829,
+  "cacheCreate": 15161,
+  "output": 13,
+  "total": 227063,
+  "ctxPeak": 36670
+ },
+ "toolCalls": 5,
+ "toolSearch": 0,
+ "byName": {
+  "Read": 2,
+  "Bash": 3
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 9339,
+ "calls": [
+  {
+   "name": "Read",
+   "ms": 8,
+   "chars": 2266
+  },
+  {
+   "name": "Read",
+   "ms": 7,
+   "chars": 2951
+  },
+  {
+   "name": "Bash",
+   "ms": 76,
+   "chars": 376
+  },
+  {
+   "name": "Bash",
+   "ms": 69,
+   "chars": 3527
+  },
+  {
+   "name": "Bash",
+   "ms": 104,
+   "chars": 219
+  }
+ ],
+ "answer": {
+  "references": [
+   {
+    "line": 10918,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10929,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10975,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10980,
+    "use": "<omitted>"
+   },
+   {
+    "line": 10989,
+    "use": "<omitted>"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}

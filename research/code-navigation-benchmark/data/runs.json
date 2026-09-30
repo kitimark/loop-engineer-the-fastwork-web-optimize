@@ -3,6 +3,8 @@
   "task": "T01",
   "type": "definition by name",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a5164994f3a852238",
   "score": 1,
@@ -62,6 +64,8 @@
   "task": "T01",
   "type": "definition by name",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a46c2d2c52924fe77",
   "score": 1,
@@ -137,6 +141,8 @@
   "task": "T02",
   "type": "definition by behaviour",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a2e268ae86e671f97",
   "score": 1,
@@ -210,6 +216,8 @@
   "task": "T03",
   "type": "callers of a function",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a983cb716bae2f1b0",
   "score": 1,
@@ -332,6 +340,8 @@
   "task": "T04",
   "type": "cross-file references (bundle)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "aa4b4735938378f62",
   "score": 1,
@@ -545,6 +555,8 @@
   "task": "T05",
   "type": "callers across the repo's tooling",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a41b4e2f60daaa4fe",
   "score": 1,
@@ -636,6 +648,8 @@
   "task": "T06",
   "type": "who writes a CSS custom property (string search)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a989fe06cee6f15c3",
   "score": 1,
@@ -754,6 +768,8 @@
   "task": "T02",
   "type": "definition by behaviour",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "abf6b05ca6b788aa0",
   "score": 1,
@@ -841,6 +857,8 @@
   "task": "T03",
   "type": "callers of a function",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a4be53d492437e40e",
   "score": 1,
@@ -972,6 +990,8 @@
   "task": "T04",
   "type": "cross-file references (bundle)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "afa1b8e894632844b",
   "score": 1,
@@ -1201,6 +1221,8 @@
   "task": "T07",
   "type": "API usage scoped by call graph",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ad56bb7006a946b8b",
   "score": 1,
@@ -1305,6 +1327,8 @@
   "task": "T08",
   "type": "understand a function body",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a5f914b088173a777",
   "score": 1,
@@ -1450,6 +1474,8 @@
   "task": "T09",
   "type": "CSS search",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ac853075e9b619ba9",
   "score": 1,
@@ -1548,6 +1574,8 @@
   "task": "T10",
   "type": "CSS search",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a88d8dd099f6b8dd8",
   "score": 1,
@@ -1666,6 +1694,8 @@
   "task": "T11",
   "type": "disambiguation: references of a short local name",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "aa5cae3d57f03f8d1",
   "score": 1,
@@ -1743,6 +1773,8 @@
   "task": "T12",
   "type": "disambiguation: which binding",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ace51755330a0815e",
   "score": 1,
@@ -1820,6 +1852,8 @@
   "task": "T05",
   "type": "callers across the repo's tooling",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "aa635badb2a275f83",
   "score": 1,
@@ -1912,6 +1946,8 @@
   "task": "T06",
   "type": "who writes a CSS custom property (string search)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "aca4fe94ef7ac58f3",
   "score": 1,
@@ -2027,6 +2063,8 @@
   "task": "T07",
   "type": "API usage scoped by call graph",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a58eae4be420174ed",
   "score": 1,
@@ -2138,6 +2176,8 @@
   "task": "T13",
   "type": "locate by behaviour in the runtime",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a2c45d064916162db",
   "score": 1,
@@ -2205,6 +2245,8 @@
   "task": "T14",
   "type": "references of a module-level variable",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a019bd116a916fa7a",
   "score": 1,
@@ -2288,6 +2330,8 @@
   "task": "T15",
   "type": "text occurrence census",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a0c8f0c077f2f3cc5",
   "score": 1,
@@ -2400,6 +2444,8 @@
   "task": "T16",
   "type": "tooling control flow across processes",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a6da5e6840a1029e6",
   "score": 1,
@@ -2505,6 +2551,8 @@
   "task": "T08",
   "type": "understand a function body",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "addcfd1384dd73172",
   "score": 1,
@@ -2638,6 +2686,8 @@
   "task": "T09",
   "type": "CSS search",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "add091b7b6a77e25e",
   "score": 1,
@@ -2736,6 +2786,8 @@
   "task": "T10",
   "type": "CSS search",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "afab5d6f01916835c",
   "score": 1,
@@ -2859,6 +2911,8 @@
   "task": "T11",
   "type": "disambiguation: references of a short local name",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ad340970277f7a7c0",
   "score": 1,
@@ -2941,6 +2995,8 @@
   "task": "T12",
   "type": "disambiguation: which binding",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "addf3fc54be490b24",
   "score": 1,
@@ -3022,6 +3078,8 @@
   "task": "T13",
   "type": "locate by behaviour in the runtime",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ab45063bca1d841e9",
   "score": 1,
@@ -3102,6 +3160,8 @@
   "task": "T14",
   "type": "references of a module-level variable",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a362ed6c16e2070b7",
   "score": 1,
@@ -3203,6 +3263,8 @@
   "task": "T15",
   "type": "text occurrence census",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ac53ed1cfb519cd1d",
   "score": 1,
@@ -3327,6 +3389,8 @@
   "task": "T16",
   "type": "tooling control flow across processes",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "af48ea3e91e3d60c4",
   "score": 1,
@@ -3438,6 +3502,8 @@
   "task": "T17",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ae58ba006ac0c4b9d",
   "score": 1,
@@ -3509,6 +3575,8 @@
   "task": "T18",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a82d4b38705dbfd8b",
   "score": 1,
@@ -3580,6 +3648,8 @@
   "task": "T17",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ae23a6a8c3fece251",
   "score": 1,
@@ -3657,6 +3727,8 @@
   "task": "T18",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "aae42741da31ef4a2",
   "score": 1,
@@ -3735,6 +3807,8 @@
   "task": "T01",
   "type": "definition by name",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "aa7b41b52ddf955d8",
   "score": 1,
@@ -3810,6 +3884,8 @@
   "task": "T02",
   "type": "definition by behaviour",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a55e24fb336b4bf5b",
   "score": 1,
@@ -3912,6 +3988,8 @@
   "task": "T03",
   "type": "callers of a function",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a7775295d87e396be",
   "score": 1,
@@ -4021,6 +4099,8 @@
   "task": "T04",
   "type": "cross-file references (bundle)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a80a307f89c79a8bd",
   "score": 1,
@@ -4305,6 +4385,8 @@
   "task": "T01",
   "type": "definition by name",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a846024acd126a8b1",
   "score": 1,
@@ -4380,6 +4462,8 @@
   "task": "T03",
   "type": "callers of a function",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ae2ecf445f86252ae",
   "score": 1,
@@ -4529,6 +4613,8 @@
   "task": "T04",
   "type": "cross-file references (bundle)",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a904a7aacb460f945",
   "score": 1,
@@ -4832,6 +4918,8 @@
   "task": "T05",
   "type": "callers across the repo's tooling",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "af0c7ffe2b2d70479",
   "score": 1,
@@ -4947,6 +5035,8 @@
   "task": "T11",
   "type": "disambiguation: references of a short local name",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ae071b1a62c4b028f",
   "score": 1,
@@ -5037,6 +5127,8 @@
   "task": "T14",
   "type": "references of a module-level variable",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a176a964076d945c1",
   "score": 1,
@@ -5138,6 +5230,8 @@
   "task": "T01",
   "type": "definition by name",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a10f61724f57d4453",
   "invalid": "placeholder-handback",
@@ -5189,6 +5283,8 @@
   "task": "T02",
   "type": "definition by behaviour",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a2eb40d231304d5ed",
   "score": 1,
@@ -5257,6 +5353,8 @@
   "task": "T03",
   "type": "callers of a function",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a5cb03c402675b7b5",
   "score": 1,
@@ -5374,6 +5472,8 @@
   "task": "T04",
   "type": "cross-file references (bundle)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "acfab824093d351c1",
   "score": 1,
@@ -5613,6 +5713,8 @@
   "task": "T05",
   "type": "callers across the repo's tooling",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a5191b3e8aef2ec1d",
   "score": 1,
@@ -5699,6 +5801,8 @@
   "task": "T06",
   "type": "who writes a CSS custom property (string search)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "ad949544d7763af70",
   "score": 1,
@@ -5815,6 +5919,8 @@
   "task": "T07",
   "type": "API usage scoped by call graph",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a7469d4e5c599ad2e",
   "score": 1,
@@ -5920,6 +6026,8 @@
   "task": "T08",
   "type": "understand a function body",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a05da5b60b3d7a775",
   "score": 1,
@@ -6067,6 +6175,8 @@
   "task": "T09",
   "type": "CSS search",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "ad4b126f5a93ff82c",
   "score": 1,
@@ -6165,6 +6275,8 @@
   "task": "T10",
   "type": "CSS search",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a1c5815ef25abe226",
   "score": 1,
@@ -6278,6 +6390,8 @@
   "task": "T02",
   "type": "definition by behaviour",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a0d515b8e1d28f0ea",
   "score": 1,
@@ -6383,6 +6497,8 @@
   "task": "T06",
   "type": "who writes a CSS custom property (string search)",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a8b9cadca178083d9",
   "score": 0.5,
@@ -6539,6 +6655,8 @@
   "task": "T07",
   "type": "API usage scoped by call graph",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a34620283209d091f",
   "score": 1,
@@ -6645,6 +6763,8 @@
   "task": "T12",
   "type": "disambiguation: which binding",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a21e4db4f7078f142",
   "score": 0.8,
@@ -6741,6 +6861,8 @@
   "task": "T01",
   "type": "definition by name",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "acbf77c790dfa56fe",
   "invalid": "placeholder-handback",
@@ -6791,6 +6913,8 @@
   "task": "T11",
   "type": "disambiguation: references of a short local name",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a01115538ebf40b97",
   "score": 1,
@@ -6863,6 +6987,8 @@
   "task": "T12",
   "type": "disambiguation: which binding",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a832befa5af4e3022",
   "score": 1,
@@ -6946,6 +7072,8 @@
   "task": "T13",
   "type": "locate by behaviour in the runtime",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a25ef4c7a354277a2",
   "score": 1,
@@ -7013,6 +7141,8 @@
   "task": "T14",
   "type": "references of a module-level variable",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "addbef041791e6377",
   "score": 1,
@@ -7101,6 +7231,8 @@
   "task": "T15",
   "type": "text occurrence census",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a4e1edee9ff57dc29",
   "score": 1,
@@ -7213,6 +7345,8 @@
   "task": "T16",
   "type": "tooling control flow across processes",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "ad9cec26b34b8db19",
   "score": 1,
@@ -7319,6 +7453,8 @@
   "task": "T17",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "aec7303e30b379248",
   "score": 1,
@@ -7390,6 +7526,8 @@
   "task": "T18",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a868c1aa1601bef0b",
   "score": 1,
@@ -7456,6 +7594,8 @@
   "task": "T05",
   "type": "callers across the repo's tooling",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a864a5d84d1326ee0",
   "score": 0.20000000000000004,
@@ -7596,6 +7736,8 @@
   "task": "T06",
   "type": "who writes a CSS custom property (string search)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a76e26590745adc95",
   "score": 1,
@@ -7700,6 +7842,8 @@
   "task": "T07",
   "type": "API usage scoped by call graph",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "aa34435490ea72415",
   "score": 1,
@@ -7807,6 +7951,8 @@
   "task": "T08",
   "type": "understand a function body",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "ac66081c92cef2634",
   "score": 1,
@@ -7952,6 +8098,8 @@
   "task": "T09",
   "type": "CSS search",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a743f3ac55b6f718b",
   "score": 1,
@@ -8045,6 +8193,8 @@
   "task": "T10",
   "type": "CSS search",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a339ff51c17cbaf45",
   "score": 1,
@@ -8163,6 +8313,8 @@
   "task": "T11",
   "type": "disambiguation: references of a short local name",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a9dfa86e276435edd",
   "score": 1,
@@ -8248,6 +8400,8 @@
   "task": "T12",
   "type": "disambiguation: which binding",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "abbebec70625cd5c9",
   "score": 1,
@@ -8332,6 +8486,8 @@
   "task": "T08",
   "type": "understand a function body",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ae94ab3c82b07d62d",
   "score": 1,
@@ -8481,6 +8637,8 @@
   "task": "T13",
   "type": "locate by behaviour in the runtime",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a72f1f7f0f3fd2833",
   "score": 1,
@@ -8584,6 +8742,8 @@
   "task": "T16",
   "type": "tooling control flow across processes",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a7f807d378c6ec241",
   "score": 1,
@@ -8739,6 +8899,8 @@
   "task": "T01",
   "type": "definition by name",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "af249a23cc443a233",
   "invalid": "placeholder-handback",
@@ -8789,6 +8951,8 @@
   "task": "T13",
   "type": "locate by behaviour in the runtime",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a7b3b7adcab05bf1c",
   "score": 1,
@@ -8875,6 +9039,8 @@
   "task": "T14",
   "type": "references of a module-level variable",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a05f4495aed8f4c59",
   "score": 1,
@@ -8970,6 +9136,8 @@
   "task": "T15",
   "type": "text occurrence census",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a963231a2f3ef1411",
   "score": 1,
@@ -9101,6 +9269,8 @@
   "task": "T16",
   "type": "tooling control flow across processes",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "afaaa8aa154d4367a",
   "score": 1,
@@ -9225,6 +9395,8 @@
   "task": "T17",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a0187f85e76b9ddd7",
   "score": 1,
@@ -9302,6 +9474,8 @@
   "task": "T18",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "afc5317676cfafd02",
   "score": 1,
@@ -9380,6 +9554,8 @@
   "task": "T09",
   "type": "CSS search",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a2c8912fb475f3c3c",
   "score": 0,
@@ -9490,6 +9666,8 @@
   "task": "T15",
   "type": "text occurrence census",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "aacdb71e53de5aba9",
   "score": 1,
@@ -9818,6 +9996,8 @@
   "task": "T17",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a6e71315d23f55dea",
   "score": 1,
@@ -9901,6 +10081,8 @@
   "task": "T18",
   "type": "disambiguation: references of a shadowed local in a large component",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "aa17c59778db85d3e",
   "score": 1,
@@ -9990,6 +10172,8 @@
   "task": "T19",
   "type": "cross-file definition through an import alias",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "abee60d0788960b88",
   "score": 0.8333333333333334,
@@ -10083,6 +10267,8 @@
   "task": "T20",
   "type": "callers of a function",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a93646e17b474f75e",
   "score": 1,
@@ -10147,6 +10333,8 @@
   "task": "T21",
   "type": "who toggles a class (state behind a class binding)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ad901ba96bb3c95a6",
   "score": 1,
@@ -10227,6 +10415,8 @@
   "task": "T22",
   "type": "dead-CSS check (class used by any markup?)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "aae24037e3c604114",
   "score": 1,
@@ -10315,6 +10505,8 @@
   "task": "T23",
   "type": "which DOM element does a bind:this ref hold",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a297e312325e4a4af",
   "score": 1,
@@ -10405,6 +10597,8 @@
   "task": "T24",
   "type": "cross-file definition through an import alias",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a94de9f712d4a3521",
   "score": 1,
@@ -10495,6 +10689,8 @@
   "task": "T25",
   "type": "definition of a repeated short name from a call site",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a65d770c30ee3cefb",
   "score": 1,
@@ -10560,6 +10756,8 @@
   "task": "T26",
   "type": "CSS context (@media enclosing a line)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a1953d28eefc933dc",
   "score": 1,
@@ -10629,6 +10827,8 @@
   "task": "T27",
   "type": "who writes an inline style",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a14fe5cd1961e76e2",
   "score": 1,
@@ -10702,6 +10902,8 @@
   "task": "T19",
   "type": "cross-file definition through an import alias",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a17f3686c2190577b",
   "score": 1,
@@ -10810,6 +11012,8 @@
   "task": "T20",
   "type": "callers of a function",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a3b891286d59f7869",
   "score": 1,
@@ -10881,6 +11085,8 @@
   "task": "T21",
   "type": "who toggles a class (state behind a class binding)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "ad9685c20116f9343",
   "score": 1,
@@ -10964,6 +11170,8 @@
   "task": "T22",
   "type": "dead-CSS check (class used by any markup?)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a5ea8b85d6c2484a1",
   "score": 1,
@@ -11057,6 +11265,8 @@
   "task": "T23",
   "type": "which DOM element does a bind:this ref hold",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a8a363b44429cad8f",
   "score": 1,
@@ -11137,6 +11347,8 @@
   "task": "T24",
   "type": "cross-file definition through an import alias",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a051b2553e3f46627",
   "score": 1,
@@ -11235,6 +11447,8 @@
   "task": "T25",
   "type": "definition of a repeated short name from a call site",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a21e9e9168f15821f",
   "score": 1,
@@ -11308,6 +11522,8 @@
   "task": "T26",
   "type": "CSS context (@media enclosing a line)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a1a8cc04336968c6c",
   "score": 1,
@@ -11367,6 +11583,8 @@
   "task": "T27",
   "type": "who writes an inline style",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a345ba887bbbc4dda",
   "score": 1,
@@ -11449,6 +11667,8 @@
   "task": "T19",
   "type": "cross-file definition through an import alias",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "addaa18a81e5628bb",
   "score": 1,
@@ -11560,6 +11780,8 @@
   "task": "T24",
   "type": "cross-file definition through an import alias",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a6fc417a822bc07b3",
   "score": 1,
@@ -11675,6 +11897,8 @@
   "task": "T25",
   "type": "definition of a repeated short name from a call site",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a37fa942552bda571",
   "score": 1,
@@ -11758,6 +11982,8 @@
   "task": "T21",
   "type": "who toggles a class (state behind a class binding)",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "a758c736005dec5c7",
   "score": 1,
@@ -11847,6 +12073,8 @@
   "task": "T23",
   "type": "which DOM element does a bind:this ref hold",
   "arm": "SO",
+  "model": "sonnet",
+  "batch": "",
   "rep": 1,
   "agentId": "af29009d4932a9a6c",
   "score": 1,
@@ -11927,6 +12155,8 @@
   "task": "T19",
   "type": "cross-file definition through an import alias",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a6aae7b86dd0933b0",
   "score": 0.8333333333333334,
@@ -12015,6 +12245,8 @@
   "task": "T20",
   "type": "callers of a function",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a7bf05b475e3eef11",
   "invalid": "placeholder-handback",
@@ -12070,6 +12302,8 @@
   "task": "T21",
   "type": "who toggles a class (state behind a class binding)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a066f5162cc0c50ae",
   "score": 1,
@@ -12145,6 +12379,8 @@
   "task": "T22",
   "type": "dead-CSS check (class used by any markup?)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a0c83229439a2b429",
   "score": 1,
@@ -12236,6 +12472,8 @@
   "task": "T23",
   "type": "which DOM element does a bind:this ref hold",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a35db88f3288885ac",
   "score": 1,
@@ -12324,6 +12562,8 @@
   "task": "T24",
   "type": "cross-file definition through an import alias",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a82ef10d378bee81b",
   "score": 1,
@@ -12409,6 +12649,8 @@
   "task": "T25",
   "type": "definition of a repeated short name from a call site",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a6e01360045880fbb",
   "score": 1,
@@ -12480,6 +12722,8 @@
   "task": "T26",
   "type": "CSS context (@media enclosing a line)",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "adf1573f9ba423337",
   "score": 1,
@@ -12544,6 +12788,8 @@
   "task": "T27",
   "type": "who writes an inline style",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a74bf0249e2e25829",
   "score": 1,
@@ -12643,6 +12889,8 @@
   "task": "T19",
   "type": "cross-file definition through an import alias",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a7246181f6f2cc442",
   "score": 1,
@@ -12746,6 +12994,8 @@
   "task": "T20",
   "type": "callers of a function",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "afd65320dec935128",
   "score": 1,
@@ -12822,6 +13072,8 @@
   "task": "T21",
   "type": "who toggles a class (state behind a class binding)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a23e209ac5587f581",
   "score": 1,
@@ -12910,6 +13162,8 @@
   "task": "T22",
   "type": "dead-CSS check (class used by any markup?)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a263ff9a36195c936",
   "score": 1,
@@ -13005,6 +13259,8 @@
   "task": "T23",
   "type": "which DOM element does a bind:this ref hold",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a01d4631a31a6ea43",
   "score": 1,
@@ -13095,6 +13351,8 @@
   "task": "T24",
   "type": "cross-file definition through an import alias",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a43ea685bbbdf9e9e",
   "score": 1,
@@ -13181,6 +13439,8 @@
   "task": "T25",
   "type": "definition of a repeated short name from a call site",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a6a591e30199248a5",
   "score": 1,
@@ -13254,6 +13514,8 @@
   "task": "T26",
   "type": "CSS context (@media enclosing a line)",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a48c95adf4cba27ee",
   "score": 1,
@@ -13313,6 +13575,8 @@
   "task": "T27",
   "type": "who writes an inline style",
   "arm": "S",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a0f0bc233ba39635a",
   "score": 1,
@@ -13400,6 +13664,8 @@
   "task": "T20",
   "type": "callers of a function",
   "arm": "G",
+  "model": "sonnet",
+  "batch": "",
   "rep": 2,
   "agentId": "a08fcf41692cabca3",
   "score": 1,
@@ -13464,5 +13730,5418 @@
    ]
   },
   "handbackPlaceholder": false
+ },
+ {
+  "task": "T35",
+  "type": "minified bundle: locate by behaviour",
+  "arm": "GU",
+  "model": "sonnet",
+  "batch": "b3-minified",
+  "rep": 1,
+  "agentId": "ac6b42cef85c021ff",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 18.5,
+  "start": "2026-09-30T21:38:26.669Z",
+  "end": "2026-09-30T21:38:45.138Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 91245,
+   "cacheCreate": 15902,
+   "output": 1017,
+   "total": 108170,
+   "ctxPeak": 38642
+  },
+  "toolCalls": 2,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 9603,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 428,
+    "chars": 8788
+   },
+   {
+    "name": "Bash",
+    "ms": 5370,
+    "chars": 815
+   }
+  ],
+  "answer": {
+   "stiffness": 280,
+   "damping": 18,
+   "mass": 0.3,
+   "paramsVar": "UE",
+   "stepFunction": "GE",
+   "digitComponent": "$E"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T36",
+  "type": "minified bundle: locate by behaviour",
+  "arm": "GU",
+  "model": "sonnet",
+  "batch": "b3-minified",
+  "rep": 1,
+  "agentId": "a0b244786ea74494a",
+  "score": 1,
+  "items": [
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 18.7,
+  "start": "2026-09-30T21:38:28.588Z",
+  "end": "2026-09-30T21:38:47.314Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 87151,
+   "cacheCreate": 11850,
+   "output": 182,
+   "total": 99189,
+   "ctxPeak": 34590
+  },
+  "toolCalls": 2,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3060,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 198,
+    "chars": 2197
+   },
+   {
+    "name": "Bash",
+    "ms": 3097,
+    "chars": 863
+   }
+  ],
+  "answer": {
+   "handler": "ai",
+   "attachFunction": "bi"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T30",
+  "type": "open discovery: census of IntersectionObservers",
+  "arm": "G",
+  "model": "sonnet",
+  "batch": "b4-discovery",
+  "rep": 1,
+  "agentId": "a4fdaf7ae1b3c6a15",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 26.7,
+  "start": "2026-09-30T21:38:24.113Z",
+  "end": "2026-09-30T21:38:50.835Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 119546,
+   "cacheCreate": 13164,
+   "output": 1383,
+   "total": 134101,
+   "ctxPeak": 35904
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 5452,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 2964,
+    "chars": 635
+   },
+   {
+    "name": "Bash",
+    "ms": 2371,
+    "chars": 823
+   },
+   {
+    "name": "Bash",
+    "ms": 2149,
+    "chars": 3700
+   },
+   {
+    "name": "Bash",
+    "ms": 3540,
+    "chars": 294
+   }
+  ],
+  "answer": {
+   "observers": [
+    {
+     "line": 2504,
+     "component": "JT",
+     "options": "{ threshold: [0, 0.05, 0.2] }"
+    },
+    {
+     "line": 2725,
+     "component": "uE",
+     "options": "{ rootMargin: n }"
+    },
+    {
+     "line": 3130,
+     "component": "AE",
+     "options": "{ threshold: [0, 0.45, 0.75] }"
+    },
+    {
+     "line": 3709,
+     "component": "HE",
+     "options": "{ rootMargin: `100% 0px` }"
+    },
+    {
+     "line": 4698,
+     "component": "hD",
+     "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+    },
+    {
+     "line": 6261,
+     "component": "WD",
+     "options": "{ threshold: 0.35 }"
+    },
+    {
+     "line": 11609,
+     "component": "yM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 11862,
+     "component": "SM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12024,
+     "component": "EM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12216,
+     "component": "NM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 13082,
+     "component": "dN",
+     "options": "{ rootMargin: `200% 0px` }"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b1-policy",
+  "rep": 1,
+  "agentId": "acf217f7290cfd9cf",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 40.4,
+  "start": "2026-09-30T21:38:12.672Z",
+  "end": "2026-09-30T21:38:53.041Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 189553,
+   "cacheCreate": 13603,
+   "output": 174,
+   "total": 203342,
+   "ctxPeak": 36343
+  },
+  "toolCalls": 6,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 6
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 4269,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 525
+   },
+   {
+    "name": "Bash",
+    "ms": 2706,
+    "chars": 596
+   },
+   {
+    "name": "Bash",
+    "ms": 2847,
+    "chars": 191
+   },
+   {
+    "name": "Bash",
+    "ms": 4498,
+    "chars": 117
+   },
+   {
+    "name": "Bash",
+    "ms": 1873,
+    "chars": 664
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 2176
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T28",
+  "type": "open discovery: self-rescheduling rAF loops",
+  "arm": "G",
+  "model": "sonnet",
+  "batch": "b4-discovery",
+  "rep": 1,
+  "agentId": "a070841f613de7a84",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 35.4,
+  "start": "2026-09-30T21:38:18.583Z",
+  "end": "2026-09-30T21:38:53.992Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 167631,
+   "cacheCreate": 18016,
+   "output": 163,
+   "total": 185820,
+   "ctxPeak": 40756
+  },
+  "toolCalls": 5,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 15795,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 142,
+    "chars": 3051
+   },
+   {
+    "name": "Bash",
+    "ms": 2954,
+    "chars": 6730
+   },
+   {
+    "name": "Bash",
+    "ms": 4527,
+    "chars": 5608
+   },
+   {
+    "name": "Bash",
+    "ms": 2229,
+    "chars": 279
+   },
+   {
+    "name": "Bash",
+    "ms": 2158,
+    "chars": 127
+   }
+  ],
+  "answer": {
+   "loops": [
+    {
+     "line": 2458,
+     "component": "JT",
+     "callback": "d"
+    },
+    {
+     "line": 3125,
+     "component": "AE",
+     "callback": "a"
+    },
+    {
+     "line": 3838,
+     "component": "$E",
+     "callback": "i"
+    },
+    {
+     "line": 4201,
+     "component": "fD",
+     "callback": "f"
+    },
+    {
+     "line": 10969,
+     "component": "uM",
+     "callback": "f"
+    },
+    {
+     "line": 11319,
+     "component": "mM",
+     "callback": "l"
+    },
+    {
+     "line": 12019,
+     "component": "EM",
+     "callback": "n"
+    },
+    {
+     "line": 13022,
+     "component": "dN",
+     "callback": "T"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T19",
+  "type": "cross-file definition through an import alias",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b1-policy",
+  "rep": 1,
+  "agentId": "a6cf73fe24c12ed36",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 30.8,
+  "start": "2026-09-30T21:38:26.401Z",
+  "end": "2026-09-30T21:38:57.191Z",
+  "turns": 8,
+  "tokens": {
+   "input": 16,
+   "cacheRead": 257812,
+   "cacheCreate": 13109,
+   "output": 1457,
+   "total": 272394,
+   "ctxPeak": 35849
+  },
+  "toolCalls": 8,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 8
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3277,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 284,
+    "chars": 742
+   },
+   {
+    "name": "Bash",
+    "ms": 323,
+    "chars": 25
+   },
+   {
+    "name": "Bash",
+    "ms": 1793,
+    "chars": 247
+   },
+   {
+    "name": "Bash",
+    "ms": 2328,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 2791,
+    "chars": 114
+   },
+   {
+    "name": "Bash",
+    "ms": 2431,
+    "chars": 88
+   },
+   {
+    "name": "Bash",
+    "ms": 66,
+    "chars": 1727
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 303
+   }
+  ],
+  "answer": {
+   "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+   "name": "$i",
+   "start": 2861,
+   "end": 2870,
+   "perPropertyHelper": {
+    "name": "Qi",
+    "start": 2855,
+    "end": 2860
+   },
+   "onlyChanged": true
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T30",
+  "type": "open discovery: census of IntersectionObservers",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b4-discovery",
+  "rep": 1,
+  "agentId": "ab19113109df70416",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 23.2,
+  "start": "2026-09-30T21:38:37.415Z",
+  "end": "2026-09-30T21:39:00.571Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 86655,
+   "cacheCreate": 12919,
+   "output": 125,
+   "total": 99705,
+   "ctxPeak": 35659
+  },
+  "toolCalls": 2,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 5708,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 66,
+    "chars": 579
+   },
+   {
+    "name": "Bash",
+    "ms": 2170,
+    "chars": 5129
+   }
+  ],
+  "answer": {
+   "observers": [
+    {
+     "line": 2504,
+     "component": "JT",
+     "options": "{ threshold: [0, 0.05, 0.2] }"
+    },
+    {
+     "line": 2725,
+     "component": "uE",
+     "options": "{ rootMargin: n }"
+    },
+    {
+     "line": 3130,
+     "component": "AE",
+     "options": "{ threshold: [0, 0.45, 0.75] }"
+    },
+    {
+     "line": 3709,
+     "component": "HE",
+     "options": "{ rootMargin: `100% 0px` }"
+    },
+    {
+     "line": 4698,
+     "component": "hD",
+     "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+    },
+    {
+     "line": 6261,
+     "component": "WD",
+     "options": "{ threshold: 0.35 }"
+    },
+    {
+     "line": 11609,
+     "component": "yM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 11862,
+     "component": "SM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12024,
+     "component": "EM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12216,
+     "component": "NM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 13082,
+     "component": "dN",
+     "options": "{ rootMargin: `200% 0px` }"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T29",
+  "type": "open discovery: classify scroll-engine callbacks",
+  "arm": "G",
+  "model": "sonnet",
+  "batch": "b4-discovery",
+  "rep": 1,
+  "agentId": "a2a9353357205ad99",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 40.6,
+  "start": "2026-09-30T21:38:21.360Z",
+  "end": "2026-09-30T21:39:01.923Z",
+  "turns": 9,
+  "tokens": {
+   "input": 18,
+   "cacheRead": 331597,
+   "cacheCreate": 26271,
+   "output": 1542,
+   "total": 359428,
+   "ctxPeak": 49011
+  },
+  "toolCalls": 10,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 8,
+   "Read": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 30221,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 225,
+    "chars": 3369
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 3253
+   },
+   {
+    "name": "Read",
+    "ms": 44,
+    "chars": 2230
+   },
+   {
+    "name": "Bash",
+    "ms": 2049,
+    "chars": 884
+   },
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 5911
+   },
+   {
+    "name": "Bash",
+    "ms": 1965,
+    "chars": 211
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 4355
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 5739
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 4238
+   },
+   {
+    "name": "Bash",
+    "ms": 2621,
+    "chars": 31
+   }
+  ],
+  "answer": {
+   "callbacks": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d",
+     "kind": "direct-read",
+     "readLine": 4730
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A",
+     "kind": "direct-read",
+     "readLine": 6206
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L",
+     "kind": "calls-helper",
+     "readLine": 0
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T12",
+  "type": "disambiguation: which binding",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b1-policy",
+  "rep": 1,
+  "agentId": "a951d73b50cca190a",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 41.7,
+  "start": "2026-09-30T21:38:21.788Z",
+  "end": "2026-09-30T21:39:03.528Z",
+  "turns": 8,
+  "tokens": {
+   "input": 16,
+   "cacheRead": 272965,
+   "cacheCreate": 16383,
+   "output": 597,
+   "total": 289961,
+   "ctxPeak": 39123
+  },
+  "toolCalls": 8,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 8
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 10008,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 2977,
+    "chars": 399
+   },
+   {
+    "name": "Bash",
+    "ms": 2590,
+    "chars": 4905
+   },
+   {
+    "name": "Bash",
+    "ms": 1902,
+    "chars": 143
+   },
+   {
+    "name": "Bash",
+    "ms": 3642,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 1993,
+    "chars": 2495
+   },
+   {
+    "name": "Bash",
+    "ms": 1841,
+    "chars": 1409
+   },
+   {
+    "name": "Bash",
+    "ms": 109,
+    "chars": 205
+   },
+   {
+    "name": "Bash",
+    "ms": 102,
+    "chars": 421
+   }
+  ],
+  "answer": {
+   "declaredLine": 12946,
+   "assignedLine": 13218,
+   "holds": "<omitted>",
+   "sameAsRafT": false,
+   "otherTLine": 13020
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T28",
+  "type": "open discovery: self-rescheduling rAF loops",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b4-discovery",
+  "rep": 1,
+  "agentId": "a8f920557f4a0eef6",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 37.3,
+  "start": "2026-09-30T21:38:28.510Z",
+  "end": "2026-09-30T21:39:05.797Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 207404,
+   "cacheCreate": 20262,
+   "output": 155,
+   "total": 227833,
+   "ctxPeak": 43002
+  },
+  "toolCalls": 6,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 6
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 18649,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 1782
+   },
+   {
+    "name": "Bash",
+    "ms": 1772,
+    "chars": 7036
+   },
+   {
+    "name": "Bash",
+    "ms": 2543,
+    "chars": 6299
+   },
+   {
+    "name": "Bash",
+    "ms": 3580,
+    "chars": 315
+   },
+   {
+    "name": "Bash",
+    "ms": 1951,
+    "chars": 1930
+   },
+   {
+    "name": "Bash",
+    "ms": 2542,
+    "chars": 1287
+   }
+  ],
+  "answer": {
+   "loops": [
+    {
+     "line": 2458,
+     "component": "JT",
+     "callback": "d"
+    },
+    {
+     "line": 3125,
+     "component": "AE",
+     "callback": "a"
+    },
+    {
+     "line": 3838,
+     "component": "$E",
+     "callback": "i"
+    },
+    {
+     "line": 4201,
+     "component": "fD",
+     "callback": "f"
+    },
+    {
+     "line": 10969,
+     "component": "uM",
+     "callback": "f"
+    },
+    {
+     "line": 11319,
+     "component": "mM",
+     "callback": "l"
+    },
+    {
+     "line": 12019,
+     "component": "EM",
+     "callback": "n"
+    },
+    {
+     "line": 13022,
+     "component": "dN",
+     "callback": "T"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T34",
+  "type": "minified bundle: callers of a function",
+  "arm": "GU",
+  "model": "sonnet",
+  "batch": "b3-minified",
+  "rep": 1,
+  "agentId": "af5ead50c72223437",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 55,
+  "start": "2026-09-30T21:38:22.105Z",
+  "end": "2026-09-30T21:39:17.119Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 225704,
+   "cacheCreate": 15616,
+   "output": 927,
+   "total": 242261,
+   "ctxPeak": 38356
+  },
+  "toolCalls": 6,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 6
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3208,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 2701,
+    "chars": 26
+   },
+   {
+    "name": "Bash",
+    "ms": 2009,
+    "chars": 120
+   },
+   {
+    "name": "Bash",
+    "ms": 2613,
+    "chars": 72
+   },
+   {
+    "name": "Bash",
+    "ms": 2729,
+    "chars": 1618
+   },
+   {
+    "name": "Bash",
+    "ms": 2102,
+    "chars": 293
+   },
+   {
+    "name": "Bash",
+    "ms": 2250,
+    "chars": 1079
+   }
+  ],
+  "answer": {
+   "callers": [
+    "AE",
+    "fD",
+    "hD",
+    "WD",
+    "uM",
+    "mM",
+    "GM",
+    "dN"
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T29",
+  "type": "open discovery: classify scroll-engine callbacks",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b4-discovery",
+  "rep": 1,
+  "agentId": "ac560a1e47244399d",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 43.6,
+  "start": "2026-09-30T21:38:33.354Z",
+  "end": "2026-09-30T21:39:16.945Z",
+  "turns": 11,
+  "tokens": {
+   "input": 22,
+   "cacheRead": 448952,
+   "cacheCreate": 31347,
+   "output": 279,
+   "total": 480600,
+   "ctxPeak": 54087
+  },
+  "toolCalls": 12,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 12
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 40190,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 1609
+   },
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 4978
+   },
+   {
+    "name": "Bash",
+    "ms": 132,
+    "chars": 4823
+   },
+   {
+    "name": "Bash",
+    "ms": 184,
+    "chars": 2826
+   },
+   {
+    "name": "Bash",
+    "ms": 2102,
+    "chars": 805
+   },
+   {
+    "name": "Bash",
+    "ms": 65,
+    "chars": 1890
+   },
+   {
+    "name": "Bash",
+    "ms": 65,
+    "chars": 3344
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 4036
+   },
+   {
+    "name": "Bash",
+    "ms": 104,
+    "chars": 2101
+   },
+   {
+    "name": "Bash",
+    "ms": 126,
+    "chars": 4748
+   },
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 3083
+   },
+   {
+    "name": "Bash",
+    "ms": 82,
+    "chars": 5947
+   }
+  ],
+  "answer": {
+   "callbacks": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d",
+     "kind": "direct-read",
+     "readLine": 4730
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A",
+     "kind": "direct-read",
+     "readLine": 6206
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L",
+     "kind": "calls-helper",
+     "readLine": 0
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T35",
+  "type": "minified bundle: locate by behaviour",
+  "arm": "SU",
+  "model": "sonnet",
+  "batch": "b3-minified",
+  "rep": 1,
+  "agentId": "a1cc57d219b4befc9",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 15.9,
+  "start": "2026-09-30T21:39:30.714Z",
+  "end": "2026-09-30T21:39:46.643Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 96214,
+   "cacheCreate": 20564,
+   "output": 751,
+   "total": 117535,
+   "ctxPeak": 43304
+  },
+  "toolCalls": 2,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 10982,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 829,
+    "chars": 10362
+   },
+   {
+    "name": "Bash",
+    "ms": 3246,
+    "chars": 620
+   }
+  ],
+  "answer": {
+   "stiffness": 280,
+   "damping": 18,
+   "mass": 0.3,
+   "paramsVar": "UE",
+   "stepFunction": "GE",
+   "digitComponent": "$E"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T34",
+  "type": "minified bundle: callers of a function",
+  "arm": "SU",
+  "model": "sonnet",
+  "batch": "b3-minified",
+  "rep": 1,
+  "agentId": "a6ed1dc39a7674d3a",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 31.3,
+  "start": "2026-09-30T21:39:27.188Z",
+  "end": "2026-09-30T21:39:58.536Z",
+  "turns": 5,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 165547,
+   "cacheCreate": 16968,
+   "output": 1614,
+   "total": 184141,
+   "ctxPeak": 39710
+  },
+  "toolCalls": 3,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Bash": 2
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 158,
+  "serenaMs": 181,
+  "textResultChars": 1779,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 181,
+    "chars": 158,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 3060,
+    "chars": 1197
+   },
+   {
+    "name": "Bash",
+    "ms": 2934,
+    "chars": 582
+   }
+  ],
+  "answer": {
+   "callers": [
+    "AE",
+    "fD",
+    "hD",
+    "WD",
+    "uM",
+    "mM",
+    "GM",
+    "dN"
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T30",
+  "type": "open discovery: census of IntersectionObservers",
+  "arm": "S",
+  "model": "sonnet",
+  "batch": "b4-discovery",
+  "rep": 1,
+  "agentId": "acc70ee6ffac2028e",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 25.5,
+  "start": "2026-09-30T21:39:40.386Z",
+  "end": "2026-09-30T21:40:05.882Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 182249,
+   "cacheCreate": 25385,
+   "output": 1347,
+   "total": 208991,
+   "ctxPeak": 48125
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "Grep": 1,
+   "ToolSearch": 1,
+   "Bash": 3,
+   "mcp__serena__get_symbols_overview": 1
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 11486,
+  "serenaMs": 74,
+  "textResultChars": 6166,
+  "calls": [
+   {
+    "name": "Grep",
+    "ms": 3,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "ToolSearch",
+    "ms": 10,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 190,
+    "chars": 602
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 74,
+    "chars": 11486
+   },
+   {
+    "name": "Bash",
+    "ms": 2275,
+    "chars": 5173
+   },
+   {
+    "name": "Bash",
+    "ms": 2151,
+    "chars": 222
+   }
+  ],
+  "answer": {
+   "observers": [
+    {
+     "line": 2504,
+     "component": "JT",
+     "options": "{ threshold: [0, 0.05, 0.2] }"
+    },
+    {
+     "line": 2725,
+     "component": "uE",
+     "options": "{ rootMargin: n }"
+    },
+    {
+     "line": 3130,
+     "component": "AE",
+     "options": "{ threshold: [0, 0.45, 0.75] }"
+    },
+    {
+     "line": 3709,
+     "component": "HE",
+     "options": "{ rootMargin: `100% 0px` }"
+    },
+    {
+     "line": 4698,
+     "component": "hD",
+     "options": "{ threshold: [0, 0.12, 0.25, 0.5] }"
+    },
+    {
+     "line": 6261,
+     "component": "WD",
+     "options": "{ threshold: 0.35 }"
+    },
+    {
+     "line": 11609,
+     "component": "yM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 11862,
+     "component": "SM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12024,
+     "component": "EM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 12216,
+     "component": "NM",
+     "options": "{ threshold: [0, 0.35, 0.6] }"
+    },
+    {
+     "line": 13082,
+     "component": "dN",
+     "options": "{ rootMargin: `200% 0px` }"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T28",
+  "type": "open discovery: self-rescheduling rAF loops",
+  "arm": "S",
+  "model": "sonnet",
+  "batch": "b4-discovery",
+  "rep": 1,
+  "agentId": "a7d45d41995958c59",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 34,
+  "start": "2026-09-30T21:39:32.855Z",
+  "end": "2026-09-30T21:40:06.871Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 259273,
+   "cacheCreate": 22900,
+   "output": 1485,
+   "total": 283672,
+   "ctxPeak": 45640
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "Grep": 1,
+   "ToolSearch": 1,
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 17743,
+  "calls": [
+   {
+    "name": "Grep",
+    "ms": 1,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 137,
+    "chars": 1782
+   },
+   {
+    "name": "Bash",
+    "ms": 2489,
+    "chars": 8952
+   },
+   {
+    "name": "Bash",
+    "ms": 2762,
+    "chars": 6430
+   },
+   {
+    "name": "Bash",
+    "ms": 2410,
+    "chars": 283
+   },
+   {
+    "name": "Bash",
+    "ms": 2314,
+    "chars": 127
+   }
+  ],
+  "answer": {
+   "loops": [
+    {
+     "line": 2458,
+     "component": "JT",
+     "callback": "d"
+    },
+    {
+     "line": 3125,
+     "component": "AE",
+     "callback": "a"
+    },
+    {
+     "line": 3838,
+     "component": "$E",
+     "callback": "i"
+    },
+    {
+     "line": 4201,
+     "component": "fD",
+     "callback": "f"
+    },
+    {
+     "line": 10969,
+     "component": "uM",
+     "callback": "f"
+    },
+    {
+     "line": 11319,
+     "component": "mM",
+     "callback": "l"
+    },
+    {
+     "line": 12019,
+     "component": "EM",
+     "callback": "n"
+    },
+    {
+     "line": 13022,
+     "component": "dN",
+     "callback": "T"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T36",
+  "type": "minified bundle: locate by behaviour",
+  "arm": "SU",
+  "model": "sonnet",
+  "batch": "b3-minified",
+  "rep": 1,
+  "agentId": "a63e6bfd65ada0f3c",
+  "score": 1,
+  "items": [
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 35,
+  "start": "2026-09-30T21:39:34.648Z",
+  "end": "2026-09-30T21:40:09.624Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 243671,
+   "cacheCreate": 16837,
+   "output": 1485,
+   "total": 262007,
+   "ctxPeak": 39577
+  },
+  "toolCalls": 7,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 6,
+   "mcp__serena__find_referencing_symbols": 1
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 157,
+  "serenaMs": 134,
+  "textResultChars": 2561,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 6,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 211,
+    "chars": 912
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 134,
+    "chars": 157,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 1949,
+    "chars": 460
+   },
+   {
+    "name": "Bash",
+    "ms": 2639,
+    "chars": 177
+   },
+   {
+    "name": "Bash",
+    "ms": 2374,
+    "chars": 504
+   },
+   {
+    "name": "Bash",
+    "ms": 2527,
+    "chars": 41
+   },
+   {
+    "name": "Bash",
+    "ms": 2178,
+    "chars": 467
+   }
+  ],
+  "answer": {
+   "handler": "ai",
+   "attachFunction": "bi"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T29",
+  "type": "open discovery: classify scroll-engine callbacks",
+  "arm": "S",
+  "model": "sonnet",
+  "batch": "b4-discovery",
+  "rep": 1,
+  "agentId": "a6342822293d7e82b",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 44.8,
+  "start": "2026-09-30T21:39:37.853Z",
+  "end": "2026-09-30T21:40:22.659Z",
+  "turns": 12,
+  "tokens": {
+   "input": 24,
+   "cacheRead": 555538,
+   "cacheCreate": 44243,
+   "output": 334,
+   "total": 600139,
+   "ctxPeak": 66983
+  },
+  "toolCalls": 16,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "Bash": 5,
+   "Read": 10
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 11486,
+  "serenaMs": 92,
+  "textResultChars": 41893,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 92,
+    "chars": 11486
+   },
+   {
+    "name": "Bash",
+    "ms": 298,
+    "chars": 1609
+   },
+   {
+    "name": "Bash",
+    "ms": 2467,
+    "chars": 3511
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 1125
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 3315
+   },
+   {
+    "name": "Bash",
+    "ms": 2048,
+    "chars": 692
+   },
+   {
+    "name": "Bash",
+    "ms": 140,
+    "chars": 525
+   },
+   {
+    "name": "Bash",
+    "ms": 2115,
+    "chars": 279
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 2310
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 3967
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 7072
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2662
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 4036
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 3159
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 1326
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 6305
+   }
+  ],
+  "answer": {
+   "callbacks": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d",
+     "kind": "direct-read",
+     "readLine": 4730
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A",
+     "kind": "direct-read",
+     "readLine": 6206
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r",
+     "kind": "schedules-raf",
+     "readLine": 0
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L",
+     "kind": "calls-helper",
+     "readLine": 0
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b1-policy",
+  "rep": 1,
+  "agentId": "a81025d4fc0b587fb",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "found540": false,
+  "offByOne": 0,
+  "wallSec": 149,
+  "start": "2026-09-30T21:38:17.290Z",
+  "end": "2026-09-30T21:40:46.333Z",
+  "turns": 15,
+  "tokens": {
+   "input": 30,
+   "cacheRead": 564424,
+   "cacheCreate": 23388,
+   "output": 1338,
+   "total": 589180,
+   "ctxPeak": 46128
+  },
+  "toolCalls": 15,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 15
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 13137,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 62
+   },
+   {
+    "name": "Bash",
+    "ms": 168,
+    "chars": 1332
+   },
+   {
+    "name": "Bash",
+    "ms": 339,
+    "chars": 373
+   },
+   {
+    "name": "Bash",
+    "ms": 360,
+    "chars": 571
+   },
+   {
+    "name": "Bash",
+    "ms": 2191,
+    "chars": 2075
+   },
+   {
+    "name": "Bash",
+    "ms": 468,
+    "chars": 1062
+   },
+   {
+    "name": "Bash",
+    "ms": 1946,
+    "chars": 2899
+   },
+   {
+    "name": "Bash",
+    "ms": 1975,
+    "chars": 229
+   },
+   {
+    "name": "Bash",
+    "ms": 2269,
+    "chars": 959
+   },
+   {
+    "name": "Bash",
+    "ms": 2291,
+    "chars": 821,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 294,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 58662,
+    "chars": 828
+   },
+   {
+    "name": "Bash",
+    "ms": 2398,
+    "chars": 672
+   },
+   {
+    "name": "Bash",
+    "ms": 2198,
+    "chars": 527
+   },
+   {
+    "name": "Bash",
+    "ms": 276,
+    "chars": 696
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "Ra",
+    "line": 3430
+   },
+   "uses": [
+    {
+     "file": "chunks/BSBv9QXB.js",
+     "line": 3420,
+     "localName": "Ra"
+    },
+    {
+     "file": "chunks/BSBv9QXB.js",
+     "line": 3440,
+     "localName": "Ra"
+    },
+    {
+     "file": "chunks/CzkAa0og.js",
+     "line": 445,
+     "localName": "a"
+    },
+    {
+     "file": "entry/app.HSR43Bkx.js",
+     "line": 3880,
+     "localName": "ie"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 2424,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 2927,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 3100,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 3680,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 3931,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 4155,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 4689,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 6225,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 10913,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 11294,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 11606,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 11860,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 11994,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 12196,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 12433,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 12978,
+     "localName": "ne"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T21",
+  "type": "who toggles a class (state behind a class binding)",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b1-policy",
+  "rep": 1,
+  "agentId": "af9e31fdc7269871b",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 28.1,
+  "start": "2026-09-30T21:43:53.350Z",
+  "end": "2026-09-30T21:44:21.418Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 195783,
+   "cacheCreate": 15171,
+   "output": 1176,
+   "total": 212142,
+   "ctxPeak": 37911
+  },
+  "toolCalls": 5,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 8683,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 1710
+   },
+   {
+    "name": "Bash",
+    "ms": 1930,
+    "chars": 2815
+   },
+   {
+    "name": "Bash",
+    "ms": 2086,
+    "chars": 2555
+   },
+   {
+    "name": "Bash",
+    "ms": 2075,
+    "chars": 1295
+   },
+   {
+    "name": "Bash",
+    "ms": 2162,
+    "chars": 308
+   }
+  ],
+  "answer": {
+   "classBindingLine": 11469,
+   "stateVar": "y",
+   "stateDeclLine": 11274,
+   "writes": [
+    11310,
+    11311
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T24",
+  "type": "cross-file definition through an import alias",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b1-policy",
+  "rep": 1,
+  "agentId": "a07fa97dc628c970b",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 29.6,
+  "start": "2026-09-30T21:43:58.187Z",
+  "end": "2026-09-30T21:44:27.765Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 188963,
+   "cacheCreate": 13180,
+   "output": 292,
+   "total": 202447,
+   "ctxPeak": 35920
+  },
+  "toolCalls": 6,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 6
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3718,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 138,
+    "chars": 534
+   },
+   {
+    "name": "Bash",
+    "ms": 102,
+    "chars": 582
+   },
+   {
+    "name": "Bash",
+    "ms": 1918,
+    "chars": 406
+   },
+   {
+    "name": "Bash",
+    "ms": 2061,
+    "chars": 626
+   },
+   {
+    "name": "Bash",
+    "ms": 1844,
+    "chars": 1412
+   },
+   {
+    "name": "Bash",
+    "ms": 3143,
+    "chars": 158
+   }
+  ],
+  "answer": {
+   "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+   "name": "F",
+   "start": 1229,
+   "end": 1234,
+   "equalityCheckIn": {
+    "name": "wn",
+    "line": 1235
+   }
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T25",
+  "type": "definition of a repeated short name from a call site",
+  "arm": "GR",
+  "model": "sonnet",
+  "batch": "b1-policy",
+  "rep": 1,
+  "agentId": "a5de10523742332d6",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 21.7,
+  "start": "2026-09-30T21:44:01.796Z",
+  "end": "2026-09-30T21:44:23.461Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 121229,
+   "cacheCreate": 12211,
+   "output": 184,
+   "total": 133632,
+   "ctxPeak": 34951
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3292,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 1845,
+    "chars": 1014
+   },
+   {
+    "name": "Bash",
+    "ms": 1893,
+    "chars": 1590
+   },
+   {
+    "name": "Bash",
+    "ms": 3164,
+    "chars": 688
+   }
+  ],
+  "answer": {
+   "start": 10782,
+   "end": 10784,
+   "returns": "!oe() && !s(T) && window.matchMedia('(min-width: 861px)').matches, i.e. true only when reduced-motion is off, the mobile flag T is false, and the viewport is at least 861px wide",
+   "excludesPhones": true
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "GM",
+  "model": "sonnet",
+  "batch": "b5-memory",
+  "rep": 1,
+  "agentId": "a6c1cc1da1456a34d",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 10.2,
+  "start": "2026-09-30T21:46:33.887Z",
+  "end": "2026-09-30T21:46:44.057Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 86018,
+   "cacheCreate": 11307,
+   "output": 752,
+   "total": 98083,
+   "ctxPeak": 34047
+  },
+  "toolCalls": 2,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 2668,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 93,
+    "chars": 166
+   },
+   {
+    "name": "Bash",
+    "ms": 2152,
+    "chars": 2502
+   }
+  ],
+  "answer": {
+   "iE": [
+    2670,
+    2673
+   ],
+   "dE": [
+    2749,
+    2783
+   ],
+   "uE": [
+    2719,
+    2748
+   ],
+   "defaultRootMargin": "100% 0px"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T31",
+  "type": "overlay path: callers of a function",
+  "arm": "G",
+  "model": "sonnet",
+  "batch": "b6-overlay",
+  "rep": 1,
+  "agentId": "af27165b7ea9a5005",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "baselineLines": 0,
+  "offByOne": 0,
+  "wallSec": 14.8,
+  "start": "2026-09-30T21:46:34.950Z",
+  "end": "2026-09-30T21:46:49.732Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 86446,
+   "cacheCreate": 11441,
+   "output": 172,
+   "total": 98065,
+   "ctxPeak": 34181
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 1821,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 74,
+    "chars": 570
+   },
+   {
+    "name": "Bash",
+    "ms": 2180,
+    "chars": 654
+   },
+   {
+    "name": "Bash",
+    "ms": 2960,
+    "chars": 597
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3155,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4251,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4748,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6281,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10989,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11371,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12460,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13102,
+     "component": "dN",
+     "callback": "L"
+    },
+    {
+     "line": 13525,
+     "component": "NB1",
+     "callback": ""
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T32",
+  "type": "overlay path: locate definitions",
+  "arm": "G",
+  "model": "sonnet",
+  "batch": "b6-overlay",
+  "rep": 1,
+  "agentId": "a35be69aa5768e6ee",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 18.6,
+  "start": "2026-09-30T21:46:38.502Z",
+  "end": "2026-09-30T21:46:57.071Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 119852,
+   "cacheCreate": 11290,
+   "output": 208,
+   "total": 131358,
+   "ctxPeak": 34030
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 1436,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 393
+   },
+   {
+    "name": "Bash",
+    "ms": 1816,
+    "chars": 556
+   },
+   {
+    "name": "Bash",
+    "ms": 2034,
+    "chars": 487
+   }
+  ],
+  "answer": {
+   "iE": [
+    2682,
+    2685
+   ],
+   "dE": [
+    2761,
+    2795
+   ],
+   "uE": [
+    2731,
+    2760
+   ],
+   "NB1": [
+    13523,
+    13534
+   ],
+   "exitOpacityLine": 13528
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T33",
+  "type": "overlay path: who writes a custom property",
+  "arm": "G",
+  "model": "sonnet",
+  "batch": "b6-overlay",
+  "rep": 1,
+  "agentId": "a5e7b9f6e0fb7a47d",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 16.4,
+  "start": "2026-09-30T21:46:42.288Z",
+  "end": "2026-09-30T21:46:58.651Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 120117,
+   "cacheCreate": 12410,
+   "output": 762,
+   "total": 133297,
+   "ctxPeak": 35150
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3639,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 291
+   },
+   {
+    "name": "Bash",
+    "ms": 1947,
+    "chars": 1743
+   },
+   {
+    "name": "Bash",
+    "ms": 2015,
+    "chars": 840
+   },
+   {
+    "name": "Bash",
+    "ms": 1550,
+    "chars": 765
+   }
+  ],
+  "answer": {
+   "writes": [
+    {
+     "line": 4177,
+     "component": "fD"
+    },
+    {
+     "line": 4183,
+     "component": "fD"
+    },
+    {
+     "line": 13528,
+     "component": "NB1"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T13",
+  "type": "locate by behaviour in the runtime",
+  "arm": "GM",
+  "model": "sonnet",
+  "batch": "b5-memory",
+  "rep": 1,
+  "agentId": "ad6f4d3af9c4a0387",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 21,
+  "start": "2026-09-30T21:46:43.206Z",
+  "end": "2026-09-30T21:47:04.249Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 154554,
+   "cacheCreate": 12174,
+   "output": 985,
+   "total": 167723,
+   "ctxPeak": 34914
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3946,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 98,
+    "chars": 313
+   },
+   {
+    "name": "Bash",
+    "ms": 2046,
+    "chars": 2781
+   },
+   {
+    "name": "Bash",
+    "ms": 1850,
+    "chars": 704
+   },
+   {
+    "name": "Bash",
+    "ms": 1907,
+    "chars": 148
+   }
+  ],
+  "answer": {
+   "name": "ai",
+   "start": 2054,
+   "end": 2110,
+   "attachLine": 2275,
+   "attachFunction": "bi (inner arrow d, inside the mount function)"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T07",
+  "type": "API usage scoped by call graph",
+  "arm": "GM",
+  "model": "sonnet",
+  "batch": "b5-memory",
+  "rep": 1,
+  "agentId": "a18e3e801b235d258",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0,
+  "wallSec": 28.8,
+  "start": "2026-09-30T21:46:40.295Z",
+  "end": "2026-09-30T21:47:09.090Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 227649,
+   "cacheCreate": 26736,
+   "output": 372,
+   "total": 254769,
+   "ctxPeak": 49476
+  },
+  "toolCalls": 6,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2,
+   "Read": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 32215,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 567
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 19417
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 4650
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 6254
+   },
+   {
+    "name": "Bash",
+    "ms": 2098,
+    "chars": 439
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 888
+   }
+  ],
+  "answer": {
+   "perScrollFrame": [
+    {
+     "line": 13007,
+     "api": "getBoundingClientRect",
+     "function": "_ (hero-track progress, called by scroll callback L)"
+    },
+    {
+     "line": 12956,
+     "api": "getBoundingClientRect",
+     "function": "F (nav root T, called from _)"
+    },
+    {
+     "line": 12961,
+     "api": "elementFromPoint",
+     "function": "F (called from _)"
+    },
+    {
+     "line": 12967,
+     "api": "getComputedStyle",
+     "function": "ee (called from _, only if .start-selling-profile-sticky exists)"
+    },
+    {
+     "line": 12972,
+     "api": "getBoundingClientRect",
+     "function": "ee (sticky element, only if position is sticky and ancestor found)"
+    },
+    {
+     "line": 12973,
+     "api": "getBoundingClientRect",
+     "function": "ee (profile section ancestor, only if position is sticky and ancestor found)"
+    }
+   ],
+   "notFromScrollCallback": [
+    {
+     "line": 13044,
+     "api": "getBoundingClientRect",
+     "function": "O (called via k from wheel handler A and touchmove handler M)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "GM",
+  "model": "sonnet",
+  "batch": "b5-memory",
+  "rep": 1,
+  "agentId": "a07fb067c2279fa5b",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 43.9,
+  "start": "2026-09-30T21:46:36.930Z",
+  "end": "2026-09-30T21:47:20.805Z",
+  "turns": 8,
+  "tokens": {
+   "input": 16,
+   "cacheRead": 261887,
+   "cacheCreate": 15086,
+   "output": 1070,
+   "total": 278059,
+   "ctxPeak": 37826
+  },
+  "toolCalls": 8,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 8
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 6100,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 525
+   },
+   {
+    "name": "Bash",
+    "ms": 2484,
+    "chars": 279
+   },
+   {
+    "name": "Bash",
+    "ms": 2108,
+    "chars": 963
+   },
+   {
+    "name": "Bash",
+    "ms": 3328,
+    "chars": 211
+   },
+   {
+    "name": "Bash",
+    "ms": 2228,
+    "chars": 63
+   },
+   {
+    "name": "Bash",
+    "ms": 2147,
+    "chars": 897
+   },
+   {
+    "name": "Bash",
+    "ms": 2064,
+    "chars": 3131
+   },
+   {
+    "name": "Bash",
+    "ms": 2017,
+    "chars": 31
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T11",
+  "type": "disambiguation: references of a short local name",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "a67783a62653f8797",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 53.8,
+  "start": "2026-09-30T21:46:40.943Z",
+  "end": "2026-09-30T21:47:34.732Z",
+  "turns": 9,
+  "tokens": {
+   "input": 76,
+   "cacheRead": 302670,
+   "cacheCreate": 19456,
+   "output": 16,
+   "total": 322218,
+   "ctxPeak": 40965
+  },
+  "toolCalls": 7,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 3,
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 20271,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 2059
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 740
+   },
+   {
+    "name": "Bash",
+    "ms": 100,
+    "chars": 14574
+   },
+   {
+    "name": "Read",
+    "ms": 32,
+    "chars": 2274
+   },
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 206
+   },
+   {
+    "name": "Bash",
+    "ms": 82,
+    "chars": 195
+   },
+   {
+    "name": "Bash",
+    "ms": 2024,
+    "chars": 223
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 3125,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3128,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3142,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T32",
+  "type": "overlay path: locate definitions",
+  "arm": "S",
+  "model": "sonnet",
+  "batch": "b6-overlay",
+  "rep": 1,
+  "agentId": "a52f4614e14a521e9",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 23.4,
+  "start": "2026-09-30T21:47:13.097Z",
+  "end": "2026-09-30T21:47:36.515Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 203275,
+   "cacheCreate": 16259,
+   "output": 397,
+   "total": 219943,
+   "ctxPeak": 38999
+  },
+  "toolCalls": 7,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 4,
+   "Bash": 3
+  },
+  "serenaCalls": 4,
+  "serenaResultChars": 827,
+  "serenaMs": 246,
+  "textResultChars": 1595,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 101,
+    "chars": 206
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 43,
+    "chars": 206
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 49,
+    "chars": 206
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 53,
+    "chars": 209
+   },
+   {
+    "name": "Bash",
+    "ms": 1937,
+    "chars": 393
+   },
+   {
+    "name": "Bash",
+    "ms": 1840,
+    "chars": 383
+   },
+   {
+    "name": "Bash",
+    "ms": 2229,
+    "chars": 819
+   }
+  ],
+  "answer": {
+   "iE": [
+    2682,
+    2685
+   ],
+   "dE": [
+    2761,
+    2795
+   ],
+   "uE": [
+    2731,
+    2760
+   ],
+   "NB1": [
+    13523,
+    13534
+   ],
+   "exitOpacityLine": 13528
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T17",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "ad577c6da79aca841",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 52.5,
+  "start": "2026-09-30T21:46:43.747Z",
+  "end": "2026-09-30T21:47:36.248Z",
+  "turns": 7,
+  "tokens": {
+   "input": 60,
+   "cacheRead": 211829,
+   "cacheCreate": 15161,
+   "output": 13,
+   "total": 227063,
+   "ctxPeak": 36670
+  },
+  "toolCalls": 5,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 2,
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 9339,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2266
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 2951
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 376
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 3527
+   },
+   {
+    "name": "Bash",
+    "ms": 104,
+    "chars": 219
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10918,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10929,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10975,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10980,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10989,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T33",
+  "type": "overlay path: who writes a custom property",
+  "arm": "S",
+  "model": "sonnet",
+  "batch": "b6-overlay",
+  "rep": 1,
+  "agentId": "a115bd16f4a31e38b",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 21.1,
+  "start": "2026-09-30T21:47:17.297Z",
+  "end": "2026-09-30T21:47:38.352Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 217852,
+   "cacheCreate": 23636,
+   "output": 755,
+   "total": 242255,
+   "ctxPeak": 46376
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "Bash": 3,
+   "mcp__serena__get_symbols_overview": 1
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 11493,
+  "serenaMs": 33,
+  "textResultChars": 2121,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 1,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 291
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 33,
+    "chars": 11493
+   },
+   {
+    "name": "Bash",
+    "ms": 1867,
+    "chars": 1393
+   },
+   {
+    "name": "Bash",
+    "ms": 1849,
+    "chars": 268
+   }
+  ],
+  "answer": {
+   "writes": [
+    {
+     "line": 4177,
+     "component": "fD"
+    },
+    {
+     "line": 4183,
+     "component": "fD"
+    },
+    {
+     "line": 13528,
+     "component": "NB1"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T31",
+  "type": "overlay path: callers of a function",
+  "arm": "S",
+  "model": "sonnet",
+  "batch": "b6-overlay",
+  "rep": 1,
+  "agentId": "a08250c23409ab4be",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "baselineLines": 0,
+  "offByOne": 0,
+  "wallSec": 36.1,
+  "start": "2026-09-30T21:47:09.287Z",
+  "end": "2026-09-30T21:47:45.366Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 206405,
+   "cacheCreate": 17465,
+   "output": 87,
+   "total": 223969,
+   "ctxPeak": 40205
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3201,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 74,
+    "chars": 570
+   },
+   {
+    "name": "Bash",
+    "ms": 2062,
+    "chars": 1213
+   },
+   {
+    "name": "Bash",
+    "ms": 2236,
+    "chars": 514
+   },
+   {
+    "name": "Bash",
+    "ms": 2961,
+    "chars": 717
+   },
+   {
+    "name": "Bash",
+    "ms": 2134,
+    "chars": 187
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3155,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4251,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4748,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6281,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10989,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11371,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12460,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13102,
+     "component": "dN",
+     "callback": "L"
+    },
+    {
+     "line": 13525,
+     "component": "NB1",
+     "callback": ""
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "SM",
+  "model": "sonnet",
+  "batch": "b5-memory",
+  "rep": 1,
+  "agentId": "a24740678914cdcec",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 13.2,
+  "start": "2026-09-30T21:47:36.680Z",
+  "end": "2026-09-30T21:47:49.850Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 126616,
+   "cacheCreate": 15421,
+   "output": 146,
+   "total": 142191,
+   "ctxPeak": 38161
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 3,
+   "Bash": 1
+  },
+  "serenaCalls": 3,
+  "serenaResultChars": 495,
+  "serenaMs": 150,
+  "textResultChars": 2085,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 3,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 60,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 57,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 33,
+    "chars": 165
+   },
+   {
+    "name": "Bash",
+    "ms": 2122,
+    "chars": 2085
+   }
+  ],
+  "answer": {
+   "iE": [
+    2670,
+    2673
+   ],
+   "dE": [
+    2749,
+    2783
+   ],
+   "uE": [
+    2719,
+    2748
+   ],
+   "defaultRootMargin": "100% 0px"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "SM",
+  "model": "sonnet",
+  "batch": "b5-memory",
+  "rep": 1,
+  "agentId": "a6f323f63961564d2",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 24,
+  "start": "2026-09-30T21:47:39.638Z",
+  "end": "2026-09-30T21:48:03.682Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 166433,
+   "cacheCreate": 16615,
+   "output": 68,
+   "total": 183126,
+   "ctxPeak": 39355
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Bash": 3
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 2117,
+  "serenaMs": 702,
+  "textResultChars": 1506,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 1,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 702,
+    "chars": 2117
+   },
+   {
+    "name": "Bash",
+    "ms": 66,
+    "chars": 525
+   },
+   {
+    "name": "Bash",
+    "ms": 2207,
+    "chars": 234
+   },
+   {
+    "name": "Bash",
+    "ms": 2793,
+    "chars": 578
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T24",
+  "type": "cross-file definition through an import alias",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "a8d6bb1f1dc2b32fe",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 75,
+  "start": "2026-09-30T21:46:49.694Z",
+  "end": "2026-09-30T21:48:04.722Z",
+  "turns": 19,
+  "tokens": {
+   "input": 156,
+   "cacheRead": 625099,
+   "cacheCreate": 19808,
+   "output": 42,
+   "total": 645105,
+   "ctxPeak": 41317
+  },
+  "toolCalls": 17,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 10,
+   "Bash": 7
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 14157,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 197,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 95,
+    "chars": 226
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 653
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 747
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 1873
+   },
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 25
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 2033
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 2685
+   },
+   {
+    "name": "Bash",
+    "ms": 66,
+    "chars": 103
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 19
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 1072
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 52
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 2996
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 787
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 306
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 352
+   }
+  ],
+  "answer": {
+   "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+   "name": "F",
+   "start": 1229,
+   "end": 1234,
+   "equalityCheckIn": {
+    "name": "wn",
+    "line": 1236
+   }
+  },
+  "handbackPlaceholder": true
+ },
+ {
+  "task": "T07",
+  "type": "API usage scoped by call graph",
+  "arm": "SM",
+  "model": "sonnet",
+  "batch": "b5-memory",
+  "rep": 1,
+  "agentId": "a0930451e30d8860c",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0,
+  "wallSec": 32.6,
+  "start": "2026-09-30T21:47:43.275Z",
+  "end": "2026-09-30T21:48:15.826Z",
+  "turns": 6,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 224057,
+   "cacheCreate": 25126,
+   "output": 1206,
+   "total": 250403,
+   "ctxPeak": 47868
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 4,
+   "mcp__serena__find_symbol": 2
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 12566,
+  "serenaMs": 140,
+  "textResultChars": 6216,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 9,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 50
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 53,
+    "chars": 11217
+   },
+   {
+    "name": "Bash",
+    "ms": 65,
+    "chars": 1683
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 87,
+    "chars": 1349
+   },
+   {
+    "name": "Bash",
+    "ms": 94,
+    "chars": 1503
+   },
+   {
+    "name": "Bash",
+    "ms": 67,
+    "chars": 2980
+   }
+  ],
+  "answer": {
+   "perScrollFrame": [
+    {
+     "line": 12956,
+     "api": "getBoundingClientRect",
+     "function": "F"
+    },
+    {
+     "line": 12961,
+     "api": "elementFromPoint",
+     "function": "F"
+    },
+    {
+     "line": 12967,
+     "api": "getComputedStyle",
+     "function": "ee"
+    },
+    {
+     "line": 12972,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 12973,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 13007,
+     "api": "getBoundingClientRect",
+     "function": "_ (closure in ne effect, called by L)"
+    }
+   ],
+   "notFromScrollCallback": [
+    {
+     "line": 13044,
+     "api": "getBoundingClientRect",
+     "function": "O (called via k from wheel/touchmove handlers A/M)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T13",
+  "type": "locate by behaviour in the runtime",
+  "arm": "SM",
+  "model": "sonnet",
+  "batch": "b5-memory",
+  "rep": 1,
+  "agentId": "a1cb096e877839066",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 19.4,
+  "start": "2026-09-30T21:48:00.840Z",
+  "end": "2026-09-30T21:48:20.200Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 209607,
+   "cacheCreate": 18669,
+   "output": 213,
+   "total": 228501,
+   "ctxPeak": 41409
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "Bash": 4
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 2182,
+  "serenaMs": 82,
+  "textResultChars": 5342,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 6,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 2,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 82,
+    "chars": 2182
+   },
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 313
+   },
+   {
+    "name": "Bash",
+    "ms": 95,
+    "chars": 3606
+   },
+   {
+    "name": "Bash",
+    "ms": 115,
+    "chars": 894
+   },
+   {
+    "name": "Bash",
+    "ms": 95,
+    "chars": 360
+   }
+  ],
+  "answer": {
+   "name": "ai",
+   "start": 2054,
+   "end": 2110,
+   "attachLine": 2275,
+   "attachFunction": "bi"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T19",
+  "type": "cross-file definition through an import alias",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "a5429b582d63c1a69",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 97.2,
+  "start": "2026-09-30T21:46:46.933Z",
+  "end": "2026-09-30T21:48:24.143Z",
+  "turns": 25,
+  "tokens": {
+   "input": 202,
+   "cacheRead": 877489,
+   "cacheCreate": 22437,
+   "output": 49,
+   "total": 900177,
+   "ctxPeak": 43944
+  },
+  "toolCalls": 24,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 9,
+   "Bash": 15
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 17872,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 1320
+   },
+   {
+    "name": "Bash",
+    "ms": 93,
+    "chars": 984
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 2033
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 110,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 66,
+    "chars": 104
+   },
+   {
+    "name": "Bash",
+    "ms": 67,
+    "chars": 1139
+   },
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 231
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 332
+   },
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 548
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2685
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 107
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 1792
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 1433
+   },
+   {
+    "name": "Bash",
+    "ms": 2450,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 1916,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 527
+   },
+   {
+    "name": "Read",
+    "ms": 17,
+    "chars": 1867
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 716
+   },
+   {
+    "name": "Bash",
+    "ms": 2163,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 2356,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 93,
+    "chars": 21
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 1028
+   },
+   {
+    "name": "Read",
+    "ms": 23,
+    "chars": 740
+   }
+  ],
+  "answer": {
+   "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+   "name": "$i",
+   "start": 2861,
+   "end": 2870,
+   "perPropertyHelper": {
+    "name": "Qi",
+    "start": 2855,
+    "end": 2860
+   },
+   "onlyChanged": true
+  },
+  "handbackPlaceholder": true
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "G-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "a0e4a59a58038ee1a",
+  "score": 0.9473684210526315,
+  "recall": 0.9473684210526315,
+  "precision": 0.9473684210526315,
+  "misses": [
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   }
+  ],
+  "extras": [
+   {
+    "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+    "line": 13099,
+    "localName": "ne"
+   }
+  ],
+  "found540": false,
+  "offByOne": 0,
+  "wallSec": 208.3,
+  "start": "2026-09-30T21:46:38.521Z",
+  "end": "2026-09-30T21:50:06.854Z",
+  "turns": 59,
+  "tokens": {
+   "input": 474,
+   "cacheRead": 3621568,
+   "cacheCreate": 75476,
+   "output": 92,
+   "total": 3697610,
+   "ctxPeak": 75484
+  },
+  "toolCalls": 58,
+  "toolSearch": 0,
+  "byName": {
+   "Read": 14,
+   "Bash": 44
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 68341,
+  "calls": [
+   {
+    "name": "Read",
+    "ms": 638,
+    "chars": 49068
+   },
+   {
+    "name": "Bash",
+    "ms": 171,
+    "chars": 62
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 1173
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 1150
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 386
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 615
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 957
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 20
+   },
+   {
+    "name": "Bash",
+    "ms": 100,
+    "chars": 38
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 133
+   },
+   {
+    "name": "Bash",
+    "ms": 1935,
+    "chars": 315,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 139,
+    "chars": 11,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 1876,
+    "chars": 189
+   },
+   {
+    "name": "Bash",
+    "ms": 62,
+    "chars": 103
+   },
+   {
+    "name": "Bash",
+    "ms": 217,
+    "chars": 82
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 102,
+    "chars": 83
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 168
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 125
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 162
+   },
+   {
+    "name": "Bash",
+    "ms": 67,
+    "chars": 287
+   },
+   {
+    "name": "Bash",
+    "ms": 111,
+    "chars": 385
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 59
+   },
+   {
+    "name": "Bash",
+    "ms": 119,
+    "chars": 365
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 489
+   },
+   {
+    "name": "Bash",
+    "ms": 82,
+    "chars": 301
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 927
+   },
+   {
+    "name": "Bash",
+    "ms": 83,
+    "chars": 484
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 100
+   },
+   {
+    "name": "Bash",
+    "ms": 98,
+    "chars": 772
+   },
+   {
+    "name": "Bash",
+    "ms": 74,
+    "chars": 564
+   },
+   {
+    "name": "Bash",
+    "ms": 169,
+    "chars": 17
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 127
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 93
+   },
+   {
+    "name": "Bash",
+    "ms": 92,
+    "chars": 13
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 320
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 13
+   },
+   {
+    "name": "Bash",
+    "ms": 86,
+    "chars": 17
+   },
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 492
+   },
+   {
+    "name": "Bash",
+    "ms": 99,
+    "chars": 189
+   },
+   {
+    "name": "Bash",
+    "ms": 98,
+    "chars": 15
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 23
+   },
+   {
+    "name": "Bash",
+    "ms": 94,
+    "chars": 631
+   },
+   {
+    "name": "Bash",
+    "ms": 102,
+    "chars": 284
+   },
+   {
+    "name": "Bash",
+    "ms": 86,
+    "chars": 2517
+   },
+   {
+    "name": "Bash",
+    "ms": 93,
+    "chars": 750
+   },
+   {
+    "name": "Bash",
+    "ms": 87,
+    "chars": 257
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 195
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 131
+   },
+   {
+    "name": "Bash",
+    "ms": 143,
+    "chars": 65
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 74
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 675
+   },
+   {
+    "name": "Bash",
+    "ms": 91,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 74,
+    "chars": 371
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 389
+   },
+   {
+    "name": "Bash",
+    "ms": 1778,
+    "chars": 578
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 289
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 181
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "Ra",
+    "line": 3430
+   },
+   "uses": [
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+     "line": 3440,
+     "localName": "Ra"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2424,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2927,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3100,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3680,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3931,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4155,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4689,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 6225,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 10913,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11294,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11606,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11860,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11994,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12196,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12433,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12978,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 13099,
+     "localName": "ne"
+    },
+    {
+     "file": "/Users/<user>/source/fastwork-com-web-optimize/site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+     "line": 3880,
+     "localName": "ie"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T11",
+  "type": "disambiguation: references of a short local name",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "ae73b8b58f9fef9cf",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 46.8,
+  "start": "2026-09-30T21:50:25.256Z",
+  "end": "2026-09-30T21:51:12.008Z",
+  "turns": 9,
+  "tokens": {
+   "input": 78,
+   "cacheRead": 276761,
+   "cacheCreate": 15658,
+   "output": 15,
+   "total": 292512,
+   "ctxPeak": 37167
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 5,
+   "Read": 1
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 7647,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 65,
+    "chars": 310
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 1673
+   },
+   {
+    "name": "Bash",
+    "ms": 65,
+    "chars": 2172
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 813
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2648
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 3125,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3128,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3142,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T17",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "a736130e4dc94491b",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 46.9,
+  "start": "2026-09-30T21:50:28.765Z",
+  "end": "2026-09-30T21:51:15.669Z",
+  "turns": 4,
+  "tokens": {
+   "input": 36,
+   "cacheRead": 112653,
+   "cacheCreate": 14490,
+   "output": 6,
+   "total": 127185,
+   "ctxPeak": 35997
+  },
+  "toolCalls": 2,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 10261,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 6749
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 3512
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10918,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10929,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10975,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10980,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10989,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "ae6600fef87831804",
+  "score": 0,
+  "recall": 0,
+  "precision": 0,
+  "misses": [
+   {
+    "file": "chunks/BSBv9QXB.js",
+    "line": 3440,
+    "localName": "Ra"
+   },
+   {
+    "file": "chunks/CzkAa0og.js",
+    "line": 445,
+    "localName": "a"
+   },
+   {
+    "file": "entry/app.HSR43Bkx.js",
+    "line": 3880,
+    "localName": "ie"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2424,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 2927,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3100,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3680,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 3931,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4155,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 4689,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 6225,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 10913,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11294,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11606,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11860,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 11994,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12196,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12433,
+    "localName": "ne"
+   },
+   {
+    "file": "nodes/2.DyWL8TcE.js",
+    "line": 12978,
+    "localName": "ne"
+   }
+  ],
+  "extras": [],
+  "found540": false,
+  "offByOne": 0,
+  "wallSec": 116.7,
+  "start": "2026-09-30T21:50:21.661Z",
+  "end": "2026-09-30T21:52:18.409Z",
+  "turns": 23,
+  "tokens": {
+   "input": 190,
+   "cacheRead": 802371,
+   "cacheCreate": 20594,
+   "output": 41,
+   "total": 823196,
+   "ctxPeak": 42484
+  },
+  "toolCalls": 20,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Read": 4,
+   "Bash": 14
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 172,
+  "serenaMs": 292,
+  "textResultChars": 5151,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 114,
+    "chars": 170
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 178,
+    "chars": 2
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 265
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 386
+   },
+   {
+    "name": "Bash",
+    "ms": 123,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 1856,
+    "chars": 323,
+    "err": true
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 919
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 20
+   },
+   {
+    "name": "Bash",
+    "ms": 134,
+    "chars": 38
+   },
+   {
+    "name": "Bash",
+    "ms": 1932,
+    "chars": 189
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 987
+   },
+   {
+    "name": "Bash",
+    "ms": 65,
+    "chars": 547
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 105
+   },
+   {
+    "name": "Bash",
+    "ms": 63,
+    "chars": 82
+   },
+   {
+    "name": "Bash",
+    "ms": 1890,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 38
+   },
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 2198,
+    "chars": 1098
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 53
+   },
+   {
+    "name": "Bash",
+    "ms": 67,
+    "chars": 8
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "onMount",
+    "line": 3420
+   },
+   "uses": []
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T19",
+  "type": "cross-file definition through an import alias",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "a371cc778fdf0adec",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 102.3,
+  "start": "2026-09-30T21:51:22.313Z",
+  "end": "2026-09-30T21:53:04.610Z",
+  "turns": 23,
+  "tokens": {
+   "input": 188,
+   "cacheRead": 837951,
+   "cacheCreate": 23209,
+   "output": 43,
+   "total": 861391,
+   "ctxPeak": 44758
+  },
+  "toolCalls": 21,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 8,
+   "mcp__serena__find_declaration": 1,
+   "mcp__serena__find_symbol": 1,
+   "Bash": 11
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 445,
+  "serenaMs": 145,
+  "textResultChars": 14761,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 534
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 92,
+    "chars": 92,
+    "err": true
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 53,
+    "chars": 353
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 2033
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 110,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 128,
+    "chars": 94
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 5352
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 13
+   },
+   {
+    "name": "Read",
+    "ms": 23,
+    "chars": 1170
+   },
+   {
+    "name": "Bash",
+    "ms": 2474,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 1835,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 2174,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 1786,
+    "chars": 14
+   },
+   {
+    "name": "Bash",
+    "ms": 2071,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 158,
+    "chars": 103
+   },
+   {
+    "name": "Bash",
+    "ms": 316,
+    "chars": 1007
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 912
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 1599
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 995
+   },
+   {
+    "name": "Bash",
+    "ms": 83,
+    "chars": 108
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 593
+   }
+  ],
+  "answer": {
+   "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+   "name": "$i",
+   "start": 2861,
+   "end": 2870,
+   "perPropertyHelper": {
+    "name": "Qi",
+    "start": 2855,
+    "end": 2860
+   },
+   "onlyChanged": true
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T24",
+  "type": "cross-file definition through an import alias",
+  "arm": "S-haiku",
+  "model": "haiku",
+  "batch": "b2-haiku",
+  "rep": 1,
+  "agentId": "a602ef7eb916ba09b",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 110.4,
+  "start": "2026-09-30T21:51:29.991Z",
+  "end": "2026-09-30T21:53:20.405Z",
+  "turns": 30,
+  "tokens": {
+   "input": 246,
+   "cacheRead": 1375275,
+   "cacheCreate": 37031,
+   "output": 54,
+   "total": 1412606,
+   "ctxPeak": 58805
+  },
+  "toolCalls": 27,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_symbol": 3,
+   "Bash": 15,
+   "Read": 8
+  },
+  "serenaCalls": 4,
+  "serenaResultChars": 12944,
+  "serenaMs": 306,
+  "textResultChars": 24285,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 3,
+    "chars": 0
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 63,
+    "chars": 11486
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 59,
+    "chars": 477
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 220,
+    "chars": 321
+   },
+   {
+    "name": "Bash",
+    "ms": 121,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 1649
+   },
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 1818
+   },
+   {
+    "name": "Bash",
+    "ms": 269,
+    "chars": 1732
+   },
+   {
+    "name": "Bash",
+    "ms": 132,
+    "chars": 1458
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 7737
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2033
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 127,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 285,
+    "chars": 94
+   },
+   {
+    "name": "Bash",
+    "ms": 74,
+    "chars": 103
+   },
+   {
+    "name": "Bash",
+    "ms": 93,
+    "chars": 19
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 2190
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 652
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 16
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 710
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 1028
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 31
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 1425
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 267
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 106,
+    "chars": 355
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 78,
+    "chars": 626
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 782
+   }
+  ],
+  "answer": {
+   "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+   "name": "F",
+   "start": 1229,
+   "end": 1234,
+   "equalityCheckIn": {
+    "name": "wn",
+    "line": 1236
+   }
+  },
+  "handbackPlaceholder": true
  }
 ]

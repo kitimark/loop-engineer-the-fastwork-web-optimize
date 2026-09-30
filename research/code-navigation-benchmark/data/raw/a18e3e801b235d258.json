@@ -1,0 +1,113 @@
+{
+ "task": "T07",
+ "arm": "GM",
+ "model": "sonnet",
+ "batch": "b5-memory",
+ "rep": 1,
+ "agentId": "a18e3e801b235d258",
+ "wallSec": 28.8,
+ "start": "2026-09-30T21:46:40.295Z",
+ "end": "2026-09-30T21:47:09.090Z",
+ "turns": 6,
+ "tokens": {
+  "input": 12,
+  "cacheRead": 227649,
+  "cacheCreate": 26736,
+  "output": 372,
+  "total": 254769,
+  "ctxPeak": 49476
+ },
+ "toolCalls": 6,
+ "toolSearch": 0,
+ "byName": {
+  "Bash": 2,
+  "Read": 4
+ },
+ "serenaCalls": 0,
+ "serenaResultChars": 0,
+ "serenaMs": 0,
+ "textResultChars": 32215,
+ "calls": [
+  {
+   "name": "Bash",
+   "ms": 90,
+   "chars": 567
+  },
+  {
+   "name": "Read",
+   "ms": 12,
+   "chars": 19417
+  },
+  {
+   "name": "Read",
+   "ms": 22,
+   "chars": 4650
+  },
+  {
+   "name": "Read",
+   "ms": 11,
+   "chars": 6254
+  },
+  {
+   "name": "Bash",
+   "ms": 2098,
+   "chars": 439
+  },
+  {
+   "name": "Read",
+   "ms": 10,
+   "chars": 888
+  }
+ ],
+ "answer": {
+  "perScrollFrame": [
+   {
+    "line": 13007,
+    "api": "getBoundingClientRect",
+    "function": "_ (hero-track progress, called by scroll callback L)"
+   },
+   {
+    "line": 12956,
+    "api": "getBoundingClientRect",
+    "function": "F (nav root T, called from _)"
+   },
+   {
+    "line": 12961,
+    "api": "elementFromPoint",
+    "function": "F (called from _)"
+   },
+   {
+    "line": 12967,
+    "api": "getComputedStyle",
+    "function": "ee (called from _, only if .start-selling-profile-sticky exists)"
+   },
+   {
+    "line": 12972,
+    "api": "getBoundingClientRect",
+    "function": "ee (sticky element, only if position is sticky and ancestor found)"
+   },
+   {
+    "line": 12973,
+    "api": "getBoundingClientRect",
+    "function": "ee (profile section ancestor, only if position is sticky and ancestor found)"
+   }
+  ],
+  "notFromScrollCallback": [
+   {
+    "line": 13044,
+    "api": "getBoundingClientRect",
+    "function": "O (called via k from wheel handler A and touchmove handler M)"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0
+ }
+}

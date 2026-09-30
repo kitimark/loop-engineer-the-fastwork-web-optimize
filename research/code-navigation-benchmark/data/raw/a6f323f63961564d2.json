@@ -1,0 +1,118 @@
+{
+ "task": "T03",
+ "arm": "SM",
+ "model": "sonnet",
+ "batch": "b5-memory",
+ "rep": 1,
+ "agentId": "a6f323f63961564d2",
+ "wallSec": 24,
+ "start": "2026-09-30T21:47:39.638Z",
+ "end": "2026-09-30T21:48:03.682Z",
+ "turns": 5,
+ "tokens": {
+  "input": 10,
+  "cacheRead": 166433,
+  "cacheCreate": 16615,
+  "output": 68,
+  "total": 183126,
+  "ctxPeak": 39355
+ },
+ "toolCalls": 5,
+ "toolSearch": 1,
+ "byName": {
+  "ToolSearch": 1,
+  "Grep": 1,
+  "mcp__serena__find_referencing_symbols": 1,
+  "Bash": 3
+ },
+ "serenaCalls": 1,
+ "serenaResultChars": 2117,
+ "serenaMs": 702,
+ "textResultChars": 1506,
+ "calls": [
+  {
+   "name": "ToolSearch",
+   "ms": 5,
+   "chars": 0
+  },
+  {
+   "name": "Grep",
+   "ms": 1,
+   "chars": 169,
+   "err": true
+  },
+  {
+   "name": "serena.find_referencing_symbols",
+   "ms": 702,
+   "chars": 2117
+  },
+  {
+   "name": "Bash",
+   "ms": 66,
+   "chars": 525
+  },
+  {
+   "name": "Bash",
+   "ms": 2207,
+   "chars": 234
+  },
+  {
+   "name": "Bash",
+   "ms": 2793,
+   "chars": 578
+  }
+ ],
+ "answer": {
+  "callers": [
+   {
+    "line": 3143,
+    "component": "AE",
+    "callback": "o"
+   },
+   {
+    "line": 4239,
+    "component": "fD",
+    "callback": "c"
+   },
+   {
+    "line": 4736,
+    "component": "hD",
+    "callback": "d"
+   },
+   {
+    "line": 6269,
+    "component": "WD",
+    "callback": "A"
+   },
+   {
+    "line": 10977,
+    "component": "uM",
+    "callback": "m"
+   },
+   {
+    "line": 11359,
+    "component": "mM",
+    "callback": "u"
+   },
+   {
+    "line": 12448,
+    "component": "GM",
+    "callback": "r"
+   },
+   {
+    "line": 13090,
+    "component": "dN",
+    "callback": "L"
+   }
+  ]
+ },
+ "handbackPlaceholder": false,
+ "stored": {
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0
+ }
+}
