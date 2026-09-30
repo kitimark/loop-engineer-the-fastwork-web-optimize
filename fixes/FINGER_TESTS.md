@@ -1,4 +1,4 @@
-# iPhone finger tests (for the user)
+# iPhone tests to catch up (for the user and the lead)
 
 Some effects only show under a real finger on the iPhone 15 Pro Max: touch scroll-jack at the page
 bottom (`#platform` morph), the Safari toolbar collapsing and expanding, momentum and rubber-band
@@ -21,7 +21,25 @@ release the phone. The lead starts each test when you say you're ready.
 The lead records timing on the phone during each run (`iphone.mjs record`) and writes both your
 impression and the numbers into the fix's README.
 
-## Queue
+## Scripted iPhone checks pending (the lead runs these; you only reconnect the phone)
+
+Scripted `iphone.mjs scroll` runs, baseline vs patched, 3 each, alternating, plain http. They need no finger,
+only the phone connected, unlocked, with Safari in front. Run them before the finger tests.
+
+| # | topic | status | what to measure |
+|---|---|---|---|
+| 1 | large-area-blur | pending | the main one: blur raster cost is on the iPhone GPU and invisible in Chrome throttling; scroll fps, frames >34 ms, bottom-of-page (`#platform`) section |
+| 2 | layout-animations | pending | idle (avatar carousel, accent, doc-sweep repaint at the page bottom) and scroll |
+| 3 | hero-exit-scroll-timeline | pending (an earlier parity check matched the baseline) | scroll out of the hero; Safari 26 scroll-timeline behaviour |
+| 4 | scroll-engine (topics 2+10+12) | pending, on its combined overlay | full scroll; toolbar resize needs the finger test below |
+| 5 | countdown-idle-raf | not run yet | idle repaint of the hero countdown (the research saw ~51 repaints/s) |
+| 6 | wave-1 combined | after wave 1 lands | full scroll + idle, the number that counts for the goal (60 fps, no frame >50 ms) |
+
+Already done before the disconnect: phone-invisible-shrink (better, all ranges disjoint), nav-morph
+(6 runs), commission-forced-layout (within noise), pain-offscreen-notes. I-003 (https on the phone) still
+needs one real-device check by its toolsmith's steps.
+
+## Finger-test queue
 
 The iPhone is disconnected (since 2026-10-01): the lead holds the `iphone` lease as
 `lead-iphone-offline` so no agent uses it. When you reconnect it, the lead releases the lease and runs
