@@ -39,7 +39,8 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
   assert.equal(x.viewport, 'mobile');
   assert.ok(x.scroll.y > 0, 'the page scrolled');
   assert.equal(x.state.nav, 'start-selling-top-nav');
-  assert.equal(res.idle, 5, 'default idle phase');
+  assert.equal(res.idle, 6, 'default idle phase');
+  assert.equal(x.idleSummary.scrollY, 0, 'idle phase stays at the top');
   for (const ph of ['idleSummary', 'scrollSummary', 'morphSummary']) {
     const s = x[ph];
     assert.ok(s.frames > 10, `${ph}.frames ${s.frames}`);

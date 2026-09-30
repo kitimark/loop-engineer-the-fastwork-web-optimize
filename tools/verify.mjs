@@ -4,7 +4,7 @@
 //   node tools/verify.mjs live=https://fastwork.com/ block=http://localhost:5173/ local=http://localhost:5174/
 //        [--viewport desktop|mobile|both] [--cpu 4] [--runs 3] [--out out/verify] [--no-screens]
 //        [--port 0] [--profile out/chrome-verify-profile] [--result file.json] [--owner name] [--no-lock]
-//        [--idle 5]
+//        [--idle 6]
 //
 // Parallel worktrees: the DevTools port defaults to 0 (Chrome picks a free one) and the profile dir
 // is under this checkout's out/, so runs from different worktrees never collide. Every run takes the
@@ -14,9 +14,9 @@
 //
 // For every target and run: fresh isolated browser context (cold cache), load, settle, then with
 // CPU throttling a rAF frame logger + PerformanceObserver('long-animation-frame') record first for
-// --idle seconds (default 5) at the top of the page without any input ("idle" phase: timers, rAF
-// loops and animations that run while nobody scrolls; --idle 0 skips it), then while the
-// page is smooth-scrolled with window.scrollBy({top:250,behavior:'smooth'}) every 300 ms to the
+// --idle seconds (default 6, i.e. two ticks of the page's 3 s carousel interval) at the top of the
+// page without any input ("idle" phase: timers, rAF loops and animations that run while nobody
+// scrolls; --idle 0 skips it), then while the page is smooth-scrolled with window.scrollBy({top:250,behavior:'smooth'}) every 300 ms to the
 // bottom ("scroll" phase), and then pushed past the end with wheel / touch gestures ("morph" phase,
 // the scroll-jacked header morph). Screenshots at top/middle/bottom are compared pixel-wise.
 // No Tracing is used (in-page LoAF attribution only).
@@ -26,6 +26,7 @@ import os from 'node:os';
 import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
+import { LOGGER, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
 
 const ROOT = REPO;
 const argv = process.argv.slice(2);
@@ -41,30 +42,13 @@ const vpList = vpSel === 'both' ? ['desktop', 'mobile'] : [vpSel];
 const OUT = resolve(ROOT, opt('out', 'out/verify'));
 const SCREENS = !flag('no-screens');
 // Idle phase length in seconds, recorded after settle + throttle and before the scroll phase; 0 = off.
-// The scroll and morph phases run exactly as without it, just IDLE seconds later.
-const IDLE = Number(opt('idle', 5));
+// The scroll and morph phases run exactly as without it, just IDLE seconds later. Default 6 s: the
+// carousel ticks every 3 s, so a 5 s window caught 1 or 2 ticks and idle LoAF ms went bimodal.
+const IDLE = Number(opt('idle', 6));
 if (!Number.isFinite(IDLE) || IDLE < 0) { console.error(`--idle must be a number of seconds >= 0 (got "${opt('idle')}")`); process.exit(2); }
 mkdirSync(OUT, { recursive: true });
 
-// ---- injected before any page script ------------------------------------------------------------
-const LOGGER = `(() => {
-  const S = window.__perf = { frames: [], loaf: [], on: false };
-  let last = 0;
-  const tick = (t) => { if (S.on && last) S.frames.push(t - last); last = t; requestAnimationFrame(tick); };
-  requestAnimationFrame(tick);
-  try {
-    new PerformanceObserver((list) => {
-      if (!S.on) return;
-      for (const e of list.getEntries()) S.loaf.push({
-        start: e.startTime, duration: e.duration, blocking: e.blockingDuration,
-        render: e.renderStart ? e.startTime + e.duration - e.renderStart : 0,
-        styleLayout: e.styleAndLayoutStart ? e.startTime + e.duration - e.styleAndLayoutStart : 0,
-        scripts: e.scripts.map((s) => ({ url: s.sourceURL, fn: s.sourceFunctionName, pos: s.sourceCharPosition,
-          invoker: s.invoker, type: s.invokerType, dur: s.duration, forced: s.forcedStyleAndLayoutDuration, pause: s.pauseDuration })),
-      });
-    }).observe({ type: 'long-animation-frame', buffered: false });
-  } catch (e) { S.noLoaf = String(e); }
-})();`;
+// ---- page side: LOGGER (injected before any page script), RESET / COLLECT per phase: lib/perf-page.mjs
 
 const SCROLL = `new Promise((res) => {
   const t0 = performance.now(); let still = 0, ticks = 0;
@@ -154,24 +138,24 @@ async function measure(cdp, t, vpName, run) {
   // idle phase: same logger, no input, at the top of the page (before any scrolling)
   let idlePerf = null;
   if (IDLE > 0) {
-    await page.eval('window.__perf.frames.length=0; window.__perf.loaf.length=0; window.__perf.on=true');
+    await page.eval(RESET);
     await sleep(IDLE * 1000);
-    idlePerf = await page.eval('(() => { const p = window.__perf; p.on = false; return JSON.parse(JSON.stringify(p)); })()');
+    idlePerf = await page.eval(COLLECT_AT);
   }
-  await page.eval('window.__perf.frames.length=0; window.__perf.loaf.length=0; window.__perf.on=true');
+  await page.eval(RESET);
   const scroll = await page.eval(SCROLL, { timeout: 600000 });
   await sleep(500);
-  const scrollPerf = await page.eval('(() => { const p = window.__perf; p.on = false; return JSON.parse(JSON.stringify(p)); })()');
+  const scrollPerf = await page.eval(COLLECT);
 
   // morph phase: push past the end (wheel on desktop, touch drag on mobile)
-  await page.eval('window.__perf.frames.length=0; window.__perf.loaf.length=0; window.__perf.on=true');
+  await page.eval(RESET);
   if (vp.mobile) {
     for (let i = 0; i < 4; i++) await page.send('Input.synthesizeScrollGesture', { x: 215, y: 700, yDistance: -500, speed: 1200, gestureSourceType: 'touch', repeatCount: 1 });
   } else {
     for (let i = 0; i < 25; i++) { await page.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 720, y: 450, deltaX: 0, deltaY: 120 }); await sleep(100); }
   }
   await sleep(2000);
-  const morphPerf = await page.eval('(() => { const p = window.__perf; p.on = false; return JSON.parse(JSON.stringify(p)); })()');
+  const morphPerf = await page.eval(COLLECT);
   const morphState = await page.eval(`document.querySelector('.start-selling-top-nav')?.className`);
   await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
 
@@ -199,7 +183,7 @@ async function measure(cdp, t, vpName, run) {
   const firstParty = requests.filter((r) => { try { const u = new URL(r.url); return u.origin === new URL(t.url).origin; } catch { return false; } });
   return {
     label: t.label, url: t.url, viewport: vpName, run, loadavg1: { before: r1(loadBefore), after: r1(os.loadavg()[0]) }, state, scroll, morphState, shots, shimStats,
-    idleSummary: idlePerf ? summarize(idlePerf) : null, scrollSummary: summarize(scrollPerf), morphSummary: summarize(morphPerf),
+    idleSummary: idlePerf ? { ...summarize(idlePerf), scrollY: idlePerf.scrollY } : null, scrollSummary: summarize(scrollPerf), morphSummary: summarize(morphPerf),
     requests: requests.length, origins,
     notFound: firstParty.filter((r) => r.status >= 400).map((r) => `${r.status} ${new URL(r.url).pathname}`),
     scripts: [...new Set(firstParty.filter((r) => r.type === 'Script').map((r) => new URL(r.url).pathname))].sort(),

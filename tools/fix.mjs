@@ -11,7 +11,7 @@
 //   node tools/fix.mjs apply <topic> [--from a,b] [--reset] [--check]   # rebuild the overlay from patch.diff(s)
 //   node tools/fix.mjs combine <name> <topicA> <topicB>...  # apply several patches in order, report conflicts
 //   node tools/fix.mjs serve <topic> [-- serve.mjs args]  # baseline + overlay on a per-worktree port
-//   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--idle 5] [--no-screens] [-- serve.mjs args]
+//   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--idle 6] [--no-screens] [-- serve.mjs args]
 //   node tools/fix.mjs ab --aa [--runs 5]             # baseline vs baseline: the noise floor
 //   --on <other>   (edit, diff, serve, ab) stack this fix on another fix's overlay, e.g. a combined wave:
 //                  edit copies from <other>'s overlay, diff is against it, ab compares <other> vs <other>+this
@@ -342,7 +342,7 @@ async function cmdAb(t) {
   requireBase();
   const topic = aa ? (t ? checkTopic(t) : '_aa') : t;
   if (!aa && !overlayFiles(t).length) die(`fixes/${t}/overlay is empty`);
-  const runs = Number(opt('runs', 5)), cpu = Number(opt('cpu', 6)), viewport = opt('viewport', 'mobile'), idle = Number(opt('idle', 5));
+  const runs = Number(opt('runs', 5)), cpu = Number(opt('cpu', 6)), viewport = opt('viewport', 'mobile'), idle = Number(opt('idle', 6));
   if (!['mobile', 'desktop'].includes(viewport)) die('--viewport must be mobile or desktop for ab (run twice for both)');
   if (!Number.isFinite(idle) || idle < 0) die(`--idle must be a number of seconds >= 0 (got "${opt('idle')}")`);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');

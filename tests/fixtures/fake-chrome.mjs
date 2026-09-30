@@ -34,7 +34,10 @@ function evaluate(expr) {
   if (expr.includes('kit: Object.keys(window)')) return { kit: ['__sveltekit_fake'], nav: 'start-selling-top-nav', hero: 'hero', h: 3000, shim: null, vendors: { gtag: 'undefined', amplitude: 'undefined', hj: 'undefined', dataLayer: 1 } };
   if (expr.includes('window.__perf.frames.length=0')) { input = false; return true; }
   if (expr.includes("window.scrollBy({ top: 250, behavior: 'smooth' })") && expr.includes('still >= 4')) { input = true; return { ms: 5000, ticks: 16, y: 2068, h: 3000 }; }
-  if (expr.includes('p.on = false')) return input ? { frames: FRAMES, loaf: LOAF, on: false } : { frames: IDLE_FRAMES, loaf: IDLE_LOAF, on: false };
+  if (expr.includes('p.on = false')) {
+    const r = input ? { frames: FRAMES, loaf: LOAF, on: false } : { frames: IDLE_FRAMES, loaf: IDLE_LOAF, on: false };
+    return expr.includes('o.scrollY = scrollY') ? { ...r, scrollY: input ? 2068 : 0 } : r;
+  }
   if (expr.includes("document.querySelector('.start-selling-top-nav')?.className")) return 'start-selling-top-nav is-morph';
   if (expr.includes('document.documentElement.scrollHeight - innerHeight')) return 2068;
   if (expr.includes('OffscreenCanvas')) return { w: 430, h: 932, diffPct: 0.12 };

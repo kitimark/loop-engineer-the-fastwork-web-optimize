@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, nodeAsync, tool, TESTS, sleep, startProc } from '../helpers.mjs';
+import { LOGGER, RESET, COLLECT, COLLECT_AT } from '../../tools/lib/perf-page.mjs';
 
 const FAKE = join(TESTS, 'fixtures', 'fake-chrome.mjs');
 const VERIFY = tool('verify.mjs');
@@ -67,7 +68,7 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
 
   const res = JSON.parse(readFileSync(join(A.d, 'result.json'), 'utf8'));
   assert.equal(res.cpu, 3);
-  assert.equal(res.idle, 5, 'idle phase defaults to 5 s');
+  assert.equal(res.idle, 6, 'idle phase defaults to 6 s');
   assert.deepEqual(res.viewports, ['mobile']);
   assert.equal(res.runs, 1);
   assert.deepEqual(res.targets, [{ label: 'a', url: 'http://127.0.0.1:9/' }]);
@@ -97,16 +98,18 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
     { frames: 102, seconds: 1.8, fps: 58.1, p50: 16.7, p95: 16.7, max: 55, gt20: 2, gt33: 1, gt34: 1, gt50: 1, gt100: 0, droppedPct: 2 });
   assert.deepEqual({ n: i.loafCount, ms: i.loafMs, block: i.loafBlockingMs, render: i.loafRenderMs, script: i.loafScriptMs, forced: i.forcedLayoutMs }, { n: 1, ms: 55, block: 5, render: 10, script: 40, forced: 6 });
   assert.equal(i.topScripts[0].key, '/_app/immutable/nodes/2.fixture.js:42 spring [user-callback FrameRequestCallback]');
+  assert.equal(i.scrollY, 0, 'idle collect reports scrollY (the page stayed at the top)');
+  assert.equal('scrollY' in s, false, 'scroll/morph summaries are unchanged');
   assert.deepEqual(res.rows[0], { viewport: 'mobile', target: 'a', runs: 1, fps: 50, p95: 40, gt20: 4, gt34: 3, gt50: 2, gt100: 1, max: 120, loafMs: 120, loafScriptMs: 80, forcedMs: 25, morphFps: 50, morphGt50: 2, morphLoafMs: 120, scrollS: 5, idleFps: 58.1, idleGt50: 1, idleLoafMs: 55, idleScriptMs: 40, idleForcedMs: 6 });
   assert.match(ra.stdout, /\[mobile run 1\/1\] a http:\/\/127\.0\.0\.1:9\/ \.\.\. fps 50 .* idle fps 58\.1 >50ms 1 LoAF 55ms/);
 
   const log = readLog(A.env.FAKE_CHROME_LOG);
   const cmd = (m) => log.filter((l) => l.method === m).map((l) => l.params);
-  // idle window: throttled, no input, 5 s, directly before the unchanged scroll + morph phases
+  // idle window: throttled, no input, 6 s, directly before the unchanged scroll + morph phases
   const st = steps(log);
   assert.deepEqual(st.map((x) => x.s), ['state', 'cpu 3', 'reset', 'collect', ...SCROLL_MORPH]);
   const idleMs = st[3].t - st[2].t;
-  assert.ok(idleMs >= 4900 && idleMs < 8000, `idle window lasted ${idleMs} ms`);
+  assert.ok(idleMs >= 5900 && idleMs < 9000, `idle window lasted ${idleMs} ms`);
   assert.ok(st[4].t - st[3].t < 1000, 'scroll phase starts right after the idle window');
   assert.deepEqual(cmd('Emulation.setCPUThrottlingRate'), [{ rate: 3 }, { rate: 1 }]);
   assert.deepEqual(cmd('Emulation.setDeviceMetricsOverride'), [{ width: 430, height: 932, deviceScaleFactor: 3, mobile: true }]);
@@ -114,7 +117,11 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
   assert.deepEqual(cmd('Security.setIgnoreCertificateErrors'), [{ ignore: true }]);
   assert.equal(cmd('Input.synthesizeScrollGesture').length, 4, 'mobile morph phase uses touch gestures');
   assert.equal(cmd('Page.captureScreenshot').length, 0, '--no-screens');
-  assert.match(cmd('Page.addScriptToEvaluateOnNewDocument')[0].source, /long-animation-frame/);
+  assert.equal(cmd('Page.addScriptToEvaluateOnNewDocument')[0].source, LOGGER, 'injects lib/perf-page.mjs LOGGER (run in tests/unit/perf-page.test.mjs)');
+  const evals = cmd('Runtime.evaluate').map((p) => p.expression); // the fake logs the first 120 chars
+  assert.equal(evals.filter((e) => e === RESET.slice(0, 120)).length, 3, 'every phase starts with RESET (stamps t0)');
+  assert.equal(evals.filter((e) => e === COLLECT.slice(0, 120)).length, 2, 'scroll + morph read out with COLLECT');
+  assert.equal(evals.filter((e) => e === COLLECT_AT.slice(0, 120)).length, 1, 'idle reads out with COLLECT_AT (scrollY)');
   assert.equal(log.find((l) => l.method === '(started)').params.profile, join(A.d, 'profile'));
   assert.ok(log.some((l) => l.method === '(exit)'), 'Chrome was closed');
 });
