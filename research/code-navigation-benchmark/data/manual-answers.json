@@ -1,0 +1,4 @@
+{
+  "addf3fc54be490b24": {"note": "T12 S r1 ended without the json block; answer transcribed from its prose (12946 / 13218 / nav root element I / not the same / 13020)",
+    "answer": {"declaredLine": 12946, "assignedLine": 13218, "holds": "the nav root DOM element I (bind:this)", "sameAsRafT": false, "otherTLine": 13020}}
+}

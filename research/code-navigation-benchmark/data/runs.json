@@ -1,0 +1,9989 @@
+[
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a5164994f3a852238",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 8.1,
+  "start": "2026-09-30T20:53:19.927Z",
+  "end": "2026-09-30T20:53:28.070Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 62806,
+   "cacheCreate": 34857,
+   "output": 868,
+   "total": 98537,
+   "ctxPeak": 34859
+  },
+  "toolCalls": 2,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 1,
+   "Read": 1
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 4911,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 166
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 4745
+   }
+  ],
+  "answer": {
+   "iE": [
+    2670,
+    2673
+   ],
+   "dE": [
+    2749,
+    2783
+   ],
+   "uE": [
+    2719,
+    2748
+   ],
+   "defaultRootMargin": "100% 0px"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "a46c2d2c52924fe77",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 12.5,
+  "start": "2026-09-30T20:53:25.946Z",
+  "end": "2026-09-30T20:53:38.478Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 125854,
+   "cacheCreate": 15649,
+   "output": 595,
+   "total": 142106,
+   "ctxPeak": 38389
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 3,
+   "Bash": 1
+  },
+  "serenaCalls": 3,
+  "serenaResultChars": 495,
+  "serenaMs": 257,
+  "textResultChars": 3077,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 10,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 127,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 45,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 85,
+    "chars": 165
+   },
+   {
+    "name": "Bash",
+    "ms": 1872,
+    "chars": 3077
+   }
+  ],
+  "answer": {
+   "iE": [
+    2670,
+    2673
+   ],
+   "dE": [
+    2749,
+    2783
+   ],
+   "uE": [
+    2719,
+    2748
+   ],
+   "defaultRootMargin": "100% 0px"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T02",
+  "type": "definition by behaviour",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a2e268ae86e671f97",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 17.3,
+  "start": "2026-09-30T20:54:21.102Z",
+  "end": "2026-09-30T20:54:38.396Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 121656,
+   "cacheCreate": 14450,
+   "output": 249,
+   "total": 136363,
+   "ctxPeak": 37190
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 8348,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 1908
+   },
+   {
+    "name": "Bash",
+    "ms": 1966,
+    "chars": 3241
+   },
+   {
+    "name": "Bash",
+    "ms": 1857,
+    "chars": 223
+   },
+   {
+    "name": "Bash",
+    "ms": 1410,
+    "chars": 2976
+   }
+  ],
+  "answer": {
+   "digitComponent": {
+    "name": "$E",
+    "start": 3823,
+    "end": 3876
+   },
+   "rafCallbackLine": 3836,
+   "springStep": {
+    "name": "GE",
+    "start": 3791,
+    "end": 3803
+   },
+   "springParams": {
+    "name": "UE",
+    "line": 3789,
+    "stiffness": 280,
+    "damping": 18,
+    "mass": 0.3
+   }
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a983cb716bae2f1b0",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 57.7,
+  "start": "2026-09-30T20:54:25.567Z",
+  "end": "2026-09-30T20:55:23.277Z",
+  "turns": 8,
+  "tokens": {
+   "input": 16,
+   "cacheRead": 263080,
+   "cacheCreate": 17232,
+   "output": 73,
+   "total": 280401,
+   "ctxPeak": 39972
+  },
+  "toolCalls": 8,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 8
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 9847,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 63,
+    "chars": 525
+   },
+   {
+    "name": "Bash",
+    "ms": 2325,
+    "chars": 532
+   },
+   {
+    "name": "Bash",
+    "ms": 2065,
+    "chars": 343
+   },
+   {
+    "name": "Bash",
+    "ms": 3156,
+    "chars": 767
+   },
+   {
+    "name": "Bash",
+    "ms": 2099,
+    "chars": 1659,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 1834,
+    "chars": 1199
+   },
+   {
+    "name": "Bash",
+    "ms": 1887,
+    "chars": 820
+   },
+   {
+    "name": "Bash",
+    "ms": 3282,
+    "chars": 4002
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "aa4b4735938378f62",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "found540": false,
+  "offByOne": 0,
+  "wallSec": 83.1,
+  "start": "2026-09-30T20:54:29.652Z",
+  "end": "2026-09-30T20:55:52.779Z",
+  "turns": 14,
+  "tokens": {
+   "input": 28,
+   "cacheRead": 509352,
+   "cacheCreate": 23019,
+   "output": 361,
+   "total": 532760,
+   "ctxPeak": 45759
+  },
+  "toolCalls": 14,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 14
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 15589,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 105
+   },
+   {
+    "name": "Bash",
+    "ms": 83,
+    "chars": 1153
+   },
+   {
+    "name": "Bash",
+    "ms": 92,
+    "chars": 930
+   },
+   {
+    "name": "Bash",
+    "ms": 1997,
+    "chars": 33,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 180,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 984
+   },
+   {
+    "name": "Bash",
+    "ms": 2051,
+    "chars": 423
+   },
+   {
+    "name": "Bash",
+    "ms": 2517,
+    "chars": 1105
+   },
+   {
+    "name": "Bash",
+    "ms": 91,
+    "chars": 5978
+   },
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 727
+   },
+   {
+    "name": "Bash",
+    "ms": 2639,
+    "chars": 31
+   },
+   {
+    "name": "Bash",
+    "ms": 1910,
+    "chars": 1031
+   },
+   {
+    "name": "Bash",
+    "ms": 2394,
+    "chars": 2580
+   },
+   {
+    "name": "Bash",
+    "ms": 7488,
+    "chars": 329
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "Ra",
+    "line": 3430
+   },
+   "uses": [
+    {
+     "file": "chunks/BSBv9QXB.js",
+     "line": 3440,
+     "localName": "Ra"
+    },
+    {
+     "file": "chunks/CzkAa0og.js",
+     "line": 445,
+     "localName": "a"
+    },
+    {
+     "file": "entry/app.HSR43Bkx.js",
+     "line": 3880,
+     "localName": "ie"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 2424,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 2927,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 3100,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 3680,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 3931,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 4155,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 4689,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 6225,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 10913,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 11294,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 11606,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 11860,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 11994,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 12196,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 12433,
+     "localName": "ne"
+    },
+    {
+     "file": "nodes/2.DyWL8TcE.js",
+     "line": 12978,
+     "localName": "ne"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T05",
+  "type": "callers across the repo's tooling",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a41b4e2f60daaa4fe",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 23.7,
+  "start": "2026-09-30T20:54:34.123Z",
+  "end": "2026-09-30T20:54:57.806Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 163549,
+   "cacheCreate": 18803,
+   "output": 1154,
+   "total": 183516,
+   "ctxPeak": 41543
+  },
+  "toolCalls": 5,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 16002,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 112,
+    "chars": 901
+   },
+   {
+    "name": "Bash",
+    "ms": 169,
+    "chars": 7385
+   },
+   {
+    "name": "Bash",
+    "ms": 92,
+    "chars": 3298
+   },
+   {
+    "name": "Bash",
+    "ms": 1939,
+    "chars": 3485
+   },
+   {
+    "name": "Bash",
+    "ms": 1783,
+    "chars": 933
+   }
+  ],
+  "answer": {
+   "calls": [
+    {
+     "file": "tools/verify.mjs",
+     "line": 221,
+     "enclosing": "main"
+    },
+    {
+     "file": "tools/lock.mjs",
+     "line": 74,
+     "enclosing": "main"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 157,
+     "enclosing": "acquire() waits for the holder and then takes the lock; release() of the handle is token-safe"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 176,
+     "enclosing": "acquire() times out, leaves the queue and says who holds the lock"
+    },
+    {
+     "file": "tests/chrome/vendor-shim.chrome.test.mjs",
+     "line": 18,
+     "enclosing": "before hook"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T06",
+  "type": "who writes a CSS custom property (string search)",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a989fe06cee6f15c3",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 59,
+  "start": "2026-09-30T20:54:38.649Z",
+  "end": "2026-09-30T20:55:37.602Z",
+  "turns": 11,
+  "tokens": {
+   "input": 22,
+   "cacheRead": 407741,
+   "cacheCreate": 21570,
+   "output": 1795,
+   "total": 431128,
+   "ctxPeak": 44310
+  },
+  "toolCalls": 11,
+  "toolSearch": 0,
+  "byName": {
+   "Grep": 1,
+   "Bash": 10
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 16473,
+  "calls": [
+   {
+    "name": "Grep",
+    "ms": 2,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 143,
+    "chars": 6202
+   },
+   {
+    "name": "Bash",
+    "ms": 107,
+    "chars": 2747
+   },
+   {
+    "name": "Bash",
+    "ms": 2477,
+    "chars": 678
+   },
+   {
+    "name": "Bash",
+    "ms": 2021,
+    "chars": 1539
+   },
+   {
+    "name": "Bash",
+    "ms": 2535,
+    "chars": 195
+   },
+   {
+    "name": "Bash",
+    "ms": 2850,
+    "chars": 2263
+   },
+   {
+    "name": "Bash",
+    "ms": 2497,
+    "chars": 270
+   },
+   {
+    "name": "Bash",
+    "ms": 2022,
+    "chars": 586
+   },
+   {
+    "name": "Bash",
+    "ms": 1988,
+    "chars": 1172
+   },
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 652
+   }
+  ],
+  "answer": {
+   "exitOpacity": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4165,
+     "function": "fD/ne effect/s (reduced-motion branch)",
+     "mechanism": "<omitted>"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4171,
+     "function": "fD/ne effect/s (scroll handler, rAF)",
+     "mechanism": "<omitted>"
+    }
+   ],
+   "morph": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 13243,
+     "function": "dN (template render effect l(...) values thunk)",
+     "mechanism": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T02",
+  "type": "definition by behaviour",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "abf6b05ca6b788aa0",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 20.8,
+  "start": "2026-09-30T20:54:44.342Z",
+  "end": "2026-09-30T20:55:05.097Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 183491,
+   "cacheCreate": 25610,
+   "output": 305,
+   "total": 209416,
+   "ctxPeak": 48350
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "Bash": 3
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 11486,
+  "serenaMs": 64,
+  "textResultChars": 7258,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 4,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 64,
+    "chars": 11486
+   },
+   {
+    "name": "Bash",
+    "ms": 63,
+    "chars": 3121
+   },
+   {
+    "name": "Bash",
+    "ms": 2496,
+    "chars": 3137
+   },
+   {
+    "name": "Bash",
+    "ms": 1855,
+    "chars": 831
+   }
+  ],
+  "answer": {
+   "digitComponent": {
+    "name": "$E",
+    "start": 3823,
+    "end": 3876
+   },
+   "rafCallbackLine": 3836,
+   "springStep": {
+    "name": "GE",
+    "start": 3791,
+    "end": 3803
+   },
+   "springParams": {
+    "name": "UE",
+    "line": 3789,
+    "stiffness": 280,
+    "damping": 18,
+    "mass": 0.3
+   }
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "a4be53d492437e40e",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 36.5,
+  "start": "2026-09-30T20:54:49.584Z",
+  "end": "2026-09-30T20:55:26.073Z",
+  "turns": 8,
+  "tokens": {
+   "input": 16,
+   "cacheRead": 284364,
+   "cacheCreate": 17756,
+   "output": 1299,
+   "total": 303435,
+   "ctxPeak": 40496
+  },
+  "toolCalls": 8,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Bash": 6
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 2117,
+  "serenaMs": 685,
+  "textResultChars": 3301,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 1,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 685,
+    "chars": 2117
+   },
+   {
+    "name": "Bash",
+    "ms": 67,
+    "chars": 525
+   },
+   {
+    "name": "Bash",
+    "ms": 2354,
+    "chars": 776
+   },
+   {
+    "name": "Bash",
+    "ms": 2724,
+    "chars": 688
+   },
+   {
+    "name": "Bash",
+    "ms": 1897,
+    "chars": 41,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 2057,
+    "chars": 101
+   },
+   {
+    "name": "Bash",
+    "ms": 89,
+    "chars": 1001
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "afa1b8e894632844b",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "found540": true,
+  "offByOne": 0,
+  "wallSec": 101.3,
+  "start": "2026-09-30T20:54:54.895Z",
+  "end": "2026-09-30T20:56:36.148Z",
+  "turns": 15,
+  "tokens": {
+   "input": 30,
+   "cacheRead": 606942,
+   "cacheCreate": 30364,
+   "output": 574,
+   "total": 637910,
+   "ctxPeak": 53104
+  },
+  "toolCalls": 15,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "Bash": 14
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 19876,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 1,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 90
+   },
+   {
+    "name": "Bash",
+    "ms": 99,
+    "chars": 1152
+   },
+   {
+    "name": "Bash",
+    "ms": 103,
+    "chars": 885
+   },
+   {
+    "name": "Bash",
+    "ms": 1887,
+    "chars": 690
+   },
+   {
+    "name": "Bash",
+    "ms": 87,
+    "chars": 1177
+   },
+   {
+    "name": "Bash",
+    "ms": 132,
+    "chars": 1246
+   },
+   {
+    "name": "Bash",
+    "ms": 1979,
+    "chars": 1612
+   },
+   {
+    "name": "Bash",
+    "ms": 104,
+    "chars": 1091
+   },
+   {
+    "name": "Bash",
+    "ms": 7396,
+    "chars": 3173
+   },
+   {
+    "name": "Bash",
+    "ms": 2230,
+    "chars": 253
+   },
+   {
+    "name": "Bash",
+    "ms": 2705,
+    "chars": 998
+   },
+   {
+    "name": "Bash",
+    "ms": 151,
+    "chars": 5652
+   },
+   {
+    "name": "Bash",
+    "ms": 91,
+    "chars": 718
+   },
+   {
+    "name": "Bash",
+    "ms": 87,
+    "chars": 970
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "Ra",
+    "line": 3430
+   },
+   "uses": [
+    {
+     "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+     "line": 3440,
+     "localName": "Ra"
+    },
+    {
+     "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+     "line": 445,
+     "localName": "a"
+    },
+    {
+     "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+     "line": 540,
+     "localName": "ze"
+    },
+    {
+     "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+     "line": 3880,
+     "localName": "ie"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2424,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2927,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3100,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3680,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3931,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4155,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4689,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 6225,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 10913,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11294,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11606,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11860,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11994,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12196,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12433,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12978,
+     "localName": "ne"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T07",
+  "type": "API usage scoped by call graph",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "ad56bb7006a946b8b",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0,
+  "wallSec": 25.8,
+  "start": "2026-09-30T20:56:26.799Z",
+  "end": "2026-09-30T20:56:52.647Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 163588,
+   "cacheCreate": 17900,
+   "output": 1467,
+   "total": 182965,
+   "ctxPeak": 40640
+  },
+  "toolCalls": 5,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 15221,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 590
+   },
+   {
+    "name": "Bash",
+    "ms": 94,
+    "chars": 11012
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 2982
+   },
+   {
+    "name": "Bash",
+    "ms": 87,
+    "chars": 306
+   },
+   {
+    "name": "Bash",
+    "ms": 1808,
+    "chars": 331
+   }
+  ],
+  "answer": {
+   "perScrollFrame": [
+    {
+     "line": 12956,
+     "api": "getBoundingClientRect",
+     "function": "F"
+    },
+    {
+     "line": 12961,
+     "api": "elementFromPoint",
+     "function": "F"
+    },
+    {
+     "line": 12967,
+     "api": "getComputedStyle",
+     "function": "ee"
+    },
+    {
+     "line": 12972,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 12973,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 13007,
+     "api": "getBoundingClientRect",
+     "function": "_"
+    }
+   ],
+   "notFromScrollCallback": [
+    {
+     "line": 13044,
+     "api": "getBoundingClientRect",
+     "function": "O"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T08",
+  "type": "understand a function body",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a5f914b088173a777",
+  "score": 1,
+  "keys": {
+   "R1": true,
+   "R2": true,
+   "R3": true,
+   "R4": true,
+   "R5": true,
+   "R6": true,
+   "W1": true,
+   "W2": true,
+   "W3": true,
+   "W4": true
+  },
+  "offByOne": 0,
+  "wallSec": 30.8,
+  "start": "2026-09-30T20:56:31.618Z",
+  "end": "2026-09-30T20:57:02.427Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 121106,
+   "cacheCreate": 16378,
+   "output": 336,
+   "total": 137828,
+   "ctxPeak": 39118
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3,
+   "Read": 1
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 11815,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 2040,
+    "chars": 103,
+    "err": true
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 6099
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 333
+   },
+   {
+    "name": "Bash",
+    "ms": 93,
+    "chars": 5280
+   }
+  ],
+  "answer": {
+   "reads": [
+    {
+     "line": 11305,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11307,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11308,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11313,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11314,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11315,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11321,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11323,
+     "what": "<omitted>"
+    }
+   ],
+   "writes": [
+    {
+     "line": 11304,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11311,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11315,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11316,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11317,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11318,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11319,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11324,
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T09",
+  "type": "CSS search",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "ac853075e9b619ba9",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 19.1,
+  "start": "2026-09-30T20:56:34.966Z",
+  "end": "2026-09-30T20:56:54.106Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 119498,
+   "cacheCreate": 12058,
+   "output": 1533,
+   "total": 133097,
+   "ctxPeak": 34798
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3139,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 850
+   },
+   {
+    "name": "Bash",
+    "ms": 2409,
+    "chars": 809
+   },
+   {
+    "name": "Bash",
+    "ms": 144,
+    "chars": 1480
+   }
+  ],
+  "answer": {
+   "rules": [
+    {
+     "file": "site-pretty/_app/immutable/assets/DialogHeader.Qcgwm6ST.css",
+     "line": 671,
+     "selector": ".sb-dialog.svelte-1u79i78::backdrop",
+     "value": "blur(2px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 701,
+     "selector": ".why-bring-backdrop",
+     "value": "blur(16px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 4220,
+     "selector": ".price.svelte-18m48uz",
+     "value": "blur(6px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 10352,
+     "selector": ".start-selling-platform-agents-card-chat",
+     "value": "blur(6px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11116,
+     "selector": ".start-selling-language-switch.svelte-1lc7nmb",
+     "value": "blur(12px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11343,
+     "selector": ".start-selling-top-nav.svelte-1dcozpm",
+     "value": "blur(calc(20px * (1 - var(--morph))))"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11619,
+     "selector": "dialog.sb-dialog[data-modal-name=\"waitlist-signup\"]::backdrop",
+     "value": "blur(8px)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T10",
+  "type": "CSS search",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a88d8dd099f6b8dd8",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 30.8,
+  "start": "2026-09-30T20:56:39.398Z",
+  "end": "2026-09-30T20:57:10.219Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 165109,
+   "cacheCreate": 17828,
+   "output": 1739,
+   "total": 184686,
+   "ctxPeak": 40568
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 11252,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 99,
+    "chars": 6567
+   },
+   {
+    "name": "Bash",
+    "ms": 114,
+    "chars": 207
+   },
+   {
+    "name": "Bash",
+    "ms": 2131,
+    "chars": 2977
+   },
+   {
+    "name": "Bash",
+    "ms": 1960,
+    "chars": 1501
+   }
+  ],
+  "answer": {
+   "keyframes": [
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 2888,
+     "name": "avatars-exit"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 5332,
+     "name": "start-selling-people-o-peel"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 10412,
+     "name": "start-selling-avatars-exit"
+    }
+   ],
+   "transitions": [
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 1231,
+     "selector": ".script-accent.is-drawing-in.svelte-1fn2go6"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 2548,
+     "selector": ".start-selling-future-people-o-face"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 9188,
+     "selector": ".start-selling-platform-service-card.is-animating"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 9256,
+     "selector": ".start-selling-platform-service-card.is-animating .start-selling-platform-service-card-row img"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11356,
+     "selector": ".start-selling-top-nav.svelte-1dcozpm:not(.is-morphing)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11399,
+     "selector": ".start-selling-top-nav.is-hero-pill.is-hero-chrome-ready.svelte-1dcozpm"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11489,
+     "selector": ".start-selling-top-nav-btn.is-earn.svelte-1dcozpm"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11502,
+     "selector": ".start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T11",
+  "type": "disambiguation: references of a short local name",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "aa5cae3d57f03f8d1",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 20.2,
+  "start": "2026-09-30T20:56:43.342Z",
+  "end": "2026-09-30T20:57:03.549Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 119913,
+   "cacheCreate": 11910,
+   "output": 152,
+   "total": 131983,
+   "ctxPeak": 34650
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3152,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 108,
+    "chars": 1278
+   },
+   {
+    "name": "Bash",
+    "ms": 86,
+    "chars": 1624
+   },
+   {
+    "name": "Bash",
+    "ms": 2093,
+    "chars": 219
+   },
+   {
+    "name": "Bash",
+    "ms": 3026,
+    "chars": 31
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 3106,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3125,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3128,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3142,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T12",
+  "type": "disambiguation: which binding",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "ace51755330a0815e",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 33.8,
+  "start": "2026-09-30T20:56:48.934Z",
+  "end": "2026-09-30T20:57:22.731Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 201858,
+   "cacheCreate": 16421,
+   "output": 1483,
+   "total": 219774,
+   "ctxPeak": 39161
+  },
+  "toolCalls": 6,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 6
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 11630,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 1819,
+    "chars": 6186
+   },
+   {
+    "name": "Bash",
+    "ms": 1953,
+    "chars": 1630
+   },
+   {
+    "name": "Bash",
+    "ms": 2056,
+    "chars": 2111
+   },
+   {
+    "name": "Bash",
+    "ms": 3378,
+    "chars": 1048
+   },
+   {
+    "name": "Bash",
+    "ms": 2250,
+    "chars": 274
+   },
+   {
+    "name": "Bash",
+    "ms": 1902,
+    "chars": 381
+   }
+  ],
+  "answer": {
+   "declaredLine": 12946,
+   "assignedLine": 13218,
+   "holds": "<omitted>",
+   "sameAsRafT": false,
+   "otherTLine": 13020
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T05",
+  "type": "callers across the repo's tooling",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "aa635badb2a275f83",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 17.8,
+  "start": "2026-09-30T20:56:53.411Z",
+  "end": "2026-09-30T20:57:11.196Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 172510,
+   "cacheCreate": 22877,
+   "output": 183,
+   "total": 195580,
+   "ctxPeak": 45617
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 17355,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 39
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 8336
+   },
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 3798
+   },
+   {
+    "name": "Bash",
+    "ms": 110,
+    "chars": 5182
+   }
+  ],
+  "answer": {
+   "calls": [
+    {
+     "file": "tools/lock.mjs",
+     "line": 74,
+     "enclosing": "main"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 221,
+     "enclosing": "main"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 157,
+     "enclosing": "acquire() waits for the holder and then takes the lock; release() of the handle is token-safe"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 176,
+     "enclosing": "acquire() times out, leaves the queue and says who holds the lock"
+    },
+    {
+     "file": "tests/chrome/vendor-shim.chrome.test.mjs",
+     "line": 18,
+     "enclosing": "before (anonymous async hook)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T06",
+  "type": "who writes a CSS custom property (string search)",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "aca4fe94ef7ac58f3",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 39.5,
+  "start": "2026-09-30T20:56:58.597Z",
+  "end": "2026-09-30T20:57:38.105Z",
+  "turns": 7,
+  "tokens": {
+   "input": 16,
+   "cacheRead": 293653,
+   "cacheCreate": 35842,
+   "output": 1047,
+   "total": 330558,
+   "ctxPeak": 58584
+  },
+  "toolCalls": 9,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 4,
+   "Read": 2,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_symbol": 2
+  },
+  "serenaCalls": 3,
+  "serenaResultChars": 21091,
+  "serenaMs": 1463,
+  "textResultChars": 12879,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 1845,
+    "chars": 4290
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2533
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 1489
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 42
+   },
+   {
+    "name": "Bash",
+    "ms": 1775,
+    "chars": 2617
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 1282,
+    "chars": 11486
+   },
+   {
+    "name": "Bash",
+    "ms": 2424,
+    "chars": 1908
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 112,
+    "chars": 6144
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 69,
+    "chars": 3461
+   }
+  ],
+  "answer": {
+   "exitOpacity": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4165,
+     "function": "fD/ne() callback/s",
+     "mechanism": "<omitted>"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4171,
+     "function": "fD/ne() callback/s",
+     "mechanism": "<omitted>"
+    }
+   ],
+   "morph": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 13243,
+     "function": "dN/l() callback",
+     "mechanism": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T07",
+  "type": "API usage scoped by call graph",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "a58eae4be420174ed",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0,
+  "wallSec": 36.6,
+  "start": "2026-09-30T20:57:03.947Z",
+  "end": "2026-09-30T20:57:40.556Z",
+  "turns": 6,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 227057,
+   "cacheCreate": 30433,
+   "output": 1357,
+   "total": 258861,
+   "ctxPeak": 53175
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "Bash": 4
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 167,
+  "serenaMs": 82,
+  "textResultChars": 29435,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 6,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 82,
+    "chars": 167
+   },
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 2235
+   },
+   {
+    "name": "Bash",
+    "ms": 1931,
+    "chars": 12854
+   },
+   {
+    "name": "Bash",
+    "ms": 3396,
+    "chars": 9860
+   },
+   {
+    "name": "Bash",
+    "ms": 2000,
+    "chars": 4486
+   }
+  ],
+  "answer": {
+   "perScrollFrame": [
+    {
+     "line": 12967,
+     "api": "getComputedStyle",
+     "function": "ee"
+    },
+    {
+     "line": 12972,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 12973,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 12956,
+     "api": "getBoundingClientRect",
+     "function": "F"
+    },
+    {
+     "line": 12961,
+     "api": "elementFromPoint",
+     "function": "F"
+    },
+    {
+     "line": 13007,
+     "api": "getBoundingClientRect",
+     "function": "_"
+    }
+   ],
+   "notFromScrollCallback": [
+    {
+     "line": 13044,
+     "api": "getBoundingClientRect",
+     "function": "O"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T13",
+  "type": "locate by behaviour in the runtime",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a2c45d064916162db",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 18.5,
+  "start": "2026-09-30T20:57:43.634Z",
+  "end": "2026-09-30T20:58:02.132Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 119322,
+   "cacheCreate": 12168,
+   "output": 321,
+   "total": 131819,
+   "ctxPeak": 34908
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 4637,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 313
+   },
+   {
+    "name": "Bash",
+    "ms": 100,
+    "chars": 2761
+   },
+   {
+    "name": "Bash",
+    "ms": 2736,
+    "chars": 1122
+   },
+   {
+    "name": "Bash",
+    "ms": 2215,
+    "chars": 441
+   }
+  ],
+  "answer": {
+   "name": "ai",
+   "start": 2054,
+   "end": 2110,
+   "attachLine": 2275,
+   "attachFunction": "bi"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T14",
+  "type": "references of a module-level variable",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a019bd116a916fa7a",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 17.4,
+  "start": "2026-09-30T20:57:47.831Z",
+  "end": "2026-09-30T20:58:05.265Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 121409,
+   "cacheCreate": 14318,
+   "output": 316,
+   "total": 136051,
+   "ctxPeak": 37058
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2,
+   "Read": 1
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 8198,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 99,
+    "chars": 72
+   },
+   {
+    "name": "Read",
+    "ms": 24,
+    "chars": 6585
+   },
+   {
+    "name": "Bash",
+    "ms": 2085,
+    "chars": 1541
+   }
+  ],
+  "answer": {
+   "variable": "$T",
+   "declLine": 2663,
+   "uses": [
+    {
+     "line": 2672,
+     "function": "iE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2682,
+     "function": "oE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2761,
+     "function": "dE",
+     "access": "write",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2773,
+     "function": "anonymous cleanup closure returned by dE (lines 2770-2781)",
+     "access": "write",
+     "how": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T15",
+  "type": "text occurrence census",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a0c8f0c077f2f3cc5",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 17.9,
+  "start": "2026-09-30T20:57:52.020Z",
+  "end": "2026-09-30T20:58:09.924Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 118873,
+   "cacheCreate": 10960,
+   "output": 884,
+   "total": 130725,
+   "ctxPeak": 33700
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 1615,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 83,
+    "chars": 976
+   },
+   {
+    "name": "Bash",
+    "ms": 1959,
+    "chars": 425
+   },
+   {
+    "name": "Bash",
+    "ms": 1856,
+    "chars": 214
+   }
+  ],
+  "answer": {
+   "lines": [
+    {
+     "line": 2717,
+     "topLevelFunction": "lE"
+    },
+    {
+     "line": 3108,
+     "topLevelFunction": "AE"
+    },
+    {
+     "line": 4169,
+     "topLevelFunction": "fD"
+    },
+    {
+     "line": 4600,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 4730,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 6211,
+     "topLevelFunction": "WD"
+    },
+    {
+     "line": 10786,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 10787,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 11308,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 11313,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 12439,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 12440,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 13008,
+     "topLevelFunction": "dN"
+    },
+    {
+     "line": 13045,
+     "topLevelFunction": "dN"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T16",
+  "type": "tooling control flow across processes",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a6da5e6840a1029e6",
+  "score": 1,
+  "keys": {
+   "C1": true,
+   "C2": true,
+   "C3": true,
+   "C4": true
+  },
+  "wrongClaim": false,
+  "offByOne": 0,
+  "wallSec": 25.2,
+  "start": "2026-09-30T20:57:55.857Z",
+  "end": "2026-09-30T20:58:21.024Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 157717,
+   "cacheCreate": 20302,
+   "output": 426,
+   "total": 178455,
+   "ctxPeak": 43042
+  },
+  "toolCalls": 5,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 21162,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 380
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 3922
+   },
+   {
+    "name": "Bash",
+    "ms": 1913,
+    "chars": 6614
+   },
+   {
+    "name": "Bash",
+    "ms": 1875,
+    "chars": 5123
+   },
+   {
+    "name": "Bash",
+    "ms": 1327,
+    "chars": 5123
+   }
+  ],
+  "answer": {
+   "chain": [
+    {
+     "file": "tools/fix.mjs",
+     "line": 420,
+     "function": "cmds dispatch table (ab entry; invoked at line 423)",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/fix.mjs",
+     "line": 373,
+     "function": "cmdAb (declared at line 336)",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 274,
+     "function": "top-level main().catch(...)",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 221,
+     "function": "main (declared at line 219)",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 174,
+     "function": "acquire (declared at line 170)",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 122,
+     "function": "tryAcquire (declared at line 94, guarded by withGuard at line 98)",
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T08",
+  "type": "understand a function body",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "addcfd1384dd73172",
+  "score": 1,
+  "keys": {
+   "R1": true,
+   "R2": true,
+   "R3": true,
+   "R4": true,
+   "R5": true,
+   "R6": true,
+   "W1": true,
+   "W2": true,
+   "W3": true,
+   "W4": true
+  },
+  "offByOne": 0,
+  "wallSec": 36.6,
+  "start": "2026-09-30T20:58:01.012Z",
+  "end": "2026-09-30T20:58:37.630Z",
+  "turns": 5,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 175880,
+   "cacheCreate": 21716,
+   "output": 1999,
+   "total": 199607,
+   "ctxPeak": 44458
+  },
+  "toolCalls": 3,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 1,
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 10718,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 13,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 7527
+   },
+   {
+    "name": "Bash",
+    "ms": 110,
+    "chars": 160
+   },
+   {
+    "name": "Bash",
+    "ms": 96,
+    "chars": 3031
+   }
+  ],
+  "answer": {
+   "reads": [
+    {
+     "line": 11305,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11307,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11308,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11313,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11314,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11321,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11323,
+     "what": "<omitted>"
+    }
+   ],
+   "writes": [
+    {
+     "line": 11304,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11315,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11317,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11318,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11319,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11324,
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T09",
+  "type": "CSS search",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "add091b7b6a77e25e",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 17.7,
+  "start": "2026-09-30T20:58:06.179Z",
+  "end": "2026-09-30T20:58:23.912Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 120075,
+   "cacheCreate": 11767,
+   "output": 1268,
+   "total": 133118,
+   "ctxPeak": 34507
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 2460,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 105,
+    "chars": 1072
+   },
+   {
+    "name": "Bash",
+    "ms": 2096,
+    "chars": 588
+   },
+   {
+    "name": "Bash",
+    "ms": 100,
+    "chars": 800
+   }
+  ],
+  "answer": {
+   "rules": [
+    {
+     "file": "site-pretty/_app/immutable/assets/DialogHeader.Qcgwm6ST.css",
+     "line": 671,
+     "selector": ".sb-dialog.svelte-1u79i78::backdrop",
+     "value": "blur(2px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 701,
+     "selector": ".why-bring-backdrop",
+     "value": "blur(16px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 4220,
+     "selector": ".price.svelte-18m48uz",
+     "value": "blur(6px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 10352,
+     "selector": ".start-selling-platform-agents-card-chat",
+     "value": "blur(6px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11116,
+     "selector": ".start-selling-language-switch.svelte-1lc7nmb",
+     "value": "blur(12px)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11343,
+     "selector": ".start-selling-top-nav.svelte-1dcozpm",
+     "value": "blur(calc(20px * (1 - var(--morph))))"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11619,
+     "selector": "dialog.sb-dialog[data-modal-name=\"waitlist-signup\"]::backdrop",
+     "value": "blur(8px)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T10",
+  "type": "CSS search",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "afab5d6f01916835c",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 35.1,
+  "start": "2026-09-30T20:58:12.177Z",
+  "end": "2026-09-30T20:58:47.252Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 207010,
+   "cacheCreate": 18703,
+   "output": 38,
+   "total": 225763,
+   "ctxPeak": 41443
+  },
+  "toolCalls": 5,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 5
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 12592,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 6531
+   },
+   {
+    "name": "Bash",
+    "ms": 1898,
+    "chars": 756
+   },
+   {
+    "name": "Bash",
+    "ms": 2172,
+    "chars": 2801
+   },
+   {
+    "name": "Bash",
+    "ms": 1884,
+    "chars": 2027
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 477
+   }
+  ],
+  "answer": {
+   "keyframes": [
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 2888,
+     "name": "avatars-exit"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 5332,
+     "name": "start-selling-people-o-peel"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 10412,
+     "name": "start-selling-avatars-exit"
+    }
+   ],
+   "transitions": [
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 1231,
+     "selector": ".script-accent.is-drawing-in.svelte-1fn2go6"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 2548,
+     "selector": ".start-selling-future-people-o-face"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 9188,
+     "selector": ".start-selling-platform-service-card.is-animating"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 9256,
+     "selector": ".start-selling-platform-service-card.is-animating .start-selling-platform-service-card-row img"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11356,
+     "selector": ".start-selling-top-nav.svelte-1dcozpm:not(.is-morphing)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11399,
+     "selector": ".start-selling-top-nav.is-hero-pill.is-hero-chrome-ready.svelte-1dcozpm"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11489,
+     "selector": ".start-selling-top-nav-btn.is-earn.svelte-1dcozpm"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11501,
+     "selector": ".start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T11",
+  "type": "disambiguation: references of a short local name",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "ad340970277f7a7c0",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 23.5,
+  "start": "2026-09-30T20:58:17.001Z",
+  "end": "2026-09-30T20:58:40.547Z",
+  "turns": 5,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 166548,
+   "cacheCreate": 17009,
+   "output": 1964,
+   "total": 185533,
+   "ctxPeak": 39751
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 2,
+   "mcp__serena__find_declaration": 1,
+   "Bash": 1
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 142,
+  "serenaMs": 89,
+  "textResultChars": 3792,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 1681
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 89,
+    "chars": 142,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 1975,
+    "chars": 336
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 1775
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 3125,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3128,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3142,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T12",
+  "type": "disambiguation: which binding",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "addf3fc54be490b24",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 18.9,
+  "start": "2026-09-30T20:58:23.262Z",
+  "end": "2026-09-30T20:58:42.194Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 213314,
+   "cacheCreate": 19668,
+   "output": 779,
+   "total": 233773,
+   "ctxPeak": 42408
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "Read": 2,
+   "Bash": 2
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 3461,
+  "serenaMs": 122,
+  "textResultChars": 8257,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 10,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 122,
+    "chars": 3461
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 5971
+   },
+   {
+    "name": "Bash",
+    "ms": 1698,
+    "chars": 550
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 1639
+   },
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 97
+   }
+  ],
+  "answer": {
+   "declaredLine": 12946,
+   "assignedLine": 13218,
+   "holds": "<omitted>",
+   "sameAsRafT": false,
+   "otherTLine": 13020
+  },
+  "handbackPlaceholder": false,
+  "formatFail": "T12 S r1 ended without the json block; answer transcribed from its prose (12946 / 13218 / nav root element I / not the same / 13020)"
+ },
+ {
+  "task": "T13",
+  "type": "locate by behaviour in the runtime",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "ab45063bca1d841e9",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 11.7,
+  "start": "2026-09-30T20:58:43.657Z",
+  "end": "2026-09-30T20:58:55.314Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 130271,
+   "cacheCreate": 18274,
+   "output": 80,
+   "total": 148633,
+   "ctxPeak": 41014
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "Read": 3
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 2182,
+  "serenaMs": 76,
+  "textResultChars": 5680,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 10,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 82,
+    "chars": 313
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 76,
+    "chars": 2182
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 3158
+   },
+   {
+    "name": "Read",
+    "ms": 20,
+    "chars": 1982
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 227
+   }
+  ],
+  "answer": {
+   "name": "ai",
+   "start": 2054,
+   "end": 2110,
+   "attachLine": 2275,
+   "attachFunction": "bi"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T14",
+  "type": "references of a module-level variable",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "a362ed6c16e2070b7",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 18.7,
+  "start": "2026-09-30T20:58:48.836Z",
+  "end": "2026-09-30T20:59:07.530Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 163033,
+   "cacheCreate": 15634,
+   "output": 347,
+   "total": 179024,
+   "ctxPeak": 38374
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "mcp__serena__find_symbol": 2,
+   "Bash": 2
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 444,
+  "serenaMs": 346,
+  "textResultChars": 2640,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 2,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 276,
+    "chars": 253
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 70,
+    "chars": 191
+   },
+   {
+    "name": "Bash",
+    "ms": 1714,
+    "chars": 142
+   },
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 2329
+   }
+  ],
+  "answer": {
+   "variable": "$T",
+   "declLine": 2663,
+   "uses": [
+    {
+     "line": 2672,
+     "function": "iE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2682,
+     "function": "oE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2761,
+     "function": "dE",
+     "access": "write",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2773,
+     "function": "anonymous arrow function returned by dE (unsubscribe/cleanup)",
+     "access": "write",
+     "how": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T15",
+  "type": "text occurrence census",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "ac53ed1cfb519cd1d",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 22.7,
+  "start": "2026-09-30T20:58:53.464Z",
+  "end": "2026-09-30T20:59:16.133Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 179263,
+   "cacheCreate": 23088,
+   "output": 43,
+   "total": 202404,
+   "ctxPeak": 45828
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 3,
+   "mcp__serena__get_symbols_overview": 1
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 11486,
+  "serenaMs": 106,
+  "textResultChars": 1798,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 8,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 69,
+    "chars": 920
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 106,
+    "chars": 11486
+   },
+   {
+    "name": "Bash",
+    "ms": 1923,
+    "chars": 492
+   },
+   {
+    "name": "Bash",
+    "ms": 2459,
+    "chars": 386
+   }
+  ],
+  "answer": {
+   "lines": [
+    {
+     "line": 2717,
+     "topLevelFunction": "lE"
+    },
+    {
+     "line": 3108,
+     "topLevelFunction": "AE"
+    },
+    {
+     "line": 4169,
+     "topLevelFunction": "fD"
+    },
+    {
+     "line": 4600,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 4730,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 6211,
+     "topLevelFunction": "WD"
+    },
+    {
+     "line": 10786,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 10787,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 11308,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 11313,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 12439,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 12440,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 13008,
+     "topLevelFunction": "dN"
+    },
+    {
+     "line": 13045,
+     "topLevelFunction": "dN"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T16",
+  "type": "tooling control flow across processes",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "af48ea3e91e3d60c4",
+  "score": 1,
+  "keys": {
+   "C1": true,
+   "C2": true,
+   "C3": true,
+   "C4": true
+  },
+  "wrongClaim": false,
+  "offByOne": 0,
+  "wallSec": 23.3,
+  "start": "2026-09-30T20:58:58.743Z",
+  "end": "2026-09-30T20:59:22.072Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 211250,
+   "cacheCreate": 21171,
+   "output": 123,
+   "total": 232556,
+   "ctxPeak": 43911
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 5,
+   "mcp__serena__get_symbols_overview": 1
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 614,
+  "serenaMs": 199,
+  "textResultChars": 13757,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 9,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 83,
+    "chars": 189
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 199,
+    "chars": 614
+   },
+   {
+    "name": "Bash",
+    "ms": 103,
+    "chars": 2328
+   },
+   {
+    "name": "Bash",
+    "ms": 133,
+    "chars": 6381
+   },
+   {
+    "name": "Bash",
+    "ms": 95,
+    "chars": 3094
+   },
+   {
+    "name": "Bash",
+    "ms": 68,
+    "chars": 1765
+   }
+  ],
+  "answer": {
+   "chain": [
+    {
+     "file": "tools/fix.mjs",
+     "line": 420,
+     "function": "cmds table (ab entry) -> cmdAb dispatch",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/fix.mjs",
+     "line": 336,
+     "function": "cmdAb",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 219,
+     "function": "main",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 170,
+     "function": "acquire",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 94,
+     "function": "tryAcquire",
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T17",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "ae58ba006ac0c4b9d",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 17.7,
+  "start": "2026-09-30T21:00:40.566Z",
+  "end": "2026-09-30T21:00:58.287Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 87062,
+   "cacheCreate": 11702,
+   "output": 202,
+   "total": 98972,
+   "ctxPeak": 34442
+  },
+  "toolCalls": 2,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 4023,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 2023,
+    "chars": 3540
+   },
+   {
+    "name": "Bash",
+    "ms": 1848,
+    "chars": 483
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10918,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10929,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10975,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10980,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10989,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T18",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "G",
+  "rep": 1,
+  "agentId": "a82d4b38705dbfd8b",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 17.7,
+  "start": "2026-09-30T21:00:44.645Z",
+  "end": "2026-09-30T21:01:02.335Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 87554,
+   "cacheCreate": 12380,
+   "output": 207,
+   "total": 100147,
+   "ctxPeak": 35120
+  },
+  "toolCalls": 2,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 4925,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 2025,
+    "chars": 4514
+   },
+   {
+    "name": "Bash",
+    "ms": 1775,
+    "chars": 411
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10946,
+     "access": "both"
+    },
+    {
+     "line": 10947,
+     "access": "read"
+    },
+    {
+     "line": 10950,
+     "access": "both"
+    },
+    {
+     "line": 10954,
+     "access": "read"
+    },
+    {
+     "line": 10957,
+     "access": "read"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T17",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "ae23a6a8c3fece251",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 18.2,
+  "start": "2026-09-30T21:00:50.275Z",
+  "end": "2026-09-30T21:01:08.487Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 90716,
+   "cacheCreate": 16845,
+   "output": 40,
+   "total": 107607,
+   "ctxPeak": 39585
+  },
+  "toolCalls": 2,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 6745,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 12,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 17,
+    "chars": 2621
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 4124
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10918,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10929,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10975,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10980,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10989,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T18",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "S",
+  "rep": 1,
+  "agentId": "aae42741da31ef4a2",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 14.2,
+  "start": "2026-09-30T21:00:55.106Z",
+  "end": "2026-09-30T21:01:09.290Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 91919,
+   "cacheCreate": 16630,
+   "output": 587,
+   "total": 109142,
+   "ctxPeak": 39370
+  },
+  "toolCalls": 2,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 1,
+   "Bash": 1
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 5717,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 8,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 5289
+   },
+   {
+    "name": "Bash",
+    "ms": 1878,
+    "chars": 428
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10946,
+     "access": "both"
+    },
+    {
+     "line": 10947,
+     "access": "read"
+    },
+    {
+     "line": 10950,
+     "access": "both"
+    },
+    {
+     "line": 10954,
+     "access": "read"
+    },
+    {
+     "line": 10957,
+     "access": "read"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "aa7b41b52ddf955d8",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 14.7,
+  "start": "2026-09-30T21:01:01.829Z",
+  "end": "2026-09-30T21:01:16.556Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 125168,
+   "cacheCreate": 14683,
+   "output": 111,
+   "total": 139970,
+   "ctxPeak": 37423
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 3,
+   "Bash": 1
+  },
+  "serenaCalls": 3,
+  "serenaResultChars": 1679,
+  "serenaMs": 349,
+  "textResultChars": 849,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 3,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 71,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 138,
+    "chars": 1349
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 140,
+    "chars": 165
+   },
+   {
+    "name": "Bash",
+    "ms": 2531,
+    "chars": 849
+   }
+  ],
+  "answer": {
+   "iE": [
+    2670,
+    2673
+   ],
+   "dE": [
+    2749,
+    2783
+   ],
+   "uE": [
+    2719,
+    2748
+   ],
+   "defaultRootMargin": "100% 0px"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T02",
+  "type": "definition by behaviour",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a55e24fb336b4bf5b",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 23,
+  "start": "2026-09-30T21:01:06.652Z",
+  "end": "2026-09-30T21:01:29.668Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 232104,
+   "cacheCreate": 25435,
+   "output": 811,
+   "total": 258362,
+   "ctxPeak": 48175
+  },
+  "toolCalls": 8,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 4,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_symbol": 2,
+   "mcp__serena__find_referencing_symbols": 1
+  },
+  "serenaCalls": 4,
+  "serenaResultChars": 12085,
+  "serenaMs": 411,
+  "textResultChars": 4940,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 10,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 73,
+    "chars": 1885
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 117,
+    "chars": 11486
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 2251
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 72,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 102,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 120,
+    "chars": 269
+   },
+   {
+    "name": "Bash",
+    "ms": 1784,
+    "chars": 752
+   },
+   {
+    "name": "Bash",
+    "ms": 1986,
+    "chars": 52
+   }
+  ],
+  "answer": {
+   "digitComponent": {
+    "name": "$E",
+    "start": 3823,
+    "end": 3876
+   },
+   "rafCallbackLine": 3836,
+   "springStep": {
+    "name": "GE",
+    "start": 3791,
+    "end": 3803
+   },
+   "springParams": {
+    "name": "UE",
+    "line": 3789,
+    "stiffness": 280,
+    "damping": 18,
+    "mass": 0.3
+   }
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a7775295d87e396be",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 14.5,
+  "start": "2026-09-30T21:01:11.772Z",
+  "end": "2026-09-30T21:01:26.228Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 163613,
+   "cacheCreate": 15923,
+   "output": 254,
+   "total": 179800,
+   "ctxPeak": 38663
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Bash": 2
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 2282,
+  "serenaMs": 758,
+  "textResultChars": 2022,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 3,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 91,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 667,
+    "chars": 2117
+   },
+   {
+    "name": "Bash",
+    "ms": 72,
+    "chars": 1819
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 203
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a80a307f89c79a8bd",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "found540": true,
+  "offByOne": 0,
+  "wallSec": 109.4,
+  "start": "2026-09-30T21:01:19.926Z",
+  "end": "2026-09-30T21:03:09.345Z",
+  "turns": 20,
+  "tokens": {
+   "input": 40,
+   "cacheRead": 864648,
+   "cacheCreate": 31391,
+   "output": 408,
+   "total": 896487,
+   "ctxPeak": 54131
+  },
+  "toolCalls": 24,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 15,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_referencing_symbols": 1,
+   "mcp__serena__find_symbol": 7
+  },
+  "serenaCalls": 9,
+  "serenaResultChars": 4635,
+  "serenaMs": 975,
+  "textResultChars": 14600,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 90
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 28,
+    "chars": 2182
+   },
+   {
+    "name": "Bash",
+    "ms": 101,
+    "chars": 1620
+   },
+   {
+    "name": "Bash",
+    "ms": 1740,
+    "chars": 173,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 1982,
+    "chars": 914,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 2256,
+    "chars": 658
+   },
+   {
+    "name": "Bash",
+    "ms": 104,
+    "chars": 411,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 115,
+    "chars": 1075
+   },
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 2500
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 134,
+    "chars": 679,
+    "err": true
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 22,
+    "chars": 727
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 55,
+    "chars": 167
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 142,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 137,
+    "chars": 181
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 117,
+    "chars": 168
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 93,
+    "chars": 185
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 247,
+    "chars": 181
+   },
+   {
+    "name": "Bash",
+    "ms": 113,
+    "chars": 631
+   },
+   {
+    "name": "Bash",
+    "ms": 2398,
+    "chars": 4156
+   },
+   {
+    "name": "Bash",
+    "ms": 114,
+    "chars": 1013
+   },
+   {
+    "name": "Bash",
+    "ms": 99,
+    "chars": 155
+   },
+   {
+    "name": "Bash",
+    "ms": 2188,
+    "chars": 724
+   },
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 149
+   },
+   {
+    "name": "Bash",
+    "ms": 66,
+    "chars": 331
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "Ra",
+    "line": 3430
+   },
+   "uses": [
+    {
+     "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+     "line": 3420,
+     "localName": "Ra"
+    },
+    {
+     "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+     "line": 3440,
+     "localName": "Ra"
+    },
+    {
+     "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+     "line": 3880,
+     "localName": "ie"
+    },
+    {
+     "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+     "line": 445,
+     "localName": "a"
+    },
+    {
+     "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+     "line": 540,
+     "localName": "ze"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2424,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2927,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3100,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3680,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3931,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4155,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4689,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 6225,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 10913,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11294,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11606,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11860,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11994,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12196,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12433,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12978,
+     "localName": "ne"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a846024acd126a8b1",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 10.6,
+  "start": "2026-09-30T21:01:41.203Z",
+  "end": "2026-09-30T21:01:51.755Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 125713,
+   "cacheCreate": 16240,
+   "output": 572,
+   "total": 142533,
+   "ctxPeak": 38980
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 3,
+   "Read": 1
+  },
+  "serenaCalls": 3,
+  "serenaResultChars": 495,
+  "serenaMs": 287,
+  "textResultChars": 4454,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 77,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 146,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 64,
+    "chars": 165
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 4454
+   }
+  ],
+  "answer": {
+   "iE": [
+    2670,
+    2673
+   ],
+   "dE": [
+    2749,
+    2783
+   ],
+   "uE": [
+    2719,
+    2748
+   ],
+   "defaultRootMargin": "100% 0px"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "ae2ecf445f86252ae",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 27.2,
+  "start": "2026-09-30T21:01:45.626Z",
+  "end": "2026-09-30T21:02:12.819Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 202518,
+   "cacheCreate": 17660,
+   "output": 256,
+   "total": 220446,
+   "ctxPeak": 40400
+  },
+  "toolCalls": 12,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 2,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Read": 9
+  },
+  "serenaCalls": 3,
+  "serenaResultChars": 2447,
+  "serenaMs": 828,
+  "textResultChars": 2382,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 109,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 670,
+    "chars": 2117
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 1493
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 147
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 173
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 216
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 127
+   },
+   {
+    "name": "Read",
+    "ms": 33,
+    "chars": 38
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 77
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 60
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 51
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 49,
+    "chars": 165
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a904a7aacb460f945",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "found540": false,
+  "offByOne": 0,
+  "firstAnswerScore": 0.21052631578947367,
+  "firstAnswerOffByOne": 15,
+  "wallSec": 99.8,
+  "start": "2026-09-30T21:01:50.606Z",
+  "end": "2026-09-30T21:03:30.448Z",
+  "turns": 16,
+  "tokens": {
+   "input": 32,
+   "cacheRead": 683103,
+   "cacheCreate": 31969,
+   "output": 367,
+   "total": 715471,
+   "ctxPeak": 54709
+  },
+  "toolCalls": 28,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_symbol": 3,
+   "mcp__serena__find_declaration": 12,
+   "Read": 6,
+   "mcp__serena__find_referencing_symbols": 6
+  },
+  "serenaCalls": 22,
+  "serenaResultChars": 15937,
+  "serenaMs": 3370,
+  "textResultChars": 1163,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 8,
+    "chars": 0
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 40,
+    "chars": 2182
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 30,
+    "chars": 170
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 68,
+    "chars": 96,
+    "err": true
+   },
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 858
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 1505,
+    "chars": 6366
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 117,
+    "chars": 1207
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 168
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 64,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 106,
+    "chars": 227
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 118,
+    "chars": 162
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 14,
+    "chars": 3502
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 116,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 87,
+    "chars": 679,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 119,
+    "chars": 90,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 71,
+    "chars": 160
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 30,
+    "chars": 95,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 145,
+    "chars": 160
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 31,
+    "chars": 126,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 169,
+    "chars": 107,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 156,
+    "chars": 107,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 107,
+    "chars": 107,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 57,
+    "chars": 104,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 153,
+    "chars": 182
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 67,
+    "chars": 104,
+    "err": true
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 17
+   },
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 18
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 17
+   },
+   {
+    "name": "Read",
+    "ms": 17,
+    "chars": 85
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "Ra",
+    "line": 3430
+   },
+   "uses": [
+    {
+     "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+     "line": 3440,
+     "localName": "Ra"
+    },
+    {
+     "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+     "line": 445,
+     "localName": "a"
+    },
+    {
+     "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+     "line": 3880,
+     "localName": "ie"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2424,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2927,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3100,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3680,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3931,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4155,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4689,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 6225,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 10913,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11294,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11606,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11860,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11994,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12196,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12433,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12978,
+     "localName": "ne"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T05",
+  "type": "callers across the repo's tooling",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "af0c7ffe2b2d70479",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 22.5,
+  "start": "2026-09-30T21:01:55.289Z",
+  "end": "2026-09-30T21:02:17.827Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 202769,
+   "cacheCreate": 20216,
+   "output": 284,
+   "total": 223281,
+   "ctxPeak": 42956
+  },
+  "toolCalls": 8,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "mcp__serena__find_referencing_symbols": 2,
+   "mcp__serena__get_symbols_overview": 1,
+   "Read": 4
+  },
+  "serenaCalls": 4,
+  "serenaResultChars": 8153,
+  "serenaMs": 583,
+  "textResultChars": 4064,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 104,
+    "chars": 140
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 255,
+    "chars": 2751
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 183,
+    "chars": 4081
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 41,
+    "chars": 1181
+   },
+   {
+    "name": "Read",
+    "ms": 36,
+    "chars": 1452
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 628
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 422
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 1562
+   }
+  ],
+  "answer": {
+   "calls": [
+    {
+     "file": "tools/verify.mjs",
+     "line": 221,
+     "enclosing": "main"
+    },
+    {
+     "file": "tools/lock.mjs",
+     "line": 74,
+     "enclosing": "main"
+    },
+    {
+     "file": "tests/chrome/vendor-shim.chrome.test.mjs",
+     "line": 18,
+     "enclosing": "before() callback"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 157,
+     "enclosing": "test('acquire() waits for the holder and then takes the lock; release() of the handle is token-safe')"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 176,
+     "enclosing": "test('acquire() times out, leaves the queue and says who holds the lock')"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T11",
+  "type": "disambiguation: references of a short local name",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "ae071b1a62c4b028f",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 19.1,
+  "start": "2026-09-30T21:02:00.332Z",
+  "end": "2026-09-30T21:02:19.472Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 164436,
+   "cacheCreate": 16409,
+   "output": 1054,
+   "total": 181909,
+   "ctxPeak": 39149
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "Read": 3,
+   "mcp__serena__find_referencing_symbols": 1
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 403,
+  "serenaMs": 305,
+  "textResultChars": 3737,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 3,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 75,
+    "chars": 167
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 1260
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 1874
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 230,
+    "chars": 236
+   },
+   {
+    "name": "Read",
+    "ms": 40,
+    "chars": 603
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 3106,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3125,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3128,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3142,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T14",
+  "type": "references of a module-level variable",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a176a964076d945c1",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 18.2,
+  "start": "2026-09-30T21:02:04.952Z",
+  "end": "2026-09-30T21:02:23.148Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 199653,
+   "cacheCreate": 15774,
+   "output": 359,
+   "total": 215798,
+   "ctxPeak": 38514
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "mcp__serena__find_referencing_symbols": 1,
+   "mcp__serena__find_declaration": 1,
+   "Read": 2
+  },
+  "serenaCalls": 3,
+  "serenaResultChars": 1361,
+  "serenaMs": 558,
+  "textResultChars": 2123,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 11,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 44,
+    "chars": 253
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 350,
+    "chars": 945
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 164,
+    "chars": 163
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 732
+   },
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 1391
+   }
+  ],
+  "answer": {
+   "variable": "$T",
+   "declLine": 2663,
+   "uses": [
+    {
+     "line": 2672,
+     "function": "iE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2682,
+     "function": "oE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2761,
+     "function": "dE",
+     "access": "write",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2773,
+     "function": "anonymous cleanup arrow returned by dE",
+     "access": "write",
+     "how": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a10f61724f57d4453",
+  "invalid": "placeholder-handback",
+  "score": 0,
+  "note": "no parsable answer",
+  "wallSec": 6.5,
+  "start": "2026-09-30T21:02:09.598Z",
+  "end": "2026-09-30T21:02:16.084Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 85537,
+   "cacheCreate": 12262,
+   "output": 197,
+   "total": 98002,
+   "ctxPeak": 35002
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2,
+   "Read": 1
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 5273,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 134
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 5061
+   },
+   {
+    "name": "Bash",
+    "ms": 63,
+    "chars": 78
+   }
+  ],
+  "answer": null,
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T02",
+  "type": "definition by behaviour",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a2eb40d231304d5ed",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 19.3,
+  "start": "2026-09-30T21:02:14.164Z",
+  "end": "2026-09-30T21:02:33.454Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 122816,
+   "cacheCreate": 14077,
+   "output": 1110,
+   "total": 138011,
+   "ctxPeak": 36817
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 8273,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 1857,
+    "chars": 3177
+   },
+   {
+    "name": "Bash",
+    "ms": 3241,
+    "chars": 3312
+   },
+   {
+    "name": "Bash",
+    "ms": 1773,
+    "chars": 1784
+   }
+  ],
+  "answer": {
+   "digitComponent": {
+    "name": "$E",
+    "start": 3823,
+    "end": 3876
+   },
+   "rafCallbackLine": 3836,
+   "springStep": {
+    "name": "GE",
+    "start": 3791,
+    "end": 3803
+   },
+   "springParams": {
+    "name": "UE",
+    "line": 3789,
+    "stiffness": 280,
+    "damping": 18,
+    "mass": 0.3
+   }
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T03",
+  "type": "callers of a function",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a5cb03c402675b7b5",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 47.5,
+  "start": "2026-09-30T21:02:18.086Z",
+  "end": "2026-09-30T21:03:05.624Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 226542,
+   "cacheCreate": 15836,
+   "output": 146,
+   "total": 242538,
+   "ctxPeak": 38576
+  },
+  "toolCalls": 7,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 7
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 7710,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 63,
+    "chars": 525
+   },
+   {
+    "name": "Bash",
+    "ms": 3083,
+    "chars": 731
+   },
+   {
+    "name": "Bash",
+    "ms": 2359,
+    "chars": 776
+   },
+   {
+    "name": "Bash",
+    "ms": 2826,
+    "chars": 1198
+   },
+   {
+    "name": "Bash",
+    "ms": 1909,
+    "chars": 1111,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 1847,
+    "chars": 990
+   },
+   {
+    "name": "Bash",
+    "ms": 2137,
+    "chars": 2379
+   }
+  ],
+  "answer": {
+   "callers": [
+    {
+     "line": 3143,
+     "component": "AE",
+     "callback": "o"
+    },
+    {
+     "line": 4239,
+     "component": "fD",
+     "callback": "c"
+    },
+    {
+     "line": 4736,
+     "component": "hD",
+     "callback": "d"
+    },
+    {
+     "line": 6269,
+     "component": "WD",
+     "callback": "A"
+    },
+    {
+     "line": 10977,
+     "component": "uM",
+     "callback": "m"
+    },
+    {
+     "line": 11359,
+     "component": "mM",
+     "callback": "u"
+    },
+    {
+     "line": 12448,
+     "component": "GM",
+     "callback": "r"
+    },
+    {
+     "line": 13090,
+     "component": "dN",
+     "callback": "L"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T04",
+  "type": "cross-file references (bundle)",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "acfab824093d351c1",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "found540": true,
+  "offByOne": 0,
+  "wallSec": 103.6,
+  "start": "2026-09-30T21:02:22.549Z",
+  "end": "2026-09-30T21:04:06.121Z",
+  "turns": 18,
+  "tokens": {
+   "input": 36,
+   "cacheRead": 697294,
+   "cacheCreate": 27355,
+   "output": 575,
+   "total": 725260,
+   "ctxPeak": 50095
+  },
+  "toolCalls": 18,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 18
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 21470,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 105
+   },
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 1462
+   },
+   {
+    "name": "Bash",
+    "ms": 109,
+    "chars": 495
+   },
+   {
+    "name": "Bash",
+    "ms": 85,
+    "chars": 730
+   },
+   {
+    "name": "Bash",
+    "ms": 114,
+    "chars": 676
+   },
+   {
+    "name": "Bash",
+    "ms": 2022,
+    "chars": 33,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 1921,
+    "chars": 183,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 97,
+    "chars": 2345
+   },
+   {
+    "name": "Bash",
+    "ms": 101,
+    "chars": 1902
+   },
+   {
+    "name": "Bash",
+    "ms": 2852,
+    "chars": 693
+   },
+   {
+    "name": "Bash",
+    "ms": 103,
+    "chars": 1133
+   },
+   {
+    "name": "Bash",
+    "ms": 1866,
+    "chars": 5622
+   },
+   {
+    "name": "Bash",
+    "ms": 1918,
+    "chars": 1539
+   },
+   {
+    "name": "Bash",
+    "ms": 64,
+    "chars": 312
+   },
+   {
+    "name": "Bash",
+    "ms": 1964,
+    "chars": 593
+   },
+   {
+    "name": "Bash",
+    "ms": 2111,
+    "chars": 1292
+   },
+   {
+    "name": "Bash",
+    "ms": 2945,
+    "chars": 993,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 1911,
+    "chars": 1362
+   }
+  ],
+  "answer": {
+   "definition": {
+    "name": "Ra",
+    "line": 3430
+   },
+   "uses": [
+    {
+     "file": "site-pretty/_app/immutable/chunks/BSBv9QXB.js",
+     "line": 3440,
+     "localName": "Ra"
+    },
+    {
+     "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+     "line": 445,
+     "localName": "a"
+    },
+    {
+     "file": "site-pretty/_app/immutable/chunks/CzkAa0og.js",
+     "line": 540,
+     "localName": "ze"
+    },
+    {
+     "file": "site-pretty/_app/immutable/entry/app.HSR43Bkx.js",
+     "line": 3880,
+     "localName": "ie"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2424,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 2927,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3100,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3680,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 3931,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4155,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4689,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 6225,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 10913,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11294,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11606,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11860,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 11994,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12196,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12433,
+     "localName": "ne"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 12978,
+     "localName": "ne"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T05",
+  "type": "callers across the repo's tooling",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a5191b3e8aef2ec1d",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 19,
+  "start": "2026-09-30T21:03:00.822Z",
+  "end": "2026-09-30T21:03:19.789Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 162059,
+   "cacheCreate": 17085,
+   "output": 44,
+   "total": 179198,
+   "ctxPeak": 39825
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 13544,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 82,
+    "chars": 813
+   },
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 8336
+   },
+   {
+    "name": "Bash",
+    "ms": 98,
+    "chars": 3578
+   },
+   {
+    "name": "Bash",
+    "ms": 92,
+    "chars": 817
+   }
+  ],
+  "answer": {
+   "calls": [
+    {
+     "file": "tools/lock.mjs",
+     "line": 74,
+     "enclosing": "main"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 221,
+     "enclosing": "main"
+    },
+    {
+     "file": "tests/chrome/vendor-shim.chrome.test.mjs",
+     "line": 18,
+     "enclosing": "before hook"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 157,
+     "enclosing": "acquire() waits for the holder and then takes the lock; release() of the handle is token-safe"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 176,
+     "enclosing": "acquire() times out, leaves the queue and says who holds the lock"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T06",
+  "type": "who writes a CSS custom property (string search)",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "ad949544d7763af70",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 69.8,
+  "start": "2026-09-30T21:03:05.570Z",
+  "end": "2026-09-30T21:04:15.336Z",
+  "turns": 11,
+  "tokens": {
+   "input": 22,
+   "cacheRead": 426746,
+   "cacheCreate": 24067,
+   "output": 195,
+   "total": 451030,
+   "ctxPeak": 46807
+  },
+  "toolCalls": 11,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 11
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 19448,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 67,
+    "chars": 4671
+   },
+   {
+    "name": "Bash",
+    "ms": 2052,
+    "chars": 2145
+   },
+   {
+    "name": "Bash",
+    "ms": 1828,
+    "chars": 2655
+   },
+   {
+    "name": "Bash",
+    "ms": 1953,
+    "chars": 423
+   },
+   {
+    "name": "Bash",
+    "ms": 2061,
+    "chars": 629
+   },
+   {
+    "name": "Bash",
+    "ms": 2084,
+    "chars": 5827
+   },
+   {
+    "name": "Bash",
+    "ms": 1998,
+    "chars": 1112
+   },
+   {
+    "name": "Bash",
+    "ms": 1965,
+    "chars": 749
+   },
+   {
+    "name": "Bash",
+    "ms": 96,
+    "chars": 841
+   },
+   {
+    "name": "Bash",
+    "ms": 106,
+    "chars": 355
+   },
+   {
+    "name": "Bash",
+    "ms": 2420,
+    "chars": 41
+   }
+  ],
+  "answer": {
+   "exitOpacity": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4171,
+     "function": "fD/ne(effect callback)/s",
+     "mechanism": "<omitted>"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4165,
+     "function": "fD/ne(effect callback)/s",
+     "mechanism": "<omitted>"
+    }
+   ],
+   "morph": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 13243,
+     "function": "dN/render effect l(() => ...) (style values for S(I,'',te,e) at line 13221)",
+     "mechanism": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T07",
+  "type": "API usage scoped by call graph",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a7469d4e5c599ad2e",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0,
+  "wallSec": 29.9,
+  "start": "2026-09-30T21:03:10.065Z",
+  "end": "2026-09-30T21:03:39.992Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 178259,
+   "cacheCreate": 26523,
+   "output": 1828,
+   "total": 206620,
+   "ctxPeak": 49263
+  },
+  "toolCalls": 5,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2,
+   "Read": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 32286,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 75,
+    "chars": 590
+   },
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 19417
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 4516
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 7431
+   },
+   {
+    "name": "Bash",
+    "ms": 1938,
+    "chars": 332
+   }
+  ],
+  "answer": {
+   "perScrollFrame": [
+    {
+     "line": 12956,
+     "api": "getBoundingClientRect",
+     "function": "F"
+    },
+    {
+     "line": 12961,
+     "api": "elementFromPoint",
+     "function": "F"
+    },
+    {
+     "line": 12967,
+     "api": "getComputedStyle",
+     "function": "ee"
+    },
+    {
+     "line": 12972,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 12973,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 13007,
+     "api": "getBoundingClientRect",
+     "function": "_ (inside ne effect, called by L)"
+    }
+   ],
+   "notFromScrollCallback": [
+    {
+     "line": 13044,
+     "api": "getBoundingClientRect",
+     "function": "O (inside ne effect, called via k from wheel/touchmove handlers A/M)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T08",
+  "type": "understand a function body",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a05da5b60b3d7a775",
+  "score": 1,
+  "keys": {
+   "R1": true,
+   "R2": true,
+   "R3": true,
+   "R4": true,
+   "R5": true,
+   "R6": true,
+   "W1": true,
+   "W2": true,
+   "W3": true,
+   "W4": true
+  },
+  "offByOne": 0,
+  "wallSec": 36.7,
+  "start": "2026-09-30T21:03:14.576Z",
+  "end": "2026-09-30T21:03:51.309Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 125304,
+   "cacheCreate": 14488,
+   "output": 355,
+   "total": 140155,
+   "ctxPeak": 37228
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 7499,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 1794,
+    "chars": 6416
+   },
+   {
+    "name": "Bash",
+    "ms": 2349,
+    "chars": 292
+   },
+   {
+    "name": "Bash",
+    "ms": 1750,
+    "chars": 267
+   },
+   {
+    "name": "Bash",
+    "ms": 1841,
+    "chars": 524
+   }
+  ],
+  "answer": {
+   "reads": [
+    {
+     "line": 11305,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11307,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11308,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11309,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11313,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11314,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11315,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11319,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11321,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11323,
+     "what": "<omitted>"
+    }
+   ],
+   "writes": [
+    {
+     "line": 11304,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11315,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11316,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11317,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11318,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11319,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11324,
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T09",
+  "type": "CSS search",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "ad4b126f5a93ff82c",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 20.1,
+  "start": "2026-09-30T21:03:19.068Z",
+  "end": "2026-09-30T21:03:39.150Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 120470,
+   "cacheCreate": 12487,
+   "output": 1310,
+   "total": 134275,
+   "ctxPeak": 35227
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3855,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 1314
+   },
+   {
+    "name": "Bash",
+    "ms": 2368,
+    "chars": 1516
+   },
+   {
+    "name": "Bash",
+    "ms": 112,
+    "chars": 1025
+   }
+  ],
+  "answer": {
+   "rules": [
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 701,
+     "selector": ".why-bring-backdrop",
+     "value": "blur(16px)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 4220,
+     "selector": ".price.svelte-18m48uz",
+     "value": "blur(6px)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 10352,
+     "selector": ".start-selling-platform-agents-card-chat",
+     "value": "blur(6px)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11116,
+     "selector": ".start-selling-language-switch.svelte-1lc7nmb",
+     "value": "blur(12px)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11343,
+     "selector": ".start-selling-top-nav.svelte-1dcozpm",
+     "value": "blur(calc(20px * (1 - var(--morph))))"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11619,
+     "selector": "dialog.sb-dialog[data-modal-name=\"waitlist-signup\"]::backdrop",
+     "value": "blur(8px)"
+    },
+    {
+     "file": "DialogHeader.Qcgwm6ST.css",
+     "line": 671,
+     "selector": ".sb-dialog.svelte-1u79i78::backdrop",
+     "value": "blur(2px)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T10",
+  "type": "CSS search",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a1c5815ef25abe226",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 26.9,
+  "start": "2026-09-30T21:03:23.380Z",
+  "end": "2026-09-30T21:03:50.305Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 127682,
+   "cacheCreate": 16533,
+   "output": 135,
+   "total": 144358,
+   "ctxPeak": 39273
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 9518,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 6567
+   },
+   {
+    "name": "Bash",
+    "ms": 2113,
+    "chars": 2453
+   },
+   {
+    "name": "Bash",
+    "ms": 1794,
+    "chars": 498
+   }
+  ],
+  "answer": {
+   "keyframes": [
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 2888,
+     "name": "avatars-exit"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 5332,
+     "name": "start-selling-people-o-peel"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 10412,
+     "name": "start-selling-avatars-exit"
+    }
+   ],
+   "transitions": [
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 1231,
+     "selector": ".script-accent.is-drawing-in.svelte-1fn2go6"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 2548,
+     "selector": ".start-selling-future-people-o-face"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 9188,
+     "selector": ".start-selling-platform-service-card.is-animating"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 9256,
+     "selector": ".start-selling-platform-service-card.is-animating .start-selling-platform-service-card-row img"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11356,
+     "selector": ".start-selling-top-nav.svelte-1dcozpm:not(.is-morphing)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11399,
+     "selector": ".start-selling-top-nav.is-hero-pill.is-hero-chrome-ready.svelte-1dcozpm"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11489,
+     "selector": ".start-selling-top-nav-btn.is-earn.svelte-1dcozpm"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11502,
+     "selector": ".start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T02",
+  "type": "definition by behaviour",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a0d515b8e1d28f0ea",
+  "score": 1,
+  "offByOne": 0,
+  "wallSec": 23.5,
+  "start": "2026-09-30T21:03:28.993Z",
+  "end": "2026-09-30T21:03:52.492Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 270157,
+   "cacheCreate": 25402,
+   "output": 221,
+   "total": 295794,
+   "ctxPeak": 48142
+  },
+  "toolCalls": 8,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_declaration": 4,
+   "Read": 2,
+   "mcp__serena__find_symbol": 1
+  },
+  "serenaCalls": 6,
+  "serenaResultChars": 12168,
+  "serenaMs": 655,
+  "textResultChars": 4457,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 10,
+    "chars": 0
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 99,
+    "chars": 11486
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 71,
+    "chars": 124,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 97,
+    "chars": 111,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 206,
+    "chars": 173
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 124,
+    "chars": 109,
+    "err": true
+   },
+   {
+    "name": "Read",
+    "ms": 49,
+    "chars": 3046
+   },
+   {
+    "name": "Read",
+    "ms": 7,
+    "chars": 1411
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 58,
+    "chars": 165
+   }
+  ],
+  "answer": {
+   "digitComponent": {
+    "name": "$E",
+    "start": 3823,
+    "end": 3876
+   },
+   "rafCallbackLine": 3836,
+   "springStep": {
+    "name": "GE",
+    "start": 3791,
+    "end": 3803
+   },
+   "springParams": {
+    "name": "UE",
+    "line": 3789,
+    "stiffness": 280,
+    "damping": 18,
+    "mass": 0.3
+   }
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T06",
+  "type": "who writes a CSS custom property (string search)",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a8b9cadca178083d9",
+  "score": 0.5,
+  "recall": 0.3333333333333333,
+  "precision": 1,
+  "misses": [
+   {
+    "k": "exit",
+    "line": 4165
+   },
+   {
+    "k": "exit",
+    "line": 4171
+   }
+  ],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 52.8,
+  "start": "2026-09-30T21:03:33.843Z",
+  "end": "2026-09-30T21:04:26.602Z",
+  "turns": 11,
+  "tokens": {
+   "input": 22,
+   "cacheRead": 450680,
+   "cacheCreate": 30474,
+   "output": 112,
+   "total": 481288,
+   "ctxPeak": 53214
+  },
+  "toolCalls": 18,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 13,
+   "Read": 4,
+   "mcp__serena__get_symbols_overview": 1
+  },
+  "serenaCalls": 14,
+  "serenaResultChars": 9825,
+  "serenaMs": 1524,
+  "textResultChars": 15170,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 81,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 117,
+    "chars": 386
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 4783
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 97,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 203,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 140,
+    "chars": 1036
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 127,
+    "chars": 3461
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 72,
+    "chars": 2809
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 3601
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 2042
+   },
+   {
+    "name": "Read",
+    "ms": 27,
+    "chars": 4744
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 91,
+    "chars": 1036
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 142,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 135,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 130,
+    "chars": 233
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 48,
+    "chars": 237
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 99,
+    "chars": 136,
+    "err": true
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 42,
+    "chars": 481
+   }
+  ],
+  "answer": {
+   "exitOpacity": [],
+   "morph": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 13243,
+     "function": "dN/l() callback (value thunk at dN/<function>; applied by S(I, '', te, e) at line 13234)",
+     "mechanism": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T07",
+  "type": "API usage scoped by call graph",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a34620283209d091f",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0,
+  "wallSec": 30.4,
+  "start": "2026-09-30T21:03:39.695Z",
+  "end": "2026-09-30T21:04:10.110Z",
+  "turns": 7,
+  "tokens": {
+   "input": 16,
+   "cacheRead": 262129,
+   "cacheCreate": 25362,
+   "output": 1422,
+   "total": 288929,
+   "ctxPeak": 48104
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 2,
+   "Read": 2
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 4810,
+  "serenaMs": 135,
+  "textResultChars": 16546,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 85,
+    "chars": 3461
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 13026
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 50,
+    "chars": 1349
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 3520
+   }
+  ],
+  "answer": {
+   "perScrollFrame": [
+    {
+     "line": 12967,
+     "api": "getComputedStyle",
+     "function": "ee"
+    },
+    {
+     "line": 12972,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 12973,
+     "api": "getBoundingClientRect",
+     "function": "ee"
+    },
+    {
+     "line": 12956,
+     "api": "getBoundingClientRect",
+     "function": "F"
+    },
+    {
+     "line": 12961,
+     "api": "elementFromPoint",
+     "function": "F"
+    },
+    {
+     "line": 13007,
+     "api": "getBoundingClientRect",
+     "function": "_"
+    }
+   ],
+   "notFromScrollCallback": [
+    {
+     "line": 13044,
+     "api": "getBoundingClientRect",
+     "function": "O"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T12",
+  "type": "disambiguation: which binding",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a21e4db4f7078f142",
+  "score": 0.8,
+  "items": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 1,
+  "wallSec": 27.8,
+  "start": "2026-09-30T21:03:44.667Z",
+  "end": "2026-09-30T21:04:12.494Z",
+  "turns": 8,
+  "tokens": {
+   "input": 16,
+   "cacheRead": 285390,
+   "cacheCreate": 18710,
+   "output": 170,
+   "total": 304286,
+   "ctxPeak": 41450
+  },
+  "toolCalls": 8,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_declaration": 4,
+   "Read": 3,
+   "mcp__serena__find_referencing_symbols": 1
+  },
+  "serenaCalls": 5,
+  "serenaResultChars": 2079,
+  "serenaMs": 1880,
+  "textResultChars": 6490,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 261,
+    "chars": 167
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 119,
+    "chars": 128,
+    "err": true
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 4642
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 1087,
+    "chars": 1436
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 1502
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 222,
+    "chars": 167
+   },
+   {
+    "name": "Read",
+    "ms": 23,
+    "chars": 346
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 191,
+    "chars": 181
+   }
+  ],
+  "answer": {
+   "declaredLine": 12946,
+   "assignedLine": 13217,
+   "holds": "<omitted>",
+   "sameAsRafT": false,
+   "otherTLine": 13020
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "acbf77c790dfa56fe",
+  "invalid": "placeholder-handback",
+  "score": 0,
+  "note": "no parsable answer",
+  "wallSec": 8.2,
+  "start": "2026-09-30T21:04:55.210Z",
+  "end": "2026-09-30T21:05:03.366Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 93177,
+   "cacheCreate": 4859,
+   "output": 379,
+   "total": 98421,
+   "ctxPeak": 35332
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 6156,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 66,
+    "chars": 78
+   },
+   {
+    "name": "Bash",
+    "ms": 1857,
+    "chars": 6000
+   },
+   {
+    "name": "Bash",
+    "ms": 74,
+    "chars": 78
+   }
+  ],
+  "answer": null,
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T11",
+  "type": "disambiguation: references of a short local name",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a01115538ebf40b97",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 19.3,
+  "start": "2026-09-30T21:04:58.896Z",
+  "end": "2026-09-30T21:05:18.172Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 119937,
+   "cacheCreate": 11622,
+   "output": 178,
+   "total": 131745,
+   "ctxPeak": 34362
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3176,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 77,
+    "chars": 1278
+   },
+   {
+    "name": "Bash",
+    "ms": 2052,
+    "chars": 1638
+   },
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 260
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 3106,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3125,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3128,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3142,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T12",
+  "type": "disambiguation: which binding",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a832befa5af4e3022",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 38.3,
+  "start": "2026-09-30T21:05:04.163Z",
+  "end": "2026-09-30T21:05:42.446Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 239331,
+   "cacheCreate": 16566,
+   "output": 516,
+   "total": 256427,
+   "ctxPeak": 39306
+  },
+  "toolCalls": 7,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 7
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 10860,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 2065,
+    "chars": 4924
+   },
+   {
+    "name": "Bash",
+    "ms": 2041,
+    "chars": 692
+   },
+   {
+    "name": "Bash",
+    "ms": 78,
+    "chars": 4089
+   },
+   {
+    "name": "Bash",
+    "ms": 1941,
+    "chars": 219
+   },
+   {
+    "name": "Bash",
+    "ms": 126,
+    "chars": 483
+   },
+   {
+    "name": "Bash",
+    "ms": 1805,
+    "chars": 95,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 358
+   }
+  ],
+  "answer": {
+   "declaredLine": 12946,
+   "assignedLine": 13218,
+   "holds": "<omitted>",
+   "sameAsRafT": false,
+   "otherTLine": 13020
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T13",
+  "type": "locate by behaviour in the runtime",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a25ef4c7a354277a2",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 19.9,
+  "start": "2026-09-30T21:05:08.251Z",
+  "end": "2026-09-30T21:05:28.139Z",
+  "turns": 5,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 154460,
+   "cacheCreate": 13043,
+   "output": 1631,
+   "total": 169146,
+   "ctxPeak": 35785
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 4981,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 313
+   },
+   {
+    "name": "Bash",
+    "ms": 84,
+    "chars": 2881
+   },
+   {
+    "name": "Bash",
+    "ms": 3114,
+    "chars": 1360
+   },
+   {
+    "name": "Bash",
+    "ms": 2728,
+    "chars": 427
+   }
+  ],
+  "answer": {
+   "name": "ai",
+   "start": 2054,
+   "end": 2110,
+   "attachLine": 2275,
+   "attachFunction": "bi"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T14",
+  "type": "references of a module-level variable",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "addbef041791e6377",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 21.3,
+  "start": "2026-09-30T21:05:12.409Z",
+  "end": "2026-09-30T21:05:33.757Z",
+  "turns": 6,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 192107,
+   "cacheCreate": 14467,
+   "output": 2118,
+   "total": 208706,
+   "ctxPeak": 37209
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2,
+   "Read": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 6805,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 80,
+    "chars": 72
+   },
+   {
+    "name": "Read",
+    "ms": 11,
+    "chars": 4986
+   },
+   {
+    "name": "Bash",
+    "ms": 1917,
+    "chars": 142
+   },
+   {
+    "name": "Read",
+    "ms": 24,
+    "chars": 1605
+   }
+  ],
+  "answer": {
+   "variable": "$T",
+   "declLine": 2663,
+   "uses": [
+    {
+     "line": 2672,
+     "function": "iE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2682,
+     "function": "oE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2761,
+     "function": "dE",
+     "access": "write",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2773,
+     "function": "anonymous cleanup arrow returned by dE",
+     "access": "write",
+     "how": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T15",
+  "type": "text occurrence census",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a4e1edee9ff57dc29",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 18.3,
+  "start": "2026-09-30T21:05:15.716Z",
+  "end": "2026-09-30T21:05:33.970Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 118925,
+   "cacheCreate": 10839,
+   "output": 189,
+   "total": 129961,
+   "ctxPeak": 33579
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 1577,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 71,
+    "chars": 976
+   },
+   {
+    "name": "Bash",
+    "ms": 2125,
+    "chars": 429
+   },
+   {
+    "name": "Bash",
+    "ms": 2018,
+    "chars": 172
+   }
+  ],
+  "answer": {
+   "lines": [
+    {
+     "line": 2717,
+     "topLevelFunction": "lE"
+    },
+    {
+     "line": 3108,
+     "topLevelFunction": "AE"
+    },
+    {
+     "line": 4169,
+     "topLevelFunction": "fD"
+    },
+    {
+     "line": 4600,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 4730,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 6211,
+     "topLevelFunction": "WD"
+    },
+    {
+     "line": 10786,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 10787,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 11308,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 11313,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 12439,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 12440,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 13008,
+     "topLevelFunction": "dN"
+    },
+    {
+     "line": 13045,
+     "topLevelFunction": "dN"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T16",
+  "type": "tooling control flow across processes",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "ad9cec26b34b8db19",
+  "score": 1,
+  "keys": {
+   "C1": true,
+   "C2": true,
+   "C3": true,
+   "C4": true
+  },
+  "wrongClaim": false,
+  "offByOne": 0,
+  "wallSec": 29.5,
+  "start": "2026-09-30T21:05:20.153Z",
+  "end": "2026-09-30T21:05:49.631Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 122693,
+   "cacheCreate": 19859,
+   "output": 366,
+   "total": 142926,
+   "ctxPeak": 42599
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 20669,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 85,
+    "chars": 380
+   },
+   {
+    "name": "Bash",
+    "ms": 95,
+    "chars": 9590
+   },
+   {
+    "name": "Bash",
+    "ms": 1857,
+    "chars": 9095
+   },
+   {
+    "name": "Bash",
+    "ms": 1470,
+    "chars": 1604
+   }
+  ],
+  "answer": {
+   "chain": [
+    {
+     "file": "tools/fix.mjs",
+     "line": 423,
+     "function": "top-level dispatch (cmds.ab at line 420 -> cmdAb)",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/fix.mjs",
+     "line": 336,
+     "function": "cmdAb",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/fix.mjs",
+     "line": 373,
+     "function": "cmdAb",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 219,
+     "function": "main",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 221,
+     "function": "main",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 170,
+     "function": "acquire",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 94,
+     "function": "tryAcquire",
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T17",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "aec7303e30b379248",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 17,
+  "start": "2026-09-30T21:05:24.807Z",
+  "end": "2026-09-30T21:05:41.836Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 94836,
+   "cacheCreate": 4150,
+   "output": 224,
+   "total": 99216,
+   "ctxPeak": 34643
+  },
+  "toolCalls": 2,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 4775,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 1820,
+    "chars": 3540
+   },
+   {
+    "name": "Bash",
+    "ms": 2288,
+    "chars": 1235
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10918,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10929,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10975,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10980,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10989,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T18",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "a868c1aa1601bef0b",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 14.8,
+  "start": "2026-09-30T21:05:28.892Z",
+  "end": "2026-09-30T21:05:43.691Z",
+  "turns": 2,
+  "tokens": {
+   "input": 4,
+   "cacheRead": 60966,
+   "cacheCreate": 4238,
+   "output": 202,
+   "total": 65410,
+   "ctxPeak": 34723
+  },
+  "toolCalls": 1,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 1
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 5471,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 1857,
+    "chars": 5471
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10946,
+     "access": "both"
+    },
+    {
+     "line": 10947,
+     "access": "read"
+    },
+    {
+     "line": 10950,
+     "access": "both"
+    },
+    {
+     "line": 10954,
+     "access": "read"
+    },
+    {
+     "line": 10957,
+     "access": "read"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T05",
+  "type": "callers across the repo's tooling",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a864a5d84d1326ee0",
+  "score": 0.20000000000000004,
+  "recall": 0.2,
+  "precision": 0.2,
+  "misses": [
+   {
+    "file": "tools/lock.mjs",
+    "line": 74,
+    "enclosing": "main"
+   },
+   {
+    "file": "tools/verify.mjs",
+    "line": 221,
+    "enclosing": "main"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 157,
+    "enclosing": "test acquire() waits for the holder..."
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 176,
+    "enclosing": "test acquire() times out..."
+   }
+  ],
+  "extras": [
+   {
+    "file": "tools/verify.mjs",
+    "line": 220,
+    "enclosing": "main"
+   },
+   {
+    "file": "tools/lock.mjs",
+    "line": 73,
+    "enclosing": "main"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 156,
+    "enclosing": "test: acquire() waits for the holder and then takes the lock; release() of the handle is token-safe"
+   },
+   {
+    "file": "tests/unit/lock.test.mjs",
+    "line": 175,
+    "enclosing": "test: acquire() times out, leaves the queue and says who holds the lock"
+   }
+  ],
+  "offByOne": 4,
+  "wallSec": 18.2,
+  "start": "2026-09-30T21:06:05.641Z",
+  "end": "2026-09-30T21:06:23.848Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 211754,
+   "cacheCreate": 21112,
+   "output": 1014,
+   "total": 233892,
+   "ctxPeak": 43852
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Bash": 4
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 2751,
+  "serenaMs": 106,
+  "textResultChars": 11277,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 106,
+    "chars": 2751
+   },
+   {
+    "name": "Bash",
+    "ms": 85,
+    "chars": 39
+   },
+   {
+    "name": "Bash",
+    "ms": 110,
+    "chars": 8077
+   },
+   {
+    "name": "Bash",
+    "ms": 102,
+    "chars": 2415
+   },
+   {
+    "name": "Bash",
+    "ms": 91,
+    "chars": 746
+   }
+  ],
+  "answer": {
+   "calls": [
+    {
+     "file": "tools/verify.mjs",
+     "line": 220,
+     "enclosing": "main"
+    },
+    {
+     "file": "tools/lock.mjs",
+     "line": 73,
+     "enclosing": "main"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 156,
+     "enclosing": "test: acquire() waits for the holder and then takes the lock; release() of the handle is token-safe"
+    },
+    {
+     "file": "tests/unit/lock.test.mjs",
+     "line": 175,
+     "enclosing": "test: acquire() times out, leaves the queue and says who holds the lock"
+    },
+    {
+     "file": "tests/chrome/vendor-shim.chrome.test.mjs",
+     "line": 18,
+     "enclosing": "before hook"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T06",
+  "type": "who writes a CSS custom property (string search)",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a76e26590745adc95",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 37.1,
+  "start": "2026-09-30T21:06:11.656Z",
+  "end": "2026-09-30T21:06:48.751Z",
+  "turns": 7,
+  "tokens": {
+   "input": 16,
+   "cacheRead": 302745,
+   "cacheCreate": 32026,
+   "output": 1157,
+   "total": 335944,
+   "ctxPeak": 54768
+  },
+  "toolCalls": 7,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 4,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_symbol": 2
+  },
+  "serenaCalls": 3,
+  "serenaResultChars": 11818,
+  "serenaMs": 323,
+  "textResultChars": 13652,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 9,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 88,
+    "chars": 8592
+   },
+   {
+    "name": "Bash",
+    "ms": 110,
+    "chars": 2666
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 128,
+    "chars": 11486
+   },
+   {
+    "name": "Bash",
+    "ms": 1873,
+    "chars": 1200
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 151,
+    "chars": 165
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 44,
+    "chars": 167
+   },
+   {
+    "name": "Bash",
+    "ms": 2508,
+    "chars": 1194
+   }
+  ],
+  "answer": {
+   "exitOpacity": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4165,
+     "function": "fD/ne effect callback/s (reduced-motion branch)",
+     "mechanism": "<omitted>"
+    },
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 4171,
+     "function": "fD/ne effect callback/s (rAF scroll handler)",
+     "mechanism": "<omitted>"
+    }
+   ],
+   "morph": [
+    {
+     "file": "site-pretty/_app/immutable/nodes/2.DyWL8TcE.js",
+     "line": 13243,
+     "function": "dN (template-effect style directive on the .start-selling-top-nav element)",
+     "mechanism": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T07",
+  "type": "API usage scoped by call graph",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "aa34435490ea72415",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "notOk": 1,
+  "offByOne": 0,
+  "wallSec": 34.4,
+  "start": "2026-09-30T21:06:16.540Z",
+  "end": "2026-09-30T21:06:50.978Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 166591,
+   "cacheCreate": 23722,
+   "output": 335,
+   "total": 190658,
+   "ctxPeak": 46462
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "Bash": 3
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 167,
+  "serenaMs": 82,
+  "textResultChars": 19566,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 82,
+    "chars": 167
+   },
+   {
+    "name": "Bash",
+    "ms": 81,
+    "chars": 2209
+   },
+   {
+    "name": "Bash",
+    "ms": 1893,
+    "chars": 4468,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 2608,
+    "chars": 12889
+   }
+  ],
+  "answer": {
+   "perScrollFrame": [
+    {
+     "line": 12967,
+     "api": "getComputedStyle",
+     "function": "ee (called from _ in L)"
+    },
+    {
+     "line": 12972,
+     "api": "getBoundingClientRect",
+     "function": "ee (called from _ in L)"
+    },
+    {
+     "line": 12973,
+     "api": "getBoundingClientRect",
+     "function": "ee (called from _ in L)"
+    },
+    {
+     "line": 12956,
+     "api": "getBoundingClientRect",
+     "function": "F (called from _ in L)"
+    },
+    {
+     "line": 12961,
+     "api": "elementFromPoint",
+     "function": "F (called from _ in L)"
+    },
+    {
+     "line": 13007,
+     "api": "getBoundingClientRect",
+     "function": "_ (called from L)"
+    }
+   ],
+   "notFromScrollCallback": [
+    {
+     "line": 13044,
+     "api": "getBoundingClientRect",
+     "function": "O (called from k, from wheel/touchmove handlers A and M)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T08",
+  "type": "understand a function body",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "ac66081c92cef2634",
+  "score": 1,
+  "keys": {
+   "R1": true,
+   "R2": true,
+   "R3": true,
+   "R4": true,
+   "R5": true,
+   "R6": true,
+   "W1": true,
+   "W2": true,
+   "W3": true,
+   "W4": true
+  },
+  "offByOne": 0,
+  "wallSec": 33.2,
+  "start": "2026-09-30T21:06:22.140Z",
+  "end": "2026-09-30T21:06:55.385Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 136606,
+   "cacheCreate": 21011,
+   "output": 35,
+   "total": 157660,
+   "ctxPeak": 43751
+  },
+  "toolCalls": 3,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 1,
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 12993,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 14,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 8229
+   },
+   {
+    "name": "Bash",
+    "ms": 1828,
+    "chars": 4289
+   },
+   {
+    "name": "Bash",
+    "ms": 120,
+    "chars": 475
+   }
+  ],
+  "answer": {
+   "reads": [
+    {
+     "line": 11305,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11307,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11308,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11309,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11313,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11314,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11315,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11321,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11323,
+     "what": "<omitted>"
+    }
+   ],
+   "writes": [
+    {
+     "line": 11304,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11311,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11315,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11317,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11318,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11319,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11324,
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T09",
+  "type": "CSS search",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a743f3ac55b6f718b",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 15.4,
+  "start": "2026-09-30T21:06:27.263Z",
+  "end": "2026-09-30T21:06:42.647Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 86330,
+   "cacheCreate": 11919,
+   "output": 37,
+   "total": 98292,
+   "ctxPeak": 34659
+  },
+  "toolCalls": 2,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 3369,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 1072
+   },
+   {
+    "name": "Bash",
+    "ms": 2015,
+    "chars": 2297
+   }
+  ],
+  "answer": {
+   "rules": [
+    {
+     "file": "DialogHeader.Qcgwm6ST.css",
+     "line": 671,
+     "selector": ".sb-dialog.svelte-1u79i78::backdrop",
+     "value": "blur(2px)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 701,
+     "selector": ".why-bring-backdrop",
+     "value": "blur(16px)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 4220,
+     "selector": ".price.svelte-18m48uz",
+     "value": "blur(6px)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 10352,
+     "selector": ".start-selling-platform-agents-card-chat",
+     "value": "blur(6px)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11116,
+     "selector": ".start-selling-language-switch.svelte-1lc7nmb",
+     "value": "blur(12px)"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11343,
+     "selector": ".start-selling-top-nav.svelte-1dcozpm",
+     "value": "blur(calc(20px * (1 - var(--morph))))"
+    },
+    {
+     "file": "2.gBuqKVzi.css",
+     "line": 11619,
+     "selector": "dialog.sb-dialog[data-modal-name=\"waitlist-signup\"]::backdrop",
+     "value": "blur(8px)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T10",
+  "type": "CSS search",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a339ff51c17cbaf45",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 29.9,
+  "start": "2026-09-30T21:06:33.429Z",
+  "end": "2026-09-30T21:07:03.358Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 161729,
+   "cacheCreate": 17587,
+   "output": 32,
+   "total": 179358,
+   "ctxPeak": 40327
+  },
+  "toolCalls": 4,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 4
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 10881,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 104,
+    "chars": 330
+   },
+   {
+    "name": "Bash",
+    "ms": 99,
+    "chars": 6526
+   },
+   {
+    "name": "Bash",
+    "ms": 1932,
+    "chars": 2635
+   },
+   {
+    "name": "Bash",
+    "ms": 2449,
+    "chars": 1390
+   }
+  ],
+  "answer": {
+   "keyframes": [
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 2888,
+     "name": "avatars-exit"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 5332,
+     "name": "start-selling-people-o-peel"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 10412,
+     "name": "start-selling-avatars-exit"
+    }
+   ],
+   "transitions": [
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 1231,
+     "selector": ".script-accent.is-drawing-in.svelte-1fn2go6"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 2548,
+     "selector": ".start-selling-future-people-o-face"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 9188,
+     "selector": ".start-selling-platform-service-card.is-animating"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 9256,
+     "selector": ".start-selling-platform-service-card.is-animating .start-selling-platform-service-card-row img"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11356,
+     "selector": ".start-selling-top-nav.svelte-1dcozpm:not(.is-morphing)"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11399,
+     "selector": ".start-selling-top-nav.is-hero-pill.is-hero-chrome-ready.svelte-1dcozpm"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11489,
+     "selector": ".start-selling-top-nav-btn.is-earn.svelte-1dcozpm"
+    },
+    {
+     "file": "site-pretty/_app/immutable/assets/2.gBuqKVzi.css",
+     "line": 11502,
+     "selector": ".start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm)"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T11",
+  "type": "disambiguation: references of a short local name",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a9dfa86e276435edd",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 19.3,
+  "start": "2026-09-30T21:06:38.162Z",
+  "end": "2026-09-30T21:06:57.441Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 128203,
+   "cacheCreate": 15990,
+   "output": 43,
+   "total": 144244,
+   "ctxPeak": 38730
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 2,
+   "mcp__serena__find_referencing_symbols": 1,
+   "Bash": 1
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 236,
+  "serenaMs": 203,
+  "textResultChars": 3258,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 9,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 17,
+    "chars": 1572
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 1376
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 203,
+    "chars": 236
+   },
+   {
+    "name": "Bash",
+    "ms": 2044,
+    "chars": 310
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 3106,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3125,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3128,
+     "use": "<omitted>"
+    },
+    {
+     "line": 3142,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T12",
+  "type": "disambiguation: which binding",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "abbebec70625cd5c9",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 29.4,
+  "start": "2026-09-30T21:06:44.903Z",
+  "end": "2026-09-30T21:07:14.253Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 218268,
+   "cacheCreate": 20150,
+   "output": 1335,
+   "total": 239765,
+   "ctxPeak": 42890
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Bash": 5,
+   "mcp__serena__find_symbol": 1
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 3461,
+  "serenaMs": 1665,
+  "textResultChars": 8547,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 6,
+    "chars": 0
+   },
+   {
+    "name": "Bash",
+    "ms": 1862,
+    "chars": 6186
+   },
+   {
+    "name": "Bash",
+    "ms": 2080,
+    "chars": 513
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 1665,
+    "chars": 3461
+   },
+   {
+    "name": "Bash",
+    "ms": 1861,
+    "chars": 1243
+   },
+   {
+    "name": "Bash",
+    "ms": 1874,
+    "chars": 198
+   },
+   {
+    "name": "Bash",
+    "ms": 90,
+    "chars": 407
+   }
+  ],
+  "answer": {
+   "declaredLine": 12946,
+   "assignedLine": 13218,
+   "holds": "<omitted>",
+   "sameAsRafT": false,
+   "otherTLine": 13020
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T08",
+  "type": "understand a function body",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "ae94ab3c82b07d62d",
+  "score": 1,
+  "keys": {
+   "R1": true,
+   "R2": true,
+   "R3": true,
+   "R4": true,
+   "R5": true,
+   "R6": true,
+   "W1": true,
+   "W2": true,
+   "W3": true,
+   "W4": true
+  },
+  "offByOne": 0,
+  "wallSec": 39.6,
+  "start": "2026-09-30T21:06:49.156Z",
+  "end": "2026-09-30T21:07:28.790Z",
+  "turns": 6,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 209470,
+   "cacheCreate": 22012,
+   "output": 2440,
+   "total": 233936,
+   "ctxPeak": 44754
+  },
+  "toolCalls": 3,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "Read": 2
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 4524,
+  "serenaMs": 90,
+  "textResultChars": 6941,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 7,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 90,
+    "chars": 4524
+   },
+   {
+    "name": "Read",
+    "ms": 8,
+    "chars": 4114
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 2827
+   }
+  ],
+  "answer": {
+   "reads": [
+    {
+     "line": 11305,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11307,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11308,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11309,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11313,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11314,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11315,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11321,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11323,
+     "what": "<omitted>"
+    }
+   ],
+   "writes": [
+    {
+     "line": 11304,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11310,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11311,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11315,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11316,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11317,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11318,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11319,
+     "what": "<omitted>"
+    },
+    {
+     "line": 11324,
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T13",
+  "type": "locate by behaviour in the runtime",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a72f1f7f0f3fd2833",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 23.5,
+  "start": "2026-09-30T21:06:53.880Z",
+  "end": "2026-09-30T21:07:17.427Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 244236,
+   "cacheCreate": 18888,
+   "output": 192,
+   "total": 263330,
+   "ctxPeak": 41628
+  },
+  "toolCalls": 9,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_declaration": 2,
+   "Read": 4,
+   "mcp__serena__find_symbol": 2
+  },
+  "serenaCalls": 5,
+  "serenaResultChars": 4102,
+  "serenaMs": 419,
+  "textResultChars": 3034,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 9,
+    "chars": 0
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 37,
+    "chars": 2182
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 76,
+    "chars": 95,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 99,
+    "chars": 179,
+    "err": true
+   },
+   {
+    "name": "Read",
+    "ms": 32,
+    "chars": 1532
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 96,
+    "chars": 1482
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 111,
+    "chars": 164
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 1357
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 57
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 88
+   }
+  ],
+  "answer": {
+   "name": "ai",
+   "start": 2054,
+   "end": 2110,
+   "attachLine": 2275,
+   "attachFunction": "bi"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T16",
+  "type": "tooling control flow across processes",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a7f807d378c6ec241",
+  "score": 1,
+  "keys": {
+   "C1": true,
+   "C2": true,
+   "C3": true,
+   "C4": true
+  },
+  "wrongClaim": false,
+  "offByOne": 0,
+  "wallSec": 31.4,
+  "start": "2026-09-30T21:06:58.461Z",
+  "end": "2026-09-30T21:07:29.839Z",
+  "turns": 10,
+  "tokens": {
+   "input": 20,
+   "cacheRead": 379769,
+   "cacheCreate": 23961,
+   "output": 1857,
+   "total": 405607,
+   "ctxPeak": 46701
+  },
+  "toolCalls": 13,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__get_symbols_overview": 2,
+   "mcp__serena__find_symbol": 3,
+   "Read": 5,
+   "mcp__serena__find_declaration": 1,
+   "mcp__serena__find_referencing_symbols": 2
+  },
+  "serenaCalls": 8,
+  "serenaResultChars": 11845,
+  "serenaMs": 683,
+  "textResultChars": 5911,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 79,
+    "chars": 614
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 64,
+    "chars": 6078
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 99,
+    "chars": 286
+   },
+   {
+    "name": "Read",
+    "ms": 10,
+    "chars": 523
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 92,
+    "chars": 3936
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 107,
+    "chars": 138
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 1908
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 417
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 56,
+    "chars": 421
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 842
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 125,
+    "chars": 230
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 61,
+    "chars": 142
+   },
+   {
+    "name": "Read",
+    "ms": 20,
+    "chars": 2221
+   }
+  ],
+  "answer": {
+   "chain": [
+    {
+     "file": "tools/fix.mjs",
+     "line": 423,
+     "function": "(top-level dispatch) cmds[cmd]()",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/fix.mjs",
+     "line": 336,
+     "function": "cmdAb",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 273,
+     "function": "(module top level) main()",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 219,
+     "function": "main",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 170,
+     "function": "acquire",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 94,
+     "function": "tryAcquire",
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T01",
+  "type": "definition by name",
+  "arm": "G",
+  "rep": 2,
+  "agentId": "af249a23cc443a233",
+  "invalid": "placeholder-handback",
+  "score": 0,
+  "note": "no parsable answer",
+  "wallSec": 9,
+  "start": "2026-09-30T21:07:02.596Z",
+  "end": "2026-09-30T21:07:11.628Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 98036,
+   "cacheCreate": 0,
+   "output": 374,
+   "total": 98416,
+   "ctxPeak": 35332
+  },
+  "toolCalls": 3,
+  "toolSearch": 0,
+  "byName": {
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 6156,
+  "calls": [
+   {
+    "name": "Bash",
+    "ms": 70,
+    "chars": 78
+   },
+   {
+    "name": "Bash",
+    "ms": 2637,
+    "chars": 6000
+   },
+   {
+    "name": "Bash",
+    "ms": 86,
+    "chars": 78
+   }
+  ],
+  "answer": null,
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T13",
+  "type": "locate by behaviour in the runtime",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a7b3b7adcab05bf1c",
+  "score": 1,
+  "items": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "offByOne": 0,
+  "wallSec": 19.6,
+  "start": "2026-09-30T21:07:38.236Z",
+  "end": "2026-09-30T21:07:57.835Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 246284,
+   "cacheCreate": 18325,
+   "output": 298,
+   "total": 264921,
+   "ctxPeak": 41065
+  },
+  "toolCalls": 6,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "Grep": 1,
+   "Bash": 4
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 2182,
+  "serenaMs": 89,
+  "textResultChars": 5265,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 11,
+    "chars": 0
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 89,
+    "chars": 2182
+   },
+   {
+    "name": "Grep",
+    "ms": 7,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 313
+   },
+   {
+    "name": "Bash",
+    "ms": 89,
+    "chars": 4221
+   },
+   {
+    "name": "Bash",
+    "ms": 101,
+    "chars": 412
+   },
+   {
+    "name": "Bash",
+    "ms": 82,
+    "chars": 150
+   }
+  ],
+  "answer": {
+   "name": "ai",
+   "start": 2054,
+   "end": 2110,
+   "attachLine": 2275,
+   "attachFunction": "bi"
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T14",
+  "type": "references of a module-level variable",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a05f4495aed8f4c59",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 15.6,
+  "start": "2026-09-30T21:07:43.999Z",
+  "end": "2026-09-30T21:07:59.646Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 163730,
+   "cacheCreate": 16678,
+   "output": 1111,
+   "total": 181529,
+   "ctxPeak": 39418
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "Bash": 3
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 5784,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 9,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 2,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 87,
+    "chars": 68
+   },
+   {
+    "name": "Bash",
+    "ms": 74,
+    "chars": 2705
+   },
+   {
+    "name": "Bash",
+    "ms": 1989,
+    "chars": 2842
+   }
+  ],
+  "answer": {
+   "variable": "$T",
+   "declLine": 2663,
+   "uses": [
+    {
+     "line": 2672,
+     "function": "iE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2682,
+     "function": "oE",
+     "access": "read",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2761,
+     "function": "dE",
+     "access": "write",
+     "how": "<omitted>"
+    },
+    {
+     "line": 2773,
+     "function": "dE (returned cleanup closure)",
+     "access": "write",
+     "how": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T15",
+  "type": "text occurrence census",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a963231a2f3ef1411",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 21.3,
+  "start": "2026-09-30T21:07:48.766Z",
+  "end": "2026-09-30T21:08:10.028Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 179415,
+   "cacheCreate": 22966,
+   "output": 76,
+   "total": 202467,
+   "ctxPeak": 45706
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "Bash": 3,
+   "mcp__serena__get_symbols_overview": 1
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 11486,
+  "serenaMs": 124,
+  "textResultChars": 1701,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 4,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 2,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 76,
+    "chars": 920
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 124,
+    "chars": 11486
+   },
+   {
+    "name": "Bash",
+    "ms": 2208,
+    "chars": 488
+   },
+   {
+    "name": "Bash",
+    "ms": 2300,
+    "chars": 124
+   }
+  ],
+  "answer": {
+   "lines": [
+    {
+     "line": 2717,
+     "topLevelFunction": "lE"
+    },
+    {
+     "line": 3108,
+     "topLevelFunction": "AE"
+    },
+    {
+     "line": 4169,
+     "topLevelFunction": "fD"
+    },
+    {
+     "line": 4600,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 4730,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 6211,
+     "topLevelFunction": "WD"
+    },
+    {
+     "line": 10786,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 10787,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 11308,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 11313,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 12439,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 12440,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 13008,
+     "topLevelFunction": "dN"
+    },
+    {
+     "line": 13045,
+     "topLevelFunction": "dN"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T16",
+  "type": "tooling control flow across processes",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "afaaa8aa154d4367a",
+  "score": 1,
+  "keys": {
+   "C1": true,
+   "C2": true,
+   "C3": true,
+   "C4": true
+  },
+  "wrongClaim": false,
+  "offByOne": 0,
+  "wallSec": 24.6,
+  "start": "2026-09-30T21:07:53.435Z",
+  "end": "2026-09-30T21:08:18.014Z",
+  "turns": 7,
+  "tokens": {
+   "input": 14,
+   "cacheRead": 262564,
+   "cacheCreate": 25535,
+   "output": 1801,
+   "total": 289914,
+   "ctxPeak": 48275
+  },
+  "toolCalls": 8,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Grep": 1,
+   "Bash": 5,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_symbol": 1
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 6692,
+  "serenaMs": 130,
+  "textResultChars": 16249,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 11,
+    "chars": 0
+   },
+   {
+    "name": "Grep",
+    "ms": 2,
+    "chars": 169,
+    "err": true
+   },
+   {
+    "name": "Bash",
+    "ms": 79,
+    "chars": 380
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 65,
+    "chars": 614
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 65,
+    "chars": 6078
+   },
+   {
+    "name": "Bash",
+    "ms": 92,
+    "chars": 6756
+   },
+   {
+    "name": "Bash",
+    "ms": 91,
+    "chars": 2974
+   },
+   {
+    "name": "Bash",
+    "ms": 87,
+    "chars": 5363
+   },
+   {
+    "name": "Bash",
+    "ms": 100,
+    "chars": 607
+   }
+  ],
+  "answer": {
+   "chain": [
+    {
+     "file": "tools/fix.mjs",
+     "line": 420,
+     "function": "cmds.ab -> cmdAb (defined 335-413; dispatched at line 423)",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/fix.mjs",
+     "line": 373,
+     "function": "cmdAb",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/verify.mjs",
+     "line": 221,
+     "function": "main (219)",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 170,
+     "function": "acquire",
+     "what": "<omitted>"
+    },
+    {
+     "file": "tools/lib/lock.mjs",
+     "line": 94,
+     "function": "tryAcquire",
+     "what": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T17",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "a0187f85e76b9ddd7",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 18.2,
+  "start": "2026-09-30T21:07:59.131Z",
+  "end": "2026-09-30T21:08:17.354Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 90683,
+   "cacheCreate": 16926,
+   "output": 34,
+   "total": 107649,
+   "ctxPeak": 39666
+  },
+  "toolCalls": 2,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 2
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 7388,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 2594
+   },
+   {
+    "name": "Read",
+    "ms": 17,
+    "chars": 4794
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10918,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10929,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10975,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10980,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10989,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T18",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "S",
+  "rep": 2,
+  "agentId": "afc5317676cfafd02",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 16.5,
+  "start": "2026-09-30T21:08:04.375Z",
+  "end": "2026-09-30T21:08:20.916Z",
+  "turns": 3,
+  "tokens": {
+   "input": 6,
+   "cacheRead": 91584,
+   "cacheCreate": 16402,
+   "output": 703,
+   "total": 108695,
+   "ctxPeak": 39142
+  },
+  "toolCalls": 2,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 1,
+   "Bash": 1
+  },
+  "serenaCalls": 0,
+  "serenaResultChars": 0,
+  "serenaMs": 0,
+  "textResultChars": 4968,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 4540
+   },
+   {
+    "name": "Bash",
+    "ms": 2543,
+    "chars": 428
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10946,
+     "access": "both"
+    },
+    {
+     "line": 10947,
+     "access": "read"
+    },
+    {
+     "line": 10950,
+     "access": "both"
+    },
+    {
+     "line": 10954,
+     "access": "read"
+    },
+    {
+     "line": 10957,
+     "access": "read"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T09",
+  "type": "CSS search",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a2c8912fb475f3c3c",
+  "score": 0,
+  "recall": 0,
+  "precision": 0,
+  "misses": [
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 701,
+    "selector": ".why-bring-backdrop"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 4220,
+    "selector": ".price.svelte-18m48uz"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 10352,
+    "selector": ".start-selling-platform-agents-card-chat"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11116,
+    "selector": ".start-selling-language-switch.svelte-1lc7nmb"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11343,
+    "selector": ".start-selling-top-nav.svelte-1dcozpm"
+   },
+   {
+    "file": "2.gBuqKVzi.css",
+    "line": 11619,
+    "selector": "dialog.sb-dialog[data-modal-name=\"waitlist-signup\"]::backdrop"
+   },
+   {
+    "file": "DialogHeader.Qcgwm6ST.css",
+    "line": 671,
+    "selector": ".sb-dialog.svelte-1u79i78::backdrop"
+   }
+  ],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 18.9,
+  "start": "2026-09-30T21:08:09.835Z",
+  "end": "2026-09-30T21:08:28.705Z",
+  "turns": 6,
+  "tokens": {
+   "input": 12,
+   "cacheRead": 198168,
+   "cacheCreate": 14280,
+   "output": 121,
+   "total": 212581,
+   "ctxPeak": 37020
+  },
+  "toolCalls": 5,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 4,
+   "mcp__serena__get_symbols_overview": 1
+  },
+  "serenaCalls": 5,
+  "serenaResultChars": 220,
+  "serenaMs": 428,
+  "textResultChars": 0,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 5,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 107,
+    "chars": 2
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 97,
+    "chars": 137,
+    "err": true
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 84,
+    "chars": 77,
+    "err": true
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 68,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 72,
+    "chars": 2
+   }
+  ],
+  "answer": {
+   "rules": []
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T15",
+  "type": "text occurrence census",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "aacdb71e53de5aba9",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 97.6,
+  "start": "2026-09-30T21:08:14.334Z",
+  "end": "2026-09-30T21:09:51.905Z",
+  "turns": 23,
+  "tokens": {
+   "input": 46,
+   "cacheRead": 1062324,
+   "cacheCreate": 45696,
+   "output": 2979,
+   "total": 1111045,
+   "ctxPeak": 68436
+  },
+  "toolCalls": 41,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__get_symbols_overview": 1,
+   "mcp__serena__find_declaration": 17,
+   "mcp__serena__find_symbol": 2,
+   "Read": 21
+  },
+  "serenaCalls": 20,
+  "serenaResultChars": 39596,
+  "serenaMs": 2240,
+  "textResultChars": 1126,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 9,
+    "chars": 0
+   },
+   {
+    "name": "serena.get_symbols_overview",
+    "ms": 102,
+    "chars": 11486
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 113,
+    "chars": 116,
+    "err": true
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 34,
+    "chars": 2
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 128,
+    "chars": 180,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 91,
+    "chars": 180,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 139,
+    "chars": 180,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 151,
+    "chars": 180,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 63,
+    "chars": 180,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 109,
+    "chars": 180,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 145,
+    "chars": 180,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 89,
+    "chars": 181,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 126,
+    "chars": 181,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 147,
+    "chars": 181,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 170,
+    "chars": 181,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 117,
+    "chars": 181,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 90,
+    "chars": 181,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 112,
+    "chars": 181,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 77,
+    "chars": 181,
+    "err": true
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 97,
+    "chars": 119,
+    "err": true
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 81
+   },
+   {
+    "name": "Read",
+    "ms": 12,
+    "chars": 40
+   },
+   {
+    "name": "Read",
+    "ms": 21,
+    "chars": 62
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 79
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 93
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 84
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 118
+   },
+   {
+    "name": "Read",
+    "ms": 15,
+    "chars": 65
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 73
+   },
+   {
+    "name": "Read",
+    "ms": 9,
+    "chars": 79
+   },
+   {
+    "name": "Read",
+    "ms": 22,
+    "chars": 63
+   },
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 72
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 140,
+    "chars": 25165
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 21
+   },
+   {
+    "name": "Read",
+    "ms": 20,
+    "chars": 25
+   },
+   {
+    "name": "Read",
+    "ms": 20,
+    "chars": 25
+   },
+   {
+    "name": "Read",
+    "ms": 17,
+    "chars": 25
+   },
+   {
+    "name": "Read",
+    "ms": 13,
+    "chars": 25
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 24
+   },
+   {
+    "name": "Read",
+    "ms": 16,
+    "chars": 24
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 24
+   },
+   {
+    "name": "Read",
+    "ms": 5,
+    "chars": 24
+   }
+  ],
+  "answer": {
+   "lines": [
+    {
+     "line": 2717,
+     "topLevelFunction": "lE"
+    },
+    {
+     "line": 3108,
+     "topLevelFunction": "AE"
+    },
+    {
+     "line": 4169,
+     "topLevelFunction": "fD"
+    },
+    {
+     "line": 4600,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 4730,
+     "topLevelFunction": "hD"
+    },
+    {
+     "line": 6211,
+     "topLevelFunction": "WD"
+    },
+    {
+     "line": 10786,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 10787,
+     "topLevelFunction": "uM"
+    },
+    {
+     "line": 11308,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 11313,
+     "topLevelFunction": "mM"
+    },
+    {
+     "line": 12439,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 12440,
+     "topLevelFunction": "GM"
+    },
+    {
+     "line": 13008,
+     "topLevelFunction": "dN"
+    },
+    {
+     "line": 13045,
+     "topLevelFunction": "dN"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T17",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "a6e71315d23f55dea",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 20.7,
+  "start": "2026-09-30T21:08:19.367Z",
+  "end": "2026-09-30T21:08:40.093Z",
+  "turns": 5,
+  "tokens": {
+   "input": 10,
+   "cacheRead": 162682,
+   "cacheCreate": 16283,
+   "output": 235,
+   "total": 179210,
+   "ctxPeak": 39023
+  },
+  "toolCalls": 3,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "mcp__serena__find_symbol": 1,
+   "Read": 2
+  },
+  "serenaCalls": 1,
+  "serenaResultChars": 167,
+  "serenaMs": 144,
+  "textResultChars": 5252,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 8,
+    "chars": 0
+   },
+   {
+    "name": "serena.find_symbol",
+    "ms": 144,
+    "chars": 167
+   },
+   {
+    "name": "Read",
+    "ms": 19,
+    "chars": 2139
+   },
+   {
+    "name": "Read",
+    "ms": 18,
+    "chars": 3113
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10918,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10929,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10975,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10980,
+     "use": "<omitted>"
+    },
+    {
+     "line": 10989,
+     "use": "<omitted>"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ },
+ {
+  "task": "T18",
+  "type": "disambiguation: references of a shadowed local in a large component",
+  "arm": "SO",
+  "rep": 1,
+  "agentId": "aa17c59778db85d3e",
+  "score": 1,
+  "recall": 1,
+  "precision": 1,
+  "misses": [],
+  "extras": [],
+  "offByOne": 0,
+  "wallSec": 19.1,
+  "start": "2026-09-30T21:08:23.841Z",
+  "end": "2026-09-30T21:08:42.915Z",
+  "turns": 4,
+  "tokens": {
+   "input": 8,
+   "cacheRead": 127057,
+   "cacheCreate": 17604,
+   "output": 39,
+   "total": 144708,
+   "ctxPeak": 40344
+  },
+  "toolCalls": 4,
+  "toolSearch": 1,
+  "byName": {
+   "ToolSearch": 1,
+   "Read": 2,
+   "mcp__serena__find_declaration": 1,
+   "mcp__serena__find_referencing_symbols": 1
+  },
+  "serenaCalls": 2,
+  "serenaResultChars": 2570,
+  "serenaMs": 760,
+  "textResultChars": 5171,
+  "calls": [
+   {
+    "name": "ToolSearch",
+    "ms": 6,
+    "chars": 0
+   },
+   {
+    "name": "Read",
+    "ms": 14,
+    "chars": 3290
+   },
+   {
+    "name": "serena.find_declaration",
+    "ms": 148,
+    "chars": 181
+   },
+   {
+    "name": "serena.find_referencing_symbols",
+    "ms": 612,
+    "chars": 2389
+   },
+   {
+    "name": "Read",
+    "ms": 6,
+    "chars": 1881
+   }
+  ],
+  "answer": {
+   "references": [
+    {
+     "line": 10946,
+     "access": "both"
+    },
+    {
+     "line": 10947,
+     "access": "read"
+    },
+    {
+     "line": 10950,
+     "access": "both"
+    },
+    {
+     "line": 10954,
+     "access": "read"
+    },
+    {
+     "line": 10957,
+     "access": "read"
+    }
+   ]
+  },
+  "handbackPlaceholder": false
+ }
+]

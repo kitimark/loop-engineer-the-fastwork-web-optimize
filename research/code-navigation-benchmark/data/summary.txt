@@ -1,0 +1,61 @@
+task | type | G | S | SO   (score (perfect/n) calls medianWall medianTotalTokens)
+T01 | definition by name | 1.00 (1/1) 2c 8.1s 99k | 1.00 (2/2) 4c 13.6s 141k | 1.00 (1/1) 4c 10.6s 143k
+T02 | definition by behaviour | 1.00 (2/2) 3.5c 18.3s 137k | 1.00 (2/2) 6.5c 21.9s 234k | 1.00 (1/1) 8c 23.5s 296k
+T03 | callers of a function | 1.00 (2/2) 7.5c 52.6s 261k | 1.00 (2/2) 6c 25.5s 242k | 1.00 (1/1) 12c 27.2s 220k
+T04 | cross-file references (bundle) | 1.00 (2/2) 16c 93.3s 629k | 1.00 (2/2) 19.5c 105.3s 767k | 1.00 (1/1) 28c 99.8s 715k
+T05 | callers across the repo's tooling | 1.00 (2/2) 4.5c 21.4s 181k | 0.60 (1/2) 4.5c 18s 215k | 1.00 (1/1) 8c 22.5s 223k
+T06 | who writes a CSS custom property (string search) | 1.00 (2/2) 11c 64.4s 441k | 1.00 (2/2) 8c 38.3s 333k | 0.50 (0/1) 18c 52.8s 481k
+T07 | API usage scoped by call graph | 1.00 (2/2) 5c 27.9s 195k | 1.00 (2/2) 4.5c 35.5s 225k | 1.00 (1/1) 4c 30.4s 289k
+T08 | understand a function body | 1.00 (2/2) 4c 33.8s 139k | 1.00 (2/2) 3c 34.9s 179k | 1.00 (1/1) 3c 39.6s 234k
+T09 | CSS search | 1.00 (2/2) 3c 19.6s 134k | 1.00 (2/2) 2.5c 16.6s 116k | 0.00 (0/1) 5c 18.9s 213k
+T10 | CSS search | 1.00 (2/2) 3.5c 28.9s 165k | 1.00 (2/2) 4.5c 32.5s 203k | -
+T11 | disambiguation: references of a short local name | 1.00 (2/2) 3.5c 19.8s 132k | 1.00 (2/2) 4c 21.4s 165k | 1.00 (1/1) 5c 19.1s 182k
+T12 | disambiguation: which binding | 1.00 (2/2) 6.5c 36s 238k | 1.00 (2/2) 5.5c 24.1s 237k | 0.80 (0/1) 8c 27.8s 304k
+T13 | locate by behaviour in the runtime | 1.00 (2/2) 4c 19.2s 150k | 1.00 (2/2) 5.5c 15.7s 207k | 1.00 (1/1) 9c 23.5s 263k
+T14 | references of a module-level variable | 1.00 (2/2) 3.5c 19.4s 172k | 1.00 (2/2) 4.5c 17.1s 180k | 1.00 (1/1) 5c 18.2s 216k
+T15 | text occurrence census | 1.00 (2/2) 3c 18.1s 130k | 1.00 (2/2) 4.5c 22s 202k | 1.00 (1/1) 41c 97.6s 1111k
+T16 | tooling control flow across processes | 1.00 (2/2) 4.5c 27.4s 161k | 1.00 (2/2) 7c 24s 261k | 1.00 (1/1) 13c 31.4s 406k
+T17 | disambiguation: references of a shadowed local in a large component | 1.00 (2/2) 2c 17.4s 99k | 1.00 (2/2) 2c 18.2s 108k | 1.00 (1/1) 3c 20.7s 179k
+T18 | disambiguation: references of a shadowed local in a large component | 1.00 (2/2) 1.5c 16.3s 83k | 1.00 (2/2) 2c 15.3s 109k | 1.00 (1/1) 4c 19.1s 145k
+
+by arm:
+┌─────────┬────┬───────┬─────────┬───────┬─────────────┬────────────┬─────────┬─────────┬──────────┬────────┬──────────┐
+│ (index) │ n  │ score │ perfect │ calls │ serenaCalls │ usedSerena │ wallSec │ tokensK │ ctxPeakK │ outTok │ offByOne │
+├─────────┼────┼───────┼─────────┼───────┼─────────────┼────────────┼─────────┼─────────┼──────────┼────────┼──────────┤
+│ G       │ 35 │ 1     │ 35      │ 5     │ 0           │ 0          │ 21.3    │ 143     │ 37.2     │ 361    │ 0        │
+│ S       │ 36 │ 0.978 │ 35      │ 5.4   │ 1.3         │ 23         │ 21.1    │ 198     │ 41.9     │ 378    │ 4        │
+│ SO      │ 17 │ 0.9   │ 14      │ 10.5  │ 6.2         │ 17         │ 23.5    │ 234     │ 41.6     │ 284    │ 1        │
+└─────────┴────┴───────┴─────────┴───────┴─────────────┴────────────┴─────────┴─────────┴──────────┴────────┴──────────┘
+paired on SO tasks:
+┌─────────┬────┬───────┬─────────┬───────┬─────────────┬────────────┬─────────┬─────────┬──────────┬────────┬──────────┐
+│ (index) │ n  │ score │ perfect │ calls │ serenaCalls │ usedSerena │ wallSec │ tokensK │ ctxPeakK │ outTok │ offByOne │
+├─────────┼────┼───────┼─────────┼───────┼─────────────┼────────────┼─────────┼─────────┼──────────┼────────┼──────────┤
+│ G       │ 33 │ 1     │ 33      │ 5.1   │ 0           │ 0          │ 20.2    │ 140     │ 37.2     │ 361    │ 0        │
+│ S       │ 34 │ 0.976 │ 33      │ 5.5   │ 1.3         │ 23         │ 20.2    │ 198     │ 42.6     │ 491    │ 4        │
+│ SO      │ 17 │ 0.9   │ 14      │ 10.5  │ 6.2         │ 17         │ 23.5    │ 234     │ 41.6     │ 284    │ 1        │
+└─────────┴────┴───────┴─────────┴───────┴─────────────┴────────────┴─────────┴─────────┴──────────┴────────┴──────────┘
+agent-side call stats:
+┌─────────┬───────────────────────────────────┬─────┬───────┬───────┬───────┬──────────┬──────────┬──────────┐
+│ (index) │ tool                              │ n   │ medMs │ p90Ms │ maxMs │ medChars │ p90Chars │ maxChars │
+├─────────┼───────────────────────────────────┼─────┼───────┼───────┼───────┼──────────┼──────────┼──────────┤
+│ 0       │ 'Bash'                            │ 290 │ 1775  │ 2459  │ 7488  │ 990      │ 5280     │ 12889    │
+│ 1       │ 'Read'                            │ 99  │ 16    │ 22    │ 49    │ 1391     │ 4986     │ 19417    │
+│ 2       │ 'serena.find_symbol'              │ 67  │ 91    │ 144   │ 1665  │ 167      │ 3502     │ 25165    │
+│ 3       │ 'ToolSearch'                      │ 49  │ 7     │ 11    │ 14    │ 0        │ 0        │ 0        │
+│ 4       │ 'serena.find_declaration'         │ 43  │ 113   │ 170   │ 261   │ 167      │ 181      │ 182      │
+│ 5       │ 'serena.find_referencing_symbols' │ 21  │ 183   │ 685   │ 1505  │ 945      │ 2751     │ 6366     │
+│ 6       │ 'serena.get_symbols_overview'     │ 20  │ 99    │ 199   │ 1282  │ 2182     │ 11486    │ 11486    │
+│ 7       │ 'Grep'                            │ 9   │ 2     │ 7     │ 7     │ 169      │ 169      │ 169      │
+└─────────┴───────────────────────────────────┴─────┴───────┴───────┴───────┴──────────┴──────────┴──────────┘
+
+by group:
+A locate a definition (by name / by behaviour) | 1.00 (5/5) 3.4c 18.5s 136k | 1.00 (6/6) 5.3c 17.1s 179k | 1.00 (3/3) 7c 23.5s 263k
+B callers / references of a named symbol | 1.00 (6/6) 5.2c 22.5s 196k | 0.87 (5/6) 5c 18s 189k | 1.00 (3/3) 8.3c 22.5s 220k
+C cross-file references through bundle aliases | 1.00 (2/2) 16c 93.3s 629k | 1.00 (2/2) 19.5c 105.3s 767k | 1.00 (1/1) 28c 99.8s 715k
+D disambiguate short / shadowed locals | 1.00 (8/8) 3.4c 18.5s 116k | 1.00 (8/8) 3.4c 18.5s 127k | 0.95 (3/4) 5c 19.9s 181k
+E call-graph scoped API use, read a function body | 1.00 (4/4) 4.5c 30.4s 162k | 1.00 (4/4) 3.8c 35.5s 195k | 1.00 (2/2) 3.5c 35s 261k
+F string / custom-property writers | 1.00 (2/2) 11c 64.4s 441k | 1.00 (2/2) 8c 38.3s 333k | 0.50 (0/1) 18c 52.8s 481k
+G CSS | 1.00 (4/4) 3.3c 23.5s 139k | 1.00 (4/4) 3.5c 23.8s 156k | 0.00 (0/1) 5c 18.9s 213k
+H text census (every line containing X) | 1.00 (2/2) 3c 18.1s 130k | 1.00 (2/2) 4.5c 22s 202k | 1.00 (1/1) 41c 97.6s 1111k
+I tooling control flow across processes | 1.00 (2/2) 4.5c 27.4s 161k | 1.00 (2/2) 7c 24s 261k | 1.00 (1/1) 13c 31.4s 406k
+{ S_runsUsingSerena: 23, S_runs: 36, S_serenaShareOfCalls: 0.23 }

@@ -1,0 +1,826 @@
+{
+  "note": "Ground truth established 2026-10-01 on the prettified baseline (site-pretty/, prettify of the current mirror) and main 49d337b (tools/, tests/). Lines are 1-based. GT derived with grep + the TypeScript compiler (tools/gt.mjs) and checked by reading the code.",
+  "tasks": [
+    {
+      "id": "T01",
+      "type": "definition by name",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, give the 1-based line ranges (first and last line) of the top-level functions `iE`, `dE` and `uE`, and the default IntersectionObserver rootMargin that `dE` uses when the caller passes none.",
+      "schema": "{\"iE\":[start,end],\"dE\":[start,end],\"uE\":[start,end],\"defaultRootMargin\":\"...\"}",
+      "gt": {
+        "iE": [
+          2670,
+          2673
+        ],
+        "dE": [
+          2749,
+          2783
+        ],
+        "uE": [
+          2719,
+          2748
+        ],
+        "defaultRootMargin": "100% 0px"
+      }
+    },
+    {
+      "id": "T02",
+      "type": "definition by behaviour",
+      "question": "The hero countdown's digits animate with a spring driven by requestAnimationFrame in site-pretty/_app/immutable/nodes/2.DyWL8TcE.js. Find: (a) the component function that renders one digit and runs the rAF loop (name, 1-based line range), (b) the 1-based line where the per-frame rAF callback function starts, (c) the function that computes one spring step (name, line range), (d) the constant holding the spring parameters (name, line, stiffness, damping, mass).",
+      "schema": "{\"digitComponent\":{\"name\":\"\",\"start\":0,\"end\":0},\"rafCallbackLine\":0,\"springStep\":{\"name\":\"\",\"start\":0,\"end\":0},\"springParams\":{\"name\":\"\",\"line\":0,\"stiffness\":0,\"damping\":0,\"mass\":0}}",
+      "gt": {
+        "digitComponent": {
+          "name": "$E",
+          "start": 3823,
+          "end": 3876
+        },
+        "rafCallbackLine": 3836,
+        "springStep": {
+          "name": "GE",
+          "start": 3791,
+          "end": 3803
+        },
+        "springParams": {
+          "name": "UE",
+          "line": 3789,
+          "stiffness": 280,
+          "damping": 18,
+          "mass": 0.3
+        }
+      }
+    },
+    {
+      "id": "T03",
+      "type": "callers of a function",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, `dE` registers a scroll callback with the shared scroll engine. List every call site of `dE` (1-based line), the top-level component function that contains it, and the local name of the callback function passed as its first argument.",
+      "schema": "{\"callers\":[{\"line\":0,\"component\":\"\",\"callback\":\"\"}]}",
+      "gt": {
+        "callers": [
+          {
+            "line": 3143,
+            "component": "AE",
+            "callback": "o"
+          },
+          {
+            "line": 4239,
+            "component": "fD",
+            "callback": "c"
+          },
+          {
+            "line": 4736,
+            "component": "hD",
+            "callback": "d"
+          },
+          {
+            "line": 6269,
+            "component": "WD",
+            "callback": "A"
+          },
+          {
+            "line": 10977,
+            "component": "uM",
+            "callback": "m"
+          },
+          {
+            "line": 11359,
+            "component": "mM",
+            "callback": "u"
+          },
+          {
+            "line": 12448,
+            "component": "GM",
+            "callback": "r"
+          },
+          {
+            "line": 13090,
+            "component": "dN",
+            "callback": "L"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T04",
+      "type": "cross-file references (bundle)",
+      "question": "The Svelte runtime chunk site-pretty/_app/immutable/chunks/BSBv9QXB.js defines Svelte's `onMount` (the function registered as `onMount` in the runtime's namespace object). Find every use of that function in all JS files under site-pretty/_app/immutable/ (nodes/, chunks/, entry/), excluding import and export statements: for each use give the file, the 1-based line, and the local name under which that file refers to it.",
+      "schema": "{\"definition\":{\"name\":\"\",\"line\":0},\"uses\":[{\"file\":\"\",\"line\":0,\"localName\":\"\"}]}",
+      "gt": {
+        "definition": {
+          "name": "Ra",
+          "line": 3430
+        },
+        "uses": [
+          {
+            "file": "chunks/BSBv9QXB.js",
+            "line": 3420,
+            "localName": "Ra"
+          },
+          {
+            "file": "chunks/BSBv9QXB.js",
+            "line": 3440,
+            "localName": "Ra"
+          },
+          {
+            "file": "chunks/CzkAa0og.js",
+            "line": 445,
+            "localName": "a"
+          },
+          {
+            "file": "entry/app.HSR43Bkx.js",
+            "line": 3880,
+            "localName": "ie"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 2424,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 2927,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 3100,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 3680,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 3931,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 4155,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 4689,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 6225,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 10913,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 11294,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 11606,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 11860,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 11994,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 12196,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 12433,
+            "localName": "ne"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 12978,
+            "localName": "ne"
+          }
+        ],
+        "traps": "nodes/2 also has unrelated locals named ne (2564, 6376, 11088, 13090 `let ne = dE(...)`); 3420 is the namespace getter, 445 is `a.toString()` (dev-build check)"
+      }
+    },
+    {
+      "id": "T05",
+      "type": "callers across the repo's tooling",
+      "question": "List every call site of the function `acquire` exported by tools/lib/lock.mjs, anywhere in the repo's own code (tools/, tests/, research/*/tools/): file, 1-based line, and the enclosing function or test name. Exclude its definition, import statements, comments and string arguments such as CLI subcommand names.",
+      "schema": "{\"calls\":[{\"file\":\"\",\"line\":0,\"enclosing\":\"\"}]}",
+      "gt": {
+        "calls": [
+          {
+            "file": "tools/lock.mjs",
+            "line": 74,
+            "enclosing": "main"
+          },
+          {
+            "file": "tools/verify.mjs",
+            "line": 221,
+            "enclosing": "main"
+          },
+          {
+            "file": "tests/unit/lock.test.mjs",
+            "line": 157,
+            "enclosing": "test acquire() waits for the holder..."
+          },
+          {
+            "file": "tests/unit/lock.test.mjs",
+            "line": 176,
+            "enclosing": "test acquire() times out..."
+          },
+          {
+            "file": "tests/chrome/vendor-shim.chrome.test.mjs",
+            "line": 18,
+            "enclosing": "test/before hook"
+          }
+        ],
+        "traps": "tryAcquire (lock.mjs 52/58, lib 174); `lock('acquire', ...)` CLI strings in tests/e2e; L.acquire via `const L = await import(...)`; `{ acquire } = await import(...)` in tests/chrome"
+      }
+    },
+    {
+      "id": "T06",
+      "type": "who writes a CSS custom property (string search)",
+      "question": "Which JavaScript code sets the CSS custom properties `--exit-opacity` and `--morph` at runtime? Search the first-party JS under site-pretty/_app/immutable/. For each write give the file, 1-based line, the enclosing function (name path, e.g. Component/inner) and the mechanism (e.g. style.setProperty, Svelte style directive).",
+      "schema": "{\"exitOpacity\":[{\"file\":\"\",\"line\":0,\"function\":\"\",\"mechanism\":\"\"}],\"morph\":[{\"file\":\"\",\"line\":0,\"function\":\"\",\"mechanism\":\"\"}]}",
+      "gt": {
+        "exitOpacity": [
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 4165,
+            "function": "fD/ne() callback/s"
+          },
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 4171,
+            "function": "fD/ne() callback/s"
+          }
+        ],
+        "morph": [
+          {
+            "file": "nodes/2.DyWL8TcE.js",
+            "line": 13243,
+            "function": "dN (template effect style object applied by S(I,...) at 13234)"
+          }
+        ],
+        "traps": "--morph-fade (13017) is a different property; --morph is not set with setProperty"
+      }
+    },
+    {
+      "id": "T07",
+      "type": "API usage scoped by call graph",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js the navigation/morph component `dN` registers a scroll callback via `dE(...)`. List every call to getBoundingClientRect, getClientRects, elementFromPoint or getComputedStyle that runs on every scroll frame because of that registered callback (directly, or inside helper functions it calls). Also list any such calls in `dN` that do NOT run from that callback. 1-based lines.",
+      "schema": "{\"perScrollFrame\":[{\"line\":0,\"api\":\"\",\"function\":\"\"}],\"notFromScrollCallback\":[{\"line\":0,\"api\":\"\",\"function\":\"\"}]}",
+      "gt": {
+        "perScrollFrame": [
+          {
+            "line": 12956,
+            "api": "getBoundingClientRect",
+            "function": "dN/F"
+          },
+          {
+            "line": 12961,
+            "api": "elementFromPoint",
+            "function": "dN/F"
+          },
+          {
+            "line": 12967,
+            "api": "getComputedStyle",
+            "function": "dN/ee"
+          },
+          {
+            "line": 12972,
+            "api": "getBoundingClientRect",
+            "function": "dN/ee"
+          },
+          {
+            "line": 12973,
+            "api": "getBoundingClientRect",
+            "function": "dN/ee"
+          },
+          {
+            "line": 13007,
+            "api": "getBoundingClientRect",
+            "function": "dN/ne() callback/_"
+          }
+        ],
+        "notFromScrollCallback": [
+          {
+            "line": 13044,
+            "api": "getBoundingClientRect",
+            "function": "dN/ne() callback/O (wheel/touchmove path)"
+          }
+        ],
+        "chain": "L (13075) -> _ (13000) -> ee (12964), F (12955); registered at 13090"
+      }
+    },
+    {
+      "id": "T08",
+      "type": "understand a function body",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, the future-section component `mM` has a per-frame function `l` (inside its `ne(() => ...)` block, around line 11303) that the scroll engine schedules. What does `l` read (DOM queries, layout reads, media queries, window properties) and what does it write (styles, classes, Svelte state, scheduling) on each run? 1-based lines.",
+      "schema": "{\"reads\":[{\"line\":0,\"what\":\"\"}],\"writes\":[{\"line\":0,\"what\":\"\"}]}",
+      "gt": {
+        "reads": [
+          {
+            "key": "R1",
+            "lines": [
+              11305,
+              11307
+            ],
+            "what": "querySelector('.hero-track') + its getBoundingClientRect"
+          },
+          {
+            "key": "R2",
+            "lines": [
+              11313
+            ],
+            "what": "g.getBoundingClientRect() (bound element g)"
+          },
+          {
+            "key": "R3",
+            "lines": [
+              11323
+            ],
+            "what": "v?.getBoundingClientRect() only when (max-width: 860px) matches"
+          },
+          {
+            "key": "R4",
+            "lines": [
+              11308,
+              11313
+            ],
+            "what": "window.innerHeight"
+          },
+          {
+            "key": "R5",
+            "lines": [
+              11321
+            ],
+            "what": "querySelector('.pain')"
+          },
+          {
+            "key": "R6",
+            "lines": [
+              11310,
+              11314,
+              11315,
+              11323
+            ],
+            "what": "media queries e (reduced motion) / t (max-width 860px) .matches"
+          }
+        ],
+        "writes": [
+          {
+            "key": "W1",
+            "lines": [
+              11317
+            ],
+            "what": "h.style.setProperty('--future-shrink')"
+          },
+          {
+            "key": "W2",
+            "lines": [
+              11324
+            ],
+            "what": ".pain classList.toggle('is-pain-dark')"
+          },
+          {
+            "key": "W3",
+            "lines": [
+              11310,
+              11311,
+              11318
+            ],
+            "what": "Svelte state y (hero passed) and b (shrinking)"
+          },
+          {
+            "key": "W4",
+            "lines": [
+              11319
+            ],
+            "what": "re-schedules itself with requestAnimationFrame while easing"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T09",
+      "type": "CSS search",
+      "question": "Which CSS rules in site-pretty/_app/immutable/assets/*.css use `backdrop-filter`? For each give the file, the 1-based line of the (unprefixed) backdrop-filter declaration, the selector and the blur value.",
+      "schema": "{\"rules\":[{\"file\":\"\",\"line\":0,\"selector\":\"\",\"value\":\"\"}]}",
+      "gt": {
+        "rules": [
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 701,
+            "selector": ".why-bring-backdrop"
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 4220,
+            "selector": ".price.svelte-18m48uz"
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 10352,
+            "selector": ".start-selling-platform-agents-card-chat"
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 11116,
+            "selector": ".start-selling-language-switch.svelte-1lc7nmb"
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 11343,
+            "selector": ".start-selling-top-nav.svelte-1dcozpm"
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 11619,
+            "selector": "dialog.sb-dialog[data-modal-name=\"waitlist-signup\"]::backdrop"
+          },
+          {
+            "file": "DialogHeader.Qcgwm6ST.css",
+            "line": 671,
+            "selector": ".sb-dialog.svelte-1u79i78::backdrop"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T10",
+      "type": "CSS search",
+      "question": "In the CSS under site-pretty/_app/immutable/assets/, which @keyframes animate `width` (or min-width/max-width/flex-basis), and which `transition` declarations transition `width` (or min-width/max-width)? Give file, 1-based line (the @keyframes line, or the line where the transition declaration starts) and the keyframes name or the rule's selector.",
+      "schema": "{\"keyframes\":[{\"file\":\"\",\"line\":0,\"name\":\"\"}],\"transitions\":[{\"file\":\"\",\"line\":0,\"selector\":\"\"}]}",
+      "gt": {
+        "keyframes": [
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 2888,
+            "name": "avatars-exit",
+            "range": [
+              2888,
+              2904
+            ]
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 5332,
+            "name": "start-selling-people-o-peel",
+            "range": [
+              5332,
+              5356
+            ]
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 10412,
+            "name": "start-selling-avatars-exit",
+            "range": [
+              10412,
+              10428
+            ]
+          }
+        ],
+        "transitions": [
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 1231,
+            "selector": ".script-accent.is-drawing-in.svelte-1fn2go6"
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 2548,
+            "selector": ".start-selling-future-people-o-face",
+            "range": [
+              2532,
+              2552
+            ]
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 9188,
+            "selector": ".start-selling-platform-service-card.is-animating"
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 9256,
+            "selector": ".start-selling-platform-service-card.is-animating .start-selling-platform-service-card-row img"
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 11356,
+            "selector": ".start-selling-top-nav.svelte-1dcozpm:not(.is-morphing)",
+            "range": [
+              11355,
+              11361
+            ]
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 11399,
+            "selector": ".start-selling-top-nav.is-hero-pill.is-hero-chrome-ready.svelte-1dcozpm (in @media (width>600px))",
+            "range": [
+              11397,
+              11403
+            ]
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 11489,
+            "selector": ".start-selling-top-nav-btn.is-earn.svelte-1dcozpm",
+            "range": [
+              11477,
+              11492
+            ]
+          },
+          {
+            "file": "2.gBuqKVzi.css",
+            "line": 11502,
+            "selector": ".start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm)",
+            "range": [
+              11500,
+              11505
+            ]
+          }
+        ],
+        "traps": "multi-line transition values (width on a continuation line); max-width transitions"
+      }
+    },
+    {
+      "id": "T11",
+      "type": "disambiguation: references of a short local name",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, inside the commission component `AE`, a function `a` is defined at line 3106 (`a = () => {`). List every place that references this particular `a` (not other symbols named `a`), 1-based lines, and how each uses it.",
+      "schema": "{\"references\":[{\"line\":0,\"use\":\"\"}]}",
+      "gt": {
+        "references": [
+          {
+            "line": 3125,
+            "use": "re-schedules itself: requestAnimationFrame(a) while easing"
+          },
+          {
+            "line": 3128,
+            "use": "o (the registered scroll callback) schedules requestAnimationFrame(a)"
+          },
+          {
+            "line": 3142,
+            "use": "initial call a() after observers are set up"
+          }
+        ],
+        "traps": "`a` appears on 500+ lines of the file"
+      }
+    },
+    {
+      "id": "T12",
+      "type": "disambiguation: which binding",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, the hit-test function `F` inside the nav component `dN` (around line 12955) calls `T.getBoundingClientRect()`. Which `T` is that: 1-based line where that `T` is declared, the line where it is assigned and what it holds? Is it the same `T` that is passed to `requestAnimationFrame(T)` around line 13034, and if not, where is that other `T` defined?",
+      "schema": "{\"declaredLine\":0,\"assignedLine\":0,\"holds\":\"\",\"sameAsRafT\":false,\"otherTLine\":0}",
+      "gt": {
+        "declaredLine": 12946,
+        "assignedLine": 13218,
+        "holds": "the nav root element (bind:this on I = uN() template root)",
+        "sameAsRafT": false,
+        "otherTLine": 13020
+      }
+    },
+    {
+      "id": "T13",
+      "type": "locate by behaviour in the runtime",
+      "question": "In the Svelte runtime chunk site-pretty/_app/immutable/chunks/BSBv9QXB.js, find the delegated event handler: the function that receives native events on the root/document, walks `event.composedPath()` and invokes the handlers Svelte stored on elements. Give its name and 1-based line range, and the line + enclosing function where it is attached with addEventListener.",
+      "schema": "{\"name\":\"\",\"start\":0,\"end\":0,\"attachLine\":0,\"attachFunction\":\"\"}",
+      "gt": {
+        "name": "ai",
+        "start": 2054,
+        "end": 2110,
+        "attachLine": 2275,
+        "attachFunction": "bi"
+      }
+    },
+    {
+      "id": "T14",
+      "type": "references of a module-level variable",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, the scroll engine function `iE` iterates a module-level collection of registered callbacks. Name that variable and its declaration line, then list every other reference to it: 1-based line, enclosing function, and whether it reads it or modifies it (and how).",
+      "schema": "{\"variable\":\"\",\"declLine\":0,\"uses\":[{\"line\":0,\"function\":\"\",\"access\":\"read|write\",\"how\":\"\"}]}",
+      "gt": {
+        "variable": "$T",
+        "declLine": 2663,
+        "uses": [
+          {
+            "line": 2672,
+            "function": "iE",
+            "access": "read",
+            "how": "for..of iteration"
+          },
+          {
+            "line": 2682,
+            "function": "oE",
+            "access": "read",
+            "how": ".size"
+          },
+          {
+            "line": 2761,
+            "function": "dE",
+            "access": "write",
+            "how": ".add(n)"
+          },
+          {
+            "line": 2773,
+            "function": "dE (returned cleanup closure)",
+            "access": "write",
+            "how": ".delete(n)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T15",
+      "type": "text occurrence census",
+      "question": "List every line in site-pretty/_app/immutable/nodes/2.DyWL8TcE.js that reads `innerHeight`, with the top-level function that contains each line.",
+      "schema": "{\"lines\":[{\"line\":0,\"topLevelFunction\":\"\"}]}",
+      "gt": {
+        "lines": [
+          {
+            "line": 2717,
+            "topLevelFunction": "lE"
+          },
+          {
+            "line": 3108,
+            "topLevelFunction": "AE"
+          },
+          {
+            "line": 4169,
+            "topLevelFunction": "fD"
+          },
+          {
+            "line": 4600,
+            "topLevelFunction": "hD"
+          },
+          {
+            "line": 4730,
+            "topLevelFunction": "hD"
+          },
+          {
+            "line": 6211,
+            "topLevelFunction": "WD"
+          },
+          {
+            "line": 10786,
+            "topLevelFunction": "uM"
+          },
+          {
+            "line": 10787,
+            "topLevelFunction": "uM"
+          },
+          {
+            "line": 11308,
+            "topLevelFunction": "mM"
+          },
+          {
+            "line": 11313,
+            "topLevelFunction": "mM"
+          },
+          {
+            "line": 12439,
+            "topLevelFunction": "GM"
+          },
+          {
+            "line": 12440,
+            "topLevelFunction": "GM"
+          },
+          {
+            "line": 13008,
+            "topLevelFunction": "dN"
+          },
+          {
+            "line": 13045,
+            "topLevelFunction": "dN"
+          }
+        ],
+        "traps": "12439/12440 read bare `innerHeight` (no window.)"
+      }
+    },
+    {
+      "id": "T16",
+      "type": "tooling control flow across processes",
+      "question": "When a fix agent runs `node tools/fix.mjs ab <topic>`, where exactly is the `chrome-measure` lock acquired? Trace the chain from fix.mjs to the lock library: for each hop give file, 1-based line and function.",
+      "schema": "{\"chain\":[{\"file\":\"\",\"line\":0,\"function\":\"\",\"what\":\"\"}]}",
+      "gt": {
+        "chain": [
+          {
+            "key": "C1",
+            "file": "tools/fix.mjs",
+            "lines": [
+              336
+            ],
+            "function": "cmdAb",
+            "what": "ab handler"
+          },
+          {
+            "key": "C2",
+            "file": "tools/fix.mjs",
+            "lines": [
+              372,
+              373
+            ],
+            "function": "cmdAb",
+            "what": "spawns node tools/verify.mjs (child process), passes --owner topic"
+          },
+          {
+            "key": "C3",
+            "file": "tools/verify.mjs",
+            "lines": [
+              220,
+              221
+            ],
+            "function": "main",
+            "what": "acquire('chrome-measure', ...) unless --no-lock"
+          },
+          {
+            "key": "C4",
+            "file": "tools/lib/lock.mjs",
+            "lines": [
+              170
+            ],
+            "function": "acquire",
+            "what": "FIFO wait via tryAcquire"
+          }
+        ],
+        "traps": "fix.mjs imports only allStatus from lib/lock.mjs; the lock is taken in a child process, so no static reference links fix.mjs to acquire"
+      }
+    },
+    {
+      "id": "T17",
+      "type": "disambiguation: references of a shadowed local in a large component",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, the profile component `uM` has an `ne(() => { ... })` block that starts with `let e = window.matchMedia(` (line 10914). List every line that references this particular `e` (the MediaQueryList), excluding its declaration, and how each uses it. Other symbols named `e` (parameters, inner `let e`, runtime helpers) do not count.",
+      "schema": "{\"references\":[{\"line\":0,\"use\":\"\"}]}",
+      "gt": {
+        "references": [
+          {
+            "line": 10918,
+            "use": "z(T, e.matches)"
+          },
+          {
+            "line": 10929,
+            "use": "in f: z(T, e.matches)"
+          },
+          {
+            "line": 10975,
+            "use": "in _: z(T, e.matches)"
+          },
+          {
+            "line": 10980,
+            "use": "e.addEventListener('change', _)"
+          },
+          {
+            "line": 10989,
+            "use": "cleanup: e.removeEventListener('change', _)"
+          }
+        ],
+        "traps": "`e` appears on 117 lines of uM: inner `let e` in d (10925), f (10940, 10962), arrow params, and the runtime child helper `e(...)` in the template"
+      }
+    },
+    {
+      "id": "T18",
+      "type": "disambiguation: references of a shadowed local in a large component",
+      "question": "In site-pretty/_app/immutable/nodes/2.DyWL8TcE.js, inside the profile component `uM` (whose first parameter is also named `r`), its `ne(() => { ... })` block declares `r = a,` at line 10920 (the eased profile scale). List every line that reads or writes this particular `r`, excluding its declaration, and say whether each line reads, writes, or both.",
+      "schema": "{\"references\":[{\"line\":0,\"access\":\"read|write|both\"}]}",
+      "gt": {
+        "references": [
+          {
+            "line": 10946,
+            "access": "both"
+          },
+          {
+            "line": 10947,
+            "access": "read"
+          },
+          {
+            "line": 10950,
+            "access": "both"
+          },
+          {
+            "line": 10954,
+            "access": "read"
+          },
+          {
+            "line": 10957,
+            "access": "read"
+          }
+        ],
+        "traps": "uM's parameter r; `r` appears on 57 lines of uM"
+      }
+    }
+  ]
+}

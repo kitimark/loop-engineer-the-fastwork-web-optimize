@@ -1,0 +1,878 @@
+{
+ "log": "mcp_20261001-034012_64232.txt",
+ "since": "03:52",
+ "summary": [
+  {
+   "tool": "FindSymbolTool",
+   "n": 68,
+   "medSec": 0.02,
+   "p90Sec": 0.038,
+   "maxSec": 0.151,
+   "medChars": 167,
+   "maxChars": 25165
+  },
+  {
+   "tool": "GetSymbolsOverviewTool",
+   "n": 18,
+   "medSec": 0.01,
+   "p90Sec": 0.016,
+   "maxSec": 0.162,
+   "medChars": 2182,
+   "maxChars": 11486
+  },
+  {
+   "tool": "FindReferencingSymbolsTool",
+   "n": 23,
+   "medSec": 0.119,
+   "p90Sec": 0.593,
+   "maxSec": 1.391,
+   "medChars": 1436,
+   "maxChars": 6366
+  },
+  {
+   "tool": "FindDeclarationTool",
+   "n": 10,
+   "medSec": 0.117,
+   "p90Sec": 0.133,
+   "maxSec": 0.133,
+   "medChars": 167,
+   "maxChars": 182
+  }
+ ],
+ "calls": [
+  {
+   "task": "Task-8",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 03:53:29,993",
+   "resultChars": 165,
+   "sec": 0.017
+  },
+  {
+   "task": "Task-9",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 03:53:30,321",
+   "resultChars": 165,
+   "sec": 0.022
+  },
+  {
+   "task": "Task-10",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 03:53:30,759",
+   "resultChars": 165,
+   "sec": 0.02
+  },
+  {
+   "task": "Task-11",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 03:54:48,690",
+   "resultChars": 11486,
+   "sec": 0.014
+  },
+  {
+   "task": "Task-12",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 03:54:54,222",
+   "resultChars": 2117,
+   "sec": 0.6
+  },
+  {
+   "task": "Task-13",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 03:57:08,455",
+   "resultChars": 167,
+   "sec": 0.019
+  },
+  {
+   "task": "Task-14",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 03:57:12,116",
+   "resultChars": 11486,
+   "sec": 0.01
+  },
+  {
+   "task": "Task-15",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 03:57:22,461",
+   "resultChars": 6144,
+   "sec": 0.023
+  },
+  {
+   "task": "Task-16",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 03:57:22,907",
+   "resultChars": 3461,
+   "sec": 0.021
+  },
+  {
+   "task": "Task-18",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 03:58:26,903",
+   "resultChars": 3461,
+   "sec": 0.02
+  },
+  {
+   "task": "Task-19",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 03:58:47,540",
+   "resultChars": 2182,
+   "sec": 0.004
+  },
+  {
+   "task": "Task-20",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 03:58:53,482",
+   "resultChars": 253,
+   "sec": 0.151
+  },
+  {
+   "task": "Task-21",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 03:58:55,729",
+   "resultChars": 191,
+   "sec": 0.014
+  },
+  {
+   "task": "Task-22",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 03:58:57,506",
+   "resultChars": 11486,
+   "sec": 0.01
+  },
+  {
+   "task": "Task-23",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 03:59:02,732",
+   "resultChars": 614,
+   "sec": 0.162
+  },
+  {
+   "task": "Task-24",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:05,638",
+   "resultChars": 165,
+   "sec": 0.022
+  },
+  {
+   "task": "Task-25",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:06,182",
+   "resultChars": 1349,
+   "sec": 0.027
+  },
+  {
+   "task": "Task-26",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:06,627",
+   "resultChars": 165,
+   "sec": 0.028
+  },
+  {
+   "task": "Task-27",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:01:10,939",
+   "resultChars": 11486,
+   "sec": 0.016
+  },
+  {
+   "task": "Task-28",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:13,555",
+   "resultChars": 165,
+   "sec": 0.016
+  },
+  {
+   "task": "Task-29",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:14,095",
+   "resultChars": 165,
+   "sec": 0.018
+  },
+  {
+   "task": "Task-30",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:01:14,528",
+   "resultChars": 269,
+   "sec": 0.106
+  },
+  {
+   "task": "Task-31",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:15,577",
+   "resultChars": 165,
+   "sec": 0.024
+  },
+  {
+   "task": "Task-32",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:01:17,380",
+   "resultChars": 2117,
+   "sec": 0.593
+  },
+  {
+   "task": "Task-33",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:01:23,922",
+   "resultChars": 2182,
+   "sec": 0.003
+  },
+  {
+   "task": "Task-34",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:45,055",
+   "resultChars": 165,
+   "sec": 0.029
+  },
+  {
+   "task": "Task-35",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:45,607",
+   "resultChars": 165,
+   "sec": 0.027
+  },
+  {
+   "task": "Task-36",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:45,953",
+   "resultChars": 165,
+   "sec": 0.02
+  },
+  {
+   "task": "Task-37",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:49,302",
+   "resultChars": 165,
+   "sec": 0.024
+  },
+  {
+   "task": "Task-38",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:01:51,304",
+   "resultChars": 2117,
+   "sec": 0.592
+  },
+  {
+   "task": "Task-39",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:01:53,876",
+   "resultChars": 2182,
+   "sec": 0.004
+  },
+  {
+   "task": "Task-40",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:56,077",
+   "resultChars": 170,
+   "sec": 0.006
+  },
+  {
+   "task": "Task-43",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:58,734",
+   "resultChars": 140,
+   "sec": 0.002
+  },
+  {
+   "task": "Task-44",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:59,366",
+   "resultChars": 727,
+   "sec": 0.013
+  },
+  {
+   "task": "Task-45",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:01:59,901",
+   "resultChars": 167,
+   "sec": 0.02
+  },
+  {
+   "task": "Task-46",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:02:00,232",
+   "resultChars": 2751,
+   "sec": 0.175
+  },
+  {
+   "task": "Task-47",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:00,409",
+   "resultChars": 165,
+   "sec": 0.014
+  },
+  {
+   "task": "Task-48",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:02:00,631",
+   "resultChars": 6366,
+   "sec": 1.391
+  },
+  {
+   "task": "Task-49",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:02,126",
+   "resultChars": 165,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-50",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:03,600",
+   "resultChars": 181,
+   "sec": 0.025
+  },
+  {
+   "task": "Task-51",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:04,047",
+   "resultChars": 168,
+   "sec": 0.026
+  },
+  {
+   "task": "Task-52",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:02:04,181",
+   "resultChars": 4081,
+   "sec": 0.077
+  },
+  {
+   "task": "Task-53",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:04,362",
+   "resultChars": 167,
+   "sec": 0.016
+  },
+  {
+   "task": "Task-54",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:02:04,379",
+   "resultChars": 1181,
+   "sec": 0.001
+  },
+  {
+   "task": "Task-55",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:04,486",
+   "resultChars": 185,
+   "sec": 0.02
+  },
+  {
+   "task": "Task-56",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:02:07,740",
+   "resultChars": 236,
+   "sec": 0.119
+  },
+  {
+   "task": "Task-57",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:08,491",
+   "resultChars": 253,
+   "sec": 0.018
+  },
+  {
+   "task": "Task-58",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:02:10,276",
+   "resultChars": 945,
+   "sec": 0.308
+  },
+  {
+   "task": "Task-59",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:10,586",
+   "resultChars": 181,
+   "sec": 0.014
+  },
+  {
+   "task": "Task-60",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:02:11,121",
+   "resultChars": 1207,
+   "sec": 0.078
+  },
+  {
+   "task": "Task-61",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:02:12,461",
+   "resultChars": 163,
+   "sec": 0.117
+  },
+  {
+   "task": "Task-62",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:02:16,658",
+   "resultChars": 2,
+   "sec": 0.012
+  },
+  {
+   "task": "Task-63",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:02:17,086",
+   "resultChars": 227,
+   "sec": 0.028
+  },
+  {
+   "task": "Task-64",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:20,353",
+   "resultChars": 162,
+   "sec": 0.003
+  },
+  {
+   "task": "Task-65",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:02:20,670",
+   "resultChars": 3502,
+   "sec": 0.002
+  },
+  {
+   "task": "Task-66",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:02:25,585",
+   "resultChars": 2,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-69",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:02:32,843",
+   "resultChars": 160,
+   "sec": 0.023
+  },
+  {
+   "task": "Task-71",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:02:37,377",
+   "resultChars": 160,
+   "sec": 0.029
+  },
+  {
+   "task": "Task-77",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:03:01,130",
+   "resultChars": 182,
+   "sec": 0.133
+  },
+  {
+   "task": "Task-79",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:03:32,634",
+   "resultChars": 11486,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-82",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:38,964",
+   "resultChars": 2,
+   "sec": 0.048
+  },
+  {
+   "task": "Task-83",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:39,537",
+   "resultChars": 386,
+   "sec": 0.05
+  },
+  {
+   "task": "Task-84",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:03:40,527",
+   "resultChars": 173,
+   "sec": 0.122
+  },
+  {
+   "task": "Task-86",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:43,055",
+   "resultChars": 2,
+   "sec": 0.038
+  },
+  {
+   "task": "Task-87",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:44,024",
+   "resultChars": 3461,
+   "sec": 0.016
+  },
+  {
+   "task": "Task-88",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:45,501",
+   "resultChars": 165,
+   "sec": 0.018
+  },
+  {
+   "task": "Task-89",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:03:48,967",
+   "resultChars": 167,
+   "sec": 0.113
+  },
+  {
+   "task": "Task-90",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:49,082",
+   "resultChars": 2,
+   "sec": 0.036
+  },
+  {
+   "task": "Task-92",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:49,558",
+   "resultChars": 1036,
+   "sec": 0.038
+  },
+  {
+   "task": "Task-93",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:49,598",
+   "resultChars": 1349,
+   "sec": 0.014
+  },
+  {
+   "task": "Task-94",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:52,640",
+   "resultChars": 3461,
+   "sec": 0.02
+  },
+  {
+   "task": "Task-95",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:03:53,078",
+   "resultChars": 2809,
+   "sec": 0.038
+  },
+  {
+   "task": "Task-96",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:03:53,643",
+   "resultChars": 1436,
+   "sec": 0.462
+  },
+  {
+   "task": "Task-97",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:03:54,106",
+   "resultChars": 2389,
+   "sec": 0.526
+  },
+  {
+   "task": "Task-98",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:03:54,634",
+   "resultChars": 1392,
+   "sec": 0.38
+  },
+  {
+   "task": "Task-99",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:03:59,401",
+   "resultChars": 167,
+   "sec": 0.125
+  },
+  {
+   "task": "Task-100",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:04:01,924",
+   "resultChars": 181,
+   "sec": 0.121
+  },
+  {
+   "task": "Task-101",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:04:02,876",
+   "resultChars": 2751,
+   "sec": 0.039
+  },
+  {
+   "task": "Task-102",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:04:05,218",
+   "resultChars": 1036,
+   "sec": 0.051
+  },
+  {
+   "task": "Task-103",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:04:05,692",
+   "resultChars": 2,
+   "sec": 0.063
+  },
+  {
+   "task": "Task-104",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:04:11,485",
+   "resultChars": 2,
+   "sec": 0.062
+  },
+  {
+   "task": "Task-105",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:04:12,070",
+   "resultChars": 233,
+   "sec": 0.02
+  },
+  {
+   "task": "Task-106",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:04:12,505",
+   "resultChars": 237,
+   "sec": 0.022
+  },
+  {
+   "task": "Task-108",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:04:18,063",
+   "resultChars": 481,
+   "sec": 0.021
+  },
+  {
+   "task": "Task-109",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:06:09,194",
+   "resultChars": 2751,
+   "sec": 0.027
+  },
+  {
+   "task": "Task-110",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:06:17,667",
+   "resultChars": 11486,
+   "sec": 0.015
+  },
+  {
+   "task": "Task-111",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:06:21,029",
+   "resultChars": 167,
+   "sec": 0.026
+  },
+  {
+   "task": "Task-112",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:06:26,583",
+   "resultChars": 165,
+   "sec": 0.035
+  },
+  {
+   "task": "Task-113",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:06:26,931",
+   "resultChars": 167,
+   "sec": 0.021
+  },
+  {
+   "task": "Task-114",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:06:43,406",
+   "resultChars": 236,
+   "sec": 0.114
+  },
+  {
+   "task": "Task-115",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:06:53,010",
+   "resultChars": 4524,
+   "sec": 0.028
+  },
+  {
+   "task": "Task-116",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:06:55,233",
+   "resultChars": 3461,
+   "sec": 0.018
+  },
+  {
+   "task": "Task-117",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:06:57,132",
+   "resultChars": 2182,
+   "sec": 0.004
+  },
+  {
+   "task": "Task-119",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:07:01,842",
+   "resultChars": 614,
+   "sec": 0.001
+  },
+  {
+   "task": "Task-121",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:07:03,329",
+   "resultChars": 6078,
+   "sec": 0.004
+  },
+  {
+   "task": "Task-122",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:07:06,784",
+   "resultChars": 1482,
+   "sec": 0.006
+  },
+  {
+   "task": "Task-123",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:07:07,205",
+   "resultChars": 164,
+   "sec": 0.005
+  },
+  {
+   "task": "Task-124",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:07:07,318",
+   "resultChars": 286,
+   "sec": 0.001
+  },
+  {
+   "task": "Task-125",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:07:09,406",
+   "resultChars": 3936,
+   "sec": 0.001
+  },
+  {
+   "task": "Task-126",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:07:11,595",
+   "resultChars": 138,
+   "sec": 0.016
+  },
+  {
+   "task": "Task-127",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:07:14,439",
+   "resultChars": 421,
+   "sec": 0.021
+  },
+  {
+   "task": "Task-128",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:07:17,303",
+   "resultChars": 230,
+   "sec": 0.027
+  },
+  {
+   "task": "Task-129",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:07:17,649",
+   "resultChars": 142,
+   "sec": 0.002
+  },
+  {
+   "task": "Task-130",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:07:41,698",
+   "resultChars": 2182,
+   "sec": 0.004
+  },
+  {
+   "task": "Task-131",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:07:53,192",
+   "resultChars": 11486,
+   "sec": 0.014
+  },
+  {
+   "task": "Task-132",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:07:58,202",
+   "resultChars": 614,
+   "sec": 0.001
+  },
+  {
+   "task": "Task-133",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:08:00,078",
+   "resultChars": 6078,
+   "sec": 0.001
+  },
+  {
+   "task": "Task-134",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:08:14,651",
+   "resultChars": 2,
+   "sec": 0.002
+  },
+  {
+   "task": "Task-136",
+   "tool": "GetSymbolsOverviewTool",
+   "ts": "2026-10-01 04:08:17,795",
+   "resultChars": 11486,
+   "sec": 0.012
+  },
+  {
+   "task": "Task-139",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:08:20,851",
+   "resultChars": 2,
+   "sec": 0.02
+  },
+  {
+   "task": "Task-140",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:08:21,808",
+   "resultChars": 2,
+   "sec": 0.005
+  },
+  {
+   "task": "Task-141",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:08:22,129",
+   "resultChars": 2,
+   "sec": 0.003
+  },
+  {
+   "task": "Task-142",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:08:23,595",
+   "resultChars": 167,
+   "sec": 0.025
+  },
+  {
+   "task": "Task-143",
+   "tool": "FindDeclarationTool",
+   "ts": "2026-10-01 04:08:28,623",
+   "resultChars": 181,
+   "sec": 0.107
+  },
+  {
+   "task": "Task-145",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:08:31,482",
+   "resultChars": 2389,
+   "sec": 0.521
+  },
+  {
+   "task": "Task-149",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:08:38,291",
+   "resultChars": 165,
+   "sec": 0.019
+  },
+  {
+   "task": "Task-150",
+   "tool": "FindReferencingSymbolsTool",
+   "ts": "2026-10-01 04:08:39,035",
+   "resultChars": 2117,
+   "sec": 0.582
+  },
+  {
+   "task": "Task-152",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:08:39,861",
+   "resultChars": 186,
+   "sec": 0.018
+  },
+  {
+   "task": "Task-164",
+   "tool": "FindSymbolTool",
+   "ts": "2026-10-01 04:09:32,631",
+   "resultChars": 25165,
+   "sec": 0.021
+  }
+ ],
+ "note": "Server-side durations from the shared Serena MCP log during the benchmark window (all arms plus a few direct calls by the benchmark lead)."
+}

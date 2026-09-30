@@ -1,0 +1,82 @@
+[
+ {
+  "tool": "Bash",
+  "n": 290,
+  "medMs": 1775,
+  "p90Ms": 2459,
+  "maxMs": 7488,
+  "medChars": 990,
+  "p90Chars": 5280,
+  "maxChars": 12889
+ },
+ {
+  "tool": "Read",
+  "n": 99,
+  "medMs": 16,
+  "p90Ms": 22,
+  "maxMs": 49,
+  "medChars": 1391,
+  "p90Chars": 4986,
+  "maxChars": 19417
+ },
+ {
+  "tool": "serena.find_symbol",
+  "n": 67,
+  "medMs": 91,
+  "p90Ms": 144,
+  "maxMs": 1665,
+  "medChars": 167,
+  "p90Chars": 3502,
+  "maxChars": 25165
+ },
+ {
+  "tool": "ToolSearch",
+  "n": 49,
+  "medMs": 7,
+  "p90Ms": 11,
+  "maxMs": 14,
+  "medChars": 0,
+  "p90Chars": 0,
+  "maxChars": 0
+ },
+ {
+  "tool": "serena.find_declaration",
+  "n": 43,
+  "medMs": 113,
+  "p90Ms": 170,
+  "maxMs": 261,
+  "medChars": 167,
+  "p90Chars": 181,
+  "maxChars": 182
+ },
+ {
+  "tool": "serena.find_referencing_symbols",
+  "n": 21,
+  "medMs": 183,
+  "p90Ms": 685,
+  "maxMs": 1505,
+  "medChars": 945,
+  "p90Chars": 2751,
+  "maxChars": 6366
+ },
+ {
+  "tool": "serena.get_symbols_overview",
+  "n": 20,
+  "medMs": 99,
+  "p90Ms": 199,
+  "maxMs": 1282,
+  "medChars": 2182,
+  "p90Chars": 11486,
+  "maxChars": 11486
+ },
+ {
+  "tool": "Grep",
+  "n": 9,
+  "medMs": 2,
+  "p90Ms": 7,
+  "maxMs": 7,
+  "medChars": 169,
+  "p90Chars": 169,
+  "maxChars": 169
+ }
+]
