@@ -122,6 +122,11 @@ names you are giving them, A/A numbers, and `--on <combined>` for wave 2).
   (env, baseline) or a `bundle-mapper` (research) → land the fix first (section 5 here) → `resolve`
   → send the printed announcement to every affected agent (teammates and named subagents by
   `SendMessage`; a message resumes a subagent that ended `BLOCKED`).
+- **Fold findings** (incident I-013): `node tools/finding.mjs list --open` at each check-in; forward a
+  coupling or pitfall to the owners it names if they haven't acked it. When a few have piled up:
+  `node tools/finding.mjs digest` → paste and edit the rows into `fixes/FINDINGS.md`, commit on `main`,
+  then `finding.mjs resolve <id> --by lead --folded T<n>|P<n>|lesson|duplicate:F-<n>|rejected --note …`
+  for each. The tool never edits `FINDINGS.md`; only the lead resolves.
 - **Permission prompts** from teammates and background subagents surface here. Deny any write to
   `site/`, `site-pretty/`, `.githooks/`, `.claude/hooks/`, `.claude/settings.json`, `.serena/`, any
   `git push`/`git add -f`, any chrome-devtools MCP call, and any `git merge` by an owner.
@@ -133,7 +138,7 @@ names you are giving them, A/A numbers, and `--on <combined>` for wave 2).
 - **Cross-topic disputes:** decide with the conflict table in `TOPICS.md`; one owner changes the
   shared code, the other adapts.
 - **Check in** every ~20-30 minutes: `lock.mjs status` (is the queue moving?), `incident.mjs list`,
-  idle teammates. An owner stuck on the same step twice gets a question, not a replacement.
+  `finding.mjs list --open`, idle teammates. An owner stuck on the same step twice gets a question, not a replacement.
 - **Host load budget (I-016).** The host has 8 cores. Check `uptime` at every check-in. Above ~8, find
   the cause (`ps` by process kind) before starting anything. Never grant an exception that runs heavy
   work (`npm test`, Chrome, builds) outside `chrome-measure`: route it through the short lane. An

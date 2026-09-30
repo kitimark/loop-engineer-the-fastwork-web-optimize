@@ -38,9 +38,16 @@ Not separate agents, on purpose:
 | spawn helpers | teammates and subagents | foreground (teammate) / nested subagents | no | subagents | no | no |
 | open an incident | yes | yes | yes (a second bug) | yes | via its caller | via its caller |
 | triage, dispatch, resolve an incident | yes | claim a self-fix only | notes only | no | no | no |
+| post, ack a finding (`finding.mjs post`, `ack`) | yes | yes | yes | yes | yes | yes |
+| fold (`digest`) and resolve a finding | yes | no | no | no | no | no |
 | land on `main`, tell everyone to rebase | yes | no | no | no | no | no |
 | talk to the user | yes | via lead | via lead | via lead | no | no |
 | edit the enforcement layer | asks the user | no | no | no | no | no |
+
+The findings board (`tools/finding.mjs`, incident I-013) is the one shared store that read-only roles
+write to: a `bundle-mapper` or `fix-reviewer` posts a coupling, pitfall or technique it found (reviewers:
+every pitfall that cost a review round) with its caller's topic in `--topics`. Nobody but the lead resolves
+a finding or edits `fixes/FINDINGS.md`.
 
 Where each fact lives (link, don't copy): hard rules, layout, fix commands, ports, locks, iPhone
 lease, team conventions → `CLAUDE.md`. Deliverable format and per-fix done criteria →

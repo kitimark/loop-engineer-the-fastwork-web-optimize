@@ -8,7 +8,7 @@ local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling
 
 | | path | in git? | who writes it |
 |---|---|---|---|
-| (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `incident`, `mirror`, `prettify`, `lib/`) | yes | any agent, with a covering test (Hard rule 6); usually a `toolsmith` per incident |
+| (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `incident`, `finding`, `mirror`, `prettify`, `lib/`) | yes | any agent, with a covering test (Hard rule 6); usually a `toolsmith` per incident |
 | (b) research write-ups | `research/<nn-topic>/` (README, data, one-off tools) | yes | append new studies; don't rewrite history |
 | (c) private mirror baseline | `site/` (byte-identical), `site-pretty/` (Prettier copy) — **main checkout only** | **never** (gitignored) | only `mirror.mjs` / `prettify.mjs`, run by the user |
 | (d) per-fix experiments | `fixes/<topic>/` `README.md`, `patch.diff`, `results.json` (+ gitignored `overlay/`) | deliverables only, local branches | one fix agent per topic, in its own worktree |
@@ -206,9 +206,10 @@ the local `HEAD`, so **commit the tooling first**: a worktree only has committed
 Team conventions (messages go to the lead and to teammates named in `fixes/TOPICS.md` conflicts):
 - One teammate owns one topic (or one conflict cluster from `fixes/TOPICS.md`) and one worktree.
 - **Read `fixes/FINDINGS.md` before you edit** (techniques that won, pitfalls that cost a review round,
-  measurement lessons) and `node tools/finding.mjs list` when it exists (I-013). **Post every finding that
-  could help another topic**: a technique that won, a pitfall, a code coupling, a measurement surprise.
-  Post it to the board (`finding.mjs post`, or `SendMessage` the lead until then), not only in your README.
+  measurement lessons) and the live board: `node tools/finding.mjs list --unread --as <you>` (at start and
+  on resume; ack what you read). **Post every finding that could help another topic**: a technique that
+  won, a pitfall, a code coupling, a measurement surprise. Post it to the board (`finding.mjs post`, see
+  "Findings board"), not only in your README.
 - **Post cross-topic findings** as soon as you find them, to the owners of the affected topics, e.g.
   "scroll engine `iE` also drives the nav callback, so changing `dE`'s contract touches
   nav-hit-test" or "future `l` also toggles `.pain is-pain-dark`". Don't edit code another topic owns;
@@ -246,6 +247,13 @@ The store lives in the shared git dir (`.git/fastwork-mirror/incidents/`), so ev
 report at once. Only the lead triages, sends a `toolsmith`, lands the fix and resolves. "incident
 <id> RESOLVED … fixed in <sha>" means: `git rebase main` between steps (never mid-A/B) and
 continue; re-measure if it says "Re-measure".
+
+## Findings board
+
+`node tools/finding.mjs post --by <you> --kind technique|pitfall|coupling|measurement|question --topics a,b --title "…" [--where "JS 3100-3155"] [--evidence "…"] [--body "…"]` (`POSTED F-012`, or `SIMILAR F-007`: ack that one, `--force` if yours differs);
+`list [--kind k] [--topic t] [--since F-007] [--unread --as <you>]`, `show <id>`, `ack <id> --by <you> --note "applied in <topic>"|"not relevant"`,
+`wait --as <you> --topic <t> --timeout 3600` in the background. Store: `.git/fastwork-mirror/findings/`, seen by every worktree at once;
+only the lead folds findings into `fixes/FINDINGS.md` (`digest`) and `resolve`s them.
 
 ## Serena (code navigation, read-only)
 
