@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** probe-checked in Chrome (equivalence); in the E1 combined A/B (no regressions, morphReached 5/5); no solo A/B; finger test pending (user), see `fixes/FINGER_TESTS.md` row 1
+**Status:** probe-checked in Chrome (equivalence); in the E1 combined A/B (no regressions, morphReached 5/5); no solo A/B; finger test pending (user), see `fixes/FINGER_TESTS.md` row 1 (reviewer criteria a-d). **Lands only after the finger test; not in the wave-1 combine.** Current patch = variant 05 (k fix).
 **Topic:** `fixes/TOPICS.md` #6 `morph-scrolljack-passive` (cluster B with #3 `nav-hit-test`, same owner)
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` (one `@property` rule, ~5388) and `/_app/immutable/nodes/2.DyWL8TcE.js`, component `dN` (fixed top nav), the scroll-jack block
 of its `ne(() => …)` effect: state `d` (pretty 12990), `y` (13012), `E` (13024), `k`/`A`/`M` (13048-13059),
@@ -44,9 +44,13 @@ Three listener modes instead of two (`d`: 0 off, 1 passive, 2 blocking):
   the end still starts the morph (`D()` → `E()`), and `E()` now calls `I()` so the listeners switch to
   blocking the moment a morph starts.
 - **Off (0)** outside the zone, as before.
-- `__atEnd` is refreshed where the original evaluated the condition anyway: by `k()` (handlers), by the IO
-  callback, and once per scroll frame in `L` while in the zone (`__end()`: one `getBoundingClientRect` of the
-  platform, a read after `_()`'s reads; it re-arms only when the value flips).
+- `__atEnd` is refreshed by the IO callback and once per scroll frame in `L` while in the zone (`__end()`: one
+  `getBoundingClientRect` of the platform, a read after `_()`'s reads). `__end()` re-arms the listeners (`I()`)
+  when the value flips. `k()` is the original test (`C() || (e > 0 && O())`) and doesn't write `__atEnd`.
+  Variant 05 fixes a review bug in 01-04: `k()` wrote `__atEnd = O()` without calling `I()`. A touchmove that
+  reached the end first could then set it to true with no mode change (`D()` doesn't start the morph for
+  `0 < n < 1`). `__end()` would then see no flip, and the listeners stayed passive at the end: the next push
+  couldn't `preventDefault()`, so iOS would rubber-band.
 - `y()` caches the `.start-selling-platform` element (re-queried if detached).
 - CSS (variant 04, from the architecture review): `@property --morph-fade { syntax: "<number>"; inherits:
   false; initial-value: 1 }` before the `.start-selling-platform` rule (CSS ~5388). Only that element reads
@@ -69,12 +73,9 @@ unchanged (+1 rect read per frame while in the zone), so Chrome's scripted-scrol
 
 ## Before / after
 
-`node tools/fix.mjs ab morph-scrolljack-passive --runs 5` (Chrome, mobile 430x932 DPR3, CPU 6x, ABBA, cold
-cache, `--vendors=local --https --latency 150`):
-
 No solo A/B. This patch is part of **E1**, the combined `nav-morph-all` (see `fixes/nav-morph-all/README.md`):
 morphReached 5/5 on both sides, no new errors, screenshots 0.15 / 0 / 0.13 %, morph-phase fps 110 -> 112.2
-(within noise). E1's scroll gains come from #13 and #3. This patch changes the touch/wheel input path, which the
+(within noise). E1's scroll gains come from the other inputs (#3, #13, countdown); the split is unmeasured. This patch changes the touch/wheel input path, which the
 scripted scroll doesn't exercise, so E1 says nothing about its gain. That proof is the finger test.
 
 Own CDP touch probe (not a tool change), mobile 430x932 DPR3 with touch, CPU 6x, `--vendors=local --https
@@ -130,12 +131,13 @@ end).
 
 ## Experiments tried
 
-| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status |
-|---|---|---|---|---|---|---|---|---|
-| morph-scrolljack-passive/01 | listener modes off / passive / blocking (blocking only while morph active or platform end in view) | the compositor no longer waits for the main thread on touch/wheel in the 200 % zone | better (touchstart ack) / within noise (touchmove ack); behaviour equivalent | provisional (own CDP probe, host load not recorded, n=3) | zone touchstart ack 31.4 [27.5-35.7] -> 19.2 [17.9-24.1] ms; touchmove ack 41.3 -> 41.2 ms; morph expands 3/3, collapses 3/3 both | `variants/01.diff`; README "Before / after" probe table; `scratchpad/nav-morph/probe-1.log` | CDP touch acks appear to wait for main-thread dispatch even when passive, so Chrome can check equivalence but not the latency gain | on branch; finger test pending (user) |
-| morph-scrolljack-passive/02 | iPhone scripted scroll, `nav-morph` (#3 + #6) vs baseline, alternating 3 + 3 | main-thread per-frame cost on the phone | within noise | clean (phone-side, plain http) | main-thread frame gaps: rAF rate 52.7 [52.6-53.9] -> 52.5 [52.2-53.2]; frames >20 ms 60 [57-63] -> 59 [58-61] | `variants/02.diff` (combined #3 + #6 overlay); README iPhone table; out/iphone/nav-morph-*.json | `iphone.mjs scroll` scrolls by script, not touch: blind to input-handler changes (FINDINGS measurement lessons) | done |
-| morph-scrolljack-passive/03 | `filter: none` on `#platform` outside the morph | no permanent `blur(0)` layer on the platform section | abandoned | - | - | README "Risks"; no patch kept (not built here; large-area-blur measured its own `large-area-blur--platform-none` variant) | large-area-blur's iPhone check found no paint gain; changes the containing block / stacking of the section | dropped (large-area-blur / P4 owns blur(0)) |
-| morph-scrolljack-passive/04 | `@property --morph-fade { <number>; inherits: false; initial-value: 1 }` on top of #01 | the per-frame `--morph-fade` write in `S` stops restyling the section's descendants; morph-phase style time should drop | within noise (in combination) | mechanism/attribution, load 2.9-4.3, timing not claimed (E1 combined) | morph fps 110 [108-112.1] -> 112.2 [108-113.5], morph LoAF 0 both, n=5 | `variants/04.diff`; `fixes/nav-morph-all/README.md` | the morph phase has no LoAF at 6x on either side, so a style saving there doesn't show in these metrics | in the patch (current patch.diff) |
+| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status | bench |
+|---|---|---|---|---|---|---|---|---|---|
+| morph-scrolljack-passive/01 | listener modes off / passive / blocking (blocking only while morph active or platform end in view) | the compositor no longer waits for the main thread on touch/wheel in the 200 % zone | better (touchstart ack) / within noise (touchmove ack); behaviour equivalent | provisional (own CDP probe, host load not recorded, n=3) | zone touchstart ack 31.4 [27.5-35.7] -> 19.2 [17.9-24.1] ms; touchmove ack 41.3 -> 41.2 ms; morph expands 3/3, collapses 3/3 both | `variants/01.diff`; README "Before / after" probe table; probe script and log not kept (session scratchpad) | CDP touch acks appear to wait for main-thread dispatch even when passive, so Chrome can check equivalence but not the latency gain | on branch; finger test pending (user) | pending runner: variants/01.diff; mech: no non-passive wheel/touchmove on window while the platform end is out of view (DOMDebugger.getEventListeners) |
+| morph-scrolljack-passive/02 | iPhone scripted scroll, `nav-morph` (#3 + #6) vs baseline, alternating 3 + 3 | main-thread per-frame cost on the phone | within noise | clean (phone-side, plain http) | main-thread frame gaps: rAF rate 52.7 [52.6-53.9] -> 52.5 [52.2-53.2]; frames >20 ms 60 [57-63] -> 59 [58-61] | `variants/02.diff` (combined #3 + #6 overlay); README iPhone table; out/iphone/nav-morph-*.json | `iphone.mjs scroll` scrolls by script, not touch: blind to input-handler changes (FINDINGS measurement lessons) | done | pending runner: variants/02.diff (informational, combined #3+#6) |
+| morph-scrolljack-passive/03 | `filter: none` on `#platform` outside the morph | no permanent `blur(0)` layer on the platform section | abandoned | - | - | README "Risks"; no patch kept (not built here; large-area-blur measured its own `large-area-blur--platform-none` variant) | large-area-blur's iPhone check found no paint gain; changes the containing block / stacking of the section | dropped (large-area-blur / P4 owns blur(0)) | no patch kept |
+| morph-scrolljack-passive/04 | `@property --morph-fade { <number>; inherits: false; initial-value: 1 }` on top of #01 | the per-frame `--morph-fade` write in `S` stops restyling the section's descendants; morph-phase style time should drop | within noise (in combination) | mechanism/attribution, load 2.9-4.3, timing not claimed (E1 combined) | morph fps 110 [108-112.1] -> 112.2 [108-113.5], morph LoAF 0 both, n=5 | `variants/04.diff`; `fixes/nav-morph-all/README.md` | the morph phase has no LoAF at 6x on either side, so a style saving there doesn't show in these metrics | in the patch (current patch.diff) | pending runner: variants/04.diff; mech: CSS registers --morph-fade, inherits false |
+| morph-scrolljack-passive/05 | #04 with `k = (e) => C() \|\| (e > 0 && O())` (review fix: `k` no longer writes `__atEnd` without re-arming) | at the end, the listeners are always blocking by the next push, so `preventDefault()` works | not measured (code-read) | - | - | `variants/05.diff` (= current patch.diff) | a mode flag written outside its re-arm function desynchronises the listener mode; keep one writer (`__end`/IO) | on branch; lands after the finger test | pending runner: variants/05.diff; mech: at the end (O() true, morph idle) window has a non-passive touchmove listener |
 
 ## Risks, conflicts, follow-ups
 
@@ -153,8 +155,6 @@ end).
 
 ## Next iteration (architecture review, not in this patch)
 
-- Register `--morph-fade` with `@property { syntax: '<number>'; inherits: false; initial-value: 1 }`. Only the
-  platform section reads it, so its descendants stop being restyled on each write in `S`.
 - The bigger redesign is a later topic, N2 `morph-composited`, in this cluster: a full-size panel revealed with
   `clip-path: inset(... round)`, opacity cross-fades, a fixed backdrop radius, and the spring as WAAPI with
   `linear()` easing.

@@ -53,12 +53,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +13047,9 @@
-           n = window.visualViewport?.height ?? window.innerHeight;
-         return t.height >= n * 0.45 && t.bottom <= n + 8;
+@@ -13047,7 +13049,7 @@
        },
--      k = (e) => C() || (e > 0 && O()),
-+      k = (e) => C() || (e > 0 && (__atEnd = O())),
+       k = (e) => C() || (e > 0 && O()),
        A = (e) => {
 -        k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
 +        k(e.deltaY) && (C() || (s = window.scrollY), d === 2 && e.cancelable && e.preventDefault(), D(e.deltaY));
