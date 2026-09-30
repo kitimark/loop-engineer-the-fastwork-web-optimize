@@ -1,0 +1,19 @@
+# fastwork mirror fix: pain-offscreen-notes
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply pain-offscreen-notes
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4726,6 +4726,10 @@
+         ((O = null), z(E, null));
+       },
+       d = () => {
++        // fix(pain-offscreen-notes): nothing to clear -> skip the per-frame querySelector, the
++        // .commission-card rect read (forced layout after earlier writers) and the no-op reactive
++        // write z(T, []) that re-ran the notes each-block every scroll frame.
++        if (s(T).length === 0) return;
+         let e = document.querySelector(`.commission-card`);
+         e && e.getBoundingClientRect().top < window.innerHeight * 0.995 && z(T, [], !0);
+       };
