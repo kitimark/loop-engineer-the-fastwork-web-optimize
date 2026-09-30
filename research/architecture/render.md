@@ -33,8 +33,10 @@ or **inference** (mine). Numbering follows `arch-lead`'s question list.
   path, but they are still visited. https://blogs.igalia.com/jfernandez/2020/08/13/improving-css-custom-properties-performance/
   (**blog** by the engine author).
 - **`@property` with `inherits: false`:** only the element itself is invalidated. The web.dev benchmark
-  measured about 8x more runs/s than an inheriting registered property; registration itself costs about
-  2 % for inheriting properties. https://web.dev/blog/at-property-performance (**vendor doc**).
+  measured 252 runs/s for an inheriting registered property vs 214,110 runs/s with `inherits: false`,
+  on the same 1,000-element tree. That is about 850x; the article's "848 % increase" is its own
+  miscount of the same numbers. Registration itself costs about 2 % for inheriting properties.
+  https://web.dev/blog/at-property-performance (**vendor doc**).
 - **WebKit:** an inherited style change "re-resolves all descendants"
   (https://github.com/WebKit/WebKit/pull/69912, **bug/PR**). That custom-property changes take this path
   is **inference**, medium confidence.
