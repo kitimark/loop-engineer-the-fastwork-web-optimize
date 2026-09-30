@@ -20,10 +20,10 @@ async function scrollTo(page, sel) {
 }
 
 // wait until `cond` is true, then pause every animation under `scope` and seek to t ms
-const FREEZE = (scope, cond, t) => `new Promise((res) => { const t0 = performance.now(); const tick = () => {
+const FREEZE = (scope, cond, t, maxMs = 15000) => `new Promise((res) => { const t0 = performance.now(); const tick = () => {
   if (${cond}) { const root = document.querySelector(${JSON.stringify(scope)}); const as = document.getAnimations().filter(a => a.effect && a.effect.target && root.contains(a.effect.target));
     for (const a of as) { a.pause(); a.currentTime = ${t}; } res(as.map(a => (a.animationName || a.transitionProperty || 'waapi') + ':' + a.effect.target.tagName)); return; }
-  if (performance.now() - t0 > 15000) { res('timeout'); return; } requestAnimationFrame(tick); }; tick(); })`;
+  if (performance.now() - t0 > ${maxMs}) { res('timeout'); return; } requestAnimationFrame(tick); }; tick(); })`;
 
 export async function visualChecks(cdp, targets, outDir, { gotoAndSettle, sleep }) {
   mkdirSync(outDir, { recursive: true });
@@ -43,15 +43,20 @@ export async function visualChecks(cdp, targets, outDir, { gotoAndSettle, sleep 
         f[`accent-${ms}`] = await shot(page, 'h1', 12, join(outDir, `${t.label}-accent-${ms}.png`), true);
         console.log(t.label, 'accent', ms, JSON.stringify(r));
       }
-      // 1b. hero accent under html[dir=rtl] (the RTL hero title is row-reverse): 300 and 600 ms
+      // 1b. hero accent under html[dir=rtl] (row-reverse inside `.start-selling { direction: ltr }`, so the
+      // words before the accent sit on its right): 300 / 600 ms of the SECOND draw-in. The first draw-in
+      // (106 -> 112 units, 3.75 CSS px) is too small to show a wrong slide direction; the second is 112 -> 80.
       for (const ms of [300, 600]) {
         await gotoAndSettle(page, t.url, { quietMs: 1500 });
-        await page.eval(`document.documentElement.setAttribute('dir', 'rtl')`);
-        const r = await page.eval(FREEZE('.hero-title', `document.querySelector('.script-accent.is-drawing-in')`, ms), { timeout: 30000 });
+        await page.eval(`document.documentElement.setAttribute('dir', 'rtl'); window.__dIn = 0; window.__pIn = false;`);
+        const cond = `(() => { const on = !!document.querySelector('.script-accent.is-drawing-in'); if (on && !window.__pIn) window.__dIn++; window.__pIn = on; return on && window.__dIn >= 2; })()`;
+        const r = await page.eval(FREEZE('.hero-title', cond, ms, 30000), { timeout: 45000 });
+        const w = await page.eval(`getComputedStyle(document.querySelector('.script-accent')).width`);
         await page.eval(SETTLE);
         f[`accent-rtl-${ms}`] = await shot(page, 'h1', 12, join(outDir, `${t.label}-accent-rtl-${ms}.png`), true);
-        console.log(t.label, 'accent-rtl', ms, JSON.stringify(r));
+        console.log(t.label, 'accent-rtl', ms, JSON.stringify(r), 'accent width now', w);
       }
+      if (!t.label.startsWith('ctl')) { // control targets: RTL keys only
       // 2. avatar carousel: freeze the exit at 20 / 60 / 110 / 180 ms
       for (const ms of [20, 60, 110, 180]) {
         await gotoAndSettle(page, t.url, { quietMs: 1500 });
@@ -72,14 +77,16 @@ export async function visualChecks(cdp, targets, outDir, { gotoAndSettle, sleep 
         document.body.appendChild(box); return fix; })()`);
       await page.eval(SETTLE);
       f.fee = await shot(page, '#__feebox', 0, join(outDir, `${t.label}-fee.png`));
+      }
     } catch (e) { console.log('visual check error', t.label, e.message); }
     await page.close();
   }
   // pixel diff (same threshold as verify.mjs)
-  const [a, b] = targets.map((t) => files[t.label]);
+  const a = files[targets[0].label];
   const page = await cdp.newIsolatedPage();
+  for (const [ti, t] of targets.entries()) { if (ti === 0) continue; const b = files[t.label];
   for (const k of Object.keys(a || {})) {
-    if (!b?.[k]) continue;
+    if (!b?.[k]) { if (ti === 1) console.log('VISUAL-MISSING', k); continue; }
     const da = 'data:image/png;base64,' + readFileSync(a[k]).toString('base64');
     const db = 'data:image/png;base64,' + readFileSync(b[k]).toString('base64');
     const res = await page.eval(`(async () => {
@@ -96,7 +103,8 @@ export async function visualChecks(cdp, targets, outDir, { gotoAndSettle, sleep 
       const blank = span(pa) < 60 || span(pb) < 60;
       return { size: [A.width, A.height, B.width, B.height].join('x'), diffPct: Math.round(10000 * diff / (w * h)) / 100, maxd, blank };
     })()`);
-    console.log(res.blank ? 'VISUAL-BLANK' : 'VISUAL', k, JSON.stringify(res));
+    console.log(res.blank ? 'VISUAL-BLANK' : 'VISUAL', ti === 1 ? k : `${t.label}:${k}`, JSON.stringify(res), b[k]);
+  }
   }
   await page.close();
 }
