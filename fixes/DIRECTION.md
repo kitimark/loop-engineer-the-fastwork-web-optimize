@@ -115,6 +115,9 @@ Sources: E1-E5 `research/architecture/measurement-review.md`; W1-W3 / R1-R3 `res
 | R1 touch latency histograms | **no** for now | - | not a goal metric, and it needs a measurement-code toolsmith; revisit only if N7 input-listener-diet becomes a topic |
 | R2 animation update runs before rAF | yes | fix-infinite-anims (N3) | **done** (N3/02): ≤ 0.2 ms/frame at 1x for the first reader, animations running vs paused |
 | R3 statechange event timing | yes | fix-scroll-engine (E2) | inside the E2 slot |
+| AV1 apple-verify: scroll-metrics-cache success metric (`research/architecture/apple-verify.md`) | yes | fix-nav-morph (N12) | success = forced style+layout ms in the scroll phase -> ~0 (all-wave1 already 0 in Chrome); judge N12 on it plus > 34 ms |
+| AV2 apple-verify: "countdown-idle-raf moves up" | **no** (lead 05:05Z) | - | idle rAF 48-95/s at rest is a battery/idle-cost item, not a > 50/> 34 ms frame source; all-wave1 already gates countdown writes; countdown 05/08 stays after hero-exit |
+| AV3 F-016 (430x932 trips apple.com base tier), F-017 (per-call debounce in Apple analytics), F-021 (`html { scroll-behavior: smooth }`: scripted scrollTo must pass `behavior:'instant'`) | yes, as pitfalls | every owner writing a probe | F-021 applies to every scripted scroll driver on our page |
 
 iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain http per I-003), in order:
 1. R3 capture-phase `contentvisibilityautostatechange` logger on the plain baseline, together with E2's
