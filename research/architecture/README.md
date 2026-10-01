@@ -303,3 +303,14 @@ morph, compositor list, containment, batching/IO, Svelte 5 runes, gradient text,
 composited ring). Checked and wrong: one figure (web.dev "8x", actually ~850x). Unverified and flagged
 "inference": off-screen animation behaviour in both engines, clip-path shipping version in Chrome, Safari's
 touchmove cancelability, the number of toolbar `resize` events.
+
+## Measurement & workflow protocol v2 (arch-lead, 2026-10-01)
+
+[`measurement-protocol-v2.md`](measurement-protocol-v2.md): stages R/I/D/F/V/L with gates and sign-offs; the
+attribution card (NAMED/LOCATED/UNEXPLAINED, positive + negative ablations with mechanism checks) as the gate
+before any build; metric sources per device (rAF ticks primary, DroppedFrame / WebKit Timeline / layerPainted
+diagnostic); prediction cards and the `fixes/PREDICTIONS.md` ledger; the iPhone block protocol (warm-up, control
+sentinel under load, 4v4 ABBA, sequential stop over max 2 blocks with stratified pooling); Chrome additions and
+the canary-drift plan; review checklist additions; the ranked tool/doc/topic execution plan. Folds in
+arch-devtools (`devtools-methodology.md`) and de-devtools (`devtools-render-metrics.md`); arch-safari and
+de-safari inputs pending (§10).
