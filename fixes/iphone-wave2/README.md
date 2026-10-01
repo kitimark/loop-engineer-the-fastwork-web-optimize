@@ -187,6 +187,82 @@ ablations (blur/backdrop/large layers of the morph panel) with a scripted morph 
 Earlier finger runs agree: the B2 pass 2 dwell at the pin (aw1-10c, 08:06Z) ran ~13 fps with 50
 reversals 5220<->5312 (section 2).
 
-## 3. Scripted queue (DIRECTION "iPhone scripted-check queue")
+## 3. Scripted blocks after the finger tests
 
-(pending)
+Driver scripts (in `out/iphone-runner/`, not committed): `winrun.mjs` (the `iphone.mjs scroll` sequence
+with a configurable idle, an optional stop at y, `document.getAnimations()` counts before scrolling, and
+the optional r3 logger), `mdrive.mjs` (fix-nav-morph's `__fwMorphDrive({hold: 2000, cycles: 3})`).
+
+### 3a. Hero block (08:53-09:02Z; control ctl-B12 pass: 54.1 / 59.6 idle / 60.0 bottom; holds 57-60 fps)
+
+Requested by mgmt-ops-3 for fix-hero-exit. Window run: reload, 8 s settle, **6 s idle at y = 0**, the
+calibrated `scrollBy` steps until y >= 1000, 2 s hold; plus one full pass per version. Served with
+`--no-cache`.
+
+| version | served JS / CSS | n | hero 0-900 > 34 | > 50 | max | y~50 frame | y~700 frame (#people entry) | idle at y=0: > 34 / max | animations |
+|---|---|---|---|---|---|---|---|---|---|
+| B = aw1-10c | 757e2cbc / c6aad94b | 3 | 6 [4-7] | 1 [0-2] | 53 [48-64] | 48 [42-64] | 51 [45-53] | 10 [8-11] / 51 | 17 |
+| P2 = se10e = aw1-10e | 3e2f599a / c6aad94b | 6 | 4.5 [4-6] | 1 [0-1] | 52 [48-56] | 43 [37-48] | 52 [44-56] | 8 [7-9] / 50.5 | 17 |
+| P = hero v2 on aw1-10e | 71d76d69 / 8a14ac2e | 3 | 3 [3-3] | 1 [1-1] | 63 [58-68] | **35 [22-37]** | **63 [58-68]** | 7 [6-10] / 50 | 24 (7 ViewTimeline) |
+| P3 = hero v2 + people-o | 71d76d69 / b6e53245 | 3 | 5 [5-6] | 2 [1-2] | 61 [57-64] | 44 [38-48] | 61 [57-64] | 6 [5-9] / 44 | 24 (7 ViewTimeline) |
+
+Order B P P2 P2 P B B P2 P, then P3 P2 P2 P3 P3 P2 (median [range]). The P overlay changed on disk
+between the 07:17Z serve (JS edc967ea, aw1-10c based) and this block (JS 71d76d69, aw1-10e based); the
+block measured the latter. Full passes (n=1 each): scroll fps 57.7 / 57.7 / 57.9 / 57.3 (B / P / P2 /
+P3); the worst frame of every pass is the y~1965 frame (95 / 93 / 86 / 106 ms).
+
+**Verdict:** hero v2 removes the y~50 frame (42-64 -> 22-37 ms) but makes the #people-entry frame at
+y~700 ~10 ms worse (52 -> 63, ranges disjoint from P2 and B); P3 keeps the y~700 cost and loses the
+y~50 gain in this sample. /10e vs aw1-10c: small (hero > 34 ms 6 -> 4.5, idle > 34 10 -> 8).
+
+### 3b. Morph driver block (09:03Z-, control ctl-B13 pass: 53.1 / 59.6 / 60.0)
+
+Builds from fix-nav-morph (all on aw1-10e): f = pin clamp only (JS 68a00843), g = f +
+`overscroll-behavior-y: none` while morphing (JS 22efa0ab), fb / gb = with the 3 per-frame blurs off
+(CSS d157ed21), ge = g with columns off (CSS bb992205), gc = g with the panel on its own layer (CSS
+2cd9375b). "moving" = frames with 0 < --morph < 1 (the transition), "atOne"/"atZero" = held states.
+
+| run | moving frames | p50 | p95 | > 50 ms | max | atOne p95 / max | atZero p95 / max |
+|---|---|---|---|---|---|---|---|
+| f1 | 110 | 30 | 53 | 7 % | 64 | 17 / 50 | 17 / 26 |
+| g1 | 106 | 34 | 54 | 10 % | 59 | 17 / 48 | 17 / 40 |
+| g2 | 119 | 29 | 52 | 5 % | 56 | 17 / 37 | 17 / 24 |
+| f2 | 105 | 33 | 56 | 14 % | 64 | 17 / 48 | 17 / 46 |
+| f3 | 96 | 35 | 64 | 22 % | 95 | 17 / 49 | 18 / 50 |
+| g3 | 125 | 27 | 47 | 3 % | 52 | 17 / 36 | 17 / 38 |
+| fb1 | 126 | 27 | 45 | 1 % | 57 | 17 / 39 | 17 / 21 |
+| f4, f5 | (discarded: phone throttled, idle at the pin 42.7 fps; max 764 / 686 ms) | | | | | | |
+
+The held states are clean (p95 17 ms); the cost is the transition itself (~30 ms median, ~33 fps while
+the panel morphs). Paused at 09:08Z for heat.
+
+**gh / gb / g** (09:24-09:27Z, control ctl-B14 pass; gh = g + size-stable panel, JS 1df2484c / CSS
+a2b0be9a): moving p50 median gh 26 [24-31], gb 29 [27-35], g 35 [31-36]; the third round was warm
+(400-800 ms spikes in held states). **ghb** (gh + blurs off, CSS db01137a; 09:52-09:55Z, phone cool
+throughout, held p95 17): moving p50 ghb 21 / 21 / 24, gh 24 / 24 / 24, g 30 / 33 / 33; p95 46-52 for
+all three. gh saves ~9 ms of p50 against g, blur-off ~3 ms more; the savings don't add up to the
+predicted 17-20 ms, and the p95 tail (~50 ms) is untouched by both. fix-nav-morph later noted that its
+"b" variants never removed the nav's own per-frame backdrop blur (ghbn tests that; its first round at
+10:03Z was discarded, phone throttled).
+
+**R2 clip probe** (`/fw-clip-probe.html`, :5466): computed B = `backdrop-filter: blur(20px)` +
+`clip-path: inset(100px 40px round 24px)`. WebKit's `Page.snapshotRect` does not render
+backdrop-filter at all (no blur even in the unclipped box A), so the question needs a human look.
+
+### 3c. e1/e2 block: the y~1965 worst frame (09:41-09:48Z, control ctl-B15b pass)
+
+The first control after ~10 min of phone idle (ctl-B15) was slow with a 60 fps bottom phase (42.3 fps
+scroll): a cold-cache first run, not heat; the immediate rerun passed (53.0). Builds from fix-nav-morph
+on aw1-10e: e1 = #6 v05 passive arming (JS 3645c50c / CSS 97a20ad3), e2 = morph IO rootMargin 200 %
+-> 150 % (JS 1abe16f1). Scripted scroll top -> y 2500, r3 logger with `inert` and `src` added to its
+watch list, order C e1 e2 | e2 e1 C | C e2 e1.
+
+| version | long frame ms @ y (3 runs) | named by R3 |
+|---|---|---|
+| control aw1-10e | 90@1965, 114@1969, 94@1967 | 3/3: >= 12 img `src` sets in the frame |
+| e1 passive arming | 105@1965, 94@1966, 86@1963 | 3/3: same |
+| e2 IO 150 % | 96@2243, 105@2239, 85@2242 | 3/3: same, at the new position |
+
+The panel was pre-mounted at scroll start in 9/9 runs. **The worst scroll frame on the phone is the
+morph IO callback giving a dozen panel images their `src` at once**; moving the IO edge moves the
+frame, listener arming is not the cost. Candidate fix: `mw10e-src` (sources them in idle time).
