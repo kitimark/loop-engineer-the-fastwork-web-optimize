@@ -5,7 +5,10 @@
 //
 // Script: {name, version, screen: [430, 932], params: {...}, steps: [...]}. Coordinates are screen points
 // (= CSS px). Step types:
-//   stroke  {dir: up|down (finger direction), px, ms, profile: minjerk|fling|still, pressMs, holdMs, x, y}
+//   stroke  {dir: up|down (finger direction), px, ms, profile: minjerk|fling|still|drag, pressMs, holdMs, x, y}
+//           drag: a slow constant-speed drag (U5): smooth 150 ms speed-up and slow-down (each covers half
+//           the distance the plateau speed would) around a plateau of px / (ms - 150) px/ms for ms >= 600
+//           (shorter: ramps of ms/4 each); ends at rest (no fling); kin.plateauPxPerS. 560 px in 4458 ms = 130 px/s
 //   pause   {ms}                                  Mac-side sleep
 //   until   {cond: atEnd|atTop|settled|"y>=N", timeoutMs, optional}   polls scrollY between strokes
 //   reload  {scrollAfterMs}                       location.reload(), reconnect, wait, then scrollAfterMs
@@ -39,20 +42,42 @@ export const LIMITS = Object.freeze({
   scrollAfterMs: [0, 10000], repeat: 50, ops: 2000,
 });
 export const DEFAULTS = Object.freeze({ x: 215, pressMs: 40, holdMs: 0, endY: 5000, untilTimeoutMs: 10000 });
-const PROFILES = new Set(['minjerk', 'fling', 'still']);
+const PROFILES = new Set(['minjerk', 'fling', 'still', 'drag']);
+/** drag: each ramp lasts this long (at most a quarter of the stroke). */
+export const DRAG_RAMP_MS = 150;
 const STEP_TYPES = new Set(['stroke', 'pause', 'until', 'reload', 'mark', 'repeat']);
 
 // ---- velocity profiles over normalised time u in [0, 1] (position as a fraction of px) ---------------
 const mj = (u) => u * u * u * (10 - 15 * u + 6 * u * u); // minimum jerk (Flash & Hogan 1985)
 const mjVel = (u) => 30 * u * u * (1 - u) * (1 - u);
-/** Fraction of the stroke covered at u. fling = the first half of minjerk, stretched (peak speed at lift-off). */
-export function profilePos(profile, u) {
+const mjInt = (s) => s * s * s * s * (2.5 - 3 * s + s * s); // integral of mj over [0, s]; 1/2 at s = 1
+const dragRamp = (ms) => Math.min(0.25, DRAG_RAMP_MS / (ms > 0 ? ms : 1));
+// drag: velocity = vmax * mj(u / a) up the ramp, vmax on the plateau, mirrored down; vmax = 1 / (1 - a) so the
+// area is 1 (a smoothstep ramp covers half of what the plateau speed would, like a linear one)
+function dragPos(u, ms) {
+  const a = dragRamp(ms), v = 1 / (1 - a);
+  if (u < a) return v * a * mjInt(u / a);
+  if (u > 1 - a) return 1 - v * a * mjInt((1 - u) / a);
+  return v * (a / 2 + u - a);
+}
+function dragVel(u, ms) {
+  const a = dragRamp(ms), v = 1 / (1 - a);
+  if (u < a) return v * mj(u / a);
+  if (u > 1 - a) return v * mj((1 - u) / a);
+  return v;
+}
+/** Fraction of the stroke covered at u. fling = the first half of minjerk, stretched (peak speed at lift-off).
+ *  drag needs the stroke's ms (its ramps are DRAG_RAMP_MS long). */
+export function profilePos(profile, u, ms) {
   u = Math.min(1, Math.max(0, u));
+  if (profile === 'drag') return dragPos(u, ms);
   return profile === 'fling' ? 2 * mj(u / 2) : mj(u);
 }
-/** d(position fraction)/du at u: minjerk/still end at 0, fling peaks at u = 1 with 1.875. */
-export function profileVel(profile, u) {
+/** d(position fraction)/du at u: minjerk/still/drag end at 0, fling peaks at u = 1 with 1.875, drag holds
+ *  1 / (1 - a) on its plateau (a = the ramp's share of ms). */
+export function profileVel(profile, u, ms) {
   u = Math.min(1, Math.max(0, u));
+  if (profile === 'drag') return dragVel(u, ms);
   return profile === 'fling' ? mjVel(u / 2) : mjVel(u);
 }
 
@@ -104,7 +129,7 @@ export function resolveParams(script, overrides = {}) {
 export function compileStroke(s, where = 'stroke') {
   const { dir, px, ms, profile, pressMs, holdMs, x } = s;
   if (dir !== 'up' && dir !== 'down') fail(where, `dir must be up or down (got ${JSON.stringify(dir)})`);
-  if (!PROFILES.has(profile)) fail(where, `profile must be minjerk, fling or still (got ${JSON.stringify(profile)})`);
+  if (!PROFILES.has(profile)) fail(where, `profile must be minjerk, fling, still or drag (got ${JSON.stringify(profile)})`);
   inRange(px, LIMITS.px, where, 'px');
   inRange(ms, LIMITS.ms, where, 'ms');
   inRange(pressMs, LIMITS.pressMs, where, 'pressMs');
@@ -129,7 +154,7 @@ export function compileStroke(s, where = 'stroke') {
   for (let i = 1; i <= n; i++) {
     const d = i < n ? STEP_MS : ms - STEP_MS * (n - 1);
     t += d;
-    const y = r1(y0 + sign * px * profilePos(profile, t / ms));
+    const y = r1(y0 + sign * px * profilePos(profile, t / ms, ms));
     lastV = Math.abs(y - prevY) / d; // px per ms over this sample
     peakV = Math.max(peakV, lastV);
     acts.push({ type: 'pointerMove', duration: d, x: r1(x), y });
@@ -138,7 +163,7 @@ export function compileStroke(s, where = 'stroke') {
   if (holdMs > 0) acts.push({ type: 'pause', duration: holdMs });
   acts.push({ type: 'pointerUp', button: 0 });
   const actions = { actions: [{ type: 'pointer', id: 'finger1', parameters: { pointerType: 'touch' }, actions: acts }] };
-  // A fling lifts off at speed; a minjerk/still stroke has (almost) stopped. The last sample's speed is what
+  // A fling lifts off at speed; a minjerk/still/drag stroke has (almost) stopped. The last sample's speed is what
   // UIKit's velocity estimate sees; the analytic peak is 1.875 * px / ms.
   const liftoffPxPerS = Math.round((holdMs > 0 ? 0 : lastV) * 1000);
   if (liftoffPxPerS > LIMITS.liftoffPxPerS) fail(where, `lift-off speed ${liftoffPxPerS} px/s exceeds ${LIMITS.liftoffPxPerS} (make it longer or shorter in px)`);
@@ -146,6 +171,9 @@ export function compileStroke(s, where = 'stroke') {
     dir, px, ms, profile, pressMs, holdMs, x: r1(x), y0: r1(y0), y1: r1(y1), moves: n, contactMs,
     peakPxPerS: Math.round(peakV * 1000), analyticPeakPxPerS: Math.round(1875 * px / ms), liftoffPxPerS,
   };
+  // only drag strokes get the extra field: every other stroke's kin, and so the hash of a script without
+  // drags, stays exactly as before the drag profile existed (COMPILER_VERSION stays 1)
+  if (profile === 'drag') kin.analyticPeakPxPerS = kin.plateauPxPerS = Math.round((px * 1000) / (ms * (1 - dragRamp(ms))));
   return { actions, kin };
 }
 

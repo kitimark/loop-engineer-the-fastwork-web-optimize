@@ -60,6 +60,12 @@ test('gesture --dry-run: compiles and prints the strokes and the hash; needs no 
   const bad = node(IPHONE, ['gesture', scriptFile([{ type: 'reload' }, S({ dir: 'down' })]), '--dry-run'], { env });
   assert.equal(bad.code, 1);
   assert.match(bad.stderr, /pull-to-refresh guard/);
+  // the slow-drag script (U5): drag strokes print their plateau speed
+  const sd = node(IPHONE, ['gesture', join(REPO, 'tools', 'gestures', 'slow-drag-v1.json'), '--dry-run'], { env });
+  assert.equal(sd.code, 0, sd.out);
+  assert.match(sd.stdout, /^slow-drag-v1 v1 hash [0-9a-f]{12} .*: 5 strokes/m);
+  assert.match(sd.stdout, /^ {2}s2 up 560 px \/ 4458 ms drag: .*\(plateau 130 px\/s\)/m);
+  assert.match(sd.stdout, /^ {2}s3 down 560 px \/ 4458 ms drag: .*\(plateau 130 px\/s\)/m);
 });
 
 test('gesture and wda start refuse without the lease (no --owner, nobody holds it, someone else holds it)', () => {
@@ -141,6 +147,23 @@ test('gesture end to end on the fake phone: strokes as real touches, recorder, m
   // touches carry the event's own timeStamp (v2 recorder); the handler ran at or after it
   assert.ok(seg.touches.every((e) => e.length === 8 && typeof e[7] === 'number' && e[7] <= e[0]), 'timeStamp recorded');
   assert.ok(sm.segments[0].perStroke.every((p) => typeof p.endLagMs === 'number' && p.endLagMs >= 0));
+  // motion metrics (de-unknowns-ux): per stroke window, per segment, pooled for the run; printed with the summary
+  assert.ok(sm.motion.movingFrames > 50 && sm.motion.mwfiMs >= 8 && sm.motion.longestGapMs >= sm.motion.mwfiMs, JSON.stringify(sm.motion));
+  assert.ok(Number.isInteger(sm.motion.stutterRuns) && sm.motion.stutterRunMaxMs !== null);
+  assert.equal(sm.segments.reduce((a, g) => a + g.motion.movingFrames, 0), sm.motion.movingFrames);
+  // the first fling scrolls to the end, the fling back up to the top; in between the page prevents every
+  // touchmove at the end (--prevent-at-end), so those windows have no motion: counts 0, metrics null, not 0
+  const ps = sm.segments[0].perStroke, show = JSON.stringify(ps.map((p) => [p.id, p.startY, p.movingFrames, p.mwfiMs]));
+  assert.ok(ps[0].movingFrames > 10 && ps.at(-1).movingFrames > 10, show);
+  for (const p of ps) {
+    if (p.movingFrames > 0) assert.ok(p.mwfiMs > 0 && p.longestGapMs >= p.mwfiMs && Number.isInteger(p.stutterRuns) && p.stutterRunMaxMs !== null, show);
+    else assert.deepEqual([p.mwfiMs, p.longestGapMs, p.stutterRuns, p.stutterRunMaxMs], [null, null, 0, null], show);
+  }
+  assert.equal(ps.reduce((a, p) => a + p.movingFrames, 0) <= sm.segments[0].motion.movingFrames, true, 'windows start at the first touch');
+  // U6: touch to first scroll on a page at rest, and whether the first touchmove was cancelable (armed)
+  assert.ok(sm.segments[0].perStroke.some((p) => typeof p.touchToScrollMs === 'number' && p.touchToScrollMs >= 0));
+  assert.ok(sm.segments[0].perStroke.every((p) => p.firstMoveCancelable === null || p.firstMoveCancelable === 0 || p.firstMoveCancelable === 1));
+  assert.match(r.stdout + r.stderr, /"motion": \{\s+"movingFrames": \d+/);
   // loops: the traverse ended at the end, the fling-to-top loop at the top
   assert.equal(doc.run.loops[0].until, 'atEnd');
   assert.equal(doc.run.loops.at(-1).until, 'atTop');

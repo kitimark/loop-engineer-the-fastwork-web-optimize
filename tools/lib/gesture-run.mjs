@@ -268,7 +268,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   const head = `${prog.name} v${prog.version} hash ${prog.hash.slice(0, 12)} params ${JSON.stringify(prog.params)}: ${prog.strokes.length} strokes, ~${Math.round(prog.estMs / 1000)} s`;
   if (flag('dry-run')) {
     log(head);
-    for (const s of prog.strokes) log(`  ${s.id} ${s.dir} ${s.px} px / ${s.ms} ms ${s.profile}${s.holdMs ? ` hold ${s.holdMs}` : ''}: x ${s.x} y ${s.y0}->${s.y1}, peak ${s.peakPxPerS} px/s, lift-off ${s.liftoffPxPerS} px/s`);
+    for (const s of prog.strokes) log(`  ${s.id} ${s.dir} ${s.px} px / ${s.ms} ms ${s.profile}${s.holdMs ? ` hold ${s.holdMs}` : ''}: x ${s.x} y ${s.y0}->${s.y1}, peak ${s.peakPxPerS} px/s${s.plateauPxPerS ? ` (plateau ${s.plateauPxPerS} px/s)` : ''}, lift-off ${s.liftoffPxPerS} px/s`);
     log(`GESTURE_HASH ${prog.hash}`);
     return 0;
   }
@@ -326,7 +326,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   if (res.aborted) res.aborted = scrub(res.aborted);
   doc.summary = summarizeRun(res.segments, res.strokes, { morph: res.morph });
   writeFileSync(out, JSON.stringify(doc));
-  log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));
+  log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, motion: doc.summary.motion, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));
   log(`saved ${out}`);
   if (res.aborted) throw new Error(`gesture run aborted: ${res.aborted} (partial data saved in ${out})`);
   return 0;

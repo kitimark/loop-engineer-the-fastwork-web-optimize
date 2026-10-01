@@ -170,3 +170,47 @@ test('the protocol script: both variants compile, ~1 min each; the compiled hash
   assert.equal(a.hash, '03aade25b820b5d39163e9c112c6d0aae801ad9f8ad8b8f87f3d58f2be8e5097');
   assert.equal(s.hash, '6b27d1800ad7729b6da34715a427761553cc07cb45b049d69918f2ba3dc6327b');
 });
+
+test('drag profile: smooth 150 ms ramps around a constant plateau, starts and ends at rest; plateau px/s in kin', () => {
+  const ms = 4458, a = 150 / ms;
+  assert.equal(profilePos('drag', 0, ms), 0);
+  assert.ok(Math.abs(profilePos('drag', 1, ms) - 1) < 1e-12);
+  assert.equal(profileVel('drag', 0, ms), 0);
+  assert.equal(profileVel('drag', 1, ms), 0);
+  for (let u = 0.01; u <= 1; u += 0.01) assert.ok(profilePos('drag', u, ms) >= profilePos('drag', u - 0.01, ms), 'monotone');
+  for (const u of [0.1, 0.5, 0.9]) assert.ok(Math.abs(profileVel('drag', u, ms) - 1 / (1 - a)) < 1e-12, `plateau at ${u}`);
+  // continuous at the ramp ends (the position has no kink)
+  for (const u of [a, 1 - a]) assert.ok(Math.abs(profilePos('drag', u - 1e-9, ms) - profilePos('drag', u + 1e-9, ms)) < 1e-6);
+  // a short drag: the ramps take at most a quarter each
+  assert.ok(Math.abs(profileVel('drag', 0.5, 200) - 1 / 0.75) < 1e-12);
+  const d = stroke({ px: 560, ms, profile: 'drag' });
+  assert.equal(d.kin.plateauPxPerS, 130, '560 px over 4458 ms with 150 ms of ramps: 130 px/s');
+  assert.equal(d.kin.analyticPeakPxPerS, 130);
+  assert.ok(Math.abs(d.kin.peakPxPerS - 130) <= 15, `sampled peak ${d.kin.peakPxPerS} (0.1 px rounding per 8 ms)`);
+  assert.ok(d.kin.liftoffPxPerS <= 15, `ends at rest (${d.kin.liftoffPxPerS})`);
+  assert.equal(moves(d).length, 1 + Math.ceil(ms / STEP_MS), 'the touch-down point, then one per 8 ms');
+  // only drag strokes carry plateauPxPerS: the other profiles' kin (and so v1 scripts' hashes) are unchanged
+  assert.equal('plateauPxPerS' in stroke({}).kin, false);
+  assert.throws(() => stroke({ profile: 'swipe' }), /profile must be minjerk, fling, still or drag/);
+});
+
+test('the slow-drag script (U5): ~130 px/s drags through y 400-900 and back, after a positioning stroke; hash pinned', () => {
+  const SLOW = JSON.parse(readFileSync(join(REPO, 'tools', 'gestures', 'slow-drag-v1.json'), 'utf8'));
+  const p = compileScript(SLOW);
+  assert.equal(p.name, 'slow-drag-v1');
+  const drags = p.strokes.filter((s) => s.profile === 'drag');
+  assert.equal(drags.length, 2 * p.params.reps);
+  for (const s of drags) assert.ok(Math.abs(s.plateauPxPerS - 130) <= 2, `${s.id} ${s.plateauPxPerS} px/s`);
+  assert.deepEqual([...new Set(drags.map((s) => s.dir))].sort(), ['down', 'up']);
+  const pos = p.strokes[0];
+  assert.equal(pos.profile, 'minjerk');
+  // positioning lands near 400 (px - 15 of slop) and the up drag then covers the hero band to past 900
+  assert.ok(pos.px - 15 <= 400 && pos.px - 15 + drags[0].px - 15 >= 900, `${pos.px} then ${drags[0].px}`);
+  for (const o of strokeOps(p.ops)) for (const act of o.actions.actions[0].actions) {
+    if (act.type === 'pointerMove') assert.ok(act.x >= SAFE.x[0] && act.x <= SAFE.x[1] && act.y >= SAFE.y[0] && act.y <= SAFE.y[1], `${o.id} ${act.x},${act.y}`);
+  }
+  assert.ok(p.estMs > 20000 && p.estMs < 60000, `estMs ${p.estMs}`);
+  assert.equal(p.ops[2].ms, 6000, 'the 6 s idle phase at the top');
+  assert.equal(compileScript(SLOW).hash, p.hash, 'deterministic');
+  assert.equal(p.hash, 'ffdf747c488974a788f6995c28f237b354f7367d736e86aba3ddb59da9109fbb', 'pinned like the protocol: a change is a new script version');
+});

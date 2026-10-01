@@ -201,9 +201,9 @@ export function touchSequences(seg) {
   for (const e of seg.touches || []) {
     const [, k, , cancelable, prevented, y] = e;
     const t = touchTime(e);
-    if (k === 's') { if (!cur || e[2] <= 1) { cur = { start: t, end: null, startY: y, moves: 0, cancelable: 0, prevented: 0, firstMoveT: null, lastMoveT: null }; seqs.push(cur); } continue; }
+    if (k === 's') { if (!cur || e[2] <= 1) { cur = { start: t, end: null, startY: y, moves: 0, cancelable: 0, prevented: 0, firstMoveT: null, lastMoveT: null, firstMoveCancelable: null }; seqs.push(cur); } continue; }
     if (!cur) continue;
-    if (k === 'm') { cur.moves++; cur.cancelable += cancelable; cur.prevented += prevented; cur.firstMoveT ??= t; cur.lastMoveT = t; }
+    if (k === 'm') { cur.moves++; cur.cancelable += cancelable; cur.prevented += prevented; cur.firstMoveT ??= t; cur.firstMoveCancelable ??= cancelable; cur.lastMoveT = t; }
     else if ((k === 'e' || k === 'c') && e[2] === 0) { cur.end = t; cur.endLagMs = Math.round((e[0] - t) * 10) / 10; cur.endY = y; cur.cancelled = k === 'c'; cur = null; }
   }
   for (const s of seqs) s.moveHz = s.moves > 1 && s.lastMoveT > s.firstMoveT ? Math.round(((s.moves - 1) * 1000) / (s.lastMoveT - s.firstMoveT)) : null;
@@ -266,6 +266,63 @@ export function morphStats(morphFrames, { skipFirst = true } = {}) {
   return { frames: act.length, p50: q(0.5), p95: q(0.95), gt50Pct: act.length ? Math.round((1000 * act.filter((x) => x > 50).length) / act.length) / 10 : null };
 }
 
+// ---- motion metrics (de-unknowns-ux's perceptual metrics, research/design-engineering/unknowns-ux-metric.mjs) --
+// Over moving frames (dx = |scrollY - previous frame's scrollY| > 0, dt > 0):
+//   mwfiMs          motion-weighted frame interval = sum(dx * dt) / sum(dx): an element drawn on the main thread
+//                   that tracks the scroll is on average v * MWFI / 2 behind it (reference MWFI)
+//   longestGapMs    the longest moving frame (reference LGG, here per window instead of per 250 ms-still gesture)
+//   stutterRuns     runs of consecutive moving frames with k >= 4 ticks (dt >= 29.2 ms); any other frame with
+//                   dt > 0 ends a run (reference STUT)
+//   stutterRunMaxMs the longest such run, the sum of its dt (reference RUNmax)
+// movingFrames / movingMs say what each was computed over; with no moving frame mwfiMs, longestGapMs and
+// stutterRunMaxMs are null, never 0 (tools/lib/stats.mjs refuses null, so an empty window can't score as a
+// perfect run). Names agreed with ts-analysis (stats.mjs style). HTR, JUMP, ODD stay in the reference script.
+export const STUTTER_K = 4;
+/** Ticks of a frame, exactly as tools/lib/stats.mjs tick() (120 Hz, 8.333 ms; the 1e9 guard makes 37.5 ms k 5). */
+export const motionTick = (dt) => Math.round(Math.round((dt / (1000 / 120)) * 1e9) / 1e9);
+const r1 = (v) => Math.round(v * 10) / 10;
+function motionAcc() { return { n: 0, T: 0, X: 0, XT: 0, longest: 0, runs: 0, runMax: 0 }; }
+function motionAdd(acc, fr, from, to) {
+  let inRun = false, run = 0;
+  for (let i = Math.max(1, from); i < to; i++) {
+    const dt = fr[i][1], dx = Math.abs(fr[i][2] - fr[i - 1][2]);
+    if (dx > 0 && dt > 0) {
+      acc.n++; acc.T += dt; acc.X += dx; acc.XT += dx * dt; acc.longest = Math.max(acc.longest, dt);
+      if (motionTick(dt) >= STUTTER_K) { if (!inRun) { acc.runs++; run = 0; inRun = true; } run += dt; acc.runMax = Math.max(acc.runMax, run); }
+      else inRun = false;
+    } else if (dt > 0) inRun = false;
+  }
+  return acc;
+}
+const motionOut = (a) => ({ movingFrames: a.n, movingMs: r1(a.T), mwfiMs: a.n ? r1(a.XT / a.X) : null, longestGapMs: a.n ? a.longest : null, stutterRuns: a.runs, stutterRunMaxMs: a.n ? r1(a.runMax) : null });
+/** Motion metrics of frames [t, dt, scrollY, innerHeight], over frame indices [from, to) (dx of frame "from"
+ *  comes from the frame before it; frame 0 has no dx). */
+export function motionMetrics(frames, from = 1, to = (frames || []).length) {
+  return motionOut(motionAdd(motionAcc(), frames || [], from, to));
+}
+/** Pooled over several frame lists (sum(dx dt) / sum(dx) over all; runs do not cross lists). */
+export function motionPooled(lists) {
+  const acc = motionAcc();
+  for (const fr of lists) motionAdd(acc, fr || [], 1, (fr || []).length);
+  return motionOut(acc);
+}
+
+/**
+ * Touch to first scroll (U6): from a touchstart (touchTime) to the first frame whose scrollY differs from the
+ * page's at the touchstart, ms; null when the page was still moving at the touchstart (the last two frames at
+ * or before it differ) or nothing moved within maxMs. Frame-quantized (the rAF time of the first moved frame);
+ * includes the pan slop (~15 px of finger travel before the page follows).
+ */
+export function touchToScrollMs(seg, start, { maxMs = 1500 } = {}) {
+  const fr = seg.frames || [];
+  let i = 0;
+  while (i < fr.length && fr[i][0] <= start) i++;
+  if (i < 2 || fr[i - 1][2] !== fr[i - 2][2]) return null;
+  const y0 = fr[i - 1][2];
+  for (let j = i; j < fr.length && fr[j][0] - start <= maxMs; j++) if (fr[j][2] !== y0) return r1(fr[j][0] - start);
+  return null;
+}
+
 /** pinReversals() summaries of several segments added up (perMark by mark name). */
 function sumPin(pins) {
   const add = (a, b) => { for (const [k, v] of Object.entries(b)) if (typeof v === 'number') a[k] = (a[k] || 0) + v; return a; };
@@ -281,6 +338,10 @@ function sumPin(pins) {
 /**
  * Whole-run summary. `segments`: recorder buffers (one per page load); `strokes`: the runner's per-stroke
  * records in execution order, each with `seg` (segment index) and `kin` (compiled kinematics).
+ * Motion metrics (motionMetrics) per stroke over its window, from its touchstart to the next stroke's (finger
+ * and momentum), per segment (`motion`) and pooled for the run (`motion`). Per stroke also touchToScrollMs (U6,
+ * touchToScrollMs()) and firstMoveCancelable: 1 when the sequence's first touchmove was cancelable, i.e. a
+ * non-passive touchmove listener was in effect (the page "armed"), 0 when not, null without a touchmove.
  */
 export function summarizeRun(segments, strokes = [], { morph = [] } = {}) {
   const segOut = segments.map((seg, i) => {
@@ -292,11 +353,17 @@ export function summarizeRun(segments, strokes = [], { morph = [] } = {}) {
       const q = aligned ? seqs[k] : null;
       const next = aligned && seqs[k + 1] ? seqs[k + 1].start : Infinity;
       const m = q && q.end !== null ? momentumTau(seg, q.end, { tNext: next }) : null;
-      return { id: s.id, profile: s.kin.profile, dir: s.kin.dir, px: s.kin.px, liftoffPxPerS: s.kin.liftoffPxPerS, touchStart: q?.start ?? null, contactMs: q && q.end !== null ? Math.round(q.end - q.start) : null, endLagMs: q?.endLagMs ?? null, touchmoves: q?.moves ?? null, prevented: q?.prevented ?? null, moveHz: q?.moveHz ?? null, startY: q?.startY ?? null, tauS: m?.tauS ?? null, postReleaseTravelPx: m?.travelPx ?? null, pinTouching: aligned ? pin.perTouch[k].touching : null, pinAfterLift: aligned ? pin.perTouch[k].afterLift : null };
+      // the stroke's window: its touchstart to the next stroke's (finger and momentum), frames by their time
+      const fr = seg.frames || [];
+      const idx = (t) => { const i = fr.findIndex((f) => f[0] >= t); return i < 0 ? fr.length : i; };
+      const mo = q ? motionMetrics(fr, Math.max(1, idx(q.start)), next === Infinity ? fr.length : idx(next)) : null;
+      return { id: s.id, profile: s.kin.profile, dir: s.kin.dir, px: s.kin.px, liftoffPxPerS: s.kin.liftoffPxPerS, touchStart: q?.start ?? null, contactMs: q && q.end !== null ? Math.round(q.end - q.start) : null, endLagMs: q?.endLagMs ?? null, touchmoves: q?.moves ?? null, prevented: q?.prevented ?? null, moveHz: q?.moveHz ?? null, startY: q?.startY ?? null, tauS: m?.tauS ?? null, postReleaseTravelPx: m?.travelPx ?? null, pinTouching: aligned ? pin.perTouch[k].touching : null, pinAfterLift: aligned ? pin.perTouch[k].afterLift : null,
+        movingFrames: mo?.movingFrames ?? null, movingMs: mo?.movingMs ?? null, mwfiMs: mo?.mwfiMs ?? null, longestGapMs: mo?.longestGapMs ?? null, stutterRuns: mo?.stutterRuns ?? null, stutterRunMaxMs: mo?.stutterRunMaxMs ?? null,
+        touchToScrollMs: q ? touchToScrollMs(seg, q.start) : null, firstMoveCancelable: q?.firstMoveCancelable ?? null };
     });
     const { perTouch, swings, ...pinSum } = pin;
     return {
-      href: seg.href, frames: (seg.frames || []).length, bands: frameBands(seg), toolbar: toolbarTransitions(seg.frames || []), overscroll: overscroll(seg), pin: { ...pinSum, swings: swings.slice(0, 20) },
+      href: seg.href, frames: (seg.frames || []).length, motion: motionMetrics(seg.frames || []), bands: frameBands(seg), toolbar: toolbarTransitions(seg.frames || []), overscroll: overscroll(seg), pin: { ...pinSum, swings: swings.slice(0, 20) },
       touchmove: touchmoveStats(seg), touchSequences: seqs.length, strokes: mine.length, aligned, perStroke,
     };
   });
@@ -305,6 +372,7 @@ export function summarizeRun(segments, strokes = [], { morph = [] } = {}) {
   const tb = segOut.flatMap((s) => s.toolbar.transitions.map((x) => x.ms));
   return {
     segments: segOut,
+    motion: motionPooled(segments.map((g) => g.frames)),
     touchmove: { ...tm, preventedPct: tm.total ? Math.round((1000 * tm.prevented) / tm.total) / 10 : null, endPreventedPct: tm.endTotal ? Math.round((1000 * tm.endPrevented) / tm.endTotal) / 10 : null },
     toolbar: { transitions: tb.length, medianMs: median(tb), minMs: tb.length ? Math.min(...tb) : null, maxMs: tb.length ? Math.max(...tb) : null },
     pin: sumPin(segOut.map((s) => s.pin)),

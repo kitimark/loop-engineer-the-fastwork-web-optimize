@@ -1,0 +1,36 @@
+{
+  "name": "slow-drag-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "U5 (research/design-engineering, de-unknowns-ux): a slow finger drag at ~130 px/s through the hero band y 400-900 and back, the finger held on the glass the whole way (no momentum), so every frame is a touch-driven frame. The first up drag collapses Safari's toolbar (the toolbar step), the down drag may bring it back. A drag of 560 px in 4458 ms has a 130 px/s plateau (tools/lib/gesture.mjs, profile drag). Override params with --param k=v.",
+  "params": {
+    "x": 215,
+    "idleMs": 6000,
+    "positionPx": 400,
+    "dragPx": 560,
+    "dragMs": 4458,
+    "reps": 2,
+    "endY": 5000
+  },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": "$idleMs" },
+
+    { "type": "mark", "name": "position" },
+    { "type": "stroke", "dir": "up", "px": "$positionPx", "ms": 700, "profile": "minjerk" },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1000 },
+
+    { "type": "repeat", "times": "$reps", "steps": [
+      { "type": "mark", "name": "drag-down-page" },
+      { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 1000 },
+      { "type": "mark", "name": "drag-up-page" },
+      { "type": "stroke", "dir": "down", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 1000 }
+    ] }
+  ]
+}

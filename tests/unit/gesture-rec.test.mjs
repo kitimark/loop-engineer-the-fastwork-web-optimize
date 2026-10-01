@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from '../helpers.mjs';
-import { RECORDER_JS, READ_JS, STATE_JS, markJs, toolbarTransitions, pinReversals, overscroll, touchSequences, touchTime, touchmoveStats, momentumTau, frameBands, morphStats, summarizeRun } from '../../tools/lib/gesture-rec.mjs';
+import { RECORDER_JS, READ_JS, STATE_JS, markJs, toolbarTransitions, pinReversals, overscroll, touchSequences, touchTime, touchmoveStats, momentumTau, frameBands, morphStats, summarizeRun, motionMetrics, motionTick } from '../../tools/lib/gesture-rec.mjs';
 
 function fakeWindow() {
   let now = 1000;
@@ -218,4 +218,85 @@ test('frameBands, morphStats and summarizeRun align strokes to touch sequences p
   assert.equal(r.segments[1].perStroke[0].touchStart, null);
   assert.equal(r.touchmove.total, 1);
   assert.equal(r.morph, null);
+});
+
+// ---- motion metrics (de-unknowns-ux's perceptual metrics, research/design-engineering/unknowns-ux-metric.mjs) ----
+const MOTION = [
+  [0, 0, 0, 775], [16.7, 16.7, 10, 775], [33.4, 16.7, 20, 775],
+  [83.4, 50, 70, 775], [116.7, 33.3, 100, 775], // a stutter run: k 6 then k 4 = 83.3 ms
+  [133.4, 16.7, 110, 775], [150.1, 16.7, 110, 775], // on time, then still: both end a run
+  [183.4, 33.3, 140, 775], [200.1, 16.7, 140, 775], // a second run (k 4)
+  [400.1, 200, 140, 775], // a long frame on a still page: no gap of the motion
+];
+
+test('motionMetrics: MWFI = sum(dx dt) / sum(dx), longest gap and stutter runs (k >= 4) over moving frames only', () => {
+  assert.deepEqual(motionMetrics(MOTION), { movingFrames: 6, movingMs: 166.7, mwfiMs: 35.7, longestGapMs: 50, stutterRuns: 2, stutterRunMaxMs: 83.3 });
+  // a window [from, to) of frame indices: dx still comes from the frame before `from`
+  assert.deepEqual(motionMetrics(MOTION, 3, 5), { movingFrames: 2, movingMs: 83.3, mwfiMs: 43.7, longestGapMs: 50, stutterRuns: 1, stutterRunMaxMs: 83.3 });
+  assert.deepEqual(motionMetrics([[0, 0, 5, 775], [20, 20, 5, 775]]), { movingFrames: 0, movingMs: 0, mwfiMs: null, longestGapMs: null, stutterRuns: 0, stutterRunMaxMs: null });
+  // null only when nothing moved (stats.mjs refuses null, so an empty window can't score as a perfect run);
+  // motion without a stutter is a real 0
+  assert.deepEqual(motionMetrics([[0, 0, 0, 775], [16.7, 16.7, 10, 775]]), { movingFrames: 1, movingMs: 16.7, mwfiMs: 16.7, longestGapMs: 16.7, stutterRuns: 0, stutterRunMaxMs: 0 });
+  assert.deepEqual(motionMetrics([]), { movingFrames: 0, movingMs: 0, mwfiMs: null, longestGapMs: null, stutterRuns: 0, stutterRunMaxMs: null });
+  // dx is |delta scrollY|: a move back up counts the same
+  assert.equal(motionMetrics([[0, 0, 100, 775], [16.7, 16.7, 90, 775], [46.7, 30, 120, 775]]).mwfiMs, 26.7);
+  // ticks as in tools/lib/stats.mjs: 37.5 ms is k 5 (a plain Math.round of 37.5 / 8.333 gives 4.499..., k 4)
+  assert.equal(motionTick(37.5), 5);
+  assert.equal(motionTick(29.1), 3);
+  assert.equal(motionTick(29.2), 4);
+});
+
+test('motionMetrics agrees with de-unknowns-ux\'s reference (unknowns-ux-metric.mjs) on MWFI, STUT, RUNmax, LGGmax', async (t) => {
+  const ref = join(REPO, 'research', 'design-engineering', 'unknowns-ux-metric.mjs');
+  if (!existsSync(ref)) return t.skip('research/design-engineering/unknowns-ux-metric.mjs absent');
+  const { metrics, finger } = await import(ref);
+  const asRef = (fr) => fr.map((a, i) => ({ t: a[0], dt: i ? a[1] : 0, y: a[2], ih: a[3], dx: i ? Math.abs(a[2] - fr[i - 1][2]) : 0 }));
+  const same = (mine, theirs, what) => {
+    assert.equal(mine.mwfiMs, theirs.MWFI, `${what} MWFI`);
+    assert.equal(mine.stutterRuns, theirs.STUT, `${what} STUT`);
+    assert.equal(mine.stutterRunMaxMs, Math.round(theirs.RUNmax * 10) / 10, `${what} RUNmax`);
+  };
+  const m = motionMetrics(MOTION), r = metrics(asRef(MOTION));
+  same(m, r, 'synthetic');
+  assert.equal(m.longestGapMs, r.LGGmax, 'one gesture: its longest gap');
+  const raw = join(REPO, 'fixes', 'iphone-wave2', 'raw');
+  if (!existsSync(join(raw, 'finger-E1b.json'))) return t.skip('fixes/iphone-wave2/raw/finger-*.json absent');
+  let n = 0;
+  for (const f of ['finger-A2.json', 'finger-B2.json', 'finger-E1.json', 'finger-E1b.json', 'finger-F1.json', 'finger-F2.json']) {
+    const segs = JSON.parse(readFileSync(join(raw, f), 'utf8')).segments;
+    finger(f).forEach((theirs, i) => { same(motionMetrics(segs[i].frames), theirs.all, `${f}#${i}`); n++; });
+  }
+  assert.ok(n >= 6, `${n} finger segments compared`);
+});
+
+test('summarizeRun: per-stroke motion (touchstart to the next touchstart), touch-to-first-scroll for U6, segment and run motion', () => {
+  const fr = [[0, 0, 0, 775]];
+  const at = (t, y) => fr.push([t, Math.round((t - fr[fr.length - 1][0]) * 10) / 10, y, 775]);
+  for (let t = 20; t <= 120; t += 20) at(t, 0);
+  at(140, 10); at(160, 30); at(210, 90); at(245, 130); at(265, 150); at(285, 160); // stroke 1: first move at 140
+  for (let t = 300; t <= 600; t += 20) at(t, 160);
+  at(620, 170); at(640, 200); at(700, 260); at(720, 270); // stroke 2: first move at 620
+  for (let t = 740; t <= 800; t += 20) at(t, 270);
+  // [handler t, kind, touches, cancelable, prevented, scrollY, clientY, timeStamp]
+  const touches = [
+    [95, 's', 1, 1, 0, 0, 700, 90], [100, 'm', 1, 1, 0, 0, 690, 98], [130, 'm', 1, 1, 0, 0, 650, 129], [300, 'e', 0, 0, 0, 160, 300, 299],
+    [590.5, 's', 1, 1, 0, 160, 700, 590], [600, 'm', 1, 0, 0, 160, 690, 599], [750, 'e', 0, 0, 0, 270, 400, 749],
+  ];
+  const seg = { docH: 6000, vh0: 775, frames: fr, touches, marks: [] };
+  const kin = (profile) => ({ profile, dir: 'up', px: 200, liftoffPxPerS: 0 });
+  const r = summarizeRun([seg, { docH: 6000, vh0: 775, frames: [], touches: [] }], [{ id: 's1', seg: 0, kin: kin('minjerk') }, { id: 's2', seg: 0, kin: kin('drag') }]);
+  const [p1, p2] = r.segments[0].perStroke;
+  const pick = (p) => [p.movingFrames, p.mwfiMs, p.longestGapMs, p.stutterRuns, p.stutterRunMaxMs, p.touchToScrollMs, p.firstMoveCancelable];
+  assert.deepEqual(pick(p1), [6, 35, 50, 1, 85, 50, 1]);
+  assert.deepEqual(pick(p2), [4, 41.8, 60, 1, 60, 30, 0]);
+  assert.deepEqual(r.segments[0].motion, { movingFrames: 10, movingMs: 285, mwfiMs: 37.8, longestGapMs: 60, stutterRuns: 2, stutterRunMaxMs: 85 });
+  assert.deepEqual(r.segments[1].motion, { movingFrames: 0, movingMs: 0, mwfiMs: null, longestGapMs: null, stutterRuns: 0, stutterRunMaxMs: null });
+  assert.deepEqual(r.motion, r.segments[0].motion, 'the run pools its segments (Σdx·dt / Σdx over all of them)');
+  // touch-to-scroll needs a page at rest at the touchstart: during momentum it is null
+  const moving = summarizeRun([{ ...seg, touches: touches.map((e) => (e[1] === 's' && e[0] < 100 ? [255, 's', 1, 1, 0, 130, 700, 250] : e)).filter((e) => e[0] !== 100 && e[0] !== 130) }], [{ id: 's1', seg: 0, kin: kin('fling') }, { id: 's2', seg: 0, kin: kin('fling') }]);
+  assert.equal(moving.segments[0].perStroke[0].touchToScrollMs, null);
+  assert.equal(moving.segments[0].perStroke[0].firstMoveCancelable, null, 'no touchmove in that sequence');
+  // not aligned: no per-stroke windows
+  const un = summarizeRun([seg], [{ id: 's1', seg: 0, kin: kin('minjerk') }]);
+  assert.deepEqual(pick(un.segments[0].perStroke[0]), [null, null, null, null, null, null, null]);
 });
