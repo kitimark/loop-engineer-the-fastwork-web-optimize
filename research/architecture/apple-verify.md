@@ -24,7 +24,7 @@ Five things the static read missed or got wrong:
 | | |
 |---|---|
 | browser | chrome-devtools MCP Chrome (dedicated profile, not signed in, default Chrome UA). No `performance_*` MCP tools (Hard rule 8). All numbers come from in-page scripts. |
-| lock | 4 `chrome-measure` holds, all ≤ 10 min, MCP pages closed after each. Hold 1: 00:09:49-00:13:47Z, load 4.77→3.41. Hold 2: 03:21:06-03:26:11Z, 2.05→1.43. Hold 3: 03:32:53-03:40:17Z, 1.46→1.19. Hold 4: 03:47:26-03:52:58Z, 2.38→2.35. Hold 1 ran on a **loaded host**. Holds 2-4 were quiet (load < 2.5). |
+| lock | 5 `chrome-measure` holds, all ≤ 10 min, MCP pages closed after each, servers started and stopped inside the hold. Hold 1: 00:09:49-00:13:47Z, load 4.77→3.41. Hold 2: 03:21:06-03:26:11Z, 2.05→1.43. Hold 3: 03:32:53-03:40:17Z, 1.46→1.19. Hold 4: 03:47:26-03:52:58Z, 2.38→2.35. Hold 5: 04:55:39-04:58:49Z, 1.57→2.10. Hold 1 ran on a **loaded host**. Holds 2-5 were quiet (load < 2.5). |
 | emulation | mobile, DPR 3, touch, **CPU 6x**. The Apple pages ran at **430x739**, not 430x932 (§2). |
 | scroll | rAF-driven `scrollTo`, linear top to bottom in **9 s**. Before it: 4 s wait, 1.5 s settle, 3 s idle at the top. After it: 3 s idle at the bottom. Apple pages are 21-34k px tall at this width, so the speed is **2700-3800 px/s**, about a flick. Our page is 5.2k px (570 px/s). `verify.mjs` uses `scrollBy({top:250, behavior:'smooth'})` every 300 ms, about 830 px/s. |
 | light run (timing) | separate navigation with only a rAF frame logger and a `long-animation-frame` observer (`buffered:true`, per-script `forcedStyleAndLayoutDuration`). All fps and frame-class numbers come from this run. |
@@ -183,46 +183,64 @@ Where the reads come from (call-stack samples):
 
 ## 5. Approximate comparison with our page
 
-Our numbers come from `fixes/wave1-partial/results.json`: `fix.mjs ab`, 5 runs ABBA, **430x932**, CPU 6x,
-https + `--latency 150`, `verify.mjs` smooth `scrollBy` at about 830 px/s. Apple's come from one light run each at
-**430x739** and 2700-3800 px/s. The methods, viewports and speeds all differ, so read this as an order-of-magnitude
-picture, not an A/B.
+Two sources. **(a)** The same script, run on our mirror in hold 5 at **430x739**: baseline and wave1-partial,
+one light run each plus one counting run on the baseline, scrolled with `scrollTo({behavior:'instant'})`. The
+servers were `serve.mjs --root site-pretty --vendors=local --latency 150`, plain http, and the wave1-partial
+overlay was hash-checked against `results.json`. **(b)** `fixes/wave1-partial/results.json`: `fix.mjs ab`, 5 runs
+ABBA, **430x932**, https, `verify.mjs` smooth `scrollBy` at about 830 px/s. Our page is 5.2k px tall at 430x739,
+so a 9 s top-to-bottom is **570 px/s**; Apple's pages ran at **2700-3800 px/s**. Neither source compares
+like-for-like scroll speed, so read the table as a picture of where the cost sits, not as an A/B.
 
-| | fps | p95 ms | >20 | >34 | >50 | LoAF script ms | forced ms |
-|---|---|---|---|---|---|---|---|
-| ours, baseline (median of 5) | 74.9 | 25.1 | 65 | 10 | 4 | 144 | 44 |
-| ours, wave1-partial (median of 5) | 95.4 | 17.3 | 24 | 6 | 5 | 114 | 25 |
-| AirPods Pro 3 | 76.4 | 27.5 | 107 | 14 | 2 | 6 | 0 |
-| MacBook Pro | 76.0 | 28.2 | 109 | 19 | 2 | 51 | 27 |
-| Vision Pro `?enhanced` | 105.5 | 15.1 | 27 | 6 | 2 | 0 | 0 |
-| iPhone 18 Pro | 31.2 | 87.5 | 79 | 43 | 35 | 4205 | 703 |
+| | viewport, px/s | fps | p95 ms | >20 | >34 | >50 | LoAF script ms | forced ms |
+|---|---|---|---|---|---|---|---|---|
+| ours baseline, same script (1 run) | 739, 570 | 111.1 | 13.6 | 9 | 2 | 1 | 49 (gtag `onscrollend`) | 0 |
+| ours wave1-partial, same script (1 run) | 739, 570 | 87.3 | 17.4 | 23 | 4 | 2 | 62 | 8 |
+| ours baseline, results.json (median of 5) | 932, ~830 | 74.9 | 25.1 | 65 | 10 | 4 | 144 | 44 |
+| ours wave1-partial, results.json (median of 5) | 932, ~830 | 95.4 | 17.3 | 24 | 6 | 5 | 114 | 25 |
+| AirPods Pro 3 | 739, 2693 | 76.4 | 27.5 | 107 | 14 | 2 | 6 | 0 |
+| MacBook Pro | 739, 3777 | 76.0 | 28.2 | 109 | 19 | 2 | 51 | 27 |
+| Vision Pro `?enhanced` | 739, 2743 | 105.5 | 15.1 | 27 | 6 | 2 | 0 | 0 |
+| iPhone 18 Pro | 739, 3714 | 31.2 | 87.5 | 79 | 43 | 35 | 4205 | 703 |
 
-- Apple's good pages keep **script out of the frame**: LoAF script time is 0-51 ms over 9 s against our 114-144 ms.
-  They have fewer >50 ms frames (2 against our 4-5), even while scrolling 3-5x faster. Their remaining jank is
-  20-34 ms rendering frames, which our page has fewer of at a slower scroll.
-- Measured the same way on our page (hold 4, 430x739), the **idle** numbers are valid even though the scroll
-  phase is not (see below). At rest our page runs about 97 page rAF callbacks per second and writes about 8 style
-  records per frame (countdown faces, `transform`); Apple's pages run 0 and write 0. Our `will-change` count is
-  103 at the top (93 in view), 15 mid-page and 7 at the bottom; Apple's is a flat 35-85, mostly off-screen.
-  `window` `wheel` and `touchmove` are registered `{passive:false, capture:true}` at load (the morph scroll-jack,
-  before nav-morph #6), and `document` `pointerdown`/`pointermove` `{passive:false}`. Apple's AirPods, MacBook and
-  Vision pages have no non-passive window/document listener.
-- **Our scroll-phase run in hold 4 is invalid.** Our CSS sets `html { scroll-behavior: smooth }`
-  (`2.gBuqKVzi.css` 11738-11740), so the per-frame `scrollTo(0, y)` kept retargeting a smooth scroll and the page
-  only moved after the driver stopped: 0 scroll events and 0 reads in the scroll phase. Apple's pages are not
-  affected. Any per-frame scroll driver on our page must pass `{behavior:'instant'}` (posted as F-021).
+- The two single same-script runs of our page differ by more than the wave-1 effect: baseline 111 fps vs
+  wave1-partial 87 fps, one run each, and the wave1-partial run has one 224 ms frame. Treat this as **noise, not a
+  regression**. The 5-run ABBA in `results.json` is the verdict for wave 1.
+- **At 430x739 and a slow scroll our page is already smooth in Chrome 6x:** 1-2 frames >50 ms and 0-8 ms forced
+  layout, against 4-5 and 25-44 ms at 430x932 in `verify.mjs`. The taller viewport (more of the page laid out and
+  painted per frame, F-016) and the slower verify scroll both play a part. This method does not separate them.
+- **Per-frame reads, same script.** Our baseline does **12 layout reads per frame** (p95 15). Per frame: about 6
+  `getBoundingClientRect`, 1 `getComputedStyle` and 1 `elementsFromPoint` from the engine callbacks in page rAF
+  (stacks: nav `ee()`/`F`/`_` at JS 13010-13067, commission/future `l` at JS 11340-11360, JS 4190), plus about 1
+  each of `clientWidth/Height` and `scrollWidth/Height/Top` from gtag. That is far fewer reads than Apple's
+  analytics does (200-440), but ours are rects in rAF and Apple's engine reads none. 0 ms forced layout in this
+  run, so the reads were clean here.
+- **Per-frame writes, same script.** Our baseline writes 7.5 records per frame (p95 20) on 60 elements: almost all
+  `transform` on countdown `span.face` leaves, plus 100 `--var` writes. That is lower than Apple's 21-23 on
+  AirPods, MacBook and iPhone.
+- **At rest our page keeps working; Apple's does not.** Idle at the top: 143 page rAF callbacks in 3 s and 4 style
+  records per frame. Idle at the bottom: 286 callbacks and 8 records per frame (countdown faces). Apple's AirPods,
+  MacBook and Vision pages: 0 and 0.
+- **Layers.** Our `will-change` count is 103 at the top (93 in view), 15 mid-page and 7 at the bottom (hold 4
+  sweep). Apple's is a flat 35-85, mostly off-screen.
+- **Listeners.** `window` `wheel` and `touchmove` are registered `{passive:false, capture:true}` at load (the morph
+  scroll-jack, before nav-morph #6), and `document` `pointerdown`/`pointermove` `{passive:false}`. Apple's AirPods,
+  MacBook and Vision pages have no non-passive window/document listener.
+- **Hold 4's scroll phase on our page was invalid** and is not used. Our CSS sets `html { scroll-behavior: smooth }`
+  (`2.gBuqKVzi.css` 11738-11740), so a per-frame `scrollTo(0, y)` kept retargeting a smooth scroll: 0 scroll
+  events during the drive. Hold 5 repeated it with `behavior:'instant'` (1000 scroll events in 9 s). Any per-frame
+  scroll driver on our page must do the same (F-021).
 
 ## 6. What it changes in apple-smooth-scroll.md §5 (ranked next actions)
 
 | rank | action | change |
 |---|---|---|
 | 1 | N10 transition-frames, per-element `will-change` windows | **Keep at 1.** The per-card toggling is real (9-21 toggles per scroll, ≤ 12 elements at once). Apple still keeps 35-85 static `will-change` elements, so the lesson is "no bulk flips at section boundaries", not "zero permanent layers". Our 103 at the top, 93 in view, is the outlier. |
-| 2 | `scroll-metrics-cache` | **Keep, but change the success metric.** Apple's pages show that reads in a clean-layout scroll handler are cheap: 440 reads per frame, 0 ms forced, 105 fps. The cost is read-after-write: the iPhone page pays 0.6-1.1 s. Verify with LoAF `forcedStyleAndLayoutDuration` → about 0, not with "reads per frame → 0". Do the work before writes, or from cached offsets. |
+| 2 | `scroll-metrics-cache` | **Keep, but change the success metric.** Our baseline does 12 rect/style reads per frame in rAF, with 0 ms forced at 739 px and 44 ms at 932 px. Apple's pages show that reads in a clean-layout scroll handler are cheap: 440 reads per frame, 0 ms forced, 105 fps. The cost is read-after-write: the iPhone page pays 0.6-1.1 s. Verify with LoAF `forcedStyleAndLayoutDuration` → about 0, not with "reads per frame → 0". Do the work before writes, or from cached offsets. |
 | 3 | N11 vendor-scrollend | **Unchanged.** Apple's own analytics carries a per-event re-measure bug (F-017). Check gtag/GTM for the same per-call debounce/throttle pattern while deferring. |
 | 4 | nav-theme-ranges | **Confirmed as Apple's approach:** class flips by range, 0 hit tests per frame (MacBook Pro). Unchanged. |
 | 5 | N4 custom-property-scope / `--morph` element-local | **Confirmed:** Apple writes `--var` only on the consuming leaf. Unchanged. |
 | 6 | N2 morph-composited | **Slightly lower priority.** Apple writes `width`/`height` per frame on small leaves and still reaches 76 fps at 6x. The real problem is layout writes on large containers with descendants (our morph panel), not layout properties as such. Keep the clip-path plan for the large panel. |
-| 7 | countdown-idle-raf variant 05 | **Raise priority (to 5 or 6).** At rest our page runs about 97 rAF callbacks/s and writes about 8 records/frame. Apple's loop sleeps (0) on every page except the one with the 3D viewer. On the phone, idle work costs commits and battery even when Chrome shows 120 fps. |
+| 7 | countdown-idle-raf variant 05 | **Raise priority (to 5 or 6).** At rest our page runs 48-95 page rAF callbacks/s and writes 4-8 records per frame. Apple's loop sleeps (0) on every page except the one with the 3D viewer. On the phone, idle work costs commits and battery even when Chrome shows 120 fps. |
 | 8 | reveal-without-blur | Unchanged (no Apple reveal writes a filter). |
 | new | nav-morph #6 / P7 | **Supported.** The only Apple page with a non-passive document `touchmove` armed at rest (iPhone 18 Pro) is also the only janky one. That is not causal proof, but it argues for keeping the scroll-jack listeners unarmed until the morph is engaged. |
 | method | measurement | (a) F-016: any per-frame comparison with the phone or another site should note that 430x932 shows more content per frame than Safari does. (b) F-021: page scripts that scroll our page must pass `behavior:'instant'`. (c) Before trusting an Apple measurement, check `html.enhanced` and `causeForBase`. |
@@ -236,4 +254,5 @@ picture, not an A/B.
   settle would give a clean number.
 - Vision Pro's canvas `VideoScroll` (desktop breakpoints) and the 0.5-viewport `will-change` margins were not
   measured. The Low Power validator was not exercised.
-- Our page's scroll phase was not re-measured with `behavior:'instant'`. The comparison in §5 uses `results.json`.
+- Our page was measured at 430x739 with one run per variant. The speed mismatch with Apple (570 vs 2700-3800 px/s)
+  is not corrected. Matching px/frame would need a 1.5-2 s scroll of our page, or a 40-60 s scroll of Apple's.
