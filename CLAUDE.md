@@ -237,12 +237,13 @@ Team conventions (messages go to the lead and to teammates named in `fixes/TOPIC
   scratchpad root: all agents of a session share one scratchpad, and same-named files overwrote each
   other (incident I-006). Any Chrome `--user-data-dir` is per topic too.
 - **One `chrome-measure` queue entry per agent.** Iterate with `--runs 3`, final `--runs 5` once;
-  put visual checks in the same slot (a lease slot: `lock.mjs acquire chrome-measure --owner <you>`,
-  then run as that owner). Don't SIGTERM a waiting `fix.mjs ab`: it drops your queue place.
-  Hold the lock only while a run is executing: never while editing or debugging; release as soon as
-  the run ends. One slot for the A/B plus a probe (I-005): `node tools/lock.mjs run chrome-measure
+  put visual checks in the same slot. Don't SIGTERM a waiting `fix.mjs ab`: it drops your queue place.
+  Measure in ONE hold, not a lease (I-005, I-020): `node tools/lock.mjs run chrome-measure
   --owner <topic> -- sh -c 'node tools/fix.mjs ab <topic> --runs 5 && node <probe>'`; tools started
-  inside `run` re-enter its hold instead of queueing behind it.
+  inside `run` re-enter its hold instead of queueing behind it. Start any server inside that `sh -c`
+  (background it, wait for MIRROR_URL, run, kill it). Never hold the lock while editing or debugging.
+  No normal hold longer than ~10 min (`run --max-seconds`, default 600; past it `status` shows OVERDUE):
+  split longer work into separate holds and requeue after each.
 - **Use the iPhone while you wait for Chrome.** The phone renders by itself, so an iPhone check barely
   loads the Mac and runs in parallel with Chrome measurements (lease, plain http per I-003).
 
@@ -320,9 +321,11 @@ before relying on them (the most common error in the benchmark).
 (stale when its pid dies) or a lease with a TTL (stale when it expires). Waiters queue FIFO; a
 queue entry not refreshed for 10 min is dropped. Short lane: `--short --max-seconds N` (N <= 300, on
 `run` and `acquire`) is served before earlier normal waiters at the next hand-over, never preempts
-the holder, drains queued short jobs back to back while they fit a 300 s budget, then serves the next
-normal waiter (I-011), and
-ends at N s (`run` kills the command, exit 124; a short lease expires and can't be renewed). Only for
+the holder, drains all queued short jobs (up to 15 min) before the next normal waiter; a normal waiter
+the lead moved ahead of them goes first (I-011, I-020), and
+ends at N s (`run` kills the command's whole process tree, exit 124, I-024; a short lease expires and
+can't be renewed). A chrome-measure lease defaults to 600 s and ends by 1200 s. Keep polling while you
+wait: a waiter not seen for 30 s is skipped at a hand-over but keeps its place. Only for
 short, bounded jobs such as `npm test` and benchmark mechanism checks (`bench mech`, counts only,
 <= 180 s); never for a timing measurement.
 
