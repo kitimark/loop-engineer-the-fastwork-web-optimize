@@ -8,14 +8,16 @@ optimizations locally, on desktop Chrome or on an iPhone on the same Wi-Fi.
 > **Legal and ethics.** Everything under `site/` and `site-pretty/` (HTML, JS, CSS, images, fonts,
 > and the saved third-party scripts) belongs to Fastwork or the respective vendors. Use it only
 > for personal study on your own machine and LAN. Don't redeploy it publicly, don't push the
-> mirrored assets to any public remote, and don't pass them around. `.gitignore` excludes `site/`,
-> `site-pretty/` and `out/` so they can't be committed by accident. Only the tools and this README
-> are meant to be versioned. The site's `robots.txt` is `User-agent: * / Allow: /`, and the mirror
+> mirrored assets to any public remote, and don't pass them around. Since 2026-10-01 one frozen
+> snapshot of `site/` and `site-pretty/` is committed in this local repository so every experiment
+> measures the same build (pin: `baseline.json`); the repository has no remote and is never pushed.
+> `out/` and the fix overlays stay gitignored. The site's `robots.txt` is `User-agent: * / Allow: /`, and the mirror
 > honours it anyway. It downloads one file at a time with a delay between requests and caches
 > everything it already has.
 
 **Repository layout.** `tools/` is the shared tooling, `research/` holds the write-ups, `site/` and
-`site-pretty/` are the private mirror baseline (gitignored, main checkout only), and `fixes/<topic>/`
+`site-pretty/` are the private mirror baseline (a frozen snapshot committed on `main`, pinned by
+`baseline.json`; agent worktrees are sparse checkouts without it), and `fixes/<topic>/`
 holds per-fix experiments developed in parallel git worktrees. The per-fix workflow (overlays, A/B
 measurement, locks, the shared iPhone) is in [`fixes/README.md`](fixes/README.md) and
 [`CLAUDE.md`](CLAUDE.md); proposed fixes are in [`fixes/TOPICS.md`](fixes/TOPICS.md).
@@ -64,8 +66,12 @@ Other mirror flags: `--refresh` re-downloads everything, `--missing` also fetche
 server logged as 404 (`site/.mirror/missing-local.txt`, which includes vendor scripts), `--pages /,/th/,/id/`
 mirrors the other locales, and `--concurrency N` / `--delay ms` control politeness (defaults: 1 and 150 ms).
 
-When the production build changes (new chunk hashes), just run `node tools/mirror.mjs` again. Old
-hashed files stay in `site/`, which is harmless, and `index.html` points at the new ones.
+When the production build changes (new chunk hashes), the committed snapshot stays the study's
+baseline. Once `site/` is tracked, `mirror.mjs` and `prettify.mjs` refuse to run without
+`--new-snapshot`; with it they update the working tree only, the new build shows up as a git diff,
+and the measuring tools refuse it (`BASELINE-MODIFIED`) until it is committed as a new snapshot or
+discarded (CLAUDE.md "Baseline snapshot"). Old hashed files stay in `site/`, and `index.html` points
+at the new ones.
 
 ## Serving
 
@@ -283,7 +289,9 @@ Raw data is in `out/verify-full/` and `out/verify-https/`.
 ## Readable code (`tools/prettify.mjs`)
 
 `node tools/prettify.mjs` copies `site/` to `site-pretty/` and formats every JS/CSS file, and the
-saved vendor scripts, with Prettier via `npx prettier@3`, a one-off with no global install.
+saved vendor scripts, with Prettier via `npx prettier@<version>`, a one-off with no global install.
+The version is the exact one pinned in `baseline.json` (3.9.9 reproduces today's `site-pretty/`; even a
+patch release reformats code, and every `patch.diff` is a diff against `site-pretty/`).
 `index.html` is copied verbatim, because reformatting SSR markup breaks Svelte hydration. `site/`
 stays byte-identical. To profile with readable line numbers, run
 `node tools/serve.mjs --root site-pretty --port 5180`. Formatting doesn't change behaviour, but parse
@@ -308,8 +316,9 @@ node --test tests/e2e/serve.test.mjs   # a single file
 `iphone` lease gating with no phone, `mirror` against a local fixture origin, `prettify`), the
 pre-commit hook, the fix-agent workflow in a real temp worktree, and a read-only smoke test of the
 real baseline (skipped when `site/` is absent). `tests/chrome/` is the opt-in real-browser suite.
-The pre-commit hook blocks staged `site/`, `site-pretty/`, `out/`, `fixes/*/overlay/`,
-`.serena/cache/` and `*.pem`, and runs `npm test` when a commit touches `tools/`, `tests/`,
+The pre-commit hook blocks staged `out/`, `fixes/*/overlay/`, `.serena/cache/`, `*.pem` and any
+change to the committed snapshot (`site/`, `site-pretty/`, `baseline.json`) that is not an authorized
+snapshot update, and runs `npm test` when a commit touches `tools/`, `tests/`,
 `.githooks/`, `.claude/hooks/`, `package.json` or `.claude/settings.json`. Tool changes are allowed
 but must come with tests (CLAUDE.md "Tooling is guarded by tests").
 
@@ -329,11 +338,13 @@ tools/lib/paths.mjs    finds the baseline from any worktree, per-checkout ports
 tools/lib/lock.mjs     named lock/lease/queue implementation (state in .git/fastwork-mirror/locks/)
 tools/lib/wip.mjs      WebKit Inspector Protocol client for iOS Safari (ios_webkit_debug_proxy)
 tests/                 node:test suite (unit/, e2e/, opt-in chrome/, fixtures/: fixture baseline, fake Chrome)
-.githooks/pre-commit   blocks Fastwork assets; runs npm test on tooling changes (npm run setup to enable)
+.githooks/pre-commit   blocks overlays/out/keys and unauthorized snapshot changes; runs npm test on tooling changes (npm run setup)
 research/              write-ups and one-off tools of each study
 fixes/                 per-fix deliverables (README.md, patch.diff, results.json), TOPICS.md, AGENT_PROMPT.md
 CLAUDE.md              rules and workflow for Claude Code agents (worktrees, teams, locks)
-site/                  the mirror (gitignored); site/.mirror/manifest.json = headers, hashes, 404s, vendors
-site-pretty/           prettified copy (gitignored)
+tools/baseline.mjs     the committed snapshot: status / pin (baseline.json) / sparse worktrees
+baseline.json          the pin: snapshot id, git tree ids of site/ and site-pretty/, build, crawl date, Prettier version
+site/                  the mirror, frozen snapshot committed on main; site/.mirror/manifest.json = headers, hashes, 404s, vendors
+site-pretty/           prettified copy (part of the snapshot)
 out/                   verify results, screenshots, Chrome profiles, certs (gitignored)
 ```

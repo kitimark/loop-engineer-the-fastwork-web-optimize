@@ -10,7 +10,7 @@ local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling
 |---|---|---|---|
 | (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `incident`, `finding`, `mirror`, `prettify`, `lib/`) | yes | any agent, with a covering test (Hard rule 6); usually a `toolsmith` per incident |
 | (b) research write-ups | `research/<nn-topic>/` (README, data, one-off tools) | yes | append new studies; don't rewrite history |
-| (c) private mirror baseline | `site/` (byte-identical), `site-pretty/` (Prettier copy) — **main checkout only** | **never** (gitignored) | only `mirror.mjs` / `prettify.mjs`, run by the user |
+| (c) baseline snapshot | `site/` (byte-identical), `site-pretty/` (Prettier 3.9.9 copy), pinned by `baseline.json`; agent worktrees are sparse and read the main checkout's | **yes, frozen on `main`** (local only, never pushed) | nobody; a new snapshot only by the user (`--new-snapshot`, then the authorized commit, "Baseline snapshot") |
 | (d) per-fix experiments | `fixes/<topic>/` `README.md`, `patch.diff`, `results.json` (+ gitignored `overlay/`) | deliverables only, local branches | one fix agent per topic, in its own worktree |
 
 `out/` (gitignored) holds per-checkout measurement output, Chrome profiles and certs.
@@ -36,15 +36,25 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    this repo (`gh repo create`, gists, PRs). *Why:* the mirror, overlays and the Fastwork excerpts in
    `patch.diff` stay on this machine (personal study, see `README.md`). *Enforced:* deny rules,
    git-guard, the `pre-push` hook; `git remote add` and `git config remote.*` ask the user.
-3. **Never commit Fastwork-derived or secret files:** `site/`, `site-pretty/`, `out/`,
-   `fixes/*/overlay/`, `.serena/cache/`, `*.pem`; never `git add -f`. `patch.diff` goes on local
-   branches only (rule 2). *Why:* third-party property; generated keys. *Enforced:* `.gitignore`,
-   deny rules on `git add -f`/`--force`, the `pre-commit` hook refuses those paths when staged.
+3. **Never commit Fastwork-derived or secret files, except the frozen baseline snapshot:** `out/`,
+   `fixes/*/overlay/`, `.serena/cache/`, `*.pem`, `site*/.mirror/missing-local.txt`; never `git add -f`.
+   `site/` and `site-pretty/` ARE committed on `main` as the study's frozen snapshot (user decision
+   2026-10-01), pinned by `baseline.json`: MUST NOT stage any change to them or to `baseline.json`. Only
+   the user, or the lead on the user's explicit instruction, commits a new snapshot ("Baseline snapshot").
+   `patch.diff` and the snapshot stay on this machine (rule 2). *Why:* third-party property; generated
+   keys; every result must name the exact build it measured. *Enforced:* `.gitignore`, deny rules on
+   `git add -f`/`--force`, the `pre-commit` hook (refuses those paths, and any staged snapshot change that
+   is not an authorized snapshot update: `FW_BASELINE_UPDATE=<id>`, pin = staged trees, nothing else
+   staged, on `main`); git-guard asks the user before a command sets `FW_BASELINE_UPDATE`.
 4. **The baseline is read-only.** MUST NOT edit `site/` or `site-pretty/`; change Fastwork code only
    in your overlay copy (`node tools/fix.mjs edit <topic> <file>`). MUST NOT run `mirror.mjs` or
-   `prettify.mjs` while agents work (they rewrite the shared baseline). *Why:* every worktree measures
-   against the same baseline. *Enforced:* `Edit` deny rules; mirror/prettify ask; the baseline exists
-   only in the main checkout. Details: "Fix workflow in a worktree".
+   `prettify.mjs` (a new snapshot is the user's, with `--new-snapshot`), MUST NOT restore, clean or
+   check out the main checkout's `site/`/`site-pretty/`, and MUST NOT set `FW_BASELINE_ALLOW_MODIFIED`.
+   *Why:* every worktree measures the same committed snapshot. *Enforced:* `Edit` deny rules;
+   mirror/prettify ask and refuse a tracked tree without `--new-snapshot`; `fix.mjs`, `serve.mjs`,
+   `verify.mjs` and `bench.mjs` refuse (exit 3, `BASELINE-MODIFIED` / `BASELINE-MISMATCH`) unless the
+   baseline is the snapshot pinned by your checkout's `baseline.json`, unchanged; git-guard asks before
+   `FW_BASELINE_ALLOW_MODIFIED`. Details: "Baseline snapshot".
 5. **Your own worktree, never the main checkout.** Every agent works in its own git worktree under
    `.claude/worktrees/` on its own branch; only the lead works in the main checkout and lands on `main`.
    *Why:* the main checkout holds `main`, the baseline and port 5173. *Enforced:* `fix.mjs` refuses to
@@ -122,9 +132,13 @@ npm run test:unit                                  # before each commit: scope g
 # on your worktree branch (local only). Never commit overlay/ (it is gitignored).
 ```
 
-How it works: `tools/lib/paths.mjs` finds the baseline in the main checkout through
-`git rev-parse --git-common-dir` (or `$FW_MIRROR_HOME`), so a worktree needs **no bootstrap and no
-copy** of the 29-63 MB mirror. `serve.mjs --overlay` serves overlay files first and everything else
+How it works: the baseline is the snapshot committed on `main` (`site/`, `site-pretty/`, pin
+`baseline.json`). `fix.mjs new` makes your worktree a **sparse checkout without them** (`node tools/baseline.mjs
+sparse`; a fresh worktree first checks out a 61 MB copy, `new` drops it), and `tools/lib/paths.mjs` finds the
+baseline in the main checkout through `git rev-parse --git-common-dir` (or `$FW_MIRROR_HOME`). Every tool that
+reads it first checks that it is the snapshot your `baseline.json` pins, unchanged (`node tools/baseline.mjs
+status`; `fix.mjs doctor` shows `baseline snapshot <id> ok`), and `results.json` records the id
+(`config.baselineSnapshot`). `serve.mjs --overlay` serves overlay files first and everything else
 from the baseline. `fix.mjs` refuses to write fixes in the main checkout (use `--allow-main` only
 when you really mean it). `fix.mjs ab --aa` measures the baseline against itself (noise floor).
 `fix.mjs combine <name> <a> <b> …` applies several patches in order and reports conflicts;
@@ -136,6 +150,42 @@ new 404s, screenshot pixel diff: 0-0.4 % is countdown/orbit phase noise, more me
 `morphReached`) before claiming a win.
 The host record's `topProcs` (top 5 non-Chrome processes per run and per recheck, I-031, log only) normally lists the
 mirror server's `node`, verify's own `node` and `WindowServer`: they are part of the measured system, not contamination.
+
+## Baseline snapshot
+
+The study measures ONE frozen build of fastwork.com (user decision 2026-10-01): `site/` and `site-pretty/`
+committed on `main`, pinned by `baseline.json` (snapshot id `b<_app/version.json build>-<hash of the two git
+tree ids>`, tree ids, crawl date, Prettier version). A new live build can't silently change it: a re-mirror
+shows up as a git diff, and the tools refuse to read a changed baseline.
+
+```sh
+node tools/baseline.mjs status        # snapshot id, ok / modified / mismatch, read from where (exit 0 ok, 3 not)
+node tools/baseline.mjs sparse        # (fix.mjs new does it) no own copy; read the main checkout's snapshot
+node tools/baseline.mjs sparse --off  # check out your branch's own committed copy (61 MB, <1 s) and read that
+```
+
+- `BASELINE-MODIFIED` (exit 3 from `fix.mjs`, `serve.mjs`, `verify.mjs`, `bench.mjs`): the snapshot has
+  local changes, usually the user reviewing a new mirror in the main checkout. Don't touch the main
+  checkout; run `node tools/baseline.mjs sparse --off` and keep measuring the committed snapshot on your own
+  copy, and report an incident (`--class baseline`) if it blocks you. In your own copy: restore it as the
+  message says.
+- `BASELINE-MISMATCH`: your branch pins another snapshot than the one you read (a new pin landed on
+  `main`). `git rebase main` and re-measure, or `sparse --off` to finish on your branch's snapshot. Results
+  from two snapshots never compare (`config.baselineSnapshot` in results.json, `baseline` in verify.json,
+  `baselineSnapshot` in bench-results.json).
+- No `baseline.json` (a branch from before the snapshot commit): unchecked, as before; rebase.
+
+A new snapshot, only by the user (or the lead on the user's explicit instruction), in the main checkout,
+in a quiet window:
+
+```sh
+node tools/mirror.mjs --new-snapshot [--crawl --vendors] && node tools/prettify.mjs --new-snapshot
+git status --short site site-pretty | head; git diff --stat -- site site-pretty    # review
+# measuring it before committing: FW_BASELINE_ALLOW_MODIFIED=1 (the user's; results record state "modified")
+git add site site-pretty && node tools/baseline.mjs pin --prettier <exact version> && git add baseline.json
+FW_BASELINE_UPDATE=<id printed by pin> git commit -m "baseline: snapshot <id>"     # main, nothing else staged
+# or discard: git restore --source=HEAD --staged --worktree -- site site-pretty && git clean -fd -- site site-pretty
+```
 
 ## Tooling is guarded by tests
 
@@ -183,9 +233,10 @@ npm run test:all      # both
   comparability of A/B results measured before and after. Run `npm run test:chrome` after them.
 - `.githooks/pre-commit` (enable once per clone: `npm run setup`, i.e.
   `git config core.hooksPath .githooks`, shared by all worktrees) runs `npm test` when a commit
-  touches the paths above and blocks the commit if it fails; it also blocks staged `site/`,
-  `site-pretty/`, `out/`, `fixes/*/overlay/`, `.serena/cache/` and `*.pem`. Never bypass it
-  (`--no-verify`, `-c core.hooksPath=...`).
+  touches the paths above and blocks the commit if it fails; it also blocks staged `out/`,
+  `fixes/*/overlay/`, `.serena/cache/`, `*.pem` and `site*/.mirror/missing-local.txt`, and any staged
+  change to `site/`, `site-pretty/` or `baseline.json` that is not an authorized snapshot update
+  ("Baseline snapshot"). Never bypass it (`--no-verify`, `-c core.hooksPath=...`).
 - Tests point the tools at a fixture baseline via `$FW_MIRROR_HOME` and at a temp lock dir via
   `$FW_STATE_DIR`; they never use port 5173, the iPhone or the live site.
 
