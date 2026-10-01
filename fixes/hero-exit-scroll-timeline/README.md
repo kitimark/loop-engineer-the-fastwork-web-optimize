@@ -323,6 +323,87 @@ Hero-window frames > 50 ms: h1v2 2/1/2, P 1/1/1, h1 1/0/1, P2 1/1/2. Reading: h1
 gain at the flip (about -11 ms on either base). v2's own extra flip cost remains (h1v2 52 vs h1 45, P 65 vs
 P2 56); hero-B (v7copyop, v6noflip) tests that next.
 
+### ST-2 / ST-1 builds and the flip-pair diff (D5), after the hero post-mortem
+
+The hero post-mortem (`research/design-engineering/postmortem-hero.md`, F-049) reframed the window. Long
+frames are a ~14 ms whole-view Layout plus a 17-24 ms Composite, not style. WebKit forces a layout when an
+element's computed opacity crosses 1, or its filter/transform switches to or from `none` (StyleDifference). The
+y≈1250 frames are time-locked to the end of the #people card's reveal transitions (flip + ~745 and + ~945 ms),
+not the commission gate (F-045 is retracted as a cause). Builds for its tickets, all on aw1-10e, are
+experiment rows 18-20:
+- re-dur (ST-2): opacity 0.5 s.
+- re-keep (ST-2): ends at `blur(0px)` / `translateY(0)`.
+- v2-endearly (optional ST-1 arm): ranges end at contain 70 %, blur fill forwards.
+
+Chrome checks, counts only, 430x775, one short hold each. Scratch: `scratchpad/hero-exit/pr5`, `pr6`.
+
+**Mechanism.**
+- re-dur: the card's opacity transition ends at flip + 540 ms (aw1-10e: + 740). Filter and transform still end
+  at about + 940.
+- re-keep: the card settles at `blur(0px)` / `matrix(1, 0, 0, 1, 0, 0)`, and there is no switch to `none` at
+  + 940.
+- v2-endearly: every ViewTimeline animation is past its range at the flip.
+- Settled card pixel diff against the control is 0.000 % in every pair. Hero noise is 0.11-0.26 %.
+- v2-endearly differs from P by 9.2 % at 35 % progress. That is expected: it is not a parity build.
+
+**Presence flips after the flip** (aw1-10e; P, re-dur and v2-endearly are the same except where noted):
+
+| time after the flip | element | change |
+|---|---|---|
+| + 200 | people-o vector | opacity below 1, filter to some value |
+| + 320-450 | people-o stack | opacity reaches 1 |
+| + 455 | nav earn button | opacity reaches 1 |
+| + 455 | two spans | transform to some value |
+| + 740 | card | **opacity reaches 1** |
+| + 940 | card | **filter and transform switch to none** |
+| staggered | people-o faces | opacity reaches 1 |
+
+- Card 4's third frame (+ 1.13 s, a class write) is **`is-future-shrinking`**. On phones,
+  `.is-future-shrinking > card` sets `transform: scale(var(--future-shrink-scale))`, and the scale is 1
+  there. After the reveal, that is a transform switch from none to some value. It happens at Chrome y 1501
+  (430x775); the phone saw y≈1528.
+- `is-pain-dark` changes no presence.
+- re-keep removes this switch too (translateY(0) to scale(1) is not a presence change). So re-keep should
+  remove the + 940 and + 1.13 s layouts, and keep the + 740 one.
+- h1 ends the card's filter on its 1 s timer: filter switches to none at about + 1.0-1.1 s, a separate
+  presence flip.
+- v2 side effect: P's mobile `.scroll-float` blur has fill none, so its filter switches from some value to
+  none at the range end (y = track − innerHeight; phone 815-855) and probably at the range start (0.05 %).
+  Each is a WebKit layout, outside the flip pair. v2-endearly (fill forwards) has neither.
+
+**D5, the flip-pair diff.** Computed-style diff (55 layout and paint properties, every element) across the
+crossing, plus transition and animation events.
+- **The two triggers land in consecutive frames in Chrome.** The nav pill drop (`is-hero-pill` removed by
+  the nav's scroll-engine callback) starts its transitions at + 21-27 ms. The #people reveal (`l`'s rAF)
+  starts the card's at + 38-44 ms. This holds in all 6 builds. On the phone, the post-mortem's Timeline puts
+  `l`'s writes and the nav callback's forced read in one frame.
+- **No element crosses opacity 1 or filter/transform `none` in either frame**, in any build. So by the
+  StyleDifference rule, frame 1's whole-view layout is not a presence flip.
+- What frame 1 (nav only) changes:
+  - One class write (`header` loses `is-hero-pill`), plus `aria-hidden`/`tabindex` on the earn button.
+  - Instant changes on the earn button: `mask-image` switches from none to `var(--nav-earn-mask)`, a **mask
+    presence change**, which in WebKit gives the layer a mask (a layer-tree change). `pointer-events` also
+    changes.
+  - Animations start on the earn button: the unmask (`mask-position`) animation and the `::after` sheen
+    (transform, `mix-blend-mode: screen`). Both have a 0.52 s delay and fill both, so they apply at once.
+  - Transitions start: earn button max-width, padding-inline and opacity; `.start-selling-top-nav-actions`
+    row-gap and column-gap.
+  - Layout changes in the same frame: the actions box's width and left shift by 0.28 px. The fixed nav is
+    auto-sized, so it is not a relayout boundary.
+- What frame + 1 (#people) changes:
+  - aw1-10e and P: an instant `visibility` change from hidden to visible on the card, inherited by its whole
+    subtree.
+  - All builds: the card's opacity, filter and transform transitions start from values that already have a
+    presence, so nothing flips.
+  - People-o stack opacity starts.
+- Candidates for the phone's ~14 ms whole-view layout and ~23 ms composite in the pair, not yet attributed:
+  - (1) the earn button's mask presence change plus its two animations, in the nav frame;
+  - (2) the nav's auto-width change (root layout), in the nav frame;
+  - (3) the card's `visibility` change (aw1-10e, P only; h1 removes it, yet the post-mortem's K prediction
+    keeps the layout).
+- The cheapest discriminator is a diagnostic `nomask` build (no mask or unmask/sheen at the pill drop),
+  plus Card 3's split-trigger build. Neither is built yet.
+
 ## Risks, conflicts, follow-ups
 
 - Keyframes deliberately avoid `var()` of animated custom properties (Safari resolves them against the
@@ -404,3 +485,6 @@ The header's "rebuild with" line names the scratch topic it was generated from:
 | hero-exit-scroll-timeline/15 | DIAGNOSTIC v7copyop = 09 with the phone `.hero-copy` exit as opacity only (no transform animation on the copy) | same candidate from the other side: with no transform animation on `.hero-copy`, overlap testing stays on | pending (iPhone) | diagnostic (copy no longer lifts 8 px) | none yet | patch `variants/15.diff` (on aw1-10e) | | iPhone bisect requested |
 | hero-exit-scroll-timeline/16 | h1 = aw1-10e + #people reveal without the visibility flip (opacity 0 + `inert` while hidden, reveal blur to `blur(0px)`, filter none and inert off ~1 s later) | the 0.72 flip frame loses its inherited toggle and first raster: y≈625-745 from 43-63 to ≤ 34 ms (de-hero, derived) | provisional: parity confirmed, gain pending (iPhone) | clean (Chrome counts + frozen-frame parity) | reveal pixel diff vs P2 0-0.21 % at 6 points; idle at y=0 identical; a11y stricter (baseline leaks the profile tablist while hidden) | patch `variants/16.diff`; README "h1"; probes h1a/, h1idle.json (scratch) | memory: ~14 MB backing store for the hidden card at DPR 3 | iPhone hero-A: flip pair median 56 → 45 ms vs P2 (n=3), y≈50 unchanged, no new settle frame; partial gain (target ≤ 34 met 0/3) |
 | hero-exit-scroll-timeline/17 | h1v2 = aw1-10e + v2 (09) + h1 | v2's y≈50 removal without its y≈700 cost, if the cost was the flip's raster | provisional: parity confirmed, gain pending (iPhone) | clean (as 16) | reveal pixel diff vs P 0-0.15 %; idle identical | patch `variants/17.diff` | candidate final if the phone confirms | iPhone hero-A: flip pair median 65 → 52 ms vs P (35-77, noisy), y≈50 stays gone; v2's extra flip cost remains (52 vs h1 45) |
+| hero-exit-scroll-timeline/18 | DIAGNOSTIC re-dur = aw1-10e + the #people card's reveal opacity transition 0.7 → 0.5 s (ST-2, postmortem-hero Card 4) | the flip + ~745 ms long frame is the opacity transition reaching 1 (WebKit StyleDifference forces a layout when opacity crosses opaque): it moves to flip + 545 ± 20 ms, the + ~940 frame stays | pending (iPhone ST-2) | diagnostic (reveal fades 0.2 s faster) | see "ST-2 / ST-1 builds" | patch `variants/18.diff` (on aw1-10e), CSS 890da4b0, JS = aw1-10e 3e2f599a | | ticket via mgmt-ops-4 |
+| hero-exit-scroll-timeline/19 | DIAGNOSTIC re-keep = aw1-10e + the revealed card ends at `filter: blur(0px); transform: translateY(0)` instead of `none` (ST-2) | filter/transform never switch to none at the transition end, so the + ~940 frame loses its layout (< 2 ms) while + ~745 stays | pending (iPhone ST-2) | pixel parity expected (blur(0)/translateY(0) render as none) | see "ST-2 / ST-1 builds" | patch `variants/19.diff` (on aw1-10e), CSS 78047ec2, JS = aw1-10e 3e2f599a | a permanent blur(0px) filter on a full-section card may keep a filter layer: check before turning it into a fix | ticket via mgmt-ops-4 |
+| hero-exit-scroll-timeline/20 | DIAGNOSTIC v2-endearly = v2 (09) with every hero-exit range ending at `contain 70%` (before the 0.72 flip) and the blur kept at its end value (fill forwards) (ST-1 optional arm, postmortem-hero Card 1) | if v2's +11 ms in the flip pair comes from live ViewTimeline effects (H2a/H2b), it goes away; y≈50 stays ≤ 37 | pending (iPhone, only if ST-1 says H2a/H2b) | NOT parity by design: the exit completes at 0.70 instead of 1.0 (copy opacity 0 at the flip instead of ~0.28); the animations stay attached in their after phase (fill), so it tests "effects changing in the flip frame", not "effects present" | see "ST-2 / ST-1 builds" | patch `variants/20.diff` (on aw1-10e), CSS ed7a87ea, JS = P 71d76d69 | | ticket via mgmt-ops-4 |
