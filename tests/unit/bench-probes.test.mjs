@@ -7,7 +7,21 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { installSource, RESET, READ, QUIESCE, SNAPSHOT, GEOMETRY, SCROLL_TO, benchPage } from '../../tools/lib/bench-probes.mjs';
 
-function makePage() {
+// chromeStyle: the shape Chrome 154 really has (I-028): no CSSStyleProperties / CSS2Properties, the
+// prototype carries only cssText / cssFloat and the methods, and every declaration has its camelCase
+// properties as OWN properties. Default: the Firefox / spec shape (accessors on the prototype).
+const FIREFOX_STYLE = `for (const p of ['height', 'width', 'pointerEvents']) Object.defineProperty(CSSStyleDeclaration.prototype, p, { get() { return this._p[p] ?? ''; }, set(v) { this._p[p] = v; }, configurable: true });`;
+const CHROME_STYLE = `
+    Object.defineProperty(CSSStyleDeclaration.prototype, 'cssFloat', { get() { return this._p.float ?? ''; }, set(v) { this._p.float = v; }, configurable: true });
+    const OwnStyle = CSSStyleDeclaration;
+    CSSStyleDeclaration = function CSSStyleDeclaration() {
+      const d = Reflect.construct(OwnStyle, [], CSSStyleDeclaration);
+      for (const p of ['height', 'width', 'pointerEvents', 'transform']) Object.defineProperty(d, p, { get() { return this._p[p] ?? ''; }, set(v) { this._p[p] = String(v); }, enumerable: true, configurable: false });
+      return d;
+    };
+    CSSStyleDeclaration.prototype = OwnStyle.prototype;
+    OwnStyle.prototype.constructor = CSSStyleDeclaration;`;
+function makePage({ chromeStyle = false } = {}) {
   const ctx = { console };
   vm.createContext(ctx);
   // a tiny DOM: elements with classes and a parent chain; selectors ".a", "#id", "tag", ".a .b" (descendant)
@@ -15,7 +29,7 @@ function makePage() {
     var rafQ = [], tick = 0, records = [], observers = [], scrollY = 0, innerHeight = 900;
     class Node {}
     class CharacterData extends Node {}
-    class CSSStyleDeclaration {
+    var CSSStyleDeclaration = class CSSStyleDeclaration {
       constructor() { this._p = {}; }
       setProperty(k, v, prio) { this._p[k] = String(v); this._prio = prio || ''; return 'set:' + k; }
       getPropertyValue(k) { return this._p[k] ?? ''; }
@@ -23,7 +37,7 @@ function makePage() {
       removeProperty(k) { const o = this._p[k]; delete this._p[k]; return o; }
     }
     Object.defineProperty(CSSStyleDeclaration.prototype, 'cssText', { get() { return JSON.stringify(this._p); }, set(v) { this._p = { text: v }; }, configurable: true });
-    for (const p of ['height', 'width', 'pointerEvents']) Object.defineProperty(CSSStyleDeclaration.prototype, p, { get() { return this._p[p] ?? ''; }, set(v) { this._p[p] = v; }, configurable: true });
+    ${chromeStyle ? CHROME_STYLE : FIREFOX_STYLE}
     const simple = (e, s) => s.startsWith('.') ? e.classes.includes(s.slice(1)) : s.startsWith('#') ? e.id === s.slice(1) : e.tag === s;
     class Element extends Node {
       constructor(tag, classes = [], parent = null, id = '') { super(); this.tag = tag; this.classes = classes; this.parentElement = parent; this.id = id; this.nodeType = 1; this.attrs = {}; }
@@ -128,6 +142,38 @@ test('styleWrite wraps the style accessor setter; inlineProp counts changes of o
   assert.deepEqual(r.counts, { pe: 1, h: 1, missing: 0, plat: 2 });
   assert.deepEqual(r.errors, ['styleWrite: no style accessor "noSuchProp" on this browser']);
   assert.deepEqual(p.val('observers[0].opts'), { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['style'] });
+});
+
+test('styleWrite on the Chrome shape (own camelCase properties, I-028): el.style is a Proxy that sees the writes; same object, methods and setProperty probes still work', () => {
+  const p = makePage({ chromeStyle: true });
+  p.run('document.createElement = () => new HTMLElement("div")');
+  assert.equal(p.run('Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, "height")'), undefined, 'the real shape: nothing on the prototype');
+  assert.equal(p.run('Object.getOwnPropertyDescriptor(card.style, "height").configurable'), false);
+  p.install({
+    tf: { kind: 'styleWrite', prop: 'transform', selector: '.top-nav' },
+    h: { kind: 'styleWrite', prop: 'height' },
+    sp: { kind: 'setProperty', prop: '--x', selector: '.card' },
+    missing: { kind: 'styleWrite', prop: 'noSuchProp' },
+    raw: { kind: 'readAfterWrite', selector: '.card' },
+  });
+  assert.equal(p.run('nav.style === nav.style'), true, 'one Proxy per declaration');
+  assert.equal(p.run('nav.style instanceof CSSStyleDeclaration'), true);
+  p.run('nav.style.transform = "translateY(1px)"'); // not recording
+  p.run(RESET('w'));
+  const a0 = p.ctx.__bench.activity;
+  p.run('nav.style.transform = "translateY(2px)"; nav.style.transform = "translateY(2px)"; card.style.transform = "none"; card.style.height = "3px"');
+  assert.equal(p.run('nav.style.transform'), 'translateY(2px)', 'the write reached the declaration');
+  assert.equal(p.run('nav._s._p.transform'), 'translateY(2px)');
+  assert.equal(p.run('card.style.setProperty("--x", 1)'), 'set:--x', 'methods are bound to the real declaration (this, return value)');
+  assert.equal(p.run('card.style.getPropertyValue("--x")'), '1');
+  p.run('card.style.width = "5px"; card.getBoundingClientRect()'); // an unprobed camelCase write still marks the frame dirty
+  p.run('__bench.internal(() => { nav.style.transform = "x" })'); // the runner's own: never counted
+  const r = p.val(READ('w'));
+  assert.deepEqual(r.counts, { tf: 2, h: 1, sp: 1, missing: 0, raw: 1 });
+  assert.deepEqual(r.errors, ['styleWrite: no style property "noSuchProp" on this browser']);
+  assert.equal(p.ctx.__bench.activity - a0, 3, 'value changes: nav transform once (the repeat is a no-op), card height, --x');
+  assert.equal(p.run('__bench.uninstall()'), true);
+  assert.equal(p.run('nav.style === nav._s'), true, 'uninstall restores the plain declaration');
 });
 
 test('installed at document start (no documentElement yet): style accessors and DOM writes are still wrapped; the observer starts at DOMContentLoaded', () => {

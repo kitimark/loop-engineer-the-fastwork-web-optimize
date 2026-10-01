@@ -50,9 +50,53 @@ export function benchPage(cfg) {
   // ---- which element owns a CSSStyleDeclaration (for receiver selectors) ----------------------------
   const declEl = new WeakMap();
   const needOwner = ids.some((id) => (probes[id].kind === 'setProperty' || probes[id].kind === 'styleWrite') && probes[id].selector);
-  if (needOwner) for (const C of [W.HTMLElement, W.SVGElement, W.MathMLElement]) {
+  // Where the camelCase style properties live (el.style.height = ...). Firefox (CSS2Properties) and the
+  // CSSOM spec (CSSStyleProperties) put accessors on a prototype: wrap the setter there. Chrome 154 has
+  // neither interface: every CSSStyleDeclaration instance carries ~750 own properties and the prototype
+  // only cssText / cssFloat / the methods (incident I-028, measured with one evaluate in Chrome
+  // 154.0.8037.58). There, the element `style` getters return a Proxy of the declaration whose set trap
+  // sees the writes. Limitation: page code then gets the Proxy for el.style (same object every time,
+  // instanceof CSSStyleDeclaration holds, methods are bound to the real declaration), and only writes
+  // through el.style are seen, not through a CSSStyleRule's style or getComputedStyle.
+  const styleProtos = [];
+  for (const C of [W.CSSStyleProperties, W.CSS2Properties, W.CSSStyleDeclaration]) {
+    for (let o = C && C.prototype; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) if (styleProtos.indexOf(o) < 0) styleProtos.push(o);
+  }
+  // camelCase setters on a prototype, besides the two every engine has there (cssText, cssFloat)
+  const protoCamel = styleProtos.some((o) => Object.getOwnPropertyNames(o).some((n) => {
+    if (n === 'cssText' || n === 'cssFloat') return false;
+    const d = Object.getOwnPropertyDescriptor(o, n);
+    return !!(d && d.set);
+  }));
+  const swProbes = ids.filter((id) => probes[id].kind === 'styleWrite');
+  const needProxy = !protoCamel && (swProbes.length > 0 || kinds.has('readAfterWrite'));
+  const proxies = new WeakMap();
+  let onStyleSet = null; // set below: (decl, prop, value) for writes through the Proxy
+  const proxyFor = (decl) => {
+    let px = proxies.get(decl);
+    if (px) return px;
+    const bound = new Map();
+    px = new Proxy(decl, {
+      set(t, k, v) { if (typeof k === 'string' && onStyleSet) onStyleSet(t, k, v); return Reflect.set(t, k, v); },
+      get(t, k) {
+        const v = Reflect.get(t, k);
+        if (typeof v !== 'function') return v;
+        let b = bound.get(k);
+        if (!b || b.fn !== v) { b = { fn: v, bound: v.bind(t) }; bound.set(k, b); }
+        return b.bound;
+      },
+    });
+    proxies.set(decl, px);
+    return px;
+  };
+  if (needOwner || needProxy) for (const C of [W.HTMLElement, W.SVGElement, W.MathMLElement]) {
     if (!C) continue;
-    patch(C.prototype, 'style', (get) => function () { const s = Reflect.apply(get, this, arguments); if (s && typeof s === 'object') declEl.set(s, this); return s; }, 'get');
+    patch(C.prototype, 'style', (get) => function () {
+      const s = Reflect.apply(get, this, arguments);
+      if (!s || typeof s !== 'object') return s;
+      declEl.set(s, this);
+      return needProxy ? proxyFor(s) : s;
+    }, 'get');
   }
 
   // ---- writes: the dirty flag for readAfterWrite, plus the write-kind probes ---------------------------
@@ -86,15 +130,37 @@ export function benchPage(cfg) {
     patch(DECL, 'removeProperty', (orig) => function () { markWrite(); return Reflect.apply(orig, this, arguments); });
     patch(DECL, 'cssText', (set) => function () { markWrite(); return Reflect.apply(set, this, arguments); }, 'set');
   }
-  // style accessors (el.style.height = ...): wrap the setters on the prototype that owns each one
-  const swProbes = ids.filter((id) => probes[id].kind === 'styleWrite');
-  // the prototypes that may own the camelCase accessors (CSSStyleProperties in newer engines); never an
-  // element's style object: at document start there may be no documentElement yet
-  const styleProtos = [];
-  for (const C of [W.CSSStyleProperties, W.CSS2Properties, W.CSSStyleDeclaration]) {
-    for (let o = C && C.prototype; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) if (styleProtos.indexOf(o) < 0) styleProtos.push(o);
-  }
+  // style accessors (el.style.height = ...): on a prototype, wrap the setter that owns each one; else
+  // (Chrome) the Proxy above reports the writes to onStyleSet
   const accessorOwner = (prop) => styleProtos.find((o) => Object.getOwnPropertyDescriptor(o, prop)) || null;
+  const swByProp = {};
+  for (const id of swProbes) (swByProp[probes[id].prop] ||= []).push(id);
+  const onCamelWrite = (decl, mine, changed) => {
+    if (B.paused) return;
+    markWrite();
+    let seen = false;
+    for (const x of mine) if (!probes[x].selector || matches(declEl.get(decl), probes[x].selector)) { hit(x); seen = true; }
+    if (seen && changed) B.activity++;
+  };
+  if (needProxy) {
+    const checked = {};
+    onStyleSet = (decl, prop, v) => {
+      if (prop === 'cssText') return; // its prototype setter is wrapped (markWrite) and runs through Reflect.set
+      const mine = swByProp[prop];
+      if (!mine) { if (!B.paused) markWrite(); return; }
+      let changed = true;
+      try { changed = String(Reflect.get(decl, prop)) !== String(v == null ? '' : v); } catch (e) {}
+      onCamelWrite(decl, mine, changed);
+    };
+    // a probe on a property this engine does not have can never count: say so (checked on a real
+    // declaration, which exists only once an element does)
+    const checkProps = () => {
+      let d = null;
+      try { d = W.document.createElement('div').style; } catch (e) { return; }
+      for (const prop of Object.keys(swByProp)) if (!checked[prop]) { checked[prop] = 1; if (!(prop in d)) err('styleWrite: no style property "' + prop + '" on this browser'); }
+    };
+    checkProps();
+  }
   const wrapAccessor = (prop, onSet) => {
     const o = accessorOwner(prop);
     const get = o && Object.getOwnPropertyDescriptor(o, prop).get;
@@ -107,18 +173,9 @@ export function benchPage(cfg) {
     return true;
   };
   const wrappedAcc = new Set();
-  for (const id of swProbes) {
-    const p = probes[id];
-    if (wrappedAcc.has(p.prop)) continue;
-    wrappedAcc.add(p.prop);
-    const mine = swProbes.filter((x) => probes[x].prop === p.prop);
-    if (!wrapAccessor(p.prop, (decl, changed) => {
-      if (B.paused) return;
-      markWrite();
-      let seen = false;
-      for (const x of mine) if (!probes[x].selector || matches(declEl.get(decl), probes[x].selector)) { hit(x); seen = true; }
-      if (seen && changed) B.activity++;
-    })) err('styleWrite: no style accessor "' + p.prop + '" on this browser');
+  if (!needProxy) for (const prop of Object.keys(swByProp)) {
+    wrappedAcc.add(prop);
+    if (!wrapAccessor(prop, (decl, changed) => onCamelWrite(decl, swByProp[prop], changed))) err('styleWrite: no style accessor "' + prop + '" on this browser');
   }
   if (kinds.has('readAfterWrite')) {
     // every other style accessor only marks the frame dirty

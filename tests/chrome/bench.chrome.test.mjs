@@ -27,7 +27,10 @@ test('bench mech with real Chrome: counts discriminate, parity holds, a wrong ex
   assert.equal(fix('diff', 'nav-cache').code, 0);
   const spec = {
     schema: 1, topic: 'nav-cache', status: 'authored', evidence: 'fixture: one nav lookup per frame -> once',
-    segments: { page: { from: 'top', to: 'end', step: 300 } },
+    // the fixture page scrolls ~1000 px at 430x932: 100 px steps walk ~10 steps of >= 2 quiet frames each,
+    // so the per-frame lookups / reads / writes reach the >= 10 baselines (300 px steps gave 4 steps,
+    // 8 frames: VACUOUS, I-028)
+    segments: { page: { from: 'top', to: 'end', step: 100 } },
     spots: { idle: { at: 'top', wait: 0.5, window: 1 } },
     probes: {
       navQs: { kind: 'querySelector', selector: '.start-selling-top-nav' },
