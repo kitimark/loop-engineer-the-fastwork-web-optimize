@@ -183,6 +183,11 @@ Phone question (merged P14 boundary block, sent to mgmt-ops-5 at 12:5xZ; agreed 
   3. 9 counted runs with Timeline on in every arm: C V1 V2 · V2 C V1 · V1 V2 C.
   4. 1 Timeline-OFF control sentinel at the block end.
   5. 1 uncounted st4-rotoff run.
+- Timeline records include Paint and Decode next to Layout/InvalidateLayout, in every arm and in the st4-rotoff run.
+  This tests whether the user's "blinking" is a real blank frame (§7.8, aa5f1aa).
+- Rotator cycle, from the F3 finger run: pairs of long frames about 230 ms apart, every ~1.05 s. C's baseline pairs per
+  cycle come from the Timeline-OFF sentinels' idle at y 0; the arms compare in the Timeline-on idle phase. A
+  Timeline-off add-on (1 run per arm, idle at y 1500, +5 min) is de-pm-hero's request to mgmt-ops-5.
 - Sentinels: only the Timeline-OFF runs carry the ≥58/≥44 rule (the lead's decision). The Timeline-on C fps is
   information only. Phone time ≈ 42-43 min including cooling.
 - Driver W at 430x775: 6 s idle at y 0, then top → y≥2500, with a Timeline on every counted run.
