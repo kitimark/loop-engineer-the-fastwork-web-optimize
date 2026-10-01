@@ -223,8 +223,33 @@ is a baseline frame (nav leaves `is-hero-pill` + `section#people` `is-visible` s
 F-035); v2's +10 ms there is WebKit-only. Next: hero bisect on the phone (v4nocards, v5noblur vs P), then the real fix,
 then one Chrome A/B `--on aw1-10e`. Worst frame in every full pass stays y≈1965 (N10): 86-106 ms. Process rule (F-034):
 an overlay queued or served on the phone is frozen; new work goes under a new name, the runner checks hashes.
-**iPhone queue (09:15Z):** morph driver block (f/g/fb/gb/ge/gc + h-fixedpanel; partial: moving-phase p50 ~30 ms, fb n=1
-p95 45 vs f 53-64) -> [ts-gesture V0/V1 if ready] -> hero bisect -> N12 -> N10 ablations (d, c, b, a).
+**Design-engineering notes complete (09:25Z; main 7576f74 `middle.md`, 7d60f9f `hero.md`, README merged ranking).**
+Lead decisions:
+- **y≈1960 worst iPhone frame (86-106 ms) = the morph IntersectionObserver threshold, not `.pain`** (de-middle): in 11/11
+  phone runs it starts at scrollY 1834-1867, where the morph IO on `#platform` (`rootMargin: 200%`, JS 13080-13088)
+  fires at y = 1830; it predicts N10 ablations a-d all leave a 95-115 ms frame there. Test first on the phone, both vs
+  the aw1-10e control (fix-nav-morph 34941df; owner chose a 10e rebuild of #6 v05 over `aw1-10c-6` so the pair differs
+  in one thing): **e1** = `mw10e-e1` passive listeners (JS 3645c50c, CSS 97a20ad3), **e2** = `mw10e-e2` IO margin 200 %
+  -> 150 % (JS 1abe16f1; prediction: the frame moves to y≈2218); R3 logger gains a panel-present flag + `inert`/`src`
+  (H1a listener arming vs H1b pre-mount not run). If e1/e2 confirm, the frame moves from fix-scroll-engine (N10) to
+  fix-nav-morph (cluster B; de-middle R1: take every side effect out of the IO frame) and N10 a-d drop in priority.
+- **de-middle R2** (`::before` solid-colour layer for `is-pain-dark` / `.commission.shrinking`, 10-20 ms -> < 2 ms per
+  switch) -> **fix-scroll-engine**. **de-middle R3** (unexplained per-frame repaint of the 373×344 feed rect over y
+  1600-2500, -2-5 ms per frame) -> **unowned candidate** (needs one Web Inspector Timeline capture at y≈1900 first).
+- **Hero y≈625-745 frames (43-63 ms) = the "0.72 flip"** (de-hero): nav drops `is-hero-pill` and `#people` goes
+  `visibility: hidden` -> visible, starting a 1.6 s `blur(14px)` on a 430×775 layer, all in one frame (F-035). N12
+  removes the forced read, not the style work: **judge N12 by forced ms, not by the y≈700 frame.** **h1** (opacity 0 +
+  `inert` instead of `visibility: hidden`, pre-raster while invisible, blur 14px -> 0) -> fix-hero-exit coordinates,
+  touching large-area-blur / phone-invisible-shrink code. Hero bisect gains de-hero's variants (HEflip off = v6noflip,
+  `.hero-copy` exit opacity-only = v7copyop, cards-only = v4nocards) + a Web Inspector Layers capture y 580-780 on P2 vs P.
+- **h3 countdown strip** (one 12-glyph strip per digit, no per-face `will-change`; 160 -> 0-16 layers; also morph R6 and
+  the 1 Hz idle spikes): no active owner; **next spawn candidate (fix-countdown-idle-raf)**, spawned by the lead when an
+  iPhone slot for it is in sight.
+- **Lead's ranking (09:25Z, replaces the README order where they differ):** (1) morph gh / R1 size-stable panel;
+  (2) y≈1830 morph IO (if e1/e2 confirm); (3) h1 flip; (4) h3 countdown strip; (5) middle R2; (6) h2; (7) the rest.
+**iPhone queue (09:25Z):** morph driver block (+ gh = mw10e-gh ABBA vs gb and g, n=3; partial so far: moving-phase p50
+~30 ms, fb n=1 p95 45 vs f 53-64) -> e1/e2 -> hero bisect (v7copyop, v6noflip, v4nocards, v5noblur vs P; v3 dropped)
+-> N12 -> N10 a-d; ts-gesture V0/V1 when ready.
 
 ## Baseline freeze (user decision, 2026-10-01 ~07:35Z)
 
