@@ -595,12 +595,13 @@ References: C aw1-10e (view at both tick types), V1 st4-noswap (gone).
 - **The reading.** In st5 the class-OFF (swap) is clean and the class-ON (start) escapes. Both change the same selectors, and only ON creates animations. So the leading hypothesis is H-anim: creating the animations escapes, not the invalidation.
 - **WebKit, slide-start view share:**
   - C ~100 %, V1 ≤10 %.
-  - st5 MIXED again (25-75 %).
-  - **st5-noanim gone (≤25 %).**
-  - **st5-waapi MIXED or view (≥25 %)**, about st5's level.
+  - Bands as in P-039: gone ≤25 %, MIXED >25 % and <50 %, view ≥50 %.
+  - st5 MIXED or view again (>25 %).
+  - **st5-noanim gone (≤25 %)** (P-042).
+  - **st5-waapi MIXED or view (>25 %)**, about st5's level (P-043).
   - The swap stays gone in all three st5 arms.
   - If noanim stays MIXED and waapi is gone, H-anim is refuted and the class invalidation is the cause. Both MIXED or both gone means neither part alone explains it.
-  - **st6 gone (≤25 %) at the slide start, swap gone.** With no flip, the animations change only translate, scale, clip-path and non-opaque opacity, so nothing should require layout. If st6 stays MIXED, the flips are not the cause (de-pm-hero agrees to say so).
+  - **st6 gone (≤25 %) at the slide start, swap gone** (P-044). With no flip, the animations change only translate, scale, clip-path and non-opaque opacity, so nothing should require layout. If st6 stays MIXED, the flips are not the cause (de-pm-hero agrees to say so).
   - The 104x32 carousel-rooted Layouts (info only): present at the swap in st5 and waapi (the script-driven flips), absent in st6 and noanim.
 - **WebKit, intermittency:** no prediction on why about half the starts escape. A per-tick read of the record next to the hits (style vs layout first, nested layouts) is info only.
 - **Chrome, slide start (counts per tick window, 430x775):**
@@ -616,7 +617,7 @@ References: C aw1-10e (view at both tick types), V1 st4-noswap (gone).
 
   | arm | JS / CSS |
   |---|---|
-  | C aw1-10e | 3e2f599a1632 / c6aad94b455f |
+  | C aw1-10e (`<scratchpad>/layout-containment/snap/aw1-10e`, P-039's read-only copy; the others are in `snap2/`) | 3e2f599a1632 / c6aad94b455f |
   | V1 st4-noswap | b8c085d9b619 / c6aad94b455f |
   | st5 | 268a68962d18 / e68c99631e80 |
   | st5-noanim | 268a68962d18 / db001ab4037d |
@@ -629,6 +630,9 @@ References: C aw1-10e (view at both tick types), V1 st4-noswap (gone).
   - 6 s idle at y 0 (carousel off screen), then 30 s idle at y 1500 (on screen), giving ≥15 ticks per type per arm.
   - Order: C, V1, st5, noanim, waapi, st6, then C again as the drift check.
   - Phone only: record temperature, battery and Low Power Mode. No sentinel verdict is attached.
+- **Minutes.**
+  - Phone: 6 warm-ups at ~40 s plus 7 counted runs at ~36 s run plus ~15 s navigation and settle, i.e. ~10 min of runs, ~15-18 min with the serve and hash checks. One block, all 6 arms answering one question.
+  - Simulator (de-counts-sim's `wkcounts.mjs`, `IDLE_Y=1500 WALK=0 IDLE_MS=30000`, i.e. idle on screen only; the y 0 phase is dropped there): ~45 s per run plus a warm-up per port. Three short holds of ≤300 s, by arm pair: (C, V1), (st5, noanim), (waapi, st6 + drift C).
 - **Scoring** (`p039score.cjs` rules plus de-pm-hero's root split, `p039swap.mjs`):
   - Ticks are TimerFire at JS L11571 (the same line in all 6 arms). A tick is a swap when the gap is 150-400 ms, otherwise a slide start.
   - Window per tick: tick to +260 ms. For every Layout in it, record the root class (view 430x770-820, carousel 104x32, other), the duration bucket (<1, 1-10, ≥10 ms) and whether it follows a script-started or an animation-frame style recalc.
