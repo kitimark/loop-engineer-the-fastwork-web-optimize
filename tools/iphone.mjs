@@ -10,6 +10,12 @@
 //   node tools/iphone.mjs record --owner <topic> [--seconds 25] [--label finger-patched]   # human scrolls meanwhile
 //   node tools/lock.mjs release iphone --owner <topic>
 //
+// Simulated finger (real OS-level touches through WebDriverAgent over USB, research/architecture/
+// finger-simulation.md; NEW MEASUREMENT CODE, gesture numbers compare only with the same script hash):
+//   node tools/iphone.mjs wda status | build --owner <topic> | start --owner <topic> | stop   # tools/lib/wda-runner.mjs
+//   node tools/iphone.mjs gesture tools/gestures/finger-protocol-v1.json --owner <topic> [--label l]
+//        [--variant asPerformed|slow] [--param k=v]... [--morph-log <morph-log.mjs>] [--dry-run]   # tools/lib/gesture-run.mjs
+//
 // `scroll` is the calibrated scripted scroll (research/cpu-throttle-calibration/tools/iphone_scroll.mjs):
 // reload, settle 8 s, rAF frame logger, 3 s idle, scrollBy({top:250, behavior:'smooth'}) every 300 ms to
 // the bottom, 3 s at the bottom. It does NOT exercise the touch-only paths (non-passive touchmove
@@ -29,7 +35,7 @@ import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds'];
+const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--ref', '--team', '--udid', '--bundle-id', '--timeout'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
 const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
@@ -162,6 +168,8 @@ async function main() {
     console.log(`saved ${out}`);
     return;
   }
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25]');
+  if (cmd === 'gesture') return (await import('./lib/gesture-run.mjs')).gestureCmd({ argv, arg, opt, flag, requireLease, port: PORT });
+  if (cmd === 'wda') return (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, requireLease });
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25] | gesture <script.json> --owner <topic> [--dry-run] | wda status|build|start|stop');
 }
 main().then(() => process.exit(0), (e) => { console.error(e.message || e); process.exit(1); });

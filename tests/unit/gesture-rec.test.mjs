@@ -80,6 +80,8 @@ test('toolbarTransitions: 775 <-> 815 runs with their duration; a return to the 
   assert.equal(r.aborted, 1);
   assert.equal(r.medianMs, 300);
   assert.deepEqual(toolbarTransitions([F(0, 0), F(1, 5)]).transitions, []);
+  // a jump within one frame counts, with the frame interval as its duration
+  assert.deepEqual(toolbarTransitions([F(0, 0), F(17, 50), F(34, 150, 815), F(51, 160, 815)]).transitions, [{ t: 17, from: 775, to: 815, ms: 17 }]);
 });
 
 const END = { docH: 5995, vh0: 775 }; // maxY 5220 with the toolbar expanded, 5180 collapsed
@@ -130,7 +132,10 @@ test('frameBands, morphStats and summarizeRun align strokes to touch sequences p
   const b = frameBands({ ...END, frames });
   assert.deepEqual([b.hero.frames, b.middle.frames, b.lastScreen.frames], [1, 1, 1]);
   assert.deepEqual([b.hero.gt34, b.middle.gt50, b.lastScreen.gt100, b.all.max], [1, 1, 1, 120]);
-  assert.deepEqual(morphStats([[0, 20, 5220, 0.5], [1, 60, 5220, 1], [2, 30, 5220, null], [3, 16, 5220, 0]]), { frames: 2, p50: 20, p95: 60, gt50Pct: 50 });
+  // morph-log.mjs's definitions: first frame dropped, active = --morph > 0.001 or nav class "m", sorted[floor(p n)]
+  const mf = [[0, 99, 5220, 1, ''], [1, 20, 5220, 0.5, ''], [2, 60, 5220, 1, 'me'], [3, 30, 5220, null, 'm'], [4, 16, 5220, 0, ''], [5, 70, 5220, 0.0005, '']];
+  assert.deepEqual(morphStats(mf), { frames: 3, p50: 30, p95: 60, gt50Pct: 33.3 });
+  assert.deepEqual(morphStats(mf, { skipFirst: false }).frames, 4);
   const T = (t, k, n) => [t, k, n, 1, 0, 0, 500];
   const seg = { ...END, frames, touches: [T(1, 's', 1), T(2, 'm', 1), T(3, 'e', 0)] };
   const kin = { profile: 'fling', dir: 'up', px: 520, liftoffPxPerS: 6087 };

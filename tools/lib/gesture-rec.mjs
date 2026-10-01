@@ -71,16 +71,17 @@ export function toolbarTransitions(frames) {
   const lo = Math.min(...hs), hi = Math.max(...hs);
   if (lo === hi) return { levels: [lo], transitions: [], aborted: 0, medianMs: null };
   const out = [];
-  let level = null, start = null, aborted = 0;
+  let level = null, start = null, aborted = 0, prevT = null;
   for (const f of frames) {
     const h = f[3];
     if (h === lo || h === hi) {
       if (level !== null && start !== null) {
         if (h !== level) out.push({ t: start, from: level, to: h, ms: Math.round(f[0] - start) });
         else aborted++;
-      }
+      } else if (level !== null && h !== level) out.push({ t: prevT, from: level, to: h, ms: Math.round(f[0] - prevT) }); // a jump within one frame
       level = h; start = null;
     } else if (level !== null && start === null) start = f[0];
+    prevT = f[0];
   }
   const ms = out.map((x) => x.ms);
   return { levels: [lo, hi], transitions: out, aborted, medianMs: median(ms), minMs: ms.length ? Math.min(...ms) : null, maxMs: ms.length ? Math.max(...ms) : null };
@@ -182,10 +183,15 @@ export function momentumTau(seg, tUp, { tNext = Infinity, maxMs = 3000, skipMs =
   return { tauS: slope < 0 ? Math.round(-1 / slope) / 1000 : null, points: n, v0PxPerS: Math.round(Math.exp(pts[0][1]) * 1000), travelPx: travel };
 }
 
-/** Morph-active frames from fixes/morph-webkit/morph-log.mjs output (frame[3] = --morph, > 0 = active). */
-export function morphStats(morphFrames) {
-  const act = (morphFrames || []).filter((f) => f[3] !== null && f[3] > 0).map((f) => f[1]);
-  return { frames: act.length, p50: pct(act, 50), p95: pct(act, 95), gt50Pct: act.length ? Math.round((1000 * act.filter((x) => x > 50).length) / act.length) / 10 : null };
+/**
+ * Morph-active frames from fixes/morph-webkit/morph-log.mjs output, with that logger's own definitions so the
+ * numbers compare with the finger runs' morph logs: active = --morph (frame[3]) > 0.001 or the nav class has
+ * is-morphing (frame[4] includes "m"); the first frame is dropped; quantile = sorted[floor(p * n)].
+ */
+export function morphStats(morphFrames, { skipFirst = true } = {}) {
+  const act = (morphFrames || []).slice(skipFirst ? 1 : 0).filter((f) => (f[3] ?? 0) > 0.001 || String(f[4] || '').includes('m')).map((f) => f[1]).sort((a, b) => a - b);
+  const q = (p) => (act.length ? act[Math.min(act.length - 1, Math.floor(p * act.length))] : null);
+  return { frames: act.length, p50: q(0.5), p95: q(0.95), gt50Pct: act.length ? Math.round((1000 * act.filter((x) => x > 50).length) / act.length) / 10 : null };
 }
 
 /**
@@ -218,6 +224,6 @@ export function summarizeRun(segments, strokes = [], { morph = [] } = {}) {
     pinReversals: segOut.reduce((a, s) => a + s.pin.count, 0),
     overscroll: { minY: Math.min(...segOut.map((s) => s.overscroll.minY ?? Infinity)), maxOverPx: Math.max(...segOut.map((s) => s.overscroll.maxOverPx ?? -Infinity)) },
     momentum: { flings: flings.length, tauMedianS: median(flings), tauS: flings },
-    morph: morph.length ? morphStats(morph.flatMap((m) => m.frames || [])) : null,
+    morph: morph.length ? morphStats(morph.flatMap((m) => (m.frames || []).slice(1)), { skipFirst: false }) : null,
   };
 }

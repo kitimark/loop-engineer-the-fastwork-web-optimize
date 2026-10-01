@@ -12,9 +12,21 @@
 //   node tests/fixtures/fake-webkit-proxy.mjs --port=0 --url=<initial tab url>
 //   prints FAKE_WIP_PORT=<port> once listening. Env: FAKE_WIP_LOG=<file> appends one JSON line per
 //   evaluated expression / navigation.
+//
+// Gesture runs (tools/iphone.mjs gesture): `--page` adds a page model, `--wda-port=0` also (and starts an
+// in-process fake WebDriverAgent, tests/fixtures/fake-wda.mjs, printing FAKE_WDA_PORT=<port>) whose strokes
+// play into that page in real time: touchstart/touchmove/touchend events, scrollY following the finger
+// (clamped to 0..maxY), momentum after a fast lift-off (tau 450 ms), the toolbar collapsing (innerHeight
+// 775 -> 815) on the way down and expanding on the way up. Other expressions run in a node:vm window with
+// rAF (every 16 ms), passive/non-passive listeners, performance.now()/mark, scrollTo, location.reload()
+// (a new document: new vm window, new target id). Options: --doc-height=N (default 6035: maxY 5220
+// collapsed), --prevent-at-end (a page touchmove handler that calls preventDefault at the end, like the
+// morph's scroll-jack), --foreground=<bundleId> for the fake WDA.
 import http from 'node:http';
+import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { appendFileSync } from 'node:fs';
+import { startFakeWda } from './fake-wda.mjs';
 
 const arg = (n) => { const a = process.argv.find((x) => x.startsWith(`--${n}=`)); return a ? a.slice(n.length + 3) : null; };
 const LOG = process.env.FAKE_WIP_LOG;
@@ -46,8 +58,78 @@ async function evaluate(expr) {
   if (expr === 'document.readyState') return 'complete';
   if (expr === 'document.title') return tab.title;
   if (expr === '1') return 1;
+  if (doc) {
+    try { const v = vm.runInContext(expr, doc.ctx); return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); } catch (e) { return { __thrown: String(e) }; }
+  }
   return undefined;
 }
+
+// ---- page model (--page / --wda-port) ------------------------------------------------------------------
+const PAGE = process.argv.includes('--page') || arg('wda-port') !== null;
+const DOC_H = Number(arg('doc-height') || 6035);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let doc = null, momentum = null;
+function newDocument() {
+  const t0 = performance.now();
+  const listeners = [];
+  let raf = [];
+  const win = {
+    scrollY: 0, innerWidth: 430, innerHeight: 775,
+    document: { documentElement: { scrollHeight: DOC_H }, readyState: 'complete', get title() { return tab.title; } },
+    location: { get href() { return tab.url; }, reload: () => { setTimeout(() => { tab.gen++; doc = newDocument(); log({ reloaded: tab.url, gen: tab.gen }); }, 100); } },
+    performance: { now: () => performance.now() - t0, mark: () => {} },
+    requestAnimationFrame: (cb) => { raf.push(cb); return raf.length; },
+    addEventListener: (type, fn, o) => listeners.push({ type, fn, passive: typeof o === 'object' && !!o.passive, capture: typeof o === 'object' ? !!o.capture : !!o }),
+    scrollTo: (x, y) => { win.scrollY = Math.max(0, Math.min(maxY(win), typeof x === 'object' ? x.top : y)); },
+    setTimeout, clearTimeout, JSON, Math, Promise,
+  };
+  win.window = win;
+  const ctx = vm.createContext(win);
+  const timer = setInterval(() => { const q = raf; raf = []; const t = performance.now() - t0; q.forEach((cb) => { try { cb(t); } catch {} }); if (doc?.win !== win) clearInterval(timer); }, 16);
+  timer.unref?.();
+  if (process.argv.includes('--prevent-at-end')) listeners.push({ type: 'touchmove', fn: (e) => { if (win.scrollY >= maxY(win) - 2) e.preventDefault(); }, passive: false, capture: false });
+  return { win, ctx, listeners };
+}
+const maxY = (w) => DOC_H - w.innerHeight;
+function dispatch(type, { touches, clientY }) {
+  const e = { type, cancelable: type !== 'touchcancel', defaultPrevented: false, touches: { length: touches }, changedTouches: [{ clientY }] };
+  const ls = doc.listeners.filter((l) => l.type === type);
+  for (const l of [...ls.filter((x) => x.capture), ...ls.filter((x) => !x.capture)]) {
+    e.preventDefault = l.passive ? () => {} : () => { if (e.cancelable) e.defaultPrevented = true; };
+    try { l.fn(e); } catch {}
+  }
+  return e;
+}
+function scrollBy(d) {
+  const w = doc.win;
+  w.scrollY = Math.max(0, Math.min(maxY(w), w.scrollY + d));
+  if (d > 0 && w.scrollY > 100) w.innerHeight = 815; else if (d < 0) w.innerHeight = 775;
+}
+function startMomentum(v) { // v: px/ms of scroll
+  momentum = { v };
+  const m = momentum;
+  const tick = () => {
+    if (momentum !== m || !doc) return;
+    scrollBy(m.v * 16); m.v *= Math.exp(-16 / 450);
+    const w = doc.win;
+    if (Math.abs(m.v) < 0.02 || w.scrollY <= 0 || w.scrollY >= maxY(w)) { momentum = null; return; }
+    setTimeout(tick, 16);
+  };
+  setTimeout(tick, 16);
+}
+async function playStroke(body) {
+  let y = 0, down = false, lastV = 0;
+  for (const a of body.actions[0].actions) {
+    if (a.type === 'pointerMove') {
+      if (a.duration) await sleep(a.duration);
+      const dy = a.y - y; y = a.y;
+      if (down) { const e = dispatch('touchmove', { touches: 1, clientY: y }); if (!e.defaultPrevented) scrollBy(-dy); lastV = a.duration ? -dy / a.duration : 0; }
+    } else if (a.type === 'pointerDown') { down = true; momentum = null; dispatch('touchstart', { touches: 1, clientY: y }); }
+    else if (a.type === 'pause') { await sleep(a.duration || 0); if (down) lastV = 0; }
+    else if (a.type === 'pointerUp') { down = false; dispatch('touchend', { touches: 0, clientY: y }); if (Math.abs(lastV) > 0.3) startMomentum(lastV); }
+  }
+}
+if (PAGE) doc = newDocument();
 
 // ---- minimal RFC 6455 server (text frames, close, ping) -----------------------------------------
 function frame(str) {
@@ -78,8 +160,9 @@ server.on('upgrade', (req, sock) => {
     let result = {};
     if (inner.method === 'Runtime.evaluate') {
       const v = await evaluate(inner.params.expression);
-      log({ evaluate: inner.params.expression.slice(0, 160) });
-      result = { result: v === undefined ? { type: 'undefined' } : { type: typeof v, value: v } };
+      log({ evaluate: inner.params.expression.slice(0, 160), sha256: createHash('sha256').update(inner.params.expression).digest('hex') });
+      result = v && typeof v === 'object' && '__thrown' in v ? { wasThrown: true, result: { type: 'string', value: v.__thrown } }
+        : { result: v === undefined ? { type: 'undefined' } : { type: typeof v, value: v } };
     }
     send({ method: 'Target.dispatchMessageFromTarget', params: { targetId, message: JSON.stringify({ id: inner.id, result }) } });
   };
@@ -107,4 +190,10 @@ server.on('upgrade', (req, sock) => {
   });
   sock.on('error', () => {});
 });
-server.listen(Number(arg('port') || 0), '127.0.0.1', () => console.log(`FAKE_WIP_PORT=${server.address().port}`));
+server.listen(Number(arg('port') || 0), '127.0.0.1', async () => {
+  console.log(`FAKE_WIP_PORT=${server.address().port}`);
+  if (arg('wda-port') !== null) {
+    const w = await startFakeWda({ port: Number(arg('wda-port')), foreground: arg('foreground') || undefined, log: process.env.FAKE_WDA_LOG, onStroke: (body) => (doc ? playStroke(body) : null) });
+    console.log(`FAKE_WDA_PORT=${w.port}`);
+  }
+});
