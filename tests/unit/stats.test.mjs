@@ -10,7 +10,7 @@ import { tempDir, node, tool } from '../helpers.mjs';
 import {
   TICK_MS, tick, tickThresholdMs, quantile, median, summary, frameCounts, runMetrics, mannWhitney, hodgesLehmann,
   vanElteren, stratifiedShift, aligned, compareBlock, compareBlocks, sequentialDecision, blockOrder,
-  crossingY, placeFrame, placeFrames, normalizeFrame, runsFromJson, blocksFromRuns,
+  crossingY, placeFrame, placeFrames, normalizeFrame, runsFromJson, blocksFromRuns, blockWarnings,
 } from '../../tools/lib/stats.mjs';
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`);
@@ -141,17 +141,30 @@ test('sequential decision, block 1: win (U = 0, p 1/70, HL >= 1 tick), predictio
   assert.equal(sequentialDecision({ blocks: [{ control: [50, 51, 52, 53], variant: [60, 61, 62, 63] }], dir: 'higher', unit: 'count', minShift: 2 }).decision, 'win');
 });
 
-test('sequential decision, block 2: stratified p and HL >= 1 tick; no-win with a small shift; worse is flagged', () => {
-  let d = sequentialDecision({ blocks: [COOL, HOT], unit: 'ms' });
-  assert.equal(d.decision, 'no-win', 'HL 8 ms < 1 tick');
-  assert.match(d.reason, /HL 8 \(need p <= 0.05, HL >= 8.333\)/);
-  assert.match(d.rule, /a third block only by the lead/);
-  d = sequentialDecision({ blocks: [COOL, HOT], unit: 'ms', minShift: 5 });
+// block 1 = U 1 (41 > 40), medians 43 (k 5) vs 33 (k 4): neither win nor futile -> block 2 is due
+const B1_CONT = { control: [40, 42, 44, 46], variant: [30, 32, 34, 41] };
+// block 1 with equal tick medians and HL 2 > 0 -> block 2 is due
+const B1_SUBTICK = { control: [40, 41, 42, 43], variant: [38, 39, 40, 41] };
+
+test('sequential decision, block 2: stratified p and HL >= 1 tick; no-win with a small shift', () => {
+  // HOT2 = U 0, differences 9 + 2(i - j). T = 1/9: P(U1 + U2 <= 1) = 3/4900. Pooled 32 differences of
+  // B1_CONT (10,12,14,16, 8,10,12,14, 6,8,10,12, -1,1,3,5) and HOT2 (3,5,5,7,7,7,9,9,9,9,11,...): 16th/17th = 9
+  const HOT2 = { control: [50, 52, 54, 56], variant: [41, 43, 45, 47] };
+  let d = sequentialDecision({ blocks: [B1_CONT, HOT2], unit: 'ms' });
   assert.equal(d.decision, 'win', d.reason);
+  assert.equal(d.stoppedAt, undefined);
+  close(d.stats.p, 3 / 4900);
+  assert.equal(d.stats.shift, 9);
+  assert.equal(d.stats.test, 'exact van Elteren, one-sided, stratified by block');
   assert.equal(d.stats.aligned.test, 'aligned Mann-Whitney (diagnostic)');
-  d = sequentialDecision({ blocks: [{ control: COOL.variant, variant: COOL.control }, { control: HOT.variant, variant: HOT.control }], unit: 'ms' });
-  assert.equal(d.decision, 'no-win');
-  assert.match(d.reason, /significantly WORSE/);
+  // B1_SUBTICK + HOT: pooled differences -1,0,0,0,1,1,1,2x6,3,3,3,4x5,...: 16th/17th = 3, 4 -> HL 3.5 < 1 tick
+  d = sequentialDecision({ blocks: [B1_SUBTICK, HOT], unit: 'ms' });
+  assert.equal(d.decision, 'no-win', d.reason);
+  assert.match(d.reason, /HL 3.5 \(need p <= 0.05, HL >= 8.333\)/);
+  assert.match(d.rule, /a third block only by the lead/);
+  assert.equal(sequentialDecision({ blocks: [B1_SUBTICK, HOT], unit: 'ms', minShift: 3 }).decision, 'win');
+  // the reverse direction of COOL/HOT is the forward p by symmetry: 2/4900
+  close(compareBlocks([{ control: COOL.variant, variant: COOL.control }, { control: HOT.variant, variant: HOT.control }]).pWorse, 2 / 4900);
   assert.throws(() => sequentialDecision({ blocks: [COOL, COOL, COOL] }), /at most 2 blocks/);
   assert.throws(() => sequentialDecision({ blocks: [COOL], unit: 'fps' }), /bad unit/);
   assert.throws(() => sequentialDecision({ blocks: [COOL], dir: 'down' }), /bad dir/);
@@ -162,6 +175,57 @@ test('block orders: ABBA C V V C C V V C; 3-arm rotated Latin square C A B / A B
   assert.deepEqual(blockOrder(3), ['C', 'A', 'B', 'A', 'B', 'C', 'B', 'C', 'A']);
   for (const arm of ['C', 'A', 'B']) assert.equal(blockOrder(3).filter((x) => x === arm).length, 3);
   assert.throws(() => blockOrder(4), /2 or 3 arms/);
+});
+
+test('review-stats blocker 2: a block 1 that already stopped stands; block 2 never re-opens it', () => {
+  // the review's input: block 1 is futile (medians 40 -> k 5 vs 51 -> k 6); with a strong block 2 the
+  // stratified rule alone would say WIN (van Elteren p 0.021, HL 16)
+  const futile1 = { control: [20, 20, 60, 60], variant: [10, 50, 52, 52] };
+  const strong2 = { control: [40, 42, 44, 46], variant: [20, 22, 24, 26] };
+  assert.equal(sequentialDecision({ blocks: [futile1], unit: 'ms' }).decision, 'futile');
+  let d = sequentialDecision({ blocks: [futile1, strong2], unit: 'ms' });
+  assert.equal(d.decision, 'futile', d.reason);
+  assert.equal(d.stoppedAt, 1);
+  assert.match(d.reason, /^block 1 stopped \(futile\): variant median worse \(medians 5 vs 6 ticks\); block 2 is outside the protocol \(lead only\)/);
+  // a block-1 win followed by an unneeded block 2 stays a win of block 1 (not a fresh stratified verdict)
+  d = sequentialDecision({ blocks: [COOL, HOT], unit: 'ms' });
+  assert.deepEqual([d.decision, d.stoppedAt], ['win', 1]);
+  assert.equal(d.stats.test, 'exact Mann-Whitney, one-sided');
+  // the CLI says the same
+  const r = node(tool('stats.mjs'), ['decide', '--c', '20,20,60,60', '--v', '10,50,52,52', '--c', '40,42,44,46', '--v', '20,22,24,26']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /^DECISION FUTILE: block 1 stopped \(futile\)/m);
+});
+
+test('review-stats blocker 1: non-finite or missing run values throw, never count as an improvement', () => {
+  // the review's input 3: a NaN in the variant arm
+  const nanBlock = { control: [40, 42, 44, 46], variant: [30, 32, 34, NaN] };
+  assert.throws(() => sequentialDecision({ blocks: [nanBlock] }), /sequentialDecision: block 1 variant: run 4 has no finite value \(NaN\)/);
+  assert.throws(() => stratifiedShift([nanBlock]), /no finite value/);
+  assert.throws(() => vanElteren([nanBlock]), /no finite value/);
+  assert.throws(() => aligned([nanBlock]), /no finite value/);
+  assert.throws(() => compareBlock([40, null, 44, 46], [30, 32, 34, 36]), /control: run 2 has no finite value \(null\)/);
+  assert.throws(() => sequentialDecision({ blocks: [COOL, { control: [1, 2, 3, 4], variant: [1, 2, undefined, 4] }] }), /block 2 variant: run 3/);
+  // the review's inputs 1 and 2: four counted V runs with empty frame logs (k5 would read 0, p50Ms null)
+  const run = (arm, nLong, extra = {}) => ({ block: 1, arm, warmup: false, void: false, source: `${arm}${nLong}.json`, ...extra, frames: nLong == null ? [] : [...Array(nLong).fill(40), 16, 16].map((dt) => ({ dt })) });
+  const runs = [run('C', 6), run('V', null), run('V', null), run('C', 7), run('C', 7), run('V', null), run('V', null), run('C', 8)];
+  for (const metric of ['k5', 'p50Ms']) assert.throws(() => blocksFromRuns(runs, metric), /4 counted run\(s\) have no frames in the phase .*void them or fix the log/);
+  // voided empty runs are fine (T2 voids them); a file with marks but none for the phase has no frames + a warning
+  assert.doesNotThrow(() => blocksFromRuns(runs.map((r) => (r.frames.length ? r : { ...r, void: true })), 'k5'));
+  const [noPhase] = runsFromJson({ frames: [[0, 40, 0, 10, 775]], marks: { idle: [0, 1] }, meta: { arm: 'V', block: 1 } });
+  assert.deepEqual([noPhase.frames.length, noPhase.warning], [0, 'no marks.scroll (has idle)']);
+  assert.throws(() => blocksFromRuns([noPhase, run('C', 6)], 'k5'), /no marks.scroll/);
+  const [noMarks] = runsFromJson({ frames: [[0, 40, 0, 10, 775]], meta: {} });
+  assert.match(noMarks.warning, /no marks: all 1 frames used/);
+  const [all] = runsFromJson({ frames: [[0, 40, 0, 10, 775]], marks: { idle: [0, 1] } }, { phase: 'all' });
+  assert.deepEqual([all.frames.length, all.warning], [1, undefined]);
+});
+
+test('van Elteren weights matter: 4v4 U = 1 (w 1/9) + 3v3 U = 0 (w 1/7) -> 2/1400 (unweighted would be 3/1400)', () => {
+  // T = 1/9; splits with T* <= 1/9: (U1, U2) = (0, 0), (1, 0); (0, 1) has T* = 1/7 > 1/9
+  const r = vanElteren([{ control: [40, 42, 44, 46], variant: [30, 32, 34, 41] }, { control: [9, 10, 11], variant: [1, 2, 3] }]);
+  close(r.p, 2 / 1400);
+  close(vanElteren([{ control: [9, 10, 11], variant: [1, 2, 3] }, { control: [40, 42, 44, 46], variant: [30, 32, 34, 41] }]).p, 2 / 1400, 1e-12);
 });
 
 test('crossings: y = top - f * base per unit (ih = frame innerHeight, lvh/svh = device), run tops override, delta sign', () => {
@@ -203,9 +267,30 @@ test('input: Chrome [t, dt, y] and §5.5 tuples and objects normalise; iPhone ru
   const run = (block, arm, nLong, extra = {}) => ({ block, arm, warmup: false, void: false, ...extra, frames: [...Array(nLong).fill(40), 16, 16].map((dt) => ({ dt })) });
   const runs = [run(1, 'C', 9, { warmup: true }), run(1, 'C', 6), run(1, 'V', 3), run(1, 'V', 4), run(1, 'C', 7), run(1, 'C', 7), run(1, 'V', 4), run(1, 'V', 4), run(1, 'C', 8), run(1, 'V', 1, { void: true })];
   const by = blocksFromRuns(runs, 'k5');
-  assert.deepEqual(by, { V: [{ block: 1, control: [6, 7, 7, 8], variant: [3, 4, 4, 4] }] });
+  assert.deepEqual(by, { arms: { V: [{ block: 1, control: [6, 7, 7, 8], variant: [3, 4, 4, 4] }] }, dropped: [] });
   assert.throws(() => blocksFromRuns(runs, 'fps'), /unknown metric/);
   assert.throws(() => blocksFromRuns([run(1, null, 1)], 'k5'), /no arm/);
+  // a block whose controls are all voided is dropped and reported, not silently skipped
+  const two = [...runs, run(2, 'C', 6, { void: true }), run(2, 'V', 3), run(2, 'C', 7, { void: true })];
+  assert.deepEqual(blocksFromRuns(two, 'k5').dropped, [{ arm: 'V', block: 2, reason: '0 counted control and 1 counted V run(s)' }]);
+});
+
+test('blockWarnings: n per arm, one warm-up first, ABBA order by pos, missing sentinel records', () => {
+  const order = blockOrder(2);
+  const ok = [{ block: 1, arm: 'C', warmup: true, void: false, pos: 0, sentinel: { pass: true } }, ...order.map((arm, i) => ({ block: 1, arm, warmup: false, void: false, pos: i + 1, sentinel: arm === 'C' ? { pass: true } : null }))];
+  assert.deepEqual(blockWarnings(ok), []);
+  const noSentinel = ok.map((r) => ({ ...r, sentinel: null }));
+  assert.deepEqual(blockWarnings(noSentinel), ['block 1: sentinel not checked here (T2 sets void); 4 control run(s) carry no sentinel record']);
+  const swapped = ok.map((r) => (r.pos === 1 ? { ...r, pos: 2 } : r.pos === 2 ? { ...r, pos: 1 } : r));
+  assert.deepEqual(blockWarnings(swapped), ['block 1: run order V C V C C V V C is not C V V C C V V C']);
+  const late = ok.map((r) => (r.warmup ? { ...r, pos: 9 } : r));
+  assert.ok(blockWarnings(late).includes('block 1: the warm-up is not before the first counted run'));
+  const short = ok.filter((r) => r.pos !== 8);
+  assert.ok(blockWarnings(short).includes('block 1: arm C has 3 counted runs (expected 4)'));
+  assert.ok(blockWarnings(ok.filter((r) => !r.warmup)).includes('block 1: 0 warm-up runs (expected 1)'));
+  assert.ok(blockWarnings(ok.map((r) => ({ ...r, pos: null }))).includes('block 1: run positions (meta.pos) missing: order not checked'));
+  const latin = blockOrder(3).map((arm, i) => ({ block: 2, arm, warmup: false, void: false, pos: i + 1, sentinel: 1 }));
+  assert.deepEqual(blockWarnings([{ block: 2, arm: 'C', warmup: true, pos: 0 }, ...latin]), []);
 });
 
 test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over a dir, place, usage errors', () => {
@@ -218,13 +303,15 @@ test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over 
   assert.equal(r.code, 0, r.stderr);
   assert.match(r.stdout, /^DECISION WIN: U = 0, p 0.014, HL 10 >= 8.333$/m);
   assert.match(r.stdout, /test: exact Mann-Whitney, one-sided; dir lower .* unit ms; min shift 8.333; medians compared as ticks/);
-  r = node(tool('stats.mjs'), ['decide', '--c', '40,42,44,46', '--v', '30,32,34,36', '--c', '50,52,54,56', '--v', '44,46,48,50', '--json']);
+  r = node(tool('stats.mjs'), ['decide', '--c', '40,41,42,43', '--v', '38,39,40,41', '--c', '50,52,54,56', '--v', '44,46,48,50', '--json']);
   const j = JSON.parse(r.stdout);
   assert.equal(j.decision, 'no-win');
   assert.equal(j.stats.test, 'exact van Elteren, one-sided, stratified by block');
-  r = node(tool('stats.mjs'), ['decide', '--c', '40,42,44,46', '--v', '30,32,34,36', '--c', '50,52,54,56', '--v', '44,46,48,50', '--min-shift', '5']);
-  assert.match(r.stdout, /^DECISION WIN: van Elteren p 0 <= 0.05, HL 8 >= 5$/m);
-  assert.match(r.stdout, /aligned \(diagnostic\): U 1/);
+  r = node(tool('stats.mjs'), ['decide', '--c', '40,42,44,46', '--v', '30,32,34,41', '--c', '50,52,54,56', '--v', '41,43,45,47']);
+  assert.match(r.stdout, /^DECISION WIN: van Elteren p 0.001 <= 0.05, HL 9 >= 8.333$/m);
+  assert.match(r.stdout, /aligned \(diagnostic\): U /);
+  r = node(tool('stats.mjs'), ['decide', '--c', '40,42,44,NaN', '--v', '30,32,34,36']);
+  assert.equal(r.code, 2, 'a NaN is refused at parse time');
   assert.equal(node(tool('stats.mjs'), ['decide', '--c', '1,2']).code, 2);
   assert.equal(node(tool('stats.mjs'), ['decide', '--c', '1,x', '--v', '1']).code, 2);
   assert.equal(node(tool('stats.mjs'), []).code, 2);
@@ -233,12 +320,31 @@ test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over 
   mkdirSync(join(d, 'blk'));
   const frames = (nLong) => { const out = []; let t = 0, y = 0; for (let i = 0; i < 20; i++) { const dt = i < nLong ? 40 : 16; out.push([t, dt, y, y + 10, 775, null, 1]); t += dt; y += 10; } return out; };
   const order = blockOrder(2), longs = { C: [6, 7, 7, 8], V: [3, 4, 4, 4] }, seen = { C: 0, V: 0 };
-  writeFileSync(join(d, 'blk', 'r00-warm.json'), JSON.stringify({ frames: frames(12), meta: { block: 1, arm: 'C', warmup: true } }));
-  order.forEach((arm, i) => writeFileSync(join(d, 'blk', `r${String(i + 1).padStart(2, '0')}.json`), JSON.stringify({ frames: frames(longs[arm][seen[arm]++]), meta: { block: 1, arm, pos: i, driver: 'S' } })));
+  writeFileSync(join(d, 'blk', 'r00-warm.json'), JSON.stringify({ frames: frames(12), meta: { block: 1, arm: 'C', warmup: true, pos: 0 } }));
+  order.forEach((arm, i) => writeFileSync(join(d, 'blk', `r${String(i + 1).padStart(2, '0')}.json`), JSON.stringify({ frames: frames(longs[arm][seen[arm]++]), meta: { block: 1, arm, pos: i + 1, driver: 'S' } })));
+  writeFileSync(join(d, 'blk', 'r99-truncated.json'), '{"frames": [[0, 4');
   r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'k5']);
   assert.equal(r.code, 0, r.stderr);
-  assert.match(r.stdout, /9 run\(s\), 1 warm-up\/void skipped/);
+  assert.match(r.stderr, /WARN unreadable JSON skipped: .*r99-truncated.json/);
+  assert.match(r.stdout, /9 run\(s\), 1 warm-up\/void skipped, 1 unreadable/);
+  assert.match(r.stdout, /^WARN unreadable JSON skipped: .*r99-truncated.json$/m);
+  assert.match(r.stdout, /^WARN block 1: sentinel not checked here \(T2 sets void\); 4 control run\(s\) carry no sentinel record$/m);
+  assert.doesNotMatch(r.stdout, /threshold-sensitive|run order/);
   assert.match(r.stdout, /^arm V vs C: DECISION WIN: U = 0, p 0.014, HL 3 >= 1$/m);
+  const rj = JSON.parse(node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'k5', '--json']).stdout);
+  assert.deepEqual([rj.twin, rj.thresholdSensitive, rj.unreadable.length, rj.dropped], ['gt34', false, 1, []]);
+  // threshold-sensitive: 35 ms frames are legacy ">34" but k = 4; variant runs carry them instead of 40 ms ones
+  mkdirSync(join(d, 'ts'));
+  const fr2 = (n40, n35) => frames(0).map((x, i) => (i < n40 ? [x[0], 40, ...x.slice(2)] : i < n40 + n35 ? [x[0], 35, ...x.slice(2)] : x));
+  seen.C = 0; seen.V = 0;
+  order.forEach((arm, i) => writeFileSync(join(d, 'ts', `r${i}.json`), JSON.stringify({ frames: arm === 'C' ? fr2(longs.C[seen.C++], 0) : fr2(longs.V[seen.V], 6 - longs.V[seen.V++] + 4), meta: { block: 1, arm, pos: i + 1 } })));
+  r = node(tool('stats.mjs'), ['runs', join(d, 'ts'), '--metric', 'k5']);
+  assert.match(r.stdout, /^WARN threshold-sensitive: arm V: k5 win vs gt34 futile$/m);
+  // a counted run with no frames in the phase is an error, not a zero
+  writeFileSync(join(d, 'blk', 'r05.json'), JSON.stringify({ frames: frames(4), marks: { idle: [0, 1] }, meta: { block: 1, arm: 'V', pos: 5 } }));
+  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'k5']);
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /1 counted run\(s\) have no frames in the phase .*r05.json: no marks.scroll/);
   assert.equal(node(tool('stats.mjs'), ['runs', join(d, 'blk')]).code, 2, '--metric is required');
 
   writeFileSync(join(d, 'th.json'), JSON.stringify({ viewport: { lvh: 815, svh: 775 }, thresholds: [{ id: 'io', top: 400, f: 0.5, unit: 'ih' }, { id: 'abs', y: 15 }] }));

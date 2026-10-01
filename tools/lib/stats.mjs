@@ -19,7 +19,14 @@
 //   predicted / 2); futile iff the variant median is worse, or the medians are equal and HL <= 0 (ms
 //   medians compared as ticks); else run block 2. After block 2: win iff the van Elteren p <= alpha and
 //   the stratified HL >= minShift; else 'no-win' (a third block only by the lead). 3-arm blocks give 3 vs 3
-//   per comparison (min p 1/20 > 1/70), so they can't win after block 1.
+//   per comparison (min p 1/20 > 1/70), so they can't win after block 1. Given 2 blocks, block 1's rule
+//   runs first: if block 1 already stopped (win or futile), that decision stands and block 2 is not
+//   evaluated ("outside the protocol, lead only"); the stratified rule never gets a second look
+//   (review-stats). Blocks are taken in array order (blocksFromRuns sorts by block id).
+//   Minimum shift: 1 tick = 8.333 ms (unit ms) or 1 (unit ticks); for count metrics (frames k>=5 per run)
+//   "1 tick" does not apply and the default is 1 frame per run (arch-lead sign-off 2026-10-01).
+//   Every run value must be a finite number: a missing value (empty frame log, NaN, null) throws; it
+//   never counts as an improvement.
 // Crossings (§3.4): threshold i sits at y_i = top_i - f_i * base, base by the threshold's unit: 'ih' the
 //   frame's own innerHeight (IO rootMargin, JS reads), 'lvh' / 'svh' the device's large / small viewport
 //   height, 'dvh' innerHeight; or an absolute `y`. A frame [yStart, yEnd] has delta = 0 when y_i lies in
@@ -38,6 +45,13 @@ export const tickThresholdMs = (k, tickMs = TICK_MS) => (k - 0.5) * tickMs;
 export const K34 = 5, K50 = 7;
 
 const num = (xs) => xs.filter((x) => typeof x === 'number' && Number.isFinite(x));
+/** Throw unless every value is a finite number (a null/NaN would read as "variant better" in U). */
+export function assertFinite(xs, what) {
+  if (!Array.isArray(xs)) throw new Error(`${what}: not an array`);
+  const bad = xs.findIndex((x) => typeof x !== 'number' || !Number.isFinite(x));
+  if (bad >= 0) throw new Error(`${what}: run ${bad + 1} has no finite value (${xs[bad]}); fix or void that run`);
+}
+const checkBlocks = (blocks, who) => blocks.forEach(({ control, variant }, i) => { assertFinite(control, `${who}: block ${i + 1} control`); assertFinite(variant, `${who}: block ${i + 1} variant`); });
 const sorted = (xs) => num(xs).sort((p, q) => p - q);
 
 /** Quantile by linear interpolation between order statistics (R type 7). null for an empty sample. */
@@ -119,6 +133,7 @@ function uDistribution(a, b, dir) {
  */
 export function vanElteren(blocks, dir = 'lower') {
   if (!blocks.length) throw new Error('vanElteren: no blocks');
+  checkBlocks(blocks, 'vanElteren');
   let acc = new Map([[0, 1]]), total = 1, t = 0;
   for (const { control: a, variant: b } of blocks) {
     if (!a.length || !b.length) throw new Error('vanElteren: empty arm in a block');
@@ -137,11 +152,13 @@ export function vanElteren(blocks, dir = 'lower') {
 
 /** Stratified HL: median of within-block pairwise improvements pooled over blocks (+ = variant better). */
 export function stratifiedShift(blocks, dir = 'lower') {
+  checkBlocks(blocks, 'stratifiedShift');
   return median(blocks.flatMap(({ control, variant }) => improvements(control, variant, dir)));
 }
 
 /** Aligned diagnostic: every run minus its own block's control median, then one pooled MW and HL. */
 export function aligned(blocks, dir = 'lower') {
+  checkBlocks(blocks, 'aligned');
   const a = [], b = [];
   for (const { control, variant } of blocks) { const c = median(control); a.push(...control.map((x) => x - c)); b.push(...variant.map((x) => x - c)); }
   const mw = mannWhitney(a, b, dir);
@@ -150,6 +167,7 @@ export function aligned(blocks, dir = 'lower') {
 
 /** One block: summaries, exact one-sided MW (and the reverse direction), HL. */
 export function compareBlock(control, variant, dir = 'lower') {
+  assertFinite(control, 'control'); assertFinite(variant, 'variant');
   const mw = mannWhitney(control, variant, dir), rev = mannWhitney(control, variant, dir === 'lower' ? 'higher' : 'lower');
   return { test: 'exact Mann-Whitney, one-sided', dir, control: summary(control), variant: summary(variant), n: [control.length, variant.length], u: mw.u, p: mw.p, pWorse: rev.p, shift: hodgesLehmann(control, variant, dir) };
 }
@@ -180,21 +198,24 @@ export function sequentialDecision({ blocks, dir = 'lower', unit = 'ms', predict
   if (!(unit in DEFAULT_MIN_SHIFT)) throw new Error(`bad unit: ${unit} (ms | ticks | count)`);
   if (!blocks?.length) throw new Error('sequentialDecision: no blocks');
   if (blocks.length > 2) throw new Error('sequentialDecision: at most 2 blocks (a third only by the lead)');
+  checkBlocks(blocks, 'sequentialDecision');
   const ms = minShift ?? DEFAULT_MIN_SHIFT[unit];
   const f = (x) => (x == null ? '-' : Math.round(x * 1000) / 1000);
   const choices = { unit, dir, minShift: ms, predicted, alpha, block1Alpha, medianCompare: unit === 'ms' ? 'ticks' : 'raw' };
-  if (blocks.length === 1) {
+  {
     const { control, variant } = blocks[0];
     const s = compareBlock(control, variant, dir);
     const need = Math.max(ms, predicted != null ? predicted / 2 : 0);
     const stats = { ...s, need, choices };
+    const stop = (decision, reason, rule, stats) => (blocks.length === 1 ? { decision, reason, rule, stats }
+      : { decision, stoppedAt: 1, reason: `block 1 stopped (${decision}): ${reason}; block 2 is outside the protocol (lead only) and was not evaluated`, rule, stats });
     const rule = `block 1: win iff U = 0 and p <= ${f(block1Alpha)} and HL >= max(minShift ${f(ms)}, predicted/2 ${predicted != null ? f(predicted / 2) : '-'}); futile iff variant median worse, or medians equal and HL <= 0`;
-    if (s.u === 0 && s.p <= block1Alpha + 1e-12 && s.shift >= need - 1e-9) return { decision: 'win', reason: `U = 0, p ${f(s.p)}, HL ${f(s.shift)} >= ${f(need)}`, rule, stats };
+    if (s.u === 0 && s.p <= block1Alpha + 1e-12 && s.shift >= need - 1e-9) return stop('win', `U = 0, p ${f(s.p)}, HL ${f(s.shift)} >= ${f(need)}`, rule, stats);
     const mc = unit === 'ms' ? tick(s.control.median) : s.control.median, mv = unit === 'ms' ? tick(s.variant.median) : s.variant.median;
     const medians = `medians ${unit === 'ms' ? `${mc} vs ${mv} ticks` : `${f(mc)} vs ${f(mv)}`}`;
-    if (better(mc, mv, dir)) return { decision: 'futile', reason: `variant median worse (${medians})`, rule, stats };
-    if (mc === mv && s.shift <= 0) return { decision: 'futile', reason: `${medians} equal and HL ${f(s.shift)} <= 0`, rule, stats };
-    return { decision: 'block2', reason: `U ${s.u}, p ${f(s.p)}, HL ${f(s.shift)} (need U = 0, p <= ${f(block1Alpha)}, HL >= ${f(need)}); ${medians}: run block 2`, rule, stats };
+    if (better(mc, mv, dir)) return stop('futile', `variant median worse (${medians})`, rule, stats);
+    if (mc === mv && s.shift <= 0) return stop('futile', `${medians} equal and HL ${f(s.shift)} <= 0`, rule, stats);
+    if (blocks.length === 1) return { decision: 'block2', reason: `U ${s.u}, p ${f(s.p)}, HL ${f(s.shift)} (need U = 0, p <= ${f(block1Alpha)}, HL >= ${f(need)}); ${medians}: run block 2`, rule, stats };
   }
   const s = compareBlocks(blocks, dir);
   const stats = { ...s, need: ms, choices };
@@ -290,10 +311,17 @@ export function runsFromJson(json, { phase = 'scroll', innerHeight = null, file 
     const meta = json.meta || {};
     const mk = json.marks?.[phase];
     const tOf = (f) => (Array.isArray(f) ? f[0] : f.t);
-    const fr = mk ? json.frames.filter((f) => tOf(f) >= mk[0] && tOf(f) <= mk[1]) : json.frames;
-    return [{
+    // phase 'all': every frame. A file with marks but none for this phase gives no frames (a counted run
+    // without frames then throws in blocksFromRuns); a file without any marks keeps all frames, warned.
+    let fr = json.frames, warning = null;
+    if (phase !== 'all') {
+      if (mk) fr = json.frames.filter((f) => tOf(f) >= mk[0] && tOf(f) <= mk[1]);
+      else if (json.marks) { fr = []; warning = `no marks.${phase} (has ${Object.keys(json.marks).join(', ') || 'none'})`; }
+      else warning = `no marks: all ${json.frames.length} frames used, incl. load and idle (pass --phase all to accept)`;
+    }
+    return [{ ...(warning ? { warning } : {}),
       label: meta.label ?? null, run: meta.run ?? 0, block: meta.block ?? null, arm: meta.arm ?? null, pos: meta.pos ?? null, driver: meta.driver ?? null,
-      warmup: !!meta.warmup, void: !!meta.void, tops: json.tops || meta.tops || {}, source: file, frames: normFrames(fr, innerHeight),
+      warmup: !!meta.warmup, void: !!meta.void, sentinel: meta.sentinel ?? json.sentinel ?? null, tops: json.tops || meta.tops || {}, source: file, frames: normFrames(fr, innerHeight),
     }];
   }
   return [];
@@ -305,23 +333,64 @@ export const METRICS = {
   p50Ms: { unit: 'ms', dir: 'lower' }, p95Ms: { unit: 'ms', dir: 'lower' }, p50Ticks: { unit: 'ticks', dir: 'lower' }, p95Ticks: { unit: 'ticks', dir: 'lower' },
 };
 
+/** The legacy ms twin of a tick metric and back (§3.2: a verdict that differs is "threshold-sensitive"). */
+export const TWIN = { k5: 'gt34', gt34: 'k5', k7: 'gt50', gt50: 'k7' };
+
 /**
- * Group counted runs (not warm-up, not void) into blocks per variant arm: {arm: [{block, control, variant}]}
- * of the given metric. The control arm is 'C'.
+ * Group counted runs (not warm-up, not void) into blocks per variant arm, in block-id order, of the given
+ * metric. The control arm is 'C'. Returns {arms: {arm: [{block, control, variant}]}, dropped: [{arm, block,
+ * reason}]}: a block without counted controls or without counted variant runs is dropped and reported.
+ * A counted run without frames (empty log, no marks for the phase) throws: void it or fix it.
  */
 export function blocksFromRuns(runs, metric) {
   if (!METRICS[metric]) throw new Error(`unknown metric ${metric} (${Object.keys(METRICS).join(', ')})`);
   const counted = runs.filter((r) => !r.warmup && !r.void);
-  const blockIds = [...new Set(counted.map((r) => r.block))].sort((x, y) => (x ?? 0) - (y ?? 0));
-  const arms = [...new Set(counted.map((r) => r.arm))].filter((a) => a !== 'C');
   if (counted.some((r) => r.arm == null)) throw new Error('blocksFromRuns: a counted run has no arm (meta.arm)');
+  const empty = counted.filter((r) => !r.frames.length);
+  if (empty.length) throw new Error(`blocksFromRuns: ${empty.length} counted run(s) have no frames in the phase (${empty.map((r) => `${r.source || r.label || '?'}${r.warning ? `: ${r.warning}` : ''}`).join('; ')}); void them or fix the log`);
+  const blockIds = [...new Set(runs.map((r) => r.block))].sort((x, y) => (x ?? 0) - (y ?? 0));
+  const arms = [...new Set(runs.map((r) => r.arm))].filter((a) => a != null && a !== 'C');
   const val = (r) => runMetrics(r.frames.map((f) => f.dt))[metric];
-  const out = {};
+  const out = {}, dropped = [];
   for (const arm of arms) {
-    out[arm] = blockIds.map((b) => {
+    out[arm] = [];
+    for (const b of blockIds) {
       const inB = counted.filter((r) => r.block === b);
-      return { block: b, control: inB.filter((r) => r.arm === 'C').map(val), variant: inB.filter((r) => r.arm === arm).map(val) };
-    }).filter((x) => x.control.length && x.variant.length);
+      const x = { block: b, control: inB.filter((r) => r.arm === 'C').map(val), variant: inB.filter((r) => r.arm === arm).map(val) };
+      if (x.control.length && x.variant.length) out[arm].push(x);
+      else dropped.push({ arm, block: b, reason: `${x.control.length} counted control and ${x.variant.length} counted ${arm} run(s)` });
+    }
+  }
+  return { arms: out, dropped };
+}
+
+/**
+ * Block-shape warnings (§5.2, §5.3), per block: <= 9 counted runs; n per arm (4 for 2 arms, 3 for 3 arms);
+ * exactly one warm-up, before the first counted run; counted runs in the ABBA / Latin-square order by pos;
+ * control runs without a sentinel record (`meta.sentinel`: T2 sets it and `void`; T3 does not judge it).
+ */
+export function blockWarnings(runs) {
+  const out = [];
+  const ids = [...new Set(runs.map((r) => r.block))].sort((x, y) => (x ?? 0) - (y ?? 0));
+  for (const b of ids) {
+    const inB = runs.filter((r) => r.block === b), counted = inB.filter((r) => !r.warmup && !r.void), warm = inB.filter((r) => r.warmup);
+    const tag = `block ${b ?? '-'}`;
+    const arms = [...new Set(counted.map((r) => r.arm))];
+    const per = arms.length === 3 ? 3 : 4;
+    if (counted.length > 9) out.push(`${tag}: ${counted.length} counted runs (max 9)`);
+    for (const a of arms) { const n = counted.filter((r) => r.arm === a).length; if (n !== per) out.push(`${tag}: arm ${a} has ${n} counted runs (expected ${per})`); }
+    if (warm.length !== 1) out.push(`${tag}: ${warm.length} warm-up runs (expected 1)`);
+    if (inB.length && inB.every((r) => typeof r.pos === 'number')) {
+      const byPos = [...inB].sort((x, y) => x.pos - y.pos);
+      if (warm.length === 1 && byPos.indexOf(warm[0]) > byPos.findIndex((r) => !r.warmup)) out.push(`${tag}: the warm-up is not before the first counted run`);
+      if ((arms.length === 2 || arms.length === 3) && !inB.some((r) => r.void)) {
+        const order = blockOrder(arms.length), seq = byPos.filter((r) => !r.warmup).map((r) => r.arm);
+        const as = arms.length === 2 ? (a) => (a === 'C' ? 'C' : 'V') : (a) => a;
+        if (seq.map(as).join(' ') !== order.join(' ')) out.push(`${tag}: run order ${seq.join(' ')} is not ${order.join(' ')}`);
+      }
+    } else out.push(`${tag}: run positions (meta.pos) missing: order not checked`);
+    const noSentinel = counted.filter((r) => r.arm === 'C' && r.sentinel == null).length;
+    if (noSentinel) out.push(`${tag}: sentinel not checked here (T2 sets void); ${noSentinel} control run(s) carry no sentinel record`);
   }
   return out;
 }

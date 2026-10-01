@@ -11,7 +11,11 @@
 //   node tools/stats.mjs runs <run.json|dir>... --metric k5|k7|gt34|gt50|p50Ms|p95Ms|p50Ticks|p95Ticks
 //                               [--phase scroll] [--predicted <x>] [--min-shift <x>] [--json]
 //       iPhone run files (meta.block, meta.arm 'C' | 'V' | 'A' | 'B'; meta.warmup / meta.void runs are
-//       skipped) -> one decision per variant arm against C.
+//       skipped) -> one decision per variant arm against C. A counted run without frames in the phase is an
+//       error (void it); --phase all takes every frame. WARN lines: unreadable files, dropped blocks, block
+//       shape (n per arm, warm-up, ABBA order, no sentinel record: T2 judges the sentinel), and
+//       "threshold-sensitive" when k5/k7 and their legacy twin gt34/gt50 decide differently (§3.2).
+//       Given 2 blocks, a block 1 that already stopped (win / futile) stands; block 2 is not evaluated.
 //   node tools/stats.mjs place <run.json|verify.json|dir>... --thresholds <th.json> [--min-ms 37.5] [--phase scroll]
 //                               [--lvh 815] [--svh 775] [--inner-height 932] [--json]
 //       every frame >= --min-ms placed at its nearest code-threshold crossing (§3.4). th.json:
@@ -19,7 +23,7 @@
 //       A run's own `tops` ({id: documentTop}) override the static `top` (topSource run | static).
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tick, summary, frameCounts, sequentialDecision, runsFromJson, blocksFromRuns, placeFrames, METRICS, tickThresholdMs, K34 } from './lib/stats.mjs';
+import { tick, summary, frameCounts, sequentialDecision, runsFromJson, blocksFromRuns, blockWarnings, placeFrames, METRICS, TWIN, tickThresholdMs, K34 } from './lib/stats.mjs';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
@@ -42,10 +46,15 @@ function files(inputs) {
   }
   return out;
 }
+/** Runs of every readable file; an unreadable/truncated JSON and a run with a phase warning are reported on stderr. */
 function loadRuns(inputs, o) {
-  const runs = [];
-  for (const file of files(inputs)) { let j; try { j = JSON.parse(readFileSync(file, 'utf8')); } catch { continue; } runs.push(...runsFromJson(j, { ...o, file })); }
-  return runs;
+  const runs = [], unreadable = [];
+  for (const file of files(inputs)) {
+    let j;
+    try { j = JSON.parse(readFileSync(file, 'utf8')); } catch (e) { unreadable.push(file); console.error(`WARN unreadable JSON skipped: ${file} (${e.message})`); continue; }
+    for (const r of runsFromJson(j, { ...o, file })) { if (r.warning) console.error(`WARN ${file}: ${r.warning}`); runs.push(r); }
+  }
+  return { runs, unreadable };
 }
 function printDecision(d, title = '') {
   const s = d.stats, c = s.choices;
@@ -75,17 +84,36 @@ if (cmd === 'ticks') {
   const metric = opt('metric', null);
   if (!METRICS[metric]) die(`runs: --metric ${Object.keys(METRICS).join('|')}`);
   if (!positional.length) die(USAGE);
-  const runs = loadRuns(positional, { phase: opt('phase', 'scroll') });
+  const { runs, unreadable } = loadRuns(positional, { phase: opt('phase', 'scroll') });
   if (!runs.length) die('runs: no run files with frames');
-  let byArm;
-  try { byArm = blocksFromRuns(runs, metric); } catch (e) { die(e.message); }
-  const out = {};
-  for (const [arm, blocks] of Object.entries(byArm)) {
-    try { out[arm] = sequentialDecision({ blocks, ...METRICS[metric], predicted: numOpt('predicted'), minShift: numOpt('min-shift') }); } catch (e) { die(`arm ${arm}: ${e.message}`); }
-  }
+  const decideAll = (m) => {
+    let g;
+    try { g = blocksFromRuns(runs, m); } catch (e) { die(e.message); }
+    const out = {};
+    for (const [arm, blocks] of Object.entries(g.arms)) {
+      if (!blocks.length) continue;
+      try { out[arm] = sequentialDecision({ blocks, ...METRICS[m], predicted: numOpt('predicted'), minShift: numOpt('min-shift') }); } catch (e) { die(`arm ${arm}: ${e.message}`); }
+    }
+    return { out, dropped: g.dropped };
+  };
+  const { out, dropped } = decideAll(metric);
   if (!Object.keys(out).length) die('runs: no block with both a control (C) and a variant arm');
-  if (asJson) console.log(JSON.stringify({ metric, ...METRICS[metric], skipped: runs.filter((r) => r.warmup || r.void).length, arms: out }, null, 1));
-  else { console.log(`metric ${metric} (${METRICS[metric].unit}, ${METRICS[metric].dir} is better); ${runs.length} run(s), ${runs.filter((r) => r.warmup || r.void).length} warm-up/void skipped`); for (const [arm, d] of Object.entries(out)) printDecision(d, `arm ${arm} vs C: `); }
+  // §3.2 transition: a tick-count verdict is checked against its legacy ms twin (k5 <-> gt34, k7 <-> gt50)
+  const twin = TWIN[metric] ? decideAll(TWIN[metric]).out : {};
+  const sensitive = Object.keys(out).filter((a) => twin[a] && twin[a].decision !== out[a].decision).map((a) => `arm ${a}: ${metric} ${out[a].decision} vs ${TWIN[metric]} ${twin[a].decision}`);
+  const warnings = [
+    ...unreadable.map((x) => `unreadable JSON skipped: ${x}`),
+    ...dropped.map((x) => `block ${x.block ?? '-'} dropped for arm ${x.arm}: ${x.reason}`),
+    ...blockWarnings(runs),
+    ...sensitive.map((x) => `threshold-sensitive: ${x}`),
+  ];
+  const skipped = runs.filter((r) => r.warmup || r.void).length;
+  if (asJson) console.log(JSON.stringify({ metric, ...METRICS[metric], skipped, unreadable, dropped, warnings, thresholdSensitive: sensitive.length > 0, twin: TWIN[metric] ?? null, arms: out }, null, 1));
+  else {
+    console.log(`metric ${metric} (${METRICS[metric].unit}, ${METRICS[metric].dir} is better); ${runs.length} run(s), ${skipped} warm-up/void skipped, ${unreadable.length} unreadable`);
+    for (const w of warnings) console.log(`WARN ${w}`);
+    for (const [arm, d] of Object.entries(out)) printDecision(d, `arm ${arm} vs C: `);
+  }
 } else if (cmd === 'place') {
   const thFile = opt('thresholds', null);
   if (!thFile || !positional.length) die(USAGE);
@@ -93,7 +121,7 @@ if (cmd === 'ticks') {
   const thresholds = Array.isArray(th) ? th : th.thresholds;
   const viewport = { ...(th.viewport || {}), ...(numOpt('lvh') != null ? { lvh: numOpt('lvh') } : {}), ...(numOpt('svh') != null ? { svh: numOpt('svh') } : {}) };
   const minDt = numOpt('min-ms') ?? tickThresholdMs(K34);
-  const runs = loadRuns(positional, { phase: opt('phase', 'scroll'), innerHeight: numOpt('inner-height') });
+  const { runs } = loadRuns(positional, { phase: opt('phase', 'scroll'), innerHeight: numOpt('inner-height') });
   if (!runs.length) die('place: no frames');
   let placed;
   try { placed = runs.map((r) => ({ label: r.label, run: r.run, source: r.source, frames: placeFrames(r.frames, thresholds, { minDt, viewport, tops: r.tops }) })); } catch (e) { die(`place: ${e.message}`); }
