@@ -211,7 +211,8 @@ BATCH shas. **Stamp times from `date -u`** (mgmt-ops-4 drifted ~5-10 min ahead t
 `sh <scratchpad>/mgmt-ops/tick2.sh 150-240` (returns on incident changes; prints lock + phone state); messages arrive
 between tool calls.
 
-1. **iPhone order** (updated 13:5xZ by mgmt-ops-5; lead-ranked): DONE: P0 (P-023), P1 (P-017 HIT), P2 (P-016b miss),
+1. **iPhone order** (updated 13:5xZ by mgmt-ops-5; lead-ranked; 14:0xZ: P4 paused for a user blind swipe A/B of the
+   countdown fix, 3 real-page pairs = first v3-style F stage): DONE: P0 (P-023), P1 (P-017 HIT), P2 (P-016b miss),
    F2 pre-check, finger batch F1-F6 (F6-try3 apple.com 0 >50 / 1 >34 moving; F6-try2 ~80 Hz stretches = F-071),
    ca-check wca2 (captured, `window.__ca` filled; analysis waits for a free chrome-measure), **P-029 HIT** (13:17-13:25Z),
    **P3 HIT** (13:35-13:44Z: P-019 re-dur + re-keep HIT, baseline-A third frame unresolved; P-020: reveal-end Layouts
@@ -349,6 +350,9 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | arch-safari = `a765c480ea490a443`, de-safari = `a4ce1669dd33aa4dc` | Safari probing / iOS time model (read-only) | alive |
 | arch-devtools = `ad5593c3c7d3b8c97`, de-devtools = `a21e6c00411aba4d8` | Chrome DevTools method (read-only) | done |
 | `ts-iphone-run` (T1a f8e7d5a), `ts-analysis` (T3), `ts-render-signals` (T6+T7, I-032, in test:chrome) | protocol v2 tools | alive |
+| `arch-sim` | iOS Simulator fidelity (user work stream, lead 14:0xZ): research, plan, probe the Simulator against real-device records; Simulator runs are host-heavy -> always inside chrome-measure holds (≤ 10 min), slot like research holds | alive |
+| `ts-sim` | toolsmith: tools/sim.mjs from arch-sim's spec (lead spawns when the spec arrives) | not yet spawned |
+| `review-cdwc` | fix-reviewer of mw10e-cdwc (fix-nav-morph 051d0aa) | alive |
 | `ts-wait` | toolsmith (lead spawn 13:3xZ, user request): blocking wait commands so agents stop sleep-loop polling; may ask iphone-runner + others what waiting hurt most | alive |
 | `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); WDA runner + iproxy left running for iphone-runner | done |
 | `res-layerpainted` | F-059/F-064/F-066 stamped, F-068 limitation posted | done |
