@@ -275,7 +275,11 @@ between tool calls.
    **Lead 15:0xZ:** arch-claims owns the Instruments render-hitch lane definition; ts-iphone-run builds its tooling after
    I-037 + the probe v3 fix (not urgent). P-037 (PoC 3 idle attribution, fix-nav-morph) VALIDATED as filler after
    P-036. ts-lock-bundle implements (f) shared short holds next (short lane waited 17 min > 15 min line), reviewer gate
-   kept. **I-037 [open, blocking]:** iPhone tools pick a background app's about:blank web view instead of Safari's tab.
+   kept. F-081 residual by Layout root (fix-scroll-engine, all < 5 ms): ~23 near rotator ticks = 104x32 subtree at
+   (58, 2054) inside Composite-after-paint beside a Cloudflare-beacon PerformanceObserver callback (image-load size
+   invalidation after the src swap? UNRESOLVED); ~31 RenderView-rooted after script-less style recalc (some CSS
+   animation, UNRESOLVED); ~7 countdown tick = 398x52 subtree at (16, 920).
+   **I-037 [open, blocking]:** iPhone tools pick a background app's about:blank web view instead of Safari's tab.
    Lead 15:0xZ: 7b(f) option (A) not taken to the user (rebases change the staged tree; enforcement layer); (f) stays a
    design in ts-lock-bundle's ticket; tell the lead if short-lane waits exceed ~15 min again.
    **F-076 / P-034 owner = fix-nav-morph after cdwc lands** (lead: same countdown code; no fix-countdown-idle-raf spawn).
