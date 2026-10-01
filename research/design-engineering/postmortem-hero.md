@@ -957,6 +957,24 @@ window there are 0-3 such Layouts, at offsets 0-237 ms (median 31).
 - **That these flips cause the whole-view Layouts here is UNRESOLVED.** Why the img's Layout climbs past the
   carousel boundary to the view is still W2 (§7.3), unexplained.
 
+**fix-scroll-engine's counterpoint: the swap flips too, and it is clean.** At class-off, the lead goes from scale(.35) /
+opacity 0 back to none / 1. The roots split by what starts the style change (`p039swap.mjs`). Each cell counts ticks
+with at least one such Layout within 0-60 ms:
+
+| arm, tick | carousel-rooted <1 ms Layout | view-rooted ≥10 ms Layout |
+|---|---|---|
+| st5 swap | 34/34 | 2/34 |
+| st5 start | 29/33 | 20/33 |
+| V1 start | 0/33 | 3/33 |
+| V1 swap | 15/33 (image loads) | 4/33 |
+
+- st5 adds a carousel-rooted Layout at the slide start that V1 lacks. That is the class toggle's own recalculation,
+  which already samples the exit's first keyframe (the hasTransform flip). It also fills the swap to 34/34.
+- The view-rooted Layout comes from the opacity flip one frame later, in an animation-frame recalculation.
+- So **flips started by script or class changes stay inside the 104×32 boundary, and flips from animation samples
+  reach the view** (OBSERVED; why is UNRESOLVED).
+- The split at the swap between flips and image loads rests on 34 vs 15 ticks.
+
 **Decisive check, which is also the fix candidate: st6 = st5 with no flips.**
 - Every slot rests at `transform: scale(1)`.
 - Opacity is kept off 1 throughout: resting 0.999, `avatars-exit` starts at 0.999, and `avatars-pop` ends at 0.999.
