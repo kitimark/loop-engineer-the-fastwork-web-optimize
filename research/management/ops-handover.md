@@ -2,9 +2,15 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **05:18Z**.
+**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **05:58Z**.
 
 ## Digest log (newest first, 5 lines each)
+
+- **05:58Z** Landed: N11 fea23a5 (mechanism only), docs 7542538, I-028+I-029 4f5667d (ts-bench ENDED; review-i028
+  ACCEPT-WITH-NOTES → one ts-bench follow-up commit, tracked in I-028 notes). /10c hold 05:39-05:46: > 50 ms 2→1 BETTER,
+  > 34 ms 4→3 noise, F-011 gone 5/5, p95 +0.8 ms WORSE flag; review-10c on a7b95d1, lead lands on ACCEPT. Lead started the
+  I-018 gate early (ts-i017 rebasing f71ee42 → reviewer → A/A on/off hold ahead of q3). Starvation note: shorts drained
+  ahead of /10c ~13 min → ping lead when a goal-path normal waits > 10 min (mgmt-lead iteration 3 item).
 
 - **05:17Z** (mgmt-ops-3) Lead: npm test 0e8f288 414/414; test:chrome 7/8, bench.chrome FAIL → I-028 (ts-bench, styleWrite
   probe vacuous). GO sent: ts-i021 (I-027 + I-026 reopen; no file overlap with I-028), wave1-dry (Q3 only; bench pilot held
@@ -45,17 +51,19 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Next actions for the next mgmt-ops (in order)
 
-1. scroll-engine /10c hold (`ab se10c-aw1 --on all-wave1 --runs 5`, queued ~05:21Z behind q3; lead keeps it #1): first-pass
-   check (contamination, patch sha, > 50/> 34 first, F-011 frame gone?, layers), land batch or no-land recommendation. Then
-   its E3 probe + part-4 ablation holds (diagnostic, separate ≤ 10 min holds).
-2. After /10c: ask the lead to start the I-018 gate (ts-i017 f71ee42: review + A/A cdp-metrics on/off in one hold +
-   test:chrome). Its open question: does the analytics.js idle-callback frame (N11, 50-61 ms in 3/5) fall in the scroll phase?
-   Then GO fix-nav-morph (N12, "20-34 ms band only", success also = forced style+layout → ~0, AV1).
-3. ts-i021 (I-027 #3 + #6, I-026 reopen; GO 05:06Z): at hand-back request a reviewer for #3 (measurement code; design: no
-   FW_TIME_SCALE, the fake host clock only under FW_TEST_HOST) + its test:chrome (7/7 non-bench until I-028) + lead canary.
-4. ts-bench I-028 (bench-probes only): when landed tell wave1-dry the bench pilot is GO (short lane) and ts-i021 to rebase.
-5. wave1-dry Q3 hold 05:16Z (blip at ~05:19Z: lead killed the stray MCP Chrome): collect the metric choice.
-6. fix-vendor-scrollend told to end 05:2xZ (commit leftovers first). Monitors: none armed; use foreground `tick.sh`.
+1. review-10c verdict (lead spawned, on a7b95d1) → lead lands /10c. Then fix-scroll-engine E3 probe hold (queued since
+   05:51, one entry), part-4 ablation after it (requeue between).
+2. I-018 gate (lead runs it): ts-i017 rebases f71ee42 → reviewer → A/A cdp-metrics on/off hold (goes AHEAD of q3 and E3:
+   ping the lead when it queues) + test:chrome. I-018 lands FIRST, then ts-i021 rebases A/B/C on it.
+   Open question for its attribution: is N11's analytics.js idle-callback frame (50-61 ms, 3/5) in the scroll phase?
+3. After I-018: GO fix-nav-morph (N12, "20-34 ms band only", success also forced style+layout → ~0, AV1).
+4. ts-i021: A (I-026 reopen + #6) + B (#3, measurement code) committing; C (bench-scenario sleeps on the stubbed clock,
+   lead-approved; mind ts-bench's FAKE_HOST_SUSPEND note) after I-018 rebase. At hand-back: request a reviewer for B+C,
+   its test:chrome, then the lead's canary.
+5. wave1-dry: bench pilot GO (4f5667d; quiesce-cap hits expected until ts-bench's I-028 follow-up) + Q3-final normal hold
+   (queued 05:28). Provisional Q3: styleLayoutMs in threadTicks. Ask it to commit research/bench/q3-metric.md → land batch.
+6. hero-exit (parked): when resumed, add "calibrate bench.json `heroPointerEventsWrites` on the fixed tool (≥ 4f5667d)".
+7. Ping the lead when a goal-path normal entry waits > 10 min behind shorts. Monitors: none; foreground `tick.sh`.
 
 ## Where the project stands
 
@@ -69,35 +77,27 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 - Landed since 01:15Z: a49e591 N3, d17c490 handover addendum, b71760f mgmt-lead iteration 2, 36fd4b5 I-022 harness,
   554201a LEAD.md team ~8 + iteration-2 rules.
 
-## Incidents
+## Incidents (05:58Z; resolved ones dropped, see `incident.mjs list`)
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-023 | P0 blocking | ts-i017 | gate recheck before Chrome / keepalive, per-run watchdog (progress-based, I-026), fake-host test. Canary rule: lead lands, runs `fix.mjs ab --aa --runs 1` on main + ts-i002 test:chrome before the goal hold |
-| I-024 | P0 blocking (A) | A: ts-i017 | A: tests read the real host in gate/recheck (verify-fake 940 s, ab-fake 160 s, gain e2e 134 s); B landed e7ce0e4 (run --short kills the whole tree, wall-clock deadline) |
-| I-025 | resolved (dup of I-024) | – | – |
-| I-026 | P1, env | ts-prio (after I-024 B) | Mac Maintenance Sleep mid-hold (pmset log: 472 s, on AC); timeouts and lock caps fire ~8 min late. Fix: every lock hold runs under caffeinate. Stopgap: lead runs `caffeinate -i -s` until ~06:40Z; agents may wrap their command in `caffeinate -dis` inside the `sh -c`. ts-i017's watchdog must survive sleep |
-| I-016/017/022 | resolve on ts-i002 test:chrome after I-023 + I-024A | ts-i017 / ts-i002 | I-022 harness landed 36fd4b5 |
-| I-018 | after I-023 | ts-i017 | stashed 69cb158, own commit |
-| I-020 | RESOLVED 4b1034e | – | drain-all shorts per hand-over; leases 600 s (max 1200); normal `run` default --max-seconds 600 = OVERDUE warn, never killed |
-| I-021 | RESOLVED 0f29e7b (+d10b132 docs) | – | non-tooling roles run `npm run test:unit`; toolsmiths full npm test once in hook (cap 150 s) |
-| I-027 | P2, after I-024A lands | ts-i021 (handed back; resume with GO) | tools-speed #3 FW_TIME_SCALE (measurement code: reviewer + test:chrome + canary) + #6 shared fixtures; hook 73 s → 20-30 s |
+| I-018 | fixing | ts-i017 | f71ee42 rebasing; gate = reviewer + A/A cdp-metrics on/off (one hold) + test:chrome; lands before ts-i021 |
+| I-026 | triaged P1 | ts-i021 | reopen: sleep assertion while anyone is QUEUED (commit A) |
+| I-027 | triaged P2 | ts-i021 | #6 fixtures (A), #3 stubbed-host clock in verify (B, measurement code), bench-scenario (C) |
+| I-028/I-029 | RESOLVED 57b997a / 4f5667d | – | review-i028 notes → one ts-bench follow-up commit (`changed` readback compare, cssText 0, docs) |
+| I-016 | parked | lead | e4 hooks via short lane (user), f orphans P3 |
 
-## Who waits on what (team target ~8, lead 02:30Z)
+## Who waits on what (05:58Z)
 
 | agent | state | waits on | next |
 |---|---|---|---|
-| ts-i017 | handed back; I-023/I-024A landed (85fdeac) | wave-2 slot after /10c | I-018 + E5 f71ee42 (377/377): lands after N11 + /10c holds with review + A/A cdp-metrics on/off in one hold + test:chrome. Open (lead, parked): I-016 e4 (hooks via short lane, user), I-016 f orphans P3, refactor F |
-| ts-prio | ENDED | – | I-026 95f74dc (362/362) lands after I-023 (lead rebases, tests/helpers.mjs) |
-| ts-i021 | handed back, briefed | lead test:chrome on 0e8f288 passes | I-027 (#3 FW_TIME_SCALE measurement code + #6 shared fixtures; bench notes a-d are DONE by ts-bench cd6770e, drop them) + I-026 reopen: sleep assertion while anyone is QUEUED. Rebase on 0e8f288 first |
-| ts-bench | ENDED; batch landed (f707631..cd6770e) | – | – |
-| ts-i002 | ENDED | – | – |
-| wave1-dry | ENDED its goal hold (42f4033 landed in 0e8f288) | lead test:chrome on 0e8f288 | next (lead): pilot `bench mech phone-invisible-shrink --viewport mobile` then `desktop` (short lane) + Q3 (normal ≤ 10 min); resume it with GO. It polled in the background during the hold (flooded mgmt-ops): remind it of the no-background rule |
-| fix-scroll-engine | /10c READY (54fcc6f), waiting GO | N11 hold ends | GO = part 3 (E3) + /10c A/B `--on all-wave1`, one normal hold ≤ 10 min each; rebase on 0e8f288 first. Ticket 4/4, layers ≤ w1 at all 8 positions. iPhone item: scroll-up re-render at 1.5 vh |
-| fix-vendor-scrollend (N11) | final slot QUEUED 04:55Z (normal, wave 2 #1) | lock | built all-wave1 locally by combine (hashes match, no /analytics.js). Expect report: A/B --runs 5 --on all-wave1 + phases.mjs (removed vs phase-shifted) |
-| fix-nav-morph | READY (N12 v4 486264b + f0ba4a7), handed back | after /10c and I-018 | GO = N12 A/B `--on all-wave1` (≤ 10 min), ticket "20-34 ms band only". #6 waits finger test, then N2 |
-| apple-verify | hold 5 done ~04:59Z (report pending) | – | then write-up bf100b5 + our-page section commit → land batch; ends after |
-| countdown, layout-animations, N3 | stopped / done | – | do not resume |
+| fix-scroll-engine | /10c deliverables a7b95d1; E3 queued 05:51 | review-10c, then lock behind I-018 A/A | E3 probe, then part 4; /10d (p95) open item only |
+| ts-i017 | rebasing I-018 f71ee42 (lead resumed it) | rebase + reviewer | A/A on/off hold (ahead of q3) + test:chrome; lands first |
+| ts-i021 | committing A + B | I-018 on main | rebase, C, hand back A+B+C → reviewer + canary |
+| wave1-dry | pilot GO + Q3-final queued | lock (short + normal) | report pilot counts + Q3 final, commit the Q3 note |
+| fix-nav-morph | READY (N12 v4 486264b + f0ba4a7) | after I-018 | GO = N12 A/B `--on all-wave1`; #6 waits finger test |
+| hero-exit | parked | wave-2 order (after N12) | + bench `heroPointerEventsWrites` calibration |
+| ts-bench, N11, apple-verify, ts-prio, ts-i002 | ENDED | – | ts-bench follow-up (review-i028 notes) when the lead resumes it |
 
 ## Wave-2 order (lead decisions, DIRECTION slot 3)
 

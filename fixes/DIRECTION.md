@@ -89,6 +89,11 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    **N11 done 2026-10-01 05:15Z: mechanism only, not counted** (fea23a5; ledger row below). Left > 50 ms targets: the
    F-011 render frame (/10c) and the analytics.js idle-callback frame (whether it lands in the scroll phase is a question
    for the I-018 attribution slot).
+   **scroll-engine /10c done 2026-10-01 05:39-05:46Z** (`ab se10c-aw1 --on all-wave1 --runs 5`, 0/10 contaminated, load1
+   1.5-2.9; a7b95d1): frames > 50 ms 2 [2-7] -> 1 [0-1] **better** (ranges disjoint), > 34 ms 4 [3-8] -> 3 [2-4] within
+   noise; F-011 no-script render frame gone 5/5, the one > 50 ms left is gtag `onscrollend` (N11: page-side fix only
+   phase-shifts it). Flag: scroll p95 15.8 -> 16.6 ms WORSE (+1 vsync on ~5 % of frames; /10d wider `will-change` window
+   is an open item). Lands on review-10c ACCEPT. Next: I-018 attribution hold, then scroll-engine E3/part-4 diagnostics.
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N4 / N10 fixes (N3 rejected 2026-10-01, F-015) as their prototypes pass Tier A.
@@ -134,7 +139,9 @@ iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain 
 6. Look-only: carousel follower alignment (device-pixel snap) on layout-animations v10 (5602e1d). Chrome
    pixel diffs showed followers 0/±1 device px off from non-snapped `translate` (same in 03; equal by eye
    in Chrome). Check whether the offset is visible on the phone; only then a snap follow-up slot (F-008).
-7. Look-only (N3, F-015; decides whether N3/04, a T6 pause for step-end and compositor loops, is worth building):
+7. Look-only (/10c, a7b95d1): scroll-up re-render at 1.5 vh, and start scrolling within ~1 s of load (the deferred
+   first render now lands in post-load idle: is an early scroller exposed?). Also the p95 flag (+1 vsync in Chrome).
+8. Look-only (N3, F-015; decides whether N3/04, a T6 pause for step-end and compositor loops, is worth building):
    (a) does WebKit tick the step-end opacity loops (three-frame at commission, agents caret) on the main thread
    every frame or only at steps (Safari Timeline, 6 s idle parked at y≈2796 on the plain baseline: style recalcs /
    paints in the underline and zero-mark rects); (b) do off-screen composited loops (scroll-float, vinyl,
