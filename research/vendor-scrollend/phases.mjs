@@ -25,6 +25,8 @@ const CPU = Number(opt('cpu', 6));
 const RUNS = Number(opt('runs', 2));
 const TAIL_S = Number(opt('tail', 10));
 const ON = opt('on', null);
+const BUDGET_S = Number(opt('budget', 200)); // start no run after this many seconds (normal holds stay <= ~10 min with the A/B)
+const DROP_RUNS = Number(opt('drop-runs', 1)); // 03 what-if ("needs the site's GA setting"), after the base/02 ABBA runs
 const OUT = resolve(REPO, opt('out', 'research/vendor-scrollend/data'));
 mkdirSync(OUT, { recursive: true });
 const BASE = resolveTree('site-pretty');
@@ -40,6 +42,7 @@ if (ON && !existsSync(ov(ON))) { console.error(`--on ${ON}: ${ov(ON)} missing`);
 const VARIANTS = [
   { label: 'base', overlays: ON ? [ov(ON)] : [] },
   { label: '02-idle', overlays: [ov('vendor-scrollend'), ...(ON ? [ov(ON)] : [])] },
+  { label: '03-drop', overlays: [ov('vendor-scrollend--drop'), ...(ON ? [ov(ON)] : [])], whatIf: true },
 ];
 
 async function startServer(label, overlays) {
@@ -141,9 +144,13 @@ try {
   const cdp = await CDP.connect(chrome.wsUrl);
   // allow the mirror's self-signed --https certificate (this dedicated Chrome only), as verify.mjs does
   await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true });
-  for (let i = 0; i < RUNS; i++) {
-    const order = i % 2 ? [...VARIANTS].reverse() : VARIANTS; // ABBA
-    for (const v of order) {
+  const AB = VARIANTS.filter((v) => !v.whatIf);
+  const plan = [];
+  for (let i = 0; i < RUNS; i++) for (const v of (i % 2 ? [...AB].reverse() : AB)) plan.push([v, i]); // ABBA
+  for (let i = 0; i < DROP_RUNS; i++) plan.push([VARIANTS.find((v) => v.whatIf), i]);
+  for (const [v, i] of plan) {
+    {
+      if ((Date.now() - t0) / 1000 > BUDGET_S) { log(`budget ${BUDGET_S}s: skipping ${v.label} run ${i}`); out.skipped = [...(out.skipped || []), `${v.label} ${i}`]; continue; }
       let r; try { r = await run(cdp, v, servers[v.label].url); } catch (e) { log(`${v.label} run ${i} FAILED: ${e.message}`); out.results.push({ variant: v.label, run: i, error: e.message }); save(); continue; } r.run = i;
       out.results.push(r); save();
       log(`${v.label} run ${i}: push ${JSON.stringify(r.scrollDepthPush)}; tag frames ${JSON.stringify(r.tagFrames.map((f) => `${f.phase} ${f.d}ms`))}; gt50 ${JSON.stringify(r.gt50)}; LoAF>50 ${JSON.stringify(r.loafGt50)}`);
