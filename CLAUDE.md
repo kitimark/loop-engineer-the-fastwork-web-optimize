@@ -190,6 +190,8 @@ node tools/baseline.mjs sparse --off  # check out your branch's own committed co
   from two snapshots never compare (`config.baselineSnapshot` in results.json, `baseline` in verify.json,
   `baselineSnapshot` in bench-results.json).
 - No `baseline.json` (a branch from before the snapshot commit): unchecked, as before; rebase.
+- **Countdown expiry, 2026-11-02 05:00Z** (JS line 3905): after it the frozen page stops counting down and gets
+  cheaper by itself, so results measured before and after that instant never compare (unknowns-actions D7, V-U7).
 - The check is not only at start: `verify.mjs` re-checks after every run (a flagged run gets `baseline:
   {snapshot, state, tag}`, verify.json `baseline.flaggedRuns`), and `fix.mjs ab` / `bench.mjs` prefix every
   verdict with `BASELINE-MODIFIED: ` (or `-MISMATCH`, `-REPINNED` for a new pin mid-run, `-TIMEOUT` when the
