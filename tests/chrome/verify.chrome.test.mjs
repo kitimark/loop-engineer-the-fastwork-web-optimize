@@ -61,10 +61,11 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
     assert.ok(s.fps > 0);
     for (const k of ['p50', 'p95', 'max', 'gt20', 'gt34', 'gt50', 'gt100', 'loafCount', 'loafMs', 'loafScriptMs', 'forcedLayoutMs']) assert.equal(typeof s[k], 'number', `${ph}.${k}`);
     assert.equal(s.noLoaf, undefined, 'long-animation-frame observer available');
-    // per-phase CDP Performance.getMetrics deltas (I-018)
-    for (const k of ['cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpTaskMs', 'cdpStyleCount', 'cdpLayoutCount']) assert.ok(typeof s[k] === 'number' && s[k] >= 0, `${ph}.${k} ${s[k]}`);
-    assert.ok(s.cdpTaskMs > 0, `${ph}: main-thread task time ${s.cdpTaskMs}`);
+    // a default run is main's measurement: no CDP Performance.getMetrics deltas (opt-in --cdp-metrics, I-018
+    // review; real-Chrome coverage of --cdp-metrics: fix-ab.chrome.test.mjs)
+    for (const k of ['cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpTaskMs', 'cdpStyleCount', 'cdpLayoutCount']) assert.equal(k in s, false, `${ph}.${k}`);
   }
+  assert.deepEqual(res.measurement, { cdpMetrics: false, traceFrames: false, frameLog: false });
   assert.ok(x.scripts.includes(PAGE_JS));
   assert.ok(x.scripts.includes('/__vendor/' + VENDOR_KEY), 'CF beacon rewritten to the local vendor copy');
   assert.deepEqual(x.notFound, []);

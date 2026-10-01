@@ -50,6 +50,7 @@ test('fix.mjs ab --runs 1 --cpu 2 with real Chrome', async () => {
   assert.match(res.markdown, /host: \d+ of 2 runs contaminated/);
   // per-phase CDP deltas (--cdp-metrics, I-018) in results and markdown
   assert.ok(res.metrics.scroll.cdpStyleCount.baseline.median >= 0);
+  for (const ph of ['idle', 'scroll', 'morph']) assert.ok(res.metrics[ph].cdpTaskMs.baseline.median > 0, `${ph}: main-thread task time (CDP)`);
   assert.match(res.markdown, /^\| scroll: style recalcs \(CDP\) \|/m);
   assert.match(res.markdown, /^\| idle: layouts \(CDP\) \|/m);
 });
