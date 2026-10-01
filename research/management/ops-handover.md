@@ -23,6 +23,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **18:0xZ** P14 DONE 17:42-17:54Z (9/9 valid; sentinels bottom 60.2, scroll 56.6): V1 st4-noswap HIT (2/67 view ticks),
+  V2 #people-rooted HIT but 0.57 of C (MISS on <= half) -> LEAD SIGNED D (rotator: swap path); fix-scroll-engine st5 next.
+  PHONE ORDER (lead 17:5xZ): user sitting C-013 (lease `user` until 18:54Z; A :5611 baseline, B :5647 B+) -> ts-gesture
+  ~5 min -> st5 (C / st5 / V1, ~45 min; after Chrome mech + screenshot diff, de-pm-hero cross-check, second read) ->
+  P-033 gain -> P-038 -> P12 -> P10 -> P5 -> P9 (if st5 isn't ready, P-033 first). Landed 508d8b4, 1302f64.
+
 - **17:5xZ** Landed: 079e1cf (docs-2), 379d5e5 (ts-iphone-run N1: no LAN host in tab-pick/gesture errors), I-032
   fe7db9f..9e59002 (RESOLVED; main npm test 771/771), 5137637 (I-043 wip.mjs socket leak, ts-iphone-run). P14 (W)
   started 17:42Z (~30-35 min) -> user sitting (A = original baseline :5611, B = B+ with arm-scope-c :5647; lead holds
@@ -536,9 +542,11 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `ts-user-console` | toolsmith: tools/console.mjs local user step console (user-facing steps go there once landed) | alive |
 | `ts-progress` (a5748ebf9e8a3b086) | console Progress page + fixes/PROGRESS.json (landed 7614401 + c9ceb98) | done |
 | `ts-lock-bundle` | toolsmith: handover item 7b; I-035 landed 8935a7d; f10193c, a17909d, fb59f13, bb07e33, 14e503f (on c6ff3ea) under review by review-lock-bundle (17:5xZ); (f) shelved for good | alive |
-| `review-lock-bundle` | fix-reviewer (read-only) of ts-lock-bundle's 5 commits (lead spawn 17:5xZ; off the "after the sitting" list) | alive |
+| `review-lock-bundle` | fix-reviewer (read-only) of ts-lock-bundle's 5 commits (lead spawn 17:5xZ): 18:0xZ NO BLOCKERS (f10193c ACCEPT; a17909d, fb59f13, bb07e33, 14e503f ACCEPT-WITH-NOTES); after landing: announce bench gain HOST-DISPLAY-CHANGED exit 3 until recalibration; host-real chrome test + test:chrome only with main's lock.mjs (I-041); CLAUDE.md line on `--no-timing` (lead) | done |
 | `ts-lock-share` | toolsmith (lead spawn 17:5xZ, user request): shared lane so functional-only jobs (npm test, Sim mechanism checks, bench mech, load-only sanity) run in parallel while timing keeps the exclusive slot; design first in research/architecture/lock-shared-lane.md for the lead, then implements under the I-041 rule | alive |
 | `ts-console-nav` | toolsmith (lead spawn 17:4xZ): user console menu + notifications | alive |
+| `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | alive |
+| `ts-gesture` (Sim) | also owns the Simulator touch driver (`sim.mjs gesture`, after I-042 D1-D3 + safari-restart; lead 17:5xZ); the P-032 (b) Sim re-check waits on it | alive |
 | `review-t1a` | re-check of ts-iphone-run 7c83786 / f28f47e / 8d4f6a1 | alive |
 | `ts-wait` | toolsmith (lead spawn 13:3xZ, user request): blocking wait commands so agents stop sleep-loop polling; may ask iphone-runner + others what waiting hurt most | alive |
 | `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); owns I-042 (G strokes play as flicks, F-085): phone probe slot after the user sitting | alive |

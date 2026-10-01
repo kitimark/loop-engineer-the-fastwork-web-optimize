@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T17:51:00Z",
+ "updatedAt": "2026-10-01T17:59:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T17:59:00Z", "text": "Cause found for the blinking small profiles: each time the carousel swaps a picture in or out, the whole page re-lays out (P14 on the phone). A fix that keeps the pictures in place is next, right after your sitting." },
   { "at": "2026-10-01T17:51:00Z", "text": "From your request: a tool change is being designed so that tests and simulator checks can run side by side, while timing tests keep the Mac to themselves. A reviewer now checks the waiting lock-tool changes." },
   { "at": "2026-10-01T17:49:00Z", "text": "New rule from you: checks that need an iPhone but no timing number now run on the iPhone simulator on the Mac; the real phone stays for timing tests and your sittings. The carousel test (P14) started at 17:42 (about 30-35 min); your sitting comes next." },
   { "at": "2026-10-01T17:20:00Z", "text": "Coming up for you: a sitting on the phone that compares the original page with today's best build (the countdown fix and F3 together)." },
@@ -115,14 +116,15 @@
    "id": "hero-carousel",
    "title": "Avatar carousel: each tick re-lays out the whole page",
    "area": "hero",
-   "state": "diagnosing",
-   "stage": "D",
+   "state": "testing",
+   "stage": "F",
    "fixes": "The small rotating profile pictures near the top (the 'blinking small profiles' you noticed) cost a 25-30 ms whole-page layout about once a second, even when you are not scrolling.",
-   "gate": "P14: find which part of the carousel change escapes to the whole page.",
-   "next": "P14 phone block, running now (started 17:42, about 30-35 minutes).",
+   "gate": "Cause found (P14): swapping the pictures in and out is what makes the whole page re-lay out. Next gate: a build that keeps the pictures in place must remove that layout on the phone.",
+   "next": "A new build (st5) that keeps five pictures in place and only changes which image they show: a Chrome check first, then one phone test against the original and the P14 probe, after your sitting and the robot-finger check.",
    "owner": "fix-scroll-engine with de-pm-hero",
-   "checks": [ { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "" } ],
+   "checks": [ { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "Yes. With the pictures kept in place, the whole-page layout at each tick was gone in 65 of 67 ticks (scripted scroll, OBSERVED). A layout boundary around the section removed the hitches over 50 ms at rest (11 to 0) but kept most frames over 34 ms; each layout got cheaper, not by half." } ],
    "details": [
+    "P14 scored (fix-scroll-engine README 12859a5, de-pm-hero cross-checking; iphone-wave2 4o): sentinels bottom 60.2/60.2, scroll 56.6/56.5; 9/9 runs, 67 ticks per arm. V1 st4-noswap 2/67 view ticks, median tick Layout 0.1 vs 20.6 ms (HIT). V2 re-contain-js 61/67 rooted at #people, 11.7 ms = 0.57 of C (MISS on <= 0.5). Idle 40 s at y 1500, Timeline off, window driver: dt>50 C 11 / V1 0 / V2 0, dt>34 47 / 0 / 40. Scroll phase unchanged; the y~1960 rebuild frame is present in every arm. Lead signed D (swap path). V1 is a probe only (no slide animation), it never lands.",
     "Rest attribution (P-033 step 0, OBSERVED): 40/41 rotator callbacks dirty a whole-view Layout 1-5 ms later, 12.8-43.6 ms, median 25-26 ms.",
     "P14 arms: C aw1-10e, V1 st4-noswap (pictures updated in place, no insert/remove; probe only), V2 re-contain-js (#people as a layout boundary). Pre-registered: V1 'gone' = 25 % or fewer view-rooted ticks."
    ]
@@ -205,7 +207,8 @@
   }
  ],
  "upcoming": [
-  { "title": "Phone sitting: compare the original page with today's best build (countdown fix + F3, maybe the card reveal fix)", "when": "next, after the P14 phone block" },
+  { "title": "Phone sitting: compare the original page with today's best build (countdown fix + F3, maybe the card reveal fix)", "when": "now (the phone is yours until about 18:54)" },
+  { "title": "Carousel fix (st5): one phone test against the original page", "when": "after the sitting and a 5-minute robot-finger check", "item": "hero-carousel" },
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the P-036 robot-finger test passes", "item": "f3-arm-scope" }
  ]
 }
