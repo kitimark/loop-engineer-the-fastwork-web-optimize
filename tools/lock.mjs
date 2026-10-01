@@ -31,6 +31,9 @@
 // waiter the lead moved ahead of short jobs goes before them). The hold ends at N s: `run` kills the command (and its children) and
 // exits 124; a short lease just expires (it cannot be renewed). Keep polling while you wait (`run`
 // and `acquire --wait` do): a short queue place is dropped after 60 s without a retry.
+// --share (with --short; ts-lock-bundle (f)): a short job that runs no Chrome (npm test, a commit's hook) may share a
+// short hold with one other --share job from another checkout while no normal job waits (status: "also held by").
+// Never for anything that starts Chrome (test:chrome, probes, bench mech): those check that the holder is their hold.
 //
 // acquire exit codes: 0 = you hold it (prints the holder JSON), 3 = busy (you are queued; prints
 // holder + your queue position; call acquire again later to keep your place, every <= 5 min).
@@ -110,9 +113,10 @@ const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '-
 const [cmd, resource] = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 const owner = opt('owner', process.env.FW_LOCK_OWNER);
 const short = flag('short');
+const share = flag('share'); // ts-lock-bundle (f): a short job that runs no Chrome (npm test) may share a short hold with another such job
 const noTiming = flag('no-timing'); // ts-lock-bundle: a normal run that measures nothing (builds, CPU work): no host gate, never hosts a timing run
 const maxSec = short ? Number(opt('max-seconds', 120)) : undefined;
-const sh = (w) => (w.short ? ` (short, max ${w.maxSec} s${w.cohold ? `, shared with "${w.sharedWith}"` : ''})` : w.noTiming ? ' (no-timing)' : '');
+const sh = (w) => (w.short ? ` (short, max ${w.maxSec} s${w.cohold ? `, shared with "${w.sharedWith}"` : w.share ? ', may share' : ''})` : w.noTiming ? ' (no-timing)' : '');
 const NORMAL_HOLD_SEC = 600; // a normal chrome-measure hold should end within ~10 min (I-020); `run --max-seconds` declares another length
 // a normal hold that declared its length (`run --max-seconds`, I-020) and passed it
 const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > Date.parse(h.acquiredAt) + h.meta.expectSec * 1000 ? ` OVERDUE (past its ${h.meta.expectSec} s; split long measurements into holds of 5-10 min, I-020)` : '');
@@ -201,6 +205,7 @@ async function main() {
   if (cmd === 'wait') return waitCmd();
   if (!owner && cmd !== 'release') throw new Error('--owner <name> is required (use your fix topic)');
   if (noTiming && cmd !== 'run') throw new Error('--no-timing is for lock.mjs run (a normal hold that measures nothing: builds, CPU work)');
+  if (share && (!short || !['run', 'acquire'].includes(cmd))) throw new Error('--share is for short run / acquire (--short --max-seconds N) jobs that run no Chrome, e.g. npm test');
   const meta = {};
   if (opt('url')) meta.url = opt('url');
   if (opt('note')) meta.note = opt('note');
@@ -210,8 +215,8 @@ async function main() {
     // gated resource, normal lease: pass the latest host reading; when it is our turn, measure one window and retry
     let host = GATED[resource] && !short ? { quiet: null, reasons: ['not measured yet'] } : undefined;
     const attempt = async () => {
-      let r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host });
-      if (r.gated) { host = await gateSample(); r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host }); }
+      let r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host, share });
+      if (r.gated) { host = await gateSample(); r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host, share }); }
       else if (host) host = { quiet: null, reasons: ['not measured yet'] };
       if (!r.ok && (!r.gated || host?.quiet === false)) keepAwakeQueued(resource); // queued behind someone or held at the host gate (also a BUSY exit 3 that comes back later): keep the Mac awake (I-026 reopened, ts-lock-bundle (a))
       return r;
@@ -246,7 +251,7 @@ async function main() {
     // command keeps running (a measurement is never killed), but it warns and `status` shows the hold OVERDUE
     const expectSec = !short && (opt('max-seconds') !== undefined || LEASE_POLICY[resource]) ? Number(opt('max-seconds', NORMAL_HOLD_SEC)) : undefined;
     if (expectSec !== undefined) { if (!(expectSec > 0)) throw new Error(`--max-seconds must be a number of seconds > 0 (got ${opt('max-seconds')})`); meta.expectSec = expectSec; }
-    const { release: rel, holder, reentrant } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, timeoutSec: Number(opt('timeout', 3600)) });
+    const { release: rel, holder, reentrant } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, share, timeoutSec: Number(opt('timeout', 3600)) });
     // T8+ (I-033): a chrome-measure hold records the display / wake state and whether a display-sleep-preventing assertion
     // was active at its start and end (one JSON line per hold in locks/holds.log); a hold without one, or one in
     // which the display or wake state changed, warns on stderr (U1: display on ~76 fps vs DarkWake ~93 fps)

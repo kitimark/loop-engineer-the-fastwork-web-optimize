@@ -1,5 +1,6 @@
-// tools/lib/lock.mjs shared short holds (ts-lock-bundle (f), lead 15:0xZ): while the holder is a short job and no normal
-// job waits, the next short job (from another checkout) shares the hold in the co-hold slot; at most 2 holders; a
+// tools/lib/lock.mjs shared short holds (ts-lock-bundle (f), lead 15:0xZ): opt-in on both sides (share: true); while
+// the holder is such a short job and no normal job waits, the next such short job (from another checkout) shares the
+// hold in the co-hold slot; at most 2 holders; a
 // normal waiter blocks new shared entries and is granted only after both ended (the co-holder takes the holder's place
 // when the holder ends). Every test uses its own $FW_STATE_DIR.
 import { test, beforeEach } from 'node:test';
@@ -17,7 +18,7 @@ beforeEach(() => { state = tempDir('fw-lockshared-'); process.env.FW_STATE_DIR =
 const lockFile = (f) => join(state, 'locks', f);
 const readJson = (f) => JSON.parse(readFileSync(lockFile(f), 'utf8'));
 const deadPid = () => spawnSync(process.execPath, ['-e', '']).pid;
-const S = (owner, checkout, o = {}) => ({ owner, kind: 'lease', short: true, maxSec: 120, checkout: `/wt/${checkout}`, ...o });
+const S = (owner, checkout, o = {}) => ({ owner, kind: 'lease', short: true, maxSec: 120, share: true, checkout: `/wt/${checkout}`, ...o });
 const N = (owner, checkout, o = {}) => ({ owner, kind: 'lease', checkout: `/wt/${checkout}`, ...o });
 
 test('two short jobs from two checkouts share the hold; a third waits; the co-holder is shown and recorded', async () => {
@@ -39,6 +40,21 @@ test('two short jobs from two checkouts share the hold; a third waits; the co-ho
   assert.equal(lockConditionMet({ kind: 'released-by', owner: 'npm-b' }, s).met, false);
   assert.equal(lockConditionMet({ kind: 'free' }, { ...s, holder: null }).met, false, 'a co-holder alone is not free');
   assert.match(lockState(s), /^held by "npm-a" \(short\) and "npm-b" \(short, shared\); queue: 1\. npm-c \(short\)$/);
+});
+
+test('opt-in on both sides: no sharing unless the holder and the joiner both asked (--share); --share needs --short', async () => {
+  // a holder without share (a Chrome-running short job, or one written by code from before shared holds)
+  assert.equal((await L.tryAcquire(R, S('probe', 'x', { share: false }))).ok, true);
+  assert.equal(L.status(R).holder.share, undefined);
+  assert.equal((await L.tryAcquire(R, S('npm-b', 'y'))).ok, false, 'the holder did not ask to share');
+  await L.dequeue(R, 'npm-b');
+  await L.release(R, { owner: 'probe' });
+  // a joiner without share
+  assert.equal((await L.tryAcquire(R, S('npm-a', 'x'))).ok, true);
+  assert.equal(L.status(R).holder.share, true);
+  assert.equal((await L.tryAcquire(R, S('test-chrome', 'y', { share: false }))).ok, false, 'the joiner did not ask to share');
+  assert.equal(existsSync(lockFile(`${R}.cohold.json`)), false);
+  await assert.rejects(L.tryAcquire(R, N('ab', 'w', { share: true })), /--share is for short jobs/);
 });
 
 test('no sharing with a normal holder (a no-timing one included), from the same checkout, or on another resource', async () => {
@@ -127,20 +143,20 @@ test('re-entry, release and stale co-holders', async () => {
 
 test('acquire(): a co-holder\'s release frees only its slot; the holder\'s release hands its place to the co-holder', async () => {
   const quiet = { log: () => {} };
-  const a = await L.acquire(R, { owner: 'npm-a', kind: 'process', short: true, maxSec: 60, checkout: '/wt/x', ...quiet });
-  const b = await L.acquire(R, { owner: 'npm-b', kind: 'process', short: true, maxSec: 60, checkout: '/wt/y', ...quiet });
+  const a = await L.acquire(R, { owner: 'npm-a', kind: 'process', short: true, maxSec: 60, share: true, checkout: '/wt/x', ...quiet });
+  const b = await L.acquire(R, { owner: 'npm-b', kind: 'process', short: true, maxSec: 60, share: true, checkout: '/wt/y', ...quiet });
   assert.equal(b.holder.cohold, true);
   b.release();
   assert.equal(existsSync(lockFile(`${R}.cohold.json`)), false);
   assert.equal(readJson(`${R}.json`).owner, 'npm-a');
-  const c = await L.acquire(R, { owner: 'npm-c', kind: 'process', short: true, maxSec: 60, checkout: '/wt/z', ...quiet });
+  const c = await L.acquire(R, { owner: 'npm-c', kind: 'process', short: true, maxSec: 60, share: true, checkout: '/wt/z', ...quiet });
   a.release();
   assert.equal(readJson(`${R}.json`).owner, 'npm-c', 'promoted by the holder\'s own synchronous release');
   c.release();
   assert.equal(existsSync(lockFile(`${R}.json`)), false);
   // a normal acquire() waits behind a shared hold until both are gone
-  const d = await L.acquire(R, { owner: 'npm-d', kind: 'process', short: true, maxSec: 60, checkout: '/wt/x', ...quiet });
-  const e = await L.acquire(R, { owner: 'npm-e', kind: 'process', short: true, maxSec: 60, checkout: '/wt/y', ...quiet });
+  const d = await L.acquire(R, { owner: 'npm-d', kind: 'process', short: true, maxSec: 60, share: true, checkout: '/wt/x', ...quiet });
+  const e = await L.acquire(R, { owner: 'npm-e', kind: 'process', short: true, maxSec: 60, share: true, checkout: '/wt/y', ...quiet });
   let got = null;
   // a quiet fake host for the gate (the real one is refused in tests, I-024)
   let t = 5_000_000, total = 0;

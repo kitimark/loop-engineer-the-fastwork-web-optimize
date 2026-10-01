@@ -133,10 +133,10 @@ test('ts-lock-bundle (a): the head waiter held at the host gate keeps the Mac aw
 });
 
 test('ts-lock-bundle (f): a co-holder (shared short hold) keeps the Mac awake through the shared queue assertion, never replacing the holder\'s', async () => {
-  const a = await L.acquire('chrome-measure', { owner: 'npm-a', kind: 'process', short: true, maxSec: 60, checkout: '/wt/x', log: () => {} });
+  const a = await L.acquire('chrome-measure', { owner: 'npm-a', kind: 'process', short: true, maxSec: 60, share: true, checkout: '/wt/x', log: () => {} });
   const [c1] = await calls(1);
   assert.deepEqual(c1.args, ['-i', '-s', '-w', String(process.pid)]);
-  const b = await L.acquire('chrome-measure', { owner: 'npm-b', kind: 'process', short: true, maxSec: 60, checkout: '/wt/y', log: () => {} });
+  const b = await L.acquire('chrome-measure', { owner: 'npm-b', kind: 'process', short: true, maxSec: 60, share: true, checkout: '/wt/y', log: () => {} });
   assert.equal(b.holder.cohold, true);
   const c = await calls(2);
   assert.deepEqual(c[1].args, ['-i', '-s', '-t', '600'], 'the queue assertion (600 s > its 60 s)');

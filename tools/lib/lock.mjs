@@ -68,9 +68,10 @@
 // throws), and after the hold every timing waiter passes the gate on a fresh window as usual. Short jobs and nested
 // no-timing runs may re-enter it. Timed iPhone runs refuse during it like during any normal hold (iphone-run.mjs).
 //
-// Shared short holds (ts-lock-bundle (f), lead 15:0xZ: the short lane had 8 jobs queued): while the holder is a short
-// job and NO normal job waits (no normal entry in the queue, a no-timing one included), the next short waiter may
-// share the hold: it gets the co-hold slot <resource>.cohold.json (SHARED_SHORT: at most 2 holders), if it comes from
+// Shared short holds (ts-lock-bundle (f), lead 15:0xZ: the short lane had 8 jobs queued), opt-in on both sides
+// (`--short --share`, for jobs that run no Chrome, e.g. npm test): while the holder is a short job that asked to share
+// and NO normal job waits (no normal entry in the queue, a no-timing one included), the next short waiter that asked
+// to share may share the hold: it gets the co-hold slot <resource>.cohold.json (SHARED_SHORT: at most 2 holders), if it comes from
 // another checkout than the holder (two jobs of one worktree would share its out/). A normal waiter that arrives
 // blocks new shared entries (the condition fails) and waits for both to end: the slot is promoted into the holder
 // file when the holder ends (release, exit, stale), so <resource>.json is "the holder" whenever anyone holds, and a
@@ -78,7 +79,10 @@
 // (expiresAt = acquiredAt + maxSec, stale on a dead pid, re-entry by its own token or owner) and carries
 // `cohold: true, sharedWith: <holder>`; status() returns it as `cohold`; it keeps the Mac awake through the shared
 // queue assertion (awake.mjs keepAwakeQueued), so the holder's own assertion is not replaced. Normal holds and the
-// host gate are unchanged: a normal job never shares, and no short job joins a normal hold.
+// host gate are unchanged: a normal job never shares, and no short job joins a normal hold. Opt-in, because a
+// short job that runs Chrome (test:chrome, probes, bench mech) checks that the lock holder is its own hold, and
+// because only a holder written by this code (`share: true`) promotes its co-holder on release: code from before
+// this change deletes the holder file, and the next grant would overlap the co-holder (live, 16:41Z).
 import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
@@ -264,20 +268,23 @@ function gateHolding(w, now, T = THRESHOLDS) {
 
 /**
  * One acquisition attempt. Returns {ok:true, holder} or {ok:false, holder, position, queue, next, gated}.
- * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held, host, thresholds, noTiming}
+ * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held, host, thresholds, noTiming, share, checkout}
  * `held`: an FW_LOCK_HELD string; a token matching the live holder re-enters it ({reentrant, inherited}).
  * `noTiming`: a normal job that measures nothing (a build, CPU work; `lock.mjs run --no-timing`): passes the host gate,
  * and its holder carries `noTiming: true`. A timing acquirer (normal, not noTiming) never re-enters such a hold: throws.
+ * `share`, `checkout` (shared short holds, ts-lock-bundle (f)): a short job with `share` may join a short holder that
+ * also has `share`, from another `checkout` (default: this tools' repo), while no normal job waits ({ok, cohold: true}).
  * `host`: for a GATED resource, the caller's latest host reading {quiet: true|false|null, reasons, sample}
  * (null quiet = not measured yet). Omitted: no gate (library callers that don't sample). A normal waiter
  * whose turn it is gets {ok:false, gated:true, gate} until host.quiet, or until the gate times out.
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, checkout = REPO } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, checkout = REPO, share = false } = opts;
   let { ttlSec, queueTtlSec = 600 } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
   if (noTiming && short) throw new Error('--no-timing is for normal holds (builds, CPU work); a short job passes the host gate already');
+  if (share && !short) throw new Error('--share is for short jobs (--short --max-seconds N) that run no Chrome, e.g. npm test');
   if (short) {
     if (!(maxSec > 0 && maxSec <= SHORT_MAX_SEC)) throw new Error(`a short job needs --max-seconds between 1 and ${SHORT_MAX_SEC} (got ${maxSec})`);
     ttlSec = kind === 'process' ? maxSec + 5 : maxSec; // + the grace `lock.mjs run` gives the command after SIGTERM
@@ -330,13 +337,13 @@ export async function tryAcquire(r, opts) {
     const seen = effectiveLastGrant(lg, h);
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
     const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
-    // a shared short hold (ts-lock-bundle (f)): the holder is short, the slot is free, no normal job waits, this short
-    // job is the one served next, and it comes from another checkout
-    if (h && short && (SHARED_SHORT[r] || 1) >= 2 && !c && h.short && h.checkout !== checkout && !q.some((w) => !w.short) && (q.length === 0 || mine === ni)) {
+    // a shared short hold (ts-lock-bundle (f)): both asked to share, the holder is short, the slot is free, no normal
+    // job waits, this short job is the one served next, and it comes from another checkout
+    if (h && short && share && (SHARED_SHORT[r] || 1) >= 2 && !c && h.short && h.share && h.checkout !== checkout && !q.some((w) => !w.short) && (q.length === 0 || mine === ni)) {
       c = {
         resource: r, owner, kind, pid: kind === 'process' ? pid : undefined, token: randomBytes(6).toString('hex'),
         checkout, host: os.hostname(), acquiredAt: new Date(now).toISOString(), expiresAt: new Date(now + ttlSec * 1000).toISOString(), meta,
-        short: true, maxSec, cohold: true, sharedWith: h.owner, runStart: new Date(shortRunStart(seen, now) ?? now).toISOString(),
+        short: true, maxSec, share: true, cohold: true, sharedWith: h.owner, runStart: new Date(shortRunStart(seen, now) ?? now).toISOString(),
       };
       writeJson(coholdFile(r), c);
       if (mine >= 0) { q.splice(mine, 1); writeJson(queueFile(r), q); }
@@ -376,6 +383,7 @@ export async function tryAcquire(r, opts) {
         checkout, host: os.hostname(), acquiredAt: new Date(now).toISOString(),
         expiresAt: ttlSec ? new Date(now + ttlSec * 1000).toISOString() : undefined, meta,
         ...(short ? { short: true, maxSec } : {}),
+        ...(short && share ? { share: true } : {}),
         ...(noTiming ? { noTiming: true } : {}),
         ...(gateRec ? { gate: gateRec, ...(gateRec.timeout ? { gateTimeout: true } : {}) } : {}),
       };
@@ -388,7 +396,7 @@ export async function tryAcquire(r, opts) {
       return { ok: true, holder: h };
     }
     // busy (or someone else is served first): join / refresh the queue
-    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}), ...(noTiming ? { noTiming: true } : {}),
+    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}), ...(short && share ? { share: true } : {}), ...(noTiming ? { noTiming: true } : {}),
       // a gate wait survives a short job granted in between, so short jobs can't stretch the gate's cap
       ...(mine >= 0 && q[mine].gate ? { gate: q[mine].gate } : {}) };
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
@@ -492,7 +500,7 @@ export async function renew(r, { owner, ttlSec }) {
  * $FW_LOCK_HELD) returns at once, and its release() is a no-op: the outer holder releases.
  * Returns {holder, release(), reentrant}.
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, held = process.env.FW_LOCK_HELD, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false, checkout } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, held = process.env.FW_LOCK_HELD, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false, checkout, share = false } = {}) {
   const t0 = Date.now();
   let lastLog = 0, wait = pollMs;
   const gated = !!GATED[r] && !short && !noTiming;
@@ -501,7 +509,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
   // gate windows saw is subtracted, and a window the host slept through never ends in a throw (one fresh window decides)
   let gateSleptMs = 0, sleptLast = false;
   for (;;) {
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T, noTiming, ...(checkout ? { checkout } : {}) });
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T, noTiming, share, ...(checkout ? { checkout } : {}) });
     // queued behind someone, or the head waiter held at the host gate on a host measured not quiet (ts-lock-bundle (a);
     // not the first, unmeasured round every gated grant takes): no system sleep while anyone waits (I-026 reopened);
     // a gate wait is minutes of waiting too, and a sleep in it only stretches it (I-033)
