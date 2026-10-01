@@ -260,13 +260,14 @@ npm run test:all      # both
   as an incident, who lands them on main (rebase + ff-only) so every worktree gets them. The lead
   runs `npm test` on the exact commit in the **main checkout** too: it has `site/`, worktrees don't.
 - `npm test` is about 55 s of CPU and 75 s wall (I-021): while others may be measuring, run it under the lock in the
-  short lane, `node tools/lock.mjs run chrome-measure --owner <you> --short --max-seconds 300 -- npm test`
-  (not `test:chrome`: it takes the lock itself), and hold a short lease around a commit whose hook
-  runs it: `node tools/lock.mjs acquire chrome-measure --owner <you> --short --max-seconds 300 --wait 1800`,
-  `git commit`, `node tools/lock.mjs release chrome-measure --owner <you>` (`fixes/INCIDENTS.md`). A
-  short job waits for the current holder only, not for the queued 5-min A/Bs (incident I-007).
+  shared lane, `node tools/lock.mjs run chrome-measure --owner <you> --shared --weight 2 --max-seconds 300 -- npm test`
+  (not `test:chrome`: it takes the lock itself), and hold a shared lease around a commit whose hook
+  runs it: `node tools/lock.mjs acquire chrome-measure --owner <you> --shared --weight 2 --max-seconds 300 --wait 1800`,
+  `git commit`, `node tools/lock.mjs release chrome-measure --shared --owner <you>` (`fixes/INCIDENTS.md`). Shared
+  jobs run beside each other, never beside a timing hold ("Shared devices"); with the lead's switch off they run as
+  short jobs. A short job waits for the current holder only, not for the queued 5-min A/Bs (incident I-007).
 - Outside a lock slot run unit test files only (`node --test tests/unit/<file>`); e2e/fake-Chrome files and
-  the full suite only via the short lane (they load the host and contaminate others' holds; 2026-10-01 05:56Z).
+  the full suite only via the shared or short lane (they load the host and contaminate others' holds; 2026-10-01 05:56Z).
 - Changes to measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`; `serve.mjs` and
   `vendor-shim.js` where they change what is served) must be called out explicitly: they affect the
   comparability of A/B results measured before and after. Run `npm run test:chrome` after them.
@@ -487,9 +488,22 @@ A build or other CPU work that measures nothing takes a normal hold: `node tools
 --owner <you> --no-timing --max-seconds 600 -- <build>`. It waits its FIFO turn but skips the host gate; nothing
 timed (verify.mjs, fix.mjs ab, bench, a normal `run`) may run inside it, short jobs may, and a `--no-timing` run
 inside a timing hold refuses. Run only this checkout's tools inside it.
+Shared lane (`research/architecture/lock-shared-lane.md`, switched on by the lead 2026-10-02): jobs that time nothing
+(`npm test`, `fix.mjs check`, DOM probes, `bench mech`, `npm run test:chrome:fn`, a Simulator mechanism session) hold
+chrome-measure together: `node tools/lock.mjs run chrome-measure --shared --weight <n|job> --max-seconds N --owner <you>
+-- <cmd>` (N <= 300, killed at N like `--short`; weights: check, probe, bench-mech, test-chrome-fn 1, npm-test 2,
+simulator 3; the group fits the lead's cap, 3). A reader joins a running group while it fits, load1 <= 16 and no
+exclusive waiter is queued; exclusive holds (timing, `--short`, `--no-timing`) wait for the group and go first after it.
+Nothing timed starts inside a `--shared` command (verify.mjs, fix.mjs ab, bench gain/calibrate/reconfirm, a normal or
+`--short` run, `iphone.mjs scroll|record|run|gesture` refuse; they also refuse a `--shared` flag, exit 2); a nested
+`--shared` job re-enters its slot. Simulator mechanism checks: `node tools/lock.mjs run chrome-measure --shared --weight
+simulator --max-seconds 300 --owner <you> -- node tools/sim.mjs session --functional --owner <you> -- <cmd>` (no
+scroll/record/run in it). The lead switches the lane with `lock.mjs shared on|off`; while off, `--shared` runs as an
+exclusive `--short` job.
 
 ```sh
 node tools/lock.mjs status                                   # who holds what, who is queued
+node tools/lock.mjs run chrome-measure --shared --weight 2 --max-seconds 300 --owner <topic> -- npm test   # functional, shared
 # Chrome: automatic. verify.mjs / fix.mjs ab wait for chrome-measure and release on exit or crash.
 # iPhone (one page at a time, ios_webkit_debug_proxy on :9221/:9222, LAN https://192.168.0.55:<port>/):
 node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://192.168.0.55:<port>/ --wait 3600   # in the background

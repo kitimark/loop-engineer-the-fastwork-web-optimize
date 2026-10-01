@@ -229,7 +229,9 @@ Sources: [sub-agents](https://code.claude.com/docs/en/sub-agents.md),
 
 Measurements are serialized by the `chrome-measure` lock, so **only fix owners and the integrator
 measure**; the toolsmith runs tests under the lock; helpers and reviewers never run Chrome, the
-iPhone or the locks. Parallel helpers buy reading throughput, not measurement throughput.
+iPhone or the locks. Parallel helpers buy reading throughput, not measurement throughput. Jobs that time nothing
+(`npm test`, `fix.mjs check`, `bench mech`, `test:chrome:fn`, `sim.mjs session --functional`) share the lock in
+the shared lane (`CLAUDE.md` "Shared devices"), so up to three agents' checks run at once; timing still runs alone.
 
 | task | who does it | model / effort | why |
 |---|---|---|---|
