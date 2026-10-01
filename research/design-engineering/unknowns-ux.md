@@ -175,6 +175,11 @@ Each item gives the unknown, the evidence, the cheapest probe, the expected valu
   - Frame-rate metrics fit best: fps ρ −0.72, HTR 0.66, MWFI 0.44.
   - The eased pair went *against* MWFI: gaps at peak velocity rated 2, gaps near the slow end rated 4.
   - So MWFI is not promoted. Use HTR/fps plus JUMPmax for isolated hitches; a v2 repeat block comes before the T3+ metrics.
+- *v2 repeat block, built:* [`pacing/v2.html`](pacing/v2.html) + [`v2.js`](pacing/v2.js).
+  - 9 forced-choice pairs: the eased pair ×4 at full speed (AB, BA, BA, AB) and ×2 each at 1/2 and 1/4 speed, plus a
+    catch pair.
+  - Then 8 ratings of the isolated stall (g100) at 300-2400 px/s.
+  - The reading was fixed before the data: [`pacing-result.md`](pacing-result.md) §3. P10 waits on it (lead, 2026-10-01).
 
 **U4. Are rAF gaps under compositor scroll visible at all, and what does the y≈1960 frame show?**
 - *Unknown:* on iOS the page scrolls in the UI process. Only main-thread pixels wait on rAF: JS tweens,

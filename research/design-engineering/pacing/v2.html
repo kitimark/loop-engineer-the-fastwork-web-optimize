@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pacing calibration v2</title>
+<link rel="icon" href="data:,">
+<!--
+  Pacing-calibration page v2: the F5 repeat block (pacing-result.md "v2"; unknowns-actions K18; de-unknowns-ux,
+  2026-10-01). No Fastwork code. Same card strip, rAF driver and frame patterns as v1 (index.html + pacing.js).
+  Part 1, forced choice (9 pairs; clip A then clip B, 3 tween cycles = 3.84 s each, then "which was smoother?"):
+    ease-1    the morph's tween (739 px, 680 ms ease-out cubic, 600 ms rest, repeated), three 50 ms gaps at the start
+              (early, peak velocity) vs near the end (late, slow); 4 pairs, order by occurrence AB, BA, BA, AB (A = early)
+    ease-1/2  the same at half amplitude (369.5 px, half the velocity); 2 pairs, AB then BA (first order random)
+    ease-1/4  the same at a quarter (184.75 px); 2 pairs
+    catch     the gap-free tween against itself: measures position bias
+    Never two pairs of one group back to back, and never ease-1 first.
+  Part 2, rating 1 (perfectly smooth) to 5 (very janky), like v1 (the clip keeps moving until rated):
+    g100 at 300 / 600 / 1600 / 2400 px/s (one 100 ms gap per second), 2 each, never one speed back to back.
+  ~3 min. Results: window.__fwPacingV2 (object), window.__fwPacingGet() (JSON string), localStorage "fwPacingV2",
+  and a summary on the final screen.
+  Serve: node tools/serve.mjs --root research/design-engineering/pacing --port auto, then open /v2.html (the logic
+  lives in v2.js: serve.mjs's CSP blocks inline scripts, F-067), or any static server.
+-->
+<style>
+  :root { color-scheme: light; --bg: #f4f2ee; --fg: #1d1d1f; --card-a: #ffffff; --card-b: #e3ecf7; --line: #c9c4bb; --accent: #2a5bd7; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 16px/1.4 -apple-system, system-ui, sans-serif; overflow: hidden; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+  #strip { position: absolute; left: 0; right: 0; top: 0; will-change: transform; }
+  .card { box-sizing: border-box; height: 120px; margin: 0 16px; border-bottom: 1px solid var(--line); padding: 14px 16px; display: flex; gap: 14px; align-items: center; }
+  .card:nth-child(odd) { background: var(--card-a); }
+  .card:nth-child(even) { background: var(--card-b); }
+  .thumb { flex: 0 0 64px; height: 64px; border-radius: 12px; background: linear-gradient(135deg, #2a5bd7, #7aa2f7); }
+  .card:nth-child(3n) .thumb { background: linear-gradient(135deg, #d76a2a, #f7c27a); }
+  .card:nth-child(3n+1) .thumb { background: linear-gradient(135deg, #2a9d6a, #8fe0b8); }
+  .txt b { display: block; font-size: 17px; }
+  .txt span { font-size: 14px; opacity: .7; }
+  .panel { position: fixed; left: 0; right: 0; bottom: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); background: rgba(244, 242, 238, .97); border-top: 1px solid var(--line); text-align: center; z-index: 3; }
+  .panel p { margin: 0 0 10px; }
+  .rates { display: flex; gap: 8px; justify-content: center; }
+  .rates button, .big { font: inherit; font-size: 20px; border: 1px solid var(--line); background: #fff; color: var(--fg); border-radius: 12px; min-width: 52px; min-height: 52px; }
+  .choose button { min-width: 120px; font-weight: 600; }
+  .big { padding: 0 28px; background: var(--accent); color: #fff; border: 0; }
+  .scale { display: flex; justify-content: space-between; font-size: 13px; opacity: .7; margin: 6px 4px 0; }
+  .sheet { position: fixed; inset: 0; padding: calc(32px + env(safe-area-inset-top, 0px)) 24px 24px; background: var(--bg); z-index: 4; overflow: auto; }
+  .sheet h1 { font-size: 24px; margin: 0 0 12px; }
+  #done pre { text-align: left; font-size: 11px; max-height: 50vh; overflow: auto; background: #fff; padding: 8px; white-space: pre-wrap; word-break: break-all; -webkit-user-select: text; user-select: text; }
+  #count { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); right: 12px; font-size: 13px; background: rgba(255,255,255,.85); padding: 2px 8px; border-radius: 8px; z-index: 2; }
+  #badge { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); left: 12px; font-size: 28px; font-weight: 700; background: rgba(255,255,255,.9); padding: 2px 14px; border-radius: 10px; z-index: 2; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="strip"></div></div>
+<div id="count" hidden></div>
+<div id="badge" hidden></div>
+
+<div class="sheet" id="intro">
+  <h1>Which looks smoother?</h1>
+  <p><b>Part 1 (9 pairs).</b> Each pair shows <b>clip A</b>, a short pause, then <b>clip B</b>, about 4 seconds each.
+    Then tap the one that looked <b>smoother</b>. If they look the same, go with your first impression.</p>
+  <p><b>Part 2 (8 clips).</b> Rate each clip <b>1</b> = perfectly smooth … <b>5</b> = very janky, like last time.</p>
+  <p>Just watch the moving cards (don't touch them). About 3 minutes.</p>
+  <p><button class="big" id="start">Start</button></p>
+  <p id="hz" style="font-size:13px;opacity:.6"></p>
+</div>
+
+<div class="sheet" id="part2" hidden>
+  <h1>Part 2</h1>
+  <p>Now single clips. Rate each one <b>1</b> = perfectly smooth … <b>5</b> = very janky.</p>
+  <p><button class="big" id="go2">Continue</button></p>
+</div>
+
+<div class="panel" id="choose" hidden>
+  <p>Which clip looked smoother?</p>
+  <div class="rates choose"><button data-c="A">A</button><button data-c="B">B</button></div>
+</div>
+
+<div class="panel" id="rate" hidden>
+  <p>Rate this clip</p>
+  <div class="rates">
+    <button data-r="1">1</button><button data-r="2">2</button><button data-r="3">3</button><button data-r="4">4</button><button data-r="5">5</button>
+  </div>
+  <div class="scale"><span>perfectly smooth</span><span>very janky</span></div>
+</div>
+
+<div class="sheet" id="done" hidden>
+  <h1>Done, thank you.</h1>
+  <p>Results are saved on this page.</p>
+  <pre id="out"></pre>
+</div>
+
+<script src="v2.js"></script>
+</body>
+</html>
