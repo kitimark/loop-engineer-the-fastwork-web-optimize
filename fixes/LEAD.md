@@ -285,3 +285,19 @@ by these rules:
 | time (UTC) | waiting on lock | working (no lock) | idle/done | Chrome backlog | memory free | decision |
 |---|---|---|---|---|---|---|
 | 2026-09-30 23:10 | 7 (large-area-blur, nav-morph E1, pain, countdown, scroll-engine diag, layout-animations measuring, ts-i002 test:chrome) | 9 (N3, N11, ts-i017, ts-bench, ts-prio, arch-research2, mgmt-lead, mgmt-ops, reviewer) | 2 (commission awaiting review, hero-exit awaiting combined base) + exp-ledger done | ~7 normal entries ≈ 3.5 h | 0.26 GB (15 GB used, 4.5 GB compressed) | **Decrease: 18 → ~12 active.** No new fix owners until backlog < 2 h. End arch-research2, the reviewer and mgmt-lead after their reports; end commission after landing. hero-exit stays parked (costs nothing until messaged). Keep the 3 toolsmiths (they cut Chrome demand). N3/N11 run their final A/B `--on` the combined base (one slot each, not two). Next spawn: one wave-integrator once the wave-1 finals are in, replacing the owners that finish. |
+| 2026-10-01 02:00 | ~1-2 (shorts; normal timing blocked by I-023/I-024) | ~10 (ts-i017, ts-prio, ts-i002, ts-i021, ts-bench, mgmt-ops, scroll-engine, nav-morph, N11, apple-verify) | done: countdown, layout-animations, N3, reviewers, arch-* | holds are 5-7 min, but only ~2 A/Bs complete per hour (gate vs Spotlight/mediaanalysisd, I-023, short-lane starvation) | 74 % | **Decrease to ~8 active** (mgmt-lead iteration 2). No new toolsmith items beyond the open incidents (I-020, I-021 + tools-speed #3/#6, I-023, I-024); tools-refactor P1 waits until the team is <= 8. ts-bench and ts-i002 end after landing their current item. Scale back up only if owners sit idle > 30 min with a built variant while the gate is open. |
+
+## Rules from mgmt-lead iteration 2 (2026-10-01, lead decision)
+
+- **Measurement code lands only after a canary:** `node tools/fix.mjs ab --aa --runs 1` in the main checkout on the
+  exact commit (under the lock, gate open) plus a passing `npm run test:chrome`, in addition to `npm test` and review.
+  The host gate (I-023) shipped without this and hung the goal slot for 33 min.
+- **No idle lock holders:** `verify.mjs` gets a per-run watchdog (no progress for N s: fail and release; I-023), and
+  `lock.mjs run --max-seconds` kills the whole process group (I-024 B).
+- **Agents don't end a turn while their own background work runs** (it floods the lead with interim notifications);
+  wait for it in the foreground or hand back once when it is done.
+- **mgmt-ops is durable:** `research/management/ops-handover.md` is a living state file updated with every digest;
+  mgmt-ops restarts from it about every 2 h or at ~60 % context; its monitors run as background scripts.
+- **Goal progress is quoted only as frames > 50 ms and > 34 ms** (Chrome, quiet host, combined overlay) and iPhone
+  numbers; fps and frames > 20 ms are hints.
+
