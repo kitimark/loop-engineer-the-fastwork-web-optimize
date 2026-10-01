@@ -8,6 +8,8 @@
 //   node tools/iphone.mjs open  https://192.168.0.55:<port>/ --owner <topic>   # navigate Safari (location.href)
 //   node tools/iphone.mjs scroll --owner <topic> [--out out/iphone/<topic>-<label>.json] [--label patched]
 //   node tools/iphone.mjs record --owner <topic> [--seconds 25] [--label finger-patched]   # human scrolls meanwhile
+//        # in the background with output to a log; `node tools/wait.mjs file <log> --match '^RECORDING' --pid <pid>`
+//        # exits the moment it records (tell the lead then), NEVER (exit 4) if record failed first
 //   node tools/lock.mjs release iphone --owner <topic>
 //
 // Simulated finger (real OS-level touches through WebDriverAgent over USB, research/architecture/

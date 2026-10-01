@@ -1,0 +1,107 @@
+#!/usr/bin/env node
+// Wait for one thing, then exit by itself (user request 2026-10-01): run it with Bash run_in_background
+// and Claude Code wakes you when it exits, instead of `sleep N; check` or `until …; do sleep …; done`.
+// Polls with backoff (1 s, growing to 10 s; git every 2-15 s), prints each change of state on stderr and
+// ONE result line on stdout. Library: tools/lib/wait.mjs. Lock states: `node tools/lock.mjs wait`.
+//
+//   node tools/wait.mjs file <path> [--match <regex>] [--pid <pid>] [--timeout 3600]
+//        # the file exists and is non-empty, or (--match) a line of it matches; reads only what was appended.
+//        # --pid: the process writing it; if it exits without the line: NEVER (exit 4), no hour-long wait.
+//        # e.g. a background job's log: --match '^(EXIT|exit) ' ; a recording: iphone.mjs record … > log, --match RECORDING
+//   node tools/wait.mjs serve <state.json> [--pid <pid>] [--timeout 120]
+//        # a mirror server is listening: serve.mjs --state <file> (fix.mjs serve <topic> writes out/serve-<topic>.json)
+//        # names a live pid and its URL answers; prints MET serve: MIRROR_URL=<url> twin=<http twin> pid=<pid>
+//   node tools/wait.mjs url <url> [--status 200] [--timeout 120]   # answers (any status < 500, or exactly --status)
+//   node tools/wait.mjs pid <pid>[,<pid>...] [--timeout 3600]      # all of them exited
+//   node tools/wait.mjs git [--ref main] [--contains <sha> | --path <path> | --grep <regex>] [--timeout 3600]
+//        # the ref (default main, any checkout: refs are shared) contains a commit / has a path / has a commit
+//        # whose subject matches; with none of these: it moves away from where it was when the wait started
+//   node tools/wait.mjs time <ISO time | 10m | 600>                # a cooling period, a block start (no --timeout)
+//
+// Common: --timeout <s|10m|2h> (default 3600; url/serve 120), --for <s> (the condition must hold that long),
+// --quiet (no stderr change lines). The wait itself only reads: it never takes a lock or a queue place.
+//
+// Result line (stdout) and exit code:
+//   MET <what>: <detail> (after N s)              exit 0
+//   TIMEOUT <what> after N s: <last state>        exit 3   (nothing changed for you: wait again or look)
+//   NEVER <what>: <reason> (after N s)            exit 4   (e.g. the --pid process exited without the line)
+//   usage errors                                  exit 1
+import { resolve } from 'node:path';
+import { pollUntil, parseSec, EXIT, fileCondition, serveCondition, urlCondition, pidsCondition, gitCondition, timeCondition } from './lib/wait.mjs';
+
+const argv = process.argv.slice(2);
+const VALUED = ['--match', '--pid', '--timeout', '--status', '--ref', '--contains', '--path', '--grep', '--for'];
+const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
+const flag = (n) => argv.includes(`--${n}`);
+const [cmd, ...pos] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
+
+function num(name, v, { min = 0 } = {}) {
+  const n = parseSec(v);
+  if (!(n >= min)) throw new Error(`--${name} must be a number of seconds (or 10m, 2h), got ${v}`);
+  return n;
+}
+function pidOpt() {
+  const v = opt('pid');
+  if (v === undefined) return undefined;
+  if (!/^\d+$/.test(v)) throw new Error(`--pid must be a process id, got ${v}`);
+  return Number(v);
+}
+function regex(v, name) {
+  try { return new RegExp(v); } catch (e) { throw new Error(`--${name} is not a valid regular expression: ${e.message}`); }
+}
+
+function build() {
+  const need = (what) => { if (!pos[0]) throw new Error(`usage: node tools/wait.mjs ${cmd} <${what}> (see the header of tools/wait.mjs)`); return pos[0]; };
+  if (cmd === 'file') {
+    const p = resolve(need('path'));
+    const match = opt('match') !== undefined ? regex(opt('match'), 'match') : undefined;
+    return { what: match ? `file ${p} ~ /${match.source}/` : `file ${p}`, check: fileCondition(p, { match, pid: pidOpt() }) };
+  }
+  if (cmd === 'serve') { const p = resolve(need('state.json')); return { what: `serve ${p}`, check: serveCondition(p, { pid: pidOpt() }), defTimeout: 120 }; }
+  if (cmd === 'url') {
+    const u = need('url');
+    const status = opt('status') !== undefined ? Number(opt('status')) : undefined;
+    if (status !== undefined && !(status >= 100 && status < 600)) throw new Error(`--status must be an HTTP status, got ${opt('status')}`);
+    return { what: `url ${u}${status ? ` HTTP ${status}` : ''}`, check: urlCondition(u, { status }), defTimeout: 120 };
+  }
+  if (cmd === 'pid') {
+    const pids = pos.join(',').split(',').filter(Boolean);
+    if (!pids.length || pids.some((p) => !/^\d+$/.test(p))) throw new Error('usage: node tools/wait.mjs pid <pid>[,<pid>...]');
+    return { what: `pid ${pids.join(',')}`, check: pidsCondition(pids.map(Number)) };
+  }
+  if (cmd === 'git') {
+    const ref = opt('ref', 'main');
+    const grep = opt('grep') !== undefined ? regex(opt('grep'), 'grep') : undefined;
+    const sel = [opt('contains'), opt('path'), grep].filter((x) => x !== undefined);
+    if (sel.length > 1) throw new Error('git: give one of --contains, --path, --grep');
+    const what = `git ${ref}${opt('contains') ? ` contains ${opt('contains')}` : opt('path') ? ` has ${opt('path')}` : grep ? ` subject ~ /${grep.source}/` : ' moves'}`;
+    return { what, check: gitCondition({ ref, contains: opt('contains'), path: opt('path'), grep }), minMs: 2000, maxMs: 15000 };
+  }
+  if (cmd === 'time') {
+    const v = need('ISO time | 10m | 600');
+    const sec = parseSec(v);
+    const at = sec >= 0 ? Date.now() + sec * 1000 : Date.parse(v);
+    if (!Number.isFinite(at)) throw new Error(`time: give an ISO time (2026-10-01T14:05:00Z) or a duration (600, 10m), got ${v}`);
+    if (opt('timeout') !== undefined) throw new Error('time: no --timeout (the time is the timeout)');
+    return { what: `time ${new Date(at).toISOString()}`, check: timeCondition(at), defTimeout: Math.max(0, (at - Date.now()) / 1000) + 5, maxMs: 30000 };
+  }
+  throw new Error(cmd ? `unknown wait "${cmd}": file, serve, url, pid, git or time (see the header of tools/wait.mjs)` : 'usage: node tools/wait.mjs file|serve|url|pid|git|time … [--timeout 3600] (see the header of tools/wait.mjs)');
+}
+
+async function main() {
+  const usage = 'usage: node tools/wait.mjs file|serve|url|pid|git|time … [--timeout 3600] [--for S] [--quiet]; exit 0 met, 3 timeout, 4 never; see the header of tools/wait.mjs';
+  if (cmd === 'help' || flag('help')) { console.log(usage); return 0; }
+  if (!cmd) { console.error(usage); return EXIT.usage; }
+  const w = build();
+  const timeoutSec = opt('timeout') !== undefined ? num('timeout', opt('timeout')) : w.defTimeout ?? 3600;
+  const holdSec = opt('for') !== undefined ? num('for', opt('for')) : 0;
+  const quiet = flag('quiet');
+  const onChange = quiet ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
+  const r = await pollUntil(w.check, { timeoutSec, holdSec, onChange, ...(w.minMs && { minMs: w.minMs }), ...(w.maxMs && { maxMs: w.maxMs }) });
+  if (r.result === 'met') { console.log(`MET ${w.what}: ${r.detail ?? r.state}${holdSec ? ` (held ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return EXIT.met; }
+  if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
+  console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`);
+  return EXIT.timeout;
+}
+
+main().then((c) => process.exit(c), (e) => { console.error(e.message || e); process.exit(EXIT.usage); });

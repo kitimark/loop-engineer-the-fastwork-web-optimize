@@ -11,6 +11,7 @@
 //   node tools/fix.mjs apply <topic> [--from a,b] [--reset] [--check]   # rebuild the overlay from patch.diff(s)
 //   node tools/fix.mjs combine <name> <topicA> <topicB>...  # apply several patches in order, report conflicts
 //   node tools/fix.mjs serve <topic> [-- serve.mjs args]  # baseline + overlay on a per-worktree port
+//        # start it in the background, then `node tools/wait.mjs serve out/serve-<topic>.json` exits once it answers
 //   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--idle 6] [--no-screens] [-- serve.mjs args]
 //   node tools/fix.mjs ab --aa [--runs 5]             # baseline vs baseline: the noise floor
 //   ab per-frame attribution (I-018), all opt-in: [--cdp-metrics] per-phase CDP script/style/layout deltas; [--trace-frames]

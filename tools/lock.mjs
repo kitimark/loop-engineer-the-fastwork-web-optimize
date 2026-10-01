@@ -9,6 +9,20 @@
 //   node tools/lock.mjs run chrome-measure --owner <topic> -- <cmd> [args...]   # hold while cmd runs
 //   node tools/lock.mjs run chrome-measure --owner <topic> --short --max-seconds 150 -- npm test
 //   node tools/lock.mjs acquire chrome-measure --owner <topic> --short --max-seconds 180 --wait 1800
+//   node tools/lock.mjs wait chrome-measure --until free|idle|mine|held-by:<o>|released-by:<o>|'position<=N' [--owner <you>] [--for S] [--timeout 3600]
+//
+// wait (run it in the background; ts-wait): blocks until the lock reaches a state, then prints ONE line and exits
+// 0 MET / 3 TIMEOUT (1 usage). It only reads the lock files (polls 1 s, backing off to 10 s; each change of state
+// goes to stderr): it takes no queue place and keeps none alive. To wait for your own turn use `run` or
+// `acquire --wait N` (the waits that keep your place).
+//   free               no live holder (someone queued may take it at once)
+//   idle               no live holder and nobody queued; with --for 120: stayed so for 120 s (a quiet window for CPU work)
+//   mine               held by --owner (e.g. your background `lock.mjs run` has started)
+//   held-by:<o>        held by <o>
+//   released-by:<o>    <o> neither holds it nor waits for it (its hold, or its queued run, is over)
+//   position<=N        --owner holds it or is #N or better in the queue (as status prints it)
+// e.g.  node tools/lock.mjs wait chrome-measure --until released-by:all-wave1 --timeout 2h
+//       node tools/lock.mjs wait chrome-measure --until idle --for 120 --timeout 1h
 //
 // --short --max-seconds N (N <= 300; default 120): the short lane for jobs like `npm test` (~35 s).
 // Waits for the current holder, then is served before earlier normal waiters (queued short jobs run
@@ -75,6 +89,7 @@ import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib
 import { appendFileSync } from 'node:fs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, keepAwakeQueued } from './lib/awake.mjs';
+import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -82,7 +97,7 @@ const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const rest = dd >= 0 ? argv.slice(dd + 1) : [];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
-const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to'];
+const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for'];
 const [cmd, resource] = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 const owner = opt('owner', process.env.FW_LOCK_OWNER);
 const short = flag('short');
@@ -168,6 +183,7 @@ async function main() {
     return 0;
   }
   if (!resource) throw new Error(`usage: node tools/lock.mjs ${cmd} <resource> --owner <name>`);
+  if (cmd === 'wait') return waitCmd();
   if (!owner && cmd !== 'release') throw new Error('--owner <name> is required (use your fix topic)');
   const meta = {};
   if (opt('url')) meta.url = opt('url');
@@ -272,6 +288,21 @@ async function main() {
     return overran ? 124 : code;
   }
   throw new Error(`unknown command ${cmd}`);
+}
+
+/** `lock.mjs wait <resource> --until <cond>`: read-only, no queue place (see the header). */
+async function waitCmd() {
+  if (opt('until') === undefined) throw new Error("usage: node tools/lock.mjs wait <resource> --until free|idle|mine|held-by:<owner>|released-by:<owner>|'position<=N' [--owner <you>] [--for S] [--timeout 3600]");
+  const cond = parseLockCondition(opt('until'), owner);
+  const sec = (n, d) => { const v = opt(n); if (v === undefined) return d; const x = parseSec(v); if (!(x >= 0)) throw new Error(`--${n} must be a number of seconds (or 10m, 2h), got ${v}`); return x; };
+  const timeoutSec = sec('timeout', 3600), holdSec = sec('for', 0);
+  status(resource); // a bad resource name fails here, before the first poll
+  const what = `${resource} ${lockConditionText(cond)}`;
+  const onChange = flag('quiet') ? undefined : (state, s) => console.error(`[lock wait ${new Date().toISOString().slice(11, 19)}Z +${s}s] ${resource} ${state}`);
+  const r = await pollUntil(() => lockConditionMet(cond, status(resource)), { timeoutSec, holdSec, onChange });
+  if (r.result === 'met') { console.log(`MET ${what}: ${r.state}${holdSec ? ` (for ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return WAIT_EXIT.met; }
+  console.log(`TIMEOUT ${what} after ${r.waitedSec} s: ${r.state}`);
+  return WAIT_EXIT.timeout;
 }
 
 /** [pid, ppid, pgid] of every process (ps), or [] if ps fails. */
