@@ -70,17 +70,17 @@ Columns: **came from** = the probe/tool/version (or reading) that produced the c
 | id | claim | source | came from | status before → after | depends on it | risk |
 |---|---|---|---|---|---|---|
 | C1 | Chrome 154 never sends `LayerTree.layerPainted`; DidPaint hook "dead since CompositeAfterPaint" | F-059, protocol §3.7/§6.2, I-032 | ts-render-signals probe (2 runs, 0 events) | absence **CONFIRMED** by source for M148+ (Chromium 1bf9d9eb378c, crbug 488803411); stated cause **REFUTED** (§2.2) | `--paint-rects` design, §3.7 | 9 |
-| C2 | "`--paint-rects` costs ~20 fps" (provisional on/off A/A: scroll p50 k=1→2) (**told to the user**) | 2824c33, protocol §3.7 | one A/A, host contaminated by the lead's download | OBSERVED (at best) → §2 | "never in timing runs" rule | 4 |
-| C3 | Display on ≈ 63.5-78 fps vs DarkWake 92-94 fps on the plain baseline; display state "explains" the floor and the canary drift (**told to the user**) | research/host-display-state, protocol §6.3 A7, LEAD "Canary drift" | `pmset -g log` back-tag of 27 holds (correlation) | OBSERVED (correlation; controlled A/A U1(b) pending) → §2 | A7 rule, canary band 76-78, every cross-hold comparison | 6 |
-| C4 | CPU 6x ≈ iPhone 15 Pro Max jank on this page (**told to the user**; CLAUDE.md calibrated setting) | research/cpu-throttle-calibration | 3 cold runs per rate, 2026-09-30 ~19Z (display on), pre-I-002 tools, one rAF logger | OBSERVED (our calibration) → §2 | every `fix.mjs ab` default, Chrome-measurable device class | 6 |
-| C5 | Under 6x Chrome slows only the renderer main thread; raster and GPU stay unthrottled | protocol L6, devtools-render-metrics, FINDINGS P5, render.md Q10 | render.md source read | source-cited → §2 | device class at D, "Chrome is blind to raster" | 4 |
+| C2 | "`--paint-rects` costs ~20 fps" (provisional on/off A/A: scroll p50 k=1→2) (**told to the user**) | 2824c33, protocol §3.7 | one A/A, host contaminated by the lead's download | **WEAKENED** (§2.6): −17 fps in one host-flagged n=3 A/A, two treatments confounded; mechanism plausible by source | "never in timing runs" rule | 4 |
+| C3 | Display on ≈ 63.5-78 fps vs DarkWake 92-94 fps on the plain baseline; display state "explains" the floor and the canary drift (**told to the user**) | research/host-display-state, protocol §6.3 A7, LEAD "Canary drift" | `pmset -g log` back-tag of 27 holds (correlation) | **UNRESOLVED** (§2.6): correlation only; timer-fallback mechanism REFUTED (caps at 60) | A7 rule, canary band 76-78, every cross-hold comparison | 6 |
+| C4 | CPU 6x ≈ iPhone 15 Pro Max jank on this page (**told to the user**; CLAUDE.md calibrated setting) | research/cpu-throttle-calibration | 3 cold runs per rate, 2026-09-30 ~19Z (display on), pre-I-002 tools, one rAF logger | **OBSERVED with limits** (§2.6): scripted-scroll jank counts, display on, this page only | every `fix.mjs ab` default, Chrome-measurable device class | 6 |
+| C5 | Under 6x Chrome slows only the renderer main thread; raster and GPU stay unthrottled | protocol L6, devtools-render-metrics, FINDINGS P5, render.md Q10 | render.md source read | **CONFIRMED** (§2.6): main-thread spin duty cycle | device class at D, "Chrome is blind to raster" | 4 |
 | C6 | The trace `Paint.clip` is "unreliable and often wrong" per DevTools' own source | protocol §3.7 | DevTools frontend source comment | CONFIRMED (cited) | §3.7 paint-area source | 1 |
-| C7 | IntersectionObserver cannot see opacity 0 | F-001 | design reasoning | → §2 | countdown `active` prop | 1 |
-| C8 | `Page.captureScreenshot` `clip` is in document coordinates | F-002, FINDINGS P14 | blank-strip false passes | OBSERVED (+ fix works) → §2 | every frozen-frame parity check | 2 |
-| C9 | Same-value `setAttribute` still queues a mutation record | F-020 | probe with `attributeOldValue` | → §2 | MO-based counters | 1 |
-| C10 | `scrollTo(0,y)` is smoothed by `html{scroll-behavior:smooth}`; drivers pass `behavior:'instant'` | F-021 | MCP rAF driver | → §2 | every per-frame driver | 1 |
-| C11 | Chrome cv un-skip renders in the next frame; `contentvisibilityautostatechange` is posted after the frame | F-011, F-019 | trace + event order | OBSERVED → §2 | scroll-engine /10 idle un-skip | 2 |
-| C12 | `verify`/`ab` settle the page unthrottled, so load-time costs are invisible | F-025 | reading our tool | our code, not a platform claim → §2 | protocol §6.2 load phase | 1 |
+| C7 | IntersectionObserver cannot see opacity 0 | F-001 | design reasoning | **CONFIRMED for IO v1**; wording WEAKENED (v2 isVisible sees opacity, Chrome only) (§2.6) | countdown `active` prop | 1 |
+| C8 | `Page.captureScreenshot` `clip` is in document coordinates | F-002, FINDINGS P14 | blank-strip false passes | **CONFIRMED** by source (§2.6) | every frozen-frame parity check | 2 |
+| C9 | Same-value `setAttribute` still queues a mutation record | F-020 | probe with `attributeOldValue` | **CONFIRMED** (spec + Chrome 154) (§2.6) | MO-based counters | 1 |
+| C10 | `scrollTo(0,y)` is smoothed by `html{scroll-behavior:smooth}`; drivers pass `behavior:'instant'` | F-021 | MCP rAF driver | **CONFIRMED** (CSSOM View §3.1) (§2.6) | every per-frame driver | 1 |
+| C11 | Chrome cv un-skip renders in the next frame; `contentvisibilityautostatechange` is posted after the frame | F-011, F-019 | trace + event order | **CONFIRMED** (a)(b); F-019 geometry reason WEAKENED to our attribute toggle (§2.6) | scroll-engine /10 idle un-skip | 2 |
+| C12 | `verify`/`ab` settle the page unthrottled, so load-time costs are invisible | F-025 | reading our tool | **CONFIRMED** (our code; line cite stale) (§2.6) | protocol §6.2 load phase | 1 |
 | C13 | LoAF only reports frames ≥ 50 ms | FINDINGS lessons | — | CONFIRMED: LoAF spec §2 "any of the following occurrences whose duration exceeds 50ms" (https://w3c.github.io/long-animation-frames/) | LoAF-based attribution | 1 |
 | C14 | Blink already no-ops identical style writes (T3 saves parsing only) | render.md Q3 | source read | source-cited (not re-checked) | T3 expectations in Chrome | 1 |
 
@@ -162,6 +162,45 @@ between vsync modes:
   none at 8.3. Existing phone logs can be re-binned offline first (no phone time): if the 3-vsync mode is tight
   around 50 ± 1-2 ms, the proposal holds as written.
 
+**Offline re-bin, 2026-10-01: the proposal's premise FAILS; superseded by the revision below.** The lead
+adopted the proposal provisionally on one check: existing phone logs show a 3-vsync peak tight at 50 ± 1-2 ms and
+no mass of frames in the new flag bands. Data: 183 iphone-runner logs (ctl, e, goal, hero, md, morphlog, finger, ys,
+f6), 198 349 rAF gaps. The logger stores the rAF **timestamp argument** (`tools/iphone.mjs` l.60, l.153: `t - last`),
+which WebKit delivers at 1 ms resolution. Script: scratchpad `arch-claims/rebin.mjs` (read-only).
+- **No grid above one vsync.** From 25 to 75 ms the per-ms histogram falls smoothly. It has no peak at 33 or 50 ms,
+  and 25 ms (1.5 vsyncs) is the fullest bucket. Of the frames in the 3-vsync class [41.67, 58.33), 29.9 % lie in
+  50 ± 2 ms; an even spread over that 16.7 ms class would put 24 % there. Of the 2-vsync class [25, 41.67), 17.6 % lie
+  in 33.3 ± 2 ms, below an even spread. The only bump is weak: finger runs, 50 ms = 70 frames against 44-54 at 46-53.
+  Every subset (ctl, md, morphlog, hero, ys, goal) looks the same.
+- **Catch-up pairs.** 2.5 % of gaps are < 12 ms (4 954): a late update start is followed by an early one. This fits
+  P10 (the stamp marks when the rendering update starts, not a vsync).
+- **The new flag bands are not empty.** [37.7, 45.7] holds 2 332 frames and [54.3, 62.3] holds 658, against 5 895 and
+  1 861 in the old bands. With a continuous distribution, any ±4 ms band holds about half of the frames in its
+  16.7 ms neighbourhood. No band placement can make a per-frame flag mean "off-grid".
+- Counts, all logs: v≥3 (≥ 41.67) 5 118 · dt > 50: 3 258 · k≥7 (≥ 54.17) 2 694 · v≥4 (≥ 58.33) 2 309 · dt > 34: 7 923 ·
+  k≥5: 6 502. Between dt > 50 and k≥7 sit 564 frames (17 % of the > 50 frames). They are an ordinary 4 ms slice of a
+  continuous tail, not a pile-up at 50.0.
+
+So the rAF gaps measured on the phone are **not** quantized at 16.67 ms, and the vsync-class argument does not
+apply to them. The display's own frames are vsync-quantized, but the rAF stamp cannot tell how many vsyncs a frame
+was shown for: that would need a display-side signal (Instruments Animation Hitches, protocol §2.3 render-bound
+class). Status of "phone gaps cluster at 16.7/33.3/50.0" (written into protocol L7 today, fa04fa2): **REFUTED by
+our data** above one vsync. Only "≈ 16.7 ms when on time" holds.
+
+**Revised proposal (replaces the v≥3 / v≥4 classes on the phone). ADOPTED by the lead 2026-10-01; CLAUDE.md
+"Frame thresholds" 668b612; protocol §3.2 A5 by doc-protocol-v2:**
+- **Goal metric on the phone: the user's literal goal, dt > 50 ms on the rAF stamp, target 0.** With no grid, the cut
+  at 50 is no coin toss, and the metric says exactly what the user asked for.
+- **Secondary count: dt > 34 ms**, the legacy cut, kept for continuity. It claims no vsync meaning.
+- **No k forms on the phone.** k≥5 and k≥7 snap to nothing there; on a continuous tail k≥7 only raises the bar by 4 ms
+  and drops 17 % of the > 50 frames. Chrome keeps k≥5/k≥7: its BeginFrame stamps are vsync-aligned.
+- **A5 on the phone becomes a sensitivity test, not a per-frame flag.** Also report the counts at the threshold
+  ± 4 ms (dt > 46 and dt > 54; dt > 30 and dt > 38). A verdict that differs between the −4 and +4 counts is
+  "threshold-sensitive". This keeps A5's intent (do not trust a verdict that rides a cut) without a grid assumption.
+- Keep "record Low Power Mode" (rAF halves to 30 Hz, P9).
+- No rescoring of past phone verdicts is needed: they already report dt > 50 / dt > 34. Only verdicts that rested on
+  the k forms alone should add the ms counts.
+
 ### 2.4 WebKit style, layout, events (`ver-webkit-layout`)
 
 Source read through the jsDelivr mirror `https://cdn.jsdelivr.net/gh/WebKit/WebKit@<ref>/<path>`; device proxy =
@@ -192,6 +231,29 @@ differs between 7624 and 7625 (F-048, touch regions) is the one that would move.
 3. *Listener ticket (W5/W6):* a second window wheel listener vs the first; the F-055 touch arm repeated to see
    whether any style or region cost exists at all on 26.6.
 
+### 2.6 Chrome, specs, host (`ver-chrome-platform`)
+
+Chrome reference = tag 154.0.8037.100 (`https://chromium.googlesource.com/chromium/src/+/refs/tags/154.0.8037.100/<path>`);
+CDP = devtools-protocol `json/browser_protocol.json` (2026-10-01). Local copies of every source read:
+scratchpad `arch-claims/ver-chrome-platform/src/`.
+
+| id | verdict | what stands, what changes | references |
+|---|---|---|---|
+| C2 `--paint-rects` "~20 fps" (**told to the user**) | **WEAKENED** | the only evidence is one host-flagged A/A, n=3 per side at 6x: scroll 80.8 → 63.4 fps (**−17**, not ~20), tick median 1 → 2. The tool adds two treatments, `LayerTree.enable` and a per-frame `Runtime.addBinding` rAF recorder, and the A/A can't split them. Mechanism plausible by source: `layerTreeDidChange` sends the whole layer list, built synchronously on the main thread on every BeginMainFrame that updates layers. That is tens of KB per frame (estimate), and 6x multiplies it. User wording: "about 17 fps in one host-flagged n=3 A/A; mechanism plausible; attribution runs only" | inspector_layer_tree_agent.cc l.175-340; web_frame_widget_impl.cc ~l.3226-3235; layer_tree_host.cc l.958-971; tools/verify.mjs l.415-425, 489-510 (ae56738a worktree) |
+| C3 display on 76-78 vs DarkWake 92-94 (**told to the user**) | **UNRESOLVED** (correlation); the obvious mechanism is **REFUTED** | the timer fallback `ExternalBeginFrameSourceMac` → `DelayBasedTimeSource` at 1/60 s (`kUseDisplayRefreshRateForTimer` disabled) would cap rAF at 60, so it can't produce 92-94. No source or doc says what CA/CVDisplayLink does in DarkWake. Confounds: all DarkWake holds fall in one 2-h window and one tools build; thermal not logged. Only holds #17-18 vs #25-26 isolate display state with the same tools | root_compositor_frame_sink_impl.cc l.219-228; external_begin_frame_source_mac.cc l.146-185, 520-534; viz/common/features.cc l.208; begin_frame_args.h l.174-176 |
+| C4 CPU 6x ≈ iPhone 15 Pro Max (**told to the user**) | **OBSERVED, with limits**; scope narrowed | wording: "6x reproduces scripted-scroll jank counts on this page, in our setup", never "6x = iPhone speed". Calibration: display on, 3 runs × 3 rates, pre-I-002 tools, scripted scroll only. It can't represent raster/GPU/compositor costs, WebKit-only amplifiers (custom-property recalc, UI-process commit, 60 Hz), load (throttle starts after settle, C12) or the finger case. DarkWake holds run ~20 % faster at 6x, so the equivalence holds for display-on holds only | as C5; research/cpu-throttle-calibration |
+| C5 6x = main thread only | **CONFIRMED** | `ThreadCPUThrottler` signals the Blink main thread every ~200 µs with SIGUSR2; the handler busy-waits `run_duration×(rate−1)`. A duty-cycle spin, not a clock change. Compositor, raster, GPU and workers are not slowed. Inference: it may add idle wake latency | inspector_emulation_agent.cc l.594-599; thread_cpu_throttler.cc l.76-86, 117-175, 215-225 |
+| C7 F-001 IO can't see opacity 0 | **CONFIRMED for v1**; wording WEAKENED | IO v2 `isVisible` / `trackVisibility` does see opacity (Chrome 74+, ≥ 100 ms delay; not Safari/Firefox). The explicit-prop technique stands | https://w3c.github.io/IntersectionObserver/ §3.2, §3.2.8; MDN BCD |
+| C8 F-002 screenshot clip in document coords | **CONFIRMED** by source (CDP docs silent) | `viewport_offset = (clip.x, clip.y)`; the emulator translates by −position + scroll, so scroll cancels | page_handler.cc l.1496-1498; dev_tools_emulator.cc l.553-575 |
+| C9 F-020 same-value setAttribute queues a record | **CONFIRMED** (spec + Chrome 154) | only style invalidation checks old ≠ new; `attributeOldValue` is the right filter. WebKit not checked | https://dom.spec.whatwg.org/ "handle attribute changes"; element.cc l.13767-13772, 12039-12048 |
+| C10 F-021 smooth scrollTo | **CONFIRMED** | `behavior:'instant'` always instant; a per-frame smooth scrollTo aborts the previous one ("0 scroll events") | https://drafts.csswg.org/cssom-view/ §3.1; page CSS 2.gBuqKVzi.css l.11738-11740 |
+| C11 cv un-skip next frame / event after the frame (F-011, F-019) | (a)(b) **CONFIRMED**; F-019's geometry reason **WEAKENED** | 150 % viewport-margin IO; lock change queued to the next lifecycle (the first-ever notification is synchronous); the event is posted as a task, only on a state change. The re-skip geometry jump comes from **our** attribute toggle clearing the remembered size (`contain-intrinsic-size: auto` only under `deferred`), not from cv itself; the one-way deferral stays sound | display_lock_document_state.h l.190, .cc l.112-185; display_lock_context.cc l.313, 515-543, 601; css-contain-2 §4.4; element.cc ~l.6053-6075 |
+| C12 F-025 settle unthrottled | **CONFIRMED** (our code) | throttle set after `gotoAndSettle` + 1.5 s (verify.mjs l.348-361, reset l.411; bench-scenario.mjs l.183/209). F-025's line cite (250-262) is stale | tools/verify.mjs |
+
+**Decisive checks (owners, one lock hold each):**
+- C2: interleaved A B C D D C B A (none / binding+rAF / LayerTree only / both), ≥ 3 each, quiet host, display state fixed.
+- C3 = U1(b): plain baseline `verify --runs 3 --idle 6` before and after `pmset displaysleepnow` in one hold. Add a viz trace that counts `OnDisplayLinkCallback` vs `OnTimerTick` per second in each state.
+
 ### 2.5 What changes because of §2 (for owners)
 
 | verdict | affected | change |
@@ -202,7 +264,12 @@ differs between 7624 and 7625 (F-048, touch regions) is the one that would move.
 | W5/W6 touch | owners of F-055/F-062 (nav-hit-test, scroll-engine) | a touch-listener fix can't be justified by "style rebuild / sync touch region" on 26.6; keep the OBSERVED effect, mechanism unknown |
 | P6 filter `none` | hero-exit, webkit.md §1 | correction appended to webkit.md §1 |
 | P9 60 Hz | protocol §3.2 (done, doc-protocol-v2 5ffb00c), phone thresholds (§2.3) | |
-| P12 RenderingFrame | protocol §3.1, L13 (done), L7, §2 stage list, §5.5 note, morph-endpage l.372, CARDS D stage list | wording sent to doc-protocol-v2; CARDS done on this branch |
+| P12 RenderingFrame | protocol §3.1, L13 (done), L7, §2 stage list, §5.5 note, morph-endpage l.372, CARDS D stage list | all done (doc-protocol-v2 fa04fa2; CARDS on this branch) |
+| §2.3 re-bin: phone gaps not vsync-quantized | CLAUDE.md Tick bullet, protocol §3.2 A5, L7, every phone verdict | phone uses dt > 50 / dt > 34 + ±4 ms sensitivity, no k forms (CLAUDE.md 668b612; L7 fixed in 5406ca3; A5 by doc-protocol-v2). Past verdicts already carry dt > 50 / dt > 34 |
+| C2 `--paint-rects` ~20 fps | **lead (told to the user)**, ts-render-signals | "about 17 fps in one host-flagged n=3 A/A; attribution runs only"; split A/B/C/D check before the number is quoted again |
+| C3 display state | **lead (told to the user)**, A7, canary band | stays a correlation; the timer-fallback explanation must not be offered; U1(b) is the decisive hold |
+| C4 CPU 6x | **lead (told to the user)**, CLAUDE.md "Calibrated setting" | "reproduces scripted-scroll jank counts on this page with the display on (OBSERVED)"; raster/GPU, WebKit-only costs and the finger case are outside it |
+| C11 F-019 reason | scroll-engine | the geometry jump is caused by our attribute toggle clearing the remembered size, not by cv; the one-way deferral stays |
 
 ## 3. What changes in how we work
 
