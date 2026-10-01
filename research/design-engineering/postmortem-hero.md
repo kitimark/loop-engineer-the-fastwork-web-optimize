@@ -448,6 +448,11 @@ Baseline `site-pretty/_app/immutable/nodes/2.DyWL8TcE.js`, component `mM` (`#peo
   - `.is-carousel` is `display:flex; width:104px; height:32px; overflow:hidden`.
   - `img.is-exit` runs `avatars-exit` for 0.22 s. It animates **`width`, `flex-basis` and `margin-right`**
     (layout properties, on the main thread) plus opacity (keyframes L2888; a twin `start-selling-avatars-exit` at L10412).
+  - **Correction (fix-scroll-engine grep, 2026-10-01 16:3xZ):** this CSS is the *original baseline* only. Every
+    phone-measured build here (aw1-10e, re-keep, re-keep-op, re-contain-js, st4-noswap) carries the
+    layout-animations rewrite. There, `avatars-exit` is opacity/translate/clip-path/transform, `avatars-shift` is
+    translate, and `avatars-pop` is unchanged. Those builds have 0 width/flex-basis/margin keyframes. So in every
+    capture this post-mortem reads, the exit window has no width steps; it is just the exit animation window.
   - `img.is-enter` runs `avatars-pop` (L2905: opacity 0 → 1, scale .35 → 1). It ends at opacity 1, a presence flip in
     §1.3's sense.
 - **The second dirtier** (3 per capture) has the same shape. The hero script accent's draw-out → draw-in timer
@@ -475,7 +480,7 @@ The phone shows a full layout instead, so one of these candidates holds (none te
   - preferred-width invalidation (`invalidateContentLogicalWidths`, containing-block chain) from the removed and
     inserted renderers, through the shrink-to-fit ancestors (the proof is inline-flex `flex:none`; the pill is
     auto-width);
-  - the `avatars-exit` width/flex-basis steps.
+  - the `avatars-exit` width/flex-basis steps. Void for the measured builds: they have no width keyframes (see the 7.2 correction). What remains is the animations' layer and presence changes (`avatars-pop` ends at opacity 1).
 - **W3:** a subtree root is converted to a full layout because a layout was already pending
   (`scheduleSubtreeLayout`). This is weakened: the record shows no competing InvalidateLayout (7.1). A style-only
   dirtying would not show there, though.
@@ -498,7 +503,7 @@ The section's only containment is lifted while the rotator runs.
   - `.is-carousel` is the only 104×32 element. It sits at doc (58.3, 2023.9), which matches the phone quad once
     the toolbar offset is allowed for.
   - So the phone's WebKit already uses the carousel as a layout root. **W1 is out.** The tick's whole-view
-    Layout comes from W2 or W3: the tick's renderer insert/remove, the exit width steps, or a pending full layout.
+    Layout comes from W2 or W3: the tick's renderer insert/remove, the exit/shift/pop animations' layer and presence changes (no width steps in these builds, 7.2), or a pending full layout.
   - Correction to the step-0 note: the 398×52 subtree root is the fixed `.start-selling-top-nav` at (16, 16), not
     a countdown strip.
 
@@ -580,7 +585,7 @@ the copies the line numbers were taken from. The phone's Safari build may differ
 | `.is-carousel` meets those criteria on the phone | UNRESOLVED | decisive check: ST-4 A2 (`contain: strict` makes it a boundary on any version that has the containment rule) |
 | W3 path: a full layout already pending absorbs a subtree root | CONFIRMED that the path exists; UNRESOLVED whether it fires here | `LocalFrameViewLayoutContext.cpp` `scheduleSubtreeLayout` L778-781: if the RenderView needs layout and there is no subtree root, it marks up to the RenderView |
 | The countdown dirties no layout | OBSERVED (Timeline records, 3/3 captures) | ST-4 control vs rotoff idle counts |
-| `avatars-exit` width/flex-basis steps need layout every frame (not composited) | OBSERVED / unchecked | the reference to check is WebKit's accelerated-property list for CSS animations; A3 dropped for now |
+| `avatars-exit` width/flex-basis steps need layout every frame (not composited) | Moot for the measured builds (no width keyframes, 7.2 correction); baseline only, unchecked | the reference to check is WebKit's accelerated-property list for CSS animations; A3 dropped for now |
 
 The Chrome ST-4 build check (fix-scroll-engine, 12:24Z) is valid as a build check: childList 75/75 vs 0/0;
 `contain: strict` is applied. Its Layout roots are Chrome's: all three arms report document-rooted layouts,
@@ -591,9 +596,15 @@ The Chrome ST-4 build check (fix-scroll-engine, 12:24Z) is valid as a build chec
 **Superseded for V1 (re-registered at 15:3xZ, layout-containment README 0fd8fe2, second reader mgmt-ops-5).** W1
 is out (§7.3, identity check), so the table's carousel row no longer applies.
 - V1 is now **st4-noswap**: no img insert or remove at either tick; `src` is updated in place.
-- V1 now tests the W2 insert/remove path directly.
+- V1 tests the insert/remove path, but not alone. noswap never mounts `ge`, so it also drops the exit, shift and
+  pop animations. "V1 gone" therefore cannot separate insert/remove from those animations' layer changes (894dfbf).
+  Timing does not separate them either: both land in the frame after the TimerFire.
+  - A split arm (`ge` mounted with `animation: none`) is a later block, if it matters.
 - The other rows keep this logic.
 - Image-load Layouts rooted at the carousel are excluded from every column.
+- **Thresholds (mgmt-ops-5 amendments):** "gone" is ≤25 % of pooled ticks with a view-rooted ≥10 ms Layout,
+  "view" is ≥50 %, and anything between is MIXED. A run needs ≥6 ticks; an arm needs ≥2 runs and ≥15 ticks.
+  The dt>34 prediction is info only.
 - fix-scroll-engine and de-pm-hero read the result together.
 
 **Block.** C aw1-10e, V1 st4-strict (`contain: strict` on `.is-carousel`), V2 re-contain (`contain: layout size`
