@@ -141,7 +141,7 @@ Readings:
 - Registering the intrinsic-size property did not remove the y≈2990 nested layout, so that layout is not the
   custom-property restyle.
 
-### Root hunt (in progress)
+### Root hunt
 
 - **Correction to an earlier claim.** #platform is already `render=active` at y 2200 (hold 6 pre-state). The un-skip
   does not happen at the switch; the `render` write there writes the same value.
@@ -159,16 +159,188 @@ Readings:
   - Per H1's source, the fw-wc write is compositing only, which makes the c-v flip the lead (H3).
 - Simulator check (de-counts-sim's `wkcounts.mjs`, Timeline with initiator stacks): arms C, I40,
   X1 = I40 + `#platform` `animation: none`, and X2 = I40 + deferred render never skips. X1 and X2 are diagnostic only.
-- **PARKED (lead, 20:41Z; user T-002: only hero and page-end lag until the usage reset).** To resume: run X1/X2 with the
-  phone's W driver (srwin-sim.mjs from de-counts-sim, Timeline depth 10) in a `--no-timing` hold.
-  - Don't use a step walk: de-counts-sim's n2 shows that a 250 px jump misses the switch's nested layouts. Record
-    structure only; any Sim ms are host-uncontrolled.
-  - Reading rule (F-108): for each layout, note its root, and whether the frame already had the background
-    InvalidateLayout pair or a pending view-rooted layout. WebKit drops a subtree root when the view already needs
-    a full layout.
-  - X1/X2 snapshots are in `out/scene-scope/snap/` (not committed).
-  - de-counts-sim's w1 (W driver, OBSERVED) shows the Sim matches the phone's structure at the switch and at y≈2990
-    (nested count and root class, not ms). The Sim is therefore a valid place to resume; score with `phonecounts.mjs`.
+- Parked 20:41Z (user T-002), resumed under T-005 (lead: the platform switch only; fwreskip at y≈2990 went to
+  fix-scroll-engine with the F-107 notes). X1 and X2 were then dropped for the S0 vs ST check below.
+- Method rules kept from the park:
+  - Use the W driver (`srwin-sim.mjs`, Timeline depth 10), never a 250 px step walk (de-counts-sim's n2 misses the
+    nested layouts).
+  - de-counts-sim's w1 shows that the Sim matches the phone's structure at the switch and at y≈2990.
+  - Record structure only (nested count, root class, initiator), never Sim ms.
+  - F-108 reading rule: note each layout's root, and whether a view-rooted layout was already pending.
+
+### Switch root: the outside layout is the hero avatar rotator (F-111), fixed by rotator-st6 (F-112)
+
+**Phone, existing block 1-2 Timeline** (control B, 6 of 6 runs ss-C1/C6/C8/C11/C16/C18; OBSERVED).
+- Scored with `out/scene-scope/rootscore.mjs`: outermost RS with nested Layouts, Layouts outside any RS, and the
+  InvalidateLayout / ScheduleStyleRecalculation initiators since the previous Layout.
+- Every "12-18 ms view-rooted Layout outside the RS" near the switch is initiated by `before<mi@BSBv9QXB:2188` (SS)
+  and `remove<lr@BSBv9QXB:1662` (IL), inside the rotator's setTimeout task (B JS L11571). That task is the keyed
+  `{#if}` swap of the 4-img and 5-img carousel blocks (F-088).
+- Each 800 + 220 ms cycle gives:
+  - S=true (slide start): the swap Layout (12-25 ms), then a second view Layout one frame later (12-17 ms), which is
+    the slide-start flip that st6 removes. It shows as "IL loop" because the logger's rAF read forces it.
+  - S=false: one swap Layout (12-18 ms).
+- The tick is not tied to the switch write. It follows the rotator's own rhythm, and a scripted driver puts it in or
+  next to the switch frame in every run:
+  - same frame, after the switch RS: C1, C8, C16, C18;
+  - C11: the slide-start follow-up lands 18 ms before the RS;
+  - C6: ticks at y 2497 / 2528 / 2731.
+- The last tick is at y 2731-2812, so the y≈2960 / 2990 layouts are not the rotator. Their initiators are the cE
+  write, fwReskip and fwWC (JS 2709); all three were sent to fix-scroll-engine.
+- Attribution rule from this: switch (or any crossing in y 1800-2820) attributions must split out layouts whose
+  initiators trace to the rotator timer.
+
+**Fix: no new code.** Stack the landed rotator-st6 (f7d3b1b; user blind finger pick on aw1-10e) on bplus + RB.
+- ST = S0 + `fixes/rotator-st6/patch.diff`. It applies cleanly: JS 59b23b3f57fd, CSS e9603231b413. S0 = bplus + RB:
+  JS dbd5fdb4f1fb, CSS 0d7dfc79e703.
+- Immutable copies are in `out/scene-scope/snap2/{S0,ST}` (not committed).
+
+**Sim, W driver** (hold w1, 22:18-22:22Z, shared functional lane, 430x775, 4 runs S01 ST2 ST3 S04; structure only).
+Rotator ticks in y 1500-2800:
+
+| arm | ticks | keyed DOM swap | view Layouts ≥1 ms within 60 ms of a tick |
+|---|---|---|---|
+| S0 | 8 | 8/8 | S=true: 2-3 (~20 ms each); S=false: 1 (~19-21 ms) |
+| ST | 8 (same times) | 0/8 | 0 after every tick, S=true and S=false |
+
+- So st5's persistent slots remove the S=false swap Layout, and st6's no-flip rest state removes the slide-start one.
+- In ST2 and ST3 a tick lands in the switch frame itself (y 2610/2611, 23 ms after the cE write) and adds nothing.
+- The switch RS is unchanged, as expected: S0 19.3-21.5 ms, ST 21.6-22.0 ms, nested 2 in both
+  [VIEW 18-20 + 390x312 0.1].
+- Left in ST, not the rotator:
+  - one engine-initiated 20.7 ms view Layout inside Composite (ST3 y 2712, no JS initiator; F-108 background state);
+  - fwWC layouts at y 3041-3073 (fix-scroll-engine).
+
+**Chrome, headless functional check** (`check.mjs`, shared lane, 22:39Z; counts and parity, no timing).
+- CHECK OK for both arms: morph reached, 0 console errors, 0 4xx. Element count 1507 → 1508 (the 5th slot stays
+  mounted).
+- Rotator probe (`out/scene-scope/rotprobe.js`, 5.2 s with the carousel centred, 313 rAFs):
+
+| arm | DOM inserts / removes | imgs | src writes | carousel class toggles | flips (transform none / opacity 1 between rAFs) |
+|---|---|---|---|---|---|
+| S0 | 81 / 84 | 4-5 | 0 | 0 | 7 |
+| ST | 0 / 0 | 5 | 30 | 11 | 0 |
+
+- Screenshots, run 1, ST vs S0: top 0.23 %, middle 0.01 %, bottom 0.51 %. Run 2 (22:59Z) was one check with
+  S0, S0b (the same S0 files on a second server: an A/A) and ST:
+
+| shot | S0b vs S0 (A/A) | ST vs S0 | ST vs S0b |
+|---|---|---|---|
+| top | 0.08 % | 0.12 % | — |
+| middle | 0.01 % | 0.01 % | — |
+| bottom | 0.00 % | 0.02 % | 0.11 % |
+
+- Run 1's bottom 0.51 % was S0's own variation. `out/scene-scope/pngbbox.mjs` applies the same rule (RGB sum > 48)
+  and locates the differing pixels:
+  - S0 run 1 vs S0 run 2: 0.44 %, in the same box (css x 22-374, y 0-868);
+  - ST run 1 vs ST run 2: 0.00 %.
+- Every bottom diff, A/A included, sits in the page-end band (countdown and morph area). The carousel (y≈2130) is not
+  in that shot.
+- The top diff sits in the A/A's box (x 248-375, y 254-440: orbit and countdown).
+- These full-viewport shots do not cover the carousel (it is not in any of the three shots). They say nothing about
+  ST's own pixels: see the carousel frame check below, which finds a real difference.
+- Run 2's rotator probe repeats run 1: S0 75 inserts / 75 removes and 7 flips; ST 0 / 0 and 0 flips.
+- Stacking note: RB's will-change arm does not list `.start-selling-avatars.is-carousel img`. On RB + st6 the 5 slots
+  therefore keep their layers while #people is paused, which is st6's stated intent ("its own layer for the page's
+  life"). RB's animation arm already covers the st6 imgs through `.start-selling-avatars img`.
+- Phone attribution ticket: waits until the phone is reconnected (user T-011).
+
+**Carousel frame check: ST is NOT pixel-identical in Chrome** (headless, shared lane, 23:2x-23:50Z; counts and
+pixels, no timing; `out/scene-scope/carframes.mjs`, `carframes2.mjs`, `carcmp.mjs`).
+- Method. 430x932 DPR 3, the carousel centred. A setTimeout wrapper keeps the rotator's timers; a MutationObserver
+  holds the rotator at every state change: it clears the pending 220 / 800 ms timer (kept for later) and pauses every
+  animation. Each slide is captured at carousel-animation phases 0, 20, ..., 220 ms (other animations: finite ones at
+  their end, infinite ones at 0, the same in every arm), each rest state once; imgs decoded, 2 rAFs, full-viewport PNG.
+  Then the kept callback runs the next tick. 6 holds = 3 rotator cycles = 39 frames per arm. Frames pair across arms by
+  state, phase and the visible avatar set, and compare byte-exact over the community pill (390x85 CSS px + 4 px).
+- Screen: these runs, the bottom-shot A/A and the visual-risk probe below ran on tools before d00ee9a (I-046), so the
+  headless screen was the old `--screen-info` value (756x491 CSS px at DPR 2); the page viewport was the
+  device-metrics override (430x932 DPR 3) in every run.
+- A/A, S0 vs S0b: byte-identical in 39/39 frames (run 1), 13/13 (run 3, fewer pairs because the arms started at
+  different rotator indexes). Positive control: the method sees ST's difference in every frame.
+
+| arm (each vs S0) | what it changes | frames identical | max channel delta | differing device px (of 333,126 in the crop) |
+|---|---|---|---|---|
+| S0b (A/A) | nothing | 39/39 | 0 | 0 |
+| ST | rotator-st6 | 0/39 | 72 | 16.7k-22.7k |
+| S0wc | S0 + `will-change: transform, translate, opacity` on the carousel imgs | 0/26 | 71 | ~22k |
+| STnw | ST + `will-change: auto` | 0/39 | 7 | ≤2.8k |
+| STwo | ST with `will-change: opacity` only | 0/39 | 2 (slide frames 1) | 0.4k-9.1k |
+| STwot | ST with `will-change: opacity, translate` | 0/39 | 2 | 0.4k-9.1k |
+| STwo1 | STwo + rest opacity 1 instead of 0.999 | 0/39 | 2 | ≤2.8k |
+| S0wo | S0 + `will-change: opacity` | 36/39 | 2 | ≤1.5k |
+
+- What it looks like: in ST every avatar is softer (blurred) in every rest and slide frame; the diff is an edge map of
+  the photos (`out/scene-scope/carf-rest.png`, `carf-slide100.png`). All differing pixels are inside the 104x32
+  carousel; nothing else in the viewport differs beyond the A/A.
+- Cause: `transform` in st5's `will-change` list. S0wc (the old keyed carousel with st5's will-change and nothing else)
+  reproduces the full difference; any arm without `will-change: transform` drops it to delta ≤7. That Chrome stops
+  re-rastering a `will-change: transform` layer when its scale changes ("rastered into a fixed bitmap, which
+  subsequently never changes under transform updates") is CONFIRMED by the Chrome 53 note
+  (developer.chrome.com/blog/re-rastering-composite). Which raster scale Chrome picks here is UNRESOLVED; the decisive
+  check would be the layer's raster scale in a Chrome layer dump.
+- Residual without will-change: transform: max delta 1-2 per channel, from st6's opacity 0.999 (ST vs STo1, which only
+  sets rest opacity 1: max delta 1) plus delta 2 on some edge px that S0wo also shows. Not byte-identical, but the
+  exact difference is: at most 2 of 255 per channel, inside the carousel only.
+- Safari: not checked. rotator-st6's own pixel check compared st6 with st5, both with this will-change list, so it
+  could not see this. Whether WebKit also keeps a low raster scale for these layers is UNRESOLVED; the decisive local
+  check is the same held-frame comparison in the Simulator (the phone is disconnected, T-011).
+- Consequence: ST as landed is a visible change in Chrome and cannot be signed under "byte-identical or the exact
+  difference stated up front" without stating this blur. The candidate change (for rotator-st6's owner to decide, not
+  made here): `will-change: opacity` (or `opacity, translate`) instead of `transform, translate, opacity`. Whether
+  that keeps st6's Safari result (0 slide-start and 0 swap layouts, and no layer gain or loss) is untested: it needs a
+  Sim structure rerun before it can replace st6's CSS.
+
+### The switch's own RS: I4 vs I40 (recommendation for the lead)
+
+With the rotator tick removed, what is left at the switch is the RS's own nested layouts. Phone block 2 (S driver,
+on B, 3 runs per arm):
+
+| arm | list change on top of V1 | switch nested Layouts |
+|---|---|---|
+| V1 / RB (landed) | — | 2 |
+| I4 = V1i + V4 | animation arm cut to the 18 infinite animations; V4 = `@property --start-selling-intrinsic-block-size` | 1/1/1 (P-045 HIT) |
+| I40 = I4 minus 4 | also drops `.start-selling-platform-cred-track`, `-secure-currencies-track` and `-profile-reviews-track` from the animation arm, plus those 3 and `-stage-artboard` from the will-change arm | 0/0/0, RS 0.1-0.2 ms (P-046 HIT) |
+
+The model: each arm removes one container nesting level of restyled elements under #platform (F-099).
+
+**Visual-risk probe** (headless, S0 = V1's full list; `out/scene-scope/heldprobe2.js`, walk top → bottom → top,
+250 px every 100 ms, 44 steps; tools before d00ee9a (I-046): headless screen 756x491 CSS px at DPR 2, page viewport
+430x932 DPR 3 by device-metrics override):
+- Positive controls:
+  - 372 infinite-animation samples held paused inside paused scenes (the probe sees pausing);
+  - 667 finite-animation samples seen, 538 of them running, over 23 names (entry-blur-in, cred-card-in,
+    secure-network-*, invoice-*, fee-avatar-pop, …).
+- **One-shot animations held paused and unfinished inside a paused scene: 0.** So V1's extra one-shot entries never
+  hold anything in this walk, and V1i's cut changes nothing visible here.
+- **Paused scenes on screen:** only the morph panel, which is not touched by I4 or I40. #platform is never on screen
+  while it is paused. It switches to active about 1 viewport before it enters (Chrome geometry: switch at y 2560,
+  #platform top 4082, viewport 775).
+- Not covered by the probe: interaction-started one-shots inside a paused scene (menus, tooltips, dialogs in the
+  morph panel), and a finger fling that pauses a scene mid-entrance faster than one 100 ms step.
+
+**Risks per arm:**
+- I4 (V1i): a one-shot entrance that is running when its scene pauses would finish offscreen instead of resuming
+  later. The probe saw none. V4 is inert for visuals: no initial value, so the 100vh fallback still applies.
+- I40: the 3 marquee tracks keep animating, and the artboard and tracks keep their will-change layers, while #platform
+  is paused. They are never on screen then, so pixels cannot change. The cost moves, though:
+  - after the one-way un-skip at y≈2200, these animations run for the rest of the page life, including at the top
+    and at the page end;
+  - block 2 also saw the y≈2990 nested layout at 18-20.5 ms, against I4's 14-19 (ms are info only; host noise is
+    possible).
+  - Neither is a pixel risk. Both are a work risk that nothing here has counted yet.
+
+**Recommendation.**
+1. Land the I4 list cut on the current stack first: "RBi" = RB with V1i's animation list, with or without V4.
+   - Expected: switch nested 2 → 1.
+   - Visual risk: none observed (above).
+   - Before landing: a pixel A/B of RBi vs RB with an A/A (full-viewport shots, plus held frames of any region whose
+     animations RBi changes), on tools at or after d00ee9a, and the phone ticket when the phone is back.
+   - Independent of ST: RBi touches only animation-skip lists, not the carousel.
+2. Hold I40 until a Sim structure count shows that the unpaused tracks add no background work: idle at the page end
+   and back at the top after passing #platform, RS / Layout records per second, RBi vs RBi40.
+   - If that count is equal, I40 is the better arm (0 nested, RS ≈0) at the same pixel risk (none).
+   - Otherwise stop at RBi.
 
 ## Morph start (R4 / V3)
 
