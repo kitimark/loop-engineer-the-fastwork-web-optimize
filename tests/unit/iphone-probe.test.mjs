@@ -1,5 +1,5 @@
 // `iphone.mjs run` (protocol v2 T1a): the pure Node side of tools/lib/iphone-probe.mjs (frame placement, uncapped
-// mutation buckets, crossings, ticks, summaries), the argument parser and guards of tools/lib/iphone-run.mjs, and the
+// mutation buckets, crossings, phone ms thresholds, summaries), the argument parser and guards of tools/lib/iphone-run.mjs, and the
 // in-page probe + drivers run in-process on the fake page of tests/fixtures/fake-run-dom.mjs (node:vm; no phone,
 // no proxy, no lock).
 import { test } from 'node:test';
@@ -72,18 +72,23 @@ test('placeCrossings: time order, same-time rows keep record order, src "effect"
   ], 'no y -> stale null; a probe v1 row without the fresh flag -> stale null');
 });
 
-test('ticks: k = round(dt / 8.333); k >= 5 starts at 37.5 ms, k >= 7 at 54.2 ms', () => {
-  assert.equal(P.TICK_MS, 1000 / 120);
-  assert.equal(P.ticks(8.3), 1);
-  assert.equal(P.ticks(16.7), 2);
-  assert.equal(P.ticks(37.4), 4);
-  assert.equal(P.ticks(37.5), 5);
-  assert.equal(P.ticks(54.1), 6);
-  assert.equal(P.ticks(54.2), 7);
+test('phone thresholds in ms (no tick forms): dt > 50 / > 34, the +-4 ms counts, near flags, over', () => {
+  assert.equal(P.ticks, undefined, 'no k forms on the phone');
+  const d = [29.9, 30.1, 34, 34.1, 37.9, 38.1, 46, 50, 50.1, 54, 54.1, 60];
+  assert.deepEqual(P.phoneCounts(d), { gt50: 4, gt34: 9, gt46: 5, gt54: 2, gt30: 11, gt38: 7, near34: 4, near50: 3 });
+  assert.deepEqual([29.9, 30, 30.1, 38, 38.1, 46, 46.1, 54, 54.1].map(P.nearThreshold), [null, null, 34, 34, null, null, 50, 50, null]);
+  assert.deepEqual([34, 34.1, 50, 50.1].map(P.overThreshold), [null, 34, 34, 50]);
+  assert.equal(P.SLOW_MS, 30);
 });
 
-test('summarize: phases count k>=5 / k>=7 and >34 / >50, the worst frame with +-2 neighbours, slow frames with the mutations and crossings of rows k-1 and k', () => {
-  const ts = [0, 8.3, 16.7, 25, 33.3, 41.7, 50, 140, 148.3, 156.7, 165, 173.3];
+test('rafRate: median frame gap -> rafHz; a 30 Hz page is a Low Power Mode suspect', () => {
+  assert.deepEqual(P.rafRate(fr([0, 16.7, 33.3, 50, 66.7, 140])), { rafHz: 60, lowPowerSuspect: false });
+  assert.deepEqual(P.rafRate(fr([0, 33.3, 66.7, 100, 133.3])), { rafHz: 30, lowPowerSuspect: true });
+  assert.deepEqual(P.rafRate([[0, null]]), { rafHz: null, lowPowerSuspect: null });
+});
+
+test('summarize: phases count >50 / >34 and the +-4 ms counts, the worst frame with +-2 neighbours, slow frames with the mutations and crossings of rows k-1 and k', () => {
+  const ts = [0, 8.3, 16.7, 25, 33.3, 41.7, 50, 140, 148.3, 156.7, 165, 173.3, 205.3];
   const frames = fr(ts, { y: (t) => Math.round(t * 10) });
   const doc = {
     frames, marks: { idle: [0, 30], scroll: [33.3, 173.3], open: [180] },
@@ -93,12 +98,16 @@ test('summarize: phases count k>=5 / k>=7 and >34 / >50, the worst frame with +-
   const s = P.summarize(doc);
   assert.deepEqual(Object.keys(s.phases), ['idle', 'scroll'], 'a phase without an end mark is not summarized');
   assert.equal(s.phases.idle.frames, 3);
-  assert.equal(s.phases.idle.k5, 0);
-  assert.deepEqual([s.phases.scroll.frames, s.phases.scroll.k5, s.phases.scroll.k7, s.phases.scroll.gt34, s.phases.scroll.gt50, s.phases.scroll.max, s.phases.scroll.maxY], [8, 1, 1, 1, 1, 90, 1400]);
+  assert.deepEqual([s.phases.idle.gt34, s.phases.idle.gt30], [0, 0]);
+  const sc = s.phases.scroll;
+  assert.deepEqual([sc.frames, sc.gt50, sc.gt34, sc.gt46, sc.gt54, sc.gt30, sc.gt38, sc.near34, sc.near50, sc.max, sc.maxY], [8, 1, 1, 1, 1, 1, 1, 0, 0, 90, 1400]);
+  assert.equal(sc.k5, undefined, 'no k forms');
+  assert.equal(s.rafHz, 120);
   assert.deepEqual(s.phases.scroll.worst, { frame: 7, dt: 90, y: 1400, neighbours: [[-2, 8.4, 417], [-1, 8.3, 500], [0, 90, 1400], [1, 8.3, 1483], [2, 8.4, 1567]] });
-  assert.equal(s.slow.length, 1);
+  assert.equal(s.slow.length, 2, 'every frame over 30 ms: the 90 ms one and a 32 ms one near 34');
   const w = s.slow[0];
-  assert.deepEqual([w.frame, w.dt, w.ticks, w.yStart, w.yEnd, w.phase], [7, 90, 11, 500, 1400, 'scroll']);
+  assert.deepEqual([w.frame, w.dt, w.over, w.near, w.yStart, w.yEnd, w.phase], [7, 90, 50, null, 500, 1400, 'scroll']);
+  assert.deepEqual([s.slow[1].frame, s.slow[1].dt, s.slow[1].over, s.slow[1].near, s.slow[1].phase], [12, 32, null, 34, null]);
   assert.deepEqual(w.mut, { src: 21, inert: 1, scene: 1, same: 1 }, 'all 21 src writes and the inert flip in one row: no first-N cap');
   assert.deepEqual(w.mutPrev, { class: 1 });
   assert.deepEqual(w.crossings, ['<class div.a +on', 'scene #platform active', 'inert div.p removed']);
@@ -134,6 +143,9 @@ test('parseRunArgs: drivers, defaults, units, labels and validation', () => {
   assert.equal(parseRunArgs(['--driver', 'scroll', '--y-source', 'raf-legacy']).params.ySource, 'raf-legacy');
   assert.equal(parseRunArgs(['--driver', 'scroll', '--y-source', 'none']).params.ySource, 'none');
   assert.equal(parseRunArgs(['--driver', 'scroll', '--no-battery']).battery, false);
+  assert.equal(s.lowPower, 'unknown');
+  assert.equal(parseRunArgs(['--driver', 'scroll', '--low-power', 'on']).lowPower, 'on');
+  assert.throws(() => parseRunArgs(['--driver', 'scroll', '--low-power', 'yes']), /--low-power must be on or off \(got yes\)/);
   assert.deepEqual(s.labels, { build: null, run: null, block: null, arm: null, pos: null, warmup: false });
   const w = parseRunArgs(['--driver=window', '--to=1000', '--from', '400', '--idle', '6', '--hold', '1.5', '--sentinel', '0', '--settle', '2', '--label', 'hero',
     '--build', 'B1', '--run', 'r3', '--block', 'k2', '--arm', 'V', '--pos', '2', '--warmup', '--tops', 'platform=#platform,panel=.start-selling-morph-panel', '--allow-during-measure', '--state', 'x.js']);
@@ -167,6 +179,7 @@ test('battery: only the named AppleSmartBattery keys are kept (no serials), temp
   const st = deviceSettings({ dark: false }, b);
   assert.deepEqual([st.batteryPct, st.charging, st.lowPowerMode, st.dark], [81, true, 'unknown', false]);
   assert.equal(deviceSettings(null, { error: 'x' }).charging, 'unknown');
+  assert.deepEqual([deviceSettings({}, null, 'on').lowPowerMode, deviceSettings({}, null, 'off').lowPowerMode, deviceSettings({}, null).lowPowerMode], [true, false, 'unknown'], '--low-power');
   const old = process.env.FW_IDEVICEDIAGNOSTICS;
   process.env.FW_IDEVICEDIAGNOSTICS = join(tempDir('fw-nobin-'), 'missing');
   try { assert.deepEqual(batteryInfo(), { error: 'idevicediagnostics: ENOENT' }, 'no libimobiledevice: an error field, not a crash'); }
@@ -287,7 +300,7 @@ test('std probe + window driver: the y~1960 frame shows all 21 src writes, the i
   assert.ok(noRow.length >= 1 && noRow.every((c) => c.frame <= 1 && c.yRow === null && c.y === 0),
     `every raf crossing names its y row, except before the probe's first row (y = the probe-start read): ${JSON.stringify(noRow.map((c) => [c.frame, c.yRow, c.y, c.kind]))}`);
   assert.equal(doc.summary.mutationTotals.src, 21);
-  assert.ok(doc.summary.phases.scroll.k5 >= 1);
+  assert.ok(doc.summary.phases.scroll.gt50 >= 1);
   assert.deepEqual(raw.topsPost, { platform: 2860, none: null });
 });
 
@@ -453,6 +466,26 @@ test('finish: one JSON per run (schema, meta with labels and tool hashes, measur
   assert.ok(lines.some((l) => /^ewin \[W\]: idle \d+fr/.test(l)), lines.join('\n'));
   assert.ok(lines.some((l) => /mut \{"src":21/.test(l)), 'the slow frame line shows the uncapped counts');
   assert.ok(lines.at(-1).startsWith('saved '));
+  assert.deepEqual([m.rafHz, m.lowPowerSuspect, m.settings.lowPowerMode], [j.summary.rafHz, false, 'unknown']);
+  assert.ok(m.rafHz > 40, `the fake page ticks at about 8 ms (rafHz ${m.rafHz})`);
+  assert.ok(!lines.some((l) => /Low Power Mode/.test(l)));
+
+  // a 30 Hz page (Low Power Mode): warned unless the operator declared it with --low-power on
+  const slow30 = { ...raw, frames: raw.frames.map((f) => (f[1] === null ? f : [f[0], 33.3, ...f.slice(2)])) };
+  const lpLines = [];
+  console.log = (...a) => lpLines.push(a.join(' '));
+  let lpOut, lpOn;
+  try {
+    lpOut = finish({ ...o, out: join(dir, 'lp.json') }, 'me', slow30);
+    lpLines.push('--- on');
+    lpOn = finish({ ...parseRunArgs(['--driver', 'window', '--to', '2000', '--low-power', 'on', '--out', join(dir, 'lp-on.json')]) }, 'me', slow30);
+  } finally { console.log = log; }
+  const lm = JSON.parse(readFileSync(lpOut, 'utf8')).meta, lmOn = JSON.parse(readFileSync(lpOn, 'utf8')).meta;
+  assert.deepEqual([lm.rafHz, lm.lowPowerSuspect, lm.settings.lowPowerMode], [30, true, 'unknown']);
+  assert.deepEqual([lmOn.rafHz, lmOn.lowPowerSuspect, lmOn.settings.lowPowerMode], [30, true, true]);
+  const cut = lpLines.indexOf('--- on');
+  assert.ok(lpLines.slice(0, cut).some((l) => /^ {2}warning: rAF ~30 Hz \(median frame\): Low Power Mode on\? \(settings\.lowPowerMode unknown; pass --low-power on\|off\)$/.test(l)), lpLines.join('\n'));
+  assert.ok(!lpLines.slice(cut).some((l) => /Low Power Mode/.test(l)), 'declared on: no warning');
 
   const bad = { ...raw, err: 'boom', driverResult: null };
   const o2 = { ...o, out: join(dir, 'bad.json') };

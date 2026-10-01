@@ -32,10 +32,11 @@ const pin = ({ j, logs }) => {
 
 test('iphone run (the phone, no target): run JSON and console summary byte-identical to before the Simulator target', () => {
   // re-pinned on purpose since 44087f4, phone output only (the Simulator test below checks the target contract):
-  // T1a probe v3 adds movedFromTime
-  assert.deepEqual(pin(runFinish(['--driver', 'scroll'])), ['2d038beccb05ecaa', 9872]);
-  assert.deepEqual(pin(runFinish(['--driver', 'window', '--to', '1800'])), ['b98ddaa6e2da831d', 9925]);
-  assert.deepEqual(pin(runFinish(['--driver', 'scroll', '--no-battery'])), ['381a6963a21c1080', 9650]);
+  // T1a probe v3 adds movedFromTime; the T1a phone summary replaces the k forms with ms forms and adds rafHz /
+  // lowPowerSuspect (and the fixture's 37.4 ms frame is now a slow frame, near 34)
+  assert.deepEqual(pin(runFinish(['--driver', 'scroll'])), ['556fc28afd03fee1', 10625]);
+  assert.deepEqual(pin(runFinish(['--driver', 'window', '--to', '1800'])), ['bfb34e07452d5a24', 10678]);
+  assert.deepEqual(pin(runFinish(['--driver', 'scroll', '--no-battery'])), ['d1ecb63d607a46b7', 10403]);
   const { j } = runFinish(['--driver', 'scroll']);
   assert.equal(j.meta.device, DEVICE);
   assert.deepEqual(Object.keys(j.meta.tool.files), TOOL_FILES);

@@ -54,13 +54,16 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--state <file.js>]                                     an expression whose value joins stateAtStart.custom
     [--y-source raf|raf-legacy|scroll|none]                 where the probe's y comes from (default raf; raf-legacy = probe v1)
     [--no-battery]                                          skip the idevicediagnostics battery read at start and end
+    [--low-power on|off]                                    Low Power Mode as set on the phone (a page cannot read it;
+                                                            rAF runs at 30 Hz when on); default unknown
     [--allow-during-measure]                                run although a normal chrome-measure hold is running`;
 
 /** Device settings that a page cannot read (U9, research/architecture/unknowns-validity.md): recorded as 'unknown'
  *  rather than left out, until a device-side reader (T2: WDA / lockdown) fills them in. */
 export const UNREADABLE_SETTINGS = ['lowPowerMode', 'limitFrameRate', 'batteryPct', 'charging', 'case', 'brightness', 'autoBrightness', 'contentBlockers', 'safariFeatureFlags'];
-export function deviceSettings(page, battery = null) {
+export function deviceSettings(page, battery = null, lowPower = 'unknown') {
   const s = { ...Object.fromEntries(UNREADABLE_SETTINGS.map((k) => [k, 'unknown'])), ...(page || {}) };
+  if (lowPower === 'on' || lowPower === 'off') s.lowPowerMode = lowPower === 'on'; // declared by the operator (--low-power)
   if (battery && !battery.error) {
     if (typeof battery.CurrentCapacity === 'number') s.batteryPct = battery.CurrentCapacity;
     if (typeof battery.IsCharging === 'boolean') s.charging = battery.IsCharging;
@@ -108,6 +111,8 @@ export function parseRunArgs(argv) {
   o.stateFile = opt('state') ?? null;
   o.allowDuringMeasure = flag('allow-during-measure');
   o.battery = !flag('no-battery');
+  o.lowPower = opt('low-power', 'unknown');
+  if (!['on', 'off', 'unknown'].includes(o.lowPower)) throw new Error(`--low-power must be on or off (got ${o.lowPower})\n${USAGE}`);
   const ySource = opt('y-source', 'raf');
   if (!Y_SOURCES.includes(ySource)) throw new Error(`--y-source must be one of ${Y_SOURCES.join(', ')} (got ${ySource})\n${USAGE}`);
   const tops = opt('tops');
@@ -251,7 +256,8 @@ export function finish(o, owner, raw, { now = new Date(), target = null } = {}) 
     build: o.labels.build, run: o.labels.run ?? o.label, block: o.labels.block, arm: o.labels.arm, pos: o.labels.pos, warmup: o.labels.warmup,
     owner, date: now.toISOString(), device: target?.device ?? DEVICE, href: lanSafeUrl(raw.pre?.href), ua: raw.pre?.ua, vw: raw.pre?.vw, vh0: raw.pre?.vh0, dpr: raw.pre?.dpr,
     params: { settleMs: o.settleMs, ...o.params },
-    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: yReadsLabel(raw.ySource ?? o.params.ySource ?? 'raf', o.driver), yReadCounts: raw.yReads ?? null, settings: target?.settings ?? deviceSettings(raw.pre?.settings, raw.battery?.start), battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver, REPO, target?.toolFiles), error: raw.err || null,
+    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: yReadsLabel(raw.ySource ?? o.params.ySource ?? 'raf', o.driver), yReadCounts: raw.yReads ?? null, settings: target?.settings ?? deviceSettings(raw.pre?.settings, raw.battery?.start, o.lowPower),
+    rafHz: doc.summary.rafHz, lowPowerSuspect: doc.summary.lowPowerSuspect, battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver, REPO, target?.toolFiles), error: raw.err || null,
     ...(target?.extra ? target.extra() : {}),
   };
   const out = resolve(REPO, o.out || join('out', target?.outDir ?? 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));
@@ -259,10 +265,12 @@ export function finish(o, owner, raw, { now = new Date(), target = null } = {}) 
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify(json));
   const sm = doc.summary;
-  const ph = Object.entries(sm.phases).map(([k, v]) => `${k} ${v.frames}fr ${v.fps} fps k>=5 ${v.k5} k>=7 ${v.k7} max ${v.max}@${v.maxY}`).join(' | ');
+  const cnt = (v) => `>50 ${v.gt50} >34 ${v.gt34} (+-4: >46 ${v.gt46} >54 ${v.gt54} >30 ${v.gt30} >38 ${v.gt38}, near34 ${v.near34} near50 ${v.near50})`;
+  const ph = Object.entries(sm.phases).map(([k, v]) => `${k} ${v.frames}fr ${v.fps} fps ${cnt(v)} max ${v.max}@${v.maxY}`).join(' | ');
   console.log(`${o.label} [${meta.driver}]: ${ph}`);
-  for (const f of sm.slow) console.log(`  ${f.dt} ms (${f.ticks} ticks) @y${f.yStart}->${f.yEnd} ${f.phase || '-'} rafJs ${f.rafJsMs} mut ${JSON.stringify(f.mut)} prev ${JSON.stringify(f.mutPrev)}${f.crossings.length ? ' | ' + f.crossings.join('; ') : ''}`);
-  if (sm.early) console.log(`  early (load, from ${sm.early.t0nav} ms): ${sm.early.frames}fr k>=5 ${sm.early.k5} k>=7 ${sm.early.k7} max ${sm.early.max}${sm.early.slow.length ? ' [' + sm.early.slow.join(' ') + ']' : ''}`);
+  if (sm.lowPowerSuspect && meta.settings.lowPowerMode !== true) console.log(`  warning: rAF ~${sm.rafHz} Hz (median frame): Low Power Mode on? (settings.lowPowerMode ${meta.settings.lowPowerMode}; pass --low-power on|off)`);
+  for (const f of sm.slow) console.log(`  ${f.dt} ms${f.near ? ` (near ${f.near})` : ''} @y${f.yStart}->${f.yEnd} ${f.phase || '-'} rafJs ${f.rafJsMs} mut ${JSON.stringify(f.mut)} prev ${JSON.stringify(f.mutPrev)}${f.crossings.length ? ' | ' + f.crossings.join('; ') : ''}`);
+  if (sm.early) console.log(`  early (load, from ${sm.early.t0nav} ms): ${sm.early.frames}fr ${cnt(sm.early)} max ${sm.early.max}${sm.early.slow.length ? ' [' + sm.early.slow.join(' ') + ']' : ''}`);
   if (raw.stateAtStart) console.log(`  at start: ${JSON.stringify(raw.stateAtStart)}; animations ${JSON.stringify(raw.pre?.anims)}`);
   for (const t of sm.tweens || []) console.log(`  tween from m=${t.from}: first dts ${t.dts.join(' ')}`);
   console.log(`  mutations ${JSON.stringify(sm.mutationTotals)}; crossings ${sm.crossings}; probe max ${sm.probeMsMax} ms, frames with probe > 1 ms: ${sm.framesProbeOver1ms}`);

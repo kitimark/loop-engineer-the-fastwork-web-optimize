@@ -6,7 +6,11 @@
 // Std probe, per rAF frame (the gap from the previous rAF timestamp to this one):
 //   frames[k] = [t, dt, yStart, yEnd, innerHeight, m, rafJsMs, probeMs, docH]
 //     t        rAF timestamp (page clock = performance.now(), 0.1 ms)
-//     dt       t[k] - t[k-1]; ticks are k = round(dt / 8.333) (frame gaps quantize at 8.33 ms; analysis: T3)
+//     dt       t[k] - t[k-1]. Phone thresholds in ms, no tick (k) forms (CLAUDE.md "Frame thresholds": Safari rAF
+//              runs at 60 Hz, its 1 ms stamps mark the rendering-update start and are not vsync-quantized): the
+//              summary counts dt > 50 and dt > 34, plus the counts at +-4 ms (dt > 46 / 54, dt > 30 / 38); a frame
+//              within 4 ms of 34 / 50 is near (near34 = 30 < dt <= 38, near50 = 46 < dt <= 54), and a verdict
+//              that differs across +-4 ms is "threshold-sensitive" (decided by tools/stats.mjs, not here). summary.rafHz (median dt) flags a 30 Hz page: Low Power Mode (lowPowerSuspect).
 //     yStart   yEnd of the previous frame
 //     yEnd     the scroll position from the y source (--y-source, window.__fwrOpts.ySource; recorded per run):
 //                raf        scrollY read in the probe's rAF callback (default). On WebKit a scrollY read with y != 0
@@ -100,7 +104,9 @@ export function yReadsLabel(ySource, driver) {
   return Y_READS[ySource] + (drv ? '; driver scrollY 3.3 Hz' : '');
 }
 export const MUT_TYPES = ['src', 'class', 'style', 'inert', 'tabindex', 'scene', 'render', 'other', 'childList', 'text', 'same'];
-export const TICK_MS = 1000 / 120;
+/** Phone frame thresholds (ms) and the +-band around each (CLAUDE.md "Frame thresholds", protocol v2 A5). */
+export const PHONE_THRESHOLDS = [34, 50];
+export const NEAR_MS = 4;
 export const DRIVERS = { scroll: 'S', window: 'W', morph: 'M' };
 
 /** Installs window.__fwr (idempotent while running). Returns 'installed' | 'already installed'. */
@@ -376,14 +382,31 @@ export function placeCrossings(frames, rows) {
     });
 }
 
-export const ticks = (dt) => Math.round(dt / TICK_MS);
+/** dt > 50 and dt > 34, and the counts at +-4 ms (dt > 46 / 54, dt > 30 / 38); near34 = #(30 < dt <= 38), near50 = #(46 < dt <= 54) (names agreed with ts-analysis, tools/stats.mjs). */
+export function phoneCounts(d) {
+  const gt = (x) => d.filter((v) => v > x).length;
+  return { gt50: gt(50), gt34: gt(34), gt46: gt(46), gt54: gt(54), gt30: gt(30), gt38: gt(38), near34: d.filter((v) => nearThreshold(v) === 34).length, near50: d.filter((v) => nearThreshold(v) === 50).length };
+}
+/** The threshold a dt lies near (th - NEAR_MS < dt <= th + NEAR_MS: 34 or 50), else null; strict > like the counts. */
+export const nearThreshold = (dt) => PHONE_THRESHOLDS.find((th) => dt > th - NEAR_MS && dt <= th + NEAR_MS) ?? null;
+/** The highest threshold a dt is over (50, 34), else null. */
+export const overThreshold = (dt) => (dt > 50 ? 50 : dt > 34 ? 34 : null);
+/** Frames slower than this are listed in summary.slow (34 - NEAR_MS: the near ones under 34 too). */
+export const SLOW_MS = PHONE_THRESHOLDS[0] - NEAR_MS;
+/** rAF rate from the median frame gap (null without frames); <= 40 Hz suggests Low Power Mode (30 Hz). */
+export function rafRate(frames) {
+  const d = frames.map((f) => f[1]).filter((x) => x !== null && x > 0).sort((a, b) => a - b);
+  if (!d.length) return { rafHz: null, lowPowerSuspect: null };
+  const med = d.length % 2 ? d[(d.length - 1) / 2] : (d[d.length / 2 - 1] + d[d.length / 2]) / 2;
+  const rafHz = Math.round(1000 / med);
+  return { rafHz, lowPowerSuspect: rafHz <= 40 };
+}
 function phaseSum(fr) {
   const d = fr.map((f) => f[1]);
   const tot = d.reduce((a, b) => a + b, 0);
   let max = 0, maxY = null;
   for (const f of fr) if (f[1] > max) { max = f[1]; maxY = f[3]; }
-  return { frames: d.length, fps: d.length ? Math.round((10 * d.length) / (tot / 1000 || 1)) / 10 : null, k5: d.filter((x) => ticks(x) >= 5).length, k7: d.filter((x) => ticks(x) >= 7).length,
-    gt34: d.filter((x) => x > 34).length, gt50: d.filter((x) => x > 50).length, max, maxY };
+  return { frames: d.length, fps: d.length ? Math.round((10 * d.length) / (tot / 1000 || 1)) / 10 : null, ...phoneCounts(d), max, maxY };
 }
 /** The worst frame of a phase and its +-2 neighbours (dt and yEnd), by row index into frames. */
 function worstWithNeighbours(frames, a, b) {
@@ -408,8 +431,8 @@ export function tweenStarts(frames, driverFrames = null) {
   return out;
 }
 
-/** Counts per phase (frames whose t lies in the mark window) and every k>=5 frame with what landed in its gap and
- *  the previous one. Medians, tick histograms, IQR, HL shifts: tools/lib T3, not here. */
+/** Counts per phase (frames whose t lies in the mark window; phoneCounts) and every frame over SLOW_MS (30 ms) with
+ *  over / near and what landed in its gap and the previous one; rafHz. Medians, IQR, HL shifts: tools/lib T3. */
 export function summarize(doc) {
   const fr = doc.frames.filter((f) => f[1] !== null);
   const phases = {};
@@ -419,16 +442,16 @@ export function summarize(doc) {
   const phaseOf = (t) => Object.entries(doc.marks).find(([, [a, b]]) => b !== undefined && t >= a && t <= b)?.[0] ?? null;
   const slow = [];
   doc.frames.forEach((f, k) => {
-    if (f[1] === null || ticks(f[1]) < 5) return;
-    slow.push({ frame: k, t: f[0], dt: f[1], ticks: ticks(f[1]), yStart: f[2], yEnd: f[3], phase: phaseOf(f[0]), rafJsMs: f[6], probeMs: f[7],
+    if (f[1] === null || f[1] <= SLOW_MS) return;
+    slow.push({ frame: k, t: f[0], dt: f[1], over: overThreshold(f[1]), near: nearThreshold(f[1]), yStart: f[2], yEnd: f[3], phase: phaseOf(f[0]), rafJsMs: f[6], probeMs: f[7],
       mut: named(k), mutPrev: named(k - 1), crossings: doc.crossings.filter((c) => c.frame === k || c.frame === k - 1).map((c) => `${c.frame === k ? '' : '<'}${c.kind} ${c.id} ${c.value}`) });
   });
   const tot = new Array(MUT_TYPES.length).fill(0);
   for (const [, ...c] of doc.mutations.counts) c.forEach((v, i) => { tot[i] += v; });
   const probeMax = Math.max(0, ...doc.frames.map((f) => f[7] || 0));
-  const early = doc.early ? (() => { const d = doc.early.frames.slice(1).map((x) => x[1]); return { t0nav: doc.early.t0nav, frames: d.length, k5: d.filter((x) => ticks(x) >= 5).length, k7: d.filter((x) => ticks(x) >= 7).length, max: Math.max(0, ...d), slow: doc.early.frames.slice(1).filter((x) => ticks(x[1]) >= 5).map((x) => `${x[1]}@t${x[0]}`) }; })() : null;
+  const early = doc.early ? (() => { const d = doc.early.frames.slice(1).map((x) => x[1]); return { t0nav: doc.early.t0nav, frames: d.length, ...phoneCounts(d), max: Math.max(0, ...d), slow: doc.early.frames.slice(1).filter((x) => x[1] > SLOW_MS).map((x) => `${x[1]}@t${x[0]}`) }; })() : null;
   const tweens = doc.morph ? tweenStarts(doc.frames, doc.morph.frames) : null;
-  return { phases, early, tweens, slow, mutationTotals: Object.fromEntries(MUT_TYPES.map((k, i) => [k, tot[i]])), crossings: doc.crossings.length, probeMsMax: probeMax, framesProbeOver1ms: doc.frames.filter((f) => (f[7] || 0) > 1).length };
+  return { phases, early, tweens, slow, ...rafRate(doc.frames), mutationTotals: Object.fromEntries(MUT_TYPES.map((k, i) => [k, tot[i]])), crossings: doc.crossings.length, probeMsMax: probeMax, framesProbeOver1ms: doc.frames.filter((f) => (f[7] || 0) > 1).length };
 }
 
 /** Raw page result -> the run document's measurement part. */

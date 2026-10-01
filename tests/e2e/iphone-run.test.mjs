@@ -65,8 +65,9 @@ test('run --driver window: reload, settle, probe + driver, one JSON with meta, u
   const r = await run(['--driver', 'window', '--probe', 'std', '--owner', 'me', '--label', 'ewin', '--from', '1500', '--to', '2000', '--settle', '0.3', '--idle', '0.2', '--hold', '0.2', '--sentinel', '0.2',
     '--build', 'B1', '--block', 'k1', '--arm', 'C', '--pos', '0', '--warmup', '--tops', 'platform=#platform', '--state', state, '--out', out], phone.env);
   assert.equal(r.code, 0, r.out);
-  assert.match(r.stdout, /^ewin \[W\]: idle \d+fr .*\| scroll \d+fr .*\| hold \d+fr .*\| sentinel \d+fr/m);
-  assert.match(r.stdout, /^ {2}\d+(\.\d)? ms \(\d+ ticks\) @y\d+->\d+ scroll rafJs \d+(\.\d+)? mut \{"src":21,/m, 'the slow frame line: all 21 src writes');
+  assert.match(r.stdout, /^ewin \[W\]: idle \d+fr .*\| scroll \d+fr [\d.]+ fps >50 [1-9]\d* >34 [1-9]\d* \(\+-4: >46 \d+ >54 \d+ >30 \d+ >38 \d+, near34 \d+ near50 \d+\) max .*\| hold \d+fr .*\| sentinel \d+fr/m, 'phone counts in ms, no k forms');
+  assert.doesNotMatch(r.stdout, /k>=|ticks/);
+  assert.match(r.stdout, /^ {2}\d+(\.\d)? ms @y\d+->\d+ scroll rafJs \d+(\.\d+)? mut \{"src":21,/m, 'the slow frame line: all 21 src writes');
   assert.match(r.stdout, /inert div\.start-selling-morph-panel removed/);
   assert.match(r.stdout, new RegExp(`^saved ${out.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`, 'm'));
 
