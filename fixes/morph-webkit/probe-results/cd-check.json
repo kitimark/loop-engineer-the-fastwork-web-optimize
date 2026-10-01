@@ -1,0 +1,126 @@
+{
+ "res": {
+  "mw10e-gh": {
+   "atRest": {
+    "layers": 125,
+    "faces": {
+     "panelFaces": 84,
+     "wcTransform": 0,
+     "allFacesOnPage": 168,
+     "cdVisibility": "visible",
+     "scene": "paused",
+     "morph": "0"
+    }
+   },
+   "atHold": {
+    "tHoldMs": 1813,
+    "layers": 148,
+    "faces": {
+     "panelFaces": 84,
+     "wcTransform": 80,
+     "allFacesOnPage": 168,
+     "cdVisibility": "visible",
+     "scene": "active",
+     "morph": "1"
+    }
+   },
+   "after": {
+    "layers": 71,
+    "faces": {
+     "panelFaces": 84,
+     "wcTransform": 0,
+     "allFacesOnPage": 168,
+     "cdVisibility": "visible",
+     "scene": "paused",
+     "morph": "0"
+    }
+   },
+   "maxLayersInCycle": 154,
+   "driver": {},
+   "errors": []
+  },
+  "mw10e-gh-cdwc": {
+   "atRest": {
+    "layers": 125,
+    "faces": {
+     "panelFaces": 84,
+     "wcTransform": 0,
+     "allFacesOnPage": 168,
+     "cdVisibility": "visible",
+     "scene": "paused",
+     "morph": "0"
+    }
+   },
+   "atHold": {
+    "tHoldMs": 1727,
+    "layers": 68,
+    "faces": {
+     "panelFaces": 84,
+     "wcTransform": 0,
+     "allFacesOnPage": 168,
+     "cdVisibility": "visible",
+     "scene": "active",
+     "morph": "1"
+    }
+   },
+   "after": {
+    "layers": 71,
+    "faces": {
+     "panelFaces": 84,
+     "wcTransform": 0,
+     "allFacesOnPage": 168,
+     "cdVisibility": "visible",
+     "scene": "paused",
+     "morph": "0"
+    }
+   },
+   "maxLayersInCycle": 125,
+   "driver": {},
+   "errors": []
+  },
+  "mw10e-gh-cdhid": {
+   "atRest": {
+    "layers": 125,
+    "faces": {
+     "panelFaces": 84,
+     "wcTransform": 0,
+     "allFacesOnPage": 168,
+     "cdVisibility": "hidden",
+     "scene": "paused",
+     "morph": "0"
+    }
+   },
+   "atHold": {
+    "tHoldMs": 1725,
+    "layers": 68,
+    "faces": {
+     "panelFaces": 84,
+     "wcTransform": 80,
+     "allFacesOnPage": 168,
+     "cdVisibility": "hidden",
+     "scene": "active",
+     "morph": "1"
+    }
+   },
+   "after": {
+    "layers": 71,
+    "faces": {
+     "panelFaces": 84,
+     "wcTransform": 0,
+     "allFacesOnPage": 168,
+     "cdVisibility": "hidden",
+     "scene": "paused",
+     "morph": "0"
+    }
+   },
+   "maxLayersInCycle": 82,
+   "driver": {},
+   "errors": []
+  }
+ },
+ "diff": {
+  "gh-again": 0.11,
+  "cdwc-injected": 0.13,
+  "cdhid-injected": 0.39
+ }
+}

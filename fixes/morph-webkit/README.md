@@ -368,6 +368,36 @@ idle 60.5 fps. Moving phase:
   - the per-frame style writes of the spring (`--morph` on the header, `--morph-fade` on the platform, the veil transform).
   N2 step 2 (size morph moved to transform) addresses the first.
 
+### Morph attribution and the countdown probe (P-017, F-050)
+
+**Attribution session** (iphone-runner 10:57-11:09Z, Timeline + LayerTree):
+- Moving frames carry Script ~1 ms, style 1-5 ms, layout < 1 ms and Paint ≤ 4 ms.
+- The cost is Composite minus its Paint children:
+  - gh: 20-39 ms in the first 300 ms of a tween, 12 ms after 400 ms;
+  - g: stays ~20 ms in the tail.
+- Layers (gh): 35 at rest, 113 at the m=1 hold, 33 after, so ~78 are created and destroyed per cycle.
+- platform-card (430x1880, 12.6 MB) repaints on ~every tween frame (11/14 fwd/rev).
+- de-pm-morph's post-mortem (F-050): the start transient is the ~80 morph-panel countdown digit `.face` layers (`will-change: transform`,
+  CSS 1408-1415). They are created when the panel scene goes active and repaint on most early frames.
+
+**Probe builds** (both on gh, CSS only, JS 1df2484cc79c; diffs in `variants-10e/gh-cdwc.diff` and `gh-cdhid.diff`):
+
+| build | CSS | change |
+|---|---|---|
+| `mw10e-gh-cdwc` | 66aaffb61d59 | `.start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c { will-change: auto !important }` |
+| `mw10e-gh-cdhid` | 89c1492e6362 | the panel countdown at `visibility: hidden !important`; upper bound, visually wrong |
+
+**Chrome check** (`cd-check.mjs`, short lane; `probe-results/cd-check.json`):
+
+| | gh | cdwc | cdhid |
+|---|---|---|---|
+| faces with `will-change: transform` at the m=1 hold | 80 | 0 | 80 |
+| layers at the hold | 148 | 68 | 68 (Chrome makes no layers for hidden faces) |
+| frozen-hold diff vs gh, same page, rule injected | — | 0.13 % (noise floor gh vs gh 0.11 %) | 0.39 % (countdown missing) |
+| exceptions | 0 | 0 | 0 |
+
+The ticket went to mgmt-ops-5 and iphone-runner: driver M, a 3-arm Latin square, hold 2000, 3 cycles, plus one Timeline cycle per arm.
+
 ### R8 and R5a on gh (de-morph): `mw10e-ghr8`, `mw10e-ghr85a`
 
 Both are built on `mw10e-gh` (`--on aw1-10e`) and keep the debug driver hook.
