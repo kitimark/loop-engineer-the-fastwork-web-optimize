@@ -372,6 +372,21 @@ Owner: fix-nav-morph. The gate on `O()` (`k = C() || (e > 0 && u && O())`) is in
 - **Probe:** Instruments' Animation Hitches template (de-safari §2.3).
 - **Expect:** unknown. This only matters if Composite outlasts the raster estimate.
 
+### Peer data after the first commit (de-pm-hero, postmortem-hero.md, commit 1d34ec8)
+
+- **U1 is smaller than §0 implies.**
+  - In de-pm-hero's payer census, 40 of 59 whole-view layouts of 10 ms or more are paid by the render update with
+    no JS reader. Only the flip+60 frame holds a possible logger double.
+  - The logger pays only when layout is already dirty at its rAF. "Layout in rAF = the logger" still holds, but the
+    double layouts are rarer than "1-2 per pass" across all captures.
+  - The A/A comparison of logger modes stays the cheap check.
+- **U5(a) is weakened for one frame.**
+  - In all 15 hero-block runs, the flip+940 frame comes 185-237 ms into a hold at y 1237-1250, and no flick follows
+    it. Coverage re-attach predicts a repaint on the next flick, not during a hold.
+  - That frame goes to Card 4 (the reveal end).
+  - U5(a) can still own the frames at y 1490-1750 under the S driver, and the stationary hold frames. ST-2d
+    ("fling-hold", in ST-2) decides.
+
 ## 4. Handed to peers, not analysed here
 
 - de-unknowns-ux: perceived latency, the touch path, judder, the visibility of the y≈1960 frame.
