@@ -178,6 +178,29 @@ DENY.push(
   'node tools/lock.mjs run chrome-measure --owner t -- git push',
   "node tools/lock.mjs run chrome-measure --owner t -- sh -c 'git merge feature'",
 );
+// review-snapshot-fu: lock.mjs also takes its options before the subcommand, and node may take valued
+// options (-r x.cjs) before the script: everything after the first `--` of any lock.mjs command is analysed
+ASK.push(
+  "node tools/lock.mjs --owner t run chrome-measure -- sh -c 'FW_BASELINE_ALLOW_MODIFIED=1 node tools/fix.mjs ab t'",
+  'node tools/lock.mjs --short --max-seconds 300 run chrome-measure -- env FW_BASELINE_ALLOW_MODIFIED=1 node tools/verify.mjs',
+  'node -r ./x.cjs tools/lock.mjs run chrome-measure -- FW_BASELINE_ALLOW_MODIFIED=1 node tools/serve.mjs',
+  'node --require ./x.cjs --max-old-space-size=100 tools/lock.mjs --owner t run x -- FW_BASELINE_UPDATE=b1-0123abcd git commit -m x',
+);
+DENY.push(
+  'node tools/lock.mjs --owner t run chrome-measure -- git push',
+  'node tools/lock.mjs --owner=t --short run chrome-measure -- git push',
+  'node -r ./x.cjs tools/lock.mjs run chrome-measure -- git push',
+  "node --import ./x.mjs tools/lock.mjs --owner t --short run x -- sh -c 'git merge feature'",
+  'node --loader ./l.mjs tools/lock.mjs run x -- git push',
+  'node -- tools/lock.mjs run x -- git push',
+  'tools/lock.mjs run x -- git push',
+  'FW_LOCK_OWNER=t node ./tools/lock.mjs --owner t run x --short -- bash -c "git push"',
+);
+ALLOW.push(
+  'node tools/lock.mjs --owner t run chrome-measure -- npm test',
+  'node -r ./x.cjs tools/lock.mjs --owner t run x -- node tools/fix.mjs ab t --runs 5',
+  'node tools/lock.mjs --owner t acquire chrome-measure --short --max-seconds 300 --wait 1800',
+);
 ALLOW.push(
   'node tools/lock.mjs run chrome-measure --owner t --short --max-seconds 300 -- npm test',
   "node tools/lock.mjs run chrome-measure --owner t -- sh -c 'node tools/fix.mjs ab t --runs 5 && node probe.mjs'",
