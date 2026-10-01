@@ -245,7 +245,9 @@ between tool calls.
    warn on explicit chrome) + review-stats OK, with doc-protocol-v2's §5 text; doc-protocol-v2 sends the lead replacement
    text for the CLAUDE.md phone-threshold line + Sentinel bullet, and updates fix-reviewer check 15. Spawned:
    ts-user-console, ts-lock-bundle (item 7b + sleep wording; branch worktree-agent-a413c9626c75bd1a3).
-   **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A, 10 min, block B) -> P-032 G cdwc (VALIDATED, ~20 min) ->
+   **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A PASSED (ABBA aw1-10e S, on vs off: dt>50 3 vs 7, dt>34 18 vs 21, fps
+   57.4 vs 57.3; T1a now absolute; p95 HL shift for the minShift revisit -> ts-analysis), 10 min, block B) -> P-033 step 0
+   (lead 14:2xZ: right after P4 B) -> 10 min cooling -> P-032 G cdwc (VALIDATED, ~20 min) ->
    P11 Block A + P14 -> P12 -> P10 -> P5 -> P-033 gain (VALIDATED; step 0 fills any free phone gap) -> P9 -> P-030 ->
    P-031 G -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. P-033 "within noise" -> bundle candidate, not standalone.
    **F-076 / P-034 owner = fix-nav-morph after cdwc lands** (lead: same countdown code; no fix-countdown-idle-raf spawn).
