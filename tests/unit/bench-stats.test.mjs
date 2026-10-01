@@ -109,3 +109,19 @@ test('experimentOutcome: better / within-noise / worse against the floor; inconc
   assert.equal(experimentOutcome({ ...base, b: [98.5, 99.5, 100.5, 101.5, 102.5] }).outcome, 'within-noise', 'significant but below the floor');
   assert.equal(experimentOutcome({ ...base, b: [90, 91, 92, 93, 94], hosts: [{ loadInvalid: true }] }).outcome, 'inconclusive');
 });
+
+test('non-finite values throw instead of scoring as an improvement (review-stats b on T3)', () => {
+  // before: uStat([10,11,12,13], [NaN x4]) = 0 and mannWhitney p = 1/70 ("b better"), a false gain
+  const a = [10, 11, 12, 13];
+  for (const bad of [NaN, null, undefined, Infinity, '5']) {
+    const b = [bad, bad, bad, bad];
+    assert.throws(() => uStat(a, b), /uStat b: value 1 is not a finite number/);
+    assert.throws(() => mannWhitney(a, b), /mannWhitney b: value 1/);
+    assert.throws(() => hodgesLehmann(a, b), /shift b: value 1/);
+    assert.throws(() => mosesCI(a, [1, 2, 3, bad]), /shift b: value 4/);
+    assert.throws(() => uStat(b, a, 'higher'), /uStat a: value 1/);
+  }
+  assert.throws(() => calibrate([1, 2, null, 4, 5], [1, 2, 3, 4, 5]), /shift a: value 3/);
+  assert.equal(uStat(a, [1, 2, 3, 4]), 0, 'finite input unchanged');
+  assert.equal(mannWhitney(a, [1, 2, 3, 4]).count, 1);
+});

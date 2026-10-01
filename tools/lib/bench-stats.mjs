@@ -22,9 +22,18 @@ function combos(n, k, fn) {
   }
 }
 const MAX_N = 20;
+/** Every value must be a finite number: a null/NaN/undefined compares false both ways and would score as
+ *  "b improves on a" in U (review-stats, T3), so it throws instead of reaching a verdict. */
+function assertFinite(xs, who) {
+  if (!Array.isArray(xs)) throw new Error(`${who}: not an array`);
+  const bad = xs.findIndex((x) => typeof x !== 'number' || !Number.isFinite(x));
+  if (bad >= 0) throw new Error(`${who}: value ${bad + 1} is not a finite number (${xs[bad]}); fix or drop that run`);
+}
+const checkAB = (a, b, who) => { assertFinite(a, `${who} a`); assertFinite(b, `${who} b`); };
 
 /** U = #{(i,j): b_j "worse" than a_i} + 1/2 ties; small U = b improves on a in direction `dir`. */
 export function uStat(a, b, dir = 'lower') {
+  checkAB(a, b, 'uStat');
   let u = 0;
   for (const x of a) for (const y of b) {
     const worse = dir === 'lower' ? y > x : y < x;
@@ -37,6 +46,7 @@ export function uStat(a, b, dir = 'lower') {
 export function mannWhitney(a, b, dir = 'lower') {
   const n = a.length, m = b.length, N = n + m;
   if (!n || !m) throw new Error('mannWhitney: empty sample');
+  checkAB(a, b, 'mannWhitney');
   if (N > MAX_N) throw new Error(`mannWhitney: exact enumeration is limited to ${MAX_N} values`);
   const pooled = [...a, ...b];
   const u = uStat(a, b, dir);
@@ -66,7 +76,7 @@ export function uNullCdf(n, m) {
   return counts.map((c) => (acc += c) / total);
 }
 
-const improvements = (a, b, dir) => { const d = []; for (const x of a) for (const y of b) d.push(dir === 'lower' ? x - y : y - x); return d.sort((p, q) => p - q); };
+const improvements = (a, b, dir) => { checkAB(a, b, 'shift'); const d = []; for (const x of a) for (const y of b) d.push(dir === 'lower' ? x - y : y - x); return d.sort((p, q) => p - q); };
 const median = (s) => { const n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
 
 /** Hodges-Lehmann shift: median of the pairwise improvements (positive = b better). */
