@@ -184,6 +184,26 @@ Two findings for the tool:
   device. It is a composited overlay the phone doesn't have: dismiss it once (tap, WDA) before any measurement and
   keep the device (don't erase it between runs).
 
+Hold 1 (14:26-14:28Z, config-file proxy, baseline served `--vendors=local --latency 150`, http):
+- **Isolation works.** `:9231/json` listed one device, `SIMULATOR`; `:9232/json` listed only the Safari tab
+  (`localhost:<port>/`). The phone was never attached. Second boot took 11 s, the first 35 s.
+- **Facts.** UA `iPhone OS 18_7 … Version/26.5 Mobile/15E148 Safari/604.1` (the phone sends Version/26.6.1);
+  innerWidth x innerHeight **430 x 775**, DPR 3, screen 430 x 932, the phone's scripted geometry;
+  `hardwareConcurrency` 8 (the host's cores); reduced motion off; docH 6035.
+- **Idle rAF, 10 s at the top (D2, pilot only):** headless (Simulator.app not open) 589 frames, 59 fps, dt mostly
+  16-17 ms, but with stray 2-10 ms and 21-25 ms gaps and **8 gaps > 34 ms**. With the window shown: 598 frames,
+  60 fps, dt 15-20 ms, 0 gaps > 34 ms. So the simulated display runs at 60 Hz here, not at the host panel's 120 Hz (OBSERVED, in our setup; D2 stays
+  UNRESOLVED as to why).
+  Headless pacing is noisier: OBSERVED, in our setup, cause unknown. Until FP-1 says otherwise, **measure with
+  the window shown**.
+- **Scroll (pilot's own probe, not `iphone.mjs`'s PROBE, so no phone comparison):** about 7 s to the bottom;
+  headless dt>50 16, dt>34 42, p95 50 ms; window dt>50 17, dt>34 30, p95 53 ms. The Simulator janks on this
+  page. Whether it janks like the phone is FP-2's question.
+- **First-run tip:** no popover in hold 1's screenshot, although it was never dismissed. It showed on the first
+  Safari launch only (OBSERVED, in our setup). Its close button sits at about (393, 656) pt; a blind tap there
+  when the tip is absent would hit page content (the hero carousel). So the tool taps only when a screenshot shows
+  the tip (pixel check; `wda.mjs` forbids element queries), or does it once in `setup` (sent to ts-sim).
+
 ## 6. Verdict table
 
 (pending: §4.3 applied to §5)
