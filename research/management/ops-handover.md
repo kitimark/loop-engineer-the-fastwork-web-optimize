@@ -2,7 +2,7 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **07:31Z**.
+**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **07:37Z**.
 
 ## Digest log (newest first, 5 lines each)
 
@@ -69,6 +69,9 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Next actions for the next mgmt-ops (in order)
 
+0. USER DECISION 07:35Z: baseline freeze, `site/` + `site-pretty/` committed on main (ts-snapshot toolsmith; user approves
+   the enforcement edits). Nobody runs mirror/prettify meanwhile. iPhone thermally throttling: control must pass before
+   any numbers count.
 1. N10 (fix-scroll-engine, #1 target): iphone-runner runs the R3 logger (item 1) + ablations d, c, b, a vs aw1-10c, n=3
    through y 1700-2200 + one full pass, after the finger tests. Collect → owner designs the fix. Then /10d, then hero-exit
    (y≈50 frame).
@@ -117,6 +120,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 | fix-nav-morph, wave1-dry, ts-bench, N11, apple-verify | ENDED | – | do not resume without the lead |
 | hero-exit | parked | N10 cause | y≈50 frame; `--on aw1-10c`; bench calibration ≥ 1e2c402 |
 | arch-snapshot | research (lead spawned, versioned-baseline design) | – | report to lead |
+| ts-snapshot | toolsmith (lead spawned): baseline freeze, commit site/ + site-pretty/ | user approval of enforcement edits | land via lead |
 
 ## Wave-2 order (lead decisions, DIRECTION slot 3)
 

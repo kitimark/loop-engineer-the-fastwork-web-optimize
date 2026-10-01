@@ -153,6 +153,21 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N4 / N10 fixes (N3 rejected 2026-10-01, F-015) as their prototypes pass Tier A.
 
+## Baseline freeze (user decision, 2026-10-01 ~07:35Z)
+
+The user froze today's mirror build as the baseline: `site/` and `site-pretty/` get **committed on main** (Hard rule 3
+changes for those two paths only; rule 2, never push / no remote, stays). Toolsmith `ts-snapshot` builds it: `.gitignore`
+and pre-commit changes (the user approves the enforcement edits), a committed pin `baseline.json`, start-up checks that
+report BASELINE-MODIFIED, worktree access (sparse checkout or copies), a guard on `mirror.mjs`/`prettify.mjs`, and the
+CLAUDE.md wording. **Until it lands nobody runs `mirror.mjs` or `prettify.mjs`.** All results so far are on this build; the
+pin makes later rebuilds comparable or explicitly not. arch-snapshot (research) wrote the versioned-baseline design.
+
+## iPhone status (07:35Z)
+
+The phone throttles thermally again (control run failed 2x); the user is cooling it. Order once a control passes: finger
+tests (via the lead) -> N10 R3 logger + ablations d, c, b, a -> item 9 (N12) -> 2, 4-8. Every iPhone session starts with
+a passing control run; a failed control voids the session's numbers.
+
 ## Started now (prototype while the queue drains)
 
 - N3 `main-thread-infinite-animations`: **rejected 2026-10-01** (F-015, a49e591): the orbit is `display:none`, all CSS animations ~1 ms/frame at 6x; owner done. Its iPhone questions are look-only item 7 below.
