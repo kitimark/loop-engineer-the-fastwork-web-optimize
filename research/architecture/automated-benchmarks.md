@@ -84,6 +84,14 @@ one on the patched side (for example `== 0`).
   isn't vacuous).
 - The patched expectation proves the fix still removes it.
 
+*Note added 2026-10-02 (ts-headless, lead decision Q1):* Tier A's headless Chrome now sees the page a headed one does. It
+gets a User-Agent override (`HeadlessChrome/` → `Chrome/`; Hotjar's bootstrap skips headless user agents) and a virtual
+screen pinned to 1512x982 at DPR 2 (`--screen-info`; the headless default is DPR 1). It also runs in its own temp
+profile. Each `bench mech` record and `mechPartial`, and reconfirm's `tierAPage`, record `chromeMode`, `uaOverride`,
+`screenInfo`, `mechPage: "headed-equivalent"` and `lock.mode`. **Mech records without `mechPage` are from before this
+change and are not comparable with newer ones** (different counting conditions). They are kept as they are, not
+recomputed. Details: `research/architecture/headless-functional.md`.
+
 A second kind of check is **parity**. At every settled step, the listed classes, custom-property
 values and attributes on the patched page must equal the baseline's. This is the scroll-engine
 "parity smoke" in general form, and it guards the side jobs from P2/P12.

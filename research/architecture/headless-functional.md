@@ -265,3 +265,41 @@ The interface was agreed with ts-lock-share, and the lead approved their design.
   `--screen-dpr` to override.
 - Q4: The "headless rAF ~120/s" line in fixes/layout-animations/README.md is contradicted here (C11, F-091). Leave it as
   history, or add a note?
+
+## 8. Phase 2: what was built (2026-10-02)
+
+The lead approved the design and answered Q1-Q4. This section records what was built and where it differs from §6.
+
+**Lead answers.**
+- **Q1, yes.** `bench mech` (and reconfirm's Tier A) gets the UA override and `--screen-info`. Older mech records are
+  marked not comparable in `research/architecture/automated-benchmarks.md` §2 and are not recomputed.
+- **Q2, optional.** `fix.mjs check --save` writes `fixes/<topic>/check.json`; commit it only when the README cites it.
+- **Q3, yes.** 1512x982 at DPR 2 is recorded in every result; `--screen-dpr` overrides it.
+- **Q4, a note.** A dated note sits under the line in `fixes/layout-animations/README.md`, which itself is unchanged.
+
+**Built.**
+
+| piece | what |
+|---|---|
+| `tools/lib/cdp.mjs` | `launchChrome({args})` is additive; the headed argv is pinned exactly by a unit test. The return value gains `userAgent` and `headless` (both from the `/json/version` it already read). New helpers `HEADLESS_SCREEN`, `screenInfoArg`, `isHeadlessUA`, `headedUA`, `tempProfileDir` |
+| `tools/check.mjs` | as §6.1 |
+| `tools/fix.mjs check` | as §6.2. The served-file check is now one function shared with `ab`, with the same logic and messages. Regressions add `newFailures` (a patched-only "did not reach the bottom" or "no nav"), and exit 1 includes them. `check.json` is scrubbed: origins become `<origin>`, private IPv4 `<lan>`, the checkout `.`, and the home dir `~` |
+| refusals (exit 2) | `verify.mjs` on `--headless`/`--functional`, and on a browser whose UA says HeadlessChrome. `fix.mjs ab` on `--headless`/`--functional`. `bench gain`/`calibrate` on the flags, and `measureGain` on a headless browser (this covers reconfirm Tier B too) |
+| `verify.json` | gains `chromeMode: "headed"` |
+| `bench mech`, reconfirm Tier A | its own temp profile under `out/chrome-fn`, `--screen-info`, and the UA override through `runMech` → `tierASession` → `openPage({userAgent})`. Tier B passes no UA, so its CDP sequence is unchanged (unit test). The records gain `chromeMode`, `uaOverride`, `screenInfo`, `mechPage: "headed-equivalent"` and `lock {mode, maxSec}`; reconfirm records them as `tierAPage` |
+| fake Chrome | `FAKE_CHROME_HEADLESS`, `FAKE_CHROME_CHECK` (plays `/check-fake.json` into the page), a `User-Agent` in `/json/version`, and the launch argv in the `(started)` line's params |
+
+**Differences from §6.**
+- The argv is logged in the existing `(started)` line, not a new `(launch)` line. `cdpTokens` ignores both, and the
+  golden `verify-default-cdp.json` is untouched.
+- `check.mjs` asks for `{short: true, maxSec}` until ts-lock-share's lane is on main. It then picks up
+  `SHARED_LANE.weights.check` by feature test. `--max-seconds` is 10-300.
+- On its own, `check.mjs` does not fail on a 404 or a missing morph, since the live baseline may have both.
+  `fix.mjs check` fails only on what the patched side newly has.
+
+**Measurement code (comparability).**
+- `lib/cdp.mjs`, `verify.mjs`, `fix.mjs ab` and `bench gain` change only by additive options and refusals. A headed run
+  sends the same argv and the same CDP sequence as before (pinned by the argv unit test and the golden). `verify.json`
+  gains one field.
+- Headed A/B results before and after this change compare.
+- **Tier A mech counts do not compare across this change** (Q1, above).

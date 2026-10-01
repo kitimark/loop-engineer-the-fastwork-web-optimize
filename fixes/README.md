@@ -118,6 +118,22 @@ host load average during the runs.
 Run `node tools/fix.mjs ab --aa --runs 5` once per session to know the noise floor, and again after
 a measurement-code change (I-002 added the idle phase and changed phase boundaries).
 
+**Functional check first (headless, no timing).** `node tools/fix.mjs check <topic> [--viewport mobile|desktop|both]
+[--no-screens] [--save]` asks "does my overlay break anything?" before you queue an A/B or a user sitting. It uses the
+same two servers and served-file check as `ab`, then runs `tools/check.mjs` in one headless Chrome on both sides:
+- what it checks: load, verify's state probe, a DOM fingerprint, a stepped walk to the bottom, the morph gestures,
+  top/middle/bottom screenshots, console errors, first-party 404s and failed requests;
+- result: `out/check/<topic>/<stamp>/check.json`, scrubbed of origins, LAN addresses and paths; `--save` copies it to
+  `fixes/<topic>/check.json`. Commit that copy only when your README cites it;
+- exit 1 on a new error, a new 404, a new failure (no scroll to the bottom, nav missing) or a morph lost on the
+  patched side;
+- the screenshot diff compares headless with headless only.
+
+It gives no timing and never a verdict on gain; that stays with `ab`. `ab`, `verify.mjs` and `bench gain` refuse headless
+Chrome (exit 2). `check.mjs` also takes plain URLs: `node tools/check.mjs a=<url> b=<url> [--probe name=<js>]`.
+Headless is made to see the page a headed Chrome does: the User-Agent override and `--screen-info` 1512x982 DPR 2. Its
+limits are in `research/architecture/headless-functional.md`.
+
 ## Merging
 
 `node tools/fix.mjs combine all-wave1 <topicA> <topicB> ...` (in a worktree that has the patches, e.g.
