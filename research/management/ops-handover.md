@@ -17,6 +17,10 @@ snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-6** (at ~60 % con
 
 ## Digest log (newest first, 5 lines each)
 
+- **12:3xZ** Landed bd6762e (docs-2 P-029 row, F-059 corrections; doc-protocol-v2 layerPainted M148+, rAF 60 Hz, L13).
+  P1 HIT (P-017), P2 miss (P-016b). Lead: P10 right after P-029 (same session, 10 min cooling); runs count only with the
+  P0-cleared probe until T1a lands (T1a NEEDS-WORK B1, scrollHeight read). T8+ NEEDS-WORK (2 items). Gate 25 % (user).
+  Caffeinate ends ~13:32Z (lead restarts). Pending: mw-stub rerun (finger batch), arch-claims layout verdicts.
 - **11:5xZ** P0 CLOSED (P-023 neutral; A9 lifted for rAF-only loggers, lead 28aab81 + 747d80a, F-061; doc-protocol-v2
   carries it into protocol §3.2/§5.5 + unknowns-actions). User setup done (Developer Mode, UI Automation, cert); ts-gesture
   wda build holds the lease until <= 12:03Z, then runner: T10 -> P1+P2. P9 PASS (bbf2061). T8+ npm test in the short lane;
@@ -207,16 +211,20 @@ BATCH shas. **Stamp times from `date -u`** (mgmt-ops-4 drifted ~5-10 min ahead t
 `sh <scratchpad>/mgmt-ops/tick2.sh 150-240` (returns on incident changes; prints lock + phone state); messages arrive
 between tool calls.
 
-1. **iPhone order** (updated 12:2xZ by mgmt-ops-5; lead-ranked): DONE: P0 (P-023 closed, A9 lifted for rAF-only
+1. **iPhone order** (updated 12:3xZ by mgmt-ops-5; lead-ranked): DONE: P0 (P-023 closed, A9 lifted for rAF-only
    loggers), P1 (P-017 HIT: countdown face repaint = morph start transient), P2 (P-016b miss). NOW: WDA setup (ts-gesture
    holds the lease; user taps Trust; top priority by the user's request) -> T10 xctrace (after WDA; the iOS platform
    component was missing, installed 12:1xZ) -> F6 S (apple.com/iphone-18-pro, filler) -> ca-check (P-021, :5482) ->
    **g vs g-cdwc M block** (P-029, countdown fix transfer check on the landing base; lead 12:2xZ: ahead of P3; ticket
-   after fix-nav-morph's cd2-check) -> P3 ST-2 + baseline-A (P-019/P-020, ~45 min) -> P4 A = F1 arm-load (P-013), B =
+   after fix-nav-morph's cd2-check) -> **P10** (P-024, gh-cdwc-a1 built; lead 12:3xZ: right after P-029 in the
+   same session, 10 min cooling, same M driver, sentinel rules) -> P3 ST-2 + baseline-A (P-019/P-020, ~45 min) -> P4 A = F1 arm-load (P-013), B =
    F3 arm-scope (P-022, validated) -> P11+P14+P12 (P-028 + P-025, validated provisional on lc-cq3 parity) -> P5 ST-1
-   (P-018) -> P9 (P-026, own block) -> hero-B -> R2 bg -> /10d -> N12 -> P10 (P-024, gh-cdwc-a1 built) -> P6-P8, P13.
+   (P-018) -> P9 (P-026, own block) -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13.
+   **Probe rule (lead 12:3xZ):** until T1a lands, runs count only with the probe P0 cleared (rAF-only logger); T1a is
+   NEEDS-WORK B1 (per-frame `documentElement.scrollHeight` read forces layout at y=0). Lead asked iphone-runner whether
+   the P0 logger reads scrollHeight.
    **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (behind the countdown fix), h4.
-   Countdown fix mw10e-cdwc (CSS 269df63726b3 on aw1-10e) lands on phone gain evidence + review; mechanism wording stays
+   Countdown fix mw10e-cdwc (CSS 5dc6e8e37388 on aw1-10e; 269df637 differed only in a comment, never served) lands on phone gain evidence + review; mechanism wording stays
    OBSERVED ("repaint of the faces removed (observed)") until ver-webkit-paint reports (lead).
 2. **USER-ASK BUNDLE: answered 11:3xZ.** Approved: C1 (the lead runs it himself in the main checkout after T8+ /
    I-033 lands and is reviewed, when the user is away from the Mac; P-027), F6 (phone visits the Apple page), T10
@@ -227,15 +235,15 @@ between tool calls.
    finger F4); morph -> fix-nav-morph + de-pm-morph (Composite carries the cost, ~78 layers per cycle; R1/R2 refuted);
    hero -> fix-hero-exit + de-pm-hero; y-source -> arch-lead; ca-check -> arch-oss-survey + de-oss-map (if F-048
    confirmed: OSS P2 blur-easing-cubic fixes our own T10 base and goes first); N14 -> fix-scroll-engine.
-4. **Pending lands:** none from docs agents (lead landed 180c570, e068698, 1d42399 directly). Toolsmiths: ts-host-state
+4. **Pending lands:** none from docs agents (12:3xZ main bd6762e: docs-2 196af02, doc-protocol-v2 1b09dad/5ffb00c/cb74826). Toolsmiths: ts-host-state
    T8+ (I-033), ts-bench-gain (I-034, nit 1), ts-render-signals (I-032), ts-iphone-run (T1a), ts-gesture follow-up. fix-scroll-engine's /10d
    stays parked until its phone check (no base change mid-queue).
 5. ts-gesture notes (apply once landed): `wda build` = `node tools/lock.mjs run chrome-measure --owner iphone-runner
    --max-seconds 600 -- node tools/iphone.mjs wda build --owner iphone-runner` (normal lane, iphone lease, xcodebuild
    capped at 540 s); gesture key `pinReversals` -> `pin` (`pin.excursions`, `pin.fight`, `pin.bounces`); first G run:
    check perStroke `endLagMs` is not always 0 (review-gesture-2 B1).
-6. Caffeinate: `caffeinate -d -i -s` (display on, user-approved) since 11:01:46Z; the lead restarts it every 2 h ->
-   remind at ~12:50Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
+6. Caffeinate: `caffeinate -d -i -s` (display on, user-approved) since 11:31:52Z (7200 s), ends ~13:32Z; the lead
+   restarts it before then -> remind at ~13:20Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
 7. **Toolsmith asks from ts-analysis (review-stats T3 nits; need a lead spawn):** (nit 1) `tools/bench.mjs` calls
    `gainVerdict` at :555 and :689 without try/catch; since 86424b0 bench-stats throws on non-finite input, so a null/NaN
    scenario metric crashes bench (and in reconfirm loses later topics' tier B results) instead of INCONCLUSIVE. Fix
