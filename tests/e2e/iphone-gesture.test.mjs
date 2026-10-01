@@ -324,6 +324,10 @@ test('wda build: lease; only inside our own chrome-measure hold (not on a free l
   assert.equal(r.code, 1);
   assert.match(r.stderr, /refusing wda build: chrome-measure is held by "npm-test" \(a short-lane job\), not by this process/);
   lock('release', 'chrome-measure', '--owner', 'npm-test');
+  // our own short-lane hold: refused too (the short lane is for bounded jobs <= 300 s; lead's policy)
+  r = node(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--short', '--max-seconds', '120', '--', process.execPath, IPHONE, 'wda', 'build', '--owner', 'me', '--team', 'ABCDE12345', '--udid', '00008130-0011223344556677'], { env: w.env, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /refusing wda build: your chrome-measure hold is a short-lane job \(max 120 s\)/);
   assert.equal(xbCalls(), 0, 'xcodebuild never ran outside our hold');
   // inside our own hold (lock.mjs run): the remaining checks
   rmSync(join(w.home, 'WebDriverAgent'), { recursive: true });
@@ -359,6 +363,32 @@ test('wda build: lease; only inside our own chrome-measure hold (not on a free l
   r = wda('status');
   assert.match(r.stdout, /^build: +ok \(WebDriverAgentRunner_iphoneos26\.6-arm64\.xctestrun\)/m);
   for (const s of IDS) assert.doesNotMatch(r.out, s);
+});
+
+test('wda build: SIGTERM to the hold stops xcodebuild\'s whole process group, nothing keeps building after the lock is released (review-gesture-2 B2)', async () => {
+  const w = wdaEnv();
+  mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
+  lock('acquire', 'iphone', '--owner', 'me');
+  const pids = tempDir('fw-xbslow-');
+  const p = await startProc(process.execPath, [LOCK, 'run', 'chrome-measure', '--owner', 'me', '--max-seconds', '600', '--', process.execPath, IPHONE, 'wda', 'build', '--owner', 'me', '--team', 'ABCDE12345', '--udid', '00008130-0011223344556677'],
+    { env: { ...w.env, FAKE_XCODEBUILD_SLOW: pids }, ready: () => existsSync(join(pids, 'xb.pid')) && existsSync(join(pids, 'helper.pid')), timeout: 30000 });
+  const xb = Number(readFileSync(join(pids, 'xb.pid'), 'utf8')), helper = Number(readFileSync(join(pids, 'helper.pid'), 'utf8'));
+  assert.ok(pidAlive(xb) && pidAlive(helper), 'the slow build and its helper run');
+  assert.match(lock('status').stdout, /chrome-measure +held by "me"/);
+  // a plain `lock.mjs run` signals only its direct child (node iphone.mjs), then releases the lock and exits
+  p.proc.kill('SIGTERM');
+  await p.exited;
+  // the build's group is gone with it: xcodebuild at once (SIGTERM), its SIGTERM-ignoring helper after the grace (SIGKILL)
+  const t0 = Date.now();
+  while ((pidAlive(xb) || pidAlive(helper)) && Date.now() - t0 < 8000) await sleep(50);
+  assert.ok(!pidAlive(xb), `xcodebuild ${xb} still running after the hold ended`);
+  assert.ok(!pidAlive(helper), `xcodebuild's helper ${helper} still running after the hold ended`);
+  assert.doesNotMatch(lock('status').stdout, /chrome-measure +held by/);
+  // the interrupted build says so (its stderr closes when the orphaned node iphone.mjs exits)
+  const t1 = Date.now();
+  while (!/interrupted by SIGTERM/.test(p.stderr()) && Date.now() - t1 < 8000) await sleep(50);
+  assert.match(p.stderr(), /wda build interrupted by SIGTERM: xcodebuild \(its whole process group\) was stopped/);
+  assert.ok(!existsSync(join(w.home, 'DerivedData', 'Build', 'Products')), 'no build products from a stopped build');
 });
 
 test('wda start: a runner that fails to launch is a clean error whose xcodebuild log tail carries no ids (review-gesture 2)', async () => {

@@ -16,8 +16,10 @@
 //                                (Hard rule 7: nobody's A/B can start mid-build):
 //                                  node tools/lock.mjs run chrome-measure --owner <o> --max-seconds 600 -- \
 //                                    node tools/iphone.mjs wda build --owner <o>
-//                                xcodebuild is stopped before the hold ends (a short hold's expiry) and after
-//                                BUILD_MAX_SEC in a normal hold. The first build registers the device with the
+//                                A normal hold only (a short-lane hold is refused). xcodebuild runs in its own
+//                                process group, stopped at min(BUILD_MAX_SEC, what is left of the hold's
+//                                --max-seconds - 15 s) and on SIGINT/SIGTERM/SIGHUP (runGroup: never orphaned
+//                                past the hold). The first build registers the device with the
 //                                user's Apple account (free provisioning): the user's own one-time step
 //   wda start --owner <o>        lease-guarded: xcodebuild test-without-building + iproxy, wait for /status,
 //                                bring Safari to the front
@@ -46,7 +48,8 @@ const exe = (name, env) => process.env[env] || name;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Shorten an account or device id for printing (they stay on this machine, Hard rule 12). */
-export const mask = (s) => (s ? `${String(s).slice(0, 4)}...` : '(unset)');
+/** Whether an id is set, never any part of it (review-gesture-2: not even a prefix of the team id or UDID). */
+export const mask = (s) => (s ? 'set' : '(unset)');
 
 export function readConfig() { try { return JSON.parse(readFileSync(configFile(), 'utf8')); } catch { return {}; } }
 export function writeConfig(c) { mkdirSync(wdaHome(), { recursive: true }); writeFileSync(configFile(), JSON.stringify(c, null, 1)); }
@@ -98,13 +101,41 @@ export function buildGate(s = lockStatus('chrome-measure'), held = process.env.F
   const live = h && !s.stale && !staleReason(h, now);
   const mine = parseHeld(held)['chrome-measure'];
   if (live && mine && mine === h.token) {
-    const left = h.expiresAt ? Date.parse(h.expiresAt) - now - 15000 : Infinity;
-    const timeoutMs = Math.min(BUILD_MAX_SEC * 1000, left);
-    if (timeoutMs < 60000) return { ok: false, reason: `your chrome-measure hold ends in ${Math.max(0, Math.round((left + 15000) / 1000))} s: too little for a build. Run it in a fresh hold:\n  ${buildHoldCmd(owner)}` };
+    // the short lane is for bounded jobs of <= 300 s (npm test); a build is minutes of CPU: normal holds only (lead, review-gesture-2)
+    if (h.short) return { ok: false, reason: `your chrome-measure hold is a short-lane job (max ${h.maxSec} s): the short lane is for bounded jobs like npm test, and a build is minutes of Mac CPU. Run it in a normal hold:\n  ${buildHoldCmd(owner)}` };
+    // the hold's end: a lease's expiresAt, or a normal run's declared length (meta.expectSec = --max-seconds) from
+    // acquiredAt, so the time already spent in the hold counts (review-gesture-2)
+    const ends = [h.expiresAt && Date.parse(h.expiresAt), h.meta?.expectSec > 0 && Date.parse(h.acquiredAt) + h.meta.expectSec * 1000].filter((x) => Number.isFinite(x));
+    const left = ends.length ? Math.min(...ends) - now : Infinity;
+    const timeoutMs = Math.min(BUILD_MAX_SEC * 1000, left - 15000);
+    if (timeoutMs < 60000) return { ok: false, reason: `your chrome-measure hold ends in ${Math.max(0, Math.round(left / 1000))} s: too little for a build. Run it in a fresh hold:\n  ${buildHoldCmd(owner)}` };
     return { ok: true, timeoutMs };
   }
   const who = live ? `chrome-measure is held by "${h.owner}"${h.short ? ' (a short-lane job)' : ''}, not by this process` : 'chrome-measure is free, but this process does not hold it';
   return { ok: false, reason: `${who}. xcodebuild is minutes of Mac CPU: it runs only inside your own hold, so no A/B starts mid-build (Hard rule 7):\n  ${buildHoldCmd(owner)}` };
+}
+
+/**
+ * Run a long child (xcodebuild build-for-testing) in its own process group, never orphaned (review-gesture-2
+ * B2): a normal `lock.mjs run` passes SIGINT/SIGTERM/SIGHUP to its direct child only (this node process),
+ * and releases the lock right after; a blocking spawnSync would die with us and leave xcodebuild building
+ * outside any hold. Here those signals and the timeout kill the whole group (SIGTERM, then SIGKILL after
+ * graceMs). Resolves {status, signal, timedOut, interrupted (the signal we got, or null), error}.
+ */
+export function runGroup(cmd, args, { cwd, stdio = 'ignore', timeoutMs, graceMs = 3000, signals = ['SIGINT', 'SIGTERM', 'SIGHUP'] } = {}) {
+  return new Promise((done) => {
+    let child;
+    try { child = spawn(cmd, args, { cwd, stdio, detached: true }); } catch (error) { done({ status: null, signal: null, timedOut: false, interrupted: null, error }); return; }
+    let timedOut = false, interrupted = null, hard = null;
+    const killGroup = (sig) => { try { process.kill(-child.pid, sig); } catch {} };
+    const stop = () => { killGroup('SIGTERM'); if (!hard) { hard = setTimeout(() => killGroup('SIGKILL'), graceMs); hard.unref?.(); } };
+    const handlers = signals.map((s) => [s, () => { interrupted ??= s; stop(); }]);
+    for (const [s, h] of handlers) process.on(s, h);
+    const timer = timeoutMs ? setTimeout(() => { timedOut = true; stop(); }, timeoutMs) : null;
+    const finish = (r) => { clearTimeout(timer); clearTimeout(hard); for (const [s, h] of handlers) process.off(s, h); done(r); };
+    child.on('error', (error) => finish({ status: null, signal: null, timedOut, interrupted, error }));
+    child.on('exit', (status, signal) => { killGroup('SIGKILL'); finish({ status, signal, timedOut, interrupted, error: null }); }); // and anything it left in its group
+  });
 }
 
 function readPid(name) {
@@ -215,9 +246,11 @@ async function wdaCmdInner({ sub, opt, requireLease, log }) {
     const blog = join(wdaHome(), 'build.log');
     log(`building WebDriverAgent ${cfg.ref} for device ${mask(udid)}, team ${mask(team)} (log: ${blog}); a few minutes of Mac CPU inside your chrome-measure hold (stopped after ${Math.round(gate.timeoutMs / 1000)} s); Xcode's automatic signing registers this device with the signed-in Apple account`);
     const fd = openSync(blog, 'w');
-    const r = spawnSync(exe('xcodebuild', 'FW_XCODEBUILD'), buildArgs({ udid, team, bundleId }), { cwd: srcDir(), stdio: ['ignore', fd, fd], timeout: gate.timeoutMs });
+    const r = await runGroup(exe('xcodebuild', 'FW_XCODEBUILD'), buildArgs({ udid, team, bundleId }), { cwd: srcDir(), stdio: ['ignore', fd, fd], timeoutMs: gate.timeoutMs });
     closeSync(fd);
-    if (r.status !== 0) throw new Error(`xcodebuild build-for-testing ${r.error?.code === 'ETIMEDOUT' ? `stopped after ${Math.round(gate.timeoutMs / 1000)} s (before your chrome-measure hold ends); re-run it in a fresh hold` : 'failed'} (exit ${r.status ?? r.signal}); last lines of ${blog}:\n${tail(blog)}\nIf it is about signing or the account: ${SETUP}`);
+    if (r.interrupted) throw new Error(`wda build interrupted by ${r.interrupted}: xcodebuild (its whole process group) was stopped, nothing keeps building after the hold. Re-run it in a fresh hold:\n  ${buildHoldCmd(owner)}`);
+    if (r.error) throw new Error(`xcodebuild could not start: ${r.error.code || r.error.message}`);
+    if (r.status !== 0) throw new Error(`xcodebuild build-for-testing ${r.timedOut ? `stopped after ${Math.round(gate.timeoutMs / 1000)} s (before your chrome-measure hold ends); re-run it in a fresh hold` : 'failed'} (exit ${r.status ?? r.signal}); last lines of ${blog}:\n${tail(blog)}\nIf it is about signing or the account: ${SETUP}`);
     const x = findXctestrun();
     if (!x) throw new Error(`build succeeded but no .xctestrun in ${derivedData()}/Build/Products`);
     log(`WDA_BUILT ${x}`);

@@ -3,11 +3,13 @@
 // an .xctestrun (and a runner .app) in -derivedDataPath; test-without-building runs a fake WebDriverAgent
 // (tests/fixtures/fake-wda.mjs) on the port of $FW_WDA_URL until killed, like the real runner behind iproxy.
 // Env: FAKE_XCODEBUILD_LOG (one JSON line of argv per call), FAKE_XCODEBUILD_FAIL=1 (build: signing failure),
-// FAKE_XCODEBUILD_RUN_FAIL=1 (test-without-building: the runner fails to launch), FAKE_WDA_LOG (passed to the
+// FAKE_XCODEBUILD_RUN_FAIL=1 (test-without-building: the runner fails to launch), FAKE_XCODEBUILD_SLOW=<dir>
+// (build: runs until killed, with a SIGTERM-ignoring helper in its group; pids in <dir>), FAKE_WDA_LOG (passed to the
 // fake WDA). Both failures print what real xcodebuild prints there: the device's UDID and name, the team id,
 // the runner's bundle id, the Apple Account e-mail and the signing identity's person name (review-gesture 2:
 // the tools must scrub all of them before printing a log tail). All of these ids are made up.
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -29,6 +31,17 @@ const leaky = () => {
   console.log(`legacy device ${'0123456789abcdef0123456789abcdef01234567'}`);
 };
 if (a.includes('build-for-testing')) {
+  if (process.env.FAKE_XCODEBUILD_SLOW) {
+    // a build that runs until killed, with a helper process in its group that ignores SIGTERM (like the
+    // compilers/signing tools xcodebuild starts): writes xb.pid and helper.pid into the given directory
+    const dir = process.env.FAKE_XCODEBUILD_SLOW;
+    const h = spawn(process.execPath, ['-e', "process.on('SIGTERM', () => {}); setInterval(() => {}, 1 << 30)"], { stdio: 'ignore' });
+    writeFileSync(join(dir, 'helper.pid'), String(h.pid));
+    writeFileSync(join(dir, 'xb.pid'), String(process.pid));
+    console.log('Building... (slow fake)');
+    setInterval(() => {}, 1 << 30);
+    await new Promise(() => {}); // never finishes by itself
+  }
   if (process.env.FAKE_XCODEBUILD_FAIL) { leaky(); console.log('error: Signing for "WebDriverAgentRunner" requires a development team.'); process.exit(65); }
   const dd = a[a.indexOf('-derivedDataPath') + 1];
   const p = join(dd, 'Build', 'Products');
