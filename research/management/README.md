@@ -9,6 +9,7 @@ anything user-facing.
 
 Re-run the numbers: `node research/management/tools/kpi.mjs --transcript <session.jsonl>` (section 5).
 Baseline: [`data/kpi-baseline.md`](data/kpi-baseline.md) and `data/kpi-baseline.json`.
+Usage meter (user T-010, every 30 min): `node research/management/tools/usage.mjs [--reset 2026-10-01T21:20Z]`, tokens per 5-h window, last 30 min, agent and model from the local transcripts (counts only, no text); appends to `<git-common-dir>/fastwork-mirror/usage/usage.jsonl` (local, survives sessions); plan % is an ESTIMATE from the user's readings (`--calibrate <ISO>=<percent>`, `usage/calibration.jsonl`).
 
 ## 1. The user's decisions
 
