@@ -324,7 +324,8 @@ listeners armed once at setup) 34/35 = gone**, nb (no `b` at the edge) 84/101 = 
 landable fix (listeners armed at idle + a cheap touchmove gate); touch-only class -> G or F before landing.
 **iPhone queue (v2, lead-approved 10:5xZ):** na/nb + P2b (Timeline attribution of the y≈1960 frame) -> morph attribution
 session (de-safari P2/P3) -> hero 2 blocks + P3b (LayerTree census y 580/780 before any v6/v7 bisect) -> R2 bg -> /10d ->
-N12 -> R3/h3. Only ticketed builds; reorders only at block boundaries.
+N12 -> R3/h3. Only ticketed builds; reorders only at block boundaries. Ticket and queue rules: `fixes/LEAD.md` "Stages and
+gates", paragraph "Slot tickets (phone access)"; card templates (incl. the prediction card): `fixes/_template/CARDS.md`.
 **Measurement protocol v2 (in progress, user request ~10:20Z):** arch-lead drafts
 `research/architecture/measurement-protocol-v2.md` (research -> investigate -> distinguish -> fix -> review) with inputs
 from the owners, ops and the devtools/safari notes; execution after the lead's approval; the current queue runs unchanged

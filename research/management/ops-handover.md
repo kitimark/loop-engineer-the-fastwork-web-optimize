@@ -245,6 +245,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `doc-protocol-v2` (aa630a1a8c0adae9f) | v2 docs pass (LEAD, README DoD, AGENT_PROMPT, fix-reviewer, EXPERIMENTS, CLAUDE.md); not ops docs | alive |
 | `arch-unknowns`, `de-unknowns-render`, `de-unknowns-ux` | unknowns hunt (validity, render terms, perceived smoothness) -> arch-lead merges | alive |
 | `ts-gesture` (a83a0f8d7c6fe96b6 worktree) | fixing review-gesture-2 B1/B2 | alive |
+| `de-pm-morph`, `de-pm-hero` | post-mortem of phone-tested refactors (morph gh/ghb/ghbn/hump/first frames; hero v2 y≈700, h1, y≈1250); Timeline captures via slot tickets with per-segment predictions | alive |
+| `arch-oss-survey` (a14e692b6f530f1c0), `de-oss-map` (af4a76a52eface067) | OSS rendering libraries survey + mechanism map -> 3-5 PoC shortlist for the lead (read-only) | alive |
 
 ## Who waits on what (08:55Z)
 
