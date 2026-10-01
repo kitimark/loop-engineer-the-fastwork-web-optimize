@@ -700,3 +700,50 @@ our best current stack. Both are served over `site-pretty` with `--vendors=local
 - **Files** stay in `out/iphone-runner/` (Timeline records are large): `p14-{C1,C5,C9,A2,A6,A7,B3,B4,B8,R10}.json` +
   `.tl.json`, `p14-S-{open,end}.json`, `p14-idle-{C,A,B}.json`, `p14.log`. The arm letters A/B in these file names are
   V1/V2, not the sitting's A/B.
+
+### 4p. Style-recalc attribution (user priority, 18:32Z): sitting A (baseline) vs B (B+), W + Timeline depth 10
+
+- **Setup:**
+  - Sitting builds as in §4n: A = baseline (JS 4606120cf392), B = `user-bplus` snapshot (JS dbd5fdb4f1fb, CSS cc8d1340b449).
+  - Each run, W at 430x775: 6 s idle at the top, W scroll to the end, 6 synthetic wheel events past the end (the morph
+    push), 3 s hold. Timeline uses the F-047 sequence.
+  - Scorer `out/iphone-runner/srscore.mjs` (phases hero / people / mid / end by y and marks; outermost
+    RecalculateStyles; the ScheduleStyleRecalculation stacks give the JS trigger). Self vs nested Layout comes from
+    de-style-recalc's `rsan.mjs`.
+- **Block 1 (18:37-18:44Z), not used:** A1, B2, B3 and A4 started before the Mac Web Inspector was closed (18:41:48Z, C-014),
+  so they are marked mac-inspector-possible. It agrees with the rerun.
+- **Rerun (18:55-19:01Z), inspector closed:**
+  - One warm-up per port, then A7 B8 B9 A10 A11 B12.
+  - Timeline-OFF S sentinels on A pass: open bottom 60.0 / scroll 52.8, end 60.1 / 53.1.
+  - Phone 42.0-42.6 °C, charging, no LPM.
+  - A7's push did not start the morph (0 → 0, as A5 in block 1); every other run reached 0 → 1.
+- **RecalculateStyles per phase, in ms (totals include nested Layout):**
+
+| run | hero (incl. 6 s idle) | people | mid | end | ≥ 16 ms records |
+|---|---|---|---|---|---|
+| A7 | 228 | 118 | 334 | 169 (no morph) | people 1, mid 1 |
+| A10 | 234 | 123 | 329 | 211 | people 1, mid 1 |
+| A11 | 252 | 123 | 346 | 192 | people 1, mid 1 |
+| B8 | 322 | 65 | 218 | 243 | mid 1, end 1 |
+| B9 | 330 | 61 | 222 | 236 | mid 1, end 1 |
+| B12 | 328 | 59 | 207 | 242 | mid 1, end 1 |
+
+- **Records ≥ 10 ms** (RS = self + nested Layout; lines are in each arm's own `2.DyWL8TcE.js`):
+
+| y | arm | RS ms | self / nested Layout | trigger |
+|---|---|---|---|---|
+| ~1840 | A | 28.2-29.8 | 11.0-11.6 / 17.2-18.2 | forced inside an IntersectionObserver callback; scheduled by `N` :13063, the morph wheel listener arming |
+| ~2455 | A | 14.3-15.8 | 1.5-1.6 / 12.8-14.3 | `--start-selling-intrinsic-block-size` setProperty :2701; forced from rAF in 2 of 3 runs |
+| ~2620 | A | 16.7-19.1 | 2.4-2.9 / 14.3-16.2 | `cE` :2712, `data-start-selling-scene` active/paused |
+| ~2620 | B | 29.2-32.2 | 3.7-4.7 / 25.5-27.5 | `cE` :2762 (same flip) |
+| ~2995 | B | 13.4-14.6 | 1.6 / 11.8-13.0 | `fwReskip` :2821 (intrinsic-size setProperty) |
+| 5260 | B | 16.9-18.8 | 13.7-15.1 / 3.2-4.2 | `__osb` :13287 (`overscrollBehaviorY`) from the wheel handler, at morph start |
+
+- **Runner's reading (OBSERVED, in our setup, cause unknown):**
+  - B removes A's forced recalc at y ~1840. People-phase RS halves (~120 → ~60 ms), and mid falls ~335 → ~215 ms.
+  - The scene flip at y ~2620 is mostly nested Layout, not selector matching, and is ~11 ms larger in B.
+  - Hero idle RS is ~+90 ms in B with no record ≥ 10 ms: many small recalcs.
+  - The only large self-time (true style) record left in B is the morph start's `overscrollBehaviorY` write.
+  - The table went to de-style-recalc, fix-scene-scope and the lead (19:0xZ).
+- **Files** stay in `out/iphone-runner/`: `sr-{A7,B8,B9,A10,A11,B12}.json` + `.tl.json`, `sr2-S-{open,end}.json`,
+  `sr2-score.json`, `sr2.sh`, `srscore.mjs`, and block 1 as `sr-{A1,B2,B3,A4,A5,B6}`, `sr-score-run1.json`.
