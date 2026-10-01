@@ -1,0 +1,36 @@
+/* The user console's shared top bar (ts-console-nav): menu, badge, Alerts panel, new-step banner. Served as
+   /console-nav.css to both pages; uses each page's colour tokens (--bg, --card, --ink, --muted, --line, --accent,
+   --accent-soft) with fallbacks. No external resources. */
+.menu { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg, #f6f5f1); border-bottom: 1px solid var(--line, #e3e1da); }
+.menu-in { max-width: 860px; margin: 0 auto; padding: 8px 16px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.menu a.mbtn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line, #e3e1da); background: var(--card, #fff); color: var(--ink, #1d1d1b); text-decoration: none; font-size: 15px; font-weight: 600; }
+.menu a.mbtn:hover { border-color: var(--accent, #2f5bd3); }
+.menu a.mbtn.on { background: var(--accent, #2f5bd3); border-color: var(--accent, #2f5bd3); color: var(--accent-ink, #fff); }
+.menu .badge { display: inline-block; min-width: 22px; padding: 0 7px; border-radius: 999px; background: #c62f2f; color: #fff; font-size: 13px; font-weight: 700; line-height: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+.menu a.mbtn.on .badge { background: #fff; color: #c62f2f; }
+.menu .menu-sp { flex: 1 1 auto; }
+.menu details.alerts { position: relative; }
+.menu details.alerts > summary { list-style: none; cursor: pointer; min-height: 40px; display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line, #e3e1da); background: var(--card, #fff); color: var(--ink, #1d1d1b); font-size: 14px; }
+.menu details.alerts > summary::-webkit-details-marker { display: none; }
+.menu details.alerts > summary::after { content: "▾"; margin-left: 6px; color: var(--muted, #6b6a64); }
+.menu details.alerts > summary[data-muted="true"]::before { content: "muted · "; color: var(--muted, #6b6a64); }
+.menu .alerts-panel { position: absolute; right: 0; top: calc(100% + 6px); width: min(340px, calc(100vw - 32px)); background: var(--card, #fff); color: var(--ink, #1d1d1b); border: 1px solid var(--line, #e3e1da); border-radius: 14px; padding: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.18); display: grid; gap: 8px; }
+.menu .alerts-panel button, .menu .alerts-panel select { font: inherit; font-size: 14px; text-align: left; cursor: pointer; border-radius: 10px; border: 1px solid var(--line, #e3e1da); background: var(--bg, #f6f5f1); color: var(--ink, #1d1d1b); padding: 8px 10px; min-height: 40px; }
+.menu .alerts-panel button:disabled { cursor: not-allowed; opacity: .6; }
+.menu .alerts-panel label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
+.menu .alerts-panel .hint { font-size: 12px; color: var(--muted, #6b6a64); margin: 0; }
+.menu a:focus-visible, .menu summary:focus-visible, .menu button:focus-visible, .menu select:focus-visible, .nav-banner button:focus-visible { outline: 3px solid var(--accent, #2f5bd3); outline-offset: 2px; }
+.nav-banner { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 58px); z-index: 19; width: min(828px, calc(100% - 32px)); margin: 10px auto 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px 10px 16px; border-radius: 14px; background: var(--accent, #2f5bd3); color: var(--accent-ink, #fff); box-shadow: 0 6px 20px rgba(0,0,0,.15); font-size: 15px; }
+.nav-banner.remind { background: #8a5a00; color: #fff; }
+.nav-banner .nb-text { flex: 1 1 200px; font-weight: 600; overflow-wrap: anywhere; }
+.nav-banner button { font: inherit; font-size: 14px; cursor: pointer; border-radius: 10px; min-height: 36px; padding: 4px 12px; border: 1px solid rgba(255,255,255,.6); background: rgba(255,255,255,.15); color: inherit; }
+.nav-banner .nb-open { background: #fff; color: #1d1d1b; border-color: #fff; font-weight: 650; }
+.nav-banner .nb-x { border-color: transparent; background: transparent; font-size: 20px; padding: 0 8px; }
+@media (max-width: 520px) {
+  .menu-in { padding: 6px 12px; gap: 6px; }
+  .menu a.mbtn { padding: 6px 12px; font-size: 14px; }
+}
+section[data-id] { scroll-margin-top: 80px; }
+@keyframes nav-flash { 0%, 60% { box-shadow: 0 0 0 4px var(--accent, #2f5bd3); } 100% { box-shadow: none; } }
+section.flash { animation: nav-flash 2s ease-out 1; }
+@media (prefers-reduced-motion: reduce) { section.flash { animation: none; outline: 3px solid var(--accent, #2f5bd3); } }

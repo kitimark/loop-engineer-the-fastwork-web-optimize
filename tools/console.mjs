@@ -6,8 +6,15 @@
 // Library: tools/lib/console.mjs (state machine), tools/lib/console-server.mjs (HTTP), tools/lib/console-page.html.
 //
 // The page (lead or user, once; run it in the background; localhost only, never 5173):
-//   node tools/console.mjs serve [--port auto|N] [--open]   # prints CONSOLE_URL=http://localhost:<port>/
-//        # already running: prints the running one's CONSOLE_URL and exits 0
+//   node tools/console.mjs serve [--port auto|N] [--open] [--notify] [--remind <min>]   # prints CONSOLE_URL=http://localhost:<port>/
+//        # already running: prints the running one's CONSOLE_URL and exits 0 (its flags stay as they were)
+//        # Both pages ("/" steps, "/progress") share a top bar: "Your steps" with a live badge (open steps), "Progress",
+//        # and Alerts (sound on/muted, desktop notifications after a click, remind-after minutes, test, theme). A new
+//        # step shows a banner with Open, chimes (Web Audio), puts "(n) " in the tab title and, once allowed, raises a
+//        # desktop notification; a step left on the user's turn for --remind minutes (default 3, 0 = never; the page
+//        # can override it) is announced once more, quietly. Notifications carry only the step id and a sanitized title.
+//        # --notify (off by default, macOS, local only): the server also raises a macOS notification per new step and
+//        # one reminder (osascript via execFile with an argv array, no shell; tools/lib/console-notify.mjs).
 //   node tools/console.mjs url                              # CONSOLE_URL of the running page (exit 3: none)
 //
 // Agents:
@@ -49,12 +56,13 @@ import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { post, list, get, ack, redo, reopen, cancel, answer, waitCondition, line, parseId, consoleDir } from './lib/console.mjs';
 import { runningServer, startServer } from './lib/console-server.mjs';
+import { DEFAULT_REMIND_MIN } from './lib/console-notify.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './lib/wait.mjs';
 import { autoPortBase } from './lib/paths.mjs';
 import { currentView, renderText, readProgress } from './lib/progress.mjs';
 
 const argv = process.argv.slice(2);
-const VALUED = ['--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -82,15 +90,24 @@ function show(s) {
 
 async function serve() {
   const existing = await serverUrl();
-  if (existing) { console.log(`CONSOLE_URL=${existing}`); console.log(`already running (pid ${runningServer().pid}); store ${consoleDir()}`); return 0; }
+  if (existing) {
+    console.log(`CONSOLE_URL=${existing}`); console.log(`already running (pid ${runningServer().pid}); store ${consoleDir()}`);
+    if (flag('notify') || opt('remind') !== undefined) console.log('note: --notify/--remind apply when a server starts; stop the running one first to change them');
+    return 0;
+  }
   const p = String(opt('port', 'auto'));
   let candidates;
   if (p === 'auto') { const b = autoPortBase(); candidates = Array.from({ length: 60 }, (_, i) => 5200 + ((b - 5200 + 400 + i) % 800)); } // the half of the range away from this checkout's mirror port
   else if (/^\d+$/.test(p) && Number(p) !== 5173) candidates = [Number(p)];
   else throw new Error(`--port must be auto, 0 or a port number other than 5173 (got ${p})`);
-  const srv = await startServer(candidates);
+  const remindRaw = opt('remind', String(DEFAULT_REMIND_MIN));
+  const remindMin = Number(remindRaw);
+  if (!/^\d+(\.\d+)?$/.test(String(remindRaw)) || !(remindMin >= 0 && remindMin <= 1440)) throw new Error(`--remind must be minutes, 0-1440 (0 = never), got ${remindRaw}`);
+  const notify = flag('notify');
+  const srv = await startServer(candidates, { notify, remindMin, onNotifyError: (e) => console.error(`notify: osascript failed: ${e.message}`) });
   console.log(`CONSOLE_URL=${srv.url}`);
   console.log(`store ${consoleDir()}; open the URL in a desktop browser; Ctrl-C to stop`);
+  if (notify) console.log(process.platform === 'darwin' || process.env.FW_CONSOLE_NOTIFY_LOG ? `macOS notifications on (new steps; reminder after ${remindMin || 'never'}${remindMin ? ' min' : ''})` : 'notify: macOS notifications need macOS; ignored here');
   if (flag('open') && process.platform === 'darwin') spawn('open', [srv.url], { stdio: 'ignore', detached: true }).unref();
   const stop = () => { srv.close().then(() => process.exit(0)); setTimeout(() => process.exit(0), 2000).unref(); };
   process.on('SIGINT', stop); process.on('SIGTERM', stop); process.on('SIGHUP', stop);
