@@ -4,7 +4,7 @@
 //  - contentvisibilityautostatechange (capture phase on document: it fires after the frame and does not bubble),
 //  - attribute flips: data-start-selling-render / data-start-selling-scene / data-fw-wc (oldValue -> value, same-value
 //    re-sets ignored), and class changes on .pain (is-pain-dark) and #people (is-visible),
-// so a long frame (> 34 ms) can be named by the transitions that preceded it. No forced layout: scrollY only.
+// so a long frame (> 34 ms) can be named by the transitions that preceded it. No forced layout intended: scrollY only (note: reading scrollY can force a synchronous layout in WebKit, research/design-engineering/unknowns-render.md U1).
 (() => {
   if (window.__r3) return;
   const R = (window.__r3 = { frames: [], pending: [], long: [], t0: performance.now() });

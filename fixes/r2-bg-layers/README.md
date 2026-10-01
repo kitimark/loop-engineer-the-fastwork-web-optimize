@@ -81,6 +81,7 @@ window in both builds) and could not isolate the switch.
 
 No timing A/B yet (no normal Chrome holds, per mgmt-ops-4). The expected gain is on the phone: de-middle predicts
 10-20 ms → < 2 ms per `is-pain-dark` crossing (y ≈ 888 on the phone), ~5-10 ms → < 2 ms per `.shrinking` crossing.
+Caveat: that estimate is paint-only. The post-mortem (`research/design-engineering/postmortem-hero.md`, around lines 137-141 and 194) attributes the +1.13 s / y≈1528 frame to the same class write plus a forced read (layout ~16 ms); R2's `::before` layers do not touch that layout part.
 
 iPhone ablation (plain http per I-003; any checkout, absolute overlay path):
 `node tools/serve.mjs --root site-pretty --overlay /Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-a1722cf5058e25591/fixes/r2-bg-layers/overlay --port auto --vendors=local --latency 150`

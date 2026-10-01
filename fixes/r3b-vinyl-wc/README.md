@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** phone diagnostic (cheap test); no Chrome parity run (a `will-change` hint, no paint change intended).
+**Status:** phone diagnostic record, not in the base (cheap test); no Chrome parity run (a `will-change` hint, no paint change intended).
 **Owner:** fix-scroll-engine, for de-middle R3 (lead OK 09:50Z). **Base:** `aw1-10e`. Standalone overlay
 (aw1-10e + this change). Rebuild: `node tools/fix.mjs apply r3b-vinyl-wc --on aw1-10e`.
 Overlay CSS d879ae02ec836a6d…, JS = aw1-10e. `patch.diff` +2/-0, sha 57618e864d0f477a.

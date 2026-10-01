@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** phone diagnostic (not landable as is); parity checked in Chrome.
+**Status:** phone diagnostic record, not in the base (not landable as is); parity checked in Chrome.
 **Owner:** fix-scroll-engine, for de-middle R3 (lead OK 09:50Z). **Base:** `aw1-10e` (JS 3e2f599a…, CSS c6aad94b…).
 Standalone overlay (aw1-10e + this change). Rebuild: `node tools/fix.mjs apply r3a-feed-fade --on aw1-10e`.
 Overlay CSS ac0acfe8c682effa…, JS = aw1-10e. `patch.diff` +16/-2, sha 39a6db3b69e900ac.

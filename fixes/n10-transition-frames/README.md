@@ -3,21 +3,23 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). Diffs contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** **stopped, superseded by e1/e2** (lead decision 09:50Z). The y≈1960 frame's cause is the morph IO
-image burst, not `.pain`: in iphone-runner's e1/e2 block (09:48Z, F-043) the frame is ≥ 12 `img` src assignments in
-the `#platform` morph IO callback (9/9 runs; control 94 ms at y 1967, e1 passive listeners 94 ms at 1965, e2 IO
-rootMargin 150 % moves it to ≈ 2240, ~96 ms), as de-middle predicted (`research/design-engineering/middle.md` §2).
-fix-nav-morph (cluster B) owns that fix. The ablations a-d were dropped from the phone queue and never ran; their
-overlays and `patch.diff`s stay as a record. The `.pain` background switch is handled separately by R2
-(`fixes/r2-bg-layers`).
+**Status:** **stopped, superseded** (lead decision 09:50Z); record, not in the base. The y≈1960 frame is **not
+`.pain`**. It was first attributed to the morph IO image burst (F-043, e1/e2 block 09:48Z: control 94 ms at y 1967,
+e1 passive listeners 94 ms at 1965, e2 IO rootMargin 150 % moves it to ≈ 2240, ~96 ms); F-044 corrected that: the
+R3 logger's 12-events-per-frame cap hid the real trigger, mw10e-src was not a winner, and the frame was solved per
+`research/design-engineering/unknowns-render.md` section 1 (a window wheel/touch listener add forces a full style
+rebuild plus event-region invalidation; arming once at setup takes 104/107 to 34/35 ms). The e1/e2 numbers above stay
+valid as measurements; the "image burst" reading of them does not. The ablations a-d were dropped from the phone
+queue and never ran; their overlays and `patch.diff`s stay as a record. The `.pain` background switch is handled
+separately by R2 (`fixes/r2-bg-layers`).
 **Owner:** fix-scroll-engine (lead decision 07:07Z). Base: `aw1-10e` (all-wave1 + scroll-engine /10e, landed 60f66b6; JS 3e2f599a…, CSS c6aad94b…). The ablations were rebuilt on aw1-10e at 08:50Z.
 
-## Symptom
+## Symptom (superseded, see Status)
 
 iphone-runner's goal check on aw1-10c (scripted, n=3) shows a ~106 ms frame at y≈1960-1970 ("pain entry") in every
 run. The other frames > 50 ms are 51-55 ms at y≈50 and ~50 ms at y≈700/1000 (2/3).
 
-## What happens near y≈1.7-2.2 k on a phone (code reading)
+## What happens near y≈1.7-2.2 k on a phone (code reading; superseded, see Status: `.pain` is not the cause)
 
 - `.pain` (section, CSS `.pain-sticky { position: sticky }`) is registered with the engine at a 150 % gate
   (`dE(..., { deferRendering: !0, rootMargin: 150% 0px })`, JS 4891). Under /10c it is rendered at load and only
