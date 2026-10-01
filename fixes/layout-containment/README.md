@@ -147,6 +147,11 @@ by the scrollbar width); the slot and arm constants copy the CSS sizes, so a des
 - **Driver:** W at 430x775, 6 s idle at y 0, then top → y≥2900.
 - **Timeline:** depth 8 on every counted run.
 - **Frame columns:** dt>50 / dt>34 with the ±4 ms counts.
+- **Prediction P-028, in ms (668b612, no ticks on the phone):**
+  - aw1-cq3 has no Layout nested in RecalculateStyles.
+  - Rebuild-frame total Layout ms: −15 [−5, −25] at most.
+  - Rebuild-frame dt: −17 ms [0, −50] at most. The frame may leave dt>50.
+  - Steady frames unchanged.
 - **Readouts:**
   - nested-in-RecalculateStyles Layout count and ms (F-052/U3);
   - the rebuild-frame root quad and Layout ms;
