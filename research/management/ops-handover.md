@@ -2,9 +2,15 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **06:40Z**.
+**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **07:31Z**.
 
 ## Digest log (newest first, 5 lines each)
+
+- **07:31Z** iPhone BACK (iphone-runner owns it; I may message it directly for scripted checks, finger tests via lead).
+  iPhone goal check baseline → aw1-10c: > 50 ms 5→3, > 34 ms 16→9, fps 52.8→57.1; #1 target ~106 ms at y≈1970 → N10
+  (fix-scroll-engine, 4 phone ablations d,c,b,a built d24a656). Chrome: page-owned > 50 ms 0 on aw1-10c, 1 vendor gtag
+  frame (user-facing, lead). Landed: Q3 note d33d957 (wave1-dry ENDED), I-030 8bab8b7, docs. N13 CLOSED (0/49). N12 + #6
+  land after finger verdict. I-031 opened (other CPU 20-26 % mid-hold) → ts-i021 top-5 process log after D/E.
 
 - **06:32Z** Landed: ts-bench I-028 follow-up 1e2c402 (ts-bench ENDED for good), docs b586b9a + ff00155. N13 forced-toggle
   probe: 0 storms in 2 x 41 toggles → agents-ask visual NOT the trigger (F-027 supersedes F-026); N13 storm-catch hold
@@ -63,20 +69,19 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Next actions for the next mgmt-ops (in order)
 
-1. N12 (fix-nav-morph) A/B `--on aw1-10c` holding from ~06:31: first pass (> 50/> 34 first, AV1 forced style+layout ms,
-   contamination, patch sha) → land/no-land rec → reviewer request to the lead if landable.
-2. N13 storm-catch hold (fix-scroll-engine, queued #2): storms n/N traced vs untraced, per-storm breakdown → decide fix or
-   park; then /10d.
-3. q3 (wave1-dry Q3-final, queued #3): metric choice final → commit a Q3 note → land batch. The pilot is done (tool OK);
-   spec issues belong to phone-invisible-shrink's future bench author.
-4. I-018 (ts-i017): 7 review items coded (unit 184/184), rebase on 05967e9 → e2e short + commit lease (not while a goal normal
-   is #1) → re-review → one traced run + test:chrome → land. Then ts-i021 rebases B/C/D (review-i027 ACCEPT-WITH-NOTES; D =
-   its notes) → test:chrome → lead canary → land, resolve I-027. I-030 (ts-i021, branch ts-i030 on 05967e9, unit 73/73):
-   commits when the queue is clear; reviewer requested.
-5. Caffeinate: the lead restarts it every 2 h (background-task cap) until the user sets pmset; current one ends ~08:37Z →
-   remind the lead at ~08:30Z. I-026 commit A landed 05967e9 (caffeinate while anyone is QUEUED); resolve on lead npm test.
-6. hero-exit (parked): on resume rebase, `--on aw1-10c`, calibrate `heroPointerEventsWrites` on ≥ 1e2c402.
-7. Queue rule: no new shorts while a goal-path normal is #1 (I-030 workaround); ping the lead at > 10 min waits.
+1. N10 (fix-scroll-engine, #1 target): iphone-runner runs the R3 logger (item 1) + ablations d, c, b, a vs aw1-10c, n=3
+   through y 1700-2200 + one full pass, after the finger tests. Collect → owner designs the fix. Then /10d, then hero-exit
+   (y≈50 frame).
+2. fix-scroll-engine record batch (5dfc500..39859a5 + d24a656 ablations): it is rebasing; send LAND BATCH with the head sha.
+3. ts-i021 (resumed by lead): D notes (bench.mjs stubOutsideTest, real-clock test flags) + flaky chromeCpuPct fix = E →
+   then I-031 top-5 non-Chrome process log in verify's host record (log only, own commit, short review, test:chrome).
+   B/C/D/E rebase on I-018 → test:chrome → canary → land, resolve I-027.
+4. ts-i017 I-018: shorts running 07:2x → re-review → one traced run + test:chrome → land FIRST.
+5. N12 0c423b6 + #6 v05 (fix-nav-morph branch): lead lands after the finger verdict; fix-nav-morph ENDED, no GO for E4/N2
+   until the iPhone results.
+6. Caffeinate ends ~08:37Z: remind the lead at ~08:30Z (restart every 2 h until the user sets pmset).
+7. Backlog for mgmt-lead iteration 3: short-drain starvation (I-030 landed), recheck-pauses-instead-of-contaminate,
+   gate.since survives intervening holds, verify load-phase gap, iphone wip.mjs stub clock, agent count as a load source.
 
 ## Where the project stands
 
@@ -90,28 +95,28 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 - Landed since 01:15Z: a49e591 N3, d17c490 handover addendum, b71760f mgmt-lead iteration 2, 36fd4b5 I-022 harness,
   554201a LEAD.md team ~8 + iteration-2 rules.
 
-## Incidents (05:58Z; resolved ones dropped, see `incident.mjs list`)
+## Incidents (07:31Z; resolved ones dropped, see `incident.mjs list`)
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-018 | fixing | ts-i017 | f71ee42 rebasing; gate = reviewer + A/A cdp-metrics on/off (one hold) + test:chrome; lands before ts-i021 |
-| I-026 | triaged P1 | ts-i021 | reopen: sleep assertion while anyone is QUEUED (commit A) |
-| I-027 | triaged P2 | ts-i021 | #6 fixtures (A), #3 stubbed-host clock in verify (B, measurement code), bench-scenario (C) |
-| I-028/I-029 | RESOLVED 57b997a / 4f5667d + follow-up 1e2c402 | – | open doc item for the next toolsmith touch: inlineProp can't see Svelte style-attribute/cssText writes |
-| I-030 | triaged P2 | ts-i021 after I-027 | gateHolding(): shorts pass a head normal whose gate isn't open yet, even lead-moved; fix idea: movedBy normal never passed. Workaround: no new shorts while a goal normal is #1 |
+| I-018 | fixing | ts-i017 | review-i018 NEEDS-WORK fixed (CDP metrics opt-in); re-review → traced run → lands before ts-i021 B-E |
+| I-026 | resolve on lead npm test of 05967e9 | – | caffeinate while QUEUED landed |
+| I-027 | B/C/D(/E) after I-018 | ts-i021 | real host unchanged (review-i027); canary before land |
+| I-030 | landed 8bab8b7, resolve on lead npm test | – | shorts never pass a moved normal; 120 s pass window |
+| I-031 | open, env | ts-i021 after E | other CPU 20-26 % mid-hold; not iPhone/builds; log top-5 non-Chrome processes per run (log only) |
 | I-016 | parked | lead | e4 hooks via short lane (user), f orphans P3 |
 
-## Who waits on what (06:32Z)
+## Who waits on what (07:31Z)
 
 | agent | state | waits on | next |
 |---|---|---|---|
-| fix-scroll-engine | N13 probe done (visual ruled out); storm-catch queued #2 | lock | storm traces → fix or park; then /10d |
-| ts-i017 | I-018 fixes coded (184/184) | rebase 05967e9, 2 shorts, re-review | one traced run + test:chrome; lands before ts-i021 B/C/D |
-| ts-i021 | A landed 05967e9; B+C reviewed (ACCEPT-WITH-NOTES → D); I-030 coded | I-018 on main; queue clear | D, I-030 commit; B/C/D rebase on I-018 → test:chrome → canary |
-| wave1-dry | pilot done (tool OK); Q3-final queued #3 | lock | Q3 final → commit the Q3 note |
-| fix-nav-morph | N12 A/B `--on aw1-10c` holding ~06:31 | – | report → review → land; #6 waits finger test |
-| hero-exit | parked | wave-2 order (after N12) | + bench `heroPointerEventsWrites` calibration |
-| ts-bench (for good), N11, apple-verify, ts-prio, ts-i002 | ENDED | – | ts-bench follow-up (review-i028 notes) when the lead resumes it |
+| fix-scroll-engine | N10 owner; ablations built d24a656; record batch rebasing | iphone-runner ablation results | fix design; then /10d |
+| iphone-runner | owns the iPhone; goal check done; finger tests with the user (lead) | – | items 1 (R3), N10 ablations d,c,b,a, 9 (N12), 2, 4-8 |
+| ts-i017 | I-018 fixes, shorts in progress | re-review | traced run + test:chrome → land first |
+| ts-i021 | D notes + flaky fix (E) | – | I-031 log; B-E rebase on I-018 |
+| fix-nav-morph, wave1-dry, ts-bench, N11, apple-verify | ENDED | – | do not resume without the lead |
+| hero-exit | parked | N10 cause | y≈50 frame; `--on aw1-10c`; bench calibration ≥ 1e2c402 |
+| arch-snapshot | research (lead spawned, versioned-baseline design) | – | report to lead |
 
 ## Wave-2 order (lead decisions, DIRECTION slot 3)
 
