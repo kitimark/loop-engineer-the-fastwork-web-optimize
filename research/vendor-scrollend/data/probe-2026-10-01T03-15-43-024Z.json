@@ -1,0 +1,226 @@
+{
+ "tool": "research/vendor-scrollend/probe.mjs",
+ "cpu": 1,
+ "tailS": 4,
+ "startedAt": "2026-10-01T03:15:43.024Z",
+ "host": {
+  "load1Before": 3.0341796875,
+  "load1After": 2.76513671875,
+  "cpuIdlePct": 77.2
+ },
+ "runs": [
+  {
+   "variant": "base",
+   "scenario": "load-no-hook",
+   "loc": {
+    "href": "https://localhost:62778/",
+    "h": 6240,
+    "kit": true,
+    "dl": 6
+   }
+  },
+  {
+   "variant": "base",
+   "scenario": "D",
+   "listeners": [
+    "pagehide :9 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /__vendor/www.googletagmanager.com/gtag/js:903",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /__vendor/www.googletagmanager.com/gtag/js:903"
+   ],
+   "scroll": {
+    "y": 5344.5,
+    "t": 4021
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 3724,
+     "y": 5308
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "gtm.scrollDepth",
+    "view_section",
+    "(pagehide)",
+    "(pagehide)",
+    "(visibility:hidden)",
+    "(visibility:hidden)",
+    "(pagehide)",
+    "(visibility:hidden)"
+   ],
+   "dlBeforeLeave": 8,
+   "afterLeave": [
+    {
+     "k": "dl",
+     "ev": "(pagehide)",
+     "t": 4030,
+     "y": 5345
+    },
+    {
+     "k": "dl",
+     "ev": "(pagehide)",
+     "t": 2960,
+     "y": 0
+    },
+    {
+     "k": "dl",
+     "ev": "(visibility:hidden)",
+     "t": 4031,
+     "y": 5345
+    },
+    {
+     "k": "dl",
+     "ev": "(visibility:hidden)",
+     "t": 2961,
+     "y": 0
+    }
+   ],
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 3735,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "02-idle",
+   "scenario": "D",
+   "listeners": [
+    "pagehide :9 capture",
+    "pagehide /analytics.js:96 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /analytics.js:153",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /analytics.js:153"
+   ],
+   "scroll": {
+    "y": 5343.5,
+    "t": 7977
+   },
+   "scrollDepthPushes": [
+    {
+     "k": "dl",
+     "ev": "gtm.scrollDepth",
+     "t": 7986,
+     "y": 5344
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "view_section",
+    "(pagehide)",
+    "gtm.scrollDepth",
+    "(pagehide)",
+    "(visibility:hidden)",
+    "(visibility:hidden)",
+    "(pagehide)",
+    "(visibility:hidden)"
+   ],
+   "dlBeforeLeave": 7,
+   "afterLeave": [
+    {
+     "k": "dl",
+     "ev": "(pagehide)",
+     "t": 7985,
+     "y": 5344
+    },
+    {
+     "k": "dl",
+     "ev": "gtm.scrollDepth",
+     "t": 7986,
+     "y": 5344
+    },
+    {
+     "k": "hit",
+     "kind": "fetch",
+     "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-ZHPMJ436RV&gtm=45je69t0v9253011230za20kzb9253008550zd9253008550xf4&_p=1790824560613&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEA&ae=a&cid=879918035.1790824567&frm=0&ngs=1&pscdl=noapi&rcb=16&sr=430x932&uaa=arm&uab=64&uafvl=Chromium%3B154.0.8037.58%7CGoogle%2520Chrome%3B154.0.8037.58%7CNot%2520A(Brand%3B99.0.0.0&uam=&uamb=0&uap=macOS&uapv=26.2.0&uaw=0&ul=en-us&_s=1&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121246027~121246035&sid=1790824566&sct=1&seg=0&dl=https%3A%2F%2Flocalhost%2F&dt=Fastwork%20%C2%B7%20Show%20the%20world%20what%20you%20can%20do&en=scroll&_fv=1&_nsi=1&_ss=1&epn.percent_scrolled=90&tfd=7993",
+     "body": "",
+     "t": 7993
+    },
+    {
+     "k": "dl",
+     "ev": "(pagehide)",
+     "t": 2961,
+     "y": 0
+    },
+    {
+     "k": "dl",
+     "ev": "(visibility:hidden)",
+     "t": 7994,
+     "y": 5344
+    },
+    {
+     "k": "dl",
+     "ev": "(visibility:hidden)",
+     "t": 2962,
+     "y": 0
+    }
+   ],
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 7993,
+     "kind": "fetch",
+     "afterLeave": true
+    }
+   ],
+   "hitHosts": {
+    "xhr vc.hotjar.io": 1,
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "xhr vc.hotjar.io": 1,
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1
+   },
+   "errors": [],
+   "profile": null
+  }
+ ],
+ "seconds": 26
+}
