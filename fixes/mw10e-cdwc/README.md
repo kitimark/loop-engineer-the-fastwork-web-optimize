@@ -101,6 +101,15 @@ from 113 to 33.
 The landing pair, aw1-10e vs mw10e-cdwc, has not run on the phone, and there is no G run yet. The lead ruled no waiver:
 a G block of aw1-10e vs mw10e-cdwc is ticketed right after P4 (mgmt-ops-5). F evidence: the user's blind swipe A/B, run by
 iphone-runner, is still in progress.
+- **P-032 amendment (b), before any counted data** (lead 15:1xZ; mgmt-ops-5's second read pending). Reason: I-038. A
+  morph-log hook's second inspector connection hangs the gesture tool's connection, so the run has no m. The
+  amendment:
+  - t0 = the stamp of the first touchmove with defaultPrevented=1 in each stroke that drives the morph (push and
+    dwell), from gesture-rec's touch rows.
+  - The morph's capture handler calls preventDefault and then drives m. In a no-hook test run (aw1-10e) every push
+    and dwell move shows defaultPrevented=1, and no hero or traverse move does.
+  - Fallback: the first touchmove of the stroke with scrollY at max. A run that uses it is flagged "t0-fallback".
+  - The window (t0, t0+450] and every verdict rule stay as registered.
 - Builds, each from an immutable snapshot over site-pretty:
   - C = mw10e-g (JS 22efa0ab69ba / CSS c6aad94b455f);
   - V = mw10e-g-cdwc (JS 22efa0ab69ba / CSS 5dc6e8e37388).
