@@ -161,3 +161,32 @@ test('gain --experiment: expected outcome per row; broke and iphone rows are ski
     assert.match(r.stderr, /there is no --no-lock/);
   }
 });
+
+test('review-snapshot note 1: on a baseline that is not the pinned snapshot (FW_BASELINE_ALLOW_MODIFIED=1) calibrate is refused, gain is prefixed, exits 3 and authors nothing', async (t) => {
+  // a pin in the worktree, but the main checkout's fixture baseline is not a committed snapshot: state untracked
+  const pinFile = join(repo.wt, 'baseline.json');
+  writeFileSync(pinFile, JSON.stringify({ snapshot: 'b1-0123abcd', trees: { site: 'a'.repeat(40), 'site-pretty': 'b'.repeat(40) } }));
+  const resFile = join(repo.wt, 'fixes', 'fast-nav', 'bench-results.json');
+  const keep = readFileSync(resFile, 'utf8');
+  t.after(() => { rmSync(pinFile, { force: true }); writeFileSync(resFile, keep); });
+  let r = await bench('flag-refused', ['gain', 'fast-nav']);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stderr, /^bench\.mjs: BASELINE-UNTRACKED: /m);
+  const ALLOW = { FW_BASELINE_ALLOW_MODIFIED: '1' };
+  r = await bench('flag-cal', ['calibrate', 'fast-nav'], ALLOW);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^CALIBRATION REFUSED fast-nav: BASELINE-UNTRACKED: not measured on the pinned snapshot b1-0123abcd throughout/m);
+  assert.equal(results('fast-nav').calibration.band, 'clean', 'the stored calibration is kept');
+  assert.equal(results('fast-nav').calibrationRefused.refused, 'BASELINE-UNTRACKED');
+  // no authored effect yet: a flagged HOLDS must not author one
+  const res = results('fast-nav');
+  delete res.authored;
+  writeFileSync(resFile, JSON.stringify(res, null, 1));
+  r = await bench('flag-gain', ['gain', 'fast-nav'], ALLOW);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^GAIN BASELINE-UNTRACKED: HOLDS fast-nav styleLayoutMs: .* \[not authored: BASELINE-UNTRACKED\] -> /m);
+  const after = results('fast-nav');
+  assert.equal(after.authored, undefined);
+  assert.equal(after.gain.verdict, 'BASELINE-UNTRACKED: HOLDS');
+  assert.deepEqual(after.gain.baselineSnapshot, { snapshot: 'b1-0123abcd', state: 'untracked', tag: 'BASELINE-UNTRACKED' });
+});

@@ -165,4 +165,19 @@ export function requireBaseline(tool, { env = process.env } = {}) {
 /** What results.json / verify.json / bench-results.json record about the baseline (metadata only). */
 export const baselineMeta = (s) => ({ snapshot: s.snapshot, state: s.state });
 
+/** States a measurement may run on unflagged: the pinned snapshot, or no pin / FW_MIRROR_HOME (unchecked by design). */
+export const CLEAN_STATES = new Set(['ok', 'unpinned', 'override']);
+/**
+ * The verdict prefix for a measurement that started on baseline status `start` and ended on `end`
+ * (a fresh baselineStatus() at the end of a run): null when both are clean and the same snapshot;
+ * BASELINE-<STATE> when it did not measure the pinned snapshot (FW_BASELINE_ALLOW_MODIFIED=1) or the
+ * baseline changed under it (a re-mirror mid-A/B); BASELINE-CHANGED when it changed to another clean
+ * state (a re-pin). fix.mjs ab and bench.mjs prefix every verdict with it, like CONTAMINATED (host).
+ */
+export function baselineTag(start, end = start) {
+  if (!CLEAN_STATES.has(start.state)) return `BASELINE-${String(start.state).toUpperCase()}`;
+  if (!end || (end.state === start.state && end.snapshot === start.snapshot)) return null;
+  return CLEAN_STATES.has(end.state) ? 'BASELINE-CHANGED' : `BASELINE-${String(end.state).toUpperCase()}`;
+}
+
 export { mainCheckout };

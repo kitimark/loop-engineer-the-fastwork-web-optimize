@@ -36,6 +36,9 @@
 // Exit codes: 0 pass, 1 a check failed / VACUOUS / REGRESSED / lint errors, 2 usage,
 //             3 INCONCLUSIVE / FLAKY / BASELINE-CHANGED (or, before measuring, BASELINE-MODIFIED / -MISMATCH:
 //               the baseline is not the committed snapshot pinned by baseline.json), 124 the short-lane budget ran out.
+// A run that measured another baseline anyway (FW_BASELINE_ALLOW_MODIFIED=1) or whose baseline changed
+// while it ran (re-checked when it ends) gets "BASELINE-<STATE>: " before every verdict (baselineSnapshot.tag),
+// exits 3 instead of 0, and never stores a calibration or an authored effect.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -43,7 +46,7 @@ import { createHash } from 'node:crypto';
 import http from 'node:http';
 import https from 'node:https';
 import { REPO, resolveTree, checkoutId, isLinkedWorktree } from './lib/paths.mjs';
-import { requireBaseline, baselineMeta } from './lib/baseline.mjs';
+import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './lib/baseline.mjs';
 import { acquire } from './lib/lock.mjs';
 import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T, stubOutsideTest } from './lib/host.mjs';
 import { launchChrome, CDP, browserVersion } from './lib/cdp.mjs';
@@ -70,6 +73,10 @@ const MECH_SERVE = ['--vendors=local']; // Tier A: no latency or https needed fo
 let BASELINE = { snapshot: null, state: 'unchecked' }; // set before any measurement command (bottom of the file)
 
 function die(msg, code = 2) { console.error(msg); process.exit(code); }
+/** BASELINE-<STATE> when this command did not measure the pinned snapshot throughout (re-checked now), else null. */
+const baselineFlag = () => baselineTag(baselineMeta(BASELINE), baselineMeta(baselineStatus()));
+const flagged = (tag, verdict) => (tag ? `${tag}: ${verdict}` : verdict);
+const snapMeta = (tag) => ({ ...baselineMeta(BASELINE), ...(tag ? { tag } : {}) });
 if (flag('no-lock')) die('bench.mjs always takes chrome-measure itself (Hard rule 7): there is no --no-lock');
 /** mech/gain/calibrate write fixes/<topic>/bench-results.json: in a worktree, like fix.mjs (Hard rule 5). */
 function requireWorktree() {
@@ -391,10 +398,11 @@ async function cmdMech(t) {
   printTopic(t, ev, experiment);
   if (slept) console.log(`  FLAKY: the host slept ${host.sleptSec ?? '?'} s during the run (I-026); re-run it`);
   const summary = slept ? 'FLAKY' : code === 0 ? 'PASS' : code === 3 ? (verdicts.includes('BASELINE-CHANGED') ? 'BASELINE-CHANGED' : 'FLAKY') : 'FAIL';
+  const bTag = baselineFlag();
   const record = {
-    at: new Date().toISOString(), verdict: slept ? 'FLAKY' : experiment ? experiment.verdict : summary, ...(slept ? { hostSlept: true } : {}), seconds: Math.round((Date.now() - t0) / 1000),
+    at: new Date().toISOString(), verdict: flagged(bTag, slept ? 'FLAKY' : experiment ? experiment.verdict : summary), ...(slept ? { hostSlept: true } : {}), seconds: Math.round((Date.now() - t0) / 1000),
     git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD'), checkout: checkoutId() },
-    toolsSha: toolsSha(), chrome: chromeVersion, baselineManifest: baselineManifest(), baselineSnapshot: baselineMeta(BASELINE), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on,
+    toolsSha: toolsSha(), chrome: chromeVersion, baselineManifest: baselineManifest(), baselineSnapshot: snapMeta(bTag), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on,
     patch: source, served: { files: served.files }, viewports: Object.keys(plans), repeat, ...(TEST_FAST ? { timing: 'test-fast' } : {}), host,
     sessions: Object.fromEntries(Object.entries(sessions).map(([vp, s]) => [vp, Object.fromEntries(Object.entries(s).map(([side, rs]) => [side, rs.map((x) => ({ steps: x.steps, capped: x.capped, errors: x.errors }))]))])),
     checks: ev.checks, parity: ev.parity, ...(experiment ? { experiment } : {}),
@@ -405,7 +413,7 @@ async function cmdMech(t) {
   else res.mech = record;
   const f = writeResults(t, res);
   console.log(`MECH ${record.verdict} ${t}${exp ? ` ${expId}` : ''} (${ev.checks.length} checks, ${ev.parity.length} parity, ${record.seconds} s) -> ${relative(REPO, f)}`);
-  return code;
+  return bTag && code === 0 ? 3 : code;
 }
 
 // ---- Tier B ------------------------------------------------------------------------------------------------
@@ -505,7 +513,8 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   const range = hostRange(ser.hosts);
   const cur = { toolsSha: toolsSha(), chromeMajor: chromeMajor(m.chrome), setting: setting(o.timeDomain, o.cpu) };
   const res = readResults(t);
-  const base = { at: new Date().toISOString(), seconds: Math.round((Date.now() - t0) / 1000), git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD') }, ...cur, chrome: m.chrome, baselineManifest: baselineManifest(), baselineSnapshot: baselineMeta(BASELINE), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on, patch: calibrateMode ? null : sides.source, scenario: sc.key, metric: sc.metric, direction: sc.direction, runsPerSide: o.runs, cpu: o.cpu, timeDomain: o.timeDomain, host: range, values: { baseline: ser.a, patched: ser.b }, ...(ser.errors.length ? { errors: ser.errors } : {}) };
+  const bTag = baselineFlag();
+  const base = { at: new Date().toISOString(), seconds: Math.round((Date.now() - t0) / 1000), git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD') }, ...cur, chrome: m.chrome, baselineManifest: baselineManifest(), baselineSnapshot: snapMeta(bTag), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on, patch: calibrateMode ? null : sides.source, scenario: sc.key, metric: sc.metric, direction: sc.direction, runsPerSide: o.runs, cpu: o.cpu, timeDomain: o.timeDomain, host: range, values: { baseline: ser.a, patched: ser.b }, ...(ser.errors.length ? { errors: ser.errors } : {}) };
   if (ser.errors.length || ser.a.length < o.runs || ser.b.length < o.runs) {
     console.log(`${what.toUpperCase()} INCONCLUSIVE ${t}: scenario errors: ${[...new Set(ser.errors)].join('; ') || 'missing runs'}`);
     return 3;
@@ -514,6 +523,12 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
     const band = hostBand(ser.hosts);
     const fl = floors(m.runs, sc.key);
     const rec = { ...base, band, minEffect: fl[sc.metric].minEffect, floors: fl, runs: compactRuns(m.runs, sc.key) };
+    if (bTag) {
+      res.calibrationRefused = { ...rec, refused: bTag };
+      writeResults(t, res);
+      console.log(`CALIBRATION REFUSED ${t}: ${bTag}: not measured on the pinned snapshot ${BASELINE.snapshot ?? ''} throughout; floors come only from the committed snapshot.`);
+      return 3;
+    }
     if (band !== 'clean') {
       res.calibrationRefused = rec;
       writeResults(t, res);
@@ -532,25 +547,27 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   if (exp) {
     const r = experimentOutcome({ a: ser.a, b: ser.b, dir: sc.direction, calibration: calib, current: cur, hosts: ser.hosts });
     verdict = r.outcome === 'inconclusive' ? 'INCONCLUSIVE' : r.outcome === exp.expect.gain ? 'PASS' : 'MISMATCH';
-    rec = { ...base, expected: exp.expect.gain, outcome: r.outcome, verdict, reason: r.reason, p: r.p, pWorse: r.pWorse, shift: r.shift, ci: r.ci, minEffect: r.minEffect, band: r.band, runs: compactRuns(m.runs, sc.key) };
+    rec = { ...base, expected: exp.expect.gain, outcome: r.outcome, verdict: flagged(bTag, verdict), reason: r.reason, p: r.p, pWorse: r.pWorse, shift: r.shift, ci: r.ci, minEffect: r.minEffect, band: r.band, runs: compactRuns(m.runs, sc.key) };
     res.experiments ||= {}; res.experiments[expId] ||= {}; res.experiments[expId].gain = rec;
-    line = `GAIN ${verdict} ${t} ${expId}: expected ${exp.expect.gain}, observed ${r.outcome}${r.shift != null ? ` (HL shift ${fmt(r.shift)} [${fmt(r.ci?.lo)}, ${fmt(r.ci?.hi)}], p ${fmt(r.p)}, minEffect ${fmt(r.minEffect)})` : ` (${r.reason})`} (${fmtHost(range)})`;
+    line = `GAIN ${flagged(bTag, verdict)} ${t} ${expId}: expected ${exp.expect.gain}, observed ${r.outcome}${r.shift != null ? ` (HL shift ${fmt(r.shift)} [${fmt(r.ci?.lo)}, ${fmt(r.ci?.hi)}], p ${fmt(r.p)}, minEffect ${fmt(r.minEffect)})` : ` (${r.reason})`} (${fmtHost(range)})`;
   } else {
     const authored = on ? null : res.authored || null;
     const v = gainVerdict({ a: ser.a, b: ser.b, dir: sc.direction, calibration: calib, current: cur, authored, hosts: ser.hosts });
     verdict = v.verdict;
-    rec = { ...base, verdict, reason: v.reason, p: v.p, pWorse: v.pWorse, u: v.u, shift: v.shift, ci: v.ci, budget: v.budget, minEffect: v.minEffect, band: v.band, runs: compactRuns(m.runs, sc.key) };
+    rec = { ...base, verdict: flagged(bTag, verdict), reason: v.reason, p: v.p, pWorse: v.pWorse, u: v.u, shift: v.shift, ci: v.ci, budget: v.budget, minEffect: v.minEffect, band: v.band, runs: compactRuns(m.runs, sc.key) };
     if (on) { res.gainOn ||= {}; res.gainOn[on] = rec; } else res.gain = rec;
     let note = '';
     if (!on && !authored && sides.source.kind === 'committed') {
-      if (verdict === 'HOLDS' && v.band === 'clean') { res.authored = { at: rec.at, shift: v.shift, ci: v.ci, p: v.p, toolsSha: cur.toolsSha, chromeMajor: cur.chromeMajor, setting: cur.setting, metric: sc.metric, patchSha256: sides.source.sha256 }; note = ' [authored: later runs must keep >= half of this shift]'; }
+      if (verdict === 'HOLDS' && bTag) note = ` [not authored: ${bTag}]`;
+      else if (verdict === 'HOLDS' && v.band === 'clean') { res.authored = { at: rec.at, shift: v.shift, ci: v.ci, p: v.p, toolsSha: cur.toolsSha, chromeMajor: cur.chromeMajor, setting: cur.setting, metric: sc.metric, patchSha256: sides.source.sha256 }; note = ' [authored: later runs must keep >= half of this shift]'; }
       else if (verdict === 'HOLDS') note = ` [not authored: ${v.band} host; author on a quiet host]`;
     }
-    line = `GAIN ${verdict} ${t} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)} (minEffect ${fmt(v.minEffect)})` : ''} (${v.band === 'warn' ? 'WARN band, ' : ''}${fmtHost(range)})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}${note}`;
+    line = `GAIN ${flagged(bTag, verdict)} ${t} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)} (minEffect ${fmt(v.minEffect)})` : ''} (${v.band === 'warn' ? 'WARN band, ' : ''}${fmtHost(range)})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}${note}`;
   }
   const f = writeResults(t, res);
   console.log(`${line} -> ${relative(REPO, f)}`);
-  return GAIN_EXIT[verdict] ?? 1;
+  const gc = GAIN_EXIT[verdict] ?? 1;
+  return bTag && gc === 0 ? 3 : gc;
 }
 
 // ---- reconfirm: the landed set, one hold for Tier A + one per --gain topic --------------------------------
@@ -675,17 +692,20 @@ async function cmdReconfirm() {
     }
   }
   report.seconds = Math.round((Date.now() - t0) / 1000);
+  const bTag = baselineFlag();
+  if (bTag) report.baselineSnapshot = snapMeta(bTag);
   for (const it of items) rows.push({ topic: it.topic, A: report.tierA[it.topic]?.verdict ?? '-', B: report.tierB[it.topic]?.verdict ?? (it.spec.gain && (it.spec.gain.device ?? 'chrome') === 'iphone' ? 'iphone (skipped)' : '-'), note: report.tierB[it.topic]?.host ? `load1 ${report.tierB[it.topic].host.load1Min}-${report.tierB[it.topic].host.load1Max}, other CPU <= ${report.tierB[it.topic].host.otherBusyMax} %` : '' });
   rows.sort((x, y) => topics.indexOf(x.topic) - topics.indexOf(y.topic));
   report.rows = rows;
-  const md = [`# bench reconfirm ${ref} ${sha}`, '', `${report.at}, ${report.seconds} s, toolsSha ${report.toolsSha}, ${report.chrome || ''}`, '', '| topic | Tier A | Tier B | note |', '|---|---|---|---|', ...rows.map((r) => `| ${r.topic} | ${r.A} | ${r.B} | ${r.note || ''} |`), ...(Object.keys(report.experiments).length ? ['', '| experiment | Tier A |', '|---|---|', ...Object.entries(report.experiments).map(([id, e]) => `| ${id} | ${e.mech?.verdict ?? '-'} |`)] : [])].join('\n') + '\n';
+  const md = [`# bench reconfirm ${ref} ${sha}`, '', `${report.at}, ${report.seconds} s, toolsSha ${report.toolsSha}, ${report.chrome || ''}`, '', ...(bTag ? [`**${bTag}: not measured on the pinned snapshot ${BASELINE.snapshot ?? ''} throughout; every verdict below is invalid**`, ''] : []), '| topic | Tier A | Tier B | note |', '|---|---|---|---|', ...rows.map((r) => `| ${r.topic} | ${r.A} | ${r.B} | ${r.note || ''} |`), ...(Object.keys(report.experiments).length ? ['', '| experiment | Tier A |', '|---|---|', ...Object.entries(report.experiments).map(([id, e]) => `| ${id} | ${e.mech?.verdict ?? '-'} |`)] : [])].join('\n') + '\n';
   writeFileSync(join(outDir, 'report.json'), JSON.stringify(report, null, 1));
   writeFileSync(join(outDir, 'report.md'), md);
   console.log('\n' + md);
   const aVs = Object.values(report.tierA).map((x) => x.verdict), bVs = Object.values(report.tierB).map((x) => x.verdict), eVs = Object.values(report.experiments).map((x) => x.mech?.verdict).filter((v) => v && v !== 'SKIPPED');
   const code = Math.max(...[exitCode([...aVs, ...eVs.map((v) => (v === 'CONFLICT' ? 'FAIL' : v))]), ...bVs.map((v) => GAIN_EXIT[v] ?? 1)].map((c) => (c === 1 ? 10 : c)), 0);
-  const exit = code === 10 ? 1 : code;
-  console.log(`RECONFIRM ${exit === 0 ? 'PASS' : exit === 1 ? 'FAIL' : 'INCONCLUSIVE'} ${ref} ${sha} -> ${relative(REPO, join(outDir, 'report.md'))}`);
+  const exit0 = code === 10 ? 1 : code;
+  const exit = bTag && exit0 === 0 ? 3 : exit0;
+  console.log(`RECONFIRM ${flagged(bTag, exit0 === 0 ? 'PASS' : exit0 === 1 ? 'FAIL' : 'INCONCLUSIVE')} ${ref} ${sha} -> ${relative(REPO, join(outDir, 'report.md'))}`);
   return exit;
 }
 

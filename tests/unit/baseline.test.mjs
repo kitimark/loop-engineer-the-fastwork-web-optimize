@@ -223,3 +223,20 @@ test('requireBaseline: refuses with exit 3 and the message; FW_BASELINE_ALLOW_MO
     assert.match(a.stdout, /CONTINUED modified/);
   } finally { git(repo.main, 'checkout', '--', 'site/index.html'); }
 });
+
+test('baselineTag: the verdict prefix for a measurement that did not stay on the pinned snapshot', async () => {
+  const { baselineTag } = await import('../../tools/lib/baseline.mjs');
+  const S = (state, snapshot = 'b1-aaaaaaaa') => ({ state, snapshot });
+  for (const st of ['ok', 'unpinned', 'override']) assert.equal(baselineTag(S(st)), null, `${st} is clean`);
+  assert.equal(baselineTag(S('ok'), S('ok')), null, 'unchanged across the run');
+  // started on a baseline that is not the pinned snapshot (only possible with FW_BASELINE_ALLOW_MODIFIED=1)
+  assert.equal(baselineTag(S('modified')), 'BASELINE-MODIFIED');
+  assert.equal(baselineTag(S('untracked'), S('ok')), 'BASELINE-UNTRACKED', 'the start state wins');
+  assert.equal(baselineTag(S('mismatch'), S('mismatch')), 'BASELINE-MISMATCH');
+  // changed during the run: a re-mirror (modified), a re-pin (another clean snapshot), the pin removed
+  assert.equal(baselineTag(S('ok'), S('modified')), 'BASELINE-MODIFIED');
+  assert.equal(baselineTag(S('ok'), S('missing')), 'BASELINE-MISSING');
+  assert.equal(baselineTag(S('ok'), S('ok', 'b2-bbbbbbbb')), 'BASELINE-CHANGED');
+  assert.equal(baselineTag(S('ok'), S('unpinned', null)), 'BASELINE-CHANGED');
+  assert.equal(baselineTag(S('ok'), null), null, 'no end status: only the start counts');
+});

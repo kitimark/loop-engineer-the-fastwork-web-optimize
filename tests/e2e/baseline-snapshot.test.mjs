@@ -102,3 +102,61 @@ test('a changed snapshot in the main checkout: every baseline reader refuses (ex
   assert.equal(existsSync(join(wt, 'site-pretty')), false);
   assert.equal(tool('fix.mjs', ['show', PAGE_JS, '--lines', '1-2']).code, 0);
 });
+
+// review-snapshot notes 1 and 4: an A/B that did not measure the pinned snapshot throughout can't pass unnoticed
+const ab = (env) => nodeAsync(join(wt, 'tools', 'fix.mjs'), ['ab', 'snap', '--runs', '1', '--idle', '0', '--no-screens', '--max-wait', '0'],
+  { cwd: wt, env: { CHROME: FAKE, FW_STATE_DIR: join(tempDir('fw-snap-ab-'), 'state'), ...env } });
+const abResult = () => JSON.parse(readFileSync(join(wt, 'fixes', 'snap', 'results.json'), 'utf8'));
+const verdicts = (res) => Object.values(res.metrics).flatMap((ms) => Object.values(ms).map((x) => x.verdict));
+function makeOverlay() {
+  if (existsSync(join(wt, 'fixes', 'snap', 'overlay', PAGE_JS.slice(1)))) return;
+  const e = tool('fix.mjs', ['edit', 'snap', PAGE_JS]);
+  assert.equal(e.code, 0, e.out);
+  const f = join(wt, 'fixes', 'snap', 'overlay', PAGE_JS.slice(1));
+  writeFileSync(f, readFileSync(f, 'utf8') + '\n// patched\n');
+}
+
+test('ab on a baseline that is not the pinned snapshot (FW_BASELINE_ALLOW_MODIFIED=1): every verdict says BASELINE-MODIFIED', async (t) => {
+  makeOverlay();
+  const f = join(repo.main, 'site-pretty', PAGE_JS.slice(1));
+  writeFileSync(f, readFileSync(f, 'utf8').replace('measure', 'measureNewBuild'));
+  t.after(() => git(repo.main, 'checkout', '--', 'site-pretty'));
+  const r = await ab({ FW_BASELINE_ALLOW_MODIFIED: '1' });
+  assert.equal(r.code, 0, r.out);
+  const res = abResult();
+  assert.ok(verdicts(res).length > 0);
+  for (const v of verdicts(res)) assert.match(v, /^BASELINE-MODIFIED: /);
+  const { flaggedRuns, ...snap } = res.config.baselineSnapshot;
+  assert.deepEqual(snap, { snapshot: pin.snapshot, state: 'modified', tag: 'BASELINE-MODIFIED' });
+  assert.deepEqual(flaggedRuns.map((x) => [x.label, x.run, x.state, x.tag]).sort(), [['base', 0, 'modified', 'BASELINE-MODIFIED'], ['fix', 0, 'modified', 'BASELINE-MODIFIED']]);
+  assert.match(res.markdown, /\*\*BASELINE-MODIFIED: not measured on the pinned snapshot .* verdicts invalid\*\*/);
+  assert.match(r.stdout, /^\*\*BASELINE-MODIFIED: /m);
+  const raw = JSON.parse(readFileSync(join(wt, res.raw), 'utf8'));
+  assert.deepEqual(raw.baseline, { snapshot: pin.snapshot, state: 'modified', flaggedRuns: 2 });
+});
+
+test('a re-mirror in the middle of an A/B: verify flags the run after it, ab prefixes the verdicts; a clean A/B has no flag', async (t) => {
+  makeOverlay();
+  const clean = await ab({});
+  assert.equal(clean.code, 0, clean.out);
+  let res = abResult();
+  assert.deepEqual(res.config.baselineSnapshot, { snapshot: pin.snapshot, state: 'ok' });
+  for (const v of verdicts(res)) assert.doesNotMatch(v, /BASELINE/);
+  let raw = JSON.parse(readFileSync(join(wt, res.raw), 'utf8'));
+  assert.deepEqual(raw.baseline, { snapshot: pin.snapshot, state: 'ok' });
+  assert.ok(raw.results.filter((x) => !x.diff).every((x) => !('baseline' in x)), 'unflagged runs carry no baseline field');
+  // the fake Chrome changes the main checkout's snapshot at the first navigation of run 1
+  const f = join(repo.main, 'site-pretty', PAGE_JS.slice(1));
+  t.after(() => git(repo.main, 'checkout', '--', 'site-pretty'));
+  const r = await ab({ FAKE_CHROME_APPEND_AT: 'Page.navigate', FAKE_CHROME_APPEND_FILE: f });
+  assert.equal(r.code, 0, r.out);
+  assert.match(readFileSync(f, 'utf8'), /changed mid-run/);
+  assert.match(r.stdout, /BASELINE-MODIFIED: baseline state modified after this run/);
+  res = abResult();
+  for (const v of verdicts(res)) assert.match(v, /^BASELINE-MODIFIED: /);
+  assert.equal(res.config.baselineSnapshot.state, 'ok', 'it started on the pinned snapshot');
+  assert.equal(res.config.baselineSnapshot.tag, 'BASELINE-MODIFIED');
+  assert.equal(res.config.baselineSnapshot.flaggedRuns.length, 2);
+  raw = JSON.parse(readFileSync(join(wt, res.raw), 'utf8'));
+  assert.deepEqual(raw.results.filter((x) => !x.diff).map((x) => x.baseline), [{ snapshot: pin.snapshot, state: 'modified', tag: 'BASELINE-MODIFIED' }, { snapshot: pin.snapshot, state: 'modified', tag: 'BASELINE-MODIFIED' }]);
+});

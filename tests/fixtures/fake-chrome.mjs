@@ -10,6 +10,8 @@
 //      FAKE_CHROME_HANG_AT=<method>   never answer this CDP method (a hung browser; verify's watchdog, I-023)
 //      FAKE_CHROME_EXIT_AFTER=<method>  answer it, then exit at the next command (a browser gone between runs, I-023)
 //      FAKE_CHROME_IGNORE_SIGTERM=1     ignore SIGTERM (a browser that will not quit; close() must SIGKILL it)
+//      FAKE_CHROME_APPEND_AT=<method> FAKE_CHROME_APPEND_FILE=<file>  append a line to <file> when this method
+//                                       first arrives (a re-mirror of the baseline in the middle of a run)
 //      FAKE_CHROME_TRACE=nocomplete,dataloss,bigchunk  Tracing.end: never send tracingComplete | report
 //                                       dataLossOccurred | add one chunk of BIG_CHUNK events
 //      FAKE_CHROME_METRICS=step         Performance.getMetrics: all of verify's counters (+ Timestamp) grow by
@@ -97,12 +99,13 @@ function evaluate(expr) {
   return undefined;
 }
 
-let n = 0, dying = false;
+let n = 0, dying = false, appended = false;
 function handle(msg, send) {
   const { id, method, params = {}, sessionId } = msg;
   log({ method, params: method === 'Runtime.evaluate' ? { expression: params.expression.slice(0, 120) } : params, sessionId });
   if (process.env.FAKE_CHROME_CRASH_AT === method) { log({ method: '(crash)', params: {} }); process.exit(1); }
   if (process.env.FAKE_CHROME_HANG_AT === method) { log({ method: '(hang)', params: {} }); return; } // never answers
+  if (process.env.FAKE_CHROME_APPEND_AT === method && !appended) { appended = true; appendFileSync(process.env.FAKE_CHROME_APPEND_FILE, '\n// changed mid-run\n'); log({ method: '(append)', params: {} }); }
   // FAKE_CHROME_EXIT_AFTER: answer that method, then exit (unanswered) at the next command, like a browser
   // that went away between runs; deterministic, unlike a timer racing verify's next call
   if (dying) { log({ method: '(exit-after)', params: {} }); process.exit(0); }

@@ -66,7 +66,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
-import { requireBaseline, baselineStatus, baselineMeta } from './lib/baseline.mjs';
+import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './lib/baseline.mjs';
 import { acquire } from './lib/lock.mjs';
 import { loggerSource, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
 import { TRACE_START, TRACE_ARM, TRACE_DISARM, BUCKETS, BUCKET_LABELS, attributeFrames } from './lib/trace-frames.mjs';
@@ -100,8 +100,21 @@ const CHROME_WARM = num('chrome-warm', THRESHOLDS.chromeWarmSec);
 const TRACE_TIMEOUT = num('trace-timeout', 180);
 // Local targets serve the baseline: it must be the snapshot pinned by baseline.json, unchanged
 // (tools/lib/baseline.mjs; exit 3 otherwise). A live-only run just records it. Metadata only.
+// The check is repeated after every run (git status of the snapshot, between runs, no CDP): a run
+// whose baseline was not, or stopped being, the pinned snapshot (a re-mirror mid-A/B) gets
+// run.baseline = {snapshot, state, tag} and verify.json baseline.flaggedRuns; fix.mjs ab prefixes its
+// verdicts with the tag. Unflagged runs carry no baseline field.
 const LIVE = /^https?:\/\/([\w-]+\.)*fastwork\.com(:\d+)?(\/|$)/i;
-const BASELINE = baselineMeta(targets.every((t) => LIVE.test(t.url)) ? baselineStatus() : requireBaseline('verify.mjs'));
+const LOCAL = !targets.every((t) => LIVE.test(t.url));
+const BASELINE = baselineMeta(LOCAL ? requireBaseline('verify.mjs') : baselineStatus());
+let flaggedRuns = 0;
+/** After a run of a local target: re-check the baseline; returns {snapshot, state, tag} when flagged, else null. */
+function baselineAfterRun() {
+  if (!LOCAL) return null;
+  const now = baselineMeta(baselineStatus());
+  const tag = baselineTag(BASELINE, now);
+  return tag ? { ...now, tag } : null;
+}
 mkdirSync(OUT, { recursive: true });
 
 // ---- watchdog (incident I-023) --------------------------------------------------------------------
@@ -500,9 +513,11 @@ async function main() {
           const chromeRelaunched = await ensureChrome();
           const warmedSec = await warmChrome();
           const r = await measure(browser.cdp, t, vpName, run, { chromePid: browser.ch.proc.pid, gate, recheck, chromeRelaunched, warmedSec });
+          const bl = baselineAfterRun();
+          if (bl) { r.baseline = bl; flaggedRuns++; }
           results.push(r);
           const s = r.scrollSummary;
-          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms${s.cdpStyleCount != null ? `  style ${s.cdpStyleMs}ms/${s.cdpStyleCount}x layout ${s.cdpLayoutMs}ms/${s.cdpLayoutCount}x script ${s.cdpScriptMs}ms` : ''}${r.traceSummary ? `  trace >20ms ${r.traceSummary.frames}: script ${r.traceSummary.scriptMs} style ${r.traceSummary.styleMs} layout ${r.traceSummary.layoutMs} paint ${r.traceSummary.paintMs} other ${r.traceSummary.otherMs} offMain ${r.traceSummary.offMainMs}ms; >34ms ${r.traceSummary.gt34} (${byClass(r.traceSummary.gt34ByClass)}) >50ms ${r.traceSummary.gt50} (${byClass(r.traceSummary.gt50ByClass)})${r.traceSummary.partial ? ` PARTIAL TRACE: ${r.traceFrames.summary.partialReasons.join('; ')}` : ''}` : r.traceFrames?.error ? `  trace: ${r.traceFrames.error}` : ''}  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}`);
+          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms${s.cdpStyleCount != null ? `  style ${s.cdpStyleMs}ms/${s.cdpStyleCount}x layout ${s.cdpLayoutMs}ms/${s.cdpLayoutCount}x script ${s.cdpScriptMs}ms` : ''}${r.traceSummary ? `  trace >20ms ${r.traceSummary.frames}: script ${r.traceSummary.scriptMs} style ${r.traceSummary.styleMs} layout ${r.traceSummary.layoutMs} paint ${r.traceSummary.paintMs} other ${r.traceSummary.otherMs} offMain ${r.traceSummary.offMainMs}ms; >34ms ${r.traceSummary.gt34} (${byClass(r.traceSummary.gt34ByClass)}) >50ms ${r.traceSummary.gt50} (${byClass(r.traceSummary.gt50ByClass)})${r.traceSummary.partial ? ` PARTIAL TRACE: ${r.traceFrames.summary.partialReasons.join('; ')}` : ''}` : r.traceFrames?.error ? `  trace: ${r.traceFrames.error}` : ''}  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}${bl ? `  ${bl.tag}: baseline state ${bl.state} after this run` : ''}`);
         }
       }
       if (SCREENS && targets.length > 1) {
@@ -550,7 +565,8 @@ async function main() {
   console.log(`host: ${invalid.length} of ${measured.length} runs contaminated${invalid.length ? ` (${[...new Set(invalid.flatMap((r) => r.host.reasons))].join('; ')}): verdicts provisional` : ''}${warn.length ? `; ${warn.length} warn (${[...new Set(warn.flatMap((r) => r.host.warnings))].join('; ')})` : ''}${hostSum.stub ? `  [host STUBBED: ${hostSum.stub}]` : ''}`);
   const measurement = { cdpMetrics: CDP_METRICS, traceFrames: TRACE, frameLog: FRAME_LOG, ...(TRACE ? { note: 'traced: tracing perturbs timing, frame numbers are not comparable with untraced runs', traceBufferKb: TRACE_START.traceConfig.traceBufferSizeInKb, traceTimeoutSec: TRACE_TIMEOUT } : {}) };
   if (TRACE) console.log(`trace-frames: ${measurement.note}; offMain = ${BUCKET_LABELS.offMain}`);
-  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, baseline: BASELINE, host: hostSum, rows, results }, null, 1));
+  if (flaggedRuns) console.log(`baseline: ${flaggedRuns} of ${measured.length} runs flagged (${[...new Set(measured.filter((r) => r.baseline).map((r) => r.baseline.tag))].join(', ')}): not measured on the pinned snapshot ${BASELINE.snapshot ?? ''} throughout`);
+  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, baseline: flaggedRuns ? { ...BASELINE, flaggedRuns } : BASELINE, host: hostSum, rows, results }, null, 1));
   console.log('details: ' + file);
 }
 

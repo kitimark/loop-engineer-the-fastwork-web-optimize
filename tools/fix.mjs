@@ -27,7 +27,10 @@
 // to the byte-identical minified tree. Both are the snapshot committed on main and pinned by
 // baseline.json: every command that reads the baseline refuses (exit 3, BASELINE-MODIFIED/-MISMATCH)
 // unless it is that snapshot, unchanged; `new` makes the worktree sparse (no own copy; tools/baseline.mjs),
-// `ab` records the snapshot id in results.json config.baselineSnapshot. The overlay holds full copies of Fastwork files, so it is
+// `ab` records the snapshot id in results.json config.baselineSnapshot; when it measured another baseline
+// (FW_BASELINE_ALLOW_MODIFIED=1) or the baseline changed during the A/B (verify.mjs re-checks it after
+// every run; ab once more at the end), every verdict gets "BASELINE-<STATE>: " (config.baselineSnapshot.tag,
+// .flaggedRuns), like "CONTAMINATED (host): ". The overlay holds full copies of Fastwork files, so it is
 // gitignored; only patch.diff, README.md and results.json of a fix are meant to be committed, and
 // only to local branches (never pushed). Writing commands refuse to run in the main checkout unless
 // --allow-main is given, so a teammate that forgot to enter its worktree can't mix fixes there.
@@ -40,7 +43,7 @@ import http from 'node:http';
 import { REPO, mirrorHome, resolveTree, isLinkedWorktree, gitCommonDir, sharedStateDir, autoPortBase, checkoutId, sha256File } from './lib/paths.mjs';
 import { allStatus } from './lib/lock.mjs';
 import { stats } from './lib/ab-stats.mjs';
-import { requireBaseline, baselineStatus, baselineMeta, isSparse } from './lib/baseline.mjs';
+import { requireBaseline, baselineStatus, baselineMeta, baselineTag, isSparse } from './lib/baseline.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -356,6 +359,9 @@ function hostLine(h) {
   if (h.stub) s += ` [host STUBBED: ${h.stub}]`;
   return s;
 }
+function baselineLine(b) {
+  return `**${b.tag}: not measured on the pinned snapshot ${b.snapshot ?? '(none)'} throughout (state ${b.state} at the start, ${b.flaggedRuns.length} run(s) flagged by verify.mjs); verdicts invalid** (tools/lib/baseline.mjs)`;
+}
 function markdown(metrics, cfg) {
   const rows = [`| ${cfg.viewport} ${cfg.cpu}x, n=${cfg.runs} | baseline median [min-max] | patched median [min-max] | delta | verdict |`, '|---|---|---|---|---|'];
   for (const [phase, ms] of Object.entries(metrics)) for (const v of Object.values(ms)) {
@@ -363,6 +369,7 @@ function markdown(metrics, cfg) {
   }
   if (cfg.measurement?.traceFrames) rows.push('', 'traced (--trace-frames): tracing perturbs timing; frame numbers of this A/B are not comparable with untraced ones (compare the trace rows within this A/B only).');
   if (cfg.host) rows.push('', hostLine(cfg.host));
+  if (cfg.baselineSnapshot?.tag) rows.push('', baselineLine(cfg.baselineSnapshot));
   return rows.join('\n');
 }
 
@@ -430,7 +437,12 @@ async function cmdAb(t) {
   };
   const host = hostSummary(v);
   if (host.contaminated) for (const ms of Object.values(metrics)) for (const x of Object.values(ms)) x.verdict = CONTAMINATED + x.verdict;
-  const cfg = { cpu, viewport, runs, idle, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), baselineSnapshot: baselineMeta(BASELINE), stackedOn: ON, order: 'ABBA (alternating per run)',
+  // the baseline: not the pinned snapshot at the start (FW_BASELINE_ALLOW_MODIFIED=1), flagged by verify after
+  // a run (changed mid-A/B), or changed by now: the verdicts compare something else than they say
+  const flagged = v.results.filter((r) => !r.diff && r.baseline?.tag).map((r) => ({ label: r.label, run: r.run, viewport: r.viewport, state: r.baseline.state, tag: r.baseline.tag }));
+  const bTag = baselineTag(baselineMeta(BASELINE)) ?? flagged[0]?.tag ?? baselineTag(baselineMeta(BASELINE), baselineMeta(baselineStatus()));
+  if (bTag) for (const ms of Object.values(metrics)) for (const x of Object.values(ms)) x.verdict = `${bTag}: ${x.verdict}`;
+  const cfg = { cpu, viewport, runs, idle, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), baselineSnapshot: { ...baselineMeta(BASELINE), ...(bTag ? { tag: bTag, flaggedRuns: flagged } : {}) }, stackedOn: ON, order: 'ABBA (alternating per run)',
     hostThresholds: v.host.thresholds ?? null, hostRecheck: v.host.recheck ?? null, watchdogSec: v.host.watchdogSec ?? null, measurement: v.measurement ?? null };
   const result = {
     topic, kind: aa ? 'A/A noise floor' : 'A/B', createdAt: new Date().toISOString(),
@@ -452,6 +464,7 @@ async function cmdAb(t) {
   if (regressions.new404s.length) console.log('NEW 404s on the patched page: ' + regressions.new404s.join(', '));
   console.log(`screenshot diff patched vs baseline (% pixels): ${JSON.stringify(regressions.screenshotDiffPct)}  (0-0.4 % is countdown/orbit phase noise)`);
   console.log(hostLine(host));
+  if (bTag) console.log(baselineLine(cfg.baselineSnapshot));
   console.log(`wrote ${relative(REPO, resFile)} (raw: ${result.raw})`);
 }
 
