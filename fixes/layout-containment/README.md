@@ -5,7 +5,7 @@
 
 **Status:** P11 done. lc-cq3 / aw1-cq3 gives no gain: the nested Layout is removed but its cost stays in the same frame (P-028 MISS on ms, see "P11 Block A result"). P14 done (see "P14 result"). The rotator's whole-view tick Layout (C 67/67, median
 20.6 ms) is gone with st4-noswap (2/67, idle long frames 0), so the escape is the swap path. re-contain-js re-roots
-it at #people but keeps 57 % of the cost (P-025: V1 HIT, V2 root HIT, cost MISS). Next: an st5 candidate (proposal).
+it at #people but keeps 57 % of the cost (P-025: V1 HIT, V2 root HIT, cost MISS). st5 is built: fixed slots, src in place, the same slide. Chrome check: 0 remounts, the slide pixel-identical to C mid-slide. Its phone block C / st5 / V1 is ticketed (see "st5 build").
 **Stage:** R + I closed. The P11 phone pass is done (Block A; Block B skipped). **D for the rotator question: D signed by lead,
 2026-10-01 18:0xZ**, with this scope:
 - The whole-view tick Layout comes from the carousel's swap path: V1 0/36 idle, 2/67 overall, vs C 67/67;
@@ -18,7 +18,7 @@ F is next: st5 (see "st5 build").
 **Driver(s) behind the claims:** none yet (Chrome census/parity are mechanism checks, not timing)
 **Prediction:** `fixes/PREDICTIONS.md` P-028 (U3, lc-cq3 / aw1-cq3), P-025 is de-pm-hero's (ST-4, builds here)
 **Topic:** arch-lead's P11 (R-U2 + R-U3), `research/architecture/unknowns-actions.md` §3.3; `research/design-engineering/unknowns-render.md` U2, U3; F-052. ST-4 (F-058, `postmortem-hero.md` §7) rides in the same phone pass.
-**Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (lc-cq2, lc-cq3, st4-strict); `/_app/immutable/nodes/2.DyWL8TcE.js` only for st4-rotoff (diagnostic)
+**Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (lc-cq2, lc-cq3, st4-strict); `/_app/immutable/nodes/2.DyWL8TcE.js` for st4-rotoff / st4-noswap (diagnostic) and st5 (rotator with fixed slots, plus its CSS)
 
 ## Why it lags (hypothesis, from U2/U3)
 
@@ -422,6 +422,68 @@ Block: driver W at 430x775, Timeline on (depth 8) in all 9 counted runs, order C
     stays as the "gone" reference.
   - If st5 is still view-rooted, the animations' layer changes are the escape. The fallback is the split arm
     (`ge` mounted with `animation: none`).
+
+## st5 build (F candidate for the rotator; Chrome mechanism + visual check done, phone block ticketed, id from mgmt-ops-6)
+
+**Build** `<scratchpad>/layout-containment/snap2/st5` (read-only), on aw1-10e:
+- JS 268a68962d186803988aad1298997fc400d1bebdcb92e3d45a03397c02d0230a
+- CSS e68c99631e80b7a4098b0be78abb2ad7e15a97cb789e54df15a823943b6ab635
+- Rotator TimerFire L11571 unchanged.
+- **The if-block always renders `ge`.** The 5-img template (`dM`) stays mounted for the page's life.
+  - Its classes are `st5-lead` (first) and `st5-next` (fifth) instead of `is-exit` / `is-enter`.
+  - One template_effect writes all 5 `src`s (`E(0..4)`) and toggles `.is-sliding` on the carousel from `S`.
+  - So the swap tick (x+1, S=false) is one effect run: 5 src writes and the class removal together.
+- **CSS:**
+  - Permanent `will-change: transform, translate, opacity` on every carousel img.
+  - `.st5-next` rests at the pop's start state (opacity 0, scale .35).
+  - Under `.is-sliding`, the lead gets `avatars-exit`, its followers `avatars-shift`, and the fifth `avatars-shift, avatars-pop`. Same keyframes, easings and 0.22 s as aw1-10e.
+  - No layout property is set under `.is-sliding`. The keyframes animate only translate, transform, opacity and clip-path (CSS L2935-2966). The imgs stay fixed at 32x32 / `flex: 0 0 32px` (L2874-2881) and the carousel at 104x32 (de-pm-hero read the same lines, risk 1 and 2 cleared).
+
+**Chrome check** (`st5check.mjs` via `st5.sh`, one normal hold 18:31-18:32Z, rerun of 18:14Z with the root parse fixed; 430x775 DPR 3, no throttle, y 1500, 6 s; served hashes verified). Mechanism only, no timing claim:
+
+| build | childList adds / removes | src writes | class toggles | mutation batches per cycle | imgs | Layouts (view-rooted) / total ms / max | Paint records / ms | layer counts seen |
+|---|---|---|---|---|---|---|---|---|
+| C aw1-10e | 90 / 90 | 0 | 0 | `add9 rem6`, `add6 rem9` | 4-5 | 20 (20) / 2.62 / 0.23 | 904 / 91.4 | 131-143 |
+| st5 | **0 / 0** | 30 | 12 | `slideOn1`, then `src5 slideOff1` (6/6 cycles) | 5 | 16 (13) / 1.85 / 0.24 | 995 / 97.3 | 136-143 |
+| V1 st4-noswap | 0 / 0 | 24 | 0 | `src4` | 4 | 15 (12) / 1.51 / 0.17 | 960 / 90.4 | 131-138 |
+
+- **The view-rooted column doesn't discriminate in Chrome** (OBSERVED, in our setup):
+  - Every non-image Layout there is rooted at 430x775 in every arm, and none costs more than 0.24 ms.
+  - The phone's 20 ms whole-view tick Layout (C, P14) has no Chrome counterpart, as the census found.
+  - So whether st5 removes the phone's tick Layout is the phone block's question. Chrome only shows the mechanism: no remount, src in place, one class toggle each way.
+  - The first pass (18:14Z) read `endData.root`, which this Chrome no longer emits (it has `layoutRoots`), so every root came back "?". It is superseded.
+- **Snap-back:** in all 6 cycles the 5 src writes and the `.is-sliding` removal arrive in one MutationObserver batch, i.e. the same task. No rendering update can show the old faces at the reset positions in between, and all imgs were `complete` at that point (de-pm-hero's note 1).
+- **Visual parity:** the slide is the same as C. The page-start hook holds the 220 ms timer, so the first slide stays open, with the animations paused and set to t = 0 / 55 / 110 / 165 / 215 ms. Diffs vs C: 0.00 % and max channel sum 0 on all 5 mid-slide shots, plus `after` (2 rAF after the swap) and `after600`.
+- Layers: 5 permanent small layers (+5 vs C at rest), within C's range during C's slide. That matters for the §7.9 transparency-layer reading, which depends on whether will-change is present.
+
+**Phone ticket** (sent to mgmt-ops-6 for second read before data; slot after ts-gesture's confirmation, ahead of P-033):
+- Arms (immutable copies, one uncounted warm-up per arm's port, same builds):
+  - C aw1-10e: `snap/aw1-10e`, JS 3e2f599a1632, CSS c6aad94b455f.
+  - S st5: `snap2/st5`, JS 268a68962d18, CSS e68c99631e80.
+  - V1 st4-noswap: `snap2/st4-noswap`, JS b8c085d9b619, CSS c6aad94b455f. V1 is the "gone" reference.
+- Driver W at 430x775, same as P14: 6 s idle at y 0, then top → y≥2500. Timeline on (depth 8, Paint and Decode records kept) in all 9 counted runs, order C S V1 · V1 C S · S V1 C.
+- Sentinels: Timeline-OFF C runs at the open and the end, rule ≥58 bottom / ≥44 scroll.
+- Add-on: Timeline-OFF idle at y 1500, 40 s, 1 run per arm (info only, as in P14).
+- **Scoring:** same as P14 (`p14score.cjs`).
+  - A tick is one L11571 TimerFire. A view tick has a ≥10 ms Layout with the 430x775 root (h 770-820) before the end of the first RenderingFrame after it.
+  - st5 has two tick types: the slide start (class on) and the swap (5 srcs + class off). Report both.
+  - 104x32 carousel-rooted Layouts (image-load) are counted separately and stay out of every column.
+  - Paint records inside the 220 ms slide windows are scored separately (de-pm-hero's note 2: whether WebKit composites a clip-path animation is UNRESOLVED).
+- **Minimums:** a run counts with ≥6 ticks. An arm needs ≥2 counting runs and ≥15 pooled ticks, otherwise UNRESOLVED.
+- **Bands:** gone ≤25 %, view ≥50 %, MIXED in between.
+- **Reading:**
+  - V1 not gone, or C not view: the references moved. Stop; no reading.
+  - st5 gone: the escape was the remount (img renderer insert/remove), not the slide. Fixed slots keep the slide without it. st5 becomes the F build. Next: a gain block st5 vs C, and G/F before landing (touch).
+  - st5 view: with V1 gone, the escape is in what st5 keeps and V1 lacks: the slide animations on layered elements, the class toggle, or the 5th slot. This settles D's insert/remove-vs-layers split toward the slide. Next: a split arm st5-noanim (class toggled, `animation: none`) to separate the class toggle from the animations.
+  - st5 MIXED: no direction. Read it per tick type: if one type is view and the other gone, that type is the escape.
+- **Predictions**, written before the block (de-pm-hero's and mine):
+  - st5 is gone (≤25 % view ticks).
+  - st5's median tick Layout is <1 ms (V1 0.1 ms).
+  - Info only: in the y 1500 Timeline-OFF add-on, st5 is near V1 (0 frames >50, >34 in single digits, twins included).
+  - If st5 is gone but its idle >34 stays near C's (47), the cost has moved to style/paint/composite: read Paint/Composite per tick before any win claim.
+- **Not this block's question:**
+  - The reveal-flip frames (F-089; st5 carries no #people containment).
+  - The y≈1960 rebuild frame.
 
 ## Risks, conflicts, follow-ups
 
