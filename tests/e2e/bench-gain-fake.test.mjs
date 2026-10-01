@@ -190,3 +190,15 @@ test('review-snapshot note 1: on a baseline that is not the pinned snapshot (FW_
   assert.equal(after.gain.verdict, 'BASELINE-UNTRACKED: HOLDS');
   assert.deepEqual(after.gain.baselineSnapshot, { snapshot: 'b1-0123abcd', state: 'untracked', tag: 'BASELINE-UNTRACKED' });
 });
+
+test('I-034: a non-finite gain metric (p95 null on the patched side) ends GAIN INCONCLUSIVE naming it, not a bench-stats throw', async () => {
+  makeTopic(repo.wt, 'null-p95', '/bench-fake.json', JSON.stringify({ ...PATCH_FAKE, perfFrames: [null] }), spec('null-p95', { gain: { ...spec('x').gain, metric: 'p95' } }));
+  let r = await bench('np-cal', ['calibrate', 'null-p95']);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^CALIBRATED null-p95 p95: minEffect /m, 'the A/A is the baseline: finite');
+  r = await bench('np-gain', ['gain', 'null-p95']);
+  assert.equal(r.code, 3, r.out);
+  assert.doesNotMatch(r.out, /is not a finite number \(null\); fix or drop that run/, 'never handed to bench-stats');
+  assert.match(r.stdout, /^GAIN INCONCLUSIVE null-p95: scenario errors: p95 not a finite number \(null\) on side B$/m);
+  rmSync(join(repo.wt, 'fixes', 'null-p95'), { recursive: true, force: true });
+});

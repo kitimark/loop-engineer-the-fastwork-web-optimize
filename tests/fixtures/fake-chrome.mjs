@@ -19,7 +19,9 @@
 //      FAKE_CHROME_BENCH=1  tools/bench.mjs mode: on Page.navigate, fetch <origin>/bench-fake.json from the
 //        served page (so the baseline and the overlay can differ) and answer the bench probes from it:
 //        {windows: {label: {probeId: n}}, probes: {probe: n} (any window), frames, snapshot, capped, errors, listeners, metricsStep: {name: n},
-//         quiesceMs: n (each quiesce() answers after n ms, a slow page for the short-lane budget)}
+//         quiesceMs: n (each quiesce() answers after n ms, a slow page for the short-lane budget),
+//         perfFrames: [dt] (the frame log a Tier B scenario collects, default FRAMES/IDLE_FRAMES; [null] makes
+//         its p95 null, a non-finite gain metric, I-034)}
 import http from 'node:http';
 import https from 'node:https';
 import { createHash } from 'node:crypto';
@@ -76,6 +78,7 @@ function benchEvaluate(expr, sessionId) {
   if (expr.includes('function benchSnapshot')) return d.snapshot || {};
   if (expr.includes('function benchSettle')) return { pendingImages: 0 };
   if (expr.startsWith('window.__bench ? window.__bench.errors')) return d.errors || [];
+  if (d.perfFrames && expr.includes('p.on = false')) return { frames: d.perfFrames, loaf: [], on: false };
   return undefined;
 }
 

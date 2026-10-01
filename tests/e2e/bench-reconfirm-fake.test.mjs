@@ -86,3 +86,30 @@ test('reconfirm: _landed from main in landing order, Tier A in one hold, Tier B 
   assert.match(r.stdout, /^RECONFIRM FAIL: 1 landed patch\(es\) no longer apply/m);
   assert.equal(existsSync(join(env('rc2').FW_STATE_DIR, 'locks')), false, 'never took the lock');
 });
+
+test('I-034: a non-finite gain metric ends that topic INCONCLUSIVE naming it; the later --gain topics still run', async () => {
+  // its own repo: null-p95 lands first, its patched page logs a frame list whose p95 is null (fake perfFrames);
+  // later-topic lands after it and is measured on the same _landed overlay with a finite metric
+  const r2 = makeTempRepo({ worktree: 'reconfirm-nf' });
+  const fx = makeFixtureHome(r2.main);
+  for (const d of [fx.site, fx.pretty]) writeFileSync(join(d, 'bench-fake.json'), JSON.stringify(BASE_FAKE));
+  const m = r2.main;
+  const commit = (msg) => { git(m, 'add', '-A', 'fixes'); git(m, 'commit', '-q', '-m', msg); };
+  makeTopic(m, 'null-p95', '/bench-fake.json', JSON.stringify({ ...PATCH_FAKE, perfFrames: [null] }), spec('null-p95', { gain: { ...spec('x').gain, metric: 'p95' } }));
+  commit('land null-p95');
+  makeTopic(m, 'later-topic', '/robots.txt', 'User-agent: *\nDisallow:\n', spec('later-topic'));
+  commit('land later-topic');
+  const e = { ...env('nf'), FW_STATE_DIR: join(r2.root, 'state-nf'), FAKE_CHROME_LOG: join(r2.root, 'nf.jsonl') };
+  const r = await nodeAsync(join(r2.wt, 'tools', 'bench.mjs'), ['reconfirm', '--gain', 'all', '--runs', '4'], { cwd: r2.wt, env: e, timeout: 115000 });
+  assert.equal(r.code, 3, r.out);
+  assert.doesNotMatch(r.out, /is not a finite number \(null\); fix or drop that run/, 'never handed to bench-stats');
+  assert.match(r.stdout, /^GAIN INCONCLUSIVE null-p95 p95 \(.*\): scenario errors: p95 not a finite number \(null\) on side B$/m);
+  assert.match(r.stdout, /^GAIN HOLDS later-topic styleLayoutMs: HL shift 100/m);
+  assert.match(r.stdout, /^\| null-p95 \| PASS \| INCONCLUSIVE \|/m);
+  assert.match(r.stdout, /^\| later-topic \| PASS \| HOLDS \|/m);
+  assert.match(r.stdout, /^RECONFIRM INCONCLUSIVE main [0-9a-f]+ -> /m);
+  const sha = git(m, 'rev-parse', '--short', 'main');
+  const rep = JSON.parse(readFileSync(join(r2.wt, 'out', 'bench', 'reconfirm', sha, 'report.json'), 'utf8'));
+  assert.deepEqual(Object.keys(rep.tierB), ['null-p95', 'later-topic']);
+  assert.deepEqual([rep.tierB['null-p95'].verdict, rep.tierB['null-p95'].values.patched.length, rep.tierB['null-p95'].values.baseline.length], ['INCONCLUSIVE', 0, 4]);
+});

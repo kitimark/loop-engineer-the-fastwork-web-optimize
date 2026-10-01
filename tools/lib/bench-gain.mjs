@@ -44,11 +44,20 @@ export async function runGain({ cdp, chromePid, sides, scenarios, runs = 5, cpu 
   return out;
 }
 
-/** Values of `metric` for scenario `key` per side, plus the host records of those runs. */
+/**
+ * Values of `metric` for scenario `key` per side, plus the host records of those runs. A run whose metric is not
+ * a finite number (missing, null, NaN, Infinity, a string) is left out of a/b and reported in `errors`, so bench
+ * gain / calibrate / reconfirm end INCONCLUSIVE instead of handing it to bench-stats, which throws on it (I-034).
+ */
 export function series(runs, key, metric) {
-  const pick = (side) => runs.filter((r) => r.side === side && r.scenarios[key] && !r.scenarios[key].error).map((r) => r.scenarios[key][metric]);
+  const ok = (r) => r.scenarios[key] && !r.scenarios[key].error;
+  const finite = (x) => typeof x === 'number' && Number.isFinite(x);
+  const pick = (side) => runs.filter((r) => r.side === side && ok(r) && finite(r.scenarios[key][metric])).map((r) => r.scenarios[key][metric]);
   const hosts = runs.filter((r) => r.scenarios[key]).map((r) => r.host);
-  const errors = runs.filter((r) => r.scenarios[key]?.error).map((r) => r.scenarios[key].error);
+  const errors = [
+    ...runs.filter((r) => r.scenarios[key]?.error).map((r) => r.scenarios[key].error),
+    ...runs.filter((r) => ok(r) && !finite(r.scenarios[key][metric])).map((r) => `${metric} not a finite number (${r.scenarios[key][metric]}) on side ${r.side}`),
+  ];
   return { a: pick('A'), b: pick('B'), hosts, errors };
 }
 
