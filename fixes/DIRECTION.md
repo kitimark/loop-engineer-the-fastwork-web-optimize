@@ -251,7 +251,11 @@ Lead decisions:
 median gh 26 / gb 29 / g 35 ms, p95 56-58 / 50-52 / 62-114 (clean rounds; the phone warmed in round 3). gh ≈ gb, both
 ~6-9 ms better than g: **not** the predicted >= 25 ms drop for gh; neither de-morph's R1 (size-stable panel) nor the blurs
 dominate alone. f vs fb, g vs ge, g vs gc not run (lower priority). Next step for fix-nav-morph.
-**iPhone queue (09:30Z):** e1/e2 (aw1-10e control) -> hero bisect (v7copyop, v6noflip, v4nocards, v5noblur vs P; v3
+**Morph next (lead 09:3xZ):** no landing decision from the driver block. fix-nav-morph built `mw10e-ghb` (gh + the three
+blurs off, diagnostic: additive -> moving p50 ~17-20 ms, else a third term dominates) and an R2 probe page (does WebKit's
+`clip-path` clip `backdrop-filter`?); R2 (clip-path morph) is built only after the probe. de-morph reconciles its model
+with the driver numbers. **de-apple** (user request): apple.com's rendering math, `research/design-engineering/apple-math.md`.
+**iPhone queue (09:33Z):** e1/e2 (aw1-10e control) -> morph-2 (ghb ABBA vs gh, g control; R2 clip probe) -> hero bisect (v7copyop, v6noflip, v4nocards, v5noblur vs P; v3
 dropped) -> **apple-ref** (user request via the lead: live apple.com AirPods Pro page, plus iPhone 18 Pro if the phone is
 cool, same driver and Timeline counts as aw1-10e, one block with a control; write-up in
 `research/architecture/apple-verify.md` "iPhone Safari check") -> N12 -> N10 a-d; ts-gesture V0/V1 when ready.
