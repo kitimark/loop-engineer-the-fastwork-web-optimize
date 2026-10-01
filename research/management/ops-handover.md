@@ -238,6 +238,13 @@ between tool calls.
    **Swipe A/B (cdwc F stage) PAUSED after pairs 1-2 (both "same"; user feels the lag at the hero and the page end; tab
    stalled twice, some recordings lost); pair 3 moves to ts-user-console's console (iphone-runner keeps the key so it
    stays blind). User-facing steps go through the console once it lands, not the lead's chat.
+   **LAND-REQUEST RULE (lead 14:3xZ, all agents):** before asking the lead to land, rebase on CURRENT main with a CLEAN
+   tree (git status empty: commit or stash every edit); then send branch name + "tree clean, rebased on <main sha>" + SHAs.
+   The lead only fast-forwards; a dirty tree or stale base bounces the request. Lead 14:3xZ also: ef802b9 (phone minShift
+   4 ms, whole-ms medians) CONFIRMED, lands after ts-analysis adds the phone-platform guard (infer phone from meta.device,
+   warn on explicit chrome) + review-stats OK, with doc-protocol-v2's §5 text; doc-protocol-v2 sends the lead replacement
+   text for the CLAUDE.md phone-threshold line + Sentinel bullet, and updates fix-reviewer check 15. Spawned:
+   ts-user-console, ts-lock-bundle (item 7b + sleep wording; branch worktree-agent-a413c9626c75bd1a3).
    **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A, 10 min, block B) -> P-032 G cdwc (VALIDATED, ~20 min) ->
    P11 Block A + P14 -> P12 -> P10 -> P5 -> P-033 gain (VALIDATED; step 0 fills any free phone gap) -> P9 -> P-030 ->
    P-031 G -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. P-033 "within noise" -> bundle candidate, not standalone.
@@ -385,7 +392,9 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `arch-sim` | iOS Simulator fidelity (user work stream, lead 14:0xZ): research, plan, probe the Simulator against real-device records; Simulator runs are host-heavy -> always inside chrome-measure holds (≤ 10 min), slot like research holds | alive |
 | `ts-sim` | toolsmith: tools/sim.mjs from arch-sim's spec (lead spawns when the spec arrives) | not yet spawned |
 | `review-cdwc` | fix-reviewer of mw10e-cdwc (fix-nav-morph 051d0aa): NEEDS-WORK 14:1xZ (B1-B4) | done |
-| `review-stats` | fix-reviewer of ts-analysis eea3c06 (phone thresholds): NEEDS-WORK 14:1xZ | alive |
+| `review-stats` | fix-reviewer of ts-analysis eea3c06 (phone thresholds): NEEDS-WORK 14:1xZ; re-check 8409b95+ef802b9 ACCEPT-WITH-NOTES 14:2xZ | alive |
+| `ts-user-console` | toolsmith: tools/console.mjs local user step console (user-facing steps go there once landed) | alive |
+| `ts-lock-bundle` | toolsmith: handover item 7b (I-035, --no-timing, gate a-c, flaky fixture d, display-off tests e) | alive |
 | `review-t1a` | re-check of ts-iphone-run 7c83786 / f28f47e / 8d4f6a1 | alive |
 | `ts-wait` | toolsmith (lead spawn 13:3xZ, user request): blocking wait commands so agents stop sleep-loop polling; may ask iphone-runner + others what waiting hurt most | alive |
 | `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); WDA runner + iproxy left running for iphone-runner | done |
