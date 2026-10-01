@@ -282,6 +282,26 @@ whether the listener is passive. Two diagnostics, both on noinert:
 
 de-middle's other R1 items (`inert` until the morph, listeners once passive) are not needed for this frame.
 
+### Morph driver round 2: ghbn vs ghb vs gh
+
+iphone-runner ran this 10:42-10:52Z in 3 rounds (ghbn ghb gh | gh ghb ghbn | ghbn ghb gh). The phone was cool: held-state p95 17 ms,
+idle 60.5 fps. Moving phase:
+
+| build | p50, 3 rounds | p95, 3 rounds | > 50 ms, 3 rounds | median p50 / p95 |
+|---|---|---|---|---|
+| ghbn | 21, 25, 25 | 45, 52, 53 | 1 %, 9 %, 10 % | 25 / 52 |
+| ghb | 24, 26, 28 | 54, 57, 57 | 10 %, 15 %, 17 % | 26 / 57 |
+| gh | 29, 24, 27 | 84, 44, 59 | 18 %, 1 %, 12 % | 27 / 59 |
+
+- All three builds are within ~2 ms at p50, and their p95 ranges overlap.
+- The variable blurs are not the transition cost on the phone. That covers the panel and platform blurs (ghb) and the nav's own
+  backdrop blur (ghbn, which has no nav backdrop during the whole morph).
+- So R8, which turns off a subset of these, cannot win by itself. ghr85a vs gh still isolates R5a (layers at the tween start).
+- What is left of the ~25 ms p50 / ~55 ms p95 is not a blur cost. The candidates are:
+  - layout and paint of the morphing box: the nav backdrop's width, height, border-radius and background change every frame;
+  - the per-frame style writes of the spring (`--morph` on the header, `--morph-fade` on the platform, the veil transform).
+  N2 step 2 (size morph moved to transform) addresses the first.
+
 ### R8 and R5a on gh (de-morph): `mw10e-ghr8`, `mw10e-ghr85a`
 
 Both are built on `mw10e-gh` (`--on aw1-10e`) and keep the debug driver hook.
