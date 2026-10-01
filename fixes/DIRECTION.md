@@ -56,8 +56,22 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    before it lands); (b) gtag `onscrollend` (3/3) → N11; (c) nav platform IO callback 46 ms (1/3) →
    re-check in all-wave1 with #13 v03 in. N9 confirmed (gate flaps at its rootMargin edge when parked at
    the `.pain` top: 800 flips, 200 iE runs in 10 s).
-   **Wave-2 order (lead decision 2026-10-01): N11 → N12 → hero-exit → scroll-engine (N9 /09 + W1) → E4**,
-   each A/B `--on all-wave1`, holds ≤ ~10 min (F-007).
+   **scroll-engine diag part 2** (w1 vs w1 + /09, mechanism/attribution, load 5.0-7.8, timing not claimed;
+   F-011): /09 fixes N9 (800 flips / 200 iE runs / 2194 rects → 0 / 0 / 12 at the `.pain` top) and cv churn
+   (6 → 0 state changes per mobile run). Frame (a) above is **not** the countdown faces: it is the first
+   render of a deferred section (likely `#platform`'s content-visibility un-skip), and /09 only moves its
+   ~45 ms about 50 px earlier into our IO frame. Countdown 160d69a0 does not cover it (owner and F-011
+   agree); 03 lands as is (lead decision), 05/08 become countdown's wave-2 variant.
+   **Wave-2 order (lead decision 2026-10-01, revised after part 2): N11 and scroll-engine /10 first**
+   (whichever is ready takes the first slot; each one ~7 min hold), **then N12 → hero-exit → countdown
+   05/08 → E4** (countdown 05/08 moves ahead of N12 only if all-wave1 still shows the y≈2100-2150 frame).
+   Each A/B `--on all-wave1`, holds ≤ ~10 min (F-007). Why /10 first: it is the only candidate that hits
+   both a Chrome > 50 ms frame (the first render at y≈2100-2150, every run) and the iPhone transition
+   clusters (N10/W1). /10 = /09 + idle un-skip (one deferred section per idle callback after load,
+   `setTimeout` fallback for Safari, IO as fallback) + per-element `will-change` windows (arch-apple #1).
+   /10 mechanism check (short lane, before its A/B): the R3 `contentvisibilityautostatechange` logger shows
+   every un-skip before the first scroll (idle phase) and 0 during scroll; cv churn stays 0; `will-change`
+   per element only inside its window; no new idle-phase LoAF > 50 ms (one section per idle slice).
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N3 / N4 / N10 fixes as their prototypes pass Tier A.
