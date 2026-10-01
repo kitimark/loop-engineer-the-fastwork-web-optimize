@@ -46,14 +46,14 @@ It ran **no phone runs**. The phone data are iphone-runner's captures.
      about 350 elements restyle because one rule ends in `:where(*)`.
    - Safari's "Recalculate Styles" record also **contains the layout it triggers** (U3). So a 32 ms "style" record is
      about 4 ms of style plus 27 ms of layout.
-   - In B the largest one is the `#platform` scene switch at y≈2615: **31-32 ms in all three B runs that include it**.
+   - In B the largest one is the `#platform` scene switch at y≈2615: **29-32 ms in every B run of the inspector-clean final block** (A: 17-19 ms; B's extra ~11 ms is all nested layout).
      Fast-track topic `scene-scope` targets it (§5, rank 1).
 3. **In the hero, style recalc is small on the phone** (the largest record is 4.6 ms in B).
    - The ~20 ms items there are **Layout** records (the hero rotator, ~1 per second) and **Composite** records.
    - Safari's Timeline lists Styles, Layout and Composite in one "Layout & Rendering" lane, so they are easy to read
      as style.
    - The rotator layout already has a phone-tested fix candidate (st4-noswap, P14).
-4. **At the end of the page**, B's morph start costs 14-18 ms of style (self 11-14 ms). Most of it is again scope:
+4. **At the end of the page**, B's morph start costs 17-19 ms of style (self 14-15 ms, final block; A has no record ≥10 ms there). Most of it is again scope:
    unregistered custom properties inherited by the nav (~200 elements) and `#platform` (~345), plus the panel's scene
    switch. The candidate fix is R4 (`@property … inherits: false`), which is in nav-morph-all v04, **not in B**.
 5. **Images are oversized, but they don't make every frame cost more.**
@@ -99,6 +99,45 @@ WebKit Timeline stack line numbers are already 1-based.
 | A ×3 | 2611-2623 | 22.5-25.9 | 3.3-4.1 | 2 × 19-22 | 28-53 | **scene flip** cE baseline JS 2712 `setAttribute('data-start-selling-scene')` from the IO at 2726 | — |
 | **B ×4** | **2607-2627** | **18.9 (wB), 31.3-32.0** | 3.4-4.7 | 2 × 15.5-27.5 | 37-56 | **the same scene flip**, cE B JS 2762 from the IO at 2859 | **yes: B's largest** |
 | B ×4 | 5260 (end, push/post) | 14.3-17.6 | **11.2-14.2** | 2 × ~3 | 27-28 | morph start E(1); the first flush is `__osb` B JS 13287 (`documentElement.style.overscrollBehaviorY`), after the batch of morph-start writes | yes |
+
+**Final block, inspector closed** (iphone-runner, 2026-10-01 18:55-19:01Z):
+- Runs in order A7 B8 B9 A10 A11 B12, after one warm-up per port.
+- A = baseline (JS 4606120cf392); B = user-bplus (JS dbd5fdb4f1fb, CSS cc8d1340b449).
+- Driver W at 430×775: 6 s idle, scroll, wheel push, 3 s hold. Timeline depth 10.
+- Timeline-OFF S sentinels pass: open 60.0 / 52.8, end 60.1 / 53.1. Phone at 42.0-42.6 °C.
+- A7 never morphed. Every other run reached the morph.
+- The block-1 runs A1-A4 may have had the Mac inspector attached; they are superseded. The rows below **replace the
+  table above** for every verdict. Block 1 agrees with them within a few ms. Data:
+  `out/iphone-runner/sr-{A7,B8,B9,A10,A11,B12}.tl.json`, `sr2-score.json`.
+
+| y (phone) | A: RS = self + nested L (ms) | B: RS = self + nested L (ms) | trigger |
+|---|---|---|---|
+| ~1840 | 28.2-29.8 = 11.0-11.6 + 17.2-18.2 | absent | N baseline 13063, wheel listener arming (gone with arm-scope-c) |
+| ~2455 | 14.3-15.8 = 1.5-1.6 + 12.8-14.3 | — | baseline 2701 intrinsic-size setProperty |
+| ~2615 scene flip | **16.7-19.1** = 2.4-2.9 + 14.3-16.2 | **29.2-32.2** = 3.7-4.7 + **25.5-27.5** | cE baseline 2712 / B 2762 |
+| ~2995 | — | 13.4-14.6 = 1.6 + 11.8-13.0 | fwReskip B 2821 |
+| 5260 morph start | no record ≥10 ms | **16.9-18.8** = **13.7-15.1** + 3.2-4.2 | `__osb` B 13287 < E 13295 < D 13308 < A 13319 (wheel) |
+
+Count of records ≥16 ms, every run: A has 1 at people and 1 mid; B has 1 mid and 1 at the end.
+
+Per-phase sums of outermost RS (ms, include nested Layout):
+
+| phase | A | B |
+|---|---|---|
+| hero | 228-252 | 322-330 |
+| people | 118-123 | 59-65 |
+| mid | 329-346 | 207-222 |
+| end | 192-211 (morphing runs) | 236-243 |
+
+In the hero, B has fewer records than A (436-445 vs 529-539) but a ~90 ms larger sum, with no record ≥10 ms.
+
+Two things are new in the final data, both OBSERVED, cause unknown:
+1. **B's scene flip is ~11 ms dearer than A's, and all of the extra is nested Layout** (25.5-27.5 vs 14.3-16.2 ms).
+   - In A the `#platform` render un-skip happens in the same flip.
+   - In B the section was un-skipped earlier (one-way N9/N10). Its full subtree, 6 containers included, is therefore
+     live when the scene restyle lands. The /10b `will-change` gate also changes which elements get layers.
+   - Candidates are UNRESOLVED; scene-scope's Chrome check (Layout dirty objects per arm) splits them.
+2. **B's morph start is real style work** (self 13.7-15.1 ms), and A has no such record. This is the R4 / V3 target.
 
 Per section, all RS records in A1/A4/A5 and B2/B3/B6 (data, `rsan.mjs` HIST=sec):
 
@@ -332,10 +371,12 @@ unknowns-render U6 counted the whole asset set (190 rasters, 577 MB decoded); th
 
 ## 6. Open items
 
-- iphone-runner's inspector-clean rerun of block 1 replaces §2.1's B numbers when it lands. The y≈2615 and y≈5260 rows
-  are the ones to re-read.
-- The y≈2610 flip was cheap in ~30 of 35 older runs and costly in every B block-1 run. The dirty-container hypothesis
-  is UNRESOLVED; scene-scope's Chrome check (Layout dirty objects at the flip) is the decisive local check.
+- Done: iphone-runner's inspector-clean final is in §2.1 ("Final block").
+- The y≈2610 flip:
+  - It was cheap in ~30 of 35 older runs.
+  - In the final block it costs 16.7-19.1 ms in A and 29.2-32.2 ms in B. The extra ~11 ms in B is nested Layout.
+  - Candidates are the early one-way un-skip (N9/N10) and the /10b will-change gate. Both are UNRESOLVED.
+  - The decisive local check is scene-scope's Chrome check: Layout dirty objects at the flip, per arm.
 - Chrome's per-frame `.hero` inline-style ULTs (40-55 ms at 6x) have no phone counterpart (OBSERVED). Whether the phone
   skips those writes or prices them low is UNRESOLVED (check: phone Timeline FunctionCall at baseline JS 4172 in an
   idle-hero window).
