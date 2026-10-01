@@ -25,6 +25,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
    (Sim-vs-phone verdict gates moving the root hunt off the phone). Phone/Sim order: LAYOUT ROOT HUNT tickets
    (fix-scene-scope H1-H4, fwReskip, morph start) first after the running st5 split; any other phone ticket that would
    delay them is deferred. Timing stays deferred; lock-share stays the top Chrome tooling item.
+8. Sim structure holds (lead 20:3xZ, until the user lifts the timing deferral): Simulator attribution holds that read
+   records for STRUCTURE only (record kinds, nested-layout counts, roots, initiators; no ms claims) take a `--no-timing`
+   normal hold: `lock.mjs run chrome-measure --owner <x> --no-timing --max-seconds 420 -- node tools/sim.mjs session …`
+   (lib/sim.mjs holdGate accepts it). Why: the user's own apps closed the host gate (load1 ~15-17), up to 600 s idle per
+   gated hold. Sim ms from such holds is host-uncontrolled. The Sim refuses the short lane.
+9. Root-hunt owners (lead 20:3xZ): F-108 page-wide background dirtier, then the morph start -> fix-scroll-engine; the
+   #platform switch + fwReskip root hunt and RB -> fix-scene-scope. Short-lane order: ts-lock-share, ts-proposals, rest.
 5. Every agent keeps its status-board row matching. Broadcast to all 13 live agents 19:3xZ (mgmt-ops-6).
    Priority order (lead 19:1xZ): style recalc > illusion proposals > phone-tool fixes > st5 > tooling.
 
@@ -61,6 +68,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **20:3xZ** Landed 0c90cdc (I-038 fix; npm test on main queued), f93f798 (iphone-wave2 §4s-4u), 7c1cdd5 (st5 split
+  scored: P-042..P-044 HIT; st6 slide-start view 1/36 vs st5 24/35, C 71/71; trigger = animation-sampled opacity/
+  transform flips; F-108 page-wide background dirtier). st6 = rotator F candidate (gain block deferred). New rules: Sim
+  `--no-timing` structure holds; root-hunt owners (USER DIRECTION items 8-9). Note: one flaky test:unit fail at 20:33Z,
+  passed on rerun.
 - **20:3xZ USER PRIORITY (T-001, 20:24Z): layout-dominated slow frames first** (see USER DIRECTION item 7). Layout root
   hunt: t3 strict P-049/050/051 MISS, P-052 HIT (RB cuts steady-tween nested Layouts ~15x; neither arm changes the morph
   start). F-106 H1 (will-change restore) REFUTED by WebKit source; F-107 fwReskip crossing = two writes in one step.
