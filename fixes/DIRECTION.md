@@ -48,6 +48,16 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    > 34 ms 10 → 6 and > 50 ms 4 → 5 within noise. Still > 50 ms: gtag `onscrollend` (N11), the #13 mount
    (lands with countdown), iE (scroll-engine diagnostic names what remains on top of wave1-partial).
    Full review at the all-wave1 stage.
+   **scroll-engine diag part 1 on wave1-partial** (2026-10-01 ~00:05Z, mechanism/attribution, load 3.6-6.6,
+   timing not claimed; F-009): iE has 0 frames > 50 ms (0/3 runs); its cost is nav `L` (JS 13077, 526-617 ms
+   per run, max 10 ms per call), so the iE fix becomes the new topic **N12 nav-scroll-handler** (owner
+   nav-morph, lead decision). Left > 50 ms on w1: (a) ~60 ms pure style/layout frame at y≈2154 from the
+   countdown `span.face` writes (3/3; countdown must say whether 160d69a0 covers it, else a next variant
+   before it lands); (b) gtag `onscrollend` (3/3) → N11; (c) nav platform IO callback 46 ms (1/3) →
+   re-check in all-wave1 with #13 v03 in. N9 confirmed (gate flaps at its rootMargin edge when parked at
+   the `.pain` top: 800 flips, 200 iE runs in 10 s).
+   **Wave-2 order (lead decision 2026-10-01): N11 → N12 → hero-exit → scroll-engine (N9 /09 + W1) → E4**,
+   each A/B `--on all-wave1`, holds ≤ ~10 min (F-007).
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N3 / N4 / N10 fixes as their prototypes pass Tier A.
@@ -79,7 +89,9 @@ Sources: E1-E5 `research/architecture/measurement-review.md`; W1-W3 / R1-R3 `res
 | R3 statechange event timing | yes | fix-scroll-engine (E2) | inside the E2 slot |
 
 iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain http per I-003), in order:
-1. R3 capture-phase `contentvisibilityautostatechange` logger on the plain baseline.
+1. R3 capture-phase `contentvisibilityautostatechange` logger on the plain baseline, together with E2's
+   iPhone part (moved up 2026-10-01: in Chrome, scene/content-visibility flips name 0 of 7 slow frames on
+   wave1-partial, so only the phone can tell whether they cause the iPhone clusters).
 2. W2 busy-loop check (300 ms busy loop mid-scroll: the page keeps moving, scrollY jumps).
 3. Wave-1 combined confirmation (after the combined overlay exists).
 4. Combined wave-1 vs combined minus large-area-blur, /03 Timeline paint-area method, n=3, order B P P B B P: how much blur paint remains once phone-invisible-shrink is in (review-blur).
