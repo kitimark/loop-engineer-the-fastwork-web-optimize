@@ -1,0 +1,29 @@
+# fastwork mirror fix: illusion-digit-layers
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/user-bplus/overlay: apply user-bplus first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply illusion-digit-layers --on user-bplus
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11831,5 +11831,19 @@
+    repainted in 76 % of the frames in each tween's first 450 ms (observed); without it, 0 %. Countdowns elsewhere on
+    the page are unchanged. */
+ .start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c {
++  will-change: auto;
++}
++/* illusion-digit-layers (de-illusion-composite PoC): one layer per countdown number instead of one per digit face.
++   Each digit renders 10 stacked faces (0-9) with will-change: transform, so the hero countdown asks for 80 layers
++   (8 digits x 10 faces), created and destroyed at every hero scene flip. Here the faces paint into their number's
++   layer (4 per countdown); a digit's spring then repaints a ~2-digit box instead of moving a face layer. Same
++   transforms, same pixels. The morph panel keeps the cdwc rule above (no layers at all there). */
++.face.svelte-1quva9c {
+   will-change: auto;
+ }
++.number.svelte-1jfovfa {
++  will-change: transform;
++}
++.start-selling-morph-panel .waitlist-closing-countdown .number.svelte-1jfovfa {
++  will-change: auto;
++}

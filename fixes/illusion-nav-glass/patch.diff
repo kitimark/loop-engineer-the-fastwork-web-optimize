@@ -1,0 +1,38 @@
+# fastwork mirror fix: illusion-nav-glass
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/user-bplus/overlay: apply user-bplus first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply illusion-nav-glass --on user-bplus
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11833,3 +11833,28 @@
+ .start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c {
+   will-change: auto;
+ }
++
++/* illusion-nav-glass (de-illusion-composite PoC), phone widths only: the floating nav pill and its language switch
++   drop their live backdrop blur (pill blur(20px), switch blur(12px): two BackdropFilter layers that re-blur whatever
++   scrolls under them). The pill gets a near-opaque fill in the colour the frosted pill shows over a plain section
++   (sampled from B screenshots: white over light sections, #2c3038 over dark), picked by the nav's existing
++   is-on-dark state (JS hit test of the section under the pill). Like iOS "Reduce Transparency": content scrolling
++   under the pill is hidden instead of frosted. The morph keeps its own mix into #131922 by --morph. */
++@media (width<=640px) {
++  .start-selling-top-nav.svelte-1dcozpm {
++    -webkit-backdrop-filter: none;
++    backdrop-filter: none;
++    background: color-mix(in srgb, #fffffff0 calc((1 - var(--morph)) * 100%), #131922 calc(var(--morph) * 100%));
++  }
++  .start-selling-top-nav.is-on-dark.svelte-1dcozpm {
++    background: color-mix(in srgb, #2c3038fa calc((1 - var(--morph)) * 100%), #131922 calc(var(--morph) * 100%));
++  }
++  .start-selling-language-switch.svelte-1lc7nmb {
++    -webkit-backdrop-filter: none;
++    backdrop-filter: none;
++  }
++  /* without its own blur the switch read darker than the frosted one (P8); 22 % white instead of 12 % matches B */
++  .start-selling-top-nav.is-on-dark .start-selling-language-switch.svelte-1lc7nmb {
++    background: #ffffff38;
++  }
++}

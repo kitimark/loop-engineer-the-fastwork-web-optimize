@@ -1,0 +1,80 @@
+# fastwork mirror fix: illusion-sweep
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/user-bplus/overlay: apply user-bplus first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply illusion-sweep --on user-bplus
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11832,4 +11832,70 @@
+    the page are unchanged. */
+ .start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c {
+   will-change: auto;
++}
++
++/* illusion-sweep (de-illusion-composite PoC): the four platform row titles (Document, Earn, Secure, Organized) keep
++   their colour sweep, but it no longer animates background-position on a background-clip:text gradient (a main-thread
++   animation: style recalc + repaint of the title inside the 430x1881 platform-card layer on every frame). The word is
++   now plain white text on a card-coloured box, and the same gradient rides over it on a ::after band that moves with
++   transform (compositor-only) and mixes with mix-blend-mode: darken. Darken keeps the darker channel: over a white
++   glyph the band colour shows, over the #131922 card it leaves the card (every band colour is >= #131922 per
++   channel; the orange stop #fe7b02 is lifted to #fe7b22 for that, the only colour change). White parts of the band
++   are invisible. The span is an isolated group (z-index: 0), so the blend only sees the word and its box. Same
++   timing (4 s linear, band travels left to right), same off-screen pause (PMsweepGate). */
++@media (prefers-reduced-motion: no-preference) {
++  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc,
++  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn,
++  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure,
++  .start-selling-platform .start-selling-platform-row.is-relationship .start-selling-platform-row-title-organized {
++    color: #fff;
++    -webkit-text-fill-color: #fff;
++    background: #131922;
++    /* opaque backdrop 3px past the clip edge: without it the band's white blended with a transparent backdrop
++       on the clip's anti-aliased edge pixels and drew a hairline box around the word (hold 2 screenshots) */
++    box-shadow: 0 0 0 3px #131922;
++    animation: none;
++    position: relative;
++    z-index: 0;
++    isolation: isolate;
++    clip-path: inset(0);
++  }
++  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc:after,
++  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn:after,
++  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure:after,
++  .start-selling-platform .start-selling-platform-row.is-relationship .start-selling-platform-row-title-organized:after {
++    content: "";
++    position: absolute;
++    z-index: 1;
++    top: 0;
++    bottom: 0;
++    left: 0;
++    right: auto;
++    width: 300%;
++    background: linear-gradient(
++      90deg,
++      #fff 0 33.33%,
++      #82bcff 40%,
++      #2483ff 45%,
++      #ff66f4 50%,
++      #ff3029 55%,
++      #fe7b22 60%,
++      #fff 66.67% 100%
++    );
++    mix-blend-mode: darken;
++    pointer-events: none;
++    will-change: transform;
++    animation: 4s linear infinite fw-illusion-sweep-band;
++  }
++  .start-selling-platform [data-sweep-paused]:after {
++    animation-play-state: paused !important;
++  }
+ }
++@keyframes fw-illusion-sweep-band {
++  0% {
++    transform: translateX(-66.6667%);
++  }
++  to {
++    transform: translateX(0);
++  }
++}
