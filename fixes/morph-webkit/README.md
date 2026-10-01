@@ -440,7 +440,11 @@ hold 2000 × 3 cycles, Latin square; raw `out/iphone-runner/md-p-*`, `mdtl-p1-*`
 | layers at the m=1 hold | 113 | **33** | 113 | ≤ 40 — hit |
 | Composite − Paint, first 300 ms | 25.1 ms | 13.2 | 12.5 | ≤ 20 — hit |
 | moving p50 / p95 | 22-27 / 42-57 | 17-19 / 21-26 | 17-20 / 22-27 (+1 disturbed run, flagged) | — |
-| first-300 ms dt median (fwd) | 3.1-4.2 ticks | 2.2-2.6 | 2.2-2.4 | — |
+| first-300 ms dt median (fwd), pooled per run* | 26-35 ms | 18-22 ms | 18-26.5 ms | — |
+
+\* Recomputed 14:1xZ from md-p-*.json: frames from the first m > 0 of each forward tween to 300 ms later, pooled per
+run. This replaces a tick-form row (no k forms on the phone) whose window definition was not recorded and which this
+recompute does not reproduce.
 
 - cdhid wins as much while keeping all 113 layers, so the cost is the faces **repainting**, not the layer count
   (F-063). The repaint of the faces is removed (observed). Removing `will-change` is one way to stop the repaint;
@@ -529,16 +533,16 @@ passed; g8 sits exactly at 18 (A5 flag) and was the worst control. Raw: `out/iph
 
 Moving frames (0 < m < 1), dt in ms:
 
-| run | > 50 | > 34 | ±4 ms (>46/>54, >30/>38) | max | moving p50 |
-|---|---|---|---|---|---|
-| g1 | 1 | 51 | 3/0, 58/28 | 54 | 29 |
-| g4 | 2 | 48 | 2/1, 56/32 | 56 | 29 |
-| g5 | 3 | 47 | 4/3, 60/32 | 68 | 30 |
-| g8 | 27 | 58 | 37/20, 66/55 | 68 | 40 |
-| **gc2** | 0 | 0 | 0/0, 1/0 | 31 | 18 |
-| **gc3** | 0 | 0 | 0/0, 1/0 | 32 | 18 |
-| **gc6** | 0 | 1 | 0/0, 2/0 | 35 | 23 |
-| **gc7** | 0 | 0 | 0/0, 0/0 | 28 | 19 |
+| run | > 50 | > 34 | ±4 ms (>46/>54, >30/>38) | max | moving p50 | moving p95 |
+|---|---|---|---|---|---|---|
+| g1 | 1 | 51 | 3/0, 58/28 | 54 | 29 | 45 |
+| g4 | 2 | 48 | 2/1, 56/32 | 56 | 29 | 44 |
+| g5 | 3 | 47 | 4/3, 60/32 | 68 | 30 | 45 |
+| g8 | 27 | 58 | 37/20, 66/55 | 68 | 40 | 64 |
+| **gc2** | 0 | 0 | 0/0, 1/0 | 31 | 18 | 23 |
+| **gc3** | 0 | 0 | 0/0, 1/0 | 32 | 18 | 23 |
+| **gc6** | 0 | 1 | 0/0, 2/0 | 35 | 23 | 29 |
+| **gc7** | 0 | 0 | 0/0, 0/0 | 28 | 19 | 23 |
 
 | readout | g | g-cdwc | prediction | verdict |
 |---|---|---|---|---|
@@ -546,7 +550,9 @@ Moving frames (0 < m < 1), dt in ms:
 | excess per fwd tween, first 450 ms (per-run medians) | 209 / 210 / 217 / 234 ms | 80 / 79 / 146 / 81 | −60 to −150 | hit (≈ −130) |
 | excess per rev tween | 210 / 210 / 186 / 294 | 37 / 38 / 120 / 50 | — | — |
 | layers at the hold | 113 | 33 | ≤ 40 | hit |
-| median dt, first 300 ms | 34-48 ms | 18-23.5 | — | — |
+| median dt, first 300 ms (iphone-runner readout) | 34-48 ms | 18-23.5 | — | — |
+| median dt, first 300 ms of each fwd tween, pooled per run (recomputed from md-r29-*) | 35.5-40 ms | 20-23.5 | — | — |
+| moving p95, prediction (4) | 44-64 (45/44/45/64) | 23-29 (23/23/29/23) | 28-45 | outside the interval, on the good side (median 23) |
 | Composite − Paint p50, first 300 ms | 19.9 ms | 16.3 | — | — |
 
 - g-cdwc wins every moving-frame column and the result holds across the ±4 ms band, so it is not
