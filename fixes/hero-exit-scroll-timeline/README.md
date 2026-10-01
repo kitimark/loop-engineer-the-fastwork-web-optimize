@@ -592,6 +592,56 @@ Verdicts on P-019 (OBSERVED, n = 2 per arm):
   and P-b reads "within noise", re-keep-op becomes a bundle candidate for the next combined wave, not a
   standalone landing.
 
+### PoC 2 `blur-easing-cubic` (rows 27-28): Chrome check PASS, phone block pending
+
+- **Question** (oss-mechanism-map §3 H3, PoC table l.504): T10 gave the future card's reveal and hide blur a
+  `linear(<points>)` tail. On iOS 26.x a `linear(<points>)` easing runs a CSS transition on the main thread
+  (F-048/F-065; device freeze test F-080 CONFIRMED). Does an equivalent `cubic-bezier` take the card's blur off
+  the main thread during the reveal?
+- **Build.** The two filter tails become the exact de Casteljau split of the original 1.6 s
+  `cubic-bezier(0.16, 1, 0.3, 1)`, truncated at 0.7 s (hide) and 0.9 s (reveal), with y renormalized (max error
+  1e-5): hide `cubic-bezier(0.2350, 0.6733, 0.4511, 0.9140)`, reveal `cubic-bezier(0.2116, 0.7565, 0.4035,
+  0.9503)`. Durations and every other transition stay as they are. No endpoint change is needed (map l.541).
+  - T10's linear() points are not renormalized: they follow the truncated curve and jump to 1 at 99 %. The
+    cubic differs from them by at most 0.046 progress on the 0.7 s tail (about 0.64 px of blur) and 0.017
+    (about 0.24 px) on the 0.9 s tail (scratch `bezcheck.cjs`).
+  - After the edit, no `linear(` is left in the CSS.
+  - **blur-cubic** (row 27): on aw1-10e, CSS 069725e4, JS = aw1-10e 3e2f599a, patch `variants/27.diff`. This
+    is the gain arm, against its control aw1-10e.
+  - **blur-cubic-op** (row 28): the same edits on re-keep-op (row 26), CSS 9a7ab0f8, JS 3e2f599a, patch
+    `variants/28.diff`. This is the bundle stack; it does not touch re-keep-op's 0.999 endpoint.
+  - Read-only phone snapshots: `<scratchpad>/hero-exit/snap/blur-cubic`, `snap/blur-cubic-op`.
+- **Chrome check** (short-lane hold, untimed, no throttle, 430x775 DPR 1; Q = aw1-10e, BC, KO = re-keep-op,
+  BCO). Script `<scratchpad>/hero-exit/probe10.mjs`; report `pr10/report.json`; summary `p10sum.cjs`.
+  - **Computed easing:** BC and BCO carry the two cubics; Q and KO carry T10's linear().
+  - **Sampled curve:** pausing the card's filter CSSTransition at 8 times per direction:
+    - BC and BCO match the cubic exactly (max |p − cubic| 0.0000) in both directions;
+    - Q and KO match linear() exactly;
+    - the arms differ by 0.017 (reveal) and 0.046 (hide), as computed.
+  - **Timing:** transition ends unchanged (opacity +731-748 ms, filter/transform +931-948 ms).
+  - **Main-thread work:** 97 Layouts and 111-112 RecalculateStyles over the reveal in all four builds.
+    Chrome composites both easings, so Chrome cannot show the gain. The question is WebKit-only.
+  - **Errors:** 0 in all four builds.
+  - **Parity:**
+    - settled: Q/BC 0 % (any-pixel 0.008 %), KO/BCO 0 %;
+    - paused 225 ms into the reveal: KO/BCO 0 % (any-pixel 0.01 %); Q/BC 0.155 % (any-pixel 0.206 %). That is
+      inside the 0-0.4 % countdown/carousel phase band; the same curve change shows about 0 in KO/BCO.
+- **What the phone baseline shows** (P3 Timeline, aw1-10e and siblings; scratch `p3/types.cjs`,
+  `p3/comp.cjs`, `p3/style.cjs`). Times are from the crossing frame (y ≥ 680, S driver).
+  - Composite per RenderingFrame is 6-11 ms in the flip bin and 1.5-5 ms through about +1400. After that it is
+    about 0.5-1.5 ms.
+  - RecalculateStyles is 10-22 ms per 200 ms bin through +800, against 3-7 ms later.
+  - Most RecalculateStyles sit under rAF FunctionCalls (the driver and the page's rAF loops), not directly
+    under RenderingFrame (2-5 of about 50 frames). So the **record count** cannot isolate the card's
+    transition; the per-frame **cost** in the window can.
+  - Whether the elevated cost is the card's blur, or the other reveal work in the same window, is OBSERVED
+    (in our setup, cause unknown). The block decides it.
+  - Whether iOS runs a cubic-bezier **filter blur** transition on Core Animation is UNRESOLVED for this card.
+    F-080 showed it for the device's linear()/cubic pair, not for a blur on a 430x1328 layer. A V arm that
+    stays main-thread reads NULL, not WORSE.
+- **Plan:** the ticket goes to mgmt-ops-5 for a second read. It does not jump P-033's slot unless the lead
+  says so.
+
 ## Risks, conflicts, follow-ups
 
 - Keyframes deliberately avoid `var()` of animated custom properties (Safari resolves them against the
@@ -682,3 +732,5 @@ The header's "rebuild with" line names the scratch topic it was generated from:
 | hero-exit-scroll-timeline/24 | DIAGNOSTIC re-contain = aw1-10e + phone `#people { contain: layout size; height: 100svh }`, card `height: 100svh`: the section becomes a sized WebKit relayout boundary above the card (arch-claims F-049 verdict, boundary term of P-019/P-026) | the reveal's presence-flip Layouts (+~40/+745/+945 ms, +1.13 s) get root = #people box, not the view; durations fall (direction only) | withdrawn: Chrome parity FAIL (card content 1328.86 px > 100svh; page 554 px shorter at 775) | FAIL: seam 72 %, docH 5964 → 5410; card first screen 0.000 % | see "Boundary diagnostic re-contain" | patch `variants/24.diff` (on aw1-10e), CSS 4cd770a6, JS = aw1-10e 3e2f599a | superseded by 25 | |
 | hero-exit-scroll-timeline/25 | DIAGNOSTIC re-contain-js = aw1-10e + phone `#people.is-fw-sized { contain: layout size }` with #people's height synced to the card's border box by a ResizeObserver (JS L11606-11616): a sized relayout boundary above the card and .is-carousel without a fixed height | the reveal's presence-flip Layouts (+~40/+745/+945 ms, +1.13 s) and the rotator ticks get root = #people box, not the view; durations fall (direction only) | pending (iPhone P14 V2, merged with ST-4); Chrome mechanism PASS | parity: rects/docH identical, card 0.000 %, seam 0.000 % / 0.379 % (775 / 932); 0 #people writes in the reveal | see "Boundary diagnostic" | patch `variants/25.diff` (on aw1-10e), CSS 288c2ebe, JS 3579d857 | the observer's write is at load only; its Layout carries L11614 | ticket via fix-scroll-engine (P14) |
 | hero-exit-scroll-timeline/26 | FIX CANDIDATE re-keep-op = aw1-10e + the revealed card ends at `opacity: 0.999; filter: blur(0px); transform: translateY(0)` (re-keep + resting opacity below 1) | no presence flip at any reveal end: the + 700, + 900 and + 1150 whole-view Layouts (12-18 ms each on the phone) all go; the flip pair stays | pending (iPhone gain block, after P11+P14); Chrome check PASS | parity: card 0.000 % (775/932), mid 0.000 % / 0.398 % (carousel phase, as re-keep vs Q); layers and paint counts identical to Q | see "Fix candidate re-keep-op" | patch `variants/26.diff` (on aw1-10e), CSS 507f0ca4, JS = aw1-10e 3e2f599a | WebKit may paint a non-composited 0.999 card through a transparency layer on each repaint (arch-claims, UNRESOLVED): untimed attribution run first | ticket via mgmt-ops-5 |
+| hero-exit-scroll-timeline/27 | POC blur-cubic = aw1-10e + the card's two linear() filter tails (0.7 s hide, 0.9 s reveal) replaced by the exact cubic-bezier split of the original 1.6 s cubic-bezier(0.16,1,0.3,1) (PoC 2, oss-mechanism-map §3 H3) | on iOS 26.x the blur runs on Core Animation instead of the main thread: per-frame Composite/RecalculateStyles cost in flip+200..+900 drops; dt>34 in the window secondary (threshold-sensitive) | pending (iPhone, driver W + Timeline attribution); Chrome check PASS | settled 0 %; paused 225 ms 0.155 % (phase band); curve differs from T10 by ≤ 0.046 progress (≤ 0.64 px blur) | see "PoC 2 blur-easing-cubic" | patch `variants/27.diff` (on aw1-10e), CSS 069725e4, JS = aw1-10e 3e2f599a | Chrome composites both easings: phone only | ticket via mgmt-ops-5 |
+| hero-exit-scroll-timeline/28 | POC blur-cubic-op = re-keep-op (26) + the same two cubic filter tails | bundle stack of 26 and 27 | not measured on its own; the bundle arm if 26 and 27 both hold | settled 0 %; paused 225 ms 0 % vs 26 | see "PoC 2 blur-easing-cubic" | patch `variants/28.diff` (on aw1-10e, includes 26), CSS 9a7ab0f8, JS = aw1-10e 3e2f599a | | |
