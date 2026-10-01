@@ -102,7 +102,8 @@ straight to F. The lead decides if a topic qualifies.
 - Built under a **new name**, served from an immutable snapshot copy, file hashes recorded (`curl -D` on the
   served files, `x-mirror-source: overlay`).
 - **Parity:** frozen-frame diff 0 % (P14), plus the backdrop/filter look check (Page.snapshotRect does not render
-  `backdrop-filter`, so the user looks; a device-side capture is unverified, §10).
+  `backdrop-filter`, so the user looks; a device framebuffer capture, `idevicescreenshot` or a QuickTime USB recording, should
+  include the render-server composite. That is an inference: verify it once against the user's eye, then use it).
 - **a11y diff** when `inert`, `visibility`, `aria-*` or focusable content changes.
 - **Mechanism delta** in Chrome (bench Tier A, short lane): the named counter moved, nothing else did.
 - **Idle triple** (counts: callbacks/s, writes/s, mutations/s, rAF/s) at y=0, parked mid-page after a scroll, and
@@ -269,7 +270,9 @@ or F (M never bounces). F runs are scheduled by the lead in batches, not per top
   never per frame. The `paintCount` delta between two census points = repaints per layer.
 - A WebKit screenshot at fixed m for M runs.
 
-**Attribution runs only (never an A/B metric):** continuous Timeline with real durations. Send `Page.disable`
+**Attribution runs only, for now:** continuous Timeline with real durations. (de-safari would put it in every
+block; arch-safari rates its overhead medium and unmeasured. Resolution: it joins the standard block only after
+its on/off A/A passes, i.e. no tick-median shift and no extra k≥5 frames; rAF stays the A/B metric either way.) Send `Page.disable`
 then `Page.enable` before `Timeline.start`, and again after every reconnect (target ids change on navigation);
 `Page.enable` starts WebKit's inspector stopwatch, nothing else does (vendor source; real durations on 26.6.1 are
 still an inference until one probe call). Records are serialised on the main thread, so the overhead is
@@ -398,9 +401,11 @@ finger batch plus the one-time Instruments pairing (~30 min of the user's time).
 - **arch-safari**: answered Q1-Q5, folded into §3.1, §3.7, §5.5 (`research/architecture/safari-inspector-probing.md`,
   d3aa186). Still inference until tried on 26.6.1: real Timeline durations after `Page.enable`, the cost of
   `layersForNode` on this page's tree.
-- **de-safari**: folded from its note (`research/design-engineering/safari-render-signals.md`, worktree
-  agent-a4ce1669dd33aa4dc): L13, the render-bound device class, RenderingFrame segments, Paint clip on WebKit,
-  probes that change what they measure, P1-P6 in §8.3. **Open:** a device-side capture that renders
-  `backdrop-filter` (until answered, the user's eye is the look check); whether Instruments decodes WebKit's
-  signposts on iOS (T10); event regions as an unmodelled per-frame term (sized by P2/P2b).
+- **de-safari**: answered Q1-Q4 (`research/design-engineering/safari-render-signals.md`, 8240e5b). Folded: L13, the
+  render-bound device class, RenderingFrame segments, the WebKit Paint clip, probes that change what they measure,
+  and P1-P6 in §8.3. **Open:**
+  - does a framebuffer capture (`idevicescreenshot`, QuickTime over USB) render `backdrop-filter`? Verify once (F);
+  - does Instruments decode WebKit's signposts on iOS? (T10);
+  - event regions are an unmodelled per-frame term, sized by P2/P2b;
+  - Timeline overhead A/A before Timeline joins the standard block (§5.5).
 - de-devtools folded (§3.1, §3.7, §6.2, §8.1 T6/T7). arch-devtools folded (G1-G8).
