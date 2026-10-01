@@ -276,6 +276,44 @@ ends later (track bottom = viewport bottom, y≈932 in Chrome). There, P drops t
 keeps it. That end is outside the y≈700 frame, but v3 matches the baseline's end state exactly.
 The y≈700 cost needs a WebKit bisect: rows 12-15 (iPhone). de-hero's analysis (`research/design-engineering/hero.md` §2D, derived, not verified) gives the strongest candidate. WebKit treats the extent of a transform animation under a transform-animated ancestor as uncertain and stops overlap testing. Here that is HEflip's WAAPI word slide inside v2's lifelong `.hero-copy` transform animation. Content revealed at the 0.72 flip then composites into extra layers. If so, rows 14/15 restore about 52 ms. The pixel-identical fix would be a composited `overflow: clip` wrapper for the copy's exit transform. The robust fix is de-hero's R1, which takes the 0.72 reveal apart (owners large-area-blur and phone-invisible-shrink).
 
+**h1: the #people card reveal at the 0.72 flip (lead decision 09:2xZ; de-hero `hero.md` §2D R1).**
+The y≈700 frame is the 0.72 flip. In one frame the nav leaves the pill, and `section#people` gets
+`is-visible`: the future card goes `visibility: hidden` → `visible` (an inherited toggle over the whole
+card), starts its filter / opacity / transform transitions and gets its first raster. h1 takes that apart.
+Once JS arms the section (`data-fw-reveal`, set by `FRreveal` from the future render effect), the hidden
+card stays `visibility: visible` at opacity 0 with `inert` (not focusable, out of the a11y tree), so it is
+laid out and rastered before the flip. The flip then changes only the card's opacity / filter / transform.
+The reveal blur ends at `blur(0px)` (a list matching `blur(14px)`). About 1 s later, after the 0.9 s
+transitions, one timer drops the filter (`data-fw-revealed` → `filter: none`) and turns `inert` off.
+Hiding sets `inert` at once and keeps the baseline blur-out. Landed behaviour kept: large-area-blur's
+`linear()` filter curves (`fixes/large-area-blur/patch.diff`, copied unchanged into the armed rules) and
+phone-invisible-shrink's future block (`fixes/phone-invisible-shrink/README.md`, JS untouched).
+Two builds: `--h1` = aw1-10e + h1 (`variants/16.diff`, compare with P2), `--h1v2` = aw1-10e + v2 + h1
+(`variants/17.diff`, compare with P).
+
+Chrome checks (short lane, counts and parity only, mobile 430×932 DPR 1, probe `h1a/`, `h1idle.json`):
+- **Parity across the reveal:** the card transitions frozen at 0 / 100 / 300 / 600 / 900 ms after the flip,
+  plus the settled state. Pixel diff in the card's visible rect: P2/h1 0.21 / 0.14 / 0 / 0.002 / 0 / 0 %,
+  P/h1v2 0.07 / 0.05 / 0 / 0 / 0.15 / 0 % (noise band 0-0.4 %). Computed values are identical at every
+  point except at 900 ms, where the baseline has `none` and h1 `blur(0px)` (the same pixels). After the
+  settle step both builds have `filter: none`, `inert` false and are focusable.
+- **a11y / focus while hidden:** the card's button is not focusable in either build. h1 is stricter than
+  the baseline. On phones the baseline still exposes `#profile-showcase`'s tablist "Occupations" (6 tabs)
+  and the `#people` region while the card is hidden: `.start-selling-profile-tabs` sets
+  `visibility: visible` (CSS 3437, 3668), which overrides the card's hidden. h1's `inert` hides them. So
+  invisible tabs no longer sit in the a11y tree or take taps at opacity 0. After the reveal the a11y
+  trees match, and they match again after hiding. Behaviour change by design; reviewer to confirm.
+- **Idle at y=0 (F-030 style, 10 s, ×2 each):** identical. Face writes are 613-635 vs 615, no
+  `data-fw-wc` flips, style recalcs 476-481 vs 481-484, layouts 32 vs 30.
+- **Flip step (Chrome):** 5-6 style recalcs, 2.9-3.4 ms in all four builds. Chrome doesn't show the WebKit
+  first-raster cost, so the phone decides.
+- **Memory note:** while hidden, the card (430 × ≥ 932 CSS px, `min-height: 100svh` on phones) is painted
+  at opacity 0 instead of not at all. At DPR 3 that is one backing store of about 1290 × 2800 px ≈ 14 MB
+  (plus a blur(14px) filter surface if the engine keeps one), from mount until the reveal. The baseline
+  paints nothing there while hidden.
+- **New later frame to watch:** the settle step (about 1 s after the flip) restyles the card subtree
+  (`inert` off) and drops its filter in one frame. On a scripted phone scroll that falls at y≈1000-1300.
+
 ## Risks, conflicts, follow-ups
 
 - Keyframes deliberately avoid `var()` of animated custom properties (Safari resolves them against the
@@ -355,3 +393,5 @@ The header's "rebuild with" line names the scratch topic it was generated from:
 | hero-exit-scroll-timeline/13 | DIAGNOSTIC v5noblur = 09 without the phone cue's exit blur (`.scroll-float` fades and lifts only) | WebKit cost at y≈700 comes from the scroll-driven `filter` animation on the cue | pending (iPhone) | diagnostic (visual change: cue fades without blur; small text at low opacity) | none yet | patch `variants/13.diff` (on aw1-10e) | | iPhone bisect requested |
 | hero-exit-scroll-timeline/14 | DIAGNOSTIC v6noflip = 09 with all-wave1's `HEflip` off (the h1 words beside the accent snap instead of a 0.9 s WAAPI transform slide) | de-hero candidate 1: a transform animation (HEflip) under the transform-animated `.hero-copy` makes WebKit assume overlap, so content revealed at the 0.72 flip gets extra layers | pending (iPhone) | diagnostic only (visual change, other topic's code) | none yet | patch `variants/14.diff` (on aw1-10e) | | iPhone bisect requested |
 | hero-exit-scroll-timeline/15 | DIAGNOSTIC v7copyop = 09 with the phone `.hero-copy` exit as opacity only (no transform animation on the copy) | same candidate from the other side: with no transform animation on `.hero-copy`, overlap testing stays on | pending (iPhone) | diagnostic (copy no longer lifts 8 px) | none yet | patch `variants/15.diff` (on aw1-10e) | | iPhone bisect requested |
+| hero-exit-scroll-timeline/16 | h1 = aw1-10e + #people reveal without the visibility flip (opacity 0 + `inert` while hidden, reveal blur to `blur(0px)`, filter none and inert off ~1 s later) | the 0.72 flip frame loses its inherited toggle and first raster: y≈625-745 from 43-63 to ≤ 34 ms (de-hero, derived) | provisional: parity confirmed, gain pending (iPhone) | clean (Chrome counts + frozen-frame parity) | reveal pixel diff vs P2 0-0.21 % at 6 points; idle at y=0 identical; a11y stricter (baseline leaks the profile tablist while hidden) | patch `variants/16.diff`; README "h1"; probes h1a/, h1idle.json (scratch) | memory: ~14 MB backing store for the hidden card at DPR 3 | iPhone queued (mgmt-ops-4) |
+| hero-exit-scroll-timeline/17 | h1v2 = aw1-10e + v2 (09) + h1 | v2's y≈50 removal without its y≈700 cost, if the cost was the flip's raster | provisional: parity confirmed, gain pending (iPhone) | clean (as 16) | reveal pixel diff vs P 0-0.15 %; idle identical | patch `variants/17.diff` | candidate final if the phone confirms | iPhone queued (mgmt-ops-4) |
