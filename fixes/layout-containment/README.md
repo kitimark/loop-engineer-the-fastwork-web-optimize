@@ -6,7 +6,14 @@
 **Status:** P11 done. lc-cq3 / aw1-cq3 gives no gain: the nested Layout is removed but its cost stays in the same frame (P-028 MISS on ms, see "P11 Block A result"). P14 done (see "P14 result"). The rotator's whole-view tick Layout (C 67/67, median
 20.6 ms) is gone with st4-noswap (2/67, idle long frames 0), so the escape is the swap path. re-contain-js re-roots
 it at #people but keeps 57 % of the cost (P-025: V1 HIT, V2 root HIT, cost MISS). Next: an st5 candidate (proposal).
-**Stage:** R + I closed. The P11 phone pass is done (Block A; Block B skipped). D for the rotator question rests on the P14 boundary block (below).
+**Stage:** R + I closed. The P11 phone pass is done (Block A; Block B skipped). **D for the rotator question: D signed by lead,
+2026-10-01 18:0xZ**, with this scope:
+- The whole-view tick Layout comes from the carousel's swap path: V1 0/36 idle, 2/67 overall, vs C 67/67;
+  sentinels pass, 9/9 counted.
+- Inside the swap path, img insert/remove vs layer changes stays OBSERVED/UNRESOLVED.
+- The y≈1960 rebuild frame is explicitly NOT the rotator's.
+
+F is next: st5 (see "st5 build").
 **Device class / gate:** phone-only (Chrome shows no full layouts and no style-nested layout, see the census) → phone Timeline attribution, then phone ABBA
 **Driver(s) behind the claims:** none yet (Chrome census/parity are mechanism checks, not timing)
 **Prediction:** `fixes/PREDICTIONS.md` P-028 (U3, lc-cq3 / aw1-cq3), P-025 is de-pm-hero's (ST-4, builds here)
