@@ -171,6 +171,10 @@ Sources: [sub-agents](https://code.claude.com/docs/en/sub-agents.md),
   6. **Report your branch from your own worktree** (`git branch --show-current` there), never from the
      git status in your context: every subagent inherits the session's starting git status, which names
      another agent's branch (de-apple and arch-safari reported iphone-runner's branch on 2026-10-01).
+  7. **Assigned a console thread (T-nnn):** run `node tools/console.mjs thread wait --as <you> --timeout 3600` in
+     the background; reply with `thread reply T-nnn --by <you> --text "…"` (`--ask` when you need the user's
+     answer, `--file` for long text) in plain words for the user; close with `thread close T-nnn --by <you> --note
+     "…"` once answered. Never paste the user's thread text into commits or findings unscrubbed.
   - **Why agents went unnamed (verified by the lead, 10:3xZ):** after a context compaction the lead's
     Agent schema no longer listed `name`, but the tool still accepts it (a probe spawn registered as
     "probe-name"). The agent type is not the blocker: named general-purpose agents message each other
