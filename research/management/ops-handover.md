@@ -265,6 +265,14 @@ between tool calls.
    next: C-004 -> cooling -> P-032 -> P14 -> P-035 G -> P-036 G. User question "phone over Wi-Fi, no cable": lead answered
    UNRESOLVED, check offered after C-004, HOLD until the user replies. I-032 B1 (paint units/layerScale) open with
    ts-render-signals. Digest to the lead every 30 min.
+   **16:5xZ:** P14 (P-025, V1 = st4-noswap) and P-038 (PoC 2 blur-cubic, reveal only, behind P-033 gain) VALIDATED
+   after second read. F-v3 scored per tester (7c95689): passive NOT FELT 2/4 for the user and a second tester -> P-035 G
+   alone decides. User question "phone over Wi-Fi, no cable" ANSWERED (lead + user 16:45-16:53Z, OBSERVED, in I-040):
+   cable out, devicectl sees the phone over the network but idevice_id -l/-n and iwdp :9221/:9222 show 0 for 1.5 min;
+   cause UNRESOLVED (likely usbmuxd vs CoreDevice/RemoteXPC); decision: stay on the cable, no toolsmith. I-041 (lead):
+   ts-lock-bundle's unlanded (f) co-hold code broke chrome-measure exclusivity 16:28-16:45Z; (f) tested on a temp
+   FW_STATE_DIR only until it lands; both test:chrome runs in 16:38-16:45Z void; ts-iphone-run reruns npm test (short
+   lane) before its land; ts-render-signals' I-032 land needs a clean test:chrome. Caffeinate renewed until ~18:45Z.
    **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A PASSED (ABBA aw1-10e S, on vs off: dt>50 3 vs 7, dt>34 18 vs 21, fps
    57.4 vs 57.3; T1a now absolute; minShift revisit CLOSED: HL p95 on-off +0.48 ms, n=2/arm (crude), stays 4 ms,
    ts-analysis 14:3xZ), 10 min, block B) -> P-033 step 0
