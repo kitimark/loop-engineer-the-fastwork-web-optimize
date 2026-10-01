@@ -207,18 +207,17 @@ BATCH shas. **Stamp times from `date -u`** (mgmt-ops-4 drifted ~5-10 min ahead t
 `sh <scratchpad>/mgmt-ops/tick2.sh 150-240` (returns on incident changes; prints lock + phone state); messages arrive
 between tool calls.
 
-1. **iPhone order** (lead adopted arch-lead's `research/architecture/unknowns-actions.md` §3; phone back 11:22Z;
-   updated 11:4xZ by mgmt-ops-5): (1) P0 logger-ysrc A/A (P-023, running since 11:23Z) -> **setup window** (runner
-   releases the lease in P0's cooling gap; user turns on Developer Mode = phone reboot; then ts-gesture `wda build` in
-   its own normal chrome-measure hold with the lease; the lead pings) -> T10 xctrace pairing check (~5 min, after the
-   lead confirms the setup) -> (2) **P1 VALIDATED** (P-017: gh a2b0be9a / gh-cdwc 66aaffb6 / gh-cdhid 89c1492e, JS
-   1df2484c, M Latin square 9 + 3 warm-ups + 3 Timeline cycles, ~25 min) + P2 = P-016b -> (F6 S run on
-   apple.com/iphone-18-pro, ~8 min: gap filler) -> (3) OSS ca-check (P-021) -> (4) P3 ST-2 (P-019, P-020) -> (5) P4
-   y≈1960 A = F1 (P-013), B = F3 (P-022; fix-nav-morph building, ticket owed) -> (6) P11/P12 + **ST-4** (P-025,
-   de-pm-hero; fix-scroll-engine builds A1-A3, combined ticket owed) -> (7) P5 ST-1 (P-018) + **P9** (P-026, nomask /
-   navw / split-trigger; fix-hero-exit builds, ticket owed; maybe merged into P5's slot) -> hero-B -> R2 bg -> /10d ->
-   N12 -> P6-P8, P10 (= P-024, only if P1 passes), P13.
-   **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (until P1/P2), h4.
+1. **iPhone order** (updated 12:2xZ by mgmt-ops-5; lead-ranked): DONE: P0 (P-023 closed, A9 lifted for rAF-only
+   loggers), P1 (P-017 HIT: countdown face repaint = morph start transient), P2 (P-016b miss). NOW: WDA setup (ts-gesture
+   holds the lease; user taps Trust; top priority by the user's request) -> T10 xctrace (after WDA; the iOS platform
+   component was missing, installed 12:1xZ) -> F6 S (apple.com/iphone-18-pro, filler) -> ca-check (P-021, :5482) ->
+   **g vs g-cdwc M block** (P-029, countdown fix transfer check on the landing base; lead 12:2xZ: ahead of P3; ticket
+   after fix-nav-morph's cd2-check) -> P3 ST-2 + baseline-A (P-019/P-020, ~45 min) -> P4 A = F1 arm-load (P-013), B =
+   F3 arm-scope (P-022, validated) -> P11+P14+P12 (P-028 + P-025, validated provisional on lc-cq3 parity) -> P5 ST-1
+   (P-018) -> P9 (P-026, own block) -> hero-B -> R2 bg -> /10d -> N12 -> P10 (P-024, gh-cdwc-a1 built) -> P6-P8, P13.
+   **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (behind the countdown fix), h4.
+   Countdown fix mw10e-cdwc (CSS 269df63726b3 on aw1-10e) lands on phone gain evidence + review; mechanism wording stays
+   OBSERVED ("repaint of the faces removed (observed)") until ver-webkit-paint reports (lead).
 2. **USER-ASK BUNDLE: answered 11:3xZ.** Approved: C1 (the lead runs it himself in the main checkout after T8+ /
    I-033 lands and is reviewed, when the user is away from the Mac; P-027), F6 (phone visits the Apple page), T10
    (Instruments pairing). WDA setup by the user in progress (step 1 Xcode account done 11:4xZ). The finger batch
@@ -257,6 +256,10 @@ between tool calls.
    hold non-measuring (the wda build waited for quiet while the user worked at the Mac); no arch spawn (lead 12:0xZ): the
    I-035 toolsmith writes the proposal in the same task; the lead's measurement-code fix-reviewer is the sign-off (a
    non-measuring hold must never let a timing run start on a loud host).
+7e. **USER DECISION 12:20Z: host gate quiet-CPU threshold 20 -> 25 %** (20 % was uncalibrated, provisional per the
+   09-30 post-mortem). ts-gate25 (toolsmith) makes the change and checks the existing results.json host-busy data on
+   whether 30 % is safe later. A/Bs stay comparable: the config records the threshold. T8+ (599471e) is NEEDS-WORK
+   (review-host-state: 2 small blocking items, with ts-host-state); I-035 + --no-timing stay queued after T8+.
 7d. **NEW RULE (user, CLAUDE.md 71ad57d):** a browser/engine limitation is OBSERVED until confirmed against docs, spec,
    engine source or a bug tracker (cited). mgmt-ops signs no card that relies on an OBSERVED claim as its mechanism
    (experiments that TEST a claim are fine); route arch-claims' refuted/weakened claims to owners and amend tickets.
