@@ -174,12 +174,13 @@ and writes/s at rest, base vs patched, in the short lane. review-10c missed /10c
 --short` empty) before switching anything in it.
 
 **Tool fixes first**, on their own, so every agent gets them. A toolsmith branch holds only tool
-commits; test the exact commit **in the main checkout** (it has `site/`, worktrees don't: a test
-once passed in a worktree and hung in the main checkout, `7abd290`) and under the lock:
+commits; test the exact commit **in the main checkout** (it has the snapshot checked out, sparse
+worktrees don't: a test once passed in a worktree and hung in the main checkout, `7abd290`) and under the lock:
 
 ```sh
 git -C <toolsmith worktree> rebase main
 git -C <toolsmith worktree> diff --stat main...HEAD              # only tools/, tests/; review them and their tests
+git diff --stat main...<toolsmith branch> -- site site-pretty baseline.json   # must print NOTHING (see below)
 git switch --detach <toolsmith branch>
 node tools/lock.mjs run chrome-measure --owner land-i<nnn> --short --max-seconds 300 -- npm test
 git switch main && git merge --ff-only <toolsmith branch>
@@ -197,10 +198,20 @@ Then announce ([`INCIDENTS.md`](INCIDENTS.md) 5): every affected agent runs `git
 ```sh
 git -C <owner worktree> rebase main
 git -C <owner worktree> diff --stat main...HEAD   # only fixes/<topic>/{README.md,patch.diff,results.json}
+git diff --stat main...<fix branch> -- site site-pretty baseline.json   # must print NOTHING
 git status --short                                              # main checkout: nothing modified under fixes/<topic>/
 git merge --ff-only <fix branch>                                # in the main checkout; if it fails: rebase again
 git worktree remove <owner worktree> && git branch -d <fix branch>   # once the owner is finished
 ```
+
+**The snapshot check.** No branch but `main` or `baseline/*` changes the committed baseline snapshot
+(`site/`, `site-pretty/`, `baseline.json`). The pre-commit hook refuses such a commit, but `git
+revert`, `cherry-pick`, `rebase` and `am` skip pre-commit, so check every branch before landing:
+`git diff --stat main...<branch> -- site site-pretty baseline.json` must print nothing. The scope
+guard (`npm run test:unit`, `node tools/scope.mjs --dir <worktree>`) fails with `SCOPE SNAPSHOT` on
+the same condition, with no `FW_TOOLING` opt-out. Anything listed: don't land; ask the owner to
+restore those paths from `main` (the message names the command) and commit the restore. A snapshot
+update itself is the user's call (CLAUDE.md "The committed baseline snapshot").
 
 `patch.diff` holds Fastwork excerpts: `main` stays local (there is no remote; never push). The
 overlay is gitignored and disappears with the worktree; `node tools/fix.mjs apply <topic>` rebuilds

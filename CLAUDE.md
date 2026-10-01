@@ -45,16 +45,21 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    keys; every result must name the exact build it measured. *Enforced:* `.gitignore`, deny rules on
    `git add -f`/`--force`, the `pre-commit` hook (refuses those paths, and any staged snapshot change that
    is not an authorized snapshot update: `FW_BASELINE_UPDATE=<id>`, pin = staged trees, nothing else
-   staged, on `main`); git-guard asks the user before a command sets `FW_BASELINE_UPDATE`.
+   staged, on `main`); git-guard asks the user before a command sets `FW_BASELINE_UPDATE`; the scope
+   guard (`npm run test:unit`) refuses a branch other than `main`/`baseline/*` that changed the snapshot
+   or `baseline.json` (`SCOPE SNAPSHOT`, no opt-out: revert, cherry-pick, rebase and am skip pre-commit).
 4. **The baseline is read-only.** MUST NOT edit `site/` or `site-pretty/`; change Fastwork code only
    in your overlay copy (`node tools/fix.mjs edit <topic> <file>`). MUST NOT run `mirror.mjs` or
    `prettify.mjs` (a new snapshot is the user's, with `--new-snapshot`), MUST NOT restore, clean or
    check out the main checkout's `site/`/`site-pretty/`, and MUST NOT set `FW_BASELINE_ALLOW_MODIFIED`.
-   *Why:* every worktree measures the same committed snapshot. *Enforced:* `Edit` deny rules;
+   *Why:* every worktree measures the same committed snapshot. *Enforced:* `Edit` deny rules (also on
+   worktree copies, `.claude/worktrees/*/site*/`);
    mirror/prettify ask and refuse a tracked tree without `--new-snapshot`; `fix.mjs`, `serve.mjs`,
    `verify.mjs` and `bench.mjs` refuse (exit 3, `BASELINE-MODIFIED` / `BASELINE-MISMATCH`) unless the
-   baseline is the snapshot pinned by your checkout's `baseline.json`, unchanged; git-guard asks before
-   `FW_BASELINE_ALLOW_MODIFIED`. Details: "Baseline snapshot".
+   baseline is the snapshot pinned by your checkout's `baseline.json`, unchanged; `verify.mjs` re-checks
+   after every run and `fix.mjs ab`/`bench.mjs` prefix every verdict with `BASELINE-<STATE>: ` when the
+   baseline was not that snapshot throughout; git-guard asks before `FW_BASELINE_ALLOW_MODIFIED`.
+   Details: "Baseline snapshot".
 5. **Your own worktree, never the main checkout.** Every agent works in its own git worktree under
    `.claude/worktrees/` on its own branch; only the lead works in the main checkout and lands on `main`.
    *Why:* the main checkout holds `main`, the baseline and port 5173. *Enforced:* `fix.mjs` refuses to
@@ -102,7 +107,8 @@ the hooks of its own branch), `git config merge.ff only`, `git config pull.rebas
 `node --test 'tests/hooks/*.test.mjs'`. Known gaps: git started from a script (`node -e`, `find -exec`)
 is not seen by git-guard, but the git hooks still refuse merge commits and pushes; a human can switch
 the git hooks off, so for the user rule 1 stays a promise. `node tools/lock.mjs run … -- <cmd>` is
-pre-approved and git-guard doesn't look inside it: never run git through it.
+pre-approved; git-guard checks the command after `--` (and a `sh -c` inside it) like any other, but
+never run git through it.
 <!-- END hard-rules -->
 
 ## Calibrated measurement setting
@@ -174,6 +180,15 @@ node tools/baseline.mjs sparse --off  # check out your branch's own committed co
   from two snapshots never compare (`config.baselineSnapshot` in results.json, `baseline` in verify.json,
   `baselineSnapshot` in bench-results.json).
 - No `baseline.json` (a branch from before the snapshot commit): unchecked, as before; rebase.
+- The check is not only at start: `verify.mjs` re-checks after every run (a flagged run gets `baseline:
+  {snapshot, state, tag}`, verify.json `baseline.flaggedRuns`), and `fix.mjs ab` / `bench.mjs` prefix every
+  verdict with `BASELINE-MODIFIED: ` (or `-MISMATCH`, `-CHANGED`, ...) when the baseline was not the pinned
+  snapshot throughout (`FW_BASELINE_ALLOW_MODIFIED=1`, or a re-mirror mid-A/B); bench then exits 3 and stores
+  no calibration or authored effect. Such a result is invalid: re-measure on the committed snapshot.
+- A branch never carries a snapshot change: `npm run test:unit` fails with `SCOPE SNAPSHOT` (no `FW_TOOLING`
+  opt-out) when `site/`, `site-pretty/` or `baseline.json` differ from its merge-base with `main` (a revert
+  or cherry-pick skips pre-commit); restore them as the message says. The lead checks the same before
+  landing (`fixes/LEAD.md` "The snapshot check").
 
 A new snapshot, only by the user (or the lead on the user's explicit instruction), in the main checkout,
 in a quiet window:
@@ -206,7 +221,8 @@ npm run test:all      # both
   architecture, management) never changes tooling and runs `npm run test:unit` before
   committing; mappers and reviewers commit nothing and run no suite. The scope guard
   (`tools/scope.mjs`) fails, naming the files, when the branch changed `tools/`, `tests/`, `package.json`, `.githooks/` or `.claude/` (except `.claude/agents/`)
-  since its merge-base with `main`, counting committed, staged, unstaged and untracked files. An
+  since its merge-base with `main`, counting committed, staged, unstaged and untracked files (and, on
+  any branch but `main`/`baseline/*`, when it changed `site/`, `site-pretty/` or `baseline.json`). An
   accident: restore the file as the message says. A deliberate tool fix: own commit, then
   `FW_TOOLING=1 npm run test:unit` (or `node tools/scope.mjs --tooling`) passes the guard, and the
   full `npm test` below is still required.
