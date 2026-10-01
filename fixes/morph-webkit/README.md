@@ -424,6 +424,60 @@ idle 60.5 fps. Moving phase:
 
 The ticket went to mgmt-ops-5 and iphone-runner: driver M, a 3-arm Latin square, hold 2000, 3 cycles, plus one Timeline cycle per arm.
 
+**iPhone result, P1 = P-017: PASS** (iphone-runner 11:57-12:07Z, phone cool, gh control sentinel passed; driver M,
+hold 2000 × 3 cycles, Latin square; raw `out/iphone-runner/md-p-*`, `mdtl-p1-*`, `lt-p1-*` in iphone-runner's checkout):
+
+| readout | gh | gh-cdwc | gh-cdhid | prediction (cdwc) |
+|---|---|---|---|---|
+| face-repaint frames, first 450 ms (Timeline) | 76 % | **0 %** | 0 % | ≤ 20 % — hit |
+| excess per fwd tween, first 450 ms (median per run) | 170 / 190 / 228 ms | **38 / 66 / 101** | 41 / 99 | ≥ 30 ms lower — hit (−120..−150) |
+| layers at the m=1 hold | 113 | **33** | 113 | ≤ 40 — hit |
+| Composite − Paint, first 300 ms | 25.1 ms | 13.2 | 12.5 | ≤ 20 — hit |
+| moving p50 / p95 | 22-27 / 42-57 | 17-19 / 21-26 | 17-20 / 22-27 (+1 disturbed run, flagged) | — |
+| first-300 ms dt median (fwd) | 3.1-4.2 ticks | 2.2-2.6 | 2.2-2.4 | — |
+
+- cdhid wins as much while keeping all 113 layers, so the cost is the faces **repainting**, not the layer count
+  (F-063). The repaint of the faces is removed (observed). Why WebKit repaints them stays OBSERVED, not named, until
+  arch-claims' ver-webkit-paint reports on F-057/F-063. Removing `will-change` is one way to stop the repaint; it is
+  the measured one, and it also frees 80 layers.
+- P2 = P-016b (hold 900 vs 2000) showed no shortening: a cold store is not the cost.
+
+### The countdown fix and its follow-ups (after P1)
+
+All new names; existing overlays untouched (F-034). Diffs in `variants-10e/`.
+
+| build | base | JS | CSS | hook | role |
+|---|---|---|---|---|---|
+| `mw10e-cdwc` | aw1-10e | = aw1-10e 3e2f599a1632 | 5dc6e8e37388 | none | **landable fix**: one CSS rule |
+| `mw10e-g-cdwc` | g | = g 22efa0ab69ba | 5dc6e8e37388 | driver | transfer check on the landing stack (pin fix g, no R1) |
+| `mw10e-gh-cdwc-a1` | gh-cdwc | c5ab82228dde | = gh-cdwc 66aaffb61d59 | driver | P10 = P-024 clock shift (A1) |
+| `mw10e-stub` | ghbn | = gh 1df2484cc79c | f672fd4f1ff1 | driver | finger batch F2 perception stub; never lands |
+
+- **The fix** (`variants-10e/cdwc.diff`, +8 lines, CSS only):
+  `.start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c { will-change: auto; }`.
+  - It is the P-017 rule without `!important`. The only other rule that sets `will-change` on these faces is the
+    scene-pause rule (CSS 11809, `auto !important`), so the computed value is the same in every scene state.
+  - Scope: the morph panel's countdown only. The page's other countdown keeps its face layers (not part of the morph).
+  - At the hold, the seconds digit's spring (one ~0.3 s tween per second) now repaints a 1ch × 1.3em box in the panel
+    instead of moving a layer. That repaint is small; the held-frame (`atOne`) numbers of P-017 haven't been relayed
+    yet, and the P-029 block reports them.
+  - Coupling (F-056): countdown-idle-raf's countdown-ca (sampled WAAPI keyframes on the faces) would need these faces
+    to keep `will-change: auto`, or to stop changing transform during the morph tween.
+- **Transfer check** `mw10e-g-cdwc` vs `mw10e-g`: P-017 was measured on gh (R1 fixed panel), but R1 is not landable
+  (its veil scale is set in JS per frame, debug). The landing stack is aw1-10e + the pin fix (g) + this rule. On g the
+  panel still resizes per frame (398 → 406 px), which may repaint the panel content with or without face layers.
+- **A1** (`mw10e-gh-cdwc-a1`; `research/design-engineering/morph-clock-replay.md` §2, §5):
+  - `E()` arms A1 only for a tween from rest: no tween running (`n == 0`) and the start value `i` exactly 0 or 1.
+  - The first `T` call writes `i ± 0.0011` toward the target (scene flips active, ~0.8 px at the nav edge) and does
+    not read the clock.
+  - The second call sets `o = e − 16.67` and continues with the unchanged ease-out (`ZM`), so it shows M(16.67 ms).
+  - Tweens that reverse mid-flight keep the shipped clock.
+- **Stub** (`mw10e-stub`): it has the same listeners, `preventDefault`, pin, 680 ms time tween, nav box growth,
+  panel opacity/scale and veil. It drops what renders: `display: none` on the panel's image columns
+  (`.start-selling-morph-backdrop`), center (title, countdown, CTAs) and footer, plus ghbn's no-blur rules. The
+  panel is a flat gradient box. It answers K16 / U1 only: does the time-tween interaction feel laggy when the render
+  is cheap?
+
 ### R8 and R5a on gh (de-morph): `mw10e-ghr8`, `mw10e-ghr85a`
 
 Both are built on `mw10e-gh` (`--on aw1-10e`) and keep the debug driver hook.

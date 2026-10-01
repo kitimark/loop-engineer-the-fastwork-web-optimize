@@ -1,0 +1,22 @@
+# fastwork mirror fix: mw10e-cdwc
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw10e-cdwc --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11819,4 +11819,12 @@
+   html {
+     scroll-behavior: auto;
+   }
++}
++
++/* perf(morph-webkit, countdown fix, P-017): the morph panel's countdown digit faces get no will-change. With it,
++   the panel scene's flip to active creates ~80 digit layers at the tween start, and on the iPhone those layers were
++   repainted in 76 % of the frames in each tween's first 450 ms (observed); without it, 0 %. Countdowns elsewhere on
++   the page are unchanged. */
++.start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c {
++  will-change: auto;
+ }
