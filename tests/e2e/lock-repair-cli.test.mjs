@@ -129,3 +129,25 @@ test('repair --move (I-019): two real waiting runs; the lead moves the later one
   assert.equal(readFileSync(orderFile, 'utf8'), 'e1-prio\nfirst\n', 'the moved waiter ran first, the other one kept its entry and ran next');
   assert.deepEqual(queue(), []);
 });
+
+test('repair --move to the entry\'s own position (I-035): the dry run and --apply say "marked", status shows it, a repeat is a no-op', () => {
+  assert.equal(lock('acquire', 'test-res', '--owner', 'h').code, 0);
+  assert.equal(lock('acquire', 'test-res', '--owner', 'a').code, 3);
+  assert.equal(lock('acquire', 'test-res', '--owner', 's', '--short', '--max-seconds', '60').code, 3);
+  const args = ['repair', 'test-res', '--move', 'a', '--to', '1', '--by', 'lead', '--reason', 'E1 first'];
+  const dry = lock(...args);
+  assert.equal(dry.code, 0, dry.out);
+  assert.match(dry.stdout, /^MOVE test-res \(dry run, nothing changed\): "a" stays #1, marked as moved by "lead"; apply with --apply$/m);
+  assert.doesNotMatch(lock('status', 'test-res', '--no-host').stdout, /moved by/);
+  const ap = lock(...args, '--apply');
+  assert.equal(ap.code, 0, ap.out);
+  assert.match(ap.stdout, /^MOVED test-res: "a" stays #1, marked as moved by "lead" \(served before the short jobs behind it, I-020\/I-035\), logged to .*audit\.log$/m);
+  assert.match(lock('status', 'test-res', '--no-host').stdout, /queue: 1\. a \(since [^)]*, moved by lead\), 2\. s \(short, max 60 s, since [^)]*\)$/m);
+  const audit = readFileSync(lf('audit.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  assert.deepEqual(audit.map((x) => [x.code, x.owner, x.from, x.to]), [['queue-move', 'a', 1, 1]]);
+  const before = bytes();
+  const again = lock(...args, '--apply');
+  assert.equal(again.code, 0, again.out);
+  assert.match(again.stdout, /^MOVE test-res: "a" is already #1 and moved by "lead", nothing to do$/m);
+  assert.deepEqual(bytes(), before, 'a repeat writes nothing');
+});

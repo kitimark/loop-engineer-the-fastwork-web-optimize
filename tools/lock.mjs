@@ -70,7 +70,8 @@
 //   node tools/lock.mjs repair chrome-measure --move <owner> --to <position> --by lead --reason "<why>" [--apply]
 // Dry run by default (before/after queue). --apply moves that waiting entry under the guard and appends one
 // "queue-move" line to locks/audit.log. Only waiting entries move (never the holder); only --by lead; the
-// entry keeps its `since` and records movedBy/movedAt (status: "moved by lead"). Positions are the live
+// entry keeps its `since` and records movedBy/movedAt (status: "moved by lead"; a move to its own position records
+// them too, I-035, and is a no-op only once they are there). Positions are the live
 // queue as status shows it. Waiters keep their entries (and pids) and are granted in the new order; the
 // short lane serves queued short jobs first within its drain budget (I-007/I-011), except short jobs
 // behind a normal waiter the lead moved: the move wins (I-020).
@@ -165,7 +166,10 @@ async function main() {
       const m = await moveWaiter(resource, { owner: opt('move'), to: Number(opt('to')), by: opt('by'), reason: opt('reason'), apply });
       if (flag('json')) { console.log(JSON.stringify(m, null, 1)); return 0; }
       const what = `"${m.owner}" #${m.from} -> #${m.to}`;
-      if (!m.changed) console.log(`MOVE ${resource}: "${m.owner}" is already #${m.from}, nothing to do`);
+      // I-035: a move to the entry's own position still writes the lead's mark (movedBy), unless it is already there
+      if (!m.changed && !m.marked) console.log(`MOVE ${resource}: "${m.owner}" is already #${m.from} and moved by "${opt('by')}", nothing to do`);
+      else if (!m.changed && !apply) console.log(`MOVE ${resource} (dry run, nothing changed): "${m.owner}" stays #${m.from}, marked as moved by "${opt('by')}"; apply with --apply`);
+      else if (!m.changed) console.log(`MOVED ${resource}: "${m.owner}" stays #${m.from}, marked as moved by "${opt('by')}" (served before the short jobs behind it, I-020/I-035), logged to ${auditFile()}`);
       else if (!apply) console.log(`MOVE ${resource} (dry run, nothing changed): ${what}; apply with --apply`);
       else console.log(`MOVED ${resource}: ${what} by "${opt('by')}", logged to ${auditFile()}`);
       console.log(`  holder: ${m.holder ? `"${m.holder.owner}"${sh(m.holder)} (not touched)` : 'none'}`);
