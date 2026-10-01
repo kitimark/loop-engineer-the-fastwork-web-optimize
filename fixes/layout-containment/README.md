@@ -6,6 +6,10 @@
 **Status:** P11 done. lc-cq3 / aw1-cq3 gives no gain: the nested Layout is removed but its cost stays in the same frame (P-028 MISS on ms, see "P11 Block A result"). P14 done (see "P14 result"). The rotator's whole-view tick Layout (C 67/67, median
 20.6 ms) is gone with st4-noswap (2/67, idle long frames 0), so the escape is the swap path. re-contain-js re-roots
 it at #people but keeps 57 % of the cost (P-025: V1 HIT, V2 root HIT, cost MISS). st5 is built: fixed slots, src in place, the same slide. Chrome check: 0 remounts, the slide pixel-identical to C mid-slide. P-039 done (see "P-039 result"): st5 is **MIXED**. The swap tick is clean (1/31 view ticks, like V1), but the slide-start tick still gets the whole-view Layout in 15/33 ticks. The leftover cost sits where the slide starts.
+The st5 split is done (see "Split result"):
+- The slide-start escape is caused by the running animations' opacity/transform flips (P-042, P-043, P-044 HIT).
+- **st6** (no flips) is gone at both tick types (1/36 starts, 1/35 swaps, like V1), so it is the rotator fix candidate. Its gain block is deferred.
+- Why the bounded carousel layout reaches the view in about 2/3 of starts is partly UNRESOLVED: a page-wide background full-layout state runs in about 65 % of idle frames.
 **Stage:** R + I closed. The P11 phone pass is done (Block A; Block B skipped). **D for the rotator question: D signed by lead,
 2026-10-01 18:0xZ**, with this scope:
 - The whole-view tick Layout comes from the carousel's swap path: V1 0/36 idle, 2/67 overall, vs C 67/67;
@@ -672,6 +676,71 @@ References: C aw1-10e (view at both tick types), V1 st4-noswap (gone).
   - UpdateLayoutTree elementCount small (≤10) and about equal in st5, noanim and waapi (class invalidation vs animation targets touch the same ~5 imgs).
   - No Layout in the start window that the scroll doesn't explain in any st5 arm. C remounts at the swap: a Layout plus a larger elementCount.
   - **Chrome is not expected to discriminate:** every Chrome Layout on this page is view-rooted and ≤0.24 ms (P-039 build check). The Chrome step is the mechanism and parity check (animation counts, the class state, a 0 % screenshot diff waapi vs st5) more than evidence.
+
+## Split result (phone, iphone-runner 20:20-20:30Z; scored with `<scratchpad>/layout-containment/splitscore.cjs`)
+
+- **Block as ticketed:**
+  - Served hashes match. One warm-up per port, then C1 V2 S3 N4 W5 X6 C7.
+  - Every run: Timeline depth 8, 6 s idle at y 0 + 30 s idle at y 1500.
+  - Sentinels (Timeline-OFF, S driver on C): open 60.0 / 57.3, end 60.2 / 57.6.
+  - Phone 38.9 → 37.3 °C, external power, Low Power Mode off, iOS 26.6.1.
+  - All OBSERVED, in our setup.
+- **The scorer** reproduces P-039 (st5 start 15/33 in the next-frame form, `PREFIX=p039-`). It reports the ticket form (any view-rooted Layout ≥10 ms in tick..+260 ms) and the P-039 form (until the end of the first RenderingFrame after the tick).
+- **Ticks:** 35-36 starts and 34-35 swaps per arm (C pooled over C1+C7: 71 / 69).
+
+| arm | slide start: view (ticket form) | P-039 form | swap: view | carousel-rooted Layout in frame 0 at the start | view ms per start tick (median) |
+|---|---|---|---|---|---|
+| C (C1+C7) | 71/71 (100 %) view | 71/71 | 69/69 view | 64/71 | 63.6 |
+| V1 | 1/35 (3 %) gone | 0/35 | 1/34 gone | 0/35 | 0 |
+| st5 | **24/35 (69 %) view** | 12/35 MIXED | 1/34 gone | 33/35 | 26.6 |
+| st5-noanim | **2/35 (6 %) gone** | 0/35 | 2/34 gone | 0/35 | 0 |
+| st5-waapi | **23/35 (66 %) view** | 11/35 MIXED | 2/34 gone | 33/35 | 26.4 |
+| st6 | **1/36 (3 %) gone** | 1/36 | 1/35 gone | 0/36 | 0 |
+
+- **Predictions:**
+  - P-042 noanim gone: **HIT** (6 %).
+  - P-043 waapi >25 %: **HIT** (66 %).
+  - P-044 st6 gone: **HIT** (3 %, the same as V1).
+  - The swap stays gone in every st5 arm: **HIT**.
+  - st5 >25 %: **HIT** (69 %).
+  - C1 and C7 agree (no drift).
+- **Reading:**
+  - The class toggle alone (noanim) doesn't cause the slide-start whole-view Layout.
+  - Starting the same animations without a class (waapi) still does, at st5's rate.
+  - The same animations without the opacity/transform flips (st6) don't.
+  - So the trigger is the flips the running animations produce, as de-pm-hero read from WebKit `StyleDifference.cpp` `miscDataChangeRequiresLayout`: opacity crossing 1, or `transform` none ↔ some.
+  - Status: the rule is CONFIRMED in source; that it is the trigger here is OBSERVED (decisive within this block).
+  - In st6 and noanim the slide start has no carousel-rooted Layout in frame 0 either (0/36, 0/35, against 33/35 in st5), so with no flip there is no layout at all.
+- **Frame columns** (info only; phone fps and gain verdicts are parked per the user direction). From iphone-runner's readout, idle at y 1500, 30 s, one run per arm, as dt>34 / dt>50 / view Layouts ≥10 ms:
+
+  | arm | >34 | >50 | view Layouts ≥10 ms |
+  |---|---|---|---|
+  | C1 | 47 | 5 | 81 |
+  | C7 | 52 | 11 | 76 |
+  | V1 | 5 | 2 | 5 |
+  | st5 | 26 | 1 | 27 |
+  | noanim | 5 | 1 | 10 |
+  | waapi | 26 | 4 | 32 |
+  | st6 | 5 | 1 | 9 |
+
+  st6 sits at V1's level. This is not a gain verdict; a gain block is deferred.
+- **st6 is the rotator fix candidate** (F card next, for the lead). It is CSS-only on top of st5: rest at `transform: scale(1); opacity: 0.999`, and the keyframes start and end at 0.999.
+
+**Where the escaped Layout is rooted** (the lead's 20:24Z question; source read plus this block's records):
+- **Without the background state, the flip's layout stays at the carousel.**
+  - The carousel `.start-selling-avatars.is-carousel` (flex, 104x32, `overflow: hidden`) is a WebKit layout boundary. `RenderObject.cpp` `isLayoutBoundary` requires non-visible overflow, a fixed width and height, and a new formatting context. CONFIRMED (source at the pin).
+  - In the records, the flip's frame-0 Layouts are carousel-rooted, 33/35 in st5.
+- **Why some reach the view (candidate; source CONFIRMED, our cause UNRESOLVED).** `LocalFrameViewLayoutContext::scheduleSubtreeLayout` gives up the subtree root in two cases:
+  - when the RenderView already needs a full layout ("We already have a pending (full) layout. Just mark the subtree for layout");
+  - when two disjoint subtrees need layout ("Mark both of them and issue a full layout instead").
+  - `scheduleLayout()` and, on iOS only, `updateFixedPositionLayoutRect()` also convert a pending subtree root to a full layout.
+  - Then the full layout walks the carousel's containing-block chain through #people's flex/grid ancestors: 14-35 ms.
+- **The background state exists in every arm.**
+  - About 65 % of idle frames, at y 0 and at y 1500, already contain a view-rooted <1 ms Layout, usually after 2 InvalidateLayout records: V2 1176/1794 frames at y 1500, S3 1153/1773, X6 1175/1791.
+  - So some page-wide dirtier puts the view into a full layout in about two frames of three. That rate is close to st5's escape rate (66-69 %).
+  - What dirties it is UNRESOLVED. The decisive local check: an ablation of the continuously running animations (custom-property animations such as `--hero-orbit-angle`, the marquees), counting frames with a view-rooted Layout.
+  - **Against the simple form:** st5 has 40 frames with a carousel-rooted Layout and a separate <1 ms view Layout in the same RenderingFrame, mostly with 3 InvalidateLayouts. So a bounded carousel pass can coexist with the background full layout when it runs first. The order inside the frame (whether the flip is sampled before or after the background dirtier has scheduled its full layout) would decide which case you get. That order is UNRESOLVED; the frame tree with record order (`frametree.cjs`) is the next read.
+- **The rotator fix doesn't depend on that answer**, because st6 removes the flips. But the background full-layout state turns every small bounded layout on the page into a view-rooted one. It is a page-wide lever, posted as a finding.
 
 ## Risks, conflicts, follow-ups
 
