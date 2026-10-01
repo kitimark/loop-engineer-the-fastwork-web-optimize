@@ -19,6 +19,9 @@
 //   ab host guard (I-017): [--max-wait 60] [--max-load 6] [--max-busy 25] [--watchdog 300] [--chrome-warm 10] go to verify.mjs (recheck before
 //                  each run); a run started at load1 > 10, other CPU > 25 %, memory pressure >= warn or
 //                  after a gate-timeout grant contaminates the result: verdicts get "CONTAMINATED (host): "
+//   ab host state (T8+, I-033): verify records display on/off, FullWake/DarkWake, power source and the display-sleep
+//                  assertion at the start and end of every run; a display or wake change within a run, between runs
+//                  or between the arms prefixes every verdict with "HOST-DISPLAY-CHANGED: " (results.json host.hostState)
 //   --on <other>   (edit, diff, serve, ab) stack this fix on another fix's overlay, e.g. a combined wave:
 //                  edit copies from <other>'s overlay, diff is against it, ab compares <other> vs <other>+this
 //
@@ -43,6 +46,7 @@ import http from 'node:http';
 import { REPO, mirrorHome, resolveTree, isLinkedWorktree, gitCommonDir, sharedStateDir, autoPortBase, checkoutId, sha256File } from './lib/paths.mjs';
 import { allStatus } from './lib/lock.mjs';
 import { stats } from './lib/ab-stats.mjs';
+import { describeHostState } from './lib/host.mjs';
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag, isSparse } from './lib/baseline.mjs';
 
 const argv = process.argv.slice(2);
@@ -359,6 +363,11 @@ function hostLine(h) {
   if (h.stub) s += ` [host STUBBED: ${h.stub}]`;
   return s;
 }
+/** T8+ (I-033): the display / wake / power line; bold when the state changed (HOST-DISPLAY-CHANGED prefix on every verdict). */
+function hostStateLine(hs) {
+  if (!hs) return 'host state: not recorded (verify.mjs before T8+, I-033)';
+  return hs.tag ? `**${hs.tag}: the display or wake state was not the same throughout (${hs.reasons.join('; ')}); verdicts not comparable** (${describeHostState({ ...hs, tag: null })}; research/host-display-state)` : describeHostState(hs);
+}
 function baselineLine(b) {
   return `**${b.tag}: not measured on the pinned snapshot ${b.snapshot ?? '(none)'} throughout (state ${b.state} at the start, ${b.flaggedRuns.length} run(s) flagged by verify.mjs); verdicts invalid** (tools/lib/baseline.mjs)`;
 }
@@ -368,7 +377,7 @@ function markdown(metrics, cfg) {
     rows.push(`| ${phase}: ${v.name} | ${v.baseline.median} [${v.baseline.min}-${v.baseline.max}] | ${v.patched.median} [${v.patched.min}-${v.patched.max}] | ${v.delta > 0 ? '+' : ''}${v.delta}${v.deltaPct != null ? ` (${v.deltaPct > 0 ? '+' : ''}${v.deltaPct}%)` : ''} | ${v.verdict} |`);
   }
   if (cfg.measurement?.traceFrames) rows.push('', 'traced (--trace-frames): tracing perturbs timing; frame numbers of this A/B are not comparable with untraced ones (compare the trace rows within this A/B only).');
-  if (cfg.host) rows.push('', hostLine(cfg.host));
+  if (cfg.host) rows.push('', hostLine(cfg.host), '', hostStateLine(cfg.host.hostState));
   if (cfg.baselineSnapshot?.tag) rows.push('', baselineLine(cfg.baselineSnapshot));
   return rows.join('\n');
 }
@@ -437,6 +446,9 @@ async function cmdAb(t) {
   };
   const host = hostSummary(v);
   if (host.contaminated) for (const ms of Object.values(metrics)) for (const x of Object.values(ms)) x.verdict = CONTAMINATED + x.verdict;
+  // T8+ (I-033): the display or wake state changed within the A/B or differs between its arms (U1: ~76 vs ~93 fps)
+  const hTag = host.hostState?.tag;
+  if (hTag) for (const ms of Object.values(metrics)) for (const x of Object.values(ms)) x.verdict = `${hTag}: ${x.verdict}`;
   // the baseline: not the pinned snapshot at the start (FW_BASELINE_ALLOW_MODIFIED=1), flagged by verify after
   // a run (changed mid-A/B), or changed by now: the verdicts compare something else than they say
   const flagged = v.results.filter((r) => !r.diff && r.baseline?.tag).map((r) => ({ label: r.label, run: r.run, viewport: r.viewport, state: r.baseline.state, tag: r.baseline.tag }));
@@ -464,6 +476,7 @@ async function cmdAb(t) {
   if (regressions.new404s.length) console.log('NEW 404s on the patched page: ' + regressions.new404s.join(', '));
   console.log(`screenshot diff patched vs baseline (% pixels): ${JSON.stringify(regressions.screenshotDiffPct)}  (0-0.4 % is countdown/orbit phase noise)`);
   console.log(hostLine(host));
+  console.log(hostStateLine(host.hostState));
   if (bTag) console.log(baselineLine(cfg.baselineSnapshot));
   console.log(`wrote ${relative(REPO, resFile)} (raw: ${result.raw})`);
 }

@@ -202,3 +202,35 @@ test('I-034: a non-finite gain metric (p95 null on the patched side) ends GAIN I
   assert.match(r.stdout, /^GAIN INCONCLUSIVE null-p95: scenario errors: p95 not a finite number \(null\) on side B$/m);
   rmSync(join(repo.wt, 'fixes', 'null-p95'), { recursive: true, force: true });
 });
+
+test('T8+ (I-033): display / wake recorded per run; a change refuses calibration, tags gain HOST-DISPLAY-CHANGED, exits 3 and authors nothing', async (t) => {
+  const resFile = join(repo.wt, 'fixes', 'fast-nav', 'bench-results.json');
+  const keep = readFileSync(resFile, 'utf8');
+  t.after(() => writeFileSync(resFile, keep));
+  // FAKE_HOST_DARKWAKE_AFTER=1: run 1 (side A) starts with the display on, FullWake and ends with it off, DarkWake
+  const DARK = { FAKE_HOST_DARKWAKE_AFTER: '1' };
+  let r = await bench('dark-cal', ['calibrate', 'fast-nav'], DARK);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^CALIBRATION REFUSED fast-nav: HOST-DISPLAY-CHANGED: A run 1: display on, FullWake at the start, display off, DarkWake at the end/m);
+  assert.equal(results('fast-nav').calibration.band, 'clean', 'the stored calibration is kept');
+  assert.equal(results('fast-nav').calibrationRefused.refused, 'HOST-DISPLAY-CHANGED');
+  const res = results('fast-nav');
+  delete res.authored;
+  writeFileSync(resFile, JSON.stringify(res, null, 1));
+  r = await bench('dark-gain', ['gain', 'fast-nav'], DARK);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^host state: display on\/off, FullWake\/DarkWake, power AC, display-sleep assertion yes; HOST-DISPLAY-CHANGED: A run 1: /m);
+  assert.match(r.stdout, /^GAIN HOST-DISPLAY-CHANGED: HOLDS fast-nav styleLayoutMs: .* \[not authored: HOST-DISPLAY-CHANGED\] -> /m);
+  const after = results('fast-nav');
+  assert.equal(after.authored, undefined);
+  assert.equal(after.gain.verdict, 'HOST-DISPLAY-CHANGED: HOLDS');
+  assert.equal(after.gain.hostState.tag, 'HOST-DISPLAY-CHANGED');
+  const p0 = after.gain.runs[0].host.power;
+  assert.deepEqual([p0.start.display, p0.start.fullWake, p0.end.display, p0.end.fullWake, p0.end.powerSource], ['on', true, 'off', false, 'AC']);
+  assert.deepEqual(Object.keys(after.gain.chromeProfile), ['featureStateSha256', 'featureStateMtime', 'variationsSeedSha256', 'variationsSeedDate']);
+  // one state throughout: no tag, the record and line say so
+  r = await bench('lit-gain', ['gain', 'fast-nav']);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^host state: display on, FullWake, power AC, display-sleep assertion yes$/m);
+  assert.deepEqual([results('fast-nav').gain.verdict, results('fast-nav').gain.hostState.tag, results('fast-nav').gain.hostState.display], ['HOLDS', null, ['on']]);
+});

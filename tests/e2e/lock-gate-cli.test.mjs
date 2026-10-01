@@ -70,3 +70,27 @@ test('gate timeout (FW_GATE_MAX_WAIT): granted anyway with gateTimeout, alert lo
   assert.equal(lock({}, 'release', 'chrome-measure', '--owner', 'late-topic').code, 0);
   assert.equal(existsSync(join(state, 'locks', 'chrome-measure.json')), false);
 });
+
+test('T8+ (I-033): a chrome-measure `run` logs display / wake / display-sleep assertion at its start and end (locks/holds.log); warns without the assertion or on a change', () => {
+  const log = () => readFileSync(join(state, 'locks', 'holds.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  const cmd = [process.execPath, '-e', 'process.exit(5)'];
+  // caffeinate -d active (the fake default), one state throughout: a line, no warning
+  let r = lock({}, 'run', 'chrome-measure', '--owner', 'lit', '--', ...cmd);
+  assert.equal(r.code, 5, r.out);
+  assert.doesNotMatch(r.stderr, /display-sleep assertion|HOST-DISPLAY-CHANGED/);
+  let l = log();
+  assert.equal(l.length, 1);
+  assert.deepEqual([l[0].resource, l[0].owner, l[0].short, l[0].code, l[0].tag], ['chrome-measure', 'lit', false, 5, null]);
+  assert.deepEqual([l[0].start.display, l[0].start.fullWake, l[0].start.powerSource, l[0].start.displaySleepPrevented, l[0].end.display], ['on', true, 'AC', true, 'on']);
+  assert.match(l[0].start.stub, /fake-host\.mjs$/);
+  // no display-sleep assertion, and the display goes to sleep (DarkWake) during the hold
+  r = lock({ FAKE_HOST_DISPLAY_ASSERT: '0', FAKE_HOST_DARKWAKE_AFTER: '1' }, 'run', 'chrome-measure', '--owner', 'dark', '--short', '--max-seconds', '60', '--', ...cmd);
+  assert.equal(r.code, 5, r.out);
+  assert.match(r.stderr, /^\[lock chrome-measure\] no display-sleep assertion is active .*PreventUserIdleDisplaySleep 0/m);
+  assert.match(r.stderr, /^\[lock chrome-measure\] HOST-DISPLAY-CHANGED during this hold: dark run 1: display on, FullWake at the start, display off, DarkWake at the end/m);
+  l = log();
+  assert.deepEqual([l[1].owner, l[1].short, l[1].tag, l[1].start.displaySleepPrevented, l[1].end.fullWake], ['dark', true, 'HOST-DISPLAY-CHANGED', false, false]);
+  // other resources: nothing recorded
+  assert.equal(lock({}, 'run', 'iphone', '--owner', 'p', '--', ...cmd).code, 5);
+  assert.equal(log().length, 2);
+});

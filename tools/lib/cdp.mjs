@@ -79,6 +79,8 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
     proc,
     port,
     wsUrl: version.webSocketDebuggerUrl,
+    /** The browser's product string from /json/version, e.g. "Chrome/154.0.8037.58" (T8+, I-033: no extra CDP command). */
+    browser: version.Browser || null,
     /**
      * SIGTERM, wait for the exit (up to graceMs), then SIGKILL the whole tree and wait again: resolves
      * once the browser is gone, so a relaunch on the same profile dir cannot find it still locked (I-023).

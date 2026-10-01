@@ -75,7 +75,7 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
   assert.deepEqual(res.viewports, ['mobile']);
   assert.equal(res.runs, 1);
   assert.deepEqual(res.targets, [{ label: 'a', url: 'http://127.0.0.1:9/' }]);
-  assert.deepEqual(Object.keys(res.host).sort(), ['chromeLaunches', 'chromeWarmSec', 'contaminated', 'contaminatedRuns', 'cpus', 'gate', 'loadavg', 'model', 'recheck', 'runsTotal', 'stub', 'thresholds', 'warnRuns', 'watchdogSec']);
+  assert.deepEqual(Object.keys(res.host).sort(), ['chromeLaunches', 'chromeWarmSec', 'contaminated', 'contaminatedRuns', 'cpus', 'gate', 'hostState', 'loadavg', 'model', 'recheck', 'runsTotal', 'stub', 'thresholds', 'warnRuns', 'watchdogSec']);
   assert.equal(res.host.stub, FAKE_HOST, 'the tests run on the fake host, and the result says so');
   assert.equal(res.results.length, 1);
   const r = res.results[0];
@@ -269,7 +269,17 @@ test('host record per run and phase on a quiet host: CPU busy/sys, Chrome tree, 
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
   const h = res.results[0].host;
-  assert.deepEqual(Object.keys(h).sort(), ['chromeRelaunched', 'chromeWarmedSec', 'freeMemMB', 'freeMemMBEnd', 'gate', 'load1End', 'load1Start', 'loadInvalid', 'loadWarn', 'phases', 'reasons', 'recheck', 'sleptSec', 'stub', 'topProcs', 'warnings', 'woke']);
+  assert.deepEqual(Object.keys(h).sort(), ['chrome', 'chromeRelaunched', 'chromeWarmedSec', 'freeMemMB', 'freeMemMBEnd', 'gate', 'load1End', 'load1Start', 'loadInvalid', 'loadWarn', 'phases', 'power', 'reasons', 'recheck', 'sleptSec', 'stub', 'topProcs', 'warnings', 'woke']);
+  // T8+ (I-033): display / wake / power at the run's start and end and around the recheck (fake host defaults:
+  // display on, FullWake, AC, caffeinate -d's assertion); the browser version from /json/version
+  for (const p of [h.power.start, h.power.end, h.recheck.power.start, h.recheck.power.end]) {
+    assert.deepEqual({ ...p, at: undefined, stub: undefined }, { at: undefined, display: 'on', fullWake: true, capabilities: ['CPU', 'Graphics', 'Audio', 'Network'], powerSource: 'AC', displaySleepPrevented: true, systemSleepPrevented: true, userActive: true, stub: undefined });
+    assert.equal(p.stub, FAKE_HOST);
+  }
+  assert.deepEqual(h.chrome, { version: 'FakeChrome/1.0', featureStateSha256: null, featureStateMtime: null, variationsSeedSha256: null, variationsSeedDate: null });
+  assert.deepEqual([res.host.hostState.recorded, res.host.hostState.display, res.host.hostState.fullWake, res.host.hostState.powerSource, res.host.hostState.tag], [true, ['on'], [true], ['AC'], null]);
+  assert.deepEqual(res.host.hostState.chromeVersions, ['FakeChrome/1.0']);
+  assert.match(r.stdout, /^host state: display on, FullWake, power AC, display-sleep assertion yes$/m);
   // I-031: the top non-Chrome processes over the run (start to end) and over the recheck, % of one core
   const TOP = [{ pid: 4242, command: 'hog', cpuPct: 300 }, { pid: 427, command: 'WindowServer', cpuPct: 12 }, { pid: 377, command: 'mds_stores', cpuPct: 3 }];
   assert.deepEqual(h.topProcs.top, TOP);
@@ -286,7 +296,7 @@ test('host record per run and phase on a quiet host: CPU busy/sys, Chrome tree, 
   assert.ok(h.phases.idle.windowSec >= 1 && h.phases.idle.windowSec < 3, 'idle window = the 1 s idle phase');
   assert.deepEqual([h.load1Start, h.load1End, h.loadInvalid, h.loadWarn, h.reasons, h.warnings], [3.5, 3.5, false, false, [], []]);
   // the lock's host gate (I-016) admitted this hold on a quiet reading; verify copies the holder's record
-  assert.deepEqual({ ...h.gate, stub: undefined }, { quiet: true, waitedSec: 0, reasons: [], load1: 3.5, busyPct: 10, sysPct: 3, pressure: 1, stub: undefined, gateTimeout: false });
+  assert.deepEqual({ ...h.gate, stub: undefined }, { quiet: true, waitedSec: 0, reasons: [], load1: 3.5, busyPct: 10, sysPct: 3, pressure: 1, sleptSec: 0, woke: false, stub: undefined, gateTimeout: false });
   assert.deepEqual(res.host.gate, h.gate);
   assert.deepEqual(res.results[0].loadavg1, { before: 3.5, after: 3.5 }, 'legacy loadavg1 comes from the same (stubbed) reading');
   assert.equal(h.recheck.quiet, true);
@@ -296,6 +306,34 @@ test('host record per run and phase on a quiet host: CPU busy/sys, Chrome tree, 
   assert.equal(res.host.thresholds.invalidLoad1, 10);
   assert.match(r.stdout, /host: load1 3\.5, other CPU 5 %\n/);
   assert.match(r.stdout, /^host: 0 of 1 runs contaminated {2}\[host STUBBED: .*fake-host\.mjs\]$/m);
+});
+
+test('T8+ (I-033): display / wake per run; a change between the targets or inside a run tags verify.json HOST-DISPLAY-CHANGED', async () => {
+  const { d, env, args } = setup();
+  const two = (owner) => { const a = args(owner, ['--idle', '0', '--no-lock']); a.splice(1, 0, 'b=http://127.0.0.1:9/b'); return a; };
+  // hostPower() readings in order: recheck a (2), run a (2), recheck b (2), run b (2). After 4: a on, b in DarkWake
+  let r = await nodeAsync(VERIFY, two('arms'), { env: { ...env, FAKE_HOST_DARKWAKE_AFTER: '4' } });
+  assert.equal(r.code, 0, r.out);
+  let res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  assert.deepEqual(res.results.filter((x) => !x.diff).map((x) => [x.label, x.host.power.start.display, x.host.power.end.display, x.host.power.start.fullWake]), [['a', 'on', 'on', true], ['b', 'off', 'off', false]]);
+  assert.deepEqual([res.results[1].host.recheck.power.start.display, res.results[1].host.recheck.power.end.fullWake], ['off', false], 'the recheck readings are recorded too');
+  let hs = res.host.hostState;
+  assert.equal(hs.tag, 'HOST-DISPLAY-CHANGED');
+  assert.deepEqual(hs.reasons, ['the arms differ: a display on, FullWake vs b display off, DarkWake']);
+  assert.match(r.stdout, /^host state: display on\/off, FullWake\/DarkWake, power AC, display-sleep assertion yes; HOST-DISPLAY-CHANGED: the arms differ/m);
+  assert.equal(res.results[0].host.loadInvalid, false, 'a tag on the comparison, not a contaminated run');
+  // after 3 readings (recheck a 1-2, run a 3-4): the display slept while run a was measured (start on, end off)
+  r = await nodeAsync(VERIFY, two('within'), { env: { ...env, FAKE_HOST_DARKWAKE_AFTER: '3' } });
+  assert.equal(r.code, 0, r.out);
+  res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  hs = res.host.hostState;
+  assert.equal(hs.tag, 'HOST-DISPLAY-CHANGED');
+  assert.deepEqual(hs.reasons, ['a run 1: display on, FullWake at the start, display off, DarkWake at the end']);
+  // a change only inside a recheck (before run a): every run reading is the same, no tag
+  r = await nodeAsync(VERIFY, two('recheck'), { env: { ...env, FAKE_HOST_DARKWAKE_AFTER: '1' } });
+  assert.equal(r.code, 0, r.out);
+  res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  assert.deepEqual([res.host.hostState.tag, res.host.hostState.display, res.results[0].host.recheck.power.start.display], [null, ['off'], 'on']);
 });
 
 test('contaminated runs: load1 > 10 at run start, other CPU > 25 %, memory pressure warn; load1 > 6 only warns', async () => {

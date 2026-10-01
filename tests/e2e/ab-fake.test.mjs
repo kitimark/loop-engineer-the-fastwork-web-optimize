@@ -103,6 +103,10 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.deepEqual([res.host.loadavg1Min, res.host.loadavg1Max, res.host.otherCpuPctMax], [1, 1, 0]);
   assert.match(res.markdown, /^host: 0 of 2 runs contaminated \(load1 1-1, other CPU max 0 %\) \[host STUBBED: .*fake-host\.mjs\]$/m);
   assert.match(ab.stdout, /^host: 0 of 2 runs contaminated/m);
+  // T8+ (I-033): one display / wake state throughout (the fake host's default: display on, FullWake, AC, caffeinate -d)
+  assert.deepEqual([res.host.hostState.recorded, res.host.hostState.changed, res.host.hostState.tag, res.host.hostState.display, res.host.hostState.fullWake], [true, false, null, ['on'], [true]]);
+  assert.match(res.markdown, /^host state: display on, FullWake, power AC, display-sleep assertion yes$/m);
+  assert.match(ab.stdout, /^host state: display on, FullWake, power AC, display-sleep assertion yes$/m);
 
   // the two servers really were baseline vs baseline+overlay over https (ABBA with 1 run: base then fix)
   const nav = readLog(envB.FAKE_CHROME_LOG).filter((l) => l.method === 'Page.navigate').map((l) => l.params.url);
@@ -147,13 +151,22 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
 
   // a traced A/B (I-018 review): results-trace.json; the deliverable results.json stays as it was
   const deliverable = readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results.json'), 'utf8');
-  const tr = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '0', '--no-screens', '--trace-frames'], { cwd: repo.wt, env: { ...envB, FAKE_CHROME_LOG: join(repo.root, 'ab-trace.jsonl') } });
+  // ... and the display slept between its arms (T8+, I-033): hostPower readings 1-2 recheck, 3-4 base run, 5-6 recheck,
+  // 7-8 fix run; display off + DarkWake from reading 5 on
+  const tr = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '0', '--no-screens', '--trace-frames'], { cwd: repo.wt, env: { ...envB, FAKE_CHROME_LOG: join(repo.root, 'ab-trace.jsonl'), FAKE_HOST_DARKWAKE_AFTER: '4' } });
   assert.equal(tr.code, 0, tr.out);
   assert.equal(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results.json'), 'utf8'), deliverable, 'results.json untouched');
   const trRes = JSON.parse(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results-trace.json'), 'utf8'));
   assert.deepEqual(trRes.config.measurement.traceFrames, true);
   assert.deepEqual(Object.keys(trRes.metrics), ['scroll', 'morph', 'trace']);
   assert.match(tr.stdout, /^wrote fixes\/fast-nav\/results-trace\.json/m);
+  assert.equal(trRes.host.hostState.tag, 'HOST-DISPLAY-CHANGED');
+  assert.deepEqual(trRes.host.hostState.reasons, ['the arms differ: base display on, FullWake vs fix display off, DarkWake']);
+  assert.equal(trRes.host.contaminated, false, 'a display change is its own tag, not host contamination');
+  for (const ms of Object.values(trRes.metrics)) for (const x of Object.values(ms)) assert.equal(x.verdict, 'HOST-DISPLAY-CHANGED: n=1 (need >=3 runs for a verdict)');
+  assert.match(trRes.markdown, /^\| scroll: fps \| 50 \[50-50\] \| 50 \[50-50\] \| 0 \(0%\) \| HOST-DISPLAY-CHANGED: n=1/m);
+  assert.match(trRes.markdown, /^\*\*HOST-DISPLAY-CHANGED: the display or wake state was not the same throughout \(the arms differ: base display on, FullWake vs fix display off, DarkWake\); verdicts not comparable\*\* \(host state: display on\/off, FullWake\/DarkWake, power AC, display-sleep assertion yes; research\/host-display-state\)$/m);
+  assert.match(tr.stdout, /^\*\*HOST-DISPLAY-CHANGED: /m);
 });
 
 test('SIGTERM on ab: no server, verify.mjs or browser left running, lock released', async () => {

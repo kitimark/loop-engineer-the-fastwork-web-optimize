@@ -35,6 +35,10 @@
 // keeps strict FIFO (its waiters retry every 2-5 min by protocol). Every chrome-measure hold runs under a
 // `caffeinate -i -s` assertion (I-026: Maintenance Sleep stalled a hold 472 s): -w <holder pid> for a
 // process hold, -t <until expiry> for a lease (replaced on renew), ended on release (lib/awake.mjs).
+// A chrome-measure `run` also records the display on/off, FullWake/DarkWake, power source and whether a
+// display-sleep-preventing assertion (caffeinate -d) was active at its start and end, one JSON line per hold in
+// locks/holds.log; it warns on stderr when no such assertion is active or the display / wake state changed (T8+, I-033).
+// A host sleep inside a gate window makes that window not quiet; the grant's gate record carries sleptSec / woke (I-033).
 //
 // Lock state looks wrong (a stale "short" last grant starving the short lane, a queue entry that never
 // goes away, a leftover guard dir)? Never edit the lock JSON by hand (incident I-012); use:
@@ -66,8 +70,9 @@
 // single acquire may take ~10 s; BUSY then says "host not quiet". `status` samples the host for 3 s and
 // prints a host line with the gate state (--no-host skips it).
 import { spawn, execFileSync } from 'node:child_process';
-import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY } from './lib/lock.mjs';
-import { sample, describe, THRESHOLDS } from './lib/host.mjs';
+import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile } from './lib/lock.mjs';
+import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
+import { appendFileSync } from 'node:fs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, keepAwakeQueued } from './lib/awake.mjs';
 
@@ -209,7 +214,12 @@ async function main() {
     // command keeps running (a measurement is never killed), but it warns and `status` shows the hold OVERDUE
     const expectSec = !short && (opt('max-seconds') !== undefined || LEASE_POLICY[resource]) ? Number(opt('max-seconds', NORMAL_HOLD_SEC)) : undefined;
     if (expectSec !== undefined) { if (!(expectSec > 0)) throw new Error(`--max-seconds must be a number of seconds > 0 (got ${opt('max-seconds')})`); meta.expectSec = expectSec; }
-    const { release: rel, holder } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, timeoutSec: Number(opt('timeout', 3600)) });
+    const { release: rel, holder, reentrant } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, timeoutSec: Number(opt('timeout', 3600)) });
+    // T8+ (I-033): a chrome-measure hold records the display / wake state and whether a display-sleep-preventing assertion
+    // was active at its start and end (one JSON line per hold in locks/holds.log); a hold without one, or one in
+    // which the display or wake state changed, warns on stderr (U1: display on ~76 fps vs DarkWake ~93 fps)
+    const powerStart = GATED[resource] && !reentrant ? await hostPower() : null;
+    if (powerStart && powerStart.displaySleepPrevented === false) console.error(`[lock ${resource}] no display-sleep assertion is active (pmset -g assertions: PreventUserIdleDisplaySleep 0): the display may sleep during this hold and change what it measures (T8+, I-033)`);
     // a short job runs in its own process group, so reaching --max-seconds stops the whole tree (npm test -> node --test -> ...);
     // FW_LOCK_HELD: the command's own verify.mjs / fix.mjs ab / nested run re-enter this hold instead of queueing behind it
     const child = spawn(rest[0], rest.slice(1), { stdio: 'inherit', detached: short, env: { ...process.env, FW_LOCK_HELD: heldEnv(resource, holder.token) } });
@@ -250,6 +260,12 @@ async function main() {
     clearInterval(timer);
     clearTimeout(warn);
     if (overran) kill('SIGKILL'); // anything in the tree that ignored SIGTERM (or was orphaned when the command exited)
+    if (powerStart) {
+      const powerEnd = await hostPower();
+      const hs = hostStateSummary([{ label: owner, run: 0, power: { start: powerStart, end: powerEnd } }]);
+      try { appendFileSync(holdsLogFile(), JSON.stringify({ at: new Date().toISOString(), resource, owner, short: !!short, acquiredAt: holder.acquiredAt, code, start: powerStart, end: powerEnd, tag: hs.tag }) + '\n'); } catch {}
+      if (hs.tag) console.error(`[lock ${resource}] ${hs.tag} during this hold: ${hs.reasons.join('; ')} (T8+, I-033)`);
+    }
     rel();
     return overran ? 124 : code;
   }

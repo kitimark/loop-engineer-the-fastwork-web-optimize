@@ -38,9 +38,16 @@
 //   procsSnapshot({samplers}) async    {at, procs} process table (ps, ~20 ms) or null; I-031, log only
 //   topProcs(a, b, {excludeRoot, n=5})  -> {windowSec, top: [{pid, command, cpuPct}]}: the busiest processes
 //                                      between two procsSnapshot()s, % of one core, a Chrome tree left out
+//   hostPower({samplers})      async   T8+ (I-033): {at, display 'on'|'off', fullWake, capabilities, powerSource,
+//                                      displaySleepPrevented, systemSleepPrevented, userActive}, null fields when
+//                                      unknown; never throws (pmset -g systemstate|ps|assertions, CGDisplayIsAsleep)
+//   hostStateSummary(runs)             [{label, run, power: {start, end}, chrome}] -> distinct states, byLabel, and
+//                                      tag HOST-DISPLAY-CHANGED when display / wake differ anywhere (verdict prefix)
+//   describeHostState(summary)         one-line text of it
+//   chromeProfileState(profileDir)     {featureStateSha256, featureStateMtime, variationsSeedSha256, variationsSeedDate}
 //   classifyRun(rec, t=THRESHOLDS)     per-run flags -> {loadInvalid, loadWarn, reasons, warnings}
 //                                      rec: {load1Start, otherBusyPct, pressureMax, gateTimeout, recheckQuiet,
-//                                      sleptSec, woke, recheckSleptSec, chromeRelaunched}
+//                                      sleptSec, woke, recheckSleptSec, gateSleptSec, chromeRelaunched}
 //   hostInfo({samplers})       async   {cpus, model, loadavg}
 //   hostClock({samplers})      async   {mono(), sleep(ms)} of the samplers (fake in tests)
 //   describe(sample)                   one-line text: "load1 3.1 | cpu 12 % busy (sys 4 %) | mem pressure normal"
@@ -54,7 +61,9 @@
 // opt-in Chrome tests): no default test may wait on the real, possibly busy or sleeping Mac.
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
 /** Defaults. Why these numbers: see the comments; recalibrate after the first quiet A/A (postmortem (a)). */
@@ -159,6 +168,15 @@ export const DEFAULT_SAMPLERS = Object.freeze({
     const m = (sh('sysctl', ['-n', 'kern.waketime']) || '').match(/sec = (\d+)/);
     return m ? Number(m[1]) : null;
   },
+  // T8+ (I-033): display / wake / power state, raw command output (parsed by hostPower(); log and verdict tag only)
+  /** `pmset -g systemstate`: "Current System Capabilities are: CPU Graphics Audio Network" (no Graphics = DarkWake). */
+  pmsetSystemState: () => (process.platform === 'darwin' ? sh('pmset', ['-g', 'systemstate']) : null),
+  /** `pmset -g ps`: "Now drawing from 'AC Power'". */
+  pmsetPs: () => (process.platform === 'darwin' ? sh('pmset', ['-g', 'ps']) : null),
+  /** `pmset -g assertions`: system-wide counts, e.g. PreventUserIdleDisplaySleep (caffeinate -d). */
+  pmsetAssertions: () => (process.platform === 'darwin' ? sh('pmset', ['-g', 'assertions']) : null),
+  /** CGDisplayIsAsleep(main display) through JXA (~100 ms, no root): "0" display on, "1" asleep. */
+  displayAsleep: () => (process.platform === 'darwin' ? sh('osascript', ['-l', 'JavaScript', '-e', 'ObjC.import("CoreGraphics"); $.CGDisplayIsAsleep($.CGMainDisplayID())']) : null),
   now: () => Date.now(),
   /** ms on a clock that does not advance while the host sleeps (mach_absolute_time on macOS). */
   mono: () => performance.now(),
@@ -335,6 +353,138 @@ export function topProcs(a, b, { excludeRoot, n = 5 } = {}) {
   return { windowSec: Math.round(sec * 10) / 10, top };
 }
 
+// ---- display, wake and power state (T8+, incident I-033) ------------------------------------------------
+// research/host-display-state: the plain baseline measured 63.5-78.3 fps with the display on (FullWake) and
+// 92.2-93.8 with it off (DarkWake), no overlap. So every run records the state at its start and end, and an
+// A/B whose display or wake state changed (within a run, between runs, or between its arms) gets the verdict
+// tag HOST-DISPLAY-CHANGED (hostStateSummary). Readings never throw and never gate; null = unknown.
+
+/** `pmset -g systemstate` -> {capabilities, fullWake} (FullWake = the Graphics capability; DarkWake lacks it), or null. */
+export function parseSystemState(text) {
+  const m = String(text ?? '').match(/Current System Capabilities are:[ \t]*([^\n]*)/);
+  if (!m) return null;
+  const capabilities = m[1].trim().split(/\s+/).filter(Boolean);
+  return { capabilities, fullWake: capabilities.includes('Graphics') };
+}
+/** `pmset -g ps` -> 'AC' | 'battery' | 'UPS' | the raw source name, or null. */
+export function parsePowerSource(text) {
+  const m = String(text ?? '').match(/Now drawing from '([^']+)'/);
+  if (!m) return null;
+  return { 'AC Power': 'AC', 'Battery Power': 'battery', 'UPS Power': 'UPS' }[m[1]] ?? m[1];
+}
+/** `pmset -g assertions` -> the system-wide counts {PreventUserIdleDisplaySleep: 1, ...} (not the per-process list), or null. */
+export function parseAssertions(text) {
+  const lines = String(text ?? '').split('\n');
+  const i = lines.findIndex((l) => /^Assertion status system-wide:/.test(l.trim()));
+  if (i < 0) return null;
+  const out = {};
+  for (const l of lines.slice(i + 1)) {
+    const m = l.match(/^\s+(\w+)\s+(\d+)\s*$/);
+    if (!m) break;
+    out[m[1]] = Number(m[2]);
+  }
+  return Object.keys(out).length ? out : null;
+}
+/** The CGDisplayIsAsleep answer ("0"/"false" on, "1"/"true" asleep) -> 'on' | 'off' | null. */
+export function parseDisplayAsleep(text) {
+  const t = String(text ?? '').trim();
+  return t === '0' || t === 'false' ? 'on' : t === '1' || t === 'true' ? 'off' : null;
+}
+
+/**
+ * The display, wake and power state now: {at, display: 'on'|'off'|null, fullWake: bool|null, capabilities,
+ * powerSource: 'AC'|'battery'|..|null, displaySleepPrevented: bool|null (a PreventUserIdleDisplaySleep
+ * assertion, e.g. caffeinate -d), systemSleepPrevented, userActive}. ~150 ms (four commands); never throws
+ * (a failing or refused sampler gives null for its fields). With a stubbed host it carries `stub`.
+ */
+export async function hostPower({ samplers } = {}) {
+  let s = {}, stub;
+  try { ({ s, stub } = await resolveSamplers(samplers)); } catch {}
+  const read = (k, parse) => { try { return parse(s[k]()); } catch { return null; } };
+  const sys = read('pmsetSystemState', parseSystemState), as = read('pmsetAssertions', parseAssertions);
+  let at = null;
+  try { at = new Date(s.now()).toISOString(); } catch {}
+  const n = (k) => (as && as[k] != null ? as[k] > 0 : null);
+  return {
+    at, display: read('displayAsleep', parseDisplayAsleep), fullWake: sys ? sys.fullWake : null, capabilities: sys ? sys.capabilities : null,
+    powerSource: read('pmsetPs', parsePowerSource),
+    displaySleepPrevented: n('PreventUserIdleDisplaySleep'), systemSleepPrevented: as ? !!(n('PreventUserIdleSystemSleep') || n('PreventSystemSleep')) : null, userActive: n('UserIsActive'),
+    ...(stub ? { stub } : {}),
+  };
+}
+
+export const HOST_DISPLAY_TAG = 'HOST-DISPLAY-CHANGED';
+const fmtState = (p) => `display ${p?.display ?? '?'}, ${p?.fullWake == null ? 'wake ?' : p.fullWake ? 'FullWake' : 'DarkWake'}`;
+/**
+ * The host state over the runs of one A/B (or bench series). runs: [{label, run, power: {start, end}, chrome}]
+ * (power = hostPower() at the run's start and end). Returns {recorded, display, fullWake, powerSource,
+ * displaySleepPrevented (distinct known values each), byLabel: {label: {display, fullWake}}, chromeVersions,
+ * featureStateSha256, variationsSeedSha256, changed, reasons, tag}. tag = HOST-DISPLAY-CHANGED when the
+ * display or wake state is not the same in every known run reading (a change within a run, between runs, or
+ * between the arms); null when it is, or when nothing is known (recorded false). Recheck readings are recorded
+ * per run but not counted here: only the measured runs are compared.
+ */
+export function hostStateSummary(runs = []) {
+  const distinct = (xs) => [...new Set(xs.filter((x) => x != null))];
+  const reads = runs.flatMap((r) => [r.power?.start, r.power?.end].filter(Boolean).map((p) => ({ r, p })));
+  const display = distinct(reads.map((x) => x.p.display)), fullWake = distinct(reads.map((x) => x.p.fullWake));
+  const byLabel = {};
+  for (const { r, p } of reads) {
+    const b = (byLabel[r.label] ||= { display: [], fullWake: [] });
+    if (p.display != null && !b.display.includes(p.display)) b.display.push(p.display);
+    if (p.fullWake != null && !b.fullWake.includes(p.fullWake)) b.fullWake.push(p.fullWake);
+  }
+  const reasons = [];
+  for (const r of runs) {
+    const a = r.power?.start, b = r.power?.end;
+    if (a && b && ((a.display != null && b.display != null && a.display !== b.display) || (a.fullWake != null && b.fullWake != null && a.fullWake !== b.fullWake)))
+      reasons.push(`${r.label} run ${(r.run ?? 0) + 1}: ${fmtState(a)} at the start, ${fmtState(b)} at the end`);
+  }
+  const changed = display.length > 1 || fullWake.length > 1;
+  const labels = Object.keys(byLabel);
+  if (changed && labels.length > 1 && labels.every((l) => byLabel[l].display.length <= 1 && byLabel[l].fullWake.length <= 1))
+    reasons.push(`the arms differ: ${labels.map((l) => `${l} ${fmtState({ display: byLabel[l].display[0], fullWake: byLabel[l].fullWake[0] })}`).join(' vs ')}`);
+  if (changed && !reasons.length) reasons.push(`not the same in every run: display ${display.join('/') || '?'}, fullWake ${fullWake.join('/') || '?'}`);
+  return {
+    recorded: reads.some((x) => x.p.display != null || x.p.fullWake != null),
+    display, fullWake, powerSource: distinct(reads.map((x) => x.p.powerSource)), displaySleepPrevented: distinct(reads.map((x) => x.p.displaySleepPrevented)),
+    byLabel,
+    chromeVersions: distinct(runs.map((r) => r.chrome?.version)), featureStateSha256: distinct(runs.map((r) => r.chrome?.featureStateSha256)),
+    variationsSeedSha256: distinct(runs.map((r) => r.chrome?.variationsSeedSha256)),
+    changed, reasons, tag: changed ? HOST_DISPLAY_TAG : null,
+  };
+}
+/** One line for verify / fix.mjs ab / bench output: "host state: display on, FullWake, power AC, display-sleep assertion yes". */
+export function describeHostState(h) {
+  if (!h || !h.recorded) return 'host state: not recorded';
+  const v = (xs, f = (x) => x) => (xs?.length ? xs.map(f).join('/') : '?');
+  return `host state: display ${v(h.display)}, ${v(h.fullWake, (x) => (x ? 'FullWake' : 'DarkWake'))}, power ${v(h.powerSource)}, display-sleep assertion ${v(h.displaySleepPrevented, (x) => (x ? 'yes' : 'no'))}${h.tag ? `; ${h.tag}: ${h.reasons.join('; ')}` : ''}`;
+}
+
+// Chrome's field-trial state on disk (U8): <profile>/ChromeFeatureState (written at each launch: the enabled /
+// disabled features and forced field trials of that session) and <profile>/Local State variations_* keys.
+const CHROME_EPOCH_MS = 11644473600000; // 1601-01-01 -> 1970-01-01
+/**
+ * {featureStateSha256, featureStateMtime, variationsSeedSha256, variationsSeedDate} of a Chrome profile dir,
+ * each null when unreadable. Hashes only: the feature lists and the seed serial are not copied.
+ */
+export function chromeProfileState(profileDir) {
+  const out = { featureStateSha256: null, featureStateMtime: null, variationsSeedSha256: null, variationsSeedDate: null };
+  if (!profileDir) return out;
+  try {
+    const f = join(profileDir, 'ChromeFeatureState');
+    out.featureStateSha256 = createHash('sha256').update(readFileSync(f)).digest('hex');
+    out.featureStateMtime = statSync(f).mtime.toISOString();
+  } catch {}
+  try {
+    const ls = JSON.parse(readFileSync(join(profileDir, 'Local State'), 'utf8'));
+    if (ls.variations_seed_serial_number) out.variationsSeedSha256 = createHash('sha256').update(String(ls.variations_seed_serial_number)).digest('hex');
+    const us = Number(ls.variations_seed_date);
+    if (us > 0) out.variationsSeedDate = new Date(us / 1000 - CHROME_EPOCH_MS).toISOString();
+  } catch {}
+  return out;
+}
+
 /** CPU seconds used so far by rootPid and all its descendants (null if unknown). */
 export async function treeCpuSec(rootPid, { samplers } = {}) {
   const { s } = await resolveSamplers(samplers);
@@ -371,6 +521,7 @@ export function classifyRun(rec = {}, t = THRESHOLDS) {
   if (rec.recheckQuiet === false) warnings.push('host not quiet after the recheck before the run');
   if ((rec.sleptSec != null && rec.sleptSec > t.suspendMinSec) || rec.woke) reasons.push(`host slept ${rec.sleptSec ?? '?'} s during the run (I-026)`);
   if (rec.recheckSleptSec != null && rec.recheckSleptSec > t.suspendMinSec) warnings.push(`host slept ${rec.recheckSleptSec} s during the recheck before the run`);
+  if (rec.gateSleptSec != null && rec.gateSleptSec > t.suspendMinSec) warnings.push(`host slept ${rec.gateSleptSec} s in the lock's host gate before this hold`);
   if (rec.chromeRelaunched) warnings.push('Chrome was relaunched before this run (the previous one exited or stopped answering)');
   return { loadInvalid: reasons.length > 0, loadWarn: warnings.length > 0, reasons, warnings };
 }

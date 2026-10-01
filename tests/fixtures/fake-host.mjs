@@ -20,6 +20,13 @@
 //                            "427:WindowServer:0.12,377:mds_stores:0.03"; not a timeline)
 //   FAKE_HOST_SUSPEND        "atMs:sec[,atMs:sec]": the host sleeps `sec` s once fake monotonic time passes
 //                            atMs (wall clock jumps; ticks and mono stand still; kern.waketime changes)
+//   T8+ (I-033), timelines of 1/0; the answers are the synthetic command outputs of tests/fixtures/pmset-outputs.mjs:
+//   FAKE_HOST_DISPLAY        1 display on, 0 asleep (default 1)
+//   FAKE_HOST_FULLWAKE       1 FullWake, 0 DarkWake (default 1)
+//   FAKE_HOST_AC             1 AC power, 0 battery (default 1)
+//   FAKE_HOST_DISPLAY_ASSERT count of PreventUserIdleDisplaySleep assertions (default 1: caffeinate -d)
+//   FAKE_HOST_DARKWAKE_AFTER n: display off + DarkWake from the (n+1)-th reading on (not a timeline; see below)
+import * as PM from './pmset-outputs.mjs';
 const M0 = performance.now(), W0 = Date.now();
 let offset = 0, jump = 0, wakeAt = Math.floor(W0 / 1000) - 3600;
 const suspends = String(process.env.FAKE_HOST_SUSPEND || '').split(',').filter(Boolean).map((p) => { const [at, sec] = p.split(':').map(Number); return { at, sec, done: false }; });
@@ -65,3 +72,13 @@ export const procs = () => ({}); // treeCpu answers instead
 // runs on mono (real time plus sleeps), the clock procsSnapshot() stamps them with, so each % is exact.
 const others = String(process.env.FAKE_HOST_PROCS ?? '427:WindowServer:0.12,377:mds_stores:0.03').split(',').filter(Boolean).map((p) => { const [pid, command, cores] = p.split(':'); return { pid, command, cores: Number(cores) }; });
 export const procTable = () => { const t = elapsed() / 1000; return Object.fromEntries(others.map((o) => [o.pid, { ppid: 1, cpuSec: o.cores * t, command: o.command }])); };
+// T8+ (I-033): display / wake / power, as the raw command output host.mjs hostPower() parses
+const display = timeline('FAKE_HOST_DISPLAY', 1), fullWake = timeline('FAKE_HOST_FULLWAKE', 1), ac = timeline('FAKE_HOST_AC', 1), displayAssert = timeline('FAKE_HOST_DISPLAY_ASSERT', 1);
+// FAKE_HOST_DARKWAKE_AFTER=n: from the (n+1)-th reading on, display off and DarkWake whatever the timelines say
+// (each hostPower() reads systemstate and the display once, so n counts readings: deterministic, unlike fake time)
+const darkAfter = process.env.FAKE_HOST_DARKWAKE_AFTER ? Number(process.env.FAKE_HOST_DARKWAKE_AFTER) : Infinity;
+let sysReads = 0, dispReads = 0;
+export const pmsetSystemState = () => PM.systemState(++sysReads <= darkAfter && !!fullWake());
+export const pmsetPs = () => PM.powerSource(!!ac());
+export const pmsetAssertions = () => PM.assertions({ displayAssert: displayAssert() });
+export const displayAsleep = () => PM.displayAsleep(++dispReads <= darkAfter && !!display());

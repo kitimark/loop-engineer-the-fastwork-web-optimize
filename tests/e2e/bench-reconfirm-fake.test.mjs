@@ -77,6 +77,18 @@ test('reconfirm: _landed from main in landing order, Tier A in one hold, Tier B 
   assert.ok(Date.parse(lg.at) > firstLoad, 'Tier B took its own hold after Tier A');
   assert.deepEqual([lg.owner, lg.short], ['bench-reconfirm', false]);
   assert.equal(existsSync(join(env('rc').FW_STATE_DIR, 'locks', 'chrome-measure.json')), false);
+  // T8+ (I-033): the display / wake state over Tier B's gain runs
+  assert.deepEqual([rep.tierB['fast-nav'].hostState.tag, rep.tierB['fast-nav'].hostState.display], [null, ['on']]);
+  // ... and when the display sleeps inside the first gain run: the A/A floor takes 8 runs = 16 hostPower readings, so
+  // readings 17-18 are gain run 1 (side A): on at its start, off at its end
+  r = await bench('rc-dark', ['reconfirm', '--gain', 'fast-nav', '--runs', '4'], { FAKE_HOST_DARKWAKE_AFTER: '17' });
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /A\/A first: the calibration of fast-nav is missing or stale/);
+  assert.match(r.stdout, /^GAIN HOST-DISPLAY-CHANGED: HOLDS fast-nav styleLayoutMs: /m);
+  assert.match(r.stdout, /^\| fast-nav \| PASS \| HOLDS \| HOST-DISPLAY-CHANGED: A run 1: display on, FullWake at the start, display off, DarkWake at the end; load1 /m);
+  assert.match(r.stdout, /^RECONFIRM HOST-DISPLAY-CHANGED: PASS main /m);
+  const repDark = JSON.parse(readFileSync(join(repo.wt, 'out', 'bench', 'reconfirm', sha, 'report.json'), 'utf8'));
+  assert.equal(repDark.tierB['fast-nav'].hostState.tag, 'HOST-DISPLAY-CHANGED');
   // a later landing whose patch no longer applies on top: CONFLICT, never skipped
   makeTopic(m, 'late-nav', '/bench-fake.json', JSON.stringify({ ...BASE_FAKE, probes: { navQs: 1 } }), spec('late-nav'));
   commit('land late-nav (made on the plain baseline)');

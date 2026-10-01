@@ -54,6 +54,9 @@
 // gets `gateTimeout: true`, a line goes to locks/host-alerts.log, and verify.mjs marks every run of that hold contaminated. Every gated grant
 // records `gate: {quiet, waitedSec, reasons, load1, busyPct, sysPct, pressure}` in the holder. The host
 // sample is passed in by the caller (tryAcquire's `host`); acquire() and `lock.mjs acquire` take it.
+// I-033: a gate window in which the host slept (sample.suspended) is not quiet, whatever its load (the 04:00Z
+// A/A was granted on a window with a 27 s sleep in it); acquire() sums the sleep over its gate windows into
+// the grant's `gate.sleptSec` / `gate.woke`, and verify.mjs warns on a run of such a hold.
 import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
@@ -80,6 +83,8 @@ export const SHORT_DRAIN_SEC = 900;
 /** Resources whose normal waiters pass the host admission gate (I-016). */
 export const GATED = Object.freeze({ 'chrome-measure': true });
 export const hostAlertsFile = () => join(lockDir(), 'host-alerts.log');
+/** One JSON line per chrome-measure `lock.mjs run` hold: display / wake / assertion at its start and end (T8+, I-033). */
+export const holdsLogFile = () => join(lockDir(), 'holds.log');
 const GATE_FRESH_MS = 60000; // a waiter's gate record counts as "waiting for quiet" while refreshed within this
 // Incident I-020 (research/architecture/tools-speed.md #1): a normal *lease* on chrome-measure holds the
 // Mac between an agent's turns (one sat idle 4 min of a 40-min lease). Measure in one process hold
@@ -288,8 +293,10 @@ export async function tryAcquire(r, opts) {
       const waitedSec = Math.round((now - Date.parse(since)) / 1000);
       const x = host?.sample || {};
       const g = { since, at: new Date(now).toISOString(), quiet: host?.quiet ?? null, reasons: host?.reasons || [], load1: x.load1 ?? null, busyPct: x.busyPct ?? null, sysPct: x.sysPct ?? null, pressure: x.pressureMax ?? x.pressure ?? null, ...(x.stub ? { stub: x.stub } : {}) };
-      if (host?.quiet === true) gateRec = { quiet: true, waitedSec, reasons: [], load1: g.load1, busyPct: g.busyPct, sysPct: g.sysPct, pressure: g.pressure, ...(x.stub ? { stub: x.stub } : {}) };
-      else if (now - Date.parse(since) >= T.gateMaxWaitSec * 1000) gateRec = { quiet: false, timeout: true, waitedSec, reasons: g.reasons, load1: g.load1, busyPct: g.busyPct, sysPct: g.sysPct, pressure: g.pressure, ...(x.stub ? { stub: x.stub } : {}) };
+      // I-033: the host sleep over the gate's windows (acquire() sums it; a caller passing one sample gives that one's)
+      const sl = host?.sleptSec != null ? { sleptSec: Math.round(host.sleptSec * 10) / 10, woke: !!host.woke } : x.sleptSec != null ? { sleptSec: x.sleptSec, woke: !!x.woke } : {};
+      if (host?.quiet === true) gateRec = { quiet: true, waitedSec, reasons: [], load1: g.load1, busyPct: g.busyPct, sysPct: g.sysPct, pressure: g.pressure, ...sl, ...(x.stub ? { stub: x.stub } : {}) };
+      else if (now - Date.parse(since) >= T.gateMaxWaitSec * 1000) gateRec = { quiet: false, timeout: true, waitedSec, reasons: g.reasons, load1: g.load1, busyPct: g.busyPct, sysPct: g.sysPct, pressure: g.pressure, ...sl, ...(x.stub ? { stub: x.stub } : {}) };
       else {
         // not quiet (or not measured yet): keep the head place, record why for `status`
         const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, gate: g };
@@ -332,7 +339,11 @@ export async function tryAcquire(r, opts) {
  */
 export async function gateSample({ thresholds: T = THRESHOLDS, samplers } = {}) {
   const x = await sample({ windowSec: T.quietMinWindowSec, samplers });
-  return { ...quiet(x, T), sample: x };
+  const q = quiet(x, T);
+  // I-033: a window the host slept through is not quiet (its ticks cover only the awake part, and the host is
+  // rarely settled right after a wake), as in waitQuiet (I-023): the next window decides
+  if (x.suspended) return { quiet: false, reasons: [...q.reasons, `host slept ${x.sleptSec ?? '?'} s in this window`], sample: x };
+  return { ...q, sample: x };
 }
 
 /** Leave the queue without acquiring (e.g. an agent gives up waiting). */
@@ -379,6 +390,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
   let lastLog = 0, wait = pollMs;
   const gated = !!GATED[r] && !short;
   let host = gated ? { quiet: null, reasons: ['not measured yet'] } : undefined;
+  let gateSlept = 0, gateWoke = false;
   for (;;) {
     const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T });
     if (!res.ok && !res.gated) keepAwakeQueued(r); // queued behind someone: no system sleep while anyone waits either (I-026 reopened)
@@ -390,9 +402,12 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       }
       if (Date.now() - t0 > timeoutSec * 1000) { await dequeue(r, owner); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s waiting for a quiet host`); }
       host = await gateSample({ thresholds: T, samplers: hostSamplers });
+      // I-033: the gate's host sleep over all its windows, recorded in the grant (verify: host.gate.sleptSec)
+      gateSlept += host.sample?.sleptSec || 0; gateWoke ||= !!host.sample?.woke;
+      host = { ...host, sleptSec: gateSlept, woke: gateWoke };
       continue;
     }
-    if (gated) host = { quiet: null, reasons: ['not measured yet'] }; // the window restarts at the next hand-over
+    if (gated) { host = { quiet: null, reasons: ['not measured yet'] }; gateSlept = 0; gateWoke = false; } // the window (and its sleep sum) restarts at the next hand-over
     if (res.ok && res.reentrant) return { holder: res.holder, release: () => {}, reentrant: true };
     if (res.ok) {
       if (Date.now() - t0 > 1500) log(`[lock ${r}] acquired after ${Math.round((Date.now() - t0) / 1000)} s`);

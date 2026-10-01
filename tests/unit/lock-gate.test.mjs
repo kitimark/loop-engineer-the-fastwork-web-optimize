@@ -285,3 +285,25 @@ test('I-030 review: a lead-moved gated waiter that stopped polling is skipped at
   assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, true);
   assert.deepEqual(readJson(`${R}.queue.json`).map((w) => w.owner), ['goal', 'a']);
 });
+
+test('I-033: a host sleep inside a gate window is not quiet (one more window), and the grant records the gate\'s sleep', async () => {
+  // the 04:00Z canary: the Mac slept 27 s inside the gate's only window, the gate granted on that window, and the
+  // holder's gate record dropped the sleep, so verify.json said sleptSec 0 everywhere (its own windows came later)
+  let t = 9_000_000, jump = 0, wake = 1, windows = 0;
+  const s = {
+    now: () => t + jump, mono: () => t, wake: () => wake, procs: () => ({}),
+    sleep: async (ms) => { if (windows++ === 0) { t += 7000; jump += 27000; wake++; t += ms - 7000; } else t += ms; },
+    cpus: () => Array.from({ length: 8 }, () => ({ times: { user: t * 0.05, nice: 0, sys: 0, idle: t * 0.95, irq: 0 } })),
+    loadavg: () => [1, 1, 1], freemem: () => 1e9, pressure: () => 1, decompressions: () => 0,
+  };
+  const g = await L.gateSample({ samplers: s });
+  assert.equal(g.quiet, false, 'a window with a sleep in it is not quiet, however idle its ticks look');
+  assert.deepEqual(g.reasons, ['host slept 27 s in this window']);
+  windows = 0;
+  const h = await L.acquire(R, { owner: 'canary', kind: 'lease', pollMs: 20, log: () => {}, hostSamplers: s });
+  assert.equal(windows, 2, 'granted on the fresh window after the wake, not on the one with the sleep');
+  assert.equal(h.holder.gate.quiet, true);
+  assert.equal(h.holder.gate.sleptSec, 27, 'the gate\'s sleep, summed over its windows');
+  assert.equal(h.holder.gate.woke, true);
+  h.release();
+});

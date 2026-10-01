@@ -39,6 +39,10 @@
 // A run that measured another baseline anyway (FW_BASELINE_ALLOW_MODIFIED=1) or whose baseline changed
 // while it ran (re-checked when it ends) gets "BASELINE-<STATE>: " before every verdict (baselineSnapshot.tag),
 // exits 3 instead of 0, and never stores a calibration or an authored effect.
+// Tier B host state (T8+, I-033): every gain run records display on/off, FullWake/DarkWake, power source and the
+// display-sleep assertion just before and after it (runs[].host.power); a display or wake change within a run,
+// between runs or between the sides gets "HOST-DISPLAY-CHANGED: " before the verdict (hostState.tag), with the same
+// consequences as a BASELINE-* tag. The Chrome profile's field-trial hashes are logged as chromeProfile.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -48,7 +52,7 @@ import https from 'node:https';
 import { REPO, resolveTree, checkoutId, isLinkedWorktree } from './lib/paths.mjs';
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './lib/baseline.mjs';
 import { acquire } from './lib/lock.mjs';
-import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T, stubOutsideTest } from './lib/host.mjs';
+import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T, stubOutsideTest, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
 import { launchChrome, CDP, browserVersion } from './lib/cdp.mjs';
 import { lintTopic, loadSpec, lintSpec, GAIN_METRICS } from './lib/bench-spec.mjs';
 import { patchHeader, baselineDrift, buildOverlay, listFiles, sha256File, landedTopics, gitShow, gitRev } from './lib/bench-overlay.mjs';
@@ -437,7 +441,7 @@ function gainOpts() {
   if (maxLoad != null && !(maxLoad > 0)) die('--max-load must be > 0');
   return { runs, cpu, timeDomain, maxLoad };
 }
-const compactRuns = (runs, key) => runs.filter((r) => r.scenarios[key]).map((r) => ({ side: r.side, pair: r.pair, ...Object.fromEntries(Object.entries(r.scenarios[key]).filter(([k]) => k !== 'host')), host: { load1Start: r.host.load1Start, load1End: r.host.load1End, busyPct: r.host.busyPct, chromeCpuPct: r.host.chromeCpuPct, otherBusyPct: r.host.otherBusyPct, pressureMax: r.host.pressureMax, loadInvalid: r.host.loadInvalid, loadWarn: r.host.loadWarn, reasons: r.host.reasons, warnings: r.host.warnings, ...(r.host.stub ? { stub: r.host.stub } : {}) } }));
+const compactRuns = (runs, key) => runs.filter((r) => r.scenarios[key]).map((r) => ({ side: r.side, pair: r.pair, ...Object.fromEntries(Object.entries(r.scenarios[key]).filter(([k]) => k !== 'host')), host: { load1Start: r.host.load1Start, load1End: r.host.load1End, busyPct: r.host.busyPct, chromeCpuPct: r.host.chromeCpuPct, otherBusyPct: r.host.otherBusyPct, pressureMax: r.host.pressureMax, loadInvalid: r.host.loadInvalid, loadWarn: r.host.loadWarn, reasons: r.host.reasons, warnings: r.host.warnings, ...(r.host.power ? { power: r.host.power } : {}), ...(r.host.stub ? { stub: r.host.stub } : {}) } }));
 
 /**
  * Serve A and B, launch a headed Chrome, run the ABBA loop over `scenarios`. Returns {runs, chrome}.
@@ -445,7 +449,8 @@ const compactRuns = (runs, key) => runs.filter((r) => r.scenarios[key]).map((r) 
  */
 async function measureGain({ aOverlays, bOverlays, scenarios, o, runDir, log, gateTimeout = false }) {
   const { runGain } = await import('./lib/bench-gain.mjs');
-  const ch = await launchChrome({ port: 0, profileDir: join(REPO, 'out', 'chrome-bench-profile'), headless: false });
+  const profileDir = join(REPO, 'out', 'chrome-bench-profile');
+  const ch = await launchChrome({ port: 0, profileDir, headless: false });
   try {
     const [as, bs] = await Promise.all([startServer('A', aOverlays, GAIN_SERVE, runDir), startServer('B', bOverlays, GAIN_SERVE, runDir)]);
     const cdp = await CDP.connect(ch.wsUrl);
@@ -453,7 +458,7 @@ async function measureGain({ aOverlays, bOverlays, scenarios, o, runDir, log, ga
     const chrome = await browserVersion(cdp).catch(() => null);
     const runs = await runGain({ cdp, chromePid: ch.proc.pid, sides: { A: { url: as.url }, B: { url: bs.url } }, scenarios, runs: o.runs, cpu: o.cpu, timeDomain: o.timeDomain, maxLoad: o.maxLoad, log, gateTimeout });
     cdp.close();
-    return { runs, chrome };
+    return { runs, chrome, chromeProfile: chromeProfileState(profileDir) };
   } finally {
     await ch.close();
     killChildren();
@@ -514,7 +519,13 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   const cur = { toolsSha: toolsSha(), chromeMajor: chromeMajor(m.chrome), setting: setting(o.timeDomain, o.cpu) };
   const res = readResults(t);
   const bTag = baselineFlag();
-  const base = { at: new Date().toISOString(), seconds: Math.round((Date.now() - t0) / 1000), git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD') }, ...cur, chrome: m.chrome, baselineManifest: baselineManifest(), baselineSnapshot: snapMeta(bTag), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on, patch: calibrateMode ? null : sides.source, scenario: sc.key, metric: sc.metric, direction: sc.direction, runsPerSide: o.runs, cpu: o.cpu, timeDomain: o.timeDomain, host: range, values: { baseline: ser.a, patched: ser.b }, ...(ser.errors.length ? { errors: ser.errors } : {}) };
+  // T8+ (I-033): display / wake per run (side = arm, pair = run); a change within a run, between runs or between the
+  // sides tags every verdict HOST-DISPLAY-CHANGED, refuses calibration and authoring and exits 3, like a BASELINE-* tag
+  const hostState = hostStateSummary(m.runs.filter((r) => r.scenarios[sc.key]).map((r) => ({ label: r.side, run: r.pair, power: r.host.power })));
+  const hTag = hostState.tag;
+  const vTag = [bTag, hTag].filter(Boolean).join(': ') || null;
+  console.log(describeHostState(hostState));
+  const base = { at: new Date().toISOString(), seconds: Math.round((Date.now() - t0) / 1000), git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD') }, ...cur, chrome: m.chrome, baselineManifest: baselineManifest(), baselineSnapshot: snapMeta(bTag), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on, patch: calibrateMode ? null : sides.source, scenario: sc.key, metric: sc.metric, direction: sc.direction, runsPerSide: o.runs, cpu: o.cpu, timeDomain: o.timeDomain, host: range, hostState, chromeProfile: m.chromeProfile, values: { baseline: ser.a, patched: ser.b }, ...(ser.errors.length ? { errors: ser.errors } : {}) };
   if (ser.errors.length || ser.a.length < o.runs || ser.b.length < o.runs) {
     console.log(`${what.toUpperCase()} INCONCLUSIVE ${t}: scenario errors: ${[...new Set(ser.errors)].join('; ') || 'missing runs'}`);
     return 3;
@@ -527,6 +538,12 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
       res.calibrationRefused = { ...rec, refused: bTag };
       writeResults(t, res);
       console.log(`CALIBRATION REFUSED ${t}: ${bTag}: not measured on the pinned snapshot ${BASELINE.snapshot ?? ''} throughout; floors come only from the committed snapshot.`);
+      return 3;
+    }
+    if (hTag) {
+      res.calibrationRefused = { ...rec, refused: hTag };
+      writeResults(t, res);
+      console.log(`CALIBRATION REFUSED ${t}: ${hTag}: ${hostState.reasons.join('; ')}; floors come only from runs in one display / wake state.`);
       return 3;
     }
     if (band !== 'clean') {
@@ -547,27 +564,27 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   if (exp) {
     const r = experimentOutcome({ a: ser.a, b: ser.b, dir: sc.direction, calibration: calib, current: cur, hosts: ser.hosts });
     verdict = r.outcome === 'inconclusive' ? 'INCONCLUSIVE' : r.outcome === exp.expect.gain ? 'PASS' : 'MISMATCH';
-    rec = { ...base, expected: exp.expect.gain, outcome: r.outcome, verdict: flagged(bTag, verdict), reason: r.reason, p: r.p, pWorse: r.pWorse, shift: r.shift, ci: r.ci, minEffect: r.minEffect, band: r.band, runs: compactRuns(m.runs, sc.key) };
+    rec = { ...base, expected: exp.expect.gain, outcome: r.outcome, verdict: flagged(vTag, verdict), reason: r.reason, p: r.p, pWorse: r.pWorse, shift: r.shift, ci: r.ci, minEffect: r.minEffect, band: r.band, runs: compactRuns(m.runs, sc.key) };
     res.experiments ||= {}; res.experiments[expId] ||= {}; res.experiments[expId].gain = rec;
-    line = `GAIN ${flagged(bTag, verdict)} ${t} ${expId}: expected ${exp.expect.gain}, observed ${r.outcome}${r.shift != null ? ` (HL shift ${fmt(r.shift)} [${fmt(r.ci?.lo)}, ${fmt(r.ci?.hi)}], p ${fmt(r.p)}, minEffect ${fmt(r.minEffect)})` : ` (${r.reason})`} (${fmtHost(range)})`;
+    line = `GAIN ${flagged(vTag, verdict)} ${t} ${expId}: expected ${exp.expect.gain}, observed ${r.outcome}${r.shift != null ? ` (HL shift ${fmt(r.shift)} [${fmt(r.ci?.lo)}, ${fmt(r.ci?.hi)}], p ${fmt(r.p)}, minEffect ${fmt(r.minEffect)})` : ` (${r.reason})`} (${fmtHost(range)})`;
   } else {
     const authored = on ? null : res.authored || null;
     const v = gainVerdict({ a: ser.a, b: ser.b, dir: sc.direction, calibration: calib, current: cur, authored, hosts: ser.hosts });
     verdict = v.verdict;
-    rec = { ...base, verdict: flagged(bTag, verdict), reason: v.reason, p: v.p, pWorse: v.pWorse, u: v.u, shift: v.shift, ci: v.ci, budget: v.budget, minEffect: v.minEffect, band: v.band, runs: compactRuns(m.runs, sc.key) };
+    rec = { ...base, verdict: flagged(vTag, verdict), reason: v.reason, p: v.p, pWorse: v.pWorse, u: v.u, shift: v.shift, ci: v.ci, budget: v.budget, minEffect: v.minEffect, band: v.band, runs: compactRuns(m.runs, sc.key) };
     if (on) { res.gainOn ||= {}; res.gainOn[on] = rec; } else res.gain = rec;
     let note = '';
     if (!on && !authored && sides.source.kind === 'committed') {
-      if (verdict === 'HOLDS' && bTag) note = ` [not authored: ${bTag}]`;
+      if (verdict === 'HOLDS' && vTag) note = ` [not authored: ${vTag}]`;
       else if (verdict === 'HOLDS' && v.band === 'clean') { res.authored = { at: rec.at, shift: v.shift, ci: v.ci, p: v.p, toolsSha: cur.toolsSha, chromeMajor: cur.chromeMajor, setting: cur.setting, metric: sc.metric, patchSha256: sides.source.sha256 }; note = ' [authored: later runs must keep >= half of this shift]'; }
       else if (verdict === 'HOLDS') note = ` [not authored: ${v.band} host; author on a quiet host]`;
     }
-    line = `GAIN ${flagged(bTag, verdict)} ${t} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)} (minEffect ${fmt(v.minEffect)})` : ''} (${v.band === 'warn' ? 'WARN band, ' : ''}${fmtHost(range)})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}${note}`;
+    line = `GAIN ${flagged(vTag, verdict)} ${t} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)} (minEffect ${fmt(v.minEffect)})` : ''} (${v.band === 'warn' ? 'WARN band, ' : ''}${fmtHost(range)})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}${note}`;
   }
   const f = writeResults(t, res);
   console.log(`${line} -> ${relative(REPO, f)}`);
   const gc = GAIN_EXIT[verdict] ?? 1;
-  return bTag && gc === 0 ? 3 : gc;
+  return vTag && gc === 0 ? 3 : gc;
 }
 
 // ---- reconfirm: the landed set, one hold for Tier A + one per --gain topic --------------------------------
@@ -687,14 +704,19 @@ async function cmdReconfirm() {
       const ser = series(m.runs, sc.key, sc.metric);
       const calibration = floor || i.results.calibration;
       const v = ser.errors.length ? { verdict: 'INCONCLUSIVE', reason: `scenario errors: ${[...new Set(ser.errors)].join('; ')}` } : gainVerdict({ a: ser.a, b: ser.b, dir: sc.direction, calibration, current: cur, authored: i.results?.authored || null, hosts: ser.hosts });
-      report.tierB[i.topic] = { ...v, metric: sc.metric, values: { baseline: ser.a, patched: ser.b }, host: hostRange(ser.hosts), calibration: floor ? 'reconfirm A/A' : 'bench-results.json' };
-      console.log(`GAIN ${v.verdict} ${i.topic} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)}` : ''} (${fmtHost(hostRange(ser.hosts))})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}`);
+      // T8+ (I-033): the display / wake state over the gain runs (not the floor's A/A): a change tags this topic's line and the reconfirm
+      const hostState = hostStateSummary(m.runs.filter((r) => r.scenarios[sc.key]).map((r) => ({ label: r.side, run: r.pair, power: r.host.power })));
+      report.tierB[i.topic] = { ...v, metric: sc.metric, values: { baseline: ser.a, patched: ser.b }, host: hostRange(ser.hosts), hostState, calibration: floor ? 'reconfirm A/A' : 'bench-results.json' };
+      console.log(describeHostState(hostState));
+      console.log(`GAIN ${flagged(hostState.tag, v.verdict)} ${i.topic} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)}` : ''} (${fmtHost(hostRange(ser.hosts))})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}`);
     }
   }
   report.seconds = Math.round((Date.now() - t0) / 1000);
   const bTag = baselineFlag();
   if (bTag) report.baselineSnapshot = snapMeta(bTag);
-  for (const it of items) rows.push({ topic: it.topic, A: report.tierA[it.topic]?.verdict ?? '-', B: report.tierB[it.topic]?.verdict ?? (it.spec.gain && (it.spec.gain.device ?? 'chrome') === 'iphone' ? 'iphone (skipped)' : '-'), note: report.tierB[it.topic]?.host ? `load1 ${report.tierB[it.topic].host.load1Min}-${report.tierB[it.topic].host.load1Max}, other CPU <= ${report.tierB[it.topic].host.otherBusyMax} %` : '' });
+  const hTag = Object.values(report.tierB).find((x) => x.hostState?.tag)?.hostState.tag ?? null;
+  const vTag = [bTag, hTag].filter(Boolean).join(': ') || null;
+  for (const it of items) rows.push({ topic: it.topic, A: report.tierA[it.topic]?.verdict ?? '-', B: report.tierB[it.topic]?.verdict ?? (it.spec.gain && (it.spec.gain.device ?? 'chrome') === 'iphone' ? 'iphone (skipped)' : '-'), note: report.tierB[it.topic]?.host ? `${report.tierB[it.topic].hostState?.tag ? `${report.tierB[it.topic].hostState.tag}: ${report.tierB[it.topic].hostState.reasons.join('; ')}; ` : ''}load1 ${report.tierB[it.topic].host.load1Min}-${report.tierB[it.topic].host.load1Max}, other CPU <= ${report.tierB[it.topic].host.otherBusyMax} %` : '' });
   rows.sort((x, y) => topics.indexOf(x.topic) - topics.indexOf(y.topic));
   report.rows = rows;
   const md = [`# bench reconfirm ${ref} ${sha}`, '', `${report.at}, ${report.seconds} s, toolsSha ${report.toolsSha}, ${report.chrome || ''}`, '', ...(bTag ? [`**${bTag}: not measured on the pinned snapshot ${BASELINE.snapshot ?? ''} throughout; every verdict below is invalid**`, ''] : []), '| topic | Tier A | Tier B | note |', '|---|---|---|---|', ...rows.map((r) => `| ${r.topic} | ${r.A} | ${r.B} | ${r.note || ''} |`), ...(Object.keys(report.experiments).length ? ['', '| experiment | Tier A |', '|---|---|', ...Object.entries(report.experiments).map(([id, e]) => `| ${id} | ${e.mech?.verdict ?? '-'} |`)] : [])].join('\n') + '\n';
@@ -704,8 +726,8 @@ async function cmdReconfirm() {
   const aVs = Object.values(report.tierA).map((x) => x.verdict), bVs = Object.values(report.tierB).map((x) => x.verdict), eVs = Object.values(report.experiments).map((x) => x.mech?.verdict).filter((v) => v && v !== 'SKIPPED');
   const code = Math.max(...[exitCode([...aVs, ...eVs.map((v) => (v === 'CONFLICT' ? 'FAIL' : v))]), ...bVs.map((v) => GAIN_EXIT[v] ?? 1)].map((c) => (c === 1 ? 10 : c)), 0);
   const exit0 = code === 10 ? 1 : code;
-  const exit = bTag && exit0 === 0 ? 3 : exit0;
-  console.log(`RECONFIRM ${flagged(bTag, exit0 === 0 ? 'PASS' : exit0 === 1 ? 'FAIL' : 'INCONCLUSIVE')} ${ref} ${sha} -> ${relative(REPO, join(outDir, 'report.md'))}`);
+  const exit = vTag && exit0 === 0 ? 3 : exit0;
+  console.log(`RECONFIRM ${flagged(vTag, exit0 === 0 ? 'PASS' : exit0 === 1 ? 'FAIL' : 'INCONCLUSIVE')} ${ref} ${sha} -> ${relative(REPO, join(outDir, 'report.md'))}`);
   return exit;
 }
 

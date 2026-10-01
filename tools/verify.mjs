@@ -62,6 +62,14 @@
 // contaminated. [--watchdog 300]: once the lock is held, a step with no progress for that many seconds
 // (monotonic, plus the step's own budget) fails verify with a WATCHDOG error, which closes Chrome and frees
 // the lock; 0 = off.
+// Display, wake and power (T8+, incident I-033; U1: the plain baseline ran 63-78 fps with the display on, 92-94
+// in DarkWake): `host.power = {start, end}` per run (read just outside the run's own snapshots) and
+// `host.recheck.power = {start, end}`, each hostPower(): display 'on'|'off', fullWake (false = DarkWake),
+// powerSource, displaySleepPrevented (a PreventUserIdleDisplaySleep assertion, e.g. caffeinate -d). `host.chrome`
+// per run: the browser version (from /json/version) and sha256 of the profile's ChromeFeatureState and variations
+// seed (U8). verify.json `host.hostState` (hostStateSummary): the distinct states over the runs and `tag`
+// HOST-DISPLAY-CHANGED when display or wake differ within a run, between runs or between targets; fix.mjs ab
+// prefixes its verdicts with it. `host.gate.sleptSec`: a host sleep in the lock's admission gate (a warning).
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
@@ -70,7 +78,7 @@ import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './li
 import { acquire } from './lib/lock.mjs';
 import { loggerSource, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
 import { TRACE_START, TRACE_ARM, TRACE_DISARM, BUCKETS, BUCKET_LABELS, attributeFrames } from './lib/trace-frames.mjs';
-import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock, stubOutsideTest, procsSnapshot, topProcs } from './lib/host.mjs';
+import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock, stubOutsideTest, procsSnapshot, topProcs, hostPower, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
 
 const ROOT = REPO;
 const argv = process.argv.slice(2);
@@ -145,10 +153,13 @@ function armWatchdog() {
 // I-023 A/A: CDP closed during a 60 s recheck). A run never starts sooner than --chrome-warm s
 // (default 10) after its Chrome launched (review-i023: a just-launched Chrome measures cold).
 let browser = null, launches = 0;
+const PROFILE = resolve(ROOT, opt('profile', 'out/chrome-verify-profile'));
+/** host.chrome of a run (T8+, U8): the browser version and the profile's field-trial state (hashes; a file read). */
+const chromeState = () => ({ version: browser?.ch.browser ?? null, ...chromeProfileState(PROFILE) });
 const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${what}: no answer in ${ms} ms`)), ms).unref())]);
 async function openChrome() {
   progress('chrome launch', 30); // launchChrome waits up to 15 s for the DevTools port
-  const ch = await launchChrome({ port: Number(opt('port', 0)), profileDir: resolve(ROOT, opt('profile', 'out/chrome-verify-profile')) });
+  const ch = await launchChrome({ port: Number(opt('port', 0)), profileDir: PROFILE });
   let exited = false;
   ch.proc.on('exit', () => { exited = true; });
   const cdp = await CDP.connect(ch.wsUrl);
@@ -184,10 +195,12 @@ async function warmChrome() {
 async function recheckHost() {
   if (!(MAX_WAIT > 0)) return null;
   progress('host recheck', MAX_WAIT + 60);
+  const power0 = await hostPower(); // T8+ (I-033): display / wake / power on each side of the recheck windows
   const procs0 = await procsSnapshot(); // I-031, log only: one ps (~20 ms) on each side of the recheck windows
   const w = await waitQuiet({ maxWaitSec: MAX_WAIT, thresholds: QUIET, onSample: async () => { progress('host recheck', MAX_WAIT + 60); if (browser) await chromeAlive(); } });
   const recheck = { quiet: w.quiet, waitedSec: w.waitedSec, windows: w.windows, reasons: w.reasons, sleptSec: w.sleptSec, suspended: w.suspended, last: w.last,
     topProcs: topProcs(procs0, await procsSnapshot(), { excludeRoot: browser?.ch.proc.pid }) };
+  recheck.power = { start: power0, end: await hostPower() };
   if (w.suspended) process.stdout.write(`(the host slept ${w.sleptSec} s during the recheck; measuring now) `);
   else if (!w.quiet) process.stdout.write(`(host not quiet after ${w.waitedSec} s: ${w.reasons.join(', ')}; measuring anyway) `);
   else if (w.windows > 1) process.stdout.write(`(waited ${w.waitedSec} s for a quiet host) `);
@@ -318,9 +331,10 @@ function traceSummary(tf) {
 }
 const byClass = (d) => BUCKETS.filter((k) => d[k]).map((k) => `${k} ${d[k]}`).join(', ') || '-';
 
-async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, chromeRelaunched = false, warmedSec = 0 } = {}) {
+async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, chromeRelaunched = false, warmedSec = 0, chrome = null } = {}) {
   const vp = VIEWPORTS[vpName];
   const hostPhases = {};
+  const powerStart = await hostPower(); // T8+ (I-033): before the run's first snapshot, outside every window
   const runStart = await snapshot();
   const procsStart = await procsSnapshot(); // I-031, log only: before the page opens, outside every phase window
   const loadBefore = runStart.load1;
@@ -435,6 +449,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   const firstParty = requests.filter((r) => { try { const u = new URL(r.url); return u.origin === new URL(t.url).origin; } catch { return false; } });
   const runEnd = await snapshot();
   const runTop = topProcs(procsStart, await procsSnapshot(), { excludeRoot: chromePid }); // I-031, after the last phase
+  const powerEnd = await hostPower(); // T8+ (I-033): after the run's last snapshot
   progress('report');
   const pressures = Object.values(hostPhases).map((p) => p.pressureMax).filter((x) => x != null);
   const sl = slept(runStart, runEnd); // did the Mac sleep during the run (I-026)?
@@ -443,9 +458,10 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
     sleptSec: sl.sleptSec, woke: sl.woke, chromeRelaunched, chromeWarmedSec: Math.round(warmedSec * 10) / 10,
     recheck, gate: gate || null, phases: hostPhases,
     topProcs: runTop, // I-031: log only, not passed to classifyRun
+    power: { start: powerStart, end: powerEnd }, chrome, // T8+ (I-033): verdict tag via hostStateSummary, not classifyRun
     ...(runStart.stub ? { stub: runStart.stub } : {}),
   };
-  Object.assign(hostRec, classifyRun({ load1Start: runStart.load1, otherBusyPct: hostPhases.scroll?.otherBusyPct, pressureMax: pressures.length ? Math.max(...pressures) : null, gateTimeout: !!gate?.gateTimeout, recheckQuiet: recheck ? recheck.quiet : undefined, sleptSec: sl.sleptSec, woke: sl.woke, recheckSleptSec: recheck?.sleptSec, chromeRelaunched }));
+  Object.assign(hostRec, classifyRun({ load1Start: runStart.load1, otherBusyPct: hostPhases.scroll?.otherBusyPct, pressureMax: pressures.length ? Math.max(...pressures) : null, gateTimeout: !!gate?.gateTimeout, recheckQuiet: recheck ? recheck.quiet : undefined, sleptSec: sl.sleptSec, woke: sl.woke, recheckSleptSec: recheck?.sleptSec, gateSleptSec: gate?.sleptSec, chromeRelaunched }));
   return {
     label: t.label, url: t.url, viewport: vpName, run, loadavg1: { before: r1(loadBefore), after: r1(runEnd.load1) }, host: hostRec, state, scroll, morphState, shots, shimStats,
     idleSummary: idlePerf ? { ...summarize(idlePerf), ...cdpPhase.idle, scrollY: idlePerf.scrollY } : null, scrollSummary: { ...summarize(scrollPerf), ...cdpPhase.scroll }, morphSummary: { ...summarize(morphPerf), ...cdpPhase.morph },
@@ -512,7 +528,7 @@ async function main() {
           const recheck = await recheckHost();
           const chromeRelaunched = await ensureChrome();
           const warmedSec = await warmChrome();
-          const r = await measure(browser.cdp, t, vpName, run, { chromePid: browser.ch.proc.pid, gate, recheck, chromeRelaunched, warmedSec });
+          const r = await measure(browser.cdp, t, vpName, run, { chromePid: browser.ch.proc.pid, gate, recheck, chromeRelaunched, warmedSec, chrome: chromeState() });
           const bl = baselineAfterRun();
           if (bl) { r.baseline = bl; flaggedRuns++; }
           results.push(r);
@@ -560,8 +576,10 @@ async function main() {
     ...(await hostInfo()), chromeLaunches: launches, watchdogSec: WATCHDOG, chromeWarmSec: CHROME_WARM,
     thresholds: THRESHOLDS, recheck: { maxWaitSec: MAX_WAIT, maxLoad1: QUIET.quietMaxLoad1, maxBusyPct: QUIET.quietMaxBusyPct }, gate,
     contaminated: invalid.length > 0, contaminatedRuns: invalid.length, warnRuns: warn.length, runsTotal: measured.length,
+    hostState: hostStateSummary(measured.map((r) => ({ label: r.label, run: r.run, power: r.host.power, chrome: r.host.chrome }))), // T8+ (I-033)
     ...(measured[0]?.host.stub ? { stub: measured[0].host.stub } : {}),
   };
+  console.log(describeHostState(hostSum.hostState));
   console.log(`host: ${invalid.length} of ${measured.length} runs contaminated${invalid.length ? ` (${[...new Set(invalid.flatMap((r) => r.host.reasons))].join('; ')}): verdicts provisional` : ''}${warn.length ? `; ${warn.length} warn (${[...new Set(warn.flatMap((r) => r.host.warnings))].join('; ')})` : ''}${hostSum.stub ? `  [host STUBBED: ${hostSum.stub}]` : ''}`);
   const measurement = { cdpMetrics: CDP_METRICS, traceFrames: TRACE, frameLog: FRAME_LOG, ...(TRACE ? { note: 'traced: tracing perturbs timing, frame numbers are not comparable with untraced runs', traceBufferKb: TRACE_START.traceConfig.traceBufferSizeInKb, traceTimeoutSec: TRACE_TIMEOUT } : {}) };
   if (TRACE) console.log(`trace-frames: ${measurement.note}; offMain = ${BUCKET_LABELS.offMain}`);
