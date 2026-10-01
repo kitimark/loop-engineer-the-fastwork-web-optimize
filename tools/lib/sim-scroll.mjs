@@ -8,7 +8,7 @@
 // Simulator target that `sim.mjs run` passes to iphone.mjs run's runCmd (tools/lib/iphone-run.mjs).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
-import { openTab, sleep } from './wip.mjs';
+import { openTab, pickTab, sleep } from './wip.mjs';
 import { REPO } from './paths.mjs';
 import { CERT_WARNING_TITLE } from './iphone-url.mjs';
 import { sample as hostSample } from './host.mjs';
@@ -69,8 +69,8 @@ const outPath = (o, owner, label) => resolve(REPO, o.out || join('out', 'sim', `
 
 async function firstTab(port) {
   const list = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
-  const tab = list[0];
-  if (!tab) throw new Error('no Safari tab in the Simulator (node tools/sim.mjs open <url> first)');
+  let tab; // never a blank web view of another app, never the first of several (I-037)
+  try { tab = pickTab(list); } catch (e) { if (!e.ambiguous) e.message = `no Safari tab in the Simulator (node tools/sim.mjs open <url> first): ${e.message}`; throw e; }
   if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}: open the plain-http URL (node tools/sim.mjs open http://localhost:<port>/)`);
   return tab;
 }

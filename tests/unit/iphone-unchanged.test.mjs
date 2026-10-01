@@ -3,9 +3,12 @@
 // (the finger-test frame logger) stay byte-identical, and so do the lease guard and `open`/`status`. This pins
 // the source of those blocks as they were before gesture/wda existed (2226d51). If one of them is changed on
 // purpose, that is a measurement-code change: call it out (CLAUDE.md, Hard rule 6) and update the pin.
-// The one intended change since 2226d51: scroll and record write their file through lanSafeRecord (no LAN address
-// on disk, Hard rule 12; what they measure is unchanged). The 2226d51 pins still hold for the blocks with that one
-// line put back, so everything else in them stays pinned.
+// The intended changes since 2226d51, none of which changes what is measured (CHANGES below):
+//   - scroll and record write their file through lanSafeRecord (no LAN address on disk, Hard rule 12);
+//   - scroll takes Safari's tab with safariTab(list), not list[0] (I-037: another app's about:blank web view can be
+//     listed first; several candidates now fail instead of picking the first);
+//   - status lists each target's appId (which app a web view belongs to, I-037).
+// The 2226d51 pins still hold for the blocks with those lines put back, so everything else in them stays pinned.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -37,20 +40,33 @@ test('iphone.mjs: scroll, record, open, status, PROBE, summarize and requireLeas
     record: sha(block(src, "  if (cmd === 'record') {", '  }')),
   };
   assert.deepEqual(got, PINS);
-  for (const k of ['scroll', 'record']) {
-    const b = block(src, `  if (cmd === '${k}') {`, '  }');
-    assert.equal(b.split(LAN_SAFE_WRITE).length, 2, `${k} writes its file through lanSafeRecord, once`);
-    assert.equal(sha(b.replace(LAN_SAFE_WRITE, WRITE_83B7F7B)), PINS_83B7F7B[k], `${k}: only the file write changed since 2226d51`);
+  for (const [k, changes] of Object.entries(CHANGES)) {
+    let b = block(src, `  if (cmd === '${k}') {`, '  }');
+    for (const [now, then] of changes) {
+      assert.equal(b.split(now).length, 2, `${k} has this intended change, once: ${now.trim().slice(0, 60)}`);
+      b = b.replace(now, then);
+    }
+    assert.equal(sha(b), PINS_83B7F7B[k], `${k}: only the intended lines changed since 2226d51`);
   }
 });
 
 const LAN_SAFE_WRITE = '    writeFileSync(out, JSON.stringify(lanSafeRecord(res))); // no LAN address in the file (Hard rule 12)';
 const WRITE_83B7F7B = '    writeFileSync(out, JSON.stringify(res));';
-const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49' };
+const SAFARI_TAB = '    const tab = safariTab(list); // never a blank web view of another app, never the first of several (I-037)';
+const TAB_83B7F7B = "    const tab = list[0];\n    if (!tab) throw new Error('no Safari tab (unlock the iPhone, bring Safari to the front)');";
+const STATUS_APPID = '.map((t) => ({ url: t.url, title: t.title, appId: t.appId, error: t.error }))';
+const STATUS_83B7F7B = '.map((t) => ({ url: t.url, title: t.title, error: t.error }))';
+/** [now, as in 2226d51] per block */
+const CHANGES = {
+  scroll: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B]],
+  record: [[LAN_SAFE_WRITE, WRITE_83B7F7B]],
+  status: [[STATUS_APPID, STATUS_83B7F7B]],
+};
+const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49', status: '28dd691408056316' };
 
 const PINS = {
   requireLease: '138ba8339515624d', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '28dd691408056316', open: 'dabba5b174193021', scroll: '99ba1cc448a2d825', record: '0061c1840ddf47c6', // lanSafeRecord write
+  status: '43e304a76f1bf0c9', open: 'dabba5b174193021', scroll: '3419c1ca7562d527', record: '0061c1840ddf47c6', // CHANGES
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with

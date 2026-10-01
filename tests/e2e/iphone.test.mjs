@@ -4,6 +4,7 @@
 // proxy on :9221/:9222 and the real iphone lease are never touched.
 // `open` against a self-signed --https mirror (incident I-003) runs end to end against
 // tests/fixtures/fake-webkit-proxy.mjs, a fake proxy + Safari that does not trust the certificate.
+// I-037: with another app's background about:blank web view listed before Safari's tab, open still drives Safari's.
 import { test, before, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
@@ -84,14 +85,15 @@ async function mirror(args) {
   procs.push(s);
   return s;
 }
-async function fakePhone() {
+async function fakePhone(args = []) {
   const log = join(tempDir('fw-wip-'), 'wip.jsonl');
-  const p = await startProc(process.execPath, [join(TESTS, 'fixtures', 'fake-webkit-proxy.mjs'), '--port=0', '--url=http://127.0.0.1:9/start'],
+  const p = await startProc(process.execPath, [join(TESTS, 'fixtures', 'fake-webkit-proxy.mjs'), '--port=0', '--url=http://127.0.0.1:9/start', ...args],
     { env: { FAKE_WIP_LOG: log }, ready: (s) => s.match(/^FAKE_WIP_PORT=(\d+)$/m) });
   procs.push(p);
   const port = p.stdout().match(/^FAKE_WIP_PORT=(\d+)$/m)[1];
   const navigations = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((e) => e.navigate).map((e) => e.navigate) : []);
-  return { env: { ...env, FW_IPHONE_PORT: port }, navigations };
+  const blankConnects = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').filter((l) => l.includes('"blankViewConnected"')).length : 0);
+  return { env: { ...env, FW_IPHONE_PORT: port }, navigations, blankConnects };
 }
 const infoOf = async (s) => JSON.parse((await request(s.url + '__mirror/info')).text);
 const lan = (s) => s.url.replace('localhost', '127.0.0.1'); // what an agent passes: the LAN-style URL, not localhost
@@ -144,4 +146,18 @@ test('I-003: open <plain http mirror URL> works as before and checks it landed o
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, new RegExp(`^Safari now on ${lan(s).replace(/[./]/g, '\\$&')}$`, 'm'));
   assert.deepEqual(phone.navigations(), [lan(s)]);
+});
+
+test('I-037: another app\'s about:blank web view listed before Safari\'s tab is never picked; open drives Safari\'s tab; status shows appIds', async () => {
+  const s = await mirror([]);
+  const phone = await fakePhone(['--blank-view']);
+  const st = await nodeAsync(IPHONE, ['status'], { env: phone.env, timeout: 20000 });
+  assert.match(st.stdout, /^tabs: \[\{"url":"about:blank","title":"","appId":"PID:1304"\},\{"url":"http:\/\/127\.0\.0\.1:9\/start","title":"start","appId":"PID:4242"\}\]$/m, st.out);
+  lock('acquire', 'iphone', '--owner', 'me');
+  const r = await nodeAsync(IPHONE, ['open', lan(s), '--owner', 'me'], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, new RegExp(`^Safari now on ${lan(s).replace(/[./]/g, '\\$&')}$`, 'm'));
+  assert.deepEqual(phone.navigations(), [lan(s)]);
+  assert.equal(phone.blankConnects(), 0, 'the blank view was never connected to');
+  assert.doesNotMatch(r.stderr, /openTab try/, 'first try');
 });

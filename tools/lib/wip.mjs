@@ -43,18 +43,67 @@ export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
   return {ws, targets, send, evaluate, on: (fn) => listeners.push(fn), close: () => ws.close()};
 }
 
-// Find the Safari tab whose URL matches `match` and connect, retrying with backoff.
-export async function openTab(match, {tries = 6, port = Number(process.env.FW_IPHONE_PORT || 9222)} = {}) {
+// Which listed target is Safari's tab (incident I-037). The proxy's /json lists every inspectable web view on the
+// phone, one entry per page with its app as `appId` ("PID:<pid>"), so another app's background WKWebView shows up
+// next to Safari's tab (seen: an about:blank view of PID:1304 listed before Safari's PID:613), and Runtime.evaluate
+// on it times out. pickTab therefore:
+//   - never picks a blank web view (url about:blank or empty): a run never targets one;
+//   - keeps the tabs whose url matches `match` (a function of the url, or a substring such as the expected host);
+//   - with FW_IPHONE_APPID=<appId> (or opts.appId) keeps only that app's tabs; otherwise, when `preferAppId` (the
+//     app openTab connected to last in this process, i.e. Safari's after the first connect) is among them, only
+//     that app's: a reconnect after a reload or navigation stays in Safari;
+//   - returns the one tab left, and throws when none is left or when several are (AMBIGUOUS: it never picks the
+//     first of several), naming every listed target (url, title, appId) so the user can close one or set the env.
+export const isBlankUrl = (u) => !u || /^about:blank([?#]|$)/.test(String(u));
+const describeTab = (p) => `${p.url || '(no url)'}${p.title ? ` "${p.title}"` : ''}${p.appId ? ` [${p.appId}]` : ''}`;
+const describeMatch = (m) => (typeof m === 'function' ? (m.length || String(m).replace(/\s/g, '') !== '()=>true' ? 'the matcher' : 'any page') : JSON.stringify(m));
+export function pickTab(pages, match = () => true, { appId = process.env.FW_IPHONE_APPID || null, preferAppId = null } = {}) {
+  const all = (Array.isArray(pages) ? pages : []).filter((p) => p && p.webSocketDebuggerUrl);
+  const listed = all.map(describeTab).join(', ') || '(none)';
+  const ok = (p) => (typeof match === 'function' ? match(p.url) : String(p.url || '').includes(match));
+  let c = all.filter((p) => !isBlankUrl(p.url) && ok(p));
+  if (appId) c = c.filter((p) => p.appId === appId);
+  else if (preferAppId && c.some((p) => p.appId === preferAppId)) c = c.filter((p) => p.appId === preferAppId);
+  if (c.length === 1) return c[0];
+  const which = `${describeMatch(match)}${appId ? ` in app ${appId} (FW_IPHONE_APPID)` : ''}`;
+  if (!c.length) {
+    const blankOnly = all.length > 0 && all.every((p) => isBlankUrl(p.url));
+    throw new Error(`no tab matching ${which} (blank web views are never picked, I-037); targets: ${listed}${blankOnly ? '. Safari shows no page: open any http page in Safari first' : ''}`);
+  }
+  const e = new Error(`AMBIGUOUS: ${c.length} tabs match ${which}: ${c.map(describeTab).join(', ')} (all targets: ${listed}). Not picking one (I-037): close the other Safari tabs or the other app, or set FW_IPHONE_APPID=<appId> to Safari's`);
+  e.ambiguous = true;
+  throw e;
+}
+
+/** The one Safari tab for a tab-list check (certificate warning, lease URL): pickTab with any url. */
+export function safariTab(pages, opts) {
+  try { return pickTab(pages, () => true, opts); } catch (e) {
+    if (!e.ambiguous) e.message = `no Safari tab (unlock the iPhone, bring Safari to the front): ${e.message}`;
+    throw e;
+  }
+}
+
+let lastAppId = null; // the app of the last tab openTab connected to (Safari's), preferred on reconnects (I-037)
+
+// Find the Safari tab whose URL matches `match` (pickTab) and connect, retrying with backoff. Several matching tabs
+// fail after two listings (AMBIGUOUS), not after the whole backoff, and not as "unlock the iPhone". `appId`: Safari's
+// app ("PID:<pid>", e.g. from WDA's activeAppInfo), else FW_IPHONE_APPID.
+export async function openTab(match, {tries = 6, port = Number(process.env.FW_IPHONE_PORT || 9222), appId = process.env.FW_IPHONE_APPID || null} = {}) {
   let lastErr;
   for (let i = 0; i < tries; i++) {
     try {
       const pages = await (await fetch(`http://localhost:${port}/json`)).json();
-      const p = pages.find(p => typeof match === 'function' ? match(p.url) : p.url.includes(match));
-      if (!p) throw new Error(`no tab matching ${match}; tabs: ${pages.map(p => p.url).join(', ') || '(none)'}`);
+      const p = pickTab(pages, match, { appId, preferAppId: lastAppId });
       const c = await connect(p.webSocketDebuggerUrl);
       await c.evaluate('1', 'page', 8000);
+      lastAppId = p.appId ?? lastAppId;
       return c;
-    } catch (e) { lastErr = e; console.error(`openTab try ${i + 1}: ${e.message || JSON.stringify(e)}`); await sleep(1000 * 2 ** i); }
+    } catch (e) {
+      lastErr = e;
+      console.error(`openTab try ${i + 1}: ${e.message || JSON.stringify(e)}`);
+      if (e.ambiguous && i >= 1) throw e;
+      await sleep(1000 * 2 ** i);
+    }
   }
   throw new Error(`BLOCKED: cannot reach Safari tab (${lastErr?.message}). Unlock the iPhone and bring Safari to the foreground.`);
 }

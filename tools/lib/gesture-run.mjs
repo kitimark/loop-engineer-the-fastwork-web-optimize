@@ -16,7 +16,7 @@ import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { openTab, sleep } from './wip.mjs';
+import { openTab, safariTab, sleep } from './wip.mjs';
 import { compileScript, condText, COMPILER_VERSION } from './gesture.mjs';
 import { RECORDER_JS, READ_JS, STATE_JS, markJs, summarizeRun } from './gesture-rec.mjs';
 import { status as wdaStatus, createSession, SAFARI } from './wda.mjs';
@@ -45,12 +45,14 @@ export function toolVersion(root = REPO, { morphLog } = {}) {
   return v;
 }
 
-/** The page over WIP. `match`: tab matcher for openTab (a host string after the first connect). */
-export function wipPage() {
+/** The page over WIP. `match`: tab matcher for openTab (a host string after the first connect). `appId`: Safari's
+ *  app on the proxy's list ("PID:<pid>" from WDA's activeAppInfo), so no other app's web view is picked (I-037). */
+export function wipPage({ appId = null } = {}) {
+  const o = appId ? { appId } : {};
   let c = null, host = null;
   const page = {
     async connect() {
-      c = await openTab(() => true);
+      c = await openTab(() => true, o);
       host = new URL(await c.evaluate('location.href')).host;
       return page;
     },
@@ -69,7 +71,7 @@ export function wipPage() {
       c.close();
       await sleep(1200);
       for (let i = 0; ; i++) {
-        c = await openTab(host);
+        c = await openTab(host, o);
         if ((await c.evaluate('window.__fwgOld === undefined && document.readyState !== "loading"'))) break;
         c.close();
         if (i > 60) throw new Error('reload: the new document never became ready');
@@ -280,8 +282,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
 
   // Safari's tab: there, not the certificate warning, the lease's page
   const list = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
-  const tab = list[0];
-  if (!tab) throw new Error('no Safari tab (unlock the iPhone, bring Safari to the front)');
+  const tab = safariTab(list); // never a blank web view of another app, never the first of several (I-037)
   if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (incident I-003)`);
   let leaseUrl = h0.meta?.url;
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) { try { leaseUrl = iphoneTarget(leaseUrl, await mirrorInfo(leaseUrl)).url; } catch {} }
@@ -303,7 +304,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   try {
     const front = await session.activeApp();
     if (front?.bundleId !== SAFARI) throw new Error(`refusing: ${scrub(front?.bundleId || 'an unknown app')} is in front, not Safari. Bring Safari to the front (node tools/iphone.mjs wda start --owner ${owner} activates it)`);
-    page = await wipPage().connect();
+    page = await wipPage({ appId: front.pid ? `PID:${front.pid}` : null }).connect(); // the proxy names apps by pid (I-037)
     log(`GESTURE ${head} on ${await page.href()}`);
     const morphLog = opt('morph-log');
     if (morphLog && !existsSync(morphLog)) throw new Error(`--morph-log ${morphLog}: no such file`);

@@ -26,7 +26,7 @@ import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { openTab, sleep } from './wip.mjs';
+import { openTab, safariTab, sleep } from './wip.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, LAN_HOST } from './iphone-url.mjs';
@@ -159,8 +159,7 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
     if (rn.status !== 0) throw new Error(`could not renew the iphone lease: ${(rn.stderr || rn.stdout || '').trim()}`);
   } else await target.renew?.(need);
   const tabs = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
-  const tab = tabs[0];
-  if (!tab) throw new Error('no Safari tab (unlock the iPhone, bring Safari to the front)');
+  const tab = safariTab(tabs); // never a blank web view of another app, never the first of several (I-037)
   if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (incident I-003)`);
   const holder = target ? null : lockStatus('iphone').holder;
   let leaseUrl = holder?.meta?.url;

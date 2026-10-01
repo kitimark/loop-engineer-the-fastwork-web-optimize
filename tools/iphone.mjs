@@ -34,7 +34,7 @@
 // crossing log, tool hashes) -> out/iphone/<owner>-run-<label>-<ts>.json (schema fw-iphone-run/1).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
-import { openTab, navigate, sleep } from './lib/wip.mjs';
+import { openTab, navigate, safariTab, sleep } from './lib/wip.mjs';
 import { status as lockStatus } from './lib/lock.mjs';
 import { REPO } from './lib/paths.mjs';
 import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord } from './lib/iphone-url.mjs';
@@ -92,7 +92,7 @@ async function main() {
   if (cmd === 'status') {
     const dev = await fetch(`http://localhost:${DEVICE_PORT}/json`, { signal: AbortSignal.timeout(4000) }).then((r) => r.json()).catch((e) => ({ error: `proxy not reachable on :${DEVICE_PORT} (${e.cause?.code || e.message})` }));
     console.log('device:', JSON.stringify(dev));
-    console.log('tabs:', JSON.stringify((await tabs().catch((e) => [{ error: `proxy not reachable on :${PORT} (${e.cause?.code || e.message})` }])).map((t) => ({ url: t.url, title: t.title, error: t.error }))));
+    console.log('tabs:', JSON.stringify((await tabs().catch((e) => [{ error: `proxy not reachable on :${PORT} (${e.cause?.code || e.message})` }])).map((t) => ({ url: t.url, title: t.title, appId: t.appId, error: t.error }))));
     const s = lockStatus('iphone');
     console.log('lease:', s.holder ? `${s.holder.owner}${s.stale ? ' (stale: ' + s.stale + ')' : ''} until ${s.holder.expiresAt}` : 'free', s.queue.length ? `queue: ${s.queue.map((w) => w.owner).join(', ')}` : '');
     return;
@@ -120,8 +120,7 @@ async function main() {
     const owner = requireLease();
     const holder = lockStatus('iphone').holder;
     const list = await tabs();
-    const tab = list[0];
-    if (!tab) throw new Error('no Safari tab (unlock the iPhone, bring Safari to the front)');
+    const tab = safariTab(list); // never a blank web view of another app, never the first of several (I-037)
     if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (it opens a self-signed https mirror over its plain-http twin, incident I-003)`);
     let leaseUrl = holder.meta?.url;
     if (leaseUrl && !tab.url.startsWith(leaseUrl)) { try { leaseUrl = iphoneTarget(leaseUrl, await mirrorInfo(leaseUrl)).url; } catch {} } // https lease URL, Safari on its http twin

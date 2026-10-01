@@ -25,6 +25,9 @@
 // landscape), --hide-after-strokes=N (document.visibilityState turns "hidden" after N strokes, as when another
 // app comes to the front), --jitter-at-end (near maxY the page runs a 60 px sawtooth, 1 px per 10 ms, and never
 // comes to rest, like a pin fight that does not stop).
+// Every listed target carries `appId` ("PID:<pid>", as ios_webkit_debug_proxy lists it); Safari's tab is PID:4242, the
+// pid the fake WDA reports for Safari. --blank-view (incident I-037) also lists, BEFORE Safari's tab, another app's
+// background about:blank web view (PID:1304) whose websocket opens but never answers a command, like the real one.
 import http from 'node:http';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
@@ -71,6 +74,7 @@ async function evaluate(expr) {
 const PAGE = process.argv.includes('--page') || arg('wda-port') !== null;
 const DOC_H = Number(arg('doc-height') || 6035);
 const WIDTH = Number(arg('width') || 430);
+const BLANK_VIEW = process.argv.includes('--blank-view');
 const HIDE_AFTER = arg('hide-after-strokes') === null ? Infinity : Number(arg('hide-after-strokes'));
 let hidden = false, strokesPlayed = 0;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -153,13 +157,16 @@ function frame(str) {
 const server = http.createServer((req, res) => {
   if (req.url === '/json') {
     res.setHeader('content-type', 'application/json');
-    return res.end(JSON.stringify([{ url: tab.url, title: tab.title, webSocketDebuggerUrl: `ws://127.0.0.1:${server.address().port}/devtools/page/1` }]));
+    const ws = (n) => `ws://127.0.0.1:${server.address().port}/devtools/page/${n}`;
+    const safari = { url: tab.url, title: tab.title, webSocketDebuggerUrl: ws(1), appId: 'PID:4242' };
+    return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: ws(2), appId: 'PID:1304' }, safari] : [safari]));
   }
   res.statusCode = 404; res.end();
 });
 server.on('upgrade', (req, sock) => {
   const accept = createHash('sha1').update(req.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
   sock.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+  if (req.url === '/devtools/page/2') { log({ blankViewConnected: true }); sock.on('data', () => {}); sock.on('error', () => {}); return; } // the background view: silent
   const send = (o) => { if (!sock.destroyed) sock.write(frame(JSON.stringify(o))); };
   const targetId = `page-${tab.gen}`; // target ids change on every navigation, like iOS
   send({ method: 'Target.targetCreated', params: { targetInfo: { targetId, type: 'page' } } });
