@@ -170,6 +170,8 @@ async function scenario(cdp, v, url, sc, profile, hook = true) {
   await page.send('Page.navigate', { url: 'about:blank' });
   await sleep(1200);
   await page.close();
+  // a request passes several stacked fetch wrappers (shim, vendors): the hook can see it twice; count it once
+  { const seen = new Set(); for (let i = hits.length - 1; i >= 0; i--) { const k = hits[i].url + '\u0000' + hits[i].body + '\u0000' + hits[i].t; if (seen.has(k)) hits.splice(i, 1); else seen.add(k); } }
   const events = hits.flatMap((h) => gaEvents(h).map((e) => ({ ...e, t: h.t, kind: h.kind, afterLeave: hits.indexOf(h) >= hitsBeforeLeave })));
   const hosts = {}; for (const h of hits) { const k = h.kind + ' ' + new URL(h.url).host; hosts[k] = (hosts[k] || 0) + 1; }
   return { variant: v.label, scenario: sc, listeners: ls, scroll, scrollDepthPushes: dl.filter((e) => e.ev === 'gtm.scrollDepth'), dlEvents: dl.map((e) => e.ev), dlBeforeLeave,
