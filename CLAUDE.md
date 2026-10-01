@@ -134,6 +134,8 @@ Reading `results.json`: `verdict` is "better"/"WORSE" only when the baseline and
 don't overlap over >= 3 runs; otherwise "within noise". Check `regressions` (new console errors,
 new 404s, screenshot pixel diff: 0-0.4 % is countdown/orbit phase noise, more means a visual change,
 `morphReached`) before claiming a win.
+The host record's `topProcs` (top 5 non-Chrome processes per run and per recheck, I-031, log only) normally lists the
+mirror server's `node`, verify's own `node` and `WindowServer`: they are part of the measured system, not contamination.
 
 ## Tooling is guarded by tests
 
