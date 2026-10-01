@@ -165,8 +165,9 @@ pin makes later rebuilds comparable or explicitly not. arch-snapshot (research) 
 ## iPhone status (07:35Z)
 
 The phone throttles thermally again (control run failed 2x); the user is cooling it. Order once a control passes: finger
-tests (via the lead) -> N10 R3 logger + ablations d, c, b, a -> item 9 (N12) -> 2, 4-8. Every iPhone session starts with
-a passing control run; a failed control voids the session's numbers.
+tests (via the lead) -> N10 R3 logger + ablations d, c, b, a -> item 9 (N12) -> 2, 4-8. **Standing rule (lead 07:41Z):**
+every iPhone block (a session or a block of scripted runs) starts with a passing control run; a failed control voids
+that block's numbers; a control fails if bottom/idle < 58 fps or baseline scroll < 44 fps.
 
 ## Started now (prototype while the queue drains)
 
