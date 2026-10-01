@@ -17,13 +17,27 @@ mechanical. Wave 2 (`hero-exit-scroll-timeline`, `scroll-engine`) waits for it.
 |---|---|---|
 | phone-invisible-shrink | `main` | `5e42555d4191d0a72dbfdb0f5a0c6c6567408d320bc11ed8ecaaad835fc7aede` |
 | commission-forced-layout | `main` (`1cbe7b6`) | `9897e36c47d7a357fce1a05e3002d2cb91e6b8cc507c3403edf68ce2e9704099` |
-| layout-animations **05** | `worktree-agent-a7da36df115c2e662` @ `9705825` | `6504253b4d37620e0847c4aad494640c83eb95296cf655cb069bb2f2317d8593` |
+| layout-animations **v10** | `main` (`5602e1d`); supersedes 05 (`6504253b…`) and 03 (`70f90017…`) | `7bf120165d54b4a79ecf89a4919ceff1432165eea019a21c9f501691ba76d7ba` |
 | pain-offscreen-notes | `main` (`e26f7f3`) | `71f64449e9e6723fcee4437e24600452a4542e28d604af5dd7a94a3097e67895` |
 | countdown-idle-raf | `worktree-agent-a03218c7c8f9587ed` @ `b6fdbff` (variant 03) | `160d69a043f1bcee9d86bf3c02fc9197907253ce2be9ff0b768b8bfb92fd9d17` |
 | large-area-blur | `main` (`3a79f4b`) | `db12ccec57a1e93afb5c8dccd57f6597a822ceb9c032d0125cbae0b86a28e840` |
 | nav-hit-test | `main` (`8b325c5`) | `e1f84630d19abc1a8c7cf146818eb10a56c824c00b75b2efc8f22be2ba36b211` |
 | morph-scrolljack-passive | `worktree-agent-a277ea00c8773c1ea` @ `4eac79f` (variant 04) | `5f116f817edde26fe3483f5a6b5d9d8d568ade4efbc184b0e32e8d1cc3f532b0` |
 | morph-panel-lazy-mount | `worktree-agent-a277ea00c8773c1ea` @ `4eac79f` | `39072167b15d04693d356b125c93a4e8c2d06e9bf9049b014b1a99a3f3367b79` |
+
+**Update, layout-animations v10** (landed `5602e1d`, sha `7bf12016`). v10 = 03's RTL flip restored (the
+sign flip under `html[dir=rtl]` was correct, per the owner) + 05's sweep-gate teardown. JS hunks:
+- **20-26** (baseline 20-25, patched 20-26), the chunk import list: adds `X as PMpre` (Svelte `$effect.pre`). It occurs 0 times in the baseline,
+  and no other patch touches the import block.
+- 2587, 3669, and **3782-3790** (baseline lines): `HEflip` with the RTL sign, and `PMsweepGate`, which unobserves its titles in a
+  `PMpre(() => () => …)` teardown. countdown-idle-raf's first hunk at 3824 is still separate.
+- 12652.
+
+The CSS hunks are the same as 03/05. A re-run of the combine with v10 instead of 05, and **without
+morph-scrolljack-passive** (#6 is iPhone-gated and out of the combine), applies all 8 patches cleanly, and
+`node --check` passes. Input order: phone-invisible-shrink, commission-forced-layout, layout-animations,
+pain-offscreen-notes, countdown-idle-raf `160d69a0`, large-area-blur, nav-hit-test, morph-panel-lazy-mount
+`39072167`.
 
 Changes against the first dry run:
 
