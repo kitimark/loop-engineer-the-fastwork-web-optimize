@@ -1,0 +1,65 @@
+# fastwork mirror fix: r2-bg-layers
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply r2-bg-layers --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -925,7 +925,25 @@
+     --commission-shrink-scale: 1;
+     --commission-shrink-radius: 0px;
+     overflow: visible;
++  }
++  /* R2: on phones .shrinking is only a background switch (scale 1, radius 0, runway display:none). The
++     colour lives on an empty ::before layer (.commission is a stacking context: z-index 3), so the switch
++     is a layer property, not a repaint of the section. */
++  .commission.shrinking {
++    background: 0 0;
++  }
++  .commission::before {
++    content: "";
++    z-index: -1;
++    pointer-events: none;
++    will-change: transform;
++    background: 0 0;
++    position: absolute;
++    inset: 0;
+   }
++  .commission.shrinking::before {
++    background: #131922;
++  }
+   .commission-sticky {
+     min-height: 0;
+     position: relative;
+@@ -2309,14 +2327,25 @@
+   }
+ }
+ @media (width<=860px) {
++  /* R2 (de-middle, research/design-engineering/middle.md 5): the is-pain-dark switch repainted the
++     backgrounds of .pain, the composited sticky (text + 11 notes) and the hold. The colour now lives on
++     one empty ::before layer behind them (.pain is a stacking context: position relative, z-index 1),
++     so a switch is a solid-colour layer property, not a repaint. Same colours, same rect. */
+   .pain,
+   .pain-sticky,
+   .pain-hold {
++    background: 0 0;
++  }
++  .pain::before {
++    content: "";
++    z-index: -1;
++    pointer-events: none;
++    will-change: transform;
+     background: #fff;
++    position: absolute;
++    inset: 0;
+   }
+-  .pain.is-pain-dark,
+-  .pain.is-pain-dark .pain-sticky,
+-  .pain.is-pain-dark .pain-hold {
++  .pain.is-pain-dark::before {
+     background: #131922;
+   }
+   .pain,
