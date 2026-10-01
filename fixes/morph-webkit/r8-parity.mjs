@@ -26,14 +26,14 @@ try {
   // real morph via the driver hook, sampling the class each frame
   await page.eval(`(() => { const L = window.__r8log = []; const h = document.querySelector('header.start-selling-top-nav'); const loop = () => { L.push([+h.style.getPropertyValue('--morph') || 0, h.classList.contains('is-morph-covered'), getComputedStyle(h).backdropFilter, h.classList.contains('is-morphing')]); if (!window.__r8stop) requestAnimationFrame(loop); }; requestAnimationFrame(loop); window.__fwMorphDrive({ hold: 1200, cycles: 1 }); return 1; })()`);
   let md = null; for (let i = 0; i < 30 && !md; i++) { await sleep(500); md = await page.eval('window.__fwMD'); }
-  const toggle = await page.eval(`(() => { window.__r8stop = true; const L = window.__r8log; const on = L.filter((f) => f[1]); return { frames: L.length, onFrames: on.length, minMorphOn: on.length ? Math.min(...on.map((f) => f[0])) : null, offAbove055: L.filter((f) => !f[1] && f[0] >= 0.56).length, endOn: L.at(-1)[1], bdf: Object.entries(L.reduce((a, f) => { const k = (f[3] ? 'morphing ' : 'idle ') + (f[0] > 0.001 ? 'm>0 ' : 'm=0 ') + f[2]; a[k] = (a[k] || 0) + 1; return a; }, {})).map(([k, n]) => n + 'x ' + k.replace(/blur\(calc\([^)]*\)*/, 'blur(var)')).slice(0, 12), tracks: [...document.querySelectorAll('.start-selling-morph-col-track')].map((t) => getComputedStyle(t).willChange).join('|'), scene: [...document.querySelectorAll('[data-start-selling-scene]')].map((e) => e.dataset.startSellingScene).join('|') }; })()`);
+  const toggle = await page.eval(`(() => { window.__r8stop = true; const L = window.__r8log; const on = L.filter((f) => f[1]); return { frames: L.length, onFrames: on.length, minMorphOn: on.length ? Math.min(...on.map((f) => f[0])) : null, offAbove055: L.filter((f) => !f[1] && f[0] >= 0.56).length, endOn: L.at(-1)[1], bdf: Object.entries(L.reduce((a, f) => { const k = (f[3] ? 'morphing ' : 'idle ') + (f[0] > 0.001 ? 'm>0 ' : 'm=0 ') + f[2]; a[k] = (a[k] || 0) + 1; return a; }, {})).map(([k, n]) => n + 'x ' + k.slice(0, 70)).slice(0, 12), tracks: [...document.querySelectorAll('.start-selling-morph-col-track')].map((t) => getComputedStyle(t).willChange).join('|'), scene: [...document.querySelectorAll('[data-start-selling-scene]')].map((e) => e.dataset.startSellingScene).join('|') }; })()`);
   // frozen frames
   await page.eval(`window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })`); await sleep(500);
   for (let i = 0; i < 25; i++) { await page.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 215, y: 500, deltaX: 0, deltaY: 120 }); await sleep(40); }
   await sleep(2000);
   await page.eval(`document.getAnimations().forEach((a) => { a.currentTime = 0; a.pause(); }); 1`);
   const res = {};
-  const PARTS = (process.env.PARTS || 'both').split(',');
+  const PARTS = process.env.SKIPFROZEN ? [] : (process.env.PARTS || 'both').split(',');
   for (const part of PARTS) for (const m of [0.55, 0.7, 0.9, 1]) {
     const shot = async (on) => {
       const rect = await page.eval(`(() => { const h = document.querySelector('header.start-selling-top-nav'), p = document.querySelector('.start-selling-platform');
