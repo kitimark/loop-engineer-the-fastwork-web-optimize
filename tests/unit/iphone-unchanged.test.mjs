@@ -40,3 +40,33 @@ const PINS = {
   requireLease: '138ba8339515624d', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
   status: '28dd691408056316', open: 'dabba5b174193021', scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49',
 };
+
+// tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with
+// COPIES of the phone's probe, summary and finger logger, so the Simulator's numbers are the phone's numbers: the copies
+// must stay byte-identical to iphone.mjs (and so to the pins above). A change to one is a change to both.
+test('sim-scroll.mjs: PROBE, summarize, the record logger and its summary are the phone\'s, byte for byte', async () => {
+  const phone = readFileSync(join(TOOLS, 'iphone.mjs'), 'utf8');
+  const sim = readFileSync(join(TOOLS, 'lib', 'sim-scroll.mjs'), 'utf8');
+  for (const [head, close] of [['const PROBE = `', '})()`;'], ['function summarize(res) {', '}']]) {
+    assert.equal(block(sim, head, close), block(phone, head, close), head);
+  }
+  assert.equal(sha(block(sim, 'const PROBE = `', '})()`;')), PINS.PROBE);
+  assert.equal(sha(block(sim, 'function summarize(res) {', '}')), PINS.summarize);
+  const rec = block(phone, "  if (cmd === 'record') {", '  }');
+  const m = await import('../../tools/lib/sim-scroll.mjs');
+  assert.ok(rec.includes(`await c.evaluate(\`${m.RECORD_JS}\`);`), 'RECORD_JS is the phone\'s logger expression');
+  assert.ok(rec.includes(`await c.evaluate('${m.RECORD_STOP_JS}')`), 'RECORD_STOP_JS is the phone\'s stop expression');
+  const fn = block(sim, 'function recordSummary(res) {', '}').split('\n').map((l) => l.trim());
+  const phoneLines = rec.split('\n').map((l) => l.trim());
+  for (const l of fn.slice(1, 4)) assert.ok(phoneLines.includes(l), `record summary line: ${l}`);
+  assert.ok(phoneLines.includes(fn[4].replace(/^return /, 'res.summary = ')), 'the summary object is the phone\'s');
+  // scrollCmd's sequence is the phone's scroll block's: reload from the top, 2.5 s, readyState, 8 s, probe, 1.5 s polls
+  const simScroll = block(sim, 'export async function scrollCmd(', '}').split('\n').map((l) => l.trim());
+  const phoneScroll = block(phone, "  if (cmd === 'scroll') {", '  }').split('\n').map((l) => l.trim());
+  for (const l of phoneScroll.filter((x) => /^(await c\.evaluate|await sleep|for \(let i = 0; i < 60|while \(!res|if \(!res\)|if \(res\.err\)|res\.summary =|c\.close)/.test(x))) {
+    assert.ok(simScroll.includes(l), `sim scrollCmd lacks the phone's line: ${l}`);
+  }
+  // and the copies compute what the phone's code computes, on a made-up frame list
+  const res = { frames: [[0, 16.7, 0, 775], [16.7, 16.7, 0, 775], [60, 43.3, 10, 775], [120, 60, 30, 815], [130, 10, 30, 815]] };
+  assert.deepEqual(m.recordSummary(res), { all: { frames: 5, gt20: 2, gt34: 2, gt50: 1, gt100: 0, max: 60 }, whileScrollYChanges: { frames: 2, gt20: 2, gt34: 2, gt50: 1, gt100: 0, max: 60 }, innerHeightChanges: 1 });
+});

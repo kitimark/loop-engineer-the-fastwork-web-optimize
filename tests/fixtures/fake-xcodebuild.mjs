@@ -53,7 +53,9 @@ if (a.includes('build-for-testing')) {
 if (a.includes('test-without-building')) {
   if (process.env.FAKE_XCODEBUILD_RUN_FAIL) { leaky(); console.log('** TEST EXECUTE FAILED **'); process.exit(65); }
   const { startFakeWda } = await import(join(dirname(fileURLToPath(import.meta.url)), 'fake-wda.mjs'));
-  const port = Number(new URL(process.env.FW_WDA_URL).port);
+  // the real runner listens on USE_PORT, which xcodebuild passes from TEST_RUNNER_USE_PORT (WDA-sim, tools/lib/sim.mjs);
+  // the phone's runner keeps 8100 behind iproxy, which these tests stand in for with $FW_WDA_URL's port
+  const port = process.env.TEST_RUNNER_USE_PORT ? Number(process.env.TEST_RUNNER_USE_PORT) : Number(new URL(process.env.FW_WDA_URL).port);
   await startFakeWda({ port, foreground: 'com.example.WebDriverAgentRunner.xctrunner', log: process.env.FAKE_WDA_LOG });
   console.log(`ServerURLHere->http://127.0.0.1:${port}<-ServerURLHere`);
   setInterval(() => {}, 1 << 30);

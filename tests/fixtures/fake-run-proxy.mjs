@@ -6,7 +6,7 @@
 // page's vm context. location.reload() builds a new page (new target id, like iOS). The server also serves the
 // page's one script, /_app/immutable/app.js, so the served-hash record can be checked.
 //
-//   node tests/fixtures/fake-run-proxy.mjs [--doc-height=2900] [--morph] [--cert-warning]
+//   node tests/fixtures/fake-run-proxy.mjs [--doc-height=2900] [--morph] [--cert-warning] [--port=N (default: any free port)]
 //   prints FAKE_WIP_PORT=<port>. Env FAKE_WIP_LOG=<file>: one JSON line per evaluate ({evaluate: head, len}) and reload.
 import http from 'node:http';
 import { createHash } from 'node:crypto';
@@ -88,7 +88,7 @@ server.on('upgrade', (req, sock) => {
   });
   sock.on('error', () => {});
 });
-server.listen(0, '127.0.0.1', () => {
+server.listen(Number(arg('port') || 0), '127.0.0.1', () => {
   base = `http://127.0.0.1:${server.address().port}/`;
   newPage();
   console.log(`FAKE_WIP_PORT=${server.address().port}`);
