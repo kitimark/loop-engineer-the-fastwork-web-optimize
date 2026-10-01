@@ -270,8 +270,17 @@ mgmt-ops-5 as second reader.
   - So both the exit-start tick and the swap tick remove and insert img renderers in the carousel.
   - In s0-rk / s0-rkop (`tick2.cjs`), the ≥10 ms whole-view Layouts fall 0-60 ms after both tick types: 31/31
     after exit-start and 21/21 after swap, out of 19 + 19 ticks.
-  - The `avatars-exit` width steps (60-240 ms after exit-start) coincide only with small (<5 ms) whole-view Layouts:
+  - During the exit animation window (60-240 ms after exit-start) only small (<5 ms) whole-view Layouts occur:
     135/142.
+  - **Correction (16:4xZ): no build in P14 has exit width steps.** The re-keep (s0), aw1-10e, re-contain-js and
+    st4-noswap CSS all carry the layout-animations rewrite. In it, `avatars-exit` animates opacity, translate,
+    clip-path and transform; the followers animate `translate` (`avatars-shift`); the enter animates
+    `avatars-pop`. There is no width, flex-basis or margin keyframe in any of them (grep, 0 hits). Only the
+    original baseline has the width/flex-basis steps. So "W3 = exit width steps" does not apply to these builds.
+  - **st4-noswap also drops those animations.** They match only `img.is-exit` / `.is-enter` inside the `ge`
+    block, and noswap never mounts `ge`. V1 therefore removes the whole swap path at once: the img renderer
+    insert/remove, and the exit/shift/pop animations with any layer gain/loss they cause (F-075). It keeps the
+    tick's state writes (S, x+1) and the in-place `src` update.
 
 **New V1, st4-noswap** (`<scratchpad>/layout-containment/snap2/st4-noswap`, read-only; JS b8c085d9b619, CSS
 c6aad94b455f = aw1-10e):
@@ -315,21 +324,33 @@ Chrome mechanism check (5 s, counts only):
     small Layouts under any P14 column: they are image-load Layouts, not the tick's. In V1 the `src` updates in
     place, so expect more of them there; they stay out of every column.
 - Reading, re-registered at 15:3xZ for V1 = st4-noswap. It follows de-pm-hero's postmortem-hero.md §7.7 (6ed6767)
-  with the carousel row replaced, because the DOM check put W1 out. The tick Layout is the ≥10 ms whole-view one
-  counted as above.
-  - C view, V1 gone (no ≥10 ms whole-view Layout after ≥75 % of ticks, or tick Layouts rooted at the carousel):
-    the insert/remove of img renderers is the escape (W2, the swap path). Fix direction: rotate by `src`/transform
-    inside fixed slots, not by keyed insert/remove.
-  - C view, V1 still view-rooted ≥10 ms at most ticks: the DOM swap is not the escape. W3 (the exit width steps
-    above the carousel) or another dirtier in the tick. Read the st4-rotoff run for how many view-rooted Layouts
-    remain with the rotator off.
+  with the carousel row replaced, because the DOM check put W1 out. Amended at 16:4xZ after mgmt-ops-5's second
+  read (confound, grey zone, prediction).
+  - **Tick unit.** A tick is one L11571 TimerFire (exit-start or swap). Its "view tick" means a ≥10 ms Layout
+    with the whole-view root quad in the next frame. Per arm, pool the ticks of its 3 counted runs, and report
+    the per-run shares beside the pool.
+  - **Minimum.** A run counts for the tick readout with ≥6 ticks. An arm needs ≥2 counting runs and ≥15 pooled
+    ticks; with fewer, its row is UNRESOLVED (no reading).
+  - **Bands** (share of an arm's ticks that are view ticks): **gone** ≤25 %; **view** ≥50 %; **MIXED** in
+    between. MIXED gives no fix direction; read the st4-rotoff run.
+  - C view, V1 gone: the escape is in the swap path, i.e. the `ge` mount/unmount: img renderer insert/remove,
+    or the exit/shift/pop animations' layer changes. V1 does not separate the two. Fix direction: a rotator with
+    no keyed remount (fixed slots). Whether a slide can be kept without the escape needs a split arm (`ge`
+    mounted with `animation: none`), in a later block if it matters.
+  - C view, V1 view: the swap path is not the escape. Something noswap keeps is: the S/x+1 state writes, the
+    in-place `src` update, or a full layout already pending at the tick. Read the st4-rotoff run for how many
+    view-rooted Layouts remain with the rotator off.
+  - C view, V1 MIXED: no direction; read rotoff.
   - V2 rooted at #people with tick Layout ≤ half of C's: the #people boundary contains it whatever the dirtier is
     (fix-hero-exit's direction). V2 still view-rooted: the escape is outside #people or the boundary does not hold
     on this WebKit build.
-  - C not view-rooted: the C build moved. Stop.
-- Prediction (written before the block): V1 removes the ≥10 ms whole-view tick Layouts (W2); idle dt>34 drops by
-  about the rotator's share of C's idle long frames; V2 rooted at #people at ≤ half of C's tick cost. The headline
-  target stays the ≥101 ms rebuild frame at y≈1960 (lead's instruction); P14 does not test it.
+  - C not view (≤25 %) or MIXED: the C build moved or the escape is intermittent. Stop.
+- Prediction (written before the block):
+  - V1 is gone (≤25 % view ticks), because the swap path is the escape.
+  - V2 is rooted at #people with a median tick Layout ≤ half of C's.
+  - Info only, not scored: idle dt>34 is lower in V1 than C. The Timeline-on counted runs' 6 s idle can't
+    test that, and the §7.8 Timeline-OFF add-on is not part of this ticket.
+- The headline target stays the ≥101 ms rebuild frame at y≈1960 (lead's instruction); P14 does not test it.
 - No overlap with lc-cq3: in the SSR HTML the mobile deck is in the hero section, the stage visuals and kr-arms are
   in a later section, and `.is-carousel` is inside #people.
 
