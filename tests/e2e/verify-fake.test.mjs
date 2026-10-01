@@ -189,20 +189,23 @@ test('inside `lock.mjs run chrome-measure`: verify re-enters the wrapper\'s hold
 });
 
 test('a forged or stale FW_LOCK_HELD token does not let verify past someone else\'s hold', async () => {
-  const { env, args } = setup();
-  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'other-agent'], { env }).code, 0);
-  const token = holder(env.FW_STATE_DIR).token;
-  for (const held of ['chrome-measure:0123456789ab', `iphone:${token}`, `chrome-measure:${token}x`, '']) {
+  // one lock dir per forged value, all four at once (I-027: they waited out their 3 s one after another)
+  const forge = async (held, i) => {
+    const { env, args } = setup();
+    assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'other-agent'], { env }).code, 0);
+    const token = holder(env.FW_STATE_DIR).token;
+    held = held.replace('<token>', token);
     const p = nodeAsync(VERIFY, args('forger'), { env: { ...env, FW_LOCK_HELD: held }, timeout: 3000 }); // SIGTERMed after 3 s
     await sleep(1200);
     assert.equal(readLog(env.FAKE_CHROME_LOG).length, 0, `Chrome must not start with FW_LOCK_HELD=${held}`);
     const st = JSON.parse(node(LOCK, ['status', 'chrome-measure', '--json'], { env }).stdout)[0];
     assert.equal(st.holder.owner, 'other-agent');
-    assert.deepEqual(st.queue.map((w) => w.owner), ['forger'], 'it queues like anyone else');
+    assert.deepEqual(st.queue.map((w) => w.owner), ['forger'], `it queues like anyone else (case ${i})`);
     await p;
     assert.equal(readLog(env.FAKE_CHROME_LOG).length, 0);
     assert.deepEqual(JSON.parse(node(LOCK, ['status', 'chrome-measure', '--json'], { env }).stdout)[0].queue, [], 'a killed waiter leaves the queue');
-  }
+  };
+  await Promise.all(['chrome-measure:0123456789ab', 'iphone:<token>', 'chrome-measure:<token>x', ''].map(forge));
 });
 
 test('SIGTERM mid-run: lock released and the browser does not outlive verify.mjs', async () => {

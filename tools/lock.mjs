@@ -67,7 +67,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS } from './lib/host.mjs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
-import { keepAwake, stopAwake } from './lib/awake.mjs';
+import { keepAwake, stopAwake, keepAwakeQueued } from './lib/awake.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -174,6 +174,7 @@ async function main() {
       let r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host });
       if (r.gated) { host = await gateSample(); r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host }); }
       else if (host) host = { quiet: null, reasons: ['not measured yet'] };
+      if (!r.ok && !r.gated) keepAwakeQueued(resource); // queued behind someone (also a BUSY exit 3 that comes back later): keep the Mac awake (I-026 reopened)
       return r;
     };
     let res = await attempt();

@@ -56,7 +56,7 @@ import os from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { sharedStateDir, REPO } from './paths.mjs';
 import { THRESHOLDS, sample, quiet } from './host.mjs';
-import { keepAwake, stopAwake } from './awake.mjs';
+import { keepAwake, stopAwake, keepAwakeQueued } from './awake.mjs';
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -357,6 +357,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
   let host = gated ? { quiet: null, reasons: ['not measured yet'] } : undefined;
   for (;;) {
     const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T });
+    if (!res.ok && !res.gated) keepAwakeQueued(r); // queued behind someone: no system sleep while anyone waits either (I-026 reopened)
     if (res.gated) {
       // our turn, but the host is not (known to be) quiet: measure one window, then try again at once
       if (host.quiet === false && Date.now() - lastLog > 30000) {

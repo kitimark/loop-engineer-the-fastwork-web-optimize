@@ -269,6 +269,25 @@ test('I-026: every chrome-measure hold runs under caffeinate: run (-w its pid), 
   assert.ok(!existsSync(join(state, 'locks', 'chrome-measure.awake.json')));
 });
 
+test('I-026 (reopened): a queued waiter keeps the Mac awake too, also a CLI acquire that exits BUSY: one shared caffeinate -t 600 per resource', async () => {
+  const log = join(state, 'caffeinate-q.jsonl');
+  const cenv = { ...env, FW_CAFFEINATE: join(TESTS, 'fixtures', 'fake-caffeinate.mjs'), FAKE_CAFFEINATE_LOG: log };
+  const calls = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
+  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'holder'], { env: cenv }).code, 0);
+  for (let i = 0; i < 60 && calls().length < 1; i++) await sleep(50);
+  // two waiters that do not wait (exit 3, they come back within 10 min): the queue keeps one assertion alive
+  for (const w of ['w1', 'w2']) assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', w, '--short', '--max-seconds', '60'], { env: cenv }).code, 3);
+  for (let i = 0; i < 60 && calls().length < 2; i++) await sleep(50);
+  await sleep(200);
+  const all = calls();
+  assert.equal(all.length, 2, `the lease's assertion plus ONE queue assertion: ${JSON.stringify(all.map((c) => c.args))}`);
+  assert.deepEqual(all[1].args, ['-i', '-s', '-t', '600']);
+  assert.ok(alive(all[1].pid), 'outlives the CLI that queued');
+  assert.equal(JSON.parse(readFileSync(join(state, 'locks', 'chrome-measure.queue-awake.json'), 'utf8')).pid, all[1].pid);
+  assert.equal(node(LOCK, ['release', 'chrome-measure', '--owner', 'holder'], { env: cenv }).code, 0);
+  for (const c of all) { try { process.kill(c.pid, 'SIGKILL'); } catch {} }
+});
+
 test('run: killing the lock holder also stops the command (the lock never outlives the work)', async () => {
   const pidFile = join(state, 'child.pid');
   const child = `require('fs').writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); console.log('CHILD UP'); setInterval(() => {}, 1000);`;

@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,15 +14,41 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const HOOKS = join(ROOT, '.githooks');
 
-function makeRepo(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'rebase-only-'));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+const gitEnv = (home) => {
   const env = {
-    ...process.env, HOME: dir, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null',
+    ...process.env, HOME: home, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null',
     GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@example.invalid', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@example.invalid',
     GIT_EDITOR: 'true', GIT_MERGE_AUTOEDIT: 'no',
   };
   for (const k of Object.keys(env)) if (/^GIT_(DIR|WORK_TREE|INDEX_FILE|OBJECT_DIRECTORY|COMMON_DIR|PREFIX|CONFIG_(COUNT|PARAMETERS|KEY_|VALUE_))/.test(k)) delete env[k];
+  return env;
+};
+
+// The diverged start repo (main: a, c; feature: a, b), built once per file with the hooks on, exactly as
+// each test used to build it, and copied per test (incident I-027: the ~6 hooked git spawns per test were
+// most of this file's wall time). Every test still gets its own copy.
+let template;
+function templateRepo() {
+  if (template) return template;
+  const dir = mkdtempSync(join(tmpdir(), 'rebase-only-tpl-'));
+  process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
+  const env = gitEnv(dir);
+  const repo = join(dir, 'repo');
+  const git = (...args) => { const r = spawnSync('git', ['-c', `core.hooksPath=${HOOKS}`, ...args], { cwd: repo, env, encoding: 'utf8' }); assert.equal(r.status, 0, `git ${args.join(' ')} failed:\n${r.stdout}${r.stderr}`); };
+  const commit = (file) => { writeFileSync(join(repo, file), `${file[0]}\n`); git('add', file); git('commit', '-q', '-m', file); };
+  spawnSync('git', ['init', '-q', '-b', 'main', repo], { env });
+  commit('a.txt');
+  git('switch', '-q', '-c', 'feature');
+  commit('b.txt');
+  git('switch', '-q', 'main');
+  commit('c.txt'); // main and feature have diverged
+  return (template = repo);
+}
+
+function makeRepo(t) {
+  const dir = mkdtempSync(join(tmpdir(), 'rebase-only-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const env = gitEnv(dir);
   const repo = join(dir, 'repo');
   const run = (cwd, hooks, args) => spawnSync('git', [...(hooks ? ['-c', `core.hooksPath=${HOOKS}`] : ['-c', 'core.hooksPath=/dev/null']), ...args], { cwd, env, encoding: 'utf8' });
   const mk = (cwd = repo) => {
@@ -33,13 +59,8 @@ function makeRepo(t) {
     const merges = (ref = '--all') => ok('rev-list', '--merges', ref);
     return { git, ok, noHooks, commit, merges, cwd };
   };
-  spawnSync('git', ['init', '-q', '-b', 'main', repo], { env });
+  cpSync(templateRepo(), repo, { recursive: true });
   const r = mk();
-  r.commit('a.txt', 'a\n');
-  r.ok('switch', '-q', '-c', 'feature');
-  r.commit('b.txt', 'b\n');
-  r.ok('switch', '-q', 'main');
-  r.commit('c.txt', 'c\n'); // main and feature have diverged
   return { ...r, mk, dir, repo };
 }
 

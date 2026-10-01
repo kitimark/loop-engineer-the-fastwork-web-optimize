@@ -74,3 +74,44 @@ test('stopAwake never signals a pid that is no longer a caffeinate (pid reuse)',
   assert.equal(A.stopAwake('chrome-measure', 't'), false, 'this test process is not a caffeinate: left alone');
   assert.ok(!existsSync(join(state, 'locks', 'chrome-measure.awake.json')), 'the stale record is dropped');
 });
+
+// I-026 reopened: the Mac also slept 15 min (Deep Idle) while the lock was FREE and agents were queued, so
+// every waiter stalled. A waiter's attempt that leaves it queued keeps one shared assertion per resource
+// (caffeinate -i -s -t 600, the normal queue-entry TTL), replaced only when less than half of it is left.
+test('a queued waiter keeps the Mac awake: one shared -t 600 assertion, reused while fresh, replaced when half is gone', async () => {
+  const A = await import('../../tools/lib/awake.mjs');
+  const h = await L.acquire('chrome-measure', { owner: 'holder', kind: 'process', log: () => {} });
+  await calls(1);
+  await assert.rejects(L.acquire('chrome-measure', { owner: 'w1', kind: 'process', short: true, maxSec: 60, timeoutSec: 0.3, pollMs: 50, log: () => {} }), /timed out/);
+  const [, q] = await calls(2);
+  assert.deepEqual(q.args, ['-i', '-s', '-t', String(A.QUEUE_AWAKE_SEC)]);
+  assert.equal(A.QUEUE_AWAKE_SEC, 600);
+  const file = join(state, 'locks', 'chrome-measure.queue-awake.json');
+  assert.equal(JSON.parse(readFileSync(file, 'utf8')).pid, q.pid);
+  // a second waiter, while the first assertion is fresh: no new process
+  assert.equal(A.keepAwakeQueued('chrome-measure'), q.pid);
+  await sleep(150);
+  assert.equal((await calls(2)).length, 2);
+  // less than half left: replaced, and the old one ended
+  const rec = JSON.parse(readFileSync(file, 'utf8'));
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync(file, JSON.stringify({ ...rec, until: Date.now() + 200 * 1000 }));
+  const p2 = A.keepAwakeQueued('chrome-measure');
+  assert.notEqual(p2, q.pid);
+  assert.ok(await gone(q.pid), 'the old queue assertion is replaced');
+  assert.ok(alive(p2));
+  h.release();
+  process.kill(p2, 'SIGTERM');
+  assert.equal(A.keepAwakeQueued('iphone'), null, 'only chrome-measure');
+});
+
+test('a test process never starts a real caffeinate: without FW_CAFFEINATE, no assertion (holds or queue)', async () => {
+  const A = await import('../../tools/lib/awake.mjs');
+  delete process.env.FW_CAFFEINATE;
+  try {
+    assert.ok(process.env.NODE_TEST_CONTEXT, 'running under node --test');
+    assert.equal(A.keepAwake('chrome-measure', { token: 't', kind: 'process', pid: process.pid }), null);
+    assert.equal(A.keepAwakeQueued('chrome-measure'), null);
+  } finally { process.env.FW_CAFFEINATE = FAKE; }
+  assert.deepEqual(await calls(0), []);
+});
