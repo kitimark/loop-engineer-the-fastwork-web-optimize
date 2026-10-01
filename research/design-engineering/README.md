@@ -27,6 +27,7 @@ analyze the render complexity of each topic". Lead of this note: `de-morph`.
 | `de-morph` (lead) | end of page: `#platform`, the nav morph panel, the touch scroll-jack/pin | [`morph-endpage.md`](morph-endpage.md) | done |
 | `de-devtools` | our render metrics against Chrome DevTools' guidance: each hotspot in the docs' pixel pipeline, what the Frames track / paint rects / Layers / Rendering tab show that we don't, the iPhone budget in RAIL terms, ranked measurement additions (WebKit side: `de-safari`) | [`devtools-render-metrics.md`](devtools-render-metrics.md) | done |
 | `de-apple` | the math behind apple.com's 14 scroll decisions (cost model, complexity class, trade-off each), a per-frame complexity budget for the iPhone, our hotspots against it | [`apple-math.md`](apple-math.md) | done; folds in the gh/gb/g driver result (§2.5) |
+| `de-safari` | Safari/WebKit render signals: WebKit's iOS frame as a per-frame phase model, what each Safari/Instruments tool measures, probes for the open morph/hero questions | [`safari-render-signals.md`](safari-render-signals.md) | done; corrects apple-math F3 (WebContent waits for the commit to be applied, not displayed) |
 
 ## Method (shared by the three notes)
 
