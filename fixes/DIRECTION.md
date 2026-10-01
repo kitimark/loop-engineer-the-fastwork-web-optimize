@@ -322,7 +322,21 @@ listeners armed once at setup) 34/35 = gone**, nb (no `b` at the edge) 84/101 = 
 (incl. Layout 19-24) + Composite 58-72 ms, JS ~1 ms. Mechanism: the window wheel/touch listener add at the morph IO edge
 (likely event-region invalidation over all layers). fix-nav-morph sends the attribution card to the lead, then builds the
 landable fix (listeners armed at idle + a cheap touchmove gate); touch-only class -> G or F before landing.
-**iPhone queue (v2, lead-approved 10:5xZ):** na/nb + P2b (Timeline attribution of the y≈1960 frame) -> morph attribution
+**CAVEAT, host display state (arch-unknowns U1, `research/architecture/unknowns-validity.md`; lead 11:0xZ):** Chrome
+baseline fps is ~76 with the display on vs ~93 in DarkWake, so the "~93 fps floor" (04:25Z) and the canary drift 92 -> 76
+may be the host, not the tools. **From 11:01:46Z every hold runs display-on** (`caffeinate -d -i -s`, user-approved; lead
+restarts it every 2 h), which matches how the user uses the site. Chrome results before 11:01Z compare with later ones
+**only if `pmset` shows the display was on**; **the DarkWake runs (00:17-06:21Z, ~93 fps baselines) compare with nothing
+after them.** Back-tagging existing results.json/canaries from `pmset -g log` is a desk task (fix-scroll-engine, for the
+T8 host-record ticket). Also U2: phone rAF timestamps are off the vsync grid -> every phone verdict in k-ticks AND
+legacy ms; U5: the warm-up covers every arm's port; U7/U9: `Date.now()` + settings fingerprint per run (T2 schema).
+**Gesture/WDA tool landed (main 5d357b1, review-gesture-2 ACCEPT):** the G driver exists; its first real run (V1: aw1-10c
+vs mw-g) waits for the user's one-time WDA signing setup. **Bundled user asks (lead presents after arch-lead's
+synthesis):** WDA signing setup, Instruments pairing (gates the render-bound class), finger batch (incl. the R2 clip look).
+**iPhone queue (v2, lead-approved 10:5xZ, + 10:59Z y≈1960 blocks):** morph attribution session (P2/P3 + ghbn mech check +
+P-016 hold-250 pair) -> y≈1960 block A (F1 mw10e-arm-load) -> block B (F2 mw10e-arm-idle) -> hero 2 blocks + P3b -> R2 bg
+-> /10d -> N12 -> R3/h3.
+**iPhone queue (v2, lead-approved 10:5xZ, superseded):** na/nb + P2b (Timeline attribution of the y≈1960 frame) -> morph attribution
 session (de-safari P2/P3) -> hero 2 blocks + P3b (LayerTree census y 580/780 before any v6/v7 bisect) -> R2 bg -> /10d ->
 N12 -> R3/h3. Only ticketed builds; reorders only at block boundaries. Ticket and queue rules: `fixes/LEAD.md` "Stages and
 gates", paragraph "Slot tickets (phone access)"; card templates (incl. the prediction card): `fixes/_template/CARDS.md`.

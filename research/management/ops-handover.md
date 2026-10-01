@@ -3,7 +3,7 @@
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
 **mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **10:48Z**.
+snapshot), branch `mgmt-ops/docs-2`. Last update: **11:05Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +16,11 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:48Z**.
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **11:05Z** Tickets validated: y≈1960 F1/F2 as two 2-arm blocks after the morph session (lead confirmed), de-pm-morph
+  hold-250 pair (P-016). U1 display caveat in DIRECTION (display-on from 11:01:46Z; DarkWake runs compare with nothing
+  later); back-tag desk task -> fix-scroll-engine. U5/U7/U9/U2 routed (runner, ts-iphone-run, ts-analysis,
+  doc-protocol-v2). Gesture tool landed 5d357b1; user asks bundled: WDA signing, Instruments pairing, finger batch.
 
 - **10:48Z** y≈1960 NAMED: na (listeners armed at setup) 104/107 -> 34/35 ms, nb stays; P2b = style 34-42 + composite
   58-72 ms. fix-nav-morph: attribution card -> lead, then landable fix + ticket. ghr85a held (no ticket). Runner next:
@@ -191,8 +196,8 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:48Z**.
    finger verdict (C/D postponed until a morph render fix exists).
 3. WATCH (lead 08:31Z): canary A/A on 43e40ce fps 78.3 / > 20 ms 57 / p95 25 vs ~92 / ~25 at 04:25Z on 93b4af2. If the next
    goal-hold A/A also shows ~78 fps → incident + A/A 93b4af2 vs 43e40ce in one hold.
-4. Caffeinate: restarted 10:07Z, runs to ~12:07Z → remind the lead at ~11:57Z (restart every 2 h until the user sets
-   pmset).
+4. Caffeinate: now `caffeinate -d -i -s` (display on, user-approved) since 11:01:46Z; the lead restarts it every 2 h →
+   remind the lead at ~12:50Z.
 5. ts-gesture (WDA gesture tool, branch worktree-agent-a83a0f8d7c6fe96b6; applies once review-gesture-2 passes and the lead
    lands it; the user's WDA setup is still pending): (a) `wda build` runs only inside its own NORMAL chrome-measure hold and
    with the iphone lease, exactly `node tools/lock.mjs run chrome-measure --owner iphone-runner --max-seconds 600 -- node
