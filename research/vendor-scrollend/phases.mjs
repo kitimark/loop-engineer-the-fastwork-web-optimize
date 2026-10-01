@@ -30,6 +30,11 @@ mkdirSync(OUT, { recursive: true });
 const BASE = resolveTree('site-pretty');
 const t0 = Date.now();
 const log = (...a) => console.log(`[phases ${((Date.now() - t0) / 1000).toFixed(1)}s]`, ...a);
+// Bounded steps: a hang must never keep the chrome-measure hold (this runs inside a normal, uncapped hold).
+async function step(name, p, ms) {
+  let to; try { return await Promise.race([p, new Promise((_, rej) => { to = setTimeout(() => rej(new Error(`step "${name}" timed out after ${ms} ms`)), ms); })]); }
+  finally { clearTimeout(to); }
+}
 const ov = (t) => join(REPO, 'fixes', t, 'overlay');
 if (ON && !existsSync(ov(ON))) { console.error(`--on ${ON}: ${ov(ON)} missing`); process.exit(2); }
 const VARIANTS = [
@@ -87,24 +92,24 @@ async function run(cdp, v, url) {
   await page.send('Page.addScriptToEvaluateOnNewDocument', { source: HOOK });
   await page.send('Page.bringToFront');
   await page.send('Network.enable');
-  await gotoAndSettle(page, url, { quietMs: 2000 });
+  await step('load', gotoAndSettle(page, url, { quietMs: 2000 }), 60000);
   await sleep(1500);
-  const loc = await page.eval('({ href: location.href, h: document.documentElement.scrollHeight })');
+  const loc = await step('loc', page.eval('({ href: location.href, h: document.documentElement.scrollHeight })'), 15000);
   if (!/^https:\/\/localhost/.test(loc.href) || loc.h < 2000) throw new Error('page did not load: ' + JSON.stringify(loc));
   await page.send('Emulation.setCPUThrottlingRate', { rate: CPU });
   await sleep(1000);
-  const now = () => page.eval('Math.round(performance.now())');
+  const now = () => step('now', page.eval('Math.round(performance.now())'), 30000);
   const m = { scroll0: await now() };
-  await page.eval(SCROLL, { timeout: 600000 });
+  await step('scroll', page.eval(SCROLL, { timeout: 600000 }), 240000);
   await sleep(500);
   m.morph0 = await now();
-  for (let i = 0; i < 4; i++) await page.send('Input.synthesizeScrollGesture', { x: 215, y: 700, yDistance: -500, speed: 1200, gestureSourceType: 'touch', repeatCount: 1 });
+  for (let i = 0; i < 4; i++) await step('gesture', page.send('Input.synthesizeScrollGesture', { x: 215, y: 700, yDistance: -500, speed: 1200, gestureSourceType: 'touch', repeatCount: 1 }), 60000);
   await sleep(2000);
   m.tail0 = await now();
   await sleep(TAIL_S * 1000);
   m.end = await now();
   await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-  const S = await page.eval('JSON.parse(JSON.stringify(window.__n11p))');
+  const S = await step('collect', page.eval('JSON.parse(JSON.stringify(window.__n11p))'), 30000);
   await page.close();
   const phase = (t) => (t < m.scroll0 ? 'pre' : t < m.morph0 ? 'scroll' : t < m.tail0 ? 'morph' : t < m.end ? 'tail' : 'post');
   const isTag = (e) => e.scripts.some((s) => /googletagmanager/.test(s.src) && /scrollend/i.test(String(s.inv)));
@@ -139,7 +144,7 @@ try {
   for (let i = 0; i < RUNS; i++) {
     const order = i % 2 ? [...VARIANTS].reverse() : VARIANTS; // ABBA
     for (const v of order) {
-      const r = await run(cdp, v, servers[v.label].url); r.run = i;
+      let r; try { r = await run(cdp, v, servers[v.label].url); } catch (e) { log(`${v.label} run ${i} FAILED: ${e.message}`); out.results.push({ variant: v.label, run: i, error: e.message }); save(); continue; } r.run = i;
       out.results.push(r); save();
       log(`${v.label} run ${i}: push ${JSON.stringify(r.scrollDepthPush)}; tag frames ${JSON.stringify(r.tagFrames.map((f) => `${f.phase} ${f.d}ms`))}; gt50 ${JSON.stringify(r.gt50)}; LoAF>50 ${JSON.stringify(r.loafGt50)}`);
     }

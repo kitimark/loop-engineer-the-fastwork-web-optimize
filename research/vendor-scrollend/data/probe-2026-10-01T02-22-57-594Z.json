@@ -1,0 +1,136 @@
+{
+ "tool": "research/vendor-scrollend/probe.mjs",
+ "cpu": 1,
+ "tailS": 4,
+ "startedAt": "2026-10-01T02:22:57.595Z",
+ "host": {
+  "load1Before": 6.20703125
+ },
+ "runs": [
+  {
+   "variant": "base",
+   "scenario": "load-no-hook",
+   "loc": {
+    "href": "https://localhost:54515/",
+    "h": 6240,
+    "kit": true,
+    "dl": 6
+   }
+  },
+  {
+   "variant": "base",
+   "scenario": "A",
+   "listeners": [
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /__vendor/www.googletagmanager.com/gtag/js:903",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /__vendor/www.googletagmanager.com/gtag/js:903"
+   ],
+   "scroll": {
+    "t0": 3724,
+    "tEnd": 12105,
+    "ticks": 27,
+    "y": 5345,
+    "h": 6277
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 10699,
+     "y": 5345
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section",
+    "gtm.scrollDepth"
+   ],
+   "dlBeforeLeave": 12,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 10709,
+     "kind": "fetch",
+     "afterLeave": false
+    },
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 10709,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 4,
+    "fetch api2.amplitude.com": 2,
+    "fetch www.google-analytics.com": 2
+   },
+   "shimNeutered": {
+    "img www.googletagmanager.com": 11,
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "attribution": {
+    "listenerAt": "903:244",
+    "invocations": 1,
+    "samplesUs": 10288,
+    "selfTop": [
+     "7.2% get cookie :0:0",
+     "7.2% XQ /__vendor/www.googletagmanager.com/gtag/js:983:292",
+     "6.7% f /__vendor/www.googletagmanager.com/gtag/js:283:610",
+     "5.9% ho /__vendor/www.googletagmanager.com/gtag/js:461:539",
+     "3.9% db /__vendor/www.googletagmanager.com/gtag/js:239:562",
+     "3.9% nA /__vendor/www.googletagmanager.com/gtag/js:666:103",
+     "3.9% Uj /__vendor/www.googletagmanager.com/gtag/js:416:12",
+     "3.8% l.Ht /__vendor/www.googletagmanager.com/gtag/js:1028:242",
+     "3.8% $c /__vendor/www.googletagmanager.com/gtag/js:263:291",
+     "3.8% DD.enqueue /__vendor/www.googletagmanager.com/gtm.js:615:30",
+     "3.7% (anon) /__vendor/www.googletagmanager.com/gtag/js:830:310",
+     "3.7% GE /__vendor/www.googletagmanager.com/gtag/js:755:398",
+     "3.7% (anon) /__vendor/www.googletagmanager.com/gtag/js:922:216",
+     "3.7% Ua.get /__vendor/www.googletagmanager.com/gtag/js:236:388",
+     "3.7% cR /__vendor/www.googletagmanager.com/gtag/js:993:16",
+     "3.7% Ob /__vendor/www.googletagmanager.com/gtag/js:249:12",
+     "3.6% Qq /__vendor/www.googletagmanager.com/gtag/js:497:12",
+     "3.5% (anon) /__vendor/www.googletagmanager.com/gtag/js:365:77",
+     "3.5% Rd /__vendor/www.googletagmanager.com/gtag/js:281:365",
+     "3.5% hQ /__vendor/www.googletagmanager.com/gtag/js:963:102",
+     "3.4% rec :4:15",
+     "3.4% ge /__vendor/www.googletagmanager.com/gtag/js:293:12",
+     "3% xg /__vendor/www.googletagmanager.com/gtm.js:276:16",
+     "2.8% $z /__vendor/www.googletagmanager.com/gtag/js:659:12",
+     "0.9% l.apply /__vendor/www.googletagmanager.com/gtag/js:280:444"
+    ],
+    "byScript": [
+     "82.6% /__vendor/www.googletagmanager.com/gtag/js",
+     "7.2% (get cookie)",
+     "6.8% /__vendor/www.googletagmanager.com/gtm.js",
+     "3.4% (rec)",
+     "0% (native)",
+     "0% (w)",
+     "0% /_app/immutable/chunks/CzkAa0og.js"
+    ]
+   }
+  }
+ ]
+}
