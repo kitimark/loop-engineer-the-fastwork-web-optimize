@@ -192,6 +192,41 @@ Chrome check (`src-check.mjs`, short lane, mobile 6x, mechanism/state only; `pro
 
 de-middle's other R1 items (`inert` until the morph, listeners once passive) are not needed for this frame.
 
+### R8 and R5a on gh (de-morph): `mw10e-ghr8`, `mw10e-ghr85a`
+
+Both are built on `mw10e-gh` (`--on aw1-10e`) and keep the debug driver hook.
+
+- **R8:** `S()` toggles `is-morph-covered` on the nav and on `.start-selling-platform` exactly when `--morph-fade` reaches 0
+  (`QM(r) = 1 - min(1, r / KM)`, so `t <= 1e-4`). The class is written once per edge, not per frame. CSS:
+  `.start-selling-top-nav.is-morph-covered { backdrop-filter: none !important }` and
+  `.start-selling-platform.is-morph-covered { filter: none !important }`.
+  - JS ce2a9bb3fa72… (the same in both builds). CSS: ghr8 a9ed752953d7…, ghr85a 1d1846a92311….
+  - Diffs: `variants-10e/ghr8.diff` (+102 -5), `variants-10e/ghr85a.diff` (+106 -5).
+- **R5a (ghr85a only):** `.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track { will-change: transform !important }`.
+  The 5 column tracks keep their layers while the scene is paused, so the tween start does not create them.
+  - R5(b) was not built. R5(b) would flip the scene to active at the IO, and that moves layer creation into the y≈1830 IO frame
+    (the #2 frame above).
+
+**Chrome check (`r8-parity.mjs`, short lane, 430x932 DPR1, morph frozen with animations paused).** The pixel diff inside the
+nav rect compares the class on vs off at m = 0.55 / 0.7 / 0.9 / 1:
+
+| class toggled on | 0.55 | 0.7 | 0.9 | 1 |
+|---|---|---|---|---|
+| platform only | 0 % | 0.12 % | 0 % | 0.04 % |
+| nav only | **1.04 %** | 0.55 % | 0.08 % | 0 % |
+| both (ghr85a) | 1.04 % | 0.52 % | 0.06 % | 0 % |
+
+- **The platform half is exact.** #platform's computed opacity is 0 at fade 0.
+- **The nav half is NOT exact before m ≈ 0.9.** The nav backdrop also blurs the end-of-page section under the nav, which is the
+  countdown / "Join waitlist" block, not only #platform. At m = 0.55 the residual radius is 9 px. The change is subtle (the edges
+  are a little sharper) and lasts ~200 ms while moving, but it is a pixel change.
+- An exact variant would gate the nav at m ≥ 0.9, inside the 0-0.4 % noise band, while keeping the platform at fade 0. Under
+  ease-out-cubic over 680 ms, m reaches 0.9 at ~365 ms (0.55 at ~160 ms). It is built only if ghr8 wins on the phone.
+- **State during a real morph** (driver hook, sampled per rAF, both builds):
+  - the class is on only at m ≥ 0.55 (first on at 0.550-0.568), never off above 0.56, and off again at the end;
+  - no exceptions;
+  - in ghr85a all 5 tracks compute `will-change: transform` while their scenes are paused.
+
 ## Composited morph (N2), if b names the blur
 
 Each morph frame currently changes:

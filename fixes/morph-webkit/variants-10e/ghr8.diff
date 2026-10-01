@@ -1,0 +1,174 @@
+# fastwork mirror fix: mw10e-ghr8
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw10e-ghr8 --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11818,5 +11818,31 @@
+ @media (prefers-reduced-motion: reduce) {
+   html {
+     scroll-behavior: auto;
++  }
++}
++
++/* ABLATION h-fixedpanel (phone only; research/design-engineering/morph-endpage.md R1). The morph panel keeps its
++   final size, clipped by the nav, so nothing inside it is resized (re-rasterized) per frame. Center and footer
++   follow the nav height H(m) = 52px + (panel-h - 52px) * m by translate; the veil by scaleY (set in JS, S()). */
++@media (width<=640px) {
++  .start-selling-top-nav .start-selling-morph-panel {
++    inset: 0 auto auto 50%;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    translate: -50% 0;
++    transform-origin: 50% calc((52px + (var(--panel-h) - 52px) * var(--morph)) / 2);
++  }
++  .start-selling-top-nav .start-selling-morph-center {
++    translate: 0 calc((52px + (var(--panel-h) - 52px) * var(--morph) - var(--panel-h)) / 2);
+   }
++  .start-selling-top-nav .start-selling-morph-footer {
++    translate: 0 calc(52px + (var(--panel-h) - 52px) * var(--morph) - var(--panel-h));
++  }
++  .start-selling-top-nav .start-selling-morph-veil {
++    transform-origin: top;
++  }
+ }
++
++/* perf(morph R8): exact; see S(). Nav backdrop blur and platform filter off while the platform is fully faded */
++.start-selling-top-nav.is-morph-covered { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
++.start-selling-platform.is-morph-covered { filter: none !important; }
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13272,20 +13272,50 @@
+         z(p, i / r >= 0.72);
+       },
+       y = () => document.querySelector(`.start-selling-platform`),
++      __ghMq = window.matchMedia(`(width <= 640px)`),
++      __ghVeil = null,
++      __ghHf = 0,
++      __r8 = !1,
+       S = () => {
+         let e = y();
+         if (!e) return;
+         let t = QM(r);
+         (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
++        // perf(morph R8): once the written fade is 0, #platform is opacity:0 and only the uniform #f5f5f3 page
++        // background is behind the nav, so the nav's backdrop blur and the platform's filter are pixel no-ops:
++        // switch both off with one class, toggled only when the threshold is crossed.
++        let __cv = t <= 1e-4;
++        if (__cv !== __r8) {
++          __r8 = __cv;
++          let n = __navEl(`header.start-selling-top-nav`);
++          (n && n.classList.toggle(`is-morph-covered`, __cv), e.classList.toggle(`is-morph-covered`, __cv));
++        }
++        // ABLATION h-fixedpanel (phone only, research/design-engineering/morph-endpage.md R1): the panel keeps its
++        // final size (CSS); the veil follows the nav height H(m) = 52 + (Hf - 52) m by scaleY. CSS can't divide
++        // lengths, so the ratio is computed here from Hf = the fixed panel height, read once per morph.
++        if (__ghMq.matches) {
++          let n = __ghVeil?.isConnected ? __ghVeil : (__ghVeil = document.querySelector(`.start-selling-top-nav .start-selling-morph-veil`));
++          if (n) {
++            __ghHf || (__ghHf = n.parentElement.offsetHeight || 1);
++            n.style.transform = `scaleY(${(52 + (__ghHf - 52) * r) / __ghHf})`;
++          }
++        }
+       },
+       C = () => w > 0.001 || r > 0.001,
++      // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past
++      // the end can't overscroll the page underneath the morph (one style write per morph start/end)
++      __osbV = ``,
++      __osb = () => {
++        let e = C() ? `none` : ``;
++        e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
++      },
+       T = (e) => {
+         let t = ZM(i, a, e - o);
+-        ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), C() || I());
++        ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
+       },
+       E = (t) => {
+         if (w !== t || a !== t) {
+-          if (((w = t), z(b, !0), e.matches)) {
++          if (((w = t), (__ghHf = 0), z(b, !0), __osb(), e.matches)) {
+             ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
+             return;
+           }
+@@ -13309,7 +13339,7 @@
+       },
+       k = (e) => C() || (e > 0 && O()),
+       A = (e) => {
+-        k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
++        k(e.deltaY) && (C() || (s = __pinY()), e.preventDefault(), D(e.deltaY));
+       },
+       j = (e) => {
+         c = e.touches[0]?.clientY ?? 0;
+@@ -13317,7 +13347,7 @@
+       M = (e) => {
+         let t = e.touches[0]?.clientY ?? c,
+           n = c - t;
+-        ((c = t), k(n) && (C() || (s = window.scrollY), e.preventDefault(), D(n)));
++        ((c = t), k(n) && (C() || (s = __pinY()), e.preventDefault(), D(n)));
+       },
+       N = () => {
+         d ||
+@@ -13336,8 +13366,18 @@
+       I = () => {
+         u || C() ? N() : P();
+       },
++      // perf(morph-webkit): the pin fought iOS rubber-band at the end of the page. A morph started during the
++      // overscroll bounce stored s = scrollY > maxY (5312 vs 5220), so every frame scrollTo(s) was clamped to
++      // maxY, scrollY !== s again, and the pin re-fired: scrollY alternated 5220 <-> 5312 at ~13 fps. Now the
++      // pin target is clamped to [0, maxY], and the pin leaves the overscroll range (scrollY > maxY) alone:
++      // iOS springs back to maxY by itself.
++      __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
++      __pinY = () => Math.min(window.scrollY, __pinMax()),
+       L = () => {
+-        (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
++        if ((_(), !C())) return;
++        let e = window.scrollY,
++          t = __pinMax();
++        (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
+       },
+       R = y(),
+       te = R
+@@ -13349,6 +13389,37 @@
+           )
+         : void 0;
+     (R && te && te.observe(R), _(), m());
++    // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
++    // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
++    // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
++    window.__fwMorphDrive = (o = {}) => {
++      let h = o.hold ?? 2e3,
++        c = o.cycles ?? 3,
++        f = [],
++        l = performance.now(),
++        u = !0,
++        d = (e) => new Promise((t) => setTimeout(t, e)),
++        p = (e) => {
++          (f.push([Math.round(e * 10) / 10, Math.round((e - l) * 10) / 10, Math.round(window.scrollY), Math.round(r * 1e3) / 1e3]), (l = e), u && requestAnimationFrame(p));
++        };
++      return (
++        (window.__fwMD = null),
++        window.scrollTo({ top: __pinMax(), behavior: `instant` }),
++        (async () => {
++          (await d(800), requestAnimationFrame(p), await d(300));
++          for (let e = 0; e < c; e++) (C() || (s = __pinY()), E(1), await d(h), E(0), await d(h));
++          u = !1;
++          let e = (e) => {
++              let t = e.map((e) => e[1]).sort((e, t) => e - t),
++                n = (e) => (t.length ? t[Math.min(t.length - 1, Math.floor(e * t.length))] : null);
++              return { frames: t.length, gt20: t.filter((e) => e > 20).length, gt34: t.filter((e) => e > 34).length, gt50: t.filter((e) => e > 50).length, p50: n(0.5), p95: n(0.95), max: t.at(-1) ?? null };
++            },
++            t = f.slice(1),
++            n = { href: location.href, hold: h, cycles: c, all: e(t), moving: e(t.filter((e) => e[3] > 0.001 && e[3] < 0.999)), atOne: e(t.filter((e) => e[3] >= 0.999)), atZero: e(t.filter((e) => e[3] <= 0.001)), frames: f };
++          return ((window.__fwMD = JSON.stringify(n)), n);
++        })()
++      );
++    };
+     let ne = dE(L, { manageAnimations: !1 });
+     return (
+       e.addEventListener(`change`, m),
