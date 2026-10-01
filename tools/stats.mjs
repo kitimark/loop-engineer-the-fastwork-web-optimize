@@ -133,12 +133,16 @@ if (cmd === 'ticks') {
   if (!runs.length) die('place: no frames');
   let placed;
   try { placed = runs.map((r) => ({ label: r.label, run: r.run, source: r.source, frames: placeFrames(r.frames, thresholds, { minDt, viewport, tops: r.tops }) })); } catch (e) { die(`place: ${e.message}`); }
-  if (asJson) console.log(JSON.stringify({ minDt, viewport, runs: placed }, null, 1));
+  // frames without a scroll position (logger --y-source none) are listed but not placed
+  const warnings = placed.map((r) => [r, r.frames.filter((x) => x.noY).length]).filter(([, n]) => n).map(([r, n]) => `${r.source ?? r.label ?? '-'}: ${n} of ${r.frames.length} frame(s) have no scroll position (y source none?): not placed`);
+  for (const w of warnings) console.error(`WARN ${w}`);
+  if (asJson) console.log(JSON.stringify({ minDt, viewport, warnings, runs: placed }, null, 1));
   else {
     console.log(`frames >= ${f(minDt)} ms at their nearest crossing (delta 0 = crossed in the frame, + = past it); viewport ${JSON.stringify(viewport)}`);
+    for (const w of warnings) console.log(`WARN ${w}`);
     for (const r of placed) {
       console.log(`\n${r.label ?? '-'} run ${r.run} (${r.source}): ${r.frames.length} frame(s)`);
-      for (const x of r.frames) console.log(`  dt ${f(x.dt)} (k ${x.k})  y ${f(x.yStart)}->${f(x.yEnd)}  ih ${x.innerHeight ?? '-'}  ${x.crossing} @ ${f(x.crossingY)} [${x.unit}, top ${x.topSource}]  delta ${f(x.delta)}`);
+      for (const x of r.frames) console.log(x.noY ? `  dt ${f(x.dt)} (k ${x.k})  no y: not placed` : `  dt ${f(x.dt)} (k ${x.k})  y ${f(x.yStart)}->${f(x.yEnd)}  ih ${x.innerHeight ?? '-'}  ${x.crossing} @ ${f(x.crossingY)} [${x.unit}, top ${x.topSource}]  delta ${f(x.delta)}`);
     }
   }
 } else die(USAGE);

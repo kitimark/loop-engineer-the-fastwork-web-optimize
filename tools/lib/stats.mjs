@@ -257,6 +257,8 @@ export function crossingY(th, ih, { viewport = {}, tops = {} } = {}) {
 
 /** Place one frame {yStart, yEnd, innerHeight}: every threshold's delta, and the nearest crossing. */
 export function placeFrame(frame, thresholds, opts = {}) {
+  // no scroll position (logger --y-source none): not placeable; Math.min(null, null) would read as y = 0
+  if (![frame.yStart, frame.yEnd].every((y) => typeof y === 'number' && Number.isFinite(y))) return { nearest: null, all: [], noY: true };
   const lo = Math.min(frame.yStart, frame.yEnd), hi = Math.max(frame.yStart, frame.yEnd);
   let best = null;
   const all = thresholds.map((th) => {
@@ -272,23 +274,25 @@ export function placeFrame(frame, thresholds, opts = {}) {
 /** Frames (normalized objects) with dt >= minDt placed at their nearest crossing. */
 export function placeFrames(frames, thresholds, { minDt = tickThresholdMs(K34), ...opts } = {}) {
   return frames.filter((fr) => fr.dt >= minDt).map((fr) => {
-    const { nearest } = placeFrame(fr, thresholds, opts);
-    return { t: fr.t, dt: fr.dt, k: tick(fr.dt), yStart: fr.yStart, yEnd: fr.yEnd, innerHeight: fr.innerHeight, m: fr.m ?? null, crossing: nearest?.id ?? null, crossingY: nearest?.y ?? null, delta: nearest?.delta ?? null, unit: nearest?.unit ?? null, topSource: nearest?.topSource ?? null };
+    const { nearest, noY } = placeFrame(fr, thresholds, opts);
+    return { ...(noY ? { noY: true } : {}), t: fr.t, dt: fr.dt, k: tick(fr.dt), yStart: fr.yStart, yEnd: fr.yEnd, innerHeight: fr.innerHeight, m: fr.m ?? null, crossing: nearest?.id ?? null, crossingY: nearest?.y ?? null, delta: nearest?.delta ?? null, unit: nearest?.unit ?? null, topSource: nearest?.topSource ?? null };
   });
 }
 
 // ---------------------------------------------------------------- input normalisation (both devices)
 
-const FIELDS = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'jsMs', 'probeMs']; // fw-iphone-run/1 `fields`
+// fw-iphone-run/1 `fields` (ts-iphone-run 4f0bfd4/e96e5b5): [t, dt, yStart, yEnd, innerHeight, m, rafJsMs, probeMs, docH];
+// rafJsMs is read as jsMs. yStart/yEnd/docH are null with --y-source none (such frames can't be placed).
+const FIELDS = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'jsMs', 'probeMs', 'docH'];
 
-/** A frame as {t, dt, yStart, yEnd, innerHeight, m, jsMs, probeMs} from a fw-iphone-run/1 tuple, an object, or a Chrome [t, dt, y]. */
+/** A frame as {t, dt, yStart, yEnd, innerHeight, m, jsMs, probeMs, docH} from a fw-iphone-run/1 tuple, an object, or a Chrome [t, dt, y]. */
 export function normalizeFrame(fr, prevY = null, ih = null) {
   if (Array.isArray(fr)) {
-    if (fr.length <= 3) { const y = fr[2] ?? null; return { t: fr[0], dt: fr[1], yStart: prevY ?? y, yEnd: y, innerHeight: ih, m: null, jsMs: null, probeMs: null }; }
+    if (fr.length <= 3) { const y = fr[2] ?? null; return { t: fr[0], dt: fr[1], yStart: prevY ?? y, yEnd: y, innerHeight: ih, m: null, jsMs: null, probeMs: null, docH: null }; }
     const o = {}; FIELDS.forEach((k, i) => { o[k] = fr[i] ?? null; }); return o;
   }
   const yEnd = fr.yEnd ?? fr.y ?? null;
-  return { t: fr.t, dt: fr.dt, yStart: fr.yStart ?? prevY ?? yEnd, yEnd, innerHeight: fr.innerHeight ?? ih, m: fr.m ?? null, jsMs: fr.jsMs ?? null, probeMs: fr.probeMs ?? null };
+  return { t: fr.t, dt: fr.dt, yStart: fr.yStart ?? prevY ?? yEnd, yEnd, innerHeight: fr.innerHeight ?? ih, m: fr.m ?? null, jsMs: fr.jsMs ?? fr.rafJsMs ?? null, probeMs: fr.probeMs ?? null, docH: fr.docH ?? null };
 }
 
 const normFrames = (frames, ih) => { let prev = null; return frames.map((f) => { const n = normalizeFrame(f, prev, ih); prev = n.yEnd; return n; }); };

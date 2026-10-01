@@ -278,15 +278,22 @@ test('crossings: y = top - f * base per unit (ih = frame innerHeight, lvh/svh = 
   assert.equal(placeFrame(fr(520, 530), ths, { viewport }).nearest.delta, 20);
   const placed = placeFrames([fr(1600, 1620), { ...fr(2180, 2200), dt: 37.4 }, { ...fr(510, 530), dt: 60 }], ths, { viewport });
   assert.deepEqual(placed.map((p) => [p.crossing, p.k, p.delta]), [['io', 5, 0], ['abs', 7, 10]], 'frames under 37.5 ms are left out');
+  // --y-source none: yStart/yEnd null -> not placed (Math.min(null, null) used to read as y = 0)
+  const noY = { ...fr(null, null), dt: 60 };
+  assert.deepEqual(placeFrame(noY, ths, { viewport }), { nearest: null, all: [], noY: true });
+  assert.deepEqual(placeFrames([noY], ths, { viewport }).map((p) => [p.noY, p.crossing, p.delta]), [[true, null, null]]);
 });
 
 test('input: Chrome [t, dt, y] and §5.5 tuples and objects normalise; iPhone run files; blocks per arm', () => {
-  assert.deepEqual(normalizeFrame([10, 40, 120], 100, 932), { t: 10, dt: 40, yStart: 100, yEnd: 120, innerHeight: 932, m: null, jsMs: null, probeMs: null });
-  assert.deepEqual(normalizeFrame([10, 40, 100, 120, 775, 0.5, 3, 0.2]), { t: 10, dt: 40, yStart: 100, yEnd: 120, innerHeight: 775, m: 0.5, jsMs: 3, probeMs: 0.2 });
-  assert.deepEqual(normalizeFrame({ t: 1, dt: 2, y: 5 }, 3), { t: 1, dt: 2, yStart: 3, yEnd: 5, innerHeight: null, m: null, jsMs: null, probeMs: null });
+  assert.deepEqual(normalizeFrame([10, 40, 120], 100, 932), { t: 10, dt: 40, yStart: 100, yEnd: 120, innerHeight: 932, m: null, jsMs: null, probeMs: null, docH: null });
+  assert.deepEqual(normalizeFrame([10, 40, 100, 120, 775, 0.5, 3, 0.2]), { t: 10, dt: 40, yStart: 100, yEnd: 120, innerHeight: 775, m: 0.5, jsMs: 3, probeMs: 0.2, docH: null });
+  // fw-iphone-run/1 final fields (ts-iphone-run e96e5b5): docH appended; rafJsMs read as jsMs
+  assert.deepEqual(normalizeFrame([10, 40, 100, 120, 775, 0.5, 3, 0.2, 5600]), { t: 10, dt: 40, yStart: 100, yEnd: 120, innerHeight: 775, m: 0.5, jsMs: 3, probeMs: 0.2, docH: 5600 });
+  assert.deepEqual(normalizeFrame({ t: 1, dt: 2, yStart: 0, yEnd: 4, rafJsMs: 3, docH: 9 }), { t: 1, dt: 2, yStart: 0, yEnd: 4, innerHeight: null, m: null, jsMs: 3, probeMs: null, docH: 9 });
+  assert.deepEqual(normalizeFrame({ t: 1, dt: 2, y: 5 }, 3), { t: 1, dt: 2, yStart: 3, yEnd: 5, innerHeight: null, m: null, jsMs: null, probeMs: null, docH: null });
   const v = runsFromJson({ results: [{ label: 'base', run: 0, frameLog: { scroll: [[0, 16, 0], [16, 40, 30]] } }, { diff: true }] }, { innerHeight: 932 });
   assert.equal(v.length, 1);
-  assert.deepEqual(v[0].frames[1], { t: 16, dt: 40, yStart: 0, yEnd: 30, innerHeight: 932, m: null, jsMs: null, probeMs: null });
+  assert.deepEqual(v[0].frames[1], { t: 16, dt: 40, yStart: 0, yEnd: 30, innerHeight: 932, m: null, jsMs: null, probeMs: null, docH: null });
   const ip = runsFromJson({ frames: [[0, 16, 0, 0, 775, null, 1], [16, 40, 0, 30, 775, null, 2], [56, 16, 30, 40, 775, null, 1]], marks: { scroll: [10, 60] }, meta: { label: 'x', block: 1, arm: 'V', driver: 'S' }, tops: { io: 1 } });
   assert.deepEqual([ip[0].frames.length, ip[0].arm, ip[0].block, ip[0].driver, ip[0].tops.io], [2, 'V', 1, 'S', 1]);
   // blocks from runs: k>=5 count per run; the warm-up and a voided run are skipped
@@ -402,5 +409,10 @@ test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over 
   assert.deepEqual(p.runs[0].frames.map((x) => [x.crossing, x.delta, x.topSource]), [['abs', -5, 'absolute'], ['abs', 0, 'absolute'], ['io', 0, 'run']]);
   r = node(tool('stats.mjs'), ['place', join(d, 'tops.json'), '--thresholds', join(d, 'th.json')]);
   assert.match(r.stdout, /io @ 22.5 \[ih, top run\] {2}delta 0/);
+  writeFileSync(join(d, 'noy.json'), JSON.stringify({ frames: frames(2).map((x) => [x[0], x[1], null, null, 775, null, 1, 0.1, null]), meta: { label: 'n', ySource: 'none' } }));
+  r = node(tool('stats.mjs'), ['place', join(d, 'noy.json'), '--thresholds', join(d, 'th.json')]);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /^WARN .*noy.json: 2 of 2 frame\(s\) have no scroll position \(y source none\?\): not placed$/m);
+  assert.match(r.stdout, /^ {2}dt 40 \(k 5\) {2}no y: not placed$/m);
   assert.equal(node(tool('stats.mjs'), ['place', join(d, 'tops.json')]).code, 2);
 });
