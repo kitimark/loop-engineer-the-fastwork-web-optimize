@@ -68,6 +68,9 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **20:4xZ T-002 20:37Z: usage 78 %, hero + page-end only until 04:20 reset** (21:20Z). Live: fix-scroll-engine (st6
+  rotator, F-108 dirtier), fix-scene-scope (RB r4-v3 + morph start), iphone-runner (their finger checks); all else parked.
+  mgmt-ops-6 PARKED (lead resumes after 21:20Z). Unlanded: nothing. Phone: no lease, waits for root-hunt tickets.
 - **20:3xZ** Landed 0c90cdc (I-038 fix; npm test on main queued), f93f798 (iphone-wave2 §4s-4u), 7c1cdd5 (st5 split
   scored: P-042..P-044 HIT; st6 slide-start view 1/36 vs st5 24/35, C 71/71; trigger = animation-sampled opacity/
   transform flips; F-108 page-wide background dirtier). st6 = rotator F candidate (gain block deferred). New rules: Sim
