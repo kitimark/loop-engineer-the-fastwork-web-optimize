@@ -201,6 +201,13 @@ of the three without a stated reason.
 ### 3.7 Visual parity, paint, layers, memory, CLS
 
 - Parity: frozen-frame diff 0 % (P14); 0-0.4 % in `fix.mjs ab` is phase noise; backdrop by the user's eye.
+- **Chrome 154 (ts-render-signals probe, I-032):** `layerPainted` never fires (0 events against 360
+  `layerTreeDidChange` on a page that repaints every rAF; the DidPaint hook appears to have been dead since
+  CompositeAfterPaint). `--paint-rects` therefore falls back to per-layer `paintCount` deltas between consecutive
+  layer lists (`paintRects.source: 'paintCount'`). Its area is **layerMpx**, the full size of the layers that painted,
+  in physical px: an **upper bound**, never "paint area" or "clip". Deltas bind to the interval between two lists
+  (`binding: 'interval'` when lists are sparser than frames). The probe is opt-in, never in gain runs, and gets an
+  on/off A/A. The `layerPainted` clip sum below applies only where it fires.
 - **Paint area: from CDP `LayerTree.layerPainted` only** (opt-in `verify --paint-rects`). The trace `Paint.clip`
   is "unreliable and often wrong" per DevTools' own source: never an area source (corrects arch-devtools G3a; its
   Paint *count* is fine). Chrome's area is a lower bound on WebKit's for resizing layers, exact for paint-only
@@ -342,7 +349,7 @@ hold per A/B, compare within a hold.
   phase (F-025). Each fix's README lists which scenarios it ran and which it didn't.
 - Opt-in `--trace-frames` additions: `DroppedFrame` states (G1), `Layerize`/`UpdateLayerTree`/`Commit` split out
   of `paint` (de-devtools rank 4), `--save-trace` (G6) so the Performance panel can open a run.
-- Opt-in `--paint-rects` (LayerTree.layerPainted, de-devtools rank 2).
+- Opt-in `--paint-rects` (LayerTree.layerPainted where it fires, else paintCount deltas as a layer-size upper bound, §3.7; de-devtools rank 2).
 - Recalibrate 6x once per wave against the phone (G5), with the same logger on both sides.
 - Blind spots stated in every Chrome-only verdict: GPU, raster, WebKit layerization, threaded presentation.
 
