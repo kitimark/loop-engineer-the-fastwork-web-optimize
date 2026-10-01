@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R2 probe: does clip-path clip backdrop-filter?</title>
+<style>
+  body { margin: 0; font: 14px -apple-system, sans-serif; }
+  /* high-contrast stripes so a blur is obvious */
+  .bg { height: 200vh; background: repeating-linear-gradient(90deg, #000 0 6px, #fff 6px 12px); }
+  .box { position: fixed; left: 12px; right: 12px; height: 300px; background: #ffffff1a;
+         -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  /* A: no clip (reference) */
+  #a { top: 40px; }
+  /* B: clip-path inset with radius: only the middle 100px band (rounded) should be blurred if clip-path clips the backdrop */
+  #b { top: 380px; clip-path: inset(100px 40px 100px 40px round 24px); }
+  .label { position: fixed; left: 16px; background: #c00; color: #fff; padding: 2px 6px; z-index: 2; }
+  #la { top: 44px; } #lb { top: 384px; }
+  #out { position: fixed; bottom: 8px; left: 8px; right: 8px; background: #fff; color: #000; padding: 6px; z-index: 3; }
+</style>
+<div class="bg"></div>
+<div class="box" id="a"></div><div class="label" id="la">A: no clip</div>
+<div class="box" id="b"></div><div class="label" id="lb">B: clip-path inset(100px 40px round 24px)</div>
+<div id="out"></div>
+<script>
+  // Reading: in B, stripes must stay sharp outside the rounded middle band (top/bottom 100px, left/right 40px).
+  // If B shows a blurred 300px box, WebKit does not clip the backdrop blur by clip-path (R2 needs another clip).
+  const s = getComputedStyle(document.getElementById('b'));
+  document.getElementById('out').textContent = 'UA ' + navigator.userAgent.slice(0, 60) + ' | clip-path: ' + s.clipPath + ' | backdrop: ' + (s.backdropFilter || s.webkitBackdropFilter);
+  window.__fwClipProbe = { clipPath: s.clipPath, backdrop: s.backdropFilter || s.webkitBackdropFilter, ua: navigator.userAgent };
+</script>
