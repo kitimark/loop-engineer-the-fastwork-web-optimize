@@ -560,6 +560,87 @@ Block as ticketed:
   - V1 stays the "gone" reference.
   - This is the rotator question's third block, so the sequential rule (§5.3, ≤2 blocks per question) needs the lead's call. Alternatively, st5 could go to a gain block as is: it removes C's >50 and pairs at y 1500, but it is not at V1's level.
 
+## st5 split: noanim / waapi (lead's option (a); attribution only, timing deferred per the 19:27Z user direction)
+
+The question: which part of st5's slide start re-roots WebKit's Layout at the view (P-039: 15/33 slide-start ticks view,
+swap 1/31)? Is it the class toggle's style invalidation, or the creation of the 6 animations? Probe builds, not candidates.
+
+**Builds** (read-only copies in `<scratchpad>/layout-containment/snap2/`, made from st5; L11571, the rotator timer, unchanged):
+
+| arm | change vs st5 | JS sha256 | CSS sha256 |
+|---|---|---|---|
+| st5 | (P-039's) | 268a68962d18… | e68c99631e80… |
+| st5-noanim | CSS only: the three `.is-sliding` rules keep their selectors (the class still matches and invalidates) but set `animation: none` | 268a68962d18… (= st5) | db001ab4037d… |
+| st5-waapi | JS only: no class toggle; at `sl` the same keyframes, easings, 220 ms and `fill: forwards` start via `element.animate()` on the same 5 imgs (6 animations); cancelled in the same effect run as the src writes | bcb835679b55… | e68c99631e80… (= st5, `.is-sliding` never set) |
+| st6 (de-pm-hero's no-flip arm, a fix candidate if it holds) | CSS only: every carousel img rests at `transform: scale(1); opacity: 0.999`; avatars-exit starts and avatars-pop ends at opacity 0.999. No style change ever flips `hasTransform()` or `isOpaque()` | 268a68962d18… (= st5) | 7e40587580d3… |
+
+References: C aw1-10e (view at both tick types), V1 st4-noswap (gone).
+
+**st6's rationale** (de-pm-hero):
+- WebKit `Source/WebCore/style/StyleDifference.cpp` `miscDataChangeRequiresLayout` returns "layout" when `opacity.isOpaque()` or `transform->hasTransform()` flips. That this makes the change require layout is CONFIRMED (source); that it causes our view-rooted Layout is UNRESOLVED.
+- In st5, the exit flips both at the slide start, and the pop's forwards fill flips opacity.
+- de-pm-hero's sequence read of P-039 S2:
+  - The class toggle itself gives only a ~0.1 ms Layout.
+  - The whole-view Layout comes 1-2 frames later, after an animation-frame style recalc that invalidates layout.
+- **Counterpoint, to be settled by the data.** The swap (class off) flips too, and is clean (st5 swap 1/31):
+  - The lead slot goes from the exit's held scale(.35) / opacity 0 back to none / 1.
+  - The next slot goes from the pop's held 1 back to 0.
+  - So if flips are the cause, a flip escapes only when it comes from an animation sample, not from a script style change. One candidate: the carousel (104x32, overflow hidden, fixed size) acting as the layout root for the script-driven case. Those would be the 104x32 Layouts that P14/P-039 excluded as image loads. This is UNRESOLVED; the per-tick roots will show it.
+  - **de-pm-hero's root split of the existing P-039 data** (`p039swap.mjs`, Layouts 0-60 ms after each tick; OBSERVED) supports this:
+    - A carousel-rooted <1 ms Layout shows at the st5 swap in 34/34 ticks, against V1's 15/33 from image loads alone, and at the st5 start in 29/33, against V1's 0/33.
+    - The view ≥10 ms Layout comes a frame later, after an animation-frame recalc.
+    - Why the animation-driven path skips the carousel boundary is UNRESOLVED (finding F-102).
+
+**Predictions** (written before any data; WebKit = the Safari Timeline count; Chrome = the counts-only probe):
+- **The reading.** In st5 the class-OFF (swap) is clean and the class-ON (start) escapes. Both change the same selectors, and only ON creates animations. So the leading hypothesis is H-anim: creating the animations escapes, not the invalidation.
+- **WebKit, slide-start view share:**
+  - C ~100 %, V1 ≤10 %.
+  - st5 MIXED again (25-75 %).
+  - **st5-noanim gone (≤25 %).**
+  - **st5-waapi MIXED or view (≥25 %)**, about st5's level.
+  - The swap stays gone in all three st5 arms.
+  - If noanim stays MIXED and waapi is gone, H-anim is refuted and the class invalidation is the cause. Both MIXED or both gone means neither part alone explains it.
+  - **st6 gone (≤25 %) at the slide start, swap gone.** With no flip, the animations change only translate, scale, clip-path and non-opaque opacity, so nothing should require layout. If st6 stays MIXED, the flips are not the cause (de-pm-hero agrees to say so).
+  - The 104x32 carousel-rooted Layouts (info only): present at the swap in st5 and waapi (the script-driven flips), absent in st6 and noanim.
+- **WebKit, intermittency:** no prediction on why about half the starts escape. A per-tick read of the record next to the hits (style vs layout first, nested layouts) is info only.
+- **Chrome, slide start (counts per tick window, 430x775):**
+  - Animations on the carousel after the start: st5 6, waapi 6, st6 6, noanim 0.
+  - Flips per slide cycle, sampled per rAF from computed style (any img whose `transform` is `none` or `opacity` is `1`, before vs after): st5 and waapi ≥2, st6 0, noanim 0. This is Chrome's check that st6 really removes both flips.
+  - Parity: the screenshot diff of st6 vs st5 during the slide is ≤0.4 % (0.999 opacity is invisible).
+
+**Safari attribution ticket (split; attribution only, no fps or frame verdict, not a gain block).**
+- **Where.**
+  - On the Simulator if de-counts-sim's C/N gate passes (C ~all ticks view-rooted, N few).
+  - Otherwise on the phone: one attribution run per arm, after scene-scope's block.
+- **Arms**, all served from read-only snapshot copies and hash-checked at the start (JS / CSS sha256, first 12):
+
+  | arm | JS / CSS |
+  |---|---|
+  | C aw1-10e | 3e2f599a1632 / c6aad94b455f |
+  | V1 st4-noswap | b8c085d9b619 / c6aad94b455f |
+  | st5 | 268a68962d18 / e68c99631e80 |
+  | st5-noanim | 268a68962d18 / db001ab4037d |
+  | st5-waapi | bcb835679b55 / e68c99631e80 |
+  | st6 | 268a68962d18 / 7e40587580d3 |
+
+- **Run, per arm:**
+  - Driver W at 430x775. One uncounted warm-up per port.
+  - Timeline on (depth 8, Paint and Decode kept; `Page.disable` → `Page.enable` → `Timeline.start` after each navigation).
+  - 6 s idle at y 0 (carousel off screen), then 30 s idle at y 1500 (on screen), giving ≥15 ticks per type per arm.
+  - Order: C, V1, st5, noanim, waapi, st6, then C again as the drift check.
+  - Phone only: record temperature, battery and Low Power Mode. No sentinel verdict is attached.
+- **Scoring** (`p039score.cjs` rules plus de-pm-hero's root split, `p039swap.mjs`):
+  - Ticks are TimerFire at JS L11571 (the same line in all 6 arms). A tick is a swap when the gap is 150-400 ms, otherwise a slide start.
+  - Window per tick: tick to +260 ms. For every Layout in it, record the root class (view 430x770-820, carousel 104x32, other), the duration bucket (<1, 1-10, ≥10 ms) and whether it follows a script-started or an animation-frame style recalc.
+  - Per tick type: the share of ticks with a view-rooted Layout ≥10 ms. Bands: gone ≤25 %, view ≥50 %, MIXED otherwise.
+  - Sim: classify by root quad first, with 1 / 5 ms duration cuts; "cut-sensitive" if they disagree.
+- **Predictions:** above (written before data). The readable outcomes:
+  - noanim gone and waapi not gone: creating or sampling the animations causes it, not the class.
+  - st6 gone: the opacity / transform flips cause it, and st6 becomes the fix candidate for a later gain block. The gain block stays deferred per the 19:27Z direction.
+  - UpdateLayoutTree elementCount small (≤10) and about equal in st5, noanim and waapi (class invalidation vs animation targets touch the same ~5 imgs).
+  - No Layout in the start window that the scroll doesn't explain in any st5 arm. C remounts at the swap: a Layout plus a larger elementCount.
+  - **Chrome is not expected to discriminate:** every Chrome Layout on this page is view-rooted and ≤0.24 ms (P-039 build check). The Chrome step is the mechanism and parity check (animation counts, the class state, a 0 % screenshot diff waapi vs st5) more than evidence.
+
 ## Risks, conflicts, follow-ups
 
 - The orbit deck and the platform stage are hero-exit / platform topics' CSS: the rules touched are sizing only and
