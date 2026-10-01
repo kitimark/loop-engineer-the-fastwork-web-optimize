@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T20:08:00Z",
+ "updatedAt": "2026-10-01T20:20:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T20:20:00Z", "text": "Second style recording: one extra layout at the section switch can be removed, but another whole-page layout stays; the team is hunting its trigger before any fix is timed." },
   { "at": "2026-10-01T20:08:00Z", "text": "Four cheaper look-alike proposals are ready for you to accept or reject; two more are coming. Your questions now have one thread per topic in the console." },
   { "at": "2026-10-01T19:55:00Z", "text": "Style fix recorded on the phone: the section switch does less work, but the same work shows up one frame later further down, so nothing is saved yet. Next: find out why it moved." },
   { "at": "2026-10-01T19:31:00Z", "text": "Your decision: timing tests are on hold. The team now finds out what work the page does and how often (Chrome call tree, style and layout counts, layers) and records Safari's layout and drawing work. The phone is only used for those recordings." },
@@ -130,7 +131,7 @@
    "stage": "F",
    "fixes": "The small rotating profile pictures near the top (the 'blinking small profiles' you noticed) cost a 25-30 ms whole-page layout about once a second, even when you are not scrolling.",
    "gate": "Cause found (P14): swapping the pictures in and out is what makes the whole page re-lay out. Next gate: a build that keeps the pictures in place must remove that layout on the phone.",
-   "next": "Mixed st5 result. Next: count where the start of each slide still re-lays out the page (two new test builds, counts in Chrome, then a Safari recording on the phone; no timing test).",
+   "next": "Chrome confirmed the new test builds do what they should (the no-flip build removes both flips, no visible change). Its phone recording runs next, about 20:26-20:45, to tell which part of the slide start causes the layout.",
    "owner": "fix-scroll-engine with de-pm-hero",
    "checks": [ { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "Yes. With the pictures kept in place, the whole-page layout at each tick was gone in 65 of 67 ticks (scripted scroll, OBSERVED). A layout boundary around the section removed the hitches over 50 ms at rest (11 to 0) but kept most frames over 34 ms; each layout got cheaper, not by half." }, { "id": "P-039", "what": "st5 phone test: does the real fix also stop the whole-page layout?", "result": "Partly. The picture swap no longer re-lays out the page (1 of 31 ticks), but the start of each slide still does in 15 of 33 ticks. At rest, hitches over 34 ms fell from 70 to 29 in 40 s, and over 50 ms from 4 to 0 (OBSERVED)." } ],
    "details": [
@@ -164,7 +165,7 @@
    "fixes": "You saw style recalculation taking about 19-20 ms at times, more than a 60 Hz frame allows (16.7 ms). Your two guesses: complex nested CSS makes selector matching slow, or the images (rotation, resizing) cost work every frame. You also asked about smaller images and plain-CSS effects.",
    "felt": { "answer": "not-yet" },
    "gate": "Find out whether either guess explains the slow frames before anything is built.",
-   "next": "The phone recording shows the switch itself got cheaper, but the work moved to the next big frame a bit further down (y about 2990). fix-scene-scope is looking at why, and at fixing both frames together.",
+   "next": "Second recording: one extra layout at the switch can go, but a separate whole-page layout (12-18 ms) stays in every version, and the frame at y about 2990 keeps its own. fix-scene-scope is hunting its trigger. The panel recording showed one variant mostly removes the per-frame layouts.",
    "owner": "de-style-recalc, fix-scene-scope",
    "checks": [ { "id": "P-040", "what": "phone recording: does the narrower pause (V1) remove the extra nested layout at the section switch?", "result": "Mostly. One real nested layout instead of two (the second shrank to 0.1 ms), and the style step got cheaper, but the next big frame (y about 2990) got more expensive, so the total did not drop (OBSERVED)." }, { "id": "P-041", "what": "same for the infinite-animations-only variant (V1i)", "result": "One nested layout in every run, cheapest style step, but the frame at y about 2990 grew even more; the two frames together cost more than before (OBSERVED)." } ],
    "details": [

@@ -56,6 +56,17 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **20:2xZ** WORKTREE CLEANUP (lead, user request): 56 finished worktrees removed (their work on main; 6 leftover doc commits
+  landed first); untracked results archived in `.git/fastwork-mirror/archive/worktrees/<agent-id>/` (146 MB, local only);
+  11 orphan arch-sim serve.mjs stopped. Kept: live agents + parked fix-nav-morph (a277ea00, 48 unlanded) and fix-hero-exit
+  (a77e2ec7, 27 unlanded). Broadcast: `git rebase main` at the next safe point; headless needs main >= 8fa38f7. ts-headless
+  and ts-console-threads are ENDED (worktrees gone; can't be resumed). USER: lock-share = HIGHEST Chrome priority.
+  scene-scope t2: P-045/046 HIT, P-047/048 MISS; outside view Layout 12-18 ms in every arm -> root hunt (H1 will-change
+  restore on .start-selling-platform-card, source check running). st5-split Chrome counts 18dacf0: st6 removes both
+  flips, parity 0.00 %, Chrome Layout not discriminating (as predicted). de-counts-sim: Sim refuses the short lane by
+  design -> 3 normal holds <= 420 s (n1 A/B, n2 C/N calibration, n3 V1/V1i); its Sim-vs-phone verdict waits on n1+n2.
+  scene-scope t3 (R4, M, 20:12-20:20Z): P-049/P-051 MISS (morph-start keeps 2 nested view Layouts), P-050 RA MISS / RB
+  near (1-3 vs 30-44 per tween), P-052 HIT (tween RS RB 0.1-0.2 vs C 0.5-0.7 ms). st5 split on phone 20:22-~20:40Z.
 - **20:0xZ** Console THREADS landed (77d318c, rule fc07bb1): an agent the lead assigns a thread arms `console.mjs thread
   wait --as <me>` and answers there, not in chat; broadcast to 12 live agents. scene-scope block-1 scoring (owner, strict
   raw count): P-040 MISS, P-041 HIT. Tickets 2 (C=B, I4, I40; W; P-045..P-048) and 3 (C=B+V1, RA, RB; M; P-049..P-052)
