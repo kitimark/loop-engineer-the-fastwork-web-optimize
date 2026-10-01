@@ -288,7 +288,7 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
   Every control run must reach bottom-phase ≥58 fps and scroll ≥44 fps (S/W); M runs: held m=1 p95 ≤18 ms; W
   runs end with a jump to the bottom and a 3 s hold to give the sentinel.
 - A failing control **voids every run since the last passing control**; the block stops, the phone cools
-  10 min, and the block restarts.
+  (§5.3: by battery temperature, `wait.mjs phone-temp`, at most 10 min), and the block restarts.
 - **Timeline blocks (lead decision 2026-10-01 12:5xZ).** A block whose counted runs capture Timeline (every counted
   run, every arm, the control included; P3, P11, P14, the listener ticket, and any later one): the sentinel is a
   heat/device-state check whose thresholds were set with Timeline OFF, so it moves to dedicated runs.
@@ -306,7 +306,16 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
   T1a+); the heat trend is reported per block and used as a covariate when a block is borderline.
 
 ### 5.3 Blocks and n (resolving n≥6 vs ≤9-run blocks)
-- A block: ≤9 counted runs, **one question**, one named control on the same base. 10 min cooling between blocks. (Exception, lead 2026-10-01 19:56Z, while timing is deferred: attribution-only blocks skip the fixed cooling; the Timeline-OFF heat sentinel at start and end decides, a failing one means cooling plus a redo; `fixes/LEAD.md` "Timing deferred".)
+- A block: ≤9 counted runs, **one question**, one named control on the same base. **Cooling between blocks:** cool
+  until the battery temperature is at or below the last passing sentinel's minus 0.5 °C (38.0 °C when no sentinel
+  passed today), at most 10 min: `node tools/wait.mjs phone-temp --below <°C>` (one read per minute; default
+  `--timeout 600`, and a TIMEOUT means go on); the sentinel still decides validity (lead rule 2026-10-01 21:32Z,
+  user T-009, replacing the fixed 10 min). Battery temperature lags the SoC, so it is a cooling cue, never a
+  validity check. `--below auto` is not built: no tool records the sentinel verdict, so the operator takes the
+  temperature from the passing sentinel run's battery record (`meta.battery` of an `iphone.mjs run` file, or the
+  runner's own battery log). (Exception, lead 2026-10-01 19:56Z, while timing is deferred: attribution-only blocks
+  skip the cooling between blocks; the Timeline-OFF heat sentinel at start and end decides, a failing one means
+  cooling (the same `wait.mjs phone-temp` rule) plus a redo; `fixes/LEAD.md` "Timing deferred".)
 - 2 arms: **C V V C C V V C** (4 vs 4). 3 arms: a 3×3 rotated Latin square (C A B / A B C / B C A), n=3 per arm.
 - **Sequential decision, max 2 blocks** (a third only by the lead):
   - after block 1 (4v4): **stop, win** if U=0 (exact one-sided p = 1/70 ≈ 0.014) and the Hodges-Lehmann shift ≥
