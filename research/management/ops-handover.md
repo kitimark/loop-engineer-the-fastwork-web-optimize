@@ -211,18 +211,24 @@ BATCH shas. **Stamp times from `date -u`** (mgmt-ops-4 drifted ~5-10 min ahead t
 `sh <scratchpad>/mgmt-ops/tick2.sh 150-240` (returns on incident changes; prints lock + phone state); messages arrive
 between tool calls.
 
-1. **iPhone order** (updated 12:3xZ by mgmt-ops-5; lead-ranked): DONE: P0 (P-023 closed, A9 lifted for rAF-only
-   loggers), P1 (P-017 HIT: countdown face repaint = morph start transient), P2 (P-016b miss). NOW: WDA setup (ts-gesture
-   holds the lease; user taps Trust; top priority by the user's request) -> T10 xctrace (after WDA; the iOS platform
-   component was missing, installed 12:1xZ) -> F6 S (apple.com/iphone-18-pro, filler) -> ca-check (P-021, :5482) ->
-   **g vs g-cdwc M block** (P-029, countdown fix transfer check on the landing base; lead 12:2xZ: ahead of P3; ticket
-   after fix-nav-morph's cd2-check) -> **P10** (P-024, gh-cdwc-a1 built; lead 12:3xZ: right after P-029 in the
-   same session, 10 min cooling, same M driver, sentinel rules) -> P3 ST-2 + baseline-A (P-019/P-020, ~45 min) -> P4 A = F1 arm-load (P-013), B =
-   F3 arm-scope (P-022, validated) -> P11+P14+P12 (P-028 + P-025, validated provisional on lc-cq3 parity) -> P5 ST-1
-   (P-018) -> P9 (P-026, own block) -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13.
-   **Probe rule (lead 12:3xZ):** until T1a lands, runs count only with the probe P0 cleared (rAF-only logger); T1a is
-   NEEDS-WORK B1 (per-frame `documentElement.scrollHeight` read forces layout at y=0). Lead asked iphone-runner whether
-   the P0 logger reads scrollHeight.
+1. **iPhone order** (updated 12:4xZ by mgmt-ops-5; lead-ranked): DONE: P0 (P-023 closed, A9 lifted for rAF-only
+   loggers), P1 (P-017 HIT: countdown face repaint = morph start transient), P2 (P-016b miss), F2 pre-check (stub p50
+   17 ms max 23; gh p50 23, 7 >50: VALID). **NOW (user priority 12:41Z): finger batch F1-F6** (unknowns-actions §3.5;
+   user lines sent to iphone-runner 12:4xZ; F3/F4 serve mw10e-arm-load; F7 optional; R2 clip look = lead's call) ->
+   ca-check re-run (P-021; wca1 had an empty `window.__ca`; ioscap blocked by TCC Camera, interim WDA /screenshot
+   14-17/s) -> **g vs g-cdwc M block** (P-029) -> **P10** (P-024, right after P-029, same session, 10 min cooling, same
+   M driver) -> P3 ST-2 + baseline-A (P-019/P-020, ~45 min) -> P4 A = F1 arm-load (P-013), B = F3 arm-scope (P-022)
+   -> P11+P14+P12 (P-028 + P-025; **P14 merged with the boundary ticket**: C aw1-10e, V1 st4-strict, V2 re-contain CSS
+   4cd770a6 / JS 3e2f599a after its parity PASS, st4-rotoff a conditional uncounted Timeline run; every counted run
+   Timeline + 6 s idle at y 0; no 16 ms rotator-drop rule; de-pm-hero scores offline; fix-scroll-engine sends ONE ticket;
+   F-052 folds into P11 via aw1-10e vs aw1-cq3 nested Layouts) -> P5 ST-1 (P-018) -> P9 (P-026, own block) -> listener
+   ticket (arch-claims + fix-nav-morph drafting) -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. T10 xctrace: when the
+   lead slots it.
+   **Phone scoring (lead, CLAUDE.md 668b612, supersedes the v>=3 decision):** dt > 50 goal (target 0) + dt > 34, counts
+   at ±4 ms (dt>46/54, dt>30/38), "threshold-sensitive" if the verdict differs; no k forms on the phone; Low Power Mode
+   per run. Open (lead/user, enforcement layer): fix-reviewer.md check 15 still says both k forms.
+   **Probe rule (lead 12:3xZ):** until T1a lands, runs count only with the probe P0 cleared (rAF-only logger). T1a
+   review ACCEPT (12:4xZ), pending ts-iphone-run's commit + npm test.
    **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (behind the countdown fix), h4.
    Countdown fix mw10e-cdwc (CSS 5dc6e8e37388 on aw1-10e; 269df637 differed only in a comment, never served) lands on phone gain evidence + review; mechanism wording stays
    OBSERVED ("repaint of the faces removed (observed)") until ver-webkit-paint reports (lead).
