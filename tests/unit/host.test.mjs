@@ -205,14 +205,30 @@ test('I-024: no default test reads the real host: real samplers refuse in a test
   //    unit / e2e / hook test switches it off (only tests/chrome may pass FW_TEST_HOST: '')
   assert.equal(cleanEnv().FW_TEST_HOST, FAKE_HOST);
   assert.equal(cleanEnv().NODE_TEST_CONTEXT, undefined, 'tool subprocesses rely on FW_TEST_HOST, not on the test-process guard');
-  const offenders = [];
+  const offenders = [], exceptions = [];
+  const EXCEPTION = '// I-024 exception: ' + 'review-i027 real-clock guard'; // split: this line must not count itself
   for (const dir of ['unit', 'e2e', 'hooks']) for (const f of readdirSync(join(TESTS, dir))) {
     if (!f.endsWith('.mjs')) continue;
     const src = readFileSync(join(TESTS, dir, f), 'utf8');
-    const code = src.split('\n').filter((l) => !l.includes('// I-024 scan: no tool runs here')).join('\n').replace(/\/\/.*$/gm, '');
+    for (const l of src.split('\n')) if (l.includes(EXCEPTION)) exceptions.push(`${dir}/${f}`);
+    const code = src.split('\n').filter((l) => !l.includes('// I-024 scan: no tool runs here') && !l.includes(EXCEPTION)).join('\n').replace(/\/\/.*$/gm, '');
     if (/FW_TEST_HOST\s*(:|=)\s*(''|""|undefined|null)|delete\s+[\w.]+\.FW_TEST_HOST|DEFAULT_SAMPLERS\.\w+\(/.test(code)) offenders.push(`${dir}/${f}`);
   }
   assert.deepEqual(offenders, [], 'default tests that switch the fake host off');
+  // the one deliberate exception: verify-fake proves the real host keeps the real clock (npm test's guard
+  // against a clock swap, review-i027), with gate thresholds that let its one real 10 s window pass
+  assert.deepEqual(exceptions, ['e2e/verify-fake.test.mjs'], 'exactly one real-host test in the default suite');
+});
+
+test('review-i027 2: stubOutsideTest(): a stubbed host is refused outside a test unless Chrome is a test fixture', () => {
+  const F = '/w/tests/fixtures/fake-host.mjs';
+  assert.equal(host.stubOutsideTest({}), false, 'no stub');
+  assert.equal(host.stubOutsideTest({ FW_TEST_HOST: '' }), false, 'real host'); // I-024 scan: no tool runs here
+  assert.equal(host.stubOutsideTest({ FW_TEST_HOST: F }), true, 'stub, real Chrome (default path)');
+  assert.equal(host.stubOutsideTest({ FW_TEST_HOST: F, CHROME: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' }), true);
+  assert.equal(host.stubOutsideTest({ FW_TEST_HOST: F, CHROME: '/tmp/fixtures/fake-chrome.mjs' }), true, 'only a tests/fixtures/ file counts');
+  assert.equal(host.stubOutsideTest({ FW_TEST_HOST: F, CHROME: '/r/tests/fixtures/fake-chrome.mjs' }), false, 'the fake Chrome');
+  assert.equal(host.stubOutsideTest({ FW_TEST_HOST: F, NODE_TEST_CONTEXT: 'child-v8' }), false, 'inside node --test');
 });
 
 test('$FW_TEST_HOST replaces the samplers process-wide, and every reading says it is stubbed', () => {
