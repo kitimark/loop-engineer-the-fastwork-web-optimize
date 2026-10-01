@@ -101,6 +101,9 @@ Data: `research/vendor-scrollend/data/probe-2026-10-01T02-35-01-789Z.json` (A, C
 Host: load1 1.5-5, CPU 77-81 % idle, `caffeinate -dis` (I-026).
 The "B" tab-switch/minimize hide could not be produced in this Chrome: the window flags keep the
 page `visible`. So `visibilitychange` is not exercised separately, only the `pagehide` path (D).
+**Untested here: the tab/app-switch hide path.** It calls the same `runPending` as `pagehide`.
+If the lead wants it checked, it is an iPhone look-only item: Safari, reach 90 %, switch app within
+1.5 s, then look for the hit in the mirror's request log.
 
 ## Experiments tried
 
