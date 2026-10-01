@@ -128,6 +128,9 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    **N13 storm-catch (06:45-06:54Z, 24 fresh loads of aw1-10c, 12 traced, load1 3.6-8.1, mechanism only):** 0/24 storms
    (0/29 on any /10c base vs 2/12 without, Fisher p ≈ 0.08); one confirm hold on all-wave1 without /10c decides: >= 2
    storms -> /10c credited with removing it, 0 -> N13 closed "rare, not reproducible" (587df6f).
+   **N13 CLOSED 07:18Z: rare, not reproducible** (confirm hold on all-wave1 without /10c: 0/25; 0/49 over both dedicated
+   holds; /10c not credited). By-product confirming /10c: the F-011 no-script render frame (54-70 ms at y≈2227-2244) is in
+   25/25 all-wave1 loads vs 0/24 aw1-10c loads (39859a5).
    **GOAL STATUS 2026-10-01 07:00Z.** *Chrome (mobile 6x):* page-owned > 50 ms frames 0 on aw1-10c; 1 vendor frame per run
    (gtag `onscrollend`, GA Enhanced Measurement "Scrolls"), removable only by the site's GA setting (N11/03 what-if shows
    it); the lead takes it to the user. *iPhone goal check* (iphone-runner, scripted n=3, B P P B B P, baseline -> aw1-10c):
