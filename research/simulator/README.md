@@ -163,6 +163,21 @@ Per question class:
    - Chance rate per arm (share of random ±60 ms windows in +400..+1300 holding a kept ≥ 2 ms Layout), phone:
      Q 54-58 %, D 47-54 %, K 22-27 %, B 86-87 %. Presence cells sit near chance, so **usable** also needs the
      3 phone-absence cells (D +700, K +900, K +1150) to agree.
+   **Amendment 6 pins (arch-claims second read, 15:5xZ, still before FP-4 data):**
+   - *Cut on the Simulator* = min(2 ms, ½ × the shortest Sim rotator Layout in its idle phase), taken from the idle
+     phase, not the scored windows. The Sim Layout duration histogram for +400..+1300 is reported; if any Layout
+     lies between the cut and 3× the cut, every cell is scored at the cut and at 1 ms, and a cell whose verdict
+     changes is "threshold-sensitive" and does not count as agreeing.
+   - *Rotator cell edges:* the rotator Layout must itself be ≥ the cut; ticks whose +100 ms window passes the end of
+     idle are excluded; a tick whose Layout also carries another dirtier is "coalesced" (neither pass nor fail,
+     count reported); "every tick" applies to the non-coalesced ticks, and needs ≥ 5 of them per run.
+   - *Chance rate* is computed on the Sim records too, per arm, and reported next to the phone's. Null (independent
+     cells, phone mid rates Q .56, D .50, K .25, B .865): a random engine passes all 13 with p ≈ 0.0017 and the
+     amended rule (≥ 12/13 with all 3 absences) with p ≈ 0.015.
+   - *Agreement over the two runs:* present = present in both Sim runs; absent = absent in both; split = disagree.
+     D +700 is a pure absence test; a Sim Layout near +500 is reported apart, not credited.
+   - Status: the phone mechanism is CONFIRMED (claims-audit §2.8, F-075); the bimodality and chance rates are
+     OBSERVED on our phone data.
 5. **Touch path (functional).** Binary facts from FP-6 vs the phone's finger records (handler ran, resize storm
    present, pin fight present). **Usable** if all agree.
 
