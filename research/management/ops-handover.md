@@ -226,6 +226,10 @@ between tool calls.
    rested; §3 sign erratum added with the scoring commit, kept visible. **Lead rule 13:5xZ: pre-registered rules get a
    second reader (arch-claims or mgmt-ops) BEFORE data arrives.** de-unknowns-ux drafts a pacing v3 (touch A/B) plan; it
    could replace P-031's F part.
+   **Lead 13:5xZ: pacing v3 APPROVED** (arm 3 passive vs non-passive touchmove = decision arm; load from measured phone
+   long tasks; synthetic, but the swipe-and-pick UI + scorer also wrap two URLs): **F stage of every fix = a blind
+   real-page swipe A/B via the v3 UI** (first user: cdwc countdown fix); second reader before data; G first, then F rested.
+   doc-protocol-v2 folds this into protocol §5 when convenient.
    **F-071 [OBSERVED] (arch-claims 13:2xZ):** finger/touch scrolls show sustained 12-13 ms (~80 Hz) rAF stretches
    (F6-try2 563/1027, try3 171/1385; fastwork E1 seg1 43/352, A1 seg2 30/816); S/W runs and idle show 16-17 ms. fps
    and frame counts from F/G runs do not compare with S/W runs; ms thresholds unaffected. ver-rafrate checks the cause;
