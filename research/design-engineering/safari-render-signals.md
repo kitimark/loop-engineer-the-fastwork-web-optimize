@@ -60,6 +60,12 @@ Labels:
      term?
    - (P2) **Rendering Frames by m bin** on g/gh/ghb: where do the filter ms live?
    - (P3) **Layers `paintCount`/`memory`** over one driver cycle (gh) and over the 0.72 reveal (baseline vs h1v2).
+9. **First device readings (§6, iphone-runner, 10:57-11:09Z):**
+   - The morph cost sits in **Composite − Paint** (the raster wait), not in script, style or paint recording.
+   - It scales with the **number of layers repainted** (≈ 0.14 ms each) far more than with their area.
+   - In gh, the ~40 % slow frames are the frames in which **~80 countdown-face layers plus the panel children
+     repaint**. They repaint because their subpixel offset changes as the panel width changes (vendor source), not
+     because their size changes.
 
 ## 1. WebKit's frame pipeline on iOS (Q1)
 
@@ -316,6 +322,91 @@ failure mode: gh's prediction failed on the total, while the segment it targeted
 - **Timestamps:** `Page.enable` on the `page` target before `Timeline.start`. It resets the stopwatch on every call;
   if the domain is already enabled, disable it first (de-devtools). arch-safari folds this into protocol v2.
 
+## 6. First readings: P2/P3 on the phone (added 2026-10-01 ~11:20Z)
+
+**Data:**
+- iphone-runner ran `mdtl-{gh,g,ghb}-tl1.json`, `mdtl-ghbn-nav1.json` (Timeline on, real timestamps per F-047, one
+  cycle, hold 2000) and `lt-gh-lt4.json` (LayerTree census, no Timeline). The files are in its worktree's
+  `out/iphone-runner/` (gitignored, not copied here). Phone cool, 10:57-11:09Z.
+- My re-analysis (scratch scripts, not committed) groups each frame's Paint clips by size and fits Composite −
+  ΣPaint children ("cMP") against the paint area and the number of Paint records.
+- Timeline was on in these runs: they are attribution runs, not A/B runs. Moving p50 was gh 25, g 29, ghb 20,
+  ghbn 30 ms; the census run without Timeline gave gh 22. So the Timeline adds ~1-3 ms.
+
+**Observed:**
+
+| reading | gh | g | ghb | ghbn |
+|---|---|---|---|---|
+| Script / style / layout / Paint (recording), per moving frame | ~1 / 1-5 / < 1 / ≤ 1.7 | same | same | same, style up to 6 |
+| cMP per moving frame, bin p50 range | 8-39 | 15-40 | 10-31 | 12-41 |
+| cMP at rest (m = 0 or held m = 1, ≤ 0.04 Mpx painted) | 6-8 | 6-9 | 6-9 | 7-12 |
+| "heavy" frames (≥ 80 Paint records): count, cMP p50, rAF gap p50 | 18/46, 24.8, 29 | 31/39, 21.8, 27 | 19/49, 27.1, 20 | 16/38, 24.9, 28 |
+| "light" frames (< 50 records): count, cMP p50, rAF gap p50 | 28/46, 8.5, **17** | 8/39, 10.2, 33 | 30/49, 9.6, 17 | 22/38, 12.0, 30 |
+| fit: cMP ≈ a + b·device Mpx + c·records | 7.5 + 0.58·Mpx + **0.13**·n | 6.1 + 0.25·Mpx + **0.15**·n | 7.5 + 0.30·Mpx + **0.14**·n | 11.7 + 0.12·Mpx + **0.16**·n |
+
+**Readings:**
+1. **Where the time goes: Composite − Paint, the raster/flush wait.** That is the Paint *segment* the model
+   predicted (P2 confirm, in the UI's sense). Paint recording is ≤ 2 ms and style ≤ 5 ms; neither is a lever.
+2. **Per-layer cost dominates the area cost.** g gives a clean natural experiment:
+   - its light and heavy frames repaint about the same area (7.8 vs 8.1 device Mpx);
+   - the heavy frames have ~85 more Paint records and take +11.6 ms (cMP 10.2 vs 21.8);
+   - so each repainted layer costs ≈ 0.14 ms (derived), consistent with the fit's c = 0.13-0.16 in all four builds;
+   - area costs only 0.1-0.6 ms per device Mpx, i.e. ≥ 1.7 Gpx/s.
+
+   **This revises §4.1's "≤ 3.5-5 Mpx" Paint budget to a two-term budget:**
+   - a fixed ~6-8 ms Composite floor (observed at rest; mechanism unknown, possibly part Timeline overhead);
+   - plus ≈ 0.14 ms per repainted layer;
+   - plus ≈ 0.1-0.6 ms per device Mpx.
+
+   Caveat: the per-record term may include Inspector record overhead. A run without Timeline (gh 22 vs 25 p50)
+   bounds that at ~3 ms per frame.
+3. **What the heavy frames repaint (gh):**
+   - **80 Paint records of 18×37 CSS px** at y ≈ 5539 and 5610: the countdown faces (two rows, stacked faces);
+   - plus the center (402×385), the footer (402×87), nav box + veil, the 3 tracks (2 rects each) and the bar.
+
+   The census agrees: the face layers are created at the tween start (35 → 113 layers) and **each repaints 15 times
+   in a 25-frame forward tween**; the center, veil and footer repaint 15-16 times.
+
+   Their memory and `compositedBounds` stay constant (center 7.1 MB, 406×388). So gh's size fix works, and this
+   repaint has **another cause**.
+4. **The cause: WebKit repaints a composited layer whenever its subpixel offset from the renderer, snapped to
+   device pixels, changes.** Vendor source: `RenderLayerBacking.cpp` l.1440-1445 `subpixelOffsetFromRendererChanged`
+   → l.1904 `setContentsNeedDisplay()`.
+   - Derived: the panel's width goes 398 → 406 CSS px, so centered content moves ~4 CSS px = 12 device px at
+     DPR 3. That is ~12 snapped-offset changes per tween, against 15 observed repaints per face (incl. the first
+     paint) and 9-11 heavy frames per tween.
+   - Inference, to check: the faces' layout x moves by fractions of a device pixel.
+   - In gh, light frames hit 17 ms (on time) and heavy frames 29 ms, so **this one mechanism is most of gh's
+     remaining jank.**
+5. **Fix direction for `fix-nav-morph` / de-morph** (inference; the owner decides):
+   - lay out the panel content (center with countdown, veil, footer, tracks) at the **final** width and at
+     whole-pixel positions for the whole tween;
+   - do any visible motion with composited `transform` or `clip-path`. A transform moves the GraphicsLayer and
+     leaves the renderer offset unchanged.
+   - Alternative: quantize the panel width so the centering offset stays on the device grid.
+
+   Expected (derived from gh's light frames): heavy frames fall to light ones, so gh's moving p50 goes ~25 → ~17-20 ms.
+6. **ghb and ghbn (P1, rAF half):**
+   - ghb's gain over g is fewer heavy frames and less area. Against gh, one run each can't tell ghb apart in
+     WebContent terms (heavy cMP 27 vs 25; light 9.6 vs 8.5).
+   - ghbn (backdrop off) was not faster in WebContent: cMP and area like gh/ghb, moving p50 30, one run.
+   - That matches the source model (the backdrop is not on the rAF path), not de-morph's ≤ 17-20 ms prediction.
+   - The render-server half of P1 (Animation Hitches/Metal) is still open.
+7. **Corrections to §2.1:**
+   - At rest the RenderingFrame record lasts the whole 16.6 ms tick (it opens on any run-loop wake), with "Other"
+     ≈ 8-10 ms of idle slack. So **"Other" is not a work term** and **gap − frame is not the commit wait**: it read
+     −8 to +28 ms, partly alignment.
+   - Read Script, Style, Layout, Paint and Composite − Paint, not the frame duration or Other.
+8. **Open discrepancy:**
+   - The census counts `platform-card` 11-14 and `platform-stage-artboard` 5-7 paints per frame. For tiled layers
+     the count goes up once **per tile** painted (vendor source: `TileGrid.cpp` l.785 → `drawLayerContents` of the
+     root layer, `PlatformCALayerCocoa.mm` l.1336). That would be ≈ one full repaint of the card's ~12.6 retained
+     tiles (13.3 MB) per frame.
+   - But the Timeline run of the same build shows **no** 430-wide or tile-sized Paint clip in any moving frame.
+   - Either the card repaint happens only with LayerTree enabled, or these are tile paints without a Paint record
+     (tile revalidation). Next check: one run with Timeline and the census together, comparing tile-sized clips with
+     the card's ΔpaintCount.
+
 ## Sources
 
 - WebKit (vendor source, `main`, 2026-10-01, https://github.com/WebKit/WebKit/blob/main/Source/…):
@@ -325,7 +416,8 @@ failure mode: gh's prediction failed on the total, while the segment it targeted
   - `WebKit/WebProcess/GPU/graphics/RemoteImageBufferSetProxy.cpp`, `WebKit/WebProcess/WebPage/DrawingArea.cpp`,
     `WebPage.cpp`;
   - `WebCore/page/Page.cpp`, `WebCore/rendering/RenderLayerBacking.cpp`,
-    `WebCore/platform/graphics/ca/GraphicsLayerCA.cpp`, `GraphicsLayer.h`;
+    `WebCore/platform/graphics/ca/GraphicsLayerCA.cpp`, `GraphicsLayer.h`, `ca/TileGrid.cpp`,
+    `ca/cocoa/PlatformCALayerCocoa.mm` (repaint counts per tile);
   - `WebCore/html/HTMLElement.cpp` (`inert` → `invalidateStyle`);
   - Inspector: `WebCore/inspector/agents/page/PageTimelineAgent.cpp`, `InspectorTimelineAgent.cpp`,
     `InspectorLayerTreeAgent.cpp`, `InspectorPageAgent.cpp` (stopwatch), `WebCore/page/cocoa/ResourceUsageThreadCocoa.mm`;
