@@ -84,7 +84,7 @@ the lesson behind each rule is its §1 table). A topic skips nothing; a stage ca
 |---|---|---|---|
 | R research | where and how often is it slow? | census card: ≥3 phone runs of one driver + Chrome at 932 and at phone geometry; clusters by crossing; a cluster in <2/3 runs goes on the "rare" list (needs F or G runs before any work) | owner |
 | I investigate | what changes in that frame? | event card: crossing table ±1 viewport, uncapped per-step probe (Chrome) and phone logger, hypotheses as element + selector + property, each checked by computed style in Chrome **and** WebKit | owner; mgmt-ops checks it is complete |
-| D distinguish | which mechanism and code, on which device? | **attribution card NAMED**: pipeline stage, code, positive + negative ablations with a mechanism check per arm, device class | **lead** |
+| D distinguish | which mechanism and code, on which device? | **attribution card NAMED**: pipeline stage, code, positive + negative ablations with a mechanism check per arm, the axis + one decoupling run (A2), device class; phone-only adds a phone Timeline segment card before F (A1) | **lead** |
 | F fix | does the build do only what we intended? | build card + prediction card + ledger row; slot ticket for phone time | owner; mgmt-ops validates the ticket |
 | V review | a win on the target device, no regression elsewhere? | review report (`fix-reviewer`, section 4) | fix-reviewer |
 | L land | | section 5 | lead |
@@ -93,7 +93,12 @@ the lesson behind each rule is its §1 table). A topic skips nothing; a stage ca
 - **D, for every topic.** The owner sends the attribution card; reply in one message: `D: NAMED, class
   <Chrome-measurable | phone-only | render-bound | touch-only>, gate <Chrome A/B | phone ABBA | Instruments
   hitches | G/F>` or `D: LOCATED|UNEXPLAINED, <what is missing>`. NAMED needs the positive ablation, ≥1 negative
-  sibling ablation and a mechanism check on every arm, all in one block against one control. A position-moving
+  sibling ablation and a mechanism check on every arm, all in one block against one control, plus the **axis** the
+  frame is locked to (y / crossing, time since a named event, or m) and **one decoupling run** that moves that axis
+  apart from the others (hold at another y, change a hold or transition length, shift a threshold); without it, at
+  most LOCATED (A2: scripted drivers make y, time and m collinear). A **phone-only** class also needs a **phone
+  Timeline segment card** before F (Script / Style / Layout / Paint+Composite / Other, gap − frame, ≥3 captures,
+  which segment the fix removes; A1): a Chrome counter at 0 is not phone parity (F-054). A position-moving
   ablation (staging work earlier) proves where the trigger is, never the cost. LOCATED may spend one more phone
   block on ablations; it builds no fix. A render-bound fix stays LOCATED until the Instruments route (T10) is
   verified on this device.
@@ -112,14 +117,21 @@ the "if X then Y" decision for each outcome; the probe set; the served ports, ea
 minutes. mgmt-ops validates it, the lead
 ranks the queue (by [`DIRECTION.md`](DIRECTION.md)). **Reorders only at block boundaries**; a running block is
 never interrupted. A rejected ticket gets its reason in one message. Block rules (warm-up, sentinel, ≤9 counted
-runs, ABBA order, max 2 blocks): `CLAUDE.md` "Shared devices" and protocol §5.
+runs, ABBA order, max 2 blocks): `CLAUDE.md` "Shared devices" and protocol §5, plus (amendments A3-A6): warm-up
+per arm's port, not only the control's (A3); battery temperature and charging state per run (A4); phone verdicts
+in both threshold forms, dt > 50 / k≥7 and dt > 34 / k≥5, frames within 4 ms of a threshold flagged, a verdict
+that differs between the forms is threshold-sensitive (A5); M runs report the time-since-tween-start profile and
+the |Δm|-weighted dt (A6).
 
 **Canary drift (L8, protocol §6.3).** The canary page drifted from ~92 fps (04:25Z, 93b4af2 tools) to 78 and
-75.9 fps (08:31Z, 10:08Z), unexplained. Until a hold-internal A/A of current vs 93b4af2 tools and the host record (T8) resolve it: **Chrome
-numbers compare only within one hold** (one `fix.mjs ab`, or one `lock.mjs run` that measures both sides), never
-across holds or against older results; flag any canary outside the 76-78 fps band and don't use that hold's
-numbers for a verdict. Tools differ → bisect 93b4af2..HEAD over the measurement code; host differs → document
-the band. Lift this rule here when it is resolved.
+75.9 fps (08:31Z, 10:08Z). The Mac's display state explains the floors: plain baseline 63.5-78.3 fps display-on vs
+92.2-93.8 DarkWake over 27 holds, no overlap (ddc3450). Rules: **Chrome numbers compare only within one hold** (one
+`fix.mjs ab`, or one `lock.mjs run` that measures both sides), never across holds or against older results; each
+hold records display / wake / power and keeps it constant (`caffeinate -d -u`, or recorded "off"; T8+); a canary
+is checked against display state before any tools bisect; results from different display states never compare
+(A7); flag any canary outside the 76-78 fps band for the display-on state and don't use that hold's numbers for a
+verdict. Tools differ → bisect 93b4af2..HEAD over the measurement code; host differs → document the band. Lifting
+the within-one-hold rule is the lead's call after C1.
 
 ## 1. Before a wave
 
@@ -225,7 +237,12 @@ NAMED with a mechanism check per ablation and no capped logger as evidence; devi
 only the targeted bin; L5: hero v2 fixed y≈50 and grew y≈700 by ~10 ms); a prediction row with measured vs
 predicted and a passed closure check; claims scoped to drivers, touch-only fixes with G or F; scenarios not run
 listed; phone geometry for attribution and served hashes = the ticket's; heat notes, sentinel passed, within-block
-vs the exact base; backdrop look check, a11y diff, memory/layers note. A missing item is NEEDS-WORK, not a note.
+vs the exact base; backdrop look check, a11y diff, memory/layers note. Amendments: a fix that changes a transition
+or animation end value (to or from `opacity:1`, `filter:none`, `transform:none`), a layer's presence, a composited
+layer's size, an easing to `linear()`/`steps()`, or a window/document wheel/touch listener needs a phone segment card,
+not a Chrome counter (X1, F-054); the claim's driver covers the class (speed, toolbar, slow drag, scroll-up, start
+after load, touch; X8); phone absolute counts and segment cards made before the P0 logger A/A carry the
+logger-layout caveat, while A/B deltas with the same logger stand (A9). A missing item is NEEDS-WORK, not a note.
 
 ## 5. Land (rebase + fast-forward only)
 

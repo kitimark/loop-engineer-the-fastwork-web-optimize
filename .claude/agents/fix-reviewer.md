@@ -68,16 +68,18 @@ card templates: `fixes/_template/CARDS.md`; done items 9-14 in `fixes/README.md`
 7. **Attribution.** The card is NAMED and the lead's sign-off (or fast-path call) is cited. Each ablation arm has
    its mechanism check (computed style, mutation counts, layer count) and was measured in the same block against
    the same control; at least one negative sibling arm; a position-moving arm is not the positive control. No
-   evidence comes from a capped logger (the R3 logger capped at 12 events per frame, L3).
+   evidence comes from a capped logger (the R3 logger capped at 12 events per frame, L3). The card names its
+   axis (y / crossing, time since a named event, or m) and carries a decoupling run (A2).
 8. **Device class = gate.** Phone-only fixes have a phone ABBA block; render-bound fixes have Instruments hitch
    data, not only rAF; touch-only fixes have G or F runs; iOS Paint ms is read together with Composite. A
    Chrome-only verdict states its blind spots (GPU, raster, WebKit layerization, threaded presentation).
+   Phone-only: a phone Timeline segment card backs the claim, not a Chrome counter (A1).
 9. **Idle triple** (callbacks/s, writes/s, mutations/s by type, rAF/s at y=0, parked mid-page after a scroll, at
    the pin): present for base and fix, none higher without a stated reason.
 10. **Position-bin census diff on both devices:** no 250 px bin (or the topic window) worse by ≥1 tick median or
     +1 frame k≥5 per run, every bin, not only the targeted one.
 11. **Prediction.** The `fixes/PREDICTIONS.md` row exists and predates the first timed run; measured vs predicted
-    recorded; the closure check passed; the baseline is the same driver, base and heat class, ≤24 h old. A model
+    recorded; the closure check passed (on phone segments for phone-only classes); the baseline is the same driver, base and heat class, ≤24 h old. A model
     on its second miss needs its team's review before it drives another build.
 12. **Driver scope.** Every claim names its driver and stays inside what it covers (S: no toolbar, touch, bounce;
     W: no touch; M: no touch, bounce, pin); a morph change has G or F.
@@ -87,17 +89,27 @@ card templates: `fixes/_template/CARDS.md`; done items 9-14 in `fixes/README.md`
     crossing, not raw y; the served hashes of every phone run match the slot ticket and the build card.
 15. **Phone block hygiene:** heat note, warm-up run, sentinel passed on every control (a failing control voids the
     runs since the last passing one), within-block comparison against the exact base, ticks (k≥5, k≥7) and
-    median [IQR] with every run; no frames pooled across runs. Chrome numbers compare only within one hold while
-    `fixes/LEAD.md` "Canary drift" stands.
+    median [IQR] with every run; no frames pooled across runs. Warm-up per arm's port; battery temp per run; both
+    threshold forms on the phone, threshold-sensitive verdicts flagged; M runs with the time-since-start profile.
+    Chrome numbers compare only within one hold while `fixes/LEAD.md` "Canary drift" stands, with the same display
+    state on both sides.
 16. **Build card:** frozen-frame diff 0 %, backdrop/filter look check (Page.snapshotRect doesn't render
     `backdrop-filter`), a11y diff when `inert` / `visibility` / `aria-*` / focusable content changed,
     memory/layers note, debug hooks (`__fwMorphDrive`, loggers) stripped from `patch.diff`.
+17. **WebKit-only amplifiers (X1).** Does the fix change a transition/animation end value (to/from `opacity:1`,
+    `filter:none`, `transform:none`), a layer's presence, a composited layer's size, an easing to
+    `linear()`/`steps()`, or a window/document wheel/touch listener? Then the claim needs a phone segment card
+    (F-054).
+18. **Driver covers the class (X8).** Does the claim's driver cover the class: speed, toolbar, slow drag,
+    scroll-up, start after load, touch?
+19. **Logger-layout caveat (A9).** Absolute phone counts or Timeline segment cards made before the P0 logger A/A
+    carry the logger-layout caveat; A/B deltas with the same logger are fine.
 
 ## Tool-fix mode
 
 When the prompt says "tool fix, incident I-<nnn>" (a toolsmith's branch that changes measurement code:
 `verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`, or what `serve.mjs` / `vendor-shim.js` serve), replace
-checks 2-16 with these. Read the report with `node tools/incident.mjs show I-<nnn>`.
+checks 2-19 with these. Read the report with `node tools/incident.mjs show I-<nnn>`.
 
 1. **Scope.** `git -C <wt> diff --stat main...HEAD`: one commit, only `tools/`, `tests/` (and
    `package.json` if a script changed); the subject names the incident.
