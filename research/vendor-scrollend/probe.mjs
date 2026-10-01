@@ -44,9 +44,9 @@ async function step(name, p, ms = 30000) {
 }
 
 const VARIANTS = [
-  { label: 'base', overlay: null, scenarios: ['A', 'B', 'C'] },
+  { label: 'base', overlay: null, scenarios: ['A', 'B', 'C', 'D'] },
   { label: '01-task', overlay: 'vendor-scrollend--task', scenarios: ['A'] },
-  { label: '02-idle', overlay: 'vendor-scrollend', scenarios: ['A', 'B', 'C'] },
+  { label: '02-idle', overlay: 'vendor-scrollend', scenarios: ['A', 'B', 'C', 'D'] },
   { label: '03-drop', overlay: 'vendor-scrollend--drop', scenarios: ['A'] },
 ].filter((v) => !ONLY.length || ONLY.includes(v.label));
 
@@ -71,9 +71,12 @@ const HOOK = `(() => {
   const foreign = (u) => { try { const x = new URL(String(u), location.href); return x.origin !== location.origin ? x.href : null; } catch { return null; } };
   const rec = (kind, u, body) => { if (String(u).indexOf('/__mirror/null?h=') === 0) u = 'https://' + decodeURIComponent(String(u).split('h=')[1]) + '/'; const f = foreign(u); if (!f) return; const b = body == null ? '' : typeof body === 'string' ? body : (body instanceof URLSearchParams ? body.toString() : '[' + (body && body.constructor && body.constructor.name) + ']');
     const e = { kind, url: f, body: b.slice(0, 4000), t: Math.round(performance.now()) }; L.hits.push(e); console.debug('__N11HIT__' + JSON.stringify(e)); };
+  const mark = (ev) => { const e = { ev: '(' + ev + ')', t: Math.round(performance.now()), y: Math.round(scrollY) }; L.dl.push(e); console.debug('__N11DL__' + JSON.stringify(e)); };
+  document.addEventListener('visibilitychange', () => mark('visibility:' + document.visibilityState), true);
+  window.addEventListener('pagehide', () => mark('pagehide'), true);
   const wrapProp = (obj, name, kind, pick) => { let cur = obj[name]; const cache = new WeakMap();
     Object.defineProperty(obj, name, { configurable: true, enumerable: true, set(v) { cur = v; },
-      get() { if (typeof cur !== 'function') return cur; let w = cache.get(cur); if (!w) { const f = cur; w = function () { try { const [u, b] = pick(arguments); rec(kind, u, b); } catch {} return f.apply(this, arguments); }; cache.set(f, w); } return w; } }); };
+      get() { if (typeof cur !== 'function') return cur; let w = cache.get(cur); if (!w) { const f = cur; w = function () { if (!L.depth) { try { const [u, b] = pick(arguments); rec(kind, u, b); } catch {} } L.depth = (L.depth || 0) + 1; try { return f.apply(this, arguments); } finally { L.depth--; } }; cache.set(f, w); } return w; } }); };
   wrapProp(window, 'fetch', 'fetch', (a) => [a[0] && typeof a[0] === 'object' && 'url' in a[0] ? a[0].url : a[0], a[1] && a[1].body]);
   wrapProp(navigator, 'sendBeacon', 'beacon', (a) => [a[0], a[1]]);
   const open = XMLHttpRequest.prototype.open;
@@ -155,8 +158,16 @@ async function scenario(cdp, v, url, sc, profile, hook = true) {
   if (sc === 'A') {
     scroll = await step('scroll', page.eval(SCROLL, { timeout: 120000 }), 60000);
     await sleep(TAIL_S * 1000);
-  } else if (sc === 'B') {
-    scroll = await page.eval(`(async () => { window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }); await new Promise(r => setTimeout(r, 300)); return { y: scrollY, t: Math.round(performance.now()) }; })()`);
+  } else if (sc === 'B' || sc === 'D') {
+    scroll = await step('jump', page.eval(`(async () => { window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }); await new Promise(r => setTimeout(r, 300)); return { y: scrollY, t: Math.round(performance.now()) }; })()`), 10000);
+    if (sc === 'B') {
+      // the visitor switches tab/app 300 ms after the scroll: visibilitychange(hidden), page stays alive
+      const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank', browserContextId: page.browserContextId, newWindow: false });
+      await cdp.send('Target.activateTarget', { targetId });
+      await sleep(1500);
+      scroll.hidden = await step('hidden', page.eval('({ vis: document.visibilityState, dl: window.__n11.dl.slice(-4), hits: window.__n11.hits.length })'), 10000);
+      await cdp.send('Target.closeTarget', { targetId }).catch(() => {});
+    }
   } else if (sc === 'C') {
     scroll = await page.eval(`(async () => { window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }); await new Promise(r => setTimeout(r, 400)); const yb = scrollY; window.scrollTo({ top: 0, behavior: 'instant' }); await new Promise(r => setTimeout(r, 300)); return { yBottom: yb, y: scrollY, t: Math.round(performance.now()) }; })()`);
     await sleep(TAIL_S * 1000);
@@ -214,7 +225,7 @@ try {
   const byLabel = Object.fromEntries(VARIANTS.map((v) => [v.label, v]));
   if (byLabel.base) { const r0 = await scenario(cdp, byLabel.base, servers.base.url, 'A', false, false); out.runs.push(r0); save(); }
   // most valuable first: A base (with the profile) and 02, the hide flush (B), back-scroll (C), then 01 and 03
-  const ORDER = [['base', 'A'], ['02-idle', 'A'], ['02-idle', 'B'], ['base', 'B'], ['02-idle', 'C'], ['base', 'C'], ['01-task', 'A'], ['03-drop', 'A']];
+  const ORDER = (opt('order') ? opt('order').split(',').map((x) => x.split(':')) : [['base', 'A'], ['02-idle', 'A'], ['02-idle', 'B'], ['base', 'B'], ['02-idle', 'D'], ['base', 'D'], ['02-idle', 'C'], ['base', 'C'], ['01-task', 'A'], ['03-drop', 'A']]);
   for (const [label, sc] of ORDER) {
     const v = byLabel[label];
     if (!v || !v.scenarios.includes(sc)) continue;

@@ -1,0 +1,552 @@
+{
+ "tool": "research/vendor-scrollend/probe.mjs",
+ "cpu": 1,
+ "tailS": 4,
+ "startedAt": "2026-10-01T02:35:01.790Z",
+ "host": {
+  "load1Before": 3.10498046875,
+  "load1After": 2.4443359375,
+  "cpuIdlePct": 77.5
+ },
+ "runs": [
+  {
+   "variant": "base",
+   "scenario": "load-no-hook",
+   "loc": {
+    "href": "https://localhost:55712/",
+    "h": 6240,
+    "kit": true,
+    "dl": 6
+   }
+  },
+  {
+   "variant": "base",
+   "scenario": "A",
+   "listeners": [
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /__vendor/www.googletagmanager.com/gtag/js:903",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /__vendor/www.googletagmanager.com/gtag/js:903"
+   ],
+   "scroll": {
+    "t0": 3884,
+    "tEnd": 12265,
+    "ticks": 27,
+    "y": 5345,
+    "h": 6277
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 10852,
+     "y": 5345
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section",
+    "gtm.scrollDepth"
+   ],
+   "dlBeforeLeave": 12,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 10860,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "attribution": {
+    "listenerAt": "903:244",
+    "invocations": 1,
+    "samplesUs": 8474,
+    "selfTop": [
+     "9.2% ge /__vendor/www.googletagmanager.com/gtag/js:293:12",
+     "8.4% e /__vendor/www.googletagmanager.com/gtag/js:286:41",
+     "5% Sq /__vendor/www.googletagmanager.com/gtag/js:502:173",
+     "4.9% Sp /__vendor/www.googletagmanager.com/gtag/js:483:633",
+     "4.8% c.push /__vendor/www.googletagmanager.com/gtag/js:760:354",
+     "4.8% rec :4:15",
+     "4.7% OL /__vendor/www.googletagmanager.com/gtag/js:904:153",
+     "4.6% l.Ug /__vendor/www.googletagmanager.com/gtag/js:1000:201",
+     "4.6% l.Gt /__vendor/www.googletagmanager.com/gtag/js:1027:389",
+     "4.6% get cookie :0:0",
+     "4.6% rb /__vendor/www.googletagmanager.com/gtag/js:243:1115",
+     "4.5% yh /__vendor/www.googletagmanager.com/gtag/js:367:910",
+     "4.5% l.Ht /__vendor/www.googletagmanager.com/gtag/js:1028:242",
+     "4.5% uN /__vendor/www.googletagmanager.com/gtag/js:947:556",
+     "4.4% DD.enqueue /__vendor/www.googletagmanager.com/gtm.js:615:30",
+     "4.3% (anon) /__vendor/www.googletagmanager.com/gtm.js:660:481",
+     "4.3% Hj /__vendor/www.googletagmanager.com/gtag/js:413:12",
+     "4.3% Qd.evaluate /__vendor/www.googletagmanager.com/gtag/js:282:31",
+     "4.1% f /__vendor/www.googletagmanager.com/gtag/js:283:610",
+     "2.9% l.apply /__vendor/www.googletagmanager.com/gtag/js:280:444",
+     "2.1% Ua.Ga /__vendor/www.googletagmanager.com/gtag/js:237:223",
+     "0% c /__vendor/www.googletagmanager.com/gtag/js:903:254",
+     "0% TL /__vendor/www.googletagmanager.com/gtag/js:904:427",
+     "0% ME /__vendor/www.googletagmanager.com/gtag/js:763:337",
+     "0% yE.push /__vendor/www.googletagmanager.com/gtag/js:762:27"
+    ],
+    "byScript": [
+     "81.9% /__vendor/www.googletagmanager.com/gtag/js",
+     "8.7% /__vendor/www.googletagmanager.com/gtm.js",
+     "4.8% (rec)",
+     "4.6% (get cookie)",
+     "0% (native)",
+     "0% (w)",
+     "0% /_app/immutable/chunks/CzkAa0og.js"
+    ]
+   }
+  },
+  {
+   "variant": "02-idle",
+   "scenario": "A",
+   "listeners": [
+    "pagehide /analytics.js:96 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /analytics.js:153",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /analytics.js:153"
+   ],
+   "scroll": {
+    "t0": 7676,
+    "tEnd": 16058,
+    "ticks": 27,
+    "y": 5345,
+    "h": 6277
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 16111,
+     "y": 5345
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section",
+    "gtm.scrollDepth"
+   ],
+   "dlBeforeLeave": 12,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 16119,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "02-idle",
+   "scenario": "B",
+   "listeners": [
+    "pagehide /analytics.js:96 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /analytics.js:153",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /analytics.js:153"
+   ],
+   "scroll": {
+    "y": 5343.5,
+    "t": 3997
+   },
+   "scrollDepthPushes": [],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "view_section"
+   ],
+   "dlBeforeLeave": 7,
+   "gaEvents": [],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 3,
+    "fetch api2.amplitude.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "base",
+   "scenario": "B",
+   "listeners": [
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /__vendor/www.googletagmanager.com/gtag/js:903",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /__vendor/www.googletagmanager.com/gtag/js:903"
+   ],
+   "scroll": {
+    "y": 5344.5,
+    "t": 4026
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 3728,
+     "y": 5308
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "gtm.scrollDepth",
+    "view_section"
+   ],
+   "dlBeforeLeave": 8,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 3739,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "02-idle",
+   "scenario": "C",
+   "listeners": [
+    "pagehide /analytics.js:96 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /analytics.js:153",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /analytics.js:153"
+   ],
+   "scroll": {
+    "yBottom": 5344.5,
+    "y": 0,
+    "t": 4411
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 5620,
+     "y": 0
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "view_section",
+    "gtm.scrollDepth"
+   ],
+   "dlBeforeLeave": 8,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 5626,
+     "kind": "fetch",
+     "afterLeave": false
+    },
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 5627,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 2
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "base",
+   "scenario": "C",
+   "listeners": [
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /__vendor/www.googletagmanager.com/gtag/js:903",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /__vendor/www.googletagmanager.com/gtag/js:903"
+   ],
+   "scroll": {
+    "yBottom": 5344.5,
+    "y": 0,
+    "t": 4416
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 3723,
+     "y": 5308
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "gtm.scrollDepth",
+    "view_section"
+   ],
+   "dlBeforeLeave": 8,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 3734,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 3,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "01-task",
+   "scenario": "A",
+   "listeners": [
+    "pagehide /analytics.js:96 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /analytics.js:142",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /analytics.js:142"
+   ],
+   "scroll": {
+    "t0": 7684,
+    "tEnd": 16067,
+    "ticks": 27,
+    "y": 5345,
+    "h": 6277
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 14635,
+     "y": 5345
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section",
+    "gtm.scrollDepth"
+   ],
+   "dlBeforeLeave": 12,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 14642,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "03-drop",
+   "scenario": "A",
+   "listeners": [
+    "pagehide /analytics.js:96 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262"
+   ],
+   "scroll": {
+    "t0": 7706,
+    "tEnd": 16088,
+    "ticks": 27,
+    "y": 5345,
+    "h": 6277
+   },
+   "scrollDepthPushes": [],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section",
+    "view_section"
+   ],
+   "dlBeforeLeave": 11,
+   "gaEvents": [],
+   "hitHosts": {
+    "xhr vc.hotjar.io": 1,
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 2
+   },
+   "shimNeutered": {
+    "xhr vc.hotjar.io": 1,
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1
+   },
+   "errors": [],
+   "profile": null
+  }
+ ],
+ "seconds": 122
+}

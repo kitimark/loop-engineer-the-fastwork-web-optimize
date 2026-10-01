@@ -29,6 +29,15 @@ still to come: it runs `--on` the wave-1 combined base, one slot (mgmt-ops decis
   - Then `PL` removes both listeners once no thresholds remain.
   - So the cost is the tag's event pipeline, not layout. It runs only on the scrollend where depth
     first reaches 90 %; every other scrollend costs a few ms.
+- Probe, baseline, 1x (`research/vendor-scrollend/data/probe-2026-10-01T02-22-57-594Z.json`):
+  - The window listeners are `scrollend` and `resize` at `gtag/js:903`, as read from the code.
+  - At the 90 % crossing, `gtm.scrollDepth` is pushed. The GA4 `scroll` hit (`percent_scrolled=90`)
+    goes out by `fetch` ~10 ms later; it isn't batched.
+  - CPU-profile attribution of that one call (~10 ms at 1x, sampled every 250 µs):
+    - 83 % `gtag/js`, spread over ~20 functions with no hotspot;
+    - 7 % the `document.cookie` getter;
+    - 7 % `gtm.js` (`DD.enqueue`, `xg`).
+  - Nothing page-side can trim it.
 - Safari 26.2+ supports `scrollend` (`research/architecture/webkit.md`), so iPhones take this path too.
 
 ## Options considered (research)
