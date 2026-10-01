@@ -74,11 +74,11 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    per element only inside its window; no new idle-phase LoAF > 50 ms (one section per idle slice).
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
-5. N3 / N4 / N10 fixes as their prototypes pass Tier A.
+5. N4 / N10 fixes (N3 rejected 2026-10-01, F-015) as their prototypes pass Tier A.
 
 ## Started now (prototype while the queue drains)
 
-- N3 `main-thread-infinite-animations`: new owner.
+- N3 `main-thread-infinite-animations`: **rejected 2026-10-01** (F-015, a49e591): the orbit is `display:none`, all CSS animations ~1 ms/frame at 6x; owner done. Its iPhone questions are look-only item 7 below.
 - N11 `vendor-scrollend`: new owner, research first (can the page avoid gtag's 45-74 ms `onscrollend`
   without breaking analytics? Label any vendor-config change as "needs the site's GA setting").
 - W1-W3 / R1-R3 answers (arch-research2) feed N10 and the touch-path metrics.
@@ -92,14 +92,14 @@ Sources: E1-E5 `research/architecture/measurement-review.md`; W1-W3 / R1-R3 `res
 |---|---|---|---|
 | E1 lazy mount + hit test + passive + countdown `active` | yes | fix-nav-morph | normal slot, priority 1; ticket: morph IO LoAF (>50 ms) gone; mechanism/attribution run at current load, timing not claimed |
 | E2 state-flip probe | yes | fix-scroll-engine | diagnostic slot, priority 2; uses R3 (capture-phase `contentvisibilityautostatechange` + MutationObserver); iPhone part when the phone is back |
-| E3 animation ablation | yes | fix-scroll-engine (N3 reads the result) | diagnostic slot, priority 2; N3's cheaper first-reader probe (R2) goes in the short lane |
+| E3 animation ablation | yes | fix-scroll-engine (part 3; N3 rejected, E3 stays) | diagnostic slot, priority 2; N3's cheaper first-reader probe (R2) goes in the short lane |
 | E4 `.hero-track` IO (T7) | yes, wave 2 | fix-nav-morph | after E1, `--on all-wave1` |
 | E5 per-frame log + getMetrics deltas | yes | ts-i017 (after the host gate) | tool, no slot; `--frame-log` opt-in (a per-rAF scrollY read can force layout), getMetrics deltas on by default |
 | W1 WebKit content-visibility un-skip at 0 margin + layer rebuild | yes -> N10 | N10 owner after the wave-1 combine (no new N-topics before it); fix-scroll-engine applies it in its hysteresis variant now | wave 2, biggest expected iPhone gain; iPhone check: R3 capture-phase logger |
 | W2 iPhone rAF gaps are main-thread frame gaps | yes (metric naming) | everyone writing iPhone results | iPhone check: 300 ms busy loop mid-scroll (page keeps moving, scrollY jumps) |
 | W3 background flips on an empty composited child | yes -> N10 (N9 candidate 3) | as W1 | wave 2 |
 | R1 touch latency histograms | **no** for now | - | not a goal metric, and it needs a measurement-code toolsmith; revisit only if N7 input-listener-diet becomes a topic |
-| R2 animation update runs before rAF | yes | fix-infinite-anims (N3) | short lane: early rAF loop timing one `getBoundingClientRect`, animations running vs paused |
+| R2 animation update runs before rAF | yes | fix-infinite-anims (N3) | **done** (N3/02): ≤ 0.2 ms/frame at 1x for the first reader, animations running vs paused |
 | R3 statechange event timing | yes | fix-scroll-engine (E2) | inside the E2 slot |
 
 iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain http per I-003), in order:
@@ -113,3 +113,10 @@ iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain 
 6. Look-only: carousel follower alignment (device-pixel snap) on layout-animations v10 (5602e1d). Chrome
    pixel diffs showed followers 0/±1 device px off from non-snapped `translate` (same in 03; equal by eye
    in Chrome). Check whether the offset is visible on the phone; only then a snap follow-up slot (F-008).
+7. Look-only (N3, F-015; decides whether N3/04, a T6 pause for step-end and compositor loops, is worth building):
+   (a) does WebKit tick the step-end opacity loops (three-frame at commission, agents caret) on the main thread
+   every frame or only at steps (Safari Timeline, 6 s idle parked at y≈2796 on the plain baseline: style recalcs /
+   paints in the underline and zero-mark rects); (b) do off-screen composited loops (scroll-float, vinyl,
+   marquees) keep the render server compositing at idle (Timeline "Composite" count at an idle stop with all of
+   them off-screen, vs the same stop with `animation-play-state: paused` injected). Method:
+   `fixes/main-thread-infinite-animations/README.md` "iPhone pending".

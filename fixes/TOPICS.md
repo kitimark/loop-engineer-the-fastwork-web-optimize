@@ -38,7 +38,7 @@ Each needs a lead decision and an owner; N1 first, because it tells which of the
 |---|---|---|---|
 | N1 | `frame-attribution` | per-frame script / style / layout split (`Performance.getMetrics` deltas, trace of elements touched per style recalc) for the 20-50 ms frames LoAF can't see | toolsmith, I-018 (with I-017 in `verify.mjs`) |
 | N2 | `morph-composited` | morph panel mounted at full size, revealed by `clip-path: inset(... round)`, opacity cross-fades, fixed backdrop-blur radius; spring as WAAPI with `linear()` easing | fix, cluster B (after nav-morph lands) |
-| N3 | `main-thread-infinite-animations` | hero CTA orbit animates a registered angle in a conic gradient: style + repaint every frame, also off-screen; static conic on a child rotated with `transform`, IO pause | fix |
+| N3 | `main-thread-infinite-animations` | hero CTA orbit animates a registered angle in a conic gradient: style + repaint every frame, also off-screen; static conic on a child rotated with `transform`, IO pause | **rejected 2026-10-01**: orbit `display:none` (F-015); see `fixes/main-thread-infinite-animations` |
 | N4 | `custom-property-scope` | register per-frame custom properties `inherits: false` and write them on the element that uses them (~850x cheaper per change on a large subtree) | fix, touches every `setProperty` caller: cluster A |
 | N5 | `layer-diet` | leftover `will-change` / `blur(0)` layers (countdown faces, stages); count in the Layers tab | fix |
 | N6 | `nav-backdrop-budget` | always-on nav backdrop-filters re-blur per frame on the iPhone GPU; size with a semi-opaque-solid variant | iPhone only |
