@@ -517,3 +517,40 @@ the copies the line numbers were taken from. The phone's Safari build may differ
 The Chrome ST-4 build check (fix-scroll-engine, 12:24Z) is valid as a build check: childList 75/75 vs 0/0;
 `contain: strict` is applied. Its Layout roots are Chrome's: all three arms report document-rooted layouts,
 `st4-strict` included. That is **not** evidence for WebKit's root and does not change A2's prediction.
+
+### 7.7 Pre-registered decision table for the merged block P14 (before data)
+
+**Block.** C aw1-10e, V1 st4-strict (`contain: strict` on `.is-carousel`), V2 re-contain (`contain: layout size`
+around #people). One uncounted st4-rotoff attribution run follows. The source is the same pin `a1fb7ce`.
+
+**Source facts (CONFIRMED on that commit):**
+- **Only ancestors are boundary-checked.** `markContainingBlocksForLayout` starts at `container()` and tests
+  `isLayoutBoundary` only on ancestors (`RenderObject.cpp` L596-650). A renderer that marks *itself* dirty is
+  never its own boundary.
+- **The carousel can mark itself.** `RenderElement::setChildNeedsLayout` marks from the element's own container
+  upward (`RenderElement.h` L489-497). `RenderTreeBuilder` calls it on the parent at insert when the parent is
+  not already child-dirty (`RenderTreeBuilder.cpp` L524-555).
+  - So a path where the carousel marks *itself* skips the carousel's own boundary and reaches the next boundary
+    above.
+  - Whether that path fires here is UNRESOLVED. It needs the new child to be self-dirty already at attach.
+    `initializeStyle` (`NewStyle`) does not set that (`RenderElement.cpp` L583-589, L1396-1399), and no trigger
+    has been found.
+- **On these rules the carousel is already a boundary in C**, as arch-claims also reads it: non-visible
+  overflow, fixed 104×32, a flex container (new formatting context).
+- Therefore, if the phone matches `main`, V1 changes nothing for marking that comes up from the imgs.
+
+**Decision table:**
+
+| C root | V1 root | V2 root | reading |
+|---|---|---|---|
+| view | **carousel** | (any) | The phone's rules differ from `main` (**W1**): in C the carousel was not a boundary on the phone; forced containment makes it one |
+| view | view | **#people** | The marking enters at or above the carousel but below #people: the carousel marks itself (path above), or preferred-width/flex marking through the proof and pill (**W2**). The fix is a boundary above the carousel, not on it |
+| view | view | view | **W3** (a pending full layout absorbs the subtree root, `scheduleSubtreeLayout` L778-781) or a dirtier outside #people. Read rotoff and the co-occurring InvalidateLayout records |
+| carousel / small | (any) | (any) | The C baseline moved (phone build or snapshot changed). Stop and re-check the build |
+
+- **Cost prediction:** wherever the root moves off the view, the rotator's Layout drops below 1 ms (carousel)
+  or to at most half of C's median (#people).
+- **Idle at y 0:** v>=3 drops in proportion to the rotator's share (2 writes/s).
+
+The A2 prediction in 7.4 assumed C's carousel is *not* a boundary on the phone. This table replaces it: on
+`main`'s rules V1 should change nothing unless W1 holds.
