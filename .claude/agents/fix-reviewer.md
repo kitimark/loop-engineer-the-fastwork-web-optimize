@@ -88,9 +88,10 @@ card templates: `fixes/_template/CARDS.md`; done items 9-14 in `fixes/README.md`
 14. **Geometry and hashes.** Attribution probes ran at the phone geometry (430x775 / 430x815), positions are by
     crossing, not raw y; the served hashes of every phone run match the slot ticket and the build card.
 15. **Phone block hygiene:** heat note, warm-up run, sentinel passed on every control (a failing control voids the
-    runs since the last passing one), within-block comparison against the exact base, ticks (k≥5, k≥7) and
-    median [IQR] with every run; no frames pooled across runs. Warm-up per arm's port; battery temp per run; both
-    threshold forms on the phone, threshold-sensitive verdicts flagged; M runs with the time-since-start profile.
+    runs since the last passing one), within-block comparison against the exact base, phone frames in ms (dt > 50
+    goal, dt > 34, no k forms on the phone) and median [IQR] with every run; no frames pooled across runs. Warm-up
+    per arm's port; battery temp and Low Power Mode per run; the ±4 ms sensitivity counts (dt>46/54, dt>30/38),
+    verdicts that differ across them flagged threshold-sensitive; M runs with the time-since-start profile.
     Chrome numbers compare only within one hold while `fixes/LEAD.md` "Canary drift" stands, with the same display
     state on both sides.
 16. **Build card:** frozen-frame diff 0 %, backdrop/filter look check (Page.snapshotRect doesn't render
