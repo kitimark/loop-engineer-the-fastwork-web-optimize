@@ -609,6 +609,34 @@ References: C aw1-10e (view at both tick types), V1 st4-noswap (gone).
   - Flips per slide cycle, sampled per rAF from computed style (any img whose `transform` is `none` or `opacity` is `1`, before vs after): st5 and waapi ≥2, st6 0, noanim 0. This is Chrome's check that st6 really removes both flips.
   - Parity: the screenshot diff of st6 vs st5 during the slide is ≤0.4 % (0.999 opacity is invisible).
 
+**Chrome counts result** (short-lane hold, 20:13-20:15Z):
+- Setup: `<scratchpad>/layout-containment/splitprobe.mjs` via `split.sh`, output `split-0313/`. 430x775 DPR 3, no throttle, y 1500, 8 s trace, 8 start and 8 swap windows per arm. Served hashes all match the ticket.
+- Counts only, OBSERVED in our setup. The window columns are medians per window (start = mark to +220 ms, swap = mark to +120 ms) and include the rest of the page's per-frame style work, so compare them against V1.
+
+| arm | animations 2 rAF after start / swap | flag flips per 3 cycles (start / swap) | start: UpdateLayoutTree, elementCount | start: Layouts, dirty / total, root | swap: elementCount, Layouts |
+|---|---|---|---|---|---|
+| C | 6 / 0 | 16 / 12 | 11, 165 | 2, 37 / 1691, view | 31, 1 |
+| V1 | 0 / 0 | 0 / 0 | 9, 94 | 1, 22 / 1690, view | 19, 1 |
+| st5 | 6 / 0 | 8 / 7 | 11, 165 | 1, 22 / 1691, view | 40, 1 |
+| st5-noanim | 0 / 0 | 0 / 0 | 10, 109 | 1, 22 / 1691, view | 13, 1 |
+| st5-waapi | 6 / 0 | 8 / 7 | 13, 172 | 1, 22 / 1691, view | 24, 1 |
+| st6 | 6 / 0 | **0 / 0** | 12, 172 | 1, 22 / 1691, view | 32, 1 |
+
+- **Flips.** A flip is a change of an img's computed `transform == none` or `opacity == 1` between rAFs.
+  - st6 never has one: every slot reads "t,o" throughout. st5 and waapi flip about 2.7 times per start and 2.3 per swap.
+  - So st6 removes both flips (de-pm-hero's pre-phone check).
+  - The `.is-sliding` class was seen in st5, noanim and st6, and never in waapi.
+- **Parity.** Screenshots of waapi and st6 against st5 at t = 0, 110 and 215 ms and after the swap all differ by 0.00 % (max channel difference 0).
+- **Predictions:**
+  - Animation counts 6/6/6/0: **HIT**.
+  - Flips (st5 and waapi ≥2, st6 and noanim 0): **HIT**.
+  - No extra Layout in any st5 arm: **HIT**. Every arm, V1 included, has 1 Layout per start window, 22 dirty of 1691, rooted at the view, as on every Chrome Layout on this page. C has 2 and 37.
+  - Parity: **HIT**.
+  - elementCount "≤10 and about equal": **MISS**. The window sums include the page's other recalcs (V1 94). Relative to V1:
+    - the class-only invalidation (noanim) adds ~15;
+    - running the 6 animations adds ~70-78 (st5 +71, waapi +78, st6 +78), consistent with the 6 animations' per-frame style updates over the 220 ms window.
+- **As predicted, Chrome doesn't discriminate** between the arms' Layout. The roots answer is the phone's.
+
 **Safari attribution ticket (split; attribution only, no fps or frame verdict, not a gain block).**
 - **Where.**
   - On the Simulator if de-counts-sim's C/N gate passes (C ~all ticks view-rooted, N few).
