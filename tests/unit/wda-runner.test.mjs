@@ -13,7 +13,7 @@ import { REPO, tempDir, sleep } from '../helpers.mjs';
 const holder = (o) => ({ resource: 'chrome-measure', owner: 'x', kind: 'lease', token: 'aaaaaaaaaaaa', expiresAt: new Date(Date.now() + 60000).toISOString(), ...o });
 
 test('buildGate: only inside our own chrome-measure hold (review-gesture 1: a free lock or a short holder is not enough)', () => {
-  const HOLD = /node tools\/lock\.mjs run chrome-measure --owner me --max-seconds 600 -- node tools\/iphone\.mjs wda build --owner me/;
+  const HOLD = /node tools\/lock\.mjs run chrome-measure --owner me --no-timing --max-seconds 600 -- node tools\/iphone\.mjs wda build --owner me/;
   const no = (s, held) => { const g = buildGate(s, held, { owner: 'me' }); assert.equal(g.ok, false, JSON.stringify(g)); assert.match(g.reason, HOLD); return g.reason; };
   // free or stale: someone's A/B could be granted the lock mid-build
   assert.match(no({ holder: null, stale: null }, ''), /chrome-measure is free, but this process does not hold it/);
@@ -29,6 +29,8 @@ test('buildGate: only inside our own chrome-measure hold (review-gesture 1: a fr
   assert.deepEqual(g, { ok: true, timeoutMs: BUILD_MAX_SEC * 1000 }, 'a normal hold that declared no length: the normal-hold cap');
   g = buildGate({ holder: run({ meta: { expectSec: 600 } }), stale: null }, 'chrome-measure:aaaaaaaaaaaa', { now });
   assert.deepEqual(g, { ok: true, timeoutMs: BUILD_MAX_SEC * 1000 }, 'a fresh `run --max-seconds 600`: 540 s (< 600 - 15)');
+  g = buildGate({ holder: run({ meta: { expectSec: 600 }, noTiming: true }), stale: null }, 'chrome-measure:aaaaaaaaaaaa', { now });
+  assert.deepEqual(g, { ok: true, timeoutMs: BUILD_MAX_SEC * 1000 }, 'the suggested `run --no-timing --max-seconds 600` hold (ts-lock-bundle)');
   // review-gesture-2: the cap is min(540 s, what is left of the declared hold - 15 s): time already spent counts
   g = buildGate({ holder: run({ meta: { expectSec: 600 }, acquiredAt: new Date(now - 300000).toISOString() }), stale: null }, 'chrome-measure:aaaaaaaaaaaa', { now });
   assert.deepEqual(g, { ok: true, timeoutMs: 285000 }, '300 s into a 600 s hold: 300 - 15 s');
@@ -43,7 +45,7 @@ test('buildGate: only inside our own chrome-measure hold (review-gesture 1: a fr
   // our own short-lane hold is refused too (lead's policy: the short lane is for bounded jobs <= 300 s)
   g = buildGate({ holder: holder({ short: true, maxSec: 300, expiresAt: new Date(now + 305000).toISOString() }), stale: null }, 'chrome-measure:aaaaaaaaaaaa', { now, owner: 'me' });
   assert.equal(g.ok, false);
-  assert.match(g.reason, /your chrome-measure hold is a short-lane job \(max 300 s\).*Run it in a normal hold:\n  node tools\/lock\.mjs run chrome-measure --owner me --max-seconds 600 -- /s);
+  assert.match(g.reason, /your chrome-measure hold is a short-lane job \(max 300 s\).*Run it in a normal hold:\n  node tools\/lock\.mjs run chrome-measure --owner me --no-timing --max-seconds 600 -- /s);
 });
 
 test('runGroup: the timeout stops the child\'s whole process group (SIGKILL after the grace for a member ignoring SIGTERM); a normal exit passes through (review-gesture-2 B2)', async () => {

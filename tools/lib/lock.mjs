@@ -59,6 +59,16 @@
 // waiter's queue entry (kept across short jobs) into the grant's `gate.sleptSec` / `gate.woke`, and verify.mjs
 // warns on a run of such a hold. The gateMaxWaitSec cap counts awake time only, and a window the host slept
 // through never ends in a gate timeout (review-host-state B1): the next, fresh window decides.
+//
+// No-timing holds (ts-lock-bundle; `lock.mjs run --no-timing`): a normal job that measures nothing (a build, other
+// minutes of CPU work) still holds chrome-measure, so no measurement runs beside it (Hard rule 7), but it skips the
+// host gate: it does not need a quiet host and must not wait for one while the user works at the Mac. Its holder
+// carries `noTiming: true`. The gate's guarantee stays whole: a timing acquirer (a normal, gated one: verify.mjs,
+// fix.mjs ab, bench, a normal `lock.mjs run`) never re-enters a no-timing hold (FW_LOCK_HELD or same owner: it
+// throws), and after the hold every timing waiter passes the gate on a fresh window as usual. Short jobs and nested
+// no-timing runs may re-enter it. Timed iPhone runs refuse during it like during any normal hold (iphone-run.mjs).
+// A no-timing run nested inside a timing hold (FW_LOCK_HELD) throws too (a short hold may host it). Run only this
+// checkout's tools inside a no-timing hold; an older checkout's verify/ab/bench would not refuse.
 import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
@@ -241,17 +251,20 @@ function gateHolding(w, now, T = THRESHOLDS) {
 
 /**
  * One acquisition attempt. Returns {ok:true, holder} or {ok:false, holder, position, queue, next, gated}.
- * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held, host, thresholds}
+ * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held, host, thresholds, noTiming}
  * `held`: an FW_LOCK_HELD string; a token matching the live holder re-enters it ({reentrant, inherited}).
+ * `noTiming`: a normal job that measures nothing (a build, CPU work; `lock.mjs run --no-timing`): passes the host gate,
+ * and its holder carries `noTiming: true`. A timing acquirer (normal, not noTiming) never re-enters such a hold: throws.
  * `host`: for a GATED resource, the caller's latest host reading {quiet: true|false|null, reasons, sample}
  * (null quiet = not measured yet). Omitted: no gate (library callers that don't sample). A normal waiter
  * whose turn it is gets {ok:false, gated:true, gate} until host.quiet, or until the gate times out.
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec, held, host, thresholds: T = THRESHOLDS } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false } = opts;
   let { ttlSec, queueTtlSec = 600 } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
+  if (noTiming && short) throw new Error('--no-timing is for normal holds (builds, CPU work); a short job passes the host gate already');
   if (short) {
     if (!(maxSec > 0 && maxSec <= SHORT_MAX_SEC)) throw new Error(`a short job needs --max-seconds between 1 and ${SHORT_MAX_SEC} (got ${maxSec})`);
     ttlSec = kind === 'process' ? maxSec + 5 : maxSec; // + the grace `lock.mjs run` gives the command after SIGTERM
@@ -272,11 +285,18 @@ export async function tryAcquire(r, opts) {
       try { unlinkSync(holderFile(r)); } catch {}
       h = null;
     }
-    if (h && h.token && parseHeld(held)[r] === h.token) {
+    const inherit = h && h.token && parseHeld(held)[r] === h.token, same = h && h.owner === owner && (h.kind === 'lease' || h.pid === pid);
+    // a no-timing hold was granted without the host gate (the host may be loud, e.g. the user at the Mac, or the
+    // hold's own build): a timing run (verify.mjs, fix.mjs ab, bench, a normal `lock.mjs run`) never runs inside it
+    if ((inherit || same) && h.noTiming && GATED[r] && !short && !noTiming) throw new Error(noTimingRefusal(r, h));
+    // and the other way round (review N7): a --no-timing run (a build) never runs inside a timing hold, whose
+    // measurements it would load; a short hold may host it (short jobs measure nothing either)
+    if (inherit && noTiming && !h.noTiming && !h.short) throw new Error(noTimingNestedRefusal(r, h));
+    if (inherit) {
       // a descendant of the holder (FW_LOCK_HELD from `lock.mjs run`): runs under the ancestor's hold
       return { ok: true, holder: h, reentrant: true, inherited: true };
     }
-    if (h && h.owner === owner && (h.kind === 'lease' || h.pid === pid)) {
+    if (same) {
       // re-entrant for the same owner: refresh the TTL
       if (ttlSec && !h.short) h.expiresAt = new Date(Math.min(now + ttlSec * 1000, capMs(r, h))).toISOString();
       writeJson(holderFile(r), h);
@@ -291,7 +311,7 @@ export async function tryAcquire(r, opts) {
     // (not one the lead moved, and only early in its gate wait: gateHolding, I-030)
     const headOk = q.length === 0 || mine === ni || (short && GATED[r] && gateHolding(q[ni], now, T) && mine === q.findIndex((w) => w.short));
     let gateRec;
-    if (!h && headOk && GATED[r] && !short && host !== undefined) {
+    if (!h && headOk && GATED[r] && !short && !noTiming && host !== undefined) {
       const since = (mine >= 0 && q[mine].gate?.since) || new Date(now).toISOString();
       const waitedSec = Math.round((now - Date.parse(since)) / 1000);
       const x = host?.sample || {};
@@ -321,6 +341,7 @@ export async function tryAcquire(r, opts) {
         checkout: REPO, host: os.hostname(), acquiredAt: new Date(now).toISOString(),
         expiresAt: ttlSec ? new Date(now + ttlSec * 1000).toISOString() : undefined, meta,
         ...(short ? { short: true, maxSec } : {}),
+        ...(noTiming ? { noTiming: true } : {}),
         ...(gateRec ? { gate: gateRec, ...(gateRec.timeout ? { gateTimeout: true } : {}) } : {}),
       };
       if (gateRec?.timeout) { try { appendFileSync(hostAlertsFile(), JSON.stringify({ at: h.acquiredAt, resource: r, owner, event: 'gate-timeout', ...gateRec }) + '\n'); } catch {} }
@@ -332,7 +353,7 @@ export async function tryAcquire(r, opts) {
       return { ok: true, holder: h };
     }
     // busy (or someone else is served first): join / refresh the queue
-    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}),
+    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}), ...(noTiming ? { noTiming: true } : {}),
       // a gate wait survives a short job granted in between, so short jobs can't stretch the gate's cap
       ...(mine >= 0 && q[mine].gate ? { gate: q[mine].gate } : {}) };
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
@@ -340,6 +361,16 @@ export async function tryAcquire(r, opts) {
     writeJson(queueFile(r), q);
     return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)].owner };
   });
+}
+
+/** Why a --no-timing run may not run inside the timing hold `h` (ts-lock-bundle, review N7). */
+export function noTimingNestedRefusal(r, h) {
+  return `${r} is held by "${h.owner}" as a timing hold: a --no-timing run (a build, CPU work) never runs inside it, it would load the host under that hold's measurements. Run it in its own hold after this one: node tools/lock.mjs run ${r} --owner <you> --no-timing -- <build>`;
+}
+
+/** Why a timing acquirer may not run inside the no-timing hold `h` (ts-lock-bundle). */
+export function noTimingRefusal(r, h) {
+  return `${r} is held by "${h.owner}" as a no-timing hold (lock.mjs run --no-timing: builds and CPU work, granted without the host gate, so the host may be loud): a timing run (verify.mjs, fix.mjs ab, bench, a normal lock.mjs run) never runs inside it. Run it in its own hold after this one.`;
 }
 
 /**
@@ -394,16 +425,16 @@ export async function renew(r, { owner, ttlSec }) {
  * $FW_LOCK_HELD) returns at once, and its release() is a no-op: the outer holder releases.
  * Returns {holder, release(), reentrant}.
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, held = process.env.FW_LOCK_HELD, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, held = process.env.FW_LOCK_HELD, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false } = {}) {
   const t0 = Date.now();
   let lastLog = 0, wait = pollMs;
-  const gated = !!GATED[r] && !short;
+  const gated = !!GATED[r] && !short && !noTiming;
   let host = gated ? { quiet: null, reasons: ['not measured yet'] } : undefined;
   // ts-lock-bundle (b): the gate's timeout counts awake time, like its cap (review-host-state B1): the host sleep the
   // gate windows saw is subtracted, and a window the host slept through never ends in a throw (one fresh window decides)
   let gateSleptMs = 0, sleptLast = false;
   for (;;) {
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T });
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T, noTiming });
     // queued behind someone, or the head waiter held at the host gate on a host measured not quiet (ts-lock-bundle (a);
     // not the first, unmeasured round every gated grant takes): no system sleep while anyone waits (I-026 reopened);
     // a gate wait is minutes of waiting too, and a sleep in it only stretches it (I-033)

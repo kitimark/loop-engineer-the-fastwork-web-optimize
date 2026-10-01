@@ -88,7 +88,8 @@ function profileExpiry() {
 
 /** A normal hold's xcodebuild cap: inside the ~10 min a normal chrome-measure hold may last (CLAUDE.md). */
 export const BUILD_MAX_SEC = 540;
-export const buildHoldCmd = (owner = '<you>') => `node tools/lock.mjs run chrome-measure --owner ${owner} --max-seconds 600 -- node tools/iphone.mjs wda build --owner ${owner}`;
+// --no-timing (ts-lock-bundle): a build measures nothing, so it need not wait for a quiet host (the user may work at the Mac)
+export const buildHoldCmd = (owner = '<you>') => `node tools/lock.mjs run chrome-measure --owner ${owner} --no-timing --max-seconds 600 -- node tools/iphone.mjs wda build --owner ${owner}`;
 
 /**
  * May `wda build` (minutes of xcodebuild) run now? Only inside this process's own chrome-measure hold: the

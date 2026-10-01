@@ -8,6 +8,7 @@
 //   node tools/lock.mjs dequeue iphone --owner <topic>          # stop waiting
 //   node tools/lock.mjs run chrome-measure --owner <topic> -- <cmd> [args...]   # hold while cmd runs
 //   node tools/lock.mjs run chrome-measure --owner <topic> --short --max-seconds 150 -- npm test
+//   node tools/lock.mjs run chrome-measure --owner <topic> --no-timing --max-seconds 600 -- <build>   # CPU work, no host gate
 //   node tools/lock.mjs acquire chrome-measure --owner <topic> --short --max-seconds 180 --wait 1800
 //   node tools/lock.mjs wait chrome-measure --until free|idle|mine|held-by:<o>|released-by:<o>|'position<=N' [--owner <you>] [--for S] [--timeout 3600]
 //
@@ -53,6 +54,15 @@
 // display-sleep-preventing assertion (caffeinate -d) was active at its start and end, one JSON line per hold in
 // locks/holds.log; it warns on stderr when no such assertion is active, the host is already asleep (display off or DarkWake) at the start, or the display / wake state changed (T8+, I-033).
 // A host sleep inside a gate window makes that window not quiet; the grant's gate record carries sleptSec / woke (I-033).
+//
+// --no-timing (run only; ts-lock-bundle): a normal hold for work that measures nothing (xcodebuild, other minutes of
+// CPU) while it keeps measurements out (Hard rule 7). It waits its FIFO turn like any normal job, but skips the host
+// gate (it needs no quiet host: e.g. the user works at the Mac), records no display / wake state, and shows as
+// "(no-timing)" in status. Nothing timed runs inside it: a nested verify.mjs / fix.mjs ab / bench / normal `run`
+// refuses to start (exit 1, "no-timing hold"), timed iPhone runs refuse as during any normal hold, and every timing
+// waiter after it passes the gate on a fresh window. Short jobs and nested --no-timing runs may run inside it; a
+// --no-timing run nested inside a timing hold refuses (exit 1). Run only this checkout's tools inside a no-timing
+// hold; an older checkout's verify/ab/bench would not refuse.
 //
 // Lock state looks wrong (a stale "short" last grant starving the short lane, a queue entry that never
 // goes away, a leftover guard dir)? Never edit the lock JSON by hand (incident I-012); use:
@@ -102,8 +112,9 @@ const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '-
 const [cmd, resource] = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 const owner = opt('owner', process.env.FW_LOCK_OWNER);
 const short = flag('short');
+const noTiming = flag('no-timing'); // ts-lock-bundle: a normal run that measures nothing (builds, CPU work): no host gate, never hosts a timing run
 const maxSec = short ? Number(opt('max-seconds', 120)) : undefined;
-const sh = (w) => (w.short ? ` (short, max ${w.maxSec} s)` : '');
+const sh = (w) => (w.short ? ` (short, max ${w.maxSec} s)` : w.noTiming ? ' (no-timing)' : '');
 const NORMAL_HOLD_SEC = 600; // a normal chrome-measure hold should end within ~10 min (I-020); `run --max-seconds` declares another length
 // a normal hold that declared its length (`run --max-seconds`, I-020) and passed it
 const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > Date.parse(h.acquiredAt) + h.meta.expectSec * 1000 ? ` OVERDUE (past its ${h.meta.expectSec} s; split long measurements into holds of 5-10 min, I-020)` : '');
@@ -117,7 +128,7 @@ function fmt(s) {
   return line;
 }
 const moved = (w) => (w.movedBy ? `, moved by ${w.movedBy}` : '');
-const fmtQueue = (q) => q.map((w, i) => `${i + 1}. ${w.owner}${w.short ? ` (short, max ${w.maxSec} s, since ${w.since}${moved(w)})` : ` (since ${w.since}${moved(w)})`}`).join(', ');
+const fmtQueue = (q) => q.map((w, i) => `${i + 1}. ${w.owner}${w.short ? ` (short, max ${w.maxSec} s, since ${w.since}${moved(w)})` : ` (${w.noTiming ? 'no-timing, ' : ''}since ${w.since}${moved(w)})`}`).join(', ');
 
 /** host: load1 30.4 | cpu 68 % busy (sys 33 %) over 3 s | mem pressure warn | gate CLOSED (...) since ... */
 function hostLine(host, list) {
@@ -189,6 +200,7 @@ async function main() {
   if (!resource) throw new Error(`usage: node tools/lock.mjs ${cmd} <resource> --owner <name>`);
   if (cmd === 'wait') return waitCmd();
   if (!owner && cmd !== 'release') throw new Error('--owner <name> is required (use your fix topic)');
+  if (noTiming && cmd !== 'run') throw new Error('--no-timing is for lock.mjs run (a normal hold that measures nothing: builds, CPU work)');
   const meta = {};
   if (opt('url')) meta.url = opt('url');
   if (opt('note')) meta.note = opt('note');
@@ -234,11 +246,11 @@ async function main() {
     // command keeps running (a measurement is never killed), but it warns and `status` shows the hold OVERDUE
     const expectSec = !short && (opt('max-seconds') !== undefined || LEASE_POLICY[resource]) ? Number(opt('max-seconds', NORMAL_HOLD_SEC)) : undefined;
     if (expectSec !== undefined) { if (!(expectSec > 0)) throw new Error(`--max-seconds must be a number of seconds > 0 (got ${opt('max-seconds')})`); meta.expectSec = expectSec; }
-    const { release: rel, holder, reentrant } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, timeoutSec: Number(opt('timeout', 3600)) });
+    const { release: rel, holder, reentrant } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, timeoutSec: Number(opt('timeout', 3600)) });
     // T8+ (I-033): a chrome-measure hold records the display / wake state and whether a display-sleep-preventing assertion
     // was active at its start and end (one JSON line per hold in locks/holds.log); a hold without one, or one in
     // which the display or wake state changed, warns on stderr (U1: display on ~76 fps vs DarkWake ~93 fps)
-    const powerStart = GATED[resource] && !reentrant ? await hostPower() : null;
+    const powerStart = GATED[resource] && !reentrant && !noTiming ? await hostPower() : null; // a no-timing hold measures nothing: no display / wake record
     if (powerStart && powerStart.displaySleepPrevented === false) console.error(`[lock ${resource}] no display-sleep assertion is active (pmset -g assertions: PreventUserIdleDisplaySleep 0): the display may sleep during this hold and change what it measures (T8+, I-033)`);
     // review-host-state N1: an assertion (caffeinate -d) keeps a lit display lit, it does not light a dark one or end DarkWake
     if (powerStart && (powerStart.display === 'off' || powerStart.fullWake === false)) console.error(`[lock ${resource}] the host is not awake at the start of this hold (${[powerStart.display === 'off' ? 'display off' : null, powerStart.fullWake === false ? 'DarkWake' : null].filter(Boolean).join(', ')}): a display-sleep assertion does not wake it; what this hold measures may not compare with an awake host (T8+, I-033)`);

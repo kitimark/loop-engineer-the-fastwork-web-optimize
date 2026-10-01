@@ -128,3 +128,28 @@ test('T8+ (I-033): a chrome-measure `run` logs display / wake / display-sleep as
   assert.equal(lock({}, 'run', 'iphone', '--owner', 'p', '--', ...cmd).code, 5);
   assert.equal(log().length, 3);
 });
+
+test('run --no-timing (ts-lock-bundle): granted on a busy host without the gate, shown as no-timing; a timing run inside refuses, a short one runs; no holds.log line', () => {
+  const N = JSON.stringify(process.execPath), Q = JSON.stringify(LOCK);
+  const inner = [
+    `${N} ${Q} status chrome-measure --no-host`,
+    `${N} ${Q} run chrome-measure --owner inner -- ${N} -e "process.exit(0)"; echo "timing=$?"`,
+    `${N} ${Q} run chrome-measure --owner npm-test --short --max-seconds 60 -- ${N} -e "process.exit(0)"; echo "short=$?"`,
+  ].join('; ');
+  const r = lock({ FAKE_HOST_BUSY: '0.6' }, 'run', 'chrome-measure', '--owner', 'build', '--no-timing', '--', 'sh', '-c', inner);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^chrome-measure {2}held by "build" \(no-timing\) \[process pid \d+\]/m);
+  assert.match(r.stdout, /^timing=1$/m);
+  assert.match(r.stderr, /chrome-measure is held by "build" as a no-timing hold .* never runs inside it/);
+  assert.match(r.stdout, /^short=0$/m);
+  assert.doesNotMatch(r.stderr, /host is not quiet|display-sleep/);
+  assert.equal(existsSync(join(state, 'locks', 'holds.log')), false, 'a no-timing hold records no display / wake state');
+  assert.equal(existsSync(join(state, 'locks', 'host-alerts.log')), false);
+  assert.equal(holder(), null, 'released');
+  const a = lock({}, 'acquire', 'chrome-measure', '--owner', 'x', '--no-timing');
+  assert.equal(a.code, 1);
+  assert.match(a.stderr, /--no-timing is for lock\.mjs run/);
+  const s = lock({}, 'run', 'chrome-measure', '--owner', 'x', '--no-timing', '--short', '--max-seconds', '60', '--', process.execPath, '-e', '0');
+  assert.equal(s.code, 1);
+  assert.match(s.stderr, /--no-timing is for normal holds/);
+});

@@ -367,7 +367,7 @@ test('wda build: lease; only inside our own chrome-measure hold (not on a free l
   assert.match(r.stdout, new RegExp(`^sources: +missing; run: git clone --depth 1 --branch v[0-9.]+ https://github\\.com/appium/WebDriverAgent ${w.home}/WebDriverAgent$`, 'm'));
   assert.match(r.stdout, /^build: +none/m);
   assert.match(r.stdout, /^wda: +not reachable/m);
-  const HOLD = /\n {2}node tools\/lock\.mjs run chrome-measure --owner me --max-seconds 600 -- node tools\/iphone\.mjs wda build --owner me/;
+  const HOLD = /\n {2}node tools\/lock\.mjs run chrome-measure --owner me --no-timing --max-seconds 600 -- node tools\/iphone\.mjs wda build --owner me/;
   mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
   const xbCalls = () => (existsSync(w.env.FAKE_XCODEBUILD_LOG) ? readFileSync(w.env.FAKE_XCODEBUILD_LOG, 'utf8').trim().split('\n').filter(Boolean).length : 0);
   // a free lock: a queued A/B would be granted it mid-build
