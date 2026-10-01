@@ -1,0 +1,70 @@
+{
+  "name": "arm-scope-touch-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "P-036 (fix-nav-morph): G driver for F3 mw10e-arm-scope vs aw1-10e touch-to-scroll start. Up strokes from rest in three scroll zones, read by stroke-start scrollY: Z1 before the IO edge (phone y<1900; no non-passive touch listener under the finger in either arm), Z2 after the edge with #platform off screen (2100-3300; C has the window touchmove {passive:false}, V none under the finger), Z3 #platform under the finger (>=3800; both arms). Every zone stroke is a minjerk stroke that ends near rest, followed by settled + 700 ms, so every stroke starts a new touch sequence from a still page. Transit strokes (still profile) are marked 'transit' and not scored. End: two pushes into the end (info: morph response).",
+  "params": {
+    "x": 215,
+    "idleMs": 3000,
+    "zonePx": 280,
+    "zoneMs": 600,
+    "transitPx": 480,
+    "transitMs": 700,
+    "endY": 5000
+  },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": "$idleMs" },
+
+    { "type": "mark", "name": "z1" },
+    { "type": "repeat", "times": 4, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$zonePx", "ms": "$zoneMs", "profile": "minjerk" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 700 }
+    ] },
+
+    { "type": "mark", "name": "transit" },
+    { "type": "repeat", "times": 10, "until": "y>=2100", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$transitPx", "ms": "$transitMs", "profile": "still", "holdMs": 150 },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+
+    { "type": "mark", "name": "z2" },
+    { "type": "repeat", "times": 4, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$zonePx", "ms": "$zoneMs", "profile": "minjerk" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 700 }
+    ] },
+
+    { "type": "mark", "name": "transit" },
+    { "type": "repeat", "times": 10, "until": "y>=3800", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$transitPx", "ms": "$transitMs", "profile": "still", "holdMs": 150 },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+
+    { "type": "mark", "name": "z3" },
+    { "type": "repeat", "times": 3, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$zonePx", "ms": "$zoneMs", "profile": "minjerk" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 700 }
+    ] },
+
+    { "type": "mark", "name": "transit" },
+    { "type": "repeat", "times": 10, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$transitPx", "ms": "$transitMs", "profile": "still", "holdMs": 150 },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+
+    { "type": "mark", "name": "end" },
+    { "type": "repeat", "times": 2, "steps": [
+      { "type": "stroke", "dir": "up", "px": 240, "ms": 500, "profile": "minjerk" },
+      { "type": "pause", "ms": 1500 }
+    ] }
+  ]
+}
