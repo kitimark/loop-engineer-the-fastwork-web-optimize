@@ -423,7 +423,7 @@ Block: driver W at 430x775, Timeline on (depth 8) in all 9 counted runs, order C
   - If st5 is still view-rooted, the animations' layer changes are the escape. The fallback is the split arm
     (`ge` mounted with `animation: none`).
 
-## st5 build (F candidate for the rotator; Chrome mechanism + visual check done, phone block ticketed, id from mgmt-ops-6)
+## st5 build (F candidate for the rotator; Chrome mechanism + visual check done, phone block P-039 ticketed)
 
 **Build** `<scratchpad>/layout-containment/snap2/st5` (read-only), on aw1-10e:
 - JS 268a68962d186803988aad1298997fc400d1bebdcb92e3d45a03397c02d0230a
@@ -463,6 +463,9 @@ Block: driver W at 430x775, Timeline on (depth 8) in all 9 counted runs, order C
   - V1 st4-noswap: `snap2/st4-noswap`, JS b8c085d9b619, CSS c6aad94b455f. V1 is the "gone" reference.
 - Driver W at 430x775, same as P14: 6 s idle at y 0, then top → y≥2500. Timeline on (depth 8, Paint and Decode records kept) in all 9 counted runs, order C S V1 · V1 C S · S V1 C.
 - Sentinels: Timeline-OFF C runs at the open and the end, rule ≥58 bottom / ≥44 scroll.
+- **Same control for both reads** (mgmt-ops-6's second read):
+  - C and V1 are read from THIS block's values, never from P14's, because the phone arrives warm from the sitting and the style-recalc block.
+  - Battery °C per run and Low Power Mode are recorded.
 - Add-on: Timeline-OFF idle at y 1500, 40 s, 1 run per arm (info only, as in P14).
 - **Scoring:** same as P14 (`p14score.cjs`).
   - A tick is one L11571 TimerFire. A view tick has a ≥10 ms Layout with the 430x775 root (h 770-820) before the end of the first RenderingFrame after it.
@@ -471,6 +474,10 @@ Block: driver W at 430x775, Timeline on (depth 8) in all 9 counted runs, order C
   - Paint records inside the 220 ms slide windows are scored separately (de-pm-hero's note 2: whether WebKit composites a clip-path animation is UNRESOLVED).
 - **Minimums:** a run counts with ≥6 ticks. An arm needs ≥2 counting runs and ≥15 pooled ticks, otherwise UNRESOLVED.
 - **Bands:** gone ≤25 %, view ≥50 %, MIXED in between.
+  - **st5 is banded per tick type** (amended before the data, after mgmt-ops-6's second read). The rule stops one type at 50 % and the other at 0 % from pooling to "gone".
+    - The slide-start and swap ticks are banded separately. Each type needs ≥15 pooled ticks; with fewer, that type is UNRESOLVED. The run minimum (≥6 ticks) stays on the run's total.
+    - st5 is **gone** only if EACH type is ≤25 % view with its minimum met. It is **view** if either type is ≥50 %. Otherwise it is **MIXED**, read per type.
+    - The pooled share is reported beside the per-type shares, as information only.
 - **Reading:**
   - V1 not gone, or C not view: the references moved. Stop; no reading.
   - st5 gone: the escape was the remount (img renderer insert/remove), not the slide. Fixed slots keep the slide without it. st5 becomes the F build. Next: a gain block st5 vs C, and G/F before landing (touch).
@@ -480,7 +487,11 @@ Block: driver W at 430x775, Timeline on (depth 8) in all 9 counted runs, order C
   - st5 is gone (≤25 % view ticks).
   - st5's median tick Layout is <1 ms (V1 0.1 ms).
   - Info only: in the y 1500 Timeline-OFF add-on, st5 is near V1 (0 frames >50, >34 in single digits, twins included).
-  - If st5 is gone but its idle >34 stays near C's (47), the cost has moved to style/paint/composite: read Paint/Composite per tick before any win claim.
+  - If st5 is gone but its idle >34 stays near C's, the cost has moved to style/paint/composite: read Paint/Composite per tick before any win claim.
+    - **The number**, fixed before the data: in this block's Timeline-OFF y 1500 add-on, st5's dt>34 count is ≥ half of C's count in the same add-on.
+    - It must hold for both twins (>30 and >38). If a twin disagrees, the line is "threshold-sensitive".
+    - The line is readable only if C has ≥10 frames >34 there (P14 had 47); otherwise it is UNRESOLVED.
+    - Info only (n=1 per arm), with no win claim either way.
 - **Not this block's question:**
   - The reveal-flip frames (F-089; st5 carries no #people containment).
   - The y≈1960 rebuild frame.
