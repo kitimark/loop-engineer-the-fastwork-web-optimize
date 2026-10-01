@@ -279,6 +279,38 @@ g frame is > 34 ms and g renders fewer frames, the dt > 34 count inverts. Under 
 reversal makes **class 1 not usable**. Rule 2's ratios (sim+1)/(phone+1) for the M arms are 9.4 (C > 50),
 12 (V > 50), 0.77 (C > 34) and 62 (V > 34), so **class 2 is not usable**. Both verdicts stand whatever FP-2 shows.
 
+### 5.3 FP-4 (T+R: P3 Timeline arms; hold 15:52-15:59Z, window shown)
+
+Byte-identical `tlwin.mjs` (sha `3c8345c3b02bd93d`) with p3.sh's env (`IDLE_MS=6000 R3_Y0=0 R3_Y1=1800`, stop 1745,
+Timeline on); arms Q (aw1-10e), D (hero-re-dur), K (hero-re-keep), B (baseline), served from copies of the
+phone block's snapshots; warm-up per port; counted Q D K Q K D, then B B (the phone's order). Scored with the
+frozen scorer `tools/score4.mjs` (sha `8aed996e7d687152`; amendment 6 and pins; rotator line JS:11571, baseline
+11332). Records `out/arch-sim/sim-p3-*.json` + `.tl.json` (local, retagged). Host CPU busy 16-35 %.
+
+| arm | phone cells +700 / +900 / +1150 | Sim run 1 | Sim run 2 | cell agreement (both Sim runs) |
+|---|---|---|---|---|
+| Q | Y / Y / Y | Q1: Y / Y / Y | Q4: Y / Y / Y | 3/3 |
+| D | − / Y / Y | D2: − / Y / Y (+1207) | D6: − / Y / − | 2/3 (+1150 split) |
+| K | Y / − / − | K3: Y / − / − | K5: Y / − / − | 3/3 |
+| B | Y / Y / Y | B7: Y / Y / − | B8: Y / Y / Y (+1187) | 2/3 (+1150 split) |
+| rotator (1 cell) | HOLDS in 8/8 phone runs | HOLDS in all 8 Sim runs | (rotator-only Layouts 17.8-31.6 ms) | agree |
+
+- Cut 2 ms in every run (the Sim's shortest rotator-only idle Layout is ≥ 17.8 ms); no Layout of the reveal band
+  falls in [cut, 3·cut), so no cell is threshold-sensitive; `CUT=1` gives the same 13 scored cells.
+- Chance rates (share of 5 ms centres in +400..+1300 with a Layout ≥ cut within ±60 ms), Sim vs phone: Q 55/46 vs
+  54-58 %, D 45/43 vs 47-54 %, K 38/27 vs 22-27 %, B 80/82 vs 86-87 %. The Sim's Layouts are not denser than the
+  phone's, so agreement is not the busy-engine artefact amendment 6 guards against.
+- **Score: 11/13, all 3 phone-absence cells agree (D +700, K +900, K +1150).** The rule needs ≥ 12/13, so **class 4
+  is not usable** by the pre-registered rule, missing by one cell.
+- Both misses are the late +1150 window: the Sim's Layout lands at +1178..+1207 ms (phone +1136..+1152), just past
+  the ±60 ms band. The scripted scroll runs slower on the Sim (crossing at the same y-687, then y at +700 ms is
+  1133-1149 vs the phone's 1218-1224, and at +1150 ms 1453-1490 vs 1540-1555), so a fixed time offset from the
+  crossing reaches a smaller y on the Sim. A position-indexed cell would likely have caught both, but that is a
+  post-hoc reading and does not change the verdict (OBSERVED, in our setup).
+- Read: the Layout **mechanism** (which reveal phases lay out at all, the absences the hero fixes create, the
+  rotator's view-rooted Layout per tick) matches the phone in every cell where the Sim's slower clock does not
+  move the event across a window edge. It can screen "does this change remove/add a Layout", not "when".
+
 ## 6. Verdict table
 
 (pending: §4.3 applied to §5)
@@ -350,3 +382,5 @@ later option); any runtime download.
 - 15:51Z: amendment 6 (class 4 operationalized on phone data only; FP-4 queued, unread), sent to arch-claims.
 - 15:56Z: arch-claims' pins added; class-4 scorer frozen as `tools/score4.mjs` (sha256 `8aed996e7d687152`). On the 8
   phone runs it reproduces §7.9's 12 cells, and the rotator cell HOLDS in 8/8. FP-4 running since 15:52Z, output unread.
+- 16:01Z: FP-4 scored (§5.3): 11/13, all absences agree, rotator HOLDS 8/8; class 4 not usable (needs 12/13), both
+  misses at the +1150 window edge.
