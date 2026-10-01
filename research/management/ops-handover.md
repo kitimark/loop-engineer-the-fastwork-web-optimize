@@ -1,9 +1,9 @@
 # mgmt-ops living state (updated with every digest)
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
-or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Last instance:
-**mgmt-ops-4** (08:52-11:25Z; handing over at the phone-back boundary), worktree `.claude/worktrees/mgmt-ops-2` (sparse,
-on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-5** (spawned by the lead). Last update: **11:24Z**.
+or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
+**mgmt-ops-5** (from 11:26Z; mgmt-ops-4 ran 08:52-11:25Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
+snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-6** (at ~60 % context). Last update: **11:3xZ**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -17,6 +17,10 @@ on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-5** (spawn
 
 ## Digest log (newest first, 5 lines each)
 
+- **11:3xZ** (mgmt-ops-5) Took over. Lead 11:30Z: P10 change approved (gh-cdwc vs gh-cdwc + A1 only if P1 passes, gated
+  on the per-tween max edge leap; arch-lead writes it); user-ask bundle with the user now; ts-bench-gain (nit 1) being
+  spawned; T2 only after T1a lands (nit 3 in its prompt). Landed since 11:24Z: none new (main 5a3c72b). Asked
+  fix-nav-morph for the P1 ticket (gh-cdwc/gh-cdhid hashes + P-017 card). Caffeinate reminder ~12:50Z.
 - **11:25Z** P0 logger-ysrc A/A RUNNING since 11:23Z (hand-patched runner yswin.mjs, aw1-10e immutable :5476; battery
   80 %, not charging, 39.4 °C logged per run). Next P1+P2 once fix-nav-morph sends gh-cdwc/gh-cdhid hashes.
 - **11:24Z** HANDOVER to mgmt-ops-5 at the phone-back boundary (11:22Z). Runner has the §3 order and the P0 logger-ysrc
@@ -199,32 +203,29 @@ BATCH shas. **Stamp times from `date -u`** (mgmt-ops-4 drifted ~5-10 min ahead t
 `sh <scratchpad>/mgmt-ops/tick2.sh 150-240` (returns on incident changes; prints lock + phone state); messages arrive
 between tool calls.
 
-1. **iPhone order** (lead adopted arch-lead's `research/architecture/unknowns-actions.md` §3; phone back 11:22Z):
-   (1) P0 logger-ysrc A/A (ticket sent 11:2xZ; needs ts-iphone-run `--y-source` or hand-patched loggers) -> (2) P1
-   countdown probe P-017 (gh / gh-cdwc / gh-cdhid; fix-nav-morph builds) + P2 = P-016b (gh hold 900 vs 2000) -> (3) OSS
-   P0 ca-check (P-021; iphone-runner builds the page) -> (4) P3 ST-2 re-dur / re-keep (cleared by Chrome parity, pr5) +
-   ST-2d fling-hold (P-019, P-020) -> (5) P4 y≈1960 blocks: A = F1 mw10e-arm-load (P-013), B = F3 listener-scope
-   (P-022) or F2 (P-014/015) if F3 isn't ticketed -> (6) P11/P12 layout-containment (N14, fix-scroll-engine) + y≈2678
-   residual on na -> (7) P5 hero ST-1 (P-018; optional arm v2-endearly only on H2a/H2b) -> hero-B -> R2 bg (+ r3a/r3b)
-   -> /10d phone check (then a reviewer: lead) -> N12 -> P6-P10, P13 as ranked.
+1. **iPhone order** (lead adopted arch-lead's `research/architecture/unknowns-actions.md` §3; phone back 11:22Z;
+   updated 11:4xZ by mgmt-ops-5): (1) P0 logger-ysrc A/A (P-023, running since 11:23Z) -> **setup window** (runner
+   releases the lease in P0's cooling gap; user turns on Developer Mode = phone reboot; then ts-gesture `wda build` in
+   its own normal chrome-measure hold with the lease; the lead pings) -> T10 xctrace pairing check (~5 min, after the
+   lead confirms the setup) -> (2) **P1 VALIDATED** (P-017: gh a2b0be9a / gh-cdwc 66aaffb6 / gh-cdhid 89c1492e, JS
+   1df2484c, M Latin square 9 + 3 warm-ups + 3 Timeline cycles, ~25 min) + P2 = P-016b -> (F6 S run on
+   apple.com/iphone-18-pro, ~8 min: gap filler) -> (3) OSS ca-check (P-021) -> (4) P3 ST-2 (P-019, P-020) -> (5) P4
+   y≈1960 A = F1 (P-013), B = F3 (P-022; fix-nav-morph building, ticket owed) -> (6) P11/P12 + **ST-4** (P-025,
+   de-pm-hero; fix-scroll-engine builds A1-A3, combined ticket owed) -> (7) P5 ST-1 (P-018) + **P9** (P-026, nomask /
+   navw / split-trigger; fix-hero-exit builds, ticket owed; maybe merged into P5's slot) -> hero-B -> R2 bg -> /10d ->
+   N12 -> P6-P8, P10 (= P-024, only if P1 passes), P13.
    **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (until P1/P2), h4.
-2. **USER-ASK BUNDLE** (send to the lead as ONE list when it asks; the lead talks to the user):
-   - one-time WDA setup: Xcode Apple account, Developer Mode, Enable UI Automation, then Trust after the WDA build
-     (`wda build` only in its own NORMAL chrome-measure hold + the iphone lease; see item 5);
-   - T10 Instruments pairing check (`xcrun xctrace record --template 'Animation Hitches'` attaches to Safari; gates the
-     render-bound class: ghbn, morph backdrop, P7);
-   - C1 canary A/A with display on/off interleaved (needs the user's OK for `pmset displaysleepnow`);
-   - F6: navigate the phone to the Apple product page arch-apple studied (external navigation, user/lead approval);
-   - finger batch F1-F7 (~8-10 user min, `unknowns-actions.md` §3.5): settings check; `mw-stub` vs gh blind push past the
-     end (fix-nav-morph builds mw-stub); slow scroll y 1700-2300 aw1-10e vs F1; 3 flicks with touchstart timestamps +
-     Memory tracking; pacing page (de-unknowns-ux builds); 30 s on the Apple page; optional 240 fps clips. Plus the R2
-     clip-path/backdrop look (fw-clip-probe.html).
+2. **USER-ASK BUNDLE: answered 11:3xZ.** Approved: C1 (the lead runs it himself in the main checkout after T8+ /
+   I-033 lands and is reviewed, when the user is away from the Mac; P-027), F6 (phone visits the Apple page), T10
+   (Instruments pairing). WDA setup by the user in progress (step 1 Xcode account done 11:4xZ). The finger batch
+   F1-F7 + R2 clip look: tell the lead when its pages are built (mw-stub: fix-nav-morph; pacing page: de-unknowns-ux;
+   fw-clip-probe exists) AND P1/P2 are done; the lead pings the user.
 3. **Results routing:** y≈1960 -> fix-nav-morph (touch-only class: G or F before landing; F1 landing gate = touch latency,
    finger F4); morph -> fix-nav-morph + de-pm-morph (Composite carries the cost, ~78 layers per cycle; R1/R2 refuted);
    hero -> fix-hero-exit + de-pm-hero; y-source -> arch-lead; ca-check -> arch-oss-survey + de-oss-map (if F-048
    confirmed: OSS P2 blur-easing-cubic fixes our own T10 base and goes first); N14 -> fix-scroll-engine.
-4. **Pending lands (lead has them):** arch-lead 54f31a5, doc-protocol-v2 b4b2670 (U5 warm-up) + 5477db5 (A1-A9) /
-   c817435, ts-gesture follow-up (review-gesture-2 ACCEPT), de-oss-map 008e0d1 (if not yet). fix-scroll-engine's /10d
+4. **Pending lands:** none from docs agents (lead landed 180c570, e068698, 1d42399 directly). Toolsmiths: ts-host-state
+   T8+ (I-033), ts-bench-gain (I-034, nit 1), ts-render-signals (I-032), ts-iphone-run (T1a), ts-gesture follow-up. fix-scroll-engine's /10d
    stays parked until its phone check (no base change mid-queue).
 5. ts-gesture notes (apply once landed): `wda build` = `node tools/lock.mjs run chrome-measure --owner iphone-runner
    --max-seconds 600 -- node tools/iphone.mjs wda build --owner iphone-runner` (normal lane, iphone lease, xcodebuild
