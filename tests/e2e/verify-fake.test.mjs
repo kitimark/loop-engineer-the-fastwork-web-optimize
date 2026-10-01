@@ -425,11 +425,11 @@ test('I-023 watchdog: a step with no progress fails verify with a clear error, f
 });
 
 test('review-i027 1: the real host (FW_TEST_HOST \'\') keeps the real clock: a 1 s idle phase takes >= 1 s of wall time', async () => {
-  // npm test's guard against an unconditional clock swap (before, only test:chrome caught one). Real samplers:
-  // the recheck's quiet() window (10 s, real time) passes at once with these thresholds, so ~10-15 s of waiting.
+  // npm test's guard against an unconditional clock swap (before, only test:chrome caught one). Real samplers,
+  // but no recheck (--max-wait 0) and no Chrome warm-up wait: ~3 s of real time, whatever the host's load.
   const { d, env, args } = setup();
-  const real = { ...env, FW_TEST_HOST: '', FW_GATE_MAX_BUSY: '100', FW_GATE_MAX_LOAD1: '10000' }; // I-024 exception: review-i027 real-clock guard
-  const r = await nodeAsync(VERIFY, args('realclock', ['--idle', '1', '--no-lock']), { env: real, timeout: 180000 });
+  const real = { ...env, FW_TEST_HOST: '' }; // I-024 exception: review-i027 real-clock guard
+  const r = await nodeAsync(VERIFY, args('realclock', ['--idle', '1', '--max-wait', '0', '--chrome-warm', '0', '--no-lock']), { env: real, timeout: 120000 });
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
   assert.equal(res.results[0].host.stub, undefined, 'not stubbed');

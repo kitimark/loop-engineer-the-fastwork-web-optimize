@@ -43,7 +43,7 @@ import http from 'node:http';
 import https from 'node:https';
 import { REPO, resolveTree, checkoutId, isLinkedWorktree } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
-import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T } from './lib/host.mjs';
+import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T, stubOutsideTest } from './lib/host.mjs';
 import { launchChrome, CDP, browserVersion } from './lib/cdp.mjs';
 import { lintTopic, loadSpec, lintSpec, GAIN_METRICS } from './lib/bench-spec.mjs';
 import { patchHeader, baselineDrift, buildOverlay, listFiles, sha256File, landedTopics, gitShow, gitRev } from './lib/bench-overlay.mjs';
@@ -690,5 +690,10 @@ const cmds = { lint: () => cmdLint(args), mech: () => cmdMech(args[0]), gain: ()
 if (!cmd || !cmds[cmd]) {
   console.log(readFileSync(new URL(import.meta.url), 'utf8').split('\n').filter((l) => l.startsWith('//')).map((l) => l.slice(3)).join('\n'));
   process.exit(cmd ? 2 : 0);
+}
+if (cmd !== 'lint' && stubOutsideTest()) {
+  // review-i027 (as verify.mjs): a stubbed host would put fake waits and host records under a real Chrome's numbers
+  console.error(`bench: a stubbed host (FW_TEST_HOST=${process.env.FW_TEST_HOST}) outside a test, with a real Chrome: refused; unset FW_TEST_HOST to measure`);
+  process.exit(2);
 }
 Promise.resolve(cmds[cmd]()).then((c) => process.exit(c ?? 0), (e) => { console.error(e.stack || e); process.exit(1); });
