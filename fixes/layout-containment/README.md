@@ -3,8 +3,8 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). The builds' CSS/JS stay in gitignored overlays and scratchpad snapshots; never push.
 
-**Status:** draft (probe builds, no timing claim yet)
-**Stage:** R + I closed (desk + Chrome short lane, counts only); D needs the P11 phone Timeline pass (arms aw1-10e / aw1-cq3, lc-base / lc-cq3; F-052 folded in via the nested-in-RecalculateStyles count) and the merged P14 boundary block (below)
+**Status:** P11 done. lc-cq3 / aw1-cq3 gives no gain: the nested Layout is removed but its cost stays in the same frame (P-028 MISS on ms, see "P11 Block A result"). P14 is pending.
+**Stage:** R + I closed. The P11 phone pass is done (Block A; Block B skipped). D for the rotator question rests on the P14 boundary block (below).
 **Device class / gate:** phone-only (Chrome shows no full layouts and no style-nested layout, see the census) → phone Timeline attribution, then phone ABBA
 **Driver(s) behind the claims:** none yet (Chrome census/parity are mechanism checks, not timing)
 **Prediction:** `fixes/PREDICTIONS.md` P-028 (U3, lc-cq3 / aw1-cq3), P-025 is de-pm-hero's (ST-4, builds here)
@@ -161,6 +161,60 @@ by the scrollbar width); the slot and arm constants copy the CSS sizes, so a des
 Lead decision: P11 Block A and P14 do not share sentinel runs. Each block keeps its own Timeline-off sentinels,
 after the warm-ups and at the block end (protocol §5.2). Both blocks are cleared to run after the ca-check re-run,
 P-029 and P10, in mgmt-ops-5's phone order.
+
+## P11 Block A result (iphone-runner, 15:13-15:20Z; read here with iphone-runner's `p11an.mjs`)
+
+Setup: C aw1-10e vs V aw1-cq3 (CSS 8b96dc588847), driver W at 430x775, Timeline depth 8 on every counted run.
+iPhone 15 Pro Max, iOS 26.6.1 Safari, Low Power Mode off. Raw data: `out/iphone-runner/p11-*` in iphone-runner's
+worktree (not committed).
+
+**Block valid.** Both Timeline-OFF control sentinels passed: open and end each had bottom ≥58 fps (60.0 / 60.2)
+and scroll ≥44 fps (57.8 / 57.9).
+
+| run | rebuild frame dt (y) | Layout ms in that frame (records) | of which nested in RecalculateStyles | scroll phase: Layout ms (records), nested |
+|---|---|---|---|---|
+| C1 | 127 (1979) | 25.9 (6) | 2 recs, 24.6 ms | 463.6 (319), 35 |
+| C4 | 108 (1971) | 35.4 (6) | 2 recs, 22.4 ms | 465.7 (320), 40 |
+| C5 | 101 (1966) | 35.9 (7) | 2 recs, 22.1 ms | 475.5 (329), 39 |
+| C8 | 107 (1961) | 34.5 (5) | 2 recs, 21.6 ms | 450.8 (324), 40 |
+| V2 | 107 (1973) | 33.4 (3) | 0 | 515.6 (364), 0 |
+| V3 | 108 (1984) | 34.0 (3) | 0 | 504.1 (352), 0 |
+| V6 | 102 (1965) | 21.9 (4) | 0 | 461.8 (359), 0 |
+| V7 | 102 (1975) | 33.5 (4) | 0 | 455.1 (354), 0 |
+
+Frame counts per run, C1 C4 C5 C8 | V2 V3 V6 V7:
+
+| threshold | C | V | twins: C | twins: V |
+|---|---|---|---|---|
+| dt>50 | 3 1 1 1 | 1 1 2 1 | >46: 3 1 3 3; >54: 3 1 1 1 | >46: 1 2 3 2; >54: 1 1 1 1 |
+| dt>34 | 8 7 6 7 | 7 5 7 9 | >30: 12 8 12 10; >38: 7 4 6 6 | >30: 9 12 8 10; >38: 3 3 5 5 |
+
+- dt>50 and dt>34 are within noise. The >38 twin leans to V (C 23 vs V 16), so dt>34 is threshold-sensitive.
+
+**P-028 scored against its prediction:**
+- **Nested Layout removed: HIT.** C has 2 nested in every rebuild frame (21.6-24.6 ms) and 35-40 per scroll
+  phase; V has 0 in every run. So U3 holds on the phone: query containers make WebKit run Layout inside style
+  recalc (OBSERVED, 8/8 runs).
+- **Rebuild-frame Layout ms: MISS.** Medians are C 34.95 and V 33.45, so Δ −1.5 ms against a predicted −15
+  [−5, −25]. The Layout that left RecalculateStyles still runs in the same frame at about the same cost.
+- **Rebuild-frame dt: NULL.** Medians are C 107.5 and V 104.5 ms, so Δ −3. That is inside the predicted
+  [0, −50] but at its null end, and the frame stays above 100 ms in 8/8 runs.
+- **Steady frames: unchanged within noise.** Scroll-phase Layout total is 451-476 ms (C) vs 455-516 ms (V);
+  V has ~30 more, smaller records.
+- **Reading.** F-052/U3 is a real mechanism but not a cost. Lifting the interleaved Layout out of style recalc
+  saves nothing, because the same layout work stays dirty and runs right after. P-028's "−15 ms upper bound"
+  rested on U2 (WEAKENED above), and the phone confirms the weakening.
+- The ≥100 ms rebuild frame at the y≈1960 crossing has only 22-36 ms of Layout. Most of its time is elsewhere
+  and is not this topic's.
+
+**Block B: skipped (topic owner's call).** By the literal gate it is indicated: C showed nested Layouts and V
+removed them. But Block A shows that removing them saves no frame time.
+- On lc-base the nested share is smaller still: the L9 run has 40 nested records worth 44 ms per scroll phase,
+  and its y≈1960 frame is only 31 ms.
+- So Block B could at most repeat Block A's NULL, and it is not worth a phone block.
+
+**Verdict for lc-cq3 / aw1-cq3: no gain, not a landing candidate.** The F stage closes here. The topic's
+remaining question is P14 (the rotator's whole-view Layout).
 
 ## ST-4 builds (de-pm-hero's question, P-025; built here, read out by de-pm-hero)
 
