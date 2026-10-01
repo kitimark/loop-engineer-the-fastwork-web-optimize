@@ -347,3 +347,67 @@ from the root and re-walks every composited layer's event region. Arming them at
 load time, where no long frame shows. Timeline records stay in `out/` (`e-tc*.tl.json`); the frame/summary
 JSON is in `raw/`.
 
+## 4. Protocol-v2 sessions (from 10:57Z)
+
+Protocol v2 (research/architecture/measurement-protocol-v2.md §5) is applied by hand from here:
+- one question per block, and a warm-up per served origin;
+- immutable snapshot copies of every overlay (`out/iphone-runner/snap/`), with hashes checked on the served files;
+- at least 10 min of cooling between blocks;
+- from 11:23Z, every run records battery %, charging state and battery temperature (`batt.mjs`, `idevicediagnostics ioregentry AppleSmartBattery`).
+
+Timeline runs are attribution only: de-safari measured that the Timeline adds about 1-3 ms per frame.
+
+### 4a. Morph attribution session (10:57-11:09Z, control ctl-B20 pass: 53.3 / 59.8 / 60.2; idle 60.5 after every run)
+
+**P2: where the transition time goes.** One Timeline cycle each on gh, g, ghb and ghbn (`mdtl.mjs`). Per moving frame:
+script ~1 ms, style 1-5 ms, layout < 1 ms, Paint recording <= 4 ms. The cost is in **Composite minus its Paint
+children**:
+- gh: 31 ms in the first frame, 20-39 ms in the first 300 ms, 12 ms after 400 ms;
+- g: 40, 32 and 23 ms early, and it stays at 20 ms in the tail;
+- ghb: 30, 29 and 21 ms early, 12 ms late;
+- at rest: about 6.5 ms.
+
+de-safari's analysis (safari-render-signals.md §6) puts the cost at about 0.14 ms per repainted layer, almost
+independent of the painted area.
+
+**P3: LayerTree census over one gh cycle** (`lt.mjs`). Layers: 35 at rest, **113 at the m=1 hold**, 33 after.
+About 78 layers are created and destroyed per cycle, and memory goes from 106 to 117 MB. Repaints per tween frame
+(fwd / rev):
+
+| layer | repaints per frame (fwd / rev) |
+|---|---|
+| platform-card (430x1880; a tile count) | 11 / 14 |
+| platform-stage-artboard | 5.3 / 7.0 |
+| nav header | 1.2 / 2.6 |
+| column tracks | 1.0-1.5 / 0.7-0.9 |
+| veil, center, footer | ~0.6 |
+
+So gh's size-fixed children still repaint about every frame. The nav header's backing grows from 0.9 to 13.8 MB
+at the hold.
+
+**ghbn mechanism check:** the nav's computed `backdrop-filter` is `none` in 40/40 moving frames and 81/81 m=1
+frames, and `blur(20px)` at rest. Verified.
+
+**P-016 pair (gh, hold 2000 vs hold 250): invalid by design.** The tween takes ~650 ms (629-694 measured), so with
+hold 250 the panel reverses at m <= 0.81 and never rests. Re-ticketed as P-016b with hold 900.
+
+### 4b. P0 logger y-source A/A (11:23-11:30Z; 80 %, not charging, 39.4 -> 41.7 C)
+
+- Build: aw1-10e (snapshot JS 3e2f599a / CSS c6aad94b), S full pass, Timeline on.
+- The driver uses a fixed step count and reads no scrollY itself.
+- Arms, which differ only in where the rAF logger gets y:
+  - R: `scrollY` read in rAF (today's logger);
+  - E: a passive scroll listener;
+  - N: no y read.
+- Order: R E N / E N R / N R E after a warm-up, then an uncounted Heap pass.
+
+| arm | frames with >= 2 layouts > 0.5 ms | layouts > 0.5 ms | 12-17 ms layouts | layouts > 10 ms | tick median | k >= 5 (of ~420) |
+|---|---|---|---|---|---|---|
+| R | 4, 6, 4 | 45, 51, 47 | 20, 21, 20 | 25, 27, 26 | 2 | 7, 5, 7 |
+| E | 4, 4, 7 | 47, 59, 48 | 19, 22, 21 | 32, 29, 29 | 2 | 5, 8, 6 |
+| N | 5, 5, 2 | 53, 47, 44 | 23, 18, 21 | 29, 26, 26 | 2 | 7, 7, 7 |
+
+**The logger's rAF read is neutral:** no column moves beyond the run-to-run spread, so the rAF y source stays.
+The Heap pass delivered no `Heap.garbageCollected` events (Heap.enable is probably needed too), so GC is still
+unmeasured.
+
