@@ -262,6 +262,8 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
       - **Why the root is the view:** no layout boundary sits above the card (RenderObject.cpp l.523-562,
         598-660).
       - **Still OBSERVED:** the tie of each frame to this rule (the re-dur and re-keep ablations, n=2).
+      - **LIFTED (lead):** the presence-flip mechanism is CONFIRMED (§2.8, F-075). The attribution of these
+        phone frames to it stays OBSERVED (n=2).
 - **Fix only after NAMED:** end states that keep presence. `blur(0px)` / `translateY(0)` remove the +940
   layout. For opacity, either align its duration with the 0.9 s pair (two long frames → one) or end at 0.999.
   The 0.999 end needs a render-server check: group opacity on a full-section layer may cost an offscreen pass
@@ -729,5 +731,31 @@ from the flip, so they read here as about **+700 / +900**. Compare shifts, not a
 - baseline-A's +1645 frame is still unresolved: from +1119, baseline-A runs a Layout every frame under L11303
   (fix-hero-exit).
 
-**Next.** A build card for the end-state fix, held back by condition 2. Also a page-wide pitfall: every reveal
+**re-keep-op transparency-layer risk** (claims-audit §2.8 "Risk for re-keep-op", UNRESOLVED). Recorded
+before the untimed at-rest check of re-keep-op vs re-keep (ticket via mgmt-ops-5).
+- **Why the risk is live at rest here.** The avatar carousel (`.is-carousel`, template L11257) is *inside*
+  `.start-selling-future-card`. So the rotator (§7.2, about 2 writes per 1.05 s) repaints part of the card while
+  the page is idle.
+- **What it costs if the card is not composited.** At opacity 0.999, each of those repaints goes through
+  `beginTransparencyLayer` over the card (RenderLayerInlines.h l.70-75, RenderLayer.cpp l.2711-2737). That cost
+  recurs every rotator cycle, not once per pass.
+- **Readout per arm** (one untimed run each, page held at the card):
+  1. LayerTree, read outside any timed block: does the card have its own layer, and is it composited?
+  2. Idle Paint records whose clip intersects the card's rect, over about 10 s: count, total ms, median ms per
+     Paint.
+  3. Whether each such Paint follows a rotator Layout (Timer L11571) within 1 frame.
+- **Decision:**
+  - The card is composited in re-keep-op: the risk is void at rest (the opacity sits on the GraphicsLayer).
+  - Not composited, and no idle Paint touches the card: void at rest. Re-check during scroll.
+  - Not composited, with card-intersecting idle Paints: compare per-Paint ms against re-keep.
+    - Fail if the extra transparency cost across one pass's idle and scroll repaints is larger than the single
+      +700 Layout re-keep-op removes (12-15 ms per pass).
+    - Fallbacks:
+      - give the card its own compositing reason (`will-change: opacity`, which costs layer memory);
+      - or keep opacity at 1 and accept the +700 frame;
+      - or move the carousel's repaint off the card. A boundary does not help paint, so this means the
+        carousel's own layer.
+
+**Next.** A build card for the end-state fix. Conditions 1 and 2 are lifted. re-keep-op's gain block waits for the
+at-rest check above. Also a page-wide pitfall: every reveal
 that ends at `opacity: 1` / `filter: none` / `transform: none` pays this frame on the phone.
