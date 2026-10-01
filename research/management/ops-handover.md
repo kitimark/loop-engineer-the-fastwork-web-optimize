@@ -262,6 +262,15 @@ between tool calls.
    morph-ca -> fix-nav-morph (blur/opacity/scale usable; backdrop undecided, needs a larger-contrast lane).
    arch-oss-survey: no unlanded commits. Step-0 side observation (idle whole-view Layouts at rest on #people: rotator
    ~25-30 ms per tick; ~750 x 0.75 ms per 20 s from a per-frame RecalculateStyles) -> fix-scroll-engine + de-pm-hero.
+   **NAMED 15:0xZ, F-081 (OBSERVED, 1 run/arm, time association):** of ~795 small Layouts / 20 s: countdown digit spring
+   rAF (re-keep JS L4039, started by the 1 s setInterval L4142; on screen, so the off-screen gate rightly keeps it) ~320;
+   accent stroke-dashoffset 0.9 s animation (CSS L1274-1280, JS timers L3858/3864/3869, ~5 cycles / 20 s) ~440;
+   avatars-exit ~24; other 9. Cost ~165 ms / 20 s (~0.21 ms each, ~0.8 % main thread), no long frame -> no ticket now
+   (fix-scroll-engine); option: 2-3 min untimed rider (accent off + spring snapped, rest at y 904); accent fix idea:
+   animate a mask/clip transform instead of stroke-dashoffset. Why stroke-dashoffset invalidates WebKit layout:
+   UNRESOLVED. Spring rAF L4039 is a candidate for fix-nav-morph's countdown 1 Hz idle spike (PoC 3).
+   Lead 15:0xZ: 7b(f) option (A) not taken to the user (rebases change the staged tree; enforcement layer); (f) stays a
+   design in ts-lock-bundle's ticket; tell the lead if short-lane waits exceed ~15 min again.
    **F-076 / P-034 owner = fix-nav-morph after cdwc lands** (lead: same countdown code; no fix-countdown-idle-raf spawn).
    Toolsmith bundle: lead spawns after ts-wait's npm test on main (c4a1ee2) passes. ts-user-console (tools/console.mjs:
    user-facing step console, agents `console.mjs wait <id> --until started|answered`) in progress.
