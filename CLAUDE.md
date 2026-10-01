@@ -82,7 +82,8 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    separation; ask rules on the enforcement layer. Details: "Tooling is guarded by tests".
 7. **Chrome measurements only through the `chrome-measure` lock:** `tools/verify.mjs` or
    `tools/fix.mjs ab`, never `--no-lock`, and no CPU-heavy work (builds, `npx`, other Chromes) while
-   anyone holds the lock. *Why:* A/B numbers only compare on a quiet machine. *Enforced:* both tools
+   anyone holds the lock (builds: `lock.mjs run chrome-measure --no-timing`, see "Shared devices").
+   *Why:* A/B numbers only compare on a quiet machine. *Enforced:* both tools
    take the lock themselves; deny rule on `--no-lock`; `results.json` records host load.
    Details: "Shared devices".
 8. **No chrome-devtools MCP performance traces.** Use `verify.mjs`, `fix.mjs ab`, `tools/lib/cdp.mjs`.
@@ -471,6 +472,10 @@ can't be renewed). A chrome-measure lease defaults to 600 s and ends by 1200 s. 
 wait: a waiter not seen for 30 s is skipped at a hand-over but keeps its place. Only for
 short, bounded jobs such as `npm test` and benchmark mechanism checks (`bench mech`, counts only,
 <= 180 s); never for a timing measurement.
+A build or other CPU work that measures nothing takes a normal hold: `node tools/lock.mjs run chrome-measure
+--owner <you> --no-timing --max-seconds 600 -- <build>`. It waits its FIFO turn but skips the host gate; nothing
+timed (verify.mjs, fix.mjs ab, bench, a normal `run`) may run inside it, short jobs may, and a `--no-timing` run
+inside a timing hold refuses. Run only this checkout's tools inside it.
 
 ```sh
 node tools/lock.mjs status                                   # who holds what, who is queued
