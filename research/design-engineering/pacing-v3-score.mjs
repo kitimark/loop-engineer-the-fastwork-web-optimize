@@ -169,19 +169,57 @@ if (out.sessions.length > 1) {
 }
 
 // ------------------------------------------------------------------------------------------------ G runs
+// Second read (mgmt-ops-5, 2026-10-01, before any data), amendments 1-3 in pacing-result.md §5:
+//  1. heat sentinel: hero-none (no load) runs are the block's sentinels; one passes when its moving rAF gaps have
+//     p50 <= 17.5 ms and p95 <= 18 ms. Runs are ordered by startedAt (the gesture's reload sets it). A counted run
+//     is read only when a passing sentinel comes before it and one after it with no failing sentinel in between;
+//     a failing sentinel voids every run since the last passing one. Runs before the first sentinel (warm-up) are
+//     never counted.
+//  2. (stimulus frozen: v3-load.js at 867fa88; nothing here)
+//  3. separated = median of per-run medians (V) - median of per-run medians (C) >= 16.7 ms AND every V run median >
+//     every C run median, >= 3 valid runs each. Time base: touchstart Event.timeStamp and the rAF callback timestamp,
+//     both taken as performance.now() clock (UNRESOLVED C2; a run whose touchmove timeStamp is later than its
+//     handler's performance.now() by > 1 ms is flagged, and any such run makes the time base suspect). A scroll run
+//     with < 3 scroll starts (touch-to-scroll n < 3) is void.
+const SENT = { state: 'hero-none', p50: 17.5, p95: 18 };
 const gdocs = docs.filter((x) => x.d.mode === 'g');
 if (gdocs.length) {
-  const byState = {};
+  const runs = [];
   for (const { file, d } of gdocs) {
     if (!d.visit) continue;
-    const m = visitMetrics(d.visit);
-    (byState[d.state] ??= []).push({ file, label: d.label || null, rafMs: d.rafMs, ...m });
+    runs.push({ file, startedAt: d.startedAt, rafMs: d.rafMs, ...visitMetrics(d.visit) });
   }
+  runs.sort((a, b) => String(a.startedAt).localeCompare(String(b.startedAt)));
+  // heat sentinel walk
+  const sentinels = [];
+  let pending = [], seenPass = false;
+  for (const r of runs) {
+    if (r.state === SENT.state) {
+      r.sentinel = r.movingGaps.n > 0 && r.movingGaps.p50 <= SENT.p50 && r.movingGaps.p95 <= SENT.p95 ? 'pass' : 'FAIL';
+      sentinels.push(`${r.file}: ${r.sentinel} (moving p50 ${r.movingGaps.p50}, p95 ${r.movingGaps.p95} ms, n ${r.movingGaps.n})`);
+      for (const p of pending) p.cover = r.sentinel === 'pass' ? (seenPass ? 'covered' : 'before first passing sentinel') : `void: sentinel ${r.file} failed`;
+      pending = [];
+      if (r.sentinel === 'pass') seenPass = true;
+      continue;
+    }
+    if (!seenPass) { r.cover = 'before first passing sentinel'; continue; }
+    pending.push(r);
+  }
+  for (const p of pending) p.cover = 'no closing sentinel';
+  for (const r of runs) {
+    r.void = [];
+    if (r.state !== SENT.state && r.cover !== 'covered') r.void.push(r.cover || 'uncovered');
+    if (r.surface === 'scroll' && r.state !== SENT.state && (r.touchToScrollMs?.n ?? 0) < 3) r.void.push(`${r.touchToScrollMs?.n ?? 0} scroll starts (< 3)`);
+    if (r.touchmoveQueueMs.negative > 0) r.void.push(`time base suspect: ${r.touchmoveQueueMs.negative} touchmoves with timeStamp > handler time`);
+  }
+  const byState = {};
+  for (const r of runs) (byState[r.state] ??= []).push(r);
   const runMed = (rs, f) => rs.map(f).filter((x) => x != null);
-  const G = { states: {}, reading: {} };
-  for (const [st, rs] of Object.entries(byState)) {
+  const G = { order: runs.map((r) => `${r.state}${r.sentinel ? `[sentinel ${r.sentinel}]` : r.void.length ? '[void]' : ''}`), sentinels, voided: runs.filter((r) => r.void.length).map((r) => `${r.file} ${r.state}: ${r.void.join('; ')}`), states: {}, reading: {} };
+  for (const [st, all] of Object.entries(byState)) {
+    const rs = st === SENT.state ? all : all.filter((r) => !r.void.length);
     G.states[st] = {
-      runs: rs.length,
+      runs: rs.length, voided: all.length - rs.length,
       touchToScrollP50: runMed(rs, (m) => m.touchToScrollMs?.p50),
       dragLagP50: runMed(rs, (m) => m.dragLagMs?.p50), dragLagP90: runMed(rs, (m) => m.dragLagMs?.p90),
       queueP50: runMed(rs, (m) => m.touchmoveQueueMs.p50),
@@ -189,9 +227,9 @@ if (gdocs.length) {
       cancelableShare: runMed(rs, (m) => m.cancelableShare), busyShare: runMed(rs, (m) => m.load.busyShare), loadOk: rs.every(loadOk),
     };
   }
-  // the G reading (§5): per-run medians, separated when the two sets of runs do not overlap (>= 3 runs each)
+  // separated: median(per-run medians of b) - median(per-run medians of a) >= minDiff and every b > every a (>= 3 runs each)
   const sep = (a, b, minDiff) => {
-    if (a.length < 3 || b.length < 3) return `too few runs (${a.length} vs ${b.length})`;
+    if (a.length < 3 || b.length < 3) return `too few valid runs (${a.length} vs ${b.length}): not read`;
     const d = (med(b) ?? 0) - (med(a) ?? 0);
     if (Math.min(...b) > Math.max(...a) && d >= minDiff) return `SEPARATED: +${r1(d)} ms (runs ${a.map(r1).join(',')} vs ${b.map(r1).join(',')})`;
     if (Math.max(...b) < Math.min(...a) && -d >= minDiff) return `SEPARATED, reversed: ${r1(d)} ms`;
@@ -202,8 +240,10 @@ if (gdocs.length) {
     G.reading.passiveTouchToScroll = sep(S['scroll-passive'].touchToScrollP50, S['scroll-nonpassive'].touchToScrollP50, TH.frame);
     G.reading.passiveQueue = sep(S['scroll-passive'].queueP50, S['scroll-nonpassive'].queueP50, 0);
     G.reading.passiveCancelable = `cancelable share passive ${S['scroll-passive'].cancelableShare.join(',')} vs non-passive ${S['scroll-nonpassive'].cancelableShare.join(',')}`;
+    if (!S['scroll-passive'].loadOk || !S['scroll-nonpassive'].loadOk) G.reading.passiveTouchToScroll = `not read (load not delivered in a valid run): ${G.reading.passiveTouchToScroll}`;
   }
   if (S['drag-none'] && S['drag-trace']) G.reading.dragLagControl = sep(S['drag-none'].dragLagP90, S['drag-trace'].dragLagP90, TH.frame); // p90: the load blocks some frames, so the median barely moves (Chrome check: p50 31 vs 32, p90 32 vs 83 ms)
+  if (G.reading.dragLagControl && !G.reading.dragLagControl.startsWith('SEPARATED:')) G.reading.void = 'G VOID: the drag control did not separate (the load did not reach the input path)';
   out.g = G;
 }
 
@@ -232,6 +272,9 @@ for (const S of out.sessions) {
 if (out.pooled) console.log('== pooled decision arm', JSON.stringify(out.pooled));
 if (out.g) {
   console.log('== G runs');
+  console.log(`  order: ${out.g.order.join(' ')}`);
+  for (const s of out.g.sentinels) console.log(`  SENTINEL ${s}`);
+  for (const v of out.g.voided) console.log(`  VOID ${v}`);
   for (const [st, o] of Object.entries(out.g.states)) console.log(`  ${st.padEnd(18)} ${JSON.stringify(o)}`);
   for (const [k, v] of Object.entries(out.g.reading)) console.log(`  READ ${k}: ${v}`);
 }

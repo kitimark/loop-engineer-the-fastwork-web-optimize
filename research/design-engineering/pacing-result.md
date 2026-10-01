@@ -249,8 +249,10 @@ Every state runs the same rAF loop. Each frame it first draws from the current i
   - The records are Timeline-on, so durations may be inflated.
   - The recorded page ran the rAF logger, whose forced Layout is counted (P-023: neutral on layout counts).
   - A busy-wait reproduces when the main thread is occupied, not what the work invalidates.
-  - P4's Timeline records did not exist yet at build time. When they land, regenerate with
-    `pacing-v3-load.mjs <out> scroll <labels> --write`; the config then names the new run ids.
+- **Frozen stimulus (second read, amendment 2):** `v3-load.js` as committed in 867fa88 (P3 p3-B7 / p3-B8) is THE
+  stimulus for this G + F pair. P4 records no Timeline (iphone-runner: a window driver with the r3 logger, no
+  `.tl.json`), so there is nothing to regenerate from. A load from other records makes a new version, which needs a
+  new Chrome check and a new second read.
 
 ### 5.2 Session plan (driver F, one viewer)
 
@@ -321,11 +323,36 @@ chosen state is `scroll-passive`, which counts toward "non-passive felt as worse
 - **Runs:** `v3.html?state=<id>`, then `iphone.mjs gesture research/design-engineering/pacing/v3-gesture.json`
   (script hash 716889c2…), then `__fwPacingV3Get()`. The script is a reload, 1.5 s idle, 2 slow held drags,
   3 medium strokes and 2 flings, all up.
-- **Order:** `scroll-passive` (C) vs `scroll-nonpassive` (V) in C V V C C V V C, after one uncounted warm-up. Then
-  one run each of `drag-none`, `drag-trace`, `drag-steady`, `hero-none` and `hero-trace`.
-- **Passive reading:** per-run median touch-to-scroll (touchstart `timeStamp` to the first rAF whose `scrollY`
-  moved). "SEPARATED" means every non-passive run is above every passive run and the medians differ by
-  ≥ 16.7 ms; otherwise "overlap".
+- **Order:** 20 runs, about 12 min, in one ~20 min lease, with 10 min cooling after the previous phone block.
+  1. One uncounted warm-up (`scroll-passive`).
+  2. Sentinel `hero-none`.
+  3. `scroll-passive` (C) vs `scroll-nonpassive` (V) in C V V C C V V C.
+  4. Sentinel `hero-none`.
+  5. Drag control: `drag-none` (N) vs `drag-trace` (T) in N T T N N T.
+  6. One run each of `drag-steady` and `hero-trace` (direction only).
+  7. Sentinel `hero-none`.
+- **Heat sentinel (second read, amendment 1; protocol §5.2):**
+  - The loaded states are slow by design, so the sentinel is `hero-none` (no load, native scroll).
+  - It passes when its moving rAF gaps have p50 ≤ 17.5 ms and p95 ≤ 18 ms.
+  - Runs are ordered by `startedAt`, which the gesture's reload sets.
+  - A counted run is read only if it lies between two passing sentinels.
+  - A failing sentinel voids every run since the last passing one. The phone then cools 10 min and the voided part
+    restarts.
+- **Void runs:**
+  - a scroll run with fewer than 3 scroll starts (touch-to-scroll n < 3; the script has 7 strokes);
+  - a run outside the sentinel cover;
+  - a run with any touchmove whose `timeStamp` is more than 1 ms later than its handler's `performance.now()`. The
+    time base is then suspect.
+- **Passive reading (second read, amendment 3):**
+  - Per run, the median touch-to-scroll: from touchstart `Event.timeStamp` to the timestamp of the first rAF
+    callback whose `scrollY` moved.
+  - Both are taken as the `performance.now()` clock. That is UNRESOLVED (C2 below); the void rule above catches a
+    clock mismatch in one direction.
+  - "SEPARATED" needs ≥ 3 valid runs per arm and both of:
+    - the median of the V runs' medians minus the median of the C runs' medians is ≥ 16.7 ms;
+    - every V run's median is above every C run's median.
+  - Otherwise "overlap".
+  - The rule is in ms, not frames, so the phone's rAF rate (F-071) does not change it.
   - SEPARATED: non-passive delays the scroll start under this load (OBSERVED), and F's passive arm tests whether
     that is felt.
   - Overlap: WebKit did not make the scroll wait on the handler under this load (OBSERVED, in our setup), and F's
@@ -334,8 +361,10 @@ chosen state is `scroll-passive`, which counts toward "non-passive felt as worse
   - touchmove queue delay (handler time minus `timeStamp`);
   - the share of cancelable touchmoves per state;
   - moving rAF gaps over 34 and 50 ms.
-- **Control:** per-run p90 drag lag (`drag-none` vs `drag-trace`) should separate. If it doesn't, the load did not
-  reach the input path and G is void.
+- **Control:** per-run p90 drag lag (`drag-none` vs `drag-trace`, 3 runs each) should separate by the same rule
+  (≥ 16.7 ms). If it doesn't, the load did not reach the input path and G is void.
+  - The first draft had one run of each, which the separation rule can never read. The 3 runs each were added with
+    the amendments, before any data.
   - Why p90: the load blocks only some frames, so the median barely moves. In the Chrome check the p50 was 31 vs
     32 ms and the p90 was 32 vs 83 ms.
 
@@ -371,4 +400,14 @@ Mechanics only; Chrome numbers say nothing about WebKit.
 - **urls mode:** two pairs went through page 1 → back → page 2 → back → pick. The picks mapped AB→B and BA→A
   correctly. Results keep port and path only.
 
-**Second reader:** mgmt-ops-5 (the lead's rule) gets this section and the scorer before G. Reply: pending.
+**Second reader:** mgmt-ops-5 (the lead's rule), 2026-10-01.
+- **OK:** the sign, the worked example, the session and pooled tables, the validity rules and the two pre-data rule
+  changes.
+- **Three amendments, now written in above and in the scorer:**
+  1. the G heat sentinel;
+  2. the frozen stimulus;
+  3. the exact G separation rule, its time base and the < 3 scroll starts void.
+- **Added with them, before any data:** the drag control at 3 runs each (see Control).
+- **Platform claims:** arch-claims owns the C1 and C2 reference checks. Both stay UNRESOLVED here until it reports.
+  The V arm registers its window touchmove with an explicit `{capture: true, passive: false}` (v3.js), so WebKit's
+  passive-by-default rule for window listeners does not apply to it.
