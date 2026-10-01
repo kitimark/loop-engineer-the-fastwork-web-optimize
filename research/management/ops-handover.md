@@ -1,9 +1,9 @@
 # mgmt-ops living state (updated with every digest)
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
-or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Last instance:
-**mgmt-ops-3** (05:04-08:55Z, handing over at ~55 % context), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **08:55Z**. Next instance: mgmt-ops-4 (spawned by the lead).
+or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
+**mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
+snapshot), branch `mgmt-ops/docs-2`. Last update: **09:00Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +16,12 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **08:55Z**. Next instance: mgm
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **09:00Z** (mgmt-ops-4) Lead: 4edb872 npm test 495/495, test:chrome 8/9 (fix-ab test CONTAMINATED by environment,
+  topProcs name WindowServer/duetexpertd/zed/iTerm2/claude; accepted as an environmental pass). arch-finger plan landed
+  2226d51 (WDA/XCUITest real touches); ts-gesture building gesture.mjs + wda.mjs (measurement code -> reviewer before
+  landing); user setup pending. iPhone queue += ts-gesture V0 (~15 min) + V1 (~60 min) after the morph block, when ready.
+  10 agents active: goal-metric holds wait for a quieter host or accept requeues (design engineers end in ~1 h).
 
 - **08:55Z** HANDOVER. Snapshot landed (4edb872): all worktrees rebase + `baseline.mjs sparse` between steps; done:
   fix-hero-exit (7169a6a, 9e84199), mgmt-ops-2; HOLDING until their iPhone block ends: fix-nav-morph, fix-scroll-engine
@@ -108,6 +114,8 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **08:55Z**. Next instance: mgm
        `node tools/fix.mjs serve <build> --on aw1-10e`.
    (c) N12 block: aw1-10c vs n12v5-aw1 (matched pair, fix-nav-morph's worktree); hero window esp. y≈700 (F-029 nav ee()
        forced style), middle, end, parity spots. If y≈700 goes → N12 enters the base (needs a review then).
+   (b2) ts-gesture V0 smoke (~15 min) + V1 validation (~60 min), `research/architecture/finger-simulation.md` §5c, only
+       when ts-gesture reports its phone part ready (and the user's one-time setup is done); else skip to (c).
    (d) N10 ablations, rebuilt on aw1-10e (0e62ccc; base `.../agent-a1722cf5058e25591/fixes/aw1-10e/overlay`; order
        d, c, b, a; R3 logger); sent to iphone-runner 08:57Z.
    After each block ends: tell the owners whose worktree it served from that they may now rebase + sparse.
@@ -153,7 +161,9 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **08:55Z**. Next instance: mgm
 | fix-hero-exit | hero window owner (#2); rebased + sparse (7169a6a, 9e84199) | hero block results | one Chrome A/B `--on aw1-10e` |
 | fix-scroll-engine | N10 (#3); ablations rebuilt on aw1-10e (0e62ccc); holds rebase/sparse | phone (last in queue) | ablation verdict → fix; /10d after |
 | ts-snapshot | delivered; follow-ups from review-snapshot (lead) | – | – |
-| arch-finger | research (finger simulation) | – | plan to the lead |
+| arch-finger | plan landed 2226d51 (finger-simulation.md) | – | – |
+| ts-gesture | toolsmith: gesture.mjs + wda.mjs vs a fake WDA | user's one-time setup (Xcode, Developer Mode, UI Automation) | reviewer, then V0/V1 on the phone (queue b2) |
+| de-morph, de-hero, de-middle | design-engineering (read-only, report to the lead) | – | proposals routed to owners; end in ~1 h |
 | ts-i017, ts-i021, ts-bench, wave1-dry, N11, apple-verify | ENDED | – | do not resume without the lead |
 
 ## Priority order (user feedback 08:04Z; DIRECTION "Priority from user feedback")
