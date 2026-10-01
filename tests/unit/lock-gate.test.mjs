@@ -160,3 +160,128 @@ test('review-gate R2: a lead\'s queue move (I-019 movedBy/movedAt) survives the 
   assert.equal(b.gate.quiet, false);
   assert.deepEqual(readJson(`${R}.queue.json`).map((w) => w.owner), ['b', 'a']);
 });
+
+// I-030: short jobs passed a lead-moved normal waiter while its gate was closed ("not measured yet"); each short
+// kept the host busy, so the gate stayed closed and the normal was starved until the gate cap (contaminated grant).
+test('I-030: short jobs never pass a head normal waiter the lead moved, even while its gate is closed', async () => {
+  const X = await import('../../tools/lib/lock-repair.mjs');
+  assert.equal((await L.tryAcquire(R, { owner: 'holder', kind: 'lease' })).ok, true);
+  for (const o of ['a', 'goal']) assert.equal((await L.tryAcquire(R, { owner: o, kind: 'lease', host: UNKNOWN })).ok, false);
+  await X.moveWaiter(R, { owner: 'goal', to: 1, by: 'lead', reason: 'goal path', apply: true });
+  await L.release(R, { owner: 'holder' });
+  const g = await L.tryAcquire(R, { owner: 'goal', kind: 'lease', host: UNKNOWN });
+  assert.deepEqual([g.gated, g.gate.quiet, g.gate.reasons], [true, null, ['not measured yet']], 'the incident state');
+  for (let i = 0; i < 2; i++) {
+    const s = await L.tryAcquire(R, { owner: 'test-chrome', kind: 'lease', short: true, maxSec: 300 });
+    assert.equal(s.ok, false, 'the short job waits behind the moved waiter');
+    assert.equal(s.next, 'goal');
+  }
+  assert.equal((await L.tryAcquire(R, { owner: 'goal', kind: 'lease', host: BUSY })).gated, true);
+  assert.equal((await L.tryAcquire(R, { owner: 'test-chrome', kind: 'lease', short: true, maxSec: 300 })).ok, false, 'still not while the host settles');
+  const ok = await L.tryAcquire(R, { owner: 'goal', kind: 'lease', host: QUIET });
+  assert.equal(ok.ok, true);
+  assert.equal(ok.holder.gateTimeout, undefined, 'a clean grant, not a starved gate timeout');
+  assert.deepEqual(readJson(`${R}.queue.json`).map((w) => w.owner), ['a', 'test-chrome']);
+});
+
+test('I-030: short jobs pass any gated head normal waiter only during the first gateShortPassSec of its gate wait', async () => {
+  assert.equal(H.DEFAULTS.gateShortPassSec, 120);
+  assert.ok(H.DEFAULTS.gateShortPassSec + L.SHORT_MAX_SEC + 2 * H.DEFAULTS.quietMinWindowSec <= H.DEFAULTS.gateMaxWaitSec,
+    'the last short job let through ends with time left for the gate to settle before the cap');
+  const T = { ...H.THRESHOLDS, gateShortPassSec: 30 };
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY, thresholds: T })).gated, true);
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  const usedUp = (tok) => { const t = Date.now(); writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - (L.SHORT_DRAIN_SEC - 10) * 1000).toISOString(), token: tok })); };
+  usedUp('aaaaaaaaaaaa'); // drain budget used up: only the gate exemption could let a short job through
+  assert.equal((await L.tryAcquire(R, { owner: 'npm-test', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, true, 'within the pass window: exempt');
+  await L.release(R, { owner: 'npm-test' });
+  usedUp('bbbbbbbbbbbb');
+  // the waiter keeps polling (fresh gate record) and has now waited 31 s at the gate: past the pass window, far below the cap
+  const q = readJson(`${R}.queue.json`);
+  Object.assign(q[0].gate, { at: new Date().toISOString(), since: new Date(Date.now() - 31000).toISOString() });
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q));
+  for (let i = 0; i < 2; i++) assert.equal((await L.tryAcquire(R, { owner: 'npm-test2', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, false, 'past the pass window the gate closes to short jobs too');
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY, thresholds: T })).gated, true, 'still waits for quiet (cap not reached)');
+  const g = await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: QUIET, thresholds: T });
+  assert.equal(g.ok, true);
+  assert.equal(g.holder.gateTimeout, undefined);
+  assert.ok(g.holder.gate.waitedSec >= 31);
+});
+
+// review of I-030: the short-lane drain (nextIndex) let short jobs pass a gated waiter before gateHolding was asked
+const ago = (ms) => new Date(Date.now() - ms).toISOString();
+const editQueue = (fn) => { const q = readJson(`${R}.queue.json`); fn(q); writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q)); };
+const gateOf = (q, owner) => q.find((w) => w.owner === owner).gate;
+
+test('I-030 review: with drain budget left, short jobs stop passing a gated waiter after the pass window, even behind a 300 s short', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY })).gated, true);
+  assert.equal((await L.tryAcquire(R, { owner: 's1', kind: 'lease', short: true, maxSec: 300 })).ok, true, 'early in the gate wait the short lane serves the short job');
+  // the waiter keeps polling while s1 holds the lock: busy, so its gate record is kept but gate.at is not refreshed
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY })).ok, false);
+  editQueue((q) => Object.assign(gateOf(q, 'normal'), { since: ago(290000), at: ago(280000) })); // s1 ran 280 s
+  await L.release(R, { owner: 's1' });
+  for (let i = 0; i < 2; i++) {
+    const s = await L.tryAcquire(R, { owner: 's2', kind: 'lease', short: true, maxSec: 300 });
+    assert.equal(s.ok, false, 'a second 300 s short still fits the 900 s drain budget, but the gate has waited out its pass window');
+    assert.equal(s.next, 'normal');
+  }
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY })).gated, true);
+  const g = await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: QUIET });
+  assert.equal(g.ok, true);
+  assert.equal(g.holder.gateTimeout, undefined, 'granted on a quiet host, not by the 600 s timeout');
+});
+
+test('I-030 review: a lead-moved waiter that reaches the cap is granted (gate timeout); then short jobs flow again', async () => {
+  const X = await import('../../tools/lib/lock-repair.mjs');
+  const T = { ...H.THRESHOLDS, gateMaxWaitSec: 1 };
+  assert.equal((await L.tryAcquire(R, { owner: 'holder', kind: 'lease' })).ok, true);
+  for (const o of ['a', 'goal']) assert.equal((await L.tryAcquire(R, { owner: o, kind: 'lease', host: UNKNOWN, thresholds: T })).ok, false);
+  await X.moveWaiter(R, { owner: 'goal', to: 1, by: 'lead', reason: 'goal path', apply: true });
+  await L.release(R, { owner: 'holder' });
+  assert.equal((await L.tryAcquire(R, { owner: 'goal', kind: 'lease', host: BUSY, thresholds: T })).gated, true);
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, false);
+  editQueue((q) => { gateOf(q, 'goal').since = ago(2000); });
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, false, 'due: granted next');
+  const g = await L.tryAcquire(R, { owner: 'goal', kind: 'lease', host: BUSY, thresholds: T });
+  assert.equal(g.ok, true);
+  assert.equal(g.holder.gateTimeout, true);
+  await L.release(R, { owner: 'goal' });
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, true, 'the short lane serves short jobs again');
+});
+
+test('I-030 review: FW_GATE_SHORT_PASS=0, read by the short job\'s own process: no short job passes a gated waiter', async () => {
+  const T0 = H.thresholds({ FW_GATE_SHORT_PASS: '0' });
+  assert.equal(T0.gateShortPassSec, 0);
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY })).gated, true);
+  for (let i = 0; i < 2; i++) assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60, thresholds: T0 })).ok, false, 'not through the drain (budget left; the 2nd poll is a queued short)');
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  const t = Date.now();
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - (L.SHORT_DRAIN_SEC - 10) * 1000).toISOString(), token: 'cccccccccccc' }));
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60, thresholds: T0 })).ok, false, 'not through the gate exemption (budget used up)');
+  // the setting is the polling process's: a short job started with the default env still passes in the window
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, true);
+});
+
+test('I-030 review: gateShortPassSec above the cap: the cap bounds the pass window (granted next, by timeout)', async () => {
+  const T = { ...H.THRESHOLDS, gateShortPassSec: 1000, gateMaxWaitSec: 1 };
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY, thresholds: T })).gated, true);
+  editQueue((q) => Object.assign(gateOf(q, 'normal'), { since: ago(2000), at: ago(0) }));
+  for (let i = 0; i < 2; i++) assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, false, 'drain budget left, but the wait reached the cap');
+  const g = await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY, thresholds: T });
+  assert.equal(g.ok, true);
+  assert.equal(g.holder.gateTimeout, true);
+});
+
+test('I-030 review: a lead-moved gated waiter that stopped polling is skipped at the hand-over; short jobs pass it, it keeps its place', async () => {
+  const X = await import('../../tools/lib/lock-repair.mjs');
+  assert.equal((await L.tryAcquire(R, { owner: 'holder', kind: 'lease' })).ok, true);
+  for (const o of ['a', 'goal']) assert.equal((await L.tryAcquire(R, { owner: o, kind: 'lease', host: UNKNOWN })).ok, false);
+  await X.moveWaiter(R, { owner: 'goal', to: 1, by: 'lead', reason: 'goal path', apply: true });
+  await L.release(R, { owner: 'holder' });
+  assert.equal((await L.tryAcquire(R, { owner: 'goal', kind: 'lease', host: BUSY })).gated, true);
+  editQueue((q) => { const w = q.find((x) => x.owner === 'goal'); w.lastSeen = ago((L.HANDOVER_FRESH_SEC + 10) * 1000); Object.assign(w.gate, { since: ago(200000), at: ago((L.HANDOVER_FRESH_SEC + 10) * 1000) }); });
+  // the first poll queues the short job (it is not a waiter yet, so `a` is next); the second is served by the short lane
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, true);
+  assert.deepEqual(readJson(`${R}.queue.json`).map((w) => w.owner), ['goal', 'a']);
+});

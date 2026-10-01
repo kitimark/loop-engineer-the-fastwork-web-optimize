@@ -38,14 +38,15 @@ function fakeSamplers({ busy = () => 0.1, load = () => 2, pressure = () => 1, de
 
 test('THRESHOLDS: the documented defaults; FW_GATE_* env overrides; bad values are refused', () => {
   assert.deepEqual({ ...host.DEFAULTS }, {
-    quietMaxBusyPct: 20, quietMaxLoad1: 6, quietMaxPressure: 1, quietMinWindowSec: 10, gateMaxWaitSec: 600, recheckMaxWaitSec: 60,
+    quietMaxBusyPct: 20, quietMaxLoad1: 6, quietMaxPressure: 1, quietMinWindowSec: 10, gateMaxWaitSec: 600, gateShortPassSec: 120, recheckMaxWaitSec: 60,
     invalidLoad1: 10, invalidOtherBusyPct: 25, invalidPressure: 2, warnLoad1: 6, warnOtherBusyPct: 20,
     suspendMinSec: 2, watchdogStallSec: 300, chromeWarmSec: 10,
   });
-  const t = host.thresholds({ FW_GATE_MAX_LOAD1: '4', FW_GATE_MAX_BUSY: '15', FW_GATE_MAX_WAIT: '120' });
+  const t = host.thresholds({ FW_GATE_MAX_LOAD1: '4', FW_GATE_MAX_BUSY: '15', FW_GATE_MAX_WAIT: '120', FW_GATE_SHORT_PASS: '0' });
   assert.equal(t.quietMaxLoad1, 4);
   assert.equal(t.quietMaxBusyPct, 15);
   assert.equal(t.gateMaxWaitSec, 120);
+  assert.equal(t.gateShortPassSec, 0, 'I-030: 0 = short jobs never pass a gated waiter');
   assert.equal(t.invalidLoad1, 10, 'run-validity numbers are not env-tunable');
   assert.deepEqual(host.thresholds({}), { ...host.DEFAULTS });
   assert.throws(() => host.thresholds({ FW_GATE_MAX_BUSY: 'lots' }), /FW_GATE_MAX_BUSY must be a number/);

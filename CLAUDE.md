@@ -324,7 +324,9 @@ before relying on them (the most common error in the benchmark).
 queue entry not refreshed for 10 min is dropped. Short lane: `--short --max-seconds N` (N <= 300, on
 `run` and `acquire`) is served before earlier normal waiters at the next hand-over, never preempts
 the holder, drains all queued short jobs (up to 15 min) before the next normal waiter; a normal waiter
-the lead moved ahead of them goes first (I-011, I-020), and
+the lead moved ahead of them goes first, also while its host gate settles (I-011, I-020, I-030;
+any other gated waiter is passed only in its first 120 s at the gate; `FW_GATE_SHORT_PASS` in the short
+job's env changes that, 0 = never), and
 ends at N s (`run` kills the command's whole process tree, exit 124, I-024; a short lease expires and
 can't be renewed). A chrome-measure lease defaults to 600 s and ends by 1200 s. Keep polling while you
 wait: a waiter not seen for 30 s is skipped at a hand-over but keeps its place. Only for
