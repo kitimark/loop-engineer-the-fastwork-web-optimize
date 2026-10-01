@@ -126,6 +126,20 @@ Chrome checks (short lane, `gh-parity.mjs`):
   - m = 1: 0.12 % (countdown).
 - The final panel size is unchanged: 406 × 908 in both.
 
+### Middle-of-page frame at y≈1960 (de-middle, `research/design-engineering/middle.md`)
+
+Claim: the morph IO on `#platform` (rootMargin 200%) fires at y≈1830 and causes an 86-106 ms frame. Two hypotheses:
+- H1a: arming the non-passive touch/wheel listeners is expensive on WebKit;
+- H1b: the 2 s Safari pre-mount had not run yet.
+
+Builds on aw1-10e:
+- `mw10e-e2`: rootMargin 200% → 150%, nothing else. Prediction: the frame moves to y≈2218.
+- `mw10e-e1`: #6 v05 on aw1-10e. In the zone, listeners arm passive, and switch to blocking only at the end.
+  It replaces `mw-d-passive`, which sits on aw1-10c and would mix bases.
+
+Chrome state check (short lane): both reach morph 1 at the end and return to 0. de-middle's R1 (images `src`
+at the idle pre-mount, `inert` until the morph, listeners once passive) waits for e1/e2.
+
 ## Composited morph (N2), if b names the blur
 
 Each morph frame currently changes:

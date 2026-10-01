@@ -1,0 +1,19 @@
+# fastwork mirror fix: mw10e-e2
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw10e-e2 --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13345,7 +13345,8 @@
+             ([e]) => {
+               ((u = !!e?.isIntersecting), u && z(b, !0), I());
+             },
+-            { rootMargin: `200% 0px` },
++            // ABLATION e2 (de-middle): morph IO margin 200% -> 150%, to see whether the y~1960 long frame moves with it
++            { rootMargin: `150% 0px` },
+           )
+         : void 0;
+     (R && te && te.observe(R), _(), m());
