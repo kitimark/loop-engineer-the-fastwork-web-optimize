@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T18:31:00Z",
+ "updatedAt": "2026-10-01T18:33:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T18:33:00Z", "text": "Your decision: style recalculation is now the top priority. The phone first records where style time goes in A and B; the robot-finger check and the other tests follow." },
   { "at": "2026-10-01T18:31:00Z", "text": "Your sitting: on the hero and at the end of the page, the best build felt quite a bit smoother than the original. Your idea that style recalculation causes the lag is now being checked by a new helper." },
   { "at": "2026-10-01T17:59:00Z", "text": "Cause found for the blinking small profiles: each time the carousel swaps a picture in or out, the whole page re-lays out (P14 on the phone). A fix that keeps the pictures in place is next, right after your sitting." },
   { "at": "2026-10-01T17:51:00Z", "text": "From your request: a tool change is being designed so that tests and simulator checks can run side by side, while timing tests keep the Mac to themselves. A reviewer now checks the waiting lock-tool changes." },
@@ -155,7 +156,7 @@
    "fixes": "You saw style recalculation taking about 19-20 ms at times, more than a 60 Hz frame allows (16.7 ms). Your two guesses: complex nested CSS makes selector matching slow, or the images (rotation, resizing) cost work every frame. You also asked about smaller images and plain-CSS effects.",
    "felt": { "answer": "not-yet" },
    "gate": "Find out whether either guess explains the slow frames before anything is built.",
-   "next": "de-style-recalc tests both guesses against the phone recordings we already have.",
+   "next": "Top priority now (your decision): a phone recording of A and B that times every style recalculation, and de-style-recalc testing both guesses. Any fix it proposes goes straight to a phone test.",
    "owner": "de-style-recalc",
    "checks": [],
    "details": [
@@ -240,6 +241,7 @@
   }
  ],
  "upcoming": [
+  { "title": "Possible fix for slow style recalculation: a phone test, fast-tracked", "when": "as soon as de-style-recalc proposes one", "item": "style-recalc" },
   { "title": "Carousel fix (st5): one phone test against the original page", "when": "after the sitting and a 5-minute robot-finger check", "item": "hero-carousel" },
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the P-036 robot-finger test passes", "item": "f3-arm-scope" }
  ]

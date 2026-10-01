@@ -23,6 +23,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **18:3xZ USER PRIORITY (18:32Z): style recalculation is the HIGHEST priority** (overrides the order below). Phone:
+  iphone-runner style-recalc Timeline attribution block on the sitting's A/B NOW -> ts-gesture ~5 min -> st5 / P-033 ->
+  P-038 -> P12 -> P10 -> P5 -> P9. chrome-measure: de-style-recalc to #1 whenever it queues (lead moves it; tell the
+  lead the moment it queues). Any de-style-recalc fix proposal is FAST-TRACKED: owner, ticket (second read at once),
+  phone block next. ts-gesture told.
+
 - **18:3xZ** USER SITTING C-013 done 18:30Z (lead): hero + page end "B quite smoother" (B = aw1-10e + g + cdwc + re-keep-op +
   arm-scope-c; not blind, one viewer, OBSERVED perception). User's own idea: style recalc ~19-20 ms (> 16.7 ms budget)
   is the lag; hypotheses (1) nested/complex CSS selector matching, (2) per-frame image rotation/resizing, image sizes,
