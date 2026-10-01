@@ -3,9 +3,15 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured against the plain baseline (mobile 6x, n=3: fps +9 %, frames >20 ms -21 %, both
-disjoint). Pending: the final `--runs 5` on the combined wave-1 base, the scripted iPhone A/B
-(iPhone pending), and the finger test (finger test pending (user)).
+**Status (wave 2, 2026-10-01):** `patch.diff` is now **stacked on `aw1-10c`** (all-wave1 + scroll-engine
+/10c, JS 757e2cbc…, CSS c6aad94b…). The hero code there is byte-identical to the baseline, so v2 applied
+unchanged (row /09). `results.json` is still the old plain-baseline n=3 A/B (fps +9 %, frames >20 ms
+-21 %, both disjoint, old tools). Pending:
+- the iPhone hero-window block (aw1-10c vs +hero, y 0-900, iPhone-led);
+- then one Chrome A/B `--on aw1-10c`;
+- finger test pending (user).
+
+See "Wave 2: the first scroll out of the hero".
 **Topic:** see `fixes/TOPICS.md` (7, hero-exit-scroll-timeline)
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` (the hero `ne(() => …)` block, pretty 4155-4251:
 `s`/`c` gated, `d`/`p` switch modes, registration), `/_app/immutable/assets/2.gBuqKVzi.css` (one new
@@ -197,6 +203,36 @@ scroll out of the hero, then a fling. Look for smooth fade/scatter of the copy, 
 stepping, the cue never stuck invisible, the hero tappable again after scrolling back up, and a look
 that matches the baseline.
 
+## Wave 2: the first scroll out of the hero (aw1-10c)
+
+Trigger (mgmt-ops-3, 08:05Z): the user's finger test on `aw1-10c` feels the top laggy. On the iPhone,
+the scripted runs show a 51-55 ms frame at y≈50 every run, and the finger runs on the baseline show
+3-12 frames >50 ms per pass in y 0-900.
+
+**Mechanism probe** (own CDP script, short lane, unthrottled, counts only, n=1 per target; mobile
+430x932 DPR 3). It steps y 0 → 25 → 50 → 75 → 100 → 150 → 200 → 300 → 450 → 600 and logs, per step:
+attribute mutations with their old value (same-value writes dropped), `setProperty` calls,
+IntersectionObserver callbacks, animations or transitions that start or stop, rAF requests, and
+`Performance.getMetrics` style and layout counts. Scratch `first-scroll.mjs`; output `fs1/report.json`.
+What fires on aw1-10c:
+1. **Hero exit (this topic):** one `--exit-opacity` write on `.hero` per step, from the first step on.
+   It is an inherited custom property, so the hero subtree restyles. With the patch: 0 writes at every
+   step. Style-recalc time per step drops from 7.4-10.4 to 5.4-7.2 ms (unthrottled, n=1, direction only).
+2. **Not this topic, present in both:** about 930 IntersectionObserver callbacks per step on `span.face`
+   (rootMargin `50% 0px 50% 0px`). That is scroll-engine /10's will-change window (JS 2696-2712), and
+   each callback flips `data-fw-wc` on a countdown face. It also happens at y=0 with no scroll at all.
+   That is roughly 1,500 attribute writes per second, each toggling `will-change` (CSS 11808), so the
+   countdown faces' layers are created and destroyed continuously. Reported to mgmt-ops and
+   fix-scroll-engine (board finding). Likely cause, an inference: the faces slide out of their
+   `overflow: hidden` digit window, and an IntersectionObserver clips by ancestors.
+3. **Not this topic:** at y≈25 (the first scroll step) and again at y≈300, 6 `setProperty` calls
+   (`width` ×2, `top`, `right`, `bottom`, `left`) that are not inline-style writes (no mutation was
+   seen), so they go to a stylesheet or detached declaration. The receiver isn't named yet.
+4. **Not this topic:** at y≈300, `.start-selling-future-people-o` expands, starting `grid-template-columns`
+   and `height` transitions (layout every frame while they run) plus `filter`, `opacity` and `transform`
+   transitions. Layout count per step jumps from 1-4 to 25-31 at y 450-600. This sits inside the iPhone
+   hero window (y 0-900). It belongs to the layout-animations topic area (T5).
+
 ## Risks, conflicts, follow-ups
 
 - Keyframes deliberately avoid `var()` of animated custom properties (Safari resolves them against the
@@ -269,3 +305,4 @@ The header's "rebuild with" line names the scratch topic it was generated from:
 | hero-exit-scroll-timeline/06 | `--noblur`: 04 without the two blur animations (attribution: how much the cue/copy blur costs) | the exit blur's paint is part of the remaining cost | abandoned | n/a (never measured) | none | patch `variants/06.diff`; overlay `fixes/hero-exit-scroll-timeline--noblur/` (uncommitted, gitignored) | dropped from the slot: one queue entry per agent, and I-005 (a same-owner `ab` deletes the lease) meant ab had to run last. P5: Chrome can't show GPU blur cost anyway, so attribute on the iPhone | retry when the iPhone is back (scripted A/B, blur vs noblur) |
 | hero-exit-scroll-timeline/07 | 04, `fix.mjs ab --runs 5` vs plain baseline | confirm 05 with n=5 | abandoned | n/a (stopped while queued, #7) | none | patch `variants/04.diff` (never run); this README (status) | the lead stopped it: Chrome is the bottleneck, and the final number must be on the combined wave-1 base with the I-002 tools | superseded by the `--runs 5 --on <combined>` run (pending) |
 | hero-exit-scroll-timeline/08 | Unregister the hero `dE` callback once CSS takes over (the prompt allowed it: "you may unregister your own dE callback") | with the exit on a scroll timeline, the engine callback has nothing to do, so dropping the registration saves its per-frame dispatch | abandoned | n/a (design only: never built, run or probed) | none measured. Code reading (baseline): registration sets `data-start-selling-scene` on `.hero-track` (JS 2765) and `data-start-selling-render=deferred` via `deferRendering` (JS 2703). Its cleanup removes both (JS 2774-2779). CSS 11754-11762 hang the scene pause (`animation-play-state: paused !important`, `will-change: auto`) and `content-visibility: auto` on those attributes | no patch kept (never built: rejected at design time, before v1). README "What changed" (why `dE` stays registered) | unregistering would silently drop the off-screen pause and the render deferral of `.hero-track`. Keep the registration with a mode-gated callback: FINDINGS P12. The claim is from code reading, not from an observed breakage | dropped (01, 02 and 04 all keep the registration) |
+| hero-exit-scroll-timeline/09 | 04 restacked on `aw1-10c` (all-wave1 + scroll-engine /10c); the hero code there is identical to the baseline, so the same hunks apply | as 04, on the wave-2 base: no `--exit-opacity` writes, so no hero-subtree restyle per scroll frame. May also remove the iPhone y≈50 first-scroll frame | provisional: mechanism confirmed, gain pending | clean (mechanism probe, counts only) | `--exit-opacity` writes per 100 px step: 1 → 0 at every step (y 25-600); style-recalc time per step 7.4-10.4 → 5.4-7.2 ms (unthrottled, direction only), n=1 | patch `patch.diff` (= final, stacked on aw1-10c); README "Wave 2"; probe output fs1/report.json (scratch) | the mechanism holds on the wave-2 base. The probe also named three other first-screen costs that aren't this topic (face will-change churn, an unnamed 6-write layout at y≈25, people-o layout transitions at y≈300) | on branch; iPhone hero-window block requested, then Chrome `--on aw1-10c` |

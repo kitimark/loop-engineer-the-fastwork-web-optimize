@@ -3,15 +3,14 @@
   "topic": "hero-exit-scroll-timeline",
   "status": "authored",
   "supersededBy": null,
-  "draft": "Tier A draft by the fix owner, written before tools/bench.mjs landed. Counts are predicted from the code, not measured by the runner. The bench-author calibrates and proves each check discriminates.",
-  "evidence": "README 'Before / after' (mobile 6x n=3, old tools: fps 63.7 -> 69.5, frames >20 ms 115 -> 91, disjoint) and 'Visual / behaviour parity' (exit values equal to 3 decimals)",
+  "evidence": "README 'Before / after' (plain baseline, mobile 6x n=3, old tools: fps 63.7 -> 69.5, frames >20 ms 115 -> 91, disjoint) and 'Visual / behaviour parity'",
+  "notes": "Drafted by the fix owner. Counts are predicted from the code until the runner calibrates them on aw1-10c (patch.diff is stacked on aw1-10c).",
   "segments": {
     "hero": {
-      "from": ".hero-track",
-      "to": ".hero-track",
+      "from": "top",
+      "to": ".pain",
       "step": 100,
-      "before": 0,
-      "why": "Exit progress 0 to past 1 over .hero-track (200vh). Start after the desktop entrance (about 1.8 s, class is-ring-splash-done on .hero): the JS path runs until then on purpose."
+      "why": "The hero exit: y 0 to the end of .hero-track (200vh), where .pain starts."
     }
   },
   "probes": {
@@ -19,25 +18,27 @@
       "kind": "setProperty",
       "prop": "--exit-opacity",
       "selector": ".hero",
-      "why": "Baseline s (JS 4163) writes --exit-opacity on .hero once per engine frame. Patched CSS mode writes none (it removes the property once in d)."
+      "why": "Baseline s (JS 4163 plain, 4384 on aw1-10c) writes --exit-opacity on .hero every engine frame. In CSS mode the patch writes none."
     },
     "heroPointerEventsWrites": {
       "kind": "styleWrite",
       "prop": "pointerEvents",
       "selector": ".hero",
-      "why": "Baseline s writes style.pointerEvents every frame. Patched writes it only when the IntersectionObserver flips (track bottom crosses 1.05 viewport heights)."
+      "why": "Baseline s writes style.pointerEvents every frame. The patch writes it only when its IntersectionObserver flips (track bottom crosses 1.05 viewport heights)."
     },
-    "cueFloatAnimations": {
+    "cueFilterAnimations": {
       "kind": "animations",
       "selector": ".scroll-float",
-      "output": "animatedProperties",
-      "why": "On phones the patched cue exit runs as scroll-driven animations on .scroll-float (opacity, translate, filter). The baseline only has the idle bob (transform) there."
+      "props": ["filter"],
+      "state": "any",
+      "why": "On phones the patched cue blur is a scroll-driven animation on .scroll-float. The baseline only has the idle bob there (transform)."
     },
-    "exitAnimatedProps": {
+    "copyOpacityAnimations": {
       "kind": "animations",
-      "selector": ".hero-copy, .scroll-cue, .scroll-float, .orbit .orbit-card, .mobile-deck .orbit-card",
-      "output": "animatedProperties",
-      "why": "Architecture review (webkit.md 1): scroll-driven keyframes only on threaded properties, no custom properties (FINDINGS P3)."
+      "selector": ".hero-copy",
+      "props": ["opacity"],
+      "state": "any",
+      "why": "On phones the baseline .hero-copy has animation none (opacity comes from --exit-opacity). The patched exit is a scroll-driven opacity animation."
     }
   },
   "mechanism": [
@@ -48,7 +49,7 @@
       "probe": "exitOpacityWrites",
       "baseline": ">= 5",
       "patched": "== 0",
-      "why": "Phones enter CSS mode at mount. Predicted baseline about 10 writes (about 10 steps of 100 px over 932 px of progress, at least 1 write per step)."
+      "why": "Phones are in CSS mode from mount. Predicted baseline: about 1 write per 100 px step over about 930 px of exit progress."
     },
     {
       "id": "no-exit-opacity-writes-desktop",
@@ -57,7 +58,7 @@
       "probe": "exitOpacityWrites",
       "baseline": ">= 5",
       "patched": "== 0",
-      "why": "Desktop enters CSS mode after the entrance (d). The segment starts after it."
+      "why": "Desktop switches to CSS mode when the entrance ends (about 1.8 s after load, d). The runner's settle is assumed to outlast it."
     },
     {
       "id": "pointer-events-only-on-flip-mobile",
@@ -66,49 +67,40 @@
       "probe": "heroPointerEventsWrites",
       "baseline": ">= 5",
       "patched": "<= 2",
-      "why": "Patched: at most one write per IntersectionObserver flip (one near the end, one more if the scroll comes back)."
+      "why": "Patched: one write when the IntersectionObserver flips near the end of the exit, at most one more if the scroll comes back."
     },
     {
-      "id": "cue-exit-is-a-scroll-animation-mobile",
+      "id": "cue-exit-animated-mobile",
       "viewport": "mobile",
       "segment": "hero",
-      "probe": "cueFloatAnimations",
-      "baseline": "not contains filter",
-      "patched": "contains filter, opacity, translate",
-      "why": "Proves the CSS path is live (supported and attached). If it isn't, the JS fallback runs and the exitOpacityWrites check fails too."
+      "probe": "cueFilterAnimations",
+      "baseline": "== 0",
+      "patched": ">= 1",
+      "why": "Proves the CSS path is live on phones (supported and attached). Without it the JS fallback runs and no-exit-opacity-writes fails too."
     },
     {
-      "id": "exit-animates-threaded-properties-only",
-      "viewport": "both",
+      "id": "copy-exit-animated-mobile",
+      "viewport": "mobile",
       "segment": "hero",
-      "probe": "exitAnimatedProps",
-      "baseline": "n/a",
-      "patched": "contains none of --exit-opacity, --exit-scatter, --copy-in, --entered, width, height, top, left, margin-*, clip-path",
-      "why": "A compliance guard, not a discriminating check: a later edit must not move the exit back to custom properties or layout properties."
+      "probe": "copyOpacityAnimations",
+      "baseline": "== 0",
+      "patched": ">= 1",
+      "why": "The copy fade runs as a compositor-eligible opacity animation, not through an inherited custom property."
     }
   ],
   "parity": [
     {
       "viewport": "mobile",
       "segment": "hero",
-      "classes": [".hero", ".orbit"],
-      "props": [
-        [".hero-copy", "opacity", 0.01],
-        [".mobile-deck .is-e", "opacity", 0.01],
-        [".hero", "pointer-events", null]
-      ],
-      "why": "The cue's opacity and blur move from .scroll-cue to .scroll-float on phones, so compare the product in the visual check, not per element here."
+      "classes": [".hero", ".scroll-cue"],
+      "props": [[".hero-copy", "opacity", 0.01], [".mobile-deck .is-e", "opacity", 0.01], [".hero", "pointer-events"]],
+      "why": "The cue fade moves from .scroll-cue to .scroll-float on phones, so its opacity is compared in the README visual check (product of both), not here."
     },
     {
       "viewport": "desktop",
       "segment": "hero",
       "classes": [".hero", ".orbit"],
-      "props": [
-        [".hero-copy", "opacity", 0.01],
-        [".scroll-cue", "opacity", 0.01],
-        [".orbit .orbit-card", "opacity", 0.01],
-        [".hero", "pointer-events", null]
-      ]
+      "props": [[".hero-copy", "opacity", 0.01], [".scroll-cue", "opacity", 0.01], [".orbit .orbit-card", "opacity", 0.01], [".hero", "pointer-events"]]
     }
   ],
   "gain": {
@@ -117,43 +109,39 @@
     "direction": "lower",
     "device": "chrome",
     "status": "pending-quiet-host",
-    "why": "Whole-page A/B showed the gain in per-frame style/paint (frames >20 ms, fps), not LoAF. The iPhone check (device iphone) is pending: the phone is disconnected."
+    "why": "The plain-baseline A/B moved per-frame cost (frames >20 ms, fps), not LoAF. The iPhone hero window (y 0-900) is the device check (iPhone-led, wave 2)."
   },
   "experiments": [
     {
       "id": "hero-exit-scroll-timeline/01",
-      "variant": "v1: keyframes use animated custom properties",
-      "patch": "variants/01.diff",
-      "expected": "broke",
-      "why": "Rebuilt from the session transcript. The breakage (cue stuck at opacity 0) is Safari-only (P3): confirm it with device iphone. Chrome parity may pass."
+      "variant": "variants/01.diff",
+      "device": "iphone",
+      "expect": { "parity": "fail", "gain": "broke" },
+      "why": "v1 keyframes used animated custom properties: on Safari 26 the cue stayed at opacity 0 (P3). Chrome parity likely passes, so this needs the iPhone."
     },
     {
       "id": "hero-exit-scroll-timeline/02",
-      "variant": "v2 with the original local names",
-      "patch": "variants/02.diff",
-      "expected": "within noise",
-      "why": "Parity: all mechanism and parity checks pass, the same as 04."
+      "variant": "variants/02.diff",
+      "expect": { "mech": "pass", "parity": "pass" },
+      "why": "v2 with the original local names, functionally the same as 04."
     },
     {
       "id": "hero-exit-scroll-timeline/04",
-      "variant": "v2 with renamed locals (= patch.diff)",
-      "patch": "variants/04.diff",
-      "expected": "better",
-      "why": "The fix. All mechanism checks pass, and styleLayoutMs is lower in the gain scenario."
+      "variant": "variants/04.diff",
+      "expect": { "mech": "pass", "parity": "pass", "gain": "better" },
+      "why": "v2 on the plain baseline (the measured n=3 A/B)."
     },
     {
       "id": "hero-exit-scroll-timeline/06",
-      "variant": "--noblur attribution (04 without the exit blur)",
-      "patch": "variants/06.diff",
-      "expected": "broke",
-      "why": "Visual change on purpose (no exit blur). Mechanism checks pass except cue-exit-is-a-scroll-animation-mobile (no filter). The gain against 04 is unmeasured."
+      "variant": "variants/06.diff",
+      "expect": { "mech": { "cue-exit-animated-mobile": "fail" }, "gain": "broke" },
+      "why": "No exit blur, a visual change on purpose (attribution only). The cue filter animation is missing."
     },
     {
-      "id": "hero-exit-scroll-timeline/08",
-      "variant": "unregister the hero dE callback in CSS mode",
-      "patch": null,
-      "expected": "broke",
-      "why": "no patch kept: rejected at design time, never built. Predicted: .hero-track loses data-start-selling-scene and data-start-selling-render (P12)."
+      "id": "hero-exit-scroll-timeline/09",
+      "variant": "final",
+      "expect": { "mech": "pass", "parity": "pass", "gain": "better" },
+      "why": "v2 restacked on aw1-10c (patch.diff). The gain is still to be measured on the iPhone hero window and Chrome."
     }
   ]
 }
