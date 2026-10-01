@@ -307,8 +307,12 @@ test('wda: build refused outside a normal hold; inside one: unsigned Simulator b
   r = node(SIM, ['wda', 'start'], { env: e });
   assert.equal(r.code, 1);
   assert.match(r.stderr, /no live Simulator session/);
-  r = await inHold(['sh', '-c', `"${process.execPath}" "${SIM}" wda start && "${process.execPath}" -e "fetch('http://127.0.0.1:${env.FW_SIM_WDA_PORT}/status').then((x) => x.text()).then(console.log)"`], { e });
+  // review-sim R1: the running WDA-sim's pidfile must match only the Simulator's DerivedData-sim, never a generic
+  // `test-without-building` (the phone's WDA runner has that too: a stop/cleanup would kill it)
+  const pidfile = join(simDir(), 'wda.pid.json');
+  r = await inHold(['sh', '-c', `"${process.execPath}" "${SIM}" wda start && "${process.execPath}" -e "fetch('http://127.0.0.1:${env.FW_SIM_WDA_PORT}/status').then((x) => x.text()).then(console.log)" && "${process.execPath}" -e "console.log('PIDMATCH=' + JSON.parse(require('fs').readFileSync('${pidfile}', 'utf8')).match)"`], { e });
   assert.equal(r.code, 0, r.out);
+  assert.equal((r.stdout.match(/^PIDMATCH=(.*)$/m) || [])[1], join(home, 'DerivedData-sim'), r.out);
   assert.match(r.stdout, new RegExp(`WDA_SIM_READY http://127\\.0\\.0\\.1:${env.FW_SIM_WDA_PORT}`));
   assert.match(r.stdout, /"ready":true/);
   assert.match(r.stdout, /cleanup: stopped wda/);
