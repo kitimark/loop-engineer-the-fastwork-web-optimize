@@ -23,7 +23,7 @@ iPhone and the finger. Words: **must** = a gate fails without it; **should** = t
 | L4 | /10c shipped the F-030 idle regression; review looked at the idle phase at y=0, the cost was in the post-scroll un-skip | **Idle triple** (y=0, parked mid-page after a scroll, at the pin) in F and V |
 | L5 | hero v2 fixed y≈50 and grew y≈700 by ~10 ms; only the phone saw it, 1.5 h later | **Position-bin census diff** on both devices in V: every bin, not only the targeted one |
 | L6 | Chrome shows the morph at 110 fps, the phone 15-30 fps. Chrome at 6x throttles only the main thread; WebKit raster, allocation and commit are on the phone's frame path | **Device class** decided at D; phone-only fixes are gated on the phone, Chrome is a no-regression check |
-| L7 | Heat voids phone blocks (F-028: idle stays 60 while scroll/bottom fall); cold first runs are slow (F-042); Timeline timestamps are 0 over the proxy; 120 Hz panel quantizes gaps to 8.33 ms | §5 sentinel under load, warm-up run, block limits; §3 tick metrics |
+| L7 | Heat voids phone blocks (F-028: idle stays 60 while scroll/bottom fall); cold first runs are slow (F-042); Timeline timestamps are 0 over the proxy; Safari rAF runs at 60 Hz with 1 ms, non-vsync timestamps (§3.2): gaps cluster near 16.7 / 33.3 / 50.0 ms and go off-grid when the main thread is busy; 8.33 ms is a unit there, not a grid. Low Power Mode halves rAF to 30 Hz | §5 sentinel under load, warm-up run, block limits; §3 tick metrics |
 | L8 | Canary drift on the same page: ~92 fps / 25 frames >20 ms (04:25Z, 93b4af2) → 78/57 (08:31Z, 43e40ce) → 75.9/75.2 (10:08Z, acce613), unexplained | §6.3: host-vs-tool A/A, then bisect; until then compare only within one hold |
 | L9 | Driver ≠ finger: the morph driver never bounces or pins, the scripted scroll never resizes the toolbar; savings don't add (ghb 21 / gh 24 / g 33) | Claims are scoped to their driver (§5.4); touch paths need G or F before landing |
 | L10 | Chrome y and phone y differ by ~77 px; viewports differ (932 vs 775/815) | Positions in **crossing coordinates** (§3.4); Chrome attribution probes at phone geometry |
@@ -71,7 +71,7 @@ For one cluster: everything that changes in that frame.
 A fix is built only on a **NAMED** card. Fields:
 
 1. **Pipeline stage:** script / style / layout / paint recording / raster wait + allocation / "Other"
-   (compositing update, layer creation, event-region walks, IO) / UI apply / render server (GPU) / input.
+   (compositing update, layer creation, event-region walks, IO) / tick wait (phone: gap − frame = next-tick wait + wake latency + post-flush; not separable into a 'UI apply' stage, claims-audit P12) / render server (GPU) / input.
    Evidence: Chrome `--trace-frames` class of that frame; on the phone, the RenderingFrame segments of an
    attribution run (§5.5: Script, Layout, Paint+Composite read **together**, Other, and gap − frame) + page-rAF JS
    ms + filter element counts after the frame + LayerTree census (paintCount deltas) bracketing it; for a
@@ -325,7 +325,7 @@ then `Page.enable` before `Timeline.start`, and again after every reconnect (tar
 `Page.enable` starts WebKit's inspector stopwatch, nothing else does (vendor source; **confirmed on 26.6.1**, F-047: all
 1922 records timed, `performance.mark` arrives as TimeStamp, RenderingFrame 16.6-16.7 ms steady). Records are serialised on the main thread, so the overhead is
 medium. Read `RenderingFrame` segments per frame (Script, Layout, Paint+Composite, Other) and gap − frame
-(≈ UI apply + tick wait). Check Composite's children before reading it as raster: a timer or IO callback that
+(= wait for the next display-link tick + wake latency + post-flush time, §3.1; not 'UI apply'). Check Composite's children before reading it as raster: a timer or IO callback that
 runs during the flush wait nests under it. A large "Other" = layer churn or event-region walks. A render-server
 suspect (backdrop, filters) goes to Instruments Animation Hitches in its own block with its own control.
 Timing runs carry only Timeline (Script/Layout/Paint/Composite/RenderingFrame) + the rAF logger; counts and

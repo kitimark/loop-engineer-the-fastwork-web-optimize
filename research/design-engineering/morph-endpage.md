@@ -368,9 +368,10 @@ before landing, and the touchmove-frame penalty (§2) stays #6's to remove.
 | gb (gb1, gb2) | 27 / 29.7 | 21 % | 51 | 25 / 26 / 29 / 36 / 27 | 17 |
 | gh (gh1, gh2) | **24 / 26.8** | **41 %** | 49 | 20 / 24 / 30 / 31 / 20 | 17 |
 
-Frame gaps are measured in **8.33 ms** units; Safari rAF runs at 60 Hz (protocol v2 §3.2). A frame whose work runs just
-over 16.7 ms costs 25 ms. So savings move in 8.33 ms steps: a p50 is a coarse statistic here, and the tick shares
-are the better read.
+Frame gaps are measured in **8.33 ms** units; Safari rAF runs at 60 Hz (protocol v2 §3.2). At 60 Hz a frame
+whose work runs just over 16.7 ms nominally costs 33.3 ms (the next display-link tick), so tick-bound savings move in
+16.7 ms steps, while busy-main-thread frames land off-grid at 1 ms resolution. A p50 is a coarse statistic here; the
+vsync and tick shares are the better read.
 
 ### 6.1 Q1: why 58-68 ms (finger) became 29-35 ms (driver), and g's budget under the driver
 
