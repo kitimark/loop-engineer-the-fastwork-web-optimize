@@ -70,20 +70,28 @@ export function summary(xs) {
   return { n: s.length, median: quantile(s, 0.5), q1, q3, iqr: q3 - q1, min: s[0], max: s[s.length - 1] };
 }
 
-/** Per-run frame counts: tick histogram, k>=5, k>=7, on-time (k<=2), legacy dt>34 / dt>50. */
+/**
+ * Per-run frame counts: tick histogram, k>=5, k>=7, on-time (k<=2) (Chrome forms); dt>34 / dt>50 and the
+ * phone's +-4 ms counts dt>30/38, dt>46/54, near34 = 30 < dt <= 38, near50 = 46 < dt <= 54 (frames within
+ * 4 ms of a goal threshold; CLAUDE.md "Frame thresholds", names agreed with ts-iphone-run). Strict ">".
+ */
 export function frameCounts(dts) {
   const d = num(dts), hist = {};
-  let k5 = 0, k7 = 0, onTime = 0, gt34 = 0, gt50 = 0;
+  let k5 = 0, k7 = 0, onTime = 0, gt30 = 0, gt34 = 0, gt38 = 0, gt46 = 0, gt50 = 0, gt54 = 0;
   for (const dt of d) {
     const k = tick(dt);
     hist[k] = (hist[k] || 0) + 1;
     if (k >= K34) k5++;
     if (k >= K50) k7++;
     if (k <= 2) onTime++;
+    if (dt > 30) gt30++;
     if (dt > 34) gt34++;
+    if (dt > 38) gt38++;
+    if (dt > 46) gt46++;
     if (dt > 50) gt50++;
+    if (dt > 54) gt54++;
   }
-  return { n: d.length, k5, k7, onTime, gt34, gt50, hist };
+  return { n: d.length, k5, k7, onTime, gt30, gt34, gt38, gt46, gt50, gt54, near34: gt30 - gt38, near50: gt46 - gt54, hist };
 }
 
 /** One run's scalar metrics from its frame times: counts plus p50/p95 in ms and in ticks. */
@@ -193,7 +201,7 @@ const DEFAULT_MIN_SHIFT = { ms: TICK_MS, ticks: 1, count: 1 };
  * predicted: the predicted improvement (positive, metric units) or null. Returns {decision: 'win' |
  * 'futile' | 'block2' | 'no-win', reason, rule, stats}.
  */
-export function sequentialDecision({ blocks, dir = 'lower', unit = 'ms', predicted = null, minShift = null, alpha = 0.05, block1Alpha = BLOCK1_ALPHA }) {
+export function sequentialDecision({ blocks, dir = 'lower', unit = 'ms', predicted = null, minShift = null, alpha = 0.05, block1Alpha = BLOCK1_ALPHA, medianCompare = null }) {
   if (!['lower', 'higher'].includes(dir)) throw new Error(`bad dir: ${dir}`);
   if (!(unit in DEFAULT_MIN_SHIFT)) throw new Error(`bad unit: ${unit} (ms | ticks | count)`);
   if (!blocks?.length) throw new Error('sequentialDecision: no blocks');
@@ -201,7 +209,10 @@ export function sequentialDecision({ blocks, dir = 'lower', unit = 'ms', predict
   checkBlocks(blocks, 'sequentialDecision');
   const ms = minShift ?? DEFAULT_MIN_SHIFT[unit];
   const f = (x) => (x == null ? '-' : Math.round(x * 1000) / 1000);
-  const choices = { unit, dir, minShift: ms, predicted, alpha, block1Alpha, medianCompare: unit === 'ms' ? 'ticks' : 'raw' };
+  // ms medians compare as ticks on Chrome (§3.2); the phone has no k forms (CLAUDE.md, claims-audit §2.3): 'raw'
+  const mcmp = medianCompare ?? (unit === 'ms' ? 'ticks' : 'raw');
+  if (!['ticks', 'raw'].includes(mcmp)) throw new Error(`bad medianCompare: ${mcmp} (ticks | raw)`);
+  const choices = { unit, dir, minShift: ms, predicted, alpha, block1Alpha, medianCompare: mcmp };
   {
     const { control, variant } = blocks[0];
     const s = compareBlock(control, variant, dir);
@@ -211,8 +222,9 @@ export function sequentialDecision({ blocks, dir = 'lower', unit = 'ms', predict
       : { decision, stoppedAt: 1, reason: `block 1 stopped (${decision}): ${reason}; block 2 is outside the protocol (lead only) and was not evaluated`, rule, stats });
     const rule = `block 1: win iff U = 0 and p <= ${f(block1Alpha)} and HL >= max(minShift ${f(ms)}, predicted/2 ${predicted != null ? f(predicted / 2) : '-'}); futile iff variant median worse, or medians equal and HL <= 0`;
     if (s.u === 0 && s.p <= block1Alpha + 1e-12 && s.shift >= need - 1e-9) return stop('win', `U = 0, p ${f(s.p)}, HL ${f(s.shift)} >= ${f(need)}`, rule, stats);
-    const mc = unit === 'ms' ? tick(s.control.median) : s.control.median, mv = unit === 'ms' ? tick(s.variant.median) : s.variant.median;
-    const medians = `medians ${unit === 'ms' ? `${mc} vs ${mv} ticks` : `${f(mc)} vs ${f(mv)}`}`;
+    const asTicks = mcmp === 'ticks';
+    const mc = asTicks ? tick(s.control.median) : s.control.median, mv = asTicks ? tick(s.variant.median) : s.variant.median;
+    const medians = `medians ${asTicks ? `${mc} vs ${mv} ticks` : `${f(mc)} vs ${f(mv)}`}`;
     if (better(mc, mv, dir)) return stop('futile', `variant median worse (${medians})`, rule, stats);
     if (mc === mv && s.shift <= 0) return stop('futile', `${medians} equal and HL ${f(s.shift)} <= 0`, rule, stats);
     if (blocks.length === 1) return { decision: 'block2', reason: `U ${s.u}, p ${f(s.p)}, HL ${f(s.shift)} (need U = 0, p <= ${f(block1Alpha)}, HL >= ${f(need)}); ${medians}: run block 2`, rule, stats };
@@ -296,18 +308,33 @@ export function normalizeFrame(fr, prevY = null, ih = null) {
 }
 
 const normFrames = (frames, ih) => { let prev = null; return frames.map((f) => { const n = normalizeFrame(f, prev, ih); prev = n.yEnd; return n; }); };
+// legacy `iphone.mjs record` (finger) rows are [t, dt, y, innerHeight], without `fields`: not fw-iphone-run/1 tuples
+const legacyRow = (f) => (Array.isArray(f) && f.length === 4 ? { t: f[0], dt: f[1], y: f[2], innerHeight: f[3] } : f);
+
+/**
+ * meta.driver (S scroll, W window, M morph, G gesture, F finger; DRIVERS in tools/lib/iphone-probe.mjs). Files
+ * from before T1a carry none: a legacy `iphone.mjs record` file (summary.whileScrollYChanges) is F, a legacy
+ * `iphone.mjs scroll` file (maxY + marks.scroll) is S (ts-iphone-run); anything else stays null (unknown).
+ */
+export function driverOf(json) {
+  if (json?.meta?.driver != null) return json.meta.driver;
+  if (json?.summary?.whileScrollYChanges) return 'F';
+  if (json?.maxY != null && json?.marks?.scroll) return 'S';
+  return null;
+}
 
 /**
  * Runs from one parsed JSON: verify.json (results[].frameLog.<phase>, Chrome [t, dt, y]; innerHeight from
  * `innerHeight` option) or an iPhone run file (schema fw-iphone-run/1 of `iphone.mjs run`, T1a: {fields, frames,
  * marks, meta: {driver, label, run, block, arm, pos, warmup}, mutations, crossings}; `void` is set by T2;
  * optional `tops` {id: documentTop} measured in the run). Returns [{label, run, block, arm,
- * pos, driver, warmup, void, tops, frames}] with normalized frames.
+ * pos, device ('chrome' | 'phone'), driver (driverOf; 'chrome' for verify.json), warmup, void, tops, frames}]
+ * with normalized frames.
  */
 export function runsFromJson(json, { phase = 'scroll', innerHeight = null, file = '' } = {}) {
   if (Array.isArray(json?.results)) {
     return json.results.filter((r) => !r.diff && r.frameLog?.[phase]).map((r) => ({
-      label: r.label, run: r.run, block: r.block ?? null, arm: r.arm ?? null, pos: null, driver: 'chrome', warmup: false, void: false, tops: {}, source: file,
+      label: r.label, run: r.run, block: r.block ?? null, arm: r.arm ?? null, pos: null, device: 'chrome', driver: 'chrome', warmup: false, void: false, tops: {}, source: file,
       frames: normFrames(r.frameLog[phase], innerHeight ?? r.innerHeight ?? null),
     }));
   }
@@ -324,8 +351,9 @@ export function runsFromJson(json, { phase = 'scroll', innerHeight = null, file 
       else warning = `no marks: all ${json.frames.length} frames used, incl. load and idle (pass --phase all to accept)`;
     }
     return [{ ...(warning ? { warning } : {}),
-      label: meta.label ?? null, run: meta.run ?? 0, block: meta.block ?? null, arm: meta.arm ?? null, pos: meta.pos ?? null, driver: meta.driver ?? null,
-      warmup: !!meta.warmup, void: !!meta.void, sentinel: meta.sentinel ?? json.sentinel ?? null, tops: json.tops || meta.tops || {}, source: file, frames: normFrames(fr, innerHeight),
+      label: meta.label ?? null, run: meta.run ?? 0, block: meta.block ?? null, arm: meta.arm ?? null, pos: meta.pos ?? null, device: 'phone', driver: driverOf(json),
+      warmup: !!meta.warmup, void: !!meta.void, sentinel: meta.sentinel ?? json.sentinel ?? null, tops: json.tops || meta.tops || {}, source: file,
+      frames: normFrames(json.fields ? fr : fr.map(legacyRow), innerHeight),
     }];
   }
   return [];
@@ -334,6 +362,7 @@ export function runsFromJson(json, { phase = 'scroll', innerHeight = null, file 
 /** Metric names a run can be scored by (runMetrics keys) with their unit and direction. */
 export const METRICS = {
   k5: { unit: 'count', dir: 'lower' }, k7: { unit: 'count', dir: 'lower' }, gt34: { unit: 'count', dir: 'lower' }, gt50: { unit: 'count', dir: 'lower' },
+  gt30: { unit: 'count', dir: 'lower' }, gt38: { unit: 'count', dir: 'lower' }, gt46: { unit: 'count', dir: 'lower' }, gt54: { unit: 'count', dir: 'lower' },
   p50Ms: { unit: 'ms', dir: 'lower' }, p95Ms: { unit: 'ms', dir: 'lower' }, p50Ticks: { unit: 'ticks', dir: 'lower' }, p95Ticks: { unit: 'ticks', dir: 'lower' },
 };
 
@@ -344,6 +373,19 @@ export const METRICS = {
  */
 export const TWIN = { k5: 'gt34', gt34: 'k5', k7: 'gt50', gt50: 'k7', p50Ms: 'p50Ticks', p50Ticks: 'p50Ms', p95Ms: 'p95Ticks', p95Ticks: 'p95Ms' };
 export const twinKind = (metric) => (/^(k|gt)\d/.test(metric) ? 'threshold-sensitive' : 'tick-sensitive');
+
+/**
+ * The phone has no k forms (CLAUDE.md "Frame thresholds": Safari rAF stamps are 1 ms, not vsync-quantized):
+ * goal dt>50 and dt>34, each checked at +-4 ms (dt>46/54, dt>30/38); a verdict that differs across them is
+ * "threshold-sensitive". Medians on the phone compare raw (ms), not as ticks.
+ */
+export const PHONE_TWINS = { gt50: ['gt46', 'gt54'], gt34: ['gt30', 'gt38'] };
+export const K_FORMS = new Set(['k5', 'k7', 'p50Ticks', 'p95Ticks']);
+/** The metrics a verdict on `metric` is also decided by, per device ('chrome' | 'phone'); [] when none. */
+export function twinsFor(metric, device = 'chrome') {
+  if (device === 'phone') return PHONE_TWINS[metric] ?? [];
+  return TWIN[metric] ? [TWIN[metric]] : [];
+}
 
 /** Block ids in order: null first, then numeric-aware (2 before 10, 'b2' before 'b10'). */
 export const compareBlockIds = (x, y) => (x == null ? (y == null ? 0 : -1) : y == null ? 1
@@ -385,7 +427,8 @@ export function blocksFromRuns(runs, metric) {
 /**
  * Block-shape warnings (§5.2, §5.3), per block: <= 9 counted runs; n per arm (4 for 2 arms, 3 for 3 arms);
  * exactly one warm-up, before the first counted run; counted runs in the ABBA / Latin-square order by pos;
- * control runs without a sentinel record (`meta.sentinel`: T2 sets it and `void`; T3 does not judge it).
+ * control runs without a sentinel record (`meta.sentinel`: T2 sets it and `void`; T3 does not judge it);
+ * counted runs of more than one driver (F-071).
  */
 export function blockWarnings(runs) {
   const out = [];
@@ -409,6 +452,10 @@ export function blockWarnings(runs) {
     } else out.push(`${tag}: run positions (meta.pos) missing: order not checked`);
     const noSentinel = counted.filter((r) => r.arm === 'C' && r.sentinel == null).length;
     if (noSentinel) out.push(`${tag}: sentinel not checked here (T2 sets void); ${noSentinel} control run(s) carry no sentinel record`);
+    // a block names one driver (§5); F-071: F/G runs show ~80 Hz rAF stretches, S/W/M 60 Hz, so fps and frame
+    // totals don't compare across drivers (the ms-threshold counts do; CLAUDE.md "Frame thresholds")
+    const drivers = [...new Set(counted.map((r) => r.driver ?? '?'))].sort();
+    if (drivers.length > 1) out.push(`${tag}: mixed drivers ${drivers.map((d) => `${d} ${counted.filter((r) => (r.driver ?? '?') === d).length}`).join(', ')} (a block names one driver; F-071: fps and frame totals of F/G and S/W/M runs don't compare; '?' = no meta.driver)`);
   }
   return out;
 }

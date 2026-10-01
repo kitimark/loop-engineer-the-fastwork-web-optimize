@@ -11,7 +11,7 @@ import {
   TICK_MS, tick, tickThresholdMs, quantile, median, summary, frameCounts, runMetrics, mannWhitney, hodgesLehmann,
   vanElteren, stratifiedShift, aligned, compareBlock, compareBlocks, sequentialDecision, blockOrder,
   crossingY, placeFrame, placeFrames, normalizeFrame, runsFromJson, blocksFromRuns, blockWarnings,
-  compareBlockIds, METRICS, TWIN, twinKind,
+  compareBlockIds, METRICS, TWIN, twinKind, twinsFor, K_FORMS, PHONE_TWINS, driverOf,
 } from '../../tools/lib/stats.mjs';
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`);
@@ -28,7 +28,10 @@ test('ticks: k = round(dt / 8.333); midpoints 37.5 -> 5 and 54.17 -> 7; the prot
 test('frameCounts: tick histogram, k>=5, k>=7, on-time, legacy >34 / >50 side by side', () => {
   // ticks 2, 5, 7, 4, 6: 35 ms is ">34" in legacy ms but only k = 4; 50.5 is legacy ">50" but k = 6
   const c = frameCounts([16.7, 37.5, 54.2, 35, 50.5]);
-  assert.deepEqual(c, { n: 5, k5: 3, k7: 1, onTime: 1, gt34: 4, gt50: 2, hist: { 2: 1, 5: 1, 7: 1, 4: 1, 6: 1 } });
+  // phone +-4 ms: >30 and >38 4 / 2 (near34 = 30 < dt <= 38: 37.5, 35), >46 and >54 2 / 1 (near50: 50.5)
+  assert.deepEqual(c, { n: 5, k5: 3, k7: 1, onTime: 1, gt30: 4, gt34: 4, gt38: 2, gt46: 2, gt50: 2, gt54: 1, near34: 2, near50: 1, hist: { 2: 1, 5: 1, 7: 1, 4: 1, 6: 1 } });
+  // strict ">": a frame exactly on a threshold is not over it, and is near it
+  assert.deepEqual(['gt30', 'gt34', 'gt38', 'gt46', 'gt50', 'gt54', 'near34', 'near50'].map((k) => frameCounts([30, 34, 38, 46, 50, 54])[k]), [5, 4, 3, 2, 1, 0, 2, 2]);
   const m = runMetrics([10, 20, 30, 40, 50]);
   assert.equal(m.p50Ms, 30);
   close(m.p95Ms, 48); // h = 4 * 0.95 = 3.8: 40 + 0.8 * 10
@@ -242,8 +245,13 @@ test('review-stats round 2: frames whose dt are all non-finite throw; partly non
   const sb = blocksFromRuns([...two('b10', 9, 1), ...two('b2', 5, 2)], 'k5');
   assert.deepEqual(sb.arms.V.map((x) => x.block), ['b2', 'b10']);
   assert.deepEqual(blockWarnings([...two('b10', 9, 1), ...two('b2', 5, 2)]).filter((w) => /warm-up/.test(w)), ['block b2: 0 warm-up runs (expected 1)', 'block b10: 0 warm-up runs (expected 1)']);
-  // every verdict has a twin, both ways (arch-unknowns U2)
-  for (const m of Object.keys(METRICS)) assert.equal(TWIN[TWIN[m]], m, `${m} has a twin`);
+  // Chrome: every tick or legacy metric has a twin, both ways (arch-unknowns U2); the phone's +-4 ms counts have none there
+  for (const m of Object.keys(METRICS).filter((x) => !['gt30', 'gt38', 'gt46', 'gt54'].includes(x))) assert.equal(TWIN[TWIN[m]], m, `${m} has a twin`);
+  assert.deepEqual([twinsFor('k7'), twinsFor('gt50'), twinsFor('gt46'), twinsFor('p50Ms')], [['gt50'], ['k7'], [], ['p50Ticks']]);
+  // phone: no k forms; gt50 and gt34 at +-4 ms
+  assert.deepEqual([twinsFor('gt50', 'phone'), twinsFor('gt34', 'phone'), twinsFor('p50Ms', 'phone'), twinsFor('gt46', 'phone')], [['gt46', 'gt54'], ['gt30', 'gt38'], [], []]);
+  for (const k of K_FORMS) assert.deepEqual(twinsFor(k, 'phone'), []);
+  for (const ts of Object.values(PHONE_TWINS)) for (const m of ts) assert.ok(METRICS[m] && !K_FORMS.has(m), m);
   assert.deepEqual([twinKind('k5'), twinKind('gt50'), twinKind('p50Ms'), twinKind('p95Ticks')], ['threshold-sensitive', 'threshold-sensitive', 'tick-sensitive', 'tick-sensitive']);
 });
 
@@ -356,7 +364,7 @@ test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over 
   writeFileSync(join(d, 'blk', 'r00-warm.json'), JSON.stringify({ frames: frames(12), meta: { block: 1, arm: 'C', warmup: true, pos: 0 } }));
   order.forEach((arm, i) => writeFileSync(join(d, 'blk', `r${String(i + 1).padStart(2, '0')}.json`), JSON.stringify({ frames: frames(longs[arm][seen[arm]++]), meta: { block: 1, arm, pos: i + 1, driver: 'S' } })));
   writeFileSync(join(d, 'blk', 'r99-truncated.json'), '{"frames": [[0, 4');
-  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'k5']);
+  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--device', 'chrome', '--metric', 'k5']);
   assert.equal(r.code, 0, r.stderr);
   assert.match(r.stderr, /WARN unreadable JSON skipped: .*r99-truncated.json/);
   assert.match(r.stdout, /9 run\(s\), 1 warm-up\/void skipped, 1 unreadable/);
@@ -364,37 +372,37 @@ test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over 
   assert.match(r.stdout, /^WARN block 1: sentinel not checked here \(T2 sets void\); 4 control run\(s\) carry no sentinel record$/m);
   assert.doesNotMatch(r.stdout, /threshold-sensitive|run order/);
   assert.match(r.stdout, /^arm V vs C: DECISION WIN: U = 0, p 0.014, HL 3 >= 1$/m);
-  const rj = JSON.parse(node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'k5', '--json']).stdout);
+  const rj = JSON.parse(node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--device', 'chrome', '--metric', 'k5', '--json']).stdout);
   assert.deepEqual([rj.twin, rj.thresholdSensitive, rj.unreadable.length, rj.dropped], ['gt34', false, 1, []]);
   // threshold-sensitive: 35 ms frames are legacy ">34" but k = 4; variant runs carry them instead of 40 ms ones
   mkdirSync(join(d, 'ts'));
   const fr2 = (n40, n35) => frames(0).map((x, i) => (i < n40 ? [x[0], 40, ...x.slice(2)] : i < n40 + n35 ? [x[0], 35, ...x.slice(2)] : x));
   seen.C = 0; seen.V = 0;
   order.forEach((arm, i) => writeFileSync(join(d, 'ts', `r${i}.json`), JSON.stringify({ frames: arm === 'C' ? fr2(longs.C[seen.C++], 0) : fr2(longs.V[seen.V], 6 - longs.V[seen.V++] + 4), meta: { block: 1, arm, pos: i + 1 } })));
-  r = node(tool('stats.mjs'), ['runs', join(d, 'ts'), '--metric', 'k5']);
+  r = node(tool('stats.mjs'), ['runs', join(d, 'ts'), '--device', 'chrome', '--metric', 'k5']);
   assert.match(r.stdout, /^WARN threshold-sensitive: arm V: k5 win vs gt34 futile$/m);
   assert.match(r.stdout, /^ {2}both ways: k5 WIN \| gt34 FUTILE \(.*\) {2}THRESHOLD-SENSITIVE$/m);
   // both ways also when the twins agree (arch-unknowns U2), and for p50Ms / p50Ticks
-  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'gt34']);
+  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--device', 'chrome', '--metric', 'gt34']);
   assert.match(r.stdout, /^ {2}both ways: gt34 WIN \| k5 WIN \(U = 0, p 0.014, HL 3 >= 1\)$/m);
-  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'p50Ms', '--json']);
+  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--device', 'chrome', '--metric', 'p50Ms', '--json']);
   const pj = JSON.parse(r.stdout);
   assert.deepEqual([pj.twin, pj.sensitivity, pj.twinSensitive, pj.thresholdSensitive, Object.keys(pj.twinArms)], ['p50Ticks', 'tick-sensitive', false, undefined, ['V']]);
   // partly non-finite frame times: warned, scored on the finite ones
   mkdirSync(join(d, 'part'));
   order.forEach((arm, i) => writeFileSync(join(d, 'part', `r${i}.json`), JSON.stringify({ frames: [...frames(arm === 'C' ? 7 : 3), ...(i === 1 ? [[999, null, 0, 0, 775]] : [])], meta: { block: 1, arm, pos: i + 1 } })));
-  r = node(tool('stats.mjs'), ['runs', join(d, 'part'), '--metric', 'k5']);
+  r = node(tool('stats.mjs'), ['runs', join(d, 'part'), '--device', 'chrome', '--metric', 'k5']);
   assert.equal(r.code, 0, r.stderr);
   assert.match(r.stdout, /^WARN .*r1.json \(block 1, arm V\): 1 of 21 frame time\(s\) not finite; scored on 20$/m);
   // the review's input via the CLI: V runs whose frame times are all null -> error, not a WIN
   mkdirSync(join(d, 'nul'));
   order.forEach((arm, i) => writeFileSync(join(d, 'nul', `r${i}.json`), JSON.stringify({ frames: arm === 'C' ? frames(7) : frames(0).map((x) => [x[0], null, ...x.slice(2)]), meta: { block: 1, arm, pos: i + 1 } })));
-  r = node(tool('stats.mjs'), ['runs', join(d, 'nul'), '--metric', 'k5']);
+  r = node(tool('stats.mjs'), ['runs', join(d, 'nul'), '--device', 'chrome', '--metric', 'k5']);
   assert.equal(r.code, 2);
   assert.match(r.stderr, /4 counted run\(s\) have no frames with a finite frame time .*dt all non-finite/);
   // a counted run with no frames in the phase is an error, not a zero
   writeFileSync(join(d, 'blk', 'r05.json'), JSON.stringify({ frames: frames(4), marks: { idle: [0, 1] }, meta: { block: 1, arm: 'V', pos: 5 } }));
-  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'k5']);
+  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--device', 'chrome', '--metric', 'k5']);
   assert.equal(r.code, 2);
   assert.match(r.stderr, /1 counted run\(s\) have no frames with a finite frame time in the phase .*r05.json: no marks.scroll/);
   assert.equal(node(tool('stats.mjs'), ['runs', join(d, 'blk')]).code, 2, '--metric is required');
@@ -415,4 +423,75 @@ test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over 
   assert.match(r.stdout, /^WARN .*noy.json: 2 of 2 frame\(s\) have no scroll position \(y source none\?\): not placed$/m);
   assert.match(r.stdout, /^ {2}dt 40 \(k 5\) {2}no y: not placed$/m);
   assert.equal(node(tool('stats.mjs'), ['place', join(d, 'tops.json')]).code, 2);
+});
+
+test('phone: medians compare raw (no ticks), legacy drivers, legacy finger rows, mixed-driver warning (F-071)', () => {
+  // 35 vs 36 ms: one tick (4) apart in neither, so as ticks the medians tie and HL 4 > 0 goes on to block 2;
+  // raw, the variant median is worse: futile. HL by hand: improvements -6 x6, 4 x6, 10 x2, 20 x2 -> median 4.
+  const b = { control: [30, 30, 40, 40], variant: [36, 36, 36, 20] };
+  let d = sequentialDecision({ blocks: [b], unit: 'ms' });
+  assert.equal(d.decision, 'block2', d.reason);
+  assert.match(d.reason, /medians 4 vs 4 ticks/);
+  d = sequentialDecision({ blocks: [b], unit: 'ms', medianCompare: 'raw' });
+  assert.equal(d.decision, 'futile', d.reason);
+  assert.equal(d.stats.choices.medianCompare, 'raw');
+  assert.throws(() => sequentialDecision({ blocks: [b], unit: 'ms', medianCompare: 'k' }), /bad medianCompare/);
+  // device and driver per run; files from before T1a: record -> F, scroll -> S, else unknown
+  assert.deepEqual([driverOf({ meta: { driver: 'M' } }), driverOf({ summary: { whileScrollYChanges: {} } }), driverOf({ maxY: 9, marks: { scroll: [0, 1] } }), driverOf({ frames: [] })], ['M', 'F', 'S', null]);
+  assert.equal(runsFromJson({ results: [{ label: 'a', run: 1, frameLog: { scroll: [[0, 16, 0]] } }] })[0].device, 'chrome');
+  // a legacy finger row [t, dt, y, innerHeight] is not a fw-iphone-run/1 tuple: y is y, innerHeight is innerHeight
+  const fin = runsFromJson({ frames: [[0, 16, 0, 775], [16, 40, 30, 815]], summary: { whileScrollYChanges: {} }, meta: {} }, { phase: 'all' })[0];
+  assert.deepEqual([fin.device, fin.driver, fin.frames[1].yStart, fin.frames[1].yEnd, fin.frames[1].innerHeight], ['phone', 'F', 0, 30, 815]);
+  const v1 = runsFromJson({ fields: ['t', 'dt', 'yStart', 'yEnd'], frames: [[0, 16, 5, 9]], meta: { driver: 'S' } }, { phase: 'all' })[0];
+  assert.deepEqual([v1.frames[0].yStart, v1.frames[0].yEnd, v1.frames[0].innerHeight], [5, 9, null]);
+  // F-071: one block mixing drivers is warned (counted runs only; '?' = no meta.driver)
+  const order = blockOrder(2);
+  const blk = (drv) => [{ block: 1, arm: 'C', warmup: true, pos: 0, driver: 'F', sentinel: 1 }, ...order.map((arm, i) => ({ block: 1, arm, warmup: false, void: false, pos: i + 1, sentinel: 1, driver: drv(i) }))];
+  assert.deepEqual(blockWarnings(blk(() => 'S')), []);
+  assert.deepEqual(blockWarnings(blk((i) => (i < 6 ? 'S' : i === 6 ? 'F' : null))), ["block 1: mixed drivers ? 1, F 1, S 6 (a block names one driver; F-071: fps and frame totals of F/G and S/W/M runs don't compare; '?' = no meta.driver)"]);
+});
+
+test('stats.mjs runs on phone files: gt50 at +-4 ms, threshold-sensitive, near totals, no k forms, raw medians', () => {
+  const d = tempDir('fw-stats-phone-');
+  const order = blockOrder(2);
+  // control runs: 6-8 frames of 52 ms; variant runs: 3-4 frames of 52 ms and 6 of 48 ms (over 46, not over 50); V near50 = 15 + 24
+  const frames = (n52, n48) => { const out = []; let t = 0; for (let i = 0; i < 20; i++) { const dt = i < n52 ? 52 : i < n52 + n48 ? 48 : 16; out.push([t, dt, i * 10, i * 10 + 10, 775, null, 1, 0.1, 9000]); t += dt; } return out; };
+  const longs = { C: [6, 7, 7, 8], V: [3, 4, 4, 4] }, seen = { C: 0, V: 0 };
+  mkdirSync(join(d, 'p'));
+  const fields = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs', 'docH'];
+  writeFileSync(join(d, 'p', 'r0.json'), JSON.stringify({ fields, frames: frames(9, 0), marks: { scroll: [0, 1e9] }, meta: { block: 1, arm: 'C', warmup: true, pos: 0, driver: 'S' } }));
+  order.forEach((arm, i) => writeFileSync(join(d, 'p', `r${i + 1}.json`), JSON.stringify({ fields, frames: arm === 'C' ? frames(longs.C[seen.C++], 0) : frames(longs.V[seen.V++], 6), marks: { scroll: [0, 1e9] }, meta: { block: 1, arm, pos: i + 1, driver: 'S', sentinel: { pass: true } } })));
+  // gt50 wins (C 6-8 vs V 3-4); gt54 counts 0 everywhere (tie, HL 0) -> futile; gt46 (C 6-8 vs V 9-10) is worse
+  let r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /^metric gt50 \(count, lower is better\) on phone, twins gt46, gt54; 9 run\(s\), 1 warm-up\/void skipped/m);
+  assert.match(r.stdout, /^arm V vs C: DECISION WIN: U = 0, p 0.014, HL 3 >= 1$/m);
+  assert.match(r.stdout, /^ {2}both ways: gt50 WIN \| gt46 FUTILE \(.*\) \| gt54 FUTILE \(.*\) {2}THRESHOLD-SENSITIVE$/m);
+  assert.match(r.stdout, /^WARN threshold-sensitive: arm V: gt50 win vs gt46 futile$/m);
+  assert.match(r.stdout, /^ {2}near thresholds, arm V \(4 counted run\(s\), 80 frames\): near50 39 \(gt50 15\) {2}near34 0 \(gt34 39\)$/m);
+  assert.doesNotMatch(r.stdout, /mixed drivers|sentinel not checked/);
+  const j = JSON.parse(node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50', '--json']).stdout);
+  assert.deepEqual([j.device, j.medianCompare, j.twin, j.twins, j.thresholdSensitive, j.sensitiveArms, Object.keys(j.twinsArms)], ['phone', 'raw', 'gt46', ['gt46', 'gt54'], true, ['V'], ['gt46', 'gt54']]);
+  assert.deepEqual(j.near.C, { runs: 4, frames: 80, near50: 28, near34: 0, gt50: 28, gt34: 28 });
+  assert.equal(j.arms.V.stats.choices.medianCompare, 'raw');
+  // a metric without a twin on the phone: decided alone
+  r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'p50Ms']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /^ {2}both ways: p50Ms \S+ \(no twin\)$/m);
+  assert.match(r.stdout, /medians compared as raw/);
+  // no k forms on the phone; --device chrome reads the same files the Chrome way
+  for (const k of ['k5', 'k7', 'p50Ticks', 'p95Ticks']) {
+    r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', k]);
+    assert.equal(r.code, 2, k);
+    assert.match(r.stderr, /no k forms on the phone/);
+  }
+  r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'k7', '--device', 'chrome']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /^ {2}both ways: k7 FUTILE \| gt50 WIN \(.*\) {2}THRESHOLD-SENSITIVE$/m); // 52 ms is k = 6, not k >= 7
+  assert.equal(node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50', '--device', 'tv']).code, 2);
+  // phone and Chrome runs in one analysis are refused
+  writeFileSync(join(d, 'p', 'verify.json'), JSON.stringify({ results: [{ label: 'a', run: 1, block: 1, arm: 'C', frameLog: { scroll: [[0, 16, 0]] } }] }));
+  r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50']);
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /mixed devices \(phone, chrome\)|mixed devices \(chrome, phone\)/);
 });
