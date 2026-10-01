@@ -5,7 +5,9 @@
 
 **Status:** measured (iPhone P-017, P-029: PASS, driver M); review round 2 (review-cdwc NEEDS-WORK 14:0xZ: B1, B2, B4
 addressed here; B3: G block of the landing pair ticketed by the lead, no waiver)
-**Topic:** morph-webkit / nav-morph (owner fix-nav-morph); full history in `fixes/morph-webkit/README.md`
+**Topic:** morph-webkit / nav-morph (owner fix-nav-morph). The full history is in `fixes/morph-webkit/README.md` on the
+working branch `worktree-agent-a277ea00c8773c1ea`, which is not part of this landing. This landing carries the
+deliverables, plus the two Chrome probes and their results under `fixes/morph-webkit/`.
 **Base:** stacked on `aw1-10e` (`node tools/fix.mjs apply mw10e-cdwc --on aw1-10e`); CSS only, independent of the
 pin fix (g) and of R1 (gh)
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css`: one rule appended (+8 lines with the comment). Frozen
