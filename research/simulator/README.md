@@ -348,3 +348,5 @@ later option); any runtime download.
   first-run tip dismissed once at boot). Hold 1 (functional, fixed iwdp config) queued.
 - 15:28Z: hold 1 read (§5.0). 15:34-15:38Z FP-1 (§5.1). 15:41-15:47Z FP-3 (§5.2): classes 1 and 2 not usable.
 - 15:51Z: amendment 6 (class 4 operationalized on phone data only; FP-4 queued, unread), sent to arch-claims.
+- 15:56Z: arch-claims' pins added; class-4 scorer frozen as `tools/score4.mjs` (sha256 `8aed996e7d687152`). On the 8
+  phone runs it reproduces §7.9's 12 cells, and the rotator cell HOLDS in 8/8. FP-4 running since 15:52Z, output unread.
