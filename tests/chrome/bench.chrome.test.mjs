@@ -49,9 +49,10 @@ test('bench mech with real Chrome: counts discriminate, parity holds, a wrong ex
     parity: [{ viewport: 'mobile', segment: 'page', attrs: [['body', 'data-y']] }],
   };
   writeFileSync(join(repo.wt, 'fixes', 'nav-cache', 'bench.json'), JSON.stringify(spec, null, 1));
-  const env = { ...lock.env, FW_STATE_DIR: join(common, 'fastwork-mirror'), FW_LOCK_OWNER: `test-chrome-bench-${process.pid}` };
+  // the real host (FW_TEST_HOST ''), like the other Chrome tests; each mech run stays under 120 s (review-bench c)
+  const env = { ...lock.env, FW_STATE_DIR: join(common, 'fastwork-mirror'), FW_LOCK_OWNER: `test-chrome-bench-${process.pid}`, FW_TEST_HOST: '' };
   const t0 = Date.now();
-  const r = await nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), ['mech', 'nav-cache'], { cwd: repo.wt, env, timeout: 240000 });
+  const r = await nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), ['mech', 'nav-cache'], { cwd: repo.wt, env, timeout: 120000 });
   assert.equal(r.code, 0, r.out);
   assert.doesNotMatch(r.out, /\[lock chrome-measure\] busy/, 'bench.mjs re-entered the hold instead of queueing');
   const res = JSON.parse(readFileSync(join(repo.wt, 'fixes', 'nav-cache', 'bench-results.json'), 'utf8')).mech;
@@ -71,7 +72,7 @@ test('bench mech with real Chrome: counts discriminate, parity holds, a wrong ex
   mkdirSync(join(repo.wt, 'fixes', t2));
   cpSync(join(repo.wt, 'fixes', 'nav-cache', 'patch.diff'), join(repo.wt, 'fixes', t2, 'patch.diff'));
   writeFileSync(join(repo.wt, 'fixes', t2, 'bench.json'), JSON.stringify({ ...spec, topic: t2, spots: undefined, mechanism: [{ ...spec.mechanism[0], patched: '>= 1' }] }, null, 1));
-  const w = await nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), ['mech', t2, '--repeat', '1'], { cwd: repo.wt, env, timeout: 240000 });
+  const w = await nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), ['mech', t2, '--repeat', '1'], { cwd: repo.wt, env, timeout: 120000 });
   assert.equal(w.code, 1, w.out);
   assert.match(w.stdout, /FAIL +nav-cached/);
 });

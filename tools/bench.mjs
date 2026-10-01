@@ -22,9 +22,10 @@
 //        first clean HOLDS of the committed patch is stored as the authored effect. Normal lane.
 //   node tools/bench.mjs reconfirm [--ref main] [--gain <topic,...>|all] [--experiments] [--runs 5] [--repeat 2]
 //        Rebuild out/bench/overlays/_landed from <ref>'s committed fixes/*/patch.diff in landing order
-//        (CONFLICT <topic> if one no longer applies), then in ONE chrome-measure hold: Tier A of every
-//        landed topic with a bench.json (site-pretty vs _landed), Tier B for --gain topics (an A/A first
-//        when their floors are stale), --experiments: every experiment row's variant on its own overlay.
+//        (CONFLICT <topic> if one no longer applies), then one normal chrome-measure hold for Tier A of
+//        every landed topic with a bench.json (site-pretty vs _landed; --experiments: every experiment
+//        row's variant on its own overlay), and one more hold per --gain topic for its Tier B (an A/A
+//        first when its floor is stale). Normal holds announce expectSec 600 (I-020).
 //        Writes only out/bench/reconfirm/<sha>/report.{json,md}. Runs in the main checkout too.
 //
 // Every check asserts a pair: the baseline expectation proves the probe still sees the mechanism
@@ -41,7 +42,7 @@ import http from 'node:http';
 import https from 'node:https';
 import { REPO, resolveTree, checkoutId, isLinkedWorktree } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
-import { snapshot as hostSnapshot, between as hostBetween } from './lib/host.mjs';
+import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T } from './lib/host.mjs';
 import { launchChrome, CDP, browserVersion } from './lib/cdp.mjs';
 import { lintTopic, loadSpec, lintSpec, GAIN_METRICS } from './lib/bench-spec.mjs';
 import { patchHeader, baselineDrift, buildOverlay, listFiles, sha256File, landedTopics, gitShow, gitRev } from './lib/bench-overlay.mjs';
@@ -166,8 +167,9 @@ async function servedCheck(url, dir) {
 }
 
 // ---- lock + budget -------------------------------------------------------------------------------------
+const NORMAL_EXPECT_SEC = 600; // a normal hold announces 10 min (lock.mjs status shows OVERDUE past it, I-020)
 async function takeLock(owner, { short, maxSec, meta, onBudget }) {
-  const l = await acquire('chrome-measure', { owner, kind: 'process', short, maxSec, meta });
+  const l = await acquire('chrome-measure', { owner, kind: 'process', short, maxSec, meta: short ? meta : { ...meta, expectSec: NORMAL_EXPECT_SEC } });
   if (short && !l.reentrant) {
     // a short hold ends at maxSec for everyone else: stop before that, never measure past it
     const t = setTimeout(() => {
@@ -367,17 +369,21 @@ async function cmdMech(t) {
     killChildren();
     lock.release();
   }
+  const host = hostBetween(hostStart, await hostSnapshot());
+  // the host slept during the run (I-026): timers and frames stalled mid-window, so no count is trusted
+  const slept = !!host.woke || (host.sleptSec ?? 0) > HOST_T.suspendMinSec;
   const ev = evaluateTopic(t, spec, sessions, { on, drift });
   const experiment = exp ? experimentVerdict(exp.expect, ev.checks, ev.parity) : null;
   const verdicts = experiment ? [experiment.verdict] : [...ev.checks.map((c) => c.verdict), ...ev.parity.map((p) => p.verdict)];
-  const code = exitCode(verdicts);
+  const code = slept ? 3 : exitCode(verdicts);
   printTopic(t, ev, experiment);
-  const summary = code === 0 ? 'PASS' : code === 3 ? (verdicts.includes('BASELINE-CHANGED') ? 'BASELINE-CHANGED' : 'FLAKY') : 'FAIL';
+  if (slept) console.log(`  FLAKY: the host slept ${host.sleptSec ?? '?'} s during the run (I-026); re-run it`);
+  const summary = slept ? 'FLAKY' : code === 0 ? 'PASS' : code === 3 ? (verdicts.includes('BASELINE-CHANGED') ? 'BASELINE-CHANGED' : 'FLAKY') : 'FAIL';
   const record = {
-    at: new Date().toISOString(), verdict: experiment ? experiment.verdict : summary, seconds: Math.round((Date.now() - t0) / 1000),
+    at: new Date().toISOString(), verdict: slept ? 'FLAKY' : experiment ? experiment.verdict : summary, ...(slept ? { hostSlept: true } : {}), seconds: Math.round((Date.now() - t0) / 1000),
     git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD'), checkout: checkoutId() },
     toolsSha: toolsSha(), chrome: chromeVersion, baselineManifest: baselineManifest(), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on,
-    patch: source, served: { files: served.files }, viewports: Object.keys(plans), repeat, ...(TEST_FAST ? { timing: 'test-fast' } : {}), host: hostBetween(hostStart, await hostSnapshot()),
+    patch: source, served: { files: served.files }, viewports: Object.keys(plans), repeat, ...(TEST_FAST ? { timing: 'test-fast' } : {}), host,
     sessions: Object.fromEntries(Object.entries(sessions).map(([vp, s]) => [vp, Object.fromEntries(Object.entries(s).map(([side, rs]) => [side, rs.map((x) => ({ steps: x.steps, capped: x.capped, errors: x.errors }))]))])),
     checks: ev.checks, parity: ev.parity, ...(experiment ? { experiment } : {}),
   };
@@ -533,7 +539,7 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   return GAIN_EXIT[verdict] ?? 1;
 }
 
-// ---- reconfirm: the landed set, one hold ----------------------------------------------------------------
+// ---- reconfirm: the landed set, one hold for Tier A + one per --gain topic --------------------------------
 async function cmdReconfirm() {
   if (!existsSync(BASE)) die(`baseline ${BASE} not found (FW_MIRROR_HOME?)`, 1);
   const ref = opt('ref', 'main');
@@ -572,13 +578,16 @@ async function cmdReconfirm() {
   const outDir = join(OUT, 'reconfirm', sha);
   mkdirSync(outDir, { recursive: true });
   const owner = opt('owner', process.env.FW_LOCK_OWNER || 'bench-reconfirm');
-  const lock = await takeLock(owner, { short: false, meta: { cmd: 'bench reconfirm', ref, sha, gain: gainSet } });
-  const gateTimeout = !!lock.holder?.gateTimeout;
-  const report = { ref, sha, at: new Date().toISOString(), toolsSha: toolsSha(), baselineManifest: baselineManifest(), landed: topics, tierA: {}, tierB: {}, experiments: {} };
+  const report = { ref, sha, at: new Date().toISOString(), toolsSha: toolsSha(), baselineManifest: baselineManifest(), landed: topics, tierA: {}, tierB: {}, experiments: {}, holds: [] };
   const t0 = Date.now();
-  try {
+  // one normal hold for Tier A (+ experiments), then one per --gain topic (I-020: holds <= 10 min, short
+  // jobs get in at every hand-over)
+  if (items.length) {
+    const lock = await takeLock(owner, { short: false, meta: { cmd: 'bench reconfirm tier A', ref, sha } });
+    report.holds.push({ what: 'tier A', gateTimeout: !!lock.holder?.gateTimeout, expectSec: lock.holder?.meta?.expectSec ?? null });
+    try {
     // Tier A: one merged session per (side, viewport), baseline = site-pretty, patched = _landed
-    if (items.length) {
+    {
       const plans = mechPlans(items, ['mobile', 'desktop']);
       const ch = await launchChrome({ port: 0, profileDir: join(REPO, 'out', 'chrome-bench-profile'), headless: true });
       try {
@@ -618,37 +627,39 @@ async function cmdReconfirm() {
         cdp.close();
       } finally { await ch.close(); killChildren(); }
     }
-    // Tier B: one page per run with every named scenario, baseline vs _landed, after an A/A when the floors are stale
-    if (gainSet.length) {
-      const { series, hostRange, fmtHost } = await import('./lib/bench-gain.mjs');
-      const sel = items.filter((i) => gainSet.includes(i.topic));
-      const scenarios = sel.map((i) => gainScenario(i.topic, i.spec));
-      const cur0 = { toolsSha: report.toolsSha, setting: setting(o.timeDomain, o.cpu) };
-      const fresh = (i) => i.results?.calibration && i.results.calibration.toolsSha === cur0.toolsSha && i.results.calibration.setting === cur0.setting && i.results.calibration.chromeMajor === chromeMajor(report.chrome) && i.results.calibration.band === 'clean';
-      const floorsBy = {};
-      if (sel.some((i) => !fresh(i))) {
-        console.log(`A/A first: the calibration of ${sel.filter((i) => !fresh(i)).map((i) => i.topic).join(', ')} is missing or stale (toolsSha ${cur0.toolsSha}, ${cur0.setting})`);
-        const aa = await measureGain({ aOverlays: [], bOverlays: [], scenarios, o, runDir: join(outDir, 'aa'), log: (s) => console.log(s), gateTimeout });
-        for (const sc of scenarios) {
+    } finally { lock.release(); }
+  }
+  // Tier B: per --gain topic, its own normal hold: an A/A first when its floor is missing or stale, then
+  // baseline vs _landed, one page per run
+  if (gainSet.length) {
+    const { series, hostRange, fmtHost } = await import('./lib/bench-gain.mjs');
+    const cur0 = { toolsSha: report.toolsSha, setting: setting(o.timeDomain, o.cpu) };
+    const fresh = (i) => i.results?.calibration && i.results.calibration.toolsSha === cur0.toolsSha && i.results.calibration.setting === cur0.setting && i.results.calibration.chromeMajor === chromeMajor(report.chrome) && i.results.calibration.band === 'clean';
+    for (const i of items.filter((x) => gainSet.includes(x.topic))) {
+      const sc = gainScenario(i.topic, i.spec);
+      const lock = await takeLock(owner, { short: false, meta: { cmd: 'bench reconfirm tier B', ref, sha, topic: i.topic } });
+      const gateTimeout = !!lock.holder?.gateTimeout;
+      report.holds.push({ what: `tier B ${i.topic}`, gateTimeout, expectSec: lock.holder?.meta?.expectSec ?? null });
+      let floor = null, m;
+      try {
+        if (!fresh(i)) {
+          console.log(`A/A first: the calibration of ${i.topic} is missing or stale (toolsSha ${cur0.toolsSha}, ${cur0.setting})`);
+          const aa = await measureGain({ aOverlays: [], bOverlays: [], scenarios: [sc], o, runDir: join(outDir, 'aa', i.topic), log: (s) => console.log(s), gateTimeout });
           const ser = series(aa.runs, sc.key, sc.metric);
-          const band = hostBand(ser.hosts);
           let minEffect = null;
           try { minEffect = calibrateStats(ser.a, ser.b).minEffect; } catch {}
-          floorsBy[sc.topic] = { minEffect, band, toolsSha: cur0.toolsSha, chromeMajor: chromeMajor(aa.chrome), setting: cur0.setting, host: hostRange(ser.hosts), source: 'reconfirm A/A' };
+          floor = { minEffect, band: hostBand(ser.hosts), toolsSha: cur0.toolsSha, chromeMajor: chromeMajor(aa.chrome), setting: cur0.setting, host: hostRange(ser.hosts), source: 'reconfirm A/A' };
         }
-      }
-      const m = await measureGain({ aOverlays: [], bOverlays: [lb.dest], scenarios, o, runDir: join(outDir, 'gain'), log: (s) => console.log(s), gateTimeout });
+        m = await measureGain({ aOverlays: [], bOverlays: [lb.dest], scenarios: [sc], o, runDir: join(outDir, 'gain', i.topic), log: (s) => console.log(s), gateTimeout });
+      } finally { lock.release(); }
       const cur = { ...cur0, chromeMajor: chromeMajor(m.chrome) };
-      for (const i of sel) {
-        const sc = scenarios.find((s) => s.topic === i.topic);
-        const ser = series(m.runs, sc.key, sc.metric);
-        const calibration = floorsBy[i.topic] || i.results.calibration;
-        const v = ser.errors.length ? { verdict: 'INCONCLUSIVE', reason: `scenario errors: ${[...new Set(ser.errors)].join('; ')}` } : gainVerdict({ a: ser.a, b: ser.b, dir: sc.direction, calibration, current: cur, authored: i.results?.authored || null, hosts: ser.hosts });
-        report.tierB[i.topic] = { ...v, metric: sc.metric, values: { baseline: ser.a, patched: ser.b }, host: hostRange(ser.hosts), calibration: floorsBy[i.topic] ? 'reconfirm A/A' : 'bench-results.json' };
-        console.log(`GAIN ${v.verdict} ${i.topic} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)}` : ''} (${fmtHost(hostRange(ser.hosts))})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}`);
-      }
+      const ser = series(m.runs, sc.key, sc.metric);
+      const calibration = floor || i.results.calibration;
+      const v = ser.errors.length ? { verdict: 'INCONCLUSIVE', reason: `scenario errors: ${[...new Set(ser.errors)].join('; ')}` } : gainVerdict({ a: ser.a, b: ser.b, dir: sc.direction, calibration, current: cur, authored: i.results?.authored || null, hosts: ser.hosts });
+      report.tierB[i.topic] = { ...v, metric: sc.metric, values: { baseline: ser.a, patched: ser.b }, host: hostRange(ser.hosts), calibration: floor ? 'reconfirm A/A' : 'bench-results.json' };
+      console.log(`GAIN ${v.verdict} ${i.topic} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)}` : ''} (${fmtHost(hostRange(ser.hosts))})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}`);
     }
-  } finally { lock.release(); }
+  }
   report.seconds = Math.round((Date.now() - t0) / 1000);
   for (const it of items) rows.push({ topic: it.topic, A: report.tierA[it.topic]?.verdict ?? '-', B: report.tierB[it.topic]?.verdict ?? (it.spec.gain && (it.spec.gain.device ?? 'chrome') === 'iphone' ? 'iphone (skipped)' : '-'), note: report.tierB[it.topic]?.host ? `load1 ${report.tierB[it.topic].host.load1Min}-${report.tierB[it.topic].host.load1Max}, other CPU <= ${report.tierB[it.topic].host.otherBusyMax} %` : '' });
   rows.sort((x, y) => topics.indexOf(x.topic) - topics.indexOf(y.topic));

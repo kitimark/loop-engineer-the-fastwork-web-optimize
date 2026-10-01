@@ -1,7 +1,7 @@
 // tools/bench.mjs reconfirm end to end with the fake Chrome (bench mode) and the fake host (FW_TEST_HOST):
 // the _landed overlay rebuilt from main's committed patches in landing order, Tier A of every landed topic
-// with a bench.json, Tier B for --gain topics after an A/A when their floors are stale, all in ONE lock
-// hold; MISSING (no bench.json), CONFLICT (a landed patch no longer applies), report.json / report.md.
+// with a bench.json in one normal hold, Tier B per --gain topic in its own hold (an A/A first when its floor
+// is stale); MISSING (no bench.json), CONFLICT (a landed patch no longer applies), report.json / report.md.
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
@@ -45,7 +45,7 @@ before(() => {
   for (const d of [fx.site, fx.pretty]) writeFileSync(join(d, 'bench-fake.json'), JSON.stringify(BASE_FAKE));
 });
 
-test('reconfirm: _landed from main in landing order, Tier A + Tier B (A/A first) in one hold, MISSING, CONFLICT', async () => {
+test('reconfirm: _landed from main in landing order, Tier A in one hold, Tier B (A/A first) in its own, MISSING, CONFLICT', async () => {
   const m = repo.main;
   const commit = (msg) => { git(m, 'add', '-A', 'fixes'); git(m, 'commit', '-q', '-m', msg); };
   makeTopic(m, 'fast-nav', '/bench-fake.json', JSON.stringify(PATCH_FAKE), spec('fast-nav'));
@@ -69,10 +69,12 @@ test('reconfirm: _landed from main in landing order, Tier A + Tier B (A/A first)
   assert.equal(rep.tierB['fast-nav'].calibration, 'reconfirm A/A');
   assert.equal(readFileSync(join(repo.wt, 'out', 'bench', 'overlays', '_landed', 'robots.txt'), 'utf8'), 'User-agent: *\nDisallow:\n');
   assert.ok(existsSync(join(repo.wt, 'out', 'bench', 'overlays', '_landed', 'page.html')));
-  // one hold: the only grant happened before the first page load, and it is released
+  // one normal hold for Tier A, then one per --gain topic (review-bench b), each announcing 600 s (I-020, review-bench a);
+  // the last grant (Tier B) came after Tier A's page loads, and every hold is released
+  assert.deepEqual(rep.holds, [{ what: 'tier A', gateTimeout: false, expectSec: 600 }, { what: 'tier B fast-nav', gateTimeout: false, expectSec: 600 }]);
   const lg = JSON.parse(readFileSync(join(env('rc').FW_STATE_DIR, 'locks', 'chrome-measure.last-grant.json'), 'utf8'));
   const firstLoad = readLog(env('rc').FAKE_CHROME_LOG).find((l) => l.method === '(bench-fake)').t;
-  assert.ok(Date.parse(lg.at) <= firstLoad, 'one grant for Tier A and Tier B');
+  assert.ok(Date.parse(lg.at) > firstLoad, 'Tier B took its own hold after Tier A');
   assert.deepEqual([lg.owner, lg.short], ['bench-reconfirm', false]);
   assert.equal(existsSync(join(env('rc').FW_STATE_DIR, 'locks', 'chrome-measure.json')), false);
   // a later landing whose patch no longer applies on top: CONFLICT, never skipped

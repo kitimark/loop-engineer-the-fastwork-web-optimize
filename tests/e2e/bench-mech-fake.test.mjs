@@ -8,14 +8,16 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, rmSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
-import { makeTempRepo, node, nodeAsync, TESTS, sha256 } from '../helpers.mjs';
+import { makeTempRepo, node, nodeAsync, TESTS, sha256, FAKE_HOST } from '../helpers.mjs';
 import { makeFixtureHome } from '../fixtures/baseline.mjs';
 
 const FAKE = join(TESTS, 'fixtures', 'fake-chrome.mjs');
 let repo;
 const fix = (...a) => node(join(repo.wt, 'tools', 'fix.mjs'), a, { cwd: repo.wt });
-const benchEnv = (name) => ({ CHROME: FAKE, FAKE_CHROME_BENCH: '1', FW_BENCH_TEST_FAST: '1', FW_STATE_DIR: join(repo.root, `state-${name}`), FAKE_CHROME_LOG: join(repo.root, `${name}.jsonl`) });
+// FW_TEST_HOST: the fake host, explicitly (real samplers refuse under node --test, I-024)
+const benchEnv = (name, extra = {}) => ({ CHROME: FAKE, FAKE_CHROME_BENCH: '1', FW_BENCH_TEST_FAST: '1', FW_TEST_HOST: FAKE_HOST, ...extra, FW_STATE_DIR: join(repo.root, `state-${name}`), FAKE_CHROME_LOG: join(repo.root, `${name}.jsonl`) });
 const bench = (name, ...a) => nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), a, { cwd: repo.wt, env: benchEnv(name), timeout: 110000 });
+const benchX = (name, extra, ...a) => nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), a, { cwd: repo.wt, env: benchEnv(name, extra), timeout: 110000 });
 const results = (t) => JSON.parse(readFileSync(join(repo.wt, 'fixes', t, 'bench-results.json'), 'utf8'));
 const readLog = (f) => (existsSync(f) ? readFileSync(f, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []);
 
@@ -170,6 +172,16 @@ test('mech: VACUOUS when the baseline no longer shows the mechanism; FLAKY at th
   assert.equal(r.code, 3, r.out);
   assert.match(r.stdout, /FLAKY +nav-cached .*quiescence cap/);
   assert.match(r.stdout, /^MECH FLAKY flaky-nav/m);
+  // the host slept during the run (I-026): FLAKY whatever the counts say, never PASS
+  // (the patched page answers each quiesce() after 1.5 s: 3 steps >= 4.5 s, so the sleep at 2.5 s of the
+  // host clock falls between the start and end snapshots)
+  makeTopic('sleepy-nav', { ...PATCH_FAKE, quiesceMs: 1500 }, { benchSpec: spec('sleepy-nav') });
+  r = await benchX('slept', { FAKE_HOST_SUSPEND: '2500:30' }, 'mech', 'sleepy-nav', '--repeat', '1');
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /FLAKY: the host slept 30 s during the run \(I-026\)/);
+  assert.match(r.stdout, /^MECH FLAKY sleepy-nav/m);
+  const m = results('sleepy-nav').mech;
+  assert.deepEqual([m.verdict, m.hostSlept, m.host.sleptSec >= 29], ['FLAKY', true, true]);
 });
 
 test('mech: --max-seconds stops at the budget (exit 124) and keeps the finished sessions as mechPartial, never as mech', async () => {

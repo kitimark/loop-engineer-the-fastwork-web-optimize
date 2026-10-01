@@ -1,7 +1,8 @@
 // Tier B runner (tools/bench.mjs gain | calibrate | reconfirm): ABBA runs of the topics' micro-scenarios
 // at a CPU throttle, one fresh page per run, with the host gate of tools/lib/host.mjs (I-017) around every
 // run: load1 at start and end, host CPU from tick deltas, the measured Chrome's own CPU (its process
-// tree), other CPU = host - Chrome, memory pressure; classifyRun() flags each run invalid / warn.
+// tree), other CPU = host - Chrome, memory pressure, a host sleep inside the run (sleptSec / woke, I-026);
+// classifyRun() flags each run invalid / warn.
 import os from 'node:os';
 import { snapshot, between, treeCpuSec, classifyRun, waitQuiet, THRESHOLDS } from './host.mjs';
 import { tierBRun } from './bench-scenario.mjs';
@@ -19,11 +20,11 @@ export async function runGain({ cdp, chromePid, sides, scenarios, runs = 5, cpu 
   for (let k = 0; k < runs; k++) {
     for (const side of k % 2 ? ['B', 'A'] : ['A', 'B']) {
       for (const [viewport, list] of Object.entries(byVp)) {
-        let recheckQuiet;
+        let recheckQuiet, recheckSleptSec;
         if (maxLoad != null) {
           // wait (still holding the lock) up to 60 s for a quiet host before each run
           const q = await waitQuiet({ maxWaitSec: 60, windowSec: 5, thresholds: { ...THRESHOLDS, quietMaxLoad1: maxLoad, quietMinWindowSec: 5 } });
-          recheckQuiet = q.quiet;
+          recheckQuiet = q.quiet; recheckSleptSec = q.sleptSec;
           if (!q.quiet) log(`  host not quiet after ${q.waitedSec} s (${q.reasons.join(', ')}): running anyway, flagged`);
         }
         const s0 = await snapshot(), c0 = await treeCpuSec(chromePid);
@@ -32,11 +33,11 @@ export async function runGain({ cdp, chromePid, sides, scenarios, runs = 5, cpu 
         const h = between(s0, s1);
         const chromeCpuPct = c0 != null && c1 != null && h.windowSec > 0 ? r1((100 * (c1 - c0)) / (h.windowSec * os.cpus().length)) : null;
         const otherBusyPct = h.busyPct != null && chromeCpuPct != null ? r1(h.busyPct - chromeCpuPct) : h.busyPct;
-        const flags = classifyRun({ load1Start: h.load1Start, otherBusyPct, pressureMax: h.pressureMax, gateTimeout, recheckQuiet });
+        const flags = classifyRun({ load1Start: h.load1Start, otherBusyPct, pressureMax: h.pressureMax, gateTimeout, recheckQuiet, sleptSec: h.sleptSec, woke: h.woke, recheckSleptSec });
         const host = { ...h, chromeCpuPct, otherBusyPct, recheckQuiet, ...flags };
         out.push({ side, pair: k, viewport, scenarios: r.scenarios, host });
         const first = list[0].key;
-        log(`[run ${k + 1}/${runs} ${side} ${viewport}] ${Object.entries(r.scenarios).map(([key, m]) => `${key}: ${m.error ? m.error : `style+layout ${r1(m.styleLayoutMs)} ms, script ${r1(m.scriptMs)} ms, ${m.frames} frames`}`).join('; ')}  | load1 ${h.load1Start}-${h.load1End}, other CPU ${otherBusyPct ?? '?'} %${flags.loadInvalid ? ' CONTAMINATED' : flags.loadWarn ? ' warn' : ''}${first ? '' : ''}`);
+        log(`[run ${k + 1}/${runs} ${side} ${viewport}] ${Object.entries(r.scenarios).map(([key, m]) => `${key}: ${m.error ? m.error : `style+layout ${r1(m.styleLayoutMs)} ms, script ${r1(m.scriptMs)} ms, ${m.frames} frames`}`).join('; ')}  | load1 ${h.load1Start}-${h.load1End}, other CPU ${otherBusyPct ?? '?'} %${h.sleptSec > 0 || h.woke ? `, slept ${h.sleptSec ?? '?'} s` : ''}${flags.loadInvalid ? ' CONTAMINATED' : flags.loadWarn ? ' warn' : ''}${first ? '' : ''}`);
       }
     }
   }

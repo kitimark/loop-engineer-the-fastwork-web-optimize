@@ -109,6 +109,11 @@ test('gain: HOLDS from ABBA runs at 6x in the normal lane, authors the effect on
   assert.equal(r.code, 3, r.out);
   assert.match(r.stdout, /^GAIN INCONCLUSIVE fast-nav .*contaminated: run 1: lock granted by gate timeout/m);
   // a warn host decides, marked
+  // a host sleep inside a run (I-026) contaminates it (the gate's 10 s window is fake time: runs start after it)
+  r = await bench('slept', ['gain', 'fast-nav'], { FAKE_HOST_SUSPEND: '10600:30,11200:30,11800:30,12400:30' });
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^GAIN INCONCLUSIVE fast-nav .*contaminated: .*host slept 30 s during the run \(I-026\)/m);
+  assert.match(r.stdout, /slept 30 s CONTAMINATED/);
   r = await bench('warn', ['gain', 'fast-nav'], { FAKE_HOST_LOAD1: '8', FW_GATE_MAX_LOAD1: '20' });
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /^GAIN HOLDS .*\(WARN band, load1 8-8/m);
