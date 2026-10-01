@@ -312,5 +312,6 @@ before any build; metric sources per device (rAF ticks primary, DroppedFrame / W
 diagnostic); prediction cards and the `fixes/PREDICTIONS.md` ledger; the iPhone block protocol (warm-up, control
 sentinel under load, 4v4 ABBA, sequential stop over max 2 blocks with stratified pooling); Chrome additions and
 the canary-drift plan; review checklist additions; the ranked tool/doc/topic execution plan. Folds in
-arch-devtools (`devtools-methodology.md`) and de-devtools (`devtools-render-metrics.md`); arch-safari and
-de-safari inputs pending (§10).
+arch-devtools (`devtools-methodology.md`), de-devtools (`devtools-render-metrics.md`), arch-safari
+(`safari-inspector-probing.md`) and de-safari (`safari-render-signals.md`): on iOS the rAF gap does not include
+render-server GPU time, so render-bound fixes (backdrop, filters) get their own device class and gate.

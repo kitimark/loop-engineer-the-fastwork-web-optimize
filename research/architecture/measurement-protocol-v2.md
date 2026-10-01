@@ -1,10 +1,10 @@
 # Measurement & workflow protocol v2 (arch-lead)
 
-Status: **DRAFT 2** (2026-10-01, ~11:00Z). Built from the team inputs (fix-nav-morph, fix-scroll-engine,
-fix-hero-exit, mgmt-ops-4), arch-devtools (`research/architecture/devtools-methodology.md`, 3096c8e),
-de-devtools (`research/design-engineering/devtools-render-metrics.md`, 97b1a41) and arch-safari
-(`research/architecture/safari-inspector-probing.md`, d3aa186). de-safari is still writing: its questions are
-in §10 and the affected rules are marked **[pending safari]**.
+Status: **FINAL DRAFT for approval** (2026-10-01, ~11:15Z). Built from the team inputs (fix-nav-morph,
+fix-scroll-engine, fix-hero-exit, mgmt-ops-4), arch-devtools (`research/architecture/devtools-methodology.md`,
+3096c8e), de-devtools (`research/design-engineering/devtools-render-metrics.md`, 97b1a41), arch-safari
+(`research/architecture/safari-inspector-probing.md`, d3aa186) and de-safari
+(`research/design-engineering/safari-render-signals.md`). Open items: §10.
 It replaces nothing yet. The lead approves it; then the doc changes in §8 make it binding.
 
 Scope: how we go from "a frame is slow" to a landed fix, and what evidence each step needs, on Chrome, the
@@ -26,6 +26,7 @@ iPhone and the finger. Words: **must** = a gate fails without it; **should** = t
 | L10 | Chrome y and phone y differ by ~77 px; viewports differ (932 vs 775/815) | Positions in **crossing coordinates** (§3.4); Chrome attribution probes at phone geometry |
 | L11 | ~6 phone queue reorders in 90 min; owners waited 1 h+ per phone answer | Slot ticket (§2.5): ticketed builds only, ranked queue, reorders at block boundaries |
 | L12 | rAF gaps can't credit work moved off the main thread (h2, morph R3, WAAPI strips); every Mpx figure was derived | §3.1 presentation and paint-area sources; predictions state which source can see the gain |
+| L13 | On iOS the rAF gap = WebContent + GPU-process raster wait + UI apply + tick; **render-server (GPU) time is not on that path** (de-safari, vendor source; refines de-apple F3). A backdrop/filter fix can look smoother with no rAF change, or the reverse | Render-bound is its own device class (§2.3); its gate metric is Instruments render hitches, not rAF |
 
 ## 2. Stages and gates
 
@@ -66,10 +67,12 @@ For one cluster: everything that changes in that frame.
 
 A fix is built only on a **NAMED** card. Fields:
 
-1. **Pipeline stage:** script / style / layout / paint (record + raster) / allocation / composite-commit / GPU /
-   input. Evidence: Chrome `--trace-frames` class of that frame; on the phone, Timeline counts (durations once
-   §5.5 attribution runs) + page-rAF JS ms + filter element counts after the frame + LayerTree census
-   (paintCount deltas) at positions bracketing it.
+1. **Pipeline stage:** script / style / layout / paint recording / raster wait + allocation / "Other"
+   (compositing update, layer creation, event-region walks, IO) / UI apply / render server (GPU) / input.
+   Evidence: Chrome `--trace-frames` class of that frame; on the phone, the RenderingFrame segments of an
+   attribution run (§5.5: Script, Layout, Paint+Composite read **together**, Other, and gap − frame) + page-rAF JS
+   ms + filter element counts after the frame + LayerTree census (paintCount deltas) bracketing it; for a
+   render-server suspect, Instruments Animation Hitches (render hitches, Renders/GPU) over the same cycles.
 2. **Code:** the single mechanism and its location.
 3. **Ablation set**, all built under new names, all measured in one block against the same control:
    - positive: removing the mechanism removes (or shrinks) the frame;
@@ -83,6 +86,9 @@ A fix is built only on a **NAMED** card. Fields:
      the phone confirms.
    - **Phone-only:** absent or flat in Chrome (raster, allocation, GPU, WebKit layerization) → a phone ABBA
      block is the gate; Chrome is a no-regression and parity check.
+   - **Render-bound (phone):** the cost is in the render server (backdrop/filter passes): rAF can't score it
+     (L13). Gate = render-hitch time per s and Renders/GPU in Instruments, ABBA like §5.3; rAF is a no-regression
+     check. Until the Instruments route is verified on this device, such a fix is held at LOCATED.
    - **Touch-only:** depends on touch, bounce, pin or toolbar → G or F runs are required before landing.
 5. **Verdict:** NAMED (positive + negative + mechanism all pass), LOCATED (trigger position known, mechanism not
    isolated), UNEXPLAINED. LOCATED may spend one more phone block on ablations; it may not build a fix.
@@ -96,7 +102,7 @@ straight to F. The lead decides if a topic qualifies.
 - Built under a **new name**, served from an immutable snapshot copy, file hashes recorded (`curl -D` on the
   served files, `x-mirror-source: overlay`).
 - **Parity:** frozen-frame diff 0 % (P14), plus the backdrop/filter look check (Page.snapshotRect does not render
-  `backdrop-filter`, so the user looks, or a device capture [pending safari §10 Q3]).
+  `backdrop-filter`, so the user looks; a device-side capture is unverified, §10).
 - **a11y diff** when `inert`, `visibility`, `aria-*` or focusable content changes.
 - **Mechanism delta** in Chrome (bench Tier A, short lane): the named counter moved, nothing else did.
 - **Idle triple** (counts: callbacks/s, writes/s, mutations/s, rAF/s) at y=0, parked mid-page after a scroll, and
@@ -124,8 +130,8 @@ rejected gets the reason in one message. Running blocks are never interrupted fo
 | rAF gap (page logger) | both | main-thread frame cadence: scroll-linked JS, style, layout; on iOS also raster/commit back-pressure one frame late (F3) | compositor-presented scroll and threaded animations (can't credit off-main moves); Chrome GPU/raster at 6x | **primary** for both devices |
 | `DroppedFrame` ± `hasPartialUpdate` in `--trace-frames` (G1) | Chrome | presented / partial / dropped per phase | iPhone anything; traced runs ≠ untraced | diagnostic; **primary only for threaded-refactor claims** in Chrome |
 | WebKit Timeline per-record durations (`Page.enable` before `Timeline.start`) | phone | per-frame style/layout/paint/composite (= WebContent layer commit) ms | GPU/render-server time; medium overhead | diagnostic, attribution runs only |
-| WebKit `RenderingFrame` (one per main runloop turn) | phone | main-thread busy time per frame | back-pressure directly (the next update is deferred while waiting for the backing-store swap): infer it from gap ≫ busy | diagnostic; gap − busy flags render-bound frames |
-| Instruments Animation Hitches | phone | commit vs render hitches | page attribution | one-off, own block |
+| WebKit `RenderingFrame` (one per main runloop turn) | phone | segments Script / Layout (style+layout) / Paint (= Paint recording + Composite, which on iOS includes allocation and the **GPU-process raster wait**) / Other (compositing update, layer creation, event regions, IO: no records) | UI apply and tick wait (≈ gap − frame); render server | diagnostic, attribution runs; the per-frame phase breakdown for D and for predictions |
+| Instruments Animation Hitches / Metal System Trace | phone | render hitches (render-server CPU/GPU: backdrop, filters), UI-process commit hitches, presented smoothness | page attribution | **primary for render-bound claims**; one-off, own block with its own control |
 | Timeline counts per 1 s chunk | phone | paint/layout/style counts and rects | per-frame timing | diagnostic (what exists today) |
 | LoAF (`forcedStyleAndLayoutDuration`, scripts) | Chrome | ≥50 ms frames' script attribution, forced layout | WebKit (no LoAF), off-main work | diagnostic |
 
@@ -177,7 +183,10 @@ of the three without a stated reason.
 - **Paint area: from CDP `LayerTree.layerPainted` only** (opt-in `verify --paint-rects`). The trace `Paint.clip`
   is "unreliable and often wrong" per DevTools' own source: never an area source (corrects arch-devtools G3a; its
   Paint *count* is fine). Chrome's area is a lower bound on WebKit's for resizing layers, exact for paint-only
-  switches. Phone area: Timeline Paint rects **[pending safari Q2]**.
+  switches. Phone area: WebKit Timeline `Paint` `data.clip` is usable (the RenderLayer's paint dirty rect, unlike
+  Chrome's trace clip): sum per layer (records nest and overlap, never a per-frame union), × 9 for device px;
+  event-region paints emit no record, so this is visual paint only. Per 1 s chunk today, per frame in attribution
+  runs. Paint ms on iOS is **recording** only; raster shows in the Composite tail (read them together).
 - Layers: Chrome count delta via `layerTreeDidChange` vs a no-op control; phone: the LayerTree census of §5.5
   (layer count, per-layer `paintCount` deltas, `memory` estimates, compositing reasons) at fixed positions.
   On WebKit `layerTreeDidChange` is coalesced: a "tree changed" flag, no counts.
@@ -264,9 +273,12 @@ or F (M never bounces). F runs are scheduled by the lead in batches, not per top
 then `Page.enable` before `Timeline.start`, and again after every reconnect (target ids change on navigation);
 `Page.enable` starts WebKit's inspector stopwatch, nothing else does (vendor source; real durations on 26.6.1 are
 still an inference until one probe call). Records are serialised on the main thread, so the overhead is
-medium. Use `RenderingFrame` children (script/style/layout/Paint/Composite) as **busy time** per runloop; a rAF
-gap much larger than busy time means back-pressure or render-bound, and then Instruments (Animation Hitches:
-commit vs render hitch) is the next tool, in its own block with its own control.
+medium. Read `RenderingFrame` segments per frame (Script, Layout, Paint+Composite, Other) and gap − frame
+(≈ UI apply + tick wait). Check Composite's children before reading it as raster: a timer or IO callback that
+runs during the flush wait nests under it. A large "Other" = layer churn or event-region walks. A render-server
+suspect (backdrop, filters) goes to Instruments Animation Hitches in its own block with its own control.
+Timing runs carry only Timeline (Script/Layout/Paint/Composite/RenderingFrame) + the rAF logger; counts and
+areas go in separate runs.
 
 **Never during a timed block:** Timeline Screenshot instrument; `Page.setShowPaintRects`, ShowDebugBorders,
 ShowRepaintCounter; `layersForNode`; heap snapshots; `Runtime.evaluate` polling faster than ~1 Hz; WDA `/source`
@@ -304,7 +316,8 @@ hold per A/B, compare within a hold.
 ## 7. Review checklist additions (fix-reviewer)
 
 1. Attribution card is NAMED; each ablation has its mechanism check; no capped logger produced evidence.
-2. Device class matches the gate used (phone-only fixes have a phone block).
+2. Device class matches the gate used (phone-only fixes have a phone block; render-bound fixes have hitch data,
+   not only rAF; iOS Paint ms read together with Composite).
 3. Idle triple counts present, none worse.
 4. Position-bin census diff on both devices: no bin worse by ≥1 tick median or +1 frame k≥5 per run.
 5. Prediction row exists; measured vs predicted recorded; closure check passed.
@@ -331,9 +344,11 @@ hold per A/B, compare within a hold.
 | T8 | host record (Chrome version, memory, power, thermal) + canary command | S-M | yes | — |
 | T5 | verify scenarios: idle-after-scroll, reload-at, input-at-load, scroll-up, load phase, phone viewport | M-L | yes | T8, canary resolved |
 | T9 | CLS counter (G4), CDP memory keys (G7), dropped ratio (G8) | S | opt-in / report | — |
+| T10 | Instruments route: verify once that `xcrun xctrace record --template 'Animation Hitches'` attaches to Safari on the phone and that WebKit's signposts decode; then `iphone.mjs hitches --seconds N` wrapping it next to a driver run, exporting hitch ms/s and Renders/GPU per window | S verify + M tool | device | user check first (one-time device pairing in Xcode, through the lead); arch-safari |
 
-Order for the lead: T1a and T3 in parallel now; then T2; T6+T7 as one "render-side trace signals" incident; T8
-before T5. Interim until T1/T2 land: iphone-runner applies §5 by hand with the 12-event cap removed.
+Order for the lead: T1a and T3 in parallel now; the T10 check and the T1b `Page.enable` check as two 5-min
+phone items in the next slot; then T2; T6+T7 as one "render-side trace signals" incident; T8 before T5. Interim
+until T1/T2 land: iphone-runner applies §5 by hand with the 12-event cap removed.
 
 ### 8.2 Docs (one doc-owner pass after approval)
 - `fixes/LEAD.md`: stages and gates, sign-offs, slot ticket, review additions, canary rule.
@@ -348,21 +363,24 @@ before T5. Interim until T1/T2 land: iphone-runner applies §5 by hand with the 
 
 | topic | state | next step under v2 |
 |---|---|---|
-| y≈1960 (nav-morph) | LOCATED: `inert` removal at the IO edge (F-044); src rejected | no-inert-flip ablation (mw10e-noinert) 4v4 vs aw1-10e with an inert/mutation counter; record src as rejected in the ledger |
-| ghbn | diagnostic | mechanism check: computed `backdrop-filter: none` on `header.start-selling-top-nav` during the morph, Chrome + WebKit; prediction (moving p50 ≤20 ms, hump flattens); M block vs ghb; m-bins |
+| y≈1960 (nav-morph) | LOCATED: `inert` removal at the IO edge (F-044); src rejected | no-inert-flip ablation (mw10e-noinert) 4v4 vs aw1-10e with an inert/mutation counter; plus de-safari P2b (one attribution pass, RenderingFrame segments y 1830-1990: Other = event/AX region walk, Script = IO callback, Layout = wide invalidation); record src as rejected in the ledger |
+| ghbn | diagnostic | mechanism check: computed `backdrop-filter: none` on `header.start-selling-top-nav` during the morph, Chrome + WebKit. **Two pre-registered predictions** (de-safari P1): de-morph "moving p50 ≤20 ms and the hump flattens" (backdrop on the rAF path) vs de-safari "ghbn within ±2 ms of ghb, hump stays" (render-server term). M block vs ghb, m-bins; record Animation Hitches over the same cycles once T10 works. If rAF is flat and hitches fall, R8 is a render-bound fix (§2.3) |
+| morph g/gh/ghb | — | de-safari P2 (RenderingFrame by m bin: where the filter ms live) and P3 (LayerTree paintCount over one gh cycle: do the size-fixed children still repaint?) in one attribution session; P4 recalibrates the raster rate from P2's frames, P5 the first tween frame |
 | R8 / R5 (ghr8, ghr85a) | built | wait for ghbn to NAME the backdrop; G/F before landing |
 | R2 clip | built | user's look at the next finger batch |
-| hero h1/h1v2 | phone-only regression at y≈700 | 2 blocks (n≥6 via 3-arm or sequential), W 0-1000, bins y≈50/700; a11y, memory; v6/v7 bisect only if it fails |
+| hero h1/h1v2 | phone-only regression at y≈700 | 2 blocks (n≥6 via 3-arm or sequential), W 0-1000, bins y≈50/700; a11y, memory; de-safari P3b (LayerTree census at y 580/780: is the card pre-rastered?) before a v6/v7 bisect, which runs only if it fails |
 | /10d | Chrome-neutral | phone block S + idle-after-scroll + reload-scrolled vs aw1-10e |
 | y≈1250 | census 3/3 (base 53-54, aw1-10c 41-46); F-045: commission scene gate paused→active is the candidate | phone logger with `data-start-selling-scene` watched in 1100-1400, then the D card |
 | R2 bg | idea | W around y 850-1000 and the commission end, Timeline paints |
-| h3 | idea | attribute the 1 Hz idle spike on the device first |
+| h3 | idea | attribute the 1 Hz idle spike on the device first (de-safari P6: 10 s idle, RenderingFrame + face paintCount; Other = compositing update over ~160 layers → strips) |
 | R3 | low | after the morph is NAMED |
 
 ### 8.4 Cost
-Tools ≈ 20-28 toolsmith hours (T1 6-8, T2 3-4, T3 1-2, T4 2-3, T5 4-6, T6 3-4, T7 2-3, T8 1-2, T9 1).
-Phone ≈ 30 min per block, ≈ 1 h per question (2 blocks); the §8.3 list is 10-13 blocks ≈ 5-6.5 phone hours,
-plus one finger batch (~20 min of the user's time).
+Tools ≈ 23-31 toolsmith hours (T1 6-8, T2 3-4, T3 1-2, T4 2-3, T5 4-6, T6 3-4, T7 2-3, T8 1-2, T9 1,
+T10 3).
+Phone ≈ 30 min per block, ≈ 1 h per question (2 blocks); the §8.3 list is 10-13 blocks ≈ 5-6.5 phone hours, plus
+~1 h of attribution sessions (P2/P2b/P3/P3b/P5/P6, counts and segments, no ABBA), two 5-min tool checks, and one
+finger batch plus the one-time Instruments pairing (~30 min of the user's time).
 
 ## 9. Agent communication
 
@@ -375,12 +393,14 @@ plus one finger batch (~20 min of the user's time).
   recipient sat in a long foreground command.
 - Send peers what they need before you finish; your final report goes only to the lead.
 
-## 10. Pending inputs (asked 10:40Z)
+## 10. Inputs and open items
 
 - **arch-safari**: answered Q1-Q5, folded into §3.1, §3.7, §5.5 (`research/architecture/safari-inspector-probing.md`,
   d3aa186). Still inference until tried on 26.6.1: real Timeline durations after `Page.enable`, the cost of
   `layersForNode` on this page's tree.
-- **de-safari** (a4ce1669dd33aa4dc): primary on-device signal for raster/GPU fixes; Timeline Paint clip
-  reliability; a device capture that renders backdrop-filter; ranked standard vs one-off probes and probes that
-  change WebKit behaviour.
+- **de-safari**: folded from its note (`research/design-engineering/safari-render-signals.md`, worktree
+  agent-a4ce1669dd33aa4dc): L13, the render-bound device class, RenderingFrame segments, Paint clip on WebKit,
+  probes that change what they measure, P1-P6 in §8.3. **Open:** a device-side capture that renders
+  `backdrop-filter` (until answered, the user's eye is the look check); whether Instruments decodes WebKit's
+  signposts on iOS (T10); event regions as an unmodelled per-frame term (sized by P2/P2b).
 - de-devtools folded (§3.1, §3.7, §6.2, §8.1 T6/T7). arch-devtools folded (G1-G8).
