@@ -62,7 +62,7 @@ export const FAKE_HOST = join(TESTS, 'fixtures', 'fake-host.mjs');
 /** A clean env for tool subprocesses: no inherited mirror/lock/port overrides unless given. */
 export function cleanEnv(extra = {}) {
   const env = { ...process.env };
-  for (const k of ['FW_MIRROR_HOME', 'FW_STATE_DIR', 'FW_BASE', 'FW_ALLOW_MAIN', 'FW_LOCK_OWNER', 'FW_LOCK_HELD', 'PORT', 'CHROME', 'FW_IPHONE_PORT', 'FW_IPHONE_DEVICE_PORT', 'NODE_TEST_CONTEXT', 'FW_PRECOMMIT_TEST_CMD', 'FW_GATE_MAX_LOAD1', 'FW_GATE_MAX_BUSY', 'FW_GATE_MAX_WAIT', 'FW_TOOLING', 'FW_BASELINE_UPDATE', 'FW_BASELINE_ALLOW_MODIFIED', 'FW_WDA_URL', 'FW_WDA_HOME', 'FW_XCODEBUILD', 'FW_IPROXY', 'FW_IDEVICE_ID', 'FW_IDEVICEINFO', 'FW_SECURITY', 'FW_SIMCTL', 'FW_IWDP', 'FW_LSOF', 'FW_OPEN', 'FW_OSASCRIPT']) delete env[k];
+  for (const k of ['FW_MIRROR_HOME', 'FW_STATE_DIR', 'FW_BASE', 'FW_ALLOW_MAIN', 'FW_LOCK_OWNER', 'FW_LOCK_HELD', 'FW_LOCK_SHARED', 'FW_LOCK_SHARED_JOIN_LOAD', 'PORT', 'CHROME', 'FW_IPHONE_PORT', 'FW_IPHONE_DEVICE_PORT', 'NODE_TEST_CONTEXT', 'FW_PRECOMMIT_TEST_CMD', 'FW_GATE_MAX_LOAD1', 'FW_GATE_MAX_BUSY', 'FW_GATE_MAX_WAIT', 'FW_TOOLING', 'FW_BASELINE_UPDATE', 'FW_BASELINE_ALLOW_MODIFIED', 'FW_WDA_URL', 'FW_WDA_HOME', 'FW_XCODEBUILD', 'FW_IPROXY', 'FW_IDEVICE_ID', 'FW_IDEVICEINFO', 'FW_SECURITY', 'FW_SIMCTL', 'FW_IWDP', 'FW_LSOF', 'FW_OPEN', 'FW_OSASCRIPT']) delete env[k];
   for (const k of Object.keys(env)) if (/^FW_SIM_/.test(k)) delete env[k]; // FW_SIM_SESSION, FW_SIM_PORT, FW_SIM_UDID, ... (a test run from inside a sim session)
   for (const k of Object.keys(env)) if (/^FAKE_HOST_/.test(k)) delete env[k];
   env.FW_TEST_HOST = FAKE_HOST;
@@ -223,8 +223,10 @@ export function makeTempRepo({ worktree = 'fix-wt', withHooks = false } = {}) {
  *   const lock = chromeLock(`test-chrome-x-${process.pid}`, { cmd: 'x test' });
  *   before(() => lock.acquire(), { timeout: Infinity });   // first hook of the file
  *   after(() => lock.release());
+ * A functional-only file (no timing) may pass `{ shared: true, weight, maxSec }`: it holds the lock as a reader of the
+ * shared lane (ts-lock-share; an exclusive short hold while the lane is off), and `lock.env` carries FW_LOCK_SHARED.
  */
-export function chromeLock(owner, meta = {}, { waitSec = Number(process.env.FW_TEST_CHROME_LOCK_WAIT_SEC || 4 * 3600) } = {}) {
+export function chromeLock(owner, meta = {}, { waitSec = Number(process.env.FW_TEST_CHROME_LOCK_WAIT_SEC || 4 * 3600), shared = false, weight = 1, maxSec = 300 } = {}) {
   let handle = null;
   const lock = {
     owner, env: {},
@@ -234,8 +236,8 @@ export function chromeLock(owner, meta = {}, { waitSec = Number(process.env.FW_T
       // samples it while this file queues
       if (process.env.FW_TEST_HOST === undefined) process.env.FW_TEST_HOST = '';
       const { acquire, heldEnv } = await import('../tools/lib/lock.mjs');
-      handle = await acquire('chrome-measure', { owner, kind: 'process', meta, timeoutSec: waitSec });
-      lock.env = { FW_LOCK_HELD: heldEnv('chrome-measure', handle.holder.token) };
+      handle = await acquire('chrome-measure', { owner, kind: 'process', meta, timeoutSec: waitSec, ...(shared ? { shared, weight, maxSec } : {}) });
+      lock.env = shared ? { ...handle.env } : { FW_LOCK_HELD: heldEnv('chrome-measure', handle.holder.token) }; // handle.env: FW_LOCK_SHARED (a reader) or FW_LOCK_HELD
       if (process.env.FW_STATE_DIR) lock.env.FW_STATE_DIR = process.env.FW_STATE_DIR;
       return handle;
     },

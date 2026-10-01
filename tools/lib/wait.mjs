@@ -222,22 +222,29 @@ export function parseLockCondition(spec, owner) {
   throw new Error(`unknown --until "${spec}": use free, idle, mine, held-by:<owner>, released-by:<owner> or position<=N (with --owner)`);
 }
 
+/** The readers of a shared group holder (ts-lock-share), or [] for an exclusive holder. */
+const groupReaders = (h) => (h && h.shared === true && Array.isArray(h.readers) ? h.readers : []);
+/** `o` holds the lock: the exclusive holder, or a reader of the shared group. */
+const holds = (h, o) => !!h && (h.shared === true ? groupReaders(h).some((x) => x.owner === o) : h.owner === o);
+
 /** One line for a lock status snapshot ({holder, stale, queue}). */
 export function lockState(st) {
   const h = st.holder && !st.stale ? st.holder : null;
-  const q = st.queue.map((w, i) => `${i + 1}. ${w.owner}${w.short ? ' (short)' : ''}`).join(', ');
-  return `${h ? `held by "${h.owner}"${h.short ? ' (short)' : ''}` : 'free'}${q ? `; queue: ${q}` : ''}`;
+  const q = st.queue.map((w, i) => `${i + 1}. ${w.owner}${w.shared ? ' (shared)' : w.short ? ' (short)' : ''}`).join(', ');
+  const rs = groupReaders(h);
+  const who = !h ? 'free' : h.shared === true ? `shared by ${rs.length} reader${rs.length === 1 ? '' : 's'}: ${rs.map((x) => x.owner).join(', ') || '(none)'}` : `held by "${h.owner}"${h.short ? ' (short)' : ''}`;
+  return `${who}${q ? `; queue: ${q}` : ''}`;
 }
 
-/** Evaluate a parsed lock condition on a status snapshot: {met, state, detail}. */
+/** Evaluate a parsed lock condition on a status snapshot: {met, state, detail}. A shared group's readers each hold it. */
 export function lockConditionMet(cond, st) {
   const h = st.holder && !st.stale ? st.holder : null;
   const state = lockState(st);
-  const pos = (o) => (h && h.owner === o ? 0 : st.queue.findIndex((w) => w.owner === o) + 1 || null);
+  const pos = (o) => (holds(h, o) ? 0 : st.queue.findIndex((w) => w.owner === o) + 1 || null);
   let met;
   if (cond.kind === 'free') met = !h;
   else if (cond.kind === 'idle') met = !h && !st.queue.length;
-  else if (cond.kind === 'held-by') met = !!h && h.owner === cond.owner;
+  else if (cond.kind === 'held-by') met = holds(h, cond.owner);
   else if (cond.kind === 'released-by') met = pos(cond.owner) === null;
   else if (cond.kind === 'position') { const p = pos(cond.owner); met = p !== null && p <= cond.n; }
   else throw new Error(`unknown lock condition ${cond.kind}`);

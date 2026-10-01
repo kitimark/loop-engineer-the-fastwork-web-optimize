@@ -68,6 +68,8 @@ const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.start
 const flag = (n) => own.includes(`--${n}`);
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 const [cmd, ...args] = pos;
+// ts-lock-share: an A/B is a timing measurement and holds chrome-measure exclusively; only functional jobs share it
+if (cmd === 'ab' && flag('shared')) { console.error('fix.mjs ab is a timing measurement and never runs in the shared lane (--shared): it takes an exclusive chrome-measure hold'); process.exit(2); }
 
 const BASE_NAME = process.env.FW_BASE || 'site-pretty';
 const BASE = resolveTree(BASE_NAME);

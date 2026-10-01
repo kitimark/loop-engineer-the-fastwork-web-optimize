@@ -21,6 +21,7 @@
     "test:hooks": "node --test \"tests/hooks/*.test.mjs\"",
     "test:bench": "node tools/bench.mjs reconfirm",
     "test:chrome": "node tools/lock.mjs run chrome-measure --short --max-seconds 300 --owner test-chrome -- node --test --test-concurrency=1 --test-timeout=600000 \"tests/chrome/*.test.mjs\"",
+    "test:chrome:fn": "node tools/lock.mjs run chrome-measure --shared --max-seconds 300 --weight test-chrome-fn --owner test-chrome-fn -- node --test --test-concurrency=1 --test-timeout=600000 tests/chrome/vendor-shim.chrome.test.mjs tests/chrome/bench.chrome.test.mjs",
     "test:all": "npm test && npm run test:chrome",
     "setup": "git config core.hooksPath .githooks"
   }

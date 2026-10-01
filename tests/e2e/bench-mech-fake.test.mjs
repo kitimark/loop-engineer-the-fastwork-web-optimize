@@ -283,3 +283,14 @@ test('review-snapshot note 1: mech on a baseline that is not the pinned snapshot
   assert.equal(m.verdict, 'BASELINE-UNTRACKED: PASS');
   assert.deepEqual(m.baselineSnapshot, { snapshot: 'b1-0123abcd', state: 'untracked', tag: 'BASELINE-UNTRACKED' });
 });
+
+test('ts-lock-share: mech is a functional job: with the shared lane on it holds chrome-measure as a reader (weight bench-mech)', async () => {
+  const env = benchEnv('shared-lane');
+  const sw = node(join(repo.wt, 'tools', 'lock.mjs'), ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'test'], { cwd: repo.wt, env });
+  assert.equal(sw.code, 0, sw.out);
+  const r = await bench('shared-lane', 'mech', 'fast-nav', '--repeat', '1');
+  assert.equal(r.code, 0, r.out);
+  const lg = JSON.parse(readFileSync(join(env.FW_STATE_DIR, 'locks', 'chrome-measure.last-grant.json'), 'utf8'));
+  assert.deepEqual([lg.owner, lg.shared], ['(shared)', true], 'granted as a reader of the shared group');
+  assert.equal(existsSync(join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json')), false, 'the reader left and closed the group');
+});

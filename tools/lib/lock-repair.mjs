@@ -18,7 +18,14 @@
 //   queue-unparsable         <r>.queue.json is not a JSON array              -> moved aside
 //   queue-bad-entry          an entry without owner / lastSeen               -> dropped
 //   queue-stale-entry        not refreshed within its queueTtlSec, or its process is gone -> dropped
-//   queue-duplicate          the same owner queued twice                     -> later entries dropped (the first keeps its place)
+//   queue-duplicate          the same waiter queued twice (an exclusive entry: its owner; a shared reader's: owner + pid,
+//                            or owner + checkout for a lease reader)          -> later entries dropped (the first keeps its place)
+//   group-reader-dead        a shared group's process reader whose pid is gone -> dropped from the group (expiry recomputed)
+//   group-reader-expired     a shared group's reader past its deadline       -> dropped from the group (expiry recomputed)
+//   group-empty              a shared group with no reader left               -> removed, recorded in <r>.last-stale.json
+//   group-expiry-short       a shared group whose expiresAt is below its latest reader deadline + the grace (old code
+//                            would clear it while a reader may still run)    -> expiresAt recomputed
+//   group-format-unknown     a shared group in a format this code does not know -> reported only (newer lock code wrote it)
 //   last-grant-unparsable    <r>.last-grant.json is not a grant record       -> moved aside
 //   last-grant-missing       a live holder but no last-grant record (old client) -> written from the holder
 //   last-grant-mismatch      the record names another grant than the live holder (other token/owner/short,
@@ -30,7 +37,7 @@
 import { readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, statSync, appendFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, SHORT_DRAIN_SEC, RESOURCES } from './lock.mjs';
+import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, SHORT_DRAIN_SEC, RESOURCES, SHARED_LANE, SHARED_FORMAT, isGroup, groupWith, groupGrant } from './lock.mjs';
 
 export const auditFile = () => join(lockDir(), 'audit.log');
 const files = (r) => ({ holder: `${r}.json`, queue: `${r}.queue.json`, lastGrant: `${r}.last-grant.json`, lastStale: `${r}.last-stale.json`, guard: `${r}.guard` });
@@ -58,8 +65,12 @@ const validHolder = (h) => isObj(h) && typeof h.owner === 'string' && h.owner &&
 const validGrant = (g) => isObj(g) && typeof g.owner === 'string' && !Number.isNaN(Date.parse(g.at));
 const clip = (s) => (s.length > 2000 ? s.slice(0, 2000) + '…' : s);
 const who = (x) => `"${x.owner}"${x.short ? ` (short, max ${x.maxSec} s)` : ' (normal)'}`;
-/** The last-grant record describing a holder (the shape lib/lock.mjs writes). */
-export const grantOf = (h) => JSON.parse(JSON.stringify({ owner: h.owner, short: !!h.short, maxSec: h.maxSec, at: h.acquiredAt, token: h.token }));
+/** The last-grant record describing a holder (the shape lib/lock.mjs writes; a shared group's: groupGrant at its latest join). */
+export const grantOf = (h) => (isGroup(h) && h.format === SHARED_FORMAT
+  ? groupGrant(h, Math.max(Date.parse(h.acquiredAt), ...(h.readers || []).map((x) => Date.parse(x.acquiredAt)).filter((t) => !Number.isNaN(t))))
+  : JSON.parse(JSON.stringify({ owner: h.owner, short: !!h.short, maxSec: h.maxSec, at: h.acquiredAt, token: h.token })));
+/** A queue entry's identity: an exclusive waiter is its owner; a shared reader is owner + pid (or + checkout for a lease). */
+export const queueKey = (w) => (w.shared ? `${w.owner}\u0000shared\u0000${w.kind === 'process' ? `pid ${w.pid}` : `checkout ${w.checkout}`}` : w.owner);
 
 function ageSec(p, now) { try { return (now - statSync(p).mtimeMs) / 1000; } catch { return null; } }
 
@@ -94,6 +105,27 @@ export function diagnose(r, { now = Date.now(), guardAgeSec = 10, tmpAgeSec = 60
         add({ code: 'holder-live-forced', file: F.holder, message: `holder ${who(h)} is LIVE (${h.kind}${h.pid ? ' pid ' + h.pid : ''}${h.expiresAt ? ', until ' + h.expiresAt : ''}), removal forced with --force-holder`, fix: `remove it (recorded in ${F.lastStale})`, before: h, after: null },
           { kind: 'unlink-holder', file: F.holder, token: h.token, record: { ...h, staleBecause: 'removed by lock.mjs repair --force-holder' } });
       }
+    } else if (isGroup(h) && (h.format !== SHARED_FORMAT || !Array.isArray(h.readers))) {
+      add({ code: 'group-format-unknown', file: F.holder, message: `a shared group in format "${h.format}", which this lock code does not know (newer lock code wrote it): it is treated as an exclusive holder until it expires (${h.expiresAt})`, fix: 'none (report only; rebase on main for the lock code that knows it)', before: h, after: h });
+      holder = h; holderLive = true;
+    } else if (isGroup(h)) {
+      // a live shared group: its readers, and its expiry against their deadlines (the invariant old lock code relies on)
+      const live = [];
+      for (const x of h.readers) {
+        if (x.kind === 'process' && !pidAlive(x.pid)) add({ code: 'group-reader-dead', file: F.holder, message: `shared reader "${x.owner}" (pid ${x.pid}) is gone`, fix: 'drop it from the group', before: x, after: null });
+        else if (!(Date.parse(x.deadline) > now)) add({ code: 'group-reader-expired', file: F.holder, message: `shared reader "${x.owner}" is past its deadline ${x.deadline}`, fix: 'drop it from the group', before: x, after: null });
+        else live.push(x);
+      }
+      if (!live.length) {
+        add({ code: 'group-empty', file: F.holder, message: `the shared group (since ${h.acquiredAt}) has no live reader left`, fix: `remove it (recorded in ${F.lastStale}, as an acquirer would)`, before: h, after: null },
+          { kind: 'unlink-holder', file: F.holder, token: h.token, record: { ...h, staleBecause: 'no live reader (lock.mjs repair)' } });
+      } else {
+        const want = groupWith(h, live);
+        const needed = Math.max(...live.map((x) => Date.parse(x.deadline))) + SHARED_LANE.expiryGraceSec * 1000;
+        if (Date.parse(h.expiresAt) < needed) add({ code: 'group-expiry-short', file: F.holder, message: `the shared group expires at ${h.expiresAt}, before its latest reader deadline + ${SHARED_LANE.expiryGraceSec} s (${iso(needed)}): old lock code would clear it while a reader may still run`, fix: 'recompute expiresAt from the readers', before: h.expiresAt, after: want.expiresAt });
+        if (live.length !== h.readers.length || Date.parse(h.expiresAt) < needed) ops.push({ kind: 'write-holder', file: F.holder, token: h.token, value: want });
+        holder = want; holderLive = true;
+      }
     } else { holder = h; holderLive = true; }
   }
 
@@ -113,11 +145,11 @@ export function diagnose(r, { now = Date.now(), guardAgeSec = 10, tmpAgeSec = 60
         code = 'queue-stale-entry'; message = `queue entry "${w.owner}" not refreshed since ${w.lastSeen} (queue TTL ${w.queueTtlSec ?? 600} s)`;
       } else if (w.kind === 'process' && w.pid && !pidAlive(w.pid)) {
         code = 'queue-stale-entry'; message = `queue entry "${w.owner}" waits in pid ${w.pid}, which is gone`;
-      } else if (seen.has(w.owner)) {
-        code = 'queue-duplicate'; message = `"${w.owner}" is queued more than once (since ${w.since})`;
+      } else if (seen.has(queueKey(w))) {
+        code = 'queue-duplicate'; message = `"${w.owner}"${w.shared ? ` (shared reader, ${w.kind === 'process' ? `pid ${w.pid}` : w.checkout})` : ''} is queued more than once (since ${w.since})`;
       }
       if (code) { changed = true; add({ code, file: F.queue, message, fix: code === 'queue-duplicate' ? 'drop this later entry (the first keeps its place)' : 'drop the entry', before: w, after: null }); }
-      else { seen.add(w.owner); keep.push(w); }
+      else { seen.add(queueKey(w)); keep.push(w); }
     }
     if (changed) ops.push({ kind: 'write-queue', file: F.queue, before: qr.value, value: keep });
   }
@@ -225,7 +257,7 @@ export async function repair(r, { by, reason, apply = false, forceHolder = false
         writeJsonAtomic(P(files(r).lastStale), { ...op.record, clearedAt: ts, clearedBy: `lock.mjs repair (${by})` });
         unlinkSync(f);
       }
-      else if (op.kind === 'write-queue' || op.kind === 'write-grant') writeJsonAtomic(f, op.value);
+      else if (op.kind === 'write-queue' || op.kind === 'write-grant' || op.kind === 'write-holder') writeJsonAtomic(f, op.value);
     }
     for (const p of d.problems) log(p);
     const { ops: __, ...rest } = d;

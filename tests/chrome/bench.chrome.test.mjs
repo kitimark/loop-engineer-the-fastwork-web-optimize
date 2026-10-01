@@ -12,7 +12,8 @@ import { makeTempRepo, node, nodeAsync, run, REPO, chromeLock } from '../helpers
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
 
 const common = run('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: REPO }).stdout.trim();
-const lock = chromeLock(`test-chrome-bench-${process.pid}`, { cmd: 'bench.chrome test' });
+// functional (bench mech counts, no timing): a reader of the shared lane (ts-lock-share; npm run test:chrome:fn)
+const lock = chromeLock(`test-chrome-bench-${process.pid}`, { cmd: 'bench.chrome test' }, { shared: true, weight: 1, maxSec: 300 });
 before(() => lock.acquire(), { timeout: Infinity });
 after(() => lock.release());
 

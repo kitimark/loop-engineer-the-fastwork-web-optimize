@@ -40,6 +40,20 @@ test('under the npm run test:chrome wrapper (one lock.mjs run hold), the file an
   assert.equal(status(env).holder, null, 'released when the run ends');
 });
 
+test('ts-lock-share: under a `run --shared` wrapper (test:chrome:fn), a shared chromeLock file and its --shared tools re-enter the reader slot', async () => {
+  const env = { ...state(), FW_LOCK_SHARED_JOIN_LOAD: '1000' };
+  assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env }).code, 0);
+  const r = await runAsync(process.execPath, [LOCK, 'run', 'chrome-measure', '--shared', '--max-seconds', '60', '--weight', 'test-chrome-fn', '--owner', 'test-chrome-fn', '--', process.execPath, '--test', '--test-timeout=5000', FIXTURE], { env: { ...env, FIXTURE_SHARED: '1' }, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /ℹ pass 1/);
+  assert.doesNotMatch(r.out, /busy|shared \(functional\) hold/);
+  assert.equal(status(env).holder, null, 'the group closed when the run ended');
+  // the same file under the exclusive test:chrome wrapper: its shared lock re-enters the exclusive hold
+  const x = await runAsync(process.execPath, [LOCK, 'run', 'chrome-measure', '--short', '--max-seconds', '60', '--owner', 'test-chrome', '--', process.execPath, '--test', '--test-timeout=5000', FIXTURE], { env: { ...env, FIXTURE_SHARED: '1' }, timeout: 60000 });
+  assert.equal(x.code, 0, x.out);
+  assert.doesNotMatch(x.out, /busy/);
+});
+
 test('a failing test still releases the hold', async () => {
   const env = state();
   const r = await runFixture(env, 20000, { FIXTURE_FAIL: '1' });

@@ -56,7 +56,7 @@ import http from 'node:http';
 import https from 'node:https';
 import { REPO, resolveTree, checkoutId, isLinkedWorktree } from './lib/paths.mjs';
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './lib/baseline.mjs';
-import { acquire } from './lib/lock.mjs';
+import { acquire, SHARED_LANE } from './lib/lock.mjs';
 import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T, stubOutsideTest, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
 import { launchChrome, CDP, browserVersion, screenInfoArg, headedUA, tempProfileDir, HEADLESS_SCREEN } from './lib/cdp.mjs';
 import { lintTopic, loadSpec, lintSpec, GAIN_METRICS } from './lib/bench-spec.mjs';
@@ -73,6 +73,10 @@ const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.start
 const flag = (n) => own.includes(`--${n}`);
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 const [cmd, ...args] = pos;
+// ts-lock-share: a timing measurement holds chrome-measure exclusively; only functional jobs run in the shared lane
+if (flag('shared') && cmd !== 'mech') { console.error(`bench${cmd ? ' ' + cmd : ''} is a timing measurement and never runs in the shared lane (--shared): it takes an exclusive chrome-measure hold`); process.exit(2); }
+// bench mech (counts only) is a functional job: it always asks for the shared lane (--shared is implied); while the lane
+// is off that is the short lane as before, inside a shared hold it re-enters the reader slot
 const FIXES = join(REPO, 'fixes');
 const BASE_NAME = process.env.FW_BASE || 'site-pretty';
 const BASE = resolveTree(BASE_NAME);
@@ -188,10 +192,13 @@ async function servedCheck(url, dir) {
 
 // ---- lock + budget -------------------------------------------------------------------------------------
 const NORMAL_EXPECT_SEC = 600; // a normal hold announces 10 min (lock.mjs status shows OVERDUE past it, I-020)
-async function takeLock(owner, { short, maxSec, meta, onBudget }) {
-  const l = await acquire('chrome-measure', { owner, kind: 'process', short, maxSec, meta: short ? meta : { ...meta, expectSec: NORMAL_EXPECT_SEC } });
-  if (short && !l.reentrant) {
-    // a short hold ends at maxSec for everyone else: stop before that, never measure past it
+async function takeLock(owner, { short, shared, maxSec, meta, onBudget }) {
+  // shared (bench mech, ts-lock-share): a reader of the shared lane with weight bench-mech, or an exclusive short hold
+  // with the same maxSec while the lane is off (acquire's mode says which)
+  const bounded = short || shared;
+  const l = await acquire('chrome-measure', { owner, kind: 'process', maxSec, ...(shared ? { shared, weight: SHARED_LANE.weights['bench-mech'] } : { short }), meta: bounded ? meta : { ...meta, expectSec: NORMAL_EXPECT_SEC } });
+  if (bounded && !l.reentrant) {
+    // a short hold (or reader) ends at maxSec for everyone else: stop before that, never measure past it
     const t = setTimeout(() => {
       console.error(`[bench] the short-lane budget of ${maxSec} s ran out: stopping (split the run with --viewport, or --repeat 1 while iterating)`);
       try { onBudget?.(); } catch (e) { console.error(`[bench] could not save the partial record: ${e.message}`); }
@@ -391,7 +398,7 @@ async function cmdMech(t) {
     const f = writeResults(t, res);
     console.error(`[bench] partial record (finished sessions only) -> ${relative(REPO, f)} mechPartial`);
   };
-  const lock = await takeLock(owner, { short: true, maxSec, meta: { cmd: 'bench mech', topic: t, on, viewports }, onBudget });
+  const lock = await takeLock(owner, { shared: true, maxSec, meta: { cmd: 'bench mech', topic: t, on, viewports }, onBudget });
   lockInfo = { mode: lockMode(lock), maxSec };
   t0 = Date.now();
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');

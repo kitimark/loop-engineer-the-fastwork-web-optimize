@@ -1,0 +1,149 @@
+// tools/lock.mjs shared lane end to end (ts-lock-share): `run --shared` jobs overlap each other, never an exclusive
+// run; the switch (lead only); FW_LOCK_SHARED in the command's env; the deadline kill lands before the group's
+// expiresAt (so old code's stale-lease takeover never fires while a reader is alive); status / wait / doctor output;
+// timing tools refuse --shared. Temp FW_STATE_DIR only (I-041); the fake host (cleanEnv) keeps the gate quiet.
+import { test, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, existsSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tempDir, node, nodeAsync, tool, sleep } from '../helpers.mjs';
+
+const LOCK = tool('lock.mjs');
+let state, env, dir;
+beforeEach(() => { state = tempDir('fw-sharedcli-'); dir = tempDir('fw-sharedcli-out-'); env = { FW_STATE_DIR: state, FW_LOCK_SHARED_JOIN_LOAD: '1000' }; });
+const lock = (...a) => node(LOCK, a, { env });
+const lockAsync = (...a) => nodeAsync(LOCK, a, { env });
+const holder = () => { try { return JSON.parse(readFileSync(join(state, 'locks', 'chrome-measure.json'), 'utf8')); } catch { return null; } };
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+const until = async (fn, ms = 15000) => { const t = Date.now(); while (!fn()) { if (Date.now() - t > ms) throw new Error('timed out'); await sleep(50); } };
+const turnOn = () => assert.equal(lock('shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e').code, 0);
+// a job that records its start / end (ms) and its FW_LOCK_* env, and runs `sec` seconds
+const job = (name, sec) => `const fs=require('fs');const f=${JSON.stringify(join(dir, name + '.json'))};const s=Date.now();setTimeout(()=>{fs.writeFileSync(f,JSON.stringify({s,e:Date.now(),shared:process.env.FW_LOCK_SHARED||null,held:process.env.FW_LOCK_HELD||null}))},${sec * 1000})`;
+const stamp = (name) => JSON.parse(readFileSync(join(dir, name + '.json'), 'utf8'));
+
+test('switch CLI: lead only, with a reason; status shows it', () => {
+  const bad = lock('shared', 'on', 'chrome-measure', '--by', 'me', '--reason', 'x');
+  assert.equal(bad.code, 1);
+  assert.match(bad.stderr, /--by lead/);
+  assert.match(lock('status', 'chrome-measure', '--no-host').stdout, /shared lane: off/);
+  turnOn();
+  assert.match(lock('status', 'chrome-measure', '--no-host').stdout, /shared lane: on \(cap 4\)/);
+  assert.equal(lock('shared', 'off', 'chrome-measure', '--by', 'lead', '--reason', 'e2e').code, 0);
+  assert.match(lock('status', 'chrome-measure', '--no-host').stdout, /shared lane: off/);
+});
+
+test('usage: --shared needs --max-seconds, never with --short / --no-timing, not on iphone', () => {
+  assert.match(lock('run', 'chrome-measure', '--shared', '--owner', 'a', '--', 'true').stderr, /--shared needs --max-seconds/);
+  assert.match(lock('run', 'chrome-measure', '--shared', '--short', '--max-seconds', '10', '--owner', 'a', '--', 'true').stderr, /--short/);
+  const nt = lock('run', 'chrome-measure', '--shared', '--no-timing', '--max-seconds', '10', '--owner', 'a', '--', 'true');
+  assert.equal(nt.code, 1, nt.out);
+  assert.match(nt.stderr, /--shared and --no-timing do not combine/);
+  assert.match(lock('acquire', 'iphone', '--shared', '--max-seconds', '10', '--owner', 'a').stderr, /iphone/);
+  assert.match(lock('run', 'chrome-measure', '--shared', '--max-seconds', '10', '--weight', '7', '--owner', 'a', '--', 'true').stderr, /weight/);
+});
+
+test('two shared runs overlap; an exclusive run waits for both; no shared run starts while it holds', async () => {
+  turnOn();
+  const a = lockAsync('run', 'chrome-measure', '--shared', '--weight', '2', '--max-seconds', '60', '--owner', 'npm-a', '--', process.execPath, '-e', job('a', 2.5));
+  const b = lockAsync('run', 'chrome-measure', '--shared', '--weight', '1', '--max-seconds', '60', '--owner', 'fn-b', '--', process.execPath, '-e', job('b', 2.5));
+  await until(() => holder()?.readers?.length === 2);
+  const st = lock('status', 'chrome-measure', '--no-host').stdout;
+  assert.match(st, /shared by 2 readers \(weight 3\/4\)/);
+  assert.match(st, /npm-a \(w2, pid \d+, until /);
+  const x = lockAsync('run', 'chrome-measure', '--owner', 'ab', '--max-seconds', '60', '--', process.execPath, '-e', job('x', 1.5));
+  await until(() => JSON.parse(lock('status', 'chrome-measure', '--json', '--no-host').stdout)[0].queue.some((w) => w.owner === 'ab'));
+  assert.match(lock('status', 'chrome-measure', '--no-host').stdout, /joins closed: "ab" waits/);
+  // a reader arriving now waits behind "ab" (writer preference)
+  const c = lockAsync('run', 'chrome-measure', '--shared', '--max-seconds', '60', '--owner', 'fn-c', '--', process.execPath, '-e', job('c', 0.2));
+  const [ra, rb, rx, rc] = await Promise.all([a, b, x, c]);
+  for (const r of [ra, rb, rx, rc]) assert.equal(r.code, 0, r.out);
+  const [A, B, X, C] = ['a', 'b', 'x', 'c'].map(stamp);
+  assert.ok(A.s < B.e && B.s < A.e, 'the two readers overlapped');
+  assert.ok(X.s >= Math.max(A.e, B.e), 'the exclusive run started after both readers ended');
+  assert.ok(C.s >= X.e, 'the late reader started after the exclusive run');
+  assert.match(A.shared, /^chrome-measure:[0-9a-f]{12}$/);
+  assert.notEqual(A.shared, B.shared);
+  assert.equal(A.held, null, 'a reader exports no FW_LOCK_HELD');
+  assert.match(X.held, /^chrome-measure:[0-9a-f]{12}$/);
+  assert.equal(X.shared, null);
+  assert.equal(holder(), null);
+});
+
+test('inside a shared run: a nested exclusive run is refused at once; a nested shared run re-enters the slot', async () => {
+  turnOn();
+  const inner = `const {spawnSync}=require('child_process');const L=${JSON.stringify(LOCK)};`
+    + `const ex=spawnSync(process.execPath,[L,'run','chrome-measure','--owner','verify-x','--','true'],{encoding:'utf8'});`
+    + `const sh=spawnSync(process.execPath,[L,'run','chrome-measure','--shared','--max-seconds','20','--owner','inner','--',process.execPath,'-e','process.exit(7)'],{encoding:'utf8'});`
+    + `require('fs').writeFileSync(${JSON.stringify(join(dir, 'nested.json'))},JSON.stringify({ex:[ex.status,ex.stderr],sh:[sh.status,sh.stderr]}))`;
+  const r = await lockAsync('run', 'chrome-measure', '--shared', '--max-seconds', '60', '--owner', 'outer', '--', process.execPath, '-e', inner);
+  assert.equal(r.code, 0, r.out);
+  const n = JSON.parse(readFileSync(join(dir, 'nested.json'), 'utf8'));
+  assert.equal(n.ex[0], 1);
+  assert.match(n.ex[1], /inside the shared \(functional\) hold of "outer"/);
+  assert.equal(n.sh[0], 7, n.sh[1]);
+});
+
+test('switch off: run --shared runs as an exclusive short job (with a notice) and exports FW_LOCK_HELD', async () => {
+  const r = await lockAsync('run', 'chrome-measure', '--shared', '--max-seconds', '30', '--owner', 'fn', '--', process.execPath, '-e', job('off', 0.1));
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stderr, /shared lane is off: running as an exclusive --short job/);
+  const s = stamp('off');
+  assert.match(s.held, /^chrome-measure:/);
+  assert.equal(s.shared, null);
+});
+
+test('deadline: a reader overrunning --max-seconds is hard-killed (exit 124) before the group\'s expiresAt', async () => {
+  turnOn();
+  const pidFile = join(dir, 'pid');
+  const child = `require('fs').writeFileSync(${JSON.stringify(pidFile)},String(process.pid));process.on('SIGTERM',()=>{});setInterval(()=>{},1000)`;
+  const run = lockAsync('run', 'chrome-measure', '--shared', '--max-seconds', '2', '--owner', 'stuck', '--', process.execPath, '-e', child);
+  await until(() => holder()?.readers?.length === 1 && existsSync(pidFile));
+  const expiresAt = Date.parse(holder().expiresAt);
+  const pid = Number(readFileSync(pidFile, 'utf8'));
+  const r = await run;
+  assert.equal(r.code, 124, r.out);
+  assert.equal(alive(pid), false, 'the SIGTERM-ignoring command is dead');
+  assert.ok(Date.now() < expiresAt, `run ended ${Date.now() - expiresAt} ms after the group's expiresAt`);
+  assert.equal(holder(), null, 'the reader left and closed the group');
+});
+
+test('acquire --shared lease + release --shared; wait --until held-by sees a reader', () => {
+  turnOn();
+  const a = lock('acquire', 'chrome-measure', '--shared', '--weight', '2', '--max-seconds', '120', '--owner', 'commit-x');
+  assert.equal(a.code, 0, a.out);
+  assert.match(a.stdout, /^ACQUIRED chrome-measure for "commit-x" \(shared, weight 2, max 120 s\)/);
+  assert.match(lock('wait', 'chrome-measure', '--until', 'held-by:commit-x', '--timeout', '5').stdout, /^MET/);
+  const bad = lock('release', 'chrome-measure', '--owner', 'commit-x');
+  assert.equal(bad.code, 1);
+  assert.match(bad.stderr, /release --shared/);
+  assert.equal(lock('acquire', 'chrome-measure', '--shared', '--max-seconds', '60', '--owner', 'commit-y').code, 0);
+  const one = lock('release', 'chrome-measure', '--shared', '--owner', 'commit-y');
+  assert.equal(one.code, 0, one.out);
+  assert.match(one.stdout, /^RELEASED chrome-measure \(shared reader "commit-y"\)$/m, 'another reader is still in: the group stays');
+  const rel = lock('release', 'chrome-measure', '--shared', '--owner', 'commit-x');
+  assert.equal(rel.code, 0, rel.out);
+  assert.match(rel.stdout, /^RELEASED chrome-measure \(shared reader "commit-x"; the group closed\)$/m, 'the last reader out closes the group');
+  assert.equal(holder(), null);
+});
+
+test('doctor flags a dead reader; repair --apply prunes it', () => {
+  turnOn();
+  assert.equal(lock('acquire', 'chrome-measure', '--shared', '--max-seconds', '120', '--owner', 'lease-r').code, 0);
+  const h = holder();
+  const dead = { ...h.readers[0], owner: 'gone', token: 'bbbbbbbbbbbb', kind: 'process', pid: 999999 };
+  writeFileSync(join(state, 'locks', 'chrome-measure.json'), JSON.stringify({ ...h, readers: [...h.readers, dead] }));
+  const d = lock('doctor', 'chrome-measure');
+  assert.equal(d.code, 1);
+  assert.match(d.stdout, /\[group-reader-dead\]/);
+  assert.equal(lock('repair', 'chrome-measure', '--by', 'lead', '--reason', 'e2e', '--apply').code, 0);
+  assert.deepEqual(holder().readers.map((x) => x.owner), ['lease-r']);
+  assert.equal(lock('doctor', 'chrome-measure').code, 0);
+});
+
+test('timing tools refuse --shared (exit 2): verify.mjs, fix.mjs ab, bench gain / reconfirm', () => {
+  for (const [t, args] of [['verify.mjs', ['a=http://localhost:1/', '--shared']], ['fix.mjs', ['ab', 'x', '--shared']], ['bench.mjs', ['gain', '--shared']], ['bench.mjs', ['reconfirm', '--shared']]]) {
+    const r = node(tool(t), args, { env });
+    assert.equal(r.code, 2, `${t} ${args.join(' ')}: ${r.out}`);
+    assert.match(r.stderr, /never runs in the shared lane/);
+  }
+});

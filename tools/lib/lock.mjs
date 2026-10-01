@@ -69,6 +69,23 @@
 // no-timing runs may re-enter it. Timed iPhone runs refuse during it like during any normal hold (iphone-run.mjs).
 // A no-timing run nested inside a timing hold (FW_LOCK_HELD) throws too (a short hold may host it). Run only this
 // checkout's tools inside a no-timing hold; an older checkout's verify/ab/bench would not refuse.
+//
+// Shared lane (ts-lock-share, research/architecture/lock-shared-lane.md): jobs that only confirm functionality (npm test,
+// headless checks, DOM probes, bench mech, a Simulator mechanism session) hold chrome-measure as READERS, in parallel
+// with each other but never beside an exclusive (timing) holder. The readers form ONE group that lives in <r>.json as
+// a holder record old lock code reads as a live short lease ({owner: "(shared)", kind: "lease", short: true, shared:
+// true, format: "rw1", readers: [...]}), so code from before the lane never sees the lock free while a reader runs
+// (shelf B2). Invariant: the group's expiresAt >= every reader's hard deadline (a process reader: acquiredAt + maxSec
+// + killGraceSec, `lock.mjs run` kills it at maxSec; a lease reader: acquiredAt + maxSec), so old code clears the group
+// only when no reader can still run. A reader joins while the weights fit SHARED_LANE.cap (or the switch file's cap),
+// load1 <= the cpu count (not for the opener), and no exclusive waiter is queued (writer preference), except the
+// readers queued before the group opened, for batchJoinSec. The group opens at a hand-over like a short job (the short
+// lane, its drain budget, I-030 and lead moves apply to reader entries); right after a group, the exclusive waiters go
+// first. A reader's command gets FW_LOCK_SHARED=<r>:<reader token>, never FW_LOCK_HELD: a nested shared acquire re-enters
+// that slot, an exclusive one is refused at once (B1); readers are keyed by token, not owner (B3). The lane is off
+// unless the lead switched it on (<r>.shared.json); while off, a shared acquire is an exclusive short job with the same
+// maxSec, so callers never branch. With no-timing holds: a shared acquire inside one (FW_LOCK_HELD) re-enters it like a
+// short job; a --no-timing acquire inside a reader is refused like any exclusive one; --shared --no-timing is refused.
 import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
@@ -94,6 +111,23 @@ const SHORT_QUEUE_TTL_SEC = 60;
 export const SHORT_DRAIN_SEC = 900;
 /** Resources whose normal waiters pass the host admission gate (I-016). */
 export const GATED = Object.freeze({ 'chrome-measure': true });
+/** The shared lane's bounds and the per-job weights (ts-lock-share; the lead approved cap 4 and these weights). */
+export const SHARED_LANE = Object.freeze({
+  cap: 4, // weight units of all readers at once
+  maxSec: 300, // per reader; `lock.mjs run` kills its command at maxSec (SIGKILL 3 s later)
+  batchJoinSec: 30, // readers queued before the group opened may join this long despite a waiting writer
+  expiryGraceSec: 10, // group expiresAt = the latest reader deadline + this
+  killGraceSec: 5, // a process reader's deadline = acquiredAt + maxSec + this (the SIGTERM -> SIGKILL grace)
+  weights: Object.freeze({ check: 1, probe: 1, 'bench-mech': 1, 'test-chrome-fn': 1, 'npm-test': 2, simulator: 3 }),
+});
+export const SHARED_FORMAT = 'rw1';
+export const GROUP_OWNER = '(shared)';
+/** A joining reader needs load1 <= this: the cpu count (FW_LOCK_SHARED_JOIN_LOAD overrides it, for tests). */
+export const sharedJoinLoad = () => Number(process.env.FW_LOCK_SHARED_JOIN_LOAD) || os.cpus().length;
+const switchFile = (r) => join(lockDir(), `${r}.shared.json`);
+export const isGroup = (h) => !!(h && h.shared === true);
+const knownGroup = (h) => isGroup(h) && h.format === SHARED_FORMAT && Array.isArray(h.readers);
+const iso = (t) => new Date(t).toISOString();
 export const hostAlertsFile = () => join(lockDir(), 'host-alerts.log');
 /** One JSON line per chrome-measure `lock.mjs run` hold: display / wake / assertion at its start and end (T8+, I-033). */
 export const holdsLogFile = () => join(lockDir(), 'holds.log');
@@ -126,6 +160,50 @@ export function parseHeld(s) {
 /** FW_LOCK_HELD value for a child of a process that holds `r` with `token` (keeps other resources' entries). */
 export function heldEnv(r, token, prev = process.env.FW_LOCK_HELD) {
   return Object.entries({ ...parseHeld(prev), [r]: token }).map(([k, v]) => `${k}:${v}`).join(',');
+}
+
+/** FW_LOCK_SHARED value for a child of a shared reader of `r` with reader `token` (keeps other resources' entries). */
+export function sharedEnv(r, token, prev = process.env.FW_LOCK_SHARED) {
+  return heldEnv(r, token, prev);
+}
+
+/** The lead's switch for the shared lane of `r`: {enabled, cap}. Absent or unreadable = off. */
+export function sharedSwitch(r) {
+  const x = readJson(switchFile(r), null);
+  const cap = Number.isInteger(x?.cap) && x.cap >= 1 && x.cap <= SHARED_LANE.cap ? x.cap : SHARED_LANE.cap;
+  return { enabled: x?.enabled === true, cap };
+}
+
+/** Turn the shared lane of `r` on or off (the lead only; audited in locks/audit.log). Readers already in a group stay. */
+export async function setSharedSwitch(r, { on, by, reason, cap } = {}) {
+  checkName(r);
+  if (!GATED[r]) throw new Error(`the shared lane exists only on ${Object.keys(GATED).join(', ')} (not "${r}")`);
+  if (by !== 'lead') throw new Error('only the lead switches the shared lane (--by lead)');
+  if (!reason) throw new Error('switching the shared lane needs --reason "<why>" (it goes into the audit log)');
+  if (cap !== undefined && !(Number.isInteger(cap) && cap >= 1 && cap <= SHARED_LANE.cap)) throw new Error(`--cap must be an integer 1..${SHARED_LANE.cap} (got ${cap})`);
+  return withGuard(r, () => {
+    const before = readJson(switchFile(r), null);
+    const after = { enabled: !!on, ...(cap !== undefined ? { cap } : {}), by, reason, at: iso(Date.now()) };
+    writeJson(switchFile(r), after);
+    appendFileSync(join(lockDir(), 'audit.log'), JSON.stringify({ ts: after.at, by, reason, resource: r, code: 'shared-switch', file: `${r}.shared.json`, fix: on ? 'on' : 'off', before, after }) + '\n');
+    return sharedSwitch(r);
+  });
+}
+
+/** A process reader's hard deadline (ms): `lock.mjs run` kills it at maxSec; a lease reader just expires. */
+const readerDeadline = (kind, at, maxSec) => at + (maxSec + (kind === 'process' ? SHARED_LANE.killGraceSec : 0)) * 1000;
+/** Readers that can still run at `now`. */
+export const liveReaders = (g, now = Date.now()) => (g.readers || []).filter((x) => Date.parse(x.deadline) > now && (x.kind !== 'process' || pidAlive(x.pid)));
+/** `g` with `readers`, its expiresAt and meta recomputed (expiresAt = the latest deadline + expiryGraceSec). */
+export function groupWith(g, readers) {
+  const end = Math.max(...readers.map((x) => Date.parse(x.deadline)));
+  return { ...g, readers, expiresAt: iso(end + SHARED_LANE.expiryGraceSec * 1000), meta: { ...g.meta, readers: readers.map((x) => `${x.owner} (w${x.weight})`).join(', ') } };
+}
+const readerList = (g) => (g.readers || []).map((x) => `"${x.owner}"`).join(', ') || 'none';
+
+/** Why an exclusive acquirer may not start inside the shared reader slot `x` (B1). */
+export function sharedRefusal(r, x) {
+  return `${r}: this process runs inside the shared (functional) hold of "${x.owner}" (FW_LOCK_SHARED): an exclusive or timing job (verify.mjs, fix.mjs ab, bench gain, a normal or --short lock.mjs run) never runs inside it. Run it in its own hold after this one.`;
 }
 
 function checkName(r) {
@@ -165,6 +243,57 @@ export async function withGuard(r, fn) {
     }
   }
   try { return fn(); } finally { try { rmdirSync(g); } catch {} }
+}
+
+/** withGuard for an 'exit' handler (synchronous): gives up after maxMs and returns undefined (the caller's state is pruned later). */
+function withGuardSync(r, fn, maxMs = 2000) {
+  mkdirSync(lockDir(), { recursive: true });
+  const g = guardDir(r), t0 = Date.now(), cell = new Int32Array(new SharedArrayBuffer(4));
+  for (;;) {
+    try { mkdirSync(g); break; } catch (e) {
+      if (e.code !== 'EEXIST') return undefined;
+      try { if (Date.now() - statSync(g).mtimeMs > 10000) { rmdirSync(g); continue; } } catch {}
+      if (Date.now() - t0 > maxMs) return undefined;
+      Atomics.wait(cell, 0, 0, 5 + Math.random() * 20);
+    }
+  }
+  try { return fn(); } finally { try { rmdirSync(g); } catch {} }
+}
+
+/** Inside the guard: drop reader `token` from the group; the last one closes it. {closed, group, reader} or null. */
+function removeReader(r, token, now = Date.now()) {
+  const h = readJson(holderFile(r), null);
+  if (!knownGroup(h)) return null;
+  const reader = h.readers.find((x) => x.token === token);
+  if (!reader) return null;
+  const rest = h.readers.filter((x) => x.token !== token);
+  if (!rest.length) { try { unlinkSync(holderFile(r)); } catch {} return { closed: true, group: h, reader }; }
+  const g = groupWith(h, rest);
+  writeJson(holderFile(r), g);
+  return { closed: false, group: g, reader };
+}
+
+/** A reader leaves the shared group of `r` (the last one closes it and ends the group's awake assertion). */
+export async function releaseReader(r, token, { now = Date.now() } = {}) {
+  checkName(r);
+  const out = await withGuard(r, () => removeReader(r, token, now));
+  if (out?.closed) stopAwake(r, out.group.token);
+  return out || { closed: false, group: null, reader: null };
+}
+
+/** Inside the guard: drop readers that can no longer run; no live reader left removes the group (last-stale). */
+function pruneGroup(r, h, now, by) {
+  const live = liveReaders(h, now);
+  if (live.length === h.readers.length && live.length) return h;
+  if (!live.length) {
+    writeJson(join(lockDir(), `${r}.last-stale.json`), { ...h, staleBecause: `no live reader (${readerList(h)}: process gone or past its deadline)`, clearedAt: iso(now), clearedBy: by });
+    try { unlinkSync(holderFile(r)); } catch {}
+    stopAwake(r, h.token);
+    return null;
+  }
+  const g = groupWith(h, live);
+  writeJson(holderFile(r), g);
+  return g;
 }
 
 function pruneQueue(q, now = Date.now(), queueTtlSec = 600) {
@@ -215,6 +344,8 @@ function nextIndex(q, lg, now = Date.now(), caller, r, T = THRESHOLDS) {
     const fresh = pool.filter(([w]) => w.owner === caller || now - Date.parse(w.lastSeen) <= HANDOVER_FRESH_SEC * 1000);
     if (fresh.length) pool = fresh;
   }
+  // (a shared group's last-grant record has its short-drain budget spent (groupGrant), so right after a group a normal
+  // waiter goes first; the rule is data old lock code reads the same way, so old and new code agree on who is next)
   const s = pool.find(([w]) => w.short), n = pool.find(([w]) => !w.short);
   if (!s || !n) return pool[0][1];
   if (n[0].movedBy && n[1] < s[1]) return n[1]; // the lead moved this normal waiter ahead of these short jobs (I-019): its priority wins (I-020)
@@ -250,33 +381,50 @@ function gateHolding(w, now, T = THRESHOLDS) {
 }
 
 /**
- * One acquisition attempt. Returns {ok:true, holder} or {ok:false, holder, position, queue, next, gated}.
- * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held, host, thresholds, noTiming}
+ * One acquisition attempt. Returns {ok:true, holder, mode} or {ok:false, holder, position, queue, next, gated, why}.
+ * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held, host, thresholds, noTiming,
+ *        shared, weight, sharedHeld, load1, ncpu, now}
  * `held`: an FW_LOCK_HELD string; a token matching the live holder re-enters it ({reentrant, inherited}).
  * `noTiming`: a normal job that measures nothing (a build, CPU work; `lock.mjs run --no-timing`): passes the host gate,
  * and its holder carries `noTiming: true`. A timing acquirer (normal, not noTiming) never re-enters such a hold: throws.
  * `host`: for a GATED resource, the caller's latest host reading {quiet: true|false|null, reasons, sample}
  * (null quiet = not measured yet). Omitted: no gate (library callers that don't sample). A normal waiter
  * whose turn it is gets {ok:false, gated:true, gate} until host.quiet, or until the gate times out.
+ * `shared` (ts-lock-share): a reader of the shared lane (see header), with `weight` (1..cap) and `maxSec` (1..300);
+ * `sharedHeld`: an FW_LOCK_SHARED string: a live reader token there re-enters that slot (shared acquirer) or refuses
+ * at once (exclusive acquirer, B1). `load1` / `ncpu` / `now`: injected for tests (default: os.loadavg, the cpu
+ * count, Date.now). `mode`: 'exclusive' | 'short' | 'shared' | 'reentrant' | 'reentrant-exclusive' | 'reentrant-shared'.
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, short = false, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false } = opts;
-  let { ttlSec, queueTtlSec = 600 } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, sharedHeld, load1, ncpu } = opts;
+  let { ttlSec, queueTtlSec = 600, short = false } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
+  if (String(owner).startsWith('(')) throw new Error(`owner names starting with "(" are reserved for the lock itself ("${GROUP_OWNER}" is the shared group): pick another --owner`);
   if (noTiming && short) throw new Error('--no-timing is for normal holds (builds, CPU work); a short job passes the host gate already');
+  if (noTiming && shared) throw new Error('--no-timing and --shared do not combine: a shared job is a bounded functional reader already; a build that needs the Mac alone is --no-timing');
+  if (shared) {
+    if (!GATED[r]) throw new Error(`--shared exists only on ${Object.keys(GATED).join(', ')} (not "${r}")`);
+    if (short) throw new Error('--shared and --short do not combine: a shared job is bounded already (--max-seconds)');
+    if (!(maxSec > 0 && maxSec <= SHARED_LANE.maxSec)) throw new Error(`a shared job needs --max-seconds between 1 and ${SHARED_LANE.maxSec} (got ${maxSec})`);
+    if (!(Number.isInteger(weight) && weight >= 1 && weight <= SHARED_LANE.cap)) throw new Error(`a shared job's --weight must be an integer 1..${SHARED_LANE.cap} (got ${weight})`);
+  }
+  const sw = shared ? sharedSwitch(r) : null;
+  const lane = shared && sw.enabled; // a reader; with the switch off a shared acquire is an exclusive short job
+  if (shared && !lane) short = true;
   if (short) {
     if (!(maxSec > 0 && maxSec <= SHORT_MAX_SEC)) throw new Error(`a short job needs --max-seconds between 1 and ${SHORT_MAX_SEC} (got ${maxSec})`);
     ttlSec = kind === 'process' ? maxSec + 5 : maxSec; // + the grace `lock.mjs run` gives the command after SIGTERM
     queueTtlSec = Math.min(queueTtlSec, SHORT_QUEUE_TTL_SEC);
   }
-  const pol = !short && kind === 'lease' && LEASE_POLICY[r];
+  if (lane) queueTtlSec = Math.min(queueTtlSec, SHORT_QUEUE_TTL_SEC); // a reader polls like a short job
+  const pol = !short && !lane && kind === 'lease' && LEASE_POLICY[r];
   if (pol) {
     if (ttlSec > pol.maxHoldSec) throw new Error(`a ${r} lease is capped at ${pol.maxHoldSec} s (asked --ttl ${ttlSec}); measure inside one process hold instead: node tools/lock.mjs run ${r} --owner <topic> -- sh -c '<ab && probe>' (I-020)`);
     ttlSec ||= pol.defaultTtlSec;
   }
   return withGuard(r, () => {
-    const now = Date.now();
+    const now = opts.now ?? Date.now();
     let h = readJson(holderFile(r), null);
     let q = pruneQueue(readJson(queueFile(r), []), now, queueTtlSec);
     const reason = h && staleReason(h, now);
@@ -285,27 +433,36 @@ export async function tryAcquire(r, opts) {
       try { unlinkSync(holderFile(r)); } catch {}
       h = null;
     }
-    const inherit = h && h.token && parseHeld(held)[r] === h.token, same = h && h.owner === owner && (h.kind === 'lease' || h.pid === pid);
+    if (knownGroup(h)) h = pruneGroup(r, h, now, owner);
+    // B1: inside a live reader slot (FW_LOCK_SHARED) no exclusive job starts, on any path; a shared one re-enters it
+    const sTok = parseHeld(sharedHeld)[r];
+    const myReader = sTok && knownGroup(h) ? h.readers.find((x) => x.token === sTok) : null;
+    if (myReader && !shared) throw new Error(sharedRefusal(r, myReader));
+    if (myReader) return { ok: true, holder: h, reader: myReader, reentrant: true, mode: 'reentrant-shared' };
+    // re-entrant for the same owner; never for a shared acquirer (an owner name is no proof the job belongs to that hold)
+    const inherit = h && !isGroup(h) && h.token && parseHeld(held)[r] === h.token, same = !shared && h && !isGroup(h) && h.owner === owner && (h.kind === 'lease' || h.pid === pid);
     // a no-timing hold was granted without the host gate (the host may be loud, e.g. the user at the Mac, or the
-    // hold's own build): a timing run (verify.mjs, fix.mjs ab, bench, a normal `lock.mjs run`) never runs inside it
-    if ((inherit || same) && h.noTiming && GATED[r] && !short && !noTiming) throw new Error(noTimingRefusal(r, h));
+    // hold's own build): a timing run (verify.mjs, fix.mjs ab, bench, a normal `lock.mjs run`) never runs inside it;
+    // a short or shared (functional) job may (ts-lock-share: a shared acquire inside FW_LOCK_HELD re-enters the hold)
+    if ((inherit || same) && h.noTiming && GATED[r] && !short && !shared && !noTiming) throw new Error(noTimingRefusal(r, h));
     // and the other way round (review N7): a --no-timing run (a build) never runs inside a timing hold, whose
     // measurements it would load; a short hold may host it (short jobs measure nothing either)
     if (inherit && noTiming && !h.noTiming && !h.short) throw new Error(noTimingNestedRefusal(r, h));
     if (inherit) {
       // a descendant of the holder (FW_LOCK_HELD from `lock.mjs run`): runs under the ancestor's hold
-      return { ok: true, holder: h, reentrant: true, inherited: true };
+      return { ok: true, holder: h, reentrant: true, inherited: true, mode: shared ? 'reentrant-exclusive' : 'reentrant' };
     }
     if (same) {
       // re-entrant for the same owner: refresh the TTL
       if (ttlSec && !h.short) h.expiresAt = new Date(Math.min(now + ttlSec * 1000, capMs(r, h))).toISOString();
       writeJson(holderFile(r), h);
-      return { ok: true, holder: h, reentrant: true };
+      return { ok: true, holder: h, reentrant: true, mode: 'reentrant' };
     }
-    const mine = q.findIndex((w) => w.owner === owner);
     const lg = readJson(lastGrantFile(r), {});
     const seen = effectiveLastGrant(lg, h);
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
+    if (lane) return readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap: sw.cap, queueTtlSec, load1, ncpu, T });
+    const mine = q.findIndex((w) => w.owner === owner && !w.shared);
     const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
     // short jobs are exempt from the host gate: the first short waiter may pass a head normal waiter held by it
     // (not one the lead moved, and only early in its gate wait: gateHolding, I-030)
@@ -332,7 +489,7 @@ export async function tryAcquire(r, opts) {
         if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019) survives the gate (review-gate R2)
         if (mine >= 0) q[mine] = entry; else q.push(entry);
         writeJson(queueFile(r), q);
-        return { ok: false, gated: true, gate: g, holder: null, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: owner };
+        return { ok: false, gated: true, gate: g, holder: null, position: q.indexOf(entry) + 1, queue: q, next: owner };
       }
     }
     if (!h && headOk) {
@@ -350,7 +507,7 @@ export async function tryAcquire(r, opts) {
       writeJson(lastGrantFile(r), { owner, short, maxSec, at: h.acquiredAt, token: h.token, runStart });
       if (mine >= 0) q.splice(mine, 1);
       writeJson(queueFile(r), q);
-      return { ok: true, holder: h };
+      return { ok: true, holder: h, mode: short ? 'short' : 'exclusive' };
     }
     // busy (or someone else is served first): join / refresh the queue
     const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}), ...(noTiming ? { noTiming: true } : {}),
@@ -359,7 +516,7 @@ export async function tryAcquire(r, opts) {
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     writeJson(queueFile(r), q);
-    return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)].owner };
+    return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)].owner, mode: short ? 'short' : 'exclusive' };
   });
 }
 
@@ -371,6 +528,69 @@ export function noTimingNestedRefusal(r, h) {
 /** Why a timing acquirer may not run inside the no-timing hold `h` (ts-lock-bundle). */
 export function noTimingRefusal(r, h) {
   return `${r} is held by "${h.owner}" as a no-timing hold (lock.mjs run --no-timing: builds and CPU work, granted without the host gate, so the host may be loud): a timing run (verify.mjs, fix.mjs ab, bench, a normal lock.mjs run) never runs inside it. Run it in its own hold after this one.`;
+}
+
+/**
+ * The last-grant record of a shared group (written at its opening and at every join). Writer preference after a group
+ * is expressed only in data that lock code from before the lane reads the same way (so old and new code always agree on
+ * who is served next; a rule only new code knew made a reader and an old waiter each wait for the other): `short` with
+ * `at` = the latest grant into the group keeps the record a live short grant until that reader's end + the hand-over
+ * grace (lastGrantShort: 300 + 35 s after `at`, >= 30 s past any reader's maxSec + killGraceSec), and `runStart` one SHORT_DRAIN_SEC
+ * back marks the short-drain budget spent, so at the hand-over after a group a normal waiter goes before every short-lane
+ * entry (reader or exclusive short); with no normal waiter, the short-lane entries go FIFO.
+ */
+export function groupGrant(g, now) {
+  return { owner: GROUP_OWNER, short: true, shared: true, maxSec: SHARED_LANE.maxSec, at: iso(now), token: g.token, runStart: iso(now - SHORT_DRAIN_SEC * 1000) };
+}
+
+/**
+ * Inside the guard, the shared lane on: join the live group, open one on a free lock at this reader's turn, or queue
+ * (a short-lane entry with `shared: true`, keyed by owner + pid, or owner + checkout for a lease reader).
+ */
+function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap, queueTtlSec, load1, ncpu, T }) {
+  const isMine = (w) => w.shared && w.owner === owner && (kind === 'process' ? w.kind === 'process' && w.pid === pid : w.kind !== 'process' && w.checkout === REPO);
+  const mine = q.findIndex(isMine);
+  const reader = () => ({ owner, token: randomBytes(6).toString('hex'), kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, acquiredAt: iso(now), deadline: iso(readerDeadline(kind, now, maxSec)), maxSec, weight, meta });
+  const leaveQueue = () => { if (mine >= 0) { q.splice(mine, 1); writeJson(queueFile(r), q); } };
+  const wait = (why) => {
+    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : iso(now), lastSeen: iso(now), queueTtlSec, short: true, maxSec, shared: true, weight };
+    if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt });
+    if (mine >= 0) q[mine] = entry; else q.push(entry);
+    writeJson(queueFile(r), q);
+    return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)].owner, why, mode: 'shared' };
+  };
+  // the same agent's lease reader from this checkout (an `acquire --shared` repeated to check or keep it) is that slot
+  const again = knownGroup(h) && kind !== 'process' ? h.readers.find((x) => x.kind !== 'process' && x.owner === owner && x.checkout === REPO) : null;
+  if (again) return { ok: true, holder: h, reader: again, reentrant: true, mode: 'reentrant-shared' };
+  if (h && !knownGroup(h)) return wait(isGroup(h) ? `held by a shared group in format "${h.format}", which this lock code does not know: it waits as for an exclusive holder` : `held by "${h.owner}" (exclusive)`);
+  if (h) {
+    const used = h.readers.reduce((a, x) => a + (x.weight || 1), 0);
+    if (used + weight > cap) return wait(`the shared group is full (weight ${used}/${cap}; this job needs ${weight})`);
+    const ld = load1 ?? os.loadavg()[0], lim = ncpu ?? sharedJoinLoad();
+    if (ld > lim) return wait(`load1 ${Math.round(ld * 10) / 10} > ${lim}: no new reader joins a loaded host`);
+    const writer = q.find((w) => !w.shared);
+    const inBatch = mine >= 0 && Date.parse(q[mine].since) <= Date.parse(h.openedAt) && now - Date.parse(h.openedAt) <= SHARED_LANE.batchJoinSec * 1000;
+    if (writer && !inBatch) return wait(`joins closed: "${writer.owner}" waits for an exclusive hold (writer preference)`);
+    const x = reader();
+    const g = groupWith(h, [...h.readers, x]);
+    writeJson(holderFile(r), g);
+    writeJson(lastGrantFile(r), groupGrant(g, now)); // the record stays "short" until this reader's end + the grace
+    leaveQueue();
+    return { ok: true, holder: g, reader: x, mode: 'shared' };
+  }
+  // free: reader entries are short-lane entries; right after a group a normal waiter goes first (groupGrant spends the
+  // drain budget), and no reader passes a gated head writer then (the gate exemption is for short jobs between exclusive
+  // holds only)
+  const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
+  const afterGroup = !!seen.shared;
+  const headOk = q.length === 0 || mine === ni || (mine >= 0 && !!q[ni].shared) || (!afterGroup && GATED[r] && gateHolding(q[ni], now, T) && mine === q.findIndex((w) => w.short));
+  if (!headOk) return wait(`"${q[ni].owner}" is served first`);
+  const x = reader();
+  const g = groupWith({ resource: r, owner: GROUP_OWNER, kind: 'lease', token: randomBytes(6).toString('hex'), checkout: REPO, host: os.hostname(), acquiredAt: iso(now), openedAt: iso(now), meta: {}, short: true, maxSec: SHARED_LANE.maxSec, shared: true, format: SHARED_FORMAT }, [x]);
+  writeJson(holderFile(r), g);
+  writeJson(lastGrantFile(r), groupGrant(g, now));
+  leaveQueue();
+  return { ok: true, holder: g, reader: x, mode: 'shared', opened: true };
 }
 
 /**
@@ -386,22 +606,44 @@ export async function gateSample({ thresholds: T = THRESHOLDS, samplers } = {}) 
   return { ...q, sample: x };
 }
 
-/** Leave the queue without acquiring (e.g. an agent gives up waiting). */
-export async function dequeue(r, owner) {
+/** Leave the queue without acquiring (e.g. an agent gives up waiting). `match` (optional): which of the owner's entries. */
+export async function dequeue(r, owner, match) {
   checkName(r);
-  return withGuard(r, () => { const q = readJson(queueFile(r), []).filter((w) => w.owner !== owner); writeJson(queueFile(r), q); return q; });
+  return withGuard(r, () => { const q = readJson(queueFile(r), []).filter((w) => !(w.owner === owner && (!match || match(w)))); writeJson(queueFile(r), q); return q; });
 }
 
-/** Release. Only the owner may release unless force. Returns the removed holder or null. */
-export async function release(r, { owner, force = false } = {}) {
+/**
+ * Release. Only the owner may release unless force. Returns the removed holder or null.
+ * A shared group (ts-lock-share) is never released by an owner name: `shared` releases the owner's lease reader acquired
+ * from this checkout (a process reader leaves when its process ends; it is keyed by token, B3), and returns that reader
+ * with `sharedReader: true`; `force` without `shared` removes the whole group (the lead, when its readers are gone).
+ */
+export async function release(r, { owner, force = false, shared = false } = {}) {
   checkName(r);
-  return withGuard(r, () => {
+  const out = await withGuard(r, () => {
     const h = readJson(holderFile(r), null);
     if (!h) return null;
+    if (isGroup(h)) {
+      if (!shared) {
+        if (!force) throw new Error(`${r} is held by the shared group (readers ${readerList(h)}), not by "${owner}": a lease reader leaves with release --shared (node tools/lock.mjs release ${r} --shared --owner <it>), a process reader when its process ends (--force removes the whole group: only if those readers are really gone)`);
+        unlinkSync(holderFile(r));
+        return h;
+      }
+      const mine = (h.readers || []).filter((x) => x.owner === owner);
+      if (!mine.length) throw new Error(`${r}: the shared group has no reader "${owner}" (readers ${readerList(h)})`);
+      const leases = mine.filter((x) => x.kind !== 'process');
+      if (!leases.length) throw new Error(`${r}: the shared reader "${owner}" is a process reader (pid ${mine.map((x) => x.pid).join(', ')}): it leaves when its process ends`);
+      const x = leases.find((y) => y.checkout === REPO) || (force ? leases[0] : null);
+      if (!x) throw new Error(`${r}: the shared reader "${owner}" was acquired from ${leases.map((y) => y.checkout).join(', ')}, not from this checkout (${REPO}): release it there (--force only if that agent is really gone)`);
+      const res = removeReader(r, x.token);
+      return { ...x, sharedReader: true, closed: !!res?.closed, groupToken: h.token };
+    }
     if (!force && h.owner !== owner) throw new Error(`${r} is held by "${h.owner}", not "${owner}" (use --force only if that holder is really gone)`);
     unlinkSync(holderFile(r));
     return h;
   });
+  if (out?.sharedReader && out.closed) stopAwake(r, out.groupToken);
+  return out;
 }
 
 /** Extend a lease. */
@@ -423,18 +665,22 @@ export async function renew(r, { owner, ttlSec }) {
  * Process-kind locks are also released automatically on exit / SIGINT / SIGTERM.
  * A re-entrant acquire (the same owner's lease, or an ancestor's hold via `held`, default
  * $FW_LOCK_HELD) returns at once, and its release() is a no-op: the outer holder releases.
- * Returns {holder, release(), reentrant}.
+ * `shared` (+ `weight`, `maxSec` <= 300): a reader of the shared lane (see header); `sharedHeld` (default
+ * $FW_LOCK_SHARED) re-enters an ancestor's reader slot, and refuses an exclusive acquire inside one at once (B1).
+ * Returns {holder, release(), reentrant, mode, env, reader}: `env` is what a child command needs to re-enter
+ * ({FW_LOCK_SHARED} for a reader or a re-entered reader slot, {FW_LOCK_HELD} for an exclusive hold, re-entered or not).
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, maxSec, held = process.env.FW_LOCK_HELD, timeoutSec = 3600, pollMs = 2000, maxPollMs = short ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, shared = false, weight = 1, maxSec, held = process.env.FW_LOCK_HELD, sharedHeld = process.env.FW_LOCK_SHARED, timeoutSec = 3600, pollMs = 2000, maxPollMs = short || shared ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false } = {}) {
   const t0 = Date.now();
   let lastLog = 0, wait = pollMs;
-  const gated = !!GATED[r] && !short && !noTiming;
+  const gated = !!GATED[r] && !short && !shared && !noTiming;
   let host = gated ? { quiet: null, reasons: ['not measured yet'] } : undefined;
   // ts-lock-bundle (b): the gate's timeout counts awake time, like its cap (review-host-state B1): the host sleep the
   // gate windows saw is subtracted, and a window the host slept through never ends in a throw (one fresh window decides)
   let gateSleptMs = 0, sleptLast = false;
+  const myEntry = shared ? (w) => !!w.shared && (kind !== 'process' || w.pid === process.pid) : (w) => !w.shared;
   for (;;) {
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T, noTiming });
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, maxSec, held, sharedHeld, host, thresholds: T, noTiming });
     // queued behind someone, or the head waiter held at the host gate on a host measured not quiet (ts-lock-bundle (a);
     // not the first, unmeasured round every gated grant takes): no system sleep while anyone waits (I-026 reopened);
     // a gate wait is minutes of waiting too, and a sleep in it only stretches it (I-033)
@@ -445,14 +691,35 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
         log(`[lock ${r}] free, but the host is not quiet (${host.reasons.join(', ')}); waiting since ${res.gate.since}, granted anyway after ${T.gateMaxWaitSec} s`);
         lastLog = Date.now();
       }
-      if (!sleptLast && Date.now() - t0 - gateSleptMs > timeoutSec * 1000) { await dequeue(r, owner); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s waiting for a quiet host${gateSleptMs ? ` (awake time; the host slept ${Math.round(gateSleptMs / 1000)} s more)` : ''}`); }
+      if (!sleptLast && Date.now() - t0 - gateSleptMs > timeoutSec * 1000) { await dequeue(r, owner, myEntry); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s waiting for a quiet host${gateSleptMs ? ` (awake time; the host slept ${Math.round(gateSleptMs / 1000)} s more)` : ''}`); }
       host = await gateSample({ thresholds: T, samplers: hostSamplers }); // its sleep is summed by tryAcquire (I-033)
       sleptLast = !!host.sample?.suspended;
       if (sleptLast) gateSleptMs += (host.sample.sleptSec || 0) * 1000;
       continue;
     }
     if (gated) host = { quiet: null, reasons: ['not measured yet'] }; // the window restarts at the next hand-over
-    if (res.ok && res.reentrant) return { holder: res.holder, release: () => {}, reentrant: true };
+    if (res.ok && res.reentrant) {
+      const env = res.mode === 'reentrant-shared' ? { FW_LOCK_SHARED: sharedEnv(r, res.reader.token, sharedHeld) } : { FW_LOCK_HELD: heldEnv(r, res.holder.token, held) };
+      return { holder: res.holder, reader: res.reader, release: () => {}, reentrant: true, mode: res.mode, env };
+    }
+    if (res.ok && res.reader) {
+      // a reader of the shared group: leaves by its own token; the last one out closes the group
+      if (Date.now() - t0 > 1500) log(`[lock ${r}] joined the shared group after ${Math.round((Date.now() - t0) / 1000)} s`);
+      let done = false;
+      keepAwake(r, res.holder); // the group's assertion, replaced at each join (its expiresAt grows)
+      const token = res.reader.token;
+      const rel = () => {
+        if (done) return; done = true;
+        // synchronous best effort (also used from the 'exit' handler); a reader the guard could not reach is pruned later
+        const out = withGuardSync(r, () => removeReader(r, token));
+        if (out?.closed) stopAwake(r, out.group.token);
+      };
+      if (kind === 'process') {
+        process.on('exit', rel);
+        for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { rel(); process.exit(130); });
+      }
+      return { holder: res.holder, reader: res.reader, release: rel, mode: 'shared', env: { FW_LOCK_SHARED: sharedEnv(r, token, sharedHeld) } };
+    }
     if (res.ok) {
       if (Date.now() - t0 > 1500) log(`[lock ${r}] acquired after ${Math.round((Date.now() - t0) / 1000)} s`);
       let done = false;
@@ -470,13 +737,14 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
         // process.exit() and skipped later 'exit' listeners such as lib/cdp.mjs killOnExit (incident I-008).
         for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { rel(); process.exit(130); });
       }
-      return { holder: res.holder, release: rel };
+      return { holder: res.holder, release: rel, mode: res.mode, env: { FW_LOCK_HELD: heldEnv(r, res.holder.token, held) } };
     }
     // no holder but not our turn: the lock is being handed over to the waiter served next
     const h = res.holder, handover = `free, handing over to "${res.next}"`;
-    if (Date.now() - t0 > timeoutSec * 1000) { await dequeue(r, owner); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s; ${h ? `held by ${h.owner}` : handover}`); }
+    if (Date.now() - t0 > timeoutSec * 1000) { await dequeue(r, owner, myEntry); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s; ${h ? `held by ${h.owner}` : handover}`); }
     if (Date.now() - lastLog > 30000) {
-      log(`[lock ${r}] busy: ${h ? `held by "${h.owner}" (${h.kind}${h.pid ? ' pid ' + h.pid : ''}, since ${h.acquiredAt}${h.expiresAt ? ', expires ' + h.expiresAt : ''})` : handover}; you are #${res.position} in queue`);
+      const held = h ? (isGroup(h) ? `shared by ${readerList(h)}` : `held by "${h.owner}" (${h.kind}${h.pid ? ' pid ' + h.pid : ''}, since ${h.acquiredAt}${h.expiresAt ? ', expires ' + h.expiresAt : ''})`) : handover;
+      log(`[lock ${r}] busy: ${held}${res.why ? ` (${res.why})` : ''}; you are #${res.position} in queue`);
       lastLog = Date.now();
     }
     // the waiter served next polls fast (I-020): a hand-over no longer waits out its backoff

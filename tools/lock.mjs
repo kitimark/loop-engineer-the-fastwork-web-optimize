@@ -94,8 +94,24 @@
 // counts in the short job's own env: its process decides its grant. `acquire` samples one 10 s window when it is its turn, so a
 // single acquire may take ~10 s; BUSY then says "host not quiet". `status` samples the host for 3 s and
 // prints a host line with the gate state (--no-host skips it).
+//
+// Shared lane (ts-lock-share, research/architecture/lock-shared-lane.md): jobs that only confirm functionality (npm test,
+// headless checks, DOM probes, bench mech, a Simulator mechanism session) run in parallel with each other, never beside
+// an exclusive (timing) hold:
+//   node tools/lock.mjs run chrome-measure --shared --max-seconds 300 --weight npm-test --owner <you> -- npm test
+//   node tools/lock.mjs acquire chrome-measure --shared --max-seconds 240 --owner <you> --wait 1800   # a lease reader
+//   node tools/lock.mjs release chrome-measure --shared --owner <you>
+//   node tools/lock.mjs shared on|off chrome-measure --by lead --reason "<why>" [--cap N]          # the lead's switch
+// --max-seconds N (1..300) is required; --weight is 1..4 or a job name (check, probe, bench-mech, test-chrome-fn 1;
+// npm-test 2; simulator 3); the readers' weights fit cap 4 (or the switch's --cap). A reader joins the running group
+// while it fits, load1 <= the cpu count and no exclusive waiter is queued (writer preference; readers queued before the
+// group opened may still join for 30 s). `run --shared` kills its command at --max-seconds like --short (exit 124) and
+// gives it FW_LOCK_SHARED=<resource>:<reader token>: a nested shared run re-enters that slot, a nested exclusive one
+// (verify.mjs, fix.mjs ab, bench gain, a normal or --short run) is refused at once. Timing tools refuse --shared.
+// The lane is OFF unless the lead switched it on; while off, --shared runs as an exclusive --short job (same
+// --max-seconds; a notice on stderr). `status` shows the group, its readers and the switch.
 import { spawn, execFileSync } from 'node:child_process';
-import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile } from './lib/lock.mjs';
+import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedSwitch, setSharedSwitch, isGroup } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
 import { appendFileSync } from 'node:fs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
@@ -108,27 +124,42 @@ const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const rest = dd >= 0 ? argv.slice(dd + 1) : [];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
-const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for'];
-const [cmd, resource] = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
+const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for', '--weight', '--cap'];
+const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
+// `shared on|off <resource>` has one more word
+const [cmd, resource] = pos[0] === 'shared' ? [pos[0], pos[2]] : pos;
 const owner = opt('owner', process.env.FW_LOCK_OWNER);
 const short = flag('short');
 const noTiming = flag('no-timing'); // ts-lock-bundle: a normal run that measures nothing (builds, CPU work): no host gate, never hosts a timing run
-const maxSec = short ? Number(opt('max-seconds', 120)) : undefined;
-const sh = (w) => (w.short ? ` (short, max ${w.maxSec} s)` : w.noTiming ? ' (no-timing)' : '');
+const shared = flag('shared') && cmd !== 'shared';
+const maxSec = short ? Number(opt('max-seconds', 120)) : shared ? Number(opt('max-seconds')) : undefined;
+const weightOpt = opt('weight', '1');
+const weight = /^\d+$/.test(weightOpt) ? Number(weightOpt) : SHARED_LANE.weights[weightOpt] ?? NaN;
+const sh = (w) => (w.shared ? '' : w.short ? ` (short, max ${w.maxSec} s)` : w.noTiming ? ' (no-timing)' : '');
+const OFF_NOTICE = (r) => `[lock ${r}] the shared lane is off: running as an exclusive --short job (same --max-seconds); the lead switches it on (lock.mjs shared on ${r})`;
 const NORMAL_HOLD_SEC = 600; // a normal chrome-measure hold should end within ~10 min (I-020); `run --max-seconds` declares another length
 // a normal hold that declared its length (`run --max-seconds`, I-020) and passed it
 const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > Date.parse(h.acquiredAt) + h.meta.expectSec * 1000 ? ` OVERDUE (past its ${h.meta.expectSec} s; split long measurements into holds of 5-10 min, I-020)` : '');
 
 function fmt(s) {
-  const h = s.holder;
+  const h = s.holder, pad = ' '.repeat(16);
   let line = `${s.resource.padEnd(15)} `;
   if (!h) line += s.next ? `free, handing over to "${s.next}"` : 'free';
-  else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}\n${' '.repeat(16)}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + ' '.repeat(16) + JSON.stringify(h.meta) : ''}`;
-  if (s.queue.length) line += `\n${' '.repeat(16)}queue: ${fmtQueue(s.queue)}`;
+  else if (isGroup(h) && Array.isArray(h.readers)) {
+    // a shared group (ts-lock-share): its readers hold it together
+    const used = h.readers.reduce((a, x) => a + (x.weight || 1), 0), n = h.readers.length;
+    const writer = s.queue.find((w) => !w.shared);
+    line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}shared by ${n} reader${n === 1 ? '' : 's'} (weight ${used}/${sharedSwitch(s.resource).cap})${writer ? `, joins closed: "${writer.owner}" waits for an exclusive hold` : ''} since ${h.acquiredAt} until ${h.expiresAt}`;
+    for (const x of h.readers) line += `\n${pad}reader ${x.owner} (w${x.weight}, ${x.kind === 'process' ? `pid ${x.pid}` : 'lease'}, until ${x.deadline}) checkout ${x.checkout}${x.meta && Object.keys(x.meta).length ? ' ' + JSON.stringify(x.meta) : ''}`;
+    if (h.format !== 'rw1') line += `\n${pad}format "${h.format}": unknown to this lock code (it waits as for an exclusive holder)`;
+  }
+  else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}\n${pad}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + pad + JSON.stringify(h.meta) : ''}`;
+  if (s.queue.length) line += `\n${pad}queue: ${fmtQueue(s.queue)}`;
+  if (GATED[s.resource]) { const sw = sharedSwitch(s.resource); line += `\n${pad}shared lane: ${sw.enabled ? `on (cap ${sw.cap})` : 'off'}`; }
   return line;
 }
 const moved = (w) => (w.movedBy ? `, moved by ${w.movedBy}` : '');
-const fmtQueue = (q) => q.map((w, i) => `${i + 1}. ${w.owner}${w.short ? ` (short, max ${w.maxSec} s, since ${w.since}${moved(w)})` : ` (${w.noTiming ? 'no-timing, ' : ''}since ${w.since}${moved(w)})`}`).join(', ');
+const fmtQueue = (q) => q.map((w, i) => `${i + 1}. ${w.owner}${w.shared ? ` (shared w${w.weight}, max ${w.maxSec} s, since ${w.since}${moved(w)})` : w.short ? ` (short, max ${w.maxSec} s, since ${w.since}${moved(w)})` : ` (${w.noTiming ? 'no-timing, ' : ''}since ${w.since}${moved(w)})`}`).join(', ');
 
 /** host: load1 30.4 | cpu 68 % busy (sys 33 %) over 3 s | mem pressure warn | gate CLOSED (...) since ... */
 function hostLine(host, list) {
@@ -158,7 +189,7 @@ async function main() {
   if (cmd === 'status') {
     const list = resource ? [status(resource)] : allStatus();
     const host = flag('no-host') ? null : await sample({ windowSec: 3 });
-    if (flag('json')) { console.log(JSON.stringify(host ? list.map((s) => (GATED[s.resource] ? { ...s, host } : s)) : list, null, 1)); return 0; }
+    if (flag('json')) { console.log(JSON.stringify(list.map((s) => (GATED[s.resource] ? { ...s, ...(host ? { host } : {}), sharedLane: sharedSwitch(s.resource) } : s)), null, 1)); return 0; }
     for (const s of list) console.log(fmt(s));
     if (host) console.log(hostLine(host, list));
     return 0;
@@ -197,8 +228,23 @@ async function main() {
     for (const p of d.problems) console.log(fmtProblem(p, true));
     return 0;
   }
+  if (cmd === 'shared') {
+    // the lead's switch for the shared lane (audited in locks/audit.log)
+    const onOff = pos[1];
+    if (!['on', 'off'].includes(onOff) || !resource) throw new Error('usage: node tools/lock.mjs shared on|off <resource> --by lead --reason "<why>" [--cap N]');
+    const sw = await setSharedSwitch(resource, { on: onOff === 'on', by: opt('by'), reason: opt('reason'), cap: opt('cap') === undefined ? undefined : Number(opt('cap')) });
+    console.log(`SHARED LANE ${resource}: ${sw.enabled ? `on (cap ${sw.cap})` : 'off'}, by "${opt('by')}", logged to ${auditFile()}${sw.enabled ? '' : ' (readers already in a group finish; new --shared jobs run as exclusive --short jobs)'}`);
+    return 0;
+  }
   if (!resource) throw new Error(`usage: node tools/lock.mjs ${cmd} <resource> --owner <name>`);
   if (cmd === 'wait') return waitCmd();
+  if (shared) {
+    if (!['acquire', 'run', 'release', 'dequeue'].includes(cmd)) throw new Error(`--shared is for run, acquire, release and dequeue (not ${cmd})`);
+    if (short) throw new Error('--shared and --short do not combine: a shared job is bounded by its --max-seconds already');
+    if (noTiming) throw new Error('--shared and --no-timing do not combine: a shared job is a bounded functional reader already; a build that needs the Mac alone is --no-timing');
+    if (cmd !== 'release' && cmd !== 'dequeue' && opt('max-seconds') === undefined) throw new Error(`--shared needs --max-seconds N (1..${SHARED_LANE.maxSec}): a shared job is bounded`);
+    if (cmd !== 'release' && cmd !== 'dequeue' && Number.isNaN(weight)) throw new Error(`--weight must be 1..${SHARED_LANE.cap} or a job name (${Object.entries(SHARED_LANE.weights).map(([k, v]) => `${k} ${v}`).join(', ')}), got "${weightOpt}"`);
+  }
   if (!owner && cmd !== 'release') throw new Error('--owner <name> is required (use your fix topic)');
   if (noTiming && cmd !== 'run') throw new Error('--no-timing is for lock.mjs run (a normal hold that measures nothing: builds, CPU work)');
   const meta = {};
@@ -208,55 +254,78 @@ async function main() {
     const ttlSec = Number(opt('ttl', resource === 'iphone' ? 900 : 0)) || undefined;
     const waitSec = Number(opt('wait', 0));
     // gated resource, normal lease: pass the latest host reading; when it is our turn, measure one window and retry
-    let host = GATED[resource] && !short ? { quiet: null, reasons: ['not measured yet'] } : undefined;
+    let host = GATED[resource] && !short && !shared ? { quiet: null, reasons: ['not measured yet'] } : undefined;
+    const sx = shared ? { shared, weight } : {};
     const attempt = async () => {
-      let r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host });
-      if (r.gated) { host = await gateSample(); r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host }); }
+      let r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host, ...sx });
+      if (r.gated) { host = await gateSample(); r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host, ...sx }); }
       else if (host) host = { quiet: null, reasons: ['not measured yet'] };
       if (!r.ok && (!r.gated || host?.quiet === false)) keepAwakeQueued(resource); // queued behind someone or held at the host gate (also a BUSY exit 3 that comes back later): keep the Mac awake (I-026 reopened, ts-lock-bundle (a))
       return r;
     };
     let res = await attempt();
     const t0 = Date.now();
-    let pause = short ? 1000 : 5000;
+    let pause = short || shared ? 1000 : 5000;
     while (!res.ok && (Date.now() - t0) / 1000 < waitSec) {
       // the waiter served next polls fast (I-020); others back off to 15 s, well inside the 30 s a waiter may go unseen before a hand-over skips it
       if (!res.gated) await new Promise((r) => setTimeout(r, Math.min(res.next === owner ? NEXT_POLL_MS : pause, waitSec * 1000 - (Date.now() - t0) + 10)));
-      pause = Math.min(short ? 3000 : 15000, pause * 1.5);
+      pause = Math.min(short || shared ? 3000 : 15000, pause * 1.5);
       res = await attempt();
     }
     if (res.ok && !res.inherited) keepAwake(resource, res.holder); // a lease keeps the Mac awake until it expires (I-026)
+    if (res.ok && res.reader) {
+      const x = res.reader;
+      console.log(`ACQUIRED ${resource} for "${owner}" (shared, weight ${x.weight}, max ${x.maxSec} s) until ${x.deadline}${res.reentrant ? ' (already held: the same reader)' : ''}; leave with: node tools/lock.mjs release ${resource} --shared --owner ${owner}`);
+      console.log(JSON.stringify(x, null, 1));
+      return 0;
+    }
+    if (res.ok && shared && res.mode === 'short') console.error(OFF_NOTICE(resource));
     if (res.ok) { console.log(`ACQUIRED ${resource} for "${owner}"${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}${res.reentrant ? ' (renewed)' : ''}${sh(res.holder)}${res.holder.gateTimeout ? ' after a host-gate TIMEOUT: the host was not quiet, measurements in this hold are contaminated' : ''}`); console.log(JSON.stringify(res.holder, null, 1)); return 0; }
-    const who = res.holder ? `held by "${res.holder.owner}" since ${res.holder.acquiredAt}${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}`
+    const hh = res.holder;
+    const who = hh ? (isGroup(hh) ? `shared by ${(hh.readers || []).map((x) => `"${x.owner}"`).join(', ')} until ${hh.expiresAt}` : `held by "${hh.owner}" since ${hh.acquiredAt}${hh.expiresAt ? ' until ' + hh.expiresAt : ''}`)
       : res.gated ? `free, but the host is not quiet (${res.gate.reasons.join(', ')}; waiting since ${res.gate.since}, granted anyway after ${THRESHOLDS.gateMaxWaitSec} s)` : `free, but "${res.next}" is next`;
-    console.log(`BUSY ${resource}: ${who}. You ("${owner}") are #${res.position} in the queue; run acquire again within 10 min to keep your place (a hand-over serves waiters that keep polling, e.g. with --wait; one not seen for 30 s is skipped but keeps its place).`);
+    console.log(`BUSY ${resource}: ${who}${res.why ? ` (${res.why})` : ''}. You ("${owner}") are #${res.position} in the queue; run acquire again within ${shared ? '60 s' : '10 min'} to keep your place (a hand-over serves waiters that keep polling, e.g. with --wait; one not seen for 30 s is skipped but keeps its place).`);
     return 3;
   }
   if (cmd === 'renew') { const h = await renew(resource, { owner, ttlSec: Number(opt('ttl', 900)) }); keepAwake(resource, h); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }
   if (cmd === 'release') {
-    const h = await release(resource, { owner, force: flag('force') });
+    const h = await release(resource, { owner, force: flag('force'), shared });
+    if (h?.sharedReader) { console.log(`RELEASED ${resource} (shared reader "${h.owner}"${h.closed ? '; the group closed' : ''})`); return 0; }
     if (h) stopAwake(resource, h.token);
     console.log(h ? `RELEASED ${resource} (was "${h.owner}"${staleReason(h) ? ', stale' : ''})` : `${resource} was not held`);
     return 0;
   }
-  if (cmd === 'dequeue') { const q = await dequeue(resource, owner); console.log(`left the ${resource} queue; ${q.length} waiting`); return 0; }
+  if (cmd === 'dequeue') {
+    // --shared: only the owner's lease-reader entries; without it: only its exclusive entries (B3: a process reader's
+    // entry belongs to its process, which drops it when it stops waiting)
+    const q = await dequeue(resource, owner, shared ? (w) => !!w.shared && w.kind !== 'process' : (w) => !w.shared);
+    console.log(`left the ${resource} queue; ${q.length} waiting`);
+    return 0;
+  }
   if (cmd === 'run') {
     if (!rest.length) throw new Error('usage: node tools/lock.mjs run <resource> --owner X -- <cmd> [args]');
     // a normal hold declares its length (I-020): --max-seconds, default NORMAL_HOLD_SEC on chrome-measure; past it the
     // command keeps running (a measurement is never killed), but it warns and `status` shows the hold OVERDUE
-    const expectSec = !short && (opt('max-seconds') !== undefined || LEASE_POLICY[resource]) ? Number(opt('max-seconds', NORMAL_HOLD_SEC)) : undefined;
+    const expectSec = !short && !shared && (opt('max-seconds') !== undefined || LEASE_POLICY[resource]) ? Number(opt('max-seconds', NORMAL_HOLD_SEC)) : undefined;
     if (expectSec !== undefined) { if (!(expectSec > 0)) throw new Error(`--max-seconds must be a number of seconds > 0 (got ${opt('max-seconds')})`); meta.expectSec = expectSec; }
-    const { release: rel, holder, reentrant } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, timeoutSec: Number(opt('timeout', 3600)) });
+    const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, ...(shared ? { shared, weight } : {}), timeoutSec: Number(opt('timeout', 3600)) });
+    if (shared && mode === 'short') console.error(OFF_NOTICE(resource));
+    // a shared run (or its off-mode stand-in, an exclusive short) is bounded like a short one: killed at --max-seconds
+    const bounded = short || shared;
+    // what the command needs to re-enter this hold: a reader's FW_LOCK_SHARED (never FW_LOCK_HELD, B1), an exclusive
+    // hold's FW_LOCK_HELD (acquire() returns it, also for a re-entered hold or slot)
+    const childEnv = lockEnv;
     // T8+ (I-033): a chrome-measure hold records the display / wake state and whether a display-sleep-preventing assertion
     // was active at its start and end (one JSON line per hold in locks/holds.log); a hold without one, or one in
-    // which the display or wake state changed, warns on stderr (U1: display on ~76 fps vs DarkWake ~93 fps)
-    const powerStart = GATED[resource] && !reentrant && !noTiming ? await hostPower() : null; // a no-timing hold measures nothing: no display / wake record
+    // which the display or wake state changed, warns on stderr (U1: display on ~76 fps vs DarkWake ~93 fps).
+    // A no-timing hold and a shared reader measure nothing: no display / wake record
+    const powerStart = GATED[resource] && !reentrant && !noTiming && mode !== 'shared' ? await hostPower() : null;
     if (powerStart && powerStart.displaySleepPrevented === false) console.error(`[lock ${resource}] no display-sleep assertion is active (pmset -g assertions: PreventUserIdleDisplaySleep 0): the display may sleep during this hold and change what it measures (T8+, I-033)`);
     // review-host-state N1: an assertion (caffeinate -d) keeps a lit display lit, it does not light a dark one or end DarkWake
     if (powerStart && (powerStart.display === 'off' || powerStart.fullWake === false)) console.error(`[lock ${resource}] the host is not awake at the start of this hold (${[powerStart.display === 'off' ? 'display off' : null, powerStart.fullWake === false ? 'DarkWake' : null].filter(Boolean).join(', ')}): a display-sleep assertion does not wake it; what this hold measures may not compare with an awake host (T8+, I-033)`);
     // a short job runs in its own process group, so reaching --max-seconds stops the whole tree (npm test -> node --test -> ...);
     // FW_LOCK_HELD: the command's own verify.mjs / fix.mjs ab / nested run re-enter this hold instead of queueing behind it
-    const child = spawn(rest[0], rest.slice(1), { stdio: 'inherit', detached: short, env: { ...process.env, FW_LOCK_HELD: heldEnv(resource, holder.token) } });
+    const child = spawn(rest[0], rest.slice(1), { stdio: 'inherit', detached: bounded, env: { ...process.env, ...childEnv } });
     // I-024: a short job's tree can leave the command's group (a nested `run --short` detaches its own
     // command), and orphans lose their parent link once the command exits. So every kill also signals each
     // descendant seen so far (pid + its group, re-checked by pgid against pid reuse), not only the group.
@@ -272,16 +341,19 @@ async function main() {
         try { process.kill(p, sig); } catch {}
       }
     };
-    const kill = (sig) => { try { if (short) killTree(sig); else child.kill(sig); } catch {} };
+    const kill = (sig) => { try { if (bounded) killTree(sig); else child.kill(sig); } catch {} };
     // acquire() releases the lock and exits on these signals; stop the command first, or it would keep
     // running (e.g. a throttled measurement) after the lock was handed to the next waiter.
     // a short job then gets SIGKILL too: acquire()'s handler releases the lock and exits right after this
-    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); if (short) kill('SIGKILL'); });
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); if (bounded) kill('SIGKILL'); });
     // wall-clock deadlines checked every second (I-026): a timer's clock stalls while the Mac sleeps
-    // (Maintenance Sleep / DarkWake), so after a wake the cap is enforced at once, not minutes later
+    // (Maintenance Sleep / DarkWake), so after a wake the cap is enforced at once, not minutes later.
+    // A reader counts from its own acquiredAt: its SIGKILL (deadline + 3 s) lands inside its recorded deadline
+    // (+ killGraceSec 5 s), which the group's expiresAt exceeds by 10 s, so old lock code never clears the group
+    // while this command can still run
     let overran = false;
-    const deadline = Date.now() + (maxSec || 0) * 1000;
-    const timer = short && setInterval(() => {
+    const deadline = (mode === 'shared' ? Date.parse(reader.acquiredAt) : Date.now()) + (maxSec || 0) * 1000;
+    const timer = bounded && setInterval(() => {
       const now = Date.now();
       if (!overran && now >= deadline) {
         overran = true;
@@ -297,7 +369,7 @@ async function main() {
     if (powerStart) {
       const powerEnd = await hostPower();
       const hs = hostStateSummary([{ label: owner, run: 0, power: { start: powerStart, end: powerEnd } }]);
-      try { appendFileSync(holdsLogFile(), JSON.stringify({ at: new Date().toISOString(), resource, owner, short: !!short, acquiredAt: holder.acquiredAt, code, start: powerStart, end: powerEnd, tag: hs.tag }) + '\n'); } catch {}
+      try { appendFileSync(holdsLogFile(), JSON.stringify({ at: new Date().toISOString(), resource, owner, short: !!short || mode === 'short', mode, acquiredAt: holder.acquiredAt, code, start: powerStart, end: powerEnd, tag: hs.tag }) + '\n'); } catch {}
       if (hs.tag) console.error(`[lock ${resource}] ${hs.tag} during this hold: ${hs.reasons.join('; ')} (T8+, I-033)`);
     }
     rel();

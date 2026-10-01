@@ -11,7 +11,8 @@ import { makeFixtureHome } from '../fixtures/baseline.mjs';
 
 const { launchChrome, CDP, gotoAndSettle } = await import('../../tools/lib/cdp.mjs');
 // the chrome-measure queue wait gets its own budget, not the per-test timeout (incident I-022)
-const lock = chromeLock(`test-chrome-shim-${process.pid}`, { cmd: 'vendor-shim test' });
+// functional (what the shim serves, no timing): a reader of the shared lane (ts-lock-share; npm run test:chrome:fn)
+const lock = chromeLock(`test-chrome-shim-${process.pid}`, { cmd: 'vendor-shim test' }, { shared: true, weight: 1, maxSec: 300 });
 before(() => lock.acquire(), { timeout: Infinity });
 let fx, d, ch, cdp;
 before(async () => {

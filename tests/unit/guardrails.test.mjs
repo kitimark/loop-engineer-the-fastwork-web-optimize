@@ -30,6 +30,9 @@ test('package.json has the test scripts and the hook setup', () => {
   assert.match(s['test:chrome'], /tests\/chrome/);
   // one short-lane hold for the whole run: the files re-enter it, no queue wait inside test timeouts (I-022)
   assert.match(s['test:chrome'], /^node tools\/lock\.mjs run chrome-measure --short --max-seconds 300 --owner test-chrome -- node --test /);
+  // ts-lock-share: the functional chrome files alone, as one reader of the shared lane; never a timing file
+  assert.match(s['test:chrome:fn'], /^node tools\/lock\.mjs run chrome-measure --shared --max-seconds 300 --weight test-chrome-fn --owner test-chrome-fn -- node --test /);
+  assert.doesNotMatch(s['test:chrome:fn'], /verify\.chrome|fix-ab\.chrome|host-real\.chrome|tests\/chrome\/\*/);
   assert.match(s.test, /--test-concurrency=3/, 'postmortem 2026-09-30 fix (b)');
   assert.equal(s['test:bench'], 'node tools/bench.mjs reconfirm', 'lead decision Q4: Tier A on everything landed');
   assert.match(s['test:all'], /npm test && npm run test:chrome/);

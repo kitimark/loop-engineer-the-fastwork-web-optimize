@@ -111,6 +111,8 @@ const ROOT = REPO;
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
+// ts-lock-share: verify.mjs measures timing and holds chrome-measure exclusively; only functional jobs share it
+if (flag('shared')) { console.error('verify.mjs is a timing measurement and never runs in the shared lane (--shared): it takes an exclusive chrome-measure hold (inside a shared hold it is refused)'); process.exit(2); }
 const targets = argv.filter((a) => /^[\w-]+=https?:\/\//.test(a)).map((a) => { const i = a.indexOf('='); return { label: a.slice(0, i), url: a.slice(i + 1) }; });
 if (!targets.length) { console.error('usage: node tools/verify.mjs live=https://fastwork.com/ local=http://localhost:5173/ [--viewport both] [--runs 3]'); process.exit(2); }
 const CPU = Number(opt('cpu', 4));
