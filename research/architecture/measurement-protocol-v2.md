@@ -162,8 +162,10 @@ Every metric names what it can't see in the README that quotes it.
 ### 3.4 Position
 
 - Per frame: yStart, yEnd (scrollY before and after), innerHeight, m.
-- **Crossing coordinates:** for each code threshold i, y_i = elementTop_i − f_i·vh. A frame is placed by its
-  nearest crossing and Δ to it. Chrome and phone are compared by crossing, never by raw y (L10).
+- **Crossing coordinates:** for each code threshold i, y_i = elementTop_i − f_i·V_i, where V_i is the threshold's
+  own base: the frame's innerHeight for IO rootMargins and JS reads; lvh/svh/dvh for CSS vh-based ranges and
+  offsets (phone lvh = 815, svh = 775). elementTop_i comes from the same run (layout above it moves). A frame is
+  placed by its nearest crossing (Δ = 0 inside [yStart, yEnd], else the signed distance to the nearer end). Chrome and phone are compared by crossing, never by raw y (L10).
 - Chrome attribution probes run at the phone geometry; gain A/Bs stay at 932 (the calibrated setting).
 - Position bins for the census diff: the topic window, plus fixed bins of 250 px over the whole pass.
 
@@ -233,8 +235,11 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
 - 2 arms: **C V V C C V V C** (4 vs 4). 3 arms: a 3×3 rotated Latin square (C A B / A B C / B C A), n=3 per arm.
 - **Sequential decision, max 2 blocks** (a third only by the lead):
   - after block 1 (4v4): **stop, win** if U=0 (exact one-sided p = 1/70 ≈ 0.014) and the Hodges-Lehmann shift ≥
-    max(1 tick, half the predicted delta); **stop, futile** if the variant median is not better than the
-    control's; otherwise run block 2.
+    max(1 tick, half the predicted delta); **stop, futile** if the variant median is worse than the
+    control's, or the medians are equal (in ticks) and HL ≤ 0; otherwise run block 2. 3-arm blocks (3v3, minimum
+    p = 1/20) can't win in block 1 and always go to block 2 unless futile.
+  - block-2 test: exact van Elteren permutation (within-block splits), shift = stratified HL; the aligned 8v8
+    (each run minus its block's control median) is reported as a diagnostic.
   - after block 2: pool n=8 per arm **stratified by block** (each run as its difference from its own block's
     control median, or van Elteren). Win if the stratified one-sided p ≤ 0.05 and the shift ≥ 1 tick.
   - 3-arm blocks pooled over 2 blocks give n=6 per arm (hero's n≥6), same stratified rule.
