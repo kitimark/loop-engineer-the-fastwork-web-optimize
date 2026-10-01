@@ -494,6 +494,13 @@ The section's only containment is lifted while the rotator runs.
   weakened and W2 or W3 (something in the tick itself marks above the carousel) gains.
 - The element identity rests on size only. The decisive check: the element at the quad's position in phone
   geometry. The cause of the load-time Layout is UNRESOLVED.
+- **Identity check done (fix-scroll-engine `who.mjs`, Chrome DOM read, layout-containment README 0fd8fe2).**
+  - `.is-carousel` is the only 104×32 element. It sits at doc (58.3, 2023.9), which matches the phone quad once
+    the toolbar offset is allowed for.
+  - So the phone's WebKit already uses the carousel as a layout root. **W1 is out.** The tick's whole-view
+    Layout comes from W2 or W3: the tick's renderer insert/remove, the exit width steps, or a pending full layout.
+  - Correction to the step-0 note: the 398×52 subtree root is the fixed `.start-selling-top-nav` at (16, 16), not
+    a countdown strip.
 
 **Verdict (§2.3 form):**
 - **Dirtier: LOCATED.** Code, cadence and Timeline agree in 3/3 captures and 47/47 layouts ≥10 ms. NAMED needs
@@ -580,6 +587,14 @@ The Chrome ST-4 build check (fix-scroll-engine, 12:24Z) is valid as a build chec
 `st4-strict` included. That is **not** evidence for WebKit's root and does not change A2's prediction.
 
 ### 7.7 Pre-registered decision table for the merged block P14 (before data)
+
+**Superseded for V1 (re-registered at 15:3xZ, layout-containment README 0fd8fe2, second reader mgmt-ops-5).** W1
+is out (§7.3, identity check), so the table's carousel row no longer applies.
+- V1 is now **st4-noswap**: no img insert or remove at either tick; `src` is updated in place.
+- V1 now tests the W2 insert/remove path directly.
+- The other rows keep this logic.
+- Image-load Layouts rooted at the carousel are excluded from every column.
+- fix-scroll-engine and de-pm-hero read the result together.
 
 **Block.** C aw1-10e, V1 st4-strict (`contain: strict` on `.is-carousel`), V2 re-contain (`contain: layout size`
 around #people). One uncounted st4-rotoff attribution run follows. The source is the same pin `a1fb7ce`.
