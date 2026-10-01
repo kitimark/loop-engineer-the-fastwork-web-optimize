@@ -574,6 +574,20 @@ Verdicts on P-019 (OBSERVED, n = 2 per arm):
   - aw1-10e has 1-2 frames over 34 ms and 3 over 30 ms in that window. These are reveal-end frames of 33-41 ms;
     the +700 frame sits at 34-35 ms, so the result is threshold-sensitive.
   - P-a (Layouts gone) and P-b (dt>34 median 0, non-overlap for "better") are reported separately.
+- **Step 0 (P-033, iPhone 15 Pro Max, 2026-10-01 14:47Z, 1 run per arm, untimed): PASS, the gain block goes
+  ahead.**
+  - **Setup:** each arm got a 20 s rest with the card at the viewport top, and a LayerTree read after
+    Timeline.stop.
+  - **Layers:** in both arms the card has its own composited layer, reason `willChange`, 430x1328, 15.9 MB.
+  - **Idle Paint over the card** (all Paint in the rest except clips inside `.start-selling-top-nav`; 19
+    rotator cycles = 38 TimerFires at L11571):
+    - re-keep: 4.89 ms per cycle (1205 Paints);
+    - re-keep-op: 4.77 ms per cycle (1203 Paints);
+    - delta −0.12 ms, under the pre-registered +1 ms.
+  - **Side observation, both arms alike, OBSERVED, not this fix's scope:**
+    - Every rotator tick costs a whole-view Layout of about 25-30 ms at rest (n 23-28; F-058, P14's question).
+    - About 750 small whole-view Layouts (about 0.75 ms each) are dirtied by a RecalculateStyles every frame.
+  - **Data:** iphone-runner `out/iphone-runner/s0-rk*.json`, `s0-rkop*.json`. Scoring: scratch `s0score.cjs`.
 - **Plan (lead):** the gain block is queued behind P10 and P5. Step 0 runs in any free phone gap. If P-a hits
   and P-b reads "within noise", re-keep-op becomes a bundle candidate for the next combined wave, not a
   standalone landing.
