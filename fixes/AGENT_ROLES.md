@@ -113,6 +113,21 @@ Sources: [sub-agents](https://code.claude.com/docs/en/sub-agents.md),
   subagent that ended `BLOCKED on I-004` continues where it stopped); a subagent the user stopped
   with `x` is not. An in-process teammate that is no longer running is brought back by a message.
   Messages from agents never count as the user's approval.
+- **Addresses and peer work (lead decision 2026-10-01 10:35Z, F-046).** In this setup a spawned agent
+  may have **no registered name**: a role name ("de-safari") resolves only if `ListAgents` shows it,
+  otherwise use the agent ID (`a…`). All four "No agent named X is reachable" failures on 2026-10-01
+  were such role names; tail latency (up to 26 min) came from recipients blocked in long foreground
+  commands. Rules:
+  1. **Every spawn prompt includes the peer directory** (name or ID, what each owns, alive or stopped;
+     the live copy is in `research/management/ops-handover.md` and F-046), so the agent can message peers
+     directly.
+  2. **Message the peer who owns the question directly**, not through the lead. mgmt-ops is the hub for
+     everything that is not a lead-only decision (queue and priority calls, routing results, rebase gos);
+     the lead only lands, resolves incidents, reorders locks, spawns and talks to the user.
+  3. **If a name fails, use the ID** from the directory or `ListAgents`; never drop the message.
+  4. **Long waits run in the background** (lock queues, holds, `incident.mjs wait`, phone recordings), so
+     messages reach the agent mid-wait. Send peers what they need before the final report, which goes
+     only to the spawner.
 - **Frontmatter keys** (only `name` and `description` are required; unknown keys are silently
   ignored): `tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `skills`, `mcpServers`,
   `hooks`, `memory`, `background`, `omitClaudeMd`, `effort`, `isolation`, `color`, `initialPrompt`,

@@ -3,7 +3,7 @@
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
 **mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **10:25Z**.
+snapshot), branch `mgmt-ops/docs-2`. Last update: **10:27Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +16,11 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:25Z**.
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **10:27Z** Lead: peer-to-peer mode, mgmt-ops = hub (F-046 directory above; AGENT_ROLES "Addresses and peer work").
+  noinert (fix-nav-morph 213ca19, y≈1960 inert fix) queued right after the morph driver round. y≈1250 frame candidate
+  = .commission scene gate flip (F-045) -> runner adds `data-start-selling-scene` + uncapped per-type counts to the logger;
+  fix-scroll-engine owns it if it confirms. /10d: no Chrome re-measure; phone check last, then reviewer (ask lead).
 
 - **10:25Z** mw10e-src NOT a winner; y≈1960 trigger = morph panel `inert` removal (F-044 corrects F-043; logger cap 12/frame).
   PROTOCOL V2 IN PROGRESS (arch-lead, research/architecture/measurement-protocol-v2.md; ops input sent: ablation labels
@@ -198,6 +203,24 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:25Z**.
 |---|---|---|---|
 | I-016 | parked | lead | e4 hooks via short lane (user), f orphans P3 |
 | – | all others resolved today (I-018, I-026 … I-031) | – | follow-ups are in the backlog line above |
+
+## Peer directory (F-046; keep current, send to every agent that joins)
+
+Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
+incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
+
+| address | owns | state (10:27Z) |
+|---|---|---|
+| `main` | lead: lands, resolves, reorders locks, spawns, user | alive |
+| `mgmt-ops-4` (ID a1176a675fec4336d) | ops hub, iPhone queue, DIRECTION, handover, land batches | alive |
+| `iphone-runner` (a7696771bf38f1229) | phone blocks, controls, logger | alive |
+| `fix-nav-morph` (a277ea00c8773c1ea) | morph (gh, ghbn, R8/R5, R2), y≈1960 inert fix (noinert), N12 | alive, holds rebase |
+| `fix-hero-exit` (a77e2ec753b6381fb) | hero window y 0-900: v2, h1, hero-B, people-o | stopped (wakes on message) |
+| fix-scroll-engine = ID `a1722cf5058e25591` | /10d, R2 bg-layers, R3a/b, y≈1250 scene gate candidate (F-045) | stopped (wakes on message) |
+| `ts-gesture` | WDA gesture tool (NEEDS-WORK; user setup pending) | alive |
+| arch-lead = `ae2d21af96d758d16` | measurement protocol v2 | alive |
+| arch-safari = `a765c480ea490a443`, de-safari = `a4ce1669dd33aa4dc` | Safari probing / iOS time model (read-only) | alive |
+| arch-devtools = `ad5593c3c7d3b8c97`, de-devtools = `a21e6c00411aba4d8` | Chrome DevTools method (read-only) | done |
 
 ## Who waits on what (08:55Z)
 
