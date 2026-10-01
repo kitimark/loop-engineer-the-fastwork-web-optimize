@@ -14,6 +14,8 @@
 //                                       first arrives (a re-mirror of the baseline in the middle of a run)
 //      FAKE_CHROME_TRACE=nocomplete,dataloss,bigchunk  Tracing.end: never send tracingComplete | report
 //                                       dataLossOccurred | add one chunk of BIG_CHUNK events
+//      FAKE_CHROME_PAINT=none          --paint-rects: LayerTree enabled, but no layerPainted events (I-032)
+//      FAKE_CHROME_PAINT=count         --paint-rects as Chrome 148+: no layerPainted; every list carries paintCount
 //      FAKE_CHROME_METRICS=step         Performance.getMetrics: all of verify's counters (+ Timestamp) grow by
 //                                       METRIC_STEP per read (I-018); default: the bench per-session six
 //      FAKE_CHROME_BENCH=1  tools/bench.mjs mode: on Page.navigate, fetch <origin>/bench-fake.json from the
@@ -52,6 +54,41 @@ export const METRIC_STEP = { ScriptDuration: 0.05, RecalcStyleDuration: 0.02, La
 let metricCalls = 0;
 import { TRACE_TS, TRACE_EVENTS, TRACE_SYNC, TRACE_WINDOW, BIG_CHUNK } from './trace-fixture.mjs'; // --trace-frames: rAF timestamps + a synthetic trace
 
+// ---- verify.mjs --paint-rects (I-032): LayerTree events + the per-frame binding --------------------------
+// Every recording phase gets t0 = 10000 * n (RESET n). When the binding recorder is armed, a phase's read-out
+// (COLLECT) first sends, as notifications, what the page would have sent during the phase: the layer list
+// back to PAINT_LAYERS, then frames at t0+5, +21.7 (one paint of L1), +61.7 (a 40 ms frame: a 5th layer
+// appears, L2 and L1 paint) and +78.4 with the logger already off (its paint L1 belongs to no phase).
+// FAKE_CHROME_PAINT=count (as Chrome 148+): the same paints raise per-layer paintCounts instead, and a layer list
+// with the counts follows each painting interval (the new L3 is listed with paintCount 1).
+export const PAINT_LAYERS = [{ layerId: 'L0', width: 1290, height: 2796, backendNodeId: 1, drawsContent: true }, { layerId: 'L1', width: 1290, height: 300, backendNodeId: 2, drawsContent: true },
+  { layerId: 'L2', width: 1290, height: 900, backendNodeId: 3, drawsContent: true }];
+export const PAINT_NODES = { 1: { nodeName: 'HTML', localName: 'html', attributes: [] }, 2: { nodeName: 'NAV', localName: 'nav', attributes: ['class', 'start-selling-top-nav svelte-abc12'] },
+  3: { nodeName: 'SECTION', localName: 'section', attributes: ['id', 'hero', 'class', 'hero svelte-x9 is-on'] } };
+const PAINT_BINDING = '__fwPaintFrame';
+let resets = 0, phaseT0 = 0, paintArmed = false, paintOn = false;
+const COUNT = process.env.FAKE_CHROME_PAINT === 'count';
+const paintCounts = { L0: 1, L1: 1, L2: 1 };
+const L3 = { layerId: 'L3', width: 600, height: 600, backendNodeId: 4, drawsContent: true };
+const layerList = (ls) => (COUNT ? ls.map((l) => ({ ...l, paintCount: paintCounts[l.layerId] ?? 1 })) : ls);
+function paintPhase(event) {
+  if (!paintArmed || !paintOn) return;
+  const t0 = phaseT0, f = (t, on) => event('Runtime.bindingCalled', { name: PAINT_BINDING, payload: JSON.stringify([t0 + t, on, t0]), executionContextId: 1 });
+  const paint = (id, width, height) => {
+    if (COUNT) paintCounts[id] = (paintCounts[id] ?? 1) + 1;
+    else if (process.env.FAKE_CHROME_PAINT !== 'none') event('LayerTree.layerPainted', { layerId: id, clip: { x: 0, y: 0, width, height } });
+  };
+  const list = (ls) => event('LayerTree.layerTreeDidChange', { layers: layerList(ls) });
+  delete paintCounts.L3; // L3 leaves the list at the phase start and comes back as a new layer
+  list(PAINT_LAYERS);
+  f(5, true); paint('L1', 1290, 300); if (COUNT) list(PAINT_LAYERS);
+  f(21.7, true);
+  if (!COUNT) list([...PAINT_LAYERS, L3]);
+  paint('L2', 1290, 900); paint('L1', 1290, 300); if (COUNT) list([...PAINT_LAYERS, L3]);
+  f(61.7, true); paint('L1', 1290, 300); if (COUNT) list([...PAINT_LAYERS, L3]);
+  f(78.4, false);
+}
+
 // ---- tools/bench.mjs mode (FAKE_CHROME_BENCH=1) ------------------------------------------------------
 const BENCH = process.env.FAKE_CHROME_BENCH === '1';
 const bench = new Map(); // sessionId -> {data, metrics}
@@ -82,15 +119,19 @@ function benchEvaluate(expr, sessionId) {
   return undefined;
 }
 
-function evaluate(expr) {
+function evaluate(expr, event) {
   if (expr.includes('kit: Object.keys(window)')) return { kit: ['__sveltekit_fake'], nav: 'start-selling-top-nav', hero: 'hero', h: 3000, shim: null, vendors: { gtag: 'undefined', amplitude: 'undefined', hj: 'undefined', dataLayer: 1 } };
-  if (expr.includes('window.__perf.frames.length=0')) { input = false; return true; }
+  if (expr.includes('window.__perf.frames.length=0')) { input = false; phaseT0 = 10000 * ++resets; return true; }
+  if (expr.includes('window.__fwPaintScale = devicePixelRatio')) return 2; // the host DSF before emulation (layer px = CSS px x 2)
+  if (expr.includes('if (window.__fwPaint) return false')) { paintArmed = paintOn = true; return true; }
+  if (expr.includes('const S = window.__fwPaint; if (S) S.on = false')) { const was = paintArmed; paintOn = false; return { armed: was, w: 430, h: 932, dpr: 3 }; }
   if (expr.includes("window.scrollBy({ top: 250, behavior: 'smooth' })") && expr.includes('still >= 4')) { input = true; return { ms: 5000, ticks: 16, y: 2068, h: 3000 }; }
   if (expr.includes("performance.mark('__fw_trace_sync')")) return TRACE_SYNC;
   if (expr.includes('window.__fwTrace; S.on = false')) return { ts: TRACE_TS, ...TRACE_WINDOW };
   if (expr.includes('p.on = false')) {
+    paintPhase(event);
     const fr = input ? FRAMES : IDLE_FRAMES;
-    const r = input ? { frames: FRAMES, loaf: LOAF, on: false } : { frames: IDLE_FRAMES, loaf: IDLE_LOAF, on: false };
+    const r = input ? { frames: FRAMES, loaf: LOAF, on: false, t0: phaseT0 } : { frames: IDLE_FRAMES, loaf: IDLE_LOAF, on: false, t0: phaseT0 };
     // frame log: t from 1000 ms on, scrollY 10 px per frame while scrolling (0 when idle)
     if (frameLog) { let t = 1000; r.log = fr.map((dt, i) => { t += dt; return [Math.round(t * 10) / 10, dt, input ? 10 * (i + 1) : 0]; }); }
     return expr.includes('o.scrollY = scrollY') ? { ...r, scrollY: input ? 2068 : 0 } : r;
@@ -134,6 +175,9 @@ function handle(msg, send) {
       metricCalls++;
       return reply({ metrics: [{ name: 'Timestamp', value: 1000 + metricCalls }, ...Object.entries(METRIC_STEP).map(([name, v]) => ({ name, value: Math.round(v * metricCalls * 1e6) / 1e6 }))] });
     }
+    case 'LayerTree.enable': reply({}); return event('LayerTree.layerTreeDidChange', { layers: layerList(PAINT_LAYERS) });
+    case 'LayerTree.compositingReasons': return reply({ compositingReasons: ['will-change'], compositingReasonIds: [`willChange:${params.layerId}`] });
+    case 'DOM.describeNode': return PAINT_NODES[params.backendNodeId] ? reply({ node: { backendNodeId: params.backendNodeId, ...PAINT_NODES[params.backendNodeId] } }) : send({ id, error: { code: -32000, message: 'No node found' }, ...(sessionId ? { sessionId } : {}) });
     case 'DOMDebugger.getEventListeners': return reply({ listeners: (bench.get(sessionId)?.data.listeners) || [] });
     case 'Tracing.start': reply({}); return event('Tracing.bufferUsage', { percentFull: 0.123, eventCount: 42 });
     case 'Tracing.end': {
@@ -150,7 +194,7 @@ function handle(msg, send) {
     }
     case 'Runtime.evaluate': {
       if (params.returnByValue === false) return reply({ result: { type: 'object', objectId: `obj${++n}` } });
-      const v = (BENCH ? benchEvaluate(params.expression, sessionId) : undefined) ?? evaluate(params.expression);
+      const v = (BENCH ? benchEvaluate(params.expression, sessionId) : undefined) ?? evaluate(params.expression, event);
       const wait = BENCH && params.expression.startsWith('window.__bench.quiesce(') ? bench.get(sessionId)?.data.quiesceMs : 0;
       if (wait) return void setTimeout(() => reply({ result: { type: typeof v, value: v } }), wait);
       return reply({ result: v === undefined ? { type: 'undefined' } : { type: typeof v, value: v } });

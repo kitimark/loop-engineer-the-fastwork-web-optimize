@@ -127,7 +127,9 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(aaRes.config.idle, 0);
   assert.deepEqual(Object.keys(aaRes.metrics), ['scroll', 'morph', 'trace'], '--trace-frames passed through: the trace rows (I-018)');
   assert.equal(aaRes.metrics.trace.styleMs.baseline.median, 21);
-  assert.deepEqual(Object.keys(aaRes.metrics.trace), ['frames', 'scriptMs', 'styleMs', 'layoutMs', 'paintMs', 'otherMs', 'offMainMs', 'gt34', 'gt50', 'styleElements']);
+  assert.deepEqual(Object.keys(aaRes.metrics.trace), ['frames', 'scriptMs', 'styleMs', 'layoutMs', 'paintMs', 'otherMs', 'offMainMs', 'gt34', 'gt50', 'styleElements',
+    'layerMs', 'paintEvents', 'droppedFrames', 'partialFrames']); // I-032: the layer sub-split, Paint events, the Frames track
+  assert.deepEqual([aaRes.metrics.trace.layerMs.baseline.median, aaRes.metrics.trace.droppedFrames.baseline.median, aaRes.metrics.trace.partialFrames.patched.median], [1, 1, 1]);
   assert.match(aaRes.markdown, /^\| trace: other \(compositor\/raster\/GPU\/vsync; GPU not separated\) ms in them \| 17 \[17-17\]/m);
   assert.equal(aaRes.config.measurement.traceFrames, true);
   // + the per-phase CDP Performance.getMetrics deltas (--cdp-metrics passed through, I-018)
@@ -153,12 +155,14 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   const deliverable = readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results.json'), 'utf8');
   // ... and the display slept between its arms (T8+, I-033): hostPower readings 1-2 recheck, 3-4 base run, 5-6 recheck,
   // 7-8 fix run; display off + DarkWake from reading 5 on
-  const tr = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '0', '--no-screens', '--trace-frames'], { cwd: repo.wt, env: { ...envB, FAKE_CHROME_LOG: join(repo.root, 'ab-trace.jsonl'), FAKE_HOST_DARKWAKE_AFTER: '4' } });
+  // (I-032: --trace-phases is a valued option passed through, not the topic)
+  const tr = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '0', '--no-screens', '--trace-frames', '--trace-phases', 'scroll,morph'], { cwd: repo.wt, env: { ...envB, FAKE_CHROME_LOG: join(repo.root, 'ab-trace.jsonl'), FAKE_HOST_DARKWAKE_AFTER: '4' } });
   assert.equal(tr.code, 0, tr.out);
   assert.equal(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results.json'), 'utf8'), deliverable, 'results.json untouched');
   const trRes = JSON.parse(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results-trace.json'), 'utf8'));
   assert.deepEqual(trRes.config.measurement.traceFrames, true);
-  assert.deepEqual(Object.keys(trRes.metrics), ['scroll', 'morph', 'trace']);
+  assert.deepEqual(Object.keys(trRes.metrics), ['scroll', 'morph', 'trace', 'traceMorph']);
+  assert.deepEqual(trRes.config.measurement.tracePhases, ['scroll', 'morph']);
   assert.match(tr.stdout, /^wrote fixes\/fast-nav\/results-trace\.json/m);
   assert.equal(trRes.host.hostState.tag, 'HOST-DISPLAY-CHANGED');
   assert.deepEqual(trRes.host.hostState.reasons, ['the arms differ: base display on, FullWake vs fix display off, DarkWake']);
@@ -167,6 +171,17 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.match(trRes.markdown, /^\| scroll: fps \| 50 \[50-50\] \| 50 \[50-50\] \| 0 \(0%\) \| HOST-DISPLAY-CHANGED: n=1/m);
   assert.match(trRes.markdown, /^\*\*HOST-DISPLAY-CHANGED: the display or wake state was not the same throughout \(the arms differ: base display on, FullWake vs fix display off, DarkWake\); verdicts not comparable\*\* \(host state: display on\/off, FullWake\/DarkWake, power AC, display-sleep assertion yes; research\/host-display-state\)$/m);
   assert.match(tr.stdout, /^\*\*HOST-DISPLAY-CHANGED: /m);
+
+  // a --paint-rects A/B (I-032): passed through, paint rows per phase, results-paint.json; results.json untouched
+  const pr = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens', '--paint-rects'], { cwd: repo.wt, env: { ...envB, FAKE_CHROME_LOG: join(repo.root, 'ab-paint.jsonl') } });
+  assert.equal(pr.code, 0, pr.out);
+  assert.equal(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results.json'), 'utf8'), deliverable, 'results.json untouched');
+  const prRes = JSON.parse(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results-paint.json'), 'utf8'));
+  assert.equal(prRes.config.measurement.paintRects, true);
+  assert.deepEqual(Object.keys(prRes.metrics), ['scroll', 'morph', 'idle', 'paintIdle', 'paintScroll', 'paintMorph']);
+  assert.deepEqual([prRes.metrics.paintScroll.mpx.baseline.median, prRes.metrics.paintScroll.layerMpx.baseline.median, prRes.metrics.paintScroll.layerChurn.patched.median, prRes.metrics.paintScroll.layersMax.patched.median], [1.9, 1.9, 1, 4]);
+  assert.match(prRes.markdown, /^paint-rects \(--paint-rects\): .*compare this A\/B's numbers only with other --paint-rects runs/m);
+  assert.match(pr.stdout, /^wrote fixes\/fast-nav\/results-paint\.json/m);
 });
 
 test('SIGTERM on ab: no server, verify.mjs or browser left running, lock released', async () => {

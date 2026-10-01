@@ -39,6 +39,31 @@
 //                     tools/frames.mjs (long-frame clusters by scroll position). Reads scrollY in the rAF
 //                     callback, which can force a style/layout if the page dirtied it: opt-in for that reason.
 //
+// Render-side signals (incident I-032, protocol v2 T6 + T7), all opt-in: without these flags a run sends exactly
+// the CDP commands it sent before (the golden sequence); with --trace-frames alone it differs from before I-032
+// only in one more trace category (disabled-by-default-devtools.timeline.frame, the Frames track).
+//   --trace-frames now also gives: presentation (DroppedFrame without / with hasPartialUpdate, BeginFrame, DrawFrame,
+//                     and rAF gap bands x presentation, lib/trace-frames.mjs), layerMs (Layerize / UpdateLayer(Tree) /
+//                     CompositeLayers / Commit: a sub-split of paintMs, which keeps its meaning) and Paint event counts.
+//   [--trace-phases idle,scroll,morph]  which phases --trace-frames traces, one trace each (default: scroll, as
+//                     before). Others: run.tracePhases.<phase>, run.traceIdleSummary / traceMorphSummary.
+//   [--save-trace]    with --trace-frames: write each trace as {traceEvents: [...]} to <out>/trace-<viewport>-<label>-
+//                     run<n>-<phase>.json (opens in the DevTools Performance panel), after the run's page is closed
+//                     (no timing effect); run.traceFiles.
+//   [--paint-rects]   CDP LayerTree in every phase (lib/paint-rects.mjs), per frame: paints, layer count, added /
+//                     removed layers; per layer: paint counts, node and compositing reasons of the top layers.
+//                     Source (paintRects.source): LayerTree.layerPainted where Chrome sends it (then mpx = sum of
+//                     dirty clips, never a union; never the trace Paint clip), else the layer lists' paintCount rises
+//                     (Chrome 148+ sends none, Chromium 1bf9d9eb378c: no clip area, mpx null). Both: layerMpx = full size of the
+//                     painted layers (upper bound) and layerVpMpx = the same capped to the viewport (position-free),
+//                     in layer px = CSS px x the host display's DSF, not the emulated DPR (the compositor keeps the
+//                     real DSF under emulation; paintRects.units, .layerScale). run.paintRects, run.paint<Phase>Summary. Adds main-thread
+//                     work (the layer list on every paint + a per-frame binding call): compare only with other
+//                     --paint-rects runs, never a gain A/B. No paint data at all is reported as such (status).
+//   longFrames        with --frame-log, --trace-frames or --paint-rects (the sources with frame timestamps):
+//                     run.longFrames.<phase> = every frame > 34 ms with ticks, scrollY (--frame-log only), trace class,
+//                     top LoAF script, paint area / top layer and layer delta (lib/frame-tags.mjs).
+//
 // Host state (incident I-017, postmortem 2026-09-30 (d); rules in tools/lib/host.mjs):
 //   [--max-wait 60] [--max-load 6] [--max-busy 25]
 // Before each run (each target of each run) verify waits, still holding the lock, until the host is
@@ -70,7 +95,7 @@
 // seed (U8). verify.json `host.hostState` (hostStateSummary): the distinct states over the runs and `tag`
 // HOST-DISPLAY-CHANGED when display or wake differ within a run, between runs or between targets; fix.mjs ab
 // prefixes its verdicts with it. `host.gate.sleptSec`: a host sleep in the lock's admission gate (a warning).
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, openSync, writeSync, closeSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
@@ -78,6 +103,8 @@ import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './li
 import { acquire } from './lib/lock.mjs';
 import { loggerSource, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
 import { TRACE_START, TRACE_ARM, TRACE_DISARM, BUCKETS, BUCKET_LABELS, attributeFrames } from './lib/trace-frames.mjs';
+import { PAINT_BINDING, PAINT_ARM, PAINT_DISARM, PAINT_LAYER_SCALE, PAINT_NOTE, streamItem, analyzePaints, topLayerIds, nodeLabel } from './lib/paint-rects.mjs';
+import { longFrameTags } from './lib/frame-tags.mjs';
 import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock, stubOutsideTest, procsSnapshot, topProcs, hostPower, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
 
 const ROOT = REPO;
@@ -106,6 +133,13 @@ const QUIET = { ...THRESHOLDS, quietMaxLoad1: num('max-load', THRESHOLDS.quietMa
 const WATCHDOG = num('watchdog', THRESHOLDS.watchdogStallSec);
 const CHROME_WARM = num('chrome-warm', THRESHOLDS.chromeWarmSec);
 const TRACE_TIMEOUT = num('trace-timeout', 180);
+// I-032 render-side signals (opt-in)
+const PAINT = flag('paint-rects'), SAVE_TRACE = flag('save-trace');
+const PHASES = ['idle', 'scroll', 'morph'];
+const TRACE_PHASES = String(opt('trace-phases', 'scroll')).split(',').map((x) => x.trim()).filter(Boolean);
+if (TRACE_PHASES.some((p) => !PHASES.includes(p)) || !TRACE_PHASES.length) { console.error(`--trace-phases: a comma list of ${PHASES.join(', ')} (got "${opt('trace-phases')}")`); process.exit(2); }
+if (!TRACE && (SAVE_TRACE || opt('trace-phases') !== undefined)) { console.error('--save-trace and --trace-phases need --trace-frames'); process.exit(2); }
+const traceOn = (ph) => TRACE && TRACE_PHASES.includes(ph);
 // Local targets serve the baseline: it must be the snapshot pinned by baseline.json, unchanged
 // (tools/lib/baseline.mjs; exit 3 otherwise). A live-only run just records it. Metadata only.
 // The check is repeated after every run (git status of the snapshot, between runs, no CDP): a run
@@ -324,10 +358,32 @@ function summarize(perf) {
 
 /** The numbers of a run's trace that fix.mjs ab compares (its "trace" rows); null when the trace failed. */
 function traceSummary(tf) {
-  const s = tf.summary;
+  const s = tf?.summary; // null: this phase was not traced (--trace-phases without scroll)
   if (!s) return null;
   return { frames: s.frames, ...Object.fromEntries(BUCKETS.map((k) => [k + 'Ms', s[k + 'Ms']])), gt34: s.gt34.frames, gt50: s.gt50.frames, styleElements: s.styleElements,
-    gt34ByClass: s.gt34.dominant, gt50ByClass: s.gt50.dominant, partial: s.partial };
+    gt34ByClass: s.gt34.dominant, gt50ByClass: s.gt50.dominant, partial: s.partial,
+    // I-032: the layer sub-split of paintMs (not an extra bucket), Paint events, the Frames track's DroppedFrame events
+    // over the phase window (droppedFrames: not presented; partialFrames: presented with a partial update)
+    layerMs: s.layerMs, paintEvents: s.paintEvents, droppedFrames: s.presentation?.dropped ?? null, partialFrames: s.presentation?.partial ?? null };
+}
+/** The numbers of a run's --paint-rects phase that fix.mjs ab compares (paint<Phase>Summary). */
+function paintSummary(s) {
+  if (!s) return null;
+  return { frames: s.frames, framesWithPaint: s.framesWithPaint, paints: s.paints, newLayerPaints: s.newLayerPaints, mpx: s.mpx, frameMpxMax: s.frameMpxMax, frameMpxP50: s.frameMpxP50,
+    layerMpx: s.layerMpx, frameLayerMpxMax: s.frameLayerMpxMax, frameLayerMpxP50: s.frameLayerMpxP50, layerVpMpx: s.layerVpMpx, frameLayerVpMpxMax: s.frameLayerVpMpxMax,
+    layersMax: s.layerCount?.max ?? null, layersAdded: s.layersAdded, layersRemoved: s.layersRemoved, layerChurn: s.layerChurn, layersPainted: s.layersPainted, layerTreeChanges: s.layerTreeChanges };
+}
+/** LoAF script key for long-frame tags: the topScripts key without the invoker part. */
+const loafScriptKey = (s) => `${stripOrigin(s.url)}:${s.pos} ${s.fn || ''}`.trim();
+/** --save-trace: one trace as {traceEvents, metadata} (the DevTools Performance panel's format), written in chunks. */
+function writeTrace(file, events, metadata) {
+  const fd = openSync(file, 'w');
+  try {
+    writeSync(fd, '{"traceEvents":[\n');
+    for (let i = 0; i < events.length; i += 5000) writeSync(fd, (i ? ',\n' : '') + events.slice(i, i + 5000).map((e) => JSON.stringify(e)).join(',\n'));
+    writeSync(fd, `\n],"metadata":${JSON.stringify(metadata)}}\n`);
+  } finally { closeSync(fd); }
+  return file;
 }
 const byClass = (d) => BUCKETS.filter((k) => d[k]).map((k) => `${k} ${d[k]}`).join(', ') || '-';
 
@@ -352,6 +408,8 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   await page.send('Network.enable');
   await page.send('Log.enable');
   await page.send('Network.setCacheDisabled', { cacheDisabled: false });
+  // --paint-rects: the compositor keeps the host's DSF under emulation, so read it before the override (layer px)
+  const layerScale = PAINT ? await page.eval(PAINT_LAYER_SCALE) : null;
   await page.send('Emulation.setDeviceMetricsOverride', vp);
   if (vp.mobile) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
@@ -371,6 +429,33 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
     vendors: { gtag: typeof gtag, amplitude: typeof amplitude, hj: typeof hj, dataLayer: (window.dataLayer||[]).length },
   })`);
 
+  // --paint-rects (I-032): LayerTree events + a per-frame binding call, armed before the throttle, read after the phases
+  let paintStream = null, offPaint = null;
+  if (PAINT) {
+    paintStream = [];
+    offPaint = page.on((m) => { const it = streamItem(m); if (it) paintStream.push(it); });
+    await page.send('Runtime.addBinding', { name: PAINT_BINDING });
+    await page.send('LayerTree.enable');
+    await page.eval(PAINT_ARM);
+  }
+  // --trace-frames: one trace per phase in --trace-phases (default scroll only, as before I-032)
+  const traced = {}, traceOut = {}, traceEvents = {};
+  const traceBegin = async (ph) => { if (traceOn(ph)) { const tr = await traceStart(page); traced[ph] = { tr, sync: await page.eval(TRACE_ARM) }; } };
+  const traceFinish = async (ph, perf) => {
+    const x = traced[ph];
+    if (!x) return;
+    if (ph !== 'scroll') progress(`${ph} trace`, TRACE_TIMEOUT);
+    const d = await page.eval(TRACE_DISARM);
+    const te = await traceEnd(page, x.tr);
+    const window = { from: d.t0, to: d.lastOn }; // the logger's window: the phase's frames[] exactly (lib/trace-frames.mjs)
+    const att = te.error ? { error: te.error } : attributeFrames(te.events, { frameTs: d.ts, syncStartTime: x.sync, window, dataLossOccurred: te.dataLossOccurred });
+    if (SAVE_TRACE) traceEvents[ph] = te.events;
+    traceOut[ph] = { ...att, events: te.events.length, dataLossOccurred: te.dataLossOccurred ?? null, bufferPercentMax: te.bufferPercentMax,
+      // the trace's frames vs the logger's: equal unless the two rAF recorders saw different frames
+      check: { loggerFrames: perf.frames.length, loggerGt20: perf.frames.filter((x) => x > 20).length, traceWindowFrames: att.summary?.windowFrames ?? null, traceGt20: att.summary?.frames ?? null },
+      note: 'tracing perturbs timing: not comparable with untraced runs' };
+  };
+
   await page.send('Emulation.setCPUThrottlingRate', { rate: CPU });
   await T.sleep(1000);
   // idle phase: same logger, no input, at the top of the page (before any scrolling)
@@ -379,16 +464,17 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   let idlePerf = null;
   if (IDLE > 0) {
     progress('idle phase', IDLE);
+    await traceBegin('idle');
     const m = await cdpMetrics(page), h = await hostStart(chromePid);
     await page.eval(RESET);
     await T.sleep(IDLE * 1000);
     idlePerf = await page.eval(COLLECT_AT);
     hostPhases.idle = await hostEnd(h, chromePid);
     cdpPhase.idle = cdpDelta(m, await cdpMetrics(page));
+    await traceFinish('idle', idlePerf);
   }
   progress('scroll phase', 600); // the scroll eval has its own 600 s timeout (covers the trace too)
-  let tr = null, syncStartTime = null;
-  if (TRACE) { tr = await traceStart(page); syncStartTime = await page.eval(TRACE_ARM); }
+  await traceBegin('scroll');
   let m = await cdpMetrics(page), h = await hostStart(chromePid);
   await page.eval(RESET);
   const scroll = await page.eval(SCROLL, { timeout: 600000 });
@@ -396,20 +482,12 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   const scrollPerf = await page.eval(COLLECT);
   hostPhases.scroll = await hostEnd(h, chromePid);
   cdpPhase.scroll = cdpDelta(m, await cdpMetrics(page));
-  let traceFrames = null;
-  if (TRACE) {
-    const d = await page.eval(TRACE_DISARM);
-    const te = await traceEnd(page, tr);
-    const window = { from: d.t0, to: d.lastOn }; // the logger's window: the phase's frames[] exactly (lib/trace-frames.mjs)
-    const att = te.error ? { error: te.error } : attributeFrames(te.events, { frameTs: d.ts, syncStartTime, window, dataLossOccurred: te.dataLossOccurred });
-    traceFrames = { ...att, events: te.events.length, dataLossOccurred: te.dataLossOccurred ?? null, bufferPercentMax: te.bufferPercentMax,
-      // the trace's frames vs the logger's: equal unless the two rAF recorders saw different frames
-      check: { loggerFrames: scrollPerf.frames.length, loggerGt20: scrollPerf.frames.filter((x) => x > 20).length, traceWindowFrames: att.summary?.windowFrames ?? null, traceGt20: att.summary?.frames ?? null },
-      note: 'tracing perturbs timing: not comparable with untraced runs' };
-  }
+  await traceFinish('scroll', scrollPerf);
+  const traceFrames = traceOut.scroll ?? null;
 
   // morph phase: push past the end (wheel on desktop, touch drag on mobile)
   progress('morph phase', 10); // wheel or touch gestures plus a 2 s settle
+  if (traceOn('morph')) { await traceBegin('morph'); progress('morph phase', 10); }
   m = await cdpMetrics(page); h = await hostStart(chromePid);
   await page.eval(RESET);
   if (vp.mobile) {
@@ -421,8 +499,37 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   const morphPerf = await page.eval(COLLECT);
   hostPhases.morph = await hostEnd(h, chromePid);
   cdpPhase.morph = cdpDelta(m, await cdpMetrics(page));
+  await traceFinish('morph', morphPerf);
   const morphState = await page.eval(`document.querySelector('.start-selling-top-nav')?.className`);
   await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+
+  // --paint-rects: stop the recorder, attribute the paints to the phases' frames, describe the top layers, disable
+  let paintRects = null, paintAn = null;
+  if (PAINT) {
+    progress('paint-rects', 60);
+    const pv = await page.eval(PAINT_DISARM); // {armed, w, h, dpr}: the viewport in CSS px, the emulated DPR
+    offPaint();
+    const dpr = typeof pv?.dpr === 'number' && pv.dpr > 0 ? pv.dpr : null;
+    const ls = typeof layerScale === 'number' && layerScale > 0 ? layerScale : null; // layer px = CSS px x ls
+    const vpPx = ls && pv?.w > 0 && pv?.h > 0 ? { w: Math.round(pv.w * ls), h: Math.round(pv.h * ls) } : null;
+    paintAn = analyzePaints(paintStream, { idle: idlePerf?.t0 ?? null, scroll: scrollPerf.t0, morph: morphPerf.t0 }, vpPx);
+    const layerNodes = {};
+    for (const id of topLayerIds(paintAn.phases)) {
+      const l = paintAn.layers.get(id);
+      const node = l?.node != null ? await page.send('DOM.describeNode', { backendNodeId: l.node }).then((r) => nodeLabel(r.node)).catch(() => null) : null;
+      const reasons = await page.send('LayerTree.compositingReasons', { layerId: id }).then((r) => r.compositingReasonIds || r.compositingReasons || []).catch(() => null);
+      layerNodes[id] = { node, reasons };
+    }
+    await page.send('LayerTree.disable');
+    await page.send('Runtime.removeBinding', { name: PAINT_BINDING });
+    paintRects = {
+      // source 'layerPainted' (clip areas) or 'paintCount' (no layerPainted, Chrome 148+: counts and layer sizes only, mpx null)
+      status: paintAn.source ? 'ok' : 'enabled, 0 layerPainted events, no paintCount in the layer lists',
+      source: paintAn.source, binding: paintAn.binding, intervals: paintAn.intervals, units: 'layer px', layerScale: ls, dpr, viewport: vpPx,
+      layerPaintedEvents: paintAn.layerPaintedEvents, countedPaints: paintAn.countedPaints, bindingFrames: paintAn.bindingFrames, unassignedPaints: paintAn.unassignedPaints,
+      phases: paintAn.phases, frames: paintAn.frames, layerNodes, note: PAINT_NOTE,
+    };
+  }
 
   progress('screenshots', 120);
   const shots = {};
@@ -443,6 +550,27 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   }
   const shimStats = await page.eval('window.__mirrorVendorShim ? { scripts: window.__mirrorVendorShim.rewrittenScripts, neutered: window.__mirrorVendorShim.neutered } : null');
   await page.close();
+
+  // --save-trace: written after the page is closed (outside every phase)
+  let traceFiles = null;
+  if (SAVE_TRACE) {
+    progress('save trace', 120);
+    traceFiles = {};
+    for (const [ph, evs] of Object.entries(traceEvents)) traceFiles[ph] = writeTrace(join(OUT, `trace-${vpName}-${t.label}-run${run + 1}-${ph}.json`), evs,
+      { source: 'tools/verify.mjs --trace-frames --save-trace (incident I-032)', url: t.url, viewport: vpName, label: t.label, run: run + 1, phase: ph, cpu: CPU });
+  }
+  // per-frame tags of frames > 34 ms (lib/frame-tags.mjs): only from sources with frame timestamps
+  let longFrames = null;
+  if (FRAME_LOG || TRACE || PAINT) {
+    const perfs = { idle: idlePerf, scroll: scrollPerf, morph: morphPerf };
+    const layerNodes = Object.fromEntries(Object.entries(paintRects?.layerNodes || {}).map(([id, v]) => [id, v.node]));
+    longFrames = {};
+    for (const ph of PHASES) {
+      if (!perfs[ph]) { longFrames[ph] = null; continue; }
+      longFrames[ph] = longFrameTags({ frameLog: FRAME_LOG ? perfs[ph].log ?? null : null, trace: traceOut[ph]?.frames ?? null, paint: paintAn ? paintAn.tagFrames[ph] ?? null : null,
+        loaf: perfs[ph].loaf, scriptKey: loafScriptKey, layerNodes });
+    }
+  }
 
   const origins = {};
   for (const r of requests) { try { const o = new URL(r.url).origin; const k = o + (r.failed ? ' (blocked/failed)' : ''); origins[k] = (origins[k] || 0) + 1; } catch {} }
@@ -467,6 +595,12 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
     idleSummary: idlePerf ? { ...summarize(idlePerf), ...cdpPhase.idle, scrollY: idlePerf.scrollY } : null, scrollSummary: { ...summarize(scrollPerf), ...cdpPhase.scroll }, morphSummary: { ...summarize(morphPerf), ...cdpPhase.morph },
     ...(TRACE ? { traceFrames, traceSummary: traceSummary(traceFrames) } : {}),
     ...(FRAME_LOG ? { frameLog: { idle: idlePerf?.log ?? null, scroll: scrollPerf.log ?? null, morph: morphPerf.log ?? null } } : {}),
+    ...(TRACE && TRACE_PHASES.some((p) => p !== 'scroll') ? { tracePhases: Object.fromEntries(TRACE_PHASES.filter((p) => p !== 'scroll').map((p) => [p, traceOut[p] ?? null])) } : {}),
+    ...(traceOn('idle') ? { traceIdleSummary: traceOut.idle ? traceSummary(traceOut.idle) : null } : {}),
+    ...(traceOn('morph') ? { traceMorphSummary: traceSummary(traceOut.morph) } : {}),
+    ...(traceFiles ? { traceFiles } : {}),
+    ...(PAINT ? { paintRects, ...Object.fromEntries(PHASES.map((p) => [`paint${p[0].toUpperCase()}${p.slice(1)}Summary`, paintSummary(paintRects.phases[p])])) } : {}),
+    ...(longFrames ? { longFrames } : {}),
     requests: requests.length, origins,
     notFound: firstParty.filter((r) => r.status >= 400).map((r) => `${r.status} ${new URL(r.url).pathname}`),
     scripts: [...new Set(firstParty.filter((r) => r.type === 'Script').map((r) => new URL(r.url).pathname))].sort(),
@@ -533,7 +667,11 @@ async function main() {
           if (bl) { r.baseline = bl; flaggedRuns++; }
           results.push(r);
           const s = r.scrollSummary;
-          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms${s.cdpStyleCount != null ? `  style ${s.cdpStyleMs}ms/${s.cdpStyleCount}x layout ${s.cdpLayoutMs}ms/${s.cdpLayoutCount}x script ${s.cdpScriptMs}ms` : ''}${r.traceSummary ? `  trace >20ms ${r.traceSummary.frames}: script ${r.traceSummary.scriptMs} style ${r.traceSummary.styleMs} layout ${r.traceSummary.layoutMs} paint ${r.traceSummary.paintMs} other ${r.traceSummary.otherMs} offMain ${r.traceSummary.offMainMs}ms; >34ms ${r.traceSummary.gt34} (${byClass(r.traceSummary.gt34ByClass)}) >50ms ${r.traceSummary.gt50} (${byClass(r.traceSummary.gt50ByClass)})${r.traceSummary.partial ? ` PARTIAL TRACE: ${r.traceFrames.summary.partialReasons.join('; ')}` : ''}` : r.traceFrames?.error ? `  trace: ${r.traceFrames.error}` : ''}  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}${bl ? `  ${bl.tag}: baseline state ${bl.state} after this run` : ''}`);
+          const ts = r.traceSummary, pr = r.paintRects, ps = r.paintScrollSummary;
+          const extra = (ts && ts.droppedFrames != null ? `  frames: dropped ${ts.droppedFrames} partial ${ts.partialFrames} layer ${ts.layerMs}ms paints ${ts.paintEvents}` : '')
+            + (pr ? (pr.source ? `  paint-rects scroll (${pr.source}): ${ps?.paints ?? 0} paints${ps?.mpx != null ? ` ${ps.mpx} Mpx (frame max ${ps.frameMpxMax})` : ''}, painted layers ${ps?.layerMpx ?? 0} Mpx (viewport-capped ${ps?.layerVpMpx ?? '?'}), layers max ${ps?.layersMax ?? '?'} +${ps?.layersAdded ?? 0} -${ps?.layersRemoved ?? 0}` : `  paint-rects: ${pr.status}`) : '')
+            + (r.traceFiles ? `  trace saved: ${Object.values(r.traceFiles).join(', ')}` : '');
+          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms${s.cdpStyleCount != null ? `  style ${s.cdpStyleMs}ms/${s.cdpStyleCount}x layout ${s.cdpLayoutMs}ms/${s.cdpLayoutCount}x script ${s.cdpScriptMs}ms` : ''}${r.traceSummary ? `  trace >20ms ${r.traceSummary.frames}: script ${r.traceSummary.scriptMs} style ${r.traceSummary.styleMs} layout ${r.traceSummary.layoutMs} paint ${r.traceSummary.paintMs} other ${r.traceSummary.otherMs} offMain ${r.traceSummary.offMainMs}ms; >34ms ${r.traceSummary.gt34} (${byClass(r.traceSummary.gt34ByClass)}) >50ms ${r.traceSummary.gt50} (${byClass(r.traceSummary.gt50ByClass)})${r.traceSummary.partial ? ` PARTIAL TRACE: ${r.traceFrames.summary.partialReasons.join('; ')}` : ''}` : r.traceFrames?.error ? `  trace: ${r.traceFrames.error}` : ''}  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}${bl ? `  ${bl.tag}: baseline state ${bl.state} after this run` : ''}${extra}`);
         }
       }
       if (SCREENS && targets.length > 1) {
@@ -581,8 +719,12 @@ async function main() {
   };
   console.log(describeHostState(hostSum.hostState));
   console.log(`host: ${invalid.length} of ${measured.length} runs contaminated${invalid.length ? ` (${[...new Set(invalid.flatMap((r) => r.host.reasons))].join('; ')}): verdicts provisional` : ''}${warn.length ? `; ${warn.length} warn (${[...new Set(warn.flatMap((r) => r.host.warnings))].join('; ')})` : ''}${hostSum.stub ? `  [host STUBBED: ${hostSum.stub}]` : ''}`);
-  const measurement = { cdpMetrics: CDP_METRICS, traceFrames: TRACE, frameLog: FRAME_LOG, ...(TRACE ? { note: 'traced: tracing perturbs timing, frame numbers are not comparable with untraced runs', traceBufferKb: TRACE_START.traceConfig.traceBufferSizeInKb, traceTimeoutSec: TRACE_TIMEOUT } : {}) };
+  const measurement = { cdpMetrics: CDP_METRICS, traceFrames: TRACE, frameLog: FRAME_LOG, ...(TRACE ? { note: 'traced: tracing perturbs timing, frame numbers are not comparable with untraced runs', traceBufferKb: TRACE_START.traceConfig.traceBufferSizeInKb, traceTimeoutSec: TRACE_TIMEOUT,
+    // I-032: the trace categories (incl. the Frames track's) and the traced phases; one trace per phase
+    traceCategories: TRACE_START.traceConfig.includedCategories, tracePhases: TRACE_PHASES, saveTrace: SAVE_TRACE } : {}),
+    ...(PAINT ? { paintRects: true, paintRectsNote: PAINT_NOTE, paintRectsAddedWork: ['Runtime.addBinding + one binding call per rAF frame (main thread)', 'LayerTree.enable: the full layer list on every tree change or paint (+ layerPainted per paint where Chrome sends it)'] } : {}) };
   if (TRACE) console.log(`trace-frames: ${measurement.note}; offMain = ${BUCKET_LABELS.offMain}`);
+  if (PAINT) console.log(PAINT_NOTE);
   if (flaggedRuns) console.log(`baseline: ${flaggedRuns} of ${measured.length} runs flagged (${[...new Set(measured.filter((r) => r.baseline).map((r) => r.baseline.tag))].join(', ')}): not measured on the pinned snapshot ${BASELINE.snapshot ?? ''} throughout`);
   writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, baseline: flaggedRuns ? { ...BASELINE, flaggedRuns } : BASELINE, host: hostSum, rows, results }, null, 1));
   console.log('details: ' + file);

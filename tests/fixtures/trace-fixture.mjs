@@ -23,6 +23,7 @@ export const TRACE_EVENTS = [
   { ph: 'X', name: 'Layout', pid: 1, tid: 7, ts: 5020000, dur: 4000, args: { beginData: { dirtyObjects: 40 } } },
   { ph: 'X', name: 'UpdateLayoutTree', pid: 1, tid: 7, ts: 5030000, dur: 6000, args: { elementCount: 120 } },
   { ph: 'X', name: 'Paint', pid: 1, tid: 7, ts: 5037000, dur: 3000 },
+  { ph: 'X', name: 'Layerize', pid: 1, tid: 7, ts: 5038000, dur: 1000 }, // layer work inside the paint (I-032 layerMs 1 of paintMs 3)
   // frame 2: a task that recalculates style on 900 elements, then a B/E layout
   { ph: 'X', name: 'RunTask', pid: 1, tid: 7, ts: 5063000, dur: 20000 },
   { ph: 'X', name: 'UpdateLayoutTree', pid: 1, tid: 7, ts: 5064000, dur: 15000, args: { elementCount: 900 } },
@@ -32,4 +33,13 @@ export const TRACE_EVENTS = [
   { ph: 'X', name: 'FunctionCall', pid: 1, tid: 7, ts: 5107000, dur: 30000 },
   // another thread: ignored
   { ph: 'X', name: 'FunctionCall', pid: 1, tid: 8, ts: 5017000, dur: 25000 },
+  // I-032 presentation (compositor thread, disabled-by-default-devtools.timeline.frame): frame 11 begins in
+  // frame 1 (1016-1046) and is reported partial after it ends (placed at its BeginFrame); frame 12 begins
+  // in frame 2 (1062-1090) and is dropped; one DrawFrame; a DroppedFrame before the window is not counted
+  { ph: 'I', name: 'DroppedFrame', pid: 1, tid: 9, ts: 4996000, args: { frameSeqId: 10, hasPartialUpdate: false, layerTreeId: 1 } },
+  { ph: 'I', name: 'BeginFrame', pid: 1, tid: 9, ts: 5017500, args: { frameSeqId: 11, layerTreeId: 1 } },
+  { ph: 'I', name: 'DrawFrame', pid: 1, tid: 9, ts: 5047000, args: { layerTreeId: 1 } },
+  { ph: 'I', name: 'DroppedFrame', pid: 1, tid: 9, ts: 5050000, args: { frameSeqId: 11, hasPartialUpdate: true, layerTreeId: 1 } },
+  { ph: 'I', name: 'BeginFrame', pid: 1, tid: 9, ts: 5063500, args: { frameSeqId: 12, layerTreeId: 1 } },
+  { ph: 'I', name: 'DroppedFrame', pid: 1, tid: 9, ts: 5064000, args: { frameSeqId: 12, hasPartialUpdate: false, layerTreeId: 1 } },
 ];

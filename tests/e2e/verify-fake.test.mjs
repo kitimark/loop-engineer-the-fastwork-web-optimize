@@ -8,7 +8,7 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, nodeAsync, tool, TESTS, sleep, startProc, FAKE_HOST, cdpTokens } from '../helpers.mjs';
 import { TRACE_START } from '../../tools/lib/trace-frames.mjs';
-import { BIG_CHUNK } from '../fixtures/trace-fixture.mjs';
+import { BIG_CHUNK, TRACE_EVENTS } from '../fixtures/trace-fixture.mjs';
 import { LOGGER, RESET, COLLECT, COLLECT_AT } from '../../tools/lib/perf-page.mjs';
 
 const FAKE = join(TESTS, 'fixtures', 'fake-chrome.mjs');
@@ -526,10 +526,11 @@ test('--trace-frames: traces the scroll phase, attributes its own frames > 20 ms
   const x = res.results[0];
   // tests/fixtures/trace-fixture.mjs: two frames > 20 ms in the logger's window (see tests/unit/trace-frames.test.mjs)
   const z = { script: 0, style: 0, layout: 0, paint: 0, other: 0, offMain: 0 };
-  assert.deepEqual(x.traceSummary, { frames: 2, scriptMs: 8, styleMs: 21, layoutMs: 6, paintMs: 3, otherMs: 3, offMainMs: 17, gt34: 0, gt50: 0, styleElements: 1020, gt34ByClass: z, gt50ByClass: z, partial: false });
+  assert.deepEqual(x.traceSummary, { frames: 2, scriptMs: 8, styleMs: 21, layoutMs: 6, paintMs: 3, otherMs: 3, offMainMs: 17, gt34: 0, gt50: 0, styleElements: 1020, gt34ByClass: z, gt50ByClass: z, partial: false,
+    layerMs: 1, paintEvents: 1, droppedFrames: 1, partialFrames: 1 }); // I-032: the fixture's Layerize, Paint and DroppedFrame events
   assert.equal(x.traceFrames.frames.length, 2);
   assert.deepEqual(x.traceFrames.summary.window, { from: 1000, to: 1106 }, 'the window the page reported');
-  assert.equal(x.traceFrames.events, 13);
+  assert.equal(x.traceFrames.events, 20);
   assert.equal(x.traceFrames.dataLossOccurred, false);
   assert.equal(x.traceFrames.bufferPercentMax, 12.3, 'Tracing.bufferUsage');
   assert.equal(x.traceFrames.summary.lastEventCoversLastFrame, true);
@@ -552,7 +553,7 @@ test('--trace-frames: data loss marks the trace partial; a huge dataCollected ch
   assert.equal(ra.code, 0, ra.out);
   const xa = JSON.parse(readFileSync(join(A.d, 'result.json'), 'utf8')).results[0];
   assert.equal(xa.traceFrames.error, undefined, 'a chunk of more events than a spread push(...) takes (RangeError) is collected');
-  assert.equal(xa.traceFrames.events, 13 + BIG_CHUNK);
+  assert.equal(xa.traceFrames.events, 20 + BIG_CHUNK);
   assert.equal(xa.traceFrames.dataLossOccurred, true);
   assert.equal(xa.traceSummary.partial, true);
   assert.deepEqual(xa.traceFrames.summary.partialReasons, ['trace data loss (buffer full)']);
@@ -562,7 +563,7 @@ test('--trace-frames: data loss marks the trace partial; a huge dataCollected ch
   const rb = await nodeAsync(VERIFY, B.args('hang', ['--idle', '0', '--max-wait', '0', '--trace-frames', '--trace-timeout', '1']), { env: { ...B.env, FAKE_CHROME_TRACE: 'nocomplete' } });
   assert.equal(rb.code, 0, rb.out);
   const xb = JSON.parse(readFileSync(join(B.d, 'result.json'), 'utf8')).results[0];
-  assert.match(xb.traceFrames.error, /Tracing\.tracingComplete not received within 1 s \(--trace-timeout; 13 events so far\)/);
+  assert.match(xb.traceFrames.error, /Tracing\.tracingComplete not received within 1 s \(--trace-timeout; 20 events so far\)/);
   assert.equal(xb.traceSummary, null);
   assert.equal(xb.morphState, 'start-selling-top-nav is-morph', 'the morph phase still ran');
   assert.match(rb.stdout, /trace: Tracing\.tracingComplete not received/);
@@ -582,6 +583,148 @@ test('--frame-log: [t, dt, scrollY] for every frame of every phase (E5); the def
   const src = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === 'Page.addScriptToEvaluateOnNewDocument').params.source;
   assert.match(src, /S\.log\.push/);
   assert.notEqual(src, LOGGER);
+  // I-032: the frame log has timestamps, so the run gets per-frame tags of its frames > 34 ms (with scrollY)
+  assert.deepEqual(x.longFrames.scroll.map((f) => [f.dur, f.ticks, f.scrollY, f.source]), [[40, 5, 520, 'frame-log'], [60, 7, 530, 'frame-log'], [120, 14, 540, 'frame-log']]);
+  assert.deepEqual(x.longFrames.idle.map((f) => [f.dur, f.scrollY]), [[55, 0]]);
+});
+
+// ---- render-side signals, all opt-in: --trace-phases, --save-trace, --paint-rects (incident I-032) ------------
+test('I-032 usage: --save-trace / --trace-phases need --trace-frames, --trace-phases takes idle,scroll,morph; exit 2 before any lock or browser', () => {
+  for (const [extra, re] of [[['--save-trace'], /need --trace-frames/], [['--trace-phases', 'idle'], /need --trace-frames/], [['--trace-frames', '--trace-phases', 'idle,bogus'], /--trace-phases: a comma list of idle, scroll, morph/]]) {
+    const { d, env, args } = setup();
+    const r = node(VERIFY, args('usage', extra), { env });
+    assert.equal(r.code, 2, extra.join(' '));
+    assert.match(r.stderr, re);
+    assert.equal(existsSync(join(d, 'state')), false);
+    assert.equal(readLog(env.FAKE_CHROME_LOG).length, 0);
+  }
+});
+
+test('I-032 --trace-frames: the Frames track category; traceSummary gains layerMs, Paint events, dropped / partial frames (DroppedFrame)', async () => {
+  assert.ok(TRACE_START.traceConfig.includedCategories.includes('disabled-by-default-devtools.timeline.frame'));
+  const { d, env, args } = setup();
+  const r = await nodeAsync(VERIFY, args('trace32', ['--idle', '0', '--max-wait', '0', '--trace-frames']), { env });
+  assert.equal(r.code, 0, r.out);
+  const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  const x = res.results[0];
+  assert.deepEqual(x.traceFrames.summary.presentation, { dropped: 1, partial: 1, beginFrames: 2, drawFrames: 1, placedAtBegin: 2, byLayerTree: { 1: 2 },
+    byGap: { 'k<=2': { frames: 2, withDropped: 0, withPartial: 0 }, 'k3-4': { frames: 2, withDropped: 1, withPartial: 1 }, 'k5-6': { frames: 0, withDropped: 0, withPartial: 0 }, 'k>=7': { frames: 0, withDropped: 0, withPartial: 0 } },
+    byGapMs: { le20: { frames: 2, withDropped: 0, withPartial: 0 }, '20-34': { frames: 2, withDropped: 1, withPartial: 1 }, '34-50': { frames: 0, withDropped: 0, withPartial: 0 }, gt50: { frames: 0, withDropped: 0, withPartial: 0 } } });
+  assert.deepEqual(res.measurement.tracePhases, ['scroll']);
+  assert.equal(res.measurement.saveTrace, false);
+  assert.deepEqual(res.measurement.traceCategories, TRACE_START.traceConfig.includedCategories);
+  assert.equal('tracePhases' in x, false, 'scroll only (the default): no other phase traced');
+  assert.equal('traceIdleSummary' in x || 'traceMorphSummary' in x || 'traceFiles' in x || 'paintRects' in x, false);
+  assert.deepEqual(x.longFrames.scroll, [], 'the fixture\'s frames are <= 34 ms');
+  assert.match(r.stdout, /frames: dropped 1 partial 1 layer 1ms paints 1/);
+});
+
+test('I-032 --trace-phases idle,scroll,morph --save-trace: one trace per phase around exactly its window, each saved for the Performance panel after the page closed', async () => {
+  const { d, env, args } = setup();
+  const r = await nodeAsync(VERIFY, args('phases', ['--idle', '1', '--max-wait', '0', '--trace-frames', '--trace-phases', 'idle,scroll,morph', '--save-trace']), { env });
+  assert.equal(r.code, 0, r.out);
+  const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  const x = res.results[0];
+  const log = readLog(env.FAKE_CHROME_LOG);
+  const order = log.map((l) => (l.method.startsWith('Tracing.') ? l.method : step(l))).filter((s) => ['Tracing.start', 'Tracing.end', 'reset', 'scroll', 'collect', 'input'].includes(s));
+  assert.deepEqual(order, ['Tracing.start', 'reset', 'collect', 'Tracing.end', 'Tracing.start', 'reset', 'scroll', 'collect', 'Tracing.end', 'Tracing.start', 'reset', 'input', 'input', 'input', 'input', 'collect', 'Tracing.end']);
+  assert.deepEqual(Object.keys(x.tracePhases), ['idle', 'morph']);
+  assert.deepEqual(x.traceIdleSummary, x.traceSummary, 'the fake answers every trace with the same fixture');
+  assert.deepEqual(x.traceMorphSummary, x.traceSummary);
+  assert.equal(x.tracePhases.idle.check.loggerFrames, 102, 'checked against the idle phase\'s own logger frames');
+  assert.deepEqual(res.measurement.tracePhases, ['idle', 'scroll', 'morph']);
+  assert.equal(res.measurement.saveTrace, true);
+  assert.deepEqual(Object.keys(x.traceFiles).sort(), ['idle', 'morph', 'scroll']);
+  for (const [ph, f] of Object.entries(x.traceFiles)) {
+    assert.equal(f, join(d, 'out', `trace-mobile-a-run1-${ph}.json`));
+    const t = JSON.parse(readFileSync(f, 'utf8'));
+    assert.equal(t.traceEvents.length, 20);
+    assert.deepEqual(t.traceEvents, TRACE_EVENTS, 'the events as collected');
+    assert.equal(t.metadata.phase, ph);
+  }
+  assert.match(r.stdout, /trace saved: .*trace-mobile-a-run1-idle\.json/);
+});
+
+// What --paint-rects adds to a run's CDP commands (the rest must be a default run's, in order).
+const PAINT_CMD = (l) => ['Runtime.addBinding', 'Runtime.removeBinding', 'LayerTree.enable', 'LayerTree.disable', 'LayerTree.compositingReasons', 'DOM.describeNode'].includes(l.method)
+  || (l.method === 'Runtime.evaluate' && l.params.expression.includes('__fwPaint'));
+
+test('I-032 --paint-rects: LayerTree + binding armed before the throttle, read after it; per-frame paint area (sum), per-layer paints, layer nodes; otherwise a default run', async () => {
+  const { d, env, args } = setup();
+  const r = await nodeAsync(VERIFY, args('paint', ['--idle', '1', '--max-wait', '0', '--paint-rects']), { env });
+  assert.equal(r.code, 0, r.out);
+  const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  const x = res.results[0];
+  // the fake (tests/fixtures/fake-chrome.mjs paintPhase): per phase 2 frames in the window, 3 paints of L1 (1290x300) / L2 (1290x900),
+  // in layer px: the fake host's DSF is 2 (read before the emulation), so the viewport is 430x932 CSS px x 2, not x the emulated DPR 3,
+  // and the 1290 px wide layers are capped to 860 in layerVpMpx (L1 0.258, L2 0.774 Mpx)
+  // a layer added in the 40 ms frame; the 4th paint is in a frame that ended after COLLECT (in no phase)
+  assert.equal(x.paintRects.status, 'ok');
+  assert.deepEqual([x.paintRects.source, x.paintRects.binding, x.paintRects.units, x.paintRects.dpr, x.paintRects.viewport], ['layerPainted', 'frame', 'layer px', 3, { w: 860, h: 1864 }]);
+  assert.equal(x.paintRects.layerScale, 2);
+  assert.equal(x.paintRects.layerPaintedEvents, 12);
+  assert.equal(x.paintRects.bindingFrames, 12);
+  assert.equal(x.paintRects.unassignedPaints, 3);
+  // the fake's clips are whole layers, so the dirty-clip sum equals the painted layers' size here
+  const P = { frames: 2, framesWithPaint: 2, paints: 3, newLayerPaints: 0, mpx: 1.935, frameMpxMax: 1.548, frameMpxP50: 1.548, layerMpx: 1.935, frameLayerMpxMax: 1.548, frameLayerMpxP50: 1.548,
+    layerVpMpx: 1.29, frameLayerVpMpxMax: 1.032, layersMax: 4, layersAdded: 1, layersRemoved: 0, layerChurn: 1, layersPainted: 2, layerTreeChanges: 1 };
+  for (const k of ['paintIdleSummary', 'paintScrollSummary', 'paintMorphSummary']) assert.deepEqual(x[k], P, k);
+  assert.deepEqual(x.paintRects.phases.scroll.perLayer, { L2: { paints: 1, mpx: 1.161, layerMpx: 1.161, w: 1290, h: 900, backendNodeId: 3 }, L1: { paints: 2, mpx: 0.774, layerMpx: 0.774, w: 1290, h: 300, backendNodeId: 2 } });
+  assert.deepEqual(x.paintRects.phases.scroll.topLayers, [{ layerId: 'L1', paints: 2, w: 1290, h: 300 }, { layerId: 'L2', paints: 1, w: 1290, h: 900 }]);
+  assert.deepEqual(x.paintRects.frames.scroll, [[20005, 16.7, 1, 0.387, 0.387, 3, 0, 'L1'], [20021.7, 40, 2, 1.548, 1.548, 4, 1, 'L2']]);
+  assert.deepEqual(x.paintRects.layerNodes, { L2: { node: 'section#hero.hero.is-on', reasons: ['willChange:L2'] }, L1: { node: 'nav.start-selling-top-nav', reasons: ['willChange:L1'] } });
+  assert.match(x.paintRects.note, /compare only with other --paint-rects runs/);
+  assert.deepEqual(x.longFrames.scroll, [{ t: 20021.7, dur: 40, ticks: 5, scrollY: null, class: null, top: null, loaf: null,
+    paint: { paints: 2, mpx: 1.548, layerMpx: 1.548, topLayer: { layerId: 'L2', mpx: 1.161, layerMpx: 1.161, node: 'section#hero.hero.is-on' } }, layers: 4, layersDelta: 1, source: 'paint-rects' }]);
+  assert.equal(res.measurement.paintRects, true);
+  assert.equal(res.measurement.paintRectsAddedWork.length, 2, 'the added main-thread work is recorded');
+  assert.match(r.stdout, /paint-rects scroll \(layerPainted\): 3 paints 1\.935 Mpx \(frame max 1\.548\), painted layers 1\.935 Mpx \(viewport-capped 1\.29\), layers max 4 \+1 -0/);
+  const log = readLog(env.FAKE_CHROME_LOG);
+  const seq = log.map((l) => (['Runtime.addBinding', 'LayerTree.enable', 'LayerTree.disable', 'Runtime.removeBinding'].includes(l.method) ? l.method : step(l))).filter(Boolean);
+  const at = (s) => seq.indexOf(s);
+  assert.ok(at('Runtime.addBinding') < at('LayerTree.enable') && at('LayerTree.enable') < at('cpu 3'), 'armed before the throttle');
+  assert.ok(at('cpu 1') < at('LayerTree.disable') && at('LayerTree.disable') < at('Runtime.removeBinding'), 'read out after the phases, unthrottled');
+  assert.deepEqual(log.find((l) => l.method === 'Runtime.addBinding').params, { name: '__fwPaintFrame' });
+  const scaleAt = log.findIndex((l) => l.method === 'Runtime.evaluate' && l.params.expression.includes('__fwPaintScale'));
+  assert.ok(scaleAt >= 0 && scaleAt < log.findIndex((l) => l.method === 'Emulation.setDeviceMetricsOverride'), 'the layer scale is read before the emulation');
+  // apart from the paint commands, exactly a default run's CDP sequence
+  const B = setup();
+  const rb = await nodeAsync(VERIFY, B.args('nopaint', ['--idle', '1', '--max-wait', '0']), { env: B.env });
+  assert.equal(rb.code, 0, rb.out);
+  assert.deepEqual(cdpTokens(log.filter((l) => !PAINT_CMD(l))), cdpTokens(readLog(B.env.FAKE_CHROME_LOG)));
+});
+
+test('I-032 --paint-rects as on Chrome 148+ (no layerPainted, paintCount in the lists): counts per frame and layer, no clip area, new layers flagged', async () => {
+  const { d, env, args } = setup();
+  const r = await nodeAsync(VERIFY, args('paintc', ['--idle', '1', '--max-wait', '0', '--paint-rects']), { env: { ...env, FAKE_CHROME_PAINT: 'count' } });
+  assert.equal(r.code, 0, r.out);
+  const x = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8')).results[0];
+  const pr = x.paintRects;
+  assert.deepEqual([pr.status, pr.source, pr.binding, pr.layerPaintedEvents, pr.countedPaints, pr.unassignedPaints], ['ok', 'paintCount', 'frame', 0, 15, 3]);
+  assert.deepEqual(pr.intervals, { lists: 12, withPaints: 9, spanGt1: 0, spanGt1Share: 0 });
+  // per phase: L1 +1, then L1 +1 L2 +1 and the new L3 (first count 1, flagged), then L1 +1 after COLLECT (no phase)
+  const P = { frames: 2, framesWithPaint: 2, paints: 3, newLayerPaints: 1, mpx: null, frameMpxMax: null, frameMpxP50: null, layerMpx: 1.935, frameLayerMpxMax: 1.548, frameLayerMpxP50: 1.548,
+    layerVpMpx: 1.29, frameLayerVpMpxMax: 1.032, layersMax: 4, layersAdded: 1, layersRemoved: 0, layerChurn: 1, layersPainted: 2, layerTreeChanges: 2 };
+  for (const k of ['paintIdleSummary', 'paintScrollSummary', 'paintMorphSummary']) assert.deepEqual(x[k], P, k);
+  assert.deepEqual(pr.phases.scroll.perLayer, { L2: { paints: 1, mpx: null, layerMpx: 1.161, w: 1290, h: 900, backendNodeId: 3 }, L1: { paints: 2, mpx: null, layerMpx: 0.774, w: 1290, h: 300, backendNodeId: 2 },
+    L3: { paints: 0, newPaints: 1, mpx: null, layerMpx: 0, w: 600, h: 600, backendNodeId: 4 } });
+  assert.deepEqual(pr.frames.scroll, [[20005, 16.7, 1, null, 0.387, 3, 0, 'L1'], [20021.7, 40, 2, null, 1.548, 4, 1, 'L2']]);
+  assert.deepEqual(x.longFrames.scroll[0].paint, { paints: 2, mpx: null, layerMpx: 1.548, topLayer: { layerId: 'L2', mpx: null, layerMpx: 1.161, node: 'section#hero.hero.is-on' } });
+  assert.match(r.stdout, /paint-rects scroll \(paintCount\): 3 paints, painted layers 1\.935 Mpx \(viewport-capped 1\.29\), layers max 4 \+1 -0/);
+});
+
+test('I-032 --paint-rects with no paint data (no layerPainted, no paintCount): says so explicitly (zeros, not missing)', async () => {
+  const { d, env, args } = setup();
+  const r = await nodeAsync(VERIFY, args('paint0', ['--idle', '0', '--max-wait', '0', '--paint-rects']), { env: { ...env, FAKE_CHROME_PAINT: 'none' } });
+  assert.equal(r.code, 0, r.out);
+  const x = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8')).results[0];
+  assert.equal(x.paintRects.status, 'enabled, 0 layerPainted events, no paintCount in the layer lists');
+  assert.equal(x.paintRects.source, null);
+  assert.equal(x.paintRects.layerPaintedEvents, 0);
+  assert.equal(x.paintScrollSummary.paints, 0);
+  assert.equal(x.paintScrollSummary.frames, 2);
+  assert.equal(x.paintIdleSummary, null, '--idle 0: no idle phase');
+  assert.match(r.stdout, /paint-rects: enabled, 0 layerPainted events, no paintCount/);
 });
 
 test('review-i027 1: the real host (FW_TEST_HOST \'\') keeps the real clock: a 1 s idle phase takes >= 1 s of wall time', async () => {

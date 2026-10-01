@@ -17,6 +17,10 @@
 //   ab per-frame attribution (I-018), all opt-in: [--cdp-metrics] per-phase CDP script/style/layout deltas; [--trace-frames]
 //                  (perturbs timing) attributes frames >20 ms, writes results-trace.json, never results.json; [--frame-log] (E5)
 //                  keeps [t, dt, scrollY] for tools/frames.mjs
+//   ab render-side signals (I-032), all opt-in, passed to verify.mjs: [--trace-phases idle,scroll,morph] (with --trace-frames;
+//                  trace rows per phase: trace, traceIdle, traceMorph), [--save-trace] (trace files for the DevTools Performance
+//                  panel), [--paint-rects] (LayerTree paints / painted-layer Mpx / layer churn, rows paintIdle/paintScroll/paintMorph;
+//                  adds main-thread work: writes results-paint.json, never results.json; never a gain A/B)
 //   ab host guard (I-017): [--max-wait 60] [--max-load 6] [--max-busy 25] [--watchdog 300] [--chrome-warm 10] go to verify.mjs (recheck before
 //                  each run); a run started at load1 > 10, other CPU > 25 %, memory pressure >= warn or
 //                  after a gate-timeout grant contaminates the result: verdicts get "CONTAMINATED (host): "
@@ -54,9 +58,10 @@ const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const passthrough = dd >= 0 ? argv.slice(dd + 1) : null;
-const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on', '--max-wait', '--max-load', '--max-busy', '--watchdog', '--chrome-warm'];
-// passed through to verify.mjs by ab (I-018), all opt-in: --trace-frames (perturbs timing), --frame-log (E5), --cdp-metrics
-const AB_FLAGS = ['trace-frames', 'frame-log', 'cdp-metrics'];
+const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on', '--max-wait', '--max-load', '--max-busy', '--watchdog', '--chrome-warm', '--trace-phases'];
+// passed through to verify.mjs by ab (I-018), all opt-in: --trace-frames (perturbs timing), --frame-log (E5), --cdp-metrics;
+// I-032: --paint-rects (adds main-thread work), --save-trace (with --trace-frames; --trace-phases is valued, passed below)
+const AB_FLAGS = ['trace-frames', 'frame-log', 'cdp-metrics', 'paint-rects', 'save-trace'];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
@@ -329,14 +334,32 @@ const METRICS = {
   scroll: [['fps', 'fps', +1], ['gt20', 'frames >20 ms', -1], ['gt34', 'frames >34 ms', -1], ['gt50', 'frames >50 ms', -1], ['gt100', 'frames >100 ms', -1], ['max', 'worst frame ms', -1], ['p95', 'p95 frame ms', -1], ['loafMs', 'LoAF ms', -1], ['loafScriptMs', 'LoAF script ms', -1], ['forcedLayoutMs', 'forced style+layout ms (in LoAF)', -1]],
   morph: [['fps', 'fps', +1], ['gt50', 'frames >50 ms', -1], ['loafMs', 'LoAF ms', -1], ['forcedLayoutMs', 'forced style+layout ms (in LoAF)', -1]],
   // verify.mjs --trace-frames (I-018): main-thread time inside the scroll phase's frames > 20 ms, by kind
-  trace: [['frames', 'frames >20 ms (traced)', -1], ['scriptMs', 'script ms in them', -1], ['styleMs', 'style ms in them', -1], ['layoutMs', 'layout ms in them', -1], ['paintMs', 'paint ms in them', -1], ['otherMs', 'other main-thread ms in them', -1], ['offMainMs', 'other (compositor/raster/GPU/vsync; GPU not separated) ms in them', -1], ['gt34', 'frames >34 ms (traced)', -1], ['gt50', 'frames >50 ms (traced)', -1], ['styleElements', 'elements style-recalculated in them', -1]],
+  trace: [['frames', 'frames >20 ms (traced)', -1], ['scriptMs', 'script ms in them', -1], ['styleMs', 'style ms in them', -1], ['layoutMs', 'layout ms in them', -1], ['paintMs', 'paint ms in them', -1], ['otherMs', 'other main-thread ms in them', -1], ['offMainMs', 'other (compositor/raster/GPU/vsync; GPU not separated) ms in them', -1], ['gt34', 'frames >34 ms (traced)', -1], ['gt50', 'frames >50 ms (traced)', -1], ['styleElements', 'elements style-recalculated in them', -1],
+    // I-032: layerMs is part of paintMs (a sub-split, not a bucket); DroppedFrame events of the Frames track over the phase window
+    ['layerMs', 'layer ms in them (Layerize/UpdateLayer(Tree)/CompositeLayers/Commit; part of paint)', -1], ['paintEvents', 'Paint events in them', -1],
+    ['droppedFrames', 'dropped frames (Frames track, not presented)', -1], ['partialFrames', 'partially presented frames (Frames track)', -1]],
 };
+// --trace-phases (I-032): the same rows for the idle and morph traces (traceIdleSummary, traceMorphSummary)
+METRICS.traceIdle = METRICS.trace;
+METRICS.traceMorph = METRICS.trace;
+// --paint-rects (I-032): CDP LayerTree paints per phase (paint<Phase>Summary). mpx = summed dirty clips (only where
+// Chrome sends layerPainted; null, so no row, on Chrome 148+); layerMpx / layerVpMpx = painted layers' full / viewport-
+// capped size, upper bounds, never paint area
+const PAINT_METRICS = [['paints', 'layer paints (LayerTree)', -1], ['mpx', 'painted Mpx (sum of dirty clips)', -1], ['frameMpxMax', 'largest frame paint Mpx', -1], ['frameMpxP50', 'median frame paint Mpx', -1],
+  ['layerMpx', 'painted layers Mpx (full layer size, upper bound)', -1], ['frameLayerMpxMax', 'largest frame painted-layers Mpx', -1], ['frameLayerMpxP50', 'median frame painted-layers Mpx', -1],
+  ['layerVpMpx', 'painted layers Mpx capped to the viewport (upper bound)', -1], ['frameLayerVpMpxMax', 'largest frame viewport-capped painted-layers Mpx', -1],
+  ['framesWithPaint', 'frames with a paint', -1], ['newLayerPaints', 'first paints of new layers', -1], ['layersPainted', 'layers painted', -1], ['layersMax', 'max layer count', -1],
+  ['layersAdded', 'layers added', -1], ['layersRemoved', 'layers removed', -1], ['layerChurn', 'layer churn (added + removed)', -1], ['layerTreeChanges', 'layer tree changes', -1]];
 // CDP Performance.getMetrics deltas per phase (verify.mjs --cdp-metrics, I-018; absent by default)
 const CDP_METRICS = [['cdpScriptMs', 'script ms (CDP)', -1], ['cdpStyleMs', 'style recalc ms (CDP)', -1], ['cdpLayoutMs', 'layout ms (CDP)', -1], ['cdpStyleCount', 'style recalcs (CDP)', -1], ['cdpLayoutCount', 'layouts (CDP)', -1], ['cdpTaskMs', 'main-thread task ms (CDP)', -1]];
 METRICS.scroll.push(...CDP_METRICS);
 METRICS.morph.push(...CDP_METRICS);
 // idle phase (verify.mjs --idle, before scrolling): the same metrics as the scroll phase
 METRICS.idle = METRICS.scroll;
+// paint rows after the base phases, so results.json keeps scroll, morph, idle first (I-032)
+METRICS.paintIdle = PAINT_METRICS;
+METRICS.paintScroll = PAINT_METRICS;
+METRICS.paintMorph = PAINT_METRICS;
 /** Host state of an A/B from verify's per-run records (tools/lib/host.mjs classifyRun). */
 function hostSummary(v) {
   const rs = v.results.filter((r) => !r.diff);
@@ -378,6 +401,7 @@ function markdown(metrics, cfg) {
     rows.push(`| ${phase}: ${v.name} | ${v.baseline.median} [${v.baseline.min}-${v.baseline.max}] | ${v.patched.median} [${v.patched.min}-${v.patched.max}] | ${v.delta > 0 ? '+' : ''}${v.delta}${v.deltaPct != null ? ` (${v.deltaPct > 0 ? '+' : ''}${v.deltaPct}%)` : ''} | ${v.verdict} |`);
   }
   if (cfg.measurement?.traceFrames) rows.push('', 'traced (--trace-frames): tracing perturbs timing; frame numbers of this A/B are not comparable with untraced ones (compare the trace rows within this A/B only).');
+  if (cfg.measurement?.paintRects) rows.push('', 'paint-rects (--paint-rects): LayerTree + a per-frame binding call add main-thread work; compare this A/B\'s numbers only with other --paint-rects runs (never as a gain A/B). layerMpx / layerVpMpx are painted layers\' full / viewport-capped size (upper bounds); mpx (dirty clips) only where Chrome sends layerPainted.');
   if (cfg.host) rows.push('', hostLine(cfg.host), '', hostStateLine(cfg.host.hostState));
   if (cfg.baselineSnapshot?.tag) rows.push('', baselineLine(cfg.baselineSnapshot));
   return rows.join('\n');
@@ -424,7 +448,7 @@ async function cmdAb(t) {
 
   const verifyFile = join(outDir, 'verify.json');
   const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--idle', String(idle), '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : []), ...AB_FLAGS.filter(flag).map((f) => `--${f}`),
-    ...['max-wait', 'max-load', 'max-busy', 'watchdog', 'chrome-warm'].flatMap((k) => (opt(k) !== undefined ? [`--${k}`, String(opt(k))] : []))];
+    ...['max-wait', 'max-load', 'max-busy', 'watchdog', 'chrome-warm', 'trace-phases'].flatMap((k) => (opt(k) !== undefined ? [`--${k}`, String(opt(k))] : []))];
   verifyProc = spawn(process.execPath, vArgs, { stdio: 'inherit' });
   const code = await new Promise((res) => verifyProc.on('exit', (c) => res(c)));
   kill();
@@ -468,9 +492,10 @@ async function cmdAb(t) {
     raw: relative(REPO, verifyFile),
   };
   result.markdown = markdown(metrics, { ...cfg, host });
-  // a traced A/B is not comparable with untraced ones: it never replaces the deliverable results.json (I-018 review)
-  const traced = flag('trace-frames');
-  const resFile = aa ? join(outDir, traced ? 'results-aa-trace.json' : 'results-aa.json') : join(topicDir(t), traced ? 'results-trace.json' : 'results.json');
+  // a traced A/B is not comparable with untraced ones: it never replaces the deliverable results.json (I-018 review);
+  // nor is a --paint-rects one (I-032): results-paint.json (both: results-trace-paint.json)
+  const suffix = (flag('trace-frames') ? '-trace' : '') + (flag('paint-rects') ? '-paint' : '');
+  const resFile = aa ? join(outDir, `results-aa${suffix}.json`) : join(topicDir(t), `results${suffix}.json`);
   writeFileSync(resFile, JSON.stringify(result, null, 1));
   console.log('\n' + result.markdown + '\n');
   if (regressions.newErrors.length) console.log('NEW ERRORS on the patched page:\n  ' + regressions.newErrors.join('\n  '));

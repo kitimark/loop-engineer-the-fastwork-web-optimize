@@ -2,7 +2,7 @@
 // the trace clock through the sync mark, and the renderer main thread's self time in each frame by kind.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { attributeFrames, selfSegments, kindOf, SYNC_MARK, TRACE_CATEGORIES, TRACE_START, TRACE_BUFFER_KB, BUCKETS, BUCKET_LABELS } from '../../tools/lib/trace-frames.mjs';
+import { attributeFrames, selfSegments, kindOf, presentation, ticksOf, LAYER_EVENTS, SYNC_MARK, TRACE_CATEGORIES, TRACE_START, TRACE_BUFFER_KB, BUCKETS, BUCKET_LABELS } from '../../tools/lib/trace-frames.mjs';
 import { TRACE_TS, TRACE_EVENTS, TRACE_SYNC, TRACE_WINDOW } from '../fixtures/trace-fixture.mjs';
 
 const WIN = { from: TRACE_WINDOW.t0, to: TRACE_WINDOW.lastOn };
@@ -21,12 +21,23 @@ test('each frame > 20 ms gets script / style / layout / paint / other / offMain 
   ]);
   for (const f of r.frames) assert.equal(parts(f), f.dur, 'the parts of a frame sum to its duration');
   assert.deepEqual(r.frames[1].top, [['UpdateLayoutTree', 15], ['RunTask', 3], ['Layout', 2]]);
+  // I-032: layer work is a sub-split of paint (Layerize 1 ms inside the 3 ms Paint), Paint event count, 120 Hz ticks,
+  // and the presentation states of each frame (frame 1: partial, placed at its BeginFrame; frame 2: dropped)
+  assert.deepEqual(r.frames.map((f) => [f.ticks, f.layerMs, f.paintEvents, f.dropped, f.partial]), [[4, 1, 1, 0, 1], [3, 0, 0, 1, 0]]);
   const z = { script: 0, style: 0, layout: 0, paint: 0, other: 0, offMain: 0 };
+  const band = (frames, withDropped = 0, withPartial = 0) => ({ frames, withDropped, withPartial });
   assert.deepEqual(r.summary, {
-    frames: 2, minMs: 20, scriptMs: 8, styleMs: 21, layoutMs: 6, paintMs: 3, otherMs: 3, offMainMs: 17, styleElements: 1020, styleElementsMedian: 510,
+    frames: 2, minMs: 20, scriptMs: 8, styleMs: 21, layoutMs: 6, paintMs: 3, otherMs: 3, offMainMs: 17, layerMs: 1, paintEvents: 1, styleElements: 1020, styleElementsMedian: 510,
     dominant: { ...z, style: 1, offMain: 1 },
     gt34: { frames: 0, dominant: z, ms: z }, gt50: { frames: 0, dominant: z, ms: z },
-    windowFrames: 4, window: WIN, mainThreadEvents: 9, lastEventCoversLastFrame: true, dataLossOccurred: false, partial: false,
+    windowFrames: 4, window: WIN, mainThreadEvents: 10,
+    presentation: {
+      dropped: 1, partial: 1, beginFrames: 2, drawFrames: 1, placedAtBegin: 2, byLayerTree: { 1: 2 },
+      // the window's four rAF gaps: 30 (k4, partial), 16 (k2), 28 (k3, dropped), 16 (k2)
+      byGap: { 'k<=2': band(2), 'k3-4': band(2, 1, 1), 'k5-6': band(0), 'k>=7': band(0) },
+      byGapMs: { le20: band(2), '20-34': band(2, 1, 1), '34-50': band(0), gt50: band(0) },
+    },
+    lastEventCoversLastFrame: true, dataLossOccurred: false, partial: false,
   });
   assert.match(BUCKET_LABELS.offMain, /compositor\/raster\/GPU\/vsync; GPU not separated/);
 });
@@ -101,6 +112,34 @@ test('kinds, categories, Tracing.start params (explicit buffer, recordUntilFull,
   assert.deepEqual(['FunctionCall', 'TimerFire', 'MinorGC', 'v8.compile', 'UpdateLayoutTree', 'Layout', 'PrePaint', 'Paint', 'Commit', 'RunTask', 'ComputeIntersections'].map(kindOf),
     ['script', 'script', 'script', 'script', 'style', 'layout', 'paint', 'paint', 'paint', 'other', 'other']);
   assert.ok(TRACE_CATEGORIES.includes('devtools.timeline') && TRACE_CATEGORIES.includes('blink.user_timing'));
+  assert.ok(TRACE_CATEGORIES.includes('disabled-by-default-devtools.timeline.frame'), 'I-032: the Frames track category (DroppedFrame)');
+  assert.deepEqual(['Layerize', 'UpdateLayer', 'UpdateLayerTree', 'CompositeLayers', 'Commit', 'Paint', 'PrePaint'].map((n) => LAYER_EVENTS.test(n)), [true, true, true, true, true, false, false]);
   assert.deepEqual(TRACE_START, { traceConfig: { recordMode: 'recordUntilFull', traceBufferSizeInKb: TRACE_BUFFER_KB, includedCategories: TRACE_CATEGORIES }, transferMode: 'ReportEvents', bufferUsageReportingInterval: 1000 });
   assert.ok(TRACE_BUFFER_KB >= 100 * 1024);
+});
+
+test('I-032 presentation: DroppedFrame with / without hasPartialUpdate, placed at its BeginFrame (frameSeqId), counted in [a, b)', () => {
+  const ev = [
+    { ph: 'I', name: 'BeginFrame', ts: 100, args: { frameSeqId: 1, layerTreeId: 5 } },
+    { ph: 'I', name: 'DroppedFrame', ts: 260, args: { frameSeqId: 1, hasPartialUpdate: true, layerTreeId: 5 } }, // placed at 100
+    { ph: 'I', name: 'DroppedFrame', ts: 150, args: { frameSeqId: 2, hasPartialUpdate: false, layerTreeId: 6 } }, // no BeginFrame: own ts
+    { ph: 'I', name: 'DroppedFrame', ts: 210, args: { frameSeqId: 3 } }, // no hasPartialUpdate: dropped
+    { ph: 'I', name: 'DroppedFrame', ts: 300, args: { frameSeqId: 4, hasPartialUpdate: false } }, // outside [a, b)
+    { ph: 'I', name: 'DrawFrame', ts: 120 }, { ph: 'X', name: 'DroppedFrame', ts: 130, dur: 1, args: { hasPartialUpdate: true } },
+    { ph: 'X', name: 'Paint', ts: 140, dur: 5 },
+  ];
+  const p = presentation(ev, 100, 300);
+  assert.deepEqual(p.summary, { dropped: 2, partial: 2, beginFrames: 1, drawFrames: 1, placedAtBegin: 1, byLayerTree: { 5: 1, 6: 1, '?': 2 } });
+  assert.deepEqual(p.at, [{ ts: 100, partial: true }, { ts: 130, partial: true }, { ts: 150, partial: false }, { ts: 210, partial: false }]);
+  assert.deepEqual(presentation(ev, 0, 50).summary, { dropped: 0, partial: 0, beginFrames: 0, drawFrames: 0, placedAtBegin: 0, byLayerTree: {} });
+});
+
+test('I-032 ticks (protocol v2 §3.2): k = round(dt / 8.333); bands cut at 20.8 / 37.5 / 54.2 ms', () => {
+  assert.deepEqual([8.3, 16.7, 20.8, 20.9, 33.3, 37.4, 37.5, 54.1, 54.2, 120].map(ticksOf), [1, 2, 2, 3, 4, 4, 5, 6, 7, 14]);
+  // a trace with no frame category: presentation is all zeros, the attribution is unchanged
+  const plain = TRACE_EVENTS.filter((e) => !['DroppedFrame', 'BeginFrame', 'DrawFrame'].includes(e.name));
+  const r = attributeFrames(plain, opts());
+  assert.deepEqual([r.summary.presentation.dropped, r.summary.presentation.partial, r.summary.presentation.beginFrames], [0, 0, 0]);
+  assert.deepEqual(r.frames.map((f) => [f.dropped, f.partial]), [[0, 0], [0, 0]]);
+  assert.equal(r.summary.scriptMs, 8);
 });
