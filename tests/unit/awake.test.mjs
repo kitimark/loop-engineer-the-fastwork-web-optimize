@@ -1,0 +1,76 @@
+// Incident I-026: the Mac went into Maintenance Sleep for 472 s in the middle of a chrome-measure hold, so
+// every timer and --max-seconds fired ~8 min late. While chrome-measure is held, the lock keeps a
+// sleep-prevention assertion (caffeinate -i -s): -w <pid> for a process hold, -t <seconds> for a lease,
+// ended on release. A fake caffeinate ($FW_CAFFEINATE) records its arguments; no binary means no assertion.
+import { test, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tempDir, sleep, TESTS, FAKE_HOST } from '../helpers.mjs';
+
+process.env.FW_TEST_HOST = FAKE_HOST; // a quiet fake host for the lock's admission gate, not the real Mac
+const L = await import('../../tools/lib/lock.mjs');
+const FAKE = join(TESTS, 'fixtures', 'fake-caffeinate.mjs');
+let state, log;
+beforeEach(() => {
+  state = tempDir('fw-awake-');
+  log = join(state, 'caffeinate.jsonl');
+  Object.assign(process.env, { FW_STATE_DIR: state, FW_CAFFEINATE: FAKE, FAKE_CAFFEINATE_LOG: log });
+});
+const calls = async (n = 1) => {
+  for (let i = 0; i < 100 && (!existsSync(log) || readFileSync(log, 'utf8').trim().split('\n').length < n); i++) await sleep(30);
+  return existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : [];
+};
+const alive = (p) => { try { process.kill(p, 0); return true; } catch { return false; } };
+const gone = async (p) => { for (let i = 0; i < 100 && alive(p); i++) await sleep(30); return !alive(p); };
+
+test('a process hold on chrome-measure keeps the Mac awake for exactly its lifetime (caffeinate -i -s -w <pid>), ended on release', async () => {
+  const h = await L.acquire('chrome-measure', { owner: 'verify', kind: 'process', log: () => {} });
+  const [c] = await calls();
+  assert.deepEqual(c.args, ['-i', '-s', '-w', String(process.pid)]);
+  assert.ok(alive(c.pid));
+  assert.ok(existsSync(join(state, 'locks', 'chrome-measure.awake.json')));
+  h.release();
+  assert.ok(await gone(c.pid), 'ended on release');
+  assert.ok(!existsSync(join(state, 'locks', 'chrome-measure.awake.json')));
+});
+
+test('a lease keeps it awake until the lease expires (-t), a renewal replaces the assertion, release ends it', async () => {
+  const A = await import('../../tools/lib/awake.mjs');
+  const r = await L.tryAcquire('chrome-measure', { owner: 'lease', kind: 'lease', ttlSec: 600 });
+  const p1 = A.keepAwake('chrome-measure', r.holder);
+  const [c1] = await calls();
+  assert.equal(c1.pid, p1);
+  assert.deepEqual(c1.args.slice(0, 3), ['-i', '-s', '-t']);
+  assert.ok(Math.abs(Number(c1.args[3]) - 600) <= 2);
+  const h2 = await L.renew('chrome-measure', { owner: 'lease', ttlSec: 900 });
+  const p2 = A.keepAwake('chrome-measure', h2);
+  assert.ok(await gone(p1), 'the old assertion is replaced');
+  assert.ok(alive(p2));
+  await L.release('chrome-measure', { owner: 'lease' });
+  A.stopAwake('chrome-measure', h2.token);
+  assert.ok(await gone(p2));
+});
+
+test('no caffeinate binary (or FW_CAFFEINATE=off): the lock works without an assertion; other resources never get one', async () => {
+  process.env.FW_CAFFEINATE = join(state, 'missing-caffeinate');
+  const h = await L.acquire('chrome-measure', { owner: 'a', kind: 'process', log: () => {} });
+  h.release();
+  process.env.FW_CAFFEINATE = 'off';
+  const h2 = await L.acquire('chrome-measure', { owner: 'b', kind: 'process', log: () => {} });
+  h2.release();
+  process.env.FW_CAFFEINATE = FAKE;
+  const h3 = await L.acquire('iphone', { owner: 'c', kind: 'process', log: () => {} });
+  h3.release();
+  await sleep(200);
+  assert.deepEqual(await calls(0), []);
+});
+
+test('stopAwake never signals a pid that is no longer a caffeinate (pid reuse)', async () => {
+  const A = await import('../../tools/lib/awake.mjs');
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  writeFileSync(join(state, 'locks', 'chrome-measure.awake.json'), JSON.stringify({ token: 't', pid: process.pid }));
+  assert.equal(A.stopAwake('chrome-measure', 't'), false, 'this test process is not a caffeinate: left alone');
+  assert.ok(!existsSync(join(state, 'locks', 'chrome-measure.awake.json')), 'the stale record is dropped');
+});
