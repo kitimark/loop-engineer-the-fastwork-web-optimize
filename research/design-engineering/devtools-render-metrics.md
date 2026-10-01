@@ -124,8 +124,12 @@ from my reading, handed over:
   - Not one of `Timeline.start`, `toggleInstruments`, `ScriptProfiler.startTracking` or
     `PageInspectorController::connectFrontend` starts it. `InspectorDebuggerAgent` only stops and restarts an
     already-active stopwatch around pauses.
-  - So our session never starts the clock (inference). What Safari's own frontend does differently (another
-    command, or the `frame` target that iOS 26 also exposes) is the open check.
+  - **`Page.enable` starts it** (found by de-safari, re-read by me): `InspectorPageAgent::enable()` calls
+    `executionStopwatch()->reset(); ->start();` (`Source/WebCore/inspector/agents/InspectorPageAgent.cpp`, vendor
+    source). Our committed Timeline recorders (`research/01-initial-investigation/tools/record.mjs`,
+    `research/cpu-throttle-calibration/tools/iphone_scroll.mjs`) call `Timeline.start` with no `Page.enable`.
+    Prediction (inference, untested on iOS 26.6.1): `Page.enable` on the same target first gives real
+    timestamps. Each `Page.enable` resets the clock to 0.
 - **What exists in the protocol JSON** (`Source/JavaScriptCore/inspector/protocol/*.json`):
   - Timeline records `Paint` (with `data.clip`, a quad), `Composite`, `Layout`, `RecalculateStyles` and
     `RenderingFrame`;
@@ -275,7 +279,7 @@ needs `npm run test:chrome`. An **opt-in** flag leaves default A/B runs comparab
 
 | rank | addition | tool to change | measurement code? | cost | value |
 |---|---|---|---|---|---|
-| 1 | **Per-frame durations from WebKit's Timeline** (start the execution stopwatch, §3), giving style/layout/paint/composite ms per frame on the phone | `de-safari`'s probe, then `tools/iphone.mjs` (a `timeline` mode) | no (iPhone tool; not part of Chrome A/B) | one investigation session (which command starts the clock) + a toolsmith change with a fake-proxy test | **highest**: turns every iPhone term from derived to measured, settles the raster rate, splits the y≈1960 frame (decode vs paint vs JS) |
+| 1 | **Per-frame durations from WebKit's Timeline** (send `Page.enable` before `Timeline.start`, §3), giving style/layout/paint/composite ms per frame on the phone | `de-safari`'s probe, then `tools/iphone.mjs` (a `timeline` mode) | no (iPhone tool; not part of Chrome A/B) | very low: one command, verified once on the phone, plus a toolsmith change with a fake-proxy test | **highest**: turns every iPhone term from derived to measured, settles the raster rate, splits the y≈1960 frame (decode vs paint vs JS) |
 | 2 | **Per-frame paint area and per-layer paint counts in Chrome**: `LayerTree.enable` + `layerPainted` rects, bucketed by rAF frame, summed Mpx per phase, top rects with layer and node | `tools/verify.mjs --paint-rects` (opt-in) + `lib/cdp.mjs`; or a bench probe kind `paintArea` | **yes** (opt-in; `LayerTree` adds per-commit overhead, so it only compares with other `--paint-rects` runs) | ~1 toolsmith day + fake-CDP tests | **high**: measured A_i per hotspot (lower bound for WebKit resizes, exact for paint-only switches); catches paint regressions that 6x hides; finds the feed rect's owner |
 | 3 | **Frames-track presentation states** in `--trace-frames`: add `disabled-by-default-devtools.timeline.frame`, count `DroppedFrame` events with and without `args.hasPartialUpdate` per phase (the Frames track's dropped/partial rule; = arch-devtools **G1**, `research/architecture/devtools-methodology.md`) | `tools/lib/trace-frames.mjs` + `verify.mjs` summary | **yes**, inside the already-opt-in traced runs (traced runs are not comparable to untraced ones anyway) | low: one category + a parser + tests | **medium-high for verdicts**: credits threaded refactors (h2, morph R3, countdown WAAPI); Chrome-only, says nothing about iPhone GPU |
 | 4 | **Layer creation per frame**: split `Layerize`/`UpdateLayerTree`/`Commit` out of the `paint` bucket; layer-count delta per frame from `layerTreeDidChange` | `trace-frames.mjs` (bucket split) + the `--paint-rects` session (count) | yes (bucket split changes `paint` ms: call it out) | low | **medium**: verifies a3 / R5 / h3 / /10c window flips in Chrome terms; Chrome layerization ≠ WebKit, so the iPhone `LayerTree` (de-safari) stays the truth |
@@ -290,7 +294,7 @@ needs `npm run test:chrome`. An **opt-in** flag leaves default A/B runs comparab
 - chrome-devtools MCP performance traces (Hard rule 8). `--trace-frames` and CDP do the same work under the lock.
 
 **Order (inference):** 3 and 4 are cheap and ride on `--trace-frames`. 2 is the model fix on the Chrome side. 1 is the
-model fix on the device and is worth more than the rest together, if the stopwatch can be started. Hand 2-4 to a
+model fix on the device and is worth more than the rest together; it now looks like a one-command change. Hand 2-4 to a
 toolsmith as one incident ("render-side trace signals"); 1 belongs to de-safari's note.
 
 ## 7. For the user, in plain words
