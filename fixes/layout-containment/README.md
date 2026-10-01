@@ -3,7 +3,9 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). The builds' CSS/JS stay in gitignored overlays and scratchpad snapshots; never push.
 
-**Status:** P11 done. lc-cq3 / aw1-cq3 gives no gain: the nested Layout is removed but its cost stays in the same frame (P-028 MISS on ms, see "P11 Block A result"). P14 is pending.
+**Status:** P11 done. lc-cq3 / aw1-cq3 gives no gain: the nested Layout is removed but its cost stays in the same frame (P-028 MISS on ms, see "P11 Block A result"). P14 done (see "P14 result"). The rotator's whole-view tick Layout (C 67/67, median
+20.6 ms) is gone with st4-noswap (2/67, idle long frames 0), so the escape is the swap path. re-contain-js re-roots
+it at #people but keeps 57 % of the cost (P-025: V1 HIT, V2 root HIT, cost MISS). Next: an st5 candidate (proposal).
 **Stage:** R + I closed. The P11 phone pass is done (Block A; Block B skipped). D for the rotator question rests on the P14 boundary block (below).
 **Device class / gate:** phone-only (Chrome shows no full layouts and no style-nested layout, see the census) → phone Timeline attribution, then phone ABBA
 **Driver(s) behind the claims:** none yet (Chrome census/parity are mechanism checks, not timing)
@@ -353,6 +355,66 @@ Chrome mechanism check (5 s, counts only):
 - The headline target stays the ≥101 ms rebuild frame at y≈1960 (lead's instruction); P14 does not test it.
 - No overlap with lc-cq3: in the SSR HTML the mobile deck is in the hero section, the stage visuals and kr-arms are
   in a later section, and `.is-carousel` is inside #people.
+
+## P14 result (iphone-runner, 17:42-17:54Z; scored here with `<scratchpad>/layout-containment/p14score.cjs`)
+
+Block: driver W at 430x775, Timeline on (depth 8) in all 9 counted runs, order C1 A2 B3 · B4 C5 A6 · A7 B8 C9
+(A = V1 st4-noswap, B = V2 re-contain-js). Tools: main 2cd736b (tools b80a767). Served hashes match the ticket
+(C JS 3e2f599a1632 = aw1-10e, V1 b8c085d9b619, V2 3579d857cab9 / CSS 288c2ebec580, rotoff 71572ef639cf). Phone
+35.6 → 36.8 °C, 78 %, no Low Power Mode noted.
+- **Sentinels pass.** Timeline-OFF C: S-open bottom 60.2 / scroll 56.6 fps, S-end bottom 60.2 / scroll 56.5 fps
+  (rule ≥58 / ≥44).
+- **Scoring** follows the pre-registered rules. A tick is one L11571 TimerFire in the run's marks. A view tick
+  has a ≥10 ms Layout with the viewport root (430x775) between the tick and the end of the first RenderingFrame
+  after it. The 0-60 ms window variant gives the same bands.
+  - A 1327 px tall root (430x1327) is #people, not the view. My first pass counted it as view (h ≥ 700) and was
+    wrong; the fixed test is h 770-820.
+- Every counted run has 22-23 ticks (idle 11-12, scroll 7, bottom 3-4). All arms qualify (3/3 runs, 67 pooled
+  ticks each). The rotoff run has 0 ticks, as built.
+
+| arm | view ticks (pooled) | per run | idle-only | median tick Layout | ≥5 ms tick Layout roots | band |
+|---|---|---|---|---|---|---|
+| C aw1-10e | 67/67 (100 %) | 22/22, 23/23, 22/22 | 34/34 | 20.6 ms (idle 23.8) | view 67 | view |
+| V1 st4-noswap | 2/67 (3 %) | 1/22, 1/22, 0/23 | 0/36 | 0.1 ms (idle 0.1) | view 2 | **gone** |
+| V2 re-contain-js | 8/67 (12 %) | 3/22, 2/23, 3/22 | 4/35 | 11.7 ms (idle 13.1) | #people 61, view 6 | gone (re-rooted) |
+
+- **Pre-registered predictions:**
+  - V1 gone: **HIT** (3 %, idle 0/36). C is view-rooted (100 %), so the block is readable.
+  - V2 rooted at #people: **HIT** (61/67 ≥5 ms tick Layouts at 430x1327).
+  - V2 median tick Layout ≤ half of C: **MISS**. It is 11.7 / 20.6 = 0.57 (idle 13.1 / 23.8 = 0.55), above the 0.5
+    line. The #people boundary holds on this WebKit, but laying out the 1327 px card is still about 55 % of the
+    whole-view cost.
+- **Reading** (§7.7 as amended):
+  - C view, V1 gone: the escape is in the swap path, i.e. the `ge` mount/unmount. That is either the img
+    renderer insert/remove or the exit/shift/pop animations' layer changes; P14 does not separate them
+    (OBSERVED, in our setup).
+  - Fix direction: a rotator with no keyed remount.
+  - V2's boundary contains the climb but keeps a large #people layout, so it is not the better fix for this cost.
+- **Frame columns** (phone, dt>50 (>46/>54) · dt>34 (>30/>38)). Idle at y 0 is 6 s per run, Timeline on:
+  - C: >50 2, 2, 0 · >34 4, 4, 5 (twins 9/4, 10/3, 7/4)
+  - V1: >50 0, 0, 0 · >34 0, 0, 0 (twins 0/0 ×3, max 19-23 ms)
+  - V2: >50 0, 0, 0 · >34 1, 0, 2 (twins 5/0, 2/0, 2/2)
+  - Bottom phase: C >34 3, 3, 4; V1 0, 1, 0; V2 3, 1, 2.
+  - Info only (not scored), the §7.8 Timeline-OFF idle at y 1500 add-on, 40 s, 1 run per arm:
+
+    | arm | >50 (>46/>54) | >34 (>30/>38) | max | near-band frames |
+    |---|---|---|---|---|
+    | C | 11 (13/11) | 47 (75/30) | 63 ms | 47 |
+    | V1 | 0 (0/0) | 0 (0/0) | 20 ms | 0 |
+    | V2 | 0 (3/0) | 40 (61/13) | 47 ms | 51 |
+
+  - Not threshold-sensitive for V1 vs C: every twin agrees.
+  - V2's >34 count is near C's (40 vs 47), and many of its frames sit in the near bands.
+- **Scroll phase is unchanged in every arm**, rotoff included: >34 5-8 (C 6, 7, 7; V1 8, 7, 5; V2 5, 3, 5; rotoff 7).
+  The ≥89 ms rebuild frame at y≈1950-1990 is in every run: C 89-101, V1 91-104, V2 96-142, rotoff 105.
+  - So the headline frame is not the rotator's. That matches F-082 (Composite plus Layout of the rebuild).
+- **Next step (proposal, not built):** an st5 rotator that keeps 5 img slots mounted, updates `src` in place,
+  and runs the slide on persistent elements whose layers never come or go (permanent `will-change: transform`,
+  classes toggled, no keyed remount).
+  - Then: a Chrome mechanism check (0 childList, stable layer count), then one phone block C / st5 / V1. V1
+    stays as the "gone" reference.
+  - If st5 is still view-rooted, the animations' layer changes are the escape. The fallback is the split arm
+    (`ge` mounted with `animation: none`).
 
 ## Risks, conflicts, follow-ups
 
