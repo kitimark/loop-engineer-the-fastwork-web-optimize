@@ -161,7 +161,9 @@ Sources: E1-E5 `research/architecture/measurement-review.md`; W1-W3 / R1-R3 `res
 | N11 vendor-scrollend result (lead 2026-10-01 05:2xZ) | **mechanism only, not counted**; 02 not in wave-2 combines | - (owner done) | gtag frame phase-shifted, not removed (analytics.js idle-callback LoAF 50-61 ms in 3/5); > 50 ms 2 → 2, > 34 ms 3 → 4 within noise (fea23a5). 03 = site-owner GA advice. Open for the I-018 attribution slot: does that idle-callback frame fall inside the scroll phase? |
 | AV3 F-016 (430x932 trips apple.com base tier), F-017 (per-call debounce in Apple analytics), F-021 (`html { scroll-behavior: smooth }`: scripted scrollTo must pass `behavior:'instant'`) | yes, as pitfalls | every owner writing a probe | F-021 applies to every scripted scroll driver on our page |
 
-iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain http per I-003), in order:
+iPhone scripted-check queue (lease per CLAUDE.md, plain http per I-003). **The phone is back (2026-10-01 ~06:50Z):
+`iphone-runner` owns it and works in this order: goal check baseline vs `aw1-10c` (n=3, B P P B B P), finger tests via the
+lead (`FINGER_TESTS.md`), then items 1, 2, 9, 4-8.** Items:
 1. R3 capture-phase `contentvisibilityautostatechange` logger on the plain baseline, together with E2's
    iPhone part (moved up 2026-10-01: in Chrome, scene/content-visibility flips name 0 of 7 slow frames on
    wave1-partial, so only the phone can tell whether they cause the iPhone clusters).
