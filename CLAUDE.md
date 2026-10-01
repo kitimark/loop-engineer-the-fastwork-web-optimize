@@ -126,10 +126,13 @@ stage closed by a card; the lead signs D (the attribution card): `fixes/LEAD.md`
 - **Phone geometry for attribution.** Gain A/Bs stay at 430x932; probes that ask *where* a frame happens run at the
   iPhone's 430x775 (scripted) / 430x815 (collapsed toolbar), and positions compare by crossing (the nearest code
   threshold), never by raw y (Chrome and phone y differ by ~77 px).
-- **Tick thresholds** (Chrome gaps quantize at 8.33 ms at 120 Hz; Safari rAF runs at 60 Hz by WebKit default, CONFIRMED (pref PreferPageRenderingUpdatesNear60FPSEnabled, UnifiedWebPreferences.yaml; claims-audit), with non-vsync 1 ms timestamps, so on the phone 8.33 ms is a unit, not a grid, and a 3-vsync frame (~50 ms) sits between dt>50 and k≥7): k = round(dt / 8.333 ms); ">34" = dt ≥ 37.5 ms (k≥5), ">50" =
-  dt ≥ 54.17 ms (k≥7); medians compare as ticks. The legacy ms columns stay for one wave; a verdict that differs
-  between the two is "threshold-sensitive". On the phone, report both forms (dt>50 / k≥7, dt>34 / k≥5); frames
-  within 4 ms of a threshold are flagged (A5).
+- **Frame thresholds.** Chrome (120 Hz, vsync-aligned stamps): k = round(dt / 8.333 ms), ">34" = k≥5 (dt ≥ 37.5 ms),
+  ">50" = k≥7 (dt ≥ 54.17 ms), medians compare as ticks; the legacy ms columns stay for one wave, and a verdict that
+  differs between the two is "threshold-sensitive". Phone (Safari rAF at 60 Hz by WebKit default, CONFIRMED: pref
+  PreferPageRenderingUpdatesNear60FPSEnabled; its 1 ms stamps mark the rendering-update start and are not
+  vsync-quantized above one vsync, claims-audit §2.3): goal dt > 50 ms (target 0) and dt > 34, plus the counts at
+  ±4 ms (dt>46/54, dt>30/38); a verdict that differs across ±4 ms is "threshold-sensitive"; no k forms on the
+  phone; record Low Power Mode (30 Hz).
 
 ## Fix workflow in a worktree (start to finish)
 
