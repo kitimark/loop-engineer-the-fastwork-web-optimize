@@ -41,13 +41,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, readdirSync, statSync, rmSync } from 'node:fs';
 import { resolve, join, dirname, relative, sep } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
-import https from 'node:https';
 import { createHash } from 'node:crypto';
-import http from 'node:http';
 import { REPO, mirrorHome, resolveTree, isLinkedWorktree, gitCommonDir, sharedStateDir, autoPortBase, checkoutId, sha256File } from './lib/paths.mjs';
 import { allStatus } from './lib/lock.mjs';
 import { stats } from './lib/ab-stats.mjs';
 import { describeHostState } from './lib/host.mjs';
+import { servedGet } from './lib/served-get.mjs';
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag, isSparse } from './lib/baseline.mjs';
 
 const argv = process.argv.slice(2);
@@ -303,16 +302,9 @@ function cmdServe(t) {
 }
 
 // ---- A/B measurement --------------------------------------------------------------------------------
-function get(url) {
-  return new Promise((res, rej) => {
-    const mod = url.startsWith('https:') ? https : http;
-    const req = mod.get(url, { rejectUnauthorized: false, headers: { 'accept-encoding': 'identity' } }, (r) => {
-      const chunks = []; r.on('data', (c) => chunks.push(c)); r.on('end', () => res({ status: r.statusCode, headers: r.headers, body: Buffer.concat(chunks) }));
-    });
-    req.on('error', rej);
-    req.setTimeout(20000, () => req.destroy(new Error('timeout ' + url)));
-  });
-}
+// the served-file check's GET: a transport failure (timeout, reset) is retried on a fresh connection, any HTTP answer
+// is checked as before (lib/served-get.mjs, ts-lock-bundle (d))
+const get = (url) => servedGet(url);
 async function startServer(label, stateFile, extra) {
   rmSync(stateFile, { force: true });
   const a = [join(REPO, 'tools', 'serve.mjs'), '--root', BASE, ...extra, '--port', '0', '--quiet', '--state', stateFile, ...serveArgs()];
