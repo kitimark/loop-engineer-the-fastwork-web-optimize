@@ -69,10 +69,11 @@ async function startServer(label, overlay) {
 // later (accessor properties keep the latest assigned function and wrap it on read), and dataLayer pushes.
 const HOOK = `(() => {
   const L = window.__n11 = { hits: [], dl: [] };
+  const persist = (k, e) => { if (!L.leaving) return; try { const a = JSON.parse(localStorage.getItem('n11leave') || '[]'); a.push(Object.assign({ k }, e)); localStorage.setItem('n11leave', JSON.stringify(a)); } catch (x) {} };
   const foreign = (u) => { try { const x = new URL(String(u), location.href); return x.origin !== location.origin ? x.href : null; } catch { return null; } };
   const rec = (kind, u, body) => { if (String(u).indexOf('/__mirror/null?h=') === 0) u = 'https://' + decodeURIComponent(String(u).split('h=')[1]) + '/'; const f = foreign(u); if (!f) return; const b = body == null ? '' : typeof body === 'string' ? body : (body instanceof URLSearchParams ? body.toString() : '[' + (body && body.constructor && body.constructor.name) + ']');
-    const e = { kind, url: f, body: b.slice(0, 4000), t: Math.round(performance.now()) }; L.hits.push(e); console.debug('__N11HIT__' + JSON.stringify(e)); };
-  const mark = (ev) => { try { localStorage.setItem('n11dbg', (localStorage.getItem('n11dbg') || '') + '|hook ' + ev + '@' + Math.round(performance.now())); } catch (e) {} const e = { ev: '(' + ev + ')', t: Math.round(performance.now()), y: Math.round(scrollY) }; L.dl.push(e); console.debug('__N11DL__' + JSON.stringify(e)); };
+    const e = { kind, url: f, body: b.slice(0, 4000), t: Math.round(performance.now()) }; L.hits.push(e); persist('hit', e); console.debug('__N11HIT__' + JSON.stringify(e)); };
+  const mark = (ev) => { L.leaving = true; const e = { ev: '(' + ev + ')', t: Math.round(performance.now()), y: Math.round(scrollY) }; persist('dl', e); L.dl.push(e); console.debug('__N11DL__' + JSON.stringify(e)); };
   document.addEventListener('visibilitychange', () => mark('visibility:' + document.visibilityState), true);
   window.addEventListener('pagehide', () => mark('pagehide'), true);
   const wrapProp = (obj, name, kind, pick) => { let cur = obj[name]; const cache = new WeakMap();
@@ -87,7 +88,7 @@ const HOOK = `(() => {
   // dataLayer.push is replaced by GTM and wrapped again by gtag (which keeps the previous push):
   // wrap each assigned function once, and log only the outermost call so a push is logged once.
   let dl, depth = 0; const hookPush = (arr) => { if (!arr || arr.__n11) return; arr.__n11 = true; const wrap = (f) => function () {
-      if (!depth) for (const m of arguments) { const ev = m && (m.event || (m[0] === 'event' ? 'gtag:' + m[1] : m[0])); if (ev) { const e = { ev: String(ev), t: Math.round(performance.now()), y: Math.round(scrollY) }; L.dl.push(e); console.debug('__N11DL__' + JSON.stringify(e)); } }
+      if (!depth) for (const m of arguments) { const ev = m && (m.event || (m[0] === 'event' ? 'gtag:' + m[1] : m[0])); if (ev) { const e = { ev: String(ev), t: Math.round(performance.now()), y: Math.round(scrollY) }; L.dl.push(e); persist('dl', e); console.debug('__N11DL__' + JSON.stringify(e)); } }
       depth++; try { return f.apply(this, arguments); } finally { depth--; } };
     let p = wrap(arr.push);
     Object.defineProperty(arr, 'push', { configurable: true, get() { return p; }, set(v) { p = v && v.__n11w ? v : wrap(v); p.__n11w = true; } }); };
@@ -183,7 +184,16 @@ async function scenario(cdp, v, url, sc, profile, hook = true) {
   await page.send('Page.navigate', { url: 'about:blank' });
   await sleep(1200);
   let afterLeave = null;
-  if (v.label === '02-debug') { await page.send('Page.navigate', { url: url + 'robots.txt' }); await sleep(800); afterLeave = await step('afterLeave', page.eval("localStorage.getItem('n11dbg')"), 10000).catch((e) => String(e)); log('  localStorage n11dbg: ' + afterLeave); }
+  if (sc === 'D') {
+    // what happened during the unload, from localStorage (same origin, same tab): console messages can be lost then
+    await page.send('Page.navigate', { url: url + 'robots.txt' }); await sleep(800);
+    afterLeave = await step('afterLeave', page.eval("JSON.parse(localStorage.getItem('n11leave') || '[]')"), 10000).catch((e) => String(e));
+    if (v.label === '02-debug') log('  localStorage n11dbg: ' + await page.eval("localStorage.getItem('n11dbg')").catch(() => '?'));
+    if (Array.isArray(afterLeave)) for (const e of afterLeave) {
+      if (e.k === 'dl' && !dl.some((x) => x.ev === e.ev && x.t === e.t)) dl.push(e);
+      if (e.k === 'hit' && !hits.some((x) => x.url === e.url && x.t === e.t)) hits.push(e);
+    }
+  }
   await page.close();
   // a request passes several stacked fetch wrappers (shim, vendors): the hook can see it twice; count it once
   { const seen = new Set(); for (let i = hits.length - 1; i >= 0; i--) { const k = hits[i].url + '\u0000' + hits[i].body + '\u0000' + hits[i].t; if (seen.has(k)) hits.splice(i, 1); else seen.add(k); } }

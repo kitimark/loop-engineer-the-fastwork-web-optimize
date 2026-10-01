@@ -1,0 +1,73 @@
+{
+ "tool": "research/vendor-scrollend/probe.mjs",
+ "cpu": 1,
+ "tailS": 4,
+ "startedAt": "2026-10-01T03:10:08.550Z",
+ "host": {
+  "load1Before": 1.52880859375,
+  "load1After": 2.01904296875,
+  "cpuIdlePct": 76.8
+ },
+ "runs": [
+  {
+   "variant": "base",
+   "scenario": "load-no-hook",
+   "loc": {
+    "href": "https://localhost:62107/",
+    "h": 6240,
+    "kit": true,
+    "dl": 6
+   }
+  },
+  {
+   "variant": "02-debug",
+   "scenario": "D",
+   "listeners": [
+    "pagehide :8 capture",
+    "pagehide /analytics.js:97 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /analytics.js:157",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /analytics.js:157"
+   ],
+   "scroll": {
+    "y": 5343.5,
+    "t": 8157
+   },
+   "scrollDepthPushes": [],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "(dbg wrapper scrollend pending=0)",
+    "view_section",
+    "(pagehide)",
+    "(visibility:hidden)"
+   ],
+   "dlBeforeLeave": 8,
+   "afterLeave": "|wrapper scrollend pending=0@7859|hook pagehide@8172|runPending pagehide pending=1 timer=79@8172|call ok@8180|hook pagehide@3128|hook visibility:hidden@8182|runPending undefined pending=0 timer=0@8182|hook visibility:hidden@3130",
+   "gaEvents": [],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1
+   },
+   "errors": [],
+   "profile": null
+  }
+ ],
+ "seconds": 20
+}
