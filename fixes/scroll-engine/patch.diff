@@ -1,477 +1,226 @@
-# fastwork mirror fix: scroll-engine
+# fastwork mirror fix: scroll-engine--10c
 # baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
-# rebuild the overlay with: node tools/fix.mjs apply scroll-engine
+# rebuild the overlay with: node tools/fix.mjs apply scroll-engine--10c
 # contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
 # base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11753,9 +11753,16 @@
+ }
+ .start-selling [data-start-selling-scene="paused"],
+ .start-selling [data-start-selling-scene="paused"] :where(*) {
+-  will-change: auto !important;
+   animation-play-state: paused !important;
+ }
++/* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
++   element is inside its +-0.5 vh window; both edges are off screen, and /09's no-re-skip keeps the gate
++   from flapping, so the flips happen away from the viewport. */
++.start-selling [data-start-selling-scene="paused"],
++.start-selling [data-start-selling-scene="paused"] :where(*),
++.start-selling [data-fw-wc="0"] {
++  will-change: auto !important;
++}
+ .start-selling [data-start-selling-render="deferred"] {
+   contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
+   content-visibility: auto;
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -2663,26 +2663,90 @@
- var $T = new Set(),
-   eE = new Map(),
-   tE = 0,
--  nE = !1;
--function rE() {
--  tE ||= window.requestAnimationFrame(iE);
-+  nE = !1,
-+  // [scroll-engine] full = next frame runs every active effect (scroll / resize / activation);
-+  // otherwise only effects that asked for another frame (easing) or a final run (deactivation).
-+  fwFull = !1,
-+  fwW = -1,
-+  fwRT = 0,
-+  // Per-frame viewport cache, read lazily (at most once per frame, and before any mutate() write).
-+  fwF = {
-+    _vh: -1,
-+    _vw: -1,
-+    _y: -1,
-+    t: 0,
-+    get vh() {
-+      return this._vh < 0 ? (this._vh = window.innerHeight) : this._vh;
-+    },
-+    get vw() {
-+      return this._vw < 0 ? (this._vw = window.innerWidth) : this._vw;
-+    },
-+    get y() {
-+      return this._y < 0 ? (this._y = window.scrollY) : this._y;
-+    },
-+  },
-+  // Same shape, uncached: for calling a measure()/mutate() pair directly, outside an engine frame.
-+  fwNow = {
-+    t: 0,
-+    get vh() {
-+      return window.innerHeight;
-+    },
-+    get vw() {
-+      return window.innerWidth;
-+    },
-+    get y() {
-+      return window.scrollY;
-+    },
-+  };
-+// Run a two-phase effect right now (mount, matchMedia change); true = not settled.
-+function fwRun(e) {
-+  return e.mutate(e.measure(fwNow), fwNow) === !0;
- }
--function iE() {
-+function rE() {
-+  ((fwFull = !0), (tE ||= window.requestAnimationFrame(iE)));
-+}
-+function fwWake(e) {
-+  ((e.wake = !0), (tE ||= window.requestAnimationFrame(iE)));
-+}
-+// [toolbar-resize] iOS fires `resize` ~36 times while the URL bar collapses. Those are height-only:
-+// the scroll that collapses the bar already schedules frames, which read a fresh innerHeight
-+// (fwF.vh). Width changes (rotation, desktop resize) still re-run everything at once; a height-only
-+// resize with no scroll re-runs once, after the resizes stop.
-+function fwResize() {
-+  let e = window.innerWidth;
-+  if (e !== fwW) {
-+    ((fwW = e), fwRT && (window.clearTimeout(fwRT), (fwRT = 0)), rE());
-+    return;
-+  }
-+  (fwRT && window.clearTimeout(fwRT), (fwRT = window.setTimeout(() => ((fwRT = 0), rE()), 120)));
-+}
-+function iE(t) {
+@@ -2670,9 +2670,55 @@
+ function iE() {
    tE = 0;
--  for (let e of $T) e.active && e.callback();
-+  let n = fwFull;
-+  ((fwFull = !1), (fwF._vh = fwF._vw = fwF._y = -1), (fwF.t = t));
-+  let r = [];
-+  for (let e of $T) (e.wake || e.final || (n && e.active)) && ((e.wake = e.final = !1), r.push(e));
-+  // 1. legacy dE(fn) callbacks (they read and write themselves), in registration order
-+  for (let e of r) e.measure || e.callback();
-+  // 2. every two-phase effect reads (one style+layout at most for all of them) ...
-+  for (let e of r) e.measure && (e.m = e.measure(fwF));
-+  // 3. ... then every two-phase effect writes; `true` = not settled, run it again next frame
-+  for (let e of r) e.measure && e.mutate(e.m, fwF) === !0 && fwWake(e);
+   for (let e of $T) e.active && e.callback();
++}
++// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
++// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
++// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
++var fwDef = new Set(),
++  fwBooted = !1,
++  fwArmed = !1,
++  fwQ = 0;
++function fwIdle(e) {
++  return window.requestIdleCallback ? window.requestIdleCallback(e, { timeout: 3e3 }) : window.setTimeout(e, 150);
++}
++function fwKick() {
++  fwArmed && !fwQ && fwDef.size && (fwQ = fwIdle(fwUnskipNext));
++}
++function fwUnskipNext() {
++  fwQ = 0;
++  for (let e of fwDef) {
++    (fwDef.delete(e), e.element?.getAttribute(`data-start-selling-render`) === `deferred` && sE(e, !0));
++    break;
++  }
++  fwKick();
++}
++// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
++// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
++// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
++var fwWCSel = `.commission-card, .face, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
++  fwWCIO;
++function fwWC() {
++  if (!(`IntersectionObserver` in window)) return;
++  fwWCIO ||= new IntersectionObserver(
++    (e) => {
++      for (let t of e) t.target.setAttribute(`data-fw-wc`, t.isIntersecting ? `1` : `0`);
++    },
++    { rootMargin: `50% 0px 50% 0px` },
++  );
++  for (let e of document.querySelectorAll(`.start-selling :is(${fwWCSel})`))
++    e.hasAttribute(`data-fw-wc`) || (e.setAttribute(`data-fw-wc`, `1`), fwWCIO.observe(e));
++}
++function fwBoot() {
++  if (fwBooted) return;
++  fwBooted = !0;
++  let e = () =>
++    window.setTimeout(() => {
++      ((fwArmed = !0), fwKick(), fwIdle(fwWC));
++    }, 500);
++  document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
  }
  function aE() {
-   nE ||
+-  nE ||
++  (fwBoot(), nE) ||
      ((nE = !0),
-+    (fwW = window.innerWidth),
      window.addEventListener(`scroll`, rE, { passive: !0 }),
--    window.addEventListener(`resize`, rE, { passive: !0 }));
-+    window.addEventListener(`resize`, fwResize, { passive: !0 }));
- }
- function oE() {
-   !nE ||
-     $T.size ||
-     ((nE = !1),
-     window.removeEventListener(`scroll`, rE),
--    window.removeEventListener(`resize`, rE),
-+    window.removeEventListener(`resize`, fwResize),
-+    fwRT && (window.clearTimeout(fwRT), (fwRT = 0)),
-     tE && window.cancelAnimationFrame(tE),
-     (tE = 0));
- }
-@@ -2707,10 +2771,14 @@
-   }
- }
- function cE(e, t) {
-+  // [scene-gating] only touch the attribute when it changes (it restyles the whole section subtree);
-+  // on deactivation run the effect once more so it writes its clamped end state.
-+  let n = t ? `active` : `paused`;
+     window.addEventListener(`resize`, rE, { passive: !0 }));
+@@ -2689,7 +2735,7 @@
+ function sE(e, t) {
+   if (!(!e.deferRendering || !e.element)) {
+     if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
+-      e.element.setAttribute(`data-start-selling-render`, `active`);
++      (fwDef.delete(e), e.element.setAttribute(`data-start-selling-render`, `active`));
+       return;
+     }
+     e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
+@@ -2700,7 +2746,7 @@
+               let t = e.element.getBoundingClientRect().height;
+               t > 0 && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`);
+             }
+-            e.element.setAttribute(`data-start-selling-render`, `deferred`);
++            (e.element.setAttribute(`data-start-selling-render`, `deferred`), fwDef.add(e), fwKick());
+           }
+         });
+       }));
+@@ -2710,8 +2756,91 @@
    (e.manageAnimations &&
      e.element &&
--    e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
+     e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
 -    e.active !== t && ((e.active = t), sE(e, t), e.onActiveChange?.(t), t && rE()));
-+    e.element.getAttribute(`data-start-selling-scene`) !== n &&
-+    e.element.setAttribute(`data-start-selling-scene`, n),
-+    e.active !== t && ((e.active = t), sE(e, t), e.onActiveChange?.(t), t ? rE() : ((e.final = !0), fwWake(e))));
++    e.active !== t &&
++      ((e.active = t),
++      t && sE(e, !0),
++      e.onActiveChange?.(t),
++      t && rE(),
++      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
++      // windows: re-scan once in idle time after a scene activates.
++      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
++}
++var fwWCQ = 0;
++// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
++// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
++// before it reaches the viewport (WebKit's own content-visibility margin is 0), and it is never re-skipped.
++// Re-skipping changed the section's geometry at the scene gate's edge (gate flap, N9) and tore down and
++// rebuilt its layers on every pass (N10).
++var fwRG = new Map();
++function fwRM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%/, (e, t) => `${Math.max(150, +t + 50)}%`);
++}
++function fwRender(e, t, n) {
++  let r = fwRG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e) if (t.isIntersecting) for (let e of r.elements.get(t.target) ?? []) sE(e, !0);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwRG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
  }
++// [scroll-engine /10c] far re-skip, behind the user only: a rendered section that is more than its
++// un-skip margin + 25 % (1.75 vh for the default 100 % gate, 2.25 vh for .pain's 150 %) ABOVE the viewport
++// goes back to content-visibility (its height comes from the IO entry, no forced layout), which drops its
++// layers (w1 did this at the scene gate itself, which flapped: N9). It comes back through fwRender's IO
++// (gate + 50 %) on the way up, so the 0.25 vh band between the two edges is the hysteresis. Sections
++// ahead of the user are never re-skipped (they keep the idle un-skip).
++var fwFarG = new Map();
++function fwFM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
++}
++function fwReskip(e, t) {
++  !e.deferRendering ||
++    !e.element ||
++    e.active ||
++    e.element.getAttribute(`data-start-selling-render`) === `deferred` ||
++    ((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)),
++    fwDef.delete(e),
++    t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
++    e.element.setAttribute(`data-start-selling-render`, `deferred`));
++}
++function fwFar(e, t, n) {
++  let r = fwFarG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e)
++            if (!t.isIntersecting && t.boundingClientRect.bottom < 0)
++              for (let e of r.elements.get(t.target) ?? []) fwReskip(e, t.boundingClientRect.height);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwFarG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
++}
  function lE(e) {
    let t = e.getBoundingClientRect();
-@@ -2747,9 +2815,17 @@
-   );
- }
- function dE(e, t = {}) {
-+  // [scroll-engine] e is either a callback (legacy: reads and writes itself) or a two-phase
-+  // effect { measure(f), mutate(m, f) }: measure only reads (f = per-frame fwF cache), mutate only
-+  // writes and returns true while it is still easing.
-   let n = {
-       active: !t.element || lE(t.element),
--      callback: e,
-+      callback: typeof e == `function` ? e : void 0,
-+      measure: typeof e == `function` ? void 0 : e.measure,
-+      mutate: typeof e == `function` ? void 0 : e.mutate,
-+      m: void 0,
-+      wake: !1,
-+      final: !1,
-       deferRendering: t.deferRendering ?? !1,
-       element: t.element,
-       manageAnimations: t.manageAnimations ?? !!t.element,
-@@ -3097,32 +3173,50 @@
-     let e = document.createRange();
-     (e.selectNodeContents(m), z(b, e.getClientRects().length > 1));
-   }
-+  // [scroll-engine] j() as a pure read (q = the compact flag this frame); z(b, …) happens in mutate.
-+  function fwJ(q) {
-+    if (!q || !m || !h) return !1;
-+    let e = document.createRange();
-+    return (e.selectNodeContents(m), e.getClientRects().length > 1);
-+  }
-   ne(() => {
-     let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
-       t = 0,
-       n = 1,
-       r = 0,
-       i = 0,
-+      // [scroll-engine] two-phase: measure reads (matchMedia, vh, 2 rects, line count), mutate writes.
-+      fwE = {
-+        measure: (F) => {
-+          let q = A();
-+          if (!u || !c) return { q, x: !1 };
-+          let i = F.vh;
-+          return { q, x: !0, i, R: e.matches, o: u.getBoundingClientRect(), l: c.getBoundingClientRect(), L: fwJ(q) };
-+        },
-+        mutate: (M) => {
-+          if ((t && (window.cancelAnimationFrame(t), (t = 0)), z(y, M.q, !0), !M.x)) return;
-+          let { i, o, l, R } = M,
-+            f = T(o, i),
-+            p = E(l, i),
-+            m = R ? +(f >= 0.5) : w(f),
-+            h = R ? +(p >= 0.5) : w(p);
-+          return (
-+            m > n ? (n = m) : (n += (m - n) * (R ? 1 : 0.22)),
-+            (r += (h - r) * (R ? 1 : 0.22)),
-+            Math.abs(m - n) < 8e-4 && (n = m),
-+            Math.abs(h - r) < 8e-4 && (r = h),
-+            c.style.setProperty(`--commission-enter-shrink`, String(n)),
-+            c.style.setProperty(`--commission-shrink`, String(Math.max(n, r))),
-+            z(g, o.top < i * 0.995 && f > 0.04, !0),
-+            z(v, p > 0.04),
-+            (d.style.height = s(y) || R ? `` : `${i * 0.06}px`),
-+            z(b, M.L),
-+            Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4
-+          );
-+        },
-+      },
-       a = () => {
--        if (((t = 0), z(y, A(), !0), !u || !c)) return;
--        let i = window.innerHeight,
--          o = u.getBoundingClientRect(),
--          l = c.getBoundingClientRect(),
--          f = T(o, i),
--          p = E(l, i),
--          m = e.matches ? +(f >= 0.5) : w(f),
--          h = e.matches ? +(p >= 0.5) : w(p);
--        (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
--          (r += (h - r) * (e.matches ? 1 : 0.22)),
--          Math.abs(m - n) < 8e-4 && (n = m),
--          Math.abs(h - r) < 8e-4 && (r = h),
--          c.style.setProperty(`--commission-enter-shrink`, String(n)),
--          c.style.setProperty(`--commission-shrink`, String(Math.max(n, r))),
--          z(g, o.top < i * 0.995 && f > 0.04, !0),
--          z(v, p > 0.04),
--          (d.style.height = s(y) || e.matches ? `` : `${i * 0.06}px`),
--          j(),
--          (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
-+        ((t = 0), fwRun(fwE) && (t = window.requestAnimationFrame(a)));
-       },
-       o = () => {
-         t ||= window.requestAnimationFrame(a);
-@@ -3140,7 +3234,7 @@
-     l.observe(p);
-     let f = new ResizeObserver(j);
-     (f.observe(h), a());
--    let m = dE(o, { deferRendering: !0, element: c });
-+    let m = dE(fwE, { deferRendering: !0, element: c });
-     return (
-       e.addEventListener(`change`, o),
-       () => {
-@@ -4160,15 +4254,22 @@
-       i = 0,
-       a = 0,
-       o = !1,
-+      // [scroll-engine] two-phase: measure = hero-track rect + vh, mutate = the two writes.
-+      fwE = {
-+        measure: (F) => {
-+          if (e.matches) return -1;
-+          let t = b.getBoundingClientRect(),
-+            n = Math.max(1, t.height - F.vh);
-+          return 1 - Math.min(n, Math.max(0, -t.top)) / n;
-+        },
-+        mutate: (r) => {
-+          (i && (window.cancelAnimationFrame(i), (i = 0)),
-+            x.style.setProperty(`--exit-opacity`, r < 0 ? `1` : String(r)),
-+            (x.style.pointerEvents = r >= 0 && r < 0.05 ? `none` : ``));
-+        },
-+      },
-       s = () => {
--        if (((i = 0), e.matches)) {
--          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
--          return;
--        }
--        let t = b.getBoundingClientRect(),
--          n = Math.max(1, t.height - window.innerHeight),
--          r = 1 - Math.min(n, Math.max(0, -t.top)) / n;
--        (x.style.setProperty(`--exit-opacity`, String(r)), (x.style.pointerEvents = r < 0.05 ? `none` : ``));
-+        ((i = 0), fwRun(fwE));
-       },
-       c = () => {
-         i ||= window.requestAnimationFrame(s);
-@@ -4236,7 +4337,7 @@
-       t.matches && d();
-     };
-     (t.addEventListener(`change`, h), window.addEventListener(`pageshow`, m));
--    let g = dE(c, { deferRendering: !0, element: b });
-+    let g = dE(fwE, { deferRendering: !0, element: b });
-     return (
-       s(),
-       () => {
-@@ -10925,15 +11026,43 @@
-         let e = v.querySelector(`.start-selling-profile-shell.is-active-shell`);
-         (e && ((e.style.transform = ``), (e.style.transformOrigin = ``)), z(w, !0));
-       },
--      f = () => {
--        if (((n = 0), z(T, e.matches, !0), W(), !ce())) {
--          d();
--          return;
--        }
--        let { shrinkRange: t, professionRange: a, totalRange: m } = le(),
--          _ = 48 - h.getBoundingClientRect().top,
-+      // [scroll-engine] two-phase. measure: matchMedia flags, g.offsetHeight, vh ranges, h top,
-+      // v width, the active shell's offsets (fe). mutate: W()'s height write, easing, transform writes.
-+      fwE = {
-+        measure: (F) => {
-+          let t = e.matches,
-+            c = !oe() && !t && window.matchMedia(`(min-width: 861px)`).matches;
-+          if (!c || !h || !g) return { t, c };
-+          let n = ue(Math.max(1, v.clientWidth - 248));
-+          return {
-+            t,
-+            c,
-+            gh: g.offsetHeight,
-+            sr: F.vh * 1.45,
-+            pr: Math.max(0, s(p).length - 1) * F.vh * 0.34,
-+            top: h.getBoundingClientRect().top,
-+            b: n,
-+            fe: fe(n, 50),
-+          };
-+        },
-+        mutate: (M) => {
-+          if ((n && (window.cancelAnimationFrame(n), (n = 0)), z(T, M.t, !0), !M.c || !h || !g)) {
-+            (h && g && (h.style.height = ``), d());
-+            return;
-+          }
-+          return fwF2(M);
-+        },
-+      },
-+      f = () => {
-+        ((n = 0), fwRun(fwE) && (n = window.requestAnimationFrame(f)));
-+      },
-+      fwF2 = (P) => {
-+        h.style.height = `${P.gh + P.sr + P.pr}px`;
-+        let { sr: t, pr: a } = P,
-+          m = t + a,
-+          _ = 48 - P.top,
-           y = Math.min(m, Math.max(0, _)),
--          b = ue(Math.max(1, v.clientWidth - 248)),
-+          b = P.b,
-           x = 1,
-           S = 0,
-           D = 100,
-@@ -10941,7 +11070,7 @@
-           k = 0;
-         if (y < t) {
-           let e = ae(y / t);
--          ((x = b + (1 - b) * e), (S = fe(b, 50) * (1 - e)), (D = 50 + 50 * e), (O = !1));
-+          ((x = b + (1 - b) * e), (S = P.fe * (1 - e)), (D = 50 + 50 * e), (O = !1));
-         } else k = a <= 0 ? 0 : ie((y - t) / a);
-         ((r += (x - r) * o), (i += (S - i) * o), (l += (D - l) * o));
-         let A = Math.abs(x - r) < c,
-@@ -10966,7 +11095,7 @@
-             n = s(p)[t];
-           n && n.id !== s(C) && z(C, n.id, !0);
-         }
--        (A && j && M) || (n = window.requestAnimationFrame(f));
-+        return !(A && j && M);
-       },
-       m = () => {
-         n ||= window.requestAnimationFrame(f);
-@@ -10974,7 +11103,7 @@
-       _ = () => {
-         (z(T, e.matches, !0), he(s(C), s(T)), m());
-       },
--      y = dE(m, { element: h });
-+      y = dE(fwE, { element: h });
-     return (
-       x.addEventListener(`scrollend`, be),
-       e.addEventListener(`change`, _),
-@@ -11300,29 +11429,42 @@
-       a = !1,
-       o = 0,
-       c = !1,
-+      // [scroll-engine] two-phase: measure = .hero-track rect, g rect, v top, matchMedia flags;
-+      // mutate = z() sets, --future-shrink, the .pain is-pain-dark toggle.
-+      fwE = {
-+        measure: (F) => {
-+          let n = document.querySelector(`.hero-track`),
-+            R = e.matches,
-+            M = { R, y: !0, t: -1, p: document.querySelector(`.pain`), d: !1 };
-+          if (n) {
-+            let t = n.getBoundingClientRect(),
-+              r = Math.max(1, t.height - F.vh),
-+              i = Math.min(r, Math.max(0, -t.top));
-+            M.y = R || i / r >= 0.72;
-+          }
-+          return (
-+            g && (M.t = T(g.getBoundingClientRect(), F.vh)),
-+            M.p && (M.d = !t.matches || (v?.getBoundingClientRect().top ?? 1) <= 0.5),
-+            M
-+          );
-+        },
-+        mutate: (M) => {
-+          (i && (window.cancelAnimationFrame(i), (i = 0)), z(y, M.y, !0));
-+          let r = !1;
-+          if (g) {
-+            let t = M.t,
-+              n = M.R ? +(t >= 0.5) : w(t);
-+            ((o += (n - o) * (M.R ? 1 : 0.22)),
-+              Math.abs(n - o) < 8e-4 && (o = n),
-+              h.style.setProperty(`--future-shrink`, String(o)),
-+              z(b, t > 0.04),
-+              (r = Math.abs(n - o) >= 8e-4));
-+          }
-+          return (M.p && M.p.classList.toggle(`is-pain-dark`, M.d), r);
-+        },
-+      },
-       l = () => {
--        i = 0;
--        let n = document.querySelector(`.hero-track`);
--        if (n) {
--          let t = n.getBoundingClientRect(),
--            r = Math.max(1, t.height - window.innerHeight),
--            i = Math.min(r, Math.max(0, -t.top));
--          z(y, e.matches || i / r >= 0.72, !0);
--        } else z(y, !0);
--        if (g) {
--          let t = T(g.getBoundingClientRect(), window.innerHeight),
--            n = e.matches ? +(t >= 0.5) : w(t);
--          ((o += (n - o) * (e.matches ? 1 : 0.22)),
--            Math.abs(n - o) < 8e-4 && (o = n),
--            h.style.setProperty(`--future-shrink`, String(o)),
--            z(b, t > 0.04),
--            Math.abs(n - o) >= 8e-4 && (i = window.requestAnimationFrame(l)));
--        }
--        let r = document.querySelector(`.pain`);
--        if (r) {
--          let e = !t.matches || (v?.getBoundingClientRect().top ?? 1) <= 0.5;
--          r.classList.toggle(`is-pain-dark`, e);
--        }
-+        ((i = 0), fwRun(fwE) && (i = window.requestAnimationFrame(l)));
-       },
-       u = () => {
-         i ||= window.requestAnimationFrame(l);
-@@ -11356,8 +11498,27 @@
-             }
-           }
-       },
--      C = dE(u, { deferRendering: !0, element: h, onActiveChange: m });
-+      // [scene-gating] the avatar carousel (_ loop, swaps DOM ~1/s) runs only while the section is
-+      // engine-active (rootMargin 100%) AND the carousel itself is on screen.
-+      fwA = !1,
-+      fwV = !1,
-+      fwM = () => m(fwA && fwV),
-+      fwO = h.querySelector(`.start-selling-avatars`) ?? h,
-+      fwIO = new IntersectionObserver(
-+        ([e]) => {
-+          ((fwV = !!e?.isIntersecting), fwM());
-+        },
-+        { rootMargin: `0px` },
-+      ),
-+      C = dE(fwE, {
-+        deferRendering: !0,
-+        element: h,
-+        onActiveChange: (e) => {
-+          ((fwA = e), fwM());
-+        },
-+      });
-     return (
-+      fwIO.observe(fwO),
-       e.addEventListener(`change`, u),
-       t.addEventListener(`change`, u),
-       _(),
-@@ -11367,7 +11528,7 @@
-         for (let e of r) e();
-         ((r.length = 0), i && window.cancelAnimationFrame(i));
-         for (let e of n) window.clearTimeout(e);
--        ((n.length = 0), C(), e.removeEventListener(`change`, u), t.removeEventListener(`change`, u));
-+        (fwIO.disconnect(), (n.length = 0), C(), e.removeEventListener(`change`, u), t.removeEventListener(`change`, u));
-       }
-     );
-   });
-@@ -12433,19 +12594,26 @@
-   ne(() => {
-     let e = 0,
-       t = matchMedia(`(prefers-reduced-motion: reduce)`),
-+      // [scroll-engine] two-phase: measure = c rect + vh, mutate = the two z() sets.
-+      fwE = {
-+        measure: (F) => {
-+          let n = c.getBoundingClientRect(),
-+            r = F.vh * 0.85,
-+            i = F.vh * 0.35;
-+          return { a: n.bottom >= r ? 0 : n.bottom <= i ? 1 : (r - n.bottom) / (r - i), R: t.matches };
-+        },
-+        mutate: ({ a, R }) => {
-+          (e && (cancelAnimationFrame(e), (e = 0)), z(u, R ? +(a >= 0.5) : p(a), !0), z(d, a > 0.04));
-+        },
-+      },
-       n = () => {
--        e = 0;
--        let n = c.getBoundingClientRect(),
--          r = innerHeight * 0.85,
--          i = innerHeight * 0.35,
--          a = n.bottom >= r ? 0 : n.bottom <= i ? 1 : (r - n.bottom) / (r - i);
--        (z(u, t.matches ? +(a >= 0.5) : p(a), !0), z(d, a > 0.04));
-+        ((e = 0), fwRun(fwE));
-       },
-       r = () => {
-         e ||= requestAnimationFrame(n);
-       };
-     n();
--    let i = dE(r, { deferRendering: !0, element: o });
-+    let i = dE(fwE, { deferRendering: !0, element: o });
-     return () => {
-       (e && cancelAnimationFrame(e), i());
-     };
+   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
+@@ -2756,7 +2885,9 @@
+       onActiveChange: t.onActiveChange,
+       renderFrame: 0,
+     },
+-    r;
++    r,
++    fwRd,
++    fwFd;
+   return (
+     $T.add(n),
+     aE(),
+@@ -2766,9 +2897,16 @@
+     sE(n, n.active),
+     t.onActiveChange?.(n.active),
+     t.element && `IntersectionObserver` in window && (r = uE(n, t.element, t.rootMargin ?? `100% 0px`)),
++    n.deferRendering &&
++      t.element &&
++      `IntersectionObserver` in window &&
++      (fwRd = fwRender(n, t.element, fwRM(t.rootMargin ?? `100% 0px`))),
++    n.deferRendering && t.element && `IntersectionObserver` in window && (fwFd = fwFar(n, t.element, fwFM(fwRM(t.rootMargin ?? `100% 0px`)))),
+     rE(),
+     () => {
+       (r?.(),
++        fwRd?.(),
++        fwFd?.(),
+         n.renderFrame && window.cancelAnimationFrame(n.renderFrame),
+         $T.delete(n),
+         n.manageAnimations && n.element && n.element.removeAttribute(`data-start-selling-scene`),

@@ -3,9 +3,46 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (interim: plain-baseline prototype, n=3). Not yet redone on the combined wave-1 base; that step and the final `--runs 5` are still to do.
+**Status:** measured, wave 2 on all-wave1 (n=5): `patch.diff` is variant /10c (plain baseline, applies cleanly on all-wave1); `results.json` is `ab se10c-aw1 --on all-wave1 --runs 5`. Frames > 50 ms 2 → 1 (better), F-011's render frame gone 5/5, p95 +0.8 ms (flagged). The measure/mutate engine conversion (/01) is parked. iPhone and finger checks are pending.
 **Topic:** `fixes/TOPICS.md` rows 2, 10, 12 (conflict cluster A)
-**Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` only: engine `rE`/`iE`/`aE`/`oE`/`cE`/`dE` (pretty 2663-2783), commission `a` (3106), hero exit `s` (4163), profile `f` (10928), future `l` (11303) and its `dE` registration (11359), platform `n` (12436).
+**Files touched (/10c):** `/_app/immutable/nodes/2.DyWL8TcE.js`: the engine scene/render gating (`aE`, `sE`, `cE`, `dE`, plus new `fwRender`, `fwFar`, idle un-skip `fwUnskipNext`, will-change windows `fwWC`; pretty 2663-2880). `/_app/immutable/assets/2.gBuqKVzi.css`: the scene pause rule (11754-11766). No effect callbacks are touched, so there is no overlap with the wave-1 callback fixes.
+
+## Wave 2 result (/10c on all-wave1)
+
+What /10c does (stack 09 → 10 → 10b → 10c, see "Experiments tried"):
+1. **One-way render deferral (N9/N10).** A section deferred at mount (`content-visibility`) is un-skipped by our own IO at the scene margin + 50 % (min 150 %). Deactivating no longer defers it again, so the scene gate can't flap (N9: 800 flips / 10 s → 0).
+2. **Idle un-skip (W1, F-011).** After load + 500 ms, deferred sections are un-skipped one per `requestIdleCallback` slice, so their first render (style + layout + layers) happens before the user scrolls, not mid-scroll.
+3. **Per-element will-change windows (Apple pattern).** The 11 non-fixed `will-change` selectors keep their layer only within ±0.5 vh of the viewport AND while their scene is active (`[data-fw-wc="0"]` and the paused-scene rule both set `will-change: auto`). Out-of-window layers 92/506 → 0/506.
+4. **Far re-skip behind the user.** A section more than its un-skip margin + 25 % above the viewport is deferred again. Its height comes from the IO entry, so there is no forced layout. It comes back through the un-skip IO, which gives 0.25 vh of hysteresis. Drawing layers are ≤ wave1 at all 8 settled positions.
+
+`fix.mjs ab se10c-aw1 --on all-wave1 --runs 5` (mobile 430x932 DPR3, CPU 6x, `--idle 6`, 05:39-05:46Z, 0/10 runs contaminated, load1 1.5-2.9, no host sleep):
+
+| mobile 6x, n=5 | all-wave1 median [min-max] | + /10c median [min-max] | delta | verdict |
+|---|---|---|---|---|
+| scroll: frames >50 ms | 2 [2-7] | 1 [0-1] | -1 | **better** (ranges don't overlap) |
+| scroll: frames >34 ms | 4 [3-8] | 3 [2-4] | -1 | within noise |
+| scroll: frames >20 ms | 13 [10-16] | 11 [9-14] | -2 | within noise |
+| scroll: frames >100 ms | 0 [0-3] | 0 [0-0] | 0 | within noise |
+| scroll: LoAF ms | 115 [107-837] | 59 [55-75] | -56 | **better** |
+| scroll: p95 frame ms | 15.8 [15.1-16.3] | 16.6 [16.6-16.7] | +0.8 | **WORSE** (ranges don't overlap) |
+| scroll: fps | 110.6 [101.5-111.4] | 108.6 [108.2-109.7] | -2 | within noise |
+| morph / idle | 0 frames >50 ms | 0 frames >50 ms | 0 | within noise |
+
+- **F-011 is gone, 5/5.** Every baseline run has 2 scroll LoAFs: gtag `onscrollend` (script 49-55 ms) plus a no-script ~53-62 ms render frame, the first render of a deferred section. Every /10c run has only the gtag one (49-70 ms, vendor, N11). That is the 0-1 remaining frame > 50 ms.
+- Regressions: none (0 console errors, 0 404s). Screenshot diff top 0.25 / middle 0 / bottom 0.4 % (phase noise).
+- Patch sha256: plain `patch.diff` 73a42b7f…; stacked `fixes/se10c-aw1/patch.diff` 3bfa0531…
+- No measurement code was changed by this topic.
+
+**The p95 flag (+0.8 ms, one 120 Hz vsync).** It is in the scroll phase only:
+- idle p95 is 9.7-9.9 → 9.8-9.9 ms and morph p95 is 10.2-10.3 → 10.2-10.3 ms on both sides, per run;
+- scroll p50 stays 8.3-8.4 ms; frames > 20 ms (13 → 11) and dropped frames (1.0-1.7 % → 0.9-1.5 %) don't rise;
+- the scroll phase delivers 15-20 fewer frames per run (base 980-989 except one 931 run; /10c 960-973).
+
+So about 2 % of scroll frames go from 1 vsync (8.3 ms) to 2 (16.6 ms), and the 95th percentile lands exactly on 2 vsyncs. It is not the deferred render moving earlier, which was always a single ~55 ms frame; it now happens in post-load idle, and the idle phase shows no change. It is a new, small per-frame cost spread over the scroll. Two candidates, not yet separated:
+- (a) more rendered content during scroll: sections ahead are pre-rendered from load, and sections behind stay rendered until 1.75 vh instead of wave 1's 1 vh re-skip, so there is more paint and composite work per frame;
+- (b) layers created or dropped at the ±0.5 vh will-change window edges.
+
+A diagnostic A/B of /09 alone vs /10c on all-wave1 would separate them. The cost is far below the > 34 ms / > 50 ms goal frames it removes; the iPhone check will show whether it matters there.
 
 ## Why it lags
 
@@ -22,7 +59,7 @@
 - Gating: a section counts as active whenever it is within `rootMargin: 100% 0px` (2768). The future
   section's avatar carousel (`_` loop, 11345) swaps DOM about 1×/s while it is off-screen (finding from layout-animations).
 
-## What changed
+## What changed in /01 (parked: plain-baseline prototype, not in `patch.diff`; kept as `variants/01.diff`)
 
 1. **Two-phase engine, backward-compatible.** `dE(fn, opts)` works as before. An opt-in form,
    `dE({ measure(f), mutate(m, f) }, opts)`, works like this: in one rAF, legacy callbacks run first, then every
@@ -39,7 +76,7 @@
    change) use `fwRun` with uncached metrics. Nav `L`, pain `d` and tooltip `A` stay legacy: they are owned by
    nav-morph / pain-offscreen-notes, and their wave-1 versions are already read-then-write.
 
-## Before / after (plain baseline, interim)
+## Before / after /01 (plain baseline, interim, old tools; results in `variants/01-results.json`)
 
 Parity smoke (own CDP script, instant-scroll steps, settled state dump of `--exit-*`, `--commission-*`,
 `--future-shrink`, `--profile-scale`, `.pain`/nav/section classes, scene/render attrs): mobile 15 steps and
@@ -69,6 +106,11 @@ Frames >20 ms (p95 25.7 ms) are not LoAF-visible, so they are per-frame style an
 
 ## Risks, conflicts, follow-ups
 
+Open items for /10c (not slots):
+- **p95 +1 vsync in scroll** (see "The p95 flag"). To separate (a) more rendered content from (b) will-change window edges: a diagnostic A/B of /09 alone vs /10c on all-wave1. If it is (b), try **/10d: a wider window** (IO rootMargin `100% 0px 100% 0px` instead of 50 %), trading a few more layers for fewer promotions at the edge.
+- **Scroll-up re-render**: re-skipped sections re-render synchronously at 1.5 vh on the way back up. On the iPhone list.
+- **Layer memory** was measured as Chrome LayerTree area on wave1-partial, not on the iPhone. WebKit's own budget is unknown.
+
 - Converted effects now update in the same frame as the scroll, one frame earlier than before. The settled state is identical (parity).
 - The callbacks of phone-invisible-shrink (landed), commission-forced-layout, pain, nav-morph and hero-exit change
   the same functions. This patch is against the plain baseline and must be redone with `--on <combined wave 1>`.
@@ -93,4 +135,4 @@ Frames >20 ms (p95 25.7 ms) are not LoAF-visible, so they are per-frame style an
 | scroll-engine/11 | Diagnostic engine instrumentation `se-instr` (per-callback timing inside `iE`, recorded only while a probe sets `window.__fwEng.on`) on wave1-partial (`se-w1i`), 3 runs | Name what remains of `iE` on top of wave1-partial | iE LoAF > 50 ms: 0 of 3 runs. Inside iE, nav `L` (global dE, JS 13077) is 316-320 calls / 526-617 ms per run (max 7.6-10.1 ms per call); every other dE callback 0-7 ms per run in total | mechanism/attribution, load 3.6-6.6, timing not claimed (pre-gate tools) | see result column; remaining > 50 ms frames per run: a ~60 ms no-script style/layout frame at y≈2154 (3/3, first render of a deferred section), gtag `onscrollend` 45-67 ms (3/3), nav platform IO `z(b, !0)` mount 46 ms (1/3); E2: 0 of 7 frames > 34 ms coincide with a scene/render flip | patch `fixes/scroll-engine/variants/11-se-instr.diff`; raw `scratchpad/scroll-engine/part1-0658/probe.json`, `part2-*/probe.json` | The engine itself is cheap; iE's time is nav L (N12 / nav-hit-test). N9 reproduces 3/3 on desktop at `.pain` top | done (diagnostic) |
 | scroll-engine/10 | /09 + idle un-skip (after load + 500 ms, one deferred section per `requestIdleCallback` slice; `setTimeout` fallback) + per-element `will-change` windows (IO `50% 0px 50% 0px` on the 11 non-fixed `will-change` selectors; CSS `[data-fw-wc="0"] { will-change: auto !important }`) + no scene-wide `will-change` override (arch apple-smooth-scroll §2.3, §5 row 1; W1) | The first render of deferred sections moves from the scroll phase to idle (Chrome > 50 ms frame at y≈2100-2150; iPhone transition clusters); layers exist only near the viewport | mechanism: entry ticket 4/4 pass; layer count WORSE | mechanism/attribution, load 2.0-3.1, timing not claimed (post-gate tools, 3 short holds 02:33Z, 03:10Z, 03:16Z) | on wave1-partial, mobile 6x, idle 8 s then smooth scroll, n=4 (/10) vs n=2 (w1): (1) the 2 deferred sections (commission.compact, #platform) un-skip at ~6.3 s in post-load idle, with no LoAF > 50 ms there; 0 real un-skips / 0 re-skips in scroll and settle (w1: 4 un-skips + 6 cv events in scroll, 14 re-skips in scroll/settle); run 1's 4 "scroll un-skips" were same-value `setAttribute` re-sets (F-020); (2) cv events in scroll 6 → 0; (3) out-of-window `will-change` layers 92/506 → 0/506; (4) idle LoAF > 50 ms: none; one 339 ms scroll LoAF (future `l` 6 ms script, rest rendering) in 1/4 runs, not reproduced; drawing layers at 8 settled positions 54-129 → 126-171 (2x at commission/platform: in-window paused scenes keep their layers) | patch `fixes/scroll-engine/variants/10.diff`; probe `scratchpad/scroll-engine/mech10.mjs` (attributeOldValue transitions, LoAF sourceURL/scrollY, timer jumps, LayerTree area per position) | Idle un-skip works (first render leaves the scroll phase); dropping the scene-wide `will-change: auto` doubles the layer count → /10b | superseded by /10b (layer budget) |
 | scroll-engine/10b | /10 + restore `will-change: auto !important` on paused scenes, so an element gets a layer only if its scene is active (gate ±1 vh) AND it is in its ±0.5 vh window (both edges off screen, no flap thanks to /09) + re-scan the windows in idle when a scene activates (elements mounted later) | Same as /10, with the layer count ≤ w1 | mechanism: ticket 4/4 pass; layers below w1 at 5 of 8 positions, above at 3 | mechanism/attribution, load 2.2-2.8, timing not claimed (1 short hold 03:16Z) | on wave1-partial, n=1: ticket as /10 (0 un-skips / cv in scroll, out-of-window 0/506, no idle LoAF > 50, un-observed elements 84 → 0); drawing layers vs w1 by y: 0: 118→66, 785: 127→82, 1570: 127→68, 2354: 129→45, 3139: 58→49, 3924: 54→63, 4709: 76→90, 5493: 60→70; area bound +83-120 MB at the 3 bottom positions (same in /10: from no-re-skip keeping hero-track/#people rendered, not from `will-change`) | patch `fixes/scroll-engine/variants/10b.diff` (on top of /10; topic dir `se10b-w1`); layer naming probe `scratchpad/scroll-engine/layers.mjs` | Named (`layers.mjs`, 03:29Z): the extra bottom layers are all in sections behind the user that w1 re-skips (#profile-showcase profile-deck 70.2 MB, #people section 19.6 MB, hero 13.8 MB, 4 orbit cards, scroll cue/float, feed record), ≈ 104 MB of area, more than the 93 MB document layer → far re-skip (/10c) | superseded by /10c |
-| scroll-engine/10c | /10b + far re-skip behind the user only: a rendered, inactive section whose rect is above the viewport and outside its un-skip margin + 25 % (1.75 vh; 2.25 vh for `.pain`'s 150 % gate) goes back to `data-start-selling-render="deferred"` (height from the IO entry, no forced layout); it comes back through the existing un-skip IO (gate + 50 %), so 0.25 vh of hysteresis; sections ahead are never re-skipped | /10b's layer savings without the bottom excess: no-re-skip kept off-screen sections behind the user alive | mechanism: ticket pass (0 un-skips in scroll; 2 scroll cv events = the intended far re-skips, each once, no flap); drawing layers ≤ w1 at all 8 positions | mechanism/attribution, load 1.2-2.0, timing not claimed (1 short hold 03:40Z) | on wave1-partial, n=1: drawing layers w1 → /10c by y: 0: 118→72, 785: 120→78, 1570: 129→74, 2354: 131→43, 3139: 58→49, 3924: 54→49, 4709: 76→76, 5493: 60→56; area bound ≤ w1 except y=0/785 (+17.8 MB: the commission section, pre-rendered in idle, now has a layer while 2+ vh below); timeline: hero-track and #people re-skip once on the way down (y≈4.0-4.5 k), un-skip once on the jump back to the top, re-skip once on the jump down; idle LoAF > 50 none; scroll LoAF > 50 only gtag onscrollend (also in w1); no timer jumps | patch `fixes/scroll-engine/variants/10c.diff` (on top of /10b; topic dir `se10c-w1`); `scratchpad/scroll-engine/mech-c.sh` (mech10 + layers) | Scroll-up re-render cost not measured (paid synchronously at 1.5 vh, w1 at 1 vh): iPhone/finger check | candidate for the wave-2 A/B `--on all-wave1` (waits for mgmt-ops' GO) |
+| scroll-engine/10c | /10b + far re-skip behind the user only: a rendered, inactive section whose rect is above the viewport and outside its un-skip margin + 25 % (1.75 vh; 2.25 vh for `.pain`'s 150 % gate) goes back to `data-start-selling-render="deferred"` (height from the IO entry, no forced layout); it comes back through the existing un-skip IO (gate + 50 %), so 0.25 vh of hysteresis; sections ahead are never re-skipped | /10b's layer savings without the bottom excess: no-re-skip kept off-screen sections behind the user alive | mechanism: ticket pass (0 un-skips in scroll; 2 scroll cv events = the intended far re-skips, each once, no flap); drawing layers ≤ w1 at all 8 positions | mechanism/attribution, load 1.2-2.0, timing not claimed (1 short hold 03:40Z) | on wave1-partial, n=1: drawing layers w1 → /10c by y: 0: 118→72, 785: 120→78, 1570: 129→74, 2354: 131→43, 3139: 58→49, 3924: 54→49, 4709: 76→76, 5493: 60→56; area bound ≤ w1 except y=0/785 (+17.8 MB: the commission section, pre-rendered in idle, now has a layer while 2+ vh below); timeline: hero-track and #people re-skip once on the way down (y≈4.0-4.5 k), un-skip once on the jump back to the top, re-skip once on the jump down; idle LoAF > 50 none; scroll LoAF > 50 only gtag onscrollend (also in w1); no timer jumps | patch `fixes/scroll-engine/variants/10c.diff` (on top of /10b; topic dir `se10c-w1`); `scratchpad/scroll-engine/mech-c.sh` (mech10 + layers) | Scroll-up re-render cost not measured (paid synchronously at 1.5 vh, w1 at 1 vh): iPhone/finger check | **kept, the deliverable**. Wave-2 A/B `--on all-wave1`, n=5, 05:39Z, 0/10 contaminated: frames > 50 ms 2 → 1 (better), LoAF 115 → 59 ms (better), > 34 ms 4 → 3 (noise), p95 +0.8 ms (WORSE, see "The p95 flag"); F-011 render frame gone 5/5 |
