@@ -70,7 +70,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 - **22:1xZ IPHONE UNPLUGGED by the user (T-011).** PHONE BACKLOG, run in this order when it is plugged back in:
   (a) the rest of the cooldown curve (ts-phone-cool, `wait.mjs phone-temp`); (b) scene-scope's ST ticket; (c) the fwreskip
-  candidate; (d) ts-gesture's G run with the compiler v2 hashes (finger-protocol-v1 ee84ebd4e916, slow-drag-v1 5bd9f52ed38e; I-042 fix f16c65b, npm test 960/960; sim.mjs gesture is timed = normal hold); (e) the morph start (parked).
+  candidate; (d) ts-gesture's G run with the compiler v2 hashes (finger-protocol-v1 ee84ebd4e916, slow-drag-v1 5bd9f52ed38e; I-042 fix f16c65b, npm test 960/960; sim.mjs gesture is timed = normal hold); (e) the morph start (parked); (f) PR-001 WebKit frame capture on the phone (lead 23:4xZ; Sim frames first).
   Also landed: 6ff7dd4 usage.mjs (T-010; the lead runs it every 30 min and posts to T-010), fdb2577/8c3187e phone-temp.
   Open: I-042, I-045, I-046 (check.chrome screen size), I-047 (phone park between blocks), I-048 (shared readers hidden).
   Lead corrections 22:1xZ: I-042 resolves on the lead's npm test on main (shared lane), not on the phone G run, which is
@@ -96,6 +96,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   Chrome at 60 Hz) landed. de-illusion-style requeues often (short shared jobs): each time, tell the lead.
   Lock settings (lead): the shared lane stays at cap 4 (ts-lock-share batch 2); timing stays exclusive, cap 1 (from
   cal-headless60's parallel A/A). The headless-60 Hz mode proposal is parked until the user wants timing work back.
+  23:4xZ: landed I-047 (72a7eb9, 5ad847c), I-046 (d00ee9a, MEASUREMENT CODE, headless only), I-048 (9fd2d3a), I-049
+  (212059d: no later exclusive passes an earlier reader, 10 min reader age bound, head-of-line bypass); lead's npm test
+  986/986, chrome:fn 6/6. I-046..I-049 RESOLVED (rebase). Open: I-050 only (stale Sim Safari tab, ts-phone-park).
+  Correction: de-illusion-style's r10 "58/58 identical after handback" is INVALID (blank captures); the real figure is r11:
+  421/436 frames identical in Chrome headless, 15 frames of one word open. Decision (lead): PR-001 frames must be
+  WebKit-made: Sim frames first, the phone capture joins the phone backlog as (f).
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
