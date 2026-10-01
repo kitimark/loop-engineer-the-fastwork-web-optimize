@@ -67,6 +67,10 @@ the next free `research/<nn>-…` number.
   measuring, conflict decisions and the write-up stay with you.
 - A tool or environment problem: report it with `node tools/incident.mjs open …` and follow
   `fixes/INCIDENTS.md`; don't fix tools in this branch.
+- Status board (the user's Status page): report the wave's state at every transition and on resume,
+  `node tools/status.mjs set <wave id> --by <you> --state implementing|measuring|waiting|ready-to-land --note "<one
+  plain line>" [--waiting-on …]` (first time also `--kind fix --title "<plain name>"`); `status.mjs mine --by <you>`
+  on resume. Queue places and blocking incidents show by themselves; only the lead sets priority.
 
 ## Never
 

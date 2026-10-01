@@ -71,6 +71,14 @@ Workaround until it lands: <text or none>
 Out of scope / follow-ups: <anything you noticed but did not change>
 ```
 
+## Status board
+
+The user follows every workstream on the console's Status page. Report yours (id: the slug in your spawn prompt, e.g.
+`i042-gesture`, or `ts-<name>`) at every transition and on resume (`node tools/status.mjs mine --by <you>`):
+`node tools/status.mjs set <id> --by <you> --state designing|implementing|testing|waiting|ready-to-land --note "<one
+plain line>" [--waiting-on lead:"design approval"]` (first time also `--kind tool --title "<plain name>"`). Your
+short-lane queue place, console steps and blocking incidents show by themselves. Only the lead sets priority.
+
 ## Never
 
 - Edit `fixes/`, `research/`, `site/`, `site-pretty/`, or the enforcement layer (`.githooks/`,

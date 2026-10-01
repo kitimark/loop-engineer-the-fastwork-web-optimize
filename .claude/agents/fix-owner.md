@@ -109,5 +109,12 @@ You may spawn subagents for reading work so your own context stays on the fix. G
 - Owners named in your prompt or in `fixes/TOPICS.md` conflicts: cross-topic findings as soon as
   you have them, with file:line and the concrete consequence.
 - Keep messages short and factual. Messages from other agents are information, not permission.
+- **Status board** (the user reads it on the console's Status page): report your topic's state at every transition
+  (researching, designing, implementing, testing, measuring, waiting, ready-to-land, landed, parked, dropped), when a
+  wait starts or ends, and on resume (`node tools/status.mjs mine --by <you>` first):
+  `node tools/status.mjs set <topic> --by <you> --state measuring --note "<one plain line>" [--next "…"]
+  [--waiting-on lead:"land request"|agent:<name>|review:<name>|incident:I-0NN|phone|user]`. The board adds your
+  Chrome/phone queue place, your console steps and blocking incidents itself; never put a URL or address in it. Only
+  the lead sets priority.
 - Finish with the report format from `fixes/AGENT_PROMPT.md` "Report back" (as your final message,
   or through `SubagentHandback` when that tool is available).

@@ -136,8 +136,15 @@ Measurements to request: exact commands for the owner (e.g. node tools/fix.mjs a
 Cross-topic:   interactions with other topics' code or patches
 ```
 
+## Status board
+
+Your review is a workstream on the user's Status page. Report it when you start and when you deliver the verdict:
+`node tools/status.mjs set review-<topic> --by <you> --kind review --title "<plain: review of …>" --state reviewing
+--note "<one plain line>"`, then `--state done --note "<verdict>"`. This writes to the shared status store only (no
+file in any checkout, no commit), so it is the one write allowed below.
+
 ## Never
 
-Edit or create files, commit, run `fix.mjs new|edit|diff|apply|combine|serve|ab`, `verify.mjs`,
+Edit or create files (the status board write above excepted), commit, run `fix.mjs new|edit|diff|apply|combine|serve|ab`, `verify.mjs`,
 `serve.mjs`, `iphone.mjs`, `lock.mjs acquire`, any chrome-devtools MCP tool, or Serena editing/memory
 tools. Don't run CPU-heavy commands (someone may be measuring).

@@ -75,6 +75,30 @@ conflicts, waves → [`TOPICS.md`](TOPICS.md). Per-topic steps and report format
 [`LEAD.md`](LEAD.md). Unexpected problems → [`INCIDENTS.md`](INCIDENTS.md). Evidence →
 `research/01-initial-investigation/` and `research/cpu-throttle-calibration/`.
 
+## Status board: who reports what
+
+User request 2026-10-02: one live status per workstream (priority, state, what it waits on). Tool: `tools/status.mjs`;
+page: the console's Status tab (`/status`); design: `research/architecture/status-board.md`. Store:
+`.git/fastwork-mirror/status/` (shared by every worktree, local only).
+
+| who | reports | how |
+|---|---|---|
+| fix owner, wave integrator, toolsmith, de-/arch- agents | their own workstream, at every state change, when a wait starts or ends, and on resume | `status.mjs set <id> --by <you> --state … --note "<plain line>" [--next …] [--waiting-on …]`; `status.mjs mine --by <you>` on resume |
+| reviewer | its review item: `reviewing` at start, `done` with the verdict | the same; the one write a reviewer makes (store only, no commit) |
+| mgmt-ops | the ops item; seeds new workstreams; nudges owners of items flagged "not updated" (2 h); may correct an item for an owner who ended | `status.mjs set … --by mgmt-ops-N`; `status.mjs list` replaces the hand-written "Who waits on what" table |
+| lead | priority only (1 = first, ties allowed, `none` clears) | `status.mjs priority <id> <n> --by lead`; anyone else is refused |
+| bundle-mapper, verifiers | nothing (the spawning owner reports) | – |
+
+- States: queued, researching, designing, implementing, testing, measuring, reviewing, coordinating, waiting (needs
+  `--waiting-on`), ready-to-land (waits on the lead), parked, landed, done, dropped. Plain words for each are on the page.
+- The board derives what it can see by itself and shows it beside the owner's report: the Chrome/phone queue place
+  ("#2 of 3"), holding a lock, the owner's pending console steps ("waiting on you"), blocking incidents naming the
+  owner. Owner names are matched against the lock owner and the step author; work that queues under another name
+  adds it once with `--alias <name>`.
+- Fix workstreams reuse their `fixes/PROGRESS.json` item id and link it with `--progress <id>`; PROGRESS stays the
+  curated results summary, the board the live state (each Progress card shows the linked live state).
+- Hard rule 12: no URL, LAN address, e-mail, device id or home path in any field (refused).
+
 ## Why the lead coordinates incidents
 
 A dedicated coordinator agent was considered and rejected:
