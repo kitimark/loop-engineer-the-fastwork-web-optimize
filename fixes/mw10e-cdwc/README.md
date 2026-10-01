@@ -152,10 +152,23 @@ iphone-runner, is still in progress.
 - So far:
   - pair 1: "same";
   - pair 2: "almost same, hero and end of page are laggy";
-  - pair 3: pending.
-- Reading so far: in free swipes the user has not felt the countdown fix. The lag the user names is at the hero and the
-  page end.
-- The verdict goes here when the key is opened.
+  - pair 3: "same". The user's note: "hero quite smoother a little bit on page 2, overall, i think they're same".
+- **Key opened** (iphone-runner):
+  - pair 3 was C/V: page 1 = C mw10e-g, page 2 = V mw10e-g-cdwc;
+  - pairs 1 and 2 were the V/C pair and the C/C catch;
+  - recordings: iphone-runner's worktree, out/iphone-runner/finger/sw-p3-{1,2}-redo.json.
+- **Verdict (F, blind finger swipes): NOT FELT.**
+  - All three pairs were answered "same" or "almost same", including the catch pair. So the countdown fix gives no
+    felt difference in free swipes.
+  - The only lean is pair 3's note, "hero a little smoother on page 2", which is V. That is one remark, in a region the
+    fix does not touch (the countdown faces are in the morph panel at the page end, not in the hero). So it is not
+    read as an effect.
+  - The lag the user names is at the hero and the page end, in both arms.
+- **What this means for landing.** The P-029 result predicted this: the fix removes the faces' repaint and about −80
+  layers, and the gain is in the morph tween frames. Free swipes don't isolate those frames.
+  - The landing gate stays P-032 (G, the landing pair): PASS lands it, NULL or WORSE does not.
+  - Under the lead's gate rule, not felt in F does not block a PASS by itself; the lead confirms that at landing. It is
+    recorded as "measured gain, not felt in free swipes".
 
 **Chrome** (`fix.mjs ab mw10e-cdwc --on aw1-10e`, mobile 6x, snapshot b1789284481295-4ad4a84a, tools as on main
 5075aac). Chrome doesn't show the WebKit repaint (OBSERVED in our setup: cd2-check counted layers, not paint), so no
