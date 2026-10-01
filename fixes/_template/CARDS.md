@@ -4,8 +4,9 @@ One card per stage gate ([`research/architecture/measurement-protocol-v2.md`](..
 §2, §4; who signs: [`fixes/LEAD.md`](../LEAD.md) "Stages and gates"). Copy a card into your
 `fixes/<topic>/README.md` (section "Cards") or into the message that asks for a sign-off; send the census, event and
 attribution cards as they close, not at the end. Cite raw files by path (worktree `out/…` or `research/…`), never only
-numbers. Positions are in **crossing coordinates** (protocol §3.4: y_i = elementTop_i − f_i·vh; Chrome and phone
-are compared by crossing, never by raw y). Frame thresholds are in ticks (k = round(dt / 8.333); k≥5 = dt ≥ 37.5 ms,
+numbers. Positions are in **crossing coordinates** (protocol §3.4: y_i = elementTop_i − f_i·V_i, V_i = the
+frame's innerHeight for IO rootMargins and JS reads, lvh 815 / svh 775 on the phone for CSS vh ranges; elementTop_i
+from the same run; Δ = 0 inside [yStart, yEnd]; Chrome and phone are compared by crossing, never by raw y). Frame thresholds are in ticks (k = round(dt / 8.333); k≥5 = dt ≥ 37.5 ms,
 k≥7 = dt ≥ 54.2 ms).
 
 ## R: census card (owner signs)
