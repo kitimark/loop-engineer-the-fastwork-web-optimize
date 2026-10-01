@@ -162,6 +162,21 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N4 / N10 fixes (N3 rejected 2026-10-01, F-015) as their prototypes pass Tier A.
 
+## Priority from user feedback (2026-10-01 08:04Z, replaces the slot-3 order where they differ)
+
+The user finger-tested baseline vs `aw1-10c` on the iPhone and feels **no difference** ("laggy, the same"). The user feels
+the lag at (1) the **end of the page** (morph, push past the end) and (2) the **top** (hero and scrolling out of it).
+iPhone finger evidence (A2 = baseline, unthrottled): the end-of-page morph runs at ~10-18 fps, a steady run of 51-112 ms
+frames at scrollY 5220 (the morph pin) while the user pushes past the end, > 50 ms 50-75 per pass, worst 112-218 ms;
+Chrome's morph phase never showed this. Hero window y 0-900: > 50 ms 3-12 per pass, worst 71-107 ms. Middle: worst
+115-152 ms at y≈1936-2092.
+**Order:** (1) **morph on WebKit** (end of page; owner proposed: fix-nav-morph resumed, or a fresh fix-owner from its
+READMEs; #6 v05 C/D finger pair first, then name the pin frames with a logger during finger runs, phone ablations: the
+`scrollTo` pin loop, morph-panel backdrop blur, panel mount/layout, non-passive touch listeners); (2) **hero-exit**
+(resumed 08:06Z: the y≈50 frame and the hero window, `--on aw1-10c`, iPhone-led); (3) **N10** y≈1970 (fix-scroll-engine,
+ablations ready). Chrome-only 20-50 ms work (the "other" class diagnostic, the 429-element restyle) runs only on spare
+Chrome capacity. Success is judged on the iPhone under a finger first, then Chrome > 50/> 34 ms.
+
 ## Baseline freeze (user decision, 2026-10-01 ~07:35Z)
 
 The user froze today's mirror build as the baseline: `site/` and `site-pretty/` get **committed on main** (Hard rule 3
