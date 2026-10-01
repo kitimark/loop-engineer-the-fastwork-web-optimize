@@ -25,6 +25,11 @@
 // `fix.mjs serve`) therefore also serve a plain-http twin port; `open <https mirror URL>` switches to
 // it (--keep-https opts out, for a phone that trusts the cert) and after navigating fails loudly if
 // Safari is not on the mirror page (certificate warning), instead of leaving it there to be measured.
+//
+// Protocol v2 runs (T1a, research/architecture/measurement-protocol-v2.md §5.4-5.5; tools/lib/iphone-run.mjs):
+//   node tools/iphone.mjs run --driver scroll|window|morph --probe std --owner <topic> [--label l] ...   (run --help)
+// one reload + settle + driver run with the standard probe (per-frame log, uncapped mutation counts by type,
+// crossing log, tool hashes) -> out/iphone/<owner>-run-<label>-<ts>.json (schema fw-iphone-run/1).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, sleep } from './lib/wip.mjs';
@@ -170,6 +175,7 @@ async function main() {
   }
   if (cmd === 'gesture') return (await import('./lib/gesture-run.mjs')).gestureCmd({ argv, arg, opt, flag, requireLease, port: PORT });
   if (cmd === 'wda') return (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, requireLease });
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25] | gesture <script.json> --owner <topic> [--dry-run] | wda status|build|start|stop');
+  if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease, port: PORT });
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25] | gesture <script.json> --owner <topic> [--dry-run] | wda status|build|start|stop | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(() => process.exit(0), (e) => { console.error(e.message || e); process.exit(1); });
