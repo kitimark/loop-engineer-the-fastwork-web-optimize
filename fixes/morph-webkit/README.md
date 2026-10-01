@@ -105,6 +105,27 @@ So f vs g in the driver only answers the lead's `overscroll-behavior` compositin
 `driver-check.mjs` state check, Chrome, short lane, state only: all six builds reach `--morph` 1 and return to 0,
 scrollY stays at maxY, no errors, and `overscroll-behavior` is cleared afterwards.
 
+### h-fixedpanel (`mw10e-gh` = g + R1 of `research/design-engineering/morph-endpage.md`)
+
+Phone only (`@media (width<=640px)`). The change:
+- The morph panel gets its final box: `inset: 0 auto auto 50%`, `width: var(--panel-w)`, `height: var(--panel-h)`,
+  `translate: -50% 0`. The nav clips it.
+- Center and footer follow the nav height H(m) = 52px + (panel-h - 52px)·m by `translate`.
+- The panel's `transform-origin` is at H(m)/2.
+- The veil follows by `scaleY(H/Hf)`. CSS can't divide lengths, so S() sets it per spring frame (debug build),
+  with Hf read once per morph start.
+
+Expected (model): moving-frame p50 down 30-45 ms; b-noblur at most ~10 ms. Not measured on the phone yet.
+
+Chrome checks (short lane, `gh-parity.mjs`):
+- Driver state: morph reaches 1 and returns to 0, no errors.
+- Visual parity vs g at 430 px (DPR 1, animations paused, `--morph` pinned):
+  - m = 0.15: 0.01 %;
+  - m = 0.35: 0.08 %;
+  - m = 0.6: **1.14 %** (rows 29-578: the mid-tween panel is ≤ 8 px wider than the box, so the columns and title differ; R1's predicted risk);
+  - m = 1: 0.12 % (countdown).
+- The final panel size is unchanged: 406 × 908 in both.
+
 ## Composited morph (N2), if b names the blur
 
 Each morph frame currently changes:
