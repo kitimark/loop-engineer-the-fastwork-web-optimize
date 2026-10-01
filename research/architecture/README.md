@@ -309,7 +309,8 @@ touchmove cancelability, the number of toolbar `resize` events.
 [`measurement-protocol-v2.md`](measurement-protocol-v2.md): stages R/I/D/F/V/L with gates and sign-offs; the
 attribution card (NAMED/LOCATED/UNEXPLAINED, positive + negative ablations with mechanism checks) as the gate
 before any build; metric sources per device (rAF ticks primary, DroppedFrame / WebKit Timeline / layerPainted
-diagnostic); prediction cards and the `fixes/PREDICTIONS.md` ledger; the iPhone block protocol (warm-up, control
+diagnostic; layerPainted is unavailable on Chrome M148+ (Chromium 1bf9d9eb, crbug 488803411; CONFIRMED by source,
+empirical check pending), so per-layer `paintCount` deltas replace it, protocol §3.7); prediction cards and the `fixes/PREDICTIONS.md` ledger; the iPhone block protocol (warm-up, control
 sentinel under load, 4v4 ABBA, sequential stop over max 2 blocks with stratified pooling); Chrome additions and
 the canary-drift plan; review checklist additions; the ranked tool/doc/topic execution plan. Folds in
 arch-devtools (`devtools-methodology.md`), de-devtools (`devtools-render-metrics.md`), arch-safari
