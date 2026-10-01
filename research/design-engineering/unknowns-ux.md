@@ -171,6 +171,10 @@ Each item gives the unknown, the evidence, the cheapest probe, the expected valu
       - HTR, STUT, RUNmax, >34/s and fps are equal within ~30 %.
   - **Results:** `window.__fwPacing`, `localStorage.fwPacing`, and the final screen's text. To score them:
     `node research/design-engineering/pacing-fit.mjs <results.json>` gives Spearman ρ per metric, plus a repeat check.
+- *First result (F5-try2, [`pacing-result.md`](pacing-result.md); one tired session):*
+  - Frame-rate metrics fit best: fps ρ −0.72, HTR 0.66, MWFI 0.44.
+  - The eased pair went *against* MWFI: gaps at peak velocity rated 2, gaps near the slow end rated 4.
+  - So MWFI is not promoted. Use HTR/fps plus JUMPmax for isolated hitches; a v2 repeat block comes before the T3+ metrics.
 
 **U4. Are rAF gaps under compositor scroll visible at all, and what does the y≈1960 frame show?**
 - *Unknown:* on iOS the page scrolls in the UI process. Only main-thread pixels wait on rAF: JS tweens,
