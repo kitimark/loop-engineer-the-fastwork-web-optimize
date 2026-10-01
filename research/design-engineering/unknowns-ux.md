@@ -157,6 +157,20 @@ Each item gives the unknown, the evidence, the cheapest probe, the expected valu
   The user ranks them blind (~2 min) while the rAF log records the patterns. Fit MWFI, STUT/s, RUNmax and JUMP to
   the ranking.
 - *EV:* high: it fixes the primary perceptual metric for every later A/B and calibrates the 20 px JUMP threshold. *Owner:* de-unknowns-ux writes the page; iphone-runner shows it; ts-analysis takes the winner into the stats lib.
+- *Built (F5):* [`pacing/index.html`](pacing/index.html) (static, no Fastwork code) and the fit
+  [`pacing-fit.mjs`](pacing-fit.mjs).
+  - **Trials:** the 5 patterns × 2 speeds, plus two eased trials, plus 2 repeats: 14 blind trials, ~2 min. The eased
+    trials use the morph's own tween (739 px, 680 ms ease-out) with three 50 ms gaps, either at the start
+    (ease-early) or near the end (ease-late).
+  - **The design check (`--synthetic`)** shows what each axis can tell apart:
+    - At constant speed, MWFI, HTR and fps rank the patterns alike (|ρ| 0.9-1). So the 10 constant-speed trials
+      can't single out MWFI.
+    - The speed pair separates JUMP, which scales with v, from the time-only metrics.
+    - The eased pair separates the motion-weighted metrics from the frame-weighted ones:
+      - MWFI 35 vs 17 ms, JUMP p95 81 vs 1 px;
+      - HTR, STUT, RUNmax, >34/s and fps are equal within ~30 %.
+  - **Results:** `window.__fwPacing`, `localStorage.fwPacing`, and the final screen's text. To score them:
+    `node research/design-engineering/pacing-fit.mjs <results.json>` gives Spearman ρ per metric, plus a repeat check.
 
 **U4. Are rAF gaps under compositor scroll visible at all, and what does the y≈1960 frame show?**
 - *Unknown:* on iOS the page scrolls in the UI process. Only main-thread pixels wait on rAF: JS tweens,
