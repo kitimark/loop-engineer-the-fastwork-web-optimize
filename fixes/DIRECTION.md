@@ -72,6 +72,20 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    /10 mechanism check (short lane, before its A/B): the R3 `contentvisibilityautostatechange` logger shows
    every un-skip before the first scroll (idle phase) and 0 during scroll; cv churn stays 0; `will-change`
    per element only inside its window; no new idle-phase LoAF > 50 ms (one section per idle slice).
+   **all-wave1 goal hold done** (2026-10-01 04:37-04:51Z, gated tools 93b4af2, 0/20 contaminated, load1 1.9-3.6;
+   `fixes/all-wave1/`, 0e8f288; F-022). Same-hold A/A is the new floor (baseline ~93 fps on the gated tools vs ~75 before:
+   never compare with pre-gate numbers). Goal metrics flat: frames > 50 ms 3 [2-4] -> 2 [1-3], > 34 ms 5 [4-6] -> 5 [4-6],
+   both within noise. Hints: fps 93.8 -> 110.6, > 20 ms 25 -> 13, forced style+layout 28 -> 0 ms. F-009c (nav IO 46 ms)
+   gone 5/5. Left > 50 ms per run: gtag `onscrollend` (48-52 ms, N11) and one script-less 55-70 ms render frame (likely
+   F-011, `#platform` first render, scroll-engine /10c). Countdown `active` probe 21 vs 717 face writes: gate works,
+   the 1 Hz snap residual goes to countdown 05/08.
+   **Wave-2 order (lead decision 2026-10-01 05:00Z, replaces the one above):** N11 -> scroll-engine **/10c** (= /09 + /10
+   idle un-skip + /10b per-scene `will-change` + far re-skip behind the user; replaces /10: layers <= w1 at all 8
+   positions, F-019) -> **I-018 attribution** (f71ee42: review + A/A with/without cdp-metrics in one hold + test:chrome),
+   so wave-2 slots can name the > 34 ms frames (5/run, no named source yet) -> N12 nav-scroll-handler ("20-34 ms band
+   only") -> hero-exit -> countdown 05/08 (behind N12 unless /10c fails to remove the y≈2100-2150 frame) -> E4 (folded
+   into the attribution step). Every A/B `--on all-wave1` (`fix.mjs apply all-wave1` after rebasing on 0e8f288), holds
+   <= 10 min.
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N4 / N10 fixes (N3 rejected 2026-10-01, F-015) as their prototypes pass Tier A.
