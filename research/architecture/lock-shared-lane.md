@@ -314,3 +314,27 @@ kept).
 Switch-on line for the lead (after the canary): `node tools/lock.mjs shared on chrome-measure --by lead --reason
 "<why>"` (cap 3 and join load 2x cpus by default; `--cap N` 1..4, `--join-load L`). Off again: `shared off`.
 
+## 10. I-049: readers starved by later exclusive waiters (as built)
+
+Seen live on 2026-10-02: the lead's npm test (shared w2) was #1 in the queue from 22:15Z to after 22:44Z. Exclusive
+holds queued after it passed it at three hand-overs (22:14, 22:34 and 22:43:35; the last one queued about 22:39).
+Cause: §1 step 6 ("right after a group, the exclusive waiters go first") picked the first normal waiter whatever its
+queue place, and gatePassDone did the same, while a waiting writer kept joins closed.
+
+Rule now (`nextIndex`, test-first in tests/unit/lock-shared.test.mjs "I-049"):
+- **FIFO between readers and exclusive waiters.** An exclusive waiter never passes a reader queued before it: not after
+  a group, and not through its gate pass window. The short-lane entries go in queue order. Writer preference only
+  closes joins to a running group; it does not reorder the queue. Earlier exclusive waiters still go first after a
+  group, and readers still pass later normal waiters through the short lane, as before.
+- **Age bound.** A reader queued `readerMaxWaitSec` (600 s) goes before any exclusive waiter at the next hand-over.
+- A lead move (`movedBy`) of an exclusive waiter ahead still wins over FIFO; the age bound comes before it.
+- **Head-of-line (amends N4).** Seen live: with the group at weight 3/4, the head reader fwreskip (w3) could not join,
+  and test-chrome-fn (w1, waiting since 22:30Z) behind it could not either. Now a reader that fits may join past fresh
+  readers ahead that do not fit now, as long as each of them has waited less than `readerBypassSec` (300 s). After
+  that the group drains for the head. A reader ahead that fits is never passed.
+
+Mixed versions: where the new rule picks a reader and pre-I-049 code picks the normal waiter, each takes its own turn,
+and the guard settles the race. One mutual wait stays possible until every worktree rebases: a pre-I-049 reader defers
+to an I-049 writer that defers to it. It is bounded by the group's last-grant record, which expires 335 s after the
+group's last grant; after that both versions serve the short lane first.
+

@@ -33,7 +33,7 @@ const ms = (s) => s * 1000;
 
 test('config: one constant holds the cap, the per-job weights and the bounds; the join load is 2x the cpu count', () => {
   assert.deepEqual(L.SHARED_LANE, {
-    cap: 4, defaultCap: 3, joinLoadPerCpu: 2, maxSec: 300, batchJoinSec: 30, expiryGraceSec: 10, killGraceSec: 5,
+    cap: 4, defaultCap: 3, joinLoadPerCpu: 2, maxSec: 300, batchJoinSec: 30, expiryGraceSec: 10, killGraceSec: 5, readerMaxWaitSec: 600, readerBypassSec: 300,
     weights: { check: 1, probe: 1, 'bench-mech': 1, 'test-chrome-fn': 1, 'npm-test': 2, simulator: 3 },
   });
   assert.ok(Object.isFrozen(L.SHARED_LANE) && Object.isFrozen(L.SHARED_LANE.weights));
@@ -110,19 +110,47 @@ test('N8: a nested shared acquire heavier than its reader slot is refused; an eq
   assert.equal(holder().readers.length, 1);
 });
 
-test('N4: readers join in queue order: a heavier reader waiting for room is not passed by a lighter one queued after it', async () => {
+test('N4 + I-049: readers join in queue order, but one that fits may pass a head reader that does not, until that one is readerBypassSec old', async () => {
   await on();
-  assert.equal((await rd('npm-a', { weight: 2 })).opened, true);
-  const pidB = livePid(), pidC = livePid();
-  const b = await rd('npm-b', { pid: pidB, weight: 2 });
+  const t0 = Date.now();
+  assert.equal((await rd('npm-a', { weight: 2, maxSec: 300, now: t0 })).opened, true);
+  const pidB = livePid(), pidC = livePid(), pidD = livePid();
+  const b = await rd('npm-b', { pid: pidB, weight: 2, now: t0 + 1000 });
   assert.equal(b.ok, false, '2 + 2 > cap 3');
-  const c = await rd('check-c', { pid: pidC, weight: 1 });
-  assert.equal(c.ok, false, 'would fit, but npm-b queued first');
-  assert.match(c.why, /"npm-b" queued first/);
+  // I-049 head-of-line: npm-b cannot fit now, so a lighter reader that fits joins past it while npm-b is young
+  const c = await rd('check-c', { pid: pidC, weight: 1, now: t0 + 2000 });
+  assert.equal(c.ok, true, 'fits (2 + 1 <= 3); npm-b does not fit and has waited 1 s');
+  await L.releaseReader(R, c.reader.token);
+  const bypass = ms(L.SHARED_LANE.readerBypassSec);
+  // once npm-b has waited readerBypassSec, nobody passes it any more: the group drains for it (npm-b's entry is
+  // backdated: a real waiter keeps polling, this test does not)
+  const late = t0 + 1000 + bypass;
+  assert.equal((await rd('npm-b', { pid: pidB, weight: 2, now: late })).ok, false);
+  const qb = L.status(R).queue;
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(qb.map((w) => (w.owner === 'npm-b' ? { ...w, since: new Date(t0 + 1000).toISOString() } : w))));
+  const d = await rd('check-d', { pid: pidD, weight: 1, now: late + 500 });
+  assert.equal(d.ok, false, 'would fit, but npm-b is past the bypass bound');
+  assert.match(d.why, /"npm-b" queued first/);
   // a reader that stopped polling does not hold the others up
   const q = L.status(R).queue;
-  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q.map((w) => (w.owner === 'npm-b' ? { ...w, lastSeen: new Date(Date.now() - 120000).toISOString() } : w))));
-  assert.equal((await rd('check-c', { pid: pidC, weight: 1 })).ok, true);
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q.map((w) => (w.owner === 'npm-b' ? { ...w, lastSeen: new Date(late - 120000).toISOString() } : w))));
+  assert.equal((await rd('check-d', { pid: pidD, weight: 1, now: late + 1000 })).ok, true);
+});
+
+test('I-049 head-of-line: a reader ahead that fits is never passed', async () => {
+  await on({ cap: 4 });
+  const t0 = Date.now();
+  assert.equal((await rd('npm-a', { weight: 2, now: t0 })).opened, true);
+  const w = await L.tryAcquire(R, { owner: 'ab', kind: 'lease', now: t0 + 500 }); // closes joins for a moment
+  assert.equal(w.ok, false);
+  const pidB = livePid(), pidC = livePid();
+  assert.equal((await rd('npm-b', { pid: pidB, weight: 2, now: t0 + 1000 })).ok, false, 'joins closed by ab');
+  assert.equal((await rd('check-c', { pid: pidC, weight: 1, now: t0 + 2000 })).ok, false);
+  await L.dequeue(R, 'ab');
+  const c = await rd('check-c', { pid: pidC, weight: 1, now: t0 + 3000 });
+  assert.equal(c.ok, false, 'npm-b fits (2 + 2 <= 4), so it goes first');
+  assert.match(c.why, /"npm-b" queued first/);
+  assert.equal((await rd('npm-b', { pid: pidB, weight: 2, now: t0 + 3500 })).ok, true);
 });
 
 test('N10: a waiter converts in place when the lead flips the switch (its queue place is kept)', async () => {
@@ -242,6 +270,52 @@ test('writer preference: a queued exclusive waiter closes joins; when the reader
   assert.equal(b2.ok, false);
   assert.equal(b2.next, 'ab');
   assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease' })).ok, true);
+});
+
+test('I-049: a later exclusive never passes an earlier reader at the hand-over after a group; it still closes joins', async () => {
+  await on(); // cap 3
+  const t0 = Date.now();
+  const a = await rd('npm-a', { weight: 2, now: t0 });
+  assert.equal(a.opened, true);
+  const pB = livePid();
+  assert.equal((await rd('npm-b', { pid: pB, weight: 2, now: t0 + 1000 })).ok, false, '2 + 2 > cap 3');
+  assert.equal((await L.tryAcquire(R, { owner: 'cal', kind: 'lease', now: t0 + 2000 })).ok, false, 'queued behind npm-b');
+  await L.releaseReader(R, a.reader.token);
+  assert.equal(holder(), null);
+  const w = await L.tryAcquire(R, { owner: 'cal', kind: 'lease', now: t0 + 3000 });
+  assert.equal(w.ok, false, 'right after a group, the exclusive queued later does not pass the reader queued first');
+  assert.equal(w.next, 'npm-b');
+  const b = await rd('npm-b', { pid: pB, weight: 2, now: t0 + 4000 });
+  assert.equal(b.ok, true);
+  assert.equal(b.opened, true);
+  // writer preference only closes joins: a reader that came after cal waits behind it
+  const late = await rd('late', { pid: livePid(), now: t0 + 5000 });
+  assert.equal(late.ok, false);
+  assert.match(late.why, /"cal" waits/);
+  await L.releaseReader(R, b.reader.token);
+  assert.equal((await rd('late', { pid: late.queue.find((x) => x.owner === 'late').pid, now: t0 + 6000 })).next, 'cal', 'cal before the reader queued after it');
+});
+
+test('I-049: age bound: a reader waiting readerMaxWaitSec goes before an exclusive queued ahead of it', async () => {
+  await on();
+  const now = Date.now();
+  const iso = (t) => new Date(t).toISOString();
+  const pB = livePid();
+  const queue = (readerSince) => JSON.stringify([
+    { owner: 'ab', kind: 'lease', checkout: REPO, since: iso(readerSince - 1000), lastSeen: iso(now), queueTtlSec: 600 },
+    { owner: 'fn-b', kind: 'process', pid: pB, checkout: REPO, since: iso(readerSince), lastSeen: iso(now), queueTtlSec: 600, short: true, maxSec: 60, shared: true, weight: 1 },
+  ]);
+  // right after a group (its grant spends the short-drain budget), with nobody holding the lock
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify(L.groupGrant({ token: 'abcdefabcdef' }, now - 20000)));
+  const bound = ms(L.SHARED_LANE.readerMaxWaitSec);
+  writeFileSync(lockFile(`${R}.queue.json`), queue(now - bound + 60000));
+  assert.equal(L.status(R).next, 'ab', 'below the bound: the exclusive queued first goes first');
+  writeFileSync(lockFile(`${R}.queue.json`), queue(now - bound - 1000));
+  assert.equal(L.status(R).next, 'fn-b', 'past the bound: the reader goes before any exclusive');
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', now })).ok, false);
+  const b = await rd('fn-b', { pid: pB, now: now + 1000 });
+  assert.equal(b.ok, true);
+  assert.equal(b.opened, true);
 });
 
 test('writer preference: an old-code waiter (no `shared` field) closes joins too, fresh or not', async () => {
@@ -577,25 +651,30 @@ old('an old-code waiter closes joins; when the group drains, the old waiter is g
   assert.equal((await rd('fn-b', { pid: livePid() })).ok, false, 'a reader waits behind the old exclusive holder');
 });
 
-old('old and new code agree on who is served next (no reader and old waiter each waiting for the other)', async () => {
+old('old and new code agree on who is served next, or new code picks a reader that goes itself (no reader and old waiter each waiting for the other)', async () => {
   await on();
   const fresh = () => new Date().toISOString();
   const rdr = (owner, since) => ({ owner, kind: 'lease', checkout: REPO, since, lastSeen: fresh(), queueTtlSec: 60, short: true, maxSec: 60, shared: true, weight: 1 });
   const normal = (owner, since) => ({ owner, kind: 'lease', checkout: REPO, since, lastSeen: fresh(), queueTtlSec: 600 });
   const short = (owner, since) => ({ owner, kind: 'lease', checkout: REPO, since, lastSeen: fresh(), queueTtlSec: 60, short: true, maxSec: 120 });
   const t = (s) => new Date(Date.now() - s * 1000).toISOString();
+  // [name, queue, new code's pick, old code's pick]. I-049: where they differ, new code picks a reader queued before the
+  // normal waiter; a reader is always new code, so it takes its turn itself while the old waiter takes its own: a race
+  // the guard settles, never two waiters each waiting for the other
   const cases = [
-    ['after a group: a normal waiter before every short-lane entry', [rdr('fn-b', t(50)), short('npm-x', t(40)), normal('old-ab', t(30))], 'old-ab'],
-    ['after a group, no normal waiter: short-lane entries FIFO', [rdr('fn-b', t(50)), short('npm-x', t(40))], 'fn-b'],
-    ['after a group, no normal waiter: short-lane entries FIFO (exclusive short first)', [short('npm-x', t(50)), rdr('fn-b', t(40))], 'npm-x'],
+    ['after a group: a normal waiter before every later short-lane entry', [normal('old-ab', t(60)), rdr('fn-b', t(50)), short('npm-x', t(40))], 'old-ab', 'old-ab'],
+    ['after a group: a reader queued before the normal waiter goes first in new code (I-049)', [rdr('fn-b', t(50)), short('npm-x', t(40)), normal('old-ab', t(30))], 'fn-b', 'old-ab'],
+    ['after a group, no normal waiter: short-lane entries FIFO', [rdr('fn-b', t(50)), short('npm-x', t(40))], 'fn-b', 'fn-b'],
+    ['after a group, no normal waiter: short-lane entries FIFO (exclusive short first)', [short('npm-x', t(50)), rdr('fn-b', t(40))], 'npm-x', 'npm-x'],
   ];
   // a real group: opened, then closed by its last reader (its last-grant record is what both versions read)
   const a = await rd('fn-a');
   await L.releaseReader(R, a.reader.token);
-  for (const [name, q, want] of cases) {
+  for (const [name, q, wantNew, wantOld] of cases) {
     writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q));
-    assert.equal(L.status(R).next, want, `new: ${name}`);
-    assert.equal(OLD.status(R).next, want, `old: ${name}`);
+    assert.equal(L.status(R).next, wantNew, `new: ${name}`);
+    assert.equal(OLD.status(R).next, wantOld, `old: ${name}`);
+    if (wantNew !== wantOld) assert.equal(q.find((w) => w.owner === wantNew).shared, true, `new code's pick is a reader (new code): ${name}`);
   }
   // after an exclusive normal hold: the short lane (readers too) goes first in both
   writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([]));

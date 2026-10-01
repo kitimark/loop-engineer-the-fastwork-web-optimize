@@ -82,9 +82,11 @@
 // switch file's joinLoad; not for the opener), and no exclusive waiter is queued (writer preference), except the
 // readers queued before the group opened, for batchJoinSec. The group opens at a hand-over like a short job (the short
 // lane, its drain budget, I-030 and lead moves apply to reader entries); right after a group, the exclusive waiters go
-// first. A reader's command gets FW_LOCK_SHARED=<r>:<reader token>, never FW_LOCK_HELD: a nested shared acquire re-enters
+// first, but never before a reader queued ahead of them, and a reader queued readerMaxWaitSec goes before any exclusive
+// waiter (I-049: writer preference only closes joins; it does not reorder the queue). A reader's command gets FW_LOCK_SHARED=<r>:<reader token>, never FW_LOCK_HELD: a nested shared acquire re-enters
 // that slot (if it is no heavier than the slot), an exclusive one is refused at once (B1); readers are keyed by token,
-// not owner (B3); readers join in queue order (a heavier reader waiting for room holds the lighter ones behind it). The
+// not owner (B3); readers join in queue order (a heavier reader waiting for room holds the lighter ones behind it once it
+// has waited readerBypassSec; before that a reader that fits joins past it, I-049). The
 // lane is off unless the lead switched it on (<r>.shared.json); while off, a shared acquire is an exclusive short job with
 // the same maxSec (its holder and queue entry carry `functional: true` and the weight), so callers never branch, and it
 // behaves as a slot the same way (review-lock-share N2): its command gets FW_LOCK_SHARED=<r>:<holder token> (no
@@ -128,6 +130,8 @@ export const SHARED_LANE = Object.freeze({
   batchJoinSec: 30, // readers queued before the group opened may join this long despite a waiting writer
   expiryGraceSec: 10, // group expiresAt = the latest reader deadline + this
   killGraceSec: 5, // a process reader's deadline = acquiredAt + maxSec + this (the SIGTERM -> SIGKILL grace)
+  readerMaxWaitSec: 600, // I-049: a reader queued this long goes before any exclusive waiter at the next hand-over
+  readerBypassSec: 300, // I-049: a reader that fits may join past a non-fitting reader ahead until that one waited this long
   weights: Object.freeze({ check: 1, probe: 1, 'bench-mech': 1, 'test-chrome-fn': 1, 'npm-test': 2, simulator: 3 }),
 });
 export const SHARED_FORMAT = 'rw1';
@@ -397,10 +401,17 @@ function nextIndex(q, lg, now = Date.now(), caller, r, T = THRESHOLDS) {
     if (fresh.length) pool = fresh;
   }
   // (a shared group's last-grant record has its short-drain budget spent (groupGrant), so right after a group a normal
-  // waiter goes first; the rule is data old lock code reads the same way, so old and new code agree on who is next)
+  // waiter goes first; the rule is data old lock code reads the same way, so old and new code agree on who is next,
+  // except where I-049 below picks a reader: a reader runs new code, so it takes that turn itself)
   const s = pool.find(([w]) => w.short), n = pool.find(([w]) => !w.short);
   if (!s || !n) return pool[0][1];
+  // I-049 (shared readers starved): a reader that waited readerMaxWaitSec goes before any exclusive waiter
+  const rd = pool.find(([w]) => w.shared);
+  if (rd && now - Date.parse(rd[0].since) >= SHARED_LANE.readerMaxWaitSec * 1000) return rd[1];
   if (n[0].movedBy && n[1] < s[1]) return n[1]; // the lead moved this normal waiter ahead of these short jobs (I-019): its priority wins (I-020)
+  // I-049: an exclusive waiter never passes a reader queued before it (not after a group, not by its gate): writer
+  // preference only closes joins to a running group. The short-lane entries go in queue order (s is at or before rd).
+  if (rd && rd[1] < n[1]) return s[1];
   if (gatePassDone(n[0], now, T)) return n[1]; // its host gate has waited out the short jobs' pass window (I-030)
   const start = shortRunStart(lg, now) ?? now;
   return now - start + (s[0].maxSec || SHORT_MAX_SEC) * 1000 <= SHORT_DRAIN_SEC * 1000 ? s[1] : n[1];
@@ -626,11 +637,13 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
     const writer = q.find((w) => !w.shared);
     const inBatch = mine >= 0 && Date.parse(q[mine].since) <= Date.parse(h.openedAt) && now - Date.parse(h.openedAt) <= SHARED_LANE.batchJoinSec * 1000;
     if (writer && !inBatch) return wait(`joins closed: "${writer.owner}" waits for an exclusive hold (writer preference)`);
-    // readers join in queue order (review-lock-share N4): a heavier reader waiting for room is not passed by lighter
-    // ones queued after it (a reader that stopped polling does not hold the others up)
-    const ahead = q.slice(0, mine >= 0 ? mine : q.length).find((w) => w.shared && fresh(w));
-    if (ahead) return wait(`"${ahead.owner}" queued first (readers join in queue order)`);
+    // readers join in queue order (review-lock-share N4; a reader that stopped polling does not hold the others up).
+    // I-049 head-of-line: a reader that fits may pass readers ahead that do not fit now, while each of them has waited
+    // less than readerBypassSec; past that the group drains for them. A reader ahead that fits is never passed.
     const used = h.readers.reduce((a, x) => a + (x.weight || 1), 0);
+    const ahead = q.slice(0, mine >= 0 ? mine : q.length).find((w) => w.shared && fresh(w)
+      && (used + (w.weight || 1) <= cap || now - Date.parse(w.since) >= SHARED_LANE.readerBypassSec * 1000));
+    if (ahead) return wait(`"${ahead.owner}" queued first (readers join in queue order)`);
     if (used + weight > cap) return wait(`the shared group is full (weight ${used}/${cap}; this job needs ${weight})`);
     const ld = load1 ?? os.loadavg()[0], lim = ncpu ?? sharedJoinLoad(r);
     if (ld > lim) return wait(`load1 ${Math.round(ld * 10) / 10} > ${lim}: no new reader joins a loaded host`);
@@ -642,7 +655,7 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
     return { ok: true, holder: g, reader: x, mode: 'shared' };
   }
   // free: reader entries are short-lane entries; right after a group a normal waiter goes first (groupGrant spends the
-  // drain budget), and no reader passes a gated head writer then (the gate exemption is for short jobs between exclusive
+  // drain budget) unless a reader queued before it (I-049), and no reader passes a gated head writer then (the gate exemption is for short jobs between exclusive
   // holds only)
   const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
   const afterGroup = !!seen.shared;
