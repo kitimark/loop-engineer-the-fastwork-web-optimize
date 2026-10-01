@@ -762,7 +762,27 @@ before the untimed at-rest check of re-keep-op vs re-keep (ticket via mgmt-ops-5
       - or keep opacity at 1 and accept the +700 frame;
       - or move the carousel's repaint off the card. A boundary does not help paint, so this means the
         carousel's own layer.
+- **Result (P-033 step 0, 2026-10-01 14:47Z, 1 untimed run per arm, about 21 s at rest with the card at the
+  viewport top; fix-hero-exit 57ba3ac, iphone-runner `s0-rk*`, `s0-rkop*`): the risk is VOID at rest. The
+  first decision branch applies.**
+  - LayerTree, read after Timeline.stop: in both arms the card has its own composited layer, reason
+    `willChange`, 430x1328, 15.9 MB. So the 0.999 opacity sits on the GraphicsLayer, and the rotator's repaints
+    do not go through a transparency layer.
+  - Idle Paint over the card (fix-hero-exit's `s0score`): re-keep 4.89 ms per rotator cycle (1205 Paints),
+    re-keep-op 4.77 (1203). The delta is −0.12 ms.
+  - The scroll re-check in the second branch is not needed: the layer comes from `will-change`, not from motion.
+    Caveat: the layer exists in both arms, so this needs no new layer memory. It also means the risk returns if
+    a later fix drops that `will-change`.
+- **Against §7.1/§7.4 (D3), same data (`s0rot.mjs`):** the rotator prediction HITS at rest on the card.
+  - 41 rotator callbacks in about 21 s. 40/41 (rk) and 41/41 (rkop) hold an InvalidateLayout, and each is
+    followed 1-5 ms later (one at +12 ms) by a whole-view Layout, root `[0,0,430,775]`.
+  - That is 2 per cycle, as §7.4 predicted (about 38 per 20 s).
+  - Sizes: 12.8-43.6 ms, median 25-26 ms. By write:
+    - the `S = true` write (after the 800 ms dwell; mounts 5 imgs and `is-exit`): median 27.9 / 26.9 ms;
+    - the `S = false` write (220 ms later; 4 imgs): median 23.3 / 22.6 ms.
+  - That is a little above §7.1's idle-at-y-0 median of 24 ms (range 14-31).
+  - The "n 23-28" in 57ba3ac is the count at ≥25 ms (25 / 22 here). At ≥10 ms it is 40 / 41.
 
-**Next.** A build card for the end-state fix. Conditions 1 and 2 are lifted. re-keep-op's gain block waits for the
-at-rest check above. Also a page-wide pitfall: every reveal
+**Next.** A build card for the end-state fix. Conditions 1 and 2 are lifted. The at-rest check above passed, so
+re-keep-op's gain block can go ahead. Also a page-wide pitfall: every reveal
 that ends at `opacity: 1` / `filter: none` / `transform: none` pays this frame on the phone.
