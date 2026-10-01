@@ -19,6 +19,9 @@ test('.claude/settings.json: the test gate cannot be skipped silently; rule synt
 
 test('.claude/settings.json: baseline edits and pushes stay denied', () => {
   for (const r of ['Bash(git push *)', 'Bash(git add -f *)', 'Bash(git add --force *)', 'Edit(/site/**)', 'Edit(/site-pretty/**)']) assert.ok(deny.includes(r), r);
+  // a worktree's own copy of the committed snapshot (not sparse, ~60 MB) is the baseline too (review-snapshot note 3);
+  // "/" is the project root, so these name the copies seen from a session rooted in the main checkout
+  for (const r of ['Edit(/.claude/worktrees/*/site/**)', 'Edit(/.claude/worktrees/*/site-pretty/**)']) assert.ok(deny.includes(r), r);
 });
 
 test('package.json has the test scripts and the hook setup', () => {
