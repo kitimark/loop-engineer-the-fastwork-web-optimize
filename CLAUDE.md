@@ -114,7 +114,7 @@ still never run git through it.
 
 ## Calibrated measurement setting
 
-Chrome, mobile viewport 430x932 DPR 3 with touch, **CPU 6x** ≈ iPhone 15 Pro Max jank on this page
+Chrome, mobile viewport 430x932 DPR 3 with touch, **CPU 6x** reproduces the iPhone 15 Pro Max's scripted-scroll jank counts on this page (display on; OBSERVED in our setup: it slows only the main thread, so it can't stand in for raster/GPU, WebKit-only costs or the finger case, claims-audit §2.6)
 (`research/cpu-throttle-calibration/`). Serve with `--vendors=local --https --latency 150` ("lags like
 live"). These are the `fix.mjs ab` defaults, plus a 6 s idle phase at the top of the page before
 scrolling (`--idle 6`, I-002; `--idle 0` reproduces the pre-I-002 sequence). Compare A/B results only when both
