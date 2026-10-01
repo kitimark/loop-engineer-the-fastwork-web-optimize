@@ -804,3 +804,111 @@ parked. The phone now runs attribution only.
   - Results went to fix-scene-scope, mgmt-ops-6 and the lead.
 - **Files** (`out/iphone-runner/`): `ss-{C1,V2,I3,V4,I5,C6,I7,C8,V9}.json` + `.tl.json`, `ss-Sent-{open,end}.json`,
   `ss-score.json`, `ss.sh`, `ssan.mjs`.
+
+### 4s. Scene-scope ticket 2 (fix-scene-scope, P-a/P-b): C B vs I4 vs I40 at the #platform switch (20:05-20:11Z)
+
+- **Setup:**
+  - All arms are on base B (JS dbd5fdb4f1fb): C = B (CSS cc8d1340b449), I4 = V1i+V4 (CSS 3646288553f6),
+    I40 = I4 with no restyle under the #platform containers (CSS b67493d05e1b).
+  - Immutable snaps `out/iphone-runner/snap/ss-{C,I4,I40}`; served hashes checked at the start.
+  - W 430x775: 6 s idle, then scroll to y 3200. Timeline depth 10. One warm-up per port.
+  - Counted runs C11 F12 Z13 / F14 Z15 C16 / Z17 C18 F19 (F = I4, Z = I40).
+  - Timeline-OFF heat sentinels on C pass: open bottom 60.2 / scroll 58.2, end 60.2 / 58.2. Phone about 36 °C.
+  - Analyzer `ssan.mjs`, now with a switch band of y 2560-2680: I40's largest `cE` RS sat at y 2415, outside the switch.
+    Outside Layouts are those ≥ 2 ms not inside any RS, in the same rAF interval as the RS.
+- **Switch RS at y ~2615** (ms per run, in run order):
+
+| arm | RS total | RS self | nested Layouts (ms, all view-rooted) | outside Layout in the frame (view) |
+|---|---|---|---|---|
+| C | 18.2 / 31.7 / 22.0 | 2.7 / 4.8 / 2.9 | 2/2/2 (14.3+1.2, 25.0+1.9, 17.8+1.3) | 17.1 / 15.7 / 13.2 |
+| I4 | 24.6 / 13.1 / 14.8 | 0.8 / 0.7 / 0.5 | 1/1/1 (23.8, 12.4, 14.3) | - / 14.9 / - |
+| I40 | 0.2 / 0.2 / 0.1 | 0.2 / 0.2 / 0.1 | 0/0/0 | 13.6 / 18.2+14.6 / 12.1 |
+
+- **fwReskip RS at y ~2990** (RS / nested Layout, ms):
+  - C: 13.6/12.0, 13.7/12.1, 15.0/13.3
+  - I4: 16.1/14.5, 16.3/14.4, 21.5/19.1
+  - I40: 20.4/18.0, 22.5/20.1, 23.1/20.5
+  - Every arm keeps 1 nested Layout there.
+- **Window sum** (switch RS + fwReskip RS + their outside Layouts): C 60.9/61.1/50.2, I4 40.7/44.3/51.9, I40 49.3/71.2/51.0.
+- **RS ≥ 16 ms in y 2200-3100:** C 1/1/1, I4 2/1/1, I40 1/1/1.
+- **Runner's reading (OBSERVED, in our setup, cause unknown):**
+  - P-a (fewer nested Layouts in the switch RS) holds for both: I4 has 1, I40 has 0.
+  - In I40 the view-rooted layout is not gone. It runs outside the RS in the same frame (12-18 ms).
+  - P-b (no nested Layout at fwReskip) fails for both arms, and the fwReskip layout grows (C 12-13 ms, I4 14-19 ms, I40 18-20.5 ms).
+  - The per-window total does not separate the arms.
+- **Files** (`out/iphone-runner/`): `ss-{C11,F12,Z13,F14,Z15,C16,Z17,C18,F19}.json` + `.tl.json`, `ss2-Sent-{open,end}.json`,
+  `ss2-score.json`, `ss2.sh`.
+
+### 4t. Scene-scope ticket 3 (R4, P-c..P-f): morph start and tween restyles, C B+V1 vs RA vs RB, M driver (20:12-20:20Z)
+
+- **Setup:**
+  - All arms on B+V1 (JS dbd5fdb4f1fb): C = B+V1 (CSS 851c397012bc), RA = +R4a (CSS dfb29cc686ee), RB = +R4a+R4b
+    (CSS 0d7dfc79e703).
+  - Immutable snaps `out/iphone-runner/snap/ss-{V,RA,RB}`; served hashes checked at the start.
+  - M driver `__fwMorphDrive` with hold 2000 ms and 3 cycles; forward tweens last 629-667 ms. Timeline depth 10 on all 9
+    counted runs C1 A2 B3 / A4 B5 C6 / B7 C8 A9. One warm-up per port.
+  - Timeline-OFF M sentinels on C: atOne p95 17 at open and 17 at end; both pass.
+  - The phone warmed from 35.7 to 38.6 °C during the block; the late runs (C6, C8, A9) show about 1 ms more per-frame
+    self time in tweens 2-3.
+  - Analyzer `out/iphone-runner/r4an.mjs`:
+    - The morph-start RS is the first outermost RS after the first `__osb` (:13287) ScheduleStyleRecalculation, within
+      300 ms before the tween to the tween's end.
+    - Tween RSs are the outermost RSs inside the tween, start RS excluded. Per-frame sums add the RS self time within one
+      rAF interval.
+- **Morph start:**
+  - Only tween 1 has a large start RS. In tweens 2 and 3, every arm's `__osb` schedule is followed by a 0.2-0.5 ms RS.
+  - Tween-1 start RS, total/self ms; every run has 2 nested view-rooted Layouts (3.9-4.7 ms and 1.2-1.4 ms):
+
+| arm | run 1 | run 2 | run 3 |
+|---|---|---|---|
+| C | 15.3/9.4 | 15.5/9.3 | 15.0/9.2 |
+| RA | 13.7/8.3 | 14.7/9.1 | 15.4/9.9 |
+| RB | 15.4/10.0 | 15.0/9.4 | 16.3/10.4 |
+
+- **Tween restyles** (3 runs x 3 tweens per arm, ranges):
+
+| arm | nested Layouts per tween | RS self median | per-frame self median | per-frame self max | fade frames 2-5 (self, nested per frame) |
+|---|---|---|---|---|---|
+| C | 30-44 | 0.5-0.7 | 1.6-2.7 | 4.1-7.4 | 3.2-7.4 ms, 1-3 |
+| RA | 25-35 | 0.5-0.8 | 1.6-2.7 | 3.2-5.2 | 1.3-3.0 ms, 0-2 |
+| RB | 1-3 | 0.1-0.2 | 0.6-0.8 | 2.1-3.5 | 0-1.8 ms, 0 |
+
+- **Outside Layouts ≥ 2 ms** (not in any RS, tween plus lead-in): none in any run.
+- **Runner's reading (OBSERVED, in our setup, cause unknown):**
+  - P-c (no nested Layout at the morph start) fails: every arm keeps 2.
+  - P-e (start self RB < RA < C) fails: the three arms overlap, and RB is not lower.
+  - P-d (no nested Layouts in the tween) fails for RA, which is equal to C. It nearly holds for RB: 1-3 per tween vs C's 30-44.
+  - P-f (RB's tween self ≤ 50 % of C's) holds, both per RS and per frame.
+  - RA lowers only the fade frames; RB lowers the whole tween.
+- **Files** (`out/iphone-runner/`): `r4-{C1,A2,B3,A4,B5,C6,B7,C8,A9}.json` + `.tl.json`, `r4-Sent-{open,end}.json`,
+  `r4-score.json`, `r4.sh`, `mdtl2.mjs`, `r4an.mjs`.
+
+### 4u. st5 split (fix-scroll-engine ticket cfef9cf): 6 arms, idle at y 0 and y 1500, Timeline depth 8 (20:20-20:30Z)
+
+- **Setup:**
+  - Arms (JS/CSS hashes match the ticket): C aw1-10e (3e2f599a1632/c6aad94b455f), V st4-noswap (b8c085d9b619/c6aad94b455f),
+    S st5 (268a68962d18/e68c99631e80), N st5-noanim (268a68962d18/db001ab4037d), W st5-waapi (bcb835679b55/e68c99631e80),
+    X st6 (268a68962d18/7e40587580d3). Served from fix-scroll-engine's immutable snapshots.
+  - One warm-up per port. Counted runs C1 V2 S3 N4 W5 X6 C7; C7 is the drift check.
+  - Per run: reload, 8 s settle, Timeline depth 8, 6 s idle at y 0, instant jump to y 1500, 30 s idle.
+    Driver `out/iphone-runner/splitwin.mjs`.
+  - Timeline-OFF S-driver heat sentinels on C pass: open bottom 60.0 / scroll 57.3, end 60.2 / 57.6. The phone cooled from
+    38.9 to 37.3 °C during the block. Attribution block: no cooling before it (lead rule), phone fps verdicts are parked
+    (user direction 19:27Z).
+- **Runner's quick readout** (frame counts are data only; fix-scroll-engine scores P-042..P-044):
+
+| run | getAnimations | idle0 >34 | idle0 view Layouts ≥10 ms | idle1500 >34 | idle1500 >50 | idle1500 view Layouts ≥10 ms |
+|---|---|---|---|---|---|---|
+| C1 | 23 | 10 | 13 | 47 | 5 | 81 |
+| V2 | 17 | 0 | 0 | 5 | 2 | 5 |
+| S3 | 23 | 1 | 4 | 26 | 1 | 27 |
+| N4 | 17 | 0 | 0 | 5 | 1 | 10 |
+| W5 | 23 | 1 | 4 | 26 | 4 | 32 |
+| X6 | 23 | 0 | 0 | 5 | 1 | 9 |
+| C7 | 23 | 4 | 14 | 52 | 11 | 76 |
+
+  - Every Layout ≥ 10 ms is view-rooted (430x775); non-view ones: 0 in every run.
+  - C1 and C7 agree, so there is no drift across the block.
+  - OBSERVED, in our setup, cause unknown: one run per arm, so this is not a verdict.
+- **Files** (`out/iphone-runner/`): `split-{C1,V2,S3,N4,W5,X6,C7}.json` + `.tl.json`, `split-Sent-{open,end}.json`, `split.sh`,
+  `splitwin.mjs`. Sent to fix-scroll-engine at 20:31Z.
