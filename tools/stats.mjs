@@ -11,10 +11,12 @@
 //   node tools/stats.mjs runs <run.json|dir>... --metric k5|k7|gt34|gt50|p50Ms|p95Ms|p50Ticks|p95Ticks
 //                               [--phase scroll] [--predicted <x>] [--min-shift <x>] [--json]
 //       iPhone run files (meta.block, meta.arm 'C' | 'V' | 'A' | 'B'; meta.warmup / meta.void runs are
-//       skipped) -> one decision per variant arm against C. A counted run without frames in the phase is an
-//       error (void it); --phase all takes every frame. WARN lines: unreadable files, dropped blocks, block
-//       shape (n per arm, warm-up, ABBA order, no sentinel record: T2 judges the sentinel), and
-//       "threshold-sensitive" when k5/k7 and their legacy twin gt34/gt50 decide differently (§3.2).
+//       skipped) -> one decision per variant arm against C, reported both ways (§3.2, arch-unknowns U2):
+//       the metric and its twin (k5/gt34, k7/gt50, p50Ms/p50Ticks, p95Ms/p95Ticks) on a "both ways" line.
+//       A counted run without a finite frame time in the phase is an error (void it); --phase all takes
+//       every frame. WARN lines: unreadable files, runs with some non-finite frame times, dropped blocks,
+//       block shape (n per arm, warm-up, ABBA order, no sentinel record: T2 judges the sentinel), and
+//       "threshold-sensitive" (k5/k7 vs gt34/gt50) or "tick-sensitive" (ms vs ticks) when the twins differ.
 //       Given 2 blocks, a block 1 that already stopped (win / futile) stands; block 2 is not evaluated.
 //   node tools/stats.mjs place <run.json|verify.json|dir>... --thresholds <th.json> [--min-ms 37.5] [--phase scroll]
 //                               [--lvh 815] [--svh 775] [--inner-height 932] [--json]
@@ -23,7 +25,7 @@
 //       A run's own `tops` ({id: documentTop}) override the static `top` (topSource run | static).
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tick, summary, frameCounts, sequentialDecision, runsFromJson, blocksFromRuns, blockWarnings, placeFrames, METRICS, TWIN, tickThresholdMs, K34 } from './lib/stats.mjs';
+import { tick, summary, frameCounts, sequentialDecision, runsFromJson, blocksFromRuns, blockWarnings, placeFrames, METRICS, TWIN, twinKind, tickThresholdMs, K34 } from './lib/stats.mjs';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
@@ -94,25 +96,31 @@ if (cmd === 'ticks') {
       if (!blocks.length) continue;
       try { out[arm] = sequentialDecision({ blocks, ...METRICS[m], predicted: numOpt('predicted'), minShift: numOpt('min-shift') }); } catch (e) { die(`arm ${arm}: ${e.message}`); }
     }
-    return { out, dropped: g.dropped };
+    return { out, dropped: g.dropped, partial: g.partial };
   };
-  const { out, dropped } = decideAll(metric);
+  const { out, dropped, partial } = decideAll(metric);
   if (!Object.keys(out).length) die('runs: no block with both a control (C) and a variant arm');
-  // §3.2 transition: a tick-count verdict is checked against its legacy ms twin (k5 <-> gt34, k7 <-> gt50)
-  const twin = TWIN[metric] ? decideAll(TWIN[metric]).out : {};
-  const sensitive = Object.keys(out).filter((a) => twin[a] && twin[a].decision !== out[a].decision).map((a) => `arm ${a}: ${metric} ${out[a].decision} vs ${TWIN[metric]} ${twin[a].decision}`);
+  // §3.2 / arch-unknowns U2: every verdict both ways, the tick metric and its legacy ms twin
+  const tw = TWIN[metric], kind = twinKind(metric);
+  const twin = decideAll(tw).out;
+  const sensitive = Object.keys(out).filter((a) => twin[a] && twin[a].decision !== out[a].decision).map((a) => `arm ${a}: ${metric} ${out[a].decision} vs ${tw} ${twin[a].decision}`);
   const warnings = [
     ...unreadable.map((x) => `unreadable JSON skipped: ${x}`),
+    ...partial.map((x) => `${x.source} (block ${x.block ?? '-'}, arm ${x.arm}): ${x.frames - x.finite} of ${x.frames} frame time(s) not finite; scored on ${x.finite}`),
     ...dropped.map((x) => `block ${x.block ?? '-'} dropped for arm ${x.arm}: ${x.reason}`),
     ...blockWarnings(runs),
-    ...sensitive.map((x) => `threshold-sensitive: ${x}`),
+    ...sensitive.map((x) => `${kind}: ${x}`),
   ];
   const skipped = runs.filter((r) => r.warmup || r.void).length;
-  if (asJson) console.log(JSON.stringify({ metric, ...METRICS[metric], skipped, unreadable, dropped, warnings, thresholdSensitive: sensitive.length > 0, twin: TWIN[metric] ?? null, arms: out }, null, 1));
+  if (asJson) console.log(JSON.stringify({ metric, ...METRICS[metric], skipped, unreadable, partial, dropped, warnings, twin: tw, twinSensitive: sensitive.length > 0, sensitivity: kind, ...(kind === 'threshold-sensitive' ? { thresholdSensitive: sensitive.length > 0 } : {}), arms: out, twinArms: twin }, null, 1));
   else {
-    console.log(`metric ${metric} (${METRICS[metric].unit}, ${METRICS[metric].dir} is better); ${runs.length} run(s), ${skipped} warm-up/void skipped, ${unreadable.length} unreadable`);
+    console.log(`metric ${metric} (${METRICS[metric].unit}, ${METRICS[metric].dir} is better), twin ${tw}; ${runs.length} run(s), ${skipped} warm-up/void skipped, ${unreadable.length} unreadable`);
     for (const w of warnings) console.log(`WARN ${w}`);
-    for (const [arm, d] of Object.entries(out)) printDecision(d, `arm ${arm} vs C: `);
+    for (const [arm, d] of Object.entries(out)) {
+      printDecision(d, `arm ${arm} vs C: `);
+      const t = twin[arm];
+      console.log(`  both ways: ${metric} ${d.decision.toUpperCase()} | ${tw} ${t ? `${t.decision.toUpperCase()} (${t.reason})` : '-'}${t && t.decision !== d.decision ? `  ${kind.toUpperCase()}` : ''}`);
+    }
   }
 } else if (cmd === 'place') {
   const thFile = opt('thresholds', null);

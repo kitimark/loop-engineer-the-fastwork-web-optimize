@@ -333,22 +333,36 @@ export const METRICS = {
   p50Ms: { unit: 'ms', dir: 'lower' }, p95Ms: { unit: 'ms', dir: 'lower' }, p50Ticks: { unit: 'ticks', dir: 'lower' }, p95Ticks: { unit: 'ticks', dir: 'lower' },
 };
 
-/** The legacy ms twin of a tick metric and back (§3.2: a verdict that differs is "threshold-sensitive"). */
-export const TWIN = { k5: 'gt34', gt34: 'k5', k7: 'gt50', gt50: 'k7' };
+/**
+ * Every phone verdict is reported both ways (§3.2; arch-unknowns U2: phone rAF timestamps are off the
+ * vsync grid): a tick metric and its legacy ms twin. k5 <-> gt34, k7 <-> gt50 (a verdict that differs is
+ * "threshold-sensitive"), p50Ms <-> p50Ticks, p95Ms <-> p95Ticks (one that differs is "tick-sensitive").
+ */
+export const TWIN = { k5: 'gt34', gt34: 'k5', k7: 'gt50', gt50: 'k7', p50Ms: 'p50Ticks', p50Ticks: 'p50Ms', p95Ms: 'p95Ticks', p95Ticks: 'p95Ms' };
+export const twinKind = (metric) => (/^(k|gt)\d/.test(metric) ? 'threshold-sensitive' : 'tick-sensitive');
+
+/** Block ids in order: null first, then numeric-aware (2 before 10, 'b2' before 'b10'). */
+export const compareBlockIds = (x, y) => (x == null ? (y == null ? 0 : -1) : y == null ? 1
+  : typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'en', { numeric: true }));
 
 /**
  * Group counted runs (not warm-up, not void) into blocks per variant arm, in block-id order, of the given
  * metric. The control arm is 'C'. Returns {arms: {arm: [{block, control, variant}]}, dropped: [{arm, block,
  * reason}]}: a block without counted controls or without counted variant runs is dropped and reported.
- * A counted run without frames (empty log, no marks for the phase) throws: void it or fix it.
+ * A counted run without a finite frame time (empty log, no marks for the phase, dt all null/NaN) throws:
+ * void it or fix it. `partial` lists counted runs where only some frame times are non-finite (scored on
+ * the finite ones; the CLI warns).
  */
 export function blocksFromRuns(runs, metric) {
   if (!METRICS[metric]) throw new Error(`unknown metric ${metric} (${Object.keys(METRICS).join(', ')})`);
   const counted = runs.filter((r) => !r.warmup && !r.void);
   if (counted.some((r) => r.arm == null)) throw new Error('blocksFromRuns: a counted run has no arm (meta.arm)');
-  const empty = counted.filter((r) => !r.frames.length);
-  if (empty.length) throw new Error(`blocksFromRuns: ${empty.length} counted run(s) have no frames in the phase (${empty.map((r) => `${r.source || r.label || '?'}${r.warning ? `: ${r.warning}` : ''}`).join('; ')}); void them or fix the log`);
-  const blockIds = [...new Set(runs.map((r) => r.block))].sort((x, y) => (x ?? 0) - (y ?? 0));
+  const finiteN = (r) => frameCounts(r.frames.map((f) => f.dt)).n;
+  const name = (r) => r.source || r.label || '?';
+  const empty = counted.filter((r) => !finiteN(r));
+  if (empty.length) throw new Error(`blocksFromRuns: ${empty.length} counted run(s) have no frames with a finite frame time in the phase (${empty.map((r) => `${name(r)}${r.frames.length ? `: ${r.frames.length} frame(s), dt all non-finite` : ''}${r.warning ? `: ${r.warning}` : ''}`).join('; ')}); void them or fix the log`);
+  const partial = counted.filter((r) => finiteN(r) < r.frames.length).map((r) => ({ source: name(r), block: r.block ?? null, arm: r.arm, frames: r.frames.length, finite: finiteN(r) }));
+  const blockIds = [...new Set(runs.map((r) => r.block))].sort(compareBlockIds);
   const arms = [...new Set(runs.map((r) => r.arm))].filter((a) => a != null && a !== 'C');
   const val = (r) => runMetrics(r.frames.map((f) => f.dt))[metric];
   const out = {}, dropped = [];
@@ -361,7 +375,7 @@ export function blocksFromRuns(runs, metric) {
       else dropped.push({ arm, block: b, reason: `${x.control.length} counted control and ${x.variant.length} counted ${arm} run(s)` });
     }
   }
-  return { arms: out, dropped };
+  return { arms: out, dropped, partial };
 }
 
 /**
@@ -371,7 +385,7 @@ export function blocksFromRuns(runs, metric) {
  */
 export function blockWarnings(runs) {
   const out = [];
-  const ids = [...new Set(runs.map((r) => r.block))].sort((x, y) => (x ?? 0) - (y ?? 0));
+  const ids = [...new Set(runs.map((r) => r.block))].sort(compareBlockIds);
   for (const b of ids) {
     const inB = runs.filter((r) => r.block === b), counted = inB.filter((r) => !r.warmup && !r.void), warm = inB.filter((r) => r.warmup);
     const tag = `block ${b ?? '-'}`;

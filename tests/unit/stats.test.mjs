@@ -11,6 +11,7 @@ import {
   TICK_MS, tick, tickThresholdMs, quantile, median, summary, frameCounts, runMetrics, mannWhitney, hodgesLehmann,
   vanElteren, stratifiedShift, aligned, compareBlock, compareBlocks, sequentialDecision, blockOrder,
   crossingY, placeFrame, placeFrames, normalizeFrame, runsFromJson, blocksFromRuns, blockWarnings,
+  compareBlockIds, METRICS, TWIN, twinKind,
 } from '../../tools/lib/stats.mjs';
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`);
@@ -209,7 +210,7 @@ test('review-stats blocker 1: non-finite or missing run values throw, never coun
   // the review's inputs 1 and 2: four counted V runs with empty frame logs (k5 would read 0, p50Ms null)
   const run = (arm, nLong, extra = {}) => ({ block: 1, arm, warmup: false, void: false, source: `${arm}${nLong}.json`, ...extra, frames: nLong == null ? [] : [...Array(nLong).fill(40), 16, 16].map((dt) => ({ dt })) });
   const runs = [run('C', 6), run('V', null), run('V', null), run('C', 7), run('C', 7), run('V', null), run('V', null), run('C', 8)];
-  for (const metric of ['k5', 'p50Ms']) assert.throws(() => blocksFromRuns(runs, metric), /4 counted run\(s\) have no frames in the phase .*void them or fix the log/);
+  for (const metric of ['k5', 'p50Ms']) assert.throws(() => blocksFromRuns(runs, metric), /4 counted run\(s\) have no frames with a finite frame time in the phase .*void them or fix the log/);
   // voided empty runs are fine (T2 voids them); a file with marks but none for the phase has no frames + a warning
   assert.doesNotThrow(() => blocksFromRuns(runs.map((r) => (r.frames.length ? r : { ...r, void: true })), 'k5'));
   const [noPhase] = runsFromJson({ frames: [[0, 40, 0, 10, 775]], marks: { idle: [0, 1] }, meta: { arm: 'V', block: 1 } });
@@ -219,6 +220,31 @@ test('review-stats blocker 1: non-finite or missing run values throw, never coun
   assert.match(noMarks.warning, /no marks: all 1 frames used/);
   const [all] = runsFromJson({ frames: [[0, 40, 0, 10, 775]], marks: { idle: [0, 1] } }, { phase: 'all' });
   assert.deepEqual([all.frames.length, all.warning], [1, undefined]);
+});
+
+test('review-stats round 2: frames whose dt are all non-finite throw; partly non-finite runs are listed; block ids sort numerically', () => {
+  const run = (arm, frames, extra = {}) => ({ block: 1, arm, warmup: false, void: false, source: `${arm}.json`, ...extra, frames });
+  const longs = (n) => [...Array(n).fill(40), 16, 16].map((dt) => ({ dt }));
+  // the review's failing input: four V runs with frames [{dt:null},{dt:NaN},{dt:undefined}] vs controls k5 6,7,7,8 (was a WIN, k5 = 0)
+  const bad = [{ dt: null }, { dt: NaN }, { dt: undefined }];
+  const runs = [run('C', longs(6)), run('V', bad), run('V', bad), run('C', longs(7)), run('C', longs(7)), run('V', bad), run('V', bad), run('C', longs(8))];
+  for (const metric of ['k5', 'k7', 'gt34', 'p50Ms', 'p95Ticks']) assert.throws(() => blocksFromRuns(runs, metric), /4 counted run\(s\) have no frames with a finite frame time .*V.json: 3 frame\(s\), dt all non-finite.*void them or fix the log/);
+  // partly non-finite: scored on the finite frames, listed in `partial`
+  const some = runs.map((r) => (r.arm === 'V' ? { ...r, frames: [...longs(3), { dt: null }] } : r));
+  const g = blocksFromRuns(some, 'k5');
+  assert.deepEqual(g.arms.V[0].variant, [3, 3, 3, 3]);
+  assert.equal(g.partial.length, 4);
+  assert.deepEqual(g.partial[0], { source: 'V.json', block: 1, arm: 'V', frames: 6, finite: 5 });
+  // nit a: block ids in numeric-aware order, null first (was file order for strings)
+  assert.deepEqual([10, 2, null, 1].sort(compareBlockIds), [null, 1, 2, 10]);
+  assert.deepEqual(['b10', 'b2', 'b1'].sort(compareBlockIds), ['b1', 'b2', 'b10']);
+  const two = (id, c, v) => [run('C', longs(c), { block: id }), run('V', longs(v), { block: id })];
+  const sb = blocksFromRuns([...two('b10', 9, 1), ...two('b2', 5, 2)], 'k5');
+  assert.deepEqual(sb.arms.V.map((x) => x.block), ['b2', 'b10']);
+  assert.deepEqual(blockWarnings([...two('b10', 9, 1), ...two('b2', 5, 2)]).filter((w) => /warm-up/.test(w)), ['block b2: 0 warm-up runs (expected 1)', 'block b10: 0 warm-up runs (expected 1)']);
+  // every verdict has a twin, both ways (arch-unknowns U2)
+  for (const m of Object.keys(METRICS)) assert.equal(TWIN[TWIN[m]], m, `${m} has a twin`);
+  assert.deepEqual([twinKind('k5'), twinKind('gt50'), twinKind('p50Ms'), twinKind('p95Ticks')], ['threshold-sensitive', 'threshold-sensitive', 'tick-sensitive', 'tick-sensitive']);
 });
 
 test('van Elteren weights matter: 4v4 U = 1 (w 1/9) + 3v3 U = 0 (w 1/7) -> 2/1400 (unweighted would be 3/1400)', () => {
@@ -267,7 +293,7 @@ test('input: Chrome [t, dt, y] and §5.5 tuples and objects normalise; iPhone ru
   const run = (block, arm, nLong, extra = {}) => ({ block, arm, warmup: false, void: false, ...extra, frames: [...Array(nLong).fill(40), 16, 16].map((dt) => ({ dt })) });
   const runs = [run(1, 'C', 9, { warmup: true }), run(1, 'C', 6), run(1, 'V', 3), run(1, 'V', 4), run(1, 'C', 7), run(1, 'C', 7), run(1, 'V', 4), run(1, 'V', 4), run(1, 'C', 8), run(1, 'V', 1, { void: true })];
   const by = blocksFromRuns(runs, 'k5');
-  assert.deepEqual(by, { arms: { V: [{ block: 1, control: [6, 7, 7, 8], variant: [3, 4, 4, 4] }] }, dropped: [] });
+  assert.deepEqual(by, { arms: { V: [{ block: 1, control: [6, 7, 7, 8], variant: [3, 4, 4, 4] }] }, dropped: [], partial: [] });
   assert.throws(() => blocksFromRuns(runs, 'fps'), /unknown metric/);
   assert.throws(() => blocksFromRuns([run(1, null, 1)], 'k5'), /no arm/);
   // a block whose controls are all voided is dropped and reported, not silently skipped
@@ -340,11 +366,30 @@ test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over 
   order.forEach((arm, i) => writeFileSync(join(d, 'ts', `r${i}.json`), JSON.stringify({ frames: arm === 'C' ? fr2(longs.C[seen.C++], 0) : fr2(longs.V[seen.V], 6 - longs.V[seen.V++] + 4), meta: { block: 1, arm, pos: i + 1 } })));
   r = node(tool('stats.mjs'), ['runs', join(d, 'ts'), '--metric', 'k5']);
   assert.match(r.stdout, /^WARN threshold-sensitive: arm V: k5 win vs gt34 futile$/m);
+  assert.match(r.stdout, /^ {2}both ways: k5 WIN \| gt34 FUTILE \(.*\) {2}THRESHOLD-SENSITIVE$/m);
+  // both ways also when the twins agree (arch-unknowns U2), and for p50Ms / p50Ticks
+  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'gt34']);
+  assert.match(r.stdout, /^ {2}both ways: gt34 WIN \| k5 WIN \(U = 0, p 0.014, HL 3 >= 1\)$/m);
+  r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'p50Ms', '--json']);
+  const pj = JSON.parse(r.stdout);
+  assert.deepEqual([pj.twin, pj.sensitivity, pj.twinSensitive, pj.thresholdSensitive, Object.keys(pj.twinArms)], ['p50Ticks', 'tick-sensitive', false, undefined, ['V']]);
+  // partly non-finite frame times: warned, scored on the finite ones
+  mkdirSync(join(d, 'part'));
+  order.forEach((arm, i) => writeFileSync(join(d, 'part', `r${i}.json`), JSON.stringify({ frames: [...frames(arm === 'C' ? 7 : 3), ...(i === 1 ? [[999, null, 0, 0, 775]] : [])], meta: { block: 1, arm, pos: i + 1 } })));
+  r = node(tool('stats.mjs'), ['runs', join(d, 'part'), '--metric', 'k5']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /^WARN .*r1.json \(block 1, arm V\): 1 of 21 frame time\(s\) not finite; scored on 20$/m);
+  // the review's input via the CLI: V runs whose frame times are all null -> error, not a WIN
+  mkdirSync(join(d, 'nul'));
+  order.forEach((arm, i) => writeFileSync(join(d, 'nul', `r${i}.json`), JSON.stringify({ frames: arm === 'C' ? frames(7) : frames(0).map((x) => [x[0], null, ...x.slice(2)]), meta: { block: 1, arm, pos: i + 1 } })));
+  r = node(tool('stats.mjs'), ['runs', join(d, 'nul'), '--metric', 'k5']);
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /4 counted run\(s\) have no frames with a finite frame time .*dt all non-finite/);
   // a counted run with no frames in the phase is an error, not a zero
   writeFileSync(join(d, 'blk', 'r05.json'), JSON.stringify({ frames: frames(4), marks: { idle: [0, 1] }, meta: { block: 1, arm: 'V', pos: 5 } }));
   r = node(tool('stats.mjs'), ['runs', join(d, 'blk'), '--metric', 'k5']);
   assert.equal(r.code, 2);
-  assert.match(r.stderr, /1 counted run\(s\) have no frames in the phase .*r05.json: no marks.scroll/);
+  assert.match(r.stderr, /1 counted run\(s\) have no frames with a finite frame time in the phase .*r05.json: no marks.scroll/);
   assert.equal(node(tool('stats.mjs'), ['runs', join(d, 'blk')]).code, 2, '--metric is required');
 
   writeFileSync(join(d, 'th.json'), JSON.stringify({ viewport: { lvh: 815, svh: 775 }, thresholds: [{ id: 'io', top: 400, f: 0.5, unit: 'ih' }, { id: 'abs', y: 15 }] }));
