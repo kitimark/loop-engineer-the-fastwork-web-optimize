@@ -111,7 +111,9 @@ unknown). They do not block F3 (lead).
 
 - **Touch delay (P-036, VALIDATED, after P-035).**
   - G compares touch-to-scroll start by zone (`fixes/morph-webkit/gestures/arm-scope-touch-v1.json`, hash
-    ed932f9b53a2).
+    ed932f9b53a2 under compiler v1). I-042 (f16c65b) moved the stroke compiler to v2 (moves of at least 40 ms;
+    v1 strokes played as ~50 ms flicks), so the same script now has hash d72ee13644cc (v2, 16 strokes, ~32 s).
+    P-036 G runs on v2 only, recorded before any data. No v1 run counts.
   - WebKit holds the pan only for the first preventable touchmove of a sequence (C1 CONFIRMED, claims-audit §2.9).
   - So F3 can only add a wait to strokes that start on #platform or the nav before the edge. After the edge the
     original makes every stroke wait.
