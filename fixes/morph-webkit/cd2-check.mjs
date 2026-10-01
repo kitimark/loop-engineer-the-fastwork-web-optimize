@@ -94,7 +94,7 @@ try {
           // first logged m values of each tween: rows [t, dt, scrollY, m]; a tween starts where m leaves 0 or 1
           const f = md.frames, starts = [];
           for (let i = 1; i < f.length; i++) { const p = f[i - 1][3], m = f[i][3]; if ((p <= 0 && m > 0) || (p >= 1 && m < 1)) starts.push({ dir: p <= 0 ? 'fwd' : 'rev', m: f.slice(i, i + 4).map((x) => x[3]) }); }
-          r.driver = { moving: md.moving, atOne: md.atOne, atZero: md.atZero, tweenStarts: starts, endsAt: f.at(-1)?.[3] };
+          r.driver = { moving: md.moving, atOne: md.atOne, atZero: md.atZero, tweenStarts: starts, endsAt: f.at(-1)?.[3], long: f.map((x, i) => [i, ...x]).filter((x) => x[2] > 34) };
         }
       }
       r.after = { layers, morph: await page.eval(M) };

@@ -437,9 +437,19 @@ hold 2000 × 3 cycles, Latin square; raw `out/iphone-runner/md-p-*`, `mdtl-p1-*`
 | first-300 ms dt median (fwd) | 3.1-4.2 ticks | 2.2-2.6 | 2.2-2.4 | — |
 
 - cdhid wins as much while keeping all 113 layers, so the cost is the faces **repainting**, not the layer count
-  (F-063). The repaint of the faces is removed (observed). Why WebKit repaints them stays OBSERVED, not named, until
-  arch-claims' ver-webkit-paint reports on F-057/F-063. Removing `will-change` is one way to stop the repaint; it is
-  the measured one, and it also frees 80 layers.
+  (F-063). The repaint of the faces is removed (observed). Removing `will-change` is one way to stop the repaint;
+  it is the measured one, and it also frees 80 layers.
+- **Mechanism, arch-claims' audit (12:4xZ).** CONFIRMED in WebKit source; the attribution to these 80 repaints stays
+  OBSERVED, with P-017's ablation as the device evidence.
+  - RenderLayerBacking.cpp (main l.1440-1445, l.1904; safari-7624-branch l.1356/1761) repaints a whole composited
+    layer when its sub-device-pixel offset from the renderer, snapped to a device pixel, changes.
+  - That happens in 1/6 CSS px buckets at DPR 3, so slow motion repaints different layers on different frames.
+  - A second trigger is the offset's device-pixel part changing (GraphicsLayer.cpp l.608-618).
+  - Both only fire when layout dirties geometry, not for a pure transform animation. `will-change: transform` gives
+    no exemption, and a fractional compositing ancestor shifts every descendant.
+  - So two other fixes are supported by source: quantize the panel width so its centering offset stays on the
+    device-pixel grid (width steps of 2/3 CSS px at DPR 3), or lay out at the final width and move by transform (R1).
+    They are kept as follow-ups if P-029 shows the gain needs R1.
 - P2 = P-016b (hold 900 vs 2000) showed no shortening: a cold store is not the cost.
 
 ### The countdown fix and its follow-ups (after P1)
@@ -477,6 +487,33 @@ All new names; existing overlays untouched (F-034). Diffs in `variants-10e/`.
   (`.start-selling-morph-backdrop`), center (title, countdown, CTAs) and footer, plus ghbn's no-blur rules. The
   panel is a flat gradient box. It answers K16 / U1 only: does the time-tween interaction feel laggy when the render
   is cheap?
+
+**Chrome mechanism check** (`cd2-check.mjs`, short lane, 430x932 DPR 1, no throttling; mechanism and parity only;
+`probe-results/cd2-check.json`, `cd2-check-stub-rerun.json`):
+
+| build | path | layers at the m=1 hold | panel faces with `will-change: transform` | m 0 → 1 → 0 | exceptions |
+|---|---|---|---|---|---|
+| aw1-10e | wheel | 144 | 80 | yes (260 ms) | 0 |
+| **mw10e-cdwc** | wheel | **64** | **0** | yes (259 ms) | 0 |
+| mw10e-g | driver | 142 | 80 | yes | 0 |
+| mw10e-g-cdwc | driver | 68 | 0 | yes | 0 |
+| mw10e-gh-cdwc | driver | 68 | 0 | yes | 0 |
+| mw10e-gh-cdwc-a1 | driver | 68 | 0 | yes | 0 |
+| mw10e-stub | driver | 53 (rerun) | — (center not displayed) | yes | 0 |
+
+- At rest, every build has 125 layers and the paused scene (stub 116), and the page's other countdown keeps its 80
+  face layers.
+- Parity for the fix: aw1-10e hold screenshot with the rule injected, same page, animations paused: 0.11 %. The same
+  page before and after gives a noise floor of 0.13 %.
+- A1: the first logged m values of each tween are 0.001 then 0.072, i.e. start + 0.0011, then M(16.67 ms) = 0.0717.
+  Reverse: 0.999 then 0.928. 4/4 tweens. gh-cdwc starts at a variable M(e1) (0.014-0.037).
+- Stub: the first run had two long frames (333 ms moving, 159 ms at m=1). The rerun with frame indices
+  (ghbn, stub, gh in one hold) had none in any build: all moving frames ≤ 9.4 ms. The only frame > 34 ms is the
+  driver's first logged frame, which the driver excludes. So the first run's frames were host noise; the host was
+  loaded, with load1 ~6.
+
+Tickets (validated by mgmt-ops-5): **P-029** g vs g-cdwc (M, C V V C C V V C; ranked right after ca-check) and
+**P10 = P-024** gh-cdwc vs gh-cdwc-a1. mw10e-stub goes to the finger batch as F2.
 
 ### R8 and R5a on gh (de-morph): `mw10e-ghr8`, `mw10e-ghr85a`
 

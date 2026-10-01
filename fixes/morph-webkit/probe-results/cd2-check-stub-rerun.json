@@ -1,0 +1,365 @@
+{
+ "mw10e-ghbn": {
+  "hasDriver": true,
+  "atRest": {
+   "layers": 125,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 1769,
+  "atHold": {
+   "layers": 140,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 80,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 148,
+  "driver": {
+   "moving": {
+    "frames": 289,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9,
+    "max": 9.4
+   },
+   "atOne": {
+    "frames": 456,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.2,
+    "max": 9.4
+   },
+   "atZero": {
+    "frames": 491,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 8.9,
+    "max": 9.4
+   },
+   "tweenStarts": [
+    {
+     "dir": "fwd",
+     "m": [
+      0.014,
+      0.048,
+      0.085,
+      0.115
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.993,
+      0.957,
+      0.922,
+      0.888
+     ]
+    },
+    {
+     "dir": "fwd",
+     "m": [
+      0.001,
+      0.036,
+      0.073,
+      0.107
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.964,
+      0.928,
+      0.893,
+      0.86
+     ]
+    }
+   ],
+   "endsAt": 0,
+   "long": [
+    [
+     0,
+     8262,
+     805.6,
+     5345,
+     0
+    ]
+   ]
+  },
+  "after": {
+   "layers": 64,
+   "morph": 0
+  },
+  "errors": []
+ },
+ "mw10e-stub": {
+  "hasDriver": true,
+  "atRest": {
+   "layers": 116,
+   "faces": {
+    "panelFaces": 4,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "none",
+     "center": "none",
+     "footer": "none",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 1740,
+  "atHold": {
+   "layers": 53,
+   "faces": {
+    "panelFaces": 4,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "none",
+     "center": "none",
+     "footer": "none",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 59,
+  "driver": {
+   "moving": {
+    "frames": 288,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.2,
+    "max": 9.4
+   },
+   "atOne": {
+    "frames": 456,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.2,
+    "max": 9.4
+   },
+   "atZero": {
+    "frames": 492,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 8.9,
+    "max": 9.4
+   },
+   "tweenStarts": [
+    {
+     "dir": "fwd",
+     "m": [
+      0.001,
+      0.042,
+      0.076,
+      0.108
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.964,
+      0.928,
+      0.894,
+      0.86
+     ]
+    },
+    {
+     "dir": "fwd",
+     "m": [
+      0.031,
+      0.066,
+      0.101,
+      0.135
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.971,
+      0.935,
+      0.9,
+      0.866
+     ]
+    }
+   ],
+   "endsAt": 0,
+   "long": [
+    [
+     0,
+     8269,
+     804.1,
+     5345,
+     0
+    ]
+   ]
+  },
+  "after": {
+   "layers": 55,
+   "morph": 0
+  },
+  "errors": []
+ },
+ "mw10e-gh": {
+  "hasDriver": true,
+  "atRest": {
+   "layers": 125,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 1742,
+  "atHold": {
+   "layers": 142,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 80,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 149,
+  "driver": {
+   "moving": {
+    "frames": 288,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 8.7,
+    "max": 9.4
+   },
+   "atOne": {
+    "frames": 456,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.2,
+    "max": 9.4
+   },
+   "atZero": {
+    "frames": 492,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.1,
+    "max": 9.4
+   },
+   "tweenStarts": [
+    {
+     "dir": "fwd",
+     "m": [
+      0.035,
+      0.071,
+      0.105,
+      0.139
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.968,
+      0.934,
+      0.898,
+      0.864
+     ]
+    },
+    {
+     "dir": "fwd",
+     "m": [
+      0.031,
+      0.063,
+      0.101,
+      0.135
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.974,
+      0.939,
+      0.904,
+      0.87
+     ]
+    }
+   ],
+   "endsAt": 0,
+   "long": [
+    [
+     0,
+     8256.3,
+     802.4,
+     5345,
+     0
+    ]
+   ]
+  },
+  "after": {
+   "layers": 65,
+   "morph": 0
+  },
+  "errors": []
+ }
+}
