@@ -73,6 +73,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   candidate; (d) ts-gesture's G run with the compiler v2 hashes (finger-protocol-v1 ee84ebd4e916, slow-drag-v1 5bd9f52ed38e; I-042 fix f16c65b, npm test 960/960; sim.mjs gesture is timed = normal hold); (e) the morph start (parked).
   Also landed: 6ff7dd4 usage.mjs (T-010; the lead runs it every 30 min and posts to T-010), fdb2577/8c3187e phone-temp.
   Open: I-042, I-045, I-046 (check.chrome screen size), I-047 (phone park between blocks), I-048 (shared readers hidden).
+  Lead corrections 22:1xZ: I-042 resolves on the lead's npm test on main (shared lane), not on the phone G run, which is
+  backlog (d) only; I-048 owner ts-progress-lane; ts-lock-share's exclusive hold moved to the back; scene-scope merges its two queue entries.
+  Land requests to expect and pass on: ts-lock-share (2116109 docs + I-046), ts-proposal-watch (I-045), ts-phone-park (I-047), cal-headless60.
+  iphone-runner §4v/§4w landed 211f923.
+  22:2xZ: 4a903b2 (ts-lock-share shared-lane docs) landed. USER PRIORITY T-006 #5 (22:26Z): PR-001 (de-illusion-style, hero accent
+  draw/erase frames) is the top of the testing lane: lead moved it to #1 in chrome-measure, board priority 1. Whenever
+  de-illusion-style requeues, tell the lead at once so it moves the entry to the front. P-036 row: G on compiler v2 only (d72ee13644cc).
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
@@ -706,6 +713,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `de-illusion-style` | research (lead spawn 19:1xZ, USER PRIORITY 2 "optical illusion is acceptable"): cheaper look-alike renderings for style/layout costs; counts first, <= 2 batched Chrome holds before first proposals (queued after scene-scope + de-counts pair); proposals to the user via ts-proposals' page; no phone before Accept | alive |
 | `de-illusion-composite` | research (lead spawn 19:1xZ, USER PRIORITY 2): cheaper look-alikes for compositing/layers/blur; same rules as de-illusion-style | alive |
 | `ts-proposals` | toolsmith (lead spawn 19:1xZ): console Proposals page (read, visual compare, Accept/Reject/Request change); full `npm test` in the short lane | alive |
+| `ts-progress-lane` | toolsmith (lead spawn 22:11Z): I-048, shared-lane readers missing from the progress page and status board | alive |
 | `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
 | `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | ended (landed 14806cb..8fa38f7; worktree removed 20:2xZ) |
 | `ts-console-threads` | toolsmith: console threads (one thread per topic for the user) | ended (landed 545cf85, 77d318c, fc07bb1; worktree removed 20:2xZ) |
