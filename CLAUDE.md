@@ -146,7 +146,7 @@ node tools/fix.mjs grep 'getBoundingClientRect'    # search the baseline (pretty
 node tools/fix.mjs show /_app/immutable/nodes/2.DyWL8TcE.js --lines 2660-2780
 node tools/fix.mjs edit <topic> /_app/immutable/nodes/2.DyWL8TcE.js   # copy into the overlay, then Edit it
 node --check fixes/<topic>/overlay/_app/immutable/nodes/2.DyWL8TcE.js
-node tools/fix.mjs serve <topic>                   # run in background; prints MIRROR_URL=… and LAN URL
+node tools/fix.mjs serve <topic>                   # in background; then node tools/wait.mjs serve out/serve-<topic>.json (MIRROR_URL=…)
 curl -sk -D - -o /dev/null https://localhost:<port>/_app/immutable/nodes/2.DyWL8TcE.js   # x-mirror-source: overlay
 node tools/fix.mjs ab <topic> --runs 5             # A/B under the lock -> fixes/<topic>/results.json (+ patch.diff)
 node tools/fix.mjs diff <topic>                    # (ab does this too) fixes/<topic>/patch.diff
@@ -333,7 +333,7 @@ Team conventions (messages go to the owner of the question, see "Agent communica
   Measure in ONE hold, not a lease (I-005, I-020): `node tools/lock.mjs run chrome-measure
   --owner <topic> -- sh -c 'node tools/fix.mjs ab <topic> --runs 5 && node <probe>'`; tools started
   inside `run` re-enter its hold instead of queueing behind it. Start any server inside that `sh -c`
-  (background it, wait for MIRROR_URL, run, kill it). Never hold the lock while editing or debugging.
+  (background it, `node tools/wait.mjs serve <state.json> --pid $!`, run, kill it). Never hold the lock while editing or debugging.
   No normal hold longer than ~10 min (`run --max-seconds`, default 600; past it `status` shows OVERDUE):
   split longer work into separate holds and requeue after each.
 - **Use the iPhone while you wait for Chrome.** The phone renders by itself, so an iPhone check barely
@@ -347,9 +347,19 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   `research/management/ops-handover.md`); if a name fails, use the agent ID; never drop the message.
 - **Ask the owner of the question directly.** mgmt-ops is the hub for the rest; the lead lands, resolves
   incidents, reorders locks, spawns and talks to the user.
-- Messages reach you only at your next tool round: **run long waits in the background** (lock queues, holds,
-  `incident.mjs wait`, phone recordings). Send peers what they need before your final report, which goes only to
-  your spawner.
+- Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
+  `sleep`/`until`/`for … sleep` loop**: run it with Bash `run_in_background` and keep working (Claude Code wakes you
+  when it exits); with nothing else to do, run it in the foreground with `--timeout 580` and rerun on TIMEOUT. Every
+  wait prints one line, exit 0 MET, 3 TIMEOUT, 4 NEVER, 1 usage (c4a1ee2):
+  - a job's line: `node tools/wait.mjs file <log> --match '^EXIT' --pid <pid>` (a plain background job needs no wait);
+  - your server: `node tools/wait.mjs serve out/serve-<topic>.json` (prints `MIRROR_URL=…`); a URL: `wait.mjs url <u>`;
+  - locks, read-only: `node tools/lock.mjs wait chrome-measure --until mine|free|idle|released-by:<o>|'position<=N'
+    [--owner <you>] [--for S]` (to get your turn use `run` or `acquire --wait`); a quiet window for CPU work:
+    `--until idle --for 120`;
+  - main: `node tools/wait.mjs git --path <p> | --grep '<subject re>' | --contains <sha>`; a process: `wait.mjs pid
+    <pid>`; cooling: `wait.mjs time 10m`; `incident.mjs wait <id>`; `finding.mjs wait --as <you>`.
+  - A peer's reply has no command: wait on what the reply is about, or do other work.
+  Send peers what they need before your final report, which goes only to your spawner.
 - **Report your branch** with `git branch --show-current` in your own worktree, never from the git status in your
   context (it is the session's, i.e. another agent's).
 
@@ -460,8 +470,8 @@ short, bounded jobs such as `npm test` and benchmark mechanism checks (`bench me
 node tools/lock.mjs status                                   # who holds what, who is queued
 # Chrome: automatic. verify.mjs / fix.mjs ab wait for chrome-measure and release on exit or crash.
 # iPhone (one page at a time, ios_webkit_debug_proxy on :9221/:9222, LAN https://192.168.0.55:<port>/):
-node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://192.168.0.55:<port>/
-#   exit 0 = yours; exit 3 = busy and you are queued: do other work, retry every 2-5 min (keeps your place)
+node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://192.168.0.55:<port>/ --wait 3600   # in the background
+#   exit 0 = yours (the lease runs from now); exit 3 = still busy after --wait, your place is kept: run it again
 node tools/iphone.mjs open https://192.168.0.55:<port>/ --owner <topic>    # navigates Safari (location.href)
 node tools/iphone.mjs scroll --owner <topic> --label patched                 # scripted scroll, ~60 s
 node tools/iphone.mjs record --owner <topic> --seconds 25 --label finger     # human finger scroll (see below)
@@ -480,7 +490,8 @@ iPhone protocol on top of the lease:
    top to bottom then push past the end". The lead asks the user; start `iphone.mjs record` when
    the lead confirms the user is ready.
 4. Release and message the lead "iPhone released (<topic>)". Never hold it while idle; never
-   navigate the phone without the lease; waiters queue instead of polling faster than every 2 min.
+   navigate the phone without the lease; waiters queue with `acquire iphone --wait` (first come first served,
+   no hand-made retry loops).
 
 Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages and gates"):
 - **Blocks.** Only ticketed builds, served from immutable snapshot copies. A block: one question, one named control
