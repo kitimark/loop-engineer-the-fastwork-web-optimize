@@ -1,0 +1,670 @@
+{
+ "aw1-10e": {
+  "hasDriver": false,
+  "atRest": {
+   "layers": 125,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 260,
+  "atHold": {
+   "layers": 144,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 80,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 152,
+  "injectedFaces": {
+   "panelFaces": 84,
+   "panelWcTransform": 0,
+   "otherFaces": 84,
+   "otherWcTransform": 0,
+   "scene": "active",
+   "morph": 1,
+   "display": {
+    "backdrop": "flex",
+    "center": "flex",
+    "footer": "flex",
+    "veil": "block"
+   }
+  },
+  "tBackMs": 224,
+  "after": {
+   "layers": 70,
+   "morph": 0.0005585182166186753
+  },
+  "errors": []
+ },
+ "mw10e-cdwc": {
+  "hasDriver": false,
+  "atRest": {
+   "layers": 125,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 259,
+  "atHold": {
+   "layers": 64,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 152,
+  "tBackMs": 266,
+  "after": {
+   "layers": 67,
+   "morph": 0.000009695657662289747
+  },
+  "errors": []
+ },
+ "mw10e-g": {
+  "hasDriver": true,
+  "atRest": {
+   "layers": 125,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 1764,
+  "atHold": {
+   "layers": 142,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 80,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 148,
+  "driver": {
+   "moving": {
+    "frames": 288,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 8.9,
+    "max": 9.4
+   },
+   "atOne": {
+    "frames": 456,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 8.9,
+    "max": 9.4
+   },
+   "atZero": {
+    "frames": 491,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 8.7,
+    "max": 9.4
+   },
+   "tweenStarts": [
+    {
+     "dir": "fwd",
+     "m": [
+      0.025,
+      0.061,
+      0.094,
+      0.129
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.98,
+      0.945,
+      0.909,
+      0.875
+     ]
+    },
+    {
+     "dir": "fwd",
+     "m": [
+      0.016,
+      0.052,
+      0.087,
+      0.121
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.987,
+      0.951,
+      0.916,
+      0.881
+     ]
+    }
+   ],
+   "endsAt": 0
+  },
+  "after": {
+   "layers": 65,
+   "morph": 0
+  },
+  "errors": []
+ },
+ "mw10e-g-cdwc": {
+  "hasDriver": true,
+  "atRest": {
+   "layers": 125,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 1752,
+  "atHold": {
+   "layers": 68,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 82,
+  "driver": {
+   "moving": {
+    "frames": 289,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.2,
+    "max": 9.4
+   },
+   "atOne": {
+    "frames": 456,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.2,
+    "max": 9.4
+   },
+   "atZero": {
+    "frames": 491,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9,
+    "max": 9.5
+   },
+   "tweenStarts": [
+    {
+     "dir": "fwd",
+     "m": [
+      0.004,
+      0.041,
+      0.076,
+      0.107
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.964,
+      0.929,
+      0.894,
+      0.863
+     ]
+    },
+    {
+     "dir": "fwd",
+     "m": [
+      0.027,
+      0.066,
+      0.101,
+      0.135
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.971,
+      0.936,
+      0.901,
+      0.867
+     ]
+    }
+   ],
+   "endsAt": 0
+  },
+  "after": {
+   "layers": 71,
+   "morph": 0
+  },
+  "errors": []
+ },
+ "mw10e-gh-cdwc": {
+  "hasDriver": true,
+  "atRest": {
+   "layers": 125,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 1735,
+  "atHold": {
+   "layers": 68,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 82,
+  "driver": {
+   "moving": {
+    "frames": 289,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 8.8,
+    "max": 9.3
+   },
+   "atOne": {
+    "frames": 456,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 8.9,
+    "max": 9.4
+   },
+   "atZero": {
+    "frames": 491,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 8.8,
+    "max": 9.4
+   },
+   "tweenStarts": [
+    {
+     "dir": "fwd",
+     "m": [
+      0.014,
+      0.05,
+      0.085,
+      0.119
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.993,
+      0.957,
+      0.921,
+      0.887
+     ]
+    },
+    {
+     "dir": "fwd",
+     "m": [
+      0.037,
+      0.072,
+      0.106,
+      0.14
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.967,
+      0.931,
+      0.897,
+      0.863
+     ]
+    }
+   ],
+   "endsAt": 0
+  },
+  "after": {
+   "layers": 71,
+   "morph": 0
+  },
+  "errors": []
+ },
+ "mw10e-gh-cdwc-a1": {
+  "hasDriver": true,
+  "atRest": {
+   "layers": 125,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 1748,
+  "atHold": {
+   "layers": 68,
+   "faces": {
+    "panelFaces": 84,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "flex",
+     "center": "flex",
+     "footer": "flex",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 83,
+  "driver": {
+   "moving": {
+    "frames": 284,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.1,
+    "max": 9.4
+   },
+   "atOne": {
+    "frames": 459,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.1,
+    "max": 9.4
+   },
+   "atZero": {
+    "frames": 493,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.3,
+    "max": 9.4
+   },
+   "tweenStarts": [
+    {
+     "dir": "fwd",
+     "m": [
+      0.001,
+      0.072,
+      0.106,
+      0.14
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.999,
+      0.928,
+      0.893,
+      0.859
+     ]
+    },
+    {
+     "dir": "fwd",
+     "m": [
+      0.001,
+      0.072,
+      0.106,
+      0.138
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.999,
+      0.928,
+      0.894,
+      0.86
+     ]
+    }
+   ],
+   "endsAt": 0
+  },
+  "after": {
+   "layers": 71,
+   "morph": 0
+  },
+  "errors": []
+ },
+ "mw10e-stub": {
+  "hasDriver": true,
+  "atRest": {
+   "layers": 116,
+   "faces": {
+    "panelFaces": 4,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 80,
+    "scene": "paused",
+    "morph": 0,
+    "display": {
+     "backdrop": "none",
+     "center": "none",
+     "footer": "none",
+     "veil": "block"
+    }
+   }
+  },
+  "tHoldMs": 1800,
+  "atHold": {
+   "layers": 59,
+   "faces": {
+    "panelFaces": 4,
+    "panelWcTransform": 0,
+    "otherFaces": 84,
+    "otherWcTransform": 0,
+    "scene": "active",
+    "morph": 1,
+    "display": {
+     "backdrop": "none",
+     "center": "none",
+     "footer": "none",
+     "veil": "block"
+    }
+   }
+  },
+  "maxLayersToHold": 116,
+  "driver": {
+   "moving": {
+    "frames": 253,
+    "gt20": 2,
+    "gt34": 1,
+    "gt50": 1,
+    "p50": 8.3,
+    "p95": 9.3,
+    "max": 333.2
+   },
+   "atOne": {
+    "frames": 430,
+    "gt20": 2,
+    "gt34": 1,
+    "gt50": 1,
+    "p50": 8.3,
+    "p95": 9.2,
+    "max": 158.9
+   },
+   "atZero": {
+    "frames": 490,
+    "gt20": 0,
+    "gt34": 0,
+    "gt50": 0,
+    "p50": 8.3,
+    "p95": 9.3,
+    "max": 9.4
+   },
+   "tweenStarts": [
+    {
+     "dir": "fwd",
+     "m": [
+      0.021,
+      0.056,
+      0.091,
+      0.125
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.985,
+      0.948,
+      0.914,
+      0.883
+     ]
+    },
+    {
+     "dir": "fwd",
+     "m": [
+      0.013,
+      0.049,
+      0.084,
+      0.119
+     ]
+    },
+    {
+     "dir": "rev",
+     "m": [
+      0.994,
+      0.958,
+      0.923,
+      0.892
+     ]
+    }
+   ],
+   "endsAt": 0
+  },
+  "after": {
+   "layers": 61,
+   "morph": 0
+  },
+  "errors": []
+ },
+ "parity": {
+  "aw-again": 0.13,
+  "cdwc-injected": 0.11
+ }
+}
