@@ -4,7 +4,8 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (iPhone P-017, P-029: PASS, driver M); review round 2 (review-cdwc NEEDS-WORK 14:0xZ: B1, B2, B4
-addressed here; B3: G block of the landing pair ticketed by the lead, no waiver)
+addressed here; B3: G block of the landing pair ticketed by the lead, no waiver). Re-check (review-cdwc, on 3d664c7):
+B1, B2 and B4 resolved; B5 (twin wording) fixed here; landing gated on P-032 PASS (NULL or WORSE: no land).
 **Topic:** morph-webkit / nav-morph (owner fix-nav-morph). The full history is in `fixes/morph-webkit/README.md` on the
 working branch `worktree-agent-a277ea00c8773c1ea`, which is not part of this landing. This landing carries the
 deliverables, plus the two Chrome probes and their results under `fixes/morph-webkit/`.
@@ -86,7 +87,13 @@ from 113 to 33.
 
 - Predictions (1)-(3) hit. Prediction (4), moving p95, measured median 23 ms: **outside the interval, on the good side**
   (recorded in PREDICTIONS.md by mgmt-ops-5).
-- The result is not threshold-sensitive.
+- Twins (either-twin rule, main 77c480e):
+  - **>34 is not threshold-sensitive**: >30 is 56-66 vs 0-2, and >38 is 28-55 vs 0.
+  - **>50 is threshold-sensitive.** At >50 it is 1/2/3/27 vs 0, which reads better. The >54 twin is 0/1/3/20 vs
+    0/0/0/0; g's run with 0 makes the ranges overlap, so that twin reads within noise.
+  - Near-band frames: g-cdwc has frames in (30, 38] (runs 2 and 3 at 31 and 32 ms, run 6 up to 35 ms), and g has many
+    in (46, 54].
+  - P-032 is scored the same way.
 - P-017 (gh vs gh-cdwc vs gh-cdhid) showed the same mechanism and size of effect on the R1 base: face repaint 76 % → 0 %,
   layers 113 → 33, excess per forward tween −120 to −150 ms.
 
