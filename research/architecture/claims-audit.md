@@ -400,6 +400,71 @@ Decisive check: in an untimed attribution run on re-keep-op, at rest, check two 
 If the card repaints often (anything inside it animating on the main thread), 0.999 can cost more per paint than it
 saves at +700. Chrome cannot answer this, because Blink handles opacity differently (§2.4).
 
+### 2.9 iOS touch path: does a touchmove listener make scrolling wait, and what is `event.timeStamp`? (de-unknowns-ux pacing v3, C1/C2)
+
+All references are to tag WebKit-7624.4.5 (≈ Safari 26.6). The iOS `TouchEvent` class and its dispatch code are in
+WebKitAdditions, which is not public (TouchEvent.h l.29-30: `#if ENABLE(IOS_TOUCH_EVENTS) #include
+<WebKitAdditions/TouchEventIOS.h>`). Only the UI-process side and the shared `Event` code can be read.
+
+**C1. A non-passive touchmove listener makes the scroll wait only once per touch sequence, at the start.**
+Status: CONFIRMED for the gesture gate in the UI process.
+
+- **Passive by default (CONFIRMED).** A listener added without an explicit `passive` option to `window`,
+  `document`, `<html>` or `<body>` becomes passive when its type is in TouchScrollBlocking. Sources:
+  EventTarget.cpp l.100-104; Quirks.cpp `shouldMakeEventListenerPassive` l.983-1008. This applies when
+  `passiveTouchListenersAsDefaultOnDocument` is on. On iOS the setting is on for apps linked on or after the SDK
+  that brought the behaviour (UnifiedWebPreferences.yaml l.6137-6148; WebPreferencesDefaultValues.cpp l.62-66), so
+  it holds for current Safari. As a result, only `{passive: false}` makes a window touchmove listener blocking.
+
+- **Tracking type.** At touchstart, the UI process asks the scrolling-tree proxy for the tracking type of each touch
+  point, by event type (`updateTouchEventTracking`, WebPageProxy.cpp l.4568-4600). On iOS 7624,
+  `TOUCH_EVENT_REGIONS` is off (§2.4), so the scrolling coordinator's EventTrackingRegions answer. A passive-only
+  listener gives `Asynchronous`. Then `handlePreventableTouchEvent` sends the event as unpreventable and
+  immediately calls `doneDeferring…(false)`, so nothing waits (l.4779-4797).
+
+- **What waits for a Synchronous (non-passive) touchmove.**
+  - The event goes over `sendWithAsyncReply`, so the UI thread is never blocked (l.4690-4736).
+  - The gate is a UIKit gesture recognizer. `_touchMoveDeferringGestureRecognizer` holds back only UIPan and UIPinch
+    (WKContentViewInteraction.mm l.10484-10485). It holds them until the web process replies to the first preventable
+    touchmove.
+  - `m_touchMovePreventionState` is reset at touchstart (l.4764-4765). It goes to `Waiting` only from `None`
+    (l.4803-4804), and the reply calls `doneDeferringTouchMove(handled)` once (l.4711-4734).
+  - So scrolling starts only after the page's first touchmove handlers have run on the web process's main thread.
+    A busy main thread delays the start of the scroll.
+
+- **After the pan begins, the moves don't gate scrolling.**
+  - `scrollViewWillStartPanOrPinchGesture` sets `_touchEventsCanPreventNativeGestures = NO`
+    (WKContentViewInteraction.mm l.4174-4181).
+  - Every later move then goes through `handleUnpreventableTouchEvent`, asynchronously (l.2242-2245).
+  - The flag is set back to YES only when all touch points are released (l.2247-2248).
+  - So scrolling never waits per move.
+
+- **Whether those later moves arrive with `cancelable = false` in the DOM: UNRESOLVED.** The DOM side is in
+  WebKitAdditions, so the source can't answer it. Decisive check: log `e.cancelable` per touchmove in the V arm.
+  Chrome's 0-2 % cancelable is a different engine and settles nothing here.
+
+- **For pacing.**
+  - The C vs V comparison should show a difference in touch-to-scroll-start (first move) only. Steady-state
+    moving frames should not differ through this path.
+  - Main-thread work in the handler still costs frames, through the rendering update, as any main-thread work does.
+
+**C2. `Event.timeStamp` for iOS touch events: UNRESOLVED.**
+
+- **What the shared code shows.** It returns `m_createTime`, reduced in resolution, relative to the time origin
+  (Event.cpp l.188-199).
+- **Why that doesn't settle it.** The open-source `TouchEvent` constructor uses `MonotonicTime::now()` at creation
+  (TouchEvent.cpp l.47). But the iOS class comes from WebKitAdditions, so whether it passes the platform event's
+  timestamp instead can't be read.
+- **Decisive local check (phone, any driver).**
+  - In the touchmove handler, log `performance.now() - e.timeStamp`.
+  - Run it with and without a 50 ms busy loop placed just before the touch, so that it ends while the touch is
+    pending.
+  - If the gap stays below about 2 ms in both cases, the stamp is the web process's creation time at dispatch:
+    queue delay is invisible to it.
+  - If the gap grows by tens of ms with the busy loop, the stamp is earlier, from the UI process or the OS.
+- **Until then.** Queue delay and touch-to-scroll can be read only as within-page comparisons (C vs V), as
+  de-unknowns-ux already does.
+
 ### 2.5 What changes because of §2 (for owners)
 
 | verdict | affected | change |
