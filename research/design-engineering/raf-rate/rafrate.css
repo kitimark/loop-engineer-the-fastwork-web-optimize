@@ -1,0 +1,18 @@
+/* P-031 rAF-rate test pages: shared styles. Every page has the same content and height; only the .mover's animation differs. */
+:root { color-scheme: light; --bg: #f4f2ee; --fg: #1d1d1f; --card-a: #ffffff; --card-b: #e3ecf7; --line: #c9c4bb; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 -apple-system, system-ui, sans-serif; }
+/* defined scroll length: the document is exactly 6000 px tall (50 cards x 120 px), so the scroll range is 6000 - innerHeight */
+#list { height: 6000px; overflow: hidden; }
+.card { box-sizing: border-box; height: 120px; margin: 0 16px; border-bottom: 1px solid var(--line); padding: 14px 16px; display: flex; gap: 14px; align-items: center; }
+.card:nth-child(odd) { background: var(--card-a); }
+.card:nth-child(even) { background: var(--card-b); }
+.thumb { flex: 0 0 64px; height: 64px; border-radius: 12px; background: linear-gradient(135deg, #2a5bd7, #7aa2f7); }
+.txt b { display: block; font-size: 17px; }
+.txt span { font-size: 14px; opacity: .7; }
+/* the one element that differs: a 44 px square, fixed in the top-right corner, travelling 0 -> -120 px (1 s, alternate) */
+.mover { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: calc(100vw - 56px); width: 44px; height: 44px; border-radius: 10px; background: #d76a2a; z-index: 2; }
+@keyframes fw-move-transform { from { transform: translateX(0); } to { transform: translateX(-120px); } }
+@keyframes fw-move-left { from { left: calc(100vw - 56px); } to { left: calc(100vw - 176px); } }
+body[data-variant="anim-compositor"] .mover { animation: fw-move-transform 1s ease-in-out infinite alternate; }
+body[data-variant="anim-paused"] .mover { animation: fw-move-transform 1s ease-in-out infinite alternate; animation-play-state: paused; }
+body[data-variant="anim-left"] .mover { animation: fw-move-left 1s ease-in-out infinite alternate; }
