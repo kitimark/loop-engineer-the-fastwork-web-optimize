@@ -293,6 +293,113 @@ WebKit-7624.4.5; main is the same on these points.
 **Already in force (lead):** fps and frame counts from finger (F) and gesture (G) runs don't compare with scripted runs
 (S, W, M). The ms thresholds still compare.
 
+### 2.8 Layout at a transition end on the hero card (fix-hero-exit, de-pm-hero; arch-claims)
+
+**Claim (OBSERVED, iPhone P3 block, n=2 per arm).** On the #people card, three moments are each followed by one
+whole-view Layout of 12-18 ms:
+- the end of the opacity transition (+700);
+- the end of the filter/transform transition (+900);
+- the `is-future-shrinking` write, which changes `transform` from `none` to `scale(1)` (+1150).
+
+Two device ablations move or remove these Layouts:
+- re-dur shifts the +700 Layout by -199 ms.
+- re-keep, where the card rests at `blur(0px)` / `translateY(0)`, removes the +900 and +1150 Layouts.
+
+The question for re-keep-op (re-keep plus a resting opacity of 0.999): what in WebKit causes the Layout, and does
+re-keep-op avoid it?
+
+All line numbers are from tag WebKit-7624.4.5 (≈ Safari 26.6). StyleDifference.cpp is the same on main (§2.4). The
+other files were read at 7624.4.5 only.
+
+**Q1. Why the end value needs a Layout: CONFIRMED.** The style diff returns Layout when a property's presence flips:
+- `miscDataChangeRequiresLayout` (StyleDifference.cpp l.191-209) returns Layout when any of these flips:
+  `transform->hasTransform()`, `opacity.isOpaque()` or `hasFilters()`.
+- `hasTransform()` means "not `none`" (style/computed/data/StyleTransformData.h l.50). So `translateY(0)` and
+  `scale(1)` count as transforms, and `none` → `scale(1)` is a flip.
+- The opacity branch carries a FIXME. A full layout is needed "to keep floating object lists sane" "when layers
+  come and go".
+
+The diff does not check whether a RenderLayer really appears or goes. It fires on the flip alone, even when the
+renderer keeps its layer for another reason. Examples are `position: relative`, z-index and overflow
+(RenderBoxModelObject::requiresLayer l.1027-1030; RenderBox::requiresLayer l.5199-5205).
+
+When a layer really is gained or lost, it adds Layout through two separate paths:
+- `RenderElement::adjustStyleDifference` (RenderElement.cpp l.348-355): `hasLayer() != requiresLayer()` gives Layout.
+- `RenderLayerModelObject::styleDidChange` (l.157-184) creates or removes the layer. When the element was
+  transformed, it also calls `setNeedsLayoutAndPreferredWidthsUpdate()`.
+
+A Layout diff reaches `setNeedsLayoutForStyleDifference` (RenderElement.cpp l.1106, l.1270-1273), which calls
+`setNeedsLayoutAndPreferredWidthsUpdate()`.
+
+Without a flip, `translateY(0)` → `scale(1)` is only a context-sensitive Transform change
+(StyleDifference.cpp l.194-197). `adjustStyleDifference` (RenderElement.cpp l.302-316) then makes it:
+- RecompositeLayer if the layer is composited;
+- Overflow (simplified layout) if the layer is not composited;
+- Layout only if the renderer has no layer.
+
+This matches re-keep's phone result: no Layout of 2 ms or more at +900 and +1150.
+
+**Q2. Accelerated end vs main-thread end: same diff, different route. CONFIRMED.**
+- **Accelerated (opacity, transform with cubic-bezier).**
+  - While the effect runs fully accelerated, it does not re-resolve style every frame (`ticksContinuouslyWhileActive`
+    returns false, KeyframeEffect.cpp l.2668-2687).
+  - At the end, the Stop action calls `renderer->animationFinished` and then
+    `m_target->invalidateStyleAndLayerComposition()` (l.2429-2434).
+  - The next style resolution applies the remaining effects to the base style (StyleTreeResolver.cpp l.850-879,
+    `applyKeyframeEffects`). The new style holds the end value 1 / `none`, and it is diffed against the last style,
+    which still held an animated value below 1 or not `none`.
+- **Main thread (the filter, `linear()` easing, F-048/F-065).**
+  - The filter is re-resolved every frame. `hasFilters()` stays true across `blur(Npx)`, so each frame is only a
+    Filter context-sensitive change: RepaintLayer or RecompositeLayer (RenderElement.cpp l.337-343).
+  - The final `blur(…)` → `none` is the flip, so the Layout comes in the end frame only.
+- **What the end itself does to compositing.** The animation's compositing reason goes away when the effect no longer
+  affects the property (`requiresCompositingForAnimation`, RenderLayerCompositor.cpp l.3813-3840). That GraphicsLayer
+  teardown is a compositing update and repaint, not a Layout.
+- **Answer to the lead's question.** The Layout does not come from "a finished transition" or from GraphicsLayer
+  teardown. It comes from the end value flipping presence, so re-keep-op's premise holds:
+  - At a resting opacity of 0.999, `isOpaque()` never flips, so there is no Layout.
+  - The RenderLayer stays, because `createsGroup` holds while opacity is below 1.
+  - The compositing update at the end stays (expected: Composite/Paint at +700, no Layout).
+
+**Q3. Why the root is the view: CONFIRMED, as in §2.4.** Neither creating nor removing a layer schedules a full
+layout. Both mark only the renderer itself (RenderLayerModelObject.cpp l.161-184). The marks climb through
+`markContainingBlocksForLayout` (RenderObject.cpp l.598-660) to the first `isLayoutBoundary` ancestor
+(l.523-562). A boundary is one of:
+- the RenderView;
+- `contain: layout size`;
+- an SVG root;
+- an element with non-visible overflow, a definite non-percent width and height, and a new formatting context.
+
+#people has no such ancestor, so the root is the view. `setNeedsLayoutAndPreferredWidthsUpdate` also dirties the
+ancestors' preferred widths. `scheduleSubtreeLayout` turns the layout into a full one when a full layout is already
+pending or when there are two disjoint roots (§2.4).
+
+**de-pm-hero's transform claim (Card 4, condition 1): CONFIRMED.** `none` → `scale(1)` is a `hasTransform()` flip,
+so it is Layout. `translateY(0)` → `scale(1)` is not a flip; it is Transform → RecompositeLayer or Overflow. Two more
+things happen when an element gains a transform, and both are additional, not the cause:
+- it becomes the containing block for fixed and absolute descendants
+  (`removeOutOfFlowBoxesIfNeededOnStyleChange`, RenderBoxModelObject.cpp l.1032);
+- it gains a RenderLayer.
+
+**Attribution of the phone frames to these paths: OBSERVED.** The evidence is device ablations (re-dur shift,
+re-keep removal, n=2 per arm), consistent with the source. A Layout from another dirtier in the same frame (the
+rotator, the logger's forced flush) is not excluded beyond those ablations.
+
+**Risk for re-keep-op: UNRESOLVED.** Once the transitions end, nothing in the code read keeps the card composited.
+On iOS, `allowedCompositingTriggers` (WebChromeClient.h l.292-306) has no FilterTrigger, and a 2D `translateY(0)`
+is not a 3D trigger; overlap or `will-change` would still composite it. A non-composited layer with opacity 0.999
+paints through `beginTransparencyLayer` on every repaint of its area (RenderLayerInlines.h l.70-75, RenderLayer.cpp
+l.2711-2737). The only exception is a single-image layer that can use `setAlpha`.
+
+`blur(0px)` is free here: it is an identity filter, so it is not painted (`shouldPaintWithFilters` → `isIdentity`,
+RenderLayer.cpp l.1017-1027).
+
+Decisive check: in an untimed attribution run on re-keep-op, at rest, check two things:
+- whether the card has its own layer (LayerTree, outside a timed block);
+- the Paint events covering the card while the page is idle, against re-keep.
+If the card repaints often (anything inside it animating on the main thread), 0.999 can cost more per paint than it
+saves at +700. Chrome cannot answer this, because Blink handles opacity differently (§2.4).
+
 ### 2.5 What changes because of §2 (for owners)
 
 | verdict | affected | change |
