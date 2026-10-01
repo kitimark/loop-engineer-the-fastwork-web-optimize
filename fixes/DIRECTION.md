@@ -333,7 +333,21 @@ legacy ms; U5: the warm-up covers every arm's port; U7/U9: `Date.now()` + settin
 **Gesture/WDA tool landed (main 5d357b1, review-gesture-2 ACCEPT):** the G driver exists; its first real run (V1: aw1-10c
 vs mw-g) waits for the user's one-time WDA signing setup. **Bundled user asks (lead presents after arch-lead's
 synthesis):** WDA signing setup, Instruments pairing (gates the render-bound class), finger batch (incl. the R2 clip look).
-**iPhone queue (v2, lead-approved 10:5xZ, + 10:59Z y≈1960 blocks):** morph attribution session (P2/P3 + ghbn mech check +
+**Morph attribution session (iPhone 10:57-11:09Z, control passed; attribution only):** P2 Timeline: moving frames carry
+Script ~1, style 1-5, layout < 1, Paint <= 4 ms; **Composite minus its Paint children carries the cost** (gh 31 ms first
+frame, 20-39 in fwd t100-300 ms, 12 after 400 ms; g stays high in the tail); the start transient is inside Composite
+(buffer prepare / raster wait). P3 LayerTree (gh): **35 layers at rest -> 113 at the m=1 hold -> 33 after (~78 created
+and destroyed per cycle)**, memory 106 -> 117 MB; platform-card (430×1880, 12.6 MB) repaints 11/14 per tween frame
+fwd/rev, the artboard 5.3/7.0: the size-fixed children still repaint every frame -> **R1/R2 refuted** (de-safari's
+branch). ghbn mechanism verified (backdrop-filter none 40/40 moving, 81/81 at m=1). P-016 (hold 250) invalid by design
+-> P-016b hold 900. Post-mortems landed: f0013ff (morph), cf79bfd (hero). **F-045 (scene gate as the y≈1250 cause) is
+weakened by F-049**; the class write at L11538 / forced read at L3258 (flip + 1.13 s) goes to fix-scroll-engine as a note.
+**iPhone sequence (lead 11:1xZ):** (1) morph attribution DONE -> (2) y≈1960 block A (F1) -> (3) morph countdown probe
+(gh-cdwc / gh-cdhid driver pair + one Timeline cycle + P-016b hold 900) -> (4) y≈1960 block B (F2) -> (5) hero ST-1
+(de-pm-hero Timeline of the flip pair, Q P K Q K P; decides the hero-B arms) -> (6) ST-2 (re-dur / re-keep, fix-hero-exit
+builds) -> (7) hero-B -> (8) R2 bg, /10d, N12. ST-3 only if a slot is free. User one-time setups (WDA signing, Instruments
+pairing, ~10 min) at a block boundary; the finger batch after arch-lead's synthesis.
+**iPhone queue (v2, lead-approved 10:5xZ, + 10:59Z y≈1960 blocks; superseded):** morph attribution session (P2/P3 + ghbn mech check +
 P-016 hold-250 pair) -> y≈1960 block A (F1 mw10e-arm-load) -> block B (F2 mw10e-arm-idle) -> hero 2 blocks + P3b -> R2 bg
 -> /10d -> N12 -> R3/h3.
 **iPhone queue (v2, lead-approved 10:5xZ, superseded):** na/nb + P2b (Timeline attribution of the y≈1960 frame) -> morph attribution
