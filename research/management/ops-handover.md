@@ -282,6 +282,14 @@ between tool calls.
    **LATER (not urgent, needs a fix-reviewer pass before landing):** ts-lock-bundle 65903b9 docs, e143153 (a)(b) gate
    wake, 2f7751c `run --no-timing`, 3f2b100 (d) served-check retry (measurement-code pre-check), 1369205 (c)(e)
    HOST-DISPLAY-CHANGED; test:chrome for (d)/(e) only after they land (needs main's lock code).
+   **17:2xZ PHONE ORDER (lead, supersedes 17:1xZ):** P14 (W, running) -> USER SITTING (lead holds the lease as owner
+   `user`: render test A = original baseline vs B = best build now, mw10e-g + cdwc + arm-scope-c (+ re-keep-op if it
+   combines cleanly), iphone-runner prepares; NOBODY touches the phone) -> ts-gesture I-042 slot (~15 min) -> P-033
+   gain -> P-038 -> P12 -> P10 -> P5 -> P9. After I-042: P-032 G first (fresh block 1, full cap, stop at > 2 WDA
+   voids), then P-036 G, then the next finger sitting. I-042 interim (ts-gesture): G strokes play as ~50 ms flicks
+   (pointerMove durations dropped) -> ALL G data so far is invalid as a finger proxy; G stays blocked. I-035 RESOLVED
+   (8935a7d, npm test 730/730). Console server stopped at its 2 h limit 17:16Z (lead restarts). After ts-progress lands:
+   keep fixes/PROGRESS.json current on every P-row result, verdict or land.
    **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A PASSED (ABBA aw1-10e S, on vs off: dt>50 3 vs 7, dt>34 18 vs 21, fps
    57.4 vs 57.3; T1a now absolute; minShift revisit CLOSED: HL p95 on-off +0.48 ms, n=2/arm (crude), stays 4 ms,
    ts-analysis 14:3xZ), 10 min, block B) -> P-033 step 0
