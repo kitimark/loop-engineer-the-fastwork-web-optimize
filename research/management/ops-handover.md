@@ -87,6 +87,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   video only (de-illusion-style); A/B arms are no longer posted. Accent containment result (de-illusion-style, Chrome):
   contain: layout size gives a 0-px diff on all 14 draws; its canvas-frames arm's first diff failed (alignment being
   fixed); a Sim F-108 run comes next. I-049 (lead, 22:44Z): shared readers starve behind later exclusive holds.
+  Lead corrections 22:4xZ: containment is NOT a candidate. It is pixel-identical on Chrome, but WebKit source REFUTES it as a
+  Safari fix (the svg is already a layout boundary; the full layout comes from 3 dirty svg roots in one frame,
+  de-illusion-style 22:34Z): never present contain to the user. ts-lock-share's docs landed as 4a903b2 (rebased from 2116109);
+  only I-046 is pending from it, then I-049 (owner ts-lock-share). fix-nav-morph steps out of the queue until the shared
+  group runs (I-049 workaround): if it is still queued when the exclusive holder releases, tell the lead.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
