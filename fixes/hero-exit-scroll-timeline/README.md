@@ -402,7 +402,30 @@ crossing, plus transition and animation events.
   - (3) the card's `visibility` change (aw1-10e, P only; h1 removes it, yet the post-mortem's K prediction
     keeps the layout).
 - The cheapest discriminator is a diagnostic `nomask` build (no mask or unmask/sheen at the pill drop),
-  plus Card 3's split-trigger build. Neither is built yet.
+  plus Card 3's split-trigger build. Built afterwards as P9, see below.
+
+### P9 builds (nomask, navw, split80) and their mechanism check
+
+arch-lead re-specified P9 (unknowns-actions §3.3, main e068698) as a decoupling block on aw1-10e. Its arms are
+experiment rows 21-23, with prediction P-026. The phone block runs 3 Latin-square rows of C/nomask/navw with
+Timeline on every run, plus 1 split80 Timeline run.
+
+Chrome mechanism check: 430x775, counts only, one short-lane hold (scratch `pr7/`, `probe7.mjs`). PASS.
+- Every build was served from its overlay, with 0 errors.
+- **nomask:** computed mask-image is one value from load, through the drop, to + 1.6 s. In aw1-10e it switches
+  from none to some at the drop frame (+ 20 ms). Mask-position still animates (unmask kept).
+- **navw:** the nav-actions rect is constant (left 174, width 232) through the drop.
+  - In aw1-10e the box grows 73 → 187 px **in every frame for ~0.7 s** (the earn button's max-width and
+    padding transitions).
+  - So the nav costs more than one frame-1 layout: it relayouts an auto-sized fixed box on every frame of the
+    0.68 s transition. That is worth reading in the phone Timeline too.
+- **split80:** the 0.72 crossing starts only the nav transitions (+ 23 ms), and #people stays hidden for
+  1.6 s. The step to 0.80 (y 623) reveals the card at + 43 ms.
+- **Parity vs aw1-10e** is 0.000 % for all three builds at three points: nav strip at the top, nav strip
+  settled after the drop, and card settled at 0.80.
+
+Card wording (mgmt-ops-5): navw changes the width and also adds `contain: layout size`. So a win for navw alone
+names "the nav box's relayout escapes it (auto width plus no relayout boundary)", not "auto width" alone.
 
 ## Risks, conflicts, follow-ups
 
@@ -488,3 +511,6 @@ The header's "rebuild with" line names the scratch topic it was generated from:
 | hero-exit-scroll-timeline/18 | DIAGNOSTIC re-dur = aw1-10e + the #people card's reveal opacity transition 0.7 → 0.5 s (ST-2, postmortem-hero Card 4) | the flip + ~745 ms long frame is the opacity transition reaching 1 (WebKit StyleDifference forces a layout when opacity crosses opaque): it moves to flip + 545 ± 20 ms, the + ~940 frame stays | pending (iPhone ST-2) | diagnostic (reveal fades 0.2 s faster) | see "ST-2 / ST-1 builds" | patch `variants/18.diff` (on aw1-10e), CSS 890da4b0, JS = aw1-10e 3e2f599a | | ticket via mgmt-ops-4 |
 | hero-exit-scroll-timeline/19 | DIAGNOSTIC re-keep = aw1-10e + the revealed card ends at `filter: blur(0px); transform: translateY(0)` instead of `none` (ST-2) | filter/transform never switch to none at the transition end, so the + ~940 frame loses its layout (< 2 ms) while + ~745 stays | pending (iPhone ST-2) | pixel parity expected (blur(0)/translateY(0) render as none) | see "ST-2 / ST-1 builds" | patch `variants/19.diff` (on aw1-10e), CSS 78047ec2, JS = aw1-10e 3e2f599a | a permanent blur(0px) filter on a full-section card may keep a filter layer: check before turning it into a fix | ticket via mgmt-ops-4 |
 | hero-exit-scroll-timeline/20 | DIAGNOSTIC v2-endearly = v2 (09) with every hero-exit range ending at `contain 70%` (before the 0.72 flip) and the blur kept at its end value (fill forwards) (ST-1 optional arm, postmortem-hero Card 1) | if v2's +11 ms in the flip pair comes from live ViewTimeline effects (H2a/H2b), it goes away; y≈50 stays ≤ 37 | pending (iPhone, only if ST-1 says H2a/H2b) | NOT parity by design: the exit completes at 0.70 instead of 1.0 (copy opacity 0 at the flip instead of ~0.28); the animations stay attached in their after phase (fill), so it tests "effects changing in the flip frame", not "effects present" | see "ST-2 / ST-1 builds" | patch `variants/20.diff` (on aw1-10e), CSS ed7a87ea, JS = P 71d76d69 | | ticket via mgmt-ops-4 |
+| hero-exit-scroll-timeline/21 | DIAGNOSTIC nomask = aw1-10e + the earn button carries `mask-image: var(--nav-earn-mask)` (240 %, no-repeat) while pilled too, so the is-hero-pill drop no longer switches mask-image none -> some; unmask/sheen animations kept (P9, D5 candidate a) | if the mask presence owns frame 1's 13-14 ms whole-view Layout, it goes; navw keeps it | pending (iPhone P9, P-026); Chrome mechanism PASS | parity 0.000 % (nav top, nav settled, card) | see "P9 builds" | patch `variants/21.diff` (on aw1-10e), CSS fd90c0f2, JS = aw1-10e 3e2f599a | | ticket via mgmt-ops-5 |
+| hero-exit-scroll-timeline/22 | DIAGNOSTIC navw = aw1-10e + phone nav-actions box `width: 232px; height: 36px; justify-content: flex-end; contain: layout size` (rect constant across the drop, relayout boundary); max-width/padding/gap transitions kept (P9, D5 candidate b) | if the nav's auto-width change owns frame 1's Layout, it goes; nomask keeps it | pending (iPhone P9, P-026); Chrome mechanism PASS | parity 0.000 % (nav top, nav settled, card); the transparent box covers x 150-390 of the bar (hit-testing over the logo during the morph) | see "P9 builds" | patch `variants/22.diff` (on aw1-10e), CSS ec57cba0, JS = aw1-10e 3e2f599a | an explicit width alone is not a WebKit relayout boundary (needs overflow clip or size+layout containment), hence the contain | ticket via mgmt-ops-5 |
+| hero-exit-scroll-timeline/23 | DIAGNOSTIC split80 = aw1-10e + the #people reveal at 0.80 instead of 0.72 (nav pill drop stays at 0.72), postmortem Card 3 split trigger | the 0.72 frame alone shows the nav's share, the 0.80 frame the reveal's | pending (iPhone P9, Timeline-only); Chrome mechanism PASS | NOT parity (reveal ~60 px later; settled states identical) | see "P9 builds" | patch `variants/23.diff` (on aw1-10e), CSS = aw1-10e c6aad94b, JS 40b43ffa | | ticket via mgmt-ops-5 |

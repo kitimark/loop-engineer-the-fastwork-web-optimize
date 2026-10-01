@@ -1,0 +1,21 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--split80
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--split80 --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -11542,7 +11542,9 @@
+           let t = n.getBoundingClientRect(),
+             r = Math.max(1, t.height - window.innerHeight),
+             i = Math.min(r, Math.max(0, -t.top));
+-          z(y, e.matches || i / r >= 0.72, !0);
++          // P9 diagnostic `split80` (hero-exit): #people reveal at 0.80 instead of 0.72, nav pill drop stays
++          // at 0.72, so the two triggers land ~60 px apart. NOT parity (reveal later). Timeline-only.
++          z(y, e.matches || i / r >= 0.8, !0);
+         } else z(y, !0);
+         if (g) {
+           let t = T(g.getBoundingClientRect(), window.innerHeight),
