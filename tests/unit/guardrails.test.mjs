@@ -33,6 +33,7 @@ test('package.json has the test scripts and the hook setup', () => {
   // ts-lock-share: the functional chrome files alone, as one reader of the shared lane; never a timing file
   assert.match(s['test:chrome:fn'], /^node tools\/lock\.mjs run chrome-measure --shared --max-seconds 300 --weight test-chrome-fn --owner test-chrome-fn -- node --test /);
   assert.doesNotMatch(s['test:chrome:fn'], /verify\.chrome|fix-ab\.chrome|host-real\.chrome|tests\/chrome\/\*/);
+  for (const f of ['vendor-shim', 'bench', 'check']) assert.match(s['test:chrome:fn'], new RegExp(`tests/chrome/${f}\\.chrome\\.test\\.mjs`), `${f}.chrome is functional`);
   assert.match(s.test, /--test-concurrency=3/, 'postmortem 2026-09-30 fix (b)');
   assert.equal(s['test:bench'], 'node tools/bench.mjs reconfirm', 'lead decision Q4: Tier A on everything landed');
   assert.match(s['test:all'], /npm test && npm run test:chrome/);
