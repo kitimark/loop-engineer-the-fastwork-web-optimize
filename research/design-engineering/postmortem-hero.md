@@ -510,7 +510,8 @@ The section's only containment is lifted while the rotator runs.
 **Verdict (§2.3 form):**
 - **Dirtier: LOCATED.** Code, cadence and Timeline agree in 3/3 captures and 47/47 layouts ≥10 ms. NAMED needs
   the ablation in 7.4.
-- **Whole-view mechanism: UNEXPLAINED** between W1, W2 and W3.
+- **Whole-view mechanism: UNEXPLAINED** between W1, W2 and W3. *Update after P14 (7.7 Result):* W1 out, W3
+  REFUTED (decisive check), W2 LOCATED in the swap path; insert/remove vs animation layers UNEXPLAINED.
 - **Device class:** iPhone 15 Pro Max Safari (the tc/ta captures). Chrome is not evidence for WebKit's layout
   root.
 
@@ -583,7 +584,7 @@ the copies the line numbers were taken from. The phone's Safari build may differ
 | On the phone, the rotator's layouts are full layouts | OBSERVED (in our setup; follows from the row above if the phone build matches `main`) | ST-4 A2: the root quad changes or it doesn't |
 | Layout-boundary criteria (non-visible overflow + fixed width/height + new formatting context, or layout + size containment) | **CONFIRMED** (on `main`) | `Source/WebCore/rendering/RenderObject.cpp` `isLayoutBoundary` L519-556, `markContainingBlocksForLayout` L596-660 |
 | `.is-carousel` meets those criteria on the phone | UNRESOLVED | decisive check: ST-4 A2 (`contain: strict` makes it a boundary on any version that has the containment rule) |
-| W3 path: a full layout already pending absorbs a subtree root | CONFIRMED that the path exists; UNRESOLVED whether it fires here | `LocalFrameViewLayoutContext.cpp` `scheduleSubtreeLayout` L778-781: if the RenderView needs layout and there is no subtree root, it marks up to the RenderView |
+| W3 path: a full layout already pending absorbs a subtree root | CONFIRMED that the path exists; **REFUTED as the cause here** by P14 V2 (root moved to #people under containment, 7.7 Result) | `LocalFrameViewLayoutContext.cpp` `scheduleSubtreeLayout` L778-781: if the RenderView needs layout and there is no subtree root, it marks up to the RenderView |
 | The countdown dirties no layout | OBSERVED (Timeline records, 3/3 captures) | ST-4 control vs rotoff idle counts |
 | `avatars-exit` width/flex-basis steps need layout every frame (not composited) | Moot for the measured builds (no width keyframes, 7.2 correction); baseline only, unchecked | the reference to check is WebKit's accelerated-property list for CSS animations; A3 dropped for now |
 
@@ -642,6 +643,67 @@ around #people). One uncounted st4-rotoff attribution run follows. The source is
 
 The A2 prediction in 7.4 assumed C's carousel is *not* a boundary on the phone. This table replaces it: on
 `main`'s rules V1 should change nothing unless W1 holds.
+
+**Result (P14 / P-025, 2026-10-01 ~17:3x-17:53Z, iPhone 15 Pro Max Safari, S driver, Timeline on in every counted
+run; read jointly with fix-scroll-engine, layout-containment README 12859a5).**
+- **Block:** C aw1-10e (C1, C5, C9), V1 st4-noswap (A2, A6, A7), V2 re-contain-js (B3, B4, B8); sentinels S-open and
+  S-end pass (bottom 60.2 fps, scroll 56.6 / 56.5) and are excluded; R10 is the uncounted st4-rotoff Timeline run.
+- **Per-tick root, two independent scorers.** de-pm-hero: `de-pm-hero/p14rot.mjs` and `p14b.mjs`, a tick = the
+  L11571 FunctionCall, scored by the first Layout ≥10 ms within 60 ms. fix-scroll-engine: `p14score.cjs`, a tick =
+  the L11571 TimerFire, scored by any 430×775-rooted Layout ≥10 ms up to the end of the next RenderingFrame. Every run
+  has 22-23 ticks, every arm ≥67, so all runs and arms qualify (≥6 / ≥2 runs and ≥15).
+
+| arm | ticks | view-rooted ≥10 ms (de-pm-hero / fix-scroll-engine) | band | where the root went | tick Layout median |
+|---|---|---|---|---|---|
+| C | 68 / 67 | 68 (100 %) / 67 (100 %) | view | view [0,0,430,775] | 21.2 / 20.6 ms (range 11.2-42.7) |
+| V1 noswap | 69 / 67 | 5 (7 %) / 2 (3 %), all in the scroll phase; idle 0/36 | **gone** | no Layout ≥10 ms; the tick holds an InvalidateLayout in only 15/69 | 0.2 / 0.1 ms |
+| V2 re-contain-js | 69 / 67 | 3 (4 %) / 8 (12 %), all in the scroll phase | **gone** | **#people**, 430×1327 at doc y 856 (61/67) | 11.5 / 11.7 ms (range 6-28) |
+
+  The two scorers differ by a few ticks (first ≥10 ms Layout vs any view-rooted one up to the frame end); both put
+  every arm in the same band. A height test of ≥700 px counts #people (1327 px) as view: test the 775 px quad.
+- **Reading against the table (rows re-read for V1 = noswap):**
+  - C stayed view-rooted, so row 4 (moved baseline) does not apply.
+  - **V2 moves the root to #people (prediction HIT).** A pending full layout would stay view-rooted under the
+    containment (`scheduleSubtreeLayout` L778-781 marks to the RenderView whenever the view already needs layout).
+    So **W3 is REFUTED by the decisive check** (in our setup), and so is a dirtier outside #people.
+  - **What is left is W2: the tick's marking crosses the carousel boundary and climbs at least to #people.**
+  - **V1 GONE says the climb comes from the swap path.** Two parts of that path remain, and the block cannot
+    separate them (the 894dfbf confound): the img insert/remove (the carousel marking itself, or preferred-width
+    marking through the proof and pill), or the exit, shift and pop animations' layer and presence changes. All of
+    this is OBSERVED.
+  - **Cost prediction MISSED, narrowly.** V2's #people Layout is 0.54-0.57× C's median, not ≤0.5×. Containment
+    shrinks the root but not the swap's own work inside a 1327 px section.
+- **Frames.**
+  - **Idle at y 1500, Timeline OFF** (one uncounted 40 s run per arm, de-pm-hero `p14idle2.mjs`). This is n=1 per
+    arm, so it is info only:
+
+    | arm | >30 | >34 | >38 | >46 | >50 | >54 | max |
+    |---|---|---|---|---|---|---|---|
+    | C | 75 | 47 | 30 | 13 | 11 | 11 | 63 ms |
+    | V1 | 0 | 0 | 0 | 0 | 0 | 0 | 20 ms |
+    | V2 | 61 | 40 | 13 | 3 | 0 | 0 | 47 ms |
+
+    V1 removes every long idle frame at y 1500, at every threshold. V2 removes dt>50 (twins 3 / 0), but dt>34 only
+    drops 47 → 40; that verdict is threshold-sensitive (75 → 61 at >30, 30 → 13 at >38).
+  - **Idle at y 0** (counted runs, Timeline on, fix-scroll-engine), dt>34 per run: C 4/4/5, V1 0/0/0, V2 1/0/2.
+  - **Scroll phase:** unchanged in every arm, rotoff included, and so is the ≥89 ms rebuild frame at y≈1960
+    (fix-scroll-engine). The rotator's cost is an idle and rest cost; it is not the scroll-phase cost.
+  - **R10 (rotoff):** idle 60.2 fps, dt>34 0, max 17 ms. The 1050 ms pairs of §7.8 disappear with the rotator, so
+    check 2 there is a cadence HIT. It cannot settle "blinking" (a) vs (b), because rotoff removes both readings at
+    once; that still needs the frame grabs.
+- **Verdict (§2.3 form, for the lead to sign):**
+  - **Dirtier:** the rotator's swap at L11571. This now meets the NAMED bar: two ablations (noswap, rotoff) remove it,
+    and the code, cadence and root all agree.
+  - **Whole-view mechanism:** W1 is out (§7.3), W3 is REFUTED (V2), and W2 is LOCATED in the swap path.
+  - **Insert/remove vs animation layers:** UNEXPLAINED.
+  - **Device class:** iPhone 15 Pro Max Safari only.
+- **Next.**
+  - We agree with fix-scroll-engine's **st5**: persistent slots, `src` updated in place, layers always present. It
+    is the presence-keeping design version of 7.4's A3 (F-049), and unlike noswap it keeps the designed exit and pop
+    motion. It does not separate the two W2 parts either, and a fix does not need that.
+  - The split arm (`ge` mounted with `animation: none`) is only worth a block if st5 fails.
+  - V1 as measured is not a ship candidate, because it drops the designed motion.
+  - V2 alone leaves the >34 idle frames.
 
 ### 7.8 The user's finger run F3: "small user profile blinking" follows the rotator's cycle (OBSERVED, rAF timing only)
 
