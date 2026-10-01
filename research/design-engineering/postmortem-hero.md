@@ -517,6 +517,13 @@ Setup:
 
 - **h3 (countdown strip):** its Layout term is **zero**. Keep h3 priced by face repaint and layers only
   (F-050). P-017 (fix-nav-morph's countdown probe) should not predict a Layout drop.
+  - **Scope (F-081, P-033 step 0, OBSERVED):** "zero" holds for Layouts ≥10 ms. At rest on the #people card,
+    ~800 small Layouts per 20 s (<5 ms, ~165 ms in total) are style-dirtied. fix-scroll-engine binned them by
+    frame co-occurrence: countdown-spring frames 314-333, accent `stroke-dashoffset` window 434-445, 0-240 ms
+    after a rotator tick (`avatars-exit`) 23-24, other 9. Co-occurrence names no dirtier. §7.1 found no
+    InvalidateLayout under the spring rAF. The spring writes transforms on `will-change` faces, which is not a
+    Layout change by the §2.8 rule. So which style change dirties the spring-frame Layouts is UNRESOLVED. The
+    decisive check: the RecalculateStyles before each such Layout, in spring frames outside the accent windows.
 - **Idle and rest-to-motion:** the rotator is the main source of whole-view layout at y 0.
   - It keeps running in the hero, because the hero is within one viewport of its element.
   - Any "idle quiet" assumption (I-002's 6 s idle; the rest-to-motion note in §6) includes 2 whole-view layouts
