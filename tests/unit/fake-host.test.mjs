@@ -40,3 +40,13 @@ test('fake host: no fake time, no CPU time (real time alone accrues nothing)', a
   await fake.sleep(1000);
   assert.equal(Math.round((fake.treeCpu() - t0) * 1000), 400, '0.4 cores for 1 s of fake time');
 });
+
+test('I-031 fake host: procTable lists FAKE_HOST_PROCS (default WindowServer 12 %, mds_stores 3 % of one core), exact on its mono clock', async () => {
+  const a = await host.procsSnapshot({ samplers: fake });
+  await realDelay(40);
+  await fake.sleep(2000);
+  const b = await host.procsSnapshot({ samplers: fake });
+  const t = host.topProcs(a, b);
+  assert.ok(t.windowSec >= 2 && t.windowSec < 2.5, `window ${t.windowSec}`);
+  assert.deepEqual(t.top, [{ pid: 427, command: 'WindowServer', cpuPct: 12 }, { pid: 377, command: 'mds_stores', cpuPct: 3 }]);
+});

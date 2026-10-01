@@ -16,6 +16,8 @@
 //   FAKE_HOST_PRESSURE       memory pressure level 1 normal, 2 warn, 4 critical (default 1)
 //   FAKE_HOST_CHROME_CORES   CPU cores used by any process tree asked about with treeCpu (default 0.4)
 //   FAKE_HOST_DECOMP         decompressions per second (default 10)
+//   FAKE_HOST_PROCS          other processes for procTable, "pid:command:cores[,...]" (default
+//                            "427:WindowServer:0.12,377:mds_stores:0.03"; not a timeline)
 //   FAKE_HOST_SUSPEND        "atMs:sec[,atMs:sec]": the host sleeps `sec` s once fake monotonic time passes
 //                            atMs (wall clock jumps; ticks and mono stand still; kern.waketime changes)
 const M0 = performance.now(), W0 = Date.now();
@@ -59,3 +61,7 @@ export const pressure = () => pres();
 export const decompressions = () => { advance(); return Math.round(decompN); };
 export const treeCpu = () => { advance(); return Math.round(chromeSec * 1000) / 1000; };
 export const procs = () => ({}); // treeCpu answers instead
+// I-031: the other processes (verify's top-5 log): FAKE_HOST_PROCS "pid:command:cores[,...]". Their CPU time
+// runs on mono (real time plus sleeps), the clock procsSnapshot() stamps them with, so each % is exact.
+const others = String(process.env.FAKE_HOST_PROCS ?? '427:WindowServer:0.12,377:mds_stores:0.03').split(',').filter(Boolean).map((p) => { const [pid, command, cores] = p.split(':'); return { pid, command, cores: Number(cores) }; });
+export const procTable = () => { const t = elapsed() / 1000; return Object.fromEntries(others.map((o) => [o.pid, { ppid: 1, cpuSec: o.cores * t, command: o.command }])); };

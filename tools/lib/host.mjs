@@ -35,6 +35,9 @@
 //                                      sleep ends the wait after one more window, I-023); onSample may throw
 //                                      -> {quiet, waitedSec, windows, last, reasons, sleptSec, suspended}
 //   treeCpuSec(rootPid, {samplers}) async   CPU seconds used so far by rootPid and its descendants (ps)
+//   procsSnapshot({samplers}) async    {at, procs} process table (ps, ~20 ms) or null; I-031, log only
+//   topProcs(a, b, {excludeRoot, n=5})  -> {windowSec, top: [{pid, command, cpuPct}]}: the busiest processes
+//                                      between two procsSnapshot()s, % of one core, a Chrome tree left out
 //   classifyRun(rec, t=THRESHOLDS)     per-run flags -> {loadInvalid, loadWarn, reasons, warnings}
 //                                      rec: {load1Start, otherBusyPct, pressureMax, gateTimeout, recheckQuiet,
 //                                      sleptSec, woke, recheckSleptSec, chromeRelaunched}
@@ -113,6 +116,17 @@ export function parsePsTime(s) {
   return sec + (m[1] ? Number(m[1]) * 86400 : 0);
 }
 
+/** `ps -A -o pid=,ppid=,time=,comm=` -> {pid: {ppid, cpuSec, command}}; command = the executable's basename. */
+export function parsePsProcs(text) {
+  const out = {};
+  for (const l of String(text || '').split('\n')) {
+    const m = l.trim().match(/^(\d+)\s+(\d+)\s+(\S+)\s+(.+)$/);
+    const cpuSec = m && parsePsTime(m[3]);
+    if (m && cpuSec != null) out[m[1]] = { ppid: Number(m[2]), cpuSec, command: m[4].trim().split('/').pop() };
+  }
+  return out;
+}
+
 export const DEFAULT_SAMPLERS = Object.freeze({
   cpus: () => os.cpus(),
   loadavg: () => os.loadavg(),
@@ -136,6 +150,8 @@ export const DEFAULT_SAMPLERS = Object.freeze({
     }
     return out;
   },
+  /** {pid: {ppid, cpuSec, command}} for every process (I-031, log only; one ps, ~20 ms). */
+  procTable: () => parsePsProcs(sh('ps', ['-A', '-o', 'pid=,ppid=,time=,comm='])),
   /** Last wake from sleep, seconds since the epoch (macOS kern.waketime), or null. */
   wake: () => {
     if (process.platform !== 'darwin') return null;
@@ -280,6 +296,42 @@ export async function waitQuiet({ maxWaitSec = THRESHOLDS.recheckMaxWaitSec, win
     if (done) return { quiet: q.quiet, waitedSec, windows, last, reasons: q.reasons, sleptSec: r1(sleptSec), suspended };
     if (last.suspended) afterWake = true; // one fresh window after the wake, then stop whatever it says
   }
+}
+
+// ---- other processes on the CPU (I-031: log only, never gates, classifies or changes a verdict) --------
+/** {at: mono ms, procs: procTable()}, or null when the process table can't be read (log only: never throws). */
+export async function procsSnapshot({ samplers } = {}) {
+  try {
+    const { s } = await resolveSamplers(samplers);
+    const at = s.mono(), procs = s.procTable();
+    return procs && Object.keys(procs).length ? { at, procs } : null;
+  } catch { return null; }
+}
+/** pid and all its descendants in a process table. */
+function treePids(procs, root) {
+  const kids = {};
+  for (const [pid, p] of Object.entries(procs)) (kids[p.ppid] ||= []).push(Number(pid));
+  const out = new Set(), stack = [Number(root)];
+  while (stack.length) { const pid = stack.pop(); if (out.has(pid)) continue; out.add(pid); stack.push(...(kids[pid] || [])); }
+  return out;
+}
+/**
+ * The top `n` processes by CPU between two procsSnapshot()s: {windowSec, top: [{pid, command, cpuPct}]}, cpuPct
+ * in % of ONE core (as `top`), from ps CPU-time deltas, so not ps's decayed %CPU. `excludeRoot`: the measured
+ * Chrome's pid; its whole tree (at either end) is left out. A process born inside the window counts all its
+ * CPU time; one that exited is not seen. Null without two snapshots or a window.
+ */
+export function topProcs(a, b, { excludeRoot, n = 5 } = {}) {
+  if (!a || !b || !(b.at > a.at)) return null;
+  const sec = (b.at - a.at) / 1000;
+  const skip = excludeRoot != null ? new Set([...treePids(a.procs, excludeRoot), ...treePids(b.procs, excludeRoot)]) : new Set();
+  const top = Object.entries(b.procs)
+    .filter(([pid]) => !skip.has(Number(pid)))
+    .map(([pid, p]) => ({ pid: Number(pid), command: p.command, cpuPct: Math.round(((p.cpuSec - (a.procs[pid]?.cpuSec ?? 0)) / sec) * 1000) / 10 }))
+    .filter((x) => x.cpuPct > 0)
+    .sort((x, y) => y.cpuPct - x.cpuPct || x.pid - y.pid)
+    .slice(0, n);
+  return { windowSec: Math.round(sec * 10) / 10, top };
 }
 
 /** CPU seconds used so far by rootPid and all its descendants (null if unknown). */
