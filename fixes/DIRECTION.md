@@ -276,7 +276,17 @@ answer needs the user's 2-second look (asked via the lead).
 **de-middle R3 named (F-041, fix-scroll-engine read-only):** the per-frame 373×344 feed repaint is likely the spinning
 vinyl (`.record.spinning` rotate, CSS 3880-3887) under `.feed .body` `overflow: hidden` + `mask-image` (CSS 5143-5150);
 fix options (a) mask -> `::after` white gradient overlay (equivalent pixels), (b) `will-change: transform` test. Owner: lead.
-**iPhone queue (09:38Z):** e1/e2 (aw1-10e control) -> morph-2 (ghb ABBA vs gh, g control; R2 clip probe) -> hero-A (h1v2 vs
+**Lead decisions 09:55Z:** **N10 a-d dropped** from the phone (fix-scroll-engine stops N10; /10d continues on its own merits:
+one normal slot `--on aw1-10e` after the main tests, rebased on d1c324c). Builds at fix-nav-morph, in order: img-sourcing
+fix (y≈1960) -> R8 (exact class toggle at m >= 0.55 that kills the nav backdrop and platform filter, de-morph/de-apple)
+-> R5 (no layer creation at the tween start); R2 clip-path waits for ghb/ghbn. R3: fix-scroll-engine builds (b)
+`will-change: transform` and (a) `::after` gradient (0 % parity first) as phone diagnostics. h3 countdown: no spawn yet
+(de-apple: 160 layers is under the count budget); attribute the 1 Hz 35-58 ms idle spike on the device first (idle-at-top
+Timeline capture in apple-ref or a spare minute). ts-gesture NEEDS-WORK (6 findings); the user's WDA setup is pending.
+**iPhone queue (09:55Z, lead; replaces the lines below):** morph-2 (ghb + ghbn nav backdrop off while morphing; R2 clip
+probe when the user can look) -> hero-A (h1v2) -> hero-B (drop v4/v5 if h1v2 wins) -> apple-ref (+ idle-at-top Timeline)
+-> R2 bg-layers -> N12 -> img-sourcing candidate -> ts-gesture V0 after the user's setup.
+**iPhone queue (09:38Z, superseded):** e1/e2 (aw1-10e control) -> morph-2 (ghb ABBA vs gh, g control; R2 clip probe) -> hero-A (h1v2 vs
 P, h1 vs P2) -> hero-B bisect (v7copyop, v6noflip, v4nocards, v5noblur vs P; v3
 dropped) -> **apple-ref** (user request via the lead: live apple.com AirPods Pro page, plus iPhone 18 Pro if the phone is
 cool, same driver and Timeline counts as aw1-10e, one block with a control; write-up in
