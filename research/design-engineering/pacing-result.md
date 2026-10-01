@@ -75,12 +75,25 @@ gap at its start, the trial switch. "steady" carries ~1.3 frames/s at 33 ms on t
 
 ## 3. Next probe (cheap; one rested user session, ~2 min)
 
-A v2 page, which I will build on request:
-- the eased pair ×2 each;
-- the eased pair at half and at a quarter of the morph's speed (369 / 185 px over 680 ms), to test the pursuit-limit
-  reading;
-- g100 at 300 / 600 / 1600 / 2400 px/s;
-- forced-choice pairs ("which was smoother?") instead of a 1-5 rating, so the sustained-loss patterns don't sit at the
-  ceiling.
+A v2 page, which I will build on request (the v2 repeat block that K18, T3+ and P10 wait on, unknowns-actions
+e0bb5d4):
+- **Forced-choice pairs** ("which was smoother?") instead of a 1-5 rating, so the sustained-loss patterns don't sit at
+  the ceiling. Both clips play, 4 s each, then the user taps A or B.
+- **The eased pair (ease-early vs ease-late) at full speed, 4 presentations, order counterbalanced AB, BA, BA, AB**
+  (arch-lead's request). Session 1's 2-vs-4 gap could be order or fatigue: early always came first.
+- **The eased pair at half and at a quarter of the morph's speed** (369 / 185 px over 680 ms), 2 presentations each
+  (AB, BA), to test the pursuit-limit reading. Prediction if pursuit is the cause: the late-gaps preference holds or
+  grows at full speed and fades or reverses at 1/4 speed. If the late gaps are preferred at every speed, the cause is
+  something else.
+- **One catch pair, steady vs steady:** a "smoother" answer here measures position bias.
+- **g100 at 300 / 600 / 1600 / 2400 px/s, 1-5 rating, 2 each:** an isolated stall against speed.
+- **Order rules:** pairs shuffled, never two presentations of the same pair back to back. Run it **rested and before any
+  finger test**, which session 1 did not do.
+
+**Time:** session 1 took 107 s for 14 trials (7.7 s each, measured from `startedAt`/`finishedAt`). v2 has 9 pairs at
+about 12 s each (108 s) plus 8 ratings at 7.7 s (62 s): about **3 min on the page and about 5 min of the user's
+time** with instructions. The phone holds **one `iphone` lease of about 10 min**: serve, open, the session, copying
+the result. It needs no Chrome lock. It needs no cooling either: it is not a timed block, and its numbers come from the
+user's choices, not from frame timing. It must not share the lease with a timed block.
 
 Before the user, iphone-runner should check that serve.mjs serves the split `pacing.js`.
