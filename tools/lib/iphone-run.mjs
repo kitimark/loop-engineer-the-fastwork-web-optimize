@@ -37,11 +37,11 @@ export const DEVICE = 'iPhone 15 Pro Max, iOS 26.6.1 Safari';
 export const TOOL_FILES = ['tools/iphone.mjs', 'tools/lib/iphone-run.mjs', 'tools/lib/iphone-probe.mjs', 'tools/lib/wip.mjs'];
 const sha16 = (s) => createHash('sha256').update(s).digest('hex').slice(0, 16);
 
-export function toolVersion(driver, root = REPO) {
+export function toolVersion(driver, root = REPO, toolFiles = TOOL_FILES) {
   const git = (...a) => { const r = spawnSync('git', ['-C', root, ...a], { encoding: 'utf8', timeout: 10000 }); return r.status === 0 ? r.stdout.trim() : null; };
   const files = {};
-  for (const f of TOOL_FILES) { try { files[f] = sha16(readFileSync(join(root, f))); } catch { files[f] = null; } }
-  const st = git('status', '--porcelain', '--', ...TOOL_FILES);
+  for (const f of toolFiles) { try { files[f] = sha16(readFileSync(join(root, f))); } catch { files[f] = null; } }
+  const st = git('status', '--porcelain', '--', ...toolFiles);
   return { gitHead: git('rev-parse', 'HEAD'), dirty: st === null ? null : st.length > 0, files, probe: sha16(PROBE_STD_JS + PRE_JS + STATE_START_JS + EARLY_JS + RESOURCE_TIMING_JS + startJs.toString()), driver: sha16(DRIVER_JS[driver]) };
 }
 
@@ -132,23 +132,32 @@ export function estimateMs(o) {
   return p.maxDriveMs;
 }
 
-export async function runCmd({ argv, requireLease, port }) {
+/**
+ * `target` (absent for the phone, whose path is unchanged): the Simulator's `sim.mjs run` passes {device, settings,
+ * toolFiles, outDir, extra() -> more meta fields, guard() in place of measureGuard (it runs inside its own normal
+ * hold), renew(needMs), start() / end() around the timed part}; no lease renewal, lease URL check or battery read.
+ */
+export async function runCmd({ argv, requireLease, port, target = null }) {
   const o = parseRunArgs(argv.slice(argv.indexOf('run') + 1));
   if (o.help) { console.log(USAGE); return; }
   const owner = requireLease();
   const customStateJs = o.stateFile ? readFileSync(resolve(o.stateFile), 'utf8').trim().replace(/;\s*$/, '') : null;
-  measureGuard(o);
-  // renew the lease to cover this run (iphone-runner did it before every run), through lock.mjs, which also
-  // keeps the Mac awake until the new expiry
+  if (target) o.battery = false;
+  const guard = target ? target.guard : () => measureGuard(o);
+  await guard();
   const need = o.settleMs + estimateMs(o) + 30000 + 2500;
-  const ttl = Math.max(900, Math.ceil(need / 1000) + 60);
-  const rn = spawnSync(process.execPath, [join(REPO, 'tools', 'lock.mjs'), 'renew', 'iphone', '--owner', owner, '--ttl', String(ttl)], { encoding: 'utf8', timeout: 30000 });
-  if (rn.status !== 0) throw new Error(`could not renew the iphone lease: ${(rn.stderr || rn.stdout || '').trim()}`);
+  if (!target) {
+    // renew the lease to cover this run (iphone-runner did it before every run), through lock.mjs, which also
+    // keeps the Mac awake until the new expiry
+    const ttl = Math.max(900, Math.ceil(need / 1000) + 60);
+    const rn = spawnSync(process.execPath, [join(REPO, 'tools', 'lock.mjs'), 'renew', 'iphone', '--owner', owner, '--ttl', String(ttl)], { encoding: 'utf8', timeout: 30000 });
+    if (rn.status !== 0) throw new Error(`could not renew the iphone lease: ${(rn.stderr || rn.stdout || '').trim()}`);
+  } else await target.renew?.(need);
   const tabs = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
   const tab = tabs[0];
   if (!tab) throw new Error('no Safari tab (unlock the iPhone, bring Safari to the front)');
   if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (incident I-003)`);
-  const holder = lockStatus('iphone').holder;
+  const holder = target ? null : lockStatus('iphone').holder;
   let leaseUrl = holder?.meta?.url;
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) { try { leaseUrl = iphoneTarget(leaseUrl, await mirrorInfo(leaseUrl)).url; } catch {} }
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) console.error(`warning: Safari shows ${tab.url}, your lease says ${holder.meta.url} (run: node tools/iphone.mjs open ${holder.meta.url} --owner ${owner})`);
@@ -164,9 +173,10 @@ export async function runCmd({ argv, requireLease, port }) {
     await c.evaluate(EARLY_JS).catch(() => {});
     for (let i = 0; i < 60; i++) { if ((await c.evaluate('document.readyState')) === 'complete') break; await sleep(500); }
     const batteryStart = o.battery ? batteryInfo() : null; // before the settle: the USB query is not in the timed part
+    if (target) await target.start?.();
     await sleep(o.settleMs);
     requireLease(); // still ours after the settle
-    measureGuard(o);
+    await guard();
     const macStartMs = Date.now();
     const started = await c.evaluate(startJs(o.driver, o.params, { customStateJs }));
     if (started !== 'started') throw new Error(`the run did not start in the page (${JSON.stringify(started)})`);
@@ -186,7 +196,8 @@ export async function runCmd({ argv, requireLease, port }) {
     raw.macStartMs = macStartMs;
     raw.battery = o.battery ? { start: batteryStart, end: batteryInfo() } : null;
     raw.served = await servedHashes(await c.evaluate(RESOURCES_JS).catch(() => []));
-    return finish(o, owner, raw);
+    if (target) await target.end?.();
+    return finish(o, owner, raw, { target });
   } finally { c.close(); }
 }
 
@@ -233,16 +244,17 @@ function lanSafe(o) {
 }
 
 /** Raw page result -> run JSON on disk + console summary. Exported for tests. */
-export function finish(o, owner, raw, { now = new Date() } = {}) {
+export function finish(o, owner, raw, { now = new Date(), target = null } = {}) {
   const doc = buildDoc(raw);
   const meta = {
     schema: SCHEMA, kind: 'run', driver: DRIVERS[o.driver], driverName: o.driver, probe: o.probe, label: o.label,
     build: o.labels.build, run: o.labels.run ?? o.label, block: o.labels.block, arm: o.labels.arm, pos: o.labels.pos, warmup: o.labels.warmup,
-    owner, date: now.toISOString(), device: DEVICE, href: lanSafeUrl(raw.pre?.href), ua: raw.pre?.ua, vw: raw.pre?.vw, vh0: raw.pre?.vh0, dpr: raw.pre?.dpr,
+    owner, date: now.toISOString(), device: target?.device ?? DEVICE, href: lanSafeUrl(raw.pre?.href), ua: raw.pre?.ua, vw: raw.pre?.vw, vh0: raw.pre?.vh0, dpr: raw.pre?.dpr,
     params: { settleMs: o.settleMs, ...o.params },
-    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: yReadsLabel(raw.ySource ?? o.params.ySource ?? 'raf', o.driver), yReadCounts: raw.yReads ?? null, settings: deviceSettings(raw.pre?.settings, raw.battery?.start), battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver), error: raw.err || null,
+    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: yReadsLabel(raw.ySource ?? o.params.ySource ?? 'raf', o.driver), yReadCounts: raw.yReads ?? null, settings: target?.settings ?? deviceSettings(raw.pre?.settings, raw.battery?.start), battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver, REPO, target?.toolFiles), error: raw.err || null,
+    ...(target?.extra ? target.extra() : {}),
   };
-  const out = resolve(REPO, o.out || join('out', 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));
+  const out = resolve(REPO, o.out || join('out', target?.outDir ?? 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));
   const json = { meta, ...doc, tops: raw.tops, topsPost: raw.topsPost, stateAtStart: raw.stateAtStart, early: raw.early, driverResult: raw.driverResult, pre: lanSafe(raw.pre), post: lanSafe(raw.post) };
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify(json));
