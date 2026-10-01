@@ -1,0 +1,19 @@
+{
+ "snapshot": "b1789284481295-4ad4a84a",
+ "build": "1789284481295",
+ "builtAt": "2026-09-13T07:28:01.295Z",
+ "origin": "https://fastwork.com",
+ "crawledAt": "2026-09-30T19:03:53.263Z",
+ "trees": {
+  "site": "c092f0d8f33c9eb3b8ee6b6b50c8060ea4a8a6ab",
+  "site-pretty": "9e4b05b9496074066cc47b2f8bda913d8ae18b07"
+ },
+ "contentHash": "4ad4a84a7ec3f52f4c337f80bc042e69d0dccaa3f1aa9666b254e60a506b1804",
+ "files": {
+  "site": 263,
+  "site-pretty": 263
+ },
+ "prettier": "3.9.9",
+ "pinnedAt": "2026-10-01T08:45:47.167Z",
+ "note": "S1: the 2026-09-30 mirror; all wave-1/2 work targets it"
+}
