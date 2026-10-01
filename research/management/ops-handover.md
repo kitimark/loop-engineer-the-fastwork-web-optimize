@@ -235,13 +235,26 @@ between tool calls.
    **P-032 G block aw1-10e vs mw10e-cdwc right after P4** (card from fix-nav-morph pending). P-029 (4) moving p95
    recorded OUTSIDE [28, 45] on the better side (median 23). **F-076 (UNRESOLVED) -> P-034 gate** on any countdown-ca
    ticket; put it in the fix-countdown-idle-raf spawn prompt (de-oss-map waits on it).
+   **Swipe A/B (cdwc F stage) PAUSED after pairs 1-2 (both "same"; user feels the lag at the hero and the page end; tab
+   stalled twice, some recordings lost); pair 3 moves to ts-user-console's console (iphone-runner keeps the key so it
+   stays blind). User-facing steps go through the console once it lands, not the lead's chat.
+   **PHONE ORDER (lead 14:3xZ, supersedes the NOW line above):** P4 (started ~14:3xZ; block A + T1a A/A, 10 min, block B) -> P-032 G cdwc (VALIDATED, ~20 min) ->
+   P11 Block A + P14 -> P12 -> P10 -> P5 -> P-033 gain (VALIDATED; step 0 fills any free phone gap) -> P9 -> P-030 ->
+   P-031 G -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. P-033 "within noise" -> bundle candidate, not standalone.
+   **F-076 / P-034 owner = fix-nav-morph after cdwc lands** (lead: same countdown code; no fix-countdown-idle-raf spawn).
+   Toolsmith bundle: lead spawns after ts-wait's npm test on main (c4a1ee2) passes. ts-user-console (tools/console.mjs:
+   user-facing step console, agents `console.mjs wait <id> --until started|answered`) in progress.
    **arch-sim** (iOS Simulator fidelity): normal chrome-measure holds <= 420 s, announced to mgmt-ops each time;
    `--port auto`; own iwdp `-c null:9231,SIMULATOR:9232` (iwdp attaches only configured devices, so never the phone);
    no iphone lease; results tagged meta.device "simulator".
    **ts-analysis eea3c06 -> review-stats NEEDS-WORK** (cross-block driver pooling unwarned; "near thresholds" line pools
    frames across runs, §5.3): ts-analysis fixing; lands only after ACCEPT. Protocol questions (lead 14:1xZ): (a) A5
    "threshold-sensitive" wording vs code (code flags when gt46 or gt54 differs from gt50, stricter) -> doc-protocol-v2;
-   (b) phone p50/p95 minimum shift (now 1 Chrome tick 8.33 ms) -> arch-claims (arch-lead ended). Answers: pending.
+   (b) phone p50/p95 minimum shift -> arch-claims DECIDED 14:2xZ: 4 ms (the ±4 band; phone stamps 1 ms,
+   off-grid, claims-audit §2.3), phone median futility in whole ms (not ticks); revisit after P4's T1a A/A (|HL p95
+   shift| >= 4 ms raises the floor); Chrome unchanged; sent to ts-analysis for the eea3c06 fix. (a) DONE doc-protocol-v2 157eeea (docs follow the code: threshold-sensitive if EITHER twin's verdict differs; near
+   bands half-open (30, 38] / (46, 54]; rAF-rate text per 6f71f51). Lead-only: CLAUDE.md phone line wording, CLAUDE.md
+   "Sentinel" bullet vs the Timeline-block sentinel, fix-reviewer check 15 phone tick forms.
    **Pacing v2 (de-unknowns-ux e64b6de, pacing-result §4):** verdict accepted on intent (§0/§2), OBSERVED, one user, not
    rested; §3 sign erratum added with the scoring commit, kept visible. **Lead rule 13:5xZ: pre-registered rules get a
    second reader (arch-claims or mgmt-ops) BEFORE data arrives.** de-unknowns-ux drafts a pacing v3 (touch A/B) plan; it
