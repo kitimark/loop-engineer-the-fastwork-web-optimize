@@ -912,3 +912,62 @@ parked. The phone now runs attribution only.
   - OBSERVED, in our setup, cause unknown: one run per arm, so this is not a verdict.
 - **Files** (`out/iphone-runner/`): `split-{C1,V2,S3,N4,W5,X6,C7}.json` + `.tl.json`, `split-Sent-{open,end}.json`, `split.sh`,
   `splitwin.mjs`. Sent to fix-scroll-engine at 20:31Z.
+
+### 4v. Ticket ms-1 (fix-scroll-engine, user T-004): morph start on RB, C vs S (panel image src writes blocked), M driver (21:31-21:38Z)
+
+- **Setup:**
+  - RB snapshot (same build as §4t). M driver with hold 2000 ms and 2 cycles, Timeline depth 8.
+  - Counted runs C1 S2 S3 C4 C5 S6 S7 C8. The S arm blocks the `src` writes in `.start-selling-morph-panel`; it is injected
+    after the 8 s settle and before Timeline.start.
+  - M sentinels pass: held p95 17 at 38.7 °C (open) and 39.8 °C (end).
+  - The first attempt was void: its open sentinel failed (p95 35) at 41.5 °C, see §4w.
+- **Block engaged:** `__nosrc` = 21 in every S run.
+- **Tween-1 start RS, total ms:** C 14.2-16.5, S 15.4-16.6. Every run has 2 nested view-rooted Layouts (4.2-4.6 ms and
+  1.3-1.5 ms).
+- **Tween 2:** start RS 0.2-0.5 ms with 0 nested Layouts in all runs. No Layout ≥ 2 ms outside an RS.
+- **Runner's reading (OBSERVED, in our setup, cause unknown):**
+  - Blocking the panel's image loads does not change the first-open morph-start cost (S = C, as predicted).
+  - This agrees with fix-scroll-engine's Simulator result (h4).
+- **Files** (`out/iphone-runner/`): `ms1-*.json` + `.tl.json`, `ms1-score.json`, `ms1.sh`, `ms1-nosrc.js`.
+
+### 4w. Phone heat and cooling (user T-009, 22:01-22:12Z; today's battery log)
+
+- **Source:** battery temperature (AppleSmartBattery) from `out/iphone-runner/batt.jsonl`, read before every run since 11:22Z,
+  plus every sentinel file. Phone on external power throughout. It was charging only at 18:38-18:56Z, the SR blocks, up
+  to 42.6 °C. Room and case state unknown. All OBSERVED, n small.
+- **Sentinels vs temperature:**
+  - S/W sentinels: all 20 with a temperature passed, from 35.6 to 42.5 °C (bottom ≥ 60.0, scroll ≥ 51.7).
+  - The six S/W failures today (all early, ctl-B) have no temperature record.
+  - M sentinels: passed at 36.1, 38.7, 38.7 and 39.7 °C (p95 17); failed once at 41.5 °C (p95 35).
+  - So a heat threshold shows only for M, somewhere between 39.7 and 41.5 °C (n = 1 fail).
+- **Rise during a block** (start → end, minutes of work):
+
+| block type | example | start °C | rise | per min |
+|---|---|---|---|---|
+| M driver + Timeline | ticket 3 (7 min) | 35.7 | +2.9 | +0.41 |
+| M driver + Timeline | ms-1 (6 min) | 38.7 | +1.1 | +0.18 |
+| W + Timeline depth 10, charging | SR (5.5 min) | 39.1 | +2.6 | +0.47 |
+| W + Timeline | scene-scope 1 (7 min) | 36.7 | +0.9 | +0.13 |
+| S | P14 (10 min) | 35.6 | +1.2 | +0.12 |
+| W / idle at y 1500 + Timeline | split, P-039, ticket 2 | 36.1-41.9 | −0.5 to −1.8 | cools |
+| finger (user swipes) | F2-F4 (17 min) | 36.5 | +3.1 | +0.18 |
+
+- **Between blocks with the page left loaded** (not parked):
+  - Sometimes it cools only slowly: 39.4 → 36.7 °C in 21 min, 37.6 → 36.1 °C in 13 min (0.10-0.13 °C/min).
+  - Sometimes it warms: 39.7 → 41.0 °C in 22 min with the RB page left at the morph end. 37.3 → 41.5 °C in 48 min, which
+    included about 4 min of finger checks.
+  - Probable cause: the loaded page keeps animating. OBSERVED, cause unknown.
+- **Parked cooling curve** (Safari on about:blank, idle, once per minute; stopped at 10.9 min when the user unplugged
+  the phone, T-011):
+  - Readings: 41.1, 40.7, 39.8, 39.2, 39.0, 38.4, 37.8, 37.5, 37.3, 37.1, 36.7 °C.
+  - Rate about 0.6 °C/min near 40 °C and about 0.3 °C/min near 38 °C. It reached ≤ 38.0 °C after about 5.5 min from
+    41.1 °C, and about 4 min from 39.8 °C (a typical block end). It was not flat yet when stopped.
+  - That is 3-5x faster than the unparked gaps (one curve).
+- **Recommended rule (runner's, for the lead):**
+  - Park Safari on about:blank at every block end and between finger checks.
+  - Cool with `wait.mjs phone-temp --below <last pass − 0.5, else 38>`. Parked, expect 4-6 min from 39.5-41 °C. Keep the
+    10-min cap, and the sentinel decides.
+  - Start M-driver blocks at ≤ 39.5 °C, since M is the only sentinel seen failing hot.
+  - The full curve to flat is still owed when the phone is back.
+- **Files** (`out/iphone-runner/`): `batt.jsonl`, `cool-idle-curve.jsonl`, `heat-sentinels.json`, `heatsum.mjs`,
+  `coolcurve.mjs`, `park.mjs`, `sentverdict.mjs`.
