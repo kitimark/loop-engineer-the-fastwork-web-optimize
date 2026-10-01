@@ -602,8 +602,91 @@ The block was hook-free: C aw1-10e (:5497) vs V mw10e-cdwc (:5492), driver G (`f
   - C4: killed at its start, when I stopped the block.
 - Per-stroke WDA time was 8-15 s for gestures with 0.3-0.9 s of contact (C3: 9.2, 14.7, 11.1, 15.0, 2.3 for the fling,
   6.4, 13.3, then 12.7-14.4 s). The run aborts at the first stroke that passes the limit.
+- Strokes were also collapsed to ~50 ms flicks (F-085, I-042). The raw per-stroke times stay valid; the block was void
+  anyway.
 - WDA `/status` answered in 4 ms, ready, and `activeAppInfo` showed Safari, so the slowness is in the actions endpoint
   only. Cause UNRESOLVED (I-042).
 - The phone warmed from 31.9 to 40.1 °C over the block.
 - No counted run is valid. Per the lead, these runs do not count against P-032's 2-block cap.
 - The gesture JSON stays in `out/` (lead ruling: no gesture records committed until N1 lands).
+
+### 4n. Builds for the user's hand test (lead request, 17:20Z)
+
+The sitting compares A, the original Fastwork (the plain baseline snapshot b1789284481295-4ad4a84a, no overlay), with B,
+our best current stack. Both are served over `site-pretty` with `--vendors=local --latency 150`, plain http.
+
+- **Key:** A = `:5611`, B = `:5647`. The ports were drawn at random so they don't reveal which is which.
+  - A serves the baseline as is: JS `4606120cf392`, CSS `27776f3d4138`.
+  - B serves `out/iphone-runner/snap/user-bplus`, a read-only copy: JS `dbd5fdb4f1fb…`, CSS `cc8d1340b449…`.
+  - The served hashes were checked on both ports.
+- **B's stack, on aw1-10e:**
+  - mw10e-g (pin clamp + nav-morph g; it still carries the DEBUG `__fwMorphDrive` hook, which only runs when called);
+  - mw10e-cdwc (CSS);
+  - re-keep-op (CSS; the CSS merge is clean);
+  - mw10e-arm-scope-c (F3, the landing bytes `c6d3590576a7`).
+- **One hand-resolved line.** The 3-way merge of g and arm-scope-c conflicts on one line, the effect's setup call:
+  - g keeps `(R && te && te.observe(R), _(), m());` and adds its debug hook after it;
+  - arm-scope-c changes the call to `…, m(), N());`.
+  - The resolution is the union: g's block, with the call `…, m(), N());`. `node --check` passes. The diff against g is
+    exactly F3's changes.
+  - The lead allowed this B+ as the user's B, as long as it passed the Chrome sanity check.
+- **Plain B without F3** (g JS `22efa0ab69ba` + the same CSS) is `snap/user-b`. It was checked too.
+- **Chrome sanity:** `fix.mjs ab --runs 1` against the baseline, one short hold per build, info only (n=1, no verdict).
+
+| | new console errors | new 404s | morphReached | screenshot diff top/mid/bottom % | scroll p95 ms | scroll >34 / >50 |
+|---|---|---|---|---|---|---|
+| B (no F3) | 0 | 0 | true | 0.16 / 0 / 0.55 | 25.4 → 17.3 | 8→5 / 7→2 |
+| B+ (served as B) | 0 | 0 | true | 0.13 / 0 / 0.55 | 25.1 → 17.4 | 7→5 / 5→1 |
+
+  - The 0.55 % at the bottom is the animated gradient headline text ("Secure", "Organized") caught at another color
+    phase. I compared the screenshots: the layout is identical.
+  - `fixes/all-wave1` has the same bottom 0.55, so the difference comes from the aw1 base, not from B's patches.
+
+### 4o. P14 (P-025): C aw1-10e vs V1 st4-noswap vs V2 re-contain-js, driver W, Timeline depth 8 (17:42-17:54Z)
+
+- **Setup:** 430x775. Each run: 6 s idle at y 0, then scroll from the top to y ≥ 2500, then a 2 s hold.
+- **Ports and served hashes:**
+  - C :5497, JS `3e2f599a1632`, CSS `c6aad94b455f`;
+  - V1 st4-noswap :5501, JS `b8c085d9b619`;
+  - V2 re-contain-js :5502, JS `3579d857cab9`, CSS `288c2ebec580`;
+  - R st4-rotoff :5503, JS `71572ef639cf`.
+- **Tools:** the branch at main 2cd736b (tools last changed b80a767: the I-037 fix and the T1a series).
+- **Block:** one warm-up per arm, then the S-open sentinel, 9 counted runs (C V1 V2 / V2 C V1 / V1 V2 C), the S-end
+  sentinel, 3 Timeline-OFF idle runs at y 1500, and 1 uncounted R run.
+- **Phone:** 35.6 → 36.8 °C, LPM off.
+- **The first start (17:17Z) aborted at the warm-ups.**
+  - Safari's inspector gave no page target, then a page target whose evaluate never answered.
+  - The user fixed it from the console (C-009 to C-012): reload, a new tab, force-quit Safari, then typing the URL.
+- **Sentinels (S, Timeline off, C):** S-open 56.6 fps, S-end 56.5 fps. Scroll ≥ 44 holds.
+- **Runner's quick readout** (`p14an.mjs`, not the scorer's): Layout records ≥ 10 ms per phase. "View" means rooted at the
+  whole viewport. Frame counts are dt > 34 / > 50.
+
+| run | idle 6 s: view / other L≥10 | idle >34/>50 | scroll 3.3 s: view / other | scroll >34/>50 | hold 2 s: view / other |
+|---|---|---|---|---|---|
+| C1 | 15 / 0 | 4/2 | 24 / 0 | 6/1 | 5 / 0 |
+| C5 | 15 / 0 | 4/2 | 29 / 1 | 7/1 | 6 / 0 |
+| C9 | 15 / 0 | 5/0 | 25 / 0 | 7/2 | 5 / 0 |
+| V1 A2 | 0 / 0 | 0/0 | 13 / 0 | 8/1 | 0 / 0 |
+| V1 A6 | 0 / 0 | 0/0 | 15 / 0 | 7/1 | 1 / 0 |
+| V1 A7 | 0 / 0 | 0/0 | 15 / 0 | 5/1 | 0 / 0 |
+| V2 B3 | 1 / 10 | 1/0 | 2 / 11 | 5/2 | 1 / 3 |
+| V2 B4 | 2 / 9 | 0/0 | 2 / 10 | 3/1 | 0 / 4 |
+| V2 B8 | 2 / 9 | 2/0 | 2 / 9 | 5/1 | 0 / 3 |
+| R10 (rotoff, uncounted) | 0 / 0 | 0/0 | 16 / 0 | 7/2 | 0 / 0 |
+
+- **Timeline-OFF idle at y 1500, 40 s per arm** (`p14idle.mjs`):
+
+| arm | >30 / >34 / >38 | >46 / >50 / >54 | near | max | fps |
+|---|---|---|---|---|---|
+| C | 75 / 47 / 30 | 13 / 11 / 11 | 47 | 63 ms | 58.3 |
+| V1 st4-noswap | 0 / 0 / 0 | 0 / 0 / 0 | 0 | 20 ms | 60.0 |
+| V2 re-contain-js | 61 / 40 / 13 | 3 / 0 / 0 | 51 | 47 ms | 59.1 |
+
+- **Reading (OBSERVED, in our setup; the P-025 verdict is the scorer's):**
+  - V1 (no swap) removes every ≥ 10 ms view Layout at rest, like rotoff does. Its idle frames match rotoff's.
+  - V2 (contain) moves the rest-phase Layouts from the view root into subtrees. It keeps about as many ≥ 10 ms Layouts
+    and fewer > 50 ms frames, but the > 34 ms idle frames at y 1500 stay (40 vs 47).
+  - The scroll-phase view Layouts drop from 24-29 (C) to 13-15 (V1) and 2 (V2).
+- **Files** stay in `out/iphone-runner/` (Timeline records are large): `p14-{C1,C5,C9,A2,A6,A7,B3,B4,B8,R10}.json` +
+  `.tl.json`, `p14-S-{open,end}.json`, `p14-idle-{C,A,B}.json`, `p14.log`. The arm letters A/B in these file names are
+  V1/V2, not the sitting's A/B.

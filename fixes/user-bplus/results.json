@@ -1,0 +1,868 @@
+{
+ "topic": "user-bplus",
+ "kind": "A/B",
+ "createdAt": "2026-10-01T17:39:54.112Z",
+ "git": {
+  "branch": "worktree-agent-a7696771bf38f1229",
+  "head": "2cd736b",
+  "checkout": "agent-a7696771bf38f1229-f21965"
+ },
+ "config": {
+  "cpu": 6,
+  "viewport": "mobile",
+  "runs": 1,
+  "idle": 6,
+  "serveArgs": [
+   "--vendors=local",
+   "--https",
+   "--latency",
+   "150"
+  ],
+  "baseline": "site-pretty",
+  "baselineSnapshot": {
+   "snapshot": "b1789284481295-4ad4a84a",
+   "state": "ok"
+  },
+  "stackedOn": null,
+  "order": "ABBA (alternating per run)",
+  "hostThresholds": {
+   "quietMaxBusyPct": 25,
+   "quietMaxLoad1": 6,
+   "quietMaxPressure": 1,
+   "quietMinWindowSec": 10,
+   "gateMaxWaitSec": 600,
+   "gateShortPassSec": 120,
+   "recheckMaxWaitSec": 60,
+   "invalidLoad1": 10,
+   "invalidOtherBusyPct": 25,
+   "invalidPressure": 2,
+   "warnLoad1": 6,
+   "warnOtherBusyPct": 20,
+   "suspendMinSec": 2,
+   "watchdogStallSec": 300,
+   "chromeWarmSec": 10
+  },
+  "hostRecheck": {
+   "maxWaitSec": 60,
+   "maxLoad1": 6,
+   "maxBusyPct": 25
+  },
+  "watchdogSec": 300,
+  "measurement": {
+   "cdpMetrics": false,
+   "traceFrames": false,
+   "frameLog": false
+  }
+ },
+ "patch": {
+  "file": "fixes/user-bplus/patch.diff",
+  "sha256": "ab588b456e737f42d2ebbad1cbbe5bc55975a2fefb7d36f4c5eb4eb8a694a1f4",
+  "files": 2,
+  "added": 507,
+  "removed": 71
+ },
+ "servedCheck": [
+  {
+   "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+   "baseline": {
+    "status": 200,
+    "sha256": "27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c",
+    "source": "base"
+   },
+   "patched": {
+    "status": 200,
+    "sha256": "cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813",
+    "source": "overlay"
+   },
+   "overlaySha256": "cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813"
+  },
+  {
+   "path": "/_app/immutable/nodes/2.DyWL8TcE.js",
+   "baseline": {
+    "status": 200,
+    "sha256": "4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5",
+    "source": "base"
+   },
+   "patched": {
+    "status": 200,
+    "sha256": "dbd5fdb4f1fb7e255aa2a34e435e0d1031446826ec9015df8df094f07fceaa83",
+    "source": "overlay"
+   },
+   "overlaySha256": "dbd5fdb4f1fb7e255aa2a34e435e0d1031446826ec9015df8df094f07fceaa83"
+  }
+ ],
+ "metrics": {
+  "scroll": {
+   "fps": {
+    "name": "fps",
+    "higherIsBetter": true,
+    "n": 1,
+    "baseline": {
+     "median": 75.7,
+     "min": 75.7,
+     "max": 75.7,
+     "runs": [
+      75.7
+     ]
+    },
+    "patched": {
+     "median": 94.5,
+     "min": 94.5,
+     "max": 94.5,
+     "runs": [
+      94.5
+     ]
+    },
+    "delta": 18.8,
+    "deltaPct": 24.8,
+    "pairedDeltas": [
+     18.8
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "gt20": {
+    "name": "frames >20 ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 62,
+     "min": 62,
+     "max": 62,
+     "runs": [
+      62
+     ]
+    },
+    "patched": {
+     "median": 29,
+     "min": 29,
+     "max": 29,
+     "runs": [
+      29
+     ]
+    },
+    "delta": -33,
+    "deltaPct": -53.2,
+    "pairedDeltas": [
+     -33
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "gt34": {
+    "name": "frames >34 ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 7,
+     "min": 7,
+     "max": 7,
+     "runs": [
+      7
+     ]
+    },
+    "patched": {
+     "median": 5,
+     "min": 5,
+     "max": 5,
+     "runs": [
+      5
+     ]
+    },
+    "delta": -2,
+    "deltaPct": -28.6,
+    "pairedDeltas": [
+     -2
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "gt50": {
+    "name": "frames >50 ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 5,
+     "min": 5,
+     "max": 5,
+     "runs": [
+      5
+     ]
+    },
+    "patched": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "runs": [
+      1
+     ]
+    },
+    "delta": -4,
+    "deltaPct": -80,
+    "pairedDeltas": [
+     -4
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "gt100": {
+    "name": "frames >100 ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "max": {
+    "name": "worst frame ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 83.8,
+     "min": 83.8,
+     "max": 83.8,
+     "runs": [
+      83.8
+     ]
+    },
+    "patched": {
+     "median": 67.3,
+     "min": 67.3,
+     "max": 67.3,
+     "runs": [
+      67.3
+     ]
+    },
+    "delta": -16.5,
+    "deltaPct": -19.7,
+    "pairedDeltas": [
+     -16.5
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "p95": {
+    "name": "p95 frame ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 25.1,
+     "min": 25.1,
+     "max": 25.1,
+     "runs": [
+      25.1
+     ]
+    },
+    "patched": {
+     "median": 17.4,
+     "min": 17.4,
+     "max": 17.4,
+     "runs": [
+      17.4
+     ]
+    },
+    "delta": -7.7,
+    "deltaPct": -30.7,
+    "pairedDeltas": [
+     -7.7
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "loafMs": {
+    "name": "LoAF ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 276,
+     "min": 276,
+     "max": 276,
+     "runs": [
+      276
+     ]
+    },
+    "patched": {
+     "median": 66,
+     "min": 66,
+     "max": 66,
+     "runs": [
+      66
+     ]
+    },
+    "delta": -210,
+    "deltaPct": -76.1,
+    "pairedDeltas": [
+     -210
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "loafScriptMs": {
+    "name": "LoAF script ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 146,
+     "min": 146,
+     "max": 146,
+     "runs": [
+      146
+     ]
+    },
+    "patched": {
+     "median": 62,
+     "min": 62,
+     "max": 62,
+     "runs": [
+      62
+     ]
+    },
+    "delta": -84,
+    "deltaPct": -57.5,
+    "pairedDeltas": [
+     -84
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "forcedLayoutMs": {
+    "name": "forced style+layout ms (in LoAF)",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 40,
+     "min": 40,
+     "max": 40,
+     "runs": [
+      40
+     ]
+    },
+    "patched": {
+     "median": 2,
+     "min": 2,
+     "max": 2,
+     "runs": [
+      2
+     ]
+    },
+    "delta": -38,
+    "deltaPct": -95,
+    "pairedDeltas": [
+     -38
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   }
+  },
+  "morph": {
+   "fps": {
+    "name": "fps",
+    "higherIsBetter": true,
+    "n": 1,
+    "baseline": {
+     "median": 109.9,
+     "min": 109.9,
+     "max": 109.9,
+     "runs": [
+      109.9
+     ]
+    },
+    "patched": {
+     "median": 112.8,
+     "min": 112.8,
+     "max": 112.8,
+     "runs": [
+      112.8
+     ]
+    },
+    "delta": 2.9,
+    "deltaPct": 2.6,
+    "pairedDeltas": [
+     2.9
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "gt50": {
+    "name": "frames >50 ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "loafMs": {
+    "name": "LoAF ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "forcedLayoutMs": {
+    "name": "forced style+layout ms (in LoAF)",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   }
+  },
+  "idle": {
+   "fps": {
+    "name": "fps",
+    "higherIsBetter": true,
+    "n": 1,
+    "baseline": {
+     "median": 120,
+     "min": 120,
+     "max": 120,
+     "runs": [
+      120
+     ]
+    },
+    "patched": {
+     "median": 119.2,
+     "min": 119.2,
+     "max": 119.2,
+     "runs": [
+      119.2
+     ]
+    },
+    "delta": -0.8,
+    "deltaPct": -0.7,
+    "pairedDeltas": [
+     -0.8
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "gt20": {
+    "name": "frames >20 ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "gt34": {
+    "name": "frames >34 ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "gt50": {
+    "name": "frames >50 ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "gt100": {
+    "name": "frames >100 ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "max": {
+    "name": "worst frame ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 9.4,
+     "min": 9.4,
+     "max": 9.4,
+     "runs": [
+      9.4
+     ]
+    },
+    "patched": {
+     "median": 17.6,
+     "min": 17.6,
+     "max": 17.6,
+     "runs": [
+      17.6
+     ]
+    },
+    "delta": 8.2,
+    "deltaPct": 87.2,
+    "pairedDeltas": [
+     8.2
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "p95": {
+    "name": "p95 frame ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 9.2,
+     "min": 9.2,
+     "max": 9.2,
+     "runs": [
+      9.2
+     ]
+    },
+    "patched": {
+     "median": 9.3,
+     "min": 9.3,
+     "max": 9.3,
+     "runs": [
+      9.3
+     ]
+    },
+    "delta": 0.1,
+    "deltaPct": 1.1,
+    "pairedDeltas": [
+     0.1
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "loafMs": {
+    "name": "LoAF ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "loafScriptMs": {
+    "name": "LoAF script ms",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   },
+   "forcedLayoutMs": {
+    "name": "forced style+layout ms (in LoAF)",
+    "higherIsBetter": false,
+    "n": 1,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0
+    ],
+    "verdict": "n=1 (need >=3 runs for a verdict)"
+   }
+  }
+ },
+ "regressions": {
+  "newErrors": [],
+  "fixedErrors": [],
+  "errorsBothSides": [],
+  "new404s": [],
+  "screenshotDiffPct": {
+   "top": 0.13,
+   "middle": 0,
+   "bottom": 0.55
+  },
+  "morphReached": {
+   "baseline": [
+    true
+   ],
+   "patched": [
+    true
+   ]
+  }
+ },
+ "host": {
+  "cpus": 8,
+  "model": "Apple M1 Pro",
+  "loadavg": [
+   2.9677734375,
+   3.81201171875,
+   4.5576171875
+  ],
+  "chromeLaunches": 1,
+  "watchdogSec": 300,
+  "chromeWarmSec": 10,
+  "thresholds": {
+   "quietMaxBusyPct": 25,
+   "quietMaxLoad1": 6,
+   "quietMaxPressure": 1,
+   "quietMinWindowSec": 10,
+   "gateMaxWaitSec": 600,
+   "gateShortPassSec": 120,
+   "recheckMaxWaitSec": 60,
+   "invalidLoad1": 10,
+   "invalidOtherBusyPct": 25,
+   "invalidPressure": 2,
+   "warnLoad1": 6,
+   "warnOtherBusyPct": 20,
+   "suspendMinSec": 2,
+   "watchdogStallSec": 300,
+   "chromeWarmSec": 10
+  },
+  "recheck": {
+   "maxWaitSec": 60,
+   "maxLoad1": 6,
+   "maxBusyPct": 25
+  },
+  "gate": null,
+  "contaminated": false,
+  "contaminatedRuns": 0,
+  "warnRuns": [
+   {
+    "label": "fix",
+    "run": 0,
+    "warnings": [
+     "other CPU 20.3 % > 20 %"
+    ]
+   }
+  ],
+  "runsTotal": 2,
+  "hostState": {
+   "recorded": true,
+   "display": [
+    "on"
+   ],
+   "fullWake": [
+    true
+   ],
+   "powerSource": [
+    "AC"
+   ],
+   "displaySleepPrevented": [
+    true
+   ],
+   "byLabel": {
+    "base": {
+     "display": [
+      "on"
+     ],
+     "fullWake": [
+      true
+     ]
+    },
+    "fix": {
+     "display": [
+      "on"
+     ],
+     "fullWake": [
+      true
+     ]
+    }
+   },
+   "chromeVersions": [
+    "Chrome/154.0.8037.58"
+   ],
+   "featureStateSha256": [
+    "06627ec3fd854a383a0bb466b8b87646cffbb39dbdd488e9d14bb815bfaf2cc1"
+   ],
+   "variationsSeedSha256": [
+    "b3b03b1da6633a291c0a59ba0277e4977d9347732c2d161dc8f61bc5d46ad835"
+   ],
+   "changed": false,
+   "reasons": [],
+   "tag": null
+  },
+  "loadavg1Min": 3,
+  "loadavg1Max": 3.7,
+  "otherCpuPctMax": 20.3,
+  "recorded": true,
+  "invalidRuns": []
+ },
+ "raw": "out/ab/user-bplus/2026-10-01T17-37-55-323Z/verify.json",
+ "markdown": "| mobile 6x, n=1 | baseline median [min-max] | patched median [min-max] | delta | verdict |\n|---|---|---|---|---|\n| scroll: fps | 75.7 [75.7-75.7] | 94.5 [94.5-94.5] | +18.8 (+24.8%) | n=1 (need >=3 runs for a verdict) |\n| scroll: frames >20 ms | 62 [62-62] | 29 [29-29] | -33 (-53.2%) | n=1 (need >=3 runs for a verdict) |\n| scroll: frames >34 ms | 7 [7-7] | 5 [5-5] | -2 (-28.6%) | n=1 (need >=3 runs for a verdict) |\n| scroll: frames >50 ms | 5 [5-5] | 1 [1-1] | -4 (-80%) | n=1 (need >=3 runs for a verdict) |\n| scroll: frames >100 ms | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| scroll: worst frame ms | 83.8 [83.8-83.8] | 67.3 [67.3-67.3] | -16.5 (-19.7%) | n=1 (need >=3 runs for a verdict) |\n| scroll: p95 frame ms | 25.1 [25.1-25.1] | 17.4 [17.4-17.4] | -7.7 (-30.7%) | n=1 (need >=3 runs for a verdict) |\n| scroll: LoAF ms | 276 [276-276] | 66 [66-66] | -210 (-76.1%) | n=1 (need >=3 runs for a verdict) |\n| scroll: LoAF script ms | 146 [146-146] | 62 [62-62] | -84 (-57.5%) | n=1 (need >=3 runs for a verdict) |\n| scroll: forced style+layout ms (in LoAF) | 40 [40-40] | 2 [2-2] | -38 (-95%) | n=1 (need >=3 runs for a verdict) |\n| morph: fps | 109.9 [109.9-109.9] | 112.8 [112.8-112.8] | +2.9 (+2.6%) | n=1 (need >=3 runs for a verdict) |\n| morph: frames >50 ms | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| morph: LoAF ms | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| morph: forced style+layout ms (in LoAF) | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| idle: fps | 120 [120-120] | 119.2 [119.2-119.2] | -0.8 (-0.7%) | n=1 (need >=3 runs for a verdict) |\n| idle: frames >20 ms | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| idle: frames >34 ms | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| idle: frames >50 ms | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| idle: frames >100 ms | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| idle: worst frame ms | 9.4 [9.4-9.4] | 17.6 [17.6-17.6] | +8.2 (+87.2%) | n=1 (need >=3 runs for a verdict) |\n| idle: p95 frame ms | 9.2 [9.2-9.2] | 9.3 [9.3-9.3] | +0.1 (+1.1%) | n=1 (need >=3 runs for a verdict) |\n| idle: LoAF ms | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| idle: LoAF script ms | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n| idle: forced style+layout ms (in LoAF) | 0 [0-0] | 0 [0-0] | 0 | n=1 (need >=3 runs for a verdict) |\n\nhost: 0 of 2 runs contaminated (load1 3-3.7, other CPU max 20.3 %); 1 warn: other CPU 20.3 % > 20 % (absolute numbers not comparable with an A/A floor from a quiet host)\n\nhost state: display on, FullWake, power AC, display-sleep assertion yes"
+}
