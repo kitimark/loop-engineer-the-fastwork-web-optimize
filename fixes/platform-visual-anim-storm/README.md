@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** not reproducible on aw1-10c (0/24 fresh loads, 06:45Z); cause unknown, no patch. The first hypothesis (F-026: the agents-ask visual's
+**Status:** CLOSED: rare, not reproducible. 0/24 fresh loads on aw1-10c (06:45Z) and 0/25 on all-wave1 without /10c (07:10Z); cause unknown, no patch. The first hypothesis (F-026: the agents-ask visual's
 state change starts many keyframe animations) is **ruled out** by a forced-toggle probe (F-027).
 **Topic:** N13, from F-026 (lead decision 06:10Z), owner fix-scroll-engine. Stacking base: `aw1-10c`
 (all-wave1 + scroll-engine /10c, overlay JS 757e2cbc…, CSS c6aad94b…).
@@ -71,6 +71,17 @@ the platform sections first render and cuts the layer count), or the storm is ra
 **Status: not reproducible on the current stacking base (aw1-10c).** No fix candidate, nothing to A/B.
 To make the causal statement, run the same 24-load design on all-wave1 without /10c in one more ≤ 10 min
 diagnostic hold. A rate near 2/12 there would mean /10c removed the storm; ~0 would mean it is just rare.
+
+## Confirm hold on all-wave1 without /10c (07:10-07:18Z, untraced, load1 2.3-5.2)
+
+Same design, 25 fresh loads of all-wave1 (overlay JS 69b91556…, no /10c): **0/25 storms**. So /10c did not
+remove the storm. It is rare: ~3 sightings, all in earlier holds, against 0/49 in the two dedicated holds.
+Closed as "rare, not reproducible". If it comes back on the iPhone or in a later A/B, re-open it with a trace from
+that run.
+
+By-product (useful for scroll-engine /10c): every all-wave1 load has the F-011 no-script render frame at
+y≈2227-2244, 54-70 ms with 0 ms of script (**25/25 loads**). aw1-10c had **0/24** in the previous hold. Every
+load on both bases also has the gtag `onscrollend` frame at y≈4753-5003 (N11).
 
 ## Original plan (done above)
 
