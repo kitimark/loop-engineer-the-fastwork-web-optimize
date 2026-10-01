@@ -359,7 +359,7 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   --note "<one plain line>" [--next "…"] [--waiting-on lead:"land request"|agent:<name>|incident:I-0NN|…]`. The board
   adds your Chrome/phone queue place, console steps and blocking incidents itself; only the lead sets priority.
 - **Threads** (`console.mjs thread`, console `/threads`): the user's questions, one thread per topic. The lead keeps
-  `node tools/console.mjs thread wait --as lead --timeout 3600` armed in the background (re-arm after each wake),
+  `node tools/console.mjs thread wait --as lead --timeout 3600` armed in the background (re-arm after each wake; it also wakes on proposal decisions, undos and changed decisions, I-045),
   answers with `thread reply <id> --by lead --text "…" [--ask]` or hands a thread to the topic's agent with
   `thread assign <id> --to <agent> --by lead`. An assigned agent arms `thread wait --as <you>` and answers in the
   thread, not in chat; others are refused. The user's thread text is printed as typed: never copy it into committed

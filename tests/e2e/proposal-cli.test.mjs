@@ -3,7 +3,9 @@
 // address (192.168.77.12). Checks: post (JSON and Markdown) copies the media into the store and scrubs text, a LAN
 // compare URL is refused, list/show, the page and its menu entry, the API without LAN text, media with strict names
 // and Range, the POST guards (x-console, Host), decide/undo with a stale-revision check, revise, withdraw, and
-// `proposal wait` (MET 0 with the decision, TIMEOUT 3, NEVER 4, --any for one author), the badge model.
+// `proposal wait` (MET 0 with the decision, TIMEOUT 3, NEVER 4, --any for one author or all), the badge model, and
+// I-045: every decision event (reject, undo, change) reaches `wait --any`, `wait <id> --until changed|decided --since`
+// and the lead's `thread wait --as lead`, each once.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -221,7 +223,11 @@ test('wait: MET 0 with the decision after the user decides on the page; undo; re
   assert.match(nv.stdout, /^NEVER proposal PR-002 decided: it was withdrawn/);
   assert.equal((await get('/api/proposals/PR-002')).status, 404, 'a withdrawn proposal leaves the page');
   assert.equal(cli('wait').code, 1);
-  assert.match(cli('wait', '--any').stderr, /--any needs --by/);
+  // I-045: --any without --by watches every proposal (the lead's wait); a bad --since is a usage error
+  const all = cli('wait', '--any', '--timeout', '0', '--quiet');
+  assert.equal(all.code, 3, all.out);
+  assert.match(all.stdout, /^TIMEOUT a decision on any proposal after \d{4}-/);
+  assert.match(cli('wait', '--any', '--since', 'yesterday').stderr, /--since must be an ISO time/);
 });
 
 test('publish a draft after adding shots; unknown commands and ids are usage errors', () => {
@@ -233,4 +239,70 @@ test('publish a draft after adding shots; unknown commands and ids are usage err
   assert.match(cli('show', 'X-1').stderr, /bad proposal id/);
   assert.match(cli('show', 'PR-77').stderr, /no proposal PR-077/);
   assert.equal(cli('help').code, 0);
+});
+
+// I-045: the user rejected PR-001 (21:02:13Z), undid it (21:02:45Z) and requested a change (21:04:04Z); the author's
+// wait had exited on "rejected" and the lead had no wait covering proposals, so the change notified nobody.
+test('I-045: reject -> undo -> change on the page reaches wait --any, wait --until changed/decided --since, and thread wait --as lead', async () => {
+  const id = postedId(cli('post', '--by', 'de-seq', '--file', writeProposal('seq.json', proposal({ title: 'Sequence glow' }))));
+  // the lead's standing wait existed before (its read mark starts when it is first armed: earlier decisions are not news)
+  const first = node(CON, ['thread', 'wait', '--as', 'lead', '--timeout', '0', '--quiet'], { env });
+  assert.equal(first.code, 3, first.out);
+  assert.ok(existsSync(join(state, 'console', 'proposal-reads.json')), 'the lead\'s proposal read mark is in the console store');
+  const t0 = new Date().toISOString();
+  // the author's first wait and the lead's thread wait, armed in the background
+  const authorWait = cliAsync('wait', id, '--until', 'decided', '--timeout', '20', '--quiet');
+  const leadWait = nodeAsync(CON, ['thread', 'wait', '--as', 'lead', '--timeout', '20', '--quiet'], { env, timeout: 60000 });
+  await new Promise((r) => setTimeout(r, 700));
+  const dec = (body) => postJson(`/api/proposals/${id}/decide`, { rev: 1, ...body });
+  assert.equal((await dec({ value: 'reject', notes: 'too different' })).status, 200);
+  const aw = await authorWait;
+  assert.equal(aw.code, 0, aw.out);
+  assert.match(aw.stdout, new RegExp(`^MET proposal ${id} decided: \\{"id":"${id}","rev":1,"value":"rejected"`));
+  const rejectAt = JSON.parse(aw.stdout.match(/: (\{.*\}) \(after/)[1]).at;
+  assert.match(aw.stdout, new RegExp(`^Re-arm \\(wakes on an undo or a changed decision\\): node tools/console\\.mjs proposal wait ${id} --until changed --since ${rejectAt.replace(/\./g, '\\.')}$`, 'm'));
+  const lw = await leadWait;
+  assert.equal(lw.code, 0, lw.out);
+  assert.match(lw.stdout, new RegExp(`^PROPOSAL ${id} decided rejected by user at \\S+: too different$`, 'm'));
+  assert.match(lw.stdout, /^MET threads all for lead: 1 proposal decision event\(s\) in PR-\d+ \(after [\d.]+ s\); marked read for lead\. Re-arm: node tools\/console\.mjs thread wait --as lead$/m);
+  // the author re-arms on the hint; the user undoes and requests a change
+  const rearmed = cliAsync('wait', id, '--until', 'decided', '--since', rejectAt, '--timeout', '20', '--quiet', '--json');
+  await new Promise((r) => setTimeout(r, 700));
+  assert.equal((await postJson(`/api/proposals/${id}/undo`, { rev: 1 })).status, 200);
+  const changedWait = cli('wait', id, '--until', 'changed', '--since', rejectAt, '--timeout', '5', '--quiet');
+  assert.equal(changedWait.code, 0, changedWait.out);
+  assert.match(changedWait.stdout, new RegExp(`^PROPOSAL ${id} undecided \\(was rejected\\) by user at `, 'm'));
+  await new Promise((r) => setTimeout(r, 700));
+  assert.equal((await dec({ value: 'change', notes: 'keep the glow moving' })).status, 200);
+  const rw = await rearmed;
+  assert.equal(rw.code, 0, rw.out);
+  const rd = JSON.parse(rw.stdout);
+  assert.deepEqual([rd.id, rd.value, rd.was, rd.notes], [id, 'changes-requested', 'rejected', 'keep the glow moving']);
+  assert.match(rw.stderr, new RegExp(`Re-arm .*proposal wait ${id} --until changed --since `));
+  // one --any window over all proposals (no --by) since before the reject: all three events, in order
+  const any = cli('wait', '--any', '--since', t0, '--timeout', '5', '--json', '--quiet');
+  assert.equal(any.code, 0, any.out);
+  const ev = JSON.parse(any.stdout).events.filter((e) => e.id === id);
+  assert.deepEqual(ev.map((e) => [e.event, e.value, e.was]), [['decided', 'rejected', null], ['undecided', 'proposed', 'rejected'], ['decided', 'changes-requested', 'rejected']]);
+  const anyText = cli('wait', '--any', '--since', t0, '--timeout', '5', '--quiet');
+  assert.match(anyText.stdout, /^MET a decision on any proposal after /);
+  assert.match(anyText.stdout, new RegExp(`^PROPOSAL ${id} decided changes-requested \\(was rejected\\) by user at \\S+: keep the glow moving$`, 'm'));
+  assert.match(anyText.stdout, new RegExp(`^Re-arm: node tools/console\\.mjs proposal wait --any --since ${ev[2].at.replace(/\./g, '\\.')}$`, 'm'));
+  // the lead's thread wait, armed again: the undo and the change (made while no wait ran), once, then nothing
+  const lw2 = node(CON, ['thread', 'wait', '--as', 'lead', '--timeout', '5', '--quiet'], { env });
+  assert.equal(lw2.code, 0, lw2.out);
+  assert.match(lw2.stdout, new RegExp(`^PROPOSAL ${id} undecided \\(was rejected\\) by user at \\S+: back to proposed, waiting for the user$`, 'm'));
+  assert.match(lw2.stdout, new RegExp(`^PROPOSAL ${id} decided changes-requested \\(was rejected\\) by user at \\S+: keep the glow moving$`, 'm'));
+  assert.ok(!/decided rejected/.test(lw2.stdout), 'the reject was reported by the first wait');
+  assert.match(lw2.stdout, /2 proposal decision event\(s\)/);
+  const lw3 = node(CON, ['thread', 'wait', '--as', 'lead', '--timeout', '1', '--quiet'], { env });
+  assert.equal(lw3.code, 3, `each event once per reader: ${lw3.out}`);
+  // the author's own standing thread wait sees its proposals' events; JSON items carry kind: proposal
+  const own = node(CON, ['thread', 'wait', '--as', 'de-seq', '--timeout', '0', '--quiet'], { env });
+  assert.equal(own.code, 3, own.out);
+  assert.equal((await postJson(`/api/proposals/${id}/undo`, { rev: 1 })).status, 200);
+  const ownJ = node(CON, ['thread', 'wait', '--as', 'de-seq', '--timeout', '5', '--quiet', '--json'], { env });
+  assert.equal(ownJ.code, 0, ownJ.out);
+  assert.deepEqual(JSON.parse(ownJ.stdout).map((x) => [x.kind, x.id, x.event, x.was]), [['proposal', id, 'undecided', 'changes-requested']]);
+  assert.match(cli('wait', id, '--until', 'sometime').stderr, /--until must be decided or changed/);
 });

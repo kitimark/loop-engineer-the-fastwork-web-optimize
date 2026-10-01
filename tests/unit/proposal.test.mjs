@@ -224,11 +224,13 @@ test('withdraw, and the waits: decided (MET with the decision, NEVER when withdr
   const { proposal: p } = await P.postProposal({ by: 'de-w', raw: sample(), baseDir: dir });
   const w = P.waitCondition(p.id);
   assert.equal(w.check().met, false);
-  assert.throws(() => P.waitCondition(p.id, { until: 'started' }), /--until must be decided/);
+  assert.throws(() => P.waitCondition(p.id, { until: 'started' }), /--until must be decided or changed/);
   const since = new Date(Date.now() - 1).toISOString();
   const any = P.waitAnyCondition({ by: 'de-w', since });
   assert.equal(any.check().met, false);
-  assert.throws(() => P.waitAnyCondition({}), /--any needs --by/);
+  // I-045: --any without --by is the lead's wait over ALL proposals (it used to refuse)
+  assert.match(P.waitAnyCondition({}).what, /^a decision on any proposal after /);
+  assert.throws(() => P.waitAnyCondition({ since: 'yesterday' }), /--since must be an ISO time/);
   await P.decide(p.id, { value: 'reject', notes: 'too different' });
   const r = w.check();
   assert.equal(r.met, true);
@@ -243,6 +245,124 @@ test('withdraw, and the waits: decided (MET with the decision, NEVER when withdr
   assert.match(wq.check().never, /withdrawn/);
   assert.ok(!P.listProposals().some((x) => x.id === q.id), 'withdrawn ones are hidden by default');
   assert.ok(P.listProposals({ all: true }).some((x) => x.id === q.id));
+});
+
+// I-045 (2026-10-01 21:02-21:04Z): the user rejected PR-001, undid it, then requested a change. The author's
+// `wait --until decided` had exited on "rejected" and nothing else watched, so the change notified nobody.
+const past = () => new Date(Date.now() - 1).toISOString();
+// the user clicks seconds apart; --since is strict (>), so keep each event in its own millisecond here
+const tick = () => new Promise((r) => setTimeout(r, 3));
+const evKey = (e) => [e.id, e.event, e.value, e.was];
+
+test('I-045 decision events: reject -> undo -> change inside one --any window (all proposals, no --by) gives all three', async () => {
+  const t0 = past();
+  const anyAll = P.waitAnyCondition({ since: t0 });
+  const anyMine = P.waitAnyCondition({ by: 'de-seq', since: t0 });
+  const anyOther = P.waitAnyCondition({ by: 'de-someone-else', since: t0 });
+  const { proposal: p } = await P.postProposal({ by: 'de-seq', raw: sample(), baseDir: dir });
+  const changed = P.waitCondition(p.id, { until: 'changed', since: t0 });
+  assert.equal(anyAll.check().met, false, 'posting is not a decision');
+  assert.equal(changed.check().met, false);
+  await P.decide(p.id, { value: 'reject', notes: 'too different' });
+  const rejectAt = P.get(p.id).decision.at;
+  await tick();
+  await P.undoDecision(p.id, { rev: 1 });
+  await P.decide(p.id, { value: 'change', notes: 'keep the glow moving' });
+  const a = anyAll.check();
+  assert.equal(a.met, true);
+  const d = JSON.parse(a.detail);
+  const mine = d.events.filter((e) => e.id === p.id);
+  assert.deepEqual(mine.map(evKey), [
+    [p.id, 'decided', 'rejected', null],
+    [p.id, 'undecided', 'proposed', 'rejected'],
+    [p.id, 'decided', 'changes-requested', 'rejected'],
+  ]);
+  assert.deepEqual(mine.map((e) => [e.who, e.rev, e.by, e.title]), Array(3).fill(['user', 1, 'de-seq', p.title]));
+  assert.equal(mine[0].notes, 'too different');
+  assert.equal(mine[2].notes, 'keep the glow moving');
+  assert.ok(mine.every((e, i) => i === 0 || e.at >= mine[i - 1].at), 'events in time order');
+  assert.deepEqual(d.decisions.filter((x) => x.id === p.id).map((x) => x.value), ['changes-requested'], 'decisions: the standing ones');
+  assert.deepEqual(JSON.parse(anyMine.check().detail).events.map(evKey), mine.map(evKey), '--by: the author\'s proposals');
+  assert.equal(anyOther.check().met, false, '--by: not another author\'s');
+  assert.equal(anyAll.rearm(d), `node tools/console.mjs proposal wait --any --since ${mine[2].at}`);
+  assert.equal(anyMine.rearm(d), `node tools/console.mjs proposal wait --any --by de-seq --since ${mine[2].at}`);
+  // the same sequence for one proposal: --until changed reports every event; re-armed after the last, nothing
+  const c = JSON.parse(changed.check().detail);
+  assert.deepEqual(c.events.map(evKey), mine.map(evKey));
+  assert.deepEqual([c.id, c.state, c.decision.value, c.decision.was], [p.id, 'changes-requested', 'changes-requested', 'rejected']);
+  assert.equal(changed.rearm(c), `node tools/console.mjs proposal wait ${p.id} --until changed --since ${mine[2].at}`);
+  assert.equal(P.waitCondition(p.id, { until: 'changed', since: mine[2].at }).check().met, false);
+  assert.equal(P.waitCondition(p.id, { until: 'changed' }).check().met, false, 'changed: default since = now');
+  // re-armed after the first decision (the author acted on "rejected"): the undo and the change are both seen
+  const after1 = JSON.parse(P.waitCondition(p.id, { until: 'changed', since: rejectAt }).check().detail);
+  assert.deepEqual(after1.events.map((e) => e.event), ['undecided', 'decided']);
+});
+
+test('I-045 --until decided --since: an undo alone does not wake it, the changed decision does; plain decided is unchanged', async () => {
+  const { proposal: p } = await P.postProposal({ by: 'de-seq2', raw: sample(), baseDir: dir });
+  await P.decide(p.id, { value: 'reject' });
+  const rejectAt = P.get(p.id).decision.at;
+  await tick();
+  const plain = P.waitCondition(p.id);
+  const pd = JSON.parse(plain.check().detail);
+  assert.deepEqual([pd.value, pd.was], ['rejected', null], 'without --since: met at once on the standing decision (as before)');
+  assert.equal(plain.rearm(pd), `node tools/console.mjs proposal wait ${p.id} --until changed --since ${rejectAt}`);
+  const again = P.waitCondition(p.id, { until: 'decided', since: rejectAt });
+  assert.equal(again.check().met, false, 'the decision it already saw does not count');
+  await P.undoDecision(p.id, { rev: 1 });
+  const u = again.check();
+  assert.equal(u.met, false, 'undone: waiting for the user again');
+  assert.match(u.state, /^proposed, rev 1/);
+  const ch = P.waitCondition(p.id, { until: 'changed', since: rejectAt }).check();
+  assert.deepEqual(JSON.parse(ch.detail).events.map(evKey), [[p.id, 'undecided', 'proposed', 'rejected']], '--until changed wakes on the undo');
+  await P.decide(p.id, { value: 'change', notes: 'brighter' });
+  const m = again.check();
+  assert.equal(m.met, true);
+  const md = JSON.parse(m.detail);
+  assert.deepEqual([md.id, md.value, md.was, md.notes], [p.id, 'changes-requested', 'rejected', 'brighter']);
+  assert.deepEqual(md.events.map((e) => e.event), ['undecided', 'decided']);
+  assert.throws(() => P.waitCondition(p.id, { since: 'soon' }), /--since must be an ISO time/);
+  const { proposal: q } = await P.postProposal({ by: 'de-seq2', raw: sample(), baseDir: dir });
+  const wq = P.waitCondition(q.id, { until: 'changed' });
+  await P.withdrawProposal(q.id, { by: 'de-seq2' });
+  assert.match(wq.check().never, /withdrawn/);
+});
+
+test('I-045 read marks: proposalNews reports each decision event once per reader; the lead sees all, an agent its own', async () => {
+  assert.deepEqual(P.proposalNews('lead', { all: true }), [], 'no mark yet: nothing (a first wait never dumps the past)');
+  await P.initProposalMark('lead');
+  await P.initProposalMark('de-mark');
+  const mark = P.proposalMark('lead');
+  await P.initProposalMark('lead', '2000-01-01T00:00:00.000Z');
+  assert.deepEqual(P.proposalMark('lead'), mark, 'init keeps an existing mark');
+  assert.deepEqual(P.proposalNews('lead', { all: true }), [], 'older decisions are not news');
+  const { proposal: p } = await P.postProposal({ by: 'de-mark', raw: sample(), baseDir: dir });
+  const { proposal: q } = await P.postProposal({ by: 'de-other', raw: sample(), baseDir: dir });
+  await P.decide(p.id, { value: 'reject', notes: 'no' });
+  await P.undoDecision(p.id, { rev: 1 });
+  await P.decide(p.id, { value: 'change', notes: 'line one\nline two' });
+  await P.decide(q.id, { value: 'accept' });
+  const lead = P.proposalNews('lead', { all: true });
+  assert.deepEqual(lead.map(evKey), [
+    [p.id, 'decided', 'rejected', null], [p.id, 'undecided', 'proposed', 'rejected'],
+    [p.id, 'decided', 'changes-requested', 'rejected'], [q.id, 'decided', 'accepted', null],
+  ]);
+  assert.deepEqual(P.proposalNews('de-mark').map(evKey), lead.slice(0, 3).map(evKey), 'an agent: its own proposals only');
+  await P.commitProposalNews('lead', lead.slice(0, 2));
+  assert.deepEqual(P.proposalNews('lead', { all: true }).map(evKey), lead.slice(2).map(evKey), 'committed events are not news again');
+  await P.commitProposalNews('lead', P.proposalNews('lead', { all: true }));
+  assert.deepEqual(P.proposalNews('lead', { all: true }), []);
+  assert.equal(P.proposalNews('de-mark').length, 3, 'each reader has its own mark');
+  await P.undoDecision(q.id, { rev: 1 });
+  assert.deepEqual(P.proposalNews('lead', { all: true }).map(evKey), [[q.id, 'undecided', 'proposed', 'accepted']]);
+  // the text the lead's thread wait prints
+  const [r, , c] = lead;
+  assert.equal(P.proposalNewsText(r).split('\n')[0], `PROPOSAL ${p.id} decided rejected by user at ${r.at}: no`);
+  assert.equal(P.proposalNewsText(lead[1]).split('\n')[0], `PROPOSAL ${p.id} undecided (was rejected) by user at ${lead[1].at}: back to proposed, waiting for the user`);
+  const ct = P.proposalNewsText(c).split('\n');
+  assert.equal(ct[0], `PROPOSAL ${p.id} decided changes-requested (was rejected) by user at ${c.at}: line one`);
+  assert.equal(ct[1], '  line two');
+  assert.match(ct.at(-1), new RegExp(`^ {2}"${p.title}" rev 1 by de-mark; show: node tools/console\\.mjs proposal show ${p.id}$`));
 });
 
 test('publicView and mediaFile: /media URLs, no history; strict names, no traversal', async () => {

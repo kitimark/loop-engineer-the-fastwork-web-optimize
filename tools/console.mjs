@@ -60,6 +60,10 @@
 //        # background: exit 0 printing NEW <thread> #<n> by user … for EVERY unread user message in the threads you
 //        # follow (the lead: all; others: the ones assigned to them), then marks them read for you only; 3 TIMEOUT;
 //        # 4 NEVER (--thread closed). Re-arm it after each wake. An assignment wakes the assignee on the backlog.
+//        # Without --thread it also wakes on proposal decision events (I-045): a decision, an undo, a changed decision,
+//        # on every proposal for the lead and on its own for an agent, each printed once as `PROPOSAL PR-001 decided
+//        # changes-requested (was rejected) by user at …: <notes>` (--json: items with kind: "proposal"). Its read mark
+//        # starts when it is first armed (<console>/proposal-reads.json): older decisions are not news.
 //   node tools/console.mjs thread list [--unread --as <agent>] [--all] [--json]   # open threads (--all: closed too)
 //   node tools/console.mjs thread show <id> [--as <agent>] [--json]               # --as: marks it read for <agent>
 //   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask]
@@ -170,19 +174,38 @@ async function thread() {
     const w = TH.threadWaitCondition({ as: as(), thread: opt('thread') });
     const timeoutSec = opt('timeout') !== undefined ? parseSec(opt('timeout')) : 3600;
     if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${opt('timeout')}`);
+    // I-045: without --thread the wait also wakes on proposal decision events (a decision, an undo, a changed decision):
+    // the lead on every proposal, an agent on its own; each event once per reader (read marks, proposal.mjs).
+    const withProposals = opt('thread') === undefined;
+    const PR = await import('./lib/proposal.mjs');
+    if (withProposals) await PR.initProposalMark(w.reader);
+    const proposalNews = () => (withProposals ? PR.proposalNews(w.reader, { all: w.reader === TH.LEAD }) : []);
+    const check = () => {
+      const t = w.check();
+      const ev = proposalNews();
+      if (!ev.length) return t;
+      const news = t.met ? JSON.parse(t.detail) : [];
+      return { met: true, state: `${news.length} thread(s), ${ev.length} proposal decision event(s)`, detail: JSON.stringify({ news, ev }) };
+    };
+    const split = (c) => (c.met ? (c.detail.startsWith('[') ? { news: JSON.parse(c.detail), ev: [] } : JSON.parse(c.detail)) : null);
     const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
-    const r = await pollUntil(w.check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
+    const r = await pollUntil(check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
     if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
     if (r.result !== 'met') { console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`); return EXIT.timeout; }
     // a burst (the user sends two or three lines in a row): settle a moment, then print everything unread at once
     await new Promise((res) => setTimeout(res, 1000));
-    const again = w.check();
-    const news = JSON.parse(again.met ? again.detail : r.detail);
+    const again = check();
+    const { news, ev } = split(again.met ? again : r);
     await TH.commitWait(w.reader, news);
-    if (flag('json')) console.log(JSON.stringify(news, null, 1));
+    await PR.commitProposalNews(w.reader, ev);
+    if (flag('json')) console.log(JSON.stringify([...news, ...ev.map((e) => ({ kind: 'proposal', ...e }))], null, 1));
     else {
       for (const t of news) console.log(TH.newsText(t, w.reader));
-      console.log(`MET ${w.what}: ${news.reduce((n, t) => n + t.messages.length, 0)} new message(s) in ${news.map((t) => t.id).join(', ')} (after ${r.waitedSec} s); marked read for ${w.reader}. Re-arm: node tools/console.mjs thread wait --as ${w.reader}`);
+      for (const e of ev) console.log(PR.proposalNewsText(e));
+      const parts = [];
+      if (news.length) parts.push(`${news.reduce((n, t) => n + t.messages.length, 0)} new message(s) in ${news.map((t) => t.id).join(', ')}`);
+      if (ev.length) parts.push(`${ev.length} proposal decision event(s) in ${[...new Set(ev.map((e) => e.id))].join(', ')}`);
+      console.log(`MET ${w.what}: ${parts.join('; ')} (after ${r.waitedSec} s); marked read for ${w.reader}. Re-arm: node tools/console.mjs thread wait --as ${w.reader}`);
     }
     return EXIT.met;
   }

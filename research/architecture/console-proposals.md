@@ -117,13 +117,32 @@ node tools/console.mjs proposal revise <id> --by <agent> --note "<what changed>"
 node tools/console.mjs proposal publish <id> --by <agent>          # draft -> proposed
 node tools/console.mjs proposal withdraw <id> --by <agent> [--note "..."]   # no longer offered (wait: NEVER)
 node tools/console.mjs proposal decide <id> --by lead --value accept|reject|change [--notes "..."]  # the user answered in chat
-node tools/console.mjs proposal wait <id> [--until decided] [--timeout 3600] [--json] [--quiet]
-     # exit 0 MET, prints {id, rev, value, notes, at, title}; 3 TIMEOUT; 4 NEVER (withdrawn); 1 usage
-node tools/console.mjs proposal wait --any --by <agent> [--since <ISO>] [--timeout 3600] [--json] [--quiet]
-     # one background wait for all of an author's proposals: MET on the first decision made after --since
-     # (default: when the wait starts), prints {decisions: [{id, rev, value, notes, at, title}]}; pass the last `at`
-     # as --since next time
+node tools/console.mjs proposal wait <id> [--until decided|changed] [--since <ISO>] [--timeout 3600] [--json] [--quiet]
+     # exit 0 MET, prints {id, rev, value, notes, at, title, was}; 3 TIMEOUT; 4 NEVER (withdrawn); 1 usage
+     # decided: met while it stands decided (at once if it already is); --since T: a decision after T that still
+     # stands (an undo alone does not wake it, the re-decision does). changed (--since default now): any decision
+     # event after T, i.e. a decision, an undo, a changed decision; prints {id, state, decision, events}.
+     # Every MET prints "Re-arm (wakes on an undo or a changed decision): … --until changed --since <last event>"
+node tools/console.mjs proposal wait --any [--by <agent>] [--since <ISO>] [--timeout 3600] [--json] [--quiet]
+     # one background wait for all of an author's proposals, or for ALL proposals without --by (the lead): MET on
+     # any decision event after --since (default: when the wait starts), prints {decisions: [standing decisions
+     # {id, rev, value, notes, at, title, was}], events: [...]}, one PROPOSAL line per event and
+     # "Re-arm: … --since <the last event's at>"
 ```
+
+**Decision events (I-045).** The user decided PR-001 "rejected" (21:02:13Z), undid it (21:02:45Z) and requested a
+change (21:04:04Z); the author's `wait --until decided` had exited on "rejected" and no wait covered all proposals,
+so the change notified nobody. The waits now read the history, not only the standing state: every `decided` and
+`undecided` entry is an event `{id, n, event: decided|undecided, value, was, rev, notes, who, at, title, by}`
+(`was`: the decision undone; on a `decided` right after an undo, the decision it replaced). `--since` is strict
+(`at > since`), so re-arming with the printed hint never repeats an event.
+
+The lead's one standing wait covers proposals too: `node tools/console.mjs thread wait --as lead` (without
+`--thread`) also wakes on every decision event on every proposal, and an agent's `thread wait --as <agent>` on its
+own proposals, printing `PROPOSAL PR-001 decided changes-requested (was rejected) by user at …: <notes>` (`--json`:
+items with `kind: "proposal"` after the thread items). Each event is reported once per reader: a read mark per
+reader in `<console>/proposal-reads.json` (`{since, seen: {PR-001: <history entries reported>}}`) starts when that
+reader's wait is first armed, so older decisions are not news, and moves past what a MET printed.
 
 `--shot-a`/`--shot-b`/`--caption` repeat and pair by order (also comma lists). Agents arm `wait` in the
 background (Bash `run_in_background`), as with `console.mjs wait`.
@@ -140,7 +159,9 @@ draft | proposed | changes-requested --withdraw--> withdrawn
 - A decision applies to the revision the user saw: the page sends `rev`, and a decision on an older revision is
   refused (409, "it was revised; reload"). `accepted` and `rejected` are final; a new idea is a new proposal.
 - The user can change their mind on the page until the agent acts: "Change my decision" on a decided proposal
-  sets it back to `proposed` (history keeps both). `wait --until decided` returns at the first decision.
+  sets it back to `proposed` (history keeps both). `wait --until decided` returns at the first decision; an
+  undo or a changed decision after it wakes `wait --until changed --since <that decision>`, `wait --any` and the
+  lead's `thread wait --as lead` (I-045).
 - **Request change**: the notes are stored on the proposal (`decision.notes`). If the proposal names a `thread`,
   the page links it (`/threads#T-004`); creating a thread from the page waits for ts-console-threads to land.
 
@@ -184,5 +205,6 @@ urgent the way a gated finger test is.
 
 "Design engineers post a PoC to the user as a proposal: `node tools/console.mjs proposal post --by <you> --file
 out/proposal-<slug>.json` with screenshot pairs at matching scroll positions (localhost pages in Chrome, 430x932)
-and an honest `visualDiff`; arm `proposal wait <id> --until decided` in the background; on
+and an honest `visualDiff`; arm `proposal wait <id> --until decided` in the background (after it, re-arm the
+printed `--until changed --since …` line so an undo or a changed decision reaches you); on
 `changes-requested` revise with `proposal revise <id> --note …`; never land a PoC the user has not accepted."

@@ -484,39 +484,160 @@ export async function undoDecision(id, { rev, who = 'user' } = {}) {
 }
 
 // ---- waits -------------------------------------------------------------------------------------------
+// I-045 (2026-10-01): the user rejected PR-001, undid it ("Change my decision") and requested a change; the author's
+// `wait --until decided` had exited on "rejected" and nothing watched all proposals, so the change notified nobody.
+// The waits below read the decision EVENTS in the history (decided, undecided), not only the standing state:
+// `wait --any` (all proposals without --by), `wait <id> --until changed|decided --since`, and the read marks that let
+// the lead's `thread wait --as lead` report each event once (proposalNews / commitProposalNews).
 
-const decisionDetail = (p) => ({ id: p.id, rev: p.decision.rev, value: p.decision.value, notes: p.decision.notes ?? null, at: p.decision.at, title: p.title });
+/** "Re-arm" hints print the command as an agent types it. */
+const CMD = 'node tools/console.mjs proposal wait';
 
-/** `proposal wait <id> --until decided`: met on accepted / rejected / changes-requested; never when withdrawn. */
-export function waitCondition(id, { until = 'decided' } = {}) {
-  if (until !== 'decided') throw new Error(`--until must be decided (got ${until})`);
+function sinceIso(since) {
+  if (since === undefined || since === null || Number.isNaN(Date.parse(since))) throw new Error(`--since must be an ISO time (got ${since})`);
+  return new Date(since).toISOString();
+}
+
+const byAt = (a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0);
+
+/**
+ * Every decision event in a proposal's history, oldest first: {id, n (history index), event: decided|undecided, value
+ * (the new state), was (the decision it replaced: for undecided the one undone, for decided the one undone just
+ * before it on the same revision, else null), rev, notes, who, at, title, by (the author)}.
+ */
+export function decisionEvents(p) {
+  const out = [];
+  let undone = null;
+  (p.history || []).forEach((h, n) => {
+    const base = { id: p.id, n, rev: h.rev ?? null, who: h.who, at: h.at, title: p.title, by: p.by };
+    if (h.action === 'decided') { out.push({ ...base, event: 'decided', value: h.value, was: undone, notes: h.note ?? null }); undone = null; }
+    else if (h.action === 'undecided') { out.push({ ...base, event: 'undecided', value: 'proposed', was: h.was ?? null, notes: null }); undone = h.was ?? null; }
+    else if (h.action === 'revised' || h.action === 'withdrawn') undone = null;
+  });
+  return out;
+}
+
+/** The decision events of `items` after `t0` (strictly), in time order. */
+export const eventsSince = (items, t0) => items.flatMap(decisionEvents).filter((e) => e.at > t0).sort(byAt);
+
+const decisionDetail = (p) => {
+  const last = decisionEvents(p).filter((e) => e.event === 'decided').at(-1);
+  return { id: p.id, rev: p.decision.rev, value: p.decision.value, notes: p.decision.notes ?? null, at: p.decision.at, title: p.title, was: last?.was ?? null };
+};
+
+/**
+ * `proposal wait <id> [--until decided|changed] [--since ISO]`.
+ *   decided            met while it stands decided (accepted / rejected / changes-requested): at once if it already is
+ *   decided --since T  met on a decision made after T that still stands (an undo alone does not wake it; the
+ *                      re-decision does); detail adds the events after T
+ *   changed [--since T, default now]  met on any decision event after T: a decision, an undo, a changed decision
+ * NEVER when withdrawn (for changed: only if nothing changed first). rearm(detail): the command that waits for the next
+ * change (`--until changed --since <the last event>`).
+ */
+export function waitCondition(id, { until = 'decided', since } = {}) {
+  if (until !== 'decided' && until !== 'changed') throw new Error(`--until must be decided or changed (got ${until})`);
   const pid = parseProposalId(id);
+  const t0 = since !== undefined ? sinceIso(since) : until === 'changed' ? iso() : undefined;
   get(pid);
+  const what = until === 'changed' ? `proposal ${pid} decision changed after ${t0}` : `proposal ${pid} decided${t0 ? ` after ${t0}` : ''}`;
+  const rearm = (d) => `${CMD} ${pid} --until changed --since ${d.events?.at(-1)?.at || d.at || d.decision?.at || t0 || iso()}`;
+  const check = () => {
+    const p = get(pid);
+    if (until === 'changed') {
+      const events = eventsSince([p], t0);
+      if (events.length) return { met: true, state: `${p.state}, rev ${p.rev}`, detail: JSON.stringify({ id: p.id, title: p.title, state: p.state, rev: p.rev, decision: p.decision ? decisionDetail(p) : null, events }) };
+    } else if (DECIDED.has(p.state) && p.decision && (!t0 || p.decision.at > t0)) {
+      return { met: true, state: p.state, detail: JSON.stringify({ ...decisionDetail(p), ...(t0 && { events: eventsSince([p], t0) }) }) };
+    }
+    if (p.state === 'withdrawn') return { met: false, state: p.state, never: 'it was withdrawn' };
+    return { met: false, state: `${p.state}, rev ${p.rev}${t0 && DECIDED.has(p.state) ? ` (decided at ${p.decision?.at}, not after ${t0})` : ''}` };
+  };
+  return { what, check, rearm };
+}
+
+/**
+ * `proposal wait --any [--by <agent>] [--since ISO]`: met on any decision event (a decision, an undo, a changed
+ * decision) after `since` on the agent's proposals, or on ALL proposals without --by (the lead). detail:
+ * {decisions: the standing decisions made after since, [{id, rev, value, notes, at, title, was}], events: [every
+ * decision event after since, oldest first]}. rearm(detail): the same wait from the last event on.
+ */
+export function waitAnyCondition({ by, since } = {}) {
+  const t0 = sinceIso(since ?? iso());
   return {
-    what: `proposal ${pid} decided`,
+    what: by ? `a decision on a proposal by ${by} after ${t0}` : `a decision on any proposal after ${t0}`,
+    rearm: (d) => `${CMD} --any${by ? ` --by ${by}` : ''} --since ${d.events?.at(-1)?.at || t0}`,
     check: () => {
-      const p = get(pid);
-      if (DECIDED.has(p.state) && p.decision) return { met: true, state: p.state, detail: JSON.stringify(decisionDetail(p)) };
-      if (p.state === 'withdrawn') return { met: false, state: p.state, never: 'it was withdrawn' };
-      return { met: false, state: `${p.state}, rev ${p.rev}` };
+      const items = listProposals({ all: true, by });
+      const events = eventsSince(items, t0);
+      if (events.length) {
+        const decisions = items.filter((p) => p.decision && DECIDED.has(p.state) && p.decision.at > t0).map(decisionDetail).sort(byAt);
+        return { met: true, state: `${events.length} decision event(s)`, detail: JSON.stringify({ decisions, events }) };
+      }
+      return { met: false, state: `${items.filter((p) => p.state === 'proposed').length} of ${items.length} waiting` };
     },
   };
 }
 
-/** `proposal wait --any --by <agent> [--since ISO]`: the first decision on any of the agent's proposals after `since`. */
-export function waitAnyCondition({ by, since = iso() } = {}) {
-  if (!by) throw new Error('--any needs --by <agent> (whose proposals to watch)');
-  if (Number.isNaN(Date.parse(since))) throw new Error(`--since must be an ISO time (got ${since})`);
-  const t0 = new Date(since).toISOString();
-  return {
-    what: `a decision on a proposal by ${by} after ${t0}`,
-    check: () => {
-      const mine = listProposals({ all: true, by });
-      const hits = mine.filter((p) => p.decision && DECIDED.has(p.state) && p.decision.at > t0).map(decisionDetail).sort((a, b) => (a.at < b.at ? -1 : 1));
-      if (hits.length) return { met: true, state: `${hits.length} decided`, detail: JSON.stringify({ decisions: hits }) };
-      return { met: false, state: `${mine.filter((p) => p.state === 'proposed').length} of ${mine.length} waiting` };
-    },
-  };
+// ---- read marks: the lead's `thread wait` reports each decision event once (I-045) ---------------------
+// <console>/proposal-reads.json: {<reader>: {since: ISO, seen: {PR-001: <history entries reported>}}}. A reader's
+// mark starts when its first wait is armed (initProposalMark): earlier decisions are not news. Per proposal, events
+// at history index >= seen[id] are news; a proposal not yet in `seen`: events after `since`.
+const marksFile = () => join(consoleDir(), 'proposal-reads.json');
+const readerName = (r) => { if (!r || !String(r).trim()) throw new Error('--as <agent> is required'); return String(r).slice(0, 80); };
+
+export function proposalMark(reader) { return (readJson(marksFile()) || {})[readerName(reader)] || null; }
+
+/** Start `reader`'s mark at `at` (default now) unless it has one; returns the mark. */
+export async function initProposalMark(reader, at = iso()) {
+  const r = readerName(reader);
+  return withGuard(GUARD, () => {
+    const all = readJson(marksFile()) || {};
+    if (!all[r]) {
+      all[r] = { since: sinceIso(at), seen: {} };
+      mkdirSync(consoleDir(), { recursive: true });
+      writeJson(marksFile(), all);
+    }
+    return all[r];
+  });
+}
+
+/** Decision events not yet reported to `reader` ({all: true}: every proposal, the lead; else the reader's own). */
+export function proposalNews(reader, { all = false } = {}) {
+  const r = readerName(reader);
+  const mark = proposalMark(r);
+  if (!mark) return [];
+  const items = listProposals({ all: true, ...(!all && { by: r }) });
+  return items.flatMap((p) => {
+    const seen = mark.seen?.[p.id];
+    return decisionEvents(p).filter((e) => (seen !== undefined ? e.n >= seen : e.at > mark.since));
+  }).sort(byAt);
+}
+
+/** After a MET wait: mark `events` as reported to `reader` (later events stay news). */
+export async function commitProposalNews(reader, events) {
+  const r = readerName(reader);
+  if (!events.length) return proposalMark(r);
+  return withGuard(GUARD, () => {
+    const all = readJson(marksFile()) || {};
+    const m = (all[r] ||= { since: iso(), seen: {} });
+    m.seen ||= {};
+    for (const e of events) m.seen[e.id] = Math.max(m.seen[e.id] || 0, e.n + 1);
+    mkdirSync(consoleDir(), { recursive: true });
+    writeJson(marksFile(), all);
+    return m;
+  });
+}
+
+/** Control characters (but newlines) as spaces: one event's text cannot forge another output line. */
+const flat = (s) => String(s ?? '').replace(/[\u0000-\u0009\u000b-\u001f\u007f\u2028\u2029]/g, ' ');
+
+/** The lines `thread wait` prints for one decision event. */
+export function proposalNewsText(e) {
+  const head = `PROPOSAL ${e.id} ${e.event === 'decided' ? `decided ${e.value}${e.was ? ` (was ${e.was})` : ''}` : `undecided (was ${e.was})`} by ${flat(e.who)} at ${e.at}`;
+  const notes = e.event === 'decided' ? (e.notes ? flat(e.notes).split('\n') : []) : ['back to proposed, waiting for the user'];
+  const L = [notes.length ? `${head}: ${notes[0]}` : head, ...notes.slice(1).map((l) => `  ${l}`)];
+  L.push(`  "${flat(e.title).replace(/\n/g, ' ')}" rev ${e.rev} by ${flat(e.by)}; show: node tools/console.mjs proposal show ${e.id}`);
+  return L.join('\n');
 }
 
 // ---- views -------------------------------------------------------------------------------------------
