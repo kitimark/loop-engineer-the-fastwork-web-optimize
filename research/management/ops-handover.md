@@ -94,6 +94,8 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   group runs (I-049 workaround): if it is still queued when the exclusive holder releases, tell the lead.
   22:5xZ-23:0xZ: lead's npm test on main 969/969 (22:54Z): I-042 and I-045 RESOLVED. 6ac64ae (cal-headless60, T-008 headless
   Chrome at 60 Hz) landed. de-illusion-style requeues often (short shared jobs): each time, tell the lead.
+  Lock settings (lead): the shared lane stays at cap 4 (ts-lock-share batch 2); timing stays exclusive, cap 1 (from
+  cal-headless60's parallel A/A). The headless-60 Hz mode proposal is parked until the user wants timing work back.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
