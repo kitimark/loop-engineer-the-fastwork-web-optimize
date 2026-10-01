@@ -35,7 +35,7 @@ How old lock code treats this record (every path checked against main's `lib/loc
 | old-code path | sees | result |
 |---|---|---|
 | `staleReason` | lease, `expiresAt` in the future | live: it waits (never grants beside readers) |
-| same-owner re-entry `h.owner === owner && kind lease` | owner `(shared)` | new code refuses owners that start with `(`; no agent uses this name |
+| same-owner re-entry `h.owner === owner && kind lease` | owner `(shared)` | no agent uses this name; new code never re-enters a group by name (it checks `shared: true`), so the `(` refusal was dropped (review N1) |
 | FW_LOCK_HELD re-entry | group token | never exported (readers export their own token in another variable, §5) |
 | `release` without `--force` | owner mismatch | throws |
 | `renew` | `short: true` | refuses |
@@ -99,10 +99,10 @@ dead pid is pruned at the next acquire.
 
 ## 2. Capacity: weight cap plus a load check on joining
 
-- `SHARED_CAP = 4` weight units (8 cores, 16 GB). `--weight N` (1..4, default 1) is declared by the caller.
+- `SHARED_CAP = 4` weight units at most (8 cores, 16 GB); *as built after review:* the default cap is **3** (`SHARED_LANE.defaultCap`, lead decision 2026-10-02: three Chrome agents in parallel), the switch's `--cap` sets 1..4. `--weight N` (1..4, default 1) is declared by the caller.
   Proposed: headless check, DOM probe, functional test:chrome file, `bench mech` = 1; `npm test` = 2
   (`--test-concurrency=3`, ~60 CPU-s, bursts to 3 cores); Simulator session = 3.
-- A join (not the opener) also needs `load1 ≤ SHARED_JOIN_LOAD` (default = cpu count). This is a cheap synchronous
+- A join (not the opener) also needs `load1 ≤ SHARED_JOIN_LOAD` (*as built after review:* default **2x the cpu count**, 16 here, the switch's `--join-load L` overrides it; lead decision: while timing is deferred the load gate matters only for timing jobs, which stay exclusive). This is a cheap synchronous
   read, so it adds no sampling window inside the guard. load1 lags, so the weight cap is the hard bound.
 - `SHARED_MAX_SEC = 300` per reader, hard-killed at the deadline (`run`) or expired (lease), as `--short` is.
 - Env overrides for tests only: `FW_LOCK_SHARED_CAP`, `FW_LOCK_SHARED_JOIN_LOAD`.
@@ -163,7 +163,7 @@ variable). FW_LOCK_HELD is never set to a group or reader token. Every combinati
 |---|---|---|
 | exclusive hold (FW_LOCK_HELD = holder) | re-enters (today) | re-enters the exclusive hold (like `--short` today) |
 | shared hold (FW_LOCK_SHARED) | **refused at once**: "a timing/exclusive job never runs inside a shared functional hold (owner X); run it in its own hold" | re-enters the same reader slot |
-| nothing, same owner holds exclusively | re-enters (today; lease or same pid) | **no** re-entry by name: it queues as a reader (it can't know what the same-named hold is running) |
+| nothing, same owner holds exclusively | re-enters (today; lease or same pid) | *after review N1:* re-enters (`reentrant-exclusive`) like a `--short` job does on main, in both switch states, so `bench mech` inside a fix owner's own lease behaves as before; its command gets FW_LOCK_HELD **and** FW_LOCK_SHARED (holder token), so nothing timed starts inside it |
 | nothing, same owner is a reader | no re-entry (the group owner is `(shared)`), it queues | a new, separate reader (own token, own weight); *amended:* a **lease** reader of the same owner from the same checkout is re-entered (`reentrant-shared`, so `acquire --shared` around a commit and the commit's own `--shared` acquire don't stack) |
 
 - Old-code tools inside a new reader (only possible across checkouts) don't know FW_LOCK_SHARED. They queue
@@ -185,7 +185,7 @@ variable). FW_LOCK_HELD is never set to a group or reader token. Every combinati
 node tools/lock.mjs run chrome-measure --shared --weight 2 --max-seconds 300 --owner <you> -- npm test
 node tools/lock.mjs acquire chrome-measure --shared --weight 2 --max-seconds 300 --wait 1800 --owner <you>   # lease around a commit
 node tools/lock.mjs release chrome-measure --shared --owner <you>
-node tools/lock.mjs shared on|off chrome-measure --by lead --reason "…" [--cap 4]                             # lead only
+node tools/lock.mjs shared on|off chrome-measure --by lead --reason "…" [--cap N] [--join-load L]            # lead only (cap 3, load 2x cpus by default)
 ```
 `--shared` requires `--max-seconds` (1..300). It is refused with `--short`, with `--no-timing`, on `iphone`, and on
 any non-gated resource. Library: `acquire(r, {shared: true, weight, maxSec, …})` returns `{holder: group, reader,
@@ -264,3 +264,53 @@ Existing lock tests stay green unchanged (no behaviour change for writers).
 2. Switch off by default at landing, turned on by the lead after a canary: ok?
 3. Build on fb59f13 if review-lock-bundle accepts it, independent otherwise: ok?
 4. Simulator part in this branch (last step), or handed to ts-sim?
+
+## 9. Review round 1 (review-lock-share NEEDS-WORK), as built
+
+[MEASUREMENT CODE]: this round changes `tools/lib/lock.mjs` (what every measurement's hold is), `tools/lock.mjs`,
+`tools/lib/sim.mjs`, `tools/iphone.mjs` and `tests/helpers.mjs` `chromeLock`. Timing jobs keep the exact hold they had
+on main (exclusive, host gate); what changes for them is only what may run *inside* a functional slot (nothing timed).
+
+**One rule for both switch states (N2): a functional slot.** A slot is a live group reader, the switch-off stand-in
+(the exclusive short hold a `--shared` acquire becomes while the lane is off; its holder and queue entry carry
+`functional: true` and the weight), or an exclusive hold a `--shared` job re-entered (weight = the full cap). Its
+command always gets `FW_LOCK_SHARED=<r>:<token>`; the stand-in's command gets no FW_LOCK_HELD. Inside a slot:
+- an exclusive acquire (verify.mjs, fix.mjs ab, bench gain/calibrate/reconfirm, a normal, `--short` or `--no-timing`
+  run, an exclusive `lock.mjs acquire` lease, N7) is refused at once, in either switch state;
+- a shared acquire re-enters the slot if it is no heavier than the slot (N8), else it is refused;
+- `iphone.mjs scroll|record|run|gesture` exit 2, and `sim.mjs` timed commands (`scroll`, `record`, `run`) refuse,
+  whenever FW_LOCK_SHARED names chrome-measure or FW_SIM_FUNCTIONAL=1 (set by `sim.mjs session --functional` for its
+  command, so it also covers FW_IPHONE_PORT pointing at the Simulator) (N5/N6, `timedInSlotRefusal`);
+- `sim.mjs` holdGate: a functional session accepts a slot of weight >= 3 (reader: mode `shared`; stand-in: `short`;
+  re-entered exclusive: `exclusive`); a non-functional session inside a slot is refused even if it also inherits
+  FW_LOCK_HELD; a plain `--short` hold is no longer accepted for a functional session (only the stand-in is).
+
+**Argv refusals (exit 2, unchanged since round 0):** `verify.mjs --shared`, `fix.mjs ab --shared`,
+`bench.mjs gain|calibrate|reconfirm --shared` ("a timing measurement and never runs in the shared lane"). `bench mech`
+always asks for the shared lane.
+
+**B1 (`chromeLock`):** a `tests/chrome` file declared `{shared: true}` takes a shared hold only when it runs inside a
+slot (FW_LOCK_SHARED names chrome-measure, i.e. under `npm run test:chrome:fn`), where it re-enters that slot. Run on its
+own, or under `test:chrome`, it takes main's exact exclusive process hold (no `short`, `shared`, `functional` or
+`expiresAt`; its tools get FW_LOCK_HELD), so no bounded hold exists that nobody kills.
+
+**N1 (switch off = main):** same-owner re-entry also for shared acquirers (never into a group); no `(` owner refusal;
+`status` prints the `shared lane:` line (and `--json` its `sharedLane`) only while the lane is on, a group lives, the
+holder is a stand-in, or a shared/functional entry is queued. **N3:** the deadline e2e asserts the kill lands before
+the reader's own deadline (acquiredAt + maxSec + killGraceSec), not only before the group's expiresAt. **N4:** readers
+join in queue order (a fresh earlier reader entry blocks a later one, even a lighter one that would fit; the opener
+is the waiter served next). **N10:** a waiter's entry converts in place when the lead flips the switch (its place is
+kept).
+
+**Known gaps (not safety issues; left for a later round):**
+- N9: `lock.mjs repair --move <owner>` on an owner with both a reader entry and an exclusive entry moves the first
+  match only; the lead names the entry by position if it matters.
+- A slot token is checked only against the live holder: a tool started inside a slot that has already ended (its
+  `run` killed at --max-seconds) refuses timed commands by env (iphone/sim), but an exclusive acquire there just
+  queues as a normal job (the slot is gone, so nothing runs beside it).
+- Old-code tools in another checkout do not know FW_LOCK_SHARED (§5): they queue behind the slot and are killed at its
+  deadline; they never co-hold.
+
+Switch-on line for the lead (after the canary): `node tools/lock.mjs shared on chrome-measure --by lead --reason
+"<why>"` (cap 3 and join load 2x cpus by default; `--cap N` 1..4, `--join-load L`). Off again: `shared off`.
+
