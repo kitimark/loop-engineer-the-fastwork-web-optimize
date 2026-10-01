@@ -2,7 +2,7 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-02:xx instance, worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **05:02Z**.
+02:xx instance, worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **05:08Z** (handing over: this instance stops here).
 
 ## Digest log (newest first, 5 lines each)
 
@@ -36,6 +36,23 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   verify-fake); rec caffeinate/pmset = user. Land: mgmt-ops docs 6a0db1a (N3 rejected). User: I-026, Spotlight,
   FW_TOOLING hook, iPhone.
 - **01:40Z** first digest after restart; incident candidate (hook npm test under load) became I-024 (lead).
+
+## Next actions for the next mgmt-ops (in order)
+
+1. On the lead's "npm test + test:chrome on 0e8f288 passed": GO ts-i021 (I-027 = #3 FW_TIME_SCALE + #6 shared fixtures +
+   I-026 reopen: sleep assertion while anyone is QUEUED; rebase on main first; #3 is measurement code → reviewer +
+   test:chrome + canary) and GO wave1-dry (bench pilot short + Q3 normal ≤ 10 min; remind: no background polling).
+2. When N11's hold ends (queued 04:55Z, behind the lead's test:chrome): first-pass check of its results.json
+   (contamination, patch sha, > 50/> 34 first, phases.mjs removed vs phase-shifted), land batch to the lead, then GO
+   fix-scroll-engine (part 3 E3 + /10c A/B `--on all-wave1`, rebase on main first).
+3. After /10c: tell the lead to start the I-018 gate (ts-i017 f71ee42: review + A/A cdp-metrics on/off + test:chrome);
+   then GO fix-nav-morph (N12).
+4. apple-verify ENDED (landed 29ad890). Docs on mgmt-ops/docs-2 not yet landed: 78774a7 (adoption ledger) + this commit.
+5. Monitors: `idlewatch.sh` runs as Monitor b4hrnr0gk of the old instance; stop it if you can, else it ends with that
+   instance. Re-arm per "Queue rules and monitors". The foreground `tick.sh [secs]` (scratchpad mgmt-ops/) returns on
+   lock-holder or incident changes: use it instead of a background watch to keep context small.
+6. Context tip: wave1-dry and others that end a turn with background work emit one notification every ~40 s; remind
+   owners of the rule before long holds.
 
 ## Where the project stands
 
