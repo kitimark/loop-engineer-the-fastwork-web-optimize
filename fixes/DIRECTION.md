@@ -93,7 +93,13 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    1.5-2.9; a7b95d1): frames > 50 ms 2 [2-7] -> 1 [0-1] **better** (ranges disjoint), > 34 ms 4 [3-8] -> 3 [2-4] within
    noise; F-011 no-script render frame gone 5/5, the one > 50 ms left is gtag `onscrollend` (N11: page-side fix only
    phase-shifts it). Flag: scroll p95 15.8 -> 16.6 ms WORSE (+1 vsync on ~5 % of frames; /10d wider `will-change` window
-   is an open item). Lands on review-10c ACCEPT. Next: I-018 attribution hold, then scroll-engine E3/part-4 diagnostics.
+   is an open item). **review-10c ACCEPT-WITH-NOTES** (lead lands after a README-only commit). Counted as "> 50 ms 2 -> 1
+   in the measured window; load-time cost bounded by the mech probe, iPhone pending": the F-011 render moved to page load,
+   which verify settles unthrottled before any measured phase, so the A/B cannot tell removed from moved; the 6x
+   from-navigation mech probe (n <= 3) shows no > 50 ms LoAF there. On Safari (no rIC) the un-skips fire on `setTimeout`
+   at ~load + 0.65-0.8 s whatever the user does. Tool gap (mgmt-lead iteration 3 / toolsmith backlog, no incident yet):
+   verify has no measured load phase at 6x, so load-time costs are invisible. Next: I-018 attribution hold, then
+   scroll-engine E3/part-4 diagnostics, then /10d (Safari quiet-input gate, fwReskip fix, wider `will-change` window).
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N4 / N10 fixes (N3 rejected 2026-10-01, F-015) as their prototypes pass Tier A.
@@ -139,8 +145,10 @@ iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain 
 6. Look-only: carousel follower alignment (device-pixel snap) on layout-animations v10 (5602e1d). Chrome
    pixel diffs showed followers 0/±1 device px off from non-snapped `translate` (same in 03; equal by eye
    in Chrome). Check whether the offset is visible on the phone; only then a snap follow-up slot (F-008).
-7. Look-only (/10c, a7b95d1): scroll-up re-render at 1.5 vh, and start scrolling within ~1 s of load (the deferred
-   first render now lands in post-load idle: is an early scroller exposed?). Also the p95 flag (+1 vsync in Chrome).
+7. /10c (a7b95d1, review-10c), finger + look: (a) finger scroll within 1 s of load (un-skips fire at ~load + 0.65-0.8 s
+   on Safari regardless of input); (b) fast fling bottom -> top: hero-track / #people blank or jump at y≈4.0-4.5k;
+   (c) toolbar collapse stutter; (d) reload while scrolled mid-page; (e) scroll-up re-render at 1.5 vh; (f) the Chrome
+   p95 flag (+1 vsync): visible on the phone?
 8. Look-only (N3, F-015; decides whether N3/04, a T6 pause for step-end and compositor loops, is worth building):
    (a) does WebKit tick the step-end opacity loops (three-frame at commission, agents caret) on the main thread
    every frame or only at steps (Safari Timeline, 6 s idle parked at y≈2796 on the plain baseline: style recalcs /
