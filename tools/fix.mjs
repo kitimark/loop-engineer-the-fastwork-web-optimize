@@ -14,6 +14,7 @@
 //        # start it in the background, then `node tools/wait.mjs serve out/serve-<topic>.json` exits once it answers
 //   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--idle 6] [--no-screens] [-- serve.mjs args]
 //   node tools/fix.mjs ab --aa [--runs 5]             # baseline vs baseline: the noise floor
+//   node tools/fix.mjs check <topic> [--viewport mobile|desktop|both] [--no-screens] [--screen-dpr 2] [--save]  # functional, headless, no timing
 //   ab per-frame attribution (I-018), all opt-in: [--cdp-metrics] per-phase CDP script/style/layout deltas; [--trace-frames]
 //                  (perturbs timing) attributes frames >20 ms, writes results-trace.json, never results.json; [--frame-log] (E5)
 //                  keeps [t, dt, scrollY] for tools/frames.mjs
@@ -46,6 +47,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, readd
 import { resolve, join, dirname, relative, sep } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { homedir } from 'node:os';
 import { REPO, mirrorHome, resolveTree, isLinkedWorktree, gitCommonDir, sharedStateDir, autoPortBase, checkoutId, sha256File } from './lib/paths.mjs';
 import { allStatus } from './lib/lock.mjs';
 import { stats } from './lib/ab-stats.mjs';
@@ -58,7 +60,7 @@ const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const passthrough = dd >= 0 ? argv.slice(dd + 1) : null;
-const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on', '--max-wait', '--max-load', '--max-busy', '--watchdog', '--chrome-warm', '--trace-phases'];
+const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on', '--max-wait', '--max-load', '--max-busy', '--watchdog', '--chrome-warm', '--trace-phases', '--screen-dpr'];
 // passed through to verify.mjs by ab (I-018), all opt-in: --trace-frames (perturbs timing), --frame-log (E5), --cdp-metrics;
 // I-032: --paint-rects (adds main-thread work), --save-trace (with --trace-frames; --trace-phases is valued, passed below)
 const AB_FLAGS = ['trace-frames', 'frame-log', 'cdp-metrics', 'paint-rects', 'save-trace'];
@@ -322,6 +324,19 @@ async function startServer(label, stateFile, extra) {
   }
   proc.kill(); die(`${label} server did not start`, 1);
 }
+/** The served-file check of ab and check: every overlay file comes from the patched server's overlay and differs from the baseline's (exit 1 otherwise). */
+async function servedFileCheck(t, base, fix, kill) {
+  const served = [];
+  for (const rel of overlayFiles(t)) {
+    const [rb, rf] = await Promise.all([get(base.url + rel), get(fix.url + rel)]);
+    const h = (b) => createHash('sha256').update(b).digest('hex');
+    served.push({ path: '/' + rel, baseline: { status: rb.status, sha256: h(rb.body), source: rb.headers['x-mirror-source'] || 'base' }, patched: { status: rf.status, sha256: h(rf.body), source: rf.headers['x-mirror-source'] }, overlaySha256: sha256File(join(overlayDir(t), rel)) });
+  }
+  const bad = served.filter((s) => s.patched.sha256 !== s.overlaySha256 || s.patched.source !== 'overlay' || s.baseline.sha256 === s.overlaySha256);
+  if (bad.length) { console.error('patched server does not serve the overlay as expected:', JSON.stringify(bad, null, 1)); kill(); process.exit(1); }
+  console.log(`served-file check OK: ${served.length} overlay file(s) differ from baseline and come from the overlay`);
+  return served;
+}
 const r1 = (x) => (x == null ? null : Math.round(x * 10) / 10);
 const METRICS = {
   scroll: [['fps', 'fps', +1], ['gt20', 'frames >20 ms', -1], ['gt34', 'frames >34 ms', -1], ['gt50', 'frames >50 ms', -1], ['gt100', 'frames >100 ms', -1], ['max', 'worst frame ms', -1], ['p95', 'p95 frame ms', -1], ['loafMs', 'LoAF ms', -1], ['loafScriptMs', 'LoAF script ms', -1], ['forcedLayoutMs', 'forced style+layout ms (in LoAF)', -1]],
@@ -406,6 +421,7 @@ function markdown(metrics, cfg) {
 }
 
 async function cmdAb(t) {
+  if (flag('headless') || flag('functional')) die('fix.mjs ab measures timing and runs headed only: for a functional check in headless Chrome use node tools/fix.mjs check <topic> (ts-headless)');
   const aa = flag('aa');
   if (!aa) { checkTopic(t); requireWorktree('write results'); }
   requireBase();
@@ -432,17 +448,7 @@ async function cmdAb(t) {
   console.log(`baseline ${base.url}   patched ${fix.url}${aa ? '   (A/A: both baseline)' : ''}`);
 
   // prove what each server serves: overlay files from the overlay, everything else from the baseline
-  const served = [];
-  if (!aa) {
-    for (const rel of overlayFiles(t)) {
-      const [rb, rf] = await Promise.all([get(base.url + rel), get(fix.url + rel)]);
-      const h = (b) => createHash('sha256').update(b).digest('hex');
-      served.push({ path: '/' + rel, baseline: { status: rb.status, sha256: h(rb.body), source: rb.headers['x-mirror-source'] || 'base' }, patched: { status: rf.status, sha256: h(rf.body), source: rf.headers['x-mirror-source'] }, overlaySha256: sha256File(join(overlayDir(t), rel)) });
-    }
-    const bad = served.filter((s) => s.patched.sha256 !== s.overlaySha256 || s.patched.source !== 'overlay' || s.baseline.sha256 === s.overlaySha256);
-    if (bad.length) { console.error('patched server does not serve the overlay as expected:', JSON.stringify(bad, null, 1)); kill(); process.exit(1); }
-    console.log(`served-file check OK: ${served.length} overlay file(s) differ from baseline and come from the overlay`);
-  }
+  const served = aa ? [] : await servedFileCheck(t, base, fix, kill);
 
   const verifyFile = join(outDir, 'verify.json');
   const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--idle', String(idle), '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : []), ...AB_FLAGS.filter(flag).map((f) => `--${f}`),
@@ -508,11 +514,108 @@ async function cmdAb(t) {
   console.log(`wrote ${relative(REPO, resFile)} (raw: ${result.raw})`);
 }
 
+// ---- functional check (headless; ts-headless, research/architecture/headless-functional.md) ------------
+/**
+ * check.json is meant to be committable (Hard rule 12): no server origin, LAN address, checkout path or home dir.
+ * Origins -> <origin>, private IPv4 -> <lan>, the checkout -> ".", the home dir -> "~".
+ */
+function scrubCheck(v, { repo = REPO, home = homedir() } = {}) {
+  let s = JSON.stringify(v)
+    .replace(/https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?/g, '<origin>')
+    .replace(/\b(?:https?:\/\/)?(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?::\d+)?/g, '<lan>');
+  if (repo) s = s.split(repo).join('.');
+  if (home) s = s.split(home).join('~');
+  return JSON.parse(s);
+}
+/** Patched vs baseline in one viewport of a check.mjs result (labels base / fix): the shape of ab's regressions. */
+function checkRegressions(raw, vp) {
+  const page = (l) => raw.results.find((r) => r.viewport === vp && r.label === l);
+  const b = page('base'), f = page('fix');
+  const norm = (e) => String(e).replace(/https?:\/\/(localhost|127\.0\.0\.1|[\d.]+):\d+/g, '<origin>');
+  const eb = [...new Set(b.errors.map(norm))], ef = [...new Set(f.errors.map(norm))];
+  const nb = new Set(b.notFound.map(norm)), tb = new Set(b.dom?.tokens || []), tf = new Set(f.dom?.tokens || []);
+  // a failure of the patched page the baseline does not have (did not reach the bottom, lost the nav); errors are counted above
+  const fails = (r) => r.failures.filter((x) => !/console error/.test(x));
+  return {
+    newErrors: ef.filter((e) => !eb.includes(e)),
+    fixedErrors: eb.filter((e) => !ef.includes(e)),
+    errorsBothSides: ef.filter((e) => eb.includes(e)),
+    new404s: [...new Set(f.notFound.map(norm))].filter((e) => !nb.has(e)),
+    newFailures: fails(f).filter((x) => !fails(b).includes(x)),
+    morphReached: { baseline: b.morphReached, patched: f.morphReached },
+    screenshotDiffPct: Object.fromEntries((raw.diffs || []).filter((d) => d.viewport === vp).map((d) => [d.shot, d.diffPct ?? d.error])),
+    domDiff: { elements: { baseline: b.dom?.elements ?? null, patched: f.dom?.elements ?? null }, added: [...tf].filter((x) => !tb.has(x)).slice(0, 50), removed: [...tb].filter((x) => !tf.has(x)).slice(0, 50) },
+  };
+}
+
+async function cmdCheck(t) {
+  checkTopic(t); requireBase();
+  if (!existsSync(overlayDir(t)) || !overlayFiles(t).length) die(`fixes/${t}/overlay is empty`);
+  const viewport = opt('viewport', 'mobile');
+  if (!['mobile', 'desktop', 'both'].includes(viewport)) die('--viewport must be mobile, desktop or both');
+  if (flag('save')) requireWorktree('save fixes/<topic>/check.json');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const outDir = join(REPO, 'out', 'check', t, stamp);
+  mkdirSync(outDir, { recursive: true });
+  const onOv = ON ? ['--overlay', overlayDir(ON)] : [];
+  const base = await startServer('baseline', join(outDir, 'serve-base.json'), onOv);
+  const fix = await startServer('patched', join(outDir, 'serve-fix.json'), ['--overlay', [overlayDir(t), ...(ON ? [overlayDir(ON)] : [])].join(',')]);
+  let checkProc = null;
+  const signalled = new Set();
+  const kill = () => { for (const p of [base.proc, fix.proc, checkProc]) if (p && !signalled.has(p)) { signalled.add(p); try { p.kill(); } catch {} } };
+  process.on('exit', kill);
+  for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => { kill(); process.exit(130); });
+  console.log(`baseline ${base.url}   patched ${fix.url}   (functional check, headless)`);
+  const served = await servedFileCheck(t, base, fix, kill);
+
+  const rawFile = join(outDir, 'check-raw.json');
+  const cArgs = [join(REPO, 'tools', 'check.mjs'), `base=${base.url}`, `fix=${fix.url}`, '--viewport', viewport, '--out', outDir, '--result', rawFile, '--owner', t,
+    ...(flag('no-screens') ? ['--no-screens'] : []), ...(opt('screen-dpr') !== undefined ? ['--screen-dpr', String(opt('screen-dpr'))] : [])];
+  checkProc = spawn(process.execPath, cArgs, { stdio: 'inherit' });
+  const code = await new Promise((res) => checkProc.on('exit', (c, sig) => res(c ?? (sig ? 128 : 1))));
+  kill();
+  // 0 / 1 (a page failed; judged below against the baseline); 2 usage, 3 baseline, 124 budget pass through
+  if ([2, 3, 124].includes(code)) process.exit(code);
+  if (![0, 1].includes(code) || !existsSync(rawFile)) die(`check.mjs failed (${code})`, 1);
+  const raw = JSON.parse(readFileSync(rawFile, 'utf8'));
+  const byViewport = Object.fromEntries(raw.viewports.map((vp) => [vp, checkRegressions(raw, vp)]));
+  const all = (k) => [...new Set(Object.values(byViewport).flatMap((r) => r[k]))];
+  const regressions = raw.viewports.length === 1 ? byViewport[raw.viewports[0]] : { newErrors: all('newErrors'), fixedErrors: all('fixedErrors'), errorsBothSides: all('errorsBothSides'), new404s: all('new404s'), newFailures: all('newFailures'), byViewport };
+  const morphLost = Object.entries(byViewport).filter(([, r]) => r.morphReached.baseline && !r.morphReached.patched).map(([vp]) => vp);
+  const problems = [
+    ...(regressions.newErrors.length ? [`${regressions.newErrors.length} new error(s)`] : []),
+    ...(regressions.new404s.length ? [`${regressions.new404s.length} new 404(s)`] : []),
+    ...(regressions.newFailures.length ? [`new failure(s): ${regressions.newFailures.join('; ')}`] : []),
+    ...morphLost.map((vp) => `morph lost (${vp})`),
+  ];
+  const result = scrubCheck({
+    topic: t, kind: 'functional check', chromeMode: raw.chromeMode, createdAt: new Date().toISOString(),
+    git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD') },
+    config: { viewport, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), baselineSnapshot: baselineMeta(BASELINE), stackedOn: ON,
+      browser: raw.browser, uaOverride: raw.uaOverride, screenInfo: raw.screenInfo, lock: raw.lock, ...(raw.timing ? { timing: raw.timing } : {}) },
+    note: 'functional only (headless Chrome): no timing; screenshot diffs compare headless with headless (research/architecture/headless-functional.md). Never a gain verdict: that is fix.mjs ab.',
+    servedCheck: served.map((x) => ({ path: x.path, source: x.patched.source, sha256: x.patched.sha256 })),
+    verdict: problems.length ? `REGRESSED: ${problems.join('; ')}` : 'ok',
+    regressions,
+    pages: raw.results.map((r) => ({ label: r.label, viewport: r.viewport, failures: r.failures, errors: r.errors.length, notFound: r.notFound, failed: r.failed.length, morphReached: r.morphReached, elements: r.dom?.elements ?? null, walk: r.walk, shots: r.shots })),
+    raw: relative(REPO, rawFile),
+  });
+  const file = join(outDir, 'check.json');
+  writeFileSync(file, JSON.stringify(result, null, 1));
+  if (flag('save')) writeFileSync(join(topicDir(t), 'check.json'), JSON.stringify(result, null, 1));
+  if (regressions.newErrors.length) console.log('NEW ERRORS on the patched page:\n  ' + regressions.newErrors.join('\n  '));
+  if (regressions.new404s.length) console.log('NEW 404s on the patched page: ' + regressions.new404s.join(', '));
+  for (const [vp, r] of Object.entries(byViewport)) console.log(`${vp}: morph baseline ${r.morphReached.baseline} patched ${r.morphReached.patched}; elements ${r.domDiff.elements.baseline} -> ${r.domDiff.elements.patched}; screenshot diff (% pixels, headless vs headless) ${JSON.stringify(r.screenshotDiffPct)}`);
+  console.log(`CHECK ${t}: ${result.verdict}`);
+  console.log(`wrote ${relative(REPO, file)}${flag('save') ? ` and fixes/${t}/check.json` : ''}`);
+  process.exitCode = problems.length ? 1 : 0;
+}
+
 // ---- dispatch ---------------------------------------------------------------------------------------
 const cmds = {
   doctor: () => doctor(), list: () => list(), new: () => cmdNew(args[0]), edit: () => cmdEdit(args[0], args.slice(1)),
   show: () => cmdShow(args[0]), grep: () => cmdGrep(args[0], args.slice(1)), diff: () => cmdDiff(args[0]),
-  apply: () => cmdApply(args[0]), combine: () => cmdCombine(args[0], args.slice(1)), serve: () => cmdServe(args[0]), ab: () => cmdAb(args[0]),
+  apply: () => cmdApply(args[0]), combine: () => cmdCombine(args[0], args.slice(1)), serve: () => cmdServe(args[0]), ab: () => cmdAb(args[0]), check: () => cmdCheck(args[0]),
 };
-if (!cmd || !cmds[cmd]) { console.log(readFileSync(new URL(import.meta.url), 'utf8').split('\n').filter((l) => l.startsWith('//')).slice(0, 18).map((l) => l.slice(3)).join('\n')); process.exit(cmd ? 2 : 0); }
+if (!cmd || !cmds[cmd]) { console.log(readFileSync(new URL(import.meta.url), 'utf8').split('\n').filter((l) => l.startsWith('//')).slice(0, 19).map((l) => l.slice(3)).join('\n')); process.exit(cmd ? 2 : 0); }
 Promise.resolve(cmds[cmd]()).catch((e) => { console.error(e.stack || e); process.exit(1); });

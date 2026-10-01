@@ -51,6 +51,30 @@ test('usage error without targets: exit 2 before any lock or browser', () => {
   assert.equal(readLog(env.FAKE_CHROME_LOG).length, 0);
 });
 
+test('ts-headless: verify measures timing headed only: --headless / --functional are refused before any lock or browser', () => {
+  for (const f of ['--headless', '--functional']) {
+    const { d, env, args } = setup();
+    const r = node(VERIFY, args('vheadless', [f]), { env });
+    assert.equal(r.code, 2, `${f}: ${r.out}`);
+    assert.match(r.stderr, /verify\.mjs measures timing and runs headed only.*tools\/check\.mjs/);
+    assert.equal(existsSync(join(d, 'state')), false, `${f}: never queued`);
+    assert.equal(readLog(env.FAKE_CHROME_LOG).length, 0, `${f}: no browser`);
+  }
+});
+
+test('ts-headless: verify refuses a browser that runs headless (e.g. a $CHROME wrapper): exit 2, no CDP command, Chrome closed, lock released', () => {
+  const { d, env, args } = setup();
+  const r = node(VERIFY, args('vheadless2'), { env: { ...env, FAKE_CHROME_HEADLESS: '1' } });
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.stderr, /verify\.mjs: Chrome runs headless \(User-Agent .*HeadlessChrome.*\): refused.*tools\/check\.mjs/);
+  const log = readLog(env.FAKE_CHROME_LOG);
+  assert.ok(log.some((l) => l.method === '(started)'), 'a browser was launched');
+  assert.deepEqual(cdpTokens(log), [], 'not one CDP command was sent to it');
+  assert.ok(log.some((l) => l.method === '(exit)'), 'and it was closed');
+  assert.equal(holder(env.FW_STATE_DIR), null, 'lock released');
+  assert.equal(existsSync(join(d, 'result.json')), false, 'no result');
+});
+
 test('one mobile run: result JSON shape + exact summaries, emulation settings, lock held then released', async () => {
   const A = setup(), B = setup();
   // A takes the lock; B runs at the same time with --no-lock and must never touch lock state
@@ -71,6 +95,7 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
 
   const res = JSON.parse(readFileSync(join(A.d, 'result.json'), 'utf8'));
   assert.equal(res.cpu, 3);
+  assert.equal(res.chromeMode, 'headed', 'timing runs are headed, and verify.json says so (ts-headless)');
   assert.equal(res.idle, 6, 'idle phase defaults to 6 s');
   assert.deepEqual(res.viewports, ['mobile']);
   assert.equal(res.runs, 1);

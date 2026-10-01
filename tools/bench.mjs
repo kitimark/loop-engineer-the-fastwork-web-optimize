@@ -6,6 +6,9 @@
 //   node tools/bench.mjs mech <topic> [--on <o>] [--viewport mobile|desktop|both] [--repeat 2] [--live]
 //                                     [--experiment <topic>/<nn>] [--owner <name>] [--max-seconds 5-180] [--allow-main]
 //        Tier A: exact in-page counters + parity snapshots during an unthrottled, stepped scroll, headless.
+//        Its headless Chrome sees the page a headed one does (ts-headless): the UA override (HeadlessChrome/ -> Chrome/)
+//        and the pinned screen 1512x982 DPR 2, recorded as chromeMode / uaOverride / screenInfo / mechPage in every
+//        record; records from before that (no mechPage) are not comparable with newer ones. Its own temp profile.
 //        Baseline side: site-pretty (or <o>); patched side: the overlay rebuilt from the committed
 //        fixes/<topic>/patch.diff into out/bench/overlays/ (--live: fixes/<topic>/overlay as it is now;
 //        --experiment: that row's variant diff, checked against the row's expected outcome).
@@ -55,7 +58,7 @@ import { REPO, resolveTree, checkoutId, isLinkedWorktree } from './lib/paths.mjs
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './lib/baseline.mjs';
 import { acquire } from './lib/lock.mjs';
 import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T, stubOutsideTest, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
-import { launchChrome, CDP, browserVersion } from './lib/cdp.mjs';
+import { launchChrome, CDP, browserVersion, screenInfoArg, headedUA, tempProfileDir, HEADLESS_SCREEN } from './lib/cdp.mjs';
 import { lintTopic, loadSpec, lintSpec, GAIN_METRICS } from './lib/bench-spec.mjs';
 import { patchHeader, baselineDrift, buildOverlay, listFiles, sha256File, landedTopics, gitShow, gitRev } from './lib/bench-overlay.mjs';
 import { gainVerdict, experimentOutcome, calibrate as calibrateStats, hostBand, fmt } from './lib/bench-stats.mjs';
@@ -234,18 +237,34 @@ export function mechPlans(items, viewports) {
  * Run Tier A: `sides` = {baseline: {label, url}, patched: {label, url}}; alternating order per repeat.
  * Returns sessions[viewport][side][repeat]; fills `sessions` as it goes (the partial record on a budget stop).
  */
-async function runMech(cdp, plans, sides, repeat, log, sessions = {}) {
+async function runMech(cdp, plans, sides, repeat, log, sessions = {}, { userAgent = null } = {}) {
   for (const [vp, plan] of Object.entries(plans)) {
     sessions[vp] = { baseline: [], patched: [] };
     for (let r = 0; r < repeat; r++) {
       for (const side of r % 2 ? ['patched', 'baseline'] : ['baseline', 'patched']) {
         log(`[${vp} repeat ${r + 1}/${repeat}] ${side} ${sides[side].url}`);
-        sessions[vp][side].push(await tierASession(cdp, sides[side].url, plan, { log }));
+        sessions[vp][side].push(await tierASession(cdp, sides[side].url, plan, { log, userAgent }));
       }
     }
   }
   return sessions;
 }
+
+/**
+ * Tier A's headless Chrome (ts-headless, research/architecture/headless-functional.md): its own temp profile under
+ * out/chrome-fn (removed at close and at exit; several jobs can run at once), the pinned screen (--screen-info) and the
+ * UA a headed Chrome reports. `page` is what every Tier A record says about it.
+ */
+async function launchMech(owner) {
+  const profileDir = tempProfileDir(join(REPO, 'out', 'chrome-fn'), owner);
+  const drop = () => { try { rmSync(profileDir, { recursive: true, force: true, maxRetries: 3 }); } catch {} };
+  const arg = screenInfoArg();
+  const ch = await launchChrome({ port: 0, profileDir, headless: true, args: [arg] });
+  process.on('exit', drop);
+  const userAgent = ch.userAgent ? headedUA(ch.userAgent) : null;
+  return { ch, userAgent, close: async () => { await ch.close(); drop(); }, page: { chromeMode: 'headless', uaOverride: userAgent, screenInfo: { ...HEADLESS_SCREEN, arg }, mechPage: 'headed-equivalent' } };
+}
+const lockMode = (l) => l.mode ?? (l.reentrant ? 'reentrant' : 'short');
 
 /** Evaluate one topic's checks and parity from the sessions. */
 export function evaluateTopic(topic, spec, sessions, { on = null, drift = false } = {}) {
@@ -363,22 +382,25 @@ async function cmdMech(t) {
   const maxSec = Number(opt('max-seconds', MECH_MAX_SEC));
   if (!(maxSec >= 5 && maxSec <= MECH_MAX_SEC)) die(`--max-seconds must be 5-${MECH_MAX_SEC} (Tier A runs in the short lane)`);
   const partial = {};
-  let t0 = Date.now();
+  let t0 = Date.now(), mechPage = null, lockInfo = null;
   // on a budget stop, keep what was measured: per-window counts of the finished sessions, never as `mech`
   const onBudget = () => {
     const res = readResults(t);
-    res.mechPartial = { at: new Date().toISOString(), verdict: 'BUDGET', maxSeconds: maxSec, seconds: Math.round((Date.now() - t0) / 1000), toolsSha: toolsSha(), experiment: expId || null, on, viewports: Object.keys(plans), repeat,
+    res.mechPartial = { at: new Date().toISOString(), verdict: 'BUDGET', maxSeconds: maxSec, seconds: Math.round((Date.now() - t0) / 1000), toolsSha: toolsSha(), experiment: expId || null, on, viewports: Object.keys(plans), repeat, ...mechPage, lock: lockInfo,
       sessions: Object.fromEntries(Object.entries(partial).map(([vp, s]) => [vp, Object.fromEntries(Object.entries(s).map(([side, rs]) => [side, rs.map((x) => ({ steps: x.steps, capped: x.capped, errors: x.errors, windows: x.windows }))]))])) };
     const f = writeResults(t, res);
     console.error(`[bench] partial record (finished sessions only) -> ${relative(REPO, f)} mechPartial`);
   };
   const lock = await takeLock(owner, { short: true, maxSec, meta: { cmd: 'bench mech', topic: t, on, viewports }, onBudget });
+  lockInfo = { mode: lockMode(lock), maxSec };
   t0 = Date.now();
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const runDir = join(OUT, 'runs', `${t}-${stamp}`);
   const hostStart = await hostSnapshot(); // recorded, never gated on: counts don't depend on load (design §2)
   let sessions, chromeVersion, served;
-  const ch = await launchChrome({ port: 0, profileDir: join(REPO, 'out', 'chrome-bench-profile'), headless: true });
+  const mc = await launchMech(owner);
+  const ch = mc.ch;
+  mechPage = mc.page;
   try {
     const [bs, ps] = await Promise.all([startServer('baseline', baseBuild ? [baseBuild.dest] : [], MECH_SERVE, runDir), startServer('patched', [pb.dest], MECH_SERVE, runDir)]);
     served = await servedCheck(ps.url, pb.dest);
@@ -387,10 +409,10 @@ async function cmdMech(t) {
     chromeVersion = await browserVersion(cdp).catch(() => null);
     const sides = { baseline: { url: bs.url }, patched: { url: ps.url } };
     console.log(`bench mech ${t}${exp ? ` --experiment ${expId}` : ''}: baseline ${BASE_NAME}${on ? ` + ${on}` : ''} vs ${source.kind === 'live' ? source.dir : source.file}${on ? ` on ${on}` : ''}; ${Object.keys(plans).join('+')}, repeat ${repeat}, headless, unthrottled`);
-    sessions = await runMech(cdp, plans, sides, repeat, (s) => console.log(s), partial);
+    sessions = await runMech(cdp, plans, sides, repeat, (s) => console.log(s), partial, { userAgent: mc.userAgent });
     cdp.close();
   } finally {
-    await ch.close();
+    await mc.close();
     killChildren();
     lock.release();
   }
@@ -408,7 +430,7 @@ async function cmdMech(t) {
   const record = {
     at: new Date().toISOString(), verdict: flagged(bTag, slept ? 'FLAKY' : experiment ? experiment.verdict : summary), ...(slept ? { hostSlept: true } : {}), seconds: Math.round((Date.now() - t0) / 1000),
     git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD'), checkout: checkoutId() },
-    toolsSha: toolsSha(), chrome: chromeVersion, baselineManifest: baselineManifest(), baselineSnapshot: snapMeta(bTag), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on,
+    toolsSha: toolsSha(), chrome: chromeVersion, ...mechPage, lock: lockInfo, baselineManifest: baselineManifest(), baselineSnapshot: snapMeta(bTag), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on,
     patch: source, served: { files: served.files }, viewports: Object.keys(plans), repeat, ...(TEST_FAST ? { timing: 'test-fast' } : {}), host,
     sessions: Object.fromEntries(Object.entries(sessions).map(([vp, s]) => [vp, Object.fromEntries(Object.entries(s).map(([side, rs]) => [side, rs.map((x) => ({ steps: x.steps, capped: x.capped, errors: x.errors }))]))])),
     checks: ev.checks, parity: ev.parity, ...(experiment ? { experiment } : {}),
@@ -453,6 +475,9 @@ async function measureGain({ aOverlays, bOverlays, scenarios, o, runDir, log, ga
   const { runGain } = await import('./lib/bench-gain.mjs');
   const profileDir = join(REPO, 'out', 'chrome-bench-profile');
   const ch = await launchChrome({ port: 0, profileDir, headless: false });
+  // ts-headless: a timing measurement runs headed only (headless renders rAF at 60 Hz here, OBSERVED; no presentation):
+  // a $CHROME that starts headless anyway is refused (functional checks: tools/check.mjs, bench mech)
+  if (ch.headless) { await ch.close(); die(`bench gain/calibrate measures timing and runs headed only: Chrome runs headless (User-Agent ${ch.userAgent}): refused. For a functional check use node tools/check.mjs; mechanism counts: bench mech`); }
   try {
     const [as, bs] = await Promise.all([startServer('A', aOverlays, GAIN_SERVE, runDir), startServer('B', bOverlays, GAIN_SERVE, runDir)]);
     const cdp = await CDP.connect(ch.wsUrl);
@@ -483,6 +508,7 @@ function floors(runs, key) {
 }
 
 async function cmdGain(t, { calibrateMode = false } = {}) {
+  if (flag('headless') || flag('functional')) die('bench gain/calibrate measures timing and runs headed only: for a functional check in headless Chrome use node tools/check.mjs (mechanism counts: bench mech)');
   checkTopic(t);
   requireWorktree();
   if (!existsSync(BASE)) die(`baseline ${BASE} not found (FW_MIRROR_HOME?)`, 1);
@@ -643,12 +669,13 @@ async function cmdReconfirm() {
     // Tier A: one merged session per (side, viewport), baseline = site-pretty, patched = _landed
     {
       const plans = mechPlans(items, ['mobile', 'desktop']);
-      const ch = await launchChrome({ port: 0, profileDir: join(REPO, 'out', 'chrome-bench-profile'), headless: true });
+      const mc = await launchMech(owner);
+      report.tierAPage = mc.page;
       try {
         const [bs, ps] = await Promise.all([startServer('baseline', [], MECH_SERVE, outDir), startServer('landed', [lb.dest], MECH_SERVE, outDir)]);
-        const cdp = await CDP.connect(ch.wsUrl);
+        const cdp = await CDP.connect(mc.ch.wsUrl);
         report.chrome = await browserVersion(cdp).catch(() => null);
-        const sessions = await runMech(cdp, plans, { baseline: { url: bs.url }, patched: { url: ps.url } }, repeat, (s) => console.log(s));
+        const sessions = await runMech(cdp, plans, { baseline: { url: bs.url }, patched: { url: ps.url } }, repeat, (s) => console.log(s), {}, { userAgent: mc.userAgent });
         for (const it of items) {
           const ev = evaluateTopic(it.topic, it.spec, sessions, { drift: it.drift });
           const vs = [...ev.checks.map((c) => c.verdict), ...ev.parity.map((p) => p.verdict)];
@@ -669,7 +696,7 @@ async function cmdReconfirm() {
             const vb = build(`_exp-${x.id.replace('/', '-')}`, { patches: [{ name: x.id, text }], seeds: [] });
             if (vb.bad.length) { report.experiments[x.id] = { mech: { verdict: baselineDrift(text, BASE).length ? 'BASELINE-CHANGED' : 'CONFLICT', note: vb.bad[0].error } }; continue; }
             const vs = await startServer(`exp-${x.id.replace('/', '-')}`, [vb.dest], MECH_SERVE, outDir);
-            const sess = await runMech(cdp, mechPlans([{ topic: it.topic, spec: it.spec }], ['mobile', 'desktop']), { baseline: { url: bs.url }, patched: { url: vs.url } }, repeat, (s) => console.log(s));
+            const sess = await runMech(cdp, mechPlans([{ topic: it.topic, spec: it.spec }], ['mobile', 'desktop']), { baseline: { url: bs.url }, patched: { url: vs.url } }, repeat, (s) => console.log(s), {}, { userAgent: mc.userAgent });
             try { vs.proc.kill(); } catch {}
             const ev = evaluateTopic(it.topic, it.spec, sess, {});
             const e = experimentVerdict(x.expect, ev.checks, ev.parity);
@@ -679,7 +706,7 @@ async function cmdReconfirm() {
           }
         }
         cdp.close();
-      } finally { await ch.close(); killChildren(); }
+      } finally { await mc.close(); killChildren(); }
     }
     } finally { lock.release(); }
   }

@@ -30,7 +30,7 @@ export const TIMING = TEST_FAST ? { quietA: 100, quietB: 100, settleB: 0, warmB:
 const QUIET_FRAMES = 2, QUIET_CAP = 40;
 
 /** A fresh isolated page with the viewport, optional probe source and Performance domain. */
-export async function openPage(cdp, { viewport, source, perf = false, timeDomain = 'timeTicks' }) {
+export async function openPage(cdp, { viewport, source, perf = false, timeDomain = 'timeTicks', userAgent = null }) {
   const vp = VIEWPORTS[viewport];
   if (!vp) throw new Error(`unknown viewport ${viewport}`);
   const page = await cdp.newIsolatedPage();
@@ -39,6 +39,9 @@ export async function openPage(cdp, { viewport, source, perf = false, timeDomain
     if (m.method === 'Runtime.exceptionThrown') errors.push('exception: ' + String(m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text).split('\n')[0]);
   });
   await page.send('Network.enable');
+  // Tier A's headless Chrome (ts-headless): the UA a headed Chrome reports (HeadlessChrome/ -> Chrome/; Hotjar's bootstrap
+  // skips /headless/i). Only when given: Tier B (headed) sends no override, its CDP sequence is unchanged
+  if (userAgent) await page.send('Emulation.setUserAgentOverride', { userAgent });
   await page.send('Emulation.setDeviceMetricsOverride', vp);
   if (vp.mobile) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
@@ -66,13 +69,13 @@ const listenerCount = (ls, p) => ls.filter((l) => l.type === p.type && (p.passiv
  * segments: {label: def}, spots: {label: def}}. Returns {geometry, windows: {label: {counts, frames, metrics,
  * listeners, steps, capped}}, parity: {label: [{y, snap}]}, errors, capped, steps}.
  */
-export async function tierASession(cdp, url, plan, { settleMs = 10000, log = () => {} } = {}) {
+export async function tierASession(cdp, url, plan, { settleMs = 10000, log = () => {}, userAgent = null } = {}) {
   const pageProbes = {}, cdpProbes = {};
   for (const [id, p] of Object.entries(plan.probes)) (CDP_KINDS.includes(p.kind) ? cdpProbes : pageProbes)[id] = p;
   const perf = Object.values(cdpProbes).some((p) => p.kind === 'perfMetrics' || p.kind === 'layoutsPerFrame');
   const layerProbes = Object.entries(cdpProbes).filter(([, p]) => p.kind === 'layers');
   const T = await scenarioClock();
-  const page = await openPage(cdp, { viewport: plan.viewport, source: installSource({ probes: pageProbes }), perf });
+  const page = await openPage(cdp, { viewport: plan.viewport, source: installSource({ probes: pageProbes }), perf, userAgent });
   // layers probes (I-032): LayerTree enabled only when one is used; the latest layer list and the paint counts,
   // and per window (between RESET and READ) the most layers listed and the layers new since the window began.
   // paints: the rises of the per-layer paintCount between consecutive lists (layers already listed; a new layer's

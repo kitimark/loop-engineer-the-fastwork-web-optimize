@@ -26,6 +26,12 @@
 //         quiesceMs: n (each quiesce() answers after n ms, a slow page for the short-lane budget),
 //         perfFrames: [dt] (the frame log a Tier B scenario collects, default FRAMES/IDLE_FRAMES; [null] makes
 //         its p95 null, a non-finite gain metric, I-034)}
+//      FAKE_CHROME_HEADLESS=1|0  the User-Agent of /json/version says HeadlessChrome (1) or Chrome (0); default: HeadlessChrome
+//        exactly when launched with --headless=new, as a real Chrome (ts-headless; a $CHROME wrapper adding the flag = 1)
+//      FAKE_CHROME_CHECK=1  tools/check.mjs mode: on Page.navigate, fetch <origin>/check-fake.json from the served page
+//        and play it into the page: {errors: [text] (Runtime.exceptionThrown), logErrors: [text] (Log.entryAdded),
+//        notFound: [path] (a first-party request answered 404), nav: <className> (the nav after the morph gestures)}
+// The (started) line logs the launch argv (params.argv): the tests pin what a headed or headless launch passes.
 import http from 'node:http';
 import https from 'node:https';
 import { createHash } from 'node:crypto';
@@ -36,6 +42,8 @@ const arg = (n) => { const a = process.argv.find((x) => x.startsWith(`--${n}=`))
 const port = Number(arg('remote-debugging-port') || 0);
 const profile = arg('user-data-dir');
 const LOG = process.env.FAKE_CHROME_LOG;
+const HEADLESS = process.env.FAKE_CHROME_HEADLESS === '1' || (process.env.FAKE_CHROME_HEADLESS !== '0' && process.argv.includes('--headless=new'));
+export const FAKE_UA = (headless) => `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) ${headless ? 'HeadlessChrome' : 'Chrome'}/1.0.0.0 Safari/537.36`;
 const log = (o) => { if (LOG) appendFileSync(LOG, JSON.stringify({ pid: process.pid, t: Date.now(), ...o }) + '\n'); };
 
 // 1x1 PNG
@@ -123,7 +131,22 @@ function benchEvaluate(expr, sessionId) {
   return undefined;
 }
 
+// ---- tools/check.mjs mode (FAKE_CHROME_CHECK=1) ------------------------------------------------------
+const CHECK = process.env.FAKE_CHROME_CHECK === '1';
+const checkData = new Map(); // sessionId -> check-fake.json
+function checkEvaluate(expr, sessionId) {
+  const d = checkData.get(sessionId) || {};
+  // the nav after the morph gestures (not verify's state probe, which reads the same className among others)
+  if (d.nav !== undefined && expr.includes("document.querySelector('.start-selling-top-nav')?.className") && !expr.includes('kit: Object.keys(window)')) return d.nav;
+  return undefined;
+}
+
 function evaluate(expr, event) {
+  // tools/check.mjs: the host screen before emulation (--screen-info), the DOM fingerprint, the stepped walk (first: their bodies
+  // contain substrings the verify.mjs answers below match)
+  if (expr.includes('__fwCheckPre')) return { dpr: 2, screen: [1512, 982], ua: FAKE_UA(HEADLESS) };
+  if (expr.includes('__fwCheckDom')) return { elements: 42, tokens: ['div.orbit', 'main.hero', 'nav.start-selling-top-nav'] };
+  if (expr.includes('__fwCheckWalk')) return { y: 2068, maxY: 2068, h: 3000, steps: 7 };
   if (expr.includes('kit: Object.keys(window)')) return { kit: ['__sveltekit_fake'], nav: 'start-selling-top-nav', hero: 'hero', h: 3000, shim: null, vendors: { gtag: 'undefined', amplitude: 'undefined', hj: 'undefined', dataLayer: 1 } };
   if (expr.includes('window.__perf.frames.length=0')) { input = false; phaseT0 = 10000 * ++resets; return true; }
   if (expr.includes('window.__fwPaintScale = devicePixelRatio')) return LAYER_SCALES[scaleReads++ % LAYER_SCALES.length]; // the host DSF before emulation (layer px = CSS px x 2)
@@ -198,7 +221,7 @@ function handle(msg, send) {
     }
     case 'Runtime.evaluate': {
       if (params.returnByValue === false) return reply({ result: { type: 'object', objectId: `obj${++n}` } });
-      const v = (BENCH ? benchEvaluate(params.expression, sessionId) : undefined) ?? evaluate(params.expression, event);
+      const v = (BENCH ? benchEvaluate(params.expression, sessionId) : undefined) ?? (CHECK ? checkEvaluate(params.expression, sessionId) : undefined) ?? evaluate(params.expression, event);
       const wait = BENCH && params.expression.startsWith('window.__bench.quiesce(') ? bench.get(sessionId)?.data.quiesceMs : 0;
       if (wait) return void setTimeout(() => reply({ result: { type: typeof v, value: v } }), wait);
       return reply({ result: v === undefined ? { type: 'undefined' } : { type: typeof v, value: v } });
@@ -206,13 +229,21 @@ function handle(msg, send) {
     case 'Page.navigate': {
       reply({ frameId: 'frame' });
       const u = params.url;
-      const ready = BENCH ? fetchJson(new URL('/bench-fake.json', u).href).then((data) => { bench.set(sessionId, { data }); log({ method: '(bench-fake)', params: { url: u, data } , sessionId }); }) : Promise.resolve();
+      const ready = BENCH ? fetchJson(new URL('/bench-fake.json', u).href).then((data) => { bench.set(sessionId, { data }); log({ method: '(bench-fake)', params: { url: u, data } , sessionId }); })
+        : CHECK ? fetchJson(new URL('/check-fake.json', u).href).then((data) => { checkData.set(sessionId, data); log({ method: '(check-fake)', params: { url: u, data }, sessionId }); }) : Promise.resolve();
       ready.then(() => setTimeout(() => {
         event('Network.requestWillBeSent', { requestId: 'r1', request: { url: u, method: 'GET' }, type: 'Document' });
         event('Network.responseReceived', { requestId: 'r1', response: { status: 200 } });
         event('Network.requestWillBeSent', { requestId: 'r2', request: { url: new URL('/_app/immutable/nodes/2.fixture.js', u).href, method: 'GET' }, type: 'Script' });
         event('Network.responseReceived', { requestId: 'r2', response: { status: 200 } });
         event('Network.loadingFinished', { requestId: 'r2' });
+        const cd = CHECK ? checkData.get(sessionId) || {} : {};
+        (cd.notFound || []).forEach((p, i) => {
+          event('Network.requestWillBeSent', { requestId: `nf${i}`, request: { url: new URL(p, u).href, method: 'GET' }, type: 'Script' });
+          event('Network.responseReceived', { requestId: `nf${i}`, response: { status: 404 } });
+        });
+        for (const e of cd.errors || []) event('Runtime.exceptionThrown', { timestamp: Date.now(), exceptionDetails: { text: 'Uncaught', exception: { description: `${e}\n    at fixture.js:1:1` } } });
+        for (const e of cd.logErrors || []) event('Log.entryAdded', { entry: { source: 'network', level: 'error', text: e } });
         event('Page.loadEventFired', { timestamp: Date.now() / 1000 });
       }, 10));
       return;
@@ -233,7 +264,7 @@ function frame(str) {
 const server = http.createServer((req, res) => {
   if (req.url === '/json/version') {
     res.setHeader('content-type', 'application/json');
-    return res.end(JSON.stringify({ Browser: 'FakeChrome/1.0', webSocketDebuggerUrl: `ws://127.0.0.1:${server.address().port}/devtools/browser/fake` }));
+    return res.end(JSON.stringify({ Browser: 'FakeChrome/1.0', 'User-Agent': FAKE_UA(HEADLESS), webSocketDebuggerUrl: `ws://127.0.0.1:${server.address().port}/devtools/browser/fake` }));
   }
   res.statusCode = 404; res.end();
 });
@@ -268,7 +299,7 @@ server.on('upgrade', (req, sock) => {
 server.listen(port, '127.0.0.1', () => {
   const p = server.address().port;
   if (profile) writeFileSync(join(profile, 'DevToolsActivePort'), `${p}\n/devtools/browser/fake`);
-  log({ method: '(started)', params: { port: p, profile } });
+  log({ method: '(started)', params: { port: p, profile, argv: process.argv.slice(2) } });
 });
 for (const s of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(s, () => {
   if (s === 'SIGTERM' && process.env.FAKE_CHROME_IGNORE_SIGTERM) return log({ method: '(sigterm-ignored)', params: {} }); // a browser that will not quit

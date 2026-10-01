@@ -66,6 +66,8 @@ test('reconfirm: _landed from main in landing order, Tier A in one hold, Tier B 
   const sha = git(m, 'rev-parse', '--short', 'main');
   const rep = JSON.parse(readFileSync(join(repo.wt, 'out', 'bench', 'reconfirm', sha, 'report.json'), 'utf8'));
   assert.deepEqual(rep.landed, ['fast-nav', 'robots-fix', 'no-bench']);
+  assert.deepEqual([rep.tierAPage.chromeMode, rep.tierAPage.mechPage, rep.tierAPage.screenInfo.dpr], ['headless', 'headed-equivalent', 2], 'ts-headless: Tier A as bench mech');
+  assert.doesNotMatch(rep.tierAPage.uaOverride, /Headless/);
   assert.equal(rep.tierB['fast-nav'].calibration, 'reconfirm A/A');
   assert.equal(readFileSync(join(repo.wt, 'out', 'bench', 'overlays', '_landed', 'robots.txt'), 'utf8'), 'User-agent: *\nDisallow:\n');
   assert.ok(existsSync(join(repo.wt, 'out', 'bench', 'overlays', '_landed', 'page.html')));

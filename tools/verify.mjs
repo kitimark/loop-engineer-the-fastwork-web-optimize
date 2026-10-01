@@ -140,6 +140,10 @@ const TRACE_PHASES = String(opt('trace-phases', 'scroll')).split(',').map((x) =>
 if (TRACE_PHASES.some((p) => !PHASES.includes(p)) || !TRACE_PHASES.length) { console.error(`--trace-phases: a comma list of ${PHASES.join(', ')} (got "${opt('trace-phases')}")`); process.exit(2); }
 if (!TRACE && (SAVE_TRACE || opt('trace-phases') !== undefined)) { console.error('--save-trace and --trace-phases need --trace-frames'); process.exit(2); }
 const traceOn = (ph) => TRACE && TRACE_PHASES.includes(ph);
+// ts-headless: timing is measured headed only (headless renders at 60 Hz here, DSF 1, no presentation; F-091,
+// research/architecture/headless-functional.md); a functional check in headless Chrome is tools/check.mjs
+const HEADLESS_REFUSED = 'verify.mjs measures timing and runs headed only: for a functional check in headless Chrome use node tools/check.mjs (or node tools/fix.mjs check <topic>)';
+if (flag('headless') || flag('functional')) { console.error(HEADLESS_REFUSED); process.exit(2); }
 // --save-trace writes every trace: ~200-300 MB each on this page (I-032 review N4), so say how many before starting
 if (SAVE_TRACE) console.log(`save-trace: ${RUNS * targets.length * vpList.length * TRACE_PHASES.length} trace file(s) (runs x targets x viewports x traced phases), ~200-300 MB each on this page, into ${OUT}`);
 // Local targets serve the baseline: it must be the snapshot pinned by baseline.json, unchanged
@@ -196,6 +200,9 @@ const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => se
 async function openChrome() {
   progress('chrome launch', 30); // launchChrome waits up to 15 s for the DevTools port
   const ch = await launchChrome({ port: Number(opt('port', 0)), profileDir: PROFILE });
+  // ts-headless: a browser that runs headless anyway (a $CHROME wrapper adding --headless=new) measures no timing;
+  // read from /json/version's User-Agent, before any CDP command
+  if (ch.headless) { await ch.close(); console.error(`verify.mjs: Chrome runs headless (User-Agent ${ch.userAgent}): refused. ${HEADLESS_REFUSED}`); process.exit(2); }
   let exited = false;
   ch.proc.on('exit', () => { exited = true; });
   const cdp = await CDP.connect(ch.wsUrl);
@@ -731,7 +738,7 @@ async function main() {
   if (PAINT) console.log(PAINT_NOTE);
   if (paintScale?.mixed) console.log(`${PAINT_SCALE_TAG}: the runs' layer scales differ (${paintScale.layerScales.join(', ')}): their paint Mpx are not comparable (layer px = CSS px x layerScale)`);
   if (flaggedRuns) console.log(`baseline: ${flaggedRuns} of ${measured.length} runs flagged (${[...new Set(measured.filter((r) => r.baseline).map((r) => r.baseline.tag))].join(', ')}): not measured on the pinned snapshot ${BASELINE.snapshot ?? ''} throughout`);
-  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, baseline: flaggedRuns ? { ...BASELINE, flaggedRuns } : BASELINE, host: hostSum, rows, results }, null, 1));
+  writeFileSync(file, JSON.stringify({ chromeMode: 'headed', cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, baseline: flaggedRuns ? { ...BASELINE, flaggedRuns } : BASELINE, host: hostSum, rows, results }, null, 1));
   console.log('details: ' + file);
 }
 

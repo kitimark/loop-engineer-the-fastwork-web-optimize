@@ -262,3 +262,22 @@ test('review-host-state N2 (ts-lock-bundle c): a gain judged against a calibrati
   assert.equal(r.code, 0, r.out);
   assert.deepEqual([results('fast-nav').calibration.hostState.tag, Object.keys(results('fast-nav').calibration.hostState.byLabel).sort()], [null, ['A', 'B']]);
 });
+
+test('ts-headless: gain / calibrate measure timing headed only: --headless / --functional and a headless $CHROME are refused (exit 2), nothing stored', async () => {
+  const before = readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'bench-results.json'), 'utf8');
+  for (const [cmd, f] of [['gain', '--headless'], ['calibrate', '--functional']]) {
+    const r = await bench(`hl-${cmd}`, [cmd, 'fast-nav', f]);
+    assert.equal(r.code, 2, r.out);
+    assert.match(r.stderr, /bench gain\/calibrate measures timing and runs headed only.*tools\/check\.mjs/);
+    assert.equal(existsSync(env(`hl-${cmd}`).FAKE_CHROME_LOG), false, 'refused before any browser');
+  }
+  // a $CHROME that runs headless anyway (FAKE_CHROME_HEADLESS=1: its User-Agent says HeadlessChrome)
+  const r = await bench('hl-env', ['calibrate', 'fast-nav'], { FAKE_CHROME_HEADLESS: '1' });
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.stderr, /Chrome runs headless \(User-Agent .*HeadlessChrome.*\): refused/);
+  const log = readLog(env('hl-env').FAKE_CHROME_LOG);
+  assert.ok(log.some((l) => l.method === '(started)'));
+  assert.equal(log.filter((l) => l.method === 'Page.navigate').length, 0, 'no page measured');
+  assert.equal(existsSync(join(env('hl-env').FW_STATE_DIR, 'locks', 'chrome-measure.json')), false, 'lock released');
+  assert.equal(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'bench-results.json'), 'utf8'), before, 'nothing stored');
+});

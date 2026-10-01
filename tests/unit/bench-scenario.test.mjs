@@ -88,3 +88,18 @@ test('I-032 layers probes: LayerTree enabled only when used; per window count / 
   assert.equal(x.sentB.includes('LayerTree.enable'), false, 'no layers probe: LayerTree stays off');
   assert.ok(x.kinds.includes('layers'));
 });
+
+test('ts-headless openPage: the UA override only when given (Tier A), before the emulation; none for Tier B', async () => {
+  const { openPage } = await import(SCENARIO);
+  const sent = [];
+  const page = { on: () => () => {}, send: async (method, params) => { sent.push([method, params]); return {}; } };
+  const cdp = { newIsolatedPage: async () => page };
+  await openPage(cdp, { viewport: 'mobile' });
+  assert.equal(sent.some(([m]) => m === 'Emulation.setUserAgentOverride'), false, 'Tier B (headed): its CDP sequence is unchanged');
+  const tierB = sent.splice(0).map(([m]) => m);
+  await openPage(cdp, { viewport: 'mobile', userAgent: 'Mozilla/5.0 Chrome/1.0.0.0' });
+  const ms = sent.map(([m]) => m);
+  assert.deepEqual(ms.filter((m) => m !== 'Emulation.setUserAgentOverride'), tierB, 'otherwise the same sequence');
+  assert.ok(ms.indexOf('Emulation.setUserAgentOverride') < ms.indexOf('Emulation.setDeviceMetricsOverride'));
+  assert.deepEqual(sent.find(([m]) => m === 'Emulation.setUserAgentOverride')[1], { userAgent: 'Mozilla/5.0 Chrome/1.0.0.0' });
+});

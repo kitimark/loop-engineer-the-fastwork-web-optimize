@@ -3,6 +3,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 export const CHROME_MAC = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -32,12 +33,34 @@ export function chromePath() {
   return 'google-chrome';
 }
 
+// ---- headless functional checks (ts-headless, research/architecture/headless-functional.md) -------------
+// New headless (--headless=new) is the real Chrome (CONFIRMED, developer.chrome.com/docs/chromium/headless), but its
+// UA says "HeadlessChrome/" (Hotjar's bootstrap skips such a page, CONFIRMED in the vendor source) and its virtual
+// screen defaults to 800x600 at devicePixelRatio 1 (CONFIRMED, components/headless/screen_info/headless_screen_info.h),
+// which moved layout by 1 px and screenshots by ~3 % against headed (OBSERVED). Functional checks therefore pin the
+// screen to this Mac's (1512x982 at DSF 2, lead decision Q3) and override the UA per page. Never used by timing tools.
+export const HEADLESS_SCREEN = Object.freeze({ width: 1512, height: 982, dpr: 2 });
+/** --screen-info for a headless launch (headless_screen_info.h format), e.g. {0,0 1512x982 devicePixelRatio=2}. */
+export function screenInfoArg({ width = HEADLESS_SCREEN.width, height = HEADLESS_SCREEN.height, dpr = HEADLESS_SCREEN.dpr } = {}) {
+  if (![width, height].every((x) => Number.isInteger(x) && x > 0) || !(dpr > 0 && dpr <= 4)) throw new Error(`bad screen ${width}x${height} dpr ${dpr}`);
+  return `--screen-info={0,0 ${width}x${height} devicePixelRatio=${dpr}}`;
+}
+/** Does this User-Agent come from a headless Chrome? */
+export const isHeadlessUA = (ua) => /\bHeadlessChrome\//.test(String(ua || ''));
+/** The UA a headed Chrome of the same build sends (what the page should see in a functional check). */
+export const headedUA = (ua) => String(ua || '').replace(/\bHeadlessChrome\//g, 'Chrome/');
+/** A fresh, unique profile dir under `base` for one job (several functional jobs run at once in the shared lane). */
+export function tempProfileDir(base, owner = 'job') {
+  return join(base, `${String(owner).replace(/[^\w.-]+/g, '_').slice(0, 40)}-${process.pid}-${randomBytes(4).toString('hex')}`);
+}
+
 /**
- * Launch a dedicated Chrome (own profile dir + port) and return {proc, port, wsUrl, close}.
+ * Launch a dedicated Chrome (own profile dir + port) and return {proc, port, wsUrl, browser, userAgent, headless, close}.
  * port 0 = let Chrome pick a free DevTools port (read back from <profileDir>/DevToolsActivePort), so
  * parallel worktrees never collide. A profile dir can only be used by one Chrome at a time.
+ * `args`: extra command-line switches (before the start URL); none by default, so a default launch is unchanged.
  */
-export async function launchChrome({ port = 9333, profileDir, headless = false, windowSize = '1440,900' } = {}) {
+export async function launchChrome({ port = 9333, profileDir, headless = false, windowSize = '1440,900', args: extraArgs = [] } = {}) {
   mkdirSync(profileDir, { recursive: true });
   const activePortFile = join(profileDir, 'DevToolsActivePort');
   rmSync(activePortFile, { force: true });
@@ -54,6 +77,7 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
     '--disable-background-timer-throttling',
     '--disable-features=CalculateNativeWinOcclusion',
     ...(headless ? ['--headless=new'] : []),
+    ...extraArgs,
     'about:blank',
   ];
   const proc = spawn(chromePath(), args, { stdio: 'ignore', detached: false });
@@ -81,6 +105,10 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
     wsUrl: version.webSocketDebuggerUrl,
     /** The browser's product string from /json/version, e.g. "Chrome/154.0.8037.58" (T8+, I-033: no extra CDP command). */
     browser: version.Browser || null,
+    /** The browser's User-Agent from the same /json/version (no CDP command); "HeadlessChrome/" in headless mode. */
+    userAgent: version['User-Agent'] || null,
+    /** True when the browser runs headless (its UA says so), however it was launched (e.g. a $CHROME wrapper). */
+    headless: isHeadlessUA(version['User-Agent']),
     /**
      * SIGTERM, wait for the exit (up to graceMs), then SIGKILL the whole tree and wait again: resolves
      * once the browser is gone, so a relaunch on the same profile dir cannot find it still locked (I-023).

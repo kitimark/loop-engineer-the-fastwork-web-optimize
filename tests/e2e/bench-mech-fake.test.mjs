@@ -101,6 +101,25 @@ async function passAndLive(live, mtime) {
   assert.deepEqual(m.patch.drift, []);
   assert.match(m.toolsSha, /^[0-9a-f]{12}$/);
   assert.equal(m.chrome, 'FakeChrome/1.0');
+  // ts-headless: Tier A's headless Chrome sees the page a headed one does, and the record says so
+  assert.equal(m.chromeMode, 'headless');
+  assert.equal(m.mechPage, 'headed-equivalent');
+  assert.match(m.uaOverride, /\bChrome\/1\.0\.0\.0/);
+  assert.doesNotMatch(m.uaOverride, /Headless/);
+  assert.deepEqual(m.screenInfo, { width: 1512, height: 982, dpr: 2, arg: '--screen-info={0,0 1512x982 devicePixelRatio=2}' });
+  assert.match(m.lock.mode, /^(short|shared)$/);
+  assert.equal(m.lock.maxSec, 180);
+  {
+    const lg0 = readLog(benchEnv('pass').FAKE_CHROME_LOG);
+    const started = lg0.find((l) => l.method === '(started)');
+    assert.ok(started.params.argv.includes('--headless=new') && started.params.argv.includes(m.screenInfo.arg), started.params.argv.join(' '));
+    assert.match(started.params.profile, /out\/chrome-fn\/bench-fast-nav-\d+-[0-9a-f]{8}$/, 'its own temp profile');
+    assert.equal(existsSync(started.params.profile), false, 'removed after the run');
+    for (const nav of lg0.filter((l) => l.method === 'Page.navigate')) {
+      const ua = lg0.slice(0, lg0.indexOf(nav)).find((l) => l.method === 'Emulation.setUserAgentOverride' && l.sessionId === nav.sessionId);
+      assert.equal(ua?.params.userAgent, m.uaOverride, 'the UA override before every navigation');
+    }
+  }
   assert.match(m.baselineManifest, /^[0-9a-f]{16}$/);
   assert.deepEqual(m.baselineSnapshot, { snapshot: null, state: 'unpinned' }, 'the snapshot pinned by baseline.json (none in this temp repo)');
   assert.deepEqual([m.repeat, m.viewports, m.on, m.served.files, m.timing], [2, ['mobile'], null, 1, 'test-fast']);
@@ -199,6 +218,7 @@ test('mech: --max-seconds stops at the budget (exit 124) and keeps the finished 
   assert.equal(res.mech, undefined, 'a partial run is never a mech record');
   const p = res.mechPartial;
   assert.deepEqual([p.verdict, p.maxSeconds, p.repeat, p.viewports], ['BUDGET', 8, 1, ['mobile']]);
+  assert.deepEqual([p.chromeMode, p.mechPage, p.screenInfo.dpr], ['headless', 'headed-equivalent', 2], 'ts-headless: the partial record says how Tier A ran too');
   assert.equal(p.sessions.mobile.baseline.length, 1);
   assert.equal(p.sessions.mobile.baseline[0].windows['slow-nav:page'].counts['slow-nav:navQs'], 30);
   assert.equal(p.sessions.mobile.patched.length, 0);

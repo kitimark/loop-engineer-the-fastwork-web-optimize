@@ -133,3 +133,61 @@ test('bench helpers: enablePerformance, getMetrics, eventListeners, browserVersi
     delete process.env.FAKE_CHROME_LOG;
   }
 });
+
+// ---- ts-headless (research/architecture/headless-functional.md) ------------------------------------------
+const startedArgv = (f) => readFileSync(f, 'utf8').trim().split('\n').map((l) => JSON.parse(l)).find((l) => l.method === '(started)').params.argv;
+
+test('launchChrome: a default (headed) launch passes exactly the switches it always did (timing tools unchanged, ts-headless)', async () => {
+  const d = tempDir('fw-cdp-argv-');
+  process.env.CHROME = FAKE;
+  process.env.FAKE_CHROME_LOG = join(d, 'log.jsonl');
+  const ch = await cdp.launchChrome({ port: 0, profileDir: join(d, 'profile') });
+  try {
+    assert.deepEqual(startedArgv(process.env.FAKE_CHROME_LOG), [
+      '--remote-debugging-port=0', `--user-data-dir=${join(d, 'profile')}`, '--no-first-run', '--no-default-browser-check', '--window-size=1440,900',
+      '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling',
+      '--disable-features=CalculateNativeWinOcclusion', 'about:blank']);
+    assert.equal(ch.headless, false, 'a headed browser');
+    assert.match(ch.userAgent, /\bChrome\/1\.0\.0\.0\b/);
+    assert.doesNotMatch(ch.userAgent, /Headless/);
+    assert.equal(ch.browser, 'FakeChrome/1.0');
+  } finally { await ch.close(); delete process.env.FAKE_CHROME_LOG; }
+});
+
+test('launchChrome: headless + args add --headless=new and the extra switches before the start URL; the UA says HeadlessChrome', async () => {
+  const d = tempDir('fw-cdp-argv-');
+  process.env.CHROME = FAKE;
+  process.env.FAKE_CHROME_LOG = join(d, 'log.jsonl');
+  const si = cdp.screenInfoArg();
+  const ch = await cdp.launchChrome({ port: 0, profileDir: join(d, 'profile'), headless: true, args: [si] });
+  try {
+    const argv = startedArgv(process.env.FAKE_CHROME_LOG);
+    assert.deepEqual(argv.slice(-3), ['--headless=new', '--screen-info={0,0 1512x982 devicePixelRatio=2}', 'about:blank']);
+    assert.equal(ch.headless, true);
+    assert.match(ch.userAgent, /\bHeadlessChrome\/1\.0\.0\.0\b/);
+    assert.equal(cdp.headedUA(ch.userAgent), ch.userAgent.replace('HeadlessChrome/', 'Chrome/'));
+  } finally { await ch.close(); delete process.env.FAKE_CHROME_LOG; }
+  // a $CHROME wrapper that adds --headless=new itself is still detected (FAKE_CHROME_HEADLESS=1 plays it)
+  process.env.FAKE_CHROME_HEADLESS = '1';
+  try {
+    const w = await cdp.launchChrome({ port: 0, profileDir: join(d, 'p2') });
+    try { assert.equal(w.headless, true); } finally { await w.close(); }
+  } finally { delete process.env.FAKE_CHROME_HEADLESS; }
+});
+
+test('headless helpers: screenInfoArg, isHeadlessUA, headedUA, tempProfileDir', () => {
+  assert.equal(cdp.screenInfoArg(), '--screen-info={0,0 1512x982 devicePixelRatio=2}');
+  assert.equal(cdp.screenInfoArg({ dpr: 3 }), '--screen-info={0,0 1512x982 devicePixelRatio=3}');
+  assert.deepEqual(cdp.HEADLESS_SCREEN, { width: 1512, height: 982, dpr: 2 });
+  assert.throws(() => cdp.screenInfoArg({ dpr: 0 }), /bad screen/);
+  assert.throws(() => cdp.screenInfoArg({ width: 1.5 }), /bad screen/);
+  const h = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36';
+  assert.equal(cdp.isHeadlessUA(h), true);
+  assert.equal(cdp.isHeadlessUA(h.replace('HeadlessChrome', 'Chrome')), false);
+  assert.equal(cdp.isHeadlessUA(null), false);
+  assert.equal(cdp.headedUA(h), h.replace('HeadlessChrome/', 'Chrome/'));
+  assert.doesNotMatch(cdp.headedUA(h), /headless/i, 'Hotjar\'s /headless/i test no longer matches');
+  const a = cdp.tempProfileDir('/x/out/chrome-fn', 'fix check/a b'), b = cdp.tempProfileDir('/x/out/chrome-fn', 'fix check/a b');
+  assert.notEqual(a, b, 'unique per call');
+  assert.match(a, new RegExp(`^/x/out/chrome-fn/fix_check_a_b-${process.pid}-[0-9a-f]{8}$`));
+});
