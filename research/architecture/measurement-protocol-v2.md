@@ -23,7 +23,7 @@ iPhone and the finger. Words: **must** = a gate fails without it; **should** = t
 | L4 | /10c shipped the F-030 idle regression; review looked at the idle phase at y=0, the cost was in the post-scroll un-skip | **Idle triple** (y=0, parked mid-page after a scroll, at the pin) in F and V |
 | L5 | hero v2 fixed y≈50 and grew y≈700 by ~10 ms; only the phone saw it, 1.5 h later | **Position-bin census diff** on both devices in V: every bin, not only the targeted one |
 | L6 | Chrome shows the morph at 110 fps, the phone 15-30 fps. Chrome at 6x throttles only the main thread; WebKit raster, allocation and commit are on the phone's frame path | **Device class** decided at D; phone-only fixes are gated on the phone, Chrome is a no-regression check |
-| L7 | Heat voids phone blocks (F-028: idle stays 60 while scroll/bottom fall); cold first runs are slow (F-042); Timeline timestamps are 0 over the proxy; Safari rAF runs at 60 Hz with 1 ms, non-vsync timestamps (§3.2): on-time frames are ≈ 16.7 ms, but longer gaps are not quantized: they spread continuously (no peaks at 33.3 or 50.0 ms in 198k phone gaps, claims-audit §2.3), and 8.33 ms is only a unit there. Low Power Mode halves rAF to 30 Hz | §5 sentinel under load, warm-up run, block limits; §3 tick metrics |
+| L7 | Heat voids phone blocks (F-028: idle stays 60 while scroll/bottom fall); cold first runs are slow (F-042); Timeline timestamps are 0 over the proxy; Safari rAF asks for 60 Hz as a hint (Core Animation may run faster, ~80 Hz in finger runs, F-071) with 1 ms, non-vsync timestamps (§3.2): on-time frames are ≈ 16.7 ms, but longer gaps are not quantized: they spread continuously (no peaks at 33.3 or 50.0 ms in 198k phone gaps, claims-audit §2.3), and 8.33 ms is only a unit there. Low Power Mode halves rAF to 30 Hz | §5 sentinel under load, warm-up run, block limits; §3 tick metrics |
 | L8 | Canary drift on the same page: ~92 fps / 25 frames >20 ms (04:25Z, 93b4af2) → 78/57 (08:31Z, 43e40ce) → 75.9/75.2 (10:08Z, acce613), unexplained | §6.3: host-vs-tool A/A, then bisect; until then compare only within one hold |
 | L9 | Driver ≠ finger: the morph driver never bounces or pins, the scripted scroll never resizes the toolbar; savings don't add (ghb 21 / gh 24 / g 33) | Claims are scoped to their driver (§5.4); touch paths need G or F before landing |
 | L10 | Chrome y and phone y differ by ~77 px; viewports differ (932 vs 775/815) | Positions in **crossing coordinates** (§3.4); Chrome attribution probes at phone geometry |
@@ -150,7 +150,7 @@ rejected gets the reason in one message. Running blocks are never interrupted fo
 
 Never quote "frames >20 ms" as "dropped frames" (arch-devtools §2a).
 
-### 3.2 Tick units (Chrome rAF 120 Hz; phone rAF 60 Hz)
+### 3.2 Tick units (Chrome rAF 120 Hz; phone: ms thresholds, 60 Hz hint)
 
 - Tick k = round(dt / 8.333). On-time = k ≤ 2 (one 60 Hz rAF interval).
 - Thresholds at tick midpoints: **">34" = dt ≥ 37.5 ms (k≥5)**, **">50" = dt ≥ 54.17 ms (k≥7)** (exact midpoints 4.5 and 6.5 × 8.333; code uses the exact values).
@@ -159,18 +159,25 @@ Never quote "frames >20 ms" as "dropped frames" (arch-devtools §2a).
   primary to ticks after one Chrome A/A and one phone A/A show both; any verdict that differs between the two
   is reported as "threshold-sensitive".
 - Dropped ratio with each device's own period (G8) is report-only.
-- **The tick model above is Chrome's.** Phone rate: Safari's rAF runs at 60 Hz (WebKit default
-  PreferPageRenderingUpdatesNear60FPSEnabled = true: UnifiedWebPreferences.yaml main l.4810-4818,
-  safari-7624-branch ~l.6395; AnimationFrameRate.cpp l.35-66; bug 173434; CONFIRMED, claims-audit P9), and the rAF
-  timestamp is the WebContent rendering-update start at 1 ms resolution, not a vsync (Document.cpp l.8959, Page.cpp
-  l.2424-2428; CONFIRMED, claims-audit P10). Low Power Mode halves rAF to 30 Hz (halfSpeedThrottlingReasons).
+- **The tick model above is Chrome's.** Phone rate: WebKit requests a 60 Hz display link as a **hint only**
+  (PreferPageRenderingUpdatesNear60FPSEnabled = true, preferredFramesPerSecond=60: UnifiedWebPreferences.yaml main
+  l.4810-4818, safari-7624-branch ~l.6395; AnimationFrameRate.cpp l.35-66; bug 173434; CONFIRMED, claims-audit P9);
+  Core Animation picks the actual rate and may run faster, e.g. 80 Hz (claims-audit §2.7, superseding "rAF runs at
+  60 Hz"; CLAUDE.md 6f71f51). Idle and scripted runs (S/W/M) show 16-17 ms gaps; finger runs show stretches of
+  12-13 ms gaps (~80 Hz), trigger UNRESOLVED (F-071), so fps and frame counts from F/G runs don't compare with S/W/M
+  runs; the ms thresholds do. The rAF timestamp is the WebContent rendering-update start at 1 ms resolution, not a
+  vsync (Document.cpp l.8959, Page.cpp l.2424-2428; CONFIRMED, claims-audit P10). Low Power Mode halves rAF to 30 Hz
+  (halfSpeedThrottlingReasons).
 - **A5 (phone thresholds).** Safari's rAF stamps mark the start of the rendering update at 1 ms resolution and are not
   vsync-quantized above one vsync (claims-audit §2.3 re-bin: 198 349 gaps, smooth tail 25-75 ms, catch-up gaps
   < 12 ms). The phone verdict therefore uses ms thresholds only:
   - goal: dt > 50 ms (the user's goal), target 0;
   - secondary: dt > 34 ms;
   - sensitivity: also report the counts at the threshold ± 4 ms (dt > 46 / dt > 54; dt > 30 / dt > 38). A verdict
-    that differs between the −4 and +4 counts is 'threshold-sensitive'.
+    is 'threshold-sensitive' when the verdict at **either** twin differs from the one at its threshold (dt > 46 or
+    dt > 54 vs dt > 50; dt > 30 or dt > 38 vs dt > 34). This "any twin differs" rule is the conservative one
+    `tools/stats.mjs` applies.
+  - near bands (frames flagged as close to a threshold), half-open: near34 = (30, 38] ms, near50 = (46, 54] ms.
 
   k forms are not used on the phone. Record Low Power Mode per run (rAF halves to 30 Hz). Chrome keeps k≥5 / k≥7
   (BeginFrame stamps are vsync-aligned). (Adopted by the lead 2026-10-01, CLAUDE.md 668b612; replaces the

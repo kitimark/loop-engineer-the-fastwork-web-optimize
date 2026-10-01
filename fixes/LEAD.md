@@ -136,7 +136,7 @@ ranks the queue (by [`DIRECTION.md`](DIRECTION.md)). **Reorders only at block bo
 never interrupted. A rejected ticket gets its reason in one message. Block rules (warm-up, sentinel, ≤9 counted
 runs, ABBA order, max 2 blocks): `CLAUDE.md` "Shared devices" and protocol §5, plus (amendments A3-A6): warm-up
 per arm's port, not only the control's (A3); battery temperature and charging state per run (A4); thresholds:
-phone: dt > 50 / dt > 34 plus counts at ±4 ms (threshold-sensitive if they differ); Chrome: k forms (A5); M runs report the time-since-tween-start profile and
+phone: dt > 50 / dt > 34 plus counts at ±4 ms (threshold-sensitive if either twin's verdict differs); Chrome: k forms (A5); M runs report the time-since-tween-start profile and
 the |Δm|-weighted dt (A6).
 
 **Canary drift (L8, protocol §6.3).** The canary page drifted from ~92 fps (04:25Z, 93b4af2 tools) to 78 and

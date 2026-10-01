@@ -208,7 +208,7 @@ K24 is explained); V-U10 inspector-detached A/A and V-U12 docH (low value, folde
 - **A4 (§5.2, K4):** battery temperature and charging state per run; heat trend reported per block.
 - **A5 (§3.2, K2):** phone verdicts in both forms (dt > 50 / k≥7 and dt > 34 / k≥5), frames within 4 ms of a
   threshold flagged; the tick model is exact on Chrome only. **Superseded 2026-10-01 (lead, CLAUDE.md 668b612;
-  claims-audit §2.3 re-bin):** phone: dt > 50 / dt > 34 plus counts at ±4 ms (threshold-sensitive if they differ), no
+  claims-audit §2.3 re-bin):** phone: dt > 50 / dt > 34 plus counts at ±4 ms (threshold-sensitive if either twin's verdict differs), no
   k forms; Chrome: k forms (protocol §3.2).
 - **A6 (§3.3, X7):** M runs: time-since-start profile (fwd/rev) + |Δm|-weighted dt replace the m-bin profile;
   Timeline heavy-paint share as the mechanism column (PM proposal). MWFI reported next to counts (report-only: F5 session 1 did not support it; HTR/fps + JUMPmax interim).

@@ -7,7 +7,7 @@ attribution cards as they close, not at the end. Cite raw files by path (worktre
 numbers. Positions are in **crossing coordinates** (protocol §3.4: y_i = elementTop_i − f_i·V_i, V_i = the
 frame's innerHeight for IO rootMargins and JS reads, lvh 815 / svh 775 on the phone for CSS vh ranges; elementTop_i
 from the same run; Δ = 0 inside [yStart, yEnd]; Chrome and phone are compared by crossing, never by raw y). Frame thresholds (A5): phone: dt > 50 / dt > 34 plus counts at ±4 ms
-(threshold-sensitive if they differ); Chrome: k forms (k = round(dt / 8.333); k≥5 = dt ≥ 37.5 ms, k≥7 = dt ≥ 54.17 ms,
+(threshold-sensitive if either twin's verdict differs; near bands (30, 38] / (46, 54] ms); Chrome: k forms (k = round(dt / 8.333); k≥5 = dt ≥ 37.5 ms, k≥7 = dt ≥ 54.17 ms,
 the exact midpoints).
 
 ## R: census card (owner signs)
