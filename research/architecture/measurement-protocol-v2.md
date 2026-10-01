@@ -301,7 +301,7 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
   T1a+); the heat trend is reported per block and used as a covariate when a block is borderline.
 
 ### 5.3 Blocks and n (resolving n≥6 vs ≤9-run blocks)
-- A block: ≤9 counted runs, **one question**, one named control on the same base. 10 min cooling between blocks.
+- A block: ≤9 counted runs, **one question**, one named control on the same base. 10 min cooling between blocks. (Exception, lead 2026-10-01 19:56Z, while timing is deferred: attribution-only blocks skip the fixed cooling; the Timeline-OFF heat sentinel at start and end decides, a failing one means cooling plus a redo; `fixes/LEAD.md` "Timing deferred".)
 - 2 arms: **C V V C C V V C** (4 vs 4). 3 arms: a 3×3 rotated Latin square (C A B / A B C / B C A), n=3 per arm.
 - **Sequential decision, max 2 blocks** (a third only by the lead):
   - after block 1 (4v4): **stop, win** if U=0 (exact one-sided p = 1/70 ≈ 0.014) and the Hodges-Lehmann shift ≥

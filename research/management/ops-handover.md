@@ -17,6 +17,9 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
    holds short and counts-only (short lane where possible).
 4. Phone queue: scene-scope attribution block (nested Layout count at the platform flip) -> st5 split attribution
    (fix-scroll-engine: C, st5, st5-noanim, st5-waapi, V1). Tickets: attribution only, second read as before.
+6. Cooling (lead 19:56Z): attribution-only phone blocks skip the fixed 10-min cooling; the Timeline-OFF heat sentinel
+   (start + end) decides, a failing one = cooling + redo. Timing/gain blocks keep the 10-min rule when they return
+   (fixes/LEAD.md "Timing deferred", protocol v2 §5 note).
 5. Every agent keeps its status-board row matching. Broadcast to all 13 live agents 19:3xZ (mgmt-ops-6).
    Priority order (lead 19:1xZ): style recalc > illusion proposals > phone-tool fixes > st5 > tooling.
 

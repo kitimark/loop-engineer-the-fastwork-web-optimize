@@ -132,6 +132,12 @@ the lesson behind each rule is its §1 table). A topic skips nothing; a stage ca
 runs on the iOS Simulator in a normal chrome-measure hold (≤ ~7 min); the phone is only for timing and perception (S/W/M/G
 blocks, sentinels, Timeline attribution, F tests, user sittings); Simulator timing is never a verdict (F-084).
 
+**Timing deferred; attribution blocks without fixed cooling (user direction 2026-10-01 19:27Z; lead decision 19:56Z).**
+While performance timing is deferred (no timing A/Bs, no phone gain/fps blocks), the phone runs attribution-only blocks
+(Timeline records: style, layout, paint, composite, roots, nested layouts; no fps verdict). These skip the fixed 10-min
+cooling between blocks: the Timeline-OFF heat sentinel at block start and end decides (bottom >= 58, scroll >= 44); a
+failing sentinel means cooling, then a redo of the voided runs. Timing and gain blocks keep the 10-min rule when they return.
+
 **Slot tickets (phone access).** Only ticketed builds go on the phone. A ticket names: build + served hashes; the
 ONE named control on the same base and its hashes; the driver (S/W/M/G/F); the one question; the prediction id;
 the "if X then Y" decision for each outcome; the probe set; the served ports, each with one uncounted warm-up load
