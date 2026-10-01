@@ -1,80 +1,74 @@
-# mgmt-ops handover (2026-10-01 01:15Z)
+# mgmt-ops living state (updated with every digest)
 
-Written by mgmt-ops (agent ac3dd7811b6861c73) for the next mgmt-ops. Charter: `fixes/LEAD.md` "Delegation: mgmt-ops
-runs the day-to-day". Main at handover: `eb8a447`. All my docs commits are landed.
+Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
+or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
+02:xx instance, worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **02:34Z**.
+
+## Digest log (newest first, 5 lines each)
+
+- **02:34Z** I-023/I-024A (P0, ts-i017) no sha; ts-i017 not queued yet (lead moves it to #1 on queue). No ALARM,
+  host QUIET. NEW I-026 (env): Mac Maintenance Sleep/DarkWake during holds stalls timers (explains 933-940 s
+  verify-fake); rec caffeinate/pmset = user. Land: mgmt-ops docs 6a0db1a (N3 rejected). User: I-026, Spotlight,
+  FW_TOOLING hook, iPhone.
+- **01:40Z** first digest after restart; incident candidate (hook npm test under load) became I-024 (lead).
 
 ## Where the project stands
 
-- **Wave 1 is complete on main** (F-013): phone-invisible-shrink, commission-forced-layout, layout-animations v10
-  (7bf12016), pain-offscreen-notes, large-area-blur, nav-hit-test, countdown-idle-raf 03 (160d69a0, 5dda3bd),
-  morph-panel-lazy-mount v03 (06c0b10c, eb8a447). Labels: "mechanism + review, gain pending combined".
-  #6 morph-scrolljack-passive v05 (63d6980e, nav-morph branch) lands only after the iPhone finger test.
-- **wave1-partial** (5 topics, unreviewed partial combine) is the only clean combined number so far:
-  fps 74.9 → 95.4, > 20 ms 65 → 24 (DIRECTION slot 3, mgmt-lead KPI table).
-- **The all-wave1 goal run failed** (00:18-00:53Z): no usable data. It is blocked on **I-023** (P0 per lead → ts-i017).
-- Host gate (I-016/I-017) is on main (84ebdac, 77693c3, f144d8f; F-012). It has the I-023 bug.
+- **Wave 1 complete on main** (F-013); labels "mechanism + review, gain pending combined". #6 morph-scrolljack-passive
+  v05 (63d6980e, nav-morph branch) lands only after the user's iPhone finger test.
+- **wave1-partial** is the only clean combined number: fps 74.9 → 95.4, > 20 ms 65 → 24 (hints only: goal progress is
+  quoted as frames > 50 ms and > 34 ms + iPhone, LEAD.md iteration 2).
+- **all-wave1 goal run** (one announced ~15 min hold, wave1-dry) blocked on I-023 + I-024A + the canary.
+- **N3 rejected** (a49e591, F-015: orbit `display:none`, all CSS animations ~1 ms/frame at 6x). Docs follow-up
+  6a0db1a (mgmt-ops). Its iPhone questions = DIRECTION iPhone queue item 7 (look-only). E3 stays with scroll-engine.
+- Landed since 01:15Z: a49e591 N3, d17c490 handover addendum, b71760f mgmt-lead iteration 2, 36fd4b5 I-022 harness,
+  554201a LEAD.md team ~8 + iteration-2 rules.
 
-## Blocking incident I-023 (open, tool, blocking)
+## Incidents
 
-verify.mjs per-run host recheck (fc07297). A/A run 1: Chrome CDP closed after a 60.1 s wait. A/B run 1: recheck waited
-1953 s against `recheckMaxWaitSec` 60, then measured a broken session (fps 119.6, 3 errors, CONTAMINATED).
-**Lead scope for ts-i017:** recheck before Chrome launches (or keep CDP alive), a hard per-run watchdog in verify (no
-progress for N s → clear failure, never hang holding the lock), a fake-host test that stays busy past the window;
-test:chrome must pass before it lands.
-**TODO next mgmt-ops:** (1) confirm the lead set I-023 P0 → ts-i017 (my message may not have gone out: the auto-mode
-classifier was timing out); (2) the lead adds wave1-dry's evidence with `incident.mjs update --note` (wave1-dry's
-message: grant 00:18:36 after 89 s; A/A error at cdp.mjs:94:26, out/ab/_aa/2026-10-01T00-18-36-749Z/ empty; A/B
-recheck 1953.2 s; run 1 base fps 119.6 / 3 errors; log in wave1-dry's scratchpad `wave1-dry/aw1-hold.log`).
-(3) Once I-023 lands + test:chrome passes: signal wave1-dry (below).
-
-## Who waits on what
-
-| agent | state | waits on | next step |
+| id | state | owner | note |
 |---|---|---|---|
-| wave1-dry (a304ca7) | idle, all-wave1 combine ready (8 shas checked) | I-023 fixed | ONE announced hold: guard (no gate TIMEOUT) ; `ab --aa --runs 5` ; `ab all-wave1 --runs 5` ; `timeout 60 probe-countdown-active.mjs` (panel countdown writes = 0 at scrollY 0 after #13 idle mount); attribution of F-011 frame (y≈2100-2150) and F-009c (nav platform IO 46 ms). Kill on CONTAMINATED / TIMEOUT only, not on `warn:`. Commit the probe with results. |
-| ts-i017 (a13d7bf) | I-018 + E5 commit (lease now) | – | then I-023 (P0) |
-| ts-i002 (a1fe618) | I-022 rebased onto gate, uncommitted | short lease (moved to #1 by lead, slid to #2) | commit (hook npm test), then full `npm run test:chrome` short 300 s (split if exit 124); report sha, count, per file. Lead resolves I-016/I-017/I-022 on it (I-023 fix must also pass test:chrome). |
-| ts-i021 (a8690dc) | I-021 rebased onto eb8a447, recommitting | short lease (#3) | docs commit also raises the full-suite cap 120 → 150; send shas → land batch (lead: agent-def changes + test:unit outside lock accepted). FW_TOOLING pre-commit block = user decision (lead asking). Announcement text in ts-i021's report. |
-| ts-prio (a7fad4c) | building I-020 | – | PRIORITY: "at each hand-over drain ALL queued shorts before the next normal" (cap by count or ~15 min), tests incl. lead move and gate R1; then lease TTL / run-not-lease, fast hand-over, lock-meta idle length, CLAUDE.md wording (servers inside the sh -c hold; ≤ 10 min normal holds; drain-all). When it lands, tell scroll-engine and apple-verify. |
-| ts-bench (ad57dba) | steps 3+4, short #5 | – | visual parity kind (±1 device px, F-008) is a follow-up |
-| fix-scroll-engine (a1722cf) | parts 1-2 done (F-009, F-011); /10 built (`se10-w1`) | chain: no short waiters AND all-wave1 hold has run once | part 3 (anim ablation), part 4 (E3 A/B), then mech10 short (ticket: R3 logger shows all un-skips in idle, 0 in scroll; cv churn 0; will-change only in window; no idle LoAF > 50 ms). /10 A/B `--on all-wave1`. NOTE: its chain waits for an all-wave1 hold that will not come until I-023 — re-arm it (e.g. "short queue empty") if I-023 takes long. |
-| fix-nav-morph (a277ea0) | N12 stage 1 built (offset cache + section ranges) | short lane (requeued, 2 h timeout) | report Tier A counts (rect/gCS/elementsFromPoint per frame before → after) + parity mismatches (mobile, desktop, mobile-shift, desktop-rtl, mobile-rtl). iOS toolbar line for FINGER_TESTS later. #6 waits for finger test; N2 after; E4 after all-wave1 (holds ≤ 10 min). |
-| fix-vendor-scrollend N11 (a6a570e) | probe fixed (F-014, 9764e0f) | short #1 | validation; final A/B `--on all-wave1` first in wave 2 (with /10) |
-| fix-infinite-anims N3 (a0b5fe9) | DONE: **REJECTED**, branch sha 61ed9f7 (README, probe.mjs, slot.sh; no patch) | land batch (docs/topic scripts only) | premise false: the hero CTA orbit is `display:none` (CSS 1821-1828), 0/7 stops (F-015); all CSS animations together cost ~1 ms/frame at 6x (R2); no unowned idle JS loop (countdown spring 46-144/s on w1 = hidden panel countdown, countdown open check (b)). TODO: correct TOPICS N3 + arch README row 4; E3 (scroll-engine part 3 ablation) still pending; iPhone checks (WebKit steps() loops) listed in its README. |
-| countdown (a03218c) | done, stopped | – | wave 2: 05/08 counts + A/B `--on all-wave1` after N12 (ahead of N12 only if all-wave1 still shows the y≈2100-2150 frame); open checks (hero off-screen, `active`) |
-| layout-animations (a7da36d) | done, stopped | iPhone | — |
-| apple-verify (a2e856b, lead's) | hold 1 done | short queue empty AND all-wave1 run | part 2 (normal lease ≤ 10 min, MCP Chrome idle while others hold) |
+| I-023 | P0 blocking | ts-i017 | gate recheck before Chrome / keepalive, per-run watchdog (progress-based, I-026), fake-host test. Canary rule: lead lands, runs `fix.mjs ab --aa --runs 1` on main + ts-i002 test:chrome before the goal hold |
+| I-024 | P0 blocking | A: ts-i017, B: ts-prio | A: tests read the real host in gate/recheck (verify-fake 940 s, ab-fake 160 s, gain e2e 134 s). B: `lock run --max-seconds` did not kill the node --test tree. Workaround: commit tooling only while `lock.mjs status` shows "gate open"; ONE 300 s short lease for commit + hook |
+| I-025 | resolved (dup of I-024) | – | – |
+| I-026 | P1, env | ts-prio (after I-024 B) | Mac Maintenance Sleep mid-hold (pmset log: 472 s, on AC); timeouts and lock caps fire ~8 min late. Fix: every lock hold runs under caffeinate. Stopgap: lead runs `caffeinate -i -s` until ~06:40Z; agents may wrap their command in `caffeinate -dis` inside the `sh -c`. ts-i017's watchdog must survive sleep |
+| I-016/017/022 | resolve on ts-i002 test:chrome after I-023 + I-024A | ts-i017 / ts-i002 | I-022 harness landed 36fd4b5 |
+| I-018 | after I-023 | ts-i017 | stashed 69cb158, own commit |
+| I-020 | after I-024B | ts-prio | drain-all shorts at hand-over; also lock.mjs:10 comment 120 → 150; 1 h `run` acquire timeout drops entries |
+| I-021 | committing (02:33Z lease) | ts-i021 | then tools-speed #3 + #6 (FW_TIME_SCALE, shared fixtures; hook 73 s → 20-30 s) |
+
+## Who waits on what (team target ~8, lead 02:30Z)
+
+| agent | state | waits on | next |
+|---|---|---|---|
+| ts-i017 | building I-023 + I-024A | – | message mgmt-ops when it queues commit/test:chrome → mgmt-ops pings lead for `repair --move` to #1 (watcher task btqgudm13) |
+| ts-prio | I-024B, then I-020 | – | resumed by lead 02:2xZ |
+| ts-i021 | I-021 commit lease 02:33Z | – | shas → land batch; then tools-speed #3+#6 |
+| ts-bench | steps 1/2/6 rebased (f0fea0c, 8fdcad8, 3382e71), 3+4 uncommitted | gate open | land batch, then ENDS (lead) |
+| ts-i002 | handed back; I-022 landed 36fd4b5 | I-023 + I-024A landed | resume it for full `npm run test:chrome` (short, split on 124) → lead resolves I-016/017/022; then ENDS |
+| wave1-dry | idle, no lock | I-023 + canary | ONE announced hold: guard; `ab --aa --runs 5`; `ab all-wave1 --runs 5`; `timeout 60 probe-countdown-active.mjs`; F-011 (y≈2100-2150) + F-009c (nav IO 46 ms) attribution; kill only on CONTAMINATED / gate TIMEOUT; commit probe with results |
+| fix-scroll-engine | mech10 short queued 02:32Z | short slot | report R3 un-skips idle vs scroll, cv churn, will-change window, idle LoAF > 50 ms; part 3 (E3) + /10 A/B `--on all-wave1` wait for mgmt-ops GO after the all-wave1 hold |
+| fix-vendor-scrollend (N11) | short validation requeued with caffeinate; reported I-026 | short slot | partial (base only): gtag scrollend (gtag/js:903) 83 % spread inside gtag, no hotspot, so deferral is the only lever; final A/B `--on all-wave1` first in wave 2 |
+| fix-nav-morph | resumed 02:3xZ on N12 stage-1 probe | short, gate open, 300 s | Tier A counts + parity (5 viewports); #6 waits finger test; E4 after all-wave1 |
+| apple-verify | waiting | GO after all-wave1 hold | 3 normal holds of 6-8 min (`--timeout 14400`); MCP Chrome kept until then (lead asks user to close after) |
+| countdown, layout-animations, N3 | stopped / done | – | do not resume |
 
 ## Wave-2 order (lead decisions, DIRECTION slot 3)
 
-N11 and scroll-engine /10 first (whichever is ready; one ~7 min hold each) → N12 (nav-morph; absorbs arch-apple #2 + #4)
-→ hero-exit → countdown 05/08 → E4. Every A/B `--on all-wave1`, normal holds ≤ ~10 min (F-007). Exception: the goal
-number (A/A + all-wave1) is one announced ~15 min hold. arch-apple #8 (reveal without blur) parked for the user.
+N11 and scroll-engine /10 first (one ~7 min hold each) → N12 (nav-morph) → hero-exit → countdown 05/08 → E4. Every A/B
+`--on all-wave1`, normal holds ≤ 10 min; the goal hold (A/A + all-wave1) is the one ~15 min exception.
 
-## Queue plan and rules
+## Queue rules and monitors
 
-- Current short-lane rule (I-011 budget 300 s) hands the lock to the next normal after ~1 short regardless of queue
-  position. Until ts-prio's drain-all lands: normal waiters pause (dequeue) while 3+ shorts wait; the lead uses
-  `repair --move` for critical-path shorts. Ask the lead for moves, with the owner name.
-- **HOLDER-IDLE > 5 min with 3+ waiting → message the lead immediately** (lead rule after the 33-min all-wave1 hang).
-  My monitor for it: `scratchpad/mgmt-ops/idlewatch.sh` (task bhlahyi2r). Other monitors: `watch.sh` (b6z9zgx1u: lock
-  holder, incidents, findings, tick), `quiet.sh` (b1lqrn0am: load1 ≤ 6 for 10 min). Stop them when you take over.
-- Friction scan each check-in: `node .claude/worktrees/agent-a1ecf91dac9344dc2/research/management/tools/kpi.mjs --friction`.
-- Host: Spotlight (`spotlightknowledged`, 75-90 % CPU) and earlier `mediaanalysisd` keep "other CPU" above the gate's
-  20 %. The user has the question (wait, or `sudo mdutil -a -i off`).
-- Queue entries drop silently after 1 h: `lock.mjs run` has a default 3600 s acquire timeout (N11 and nav-morph lost
-  their places this way; both requeued with longer timeouts). Tell long-waiting owners to pass `--timeout 14400`;
-  candidate item for ts-prio (I-020) if waits stay long.
-- **I-026 (env, N11):** the Mac entered "Maintenance Sleep" mid-hold (09:23:25 local, 472 s); timeouts and lock caps
-  fired ~8 min late. May explain other odd holds (check against I-023's 1953 s wait). Workaround: `caffeinate -dis`
-  around the command inside the `sh -c`; tool-side fix (every hold under caffeinate) is for the lead/toolsmith.
-  N11 partial (base only): gtag scrollend at gtag/js:903 is 83 % spread inside gtag with no hotspot, so deferral is the
-  only lever; requeued with caffeinate.
-- No normal timing A/Bs until I-023 lands (lead, 01:15Z); mechanism and short-lane work continues.
-- Digest to the lead every ≤ 30 min: counts waiting/working/idle, backlog, memory, ALARM lines. Last digest 00:12Z.
-- mgmt-lead re-run was due ~01:00Z (iteration 2): remind the lead.
+- Shorts: ONE 300 s lease for commit + hook, gate open; `--timeout 14400` on every `lock.mjs run`/`acquire` wait.
+- HOLDER-IDLE > 5 min with 3+ waiting → lead IMMEDIATELY. Friction scan (`node research/management/tools/kpi.mjs
+  --friction`) at every check-in; ALARM in 2 consecutive check-ins → incident candidate.
+- Monitors (scratchpad `mgmt-ops/`): `idlewatch.sh` (Monitor b4hrnr0gk), `watch.sh` (Monitor bd08tclc1: holder,
+  incidents, findings). Scripts point at this worktree. On restart: stop them (TaskStop) and re-arm.
+- Measurement-code canary (LEAD.md iteration 2): any verify/cdp/fix-ab change lands only after `ab --aa --runs 1` on
+  main + passing test:chrome.
 
-## Findings posted this stretch
+## Open user-facing questions (lead holds them)
 
-F-006 wave1-partial, F-007 ≤ 10-min holds, F-008 shift-tolerant pixel diff, F-009 scroll-engine part 1, F-010 I-019,
-F-011 scroll-engine part 2, F-012 gate, F-013 wave 1 complete, F-014 probe cert pitfall. The lead folds them into FINDINGS.md.
+Spotlight (pause indexing or wait); FW_TOOLING pre-commit block; I-026 sleep setting; iPhone back (#6 finger test,
+DIRECTION iPhone queue 1-7); closing the stray MCP Chrome after apple-verify part 2.
