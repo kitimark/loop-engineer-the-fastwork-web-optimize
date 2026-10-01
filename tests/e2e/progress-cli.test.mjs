@@ -78,3 +78,34 @@ test('console.mjs progress: text, --json, --details; --check validates a file', 
   assert.equal(c.code, 1);
   assert.match(c.stdout, /PROGRESS INVALID[\s\S]*goal: contains a url/);
 });
+
+test('I-048: the chrome-measure shared lane on the page, the API and the text: every reader, the weight against the cap, the switch', async () => {
+  const lock = (args) => node(tool('lock.mjs'), args, { env });
+  // the lane off, Chrome free: as before
+  assert.match(node(CON, ['progress'], { env }).stdout, /^ {2}Chrome: free$/m);
+  assert.equal(lock(['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e']).code, 0);
+  assert.match(node(CON, ['progress'], { env }).stdout, /^ {2}Chrome: free; shared lane on, cap 3$/m);
+  const a = lock(['acquire', 'chrome-measure', '--shared', '--max-seconds', '120', '--weight', '2', '--owner', 'fix-e2e-a', '--url', LAN]);
+  assert.equal(a.code, 0, a.out);
+  const b = lock(['acquire', 'chrome-measure', '--shared', '--max-seconds', '120', '--weight', '1', '--owner', 'fix-e2e-b']);
+  assert.equal(b.code, 0, b.out);
+  try {
+    const r = await request(new URL('api/progress', base).href);
+    const c = JSON.parse(r.text).live.chrome;
+    assert.equal(c.holder, null);
+    assert.deepEqual(c.shared.readers.map((x) => [x.owner, x.weight, Object.keys(x).sort().join()]), [['fix-e2e-a', 2, 'owner,since,weight'], ['fix-e2e-b', 1, 'owner,since,weight']]);
+    assert.deepEqual([c.shared.used, c.shared.cap, c.shared.joinsClosed], [3, 3, false]);
+    assert.deepEqual(c.lane, { on: true, cap: 3 });
+    for (const bad of ['192.168', 'http://', '/Users/', '"token"', '"pid"', '"checkout"', '(shared)']) assert.ok(!r.text.includes(bad), `${bad} leaked: ${r.text}`);
+    const t = node(CON, ['progress'], { env });
+    assert.match(t.stdout, /^ {2}Chrome: fix-e2e-a \(w2, since \d\d:\d\dZ\), fix-e2e-b \(w1, since \d\d:\d\dZ\) \(shared lane 3\/3\)$/m);
+    // the page renders the readers itself (text only, from the model): the names first (user T-008)
+    const p = await request(new URL('progress', base).href);
+    assert.match(p.text, /names \+ ' \(shared lane ' \+ s\.used/);
+    assert.match(p.text, /'joins closed: ' \+ s\.closedBy/);
+  } finally {
+    lock(['release', 'chrome-measure', '--shared', '--owner', 'fix-e2e-a']);
+    lock(['release', 'chrome-measure', '--shared', '--owner', 'fix-e2e-b']);
+  }
+  assert.match(node(CON, ['progress'], { env }).stdout, /^ {2}Chrome: free; shared lane on, cap 3$/m);
+});

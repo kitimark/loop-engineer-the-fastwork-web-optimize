@@ -7,7 +7,8 @@
 //      `node tools/console.mjs progress --check` validates it, and tests/unit/progress.test.mjs validates the
 //      committed file in every `npm run test:unit`.
 //   2. Live state, read at request time: the iphone and chrome-measure holders and queues (owner names only, never
-//      a holder's meta or checkout), open incidents (id, title, blocking), the console steps waiting for the user
+//      a holder's meta, checkout, pid or token; a chrome-measure shared group as its readers with weight and start
+//      time, the weight in use against the cap, whether joins are closed, and the lane switch, I-048), open incidents (id, title, blocking), the console steps waiting for the user
 //      (title only, never a URL or instructions), and the "in?" cell of fixes/PREDICTIONS.md for every check an item
 //      names. A check whose ledger row has a result while PROGRESS.json still has none is flagged "new result, the
 //      summary is not updated yet", so a stale summary shows on the page.
@@ -208,13 +209,32 @@ export function readLedger(file = ledgerFile()) {
 
 // ---- live state --------------------------------------------------------------------------------------
 
-/** A lock resource for the page: holder and queue by owner name only (no meta, no checkout, no pid). */
+/**
+ * A lock resource for the page: holder and queue by owner name only (no meta, no checkout, no pid, no token).
+ * The chrome-measure shared lane (ts-lock-share; I-048): a shared group is not one holder but its readers, each as
+ * {owner, weight, since}, with the weight in use against the lead's cap and whether joins are closed (an exclusive
+ * waiter is queued: writer preference, lock.mjs readerAttempt). `st.sharedLane` is lock.sharedSwitch() (gatherLive
+ * adds it for a gated resource); `lane` is null without it. A group in a format this code does not know shows as an
+ * exclusive holder, as lock.mjs treats it.
+ */
 export function lockView(st, now = Date.now()) {
   if (!st) return null;
-  const h = st.holder && !st.stale ? st.holder : null;
+  const held = st.holder && !st.stale ? st.holder : null;
+  const group = held && held.shared === true && held.format === 'rw1' && Array.isArray(held.readers) ? held : null;
+  const h = group ? null : held;
+  const sw = st.sharedLane || null;
+  const queue = st.queue || [];
+  let shared = null;
+  if (group) {
+    const readers = group.readers.map((x) => ({ owner: sanitize(x.owner, 60), weight: x.weight || 1, since: x.acquiredAt || null }));
+    const writer = queue.find((w) => !w.shared);
+    shared = { readers, used: readers.reduce((a, x) => a + x.weight, 0), cap: sw?.cap ?? null, joinsClosed: !!writer, closedBy: writer ? sanitize(writer.owner, 60) : null };
+  }
   return {
     holder: h ? { owner: sanitize(h.owner, 60), since: h.acquiredAt || null, until: h.expiresAt || null, short: !!h.short } : null,
-    queue: (st.queue || []).map((w) => sanitize(w.owner, 60)),
+    shared,
+    lane: sw ? { on: !!sw.enabled, cap: sw.cap } : null,
+    queue: queue.map((w) => sanitize(w.owner, 60)),
   };
 }
 
@@ -223,7 +243,14 @@ export async function gatherLive() {
   const live = { locks: {}, incidents: null, steps: null, errors: [] };
   try {
     const L = await import('./lock.mjs');
-    for (const r of ['iphone', 'chrome-measure']) live.locks[r] = L.status(r);
+    for (const r of ['iphone', 'chrome-measure']) {
+      const st = L.status(r);
+      // a shared group: only its live readers (a dead process reader stays in the file until the next acquirer prunes
+      // it), and the lead's switch (on/off, cap) for the lane line; both through lock.mjs accessors, never the files
+      if (L.isGroup(st.holder) && Array.isArray(st.holder.readers)) st.holder = { ...st.holder, readers: L.liveReaders(st.holder) };
+      if (L.GATED[r]) st.sharedLane = L.sharedSwitch(r);
+      live.locks[r] = st;
+    }
   } catch (e) { live.errors.push(`locks: ${e.message}`); }
   try { live.incidents = (await import('./incident.mjs')).list(); } catch (e) { live.errors.push(`incidents: ${e.message}`); }
   try { live.steps = (await import('./console.mjs')).list({ pending: true }); } catch (e) { live.errors.push(`console steps: ${e.message}`); }
@@ -309,9 +336,23 @@ export async function currentView({ now = Date.now() } = {}) {
 const hhmm = (iso) => (iso ? `${iso.slice(11, 16)}Z` : '?');
 const agoText = (min) => (min === null ? '' : min < 60 ? `${min} min ago` : `${Math.floor(min / 60)} h ${min % 60} min ago`);
 
+/** One shared reader: "fix-a (w2, since 21:40Z)". */
+export const readerText = (x) => `${x.owner} (w${x.weight}, since ${hhmm(x.since)})`;
+/**
+ * A shared group, the readers first (user T-008), then the weight in use against the cap ('?' if unknown):
+ * "a (w2, since 21:40Z), b (w1, since 21:41Z) (shared lane 3/3); joins closed (c waits for Chrome alone)".
+ */
+export function sharedText(l) {
+  const s = l.shared;
+  const off = l.lane && !l.lane.on ? '; switch off: no new reader joins' : '';
+  return `${s.readers.map(readerText).join(', ') || 'no live reader'} (shared lane ${s.used}/${s.cap ?? '?'}${off})${s.joinsClosed ? `; joins closed (${s.closedBy} waits for Chrome alone)` : ''}`;
+}
+
 function holderText(l, what) {
   if (!l) return `${what}: unknown`;
-  const h = l.holder ? `${l.holder.owner} (since ${hhmm(l.holder.since)})` : 'free';
+  // with the lane's switch off and no group it reads as before the lane
+  const lane = l.lane?.on ? `; shared lane on, cap ${l.lane.cap}` : '';
+  const h = l.shared ? sharedText(l) : `${l.holder ? `${l.holder.owner} (since ${hhmm(l.holder.since)})` : 'free'}${lane}`;
   return `${what}: ${h}${l.queue.length ? `, ${l.queue.length} waiting (${l.queue.join(', ')})` : ''}`;
 }
 

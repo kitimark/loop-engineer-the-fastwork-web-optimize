@@ -151,6 +151,49 @@ test('derive: queue positions, holder, pending steps by the owner, blocking inci
   assert.deepEqual(S.derive(S.get('b'), live).derived, []);
 });
 
+test('I-048 derive: every reader of a shared Chrome group is "using Chrome now (shared)"; an exclusive holder and a free lock as before', async () => {
+  // a fake lock.status('chrome-measure'): 2 readers (w2 + w1 of cap 3), joins closed by the exclusive waiter fix-c
+  const group = {
+    resource: 'chrome-measure', stale: null, sharedLane: { enabled: true, cap: 3 },
+    holder: { owner: '(shared)', kind: 'lease', token: 'g9g9g9g9g9g9', shared: true, format: 'rw1', acquiredAt: '2026-10-01T17:01:00Z', expiresAt: '2026-10-01T17:07:10Z',
+      readers: [
+        { owner: 'fix-a', token: 'a1a1a1a1a1a1', kind: 'process', pid: 424242, weight: 2, acquiredAt: '2026-10-01T17:01:00Z', deadline: '2026-10-01T17:06:05Z', meta: { url: LAN } },
+        { owner: 'runner-alias', token: 'b2b2b2b2b2b2', kind: 'lease', weight: 1, acquiredAt: '2026-10-01T17:03:00Z', deadline: '2026-10-01T17:07:00Z' },
+      ] },
+    queue: [{ owner: 'fix-d', shared: true, weight: 1 }, { owner: 'fix-c', kind: 'process', pid: 616161 }],
+  };
+  await add('a', { state: 'testing' });                                         // owner fix-a: a reader
+  await add('b', { by: 'fix-b', aliases: 'runner-alias', state: 'testing' });  // matched by its alias
+  await add('fix-d', { by: 'someone', state: 'testing' });                     // matched by its id: a waiting reader
+  await add('c', { by: 'fix-c', state: 'measuring' });                         // the exclusive waiter
+  const live = { locks: { 'chrome-measure': group }, incidents: [], steps: [] };
+  const plains = (id) => S.derive(S.get(id), live).derived.map((x) => x.plain);
+  assert.deepEqual(plains('a'), ['using Chrome now (shared)']);
+  assert.deepEqual(plains('b'), ['using Chrome now (shared)']);
+  assert.deepEqual(plains('fix-d'), ['in line for Chrome, #1 of 2']);
+  assert.deepEqual(plains('c'), ['in line for Chrome, #2 of 2']);
+  // the group's own owner "(shared)" is nobody's: a row with that name (not a valid agent name) gets nothing
+  assert.deepEqual(S.derive({ id: 'x', owner: '(shared)' }, live).derived, []);
+  const d = S.derive(S.get('a'), live);
+  assert.deepEqual(d.derived[0], { kind: 'using', resource: 'chrome', shared: true, plain: 'using Chrome now (shared)' });
+  assert.equal(d.liveWait, true, 'a shared reader is a live wait: never stale');
+  const json = JSON.stringify(S.buildStatusView({ items: S.list(), live }));
+  for (const bad of ['192.168', 'a1a1a1', 'g9g9g9', '424242']) assert.ok(!json.includes(bad), `${bad} leaked`);
+  // an exclusive holder: as before
+  const excl = { locks: { 'chrome-measure': { resource: 'chrome-measure', stale: null, holder: { owner: 'fix-a', kind: 'lease', acquiredAt: '2026-10-01T17:05:00Z' }, queue: [] } }, incidents: [], steps: [] };
+  assert.deepEqual(S.derive(S.get('a'), excl).derived, [{ kind: 'using', resource: 'chrome', plain: 'using Chrome now' }]);
+  assert.deepEqual(S.derive(S.get('b'), excl).derived, []);
+  // a free lock: nothing
+  assert.deepEqual(S.derive(S.get('a'), { locks: { 'chrome-measure': { holder: null, queue: [] } } }).derived, []);
+  // the real store: a lease reader in a real group (lane on) is using Chrome now (shared)
+  await L.setSharedSwitch('chrome-measure', { on: true, by: 'lead', reason: 'test' });
+  assert.equal((await L.tryAcquire('chrome-measure', { owner: 'fix-a', kind: 'lease', shared: true, weight: 2, maxSec: 120, load1: 0, ncpu: 8 })).ok, true);
+  assert.equal((await L.tryAcquire('chrome-measure', { owner: 'runner-alias', kind: 'lease', shared: true, weight: 1, maxSec: 120, load1: 0, ncpu: 8 })).ok, true);
+  const real = await P.gatherLive();
+  assert.deepEqual(S.derive(S.get('a'), real).derived.map((x) => x.plain), ['using Chrome now (shared)']);
+  assert.deepEqual(S.derive(S.get('b'), real).derived.map((x) => x.plain), ['using Chrome now (shared)']);
+});
+
 test('I-044: the owner drops a derived incident link with --unlink; a later --waiting-on incident re-links it; none clears', async () => {
   // iphone-runner reported I-001 (blocking) and I-002 (blocking); the phone-queue row runs something unrelated to I-001
   const i1 = (await I.open({ by: 'iphone-runner', title: 'WDA slow', error: 'wda timeout', blocking: true })).incident.id;

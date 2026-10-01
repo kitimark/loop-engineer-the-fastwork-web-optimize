@@ -121,8 +121,20 @@ var open = {}; // which details are open, kept across refreshes
 function holder(label, l) {
   var box = el('div', { class: 'box' }, el('div', { class: 'k', text: label }));
   if (!l) { box.appendChild(el('div', { class: 'v', text: 'unknown' })); return box; }
-  box.appendChild(el('div', { class: 'v', text: l.holder ? l.holder.owner : 'free' }));
-  if (l.holder) box.appendChild(el('div', { class: 'q', text: 'since ' + hhmm(l.holder.since) }));
+  if (l.shared) {
+    // the chrome-measure shared lane (I-048): the readers' names first (user T-008), then the weight in use against
+    // the cap, then every reader with its weight and start time
+    var s = l.shared;
+    var names = s.readers.map(function (x) { return x.owner; }).join(', ') || 'no live reader';
+    box.appendChild(el('div', { class: 'v', text: names + ' (shared lane ' + s.used + '/' + (s.cap === null ? '?' : s.cap) + ')' }));
+    s.readers.forEach(function (x) { box.appendChild(el('div', { class: 'q', text: x.owner + ' (w' + x.weight + ', since ' + hhmm(x.since) + ')' })); });
+    if (l.lane && !l.lane.on) box.appendChild(el('div', { class: 'q', text: 'switch off: no new reader joins' }));
+    if (s.joinsClosed) box.appendChild(el('div', { class: 'q', text: 'joins closed: ' + s.closedBy + ' waits for Chrome alone' }));
+  } else {
+    box.appendChild(el('div', { class: 'v', text: l.holder ? l.holder.owner : 'free' }));
+    if (l.holder) box.appendChild(el('div', { class: 'q', text: 'since ' + hhmm(l.holder.since) }));
+    if (l.lane && l.lane.on) box.appendChild(el('div', { class: 'q', text: 'shared lane on, cap ' + l.lane.cap }));
+  }
   if (l.queue.length) box.appendChild(el('div', { class: 'q', text: l.queue.length + ' waiting: ' + l.queue.join(', ') }));
   return box;
 }

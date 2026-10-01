@@ -9,7 +9,8 @@
 // Every read-modify-write runs inside the lock library's mkdir guard ("status-store").
 //
 // Derived waits (read at view time from progress.mjs gatherLive, never stored, never overwriting the self-report):
-// the owner queued on chrome-measure / iphone ("#2 of 3 in line"), holding one ("using Chrome now"), a pending console
+// the owner queued on chrome-measure / iphone ("#2 of 3 in line"), holding one ("using Chrome now"; a reader of the
+// chrome-measure shared group: "using Chrome now (shared)", I-048), a pending console
 // step posted by the owner ("waiting on you"), an active blocking incident naming the owner (unless the owner dropped
 // that link with `set --unlink I-0NN`, I-044: the incident is real but not what this workstream waits on). A
 // self-reported wait on an incident or a workstream that is already over is flagged.
@@ -302,7 +303,11 @@ export function derive(it, live = {}, byId = new Map()) {
     const st = live.locks?.[r];
     if (!st) continue;
     const h = st.holder && !st.stale ? st.holder : null;
-    if (h && names.has(h.owner)) derived.push({ kind: 'using', resource: kind, plain: kind === 'chrome' ? 'using Chrome now' : 'on the phone now' });
+    // a shared group (the chrome-measure shared lane, I-048) holds for its readers: each one matching this row is
+    // using Chrome now, beside the others; the group's own owner "(shared)" is nobody's
+    const group = h && h.shared === true && Array.isArray(h.readers);
+    if (group && h.readers.some((x) => names.has(x.owner))) derived.push({ kind: 'using', resource: kind, shared: true, plain: kind === 'chrome' ? 'using Chrome now (shared)' : 'on the phone now (shared)' });
+    else if (h && !group && names.has(h.owner)) derived.push({ kind: 'using', resource: kind, plain: kind === 'chrome' ? 'using Chrome now' : 'on the phone now' });
     const q = st.queue || [];
     const i = q.findIndex((w) => names.has(w.owner));
     if (i >= 0) derived.push({ kind, position: i + 1, of: q.length, plain: `in line for ${label}, #${i + 1} of ${q.length}` });
