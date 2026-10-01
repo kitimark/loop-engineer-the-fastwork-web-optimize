@@ -50,6 +50,9 @@ you were given. This file adds how to work; it doesn't repeat the steps or the r
 4. **No chrome-devtools MCP**, for anything. Chrome is driven only by `fix.mjs ab` / `verify.mjs`.
 5. **You are the only one who measures** for your topic. Queue `fix.mjs ab` in the background
    (Bash `run_in_background`) and read, plan or write while it waits for the `chrome-measure` lock.
+   Wait with commands that exit by themselves, never a `sleep` loop: your server with
+   `node tools/wait.mjs serve out/serve-<topic>.json`, the lock read-only with `node tools/lock.mjs wait
+   chrome-measure --until …`, the iPhone with `lock.mjs acquire iphone … --wait 3600` in the background.
    Keep the machine quiet while anyone holds the lock (no builds, `npx`, extra Chromes, big greps in
    loops): the holder's numbers depend on it, and `results.json` records the host load.
 6. **Commit only** `fixes/<topic>/README.md`, `patch.diff`, `results.json`, plus tool fixes with

@@ -42,7 +42,8 @@ the next free `research/<nn>-…` number.
    (expected); worse than the best single one, or new `regressions`, is interference. Only then
    measure leave-one-out combinations (`fix.mjs combine all-wave<N>--minus-<t> …`, then `ab`); each
    costs about 6 minutes of exclusive lock, so ask the lead before more than two.
-4. **iPhone** (`CLAUDE.md` "Shared devices"): with the `iphone` lease, `iphone.mjs scroll` on the
+4. **iPhone** (`CLAUDE.md` "Shared devices"; queue for the lease with `lock.mjs acquire iphone … --wait 3600`
+   in the background, no retry loop): with the `iphone` lease, `iphone.mjs scroll` on the
    baseline and the combined overlay; for touch-only topics ask the lead for a finger test. Release
    the lease right after. If the phone is unavailable, say so in the README instead of skipping silently.
 5. **Write** `fixes/all-wave<N>/README.md` from `fixes/_template/README.md`: topics and order,
