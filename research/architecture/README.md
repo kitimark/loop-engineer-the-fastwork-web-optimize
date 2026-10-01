@@ -327,3 +327,12 @@ scripted drivers never reach the finger's p90 speed (3.5k px/s), the collapsed-t
 direction. Also: phone heat as a covariate, per-origin warm-up, in-window network work, the countdown's hard expiry
 (2026-11-02 05:00Z), Chrome field trials in a persistent profile, unrecorded phone settings. Render-pipeline unknowns:
 `research/design-engineering/unknowns-render.md`; perception: `research/design-engineering/unknowns-ux.md`.
+
+## Unknown fields and phone post-mortems (arch-lead, 2026-10-01)
+
+[`unknowns-actions.md`](unknowns-actions.md): one ranked action list merged from six notes (arch-unknowns validity,
+de-unknowns-ux perception, de-unknowns-render render cost, de-pm-morph, de-pm-hero, fix-nav-morph's y≈1960 card).
+Cross-case misunderstandings X1-X9 (WebKit-only invalidation amplifiers hidden by Chrome; rAF as the wrong
+instrument; co-located events taken for causes; serial-sum models; drifting baselines; threshold artifacts; counts vs
+perception; driver coverage; the probe changing what it measures), 33 deduped unknowns, desk / tool / phone / Chrome /
+finger actions with owner, phone and user minutes and dependencies, and proposed protocol v2 amendments A1-A9.
