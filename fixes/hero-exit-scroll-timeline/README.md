@@ -639,6 +639,21 @@ Verdicts on P-019 (OBSERVED, n = 2 per arm):
   - Whether iOS runs a cubic-bezier **filter blur** transition on Core Animation is UNRESOLVED for this card.
     F-080 showed it for the device's linear()/cubic pair, not for a blur on a 430x1328 layer. A V arm that
     stays main-thread reads NULL, not WORSE.
+- **Stack check on fix-scroll-engine's st5** (5 persistent will-change avatar imgs inside the card; snapshot
+  `<scratchpad>/layout-containment/snap2/st5`, CSS e68c9963, JS 268a6896). The combined build bco-st5 is
+  blur-cubic-op's CSS hunks on st5: CSS 20438cc4, JS 268a6896. Its diffs against each side are exactly the
+  other side's hunks, so there is no overlap. Overlay `fixes/hero-exit-scroll-timeline--bco-st5/overlay`
+  (gitignored).
+  - probe9 (short lane, untimed, 430x775/932; `pr9s5/report.json`): st5 vs bco-st5.
+    - Card: 1 layer in both, 462x1329, reason WillChangeTransform, the same as on aw1-10e.
+    - Layers: 143 in both; drawing 136 vs 137. Scroll paint delta 125/126 and 121/120; card 52/52.
+    - Transitions and reveal counts unchanged; 0 errors.
+    - Parity: settled card 0.000 %; 300 px into the card 0.587 % (775) and 0.38 % (932). The 775 value is
+      above the 0.4 % band, but the frames look identical by eye and the difference is low intensity
+      (maxSum 171). It is probably phase, not located.
+  - Whether st5's img layers nest under the card is a WebKit question: Chrome's LayerTree is flat.
+  - **Open item before any bco-st5 landing:** locate the 0.587 % mid-frame pixels (agreed with fix-scroll-engine).
+    st5 against its control C was 0.00 % on its slide shots.
 - **Plan: P-038** (mgmt-ops-5 second read). It sits behind P-033's gain block unless the lead says otherwise.
   - **Block:** aw1-10e (C) vs blur-cubic (V), driver W.
     - The driver is tlwin.mjs: scrollBy +250 every 300 ms from 0 to 900, then a 2 s hold.
