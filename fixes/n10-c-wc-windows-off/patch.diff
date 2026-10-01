@@ -1,0 +1,22 @@
+# fastwork mirror fix: n10-c-wc-windows-off
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10c/overlay: apply aw1-10c first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply n10-c-wc-windows-off --on aw1-10c
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 757e2cbc44e7f245022767b04f618a3bd2b505138603d26079af89e7e04c25ad
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11804,8 +11804,9 @@
+    element is inside its +-0.5 vh window; both edges are off screen, and /09's no-re-skip keeps the gate
+    from flapping, so the flips happen away from the viewport. */
+ .start-selling [data-start-selling-scene="paused"],
+-.start-selling [data-start-selling-scene="paused"] :where(*),
+-.start-selling [data-fw-wc="0"] {
++.start-selling [data-start-selling-scene="paused"] :where(*) {
++  /* [N10 ablation c] diagnostic only: the per-element will-change windows ([data-fw-wc="0"]) are off; layers
++     follow the scene gate only, as in all-wave1 (the JS still sets data-fw-wc, it just has no effect). */
+   will-change: auto !important;
+ }
+ .start-selling [data-start-selling-render="deferred"] {

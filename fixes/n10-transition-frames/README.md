@@ -1,0 +1,49 @@
+# Fix: n10-transition-frames (N10, #1 iPhone target)
+
+> Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
+> Fastwork). Diffs contain excerpts of Fastwork's code: keep them on local branches, never push.
+
+**Status:** diagnosis. Ablation overlays built for the iPhone; no fix yet.
+**Owner:** fix-scroll-engine (lead decision 07:07Z). Base: `aw1-10c` (all-wave1 + scroll-engine /10c; JS 757e2cbc…, CSS c6aad94b…).
+
+## Symptom
+
+iphone-runner's goal check on aw1-10c (scripted, n=3) shows a ~106 ms frame at y≈1960-1970 ("pain entry") in every
+run. The other frames > 50 ms are 51-55 ms at y≈50 and ~50 ms at y≈700/1000 (2/3).
+
+## What happens near y≈1.7-2.2 k on a phone (code reading)
+
+- `.pain` (section, CSS `.pain-sticky { position: sticky }`) is registered with the engine at a 150 % gate
+  (`dE(..., { deferRendering: !0, rootMargin: 150% 0px })`, JS 4891). Under /10c it is rendered at load and only
+  re-skipped when > 2.25 vh above the viewport.
+- **`is-pain-dark`** (JS 11557-11561, future `l`): on phones (`max-width: 860px`), `.pain` gets `is-pain-dark` when
+  `.start-selling-future-header`'s top reaches 0.5 px. The CSS (2310-2320) then switches `.pain`, `.pain-sticky` and
+  `.pain-hold` from `#fff` to `#131922`: a full-viewport background repaint of a sticky section in one frame.
+- The will-change windows (/10c, IO 50 %) flip `data-fw-wc` for `.commission-card`, `.face`, `.orbit-card`,
+  `.hero-copy` and `.start-selling-future-card` in this region.
+- Filter blurs in the region: the future card's reveal `filter: blur(14px)` while `#people` is not `.is-visible`
+  (CSS 2402), and the hero copy's exit blur (CSS 1741). There is **no backdrop blur on `.pain` or
+  `.commission-card`** (CSS grep).
+
+## Ablation overlays (diagnostic only, not landable)
+
+Each overlay is a standalone copy of both files (aw1-10c plus one change), so it serves on its own.
+Diffs vs aw1-10c are in `fixes/<name>/patch.diff`.
+
+| name | disables |
+|---|---|
+| `n10-a-region-blur-off` | the region's filter blurs: future-card reveal blur + hero-copy exit blur (`filter: none !important`). There is no backdrop blur on .pain/commission-card to remove. |
+| `n10-b-pain-visible` | content-visibility on `.pain` (`.pain[data-start-selling-render="deferred"] { content-visibility: visible !important }`), so it is never skipped |
+| `n10-c-wc-windows-off` | /10c's per-element will-change windows (`[data-fw-wc="0"]` no longer forces `will-change: auto`); layers follow the scene gate only, as in all-wave1 |
+| `n10-d-pain-dark-frozen` | the `is-pain-dark` toggle (never toggled; on phones `.pain` stays light, so there is no full-viewport repaint). Desktop never turns dark either (visual change, diagnostic only). |
+
+Serve (plain http per I-003; any checkout, absolute overlay path):
+`node tools/serve.mjs --root site-pretty --overlay /Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-a1722cf5058e25591/fixes/<name>/overlay --port auto --vendors=local --latency 150`
+Base for comparison: the same with `fixes/aw1-10c/overlay`.
+
+## R3 logger for the phone
+
+`r3-logger.js` (this directory): inject before scrolling; afterwards read
+`JSON.stringify(__r3.summary(1700, 2200))`. It names each frame > 34 ms by the transitions that landed in it or in
+the frame before: cv state changes (capture phase), render/scene/fw-wc attribute flips, and `.pain` / `#people`
+class changes.
