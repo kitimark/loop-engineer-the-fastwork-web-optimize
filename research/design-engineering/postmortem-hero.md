@@ -244,6 +244,12 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
     - **Condition 2:** re-keep also removes the +1150 Layout (rAF L3258). That stays **UNEXPLAINED** until
       fix-hero-exit traces what re-keep changes on the L3258 path, before re-keep-op's build card. fix-hero-exit
       has since sent a proposed trace (§7.9); the lead decides whether it lifts this condition.
+      **Lifted (lead):** the code path is accepted. `l()`'s rAF writes `is-future-shrinking` (L11552); on phones
+      that flips the card's transform `none` → `scale(1)`; L3258's forced read pays. So +1150 joins the
+      presence-flip family, superseding "L11538, not told apart". The platform half stays **OBSERVED in our
+      setup**: that a `none` → non-`none` transform change triggers a WebKit layout and `translateY(0)` →
+      `scale(1)` does not. It is part of condition 1's reference check. re-keep-op's build card may cite the code
+      path, not the WebKit rule.
 - **Fix only after NAMED:** end states that keep presence. `blur(0px)` / `translateY(0)` remove the +940
   layout. For opacity, either align its duration with the 0.9 s pair (two long frames → one) or end at 0.999.
   The 0.999 end needs a render-server check: group opacity on a full-section layer may cost an offscreen pass
@@ -683,7 +689,9 @@ from the flip, so they read here as about **+700 / +900**. Compare shifts, not a
 1. **Mechanism: OBSERVED in our setup, cause unknown.** Why a finished opacity/filter/transform transition costs
    a whole-view Layout in WebKit is not established. arch-claims routes the reference check, and fix decisions
    must not depend on it. The NAMED status rests on the intervention, not on the mechanism.
-2. **The +1150 result: UNEXPLAINED.**
+2. **The +1150 result: UNEXPLAINED, then lifted.** The lead accepted fix-hero-exit's trace below as the code
+   path, so +1150 joins the presence-flip family. The WebKit rule stays OBSERVED and sits under condition 1. The
+   original text follows.
    - What we know: in Q and `re-dur`, the +1150 Layout's InvalidateLayout sits inside rAF L3258 itself. Card 4 had
      called this frame a separate class write (L11538 → L3258).
    - What it would mean: `re-keep` removing it means its end state also changes what L3258 finds dirty or writes.
