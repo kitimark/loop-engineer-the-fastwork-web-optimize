@@ -75,6 +75,36 @@ E1b = aw1-10c, warm phone, user says "laggy":
 
 So the pin fix (g) alone is not expected to be enough; b/e name the render cost.
 
+**F1/F2 = g, finger:**
+- the pin fight is gone: 0 reversals (8 before), 0 pin scrollTo calls (73 before);
+- render cost is not: morph-active p50 17-19 / p95 86-117 ms, 21-26 % of frames > 50 ms, worst 148-199 ms;
+- user: "same laggy".
+
+Keep g's pin fix. The render cost needs its own fix.
+
+## Driver runs (no finger), base aw1-10e
+
+The base is `aw1-10e` = `fix.mjs combine aw1-10e all-wave1 scroll-engine`, JS 3e2f599a…, CSS c6aad94b….
+Builds are `mw10e-{f,g,fb,gb,ge,gc}`; diffs in `variants-10e/`. Serve with
+`node tools/fix.mjs serve mw10e-<x> --on aw1-10e`.
+
+Each build carries a **debug-only** hook, to be stripped before landing:
+- `window.__fwMorphDrive({ hold: 2000, cycles: 3 })` scrolls to maxY and stores the pin target like a push does.
+- Each cycle: `E(1)`, hold, `E(0)`, hold. That is the same spring `T` → `--morph` / nav classes / `S()` path a finger push starts.
+- It logs rAF gaps and puts the JSON result in `window.__fwMD`. Safari's evaluate can't await, so poll it.
+- The summary splits frames into moving (0 < morph < 1), at 1, and at 0.
+
+**What the driver does not reproduce versus a finger:**
+- the touch input path: touchmove handlers, preventDefault, the compositor waiting on the main thread;
+- the iOS rubber-band/overscroll and the pin (no scroll happens, so `L` and the pin never run);
+- the toolbar collapse;
+- the scroll right before the morph starts.
+
+So f vs g in the driver only answers the lead's `overscroll-behavior` compositing question.
+
+`driver-check.mjs` state check, Chrome, short lane, state only: all six builds reach `--morph` 1 and return to 0,
+scrollY stays at maxY, no errors, and `overscroll-behavior` is cleared afterwards.
+
 ## Composited morph (N2), if b names the blur
 
 Each morph frame currently changes:
