@@ -202,6 +202,9 @@ const DEFAULT_MIN_SHIFT = { ms: TICK_MS, ticks: 1, count: 1 };
 // grid (claims-audit §2.3), so the minimum shift is the +-4 ms threshold-sensitivity band, not a Chrome tick, and
 // medians compare in whole ms (rounded; equal rounded medians tie). T1a's A/A may raise it: a parameter change.
 export const PHONE_MIN_SHIFT_MS = 4;
+/** Platforms decided by the phone rules (ms forms, no k forms, 4 ms, whole-ms medians); the simulator scores like
+ * the phone (fidelity protocol §4.2) but is its own device: never pooled with phone or Chrome runs. */
+export const PHONE_LIKE = new Set(['phone', 'simulator']);
 
 /**
  * blocks: [{control, variant}] (1 or 2 so far; per-run scalars of ONE metric). unit 'ms' | 'ticks' | 'count'.
@@ -216,8 +219,8 @@ export function sequentialDecision({ blocks, dir = 'lower', unit = 'ms', predict
   if (!blocks?.length) throw new Error('sequentialDecision: no blocks');
   if (blocks.length > 2) throw new Error('sequentialDecision: at most 2 blocks (a third only by the lead)');
   checkBlocks(blocks, 'sequentialDecision');
-  if (!['chrome', 'phone'].includes(platform)) throw new Error(`bad platform: ${platform} (chrome | phone)`);
-  const phoneMs = platform === 'phone' && unit === 'ms';
+  if (!['chrome', ...PHONE_LIKE].includes(platform)) throw new Error(`bad platform: ${platform} (chrome | phone | simulator)`);
+  const phoneMs = PHONE_LIKE.has(platform) && unit === 'ms';
   const ms = minShift ?? (phoneMs ? PHONE_MIN_SHIFT_MS : DEFAULT_MIN_SHIFT[unit]);
   const f = (x) => (x == null ? '-' : Math.round(x * 1000) / 1000);
   // ms medians compare as ticks on Chrome (§3.2); the phone has no k forms (CLAUDE.md, claims-audit §2.3): whole ms
@@ -323,24 +326,38 @@ const normFrames = (frames, ih) => { let prev = null; return frames.map((f) => {
 const legacyRow = (f) => (Array.isArray(f) && f.length === 4 ? { t: f[0], dt: f[1], y: f[2], innerHeight: f[3] } : f);
 
 /**
- * meta.driver (S scroll, W window, M morph, G gesture, F finger; DRIVERS in tools/lib/iphone-probe.mjs). Files
- * from before T1a carry none: a legacy `iphone.mjs record` file (summary.whileScrollYChanges) is F, a legacy
- * `iphone.mjs scroll` file (maxY + marks.scroll) is S (ts-iphone-run); anything else stays null (unknown).
- */
-/**
  * The platform a run file's data comes from, which sets the decision rules (sequentialDecision `platform`).
  * verify.json is 'chrome'. A frame-log file (fw-iphone-run/1 of iphone-run.mjs, legacy iphone.mjs scroll/record)
- * is 'phone' unless meta.device names Chrome: meta.device 'iPhone ...' (iphone-run.mjs DEVICE) -> phone,
- * 'Chrome ...' / 'HeadlessChrome' -> chrome. The UA is not read (Chrome emulation can carry an iPhone UA).
+ * reads meta.device, checked in this order so a name that mentions two platforms lands on the right one:
+ * 'simulator' / 'iOS Simulator (iPhone ...)' (tools/sim.mjs) -> simulator; 'Chrome ...' / 'HeadlessChrome ...,
+ * iPhone 15 emulation' -> chrome; 'iPhone ...' (iphone-run.mjs DEVICE) / iPad / iOS / Safari -> phone. No
+ * meta.device (or an unknown name): 'phone', and deviceAssumed() says so (the CLI prints a WARN). The UA is not
+ * read (Chrome emulation can carry an iPhone UA).
  */
 export function deviceOf(json) {
   if (Array.isArray(json?.results)) return 'chrome';
   const d = String(json?.meta?.device ?? '');
-  if (/iphone|ipad|\bios\b|safari/i.test(d)) return 'phone';
+  if (/simulator/i.test(d)) return 'simulator'; // research/simulator/README.md §7: never pooled with others
   if (/chrome|chromium/i.test(d)) return 'chrome';
+  if (/iphone|ipad|\bios\b|safari/i.test(d)) return 'phone';
   return 'phone';
 }
 
+/**
+ * True when deviceOf() fell back to 'phone' because the frame-log file names no known device (no meta.device, or
+ * one none of the patterns match): the caller should warn "device not recorded: phone rules assumed".
+ */
+export function deviceAssumed(json) {
+  if (Array.isArray(json?.results)) return false;
+  const d = String(json?.meta?.device ?? '');
+  return !/simulator|chrome|chromium|iphone|ipad|\bios\b|safari/i.test(d);
+}
+
+/**
+ * meta.driver (S scroll, W window, M morph, G gesture, F finger; DRIVERS in tools/lib/iphone-probe.mjs). Files
+ * from before T1a carry none: a legacy `iphone.mjs record` file (summary.whileScrollYChanges) is F, a legacy
+ * `iphone.mjs scroll` file (maxY + marks.scroll) is S (ts-iphone-run); anything else stays null (unknown).
+ */
 export function driverOf(json) {
   if (json?.meta?.driver != null) return json.meta.driver;
   if (json?.summary?.whileScrollYChanges) return 'F';
@@ -376,7 +393,7 @@ export function runsFromJson(json, { phase = 'scroll', innerHeight = null, file 
       else warning = `no marks: all ${json.frames.length} frames used, incl. load and idle (pass --phase all to accept)`;
     }
     return [{ ...(warning ? { warning } : {}),
-      label: meta.label ?? null, run: meta.run ?? 0, block: meta.block ?? null, arm: meta.arm ?? null, pos: meta.pos ?? null, device: deviceOf(json), driver: driverOf(json),
+      label: meta.label ?? null, run: meta.run ?? 0, block: meta.block ?? null, arm: meta.arm ?? null, pos: meta.pos ?? null, device: deviceOf(json), ...(deviceAssumed(json) ? { deviceAssumed: true } : {}), driver: driverOf(json),
       warmup: !!meta.warmup, void: !!meta.void, sentinel: meta.sentinel ?? json.sentinel ?? null, tops: json.tops || meta.tops || {}, source: file,
       frames: normFrames(json.fields ? fr : fr.map(legacyRow), innerHeight),
     }];
@@ -410,7 +427,7 @@ export const PHONE_TWINS = { gt50: ['gt46', 'gt54'], gt34: ['gt30', 'gt38'] };
 export const K_FORMS = new Set(['k5', 'k7', 'p50Ticks', 'p95Ticks']);
 /** The metrics a verdict on `metric` is also decided by, per device ('chrome' | 'phone'); [] when none. */
 export function twinsFor(metric, device = 'chrome') {
-  if (device === 'phone') return PHONE_TWINS[metric] ?? [];
+  if (PHONE_LIKE.has(device)) return PHONE_TWINS[metric] ?? [];
   return TWIN[metric] ? [TWIN[metric]] : [];
 }
 
@@ -426,8 +443,20 @@ export const compareBlockIds = (x, y) => (x == null ? (y == null ? 0 : -1) : y =
  * void it or fix it. `partial` lists counted runs where only some frame times are non-finite (scored on
  * the finite ones; the CLI warns).
  */
+/**
+ * Throws when the runs carry more than one device ('chrome' | 'phone' | 'simulator'; runsFromJson always sets
+ * one, hand-built runs without a device are not counted): frames and verdicts never pool across devices
+ * (research/simulator/README.md §7).
+ */
+export function assertOneDevice(runs, who = 'stats') {
+  const by = new Map();
+  for (const r of runs) if (r.device != null) by.set(r.device, (by.get(r.device) || 0) + 1);
+  if (by.size > 1) throw new Error(`${who}: refusing to pool devices: ${[...by].map(([d, n]) => `${d} (${n})`).join(' with ')}; analyse each device on its own (research/simulator/README.md §7)`);
+}
+
 export function blocksFromRuns(runs, metric) {
   if (!METRICS[metric]) throw new Error(`unknown metric ${metric} (${Object.keys(METRICS).join(', ')})`);
+  assertOneDevice(runs, 'blocksFromRuns');
   const counted = runs.filter((r) => !r.warmup && !r.void);
   if (counted.some((r) => r.arm == null)) throw new Error('blocksFromRuns: a counted run has no arm (meta.arm)');
   const finiteN = (r) => frameCounts(r.frames.map((f) => f.dt)).n;
@@ -458,6 +487,7 @@ export function blocksFromRuns(runs, metric) {
  */
 export const NEAR_KEYS = ['near50', 'near34', 'gt50', 'gt34'];
 export function nearByBlock(runs) {
+  assertOneDevice(runs, 'nearByBlock');
   const counted = runs.filter((r) => !r.warmup && !r.void), out = {};
   const ids = [...new Set(counted.map((r) => r.block))].sort(compareBlockIds);
   for (const arm of [...new Set(counted.map((r) => r.arm))].sort((x, y) => (x === 'C' ? -1 : y === 'C' ? 1 : String(x).localeCompare(String(y))))) {

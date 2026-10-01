@@ -4,14 +4,14 @@
 // blocks, every branch of the sequential decision, the block orders, and crossing placement per unit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, tool } from '../helpers.mjs';
 import {
   TICK_MS, tick, tickThresholdMs, quantile, median, summary, frameCounts, runMetrics, mannWhitney, hodgesLehmann,
   vanElteren, stratifiedShift, aligned, compareBlock, compareBlocks, sequentialDecision, blockOrder,
   crossingY, placeFrame, placeFrames, normalizeFrame, runsFromJson, blocksFromRuns, blockWarnings,
-  compareBlockIds, METRICS, TWIN, twinKind, twinsFor, K_FORMS, PHONE_TWINS, driverOf, deviceOf,
+  compareBlockIds, METRICS, TWIN, twinKind, twinsFor, K_FORMS, PHONE_TWINS, driverOf, deviceOf, deviceAssumed, assertOneDevice, nearByBlock,
 } from '../../tools/lib/stats.mjs';
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`);
@@ -467,6 +467,18 @@ test('phone: medians compare raw (no ticks), legacy drivers, legacy finger rows,
     deviceOf({ frames: [], meta: { device: 'HeadlessChrome 154 (430x775 emulation)', ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' } }),
     deviceOf({ frames: [] }),
   ], ['chrome', 'phone', 'chrome', 'phone']);
+  // a name that mentions two platforms: simulator first, then Chrome, then the phone patterns (review-stats on ae62afa)
+  assert.deepEqual([
+    deviceOf({ frames: [], meta: { device: 'HeadlessChrome 154, iPhone 15 emulation' } }),
+    deviceOf({ frames: [], meta: { device: 'iOS Simulator (iPhone 15 Pro Max, iOS 26.0)' } }),
+    deviceOf({ frames: [], meta: { device: 'Safari on iPhone' } }),
+  ], ['chrome', 'simulator', 'phone']);
+  // no (or an unknown) meta.device: phone assumed, and said so; a named device or verify.json is not assumed
+  assert.deepEqual([
+    deviceAssumed({ frames: [] }), deviceAssumed({ frames: [], meta: { device: 'Pixel 9' } }), deviceAssumed({ results: [] }),
+    deviceAssumed({ frames: [], meta: { device: 'iPhone 15 Pro Max' } }), deviceAssumed({ frames: [], meta: { device: 'simulator' } }),
+  ], [true, true, false, false, false]);
+  assert.deepEqual([runsFromJson({ frames: [[0, 16, 0]] }, { phase: 'all' })[0].deviceAssumed, 'deviceAssumed' in runsFromJson({ frames: [[0, 16, 0]], meta: { device: 'iPhone 15' } }, { phase: 'all' })[0]], [true, false]);
   assert.equal(runsFromJson({ frames: [[0, 16, 0]], meta: { device: 'Chrome 154' } }, { phase: 'all' })[0].device, 'chrome');
   // a legacy finger row [t, dt, y, innerHeight] is not a fw-iphone-run/1 tuple: y is y, innerHeight is innerHeight
   const fin = runsFromJson({ frames: [[0, 16, 0, 775], [16, 40, 30, 815]], summary: { whileScrollYChanges: {} }, meta: {} }, { phase: 'all' })[0];
@@ -494,8 +506,9 @@ test('stats.mjs runs on phone files: gt50 at +-4 ms, threshold-sensitive, near t
   const longs = { C: [6, 7, 7, 8], V: [3, 4, 4, 4] }, seen = { C: 0, V: 0 };
   mkdirSync(join(d, 'p'));
   const fields = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs', 'docH'];
-  writeFileSync(join(d, 'p', 'r0.json'), JSON.stringify({ fields, frames: frames(9, 0), marks: { scroll: [0, 1e9] }, meta: { block: 1, arm: 'C', warmup: true, pos: 0, driver: 'S' } }));
-  order.forEach((arm, i) => writeFileSync(join(d, 'p', `r${i + 1}.json`), JSON.stringify({ fields, frames: arm === 'C' ? frames(longs.C[seen.C++], 0) : frames(longs.V[seen.V++], 6), marks: { scroll: [0, 1e9] }, meta: { block: 1, arm, pos: i + 1, driver: 'S', sentinel: { pass: true } } })));
+  const IPH = 'iPhone 15 Pro Max, iOS 26.6.1 Safari'; // as iphone-run.mjs DEVICE writes it
+  writeFileSync(join(d, 'p', 'r0.json'), JSON.stringify({ fields, frames: frames(9, 0), marks: { scroll: [0, 1e9] }, meta: { device: IPH, block: 1, arm: 'C', warmup: true, pos: 0, driver: 'S' } }));
+  order.forEach((arm, i) => writeFileSync(join(d, 'p', `r${i + 1}.json`), JSON.stringify({ fields, frames: arm === 'C' ? frames(longs.C[seen.C++], 0) : frames(longs.V[seen.V++], 6), marks: { scroll: [0, 1e9] }, meta: { device: IPH, block: 1, arm, pos: i + 1, driver: 'S', sentinel: { pass: true } } })));
   // gt50 wins (C 6-8 vs V 3-4); gt54 counts 0 everywhere (tie, HL 0) -> futile; gt46 (C 6-8 vs V 9-10) is worse
   let r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50']);
   assert.equal(r.code, 0, r.stderr);
@@ -537,6 +550,18 @@ test('stats.mjs runs on phone files: gt50 at +-4 ms, threshold-sensitive, near t
   r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'p95Ms', '--json']);
   assert.deepEqual(Object.values(JSON.parse(r.stdout).arms).map((x) => [x.stats.choices.platform, x.stats.choices.minShift, x.stats.choices.medianCompare]), [['phone', 4, 'ms1']]);
   assert.doesNotMatch(r.stderr, /PLATFORM OVERRIDE/);
+  assert.doesNotMatch(r.stderr, /device not recorded/);
+  // the same files without meta.device (legacy logs): phone rules assumed, and a WARN says so (stderr and stdout)
+  mkdirSync(join(d, 'q'));
+  for (const n of readdirSync(join(d, 'p'))) { const x = JSON.parse(readFileSync(join(d, 'p', n), 'utf8')); delete x.meta.device; writeFileSync(join(d, 'q', n), JSON.stringify(x)); }
+  r = node(tool('stats.mjs'), ['runs', join(d, 'q'), '--metric', 'p95Ms']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stderr, /^WARN device not recorded: phone rules assumed for 9 file\(s\) without a known meta.device \(.*r0.json, .*, \.\.\.\); pass --device to state it$/m);
+  assert.match(r.stdout, /^WARN device not recorded: phone rules assumed for 9 file\(s\)/m);
+  assert.match(r.stdout, /platform phone; .* min shift 4; medians compared as ms1/);
+  r = node(tool('stats.mjs'), ['runs', join(d, 'q'), '--metric', 'p95Ms', '--device', 'phone']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.doesNotMatch(r.stdout + r.stderr, /device not recorded|PLATFORM OVERRIDE/);
   // decide takes bare values: --platform phone gives the phone rules; without it a NOTE says Chrome rules apply
   r = node(tool('stats.mjs'), ['decide', '--c', '40,41,42,43', '--v', '35,36,37,38', '--platform', 'phone']);
   assert.equal(r.code, 0, r.stderr);
@@ -552,5 +577,40 @@ test('stats.mjs runs on phone files: gt50 at +-4 ms, threshold-sensitive, near t
   writeFileSync(join(d, 'p', 'verify.json'), JSON.stringify({ results: [{ label: 'a', run: 1, block: 1, arm: 'C', frameLog: { scroll: [[0, 16, 0]] } }] }));
   r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50']);
   assert.equal(r.code, 2);
-  assert.match(r.stderr, /mixed devices \(phone, chrome\)|mixed devices \(chrome, phone\)/);
+  assert.match(r.stderr, /^runs: refusing to pool devices: (phone \(9\) with chrome \(1\)|chrome \(1\) with phone \(9\)); analyse each device on its own/m);
+});
+
+test('simulator runs (tools/sim.mjs) are their own device: never pooled with phone or Chrome runs; decided by the phone rules', () => {
+  const sim = { fields: ['t', 'dt', 'yStart', 'yEnd'], frames: [[0, 16, 0, 10]], meta: { device: 'simulator', sim: { runtime: 'iOS 26' } } };
+  assert.equal(deviceOf(sim), 'simulator');
+  const mk = (device, arm, nLong, block = 1) => ({ device, block, arm, warmup: false, void: false, frames: [...Array(nLong).fill(52), 16].map((dt) => ({ dt })) });
+  const simRuns = [mk('simulator', 'C', 6), mk('simulator', 'C', 7), mk('simulator', 'C', 7), mk('simulator', 'C', 8), mk('simulator', 'V', 3), mk('simulator', 'V', 4), mk('simulator', 'V', 4), mk('simulator', 'V', 4)];
+  // one simulator run among phone runs: an error, not a warning
+  assert.throws(() => blocksFromRuns([...simRuns.slice(1), mk('phone', 'C', 6)], 'gt50'), /blocksFromRuns: refusing to pool devices: simulator \(7\) with phone \(1\); analyse each device on its own \(research\/simulator\/README.md §7\)/);
+  assert.throws(() => nearByBlock([...simRuns, mk('chrome', 'V', 1)]), /nearByBlock: refusing to pool devices/);
+  assert.doesNotThrow(() => assertOneDevice([{ device: 'phone' }, { device: 'phone' }, {}]));
+  // simulator only: decided normally, by the phone's thresholds and rules
+  const g = blocksFromRuns(simRuns, 'gt50');
+  assert.deepEqual(g.arms.V[0], { block: 1, control: [6, 7, 7, 8], variant: [3, 4, 4, 4] });
+  assert.deepEqual([twinsFor('gt50', 'simulator'), twinsFor('k7', 'simulator')], [['gt46', 'gt54'], []]);
+  const dd = sequentialDecision({ blocks: [{ control: [40, 41, 42, 43], variant: [35, 36, 37, 38] }], unit: 'ms', platform: 'simulator' });
+  assert.deepEqual([dd.decision, dd.stats.choices.platform, dd.stats.choices.minShift, dd.stats.choices.medianCompare], ['win', 'simulator', 4, 'ms1']);
+  // CLI: simulator files decide on their own; k forms refused like the phone's; mixed with a phone file -> exit 2
+  const d = tempDir('fw-stats-sim-');
+  mkdirSync(join(d, 's'));
+  const fields = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs', 'docH'];
+  const frames = (n) => Array.from({ length: 20 }, (_, i) => [i * 20, i < n ? 52 : 16, i * 10, i * 10 + 10, 775, null, 1, 0.1, 9000]);
+  const longs = { C: [6, 7, 7, 8], V: [3, 4, 4, 4] }, seen = { C: 0, V: 0 };
+  writeFileSync(join(d, 's', 'r0.json'), JSON.stringify({ fields, frames: frames(9), marks: { scroll: [0, 1e9] }, meta: { device: 'simulator', block: 1, arm: 'C', warmup: true, pos: 0, driver: 'S' } }));
+  blockOrder(2).forEach((arm, i) => writeFileSync(join(d, 's', `r${i + 1}.json`), JSON.stringify({ fields, frames: frames(longs[arm][seen[arm]++]), marks: { scroll: [0, 1e9] }, meta: { device: 'simulator', block: 1, arm, pos: i + 1, driver: 'S', sentinel: { pass: true } } })));
+  let r = node(tool('stats.mjs'), ['runs', join(d, 's'), '--metric', 'gt50']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /on simulator, twins gt46, gt54/);
+  assert.match(r.stdout, /^arm V vs C: DECISION WIN: U = 0, p 0.014, HL 3 >= 1$/m);
+  assert.match(r.stdout, /^ {2}arm V block 1: near50 /m);
+  assert.equal(node(tool('stats.mjs'), ['runs', join(d, 's'), '--metric', 'k7']).code, 2);
+  writeFileSync(join(d, 's', 'phone.json'), JSON.stringify({ fields, frames: frames(5), marks: { scroll: [0, 1e9] }, meta: { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', block: 1, arm: 'C', pos: 9, driver: 'S' } }));
+  r = node(tool('stats.mjs'), ['runs', join(d, 's'), '--metric', 'gt50']);
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /runs: refusing to pool devices: (simulator \(9\) with phone \(1\)|phone \(1\) with simulator \(9\))/);
 });

@@ -21,7 +21,8 @@
 //       A counted run without a finite frame time in the phase is an error (void it); --phase all takes
 //       every frame. WARN lines: unreadable files, runs with some non-finite frame times, dropped blocks,
 //       block shape (n per arm, warm-up, ABBA order, no sentinel record: T2 judges the sentinel; mixed
-//       meta.driver in a block or across the blocks of one decision, F-071), --device unlike the files, and
+//       meta.driver in a block or across the blocks of one decision, F-071), --device unlike the files, frame-log
+//       files without a known meta.device (phone rules assumed; --device states it), and
 //       sensitivity when a twin's verdict differs.
 //       Given 2 blocks, a block 1 that already stopped (win / futile) stands; block 2 is not evaluated.
 //   node tools/stats.mjs place <run.json|verify.json|dir>... --thresholds <th.json> [--min-ms 37.5] [--phase scroll]
@@ -31,7 +32,7 @@
 //       A run's own `tops` ({id: documentTop}) override the static `top` (topSource run | static).
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tick, summary, frameCounts, sequentialDecision, runsFromJson, blocksFromRuns, blockWarnings, nearByBlock, NEAR_KEYS, placeFrames, METRICS, twinsFor, twinKind, K_FORMS, tickThresholdMs, K34 } from './lib/stats.mjs';
+import { tick, summary, frameCounts, sequentialDecision, runsFromJson, blocksFromRuns, assertOneDevice, PHONE_LIKE, blockWarnings, nearByBlock, NEAR_KEYS, placeFrames, METRICS, twinsFor, twinKind, K_FORMS, tickThresholdMs, K34 } from './lib/stats.mjs';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
@@ -97,14 +98,18 @@ if (cmd === 'ticks') {
   if (!positional.length) die(USAGE);
   const { runs, unreadable } = loadRuns(positional, { phase: opt('phase', 'scroll') });
   if (!runs.length) die('runs: no run files with frames');
+  try { assertOneDevice(runs, 'runs'); } catch (e) { die(e.message); }
   const seen = [...new Set(runs.map((r) => r.device))];
-  if (seen.length > 1) die(`runs: mixed devices (${seen.join(', ')}): analyse phone and Chrome runs separately`);
   const device = opt('device', seen[0]);
-  if (!['phone', 'chrome'].includes(device)) die(`runs: --device phone|chrome (got ${device})`);
-  // the platform comes from the data (iPhone files -> phone); an explicit override is loud (stdout WARN + stderr)
-  const deviceWarn = device !== seen[0] ? [`PLATFORM OVERRIDE: --device ${device} on ${seen[0]} files: ${device === 'chrome' ? 'Chrome rules (k forms, 8.333 ms min shift, tick medians) on phone data' : 'phone rules (no k forms, 4 ms min shift, whole-ms medians) on Chrome data'}`] : [];
+  if (!['chrome', ...PHONE_LIKE].includes(device)) die(`runs: --device phone|chrome|simulator (got ${device})`);
+  const phoneLike = PHONE_LIKE.has(device);
+  // the platform comes from the data (iPhone files -> phone, sim.mjs -> simulator); an explicit override is loud
+  const rulesOf = (x) => (PHONE_LIKE.has(x) ? 'phone rules (no k forms, 4 ms min shift, whole-ms medians)' : 'Chrome rules (k forms, 8.333 ms min shift, tick medians)');
+  const deviceWarn = device !== seen[0] ? [`PLATFORM OVERRIDE: --device ${device} on ${seen[0]} files: ${rulesOf(device)} on ${seen[0]} data`] : [];
+  const assumed = [...new Set(runs.filter((r) => r.deviceAssumed).map((r) => r.source))];
+  if (assumed.length && opt('device', null) == null) deviceWarn.push(`device not recorded: phone rules assumed for ${assumed.length} file(s) without a known meta.device (${assumed.slice(0, 3).join(', ')}${assumed.length > 3 ? ', ...' : ''}); pass --device to state it`);
   for (const w of deviceWarn) console.error(`WARN ${w}`);
-  if (device === 'phone' && K_FORMS.has(metric)) die(`runs: no k forms on the phone (CLAUDE.md "Frame thresholds"); use gt50 / gt34 (${metric} -> ${metric === 'k7' ? 'gt50' : metric === 'k5' ? 'gt34' : metric.replace('Ticks', 'Ms')})`);
+  if (phoneLike && K_FORMS.has(metric)) die(`runs: no k forms on the phone (CLAUDE.md "Frame thresholds"); use gt50 / gt34 (${metric} -> ${metric === 'k7' ? 'gt50' : metric === 'k5' ? 'gt34' : metric.replace('Ticks', 'Ms')})`);
   const decideAll = (m) => {
     let g;
     try { g = blocksFromRuns(runs, m); } catch (e) { die(e.message); }
@@ -123,7 +128,7 @@ if (cmd === 'ticks') {
   const sensitive = Object.keys(out).flatMap((a) => tws.filter((m) => twins[m][a] && twins[m][a].decision !== out[a].decision).map((m) => `arm ${a}: ${metric} ${out[a].decision} vs ${m} ${twins[m][a].decision}`));
   const sensArms = new Set(Object.keys(out).filter((a) => tws.some((m) => twins[m][a] && twins[m][a].decision !== out[a].decision)));
   // frames near a phone threshold, per arm, block and run (§5.3: never pooled; context for a threshold-sensitive verdict)
-  const near = device === 'phone' ? nearByBlock(runs) : {};
+  const near = phoneLike ? nearByBlock(runs) : {};
   const warnings = [
     ...deviceWarn,
     ...unreadable.map((x) => `unreadable JSON skipped: ${x}`),
@@ -137,7 +142,7 @@ if (cmd === 'ticks') {
   if (asJson) {
     console.log(JSON.stringify({ metric, ...METRICS[metric], device, medianCompare: Object.values(out)[0].stats.choices.medianCompare, minShift: Object.values(out)[0].stats.choices.minShift, skipped, unreadable, partial, dropped, warnings,
       twin: tw, twins: tws, twinSensitive: sensitive.length > 0, sensitivity: kind, ...(kind === 'threshold-sensitive' ? { thresholdSensitive: sensitive.length > 0 } : {}),
-      sensitiveArms: [...sensArms], ...(device === 'phone' ? { near } : {}), arms: out, twinArms: tw ? twins[tw] : {}, twinsArms: twins }, null, 1));
+      sensitiveArms: [...sensArms], ...(phoneLike ? { near } : {}), arms: out, twinArms: tw ? twins[tw] : {}, twinsArms: twins }, null, 1));
   } else {
     console.log(`metric ${metric} (${METRICS[metric].unit}, ${METRICS[metric].dir} is better) on ${device}, twin${tws.length === 1 ? '' : 's'} ${tws.join(', ') || '-'}; ${runs.length} run(s), ${skipped} warm-up/void skipped, ${unreadable.length} unreadable`);
     for (const w of warnings) console.log(`WARN ${w}`);
@@ -146,7 +151,7 @@ if (cmd === 'ticks') {
       const parts = tws.map((m) => { const t = twins[m][arm]; return `${m} ${t ? `${t.decision.toUpperCase()} (${t.reason})` : '-'}`; });
       console.log(`  both ways: ${metric} ${d.decision.toUpperCase()}${parts.length ? ` | ${parts.join(' | ')}` : ' (no twin)'}${sensArms.has(arm) ? `  ${kind.toUpperCase()}` : ''}`);
     }
-    if (device === 'phone') {
+    if (phoneLike) {
       console.log('near thresholds per run (near50 = 46 < dt <= 54, near34 = 30 < dt <= 38; median [IQR] over the runs of one arm and block):');
       for (const [arm, bs] of Object.entries(near)) for (const b of bs) {
         console.log(`  arm ${arm} block ${b.block ?? '-'}: ${NEAR_KEYS.map((k) => `${k} ${f(b[k].median)} [${f(b[k].q1)}-${f(b[k].q3)}]`).join('  ')}`);
