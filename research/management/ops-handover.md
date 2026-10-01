@@ -226,7 +226,7 @@ between tool calls.
    lead slots it.
    **Phone scoring (lead, CLAUDE.md 668b612, supersedes the v>=3 decision):** dt > 50 goal (target 0) + dt > 34, counts
    at ±4 ms (dt>46/54, dt>30/38), "threshold-sensitive" if the verdict differs; no k forms on the phone; Low Power Mode
-   per run. Open (lead/user, enforcement layer): fix-reviewer.md check 15 still says both k forms.
+   per run. fix-reviewer check 15 updated (13da193).
    **Probe rule (lead 12:3xZ):** until T1a lands, runs count only with the probe P0 cleared (rAF-only logger). T1a
    review ACCEPT (12:4xZ), pending ts-iphone-run's commit + npm test.
    **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (behind the countdown fix), h4.
@@ -269,7 +269,10 @@ between tool calls.
    move to 2, then to 1). (2) Proposal: `lock.mjs run --no-timing` (or similar) that skips the host gate and marks the
    hold non-measuring (the wda build waited for quiet while the user worked at the Mac); no arch spawn (lead 12:0xZ): the
    I-035 toolsmith writes the proposal in the same task; the lead's measurement-code fix-reviewer is the sign-off (a
-   non-measuring hold must never let a timing run start on a loud host).
+   non-measuring hold must never let a timing run start on a loud host). **Same ticket (lead 12:5xZ):** (a) the head
+   waiter at the gate calls keepAwakeQueued while gated (lib/lock.mjs acquire); (b) a gate sleep longer than timeoutSec
+   must not end in a throw on wake; (c) N2: tag a gain judged against a calibration stored in another display state.
+   Spawn once T8+ (I-033) lands.
 7e. **USER DECISION 12:20Z: host gate quiet-CPU threshold 20 -> 25 %** (20 % was uncalibrated, provisional per the
    09-30 post-mortem). ts-gate25 (toolsmith) makes the change and checks the existing results.json host-busy data on
    whether 30 % is safe later. A/Bs stay comparable: the config records the threshold. T8+ (599471e) is NEEDS-WORK
@@ -327,12 +330,13 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `arch-unknowns` (ENDED; C1 spec in unknowns-validity U1), `de-unknowns-render`, `de-unknowns-ux` (a47fed2b13de28ab2: pacing page F5, P-024) | unknowns hunt | de-* alive |
 | `ts-gesture` (a83a0f8d7c6fe96b6 worktree) | fixing review-gesture-2 B1/B2 | alive |
 | `map-webkit-amplifiers` | D2 mapper (haiku): page-wide scan for the two WebKit amplifiers | alive |
-| `ts-host-state` (a2bdbbb64c7731b2e) | T8+ host record: 599471e (MEASUREMENT CODE, npm test 592) | review-host-state (lead spawn) -> test:chrome + canary -> land -> C1 (lead) |
+| `ts-host-state` (a2bdbbb64c7731b2e) | T8+ host record: 3318067 + bdc7775 (MEASUREMENT CODE, npm test 621) | ACCEPT-WITH-NITS 12:5xZ; lead's test:chrome -> land -> C1 (lead) |
+| `ts-claims-board` | claims-audit §4: findings-board claim status + refs (lead spawn 12:5xZ) | alive |
 | `ts-bench-gain` (aabf938f2344fa8fc) | I-034 landed 526642f | done |
 | `arch-claims` (ae93098a3c9f77a35) | claim audit (user rule CLAUDE.md 71ad57d "Platform claims: confirm against a reference"): research/architecture/claims-audit.md, verifiers ver-webkit-style / ver-webkit-ca / ver-chrome; refutations -> owners + mgmt-ops | alive |
 | `res-layerpainted` | F-059 verdict (layerPainted on Chrome 154); decisive check by ts-render-signals | alive |
 | `review-host-state` | fix-reviewer (measurement mode) of T8+ 599471e | alive |
-| `de-pm-morph`, `de-pm-hero` | post-mortems (postmortem-morph.md, postmortem-hero.md §7 D3 = avatar rotator, F-058, F-063) | ENDED (results via findings board) |
+| `de-pm-morph`, `de-pm-hero` (a3f2c31df32a28d11) | post-mortems (postmortem-morph.md, postmortem-hero.md §7 D3 = avatar rotator, F-058, F-063); de-pm-hero scores P14 offline (resumable) | de-pm-morph ENDED; de-pm-hero idle |
 | `arch-oss-survey` (a14e692b6f530f1c0), `de-oss-map` (af4a76a52eface067) | OSS rendering libraries survey + mechanism map -> 3-5 PoC shortlist for the lead (read-only) | alive |
 
 ## Who waits on what (08:55Z)
