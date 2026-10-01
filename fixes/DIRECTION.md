@@ -306,6 +306,19 @@ paint / composite) that the attribute logger can't see. Next: the iPhone Timelin
 `Page.enable` before `Timeline.start`, from de-devtools/de-safari) to get per-frame style/layout/paint records on the
 phone, then one Timeline capture of that frame. **F-045** (y≈1250 = `.commission` scene gate) is weakened by phone data
 (those frames are 35-37 ms, no flip in-frame): no build.
+**Protocol v2 APPROVED and landed (670b4bf, `research/architecture/measurement-protocol-v2.md`; lead ~10:45Z).** Stages
+R/I/D/F/V/L with gates; the lead signs attribution cards and fast-path calls; mgmt-ops validates slot tickets; iPhone
+§5 applied by hand until T1a/T2 land; predictions in `fixes/PREDICTIONS.md`. Toolsmiths: ts-iphone-run (T1a),
+ts-analysis (T3), ts-render-signals (T6+T7, I-032); doc pass doc-protocol-v2. **F-047: the iPhone Timeline clock fix
+works** (Page.disable -> Page.enable -> Timeline.start on the page target: real start/end on all records,
+performance.mark arrives as TimeStamp, RenderingFrame 16.6-16.7 ms steady) -> §5.5's "inference" is confirmed.
+**ghbn (lead 10:5xZ):** ghbn ≈ ghb ≈ gh in rAF (moving p50 25/26/27) = the expected reading under L13 (backdrop GPU time
+is invisible to rAF): **render-bound, LOCATED**, no more rAF blocks; 1-min computed-style mechanism check owed; the real
+verdict waits for T10 / Instruments hitches (the user's Instruments pairing gates the render-bound class). ghr8 dropped
+for now, revisit after hitches.
+**iPhone queue (v2, lead-approved 10:5xZ):** na/nb + P2b (Timeline attribution of the y≈1960 frame) -> morph attribution
+session (de-safari P2/P3) -> hero 2 blocks + P3b (LayerTree census y 580/780 before any v6/v7 bisect) -> R2 bg -> /10d ->
+N12 -> R3/h3. Only ticketed builds; reorders only at block boundaries.
 **Measurement protocol v2 (in progress, user request ~10:20Z):** arch-lead drafts
 `research/architecture/measurement-protocol-v2.md` (research -> investigate -> distinguish -> fix -> review) with inputs
 from the owners, ops and the devtools/safari notes; execution after the lead's approval; the current queue runs unchanged
