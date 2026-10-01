@@ -5,6 +5,8 @@
 // Target ids change on every navigation, so reconnect (openTab) after navigating.
 // WebKit quirks seen on iOS 26.6.1: Runtime.evaluate ignores awaitPromise (returns the Promise object),
 // Page.navigate is not available (navigate with location.href), Timeline timestamps are all 0 over the proxy.
+import { lanSafeUrl, lanSafeText } from './iphone-url.mjs';
+
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
@@ -53,13 +55,18 @@ export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
 //     app openTab connected to last in this process, i.e. Safari's after the first connect) is among them, only
 //     that app's: a reconnect after a reload or navigation stays in Safari;
 //   - returns the one tab left, and throws when none is left or when several are (AMBIGUOUS: it never picks the
-//     first of several), naming every listed target (url, title, appId) so the user can close one or set the env.
+//     first of several), naming every listed target (url, appId) so the user can close one or set the env.
+// The messages are printed and can end up in a saved gesture record (res.aborted), so every url and host in them
+// goes through lanSafeUrl / lanSafeText, and titles are named only for the candidates of a url / host match (the
+// mirror's pages), never for the user's other tabs and apps: not in the target list, and not when any page matches
+// (safariTab, openTab(() => true)), where every Safari tab is a candidate (Hard rule 12; review-t1a N1; terminal output
+// ends up in agent transcripts).
 export const isBlankUrl = (u) => !u || /^about:blank([?#]|$)/.test(String(u));
-const describeTab = (p) => `${p.url || '(no url)'}${p.title ? ` "${p.title}"` : ''}${p.appId ? ` [${p.appId}]` : ''}`;
-const describeMatch = (m) => (typeof m === 'function' ? (m.length || String(m).replace(/\s/g, '') !== '()=>true' ? 'the matcher' : 'any page') : JSON.stringify(m));
+const describeTab = (p, { title = false } = {}) => `${lanSafeUrl(p.url) || '(no url)'}${title && p.title ? ` "${p.title}"` : ''}${p.appId ? ` [${p.appId}]` : ''}`;
+const describeMatch = (m) => (typeof m === 'function' ? (m.length || String(m).replace(/\s/g, '') !== '()=>true' ? 'the matcher' : 'any page') : JSON.stringify(lanSafeText(String(m))));
 export function pickTab(pages, match = () => true, { appId = process.env.FW_IPHONE_APPID || null, preferAppId = null } = {}) {
   const all = (Array.isArray(pages) ? pages : []).filter((p) => p && p.webSocketDebuggerUrl);
-  const listed = all.map(describeTab).join(', ') || '(none)';
+  const listed = all.map((p) => describeTab(p)).join(', ') || '(none)';
   const ok = (p) => (typeof match === 'function' ? match(p.url) : String(p.url || '').includes(match));
   let c = all.filter((p) => !isBlankUrl(p.url) && ok(p));
   if (appId) c = c.filter((p) => p.appId === appId);
@@ -70,7 +77,7 @@ export function pickTab(pages, match = () => true, { appId = process.env.FW_IPHO
     const blankOnly = all.length > 0 && all.every((p) => isBlankUrl(p.url));
     throw new Error(`no tab matching ${which} (blank web views are never picked, I-037); targets: ${listed}${blankOnly ? '. Safari shows no page: open any http page in Safari first' : ''}`);
   }
-  const e = new Error(`AMBIGUOUS: ${c.length} tabs match ${which}: ${c.map(describeTab).join(', ')} (all targets: ${listed}). Not picking one (I-037): close the other Safari tabs or the other app, or set FW_IPHONE_APPID=<appId> to Safari's`);
+  const e = new Error(`AMBIGUOUS: ${c.length} tabs match ${which}: ${c.map((p) => describeTab(p, { title: typeof match === 'string' })).join(', ')} (all targets: ${listed}). Not picking one (I-037): close the other Safari tabs or the other app, or set FW_IPHONE_APPID=<appId> to Safari's`);
   e.ambiguous = true;
   throw e;
 }

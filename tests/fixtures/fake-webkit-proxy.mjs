@@ -28,6 +28,8 @@
 // Every listed target carries `appId` ("PID:<pid>", as ios_webkit_debug_proxy lists it); Safari's tab is PID:4242, the
 // pid the fake WDA reports for Safari. --blank-view (incident I-037) also lists, BEFORE Safari's tab, another app's
 // background about:blank web view (PID:1304) whose websocket opens but never answers a command, like the real one.
+// --extra-tabs-after-reload (review-t1a N1): from the first reload on, Safari also lists a second tab on the same host
+// ("second copy", so a reconnect by host is AMBIGUOUS) and an unrelated private tab ("Private Inbox", another LAN host).
 import http from 'node:http';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
@@ -75,6 +77,7 @@ const PAGE = process.argv.includes('--page') || arg('wda-port') !== null;
 const DOC_H = Number(arg('doc-height') || 6035);
 const WIDTH = Number(arg('width') || 430);
 const BLANK_VIEW = process.argv.includes('--blank-view');
+const EXTRA_TABS = process.argv.includes('--extra-tabs-after-reload');
 const HIDE_AFTER = arg('hide-after-strokes') === null ? Infinity : Number(arg('hide-after-strokes'));
 let hidden = false, strokesPlayed = 0;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -159,7 +162,9 @@ const server = http.createServer((req, res) => {
     res.setHeader('content-type', 'application/json');
     const ws = (n) => `ws://127.0.0.1:${server.address().port}/devtools/page/${n}`;
     const safari = { url: tab.url, title: tab.title, webSocketDebuggerUrl: ws(1), appId: 'PID:4242' };
-    return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: ws(2), appId: 'PID:1304' }, safari] : [safari]));
+    const extra = EXTRA_TABS && tab.gen > 1 ? [{ url: `${tab.url}copy/`, title: 'second copy', webSocketDebuggerUrl: ws(3), appId: 'PID:4242' },
+      { url: 'http://192.168.0.9:8080/private/inbox', title: 'Private Inbox', webSocketDebuggerUrl: ws(4), appId: 'PID:4242' }] : [];
+    return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: ws(2), appId: 'PID:1304' }, safari, ...extra] : [safari, ...extra]));
   }
   res.statusCode = 404; res.end();
 });

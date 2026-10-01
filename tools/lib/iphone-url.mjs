@@ -92,6 +92,21 @@ export function lanSafeUrl(u) {
   x.hostname = LAN_HOST;
   return x.href;
 }
+/** Free text with every URL through lanSafeUrl and every bare LAN host, a private / link-local / CGNAT IPv4 literal or
+ *  a *.local name (a host:port tab matcher; also one inside a public URL's path or query), as lan-host. For error text
+ *  that may be saved or printed: pickTab's messages, gesture-run's scrub (Hard rule 12; review-t1a N1).
+ *  Bare dotless names and bare IPv6 literals stay. */
+export function lanSafeText(t) {
+  if (typeof t !== 'string' || !t) return t;
+  return t
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s"'<>`]+/gi, (u) => {
+      const tail = (u.match(/[),.;:\]]+$/) || [''])[0];
+      const core = tail ? u.slice(0, -tail.length) : u;
+      return lanSafeUrl(core) + tail;
+    })
+    .replace(/(?<![\w.-])(\d{1,3}(?:\.\d{1,3}){3}|[a-z0-9-]+(?:\.[a-z0-9-]+)*\.local)(?![\w-]|\.\w)/gi,
+      (h) => (lanSafeUrl(`http://${h}/`) === `http://${LAN_HOST}/` ? LAN_HOST : h));
+}
 /** A scroll / record result with its top-level href through lanSafeUrl (tools/iphone.mjs writes both through it). */
 export function lanSafeRecord(res) {
   return res && typeof res === 'object' && 'href' in res ? { ...res, href: lanSafeUrl(res.href) } : res;

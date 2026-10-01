@@ -307,6 +307,22 @@ test('a lease too short for the run is refused up front', async () => {
   assert.match(r.stderr, /your iphone lease ends in \d+ s, the run needs ~\d+ s: node tools\/lock\.mjs renew iphone --owner me --ttl 900/);
 });
 
+test('a reconnect that fails saves its error without a LAN address or another tab\'s title (review-t1a N1)', async () => {
+  const phone = await fakePhone(['--extra-tabs-after-reload']); // after the reload, two tabs on the mirror's host and a private one
+  const f = scriptFile([{ type: 'reload' }, S({})]);
+  lock('acquire', 'iphone', '--owner', 'me');
+  const out = join(phone.dir, 'n1.json');
+  const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.equal(actionsCalls(phone.wda()).length, 0, 'no stroke after the failed reconnect');
+  const saved = readFileSync(out, 'utf8');
+  const doc = JSON.parse(saved);
+  assert.match(doc.run.aborted, /^error: AMBIGUOUS: 2 tabs match "lan-host:5441" in app PID:4242 [^:]*: http:\/\/lan-host:5441\/ "start" \[PID:4242\], http:\/\/lan-host:5441\/copy\/ "second copy" \[PID:4242\] \(all targets: .*http:\/\/lan-host:8080\/private\/inbox \[PID:4242\]\)/);
+  assert.doesNotMatch(saved, /192\.168\.|Private Inbox/, 'the saved record names no LAN address and no title of a non-candidate tab');
+  assert.match(r.stderr, /gesture run aborted: error: AMBIGUOUS: 2 tabs match "lan-host:5441"/);
+  assert.doesNotMatch(r.stderr, /Private Inbox/);
+});
+
 test('--morph-log: installed after each page load, read per segment, morph-active stats in the summary', async () => {
   const phone = await fakePhone();
   const mlog = join(phone.dir, 'morph-calls.jsonl');

@@ -22,7 +22,7 @@ import { RECORDER_JS, READ_JS, STATE_JS, markJs, summarizeRun } from './gesture-
 import { status as wdaStatus, createSession, SAFARI } from './wda.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
-import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE } from './iphone-url.mjs';
+import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeText } from './iphone-url.mjs';
 import { redact } from './redact.mjs';
 import { readConfig, WDA_REF } from './wda-runner.mjs';
 
@@ -251,7 +251,9 @@ export function cliParams(argv) {
 /**
  * The command. What it prints and the free-text strings it saves (errors, abort reason, foreground app) go
  * through redact() with wda-runner's config ids (Hard rule 12; review-gesture 2): e.g. the WDA runner's own
- * bundle id fw.wda.<team>.WebDriverAgentRunner when it is in front instead of Safari.
+ * bundle id fw.wda.<team>.WebDriverAgentRunner when it is in front instead of Safari. The saved strings also go
+ * through lanSafeText: a reconnect error names the mirror's host:port and the listed tabs' urls, and gesture
+ * records are committed under research/ (Hard rule 12; review-t1a N1). The console keeps the real URL.
  */
 export async function gestureCmd({ log = console.log, ...args }) {
   const scrub = (s) => redact(String(s), readConfig());
@@ -323,8 +325,9 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     program: { name: prog.name, version: prog.version, compiler: prog.compiler, hash: prog.hash, params: prog.params, estMs: prog.estMs, strokes: prog.strokes },
     run: res,
   };
-  res.errors = res.errors.map(scrub);
-  if (res.aborted) res.aborted = scrub(res.aborted);
+  const saved = (s) => lanSafeText(scrub(s)); // the record is committed under research/ (review-t1a N1)
+  res.errors = res.errors.map(saved);
+  if (res.aborted) res.aborted = saved(res.aborted);
   doc.summary = summarizeRun(res.segments, res.strokes, { morph: res.morph });
   writeFileSync(out, JSON.stringify(doc));
   log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, motion: doc.summary.motion, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { twinUrl, iphoneTarget, landedProblem, mirrorInfo, lanSafeUrl, lanSafeRecord, LAN_HOST } from '../../tools/lib/iphone-url.mjs';
+import { twinUrl, iphoneTarget, landedProblem, mirrorInfo, lanSafeUrl, lanSafeRecord, lanSafeText, LAN_HOST } from '../../tools/lib/iphone-url.mjs';
 import * as run from '../../tools/lib/iphone-run.mjs';
 
 const SELF = { vendors: 'local', https: true, selfSigned: true, httpTwin: 61000 };
@@ -67,4 +67,19 @@ test('tools/iphone.mjs: scroll and record write their result files through lanSa
   const writes = src.match(/writeFileSync\([^\n]*/g) || [];
   assert.equal(writes.length, 2, 'scroll and record are the only writers in iphone.mjs (run writes through iphone-run finish)');
   for (const w of writes) assert.match(w, /^writeFileSync\(out, JSON\.stringify\(lanSafeRecord\(res\)\)\)/, w);
+});
+
+test('lanSafeText (review-t1a N1): every LAN url and bare LAN host in free text becomes lan-host; the rest stays', () => {
+  const cases = [
+    ['no tab matching "192.168.77.12:5492"; targets: http://192.168.77.12:5492/ [PID:613], about:blank [PID:1304]',
+      'no tab matching "lan-host:5492"; targets: http://lan-host:5492/ [PID:613], about:blank [PID:1304]'],
+    ['(http://172.16.0.9:61000/sub/?x=1).', '(http://lan-host:61000/sub/?x=1).'], // trailing punctuation is not part of the url
+    ['"url":"http://10.1.2.3:5441/","t":"x"', '"url":"http://lan-host:5441/","t":"x"'],
+    ['https://example.com/?u=http://192.168.1.2/&v=/10.0.0.1/', 'https://example.com/?u=http://lan-host/&v=/lan-host/'],
+    ['at 100.64.1.1. user@192.168.1.4 ::ffff:169.254.3.4 phone.local:5492', 'at lan-host. user@lan-host ::ffff:lan-host lan-host:5492'],
+    ['ws://localhost:9222/devtools/page/1 http://127.0.0.1:5300/ 203.0.113.5:80 http://203.0.113.5/x', null], // loopback, public: kept
+    ['version 1.2.3.4.5, 192.168.1 and 300.1.1.1 stay', null], // not an IPv4 literal / not private
+  ];
+  for (const [i, o] of cases) assert.equal(lanSafeText(i), o ?? i, i);
+  for (const v of ['', null, undefined, 42]) assert.equal(lanSafeText(v), v);
 });

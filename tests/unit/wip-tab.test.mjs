@@ -34,7 +34,8 @@ test('I-037: several candidates fail (AMBIGUOUS) and name them; appId or preferA
   assert.throws(() => pickTab(list, ANY, noEnv), (e) => { err = e; return true; });
   assert.equal(err.ambiguous, true);
   assert.match(err.message, /^AMBIGUOUS: 2 tabs match any page: /);
-  assert.ok(err.message.includes('http://192.0.2.7:5492/sub/ "other app page" [PID:900]') && err.message.includes('[PID:613]'), err.message);
+  assert.ok(err.message.includes('http://192.0.2.7:5492/sub/ [PID:900]') && err.message.includes('[PID:613]'), err.message);
+  assert.ok(!err.message.includes('other app page'), 'any page: no titles (review-t1a N1)');
   assert.match(err.message, /set FW_IPHONE_APPID=<appId>/);
   assert.throws(() => pickTab(list, '192.0.2.7:5492', noEnv), /^Error: AMBIGUOUS: 2 tabs match "192\.0\.2\.7:5492"/, 'a host matches both');
   assert.throws(() => safariTab(list, noEnv), /^Error: AMBIGUOUS/, 'safariTab does not turn it into "unlock the iPhone"');
@@ -76,4 +77,29 @@ test('I-037: no iPhone tool picks the first listed target or connects to any tar
   assert.match(g, /wipPage\(\{ appId: front\.pid \? `PID:\$\{front\.pid\}` : null \}\)/, 'gesture: Safari\'s pid from WDA picks its tab');
   assert.match(g, /c = await openTab\(\(\) => true, o\);/);
   assert.match(g, /c = await openTab\(host, o\);/);
+});
+
+test('review-t1a N1: pickTab\'s messages carry no LAN address and no title of a tab that is not a candidate', () => {
+  const lan = { ...SAFARI, url: 'http://192.168.77.12:5492/', thumbnailUrl: '/thumb/http://192.168.77.12:5492/' };
+  const dup = { ...lan, url: 'http://192.168.77.12:5492/copy/', title: 'second copy', webSocketDebuggerUrl: 'ws://localhost:9222/devtools/page/3' };
+  const priv = { ...SAFARI, url: 'http://192.168.0.9:8080/private/inbox', title: 'Private Inbox', webSocketDebuggerUrl: 'ws://localhost:9222/devtools/page/4' };
+  const msg = (fn) => { try { fn(); } catch (e) { return e.message; } assert.fail('no throw'); };
+  const ambiguous = msg(() => pickTab([lan, dup, priv, BLANK], '192.168.77.12:5492', noEnv));
+  assert.equal(ambiguous, 'AMBIGUOUS: 2 tabs match "lan-host:5492": http://lan-host:5492/ "Fastwork · Show the world what you can do" [PID:613], '
+    + 'http://lan-host:5492/copy/ "second copy" [PID:613] (all targets: http://lan-host:5492/ [PID:613], http://lan-host:5492/copy/ [PID:613], '
+    + 'http://lan-host:8080/private/inbox [PID:613], about:blank [PID:1304]). Not picking one (I-037): close the other Safari tabs or the other app, '
+    + 'or set FW_IPHONE_APPID=<appId> to Safari\'s');
+  const none = msg(() => pickTab([priv, BLANK], '192.168.77.12:5492', noEnv));
+  assert.equal(none, 'no tab matching "lan-host:5492" (blank web views are never picked, I-037); targets: http://lan-host:8080/private/inbox [PID:613], about:blank [PID:1304]');
+  const local = msg(() => pickTab([lan], 'phone.local:5492', noEnv));
+  assert.equal(local, 'no tab matching "lan-host:5492" (blank web views are never picked, I-037); targets: http://lan-host:5492/ [PID:613]', 'no candidate: no title at all');
+  // safariTab / openTab(() => true) (any page): every Safari tab is a candidate, so no titles at all (terminal output
+  // ends up in agent transcripts); url and appId still say which tabs to close
+  const any = msg(() => safariTab([lan, priv], noEnv));
+  assert.match(any, /^AMBIGUOUS: 2 tabs match any page: http:\/\/lan-host:5492\/ \[PID:613\], http:\/\/lan-host:8080\/private\/inbox \[PID:613\] \(all targets/);
+  const fn = msg(() => pickTab([lan, priv], (u) => u.startsWith('http'), noEnv));
+  assert.match(fn, /^AMBIGUOUS: 2 tabs match the matcher: http:\/\/lan-host:5492\/ \[PID:613\], http:\/\/lan-host:8080\/private\/inbox \[PID:613\] \(all targets/);
+  for (const m of [ambiguous, none, any, fn, local]) assert.doesNotMatch(m, /192\.168\.|phone\.local/, m);
+  for (const m of [none, any, fn, local]) assert.doesNotMatch(m, /"Fastwork|"Private Inbox"|"second copy"/, m);
+  assert.doesNotMatch(ambiguous, /Private Inbox/, 'the private tab is listed, not a candidate: no title');
 });
