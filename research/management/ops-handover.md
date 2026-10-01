@@ -268,7 +268,14 @@ between tool calls.
    avatars-exit ~24; other 9. Cost ~165 ms / 20 s (~0.21 ms each, ~0.8 % main thread), no long frame -> no ticket now
    (fix-scroll-engine); option: 2-3 min untimed rider (accent off + spring snapped, rest at y 904); accent fix idea:
    animate a mask/clip transform instead of stroke-dashoffset. Why stroke-dashoffset invalidates WebKit layout:
-   UNRESOLVED. Spring rAF L4039 is a candidate for fix-nav-morph's countdown 1 Hz idle spike (PoC 3).
+   UNRESOLVED. **CORRECTION 15:0xZ (fix-scroll-engine): the spring is REFUTED as the dirtier** (co-occurrence inside
+   accent windows; spring frames have small Layouts 13 % vs 23 % without; it raises only ScheduleStyleRecalculation);
+   residual outside accent windows (~65 / 7.6 s) leans to the rotator (~40 % within 60 ms of L11571 vs ~10 % expected).
+   Lead: F-081 rider skipped. de-pm-hero b050627: §7.9 risk VOID at rest; D3 rotator prediction HIT (2 per cycle).
+   **Lead 15:0xZ:** arch-claims owns the Instruments render-hitch lane definition; ts-iphone-run builds its tooling after
+   I-037 + the probe v3 fix (not urgent). P-037 (PoC 3 idle attribution, fix-nav-morph) VALIDATED as filler after
+   P-036. ts-lock-bundle implements (f) shared short holds next (short lane waited 17 min > 15 min line), reviewer gate
+   kept. **I-037 [open, blocking]:** iPhone tools pick a background app's about:blank web view instead of Safari's tab.
    Lead 15:0xZ: 7b(f) option (A) not taken to the user (rebases change the staged tree; enforcement layer); (f) stays a
    design in ts-lock-bundle's ticket; tell the lead if short-lane waits exceed ~15 min again.
    **F-076 / P-034 owner = fix-nav-morph after cdwc lands** (lead: same countdown code; no fix-countdown-idle-raf spawn).
