@@ -1,0 +1,1049 @@
+{
+ "topic": "scene-scope",
+ "kind": "A/B",
+ "createdAt": "2026-10-01T19:35:55.270Z",
+ "git": {
+  "branch": "worktree-agent-a49a278f1d0bd6803",
+  "head": "fa7fc6b",
+  "checkout": "agent-a49a278f1d0bd6803-40df6b"
+ },
+ "config": {
+  "cpu": 6,
+  "viewport": "mobile",
+  "runs": 3,
+  "idle": 6,
+  "serveArgs": [
+   "--vendors=local",
+   "--https",
+   "--latency",
+   "150"
+  ],
+  "baseline": "site-pretty + fixes/bplus/overlay",
+  "baselineSnapshot": {
+   "snapshot": "b1789284481295-4ad4a84a",
+   "state": "ok"
+  },
+  "stackedOn": "bplus",
+  "order": "ABBA (alternating per run)",
+  "hostThresholds": {
+   "quietMaxBusyPct": 25,
+   "quietMaxLoad1": 6,
+   "quietMaxPressure": 1,
+   "quietMinWindowSec": 10,
+   "gateMaxWaitSec": 600,
+   "gateShortPassSec": 120,
+   "recheckMaxWaitSec": 60,
+   "invalidLoad1": 10,
+   "invalidOtherBusyPct": 25,
+   "invalidPressure": 2,
+   "warnLoad1": 6,
+   "warnOtherBusyPct": 20,
+   "suspendMinSec": 2,
+   "watchdogStallSec": 300,
+   "chromeWarmSec": 10
+  },
+  "hostRecheck": {
+   "maxWaitSec": 60,
+   "maxLoad1": 6,
+   "maxBusyPct": 25
+  },
+  "watchdogSec": 300,
+  "measurement": {
+   "cdpMetrics": false,
+   "traceFrames": false,
+   "frameLog": false
+  }
+ },
+ "patch": {
+  "file": "fixes/scene-scope/patch.diff",
+  "sha256": "7bbae8c68293aec2782a843b0146875ebc6b2ffceb9eb84000ee2518b1980afa",
+  "files": 1,
+  "added": 93,
+  "removed": 3
+ },
+ "servedCheck": [
+  {
+   "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+   "baseline": {
+    "status": 200,
+    "sha256": "cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813",
+    "source": "overlay"
+   },
+   "patched": {
+    "status": 200,
+    "sha256": "851c397012bc8ab37b06cb12d53fa9ab221729490d17cbb81b2c42f78d056b2e",
+    "source": "overlay"
+   },
+   "overlaySha256": "851c397012bc8ab37b06cb12d53fa9ab221729490d17cbb81b2c42f78d056b2e"
+  }
+ ],
+ "metrics": {
+  "scroll": {
+   "fps": {
+    "name": "fps",
+    "higherIsBetter": true,
+    "n": 3,
+    "baseline": {
+     "median": 91.7,
+     "min": 91,
+     "max": 93.3,
+     "runs": [
+      91.7,
+      91,
+      93.3
+     ]
+    },
+    "patched": {
+     "median": 92.3,
+     "min": 86.1,
+     "max": 95.7,
+     "runs": [
+      95.7,
+      86.1,
+      92.3
+     ]
+    },
+    "delta": 0.6,
+    "deltaPct": 0.7,
+    "pairedDeltas": [
+     4,
+     -4.9,
+     -1
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "gt20": {
+    "name": "frames >20 ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 34,
+     "min": 24,
+     "max": 37,
+     "runs": [
+      37,
+      34,
+      24
+     ]
+    },
+    "patched": {
+     "median": 33,
+     "min": 28,
+     "max": 43,
+     "runs": [
+      28,
+      43,
+      33
+     ]
+    },
+    "delta": -1,
+    "deltaPct": -2.9,
+    "pairedDeltas": [
+     -9,
+     9,
+     9
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "gt34": {
+    "name": "frames >34 ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 5,
+     "min": 3,
+     "max": 6,
+     "runs": [
+      5,
+      6,
+      3
+     ]
+    },
+    "patched": {
+     "median": 5,
+     "min": 4,
+     "max": 5,
+     "runs": [
+      4,
+      5,
+      5
+     ]
+    },
+    "delta": 0,
+    "deltaPct": 0,
+    "pairedDeltas": [
+     -1,
+     -1,
+     2
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "gt50": {
+    "name": "frames >50 ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 2,
+     "min": 2,
+     "max": 3,
+     "runs": [
+      2,
+      2,
+      3
+     ]
+    },
+    "patched": {
+     "median": 2,
+     "min": 1,
+     "max": 2,
+     "runs": [
+      1,
+      2,
+      2
+     ]
+    },
+    "delta": 0,
+    "deltaPct": 0,
+    "pairedDeltas": [
+     -1,
+     0,
+     -1
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "gt100": {
+    "name": "frames >100 ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "max": {
+    "name": "worst frame ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 75,
+     "min": 67.3,
+     "max": 82.4,
+     "runs": [
+      67.3,
+      82.4,
+      75
+     ]
+    },
+    "patched": {
+     "median": 83.9,
+     "min": 75,
+     "max": 92.6,
+     "runs": [
+      75,
+      92.6,
+      83.9
+     ]
+    },
+    "delta": 8.9,
+    "deltaPct": 11.9,
+    "pairedDeltas": [
+     7.7,
+     10.2,
+     8.9
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "p95": {
+    "name": "p95 frame ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 17.6,
+     "min": 17.4,
+     "max": 17.6,
+     "runs": [
+      17.6,
+      17.6,
+      17.4
+     ]
+    },
+    "patched": {
+     "median": 17.5,
+     "min": 17.4,
+     "max": 24.4,
+     "runs": [
+      17.4,
+      24.4,
+      17.5
+     ]
+    },
+    "delta": -0.1,
+    "deltaPct": -0.6,
+    "pairedDeltas": [
+     -0.2,
+     6.8,
+     0.1
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "loafMs": {
+    "name": "LoAF ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 139,
+     "min": 131,
+     "max": 162,
+     "runs": [
+      131,
+      162,
+      139
+     ]
+    },
+    "patched": {
+     "median": 135,
+     "min": 75,
+     "max": 151,
+     "runs": [
+      75,
+      151,
+      135
+     ]
+    },
+    "delta": -4,
+    "deltaPct": -2.9,
+    "pairedDeltas": [
+     -56,
+     -11,
+     -4
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "loafScriptMs": {
+    "name": "LoAF script ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 70,
+     "min": 68,
+     "max": 76,
+     "runs": [
+      70,
+      76,
+      68
+     ]
+    },
+    "patched": {
+     "median": 73,
+     "min": 67,
+     "max": 75,
+     "runs": [
+      67,
+      73,
+      75
+     ]
+    },
+    "delta": 3,
+    "deltaPct": 4.3,
+    "pairedDeltas": [
+     -3,
+     -3,
+     7
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "forcedLayoutMs": {
+    "name": "forced style+layout ms (in LoAF)",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 1,
+     "min": 0,
+     "max": 1,
+     "runs": [
+      1,
+      0,
+      1
+     ]
+    },
+    "patched": {
+     "median": 2,
+     "min": 1,
+     "max": 2,
+     "runs": [
+      2,
+      2,
+      1
+     ]
+    },
+    "delta": 1,
+    "deltaPct": 100,
+    "pairedDeltas": [
+     1,
+     2,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   }
+  },
+  "morph": {
+   "fps": {
+    "name": "fps",
+    "higherIsBetter": true,
+    "n": 3,
+    "baseline": {
+     "median": 112.5,
+     "min": 112.4,
+     "max": 112.8,
+     "runs": [
+      112.8,
+      112.5,
+      112.4
+     ]
+    },
+    "patched": {
+     "median": 112.4,
+     "min": 110.5,
+     "max": 113.3,
+     "runs": [
+      113.3,
+      110.5,
+      112.4
+     ]
+    },
+    "delta": -0.1,
+    "deltaPct": -0.1,
+    "pairedDeltas": [
+     0.5,
+     -2,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "gt50": {
+    "name": "frames >50 ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 1,
+     "runs": [
+      0,
+      0,
+      1
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     -1
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "loafMs": {
+    "name": "LoAF ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "forcedLayoutMs": {
+    "name": "forced style+layout ms (in LoAF)",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   }
+  },
+  "idle": {
+   "fps": {
+    "name": "fps",
+    "higherIsBetter": true,
+    "n": 3,
+    "baseline": {
+     "median": 117.2,
+     "min": 116.7,
+     "max": 119,
+     "runs": [
+      116.7,
+      117.2,
+      119
+     ]
+    },
+    "patched": {
+     "median": 118.2,
+     "min": 117.8,
+     "max": 119.3,
+     "runs": [
+      119.3,
+      117.8,
+      118.2
+     ]
+    },
+    "delta": 1,
+    "deltaPct": 0.9,
+    "pairedDeltas": [
+     2.6,
+     0.6,
+     -0.8
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "gt20": {
+    "name": "frames >20 ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 1,
+     "min": 0,
+     "max": 1,
+     "runs": [
+      1,
+      1,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": -1,
+    "deltaPct": -100,
+    "pairedDeltas": [
+     -1,
+     -1,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "gt34": {
+    "name": "frames >34 ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "gt50": {
+    "name": "frames >50 ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "gt100": {
+    "name": "frames >100 ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "max": {
+    "name": "worst frame ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 25.6,
+     "min": 17.2,
+     "max": 25.7,
+     "runs": [
+      25.6,
+      25.7,
+      17.2
+     ]
+    },
+    "patched": {
+     "median": 17.5,
+     "min": 17.3,
+     "max": 17.5,
+     "runs": [
+      17.3,
+      17.5,
+      17.5
+     ]
+    },
+    "delta": -8.1,
+    "deltaPct": -31.6,
+    "pairedDeltas": [
+     -8.3,
+     -8.2,
+     0.3
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "p95": {
+    "name": "p95 frame ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 9.2,
+     "min": 9.2,
+     "max": 9.3,
+     "runs": [
+      9.2,
+      9.3,
+      9.2
+     ]
+    },
+    "patched": {
+     "median": 9.3,
+     "min": 9.2,
+     "max": 9.3,
+     "runs": [
+      9.2,
+      9.3,
+      9.3
+     ]
+    },
+    "delta": 0.1,
+    "deltaPct": 1.1,
+    "pairedDeltas": [
+     0,
+     0,
+     0.1
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "loafMs": {
+    "name": "LoAF ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "loafScriptMs": {
+    "name": "LoAF script ms",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   },
+   "forcedLayoutMs": {
+    "name": "forced style+layout ms (in LoAF)",
+    "higherIsBetter": false,
+    "n": 3,
+    "baseline": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "patched": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "runs": [
+      0,
+      0,
+      0
+     ]
+    },
+    "delta": 0,
+    "deltaPct": null,
+    "pairedDeltas": [
+     0,
+     0,
+     0
+    ],
+    "verdict": "CONTAMINATED (host): within noise"
+   }
+  }
+ },
+ "regressions": {
+  "newErrors": [],
+  "fixedErrors": [],
+  "errorsBothSides": [],
+  "new404s": [],
+  "screenshotDiffPct": {
+   "top": 0.14,
+   "middle": 0.01,
+   "bottom": 0
+  },
+  "morphReached": {
+   "baseline": [
+    true,
+    true,
+    true
+   ],
+   "patched": [
+    true,
+    true,
+    true
+   ]
+  }
+ },
+ "host": {
+  "cpus": 8,
+  "model": "Apple M1 Pro",
+  "loadavg": [
+   5.3212890625,
+   5.35009765625,
+   7.29833984375
+  ],
+  "chromeLaunches": 1,
+  "watchdogSec": 300,
+  "chromeWarmSec": 10,
+  "thresholds": {
+   "quietMaxBusyPct": 25,
+   "quietMaxLoad1": 6,
+   "quietMaxPressure": 1,
+   "quietMinWindowSec": 10,
+   "gateMaxWaitSec": 600,
+   "gateShortPassSec": 120,
+   "recheckMaxWaitSec": 60,
+   "invalidLoad1": 10,
+   "invalidOtherBusyPct": 25,
+   "invalidPressure": 2,
+   "warnLoad1": 6,
+   "warnOtherBusyPct": 20,
+   "suspendMinSec": 2,
+   "watchdogStallSec": 300,
+   "chromeWarmSec": 10
+  },
+  "recheck": {
+   "maxWaitSec": 60,
+   "maxLoad1": 6,
+   "maxBusyPct": 25
+  },
+  "gate": {
+   "quiet": true,
+   "waitedSec": 80,
+   "reasons": [],
+   "load1": 5.9,
+   "busyPct": 23.1,
+   "sysPct": 8.7,
+   "pressure": 1,
+   "sleptSec": 0,
+   "woke": false,
+   "gateTimeout": false
+  },
+  "contaminated": true,
+  "contaminatedRuns": 5,
+  "warnRuns": [
+   {
+    "label": "fix",
+    "run": 0,
+    "warnings": [
+     "other CPU 24.3 % > 20 %"
+    ]
+   }
+  ],
+  "runsTotal": 6,
+  "hostState": {
+   "recorded": true,
+   "display": [
+    "on"
+   ],
+   "fullWake": [
+    true
+   ],
+   "powerSource": [
+    "AC"
+   ],
+   "displaySleepPrevented": [
+    true
+   ],
+   "byLabel": {
+    "base": {
+     "display": [
+      "on"
+     ],
+     "fullWake": [
+      true
+     ]
+    },
+    "fix": {
+     "display": [
+      "on"
+     ],
+     "fullWake": [
+      true
+     ]
+    }
+   },
+   "chromeVersions": [
+    "Chrome/154.0.8037.58"
+   ],
+   "featureStateSha256": [
+    "031f81fafe14709b7dee92d8f873c92ccc6022b966473183f5404f90b421d9f0"
+   ],
+   "variationsSeedSha256": [
+    "7df0dd1533cd3dc5efa33d650f132fb0fa3f63241f07f0cb93b4bf9bef11c214"
+   ],
+   "changed": false,
+   "reasons": [],
+   "tag": null
+  },
+  "loadavg1Min": 4.2,
+  "loadavg1Max": 6.2,
+  "otherCpuPctMax": 45.1,
+  "recorded": true,
+  "invalidRuns": [
+   {
+    "label": "base",
+    "run": 0,
+    "reasons": [
+     "other CPU 27.8 % > 25 %"
+    ]
+   },
+   {
+    "label": "fix",
+    "run": 1,
+    "reasons": [
+     "other CPU 45.1 % > 25 %"
+    ]
+   },
+   {
+    "label": "base",
+    "run": 1,
+    "reasons": [
+     "other CPU 37.4 % > 25 %"
+    ]
+   },
+   {
+    "label": "base",
+    "run": 2,
+    "reasons": [
+     "other CPU 26.2 % > 25 %"
+    ]
+   },
+   {
+    "label": "fix",
+    "run": 2,
+    "reasons": [
+     "other CPU 28.5 % > 25 %"
+    ]
+   }
+  ]
+ },
+ "raw": "out/ab/scene-scope/2026-10-01T19-28-27-400Z/verify.json",
+ "markdown": "| mobile 6x, n=3 | baseline median [min-max] | patched median [min-max] | delta | verdict |\n|---|---|---|---|---|\n| scroll: fps | 91.7 [91-93.3] | 92.3 [86.1-95.7] | +0.6 (+0.7%) | CONTAMINATED (host): within noise |\n| scroll: frames >20 ms | 34 [24-37] | 33 [28-43] | -1 (-2.9%) | CONTAMINATED (host): within noise |\n| scroll: frames >34 ms | 5 [3-6] | 5 [4-5] | 0 (0%) | CONTAMINATED (host): within noise |\n| scroll: frames >50 ms | 2 [2-3] | 2 [1-2] | 0 (0%) | CONTAMINATED (host): within noise |\n| scroll: frames >100 ms | 0 [0-0] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n| scroll: worst frame ms | 75 [67.3-82.4] | 83.9 [75-92.6] | +8.9 (+11.9%) | CONTAMINATED (host): within noise |\n| scroll: p95 frame ms | 17.6 [17.4-17.6] | 17.5 [17.4-24.4] | -0.1 (-0.6%) | CONTAMINATED (host): within noise |\n| scroll: LoAF ms | 139 [131-162] | 135 [75-151] | -4 (-2.9%) | CONTAMINATED (host): within noise |\n| scroll: LoAF script ms | 70 [68-76] | 73 [67-75] | +3 (+4.3%) | CONTAMINATED (host): within noise |\n| scroll: forced style+layout ms (in LoAF) | 1 [0-1] | 2 [1-2] | +1 (+100%) | CONTAMINATED (host): within noise |\n| morph: fps | 112.5 [112.4-112.8] | 112.4 [110.5-113.3] | -0.1 (-0.1%) | CONTAMINATED (host): within noise |\n| morph: frames >50 ms | 0 [0-1] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n| morph: LoAF ms | 0 [0-0] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n| morph: forced style+layout ms (in LoAF) | 0 [0-0] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n| idle: fps | 117.2 [116.7-119] | 118.2 [117.8-119.3] | +1 (+0.9%) | CONTAMINATED (host): within noise |\n| idle: frames >20 ms | 1 [0-1] | 0 [0-0] | -1 (-100%) | CONTAMINATED (host): within noise |\n| idle: frames >34 ms | 0 [0-0] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n| idle: frames >50 ms | 0 [0-0] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n| idle: frames >100 ms | 0 [0-0] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n| idle: worst frame ms | 25.6 [17.2-25.7] | 17.5 [17.3-17.5] | -8.1 (-31.6%) | CONTAMINATED (host): within noise |\n| idle: p95 frame ms | 9.2 [9.2-9.3] | 9.3 [9.2-9.3] | +0.1 (+1.1%) | CONTAMINATED (host): within noise |\n| idle: LoAF ms | 0 [0-0] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n| idle: LoAF script ms | 0 [0-0] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n| idle: forced style+layout ms (in LoAF) | 0 [0-0] | 0 [0-0] | 0 | CONTAMINATED (host): within noise |\n\n**host: 5 of 6 runs contaminated (other CPU 27.8 % > 25 %; other CPU 45.1 % > 25 %; other CPU 37.4 % > 25 %; other CPU 26.2 % > 25 %; other CPU 28.5 % > 25 %); verdicts provisional** (load1 4.2-6.2, other CPU max 45.1 %); 1 warn: other CPU 24.3 % > 20 % (absolute numbers not comparable with an A/A floor from a quiet host)\n\nhost state: display on, FullWake, power AC, display-sleep assertion yes"
+}
