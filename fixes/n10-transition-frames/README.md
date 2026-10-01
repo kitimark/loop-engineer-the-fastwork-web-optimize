@@ -4,7 +4,7 @@
 > Fastwork). Diffs contain excerpts of Fastwork's code: keep them on local branches, never push.
 
 **Status:** diagnosis. Ablation overlays built for the iPhone; no fix yet.
-**Owner:** fix-scroll-engine (lead decision 07:07Z). Base: `aw1-10c` (all-wave1 + scroll-engine /10c; JS 757e2cbc…, CSS c6aad94b…).
+**Owner:** fix-scroll-engine (lead decision 07:07Z). Base: `aw1-10e` (all-wave1 + scroll-engine /10e, landed 60f66b6; JS 3e2f599a…, CSS c6aad94b…). The ablations were rebuilt on aw1-10e at 08:50Z.
 
 ## Symptom
 
@@ -27,8 +27,8 @@ run. The other frames > 50 ms are 51-55 ms at y≈50 and ~50 ms at y≈700/1000 
 
 ## Ablation overlays (diagnostic only, not landable)
 
-Each overlay is a standalone copy of both files (aw1-10c plus one change), so it serves on its own.
-Diffs vs aw1-10c are in `fixes/<name>/patch.diff`.
+Each overlay is a standalone copy of both files (aw1-10e plus one change), so it serves on its own.
+Diffs vs aw1-10e are in `fixes/<name>/patch.diff`.
 
 | name | disables |
 |---|---|
@@ -39,7 +39,7 @@ Diffs vs aw1-10c are in `fixes/<name>/patch.diff`.
 
 Serve (plain http per I-003; any checkout, absolute overlay path):
 `node tools/serve.mjs --root site-pretty --overlay /Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-a1722cf5058e25591/fixes/<name>/overlay --port auto --vendors=local --latency 150`
-Base for comparison: the same with `fixes/aw1-10c/overlay`.
+Base for comparison: the same with `fixes/aw1-10e/overlay`.
 
 ## R3 logger for the phone
 

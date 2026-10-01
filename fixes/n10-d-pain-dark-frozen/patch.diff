@@ -1,14 +1,14 @@
 # fastwork mirror fix: n10-d-pain-dark-frozen
 # baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
-# STACKED on fixes/aw1-10c/overlay: apply aw1-10c first, then this patch on top of it
-# rebuild the overlay with: node tools/fix.mjs apply n10-d-pain-dark-frozen --on aw1-10c
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply n10-d-pain-dark-frozen --on aw1-10e
 # contains excerpts of Fastwork's code: local branches only, never push
 # base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
-# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 757e2cbc44e7f245022767b04f618a3bd2b505138603d26079af89e7e04c25ad
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -11557,7 +11557,9 @@
+@@ -11560,7 +11560,9 @@
          let r = document.querySelector(`.pain`);
          if (r) {
            let e = !t.matches || (v?.getBoundingClientRect().top ?? 1) <= 0.5;
