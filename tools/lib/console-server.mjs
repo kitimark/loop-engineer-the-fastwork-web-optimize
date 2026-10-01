@@ -4,16 +4,22 @@
 //   GET  /api/steps              {now, steps: [public views]} (open steps oldest first, then the last finished ones)
 //   POST /api/steps/<id>/<act>   act = start | done | answer | skip | reopen; JSON body {part, value, notes}
 //   GET  /api/health             {ok, pid}
+//   GET  /progress               the fix-progress page (tools/lib/progress-page.html; read-only)
+//   GET  /api/progress           its model (tools/lib/progress.mjs currentView: curated fixes/PROGRESS.json + live
+//                                locks, incidents and waiting steps; scrubbed of URLs, addresses and ids)
 // POSTs need the header `x-console: 1` (a page on another origin can't send it without a CORS preflight,
 // which this server never answers) and every request a localhost Host header (no DNS rebinding).
 import http from 'node:http';
 import { mkdirSync, unlinkSync, readFileSync } from 'node:fs';
 import { list, publicView, start, done, answer, skip, reopen, consoleDir, serverFile, OPEN } from './console.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
+import { currentView } from './progress.mjs';
 
 /** The page (plain HTML, inline CSS and JS, no external requests). Read per request: an edit shows on reload. */
 const PAGE_FILE = new URL('./console-page.html', import.meta.url);
 const page = () => readFileSync(PAGE_FILE, 'utf8');
+const PROGRESS_PAGE_FILE = new URL('./progress-page.html', import.meta.url);
+const progressPage = () => readFileSync(PROGRESS_PAGE_FILE, 'utf8');
 
 const FINISHED_SHOWN = 40;
 const ACTIONS = {
@@ -64,6 +70,8 @@ export function handler(port) {
       if (req.method === 'GET' && (u.pathname === '/' || u.pathname === '/index.html')) return send(res, 200, page(), 'text/html; charset=utf-8');
       if (req.method === 'GET' && u.pathname === '/api/health') return send(res, 200, { ok: true, pid: process.pid });
       if (req.method === 'GET' && u.pathname === '/api/steps') return send(res, 200, { now: iso(), steps: pageSteps() });
+      if (req.method === 'GET' && (u.pathname === '/progress' || u.pathname === '/progress.html')) return send(res, 200, progressPage(), 'text/html; charset=utf-8');
+      if (req.method === 'GET' && u.pathname === '/api/progress') return send(res, 200, await currentView());
       const m = u.pathname.match(/^\/api\/steps\/(C-\d{1,6})\/([a-z]+)$/);
       if (m && req.method === 'POST') {
         if (req.headers['x-console'] !== '1') return send(res, 403, { error: 'missing x-console header' });

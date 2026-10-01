@@ -39,6 +39,11 @@
 //   node tools/console.mjs show <id> [--json]
 //   node tools/console.mjs answer <id> --by <who> --value <v> [--scale N] [--notes "..."]   # the user answered in chat instead
 //
+// Fix progress for the user (read-only; the same content as the page's Progress tab, /progress):
+//   node tools/console.mjs progress [--details] [--json]   # curated fixes/PROGRESS.json + live phone/Chrome/incidents/steps
+//   node tools/console.mjs progress --check [--file <path>] # validate a PROGRESS.json (schema + no personal data); exit 1 on errors
+//        # mgmt-ops keeps fixes/PROGRESS.json current (schema: header of tools/lib/progress.mjs)
+//
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -46,9 +51,10 @@ import { post, list, get, ack, redo, reopen, cancel, answer, waitCondition, line
 import { runningServer, startServer } from './lib/console-server.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './lib/wait.mjs';
 import { autoPortBase } from './lib/paths.mjs';
+import { currentView, renderText, readProgress } from './lib/progress.mjs';
 
 const argv = process.argv.slice(2);
-const VALUED = ['--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label'];
+const VALUED = ['--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -113,6 +119,18 @@ async function main() {
     if (flag('json')) console.log(JSON.stringify(items, null, 1));
     else if (!items.length) console.log(flag('pending') ? 'no open console steps' : 'no console steps');
     else for (const s of items) console.log(line(s));
+    return 0;
+  }
+  if (cmd === 'progress') {
+    if (opt('file')) process.env.FW_PROGRESS_FILE = opt('file');
+    if (flag('check')) {
+      const { errors, file } = readProgress();
+      if (errors.length) { console.log(`PROGRESS INVALID ${file}:`); for (const e of errors) console.log(`  ${e}`); return 1; }
+      console.log(`PROGRESS OK ${file}`);
+      return 0;
+    }
+    const v = await currentView();
+    console.log(flag('json') ? JSON.stringify(v, null, 1) : renderText(v, { details: flag('details') }));
     return 0;
   }
   if (!arg) throw new Error(`usage: node tools/console.mjs ${cmd} <id> … (see the header of tools/console.mjs)`);
