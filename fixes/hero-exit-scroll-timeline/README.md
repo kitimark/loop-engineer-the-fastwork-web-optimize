@@ -567,6 +567,16 @@ Verdicts on P-019 (OBSERVED, n = 2 per arm):
   - Decisive check: an untimed phone attribution run at rest, re-keep-op vs re-keep. It records whether the
     card has its own layer and the Paint events over the card while idle; the carousel inside the card
     repaints. This runs before the gain block's counted runs (ticket).
+  - Likely moot: the base card rule carries `will-change: transform` at rest (CSS L2380-2394, computed value
+    confirmed), which composites the card in WebKit (arch-claims). Step 0's on-screen layer read confirms it.
+- **Expected gain (P-033, amended):** the 34-ms tier only.
+  - In P3, aw1-10e has 0 frames over 50 ms in +150..+1300 (5/5 runs), so the goal metric cannot move there.
+  - aw1-10e has 1-2 frames over 34 ms and 3 over 30 ms in that window. These are reveal-end frames of 33-41 ms;
+    the +700 frame sits at 34-35 ms, so the result is threshold-sensitive.
+  - P-a (Layouts gone) and P-b (dt>34 median 0, non-overlap for "better") are reported separately.
+- **Plan (lead):** the gain block is queued behind P10 and P5. Step 0 runs in any free phone gap. If P-a hits
+  and P-b reads "within noise", re-keep-op becomes a bundle candidate for the next combined wave, not a
+  standalone landing.
 
 ## Risks, conflicts, follow-ups
 
