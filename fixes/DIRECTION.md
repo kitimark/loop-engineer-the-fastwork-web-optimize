@@ -350,6 +350,23 @@ fwd/rev, the artboard 5.3/7.0: the size-fixed children still repaint every frame
 branch). ghbn mechanism verified (backdrop-filter none 40/40 moving, 81/81 at m=1). P-016 (hold 250) invalid by design
 -> P-016b hold 900. Post-mortems landed: f0013ff (morph), cf79bfd (hero). **F-045 (scene gate as the y≈1250 cause) is
 weakened by F-049**; the class write at L11538 / forced read at L3258 (flip + 1.13 s) goes to fix-scroll-engine as a note.
+**RANKED ACTIONS (lead ~11:20Z adopts arch-lead's list, `research/architecture/unknowns-actions.md` §3, main 197c2fa;
+replaces every earlier sequence below).** iPhone, after "phone back" and the user's one-time setup: (1) **P0 logger
+y-source A/A** (~10 min; needs ts-iphone-run's `--y-source` or a hand-patched logger, else skip and run it when ready) ->
+(2) **P1 countdown probe** (P-017: gh / gh-cdwc / gh-cdhid) + **P2** = P-016b (hold 900 vs 2000) -> (3) **OSS P0 ca-check**
+(gates OSS P2-P4) -> (4) **P3** ST-2 re-dur / re-keep + ST-2d fling-hold -> (5) **P4** y≈1960 blocks: F1, then F3
+listener-scope (F2 only if F3 isn't ready) -> (6) **P11/P12** layout-containment probes (P11 opens a NEW topic
+`layout-containment`; owner proposed when we get there) + the y≈2678 residual on na -> (7) **P5** hero ST-1, then the
+remaining tickets (hero-B, R2, R3a/b, /10d phone check, N12) and P6-P10, P13 as ranked. Desk: D2 `map-webkit-amplifiers`
+(new mapper: page-wide scan for transitions ending at `opacity:1`/`filter:none`/`transform:none` on scroll-revealed
+elements, and runtime wheel/touch listener add/remove), D3 de-pm-hero (countdown per-tick layout dirtier), D4
+de-unknowns-ux (morph clock-shift replay), D5 fix-hero-exit (flip-pair presence-flip diff, short lane). Toolsmiths: T1a+
+ts-iphone-run (per-run context fields), T3+ ts-analysis (perceptual metrics MWFI/HTR/STUT/RUNmax/JUMP), T8+ new
+`ts-host-state` (display, fullWake, power, Chrome version per hold). Chrome: C1 canary A/A display on/off (the lead asks
+the user first), C2-C4 later. Finger batch (§3.5, ~8-10 user min): settings check, mw-stub vs gh blind, y≈1960 slow
+scroll aw1-10e vs F1, flicks with touchstart timestamps, pacing page, Apple page, optional 240 fps clips.
+**HOLDS (no slot until named otherwise):** fixed-size morph diagnostic; ghr85a (R5a); R7; R8 nav half; a1 (until P1/P2
+place the start transient); h4 (until K24 is explained).
 **CAVEAT F-048 (arch-oss-survey, lead 11:1xZ):** CSS `linear()` easings run on the main thread in WebKit (iOS 26.x), and
 our own wave-1 T10 change (large-area-blur) uses `linear()` blur easings, so the aw1-10e base may have moved a blur off
 Core Animation. P0 ca-check confirms or retracts it; if confirmed, P2 blur-easing-cubic (the two T10 tails as exact

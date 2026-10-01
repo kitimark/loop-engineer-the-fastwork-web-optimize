@@ -3,7 +3,7 @@
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
 **mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **11:19Z**.
+snapshot), branch `mgmt-ops/docs-2`. Last update: **11:17Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -17,7 +17,12 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **11:19Z**.
 
 ## Digest log (newest first, 5 lines each)
 
-- **11:19Z** Phone HELD by the user (lead): no phone calls until "phone back". Morph session: Composite carries the cost,
+- **11:17Z** Lead adopted arch-lead's ranked list (unknowns-actions.md §3, 197c2fa): phone P0 y-source A/A -> P1/P2
+  countdown + P-016b -> OSS ca-check -> P3 ST-2 -> P4 y≈1960 F1/F3 -> P11/P12 containment -> P5 ST-1 -> rest. Holds:
+  fixed-size, ghr85a, R7, R8 nav half, a1, h4. New: map-webkit-amplifiers (D2), ts-host-state (T8+). Phone still with
+  the user. Runner has the new order.
+
+- **11:16Z** Phone HELD by the user (lead): no phone calls until "phone back". Morph session: Composite carries the cost,
   ~78 layers/cycle, R1/R2 refuted. Display back-tag landed ddc3450 (display on since 06:22:55Z). OSS: P0 ca-check + P1
   (F3) approved, P2-P4 wait for P0; F-048 caveat (our T10 linear() blur may be main-thread). P-018..P-022 logged (ST-1,
   ST-2, ST-2d, P0, P1). Asked arch-lead for the "y-source A/A" ticket. fix-scroll-engine stack unlanded (needs review).
@@ -255,6 +260,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `doc-protocol-v2` (aa630a1a8c0adae9f) | v2 docs pass (LEAD, README DoD, AGENT_PROMPT, fix-reviewer, EXPERIMENTS, CLAUDE.md); not ops docs | alive |
 | `arch-unknowns`, `de-unknowns-render`, `de-unknowns-ux` | unknowns hunt (validity, render terms, perceived smoothness) -> arch-lead merges | alive |
 | `ts-gesture` (a83a0f8d7c6fe96b6 worktree) | fixing review-gesture-2 B1/B2 | alive |
+| `map-webkit-amplifiers` | D2 mapper (haiku): page-wide scan for the two WebKit amplifiers | alive |
+| `ts-host-state` | T8+ host record (display, fullWake, power, Chrome version per hold) | alive |
 | `de-pm-morph`, `de-pm-hero` | post-mortem of phone-tested refactors (morph gh/ghb/ghbn/hump/first frames; hero v2 y≈700, h1, y≈1250); Timeline captures via slot tickets with per-segment predictions | alive |
 | `arch-oss-survey` (a14e692b6f530f1c0), `de-oss-map` (af4a76a52eface067) | OSS rendering libraries survey + mechanism map -> 3-5 PoC shortlist for the lead (read-only) | alive |
 
