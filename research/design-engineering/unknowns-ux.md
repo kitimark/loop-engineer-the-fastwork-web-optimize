@@ -139,6 +139,9 @@ Each item gives the unknown, the evidence, the cheapest probe, the expected valu
   the script). Then one M block vs gh, n=3+3.
 - *EV:* high, and a ~3-line change that keeps every frame's pixels (same m sequence, shifted by one frame).
   Combine with R5 (activate the scene on arm). *Owner:* fix-nav-morph; de-morph signs off the latency.
+- *Replay (D4, [`morph-clock-replay.md`](morph-clock-replay.md)):* alone, the per-tween max leap goes 94 → 77 px
+  and MWFI −1.2 ms (the leap moves onto the next slow frame). With P-017 the two are complementary: 94 → 35-44 px.
+  So P10 stacks on gh-cdwc.
 
 **U3. Which metric does the eye follow: drops, judder, stall length or jump size?**
 - *Evidence:* the user's verdicts agree with MWFI and not with counts (§1.3). gh and ghb trade stall length for
