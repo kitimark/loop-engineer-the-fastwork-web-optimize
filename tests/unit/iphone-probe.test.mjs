@@ -13,7 +13,7 @@ import { parseRunArgs, measureGuard, estimateMs, finish, toolVersion, TOOL_FILES
 
 const MT = P.MUT_TYPES;
 const counts = (o) => MT.map((k) => o[k] || 0);
-const batch = (t, o, other = 0) => [t, ...counts(o), other];
+const batch = (t, o, other = 0, seen) => (seen === undefined ? [t, ...counts(o), other] : [t, ...counts(o), other, seen]);
 // frames [t, dt, yStart, yEnd, innerHeight, m, rafJsMs, probeMs]
 const fr = (ts, { y = (t) => t, m = () => null } = {}) => ts.map((t, k) => [t, k ? Math.round((t - ts[k - 1]) * 10) / 10 : null, k ? y(ts[k - 1]) : y(t), y(t), 815, m(k), k ? 0.5 : null, 0.1]);
 
@@ -40,6 +40,20 @@ test('bucketMutations: per-frame counts by type with no cap, batches in one gap 
   assert.deepEqual(m.counts, [[2, ...counts({ src: 21, inert: 1, class: 2, scene: 1, same: 5 })], [3, ...counts({ style: 3, tabindex: 4, render: 1, other: 2, childList: 6, text: 1 })]]);
   assert.deepEqual(m.otherAttrs, [[2, { 'aria-hidden': 1 }], [3, { 'aria-hidden': 1, 'data-x': 1 }]]);
   assert.deepEqual(m.outside, counts({ src: 1, class: 1 }));
+  assert.equal(m.movedFromTime, 0, 'v2 rows (no seen): by delivery time');
+});
+
+test('bucketMutations / placeCrossings (probe v3): placed by seen, the latest rAF stamp before delivery; a delivery time tied with the next stamp stays in its frame', () => {
+  const f = fr([0, 8.3, 98.3, 106.6]);
+  // a batch from the long frame's rAF callback (stamp 8.3), delivered at 98.3: the next frame's stamp (a 0.1 ms / 1 ms tie)
+  const b = [batch(98.3, { src: 21 }, 0, 8.3), batch(98.3, { class: 1 }, 0, 98.3), batch(5, { style: 1 }, 0, 0), batch(3, { text: 1 }, 0, null)];
+  assert.equal(P.frameIndexAt(f, 98.3), 3, 'by delivery time the tied batch would land in row 3');
+  const m = P.bucketMutations(f, b);
+  assert.deepEqual(m.counts, [[1, ...counts({ style: 1, text: 1 })], [2, ...counts({ src: 21 })], [3, ...counts({ class: 1 })]]);
+  assert.equal(m.movedFromTime, 1);
+  const c = P.placeCrossings(f, [[98.3, 'inert', 'div.p', 'removed', 1960, 0, 0, 8.3], [98.3, 'class', 'div.late', '+is-late', 1960, 0, 1, 98.3], [3, 'cv', 'section.c', 'rendered', 0, 0, null, null]]);
+  assert.deepEqual(c.map((x) => [x.kind, x.frame, x.yFrame]), [['cv', 1, [0, 8.3]], ['inert', 2, [8.3, 98.3]], ['class', 3, [98.3, 106.6]]]);
+  assert.equal(P.rowOf(f, 98.3, undefined), 3, 'a v2 row: by time');
 });
 
 test('placeCrossings: time order, same-time rows keep record order, src "effect", frame index, the frame\'s y interval, its y row, stale when y was not read at the crossing', () => {
@@ -189,6 +203,27 @@ async function runInPage(driver, opts, { page = createPage({ morph: driver === '
 }
 const WIN = { tops: [['platform', '#platform'], ['none', '.missing']], from: 1500, to: 2000, settleAtMs: 50, idleMs: 150, holdMs: 150, sentinelMs: 150, maxScrollMs: 45000 };
 
+test('probe v3 on a 1 ms page clock: the long frame\'s batch ties with the next stamp and still lands in the slow row (by seen)', async () => {
+  const { raw } = await runInPage('window', { ...WIN, tops: [] }, { page: createPage({ clockMs: 1, tieAfterLong: true }) });
+  assert.equal(raw.err, null);
+  assert.equal(raw.probeVersion, 3);
+  const n = MT.length;
+  const b = raw.batches.find((x) => x[1 + MT.indexOf('src')] === 21);
+  assert.ok(b, 'the src batch');
+  const k = raw.frames.findIndex((x) => x[0] === b[0]);
+  assert.ok(k > 1, `the batch's delivery time equals a frame stamp (the tie): ${b[0]}`);
+  assert.ok(raw.frames[k][1] >= 85, 'that frame closes the long gap');
+  assert.equal(b[2 + n], raw.frames[k - 1][0], 'seen = the long frame\'s stamp');
+  assert.equal(P.frameIndexAt(raw.frames, b[0]), k + 1, 'by delivery time (v2) it would land one row late');
+  const doc = P.buildDoc(raw);
+  const row = doc.mutations.counts.find((c) => c[0] === k);
+  assert.ok(row && row[1 + MT.indexOf('src')] === 21, 'by seen it lands in the slow row');
+  assert.ok(doc.mutations.movedFromTime >= 1);
+  const inert = doc.crossings.find((c) => c.kind === 'inert');
+  assert.equal(inert.frame, k, 'the inert crossing too');
+  assert.equal(doc.summary.slow.find((x) => x.frame === k).mut.src, 21);
+});
+
 test('std probe + window driver: the y~1960 frame shows all 21 src writes, the inert flip, the scene flip and its rAF JS, uncapped', async () => {
   const { raw, page } = await runInPage('window', WIN, { customStateJs: `({ imgs: document.querySelectorAll('img').length })` });
   assert.equal(raw.err, null);
@@ -236,7 +271,7 @@ test('std probe + window driver: the y~1960 frame shows all 21 src writes, the i
   assert.ok(slow.crossings.includes('inert div.start-selling-morph-panel removed'));
   assert.ok(doc.crossings.some((c) => c.kind === 'cv' && c.id === 'section.commission' && c.value === 'rendered' && c.y >= 0 && c.y < 1960));
   assert.ok(page.reads >= raw.frames.length, `raf reads scrollY every frame (${page.reads} reads, ${raw.frames.length} frames)`);
-  assert.equal(raw.probeVersion, 2);
+  assert.equal(raw.probeVersion, 3);
   assert.deepEqual([raw.yReads.raf, raw.yReads.crossing, raw.yReads.scroll], [raw.frames.length, 0, 0], 'raf: one scrollY read per frame, none in the crossing callbacks');
   assert.ok(raw.yReads.driver >= 2, 'the driver checks scrollY every 300 ms');
   assert.equal(raw.yReads.docH, raw.frames.filter((f) => f[3] !== 0).length, 'docH read once per frame with y != 0');
@@ -400,7 +435,7 @@ test('finish: one JSON per run (schema, meta with labels and tool hashes, measur
   assert.deepEqual(m.battery, raw.battery);
   assert.equal(m.ySource, 'raf');
   assert.equal(m.params.ySource, 'raf');
-  assert.equal(m.probeVersion, 2, 'probe v2: crossings read no y of their own (v1, the first T1a commit = raf-legacy)');
+  assert.equal(m.probeVersion, 3, 'probe v3: placed by seen (v2: by time; v1, the first T1a commit = raf-legacy reads)');
   assert.equal(m.yReads, 'probe rAF scrollY per frame, scrollHeight when y != 0; driver scrollY 3.3 Hz');
   assert.deepEqual(m.yReadCounts, raw.yReads);
   assert.deepEqual(Object.keys(P.Y_READS), P.Y_SOURCES);

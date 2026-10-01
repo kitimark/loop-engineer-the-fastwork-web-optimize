@@ -9,6 +9,10 @@
 // Every read of window.scrollY is counted (win.__scrollYReads), and every read of documentElement.scrollHeight
 // (win.__scrollHeightReads, win.__scrollHeightReadsAtY0 for those at scrollY 0), to test which y source reads what.
 // A simplification, not a browser: no layout at all, so the counts are reads, not forced layouts.
+// clockMs: a coarse page clock (performance.now() and the rAF stamps floored to clockMs; Safari's stamps are 1 ms).
+// tieAfterLong: the frame after a long one (> 16 ms) gets the stamp of the last observer delivery, and the page
+// clock reads that same value inside an observer callback: a batch and the next frame's stamp tie exactly, the
+// case that put a batch in the wrong row when batches were placed by delivery time (probe v2).
 //
 // The page's own behaviour (all through window.requestAnimationFrame looked up at call time, so the probe's
 // wrapper sees it, like the real Svelte runtime):
@@ -42,9 +46,10 @@ function matches(el, sel) {
   });
 }
 
-export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY = 900, lateY = 1700, busyMs = 90, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null } = {}) {
+export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY = 900, lateY = 1700, busyMs = 90, clockMs = 0, tieAfterLong = false, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null } = {}) {
   const t0 = performance.now();
-  const now = () => performance.now() - t0;
+  let inMO = null, lastDelivery = null;
+  const now = () => { if (inMO !== null) return inMO; const v = performance.now() - t0; return clockMs ? Math.floor(v / clockMs) * clockMs : v; };
   const observers = new Set();
   const record = (r) => { for (const o of observers) if (o.on) o.push(r); };
 
@@ -108,7 +113,7 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
     constructor(cb) { this.cb = cb; this.q = []; this.on = false; this.scheduled = false; }
     observe() { this.on = true; observers.add(this); }
     disconnect() { this.on = false; this.q = []; observers.delete(this); }
-    push(r) { this.q.push(r); if (!this.scheduled) { this.scheduled = true; queueMicrotask(() => { this.scheduled = false; const q = this.q; this.q = []; if (q.length && this.on) this.cb(q, this); }); } }
+    push(r) { this.q.push(r); if (!this.scheduled) { this.scheduled = true; queueMicrotask(() => { this.scheduled = false; const q = this.q; this.q = []; if (q.length && this.on) { const at = now(); lastDelivery = at; if (tieAfterLong) inMO = at; try { this.cb(q, this); } finally { inMO = null; } } }); } }
   }
 
   let raf = [], rafId = 0, smooth = null;
@@ -177,14 +182,15 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
   // Frames every 8 ms, and the next frame's timestamp at least 1 ms after the last callback of a long frame: with
   // setInterval an overdue tick fired right after the 90 ms frame, its timestamp within 0.1 ms of the observer
   // batch, and the probe's 0.1 ms rounding then placed the batch in the next row by chance (a flake under load).
-  let timer = null;
+  let timer = null, prevLong = false;
   const tick = async () => {
     const start = now();
     if (smooth) { const d = smooth.to - sy; if (Math.abs(d) <= Math.abs(smooth.step) || smooth.step === 0) { sy = smooth.to; smooth = null; } else sy = Math.round(sy + smooth.step); }
     if (sy !== lastScrollFired) { lastScrollFired = sy; for (const l of winListeners.filter((x) => x.type === 'scroll')) l.fn({ type: 'scroll' }); }
     const q = raf; raf = [];
-    const t = now();
+    const t = tieAfterLong && prevLong && lastDelivery !== null ? lastDelivery : now();
     for (const cb of q) { try { cb(t); } catch (e) { win.__errors = (win.__errors || 0) + 1; } await null; } // microtask checkpoint per callback
+    prevLong = now() - start > 16;
     if (!stopped) timer = setTimeout(tick, Math.max(1, 8 - (now() - start)));
   };
   timer = setTimeout(tick, 8);

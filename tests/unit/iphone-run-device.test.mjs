@@ -31,9 +31,11 @@ const pin = ({ j, logs }) => {
 };
 
 test('iphone run (the phone, no target): run JSON and console summary byte-identical to before the Simulator target', () => {
-  assert.deepEqual(pin(runFinish(['--driver', 'scroll'])), ['aadc29132738c7d6', 9854]);
-  assert.deepEqual(pin(runFinish(['--driver', 'window', '--to', '1800'])), ['514e941706d296fb', 9907]);
-  assert.deepEqual(pin(runFinish(['--driver', 'scroll', '--no-battery'])), ['a37687463d739789', 9632]);
+  // re-pinned on purpose since 44087f4, phone output only (the Simulator test below checks the target contract):
+  // T1a probe v3 adds movedFromTime
+  assert.deepEqual(pin(runFinish(['--driver', 'scroll'])), ['2d038beccb05ecaa', 9872]);
+  assert.deepEqual(pin(runFinish(['--driver', 'window', '--to', '1800'])), ['b98ddaa6e2da831d', 9925]);
+  assert.deepEqual(pin(runFinish(['--driver', 'scroll', '--no-battery'])), ['381a6963a21c1080', 9650]);
   const { j } = runFinish(['--driver', 'scroll']);
   assert.equal(j.meta.device, DEVICE);
   assert.deepEqual(Object.keys(j.meta.tool.files), TOOL_FILES);

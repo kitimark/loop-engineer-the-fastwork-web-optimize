@@ -36,12 +36,18 @@
 //   mutations: every MutationObserver record on the whole document (subtree, attributes with old values,
 //     childList, characterData), counted by type with NO cap (F-044: a first-N cap hid the inert flip behind
 //     an img src burst). Attribute writes that leave the value unchanged count as `same`, not under their type
-//     (F-020). A batch is placed in the frame whose gap contains its delivery time: t[k-1] <= delivery < t[k].
-//     A mutation made in a rAF callback at t[k-1] therefore lands in row k, whose dt includes its rendering;
-//     one made in a task after that frame rendered also lands in row k but renders in row k+1, so read rows
-//     k-1 and k together for a slow row k.
-//   crossings (code-threshold log): the EFFECTS of IO edges and scene gates, each [t, kind, id, value, y, fresh, yRow] in
-//     the page, placed like mutations: scene / render (data-start-selling-scene|render values), inert
+//     (F-020). Each batch carries seen: the latest rAF timestamp any rAF callback saw before its delivery (the
+//     probe's own loop and the wrapped page callbacks record their frame's timestamp before they run). A batch is
+//     placed in the gap that frame began: row k with t[k-1] = seen (frameIndexAt(frames, seen)). A mutation made
+//     in a rAF callback at t[k-1] therefore lands in row k, whose dt includes its rendering; one made in a task
+//     after that frame rendered also lands in row k but renders in row k+1, so read rows k-1 and k together for
+//     a slow row k. Probe v2 placed by delivery time (t[k-1] <= delivery < t[k]): a batch delivered at the end of
+//     a long frame whose time rounded to the next frame's stamp (0.1 ms here, 1 ms Safari stamps) went to row
+//     k+1 by chance. With seen, work of a rendering update that runs BEFORE its rAF callbacks (scroll / resize
+//     events) still carries the previous stamp and lands in row k, not k+1 as its delivery time would say.
+//     A row without seen (a v2 file, or a batch before the first callback) is placed by its delivery time.
+//   crossings (code-threshold log): the EFFECTS of IO edges and scene gates, each [t, kind, id, value, y, fresh, yRow,
+//     seen] in the page, placed like mutations (by seen): scene / render (data-start-selling-scene|render values), inert
 //     (present/removed), class (+token / -token, svelte-* hash classes ignored), cv
 //     (contentvisibilityautostatechange skipped|rendered), font (document.fonts loadingdone). A crossing's y is
 //     the y source's last value (raf: the last probe row's yEnd, see yRow; the observer itself reads no
@@ -69,6 +75,7 @@
 // probeVersion (meta.probeVersion, window.__fwr.v):
 //   1  the first T1a commit: crossing callbacks read scrollY (now --y-source raf-legacy); no meta.ySource
 //   2  probe v2: crossings take the y source's last value, docH only at y != 0, read counts, yFrame/yRow/stale
+//   3  probe v3: batches and crossings carry seen (the latest rAF timestamp) and are placed by it, not by time
 //   A run file without meta.probeVersion but WITH meta.ySource was written by the --y-source commit between the
 //   two (window.__fwr.v still 1): it has v2's crossing reads (no read in the callbacks) but docH read every frame,
 //   also at y == 0. Without either field: v1.
@@ -76,7 +83,7 @@
 export const SCHEMA = 'fw-iphone-run/1';
 export const FIELDS = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs', 'docH'];
 export const Y_SOURCES = ['raf', 'raf-legacy', 'scroll', 'none'];
-export const PROBE_VERSION = 2;
+export const PROBE_VERSION = 3;
 /** The probe's layout-forcing reads per y source (scrollY: a forced layout on WebKit when layout is dirty and y != 0;
  *  scrollHeight: always one when dirty, so read only after a scrollY read at y != 0). */
 export const Y_READS = {
@@ -107,6 +114,9 @@ export const PROBE_STD_JS = `(() => {
   const rAF = rAF0.bind(window);
   const P = window.__fwr = { v: ${PROBE_VERSION}, probe: 'std', t0: R1(now()), frames: [], batches: [], crossings: [], marks: {}, stopped: false };
   let self = 0;
+  // seen: the latest rAF timestamp any callback (the probe's loop, a wrapped page callback) saw; batches and
+  // crossings carry it and are placed by it (rounded like the frames' t, so it matches a row's t exactly)
+  let seen = null;
   // y source (--y-source): raf | raf-legacy | scroll | none, set by startJs / optsJs in window.__fwrOpts
   const YS = (window.__fwrOpts && window.__fwrOpts.ySource) || 'raf';
   const RAF = YS === 'raf' || YS === 'raf-legacy', LEGACY = YS === 'raf-legacy';
@@ -135,7 +145,7 @@ export const PROBE_STD_JS = `(() => {
   // page rAF JS: sum the sync time of the page's own callbacks per rAF timestamp
   const js = new Map();
   window.requestAnimationFrame = function (cb) {
-    return rAF((ts) => { const a = now(); try { return cb(ts); } finally { js.set(ts, (js.get(ts) || 0) + now() - a); } });
+    return rAF((ts) => { seen = R1(ts); const a = now(); try { return cb(ts); } finally { js.set(ts, (js.get(ts) || 0) + now() - a); } });
   };
   // mutations: one row per observer batch, [deliveredAt, ...counts by TYPES, otherAttrs|0]
   const mo = new MutationObserver((recs) => {
@@ -163,23 +173,23 @@ export const PROBE_STD_JS = `(() => {
       else if (name === 'data-start-selling-render') k = 'render';
       else { k = 'other'; (other ||= {})[name] = (other[name] || 0) + 1; }
       c[TI[k]]++;
-      if (k === 'scene' || k === 'render') cr.push([R1(a), k, desc(el), nv, y, yf, yr]);
-      else if (k === 'inert') cr.push([R1(a), k, desc(el), nv === null ? 'removed' : 'set', y, yf, yr]);
+      if (k === 'scene' || k === 'render') cr.push([R1(a), k, desc(el), nv, y, yf, yr, seen]);
+      else if (k === 'inert') cr.push([R1(a), k, desc(el), nv === null ? 'removed' : 'set', y, yf, yr, seen]);
       else if (k === 'class') {
         const was = new Set((r.oldValue || '').split(/\\s+/).filter(Boolean)), is = new Set((nv || '').split(/\\s+/).filter(Boolean));
-        for (const t of is) if (!was.has(t) && !/^svelte-/.test(t)) cr.push([R1(a), 'class', desc(el), '+' + t, y, yf, yr]);
-        for (const t of was) if (!is.has(t) && !/^svelte-/.test(t)) cr.push([R1(a), 'class', desc(el), '-' + t, y, yf, yr]);
+        for (const t of is) if (!was.has(t) && !/^svelte-/.test(t)) cr.push([R1(a), 'class', desc(el), '+' + t, y, yf, yr, seen]);
+        for (const t of was) if (!is.has(t) && !/^svelte-/.test(t)) cr.push([R1(a), 'class', desc(el), '-' + t, y, yf, yr, seen]);
       }
     }
     for (let i = cr.length - 1; i >= 0; i--) P.crossings.push(cr[i]); // record order
-    P.batches.push([R1(a), ...c, other]);
+    P.batches.push([R1(a), ...c, other, seen]);
     self += now() - a;
   });
   mo.observe(document, { subtree: true, attributes: true, attributeOldValue: true, childList: true, characterData: true });
-  const onCv = (e) => { const a = now(); P.crossings.push([R1(a), 'cv', desc(e.target), e.skipped ? 'skipped' : 'rendered', ...yCross()]); self += now() - a; };
+  const onCv = (e) => { const a = now(); P.crossings.push([R1(a), 'cv', desc(e.target), e.skipped ? 'skipped' : 'rendered', ...yCross(), seen]); self += now() - a; };
   document.addEventListener('contentvisibilityautostatechange', onCv, true);
   const fonts = !LEGACY && document.fonts && document.fonts.addEventListener ? document.fonts : null; // v1 had no font listener
-  const onFont = (e) => { const a = now(); P.crossings.push([R1(a), 'font', 'document.fonts', (e.fontfaces ? e.fontfaces.length : 0) + ' faces', ...yCross()]); self += now() - a; };
+  const onFont = (e) => { const a = now(); P.crossings.push([R1(a), 'font', 'document.fonts', (e.fontfaces ? e.fontfaces.length : 0) + ' faces', ...yCross(), seen]); self += now() - a; };
   if (fonts) fonts.addEventListener('loadingdone', onFont);
   // nav / morph element for m (cached; re-queried when it leaves the document)
   let mEl = [];
@@ -189,6 +199,7 @@ export const PROBE_STD_JS = `(() => {
   };
   const loop = (t) => {
     if (P.stopped) return;
+    seen = R1(t);
     const a = now();
     let m = null;
     for (const e of morphEls()) { const v = e.style.getPropertyValue('--morph'); if (v !== '') { m = Math.round(parseFloat(v) * 1000) / 1000; break; } }
@@ -329,12 +340,19 @@ export function frameIndexAt(frames, x) {
   return ans;
 }
 
-/** Observer batches -> sparse per-frame counts: {types, counts: [[k, ...n]], otherAttrs: [[k, {attr: n}]], outside}. */
+/** The row of a batch or crossing: by seen (the latest rAF timestamp before its delivery, probe v3), else by its
+ *  delivery time t (probe v2 rows, or before the first callback). */
+export const rowOf = (frames, t, seen) => frameIndexAt(frames, seen === undefined || seen === null ? t : seen);
+
+/** Observer batches [t, ...counts, other, seen] -> sparse per-frame counts: {types, counts: [[k, ...n]], otherAttrs:
+ *  [[k, {attr: n}]], outside, movedFromTime: batches whose row by seen differs from their row by delivery time}. */
 export function bucketMutations(frames, batches) {
   const n = MUT_TYPES.length, rows = new Map(), other = new Map();
   const outside = new Array(n).fill(0);
+  let moved = 0;
   for (const b of batches) {
-    const k = frameIndexAt(frames, b[0]);
+    const k = rowOf(frames, b[0], b[2 + n]);
+    if (k !== frameIndexAt(frames, b[0])) moved++;
     const c = b.slice(1, 1 + n), o = b[1 + n];
     if (k === null) { c.forEach((v, i) => { outside[i] += v; }); continue; }
     const row = rows.get(k) || new Array(n).fill(0);
@@ -343,17 +361,17 @@ export function bucketMutations(frames, batches) {
     if (o) { const m = other.get(k) || {}; for (const [a, v] of Object.entries(o)) m[a] = (m[a] || 0) + v; other.set(k, m); }
   }
   const keys = [...rows.keys()].sort((a, b) => a - b);
-  return { types: MUT_TYPES, counts: keys.map((k) => [k, ...rows.get(k)]), otherAttrs: [...other.keys()].sort((a, b) => a - b).map((k) => [k, other.get(k)]), outside };
+  return { types: MUT_TYPES, counts: keys.map((k) => [k, ...rows.get(k)]), otherAttrs: [...other.keys()].sort((a, b) => a - b).map((k) => [k, other.get(k)]), outside, movedFromTime: moved };
 }
 
-/** Page crossing rows [t, kind, id, value, y, fresh, yRow] (record order) -> [{frame, t, y, yFrame, yRow, stale, kind,
+/** Page crossing rows [t, kind, id, value, y, fresh, yRow, seen] (record order; placed by rowOf) -> [{frame, t, y, yFrame, yRow, stale, kind,
  *  id, value, src}] in time order. yFrame = [yStart, yEnd] of the crossing's frame (protocol §3.4 places a crossing by
  *  it); yRow = the frame row whose yEnd y is (raf; null otherwise or before the first row); stale = y was not read at
  *  the crossing (raf; scroll without a scroll event since the probe's last rAF callback; null: no y, or a v1 row). */
 export function placeCrossings(frames, rows) {
   return [...rows].sort((a, b) => a[0] - b[0]) // stable: same-time rows keep their record order
-    .map(([t, kind, id, value, y, fresh, yRow]) => {
-      const frame = frameIndexAt(frames, t);
+    .map(([t, kind, id, value, y, fresh, yRow, seen]) => {
+      const frame = rowOf(frames, t, seen);
       return { frame, t, y, yFrame: frame === null ? null : [frames[frame][2], frames[frame][3]], yRow: yRow === undefined || yRow < 0 ? null : yRow, stale: y === null || fresh === undefined ? null : !fresh, kind, id, value, src: 'effect' };
     });
 }

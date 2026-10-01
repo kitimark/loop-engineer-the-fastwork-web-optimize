@@ -100,7 +100,7 @@ test('run --driver window: reload, settle, probe + driver, one JSON with meta, u
   assert.ok(j.crossings.some((c) => c.kind === 'cv' && c.id === 'section.commission'));
   assert.equal(j.driverResult.finalY, 2085);
   assert.equal(m.ySource, 'raf');
-  assert.equal(m.probeVersion, 2);
+  assert.equal(m.probeVersion, 3);
   assert.match(m.yReads, /^probe rAF scrollY/);
   assert.equal(m.yReadCounts.raf, j.frames.length);
   assert.equal(m.yReadCounts.crossing, 0);
@@ -145,7 +145,7 @@ test('run --driver scroll and --driver morph: phases to the bottom; morph tweens
   assert.match(r.stdout, /^ {2}morph: moving \d+fr p50 /m);
   j = JSON.parse(readFileSync(out, 'utf8'));
   assert.deepEqual([j.meta.driver, j.meta.params.holdMs, j.meta.params.cycles], ['M', 150, 2]);
-  assert.deepEqual([j.meta.ySource, j.meta.probeVersion], ['raf-legacy', 2]);
+  assert.deepEqual([j.meta.ySource, j.meta.probeVersion], ['raf-legacy', 3]);
   assert.match(j.meta.yReads, /per observer batch/);
   assert.ok(j.meta.yReadCounts.crossing >= 1, 'raf-legacy reads scrollY in the observer (the --morph style writes)');
   assert.ok(j.crossings.every((c) => c.stale === false && c.yRow === null));
