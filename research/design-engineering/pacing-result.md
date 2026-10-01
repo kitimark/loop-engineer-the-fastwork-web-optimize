@@ -491,3 +491,37 @@ separately: never pooled, because the pooled rule (§5.3) is for one viewer's se
 - The fix: `loadOk` now finds trace-loaded visits by state name.
 - Checked by hand before the fix: every loaded visit in both runs passes the registered rule (busy 0.40-0.75,
   skipped ≤ 20 %). So no reading changes.
+
+**C2 from the F data (2026-10-02, analysis of the saved drag visits; finger driver, two viewers, n = 2 sessions).**
+The question was what an iOS touch `Event.timeStamp` marks. arch-claims' decisive check: does the handler's
+`performance.now() - e.timeStamp` grow by tens of ms when a busy loop ends while a touch is pending? The drag-trace
+visits are that test, because the load log records every busy chunk's actual start and length. The analysis script is
+the scratch `tsprobe.mjs`; only derived numbers are given here.
+
+| touchmove handler delay (now − timeStamp), ms | run 1 p50 / p90 (n) | run 2 p50 / p90 (n) |
+|---|---|---|
+| drag-none (no load) | 13 / 15 (1296) | 13 / 15 (1543) |
+| drag-trace, not right after a ≥ 20 ms chunk | 12 / 13 (901) | 12 / 14 (2027) |
+| drag-trace, handled ≤ 4 ms after a 20-35 ms chunk | 21 / 26 (271) | 21 / 26 (586) |
+| … after a 35-60 ms chunk | 19 / 28 (99) | 17 / 28 (209) |
+| … after a 60-200 ms chunk | 18 / 88 (20) | 19 / 57 (36) |
+
+- **Stamped while the main thread was busy.**
+  - 428 moves (run 1) and 936 (run 2) carry a `timeStamp` inside a ≥ 20 ms busy chunk, at least 1 ms before its end,
+    and were handled after the chunk ended.
+  - So the stamp is not created when the main thread dispatches the event: queue delay shows in `now − timeStamp`.
+    That passes arch-claims' decisive check in the "taken earlier" direction (OBSERVED, in our setup).
+  - Where exactly the stamp is taken (the hardware touch time, or the web process receiving the IPC) stays
+    UNRESOLVED.
+- **Moves seem to be coalesced while blocked.**
+  - Per busy chunk, at most 1-3 moves were stamped inside it (p50 1), even for chunks of 60 ms or more, during which a
+    finger produces several moves.
+  - The delay of the move that is delivered does not grow with the chunk length (p50 about 18-21 ms for every bin).
+  - So the move seen after a block is a recent one, not the oldest. OBSERVED; the coalescing mechanism is UNRESOLVED.
+- **Consequence for v3.** The touchmove queue delay and the touch-to-scroll times are real waits (not ~0 by
+  construction), but they are a lower bound on the finger-to-handler wait, because older moves are dropped. The
+  within-page comparison rule stays.
+- **Same clock.** No move had `timeStamp` > handler `now` (the scorer's `negative` count is 0), which fits both using
+  the `performance.now()` clock.
+- **The ~12-13 ms baseline with no load** (a stamp about a frame before its handler) is unexplained: UNRESOLVED.
+- P-035's N T T N N T drag runs repeat this read under a fixed WDA gesture. arch-claims owns the claim status.
