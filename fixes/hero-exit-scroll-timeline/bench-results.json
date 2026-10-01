@@ -271,6 +271,276 @@
      "verdict": "PASS"
     }
    ]
+  },
+  "aw1-10e": {
+   "at": "2026-10-01T08:45:35.334Z",
+   "verdict": "PASS",
+   "seconds": 113,
+   "git": {
+    "branch": "worktree-agent-a77e2ec753b6381fb",
+    "head": "24ca01a",
+    "checkout": "agent-a77e2ec753b6381fb-6b3702"
+   },
+   "toolsSha": "9a82348f4d42",
+   "chrome": "Chrome/154.0.8037.58",
+   "baselineManifest": "231b4e58bff94fdf",
+   "baseline": "site-pretty + aw1-10e",
+   "on": "aw1-10e",
+   "patch": {
+    "kind": "committed",
+    "file": "fixes/hero-exit-scroll-timeline/patch.diff",
+    "sha256": "cf313a949dae61a21bdd0f2386ba4517e2974180b29fe266297fee83603ece47",
+    "drift": []
+   },
+   "served": {
+    "files": 2
+   },
+   "viewports": [
+    "mobile",
+    "desktop"
+   ],
+   "repeat": 2,
+   "host": {
+    "windowSec": 112.5,
+    "busyPct": 22.6,
+    "sysPct": 6.9,
+    "load1": 3.6,
+    "load1Start": 3.8,
+    "load1End": 3.6,
+    "pressure": 1,
+    "pressureMax": 1,
+    "decompPerSec": 1,
+    "freeMemMB": 1827,
+    "sleptSec": 0,
+    "woke": false,
+    "suspended": false,
+    "at": "2026-10-01T08:45:35.333Z"
+   },
+   "sessions": {
+    "mobile": {
+     "baseline": [
+      {
+       "steps": 14,
+       "capped": 0,
+       "errors": []
+      },
+      {
+       "steps": 14,
+       "capped": 0,
+       "errors": []
+      }
+     ],
+     "patched": [
+      {
+       "steps": 14,
+       "capped": 0,
+       "errors": []
+      },
+      {
+       "steps": 14,
+       "capped": 0,
+       "errors": []
+      }
+     ]
+    },
+    "desktop": {
+     "baseline": [
+      {
+       "steps": 41,
+       "capped": 0,
+       "errors": []
+      },
+      {
+       "steps": 41,
+       "capped": 0,
+       "errors": []
+      }
+     ],
+     "patched": [
+      {
+       "steps": 41,
+       "capped": 0,
+       "errors": []
+      },
+      {
+       "steps": 41,
+       "capped": 0,
+       "errors": []
+      }
+     ]
+    }
+   },
+   "checks": [
+    {
+     "id": "no-exit-opacity-writes-mobile",
+     "viewport": "mobile",
+     "where": "hero",
+     "probe": "exitOpacityWrites",
+     "kind": "setProperty",
+     "baseline": {
+      "expect": ">= 5",
+      "values": [
+       14,
+       14
+      ]
+     },
+     "patched": {
+      "expect": "== 0",
+      "values": [
+       0,
+       0
+      ]
+     },
+     "perRepeat": [
+      "PASS",
+      "PASS"
+     ],
+     "verdict": "PASS"
+    },
+    {
+     "id": "no-exit-opacity-writes-desktop",
+     "viewport": "desktop",
+     "where": "hero",
+     "probe": "exitOpacityWrites",
+     "kind": "setProperty",
+     "baseline": {
+      "expect": ">= 5",
+      "values": [
+       29,
+       29
+      ]
+     },
+     "patched": {
+      "expect": "== 0",
+      "values": [
+       0,
+       0
+      ]
+     },
+     "perRepeat": [
+      "PASS",
+      "PASS"
+     ],
+     "verdict": "PASS"
+    },
+    {
+     "id": "pointer-events-only-on-flip-mobile",
+     "viewport": "mobile",
+     "where": "hero",
+     "probe": "heroPointerEventsWrites",
+     "kind": "styleWrite",
+     "baseline": {
+      "expect": ">= 5",
+      "values": [
+       14,
+       14
+      ]
+     },
+     "patched": {
+      "expect": "<= 2",
+      "values": [
+       1,
+       1
+      ]
+     },
+     "perRepeat": [
+      "PASS",
+      "PASS"
+     ],
+     "verdict": "PASS"
+    },
+    {
+     "id": "cue-exit-animated-mobile",
+     "viewport": "mobile",
+     "where": "hero",
+     "probe": "cueFilterAnimations",
+     "kind": "animations",
+     "baseline": {
+      "expect": "== 0",
+      "values": [
+       0,
+       0
+      ]
+     },
+     "patched": {
+      "expect": ">= 1",
+      "values": [
+       1,
+       1
+      ]
+     },
+     "perRepeat": [
+      "PASS",
+      "PASS"
+     ],
+     "verdict": "PASS"
+    },
+    {
+     "id": "copy-exit-animated-mobile",
+     "viewport": "mobile",
+     "where": "hero",
+     "probe": "copyOpacityAnimations",
+     "kind": "animations",
+     "baseline": {
+      "expect": "== 0",
+      "values": [
+       0,
+       0
+      ]
+     },
+     "patched": {
+      "expect": ">= 1",
+      "values": [
+       1,
+       1
+      ]
+     },
+     "perRepeat": [
+      "PASS",
+      "PASS"
+     ],
+     "verdict": "PASS"
+    }
+   ],
+   "parity": [
+    {
+     "viewport": "mobile",
+     "where": "hero",
+     "keys": [
+      "class .hero",
+      "class .scroll-cue",
+      "prop .hero-copy opacity",
+      "prop .mobile-deck .is-e opacity",
+      "prop .hero pointer-events"
+     ],
+     "steps": 15,
+     "diffTotals": [
+      0,
+      0
+     ],
+     "diffs": [],
+     "verdict": "PASS"
+    },
+    {
+     "viewport": "desktop",
+     "where": "hero",
+     "keys": [
+      "class .hero",
+      "class .orbit",
+      "prop .hero-copy opacity",
+      "prop .scroll-cue opacity",
+      "prop .orbit .orbit-card opacity",
+      "prop .hero pointer-events"
+     ],
+     "steps": 42,
+     "diffTotals": [
+      0,
+      0
+     ],
+     "diffs": [],
+     "verdict": "PASS"
+    }
+   ]
   }
  }
 }
