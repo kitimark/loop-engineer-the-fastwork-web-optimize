@@ -78,8 +78,8 @@ Lines quoted from the phone base `aw1-10e` are marked as such. Labels follow the
 | fact | source |
 |---|---|
 | Accelerated (render-server / Core Animation) properties: opacity, transform, translate, rotate, scale, offset-\*, filter, backdrop-filter. Everything else is main thread: custom properties, clip-path, colors, `color-mix`, width/height, background-position | vendor source, `AcceleratedEffect.cpp` `acceleratedPropertyFromCSSProperty` (`research/architecture/webkit.md` §1) |
-| Filter animations are accelerated only when the from/to lists match: `blur(0px)→blur(8px)`, never `none→blur(8px)` | vendor source (webkit.md §1). **REFUTED for `none`** (arch-claims, F-053 CONFIRMED): `GraphicsLayer::validateFilterOperations` treats an empty list as matching anything, so `none→blur(8px)` is CA-eligible; only two non-empty lists must match. ca-check pair (d) remains the device check |
-| **Time-based animations on the phone take the legacy Core Animation path.** There, a `linear(<points>)` or `steps()` timing function, on the animation or on any keyframe, makes the animation main-thread (`KeyframeEffect.cpp` `canBeAccelerated`: `main` l.2016 `steps`, l.2019 `linear` points; safari-7624-branch l.1959/1962). The cause: `PlatformCAAnimationCocoa.mm` l.130-151 `toCAMediaTimingFunction` takes only a cubic-bezier or an identity linear. `ThreadedTimeBasedAnimationsEnabled` is unstable/false in 7624 (iOS 26.x) but stable/true on `main`, so **this holds for iOS 26.x only; Safari 27 is expected to differ**. Scroll-driven animations are unaffected. **CA-safe forms:** a `cubic-bezier`, or keyframes pre-sampled every ~16 ms with linear segments (Svelte 5's transition pattern) | vendor source (arch-oss-survey F-048, citations corrected by arch-claims in F-065); the device check is the ca-check page (§5) |
+| Filter animations are accelerated only when the from/to lists match: `blur(0px)→blur(8px)`, never `none→blur(8px)` | vendor source (webkit.md §1). **REFUTED for `none`** (arch-claims, F-053 CONFIRMED): `GraphicsLayer::validateFilterOperations` treats an empty list as matching anything, so `none→blur(8px)` is CA-eligible; only two non-empty lists must match. device: ca-check pair (d) D1 = D2, both moving (F-080, §6) |
+| **Time-based animations on the phone take the legacy Core Animation path.** There, a `linear(<points>)` or `steps()` timing function, on the animation or on any keyframe, makes the animation main-thread (`KeyframeEffect.cpp` `canBeAccelerated`: `main` l.2016 `steps`, l.2019 `linear` points; safari-7624-branch l.1959/1962). The cause: `PlatformCAAnimationCocoa.mm` l.130-151 `toCAMediaTimingFunction` takes only a cubic-bezier or an identity linear. `ThreadedTimeBasedAnimationsEnabled` is unstable/false in 7624 (iOS 26.x) but stable/true on `main`, so **this holds for iOS 26.x only; Safari 27 is expected to differ**. Scroll-driven animations are unaffected. **CA-safe forms:** a `cubic-bezier`, or keyframes pre-sampled every ~16 ms with linear segments (Svelte 5's transition pattern) | vendor source (arch-oss-survey F-048, citations corrected by arch-claims in F-065); **CONFIRMED** on the device: ca-check F-080, `linear()` lanes frozen 4/4, cubic-bezier and sampled lanes moving (§6) |
 | CSS scroll-driven animations: main thread on 26.0-26.3, **threaded from 26.4**; the phone runs 26.6.1 | vendor doc, WebKit blog 26.4 (webkit.md) |
 | `var()` of an animated custom property resolves against its base value in Safari keyframes (P3) | data (hero-exit) |
 | Touch event regions are computed in the rendering update and pushed to the UI-process scrolling tree before touches dispatch. A non-passive listener on `window`/`document` makes the whole document synchronous. Adding or changing one rebuilds the regions page-wide | vendor source (WebKit PR 68980, arch-oss-survey M2; de-unknowns-render via fix-nav-morph); data P-011 |
@@ -549,9 +549,28 @@ diagnostic only; our own data (F-033, P-009/010, ghbn ≈ ghb ≈ gh) predicts t
 
 ## 6. Open items
 
-- **The ca-check results.** The device confirmation of two source reads:
-  - `linear()` is main-thread on iOS 26.x (F-048, citations corrected in F-065; Safari 27 is expected to differ);
-  - a `none` filter endpoint does not disqualify CA (F-053 CONFIRMED; webkit.md §1 REFUTED, to be corrected after P0).
+- **ca-check (P-021), done: F-080 CONFIRMED (WebKit source + device).** Page
+  `research/architecture/oss-rendering-libs/ca-check.html`, run wca2 13:16Z, Safari 26.6.1. Four trials, each a
+  1000 ms main-thread busy loop 300 ms into a 2000 ms animation, captured as WDA screenshots at ~15/s. The rAF witness
+  froze, so the block was real.
+  - **Kept moving** in every block:
+    - transform with a cubic-bezier transition or 31 WAAPI sampled keyframes (Ta/Tc, max diff 54);
+    - filter blur in the same two forms (Fa/Fc, 5.8-7.2).
+  - **Froze**, diff exactly 0 in 4/4 blocks: the same animations with `linear()` (31 points) (Tb/Fb). This matches
+    the source read: `linear()` is main-thread on iOS 26.x (F-048, citations in F-065; Safari 27 is expected to
+    differ).
+  - **Pair (d) ran.** Both arms used `cubic-bezier(0.2350,0.6733,0.4511,0.9140)`: D1 `none→blur(14px)` and
+    D2 `blur(0px)→blur(14px)`. Both kept moving, with max diff 3.9-4.4 and no difference between them. This matches
+    F-053 (`none` matches any filter list); webkit.md §1 is REFUTED, to be corrected.
+  - **backdrop-filter: UNRESOLVED.** Lane E diff was 0.2-0.5, so it was frozen or its change too small to see.
+    morph-ca's backdrop part stays unproven; a larger-radius lane is the decisive check.
+  - **The scroll-driven control** moved in trials 2-4 (trial 1 void).
+  - **Consequences:**
+    - blur-easing-cubic (PoC 2) is cleared as specified, with no endpoint change.
+    - countdown-ca's sampled-keyframe form (PoC 3) is confirmed CA. P-034 (the F-076 face-layer count during the
+      morph tween) still gates it.
+    - morph-ca (PoC 5) keeps its opacity, transform and filter parts as cubic-bezier.
+    - Details: `fixes/iphone-wave2` README.
 - **Phone rAF JS share in the 20-34 ms band.** It gates refresh-cache. The v2 standard probe logs `jsMs` per frame
   (measurement-protocol-v2 §5.5), so a census of runs already taken with it answers the gate at no phone cost.
 - **Touch latency of a window-wide synchronous region vs an element-scoped one.** It needs G or F; the S driver
