@@ -1,6 +1,7 @@
 # fastwork mirror fix: vendor-scrollend
 # baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
-# rebuild the overlay with: node tools/fix.mjs apply vendor-scrollend
+# STACKED on fixes/all-wave1/overlay: apply all-wave1 first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply vendor-scrollend --on all-wave1
 # contains excerpts of Fastwork's code: local branches only, never push
 # base-sha256 analytics.js a2ceb9775ea7e3186bd915c14b659d9edab915905d48a064f95d16490f4982ab
 diff --git a/analytics.js b/analytics.js

@@ -1,0 +1,189 @@
+{
+ "tool": "research/vendor-scrollend/phases.mjs",
+ "cpu": 6,
+ "runs": 2,
+ "tailS": 10,
+ "on": "all-wave1",
+ "startedAt": "2026-10-01T05:12:36.883Z",
+ "host": {
+  "load1Before": 1.697265625,
+  "load1After": 2.81005859375,
+  "cpuIdlePct": 74.6
+ },
+ "results": [
+  {
+   "variant": "base",
+   "marks": {
+    "scroll0": 9906,
+    "morph0": 18793,
+    "tail0": 26452,
+    "end": 36461
+   },
+   "scrollDepthPush": {
+    "t": 16898,
+    "phase": "scroll",
+    "sAfterScrollPhaseEnd": -1.9
+   },
+   "tagFrames": [
+    {
+     "t": 16891,
+     "phase": "scroll",
+     "d": 61,
+     "scripts": [
+      {
+       "src": "/__vendor/www.googletagmanager.com/gtag/js",
+       "inv": "DOMWindow.onscrollend",
+       "d": 55,
+       "forced": 0
+      }
+     ]
+    }
+   ],
+   "gt50": {
+    "scroll": 3,
+    "morph": 0,
+    "tail": 0
+   },
+   "loafGt50": {
+    "scroll": 2,
+    "morph": 0,
+    "tail": 0
+   },
+   "tailLoaf": [],
+   "run": 0
+  },
+  {
+   "variant": "02-idle",
+   "marks": {
+    "scroll0": 9790,
+    "morph0": 18679,
+    "tail0": 26323,
+    "end": 36330
+   },
+   "scrollDepthPush": {
+    "t": 18261,
+    "phase": "scroll",
+    "sAfterScrollPhaseEnd": -0.4
+   },
+   "tagFrames": [],
+   "gt50": {
+    "scroll": 2,
+    "morph": 0,
+    "tail": 0
+   },
+   "loafGt50": {
+    "scroll": 1,
+    "morph": 0,
+    "tail": 0
+   },
+   "tailLoaf": [],
+   "run": 0
+  },
+  {
+   "variant": "02-idle",
+   "marks": {
+    "scroll0": 5978,
+    "morph0": 14864,
+    "tail0": 22499,
+    "end": 32505
+   },
+   "scrollDepthPush": {
+    "t": 14444,
+    "phase": "scroll",
+    "sAfterScrollPhaseEnd": -0.4
+   },
+   "tagFrames": [
+    {
+     "t": 14443,
+     "phase": "scroll",
+     "d": 53,
+     "scripts": [
+      {
+       "src": "/analytics.js",
+       "inv": "IdleRequestCallback",
+       "d": 51,
+       "forced": 0
+      }
+     ]
+    }
+   ],
+   "gt50": {
+    "scroll": 2,
+    "morph": 0,
+    "tail": 0
+   },
+   "loafGt50": {
+    "scroll": 2,
+    "morph": 0,
+    "tail": 0
+   },
+   "tailLoaf": [],
+   "run": 1
+  },
+  {
+   "variant": "base",
+   "marks": {
+    "scroll0": 5795,
+    "morph0": 14681,
+    "tail0": 22316,
+    "end": 32322
+   },
+   "scrollDepthPush": {
+    "t": 12777,
+    "phase": "scroll",
+    "sAfterScrollPhaseEnd": -1.9
+   },
+   "tagFrames": [
+    {
+     "t": 12770,
+     "phase": "scroll",
+     "d": 58,
+     "scripts": [
+      {
+       "src": "/__vendor/www.googletagmanager.com/gtag/js",
+       "inv": "DOMWindow.onscrollend",
+       "d": 52,
+       "forced": 1
+      }
+     ]
+    }
+   ],
+   "gt50": {
+    "scroll": 2,
+    "morph": 0,
+    "tail": 0
+   },
+   "loafGt50": {
+    "scroll": 2,
+    "morph": 0,
+    "tail": 0
+   },
+   "tailLoaf": [],
+   "run": 1
+  },
+  {
+   "variant": "03-drop",
+   "marks": {
+    "scroll0": 9865,
+    "morph0": 18750,
+    "tail0": 26397,
+    "end": 36399
+   },
+   "scrollDepthPush": null,
+   "tagFrames": [],
+   "gt50": {
+    "scroll": 2,
+    "morph": 0,
+    "tail": 0
+   },
+   "loafGt50": {
+    "scroll": 1,
+    "morph": 0,
+    "tail": 0
+   },
+   "tailLoaf": [],
+   "run": 0
+  }
+ ],
+ "seconds": 176
+}

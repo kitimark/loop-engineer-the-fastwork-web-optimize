@@ -3,8 +3,10 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft. Mechanism and analytics parity checked (probe, short lane). The timing A/B is
-still to come: it runs `--on` the wave-1 combined base, one slot (mgmt-ops decision).
+**Status:** measured: **phase-shifted, not removed.** Analytics parity holds. The gtag `onscrollend`
+LoAF is gone in 5/5 runs, but in 3/5 an `analytics.js` idle callback of the same size (50-61 ms)
+replaces it, still inside the scroll phase. Frames >50 ms 2 [1-3] → 2 [1-3], within noise. Only the
+site's GA setting (variant 03) removes the frame.
 **Topic:** `fixes/TOPICS.md` N11 `vendor-scrollend`
 **Files touched:** `/analytics.js` (first-party GTM bootstrap, runs before GTM/gtag): new block
 `deferTagScrollDepth` before the GTM snippet. No vendor file is changed.
@@ -110,13 +112,74 @@ If the lead wants it checked, it is an iPhone look-only item: Safari, reach 90 %
 | id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status | bench |
 |---|---|---|---|---|---|---|---|---|---|
 | vendor-scrollend/01 | `setTimeout(0)` deferral of the tag's scrollend/resize call (`variants/01.diff`) | moves the ~60 ms out of the scrollend dispatch | functional parity ok. Timing: not measured; by mechanism it only re-attributes the LoAF (the same task one turn later) | 1x probe only | push time same as base (~1.4 s before the scroll ends) | probe run 8 | a monolithic task can't leave the frame budget by changing its task boundary | dropped (no expected gain) | pending runner |
-| vendor-scrollend/02 | quiet-idle deferral (1.5 s without input, then rIC), deepest-depth shadow, pagehide/visibilitychange flush (`variants/02.diff` = `patch.diff`) | the frame leaves the scroll; it runs while the visitor reads | parity ok in A/C/D; timing pending (final slot, `--on all-wave1` + `phases.mjs`) | 1x probe | 1 hit everywhere, same params | probe runs 8, 12 | see "Before / after" | on branch | pending runner |
-| vendor-scrollend/03 | what-if, **needs the site's GA setting** (EM "Scrolls" off): tag listener dropped (`variants/03.diff`) | ceiling: no tag frame at all | no GA4 `scroll` event (by design); timing pending (1 run in `phases.mjs`) | 1x probe | 0 scroll hits | probe run 8 | only the GA admin can remove the cost | what-if only | pending runner |
+| vendor-scrollend/02 | quiet-idle deferral (1.5 s without input, then rIC), deepest-depth shadow, pagehide/visibilitychange flush (`variants/02.diff` = `patch.diff`) | the frame leaves the scroll; it runs while the visitor reads | within noise: phase-shifted, not removed | clean (0/10 contaminated, load1 ≤ 3.6) | gt50 2 [1-3] → 2 [1-3]; gtag LoAF 5/5 → 0/5, analytics.js idle-callback LoAF 50-61 ms in 3/5; push 0.4 s before the scroll phase ends | results.json, phases-2026-10-01T05-12-36-882Z.json | deferral moves a monolithic vendor task; it can't remove it from a measured window that keeps rendering | on branch (not counted toward the >50 ms goal) | pending runner |
+| vendor-scrollend/03 | what-if, **needs the site's GA setting** (EM "Scrolls" off): tag listener dropped (`variants/03.diff`) | ceiling: no tag frame at all | no tag frame (1 phases run), no GA4 `scroll` event (by design) | clean, n=1 | gt50 scroll 2 (base 3/2) | phases-2026-10-01T05-12-36-882Z.json | only the GA admin can remove the cost | what-if only | pending runner |
 | vendor-scrollend/probe-1..7 | probe tool attempts | - | broke: run 1 chrome-error (self-signed cert not accepted); run 6 hit the 180 s cap silently; run 7 lost to host sleep (I-026); run 9 "B" could not hide the page | - | - | commits 9764e0f, 41b58d9, I-026 | load guard, bounded steps, caffeinate; console is unreliable during unload | fixed | no patch kept |
 
 ## Before / after
 
-(pending: `fix.mjs ab vendor-scrollend --runs 5 --on <wave-1 combined>`)
+One `lock.mjs run` hold (05:05-05:15Z, `caffeinate -dis`, tools at `dd6ece9`, I-023 fixes included):
+`fix.mjs ab vendor-scrollend --runs 5 --on all-wave1` (Chrome, mobile 430x932 DPR3, CPU 6x, ABBA,
+`--vendors=local --https --latency 150`, idle 6 s), then `research/vendor-scrollend/phases.mjs --on all-wave1`.
+Host: 0 of 10 runs contaminated, load1 1.7-3.6, other CPU max 19.5 %; `uptime` before 1.65 and after
+2.81, CPU 80 % idle. Both sides use the same tools, so compare only within this A/B (mgmt-ops). The
+all-wave1 overlay was rebuilt locally with `fix.mjs combine` from the 8 wave-1 patches; its hashes
+(JS `69b91556…0db57`, CSS `213e21d3…34d25`) match wave1-dry's.
+
+| mobile 6x, n=5 | baseline median [min-max] | patched median [min-max] | delta | verdict |
+|---|---|---|---|---|
+| scroll: fps | 109.2 [108.5-110.2] | 110.2 [109.4-110.7] | +1 (+0.9%) | within noise |
+| scroll: frames >20 ms | 14 [13-16] | 11 [10-14] | -3 (-21.4%) | within noise |
+| scroll: frames >34 ms | 3 [3-5] | 4 [3-4] | +1 (+33.3%) | within noise |
+| scroll: frames >50 ms | 2 [1-3] | 2 [1-3] | 0 (0%) | within noise |
+| scroll: frames >100 ms | 0 [0-0] | 0 [0-0] | 0 | within noise |
+| scroll: worst frame ms | 60.2 [58-66.9] | 59.7 [57.9-66] | -0.5 (-0.8%) | within noise |
+| scroll: p95 frame ms | 16.4 [15.2-16.6] | 15.8 [15.3-16.5] | -0.6 (-3.7%) | within noise |
+| scroll: LoAF ms | 116 [108-118] | 109 [51-118] | -7 (-6%) | within noise |
+| scroll: LoAF script ms | 52 [51-54] | 50 [0-61] | -2 (-3.8%) | within noise |
+| scroll: forced style+layout ms (in LoAF) | 0 [0-1] | 0 [0-0] | 0 | within noise |
+
+Regressions: none. No new errors or 404s, screenshot diff top 0.13 % / middle 0 / bottom 0, `morphReached` 5/5 on both sides.
+
+**Where the tag's frame went** (raw `out/ab/vendor-scrollend/2026-10-01T05-05-00-740Z/verify.json`, per run):
+
+| run | baseline: scroll LoAF entries with a script | patched (02) |
+|---|---|---|
+| 0 | `gtag/js c [DOMWindow.onscrollend]` 52 ms | none (LoAF count 1, the unattributed frame) |
+| 1 | gtag 52 ms | `analytics.js [IdleRequestCallback]` 50 ms |
+| 2 | gtag 54 ms | analytics.js 56 ms |
+| 3 | gtag 51 ms | analytics.js 61 ms |
+| 4 | gtag 51 ms | none |
+
+The other >50 ms scroll frame (~56-64 ms) has no script attribution in either side: a render/style
+frame, not this topic.
+
+`phases.mjs` (`research/vendor-scrollend/data/phases-2026-10-01T05-12-36-882Z.json`) repeats verify's
+scroll + morph phases and adds a 10 s no-input tail:
+
+| variant, run | `gtm.scrollDepth` push | tag frame (LoAF ≥50 ms) | rAF gaps >50 ms scroll / morph / tail |
+|---|---|---|---|
+| base 0 | scroll phase, 1.9 s before its end (the 90 % scrollend) | scroll, 61 ms, gtag `onscrollend` | 3 / 0 / 0 |
+| base 1 | scroll, -1.9 s | scroll, 58 ms, gtag | 2 / 0 / 0 |
+| 02 run 0 | scroll, -0.4 s (the still tail at the bottom) | none ≥50 ms | 2 / 0 / 0 |
+| 02 run 1 | scroll, -0.4 s | scroll, 53 ms, `analytics.js IdleRequestCallback` | 2 / 0 / 0 |
+| 03 (what-if, needs the site's GA setting) | none | none | 2 / 0 / 0 |
+
+**Verdict (honesty test): phase shift inside the measured window, not a removal.**
+- 02 moves the call from the 90 % scrollend, while the page still scrolls, to ~1.5 s after the last
+  scroll input. In the lab that is the still tail at the bottom of the scroll phase, 0.4 s before the
+  phase ends, so the A/B still counts it.
+- In 3/5 A/B runs and 1/2 phase runs it is still a 50-61 ms frame. In the other runs it stayed under
+  the 50 ms LoAF threshold. That hints it costs a little less in idle time than inside the scrollend
+  dispatch, but n is too small to claim.
+- For a real visitor, the hitch now happens after they stop scrolling, not at scroll end. Scrolling
+  itself is compositor-driven either way, so the visible gain is small.
+- Frames >50 ms: 2 [1-3] → 2 [1-3]. Frames >34 ms: 3 [3-5] → 4 [3-4]. Both within noise.
+- The frame class "gtag `onscrollend`" goes away only with variant 03, i.e. GA4 enhanced measurement
+  "Scrolls" off: **needs the site's GA setting**. That loses the GA4 `scroll` event unless the site
+  sends its own.
+
+iPhone: not measured. The tab/app-switch hide path is an iPhone look-only item (see parity).
 
 ## Risks, conflicts, follow-ups
 
