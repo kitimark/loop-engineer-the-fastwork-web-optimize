@@ -245,6 +245,19 @@ between tool calls.
    warn on explicit chrome) + review-stats OK, with doc-protocol-v2's §5 text; doc-protocol-v2 sends the lead replacement
    text for the CLAUDE.md phone-threshold line + Sentinel bullet, and updates fix-reviewer check 15. Spawned:
    ts-user-console, ts-lock-bundle (item 7b + sleep wording; branch worktree-agent-a413c9626c75bd1a3).
+   **USER PRIORITY (lead 15:22Z, "make simulator task as highest priority"; overrides every order below):**
+   chrome-measure: ts-sim and arch-sim before fix A/Bs and other toolsmiths (lead moved ts-sim to #1; whenever either
+   queues, tell the lead to move it to the front; I-035 open, so don't trust "moved by lead" when the entry already
+   sits at its own position); arch-sim fidelity holds are normal holds and outrank fix measurements. Phone: arch-sim
+   real-device reference runs, if needed, go next after the current block, ahead of P-032 / P14 / P-035 (15:2xZ
+   mgmt-ops-5 asked arch-sim for a ticket to iphone-runner by 15:31Z; none -> P-032 at 15:31Z, arch-sim after its
+   block). Reviews/landing: anything ts-sim needs first (ts-analysis deviceOf = already on main a1fd3bc: "simulator"
+   is its own device, stats refuse to pool it with iPhone/Chrome, exit 2); tell the lead THE MOMENT sim.mjs is ready
+   (he spawns its reviewer). Broadcast 15:2xZ to arch-sim, ts-sim, iphone-runner, ts-analysis, ts-iphone-run,
+   ts-lock-bundle, fix-nav-morph, fix-scroll-engine, fix-hero-exit, arch-claims, review-render-signals.
+   **15:2xZ state:** P11 Block A DONE (P-028: HIT mechanism, MISS ms, NULL frame time; Block B DROPPED by the owner;
+   lc-cq3 not a candidate) -> P14 after P-032. P-032 CLEARED: fix-nav-morph's owed (A)/(B) in the row (2 forward
+   tweens/run, (4) kept; scorer <scratchpad>/fix-nav-morph/p032-score.mjs).
    **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A PASSED (ABBA aw1-10e S, on vs off: dt>50 3 vs 7, dt>34 18 vs 21, fps
    57.4 vs 57.3; T1a now absolute; minShift revisit CLOSED: HL p95 on-off +0.48 ms, n=2/arm (crude), stays 4 ms,
    ts-analysis 14:3xZ), 10 min, block B) -> P-033 step 0
