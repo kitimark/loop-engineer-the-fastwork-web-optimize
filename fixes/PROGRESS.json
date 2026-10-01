@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T17:59:00Z",
+ "updatedAt": "2026-10-01T18:31:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T18:31:00Z", "text": "Your sitting: on the hero and at the end of the page, the best build felt quite a bit smoother than the original. Your idea that style recalculation causes the lag is now being checked by a new helper." },
   { "at": "2026-10-01T17:59:00Z", "text": "Cause found for the blinking small profiles: each time the carousel swaps a picture in or out, the whole page re-lays out (P14 on the phone). A fix that keeps the pictures in place is next, right after your sitting." },
   { "at": "2026-10-01T17:51:00Z", "text": "From your request: a tool change is being designed so that tests and simulator checks can run side by side, while timing tests keep the Mac to themselves. A reviewer now checks the waiting lock-tool changes." },
   { "at": "2026-10-01T17:49:00Z", "text": "New rule from you: checks that need an iPhone but no timing number now run on the iPhone simulator on the Mac; the real phone stays for timing tests and your sittings. The carousel test (P14) started at 17:42 (about 30-35 min); your sitting comes next." },
@@ -130,6 +131,38 @@
    ]
   },
   {
+   "id": "best-stack",
+   "title": "Today's best combined build (your sitting)",
+   "area": "whole",
+   "state": "testing",
+   "stage": "V",
+   "fixes": "All of today's candidate fixes together: the countdown fix, the panel fix, the card reveal fix and F3.",
+   "felt": { "answer": "better", "text": "Your own look on the phone (not blind): on the hero and at the end of the page, B felt quite a bit smoother than the original." },
+   "gate": "Each part still needs its own phone test and review before it can land; the combined build is a preview.",
+   "next": "The parts go through their own phone tests (robot-finger tool fix first). Your idea about style recalculation is being checked separately.",
+   "owner": "iphone-runner (builds), lead",
+   "checks": [],
+   "details": [
+    "C-013 18:0x-18:30Z, lead held the lease as owner user; A = original baseline, B = aw1-10e + g + cdwc + re-keep-op + arm-scope-c (iphone-wave2 4n). Not blind, one viewer, no frame data from this sitting: OBSERVED perception only."
+   ]
+  },
+  {
+   "id": "style-recalc",
+   "title": "Your idea: style recalculation (about 19-20 ms) causes the lag",
+   "area": "whole",
+   "state": "diagnosing",
+   "stage": "R",
+   "fixes": "You saw style recalculation taking about 19-20 ms at times, more than a 60 Hz frame allows (16.7 ms). Your two guesses: complex nested CSS makes selector matching slow, or the images (rotation, resizing) cost work every frame. You also asked about smaller images and plain-CSS effects.",
+   "felt": { "answer": "not-yet" },
+   "gate": "Find out whether either guess explains the slow frames before anything is built.",
+   "next": "de-style-recalc tests both guesses against the phone recordings we already have.",
+   "owner": "de-style-recalc",
+   "checks": [],
+   "details": [
+    "User hypotheses from C-013 notes (lead relay 18:3xZ): (1) selector matching cost from nested/complex CSS; (2) image rotation/resizing per frame, image sizes, cap render triggers at 60 fps via native CSS. Status: untested."
+   ]
+  },
+  {
    "id": "countdown-ca",
    "title": "Countdown ticking at rest (PoC 3)",
    "area": "hero",
@@ -207,7 +240,6 @@
   }
  ],
  "upcoming": [
-  { "title": "Phone sitting: compare the original page with today's best build (countdown fix + F3, maybe the card reveal fix)", "when": "now (the phone is yours until about 18:54)" },
   { "title": "Carousel fix (st5): one phone test against the original page", "when": "after the sitting and a 5-minute robot-finger check", "item": "hero-carousel" },
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the P-036 robot-finger test passes", "item": "f3-arm-scope" }
  ]

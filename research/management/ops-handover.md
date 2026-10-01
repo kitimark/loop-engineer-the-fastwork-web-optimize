@@ -23,6 +23,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **18:3xZ** USER SITTING C-013 done 18:30Z (lead): hero + page end "B quite smoother" (B = aw1-10e + g + cdwc + re-keep-op +
+  arm-scope-c; not blind, one viewer, OBSERVED perception). User's own idea: style recalc ~19-20 ms (> 16.7 ms budget)
+  is the lag; hypotheses (1) nested/complex CSS selector matching, (2) per-frame image rotation/resizing, image sizes,
+  native CSS -> lead spawns de-style-recalc. PROGRESS: items best-stack (felt better) + style-recalc. Phone free ->
+  ts-gesture ~5 min -> st5 or P-033. Lead reorder 18:24Z: chrome-measure ts-gesture, layout-containment first.
+
 - **18:0xZ** P14 DONE 17:42-17:54Z (9/9 valid; sentinels bottom 60.2, scroll 56.6): V1 st4-noswap HIT (2/67 view ticks),
   V2 #people-rooted HIT but 0.57 of C (MISS on <= half) -> LEAD SIGNED D (rotator: swap path); fix-scroll-engine st5 next.
   PHONE ORDER (lead 17:5xZ): user sitting C-013 (lease `user` until 18:54Z; A :5611 baseline, B :5647 B+) -> ts-gesture
@@ -441,7 +447,7 @@ between tool calls.
    capped at 540 s); gesture key `pinReversals` -> `pin` (`pin.excursions`, `pin.fight`, `pin.bounces`); first G run:
    check perStroke `endLagMs` is not always 0 (review-gesture-2 B1). (17:3xZ: moot until I-042; every G stroke so far
    was a ~50 ms flick, F-085; redo this check on the first valid G run after the fix.)
-6. Caffeinate: the 3 h run was killed at 30 min (background default timeout); restarted 15:12Z, renewed 16:4xZ for 2 h -> ends ~18:45Z, remind ~18:30Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
+6. Caffeinate: lead started a new one 18:13Z until ~20:13Z; remind the lead ~19:55Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
 7. **Toolsmith asks from ts-analysis (review-stats T3 nits; need a lead spawn):** (nit 1) `tools/bench.mjs` calls
    `gainVerdict` at :555 and :689 without try/catch; since 86424b0 bench-stats throws on non-finite input, so a null/NaN
    scenario metric crashes bench (and in reconfirm loses later topics' tier B results) instead of INCONCLUSIVE. Fix
