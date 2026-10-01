@@ -39,6 +39,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **19:1xZ LEAD PRIORITY ORDER (supersedes 18:4xZ):** (1) style recalc (fix-scene-scope); (2) USER: illusion proposals
+  (de-illusion-style, de-illusion-composite, ts-proposals; PROGRESS `illusion-proposals`): counts first, <= 2 batched
+  Chrome holds each, queued after scene-scope + de-counts-chrome/-sim; no phone before the user Accepts; an accepted
+  proposal -> fix topic + phone ticket via mgmt-ops; (3) phone-tool fixes (I-042 compile, I-038); (4) st5 / P-039;
+  (5) lock-share / headless / status-board / threads / proposals tooling. Watch chrome-measure queue length (load).
 - **19:1xZ** Landed c220e82 (lead retrospective; §5 now "Standing lead policy" above), a93d0c9 (§4p), 62e3fd9 (§2.1 final
   inspector-clean block: OPEN (a) below DONE), 8e26131 (PROGRESS ranked items). anim-transform + image-size PARKED (small
   gain, after scene-scope + R4+V3 phone result). fix-scene-scope hold 1: V1 `:is(70-list)` made the flip ULT slower
@@ -609,6 +614,9 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `ts-console-nav` | toolsmith (lead spawn 17:4xZ): user console menu + notifications | alive |
 | `ts-status-board` | toolsmith (lead spawn 18:4xZ, user request): live per-workstream status board (priority = lead only, state, waits from queues/console/incidents) on a console page next to /progress; design first in research/architecture/status-board.md (lead approves); briefed by mgmt-ops-6 on the PROGRESS.json split (board = workstreams + priority + waits; PROGRESS = user-facing fix narrative; link by item id). Once landed: keep the board in step with the lead | alive |
 | `fix-scene-scope` | fix owner (lead spawn 18:5xZ, PRIORITY 1 under style recalc): de-style-recalc's proposal, stacked on B: V1 narrow the `:where(*)` scene pause, V1b pause by API, V2 flip early, V3 panel + R4; Chrome check, then a W Timeline phone ticket (ahead of P-039 if both ready) | alive |
+| `de-illusion-style` | research (lead spawn 19:1xZ, USER PRIORITY 2 "optical illusion is acceptable"): cheaper look-alike renderings for style/layout costs; counts first, <= 2 batched Chrome holds before first proposals (queued after scene-scope + de-counts pair); proposals to the user via ts-proposals' page; no phone before Accept | alive |
+| `de-illusion-composite` | research (lead spawn 19:1xZ, USER PRIORITY 2): cheaper look-alikes for compositing/layers/blur; same rules as de-illusion-style | alive |
+| `ts-proposals` | toolsmith (lead spawn 19:1xZ): console Proposals page (read, visual compare, Accept/Reject/Request change); full `npm test` in the short lane | alive |
 | `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
 | `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | alive |
 | `ts-gesture` (Sim) | also owns the Simulator touch driver (`sim.mjs gesture`, after I-042 D1-D3 + safari-restart; lead 17:5xZ); the P-032 (b) Sim re-check waits on it | alive |
