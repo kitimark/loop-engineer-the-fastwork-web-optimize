@@ -43,7 +43,7 @@ measurement code is likely involved.
    genuine, intended behaviour change and say so in the commit message.
 5. **Full suite, quietly, once.** The pre-commit hook in step 6 runs `npm test` on exactly what you commit,
    so don't run it separately as well: iterate with single files (`node --test tests/<file>`), and run
-   `node tools/lock.mjs run chrome-measure --owner <your name> --short --max-seconds 150 -- npm test`
+   `node tools/lock.mjs run chrome-measure --owner <your name> --short --max-seconds 300 -- npm test`
    only when you need the full result before committing (about 55 s of CPU and 75 s wall, I-021; holding the lock keeps it from skewing someone's A/B; the short lane waits
    for the current holder only, not for the whole queue). If you changed measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`, and `serve.mjs`
    / `vendor-shim.js` where the served bytes change), also run `npm run test:chrome` directly (it
@@ -54,7 +54,7 @@ measurement code is likely involved.
 6. **Commit** one commit with only `tools/`, `tests/` (and `package.json` if a script changed),
    subject `tools: <what was wrong> (incident <id>)`, trailer as in your system instructions. The
    pre-commit hook runs `npm test` again; hold the lock around it as a lease:
-   `node tools/lock.mjs acquire chrome-measure --owner <your name> --short --max-seconds 180 --wait 1800`, then
+   `node tools/lock.mjs acquire chrome-measure --owner <your name> --short --max-seconds 300 --wait 1800`, then
    `git commit`, then `node tools/lock.mjs release chrome-measure --owner <your name>`. Never
    `--no-verify`, and never run git through `lock.mjs run` (that hides it from the git guard).
 7. **Report.** `node tools/incident.mjs update <id> --by <your name> --note "fix <sha> on <branch>;
