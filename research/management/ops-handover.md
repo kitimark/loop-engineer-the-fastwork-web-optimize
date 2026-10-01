@@ -249,7 +249,8 @@ between tool calls.
    57.4 vs 57.3; T1a now absolute; minShift revisit CLOSED: HL p95 on-off +0.48 ms, n=2/arm (crude), stays 4 ms,
    ts-analysis 14:3xZ), 10 min, block B) -> P-033 step 0
    (lead 14:4xZ: after P4 B's end sentinel: F1 edge Timeline attribution run (fix-nav-morph), then P-033 step 0) -> 10 min cooling -> P-032 G cdwc (VALIDATED, ~20 min) -> 10 min cooling -> P-035 G-v3 (pacing v3, no user,
-   ~20 min lease, filler; F-v3 waits for the user console) ->
+   ~20 min lease, filler; F-v3 waits for the user console) -> F3 G touch A/B aw1-10e vs mw10e-arm-scope (pacing v3 urls
+   mode; ticket from fix-nav-morph, lead 14:4xZ: F3 forward, F1 stops; P4 done 14:45Z, phone 40.9 °C) ->
    P11 Block A + P14 -> P12 -> P10 -> P5 -> P-033 gain (VALIDATED; step 0 fills any free phone gap) -> P9 -> P-030 ->
    P-031 G -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. P-033 "within noise" -> bundle candidate, not standalone.
    **mw10e-cdwc landing branch fix/mw10e-cdwc 6652ad9** (on 77c480e): review-cdwc round 2 resolved B1/B2/B4, B5 fixed; lands only
