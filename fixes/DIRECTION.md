@@ -189,6 +189,20 @@ READMEs; #6 v05 C/D finger pair first, then name the pin frames with a logger du
 transition as variant P3; iPhone block B aw1-10c / P hero v2 / P2 + scroll-engine face fix (F-030) / P3 + people-o); (3) **N10** y≈1970 (fix-scroll-engine,
 ablations ready). Chrome-only 20-50 ms work (the "other" class diagnostic, the 429-element restyle) runs only on spare
 Chrome capacity. Success is judged on the iPhone under a finger first, then Chrome > 50/> 34 ms.
+**Wave-2 base from 2026-10-01 08:38Z: `aw1-10e`** = `node tools/fix.mjs combine aw1-10e all-wave1 scroll-engine` (JS
+3e2f599a…, CSS c6aad94b…): /10e hotfix landed (60f66b6, review-10e ACCEPT-WITH-NOTES; F-030 face will-change churn
+1,915 IO entries/s at idle → 0, parity 0 diffs). Owners rebase between steps and build new variants `--on aw1-10e`;
+in-flight iPhone blocks keep their matched pairs.
+**Morph finger block (08:15-08:37Z, warm phone, user released after it):** E1b (aw1-10c) morph-active p50 24 / p95 73 ms,
+> 50 ms 10 %, worst 230, pin fight (scrollY 5220↔5334); F1/F2 (g = pin clamp + `overscroll-behavior-y: none` while
+morphing) p50 17-19 / p95 86-117, > 50 ms 21-26 %, worst 148-199, pin fight gone. Slow frames are rendering
+(paint/composite), not JS. User: "laggy" for both. Root cause of the jitter: pin target 5312 > maxY 5220 when the morph
+starts in the bounce. g stays (the jitter fix is real); render cost next: three blur radii rewritten every morph frame
+(panel filter, backdrop-filter, `.start-selling-platform` filter blur(…12px), CSS 5423). Next: a scripted morph driver
+so iphone-runner runs f vs g (is overscroll-behavior costlier on WebKit?), g+b (no blurs), g+e (no columns), g+c
+(prelayer) without the user; if b names the blur -> N2 composited morph (fixed radii faded by opacity).
+**Finger simulation (user request 08:38Z):** arch-finger researches real OS-level touch on the iPhone (WDA/XCUITest,
+safaridriver touch actions, simulator) so finger tests stop depending on the user.
 
 ## Baseline freeze (user decision, 2026-10-01 ~07:35Z)
 
