@@ -5,7 +5,7 @@
 // Temp lock dirs ($FW_STATE_DIR) only; no real locks, no port 5173, no phone.
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, appendFileSync, readFileSync } from 'node:fs';
+import { writeFileSync, appendFileSync, readFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import http from 'node:http';
@@ -111,14 +111,50 @@ test('wait phone-temp: MET at once when cool, TIMEOUT with the last reading, UNA
   assert.equal(u.stdout, 'UNAVAILABLE phone-temp: battery temperature unavailable (idevicediagnostics: ENOENT) (after 0 s)\n');
 
   const before = calls();
-  for (const args of [['phone-temp'], ['phone-temp', '--below', 'auto'], ['phone-temp', '--below', 'hot'], ['phone-temp', '--below', '38', '--every', '10'], ['phone-temp', '--below', '38', '--every', 'x'], ['phone-temp', '--below', '38', '--timeout', 'soon']]) {
+  for (const args of [['phone-temp'], ['phone-temp', '--below', 'hot'], ['phone-temp', '--below', '38', '--runs-dir', state], ['phone-temp', '--below', 'auto', '--driver', 'X'], ['phone-temp', '--below', '38', '--driver', 'M'], ['phone-temp', '--below', '38', '--every', '10'], ['phone-temp', '--below', '38', '--every', 'x'], ['phone-temp', '--below', '38', '--timeout', 'soon']]) {
     const e = node(WAIT, args, { env: iddEnv });
     assert.equal(e.code, 1, `${args.join(' ')}: ${e.out}`);
     assert.equal(e.stdout, '', `${args.join(' ')}: no result line on a usage error`);
   }
-  assert.match(node(WAIT, ['phone-temp', '--below', 'auto'], { env: iddEnv }).stderr, /--below auto is not available.*--below 38/);
+  assert.match(node(WAIT, ['phone-temp', '--below', '38', '--runs-dir', state], { env: iddEnv }).stderr, /--runs-dir and --driver go with --below auto/);
+  assert.match(node(WAIT, ['phone-temp', '--below', 'auto', '--driver', 'X'], { env: iddEnv }).stderr, /--driver is the next block's driver: S, W or M \(got X\)/);
   assert.match(node(WAIT, ['phone-temp', '--below', '38', '--every', '10'], { env: iddEnv }).stderr, /--every must be .*>= 30/);
   assert.equal(calls(), before, 'usage errors read no battery');
+});
+
+// --below auto (incident I-047): the last passing heat sentinel's battery temperature today minus 0.5 °C, from the run
+// records `iphone.mjs run` writes (meta.sentinel next to meta.battery); 38 °C when there is none
+test('wait phone-temp --below auto: 38 °C without a passing sentinel today; the last passing one minus 0.5 °C; the source on stderr', () => {
+  const FAKE_IDD = join(TESTS, 'fixtures', 'fake-idevicediagnostics.mjs');
+  const iddEnv = { FW_IDEVICEDIAGNOSTICS: FAKE_IDD, FAKE_IDD_LOG: join(state, 'idd.log') }; // 30.5 °C, 30.6, ...
+  const runs = join(state, 'runs');
+  const rec = (name, sentinelPass, endC, date = new Date()) => {
+    mkdirSync(runs, { recursive: true });
+    writeFileSync(join(runs, name), JSON.stringify({ meta: { schema: 'fw-iphone-run/1', kind: 'run', date: date.toISOString(), battery: { start: { temperatureC: endC - 1 }, end: { temperatureC: endC } }, sentinel: { driver: 'S', criterion: 'bottom >= 58 fps and scroll >= 44 fps', value: { bottom: 59, scroll: 55 }, pass: sentinelPass } } }));
+  };
+  let r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs], { env: iddEnv });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stdout, 'MET phone-temp --below auto: phone at 30.5 °C <= 38.0 °C (after 0 s)\n');
+  assert.match(r.stderr, /^auto: --below 38\.0 °C \(no passing heat sentinel with a battery reading today in .*runs; 0 record\(s\) from today read\)$/m);
+  rec('a-run-ctl-1.json', true, 31.0);
+  rec('a-run-ctl-2.json', false, 33.0);
+  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs, '--timeout', '1'], { env: iddEnv });
+  assert.equal(r.code, 3, r.out);
+  assert.equal(r.stdout, 'TIMEOUT phone-temp --below auto after 1 s: read 1: 30.6 °C > 30.5 °C\n', 'the failing sentinel after it does not count');
+  assert.match(r.stderr, /^auto: --below 30\.5 °C = 31\.0 °C \(battery after the last passing heat sentinel today, .*a-run-ctl-1\.json, \d\d:\d\d:\d\dZ\) - 0\.5$/m);
+  rec('a-run-ctl-3.json', true, 31.6);
+  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', `${join(state, 'none')},${runs}`], { env: iddEnv });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stdout, 'MET phone-temp --below auto: phone at 30.7 °C <= 31.1 °C (after 0 s)\n', 'the newest passing one; comma-separated dirs');
+  assert.doesNotMatch(r.out, /FAKESERIAL|Serial|192\.168\./);
+  // --driver M (iphone-runner: M sentinels failed at 41.5 °C): auto is at most 39.5 °C; S/W are not capped
+  rec('a-run-ctl-4.json', true, 41.0);
+  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs, '--driver', 'm'], { env: iddEnv });
+  assert.equal(r.stdout, 'MET phone-temp --below auto: phone at 30.8 °C <= 39.5 °C (after 0 s)\n');
+  assert.match(r.stderr, /^auto: --driver M: capped at 39\.5 °C \(M blocks start at or below 39\.5 °C\)$/m);
+  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs, '--driver', 'S'], { env: iddEnv });
+  assert.equal(r.stdout, 'MET phone-temp --below auto: phone at 30.9 °C <= 40.5 °C (after 0 s)\n');
+  assert.doesNotMatch(r.stderr, /capped/);
 });
 
 test('lock wait: released-by exits when the holder releases; position<=1 and mine as the queue moves; read-only', async () => {

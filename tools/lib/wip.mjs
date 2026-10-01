@@ -158,6 +158,35 @@ export async function navigate(c, url, match = url) {
   return c2;
 }
 
+// Park Safari between phone runs and blocks (incident I-047): a test page left open keeps its animations running and
+// the phone warm (41.0 °C 20 min after a block that ended at 39.7 °C). Navigates Safari's tab (pickTab over the
+// http(s) pages, I-037 rules: never a blank web view, never the first of several) to about:blank, then checks the
+// tab list until that page is gone (`timeoutMs`). Safari already showing no web page (only blank views listed):
+// {already: true}, nothing touched. Returns {from: <the parked page, LAN-safe>}. The caller holds the iphone lease.
+export const PARK_URL = 'about:blank';
+export const PARK_JS = `setTimeout(() => { location.href = ${JSON.stringify(PARK_URL)}; }, 100); 'parking'`;
+const isWebUrl = (u) => /^https?:\/\//i.test(String(u || ''));
+export async function parkSafari({ port = Number(process.env.FW_IPHONE_PORT || 9222), appId = process.env.FW_IPHONE_APPID || null, timeoutMs = 8000, pollMs = 500 } = {}) {
+  const list = async () => (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
+  const pages = await list();
+  let tab;
+  try { tab = pickTab(pages, isWebUrl, { appId, preferAppId: lastAppId }); } catch (e) {
+    const listed = (Array.isArray(pages) ? pages : []).filter((p) => p && p.webSocketDebuggerUrl);
+    if (!e.ambiguous && listed.length && !listed.some((p) => isWebUrl(p.url))) return { already: true };
+    if (!e.ambiguous) e.message = `no Safari page to park (unlock the iPhone, bring Safari to the front): ${e.message}`;
+    throw e;
+  }
+  const c = await openTab(isWebUrl, { port, appId, tries: 3 });
+  try { await c.evaluate(PARK_JS); } finally { c.close(); }
+  const t0 = Date.now();
+  for (;;) {
+    await sleep(pollMs);
+    const now = await list().catch(() => null);
+    if (Array.isArray(now) && !now.some((p) => p && p.url === tab.url && (!tab.appId || p.appId === tab.appId))) return { from: lanSafeUrl(tab.url) };
+    if (Date.now() - t0 >= timeoutMs) throw new Error(`Safari still lists ${lanSafeUrl(tab.url)} ${Math.round(timeoutMs / 1000)} s after location.href = ${PARK_URL}: not parked`);
+  }
+}
+
 // Run an async in-page expression that returns a Promise: stash the result on window, then poll.
 export async function runAsync(c, expr, {pollMs = 2000, timeoutMs = 180000, key = '__iphRes'} = {}) {
   await c.evaluate(`window.${key} = undefined; Promise.resolve(${expr}).then(v => { window.${key} = JSON.stringify({ok: v}); }, e => { window.${key} = JSON.stringify({err: String(e && e.stack || e)}); }); 'started'`);

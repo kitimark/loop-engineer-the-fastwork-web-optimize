@@ -3,12 +3,12 @@
 // conditions run on real temp files, processes, an in-process HTTP server and a temp git repo.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, appendFileSync, mkdirSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import http from 'node:http';
 import { tempDir, sleep, cleanEnv } from '../helpers.mjs';
-import { pollUntil, parseSec, BACKOFF, pidAlive, fileCondition, urlCondition, serveCondition, pidsCondition, gitCondition, timeCondition, parseLockCondition, lockConditionMet, lockState, phoneTempCondition, parseBelowC, fmtC, PHONE_TEMP } from '../../tools/lib/wait.mjs';
+import { pollUntil, parseSec, BACKOFF, pidAlive, fileCondition, urlCondition, serveCondition, pidsCondition, gitCondition, timeCondition, parseLockCondition, lockConditionMet, lockState, phoneTempCondition, parseBelowC, fmtC, PHONE_TEMP, recordTempC, lastPassingSentinel, autoBelowC } from '../../tools/lib/wait.mjs';
 
 /** A fake clock: sleep() advances it and records each pause. */
 function clock() {
@@ -258,10 +258,10 @@ test('lockConditionMet: each condition on status snapshots; a stale holder count
 
 // ---- phone-temp (ts-phone-cool, user T-009): cool the phone until its battery temperature is low enough -----------
 
-test('parseBelowC: a temperature in degC; auto is refused with the documented fallback (no tool records the sentinel verdict)', () => {
+test('parseBelowC: a temperature in degC, or auto (resolved by autoBelowC, I-047)', () => {
   assert.equal(parseBelowC('38'), 38);
   assert.equal(parseBelowC('37.5'), 37.5);
-  assert.throws(() => parseBelowC('auto'), /--below auto is not available.*--below 38/s);
+  assert.equal(parseBelowC('auto'), 'auto');
   for (const v of [undefined, '', 'warm', '0', '-1', '80', 'NaN', '38x']) assert.throws(() => parseBelowC(v), /--below/, String(v));
   assert.ok(PHONE_TEMP.minEverySec >= 30, 'the floor is 30 s (protocol §5.5: keep phone polling gentle)');
   assert.equal(PHONE_TEMP.everySec, 60, 'default: one read per minute');
@@ -339,4 +339,61 @@ test('phoneTempCondition: no first reading -> never (unavailable) at once; later
   r = await coolPoll(phoneTempCondition(38, { read: () => ({ t: 'x', CurrentCapacity: 80 }), now: c.now }), c);
   assert.equal(r.result, 'never');
   assert.equal(r.never, 'battery temperature unavailable (no Temperature in the battery reading)');
+});
+
+// ---- phone-temp --below auto (incident I-047): the last passing heat sentinel today minus 0.5 degC, 38 if none -------
+
+/** A run record in `dir` like `iphone.mjs run` writes (meta first, a frame list), file time = its run time. */
+function runRecord(dir, name, { date, sentinel = null, battery = null }) {
+  const p = join(dir, name);
+  writeFileSync(p, JSON.stringify({ meta: { schema: 'fw-iphone-run/1', kind: 'run', date: date.toISOString(), battery, sentinel }, frames: Array.from({ length: 50 }, (_, i) => [i, 16.7, 0]) }));
+  utimesSync(p, date, date);
+  return p;
+}
+const bat = (startC, endC) => ({ start: { t: 'x', temperatureC: startC, CurrentCapacity: 80 }, end: endC === null ? { error: 'idevicediagnostics exit 1' } : { t: 'y', temperatureC: endC, CurrentCapacity: 79 } });
+const PASS = { driver: 'S', criterion: 'bottom >= 58 fps and scroll >= 44 fps', value: { bottom: 59.9, scroll: 58.1 }, pass: true };
+const FAIL = { ...PASS, value: { bottom: 52.1, scroll: 58.1 }, pass: false };
+
+test('recordTempC: the end read of a run, else a flat (hand-annotated) read, else the start; null without one', () => {
+  assert.equal(recordTempC(bat(37.1, 38.6)), 38.6);
+  assert.equal(recordTempC(bat(37.1, null)), 37.1, 'end read failed: the start');
+  assert.equal(recordTempC({ t: 'x', temperatureC: 38.2 }), 38.2, 'one flat batteryInfo read (sentverdict.mjs records)');
+  for (const b of [null, undefined, { error: 'x' }, { start: { error: 'x' }, end: { error: 'y' } }]) assert.equal(recordTempC(b), null);
+});
+
+test('lastPassingSentinel / autoBelowC: newest passing sentinel today with a battery temperature; failing, not-judged, yesterday\'s and other JSON skipped', () => {
+  const dir = tempDir('fw-wait-auto-');
+  const now = new Date(2026, 9, 2, 15, 0, 0); // local time: "today" is the local calendar day (the user's)
+  const at = (h, m = 0) => new Date(2026, 9, 2, h, m, 0);
+  assert.deepEqual(autoBelowC([dir], { now }), { belowC: 38, source: null, capped: false, scanned: 0, dirs: [dir] }, 'no records: the 38 degC fallback');
+  runRecord(dir, 'y.json', { date: new Date(2026, 9, 1, 23, 50), sentinel: PASS, battery: bat(36, 36.5) }); // yesterday
+  assert.equal(autoBelowC([dir], { now }).belowC, 38, 'yesterday\'s sentinel does not count');
+  runRecord(dir, 'a.json', { date: at(9), sentinel: PASS, battery: bat(37.0, 38.6) });
+  runRecord(dir, 'b.json', { date: at(10), sentinel: FAIL, battery: bat(39.0, 39.9) }); // failed: not a reference
+  runRecord(dir, 'c.json', { date: at(11), sentinel: null, battery: bat(38, 38.2) }); // not a sentinel (arm V)
+  runRecord(dir, 'd.json', { date: at(12), sentinel: { ...PASS, pass: null, note: 'no sentinel frames' }, battery: bat(37, 37.2) });
+  runRecord(dir, 'e.json', { date: at(13), sentinel: PASS, battery: null }); // --no-battery: no temperature
+  for (const [n, s] of [['notes.json', '{"not": "a run"}'], ['broken.json', '{"meta": '], ['x.txt', 'x']]) { writeFileSync(join(dir, n), s); utimesSync(join(dir, n), at(13, 30), at(13, 30)); }
+  let r = autoBelowC([dir], { now });
+  assert.equal(r.source.file, join(dir, 'a.json'));
+  assert.equal(r.source.temperatureC, 38.6, 'the battery at the end of the passing run');
+  assert.equal(r.belowC, 38.1, '38.6 - 0.5');
+  assert.equal(r.scanned, 6, 'today\'s JSON records only (by file time; the broken one and the .txt skipped)');
+  runRecord(dir, 'f.json', { date: at(14, 30), sentinel: { driver: 'M', criterion: 'held m=1 p95 <= 18 ms', value: 16.4, pass: true }, battery: { t: 'z', temperatureC: 37.35 } });
+  r = autoBelowC([dir], { now });
+  assert.deepEqual([r.source.file, r.belowC], [join(dir, 'f.json'), 36.85], 'the newest passing one; a flat battery read counts');
+  // a second dir (e.g. out/iphone-runner) and a missing one
+  const other = tempDir('fw-wait-auto2-');
+  runRecord(other, 'g.json', { date: at(14, 45), sentinel: PASS, battery: bat(36, 36.9) });
+  r = autoBelowC([dir, other, join(other, 'nope')], { now });
+  assert.deepEqual([r.source.file, r.belowC, r.dirs], [join(other, 'g.json'), 36.4, [dir, other]]);
+  assert.equal(lastPassingSentinel([dir], { now: new Date(2026, 9, 3, 1, 0) }).last, null, 'the next day starts empty');
+  // the next block's driver M: at most 39.5 degC (iphone-runner: M sentinels failed at 41.5 degC, S/W passed to 42.5)
+  assert.equal(PHONE_TEMP.morphCapC, 39.5);
+  runRecord(other, 'h.json', { date: at(14, 50), sentinel: PASS, battery: bat(40, 41.2) });
+  assert.deepEqual([autoBelowC([other], { now }).belowC, autoBelowC([other], { now, driver: 'S' }).capped], [40.7, false], 'S/W: not capped');
+  r = autoBelowC([other], { now, driver: 'M' });
+  assert.deepEqual([r.belowC, r.capped, r.source.temperatureC], [39.5, true, 41.2]);
+  assert.deepEqual([autoBelowC([dir], { now, driver: 'M' }).belowC, autoBelowC([dir], { now, driver: 'M' }).capped], [36.85, false], 'under the cap: unchanged');
+  assert.deepEqual([autoBelowC([join(other, 'nope')], { now, driver: 'M' }).belowC], [38], 'the fallback is under the cap');
 });

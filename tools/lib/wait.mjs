@@ -9,7 +9,8 @@
 // the result printed on MET (e.g. the matching line), `never` the reason it can't be met any more.
 // Waits read only (files, status, HTTP GET, `git` plumbing): they never take or refresh a lock or a
 // queue place (to wait for your own turn use `lock.mjs acquire --wait` or `lock.mjs run`).
-import { openSync, readSync, closeSync, fstatSync, readFileSync } from 'node:fs';
+import { openSync, readSync, closeSync, fstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import http from 'node:http';
 import https from 'node:https';
@@ -201,21 +202,75 @@ export function gitCondition({ cwd = process.cwd(), ref = 'main', contains, path
  * `wait.mjs phone-temp` defaults: one battery read per minute (floor 30 s: protocol §5.5 keeps phone polling
  * gentle), at most 10 min of cooling, and the wait gives up after 3 failed reads in a row.
  */
-export const PHONE_TEMP = Object.freeze({ everySec: 60, minEverySec: 30, timeoutSec: 600, maxFailedReads: 3, fallbackC: 38 });
+export const PHONE_TEMP = Object.freeze({ everySec: 60, minEverySec: 30, timeoutSec: 600, maxFailedReads: 3, fallbackC: 38, autoMarginC: 0.5, morphCapC: 39.5 });
 
 /** A temperature as text: 38 -> "38.0", 37.4 -> "37.4", 38.59 -> "38.59" (the battery reports 1/100 degC). */
 export const fmtC = (x) => Number(x).toFixed(2).replace(/(\.\d)0$/, '$1');
 
 /**
- * `--below <degC>`: a number in (0, 60). `auto` (the last passing sentinel's battery temperature minus 0.5 degC)
- * is refused: no tool records the sentinel verdict (`iphone.mjs run` keeps the battery per run, but not whether the
- * run passed the §5.2 sentinel; the phone runner judges it in its own scripts), so the operator gives the number.
+ * `--below <degC>`: a number in (0, 60), or 'auto' (resolved by autoBelowC: the last passing sentinel's battery
+ * temperature today minus 0.5 degC, 38 when there is none).
  */
 export function parseBelowC(v) {
-  if (String(v ?? '').trim() === 'auto') throw new Error(`--below auto is not available: no tool records the sentinel verdict. Give the battery temperature of the last passing sentinel today minus 0.5 °C, or --below ${fmtC(PHONE_TEMP.fallbackC)} when there is none (e.g. --below 38)`);
+  if (String(v ?? '').trim() === 'auto') return 'auto';
   const n = /^\s*\d+(\.\d+)?\s*$/.test(String(v ?? '')) ? Number(v) : NaN;
-  if (!(n > 0 && n < 60)) throw new Error(`--below must be a battery temperature in °C between 0 and 60 (e.g. --below 38), got ${v}`);
+  if (!(n > 0 && n < 60)) throw new Error(`--below must be a battery temperature in °C between 0 and 60 (e.g. --below 38) or auto, got ${v}`);
   return n;
+}
+
+/** A run record's battery temperature (degC): `iphone.mjs run` keeps {start, end} (the end read, right after the run,
+ *  counts; else the start), an older hand-annotated record one flat batteryInfo read. null when there is none. */
+export function recordTempC(battery) {
+  for (const b of [battery?.end, battery, battery?.start]) if (b && typeof b.temperatureC === 'number' && Number.isFinite(b.temperatureC)) return b.temperatureC;
+  return null;
+}
+
+/**
+ * The last passing heat sentinel today (incident I-047): the run records (*.json, one level) in `dirs` written since
+ * local midnight whose meta.sentinel.pass is true (`iphone.mjs run`, protocol v2 §5.2) and whose meta.date is today,
+ * newest by meta.date, with a battery temperature. Unreadable files and other JSON are skipped. Read-only.
+ * -> {last: {file, at, temperatureC} | null, scanned (records read), dirs (the ones that exist)}
+ */
+export function lastPassingSentinel(dirs, { now = new Date() } = {}) {
+  const midnight = new Date(now);
+  midnight.setHours(0, 0, 0, 0);
+  const from = midnight.getTime();
+  const found = [], seen = [];
+  let scanned = 0;
+  for (const d of dirs) {
+    let names;
+    try { names = readdirSync(d); } catch { continue; }
+    seen.push(d);
+    for (const n of names) {
+      if (!n.endsWith('.json')) continue;
+      const p = join(d, n);
+      let st, j;
+      try { st = statSync(p); } catch { continue; }
+      if (!st.isFile() || st.mtimeMs < from) continue;
+      try { j = JSON.parse(readFileSync(p, 'utf8')); } catch { continue; }
+      scanned++;
+      const m = j && typeof j === 'object' ? j.meta : null;
+      if (!m || !m.sentinel || m.sentinel.pass !== true) continue;
+      const at = Number.isFinite(Date.parse(m.date)) ? Date.parse(m.date) : st.mtimeMs;
+      if (at < from || at > now.getTime() + 60000) continue;
+      const t = recordTempC(m.battery);
+      if (t !== null) found.push({ file: p, at, temperatureC: t });
+    }
+  }
+  found.sort((a, b) => b.at - a.at);
+  return { last: found[0] ?? null, scanned, dirs: seen };
+}
+
+/**
+ * `--below auto`: {belowC, source (lastPassingSentinel's last, or null: the 38 degC fallback), capped, scanned, dirs}.
+ * `driver` 'M' (the next block's driver, `--driver M`): at most 39.5 degC (`capped` true when that cut it): M
+ * sentinels failed at 41.5 degC while S/W passed up to 42.5 (iphone-runner, OBSERVED, small n; fixes/iphone-wave2).
+ */
+export function autoBelowC(dirs, { driver = null, ...opts } = {}) {
+  const r = lastPassingSentinel(dirs, opts);
+  const auto = r.last ? Math.round((r.last.temperatureC - PHONE_TEMP.autoMarginC) * 100) / 100 : PHONE_TEMP.fallbackC;
+  const capped = driver === 'M' && auto > PHONE_TEMP.morphCapC;
+  return { belowC: capped ? PHONE_TEMP.morphCapC : auto, source: r.last, capped, scanned: r.scanned, dirs: r.dirs };
 }
 
 /**

@@ -25,8 +25,14 @@ function runFinish(drv, opts = {}) {
   const j = JSON.parse(readFileSync(out, 'utf8'));
   return { j, logs: logs.join('\n').replaceAll(out, '<out>'), out };
 }
+// I-047 added meta.sentinel (the heat-sentinel verdict, here: --arm C) and its one console line; the pin leaves out
+// exactly those two, so everything measured stays byte for byte as pinned (the verdict is tested in iphone-sentinel).
 const pin = ({ j, logs }) => {
-  const s = JSON.stringify({ ...j, meta: { ...j.meta, tool: null } }) + '\n--\n' + logs;
+  const { sentinel, ...meta } = j.meta;
+  assert.ok(sentinel === null || 'pass' in sentinel, 'the sentinel record is there');
+  const sentinelLines = logs.split('\n').filter((l) => l.startsWith('  heat sentinel ['));
+  assert.equal(sentinelLines.length, sentinel ? 1 : 0, 'one console line per judged sentinel');
+  const s = JSON.stringify({ ...j, meta: { ...meta, tool: null } }) + '\n--\n' + logs.split('\n').filter((l) => !l.startsWith('  heat sentinel [')).join('\n');
   return [createHash('sha256').update(s).digest('hex').slice(0, 16), s.length];
 };
 
@@ -52,7 +58,9 @@ test('iphone run with a Simulator target: device, settings, tool files, meta.sim
   assert.deepEqual(sim.meta.settings, { lowPowerMode: 'n/a' });
   assert.deepEqual(Object.keys(sim.meta.tool.files), ['tools/sim.mjs', ...TOOL_FILES]);
   assert.deepEqual(sim.meta.sim, { window: 'shown' });
-  const strip = (m) => { const { device, settings, tool, sim: s, ...rest } = m; return rest; };
+  assert.equal(sim.meta.sentinel, null, 'the Simulator never judges the heat sentinel (I-047)');
+  assert.equal(phone.meta.sentinel.driver, 'S', 'the phone does (--arm C)');
+  const strip = (m) => { const { device, settings, tool, sim: s, sentinel, ...rest } = m; return rest; };
   assert.deepEqual(strip(sim.meta), strip(phone.meta));
   assert.deepEqual({ ...sim, meta: null }, { ...phone, meta: null });
   assert.ok(Object.keys(sim.meta).indexOf('sim') === Object.keys(sim.meta).length - 1, 'meta.sim comes last');

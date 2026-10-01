@@ -161,3 +161,28 @@ test('I-037: another app\'s about:blank web view listed before Safari\'s tab is 
   assert.equal(phone.blankConnects(), 0, 'the blank view was never connected to');
   assert.doesNotMatch(r.stderr, /openTab try/, 'first try');
 });
+
+test('I-047: park needs the lease, navigates Safari\'s tab (not another app\'s blank view) to about:blank, and is a no-op when parked', async () => {
+  const phone = await fakePhone(['--blank-view']);
+  let r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /you \("me"\) don't hold the iphone lease/);
+  lock('acquire', 'iphone', '--owner', 'someone-else');
+  r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
+  assert.match(r.stderr, /\(holder: "someone-else"\)/);
+  assert.deepEqual(phone.navigations(), [], 'nothing touched without the lease');
+  lock('release', 'iphone', '--owner', 'someone-else');
+  lock('acquire', 'iphone', '--owner', 'me');
+  r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stdout, 'PARKED Safari on about:blank (was http://127.0.0.1:9/start)\n');
+  assert.deepEqual(phone.navigations(), ['about:blank']);
+  assert.equal(phone.blankConnects(), 0, 'the other app\'s blank view was never connected to (I-037)');
+  const st = await nodeAsync(IPHONE, ['status'], { env: phone.env, timeout: 20000 });
+  assert.match(st.stdout, /^tabs: \[\{"url":"about:blank","title":"","appId":"PID:1304"\},\{"url":"about:blank","title":"","appId":"PID:4242"\}\]$/m, st.out);
+  r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stdout, 'PARKED already: Safari shows no web page\n');
+  assert.deepEqual(phone.navigations(), ['about:blank'], 'parked once');
+  assert.match(iphone('dance').stdout, /\| park --owner <topic> \|/, 'the usage names park');
+});

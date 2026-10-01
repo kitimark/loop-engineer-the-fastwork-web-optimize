@@ -129,7 +129,7 @@ test('run --driver scroll and --driver morph: phases to the bottom; morph tweens
   const phone = await fakePhone(['--doc-height=1500', '--morph']);
   assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
   let out = join(dir, 's.json');
-  let r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--y-source', 'scroll', '--no-battery', '--out', out], phone.env);
+  let r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--y-source', 'scroll', '--no-battery', '--no-park', '--out', out], phone.env); // --no-park: the morph run below reuses the page (I-047)
   assert.equal(r.code, 0, r.out);
   let j = JSON.parse(readFileSync(out, 'utf8'));
   assert.equal(j.meta.driver, 'S');
@@ -178,13 +178,47 @@ test('run during a normal chrome-measure hold: WAIT, Safari untouched; a short-l
   assert.match(r.stderr, /^WAIT: chrome-measure is held by "fix-ab"/m);
   assert.deepEqual(phone.events().filter((e) => e.evaluate || e.reload), [], 'nothing evaluated, no reload');
   assert.ok(!existsSync(join(dir, 'a.json')));
-  r = await run([...args, '--allow-during-measure', '--out', join(dir, 'b.json')], phone.env);
+  r = await run([...args, '--allow-during-measure', '--no-park', '--out', join(dir, 'b.json')], phone.env); // run c reuses the page (I-047)
   assert.equal(r.code, 0, r.out);
   assert.equal(node(LOCK, ['release', 'chrome-measure', '--owner', 'fix-ab'], { env: phone.env }).code, 0);
   assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '120'], { env: phone.env }).code, 0);
   r = await run([...args, '--out', join(dir, 'c.json')], phone.env);
   assert.equal(r.code, 0, r.out);
   assert.equal(JSON.parse(readFileSync(join(dir, 'c.json'), 'utf8')).meta.driver, 'S');
+});
+
+test('I-047: a control run records the heat-sentinel verdict next to the battery and ends with Safari parked; the next run asks for open; --no-park keeps the page', async () => {
+  const phone = await fakePhone(['--doc-height=1500']);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
+  let out = join(dir, 'keep.json');
+  let r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.3', '--arm', 'V', '--no-park', '--out', out], phone.env);
+  assert.equal(r.code, 0, r.out);
+  assert.deepEqual(phone.events().filter((e) => e.navigate), [], '--no-park: Safari keeps the page');
+  assert.doesNotMatch(r.out, /parked|heat sentinel/);
+  assert.equal(JSON.parse(readFileSync(out, 'utf8')).meta.sentinel, null, 'arm V is not the sentinel');
+
+  out = join(dir, 'ctl.json');
+  r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.3', '--arm', 'C', '--block', 'k1', '--out', out], phone.env);
+  assert.equal(r.code, 0, r.out);
+  const j = JSON.parse(readFileSync(out, 'utf8'));
+  const keys = Object.keys(j.meta);
+  assert.equal(keys.indexOf('sentinel'), keys.indexOf('battery') + 1, 'meta.sentinel next to meta.battery');
+  assert.deepEqual([j.meta.sentinel.driver, j.meta.sentinel.criterion, typeof j.meta.sentinel.pass], ['S', 'bottom >= 58 fps and scroll >= 44 fps', 'boolean']);
+  assert.deepEqual(j.meta.sentinel.value, { bottom: j.summary.phases.bottom.fps, scroll: j.summary.phases.scroll.fps });
+  assert.match(r.stdout, /^ {2}heat sentinel \[S\]: (PASS|FAIL) .*; battery 30\.\d+ °C at the end$/m);
+  assert.match(r.stdout, /^parked Safari on about:blank/m);
+  assert.deepEqual(phone.events().filter((e) => e.navigate).map((e) => e.navigate), ['about:blank'], 'parked once, after the run');
+  const ev = phone.events();
+  assert.ok(ev.findIndex((e) => e.navigate) > ev.findLastIndex((e) => e.evaluate && e.evaluate.startsWith('window.__fwrState')), 'the park comes after the timed part');
+
+  r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--out', join(dir, 'next.json')], phone.env);
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /Safari shows no web page \(parked after the last run or block, I-047\?\): node tools\/iphone\.mjs open <url> --owner me first/);
+  assert.equal(phone.events().filter((e) => e.reload).length, 2, 'no reload of a parked tab');
+  r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stdout, 'PARKED already: Safari shows no web page\n');
+  assert.equal(phone.events().filter((e) => e.navigate).length, 1, 'nothing navigated again');
 });
 
 test('run while Safari shows the certificate warning: refused with the open hint, no reload', async () => {

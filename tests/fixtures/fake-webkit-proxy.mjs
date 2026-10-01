@@ -49,6 +49,7 @@ const log = (o) => { if (LOG) appendFileSync(LOG, JSON.stringify({ t: Date.now()
 
 const tab = { url: arg('url') || 'about:blank', title: 'start', warning: false, gen: 1, alive: true };
 async function load(url) {
+  if (url === 'about:blank') { Object.assign(tab, { url, title: '', warning: false }); tab.gen++; log({ navigated: url, warning: false, title: '' }); return; } // iphone.mjs park (I-047)
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(5000) }); // default TLS verification, like an untrusting phone
     const html = await r.text();

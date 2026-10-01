@@ -10,6 +10,7 @@
 //   node tools/iphone.mjs record --owner <topic> [--seconds 25] [--label finger-patched]   # human scrolls meanwhile
 //        # in the background with output to a log; `node tools/wait.mjs file <log> --match '^RECORDING' --pid <pid>`
 //        # exits the moment it records (tell the lead then), NEVER (exit 4) if record failed first
+//   node tools/iphone.mjs park --owner <topic>                    # Safari to about:blank: after every block (I-047)
 //   node tools/lock.mjs release iphone --owner <topic>
 //
 // Simulated finger (real OS-level touches through WebDriverAgent over USB, research/architecture/
@@ -38,7 +39,7 @@
 // crossing log, tool hashes) -> out/iphone/<owner>-run-<label>-<ts>.json (schema fw-iphone-run/1).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
-import { openTab, navigate, safariTab, sleep } from './lib/wip.mjs';
+import { openTab, navigate, safariTab, sleep, parkSafari } from './lib/wip.mjs';
 import { status as lockStatus, timedInSlotRefusal } from './lib/lock.mjs';
 import { REPO } from './lib/paths.mjs';
 import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord } from './lib/iphone-url.mjs';
@@ -182,6 +183,14 @@ async function main() {
     console.log(`saved ${out}`);
     return;
   }
+  if (cmd === 'park') {
+    // incident I-047: a test page left open between blocks keeps animating and heats the phone; park Safari on
+    // about:blank (the lease holder's tab, pickTab rules, I-037). `iphone.mjs open <url>` brings a page back.
+    requireLease();
+    const r = await parkSafari({ port: PORT });
+    console.log(r.already ? 'PARKED already: Safari shows no web page' : `PARKED Safari on about:blank (was ${r.from})`);
+    return;
+  }
   if (cmd === 'gesture') return (await import('./lib/gesture-run.mjs')).gestureCmd({ argv, arg, opt, flag, requireLease, port: PORT });
   if (cmd === 'wda') return (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, requireLease });
   if (cmd === 'safari-restart') {
@@ -195,6 +204,6 @@ async function main() {
     return;
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease, port: PORT });
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25] | gesture <script.json> --owner <topic> [--dry-run] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | park --owner <topic> | record --owner <topic> [--seconds 25] | gesture <script.json> --owner <topic> [--dry-run] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(() => process.exit(0), (e) => { console.error(e.message || e); process.exit(1); });

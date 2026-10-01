@@ -22,11 +22,18 @@
 // fields for T2/T3, wall clock + page clock mapping (U7), settings fingerprint with 'unknown' for what a page
 // cannot read (U9), served hashes, tool hashes), fields, frames, marks, mutations, crossings, tops, summary, driverResult, pre, post.
 // A run that failed in the page (driver error) is still written, with meta.error, and exits 1.
+// Heat sentinel (protocol v2 §5.2, CLAUDE.md "Phone blocks"; incident I-047): a control run (--arm C, not --warmup) or
+// any run with --heat-sentinel gets meta.sentinel {driver, criterion, value, pass} next to meta.battery (S/W: bottom
+// >= 58 fps and scroll >= 44 fps, W's bottom = its sentinel phase; M: held m=1 p95 <= 18 ms; pass null when the run
+// has no such data), else meta.sentinel null. `wait.mjs phone-temp --below auto` reads it back.
+// Park (I-047): once the page was reloaded, the run ends with Safari on about:blank (wip.mjs parkSafari), also after
+// a failure, so an animating test page does not keep heating the phone; --no-park keeps the page. The next run on
+// the phone needs `iphone.mjs open <url>` first. The Simulator target never parks.
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { openTab, safariTab, sleep } from './wip.mjs';
+import { openTab, safariTab, sleep, parkSafari, isBlankUrl } from './wip.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, LAN_HOST } from './iphone-url.mjs';
@@ -56,7 +63,11 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--no-battery]                                          skip the idevicediagnostics battery read at start and end
     [--low-power on|off]                                    Low Power Mode as set on the phone (a page cannot read it;
                                                             rAF runs at 30 Hz when on); default unknown
-    [--allow-during-measure]                                run although a normal chrome-measure hold is running`;
+    [--allow-during-measure]                                run although a normal chrome-measure hold is running
+    [--heat-sentinel]                                       judge the run as the heat sentinel (default for --arm C
+                                                            without --warmup): meta.sentinel {driver, criterion, value, pass}
+    [--no-park]                                             keep the page open after the run (default: Safari parks
+                                                            on about:blank, I-047; open <url> before the next run)`;
 
 /** Device settings that a page cannot read (U9, research/architecture/unknowns-validity.md): recorded as 'unknown'
  *  rather than left out, until a device-side reader (T2: WDA / lockdown) fills them in. */
@@ -94,6 +105,30 @@ export function batteryInfo() {
   return { t: new Date().toISOString(), ...parseBattery(r.stdout) };
 }
 
+/** The heat sentinel's criteria (protocol v2 §5.2; CLAUDE.md "Phone blocks"). */
+export const SENTINEL = Object.freeze({ bottomFps: 58, scrollFps: 44, heldP95Ms: 18 });
+/**
+ * The sentinel verdict of one run: {driver, criterion, value, pass}. S and W: bottom >= 58 fps and scroll >= 44 fps
+ * (S's bottom phase; W's bottom is its sentinel phase, the instant jump to the bottom and hold); M: the build's held
+ * m=1 frames (driverResult.driver.atOne) p95 <= 18 ms. `pass` is null (with `note`) when the run has no such data
+ * (a W run with --sentinel 0, a phase without frames, a morph without __fwMorphDrive). Pure.
+ */
+export function sentinelVerdict(driverName, summary, driverResult) {
+  const driver = DRIVERS[driverName];
+  if (driver === 'M') {
+    const criterion = `held m=1 p95 <= ${SENTINEL.heldP95Ms} ms`;
+    const p95 = driverResult?.driver?.atOne?.p95;
+    if (typeof p95 !== 'number' || !Number.isFinite(p95)) return { driver, criterion, value: null, pass: null, note: 'no held m=1 frames (driverResult.driver.atOne)' };
+    return { driver, criterion, value: p95, pass: p95 <= SENTINEL.heldP95Ms };
+  }
+  const bottomPhase = driver === 'W' ? 'sentinel' : 'bottom';
+  const criterion = `bottom >= ${SENTINEL.bottomFps} fps and scroll >= ${SENTINEL.scrollFps} fps${driver === 'W' ? ' (bottom: the sentinel phase)' : ''}`;
+  const fps = (ph) => { const v = summary?.phases?.[ph]; return v && v.frames > 0 && typeof v.fps === 'number' ? v.fps : null; };
+  const value = { bottom: fps(bottomPhase), scroll: fps('scroll') };
+  if (value.bottom === null || value.scroll === null) return { driver, criterion, value, pass: null, note: `no ${value.bottom === null ? bottomPhase : 'scroll'} frames` };
+  return { driver, criterion, value, pass: value.bottom >= SENTINEL.bottomFps && value.scroll >= SENTINEL.scrollFps };
+}
+
 const num = (v, name, { min = 0 } = {}) => { const n = Number(v); if (!Number.isFinite(n) || n < min) throw new Error(`--${name} must be a number >= ${min} (got ${v})\n${USAGE}`); return n; };
 
 /** argv (after `run`) -> validated options. Throws with the usage on bad input. Pure. */
@@ -110,6 +145,8 @@ export function parseRunArgs(argv) {
   if (o.labels.arm !== null && !/^[A-Z]$/.test(o.labels.arm)) throw new Error(`--arm is one letter (C, V, A, B, ...), got ${o.labels.arm}`);
   o.stateFile = opt('state') ?? null;
   o.allowDuringMeasure = flag('allow-during-measure');
+  o.sentinel = flag('heat-sentinel') || (o.labels.arm === 'C' && !o.labels.warmup);
+  o.park = !flag('no-park');
   o.battery = !flag('no-battery');
   o.lowPower = opt('low-power', 'unknown');
   if (!['on', 'off', 'unknown'].includes(o.lowPower)) throw new Error(`--low-power must be on or off (got ${o.lowPower})\n${USAGE}`);
@@ -159,6 +196,7 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
     if (rn.status !== 0) throw new Error(`could not renew the iphone lease: ${(rn.stderr || rn.stdout || '').trim()}`);
   } else await target.renew?.(need);
   const tabs = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
+  if (!target && Array.isArray(tabs) && tabs.length && tabs.every((p) => isBlankUrl(p.url))) throw new Error(`Safari shows no web page (parked after the last run or block, I-047?): node tools/iphone.mjs open <url> --owner ${owner} first`);
   const tab = safariTab(tabs); // never a blank web view of another app, never the first of several (I-037)
   if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (incident I-003)`);
   const holder = target ? null : lockStatus('iphone').holder;
@@ -168,11 +206,13 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
 
   let c = await openTab(() => true, { port });
   const host = new URL(await c.evaluate('location.href')).host;
-  await c.evaluate(`scrollTo({ top: 0, behavior: 'instant' }); setTimeout(() => location.reload(), 400); 'ok'`); // instant: html{scroll-behavior:smooth} (F-021)
-  c.close();
-  await sleep(2500);
-  c = await openTab(host, { port });
+  let reloaded = false; // from the reload on, the run ends with Safari parked (I-047), also after a failure
   try {
+    await c.evaluate(`scrollTo({ top: 0, behavior: 'instant' }); setTimeout(() => location.reload(), 400); 'ok'`); // instant: html{scroll-behavior:smooth} (F-021)
+    reloaded = true;
+    c.close();
+    await sleep(2500);
+    c = await openTab(host, { port });
     await c.evaluate(optsJs(o.params)).catch(() => {});
     await c.evaluate(EARLY_JS).catch(() => {});
     for (let i = 0; i < 60; i++) { if ((await c.evaluate('document.readyState')) === 'complete') break; await sleep(500); }
@@ -202,7 +242,15 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
     raw.served = await servedHashes(await c.evaluate(RESOURCES_JS).catch(() => []));
     if (target) await target.end?.();
     return finish(o, owner, raw, { target });
-  } finally { c.close(); }
+  } finally { c.close(); if (reloaded && o.park && !target) await parkAfterRun(port, owner); }
+}
+
+/** Park Safari after a run (I-047); a failure to park never fails the run: it says how to park by hand. */
+async function parkAfterRun(port, owner) {
+  try {
+    const r = await parkSafari({ port });
+    console.log(r.already ? 'parked: Safari shows no web page (--no-park keeps the page)' : `parked Safari on about:blank (--no-park keeps the page; open <url> before the next run)`);
+  } catch (e) { console.error(`warning: could not park Safari (${e.message}); run: node tools/iphone.mjs park --owner ${owner}`); }
 }
 
 /** iphone-runner's interim rule (one.sh): no timed phone run while a NORMAL chrome-measure hold runs (a goal A/B);
@@ -242,7 +290,8 @@ export function finish(o, owner, raw, { now = new Date(), target = null } = {}) 
     owner, date: now.toISOString(), device: target?.device ?? DEVICE, href: lanSafeUrl(raw.pre?.href), ua: raw.pre?.ua, vw: raw.pre?.vw, vh0: raw.pre?.vh0, dpr: raw.pre?.dpr,
     params: { settleMs: o.settleMs, ...o.params },
     wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: yReadsLabel(raw.ySource ?? o.params.ySource ?? 'raf', o.driver), yReadCounts: raw.yReads ?? null, settings: target?.settings ?? deviceSettings(raw.pre?.settings, raw.battery?.start, o.lowPower),
-    rafHz: doc.summary.rafHz, lowPowerSuspect: doc.summary.lowPowerSuspect, battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver, REPO, target?.toolFiles), error: raw.err || null,
+    rafHz: doc.summary.rafHz, lowPowerSuspect: doc.summary.lowPowerSuspect, battery: raw.battery ?? null,
+    sentinel: o.sentinel && !target ? sentinelVerdict(o.driver, doc.summary, raw.driverResult) : null, served: raw.served || null, tool: toolVersion(o.driver, REPO, target?.toolFiles), error: raw.err || null,
     ...(target?.extra ? target.extra() : {}),
   };
   const out = resolve(REPO, o.out || join('out', target?.outDir ?? 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));
@@ -259,6 +308,7 @@ export function finish(o, owner, raw, { now = new Date(), target = null } = {}) 
   if (raw.stateAtStart) console.log(`  at start: ${JSON.stringify(raw.stateAtStart)}; animations ${JSON.stringify(raw.pre?.anims)}`);
   for (const t of sm.tweens || []) console.log(`  tween from m=${t.from}: first dts ${t.dts.join(' ')}`);
   console.log(`  mutations ${JSON.stringify(sm.mutationTotals)}; crossings ${sm.crossings}; probe max ${sm.probeMsMax} ms, frames with probe > 1 ms: ${sm.framesProbeOver1ms}`);
+  if (meta.sentinel) console.log(`  heat sentinel [${meta.sentinel.driver}]: ${meta.sentinel.pass === null ? `NOT JUDGED (${meta.sentinel.note})` : meta.sentinel.pass ? 'PASS' : 'FAIL'} ${JSON.stringify(meta.sentinel.value)} (${meta.sentinel.criterion})${typeof raw.battery?.end?.temperatureC === 'number' ? `; battery ${raw.battery.end.temperatureC} °C at the end` : ''}`);
   if (raw.driverResult?.driver) { const d = raw.driverResult.driver; const f = (s) => (s ? `${s.frames}fr p50 ${s.p50} p95 ${s.p95} >50 ${s.gt50} max ${s.max}` : '-'); console.log(`  morph: moving ${f(d.moving)} | atOne ${f(d.atOne)} | atZero ${f(d.atZero)}`); }
   console.log(`saved ${out}`);
   if (raw.err) throw new Error(`driver failed in the page: ${raw.err} (partial run saved: ${out})`);

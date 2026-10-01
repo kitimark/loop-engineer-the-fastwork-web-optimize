@@ -5,6 +5,8 @@
 // Target.sendMessageToTarget -> Runtime.evaluate -> Target.dispatchMessageFromTarget); every expression runs in the
 // page's vm context. location.reload() builds a new page (new target id, like iOS). The server also serves the
 // page's one script, /_app/immutable/app.js, so the served-hash record can be checked.
+// `location.href = "<url>"` (wip.mjs navigate / parkSafari, I-047) lists the tab at <url> 50 ms later (logged as
+// {navigate: url}); the page itself stays, so a parked tab (about:blank) is what /json shows from then on.
 //
 //   node tests/fixtures/fake-run-proxy.mjs [--doc-height=2900] [--morph] [--cert-warning] [--port=N (default: any free port)]
 //   prints FAKE_WIP_PORT=<port>. Env FAKE_WIP_LOG=<file>: one JSON line per evaluate ({evaluate: head, len}) and reload.
@@ -18,7 +20,7 @@ const flag = (n) => process.argv.includes(`--${n}`);
 const LOG = process.env.FAKE_WIP_LOG;
 const log = (o) => { if (LOG) appendFileSync(LOG, JSON.stringify({ t: Date.now(), ...o }) + '\n'); };
 
-let gen = 1, page = null, base = null;
+let gen = 1, page = null, base = null, listed = null;
 function newPage() {
   if (page) page.stop();
   page = createPage({ docHeight: Number(arg('doc-height') || 2900), morph: flag('morph'), href: base, resources: [base + '_app/immutable/app.js'],
@@ -36,7 +38,7 @@ function frame(str) {
 const server = http.createServer((req, res) => {
   if (req.url === '/json') {
     res.setHeader('content-type', 'application/json');
-    return res.end(JSON.stringify([{ url: base, title: flag('cert-warning') ? 'This Connection Is Not Private' : 'fake run page', webSocketDebuggerUrl: `ws://127.0.0.1:${server.address().port}/devtools/page/1` }]));
+    return res.end(JSON.stringify([{ url: listed ?? base, title: listed ? '' : flag('cert-warning') ? 'This Connection Is Not Private' : 'fake run page', webSocketDebuggerUrl: `ws://127.0.0.1:${server.address().port}/devtools/page/1` }]));
   }
   if (req.url === '/_app/immutable/app.js') { res.setHeader('content-type', 'text/javascript'); return res.end(APP_JS); }
   if (req.url === '/') { res.setHeader('content-type', 'text/html'); return res.end('<title>fake run page</title>'); }
@@ -56,6 +58,8 @@ server.on('upgrade', (req, sock) => {
     if (inner.method === 'Runtime.evaluate') {
       const expr = inner.params.expression;
       log({ evaluate: expr.slice(0, 80), len: expr.length });
+      const nav = expr.match(/location\.href = ("[^"]*")/);
+      if (nav) { const u = JSON.parse(nav[1]); log({ navigate: u }); setTimeout(() => { listed = u; }, 50); }
       try {
         const v = page.evaluate(expr);
         const j = v === undefined ? undefined : JSON.parse(JSON.stringify(v));
