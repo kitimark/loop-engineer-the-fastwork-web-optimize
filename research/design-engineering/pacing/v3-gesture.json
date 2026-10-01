@@ -1,0 +1,44 @@
+{
+  "name": "pacing-v3-g",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "Pacing v3 driver G (research/design-engineering/pacing-result.md §5, de-unknowns-ux): open v3.html?state=<id>, then run this script; read __fwPacingV3Get() after it. Up strokes only (the page or the drag card moves up with the finger): 2 slow drags held on the glass, 3 medium strokes, 2 flings. The reload starts every run from a fresh page (fresh log, load from t=0). Same script for every state, so per-state numbers compare by script hash.",
+  "params": {
+    "x": 215,
+    "idleMs": 1500,
+    "dragPx": 360,
+    "dragMs": 2400,
+    "strokePx": 400,
+    "strokeMs": 600,
+    "flingPx": 450,
+    "flingMs": 160,
+    "endY": 14000
+  },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": "$idleMs" },
+
+    { "type": "mark", "name": "slow" },
+    { "type": "repeat", "times": 2, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 700 }
+    ] },
+
+    { "type": "mark", "name": "medium" },
+    { "type": "repeat", "times": 3, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$strokePx", "ms": "$strokeMs", "profile": "minjerk" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 700 }
+    ] },
+
+    { "type": "mark", "name": "fling" },
+    { "type": "repeat", "times": 2, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+      { "type": "pause", "ms": 800 }
+    ] },
+    { "type": "mark", "name": "end" }
+  ]
+}
