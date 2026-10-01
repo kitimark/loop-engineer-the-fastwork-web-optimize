@@ -25,6 +25,7 @@ analyze the render complexity of each topic". Lead of this note: `de-morph`.
 | `de-middle` | everything between, including the y ≈ 1970 pain-entry frame; page-wide mechanisms: blur, content-visibility, will-change, layers | [`middle.md`](middle.md) | done |
 | `de-hero` | hero window, y 0-900 (ring splash, orbit, exit, first scroll frames out of the hero, #people entry) | [`hero.md`](hero.md) | done; covers the iPhone hero block (v2: y≈50 gone, y≈700 +11 ms, §2D) |
 | `de-morph` (lead) | end of page: `#platform`, the nav morph panel, the touch scroll-jack/pin | [`morph-endpage.md`](morph-endpage.md) | done |
+| `de-apple` | the math behind apple.com's 14 scroll decisions (cost model, complexity class, trade-off each), a per-frame complexity budget for the iPhone, our hotspots against it | [`apple-math.md`](apple-math.md) | done; folds in the gh/gb/g driver result (§2.5) |
 
 ## Method (shared by the three notes)
 
@@ -78,6 +79,9 @@ to place.
 | - | **Section background switches as solid-colour composited layers** (`is-pain-dark`, `.commission.shrinking` on an empty `::before`, W3) | middle | 10-20 ms → < 2 ms per crossing (y ≈ 888, commission end) | low (z-order of the pseudo; frozen-frame diff) | fix-scroll-engine (N10) | middle R2 |
 | - | **Stop the per-frame feed repaint** (373 × 344 rect repainted every frame over y 1600-2500; cause unattributed) | middle | −2-5 ms on every frame there | low | profile-showcase owner (layout-animations scope) | middle R3 |
 | 5 | `--morph-fade` `@property inherits:false` (already in #6 v04) | end of page | -1-3 ms on m < 0.55 frames | none | fix-nav-morph | morph-endpage R4 |
+| a1 | **Apple's text-over-media frame for the morph = full R2**: the content box stays at its final size, `clip-path: inset(round)` (WebKit masks the backdrop with it: `updateMaskLayer` on the backdrop structural layer, vendor source), `color-mix` → opacity layer, `--morph` `inherits:false` on its ~26 consumers. gh is its first half; the box still resizing in gh (2.9 Mpx, 13× Apple's largest per-frame resize) is what remains | end of page | moving p50 gh 26 / g 35 → 16.7-25 ms; a steady 16.7 needs R7 too if ghb shows additive savings (serial commit back-pressure) | medium (bar ±1 px; R7 not pixel-identical: user's call) | fix-nav-morph | apple-math §2.5, §4 rank 1 |
+| a2 | **Range edge does O(1)** (Apple loads/arms by range with only a class or `src` swap) = middle R1 | middle | y≈1830 86-106 → 17-35 ms if e1/e2 confirm | none | fix-nav-morph | apple-math §2.3, §4 rank 2 |
+| a3 | **No bulk layer creation in a scroll/tween frame** (Apple: one element per crossing, `will-change: unset` ≤ 734 px) = morph R5(b) + h3, and no per-element windows on phone-sized cards (7-13 ms per flip) | end of page, middle | first tween frames 91-96 → ~50 ms | none | fix-nav-morph, fix-countdown-idle-raf, fix-scroll-engine | apple-math §2.6, §5 |
 
 **The first prediction failed (2026-10-01 09:27Z driver block).** De-morph predicted gh −30-45 ms and gb ≤ −10 ms;
 the measured gains were −7-10 and −2-7 ms. The reconciliation is in morph-endpage §6:
