@@ -11,10 +11,12 @@
 // DOM write, cleared at the start of each frame (the runner's own rAF callback, registered first) and by
 // every layout read (a read flushes layout); a layout read while the flag is set counts. An upper bound.
 //
-// Quiescence: `activity` counts value CHANGES (setProperty and style accessor writes whose value differs
-// from the current one, class/style attribute mutations whose value differs), recording or not; a loop
-// that rewrites the same value every frame is settled. quiesce() waits for 2 frames without activity
-// (capped at 40 frames).
+// Quiescence: `activity` counts value CHANGES seen by the plan's own write probes (setProperty,
+// styleWrite, inlineProp: a write that matches a probe and changes the value), recording or not. A loop
+// that rewrites the same value every frame is settled, and the page's unrelated animations (carousel,
+// countdown) don't hold a step open: the bench waits for the easing tails it measures. quiesce() waits
+// for 2 frames without activity (capped at 40 frames). Pilot, phone-invisible-shrink: counting every
+// class/style mutation of the page hit the cap on up to 10 of 30 steps.
 
 /** The page function. Stringified into the page; never called in Node except by the vm tests. */
 export function benchPage(cfg) {
@@ -44,8 +46,6 @@ export function benchPage(cfg) {
     B.restore.push(() => Object.defineProperty(obj, name, d));
     return true;
   }
-  /** Find the prototype on the chain of `o` that owns `name`. */
-  const owner = (o, name) => { for (let p = o; p; p = Object.getPrototypeOf(p)) if (Object.getOwnPropertyDescriptor(p, name)) return p; return null; };
 
   // ---- which element owns a CSSStyleDeclaration (for receiver selectors) ----------------------------
   const declEl = new WeakMap();
@@ -64,11 +64,14 @@ export function benchPage(cfg) {
     patch(DECL, 'setProperty', (orig) => function (prop, value, prio) {
       if (!B.paused) {
         markWrite();
-        try { if (getPV.call(this, prop) !== String(value == null ? '' : value).trim()) B.activity++; } catch (e) {}
+        let changed = true;
+        try { changed = getPV.call(this, prop) !== String(value == null ? '' : value).trim(); } catch (e) {}
+        let seen = false;
         for (const id of spProbes) {
           const p = probes[id];
           if (p.prop !== prop) continue;
           if (p.selector && !matches(declEl.get(this), p.selector)) continue;
+          seen = true;
           if (p.noop) {
             let same = false;
             try { same = getPV.call(this, prop) === String(value == null ? '' : value).trim() && (getPP.call(this, prop) || '') === (prio || ''); } catch (e) {}
@@ -76,6 +79,7 @@ export function benchPage(cfg) {
           }
           hit(id);
         }
+        if (seen && changed) B.activity++;
       }
       return Reflect.apply(orig, this, arguments);
     });
@@ -84,9 +88,15 @@ export function benchPage(cfg) {
   }
   // style accessors (el.style.height = ...): wrap the setters on the prototype that owns each one
   const swProbes = ids.filter((id) => probes[id].kind === 'styleWrite');
-  const sample = W.document && W.document.documentElement && W.document.documentElement.style;
+  // the prototypes that may own the camelCase accessors (CSSStyleProperties in newer engines); never an
+  // element's style object: at document start there may be no documentElement yet
+  const styleProtos = [];
+  for (const C of [W.CSSStyleProperties, W.CSS2Properties, W.CSSStyleDeclaration]) {
+    for (let o = C && C.prototype; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) if (styleProtos.indexOf(o) < 0) styleProtos.push(o);
+  }
+  const accessorOwner = (prop) => styleProtos.find((o) => Object.getOwnPropertyDescriptor(o, prop)) || null;
   const wrapAccessor = (prop, onSet) => {
-    const o = sample && owner(sample, prop);
+    const o = accessorOwner(prop);
     const get = o && Object.getOwnPropertyDescriptor(o, prop).get;
     if (!o || !patch(o, prop, (set) => function (v) {
       let changed = true;
@@ -105,14 +115,15 @@ export function benchPage(cfg) {
     if (!wrapAccessor(p.prop, (decl, changed) => {
       if (B.paused) return;
       markWrite();
-      if (changed) B.activity++;
-      for (const x of mine) if (!probes[x].selector || matches(declEl.get(decl), probes[x].selector)) hit(x);
+      let seen = false;
+      for (const x of mine) if (!probes[x].selector || matches(declEl.get(decl), probes[x].selector)) { hit(x); seen = true; }
+      if (seen && changed) B.activity++;
     })) err('styleWrite: no style accessor "' + p.prop + '" on this browser');
   }
-  if (kinds.has('readAfterWrite') && sample) {
+  if (kinds.has('readAfterWrite')) {
     // every other style accessor only marks the frame dirty
     const seen = new Set(wrappedAcc);
-    for (let o = sample; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
+    for (const o of styleProtos) {
       for (const name of Object.getOwnPropertyNames(o)) {
         if (seen.has(name) || name === 'cssText' || name === 'length' || name === 'parentRule') continue;
         const d = Object.getOwnPropertyDescriptor(o, name);
@@ -180,7 +191,7 @@ export function benchPage(cfg) {
     B.restore.push(() => { W[type] = orig; });
   }
 
-  // ---- attribute mutations: inlineProp probes + quiescence activity ----------------------------------
+  // ---- style attribute mutations: inlineProp probes (and their quiescence activity) -------------------
   const ipProbes = ids.filter((id) => probes[id].kind === 'inlineProp');
   const propIn = (style, prop) => { const m = String(style || '').match(new RegExp('(?:^|;)\\s*' + prop.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&') + '\\s*:\\s*([^;]*)')); return m ? m[1].trim() : null; };
   let mo = null;
@@ -196,19 +207,18 @@ export function benchPage(cfg) {
       per[m.attributeName] = m.oldValue;
     }
     for (const m of list) {
-      if (!B.paused && m.oldValue !== m.__new) B.activity++; // only real changes: same-value rewrites never settle otherwise
       if (m.attributeName !== 'style') continue;
       for (const id of ipProbes) {
         const p = probes[id];
         if (!matches(m.target, p.selector)) continue;
-        if (propIn(m.oldValue, p.prop) !== propIn(m.__new, p.prop)) hit(id);
+        if (propIn(m.oldValue, p.prop) !== propIn(m.__new, p.prop)) { hit(id); if (!B.paused) B.activity++; }
       }
     }
   };
   const startMo = () => {
-    if (mo || typeof W.MutationObserver !== 'function' || !W.document || !W.document.documentElement) return;
+    if (!ipProbes.length || mo || typeof W.MutationObserver !== 'function' || !W.document || !W.document.documentElement) return;
     mo = new W.MutationObserver(onMutations);
-    mo.observe(W.document.documentElement, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['style', 'class'] });
+    mo.observe(W.document.documentElement, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['style'] });
   };
   startMo();
   if (!mo && W.document && W.document.addEventListener) W.document.addEventListener('DOMContentLoaded', startMo);

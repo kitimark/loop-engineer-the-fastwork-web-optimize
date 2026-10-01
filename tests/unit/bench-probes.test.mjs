@@ -103,7 +103,7 @@ test('setProperty: prop filter, receiver selector, no-op writes; counts only whi
   p.run('card.style.setProperty("--other", 1)');
   p.run('__bench.internal(() => future.style.setProperty("--future-shrink", 9))'); // runner's own: never counted
   assert.deepEqual(p.val(READ('w')), { label: 'w', counts: { all: 3, onFuture: 2, noop: 1 }, frames: 0, errors: [] });
-  assert.equal(p.ctx.__bench.activity - a0, 3, 'value changes are quiescence activity (the no-op write and the runner\'s own are not)');
+  assert.equal(p.ctx.__bench.activity - a0, 2, 'value changes seen by a write probe are quiescence activity (not the no-op write, the unprobed --other, or the runner\'s own)');
   p.run('future.style.setProperty("--future-shrink", 0.1)');
   assert.deepEqual(p.val(READ('w')).counts, { all: 3, onFuture: 2, noop: 1 }, 'not recording after read');
 });
@@ -127,7 +127,21 @@ test('styleWrite wraps the style accessor setter; inlineProp counts changes of o
   const r = p.val(READ('w')); // read() flushes the pending records itself
   assert.deepEqual(r.counts, { pe: 1, h: 1, missing: 0, plat: 2 });
   assert.deepEqual(r.errors, ['styleWrite: no style accessor "noSuchProp" on this browser']);
-  assert.deepEqual(p.val('observers[0].opts'), { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['style', 'class'] });
+  assert.deepEqual(p.val('observers[0].opts'), { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['style'] });
+});
+
+test('installed at document start (no documentElement yet): style accessors and DOM writes are still wrapped; the observer starts at DOMContentLoaded', () => {
+  const p = makePage();
+  p.run('var dcl = []; document.addEventListener = (t, f) => dcl.push([t, f]); var realRoot = document.documentElement; document.documentElement = null');
+  p.install({ h: { kind: 'styleWrite', prop: 'height' }, raw: { kind: 'readAfterWrite' }, plat: { kind: 'inlineProp', selector: '.start-selling-future', prop: '--p' } });
+  assert.equal(p.run('observers.length'), 0, 'no root to observe yet');
+  p.run('document.documentElement = realRoot; for (const [t, f] of dcl) if (t === "DOMContentLoaded") f()');
+  assert.equal(p.run('observers.length'), 1);
+  p.run(RESET('w'));
+  p.run('card.style.height = "3px"; card.getBoundingClientRect(); card.setAttribute("x", 1); card.getBoundingClientRect()');
+  p.run('mutate(future, "style", "--p: 1", "--p: 2")');
+  assert.deepEqual(p.val(READ('w')).counts, { h: 1, raw: 2, plat: 1 });
+  assert.deepEqual(p.val(READ('w')).errors, []);
 });
 
 test('layoutRead: every method, method filter, subtree selector; getters return the original values', () => {
@@ -212,7 +226,7 @@ test('animations: distinct running animations whose target is under the selector
 
 test('quiesce: resolves after 2 frames without activity, capped at 40 frames with continuous writes', async () => {
   const p = makePage();
-  p.install({ w: { kind: 'setProperty', prop: '--x' } });
+  p.install({ w: { kind: 'setProperty', prop: '--x' }, h: { kind: 'styleWrite', prop: 'height' }, ip: { kind: 'inlineProp', selector: '.card', prop: '--p' } });
   let q = p.run(QUIESCE());
   p.frame(); p.frame(); p.frame();
   assert.deepEqual(JSON.parse(JSON.stringify(await q)), { frames: 2, capped: false });
@@ -221,11 +235,16 @@ test('quiesce: resolves after 2 frames without activity, capped at 40 frames wit
   assert.deepEqual(JSON.parse(JSON.stringify(await q)), { frames: 5, capped: true });
   // the same value written every frame (a loop that re-applies a transform) is settled
   q = p.run(QUIESCE(2, 5));
-  for (let i = 0; i < 6; i++) { p.run('future.style.setProperty("--x", "same"); card.style.height = "5px"; mutate(card, "style", "x", "x"); deliver()'); p.frame(); }
+  for (let i = 0; i < 6; i++) { p.run('future.style.setProperty("--x", "same"); card.style.height = "5px"; mutate(card, "style", "--p: 1", "--p: 1"); deliver()'); p.frame(); }
   assert.deepEqual(JSON.parse(JSON.stringify(await q)), { frames: 3, capped: false });
+  // the page's own animations (unprobed properties, other attributes) never hold a step open
+  q = p.run(QUIESCE(2, 5));
+  for (let i = 0; i < 6; i++) { p.run(`future.style.setProperty("--other", ${i}); card.style.width = "${i}px"; mutate(card, "class", "a", "b${i}"); deliver()`); p.frame(); }
+  assert.deepEqual(JSON.parse(JSON.stringify(await q)), { frames: 2, capped: false });
+  // a probed inline custom property that changes is activity
   q = p.run(QUIESCE(2, 40));
   const a0 = p.ctx.__bench.activity;
-  p.run('mutate(card, "class", "card", "card on"); deliver()'); // attribute changes are activity too
+  p.run('mutate(card, "style", "--p: 1", "--p: 2"); deliver()');
   assert.equal(p.ctx.__bench.activity - a0, 1);
   for (let i = 0; i < 4; i++) p.frame();
   assert.equal((await q).capped, false);
@@ -261,6 +280,7 @@ test('a bad selector is reported in errors and never matches; uninstall restores
     h: { kind: 'styleWrite', prop: 'height' },
     raw: { kind: 'readAfterWrite' },
     mm: { kind: 'matchMedia', query: '(x)' }, raf: { kind: 'raf' }, t: { kind: 'timer' }, qs: { kind: 'querySelector', selector: '.a' },
+    ip: { kind: 'inlineProp', selector: '.card', prop: '--p' }, // the mutation observer runs only for inlineProp probes
   });
   assert.notEqual(p.run('CSSStyleDeclaration.prototype.setProperty'), before.sp);
   p.run(RESET('w'));

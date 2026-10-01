@@ -14,7 +14,7 @@ import { makeFixtureHome } from '../fixtures/baseline.mjs';
 const FAKE = join(TESTS, 'fixtures', 'fake-chrome.mjs');
 let repo;
 const fix = (...a) => node(join(repo.wt, 'tools', 'fix.mjs'), a, { cwd: repo.wt });
-const benchEnv = (name) => ({ CHROME: FAKE, FAKE_CHROME_BENCH: '1', FW_STATE_DIR: join(repo.root, `state-${name}`), FAKE_CHROME_LOG: join(repo.root, `${name}.jsonl`) });
+const benchEnv = (name) => ({ CHROME: FAKE, FAKE_CHROME_BENCH: '1', FW_BENCH_TEST_FAST: '1', FW_STATE_DIR: join(repo.root, `state-${name}`), FAKE_CHROME_LOG: join(repo.root, `${name}.jsonl`) });
 const bench = (name, ...a) => nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), a, { cwd: repo.wt, env: benchEnv(name), timeout: 110000 });
 const results = (t) => JSON.parse(readFileSync(join(repo.wt, 'fixes', t, 'bench-results.json'), 'utf8'));
 const readLog = (f) => (existsSync(f) ? readFileSync(f, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []);
@@ -100,7 +100,7 @@ async function passAndLive(live, mtime) {
   assert.match(m.toolsSha, /^[0-9a-f]{12}$/);
   assert.equal(m.chrome, 'FakeChrome/1.0');
   assert.match(m.baselineManifest, /^[0-9a-f]{16}$/);
-  assert.deepEqual([m.repeat, m.viewports, m.on, m.served.files], [2, ['mobile'], null, 1]);
+  assert.deepEqual([m.repeat, m.viewports, m.on, m.served.files, m.timing], [2, ['mobile'], null, 1, 'test-fast']);
   assert.equal(typeof m.host.load1Start, 'number');
   assert.deepEqual(m.checks.map((c) => [c.id, c.verdict, c.baseline.values, c.patched.values]), [['nav-cached', 'PASS', [30, 30], [0, 0]], ['fewer-layouts', 'PASS', [10, 10], [2, 2]]]);
   // ABBA per repeat: baseline, patched, then patched, baseline; unthrottled; probes installed before any page script
@@ -170,6 +170,31 @@ test('mech: VACUOUS when the baseline no longer shows the mechanism; FLAKY at th
   assert.equal(r.code, 3, r.out);
   assert.match(r.stdout, /FLAKY +nav-cached .*quiescence cap/);
   assert.match(r.stdout, /^MECH FLAKY flaky-nav/m);
+});
+
+test('mech: --max-seconds stops at the budget (exit 124) and keeps the finished sessions as mechPartial, never as mech', async () => {
+  const sl = spec('slow-nav');
+  sl.segments.page.step = 50; // 7 steps; the patched page takes 1.5 s per quiesce: >= 10 s, past the 8 - 3 s deadline
+  makeTopic('slow-nav', { ...PATCH_FAKE, quiesceMs: 1500 }, { benchSpec: sl });
+  const r = await bench('budget', 'mech', 'slow-nav', '--max-seconds', '8', '--repeat', '1');
+  assert.equal(r.code, 124, r.out);
+  assert.match(r.stderr, /the short-lane budget of 8 s ran out/);
+  assert.match(r.stderr, /partial record \(finished sessions only\) -> fixes\/slow-nav\/bench-results.json mechPartial/);
+  // the fast baseline session finished (its per-window counts are logged and kept); the slow patched one did not
+  assert.match(r.stdout, /slow-nav:page: \d+ steps, 60 frames; navQs 30, layouts \d+/);
+  const res = results('slow-nav');
+  assert.equal(res.mech, undefined, 'a partial run is never a mech record');
+  const p = res.mechPartial;
+  assert.deepEqual([p.verdict, p.maxSeconds, p.repeat, p.viewports], ['BUDGET', 8, 1, ['mobile']]);
+  assert.equal(p.sessions.mobile.baseline.length, 1);
+  assert.equal(p.sessions.mobile.baseline[0].windows['slow-nav:page'].counts['slow-nav:navQs'], 30);
+  assert.equal(p.sessions.mobile.patched.length, 0);
+  const lg = JSON.parse(readFileSync(join(benchEnv('budget').FW_STATE_DIR, 'locks', 'chrome-measure.last-grant.json'), 'utf8'));
+  assert.deepEqual([lg.short, lg.maxSec], [true, 8]);
+  const bad = await bench('budget-bad', 'mech', 'slow-nav', '--max-seconds', '300');
+  assert.equal(bad.code, 2, bad.out);
+  assert.match(bad.stderr, /--max-seconds must be 5-180/);
+  rmSync(join(repo.wt, 'fixes', 'slow-nav'), { recursive: true, force: true });
 });
 
 test('mech: a patch made on another mirror is BASELINE-CHANGED; one that does not apply is a CONFLICT', async () => {

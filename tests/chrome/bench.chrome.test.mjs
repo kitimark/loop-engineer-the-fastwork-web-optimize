@@ -1,16 +1,20 @@
 // OPT-IN (npm run test:chrome): a real `bench.mjs mech` in a temp repo + worktree over the fixture baseline,
-// through the REAL chrome-measure lock in the short lane. The fixture page calls
+// through the REAL chrome-measure lock: the file holds it once (chromeLock, I-022) and bench.mjs
+// re-enters that hold (lock.env). The fixture page calls
 // document.querySelector('.start-selling-top-nav') every frame; the topic's overlay caches it. Checks the
 // real page probes (querySelector, the style accessor wrapper on this Chrome, layout reads, perfMetrics),
 // parity on body[data-y], that a deliberately wrong expectation fails, and that the stepped scroll ends.
-import { test } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdirSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
-import { makeTempRepo, node, nodeAsync, run, REPO } from '../helpers.mjs';
+import { makeTempRepo, node, nodeAsync, run, REPO, chromeLock } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
 
 const common = run('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: REPO }).stdout.trim();
+const lock = chromeLock(`test-chrome-bench-${process.pid}`, { cmd: 'bench.chrome test' });
+before(() => lock.acquire(), { timeout: Infinity });
+after(() => lock.release());
 
 test('bench mech with real Chrome: counts discriminate, parity holds, a wrong expectation fails', async () => {
   const repo = makeTempRepo({ worktree: 'bench-chrome' });
@@ -45,10 +49,11 @@ test('bench mech with real Chrome: counts discriminate, parity holds, a wrong ex
     parity: [{ viewport: 'mobile', segment: 'page', attrs: [['body', 'data-y']] }],
   };
   writeFileSync(join(repo.wt, 'fixes', 'nav-cache', 'bench.json'), JSON.stringify(spec, null, 1));
-  const env = { FW_STATE_DIR: join(common, 'fastwork-mirror'), FW_LOCK_OWNER: `test-chrome-bench-${process.pid}` };
+  const env = { ...lock.env, FW_STATE_DIR: join(common, 'fastwork-mirror'), FW_LOCK_OWNER: `test-chrome-bench-${process.pid}` };
   const t0 = Date.now();
-  const r = await nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), ['mech', 'nav-cache'], { cwd: repo.wt, env, timeout: 3600000 });
+  const r = await nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), ['mech', 'nav-cache'], { cwd: repo.wt, env, timeout: 240000 });
   assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.out, /\[lock chrome-measure\] busy/, 'bench.mjs re-entered the hold instead of queueing');
   const res = JSON.parse(readFileSync(join(repo.wt, 'fixes', 'nav-cache', 'bench-results.json'), 'utf8')).mech;
   const byId = Object.fromEntries(res.checks.map((c) => [c.id, c]));
   for (const c of res.checks) assert.equal(c.verdict, 'PASS', `${c.id}: ${JSON.stringify(c)}`);
@@ -58,7 +63,7 @@ test('bench mech with real Chrome: counts discriminate, parity holds, a wrong ex
   assert.ok(res.parity[0].steps >= 3, 'the stepped scroll walked the page');
   assert.match(res.chrome, /Chrome\/\d+/);
   for (const side of ['baseline', 'patched']) for (const s of res.sessions.mobile[side]) assert.deepEqual(s.errors, [], 'no probe or page errors');
-  console.log(`bench mech (real Chrome): ${res.seconds} s, nav-cached baseline ${byId['nav-cached'].baseline.values}, transform ${byId['transform-still-written'].baseline.values} -> ${byId['transform-still-written'].patched.values}, capped ${JSON.stringify(res.sessions.mobile.baseline.map((s) => s.capped))}; wall ${Math.round((Date.now() - t0) / 1000)} s incl. queue`);
+  console.log(`bench mech (real Chrome): ${res.seconds} s, nav-cached baseline ${byId['nav-cached'].baseline.values}, transform ${byId['transform-still-written'].baseline.values} -> ${byId['transform-still-written'].patched.values}, capped ${JSON.stringify(res.sessions.mobile.baseline.map((s) => s.capped))}; wall ${Math.round((Date.now() - t0) / 1000)} s`);
   assert.ok(res.seconds < 60, `mech took ${res.seconds} s`);
 
   // a deliberately wrong expectation: FAIL, exit 1
@@ -66,7 +71,7 @@ test('bench mech with real Chrome: counts discriminate, parity holds, a wrong ex
   mkdirSync(join(repo.wt, 'fixes', t2));
   cpSync(join(repo.wt, 'fixes', 'nav-cache', 'patch.diff'), join(repo.wt, 'fixes', t2, 'patch.diff'));
   writeFileSync(join(repo.wt, 'fixes', t2, 'bench.json'), JSON.stringify({ ...spec, topic: t2, spots: undefined, mechanism: [{ ...spec.mechanism[0], patched: '>= 1' }] }, null, 1));
-  const w = await nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), ['mech', t2, '--repeat', '1'], { cwd: repo.wt, env, timeout: 3600000 });
+  const w = await nodeAsync(join(repo.wt, 'tools', 'bench.mjs'), ['mech', t2, '--repeat', '1'], { cwd: repo.wt, env, timeout: 240000 });
   assert.equal(w.code, 1, w.out);
   assert.match(w.stdout, /FAIL +nav-cached/);
 });

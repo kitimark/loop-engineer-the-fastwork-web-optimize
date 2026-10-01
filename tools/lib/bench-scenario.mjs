@@ -12,6 +12,10 @@ export const VIEWPORTS = {
   mobile: { width: 430, height: 932, deviceScaleFactor: 3, mobile: true },
 };
 export const CDP_KINDS = ['perfMetrics', 'layoutsPerFrame', 'listeners'];
+// Page settle times. FW_BENCH_TEST_FAST=1 shortens them for the fake-Chrome tests only; it is recorded in
+// every result (bench.mjs: timing / setting "test-fast"), so such a result never passes for a measured one.
+export const TEST_FAST = process.env.FW_BENCH_TEST_FAST === '1';
+export const TIMING = TEST_FAST ? { quietA: 100, quietB: 100, settleB: 0, warmB: 0 } : { quietA: 1500, quietB: 2000, settleB: 1500, warmB: 1000 };
 const QUIET_FRAMES = 2, QUIET_CAP = 40;
 
 /** A fresh isolated page with the viewport, optional probe source and Performance domain. */
@@ -57,7 +61,7 @@ export async function tierASession(cdp, url, plan, { settleMs = 10000, log = () 
   const perf = Object.values(cdpProbes).some((p) => p.kind !== 'listeners');
   const page = await openPage(cdp, { viewport: plan.viewport, source: installSource({ probes: pageProbes }), perf });
   try {
-    await gotoAndSettle(page, url, { quietMs: 1500 });
+    await gotoAndSettle(page, url, { quietMs: TIMING.quietA });
     await page.eval(SETTLE(settleMs), { timeout: settleMs + 5000 });
     await page.eval(SCROLL_TO(0));
     await page.eval(QUIESCE(QUIET_FRAMES, QUIET_CAP));
@@ -122,7 +126,8 @@ export async function tierASession(cdp, url, plan, { settleMs = 10000, log = () 
       out.windows[w.label] = { counts, frames: r.frames, steps, capped };
       if (wantSnap) out.parity[w.label] = snaps;
       out.steps += steps; out.capped += capped;
-      log(`  ${w.label}: ${steps} steps${capped ? ` (${capped} at the quiescence cap)` : ''}, ${r.frames} frames`);
+      const short = (v) => (typeof v === 'number' && !Number.isInteger(v) ? Math.round(v * 100) / 100 : v);
+      log(`  ${w.label}: ${steps} steps${capped ? ` (${capped} at the quiescence cap)` : ''}, ${r.frames} frames; ${Object.entries(counts).map(([k, v]) => `${k.slice(k.indexOf(':') + 1)} ${short(v)}`).join(', ')}`);
     }
     out.errors.push(...(await page.eval(ERRORS)), ...page.errors.map((e) => 'page ' + e));
     return out;
@@ -135,11 +140,12 @@ const TIER_B_METRICS = ['LayoutDuration', 'RecalcStyleDuration', 'ScriptDuration
 /** Per-scenario Tier B metrics from getMetrics deltas (durations in ms) and the frame logger. */
 export function gainMetrics(m0, m1, frames) {
   const d = (k) => (m1[k] ?? 0) - (m0[k] ?? 0);
+  const ms = (x) => Math.round(1e6 * x) / 1000; // seconds -> ms, rounded to 1 us
   const s = [...frames].sort((a, b) => a - b);
   return {
-    styleLayoutMs: 1000 * (d('RecalcStyleDuration') + d('LayoutDuration')),
-    layoutMs: 1000 * d('LayoutDuration'), recalcStyleMs: 1000 * d('RecalcStyleDuration'),
-    scriptMs: 1000 * d('ScriptDuration'), taskMs: 1000 * d('TaskDuration'),
+    styleLayoutMs: ms(d('RecalcStyleDuration') + d('LayoutDuration')),
+    layoutMs: ms(d('LayoutDuration')), recalcStyleMs: ms(d('RecalcStyleDuration')),
+    scriptMs: ms(d('ScriptDuration')), taskMs: ms(d('TaskDuration')),
     layoutCount: d('LayoutCount'), recalcStyleCount: d('RecalcStyleCount'),
     gt20: frames.filter((f) => f > 20).length, p95: s.length ? s[Math.min(s.length - 1, Math.floor(0.95 * s.length))] : 0,
     frames: frames.length,
@@ -152,17 +158,17 @@ export { TIER_B_METRICS };
  * (top of page and a short idle between them). `scenarios`: [{key, segment|spot def, kind}].
  * Returns {scenarios: {key: metrics}}.
  */
-export async function tierBRun(cdp, url, { viewport, cpu, timeDomain = 'timeTicks', scenarios, dwellFrames = 20, settleMs = 1500, beforeScenario = async () => {}, afterScenario = async () => {} }) {
+export async function tierBRun(cdp, url, { viewport, cpu, timeDomain = 'timeTicks', scenarios, dwellFrames = 20, settleMs = TIMING.settleB, beforeScenario = async () => {}, afterScenario = async () => {} }) {
   const page = await openPage(cdp, { viewport, perf: true, timeDomain });
   try {
     await page.send('Page.addScriptToEvaluateOnNewDocument', { source: LOGGER });
     await page.send('Page.bringToFront').catch(() => {});
-    await gotoAndSettle(page, url, { quietMs: 2000 });
+    await gotoAndSettle(page, url, { quietMs: TIMING.quietB });
     await sleep(settleMs);
     await page.eval(SETTLE(10000), { timeout: 15000 });
     const geometry = await page.eval(GEOMETRY({ segments: Object.fromEntries(scenarios.filter((s) => s.segment).map((s) => [s.key, s.segment])), spots: Object.fromEntries(scenarios.filter((s) => s.spot).map((s) => [s.key, s.spot])) }));
     await page.send('Emulation.setCPUThrottlingRate', { rate: cpu });
-    await sleep(1000);
+    await sleep(TIMING.warmB);
     const out = { scenarios: {} };
     const frames = (n) => `new Promise((r) => { let i = 0; const f = () => (++i >= ${Number(n)} ? r(i) : requestAnimationFrame(f)); requestAnimationFrame(f); })`;
     for (const s of scenarios) {

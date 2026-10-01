@@ -12,7 +12,8 @@
 //      FAKE_CHROME_IGNORE_SIGTERM=1     ignore SIGTERM (a browser that will not quit; close() must SIGKILL it)
 //      FAKE_CHROME_BENCH=1  tools/bench.mjs mode: on Page.navigate, fetch <origin>/bench-fake.json from the
 //        served page (so the baseline and the overlay can differ) and answer the bench probes from it:
-//        {windows: {label: {probeId: n}}, probes: {probe: n} (any window), frames, snapshot, capped, errors, listeners, metricsStep: {name: n}}
+//        {windows: {label: {probeId: n}}, probes: {probe: n} (any window), frames, snapshot, capped, errors, listeners, metricsStep: {name: n},
+//         quiesceMs: n (each quiesce() answers after n ms, a slow page for the short-lane budget)}
 import http from 'node:http';
 import https from 'node:https';
 import { createHash } from 'node:crypto';
@@ -110,6 +111,8 @@ function handle(msg, send) {
     case 'Runtime.evaluate': {
       if (params.returnByValue === false) return reply({ result: { type: 'object', objectId: `obj${++n}` } });
       const v = (BENCH ? benchEvaluate(params.expression, sessionId) : undefined) ?? evaluate(params.expression);
+      const wait = BENCH && params.expression.startsWith('window.__bench.quiesce(') ? bench.get(sessionId)?.data.quiesceMs : 0;
+      if (wait) return void setTimeout(() => reply({ result: { type: typeof v, value: v } }), wait);
       return reply({ result: v === undefined ? { type: 'undefined' } : { type: typeof v, value: v } });
     }
     case 'Page.navigate': {

@@ -19,6 +19,7 @@
     "test:unit": "node tools/scope.mjs && node --test --test-concurrency=2 --test-timeout=120000 \"tests/unit/*.test.mjs\"",
     "test:scope": "node tools/scope.mjs",
     "test:hooks": "node --test \"tests/hooks/*.test.mjs\"",
+    "test:bench": "node tools/bench.mjs reconfirm",
     "test:chrome": "node tools/lock.mjs run chrome-measure --short --max-seconds 300 --owner test-chrome -- node --test --test-concurrency=1 --test-timeout=600000 \"tests/chrome/*.test.mjs\"",
     "test:all": "npm test && npm run test:chrome",
     "setup": "git config core.hooksPath .githooks"
