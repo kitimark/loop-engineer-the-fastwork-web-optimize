@@ -146,6 +146,15 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    frozen; iphone-runner runs each vs aw1-10c, n=3 through y 1700-2200 plus one full-page pass; (3) the ablation that
    removes the frame names the cause class -> real fix (pre-warm / hysteresis / smaller blur) -> Chrome parity + mech
    (short lane) -> iPhone A/B. hero-exit resumes for the y≈50 frame once N10 has a cause.
+   **I-018 attribution, first traced run (2026-10-01 07:42-07:44Z, aw1-10c, n=1, traced: direction only; I-018 landed
+   d61231e):** trace complete (no data loss), logger/trace windows identical (747 frames, 34 > 20 ms). 5 frames > 34 ms:
+   +1100 ms 42.5 style (429 elements restyled); +2300 ms 42.1 paint (+ some script); **+2475 ms 50.2 "other"** (24.8 ms
+   RunTask self time, no timeline child = un-instrumented work, not idle); +4817 ms 49.3 "other" (37.8 ms self time);
+   **+7042 ms 66.5 script** (one 55 ms FunctionCall = gtag `onscrollend`, the N11 vendor frame; same in the baseline at
+   66.4 ms with a 67 ms gtag LoAF). offMain (compositor/raster/GPU) 0-2 ms everywhere; layout is gone from the long frames
+   (baseline: a 100 ms layout-dominated frame among 13 frames > 34 ms). Chrome next targets: (1) the two "other" frames
+   (needs V8 sampling + GC categories and `--frame-log` for scrollY), (2) the 429-element style recalc at +1.1 s; the
+   gtag frame stays the vendor residual.
    **Order from 07:07Z:** N13 confirm hold -> N10 (iPhone-led) -> /10d -> hero-exit (y≈50) -> countdown 05/08; I-018's traced
    run ahead of later normals; N12 + #6 land after the finger verdict. -> N12 `--on aw1-10c` -> /10d -> hero-exit -> countdown 05/08; I-018's traced run goes
    ahead of any later normal once re-reviewed (N13 before N12: > 100 ms frame class before the 20-34 ms band, principle 1).
