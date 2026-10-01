@@ -193,7 +193,7 @@ Phone question (merged P14 boundary block, sent to mgmt-ops-5 at 12:5xZ; agreed 
 - Driver W at 430x775: 6 s idle at y 0, then top → y≥2500, with a Timeline on every counted run.
 - Frame columns: dt>50 / dt>34 with the ±4 ms counts (CLAUDE.md 668b612).
 - Read per rotator tick and per reveal flip: the Layout root quad (viewport, carousel or #people) and its duration.
-- Reading, pre-registered in de-pm-hero's postmortem-hero.md §7.7 (84bb7a2) and agreed by arch-claims. A self-dirtied
+- Reading, pre-registered in de-pm-hero's postmortem-hero.md §7.7 (6ed6767, was 84bb7a2 before rebase) and agreed by arch-claims. A self-dirtied
   renderer's climb starts at its container, so `contain: strict` on the carousel cannot stop a self-dirty; only
   the #people boundary can.
   - C view, V1 carousel: W1. The phone's WebKit did not treat the carousel as a boundary in C (the WebKit build
