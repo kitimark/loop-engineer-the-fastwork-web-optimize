@@ -15,7 +15,7 @@
 //        FW_SIM_SESSION and FW_SIM_UDID set, then ALWAYS stops the proxy and shuts the Simulator down
 //        (window shown, the default: Simulator.app shows the device; arch-sim's pilot: headless had stray >34 ms gaps)
 //   # inside a session (its <cmd>, e.g. sh -c '...'):
-//   node tools/sim.mjs open <url>                              simctl openurl, wait until Safari lists it, screenshot to out/sim/
+//   node tools/sim.mjs open <url> [--out f.png]                simctl openurl, wait until Safari lists it, screenshot to out/sim/
 //   node tools/sim.mjs scroll [--label l] [--out f]            iphone.mjs scroll's probe and sequence -> out/sim/<owner>-<label>-<ts>.json
 //   node tools/sim.mjs record [--seconds 25] [--label l]       iphone.mjs record's frame logger
 //   node tools/sim.mjs run --driver scroll|window|morph ...    iphone.mjs run (std probe, fw-iphone-run/1) -> out/sim/<owner>-run-<label>-<ts>.json
@@ -25,7 +25,7 @@
 //   # debugging parts of `session` (boot: in your own normal hold; shutdown / proxy stop: always allowed)
 //   node tools/sim.mjs boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop
 import { mkdirSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
 import * as S from './lib/sim.mjs';
 
@@ -127,8 +127,8 @@ async function openCmd(session, owner) {
     const landed = await c.evaluate(LANDED_JS);
     const problem = landedProblem(landed, target.url, info);
     if (problem) throw new Error(problem.replace('from the iPhone (same Wi-Fi, LAN URL, not localhost)', 'from the Simulator (it shares the Mac\'s network: http://localhost:<port>/ works)'));
-    const shot = resolve(REPO, join('out', 'sim', `${owner}-open-${Date.now()}.png`));
-    mkdirSync(join(REPO, 'out', 'sim'), { recursive: true });
+    const shot = resolve(REPO, opt('out', join('out', 'sim', `${owner}-open-${Date.now()}.png`)));
+    mkdirSync(dirname(shot), { recursive: true });
     const s = S.simctl(['io', cfg.udid, 'screenshot', shot]);
     log(`Safari (Simulator) now on ${landed.href}${s.status === 0 ? `; screenshot ${shot}` : '; screenshot failed'}`);
   } finally { c.close(); }

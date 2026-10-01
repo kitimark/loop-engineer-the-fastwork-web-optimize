@@ -3,7 +3,8 @@
 // tool and point $FW_LSOF / $FW_IDEVICE_ID / $FW_OPEN / $FW_OSASCRIPT at it):
 //   lsof       `lsof -aUc launchd_sim -Fn`: one webinspectord_sim socket while a device in $FAKE_SIMCTL_STATE is
 //              booted with Safari launched ($FAKE_LSOF_SOCKETS=2: two, as with two booted Simulators); exit 1 if none.
-//   idevice_id `idevice_id -l`: the comma list $FAKE_IDEVICE_IDS one per line; $FAKE_IDEVICE_ID_FAIL=1: exit 1.
+//   idevice_id `idevice_id -l` (USB): the comma list $FAKE_IDEVICE_IDS one per line; `-n` (network): $FAKE_IDEVICE_NET_IDS;
+//              $FAKE_IDEVICE_ID_FAIL=1 (both) / -l / -n: that call exits 1.
 //   open       `open -a Simulator --args ...`: Simulator.app runs ($FAKE_MACAPP_STATE).
 //   osascript  `application "Simulator" is running` -> true/false; `quit app "Simulator"`.
 // Every call appends {tool, argv} to $FAKE_SIMTOOLS_LOG. All ids are made up.
@@ -18,8 +19,12 @@ if (tool === 'lsof') {
   const n = Number(process.env.FAKE_LSOF_SOCKETS || 1);
   for (let i = 0; i < n; i++) console.log(`p${4000 + i}\nf7\nn/private/var/tmp/com.apple.launchd.FAKE${i}/com.apple.webinspectord_sim.socket\nf8\nn/private/var/tmp/other.socket`);
 } else if (tool === 'idevice_id') {
-  if (process.env.FAKE_IDEVICE_ID_FAIL) { console.error('ERROR: Unable to retrieve device list!'); process.exit(1); }
-  for (const id of String(process.env.FAKE_IDEVICE_IDS || '').split(',').filter(Boolean)) { console.log(id); console.log(id); } // listed twice (USB + network)
+  // -l: USB devices ($FAKE_IDEVICE_IDS), -n: network devices ($FAKE_IDEVICE_NET_IDS: a phone paired over Wi-Fi)
+  const flag = a[0];
+  if (flag !== '-l' && flag !== '-n') { console.error(`fake idevice_id: unexpected ${a.join(' ')}`); process.exit(2); }
+  const fail = process.env.FAKE_IDEVICE_ID_FAIL;
+  if (fail === '1' || fail === flag) { console.error('ERROR: Unable to retrieve device list!'); process.exit(1); }
+  for (const id of String(process.env[flag === '-l' ? 'FAKE_IDEVICE_IDS' : 'FAKE_IDEVICE_NET_IDS'] || '').split(',').filter(Boolean)) console.log(id);
 } else if (tool === 'open') {
   writeFileSync(app, 'true');
 } else if (tool === 'osascript') {

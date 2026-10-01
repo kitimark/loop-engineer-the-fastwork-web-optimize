@@ -167,6 +167,25 @@ test('session: a non-simulator device on :9231 (a phone idevice_id did not list)
   assert.equal(lines(env.FAKE_IWDP_LOG).length, 1, 'no second proxy start');
   assert.ok(!existsSync(marker));
   cleanedUp();
+  r = await inHold(childJs(`require('fs').writeFileSync(${JSON.stringify(marker)}, '1')`), { e: { ...env, FAKE_IDEVICE_ID_FAIL: '-n' } });
+  assert.notEqual(r.code, 0, r.out);
+  assert.match(r.stderr, /idevice_id -n failed .*network phones.*not starting it/, 'the network list failing fails closed too');
+  assert.equal(lines(env.FAKE_IWDP_LOG).length, 1, 'no proxy start');
+  assert.ok(!existsSync(marker));
+  cleanedUp();
+});
+
+test('session: a phone paired over Wi-Fi only (idevice_id -n, not -l) gets its -1 line too; the list shows only SIMULATOR (review-sim B2)', async () => {
+  const udid = setup();
+  const r = await inHold(childJs(`fetch('http://localhost:' + process.env.FW_SIM_DEVICE_PORT + '/json').then((x) => x.json()).then((j) => console.log('LIST ' + JSON.stringify(j.map((d) => d.deviceId))))`),
+    { e: { ...env, FAKE_IDEVICE_IDS: PHONE, FAKE_IDEVICE_NET_IDS: `${PHONE2},${PHONE}`, FAKE_IWDP_PHONES: `${PHONE},${PHONE2}` } });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^LIST \["SIMULATOR"\]$/m);
+  const [iw] = lines(env.FAKE_IWDP_LOG);
+  assert.equal(iw.cfg, `null:${env.FW_SIM_DEVICE_PORT}\n${PHONE}:-1\n${PHONE2}:-1\n:${env.FW_SIM_PORT}\n`, 'USB and network phones, each once');
+  assert.deepEqual(lines(env.FAKE_SIMTOOLS_LOG).filter((x) => x.tool === 'idevice_id').map((x) => x.argv[0]), ['-l', '-n']);
+  noIds(r.out, udid);
+  cleanedUp();
 });
 
 test('session: refused when fw-sim is already booted (someone else\'s, or a leak): nothing shut down; doctor finds the leak, --fix shuts it', async () => {
@@ -212,6 +231,15 @@ test('session: SIGTERM mid-<cmd> stops <cmd>\'s group, the proxy and the Simulat
   assert.match(r.stdout, /no longer ours; removing its pidfile \(nothing killed\)/);
   assert.ok(alive(sleeper.pid));
   sleeper.kill('SIGKILL');
+  // review-sim B1: the phone's WDA runner is `xcodebuild test-without-building` too; a wda pidfile whose pid now runs
+  // such a command WITHOUT the Simulator's DerivedData-sim path is not ours: nothing killed (wda stop, doctor --fix)
+  const phoneRunner = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1e9)', 'test-without-building', '-xctestrun', '/x/DerivedData/Build/Products/W.xctestrun'], { stdio: 'ignore' });
+  writeFileSync(join(simDir(), 'wda.pid.json'), JSON.stringify({ pid: phoneRunner.pid, name: 'wda', match: join(dir, 'wda', 'DerivedData-sim'), session: 'gone' }));
+  const w = node(SIM, ['wda', 'stop'], { env });
+  assert.equal(w.code, 0, w.out);
+  assert.match(w.stdout, /wda: pid \d+ is gone or no longer ours; removing its pidfile \(nothing killed\)/);
+  assert.ok(alive(phoneRunner.pid), 'the phone\'s runner lives');
+  phoneRunner.kill('SIGKILL');
 });
 
 test('scroll inside a session: iphone.mjs scroll\'s probe on the tabs port -> out JSON with meta.device "simulator" and meta.sim; outside a session: refused', async () => {
@@ -292,11 +320,17 @@ test('wda: build refused outside a normal hold; inside one: unsigned Simulator b
   cleanedUp();
 });
 
-test('open inside a session: simctl openurl (never the proxy), waits for the tab, screenshot to out/sim', async () => {
+test('open inside a session: simctl openurl (never the proxy), waits for the tab, screenshot (--out)', async () => {
   setup();
-  const r = await inHold(['sh', '-c', `"${process.execPath}" "${SIM}" open "http://127.0.0.1:${env.FW_SIM_PORT}/"`]);
+  const shot = join(dir, 'shots', 'open.png');
+  const wip = join(dir, 'wip.jsonl');
+  const r = await inHold(['sh', '-c', `"${process.execPath}" "${SIM}" open "http://127.0.0.1:${env.FW_SIM_PORT}/" --out "${shot}"`], { e: { ...env, FAKE_WIP_LOG: wip } });
   assert.equal(r.code, 0, r.out);
-  assert.match(r.stdout, /Safari \(Simulator\) now on http:\/\/127\.0\.0\.1:\d+\/; screenshot .*out\/sim\/me-open-\d+\.png/);
+  assert.match(r.stdout, /Safari \(Simulator\) now on http:\/\/127\.0\.0\.1:\d+\/; screenshot .*shots\/open\.png/);
+  assert.equal(readFileSync(shot).subarray(0, 4).toString('hex'), '89504e47', 'the screenshot is written where --out says');
+  const evals = lines(wip).filter((x) => x.evaluate).map((x) => x.evaluate);
+  assert.ok(evals.length > 0, 'the tab was read over the proxy');
+  assert.ok(!evals.some((x) => /location\s*\.\s*(href\s*=(?!=)|assign|replace)|location\s*=(?!=)|reload\(/.test(x)), `no navigation over the proxy: ${JSON.stringify(evals)}`);
   const calls = lines(env.FAKE_SIMCTL_LOG).filter((a) => a[0] === 'openurl');
   assert.equal(calls.length, 1);
   assert.equal(calls[0][2], `http://127.0.0.1:${env.FW_SIM_PORT}/`);

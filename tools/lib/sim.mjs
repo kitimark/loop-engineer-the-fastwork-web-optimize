@@ -7,7 +7,7 @@
 //   - iwdp cannot name the Simulator on its command line (port_config.c accepts ids matching [a-fA-F0-9-]{25,},
 //     `*` or `null`, README §5.0), so the proxy gets a config FILE in the shared state dir
 //     (.git/fastwork-mirror/sim/iwdp.cfg, mode 600, never committed, never printed): `null:<list port>`, then
-//     `<udid>:-1` for EVERY device `idevice_id -l` lists (a port of -1 makes iwdp ignore that device before any
+//     `<udid>:-1` for EVERY device `idevice_id -l` (USB) or `-n` (network) lists (a port of -1 makes iwdp ignore that device before any
 //     attach: ios_webkit_debug_proxy.c iwdp_listen), then `:<tabs port>`, which the Simulator (fixed id
 //     SIMULATOR, attached over the launchd_sim webinspectord socket) takes. Phone UDIDs appear nowhere else: not
 //     in argv (the file path is), logs, JSON or errors (scrub()).
@@ -265,14 +265,22 @@ export function findSocket() {
   if (s.length > 1) throw new Error(`${s.length} Simulator web inspector sockets: more than one Simulator is booted; shut the others down (xcrun simctl list devices booted) before measuring`);
   return s[0] || null;
 }
-/** The UDIDs `idevice_id -l` lists (deduplicated). Throws if it fails or prints a line iwdp's config can't name. */
+/**
+ * Every phone iwdp could attach: the union of `idevice_id -l` (USB) and `idevice_id -n` (network: a phone paired over
+ * Wi-Fi and not plugged in; review-sim B2), deduplicated. Fails closed: either call failing, or a line that is not a
+ * device id iwdp's config can name, refuses the proxy.
+ */
 export function phoneIds() {
-  const r = spawnSync(exe('FW_IDEVICE_ID', 'idevice_id'), ['-l'], { encoding: 'utf8', timeout: 15000 });
-  if (r.error || r.status !== 0) throw new Error(`idevice_id -l failed (${r.error ? r.error.code || r.error.message : `exit ${r.status}`}): without the list of attached phones the proxy could attach one; not starting it`);
-  const ids = [...new Set(r.stdout.split('\n').map((s) => s.trim()).filter(Boolean))];
-  const bad = ids.filter((x) => !IWDP_ID.test(x)).length;
-  if (bad) throw new Error(`idevice_id -l printed ${bad} line(s) that are not device ids iwdp's config accepts: not starting the proxy (it could attach that device)`);
-  return ids;
+  const ids = new Set();
+  for (const flag of ['-l', '-n']) {
+    const r = spawnSync(exe('FW_IDEVICE_ID', 'idevice_id'), [flag], { encoding: 'utf8', timeout: 15000 });
+    if (r.error || r.status !== 0) throw new Error(`idevice_id ${flag} failed (${r.error ? r.error.code || r.error.message : `exit ${r.status}`}): without the list of ${flag === '-l' ? 'USB' : 'network'} phones the proxy could attach one; not starting it`);
+    const got = r.stdout.split('\n').map((s) => s.trim()).filter(Boolean);
+    const bad = got.filter((x) => !IWDP_ID.test(x)).length;
+    if (bad) throw new Error(`idevice_id ${flag} printed ${bad} line(s) that are not device ids iwdp's config accepts: not starting the proxy (it could attach that device)`);
+    for (const x of got) ids.add(x);
+  }
+  return [...ids];
 }
 /** iwdp's config file: the list port, every attached phone ignored (-1), then the Simulator (any other device). */
 export function iwdpConfigText(ids, { list, tabs }) {
@@ -456,7 +464,7 @@ export async function wdaStart({ session, log = console.log, timeoutMs = 120000 
   const url = `http://127.0.0.1:${p.wda}`;
   const ready = async () => { try { const j = await (await fetch(`${url}/status`, { signal: AbortSignal.timeout(3000) })).json(); return !!(j?.value?.ready ?? j?.value); } catch { return false; } };
   await stopOne('wda', log);
-  const rec = startDetached('wda', exe('FW_XCODEBUILD', 'xcodebuild'), wdaSimRunArgs({ xctestrun: x, udid: cfg.udid }), { match: 'test-without-building', owner: session.owner, session: session.id, env: wdaSimEnv(p) });
+  const rec = startDetached('wda', exe('FW_XCODEBUILD', 'xcodebuild'), wdaSimRunArgs({ xctestrun: x, udid: cfg.udid }), { match: wdaSimDerivedData(wdaHome()), owner: session.owner, session: session.id, env: wdaSimEnv(p) });
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (await ready()) { log(`WDA_SIM_READY ${url} (pid ${rec.pid}; the session stops it)`); return 0; }

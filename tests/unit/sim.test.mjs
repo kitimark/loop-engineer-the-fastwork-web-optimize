@@ -3,7 +3,8 @@
 // leaves the machine) and sim-scroll's meta (meta.device "simulator" and meta.sim, no battery).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, IWDP_ID, SIM_DEVICE } from '../../tools/lib/sim.mjs';
+import http from 'node:http';
+import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE } from '../../tools/lib/sim.mjs';
 import { simMeta, SIM_SETTINGS, runTarget } from '../../tools/lib/sim-scroll.mjs';
 import { tempDir } from '../helpers.mjs';
 
@@ -81,6 +82,23 @@ test('simMeta: device "simulator", runtime / Xcode / window / tip / ports / host
   assert.deepEqual(m.hostLoad, { start: { load1: 1 }, end: { load1: 2 } });
   for (const k of ['runtime', 'runtimeBuild', 'deviceType', 'xcode', 'lockdownMode']) assert.ok(k in m, k);
   assert.ok(!JSON.stringify(m).match(/udid/i), 'no udid field');
+});
+
+test('proxyCheck (before every timed run): exactly SIMULATOR passes; a phone that appeared later, or no Simulator, throws without printing its id', async () => {
+  process.env.FW_STATE_DIR = tempDir('fw-sim-unit-');
+  let list = [];
+  const srv = http.createServer((req, res) => { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(list)); });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const p = { list: srv.address().port, tabs: 1, wda: 2 };
+  try {
+    list = [{ deviceId: 'SIMULATOR' }];
+    assert.equal((await proxyCheck(p)).ok, true);
+    list = [{ deviceId: 'SIMULATOR' }, { deviceId: '00008130-0011223344556677', deviceName: "Test Person's iPhone" }];
+    await assert.rejects(proxyCheck(p), (e) => /proxy sees a non-simulator device \(1 non-simulator/.test(e.message) && !/00008130|Test Person/.test(e.message));
+    list = [];
+    await assert.rejects(proxyCheck(p), /lists no Simulator/);
+  } finally { srv.close(); }
+  await assert.rejects(proxyCheck(p), /not reachable/);
 });
 
 test('runTarget: the Simulator target of iphone.mjs run; renew() refuses a run that would outlast the hold (minus cleanup)', async () => {
