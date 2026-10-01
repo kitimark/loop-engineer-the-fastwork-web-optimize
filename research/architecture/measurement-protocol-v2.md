@@ -223,8 +223,11 @@ of the three without a stated reason.
 - **The paint source is the per-layer `paintCount` delta** between consecutive layer lists (`--paint-rects`,
   `paintRects.source: 'paintCount'`). Its area is **layerMpx**, the full size of the layers that painted, in
   physical px: an **upper bound**, never "paint area" or "clip". Deltas bind to the interval between two lists
-  (`binding: 'interval'` when lists are sparser than frames). The probe is opt-in, never in gain runs, and gets an
-  on/off A/A.
+  (`binding: 'interval'` when lists are sparser than frames). The probe is opt-in and gets an on/off A/A.
+  **Never in timing runs** (gain A/Bs, attribution timings, calibration). OBSERVED (in our setup) in a clean on/off A/A
+  (ts-render-signals, 2026-10-01 12:40-12:45Z, baseline, CPU 6x, idle 6, n=3 each interleaved, 0 of 6 host-flagged):
+  scroll p50 k=1 in every off run and k=2 in every on run; scroll fps 86.6 → 66.6, gt34 median 5 → 10, morph
+  113.5 → 95.6, idle unchanged. Read only its layer counts, churn and per-layer paint counts, in a separate run.
 - **Paint rects, when attribution needs them:** the trace snapshot route, categories `devtools.timeline.layers` +
   `blink.invalidation` (`annotated_invalidation_rects`). It is heavy, so it is opt-in and for attribution only, never
   a gain metric. The trace `Paint.clip` is "unreliable and often wrong" per DevTools' own source: never an area
@@ -382,7 +385,7 @@ hold per A/B, compare within a hold.
 - Opt-in `--paint-rects`: per-layer `paintCount` deltas as a layer-size upper bound (§3.7; de-devtools rank 2).
   `LayerTree.layerPainted` is unavailable on M148+ (Chromium 1bf9d9eb, crbug 488803411; CONFIRMED by source,
   empirical check pending). Rects only from the opt-in trace snapshot route (`devtools.timeline.layers` +
-  `blink.invalidation`), for attribution.
+  `blink.invalidation`), for attribution. Its own run only: it shifts scroll ticks k=1 → 2 (§3.7), never in a timing run.
 - Recalibrate 6x once per wave against the phone (G5), with the same logger on both sides.
 - Blind spots stated in every Chrome-only verdict: GPU, raster, WebKit layerization, threaded presentation.
 
