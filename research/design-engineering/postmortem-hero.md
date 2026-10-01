@@ -231,6 +231,19 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
   - device class: phone-only (Blink has no such layout rule);
   - **verdict: LOCATED, with a NAMED candidate.** Timing (27/27), Timeline shape and vendor source agree. The
     ablation is one block.
+  - **Status (P3 block, 13:35-13:44Z, n=2 per arm, lead signed D): NAMED for the +700 and +900 frames.**
+    Details in §7.9.
+    - **re-dur:** the +700 Layout moves by -199 ms (predicted -200 ± 20). This is a causal intervention, so the
+      attribution does not rest on a platform claim.
+    - **re-keep:** removes the +900 Layout.
+    - **ST-2d:** the +900 frame still fires at rest, with no flick. U5 is out for these two frames.
+    - **Condition 1:** the WebKit mechanism stays **OBSERVED in our setup, cause unknown**. That is why a
+      finished opacity/filter/transform transition triggers a whole-view Layout (`miscDataChangeRequiresLayout`
+      above is a candidate, not a reference check). arch-claims routes the reference check. No fix decision may
+      depend on the mechanism.
+    - **Condition 2:** re-keep also removes the +1150 Layout (rAF L3258). That stays **UNEXPLAINED** until
+      fix-hero-exit traces what re-keep changes on the L3258 path, before re-keep-op's build card. fix-hero-exit
+      has since sent a proposed trace (§7.9); the lead decides whether it lifts this condition.
 - **Fix only after NAMED:** end states that keep presence. `blur(0px)` / `translateY(0)` remove the +940
   layout. For opacity, either align its duration with the 0.9 s pair (two long frames → one) or end at 0.999.
   The 0.999 end needs a render-server check: group opacity on a full-section layer may cost an offscreen pass
@@ -608,3 +621,93 @@ dt>50 is threshold-sensitive (21 / 15 / 8 across ±4 ms).
   add-on requested from mgmt-ops-5.
 - **Prediction:** about 2 dt>34 frames per cycle on C. Any arm that moves the layout root off the view drops
   toward under 1 per cycle.
+
+mgmt-ops-5 accepted the add-on on P-025: one uncounted Timeline-off run per arm idling at y 1500, plus Paint and
+Decode records in every arm.
+
+### 7.9 ST-2 result: the P3 block, Card 4 NAMED (lead signed D; n=2 per arm)
+
+**Block.** P3 (P-019 / P-020), 13:35-13:44Z, aw1-10e family, both sentinels passed. Arms:
+- Q (Q1, Q4);
+- `re-dur` (D2, D6);
+- `re-keep` (K3, K5);
+- baseline-A (B7, B8);
+- ST-2d fling-hold on Q (QF9-11).
+
+**Data and scripts.** Data: iphone-runner `out/iphone-runner/p3-*.json` and `.tl.json`, Timeline depth 1,
+F-047 sequence. Scripts (scratchpad `de-pm-hero/`):
+- `p3x.mjs`: Layouts by phase and dirtier;
+- `p3flip.mjs`: Layouts relative to the y-687 crossing frame, with every non-logger InvalidateLayout since the
+  previous Layout.
+
+fix-hero-exit's flip-relative read is its README "P3 phone block" (75d4f74).
+
+**Offsets.** Offsets here are from the start of the crossing frame (y 687). Card 4's "+745 / +945" were measured
+from the flip, so they read here as about **+700 / +900**. Compare shifts, not absolute offsets.
+
+**Rotator exclusion (§7.5).**
+- A Layout is excluded when its last non-logger InvalidateLayout is under Timer → L11571 (baseline-A: L11332).
+- Per run, the rotator accounts for these Layouts >=10 ms in every arm, baseline-A included:
+
+  | phase | rotator Layouts |
+  |---|---|
+  | idle | 10-11 |
+  | scroll | 4-5 |
+  | bottom | 4 |
+
+- The rotator's phase relative to the crossing varies by run (+463 to +634 ms).
+- A logger-paid or unattributed Layout 25-40 ms after a rotator Layout is its follow-on (OBSERVED, attributed
+  by proximity).
+  - This matters in the +500 window: QF9-11, K5 and Q4 each have one at +489 to +549.
+  - D2 and D6 have none.
+
+**Results by arm** (all OBSERVED):
+
+| arm | +700 frame | +900 frame | +1150 frame |
+|---|---|---|---|
+| Q | present (12-15 ms, logger-paid, whole view) | present (14-18 ms) | present: 14-18 ms, page-paid, rAF L3258 |
+| `re-dur` | **moved to +501 / +502** (12.1 ms, logger-paid; no rotator invalidation before it; rotator at +553 / +634, separate frames). Shift **-199 ms** vs predicted -200 ± 20: **HIT** | present (+901 / +902) | present (+1136 / +1152) |
+| `re-keep` | present (+697 / +701) | **gone**: no Layout >=2 ms after +714: **HIT** | **gone too: UNEXPLAINED** |
+
+**ST-2d fling-hold.**
+- **Hold window:** the driver's hold mark starts at +1137 to +1438, so both reveal ends fall before it.
+- **+696 to +705:** y 1084-1097, still decelerating (the scroll arrives at 1101 around +764). Not decisive.
+- **+904 to +913:** 14.7-17.8 ms, logger-paid, at rest at y 1101-1102 about 140 ms after arrival, with no flick.
+  That goes against U5(a), as the hero block's +940 frame already did (ST-2 above).
+- **Inside the formal hold:** only the rotator pair (+1538-1554 and +1778-1792) plus its logger-paid follow-on.
+
+**Decision (§4 ST-2 table).** `re-dur` moves the frame and ST-2d leaves it, so **Card 4 NAMED** for the +700 and
++900 frames, and U5 is out for them. The lead signed D on the strength of the causal shift.
+
+**Conditions, from the lead's signature:**
+1. **Mechanism: OBSERVED in our setup, cause unknown.** Why a finished opacity/filter/transform transition costs
+   a whole-view Layout in WebKit is not established. arch-claims routes the reference check, and fix decisions
+   must not depend on it. The NAMED status rests on the intervention, not on the mechanism.
+2. **The +1150 result: UNEXPLAINED.**
+   - What we know: in Q and `re-dur`, the +1150 Layout's InvalidateLayout sits inside rAF L3258 itself. Card 4 had
+     called this frame a separate class write (L11538 → L3258).
+   - What it would mean: `re-keep` removing it means its end state also changes what L3258 finds dirty or writes.
+   - Before re-keep-op's build card, fix-hero-exit traces what `re-keep` changes on the L3258 path.
+   - **fix-hero-exit's proposed trace** (OBSERVED on the phone, K 2/2; the source mechanism is with arch-claims;
+     not yet reviewed by the lead):
+     - At +1150, `l()`'s rAF writes `is-future-shrinking` (JS L11552, `z(b, t > 0.04)`). On phones that rule sets
+       the card's `transform: scale(var(--future-shrink-scale))`, which is `scale(1)` here.
+     - In Q and `re-dur` the card's resting transform is `none`, so the write is a `none` → `scale(1)` presence
+       flip.
+     - L3258 does not dirty the layout. It is the commission scroll rAF whose forced read pays for the pending
+       style change, which is why the InvalidateLayout sits inside it.
+     - In `re-keep` the resting transform is `translateY(0)`. `translateY(0)` → `scale(1)` is no presence change,
+       so there is nothing to pay.
+     - fix-hero-exit notes that P-019 predicted this ("+940 and +1.13 s lose their ≥10 ms layout").
+     - §4's ST-2 prediction did not include it, and Card 4's corrected model put this frame's class write at
+       "L11538, not yet told apart". If the lead accepts the trace, both points are superseded: the class is
+       `is-future-shrinking`, and the frame belongs to the same presence-flip family as +700 / +900.
+
+**Also seen, not attributed.**
+- A 12-13 ms Layout at +420-460 (y about 991-999, native or logger-paid) appears in every arm. It is outside the
+  Card 4 frames.
+- baseline-A's +1645 frame is still unresolved: from +1119, baseline-A runs a Layout every frame under L11303
+  (fix-hero-exit).
+
+**Next.** A build card for the end-state fix, held back by condition 2. Also a page-wide pitfall: every reveal
+that ends at `opacity: 1` / `filter: none` / `transform: none` pays this frame on the phone.
