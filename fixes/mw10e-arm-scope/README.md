@@ -106,5 +106,8 @@ unknown). They do not block F3 (lead).
   source wording before landing: wheel only, on a change of the region-type set; the listener add is the observed
   cause. That changes only comments, so the JS hash changes while the code tokens stay identical. The plan is a
   comment-only re-cut with a token-identical check (the comment-stripped diff vs 7b0d62225545 is empty), so the
-  measured evidence carries over. The lead decides.
+  measured evidence carries over.
+  - **Done (lead 15:0xZ):** `mw10e-arm-scope-c`, JS c6d3590576a7…, comment-stripped sha256 identical to this build
+    (13d36da9308e…).
+  - That is the landing build; P-036, F and review run on it. See `fixes/mw10e-arm-scope-c/README.md`.
 - **Overlap.** nav-hit-test (co-owner of the listener code). No other topic touches JS 13300-13370.
