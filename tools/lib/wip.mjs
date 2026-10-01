@@ -9,12 +9,18 @@ import { lanSafeUrl, lanSafeText } from './iphone-url.mjs';
 
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Every failure closes the socket before it throws (incident I-043: a "no page target" left it open, so one
+// `iphone.mjs open` held up to 6 sockets to the proxy, one per openTab try, until the process exited).
 export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
   const ws = new WebSocket(wsUrl);
-  await Promise.race([
-    new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; }),
-    sleep(timeoutMs).then(() => { throw new Error('websocket open timeout'); }),
-  ]);
+  const fail = (e) => { try { ws.close(); } catch {} throw e; };
+  let openTimer;
+  try {
+    await Promise.race([
+      new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; }),
+      new Promise((res, rej) => { openTimer = setTimeout(() => rej(new Error('websocket open timeout')), timeoutMs); }),
+    ]);
+  } catch (e) { fail(e); } finally { clearTimeout(openTimer); }
   let id = 0, innerId = 0;
   const targets = {}, pending = new Map(), listeners = [];
   ws.onmessage = (ev) => {
@@ -28,7 +34,7 @@ export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
     }
   };
   await sleep(800);
-  if (!targets.page) throw new Error('no page target (phone locked / Safari backgrounded?)');
+  if (!targets.page) fail(new Error('no page target (phone locked / Safari backgrounded?)'));
   const send = (method, params = {}, type = 'page', tmo = timeoutMs) => new Promise((res, rej) => {
     const targetId = targets[type] ?? targets.page;
     const iid = ++innerId;
@@ -102,7 +108,7 @@ export async function openTab(match, {tries = 6, port = Number(process.env.FW_IP
       const pages = await (await fetch(`http://localhost:${port}/json`)).json();
       const p = pickTab(pages, match, { appId, preferAppId: lastAppId });
       const c = await connect(p.webSocketDebuggerUrl);
-      await c.evaluate('1', 'page', 8000);
+      try { await c.evaluate('1', 'page', 8000); } catch (e) { c.close(); throw e; } // no socket left open per try (I-043)
       lastAppId = p.appId ?? lastAppId;
       return c;
     } catch (e) {
