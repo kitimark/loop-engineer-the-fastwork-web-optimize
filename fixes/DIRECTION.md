@@ -247,9 +247,14 @@ Lead decisions:
   iPhone slot for it is in sight.
 - **Lead's ranking (09:25Z, replaces the README order where they differ):** (1) morph gh / R1 size-stable panel;
   (2) y≈1830 morph IO (if e1/e2 confirm); (3) h1 flip; (4) h3 countdown strip; (5) middle R2; (6) h2; (7) the rest.
-**iPhone queue (09:25Z):** morph driver block (+ gh = mw10e-gh ABBA vs gb and g, n=3; partial so far: moving-phase p50
-~30 ms, fb n=1 p95 45 vs f 53-64) -> e1/e2 -> hero bisect (v7copyop, v6noflip, v4nocards, v5noblur vs P; v3 dropped)
--> N12 -> N10 a-d; ts-gesture V0/V1 when ready.
+**Morph driver block result (09:27Z, iphone-runner, scripted driver, no touch/rubber band/pin):** moving-frame p50
+median gh 26 / gb 29 / g 35 ms, p95 56-58 / 50-52 / 62-114 (clean rounds; the phone warmed in round 3). gh ≈ gb, both
+~6-9 ms better than g: **not** the predicted >= 25 ms drop for gh; neither de-morph's R1 (size-stable panel) nor the blurs
+dominate alone. f vs fb, g vs ge, g vs gc not run (lower priority). Next step for fix-nav-morph.
+**iPhone queue (09:30Z):** e1/e2 (aw1-10e control) -> hero bisect (v7copyop, v6noflip, v4nocards, v5noblur vs P; v3
+dropped) -> **apple-ref** (user request via the lead: live apple.com AirPods Pro page, plus iPhone 18 Pro if the phone is
+cool, same driver and Timeline counts as aw1-10e, one block with a control; write-up in
+`research/architecture/apple-verify.md` "iPhone Safari check") -> N12 -> N10 a-d; ts-gesture V0/V1 when ready.
 
 ## Baseline freeze (user decision, 2026-10-01 ~07:35Z)
 
