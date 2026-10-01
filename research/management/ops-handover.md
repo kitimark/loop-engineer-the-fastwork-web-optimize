@@ -273,6 +273,15 @@ between tool calls.
    ts-lock-bundle's unlanded (f) co-hold code broke chrome-measure exclusivity 16:28-16:45Z; (f) tested on a temp
    FW_STATE_DIR only until it lands; both test:chrome runs in 16:38-16:45Z void; ts-iphone-run reruns npm test (short
    lane) before its land; ts-render-signals' I-032 land needs a clean test:chrome. Caffeinate renewed until ~18:45Z.
+   **17:1xZ:** P-032 attempt 1 VOID (0 valid runs, WDA /actions 8-15 s per stroke -> I-042, env, blocking for every G
+   block, owner ts-gesture). G blocks (P-032, P-035 G, P-036 G, P-031 G) WAIT for I-042; phone order meanwhile: P14 (W,
+   ~17:17Z after cooling, iphone-runner rebased on main for I-037 b80a767 + probe v3, tools sha in meta) -> P12 -> P10
+   -> P5 -> P-033 gain -> P-038 -> P9. Landed: I-035 (8935a7d), I-037 (b80a767, RESOLVED), T1a series, lanSafeUrl
+   (7ec95a5); I-041 RESOLVED ((f) shelved on local branch ts-lock-bundle-f-shelf, never lands). Lead: NO redaction of
+   the old fixes/iphone-wave2/raw LAN hosts (evidence integrity; user may overrule); new committed files carry none.
+   **LATER (not urgent, needs a fix-reviewer pass before landing):** ts-lock-bundle 65903b9 docs, e143153 (a)(b) gate
+   wake, 2f7751c `run --no-timing`, 3f2b100 (d) served-check retry (measurement-code pre-check), 1369205 (c)(e)
+   HOST-DISPLAY-CHANGED; test:chrome for (d)/(e) only after they land (needs main's lock code).
    **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A PASSED (ABBA aw1-10e S, on vs off: dt>50 3 vs 7, dt>34 18 vs 21, fps
    57.4 vs 57.3; T1a now absolute; minShift revisit CLOSED: HL p95 on-off +0.48 ms, n=2/arm (crude), stays 4 ms,
    ts-analysis 14:3xZ), 10 min, block B) -> P-033 step 0
