@@ -2,9 +2,15 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **08:11Z**.
+**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **08:33Z**.
 
 ## Digest log (newest first, 5 lines each)
+
+- **08:33Z** Landed: ts-i021 stack 43e40ce (B-E + I-031; canary PASSED, npm test 462/462; I-027, I-031 RESOLVED), I-018.
+  Morph root cause (fix-nav-morph): pin target 5312 > maxY 5220 → re-pins every frame against the bounce; candidate
+  mw-g-pinclamp-osb waits for the user's finger block (lead). F-030: /10c face will-change churn ~1,500 writes/s at idle in
+  the hero → fix-scroll-engine hotfix se10e (lands after parity + short review). hero-exit owns y 0-900 incl. F-032
+  people-o. WATCH: canary baseline fps 78 / > 20 ms 57 vs ~92 / ~25 at 04:25Z (n=1, iPhone serving at the time).
 
 - **08:11Z** USER FEEDBACK: no felt difference baseline vs aw1-10c on the iPhone; lag at END (morph pin at y 5220 runs
   10-18 fps under a finger, > 50 ms 50-75/pass) and TOP (hero y 0-900). New order: morph (fix-nav-morph resumed) →
@@ -87,7 +93,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
    Spare Chrome: its "other"-class V8 diagnostic hold (queued 08:09).
 4. ts-i021: B-E + I-031 rebased on I-018 → ONE test:chrome → lead canary (covers I-018 + B) → land; resolve I-027, I-031.
    Check the hook time (npm test ~280 s now, short cap 300 s).
-5. Caffeinate ends ~08:37Z: remind the lead at ~08:30Z.
+5. Caffeinate: the lead started a new 2 h one at 08:19Z (to ~10:19Z) → remind at ~10:10Z.
+5b. WATCH (lead 08:31Z, don't alarm yet): canary A/A on 43e40ce showed fps 78.3, > 20 ms 57, p95 25 ms vs the 04:25Z canary
+   on 93b4af2 (fps ~92, > 20 ms ~25); goal metrics similar (> 50 4 vs 4, > 34 6-8 vs 5). n=1, iPhone finger block serving
+   on the Mac. If the next goal-hold A/A also shows ~78 fps → incident: A/A 93b4af2 vs 43e40ce in one hold (I-018/I-027
+   level shift vs environment).
+5c. Baseline snapshot (ts-snapshot A-D rebasing on 43e40ce → reviewer → lead lands + snapshot commit): after it lands every
+   worktree runs `git rebase main` then `node tools/baseline.mjs sparse` between steps (never mid-A/B). Announce ONLY when
+   the lead says so. Side effect: bench toolsSha changes, stored gain calibrations read stale.
 6. Backlog (mgmt-lead iteration 3): recheck pauses instead of contaminating, gate.since across holds, verify load phase,
    iphone wip.mjs stub clock, kpi rule on topProcs > 50 % of a core, trace buffer 300 → 32 MB with V8 categories opt-in.
 
@@ -122,7 +135,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 | fix-hero-exit | RESUMED (#2) | – | rebase, aw1-10c, name y≈50 frame, iPhone via me |
 | fix-scroll-engine | N10 (#3) ablations ready; "other" diagnostic queued | lock; phone after morph/hero | report "other" class |
 | iphone-runner | owns the phone; finger runs with the user (lead) | – | C/D pair, then morph logger runs, hero, N10 |
-| ts-i021 | rebasing B-E + I-031 on I-018 | – | test:chrome → canary → land |
+| ts-i021 | stack landed 43e40ce | – | done unless the lead resumes it |
 | ts-snapshot | baseline freeze (lead's) | user approval of enforcement edits | – |
 | ts-i017, wave1-dry, ts-bench, N11, apple-verify | ENDED | – | do not resume without the lead |
 

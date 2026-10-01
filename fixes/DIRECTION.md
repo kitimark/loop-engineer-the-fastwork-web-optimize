@@ -185,7 +185,8 @@ Chrome's morph phase never showed this. Hero window y 0-900: > 50 ms 3-12 per pa
 **Order:** (1) **morph on WebKit** (end of page; owner proposed: fix-nav-morph resumed, or a fresh fix-owner from its
 READMEs; #6 v05 C/D finger pair first, then name the pin frames with a logger during finger runs, phone ablations: the
 `scrollTo` pin loop, morph-panel backdrop blur, panel mount/layout, non-passive touch listeners); (2) **hero-exit**
-(resumed 08:06Z: the y≈50 frame and the hero window, `--on aw1-10c`, iPhone-led); (3) **N10** y≈1970 (fix-scroll-engine,
+(resumed 08:06Z; from 08:30Z owns the whole hero window y 0-900: topic 7 hero v2 + F-032 people-o grid/height
+transition as variant P3; iPhone block B aw1-10c / P hero v2 / P2 + scroll-engine face fix (F-030) / P3 + people-o); (3) **N10** y≈1970 (fix-scroll-engine,
 ablations ready). Chrome-only 20-50 ms work (the "other" class diagnostic, the 429-element restyle) runs only on spare
 Chrome capacity. Success is judged on the iPhone under a finger first, then Chrome > 50/> 34 ms.
 
