@@ -150,7 +150,7 @@ to the clip and prints `VISUAL-BLANK` when a shot has no colour range.
 | hero h1 (full width) at 150 / 300 / 600 / 850 ms of the 900 ms draw-in (valid in v1; 03 and 05 identical) | 0.09 / 0.25 / 0.35 / 0.25 % |
 | hero h1 under `html[dir=rtl]`, second draw-in (112 → 80 units), 300 / 600 ms: base vs 10 | 0.19 / 0.19 % (accent width 70 → 50 CSS px in that cycle) |
 | same, base vs 05 (positive control: 05 slides the neighbours the wrong way) | **5.83 / 2.98 %**: the control fails as it should, so the RTL check can tell the two signs apart |
-| avatar carousel at 20 / 60 / 110 / 180 ms of the 220 ms swap (10) | **2.24 / 8.66 / 1.37 / 11.57 %: above the 0.4 % bar**, see below |
+| avatar carousel at 20 / 60 / 110 / 180 ms of the 220 ms swap (10) | 2.24 / 8.66 / 1.37 / 11.57 %: ±1 device px from non-snapped `translate`, same in 03 (identical carousel CSS; the landed '0 %' was a P14 false pass); equal by eye. Accepted by the lead as sub-pixel, see below |
 | `.fee-progress` at p = 0, .01, .03, .1, .37, .77, 1 (7 clones in one shot, 10) | 0.02 % |
 
 Run: one `--short --max-seconds 240` chrome-measure slot (ended 2026-09-30 23:55Z), three sides (base, 10, and
@@ -166,7 +166,8 @@ layout, which snaps them to device pixels; the fix moves them with `translate`, 
 positions. A 1-device-px (0.33 CSS px) offset of a photo gives 6-12 % of pixels above the threshold. At 20 ms
 the followers match (0 px) and the remaining difference is the leaving avatar. In the baseline its 1 px border
 ring follows the shrinking box; in the fix the `clip-path` ellipse cuts the ring away at the sides. By eye the
-frames look the same (enlarged crops in the scratch evidence), but the check's 0.4 % bar is not met.
+frames look the same (enlarged crops in the scratch evidence), but the check's 0.4 % bar is not met; the lead
+accepted this as sub-pixel. Snapping the shift to device pixels is a look-only item in the iPhone queue.
 The paint-order concern from the review does not show: at 20 ms image 2's border arc lies over the leaving
 avatar in both variants.
 
