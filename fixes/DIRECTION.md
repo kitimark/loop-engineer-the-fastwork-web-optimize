@@ -296,6 +296,14 @@ Chrome; its value (Safari quiet-input gate, scroll-restore fix) shows only on th
 vs P 65; h1 45 vs P2 56 -> h1 cuts the flip ~11-13 ms, target <= 34 ms met in 1/6; v2's extra flip cost remains (h1v2 52
 vs h1 45) -> hero-B (v7copyop, v6noflip) tests it. y≈50 stays gone with v2; no new frame ~1 s after the flip; idle
 identical. A 41-51 ms frame at y≈1250 is in all four builds (unowned; fix-hero-exit names a candidate read-only).
+**mw10e-src (iPhone, ~10:30Z): NOT a winner** (y≈1960 long frame: control 86/92/88 vs src 97/84/91 ms, images pre-sourced
+21/21, 0 src writes in scroll). **Correction (F-044):** the R3 logger capped at 12 events per frame; with src staged the
+frame shows one event, **the morph panel's `inert` removal at the IO edge** (3/3). The trigger is the panel leaving
+inert, not the img burst; fix-nav-morph's #2 item becomes "take the inert flip out of the scroll frame".
+**Measurement protocol v2 (in progress, user request ~10:20Z):** arch-lead drafts
+`research/architecture/measurement-protocol-v2.md` (research -> investigate -> distinguish -> fix -> review) with inputs
+from the owners, ops and the devtools/safari notes; execution after the lead's approval; the current queue runs unchanged
+until then.
 **iPhone queue (10:08Z):** hero-A -> mw10e-src (vs aw1-10e, warm-up control) -> ghbn (vs ghb, gh) -> ghr8 / ghr85a (vs gh)
 -> hero-B -> apple-ref (+ idle Timeline) -> R2 (+ r3a/r3b if cool) -> N12 -> /10d check; ts-gesture V0 after the user's
 setup. Blocks of ~9 runs with a 10 min gap (the phone heats after 15-20 min of back-to-back runs).

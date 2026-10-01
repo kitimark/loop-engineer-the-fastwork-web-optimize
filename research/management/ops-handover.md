@@ -3,7 +3,7 @@
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
 **mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **10:17Z**.
+snapshot), branch `mgmt-ops/docs-2`. Last update: **10:25Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +16,11 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:17Z**.
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **10:25Z** mw10e-src NOT a winner; y≈1960 trigger = morph panel `inert` removal (F-044 corrects F-043; logger cap 12/frame).
+  PROTOCOL V2 IN PROGRESS (arch-lead, research/architecture/measurement-protocol-v2.md; ops input sent: ablation labels
+  checked by computed style, uncapped per-type loggers, warm-up run, thermal checks between rounds, phone slot tickets,
+  immutable served snapshots, ABBA vs one control + pre-registered prediction). Queue unchanged until the lead approves.
 
 - **10:17Z** hero-A: h1 -11-13 ms at the flip (h1v2 52 vs P 65, h1 45 vs P2 56), <= 34 ms 1/6; y≈1250 41-51 ms frame in
   all builds (unowned). fix-hero-exit rebasing (between blocks). Runner on mw10e-src. NEW read-only research (user
