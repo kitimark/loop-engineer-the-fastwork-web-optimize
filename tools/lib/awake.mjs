@@ -32,6 +32,9 @@ function bin() {
 /** Start the assertion for `holder` (replacing an earlier one). Returns its pid, or null (no binary, other resource). */
 export function keepAwake(r, holder) {
   if (!AWAKE_RESOURCES.has(r) || !holder) return null;
+  // a co-holder (shared short hold, ts-lock-bundle (f)) must not replace the holder's assertion: the shared queue
+  // assertion (600 s) outlasts its <= 300 s; its stopAwake(token) then finds no record of its own and does nothing
+  if (holder.cohold) return keepAwakeQueued(r);
   stopAwake(r);
   const b = bin();
   if (!b) return null;

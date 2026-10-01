@@ -112,7 +112,7 @@ const owner = opt('owner', process.env.FW_LOCK_OWNER);
 const short = flag('short');
 const noTiming = flag('no-timing'); // ts-lock-bundle: a normal run that measures nothing (builds, CPU work): no host gate, never hosts a timing run
 const maxSec = short ? Number(opt('max-seconds', 120)) : undefined;
-const sh = (w) => (w.short ? ` (short, max ${w.maxSec} s)` : w.noTiming ? ' (no-timing)' : '');
+const sh = (w) => (w.short ? ` (short, max ${w.maxSec} s${w.cohold ? `, shared with "${w.sharedWith}"` : ''})` : w.noTiming ? ' (no-timing)' : '');
 const NORMAL_HOLD_SEC = 600; // a normal chrome-measure hold should end within ~10 min (I-020); `run --max-seconds` declares another length
 // a normal hold that declared its length (`run --max-seconds`, I-020) and passed it
 const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > Date.parse(h.acquiredAt) + h.meta.expectSec * 1000 ? ` OVERDUE (past its ${h.meta.expectSec} s; split long measurements into holds of 5-10 min, I-020)` : '');
@@ -122,6 +122,8 @@ function fmt(s) {
   let line = `${s.resource.padEnd(15)} `;
   if (!h) line += s.next ? `free, handing over to "${s.next}"` : 'free';
   else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}\n${' '.repeat(16)}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + ' '.repeat(16) + JSON.stringify(h.meta) : ''}`;
+  const c = s.cohold; // a shared short hold (ts-lock-bundle (f))
+  if (c) line += `\n${' '.repeat(16)}also held by "${c.owner}"${sh(c)} [${c.kind}${c.pid ? ' pid ' + c.pid : ''}] since ${c.acquiredAt} until ${c.expiresAt}, checkout ${c.checkout}`;
   if (s.queue.length) line += `\n${' '.repeat(16)}queue: ${fmtQueue(s.queue)}`;
   return line;
 }
@@ -295,7 +297,7 @@ async function main() {
     if (powerStart) {
       const powerEnd = await hostPower();
       const hs = hostStateSummary([{ label: owner, run: 0, power: { start: powerStart, end: powerEnd } }]);
-      try { appendFileSync(holdsLogFile(), JSON.stringify({ at: new Date().toISOString(), resource, owner, short: !!short, acquiredAt: holder.acquiredAt, code, start: powerStart, end: powerEnd, tag: hs.tag }) + '\n'); } catch {}
+      try { appendFileSync(holdsLogFile(), JSON.stringify({ at: new Date().toISOString(), resource, owner, short: !!short, ...(holder.cohold ? { cohold: true } : {}), acquiredAt: holder.acquiredAt, code, start: powerStart, end: powerEnd, tag: hs.tag }) + '\n'); } catch {}
       if (hs.tag) console.error(`[lock ${resource}] ${hs.tag} during this hold: ${hs.reasons.join('; ')} (T8+, I-033)`);
     }
     rel();

@@ -131,3 +131,20 @@ test('ts-lock-bundle (a): the head waiter held at the host gate keeps the Mac aw
   assert.equal(JSON.parse(readFileSync(join(state, 'locks', 'chrome-measure.queue-awake.json'), 'utf8')).pid, c[0].pid);
   process.kill(c[0].pid, 'SIGTERM');
 });
+
+test('ts-lock-bundle (f): a co-holder (shared short hold) keeps the Mac awake through the shared queue assertion, never replacing the holder\'s', async () => {
+  const a = await L.acquire('chrome-measure', { owner: 'npm-a', kind: 'process', short: true, maxSec: 60, checkout: '/wt/x', log: () => {} });
+  const [c1] = await calls(1);
+  assert.deepEqual(c1.args, ['-i', '-s', '-w', String(process.pid)]);
+  const b = await L.acquire('chrome-measure', { owner: 'npm-b', kind: 'process', short: true, maxSec: 60, checkout: '/wt/y', log: () => {} });
+  assert.equal(b.holder.cohold, true);
+  const c = await calls(2);
+  assert.deepEqual(c[1].args, ['-i', '-s', '-t', '600'], 'the queue assertion (600 s > its 60 s)');
+  assert.equal(JSON.parse(readFileSync(join(state, 'locks', 'chrome-measure.awake.json'), 'utf8')).token, a.holder.token, 'the holder\'s record stays');
+  assert.ok(alive(c1.pid));
+  b.release();
+  assert.ok(alive(c1.pid), 'the co-holder\'s release leaves the holder\'s assertion alone');
+  a.release();
+  assert.ok(await gone(c1.pid));
+  process.kill(c[1].pid, 'SIGTERM');
+});

@@ -224,20 +224,21 @@ export function parseLockCondition(spec, owner) {
 
 /** One line for a lock status snapshot ({holder, stale, queue}). */
 export function lockState(st) {
-  const h = st.holder && !st.stale ? st.holder : null;
+  const h = st.holder && !st.stale ? st.holder : null, c = st.cohold || null;
   const q = st.queue.map((w, i) => `${i + 1}. ${w.owner}${w.short ? ' (short)' : ''}`).join(', ');
-  return `${h ? `held by "${h.owner}"${h.short ? ' (short)' : ''}` : 'free'}${q ? `; queue: ${q}` : ''}`;
+  return `${h ? `held by "${h.owner}"${h.short ? ' (short)' : ''}${c ? ` and "${c.owner}" (short, shared)` : ''}` : c ? `held by "${c.owner}" (short, shared)` : 'free'}${q ? `; queue: ${q}` : ''}`;
 }
 
-/** Evaluate a parsed lock condition on a status snapshot: {met, state, detail}. */
+/** Evaluate a parsed lock condition on a status snapshot: {met, state, detail}. A co-holder (st.cohold, a shared short hold) holds too. */
 export function lockConditionMet(cond, st) {
-  const h = st.holder && !st.stale ? st.holder : null;
+  const h = st.holder && !st.stale ? st.holder : null, c = st.cohold || null;
   const state = lockState(st);
-  const pos = (o) => (h && h.owner === o ? 0 : st.queue.findIndex((w) => w.owner === o) + 1 || null);
+  const holds = (o) => (h && h.owner === o) || (c && c.owner === o);
+  const pos = (o) => (holds(o) ? 0 : st.queue.findIndex((w) => w.owner === o) + 1 || null);
   let met;
-  if (cond.kind === 'free') met = !h;
-  else if (cond.kind === 'idle') met = !h && !st.queue.length;
-  else if (cond.kind === 'held-by') met = !!h && h.owner === cond.owner;
+  if (cond.kind === 'free') met = !h && !c;
+  else if (cond.kind === 'idle') met = !h && !c && !st.queue.length;
+  else if (cond.kind === 'held-by') met = !!holds(cond.owner);
   else if (cond.kind === 'released-by') met = pos(cond.owner) === null;
   else if (cond.kind === 'position') { const p = pos(cond.owner); met = p !== null && p <= cond.n; }
   else throw new Error(`unknown lock condition ${cond.kind}`);
