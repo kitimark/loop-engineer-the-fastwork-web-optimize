@@ -326,9 +326,62 @@ frozen scorer `tools/score4.mjs` (sha `8aed996e7d687152`; amendment 6 and pins; 
   rotator's view-rooted Layout per tick) matches the phone in every cell where the Sim's slower clock does not
   move the event across a window edge. It can screen "does this change remove/add a Layout", not "when".
 
+### 5.4 FP-2 (S: baseline vs aw1-10e; hold 16:09-16:17Z, `sim.mjs session`, window shown)
+
+The first `tools/sim.mjs` block: `sim.mjs session` (boot 8 s, proxy :9231 SIMULATOR only, always shut down) and
+`sim.mjs scroll` (iphone.mjs scroll's PROBE, pinned). Served `--vendors=local --latency 150`, http; aw1-10e from the
+phone block's snapshot copy; warm-up per port; counted B A A B B A A B. Records `out/arch-sim/sim-s-s-*.json` (local,
+`meta.device: "simulator"`). docH 6035 on both sides. Host CPU busy 35-43 % during the runs (load1 22 → 5 after boot).
+FP-5 (A/A) was not run (time); the phone-vs-phone ceiling of amendment 7 stands in for it.
+
+| scroll phase | phone baseline goal-B1..B3 | phone aw1-10e ctl-B18..B20 (all 11 passing) | Sim baseline (4) | Sim aw1-10e (4) |
+|---|---|---|---|---|
+| dt > 34 | 39, 13, 16 (med 16) | 16, 15, 14 (12-21, med 14) | 35, 38, 43, 41 (med 39.5) | 18, 17, 17, 15 (med 17) |
+| dt > 50 | 13, 5, 5 (med 5) | 8, 5, 6 (4-8, med 5) | 19, 18, 20, 17 (med 18.5) | 8, 9, 8, 10 (med 8.5) |
+| ±4 ms twins >30 / >38 | 18 / 12 (med) | 20 / 13 | 48 / 32 | 23 / 13 |
+| frames, p50 | 309-357, 17 ms | 353-361, 17 ms | 297-315, 17 ms | 352-357, 17 ms |
+
+- **S direction:** the Sim separates the arms (disjoint at every threshold); the phone's medians move the same way
+  at dt > 34 (16 → 14-15) but its ranges overlap (goal-B1's 39 vs B2/B3's 13/16), and at dt > 50 the phone shows no
+  difference (5 → 5-6). So on these phone records S was not a decisive phone comparison, and the Sim **amplifies**
+  the baseline's cost: Sim/phone ratio (median + 1) 2.4 (> 34) and 3.3 (> 50) on the baseline, 1.1-1.2 and 1.4 on
+  aw1-10e. Class 1 stays not usable (§5.2's disjoint reversal); class 2 stays not usable, and the S ratios alone
+  spread 2.9x (> 2) as well. OBSERVED, in our setup.
+- **Class 3** (frozen `score3.mjs`, amendment 7):
+
+  | arm | phone sections (cover) | Sim sections (cover) | hit | false | chance hit mean (max) | rule 3 |
+  |---|---|---|---|---|---|---|
+  | baseline dt > 34 | 8 (35 %) | 7 (59 %) | 100 % | 14 % | 73 % (88 %) | usable |
+  | aw1-10e dt > 34 | 6 (29 %) | 7 (42 %) | 67 % | 43 % | 64 % (100 %) | lead generator |
+  | **both arms pooled** | 14 | 14 | **86 % (12/14)** | **29 % (4/14)** | | **lead generator only** |
+  | twins dt > 30 / > 38 | | | 88-100 % / 67-100 % | 29 % / 29-33 % | 76-82 % / 58-75 % | lead generator (both) |
+  | secondary dt > 50 | 3 / 4 | 7 / 6 | 100 % / 100 % | 57 % / 33 % | 63 % / 41 % | lead generator |
+
+  Every phone baseline section is found, but the Sim marks a much larger share of the page slow (cover 42-59 % vs
+  29-35 %), so its hit rate is only modestly above chance. The false sections are the top (0-260, the idle → scroll
+  start), 4910-5130 (near the bottom) and 2760-3120. Pooled, the Sim is inside the phone-vs-phone ceiling (hit ≥ 71 %,
+  false ≤ 43 %), i.e. about as reproducible as a second set of phone runs, which at dt > 34 is itself only "lead
+  generator" quality.
+
 ## 6. Verdict table
 
-(pending: §4.3 applied to §5)
+§4.3 applied to §5. Simulator: iOS 26.5 (WebKit 8624.2.5.10.4) on this Mac; phone: iPhone 15 Pro Max, iOS 26.6.1.
+All verdicts OBSERVED, in our setup (no reference covers Simulator-vs-device timing; D4 GPU/compositing is the
+named suspect for class 1-2, not confirmed).
+
+| class | question | block | verdict | key numbers |
+|---|---|---|---|---|
+| 1 | A/B direction (timing) | FP-3 M (+ FP-2 S) | **not usable** | M dt > 34 reversed with disjoint ranges (Sim g 35-41 → g-cdwc 53-65; phone 45-52 → 0-1); S agrees in direction and amplifies |
+| 2 | absolute counts | FP-3, FP-2 | **not usable** | ratios 0.77-62 (M), 1.1-3.3 (S); no single calibration factor (spread > 2) |
+| 3 | where slow frames recur (position) | FP-2 S | **lead generator only** | pooled hit 86 %, false 29 %; Sim flags more of the page (cover 42-59 % vs 29-35 %) |
+| 4 | Layout mechanism (Timeline) | FP-4 T+R | **not usable** (11/13, needs 12) | all 3 absence cells and the rotator cell agree; both misses at +1150, the Sim's slower scroll moves the Layout past the window edge |
+| 5 | touch path | FP-6 | **untested** | `sim.mjs gesture` not built; no phone G-driver records to compare (F-071); D9 stays UNRESOLVED |
+
+**What it is good for.** Functional checks (page loads, no console errors, a change applies, which builds lay out
+at all, the rotator's per-tick whole-view Layout) and a rough map of where the scripted scroll janks, to choose
+where to look before a phone slot. **What it is not good for:** any gain claim (direction or size), morph or
+compositing work (the Sim runs the morph ~4x slower per frame than the phone), timing-sensitive Layout windows,
+and anything touch. Every Simulator lead is confirmed on the phone before it counts.
 
 ## 7. Tool spec: `tools/sim.mjs` (for ts-sim; test-first, separate commits, NEW MEASUREMENT CODE)
 
@@ -399,3 +452,7 @@ later option); any runtime download.
   phone runs it reproduces §7.9's 12 cells, and the rotator cell HOLDS in 8/8. FP-4 running since 15:52Z, output unread.
 - 16:01Z: FP-4 scored (§5.3): 11/13, all absences agree, rotator HOLDS 8/8; class 4 not usable (needs 12/13), both
   misses at the +1150 window edge.
+- 16:12Z: amendment 7 (class 3 scorer `tools/score3.mjs` frozen, phone-vs-phone ceiling) before FP-2 data was read.
+- 16:09-16:17Z: FP-2 via `tools/sim.mjs` (first block on the landed tool; one earlier attempt at 16:06Z stopped at
+  "no Simulator configured", fixed with `sim.mjs setup`, no boot). §5.4: class 3 lead generator only. §6 filled;
+  FP-5 and FP-6 not run (class 5 untested).
