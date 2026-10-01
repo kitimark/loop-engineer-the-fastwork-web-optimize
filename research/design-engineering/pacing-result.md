@@ -393,14 +393,17 @@ chosen state is `scroll-passive`, which counts toward "non-passive felt as worse
   - Still open:
     - Whether later moves report `cancelable = false` in the DOM is UNRESOLVED (closed WebKitAdditions).
     - G already logs `cancelable` per move (cancelable share per state), so G answers it.
-- **C2. What WebKit's touch `Event.timeStamp` marks (event creation at dispatch vs the earlier system touch time):
-  UNRESOLVED** (claims-audit §2.9). `Event::timeStamp` returns the creation time (Event.cpp 188-199), but the iOS
-  TouchEvent class is closed source.
-  - The queue-delay and touch-to-scroll numbers are read only as within-page comparisons (C vs V).
-  - The decisive check is reported, not read: G's touchmove queue delay (handler `performance.now()` minus
-    `timeStamp`) in `drag-none` vs `drag-trace`.
-    - About 0-2 ms in both means the stamp is taken at creation.
-    - Tens of ms more under the trace means it is taken earlier.
+- **C2. What WebKit's touch `Event.timeStamp` marks** (claims-audit §2.9, arch-claims, updated 2026-10-02):
+  - "Creation at dispatch" is **REFUTED** by the decisive local check in the F data (§6).
+  - **Origin: the UIKit touch time, UNRESOLVED only at the last, closed hop.**
+    - `UITouch.timestamp` → WKTouchEvent (WKTouchEventsGestureRecognizer.mm l.274, 301) → WebEvent
+      (NativeWebTouchEventIOS.mm l.139) → `PlatformTouchEvent::m_timestamp` (WebEventConversion.cpp l.491-496).
+    - No IPC path re-stamps it. The PlatformTouchEvent → DOM step is closed source.
+  - **Coalescing: CONFIRMED.** EventDispatcher.cpp l.242-276: a new touchmove replaces a queued one, and the
+    replaced ones go into `coalescedEvents`.
+  - So `now - e.timeStamp` is an absolute touch-to-handler wait, a lower bound under load. It is compared only
+    within one driver class (F/G runs, not S/W/M runs). The ~12-13 ms no-load delay is UNRESOLVED; the hypothesis is
+    once-per-frame delivery, and the decisive check is the no-load delay in Low Power Mode.
 - Drag touches can't mix into the scroll-start timings:
   - In the scroll states #drag is hidden.
   - In the drag states the list is hidden and the body does not scroll.
@@ -434,7 +437,8 @@ Mechanics only; Chrome numbers say nothing about WebKit.
 - **Platform claims:** arch-claims reported after the read (see "Platform claims" above).
   - C1 is CONFIRMED: the wait comes once per touch sequence, at scroll start. That matches the registered G
     reading, so the reading is unchanged.
-  - C2 stays UNRESOLVED.
+  - C2 was UNRESOLVED at the read. On 2026-10-02, "creation at dispatch" was REFUTED and coalescing CONFIRMED (§5 C2,
+    §6).
 
 ## 6. v3 F results (2026-10-01)
 
@@ -510,18 +514,21 @@ the scratch `tsprobe.mjs`; only derived numbers are given here.
   - 428 moves (run 1) and 936 (run 2) carry a `timeStamp` inside a ≥ 20 ms busy chunk, at least 1 ms before its end,
     and were handled after the chunk ended.
   - So the stamp is not created when the main thread dispatches the event: queue delay shows in `now − timeStamp`.
-    That passes arch-claims' decisive check in the "taken earlier" direction (OBSERVED, in our setup).
-  - Where exactly the stamp is taken (the hardware touch time, or the web process receiving the IPC) stays
-    UNRESOLVED.
-- **Moves seem to be coalesced while blocked.**
+    "Creation at dispatch" is **REFUTED** (decisive local check; arch-claims, claims-audit §2.9).
+  - **Origin:** the UIKit touch time, by the open source path in §5 C2. Only the last, closed hop is UNRESOLVED.
+- **Moves are coalesced while blocked.**
   - Per busy chunk, at most 1-3 moves were stamped inside it (p50 1), even for chunks of 60 ms or more, during which a
     finger produces several moves.
   - The delay of the move that is delivered does not grow with the chunk length (p50 about 18-21 ms for every bin).
-  - So the move seen after a block is a recent one, not the oldest. OBSERVED; the coalescing mechanism is UNRESOLVED.
-- **Consequence for v3.** The touchmove queue delay and the touch-to-scroll times are real waits (not ~0 by
-  construction), but they are a lower bound on the finger-to-handler wait, because older moves are dropped. The
-  within-page comparison rule stays.
+  - So the move seen after a block is the newest. **CONFIRMED** by source: EventDispatcher.cpp l.242-276 replaces a
+    queued touchmove with the new one.
+- **Consequence for v3.**
+  - `now − timeStamp` is an absolute touch-to-handler wait. Under load it is a lower bound, because older moves are
+    dropped.
+  - Compare it only within one driver class: F/G runs, not S/W/M runs.
 - **Same clock.** No move had `timeStamp` > handler `now` (the scorer's `negative` count is 0), which fits both using
   the `performance.now()` clock.
-- **The ~12-13 ms baseline with no load** (a stamp about a frame before its handler) is unexplained: UNRESOLVED.
-- P-035's N T T N N T drag runs repeat this read under a fixed WDA gesture. arch-claims owns the claim status.
+- **The ~12-13 ms baseline with no load** (a stamp about a frame before its handler): UNRESOLVED.
+  - Hypothesis (arch-claims): UIKit delivers touches once per display frame, and 12.5 ms is one ~80 Hz frame (§2.7).
+  - Decisive check: the no-load delay in Low Power Mode. If it follows the frame period, delivery is frame-bound.
+- P-035's N T T N N T drag runs repeat this read under a fixed WDA gesture.
