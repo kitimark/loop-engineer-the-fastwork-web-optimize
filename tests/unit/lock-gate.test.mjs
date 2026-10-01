@@ -307,3 +307,31 @@ test('I-033: a host sleep inside a gate window is not quiet (one more window), a
   assert.equal(h.holder.gate.woke, true);
   h.release();
 });
+
+const SLEPT = (sec) => ({ quiet: false, reasons: [`host slept ${sec} s in this window`], sample: { ...BUSY.sample, load1: 1, busyPct: 3, suspended: true, sleptSec: sec, woke: true } });
+
+test('review-host-state B1: a sleep that carries the gate past its cap is no gate timeout: the suspended window never times out, and the cap counts awake time', async () => {
+  const T = { ...H.THRESHOLDS, gateMaxWaitSec: 1 };
+  assert.equal((await L.tryAcquire(R, { owner: 'sleeper', kind: 'lease', host: BUSY, thresholds: T })).gated, true);
+  await sleep(1100); // the wall clock is past the 1 s cap (as after a 472 s Maintenance Sleep, I-026)
+  const w = await L.tryAcquire(R, { owner: 'sleeper', kind: 'lease', host: SLEPT(600), thresholds: T });
+  assert.deepEqual([w.ok, w.gated, w.gate.sleptSec, w.gate.woke], [false, true, 600, true], 'one more gated round, not timeout: true');
+  // the fresh window after the wake is busy: 1.1 s of wall time minus 600 s asleep is under the cap, so still no timeout
+  const b = await L.tryAcquire(R, { owner: 'sleeper', kind: 'lease', host: BUSY, thresholds: T });
+  assert.deepEqual([b.ok, b.gated, b.gate.sleptSec], [false, true, 600]);
+  assert.equal(existsSync(L.hostAlertsFile()), false, 'no gate-timeout alert');
+  const g = await L.tryAcquire(R, { owner: 'sleeper', kind: 'lease', host: QUIET, thresholds: T });
+  assert.deepEqual([g.ok, g.holder.gateTimeout, g.holder.gate.quiet, g.holder.gate.sleptSec, g.holder.gate.woke], [true, undefined, true, 600, true]);
+});
+
+test('review-host-state N3: the gate\'s sleep sum survives a short job passing the gated waiter (keyed by its gate wait)', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: SLEPT(27) })).gated, true);
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  const t = Date.now();
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - (L.SHORT_DRAIN_SEC - 10) * 1000).toISOString(), token: 'aaaaaaaaaaaa' }));
+  assert.equal((await L.tryAcquire(R, { owner: 'npm-test', kind: 'lease', short: true, maxSec: 120 })).ok, true, 'short job passes the gated head waiter');
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: UNKNOWN })).ok, false);
+  await L.release(R, { owner: 'npm-test' });
+  const g = await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: { ...QUIET, sample: { ...QUIET.sample, sleptSec: 0, woke: false } } });
+  assert.deepEqual([g.ok, g.holder.gate.sleptSec, g.holder.gate.woke], [true, 27, true]);
+});

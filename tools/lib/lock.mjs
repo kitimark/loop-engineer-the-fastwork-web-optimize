@@ -55,8 +55,10 @@
 // records `gate: {quiet, waitedSec, reasons, load1, busyPct, sysPct, pressure}` in the holder. The host
 // sample is passed in by the caller (tryAcquire's `host`); acquire() and `lock.mjs acquire` take it.
 // I-033: a gate window in which the host slept (sample.suspended) is not quiet, whatever its load (the 04:00Z
-// A/A was granted on a window with a 27 s sleep in it); acquire() sums the sleep over its gate windows into
-// the grant's `gate.sleptSec` / `gate.woke`, and verify.mjs warns on a run of such a hold.
+// A/A was granted on a window with a 27 s sleep in it); tryAcquire sums the sleep over the gate wait in the
+// waiter's queue entry (kept across short jobs) into the grant's `gate.sleptSec` / `gate.woke`, and verify.mjs
+// warns on a run of such a hold. The gateMaxWaitSec cap counts awake time only, and a window the host slept
+// through never ends in a gate timeout (review-host-state B1): the next, fresh window decides.
 import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
@@ -292,11 +294,17 @@ export async function tryAcquire(r, opts) {
       const since = (mine >= 0 && q[mine].gate?.since) || new Date(now).toISOString();
       const waitedSec = Math.round((now - Date.parse(since)) / 1000);
       const x = host?.sample || {};
-      const g = { since, at: new Date(now).toISOString(), quiet: host?.quiet ?? null, reasons: host?.reasons || [], load1: x.load1 ?? null, busyPct: x.busyPct ?? null, sysPct: x.sysPct ?? null, pressure: x.pressureMax ?? x.pressure ?? null, ...(x.stub ? { stub: x.stub } : {}) };
-      // I-033: the host sleep over the gate's windows (acquire() sums it; a caller passing one sample gives that one's)
-      const sl = host?.sleptSec != null ? { sleptSec: Math.round(host.sleptSec * 10) / 10, woke: !!host.woke } : x.sleptSec != null ? { sleptSec: x.sleptSec, woke: !!x.woke } : {};
+      // I-033: the host sleep over this gate wait, summed in the queue entry's gate record (keyed by `since`, so it
+      // survives short jobs passing in between); each call carries at most one new window (host.sample)
+      const prev = mine >= 0 && q[mine].gate?.since === since ? q[mine].gate : null;
+      const sl = prev?.sleptSec != null || x.sleptSec != null ? { sleptSec: Math.round(((prev?.sleptSec || 0) + (x.sleptSec || 0)) * 10) / 10, woke: !!(prev?.woke || x.woke) } : {};
+      const g = { since, at: new Date(now).toISOString(), quiet: host?.quiet ?? null, reasons: host?.reasons || [], load1: x.load1 ?? null, busyPct: x.busyPct ?? null, sysPct: x.sysPct ?? null, pressure: x.pressureMax ?? x.pressure ?? null, ...sl, ...(x.stub ? { stub: x.stub } : {}) };
+      // the cap counts awake time: a sleep is not a busy host (review-host-state B1: a 472 s Maintenance Sleep pushed
+      // the wall clock past the cap, and the very next window granted by timeout, contaminating every run of the hold);
+      // and a window the host slept through never times out: one fresh window after the wake decides (as waitQuiet, I-023)
+      const capped = !x.suspended && now - Date.parse(since) - (sl.sleptSec || 0) * 1000 >= T.gateMaxWaitSec * 1000;
       if (host?.quiet === true) gateRec = { quiet: true, waitedSec, reasons: [], load1: g.load1, busyPct: g.busyPct, sysPct: g.sysPct, pressure: g.pressure, ...sl, ...(x.stub ? { stub: x.stub } : {}) };
-      else if (now - Date.parse(since) >= T.gateMaxWaitSec * 1000) gateRec = { quiet: false, timeout: true, waitedSec, reasons: g.reasons, load1: g.load1, busyPct: g.busyPct, sysPct: g.sysPct, pressure: g.pressure, ...sl, ...(x.stub ? { stub: x.stub } : {}) };
+      else if (capped) gateRec = { quiet: false, timeout: true, waitedSec, reasons: g.reasons, load1: g.load1, busyPct: g.busyPct, sysPct: g.sysPct, pressure: g.pressure, ...sl, ...(x.stub ? { stub: x.stub } : {}) };
       else {
         // not quiet (or not measured yet): keep the head place, record why for `status`
         const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, gate: g };
@@ -390,7 +398,6 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
   let lastLog = 0, wait = pollMs;
   const gated = !!GATED[r] && !short;
   let host = gated ? { quiet: null, reasons: ['not measured yet'] } : undefined;
-  let gateSlept = 0, gateWoke = false;
   for (;;) {
     const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T });
     if (!res.ok && !res.gated) keepAwakeQueued(r); // queued behind someone: no system sleep while anyone waits either (I-026 reopened)
@@ -401,13 +408,10 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
         lastLog = Date.now();
       }
       if (Date.now() - t0 > timeoutSec * 1000) { await dequeue(r, owner); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s waiting for a quiet host`); }
-      host = await gateSample({ thresholds: T, samplers: hostSamplers });
-      // I-033: the gate's host sleep over all its windows, recorded in the grant (verify: host.gate.sleptSec)
-      gateSlept += host.sample?.sleptSec || 0; gateWoke ||= !!host.sample?.woke;
-      host = { ...host, sleptSec: gateSlept, woke: gateWoke };
+      host = await gateSample({ thresholds: T, samplers: hostSamplers }); // its sleep is summed by tryAcquire (I-033)
       continue;
     }
-    if (gated) { host = { quiet: null, reasons: ['not measured yet'] }; gateSlept = 0; gateWoke = false; } // the window (and its sleep sum) restarts at the next hand-over
+    if (gated) host = { quiet: null, reasons: ['not measured yet'] }; // the window restarts at the next hand-over
     if (res.ok && res.reentrant) return { holder: res.holder, release: () => {}, reentrant: true };
     if (res.ok) {
       if (Date.now() - t0 > 1500) log(`[lock ${r}] acquired after ${Math.round((Date.now() - t0) / 1000)} s`);

@@ -113,7 +113,7 @@ export function thresholds(env = process.env) {
 export const THRESHOLDS = Object.freeze(thresholds());
 
 // ---- samplers -----------------------------------------------------------------------------------------
-function sh(cmd, args) { try { const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: 5000 }); return r.status === 0 ? r.stdout : null; } catch { return null; } }
+function sh(cmd, args, timeout = 5000) { try { const r = spawnSync(cmd, args, { encoding: 'utf8', timeout }); return r.status === 0 ? r.stdout : null; } catch { return null; } }
 
 /** "841:23.65", "1:02:03.45", "2-01:02:03" (ps time) -> seconds. */
 export function parsePsTime(s) {
@@ -176,7 +176,7 @@ export const DEFAULT_SAMPLERS = Object.freeze({
   /** `pmset -g assertions`: system-wide counts, e.g. PreventUserIdleDisplaySleep (caffeinate -d). */
   pmsetAssertions: () => (process.platform === 'darwin' ? sh('pmset', ['-g', 'assertions']) : null),
   /** CGDisplayIsAsleep(main display) through JXA (~100 ms, no root): "0" display on, "1" asleep. */
-  displayAsleep: () => (process.platform === 'darwin' ? sh('osascript', ['-l', 'JavaScript', '-e', 'ObjC.import("CoreGraphics"); $.CGDisplayIsAsleep($.CGMainDisplayID())']) : null),
+  displayAsleep: () => (process.platform === 'darwin' ? sh('osascript', ['-l', 'JavaScript', '-e', 'ObjC.import("CoreGraphics"); $.CGDisplayIsAsleep($.CGMainDisplayID())'], 2000) : null),
   now: () => Date.now(),
   /** ms on a clock that does not advance while the host sleeps (mach_absolute_time on macOS). */
   mono: () => performance.now(),

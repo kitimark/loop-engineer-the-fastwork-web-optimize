@@ -89,6 +89,18 @@ test('reconfirm: _landed from main in landing order, Tier A in one hold, Tier B 
   assert.match(r.stdout, /^RECONFIRM HOST-DISPLAY-CHANGED: PASS main /m);
   const repDark = JSON.parse(readFileSync(join(repo.wt, 'out', 'bench', 'reconfirm', sha, 'report.json'), 'utf8'));
   assert.equal(repDark.tierB['fast-nav'].hostState.tag, 'HOST-DISPLAY-CHANGED');
+  // review-host-state B2: the floor's A/A counts too. The display sleeps inside the A/A's first run (readings 1-2) ...
+  r = await bench('rc-aa1', ['reconfirm', '--gain', 'fast-nav', '--runs', '4'], { FAKE_HOST_DARKWAKE_AFTER: '1' });
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^GAIN HOST-DISPLAY-CHANGED: HOLDS fast-nav styleLayoutMs: /m);
+  assert.match(r.stdout, /^\| fast-nav \| PASS \| HOLDS \| HOST-DISPLAY-CHANGED: aa-[AB] run 1: display on, FullWake at the start, display off, DarkWake at the end; load1 /m);
+  assert.match(r.stdout, /^RECONFIRM HOST-DISPLAY-CHANGED: PASS main /m);
+  // ... or the whole A/A ran awake (readings 1-16) and every gain run in DarkWake: a floor from another state than the gain
+  r = await bench('rc-aa16', ['reconfirm', '--gain', 'fast-nav', '--runs', '4'], { FAKE_HOST_DARKWAKE_AFTER: '16' });
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^\| fast-nav \| PASS \| HOLDS \| HOST-DISPLAY-CHANGED: the arms differ: aa-[AB] display on, FullWake vs aa-[AB] display on, FullWake vs [AB] display off, DarkWake vs [AB] display off, DarkWake; load1 /m);
+  const repAa = JSON.parse(readFileSync(join(repo.wt, 'out', 'bench', 'reconfirm', sha, 'report.json'), 'utf8'));
+  assert.deepEqual(Object.keys(repAa.tierB['fast-nav'].hostState.byLabel).sort(), ['A', 'B', 'aa-A', 'aa-B']);
   // a later landing whose patch no longer applies on top: CONFLICT, never skipped
   makeTopic(m, 'late-nav', '/bench-fake.json', JSON.stringify({ ...BASE_FAKE, probes: { navQs: 1 } }), spec('late-nav'));
   commit('land late-nav (made on the plain baseline)');

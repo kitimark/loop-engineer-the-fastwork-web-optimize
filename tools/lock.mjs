@@ -37,7 +37,7 @@
 // process hold, -t <until expiry> for a lease (replaced on renew), ended on release (lib/awake.mjs).
 // A chrome-measure `run` also records the display on/off, FullWake/DarkWake, power source and whether a
 // display-sleep-preventing assertion (caffeinate -d) was active at its start and end, one JSON line per hold in
-// locks/holds.log; it warns on stderr when no such assertion is active or the display / wake state changed (T8+, I-033).
+// locks/holds.log; it warns on stderr when no such assertion is active, the host is already asleep (display off or DarkWake) at the start, or the display / wake state changed (T8+, I-033).
 // A host sleep inside a gate window makes that window not quiet; the grant's gate record carries sleptSec / woke (I-033).
 //
 // Lock state looks wrong (a stale "short" last grant starving the short lane, a queue entry that never
@@ -220,6 +220,8 @@ async function main() {
     // which the display or wake state changed, warns on stderr (U1: display on ~76 fps vs DarkWake ~93 fps)
     const powerStart = GATED[resource] && !reentrant ? await hostPower() : null;
     if (powerStart && powerStart.displaySleepPrevented === false) console.error(`[lock ${resource}] no display-sleep assertion is active (pmset -g assertions: PreventUserIdleDisplaySleep 0): the display may sleep during this hold and change what it measures (T8+, I-033)`);
+    // review-host-state N1: an assertion (caffeinate -d) keeps a lit display lit, it does not light a dark one or end DarkWake
+    if (powerStart && (powerStart.display === 'off' || powerStart.fullWake === false)) console.error(`[lock ${resource}] the host is not awake at the start of this hold (${[powerStart.display === 'off' ? 'display off' : null, powerStart.fullWake === false ? 'DarkWake' : null].filter(Boolean).join(', ')}): a display-sleep assertion does not wake it; what this hold measures may not compare with an awake host (T8+, I-033)`);
     // a short job runs in its own process group, so reaching --max-seconds stops the whole tree (npm test -> node --test -> ...);
     // FW_LOCK_HELD: the command's own verify.mjs / fix.mjs ab / nested run re-enter this hold instead of queueing behind it
     const child = spawn(rest[0], rest.slice(1), { stdio: 'inherit', detached: short, env: { ...process.env, FW_LOCK_HELD: heldEnv(resource, holder.token) } });

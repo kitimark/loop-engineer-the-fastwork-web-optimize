@@ -688,11 +688,12 @@ async function cmdReconfirm() {
       const lock = await takeLock(owner, { short: false, meta: { cmd: 'bench reconfirm tier B', ref, sha, topic: i.topic } });
       const gateTimeout = !!lock.holder?.gateTimeout;
       report.holds.push({ what: `tier B ${i.topic}`, gateTimeout, expectSec: lock.holder?.meta?.expectSec ?? null });
-      let floor = null, m;
+      let floor = null, m, aaRuns = [];
       try {
         if (!fresh(i)) {
           console.log(`A/A first: the calibration of ${i.topic} is missing or stale (toolsSha ${cur0.toolsSha}, ${cur0.setting})`);
           const aa = await measureGain({ aOverlays: [], bOverlays: [], scenarios: [sc], o, runDir: join(outDir, 'aa', i.topic), log: (s) => console.log(s), gateTimeout });
+          aaRuns = aa.runs;
           const ser = series(aa.runs, sc.key, sc.metric);
           let minEffect = null;
           try { minEffect = calibrateStats(ser.a, ser.b).minEffect; } catch {}
@@ -704,8 +705,10 @@ async function cmdReconfirm() {
       const ser = series(m.runs, sc.key, sc.metric);
       const calibration = floor || i.results.calibration;
       const v = ser.errors.length ? { verdict: 'INCONCLUSIVE', reason: `scenario errors: ${[...new Set(ser.errors)].join('; ')}` } : gainVerdict({ a: ser.a, b: ser.b, dir: sc.direction, calibration, current: cur, authored: i.results?.authored || null, hosts: ser.hosts });
-      // T8+ (I-033): the display / wake state over the gain runs (not the floor's A/A): a change tags this topic's line and the reconfirm
-      const hostState = hostStateSummary(m.runs.filter((r) => r.scenarios[sc.key]).map((r) => ({ label: r.side, run: r.pair, power: r.host.power })));
+      // T8+ (I-033): the display / wake state over the floor's A/A (sides aa-A, aa-B) and the gain runs: a change inside either,
+      // or a floor measured in another state than the gain (review-host-state B2), tags this topic's line and the reconfirm
+      const powerOf = (runs, pre) => runs.filter((r) => r.scenarios[sc.key]).map((r) => ({ label: pre + r.side, run: r.pair, power: r.host.power }));
+      const hostState = hostStateSummary([...powerOf(aaRuns, 'aa-'), ...powerOf(m.runs, '')]);
       report.tierB[i.topic] = { ...v, metric: sc.metric, values: { baseline: ser.a, patched: ser.b }, host: hostRange(ser.hosts), hostState, calibration: floor ? 'reconfirm A/A' : 'bench-results.json' };
       console.log(describeHostState(hostState));
       console.log(`GAIN ${flagged(hostState.tag, v.verdict)} ${i.topic} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)}` : ''} (${fmtHost(hostRange(ser.hosts))})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}`);

@@ -77,7 +77,7 @@ test('T8+ (I-033): a chrome-measure `run` logs display / wake / display-sleep as
   // caffeinate -d active (the fake default), one state throughout: a line, no warning
   let r = lock({}, 'run', 'chrome-measure', '--owner', 'lit', '--', ...cmd);
   assert.equal(r.code, 5, r.out);
-  assert.doesNotMatch(r.stderr, /display-sleep assertion|HOST-DISPLAY-CHANGED/);
+  assert.doesNotMatch(r.stderr, /display-sleep assertion|HOST-DISPLAY-CHANGED|not awake/);
   let l = log();
   assert.equal(l.length, 1);
   assert.deepEqual([l[0].resource, l[0].owner, l[0].short, l[0].code, l[0].tag], ['chrome-measure', 'lit', false, 5, null]);
@@ -90,7 +90,15 @@ test('T8+ (I-033): a chrome-measure `run` logs display / wake / display-sleep as
   assert.match(r.stderr, /^\[lock chrome-measure\] HOST-DISPLAY-CHANGED during this hold: dark run 1: display on, FullWake at the start, display off, DarkWake at the end/m);
   l = log();
   assert.deepEqual([l[1].owner, l[1].short, l[1].tag, l[1].start.displaySleepPrevented, l[1].end.fullWake], ['dark', true, 'HOST-DISPLAY-CHANGED', false, false]);
+  assert.doesNotMatch(r.stderr, /not awake/, 'awake at the start of the hold');
+  // review-host-state N1: already asleep at the start (display off, DarkWake): caffeinate -d does not wake it, so say so
+  r = lock({ FAKE_HOST_DISPLAY: '0', FAKE_HOST_FULLWAKE: '0' }, 'run', 'chrome-measure', '--owner', 'asleep', '--short', '--max-seconds', '60', '--', ...cmd);
+  assert.equal(r.code, 5, r.out);
+  assert.match(r.stderr, /^\[lock chrome-measure\] the host is not awake at the start of this hold \(display off, DarkWake\): a display-sleep assertion does not wake it/m);
+  assert.doesNotMatch(r.stderr, /HOST-DISPLAY-CHANGED|no display-sleep assertion/, 'one state throughout, assertion held');
+  l = log();
+  assert.deepEqual([l[2].owner, l[2].tag, l[2].start.display, l[2].start.fullWake], ['asleep', null, 'off', false]);
   // other resources: nothing recorded
   assert.equal(lock({}, 'run', 'iphone', '--owner', 'p', '--', ...cmd).code, 5);
-  assert.equal(log().length, 2);
+  assert.equal(log().length, 3);
 });
