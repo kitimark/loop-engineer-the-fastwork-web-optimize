@@ -283,7 +283,19 @@ fix (y≈1960) -> R8 (exact class toggle at m >= 0.55 that kills the nav backdro
 `will-change: transform` and (a) `::after` gradient (0 % parity first) as phone diagnostics. h3 countdown: no spawn yet
 (de-apple: 160 layers is under the count budget); attribute the 1 Hz 35-58 ms idle spike on the device first (idle-at-top
 Timeline capture in apple-ref or a spare minute). ts-gesture NEEDS-WORK (6 findings); the user's WDA setup is pending.
-**iPhone queue (09:55Z, lead; replaces the lines below):** morph-2 (ghb + ghbn nav backdrop off while morphing; R2 clip
+**Results 09:50-10:08Z (date -u):** morph-2 ghb (clean phone): moving p50 ghb 21 / gh 24 / g 33 ms, p95 ~46-52 all; the
+"b" builds only removed the panel and platform filters; the per-frame variable backdrop blur sits on the nav itself (CSS
+11387) -> `mw10e-ghbn` (nav backdrop off while morphing). Built for the phone: `mw10e-src` (y≈1960 fix candidate: panel
+images sourced at idle after pre-mount, 2 per slice; Chrome: 21/21 decoded at y=0 within 1 s, 0 src writes in scroll, no
+new > 50 ms task, morph diff 0.05 %; lead: if it wins with clean parity -> review -> first wave-2 landing candidate);
+`mw10e-ghr8` (R8) and `mw10e-ghr85a` (R8 + R5a), upper-bound diagnostics (nav half not pixel-exact before m≈0.9).
+**/10d Chrome A/B (10:05Z, `ab se10d-aw1 --on aw1-10e`, n=5, 1/10 contaminated, provisional):** > 50 ms 2 [1-2] -> 2 [1-2],
+> 34 ms 4 [4-6] -> 4 [4-5], p95 17.3 -> 17.2 ms (the /10c +0.8 ms flag does not recur), screens <= 0.09 %. Neutral in
+Chrome; its value (Safari quiet-input gate, scroll-restore fix) shows only on the iPhone (check at the end of the queue).
+**iPhone queue (10:08Z):** hero-A -> mw10e-src (vs aw1-10e, warm-up control) -> ghbn (vs ghb, gh) -> ghr8 / ghr85a (vs gh)
+-> hero-B -> apple-ref (+ idle Timeline) -> R2 (+ r3a/r3b if cool) -> N12 -> /10d check; ts-gesture V0 after the user's
+setup. Blocks of ~9 runs with a 10 min gap (the phone heats after 15-20 min of back-to-back runs).
+**iPhone queue (09:55Z, lead; superseded):** morph-2 (ghb + ghbn nav backdrop off while morphing; R2 clip
 probe when the user can look) -> hero-A (h1v2) -> hero-B (drop v4/v5 if h1v2 wins) -> apple-ref (+ idle-at-top Timeline)
 -> R2 bg-layers -> N12 -> img-sourcing candidate -> ts-gesture V0 after the user's setup.
 **iPhone queue (09:38Z, superseded):** e1/e2 (aw1-10e control) -> morph-2 (ghb ABBA vs gh, g control; R2 clip probe) -> hero-A (h1v2 vs
