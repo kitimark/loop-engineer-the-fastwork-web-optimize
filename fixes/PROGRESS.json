@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T19:55:00Z",
+ "updatedAt": "2026-10-01T20:08:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T20:08:00Z", "text": "Four cheaper look-alike proposals are ready for you to accept or reject; two more are coming. Your questions now have one thread per topic in the console." },
   { "at": "2026-10-01T19:55:00Z", "text": "Style fix recorded on the phone: the section switch does less work, but the same work shows up one frame later further down, so nothing is saved yet. Next: find out why it moved." },
   { "at": "2026-10-01T19:31:00Z", "text": "Your decision: timing tests are on hold. The team now finds out what work the page does and how often (Chrome call tree, style and layout counts, layers) and records Safari's layout and drawing work. The phone is only used for those recordings." },
   { "at": "2026-10-01T19:28:00Z", "text": "Carousel fix (st5) tested on the phone: the picture swap no longer re-lays out the page, but the start of each slide still does about half the time. Hitches at rest fell by more than half. Next step is the lead's call." },
@@ -180,10 +181,11 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "Two research agents count the costs on the computer first, then send the first proposals.",
+   "next": "Four proposals are ready for you on the new Proposals page: three from de-illusion-style (a cheaper underline blink, a cheaper accent sweep, typing shown in chunks) and one from de-illusion-composite (the countdown digits on fewer layers). Two more are coming.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
    "checks": [],
    "details": [
+    "Proposals waiting (lead 20:0xZ): de-illusion-style boil-ca, accent-wipe, typing-chunks; de-illusion-composite digit-layers (+2 coming). Hold-1 counts (Chrome 1x, 9.3 s, vs B): accent-wipe hero window Paint 2688 -> 61, ULT elements 7501 -> 6858, animation invalidations 6335 -> 5695; boil-ca no Chrome change (WebKit-only gain, F-048/F-065); no new errors/404s.",
     "User priority 2 (lead 19:1xZ), right after style recalc. de-illusion-style: style/layout costs; de-illusion-composite: compositing, layers, blur; ts-proposals: console Proposals page (read, visual compare, Accept/Reject/Request change). Counts first, at most 2 batched Chrome holds each before first proposals, queued after scene-scope and the de-counts pair; no phone before the user accepts; accepted -> fix topic + phone ticket via mgmt-ops."
    ]
   },

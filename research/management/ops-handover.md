@@ -56,6 +56,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **20:0xZ** Console THREADS landed (77d318c, rule fc07bb1): an agent the lead assigns a thread arms `console.mjs thread
+  wait --as <me>` and answers there, not in chat; broadcast to 12 live agents. scene-scope block-1 scoring (owner, strict
+  raw count): P-040 MISS, P-041 HIT. Tickets 2 (C=B, I4, I40; W; P-045..P-048) and 3 (C=B+V1, RA, RB; M; P-049..P-052)
+  went straight to iphone-runner on the user's "run now"; second read in parallel OK, hashes match. Phone order: t2 ->
+  t3 -> st5 split. Proposals waiting for the page: boil-ca, accent-wipe, typing-chunks, digit-layers (+2).
 - **19:5xZ** scene-scope attribution block done (iphone-runner 19:44-19:52Z, 9/9, heat sentinels pass): nested Layouts
   in the switch RS C 2 / V 2 raw (2nd 0.1 ms non-view -> 1) / I 1; RS self C 2.4-3.7, V 1.2-1.4, I 0.6-0.9 ms; but the
   cost MOVED: fwReskip RS (y~2990) C 14 / V 18-21.5 / I 21-23 ms, switch + fwReskip C 32-35 / V 33-39 / I 39-41
