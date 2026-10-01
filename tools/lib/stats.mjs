@@ -436,14 +436,6 @@ export const compareBlockIds = (x, y) => (x == null ? (y == null ? 0 : -1) : y =
   : typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'en', { numeric: true }));
 
 /**
- * Group counted runs (not warm-up, not void) into blocks per variant arm, in block-id order, of the given
- * metric. The control arm is 'C'. Returns {arms: {arm: [{block, control, variant}]}, dropped: [{arm, block,
- * reason}]}: a block without counted controls or without counted variant runs is dropped and reported.
- * A counted run without a finite frame time (empty log, no marks for the phase, dt all null/NaN) throws:
- * void it or fix it. `partial` lists counted runs where only some frame times are non-finite (scored on
- * the finite ones; the CLI warns).
- */
-/**
  * Throws when the runs carry more than one device ('chrome' | 'phone' | 'simulator'; runsFromJson always sets
  * one, hand-built runs without a device are not counted): frames and verdicts never pool across devices
  * (research/simulator/README.md §7).
@@ -454,6 +446,14 @@ export function assertOneDevice(runs, who = 'stats') {
   if (by.size > 1) throw new Error(`${who}: refusing to pool devices: ${[...by].map(([d, n]) => `${d} (${n})`).join(' with ')}; analyse each device on its own (research/simulator/README.md §7)`);
 }
 
+/**
+ * Group counted runs (not warm-up, not void) into blocks per variant arm, in block-id order, of the given
+ * metric. The control arm is 'C'. Returns {arms: {arm: [{block, control, variant}]}, dropped: [{arm, block,
+ * reason}]}: a block without counted controls or without counted variant runs is dropped and reported.
+ * A counted run without a finite frame time (empty log, no marks for the phase, dt all null/NaN) throws:
+ * void it or fix it. `partial` lists counted runs where only some frame times are non-finite (scored on
+ * the finite ones; the CLI warns).
+ */
 export function blocksFromRuns(runs, metric) {
   if (!METRICS[metric]) throw new Error(`unknown metric ${metric} (${Object.keys(METRICS).join(', ')})`);
   assertOneDevice(runs, 'blocksFromRuns');

@@ -608,7 +608,9 @@ test('simulator runs (tools/sim.mjs) are their own device: never pooled with pho
   assert.match(r.stdout, /on simulator, twins gt46, gt54/);
   assert.match(r.stdout, /^arm V vs C: DECISION WIN: U = 0, p 0.014, HL 3 >= 1$/m);
   assert.match(r.stdout, /^ {2}arm V block 1: near50 /m);
-  assert.equal(node(tool('stats.mjs'), ['runs', join(d, 's'), '--metric', 'k7']).code, 2);
+  r = node(tool('stats.mjs'), ['runs', join(d, 's'), '--metric', 'k7']);
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /runs: no k forms on the simulator \(phone rules\) \(CLAUDE.md "Frame thresholds"\); use gt50 \/ gt34 \(k7 -> gt50\)/);
   writeFileSync(join(d, 's', 'phone.json'), JSON.stringify({ fields, frames: frames(5), marks: { scroll: [0, 1e9] }, meta: { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', block: 1, arm: 'C', pos: 9, driver: 'S' } }));
   r = node(tool('stats.mjs'), ['runs', join(d, 's'), '--metric', 'gt50']);
   assert.equal(r.code, 2);

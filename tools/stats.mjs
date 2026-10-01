@@ -109,7 +109,7 @@ if (cmd === 'ticks') {
   const assumed = [...new Set(runs.filter((r) => r.deviceAssumed).map((r) => r.source))];
   if (assumed.length && opt('device', null) == null) deviceWarn.push(`device not recorded: phone rules assumed for ${assumed.length} file(s) without a known meta.device (${assumed.slice(0, 3).join(', ')}${assumed.length > 3 ? ', ...' : ''}); pass --device to state it`);
   for (const w of deviceWarn) console.error(`WARN ${w}`);
-  if (phoneLike && K_FORMS.has(metric)) die(`runs: no k forms on the phone (CLAUDE.md "Frame thresholds"); use gt50 / gt34 (${metric} -> ${metric === 'k7' ? 'gt50' : metric === 'k5' ? 'gt34' : metric.replace('Ticks', 'Ms')})`);
+  if (phoneLike && K_FORMS.has(metric)) die(`runs: no k forms on the ${device === 'phone' ? 'phone' : `${device} (phone rules)`} (CLAUDE.md "Frame thresholds"); use gt50 / gt34 (${metric} -> ${metric === 'k7' ? 'gt50' : metric === 'k5' ? 'gt34' : metric.replace('Ticks', 'Ms')})`);
   const decideAll = (m) => {
     let g;
     try { g = blocksFromRuns(runs, m); } catch (e) { die(e.message); }
