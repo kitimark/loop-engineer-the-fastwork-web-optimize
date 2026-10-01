@@ -64,8 +64,29 @@ from 113 to 33.
 - The result is not threshold-sensitive.
 - P-017 (gh vs gh-cdwc vs gh-cdhid, 11:57-12:07Z) showed the same mechanism and size of effect on the R1 base.
 
-**Chrome** (`fix.mjs ab`, regression check): see `results.json` once measured. Chrome doesn't reproduce the WebKit
-repaint, so no Chrome gain is expected.
+**Chrome** (`fix.mjs ab mw10e-cdwc --on aw1-10e`, regression check, mobile 6x, n=5 on main 5f188b9, whose tools are those of 5075aac (main has had no tool changes since), snapshot
+b1789284481295-4ad4a84a). Chrome doesn't reproduce the WebKit repaint, so no Chrome gain was expected, and none was found.
+
+- **No regressions.**
+  - Console errors: 0 new.
+  - 404s: 0 new.
+  - Screenshot diff: top 0.10 %, middle 0.01 %, bottom 0 %. That is countdown phase noise.
+  - morphReached: 5/5 on both sides.
+- **`results.json` (n=5, 13:47Z, with `--frame-log`).** Every row is within noise:
+  - scroll >34 ms: 5 [3-8] vs 5 [1-5];
+  - scroll >50 ms: 1 [0-4] vs 1 [1-2];
+  - morph >50 ms: 0 vs 0;
+  - scroll p95: 17.1 vs 17.3 ms.
+- **Host contamination.** 6 of 10 runs were contaminated (other CPU 26-41 % > 25 %), so these verdicts are provisional.
+- **An earlier n=3 run said WORSE, and it was noise.** At 13:29Z (all runs clean), scroll >34 ms was 3 [3-4] vs 5 [5-6], "WORSE (ranges do not overlap)". The n=5 frame log rules that out:
+  - The k≥5 frames sit at the same scroll positions on both sides: y≈700, y≈1660-1760, y≈3650, and the end at 5345.
+  - Two frames have no counterpart on the other side, one on each:
+    - base: y≈1456 (41 ms);
+    - fix: y≈931 (42 ms, in a contaminated run).
+  - The patched side adds no recurring position.
+  - Per run, k≥5 counts are base 5/5/3/7/5 and fix 3/1/4/5/5. k≥7 counts are base 2/1/0/2/1 and fix 1/1/2/2/1.
+  - So the n=3 split was run-to-run spread over the same recurring frames, not a cost of the rule.
+  - The n=3 table is kept at `out/cdwc-ab-n3.log` (local).
 
 ## Risks, conflicts, follow-ups
 
