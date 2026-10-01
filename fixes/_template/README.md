@@ -4,6 +4,10 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** draft | measured | rejected
+**Stage:** R | I | D (LOCATED / NAMED, signed by the lead <date>) | F | V
+**Device class / gate:** Chrome-measurable (Chrome A/B) | phone-only (phone ABBA) | render-bound (Instruments hitches) | touch-only (G/F)
+**Driver(s) behind the claims:** Chrome A/B | phone S / W / M / G / F
+**Prediction:** `fixes/PREDICTIONS.md` <id>
 **Topic:** see `fixes/TOPICS.md` (<topic>)
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` (functions / pretty line ranges), `...css` (rules)
 
@@ -36,6 +40,16 @@ serve `--vendors=local --https --latency 150`). Paste `results.json` -> `markdow
 A/A noise floor for comparison (`node tools/fix.mjs ab --aa --runs 5`), if available: ...
 
 iPhone (optional, under the `iphone` lease): scripted scroll summary / finger test notes.
+
+## Cards (protocol v2)
+
+Paste the filled cards from `fixes/_template/CARDS.md`: census, event, attribution (NAMED, with the lead's
+sign-off), build (parity, a11y diff, mechanism delta, idle triple, memory/layers), prediction (and its
+measured outcome). Phone blocks: block record (order, warm-up, sentinel per control, heat note, served hashes),
+every run, median [IQR] in ticks; position-bin census diff on both devices.
+
+**Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up · toolbar resize ·
+rubber band (strike out the ones that did run, with their evidence).
 
 ## Risks, conflicts, follow-ups
 

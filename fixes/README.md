@@ -18,7 +18,8 @@ fixes/<topic>/
 
 Other files here: `TOPICS.md` (proposed topics, code locations, conflict clusters, waves),
 `AGENT_PROMPT.md` (prompt template for a fix agent/teammate), `_template/README.md` (deliverable
-template, copied by `fix.mjs new`), `AGENT_ROLES.md` (roster: lead, fix owner, toolsmith, wave
+template, copied by `fix.mjs new`), `_template/CARDS.md` (the protocol v2 stage cards), `EXPERIMENTS.md` and
+`PREDICTIONS.md` (ledgers of every variant and every prediction), `AGENT_ROLES.md` (roster: lead, fix owner, toolsmith, wave
 integrator, mapper, reviewer; who may do what, model and effort per task), `LEAD.md` (the lead's
 playbook: the project loop, definitions of done, landing), `INCIDENTS.md` (reporting and fixing
 unexpected problems during parallel work). Agent definitions: `.claude/agents/`.
@@ -57,6 +58,32 @@ A fix is done when its branch has exactly `fixes/<topic>/README.md`, `patch.diff
    overlay and every later combined overlay (`--on`), so a later wave or tool change can't silently undo
    the gain. Format, runner and role: `research/architecture/automated-benchmarks.md` (arch-bench,
    in progress). Until the runner lands, a fix is done without it, but gets a `bench-author` afterwards.
+
+Protocol v2 items (lead decision 2026-10-01; stages and sign-offs in [`LEAD.md`](LEAD.md) "Stages and gates", card
+templates in [`_template/CARDS.md`](_template/CARDS.md), rationale in
+`research/architecture/measurement-protocol-v2.md`). The README's "Cards" section carries them:
+
+9. **Attribution card, NAMED**, signed by the lead (or the lead's fast-path one-liner, "counts X→0, by code"): pipeline
+   stage, the single mechanism with file:line, a positive and ≥1 negative sibling ablation measured in one block
+   against one control, each arm with its mechanism check (computed style, mutation counts, layer count; an arm
+   without it is void), and the device class. No evidence from a capped logger. LOCATED or UNEXPLAINED builds no fix.
+10. **Prediction row** in [`PREDICTIONS.md`](PREDICTIONS.md), written before the first timed run (prediction card:
+    same-driver baseline ≤24 h old, closure check passed, every constant calibrated or assumed), with the measured
+    median [IQR] and error ratio filled in after; its id in the README and in the `EXPERIMENTS.md` row.
+11. **Evidence on the device class's gate:** Chrome-measurable → the Chrome A/B is the gate, a phone run confirms;
+    phone-only → a phone ABBA block (≤2 blocks, sequential rule) is the gate, Chrome is a no-regression check;
+    render-bound → Instruments render-hitch time per s and Renders/GPU (held LOCATED until that route is verified),
+    rAF a no-regression check; touch-only → G or F runs before landing. Plus the **position-bin census diff on both
+    devices**: no 250 px bin worse by ≥1 tick median or +1 frame k≥5 per run. Phone blocks carry heat notes, a
+    passed sentinel, a warm-up run and the served hashes of the ticket.
+12. **Scenarios not run**, listed by name: idle after scroll, reload while scrolled, early input, scroll up,
+    toolbar resize, rubber band (and which of them did run).
+13. **Idle triple:** callbacks/s, writes/s, mutations/s by type and rAF/s at y=0, parked mid-page after a scroll,
+    and at the pin, base vs fix; none higher without a stated reason.
+14. **Driver scope:** every claim names its driver (Chrome A/B, phone S / W / M / G / F) and what that driver never
+    covers (S: toolbar, touch, bounce; W: touch; M: touch, bounce, pin; G: real finger variance). A morph change
+    lands only with G or F. Plus the build card's parity items: frozen-frame diff 0 %, backdrop look check, a11y
+    diff when `inert` / `visibility` / `aria-*` / focusable content changes, memory/layers note, debug hooks stripped.
 
 The lead has each fix checked against this list by a `fix-reviewer` agent
 ([`AGENT_ROLES.md`](AGENT_ROLES.md), [`LEAD.md`](LEAD.md)).
