@@ -5,7 +5,7 @@
 
 **Status:** P11 done. lc-cq3 / aw1-cq3 gives no gain: the nested Layout is removed but its cost stays in the same frame (P-028 MISS on ms, see "P11 Block A result"). P14 done (see "P14 result"). The rotator's whole-view tick Layout (C 67/67, median
 20.6 ms) is gone with st4-noswap (2/67, idle long frames 0), so the escape is the swap path. re-contain-js re-roots
-it at #people but keeps 57 % of the cost (P-025: V1 HIT, V2 root HIT, cost MISS). st5 is built: fixed slots, src in place, the same slide. Chrome check: 0 remounts, the slide pixel-identical to C mid-slide. Its phone block C / st5 / V1 is ticketed (see "st5 build").
+it at #people but keeps 57 % of the cost (P-025: V1 HIT, V2 root HIT, cost MISS). st5 is built: fixed slots, src in place, the same slide. Chrome check: 0 remounts, the slide pixel-identical to C mid-slide. P-039 done (see "P-039 result"): st5 is **MIXED**. The swap tick is clean (1/31 view ticks, like V1), but the slide-start tick still gets the whole-view Layout in 15/33 ticks. The leftover cost sits where the slide starts.
 **Stage:** R + I closed. The P11 phone pass is done (Block A; Block B skipped). **D for the rotator question: D signed by lead,
 2026-10-01 18:0xZ**, with this scope:
 - The whole-view tick Layout comes from the carousel's swap path: V1 0/36 idle, 2/67 overall, vs C 67/67;
@@ -495,6 +495,70 @@ Block: driver W at 430x775, Timeline on (depth 8) in all 9 counted runs, order C
 - **Not this block's question:**
   - The reveal-flip frames (F-089; st5 carries no #people containment).
   - The y≈1960 rebuild frame.
+
+## P-039 result (iphone-runner, 19:12-19:23Z; scored here with `<scratchpad>/layout-containment/p039score.cjs`)
+
+Block as ticketed:
+- Driver W at 430x775, Timeline on (depth 8, Paint and Decode kept) in all 9 counted runs, order C1 S2 V3 · V4 C5 S6 · S7 V8 C9 (S = st5, V = V1 st4-noswap).
+- Tools 1e0dedf. Served hashes checked at the start: C 3e2f599a1632 / c6aad94b455f, S 268a68962d18 / e68c99631e80, V1 b8c085d9b619.
+- Sentinels (Timeline-OFF C) pass: open bottom 60.0 / scroll 57.1, end bottom 60.0 / scroll 57.7.
+- Phone 41.9 → 39.4 °C (warm from the sitting and the style-recalc block), no Low Power Mode, unplugged after the first run.
+- All data are OBSERVED, in our setup.
+
+**Scoring.**
+- The rules are P14's, plus the pre-data amendments (511908f).
+- `p039score.cjs` is `p14score.cjs` plus the tick type. A tick 150-400 ms after the previous one is a swap (median gap 240 ms); otherwise it is a slide start (median gap 810 ms).
+- Every run has 21-22 ticks; every arm has 3/3 counting runs and 63-64 pooled ticks, with ≥30 ticks per type.
+
+| arm | slide-start ticks: view | swap ticks: view | pooled | idle-only view | median tick Layout | band |
+|---|---|---|---|---|---|---|
+| C aw1-10e | 33/33 (100 %), view | 31/31 (100 %), view | 64/64 | 34/34 | 22.95 ms | view |
+| V1 st4-noswap | 1/33 (3 %), gone | 3/30 (10 %), gone | 4/63 (6 %) | 0/33 | 0.1 ms | gone |
+| S st5 | **15/33 (45 %), MIXED** | **1/31 (3 %), gone** | 16/64 (25 %) | 5/34 | 0.3 ms | **MIXED** |
+
+- **The amended rule was needed.** Pooled, st5 sits exactly at 25 % and would have read "gone"; per type, the slide-start ticks are 45 % view, so st5 is MIXED.
+- **References hold.** C is view, V1 is gone, so the block is readable.
+- **st5's view ticks happen on and off screen.** The 15 slide-start view ticks occur in idle at y 0 (5/18), mid-scroll (y 249-1110 and 1850-1996) and at the bottom (y 2745-2747). Their Layouts take 12.5-35 ms, rooted at 430x775. On-screen means scrollY 1279-2086 (`p039ticks.cjs`).
+- **Record time per tick window** (`p039win.cjs`; slide-start window = tick + 220 ms, swap window = tick + 120 ms; ms per tick):
+
+  | arm | start: Layout / Recalc / Paint / Composite | swap: Layout / Recalc / Paint / Composite |
+  |---|---|---|
+  | C | 34.0 / 10.5 / 1.6 / 17.7 | 23.6 / 3.4 / 0.6 / 13.8 |
+  | st5 | 17.7 / 16.5 / 1.1 / 18.8 | 3.2 / 6.1 / 0.7 / 14.0 |
+  | V1 | 4.2 / 14.6 / 1.4 / 19.8 | 4.7 / 5.2 / 0.7 / 15.0 |
+
+  - Paint and Composite inside the slide windows don't rise with st5 (de-pm-hero's note 2). The leftover cost is Layout at the slide start.
+- **Pre-registered predictions:**
+  - st5 gone: **MISS** (MIXED; slide start 45 %).
+  - st5 median tick Layout <1 ms: **HIT** (0.3 ms). The median hides the slide-start hits, so it isn't a useful measure for a split result.
+  - Info only, y 1500 add-on near V1: **MISS**. st5 has >34 29 vs V1 1 (see below).
+- **"Cost moved" line: not tripped**, so there is no LayerTree read.
+  - The line trips if st5's dt>34 count is ≥ half of C's. C has 70, so the line is readable (≥10) and half is 35; st5 has 29.
+  - Twins: >30 29 vs 43; >38 26 vs 27.5 (close, but below).
+  - The Timeline-on windows above agree: no paint or composite shift.
+- **Reading** (per the ticket):
+  - st5 is MIXED. One type is gone (swap) and the other is MIXED (slide start, not ≥50 %), so the pre-registered rule gives no direction.
+  - **Observed but not pre-registered:**
+    - The swap tick, which carried the remount, is clean in st5 (3 %, like V1). So the fixed slots removed the swap's whole-view Layout.
+    - What's left comes with the slide start, i.e. adding `.is-sliding`, which starts 6 CSS animations on the layered imgs. It hits in about half the starts, on and off screen; the cause of the intermittency is unknown.
+    - This points at the slide's start (class toggle or animation creation) rather than at img insert/remove. It narrows D's open split but doesn't settle it.
+- **Frame columns** (phone; dt>50 (>46/>54) · dt>34 (>30/>38)).
+  - Timeline-OFF idle at y 1500, 40 s, 1 run per arm (info only):
+
+    | arm | >50 (>46/>54) | >34 (>30/>38) | max | near-band frames | fps | long-frame pairs |
+    |---|---|---|---|---|---|---|
+    | C | 4 (18/2) | 70 (86/55) | 58 ms | 47 | 58.1 | 29 |
+    | S st5 | 0 (0/0) | 29 (29/26) | 46 ms | 3 | 59.3 | 2 |
+    | V1 | 0 (1/0) | 1 (1/1) | 49 ms | 1 | 60.0 | 0 |
+
+    - st5 removes C's >50 frames and the paired long frames, and has fewer than half of C's >34. It keeps about one 35-46 ms frame every ~1.4 s while the carousel is on screen.
+    - The counted runs' idle at y 0 has the carousel off screen: C >34 4-5 per run, S and V1 0-1.
+  - Scroll >50 is 1 in every arm: the ~100 ms rebuild frame at y≈1965, not the rotator's (as in P14).
+- **Next step (proposal for the lead, not built):** split st5's slide start.
+  - **st5-noanim:** the class is toggled but `animation: none`. It answers whether the class toggle alone (style invalidation) re-roots the Layout.
+  - **st5-waapi:** the same keyframes started with `element.animate()`, with no class or style change on the carousel. It answers whether starting the animations escapes even without a style change.
+  - V1 stays the "gone" reference.
+  - This is the rotator question's third block, so the sequential rule (§5.3, ≤2 blocks per question) needs the lead's call. Alternatively, st5 could go to a gain block as is: it removes C's >50 and pairs at y 1500, but it is not at V1's level.
 
 ## Risks, conflicts, follow-ups
 
