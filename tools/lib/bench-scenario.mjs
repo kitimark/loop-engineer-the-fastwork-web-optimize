@@ -6,6 +6,17 @@
 import { gotoAndSettle, sleep, enablePerformance, getMetrics, eventListeners } from './cdp.mjs';
 import { installSource, RESET, READ, QUIESCE, SCROLL_TO, SNAPSHOT, GEOMETRY, SETTLE, ERRORS } from './bench-probes.mjs';
 import { LOGGER, RESET as PERF_RESET, COLLECT as PERF_COLLECT } from './perf-page.mjs';
+import { hostClock } from './host.mjs';
+
+// The clock of the scenario's own waits (quiet period, settle, warm-up, spot wait/window; incident I-027 C).
+// A real host: Date.now + setTimeout, exactly as before. A stubbed host ($FW_TEST_HOST, tests only; every
+// bench result records the stubbed host): the stub's fake clock, so a fake-Chrome bench run costs no wall
+// time on these waits. In-page waits (SETTLE, QUIESCE, rAF frames) and CDP timeouts stay on real time.
+const REAL_CLOCK = { now: () => Date.now(), sleep };
+let clockP;
+export function scenarioClock() {
+  return (clockP ||= hostClock().then((c) => (c.stub ? { now: () => c.mono(), sleep: (ms) => c.sleep(ms), stub: c.stub } : REAL_CLOCK)));
+}
 
 export const VIEWPORTS = {
   desktop: { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false },
@@ -59,9 +70,10 @@ export async function tierASession(cdp, url, plan, { settleMs = 10000, log = () 
   const pageProbes = {}, cdpProbes = {};
   for (const [id, p] of Object.entries(plan.probes)) (CDP_KINDS.includes(p.kind) ? cdpProbes : pageProbes)[id] = p;
   const perf = Object.values(cdpProbes).some((p) => p.kind !== 'listeners');
+  const T = await scenarioClock();
   const page = await openPage(cdp, { viewport: plan.viewport, source: installSource({ probes: pageProbes }), perf });
   try {
-    await gotoAndSettle(page, url, { quietMs: TIMING.quietA });
+    await gotoAndSettle(page, url, { quietMs: TIMING.quietA, clock: T });
     await page.eval(SETTLE(settleMs), { timeout: settleMs + 5000 });
     await page.eval(SCROLL_TO(0));
     await page.eval(QUIESCE(QUIET_FRAMES, QUIET_CAP));
@@ -107,10 +119,10 @@ export async function tierASession(cdp, url, plan, { settleMs = 10000, log = () 
         const def = plan.spots[w.label];
         await page.eval(SCROLL_TO(g.y));
         await settle();
-        await sleep((def.wait ?? 1) * 1000);
+        await T.sleep((def.wait ?? 1) * 1000);
         if (perf) m0 = await getMetrics(page);
         await page.eval(RESET(w.label));
-        await sleep(def.window * 1000);
+        await T.sleep(def.window * 1000);
         await snap(g.y);
       }
       const r = await page.eval(READ(w.label));
@@ -159,16 +171,17 @@ export { TIER_B_METRICS };
  * Returns {scenarios: {key: metrics}}.
  */
 export async function tierBRun(cdp, url, { viewport, cpu, timeDomain = 'timeTicks', scenarios, dwellFrames = 20, settleMs = TIMING.settleB, beforeScenario = async () => {}, afterScenario = async () => {} }) {
+  const T = await scenarioClock();
   const page = await openPage(cdp, { viewport, perf: true, timeDomain });
   try {
     await page.send('Page.addScriptToEvaluateOnNewDocument', { source: LOGGER });
     await page.send('Page.bringToFront').catch(() => {});
-    await gotoAndSettle(page, url, { quietMs: TIMING.quietB });
-    await sleep(settleMs);
+    await gotoAndSettle(page, url, { quietMs: TIMING.quietB, clock: T });
+    await T.sleep(settleMs);
     await page.eval(SETTLE(10000), { timeout: 15000 });
     const geometry = await page.eval(GEOMETRY({ segments: Object.fromEntries(scenarios.filter((s) => s.segment).map((s) => [s.key, s.segment])), spots: Object.fromEntries(scenarios.filter((s) => s.spot).map((s) => [s.key, s.spot])) }));
     await page.send('Emulation.setCPUThrottlingRate', { rate: cpu });
-    await sleep(TIMING.warmB);
+    await T.sleep(TIMING.warmB);
     const out = { scenarios: {} };
     const frames = (n) => `new Promise((r) => { let i = 0; const f = () => (++i >= ${Number(n)} ? r(i) : requestAnimationFrame(f)); requestAnimationFrame(f); })`;
     for (const s of scenarios) {
@@ -176,7 +189,7 @@ export async function tierBRun(cdp, url, { viewport, cpu, timeDomain = 'timeTick
       if (!g || g.error) { out.scenarios[s.key] = { error: g ? g.error : 'no geometry' }; continue; }
       await page.eval(SCROLL_TO(s.segment ? g.start : g.y));
       await page.eval(frames(s.dwellFrames ?? dwellFrames), { timeout: 60000 });
-      if (s.spot) await sleep((s.spot.wait ?? 1) * 1000);
+      if (s.spot) await T.sleep((s.spot.wait ?? 1) * 1000);
       await beforeScenario(s);
       const m0 = await getMetrics(page);
       await page.eval(PERF_RESET);
@@ -187,7 +200,7 @@ export async function tierBRun(cdp, url, { viewport, cpu, timeDomain = 'timeTick
           await page.eval(frames(s.dwellFrames ?? dwellFrames), { timeout: 60000 });
           if (yy >= g.end) break;
         }
-      } else await sleep(s.spot.window * 1000);
+      } else await T.sleep(s.spot.window * 1000);
       const perf = await page.eval(PERF_COLLECT);
       const m1 = await getMetrics(page);
       out.scenarios[s.key] = { ...gainMetrics(m0, m1, perf.frames || []), host: await afterScenario(s) };
