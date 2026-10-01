@@ -448,22 +448,54 @@ Status: CONFIRMED for the gesture gate in the UI process.
     moving frames should not differ through this path.
   - Main-thread work in the handler still costs frames, through the rendering update, as any main-thread work does.
 
-**C2. `Event.timeStamp` for iOS touch events: UNRESOLVED.**
+**C2. `Event.timeStamp` for iOS touch events.** Two parts:
+- "the stamp is the creation time at dispatch" is REFUTED by the decisive check;
+- the stamp is the UIKit touch time: source-traced to the last open hop, last hop UNRESOLVED.
+(Updated 2026-10-02 after de-unknowns-ux ran the check: pacing-result.md §6, 68af31a, F-087.)
 
 - **What the shared code shows.** It returns `m_createTime`, reduced in resolution, relative to the time origin
-  (Event.cpp l.188-199).
-- **Why that doesn't settle it.** The open-source `TouchEvent` constructor uses `MonotonicTime::now()` at creation
-  (TouchEvent.cpp l.47). But the iOS class comes from WebKitAdditions, so whether it passes the platform event's
-  timestamp instead can't be read.
-- **Decisive local check (phone, any driver).**
-  - In the touchmove handler, log `performance.now() - e.timeStamp`.
-  - Run it with and without a 50 ms busy loop placed just before the touch, so that it ends while the touch is
-    pending.
-  - If the gap stays below about 2 ms in both cases, the stamp is the web process's creation time at dispatch:
-    queue delay is invisible to it.
-  - If the gap grows by tens of ms with the busy loop, the stamp is earlier, from the UI process or the OS.
-- **Until then.** Queue delay and touch-to-scroll can be read only as within-page comparisons (C vs V), as
-  de-unknowns-ux already does.
+  (Event.cpp l.188-199). The open-source `TouchEvent` constructor uses `MonotonicTime::now()` at creation
+  (TouchEvent.cpp l.47). But the iOS class comes from WebKitAdditions (TouchEvent.h l.29-30), so the source alone
+  couldn't settle this.
+- **The decisive check (de-unknowns-ux, saved F-v3 finger data from 2 testers, drag-trace visits).** Both logs use
+  `performance.now()` and start in the same `enter()`, less than 1 ms apart.
+  - 428 and 936 touchmoves have a `timeStamp` inside a busy chunk of at least 20 ms, at least 1 ms before the chunk
+    ends, and were handled after it. The page's main thread was blocked at that time, so it can't have created
+    the event then. **Creation at dispatch: REFUTED.**
+  - `now - timeStamp` p50/p90:
+    - no load: 13/15 ms;
+    - after 20-35 ms chunks: 21/26 ms;
+    - after 60-200 ms chunks: p50 18-19 ms, p90 57-88 ms.
+  - No `timeStamp` was later than its handler's `now`, which fits a shared clock.
+- **Where the stamp comes from (source, WebKit-7624.4.5).** The open pipeline carries one time from start to end,
+  the UIKit touch time:
+  - `WKTouchEventsGestureRecognizer` sets the event's timestamp from `UITouch.timestamp`
+    (WKTouchEventsGestureRecognizer.mm l.274, 301);
+  - `NativeWebTouchEvent` turns it into the `WebEvent` timestamp via `MonotonicTime::fromRawSeconds`
+    (NativeWebTouchEventIOS.mm l.139);
+  - the web process copies it into `PlatformTouchEvent::m_timestamp` (WebEventConversion.cpp l.491-496);
+  - neither IPC path re-stamps it: preventable sends at WebPageProxy.cpp l.4697, unpreventable at l.4831, both
+    through `EventDispatcher::TouchEvent`.
+  - Only the last hop, `PlatformTouchEvent` → DOM `TouchEvent`, is in WebKitAdditions. The open code carries no
+    other earlier time, so by elimination `e.timeStamp` is the `UITouch` time on the page's clock. That last hop
+    stays **UNRESOLVED**; it can be read only through Apple's code or a bug or commit that names it.
+- **Coalescing: CONFIRMED (source).** `EventDispatcher::touchEvent` (EventDispatcher.cpp l.242-276) runs off the
+  main thread.
+  - It queues touch events per page and posts one main-thread drain.
+  - While a touchmove is still queued, a newer touchmove replaces it. The older ones become `coalescedEvents`.
+  - So a page whose main thread is blocked receives about one touchmove per block, carrying the newest touch's
+    time. That matches de-unknowns-ux's 1-3 stamped moves per chunk (p50 1) and a delay that doesn't grow with
+    chunk length.
+  - **Consequence:** under load, `now - e.timeStamp` is a lower bound on how long the finger waited. The first
+    touch replaced in the queue waited longer than the stamp shows.
+- **The 12-13 ms no-load delay: UNRESOLVED.** Hypothesis: UIKit delivers touches once per display frame, and
+  12.5 ms is one frame at the ~80 Hz seen in finger runs (§2.7); IPC and the main-thread hop come on top.
+  Decisive local check: repeat the no-load part at a different display rate (Low Power Mode). If the no-load
+  delay follows the frame period, delivery is frame-bound.
+- **For pacing.**
+  - `now - e.timeStamp` can now be read as an absolute measure: touch time to handler start, a lower bound under
+    load. C vs V comparisons stay valid.
+  - Don't compare F/G runs with S/W/M runs on it, because the frame rates differ (§2.7).
 
 ### 2.5 What changes because of §2 (for owners)
 
