@@ -220,6 +220,11 @@ between tool calls.
    P11 Block A (P-028, ~40 min; Block B conditional) + **P14** (P-025, ~47-48 min; C aw1-10e, V1 st4-strict, V2
    re-contain-js `<scratchpad>/hero-exit/snap/re-contain-js`; separate sentinels) -> P12 -> P5 ST-1 (P-018) -> P9 (P-026)
    -> **P-030** listener split (~25 min) -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13.
+   **F-071 [OBSERVED] (arch-claims 13:2xZ):** finger/touch scrolls show sustained 12-13 ms (~80 Hz) rAF stretches
+   (F6-try2 563/1027, try3 171/1385; fastwork E1 seg1 43/352, A1 seg2 30/816); S/W runs and idle show 16-17 ms. fps
+   and frame counts from F/G runs do not compare with S/W runs; ms thresholds unaffected. ver-rafrate checks the cause;
+   proposed CLAUDE.md qualifier after verification: "60 Hz idle and in scripted scrolls; ~80 Hz observed in finger scrolls".
+   **WDA signing profile expires 2026-10-08T12:19:35Z** (free team, ts-gesture): re-run `wda build` before then.
    **HELD:** P10 (P-024) until the pacing v2 session (next finger batch: ~10 min lease, ~5 user min, user rested, before
    any finger test, never sharing a lease with a timed block; de-unknowns-ux builds the page, ~1 h desk).
    **Phone scoring (lead, CLAUDE.md 668b612, supersedes the v>=3 decision):** dt > 50 goal (target 0) + dt > 34, counts
@@ -230,7 +235,8 @@ between tool calls.
    counted runs keep Timeline on in every arm, judged within the block; record counted C fps with Timeline on as info.
    If Timeline-on C >= 44 data exists, only the end sentinel is needed. doc-protocol-v2 writes it into protocol §5.
    **Probe rule (lead 12:3xZ):** until T1a lands, runs count only with the probe P0 cleared (rAF-only logger). T1a
-   review ACCEPT (12:4xZ), pending ts-iphone-run's commit + npm test.
+   review ACCEPT (12:4xZ); deltas committed f8e7d5a on e0b3821 (npm test 630 before rebase, unit 308 after; docH null at
+   y 0 / raf-legacy, told ts-analysis); phone dt>50/34 ±4 ms reporting is a separate measurement-code change (lead).
    **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (behind the countdown fix), h4.
    Countdown fix mw10e-cdwc (CSS 5dc6e8e37388 on aw1-10e; 269df637 differed only in a comment, never served) lands on phone gain evidence + review; mechanism wording stays
    OBSERVED ("repaint of the faces removed (observed)") until ver-webkit-paint reports (lead).
@@ -331,16 +337,16 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | arch-lead = `ae2d21af96d758d16` | measurement protocol v2 | ENDED 11:4xZ (docs follow-ups -> doc-protocol-v2) |
 | arch-safari = `a765c480ea490a443`, de-safari = `a4ce1669dd33aa4dc` | Safari probing / iOS time model (read-only) | alive |
 | arch-devtools = `ad5593c3c7d3b8c97`, de-devtools = `a21e6c00411aba4d8` | Chrome DevTools method (read-only) | done |
-| `ts-iphone-run` (T1a), `ts-analysis` (T3), `ts-render-signals` (T6+T7, I-032) | protocol v2 tools | alive |
+| `ts-iphone-run` (T1a f8e7d5a), `ts-analysis` (T3), `ts-render-signals` (T6+T7, I-032, in test:chrome) | protocol v2 tools | alive |
+| `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); WDA runner + iproxy left running for iphone-runner | done |
+| `res-layerpainted` | F-059/F-064/F-066 stamped, F-068 limitation posted | done |
 | `doc-protocol-v2` (aa630a1a8c0adae9f) | v2 docs pass (LEAD, README DoD, AGENT_PROMPT, fix-reviewer, EXPERIMENTS, CLAUDE.md); not ops docs | alive |
 | `arch-unknowns` (ENDED; C1 spec in unknowns-validity U1), `de-unknowns-render`, `de-unknowns-ux` (a47fed2b13de28ab2: pacing page F5, P-024) | unknowns hunt | de-* alive |
-| `ts-gesture` (a83a0f8d7c6fe96b6 worktree) | fixing review-gesture-2 B1/B2 | alive |
 | `map-webkit-amplifiers` | D2 mapper (haiku): page-wide scan for the two WebKit amplifiers | alive |
 | `ts-host-state` (a2bdbbb64c7731b2e) | T8+ host record: 3318067 + bdc7775 (MEASUREMENT CODE, npm test 621) | ACCEPT-WITH-NITS 12:5xZ; lead's test:chrome -> land -> C1 (lead) |
 | `ts-claims-board` | claims-audit §4: findings-board claim status + refs (lead spawn 12:5xZ) | alive |
 | `ts-bench-gain` (aabf938f2344fa8fc) | I-034 landed 526642f | done |
 | `arch-claims` (ae93098a3c9f77a35) | claim audit (user rule CLAUDE.md 71ad57d "Platform claims: confirm against a reference"): research/architecture/claims-audit.md, verifiers ver-webkit-style / ver-webkit-ca / ver-chrome; refutations -> owners + mgmt-ops | alive |
-| `res-layerpainted` | F-059 verdict (layerPainted on Chrome 154); decisive check by ts-render-signals | alive |
 | `review-host-state` | fix-reviewer (measurement mode) of T8+ 599471e | alive |
 | `de-pm-morph`, `de-pm-hero` (a3f2c31df32a28d11) | post-mortems (postmortem-morph.md, postmortem-hero.md §7 D3 = avatar rotator, F-058, F-063); de-pm-hero scores P14 offline (resumable) | de-pm-morph ENDED; de-pm-hero idle |
 | `arch-oss-survey` (a14e692b6f530f1c0), `de-oss-map` (af4a76a52eface067) | OSS rendering libraries survey + mechanism map -> 3-5 PoC shortlist for the lead (read-only) | alive |
