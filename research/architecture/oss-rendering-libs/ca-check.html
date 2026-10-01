@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ca-check (OSS P0)</title>
+<!--
+  OSS P0 ca-check (research/architecture/oss-rendering-libs.md §3), a static page with no fastwork code.
+  Question: on iOS 26.6.1 Safari, which time-based animations keep moving while the main thread is blocked?
+  F-048 prediction: (a) cubic-bezier and (c) WAAPI sampled keyframes keep moving; (b) linear(...) freezes and jumps.
+  Lanes (one per row, 2 s animations, a 1000 ms busy loop starting 300 ms in):
+    Ta / Tb / Tc  transform: (a) CSS transition cubic-bezier(0.279,0.357,0.074,1); (b) the same curve as linear(31 pts);
+                  (c) WAAPI, 31 keyframes sampled from the curve, linear segments
+    Fa / Fb / Fc  the same three on filter: blur(0px -> 14px)
+    D1 / D2       T10 endpoint pair, cubic-bezier(0.2350,0.6733,0.4511,0.9140): none -> blur(14px), blur(0px) -> blur(14px)
+    E             backdrop-filter: blur(0px -> 20px) over stripes
+    S             control: animation-timeline: scroll() on transform in an inner scroller, smooth-scrolled at the block
+                  start (threaded scroll-driven, shipped in 26.4). Must move, or the trial is void.
+    W             witness: rAF-driven transform. Must freeze during the block (proves the block is real).
+  Block indicator: the top bar turns red in the frame before the block and back to grey after it.
+  ?auto=N runs N trials, one every 4 s, starting 3 s after load (default 4); ?block=ms changes the busy loop (default 1000).
+  Results (rAF frame log per trial, block start/end) are kept on window.__ca for the driver to read afterwards.
+-->
+<style>
+  :root { color-scheme: light; }
+  html, body { margin: 0; background: #f4f4f4; font: 12px/1.2 -apple-system, system-ui, sans-serif; }
+  #bar { height: 18px; background: #888; color: #fff; padding: 2px 6px; }
+  #bar.on { background: #d00; }
+  .lane { position: relative; height: 54px; border-bottom: 1px solid #ddd; overflow: hidden; }
+  .lane > i { position: absolute; left: 4px; top: 2px; font-style: normal; color: #444; z-index: 2; }
+  .box { position: absolute; left: 30px; top: 9px; width: 36px; height: 36px; }
+  .t { background: #1565c0; }
+  .f { left: 180px; width: 72px; background: repeating-linear-gradient(90deg, #000 0 6px, #fff 6px 12px); }
+  .tr-a { transition: transform 2s cubic-bezier(0.279, 0.357, 0.074, 1); }
+  .fl-a { transition: filter 2s cubic-bezier(0.279, 0.357, 0.074, 1); }
+  .t10 { transition: filter 2s cubic-bezier(0.2350, 0.6733, 0.4511, 0.9140); }
+  .stripes { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, #000 0 4px, #ff0 4px 8px); }
+  .bd { position: absolute; left: 150px; top: 6px; width: 130px; height: 42px; -webkit-backdrop-filter: blur(0px); backdrop-filter: blur(0px); border: 1px solid #0003; }
+  .bd.go { transition: backdrop-filter 2s cubic-bezier(0.279, 0.357, 0.074, 1), -webkit-backdrop-filter 2s cubic-bezier(0.279, 0.357, 0.074, 1); }
+  #sc { position: absolute; left: 30px; top: 4px; width: 360px; height: 46px; overflow-y: scroll; overscroll-behavior: contain; }
+  #sc .inner { height: 2000px; position: relative; }
+  #sc .stick { position: sticky; top: 4px; height: 36px; }
+  #sc .stick .box { top: 0; left: 0; background: #2e7d32; animation: scx linear both; animation-timeline: scroll(nearest block); }
+  @keyframes scx { from { transform: translateX(0); } to { transform: translateX(300px); } }
+  .w { background: #6a1b9a; }
+</style>
+</head>
+<body>
+<div id="bar">ca-check: idle</div>
+<div class="lane"><i>Ta</i><div class="box t" id="Ta"></div></div>
+<div class="lane"><i>Tb</i><div class="box t" id="Tb"></div></div>
+<div class="lane"><i>Tc</i><div class="box t" id="Tc"></div></div>
+<div class="lane"><i>Fa</i><div class="box f" id="Fa"></div></div>
+<div class="lane"><i>Fb</i><div class="box f" id="Fb"></div></div>
+<div class="lane"><i>Fc</i><div class="box f" id="Fc"></div></div>
+<div class="lane"><i>D1</i><div class="box f" id="D1"></div></div>
+<div class="lane"><i>D2</i><div class="box f" id="D2"></div></div>
+<div class="lane"><i>E</i><div class="stripes"></div><div class="bd" id="E"></div></div>
+<div class="lane"><i>S</i><div id="sc"><div class="inner"><div class="stick"><div class="box"></div></div></div></div></div>
+<div class="lane"><i>W</i><div class="box w" id="W"></div></div>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const TRIALS = Number(q.get('auto') ?? 4), BLOCK = Number(q.get('block') ?? 1000), DUR = 2000, START_BLOCK = 300;
+  const $ = (id) => document.getElementById(id);
+  const bar = $('bar');
+  // cubic-bezier(0.279, 0.357, 0.074, 1) as y(x), for the linear() points and the WAAPI keyframes
+  const bez = (p1x, p1y, p2x, p2y) => (x) => {
+    const cx = 3 * p1x, bx = 3 * (p2x - p1x) - cx, ax = 1 - cx - bx, cy = 3 * p1y, by = 3 * (p2y - p1y) - cy, ay = 1 - cy - by;
+    let t = x; for (let i = 0; i < 20; i++) { const xt = ((ax * t + bx) * t + cx) * t - x, d = (3 * ax * t + 2 * bx) * t + cx; if (Math.abs(xt) < 1e-7 || !d) break; t -= xt / d; }
+    t = Math.min(1, Math.max(0, t)); return ((ay * t + by) * t + cy) * t;
+  };
+  const ease = bez(0.279, 0.357, 0.074, 1);
+  const N = 31, pts = Array.from({ length: N }, (_, i) => ease(i / (N - 1)));
+  const LIN = `linear(${pts.map((y, i) => `${y.toFixed(4)} ${((100 * i) / (N - 1)).toFixed(2)}%`).join(', ')})`;
+  const R = (window.__ca = { ua: navigator.userAgent, linear: LIN, block: BLOCK, trials: [] });
+  const resetAll = () => {
+    for (const id of ['Ta', 'Tb']) { const e = $(id); e.style.transition = 'none'; e.style.transform = 'translateX(0)'; }
+    for (const id of ['Fa', 'Fb', 'D2']) { const e = $(id); e.style.transition = 'none'; e.style.filter = 'blur(0px)'; }
+    const d1 = $('D1'); d1.style.transition = 'none'; d1.style.filter = 'none';
+    const e = $('E'); e.classList.remove('go'); e.style.webkitBackdropFilter = e.style.backdropFilter = 'blur(0px)';
+    for (const a of document.getAnimations()) if (a.id === 'ca-waapi') a.cancel();
+    $('W').style.transform = 'translateX(0)';
+    document.body.offsetWidth; // flush
+  };
+  const start = () => {
+    $('Ta').style.transition = 'transform 2s cubic-bezier(0.279, 0.357, 0.074, 1)';
+    $('Tb').style.transition = `transform 2s ${LIN}`;
+    $('Fa').style.transition = 'filter 2s cubic-bezier(0.279, 0.357, 0.074, 1)';
+    $('Fb').style.transition = `filter 2s ${LIN}`;
+    $('D1').style.transition = $('D2').style.transition = 'filter 2s cubic-bezier(0.2350, 0.6733, 0.4511, 0.9140)';
+    $('Ta').style.transform = $('Tb').style.transform = 'translateX(300px)';
+    $('Fa').style.filter = $('Fb').style.filter = $('D1').style.filter = $('D2').style.filter = 'blur(14px)';
+    $('Tc').animate(pts.map((y) => ({ transform: `translateX(${(300 * y).toFixed(2)}px)` })), { duration: DUR, easing: 'linear', fill: 'forwards', id: 'ca-waapi' });
+    $('Fc').animate(pts.map((y) => ({ filter: `blur(${(14 * y).toFixed(3)}px)` })), { duration: DUR, easing: 'linear', fill: 'forwards', id: 'ca-waapi' });
+    const e = $('E'); e.classList.add('go'); e.style.webkitBackdropFilter = e.style.backdropFilter = 'blur(20px)';
+  };
+  const busy = (ms) => { const t = performance.now(); let n = 0; while (performance.now() - t < ms) n++; return n; };
+  const trial = (k) => new Promise((done) => {
+    resetAll();
+    const T = { k, frames: [] }; R.trials.push(T);
+    let last = performance.now(), t0 = 0, running = true;
+    const loop = (t) => { T.frames.push([Math.round(t * 10) / 10, Math.round((t - last) * 10) / 10]); last = t;
+      if (t0) $('W').style.transform = `translateX(${Math.min(300, (300 * (t - t0)) / DUR).toFixed(1)}px)`;
+      if (running) requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      t0 = performance.now(); T.t0 = Math.round(t0); start(); bar.textContent = `ca-check: trial ${k} running`;
+      setTimeout(() => {
+        // indicator + scroller kick in the frame before the block, so both are committed before the main thread stalls
+        requestAnimationFrame(() => {
+          bar.classList.add('on'); bar.textContent = `ca-check: trial ${k} BLOCK ${BLOCK} ms`;
+          const sc = $('sc'); sc.scrollTo({ top: k % 2 ? 0 : sc.scrollHeight, behavior: 'smooth' });
+          requestAnimationFrame(() => setTimeout(() => {
+            T.blockStart = Math.round(performance.now()); T.iters = busy(BLOCK); T.blockEnd = Math.round(performance.now());
+            bar.classList.remove('on'); bar.textContent = `ca-check: trial ${k} after block`;
+            setTimeout(() => { running = false; bar.textContent = `ca-check: trial ${k} done`; done(); }, DUR + 500 - (performance.now() - t0));
+          }, 0));
+        });
+      }, Math.max(0, START_BLOCK - 40));
+    }));
+  });
+  R.run = async (n = TRIALS) => { for (let k = 1; k <= n; k++) { await trial(k); await new Promise((r) => setTimeout(r, 1000)); } R.done = true; bar.textContent = 'ca-check: all trials done'; };
+  if (TRIALS > 0) setTimeout(() => R.run(), 3000);
+})();
+</script>
+</body>
+</html>
