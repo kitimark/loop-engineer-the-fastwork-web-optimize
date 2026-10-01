@@ -89,7 +89,7 @@ if (argv.includes('--friction')) {
       const age = (NOW - Date.parse(h.acquiredAt)) / 60000;
       const runs = Number(h.meta?.runs) || 0;
       const expected = h.meta?.cmd === 'verify' && runs ? runs * 2 * 1.1 + 2 : h.meta?.maxSec ? h.meta.maxSec / 60 : h.kind === 'lease' && h.expiresAt ? (Date.parse(h.expiresAt) - Date.parse(h.acquiredAt)) / 60000 : 10;
-      const cpu = h.kind === 'process' && h.pid ? r1(treeCpu(p1, h.pid) - treeCpu(p0, h.pid)) : null;
+      const dCpu = h.kind === "process" && h.pid ? treeCpu(p1, h.pid) - treeCpu(p0, h.pid) : null; const cpu = dCpu != null && dCpu >= 0 ? r1(dCpu) : null; // < 0: the tree changed between samples
       const beh = behindOf(h.checkout);
       lines.push(`${res}: held by ${h.owner} [${h.kind}${h.meta?.cmd ? ' ' + h.meta.cmd : ''}] ${r1(age)} min (expected ~${r1(expected)})${cpu != null ? `, tree CPU ${cpu} s in 5 s` : ''}${beh ? `, checkout ${beh} commits behind main` : ''}`);
       if (res === 'chrome-measure') {

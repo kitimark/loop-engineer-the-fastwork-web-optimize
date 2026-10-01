@@ -1,0 +1,953 @@
+{
+ "lead": {
+  "windowH": 2.2,
+  "incoming": 370,
+  "incomingPerH": 166.8,
+  "max10min": 74,
+  "byKind": {
+   "user": 18,
+   "agent": 68,
+   "teammate": 0,
+   "notification": 284,
+   "interrupt": 0
+  },
+  "interimNotifications": 96,
+  "incomingNeedingDecision": 52,
+  "incomingDecisionPct": 14,
+  "outgoing": {
+   "spawn": 15,
+   "land": 31,
+   "triage": 12,
+   "relay": 71,
+   "status": 31,
+   "other-bash": 7,
+   "other": 7
+  },
+  "decisionsOut": 58,
+  "routineOut": 102,
+  "decisionSharePct": 36,
+  "relaysPerH": 32
+ },
+ "generatedAt": "2026-10-01T01:19:22.301Z",
+ "since": "2026-09-30T23:06:00.000Z",
+ "repo": "fastwork-com-web-optimize",
+ "goal": {
+  "target": {
+   "chromeGt50": 0,
+   "chromeGt34": "~0",
+   "iphoneFps": 60,
+   "iphoneGt50": 0
+  },
+  "aaFloor": {
+   "createdAt": "2026-09-30T21:16:21.233Z",
+   "load": [
+    2.8,
+    5.8
+   ],
+   "gt50": 4,
+   "gt34": 8,
+   "gt20": 64,
+   "fps": 74.5
+  },
+  "bestChromeGt50": {
+   "topic": "nav-morph-all",
+   "value": 3,
+   "baseline": 4,
+   "clean": true
+  },
+  "bestChromeGt34": {
+   "topic": "nav-morph-all",
+   "value": 6,
+   "baseline": 7,
+   "clean": true
+  },
+  "bestCleanGt34": {
+   "topic": "nav-morph-all",
+   "value": 6
+  },
+  "gt50BetterVerdicts": 0,
+  "gt34BetterVerdicts": 0,
+  "combinedMeasured": 1,
+  "combinedClean": 1,
+  "iphoneBaseMedian": {
+   "fps": null,
+   "gt34": null,
+   "gt50": null,
+   "n": 0
+  },
+  "iphoneBestPatched": null
+ },
+ "lock": {
+  "abSessions": 8,
+  "abCompleted": 4,
+  "abAborted": 4,
+  "serviceMinPerRun": 0.5,
+  "waitMin": {
+   "median": 0.6,
+   "max": 0.7
+  },
+  "utilizationPct": 39,
+  "windowH": 0.7,
+  "now": {
+   "chrome-measure": {
+    "holder": "fix-nav-morph",
+    "heldMin": 1.3,
+    "kind": "process",
+    "queue": 4,
+    "shortQueued": 4,
+    "waitMin": {
+     "median": 2.8,
+     "max": 2.8
+    }
+   },
+   "iphone": {
+    "holder": "lead-iphone-offline",
+    "heldMin": 185.4,
+    "kind": "lease",
+    "queue": 0,
+    "shortQueued": 0,
+    "waitMin": {
+     "median": 0,
+     "max": null
+    }
+   },
+   "auditLines": 5
+  }
+ },
+ "clean": {
+  "runsClean": 26,
+  "runs": 36,
+  "runsCleanPct": 72,
+  "runsContaminated": 10,
+  "resultsClean": 3,
+  "results": 4,
+  "medianRunLoad": 3.6,
+  "hostNow": {
+   "load1": 4.1,
+   "cpuBusyPct": 61
+  }
+ },
+ "incidents": {
+  "opened": 4,
+  "resolved": 0,
+  "active": 4,
+  "fixed": 0,
+  "duplicates": 0,
+  "resolveMin": {
+   "median": null,
+   "max": 0
+  },
+  "readyToResolveMin": {
+   "median": null
+  },
+  "staleInStore": [],
+  "activeUnassigned": [],
+  "rows": [
+   {
+    "id": "I-020",
+    "cls": "tool",
+    "status": "triaged",
+    "resolution": null,
+    "assignee": "ts-prio",
+    "openedAt": "2026-09-30T23:22:01.736Z",
+    "resolveMin": null,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": 117.3
+   },
+   {
+    "id": "I-021",
+    "cls": "tool",
+    "status": "fixing",
+    "resolution": null,
+    "assignee": "ts-i021",
+    "openedAt": "2026-09-30T23:25:07.874Z",
+    "resolveMin": null,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": 114.2
+   },
+   {
+    "id": "I-022",
+    "cls": "tool",
+    "status": "fixing",
+    "resolution": null,
+    "assignee": "ts-i002",
+    "openedAt": "2026-09-30T23:27:17.170Z",
+    "resolveMin": null,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": 112.1
+   },
+   {
+    "id": "I-023",
+    "cls": "tool",
+    "status": "fixing",
+    "resolution": null,
+    "assignee": "ts-i017",
+    "openedAt": "2026-10-01T01:11:16.633Z",
+    "resolveMin": null,
+    "readyToResolveMin": null,
+    "toolCommitOnMain": null,
+    "staleInStore": false,
+    "ageMin": 8.1
+   }
+  ]
+ },
+ "landings": {
+  "commitsOnMain": 65,
+  "toolCommits": 6,
+  "fixCommits": 7,
+  "docCommits": 43,
+  "researchCommits": 9,
+  "topicsLanded": 8,
+  "topics": 25,
+  "topicsInProgress": 6,
+  "leadTimeMin": [
+   "countdown-idle-raf: 176.6",
+   "nav-hit-test: 126.5",
+   "phone-invisible-shrink: 62",
+   "commission-forced-layout: 117.8",
+   "large-area-blur: 127.3",
+   "layout-animations: 157.1",
+   "pain-offscreen-notes: 128.4",
+   "morph-panel-lazy-mount: 82.7"
+  ],
+  "wipAgeMin": {
+   "median": 196.9,
+   "max": 216.5
+  }
+ },
+ "topics": [
+  {
+   "id": "1",
+   "name": "countdown-idle-raf",
+   "status": "landed",
+   "firstAB": "2026-09-30T21:17:34.202Z",
+   "leadTimeMin": 176.6,
+   "wipAgeMin": null
+  },
+  {
+   "id": "2",
+   "name": "scroll-engine-batching",
+   "status": "in progress",
+   "firstAB": "2026-09-30T22:22:05.405Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 177.3
+  },
+  {
+   "id": "3",
+   "name": "nav-hit-test",
+   "status": "landed",
+   "firstAB": "2026-09-30T21:19:14.853Z",
+   "leadTimeMin": 126.5,
+   "wipAgeMin": null
+  },
+  {
+   "id": "4",
+   "name": "phone-invisible-shrink",
+   "status": "landed",
+   "firstAB": null,
+   "leadTimeMin": 62,
+   "wipAgeMin": null
+  },
+  {
+   "id": "5",
+   "name": "commission-forced-layout",
+   "status": "landed",
+   "firstAB": "2026-09-30T21:15:46.797Z",
+   "leadTimeMin": 117.8,
+   "wipAgeMin": null
+  },
+  {
+   "id": "6",
+   "name": "morph-scrolljack-passive",
+   "status": "in progress",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "7",
+   "name": "hero-exit-scroll-timeline",
+   "status": "in progress",
+   "firstAB": "2026-09-30T21:42:51.677Z",
+   "leadTimeMin": null,
+   "wipAgeMin": 216.5
+  },
+  {
+   "id": "8",
+   "name": "large-area-blur",
+   "status": "landed",
+   "firstAB": "2026-09-30T21:19:11.624Z",
+   "leadTimeMin": 127.3,
+   "wipAgeMin": null
+  },
+  {
+   "id": "9",
+   "name": "layout-animations",
+   "status": "landed",
+   "firstAB": "2026-09-30T21:22:59.766Z",
+   "leadTimeMin": 157.1,
+   "wipAgeMin": null
+  },
+  {
+   "id": "10",
+   "name": "toolbar-resize",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "11",
+   "name": "pain-offscreen-notes",
+   "status": "landed",
+   "firstAB": "2026-09-30T21:15:27.113Z",
+   "leadTimeMin": 128.4,
+   "wipAgeMin": null
+  },
+  {
+   "id": "12",
+   "name": "scene-gating-tighten",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "13",
+   "name": "morph-panel-lazy-mount",
+   "status": "landed",
+   "firstAB": "2026-09-30T22:51:30.017Z",
+   "leadTimeMin": 82.7,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N1",
+   "name": "frame-attribution",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N2",
+   "name": "morph-composited",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N3",
+   "name": "main-thread-infinite-animations",
+   "status": "in progress",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N4",
+   "name": "custom-property-scope",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N5",
+   "name": "layer-diet",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N6",
+   "name": "nav-backdrop-budget",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N7",
+   "name": "input-listener-diet",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N8",
+   "name": "morph-scroll-driven",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N9",
+   "name": "scene-gate-flap",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N10",
+   "name": "transition-frames",
+   "status": "not started",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N11",
+   "name": "vendor-scrollend",
+   "status": "in progress",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  },
+  {
+   "id": "N12",
+   "name": "nav-scroll-handler",
+   "status": "in progress",
+   "firstAB": null,
+   "leadTimeMin": null,
+   "wipAgeMin": null
+  }
+ ],
+ "fixDirsInFlight": [
+  "main-thread-infinite-animations",
+  "scroll-engine",
+  "morph-scrolljack-passive",
+  "vendor-scrollend",
+  "hero-exit-scroll-timeline",
+  "countdown-idle-raf--layers",
+  "countdown-idle-raf-v08",
+  "abl-w1",
+  "anim-ablation",
+  "scroll-engine--10",
+  "scroll-engine--engine-only",
+  "scroll-engine--hyst",
+  "scroll-engine--unskip",
+  "se-instr",
+  "unskip-w1",
+  "nav-scroll-handler",
+  "large-area-blur--platform-none",
+  "vendor-scrollend--drop",
+  "vendor-scrollend--task",
+  "hero-exit-scroll-timeline--noblur"
+ ],
+ "agents": {
+  "worktrees": 22,
+  "landedOrEmpty": 7,
+  "readyWaiting30": 1,
+  "withCommitsAhead": 8,
+  "dirtyNoCommit": 7,
+  "staleBehind20": 6,
+  "rows": [
+   {
+    "branch": "worktree-agent-a03218c7c8f9587ed",
+    "ahead": 0,
+    "behind": 4,
+    "dirty": 2,
+    "lastCommitAgeMin": 65.2,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a0b5fe94cfd97f3aa",
+    "ahead": 1,
+    "behind": 2,
+    "dirty": 0,
+    "lastCommitAgeMin": 0.4,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a13d7bfa5a75e0fed",
+    "ahead": 0,
+    "behind": 2,
+    "dirty": 0,
+    "lastCommitAgeMin": 65.1,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a1722cf5058e25591",
+    "ahead": 7,
+    "behind": 2,
+    "dirty": 8,
+    "lastCommitAgeMin": 64.1,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a1ecf91dac9344dc2",
+    "ahead": 0,
+    "behind": 0,
+    "dirty": 3,
+    "lastCommitAgeMin": 0.9,
+    "kind": "none"
+   },
+   {
+    "branch": "",
+    "ahead": 0,
+    "behind": 0,
+    "dirty": 8,
+    "lastCommitAgeMin": null,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a277ea00c8773c1ea",
+    "ahead": 9,
+    "behind": 13,
+    "dirty": 2,
+    "lastCommitAgeMin": 68.2,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a2e856b509f7d6199",
+    "ahead": 0,
+    "behind": 18,
+    "dirty": 0,
+    "lastCommitAgeMin": 74.4,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a304ca7f869d9823f",
+    "ahead": 0,
+    "behind": 2,
+    "dirty": 1,
+    "lastCommitAgeMin": 65.1,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a373e2f566cb7a369",
+    "ahead": 0,
+    "behind": 0,
+    "dirty": 0,
+    "lastCommitAgeMin": 0.9,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a4091af4a88270aa0",
+    "ahead": 0,
+    "behind": 42,
+    "dirty": 1,
+    "lastCommitAgeMin": 112.9,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a53f4ec08506b7442",
+    "ahead": 0,
+    "behind": 59,
+    "dirty": 0,
+    "lastCommitAgeMin": 125.8,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a5ba00bc1e298fb33",
+    "ahead": 1,
+    "behind": 38,
+    "dirty": 0,
+    "lastCommitAgeMin": 97.9,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a6a570e184a2f6eba",
+    "ahead": 3,
+    "behind": 2,
+    "dirty": 2,
+    "lastCommitAgeMin": 63.7,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a700c6e710c364d49",
+    "ahead": 0,
+    "behind": 53,
+    "dirty": 0,
+    "lastCommitAgeMin": 115.6,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a77e2ec753b6381fb",
+    "ahead": 6,
+    "behind": 64,
+    "dirty": 1,
+    "lastCommitAgeMin": 125.6,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-a7da36df115c2e662",
+    "ahead": 0,
+    "behind": 23,
+    "dirty": 0,
+    "lastCommitAgeMin": 79.3,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a7fad4cb1a3bb1d34",
+    "ahead": 0,
+    "behind": 2,
+    "dirty": 9,
+    "lastCommitAgeMin": 65.1,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-a8690dc08bafd5f3c",
+    "ahead": 0,
+    "behind": 0,
+    "dirty": 17,
+    "lastCommitAgeMin": 0.9,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-ac3dd7811b6861c73",
+    "ahead": 1,
+    "behind": 0,
+    "dirty": 0,
+    "lastCommitAgeMin": -0.1,
+    "kind": "deliverable"
+   },
+   {
+    "branch": "worktree-agent-ac5e1ce69c84fd93d",
+    "ahead": 0,
+    "behind": 18,
+    "dirty": 0,
+    "lastCommitAgeMin": 74.4,
+    "kind": "none"
+   },
+   {
+    "branch": "worktree-agent-ad57dbcaaef308061",
+    "ahead": 4,
+    "behind": 20,
+    "dirty": 10,
+    "lastCommitAgeMin": 75.3,
+    "kind": "tool"
+   }
+  ]
+ },
+ "experiments": {
+  "ledgerRows": 73,
+  "abResults": 4,
+  "abSessions": 8,
+  "ledgerClean": 14,
+  "ledgerBenchPassing": 0,
+  "ledgerDiffKept": 37,
+  "benchFiles": 1,
+  "variantDiffs": 332,
+  "benchRunnerOnMain": false,
+  "findings": 15,
+  "findingsOpen": 15,
+  "archScoreRows": 5,
+  "archAdoptedNumeric": 14,
+  "archAdoptedPending": 3,
+  "archRecsStarted": [
+   "nav-morph-all",
+   "anim-ablation"
+  ],
+  "archRecsKnown": [
+   "nav-morph-all",
+   "anim-ablation",
+   "hero-track-io",
+   "transition-frames",
+   "frame-attribution",
+   "scene-gate-flap"
+  ]
+ },
+ "user": {
+  "prompts": 18,
+  "loopPrompts": 0,
+  "typed": 18,
+  "processQuestions": 6,
+  "windowH": 2.2,
+  "processQuestionsPerH": 2.8
+ },
+ "resultRows": [
+  {
+   "topic": "layout-animations",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T23:13:53.251Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 16.3,
+   "loadMax": 30.5,
+   "clean": false,
+   "gt50": [
+    6,
+    6
+   ],
+   "gt34": [
+    15,
+    14
+   ],
+   "gt20": [
+    122,
+    126
+   ],
+   "fps": [
+    63.5,
+    64.3
+   ],
+   "verdicts": {
+    "fps": "within noise",
+    "gt20": "within noise",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "within noise",
+    "loafMs": "within noise",
+    "loafScriptMs": "within noise",
+    "forcedLayoutMs": "within noise"
+   }
+  },
+  {
+   "topic": "nav-morph-all",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T23:37:26.789Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 2.9,
+   "loadMax": 4.3,
+   "clean": true,
+   "gt50": [
+    4,
+    3
+   ],
+   "gt34": [
+    7,
+    6
+   ],
+   "gt20": [
+    70,
+    36
+   ],
+   "fps": [
+    74.9,
+    87.3
+   ],
+   "verdicts": {
+    "fps": "better (ranges do not overlap)",
+    "gt20": "better (ranges do not overlap)",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "better (ranges do not overlap)",
+    "loafMs": "better (ranges do not overlap)",
+    "loafScriptMs": "better (ranges do not overlap)",
+    "forcedLayoutMs": "better (ranges do not overlap)"
+   }
+  },
+  {
+   "topic": "wave1-partial",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T23:47:15.783Z",
+   "viewport": "mobile",
+   "runs": 5,
+   "stackedOn": null,
+   "loadMin": 3,
+   "loadMax": 4.4,
+   "clean": true,
+   "gt50": [
+    4,
+    5
+   ],
+   "gt34": [
+    10,
+    6
+   ],
+   "gt20": [
+    65,
+    24
+   ],
+   "fps": [
+    74.9,
+    95.4
+   ],
+   "verdicts": {
+    "fps": "better (ranges do not overlap)",
+    "gt20": "better (ranges do not overlap)",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "within noise",
+    "p95": "better (ranges do not overlap)",
+    "loafMs": "within noise",
+    "loafScriptMs": "better (ranges do not overlap)",
+    "forcedLayoutMs": "better (ranges do not overlap)"
+   }
+  },
+  {
+   "topic": "nav-morph-all-v2",
+   "kind": "A/B",
+   "createdAt": "2026-09-30T23:53:17.073Z",
+   "viewport": "mobile",
+   "runs": 3,
+   "stackedOn": null,
+   "loadMin": 2.9,
+   "loadMax": 4.6,
+   "clean": true,
+   "gt50": [
+    4,
+    3
+   ],
+   "gt34": [
+    7,
+    6
+   ],
+   "gt20": [
+    62,
+    36
+   ],
+   "fps": [
+    77,
+    87.7
+   ],
+   "verdicts": {
+    "fps": "better (ranges do not overlap)",
+    "gt20": "better (ranges do not overlap)",
+    "gt34": "within noise",
+    "gt50": "within noise",
+    "gt100": "within noise",
+    "max": "WORSE (ranges do not overlap)",
+    "p95": "better (ranges do not overlap)",
+    "loafMs": "better (ranges do not overlap)",
+    "loafScriptMs": "better (ranges do not overlap)",
+    "forcedLayoutMs": "better (ranges do not overlap)"
+   }
+  }
+ ],
+ "iphoneRows": [],
+ "table": {
+  "Chrome frames >50 ms, A/A floor (median, quiet host)": 4,
+  "Chrome frames >34 ms, A/A floor": 8,
+  "best patched Chrome >50 ms (single topic)": 3,
+  "best patched Chrome >34 ms (single topic)": 6,
+  "A/Bs with a disjoint \"better\" on frames >50 ms / >34 ms": [
+   0,
+   0
+  ],
+  "combined-overlay A/Bs measured / clean": 1,
+  "iPhone baseline scroll fps / >34 / >50 (median)": {
+   "fps": null,
+   "gt34": null,
+   "gt50": null,
+   "n": 0
+  },
+  "iPhone best patched (single topic)": null,
+  "topics landed / total (TOPICS.md incl. N-list)": 8,
+  "topics in progress (branch or worktree)": 6,
+  "topic lead time, first A/B -> landed (min)": [
+   "countdown-idle-raf: 176.6",
+   "nav-hit-test: 126.5",
+   "phone-invisible-shrink: 62",
+   "commission-forced-layout: 117.8",
+   "large-area-blur: 127.3",
+   "layout-animations: 157.1",
+   "pain-offscreen-notes: 128.4",
+   "morph-panel-lazy-mount: 82.7"
+  ],
+  "in-progress topics: age since first A/B, median / max (min)": {
+   "median": 196.9,
+   "max": 216.5
+  },
+  "commits on main: tool / fix / research / docs": [
+   6,
+   7,
+   9,
+   43
+  ],
+  "A/B sessions started / completed / not completed (queued, running or killed)": [
+   8,
+   4,
+   4
+  ],
+  "queue wait per A/B, median / max (min, estimated)": {
+   "median": 0.6,
+   "max": 0.7
+  },
+  "chrome-measure utilization over the A/B window (%, lower bound)": 39,
+  "queue now: length / short / max wait (min)": [
+   4,
+   4,
+   2.8
+  ],
+  "runs started at load1 <= 6 (%)": 72,
+  "runs started at load1 > 10 (contaminated)": 10,
+  "median load1 at run start": 3.6,
+  "host now: load1 / CPU busy %": [
+   4.1,
+   61
+  ],
+  "opened / resolved / active": [
+   4,
+   0,
+   4
+  ],
+  "time to resolve, median / max (min)": {
+   "median": null,
+   "max": 0
+  },
+  "fix ready -> resolved, median (min)": null,
+  "landed on main but not resolved in the store": [],
+  "scorecard rows / rows with adopted 0 or pending": [
+   5,
+   3
+  ],
+  "measurement-review experiments started (E1, E3, E4, N9, N1)": [
+   "nav-morph-all",
+   "anim-ablation"
+  ],
+  "EXPERIMENTS.md rows / clean validity / diff kept / benchmark runnable": [
+   73,
+   14,
+   37,
+   0
+  ],
+  "bench.json files / variant diffs / runner on main": [
+   1,
+   332,
+   false
+  ],
+  "findings on the board / open": [
+   15,
+   15
+  ],
+  "worktrees / landed-or-empty (cleanup debt) / committed & untouched >30 min / >20 commits behind main": [
+   22,
+   7,
+   1,
+   6
+  ],
+  "user prompts / loop prompts / process questions per hour": [
+   18,
+   0,
+   2.8
+  ],
+  "messages the lead handled per hour (all incoming) / max in any 10 min": [
+   166.8,
+   74
+  ],
+  "incoming: agent+teammate / notifications (of which interim noise) / user / interrupts": [
+   68,
+   "284 (96)",
+   18,
+   0
+  ],
+  "incoming that needed a lead decision (%)": 14,
+  "lead actions: decisions (spawn+land+triage) / routine (relay+status) / decision share %": [
+   58,
+   102,
+   36
+  ],
+  "relays (SendMessage) per hour": 32
+ }
+}

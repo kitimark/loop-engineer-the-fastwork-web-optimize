@@ -234,3 +234,71 @@ behind main, and the holder's process-tree CPU.
   consecutive check-ins becomes an incident candidate for the lead, with a recommendation.
 - First run (23:28Z): 5 SHORT-WAIT alarms (11-21 min) and QUEUE-LONG (9 waiting, 6 of them short) on a quiet
   host (load1 3.3). It would have fired at about 23:12.
+
+## Iteration 2 (2026-10-01 01:20Z)
+
+Data: `data/kpi-2026-10-01T0120.md` (full history, `--compare` with the baseline) and `data/kpi-since-2306.md`
+(window since the delegation to mgmt-ops). Inputs: main eb8a447 + handover (e307e90), `ops-handover.md`,
+incidents I-020..I-023.
+
+**What moved**
+- **Flow.** Wave 1 landed: 2 → 8 topics. Lead time from first A/B to landing was 62-177 min (median ~127).
+  In-progress topics went 11 → 6.
+- **Clean measurement.**
+  - Since 23:06, 72 % of 36 runs started at load1 ≤ 6 (baseline 11 %); median load1 at run start is 3.6.
+  - First clean combined A/B: wave1-partial. fps 74.9 → 95.4 and frames >20 ms 65 → 24.
+  - E1 (nav-morph-all), clean: frames >20 ms 70 → 36, fps +12.
+- **Knowledge.** 15 findings on the board (was 0); E1 is now done as well.
+- **Friction.** No alarms at 01:37 (they fired at 23:28); queue wait since 23:06 under 1 min.
+
+**What did not move**
+- **Goal metrics.** Frames >50 ms and >34 ms are still within noise in every clean A/B:
+  - wave1-partial: >50 ms 4 → 5, >34 ms 10 → 6;
+  - E1: >50 ms 4 → 3, >34 ms 7 → 6;
+  - disjoint "better" verdicts on >50 / >34 ms are still 0 / 1.
+  - Wave 1 removed the medium frames, but the long tail is untouched: the named LoAF entries (gtag `onscrollend`,
+    engine `iE`, future `l`) are still there.
+- **Throughput.** Only 4 of the 8 A/B sessions started since 23:06 completed. The all-wave1 goal run (00:18-00:53)
+  produced nothing (I-023).
+- **Lead load went up, not down.** 133 → 167 incoming messages per hour, 32 relays per hour, decision share 27 → 36 %.
+  Task notifications go to whoever spawned the agent, which is the lead. Agents that end a turn with background work
+  still running produce interim notifications (96 since 23:06).
+- **iPhone dark for 3.4 h.** No benchmark is runnable yet (`tools/bench.mjs` isn't on main). I-016/I-017 landed in
+  f144d8f but are still "triaged" in the store.
+
+**New failure modes**
+1. **Measurement code shipped without a field test.**
+   - The host gate passed `npm test` against a fake host.
+   - Its per-run recheck never ran against a real Chrome on a busy host, and `test:chrome` was itself broken (I-022).
+   - So the first real use was the night's most valuable slot: a 33-min hang holding the lock, then a broken
+     contaminated run.
+   - Rule: measurement code lands only after a canary in the main checkout (`fix.mjs ab --aa --runs 1`, plus
+     `test:chrome` passing), and `verify.mjs` needs a watchdog: no progress for N s → fail and release the lock.
+2. **Ops hit its context limit** after about 2 h of relays, monitors, digests and queue moves.
+   - The handover file saved it.
+   - Rule: `ops-handover.md` is a living state file, updated with every digest, so a restart costs minutes.
+   - Restart mgmt-ops on schedule (about every 2 h, or at ~60 % context), not on exhaustion.
+   - Monitors stay background scripts, and their output stays out of the context.
+
+**Team size.** Holds are now 5-7 min, but the slot's real throughput is about 2 completed A/Bs per hour. The limits
+are the gate (Spotlight and mediaanalysisd hold "other CPU" above 20 %), I-023, and the short-lane starvation
+(I-020), not hold length. Wave 2 needs about 6 holds (N11, scroll-engine /10, N12, hero-exit, countdown 05/08, E4),
+about 1 slot-hour once the gate is open. About 12 agents is too many for that: they add CPU and messages. Run about 8
+active: wave1-dry/all-wave1 as integrator, 3 owners with no more than 2 ready-to-measure at a time, 2 toolsmiths
+(I-023, then I-020), mgmt-ops, and arch on demand. Stop the finished agents (countdown, layout-animations).
+Signal to scale back up: owners idle with a built variant for more than 30 min while the gate is open.
+
+**Plan, iteration 2**
+
+| # | action | KPI change |
+|---|---|---|
+| 1 | I-023 P0: fix plus a verify watchdog. Land after a canary A/A `--runs 1` and `test:chrome`. Then the announced goal hold: A/A + `all-wave1 --runs 5`. | clean all-wave1 measured: 0 → 1; goal gap known |
+| 2 | Wave 2 targets only the long tail: se/10 (`iE`), E4 (`l`), N11 (gtag), N12. Land the E5/I-018 attribution first (ts-i017), so every hold names the frame it removes. | disjoint "better" on >50 / >34 ms: 0/1 → ≥ 2 |
+| 3 | Host: the lead asks the user once about Spotlight (`mdutil` off, or a scheduled pause), with the numbers. A gate timeout stains the run instead of stalling it. | sessions completed / started: 4/8 → ≥ 90 %; clean ≥ 85 % |
+| 4 | Short lane: land I-020 drain-all and I-021. Raise `lock.mjs run`'s 1 h acquire timeout: queue entries were dropped silently. | SHORT-WAIT alarms 0; no silent drops |
+| 5 | Lead load: owners don't end a turn while background work runs. mgmt-ops resumes agents, so their hand-backs go to it. The lead lands only in batches. | lead incoming 167 → ≤ 40/h; decision share ≥ 50 % |
+| 6 | Ops durability: living `ops-handover.md`, scheduled restarts, monitors out of context. | unplanned ops restarts 0 |
+| 7 | Size: about 8 active agents (above). The iPhone queue (DIRECTION) goes first when the user is back. Resolve I-016/I-017 in the store. | idle host load lower; iPhone ≥ 1 run per wave |
+
+Stop: landing measurement code without a canary; ending turns with background work; queueing from checkouts more than
+20 commits behind main; reporting fps or frames >20 ms as goal progress (the wave1-partial headline is a proxy).
