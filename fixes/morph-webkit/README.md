@@ -126,6 +126,22 @@ Chrome checks (short lane, `gh-parity.mjs`):
   - m = 1: 0.12 % (countdown).
 - The final panel size is unchanged: 406 × 908 in both.
 
+**iPhone driver result** (iphone-runner, 09:24-09:27Z, aw1-10e):
+- Control ctl-B14 passed. Order: gh gb g g gb gh gh gb g. The served gh hashes match (JS 1df2484c…, CSS a2b0be9a…).
+- Moving-phase p50, per run: gh 26/24/31, gb 29/27/35, g 36/35/31. Medians: **gh 26, gb 29, g 35 ms**.
+  Earlier: g 34/29/27, f 30/33/35, fb 27.
+- p95 when cool: 50-62 ms.
+- The third round is thermally affected for all three builds (p95 98-117 ms, 400-800 ms spikes even in held states).
+
+Verdict:
+- gh ≈ gb, each ~6-9 ms better than g.
+- The predicted ≥ 25 ms drop for gh did not happen, and neither term dominates.
+- The transition stays at ~25-30 ms median (33-40 fps).
+
+Next build: `mw10e-ghb` = gh + b (CSS db01137a…, JS = gh), to test whether the two savings add up. The
+remaining candidates are the nav box's own per-frame layout/repaint (R2 clip-path) and the layer creation at the
+tween start (R3).
+
 ### Middle-of-page frame at y≈1960 (de-middle, `research/design-engineering/middle.md`)
 
 Claim: the morph IO on `#platform` (rootMargin 200%) fires at y≈1830 and causes an 86-106 ms frame. Two hypotheses:
