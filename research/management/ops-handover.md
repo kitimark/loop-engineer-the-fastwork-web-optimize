@@ -15,6 +15,22 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 - Every docs commit: rebase on main, `npm run test:unit`, commit, then a "LAND BATCH" message with the sha(s).
 - Quote goal progress as frames > 50 / > 34 ms (Chrome, within ONE hold) and iPhone numbers; > 34 ms varies ±2 across
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
+- **Standing lead policy (lead-retrospective-24h.md §5, c220e82; lead 19:1xZ):** (1) two-speed loop: inner =
+  deterministic counts (Chrome headless in parallel + WebKit counts from the Simulator, validated against existing phone
+  pairs); outer = one phone block only for candidates that pass the counts; finger tests only for stacked builds
+  (de-counts-chrome + de-counts-sim, then a toolsmith). (2) Size the team to the devices: at most 2 timing-measuring
+  agents at once; tool builds and full `npm test` batched into windows outside phone blocks; load1 on the status board.
+  (3) Root-cause hardware faults at the source after the first repeat; ask the user about the setup first (other
+  inspectors, other apps on the phone, Low Power Mode). (4) Fix budget >= 50 % of agent-hours on fix topics, split shown
+  on the status board; state the cost of every side request to the user before starting it. (5) Design spike on the
+  page's engine (C6): one researcher, counts only. (6) Shrink CLAUDE.md to hard rules + pointers. (7) Honest goal check:
+  a full-scroll phone block of B vs baseline (>50 / >34, fps) once scene-scope lands, recorded in the retrospective's
+  successor §1. Parked by this policy (19:1xZ): anim-transform (ranks 5-6), image-size (7) until scene-scope and R4+V3
+  have a phone result.
+- **Status board (ts-status-board, pending land; seed research/architecture/status-board-seed.json, the lead applies
+  it):** mgmt-ops owns item `ops` (state coordinating); refresh rows whose owner ended (`node tools/status.mjs set <id>
+  --by mgmt-ops-N --state … --note …`), nudge owners of rows flagged "not updated" (2 h, no queue place or console step),
+  seed new workstreams (`set <id> --kind … --title … --state …`); `status.mjs list` replaces "Who waits on what".
 - **Phone vs Simulator (user standing rule, lead 17:5xZ):** a job that needs an iPhone but no performance number runs
   on the iOS Simulator (tool mechanism checks, WDA/gesture compile tests, inspector-connection bugs, safari-restart,
   page-state/DOM checks, script dry runs), in a normal chrome-measure hold (sim.mjs, <= ~7 min). The phone is only for
@@ -23,12 +39,18 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **19:1xZ** Landed c220e82 (lead retrospective; §5 now "Standing lead policy" above), a93d0c9 (§4p), 62e3fd9 (§2.1 final
+  inspector-clean block: OPEN (a) below DONE), 8e26131 (PROGRESS ranked items). anim-transform + image-size PARKED (small
+  gain, after scene-scope + R4+V3 phone result). fix-scene-scope hold 1: V1 `:is(70-list)` made the flip ULT slower
+  (OBSERVED) -> rewritten as a flat list; Chrome does not reproduce the phone's 25 ms nested Layout; WebKit
+  StyleTreeResolver `updateStateForQueryContainer` SkipDescendants CONFIRMED in source; hold 2 = A, A+V1, B, B+V1, then
+  its W Timeline ticket (ahead of P-039's successors). P-039 st5 block started 19:12Z (~42 min).
 - **19:0xZ** Landed 30eaa11 (de-style-recalc DONE: style-recalc-images.md, F-093..F-096): H1 nested CSS REFUTED (scope, not
   matching), H2 images = memory only. Ranked fixes 1 scene-scope, 2 R4+V3 (fix-scene-scope), 3 st5, 4 fwReskip, 5-6
   sweep/packet -> transform, 7 image right-sizing (Sim memory + pixel check, no phone) -> PROGRESS items. ts-gesture I-042
   D1-D3 (Sim, OBSERVED, n=1): >= 33 ms segments play as written, 25 ms stretch +31 %, today's 8 ms collapse to a 50 ms
   flick, ~50 ms per pointerMove before touchstart; fix = compileStroke one move per >= 40 ms; phone D4 ~19:10Z <= 7 min.
-  **OPEN (track):** (a) §2.1's final B numbers: when iphone-runner's inspector-clean SR rerun lands, fix-scene-scope (or
+  **OPEN (track):** (a) DONE 62e3fd9. §2.1's final B numbers: when iphone-runner's inspector-clean SR rerun lands, fix-scene-scope (or
   mgmt-ops) appends them to style-recalc-images.md §2.1, append-only (re-read the y≈2615 and y≈5260 rows). (b) UNRESOLVED:
   why the y≈2610 scene flip was cheap in ~30/35 older runs and costly in every B block-1 run (dirty-container hypothesis;
   decisive = scene-scope's Chrome check of Layout dirty objects at the flip). (c) UNRESOLVED: Chrome's per-frame `.hero`

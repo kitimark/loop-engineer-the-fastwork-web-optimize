@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T19:03:00Z",
+ "updatedAt": "2026-10-01T19:12:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T19:12:00Z", "text": "Two small items (the endless sweep animations and the image sizes) are parked until the bigger style fixes have phone results, so effort stays on the largest slow frames." },
   { "at": "2026-10-01T19:03:00Z", "text": "Your two ideas checked: complex CSS is not the cause; the cost is how many elements each change touches. The images use more memory than needed but cost nothing per frame. Seven ranked fixes follow, scene-scope first." },
   { "at": "2026-10-01T18:54:00Z", "text": "A fix for slow style recalculation is being built (fix-scene-scope): it narrows how the page pauses its hidden scenes. After a Chrome check it goes to the phone next." },
   { "at": "2026-10-01T18:33:00Z", "text": "Your decision: style recalculation is now the top priority. The phone first records where style time goes in A and B; the robot-finger check and the other tests follow." },
@@ -207,7 +208,7 @@
    "fixes": "Six endless light sweeps and 20 moving line packets repaint every frame while that section is on screen. Small each frame, but continuous; they could move with the GPU instead.",
    "felt": {"answer": "not-yet"},
    "gate": "Ranks 5-6: a visual-equivalence check, then a phone test of paint per second.",
-   "next": "No owner yet; after the higher-ranked fixes.",
+   "next": "Parked: small gain, after scene-scope. It comes back once scene-scope and the panel fix have a phone result.",
    "owner": "unassigned (lead)",
    "checks": [],
    "details": [
@@ -223,7 +224,7 @@
    "fixes": "Several images are much larger than they are shown, using about 35 MB more memory than needed (estimate). This is not a per-frame cost, but it guards against the phone running low on memory.",
    "felt": {"answer": "not-yet"},
    "gate": "Rank 7: a memory check on the simulator plus a visual check (no visible change). No phone timing test.",
-   "next": "No owner yet; a new topic when the lead assigns it.",
+   "next": "Parked: small gain, after scene-scope. It comes back once scene-scope and the panel fix have a phone result.",
    "owner": "unassigned (lead)",
    "checks": [],
    "details": [
