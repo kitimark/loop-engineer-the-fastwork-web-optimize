@@ -23,6 +23,10 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **18:4xZ LEAD PRIORITY ORDER:** (1) style recalc (de-style-recalc + iphone-runner's block, then a scene-scope fix);
+  (2) phone-feeding tool fixes (ts-gesture I-042, ts-iphone-run I-038); (3) st5 / P-039; (4) lock-share, headless,
+  status-board tooling; (5) the rest. New: ts-status-board (briefed on the PROGRESS split).
+
 - **18:4xZ** Landed: a3b2832 (docs-2), 1e0dedf (ts-lock-bundle 5 commits; announcements + CLAUDE.md --no-timing line =
   lead), 511908f (P-039 ticket). P-039 st5 TICKET VALIDATED (second read 18:4xZ, row in PREDICTIONS). C-014 (lead): the
   user's Mac Safari Web Inspector was attached to the phone in parallel = likely cause of the inspector wedges (I-038),
@@ -563,6 +567,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `review-lock-bundle` | fix-reviewer (read-only) of ts-lock-bundle's 5 commits (lead spawn 17:5xZ): 18:0xZ NO BLOCKERS (f10193c ACCEPT; a17909d, fb59f13, bb07e33, 14e503f ACCEPT-WITH-NOTES); after landing: announce bench gain HOST-DISPLAY-CHANGED exit 3 until recalibration; host-real chrome test + test:chrome only with main's lock.mjs (I-041); CLAUDE.md line on `--no-timing` (lead) | done |
 | `ts-lock-share` | toolsmith (lead spawn 17:5xZ, user request): shared lane so functional-only jobs (npm test, Sim mechanism checks, bench mech, load-only sanity) run in parallel while timing keeps the exclusive slot; design first in research/architecture/lock-shared-lane.md for the lead, then implements under the I-041 rule | alive |
 | `ts-console-nav` | toolsmith (lead spawn 17:4xZ): user console menu + notifications | alive |
+| `ts-status-board` | toolsmith (lead spawn 18:4xZ, user request): live per-workstream status board (priority = lead only, state, waits from queues/console/incidents) on a console page next to /progress; design first in research/architecture/status-board.md (lead approves); briefed by mgmt-ops-6 on the PROGRESS.json split (board = workstreams + priority + waits; PROGRESS = user-facing fix narrative; link by item id). Once landed: keep the board in step with the lead | alive |
+| `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
 | `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | alive |
 | `ts-gesture` (Sim) | also owns the Simulator touch driver (`sim.mjs gesture`, after I-042 D1-D3 + safari-restart; lead 17:5xZ); the P-032 (b) Sim re-check waits on it | alive |
 | `review-t1a` | re-check of ts-iphone-run 7c83786 / f28f47e / 8d4f6a1 | alive |
