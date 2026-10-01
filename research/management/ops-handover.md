@@ -162,7 +162,7 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:08Z**.
    finger verdict (C/D postponed until a morph render fix exists).
 3. WATCH (lead 08:31Z): canary A/A on 43e40ce fps 78.3 / > 20 ms 57 / p95 25 vs ~92 / ~25 at 04:25Z on 93b4af2. If the next
    goal-hold A/A also shows ~78 fps → incident + A/A 93b4af2 vs 43e40ce in one hold.
-4. Caffeinate: the lead's current one runs to ~10:19Z → remind the lead at ~10:10Z (restart every 2 h until the user sets
+4. Caffeinate: restarted 10:07Z, runs to ~12:07Z → remind the lead at ~11:57Z (restart every 2 h until the user sets
    pmset).
 5. arch-finger researches OS-level touch simulation on the iPhone (WDA/XCUITest, safaridriver, simulator): its plan comes
    via the lead; when it exists, morph/touch checks become scriptable.
