@@ -169,15 +169,20 @@ export class CDP {
   }
 }
 
-/** Navigate and wait for load + a quiet period with no new network requests. */
-export async function gotoAndSettle(page, url, { quietMs = 1500, maxMs = 45000 } = {}) {
-  let last = Date.now();
-  const off = page.on((m) => { if (m.method === 'Network.requestWillBeSent' || m.method === 'Network.loadingFinished') last = Date.now(); });
+const REAL_CLOCK = { now: () => Date.now(), sleep };
+/**
+ * Navigate and wait for load + a quiet period with no new network requests. `clock` ({now(), sleep(ms)})
+ * runs the quiet wait; default Date.now + setTimeout. verify.mjs passes a stubbed host's fake clock in
+ * tests only (I-027). The load event wait (maxMs) stays on real time.
+ */
+export async function gotoAndSettle(page, url, { quietMs = 1500, maxMs = 45000, clock = REAL_CLOCK } = {}) {
+  let last = clock.now();
+  const off = page.on((m) => { if (m.method === 'Network.requestWillBeSent' || m.method === 'Network.loadingFinished') last = clock.now(); });
   const loaded = page.waitFor((m) => m.method === 'Page.loadEventFired', maxMs).catch(() => null);
   await page.send('Page.navigate', { url });
   await loaded;
-  const start = Date.now();
-  while (Date.now() - last < quietMs && Date.now() - start < maxMs) await sleep(200);
+  const start = clock.now();
+  while (clock.now() - last < quietMs && clock.now() - start < maxMs) await clock.sleep(200);
   off();
 }
 

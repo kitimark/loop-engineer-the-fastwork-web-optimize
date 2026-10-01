@@ -72,6 +72,9 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
   assert.deepEqual(x.errors.filter((e) => /integrity|digest/i.test(e)), [], 'vendor script passed SRI (served from site/, not site-pretty/)');
   // host record from the real samplers (I-017): the measured Chrome's process tree used CPU in every phase
   assert.equal(x.host.stub, undefined);
+  // I-027: only a stubbed host ($FW_TEST_HOST) runs verify's waits on a fake clock; on the real host the
+  // 6 s idle window is 6 s of wall time (the host record's window is Date.now-based here)
+  assert.ok(x.host.phases.idle.windowSec >= 6, `real host: idle window ${x.host.phases.idle.windowSec} s of wall time`);
   for (const [ph, p] of Object.entries(x.host.phases)) {
     for (const k of ['windowSec', 'busyPct', 'sysPct', 'chromeCpuPct', 'otherBusyPct', 'load1Start']) assert.equal(typeof p[k], 'number', `host.phases.${ph}.${k}`);
     assert.ok(p.chromeCpuPct > 0, `${ph}: Chrome tree CPU ${p.chromeCpuPct} %`);

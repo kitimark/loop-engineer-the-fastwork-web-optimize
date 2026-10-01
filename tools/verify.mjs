@@ -170,6 +170,13 @@ async function recheckHost() {
   return recheck;
 }
 
+// ---- the clock of the measurement's own waits (incident I-027) --------------------------------------
+// Settle, the idle window, the morph tail and the screenshot pauses wait on T. A real host: Date.now +
+// setTimeout, exactly as before. A stubbed host ($FW_TEST_HOST, tests only; every result records it as
+// host.stub): the stub's fake clock, so a fake-Chrome run costs no wall time. There is no other switch.
+let T = { now: () => Date.now(), sleep };
+async function useHostClock() { const c = await hostClock(); if (c.stub) T = { now: () => c.mono(), sleep: (ms) => c.sleep(ms) }; }
+
 // ---- host record per phase (tools/lib/host.mjs) ---------------------------------------------------
 // start: Chrome's tree CPU (ps) first, then the tick snapshot; end: ticks first, then ps. So the ps and
 // sysctl/vm_stat spawns stay outside the tick window, and the Chrome window covers the tick window.
@@ -312,9 +319,9 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   await page.send('Page.addScriptToEvaluateOnNewDocument', { source: loggerSource({ frameLog: FRAME_LOG }) });
   await page.send('Page.bringToFront');
   progress('load + settle', 60);
-  await gotoAndSettle(page, t.url, { quietMs: 2000 });
+  await gotoAndSettle(page, t.url, { quietMs: 2000, clock: T });
   progress('settle + throttle', 10);
-  await sleep(1500);
+  await T.sleep(1500);
   const state = await page.eval(`({
     kit: Object.keys(window).filter(k => k.startsWith('__sveltekit')),
     nav: document.querySelector('.start-selling-top-nav')?.className,
@@ -325,7 +332,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   })`);
 
   await page.send('Emulation.setCPUThrottlingRate', { rate: CPU });
-  await sleep(1000);
+  await T.sleep(1000);
   // idle phase: same logger, no input, at the top of the page (before any scrolling)
   // phase boundaries: CDP metrics, then host (start); host, then CDP metrics (end); all outside RESET..COLLECT
   const cdpPhase = {};
@@ -334,7 +341,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
     progress('idle phase', IDLE);
     const m = await cdpMetrics(page), h = await hostStart(chromePid);
     await page.eval(RESET);
-    await sleep(IDLE * 1000);
+    await T.sleep(IDLE * 1000);
     idlePerf = await page.eval(COLLECT_AT);
     hostPhases.idle = await hostEnd(h, chromePid);
     cdpPhase.idle = cdpDelta(m, await cdpMetrics(page));
@@ -345,7 +352,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   let m = await cdpMetrics(page), h = await hostStart(chromePid);
   await page.eval(RESET);
   const scroll = await page.eval(SCROLL, { timeout: 600000 });
-  await sleep(500);
+  await T.sleep(500);
   const scrollPerf = await page.eval(COLLECT);
   hostPhases.scroll = await hostEnd(h, chromePid);
   cdpPhase.scroll = cdpDelta(m, await cdpMetrics(page));
@@ -368,9 +375,9 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   if (vp.mobile) {
     for (let i = 0; i < 4; i++) await page.send('Input.synthesizeScrollGesture', { x: 215, y: 700, yDistance: -500, speed: 1200, gestureSourceType: 'touch', repeatCount: 1 });
   } else {
-    for (let i = 0; i < 25; i++) { await page.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 720, y: 450, deltaX: 0, deltaY: 120 }); await sleep(100); }
+    for (let i = 0; i < 25; i++) { await page.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 720, y: 450, deltaX: 0, deltaY: 120 }); await T.sleep(100); }
   }
-  await sleep(2000);
+  await T.sleep(2000);
   const morphPerf = await page.eval(COLLECT);
   hostPhases.morph = await hostEnd(h, chromePid);
   cdpPhase.morph = cdpDelta(m, await cdpMetrics(page));
@@ -382,12 +389,12 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   if (SCREENS && run === 0) {
     // Screenshots from a fresh load (unthrottled), walking down the page in small steps so the
     // scroll-linked effects see a normal scroll, *before* any morph gesture.
-    await gotoAndSettle(page, t.url, { quietMs: 1500 });
-    await sleep(1500);
+    await gotoAndSettle(page, t.url, { quietMs: 1500, clock: T });
+    await T.sleep(1500);
     const maxY = await page.eval('document.documentElement.scrollHeight - innerHeight');
     for (const [name, y] of [['top', 0], ['middle', Math.round(maxY * 0.45)], ['bottom', maxY]]) {
       await page.eval(`new Promise(async (res) => { while (Math.abs(scrollY - ${y}) > 1) { const d = ${y} - scrollY; window.scrollBy({ top: Math.sign(d) * Math.min(Math.abs(d), 300), behavior: 'instant' }); await new Promise(r => setTimeout(r, 60)); if (scrollY + innerHeight >= document.documentElement.scrollHeight - 1 && d > 0) break; } res(); })`, { timeout: 60000 });
-      await sleep(2500);
+      await T.sleep(2500);
       const { data } = await page.send('Page.captureScreenshot', { format: 'png' });
       const file = join(OUT, `${vpName}-${t.label}-${name}.png`);
       writeFileSync(file, Buffer.from(data, 'base64'));
@@ -452,6 +459,7 @@ async function main() {
   // process hold; a verify that re-entered an outer hold (`lock.mjs run`, test:chrome) or ran with
   // --no-lock died on SIGTERM with its Chrome left running (test:chrome on 48ace89).
   for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => process.exit(130));
+  await useHostClock();
   let lockHolder = null;
   if (!flag('no-lock')) {
     ({ holder: lockHolder } = await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel, idle: IDLE } }));

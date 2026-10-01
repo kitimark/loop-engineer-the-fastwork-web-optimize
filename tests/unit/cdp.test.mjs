@@ -48,6 +48,16 @@ test('launch (port 0 via DevToolsActivePort), sessions, eval, events and errors 
     off();
     assert.ok(events.includes('Page.loadEventFired'));
     assert.ok(events.includes('Network.requestWillBeSent'));
+    // I-027: an injected clock (verify.mjs passes the stubbed host's in tests) runs the quiet wait on that
+    // clock in the same 200 ms steps; without one it is Date.now + setTimeout, as before
+    let fake = 1e6;
+    const naps = [];
+    const clock = { now: () => fake, sleep: async (ms) => { naps.push(ms); fake += ms; } };
+    const t0 = Date.now();
+    await cdp.gotoAndSettle(page, 'http://localhost:1/', { quietMs: 30000, clock });
+    assert.ok(Date.now() - t0 < 5000, `a 30 s quiet period on the fake clock took ${Date.now() - t0} ms of wall time`);
+    assert.equal(naps.length, 150);
+    assert.ok(naps.every((n) => n === 200));
     await assert.rejects(c.waitFor(() => false, 50), /waitFor timeout/);
     await page.close();
     c.close();

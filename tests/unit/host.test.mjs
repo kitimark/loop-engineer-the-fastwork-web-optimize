@@ -219,7 +219,9 @@ test('I-024: no default test reads the real host: real samplers refuse in a test
 test('$FW_TEST_HOST replaces the samplers process-wide, and every reading says it is stubbed', () => {
   const code = `import('${new URL('../../tools/lib/host.mjs', import.meta.url).href}').then(async (h) => {
     const x = await h.sample({ windowSec: 10 });
-    console.log(JSON.stringify({ ...x, q: h.quiet(x), tree: await h.treeCpuSec(1) }));
+    const c = await h.hostClock(), m0 = c.mono(), w0 = Date.now();
+    await c.sleep(60000);
+    console.log(JSON.stringify({ ...x, q: h.quiet(x), tree: await h.treeCpuSec(1), clock: { stub: c.stub, monoSec: (c.mono() - m0) / 1000, wallMs: Date.now() - w0 } }));
   });`;
   const r = node('--input-type=module', ['-e', code], { env: { FW_TEST_HOST: FAKE_HOST, FAKE_HOST_BUSY: '0.5', FAKE_HOST_LOAD1: '7', FAKE_HOST_PRESSURE: '2', FAKE_HOST_CHROME_CORES: '0.8' } });
   assert.equal(r.code, 0, r.out);
@@ -232,4 +234,17 @@ test('$FW_TEST_HOST replaces the samplers process-wide, and every reading says i
   assert.ok(x.windowSec >= 10 && x.windowSec < 11, `fake clock window ${x.windowSec}`);
   assert.deepEqual(x.q.reasons, ['cpu 50 % > 20 %', 'load1 7 > 6', 'mem pressure warn']);
   assert.ok(x.tree >= 8, 'treeCpu from the stub: 0.8 cores over >= 10 s');
+  // I-027: hostClock() says it is stubbed, and its 60 s sleep advances only the fake clock (verify.mjs runs
+  // its settle / idle / morph waits on it under a stub, so the fake-Chrome tests cost no wall time)
+  assert.equal(x.clock.stub, FAKE_HOST);
+  assert.ok(x.clock.monoSec >= 60 && x.clock.monoSec < 61, `fake mono advanced ${x.clock.monoSec} s`);
+  assert.ok(x.clock.wallMs < 5000, `a 60 s fake sleep took ${x.clock.wallMs} ms of wall time`);
+});
+
+test('hostClock() without a stub: the real clock (stub undefined), samplers passed in are used as given', async () => {
+  let t = 0;
+  const c = await host.hostClock({ samplers: { mono: () => t, sleep: async (ms) => { t += ms; } } });
+  assert.equal(c.stub, undefined);
+  await c.sleep(1500);
+  assert.equal(c.mono(), 1500);
 });

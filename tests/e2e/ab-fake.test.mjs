@@ -157,7 +157,9 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
 });
 
 test('SIGTERM on ab: no server, verify.mjs or browser left running, lock released', async () => {
-  const env = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state-kill'), FAKE_CHROME_LOG: join(repo.root, 'kill.jsonl') };
+  // the fake Chrome never answers the throttle command, so ab is mid-run when the signal comes (I-027: a
+  // fake run no longer spends seconds in sleeps, so it could end before the SIGTERM)
+  const env = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state-kill'), FAKE_CHROME_LOG: join(repo.root, 'kill.jsonl'), FAKE_CHROME_HANG_AT: 'Emulation.setCPUThrottlingRate' };
   const p = await startProc(process.execPath, [join(repo.wt, 'tools', 'fix.mjs'), 'ab', 'fast-nav', '--runs', '1', '--no-screens'], { cwd: repo.wt, env, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 30000 });
   const chromePid = (await chromeStarted(env.FAKE_CHROME_LOG)).pid;
   const lockFile = join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json');
@@ -175,7 +177,7 @@ test('SIGTERM on ab: no server, verify.mjs or browser left running, lock release
 });
 
 test('two SIGTERMs on ab, the second during its exit: ab still exits via its handler and leaves nothing running (incident I-009)', async () => {
-  const env = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state-kill2'), FAKE_CHROME_LOG: join(repo.root, 'kill2.jsonl'), SLOW_EXIT_DIR: tempDir('fw-2sig-') };
+  const env = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state-kill2'), FAKE_CHROME_LOG: join(repo.root, 'kill2.jsonl'), SLOW_EXIT_DIR: tempDir('fw-2sig-'), FAKE_CHROME_HANG_AT: 'Emulation.setCPUThrottlingRate' };
   const p = await startProc(process.execPath, ['--import', SLOW_EXIT, join(repo.wt, 'tools', 'fix.mjs'), 'ab', 'fast-nav', '--runs', '1', '--no-screens'], { cwd: repo.wt, env, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 30000 });
   const chromePid = (await chromeStarted(env.FAKE_CHROME_LOG)).pid;
   const lockFile = join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json');
