@@ -102,6 +102,7 @@ async function passAndLive(live, mtime) {
   assert.match(m.toolsSha, /^[0-9a-f]{12}$/);
   assert.equal(m.chrome, 'FakeChrome/1.0');
   assert.match(m.baselineManifest, /^[0-9a-f]{16}$/);
+  assert.deepEqual(m.baselineSnapshot, { snapshot: null, state: 'unpinned' }, 'the snapshot pinned by baseline.json (none in this temp repo)');
   assert.deepEqual([m.repeat, m.viewports, m.on, m.served.files, m.timing], [2, ['mobile'], null, 1, 'test-fast']);
   assert.equal(typeof m.host.load1Start, 'number');
   assert.deepEqual(m.checks.map((c) => [c.id, c.verdict, c.baseline.values, c.patched.values]), [['nav-cached', 'PASS', [30, 30], [0, 0]], ['fewer-layouts', 'PASS', [10, 10], [2, 2]]]);

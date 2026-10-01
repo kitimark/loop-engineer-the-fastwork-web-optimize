@@ -1,11 +1,13 @@
 // Where things live, from any checkout: the main checkout or a linked git worktree.
 //
-// The mirrored site (site/, site-pretty/) is gitignored, so a fresh `git worktree add` doesn't have
-// it. Tools therefore look it up in this order:
+// The baseline (site/, site-pretty/) is a snapshot committed on main and pinned by baseline.json
+// (tools/lib/baseline.mjs checks it). Agent worktrees are sparse checkouts without it
+// (`node tools/baseline.mjs sparse`, applied by `fix.mjs new`), so tools look a tree up in this order:
 //   1. $FW_MIRROR_HOME: a directory that contains site/ (and usually site-pretty/)
-//   2. this checkout, if it has site/.mirror/manifest.json (the main checkout)
+//   2. this checkout, if it has the tree (the main checkout; a worktree with its own copy)
 //   3. the main checkout: dirname of `git rev-parse --git-common-dir`
-// Worktrees read the baseline in place. They never copy or modify it; per-fix changes go into
+// mirrorHome() (shared out/certs, custom roots) is the main checkout for every worktree, also one with
+// its own copy. Worktrees read the baseline in place and never modify it; per-fix changes go into
 // fixes/<topic>/overlay/, which serve.mjs layers on top (see fixes/README.md).
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname, basename, join, isAbsolute } from 'node:path';
@@ -51,7 +53,7 @@ const BASELINE_TREES = new Set(['site', 'site-pretty']);
 /** Directory holding the shared, read-only baseline (site/, site-pretty/) and shared out/certs. */
 export function mirrorHome() {
   if (process.env.FW_MIRROR_HOME) return resolve(process.env.FW_MIRROR_HOME);
-  if (hasMirror(REPO)) return REPO;
+  if (hasMirror(REPO) && !isLinkedWorktree()) return REPO; // a worktree with its own copy still shares the main checkout's out/certs
   return mainCheckout();
 }
 

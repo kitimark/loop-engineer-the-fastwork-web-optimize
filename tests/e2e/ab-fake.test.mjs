@@ -50,7 +50,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(res.git.branch, 'wt/ab-wt');
   const { hostThresholds, hostRecheck, watchdogSec, measurement, ...cfgRest } = res.config;
   assert.deepEqual(measurement, { cdpMetrics: false, traceFrames: false, frameLog: false }, 'what verify recorded (I-018): a flagless ab is main\'s measurement');
-  assert.deepEqual(cfgRest, { cpu: 6, viewport: 'mobile', runs: 1, idle: 1, serveArgs: ['--vendors=local', '--https', '--latency', '150'], baseline: 'site-pretty', stackedOn: null, order: 'ABBA (alternating per run)' });
+  assert.deepEqual(cfgRest, { cpu: 6, viewport: 'mobile', runs: 1, idle: 1, serveArgs: ['--vendors=local', '--https', '--latency', '150'], baseline: 'site-pretty', baselineSnapshot: { snapshot: null, state: 'unpinned' }, stackedOn: null, order: 'ABBA (alternating per run)' });
   assert.equal(hostThresholds.invalidLoad1, 10, 'thresholds copied into config');
   assert.deepEqual(hostRecheck, { maxWaitSec: 20, maxLoad1: 6, maxBusyPct: 20 }, 'ab passes --max-wait to verify.mjs');
   assert.equal(watchdogSec, 120, 'ab passes --watchdog to verify.mjs (I-023)');

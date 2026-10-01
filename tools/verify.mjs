@@ -66,6 +66,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
+import { requireBaseline, baselineStatus, baselineMeta } from './lib/baseline.mjs';
 import { acquire } from './lib/lock.mjs';
 import { loggerSource, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
 import { TRACE_START, TRACE_ARM, TRACE_DISARM, BUCKETS, BUCKET_LABELS, attributeFrames } from './lib/trace-frames.mjs';
@@ -97,6 +98,10 @@ const QUIET = { ...THRESHOLDS, quietMaxLoad1: num('max-load', THRESHOLDS.quietMa
 const WATCHDOG = num('watchdog', THRESHOLDS.watchdogStallSec);
 const CHROME_WARM = num('chrome-warm', THRESHOLDS.chromeWarmSec);
 const TRACE_TIMEOUT = num('trace-timeout', 180);
+// Local targets serve the baseline: it must be the snapshot pinned by baseline.json, unchanged
+// (tools/lib/baseline.mjs; exit 3 otherwise). A live-only run just records it. Metadata only.
+const LIVE = /^https?:\/\/([\w-]+\.)*fastwork\.com(:\d+)?(\/|$)/i;
+const BASELINE = baselineMeta(targets.every((t) => LIVE.test(t.url)) ? baselineStatus() : requireBaseline('verify.mjs'));
 mkdirSync(OUT, { recursive: true });
 
 // ---- watchdog (incident I-023) --------------------------------------------------------------------
@@ -545,7 +550,7 @@ async function main() {
   console.log(`host: ${invalid.length} of ${measured.length} runs contaminated${invalid.length ? ` (${[...new Set(invalid.flatMap((r) => r.host.reasons))].join('; ')}): verdicts provisional` : ''}${warn.length ? `; ${warn.length} warn (${[...new Set(warn.flatMap((r) => r.host.warnings))].join('; ')})` : ''}${hostSum.stub ? `  [host STUBBED: ${hostSum.stub}]` : ''}`);
   const measurement = { cdpMetrics: CDP_METRICS, traceFrames: TRACE, frameLog: FRAME_LOG, ...(TRACE ? { note: 'traced: tracing perturbs timing, frame numbers are not comparable with untraced runs', traceBufferKb: TRACE_START.traceConfig.traceBufferSizeInKb, traceTimeoutSec: TRACE_TIMEOUT } : {}) };
   if (TRACE) console.log(`trace-frames: ${measurement.note}; offMain = ${BUCKET_LABELS.offMain}`);
-  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, host: hostSum, rows, results }, null, 1));
+  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, baseline: BASELINE, host: hostSum, rows, results }, null, 1));
   console.log('details: ' + file);
 }
 

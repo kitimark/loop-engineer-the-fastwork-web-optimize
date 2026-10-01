@@ -59,7 +59,7 @@ test('gate timeout (FW_GATE_MAX_WAIT): granted anyway with gateTimeout, alert lo
   // verify.mjs run as that owner (re-enters the lease): every run carries the gate record and is contaminated
   const d = tempDir('fw-gatev-');
   const r = await nodeAsync(tool('verify.mjs'), ['a=http://127.0.0.1:9/', '--runs', '1', '--viewport', 'mobile', '--cpu', '3', '--no-screens', '--idle', '0', '--max-wait', '0', '--out', join(d, 'out'), '--result', join(d, 'r.json'), '--profile', join(d, 'profile'), '--owner', 'late-topic'],
-    { env: { CHROME: join(TESTS, 'fixtures', 'fake-chrome.mjs'), FW_STATE_DIR: state } });
+    { env: { CHROME: join(TESTS, 'fixtures', 'fake-chrome.mjs'), FW_STATE_DIR: state, FW_MIRROR_HOME: d } }); // no baseline served: off the real snapshot check
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(d, 'r.json'), 'utf8'));
   const h = res.results[0].host;

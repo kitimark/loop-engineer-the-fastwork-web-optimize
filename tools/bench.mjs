@@ -34,7 +34,8 @@
 // FAIL). Repeats that disagree -> FLAKY (never retried until green). Results: fixes/<topic>/bench-results.json.
 //
 // Exit codes: 0 pass, 1 a check failed / VACUOUS / REGRESSED / lint errors, 2 usage,
-//             3 INCONCLUSIVE / FLAKY / BASELINE-CHANGED, 124 the short-lane budget ran out.
+//             3 INCONCLUSIVE / FLAKY / BASELINE-CHANGED (or, before measuring, BASELINE-MODIFIED / -MISMATCH:
+//               the baseline is not the committed snapshot pinned by baseline.json), 124 the short-lane budget ran out.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -42,6 +43,7 @@ import { createHash } from 'node:crypto';
 import http from 'node:http';
 import https from 'node:https';
 import { REPO, resolveTree, checkoutId, isLinkedWorktree } from './lib/paths.mjs';
+import { requireBaseline, baselineMeta } from './lib/baseline.mjs';
 import { acquire } from './lib/lock.mjs';
 import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T, stubOutsideTest } from './lib/host.mjs';
 import { launchChrome, CDP, browserVersion } from './lib/cdp.mjs';
@@ -65,6 +67,7 @@ const BASE = resolveTree(BASE_NAME);
 const OUT = join(REPO, 'out', 'bench');
 const MECH_MAX_SEC = 180; // lead decision Q1: Tier A in the short lane, capped at 180 s
 const MECH_SERVE = ['--vendors=local']; // Tier A: no latency or https needed for counts
+let BASELINE = { snapshot: null, state: 'unchecked' }; // set before any measurement command (bottom of the file)
 
 function die(msg, code = 2) { console.error(msg); process.exit(code); }
 if (flag('no-lock')) die('bench.mjs always takes chrome-measure itself (Hard rule 7): there is no --no-lock');
@@ -391,7 +394,7 @@ async function cmdMech(t) {
   const record = {
     at: new Date().toISOString(), verdict: slept ? 'FLAKY' : experiment ? experiment.verdict : summary, ...(slept ? { hostSlept: true } : {}), seconds: Math.round((Date.now() - t0) / 1000),
     git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD'), checkout: checkoutId() },
-    toolsSha: toolsSha(), chrome: chromeVersion, baselineManifest: baselineManifest(), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on,
+    toolsSha: toolsSha(), chrome: chromeVersion, baselineManifest: baselineManifest(), baselineSnapshot: baselineMeta(BASELINE), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on,
     patch: source, served: { files: served.files }, viewports: Object.keys(plans), repeat, ...(TEST_FAST ? { timing: 'test-fast' } : {}), host,
     sessions: Object.fromEntries(Object.entries(sessions).map(([vp, s]) => [vp, Object.fromEntries(Object.entries(s).map(([side, rs]) => [side, rs.map((x) => ({ steps: x.steps, capped: x.capped, errors: x.errors }))]))])),
     checks: ev.checks, parity: ev.parity, ...(experiment ? { experiment } : {}),
@@ -502,7 +505,7 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   const range = hostRange(ser.hosts);
   const cur = { toolsSha: toolsSha(), chromeMajor: chromeMajor(m.chrome), setting: setting(o.timeDomain, o.cpu) };
   const res = readResults(t);
-  const base = { at: new Date().toISOString(), seconds: Math.round((Date.now() - t0) / 1000), git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD') }, ...cur, chrome: m.chrome, baselineManifest: baselineManifest(), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on, patch: calibrateMode ? null : sides.source, scenario: sc.key, metric: sc.metric, direction: sc.direction, runsPerSide: o.runs, cpu: o.cpu, timeDomain: o.timeDomain, host: range, values: { baseline: ser.a, patched: ser.b }, ...(ser.errors.length ? { errors: ser.errors } : {}) };
+  const base = { at: new Date().toISOString(), seconds: Math.round((Date.now() - t0) / 1000), git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD') }, ...cur, chrome: m.chrome, baselineManifest: baselineManifest(), baselineSnapshot: baselineMeta(BASELINE), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on, patch: calibrateMode ? null : sides.source, scenario: sc.key, metric: sc.metric, direction: sc.direction, runsPerSide: o.runs, cpu: o.cpu, timeDomain: o.timeDomain, host: range, values: { baseline: ser.a, patched: ser.b }, ...(ser.errors.length ? { errors: ser.errors } : {}) };
   if (ser.errors.length || ser.a.length < o.runs || ser.b.length < o.runs) {
     console.log(`${what.toUpperCase()} INCONCLUSIVE ${t}: scenario errors: ${[...new Set(ser.errors)].join('; ') || 'missing runs'}`);
     return 3;
@@ -589,7 +592,7 @@ async function cmdReconfirm() {
   const outDir = join(OUT, 'reconfirm', sha);
   mkdirSync(outDir, { recursive: true });
   const owner = opt('owner', process.env.FW_LOCK_OWNER || 'bench-reconfirm');
-  const report = { ref, sha, at: new Date().toISOString(), toolsSha: toolsSha(), baselineManifest: baselineManifest(), landed: topics, tierA: {}, tierB: {}, experiments: {}, holds: [] };
+  const report = { ref, sha, at: new Date().toISOString(), toolsSha: toolsSha(), baselineManifest: baselineManifest(), baselineSnapshot: baselineMeta(BASELINE), landed: topics, tierA: {}, tierB: {}, experiments: {}, holds: [] };
   const t0 = Date.now();
   // one normal hold for Tier A (+ experiments), then one per --gain topic (I-020: holds <= 10 min, short
   // jobs get in at every hand-over)
@@ -696,4 +699,7 @@ if (cmd !== 'lint' && stubOutsideTest()) {
   console.error(`bench: a stubbed host (FW_TEST_HOST=${process.env.FW_TEST_HOST}) outside a test, with a real Chrome: refused; unset FW_TEST_HOST to measure`);
   process.exit(2);
 }
+// the committed snapshot pinned by baseline.json, unchanged (tools/lib/baseline.mjs): checked before any
+// measurement command; bench-results.json / report.json record it as baselineSnapshot (metadata only)
+if (cmd !== 'lint') BASELINE = requireBaseline('bench.mjs');
 Promise.resolve(cmds[cmd]()).then((c) => process.exit(c ?? 0), (e) => { console.error(e.stack || e); process.exit(1); });

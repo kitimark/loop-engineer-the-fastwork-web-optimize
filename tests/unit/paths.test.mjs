@@ -59,6 +59,17 @@ test('a tree that exists in the worktree itself is preferred over the main check
   assert.equal(probe(repo.wt).custom, join(repo.wt, 'custom-root'));
 });
 
+test('a worktree with its own copy of the snapshot reads it, but shares the main checkout as mirror home (out/certs)', () => {
+  const r2 = makeTempRepo({ worktree: 'own-copy' });
+  makeFixtureHome(r2.main);
+  makeFixtureHome(r2.wt); // e.g. `node tools/baseline.mjs sparse --off`: the branch's committed snapshot
+  const p = probe(r2.wt);
+  assert.equal(p.site, join(r2.wt, 'site'));
+  assert.equal(p.pretty, join(r2.wt, 'site-pretty'));
+  assert.equal(p.home, r2.main, 'certs and custom roots stay shared');
+  assert.equal(probe(r2.main).home, r2.main);
+});
+
 test('ports and ids are deterministic per checkout and inside 5200-5999 (never 5173)', () => {
   for (const c of [repo.main, repo.wt]) {
     const a = probe(c), b = probe(c);

@@ -11,7 +11,12 @@ import { REPO, TOOLS, run, git, startServe, request, sha256, tempDir, registerRe
 const r = run(process.execPath, ['--input-type=module', '-e', `const p = await import(${JSON.stringify(join(TOOLS, 'lib/paths.mjs'))}); console.log(p.mirrorHome())`]);
 const HOME = r.stdout.trim();
 const MANIFEST = join(HOME, 'site', '.mirror', 'manifest.json');
-const skip = !existsSync(MANIFEST) && `no real mirror at ${HOME}/site (run tools/mirror.mjs in the main checkout)`;
+// The committed snapshot must be unchanged here (tools/lib/baseline.mjs): while the user reviews a re-mirror in
+// the main checkout (BASELINE-MODIFIED), this smoke test of the real baseline is skipped, not failed.
+const st = run(process.execPath, ['--input-type=module', '-e', `const b = await import(${JSON.stringify(join(TOOLS, 'lib/baseline.mjs'))}); const s = b.baselineStatus(); console.log(JSON.stringify({ ok: s.ok, state: s.state }))`]);
+const BL = JSON.parse(st.stdout || '{"ok":false,"state":"(status failed)"}');
+const skip = (!existsSync(MANIFEST) && `no real mirror at ${HOME}/site (run tools/mirror.mjs in the main checkout)`)
+  || (!BL.ok && `the real baseline is not the pinned snapshot (state ${BL.state}): node tools/baseline.mjs status`);
 
 test('real baseline: served byte-identically (site/), vendor scripts from site/ even with --root site-pretty', { skip }, async (t) => {
   const m = JSON.parse(readFileSync(MANIFEST, 'utf8'));
@@ -44,6 +49,12 @@ test('real baseline: a fresh detached worktree of this repo finds it with no cop
     git(REPO, 'worktree', 'add', '--detach', '-q', wt, 'HEAD');
     rmSync(join(wt, 'tools'), { recursive: true, force: true });
     cpSync(TOOLS, join(wt, 'tools'), { recursive: true }); // test the working-tree tools, not HEAD's
+    if (run('git', ['cat-file', '-e', 'HEAD:site'], { cwd: wt }).code === 0) {
+      // the snapshot is committed: a new worktree checks out a full copy; agent worktrees go sparse (fix.mjs new)
+      const sp = run(process.execPath, [join(wt, 'tools', 'baseline.mjs'), 'sparse'], { cwd: wt });
+      assert.equal(sp.code, 0, sp.out);
+      assert.match(run(process.execPath, [join(wt, 'tools', 'baseline.mjs'), 'status'], { cwd: wt }).stdout, /^state\s+ok$/m);
+    }
     const d = run(process.execPath, [join(wt, 'tools', 'fix.mjs'), 'doctor'], { cwd: wt });
     assert.equal(d.code, 0, d.out);
     assert.match(d.stdout, /^linked worktree\s+yes$/m);

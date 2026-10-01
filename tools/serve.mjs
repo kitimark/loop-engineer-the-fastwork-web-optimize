@@ -18,9 +18,12 @@
 //                                              # 0 = any free port; N = exactly N (default 5173 in the main checkout)
 //   node tools/serve.mjs --state out/serve.json  # write {url, port, pid, root, overlay, ...} once listening
 //
-// Baseline lookup: site/ and site-pretty/ are gitignored, so a git worktree has neither. `--root` names
-// are resolved against this checkout first, then against the main checkout (tools/lib/paths.mjs), so a
-// worktree serves the shared read-only baseline without copying it. `--overlay` dirs (comma-separated,
+// Baseline lookup: site/ and site-pretty/ are the snapshot committed on main; agent worktrees are sparse
+// and have neither. `--root` names are resolved against this checkout first, then against the main
+// checkout (tools/lib/paths.mjs), so a worktree serves the shared read-only baseline without copying it.
+// At start serve.mjs refuses (exit 3, BASELINE-MODIFIED / -MISMATCH / ...) unless that baseline is the
+// snapshot pinned by this checkout's baseline.json, unchanged (tools/lib/baseline.mjs; the state file
+// and /__mirror/info record it as `baseline`). `--overlay` dirs (comma-separated,
 // first wins) are checked before the root for every path: that is how a fix is served on top of the
 // baseline. Overlay responses carry `x-mirror-source: overlay`.
 //
@@ -37,6 +40,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { REPO, mirrorHome, resolveTree, isLinkedWorktree, autoPortBase } from './lib/paths.mjs';
 import { withGuard } from './lib/lock.mjs';
+import { requireBaseline, baselineMeta } from './lib/baseline.mjs';
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = REPO;
@@ -66,6 +70,7 @@ if (!['block', 'local', 'off'].includes(VENDORS)) { console.error('--vendors mus
 const manifestPath = join(MANIFEST_ROOT, '.mirror', 'manifest.json');
 if (!existsSync(manifestPath)) { console.error(`No ${manifestPath} — run \`node tools/mirror.mjs\` in the main checkout first (or set FW_MIRROR_HOME).`); process.exit(1); }
 if (!existsSync(ROOT)) { console.error(`--root ${ROOT} does not exist (site-pretty/ is built by \`node tools/prettify.mjs\` in the main checkout)`); process.exit(1); }
+const BASELINE = baselineMeta(requireBaseline('serve.mjs')); // the pinned snapshot, unchanged; else exit 3
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
 const MIME = {
@@ -224,7 +229,7 @@ function handler(req, res) {
   }
   if (pathname === '/__mirror/info') {
     done(200);
-    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, root: ROOT, overlays: OVERLAYS.map((d) => ({ dir: d, files: listFiles(d) })), latency: LATENCY, https: HTTPS, selfSigned: SELF_SIGNED, httpTwin: TWIN_PORT, rewrites: REWRITES }, null, 1)));
+    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, root: ROOT, baseline: BASELINE, overlays: OVERLAYS.map((d) => ({ dir: d, files: listFiles(d) })), latency: LATENCY, https: HTTPS, selfSigned: SELF_SIGNED, httpTwin: TWIN_PORT, rewrites: REWRITES }, null, 1)));
   }
   if (pathname.startsWith('/cdn-cgi/')) { done(204); return send(req, res, 204, {}, null); }
 
@@ -355,7 +360,7 @@ function announce() {
   if (STATE_FILE) {
     mkdirSync(dirname(STATE_FILE), { recursive: true });
     const tmp = `${STATE_FILE}.${process.pid}.tmp`;
-    writeFileSync(tmp, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, httpTwin: TWIN_PORT, latency: LATENCY, checkout: ROOT_DIR, startedAt: new Date().toISOString() }, null, 1));
+    writeFileSync(tmp, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, httpTwin: TWIN_PORT, latency: LATENCY, checkout: ROOT_DIR, baseline: BASELINE, startedAt: new Date().toISOString() }, null, 1));
     renameSync(tmp, STATE_FILE);
     let cleaned = false;
     const cleanup = () => { if (cleaned) return; cleaned = true; try { if (JSON.parse(readFileSync(STATE_FILE, 'utf8')).pid === process.pid) unlinkSync(STATE_FILE); } catch {} };

@@ -36,7 +36,8 @@ const SCROLL_MORPH = ['reset', 'scroll', 'collect', 'reset', 'input', 'input', '
 
 function setup() {
   const d = tempDir('fw-verify-');
-  const env = { CHROME: FAKE, FW_STATE_DIR: join(d, 'state'), FAKE_CHROME_LOG: join(d, 'chrome.jsonl'), FAKE_CHROME_METRICS: 'step' };
+  // FW_MIRROR_HOME: these targets serve no baseline; keep verify's snapshot check off this checkout's real one
+  const env = { CHROME: FAKE, FW_STATE_DIR: join(d, 'state'), FAKE_CHROME_LOG: join(d, 'chrome.jsonl'), FAKE_CHROME_METRICS: 'step', FW_MIRROR_HOME: d };
   const args = (owner, extra = []) => ['a=http://127.0.0.1:9/', '--runs', '1', '--viewport', 'mobile', '--cpu', '3', '--no-screens', '--out', join(d, 'out'), '--result', join(d, 'result.json'), '--profile', join(d, 'profile'), '--owner', owner, ...extra];
   return { d, env, args };
 }

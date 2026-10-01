@@ -24,7 +24,10 @@
 //
 // <file> is a URL path such as /_app/immutable/nodes/2.DyWL8TcE.js (a site-pretty/ prefix is fine).
 // Baseline = site-pretty/ (Prettier-formatted mirror) from the main checkout; FW_BASE=site switches
-// to the byte-identical minified tree. The overlay holds full copies of Fastwork files, so it is
+// to the byte-identical minified tree. Both are the snapshot committed on main and pinned by
+// baseline.json: every command that reads the baseline refuses (exit 3, BASELINE-MODIFIED/-MISMATCH)
+// unless it is that snapshot, unchanged; `new` makes the worktree sparse (no own copy; tools/baseline.mjs),
+// `ab` records the snapshot id in results.json config.baselineSnapshot. The overlay holds full copies of Fastwork files, so it is
 // gitignored; only patch.diff, README.md and results.json of a fix are meant to be committed, and
 // only to local branches (never pushed). Writing commands refuse to run in the main checkout unless
 // --allow-main is given, so a teammate that forgot to enter its worktree can't mix fixes there.
@@ -37,6 +40,7 @@ import http from 'node:http';
 import { REPO, mirrorHome, resolveTree, isLinkedWorktree, gitCommonDir, sharedStateDir, autoPortBase, checkoutId, sha256File } from './lib/paths.mjs';
 import { allStatus } from './lib/lock.mjs';
 import { stats } from './lib/ab-stats.mjs';
+import { requireBaseline, baselineStatus, baselineMeta, isSparse } from './lib/baseline.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -68,8 +72,10 @@ function requireWorktree(what) {
   if (isLinkedWorktree() || flag('allow-main') || process.env.FW_ALLOW_MAIN === '1') return;
   die(`refusing to ${what} in the main checkout (${REPO}).\nFix agents work in their own git worktree (EnterWorktree, isolation: "worktree", or git worktree add). Pass --allow-main if you really mean the main checkout.`);
 }
+let BASELINE = null; // status of the committed snapshot (tools/lib/baseline.mjs), checked once per run
 function requireBase() {
-  if (!existsSync(BASE)) die(`baseline ${BASE} not found. In the main checkout run: node tools/mirror.mjs && node tools/prettify.mjs (or set FW_MIRROR_HOME).`, 1);
+  if (!existsSync(BASE)) die(`baseline ${BASE} not found. It is the snapshot committed on main: node tools/baseline.mjs status (or set FW_MIRROR_HOME).`, 1);
+  BASELINE ??= requireBaseline('fix.mjs'); // BASELINE-MODIFIED / -MISMATCH / ...: exit 3 with the fix
 }
 /** Normalise a user path to a baseline-relative POSIX path ("_app/immutable/nodes/2.DyWL8TcE.js"). */
 function relPath(p) {
@@ -93,6 +99,7 @@ function git(...a) { const r = spawnSync('git', a, { cwd: REPO, encoding: 'utf8'
 // ---- commands --------------------------------------------------------------------------------------
 function doctor() {
   const home = mirrorHome();
+  const bs = baselineStatus();
   const lines = [
     ['checkout', REPO],
     ['linked worktree', isLinkedWorktree() ? 'yes' : 'no (main checkout)'],
@@ -101,10 +108,13 @@ function doctor() {
     ['mirror home', home + (process.env.FW_MIRROR_HOME ? ' (FW_MIRROR_HOME)' : '')],
     ['baseline', `${BASE} ${existsSync(BASE) ? 'OK' : 'MISSING'}`],
     ['byte-identical mirror', `${resolveTree('site')} ${existsSync(join(resolveTree('site'), '.mirror/manifest.json')) ? 'OK' : 'MISSING'}`],
+    ['baseline snapshot', `${bs.snapshot ?? '(none)'} ${bs.state}`],
+    ['worktree copy of snapshot', !isLinkedWorktree() ? '(main checkout)' : isSparse() ? 'no (sparse checkout)' : existsSync(join(REPO, 'site')) ? 'yes (own copy; node tools/baseline.mjs sparse drops it)' : 'no'],
     ['serve --port auto starts at', autoPortBase()],
     ['lock dir', join(sharedStateDir(), 'locks')],
   ];
   for (const [k, v] of lines) console.log(`${k.padEnd(28)} ${v}`);
+  if (!bs.ok) console.log(bs.message);
   console.log('locks:');
   for (const s of allStatus()) console.log(`  ${s.resource.padEnd(15)} ${s.holder ? (s.stale ? 'stale ' : '') + 'held by ' + s.holder.owner : 'free'}${s.queue.length ? ` (${s.queue.length} queued)` : ''}`);
   const fixes = existsSync(FIXES) ? readdirSync(FIXES).filter((d) => existsSync(join(FIXES, d, 'overlay'))) : [];
@@ -129,7 +139,13 @@ function cmdNew(t) {
     const tpl = readFileSync(join(FIXES, '_template', 'README.md'), 'utf8').replaceAll('<topic>', t);
     writeFileSync(readme, tpl);
   }
-  console.log(`fixes/${t}/ ready. Next: node tools/fix.mjs edit ${t} <file>   (baseline: ${BASE})`);
+  // agent worktrees leave the committed snapshot out of their checkout and read the main checkout's
+  // (tools/baseline.mjs sparse; it keeps an own copy when the main checkout doesn't hold this pin unchanged)
+  if (isLinkedWorktree() && !process.env.FW_MIRROR_HOME && !isSparse()) {
+    const r = spawnSync(process.execPath, [join(REPO, 'tools', 'baseline.mjs'), 'sparse'], { cwd: REPO, encoding: 'utf8' });
+    process.stdout.write(r.stdout || ''); process.stdout.write(r.stderr || '');
+  }
+  console.log(`fixes/${t}/ ready. Next: node tools/fix.mjs edit ${t} <file>   (baseline: ${resolveTree(BASE_NAME)})`);
 }
 
 function cmdEdit(t, files) {
@@ -414,7 +430,7 @@ async function cmdAb(t) {
   };
   const host = hostSummary(v);
   if (host.contaminated) for (const ms of Object.values(metrics)) for (const x of Object.values(ms)) x.verdict = CONTAMINATED + x.verdict;
-  const cfg = { cpu, viewport, runs, idle, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), stackedOn: ON, order: 'ABBA (alternating per run)',
+  const cfg = { cpu, viewport, runs, idle, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), baselineSnapshot: baselineMeta(BASELINE), stackedOn: ON, order: 'ABBA (alternating per run)',
     hostThresholds: v.host.thresholds ?? null, hostRecheck: v.host.recheck ?? null, watchdogSec: v.host.watchdogSec ?? null, measurement: v.measurement ?? null };
   const result = {
     topic, kind: aa ? 'A/A noise floor' : 'A/B', createdAt: new Date().toISOString(),
