@@ -77,6 +77,14 @@ future rw2.
    job passing a gate-holding head writer), it **opens a group** (`openedAt = now`). The other queued readers join
    on their next poll as the batch. last-grant.json records the group as a short grant.
 
+   *Amended in implementation:* last-grant.json records the group as a short grant **whose drain budget is
+   spent** (`groupGrant(g, now)`: owner `(shared)`, `runStart = now - SHORT_DRAIN_SEC`), written at open and at
+   every join. So after a group both old and new `nextIndex` serve a queued normal waiter first, and FIFO among
+   short-lane entries when no normal waiter is queued. An extra "after a group" rule in new `nextIndex` alone made
+   old and new code pick different waiters and livelocked (old code granted a reader entry that new code would not);
+   the agreement is tested against main's pinned `lib/lock.mjs`. Side effect: an exclusive `--short` job queued
+   right after a group waits for a queued normal waiter.
+
 Writer preference bound: once a writer is queued, no reader joins except the opening batch. The readers still in
 the group end by their deadlines. The writer therefore waits at most `30 s + SHARED_MAX_SEC (300) + 5 s ≈ 335 s`
 after the group opened, or `≤ 305 s` after the writer arrived in a running group, and then passes the host gate as
@@ -118,6 +126,17 @@ lock closes that race. Changes in `lib/sim.mjs`:
 - `wda build` keeps its normal (or `--no-timing`) hold: minutes of xcodebuild is not a shared-lane job.
 This is the last step of Phase 2 and can be split out if ts-sim/arch-sim prefer to own it.
 
+*As built (own commit, after the core lane):*
+- `holdGate(…, {functional: true})` accepts this process's live reader slot of weight ≥ 3 (`--weight simulator`), its
+  own short hold (what `run --shared` is while the switch is off), or a normal hold, and names the `mode`. A lighter
+  slot is refused.
+- **Every** session, functional or not, holds the exclusive `simulator` process lock (a new entry in `RESOURCES`,
+  not gated). It is polled through `tryAcquire`, not `acquire()`, because `acquire()`'s signal handlers exit at once
+  and would skip the Simulator shutdown. The wait is bounded so that boot, command and cleanup still fit the hold.
+- A functional session **refuses** the timing commands (`scroll`, `record`, `run`) instead of tagging their records,
+  so no functional number can reach `stats.mjs`. `open` and `wda start` work. The session record carries
+  `functional: true, lock: {mode}`.
+
 ## 4. Mixed versions (B2)
 
 - Old code vs. group: §1 table. Old code waits until `expiresAt`, and that is never before the last reader's
@@ -145,7 +164,7 @@ variable). FW_LOCK_HELD is never set to a group or reader token. Every combinati
 | exclusive hold (FW_LOCK_HELD = holder) | re-enters (today) | re-enters the exclusive hold (like `--short` today) |
 | shared hold (FW_LOCK_SHARED) | **refused at once**: "a timing/exclusive job never runs inside a shared functional hold (owner X); run it in its own hold" | re-enters the same reader slot |
 | nothing, same owner holds exclusively | re-enters (today; lease or same pid) | **no** re-entry by name: it queues as a reader (it can't know what the same-named hold is running) |
-| nothing, same owner is a reader | no re-entry (the group owner is `(shared)`), it queues | a new, separate reader (own token, own weight) |
+| nothing, same owner is a reader | no re-entry (the group owner is `(shared)`), it queues | a new, separate reader (own token, own weight); *amended:* a **lease** reader of the same owner from the same checkout is re-entered (`reentrant-shared`, so `acquire --shared` around a commit and the commit's own `--shared` acquire don't stack) |
 
 - Old-code tools inside a new reader (only possible across checkouts) don't know FW_LOCK_SHARED. They queue
   behind the group and are killed at the reader's deadline. They never co-hold.
@@ -177,7 +196,12 @@ Callers that switch (each is a one-line change plus a test; behaviour is identic
   `test:chrome:fn` (ts-headless's functional files) uses `--shared --weight 1`. `chromeLock(owner, meta, {shared,
   weight})` re-enters FW_LOCK_SHARED.
 - `bench.mjs mech`: `takeLock` with `shared: true, weight: 1` (MECH_MAX_SEC 180 unchanged). gain/reconfirm stay
-  exclusive.
+  exclusive. *As built:* mech always asks for the shared lane (weight `bench-mech`); while the switch is off that
+  is the exclusive short job it was. Its Chrome profile `out/chrome-bench-profile` is per checkout, so two mech runs
+  of one worktree would collide: the per-job profile (and recording `lock.mode` in mech results) is ts-headless's.
+- `tests/chrome/vendor-shim.chrome` and `bench.chrome` take a shared `chromeLock(…, {shared: true, weight: 1,
+  maxSec: 300})`; under the exclusive `test:chrome` wrapper they re-enter its hold, under `test:chrome:fn` its
+  reader slot.
 - `sim.mjs session --functional` (§3).
 - Docs: CLAUDE.md "Tooling is guarded by tests" and "Shared devices", and AGENT_ROLES. npm test guidance becomes
   `run … --shared --weight 2 --max-seconds 300 -- npm test`, and a commit's lease becomes `acquire --shared …`.
