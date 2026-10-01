@@ -19,6 +19,8 @@ import { status as wdaStatus, createSession, SAFARI } from './wda.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE } from './iphone-url.mjs';
+import { redact } from './redact.mjs';
+import { readConfig } from './wda-runner.mjs';
 
 /** The page over WIP. `match`: tab matcher for openTab (a host string after the first connect). */
 export function wipPage() {
@@ -179,7 +181,21 @@ export function cliParams(argv) {
   return p;
 }
 
-export async function gestureCmd({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log = console.log }) {
+/**
+ * The command. What it prints and the free-text strings it saves (errors, abort reason, foreground app) go
+ * through redact() with wda-runner's config ids (Hard rule 12; review-gesture 2): e.g. the WDA runner's own
+ * bundle id fw.wda.<team>.WebDriverAgentRunner when it is in front instead of Safari.
+ */
+export async function gestureCmd({ log = console.log, ...args }) {
+  const scrub = (s) => redact(String(s), readConfig());
+  try {
+    return await gestureCmdInner({ ...args, log: (s) => log(scrub(s)), scrub });
+  } catch (e) {
+    throw new Error(scrub(e?.message ?? e));
+  }
+}
+
+async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub }) {
   if (!arg) throw new Error('usage: node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--morph-log <morph-log.mjs>] [--out file] [--dry-run]');
   const file = resolve(arg);
   const script = JSON.parse(readFileSync(file, 'utf8'));
@@ -221,7 +237,7 @@ export async function gestureCmd({ argv, arg, opt, flag, requireLease, port = Nu
   process.on('SIGINT', onSig); process.on('SIGTERM', onSig);
   try {
     const front = await session.activeApp();
-    if (front?.bundleId !== SAFARI) throw new Error(`refusing: ${front?.bundleId || 'an unknown app'} is in front, not Safari. Bring Safari to the front (node tools/iphone.mjs wda start --owner ${owner} activates it)`);
+    if (front?.bundleId !== SAFARI) throw new Error(`refusing: ${scrub(front?.bundleId || 'an unknown app')} is in front, not Safari. Bring Safari to the front (node tools/iphone.mjs wda start --owner ${owner} activates it)`);
     page = await wipPage().connect();
     log(`GESTURE ${head} on ${await page.href()}`);
     const morphLog = opt('morph-log');
@@ -241,6 +257,8 @@ export async function gestureCmd({ argv, arg, opt, flag, requireLease, port = Nu
     program: { name: prog.name, version: prog.version, compiler: prog.compiler, hash: prog.hash, params: prog.params, estMs: prog.estMs, strokes: prog.strokes },
     run: res,
   };
+  res.errors = res.errors.map(scrub);
+  if (res.aborted) res.aborted = scrub(res.aborted);
   doc.summary = summarizeRun(res.segments, res.strokes, { morph: res.morph });
   writeFileSync(out, JSON.stringify(doc));
   log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, toolbar: doc.summary.toolbar, pinReversals: doc.summary.pinReversals, overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));

@@ -138,6 +138,16 @@ test('gesture refuses when Safari is not in front: no stroke is sent', async () 
   assert.equal(phone.wda().at(-1).method, 'DELETE', 'the session is closed');
 });
 
+test('gesture: the WDA runner itself in front is named without its team id (review-gesture 2)', async () => {
+  const phone = await fakePhone(['--foreground=fw.wda.abcde12345.WebDriverAgentRunner.xctrunner']);
+  lock('acquire', 'iphone', '--owner', 'me');
+  const r = await nodeAsync(IPHONE, ['gesture', scriptFile([S({})]), '--owner', 'me'], { env: phone.env, timeout: 30000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /refusing: <runner-bundle-id>\.xctrunner is in front, not Safari/);
+  assert.doesNotMatch(r.out, /abcde12345/i);
+  assert.equal(actionsCalls(phone.wda()).length, 0);
+});
+
 test('gesture: no WDA running is a clean error that says how to start it', async () => {
   lock('acquire', 'iphone', '--owner', 'me');
   const phone = await fakePhone();
@@ -202,10 +212,13 @@ test('--morph-log: installed after each page load, read per segment, morph-activ
 // ---- wda build | start | status | stop -------------------------------------------------------------------
 function wdaEnv() {
   const home = tempDir('fw-wdahome-');
-  for (const f of ['fake-xcodebuild.mjs', 'fake-iproxy.mjs']) chmodSync(join(FIX, f), 0o755);
+  for (const f of ['fake-xcodebuild.mjs', 'fake-iproxy.mjs', 'fake-ideviceinfo.mjs']) chmodSync(join(FIX, f), 0o755);
   const logs = tempDir('fw-wdalogs-');
-  return { home, logs, env: { ...env, FW_WDA_HOME: home, FW_XCODEBUILD: join(FIX, 'fake-xcodebuild.mjs'), FW_IPROXY: join(FIX, 'fake-iproxy.mjs'), FW_IDEVICE_ID: '/usr/bin/false', FW_SECURITY: '/usr/bin/false', FAKE_XCODEBUILD_LOG: join(logs, 'xb.jsonl'), FAKE_IPROXY_LOG: join(logs, 'ip.jsonl'), FAKE_WDA_LOG: join(logs, 'wda.jsonl') } };
+  return { home, logs, env: { ...env, FW_WDA_HOME: home, FW_XCODEBUILD: join(FIX, 'fake-xcodebuild.mjs'), FW_IPROXY: join(FIX, 'fake-iproxy.mjs'), FW_IDEVICE_ID: '/usr/bin/false', FW_IDEVICEINFO: join(FIX, 'fake-ideviceinfo.mjs'), FW_SECURITY: '/usr/bin/false', FAKE_XCODEBUILD_LOG: join(logs, 'xb.jsonl'), FAKE_IPROXY_LOG: join(logs, 'ip.jsonl'), FAKE_WDA_LOG: join(logs, 'wda.jsonl') } };
 }
+
+/** The made-up account/device ids of the fakes: never in what the tools print (review-gesture 2, Hard rule 12). */
+const IDS = [/ABCDE12345/i, /0011223344556677/, /Kitchen Phone/, /Test Person/, /example\.com/, /00AABBCCDDEEFF00/, /1A2B3C4D-1111/, /0123456789abcdef0123/];
 
 /** `wda build` inside our own chrome-measure hold, the only way it runs (review-gesture 1). */
 const heldBuild = (w, args, extra = {}) => node(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--max-seconds', '600', '--', process.execPath, IPHONE, 'wda', 'build', '--owner', 'me', ...args], { env: { ...w.env, ...extra }, timeout: 60000 });
@@ -255,18 +268,40 @@ test('wda build: lease; only inside our own chrome-measure hold (not on a free l
   assert.match(r.stderr, /no iPhone .*on USB/);
   r = heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677'], { FAKE_XCODEBUILD_FAIL: '1' });
   assert.equal(r.code, 1);
-  assert.match(r.stderr, /xcodebuild build-for-testing failed \(exit 65\).*requires a development team/s);
+  assert.match(r.stderr, /xcodebuild build-for-testing failed \(exit 65\); last lines of .*build\.log:\n.*requires a development team/s);
+  // review-gesture 2: the log tail is scrubbed (team, UDIDs, device names, runner bundle id, e-mail, identity name)...
+  for (const s of IDS) assert.doesNotMatch(r.out, s, `${s} printed:\n${r.stderr}`);
+  assert.match(r.stderr, /No Account for Team "<team>"/);
+  assert.match(r.stderr, /name:<device>/);
+  assert.match(r.stderr, /"<device-name>" is busy/);
+  // ...while the local log outside the repo keeps the real values (read there, never printed)
+  assert.match(readFileSync(join(w.home, 'build.log'), 'utf8'), /Kitchen Phone 7.*ABCDE12345/s);
   r = heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677']);
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /inside your chrome-measure hold \(stopped after 540 s\)/);
   assert.match(r.stdout, /^WDA_BUILT .*WebDriverAgentRunner_iphoneos26\.6-arm64\.xctestrun$/m);
-  assert.doesNotMatch(r.out, /ABCDE12345|0011223344556677/, 'account and device ids are not printed in full');
+  for (const s of IDS) assert.doesNotMatch(r.out, s, 'account and device ids are not printed in full');
   const args = JSON.parse(readFileSync(w.env.FAKE_XCODEBUILD_LOG, 'utf8').trim().split('\n').at(-1));
   for (const a of ['build-for-testing', '-allowProvisioningUpdates', 'DEVELOPMENT_TEAM=ABCDE12345', 'PRODUCT_BUNDLE_IDENTIFIER=fw.wda.abcde12345.WebDriverAgentRunner', 'id=00008130-0011223344556677', '-derivedDataPath']) assert.ok(args.includes(a), a);
   assert.ok(args[args.indexOf('-derivedDataPath') + 1].startsWith(w.home), 'DerivedData outside the repo');
   const cfg = JSON.parse(readFileSync(join(w.home, 'config.json'), 'utf8'));
-  assert.deepEqual([cfg.team, cfg.udid], ['ABCDE12345', '00008130-0011223344556677']);
-  assert.match(wda('status').stdout, /^build: +ok \(WebDriverAgentRunner_iphoneos26\.6-arm64\.xctestrun\)/m);
+  assert.deepEqual([cfg.team, cfg.udid, cfg.deviceName], ['ABCDE12345', '00008130-0011223344556677', 'Kitchen Phone 7'], 'the device name is kept locally, to scrub it');
+  r = wda('status');
+  assert.match(r.stdout, /^build: +ok \(WebDriverAgentRunner_iphoneos26\.6-arm64\.xctestrun\)/m);
+  for (const s of IDS) assert.doesNotMatch(r.out, s);
+});
+
+test('wda start: a runner that fails to launch is a clean error whose xcodebuild log tail carries no ids (review-gesture 2)', async () => {
+  const w = wdaEnv();
+  mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
+  lock('acquire', 'iphone', '--owner', 'me');
+  assert.equal(heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677']).code, 0);
+  const r = await nodeAsync(IPHONE, ['wda', 'start', '--owner', 'me', '--timeout', '20'], { env: { ...w.env, FAKE_XCODEBUILD_RUN_FAIL: '1' }, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /WDA did not come up at http:\/\/127\.0\.0\.1:\d+; last lines of .*runner\.log:\n.*TEST EXECUTE FAILED/s);
+  assert.match(r.stderr, /No profiles for '<runner-bundle-id>\.xctrunner'/);
+  for (const s of IDS) assert.doesNotMatch(r.out, s, `${s} printed:\n${r.stderr}`);
+  assert.ok(!existsSync(join(env.FW_STATE_DIR, 'wda', 'runner.json')), 'the failed runner was cleaned up');
 });
 
 test('wda start (lease) runs the runner and iproxy, activates Safari; status sees them; stop kills only them', async () => {

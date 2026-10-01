@@ -22,7 +22,9 @@
 //   wda start --owner <o>        lease-guarded: xcodebuild test-without-building + iproxy, wait for /status,
 //                                bring Safari to the front
 //   wda stop                     kill our runner and iproxy (no lease: cleanup must always work)
-// Test doubles: $FW_XCODEBUILD, $FW_IPROXY, $FW_IDEVICE_ID, $FW_SECURITY name the executables.
+// Test doubles: $FW_XCODEBUILD, $FW_IPROXY, $FW_IDEVICE_ID, $FW_IDEVICEINFO, $FW_SECURITY name the executables.
+// Everything printed goes through redact() (tools/lib/redact.mjs, Hard rule 12): no full team id, UDID,
+// runner bundle id, device name, Apple Account e-mail or signing-identity name, also not in xcodebuild log tails.
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, openSync, closeSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -30,6 +32,7 @@ import { homedir } from 'node:os';
 import { sharedStateDir } from './paths.mjs';
 import { status as lockStatus, parseHeld, staleReason, pidAlive } from './lock.mjs';
 import { status as wdaStatus, createSession, WDA_URL, SAFARI } from './wda.mjs';
+import { redact } from './redact.mjs';
 
 export const WDA_REF = 'v16.13.6'; // appium/WebDriverAgent tag, 2026-09-30; V0 confirms it launches on iOS 26.6.1
 export const WDA_GIT = 'https://github.com/appium/WebDriverAgent';
@@ -119,7 +122,7 @@ function startDetached(name, cmd, args, { log, match, owner }) {
   const p = spawn(cmd, args, { detached: true, stdio: ['ignore', fd, fd] });
   closeSync(fd);
   p.unref();
-  const rec = { pid: p.pid, name, cmd: [cmd, ...args].join(' ').replace(/id=[0-9A-Fa-f-]{8,}/g, 'id=<udid>').replace(/-u [0-9A-Fa-f-]{8,}/, '-u <udid>'), match, log, owner, startedAt: new Date().toISOString() };
+  const rec = { pid: p.pid, name, cmd: redact([cmd, ...args].join(' '), readConfig()).replace(/id=[0-9A-Fa-f-]{8,}/g, 'id=<udid>').replace(/-u [0-9A-Fa-f-]{8,}/, '-u <udid>'), match, log, owner, startedAt: new Date().toISOString() };
   writeFileSync(pidFile(name), JSON.stringify(rec, null, 1));
   return rec;
 }
@@ -142,6 +145,12 @@ function detectUdid() {
   const ids = r.status === 0 ? r.stdout.split('\n').map((s) => s.trim()).filter(Boolean) : [];
   return ids.length === 1 ? ids[0] : ids.length ? { many: ids.length } : null;
 }
+/** The phone's name (Settings > General > About > Name, often the owner's name): stored locally to scrub it. */
+function detectDeviceName(udid) {
+  const r = spawnSync(exe('ideviceinfo', 'FW_IDEVICEINFO'), ['-u', udid, '-k', 'DeviceName'], { encoding: 'utf8', timeout: 10000 });
+  const n = r.status === 0 ? (r.stdout || '').trim() : '';
+  return n || null;
+}
 function detectTeam() {
   const r = spawnSync(exe('security', 'FW_SECURITY'), ['find-certificate', '-a', '-c', 'Apple Development', '-p'], { encoding: 'utf8' });
   if (r.status !== 0) return null;
@@ -158,7 +167,20 @@ const SETUP = `one-time user setup (research/architecture/finger-simulation.md 5
   (a free personal team is enough); iPhone: Developer Mode on, Settings > Developer > Enable UI Automation on;
   after the first build+start: Settings > General > VPN & Device Management > trust the "Apple Development" app.`;
 
-export async function wdaCmd({ sub, opt, requireLease, log = console.log }) {
+/**
+ * The command. Everything it prints (log lines, error messages, xcodebuild log tails) goes through redact()
+ * with the ids from config.json (Hard rule 12; review-gesture 2): team, UDID, runner bundle id, device name.
+ */
+export async function wdaCmd({ log = console.log, ...args }) {
+  const scrub = (s) => redact(String(s), readConfig());
+  try {
+    return await wdaCmdInner({ ...args, log: (s) => log(scrub(s)) });
+  } catch (e) {
+    throw new Error(scrub(e?.message ?? e));
+  }
+}
+
+async function wdaCmdInner({ sub, opt, requireLease, log }) {
   if (sub === 'status') {
     const cfg = readConfig();
     const src = existsSync(join(srcDir(), 'WebDriverAgent.xcodeproj'));
@@ -187,14 +209,15 @@ export async function wdaCmd({ sub, opt, requireLease, log = console.log }) {
     const udid = opt('udid', cfg.udid) || detectUdid();
     if (!udid || typeof udid === 'object') throw new Error(`no iPhone${udid?.many ? ` (${udid.many} devices: pass --udid)` : ' on USB (idevice_id -l lists none): connect it with the cable and unlock it'}`);
     const bundleId = opt('bundle-id', cfg.bundleId) || `fw.wda.${String(team).toLowerCase()}.WebDriverAgentRunner`;
-    Object.assign(cfg, { team, udid, bundleId });
+    const deviceName = detectDeviceName(udid) || cfg.deviceName; // only to scrub it from what we print
+    Object.assign(cfg, { team, udid, bundleId, ...(deviceName ? { deviceName } : {}) });
     writeConfig(cfg);
     const blog = join(wdaHome(), 'build.log');
     log(`building WebDriverAgent ${cfg.ref} for device ${mask(udid)}, team ${mask(team)} (log: ${blog}); a few minutes of Mac CPU inside your chrome-measure hold (stopped after ${Math.round(gate.timeoutMs / 1000)} s); Xcode's automatic signing registers this device with the signed-in Apple account`);
     const fd = openSync(blog, 'w');
     const r = spawnSync(exe('xcodebuild', 'FW_XCODEBUILD'), buildArgs({ udid, team, bundleId }), { cwd: srcDir(), stdio: ['ignore', fd, fd], timeout: gate.timeoutMs });
     closeSync(fd);
-    if (r.status !== 0) throw new Error(`xcodebuild build-for-testing ${r.error?.code === 'ETIMEDOUT' ? `stopped after ${Math.round(gate.timeoutMs / 1000)} s (before your chrome-measure hold ends); re-run it in a fresh hold` : 'failed'} (exit ${r.status ?? r.signal});last lines of ${blog}:\n${tail(blog)}\nIf it is about signing or the account: ${SETUP}`);
+    if (r.status !== 0) throw new Error(`xcodebuild build-for-testing ${r.error?.code === 'ETIMEDOUT' ? `stopped after ${Math.round(gate.timeoutMs / 1000)} s (before your chrome-measure hold ends); re-run it in a fresh hold` : 'failed'} (exit ${r.status ?? r.signal}); last lines of ${blog}:\n${tail(blog)}\nIf it is about signing or the account: ${SETUP}`);
     const x = findXctestrun();
     if (!x) throw new Error(`build succeeded but no .xctestrun in ${derivedData()}/Build/Products`);
     log(`WDA_BUILT ${x}`);

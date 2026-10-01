@@ -14,6 +14,8 @@
 //   DELETE /session/:id                            end the session
 // Never /source, element lookups or screenshots: an accessibility snapshot of Safari costs phone CPU while
 // we measure it. request() refuses those paths.
+import { redact } from './redact.mjs';
+
 export const WDA_URL = () => process.env.FW_WDA_URL || 'http://127.0.0.1:8100';
 export const SAFARI = 'com.apple.mobilesafari';
 export const SESSION_SETTINGS = Object.freeze({ waitForIdleTimeout: 0, animationCoolOffTimeout: 0, defaultActiveApplication: SAFARI });
@@ -48,7 +50,7 @@ export async function request(method, path, body, { base = WDA_URL(), timeoutMs 
   if (!res.ok || (v && typeof v === 'object' && typeof v.error === 'string')) {
     const err = v && typeof v === 'object' ? v.error : undefined;
     const msg = (v && typeof v === 'object' && v.message) || text.slice(0, 200) || res.statusText;
-    throw new WdaError(`WDA ${method} ${path}: HTTP ${res.status}${err ? ` ${err}` : ''}: ${msg}`, { status: res.status, error: err, path });
+    throw new WdaError(`WDA ${method} ${path}: HTTP ${res.status}${err ? ` ${err}` : ''}: ${redact(String(msg))}`, { status: res.status, error: err, path }); // WDA's message can name the runner's bundle id, the device
   }
   return v;
 }
@@ -63,7 +65,7 @@ export const status = (opts) => request('GET', '/status', undefined, { timeoutMs
 export async function createSession(opts = {}) {
   const r = await request('POST', '/session', { capabilities: { alwaysMatch: { shouldWaitForQuiescence: false }, firstMatch: [{}] } }, opts);
   const id = r?.sessionId;
-  if (!id || !/^[A-Za-z0-9-]{1,80}$/.test(id)) throw new WdaError(`WDA POST /session: no usable sessionId in ${JSON.stringify(r).slice(0, 200)}`);
+  if (!id || !/^[A-Za-z0-9-]{1,80}$/.test(id)) throw new WdaError(`WDA POST /session: no usable sessionId in ${redact(JSON.stringify(r) ?? String(r)).slice(0, 200)}`);
   const s = {
     id,
     settings: await request('POST', `/session/${id}/appium/settings`, { settings: SESSION_SETTINGS }, opts),
