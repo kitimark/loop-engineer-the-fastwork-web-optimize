@@ -246,10 +246,13 @@ between tool calls.
    text for the CLAUDE.md phone-threshold line + Sentinel bullet, and updates fix-reviewer check 15. Spawned:
    ts-user-console, ts-lock-bundle (item 7b + sleep wording; branch worktree-agent-a413c9626c75bd1a3).
    **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A PASSED (ABBA aw1-10e S, on vs off: dt>50 3 vs 7, dt>34 18 vs 21, fps
-   57.4 vs 57.3; T1a now absolute; p95 HL shift for the minShift revisit -> ts-analysis), 10 min, block B) -> P-033 step 0
+   57.4 vs 57.3; T1a now absolute; minShift revisit CLOSED: HL p95 on-off +0.48 ms, n=2/arm (crude), stays 4 ms,
+   ts-analysis 14:3xZ), 10 min, block B) -> P-033 step 0
    (lead 14:2xZ: right after P4 B) -> 10 min cooling -> P-032 G cdwc (VALIDATED, ~20 min) ->
    P11 Block A + P14 -> P12 -> P10 -> P5 -> P-033 gain (VALIDATED; step 0 fills any free phone gap) -> P9 -> P-030 ->
    P-031 G -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. P-033 "within noise" -> bundle candidate, not standalone.
+   **mw10e-cdwc landing branch fix/mw10e-cdwc 3d664c7** (on 77c480e): review-cdwc round 2 resolved B1/B2/B4; lands only
+   after P-032 PASS + B5 (one-line wording); no further review round. P4 block A (P-013) done 14:25-14:30Z.
    **F-076 / P-034 owner = fix-nav-morph after cdwc lands** (lead: same countdown code; no fix-countdown-idle-raf spawn).
    Toolsmith bundle: lead spawns after ts-wait's npm test on main (c4a1ee2) passes. ts-user-console (tools/console.mjs:
    user-facing step console, agents `console.mjs wait <id> --until started|answered`) in progress.
