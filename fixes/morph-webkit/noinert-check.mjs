@@ -19,7 +19,7 @@ mkdirSync(OUT, { recursive: true });
 const BASEOV = join(WT, 'fixes/aw1-10e/overlay');
 const PRE = `(() => {
   const W = window.__nc = { lt: [], mut: [], listen: [] };
-  for (const [fn, tag] of [['addEventListener', '+'], ['removeEventListener', '-']]) { const o = window[fn]; window[fn] = function (t, ...r) { if (/^(wheel|touchstart|touchmove)$/.test(t)) W.listen.push(tag + t + '@' + Math.round(scrollY)); return o.call(this, t, ...r); }; }
+  for (const [fn, tag] of [['addEventListener', '+'], ['removeEventListener', '-']]) { const o = EventTarget.prototype[fn]; EventTarget.prototype[fn] = function (t, ...r) { if (/^(wheel|mousewheel|touch|gesture|pointer)/.test(t)) W.listen.push(tag + t + (this === window ? '' : this === document ? '[doc]' : '[' + (this.tagName || '?') + ']') + '@' + Math.round(scrollY)); return o.call(this, t, ...r); }; }
   try { new PerformanceObserver((l) => { for (const e of l.getEntries()) W.lt.push([Math.round(e.startTime), Math.round(e.duration)]); }).observe({ type: 'longtask', buffered: true }); } catch {}
   new MutationObserver((rs) => { for (const r of rs) if (r.target.closest && r.target.closest('.start-selling-morph-panel')) W.mut.push([Math.round(scrollY), r.attributeName, r.target.tagName + '.' + (r.target.className.baseVal ?? r.target.className).split(' ')[0], r.oldValue, r.target.getAttribute(r.attributeName)]); })
     .observe(document, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['src', 'inert', 'tabindex'] });
@@ -53,7 +53,7 @@ try {
     const idle = await page.eval(`(() => { const W = window.__nc; return { lt: W.lt.slice(), listen: W.listen.slice(), mut: W.mut.length, sourced: [...document.querySelectorAll('.start-selling-morph-panel img')].filter((i) => i.getAttribute('src')).length }; })()`);
     const a11yTop = await page.eval(A11Y);
     await page.eval('window.__nc.mut.length = 0; window.__nc.lt.length = 0; window.__nc.listen.length = 0; true');
-    await page.eval(`new Promise((res) => { let y = 0; const step = () => { y += 24; window.scrollTo({ top: y, behavior: 'instant' }); y < 2600 ? requestAnimationFrame(step) : setTimeout(res, 800); }; requestAnimationFrame(step); })`, { timeout: 120000 });
+    await page.eval(`new Promise((res) => { let y = 0; let paused = !${JSON.stringify(!!process.env.PAUSE)}; const step = () => { y += 24; window.scrollTo({ top: y, behavior: 'instant' }); if (!paused && y >= 1200) { paused = true; return setTimeout(() => requestAnimationFrame(step), 1500); } y < 2600 ? requestAnimationFrame(step) : setTimeout(res, 800); }; requestAnimationFrame(step); })`, { timeout: 120000 });
     const scroll = await page.eval(`(() => { const W = window.__nc; const by = {}; for (const m of W.mut) { const k = m[1] + '@' + m[0]; by[k] = (by[k] || 0) + 1; } return { mutations: by, listen: W.listen.splice(0), lt: W.lt.slice() }; })()`);
     const a11yEdge = await page.eval(A11Y);
     await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });

@@ -280,6 +280,72 @@ whether the listener is passive. Two diagnostics, both on noinert:
   - if nb drops the frame, the cost is the `b` effect flush;
   - if neither drops it, the cost is a non-JS change at that scroll position.
 
+### y≈1960: the split, the attribution card (NAMED) and two F-stage candidates
+
+**na/nb on the iPhone** (iphone-runner 10:40-10:43Z, C A B B A C, control aw1-10e, ctl-B19 passed). dt@y of the edge frame with
+±2 neighbours:
+
+| build | run 1 | run 2 |
+|---|---|---|
+| control | 16 17 **104@1962** 23 14 | 4 13 **107@1962** 33 10 |
+| na | 16 17 34@2002 11 10 | 17 16 35@2057 12 11 |
+| nb | 11 17 **84@1956** 16 17 | 15 23 **101@1975** 15 23 |
+
+- na removes the frame and nb doesn't. It is one long frame, not a smear.
+- Elsewhere na costs nothing (scripted): scroll fps 57.0/57.6 vs 55.4/56.3; whole-scroll frames > 50 ms 0/0 vs 3/1.
+- Timeline (F-047), control frame 100@1957: RenderingFrame 97.6 ms = RecalculateStyles 34.4 (Layout 18.9 inside) + Composite 58
+  (Layout 14, Paint 1.6, ~42 ms commit). JS is ~1.4 ms. On na, no frame over 30 ms in that range.
+- **Attribution card signed NAMED by the lead.** Phone-only; the fix class is touch-only.
+- **Caveat:** na and nb sit on noinert + src. Those two parts showed no effect on their own, and the landable builds drop them.
+
+**Mechanism, WebKit source (de-unknowns-render):**
+- On the window, `addEventListener`/`removeEventListener` for wheel, touch* and gesture* calls `invalidateEventListenerRegions()`.
+- That recomputes the ROOT style's event-listener region types. If they changed, it runs `scheduleFullStyleRebuild()`.
+- The types are inherited, so every renderer's style changes and its layer's event region is invalidated. The result is a
+  whole-document style rebuild plus an event-region repaint of every composited layer.
+- Passive listeners are types too, which explains e1's failure.
+- Consequence: each change of the type set costs one such frame. The original pays it again on the way up, because `P()` removes
+  the listeners.
+
+**Candidates** (both on bare aw1-10e; no debug hook, since aw1-10e has none):
+
+| | `mw10e-arm-load` (F1) | `mw10e-arm-idle` (F2) |
+|---|---|---|
+| JS | c6a3ac9256ea… | afff5a38ee28… |
+| CSS | base c6aad94b455f | base c6aad94b455f |
+| diff | `variants-10e/arm-load.diff` (+11 -3) | `variants-10e/arm-idle.diff` (+27 -3) |
+| when armed | once at effect setup (page load) | once, at the first 300 ms scroll-quiet moment after scrollY passes one viewport, in a timer task |
+| fallback | — | at the IO edge, as the original, if the user scrolls straight through |
+| removed | never while the page lives | never while the page lives |
+| zone gate | in the handlers: `k = C() \|\| (e > 0 && u && O())` | same |
+
+- The zone gate means the handlers act exactly when the original had them attached (`u || C()`), and `O()`'s
+  getBoundingClientRect never runs outside the zone.
+
+**Chrome check (short lane; `probe-results/arm-check-pause.json`, scroll with a 1.5 s pause at y=1200):**
+
+| build | listener adds | at the edge (y=1632) | morph | screenshot vs base |
+|---|---|---|---|---|
+| base | +wheel/+touchstart/+touchmove at y=1632 | those + src×21 + inert | reaches 1 | — |
+| F1 | the same three at y=0 (setup) | only src×21 + inert, no listener change | reaches 1 | 0.07 % |
+| F2 | the same three at y=1200 (in the pause) | only src×21 + inert | reaches 1 | 0.09 % |
+
+- a11y and hit tests are identical in all three. No exceptions.
+- Other window/document listeners of these families are added at load only: pointer*, and a `touchstart` on `<html>`. None is
+  added during the scroll.
+
+**Prediction card (P-pending, before any timed run).** Scripted, 4v4 vs aw1-10e:
+- F1: the edge frame ≤ 37.5 ms (≤ 4 ticks) and no new frame ≥ 37.5 ms in the load/settle window.
+- F2 with a 1.5 s pause at y≈1200: the edge frame ≤ 37.5 ms, and one frame of ~60-120 ms at the arming moment (inside the pause,
+  not during the scroll).
+- F2 without a pause: the same as the control (fallback at the edge).
+- Risk: the bare base still flips `inert` and writes 21 img src in the edge frame (na had neither). If F1's edge stays above
+  37.5 ms with only those events in it, restack F1 on noinert + src.
+- Touch latency is not covered by the scripted driver. F1 makes the whole page a synchronous touchmove region from load; F2 does
+  so from the arming moment. G/F runs with Event Timing on touchstart are required before landing.
+- If that latency is worse, F3 is the fallback: element-scoped listeners on #platform and the nav header, armed in idle and
+  never removed (de-unknowns-render (c)). The behaviour risk is a touch that starts outside them at the end zone.
+
 de-middle's other R1 items (`inert` until the morph, listeners once passive) are not needed for this frame.
 
 ### Morph driver round 2: ghbn vs ghb vs gh

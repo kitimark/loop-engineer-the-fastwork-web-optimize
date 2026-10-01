@@ -1,0 +1,69 @@
+# fastwork mirror fix: mw10e-arm-idle
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw10e-arm-idle --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13307,7 +13307,7 @@
+           n = window.visualViewport?.height ?? window.innerHeight;
+         return t.height >= n * 0.45 && t.bottom <= n + 8;
+       },
+-      k = (e) => C() || (e > 0 && O()),
++      k = (e) => C() || (e > 0 && u && O()),
+       A = (e) => {
+         k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
+       },
+@@ -13332,9 +13332,31 @@
+           window.removeEventListener(`wheel`, A, !0),
+           window.removeEventListener(`touchstart`, j, !0),
+           window.removeEventListener(`touchmove`, M, !0));
++      },
++      // perf(morph-listeners-once): the original added the window wheel/touchstart/touchmove listeners when
++      // #platform entered the 200% zone (IO below) and removed them when it left. On WebKit every wheel/touch
++      // listener add/remove on the window invalidates the event-listener region types of the ROOT style (passive
++      // ones too): a whole-document style recalc + layout + event-region repaint of the composited layers, the
++      // ~100 ms iPhone frame at y~1960 (and again on the way up). They are now never removed while the effect
++      // lives, and the zone gate moved into the handlers (k(): `u`), so they act exactly when the original had
++      // them attached (u || C()).
++      // mw10e-arm-idle: armed once, at the first scroll-quiet moment (300 ms without a scroll event) after scrollY
++      // passes one viewport, in a timer task between frames, so the region rebuild lands while the user isn't
++      // scrolling. A user who scrolls straight through to the zone gets them at the IO edge, as before (I()).
++      // Never removed (removal costs the same rebuild).
++      __armLs = -1e9,
++      __armT = 0,
++      __armQ = () => {
++        ((__armT = 0),
++          d ||
++            (performance.now() - __armLs < 300 ? (__armT = window.setTimeout(__armQ, 300)) : N()));
++      },
++      __armS = () => {
++        ((__armLs = performance.now()),
++          d || __armT || window.scrollY < window.innerHeight || (__armT = window.setTimeout(__armQ, 300)));
+       },
+       I = () => {
+-        u || C() ? N() : P();
++        (u || C()) && N();
+       },
+       L = () => {
+         (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
+@@ -13348,7 +13370,7 @@
+             { rootMargin: `200% 0px` },
+           )
+         : void 0;
+-    (R && te && te.observe(R), _(), m());
++    (R && te && te.observe(R), _(), m(), window.addEventListener(`scroll`, __armS, { passive: !0 }));
+     let ne = dE(L, { manageAnimations: !1 });
+     return (
+       e.addEventListener(`change`, m),
+@@ -13357,6 +13379,8 @@
+         (n && window.cancelAnimationFrame(n),
+           window.clearTimeout(l),
+           te?.disconnect(),
++          window.clearTimeout(__armT),
++          window.removeEventListener(`scroll`, __armS),
+           P(),
+           ne(),
+           e.removeEventListener(`change`, m),

@@ -1,0 +1,45 @@
+# fastwork mirror fix: mw10e-arm-load
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw10e-arm-load --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13307,7 +13307,7 @@
+           n = window.visualViewport?.height ?? window.innerHeight;
+         return t.height >= n * 0.45 && t.bottom <= n + 8;
+       },
+-      k = (e) => C() || (e > 0 && O()),
++      k = (e) => C() || (e > 0 && u && O()),
+       A = (e) => {
+         k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
+       },
+@@ -13333,8 +13333,16 @@
+           window.removeEventListener(`touchstart`, j, !0),
+           window.removeEventListener(`touchmove`, M, !0));
+       },
++      // perf(morph-listeners-once): the original added the window wheel/touchstart/touchmove listeners when
++      // #platform entered the 200% zone (IO below) and removed them when it left. On WebKit every wheel/touch
++      // listener add/remove on the window invalidates the event-listener region types of the ROOT style (passive
++      // ones too): a whole-document style recalc + layout + event-region repaint of the composited layers, the
++      // ~100 ms iPhone frame at y~1960 (and again on the way up). They are now never removed while the effect
++      // lives, and the zone gate moved into the handlers (k(): `u`), so they act exactly when the original had
++      // them attached (u || C()).
++      // mw10e-arm-load: armed once at setup (page load), before any scroll.
+       I = () => {
+-        u || C() ? N() : P();
++        N();
+       },
+       L = () => {
+         (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
+@@ -13348,7 +13356,7 @@
+             { rootMargin: `200% 0px` },
+           )
+         : void 0;
+-    (R && te && te.observe(R), _(), m());
++    (R && te && te.observe(R), _(), m(), N());
+     let ne = dE(L, { manageAnimations: !1 });
+     return (
+       e.addEventListener(`change`, m),
