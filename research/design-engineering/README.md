@@ -58,15 +58,18 @@ analyze the render complexity of each topic". Lead of this note: `de-morph`.
 ## Merged ranked refactors (page-wide)
 
 Ranking: expected gain on the iPhone frames the user feels (frames > 50 ms, the "laggy" places: end of page and
-top), divided by pixel risk. de-morph's items are ranked; de-middle's three
-rows (unranked "-", for the lead to place) are in; de-hero's slot is a placeholder until `hero.md` lands.
+top), divided by pixel risk. de-morph's items are ranked: numbers 0-6, re-ranked 2026-10-01 after the iPhone
+driver block (morph-endpage §6). de-hero's rows are h1-h4. de-middle's three rows are unranked ("-"), for the lead
+to place.
 
 | rank | refactor | area | expected gain (derived) | parity risk | owner | source |
 |---|---|---|---|---|---|---|
-| 1 | **Size-stable morph panel** (phone-gated CSS: panel at its final size, clipped by the nav; center/footer/veil follow by transform) | end of page | moving morph frames 58-68 → ~17-33 ms p50; raster per frame 4-10 → 0.6-2.8 Mpx | low (≤ 8 px width delta on the phone; title wrap) | fix-nav-morph | morph-endpage R1 |
-| 2 | **Clip-path morph + exact color-mix cross-fade** (nav at its final box while morphing; `clip-path: inset(round)`; `#131922` layer at opacity m over `#ffffff1a`) | end of page | no layout or repaint per moving frame → 16.7 ms gaps (GPU-bound ~8-12 ms) | medium (backdrop clipped by clip-path? bar alignment) | fix-nav-morph | morph-endpage R2 |
-| 3 | **No layer creation at the tween start** (keep the track layers; one strip per countdown digit; or activate the scene on arm) | end of page | first frames 91-96 ms → ~50 ms | none (same pixels); +15 MB held | fix-nav-morph, fix-countdown-idle-raf | morph-endpage R5/R6 |
-| 4 | **WAAPI tween with the exact easing `cubic-bezier(1/3,1,2/3,1)`** | end of page | the morph stops depending on the main thread (touch frames +10-30 ms today) | medium (interruption, readers of `--morph`) | fix-nav-morph | morph-endpage R3 |
+| 0 | **Ablation `ghbn`** (ghb + no nav `backdrop-filter` while morphing; diagnostic) | end of page | isolates the never-ablated nav backdrop re-blur, the prime suspect for the mid-tween hump (m 0.4-0.8 at 29-38 ms in every build) | n/a (diagnostic) | fix-nav-morph + iphone-runner | morph-endpage §6.3, V0b |
+| 1 | **Gate the blurs off where they are invisible (R8, exact):** at `--morph-fade` = 0 (m ≥ 0.55) `#platform` is `opacity: 0`, so only a uniform `#f5f5f3` lies behind the nav; one class toggled at the crossing sets the nav `backdrop-filter` and the platform `filter` to `none` | end of page | if ghbn confirms: gh moving p50 24 → ~20-22 ms (forward tween is 76 % at m ≥ 0.55) | low (anything else behind the nav; frozen frames at m 0.55/0.7/0.9 must be 0 %) | fix-nav-morph | morph-endpage §6.4 R8 |
+| 2 | **No layer creation at the tween start** (keep the track layers; one strip per countdown digit; or activate the scene on arm) | end of page | first frames: 49-54 ms in the driver (91-96 on the warm finger) → ~25-35 ms | none (same pixels); +15 MB held | fix-nav-morph, fix-countdown-idle-raf | morph-endpage R5/R6 |
+| 3 | **Size-stable morph panel** (= build `gh`; phone-gated CSS: panel at its final size, clipped by the nav; center/footer/veil follow by transform) | end of page | **measured (driver, cool):** steady moving p50 29-34 → 24 ms, frames on time 15-21 % → 41 %; −4-10 ms (the original "58-68 → 17-33" was anchored on the inflated finger baseline) | low; Chrome parity 1.14 % at m = 0.6 (≤ 8 px width delta) | fix-nav-morph | morph-endpage R1, §6 |
+| 4 | **WAAPI tween with the exact easing `cubic-bezier(1/3,1,2/3,1)`** | end of page | the morph stops depending on the main thread (finger touchmove frames +12-35 ms) | medium (interruption, readers of `--morph`) | fix-nav-morph | morph-endpage R3 |
+| 6 | **Clip-path morph + exact color-mix cross-fade**, with a **pill-sized backdrop element** | end of page | ≤ ~3 ms over gh (the nav box's own repaint); value is exact parity, not speed. As first written it would enlarge the backdrop to the full box at every m (a regression) | medium (bar alignment, hit-test) | fix-nav-morph | morph-endpage R2, §6.4 |
 | h1 | **Take the 0.72 flip apart** (pre-raster the future card while invisible: `opacity: 0` + `inert` instead of `visibility: hidden`; reveal blur `blur(14px)→blur(0px)` with matching lists; no inherited toggle in the reveal frame) | hero → #people, y≈587-745 | the y≈625-745 pair (43-63 ms on all builds) → ≤ 34 ms | medium (a11y/inert; raster earlier, +12-90 MB) | fix-large-area-blur + phone-invisible-shrink (fix-hero-exit coordinates) | hero R1 |
 | h2 | **Hero exit on a scroll timeline (v2) + /10e** | hero y 0-900 | measured y≈50 43 → 35 ms; −2-6 ms of style per hero frame; **+11 ms at y≈700 to bisect** (§2D) | low (parity shown) | fix-hero-exit, fix-scroll-engine | hero R2 |
 | h3 | **Countdown: one strip per digit, no per-face `will-change`** (12-glyph strip `9 0 1 … 9 0` at `translateY(−(a+1)·c)`) | hero (and morph panel, = morph R6) | 160 → 0-16 layers; 10 → 1 writes per spring frame; 1 Hz idle spikes 35-58 ms | low (exact within ±1 cell) | fix-countdown-idle-raf | hero R3 |
@@ -76,10 +79,19 @@ rows (unranked "-", for the lead to place) are in; de-hero's slot is a placehold
 | - | **Stop the per-frame feed repaint** (373 × 344 rect repainted every frame over y 1600-2500; cause unattributed) | middle | −2-5 ms on every frame there | low | profile-showcase owner (layout-animations scope) | middle R3 |
 | 5 | `--morph-fade` `@property inherits:false` (already in #6 v04) | end of page | -1-3 ms on m < 0.55 frames | none | fix-nav-morph | morph-endpage R4 |
 
-**Decision the lead can take now:** have fix-nav-morph build the `h-fixedpanel` driver ablation (morph-endpage
-§4 V0) next to the existing b-noblur run. The model predicts that b-noblur gains ≤ 10 ms per moving frame and
-h-fixedpanel 30-45 ms. If the result is the other way round, the dominant term is the GPU blur, and R7
-(fixed-radius blur fades) moves above R1.
+**The first prediction failed (2026-10-01 09:27Z driver block).** De-morph predicted gh −30-45 ms and gb ≤ −10 ms;
+the measured gains were −7-10 and −2-7 ms. The reconciliation is in morph-endpage §6:
+- The finger baseline (58-68 ms) was ~2x inflated by the touch path and heat; the driver's g is 29-35 ms.
+- The assumed raster rate was ~2x too slow.
+- Under the driver, g's excess over a 16.7 ms frame splits into 4-5 terms of 3-10 ms each.
+- `gb` never removed the nav's `backdrop-filter`: its rule targets an element that has none.
+
+**Decision the lead can take now:** have fix-nav-morph build `ghbn` (morph-endpage §4 V0b) and, if it confirms the
+backdrop term, R8, which is exact, and R5. R2 drops to a parity option.
+
+**For de-middle and de-hero:** the throughputs of morph-endpage §1.4, which `middle.md` reuses, are ~2x pessimistic
+on the phone (effective ~0.6-0.9 Gpx/s; morph-endpage §6.1). Divide raster-ms estimates by ~2. Their rankings
+don't change.
 
 ## Cross-topic findings from this team (for the findings board, via the lead)
 
@@ -94,3 +106,11 @@ h-fixedpanel 30-45 ms. If the result is the other way round, the dominant term i
   become a CSS/WAAPI animation with identical timing).
 - **`color-mix(in srgb, A (1-m), B m)` with B opaque equals B at `opacity: m` over A** (technique: a per-frame
   background repaint becomes a composited opacity fade with identical pixels).
+- **WebKit doesn't clip a composited layer's bounds to an ancestor's overflow when the layer or any ancestor is
+  transformed** (`RenderLayerBacking::shouldClipCompositedBounds`). A fixed-size child inside a growing,
+  `transform`ed clip box keeps its backing store; it does not resize with the clip (measurement-relevant, for
+  clip-reveal designs).
+- **iPhone driver frame gaps are quantized to 8.33 ms (ProMotion 120 Hz), not 16.7 ms** (measurement: read the
+  share of frames at 2 ticks, not only the p50).
+- **A blur over a provably uniform backdrop is a pixel no-op** (technique: gate `backdrop-filter`/`filter` off when
+  what's behind is `opacity: 0` over a flat background; morph R8).

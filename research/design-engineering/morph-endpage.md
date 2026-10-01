@@ -10,7 +10,22 @@ Labels: **vendor source** (WebKit `main` on GitHub, read 2026-10-01; iOS 26.6.1 
 CSS lines are `_app/immutable/assets/2.gBuqKVzi.css`, JS lines `_app/immutable/nodes/2.DyWL8TcE.js`
 (1-based, pretty baseline).
 
-## 0. Verdict in five lines
+> **Revision 2026-10-01 ~09:45Z (after the iPhone driver block).** The prediction in §0 item 5 / §4 V0 **failed**:
+> - predicted: gh −30-45 ms, gb ≤ −10 ms;
+> - measured: gh −7-10 ms, gb −2-7 ms, against a g of 29-35 ms (not 58-68).
+>
+> §6 reconciles this.
+> - The finger baseline was ~2x inflated by the touch path and heat.
+> - My raster throughputs were ~2x too pessimistic.
+> - With both corrected, the model reproduces g ≈ 30-35 ms and gh's saving ≈ 9 ms.
+> - Under the driver, **no single term dominates**: g's ~17 ms excess over a 16.7 ms frame splits into 4-5 terms of
+>   3-10 ms each.
+> - One ablation was mislabelled: `gb`'s rule targets `.start-selling-morph-backdrop`, which has no backdrop-filter,
+>   so the nav's per-frame `backdrop-filter` radius (11342) was **never removed** in any build.
+>
+> Items 2, 4 and 5 below are kept as written and annotated; read §6 first.
+
+## 0. Verdict in five lines (original, see the revision above)
 
 1. The slow morph frames come from the **tween**, not the rest state. While `0 < --morph < 1`, p50 is 58-68 ms and
    62-84 % of frames are > 50 ms. At `--morph = 1`, p50 is 17-23 ms. The first frame of each tween is 91-96 ms (§2).
@@ -18,6 +33,8 @@ CSS lines are `_app/immutable/assets/2.gBuqKVzi.css`, JS lines `_app/immutable/n
    the panel subtree is resized (header, veil, center, footer, bar, and three image columns), so WebKit drops and
    reallocates their backing stores and repaints them: about 4-10 device Mpx and up to ~29 MB of fresh buffers
    per frame. Blur radii, GPU compositing and JS are second-order (§1, §2).
+   *[Revised §6: this is the largest single term, ~7-10 of ~17 ms excess under the driver, not the dominant one;
+   blur and fixed per-frame terms are of the same order.]*
 3. Chrome can't see it: its raster isn't on the throttled main thread (morph phase 110 fps, 0 frames > 50 ms).
 4. Refactor #1 (**size-stable panel**, phone-gated, CSS only) removes ~60-75 % of the per-frame raster. Refactor #2
    (**clip-path morph with exact color-mix cross-fade**) removes the rest. Refactor #3 (**WAAPI with the exact easing
@@ -25,6 +42,7 @@ CSS lines are `_app/immutable/assets/2.gBuqKVzi.css`, JS lines `_app/immutable/n
    moving frames at ~17-33 ms, from 58-68 ms (derived).
 5. The cheapest test of this model is a new driver ablation `h-fixedpanel` (§4). The model predicts that b-noblur
    gains <= ~10 ms per moving frame and h-fixedpanel gains 30-45 ms. If it goes the other way, the model is wrong.
+   *[Failed: gh −7-10 ms, gb −2-7 ms. Both deltas were anchored on the inflated finger baseline; see §6.]*
 
 ## 1. Per-frame cost model
 
@@ -199,6 +217,8 @@ Build on aw1-10e + g (the pin clamp stays).
 
 **Cost after (derived).** A(m) = nav bg + bar only, ≈ 0.6 / 1.7 / 2.8 Mpx, from 3.9 / 7.2 / 10.4. Allocation is
 ≤ 12 MB/frame, from ≤ 29. T_frame ≈ 12-18 ms, which gives 17-33 ms gaps instead of 58-68.
+*[Measured as `gh`. Cool runs give p50 24 ms and 41 % of frames on time, which is inside the 17-33 ms predicted
+here. The predicted delta was wrong because the "from" figure was the finger baseline; see §6.]*
 
 **Catch.** The nav still lays out and repaints its own box every frame. R2 removes that.
 
@@ -239,6 +259,9 @@ Build on aw1-10e + g (the pin clamp stays).
 **Cost after (derived).** Per moving frame: no layout, no repaint. Style (inherited `--morph`, ~150 elements)
 + commit of ~10 changed layer properties ≈ 3-5 ms, so rAF gaps sit at 16.7 ms, bound by GPU T_gpu ≈ 8-12 ms. The
 first frame of a tween stays ~1 full raster (see R5).
+*[Revised §6.4: as written, R2 would make the backdrop blur cover the full 406×Hf box at every m. That is a
+GPU regression at small m, and the backdrop term is the prime suspect for what is left. Build R2 with a pill-sized
+backdrop element. The cost after is ~19-22 ms p50 on top of gh, not 16.7.]*
 
 ### R3. Declarative tween (WAAPI) with the exact easing. Gain: medium (robustness). Risk: medium.
 
@@ -303,7 +326,8 @@ frame. One strip layer per digit (`research/architecture/README.md` N5).
 
 | step | what | where | pass |
 |---|---|---|---|
-| V0 | **Discriminating ablation, before any refactor:** driver runs (`__fwMorphDrive({hold:2000,cycles:3})`, morph-webkit's aw1-10e builds) of base g, gb (no blur) and a new **gh** = g + R1's CSS (`h-fixedpanel`). Control run first (thermal rule, iphone-wave2), ABBA, 3 each. | iPhone, iphone lease (fix-nav-morph / iphone-runner) | Model holds if gh's moving p50 drops ≥ 25 ms and gb's ≤ 10 ms. If gb ≫ gh, the GPU blur dominates: re-rank R7 above R1. |
+| V0 | **Discriminating ablation, before any refactor:** driver runs (`__fwMorphDrive({hold:2000,cycles:3})`, morph-webkit's aw1-10e builds) of base g, gb (no blur) and a new **gh** = g + R1's CSS (`h-fixedpanel`). Control run first (thermal rule, iphone-wave2), ABBA, 3 each. | iPhone, iphone lease (fix-nav-morph / iphone-runner) | Model holds if gh's moving p50 drops ≥ 25 ms and gb's ≤ 10 ms. If gb ≫ gh, the GPU blur dominates: re-rank R7 above R1. **Done 09:23-09:27Z: FAILED as stated** (gh −7-10, gb −2-7 ms). The thresholds were anchored on the finger baseline; see §6. |
+| V0b | **Next ablation (§6.3):** `ghbn` = ghb + `.start-selling-top-nav.is-morphing { backdrop-filter: none !important; -webkit-backdrop-filter: none !important }`. Diagnostic only: the look changes. Optionally also `ghbr` = ghb + the nav box frozen at its final size with `clip-path` (R2-lite, backdrop off). | iPhone driver, cool phone, ABBA vs ghb, 3 each; split by m bin (0.2 wide) | The backdrop term dominates the remainder if ghbn's moving p50 ≤ 20 ms **and** the mid-m hump (m 0.4-0.8 bins at 30-38 ms in every build) flattens. Otherwise the nav resize/fixed overhead does: go to R2 + R3. |
 | V1 | **Paint attribution:** WebKit Timeline paint area and count over one driver cycle, as in large-area-blur/03 | iPhone | g: ~10-20 tween frames × 4-10 Mpx; gh: panel rects absent; R2: no paints after the first frame |
 | V2 | **Chrome parity, frozen frames:** a debug hook `__fwMorphSet(m)` (set `--morph`, the classes and `--morph-fade` without the tween), screenshots of the nav rect at m ∈ {0, 0.05, 0.1, 0.25, 0.5, 0.75, 0.92, 1}. Pause all animations (`document.getAnimations()`, `currentTime = 0`) and mask the countdown faces. Crop to the nav rect and add scrollY to the clip (P14). | Chrome short lane (`--short --max-seconds 180`, counts/screens only) | ≤ 0.4 % outside the title-wrap frames; any title line-break difference reported with a crop |
 | V3 | **Mechanism counters:** `Performance.getMetrics` LayoutCount per driver frame and CDP `LayerTree.layerPainted` counts per layer during one cycle | Chrome short lane | R1: no `layerPainted` for panel children while moving; R2: LayoutCount 0 per moving frame |
@@ -325,3 +349,148 @@ before landing, and the touchmove-frame penalty (§2) stays #6's to remove.
 4. Does a changing composited `filter` radius change the layer's bounds (and so repaint) on WebKit? The
    large-area-blur Timeline (2 repaints per transition, not per frame) says no for CSS transitions. A per-frame
    inline write is unverified; V1 answers it for `#platform`.
+
+## 6. Reconciliation with the iPhone driver (revision, 2026-10-01 ~09:45Z)
+
+**Data.**
+- Driver logs `md-{g,gb,gh}N.json`: iphone-runner's worktree `out/iphone-runner/`, gitignored, not copied
+  here.
+- Frames are `[t, dt, scrollY, m]`, aw1-10e, `__fwMorphDrive({hold:2000,cycles:3})`.
+- I re-binned them with a scratch script; numbers below are **data**.
+- "Cool" = rounds 1-2 of 09:23-09:26Z (g4, g5, gb1, gb2, gh1, gh2) plus the earlier g1-g3 (09:04-09:07Z).
+  Round 3 (gh3, gb3, g6) is thermally affected and excluded.
+- "Steady" = moving frames minus the first frame of each tween.
+
+| build | steady moving p50 / mean ms | share of frames at 16.7 ms (2 × 8.33 ms ticks) | first frame p50 | p50 by m bin 0-.2 / .2-.4 / .4-.6 / .6-.8 / .8-1 | at m = 1 p50 |
+|---|---|---|---|---|---|
+| g (g4, g5) | 34 / 37.6 | 15 % | 54 | 33 / 28 / 34 / 38 / 39 | 17 |
+| g (g1-g3, earlier) | 29 / 30.3 | 21 % | 52 | 27 / 29 / 38 / 38 / 28 | 17 |
+| gb (gb1, gb2) | 27 / 29.7 | 21 % | 51 | 25 / 26 / 29 / 36 / 27 | 17 |
+| gh (gh1, gh2) | **24 / 26.8** | **41 %** | 49 | 20 / 24 / 30 / 31 / 20 | 17 |
+
+Frame gaps are quantized to **8.33 ms** (the ProMotion 120 Hz display), not 16.7 ms. A frame whose work runs just
+over 16.7 ms costs 25 ms. So savings move in 8.33 ms steps: a p50 is a coarse statistic here, and the tick shares
+are the better read.
+
+### 6.1 Q1: why 58-68 ms (finger) became 29-35 ms (driver), and g's budget under the driver
+
+| factor | evidence | effect on the finger median |
+|---|---|---|
+| touch path (non-passive `touchmove` on window, JS 13063-13065; the UI process waits on the main thread) | finger moving frames with a touchmove p50 65-96 ms, without 40-61 ms (E1b 75/40, F1 65/53, F2 96/61; §2) | about +6-17 ms on the median (about half the moving frames carry a touchmove) |
+| warm phone | the finger block's control failed (bottom 40.4 fps vs ~60, a ~1.5x slowdown). Non-touch finger p50 40-61 ÷ 1.5 = 27-41 ms, which brackets the driver's g at 29-34 | ×~1.5 on everything |
+| m(t) profile | the same `E()` tween and 680 ms easing in both. The finger restarts tweens more often (first frames ~10 % of moving frames vs 6 %); first frames cost 91-96 ms on the finger vs 49-54 ms in the driver | +1-2 ms on the median |
+| page scroll during the morph (rubber band, scroll-engine callbacks) | absent in the driver (no scroll) | small; counted in the touch bucket |
+
+So the driver's g is consistent with the finger data once touch and heat are taken out. My V0 thresholds were
+anchored on the 58-68 ms finger figure. That was the main error.
+
+**g's budget under the driver** (derived from the measured deltas; mean excess over a 16.7 ms frame ≈ 14-21 ms):
+
+| term | ms per steady moving frame | basis |
+|---|---|---|
+| panel-content raster + allocation (columns, veil, center, footer resized every frame) | **4-10** | measured: g → gh (p50 29-34 → 24, mean 30-38 → 27) |
+| panel and `#platform` filter radii (`filter` re-blur + commit) | **2-7** | measured: g → gb |
+| nav `backdrop-filter` radius re-blur (area × radius), never ablated | **~4-8** (estimate) | the mid-m hump (§6.3) |
+| nav box: layout + realloc + repaint of its own rounded background (0.45-2.6 Mpx) and the bar | **≤ ~3** | gh's m 0.8-1 bin is 20 ms where this term is largest (§6.3) |
+| fixed: inherited `--morph` restyle, Svelte flush, commit of ~100 layers (incl. ~85 countdown faces), JS ~1 ms | **~2-4** | derived |
+
+**Recalibrated raster rate.** gh removed about 3.3-7.6 device Mpx per frame plus ≤ 18 MB of allocation, and saved
+4-10 ms. So the effective rate is ≈ 0.6-0.9 Gpx/s, about 2x faster than the ~0.3 Gpx/s mix assumed in §1.4. The
+areas were roughly right (see 6.2); the throughput was pessimistic. `middle.md` reuses my §1.4 throughputs, so its
+raster-ms figures are probably ~2x high too. Its rankings don't depend on that.
+
+### 6.2 Q2: why gh saves so little. The WebKit source paths, re-checked
+
+1. **"WebKit doesn't drop a store on resize when the layer is clipped or tiled."**
+   - Non-tiled layers: confirmed again. `RemoteLayerBackingStore::ensureBackingStore` (`RemoteLayerBackingStore.mm`
+     145-152) → `clearBackingStore()` → `setNeedsDisplay()` on any parameter change, size included.
+   - Tiled layers (> 1280 CSS px per side, `GraphicsLayerCA::requiresTiledLayer`): a resize only adds or removes
+     edge tiles. In g, the column tiles were repainted because their `<img>` re-laid out (the width changed), not
+     because of the resize; in gh neither happens.
+   - **Not the explanation.**
+2. **"The nav clip itself is a resized layer, so the clipped children resize too."** **Refuted for the children**
+   (vendor source, `RenderLayerBacking.cpp`).
+   - `updateCompositedBounds()` intersects a layer's bounds with its ancestors' clip (`backgroundClipRect`) only
+     if `shouldClipCompositedBounds()` is true.
+   - That returns false when the layer or any ancestor `isTransformed()`
+     (`layerOrAncestorIsTransformedOrUsingCompositedScrolling`).
+   - The nav has `transform: translate(-50%)` (11353) and the panel has its own `transform`. So in gh the panel
+     children keep fixed bounds whatever the nav's size.
+   - **The nav's own store does resize every frame** (in g and in gh):
+     - its rounded corners count as painted box decorations (`hasVisibleBoxDecorations` includes
+       `hasBorderRadius()`), so its background can't use the directly composited solid-colour path
+       (`setContentsToSolidColor`);
+     - it is a painted, non-tiled store (406 × ≤ 791) that is reallocated and repainted every frame;
+     - this is the term R2 targets.
+   - It is small, though: gh's m 0.8-1 bin, where the nav box is largest (2.6 Mpx), sits at 20 ms.
+3. **"The repaint area was over-estimated."**
+   - Partly: the center's ~330 CSS px height is an estimate, and the phone's final panel height is unknown
+     (Chrome: 908 CSS px at 932; I assumed 791 at lvh 815).
+   - The larger errors were the inflated baseline (6.1) and the ~2x raster rate (6.1).
+
+**Net:** gh removed what R1 said it would. That was only a third to a half of g's excess over 16.7 ms (p50 12-17 ms), and
+quantization shows it as one 8.33 ms tick for about a quarter of the frames (on-time share 15-21 % → 41 %).
+
+### 6.3 Q3: what dominates gh's remaining ~26 ms, and the next ablation
+
+- **The signature.** Every build has a **hump in the middle of the tween**:
+  - m 0.4-0.8 is at p50 29-38 ms;
+  - the ends (m < 0.2 and ≥ 0.8) are at 20-28 ms.
+- **Which terms can't make it:**
+  - the panel-content raster (gh removed it) and the panel filter (gb removed it): the hump survives both;
+  - the nav box resize grows monotonically with m: it would peak at m → 1, but gh's last bin is the cheapest (20 ms).
+- **The term that fits** is the never-ablated **nav backdrop** re-blur (11342-11343). Its cost scales with area ×
+  radius = (52 + 739m)·20(1 - m), derived:
+  - maximal at m ≈ 0.46;
+  - about 2x the value at m = 0.1 and 3x at m = 0.9.
+- **Why the ablations missed it:** `mw-b-noblur` disables `backdrop-filter` on `.start-selling-morph-backdrop` (the
+  image-column container, which has none in the baseline). So gb and every build kept the nav's changing radius.
+- **Caveat:** the backdrop is render-server work. It stretches the rAF gaps only through the UI-side commit
+  backpressure, which is inference. The data (the hump) supports it, but no ablation has isolated it.
+- **Next ablation, `ghbn`:** ghb plus `.start-selling-top-nav.is-morphing { backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important }`. It is diagnostic: the look changes for m < 0.55. Pass/fail is in §4
+  V0b: the hump flattens, and the moving p50 is ≤ 20 ms.
+- **If ghbn is not ~17-20 ms:** the rest is the fixed per-frame overhead (restyle, Svelte flush, a ~100-layer
+  commit). R3 (WAAPI) and R6 (countdown strips) are then the levers.
+
+### 6.4 Q4: does R2 still beat ghb? And a new exact refactor, R8
+
+**R2 as written does not.**
+- It removes only the nav box's layout and repaint, ≤ ~3 ms by 6.2.
+- It would also make the nav's backdrop cover the full 406 × Hf box at every m: at m = 0.1, ~6x today's
+  blurred area at radius 18 px. The term that is probably left grows, so it could be slower than gh.
+- If R2 is built, keep the backdrop on a separate **pill-sized** element: no background, rounded by its own
+  `clip-path` (a basic-shape mask, not a painted radius), so it has no backing store, and resizing it is geometry
+  only. Expected: gh - 1-3 ms, roughly a tie with ghb.
+- R2's value is parity (it keeps all blurs exact), not speed.
+- **Order:** ghbn first, then R8 and R5, then R2/R3.
+
+**R8 (new, exact): gate the blurs off where they are provably invisible.** Owner: fix-nav-morph. Risk: low.
+- At m ≥ 0.55, `--morph-fade` = 0, so `#platform` has `opacity: 0` (5393). Behind the nav at maxY (the viewport
+  is inside `#platform`, 4155-6035) is then only the `.start-selling` background `#f5f5f3` (CSS 11744-11749), a
+  uniform field.
+- A normalized Gaussian blur of a uniform field is the same field. So the nav's `backdrop-filter` is a pixel
+  no-op there, as is the platform's `filter: blur(12px)` under `opacity: 0`.
+- **Change:** in `S()` (JS 13013-13018), toggle one class when the written fade crosses 0, e.g.
+  `is-morph-covered`. One write per threshold crossing, no per-frame writes. Under it:
+  - `.start-selling-top-nav.is-morph-covered { backdrop-filter: none; -webkit-backdrop-filter: none }`;
+  - `.start-selling-platform.is-morph-covered { filter: none }`.
+- **Coverage:** with the ease-out, the forward tween spends ~76 % of its 680 ms at m ≥ 0.55 (t ≥ 159 ms); the
+  reverse spends ~18 % there.
+- **Expected (derived, if ghbn confirms the backdrop term):** forward-tween bins at m ≥ 0.55 fall to the ~20 ms of
+  gh's last bin, so the moving p50 is ~20-22 ms on gh.
+- **Parity risk:** anything else behind the nav at the page end (a fixed element, the platform's
+  `is-platform-pain-underlay`, page overscroll). A frozen-frame diff at m ∈ {0.55, 0.7, 0.9} with the class forced
+  on/off must be 0 % in the nav rect. Also check that the toggle itself (the backdrop layer is created or dropped
+  once) doesn't cost a visible frame.
+
+**Re-ranked for fix-nav-morph:**
+1. ghbn (diagnostic);
+2. R8 (exact, cheap);
+3. R5 (first frames: still 49-54 ms in every build, 3x a normal frame);
+4. R1 = gh (keep: −4-10 ms, parity 1.14 % at m = 0.6 from the ≤ 8 px width difference);
+5. R3 (WAAPI) for the touch path's main-thread contention;
+6. R2 with a pill-sized backdrop, for parity, not speed.
+
+**Expected stack** (derived): gh + R8 + R5 → moving p50 ~20 ms, most frames at 16.7-25 ms. The touch path stays
+#6's (morph-scrolljack-passive) and needs the finger test.
