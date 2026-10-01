@@ -104,7 +104,7 @@ test('run --driver window: reload, settle, probe + driver, one JSON with meta, u
   assert.match(m.yReads, /^probe rAF scrollY/);
   assert.equal(m.yReadCounts.raf, j.frames.length);
   assert.equal(m.yReadCounts.crossing, 0);
-  assert.ok(j.crossings.filter((c) => c.frame !== null).every((c) => c.stale === true && Array.isArray(c.yFrame) && c.y === j.frames[c.yRow][3]), 'raf crossings: stale, frame interval and y row');
+  assert.ok(j.crossings.filter((c) => c.frame !== null).every((c) => c.stale === true && Array.isArray(c.yFrame) && (c.yRow === null ? c.frame <= 1 : c.y === j.frames[c.yRow][3])), 'raf crossings: stale, frame interval and y row (none before the probe\'s first row)');
   assert.ok(j.frames.slice(1).every((f) => f[8] === 2900), 'docH per frame');
   assert.deepEqual(m.battery.start, { t: m.battery.start.t, Temperature: 3050, IsCharging: false, ExternalConnected: true, CurrentCapacity: 80, temperatureC: 30.5 });
   assert.equal(m.battery.end.CurrentCapacity, 79, 'a second battery read after the run');

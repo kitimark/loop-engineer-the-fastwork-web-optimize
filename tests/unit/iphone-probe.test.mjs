@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { tempDir } from '../helpers.mjs';
 import { createPage } from '../fixtures/fake-run-dom.mjs';
 import * as P from '../../tools/lib/iphone-probe.mjs';
-import { parseRunArgs, measureGuard, estimateMs, finish, toolVersion, TOOL_FILES, UNREADABLE_SETTINGS, parseBattery, deviceSettings, batteryInfo } from '../../tools/lib/iphone-run.mjs';
+import { parseRunArgs, measureGuard, estimateMs, finish, toolVersion, TOOL_FILES, UNREADABLE_SETTINGS, parseBattery, deviceSettings, batteryInfo, lanSafeUrl, LAN_HOST } from '../../tools/lib/iphone-run.mjs';
 
 const MT = P.MUT_TYPES;
 const counts = (o) => MT.map((k) => o[k] || 0);
@@ -42,9 +42,9 @@ test('bucketMutations: per-frame counts by type with no cap, batches in one gap 
   assert.deepEqual(m.outside, counts({ src: 1, class: 1 }));
 });
 
-test('placeCrossings: time order, same-time rows keep record order, src "effect", frame index, the frame\'s y interval, stale when the y source did not update since the frame', () => {
+test('placeCrossings: time order, same-time rows keep record order, src "effect", frame index, the frame\'s y interval, its y row, stale when y was not read at the crossing', () => {
   const f = fr([0, 8.3, 16.7]);
-  // page rows [t, kind, id, value, y, fresh, yRow]: fresh 1 = y read or updated after the last frame (raf-legacy, a scroll event), 0 = not;
+  // page rows [t, kind, id, value, y, fresh, yRow]: fresh 1 = y read at the crossing (raf-legacy) or a scroll event since the probe's last rAF callback, 0 = not;
   // yRow = the row whose yEnd y is (raf), else absent
   const rows = [[10, 'scene', '#platform', 'active', 1960, 0, 1], [9, 'inert', 'div.start-selling-morph-panel', 'removed', 1960, 1], [10, 'class', 'div.x', '+is-live', 1960, 0, 0],
     [99, 'cv', 'section.commission', 'rendered', 1250, 0], [12, 'cv', 'section.y', 'skipped', null, 0], [13, 'font', 'document.fonts', '2 faces', 900]];
@@ -174,6 +174,7 @@ async function runInPage(driver, opts, { page = createPage({ morph: driver === '
     assert.equal(page.evaluate(P.EARLY_JS), 'ok');
     await new Promise((r) => setTimeout(r, 120));
     page.readsBefore = page.win.__scrollYReads || 0;
+    const sh0 = page.win.__scrollHeightReads, sh00 = page.win.__scrollHeightReadsAtY0;
     assert.equal(page.evaluate(P.startJs(driver, opts, { customStateJs })), 'started');
     const t0 = Date.now();
     while (!['done', 'error'].includes(page.evaluate(P.STATE_JS))) { assert.ok(Date.now() - t0 < 30000, 'run finished'); await new Promise((r) => setTimeout(r, 50)); }
@@ -181,6 +182,8 @@ async function runInPage(driver, opts, { page = createPage({ morph: driver === '
     let s = '';
     for (let i = 0; i < len; i += P.CHUNK) s += page.evaluate(P.resultChunkJs(i));
     page.reads = (page.win.__scrollYReads || 0) - page.readsBefore;
+    page.shReads = page.win.__scrollHeightReads - sh0;
+    page.shReadsAtY0 = page.win.__scrollHeightReadsAtY0 - sh00;
     return { raw: JSON.parse(s), page };
   } finally { page.stop(); }
 }
@@ -236,27 +239,38 @@ test('std probe + window driver: the y~1960 frame shows all 21 src writes, the i
   assert.equal(raw.probeVersion, 2);
   assert.deepEqual([raw.yReads.raf, raw.yReads.crossing, raw.yReads.scroll], [raw.frames.length, 0, 0], 'raf: one scrollY read per frame, none in the crossing callbacks');
   assert.ok(raw.yReads.driver >= 2, 'the driver checks scrollY every 300 ms');
+  assert.equal(raw.yReads.docH, raw.frames.filter((f) => f[3] !== 0).length, 'docH read once per frame with y != 0');
   assert.ok(page.reads >= raw.yReads.raf + raw.yReads.driver);
   assert.ok(ev.every((c) => c.stale === true), 'raf: a crossing\'s y is the previous frame\'s, never updated before the crossing');
-  assert.ok(ev.every((c) => (c.yRow === c.frame - 1 || c.yRow === c.frame - 2) && c.y === doc.frames[c.yRow][3]),
-    `raf: crossing y = yEnd of row yRow: yStart of its frame (k-1), or one frame older (k-2) when the page's rAF callbacks ran before the probe's (${JSON.stringify(ev.map((c) => [c.frame, c.yRow, c.y, doc.frames[c.yRow]?.[3]]))})`);
-  assert.ok(doc.crossings.every((c) => c.frame === null || (c.yRow !== null && c.y === doc.frames[c.yRow][3])), 'every raf crossing names its y row');
+  assert.ok(ev.every((c) => c.yRow === c.frame - 2 && c.y === doc.frames[c.yRow][3]),
+    `raf: the engine's rAF loop was registered before the probe's, so its observer batch comes before the probe's callback in that frame: y = yEnd of row frame-2 (${JSON.stringify(ev.map((c) => [c.frame, c.yRow, c.y]))})`);
+  const lateC = doc.crossings.find((c) => c.kind === 'class' && c.id === 'div.late' && c.value === '+is-late');
+  assert.ok(lateC, 'the late loop\'s crossing');
+  assert.equal(lateC.yRow, lateC.frame - 1, 'a loop registered after the probe: its batch comes after the probe\'s callback, y = yStart of its frame');
+  assert.deepEqual([lateC.y, lateC.stale], [lateC.yFrame[0], true]);
+  const noRow = doc.crossings.filter((c) => c.frame !== null && !(c.yRow !== null && c.y === doc.frames[c.yRow][3]));
+  assert.ok(noRow.length >= 1 && noRow.every((c) => c.frame <= 1 && c.yRow === null && c.y === 0),
+    `every raf crossing names its y row, except before the probe's first row (y = the probe-start read): ${JSON.stringify(noRow.map((c) => [c.frame, c.yRow, c.y, c.kind]))}`);
   assert.equal(doc.summary.mutationTotals.src, 21);
   assert.ok(doc.summary.phases.scroll.k5 >= 1);
   assert.deepEqual(raw.topsPost, { platform: 2860, none: null });
 });
 
-test('--y-source raf-legacy (the probe before 4f0bfd4, P0 control): raf plus a scrollY read in every MutationObserver batch and cv / font event', async () => {
+test('--y-source raf-legacy (the reads of probe v1, the first T1a commit): scrollY in rAF plus one per MutationObserver batch and cv event; no docH, no font listener', async () => {
   const { raw, page } = await runInPage('window', { ...WIN, ySource: 'raf-legacy' });
   assert.equal(raw.err, null);
   assert.equal(raw.ySource, 'raf-legacy');
-  const ev = raw.crossings.filter((c) => c[1] === 'cv' || c[1] === 'font').length;
-  assert.ok(ev >= 2, 'cv and font events seen');
+  const ev = raw.crossings.filter((c) => c[1] === 'cv').length;
+  assert.ok(ev >= 1, 'cv event seen');
+  assert.equal(raw.crossings.filter((c) => c[1] === 'font').length, 0, 'no font listener (v1 had none)');
   assert.ok(raw.batches.length >= 3);
   assert.equal(raw.yReads.raf, raw.frames.length);
-  assert.equal(raw.yReads.crossing, raw.batches.length + ev, 'one read per observer batch (crossing or not) and per cv / font event, as the legacy logger did');
+  assert.equal(raw.yReads.crossing, raw.batches.length + ev, 'one read per observer batch (crossing or not) and per cv event, as v1 did');
+  assert.equal(raw.yReads.docH, 0);
   assert.ok(page.reads >= raw.yReads.raf + raw.yReads.crossing + raw.yReads.driver, `${page.reads} scrollY reads in the page`);
-  assert.ok(raw.frames.slice(1).every((f) => typeof f[3] === 'number' && f[8] === 2900), 'frames as with raf');
+  assert.ok(raw.frames.slice(1).every((f) => typeof f[3] === 'number' && f[8] === null), 'frames as with raf, without docH');
+  const no = await runInPage('window', { ...WIN, ySource: 'none' });
+  assert.equal(page.shReads, no.page.shReads, `no scrollHeight read beyond the page facts and the driver's, as with none (${page.shReads} vs ${no.page.shReads})`);
   assert.ok(typeof raw.early.frames.at(-1)[2] === 'number', 'the early logger reads y as with raf');
   const doc = P.buildDoc(raw);
   const inert = doc.crossings.find((c) => c.kind === 'inert');
@@ -281,6 +295,7 @@ test('--y-source scroll: y and docH from a passive scroll listener, no scrollY r
   assert.equal(ce.yRow, null);
   assert.deepEqual([sc.raw.yReads.raf, sc.raw.yReads.crossing, sc.raw.yReads.driver], [0, 0, 0], 'scroll: the drivers use the listener y');
   assert.ok(sc.raw.yReads.scroll >= 1 && sc.raw.yReads.scroll <= sc.page.reads, 'the listener reads scrollY');
+  assert.ok(sc.raw.yReads.docH >= 1 && sc.raw.yReads.docH <= sc.raw.yReads.scroll + 1, 'and scrollHeight after it (y != 0)');
 
   const no = await runInPage('window', { ...WIN, ySource: 'none' });
   assert.equal(no.raw.err, null);
@@ -292,14 +307,25 @@ test('--y-source scroll: y and docH from a passive scroll listener, no scrollY r
   const d = P.buildDoc(no.raw);
   assert.ok(d.crossings.filter((c) => c.kind !== 'cv').every((c) => c.y === null));
   assert.ok(d.crossings.every((c) => c.y !== null || c.stale === null));
-  assert.deepEqual([no.raw.yReads.raf, no.raw.yReads.crossing, no.raw.yReads.scroll], [0, 0, 0]);
+  assert.deepEqual([no.raw.yReads.raf, no.raw.yReads.crossing, no.raw.yReads.scroll, no.raw.yReads.docH], [0, 0, 0, 0]);
   assert.ok(no.raw.yReads.driver >= 2 && no.raw.yReads.driver <= no.page.reads, 'none still reads: the driver\'s stop check');
   assert.equal(d.summary.mutationTotals.src, 21);
 });
 
-test('std probe + scroll driver: idle, scroll, bottom phases to the end of the page', async () => {
-  const { raw } = await runInPage('scroll', { tops: [], idleMs: 100, bottomMs: 100, maxScrollMs: 45000 }, { page: createPage({ docHeight: 1500 }) });
+test('std probe + scroll driver: idle, scroll, bottom phases to the end of the page; at y 0 raf and scroll read no scrollHeight (review-t1a B1)', async () => {
+  const S = { tops: [], idleMs: 100, bottomMs: 100, maxScrollMs: 45000 };
+  const { raw, page } = await runInPage('scroll', S, { page: createPage({ docHeight: 1500 }) });
   assert.equal(raw.err, null);
+  const idle = raw.frames.filter((f) => f[3] === 0);
+  assert.ok(idle.length >= 5, 'idle frames at y 0');
+  assert.ok(idle.every((f) => f[8] === null), 'no docH at y 0');
+  assert.equal(raw.yReads.docH, raw.frames.length - idle.length);
+  const none = await runInPage('scroll', { ...S, ySource: 'none' }, { page: createPage({ docHeight: 1500 }) });
+  assert.equal(page.shReadsAtY0, none.page.shReadsAtY0, `raf: the scrollHeight reads at y 0 are only the driver's, as with none (${page.shReadsAtY0} vs ${none.page.shReadsAtY0})`);
+  const sc = await runInPage('scroll', { ...S, ySource: 'scroll' }, { page: createPage({ docHeight: 1500 }) });
+  assert.equal(sc.page.shReadsAtY0, none.page.shReadsAtY0, 'scroll: none at y 0 either');
+  const leg = await runInPage('scroll', { ...S, ySource: 'raf-legacy' }, { page: createPage({ docHeight: 1500 }) });
+  assert.equal(leg.page.shReads, none.page.shReads, 'raf-legacy: no probe scrollHeight read at all');
   assert.deepEqual(Object.keys(raw.marks), ['idle', 'scroll', 'bottom']);
   assert.deepEqual(raw.driverResult, { maxY: 685, finalY: 685 });
   assert.equal(raw.tops, null);
@@ -329,8 +355,19 @@ test('morph driver on a page without __fwMorphDrive: the error is reported, the 
   assert.throws(() => P.startJs('fling', {}), /unknown driver fling/);
 });
 
+test('lanSafeUrl: LAN hosts get a placeholder, scheme, port, path and query stay; loopback and public hosts stay', () => {
+  assert.equal(LAN_HOST, 'lan-host');
+  assert.equal(lanSafeUrl('https://192.168.0.55:5234/a/b.js?x=1#h'), 'https://lan-host:5234/a/b.js?x=1#h');
+  for (const h of ['10.0.0.7', '172.16.4.2', '172.31.255.1', '169.254.1.1', '100.100.1.2', 'my-mac.local', 'Someones-MacBook-Pro.local', 'nas', '[fd12::1]', '[fe80::1]']) assert.equal(new URL(lanSafeUrl(`http://${h}:8080/p`)).hostname, 'lan-host', h);
+  for (const u of ['http://127.0.0.1:9/', 'https://localhost:5300/x', 'http://[::1]:5/', 'https://fastwork.com/', 'https://172.32.0.1/', 'https://8.8.8.8/']) assert.equal(lanSafeUrl(u), u, u);
+  assert.equal(lanSafeUrl(null), null);
+  assert.equal(lanSafeUrl('not a url'), 'not a url');
+});
+
 test('finish: one JSON per run (schema, meta with labels and tool hashes, measurement part); a page error is saved, then thrown', async () => {
   const { raw } = await runInPage('window', { ...WIN, tops: [] });
+  const lan = 'https://192.168.0.55:5234/';
+  const lanRaw = { ...raw, pre: { ...raw.pre, href: lan }, post: { ...raw.post, href: lan, resources: [[lan + '_app/a.js', 'script', 1, 2, 3, 4], ['https://fastwork.com/x.js', 'script', 1, 2, 3, 4]] } };
   raw.served = { '/_app/a.js': '0123456789abcdef' };
   raw.macStartMs = 1790000000000;
   raw.battery = { start: { IsCharging: false, CurrentCapacity: 64, temperatureC: 30 }, end: { IsCharging: false, CurrentCapacity: 63, temperatureC: 31 } };
@@ -339,6 +376,15 @@ test('finish: one JSON per run (schema, meta with labels and tool hashes, measur
   const log = console.log; const lines = []; console.log = (...a) => lines.push(a.join(' '));
   let out;
   try { out = finish(o, 'me', raw, { now: new Date('2026-10-01T10:00:00Z') }); } finally { console.log = log; }
+  console.log = () => {};
+  let lanOut;
+  try { lanOut = finish({ ...o, out: join(dir, 'lan.json') }, 'me', lanRaw); } finally { console.log = log; }
+  const lj = readFileSync(lanOut, 'utf8');
+  assert.ok(!lj.includes('192.168'), 'no LAN address in the run file (review-t1a B4)');
+  const lp = JSON.parse(lj);
+  assert.deepEqual([lp.meta.href, lp.pre.href, lp.post.href], ['https://lan-host:5234/', 'https://lan-host:5234/', 'https://lan-host:5234/']);
+  assert.deepEqual(lp.post.resources.map((r) => r[0]), ['https://lan-host:5234/_app/a.js', 'https://fastwork.com/x.js']);
+  assert.equal(raw.pre.href, 'http://127.0.0.1:9/', 'the raw result is not changed');
   assert.equal(out, join(dir, 'r.json'));
   const j = JSON.parse(readFileSync(out, 'utf8'));
   assert.deepEqual(Object.keys(j), ['meta', 'fields', 'frames', 'marks', 'mutations', 'crossings', 'summary', 'tops', 'topsPost', 'stateAtStart', 'early', 'driverResult', 'pre', 'post']);
@@ -354,11 +400,16 @@ test('finish: one JSON per run (schema, meta with labels and tool hashes, measur
   assert.deepEqual(m.battery, raw.battery);
   assert.equal(m.ySource, 'raf');
   assert.equal(m.params.ySource, 'raf');
-  assert.equal(m.probeVersion, 2, 'probe v2: crossings read no y of their own (v1 = 4f0bfd4 = raf-legacy)');
-  assert.equal(m.yReads, P.Y_READS.raf);
+  assert.equal(m.probeVersion, 2, 'probe v2: crossings read no y of their own (v1, the first T1a commit = raf-legacy)');
+  assert.equal(m.yReads, 'probe rAF scrollY per frame, scrollHeight when y != 0; driver scrollY 3.3 Hz');
   assert.deepEqual(m.yReadCounts, raw.yReads);
-  assert.equal(P.Y_READS.none, 'none (driver reads 3.3 Hz)');
   assert.deepEqual(Object.keys(P.Y_READS), P.Y_SOURCES);
+  assert.equal(P.yReadsLabel('none', 'window'), 'none (driver reads 3.3 Hz)');
+  assert.equal(P.yReadsLabel('none', 'scroll'), 'none (driver reads 3.3 Hz)');
+  assert.equal(P.yReadsLabel('none', 'morph'), 'none', 'the morph driver has no stop check');
+  assert.equal(P.yReadsLabel('raf', 'morph'), P.Y_READS.raf);
+  assert.equal(P.yReadsLabel('scroll', 'window'), P.Y_READS.scroll, 'scroll: the drivers use the listener y');
+  assert.match(P.yReadsLabel('raf-legacy', 'scroll'), /per observer batch and cv event .*; driver scrollY 3\.3 Hz$/);
   assert.equal(m.params.settleMs, 8000);
   assert.equal(m.params.to, 2000);
   assert.deepEqual(Object.keys(m.tool.files), TOOL_FILES);

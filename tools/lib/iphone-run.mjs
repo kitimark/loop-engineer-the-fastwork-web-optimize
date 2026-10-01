@@ -30,7 +30,7 @@ import { openTab, sleep } from './wip.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE } from './iphone-url.mjs';
-import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, Y_READS, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
+import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, yReadsLabel, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
 
 export const DEVICE = 'iPhone 15 Pro Max, iOS 26.6.1 Safari';
 /** Files whose code shapes a run's stimulus and numbers: recorded per run (meta.tool), like `gesture`'s. */
@@ -207,18 +207,43 @@ export async function servedHashes(urls) {
   return out;
 }
 
+/** A URL with a LAN host (private / link-local / CGNAT IPv4, private / link-local IPv6, *.local or a dotless
+ *  name) gets the placeholder host `lan-host`; scheme, port, path and query stay. Loopback and public hosts stay.
+ *  Run files are committed under research/ (Hard rule 12: no LAN addresses; review-t1a B4). */
+export const LAN_HOST = 'lan-host';
+export function lanSafeUrl(u) {
+  if (typeof u !== 'string' || !u) return u;
+  let x; try { x = new URL(u); } catch { return u; }
+  const h = x.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  const v4 = h.match(/^(\d+)\.(\d+)\.\d+\.\d+$/);
+  const lan = v4 ? (+v4[1] === 10 || (+v4[1] === 172 && +v4[2] >= 16 && +v4[2] <= 31) || (+v4[1] === 192 && +v4[2] === 168) || (+v4[1] === 169 && +v4[2] === 254) || (+v4[1] === 100 && +v4[2] >= 64 && +v4[2] <= 127))
+    : h.includes(':') ? /^(fc|fd|fe[89ab])/.test(h)
+    : h.endsWith('.local') || (!h.includes('.') && h !== 'localhost');
+  if (!lan) return u;
+  x.hostname = LAN_HOST;
+  return x.href;
+}
+/** pre / post with their URLs through lanSafeUrl (href, Resource Timing names). */
+function lanSafe(o) {
+  if (!o || typeof o !== 'object') return o;
+  const c = { ...o };
+  if ('href' in c) c.href = lanSafeUrl(c.href);
+  if (Array.isArray(c.resources)) c.resources = c.resources.map((r) => (Array.isArray(r) ? [lanSafeUrl(r[0]), ...r.slice(1)] : r));
+  return c;
+}
+
 /** Raw page result -> run JSON on disk + console summary. Exported for tests. */
 export function finish(o, owner, raw, { now = new Date() } = {}) {
   const doc = buildDoc(raw);
   const meta = {
     schema: SCHEMA, kind: 'run', driver: DRIVERS[o.driver], driverName: o.driver, probe: o.probe, label: o.label,
     build: o.labels.build, run: o.labels.run ?? o.label, block: o.labels.block, arm: o.labels.arm, pos: o.labels.pos, warmup: o.labels.warmup,
-    owner, date: now.toISOString(), device: DEVICE, href: raw.pre?.href, ua: raw.pre?.ua, vw: raw.pre?.vw, vh0: raw.pre?.vh0, dpr: raw.pre?.dpr,
+    owner, date: now.toISOString(), device: DEVICE, href: lanSafeUrl(raw.pre?.href), ua: raw.pre?.ua, vw: raw.pre?.vw, vh0: raw.pre?.vh0, dpr: raw.pre?.dpr,
     params: { settleMs: o.settleMs, ...o.params },
-    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: Y_READS[raw.ySource ?? o.params.ySource ?? 'raf'] ?? null, yReadCounts: raw.yReads ?? null, settings: deviceSettings(raw.pre?.settings, raw.battery?.start), battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver), error: raw.err || null,
+    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: yReadsLabel(raw.ySource ?? o.params.ySource ?? 'raf', o.driver), yReadCounts: raw.yReads ?? null, settings: deviceSettings(raw.pre?.settings, raw.battery?.start), battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver), error: raw.err || null,
   };
   const out = resolve(REPO, o.out || join('out', 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));
-  const json = { meta, ...doc, tops: raw.tops, topsPost: raw.topsPost, stateAtStart: raw.stateAtStart, early: raw.early, driverResult: raw.driverResult, pre: raw.pre, post: raw.post };
+  const json = { meta, ...doc, tops: raw.tops, topsPost: raw.topsPost, stateAtStart: raw.stateAtStart, early: raw.early, driverResult: raw.driverResult, pre: lanSafe(raw.pre), post: lanSafe(raw.post) };
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify(json));
   const sm = doc.summary;

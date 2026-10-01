@@ -12,21 +12,27 @@
 //                raf        scrollY read in the probe's rAF callback (default). On WebKit a scrollY read with y != 0
 //                           forces a synchronous layout when layout is dirty (unknowns-render U1): the probe can add
 //                           layouts. P0 (P-023, iPhone A/A): neutral against scroll and none, so raf stays default.
-//                raf-legacy raf plus a scrollY read in every MutationObserver batch and every cv / font event: the
-//                           probe as of 4f0bfd4 (probe v1) and iphone-runner's hand-made loggers; the control arm when a
-//                           question compares against runs logged that way
+//                raf-legacy the reads of probe v1 (the first T1a commit, before --y-source): scrollY in rAF plus a
+//                           scrollY read in every MutationObserver batch and every cv event; no docH and no font
+//                           listener (v1 had neither). The control arm when a question compares against runs logged
+//                           that way (v1 runs, iphone-runner's hand-made loggers with callback reads).
 //                scroll     the last value a passive scroll listener saw (read in the scroll event, not in rAF)
-//                none       no y at all (null); drivers still read scrollY every 300 ms, outside rAF, to stop
-//              Every source's reads are named in meta.yReads (Y_READS) and counted per run in meta.yReadCounts
-//              {raf, crossing, scroll, driver} (the drivers' stop checks; their yHold/finalY reads after a phase and
-//              the page facts before the probe are not counted).
+//                none       no y at all (null); the scroll and window drivers still read scrollY every 300 ms, outside
+//                           rAF, to stop (the morph driver reads none)
+//              meta.yReads names the run's reads (yReadsLabel: probe part Y_READS + the driver's stop check) and
+//              meta.yReadCounts counts them {raf, crossing, scroll, docH, driver}. Not counted: the drivers'
+//              scrollHeight read at a phase start (maxY) and their yHold/finalY reads after a phase, the page facts
+//              before the probe (PRE: docH, maxY), the tops reads and the post facts after it.
 //     m        the `--morph` inline custom property of the nav / morph element, or null (no layout read)
 //     rafJsMs  sync time of the PAGE's own rAF callbacks that ran at t[k-1] (wrapped requestAnimationFrame),
 //              i.e. the rAF JS inside this gap. NOT scroll, IO, timer or message handlers (WebKit Timeline
 //              RenderingFrame "Script" is the full figure, attribution runs only).
 //     probeMs  the probe's own callback time (rAF loop + MutationObserver + listeners) since the previous row
-//     docH     document scrollHeight, read where y is read (raf: right after scrollY, layout already clean;
-//              scroll: in the scroll listener; none: null), never as an extra read
+//     docH     document scrollHeight, read only right after a scrollY read with y != 0 (raf: in the probe's rAF;
+//              scroll: in the scroll listener), else null (y == 0, raf-legacy, none). WebKit's scrollY returns early
+//              at y == 0 without a layout, but Element::scrollHeight() always updates layout for the scrolling
+//              element (review-t1a B1, WebKit Element.cpp / LocalDOMWindow.cpp): read at y == 0 it would force a
+//              layout the y read did not; after a scrollY read at y != 0 layout is already clean.
 //   mutations: every MutationObserver record on the whole document (subtree, attributes with old values,
 //     childList, characterData), counted by type with NO cap (F-044: a first-N cap hid the inert flip behind
 //     an img src burst). Attribute writes that leave the value unchanged count as `same`, not under their type
@@ -44,9 +50,11 @@
 //     by the frame interval (protocol §3.4), not by y alone. yRow (raf): the row whose yEnd y is: frame - 1 (y =
 //     yFrame[0]) when the probe's rAF ran before the crossing in that frame, frame - 2 when the page's own rAF
 //     callbacks ran first (page loops started before the probe are called before it, so a page-rAF mutation
-//     usually gets the older y); null for the other sources. stale: true when the y source did not update y between
-//     the frame start t[k-1] and the crossing (raf always; scroll when no scroll event came in between), false when
-//     it did (raf-legacy always; scroll after a scroll event), null without a y (none) or for a probe v1 row.
+//     usually gets the older y); null before the probe's first rAF row (y is the probe-start read) and for the
+//     other sources. stale: true when y was not read at the crossing:
+//     raf (always: y is the probe's last rAF value), scroll when no scroll event came since the probe's last rAF
+//     callback; false when it was: raf-legacy (read in the callback), scroll after such an event; null without a
+//     y (none) or for a probe v1 row (no fresh flag).
 //     `src: "effect"`: an IO callback that changes nothing is not seen here (wrapping the page's IO
 //     callbacks needs a bootstrap script: T1b, `src: "io"`).
 //   marks: {phase: [t0, t1]} on the frames' clock, also performance.mark('fwr:<phase>:start|end').
@@ -56,22 +64,34 @@
 //     for crossing placement y_i = top_i - f_i * vh (protocol §3.4) with the top of the same run.
 // Probe cost: one MutationObserver on the whole document (WebKit then builds a record for every mutation, which
 // probeMs does not see), a wrapped requestAnimationFrame, one rAF loop, capture listeners (cv, fonts; scroll for
-// --y-source scroll). Layout reads: only the y source's (scrollY + scrollHeight per frame with raf; plus one scrollY
-// per observer batch and cv / font event with raf-legacy).
-// probeVersion (meta.probeVersion, window.__fwr.v): 1 = 4f0bfd4 (crossing callbacks read scrollY: now raf-legacy),
-// 2 = e96e5b5 on (crossings take the y source's last value, --y-source, docH, read counts, stale flag).
+// --y-source scroll). Layout reads: only the y source's (scrollY per frame with raf, plus scrollHeight when y != 0;
+// plus one scrollY per observer batch and cv event with raf-legacy).
+// probeVersion (meta.probeVersion, window.__fwr.v):
+//   1  the first T1a commit: crossing callbacks read scrollY (now --y-source raf-legacy); no meta.ySource
+//   2  probe v2: crossings take the y source's last value, docH only at y != 0, read counts, yFrame/yRow/stale
+//   A run file without meta.probeVersion but WITH meta.ySource was written by the --y-source commit between the
+//   two (window.__fwr.v still 1): it has v2's crossing reads (no read in the callbacks) but docH read every frame,
+//   also at y == 0. Without either field: v1.
 
 export const SCHEMA = 'fw-iphone-run/1';
 export const FIELDS = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs', 'docH'];
 export const Y_SOURCES = ['raf', 'raf-legacy', 'scroll', 'none'];
 export const PROBE_VERSION = 2;
-/** What reads scrollY (a forced layout on WebKit when layout is dirty) per y source: meta.yReads. */
+/** The probe's layout-forcing reads per y source (scrollY: a forced layout on WebKit when layout is dirty and y != 0;
+ *  scrollHeight: always one when dirty, so read only after a scrollY read at y != 0). */
 export const Y_READS = {
-  raf: 'probe rAF scrollY+scrollHeight per frame; driver scrollY 3.3 Hz',
-  'raf-legacy': 'probe rAF scrollY+scrollHeight per frame + scrollY per observer batch and cv/font event; driver scrollY 3.3 Hz',
-  scroll: 'scroll listener scrollY+scrollHeight per scroll event; driver uses the listener y',
-  none: 'none (driver reads 3.3 Hz)',
+  raf: 'probe rAF scrollY per frame, scrollHeight when y != 0',
+  'raf-legacy': 'probe rAF scrollY per frame + scrollY per observer batch and cv event (probe v1; no docH, no font listener)',
+  scroll: 'scroll listener scrollY per scroll event, scrollHeight when y != 0',
+  none: 'none',
 };
+/** meta.yReads: the probe's reads plus the driver's stop check (scroll / window drivers read scrollY every 300 ms
+ *  unless the y source is scroll; the morph driver has no stop check). */
+export function yReadsLabel(ySource, driver) {
+  const drv = (driver === 'scroll' || driver === 'window') && ySource !== 'scroll';
+  if (ySource === 'none') return drv ? 'none (driver reads 3.3 Hz)' : 'none';
+  return Y_READS[ySource] + (drv ? '; driver scrollY 3.3 Hz' : '');
+}
 export const MUT_TYPES = ['src', 'class', 'style', 'inert', 'tabindex', 'scene', 'render', 'other', 'childList', 'text', 'same'];
 export const TICK_MS = 1000 / 120;
 export const DRIVERS = { scroll: 'S', window: 'W', morph: 'M' };
@@ -91,16 +111,19 @@ export const PROBE_STD_JS = `(() => {
   const YS = (window.__fwrOpts && window.__fwrOpts.ySource) || 'raf';
   const RAF = YS === 'raf' || YS === 'raf-legacy', LEGACY = YS === 'raf-legacy';
   P.ySource = YS;
-  const RC = P.yReads = { raf: 0, crossing: 0, scroll: 0, driver: 0 }; // scrollY reads by the probe and drivers
+  const RC = P.yReads = { raf: 0, crossing: 0, scroll: 0, docH: 0, driver: 0 }; // layout-forcing reads by the probe and drivers
+  // scrollHeight only right after a scrollY read with y != 0 (layout already clean), never in raf-legacy (v1 parity)
+  const docH = (y) => { if (LEGACY || y === 0 || y === null) return null; RC.docH++; return document.documentElement.scrollHeight; };
   let sy = null, sh = null; // scroll source: the last values the passive scroll listener saw
-  let fresh = 0; // 1 when the y source updated y after the last frame (a scroll event; raf-legacy reads in place)
-  const onScroll = () => { const a = now(); RC.scroll++; sy = Math.round(scrollY); sh = document.documentElement.scrollHeight; fresh = 1; self += now() - a; };
-  if (YS === 'scroll') { sy = Math.round(scrollY); sh = document.documentElement.scrollHeight; window.addEventListener('scroll', onScroll, { passive: true }); }
+  let fresh = 0; // scroll: 1 when a scroll event came since the probe's last rAF callback
+  const onScroll = () => { const a = now(); RC.scroll++; sy = Math.round(scrollY); sh = docH(sy); fresh = 1; self += now() - a; };
+  if (YS === 'scroll') { sy = Math.round(scrollY); sh = docH(sy); window.addEventListener('scroll', onScroll, { passive: true }); }
   let lastT = null, lastY = RAF ? Math.round(scrollY) : sy;
   // crossings: [y, fresh, yRow]. raf / scroll: the y source's last value, no read of its own (raf: yEnd of row
   // yRow); raf-legacy: a scrollY read here (probe v1); none: null
+  const yRaf = () => [lastY, 0, P.frames.length - 1];
   const yCross = LEGACY ? () => { RC.crossing++; return [Math.round(scrollY), 1, null]; }
-    : RAF ? () => [lastY, 0, P.frames.length - 1] : () => [sy, fresh, null];
+    : RAF ? yRaf : () => [sy, fresh, null];
   // drivers: where to stop. raf / none: a scrollY read every 300 ms in a timer, not in rAF; scroll: the listener y
   P.yNow = () => { if (YS === 'scroll') return sy; RC.driver++; return Math.round(scrollY); };
   const desc = (e) => {
@@ -155,7 +178,7 @@ export const PROBE_STD_JS = `(() => {
   mo.observe(document, { subtree: true, attributes: true, attributeOldValue: true, childList: true, characterData: true });
   const onCv = (e) => { const a = now(); P.crossings.push([R1(a), 'cv', desc(e.target), e.skipped ? 'skipped' : 'rendered', ...yCross()]); self += now() - a; };
   document.addEventListener('contentvisibilityautostatechange', onCv, true);
-  const fonts = document.fonts && document.fonts.addEventListener ? document.fonts : null;
+  const fonts = !LEGACY && document.fonts && document.fonts.addEventListener ? document.fonts : null; // v1 had no font listener
   const onFont = (e) => { const a = now(); P.crossings.push([R1(a), 'font', 'document.fonts', (e.fontfaces ? e.fontfaces.length : 0) + ' faces', ...yCross()]); self += now() - a; };
   if (fonts) fonts.addEventListener('loadingdone', onFont);
   // nav / morph element for m (cached; re-queried when it leaves the document)
@@ -170,7 +193,7 @@ export const PROBE_STD_JS = `(() => {
     let m = null;
     for (const e of morphEls()) { const v = e.style.getPropertyValue('--morph'); if (v !== '') { m = Math.round(parseFloat(v) * 1000) / 1000; break; } }
     let y = null, h = null;
-    if (RAF) { RC.raf++; y = Math.round(scrollY); h = document.documentElement.scrollHeight; } else if (YS === 'scroll') { y = sy; h = sh; }
+    if (RAF) { RC.raf++; y = Math.round(scrollY); h = docH(y); } else if (YS === 'scroll') { y = sy; h = sh; }
     const j = lastT === null ? null : js.get(lastT) || 0;
     if (lastT !== null) js.delete(lastT);
     P.frames.push([R1(t), lastT === null ? null : R1(t - lastT), lastY, y, innerHeight, m, j === null ? null : R2(j), R2(self + now() - a), h]);
@@ -325,8 +348,8 @@ export function bucketMutations(frames, batches) {
 
 /** Page crossing rows [t, kind, id, value, y, fresh, yRow] (record order) -> [{frame, t, y, yFrame, yRow, stale, kind,
  *  id, value, src}] in time order. yFrame = [yStart, yEnd] of the crossing's frame (protocol §3.4 places a crossing by
- *  it); yRow = the frame row whose yEnd y is (raf; null otherwise or before the first row); stale = the y source did
- *  not update y between the frame start and the crossing (null: no y, or a v1 row). */
+ *  it); yRow = the frame row whose yEnd y is (raf; null otherwise or before the first row); stale = y was not read at
+ *  the crossing (raf; scroll without a scroll event since the probe's last rAF callback; null: no y, or a v1 row). */
 export function placeCrossings(frames, rows) {
   return [...rows].sort((a, b) => a[0] - b[0]) // stable: same-time rows keep their record order
     .map(([t, kind, id, value, y, fresh, yRow]) => {

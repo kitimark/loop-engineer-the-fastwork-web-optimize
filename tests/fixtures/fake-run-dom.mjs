@@ -1,10 +1,14 @@
 // A tiny fake Safari page in a node:vm context for `iphone.mjs run` (tools/lib/iphone-run.mjs, iphone-probe.mjs):
 // enough DOM for the std probe and the drivers to run unchanged. Elements with attributes / classList / style,
-// a MutationObserver that delivers records in microtask batches (old values, same-value writes included, like a
-// browser), rAF at ~120 Hz (setInterval 8 ms, one timestamp per frame), smooth scrollBy, instant scrollTo,
+// a MutationObserver that delivers records in microtask batches (old values, same-value writes included),
+// rAF at ~120 Hz (every 8 ms, a long frame followed by a 1 ms gap; one timestamp per frame; callbacks in registration order with a microtask
+// checkpoint after each one, as HTML's "clean up after running script" does, so a MutationObserver batch from a
+// page callback is delivered before the next callback runs), smooth scrollBy, instant scrollTo,
 // contentvisibilityautostatechange on document, performance.getEntriesByType('resource'), window scroll events
-// (fired before the frame's rAF callbacks when scrollY changed, as in a browser), document.fonts, matchMedia, screen.
-// Every read of window.scrollY is counted (win.__scrollYReads), to test which y source reads it per frame.
+// (fired before the frame's rAF callbacks when scrollY changed), document.fonts, matchMedia, screen.
+// Every read of window.scrollY is counted (win.__scrollYReads), and every read of documentElement.scrollHeight
+// (win.__scrollHeightReads, win.__scrollHeightReadsAtY0 for those at scrollY 0), to test which y source reads what.
+// A simplification, not a browser: no layout at all, so the counts are reads, not forced layouts.
 //
 // The page's own behaviour (all through window.requestAnimationFrame looked up at call time, so the probe's
 // wrapper sees it, like the real Svelte runtime):
@@ -16,6 +20,9 @@
 //     12 events in one frame);
 //   - first frame with scrollY >= cvY (1250): a contentvisibilityautostatechange (rendered) on section.commission;
 //   - first frame with scrollY >= fontY (900): document.fonts loadingdone with 2 font faces;
+//   - first frame with scrollY >= lateY (1700): a timer starts a SECOND page rAF loop, registered after the probe's,
+//     which adds `is-late` to div.late in its first callback (a crossing whose MutationObserver batch comes after
+//     the probe's rAF callback in that frame; the engine's batches come before it);
 //   - morph: true defines window.__fwMorphDrive({hold, cycles}) like fix-nav-morph's overlays: the nav's
 //     --morph goes 0 -> 1 over ~150 ms, holds, back, per cycle; __fwMD = JSON {all, moving, atOne, atZero, frames}.
 import vm from 'node:vm';
@@ -35,7 +42,7 @@ function matches(el, sel) {
   });
 }
 
-export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY = 900, busyMs = 90, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null } = {}) {
+export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY = 900, lateY = 1700, busyMs = 90, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null } = {}) {
   const t0 = performance.now();
   const now = () => performance.now() - t0;
   const observers = new Set();
@@ -82,10 +89,11 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
   const platform = add(body, 'section', { id: 'platform', cls: 'start-selling-platform', attrs: { 'data-start-selling-scene': 'paused' }, top: eventY + 900 });
   const panel = add(platform, 'div', { cls: 'start-selling-morph-panel', attrs: { inert: '' }, top: eventY + 1000 });
   const imgs = Array.from({ length: 21 }, () => add(panel, 'img'));
+  const late = add(body, 'div', { cls: 'late', top: lateY + 600 });
   for (const r of resources) add(body, 'script', { attrs: { src: r } });
   const docListeners = [];
   const document = {
-    documentElement: { scrollHeight: docHeight }, readyState: 'complete', title: 'fake run page',
+    documentElement: { get scrollHeight() { win.__scrollHeightReads++; if (sy === 0) win.__scrollHeightReadsAtY0++; return docHeight; } }, readyState: 'complete', title: 'fake run page',
     querySelector: (s) => body.querySelector(s), querySelectorAll: (s) => body.querySelectorAll(s),
     addEventListener: (type, fn, capture) => docListeners.push({ type, fn, capture: typeof capture === 'object' ? !!capture.capture : !!capture }),
     removeEventListener: (type, fn) => { const i = docListeners.findIndex((l) => l.type === type && l.fn === fn); if (i >= 0) docListeners.splice(i, 1); },
@@ -123,10 +131,11 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
     scrollBy: (o) => { const to = clampY(sy + o.top); if (o.behavior === 'smooth') smooth = { to, step: (to - sy) / 18 }; else sy = to; },
   };
   win.window = win;
+  win.__scrollHeightReads = 0; win.__scrollHeightReadsAtY0 = 0;
   const ctx = vm.createContext(win);
 
   // page behaviour
-  let fired = false, cvFired = false, fontFired = false, stopped = false;
+  let fired = false, cvFired = false, fontFired = false, lateFired = false, stopped = false;
   const engine = () => {
     if (stopped) return;
     track.style.setProperty('transform', `translateY(${-Math.round(sy / 2)}px)`);
@@ -140,6 +149,7 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
       platform.setAttribute('data-start-selling-scene', 'active');
     }
     if (!fontFired && sy >= fontY) { fontFired = true; queueMicrotask(() => { for (const l of fontListeners.filter((x) => x.t === 'loadingdone')) l.fn({ fontfaces: [{}, {}] }); }); }
+    if (!lateFired && sy >= lateY) { lateFired = true; setTimeout(() => win.requestAnimationFrame(() => { if (!stopped) late.classList.add('is-late'); }), 0); }
     if (!cvFired && sy >= cvY) { cvFired = true; const tgt = body.querySelector('section.commission'); queueMicrotask(() => dispatchDoc('contentvisibilityautostatechange', { target: tgt, skipped: false })); }
     win.requestAnimationFrame(engine);
   };
@@ -164,16 +174,23 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
   }
 
   let lastScrollFired = 0;
-  const timer = setInterval(() => {
+  // Frames every 8 ms, and the next frame's timestamp at least 1 ms after the last callback of a long frame: with
+  // setInterval an overdue tick fired right after the 90 ms frame, its timestamp within 0.1 ms of the observer
+  // batch, and the probe's 0.1 ms rounding then placed the batch in the next row by chance (a flake under load).
+  let timer = null;
+  const tick = async () => {
+    const start = now();
     if (smooth) { const d = smooth.to - sy; if (Math.abs(d) <= Math.abs(smooth.step) || smooth.step === 0) { sy = smooth.to; smooth = null; } else sy = Math.round(sy + smooth.step); }
     if (sy !== lastScrollFired) { lastScrollFired = sy; for (const l of winListeners.filter((x) => x.type === 'scroll')) l.fn({ type: 'scroll' }); }
     const q = raf; raf = [];
     const t = now();
-    for (const cb of q) { try { cb(t); } catch (e) { win.__errors = (win.__errors || 0) + 1; } }
-  }, 8);
+    for (const cb of q) { try { cb(t); } catch (e) { win.__errors = (win.__errors || 0) + 1; } await null; } // microtask checkpoint per callback
+    if (!stopped) timer = setTimeout(tick, Math.max(1, 8 - (now() - start)));
+  };
+  timer = setTimeout(tick, 8);
   return {
     win, ctx, panel, imgs, nav,
     evaluate: (expr) => vm.runInContext(expr, ctx),
-    stop: () => { stopped = true; clearInterval(timer); },
+    stop: () => { stopped = true; clearTimeout(timer); },
   };
 }
