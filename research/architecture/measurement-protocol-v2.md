@@ -229,7 +229,10 @@ of the three without a stated reason.
   I-032. The earlier guess, "dead since CompositeAfterPaint", is REFUTED.)
 - **The paint source is the per-layer `paintCount` delta** between consecutive layer lists (`--paint-rects`,
   `paintRects.source: 'paintCount'`). Its area is **layerMpx**, the full size of the layers that painted, in
-  physical px: an **upper bound**, never "paint area" or "clip". Deltas bind to the interval between two lists
+  **layer px** = CSS px × `paintRects.layerScale` (the host's device scale factor, 2 on this Mac, not the emulated
+  DPR 3; CONFIRMED, blink `widget_base.cc` 1906-1909, F-077); `layerVpMpx` caps each dimension at
+  innerWidth/innerHeight × layerScale. Rescale before comparing with phone (DPR 3) pixel counts. An **upper bound**,
+  never "paint area" or "clip". Deltas bind to the interval between two lists
   (`binding: 'interval'` when lists are sparser than frames). The probe is opt-in and gets an on/off A/A.
   **Never in timing runs** (gain A/Bs, attribution timings, calibration). OBSERVED (in our setup) in a clean on/off A/A
   (ts-render-signals, 2026-10-01 12:40-12:45Z, baseline, CPU 6x, idle 6, n=3 each interleaved, 0 of 6 host-flagged):
