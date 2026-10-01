@@ -29,7 +29,7 @@ iPhone and the finger. Words: **must** = a gate fails without it; **should** = t
 | L10 | Chrome y and phone y differ by ~77 px; viewports differ (932 vs 775/815) | Positions in **crossing coordinates** (§3.4); Chrome attribution probes at phone geometry |
 | L11 | ~6 phone queue reorders in 90 min; owners waited 1 h+ per phone answer | Slot ticket (§2.5): ticketed builds only, ranked queue, reorders at block boundaries |
 | L12 | rAF gaps can't credit work moved off the main thread (h2, morph R3, WAAPI strips); every Mpx figure was derived | §3.1 presentation and paint-area sources; predictions state which source can see the gain |
-| L13 | On iOS the rAF gap = WebContent + GPU-process raster wait + UI apply + tick; **render-server (GPU) time is not on that path** (de-safari, vendor source; refines de-apple F3). A backdrop/filter fix can look smoother with no rAF change, or the reverse | Render-bound is its own device class (§2.3); its gate metric is Instruments render hitches, not rAF |
+| L13 | On iOS the rAF gap = WebContent + GPU-process raster/flush wait + wait for the next display-link tick + wake latency + post-flush time (not "UI apply", §3.1); **render-server (GPU) time is not on that path** (de-safari, vendor source; refines de-apple F3). A backdrop/filter fix can look smoother with no rAF change, or the reverse | Render-bound is its own device class (§2.3); its gate metric is Instruments render hitches, not rAF |
 
 ## 2. Stages and gates
 
@@ -143,14 +143,14 @@ rejected gets the reason in one message. Running blocks are never interrupted fo
 | rAF gap (page logger) | both | main-thread frame cadence: scroll-linked JS, style, layout; on iOS also raster/commit back-pressure one frame late (F3) | compositor-presented scroll and threaded animations (can't credit off-main moves); Chrome GPU/raster at 6x | **primary** for both devices |
 | `DroppedFrame` ± `hasPartialUpdate` in `--trace-frames` (G1) | Chrome | presented / partial / dropped per phase | iPhone anything; traced runs ≠ untraced | diagnostic; **primary only for threaded-refactor claims** in Chrome |
 | WebKit Timeline per-record durations (`Page.enable` before `Timeline.start`) | phone | per-frame style/layout/paint/composite (= WebContent layer commit) ms | GPU/render-server time; medium overhead | diagnostic, attribution runs only |
-| WebKit `RenderingFrame` (one per main runloop turn) | phone | segments Script / Layout (style+layout) / Paint (= Paint recording + Composite, which on iOS includes allocation and the **GPU-process raster wait**) / Other (compositing update, layer creation, event regions, IO: no records) | UI apply and tick wait (≈ gap − frame); render server | diagnostic, attribution runs; the per-frame phase breakdown for D and for predictions |
+| WebKit `RenderingFrame` (one per main runloop turn) | phone | segments Script / Layout (style+layout) / Paint (= Paint recording + Composite, which on iOS includes allocation and the **GPU-process raster wait**) / Other (compositing update, layer creation, event regions, IO: no records); the record starts at any main-run-loop wake and ends after the commit's backing-store flush completes (PageTimelineAgent.cpp l.118-135, 361-376; RemoteLayerTreeDrawingArea.mm l.431-440), so it includes the GPU-process flush wait | gap − frame = wait for the next display-link tick + wake latency + post-flush time (not "UI apply"); render server | diagnostic, attribution runs; the per-frame phase breakdown for D and for predictions |
 | Instruments Animation Hitches / Metal System Trace | phone | render hitches (render-server CPU/GPU: backdrop, filters), UI-process commit hitches, presented smoothness | page attribution | **primary for render-bound claims**; one-off, own block with its own control |
 | Timeline counts per 1 s chunk | phone | paint/layout/style counts and rects | per-frame timing | diagnostic (what exists today) |
 | LoAF (`forcedStyleAndLayoutDuration`, scripts) | Chrome | ≥50 ms frames' script attribution, forced layout | WebKit (no LoAF), off-main work | diagnostic |
 
 Never quote "frames >20 ms" as "dropped frames" (arch-devtools §2a).
 
-### 3.2 Tick quantization (both devices at 120 Hz)
+### 3.2 Tick units (Chrome rAF 120 Hz; phone rAF 60 Hz)
 
 - Tick k = round(dt / 8.333). On-time = k ≤ 2 (one 60 Hz rAF interval).
 - Thresholds at tick midpoints: **">34" = dt ≥ 37.5 ms (k≥5)**, **">50" = dt ≥ 54.17 ms (k≥7)** (exact midpoints 4.5 and 6.5 × 8.333; code uses the exact values).
@@ -159,8 +159,13 @@ Never quote "frames >20 ms" as "dropped frames" (arch-devtools §2a).
   primary to ticks after one Chrome A/A and one phone A/A show both; any verdict that differs between the two
   is reported as "threshold-sensitive".
 - Dropped ratio with each device's own period (G8) is report-only.
-- **Phone (A5):** the tick model is exact on Chrome only. On the phone the rAF timestamp is the rendering-update
-  start, not a vsync, and 75 % of gaps ≥34 ms fall off the 8.33 ms grid (arch-unknowns V-U2). Phone verdicts report
+- **Phone (A5):** the tick model is exact on Chrome only. On the phone, Safari's rAF runs at 60 Hz (WebKit default
+  PreferPageRenderingUpdatesNear60FPSEnabled = true: UnifiedWebPreferences.yaml main l.4810-4818,
+  safari-7624-branch ~l.6395; AnimationFrameRate.cpp l.35-66; bug 173434; CONFIRMED, claims-audit P9) and the rAF
+  timestamp is the WebContent rendering-update start at 1 ms resolution, not a vsync (Document.cpp l.8959, Page.cpp
+  l.2424-2428; CONFIRMED, claims-audit P10). The nominal phone gap is 16.67 ms = 2 ticks; 8.33 ms is a unit there,
+  not a grid (75 % of gaps ≥34 ms fall off it, arch-unknowns V-U2). Low Power Mode halves it to 30 Hz
+  (halfSpeedThrottlingReasons). Phone verdicts report
   both forms (dt > 50 and k≥7; dt > 34 and k≥5) and flag frames within 4 ms of a threshold; a verdict that differs
   between the forms is "threshold-sensitive" (the goal count did: aw1-10c ">50" 3/3/2 vs k≥7 1/2/1).
 

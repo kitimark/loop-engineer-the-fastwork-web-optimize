@@ -368,7 +368,7 @@ before landing, and the touchmove-frame penalty (§2) stays #6's to remove.
 | gb (gb1, gb2) | 27 / 29.7 | 21 % | 51 | 25 / 26 / 29 / 36 / 27 | 17 |
 | gh (gh1, gh2) | **24 / 26.8** | **41 %** | 49 | 20 / 24 / 30 / 31 / 20 | 17 |
 
-Frame gaps are quantized to **8.33 ms** (the ProMotion 120 Hz display), not 16.7 ms. A frame whose work runs just
+Frame gaps are measured in **8.33 ms** units; Safari rAF runs at 60 Hz (protocol v2 §3.2). A frame whose work runs just
 over 16.7 ms costs 25 ms. So savings move in 8.33 ms steps: a p50 is a coarse statistic here, and the tick shares
 are the better read.
 
