@@ -42,7 +42,7 @@ ATTRIBUTION <topic> · cluster <crossing> · verdict NAMED | LOCATED | UNEXPLAIN
   evidence: Chrome --trace-frames class of the frame; phone RenderingFrame segments (Script, Layout,
   Paint+Composite read together, Other, gap − frame) + page-rAF JS ms + filter element counts after the frame
   + LayerTree paintCount deltas around it; render-server suspect: Instruments Animation Hitches
-  logger-layout caveat until P0: absolute counts / segment cards flagged (A9)
+  logger y source: rAF-only (A9 lifted, P-023) | timer task / MO-cv callback reads → absolute counts / segment cards flagged (A9)
 2 code: <the single mechanism> at <file:line>
 3 ablations (new names, one block, same control <name + hashes>):
   | arm | removes | role (positive / negative sibling / position-moving) | mechanism check (computed style, mutation counts, layer count) | result [IQR] |

@@ -102,8 +102,9 @@ card templates: `fixes/_template/CARDS.md`; done items 9-14 in `fixes/README.md`
     (F-054).
 18. **Driver covers the class (X8).** Does the claim's driver cover the class: speed, toolbar, slow drag,
     scroll-up, start after load, touch?
-19. **Logger-layout caveat (A9).** Absolute phone counts or Timeline segment cards made before the P0 logger A/A
-    carry the logger-layout caveat; A/B deltas with the same logger are fine.
+19. **Logger-layout caveat (A9).** Lifted for loggers that read scrollY once per rAF (P0 A/A neutral, P-023).
+    Absolute phone counts or Timeline segment cards from scrollY reads in timer tasks (winrun's per-step timer) or
+    MO/cv crossing callbacks (the pre-T1a std probe) still carry it; A/B deltas with the same logger are fine.
 
 ## Tool-fix mode
 

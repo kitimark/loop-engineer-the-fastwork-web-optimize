@@ -241,8 +241,9 @@ vs the exact base; backdrop look check, a11y diff, memory/layers note. Amendment
 or animation end value (to or from `opacity:1`, `filter:none`, `transform:none`), a layer's presence, a composited
 layer's size, an easing to `linear()`/`steps()`, or a window/document wheel/touch listener needs a phone segment card,
 not a Chrome counter (X1, F-054); the claim's driver covers the class (speed, toolbar, slow drag, scroll-up, start
-after load, touch; X8); phone absolute counts and segment cards made before the P0 logger A/A carry the
-logger-layout caveat, while A/B deltas with the same logger stand (A9). A missing item is NEEDS-WORK, not a note.
+after load, touch; X8); the logger-layout caveat (A9) is lifted for rAF-only loggers (P-023), but still applies to
+phone absolute counts and segment cards from scrollY reads in timer tasks (winrun's step timer) or MO/cv callbacks
+(the pre-T1a std probe); A/B deltas with the same logger stand. A missing item is NEEDS-WORK, not a note.
 
 ## 5. Land (rebase + fast-forward only)
 
