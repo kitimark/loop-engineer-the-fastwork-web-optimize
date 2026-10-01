@@ -1,0 +1,91 @@
+{
+  "name": "finger-protocol-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "research/architecture/finger-simulation.md section 4.2: the user's finger test (FINGER_TESTS row 1 criteria) as WDA strokes. Override params with --param k=v (--variant sets variant).",
+  "params": {
+    "variant": "asPerformed",
+    "toolbarAtEnd": "collapsed",
+    "x": 215,
+    "idleMs": 6000,
+    "flingPx": 520,
+    "flingMs": 160,
+    "pushes": 6,
+    "dwellHoldMs": 1500,
+    "reloadScrollAfterMs": 500,
+    "endY": 5000
+  },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": "$idleMs" },
+
+    { "type": "mark", "name": "hero" },
+    { "type": "stroke", "dir": "up", "px": 450, "ms": 900, "profile": "minjerk" },
+    { "type": "pause", "ms": 300 },
+    { "type": "stroke", "dir": "down", "px": 400, "ms": 900, "profile": "minjerk" },
+    { "type": "pause", "ms": 300 },
+    { "type": "stroke", "dir": "up", "px": 450, "ms": 900, "profile": "minjerk" },
+    { "type": "pause", "ms": 300 },
+    { "type": "stroke", "dir": "down", "px": 300, "ms": 900, "profile": "minjerk" },
+    { "type": "pause", "ms": 300 },
+
+    { "type": "mark", "name": "traverse" },
+    { "type": "repeat", "when": { "variant": "slow" }, "times": 14, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": 480, "ms": 700, "profile": "still" },
+      { "type": "pause", "ms": 250 }
+    ] },
+    { "type": "repeat", "when": { "variant": "asPerformed" }, "times": 6, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "pause", "ms": 1000 }
+    ] },
+    { "type": "until", "cond": "atEnd", "timeoutMs": 6000 },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "stroke", "when": { "toolbarAtEnd": "expanded" }, "dir": "down", "px": 60, "ms": 300, "profile": "still" },
+    { "type": "pause", "when": { "toolbarAtEnd": "expanded" }, "ms": 500 },
+
+    { "type": "mark", "name": "push" },
+    { "type": "repeat", "times": 3, "steps": [
+      { "type": "stroke", "dir": "up", "px": 300, "ms": 400, "profile": "still", "holdMs": 300 },
+      { "type": "pause", "ms": 800 }
+    ] },
+
+    { "type": "mark", "name": "dwell" },
+    { "type": "repeat", "times": "$pushes", "steps": [
+      { "type": "stroke", "dir": "up", "px": 250, "ms": 300, "profile": "still", "holdMs": "$dwellHoldMs" },
+      { "type": "pause", "ms": 600 }
+    ] },
+
+    { "type": "mark", "name": "drag-into-end" },
+    { "type": "stroke", "dir": "down", "px": 450, "ms": 700, "profile": "still" },
+    { "type": "pause", "ms": 300 },
+    { "type": "stroke", "dir": "up", "px": 560, "ms": 1500, "profile": "minjerk", "holdMs": 500 },
+    { "type": "pause", "ms": 800 },
+
+    { "type": "mark", "name": "drag-back" },
+    { "type": "stroke", "dir": "down", "px": 500, "ms": 800, "profile": "still" },
+    { "type": "pause", "ms": 800 },
+
+    { "type": "mark", "name": "fling-top" },
+    { "type": "repeat", "times": 3, "until": "atTop", "steps": [
+      { "type": "stroke", "dir": "down", "px": 520, "ms": 140, "profile": "fling" },
+      { "type": "pause", "ms": 1500 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+
+    { "type": "mark", "name": "toolbar" },
+    { "type": "stroke", "dir": "up", "px": 250, "ms": 100, "profile": "fling" },
+    { "type": "until", "cond": "y>=600", "timeoutMs": 3000 },
+    { "type": "pause", "ms": 1500 },
+    { "type": "stroke", "dir": "down", "px": 120, "ms": 400, "profile": "still" },
+    { "type": "pause", "ms": 1000 },
+
+    { "type": "reload", "scrollAfterMs": "$reloadScrollAfterMs" },
+    { "type": "mark", "name": "reload-scroll" },
+    { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "pause", "ms": 300 },
+    { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 1000 }
+  ]
+}
