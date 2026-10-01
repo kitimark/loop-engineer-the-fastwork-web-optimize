@@ -17,6 +17,8 @@ on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-5** (spawn
 
 ## Digest log (newest first, 5 lines each)
 
+- **11:25Z** P0 logger-ysrc A/A RUNNING since 11:23Z (hand-patched runner yswin.mjs, aw1-10e immutable :5476; battery
+  80 %, not charging, 39.4 °C logged per run). Next P1+P2 once fix-nav-morph sends gh-cdwc/gh-cdhid hashes.
 - **11:24Z** HANDOVER to mgmt-ops-5 at the phone-back boundary (11:22Z). Runner has the §3 order and the P0 logger-ysrc
   ticket; ST-2 builds cleared (pr5; +1.13 s frame = `is-future-shrinking` transform none -> scale(1)). New topic N14
   layout-containment -> fix-scroll-engine (TOPICS). /10d parked until its phone check. User-ask bundle in "Next
@@ -230,7 +232,15 @@ between tool calls.
    check perStroke `endLagMs` is not always 0 (review-gesture-2 B1).
 6. Caffeinate: `caffeinate -d -i -s` (display on, user-approved) since 11:01:46Z; the lead restarts it every 2 h ->
    remind at ~12:50Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
-7. Backlog for mgmt-lead (none urgent): as before (recheck pauses, gate.since, WindowServer in the gate, verify has no
+7. **Toolsmith asks from ts-analysis (review-stats T3 nits; need a lead spawn):** (nit 1) `tools/bench.mjs` calls
+   `gainVerdict` at :555 and :689 without try/catch; since 86424b0 bench-stats throws on non-finite input, so a null/NaN
+   scenario metric crashes bench (and in reconfirm loses later topics' tier B results) instead of INCONCLUSIVE. Fix
+   drafted (~15 lines + 1 test, not measurement code): `tools/lib/bench-gain.mjs` series() drops non-finite values into
+   `errors`; draft in `<scratchpad>/ts-analysis/nit1-series.diff` + `bench-gain-series.test.mjs`. (nit 3, for the T2
+   spawn prompt) `stats.mjs runs` scores a run with some non-finite frame times on its finite frames only (`partial`),
+   so count metrics read better: T2 must auto-void a counted run that loses more than a few percent of its frames
+   (reason in `meta.void`). iphone-runner voids such runs by hand until T2 exists.
+8. Backlog for mgmt-lead (none urgent): as before (recheck pauses, gate.since, WindowServer in the gate, verify has no
    load phase, trace buffer, review-10e note (a)); plus T8+ host record (ts-host-state), protocol amendments A1-A9.
 
 ## Where the project stands (08:55Z; see DIRECTION for 11:2xZ)
