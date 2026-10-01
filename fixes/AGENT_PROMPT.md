@@ -53,10 +53,14 @@ Do not change code outside your scope; if you need a change there, message its o
 7. Write `fixes/{{topic}}/README.md` from the template: why it lags (with evidence and line refs), what
    changed, why that is faster, the before/after table (paste `results.json` → `markdown`), risks and
    overlaps with other topics.
-8. Commit `fixes/{{topic}}/README.md`, `patch.diff` and `results.json` on your worktree branch (local
+8. Run `npm run test:unit` (scope guard + unit tests; not the full `npm test`, which is for tooling
+   changes: `CLAUDE.md` "Tooling is guarded by tests"). `SCOPE TOOLING` means your branch touched
+   `tools/`, `tests/`, `package.json`, `.githooks/` or `.claude/`: undo it as the message says. Then
+   commit `fixes/{{topic}}/README.md`, `patch.diff` and `results.json` on your worktree branch (local
    only, no push, no `git add -f`). Don't commit the overlay. If you fixed a tool yourself (only as
    `fixes/INCIDENTS.md` section 1 allows), that fix and its test are a separate commit
-   (`CLAUDE.md` "Hard rules" 6); mention it in the report.
+   (`CLAUDE.md` "Hard rules" 6), tested with the full `npm test` and `FW_TOOLING=1 npm run test:unit`;
+   mention it in the report.
 
 **When something breaks** (any step): `fixes/INCIDENTS.md`. Report once (`incident.mjs open`; the
 answer says OPENED, JOINED or KNOWN), message the lead, then use the workaround, do other steps, or

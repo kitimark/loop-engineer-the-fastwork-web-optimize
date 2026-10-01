@@ -34,6 +34,7 @@ Not separate agents, on purpose:
 | edit `tools/`, `tests/` | own infra worktree only | small self-fix (INCIDENTS 1) | yes: its incident | no (report an incident) | no | no |
 | commit | landing only | own branch | own branch | own branch | no | no |
 | measure (`fix.mjs ab`, `verify.mjs`, `test:chrome`) | noise floor (A/A) | yes | tests only | yes | no | no |
+| tests before a commit (I-021) | full `npm test` when landing tooling; else `test:unit` | `npm run test:unit`; full `npm test` only for a self-fix | full `npm test` | `npm run test:unit` | none | none; `node tools/scope.mjs --dir <wt>` as a check |
 | `iphone` lease | yes | yes | no | yes | no | no |
 | spawn helpers | teammates and subagents | foreground (teammate) / nested subagents | no | subagents | no | no |
 | open an incident | yes | yes | yes (a second bug) | yes | via its caller | via its caller |
@@ -43,6 +44,14 @@ Not separate agents, on purpose:
 | land on `main`, tell everyone to rebase | yes | no | no | no | no | no |
 | talk to the user | yes | via lead | via lead | via lead | no | no |
 | edit the enforcement layer | asks the user | no | no | no | no | no |
+
+**Tooling roles vs the rest (I-021).** Only the toolsmith changes tooling (`tools/`, `tests/`,
+`package.json`, `.githooks/`, `.claude/` except `.claude/agents/`), plus a fix owner's section 1
+self-fix in its own commit; they run the full `npm test`. Every other role, including those outside
+this table (bench authors, the architecture team in [`ARCH_TEAM.md`](ARCH_TEAM.md), management
+agents), never does, and runs `npm run test:unit` before a commit: its scope guard fails, naming the
+files, if the branch touched tooling anyway. Details and the lane rule: `CLAUDE.md` "Tooling is
+guarded by tests".
 
 The findings board (`tools/finding.mjs`, incident I-013) is the one shared store that read-only roles
 write to: a `bundle-mapper` or `fix-reviewer` posts a coupling, pitfall or technique it found (reviewers:

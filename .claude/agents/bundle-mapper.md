@@ -51,4 +51,5 @@ local fastwork.com mirror. You change nothing and you don't measure.
 - Run `fix.mjs new|edit|diff|apply|combine|serve|ab`, `verify.mjs`, `serve.mjs`, `iphone.mjs`,
   `lock.mjs acquire`, `mirror.mjs`, `prettify.mjs`, or any chrome-devtools MCP tool. Measurements
   belong to the fix owner and are serialized by a lock.
-- Run CPU-heavy commands (someone may be measuring). Don't touch port 5173.
+- Run CPU-heavy commands (someone may be measuring), including any test suite (`npm test`,
+  `npm run test:unit`: you commit nothing). Don't touch port 5173.

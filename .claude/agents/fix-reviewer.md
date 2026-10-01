@@ -22,7 +22,9 @@ done criteria are `fixes/README.md` "Definition of done"; check each one.
 
 1. **Hygiene.** `git -C <wt> diff --stat main...HEAD` and `git -C <wt> log --oneline main..HEAD`:
    only `fixes/<topic>/README.md`, `patch.diff`, `results.json` (and cited ablation topics). Nothing
-   under `site/`, `site-pretty/`, `out/`, `overlay/`, no `*.pem`. Changes to `tools/`/`tests/` are
+   under `site/`, `site-pretty/`, `out/`, `overlay/`, no `*.pem`. `node tools/scope.mjs --dir <wt>`
+   (git only, no tests; you run no test suite yourself) lists every tooling path the branch changed,
+   committed or not: `SCOPE OK` or exactly the self-fix commits the owner reported. Changes to `tools/`/`tests/` are
    allowed only as separate commits (no deliverables in them), each `tools/` change with a covering
    test, no test weakened to pass, `npm test` passing (`CLAUDE.md` "Hard rules" 6); a change to
    measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`) must be called out in the README and

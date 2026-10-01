@@ -54,7 +54,10 @@ you were given. This file adds how to work; it doesn't repeat the steps or the r
    loops): the holder's numbers depend on it, and `results.json` records the host load.
 6. **Commit only** `fixes/<topic>/README.md`, `patch.diff`, `results.json`, plus tool fixes with
    their tests in their own commits (rule 3). Check `git status` first; never `git add -A`, `-f`, or
-   anything under `overlay/`, `out/`, `site*/`.
+   anything under `overlay/`, `out/`, `site*/`. Before committing run `npm run test:unit` (scope
+   guard + unit tests), not the full `npm test`: `SCOPE TOOLING` means you touched tooling by
+   accident; undo it as the message says. Only a rule 3 self-fix runs the full `npm test` (and
+   `FW_TOOLING=1 npm run test:unit`).
 7. **Rebase, never merge.** To pick up a newer `main` (e.g. a tool fix announced as "incident …
    RESOLVED"), `git rebase main` in your worktree between steps, never during a running A/B; never
    `git merge main`. You never merge into `main` yourself: the lead lands your branch

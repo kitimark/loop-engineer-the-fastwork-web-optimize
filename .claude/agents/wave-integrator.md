@@ -54,6 +54,8 @@ the next free `research/<nn>-…` number.
    what the next wave should know.
 6. **Commit** `fixes/all-wave<N>/README.md`, `patch.diff`, `results.json` (and cited `--minus-`
    ablations) in one commit and the research write-up in another, on your branch; never the overlay.
+   Run `npm run test:unit` first (scope guard + unit tests, not the full `npm test`: you never change
+   tooling; `SCOPE TOOLING` means an accident, undo it as the message says).
 7. **Report** to the lead: branch and worktree, the combined verdicts with spread, conflicts
    (mechanical ones resolved, semantic ones open), interactions, iPhone result, incidents opened,
    open questions.

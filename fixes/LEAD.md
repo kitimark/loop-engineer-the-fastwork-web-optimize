@@ -85,7 +85,7 @@ flowchart TD
   **3-4 owners at a time** (the agent-teams docs suggest 3-5; the lock makes more pointless). A
   5-run A/B holds `chrome-measure` for about 5-6 minutes; a topic needs 2-3 of them (main run,
   desktop or a re-run after review), so 4 owners already queue about an hour of lock time, plus about
-  35 s per `npm test` a toolsmith or a landing runs under the lock. Run a longer wave rolling: when
+  75 s per `npm test` a toolsmith or a landing runs under the lock. Run a longer wave rolling: when
   an owner finishes, the next topic starts (wave 1 has 7 owners: start 3+6, 4, 5 and 1; then 8, 9, 11).
   Budget one toolsmith slot on top (two at most, on different files) and the integrator after the wave.
 - Teammates inherit your effort: `/effort high` before spawning teammates.
@@ -176,7 +176,7 @@ once passed in a worktree and hung in the main checkout, `7abd290`) and under th
 git -C <toolsmith worktree> rebase main
 git -C <toolsmith worktree> diff --stat main...HEAD              # only tools/, tests/; review them and their tests
 git switch --detach <toolsmith branch>
-node tools/lock.mjs run chrome-measure --owner land-i<nnn> --short --max-seconds 120 -- npm test
+node tools/lock.mjs run chrome-measure --owner land-i<nnn> --short --max-seconds 150 -- npm test
 git switch main && git merge --ff-only <toolsmith branch>
 node tools/incident.mjs resolve I-<nnn> --by lead --commit <sha> [--remeasure]   # prints the announcement
 ```
