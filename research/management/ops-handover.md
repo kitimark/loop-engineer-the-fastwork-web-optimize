@@ -3,7 +3,7 @@
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
 **mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **10:27Z**.
+snapshot), branch `mgmt-ops/docs-2`. Last update: **10:33Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +16,11 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:27Z**.
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **10:33Z** noinert NOT a winner either (y≈1960: control 102 vs noinert 98 ms; the frame now carries only 2 tabindex
+  writes -> cost is other IO-callback work). F-045 (y≈1250 scene gate) weakened by phone data (frames 35-37 ms, no flip
+  in-frame): no build. Timeline clock fix (Page.disable+enable before Timeline.start; de-devtools/de-safari) -> runner
+  1-min check, then a y≈1960 Timeline capture. AGENT_ROLES: naming `<role>-<topic>`, unique; general-purpose workaround.
 
 - **10:27Z** Lead: peer-to-peer mode, mgmt-ops = hub (F-046 directory above; AGENT_ROLES "Addresses and peer work").
   noinert (fix-nav-morph 213ca19, y≈1960 inert fix) queued right after the morph driver round. y≈1250 frame candidate
@@ -179,8 +184,14 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:27Z**.
    goal-hold A/A also shows ~78 fps → incident + A/A 93b4af2 vs 43e40ce in one hold.
 4. Caffeinate: restarted 10:07Z, runs to ~12:07Z → remind the lead at ~11:57Z (restart every 2 h until the user sets
    pmset).
-5. arch-finger researches OS-level touch simulation on the iPhone (WDA/XCUITest, safaridriver, simulator): its plan comes
-   via the lead; when it exists, morph/touch checks become scriptable.
+5. ts-gesture (WDA gesture tool, branch worktree-agent-a83a0f8d7c6fe96b6; applies once review-gesture-2 passes and the lead
+   lands it; the user's WDA setup is still pending): (a) `wda build` runs only inside its own NORMAL chrome-measure hold and
+   with the iphone lease, exactly `node tools/lock.mjs run chrome-measure --owner iphone-runner --max-seconds 600 -- node
+   tools/iphone.mjs wda build --owner iphone-runner` (not the short lane; xcodebuild capped at 540 s; refuses under any other
+   holder, incl. a short npm test). (b) Gesture summary key `pinReversals` is now `pin`: compare iphone-wave2's reversal
+   counts with `pin.excursions` (wave2 counted round trips; E1b: wave2 8, excursions 7, direction changes 13);
+   `pin.fight` = reversals while touching + reversals beyond the first after each lift; `pin.bounces` = lifts with exactly
+   one reversal.
 6. Backlog for mgmt-lead iteration 3 (none urgent): recheck pauses instead of contaminating; gate.since survives intervening
    holds; WindowServer counted as measured system in the gate (I-031 answer: steady other CPU 17-20 % = WindowServer +
    agent CLIs + iTerm; daemons tip it over 25 %); fewer concurrent agents during goal holds; verify has no measured load
@@ -214,7 +225,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `main` | lead: lands, resolves, reorders locks, spawns, user | alive |
 | `mgmt-ops-4` (ID a1176a675fec4336d) | ops hub, iPhone queue, DIRECTION, handover, land batches | alive |
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, controls, logger | alive |
-| `fix-nav-morph` (a277ea00c8773c1ea) | morph (gh, ghbn, R8/R5, R2), y≈1960 inert fix (noinert), N12 | alive, holds rebase |
+| `fix-nav-morph` (a277ea00c8773c1ea) | morph (gh, ghbn, R8/R5, R2), y≈1960 IO frame (src, noinert: no win), N12 | alive, holds rebase |
 | `fix-hero-exit` (a77e2ec753b6381fb) | hero window y 0-900: v2, h1, hero-B, people-o | stopped (wakes on message) |
 | fix-scroll-engine = ID `a1722cf5058e25591` | /10d, R2 bg-layers, R3a/b, y≈1250 scene gate candidate (F-045) | stopped (wakes on message) |
 | `ts-gesture` | WDA gesture tool (NEEDS-WORK; user setup pending) | alive |

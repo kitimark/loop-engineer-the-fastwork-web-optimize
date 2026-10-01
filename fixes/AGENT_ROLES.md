@@ -128,6 +128,21 @@ Sources: [sub-agents](https://code.claude.com/docs/en/sub-agents.md),
   4. **Long waits run in the background** (lock queues, holds, `incident.mjs wait`, phone recordings), so
      messages reach the agent mid-wait. Send peers what they need before the final report, which goes
      only to the spawner.
+  5. **Every spawn gets `name: <role>-<topic>`**: `fix-<topic>`, `ts-<incident or topic>`,
+     `review-<topic>`, `de-<area>`, `arch-<topic>`, `mgmt-ops-<N>`. Names are **unique per session**: a
+     reused name re-resolves to the newest agent (two such refusals on 2026-10-01), so pick a fresh one.
+  6. **Report your branch from your own worktree** (`git branch --show-current` there), never from the
+     git status in your context: every subagent inherits the session's starting git status, which names
+     another agent's branch (de-apple and arch-safari reported iphone-runner's branch on 2026-10-01).
+  - **Why agents went unnamed (verified by the lead, 10:3xZ):** after a context compaction the lead's
+    Agent schema no longer listed `name`, but the tool still accepts it (a probe spawn registered as
+    "probe-name"). The agent type is not the blocker: named general-purpose agents message each other
+    fine.
+  - **Why every agent is general-purpose:** the project types in `.claude/agents/` landed (2026-09-30
+    20:20Z) after the lead session started (17:05Z), and agent types load only at session start.
+    Workaround in this session: `general-purpose` + `name` + the role's model + "read
+    `.claude/agents/<role>.md` first" in the prompt. Long term, a fresh lead session loads the real types
+    (the user's decision).
 - **Frontmatter keys** (only `name` and `description` are required; unknown keys are silently
   ignored): `tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `skills`, `mcpServers`,
   `hooks`, `memory`, `background`, `omitClaudeMd`, `effort`, `isolation`, `color`, `initialPrompt`,

@@ -300,6 +300,12 @@ identical. A 41-51 ms frame at y≈1250 is in all four builds (unowned; fix-hero
 21/21, 0 src writes in scroll). **Correction (F-044):** the R3 logger capped at 12 events per frame; with src staged the
 frame shows one event, **the morph panel's `inert` removal at the IO edge** (3/3). The trigger is the panel leaving
 inert, not the img burst; fix-nav-morph's #2 item becomes "take the inert flip out of the scroll frame".
+**mw10e-noinert (iPhone, ~10:36Z): NOT a winner** (y≈1960: control 102 vs noinert 98 [95-99] ms; idle mount at y=0 not
+heavier). The frame now carries only 2 tabindex writes, so its cost is other IO-callback work (style breadth / layout /
+paint / composite) that the attribute logger can't see. Next: the iPhone Timeline clock fix (`Page.disable` +
+`Page.enable` before `Timeline.start`, from de-devtools/de-safari) to get per-frame style/layout/paint records on the
+phone, then one Timeline capture of that frame. **F-045** (y≈1250 = `.commission` scene gate) is weakened by phone data
+(those frames are 35-37 ms, no flip in-frame): no build.
 **Measurement protocol v2 (in progress, user request ~10:20Z):** arch-lead drafts
 `research/architecture/measurement-protocol-v2.md` (research -> investigate -> distinguish -> fix -> review) with inputs
 from the owners, ops and the devtools/safari notes; execution after the lead's approval; the current queue runs unchanged
