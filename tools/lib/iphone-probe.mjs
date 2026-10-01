@@ -6,11 +6,14 @@
 // Std probe, per rAF frame (the gap from the previous rAF timestamp to this one):
 //   frames[k] = [t, dt, yStart, yEnd, innerHeight, m, rafJsMs, probeMs, docH]
 //     t        rAF timestamp (page clock = performance.now(), 0.1 ms)
-//     dt       t[k] - t[k-1]. Phone thresholds in ms, no tick (k) forms (CLAUDE.md "Frame thresholds": Safari rAF
-//              runs at 60 Hz, its 1 ms stamps mark the rendering-update start and are not vsync-quantized): the
-//              summary counts dt > 50 and dt > 34, plus the counts at +-4 ms (dt > 46 / 54, dt > 30 / 38); a frame
-//              within 4 ms of 34 / 50 is near (near34 = 30 < dt <= 38, near50 = 46 < dt <= 54), and a verdict
-//              that differs across +-4 ms is "threshold-sensitive" (decided by tools/stats.mjs, not here). summary.rafHz (median dt) flags a 30 Hz page: Low Power Mode (lowPowerSuspect).
+//     dt       t[k] - t[k-1]. Phone thresholds in ms, no tick (k) forms (CLAUDE.md "Frame thresholds"): Safari's
+//              rAF runs at 60 Hz by WebKit default (PreferPageRenderingUpdatesNear60FPSEnabled, CONFIRMED,
+//              claims-audit §2.3), a hint: Core Animation picks the rate, finger runs reach ~80 Hz (F-071); its 1 ms
+//              stamps mark the rendering-update start and are not vsync-quantized. The summary counts dt > 50 and
+//              dt > 34, plus the counts at +-4 ms (dt > 46 / 54, dt > 30 / 38); a frame in (th - 4, th + 4],
+//              half-open, around 34 or 50 is near (near34 = 30 < dt <= 38, near50 = 46 < dt <= 54), and a verdict
+//              that differs across +-4 ms is "threshold-sensitive" (decided by tools/stats.mjs, not here).
+//              summary.rafHz (median dt) flags a 30 Hz page: Low Power Mode (lowPowerSuspect).
 //     yStart   yEnd of the previous frame
 //     yEnd     the scroll position from the y source (--y-source, window.__fwrOpts.ySource; recorded per run):
 //                raf        scrollY read in the probe's rAF callback (default). On WebKit a scrollY read with y != 0
