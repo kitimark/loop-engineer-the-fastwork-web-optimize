@@ -7,7 +7,7 @@
 diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -11820,3 +11820,7 @@
+@@ -11820,3 +11820,8 @@
      scroll-behavior: auto;
    }
  }
@@ -15,3 +15,4 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +/* ablation mw-b (diagnostic only): no per-frame blur in the morph (panel filter, backdrop re-blur) */
 +.start-selling-morph-panel { filter: none !important; }
 +.start-selling-morph-backdrop { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
++.start-selling-platform { filter: none !important; }

@@ -34,8 +34,10 @@ morph starts. If the morph starts while iOS is in the bottom bounce, then:
 |---|---|---|
 | mw-f-pinclamp | `s` clamped to [0, maxY] (`__pinY`), no pin while scrollY > maxY (iOS springs back itself) | candidate fix |
 | mw-g-pinclamp-osb | f + `overscroll-behavior-y: none` on html while the morph is active (set at start, cleared at end) | **candidate fix, first in line** |
+| mw-gb | g + b (render-cost ablation without the pin alternation) | ablation on the fix |
+| mw-ge | g + e | ablation on the fix |
 | mw-a-nopin | no `scrollTo` pin at all | ablation |
-| mw-b-noblur | panel `filter: blur(var)` and backdrop `backdrop-filter: blur(20px*(1-morph))` off (both radii change every morph frame) | ablation (render cost) |
+| mw-b-noblur | all three per-frame variable blurs off: panel `filter: blur(var)`, backdrop `backdrop-filter: blur(20px*(1-morph))`, and `.start-selling-platform` `filter: blur((1 - --morph-fade) * 12px)` (CSS 5423) | ablation (render cost) |
 | mw-e-nocols | morph panel image-column animations off | ablation (render cost) |
 | mw-c-prelayer | panel `will-change: transform, opacity, filter` from its idle mount (#13 pre-mounts it already) | ablation |
 | mw-d-passive | #6 v05 on aw1-10c | ablation / #6 |
@@ -62,6 +64,31 @@ pushes down, then 25 up):
 Plus a timeline of touch/wheel listener adds and removes with their passive flag. The `read` summary
 splits frames > 34/50 ms by morph active/inactive and for the slow ones gives rAF JS ms vs the rest
 (style/layout/paint/GPU), pin calls and touch events.
+
+## Finger data so far (relayed)
+
+E1b = aw1-10c, warm phone, user says "laggy":
+- morph active 949 frames: p50 24 ms, p95 73 ms, 94 frames > 50 ms, worst 230 ms;
+- the 5220 ↔ 5334 alternation is present, 73 pin scrollTo calls;
+- 431/470 touchmoves preventDefault-ed;
+- the slow frames are **rendering**: median rAF JS 0 ms on slow frames.
+
+So the pin fix (g) alone is not expected to be enough; b/e name the render cost.
+
+## Composited morph (N2), if b names the blur
+
+Each morph frame currently changes:
+- three blur radii: panel `filter`, backdrop `backdrop-filter`, platform `filter`. Each change means a full re-blur of a large area;
+- the backdrop's `width/height/border-radius/background`, which means layout + repaint of a big box.
+
+The plan:
+1. **Blur:** fixed radii, faded with opacity instead of radius:
+   - the panel without `filter`, its entry carried by `opacity` + `transform: scale` (both composited);
+   - the backdrop blur as a separate fixed `blur(20px)` layer whose `opacity` = 1 - morph;
+   - the platform's blur dropped, keeping its `opacity` fade.
+2. **Size:** if b alone doesn't reach 60 fps, the size morph moves to transform. A full-size panel box is
+   scaled from the pill with `transform: scale(x, y)`. Corner radius is kept by a counter-scaled inner, or the
+   pill is cross-faded with the panel. That is more work and a visual risk, so it comes only after b's verdict.
 
 ## Next steps
 
