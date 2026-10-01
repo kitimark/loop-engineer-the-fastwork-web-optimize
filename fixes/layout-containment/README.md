@@ -154,8 +154,15 @@ carousel as a layout root even with `contain: strict`; that says nothing about W
 
 Phone question (merged P14 boundary block, sent to mgmt-ops-5 at 12:5xZ; agreed by de-pm-hero, arch-claims and fix-hero-exit):
 - Arms: C aw1-10e, V1 st4-strict, V2 fix-hero-exit's re-contain (`#people{contain: layout size; height: 100svh}` at ≤860 px).
-- Order: 3 warm-ups (one per arm), then 9 counted runs C V1 V2 · V2 C V1 · V1 V2 C, then 1 uncounted st4-rotoff run.
-- Driver W at 430x775: 6 s idle at y 0, then top → y≥2500, with a Timeline on every run.
+- Order:
+  1. 3 warm-ups, one per arm.
+  2. 1 Timeline-OFF control sentinel. Skip it if Timeline-on control data with C ≥44 already exists.
+  3. 9 counted runs with Timeline on in every arm: C V1 V2 · V2 C V1 · V1 V2 C.
+  4. 1 Timeline-OFF control sentinel at the block end.
+  5. 1 uncounted st4-rotoff run.
+- Sentinels: only the Timeline-OFF runs carry the ≥58/≥44 rule (the lead's decision). The Timeline-on C fps is
+  information only. Phone time ≈ 42-43 min including cooling.
+- Driver W at 430x775: 6 s idle at y 0, then top → y≥2500, with a Timeline on every counted run.
 - Frame columns: dt>50 / dt>34 with the ±4 ms counts (CLAUDE.md 668b612).
 - Read per rotator tick and per reveal flip: the Layout root quad (viewport, carousel or #people) and its duration.
 - The discriminating read:
