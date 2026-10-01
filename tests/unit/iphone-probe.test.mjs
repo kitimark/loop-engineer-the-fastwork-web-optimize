@@ -237,6 +237,42 @@ test('probe v3 on a 1 ms page clock: the long frame\'s batch ties with the next 
   assert.equal(doc.summary.slow.find((x) => x.frame === k).mut.src, 21);
 });
 
+test('probe v3, pre-rAF work: a scroll handler\'s batch (before the update\'s rAF callbacks) lands in that update\'s row k+1, not one row early', async () => {
+  const page = createPage({ scrollHandlerY: 1700 });
+  const { raw } = await runInPage('window', { ...WIN, tops: [] }, { page });
+  assert.equal(raw.err, null);
+  const n = MT.length;
+  const stamp = page.win.__scrollMutStamp;
+  assert.ok(typeof stamp === 'number', 'the page scroll handler mutated');
+  const k = raw.frames.findIndex((x) => x[0] === Math.round(stamp * 10) / 10);
+  assert.ok(k > 0, 'the update whose scroll step ran the handler has a probe row (its stamp)');
+  const cr = raw.crossings.find((c) => c[1] === 'class' && c[3] === '+is-scrolled');
+  assert.ok(cr, 'the crossing');
+  assert.equal(cr[7], null, 'recorded while preRaf: seen = null');
+  assert.ok(cr[0] >= raw.frames[k][0], 'delivered after the update\'s stamp');
+  const b = raw.batches.find((x) => x[0] === cr[0] && x[1 + MT.indexOf('class')] >= 1);
+  assert.ok(b && b[2 + n] === null, 'its batch carries seen = null too');
+  assert.equal(P.frameIndexAt(raw.frames, raw.frames[k - 1][0]), k, 'the previous stamp (what seen would have been) is row k: one row early');
+  const doc = P.buildDoc(raw);
+  assert.equal(doc.crossings.find((c) => c.kind === 'class' && c.value === '+is-scrolled').frame, k + 1, 'placed in row k+1, with the rest of that update');
+  const others = raw.batches.filter((x) => x[2 + n] !== null);
+  assert.ok(others.length > 10, 'batches from rAF callbacks keep their seen');
+});
+
+test('probe v3: the pre-rAF listeners are passive capture listeners on window (scroll, resize, scrollend) and on visualViewport (resize, scroll), removed by P.stop()', () => {
+  const page = createPage();
+  try {
+    const win0 = page.win.__winListeners().length;
+    assert.equal(page.evaluate(P.PROBE_STD_JS), 'installed');
+    const added = page.win.__winListeners().slice(win0);
+    assert.deepEqual(added.map((l) => l.join(' ')).sort(), ['resize true true', 'scroll true true', 'scrollend true true'], '[type, capture, passive]');
+    assert.deepEqual(page.win.visualViewport.listeners.map((l) => l.type).sort(), ['resize', 'scroll']);
+    page.evaluate('window.__fwr.stop()');
+    assert.equal(page.win.__winListeners().length, win0);
+    assert.equal(page.win.visualViewport.listeners.length, 0);
+  } finally { page.stop(); }
+});
+
 test('std probe + window driver: the y~1960 frame shows all 21 src writes, the inert flip, the scene flip and its rAF JS, uncapped', async () => {
   const { raw, page } = await runInPage('window', WIN, { customStateJs: `({ imgs: document.querySelectorAll('img').length })` });
   assert.equal(raw.err, null);

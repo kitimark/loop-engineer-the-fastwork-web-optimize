@@ -5,7 +5,9 @@
 // checkpoint after each one, as HTML's "clean up after running script" does, so a MutationObserver batch from a
 // page callback is delivered before the next callback runs), smooth scrollBy, instant scrollTo,
 // contentvisibilityautostatechange on document, performance.getEntriesByType('resource'), window scroll events
-// (fired before the frame's rAF callbacks when scrollY changed), document.fonts, matchMedia, screen.
+// (fired before the frame's rAF callbacks when scrollY changed, after the frame's stamp is taken, capture
+// listeners first, a microtask checkpoint after each, as WebKit's rendering update does), a visualViewport
+// (listeners only), document.fonts, matchMedia, screen.
 // Every read of window.scrollY is counted (win.__scrollYReads), and every read of documentElement.scrollHeight
 // (win.__scrollHeightReads, win.__scrollHeightReadsAtY0 for those at scrollY 0), to test which y source reads what.
 // A simplification, not a browser: no layout at all, so the counts are reads, not forced layouts.
@@ -13,6 +15,9 @@
 // tieAfterLong: the frame after a long one (> 16 ms) gets the stamp of the last observer delivery, and the page
 // clock reads that same value inside an observer callback: a batch and the next frame's stamp tie exactly, the
 // case that put a batch in the wrong row when batches were placed by delivery time (probe v2).
+// scrollHandlerY: the page has a window scroll listener (bubble, registered before the probe) that adds
+// `is-scrolled` to the nav on the first scroll event with scrollY >= scrollHandlerY and keeps that frame's stamp
+// in win.__scrollMutStamp: work that runs before the frame's rAF callbacks.
 //
 // The page's own behaviour (all through window.requestAnimationFrame looked up at call time, so the probe's
 // wrapper sees it, like the real Svelte runtime):
@@ -46,7 +51,7 @@ function matches(el, sel) {
   });
 }
 
-export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY = 900, lateY = 1700, busyMs = 90, clockMs = 0, tieAfterLong = false, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null } = {}) {
+export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY = 900, lateY = 1700, busyMs = 90, clockMs = 0, tieAfterLong = false, scrollHandlerY = null, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null } = {}) {
   const t0 = performance.now();
   let inMO = null, lastDelivery = null;
   const now = () => { if (inMO !== null) return inMO; const v = performance.now() - t0; return clockMs ? Math.floor(v / clockMs) * clockMs : v; };
@@ -126,8 +131,9 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
     innerWidth: 430, innerHeight: 815, devicePixelRatio: 3,
     navigator: { userAgent: 'FakeSafari/1.0 (fake-run-dom)', hardwareConcurrency: 6 },
     matchMedia: (q) => ({ matches: q === '(prefers-color-scheme: dark)' }), Date, screen: { width: 430, height: 932 },
-    addEventListener: (type, fn, o) => winListeners.push({ type, fn, passive: !!(o && o.passive) }),
+    addEventListener: (type, fn, o) => winListeners.push({ type, fn, passive: !!(o && o.passive), capture: typeof o === 'object' ? !!(o && o.capture) : !!o }),
     removeEventListener: (type, fn) => { const i = winListeners.findIndex((l) => l.type === type && l.fn === fn); if (i >= 0) winListeners.splice(i, 1); },
+    visualViewport: { listeners: [], addEventListener(type, fn) { this.listeners.push({ type, fn }); }, removeEventListener(type, fn) { const i = this.listeners.findIndex((l) => l.type === type && l.fn === fn); if (i >= 0) this.listeners.splice(i, 1); } },
     location: { href, origin: new URL(href).origin, reload: () => { win.__reloaded = true; if (onReload) onReload(); } },
     document, MutationObserver, URL, setTimeout, clearTimeout, queueMicrotask,
     performance: { now, mark: () => {}, getEntriesByType: (t) => (t === 'resource' ? resources.map((name, i) => ({ name, initiatorType: 'script', startTime: 10 + i, responseEnd: 20 + i, transferSize: 300, encodedBodySize: 25 })) : []) },
@@ -159,6 +165,9 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
     win.requestAnimationFrame(engine);
   };
   win.requestAnimationFrame(engine);
+  win.__winListeners = () => winListeners.map((l) => [l.type, l.capture, l.passive]);
+  let curStamp = null, scrollMutDone = false;
+  if (scrollHandlerY !== null) win.addEventListener('scroll', () => { if (!scrollMutDone && sy >= scrollHandlerY) { scrollMutDone = true; win.__scrollMutStamp = curStamp; nav.classList.add('is-scrolled'); } }, { passive: true });
   if (morph) {
     win.__fwMorphDrive = ({ hold = 2000, cycles = 3 } = {}) => {
       const f = []; let m = 0, last = now(), on = true;
@@ -186,9 +195,14 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
   const tick = async () => {
     const start = now();
     if (smooth) { const d = smooth.to - sy; if (Math.abs(d) <= Math.abs(smooth.step) || smooth.step === 0) { sy = smooth.to; smooth = null; } else sy = Math.round(sy + smooth.step); }
-    if (sy !== lastScrollFired) { lastScrollFired = sy; for (const l of winListeners.filter((x) => x.type === 'scroll')) l.fn({ type: 'scroll' }); }
+    const t = tieAfterLong && prevLong && lastDelivery !== null ? lastDelivery : now(); // the update's stamp, taken first
+    curStamp = t;
+    if (sy !== lastScrollFired) {
+      lastScrollFired = sy;
+      const ls = winListeners.filter((x) => x.type === 'scroll');
+      for (const l of [...ls.filter((x) => x.capture), ...ls.filter((x) => !x.capture)]) { l.fn({ type: 'scroll' }); await null; } // microtask checkpoint per listener
+    }
     const q = raf; raf = [];
-    const t = tieAfterLong && prevLong && lastDelivery !== null ? lastDelivery : now();
     for (const cb of q) { try { cb(t); } catch (e) { win.__errors = (win.__errors || 0) + 1; } await null; } // microtask checkpoint per callback
     prevLong = now() - start > 16;
     if (!stopped) timer = setTimeout(tick, Math.max(1, 8 - (now() - start)));
