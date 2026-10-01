@@ -234,7 +234,7 @@ export async function gatherLive() {
 
 const stageView = (s) => ({ code: s, name: STAGES[s]?.name || s, plain: STAGES[s]?.plain || '', index: STAGE_ORDER.indexOf(s) });
 
-function itemView(it, ledger) {
+function itemView(it, ledger, statusLinks = new Map()) {
   const checks = (it.checks || []).map((c) => {
     const row = ledger.get(c.id);
     const curated = (c.result || '').trim();
@@ -250,6 +250,7 @@ function itemView(it, ledger) {
     fixes: it.fixes || null, best: it.best || [], felt: it.felt ? { ...it.felt, plain: FELT_PLAIN[it.felt.answer] || it.felt.answer } : null, gate: it.gate || null, next: it.next || null,
     owner: it.owner || null, checks, why: it.why || null, details: it.details || [],
     attention: checks.some((c) => c.newResult),
+    status: statusLinks.get(it.id) || null, // the linked workstream's live state on the status board (status.mjs)
   };
 }
 
@@ -257,9 +258,9 @@ function itemView(it, ledger) {
  * The page / CLI model from the curated data and the live sources. Pure: every input passed in.
  * {now, summary, goal, complaints, changes, live, sections: [{key, label, items}], upcoming, waiting}
  */
-export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now() } = {}) {
+export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map() } = {}) {
   const p = errors.length && !progress ? null : progress;
-  const items = (p?.items || []).map((it) => itemView(it, ledger));
+  const items = (p?.items || []).map((it) => itemView(it, ledger, statusLinks));
   const areaRank = (a) => Object.keys(AREAS).indexOf(a);
   const byArea = (a, b) => areaRank(a.area) - areaRank(b.area) || b.stage.index - a.stage.index;
   const pick = (states) => items.filter((i) => states.includes(i.state)).sort(byArea);
@@ -297,7 +298,10 @@ export function buildView({ progress, errors = [], ledger = new Map(), live = {}
 /** Everything from the real sources, for the server and the CLI. */
 export async function currentView({ now = Date.now() } = {}) {
   const { data, errors } = readProgress();
-  return buildView({ progress: data, errors, ledger: readLedger(), live: await gatherLive(), now });
+  const live = await gatherLive();
+  let statusLinks = new Map();
+  try { const S = await import('./status.mjs'); statusLinks = S.progressLinks(S.buildStatusView({ items: S.list(), live, now })); } catch (e) { live.errors.push(`status board: ${e.message}`); }
+  return buildView({ progress: data, errors, ledger: readLedger(), live, now, statusLinks });
 }
 
 // ---- text --------------------------------------------------------------------------------------------
@@ -340,6 +344,7 @@ export function renderText(v, { details = false } = {}) {
     for (const it of sec.items) {
       const stage = it.state === 'dropped' ? `stopped at stage ${it.stage.code}` : `stage ${it.stage.code}: ${it.stage.plain}`;
       L.push(`  [${it.areaLabel}] ${it.title}  (${stage}${it.owner ? `; ${it.owner}` : ''})`);
+      if (it.status) L.push(`    now: ${it.status.state} (${it.status.plain})${it.status.waits.length ? `; ${it.status.waits.join('; ')}` : ''}${it.status.stale ? '; not updated for a while' : ''} [status board: ${it.status.id}]`);
       if (it.fixes) L.push(`    what it fixes: ${it.fixes}`);
       for (const b of it.best) L.push(`    best: ${bestText(b)}`);
       if (it.felt) L.push(`    felt: ${FELT_PLAIN[it.felt.answer] || it.felt.answer}${it.felt.text ? ` (${it.felt.text})` : ''}`);

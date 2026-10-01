@@ -51,6 +51,9 @@
 //   node tools/console.mjs progress --check [--file <path>] # validate a PROGRESS.json (schema + no personal data); exit 1 on errors
 //        # mgmt-ops keeps fixes/PROGRESS.json current (schema: header of tools/lib/progress.mjs)
 //
+// Status board (read-only; the same content as the page's Status tab, /status; agents report with tools/status.mjs):
+//   node tools/console.mjs status [--all] [--json]          # every workstream: priority, state, waits, owner, note
+//
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -60,6 +63,7 @@ import { DEFAULT_REMIND_MIN } from './lib/console-notify.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './lib/wait.mjs';
 import { autoPortBase } from './lib/paths.mjs';
 import { currentView, renderText, readProgress } from './lib/progress.mjs';
+import { currentStatusView, renderText as statusText } from './lib/status.mjs';
 
 const argv = process.argv.slice(2);
 const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file'];
@@ -148,6 +152,11 @@ async function main() {
     }
     const v = await currentView();
     console.log(flag('json') ? JSON.stringify(v, null, 1) : renderText(v, { details: flag('details') }));
+    return 0;
+  }
+  if (cmd === 'status') {
+    const v = await currentStatusView();
+    console.log(flag('json') ? JSON.stringify(v, null, 1) : statusText(v, { all: flag('all') }));
     return 0;
   }
   if (!arg) throw new Error(`usage: node tools/console.mjs ${cmd} <id> … (see the header of tools/console.mjs)`);

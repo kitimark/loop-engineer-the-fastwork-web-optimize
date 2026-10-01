@@ -80,6 +80,7 @@ details li { margin: 3px 0; color: var(--muted); word-break: break-word; }
 .dropped .item h3 { font-size: 16px; }
 .empty { color: var(--muted); }
 .tablewrap { overflow-x: auto; }
+section[data-item] { scroll-margin-top: 80px; }
 </style>
 </head>
 <body>
@@ -144,10 +145,11 @@ function detailsBox(key, summary, lines) {
 }
 
 function itemCard(it, compact) {
-  var card = el('section', { class: 'card item', 'aria-label': it.title });
+  var card = el('section', { class: 'card item', 'aria-label': it.title, 'data-item': it.id });
   card.appendChild(el('div', { class: 'meta' },
     el('span', { class: 'chip', text: it.areaLabel }),
     it.attention ? el('span', { class: 'chip bad', text: 'new result' }) : null,
+    it.status ? el('a', { class: 'chip' + (it.status.stale ? ' warn' : ''), href: '/status#' + encodeURIComponent(it.status.id), title: it.status.plain + (it.status.waits.length ? ' · ' + it.status.waits.join(' · ') : ''), text: 'now: ' + it.status.state + (it.status.waits.length ? ' · ' + it.status.waits[0] : '') }) : null,
     it.owner ? el('span', { text: 'owner: ' + it.owner }) : null));
   card.appendChild(el('h3', { text: it.title }));
   if (!compact) {
@@ -246,12 +248,21 @@ function render(v) {
   }
 }
 
-var sig = '';
+var sig = '', hashDone = false;
+// /progress#<item id> (linked from the status board): scroll to that item once
+function revealHash() {
+  if (hashDone || !/^#[a-z0-9][a-z0-9-]{0,40}$/.test(location.hash)) return;
+  var sec = document.querySelector('section[data-item="' + location.hash.slice(1) + '"]');
+  if (!sec) return;
+  hashDone = true;
+  sec.scrollIntoView({ block: 'start' });
+  sec.classList.add('flash');
+}
 function load() {
   return fetch('/api/progress', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (v) {
     document.getElementById('upd').className = 'sub';
     var s = JSON.stringify(v, function (k, x) { return k === 'now' || k === 'ageMin' ? undefined : x; });
-    if (s !== sig) { sig = s; render(v); }
+    if (s !== sig) { sig = s; render(v); revealHash(); }
     else document.getElementById('upd').textContent = document.getElementById('upd').textContent.replace(/live \S+$/, 'live ' + hhmm(v.now));
   }).catch(function () {
     var u = document.getElementById('upd'); u.textContent = 'not connected: is console.mjs serve running?'; u.className = 'sub status off';

@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status board</title>
+<link rel="stylesheet" href="/console-nav.css">
+<style>
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e3e1da;
+  --accent: #2f5bd3; --accent-ink: #ffffff; --accent-soft: #e8eefc;
+  --ok: #23824a; --ok-soft: #e4f3ea; --bad: #c62f2f; --bad-soft: #fbe9e7; --warn: #8a5a00; --warn-soft: #fdf3dc;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161716; --card: #202221; --ink: #ecebe6; --muted: #9b9a93; --line: #34362f;
+    --accent: #7c9bff; --accent-ink: #0f1424; --accent-soft: #232b45;
+    --ok: #5cc68a; --ok-soft: #1d3326; --bad: #ff6b6b; --bad-soft: #3a2020; --warn: #f0c060; --warn-soft: #3a3220;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161716; --card: #202221; --ink: #ecebe6; --muted: #9b9a93; --line: #34362f;
+  --accent: #7c9bff; --accent-ink: #0f1424; --accent-soft: #232b45;
+  --ok: #5cc68a; --ok-soft: #1d3326; --bad: #ff6b6b; --bad-soft: #3a2020; --warn: #f0c060; --warn-soft: #3a3220;
+  --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 80px; }
+header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+header h1 { font-size: 22px; margin: 0; font-weight: 650; }
+.sub { color: var(--muted); font-size: 14px; flex: 1 1 240px; }
+.status.off { color: var(--bad); font-weight: 600; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.banner { border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; background: var(--warn-soft); font-size: 15px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.you { border-color: var(--accent); }
+.you h2 { font-size: 16px; margin: 0 0 6px; }
+.you ul { margin: 0; padding-left: 18px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; }
+.filters .lbl { font-size: 13px; color: var(--muted); margin-right: 2px; }
+.filters button { font: inherit; font-size: 14px; cursor: pointer; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 4px 12px; min-height: 34px; }
+.filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.filters .n { font-variant-numeric: tabular-nums; opacity: .75; margin-left: 4px; }
+.tablewrap { overflow-x: auto; }
+table.board { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); font-size: 15px; }
+table.board th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 650; padding: 10px 10px; border-bottom: 1px solid var(--line); }
+table.board td { padding: 10px; vertical-align: top; border-bottom: 1px solid var(--line); }
+table.board tr:last-child td { border-bottom: 0; }
+td.prio { width: 56px; }
+.pr { display: inline-block; min-width: 36px; text-align: center; font-weight: 700; border-radius: 8px; padding: 2px 6px; background: var(--accent-soft); font-variant-numeric: tabular-nums; }
+.pr.p1 { background: var(--accent); color: var(--accent-ink); }
+.pr.none { background: transparent; color: var(--muted); font-weight: 400; }
+.title { font-weight: 650; }
+.meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 2px 0 4px; font-size: 12px; color: var(--muted); }
+.chip { display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); text-decoration: none; }
+.chip.k { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.chip.you { background: var(--accent); color: var(--accent-ink); }
+.chip.block { background: var(--bad-soft); }
+.chip.live { background: var(--ok-soft); }
+.chip.self { background: var(--warn-soft); }
+.line { font-size: 14px; margin-top: 2px; }
+.line b { color: var(--muted); font-weight: 600; }
+.st { font-weight: 650; }
+.st.working { color: var(--ok); }
+.st.waiting { color: var(--warn); }
+.st.finished, .st.parked, .st.queued { color: var(--muted); }
+.plain { font-size: 13px; color: var(--muted); }
+.flag { font-size: 13px; color: var(--bad); }
+.upd { white-space: nowrap; font-size: 14px; }
+.stale { display: inline-block; margin-top: 2px; font-size: 12px; font-weight: 650; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 0 6px; }
+.empty { color: var(--muted); padding: 18px; text-align: center; }
+details.legend { margin-top: 16px; font-size: 14px; }
+details.legend summary { cursor: pointer; color: var(--muted); }
+details.legend dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 8px 0 0; }
+details.legend dt { font-weight: 650; }
+details.legend dd { margin: 0; color: var(--muted); }
+tr[data-item] { scroll-margin-top: 80px; }
+@keyframes row-flash { 0%, 60% { background: var(--accent-soft); } 100% { background: transparent; } }
+tr.flash td { animation: row-flash 2.5s ease-out 1; }
+@media (prefers-reduced-motion: reduce) { tr.flash td { animation: none; background: var(--accent-soft); } }
+/* phones: one card per row */
+@media (max-width: 720px) {
+  table.board, table.board tbody, table.board tr, table.board td { display: block; width: 100%; }
+  table.board thead { display: none; }
+  table.board { border: 0; background: transparent; box-shadow: none; }
+  table.board tr { background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 10px; padding: 6px 4px; }
+  table.board td { border: 0; padding: 4px 10px; }
+  table.board td[data-label]:not(.wk):not(.prio)::before { content: attr(data-label) ": "; color: var(--muted); font-size: 13px; }
+  td.prio { width: auto; }
+}
+</style>
+</head>
+<body>
+<!--console-menu-->
+<div class="wrap">
+  <header>
+    <h1>Who is doing what</h1>
+    <span class="sub" id="upd">loading…</span>
+  </header>
+  <div id="banners"></div>
+  <div id="you"></div>
+  <div class="filters" id="fgroup" role="group" aria-label="Show by state"></div>
+  <div class="filters" id="fkind" role="group" aria-label="Show by kind"></div>
+  <main id="main"></main>
+  <details class="legend" id="legend"><summary>What the states mean</summary><dl id="legend-dl"></dl></details>
+</div>
+<script src="/console-nav.js"></script>
+<script>
+'use strict';
+// The status board (ts-status-board): every workstream with its priority (set by the lead), state, what it waits on
+// (what the agent reported plus what the console sees: Chrome/phone queues, your steps, blocking problems), owner,
+// last update and next step. Read-only; data from GET /api/status every 5 s. Text only (textContent), never HTML.
+function el(tag, attrs) {
+  var n = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    var v = attrs[k];
+    if (v === undefined || v === null || v === false) continue;
+    if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else n.setAttribute(k, v === true ? '' : v);
+  }
+  for (var i = 2; i < arguments.length; i++) {
+    var c = arguments[i];
+    if (c === undefined || c === null || c === false) continue;
+    n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return n;
+}
+function hhmm(iso) { return iso ? iso.slice(11, 16) + 'Z' : '?'; }
+function ago(min) { if (min === null || min === undefined) return ''; if (min < 1) return 'just now'; if (min < 60) return min + ' min ago'; return Math.floor(min / 60) + ' h ' + (min % 60) + ' min ago'; }
+function dur(min) { if (min === null || min === undefined) return ''; if (min < 1) return 'under a minute'; if (min < 60) return min + ' min'; return Math.floor(min / 60) + ' h ' + (min % 60) + ' min'; }
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+var SLUG = /^[a-z0-9][a-z0-9-]{0,40}$/, STEP = /^C-\d{1,6}$/;
+var GROUP_FILTERS = [['active', 'Active'], ['working', 'Working'], ['waiting', 'Waiting'], ['queued', 'Not started'], ['parked', 'Parked'], ['finished', 'Finished'], ['all', 'All']];
+var fGroup = store('status-group') || 'active', fKind = store('status-kind') || 'all';
+var last = null, hashDone = false;
+
+function groupOk(v) { return fGroup === 'all' || (fGroup === 'active' ? v.group !== 'finished' : v.group === fGroup); }
+function kindOk(v) { return fKind === 'all' || v.kind === fKind; }
+
+function filterBar(box, list, cur, count, set) {
+  box.replaceChildren(el('span', { class: 'lbl', text: box.getAttribute('aria-label') + ':' }));
+  list.forEach(function (f) {
+    var b = el('button', { type: 'button', 'aria-pressed': String(cur === f[0]) }, f[1], el('span', { class: 'n', text: String(count(f[0])) }));
+    b.addEventListener('click', function () { set(f[0]); render(last); });
+    box.appendChild(b);
+  });
+}
+
+function waitChips(v) {
+  var box = el('div', { class: 'meta' });
+  if (v.waiting) box.appendChild(el('span', { class: 'chip ' + (v.waiting.kind === 'user' ? 'you' : 'self'), title: 'reported by the owner', text: v.waiting.plain }));
+  v.derived.forEach(function (d) {
+    var cls = d.kind === 'user' ? 'you' : d.kind === 'incident' ? 'block' : d.kind === 'using' ? 'live' : '';
+    if (d.kind === 'user' && STEP.test(d.ref || '')) box.appendChild(el('a', { class: 'chip you', href: '/#' + d.ref, text: d.plain }));
+    else box.appendChild(el('span', { class: 'chip ' + cls, title: 'seen live by the console', text: d.plain }));
+  });
+  if (!box.childNodes.length) box.appendChild(el('span', { class: 'plain', text: '–' }));
+  return box;
+}
+
+function row(v) {
+  var pr = v.priority ? el('span', { class: 'pr' + (v.priority === 1 ? ' p1' : ''), title: 'priority, set by the lead', text: '#' + v.priority }) : el('span', { class: 'pr none', title: 'not ranked yet', text: '–' });
+  var wk = el('td', { class: 'wk', 'data-label': 'Workstream' },
+    el('div', { class: 'title', text: v.title }),
+    el('div', { class: 'meta' }, el('span', { class: 'chip k', text: v.kindLabel }), el('span', { text: v.id }),
+      v.progress && SLUG.test(v.progress) ? el('a', { href: '/progress#' + v.progress, text: 'fix progress' }) : null));
+  if (v.note) wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Now: ' }), v.note));
+  if (v.next) wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Next: ' }), v.next));
+  v.flags.forEach(function (f) { wk.appendChild(el('div', { class: 'flag', text: f })); });
+  var st = el('td', { 'data-label': 'State' },
+    el('div', { class: 'st ' + v.group, text: v.state + (v.group !== 'finished' && v.stateForMin !== null ? ' · ' + dur(v.stateForMin) : '') }),
+    el('div', { class: 'plain', text: v.statePlain }));
+  var upd = el('td', { class: 'upd', 'data-label': 'Updated' }, el('div', { text: ago(v.ageMin) }),
+    v.updatedBy && v.updatedBy !== v.owner ? el('div', { class: 'plain', text: 'by ' + v.updatedBy }) : null,
+    v.stale ? el('div', { class: 'stale', title: 'no update for more than ' + dur(last.staleAfterMin), text: 'not updated' }) : null);
+  return el('tr', { 'data-item': v.id },
+    el('td', { class: 'prio', 'data-label': 'Priority' }, pr), wk, st,
+    el('td', { 'data-label': 'Waiting on' }, waitChips(v)),
+    el('td', { 'data-label': 'Owner', text: v.owner }), upd);
+}
+
+function render(v) {
+  if (!v) return;
+  var c = v.counts;
+  var bits = [c.working + ' working', c.waiting + ' waiting'];
+  if (c.queued) bits.push(c.queued + ' not started');
+  if (c.waitingOnYou) bits.push(c.waitingOnYou + ' waiting on you');
+  if (c.stale) bits.push(c.stale + ' not updated for ' + dur(v.staleAfterMin));
+  document.getElementById('upd').textContent = bits.join(' · ') + ' · live ' + hhmm(v.now);
+  document.getElementById('upd').className = 'sub';
+  var ban = document.getElementById('banners');
+  ban.replaceChildren();
+  v.liveErrors.forEach(function (e) { ban.appendChild(el('div', { class: 'banner', text: 'A live source is unavailable: ' + e })); });
+
+  var you = document.getElementById('you');
+  you.replaceChildren();
+  var mine = v.items.filter(function (x) { return x.waitingOnYou && x.group !== 'finished'; });
+  if (mine.length) {
+    var ul = el('ul');
+    mine.forEach(function (x) {
+      var what = [];
+      if (x.waiting && x.waiting.kind === 'user') what.push(x.waiting.plain);
+      x.derived.forEach(function (d) { if (d.kind === 'user') what.push(d.plain); });
+      ul.appendChild(el('li', null, el('b', { text: x.title + ': ' }), what.join('; ')));
+    });
+    you.appendChild(el('section', { class: 'card you', 'aria-label': 'Waiting on you' }, el('h2', { text: 'Waiting on you' }), ul,
+      el('div', { class: 'plain' }, 'Steps are on ', el('a', { href: '/', text: 'Your steps' }), '; anything else, tell the lead.')));
+  }
+
+  filterBar(document.getElementById('fgroup'), GROUP_FILTERS, fGroup,
+    function (g) { return v.items.filter(function (x) { return kindOk(x) && (g === 'all' || (g === 'active' ? x.group !== 'finished' : x.group === g)); }).length; },
+    function (g) { fGroup = g; store('status-group', g); });
+  filterBar(document.getElementById('fkind'), [['all', 'All kinds']].concat(v.kinds.map(function (k) { return [k.key, k.label]; })), fKind,
+    function (k) { return v.items.filter(function (x) { return groupOk(x) && (k === 'all' || x.kind === k); }).length; },
+    function (k) { fKind = k; store('status-kind', k); });
+
+  var shown = v.items.filter(function (x) { return groupOk(x) && kindOk(x); });
+  var m = document.getElementById('main');
+  m.replaceChildren();
+  if (!shown.length) { m.appendChild(el('div', { class: 'card empty', text: v.items.length ? 'Nothing in this view. Try "All".' : 'No workstreams on the board yet.' })); }
+  else {
+    var head = el('tr');
+    ['Priority', 'Workstream', 'State', 'Waiting on', 'Owner', 'Updated'].forEach(function (h) { head.appendChild(el('th', { scope: 'col', text: h })); });
+    var tb = el('tbody');
+    shown.forEach(function (x) { tb.appendChild(row(x)); });
+    m.appendChild(el('div', { class: 'tablewrap' }, el('table', { class: 'board' }, el('thead', null, head), tb)));
+  }
+  var dl = document.getElementById('legend-dl');
+  if (!dl.childNodes.length) v.states.forEach(function (s) { dl.append(el('dt', { text: s.key }), el('dd', { text: s.plain })); });
+  revealHash();
+}
+
+// /status#<id> (linked from the progress page): show and flash that row once
+function revealHash() {
+  if (hashDone || !SLUG.test(location.hash.slice(1))) return;
+  var id = location.hash.slice(1);
+  var item = last.items.filter(function (x) { return x.id === id; })[0];
+  if (!item) return;
+  if (!groupOk(item) || !kindOk(item)) { fGroup = 'all'; fKind = 'all'; hashDone = true; render(last); hashDone = false; }
+  var tr = document.querySelector('tr[data-item="' + id + '"]');
+  if (!tr) return;
+  hashDone = true;
+  tr.scrollIntoView({ block: 'center' });
+  tr.classList.add('flash');
+}
+
+var sig = '';
+function load() {
+  return fetch('/api/status', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (v) {
+    var s = JSON.stringify(v, function (k, x) { return k === 'now' ? undefined : x; });
+    last = v;
+    if (s !== sig) { sig = s; render(v); }
+    else document.getElementById('upd').textContent = document.getElementById('upd').textContent.replace(/live \S+$/, 'live ' + hhmm(v.now));
+  }).catch(function () {
+    var u = document.getElementById('upd'); u.textContent = 'not connected: is console.mjs serve running?'; u.className = 'sub status off';
+  });
+}
+if (window.ConsoleNav) ConsoleNav.onChange = function () { load(); }; // a step came or went: "waiting on you" changes
+load();
+setInterval(load, 5000);
+</script>
+</body>
+</html>

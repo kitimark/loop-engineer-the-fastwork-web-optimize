@@ -7,6 +7,9 @@
 //   GET  /progress               the fix-progress page (tools/lib/progress-page.html; read-only)
 //   GET  /api/progress           its model (tools/lib/progress.mjs currentView: curated fixes/PROGRESS.json + live
 //                                locks, incidents and waiting steps; scrubbed of URLs, addresses and ids)
+//   GET  /status                 the status board (tools/lib/status-page.html; read-only): every workstream's priority,
+//                                state, waits (self-reported + derived from the locks, steps, incidents), owner, note
+//   GET  /api/status             its model (tools/lib/status.mjs currentStatusView; scrubbed like /api/progress)
 //   GET  /api/waiting            the badge / notification model (console-notify.mjs waitingView): {now, count,
 //                                yourTurn, remindMin, steps: [{id, title (sanitized), status, yourTurn, updatedAt,
 //                                queuedAt}]}; never a URL, instructions or meta
@@ -23,6 +26,7 @@ import { mkdirSync, unlinkSync, readFileSync } from 'node:fs';
 import { list, publicView, start, done, answer, skip, reopen, consoleDir, serverFile, OPEN } from './console.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
 import { currentView } from './progress.mjs';
+import { currentStatusView } from './status.mjs';
 import { waitingView, stepWatcher, createNotifier, DEFAULT_REMIND_MIN } from './console-notify.mjs';
 
 /** The page (plain HTML, inline CSS and JS, no external requests). Read per request: an edit shows on reload. */
@@ -30,14 +34,17 @@ const PAGE_FILE = new URL('./console-page.html', import.meta.url);
 const page = () => readFileSync(PAGE_FILE, 'utf8');
 const PROGRESS_PAGE_FILE = new URL('./progress-page.html', import.meta.url);
 const progressPage = () => readFileSync(PROGRESS_PAGE_FILE, 'utf8');
+const STATUS_PAGE_FILE = new URL('./status-page.html', import.meta.url);
+const statusPage = () => readFileSync(STATUS_PAGE_FILE, 'utf8');
 const NAV_JS_FILE = new URL('./console-nav.js', import.meta.url);
 const NAV_CSS_FILE = new URL('./console-nav.css', import.meta.url);
 
-/** The shared top bar of both pages; `current` = 'steps' | 'progress' (highlighted, aria-current). Plain links. */
+/** The shared top bar of every page; `current` = 'steps' | 'status' | 'progress' (highlighted, aria-current). Plain links. */
 export function menuHtml(current) {
   const on = (k) => (k === current ? ' on" aria-current="page' : '');
   return `<nav class="menu" aria-label="Console pages"><div class="menu-in">`
     + `<a class="mbtn${on('steps')}" title="What the agents need from you" href="/">Your steps<span class="badge" data-badge hidden>0</span></a>`
+    + `<a class="mbtn${on('status')}" title="Who is doing what, in priority order" href="/status">Status</a>`
     + `<a class="mbtn${on('progress')}" title="Where the fixes stand" href="/progress">Progress</a>`
     + `<span class="menu-sp"></span>`
     + `<details class="alerts" id="nav-alerts"><summary id="nav-alerts-sum">Alerts</summary><div class="alerts-panel">`
@@ -152,6 +159,8 @@ export function handler(port, feed = null) {
       if (req.method === 'GET' && u.pathname === '/api/steps') return send(res, 200, { now: iso(), steps: pageSteps() });
       if (req.method === 'GET' && (u.pathname === '/progress' || u.pathname === '/progress.html')) return send(res, 200, withMenu(progressPage(), 'progress'), 'text/html; charset=utf-8');
       if (req.method === 'GET' && u.pathname === '/api/progress') return send(res, 200, await currentView());
+      if (req.method === 'GET' && (u.pathname === '/status' || u.pathname === '/status.html')) return send(res, 200, withMenu(statusPage(), 'status'), 'text/html; charset=utf-8');
+      if (req.method === 'GET' && u.pathname === '/api/status') return send(res, 200, await currentStatusView());
       const m = u.pathname.match(/^\/api\/steps\/(C-\d{1,6})\/([a-z]+)$/);
       if (m && req.method === 'POST') {
         if (req.headers['x-console'] !== '1') return send(res, 403, { error: 'missing x-console header' });
