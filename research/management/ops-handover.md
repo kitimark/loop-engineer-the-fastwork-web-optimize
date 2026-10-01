@@ -62,6 +62,10 @@ number (A/A + all-wave1) is one announced ~15 min hold. arch-apple #8 (reveal wi
 - Friction scan each check-in: `node .claude/worktrees/agent-a1ecf91dac9344dc2/research/management/tools/kpi.mjs --friction`.
 - Host: Spotlight (`spotlightknowledged`, 75-90 % CPU) and earlier `mediaanalysisd` keep "other CPU" above the gate's
   20 %. The user has the question (wait, or `sudo mdutil -a -i off`).
+- Queue entries drop silently after 1 h: `lock.mjs run` has a default 3600 s acquire timeout (N11 and nav-morph lost
+  their places this way; both requeued with longer timeouts). Tell long-waiting owners to pass `--timeout 14400`;
+  candidate item for ts-prio (I-020) if waits stay long.
+- No normal timing A/Bs until I-023 lands (lead, 01:15Z); mechanism and short-lane work continues.
 - Digest to the lead every ≤ 30 min: counts waiting/working/idle, backlog, memory, ALARM lines. Last digest 00:12Z.
 - mgmt-lead re-run was due ~01:00Z (iteration 2): remind the lead.
 
