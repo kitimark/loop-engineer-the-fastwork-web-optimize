@@ -42,7 +42,7 @@ Findings it leans on: F-044, F-045 (weakened), F-047, F-048, F-049.
    DarkWake, no overlap over 27 holds, ddc3450), phone heat as a
    covariate, cold per-origin caches, and on a threshold that WebKit's non-vsync rAF timestamps make unstable
    (">50" vs k≥7 disagree on the goal) (X5, X6).
-6. **Our counts don't follow what the user feels;** a motion-weighted interval (MWFI) does, on 3/3 verdicts (X7).
+6. **Our counts don't follow what the user feels;** a motion-weighted interval (MWFI) did on 3/3 past verdicts (X7), but the first F5 pacing session (e6b84f4) went against it on the eased pair: fps/HTR fit best, MWFI is not promoted (K18).
 7. **Next: 7 desk items now, 14 phone items (~5 h of phone, no user), one ~10 min finger batch, 3 tool add-ons.**
    Ranked in §3; protocol amendments in §4.
 8. **On hold:** the fixed-size morph diagnostic, ghr85a, R7, R8's nav half, h4, any new morph fix before the
@@ -100,7 +100,7 @@ Notes that keep the cases apart:
 | K15 | render-server cost of blur/backdrop/threaded animations | PM case 2-3, X-U7, F-048 | ✓ v2 §10 (T10) |
 | K16 | does the morph feel "laggy" even when smooth (interaction model) | X-U1 | new, very high |
 | K17 | ease-out peak velocity on the setup frame | X-U2, PM (start transient) | new, high |
-| K18 | which perceptual metric the eye follows | X-U3, X-U10 | new, high |
+| K18 | which perceptual metric the eye follows | X-U3, X-U10 | open, high. F5 session 1 (e6b84f4, `research/design-engineering/pacing-result.md`, one tired session, 1 rating/cell, OBSERVED): sustained cadence loss saturates (5) at both speeds; a single 100 ms stall/s rates 3 at 600 px/s, 5 at 1600; the eased pair (three 50 ms gaps) rates 2 at peak velocity (MWFI 34.5, JUMP p95 82 px) vs 4 near the slow end (MWFI 17.6, JUMP p95 4 px), against MWFI; pooled ρ fps −0.72, HTR 0.66, MWFI 0.44, JUMP p95 0.38. Working rule: HTR/fps primary + JUMPmax for isolated hitches; MWFI not promoted until the v2 repeat block |
 | K19 | are rAF gaps under compositor scroll visible; tile checkerboarding | X-U4, X-U11, R | new, high |
 | K20 | non-passive touch arm → scroll freeze (F1/F2 risk) | X-U6, NM | new, high |
 | K21 | the target number for "SOOOOO ULTRA SMOOTH" | X-U9 | new, cheap |
@@ -145,7 +145,7 @@ names an agent already running; "new" means a spawn.
 |---|---|---|---|---|
 | T1a+ | per-run context fields in `iphone.mjs run --probe std` | ts-iphone-run (existing) | `Date.now()` at start; env fingerprint (prefers-reduced-motion, color-scheme, DPR, screen, innerHeight, hardwareConcurrency, `getAnimations().length`, UA); `scrollHeight` per frame; Resource Timing dump after the bottom phase; `idevicediagnostics ioregentry AppleSmartBattery` (Temperature, IsCharging) at run start/end; passive `touchstart` timestamps when a finger/G driver runs | T1a core first; any item that grows T1a past a day moves to T1b |
 | T8+ | host record + hold discipline | T8 toolsmith (new spawn when T8 starts) | `display` (on/off), `fullWake`, `powerSource`, Chrome version, hash of `ChromeFeatureState`; `caffeinate -d -u` inside `lock.mjs run` holds (or record "off") | D1 (to confirm the field matters); MC: call out |
-| T3+ | perceptual metrics + M-run profile | ts-analysis follow-up (after U3) | MWFI, HTR, STUT/s, RUNmax, JUMP in `runMetrics`/`METRICS`; M runs: time-since-start profile fwd/rev + |Δm|-weighted dt; Timeline heavy-paint share (frames with ≥80 Paint records); oracle `unknowns-ux-metric.mjs` | P5 (pacing page) picks the primary; the M profile can go now |
+| T3+ | perceptual metrics + M-run profile | ts-analysis follow-up (after U3) | MWFI, HTR, STUT/s, RUNmax, JUMP in `runMetrics`/`METRICS`; M runs: time-since-start profile fwd/rev + |Δm|-weighted dt; Timeline heavy-paint share (frames with ≥80 Paint records); oracle `unknowns-ux-metric.mjs` | the M profile can go now; the primary waits for the F5 v2 repeat block (eased pair ×2, at 1/2 and 1/4 speed, g100 across speeds, forced-choice pairs); interim primary HTR/fps + JUMPmax, MWFI report-only |
 | T10 | Instruments route (v2 §8.1) | lead → one-time pairing with the user, then a toolsmith | `xcrun xctrace record --template 'Animation Hitches'` attaches to Safari; signposts decode | user 3-5 min once; then P7 |
 
 ### 3.3 Phone blocks, no user (iphone-runner; each ≤9 counted runs, warm-up, sentinel)
@@ -166,7 +166,7 @@ names an agent already running; "new" means a spawn.
 | P14 | **ST-4 rotator whole-view layout** (PH §7), Timeline only, shares P11's slot and topic `layout-containment` | de-pm-hero specifies, fix-hero-exit or the new topic builds; iphone-runner | aw1-10e control vs A1 rotator off vs A2 `.is-carousel{contain:strict}` vs A3 imgs kept mounted (toggle only); hero window, 1 Timeline run each | ~15 | P0 | A2 moving the Layout root quad from the view to the carousel = a forced boundary works (then the h3 fix is one CSS line, and K26/K34 get a page-wide rule); A3 alone = the cost is the mount, not the box |
 | P12 | Residual y≈2678 frame on `na` (R-U4) | fix-nav-morph | `R3_Y0=2600 R3_Y1=2760 node tldump.mjs <F1 label> 50` with depth-8 stacks; shares P11's pass | ~0-5 | P11 | F1/F2's next frame (mount `b` at idle?) |
 | P13 | Memory and decode (R-U6) | iphone-runner; a new topic `image-sizing` only if pressure shows | `Memory.startTracking` + memoryPressure events over one S pass (and the finger pass in F4) | ~10 | — | whether 577 MB decoded triggers coverage shrink; sized panel images (62 → ~5 MB) |
-| P10 | Morph clock-shift M block (re-specified by D4) | fix-nav-morph | **gh-cdwc vs gh-cdwc + clock shift (A1)**, n=3+3; gate = per-tween max edge leap, predicted −50..−60 px, null ±15 px (MWFI moves < 1 tick, report only); also record time to first motion (+39 ms predicted cost; de-morph signs off the added latency, lead 2026-10-01) | ~15 | **P1 positive**; if P1 fails, parked behind R5(b) | X-U2: whether the clock shift is worth its first-motion delay once the countdown transient is gone |
+| P10 | Morph clock-shift M block (re-specified by D4) | fix-nav-morph | **gh-cdwc vs gh-cdwc + clock shift (A1)**, n=3+3; gate = per-tween max edge leap, predicted −50..−60 px, null ±15 px (MWFI moves < 1 tick, report only); also record time to first motion (+39 ms predicted cost; de-morph signs off the added latency, lead 2026-10-01) | ~15 | **P1 positive AND the F5 v2 repeat block**; if P1 fails, parked behind R5(b). Held (F5 session 1): the gated quantity, a peak-velocity edge leap, is what the user rated *better* than slow-end gaps, so its felt value is in doubt; the measured value stands | X-U2: whether the clock shift is worth its first-motion delay once the countdown transient is gone |
 
 Total ≈ 5 h of phone plus cooling. Order: P0 (it changes how the rest read), then P1-P3 (cheap builds, the
 biggest remaining frames), P4, P11 + P14 + P12 (one layout-containment slot), P5/P9, then the rest.
@@ -190,7 +190,7 @@ Order is cheapest-to-set-up first; every item after a passing control (v2 §5.2)
 | F2 | push past the end twice, blind: `mw-stub` (flat box, same tween) vs gh, "laggy or not?" | fix-nav-morph builds `mw-stub` (perception only, never lands) | 1 | K16: render fixes vs interaction-model change for the morph |
 | F3 | slow scroll y 1700-2300, blind aw1-10e vs F1 `mw10e-arm-load`, "anything hitch?" | existing | 1 | K19 (is y≈1960 visible) and F1's felt value |
 | F4 | 3 flicks starting y 2000-4400, aw1-10e vs F1, recorder with touchstart timestamps and `Memory.startTracking` (R-U6's finger pass) | existing | 2-3 | K20: does arming at load add touch latency (F1's landing gate); K28 memory pressure under a real fling |
-| F5 | pacing page: rank 5 frame patterns at 600 and 1600 px/s | de-unknowns-ux builds (no Fastwork code) | 2 | K18: the primary metric; T3+ |
+| F5 | pacing page: rank 5 frame patterns at 600 and 1600 px/s | de-unknowns-ux builds (no Fastwork code) | 2 | K18: the primary metric; T3+. Session 1 done (e6b84f4); v2 repeat block next (de-unknowns-ux) |
 | F6 | 30 s on the Apple product page arch-apple studied, "is this smooth?" + one S run | lead approves the external navigation | 1 | K21: the target number |
 | F7 (opt.) | two 240 fps clips, hero v2 vs aw1-10e | second camera | 3 | X-U7 threaded 120 Hz scroll |
 
@@ -211,7 +211,7 @@ K24 is explained); V-U10 inspector-detached A/A and V-U12 docH (low value, folde
   claims-audit §2.3 re-bin):** phone: dt > 50 / dt > 34 plus counts at ±4 ms (threshold-sensitive if they differ), no
   k forms; Chrome: k forms (protocol §3.2).
 - **A6 (§3.3, X7):** M runs: time-since-start profile (fwd/rev) + |Δm|-weighted dt replace the m-bin profile;
-  Timeline heavy-paint share as the mechanism column (PM proposal). MWFI reported next to counts (candidate until F5).
+  Timeline heavy-paint share as the mechanism column (PM proposal). MWFI reported next to counts (report-only: F5 session 1 did not support it; HTR/fps + JUMPmax interim).
 - **A7 (§6.3, K1):** Chrome holds record display state and keep it constant; canary drift is checked against it
   before a tools bisect.
 - **A9 (§5.5, X9/K25):** the logger's y source is chosen by the P0 A/A; until then phone absolute counts and Timeline
