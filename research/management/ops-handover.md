@@ -282,7 +282,11 @@ between tool calls.
    **USER CONSOLE LIVE (lead 15:2xZ; tools/console.mjs 4698218, CLAUDE.md 9666bba; server from the lead at
    localhost:5559):** EVERY user-facing step goes through `node tools/console.mjs post` (then `wait --until
    started|recording|done|answered`), never the lead's chat. iphone-runner posts swipe pair 3 (redo page 1 + page 2, key
-   in --meta) in a phone gap after P11, never mid-block; de-unknowns-ux posts F-v3 after G-v3 (P-035).
+   in --meta) and de-unknowns-ux F-v3, but per lead 15:3xZ ONE BATCHED RESTED SITTING: swipe pair 3 + F-v3 + P-031 F +
+   P-036 F posted together once every agent-side flow is ready and a ~20-25 min phone gap fits (after G-v3 P-035 and
+   P-036 G); mgmt-ops tells the lead when posted (one heads-up to the user). Waits: wait.mjs / lock.mjs wait only, no
+   sleep or until-grep loops (lead 15:3xZ). iphone-runner stops its old serve.mjs processes (ports 54xx) not needed for
+   P11 / P-032 / P14 / the sitting (own processes only; 5173 is the user's).
    **P-032 BLOCKED 15:1xZ by I-038** (morph-log hook = 2nd inspector connection hangs the gesture tool; iphone-runner's
    I-039 is a duplicate -> lead merges); lead approved amendment (b) (t0 = first defaultPrevented touchmove per end push),
    second-read OK 15:2xZ with 5 conditions (see the P-032 row); runs hook-free after P11 Block A (running ~15:20Z) + cooling.
