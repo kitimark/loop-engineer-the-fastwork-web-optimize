@@ -102,6 +102,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   Correction: de-illusion-style's r10 "58/58 identical after handback" is INVALID (blank captures); the real figure is r11:
   421/436 frames identical in Chrome headless, 15 frames of one word open. Decision (lead): PR-001 frames must be
   WebKit-made: Sim frames first, the phone capture joins the phone backlog as (f).
+  23:5xZ: PR-001 r12 (OBSERVED, Chrome headless): frames 436/436 identical ('you' and the Korean word); scroll sequence
+  68/72 identical, 0 BLANK, ink floor 500; the 4 misses are off-grid t rows. The lead has NOT accepted "test artifact": a
+  rAF-phase check (WebKit elapsed mod atlas step) is added to Sim d2. fix-nav-morph's Sim hold failed again (23:38Z: the
+  dead stale tab doesn't answer Runtime.evaluate): blocked on I-050 (ts-phone-park, its top item). A mixed-version
+  lock wait left Chrome free ~4 min (23:34-23:38Z); it cleared within the bound; ts-lock-share records it in lane §10.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
