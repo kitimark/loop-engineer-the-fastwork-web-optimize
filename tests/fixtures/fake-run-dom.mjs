@@ -2,7 +2,9 @@
 // enough DOM for the std probe and the drivers to run unchanged. Elements with attributes / classList / style,
 // a MutationObserver that delivers records in microtask batches (old values, same-value writes included, like a
 // browser), rAF at ~120 Hz (setInterval 8 ms, one timestamp per frame), smooth scrollBy, instant scrollTo,
-// contentvisibilityautostatechange on document, performance.getEntriesByType('resource').
+// contentvisibilityautostatechange on document, performance.getEntriesByType('resource'), window scroll events
+// (fired before the frame's rAF callbacks when scrollY changed, as in a browser), document.fonts, matchMedia, screen.
+// Every read of window.scrollY is counted (win.__scrollYReads), to test which y source reads it per frame.
 //
 // The page's own behaviour (all through window.requestAnimationFrame looked up at call time, so the probe's
 // wrapper sees it, like the real Svelte runtime):
@@ -13,6 +15,7 @@
 //     the platform section's data-start-selling-scene paused -> active (F-044's y~1960 frame, with more than
 //     12 events in one frame);
 //   - first frame with scrollY >= cvY (1250): a contentvisibilityautostatechange (rendered) on section.commission;
+//   - first frame with scrollY >= fontY (900): document.fonts loadingdone with 2 font faces;
 //   - morph: true defines window.__fwMorphDrive({hold, cycles}) like fix-nav-morph's overlays: the nav's
 //     --morph goes 0 -> 1 over ~150 ms, holds, back, per cycle; __fwMD = JSON {all, moving, atOne, atZero, frames}.
 import vm from 'node:vm';
@@ -32,7 +35,7 @@ function matches(el, sel) {
   });
 }
 
-export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, busyMs = 90, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null } = {}) {
+export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY = 900, busyMs = 90, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null } = {}) {
   const t0 = performance.now();
   const now = () => performance.now() - t0;
   const observers = new Set();
@@ -67,7 +70,7 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, busyMs
     all() { return this.children.flatMap((c) => [c, ...c.all()]); }
     querySelectorAll(s) { return this.all().filter((e) => matches(e, s)); }
     querySelector(s) { return this.querySelectorAll(s)[0] || null; }
-    getBoundingClientRect() { return { top: this.top - win.scrollY, height: 100 }; }
+    getBoundingClientRect() { return { top: this.top - sy, height: 100 }; }
   }
 
   // the document
@@ -89,6 +92,9 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, busyMs
     getAnimations: () => [{ timeline: new (class DocumentTimeline {})() }, { timeline: new (class ViewTimeline {})() }],
   };
   const dispatchDoc = (type, e) => { for (const l of docListeners.filter((x) => x.type === type)) l.fn(e); };
+  const fontListeners = [];
+  document.fonts = { status: 'loaded', addEventListener: (t, fn) => fontListeners.push({ t, fn }), removeEventListener: (t, fn) => { const i = fontListeners.findIndex((l) => l.t === t && l.fn === fn); if (i >= 0) fontListeners.splice(i, 1); } };
+  const winListeners = [];
 
   class MutationObserver {
     constructor(cb) { this.cb = cb; this.q = []; this.on = false; this.scheduled = false; }
@@ -100,27 +106,32 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, busyMs
   let raf = [], rafId = 0, smooth = null;
   const maxY = () => docHeight - win.innerHeight;
   const clampY = (y) => Math.max(0, Math.min(maxY(), y));
+  let sy = 0;
   const win = {
-    scrollY: 0, innerWidth: 430, innerHeight: 815, devicePixelRatio: 3,
+    get scrollY() { win.__scrollYReads = (win.__scrollYReads || 0) + 1; return sy; },
+    set scrollY(v) { sy = v; },
+    innerWidth: 430, innerHeight: 815, devicePixelRatio: 3,
     navigator: { userAgent: 'FakeSafari/1.0 (fake-run-dom)', hardwareConcurrency: 6 },
-    matchMedia: (q) => ({ matches: q === '(prefers-color-scheme: dark)' }), Date,
+    matchMedia: (q) => ({ matches: q === '(prefers-color-scheme: dark)' }), Date, screen: { width: 430, height: 932 },
+    addEventListener: (type, fn, o) => winListeners.push({ type, fn, passive: !!(o && o.passive) }),
+    removeEventListener: (type, fn) => { const i = winListeners.findIndex((l) => l.type === type && l.fn === fn); if (i >= 0) winListeners.splice(i, 1); },
     location: { href, origin: new URL(href).origin, reload: () => { win.__reloaded = true; if (onReload) onReload(); } },
     document, MutationObserver, URL, setTimeout, clearTimeout, queueMicrotask,
-    performance: { now, mark: () => {}, getEntriesByType: (t) => (t === 'resource' ? resources.map((name) => ({ name })) : []) },
+    performance: { now, mark: () => {}, getEntriesByType: (t) => (t === 'resource' ? resources.map((name, i) => ({ name, initiatorType: 'script', startTime: 10 + i, responseEnd: 20 + i, transferSize: 300, encodedBodySize: 25 })) : []) },
     requestAnimationFrame: (cb) => { raf.push(cb); return ++rafId; },
-    scrollTo: (a, b) => { const top = typeof a === 'object' ? a.top : b; smooth = null; win.scrollY = clampY(top); },
-    scrollBy: (o) => { const to = clampY(win.scrollY + o.top); if (o.behavior === 'smooth') smooth = { to, step: (to - win.scrollY) / 18 }; else win.scrollY = to; },
+    scrollTo: (a, b) => { const top = typeof a === 'object' ? a.top : b; smooth = null; sy = clampY(top); },
+    scrollBy: (o) => { const to = clampY(sy + o.top); if (o.behavior === 'smooth') smooth = { to, step: (to - sy) / 18 }; else sy = to; },
   };
   win.window = win;
   const ctx = vm.createContext(win);
 
   // page behaviour
-  let fired = false, cvFired = false, stopped = false;
+  let fired = false, cvFired = false, fontFired = false, stopped = false;
   const engine = () => {
     if (stopped) return;
-    track.style.setProperty('transform', `translateY(${-Math.round(win.scrollY / 2)}px)`);
+    track.style.setProperty('transform', `translateY(${-Math.round(sy / 2)}px)`);
     track.setAttribute('data-fw-wc', 'transform'); // same value every frame after the first
-    if (!fired && win.scrollY >= eventY) {
+    if (!fired && sy >= eventY) {
       fired = true;
       const end = performance.now() + busyMs; while (performance.now() < end) {} // the long frame
       imgs.forEach((im, i) => im.setAttribute('src', `/img/${i}.webp`));
@@ -128,14 +139,15 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, busyMs
       panel.classList.add('is-live');
       platform.setAttribute('data-start-selling-scene', 'active');
     }
-    if (!cvFired && win.scrollY >= cvY) { cvFired = true; const tgt = body.querySelector('section.commission'); queueMicrotask(() => dispatchDoc('contentvisibilityautostatechange', { target: tgt, skipped: false })); }
+    if (!fontFired && sy >= fontY) { fontFired = true; queueMicrotask(() => { for (const l of fontListeners.filter((x) => x.t === 'loadingdone')) l.fn({ fontfaces: [{}, {}] }); }); }
+    if (!cvFired && sy >= cvY) { cvFired = true; const tgt = body.querySelector('section.commission'); queueMicrotask(() => dispatchDoc('contentvisibilityautostatechange', { target: tgt, skipped: false })); }
     win.requestAnimationFrame(engine);
   };
   win.requestAnimationFrame(engine);
   if (morph) {
     win.__fwMorphDrive = ({ hold = 2000, cycles = 3 } = {}) => {
       const f = []; let m = 0, last = now(), on = true;
-      const log = (t) => { f.push([Math.round(t * 10) / 10, Math.round((t - last) * 10) / 10, Math.round(win.scrollY), m]); last = t; if (on) win.requestAnimationFrame(log); };
+      const log = (t) => { f.push([Math.round(t * 10) / 10, Math.round((t - last) * 10) / 10, Math.round(sy), m]); last = t; if (on) win.requestAnimationFrame(log); };
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const tween = async (to) => { const from = m; for (let i = 1; i <= 18; i++) { await new Promise((r) => win.requestAnimationFrame(r)); m = Math.round((from + ((to - from) * i) / 18) * 1000) / 1000; nav.style.setProperty('--morph', String(m)); } };
       win.__fwMD = null;
@@ -151,8 +163,10 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, busyMs
     };
   }
 
+  let lastScrollFired = 0;
   const timer = setInterval(() => {
-    if (smooth) { const d = smooth.to - win.scrollY; if (Math.abs(d) <= Math.abs(smooth.step) || smooth.step === 0) { win.scrollY = smooth.to; smooth = null; } else win.scrollY = Math.round(win.scrollY + smooth.step); }
+    if (smooth) { const d = smooth.to - sy; if (Math.abs(d) <= Math.abs(smooth.step) || smooth.step === 0) { sy = smooth.to; smooth = null; } else sy = Math.round(sy + smooth.step); }
+    if (sy !== lastScrollFired) { lastScrollFired = sy; for (const l of winListeners.filter((x) => x.type === 'scroll')) l.fn({ type: 'scroll' }); }
     const q = raf; raf = [];
     const t = now();
     for (const cb of q) { try { cb(t); } catch (e) { win.__errors = (win.__errors || 0) + 1; } }

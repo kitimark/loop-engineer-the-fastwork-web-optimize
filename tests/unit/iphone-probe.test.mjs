@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { tempDir } from '../helpers.mjs';
 import { createPage } from '../fixtures/fake-run-dom.mjs';
 import * as P from '../../tools/lib/iphone-probe.mjs';
-import { parseRunArgs, measureGuard, estimateMs, finish, toolVersion, TOOL_FILES, UNREADABLE_SETTINGS } from '../../tools/lib/iphone-run.mjs';
+import { parseRunArgs, measureGuard, estimateMs, finish, toolVersion, TOOL_FILES, UNREADABLE_SETTINGS, parseBattery, deviceSettings, batteryInfo } from '../../tools/lib/iphone-run.mjs';
 
 const MT = P.MUT_TYPES;
 const counts = (o) => MT.map((k) => o[k] || 0);
@@ -109,16 +109,20 @@ test('parseRunArgs: drivers, defaults, units, labels and validation', () => {
   assert.throws(() => parseRunArgs(['--driver', 'scroll', '--tops', 'nosel']), /--tops wants id=selector/);
   const s = parseRunArgs(['--driver', 'scroll', '--owner', 'me']);
   assert.deepEqual([s.driver, s.probe, s.label, s.settleMs, s.allowDuringMeasure, s.stateFile], ['scroll', 'std', 'run', 8000, false, null]);
-  assert.deepEqual(s.params, { tops: [], idleMs: 3000, bottomMs: 3000, maxScrollMs: 45000 });
+  assert.deepEqual(s.params, { tops: [], ySource: 'raf', idleMs: 3000, bottomMs: 3000, maxScrollMs: 45000 });
+  assert.equal(s.battery, true);
+  assert.throws(() => parseRunArgs(['--driver', 'scroll', '--y-source', 'layout']), /--y-source must be one of raf, scroll, none \(got layout\)/);
+  assert.equal(parseRunArgs(['--driver', 'scroll', '--y-source', 'none']).params.ySource, 'none');
+  assert.equal(parseRunArgs(['--driver', 'scroll', '--no-battery']).battery, false);
   assert.deepEqual(s.labels, { build: null, run: null, block: null, arm: null, pos: null, warmup: false });
   const w = parseRunArgs(['--driver=window', '--to=1000', '--from', '400', '--idle', '6', '--hold', '1.5', '--sentinel', '0', '--settle', '2', '--label', 'hero',
     '--build', 'B1', '--run', 'r3', '--block', 'k2', '--arm', 'V', '--pos', '2', '--warmup', '--tops', 'platform=#platform,panel=.start-selling-morph-panel', '--allow-during-measure', '--state', 'x.js']);
-  assert.deepEqual(w.params, { tops: [['platform', '#platform'], ['panel', '.start-selling-morph-panel']], from: 400, to: 1000, settleAtMs: 1000, idleMs: 6000, holdMs: 1500, sentinelMs: 0, maxScrollMs: 45000 });
+  assert.deepEqual(w.params, { tops: [['platform', '#platform'], ['panel', '.start-selling-morph-panel']], ySource: 'raf', from: 400, to: 1000, settleAtMs: 1000, idleMs: 6000, holdMs: 1500, sentinelMs: 0, maxScrollMs: 45000 });
   assert.deepEqual(w.labels, { build: 'B1', run: 'r3', block: 'k2', arm: 'V', pos: 2, warmup: true });
   assert.deepEqual([w.label, w.settleMs, w.allowDuringMeasure, w.stateFile], ['hero', 2000, true, 'x.js']);
   assert.equal(estimateMs(w), 1000 + 6000 + 45000 + 1500 + 0);
   const m = parseRunArgs(['--driver', 'morph']);
-  assert.deepEqual(m.params, { tops: [], holdMs: 2000, cycles: 3, maxDriveMs: 2 * 3 * 2000 + 30000 }, '--hold is in ms for morph (what __fwMorphDrive takes)');
+  assert.deepEqual(m.params, { tops: [], ySource: 'raf', holdMs: 2000, cycles: 3, maxDriveMs: 2 * 3 * 2000 + 30000 }, '--hold is in ms for morph (what __fwMorphDrive takes)');
   assert.throws(() => parseRunArgs(['--driver', 'morph', '--cycles', '0']), /--cycles must be a number >= 1/);
   assert.equal(estimateMs(m), 42000);
 });
@@ -132,6 +136,23 @@ test('measureGuard: a normal chrome-measure hold refuses a timed run (WAIT); fre
   assert.doesNotThrow(() => measureGuard({ allowDuringMeasure: true }, { holder: { owner: 'fix-x' }, stale: false }));
 });
 
+test('battery: only the named AppleSmartBattery keys are kept (no serials), temperature in degC; settings take charging and capacity from it', () => {
+  const xml = '<?xml version="1.0"?><plist><dict><key>IORegistry</key><dict><key>Serial</key><string>F5D0SECRET</string>'
+    + '<key>Temperature</key>\n\t<integer>3125</integer><key>IsCharging</key><true/><key>ExternalConnected</key><true/><key>FullyCharged</key><false/>'
+    + '<key>CurrentCapacity</key><integer>81</integer><key>MaxCapacity</key><integer>100</integer><key>Voltage</key><integer>4100</integer></dict></dict></plist>';
+  const b = parseBattery(xml);
+  assert.deepEqual(b, { Temperature: 3125, IsCharging: true, ExternalConnected: true, FullyCharged: false, CurrentCapacity: 81, MaxCapacity: 100, temperatureC: 31.25 });
+  assert.ok(!JSON.stringify(b).includes('SECRET'));
+  assert.deepEqual(parseBattery('ERROR: no device'), { error: 'no AppleSmartBattery values in the output' });
+  const st = deviceSettings({ dark: false }, b);
+  assert.deepEqual([st.batteryPct, st.charging, st.lowPowerMode, st.dark], [81, true, 'unknown', false]);
+  assert.equal(deviceSettings(null, { error: 'x' }).charging, 'unknown');
+  const old = process.env.FW_IDEVICEDIAGNOSTICS;
+  process.env.FW_IDEVICEDIAGNOSTICS = join(tempDir('fw-nobin-'), 'missing');
+  try { assert.deepEqual(batteryInfo(), { error: 'idevicediagnostics: ENOENT' }, 'no libimobiledevice: an error field, not a crash'); }
+  finally { if (old === undefined) delete process.env.FW_IDEVICEDIAGNOSTICS; else process.env.FW_IDEVICEDIAGNOSTICS = old; }
+});
+
 test('toolVersion: sha16 of every tool file plus the probe and driver code', () => {
   const v = toolVersion('window');
   assert.deepEqual(Object.keys(v.files), TOOL_FILES);
@@ -143,14 +164,17 @@ test('toolVersion: sha16 of every tool file plus the probe and driver code', () 
 // ---- the in-page side, in-process on the fake page ------------------------------------------------------
 async function runInPage(driver, opts, { page = createPage({ morph: driver === 'morph' }), customStateJs = null } = {}) {
   try {
+    assert.equal(page.evaluate(P.optsJs(opts)), 'ok');
     assert.equal(page.evaluate(P.EARLY_JS), 'ok');
     await new Promise((r) => setTimeout(r, 120));
+    page.readsBefore = page.win.__scrollYReads || 0;
     assert.equal(page.evaluate(P.startJs(driver, opts, { customStateJs })), 'started');
     const t0 = Date.now();
     while (!['done', 'error'].includes(page.evaluate(P.STATE_JS))) { assert.ok(Date.now() - t0 < 30000, 'run finished'); await new Promise((r) => setTimeout(r, 50)); }
     const len = page.evaluate(P.RESULT_LEN_JS);
     let s = '';
     for (let i = 0; i < len; i += P.CHUNK) s += page.evaluate(P.resultChunkJs(i));
+    page.reads = (page.win.__scrollYReads || 0) - page.readsBefore;
     return { raw: JSON.parse(s), page };
   } finally { page.stop(); }
 }
@@ -171,10 +195,15 @@ test('std probe + window driver: the y~1960 frame shows all 21 src writes, the i
   assert.equal(raw.driverResult.stopAt, 2000);
   assert.equal(raw.driverResult.finalY, 2085, 'the sentinel jumps to the bottom');
   assert.ok(raw.early.frames.length > 3, 'early frames from the EARLY_JS logger');
+  assert.equal(raw.early.fontsStatus, 'loaded');
+  assert.equal(raw.ySource, 'raf');
+  assert.deepEqual(raw.pre.screen, [430, 932]);
+  assert.deepEqual(raw.post.resources, [], 'Resource Timing dump after the run');
+  assert.ok(raw.frames.slice(1).every((f) => f[8] === 2900), 'docH per frame, read with y');
 
   const doc = P.buildDoc(raw);
   assert.deepEqual(doc.fields, P.FIELDS);
-  const ev = doc.crossings.filter((c) => c.y >= 1960 && c.kind !== 'cv');
+  const ev = doc.crossings.filter((c) => c.kind === 'inert' || c.kind === 'scene' || (c.kind === 'class' && c.id === 'div.start-selling-morph-panel'));
   assert.deepEqual(ev.map((c) => `${c.kind} ${c.id} ${c.value} ${c.src}`), [
     'inert div.start-selling-morph-panel removed effect', 'class div.start-selling-morph-panel +is-live effect', 'scene #platform active effect']);
   const k = ev[0].frame;
@@ -190,14 +219,41 @@ test('std probe + window driver: the y~1960 frame shows all 21 src writes, the i
   assert.ok(f[1] >= 85, `the busy frame's gap (${f[1]})`);
   assert.ok(f[6] >= 85, `rafJsMs attributes the page's 90 ms rAF callback to the row it delayed (${f[6]})`);
   assert.ok(f[3] >= 1960);
+  assert.ok(ev.every((c) => c.y > 1500 && c.y <= f[3]), 'crossing y = the last rAF y (no read in the observer)');
+  assert.ok(doc.crossings.some((c) => c.kind === 'font' && c.id === 'document.fonts' && c.value === '2 faces'), 'document.fonts loadingdone is a crossing');
   const slow = doc.summary.slow.find((s) => s.frame === k);
   assert.ok(slow);
   assert.equal(slow.mut.src, 21);
   assert.ok(slow.crossings.includes('inert div.start-selling-morph-panel removed'));
-  assert.ok(doc.crossings.some((c) => c.kind === 'cv' && c.id === 'section.commission' && c.value === 'rendered' && c.y >= 1250 && c.y < 1960));
+  assert.ok(doc.crossings.some((c) => c.kind === 'cv' && c.id === 'section.commission' && c.value === 'rendered' && c.y >= 0 && c.y < 1960));
+  assert.ok(page.reads >= raw.frames.length, `raf reads scrollY every frame (${page.reads} reads, ${raw.frames.length} frames)`);
   assert.equal(doc.summary.mutationTotals.src, 21);
   assert.ok(doc.summary.phases.scroll.k5 >= 1);
   assert.deepEqual(raw.topsPost, { platform: 2860, none: null });
+});
+
+test('--y-source scroll: y and docH from a passive scroll listener, no scrollY read per rAF; none: no y at all, the driver still stops at --to', async () => {
+  const sc = await runInPage('window', { ...WIN, ySource: 'scroll' });
+  assert.equal(sc.raw.err, null);
+  assert.equal(sc.raw.ySource, 'scroll');
+  const fs = sc.raw.frames.slice(1);
+  assert.ok(fs.every((f) => typeof f[3] === 'number' && f[8] === 2900));
+  assert.ok(fs.some((f) => f[3] >= 1960) && fs.at(-1)[3] === 2085, 'the listener follows the scroll and the sentinel jump');
+  assert.ok(sc.page.reads < fs.length / 2, `scroll events only (${sc.page.reads} reads, ${fs.length} frames)`);
+  assert.equal(sc.raw.early.frames.at(-1)[2], null, 'the early logger reads no y either');
+  const ce = P.buildDoc(sc.raw).crossings.find((c) => c.kind === 'inert');
+  assert.ok(ce.y > 1500, 'crossings take the listener y');
+
+  const no = await runInPage('window', { ...WIN, ySource: 'none' });
+  assert.equal(no.raw.err, null);
+  assert.equal(no.raw.ySource, 'none');
+  assert.ok(no.raw.frames.every((f) => f[2] === null && f[3] === null && f[8] === null));
+  assert.equal(no.raw.driverResult.stopAt, 2000);
+  assert.ok(no.raw.driverResult.yHold >= 2000, 'the driver stops by its own scrollY reads (every 300 ms)');
+  assert.ok(no.page.reads < 20, `only the driver's and the page facts' reads (${no.page.reads})`);
+  const d = P.buildDoc(no.raw);
+  assert.ok(d.crossings.filter((c) => c.kind !== 'cv').every((c) => c.y === null));
+  assert.equal(d.summary.mutationTotals.src, 21);
 });
 
 test('std probe + scroll driver: idle, scroll, bottom phases to the end of the page', async () => {
@@ -236,6 +292,7 @@ test('finish: one JSON per run (schema, meta with labels and tool hashes, measur
   const { raw } = await runInPage('window', { ...WIN, tops: [] });
   raw.served = { '/_app/a.js': '0123456789abcdef' };
   raw.macStartMs = 1790000000000;
+  raw.battery = { start: { IsCharging: false, CurrentCapacity: 64, temperatureC: 30 }, end: { IsCharging: false, CurrentCapacity: 63, temperatureC: 31 } };
   const dir = tempDir('fw-iphone-run-');
   const o = parseRunArgs(['--driver', 'window', '--to', '2000', '--label', 'ewin', '--build', 'B', '--arm', 'A', '--pos', '1', '--out', join(dir, 'r.json')]);
   const log = console.log; const lines = []; console.log = (...a) => lines.push(a.join(' '));
@@ -250,8 +307,12 @@ test('finish: one JSON per run (schema, meta with labels and tool hashes, measur
   assert.deepEqual(m.served, raw.served);
   assert.equal(m.wallStartMs, 1790000000000);
   assert.deepEqual(m.clock, raw.pre.clock);
-  for (const k of UNREADABLE_SETTINGS) assert.equal(m.settings[k], 'unknown', `settings.${k} is recorded as unknown, not left out (U9)`);
+  for (const k of UNREADABLE_SETTINGS.filter((x) => x !== 'batteryPct' && x !== 'charging')) assert.equal(m.settings[k], 'unknown', `settings.${k} is recorded as unknown, not left out (U9)`);
   assert.equal(m.settings.dark, true);
+  assert.deepEqual([m.settings.batteryPct, m.settings.charging], [64, false], 'battery read fills U9 fields');
+  assert.deepEqual(m.battery, raw.battery);
+  assert.equal(m.ySource, 'raf');
+  assert.equal(m.params.ySource, 'raf');
   assert.equal(m.params.settleMs, 8000);
   assert.equal(m.params.to, 2000);
   assert.deepEqual(Object.keys(m.tool.files), TOOL_FILES);

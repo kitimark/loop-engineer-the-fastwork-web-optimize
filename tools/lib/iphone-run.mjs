@@ -5,10 +5,12 @@
 // Sequence (every driver): lease check, then the lease is renewed to outlast the run (lock.mjs renew); no timed
 // run while a NORMAL chrome-measure hold runs (`WAIT`, checked again after the settle; short-lane holds pass;
 // --allow-during-measure for diagnostics); Safari not on the certificate warning; scrollTo(0, instant) + reload;
-// a load-frame logger (`early`) from the reconnect; readyState complete; settle (--settle, default 8 s); then ONE
-// in-page expression: page facts, stateAtStart (+ --state), --tops, the std probe, the driver, stop. The page is
-// polled at <= 1 Hz (1.5 s) and the result read back in chunks; then the same-origin scripts/stylesheets the
-// page loaded are fetched again from the Mac and hashed (meta.served).
+// the probe options (--y-source raf|scroll|none) and a load-frame logger (`early`) from the reconnect; readyState
+// complete; the battery (idevicediagnostics AppleSmartBattery: temperature, charging, capacity; --no-battery);
+// settle (--settle, default 8 s); then ONE in-page expression: page facts, stateAtStart (+ --state), --tops, the
+// std probe, the driver, stop, Resource Timing. The page is polled at <= 1 Hz (1.5 s) and the result read back in
+// chunks; then the battery again, and the same-origin scripts/stylesheets the page loaded are fetched again from
+// the Mac and hashed (meta.served).
 //   S scroll : the `iphone.mjs scroll` stimulus: idle (--idle 3 s), scrollBy 250 px smooth every 300 ms to the
 //              bottom, bottom hold (--bottom 3 s). Phases idle, scroll, bottom.
 //   W window : [--from Y0: instant jump, 1 s] idle (--idle 3 s), the same steps until y >= --to Y, hold (--hold 2 s),
@@ -28,7 +30,7 @@ import { openTab, sleep } from './wip.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE } from './iphone-url.mjs';
-import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
+import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
 
 export const DEVICE = 'iPhone 15 Pro Max, iOS 26.6.1 Safari';
 /** Files whose code shapes a run's stimulus and numbers: recorded per run (meta.tool), like `gesture`'s. */
@@ -40,7 +42,7 @@ export function toolVersion(driver, root = REPO) {
   const files = {};
   for (const f of TOOL_FILES) { try { files[f] = sha16(readFileSync(join(root, f))); } catch { files[f] = null; } }
   const st = git('status', '--porcelain', '--', ...TOOL_FILES);
-  return { gitHead: git('rev-parse', 'HEAD'), dirty: st === null ? null : st.length > 0, files, probe: sha16(PROBE_STD_JS + PRE_JS + STATE_START_JS + EARLY_JS), driver: sha16(DRIVER_JS[driver]) };
+  return { gitHead: git('rev-parse', 'HEAD'), dirty: st === null ? null : st.length > 0, files, probe: sha16(PROBE_STD_JS + PRE_JS + STATE_START_JS + EARLY_JS + RESOURCE_TIMING_JS + startJs.toString()), driver: sha16(DRIVER_JS[driver]) };
 }
 
 export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|morph --probe std --owner <topic> [--label l] [--out file]
@@ -50,12 +52,44 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--hold 2000] [--cycles 3]                              morph (M; --hold in ms, as __fwMorphDrive takes it)
     [--tops id=selector,...]                                document tops before/after the timed window
     [--state <file.js>]                                     an expression whose value joins stateAtStart.custom
+    [--y-source raf|scroll|none]                            where the probe's y comes from (default raf; see iphone-probe.mjs)
+    [--no-battery]                                          skip the idevicediagnostics battery read at start and end
     [--allow-during-measure]                                run although a normal chrome-measure hold is running`;
 
 /** Device settings that a page cannot read (U9, research/architecture/unknowns-validity.md): recorded as 'unknown'
  *  rather than left out, until a device-side reader (T2: WDA / lockdown) fills them in. */
 export const UNREADABLE_SETTINGS = ['lowPowerMode', 'limitFrameRate', 'batteryPct', 'charging', 'case', 'brightness', 'autoBrightness', 'contentBlockers', 'safariFeatureFlags'];
-export const deviceSettings = (page) => ({ ...Object.fromEntries(UNREADABLE_SETTINGS.map((k) => [k, 'unknown'])), ...(page || {}) });
+export function deviceSettings(page, battery = null) {
+  const s = { ...Object.fromEntries(UNREADABLE_SETTINGS.map((k) => [k, 'unknown'])), ...(page || {}) };
+  if (battery && !battery.error) {
+    if (typeof battery.CurrentCapacity === 'number') s.batteryPct = battery.CurrentCapacity;
+    if (typeof battery.IsCharging === 'boolean') s.charging = battery.IsCharging;
+  }
+  return s;
+}
+
+/** The AppleSmartBattery keys kept from `idevicediagnostics ioregentry AppleSmartBattery` (a plist): only these,
+ *  never serials or other ids (Hard rule 12). Temperature is in 1/100 degC. */
+export const BATTERY_KEYS = ['Temperature', 'IsCharging', 'ExternalConnected', 'FullyCharged', 'CurrentCapacity', 'MaxCapacity'];
+export function parseBattery(xml) {
+  const out = {};
+  for (const k of BATTERY_KEYS) {
+    const m = xml.match(new RegExp(`<key>${k}</key>\\s*<(integer|real|true|false)\\s*/?>(?:([^<]*)</\\1>)?`));
+    if (!m) continue;
+    out[k] = m[1] === 'true' ? true : m[1] === 'false' ? false : Number(m[2]);
+  }
+  if (!Object.keys(out).length) return { error: 'no AppleSmartBattery values in the output' };
+  if (typeof out.Temperature === 'number') out.temperatureC = out.Temperature / 100;
+  return out;
+}
+/** One battery read through libimobiledevice ($FW_IDEVICEDIAGNOSTICS names the executable, for tests). */
+export function batteryInfo() {
+  const bin = process.env.FW_IDEVICEDIAGNOSTICS || 'idevicediagnostics';
+  const r = spawnSync(bin, ['ioregentry', 'AppleSmartBattery'], { encoding: 'utf8', timeout: 15000 });
+  if (r.error) return { error: `idevicediagnostics: ${r.error.code || 'failed'}` };
+  if (r.status !== 0) return { error: `idevicediagnostics exit ${r.status}` }; // no stderr: it may name the device
+  return { t: new Date().toISOString(), ...parseBattery(r.stdout) };
+}
 
 const num = (v, name, { min = 0 } = {}) => { const n = Number(v); if (!Number.isFinite(n) || n < min) throw new Error(`--${name} must be a number >= ${min} (got ${v})\n${USAGE}`); return n; };
 
@@ -73,9 +107,12 @@ export function parseRunArgs(argv) {
   if (o.labels.arm !== null && !/^[A-Z]$/.test(o.labels.arm)) throw new Error(`--arm is one letter (C, V, A, B, ...), got ${o.labels.arm}`);
   o.stateFile = opt('state') ?? null;
   o.allowDuringMeasure = flag('allow-during-measure');
+  o.battery = !flag('no-battery');
+  const ySource = opt('y-source', 'raf');
+  if (!Y_SOURCES.includes(ySource)) throw new Error(`--y-source must be one of ${Y_SOURCES.join(', ')} (got ${ySource})\n${USAGE}`);
   const tops = opt('tops');
   o.tops = tops ? tops.split(',').map((s) => { const i = s.indexOf('='); if (i < 1) throw new Error(`--tops wants id=selector[,id=selector...] (got ${s})`); return [s.slice(0, i), s.slice(i + 1)]; }) : [];
-  const p = { tops: o.tops };
+  const p = { tops: o.tops, ySource };
   if (driver === 'scroll') Object.assign(p, { idleMs: 1000 * num(opt('idle', 3), 'idle'), bottomMs: 1000 * num(opt('bottom', 3), 'bottom'), maxScrollMs: 45000 });
   if (driver === 'window') {
     if (opt('to') === undefined) throw new Error(`--driver window needs --to <y>\n${USAGE}`);
@@ -123,8 +160,10 @@ export async function runCmd({ argv, requireLease, port }) {
   await sleep(2500);
   c = await openTab(host, { port });
   try {
+    await c.evaluate(optsJs(o.params)).catch(() => {});
     await c.evaluate(EARLY_JS).catch(() => {});
     for (let i = 0; i < 60; i++) { if ((await c.evaluate('document.readyState')) === 'complete') break; await sleep(500); }
+    const batteryStart = o.battery ? batteryInfo() : null; // before the settle: the USB query is not in the timed part
     await sleep(o.settleMs);
     requireLease(); // still ours after the settle
     measureGuard(o);
@@ -145,6 +184,7 @@ export async function runCmd({ argv, requireLease, port }) {
     if (s.length !== len) throw new Error(`read ${s.length} of ${len} result chars`);
     const raw = JSON.parse(s);
     raw.macStartMs = macStartMs;
+    raw.battery = o.battery ? { start: batteryStart, end: batteryInfo() } : null;
     raw.served = await servedHashes(await c.evaluate(RESOURCES_JS).catch(() => []));
     return finish(o, owner, raw);
   } finally { c.close(); }
@@ -175,7 +215,7 @@ export function finish(o, owner, raw, { now = new Date() } = {}) {
     build: o.labels.build, run: o.labels.run ?? o.label, block: o.labels.block, arm: o.labels.arm, pos: o.labels.pos, warmup: o.labels.warmup,
     owner, date: now.toISOString(), device: DEVICE, href: raw.pre?.href, ua: raw.pre?.ua, vw: raw.pre?.vw, vh0: raw.pre?.vh0, dpr: raw.pre?.dpr,
     params: { settleMs: o.settleMs, ...o.params },
-    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, settings: deviceSettings(raw.pre?.settings), served: raw.served || null, tool: toolVersion(o.driver), error: raw.err || null,
+    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, ySource: raw.ySource ?? o.params.ySource ?? 'raf', settings: deviceSettings(raw.pre?.settings, raw.battery?.start), battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver), error: raw.err || null,
   };
   const out = resolve(REPO, o.out || join('out', 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));
   const json = { meta, ...doc, tops: raw.tops, topsPost: raw.topsPost, stateAtStart: raw.stateAtStart, early: raw.early, driverResult: raw.driverResult, pre: raw.pre, post: raw.post };

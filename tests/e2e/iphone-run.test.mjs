@@ -1,7 +1,8 @@
 // `node tools/iphone.mjs run` (protocol v2 T1a) end to end against tests/fixtures/fake-run-proxy.mjs: a fake
 // ios_webkit_debug_proxy whose Safari tab is the fake page of tests/fixtures/fake-run-dom.mjs (the y~1960 frame of
 // F-044, a cv crossing at 1250, optionally window.__fwMorphDrive). FW_STATE_DIR is a temp lock dir and
-// FW_IPHONE_PORT the fake's port, so the real phone, its proxy and the real iphone lease are never touched.
+// FW_IPHONE_PORT the fake's port and FW_IDEVICEDIAGNOSTICS tests/fixtures/fake-idevicediagnostics.mjs, so the real
+// phone, its proxy, libimobiledevice and the real iphone lease are never touched.
 import { test, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -14,7 +15,12 @@ const IPHONE = tool('iphone.mjs'), LOCK = tool('lock.mjs');
 const procs = [];
 after(async () => { await Promise.all(procs.map((p) => p.stop())); });
 let env, dir;
-beforeEach(async () => { dir = tempDir('fw-iphone-run-'); env = { FW_STATE_DIR: join(dir, 'state'), FW_IPHONE_PORT: String(await freePort()), FW_IPHONE_DEVICE_PORT: String(await freePort()) }; });
+const FAKE_IDD = join(TESTS, 'fixtures', 'fake-idevicediagnostics.mjs');
+beforeEach(async () => {
+  dir = tempDir('fw-iphone-run-');
+  env = { FW_STATE_DIR: join(dir, 'state'), FW_IPHONE_PORT: String(await freePort()), FW_IPHONE_DEVICE_PORT: String(await freePort()), FW_IDEVICEDIAGNOSTICS: FAKE_IDD, FAKE_IDD_LOG: join(dir, 'idd.jsonl') };
+});
+const iddCalls = () => (existsSync(env.FAKE_IDD_LOG) ? readFileSync(env.FAKE_IDD_LOG, 'utf8').trim().split('\n').length : 0);
 const lock = (...a) => node(LOCK, a, { env });
 const run = (args, e = env) => nodeAsync(IPHONE, ['run', ...args], { env: e, timeout: 90000 });
 
@@ -74,7 +80,7 @@ test('run --driver window: reload, settle, probe + driver, one JSON with meta, u
   assert.ok(m.clock.wallMs > 0 && m.clock.perfMs >= 0);
   assert.equal(m.settings.lowPowerMode, 'unknown');
   assert.equal(m.settings.reducedMotion, false);
-  assert.deepEqual(m.params, { settleMs: 300, tops: [['platform', '#platform']], from: 1500, to: 2000, settleAtMs: 1000, idleMs: 200, holdMs: 200, sentinelMs: 200, maxScrollMs: 45000 });
+  assert.deepEqual(m.params, { settleMs: 300, tops: [['platform', '#platform']], ySource: 'raf', from: 1500, to: 2000, settleAtMs: 1000, idleMs: 200, holdMs: 200, sentinelMs: 200, maxScrollMs: 45000 });
   assert.deepEqual(m.served, { '/_app/immutable/app.js': createHash('sha256').update(APP_JS).digest('hex').slice(0, 16) }, 'served hash of each same-origin script');
   for (const f of ['tools/iphone.mjs', 'tools/lib/iphone-run.mjs', 'tools/lib/iphone-probe.mjs', 'tools/lib/wip.mjs']) assert.match(m.tool.files[f], /^[0-9a-f]{16}$/);
   assert.match(m.tool.probe, /^[0-9a-f]{16}$/);
@@ -83,16 +89,25 @@ test('run --driver window: reload, settle, probe + driver, one JSON with meta, u
   assert.deepEqual(j.tops, { platform: 2860 });
   assert.deepEqual(j.stateAtStart, { panel: true, panelInert: true, panelImg: 21, panelImgSrc: 0, custom: { imgs: 21 } });
   assert.ok(j.early.frames.length > 10, 'load frames from the reconnect through the settle');
-  assert.deepEqual(j.fields, ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs']);
+  assert.deepEqual(j.fields, ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs', 'docH']);
   const ev = j.crossings.filter((c) => c.kind === 'inert');
   assert.equal(ev.length, 1);
   assert.equal(ev[0].src, 'effect');
-  assert.ok(ev[0].y >= 1960 && ev[0].y < 2100, `inert flip at y ${ev[0].y}`);
+  assert.ok(j.frames[ev[0].frame][3] >= 1960 && ev[0].y > 1500 && ev[0].y <= j.frames[ev[0].frame][3], `inert flip in the frame that reached y 1960 (crossing y ${ev[0].y}, the last rAF y)`);
   const row = j.mutations.counts.find((c) => c[0] === ev[0].frame);
   assert.equal(row[1 + j.mutations.types.indexOf('src')], 21);
   assert.ok(j.crossings.some((c) => c.kind === 'scene' && c.value === 'active' && c.frame === ev[0].frame));
   assert.ok(j.crossings.some((c) => c.kind === 'cv' && c.id === 'section.commission'));
   assert.equal(j.driverResult.finalY, 2085);
+  assert.equal(m.ySource, 'raf');
+  assert.ok(j.frames.slice(1).every((f) => f[8] === 2900), 'docH per frame');
+  assert.deepEqual(m.battery.start, { t: m.battery.start.t, Temperature: 3050, IsCharging: false, ExternalConnected: true, CurrentCapacity: 80, temperatureC: 30.5 });
+  assert.equal(m.battery.end.CurrentCapacity, 79, 'a second battery read after the run');
+  assert.equal(iddCalls(), 2);
+  assert.ok(!readFileSync(out, 'utf8').includes('FAKESERIAL'), 'no battery serial in the run JSON');
+  assert.deepEqual([m.settings.batteryPct, m.settings.charging, m.settings.lowPowerMode], [80, false, 'unknown']);
+  assert.deepEqual(j.post.resources.map((x) => [new URL(x[0]).pathname, x[1]]), [['/_app/immutable/app.js', 'script']], 'Resource Timing dump after the run');
+  assert.equal(j.early.fontsStatus, 'loaded');
 
   const ev2 = phone.events();
   assert.equal(ev2.filter((e) => e.reload).length, 1, 'one reload per run');
@@ -108,15 +123,18 @@ test('run --driver scroll and --driver morph: phases to the bottom; morph tweens
   const phone = await fakePhone(['--doc-height=1500', '--morph']);
   assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
   let out = join(dir, 's.json');
-  let r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--out', out], phone.env);
+  let r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--y-source', 'scroll', '--no-battery', '--out', out], phone.env);
   assert.equal(r.code, 0, r.out);
   let j = JSON.parse(readFileSync(out, 'utf8'));
   assert.equal(j.meta.driver, 'S');
+  assert.deepEqual([j.meta.ySource, j.meta.params.ySource, j.meta.battery], ['scroll', 'scroll', null]);
+  assert.equal(iddCalls(), 0, '--no-battery: no idevicediagnostics call');
+  assert.equal(j.frames.at(-1)[3], 685, 'scroll-listener y');
   assert.equal(j.meta.label, 'run');
   assert.deepEqual(Object.keys(j.marks), ['idle', 'scroll', 'bottom']);
   assert.deepEqual(j.driverResult, { maxY: 685, finalY: 685 });
   out = join(dir, 'm.json');
-  r = await run(['--driver', 'morph', '--owner', 'me', '--settle', '0', '--hold', '150', '--cycles', '2', '--label', 'morph', '--out', out], phone.env);
+  r = await run(['--driver', 'morph', '--owner', 'me', '--settle', '0', '--hold', '150', '--cycles', '2', '--label', 'morph', '--out', out], { ...phone.env, FW_IDEVICEDIAGNOSTICS: join(dir, 'no-such-idevicediagnostics') });
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /^ {2}tween from m=0: first dts /m);
   assert.match(r.stdout, /^ {2}morph: moving \d+fr p50 /m);
@@ -124,6 +142,8 @@ test('run --driver scroll and --driver morph: phases to the bottom; morph tweens
   assert.deepEqual([j.meta.driver, j.meta.params.holdMs, j.meta.params.cycles], ['M', 150, 2]);
   assert.deepEqual(j.summary.tweens.map((t) => t.from), [0, 1, 0, 1]);
   assert.equal(j.driverResult.driver.cycles, 2);
+  assert.deepEqual(j.meta.battery, { start: { error: 'idevicediagnostics: ENOENT' }, end: { error: 'idevicediagnostics: ENOENT' } }, 'no libimobiledevice: recorded, the run goes on');
+  assert.equal(j.meta.settings.charging, 'unknown');
 });
 
 test('run --driver morph on a build without __fwMorphDrive: exit 1, the partial run is saved with meta.error', async () => {

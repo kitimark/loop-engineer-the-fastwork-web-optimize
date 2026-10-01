@@ -4,16 +4,23 @@
 // the run JSON (schema `fw-iphone-run/1`).
 //
 // Std probe, per rAF frame (the gap from the previous rAF timestamp to this one):
-//   frames[k] = [t, dt, yStart, yEnd, innerHeight, m, rafJsMs, probeMs]
+//   frames[k] = [t, dt, yStart, yEnd, innerHeight, m, rafJsMs, probeMs, docH]
 //     t        rAF timestamp (page clock = performance.now(), 0.1 ms)
-//     dt       t[k] - t[k-1]; ticks are k = round(dt / 8.333) at 120 Hz (analysis: T3, not here)
-//     yStart   yEnd of the previous frame (scrollY at the probe's previous rAF callback)
-//     yEnd     scrollY at the probe's rAF callback
+//     dt       t[k] - t[k-1]; ticks are k = round(dt / 8.333) (frame gaps quantize at 8.33 ms; analysis: T3)
+//     yStart   yEnd of the previous frame
+//     yEnd     the scroll position from the y source (--y-source, window.__fwrOpts.ySource; recorded per run):
+//                raf    scrollY read in the probe's rAF callback (default). On WebKit a scrollY read with y != 0
+//                       forces a synchronous layout when layout is dirty (unknowns-render U1): the probe can add
+//                       layouts. The A/A on the phone decides the default.
+//                scroll the last value a passive scroll listener saw (read in the scroll event, not in rAF)
+//                none   no y at all (null); drivers still read scrollY every 300 ms, outside rAF, to stop
 //     m        the `--morph` inline custom property of the nav / morph element, or null (no layout read)
 //     rafJsMs  sync time of the PAGE's own rAF callbacks that ran at t[k-1] (wrapped requestAnimationFrame),
 //              i.e. the rAF JS inside this gap. NOT scroll, IO, timer or message handlers (WebKit Timeline
 //              RenderingFrame "Script" is the full figure, attribution runs only).
-//     probeMs  the probe's own callback time (rAF loop + MutationObserver + cv listener) since the previous row
+//     probeMs  the probe's own callback time (rAF loop + MutationObserver + listeners) since the previous row
+//     docH     document scrollHeight, read where y is read (raf: right after scrollY, layout already clean;
+//              scroll: in the scroll listener; none: null), never as an extra read
 //   mutations: every MutationObserver record on the whole document (subtree, attributes with old values,
 //     childList, characterData), counted by type with NO cap (F-044: a first-N cap hid the inert flip behind
 //     an img src burst). Attribute writes that leave the value unchanged count as `same`, not under their type
@@ -24,18 +31,22 @@
 //   crossings (code-threshold log): the EFFECTS of IO edges and scene gates, each [t, kind, id, value, y] in
 //     the page, placed like mutations: scene / render (data-start-selling-scene|render values), inert
 //     (present/removed), class (+token / -token, svelte-* hash classes ignored), cv
-//     (contentvisibilityautostatechange skipped|rendered). `src: "effect"`: an IO callback that changes
-//     nothing is not seen here (wrapping the page's IO callbacks needs a bootstrap script: T1b, `src: "io"`).
+//     (contentvisibilityautostatechange skipped|rendered), font (document.fonts loadingdone). A crossing's y is
+//     the y source's last value (raf: the last rAF's yEnd, so up to a frame stale; the observer itself reads no
+//     layout). `src: "effect"`: an IO callback that changes nothing is not seen here (wrapping the page's IO
+//     callbacks needs a bootstrap script: T1b, `src: "io"`).
 //   marks: {phase: [t0, t1]} on the frames' clock, also performance.mark('fwr:<phase>:start|end').
 //   anims: document.getAnimations() counts by timeline type before the driver starts.
 //   tops (--tops id=selector,...): document top (getBoundingClientRect().top + scrollY, a layout read) of each
 //     element before the probe starts (`tops`) and after the driver ends (`topsPost`), outside the timed window,
 //     for crossing placement y_i = top_i - f_i * vh (protocol §3.4) with the top of the same run.
 // Probe cost: one MutationObserver on the whole document (WebKit then builds a record for every mutation, which
-// probeMs does not see), a wrapped requestAnimationFrame, one rAF loop, one capture listener. No layout reads.
+// probeMs does not see), a wrapped requestAnimationFrame, one rAF loop, capture listeners (cv, fonts; scroll for
+// --y-source scroll). Layout reads: only the y source's (scrollY + scrollHeight per frame with raf).
 
 export const SCHEMA = 'fw-iphone-run/1';
-export const FIELDS = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs'];
+export const FIELDS = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs', 'docH'];
+export const Y_SOURCES = ['raf', 'scroll', 'none'];
 export const MUT_TYPES = ['src', 'class', 'style', 'inert', 'tabindex', 'scene', 'render', 'other', 'childList', 'text', 'same'];
 export const TICK_MS = 1000 / 120;
 export const DRIVERS = { scroll: 'S', window: 'W', morph: 'M' };
@@ -51,6 +62,16 @@ export const PROBE_STD_JS = `(() => {
   const rAF = rAF0.bind(window);
   const P = window.__fwr = { v: 1, probe: 'std', t0: R1(now()), frames: [], batches: [], crossings: [], marks: {}, stopped: false };
   let self = 0;
+  // y source (--y-source): raf | scroll | none, set by startJs / optsJs in window.__fwrOpts
+  const YS = (window.__fwrOpts && window.__fwrOpts.ySource) || 'raf';
+  P.ySource = YS;
+  let sy = null, sh = null; // scroll source: the last values the passive scroll listener saw
+  const onScroll = () => { const a = now(); sy = Math.round(scrollY); sh = document.documentElement.scrollHeight; self += now() - a; };
+  if (YS === 'scroll') { sy = Math.round(scrollY); sh = document.documentElement.scrollHeight; window.addEventListener('scroll', onScroll, { passive: true }); }
+  let lastT = null, lastY = YS === 'raf' ? Math.round(scrollY) : sy;
+  const yLast = () => lastY; // crossings: the y source's last value, no read of its own
+  // drivers: where to stop. none: a scrollY read every 300 ms in a timer, not in rAF
+  P.yNow = () => (YS === 'scroll' ? sy : Math.round(scrollY));
   const desc = (e) => {
     if (!e || !e.tagName) return String(e && e.nodeName || '?');
     if (e.id) return '#' + e.id;
@@ -68,7 +89,7 @@ export const PROBE_STD_JS = `(() => {
     const c = new Array(TYPES.length).fill(0);
     let other = 0;
     const next = new Map(); // target -> {attr: value after this record}: walk backwards to know each record's new value
-    const y = Math.round(scrollY), cr = [];
+    const y = yLast(), cr = [];
     for (let i = recs.length - 1; i >= 0; i--) {
       const r = recs[i];
       if (r.type === 'childList') { c[TI.childList] += r.addedNodes.length + r.removedNodes.length; continue; }
@@ -101,30 +122,33 @@ export const PROBE_STD_JS = `(() => {
     self += now() - a;
   });
   mo.observe(document, { subtree: true, attributes: true, attributeOldValue: true, childList: true, characterData: true });
-  const onCv = (e) => { const a = now(); P.crossings.push([R1(a), 'cv', desc(e.target), e.skipped ? 'skipped' : 'rendered', Math.round(scrollY)]); self += now() - a; };
+  const onCv = (e) => { const a = now(); P.crossings.push([R1(a), 'cv', desc(e.target), e.skipped ? 'skipped' : 'rendered', yLast()]); self += now() - a; };
   document.addEventListener('contentvisibilityautostatechange', onCv, true);
+  const fonts = document.fonts && document.fonts.addEventListener ? document.fonts : null;
+  const onFont = (e) => { const a = now(); P.crossings.push([R1(a), 'font', 'document.fonts', (e.fontfaces ? e.fontfaces.length : 0) + ' faces', yLast()]); self += now() - a; };
+  if (fonts) fonts.addEventListener('loadingdone', onFont);
   // nav / morph element for m (cached; re-queried when it leaves the document)
   let mEl = [];
   const morphEls = () => {
     if (!mEl.length || mEl.some((e) => !e.isConnected)) mEl = [document.querySelector('header.start-selling-top-nav'), document.querySelector('.start-selling-morph-backdrop') || document.querySelector('.start-selling-morph')].filter(Boolean);
     return mEl;
   };
-  let lastT = null, lastY = Math.round(scrollY);
   const loop = (t) => {
     if (P.stopped) return;
     const a = now();
     let m = null;
     for (const e of morphEls()) { const v = e.style.getPropertyValue('--morph'); if (v !== '') { m = Math.round(parseFloat(v) * 1000) / 1000; break; } }
-    const y = Math.round(scrollY);
+    let y = null, h = null;
+    if (YS === 'raf') { y = Math.round(scrollY); h = document.documentElement.scrollHeight; } else if (YS === 'scroll') { y = sy; h = sh; }
     const j = lastT === null ? null : js.get(lastT) || 0;
     if (lastT !== null) js.delete(lastT);
-    P.frames.push([R1(t), lastT === null ? null : R1(t - lastT), lastY, y, innerHeight, m, j === null ? null : R2(j), R2(self + now() - a)]);
+    P.frames.push([R1(t), lastT === null ? null : R1(t - lastT), lastY, y, innerHeight, m, j === null ? null : R2(j), R2(self + now() - a), h]);
     self = 0; lastT = t; lastY = y;
     rAF(loop);
   };
   rAF(loop);
   P.mark = (name, edge) => { const t = now(); try { performance.mark('fwr:' + name + ':' + edge); } catch (e) {} if (edge === 'start') P.marks[name] = [R1(t)]; else if (P.marks[name]) P.marks[name][1] = R1(t); return t; };
-  P.stop = () => { P.stopped = true; mo.disconnect(); document.removeEventListener('contentvisibilityautostatechange', onCv, true); window.requestAnimationFrame = rAF0; };
+  P.stop = () => { P.stopped = true; mo.disconnect(); document.removeEventListener('contentvisibilityautostatechange', onCv, true); if (fonts) fonts.removeEventListener('loadingdone', onFont); if (YS === 'scroll') window.removeEventListener('scroll', onScroll, { passive: true }); window.requestAnimationFrame = rAF0; };
   return 'installed';
 })()`;
 
@@ -136,8 +160,9 @@ export const PRE_JS = `(() => {
   try { const a = document.getAnimations(); const by = {}; for (const x of a) { const k = x.timeline ? x.timeline.constructor.name : 'none'; by[k] = (by[k] || 0) + 1; } anims = { total: a.length, byTimeline: by }; } catch (e) { anims = { error: String(e) }; }
   const mm = (q) => { try { return matchMedia(q).matches; } catch (e) { return 'unknown'; } };
   const settings = { reducedMotion: mm('(prefers-reduced-motion: reduce)'), reducedTransparency: mm('(prefers-reduced-transparency: reduce)'), contrastMore: mm('(prefers-contrast: more)'), dark: mm('(prefers-color-scheme: dark)'), hardwareConcurrency: navigator.hardwareConcurrency ?? 'unknown' };
-  return { href: location.href, ua: navigator.userAgent, vw: innerWidth, vh0: innerHeight, dpr: devicePixelRatio, docH: document.documentElement.scrollHeight, maxY: document.documentElement.scrollHeight - innerHeight, y0: Math.round(scrollY), anims,
-    clock: { wallMs: Date.now(), perfMs: Math.round(performance.now() * 10) / 10 }, settings };
+  let scr = 'unknown'; try { scr = [screen.width, screen.height]; } catch (e) {}
+  return { href: location.href, ua: navigator.userAgent, vw: innerWidth, vh0: innerHeight, dpr: devicePixelRatio, screen: scr, docH: document.documentElement.scrollHeight, maxY: document.documentElement.scrollHeight - innerHeight, y0: Math.round(scrollY), anims,
+    clock: { wallMs: Date.now(), perfMs: Math.round(performance.now() * 10) / 10 }, fonts: document.fonts ? document.fonts.status : 'unknown', settings };
 })()`;
 
 /** State at scroll start (just before the probe and the driver; may read layout). This page's morph panel by
@@ -148,9 +173,20 @@ export const STATE_START_JS = `(() => {
   return { panel: !!p, panelInert: p ? p.hasAttribute('inert') : null, panelImg: p ? p.querySelectorAll('img').length : 0, panelImgSrc: p ? p.querySelectorAll('img[src]').length : 0 };
 })()`;
 
-/** Load-frame log from the reconnect after the reload through the settle (winrun's `early`): [t, dt, y] per rAF. */
-export const EARLY_JS = `(() => { const E = window.__fwrEarly = { t0nav: Math.round(performance.now()), frames: [] }; let l = performance.now();
-  const f = (t) => { if (E.stop) return; E.frames.push([Math.round(t * 10) / 10, Math.round((t - l) * 10) / 10, Math.round(scrollY)]); l = t; requestAnimationFrame(f); }; requestAnimationFrame(f); return 'ok'; })()`;
+/** Load-frame log from the reconnect after the reload through the settle (winrun's `early`): [t, dt, y] per rAF
+ *  (y only with the raf y source, else null), and document.fonts loadingdone events [t, faces]. */
+export const EARLY_JS = `(() => { const E = window.__fwrEarly = { t0nav: Math.round(performance.now()), frames: [], fonts: [], fontsStatus: document.fonts ? document.fonts.status : 'unknown' }; let l = performance.now();
+  const raf = !(window.__fwrOpts && window.__fwrOpts.ySource && window.__fwrOpts.ySource !== 'raf');
+  if (document.fonts && document.fonts.addEventListener) { E.onFont = (e) => { if (!E.stop) E.fonts.push([Math.round(performance.now() * 10) / 10, e.fontfaces ? e.fontfaces.length : 0]); }; document.fonts.addEventListener('loadingdone', E.onFont); }
+  const f = (t) => { if (E.stop) return; E.frames.push([Math.round(t * 10) / 10, Math.round((t - l) * 10) / 10, raf ? Math.round(scrollY) : null]); l = t; requestAnimationFrame(f); }; requestAnimationFrame(f); return 'ok'; })()`;
+
+/** Sets the probe options in the page (after every navigation, before EARLY_JS): the y source. */
+export const optsJs = (o) => `window.__fwrOpts = ${JSON.stringify({ ySource: o.ySource || 'raf' })}; 'ok'`;
+
+/** Resource Timing dump after the run (outside the timed window): [name, initiatorType, startTime, responseEnd,
+ *  transferSize, encodedBodySize] per entry. */
+export const RESOURCE_TIMING_JS = `(() => { const R = (v) => (typeof v === 'number' ? Math.round(v * 10) / 10 : null);
+  try { return performance.getEntriesByType('resource').map((e) => [e.name, e.initiatorType || null, R(e.startTime), R(e.responseEnd), e.transferSize ?? null, e.encodedBodySize ?? null]); } catch (e) { return { error: String(e) }; } })()`;
 
 /** Same-origin scripts and stylesheets the page loaded (for the served-hash record, read after the run). */
 export const RESOURCES_JS = `(() => { const u = new Set(); try { for (const e of performance.getEntriesByType('resource')) if (/\\.(m?js|css)$/.test(new URL(e.name).pathname)) u.add(e.name); } catch (e) {}
@@ -160,7 +196,7 @@ export const RESOURCES_JS = `(() => { const u = new Set(); try { for (const e of
 // ---- drivers: async (P, o) => driverResult; P = window.__fwr ------------------------------------------
 const SLEEP = `const sleep = (ms) => new Promise((r) => setTimeout(r, ms));`;
 // The calibrated `iphone.mjs scroll` steps (research/cpu-throttle-calibration): scrollBy 250 px smooth every 300 ms.
-const STEPS = `const steps = async (stopAt) => { const s = performance.now(); while (scrollY < stopAt && performance.now() - s < o.maxScrollMs) { window.scrollBy({ top: 250, behavior: 'smooth' }); await sleep(300); } };`;
+const STEPS = `const steps = async (stopAt) => { const s = performance.now(); while (P.yNow() < stopAt && performance.now() - s < o.maxScrollMs) { window.scrollBy({ top: 250, behavior: 'smooth' }); await sleep(300); } };`;
 export const DRIVER_JS = {
   scroll: `async (P, o) => { ${SLEEP} ${STEPS}
     P.mark('idle', 'start'); await sleep(o.idleMs); P.mark('idle', 'end');
@@ -200,7 +236,9 @@ export function startJs(driver, opts, { customStateJs = null } = {}) {
   if (!DRIVER_JS[driver]) throw new Error(`unknown driver ${driver}`);
   return `(() => {
   window.__fwrOut = undefined; window.__fwrState = 'running';
-  const E = window.__fwrEarly; let early = null; if (E) { E.stop = true; early = { t0nav: E.t0nav, frames: E.frames }; }
+  window.__fwrOpts = ${JSON.stringify({ ySource: opts.ySource || 'raf' })};
+  const E = window.__fwrEarly; let early = null;
+  if (E) { E.stop = true; if (E.onFont) document.fonts.removeEventListener('loadingdone', E.onFont); early = { t0nav: E.t0nav, frames: E.frames, fonts: E.fonts, fontsStatus: E.fontsStatus }; }
   const pre = ${PRE_JS};
   const stateAtStart = ${STATE_START_JS};
   ${customStateJs ? `try { stateAtStart.custom = (${customStateJs}); } catch (e) { stateAtStart.custom = { error: String(e && e.message || e) }; }` : ''}
@@ -216,8 +254,8 @@ export function startJs(driver, opts, { customStateJs = null } = {}) {
     await settle();
     P.stop();
     const topsPost = tops ? topsOf(o.tops) : null;
-    const post = { docH: document.documentElement.scrollHeight, vh: innerHeight, finalY: Math.round(scrollY), href: location.href };
-    window.__fwrOut = JSON.stringify({ err, pre, stateAtStart, early, post, tops, topsPost, driverResult: res, frames: P.frames, batches: P.batches, crossings: P.crossings, marks: P.marks, t0: P.t0 });
+    const post = { docH: document.documentElement.scrollHeight, vh: innerHeight, finalY: Math.round(scrollY), href: location.href, fonts: document.fonts ? document.fonts.status : 'unknown', resources: ${RESOURCE_TIMING_JS} };
+    window.__fwrOut = JSON.stringify({ err, pre, stateAtStart, early, post, tops, topsPost, driverResult: res, ySource: P.ySource, frames: P.frames, batches: P.batches, crossings: P.crossings, marks: P.marks, t0: P.t0 });
     window.__fwrState = err ? 'error' : 'done';
   })();
   return 'started';
