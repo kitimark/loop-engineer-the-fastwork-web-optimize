@@ -153,6 +153,16 @@ Per question class:
    **Usable** if ≥ 12 of 13 agree. The phone mechanism behind these cells is CONFIRMED (claims-audit §2.8,
    F-075), so a Simulator miss points at the version gap (§1) or at timing (a faster host moves a Layout), not at
    the phone record. Layout durations are reported as a ratio of medians (rule 2's form), not judged here.
+   **Amendment 6 (15:51Z, before any FP-4 data; second read requested from arch-claims).** Running the class-4
+   scorer (`score4.mjs`, p3flip/p3x's walk) on the phone records showed that the any-duration variant can't
+   discriminate. The phone makes a ~0.1 ms view-rooted Layout almost every frame, so every ±60 ms window hits.
+   - Presence is now a non-rotator Layout **≥ 2 ms** (p3flip's default) within ±60 ms. At 1 ms and 5 ms the phone
+     cells come out identical (durations are bimodal, 0.1 ms vs 12-18 ms). On all 8 phone runs it reproduces §7.9.
+   - Rotator cell: every rotator-timer InvalidateLayout in the 6 s idle is followed within 100 ms by a view-rooted
+     Layout dirtied only by the rotator (phone: 8/8 runs, 10-11 ticks each, ~525-590 ms apart, 11-34 ms each).
+   - Chance rate per arm (share of random ±60 ms windows in +400..+1300 holding a kept ≥ 2 ms Layout), phone:
+     Q 54-58 %, D 47-54 %, K 22-27 %, B 86-87 %. Presence cells sit near chance, so **usable** also needs the
+     3 phone-absence cells (D +700, K +900, K +1150) to agree.
 5. **Touch path (functional).** Binary facts from FP-6 vs the phone's finger records (handler ran, resize storm
    present, pin fight present). **Usable** if all agree.
 
@@ -190,12 +200,12 @@ Hold 1 (14:26-14:28Z, config-file proxy, baseline served `--vendors=local --late
 - **Facts.** UA `iPhone OS 18_7 … Version/26.5 Mobile/15E148 Safari/604.1` (the phone sends Version/26.6.1);
   innerWidth x innerHeight **430 x 775**, DPR 3, screen 430 x 932, the phone's scripted geometry;
   `hardwareConcurrency` 8 (the host's cores); reduced motion off; docH 6035.
-- **Idle rAF, 10 s at the top (D2, pilot only):** headless (Simulator.app not open) 589 frames, 59 fps, dt mostly
-  16-17 ms, but with stray 2-10 ms and 21-25 ms gaps and **8 gaps > 34 ms**. With the window shown: 598 frames,
-  60 fps, dt 15-20 ms, 0 gaps > 34 ms. So the simulated display runs at 60 Hz here, not at the host panel's 120 Hz (OBSERVED, in our setup; D2 stays
-  UNRESOLVED as to why).
-  Headless pacing is noisier: OBSERVED, in our setup, cause unknown. Until FP-1 says otherwise, **measure with
-  the window shown**.
+- **Idle rAF, 10 s (D2, pilot only):** headless (Simulator.app not open), at the top: 589 frames, 59 fps, dt
+  mostly 16-17 ms, with stray 2-10 ms and 21-25 ms gaps and 8 gaps > 34 ms. Window shown: 598 frames, 60 fps,
+  0 gaps > 34 ms, **but measured at the page bottom** (after the headless scroll), so the two differ in position,
+  not only window mode. The simulated display runs at 60 Hz here, not at the host panel's 120 Hz (OBSERVED, in
+  our setup; D2 stays UNRESOLVED as to why). My first reading, "headless is noisier", is **REFUTED by FP-1**
+  (§5.1): same position, same gaps in both modes.
 - **Scroll (pilot's own probe, not `iphone.mjs`'s PROBE, so no phone comparison):** about 7 s to the bottom;
   headless dt>50 16, dt>34 42, p95 50 ms; window dt>50 17, dt>34 30, p95 53 ms. The Simulator janks on this
   page. Whether it janks like the phone is FP-2's question.
@@ -203,6 +213,56 @@ Hold 1 (14:26-14:28Z, config-file proxy, baseline served `--vendors=local --late
   Safari launch only (OBSERVED, in our setup). Its close button sits at about (393, 656) pt; a blind tap there
   when the tip is absent would hit page content (the hero carousel). So the tool taps only when a screenshot shows
   the tip (pixel check; `wda.mjs` forbids element queries), or does it once in `setup` (sent to ts-sim).
+
+### 5.1 FP-1 calibration (hold 15:34-15:38Z; calibration, not a verdict class; all OBSERVED, in our setup)
+
+Records `out/arch-sim/fp1-{hidden,shown}.json` (local), script `fp1.mjs` (bench sha `9ad70feb206b9ccf`, the
+phone's harness logic, port 9232). Baseline served `--vendors=local --latency 150`, http.
+
+| cpu_bench (ms, median of 5 run-medians) | phone (iphone.md §1) | Sim hidden | Sim shown | Sim / phone |
+|---|---|---|---|---|
+| js_numeric | 19 | 14 | 16 | 0.75-0.85 |
+| js_alloc | 25 | 35 | 36 | 1.4 |
+| dom_layout_thrash | 85 | 119 | 123 | 1.4-1.45 |
+| style_recalc_var | 101 | 150 | 154 | 1.5 |
+| dom_create (1000 cards) | 31 | 48 | 50 | 1.55-1.6 |
+| **total** | **261** | **369** | **380** | **1.41-1.46** |
+| on the page (phone: live site; Sim: mirror top) | 419 | 589 | 607 | 1.4 |
+
+The Simulator on this M1 Pro is about **1.4x slower than the A17 Pro** in style, layout and DOM work, and faster
+in pure JS. Its counts can't be read as phone counts as they are (rule 2 decides the counts).
+
+| idle rAF, 10 s | frames | > 34 ms | < 12 ms |
+|---|---|---|---|
+| blank page, hidden / shown | 600 / 600 | 0 / 0 | 4 / 3 |
+| fastwork top, hidden / shown | 584 / 581 | 9 / 9 | 29 / 28 |
+| phone, fastwork top (6 s idle of P3 B7, B8, Q1, Q4; Timeline on) | 361, 360, 361, 359 | 3, 3, 8, 6 | 18, 15, 22, 18 |
+
+Window mode makes no difference. The page makes the idle gaps, on the phone too (paired short and long gaps:
+a late frame, then a catch-up). Per 10 s the Simulator shows 9 against the phone's 5-13 (scaled from 6 s), the
+same order. **Host:** the Simulator boot raises load1 from 4 to about 30 while CPU busy stays at 15-30 %, so
+Simulator holds record CPU %, not load1.
+
+### 5.2 FP-3 (M driver: g vs g-cdwc; hold 15:41-15:47Z, window shown)
+
+Byte-identical `mdrive.mjs` (sha `252a9b91ad5d26a9`); builds served from copies of iphone-runner's snapshots; JS/CSS
+hashes equal to the phone block's (`22efa0ab69ba` / `c6aad94b455f`, `5dc6e8e37388`); `--vendors=local --latency
+150`, http; warm-up per port; C V V C C V V C. Records `out/arch-sim/sim-md-s3-*.json` (local, retagged
+`meta.device: "simulator"`). Host CPU busy 17-49 %.
+
+| moving phase | phone g (C) | phone g-cdwc (V) | Sim g (C) | Sim g-cdwc (V) | rule 1 |
+|---|---|---|---|---|---|
+| frames | 91-120 | 155-195 | 35-41 | 83-99 | |
+| dt > 50 | 1, 2, 3, 24 | 0, 0, 0, 0 | 37, 31, 33, 31 | 17, 16, 5, 5 | agree (disjoint) |
+| dt > 34 | 48, 45, 46, 52 | 0, 0, 1, 0 | 41, 35, 36, 36 | 58, 64, 65, 53 | **reversed, disjoint** |
+| p50 (ms) | 29, 29, 30, 40 | 18, 18, 23, 19 | 103, 119, 119, 119 | 39, 38, 37, 35 | agree (disjoint) |
+| held m=1 p95 (ms) | 17-18 | 17 | 24-27 | 19-29 | (phone sentinel ≤ 18: fails on the Sim) |
+
+On the Simulator the morph is about 4x the phone's frame time (p50 103-119 vs 29-40 ms), against a 1.4x CPU gap
+(§5.1), consistent with D4: the GPU/compositing path is not comparable (OBSERVED, in our setup). Because every
+g frame is > 34 ms and g renders fewer frames, the dt > 34 count inverts. Under §4.3 rule 1 a single disjoint
+reversal makes **class 1 not usable**. Rule 2's ratios (sim+1)/(phone+1) for the M arms are 9.4 (C > 50),
+12 (V > 50), 0.77 (C > 34) and 62 (V > 34), so **class 2 is not usable**. Both verdicts stand whatever FP-2 shows.
 
 ## 6. Verdict table
 
@@ -271,3 +331,5 @@ later option); any runtime download.
 - 2026-10-01 ~14:30Z: arch-claims' amendments 1-5 applied to §1, §2, §4.1, §4.3; §7 tool spec for ts-sim
   (lead's requirements: phone UDID only in a local mode-600 config, proxy never attaches to or navigates the phone,
   first-run tip dismissed once at boot). Hold 1 (functional, fixed iwdp config) queued.
+- 15:28Z: hold 1 read (§5.0). 15:34-15:38Z FP-1 (§5.1). 15:41-15:47Z FP-3 (§5.2): classes 1 and 2 not usable.
+- 15:51Z: amendment 6 (class 4 operationalized on phone data only; FP-4 queued, unread), sent to arch-claims.
