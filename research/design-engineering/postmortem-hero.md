@@ -18,7 +18,9 @@ Inputs:
 Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
 - `lock.mjs` / `arrive.mjs` / `win2.mjs`: frames relative to the flip crossing;
 - `tl2-4.mjs`: Timeline segments;
-- `start.mjs`: the first 400 ms of scroll.
+- `start.mjs`: the first 400 ms of scroll;
+- `payer.mjs` (who pays each Layout), `dirtier.mjs` / `dxp.mjs` (who dirties it, crossed with the payer),
+  `cdcheck.mjs` (the record types under one script line): §1.4 and §7.
 
 ## 0. Summary: the five misunderstandings
 
@@ -37,7 +39,8 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
    - flip t+767, +826;
    - transition ends +1466, +1666;
    - a class toggle at +1900 (L11538 write, then a forced read in the commission rAF L3258: Layout 16.2);
-   - countdown ticks.
+   - ~1 Hz idle and in-scroll layouts first read as countdown ticks. **Corrected in §7 (D3):** they come from
+     the avatar carousel rotator, not from the countdown.
 
    Style is 0.1-3 ms in every one. The script that *pays* the layout is whichever code reads geometry first
    (the nav callback `ee` L2671, the logger rAF, the commission rAF); it is never the cause. (**data**: `e-tc2`,
@@ -235,7 +238,10 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
 
 ## 3. h3 and h4 in the corrected model
 
-- **h3 (countdown strip).** The Timeline shows each 1.05 s tick, on each of the two countdowns, triggering a
+- **h3 (countdown strip).** **Superseded by §7 (D3).** The 1 Hz layout pairs below belong to the avatar carousel
+  rotator. The countdown spring dirties no layout in any capture. The t+2286 frame was dirtied by an
+  IntersectionObserver mount (L13345 overlay), not by a tick. The original text is kept for the record:
+  The Timeline shows each 1.05 s tick, on each of the two countdowns, triggering a
   whole-view Layout of 15-37 ms: at idle (pairs Δ205-233 ms) and in scroll (t+1002, +1241, +2286 with RF 128.8 /
   Layout 44.6, +3397).
   - hero.md R3 priced the tick by layers (160 → 16) and writes (10 → 1). Under M5 the term that matters is the
@@ -326,7 +332,8 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
    (saves up to 2 blocks).
 3. **Name the flip pair's layout sources** (Card 3): first the Chrome short-lane computed-style diff (counts
    only), then one split-trigger phone run.
-4. **h3:** name the countdown tick's layout dirtier offline from `e-tc*` before building the strip.
+4. **h3:** ~~name the countdown tick's layout dirtier offline~~ done in §7 (D3). The countdown dirties no layout,
+   so h3's Layout term is zero; the 1 Hz layouts are the avatar carousel's. Its fix ticket is **ST-4**.
 5. **h4:** hold until P3's y≈50 regression is explained; then one G-driver attribution run.
 6. **F-045:** retract the commission gate as the y≈1250 cause (keep it as a possible small term). The +1.13 s
    class-toggle frame (L11538 → L3258) goes to fix-scroll-engine / commission-forced-layout.
@@ -339,3 +346,153 @@ First 400 ms after the 6 s idle (`start.mjs`):
   removable work (the JS exit writes), not a pure rest transient.
 - **R (P3):** it returns (38 at +0).
 - The y≈700 frame comes ~2 s after motion starts, so it is not a first-frame-after-rest effect.
+
+## 7. Addendum D3: what dirties layout "on each countdown tick" (unknowns-actions D3)
+
+Question (unknowns-actions D3): what dirties the 15-37 ms whole-view layout seen about once per second?
+Answer: **not the countdown.** It is the avatar carousel rotator in `#people`, in the "start-selling-future"
+community pill. It runs at nearly the countdown's cadence, which is why §3 h3 mixed the two up. This is offline
+work only: the three Timeline captures `e-tc1`, `e-tc2`, `e-ta1` (aw1-10e) and the source. No phone, no Chrome.
+
+### 7.1 Dirtier vs payer, with the logger separated (data: `e-tc1/tc2/ta1.tl.json`; `dirtier.mjs`, `dxp.mjs`)
+
+Method, for every Layout record ≥10 ms:
+- **Dirtier:** the last InvalidateLayout record before it that is not under the logger's `loop` (scriptName "",
+  L5), with its script chain.
+- **Payer:** the script that encloses the Layout (§1.4).
+- **No dirtier:** if no non-logger InvalidateLayout happened since the previous Layout, style resolution
+  (transition or animation steps) dirtied the layout, and the logger pays it.
+
+| dirtier (overlay line) | idle (t<0): n, ms each | scroll: n, ms each | paid by |
+|---|---|---|---|
+| **Timer → `2.DyWL8TcE.js:11571` (avatar rotator)** | **15**, 14-31 (med 24) | **32**, 11-43 (med 18) | render update 47/47, logger 0 |
+| Timer → `:3864` (hero script accent, word swap) | 2, 22 | 1, 14 | render update |
+| IntersectionObserver (→ `:13345`, lazy section mount) | 0 | 5, 13-24 | render update |
+| rAF → `:2671` (nav callback `ee`), rAF → `:3258` (commission rAF) | 0 | 3 + 3, 13-16 | page script |
+| native (scroll, reveal, IO; no script on the stack) | 3, 14-15 | 28, 11-23 | render update |
+| none recorded (style-driven) | 0 | 20, 12-25 | **logger** 20/20 |
+| **countdown spring rAF `:4039`** (baseline L3836, `$E`) | **0** | **0** | n/a |
+
+**The countdown (`cdcheck.mjs`):**
+- The spring rAF at overlay L4039 runs 113-183 times per capture.
+- Under it there are only `RequestAnimationFrame` and `ScheduleStyleRecalculation` records (51-57 per capture),
+  and **0 InvalidateLayout**.
+- Its face writes are `style.transform` on `will-change: transform` faces, i.e. composited translates. So the
+  countdown dirties no layout; its cost lies elsewhere (face repaints, F-050 / de-pm-morph).
+
+**The rotator:**
+- Its 17-18 timer callbacks per capture hold an InvalidateLayout in 14-17 of them, with 16-19 ms of script in
+  total.
+- Each callback also holds 3 MutationObserver callbacks from the analytics vendors (`analytics.js:118`, the
+  Amplitude GTM bundle). They are small, and the InvalidateLayout record comes before them in the chain.
+- `dirtier2.mjs` on tc2: for all 14 rotator layouts ≥10 ms, the rotator's InvalidateLayout is the **only**
+  non-logger InvalidateLayout since the previous Layout.
+
+**The logger caveat (F-051 / X9) does not apply to these layouts.**
+- The logger dirties none of them and pays none of them (47/47 are paid by the render update).
+- The 20 layouts the logger does pay are the style-driven ones, with no script InvalidateLayout. Without the
+  logger, the next render update would pay them: they can move in time but are not added.
+
+### 7.2 The writer (page source)
+
+Baseline `site-pretty/_app/immutable/nodes/2.DyWL8TcE.js`, component `mM` (`#people`):
+
+- **Where it runs.** L11330-11356; the timer callback is L11332 (overlay L11571).
+  - It runs while `dE`'s element is within one viewport (`rootMargin: 100% 0px`, L2749-2776). That covers
+    y 0 and also y≈2745 in these captures.
+  - `prefers-reduced-motion` stops it (`if (!e.matches)`).
+- **One cycle (about 1.02-1.05 s) makes two writes.**
+  1. It waits 800 ms, then sets `z(S, true)`.
+  2. It waits 220 ms, then sets `z(x, x+1)` and `z(S, false)`.
+- **The pairs.** The two writes of a cycle are 205-240 ms apart. In tc2 idle: −2130 / −1895. In scroll:
+  +4257 / +4497 and +5306 / +5546. These are the "pairs Δ205-233 ms" that §3 credited to two countdowns.
+- **Each write swaps a whole `{#if}` branch.** The swap is L11415-11447, `s(S) ? e(ge) : e(_e, -1)`, inside
+  `<div class="start-selling-avatars is-carousel">` (template `pM`, L11257).
+  - S = true mounts `dM`: 5 new `<img loading="lazy">`, the first with `is-exit` and the last with `is-enter`.
+  - S = false mounts a keyed each of 4 new `fM` imgs.
+  - So every tick removes 4-5 renderers and inserts 4-5 new ones.
+- **The CSS** (`2.gBuqKVzi.css` L2856-2887):
+  - `.is-carousel` is `display:flex; width:104px; height:32px; overflow:hidden`.
+  - `img.is-exit` runs `avatars-exit` for 0.22 s. It animates **`width`, `flex-basis` and `margin-right`**
+    (layout properties, on the main thread) plus opacity (keyframes L2888; a twin `start-selling-avatars-exit` at L10412).
+  - `img.is-enter` runs `avatars-pop` (L2905: opacity 0 → 1, scale .35 → 1). It ends at opacity 1, a presence flip in
+    §1.3's sense.
+- **The second dirtier** (3 per capture) has the same shape. The hero script accent's draw-out → draw-in timer
+  (baseline L3699-3701) changes the shown word (`z(r, o)`), which is a text change.
+
+### 7.3 Why the layout is whole-view rather than local: LOCATED, not NAMED
+
+**The data says full layout from the RenderView, not a subtree layout at the carousel.**
+- Every rotator Layout has the Timeline `root` quad `[0,0,430,0,430,775,0,775]`, which is the RenderView's.
+- The few subtree layouts in the same captures report their own root quad (e.g. 398×52 boxes).
+- The cost depends on page state, not on the carousel: 19-31 ms at y 0, 11-18 ms mid-scroll, 30-43 ms at
+  y≈2745.
+
+**Vendor source:** WebKit main, `Source/WebCore/rendering/RenderObject.cpp`, `isLayoutBoundary` and
+`markContainingBlocksForLayout`.
+- A box stops the upward marking if it has non-visible overflow, a fixed width and height, and a new formatting
+  context, or if it has layout + size containment.
+- `.is-carousel` (104×32, overflow hidden, a flex container) appears to meet the first set. On main's rules an
+  insert inside it should therefore schedule a **subtree** layout at the carousel.
+
+The phone shows a full layout instead, so one of these candidates holds (none tested):
+- **W1:** the phone's WebKit differs from main here. Either an older rule applies, or being a flex item inside
+  the inline-flex `.start-selling-future-community-proof` disqualifies the carousel.
+- **W2:** something marks above the carousel. Two candidates:
+  - preferred-width invalidation (`invalidateContentLogicalWidths`, containing-block chain) from the removed and
+    inserted renderers, through the shrink-to-fit ancestors (the proof is inline-flex `flex:none`; the pill is
+    auto-width);
+  - the `avatars-exit` width/flex-basis steps.
+- **W3:** a subtree root is converted to a full layout because a layout was already pending
+  (`scheduleSubtreeLayout`). This is weakened: the record shows no competing InvalidateLayout (7.1). A style-only
+  dirtying would not show there, though.
+
+The section's only containment is lifted while the rotator runs.
+- `[data-start-selling-render="deferred"]` (`content-visibility: auto`, CSS L11759) applies only while `dE` is
+  inactive.
+- The rotator only runs while `dE` is active (`sE`, L2689-2694).
+
+**Verdict (§2.3 form):**
+- **Dirtier: LOCATED.** Code, cadence and Timeline agree in 3/3 captures and 47/47 layouts ≥10 ms. NAMED needs
+  the ablation in 7.4.
+- **Whole-view mechanism: UNEXPLAINED** between W1, W2 and W3.
+- **Device class:** iPhone 15 Pro Max Safari (the tc/ta captures). Chrome is not evidence for WebKit's layout
+  root.
+
+### 7.4 Cheapest naming probe: ticket ST-4 (via mgmt-ops-4)
+
+Setup:
+- one phone Timeline attribution run per arm (Page.disable → Page.enable → Timeline.start, F-047);
+- top → y 2500 as in `e-tc*`, on aw1-10e;
+- counts only, no timing block;
+- readout: the same script as 7.1 (`dirtier.mjs`/`dxp.mjs`) plus the root quad.
+
+| arm | change (overlay) | prediction if 7.2 is right | what it splits |
+|---|---|---|---|
+| C | aw1-10e | 14-17 rotator layouts ≥10 ms, root = view | (control) |
+| A1 (positive ablation) | rotator loop off (`if (!e.matches)` → `if (false)`) | 0 layouts dirtied by L11571; idle at y 0 loses its 19-31 ms layouts | names the dirtier |
+| A2 (boundary) | `.start-selling-avatars.is-carousel { contain: strict }`, CSS only; the box is already 104×32 and clipped, so expect 0 % pixel diff | root = the carousel quad, Layout <1 ms | A2 drops: W1 or W2 (a forced boundary works). Root stays view: W3 |
+| A3 (mechanism) | keep the 5 imgs mounted; rotate by `src` and transform/opacity only; no width/flex-basis keyframes; ends not at 1/none | rotator layouts <1 ms | separates the DOM swap from the width animation |
+
+- If A2 holds, it is also the fix candidate: one CSS line, no visual change. A3 is the design-engineering
+  version: it keeps presence (F-049).
+- Prediction to check before spending a block: the idle-at-y-0 `>34` frames (7-10 per 6 s in the hero block,
+  iphone-wave2 §3a) should drop by about the rotator's share. The rotator causes 2 writes per second, so about
+  12 whole-view layouts per 6 s of idle.
+
+### 7.5 Consequences
+
+- **h3 (countdown strip):** its Layout term is **zero**. Keep h3 priced by face repaint and layers only
+  (F-050). P-017 (fix-nav-morph's countdown probe) should not predict a Layout drop.
+- **Idle and rest-to-motion:** the rotator is the main source of whole-view layout at y 0.
+  - It keeps running in the hero, because the hero is within one viewport of its element.
+  - Any "idle quiet" assumption (I-002's 6 s idle; the rest-to-motion note in §6) includes 2 whole-view layouts
+    per second from it.
+- **ST-2 / Card 4:** the rotator can coincide with the +745 / +945 reveal ends. Before scoring, exclude
+  windows where a rotator InvalidateLayout lands within 16 ms of the frame.
+- **arch-lead's +1645 check (filter end):** it cannot be run on the existing phone data.
+  - Every phone build (aw1-10c, aw1-10e, h1, h1v2, P, P3 and the hero-exit variants) carries the aw1-10e rule
+    `filter 0.9s linear(...)` (aw1-10e overlay CSS L2427). So the filter ends together with transform at +945.
+  - In the window +1550..1750 after the flip, the max dt is 17-18 ms in 27/27 hero runs (`win3.mjs`). With no
+    event there and no frame, this is a null control, not evidence either way.
+  - A test needs the baseline (A, `filter 1.6s`) in a hero block.
