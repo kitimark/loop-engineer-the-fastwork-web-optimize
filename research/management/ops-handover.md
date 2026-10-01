@@ -279,7 +279,9 @@ between tool calls.
    non-measuring hold must never let a timing run start on a loud host). **Same ticket (lead 12:5xZ):** (a) the head
    waiter at the gate calls keepAwakeQueued while gated (lib/lock.mjs acquire); (b) a gate sleep longer than timeoutSec
    must not end in a throw on wake; (c) N2: tag a gain judged against a calibration stored in another display state.
-   Spawn once T8+ (I-033) lands.
+   (d) (lead 13:4xZ) flaky fixture-server request timeout under load: tests/e2e/baseline-snapshot.test.mjs:138
+   (fix.mjs:312 'timeout …/2.fixture.js'). (e) display-off detection only tested with fake readings. T8+ landed
+   (21ec95a + 34f6069, I-033 RESOLVED 13:4xZ): spawn when the lead decides.
 7e. **USER DECISION 12:20Z: host gate quiet-CPU threshold 20 -> 25 %** (20 % was uncalibrated, provisional per the
    09-30 post-mortem). ts-gate25 (toolsmith) makes the change and checks the existing results.json host-busy data on
    whether 30 % is safe later. A/Bs stay comparable: the config records the threshold. T8+ (599471e) is NEEDS-WORK
@@ -344,7 +346,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `doc-protocol-v2` (aa630a1a8c0adae9f) | v2 docs pass (LEAD, README DoD, AGENT_PROMPT, fix-reviewer, EXPERIMENTS, CLAUDE.md); not ops docs | alive |
 | `arch-unknowns` (ENDED; C1 spec in unknowns-validity U1), `de-unknowns-render`, `de-unknowns-ux` (a47fed2b13de28ab2: pacing page F5, P-024) | unknowns hunt | de-* alive |
 | `map-webkit-amplifiers` | D2 mapper (haiku): page-wide scan for the two WebKit amplifiers | alive |
-| `ts-host-state` (a2bdbbb64c7731b2e) | T8+ host record: 3318067 + bdc7775 (MEASUREMENT CODE, npm test 621) | ACCEPT-WITH-NITS 12:5xZ; lead's test:chrome -> land -> C1 (lead) |
+| `ts-host-state` (a2bdbbb64c7731b2e) | T8+ host record landed 21ec95a + 34f6069 (I-033 RESOLVED) | done; C1 (lead, when the user is away) |
 | `ts-claims-board` | claims-audit §4: findings-board claim status + refs (lead spawn 12:5xZ) | alive |
 | `ts-bench-gain` (aabf938f2344fa8fc) | I-034 landed 526642f | done |
 | `arch-claims` (ae93098a3c9f77a35) | claim audit (user rule CLAUDE.md 71ad57d "Platform claims: confirm against a reference"): research/architecture/claims-audit.md, verifiers ver-webkit-style / ver-webkit-ca / ver-chrome; refutations -> owners + mgmt-ops | alive |
