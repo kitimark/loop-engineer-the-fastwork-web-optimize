@@ -25,7 +25,7 @@ import { mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync, openSync, cl
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { sharedStateDir } from './paths.mjs';
-import { status as lockStatus, parseHeld, staleReason, pidAlive } from './lock.mjs';
+import { status as lockStatus, parseHeld, staleReason, pidAlive, tryAcquire, dequeue, release as lockRelease, liveReaders, isGroup, SHARED_LANE } from './lock.mjs';
 import { redact } from './redact.mjs';
 
 export const SIM_NAME = 'fw-sim 15 Pro Max';
@@ -186,31 +186,86 @@ export function setup({ runtime = null, log = console.log } = {}) {
 
 // ---- the hold gate (Hard rule 7) ---------------------------------------------------------------------------------
 export const holdCmd = (owner = '<you>', rest = '-- <cmd>') => `node tools/lock.mjs run chrome-measure --owner ${owner} --max-seconds 420 -- node tools/sim.mjs session --owner ${owner} ${rest}`;
+// ts-lock-share (research/architecture/lock-shared-lane.md §3): a FUNCTIONAL session (no timing: does the page load,
+// does a tool work) may run in a shared-lane reader slot of weight SIM_WEIGHT instead of a normal hold, so at most one
+// light reader runs beside it and never an A/B. One fw-sim, so every session also holds the exclusive `simulator`
+// process lock (strict FIFO, not gated): two functional sessions never race for the device.
+export const SIM_LOCK = 'simulator';
+export const SIM_WEIGHT = SHARED_LANE.weights.simulator;
+export const functionalCmd = (owner = '<you>', rest = '-- <cmd>') => `node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds ${SHARED_LANE.maxSec} --owner ${owner} -- node tools/sim.mjs session --functional --owner ${owner} ${rest}`;
 /**
  * May a Simulator boot / timed run happen now? Only inside this process's own NORMAL chrome-measure hold: the live
  * holder's token is in $FW_LOCK_HELD (set by `lock.mjs run` for its command; the test of wda-runner's buildGate).
  * A free lock, someone else's hold, or a short-lane hold (bounded jobs like npm test) is refused.
+ * `functional: true` (sim.mjs session --functional) also accepts this process's live shared-lane reader slot
+ * ($FW_LOCK_SHARED) of weight >= SIM_WEIGHT, and its own short-lane hold (what `run --shared` becomes while the lead's
+ * switch is off); the result then names the `mode` ('exclusive' | 'short' | 'shared').
  * Returns {ok: true, endsAt} (ms epoch the hold ends, Infinity if it declared no length) or {ok: false, reason}.
  */
-export function holdGate(s = lockStatus('chrome-measure'), held = process.env.FW_LOCK_HELD, { owner, now = Date.now(), what = 'a Simulator session' } = {}) {
+export function holdGate(s = lockStatus('chrome-measure'), held = process.env.FW_LOCK_HELD, { owner, now = Date.now(), what = 'a Simulator session', functional = false, sharedHeld = process.env.FW_LOCK_SHARED } = {}) {
   const h = s.holder;
   const live = h && !s.stale && !staleReason(h, now);
-  const mine = parseHeld(held)['chrome-measure'];
-  if (live && mine && mine === h.token) {
-    if (h.short) return { ok: false, reason: `your chrome-measure hold is a short-lane job (max ${h.maxSec} s): the short lane is for bounded jobs like npm test, and ${what} is minutes of host CPU and GPU. Run it in a normal hold:\n  ${holdCmd(owner)}` };
-    const ends = [h.expiresAt && Date.parse(h.expiresAt), h.meta?.expectSec > 0 && Date.parse(h.acquiredAt) + h.meta.expectSec * 1000].filter((x) => Number.isFinite(x));
-    return { ok: true, endsAt: ends.length ? Math.min(...ends) : Infinity };
+  if (functional && live && isGroup(h)) {
+    const tok = parseHeld(sharedHeld)['chrome-measure'];
+    const x = tok ? liveReaders(h, now).find((y) => y.token === tok) : null;
+    if (x && !(x.weight >= SIM_WEIGHT)) return { ok: false, reason: `your shared reader slot has weight ${x.weight}, and ${what} needs weight ${SIM_WEIGHT} (host CPU and GPU: at most one light job beside it):\n  ${functionalCmd(owner)}` };
+    if (x) return { ok: true, endsAt: Date.parse(x.acquiredAt) + x.maxSec * 1000, mode: 'shared' };
   }
-  const who = live ? `chrome-measure is held by "${h.owner}"${h.short ? ' (a short-lane job)' : ''}, not by this process` : 'chrome-measure is free, but this process does not hold it';
-  return { ok: false, reason: `${who}. ${what[0].toUpperCase()}${what.slice(1)} runs only inside your own normal hold, so no A/B runs beside it (Hard rule 7):\n  ${holdCmd(owner)}` };
+  const mine = parseHeld(held)['chrome-measure'];
+  if (live && mine && mine === h.token && !isGroup(h)) {
+    if (h.short && functional) {
+      const ends = [h.expiresAt && Date.parse(h.expiresAt), h.maxSec > 0 && Date.parse(h.acquiredAt) + h.maxSec * 1000].filter((x) => Number.isFinite(x));
+      return { ok: true, endsAt: ends.length ? Math.min(...ends) : Infinity, mode: 'short' };
+    }
+    if (h.short) return { ok: false, reason: `your chrome-measure hold is a short-lane job (max ${h.maxSec} s): the short lane is for bounded jobs like npm test, and ${what} is minutes of host CPU and GPU. Run it in a normal hold:\n  ${holdCmd(owner)}\n(a functional check that takes no timing runs in a shared slot instead: ${functionalCmd(owner)})` };
+    const ends = [h.expiresAt && Date.parse(h.expiresAt), h.meta?.expectSec > 0 && Date.parse(h.acquiredAt) + h.meta.expectSec * 1000].filter((x) => Number.isFinite(x));
+    return { ok: true, endsAt: ends.length ? Math.min(...ends) : Infinity, ...(functional ? { mode: 'exclusive' } : {}) };
+  }
+  const who = !live ? 'chrome-measure is free, but this process does not hold it'
+    : isGroup(h) ? `chrome-measure is shared by functional readers (${(h.readers || []).map((y) => `"${y.owner}"`).join(', ')}), and ${functional ? 'none of them is this process' : 'a shared slot is no normal hold'}`
+      : `chrome-measure is held by "${h.owner}"${h.short ? ' (a short-lane job)' : ''}, not by this process`;
+  const how = functional ? functionalCmd(owner) : holdCmd(owner);
+  return { ok: false, reason: `${who}. ${what[0].toUpperCase()}${what.slice(1)} runs only inside your own ${functional ? 'normal hold or shared reader slot' : 'normal hold'}, so no A/B runs beside it (Hard rule 7):\n  ${how}` };
 }
 
-/** Commands that touch the Simulator mid-session: only from inside the live session, inside its normal hold. */
-export function requireSession({ owner } = {}) {
+/**
+ * The exclusive `simulator` process lock (one fw-sim, one session): strict FIFO, polled here rather than through
+ * lock.mjs acquire(), whose signal handlers exit at once and would skip the session's Simulator shutdown. The holder is
+ * this process (stale when it dies). Gives up after waitSec (dequeued), naming the holder. Returns {release}.
+ */
+export async function takeSimLock(owner, { waitSec = 60, meta = {}, log = console.error, pollMs = 1000 } = {}) {
+  const t0 = Date.now();
+  let logged = 0;
+  for (;;) {
+    const res = await tryAcquire(SIM_LOCK, { owner, kind: 'process', meta });
+    if (res.ok && !res.reentrant) {
+      const token = res.holder.token;
+      return { holder: res.holder, release: async () => { const h = lockStatus(SIM_LOCK).holder; if (h && h.token === token) await lockRelease(SIM_LOCK, { owner }); } };
+    }
+    if (res.ok) throw new Error(`the ${SIM_LOCK} lock is already held by "${owner}" (another session of yours): one Simulator session at a time`);
+    const h = res.holder;
+    if (Date.now() - t0 >= waitSec * 1000) {
+      await dequeue(SIM_LOCK, owner, (w) => w.pid === process.pid);
+      throw new Error(`the Simulator is busy: the ${SIM_LOCK} lock is ${h ? `held by "${h.owner}" (pid ${h.pid}, since ${h.acquiredAt})` : `being handed over to "${res.next}"`}; gave up after ${waitSec} s (one fw-sim, one session at a time)`);
+    }
+    if (Date.now() - logged > 15000) { log(`[lock ${SIM_LOCK}] busy${h ? `: held by "${h.owner}"` : ''}; you are #${res.position} in queue`); logged = Date.now(); }
+    await new Promise((ok) => setTimeout(ok, pollMs));
+  }
+}
+
+/**
+ * Commands that touch the Simulator mid-session: only from inside the live session, inside its normal hold (or, for a
+ * --functional session, its shared slot). `timed: true` (scroll, record, run) is refused in a functional session.
+ */
+export function requireSession({ owner, timed = false } = {}) {
   const s = liveSession();
   if (!s) throw new Error(`no live Simulator session. Run it inside one:\n  ${holdCmd(owner)}`);
   if (process.env.FW_SIM_SESSION !== s.id) throw new Error(`this process is not inside the live Simulator session (owner "${s.owner}"): run your command as the session's <cmd>`);
-  const g = holdGate(undefined, undefined, { owner: s.owner, what: 'a Simulator run' });
+  if (timed && s.functional) throw new Error(`refusing: this is a functional Simulator session (sim.mjs session --functional, lock mode ${s.lock?.mode ?? '?'}): it takes no timing runs (scroll, record, run), so none of its numbers is ever pooled with a measured one. Run them in a normal hold:\n  ${holdCmd(s.owner)}`);
+  // a no-timing hold (ts-lock-bundle) skipped the host gate: no timed run on a host nobody checked was quiet
+  const ch = timed ? lockStatus('chrome-measure').holder : null;
+  if (ch?.noTiming && parseHeld(process.env.FW_LOCK_HELD)['chrome-measure'] === ch.token) throw new Error(`refusing: your chrome-measure hold is a no-timing hold (lock.mjs run --no-timing: no host gate), and scroll, record and run are timing. Run them in a normal hold:\n  ${holdCmd(s.owner)}`);
+  const g = holdGate(undefined, undefined, { owner: s.owner, what: 'a Simulator run', functional: !!s.functional });
   if (!g.ok) throw new Error(`refusing: ${g.reason}`);
   return s;
 }
@@ -482,23 +537,29 @@ export async function wdaStart({ session, log = console.log, timeoutMs = 120000 
  * shut the Simulator down and quit Simulator.app if this session opened it, also on SIGINT/SIGTERM/SIGHUP.
  * Resolves <cmd>'s exit code (124: stopped before the hold ends; 128+n: a signal).
  */
-export async function session({ owner, window = 'shown', cmd, args = [], log = console.log, err = console.error, tip = null, cleanupMs = 40000 } = {}) {
+export async function session({ owner, window = 'shown', cmd, args = [], log = console.log, err = console.error, tip = null, cleanupMs = 40000, functional = false, simLockWaitSec } = {}) {
   if (!owner) throw new Error('--owner <you> is required');
   if (!WINDOWS.includes(window)) throw new Error(`--window must be shown or hidden (got ${window})`);
-  if (!cmd) throw new Error(`usage: ${holdCmd(owner)}`);
-  const gate = holdGate(undefined, undefined, { owner });
+  if (!cmd) throw new Error(`usage: ${functional ? functionalCmd(owner) : holdCmd(owner)}`);
+  const gate = holdGate(undefined, undefined, { owner, functional, what: functional ? 'a functional Simulator session' : undefined });
   if (!gate.ok) throw new Error(`refusing sim session: ${gate.reason}`);
   const p = ports();
   const cfg = readConfig();
   if (!cfg.udid) throw new Error('no Simulator configured: node tools/sim.mjs setup');
   const dev = findDevice(cfg);
   if (!dev || dev.udid !== cfg.udid) throw new Error(`${SIM_NAME} (configured) not found: node tools/sim.mjs setup`);
-  const other = liveSession();
-  if (other) throw new Error(`a Simulator session is already running (pid ${other.pid}, owner "${other.owner}")`);
-  if (dev.state !== 'Shutdown') throw new Error(`refusing: ${SIM_NAME} is already ${dev.state} (booted by someone else, or a leaked session: node tools/sim.mjs doctor)`);
-
-  const id = randomBytes(6).toString('hex');
-  const rec = { id, pid: process.pid, owner, window, startedAt: new Date().toISOString(), proxyPorts: p, tipDismissed: cfg.tip?.state ?? 'unchecked' };
+  // one fw-sim: the `simulator` lock closes the race of two sessions reading "no live session" at once (two functional
+  // sessions in a raised-cap group). Its wait leaves the boot, the command and the cleanup inside the hold.
+  const left = Number.isFinite(gate.endsAt) ? (gate.endsAt - Date.now() - cleanupMs) / 1000 - 60 : 120;
+  const simLock = await takeSimLock(owner, { waitSec: simLockWaitSec ?? Math.max(0, Math.min(120, Math.floor(left))), meta: { cmd: 'sim session', functional }, log: err });
+  let rec, id;
+  try {
+    const other = liveSession();
+    if (other) throw new Error(`a Simulator session is already running (pid ${other.pid}, owner "${other.owner}")`);
+    if (dev.state !== 'Shutdown') throw new Error(`refusing: ${SIM_NAME} is already ${dev.state} (booted by someone else, or a leaked session: node tools/sim.mjs doctor)`);
+    id = randomBytes(6).toString('hex');
+    rec = { id, pid: process.pid, owner, window, startedAt: new Date().toISOString(), proxyPorts: p, tipDismissed: cfg.tip?.state ?? 'unchecked', ...(functional ? { functional: true, lock: { mode: gate.mode } } : {}) };
+  } catch (e) { await simLock.release(); throw e; }
   writePrivate(sessionFile(), JSON.stringify(rec, null, 1));
   const ac = new AbortController();
   let interrupted = null;
@@ -508,7 +569,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   const state = { appOpened: false, wdaStarted: false };
   let code = 1;
   try {
-    log(`sim session ${id} (owner ${owner}, window ${window}): booting ${SIM_NAME}`);
+    log(`sim session ${id} (owner ${owner}, window ${window}${functional ? `, functional, lock mode ${gate.mode}` : ''}): booting ${SIM_NAME}`);
     await bootDevice(cfg.udid, { abort: ac.signal, log });
     if (window === 'shown') { const was = simAppRunning(); openSimApp(cfg.udid); state.appOpened = !was; }
     if (interrupted) throw new Error(`interrupted by ${interrupted}`);
@@ -534,6 +595,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     try { await shutdownDevice(cfg.udid, { log: clog }); } catch (e) { clog(`shutdown failed: ${e.message}`); }
     if (state.appOpened) { try { quitSimApp(); clog('Simulator.app quit'); } catch {} }
     rmSync(sessionFile(), { force: true });
+    try { await simLock.release(); } catch (e) { clog(`${SIM_LOCK} lock release failed: ${e.message}`); }
     for (const [s, h] of handlers) process.off(s, h);
   }
 }

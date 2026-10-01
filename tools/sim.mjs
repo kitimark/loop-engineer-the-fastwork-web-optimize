@@ -14,6 +14,12 @@
 //        boots, starts the proxy (:9231 list, :9232 tabs), runs <cmd> with FW_IPHONE_PORT=FW_SIM_PORT=9232,
 //        FW_SIM_SESSION and FW_SIM_UDID set, then ALWAYS stops the proxy and shuts the Simulator down
 //        (window shown, the default: Simulator.app shows the device; arch-sim's pilot: headless had stray >34 ms gaps)
+//   # a FUNCTIONAL session (no timing: does a page load, does a tool work): a shared-lane reader of weight 3 (ts-lock-share,
+//   # research/architecture/lock-shared-lane.md §3; while the lead's switch is off it runs as an exclusive short job):
+//   node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner <o> -- \
+//     node tools/sim.mjs session --functional --owner <o> [--window shown|hidden] -- <cmd> [args]
+//        open and wda start work inside it; scroll, record and run (timing) are refused. Every session (functional or
+//        not) holds the exclusive `simulator` process lock: one fw-sim, one session at a time.
 //   # inside a session (its <cmd>, e.g. sh -c '...'):
 //   node tools/sim.mjs open <url> [--out f.png]                simctl openurl, wait until Safari lists it, screenshot to out/sim/
 //   node tools/sim.mjs scroll [--label l] [--out f]            iphone.mjs scroll's probe and sequence -> out/sim/<owner>-<label>-<ts>.json
@@ -39,13 +45,13 @@ const VALUED = ['--owner', '--out', '--label', '--seconds', '--window', '--runti
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const log = (s) => console.log(S.scrub(String(s)));
 const err = (s) => console.error(S.scrub(String(s)));
-const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | session --owner <o> [--window shown|hidden] -- <cmd> | open <url> | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
+const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
 
 async function main() {
   if (cmd === 'setup') { S.setup({ runtime: opt('runtime', null), log }); return 0; }
   if (cmd === 'status') { for (const l of await S.statusLines()) log(l); return 0; }
   if (cmd === 'doctor') return S.doctor({ fix: flag('fix'), log });
-  if (cmd === 'session') return S.session({ owner: opt('owner', process.env.FW_LOCK_OWNER), window: opt('window', 'shown'), cmd: rest[0], args: rest.slice(1), log, err });
+  if (cmd === 'session') return S.session({ owner: opt('owner', process.env.FW_LOCK_OWNER), window: opt('window', 'shown'), cmd: rest[0], args: rest.slice(1), log, err, functional: flag('functional') });
   if (cmd === 'shutdown') {
     const live = S.liveSession();
     if (live && !flag('force') && process.env.FW_SIM_SESSION !== live.id) throw new Error(`a live Simulator session runs (pid ${live.pid}, owner "${live.owner}"); it shuts the Simulator down itself. --force to shut down anyway`);
@@ -82,13 +88,13 @@ async function main() {
   if (cmd === 'wda' && arg === 'start') return S.wdaStart({ session: S.requireSession({ owner: opt('owner') }), log, timeoutMs: 1000 * Number(opt('timeout', 120)) });
   if (cmd === 'wda') throw new Error('usage: node tools/sim.mjs wda build --owner <o> (in your own normal hold) | start (inside a session) | stop');
   if (['open', 'scroll', 'record', 'run'].includes(cmd)) {
-    const session = S.requireSession({ owner: opt('owner') });
+    const session = S.requireSession({ owner: opt('owner'), timed: cmd !== 'open' });
     const owner = session.owner;
     if (cmd === 'open') return openCmd(session, owner);
     if (cmd === 'run') {
       const { runCmd } = await import('./lib/iphone-run.mjs');
       const { runTarget } = await import('./lib/sim-scroll.mjs');
-      const requireSession = () => S.requireSession({ owner });
+      const requireSession = () => S.requireSession({ owner, timed: true });
       const holdEndsAt = () => S.holdGate(undefined, undefined, { owner }).endsAt ?? 0;
       await runCmd({ argv, requireLease: () => { requireSession(); return owner; }, port: S.ports().tabs, target: runTarget(session, { requireSession, holdEndsAt }) });
       return 0;

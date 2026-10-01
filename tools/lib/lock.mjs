@@ -97,6 +97,7 @@ import { keepAwake, stopAwake, keepAwakeQueued } from './awake.mjs';
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
   iphone: 'the shared iPhone 15 Pro Max (ios_webkit_debug_proxy :9221/:9222, one page at a time)',
+  simulator: 'the one iOS Simulator fw-sim (tools/sim.mjs session holds it: one session at a time; strict FIFO, not gated)',
 };
 
 export const lockDir = () => join(sharedStateDir(), 'locks');

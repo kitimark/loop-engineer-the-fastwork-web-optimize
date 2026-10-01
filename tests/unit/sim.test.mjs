@@ -4,7 +4,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE } from '../../tools/lib/sim.mjs';
+import { join } from 'node:path';
+import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock } from '../../tools/lib/sim.mjs';
+import { status as lockStatus } from '../../tools/lib/lock.mjs';
 import { simMeta, SIM_SETTINGS, runTarget } from '../../tools/lib/sim-scroll.mjs';
 import { tempDir } from '../helpers.mjs';
 
@@ -35,6 +37,57 @@ test('holdGate: refuses a free lock, someone else\'s hold, a forged token and a 
   assert.match(g.reason, /short-lane job \(max 300 s\)/);
   g = holdGate({ ...st(holder()), stale: true }, 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 });
   assert.equal(g.ok, false, 'a stale hold is no hold');
+});
+
+// ts-lock-share §3: a functional session also accepts its own shared-lane reader slot (weight >= 3) and its own short hold
+const reader = (o = {}) => ({ owner: 'me', token: 'cccccccccccc', kind: 'process', pid: process.pid, acquiredAt: new Date(T0).toISOString(), deadline: new Date(T0 + 305000).toISOString(), maxSec: 300, weight: 3, ...o });
+const group = (readers) => ({ owner: '(shared)', kind: 'lease', short: true, shared: true, format: 'rw1', token: 'dddddddddddd', acquiredAt: new Date(T0).toISOString(), expiresAt: new Date(T0 + 315000).toISOString(), readers });
+
+test('holdGate functional: its own live reader slot of weight >= SIM_WEIGHT (ends at acquiredAt + maxSec), or its own short hold; mode named', () => {
+  assert.equal(SIM_WEIGHT, 3);
+  let g = holdGate(st(group([reader()])), undefined, { owner: 'me', now: T0 + 1000, functional: true, sharedHeld: 'chrome-measure:cccccccccccc' });
+  assert.deepEqual(g, { ok: true, endsAt: T0 + 300000, mode: 'shared' });
+  g = holdGate(st(holder({ short: true, maxSec: 300, expiresAt: new Date(T0 + 305000).toISOString() })), 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 + 1000, functional: true });
+  assert.deepEqual(g, { ok: true, endsAt: T0 + 300000, mode: 'short' }, 'the switch-off form of `run --shared`');
+  g = holdGate(st(holder()), 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 + 1000, functional: true });
+  assert.deepEqual(g, { ok: true, endsAt: Infinity, mode: 'exclusive' });
+});
+
+test('holdGate functional: refuses a light slot, someone else\'s slot, a dead or expired slot; a non-functional session never takes a slot', () => {
+  let g = holdGate(st(group([reader({ weight: 1 })])), undefined, { owner: 'me', now: T0 + 1000, functional: true, sharedHeld: 'chrome-measure:cccccccccccc' });
+  assert.equal(g.ok, false);
+  assert.match(g.reason, /weight 1, and a Simulator session needs weight 3/);
+  assert.match(g.reason, /lock\.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner me -- node tools\/sim\.mjs session --functional --owner me/);
+  g = holdGate(st(group([reader({ owner: 'other' })])), undefined, { owner: 'me', now: T0 + 1000, functional: true, sharedHeld: 'chrome-measure:bbbbbbbbbbbb' });
+  assert.equal(g.ok, false);
+  assert.match(g.reason, /shared by functional readers \("other"\), and none of them is this process/);
+  g = holdGate(st(group([reader({ pid: 999999 })])), undefined, { owner: 'me', now: T0 + 1000, functional: true, sharedHeld: 'chrome-measure:cccccccccccc' });
+  assert.equal(g.ok, false, 'a reader whose process is gone is no slot');
+  g = holdGate(st(group([reader()])), undefined, { owner: 'me', now: T0 + 306000, functional: true, sharedHeld: 'chrome-measure:cccccccccccc' });
+  assert.equal(g.ok, false, 'past its deadline');
+  g = holdGate(st(group([reader()])), undefined, { owner: 'me', now: T0 + 1000, sharedHeld: 'chrome-measure:cccccccccccc' });
+  assert.equal(g.ok, false);
+  assert.match(g.reason, /a shared slot is no normal hold.*\n {2}node tools\/lock\.mjs run chrome-measure --owner me --max-seconds 420/s);
+  g = holdGate(st(holder({ short: true, maxSec: 60 })), 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 });
+  assert.match(g.reason, /short-lane job \(max 60 s\).*session --functional/s, 'the refusal names the functional form');
+});
+
+test('takeSimLock: one Simulator session at a time; a second waits, gives up after its wait (dequeued, holder named); release frees it', async () => {
+  const prev = process.env.FW_STATE_DIR;
+  process.env.FW_STATE_DIR = join(tempDir('fw-simlock-'), 'state');
+  try {
+    const a = await takeSimLock('one', { waitSec: 0 });
+    assert.equal(lockStatus(SIM_LOCK).holder.owner, 'one');
+    await assert.rejects(takeSimLock('two', { waitSec: 0, log: () => {} }), /the Simulator is busy: the simulator lock is held by "one"/);
+    assert.deepEqual(lockStatus(SIM_LOCK).queue, [], 'the giving-up waiter left the queue');
+    await assert.rejects(takeSimLock('one', { waitSec: 0 }), /already held by "one"/);
+    await a.release();
+    assert.equal(lockStatus(SIM_LOCK).holder, null);
+    const b = await takeSimLock('two', { waitSec: 0 });
+    await a.release(); // a stale handle never frees someone else's hold
+    assert.equal(lockStatus(SIM_LOCK).holder.owner, 'two');
+    await b.release();
+  } finally { if (prev === undefined) delete process.env.FW_STATE_DIR; else process.env.FW_STATE_DIR = prev; }
 });
 
 test('iwdpConfigText: list port, each phone once at -1, then the Simulator; a non-id line is refused', () => {

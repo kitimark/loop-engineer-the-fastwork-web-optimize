@@ -152,6 +152,54 @@ test('session: <cmd> fails -> its exit code, cleanup done; --window shown opens 
   cleanedUp();
 });
 
+test('ts-lock-share: session --functional in a shared reader slot of weight 3 (switch on) or its short form (switch off); the simulator lock held; timing commands refused; a light slot refused', async () => {
+  const udid = setup();
+  const e = { ...env, FW_LOCK_SHARED_JOIN_LOAD: '1000' };
+  assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: e }).code, 0);
+  const out = join(dir, 'fn.json');
+  const probe = `const fs = require('fs'), { execFileSync: x } = require('child_process');
+    const st = (r) => JSON.parse(x(process.execPath, [${JSON.stringify(LOCK)}, 'status', r, '--json'], { encoding: 'utf8' }))[0];
+    let scroll; try { x(process.execPath, [${JSON.stringify(SIM)}, 'scroll', '--label', 'nope'], { encoding: 'utf8', stdio: 'pipe' }); scroll = 'ran'; } catch (err) { scroll = String(err.stderr); }
+    fs.writeFileSync(${JSON.stringify(out)}, JSON.stringify({ shared: process.env.FW_LOCK_SHARED || null, held: process.env.FW_LOCK_HELD || null, session: JSON.parse(fs.readFileSync(${JSON.stringify(join(env.FW_STATE_DIR, 'sim', 'session.json'))}, 'utf8')), cm: st('chrome-measure').holder, sim: st('simulator').holder, scroll }));`;
+  const fn = (lockArgs, e2 = e) => nodeAsync(LOCK, ['run', 'chrome-measure', ...lockArgs, '--max-seconds', '120', '--owner', 'me', '--', process.execPath, SIM, 'session', '--functional', '--owner', 'me', '--window', 'hidden', '--', ...childJs(probe)], { env: e2, timeout: 90000 });
+  let r = await fn(['--shared', '--weight', 'simulator']);
+  assert.equal(r.code, 0, r.out);
+  noIds(r.out, udid);
+  let c = JSON.parse(readFileSync(out, 'utf8'));
+  assert.match(c.shared, /^chrome-measure:[0-9a-f]{12}$/);
+  assert.equal(c.held, null, 'a reader child never gets FW_LOCK_HELD');
+  assert.deepEqual([c.session.functional, c.session.lock], [true, { mode: 'shared' }]);
+  assert.deepEqual([c.cm.shared, c.cm.readers.map((x) => [x.owner, x.weight])], [true, [['me', 3]]]);
+  assert.deepEqual([c.sim.owner, c.sim.kind], ['me', 'process'], 'the simulator lock is held for the session');
+  assert.match(c.scroll, /refusing: this is a functional Simulator session.*takes no timing runs/s);
+  assert.match(r.stdout, /sim session [0-9a-f]{12} \(owner me, window hidden, functional, lock mode shared\)/);
+  cleanedUp();
+  const st = (res) => JSON.parse(node(LOCK, ['status', res, '--json'], { env: e }).stdout)[0];
+  assert.equal(st('simulator').holder, null, 'the simulator lock is released with the session');
+  assert.equal(st('chrome-measure').holder, null);
+  // a light slot (weight 1) is refused before anything boots
+  writeFileSync(env.FAKE_SIMCTL_LOG, '');
+  r = await fn(['--shared', '--weight', '1']);
+  assert.notEqual(r.code, 0, r.out);
+  assert.match(r.stderr, /your shared reader slot has weight 1, and a functional Simulator session needs weight 3/);
+  assert.deepEqual(simctlCalls().filter((x) => x !== 'list'), [], 'nothing booted');
+  // the switch off: `run --shared` is an exclusive short job, and the functional session runs in it
+  assert.equal(node(LOCK, ['shared', 'off', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: e }).code, 0);
+  r = await fn(['--shared', '--weight', 'simulator']);
+  assert.equal(r.code, 0, r.out);
+  c = JSON.parse(readFileSync(out, 'utf8'));
+  assert.deepEqual([c.shared, c.session.lock, c.cm.short, !!c.cm.shared], [null, { mode: 'short' }, true, false]);
+  assert.match(c.held, /^chrome-measure:[0-9a-f]{12}/);
+  cleanedUp();
+  // a normal session in a no-timing hold (ts-lock-bundle: no host gate): it boots, but its timed commands are refused
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--no-timing', '--max-seconds', '120', '--owner', 'me', '--', process.execPath, SIM, 'session', '--owner', 'me', '--window', 'hidden', '--', ...childJs(probe)], { env: e, timeout: 90000 });
+  assert.equal(r.code, 0, r.out);
+  c = JSON.parse(readFileSync(out, 'utf8'));
+  assert.equal(c.cm.noTiming, true);
+  assert.match(c.scroll, /refusing: your chrome-measure hold is a no-timing hold/);
+  cleanedUp();
+});
+
 test('session: a non-simulator device on :9231 (a phone idevice_id did not list) stops the proxy, prints no id, never runs <cmd>; idevice_id failing refuses the proxy', async () => {
   const udid = setup();
   const marker = join(dir, 'ran');

@@ -270,7 +270,8 @@ test('acquire() times out, leaves the queue and says who holds the lock', async 
 test('allStatus lists the known resources and any ad-hoc ones', async () => {
   await L.tryAcquire(R, { owner: 'a' });
   const names = L.allStatus().map((s) => s.resource);
-  for (const n of ['chrome-measure', 'iphone', R]) assert.ok(names.includes(n), names.join(','));
+  for (const n of ['chrome-measure', 'iphone', 'simulator', R]) assert.ok(names.includes(n), names.join(','));
+  assert.ok(!L.GATED.simulator, 'ts-lock-share: the simulator lock is strict FIFO, never host-gated');
 });
 
 test('acquire() during a hand-over (free, another waiter is next) says so instead of "held by undefined"', async () => {
