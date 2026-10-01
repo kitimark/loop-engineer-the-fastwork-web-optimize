@@ -28,22 +28,24 @@ REFUTED, UNRESOLVED. WebKit source is tag `WebKit-7624.4.5` (Safari 26.6, the ph
 
 **Version gap (CONFIRMED by the version map, claims-audit §2 header):** iOS 26.5 ships WebKit 624.2.5, the phone's
 iOS 26.6.1 is in the 624.4.5 family. Two point releases apart: any WebKit fix between them is a Simulator/phone
-difference. No iOS 26.6 Simulator runtime is installed and none is listed for Xcode 26.6 (UNRESOLVED whether Apple
+difference. Exact builds: the Simulator runtime's `WebKit.framework` is CFBundleVersion **8624.2.5.10.4**, built arm64 (not
+arm64e, so no pointer authentication); the nearest public source tags are `WebKit-7624.2.5.10.5` (Simulator) and
+`WebKit-7624.4.5` (phone), and every source claim in §2 was re-read at both. No iOS 26.6 Simulator runtime is installed and none is listed for Xcode 26.6 (UNRESOLVED whether Apple
 publishes one; getting it would be a multi-GB download and needs the user's OK).
 
 ## 2. Platform differences that matter for timing
 
 | # | factor | phone | Simulator | status, reference |
 |---|---|---|---|---|
-| D1 | Safari's rAF rate pref | `PreferPageRenderingUpdatesNear60FPSEnabled` default true | same default: the pref has no simulator condition | **CONFIRMED**: UnifiedWebPreferences.yaml 7624 l.6392-6406 (only `PLATFORM(VISION)` differs) |
+| D1 | Safari's rAF rate pref | `PreferPageRenderingUpdatesNear60FPSEnabled` default true | same default: the pref has no simulator condition | **CONFIRMED**: UnifiedWebPreferences.yaml 7624 l.6392-6406 (only `PLATFORM(VISION)` differs); identical at `WebKit-7624.2.5.10.5` l.6392, the public tag nearest the Simulator's build: **CONFIRMED at both tags** |
 | D2 | display link / refresh | Core Animation arbitrates; 60 Hz requested; 80 Hz runs in finger scrolls (claims-audit §2.7) | the simulated display is driven by the host's render server; the host panel is 120 Hz ProMotion | **UNRESOLVED** (no Apple doc on the Simulator's display link). Decisive check: idle rAF histogram, headless vs Simulator window visible (§4 FP-1) |
 | D3 | CPU | A17 Pro; `cpu_bench.js` total **261 ms** (research/cpu-throttle-calibration/iphone.md §1) | native arm64 on the M1 Pro, shared with every other host process; no phone thermal throttling | Simulator uses the Mac's CPU and memory, "not an accurate test of performance": **CONFIRMED** (Apple, [Testing and Debugging in Simulator](https://developer.apple.com/library/archive/documentation/IDEs/Conceptual/iOS_Simulator_Guide/TestingontheiOSSimulator/TestingontheiOSSimulator.html), archived guide). Factor: FP-1 runs the same `cpu_bench.js` |
 | D4 | GPU / compositing | A17 Pro GPU, tile-based; GPU process + render server on the device | the host GPU through the Simulator's Metal path; Apple: "does not provide a pixel-accurate match", "rendering performance ... has no relation to" the device's | **CONFIRMED** for the old OpenGL ES wording (same archived guide, "OpenGL ES Differences"); for Metal, the Simulator exposes `MTLGPUFamilyApple2` features only ([WWDC19 418](https://developer.apple.com/videos/play/wwdc2019/418/), vendor talk). Compositing/raster cost: not comparable by design |
-| D5 | WebKit build differences | device build | `PLATFORM(IOS_FAMILY_SIMULATOR)` build: no `HAVE_IOSURFACE_ACCELERATOR`, no `HAVE_IOSURFACE_COREIMAGE_SUPPORT`, no `HAVE_IOSURFACE_RGB10`, no `HAVE_IOS_JIT_RESTRICTIONS` | **CONFIRMED** by source: PlatformHave.h 7624 l.377, 381, 600, 871. `AcceleratedDrawingEnabled` (layer backing stores) is true for modern WebKit on both (UnifiedWebPreferences l.124-137: the simulator exception is WebKitLegacy only) |
-| D6 | JIT | JIT on, gated by the `dynamic-codesigning` entitlement (`HAVE(IOS_JIT_RESTRICTIONS)`) | JIT on, no entitlement gate | **CONFIRMED**: ExecutableAllocator.cpp 7624 l.146-155; PlatformHave.h l.600. Both run JS JIT-compiled; device W^X uses the inline JIT-permissions API, the Simulator the pthread one (PlatformUse.h l.272, 389): cost difference UNRESOLVED, likely small |
+| D5 | WebKit build differences | device build | `PLATFORM(IOS_FAMILY_SIMULATOR)` build: no `HAVE_IOSURFACE_ACCELERATOR`, no `HAVE_IOSURFACE_COREIMAGE_SUPPORT`, no `HAVE_IOSURFACE_RGB10`, no `HAVE_IOS_JIT_RESTRICTIONS` | **CONFIRMED at both tags** by source: PlatformHave.h 7624 l.377, 381, 600, 871 (same simulator lines at `WebKit-7624.2.5.10.5`). `AcceleratedDrawingEnabled` (layer backing stores) is true for modern WebKit on both (UnifiedWebPreferences l.124-137: the simulator exception is WebKitLegacy only) |
+| D6 | JIT | JIT on, gated by the `dynamic-codesigning` entitlement (`HAVE(IOS_JIT_RESTRICTIONS)`) | JIT on, no entitlement gate | **CONFIRMED at both tags**: ExecutableAllocator.cpp 7624 l.146-155 (identical at `WebKit-7624.2.5.10.5`); PlatformHave.h l.600. Both run JS JIT-compiled; device W^X uses the inline JIT-permissions API, the Simulator the pthread one (PlatformUse.h l.272, 389): cost difference UNRESOLVED, likely small |
 | D7 | Low Power Mode | halves rAF to 30 Hz (claims-audit P9) | no battery; LPM state not settable in the Simulator UI | UNRESOLVED (no doc found); recorded as `lowPowerMode: 'n/a'` |
 | D8 | Safari feature flags | phone's Settings > Safari > Advanced > Feature Flags | the Simulator's own Settings app; default = build defaults | same defaults expected (D1); record both |
-| D9 | 80 Hz finger cadence (F-071) | moving gaps 12-13 ms in finger scrolls | depends on D2 and on touch input injection (WDA) | UNRESOLVED; FP-6 records the gap histogram under a WDA gesture |
+| D9 | 80 Hz finger cadence (F-071) | moving gaps 12-13 ms in finger scrolls | depends on D2 and on touch input injection (WDA) | UNRESOLVED; FP-6 records the gap histogram under a WDA gesture and reads it with P-031's PRESENT/ABSENT rule (arch-claims amendment 5) |
 | D10 | thermal | throttles after ~10 min of scrolling (iphone-wave2 "Thermal episode") | none on the phone side; host load and host thermal instead | Simulator runs need the host quiet (Hard rule 7), record host load |
 | D11 | memory | 8 GB device, tile/backing-store memory limits (`cMaxPixelDimension` 1280 vs 1024 by `systemMemoryLevel()`, claims-audit P2) | host memory: `systemMemoryLevel()` reads the Mac's | inference from P2's code path; UNRESOLVED whether the Simulator ever takes the 1024 branch |
 
@@ -96,6 +98,11 @@ Simulator booted and shut down inside the hold, host load recorded per run. Pilo
 | R | rotator: idle phase (6 s at y 0) of the T runs; O/e-tc1, e-tc2, e-ta1 (+ `.tl.json`) | Timeline | whole-view Layout per rotator tick, 12-17 ms (claims-audit W3) |
 | F | O/finger/F2-F4 (human finger), F-071 | F | no phone G-driver records yet: timing not comparable (F-071), see FP-6 |
 
+Phone state to record with every reference (arch-claims amendment 5): Lockdown Mode **off** (Apple: in Lockdown Mode
+"certain complex web technologies are blocked", support.apple.com/105120, CONFIRMED; which ones, the doc doesn't
+say. Confirm the phone's state with iphone-runner before scoring), Low Power Mode off, display on. The
+Simulator has Lockdown Mode off by default; `meta.sim` records it.
+
 ### 4.2 Simulator blocks
 
 | block | content | n | hold |
@@ -120,7 +127,12 @@ Per question class:
    S dt>34 (baseline vs aw1-10e), M moving dt>50, M moving dt>34, M moving p50 (g vs g-cdwc): Y = 5. The Simulator
    "agrees" on one when its medians move the same way **and** its ranges are disjoint. **Usable** if it agrees on
    ≥ 4 of 5 (X = 4) and no comparison is reversed with disjoint ranges; **not usable** otherwise (a single disjoint
-   reversal = not usable whatever the count). The T arms' frame shifts are mechanism, rule 4.
+   reversal = not usable whatever the count). **Independence** (arch-claims amendment 2): the 5 come in two
+   pairs of correlated metrics (S: one build pair; M: another), so "usable" also needs agreement on at least one
+   metric of S **and** one of M. **Floor case:** if both Simulator medians are 0 for a comparison, it is scored
+   "floor" (neither agreeing nor reversed), reported apart, and counts against X (a floor can't show a gain).
+   The verdict is scoped to the change types tested (S: JS/scroll-handler work, aw1-10e; M: morph
+   compositing, cdwc); other change types stay untested. The T arms' frame shifts are mechanism, rule 4.
 2. **Absolute counts.** Ratio per arm r = (sim median + 1) / (phone median + 1) for dt>50 and dt>34 in the four S/M
    arms (8 ratios). **Usable as is** if all 8 lie in [0.67, 1.5]; **usable with a calibration factor** (the
    geometric mean of the 8) if max r / min r ≤ 2; **not usable** otherwise.
@@ -135,19 +147,25 @@ Per question class:
    is the only one before a view-rooted Layout, every tick" (1). **Presence on the Simulator = a Layout record of
    any duration within ±60 ms of the phone offset**, in both runs of the arm (durations are timing: a faster host
    can push a Layout under the phone's 2/10 ms cuts without changing the mechanism). Scored with de-pm-hero's
-   scripts unchanged, plus a duration-free variant. **Usable** if ≥ 12 of 13 agree. Layout durations are
-   reported as a ratio of medians (rule 2's form), not judged here.
+   scripts unchanged, plus a duration-free variant. **Before scoring presence, rotator-timer Layouts are removed
+   (de-pm-hero's p3x rule: Layouts whose initiator is the rotator timer) in both variants**, and the chance-hit
+   rate is reported: 120 ms ÷ the rotator tick period (a random Layout lands in the ±60 ms window that often).
+   **Usable** if ≥ 12 of 13 agree. The phone mechanism behind these cells is CONFIRMED (claims-audit §2.8,
+   F-075), so a Simulator miss points at the version gap (§1) or at timing (a faster host moves a Layout), not at
+   the phone record. Layout durations are reported as a ratio of medians (rule 2's form), not judged here.
 5. **Touch path (functional).** Binary facts from FP-6 vs the phone's finger records (handler ran, resize storm
    present, pin fight present). **Usable** if all agree.
 
 A class whose block could not run says **untested**, not "not usable". A Simulator verdict never replaces a
 phone verdict; "usable" means "good enough to pre-screen and to iterate before a phone slot".
 
-**Disclosure.** Pilot hold 0b (functional, queued 14:13Z) measures one S run on the baseline and a 10 s idle
-histogram. This reading was committed before that hold's output was read; the pilot's numbers are excluded from
+**Disclosure.** Pilot holds 0 and 1 (functional; hold 1 queued 14:13Z) measure one S run on the baseline and a 10 s idle
+histogram. This reading was committed before those holds' output was read; the pilot's numbers are excluded from
 every verdict and reported in §5.0 only.
 
-**Second reader:** this reading was sent to arch-claims before any fidelity run (§7 log).
+**Second reader:** this reading was sent to arch-claims before any fidelity run; its five amendments (version
+re-read, class 1 independence and floor, class 4 rotator exclusion and chance rate, class 4 mechanism status,
+Lockdown Mode and P-031 for D9) are applied above, still before any fidelity data (§8 log).
 
 ## 5. Results
 
@@ -170,6 +188,66 @@ Two findings for the tool:
 
 (pending: §4.3 applied to §5)
 
-## 7. Log
+## 7. Tool spec: `tools/sim.mjs` (for ts-sim; test-first, separate commits, NEW MEASUREMENT CODE)
+
+Goal: drive the Simulator the way `tools/iphone.mjs` drives the phone, reusing its probes, so a Simulator record
+has the phone record's schema plus `meta.device: "simulator"` and `meta.sim`.
+
+**Commands**
+
+| command | does | guard |
+|---|---|---|
+| `sim.mjs setup` | create `fw-sim 15 Pro Max` (device type iPhone-15-Pro-Max, newest installed iOS runtime, or `--runtime`) if absent; store `{udid, runtime, runtimeBuild, deviceType, xcode}` in the shared state dir (`.git/fastwork-mirror/sim/config.json`) | none (cheap, no boot) |
+| `sim.mjs session --owner o [--window hidden\|shown] -- <cmd>` | **the normal entry point**: boot, wait (`bootstatus -b`), start the proxy, dismiss the first-run tip once (below), run `<cmd>` with `FW_SIM_PORT`, `FW_IPHONE_PORT=9232` and `FW_SIM_UDID` set, then always stop the proxy (and WDA if it started it), `simctl shutdown`, quit Simulator.app only if it opened it, in `finally` and on SIGINT/SIGTERM/SIGHUP (process group, like `wda-runner.mjs` `runGroup`) | refuses unless inside the caller's own **normal** chrome-measure hold (`$FW_LOCK_HELD` token, same test as `wda-runner.mjs` `buildGate`); refuses a short-lane hold; refuses if the fw-sim device is already booted by someone else |
+| `sim.mjs boot` / `shutdown` / `proxy start\|stop` | the parts of `session`, for debugging; `shutdown` and `proxy stop` need no hold (cleanup must always work) and kill only pids from our pidfiles after checking the command line | boot: as `session` |
+| `sim.mjs open <url>` | `simctl openurl`, then wait until the proxy lists the URL and `readyState` is complete; `LANDED_JS` check as in `iphone.mjs open` | inside a session |
+| `sim.mjs scroll` / `record` / `run` / `gesture` | the same code paths as `iphone.mjs scroll` / `record` / `run` / `gesture`, with port 9232, device "simulator", no iphone lease (the session's hold instead), **no battery read** (`idevicediagnostics` would read the phone), `measureGuard` inverted (must be inside own normal hold); output `out/sim/<owner>-<label>-<ts>.json` | inside a session |
+| `sim.mjs wda build\|start\|stop` | WDA for the Simulator: separate DerivedData (`$FW_WDA_HOME/DerivedData-sim`), `-destination 'platform=iOS Simulator,id=<udid>'`, `CODE_SIGNING_ALLOWED=NO` (no team, no Apple ID); start with `TEST_RUNNER_USE_PORT=8101` (never 8100, the phone's), no iproxy; gesture runs get `FW_WDA_URL=http://127.0.0.1:8101` | build inside a normal hold (xcodebuild, minutes of CPU) |
+| `sim.mjs status` | device, booted?, proxy pid/ports, WDA-sim pid, config (UDIDs masked) | none |
+| `sim.mjs doctor` | a booted fw-sim with no live session = leak: say so, `--fix` shuts it down | none |
+
+**Proxy (Hard rules 9 and 12; the lead's requirements):**
+- Socket: `lsof -aUc launchd_sim -Fn`, the name ending `com.apple.webinspectord_sim.socket`, only after Safari runs.
+- Config **file** (iwdp can't name `SIMULATOR` on the command line, §5.0), written to the shared state dir
+  (`.git/fastwork-mirror/sim/iwdp.cfg`, mode 600, never committed, never printed): `null:9231`, then
+  `<udid>:-1` for **every** device `idevice_id -l` lists (deduplicated), then `:9232`. The UDIDs appear nowhere
+  else: not in argv (the file path is), logs, output JSON or errors (`redact()`).
+- After start, `GET :9231/json` must list exactly one device whose id is `SIMULATOR`; anything else: kill the
+  proxy, exit non-zero ("proxy sees a non-simulator device"), print no id. Re-check before every timed run.
+- Ports 9231/9232 fixed (overridable by env for tests); never 9221/9222.
+- The proxy never navigates; `open` uses `simctl openurl`. No command of `sim.mjs` talks to the phone's proxy,
+  the phone's WDA (8100) or iproxy.
+
+**First-run tip:** Safari's "View Bookmarks, Share Menu, and Open Tabs" popover appears on a fresh device. `session`
+dismisses it once after boot (WDA-sim tap on its close button, or, if a `defaults write` key for it is found and
+documented, that) and records `meta.sim.tipDismissed`. A screenshot (`simctl io screenshot`) after `open` goes to
+`out/sim/` for the check. Never `simctl erase` the device in normal use (the tip would come back).
+
+**Record schema:** exactly the phone records' (`fw-iphone-run/1` for `run`, the `scroll`/`record` JSON for those) plus
+`meta.device: "simulator"` and `meta.sim: {runtime, runtimeBuild, deviceType, xcode, window, tipDismissed,
+hostLoad (tools/lib/host.mjs sample at start and end), proxyPorts}`; `meta.settings.lowPowerMode: 'n/a'`,
+`batteryPct`/`charging`: 'n/a'. `tools/lib/stats.mjs` treats "simulator" as its own device: it refuses to pool it
+with phone or Chrome runs (mgmt-ops-5 guardrail 3).
+
+**Refactor (measurement code, call out):** `iphone-run.mjs`'s `DEVICE` constant becomes a parameter, the battery read
+and `measureGuard` become options; `iphone.mjs scroll`/`record` keep their bytes for the phone
+(`tests/unit/iphone-unchanged.test.mjs` pins them): move the shared PROBE/summarize into a module only if the pin
+test is updated with a callout, otherwise `sim.mjs` carries a copy whose hash the test pins equal to the phone's.
+Phone behaviour must not change (same output bytes on the fake proxy).
+
+**Tests (fakes via env, like `wda-runner.mjs`):** `$FW_SIMCTL`, `$FW_IWDP`, `$FW_LSOF`, `$FW_IDEVICE_ID`,
+`$FW_XCODEBUILD`; fake WIP server on the sim port. Cover: the hold gate (no hold, short hold, someone else's hold);
+config file content and mode, UDIDs never in stdout/stderr/JSON; the `:9231` check aborting on a non-simulator
+device; `session` cleanup on success, on failure and on SIGTERM (shutdown always called, only own pids killed);
+`meta.device`/`meta.sim` present; phone `iphone.mjs` outputs unchanged; `stats` refuses mixed devices.
+
+**Out of scope:** idb; HTTPS (the Simulator loads plain http from localhost; `simctl keychain add-root-cert` is the
+later option); any runtime download.
+
+## 8. Log
 
 - 2026-10-01 ~14:00Z: research, device created, pilot queued (hold, owner arch-sim).
+- 2026-10-01 14:13Z: hold 0 (functional): boot/Safari ok; iwdp config finding (§5.0); probe blocked by it.
+- 2026-10-01 ~14:30Z: arch-claims' amendments 1-5 applied to §1, §2, §4.1, §4.3; §7 tool spec for ts-sim
+  (lead's requirements: phone UDID only in a local mode-600 config, proxy never attaches to or navigates the phone,
+  first-run tip dismissed once at boot). Hold 1 (functional, fixed iwdp config) queued.
