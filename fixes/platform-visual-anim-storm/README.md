@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft, cause unknown. No patch yet. The first hypothesis (F-026: the agents-ask visual's
+**Status:** not reproducible on aw1-10c (0/24 fresh loads, 06:45Z); cause unknown, no patch. The first hypothesis (F-026: the agents-ask visual's
 state change starts many keyframe animations) is **ruled out** by a forced-toggle probe (F-027).
 **Topic:** N13, from F-026 (lead decision 06:10Z), owner fix-scroll-engine. Stacking base: `aw1-10c`
 (all-wave1 + scroll-engine /10c, overlay JS 757e2cbc…, CSS c6aad94b…).
@@ -49,7 +49,30 @@ The storm needs scrolling and/or the first entry into the platform region of a f
 3. the scroll-jack region (`#platform` within 200 %: non-passive wheel/touchmove listeners, topic 6);
 4. a major GC under scroll (CPU 6x makes a ~50 ms GC ~300 ms; no script or style time fits).
 
-## Next step (needs mgmt-ops' GO: a normal diagnostic hold ≤ 10 min, not a timing slot)
+## Storm-catch hold (06:45-06:54Z, mechanism/attribution, timing not claimed, load1 3.6-8.1, high)
+
+`storm-trace.mjs` ran 24 fresh loads of **aw1-10c**, alternating traced (12) and untraced (12). Each load was
+verify-like: settle at 1x, CPU 6x, 6 s idle, then a smooth scroll to the bottom.
+- **Storms (LoAF > 150 ms in scroll): 0/12 traced, 0/12 untraced.** No trace was kept (none needed).
+- Every load has exactly one scroll LoAF > 50 ms, at y≈4753 (twice 5003, once 5250): 56-91 ms with 46-78 ms
+  of script. That is the gtag `onscrollend` vendor frame (N11), the same one as in the /10c A/B.
+
+Storm count by stacking base, all data so far:
+
+| base | storms / fresh scroll passes |
+|---|---|
+| with /10c (aw1-10c, se10c-aw1) | **0/29** (this hold 0/24, /10c A/B patched side 0/5) |
+| without /10c (all-wave1, instrumented all-wave1) | 2/12 (A/B base 1/5, E3 1/1, part 4 0/6) |
+| wave1-partial + /10 (2x layers, no 10b/10c) | 1/5 |
+
+0/29 vs 2/12 is suggestive (Fisher's exact p ≈ 0.08), not proof. Either /10c removed the storm (it changes when
+the platform sections first render and cuts the layer count), or the storm is rarer than the ~15 % first estimated.
+
+**Status: not reproducible on the current stacking base (aw1-10c).** No fix candidate, nothing to A/B.
+To make the causal statement, run the same 24-load design on all-wave1 without /10c in one more ≤ 10 min
+diagnostic hold. A rate near 2/12 there would mean /10c removed the storm; ~0 would mean it is just rare.
+
+## Original plan (done above)
 
 Run ~15-20 fresh loads of aw1-10c, each with a verify-style smooth scroll through y 3.5-5.5 k, and record a
 CDP trace per load (`devtools.timeline`, `disabled-by-default-devtools.timeline.frame`, `v8`,
