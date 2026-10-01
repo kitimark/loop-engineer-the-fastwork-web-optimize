@@ -32,6 +32,17 @@ test('package.json has the test scripts and the hook setup', () => {
   assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')).dependencies || {}), [], 'no runtime deps');
 });
 
+test('package.json: test:unit (non-tooling roles, I-021) runs the scope guard first, then only the unit tests', () => {
+  const s = JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')).scripts;
+  assert.equal(s['test:scope'], 'node tools/scope.mjs');
+  assert.match(s['test:unit'], /^node tools\/scope\.mjs && node --test .*"tests\/unit\/\*\.test\.mjs"$/);
+  assert.doesNotMatch(s['test:unit'], /tests\/(e2e|hooks|chrome)/);
+  assert.doesNotMatch(s['test:unit'], /--tooling|FW_TOOLING/, 'the opt-out is the caller\'s explicit choice');
+  const md = readFileSync(join(REPO, 'CLAUDE.md'), 'utf8');
+  assert.match(md, /npm run test:unit/);
+  assert.match(md, /FW_TOOLING=1/);
+});
+
 test('.githooks/pre-commit is executable and guards the expected paths', () => {
   const f = join(REPO, '.githooks', 'pre-commit');
   assert.ok(statSync(f).mode & 0o111, 'executable');

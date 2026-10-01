@@ -53,7 +53,10 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
 6. **Tooling is guarded by tests.** Agents MAY change `tools/` to fix a bug or unblock work. Such a
    change MUST come with a covering test (new or updated in `tests/`) and `npm test` MUST pass; an
    accidental edit caught by a failing test MUST be reverted; tests MUST NOT be weakened to go green
-   (change a test only for a genuine, intended behaviour change). Tool fixes go in a separate commit
+   (change a test only for a genuine, intended behaviour change). Roles that never change tooling
+   (fix owners, integrators, bench authors, architecture, management, reviewers) run
+   `npm run test:unit` instead: a scope guard that fails when their branch touched tooling, then the
+   unit tests (I-021). Tool fixes go in a separate commit
    from fix deliverables and are reported to the lead as an incident ("Unexpected problems"), who
    lands them on `main` first (rule 1) for everyone. Changes to measurement code (`verify.mjs`,
    `lib/cdp.mjs`, `fix.mjs ab`) MUST be called out in the fix's README and `results.json` notes: they
@@ -114,6 +117,7 @@ node tools/fix.mjs serve <topic>                   # run in background; prints M
 curl -sk -D - -o /dev/null https://localhost:<port>/_app/immutable/nodes/2.DyWL8TcE.js   # x-mirror-source: overlay
 node tools/fix.mjs ab <topic> --runs 5             # A/B under the lock -> fixes/<topic>/results.json (+ patch.diff)
 node tools/fix.mjs diff <topic>                    # (ab does this too) fixes/<topic>/patch.diff
+npm run test:unit                                  # before each commit: scope guard (no tooling touched) + unit tests
 # write fixes/<topic>/README.md from the template, then commit README.md, patch.diff, results.json
 # on your worktree branch (local only). Never commit overlay/ (it is gitignored).
 ```
@@ -139,9 +143,23 @@ dependencies). The tests are the hardening, not permission prompts:
 
 ```sh
 npm test              # default: unit + e2e + hook tests on a tiny fixture baseline; no Chrome, network or iPhone (~30 s)
+npm run test:unit     # non-tooling roles: scope guard, then the unit tests only (~5 s, ~7 CPU-s)
+npm run test:scope    # the scope guard alone (node tools/scope.mjs)
 npm run test:chrome   # opt-in: real Chrome, short runs, queues on the real chrome-measure lock (~2 min)
 npm run test:all      # both
 ```
+
+- **Who runs what.** Toolsmiths (and a fix owner's `fixes/INCIDENTS.md` section 1 self-fix) change
+  tooling and run the full `npm test`. Every other role (fix owner, wave integrator, bench author,
+  architecture, management) never changes tooling and runs `npm run test:unit` before
+  committing; mappers and reviewers commit nothing and run no suite. The scope guard
+  (`tools/scope.mjs`) fails, naming the files, when the branch changed `tools/`, `tests/`, `package.json`, `.githooks/` or `.claude/` (except `.claude/agents/`)
+  since its merge-base with `main`, counting committed, staged, unstaged and untracked files. An
+  accident: restore the file as the message says. A deliberate tool fix: own commit, then
+  `FW_TOOLING=1 npm run test:unit` (or `node tools/scope.mjs --tooling`) passes the guard, and the
+  full `npm test` below is still required.
+  `npm run test:unit` costs about 7 CPU-s on at most 2 cores (unit tests at `--test-concurrency=2`;
+  the full suite is ~55 CPU-s and ~75 s): run it directly, **not** through the short lane.
 
 - Agents **may fix bugs in `tools/`** (or work around them) when needed. Every change to `tools/`
   comes with a test that covers it (new or updated in `tests/`), and `npm test` must pass.
@@ -150,8 +168,8 @@ npm run test:all      # both
 - Tool fixes go in **their own commit**, separate from fix deliverables, and are reported to the lead
   as an incident, who lands them on main (rebase + ff-only) so every worktree gets them. The lead
   runs `npm test` on the exact commit in the **main checkout** too: it has `site/`, worktrees don't.
-- `npm test` is about 35 s of CPU: while others may be measuring, run it under the lock in the
-  short lane, `node tools/lock.mjs run chrome-measure --owner <you> --short --max-seconds 120 -- npm test`
+- `npm test` is about 55 s of CPU and 75 s wall (I-021): while others may be measuring, run it under the lock in the
+  short lane, `node tools/lock.mjs run chrome-measure --owner <you> --short --max-seconds 150 -- npm test`
   (not `test:chrome`: it takes the lock itself), and hold a short lease around a commit whose hook
   runs it: `node tools/lock.mjs acquire chrome-measure --owner <you> --short --max-seconds 180 --wait 1800`,
   `git commit`, `node tools/lock.mjs release chrome-measure --owner <you>` (`fixes/INCIDENTS.md`). A
