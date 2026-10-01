@@ -101,15 +101,15 @@
 //   node tools/lock.mjs run chrome-measure --shared --max-seconds 300 --weight npm-test --owner <you> -- npm test
 //   node tools/lock.mjs acquire chrome-measure --shared --max-seconds 240 --owner <you> --wait 1800   # a lease reader
 //   node tools/lock.mjs release chrome-measure --shared --owner <you>
-//   node tools/lock.mjs shared on|off chrome-measure --by lead --reason "<why>" [--cap N]          # the lead's switch
+//   node tools/lock.mjs shared on|off chrome-measure --by lead --reason "<why>" [--cap N] [--join-load L]   # the lead's switch
 // --max-seconds N (1..300) is required; --weight is 1..4 or a job name (check, probe, bench-mech, test-chrome-fn 1;
-// npm-test 2; simulator 3); the readers' weights fit cap 4 (or the switch's --cap). A reader joins the running group
-// while it fits, load1 <= the cpu count and no exclusive waiter is queued (writer preference; readers queued before the
+// npm-test 2; simulator 3); the readers' weights fit the switch's --cap (default 3, max 4). A reader joins the running
+// group while it fits, load1 <= --join-load (default 2x the cpu count) and no exclusive waiter is queued (writer preference; readers queued before the
 // group opened may still join for 30 s). `run --shared` kills its command at --max-seconds like --short (exit 124) and
 // gives it FW_LOCK_SHARED=<resource>:<reader token>: a nested shared run re-enters that slot, a nested exclusive one
 // (verify.mjs, fix.mjs ab, bench gain, a normal or --short run) is refused at once. Timing tools refuse --shared.
 // The lane is OFF unless the lead switched it on; while off, --shared runs as an exclusive --short job (same
-// --max-seconds; a notice on stderr). `status` shows the group, its readers and the switch.
+// --max-seconds; a notice on stderr) whose command gets FW_LOCK_SHARED too, so nothing timed starts inside it. `status` shows the group, its readers and the switch.
 import { spawn, execFileSync } from 'node:child_process';
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedSwitch, setSharedSwitch, isGroup } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
@@ -124,7 +124,7 @@ const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const rest = dd >= 0 ? argv.slice(dd + 1) : [];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
-const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for', '--weight', '--cap'];
+const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for', '--weight', '--cap', '--join-load'];
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 // `shared on|off <resource>` has one more word
 const [cmd, resource] = pos[0] === 'shared' ? [pos[0], pos[2]] : pos;
@@ -155,9 +155,12 @@ function fmt(s) {
   }
   else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}\n${pad}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + pad + JSON.stringify(h.meta) : ''}`;
   if (s.queue.length) line += `\n${pad}queue: ${fmtQueue(s.queue)}`;
-  if (GATED[s.resource]) { const sw = sharedSwitch(s.resource); line += `\n${pad}shared lane: ${sw.enabled ? `on (cap ${sw.cap})` : 'off'}`; }
+  // the lane's line only while it is in use (review-lock-share N1: with the switch off and nothing shared, status reads as on main)
+  if (laneInUse(s)) { const sw = sharedSwitch(s.resource); line += `\n${pad}shared lane: ${laneText(sw)}`; }
   return line;
 }
+const laneText = (sw) => (sw.enabled ? `on (cap ${sw.cap}${sw.joinLoad ? `, join load ${sw.joinLoad}` : ''})` : 'off');
+const laneInUse = (s) => !!GATED[s.resource] && (sharedSwitch(s.resource).enabled || isGroup(s.holder) || !!s.holder?.functional || s.queue.some((w) => w.shared || w.functional));
 const moved = (w) => (w.movedBy ? `, moved by ${w.movedBy}` : '');
 const fmtQueue = (q) => q.map((w, i) => `${i + 1}. ${w.owner}${w.shared ? ` (shared w${w.weight}, max ${w.maxSec} s, since ${w.since}${moved(w)})` : w.short ? ` (short, max ${w.maxSec} s, since ${w.since}${moved(w)})` : ` (${w.noTiming ? 'no-timing, ' : ''}since ${w.since}${moved(w)})`}`).join(', ');
 
@@ -189,7 +192,7 @@ async function main() {
   if (cmd === 'status') {
     const list = resource ? [status(resource)] : allStatus();
     const host = flag('no-host') ? null : await sample({ windowSec: 3 });
-    if (flag('json')) { console.log(JSON.stringify(list.map((s) => (GATED[s.resource] ? { ...s, ...(host ? { host } : {}), sharedLane: sharedSwitch(s.resource) } : s)), null, 1)); return 0; }
+    if (flag('json')) { console.log(JSON.stringify(list.map((s) => (GATED[s.resource] ? { ...s, ...(host ? { host } : {}), ...(laneInUse(s) ? { sharedLane: sharedSwitch(s.resource) } : {}) } : s)), null, 1)); return 0; }
     for (const s of list) console.log(fmt(s));
     if (host) console.log(hostLine(host, list));
     return 0;
@@ -231,9 +234,10 @@ async function main() {
   if (cmd === 'shared') {
     // the lead's switch for the shared lane (audited in locks/audit.log)
     const onOff = pos[1];
-    if (!['on', 'off'].includes(onOff) || !resource) throw new Error('usage: node tools/lock.mjs shared on|off <resource> --by lead --reason "<why>" [--cap N]');
-    const sw = await setSharedSwitch(resource, { on: onOff === 'on', by: opt('by'), reason: opt('reason'), cap: opt('cap') === undefined ? undefined : Number(opt('cap')) });
-    console.log(`SHARED LANE ${resource}: ${sw.enabled ? `on (cap ${sw.cap})` : 'off'}, by "${opt('by')}", logged to ${auditFile()}${sw.enabled ? '' : ' (readers already in a group finish; new --shared jobs run as exclusive --short jobs)'}`);
+    if (!['on', 'off'].includes(onOff) || !resource) throw new Error('usage: node tools/lock.mjs shared on|off <resource> --by lead --reason "<why>" [--cap N] [--join-load L]');
+    const num = (k) => (opt(k) === undefined ? undefined : Number(opt(k)));
+    const sw = await setSharedSwitch(resource, { on: onOff === 'on', by: opt('by'), reason: opt('reason'), cap: num('cap'), joinLoad: num('join-load') });
+    console.log(`SHARED LANE ${resource}: ${laneText(sw)}, by "${opt('by')}", logged to ${auditFile()}${sw.enabled ? '' : ' (readers already in a group finish; new --shared jobs run as exclusive --short jobs)'}`);
     return 0;
   }
   if (!resource) throw new Error(`usage: node tools/lock.mjs ${cmd} <resource> --owner <name>`);
@@ -255,7 +259,9 @@ async function main() {
     const waitSec = Number(opt('wait', 0));
     // gated resource, normal lease: pass the latest host reading; when it is our turn, measure one window and retry
     let host = GATED[resource] && !short && !shared ? { quiet: null, reasons: ['not measured yet'] } : undefined;
-    const sx = shared ? { shared, weight } : {};
+    // N7: FW_LOCK_SHARED from an enclosing slot (a `run --shared` command): a shared lease re-enters it, an exclusive
+    // one is refused, as in acquire()
+    const sx = { ...(shared ? { shared, weight } : {}), sharedHeld: process.env.FW_LOCK_SHARED };
     const attempt = async () => {
       let r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host, ...sx });
       if (r.gated) { host = await gateSample(); r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host, ...sx }); }
@@ -298,7 +304,7 @@ async function main() {
   if (cmd === 'dequeue') {
     // --shared: only the owner's lease-reader entries; without it: only its exclusive entries (B3: a process reader's
     // entry belongs to its process, which drops it when it stops waiting)
-    const q = await dequeue(resource, owner, shared ? (w) => !!w.shared && w.kind !== 'process' : (w) => !w.shared);
+    const q = await dequeue(resource, owner, shared ? (w) => !!(w.shared || w.functional) && w.kind !== 'process' : (w) => !w.shared);
     console.log(`left the ${resource} queue; ${q.length} waiting`);
     return 0;
   }

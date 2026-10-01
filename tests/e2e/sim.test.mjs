@@ -181,15 +181,16 @@ test('ts-lock-share: session --functional in a shared reader slot of weight 3 (s
   writeFileSync(env.FAKE_SIMCTL_LOG, '');
   r = await fn(['--shared', '--weight', '1']);
   assert.notEqual(r.code, 0, r.out);
-  assert.match(r.stderr, /your shared reader slot has weight 1, and a functional Simulator session needs weight 3/);
+  assert.match(r.stderr, /your shared slot has weight 1, and a functional Simulator session needs weight 3/);
   assert.deepEqual(simctlCalls().filter((x) => x !== 'list'), [], 'nothing booted');
   // the switch off: `run --shared` is an exclusive short job, and the functional session runs in it
   assert.equal(node(LOCK, ['shared', 'off', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: e }).code, 0);
   r = await fn(['--shared', '--weight', 'simulator']);
   assert.equal(r.code, 0, r.out);
   c = JSON.parse(readFileSync(out, 'utf8'));
-  assert.deepEqual([c.shared, c.session.lock, c.cm.short, !!c.cm.shared], [null, { mode: 'short' }, true, false]);
-  assert.match(c.held, /^chrome-measure:[0-9a-f]{12}/);
+  // review-lock-share N2: its command gets FW_LOCK_SHARED (the stand-in's token), never FW_LOCK_HELD
+  assert.deepEqual([c.held, c.session.lock, c.cm.short, !!c.cm.shared, c.cm.functional, c.cm.weight], [null, { mode: 'short' }, true, false, true, 3]);
+  assert.equal(c.shared, `chrome-measure:${c.cm.token}`);
   cleanedUp();
   // a normal session in a no-timing hold (ts-lock-bundle: no host gate): it boots, but its timed commands are refused
   r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--no-timing', '--max-seconds', '120', '--owner', 'me', '--', process.execPath, SIM, 'session', '--owner', 'me', '--window', 'hidden', '--', ...childJs(probe)], { env: e, timeout: 90000 });

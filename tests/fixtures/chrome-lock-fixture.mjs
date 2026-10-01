@@ -3,9 +3,12 @@
 // then its test spawns `lock.mjs run chrome-measure` the way verify.mjs / fix.mjs ab take the lock,
 // which must re-enter the hold instead of queueing behind it. FIXTURE_FAIL=1 makes the test fail
 // (the hold must still be released). FIXTURE_SHARED=1 (ts-lock-share): a functional file, holding it as a reader of
-// the shared lane, whose child is a `lock.mjs run --shared` (like bench mech).
+// the shared lane, whose child is a `lock.mjs run --shared` (like bench mech). FIXTURE_HOLDER_OUT=<file>: write the
+// chrome-measure holder record seen during the test there (review-lock-share B1).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { writeFileSync } from 'node:fs';
+import { status } from '../../tools/lib/lock.mjs';
 import { chromeLock, nodeAsync, tool } from '../helpers.mjs';
 
 const SHARED = process.env.FIXTURE_SHARED === '1';
@@ -14,6 +17,7 @@ before(() => lock.acquire(), { timeout: Infinity });
 after(() => lock.release());
 
 test('runs under the file hold; a child tool re-enters it', async () => {
+  if (process.env.FIXTURE_HOLDER_OUT) writeFileSync(process.env.FIXTURE_HOLDER_OUT, JSON.stringify({ holder: status('chrome-measure').holder, env: lock.env }));
   const how = SHARED ? ['--shared', '--max-seconds', '20'] : [];
   const r = await nodeAsync(tool('lock.mjs'), ['run', 'chrome-measure', ...how, '--owner', 'child-tool', '--', process.execPath, '-e', 'process.exit(0)'], { env: lock.env, timeout: 20000 });
   assert.equal(r.code, 0, r.out);

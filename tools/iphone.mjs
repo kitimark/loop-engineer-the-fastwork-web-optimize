@@ -36,7 +36,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep } from './lib/wip.mjs';
-import { status as lockStatus } from './lib/lock.mjs';
+import { status as lockStatus, timedInSlotRefusal } from './lib/lock.mjs';
 import { REPO } from './lib/paths.mjs';
 import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord } from './lib/iphone-url.mjs';
 
@@ -90,6 +90,10 @@ function summarize(res) {
 }
 
 async function main() {
+  // review-lock-share N5: a timing command never runs inside a functional slot (FW_LOCK_SHARED from `lock.mjs run
+  // --shared`, in either switch state) or a functional Simulator session (FW_SIM_FUNCTIONAL, also via FW_IPHONE_PORT)
+  const refusal = ['scroll', 'record', 'run', 'gesture'].includes(cmd) && !flag('help') ? timedInSlotRefusal(`iphone.mjs ${cmd}`) : null;
+  if (refusal) { console.error(refusal); process.exit(2); }
   if (cmd === 'status') {
     const dev = await fetch(`http://localhost:${DEVICE_PORT}/json`, { signal: AbortSignal.timeout(4000) }).then((r) => r.json()).catch((e) => ({ error: `proxy not reachable on :${DEVICE_PORT} (${e.cause?.code || e.message})` }));
     console.log('device:', JSON.stringify(dev));

@@ -25,7 +25,7 @@ import { mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync, openSync, cl
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { sharedStateDir } from './paths.mjs';
-import { status as lockStatus, parseHeld, staleReason, pidAlive, tryAcquire, dequeue, release as lockRelease, liveReaders, isGroup, SHARED_LANE } from './lock.mjs';
+import { status as lockStatus, parseHeld, staleReason, pidAlive, tryAcquire, dequeue, release as lockRelease, isGroup, slotIn, timedInSlotRefusal, SHARED_LANE } from './lock.mjs';
 import { redact } from './redact.mjs';
 
 export const SIM_NAME = 'fw-sim 15 Pro Max';
@@ -197,26 +197,26 @@ export const functionalCmd = (owner = '<you>', rest = '-- <cmd>') => `node tools
  * May a Simulator boot / timed run happen now? Only inside this process's own NORMAL chrome-measure hold: the live
  * holder's token is in $FW_LOCK_HELD (set by `lock.mjs run` for its command; the test of wda-runner's buildGate).
  * A free lock, someone else's hold, or a short-lane hold (bounded jobs like npm test) is refused.
- * `functional: true` (sim.mjs session --functional) also accepts this process's live shared-lane reader slot
- * ($FW_LOCK_SHARED) of weight >= SIM_WEIGHT, and its own short-lane hold (what `run --shared` becomes while the lead's
- * switch is off); the result then names the `mode` ('exclusive' | 'short' | 'shared').
+ * `functional: true` (sim.mjs session --functional) also accepts this process's live functional slot ($FW_LOCK_SHARED)
+ * of weight >= SIM_WEIGHT: a shared-lane reader, or the exclusive short hold `run --shared` becomes while the lead's
+ * switch is off (review-lock-share N2); the result then names the `mode` ('exclusive' | 'short' | 'shared'). Without
+ * `functional`, a process inside a functional slot is refused even when it also inherits an exclusive hold (N6).
  * Returns {ok: true, endsAt} (ms epoch the hold ends, Infinity if it declared no length) or {ok: false, reason}.
  */
 export function holdGate(s = lockStatus('chrome-measure'), held = process.env.FW_LOCK_HELD, { owner, now = Date.now(), what = 'a Simulator session', functional = false, sharedHeld = process.env.FW_LOCK_SHARED } = {}) {
   const h = s.holder;
   const live = h && !s.stale && !staleReason(h, now);
-  if (functional && live && isGroup(h)) {
-    const tok = parseHeld(sharedHeld)['chrome-measure'];
-    const x = tok ? liveReaders(h, now).find((y) => y.token === tok) : null;
-    if (x && !(x.weight >= SIM_WEIGHT)) return { ok: false, reason: `your shared reader slot has weight ${x.weight}, and ${what} needs weight ${SIM_WEIGHT} (host CPU and GPU: at most one light job beside it):\n  ${functionalCmd(owner)}` };
-    if (x) return { ok: true, endsAt: Date.parse(x.acquiredAt) + x.maxSec * 1000, mode: 'shared' };
+  const slot = live ? slotIn(h, parseHeld(sharedHeld)['chrome-measure'], now) : null;
+  if (slot && !functional) return { ok: false, reason: `this process runs inside the functional (shared) slot of "${slot.owner}" ($FW_LOCK_SHARED): ${what} there must be a functional one (no timing runs):\n  ${functionalCmd(owner)}` };
+  if (slot && !(slot.weight >= SIM_WEIGHT)) return { ok: false, reason: `your shared slot has weight ${slot.weight}, and ${what} needs weight ${SIM_WEIGHT} (host CPU and GPU: at most one light job beside it):\n  ${functionalCmd(owner)}` };
+  if (slot && !slot.holder) return { ok: true, endsAt: Date.parse(slot.acquiredAt) + slot.maxSec * 1000, mode: 'shared' };
+  if (slot) {
+    // the switch-off stand-in (an exclusive short hold) or an exclusive hold a --shared job re-entered
+    const ends = [h.expiresAt && Date.parse(h.expiresAt), h.short && h.maxSec > 0 && Date.parse(h.acquiredAt) + h.maxSec * 1000, !h.short && h.meta?.expectSec > 0 && Date.parse(h.acquiredAt) + h.meta.expectSec * 1000].filter((x) => Number.isFinite(x));
+    return { ok: true, endsAt: ends.length ? Math.min(...ends) : Infinity, mode: h.short ? 'short' : 'exclusive' };
   }
   const mine = parseHeld(held)['chrome-measure'];
   if (live && mine && mine === h.token && !isGroup(h)) {
-    if (h.short && functional) {
-      const ends = [h.expiresAt && Date.parse(h.expiresAt), h.maxSec > 0 && Date.parse(h.acquiredAt) + h.maxSec * 1000].filter((x) => Number.isFinite(x));
-      return { ok: true, endsAt: ends.length ? Math.min(...ends) : Infinity, mode: 'short' };
-    }
     if (h.short) return { ok: false, reason: `your chrome-measure hold is a short-lane job (max ${h.maxSec} s): the short lane is for bounded jobs like npm test, and ${what} is minutes of host CPU and GPU. Run it in a normal hold:\n  ${holdCmd(owner)}\n(a functional check that takes no timing runs in a shared slot instead: ${functionalCmd(owner)})` };
     const ends = [h.expiresAt && Date.parse(h.expiresAt), h.meta?.expectSec > 0 && Date.parse(h.acquiredAt) + h.meta.expectSec * 1000].filter((x) => Number.isFinite(x));
     return { ok: true, endsAt: ends.length ? Math.min(...ends) : Infinity, ...(functional ? { mode: 'exclusive' } : {}) };
@@ -262,6 +262,9 @@ export function requireSession({ owner, timed = false } = {}) {
   if (!s) throw new Error(`no live Simulator session. Run it inside one:\n  ${holdCmd(owner)}`);
   if (process.env.FW_SIM_SESSION !== s.id) throw new Error(`this process is not inside the live Simulator session (owner "${s.owner}"): run your command as the session's <cmd>`);
   if (timed && s.functional) throw new Error(`refusing: this is a functional Simulator session (sim.mjs session --functional, lock mode ${s.lock?.mode ?? '?'}): it takes no timing runs (scroll, record, run), so none of its numbers is ever pooled with a measured one. Run them in a normal hold:\n  ${holdCmd(s.owner)}`);
+  // N6: nothing timed inside a functional slot (FW_LOCK_SHARED), whatever else the process inherits
+  const refusal = timed ? timedInSlotRefusal('this Simulator run') : null;
+  if (refusal) throw new Error(refusal);
   // a no-timing hold (ts-lock-bundle) skipped the host gate: no timed run on a host nobody checked was quiet
   const ch = timed ? lockStatus('chrome-measure').holder : null;
   if (ch?.noTiming && parseHeld(process.env.FW_LOCK_HELD)['chrome-measure'] === ch.token) throw new Error(`refusing: your chrome-measure hold is a no-timing hold (lock.mjs run --no-timing: no host gate), and scroll, record and run are timing. Run them in a normal hold:\n  ${holdCmd(s.owner)}`);
@@ -576,7 +579,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     await startProxy({ owner, session: id, log });
     if (tip) { rec.tipDismissed = await tip({ udid: cfg.udid, state, log }); writePrivate(sessionFile(), JSON.stringify(rec, null, 1)); }
     if (interrupted) throw new Error(`interrupted by ${interrupted}`);
-    const env = { ...process.env, FW_SIM_SESSION: id, FW_SIM_PORT: String(p.tabs), FW_IPHONE_PORT: String(p.tabs), FW_SIM_DEVICE_PORT: String(p.list), FW_SIM_WDA_PORT: String(p.wda), FW_SIM_UDID: cfg.udid };
+    const env = { ...process.env, FW_SIM_SESSION: id, FW_SIM_PORT: String(p.tabs), FW_IPHONE_PORT: String(p.tabs), FW_SIM_DEVICE_PORT: String(p.list), FW_SIM_WDA_PORT: String(p.wda), FW_SIM_UDID: cfg.udid, ...(functional ? { FW_SIM_FUNCTIONAL: '1' } : {}) };
     const timeoutMs = Number.isFinite(gate.endsAt) ? Math.max(1000, gate.endsAt - Date.now() - cleanupMs) : 0;
     log(`SIM_READY tabs :${p.tabs}; running: ${scrub([cmd, ...args].join(' '))}${timeoutMs ? ` (stopped after ${Math.round(timeoutMs / 1000)} s, before your hold ends)` : ''}`);
     const ids = knownIds();

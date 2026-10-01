@@ -31,36 +31,41 @@ const on = (extra = {}) => L.setSharedSwitch(R, { on: true, by: 'lead', reason: 
 const rd = (owner, o = {}) => L.tryAcquire(R, { owner, kind: 'process', shared: true, weight: 1, maxSec: 60, load1: 0, ncpu: 8, ...o });
 const ms = (s) => s * 1000;
 
-test('config: one constant holds the cap, the per-job weights and the bounds; the join load is the cpu count', () => {
+test('config: one constant holds the cap, the per-job weights and the bounds; the join load is 2x the cpu count', () => {
   assert.deepEqual(L.SHARED_LANE, {
-    cap: 4, maxSec: 300, batchJoinSec: 30, expiryGraceSec: 10, killGraceSec: 5,
+    cap: 4, defaultCap: 3, joinLoadPerCpu: 2, maxSec: 300, batchJoinSec: 30, expiryGraceSec: 10, killGraceSec: 5,
     weights: { check: 1, probe: 1, 'bench-mech': 1, 'test-chrome-fn': 1, 'npm-test': 2, simulator: 3 },
   });
   assert.ok(Object.isFrozen(L.SHARED_LANE) && Object.isFrozen(L.SHARED_LANE.weights));
   for (const w of Object.values(L.SHARED_LANE.weights)) assert.ok(Number.isInteger(w) && w >= 1 && w <= L.SHARED_LANE.cap);
   const prev = process.env.FW_LOCK_SHARED_JOIN_LOAD;
   delete process.env.FW_LOCK_SHARED_JOIN_LOAD;
-  try { assert.equal(L.sharedJoinLoad(), os.cpus().length); } finally { if (prev !== undefined) process.env.FW_LOCK_SHARED_JOIN_LOAD = prev; }
+  try { assert.equal(L.sharedJoinLoad(), 2 * os.cpus().length); } finally { if (prev !== undefined) process.env.FW_LOCK_SHARED_JOIN_LOAD = prev; }
   assert.equal(L.GROUP_OWNER, '(shared)');
   assert.equal(L.SHARED_FORMAT, 'rw1');
 });
 
-test('switch: absent = off; only the lead turns it on or off, with a reason, audited; the cap can be lowered', async () => {
-  assert.deepEqual(L.sharedSwitch(R), { enabled: false, cap: 4 });
+test('switch: absent = off; only the lead turns it on or off, with a reason, audited; cap 3 by default, 1..4; a join load', async () => {
+  assert.deepEqual(L.sharedSwitch(R), { enabled: false, cap: 3 });
   await assert.rejects(L.setSharedSwitch(R, { on: true, by: 'someone', reason: 'x' }), /--by lead/);
   await assert.rejects(L.setSharedSwitch(R, { on: true, by: 'lead' }), /--reason/);
   await assert.rejects(L.setSharedSwitch(R, { on: true, by: 'lead', reason: 'x', cap: 9 }), /cap/);
   await assert.rejects(L.setSharedSwitch('iphone', { on: true, by: 'lead', reason: 'x' }), /iphone/);
-  await on({ cap: 3 });
-  assert.equal(L.sharedSwitch(R).enabled, true);
-  assert.equal(L.sharedSwitch(R).cap, 3);
+  await assert.rejects(L.setSharedSwitch(R, { on: true, by: 'lead', reason: 'x', joinLoad: 0 }), /join/);
+  await on();
+  assert.deepEqual(L.sharedSwitch(R), { enabled: true, cap: 3 });
+  await on({ cap: 4, joinLoad: 12 });
+  assert.deepEqual(L.sharedSwitch(R), { enabled: true, cap: 4, joinLoad: 12 });
+  const prev = process.env.FW_LOCK_SHARED_JOIN_LOAD;
+  delete process.env.FW_LOCK_SHARED_JOIN_LOAD;
+  try { assert.equal(L.sharedJoinLoad(R), 12, 'the switch file sets the join load'); } finally { if (prev !== undefined) process.env.FW_LOCK_SHARED_JOIN_LOAD = prev; }
   await L.setSharedSwitch(R, { on: false, by: 'lead', reason: 'rollback' });
   assert.equal(L.sharedSwitch(R).enabled, false);
   const audit = readFileSync(LR.auditFile(), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
-  assert.deepEqual(audit.map((a) => [a.code, a.by, a.reason]), [['shared-switch', 'lead', 'test'], ['shared-switch', 'lead', 'rollback']]);
+  assert.deepEqual(audit.map((a) => [a.code, a.by, a.reason]), [['shared-switch', 'lead', 'test'], ['shared-switch', 'lead', 'test'], ['shared-switch', 'lead', 'rollback']]);
 });
 
-test('argument checks: max-seconds 1..300 and weight 1..cap are required; never with short or no iphone; "(" owners are reserved', async () => {
+test('argument checks: max-seconds 1..300 and weight 1..cap are required; never with short or no iphone; an owner "(shared)" is no group', async () => {
   await on();
   await assert.rejects(rd('a', { maxSec: undefined }), /max-seconds/);
   await assert.rejects(rd('a', { maxSec: 301 }), /max-seconds/);
@@ -69,8 +74,12 @@ test('argument checks: max-seconds 1..300 and weight 1..cap are required; never 
   await assert.rejects(rd('a', { weight: 1.5 }), /weight/);
   await assert.rejects(rd('a', { short: true }), /--short/);
   await assert.rejects(L.tryAcquire('iphone', { owner: 'a', shared: true, weight: 1, maxSec: 60 }), /iphone/);
-  await assert.rejects(L.tryAcquire(R, { owner: '(shared)', kind: 'lease' }), /reserved/);
-  await assert.rejects(rd('(x)'), /reserved/);
+  // N1: no "(" refusal (main has none); a group is `shared: true` + its format, never an owner name
+  const g = await rd('npm-a', { weight: 2 });
+  assert.equal(g.opened, true);
+  const x = await L.tryAcquire(R, { owner: '(shared)', kind: 'lease' });
+  assert.equal(x.ok, false, 'an exclusive "(shared)" lease does not re-enter the group by its owner name');
+  assert.equal(holder().readers.length, 1);
 });
 
 test('switch off: a shared acquire is an exclusive short hold with the same max-seconds (tools never branch)', async () => {
@@ -78,14 +87,64 @@ test('switch off: a shared acquire is an exclusive short hold with the same max-
   assert.equal(a.ok, true);
   assert.equal(a.mode, 'short');
   assert.equal(a.holder.shared, undefined);
-  assert.deepEqual([a.holder.owner, a.holder.short, a.holder.maxSec], ['fn-a', true, 120]);
+  assert.deepEqual([a.holder.owner, a.holder.short, a.holder.maxSec, a.holder.functional, a.holder.weight], ['fn-a', true, 120, true, 1]);
   assert.equal(a.reader, undefined);
-  const b = await rd('fn-b');
+  const b = await rd('fn-b', { pid: livePid(), weight: 2 });
   assert.equal(b.ok, false, 'no parallel readers while the lane is off');
+  assert.deepEqual(L.status(R).queue.map((w) => [w.owner, w.short, w.functional, w.weight, w.shared]), [['fn-b', true, true, 2, undefined]], 'its queue entry is an exclusive short entry marked functional');
+  // N2: the stand-in is a slot like a reader: an exclusive acquire inside it is refused, a heavier shared one too (N8)
+  const sharedHeld = L.sharedEnv(R, a.holder.token, '');
+  await assert.rejects(L.tryAcquire(R, { owner: 'verify-x', kind: 'process', sharedHeld }), /inside the shared \(functional\) hold of "fn-a"/);
+  await assert.rejects(rd('fn-c', { sharedHeld, weight: 2 }), /weight/);
+  assert.deepEqual(L.sharedSlot(R, sharedHeld), { owner: 'fn-a', token: a.holder.token, weight: 1, holder: true });
+  assert.equal(L.sharedSlot(R, ''), null);
+});
+
+test('N8: a nested shared acquire heavier than its reader slot is refused; an equal or lighter one re-enters', async () => {
+  await on();
+  const a = await rd('fn', { weight: 2 });
+  const sharedHeld = L.sharedEnv(R, a.reader.token, '');
+  await assert.rejects(rd('inner', { sharedHeld, weight: 3 }), /weight/);
+  assert.equal((await rd('inner', { sharedHeld, weight: 2 })).mode, 'reentrant-shared');
+  assert.equal(L.sharedSlot(R, sharedHeld).token, a.reader.token);
+  assert.equal(holder().readers.length, 1);
+});
+
+test('N4: readers join in queue order: a heavier reader waiting for room is not passed by a lighter one queued after it', async () => {
+  await on();
+  assert.equal((await rd('npm-a', { weight: 2 })).opened, true);
+  const pidB = livePid(), pidC = livePid();
+  const b = await rd('npm-b', { pid: pidB, weight: 2 });
+  assert.equal(b.ok, false, '2 + 2 > cap 3');
+  const c = await rd('check-c', { pid: pidC, weight: 1 });
+  assert.equal(c.ok, false, 'would fit, but npm-b queued first');
+  assert.match(c.why, /"npm-b" queued first/);
+  // a reader that stopped polling does not hold the others up
+  const q = L.status(R).queue;
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q.map((w) => (w.owner === 'npm-b' ? { ...w, lastSeen: new Date(Date.now() - 120000).toISOString() } : w))));
+  assert.equal((await rd('check-c', { pid: pidC, weight: 1 })).ok, true);
+});
+
+test('N10: a waiter converts in place when the lead flips the switch (its queue place is kept)', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'w', kind: 'lease' })).ok, true);
+  await L.tryAcquire(R, { owner: 'x', kind: 'lease' });
+  const pidF = livePid();
+  assert.equal((await rd('fn', { pid: pidF })).ok, false);
+  const pos = () => L.status(R).queue.findIndex((w) => w.owner === 'fn');
+  assert.equal(pos(), 1);
+  await on();
+  assert.equal((await rd('fn', { pid: pidF })).ok, false);
+  assert.equal(L.status(R).queue.filter((w) => w.owner === 'fn').length, 1, 'one entry, converted');
+  assert.equal(pos(), 1);
+  assert.equal(L.status(R).queue[1].shared, true);
+  await L.setSharedSwitch(R, { on: false, by: 'lead', reason: 't' });
+  assert.equal((await rd('fn', { pid: pidF })).ok, false);
+  assert.equal(L.status(R).queue.filter((w) => w.owner === 'fn').length, 1);
+  assert.deepEqual([pos(), L.status(R).queue[1].functional, L.status(R).queue[1].shared], [1, true, undefined]);
 });
 
 test('readers share: two join one group (weights 2+2), the group reads as a live short lease, a third waits at the cap', async () => {
-  await on();
+  await on({ cap: 4 });
   const pidB = livePid();
   const a = await rd('npm-a', { weight: 2, maxSec: 300 });
   assert.equal(a.ok, true);
@@ -296,15 +355,19 @@ test('re-entry (B1): an exclusive acquire inside a live reader slot is refused a
   assert.equal(later.ok, true);
 });
 
-test('re-entry: a shared acquire inside an exclusive hold (FW_LOCK_HELD) re-enters it; by owner name it does not', async () => {
+test('re-entry: a shared acquire inside an exclusive hold (FW_LOCK_HELD) re-enters it; by owner name too, like a short job (N1)', async () => {
   await on();
   const w = await L.tryAcquire(R, { owner: 'topic', kind: 'lease' });
   const inside = await rd('topic-npm', { held: L.heldEnv(R, w.holder.token, '') });
   assert.equal(inside.ok, true);
   assert.equal(inside.mode, 'reentrant-exclusive');
   assert.equal(inside.holder.owner, 'topic');
+  // review-lock-share N1: on main a short job of the same owner re-enters the owner's lease (bench mech inside a
+  // fix owner's lease); a shared one does the same, in either switch state, so the switch changes nothing here
   const byName = await rd('topic');
-  assert.equal(byName.ok, false, 'the same owner name is no proof that this job belongs to that hold');
+  assert.deepEqual([byName.ok, byName.mode, byName.holder.token], [true, 'reentrant-exclusive', w.holder.token]);
+  await L.setSharedSwitch(R, { on: false, by: 'lead', reason: 't' });
+  assert.deepEqual([(await rd('topic')).ok, (await rd('topic')).mode], [true, 'reentrant-exclusive']);
 });
 
 test('no-timing holds (ts-lock-bundle): a shared job inside one re-enters it like a short job; a --no-timing job inside a reader is refused; they never combine; a no-timing waiter closes joins', async () => {
@@ -364,7 +427,7 @@ test('owners (B3): release --shared frees the owner\'s lease reader of this chec
 });
 
 test('a lease reader repeated by its owner from the same checkout is the same slot (no second weight); a process reader is not', async () => {
-  await on();
+  await on({ cap: 4 });
   const a = await rd('agent', { kind: 'lease', weight: 2 });
   const again = await rd('agent', { kind: 'lease', weight: 2 });
   assert.equal(again.ok, true);
@@ -387,7 +450,12 @@ test('acquire(): a re-entrant acquire returns the env its child needs (the reade
   const held = L.heldEnv(R, w.holder.token, '');
   const r = await L.acquire(R, { owner: 'fn', shared: true, maxSec: 60, held, sharedHeld: '', log: () => {} });
   assert.equal(r.mode, 'reentrant-exclusive');
-  assert.deepEqual(r.env, { FW_LOCK_HELD: held });
+  // its child keeps the exclusive hold (FW_LOCK_HELD) and is marked as a functional slot (FW_LOCK_SHARED): nothing
+  // timed starts inside it (N2)
+  assert.deepEqual(r.env, { FW_LOCK_HELD: held, FW_LOCK_SHARED: `${R}:${w.holder.token}` });
+  await assert.rejects(L.tryAcquire(R, { owner: 'verify-x', kind: 'process', held, sharedHeld: r.env.FW_LOCK_SHARED }), /shared \(functional\) hold of "w"/);
+  const nested = await rd('fn-2', { held, sharedHeld: r.env.FW_LOCK_SHARED, weight: 4 });
+  assert.deepEqual([nested.ok, nested.mode], [true, 'reentrant-shared'], 'an exclusive hold counts as a slot of the full cap');
 });
 
 test('queue: reader entries are keyed by (owner, pid); an exclusive entry of the same owner stays separate', async () => {
@@ -415,11 +483,15 @@ test('acquire(): a reader gets env FW_LOCK_SHARED (never FW_LOCK_HELD, never the
   assert.equal(holder().readers.length, 1, 'a re-entrant release is a no-op');
   a.release();
   assert.equal(holder(), null);
-  // switch off: env carries FW_LOCK_HELD of the exclusive short
+  // switch off (N2): env carries FW_LOCK_SHARED naming the exclusive short stand-in, never FW_LOCK_HELD, so its
+  // command behaves as in a reader slot: a nested shared job re-enters, an exclusive one is refused
   await L.setSharedSwitch(R, { on: false, by: 'lead', reason: 't' });
   const s = await L.acquire(R, { owner: 'fn', shared: true, weight: 1, maxSec: 60, held: '', sharedHeld: '', log: () => {} });
   assert.equal(s.mode, 'short');
-  assert.deepEqual(s.env, { FW_LOCK_HELD: L.heldEnv(R, s.holder.token, '') });
+  assert.deepEqual(s.env, { FW_LOCK_SHARED: L.sharedEnv(R, s.holder.token, '') });
+  const nested = await L.acquire(R, { owner: 'fn-inner', shared: true, weight: 1, maxSec: 60, held: '', sharedHeld: s.env.FW_LOCK_SHARED, log: () => {} });
+  assert.deepEqual([nested.mode, nested.env], ['reentrant-shared', s.env]);
+  await assert.rejects(L.acquire(R, { owner: 'verify-x', held: '', sharedHeld: s.env.FW_LOCK_SHARED, timeoutSec: 1, log: () => {} }), /shared \(functional\) hold of "fn"/);
   s.release();
 });
 
@@ -540,4 +612,14 @@ old('old doctor finds nothing to repair in a live group; old status shows it hel
   await rd('fn-b', { pid: livePid() });
   assert.deepEqual(OLDR.doctor(R)[0].problems, []);
   assert.equal(OLD.status(R).holder.owner, '(shared)');
+});
+
+test('N5/N6: timedInSlotRefusal refuses a timed tool whenever FW_LOCK_SHARED names chrome-measure (live slot or not) or FW_SIM_FUNCTIONAL=1', async () => {
+  assert.equal(L.timedInSlotRefusal('iphone.mjs scroll', {}), null);
+  assert.equal(L.timedInSlotRefusal('iphone.mjs scroll', { FW_LOCK_SHARED: 'iphone:abcdefabcdef' }), null);
+  assert.match(L.timedInSlotRefusal('iphone.mjs scroll', { FW_LOCK_SHARED: `${R}:abcdefabcdef` }), /iphone\.mjs scroll is a timing run.*shared \(functional\) slot \(FW_LOCK_SHARED\)/);
+  assert.match(L.timedInSlotRefusal('x', { FW_SIM_FUNCTIONAL: '1' }), /functional Simulator session/);
+  await on();
+  const a = await rd('fn');
+  assert.match(L.timedInSlotRefusal('x', { FW_LOCK_SHARED: L.sharedEnv(R, a.reader.token, '') }), /slot of "fn"/);
 });

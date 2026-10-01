@@ -223,8 +223,10 @@ export function makeTempRepo({ worktree = 'fix-wt', withHooks = false } = {}) {
  *   const lock = chromeLock(`test-chrome-x-${process.pid}`, { cmd: 'x test' });
  *   before(() => lock.acquire(), { timeout: Infinity });   // first hook of the file
  *   after(() => lock.release());
- * A functional-only file (no timing) may pass `{ shared: true, weight, maxSec }`: it holds the lock as a reader of the
- * shared lane (ts-lock-share; an exclusive short hold while the lane is off), and `lock.env` carries FW_LOCK_SHARED.
+ * A functional-only file (no timing) may pass `{ shared: true, weight, maxSec }`: run by `npm run test:chrome:fn` (inside
+ * a `lock.mjs run --shared` slot, FW_LOCK_SHARED) it re-enters that slot, and `lock.env` carries FW_LOCK_SHARED; run any
+ * other way (on its own, or by test:chrome) it takes the same exclusive hold as without `shared` (review-lock-share B1:
+ * a bounded shared hold here has no `run` to kill the file at its --max-seconds).
  */
 export function chromeLock(owner, meta = {}, { waitSec = Number(process.env.FW_TEST_CHROME_LOCK_WAIT_SEC || 4 * 3600), shared = false, weight = 1, maxSec = 300 } = {}) {
   let handle = null;
@@ -235,9 +237,10 @@ export function chromeLock(owner, meta = {}, { waitSec = Number(process.env.FW_T
       // which tools/lib/host.mjs refuses inside node --test otherwise (I-024); the lock's host gate
       // samples it while this file queues
       if (process.env.FW_TEST_HOST === undefined) process.env.FW_TEST_HOST = '';
-      const { acquire, heldEnv } = await import('../tools/lib/lock.mjs');
-      handle = await acquire('chrome-measure', { owner, kind: 'process', meta, timeoutSec: waitSec, ...(shared ? { shared, weight, maxSec } : {}) });
-      lock.env = shared ? { ...handle.env } : { FW_LOCK_HELD: heldEnv('chrome-measure', handle.holder.token) }; // handle.env: FW_LOCK_SHARED (a reader) or FW_LOCK_HELD
+      const { acquire, heldEnv, parseHeld } = await import('../tools/lib/lock.mjs');
+      const inSlot = shared && !!parseHeld(process.env.FW_LOCK_SHARED)['chrome-measure'];
+      handle = await acquire('chrome-measure', { owner, kind: 'process', meta, timeoutSec: waitSec, ...(inSlot ? { shared, weight, maxSec } : {}) });
+      lock.env = inSlot ? { ...handle.env } : { FW_LOCK_HELD: heldEnv('chrome-measure', handle.holder.token) }; // inSlot: FW_LOCK_SHARED of the enclosing slot
       if (process.env.FW_STATE_DIR) lock.env.FW_STATE_DIR = process.env.FW_STATE_DIR;
       return handle;
     },

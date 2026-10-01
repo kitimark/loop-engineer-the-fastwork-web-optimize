@@ -47,8 +47,15 @@ test('holdGate functional: its own live reader slot of weight >= SIM_WEIGHT (end
   assert.equal(SIM_WEIGHT, 3);
   let g = holdGate(st(group([reader()])), undefined, { owner: 'me', now: T0 + 1000, functional: true, sharedHeld: 'chrome-measure:cccccccccccc' });
   assert.deepEqual(g, { ok: true, endsAt: T0 + 300000, mode: 'shared' });
-  g = holdGate(st(holder({ short: true, maxSec: 300, expiresAt: new Date(T0 + 305000).toISOString() })), 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 + 1000, functional: true });
-  assert.deepEqual(g, { ok: true, endsAt: T0 + 300000, mode: 'short' }, 'the switch-off form of `run --shared`');
+  // the switch-off form of `run --shared` (review-lock-share N2): its exclusive short stand-in, named by FW_LOCK_SHARED
+  const standIn = holder({ short: true, maxSec: 300, functional: true, weight: 3, expiresAt: new Date(T0 + 305000).toISOString() });
+  g = holdGate(st(standIn), undefined, { owner: 'me', now: T0 + 1000, functional: true, sharedHeld: 'chrome-measure:aaaaaaaaaaaa' });
+  assert.deepEqual(g, { ok: true, endsAt: T0 + 300000, mode: 'short' });
+  g = holdGate(st(standIn), 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 + 1000, functional: true, sharedHeld: '' });
+  assert.equal(g.ok, false, 'a short hold reached through FW_LOCK_HELD alone is a plain short-lane job');
+  // an exclusive hold a --shared job re-entered (both FW_LOCK_HELD and FW_LOCK_SHARED): a slot of the full cap
+  g = holdGate(st(holder({ meta: { expectSec: 420 } })), 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 + 1000, functional: true, sharedHeld: 'chrome-measure:aaaaaaaaaaaa' });
+  assert.deepEqual(g, { ok: true, endsAt: T0 + 420000, mode: 'exclusive' });
   g = holdGate(st(holder()), 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 + 1000, functional: true });
   assert.deepEqual(g, { ok: true, endsAt: Infinity, mode: 'exclusive' });
 });
@@ -67,7 +74,16 @@ test('holdGate functional: refuses a light slot, someone else\'s slot, a dead or
   assert.equal(g.ok, false, 'past its deadline');
   g = holdGate(st(group([reader()])), undefined, { owner: 'me', now: T0 + 1000, sharedHeld: 'chrome-measure:cccccccccccc' });
   assert.equal(g.ok, false);
+  assert.match(g.reason, /inside the functional \(shared\) slot of "me".*must be a functional one.*session --functional/s);
+  g = holdGate(st(group([reader({ owner: 'other' })])), undefined, { owner: 'me', now: T0 + 1000 });
   assert.match(g.reason, /a shared slot is no normal hold.*\n {2}node tools\/lock\.mjs run chrome-measure --owner me --max-seconds 420/s);
+  // N6: a non-functional session inside a slot is refused even when it also inherits the exclusive hold
+  g = holdGate(st(holder()), 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 + 1000, sharedHeld: 'chrome-measure:aaaaaaaaaaaa' });
+  assert.equal(g.ok, false);
+  assert.match(g.reason, /must be a functional one/);
+  // a light switch-off stand-in is refused like a light reader
+  g = holdGate(st(holder({ short: true, maxSec: 300, functional: true, weight: 1, expiresAt: new Date(T0 + 305000).toISOString() })), undefined, { owner: 'me', now: T0 + 1000, functional: true, sharedHeld: 'chrome-measure:aaaaaaaaaaaa' });
+  assert.match(g.reason, /weight 1, and a Simulator session needs weight 3/);
   g = holdGate(st(holder({ short: true, maxSec: 60 })), 'chrome-measure:aaaaaaaaaaaa', { owner: 'me', now: T0 });
   assert.match(g.reason, /short-lane job \(max 60 s\).*session --functional/s, 'the refusal names the functional form');
 });

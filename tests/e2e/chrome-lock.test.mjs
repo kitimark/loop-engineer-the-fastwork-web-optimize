@@ -54,6 +54,22 @@ test('ts-lock-share: under a `run --shared` wrapper (test:chrome:fn), a shared c
   assert.doesNotMatch(x.out, /busy/);
 });
 
+test('review-lock-share B1: a shared chromeLock file run on its own takes the plain exclusive hold (no bounded shared or short hold nobody would kill), switch off or on', async () => {
+  for (const on of [false, true]) {
+    const env = { ...state(), FW_LOCK_SHARED_JOIN_LOAD: '1000' };
+    if (on) assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env }).code, 0);
+    const out = join(tempDir('fw-chromelock-b1-'), 'holder.json');
+    const r = await runFixture(env, 20000, { FIXTURE_SHARED: '1', FIXTURE_HOLDER_OUT: out });
+    assert.equal(r.code, 0, r.out);
+    const { holder: h, env: lockEnv } = JSON.parse(readFileSync(out, 'utf8'));
+    assert.equal(h.owner, 'fixture-chrome-test', `switch ${on ? 'on' : 'off'}`);
+    assert.equal(h.kind, 'process');
+    for (const k of ['short', 'shared', 'functional', 'expiresAt', 'readers']) assert.equal(h[k], undefined, `switch ${on ? 'on' : 'off'}: no ${k}`);
+    assert.ok(lockEnv.FW_LOCK_HELD && !lockEnv.FW_LOCK_SHARED, 'its tools get FW_LOCK_HELD, as on main');
+    assert.equal(status(env).holder, null, 'released after the file');
+  }
+});
+
 test('a failing test still releases the hold', async () => {
   const env = state();
   const r = await runFixture(env, 20000, { FIXTURE_FAIL: '1' });
