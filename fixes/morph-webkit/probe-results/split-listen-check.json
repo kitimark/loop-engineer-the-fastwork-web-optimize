@@ -1,0 +1,388 @@
+{
+ "res": {
+  "base": {
+   "idle": {
+    "lt": [
+     [
+      3119,
+      122
+     ],
+     [
+      3258,
+      51
+     ],
+     [
+      3563,
+      265
+     ],
+     [
+      4800,
+      220
+     ],
+     [
+      5768,
+      108
+     ]
+    ],
+    "listen": [
+     "+pointerdown[DIV]@0",
+     "+pointerdown[doc]@0",
+     "+pointermove[DIV]@0",
+     "+pointermove[doc]@0",
+     "+pointerup[DIV]@0",
+     "+pointerup[doc]@0",
+     "+pointermove@0",
+     "+pointerup@0",
+     "+pointercancel@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointercancel[DIV]@0",
+     "+touchstart[HTML]@0"
+    ],
+    "mut": 0,
+    "sourced": 0
+   },
+   "a11yTop": {
+    "panel": true,
+    "inert": true,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "scroll": {
+    "mutations": {
+     "src@1608": 21,
+     "inert@1608": 1
+    },
+    "listen": [
+     "+wheel@1608",
+     "+touchstart@1608",
+     "+touchmove@1608"
+    ],
+    "lt": []
+   },
+   "a11yEdge": {
+    "panel": true,
+    "inert": false,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [
+     "A.start-selling-morph-cta-rsvp",
+     "A."
+    ],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "atMorph": {
+    "morph": "1",
+    "a11y": {
+     "panel": true,
+     "inert": false,
+     "ariaHidden": "false",
+     "focusables": 3,
+     "tabbable": [
+      "BUTTON.start-selling-morph-cta",
+      "A.start-selling-morph-cta-rsvp",
+      "A."
+     ],
+     "panelHits": [
+      "DIV.start-selling-morph-veil",
+      "DIV.start-selling-morph-center",
+      "FOOTER.start-selling-morph-footer",
+      "P.start-selling-morph-title",
+      "DIV.unit",
+      "DIV.start-selling-morph-footer-end",
+      "SPAN.face",
+      "SPAN.label",
+      "P.",
+      "DIV.countdown",
+      "DIV.start-selling-morph-cta-stack",
+      "A.start-selling-morph-cta-rsvp",
+      "BUTTON.start-selling-morph-cta",
+      "svg.solar",
+      "path.",
+      "A.",
+      "SPAN.start-selling-morph-grad"
+     ],
+     "navRect": [
+      12,
+      908
+     ]
+    }
+   },
+   "errors": []
+  },
+  "mw10e-lw": {
+   "idle": {
+    "lt": [
+     [
+      3129,
+      130
+     ],
+     [
+      3548,
+      248
+     ],
+     [
+      4832,
+      207
+     ],
+     [
+      5793,
+      116
+     ]
+    ],
+    "listen": [
+     "+pointerdown[DIV]@0",
+     "+pointerdown[doc]@0",
+     "+pointermove[DIV]@0",
+     "+pointermove[doc]@0",
+     "+pointerup[DIV]@0",
+     "+pointerup[doc]@0",
+     "+touchstart@0",
+     "+touchmove@0",
+     "+pointermove@0",
+     "+pointerup@0",
+     "+pointercancel@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointercancel[DIV]@0",
+     "+touchstart[HTML]@0"
+    ],
+    "mut": 0,
+    "sourced": 0
+   },
+   "a11yTop": {
+    "panel": true,
+    "inert": true,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "scroll": {
+    "mutations": {
+     "src@1632": 21,
+     "inert@1632": 1
+    },
+    "listen": [
+     "+wheel@1632"
+    ],
+    "lt": []
+   },
+   "a11yEdge": {
+    "panel": true,
+    "inert": false,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [
+     "A.start-selling-morph-cta-rsvp",
+     "A."
+    ],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "atMorph": {
+    "morph": "1",
+    "a11y": {
+     "panel": true,
+     "inert": false,
+     "ariaHidden": "false",
+     "focusables": 3,
+     "tabbable": [
+      "BUTTON.start-selling-morph-cta",
+      "A.start-selling-morph-cta-rsvp",
+      "A."
+     ],
+     "panelHits": [
+      "DIV.start-selling-morph-veil",
+      "DIV.start-selling-morph-center",
+      "FOOTER.start-selling-morph-footer",
+      "P.start-selling-morph-title",
+      "DIV.unit",
+      "DIV.start-selling-morph-footer-end",
+      "SPAN.face",
+      "SPAN.label",
+      "P.",
+      "DIV.countdown",
+      "DIV.start-selling-morph-cta-stack",
+      "A.start-selling-morph-cta-rsvp",
+      "BUTTON.start-selling-morph-cta",
+      "svg.solar",
+      "path.",
+      "A.",
+      "SPAN.start-selling-morph-grad"
+     ],
+     "navRect": [
+      12,
+      908
+     ]
+    }
+   },
+   "errors": []
+  },
+  "mw10e-lt": {
+   "idle": {
+    "lt": [
+     [
+      2823,
+      257
+     ],
+     [
+      3091,
+      123
+     ],
+     [
+      3488,
+      264
+     ],
+     [
+      4756,
+      214
+     ],
+     [
+      5723,
+      113
+     ]
+    ],
+    "listen": [
+     "+pointerdown[DIV]@0",
+     "+pointerdown[doc]@0",
+     "+pointermove[DIV]@0",
+     "+pointermove[doc]@0",
+     "+pointerup[DIV]@0",
+     "+pointerup[doc]@0",
+     "+wheel@0",
+     "+pointermove@0",
+     "+pointerup@0",
+     "+pointercancel@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointerenter[ARTICLE]@0",
+     "+pointercancel[DIV]@0",
+     "+touchstart[HTML]@0"
+    ],
+    "mut": 0,
+    "sourced": 0
+   },
+   "a11yTop": {
+    "panel": true,
+    "inert": true,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "scroll": {
+    "mutations": {
+     "src@1632": 21,
+     "inert@1632": 1
+    },
+    "listen": [
+     "+touchstart@1632",
+     "+touchmove@1632"
+    ],
+    "lt": []
+   },
+   "a11yEdge": {
+    "panel": true,
+    "inert": false,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [
+     "A.start-selling-morph-cta-rsvp",
+     "A."
+    ],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "atMorph": {
+    "morph": "1",
+    "a11y": {
+     "panel": true,
+     "inert": false,
+     "ariaHidden": "false",
+     "focusables": 3,
+     "tabbable": [
+      "BUTTON.start-selling-morph-cta",
+      "A.start-selling-morph-cta-rsvp",
+      "A."
+     ],
+     "panelHits": [
+      "DIV.start-selling-morph-veil",
+      "DIV.start-selling-morph-center",
+      "FOOTER.start-selling-morph-footer",
+      "P.start-selling-morph-title",
+      "DIV.unit",
+      "DIV.start-selling-morph-footer-end",
+      "SPAN.face",
+      "SPAN.label",
+      "P.",
+      "DIV.countdown",
+      "DIV.start-selling-morph-cta-stack",
+      "A.start-selling-morph-cta-rsvp",
+      "BUTTON.start-selling-morph-cta",
+      "svg.solar",
+      "path.",
+      "A.",
+      "SPAN.start-selling-morph-grad"
+     ],
+     "navRect": [
+      12,
+      908
+     ]
+    }
+   },
+   "errors": []
+  }
+ },
+ "diff": {
+  "mw10e-lw": 0.12,
+  "mw10e-lt": 0.16
+ }
+}

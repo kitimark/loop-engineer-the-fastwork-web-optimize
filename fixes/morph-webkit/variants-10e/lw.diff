@@ -1,0 +1,62 @@
+# fastwork mirror fix: mw10e-lw
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw10e-lw --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13307,7 +13307,7 @@
+           n = window.visualViewport?.height ?? window.innerHeight;
+         return t.height >= n * 0.45 && t.bottom <= n + 8;
+       },
+-      k = (e) => C() || (e > 0 && O()),
++      k = (e) => C() || (e > 0 && u && O()),
+       A = (e) => {
+         k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
+       },
+@@ -13319,19 +13319,16 @@
+           n = c - t;
+         ((c = t), k(n) && (C() || (s = window.scrollY), e.preventDefault(), D(n)));
+       },
++      // DIAG(mw10e-lw, listener split for arch-claims' W/T ticket; never lands): only the wheel listener(s) are
++      // still added/removed at the IO edge as in the original; the touch listener(s) are armed once at setup and never
++      // removed while the effect lives. Zone gate in the handlers (k(): `u`), as in F1, so behaviour is unchanged.
++      __fx = () => (window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }), window.addEventListener(`touchmove`, M, { passive: !1, capture: !0 })),
++      __fxOff = () => (window.removeEventListener(`touchstart`, j, !0), window.removeEventListener(`touchmove`, M, !0)),
+       N = () => {
+-        d ||
+-          ((d = !0),
+-          window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
+-          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
+-          window.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++        d || ((d = !0), window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }));
+       },
+       P = () => {
+-        d &&
+-          ((d = !1),
+-          window.removeEventListener(`wheel`, A, !0),
+-          window.removeEventListener(`touchstart`, j, !0),
+-          window.removeEventListener(`touchmove`, M, !0));
++        d && ((d = !1), window.removeEventListener(`wheel`, A, !0));
+       },
+       I = () => {
+         u || C() ? N() : P();
+@@ -13348,7 +13345,7 @@
+             { rootMargin: `200% 0px` },
+           )
+         : void 0;
+-    (R && te && te.observe(R), _(), m());
++    (R && te && te.observe(R), _(), m(), __fx());
+     let ne = dE(L, { manageAnimations: !1 });
+     return (
+       e.addEventListener(`change`, m),
+@@ -13358,6 +13355,7 @@
+           window.clearTimeout(l),
+           te?.disconnect(),
+           P(),
++          __fxOff(),
+           ne(),
+           e.removeEventListener(`change`, m),
+           t.removeEventListener(`change`, m));

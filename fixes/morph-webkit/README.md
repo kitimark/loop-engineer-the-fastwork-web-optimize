@@ -518,6 +518,45 @@ All new names; existing overlays untouched (F-034). Diffs in `variants-10e/`.
 Tickets (validated by mgmt-ops-5): **P-029** g vs g-cdwc (M, C V V C C V V C; ranked right after ca-check) and
 **P10 = P-024** gh-cdwc vs gh-cdwc-a1. mw10e-stub goes to the finger batch as F2.
 
+**F2 pre-check on the iPhone** (iphone-runner 12:4xZ, M driver, hold 2000 × 3, 80 % battery, 36.5 °C, not charging):
+**VALID.** Raw files: `out/iphone-runner/md-fpre-{stub,gh}.json`.
+
+| | moving frames | p50 / p95 | > 34 ms | > 50 ms | max | held m=1 p95 |
+|---|---|---|---|---|---|---|
+| mw10e-stub | 215 | 17 / 17 ms | 0 | 0 | 23 ms | 17 |
+| mw10e-gh | 139 | 23 / 51 ms | 30 | 7 | 73 ms | 17 |
+
+The stub renders at a steady 17 ms per frame, so the finger item F2 compares a smooth flat box against the real panel.
+
+### Listener split for arch-claims' W/T ticket (diagnostic, never lands)
+
+- **Source reading** (arch-claims, ver-webkit-layout, WebKit tag 7624.4.5 ≈ iOS 26.6):
+  - A window wheel listener triggers a full style rebuild only when the set of event-region types changes: the first wheel
+    listener (passive counts), the first non-passive one, or removal of the last of either.
+  - Touch event regions are compiled out on iOS before WebKit 7625 (`ENABLE_TOUCH_EVENT_REGIONS` 0).
+  - So the touch half of F-062 has no mechanism on 26.6, and the y≈1960 frame is OBSERVED, cause unknown, until a
+    device split.
+- **Builds** (bare aw1-10e; zone gate in the handlers as in F1, so behaviour is unchanged):
+
+| build | toggled at the IO edge, as in the original | armed once at setup | JS |
+|---|---|---|---|
+| `mw10e-lw` | wheel `{passive:false}` | touchstart, touchmove | 5a92076d6908 |
+| `mw10e-lt` | touchstart, touchmove | wheel | b61fd2045362 |
+
+- **Chrome check** (short lane; `probe-results/split-listen-check.json`, `split-touch-check.json`):
+  - Listener adds during the scroll: base adds wheel, touchstart and touchmove at y=1608. lw adds only wheel at y=1632
+    (touch at y=0). lt adds only touchstart and touchmove at y=1632 (wheel at y=0). Other families are added at load
+    only.
+  - a11y at the top, at the edge and at the morph is identical to base. A touch swipe on #platform drives the morph to
+    1 in all three builds. Morph screenshot vs base: 0.12 % / 0.16 %. No exceptions.
+- **Prediction (source):** lw keeps the edge frame, with a full-size RecalculateStyles; lt loses it, with
+  RecalculateStyles absent or root-only. If lw keeps the frame with a root-only RecalculateStyles, the cause is
+  UNRESOLVED (a region rebuild in Composite/Other?).
+- **Ticket** (arch-claims; nav-hit-test co-owner): C aw1-10e vs lw vs lt, 3-arm Latin square, driver S, Timeline on every
+  run.
+- The F1/F2 code comments ("wheel/touch listener add … invalidates the ROOT style") must be reworded to the wheel-only,
+  type-set wording before landing. The listener add is the observed cause.
+
 ### R8 and R5a on gh (de-morph): `mw10e-ghr8`, `mw10e-ghr85a`
 
 Both are built on `mw10e-gh` (`--on aw1-10e`) and keep the debug driver hook.
