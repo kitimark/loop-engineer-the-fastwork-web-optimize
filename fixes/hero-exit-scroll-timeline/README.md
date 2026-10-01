@@ -639,8 +639,23 @@ Verdicts on P-019 (OBSERVED, n = 2 per arm):
   - Whether iOS runs a cubic-bezier **filter blur** transition on Core Animation is UNRESOLVED for this card.
     F-080 showed it for the device's linear()/cubic pair, not for a blur on a 430x1328 layer. A V arm that
     stays main-thread reads NULL, not WORSE.
-- **Plan:** the ticket goes to mgmt-ops-5 for a second read. It does not jump P-033's slot unless the lead
-  says so.
+- **Plan: P-038** (mgmt-ops-5 second read). It sits behind P-033's gain block unless the lead says otherwise.
+  - **Block:** aw1-10e (C) vs blur-cubic (V), driver W.
+    - The driver is tlwin.mjs: scrollBy +250 every 300 ms from 0 to 900, then a 2 s hold.
+    - That gives 1 reveal and 0 hides per run, so P-038 covers the reveal only. The hide tail needs a return
+      leg, which would be a later ticket.
+  - **Window:** t0 + 200 .. t0 + 900, where t0 is the start of the first logger frame at y ≥ 680, the crossing.
+    - Fallback anchor: the first Composite ≥ 5 ms within ±100 ms of t0.
+    - A run is void with no crossing, or with fewer than 30 RenderingFrames in the window.
+  - **P2-a metrics,** each a mean per RenderingFrame in the window:
+    - M1 = Composite ms;
+    - M2 = RecalculateStyles ms, nested records included.
+  - **P2-a verdicts:**
+    - HIT = V below C on both metrics, non-overlapping over ≥ 3 valid runs per arm;
+    - PARTIAL = below on one metric only (not a HIT);
+    - NULL = overlap on both;
+    - WORSE = V above C on either metric.
+  - **P2-b** (secondary): frame counts with the ±4 ms twins, either-twin rule.
 
 ## Risks, conflicts, follow-ups
 
