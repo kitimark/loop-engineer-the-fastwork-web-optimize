@@ -346,6 +346,54 @@ whether the listener is passive. Two diagnostics, both on noinert:
 - If that latency is worse, F3 is the fallback: element-scoped listeners on #platform and the nav header, armed in idle and
   never removed (de-unknowns-render (c)). The behaviour risk is a touch that starts outside them at the end zone.
 
+**Block A, F1 vs aw1-10e (P4, iphone-runner, 14:25-14:30Z; ms only; raw: iphone-runner `out/iphone-runner/f-P4A-*.json`, `p4A.log`).**
+
+- **Setup:**
+  - C = aw1-10e (JS 3e2f599a1632 / CSS c6aad94b455f); V = mw10e-arm-load (JS c6a3ac9256ea).
+  - Window driver top → 2500, with a 1.5 s pause at y 1248; r3 inert logger.
+  - Run order C V V C C V V C, with one warm-up per port.
+  - Sentinel: bottom 59.7-60 fps on every run, all pass.
+  - Phone 37.5 → 39.0 °C, battery 80 %, Low Power Mode off.
+- **Edge frame** (slowest frame in y 1940-2010):
+
+  | arm | run 1 | run 2 | run 3 | run 4 |
+  |---|---|---|---|---|
+  | C | 101 @1974 | 116 @1975 | 102 @1975 | 100 @1968 |
+  | V | none >34 | 49 @1988 | 40 @1994 | 42 @1999 |
+
+  Every C edge frame is r3-named "src img → post-1.png ×21; inert morph-panel".
+- **Card verdict (registered above: edge ≤ 37.5 ms): FAIL as registered.** Only 1 of 4 V runs passes.
+  - The ~100 ms frame is gone in 4 of 4 runs, so the gain is large.
+  - The edge frame still exceeds 34 ms in 3 of 4 runs, under both twins (30 and 38 ms).
+  - At the 50 ms goal the edge passes in 4 of 4. This is threshold-sensitive: armload3's 49 ms is in the near band
+    (46, 54] and fails the 46 ms twin. armload7's 42 ms is in no near band.
+- **Scroll phase:**
+
+  | arm | dt>50 per run | dt>34 per run |
+  |---|---|---|
+  | C | 2, 3, 2, 3 | 11, 8, 8, 8 |
+  | V | 1, 2, 3, 1 | 12, 15, 12, 10 |
+
+  Both rows are within noise by the run-unit rule (the ranges overlap). The dt>34 row points the wrong way: V median 12
+  vs C 8. Some of V's extra frames: armload2 55 ms @2147, and a cluster in the pause at y 1238-1249 in armload3/6
+  (48 and 52 ms). F1 arms at setup, not in the pause, so that cluster is unexplained (OBSERVED, in our setup, cause
+  unknown). I asked whether C shows it too.
+- **Load and settle:**
+
+  | arm | dt>34 per run | dt>50 per run | max per run (ms) |
+  |---|---|---|---|
+  | C | 5, 7, 7, 5 | 1, 1, 1, 1 | 57, 53, 55, 54 |
+  | V | 5, 9, 8, 8 | 0, 2, 1, 0 | 50, 53, 54, 48 |
+
+  - No new frame ≥ 54 ms.
+  - The card's "no new frame ≥ 37.5 ms" clause is not met by count, but the ranges overlap (within noise).
+- **Reading:** F1 moves the y≈1960 frame from ~100 ms to 40-49 ms. That supports listener arming at the IO edge as most
+  of that frame (OBSERVED; F-062, which listener costs it, is still UNRESOLVED and goes to P-030).
+  - Per the card's risk line, the remaining 40-49 ms edge frame (src ×21 + inert still in it) points to the restack:
+    F1 on noinert + src.
+  - Block B (F3 arm-scope, ~14:40Z) is the second and last block for this question (§5.3).
+  - Not land-ready as is. The touch-latency (G/F) requirement above also still stands.
+
 ### F3 `mw10e-arm-scope` (listener scope; lead + OSS survey P1, F-055)
 
 - **What it is:** F1 with the touch listeners moved off the window. Built on bare aw1-10e. JS 7b0d62225545…, CSS = base;
