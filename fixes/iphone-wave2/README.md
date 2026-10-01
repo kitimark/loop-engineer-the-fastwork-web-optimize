@@ -215,6 +215,14 @@ P3); the worst frame of every pass is the y~1965 frame (95 / 93 / 86 / 106 ms).
 y~700 ~10 ms worse (52 -> 63, ranges disjoint from P2 and B); P3 keeps the y~700 cost and loses the
 y~50 gain in this sample. /10e vs aw1-10c: small (hero > 34 ms 6 -> 4.5, idle > 34 10 -> 8).
 
+**Hero-A (10:09-10:20Z, control ctl-B17 pass; window top -> y 1500 after 6 s idle at y = 0):** de-hero's
+h1 candidate. Worst frame of the flip pair at y~680-750 per run: h1v2 (JS 8c513279 / CSS 55221d1b)
+77 / 35 / 52 vs P 60 / 65 / 73 (order H P P H H P); h1 (JS 94e205d6 / CSS d49a050e) 45 / 41 / 52 vs P2
+56 / 59 / 52 (order K Q Q K K Q). h1 lowers the flip frame by ~11 ms on its base, h1v2 by ~13 ms but
+noisily; the <= 34 ms target was met in 1 of 6 runs. The y~50 frame stays gone with v2 (h1v2 2/3
+runs, P 3/3) and is unaffected by h1. No new frame ~1 s after the flip (the 41-51 ms frame at y~1250
+exists in all four). Idle at y = 0 the same everywhere (59.3-60.1 fps).
+
 ### 3b. Morph driver block (09:03Z-, control ctl-B13 pass: 53.1 / 59.6 / 60.0)
 
 Builds from fix-nav-morph (all on aw1-10e): f = pin clamp only (JS 68a00843), g = f +
@@ -263,6 +271,13 @@ watch list, order C e1 e2 | e2 e1 C | C e2 e1.
 | e1 passive arming | 105@1965, 94@1966, 86@1963 | 3/3: same |
 | e2 IO 150 % | 96@2243, 105@2239, 85@2242 | 3/3: same, at the new position |
 
-The panel was pre-mounted at scroll start in 9/9 runs. **The worst scroll frame on the phone is the
-morph IO callback giving a dozen panel images their `src` at once**; moving the IO edge moves the
-frame, listener arming is not the cost. Candidate fix: `mw10e-src` (sources them in idle time).
+The panel was pre-mounted at scroll start in 9/9 runs. Moving the IO edge moves the frame; listener
+arming is not the cost.
+
+**Correction (10:31Z, mw10e-src block):** the R3 logger keeps at most 12 events per frame, and the src
+sets filled that list. `mw10e-src` (JS f7716dc3) gives all 21 panel images their src in idle time
+(21/21 sourced at scroll start, 0 src writes during the scroll), yet the frame stays: control 86@1966,
+92@1964, 88@1942 vs src 97@1960, 84@1950, 91@1963 (order C S S C C S). With the src sets gone, the
+frame's only event is `inert` being removed from `div.start-selling-morph-panel`, 3/3. **The y~1965
+frame is the morph panel leaving `inert` at the IO edge** (its subtree becomes live and renders); the
+src burst only rode in the same frame.
