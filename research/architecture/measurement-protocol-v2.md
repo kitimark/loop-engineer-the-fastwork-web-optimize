@@ -276,6 +276,16 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
   runs end with a jump to the bottom and a 3 s hold to give the sentinel.
 - A failing control **voids every run since the last passing control**; the block stops, the phone cools
   10 min, and the block restarts.
+- **Timeline blocks (lead decision 2026-10-01 12:5xZ).** A block whose counted runs capture Timeline (every counted
+  run, every arm, the control included; P3, P11, P14, the listener ticket, and any later one): the sentinel is a
+  heat/device-state check whose thresholds were set with Timeline OFF, so it moves to dedicated runs.
+  - Order: warm-up(s) → one **uncounted Timeline-OFF control sentinel run** → the counted runs (Timeline on) →
+    one **uncounted Timeline-OFF control sentinel run at the block end** → any uncounted attribution runs (e.g.
+    P14's st4-rotoff).
+  - The two sentinel runs carry the ≥58 fps bottom / ≥44 fps scroll rule (S/W); a failure voids the block as usual.
+  - Counted runs are judged within the block only. Each counted C run's fps with Timeline on is recorded as
+    information (it measures the Timeline overhead), not as a sentinel.
+  - If Timeline-on control data already shows C ≥44 fps scroll, the extra runs shrink to the end sentinel only.
 - Heat note in every block record (case off, charger state, room, last block end time), plus **battery
   temperature and charging state per run** (A4: `AppleSmartBattery` Temperature / IsCharging at run start and end,
   T1a+); the heat trend is reported per block and used as a covariate when a block is borderline.
