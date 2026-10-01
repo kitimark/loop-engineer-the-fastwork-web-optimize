@@ -126,7 +126,7 @@ stage closed by a card; the lead signs D (the attribution card): `fixes/LEAD.md`
 - **Phone geometry for attribution.** Gain A/Bs stay at 430x932; probes that ask *where* a frame happens run at the
   iPhone's 430x775 (scripted) / 430x815 (collapsed toolbar), and positions compare by crossing (the nearest code
   threshold), never by raw y (Chrome and phone y differ by ~77 px).
-- **Tick thresholds** (both devices run at 120 Hz): k = round(dt / 8.333 ms); ">34" = dt ≥ 37.5 ms (k≥5), ">50" =
+- **Tick thresholds** (frame gaps quantize at 8.33 ms on both devices; whether Safari rAF runs at 60 or 120 Hz is open, arch-unknowns): k = round(dt / 8.333 ms); ">34" = dt ≥ 37.5 ms (k≥5), ">50" =
   dt ≥ 54.2 ms (k≥7); medians compare as ticks. The legacy ms columns stay for one wave; a verdict that differs
   between the two is "threshold-sensitive".
 
