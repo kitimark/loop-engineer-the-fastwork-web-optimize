@@ -3,7 +3,7 @@
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
 **mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **11:05Z**.
+snapshot), branch `mgmt-ops/docs-2`. Last update: **11:19Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +16,11 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **11:05Z**.
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **11:19Z** Phone HELD by the user (lead): no phone calls until "phone back". Morph session: Composite carries the cost,
+  ~78 layers/cycle, R1/R2 refuted. Display back-tag landed ddc3450 (display on since 06:22:55Z). OSS: P0 ca-check + P1
+  (F3) approved, P2-P4 wait for P0; F-048 caveat (our T10 linear() blur may be main-thread). P-018..P-022 logged (ST-1,
+  ST-2, ST-2d, P0, P1). Asked arch-lead for the "y-source A/A" ticket. fix-scroll-engine stack unlanded (needs review).
 
 - **11:05Z** Tickets validated: y≈1960 F1/F2 as two 2-arm blocks after the morph session (lead confirmed), de-pm-morph
   hold-250 pair (P-016). U1 display caveat in DIRECTION (display-on from 11:01:46Z; DarkWake runs compare with nothing

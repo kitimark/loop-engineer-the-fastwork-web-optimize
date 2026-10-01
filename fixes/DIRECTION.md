@@ -350,6 +350,20 @@ fwd/rev, the artboard 5.3/7.0: the size-fixed children still repaint every frame
 branch). ghbn mechanism verified (backdrop-filter none 40/40 moving, 81/81 at m=1). P-016 (hold 250) invalid by design
 -> P-016b hold 900. Post-mortems landed: f0013ff (morph), cf79bfd (hero). **F-045 (scene gate as the y≈1250 cause) is
 weakened by F-049**; the class write at L11538 / forced read at L3258 (flip + 1.13 s) goes to fix-scroll-engine as a note.
+**CAVEAT F-048 (arch-oss-survey, lead 11:1xZ):** CSS `linear()` easings run on the main thread in WebKit (iOS 26.x), and
+our own wave-1 T10 change (large-area-blur) uses `linear()` blur easings, so the aw1-10e base may have moved a blur off
+Core Animation. P0 ca-check confirms or retracts it; if confirmed, P2 blur-easing-cubic (the two T10 tails as exact
+cubic-bezier) is a fix to our own base and goes first among P2-P4. Also touches webkit.md rec 1 and every
+"spring as linear()" plan.
+**OSS shortlist (lead 11:1xZ; `research/architecture/oss-rendering-libs.md`, `research/design-engineering/oss-mechanism-map.md`):**
+P0 ca-check yes (iphone-runner builds the page; slot after the countdown probe, before y≈1960 B); P1 listener-scope = F3
+yes (fix-nav-morph; replaces F2 in block B if ticketed in time); P2 blur-easing-cubic, P3 countdown-ca, P4 morph-ca wait
+for P0 (P3's owner after P0 + the countdown probe; P4 -> fix-nav-morph); P5 only after a phone jsMs census. Rejected for
+the phone: Lenis, Locomotive, GSAP scrub, fastdom/frameloop, the scroll-timeline polyfill, View Transitions.
+**Phone held by the user (lead ~11:15Z):** no agent touches the phone (no lease, iphone.mjs, WDA or xctrace) until the lead
+says "phone back"; then the one-time setups; queue order unchanged.
+**iPhone sequence (lead 11:1xZ, + P0 and F3):** y≈1960 A -> countdown probe -> **P0 ca-check** -> y≈1960 B (F3 if ticketed,
+else F2) -> hero ST-1 -> ST-2 + ST-2d -> hero-B -> R2, /10d, N12. Earlier wording:
 **iPhone sequence (lead 11:1xZ):** (1) morph attribution DONE -> (2) y≈1960 block A (F1) -> (3) morph countdown probe
 (gh-cdwc / gh-cdhid driver pair + one Timeline cycle + P-016b hold 900) -> (4) y≈1960 block B (F2) -> (5) hero ST-1
 (de-pm-hero Timeline of the flip pair, Q P K Q K P; decides the hero-B arms) -> (6) ST-2 (re-dur / re-keep, fix-hero-exit
