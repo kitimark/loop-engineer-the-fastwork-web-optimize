@@ -1,9 +1,10 @@
 # Measurement & workflow protocol v2 (arch-lead)
 
-Status: **DRAFT 1** (2026-10-01, ~10:45Z). Built from the team inputs (fix-nav-morph, fix-scroll-engine,
-fix-hero-exit, mgmt-ops-4), arch-devtools (`research/architecture/devtools-methodology.md`, 3096c8e) and
-de-devtools (`research/design-engineering/devtools-render-metrics.md`, 97b1a41). arch-safari and de-safari
-are still writing: their questions are in §10 and the affected rules are marked **[pending safari]**.
+Status: **DRAFT 2** (2026-10-01, ~11:00Z). Built from the team inputs (fix-nav-morph, fix-scroll-engine,
+fix-hero-exit, mgmt-ops-4), arch-devtools (`research/architecture/devtools-methodology.md`, 3096c8e),
+de-devtools (`research/design-engineering/devtools-render-metrics.md`, 97b1a41) and arch-safari
+(`research/architecture/safari-inspector-probing.md`, d3aa186). de-safari is still writing: its questions are
+in §10 and the affected rules are marked **[pending safari]**.
 It replaces nothing yet. The lead approves it; then the doc changes in §8 make it binding.
 
 Scope: how we go from "a frame is slow" to a landed fix, and what evidence each step needs, on Chrome, the
@@ -67,7 +68,8 @@ A fix is built only on a **NAMED** card. Fields:
 
 1. **Pipeline stage:** script / style / layout / paint (record + raster) / allocation / composite-commit / GPU /
    input. Evidence: Chrome `--trace-frames` class of that frame; on the phone, Timeline counts (durations once
-   §10 Q1 lands) + page-rAF JS ms + layer/filter counts sampled after the frame.
+   §5.5 attribution runs) + page-rAF JS ms + filter element counts after the frame + LayerTree census
+   (paintCount deltas) at positions bracketing it.
 2. **Code:** the single mechanism and its location.
 3. **Ablation set**, all built under new names, all measured in one block against the same control:
    - positive: removing the mechanism removes (or shrinks) the frame;
@@ -121,8 +123,9 @@ rejected gets the reason in one message. Running blocks are never interrupted fo
 |---|---|---|---|---|
 | rAF gap (page logger) | both | main-thread frame cadence: scroll-linked JS, style, layout; on iOS also raster/commit back-pressure one frame late (F3) | compositor-presented scroll and threaded animations (can't credit off-main moves); Chrome GPU/raster at 6x | **primary** for both devices |
 | `DroppedFrame` ± `hasPartialUpdate` in `--trace-frames` (G1) | Chrome | presented / partial / dropped per phase | iPhone anything; traced runs ≠ untraced | diagnostic; **primary only for threaded-refactor claims** in Chrome |
-| WebKit Timeline per-record durations (`Page.enable` before `Timeline.start`) | phone | per-frame style/layout/paint/composite ms | GPU/render server time | diagnostic **[pending safari Q1]** |
-| WebKit Rendering Frames | phone | per runloop main-thread work | presentation? | diagnostic **[pending safari Q2]** |
+| WebKit Timeline per-record durations (`Page.enable` before `Timeline.start`) | phone | per-frame style/layout/paint/composite (= WebContent layer commit) ms | GPU/render-server time; medium overhead | diagnostic, attribution runs only |
+| WebKit `RenderingFrame` (one per main runloop turn) | phone | main-thread busy time per frame | back-pressure directly (the next update is deferred while waiting for the backing-store swap): infer it from gap ≫ busy | diagnostic; gap − busy flags render-bound frames |
+| Instruments Animation Hitches | phone | commit vs render hitches | page attribution | one-off, own block |
 | Timeline counts per 1 s chunk | phone | paint/layout/style counts and rects | per-frame timing | diagnostic (what exists today) |
 | LoAF (`forcedStyleAndLayoutDuration`, scripts) | Chrome | ≥50 ms frames' script attribution, forced layout | WebKit (no LoAF), off-main work | diagnostic |
 
@@ -175,8 +178,9 @@ of the three without a stated reason.
   is "unreliable and often wrong" per DevTools' own source: never an area source (corrects arch-devtools G3a; its
   Paint *count* is fine). Chrome's area is a lower bound on WebKit's for resizing layers, exact for paint-only
   switches. Phone area: Timeline Paint rects **[pending safari Q2]**.
-- Layers: count delta via `layerTreeDidChange` vs a no-op control; phone `LayerTree` paintCount/memory
-  **[pending safari Q3]**.
+- Layers: Chrome count delta via `layerTreeDidChange` vs a no-op control; phone: the LayerTree census of §5.5
+  (layer count, per-layer `paintCount` deltas, `memory` estimates, compositing reasons) at fixed positions.
+  On WebKit `layerTreeDidChange` is coalesced: a "tree changed" flag, no counts.
 - Memory: `JSHeapUsedSize`, `Nodes`, `LayoutObjects`, `JSEventListeners` in `--cdp-metrics` (G7).
 - CLS: opt-in Tier A counter (G4), as a parity guard for fixes that move boxes; not a goal metric.
 
@@ -239,16 +243,39 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
 A claim names its driver. Touch-only classes (§2.3) need G or F before landing; a morph change lands only with G
 or F (M never bounces). F runs are scheduled by the lead in batches, not per topic.
 
-### 5.5 Standard probe (one command, every run) **[pending safari Q1-Q5]**
+### 5.5 Standard probe (one command, every run; arch-safari answers folded)
+**In the timed window (page side, cheap):**
 - Per frame: [t, dt, yStart, yEnd, innerHeight, m, jsMs].
 - Mutations by type and attribute, **uncapped**, per frame (L3).
 - Crossing log: every IO edge, scene attribute and class toggle with the frame index.
-- After frames k≥5: layer count and filter/backdrop element counts (sampled, not per frame).
+- After frames k≥5: filter/backdrop **element** counts from page JS (computed style of a fixed selector list).
+- `performance.mark()` at every phase edge: WebKit turns it into a Timeline TimeStamp record on the same
+  monotonic clock, so page logs and Timeline records join exactly.
 - Event Timing touchstart/pointerdown (G/F runs).
-- Timeline per 1 s chunk counts (and per-record durations once Q1 confirms `Page.enable`; send `Page.disable` first,
-  because `Page.enable` on an already-enabled domain errors without restarting the clock, de-devtools).
+- Optional: CPUProfiler + Memory tracking at 500 ms (per-thread CPU, `layers` memory; an early heat warning).
+
+**Outside the timed window only (block start and end, or held positions):**
+- LayerTree census: `DOM.getDocument` → `LayerTree.enable` → `layersForNode(root)`: every composited layer with
+  `paintCount`, `memory`, `compositedBounds` and compositing reasons. It is a synchronous main-thread walk, so
+  never per frame. The `paintCount` delta between two census points = repaints per layer.
 - A WebKit screenshot at fixed m for M runs.
-- **Probe overhead:** each probe version gets one phone A/A (probe on vs off, 2v2) before its numbers are used.
+
+**Attribution runs only (never an A/B metric):** continuous Timeline with real durations. Send `Page.disable`
+then `Page.enable` before `Timeline.start`, and again after every reconnect (target ids change on navigation);
+`Page.enable` starts WebKit's inspector stopwatch, nothing else does (vendor source; real durations on 26.6.1 are
+still an inference until one probe call). Records are serialised on the main thread, so the overhead is
+medium. Use `RenderingFrame` children (script/style/layout/Paint/Composite) as **busy time** per runloop; a rAF
+gap much larger than busy time means back-pressure or render-bound, and then Instruments (Animation Hitches:
+commit vs render hitch) is the next tool, in its own block with its own control.
+
+**Never during a timed block:** Timeline Screenshot instrument; `Page.setShowPaintRects`, ShowDebugBorders,
+ShowRepaintCounter; `layersForNode`; heap snapshots; `Runtime.evaluate` polling faster than ~1 Hz; WDA `/source`
+or element queries; xctrace System Trace; Safari's own Web Inspector attached to the tab (a second frontend shares
+the agents).
+
+**Probe overhead:** page-side probes self-time their callbacks (`performance.now` around each, ms per frame in the
+log; a run whose probe ms exceeds 1 ms in a counted frame flags that frame). Protocol-side probes
+(Timeline, CPU, Memory) get one interleaved on/off A/A (n=3 each) per probe version.
 
 ## 6. Chrome protocol
 
@@ -295,7 +322,7 @@ hold per A/B, compare within a hold.
 | rank | item | size | MC? | depends on |
 |---|---|---|---|---|
 | T1a | `iphone.mjs run --driver scroll\|window\|morph --probe std`: promote out/iphone-runner scripts, per-frame fields, uncapped per-type mutation counts, crossing log | L | device tool (not Chrome A/B) | — |
-| T1b | probe add-ons: Event Timing (G2), layer/filter counts after long frames, WebKit shot at fixed m, Timeline `Page.enable` durations | M | device | T1a, safari answers |
+| T1b | probe add-ons: Event Timing (G2), phase-edge `performance.mark`, probe self-timing, filter counts after long frames, LayerTree census at block start/end, WebKit shot at fixed m, `--timeline` attribution mode (`Page.disable/enable` → `Timeline.start`, RenderingFrame busy time) | M | device | T1a; one on-device check of `Page.enable` first (iphone-runner, 5 min) |
 | T3 | analysis lib: ticks, IQR, HL shift, exact MW, stratified block compare, crossing placement; `frames.mjs` reads both devices | S-M | analysis (flag) | — |
 | T2 | `iphone.mjs block`: snapshot serve, warm-up, sentinel, order, gaps, auto-void, `block.json` | M-L | device | T1a, T3 |
 | T6 | `--trace-frames`: DroppedFrame (G1), layer bucket split, `--save-trace` (G6); per-frame >34 tags | M | yes (opt-in) | — |
@@ -350,9 +377,9 @@ plus one finger batch (~20 min of the user's time).
 
 ## 10. Pending inputs (asked 10:40Z)
 
-- **arch-safari** (a765c480ea490a443): Q1 `Page.enable` + Timeline durations over the proxy and side effects;
-  Q2 Rendering Frames and presentation; Q3 LayerTree paintCount/memory cost on device; Q4 probe overhead on
-  WebKit; Q5 what joins / must not join the standard block.
+- **arch-safari**: answered Q1-Q5, folded into §3.1, §3.7, §5.5 (`research/architecture/safari-inspector-probing.md`,
+  d3aa186). Still inference until tried on 26.6.1: real Timeline durations after `Page.enable`, the cost of
+  `layersForNode` on this page's tree.
 - **de-safari** (a4ce1669dd33aa4dc): primary on-device signal for raster/GPU fixes; Timeline Paint clip
   reliability; a device capture that renders backdrop-filter; ranked standard vs one-off probes and probes that
   change WebKit behaviour.
