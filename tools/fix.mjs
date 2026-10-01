@@ -52,6 +52,7 @@ import { REPO, mirrorHome, resolveTree, isLinkedWorktree, gitCommonDir, sharedSt
 import { allStatus } from './lib/lock.mjs';
 import { stats } from './lib/ab-stats.mjs';
 import { describeHostState } from './lib/host.mjs';
+import { layerScales, PAINT_SCALE_TAG } from './lib/paint-rects.mjs';
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag, isSparse } from './lib/baseline.mjs';
 
 const argv = process.argv.slice(2);
@@ -344,10 +345,11 @@ METRICS.traceIdle = METRICS.trace;
 METRICS.traceMorph = METRICS.trace;
 // --paint-rects (I-032): CDP LayerTree paints per phase (paint<Phase>Summary). mpx = summed dirty clips (only where
 // Chrome sends layerPainted; null, so no row, on Chrome 148+); layerMpx / layerVpMpx = painted layers' full / viewport-
-// capped size, upper bounds, never paint area
-const PAINT_METRICS = [['paints', 'layer paints (LayerTree)', -1], ['mpx', 'painted Mpx (sum of dirty clips)', -1], ['frameMpxMax', 'largest frame paint Mpx', -1], ['frameMpxP50', 'median frame paint Mpx', -1],
-  ['layerMpx', 'painted layers Mpx (full layer size, upper bound)', -1], ['frameLayerMpxMax', 'largest frame painted-layers Mpx', -1], ['frameLayerMpxP50', 'median frame painted-layers Mpx', -1],
-  ['layerVpMpx', 'painted layers Mpx capped to the viewport (upper bound)', -1], ['frameLayerVpMpxMax', 'largest frame viewport-capped painted-layers Mpx', -1],
+// capped size, upper bounds, never paint area. Every area is in layer px = CSS px x layerScale (the host display's
+// DSF, F-077): the rows say "layer Mpx", config.paintLayerScale records the scales, PAINT-SCALE-MIXED flags a mix
+const PAINT_METRICS = [['paints', 'layer paints (LayerTree)', -1], ['mpx', 'painted layer Mpx (sum of dirty clips)', -1], ['frameMpxMax', 'largest frame paint layer Mpx', -1], ['frameMpxP50', 'median frame paint layer Mpx', -1],
+  ['layerMpx', 'painted layers, layer Mpx (full layer size, upper bound)', -1], ['frameLayerMpxMax', 'largest frame painted-layers layer Mpx', -1], ['frameLayerMpxP50', 'median frame painted-layers layer Mpx', -1],
+  ['layerVpMpx', 'painted layers, layer Mpx capped to the viewport (upper bound)', -1], ['frameLayerVpMpxMax', 'largest frame viewport-capped painted-layers layer Mpx', -1],
   ['framesWithPaint', 'frames with a paint', -1], ['newLayerPaints', 'first paints of new layers', -1], ['layersPainted', 'layers painted', -1], ['layersMax', 'max layer count', -1],
   ['layersAdded', 'layers added', -1], ['layersRemoved', 'layers removed', -1], ['layerChurn', 'layer churn (added + removed)', -1], ['layerTreeChanges', 'layer tree changes', -1]];
 // CDP Performance.getMetrics deltas per phase (verify.mjs --cdp-metrics, I-018; absent by default)
@@ -400,8 +402,12 @@ function markdown(metrics, cfg) {
   for (const [phase, ms] of Object.entries(metrics)) for (const v of Object.values(ms)) {
     rows.push(`| ${phase}: ${v.name} | ${v.baseline.median} [${v.baseline.min}-${v.baseline.max}] | ${v.patched.median} [${v.patched.min}-${v.patched.max}] | ${v.delta > 0 ? '+' : ''}${v.delta}${v.deltaPct != null ? ` (${v.deltaPct > 0 ? '+' : ''}${v.deltaPct}%)` : ''} | ${v.verdict} |`);
   }
-  if (cfg.measurement?.traceFrames) rows.push('', 'traced (--trace-frames): tracing perturbs timing; frame numbers of this A/B are not comparable with untraced ones (compare the trace rows within this A/B only).');
-  if (cfg.measurement?.paintRects) rows.push('', 'paint-rects (--paint-rects): LayerTree + a per-frame binding call add main-thread work; compare this A/B\'s numbers only with other --paint-rects runs (never as a gain A/B). layerMpx / layerVpMpx are painted layers\' full / viewport-capped size (upper bounds); mpx (dirty clips) only where Chrome sends layerPainted.');
+  if (cfg.measurement?.traceFrames) rows.push('', `traced (--trace-frames, phases ${(cfg.measurement.tracePhases || ['scroll']).join(', ')}): tracing perturbs timing; frame numbers of this A/B are not comparable with untraced ones, nor with traced A/Bs of another trace-phase set or tool version (compare the trace rows within this A/B only).`);
+  if (cfg.measurement?.paintRects) {
+    const ps = cfg.paintLayerScale;
+    rows.push('', `paint-rects (--paint-rects): LayerTree + a per-frame binding call add main-thread work; compare this A/B's numbers only with other --paint-rects runs at the same layerScale (never as a gain A/B). layerMpx / layerVpMpx are painted layers' full / viewport-capped size (upper bounds); mpx (dirty clips) only where Chrome sends layerPainted. Units: layer Mpx, layer px = CSS px x layerScale (the host display's DSF, not the emulated DPR; F-077): baseline ${ps ? ps.baseline.join(', ') : '?'}, patched ${ps ? ps.patched.join(', ') : '?'}.`);
+    if (ps?.mixed) rows.push('', `**${PAINT_SCALE_TAG}: the runs' layer scales differ (baseline ${ps.baseline.join(', ')}, patched ${ps.patched.join(', ')}); the paint rows are not comparable**`);
+  }
   if (cfg.host) rows.push('', hostLine(cfg.host), '', hostStateLine(cfg.host.hostState));
   if (cfg.baselineSnapshot?.tag) rows.push('', baselineLine(cfg.baselineSnapshot));
   return rows.join('\n');
@@ -479,8 +485,11 @@ async function cmdAb(t) {
   const flagged = v.results.filter((r) => !r.diff && r.baseline?.tag).map((r) => ({ label: r.label, run: r.run, viewport: r.viewport, state: r.baseline.state, tag: r.baseline.tag }));
   const bTag = baselineTag(baselineMeta(BASELINE)) ?? flagged[0]?.tag ?? baselineTag(baselineMeta(BASELINE), baselineMeta(baselineStatus()));
   if (bTag) for (const ms of Object.values(metrics)) for (const x of Object.values(ms)) x.verdict = `${bTag}: ${x.verdict}`;
+  // --paint-rects (I-032 review B1): the layer scale of each arm; a mix makes the paint areas incomparable (x scale^2)
+  const paintLayerScale = v.measurement?.paintRects ? { units: layerScales([]).units, baseline: layerScales(runsOf(lb)).layerScales, patched: layerScales(runsOf(lf)).layerScales, mixed: layerScales([...runsOf(lb), ...runsOf(lf)]).mixed } : null;
+  if (paintLayerScale?.mixed) for (const [phase, ms] of Object.entries(metrics)) if (phase.startsWith('paint')) for (const x of Object.values(ms)) x.verdict = `${PAINT_SCALE_TAG}: ${x.verdict}`;
   const cfg = { cpu, viewport, runs, idle, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), baselineSnapshot: { ...baselineMeta(BASELINE), ...(bTag ? { tag: bTag, flaggedRuns: flagged } : {}) }, stackedOn: ON, order: 'ABBA (alternating per run)',
-    hostThresholds: v.host.thresholds ?? null, hostRecheck: v.host.recheck ?? null, watchdogSec: v.host.watchdogSec ?? null, measurement: v.measurement ?? null };
+    hostThresholds: v.host.thresholds ?? null, hostRecheck: v.host.recheck ?? null, watchdogSec: v.host.watchdogSec ?? null, measurement: v.measurement ?? null, ...(paintLayerScale ? { paintLayerScale } : {}) };
   const result = {
     topic, kind: aa ? 'A/A noise floor' : 'A/B', createdAt: new Date().toISOString(),
     git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD'), checkout: checkoutId() },

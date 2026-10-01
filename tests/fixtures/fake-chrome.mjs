@@ -16,6 +16,8 @@
 //                                       dataLossOccurred | add one chunk of BIG_CHUNK events
 //      FAKE_CHROME_PAINT=none          --paint-rects: LayerTree enabled, but no layerPainted events (I-032)
 //      FAKE_CHROME_PAINT=count         --paint-rects as Chrome 148+: no layerPainted; every list carries paintCount
+//      FAKE_CHROME_LAYER_SCALE=2,1     --paint-rects: the host DSF read before emulation, the next value per read
+//                                       (cycled; default 2): runs at different layer scales (I-032 review B1)
 //      FAKE_CHROME_METRICS=step         Performance.getMetrics: all of verify's counters (+ Timestamp) grow by
 //                                       METRIC_STEP per read (I-018); default: the bench per-session six
 //      FAKE_CHROME_BENCH=1  tools/bench.mjs mode: on Page.navigate, fetch <origin>/bench-fake.json from the
@@ -68,6 +70,8 @@ export const PAINT_NODES = { 1: { nodeName: 'HTML', localName: 'html', attribute
 const PAINT_BINDING = '__fwPaintFrame';
 let resets = 0, phaseT0 = 0, paintArmed = false, paintOn = false;
 const COUNT = process.env.FAKE_CHROME_PAINT === 'count';
+const LAYER_SCALES = (process.env.FAKE_CHROME_LAYER_SCALE || '2').split(',').map(Number);
+let scaleReads = 0;
 const paintCounts = { L0: 1, L1: 1, L2: 1 };
 const L3 = { layerId: 'L3', width: 600, height: 600, backendNodeId: 4, drawsContent: true };
 const layerList = (ls) => (COUNT ? ls.map((l) => ({ ...l, paintCount: paintCounts[l.layerId] ?? 1 })) : ls);
@@ -122,7 +126,7 @@ function benchEvaluate(expr, sessionId) {
 function evaluate(expr, event) {
   if (expr.includes('kit: Object.keys(window)')) return { kit: ['__sveltekit_fake'], nav: 'start-selling-top-nav', hero: 'hero', h: 3000, shim: null, vendors: { gtag: 'undefined', amplitude: 'undefined', hj: 'undefined', dataLayer: 1 } };
   if (expr.includes('window.__perf.frames.length=0')) { input = false; phaseT0 = 10000 * ++resets; return true; }
-  if (expr.includes('window.__fwPaintScale = devicePixelRatio')) return 2; // the host DSF before emulation (layer px = CSS px x 2)
+  if (expr.includes('window.__fwPaintScale = devicePixelRatio')) return LAYER_SCALES[scaleReads++ % LAYER_SCALES.length]; // the host DSF before emulation (layer px = CSS px x 2)
   if (expr.includes('if (window.__fwPaint) return false')) { paintArmed = paintOn = true; return true; }
   if (expr.includes('const S = window.__fwPaint; if (S) S.on = false')) { const was = paintArmed; paintOn = false; return { armed: was, w: 430, h: 932, dpr: 3 }; }
   if (expr.includes("window.scrollBy({ top: 250, behavior: 'smooth' })") && expr.includes('still >= 4')) { input = true; return { ms: 5000, ticks: 16, y: 2068, h: 3000 }; }

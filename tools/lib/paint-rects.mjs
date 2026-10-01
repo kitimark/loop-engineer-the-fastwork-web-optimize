@@ -35,12 +35,17 @@
 // device emulation is the host display's real DSF, not the emulated DPR: blink WidgetBase::UpdateSurfaceAndScreenInfo
 // passes GetOriginalDeviceScaleFactor() to SetViewportRectAndScale ("the DSF specified in |new_screen_info| is not
 // the DSF used by the compositor during device emulation!", third_party/blink/renderer/platform/widget/
-// widget_base.cc, main 2026-10-01, lines 1906-1909; CONFIRMED by our probe 2026-10-01, Chrome 154 on a DSF 2 host:
+// widget_base.cc at chromium/src f49f3e5a19715a09a617e72d2230a5f8bda56b36 (main 2026-10-01), lines 1906-1910; CONFIRMED by our probe 2026-10-01, Chrome 154 on a DSF 2 host:
 // a 980 CSS px page's layers were 1960 wide and a 100x50 fixed box 200x100, at emulated DSF 3 and at DSF 1 alike).
 // verify reads that scale (PAINT_LAYER_SCALE: devicePixelRatio before the emulation is set, i.e. the host DSF at
 // the fresh profile's 100% zoom) as paintRects.layerScale; paintRects.units is 'layer px' (= CSS px x layerScale),
 // paintRects.dpr the page's emulated devicePixelRatio. So on a DSF 2 Mac one CSS px is 4 layer px, whatever the
 // emulated DPR; how many pixels the phone (DPR 3) or Chrome's raster really paints is not what these numbers say.
+// devicePixelRatio is DSF x browser zoom: a reused --profile with a saved zoom for the page would change it too.
+// Every place a paint area lands names its unit (I-032 review B1): the verify stdout and fix.mjs rows say "layer
+// Mpx", paint<Phase>Summary carries layerScale, verify's measurement (and so results-paint.json's config) has
+// paintUnits + paintLayerScales, and runs or A/B arms with different layerScales are tagged PAINT-SCALE-MIXED: their
+// Mpx differ by the square of the scale ratio (a DSF 1 external display: a quarter of a DSF 2 built-in's).
 // Area, two different numbers, both in layer px:
 // - mpx ('layerPainted' only, else null): the sum of clip width x height of every paint in the frame, never a
 //   union (paints of one frame can overlap and nest). Chrome's area is a lower bound on WebKit's for resizing
@@ -70,7 +75,16 @@ export const PAINT_ARM = `(() => { if (window.__fwPaint) return false; const S =
 export const PAINT_LAYER_SCALE = '(window.__fwPaintScale = devicePixelRatio)';
 /** Page side: stop the recorder; {armed, w, h, dpr}: the viewport in CSS px and the emulated DPR (NOT the layer scale). */
 export const PAINT_DISARM = '(() => { const S = window.__fwPaint; if (S) S.on = false; return { armed: !!S, w: innerWidth, h: innerHeight, dpr: devicePixelRatio }; })()';
-export const PAINT_NOTE = 'paint-rects: LayerTree.enable + a per-frame CDP binding call add main-thread work (on/off A/A 2026-10-01: scroll tick median 1 -> 2, fps 86.6 -> 66.6): attribution only, never a timing run; compare only with other --paint-rects runs';
+export const PAINT_NOTE = 'paint-rects: LayerTree.enable + a per-frame CDP binding call add main-thread work (on/off A/A 2026-10-01: scroll tick median 1 -> 2, fps 86.6 -> 66.6): attribution only, never a timing run; compare only with other --paint-rects runs at the same layerScale (Mpx are layer Mpx: layer px = CSS px x the host display DSF, F-077)';
+/** The unit of every paint area (layer px = CSS px x paintRects.layerScale). */
+export const PAINT_UNITS = 'layer px';
+/** Verdict / run tag when --paint-rects runs (or A/B arms) were measured at different layer scales. */
+export const PAINT_SCALE_TAG = 'PAINT-SCALE-MIXED';
+/** The layer scales of verify runs with paint data: {units, layerScales: distinct values, sorted (null: not read), mixed: more than one}. */
+export function layerScales(runs) {
+  const s = [...new Set(runs.filter((r) => r?.paintRects).map((r) => r.paintRects.layerScale ?? null))].sort((a, b) => (a ?? -1) - (b ?? -1));
+  return { units: PAINT_UNITS, layerScales: s, mixed: s.length > 1 };
+}
 
 const r3 = (x) => Math.round(x * 1000) / 1000;
 const r1 = (x) => Math.round(x * 10) / 10;

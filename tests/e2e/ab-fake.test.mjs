@@ -138,7 +138,8 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.deepEqual(Object.keys(aaRes.metrics.morph), ['fps', 'gt50', 'loafMs', 'forcedLayoutMs', 'cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpStyleCount', 'cdpLayoutCount', 'cdpTaskMs']);
   assert.deepEqual([aaRes.metrics.scroll.cdpStyleCount.baseline.median, aaRes.metrics.scroll.cdpLayoutMs.name, aaRes.metrics.morph.cdpScriptMs.patched.median], [5, 'layout ms (CDP)', 50]);
   assert.match(aaRes.markdown, /^\| scroll: style recalc ms \(CDP\) \| 20 \[20-20\] \| 20 \[20-20\] \| 0 \(0%\) \| CONTAMINATED \(host\): n=1/m);
-  assert.match(aaRes.markdown, /^traced \(--trace-frames\): tracing perturbs timing/m);
+  // I-032 review N3: the note names the traced phases; other trace-phase sets or tool versions don't compare either
+  assert.match(aaRes.markdown, /^traced \(--trace-frames, phases scroll\): tracing perturbs timing; .*nor with traced A\/Bs of another trace-phase set or tool version/m);
   assert.doesNotMatch(aaRes.markdown, /\| idle:/);
   assert.equal(aaRes.metrics.scroll.fps.baseline.median, 50);
   // contaminated: every verdict carries the prefix, the summary names the runs and the reason
@@ -180,8 +181,29 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(prRes.config.measurement.paintRects, true);
   assert.deepEqual(Object.keys(prRes.metrics), ['scroll', 'morph', 'idle', 'paintIdle', 'paintScroll', 'paintMorph']);
   assert.deepEqual([prRes.metrics.paintScroll.mpx.baseline.median, prRes.metrics.paintScroll.layerMpx.baseline.median, prRes.metrics.paintScroll.layerChurn.patched.median, prRes.metrics.paintScroll.layersMax.patched.median], [1.9, 1.9, 1, 4]);
-  assert.match(prRes.markdown, /^paint-rects \(--paint-rects\): .*compare this A\/B's numbers only with other --paint-rects runs/m);
+  assert.match(prRes.markdown, /^paint-rects \(--paint-rects\): .*compare this A\/B's numbers only with other --paint-rects runs at the same layerScale/m);
   assert.match(pr.stdout, /^wrote fixes\/fast-nav\/results-paint\.json/m);
+  // I-032 review B1: the unit and each arm's layer scale are recorded with the numbers; the rows say "layer Mpx"
+  assert.deepEqual(prRes.config.paintLayerScale, { units: 'layer px', baseline: [2], patched: [2], mixed: false });
+  assert.deepEqual([prRes.config.measurement.paintUnits, prRes.config.measurement.paintLayerScales], ['layer px', [2]]);
+  assert.match(prRes.markdown, /Units: layer Mpx, layer px = CSS px x layerScale .*: baseline 2, patched 2\./);
+  assert.match(prRes.markdown, /^\| paintScroll: painted layer Mpx \(sum of dirty clips\) \|/m);
+  assert.doesNotMatch(prRes.markdown, /PAINT-SCALE-MIXED/);
+  for (const x of Object.values(prRes.metrics.paintScroll)) assert.doesNotMatch(x.verdict, /PAINT-SCALE-MIXED/);
+
+  // arms at different layer scales (a DSF 2 built-in vs a DSF 1 external display): the paint verdicts are tagged, the rest not
+  const pm = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens', '--paint-rects'], { cwd: repo.wt, env: { ...envB, FAKE_CHROME_LOG: join(repo.root, 'ab-paint-mixed.jsonl'), FAKE_CHROME_LAYER_SCALE: '2,1' } });
+  assert.equal(pm.code, 0, pm.out);
+  const pmRes = JSON.parse(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results-paint.json'), 'utf8'));
+  assert.equal(pmRes.config.paintLayerScale.mixed, true);
+  assert.deepEqual([...pmRes.config.paintLayerScale.baseline, ...pmRes.config.paintLayerScale.patched].sort(), [1, 2]);
+  assert.deepEqual([pmRes.config.measurement.paintLayerScales, pmRes.config.measurement.paintLayerScaleMixed], [[1, 2], true]);
+  for (const [phase, ms] of Object.entries(pmRes.metrics)) for (const x of Object.values(ms)) {
+    if (phase.startsWith('paint')) assert.match(x.verdict, /^PAINT-SCALE-MIXED: /, phase);
+    else assert.doesNotMatch(x.verdict, /PAINT-SCALE-MIXED/, phase);
+  }
+  assert.match(pmRes.markdown, /^\*\*PAINT-SCALE-MIXED: the runs' layer scales differ \(baseline \d, patched \d\); the paint rows are not comparable\*\*$/m);
+  assert.match(pm.stdout, /PAINT-SCALE-MIXED: the runs' layer scales differ \(1, 2\)/);
 });
 
 test('SIGTERM on ab: no server, verify.mjs or browser left running, lock released', async () => {

@@ -35,10 +35,13 @@
 // research/design-engineering/devtools-render-metrics.md §4.1-4.2, rank 3-4):
 //   layerMs     the part of `paint` that is layer work: Layerize, UpdateLayer, UpdateLayerTree, CompositeLayers,
 //               Commit (LAYER_EVENTS). A SUB-split: paintMs keeps its meaning (all paint + layer self time), so
-//               the six buckets still sum to the frame and compare with traced runs from before I-032.
+//               the six buckets still sum to the frame; the bucket definitions are unchanged, but the added Frames
+//               category adds tracing load: traced A/Bs compare only within one tool version.
 //   presentation  the Frames track's states from `disabled-by-default-devtools.timeline.frame` (DevTools always
 //               records it): DroppedFrame events in the logger window, `dropped` without and `partial` with
-//               args.hasPartialUpdate (FramesHandler.ts, the dropped/partial rule), plus BeginFrame / DrawFrame
+//               args.hasPartialUpdate (FramesHandler.ts's dropped/partial rule; unlike DevTools, NOT filtered to the
+//               main frame's layerTreeId nor to DroppedFrames with a frameSeqId: byLayerTree shows the dropped split
+//               per tree; one 6x trace had every frame event on one renderer, tree 1), plus BeginFrame / DrawFrame
 //               counts. A DroppedFrame is placed at the BeginFrame with the same args.frameSeqId (the frame it
 //               belongs to; else at its own ts). Each attributed frame gets its dropped/partial counts, and
 //               `byGap` maps rAF gap bands to presentation (one traced A/A gives "do our gaps match what Chrome

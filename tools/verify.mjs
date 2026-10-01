@@ -103,7 +103,7 @@ import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './li
 import { acquire } from './lib/lock.mjs';
 import { loggerSource, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
 import { TRACE_START, TRACE_ARM, TRACE_DISARM, BUCKETS, BUCKET_LABELS, attributeFrames } from './lib/trace-frames.mjs';
-import { PAINT_BINDING, PAINT_ARM, PAINT_DISARM, PAINT_LAYER_SCALE, PAINT_NOTE, streamItem, analyzePaints, topLayerIds, nodeLabel } from './lib/paint-rects.mjs';
+import { PAINT_BINDING, PAINT_ARM, PAINT_DISARM, PAINT_LAYER_SCALE, PAINT_NOTE, PAINT_UNITS, PAINT_SCALE_TAG, layerScales, streamItem, analyzePaints, topLayerIds, nodeLabel } from './lib/paint-rects.mjs';
 import { longFrameTags } from './lib/frame-tags.mjs';
 import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock, stubOutsideTest, procsSnapshot, topProcs, hostPower, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
 
@@ -140,6 +140,8 @@ const TRACE_PHASES = String(opt('trace-phases', 'scroll')).split(',').map((x) =>
 if (TRACE_PHASES.some((p) => !PHASES.includes(p)) || !TRACE_PHASES.length) { console.error(`--trace-phases: a comma list of ${PHASES.join(', ')} (got "${opt('trace-phases')}")`); process.exit(2); }
 if (!TRACE && (SAVE_TRACE || opt('trace-phases') !== undefined)) { console.error('--save-trace and --trace-phases need --trace-frames'); process.exit(2); }
 const traceOn = (ph) => TRACE && TRACE_PHASES.includes(ph);
+// --save-trace writes every trace: ~200-300 MB each on this page (I-032 review N4), so say how many before starting
+if (SAVE_TRACE) console.log(`save-trace: ${RUNS * targets.length * vpList.length * TRACE_PHASES.length} trace file(s) (runs x targets x viewports x traced phases), ~200-300 MB each on this page, into ${OUT}`);
 // Local targets serve the baseline: it must be the snapshot pinned by baseline.json, unchanged
 // (tools/lib/baseline.mjs; exit 3 otherwise). A live-only run just records it. Metadata only.
 // The check is repeated after every run (git status of the snapshot, between runs, no CDP): a run
@@ -367,9 +369,10 @@ function traceSummary(tf) {
     layerMs: s.layerMs, paintEvents: s.paintEvents, droppedFrames: s.presentation?.dropped ?? null, partialFrames: s.presentation?.partial ?? null };
 }
 /** The numbers of a run's --paint-rects phase that fix.mjs ab compares (paint<Phase>Summary). */
-function paintSummary(s) {
+function paintSummary(s, layerScale) {
   if (!s) return null;
-  return { frames: s.frames, framesWithPaint: s.framesWithPaint, paints: s.paints, newLayerPaints: s.newLayerPaints, mpx: s.mpx, frameMpxMax: s.frameMpxMax, frameMpxP50: s.frameMpxP50,
+  // layerScale: the areas' unit (layer px = CSS px x layerScale, I-032 review B1); not a compared metric
+  return { layerScale, frames: s.frames, framesWithPaint: s.framesWithPaint, paints: s.paints, newLayerPaints: s.newLayerPaints, mpx: s.mpx, frameMpxMax: s.frameMpxMax, frameMpxP50: s.frameMpxP50,
     layerMpx: s.layerMpx, frameLayerMpxMax: s.frameLayerMpxMax, frameLayerMpxP50: s.frameLayerMpxP50, layerVpMpx: s.layerVpMpx, frameLayerVpMpxMax: s.frameLayerVpMpxMax,
     layersMax: s.layerCount?.max ?? null, layersAdded: s.layersAdded, layersRemoved: s.layersRemoved, layerChurn: s.layerChurn, layersPainted: s.layersPainted, layerTreeChanges: s.layerTreeChanges };
 }
@@ -525,7 +528,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
     paintRects = {
       // source 'layerPainted' (clip areas) or 'paintCount' (no layerPainted, Chrome 148+: counts and layer sizes only, mpx null)
       status: paintAn.source ? 'ok' : 'enabled, 0 layerPainted events, no paintCount in the layer lists',
-      source: paintAn.source, binding: paintAn.binding, intervals: paintAn.intervals, units: 'layer px', layerScale: ls, dpr, viewport: vpPx,
+      source: paintAn.source, binding: paintAn.binding, intervals: paintAn.intervals, units: PAINT_UNITS, layerScale: ls, dpr, viewport: vpPx,
       layerPaintedEvents: paintAn.layerPaintedEvents, countedPaints: paintAn.countedPaints, bindingFrames: paintAn.bindingFrames, unassignedPaints: paintAn.unassignedPaints,
       phases: paintAn.phases, frames: paintAn.frames, layerNodes, note: PAINT_NOTE,
     };
@@ -599,7 +602,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
     ...(traceOn('idle') ? { traceIdleSummary: traceOut.idle ? traceSummary(traceOut.idle) : null } : {}),
     ...(traceOn('morph') ? { traceMorphSummary: traceSummary(traceOut.morph) } : {}),
     ...(traceFiles ? { traceFiles } : {}),
-    ...(PAINT ? { paintRects, ...Object.fromEntries(PHASES.map((p) => [`paint${p[0].toUpperCase()}${p.slice(1)}Summary`, paintSummary(paintRects.phases[p])])) } : {}),
+    ...(PAINT ? { paintRects, ...Object.fromEntries(PHASES.map((p) => [`paint${p[0].toUpperCase()}${p.slice(1)}Summary`, paintSummary(paintRects.phases[p], paintRects.layerScale)])) } : {}),
     ...(longFrames ? { longFrames } : {}),
     requests: requests.length, origins,
     notFound: firstParty.filter((r) => r.status >= 400).map((r) => `${r.status} ${new URL(r.url).pathname}`),
@@ -669,7 +672,7 @@ async function main() {
           const s = r.scrollSummary;
           const ts = r.traceSummary, pr = r.paintRects, ps = r.paintScrollSummary;
           const extra = (ts && ts.droppedFrames != null ? `  frames: dropped ${ts.droppedFrames} partial ${ts.partialFrames} layer ${ts.layerMs}ms paints ${ts.paintEvents}` : '')
-            + (pr ? (pr.source ? `  paint-rects scroll (${pr.source}): ${ps?.paints ?? 0} paints${ps?.mpx != null ? ` ${ps.mpx} Mpx (frame max ${ps.frameMpxMax})` : ''}, painted layers ${ps?.layerMpx ?? 0} Mpx (viewport-capped ${ps?.layerVpMpx ?? '?'}), layers max ${ps?.layersMax ?? '?'} +${ps?.layersAdded ?? 0} -${ps?.layersRemoved ?? 0}` : `  paint-rects: ${pr.status}`) : '')
+            + (pr ? (pr.source ? `  paint-rects scroll (${pr.source}): ${ps?.paints ?? 0} paints${ps?.mpx != null ? ` ${ps.mpx} layer Mpx (frame max ${ps.frameMpxMax})` : ''}, painted layers ${ps?.layerMpx ?? 0} layer Mpx (viewport-capped ${ps?.layerVpMpx ?? '?'}), layers max ${ps?.layersMax ?? '?'} +${ps?.layersAdded ?? 0} -${ps?.layersRemoved ?? 0} [layer px = CSS px x ${pr.layerScale ?? '?'}]` : `  paint-rects: ${pr.status}`) : '')
             + (r.traceFiles ? `  trace saved: ${Object.values(r.traceFiles).join(', ')}` : '');
           console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms${s.cdpStyleCount != null ? `  style ${s.cdpStyleMs}ms/${s.cdpStyleCount}x layout ${s.cdpLayoutMs}ms/${s.cdpLayoutCount}x script ${s.cdpScriptMs}ms` : ''}${r.traceSummary ? `  trace >20ms ${r.traceSummary.frames}: script ${r.traceSummary.scriptMs} style ${r.traceSummary.styleMs} layout ${r.traceSummary.layoutMs} paint ${r.traceSummary.paintMs} other ${r.traceSummary.otherMs} offMain ${r.traceSummary.offMainMs}ms; >34ms ${r.traceSummary.gt34} (${byClass(r.traceSummary.gt34ByClass)}) >50ms ${r.traceSummary.gt50} (${byClass(r.traceSummary.gt50ByClass)})${r.traceSummary.partial ? ` PARTIAL TRACE: ${r.traceFrames.summary.partialReasons.join('; ')}` : ''}` : r.traceFrames?.error ? `  trace: ${r.traceFrames.error}` : ''}  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}${bl ? `  ${bl.tag}: baseline state ${bl.state} after this run` : ''}${extra}`);
         }
@@ -719,12 +722,14 @@ async function main() {
   };
   console.log(describeHostState(hostSum.hostState));
   console.log(`host: ${invalid.length} of ${measured.length} runs contaminated${invalid.length ? ` (${[...new Set(invalid.flatMap((r) => r.host.reasons))].join('; ')}): verdicts provisional` : ''}${warn.length ? `; ${warn.length} warn (${[...new Set(warn.flatMap((r) => r.host.warnings))].join('; ')})` : ''}${hostSum.stub ? `  [host STUBBED: ${hostSum.stub}]` : ''}`);
+  const paintScale = PAINT ? layerScales(measured) : null; // I-032 review B1: the unit of every paint area
   const measurement = { cdpMetrics: CDP_METRICS, traceFrames: TRACE, frameLog: FRAME_LOG, ...(TRACE ? { note: 'traced: tracing perturbs timing, frame numbers are not comparable with untraced runs', traceBufferKb: TRACE_START.traceConfig.traceBufferSizeInKb, traceTimeoutSec: TRACE_TIMEOUT,
     // I-032: the trace categories (incl. the Frames track's) and the traced phases; one trace per phase
     traceCategories: TRACE_START.traceConfig.includedCategories, tracePhases: TRACE_PHASES, saveTrace: SAVE_TRACE } : {}),
-    ...(PAINT ? { paintRects: true, paintRectsNote: PAINT_NOTE, paintRectsAddedWork: ['Runtime.addBinding + one binding call per rAF frame (main thread)', 'LayerTree.enable: the full layer list on every tree change or paint (+ layerPainted per paint where Chrome sends it)'] } : {}) };
+    ...(PAINT ? { paintRects: true, paintUnits: paintScale.units, paintLayerScales: paintScale.layerScales, paintLayerScaleMixed: paintScale.mixed, paintRectsNote: PAINT_NOTE, paintRectsAddedWork: ['Runtime.addBinding + one binding call per rAF frame (main thread)', 'LayerTree.enable: the full layer list on every tree change or paint (+ layerPainted per paint where Chrome sends it)'] } : {}) };
   if (TRACE) console.log(`trace-frames: ${measurement.note}; offMain = ${BUCKET_LABELS.offMain}`);
   if (PAINT) console.log(PAINT_NOTE);
+  if (paintScale?.mixed) console.log(`${PAINT_SCALE_TAG}: the runs' layer scales differ (${paintScale.layerScales.join(', ')}): their paint Mpx are not comparable (layer px = CSS px x layerScale)`);
   if (flaggedRuns) console.log(`baseline: ${flaggedRuns} of ${measured.length} runs flagged (${[...new Set(measured.filter((r) => r.baseline).map((r) => r.baseline.tag))].join(', ')}): not measured on the pinned snapshot ${BASELINE.snapshot ?? ''} throughout`);
   writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, baseline: flaggedRuns ? { ...BASELINE, flaggedRuns } : BASELINE, host: hostSum, rows, results }, null, 1));
   console.log('details: ' + file);

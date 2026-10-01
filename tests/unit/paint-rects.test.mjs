@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { PAINT_BINDING, PAINT_ARM, PAINT_DISARM, PAINT_LAYER_SCALE, streamItem, paintSource, analyzePaints, topLayerIds, nodeLabel } from '../../tools/lib/paint-rects.mjs';
+import { PAINT_BINDING, PAINT_ARM, PAINT_DISARM, PAINT_LAYER_SCALE, PAINT_UNITS, PAINT_SCALE_TAG, PAINT_NOTE, layerScales, streamItem, paintSource, analyzePaints, topLayerIds, nodeLabel } from '../../tools/lib/paint-rects.mjs';
 
 const bind = (t, on, t0) => ({ method: 'Runtime.bindingCalled', params: { name: PAINT_BINDING, payload: JSON.stringify([t, on, t0]) } });
 const painted = (id, width, height, x = 0, y = 0) => ({ method: 'LayerTree.layerPainted', params: { layerId: id, clip: { x, y, width, height } } });
@@ -93,6 +93,19 @@ test('analyzePaints: LayerTree enabled but no layerPainted at all: zeros, not mi
   assert.equal(r.phases.scroll.frameMpxP50, 0);
   assert.deepEqual(r.phases.scroll.perLayer, {});
   assert.equal(r.source, null, 'no layerPainted and no paintCount: no source, zeros');
+});
+
+test('layerScales (I-032 review B1): the unit and the distinct layer scales of verify runs; more than one is mixed', () => {
+  assert.equal(PAINT_UNITS, 'layer px');
+  assert.equal(PAINT_SCALE_TAG, 'PAINT-SCALE-MIXED');
+  assert.match(PAINT_NOTE, /at the same layerScale/);
+  const run = (ls) => ({ paintRects: { layerScale: ls } });
+  assert.deepEqual(layerScales([run(2), run(2)]), { units: 'layer px', layerScales: [2], mixed: false });
+  assert.deepEqual(layerScales([run(2), run(1), run(2)]), { units: 'layer px', layerScales: [1, 2], mixed: true });
+  // a run without paint data has no areas to compare and is skipped; a scale not read is a value of its own (unit unknown)
+  assert.deepEqual(layerScales([run(2), {}, { paintRects: null }]), { units: 'layer px', layerScales: [2], mixed: false });
+  assert.deepEqual(layerScales([run(2), run(undefined)]), { units: 'layer px', layerScales: [null, 2], mixed: true });
+  assert.deepEqual(layerScales([]), { units: 'layer px', layerScales: [], mixed: false });
 });
 
 test('paintSource: layerPainted wins; else a list with paintCount; else null', () => {

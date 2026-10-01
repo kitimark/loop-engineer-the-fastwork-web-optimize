@@ -493,6 +493,8 @@ test('default run (no I-018 flags): exactly the CDP commands of verify.mjs befor
   assert.deepEqual(res.measurement, { cdpMetrics: false, traceFrames: false, frameLog: false });
   assert.equal('cdpStyleMs' in res.results[0].scrollSummary, false);
   assert.equal('traceFrames' in res.results[0], false);
+  assert.equal('longFrames' in res.results[0], false, 'no >34 ms frame list without --trace-frames / --frame-log / --paint-rects');
+  assert.equal('paintRects' in res.results[0], false);
 });
 
 test('--cdp-metrics: Performance.getMetrics enabled once per page, read at every phase boundary, deltas in every phase summary', async () => {
@@ -666,7 +668,7 @@ test('I-032 --paint-rects: LayerTree + binding armed before the throttle, read a
   assert.equal(x.paintRects.bindingFrames, 12);
   assert.equal(x.paintRects.unassignedPaints, 3);
   // the fake's clips are whole layers, so the dirty-clip sum equals the painted layers' size here
-  const P = { frames: 2, framesWithPaint: 2, paints: 3, newLayerPaints: 0, mpx: 1.935, frameMpxMax: 1.548, frameMpxP50: 1.548, layerMpx: 1.935, frameLayerMpxMax: 1.548, frameLayerMpxP50: 1.548,
+  const P = { layerScale: 2, frames: 2, framesWithPaint: 2, paints: 3, newLayerPaints: 0, mpx: 1.935, frameMpxMax: 1.548, frameMpxP50: 1.548, layerMpx: 1.935, frameLayerMpxMax: 1.548, frameLayerMpxP50: 1.548,
     layerVpMpx: 1.29, frameLayerVpMpxMax: 1.032, layersMax: 4, layersAdded: 1, layersRemoved: 0, layerChurn: 1, layersPainted: 2, layerTreeChanges: 1 };
   for (const k of ['paintIdleSummary', 'paintScrollSummary', 'paintMorphSummary']) assert.deepEqual(x[k], P, k);
   assert.deepEqual(x.paintRects.phases.scroll.perLayer, { L2: { paints: 1, mpx: 1.161, layerMpx: 1.161, w: 1290, h: 900, backendNodeId: 3 }, L1: { paints: 2, mpx: 0.774, layerMpx: 0.774, w: 1290, h: 300, backendNodeId: 2 } });
@@ -678,7 +680,11 @@ test('I-032 --paint-rects: LayerTree + binding armed before the throttle, read a
     paint: { paints: 2, mpx: 1.548, layerMpx: 1.548, topLayer: { layerId: 'L2', mpx: 1.161, layerMpx: 1.161, node: 'section#hero.hero.is-on' } }, layers: 4, layersDelta: 1, source: 'paint-rects' }]);
   assert.equal(res.measurement.paintRects, true);
   assert.equal(res.measurement.paintRectsAddedWork.length, 2, 'the added main-thread work is recorded');
-  assert.match(r.stdout, /paint-rects scroll \(layerPainted\): 3 paints 1\.935 Mpx \(frame max 1\.548\), painted layers 1\.935 Mpx \(viewport-capped 1\.29\), layers max 4 \+1 -0/);
+  // I-032 review B1: the unit of every paint area is recorded where the numbers land
+  assert.deepEqual([res.measurement.paintUnits, res.measurement.paintLayerScales, res.measurement.paintLayerScaleMixed], ['layer px', [2], false]);
+  assert.match(res.measurement.paintRectsNote, /at the same layerScale/);
+  assert.match(r.stdout, /paint-rects scroll \(layerPainted\): 3 paints 1\.935 layer Mpx \(frame max 1\.548\), painted layers 1\.935 layer Mpx \(viewport-capped 1\.29\), layers max 4 \+1 -0 \[layer px = CSS px x 2\]/);
+  assert.doesNotMatch(r.stdout, /PAINT-SCALE-MIXED/);
   const log = readLog(env.FAKE_CHROME_LOG);
   const seq = log.map((l) => (['Runtime.addBinding', 'LayerTree.enable', 'LayerTree.disable', 'Runtime.removeBinding'].includes(l.method) ? l.method : step(l))).filter(Boolean);
   const at = (s) => seq.indexOf(s);
@@ -703,14 +709,14 @@ test('I-032 --paint-rects as on Chrome 148+ (no layerPainted, paintCount in the 
   assert.deepEqual([pr.status, pr.source, pr.binding, pr.layerPaintedEvents, pr.countedPaints, pr.unassignedPaints], ['ok', 'paintCount', 'frame', 0, 15, 3]);
   assert.deepEqual(pr.intervals, { lists: 12, withPaints: 9, spanGt1: 0, spanGt1Share: 0 });
   // per phase: L1 +1, then L1 +1 L2 +1 and the new L3 (first count 1, flagged), then L1 +1 after COLLECT (no phase)
-  const P = { frames: 2, framesWithPaint: 2, paints: 3, newLayerPaints: 1, mpx: null, frameMpxMax: null, frameMpxP50: null, layerMpx: 1.935, frameLayerMpxMax: 1.548, frameLayerMpxP50: 1.548,
+  const P = { layerScale: 2, frames: 2, framesWithPaint: 2, paints: 3, newLayerPaints: 1, mpx: null, frameMpxMax: null, frameMpxP50: null, layerMpx: 1.935, frameLayerMpxMax: 1.548, frameLayerMpxP50: 1.548,
     layerVpMpx: 1.29, frameLayerVpMpxMax: 1.032, layersMax: 4, layersAdded: 1, layersRemoved: 0, layerChurn: 1, layersPainted: 2, layerTreeChanges: 2 };
   for (const k of ['paintIdleSummary', 'paintScrollSummary', 'paintMorphSummary']) assert.deepEqual(x[k], P, k);
   assert.deepEqual(pr.phases.scroll.perLayer, { L2: { paints: 1, mpx: null, layerMpx: 1.161, w: 1290, h: 900, backendNodeId: 3 }, L1: { paints: 2, mpx: null, layerMpx: 0.774, w: 1290, h: 300, backendNodeId: 2 },
     L3: { paints: 0, newPaints: 1, mpx: null, layerMpx: 0, w: 600, h: 600, backendNodeId: 4 } });
   assert.deepEqual(pr.frames.scroll, [[20005, 16.7, 1, null, 0.387, 3, 0, 'L1'], [20021.7, 40, 2, null, 1.548, 4, 1, 'L2']]);
   assert.deepEqual(x.longFrames.scroll[0].paint, { paints: 2, mpx: null, layerMpx: 1.548, topLayer: { layerId: 'L2', mpx: null, layerMpx: 1.161, node: 'section#hero.hero.is-on' } });
-  assert.match(r.stdout, /paint-rects scroll \(paintCount\): 3 paints, painted layers 1\.935 Mpx \(viewport-capped 1\.29\), layers max 4 \+1 -0/);
+  assert.match(r.stdout, /paint-rects scroll \(paintCount\): 3 paints, painted layers 1\.935 layer Mpx \(viewport-capped 1\.29\), layers max 4 \+1 -0 \[layer px = CSS px x 2\]/);
 });
 
 test('I-032 --paint-rects with no paint data (no layerPainted, no paintCount): says so explicitly (zeros, not missing)', async () => {

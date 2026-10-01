@@ -160,7 +160,9 @@ test('verify.mjs --paint-rects: real LayerTree paints per frame and layer, layer
   // the binding recorder and the logger are both rAF callbacks over the same window
   assert.ok(Math.abs(s.frames - x.scrollSummary.frames) <= 2, `paint frames ${s.frames} vs logger frames ${x.scrollSummary.frames}`);
   assert.ok(s.layersMax >= 1, `layers ${s.layersMax}`);
-  assert.ok(s.paints > 0 && s.framesWithPaint > 0, `the data-y line repaints while scrolling: ${s.paints} paints in ${s.framesWithPaint} frames`);
+  // the data-y line repaints in a good share of the scroll frames (real run 2026-10-01: 142 of 417), not one stray paint
+  assert.ok(s.paints > 0 && s.framesWithPaint >= s.frames / 10, `the data-y line repaints while scrolling: ${s.paints} paints in ${s.framesWithPaint} of ${s.frames} frames`);
+  assert.equal(s.layerScale, pr.layerScale, 'every paint summary names its unit');
   assert.ok(s.layerMpx > 0 && s.layerVpMpx <= s.layerMpx, `layerMpx ${s.layerMpx}, viewport-capped ${s.layerVpMpx}`);
   const all = Object.values(pr.phases).flatMap((p) => Object.values(p.perLayer));
   const widths = [...new Set(all.map((l) => l.w).filter((w) => w != null))].sort((a, b) => b - a);
@@ -168,6 +170,7 @@ test('verify.mjs --paint-rects: real LayerTree paints per frame and layer, layer
   console.log(`paint-rects (real Chrome): source ${pr.source}, binding ${pr.binding} ${JSON.stringify(pr.intervals)}, ${pr.layerPaintedEvents} layerPainted / ${pr.countedPaints} counted paints, scroll ${JSON.stringify(s)}, painted layer widths ${widths.slice(0, 5)} (430 CSS px x layerScale ${pr.layerScale} = ${pr.viewport.w}), nodes ${JSON.stringify(Object.values(pr.layerNodes).map((n) => n.node))}`);
   assert.ok(Object.values(pr.layerNodes).some((n) => n.node), 'the top layers have DOM nodes');
   assert.deepEqual(res.measurement.paintRects, true);
+  assert.deepEqual([res.measurement.paintUnits, res.measurement.paintLayerScales, res.measurement.paintLayerScaleMixed], ['layer px', [pr.layerScale], false]);
 });
 
 test('verify.mjs: SIGTERM mid-run closes the dedicated Chrome', async () => {
