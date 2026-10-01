@@ -202,7 +202,29 @@ starts in the bounce. g stays (the jitter fix is real); render cost next: three 
 so iphone-runner runs f vs g (is overscroll-behavior costlier on WebKit?), g+b (no blurs), g+e (no columns), g+c
 (prelayer) without the user; if b names the blur -> N2 composited morph (fixed radii faded by opacity).
 **Finger simulation (user request 08:38Z):** arch-finger researches real OS-level touch on the iPhone (WDA/XCUITest,
-safaridriver touch actions, simulator) so finger tests stop depending on the user.
+safaridriver touch actions, simulator) so finger tests stop depending on the user. **Plan landed 2226d51**
+(`research/architecture/finger-simulation.md`: WebDriverAgent/XCUITest real touches over USB); toolsmith `ts-gesture`
+builds `gesture.mjs` + `wda.mjs` (measurement code: reviewer before landing); the user's one-time setup (Xcode Apple
+account, Developer Mode, Enable UI Automation) is pending. On the phone: V0 smoke (~15 min) + V1 validation (~60 min)
+after the morph block, when ready.
+**Design engineering (lead 08:55Z, user request):** de-morph (team lead), de-hero, de-middle build per-frame cost models
+(read-only, report to the lead; proposals routed to owners). **de-morph done (5c4fc37,
+`research/design-engineering/README.md`, `morph-endpage.md`):** the morph's moving-frame cost is a full repaint of the
+resized layers every frame (4-10 Mpx; WebKit drops a resized backing store, F-036), not the blur. Ranked refactors: R1
+size-stable morph panel (p50 58-68 -> ~17-33 ms, derived), R2 clip-path morph + color-mix cross-fade, R5/R6 no layer
+creation at the tween start, R3 WAAPI tween. Test (lead): fix-nav-morph builds the `h-fixedpanel` driver ablation on
+aw1-10e, run in the morph driver block next to b-noblur; the model predicts h-fixedpanel beats b-noblur by 20-35 ms per
+moving frame; whichever wins sets the morph direction (blur wins -> R7 fixed-radius blur fades above R1). The README's
+de-hero and de-middle rows are placeholders, merged when their notes land. General findings on the board: F-036-F-039.
+**iPhone hero block (08:53-09:08Z, iphone-runner, control passed, window y 0-900, median [range]):** P2 /10e (n=6) vs B
+aw1-10c: > 34 ms 6 -> 4.5, > 50 ms 1 -> 1; hero v2 (P, n=3, on aw1-10e, read against P2): **y≈50 frame 43 -> 35 ms
+(gone)** but **y≈700 frame 52 -> 63 ms (worse, disjoint)**; P3 (+ people-o) same y≈700 cost, y≈50 gain not kept. y≈700
+is a baseline frame (nav leaves `is-hero-pill` + `section#people` `is-visible` start transitions in the same step,
+F-035); v2's +10 ms there is WebKit-only. Next: hero bisect on the phone (v4nocards, v5noblur vs P), then the real fix,
+then one Chrome A/B `--on aw1-10e`. Worst frame in every full pass stays y≈1965 (N10): 86-106 ms. Process rule (F-034):
+an overlay queued or served on the phone is frozen; new work goes under a new name, the runner checks hashes.
+**iPhone queue (09:15Z):** morph driver block (f/g/fb/gb/ge/gc + h-fixedpanel; partial: moving-phase p50 ~30 ms, fb n=1
+p95 45 vs f 53-64) -> [ts-gesture V0/V1 if ready] -> hero bisect -> N12 -> N10 ablations (d, c, b, a).
 
 ## Baseline freeze (user decision, 2026-10-01 ~07:35Z)
 

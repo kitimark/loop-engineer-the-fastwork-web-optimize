@@ -3,7 +3,7 @@
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
 **mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **09:00Z**.
+snapshot), branch `mgmt-ops/docs-2`. Last update: **09:15Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +16,12 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **09:00Z**.
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **09:15Z** Hero block done (P2 /10e small gain; hero v2 kills y≈50 but y≈700 +10 ms WebKit-only, F-035) -> hero bisect
+  queued after morph. Morph block partial (phone throttled 09:07, resumes ~09:23): moving p50 ~30 ms, fb n=1 p95 45 vs f
+  53-64. de-morph done (5c4fc37): cost = full repaint of resized layers, not blur -> h-fixedpanel ablation (fix-nav-morph)
+  joins the morph block. F-034 (freeze served overlays), F-036-039 (de-morph). fix-scroll-engine rebased 272f6c7 + sparse;
+  GO /10d prototype (no normal hold before the N10 verdict).
 
 - **09:00Z** (mgmt-ops-4) Lead: 4edb872 npm test 495/495, test:chrome 8/9 (fix-ab test CONTAMINATED by environment,
   topProcs name WindowServer/duetexpertd/zed/iTerm2/claude; accepted as an environmental pass). arch-finger plan landed
@@ -106,14 +112,16 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **09:00Z**.
 
 1. iphone-runner (owns the phone; every block starts with a passing control: fails if bottom/idle < 58 fps or baseline
    scroll < 44 fps). Its queue:
-   (a) HERO block: B aw1-10c, P hero v2, P2 se10e-aw1 (= aw1-10e), P3 aw1-10e + hero v2 + people-o
-       (`.claude/worktrees/agent-a77e2ec753b6381fb/fixes/hero-exit-scroll-timeline--p3/overlay`). Window y 0-900 + idle at
-       y=0; is the y≈50 frame gone?
+   (a) HERO block: DONE 09:08Z (results in DIRECTION; routed to fix-hero-exit). fix-scroll-engine rebased after it.
    (b) MORPH driver block (#1 priority): mw10e-f vs g (overscroll-behavior question), f vs fb, g vs gb, g vs ge, g vs gc,
        n=3 each; `window.__fwMorphDrive({hold:2000,cycles:3})`, poll `window.__fwMD`; serve from fix-nav-morph's worktree
        `node tools/fix.mjs serve <build> --on aw1-10e`.
    (c) N12 block: aw1-10c vs n12v5-aw1 (matched pair, fix-nav-morph's worktree); hero window esp. y≈700 (F-029 nav ee()
        forced style), middle, end, parity spots. If y≈700 goes → N12 enters the base (needs a review then).
+   (b1) + `h-fixedpanel` (fix-nav-morph builds it on aw1-10e, lead 09:12Z): queue it in the morph block next to
+       b-noblur as soon as fix-nav-morph sends label/URL; prediction (de-morph) h beats b by 20-35 ms per moving frame.
+   (b3) HERO BISECT (sent 09:13Z): v4nocards (CSS c9a4d089), v5noblur (CSS 005c825d) vs P frozen (JS 71d76d69 / CSS
+       8a14ac2e), P2 second ref, v3 (808e25a1) optional; y≈50 / y≈700 frames; fix-hero-exit 08be84c waits for it.
    (b2) ts-gesture V0 smoke (~15 min) + V1 validation (~60 min), `research/architecture/finger-simulation.md` §5c, only
        when ts-gesture reports its phone part ready (and the user's one-time setup is done); else skip to (c).
    (d) N10 ablations, rebuilt on aw1-10e (0e62ccc; base `.../agent-a1722cf5058e25591/fixes/aw1-10e/overlay`; order
@@ -157,9 +165,9 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **09:00Z**.
 | agent | state | waits on | next |
 |---|---|---|---|
 | iphone-runner | owns the phone; hero block (B/P/P2/P3) | – | morph driver block → N12 → N10 |
-| fix-nav-morph | morph owner (#1); driver + mw10e-* builds 4732f6c; holds rebase/sparse | morph driver block results | fb/gb decide → N2 composited morph |
-| fix-hero-exit | hero window owner (#2); rebased + sparse (7169a6a, 9e84199) | hero block results | one Chrome A/B `--on aw1-10e` |
-| fix-scroll-engine | N10 (#3); ablations rebuilt on aw1-10e (0e62ccc); holds rebase/sparse | phone (last in queue) | ablation verdict → fix; /10d after |
+| fix-nav-morph | morph owner (#1); driver + mw10e-* builds 4732f6c; holds rebase/sparse until morph AND N12 blocks end; building h-fixedpanel (lead) | morph driver block results | h vs b decide → R1 size-stable panel or N2/R7 |
+| fix-hero-exit | hero window owner (#2); 08be84c (rebased + sparse) | hero bisect results (I forward) | real fix (new name) → phone → one Chrome A/B `--on aw1-10e` |
+| fix-scroll-engine | N10 (#3); rebased 272f6c7 + sparse; N10 overlays frozen (aw1-10e 3e2f599a, d 7de8ee9a) | phone (last in queue) | building /10d prototype (se10d-aw1) parity + idle probe only |
 | ts-snapshot | delivered; follow-ups from review-snapshot (lead) | – | – |
 | arch-finger | plan landed 2226d51 (finger-simulation.md) | – | – |
 | ts-gesture | toolsmith: gesture.mjs + wda.mjs vs a fake WDA | user's one-time setup (Xcode, Developer Mode, UI Automation) | reviewer, then V0/V1 on the phone (queue b2) |
