@@ -15,8 +15,19 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 - Every docs commit: rebase on main, `npm run test:unit`, commit, then a "LAND BATCH" message with the sha(s).
 - Quote goal progress as frames > 50 / > 34 ms (Chrome, within ONE hold) and iPhone numbers; > 34 ms varies ±2 across
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
+- **Phone vs Simulator (user standing rule, lead 17:5xZ):** a job that needs an iPhone but no performance number runs
+  on the iOS Simulator (tool mechanism checks, WDA/gesture compile tests, inspector-connection bugs, safari-restart,
+  page-state/DOM checks, script dry runs), in a normal chrome-measure hold (sim.mjs, <= ~7 min). The phone is only for
+  timing and perception: S/W/M/G blocks, sentinels, Timeline attribution, F finger tests, user sittings. F-084 holds:
+  Simulator timing is never a verdict. Route new tickets by this before they reach the phone queue.
 
 ## Digest log (newest first, 5 lines each)
+
+- **17:5xZ** Landed: 079e1cf (docs-2), 379d5e5 (ts-iphone-run N1: no LAN host in tab-pick/gesture errors), I-032
+  fe7db9f..9e59002 (RESOLVED; main npm test 771/771), 5137637 (I-043 wip.mjs socket leak, ts-iphone-run). P14 (W)
+  started 17:42Z (~30-35 min) -> user sitting (A = original baseline :5611, B = B+ with arm-scope-c :5647; lead holds
+  the lease as `user`) -> ts-gesture (~5 min phone confirmation; I-042 D1-D3 + new `safari-restart` tool on the Sim).
+  Spawned: ts-console-nav (console menu + notifications). USER RULE: no-number iPhone jobs go to the Simulator (above).
 
 - **17:3xZ** (mgmt-ops-6) Took over from mgmt-ops-5 (17:28Z). Landed: ts-progress 7614401 + c9ceb98 (console Progress
   page, fixes/PROGRESS.json). PREDICTIONS: P-032 (b) G-based items marked G-invalid (flick, I-042, F-085); P-031 G,
@@ -296,6 +307,15 @@ between tool calls.
    (pointerMove durations dropped) -> ALL G data so far is invalid as a finger proxy; G stays blocked. I-035 RESOLVED
    (8935a7d, npm test 730/730). Console server stopped at its 2 h limit 17:16Z (lead restarts). After ts-progress lands:
    keep fixes/PROGRESS.json current on every P-row result, verdict or land.
+   **SIM ROUTING (user rule, table approved by the lead 17:5xZ):** phone = P14, user sitting, ts-gesture's ~5 min I-042
+   confirmation, P-033 gain, P-038, P10, P5, P9, P-030, hero-B, R2 bg, /10d, N12, P6, P8, P-032/P-035/P-036/P-031 G,
+   finger sittings, P-037, P7 (Instruments), P13 (device memory), WDA re-sign before 10-08 (outside blocks). P12 = desk
+   first (tldump on P11/F1 captures), phone only if they don't cover y≈2678. SIMULATOR: I-038 repro/fix check
+   (ts-iphone-run), P-032 (b) mechanism re-checks (fix-nav-morph; only if WDA on the Sim plays strokes as written, ask
+   ts-gesture), F-076 / P-034 face-layer check (fix-nav-morph, after cdwc lands; phone only if it decides a fix),
+   de-unknowns-ux cancelable/DOM part (its timeStamp C2 part stays phone: Sim touches are host HID), R2 clip/backdrop
+   look, T10 / Instruments-lane tooling dry runs. Told: ts-iphone-run, iphone-runner, ts-gesture, fix-nav-morph (acked);
+   de-unknowns-ux was resumed by mistake before the lead said "live agents only" (its ticket: split into Sim + phone).
    **PROGRESS.json (ts-progress, landed 7614401 + c9ceb98):** After every P-row result/verdict/drop/land: update
    fixes/PROGRESS.json (changes + checks[].result + next + updatedAt), run `node tools/console.mjs progress --check`,
    land with the docs batch; the page flags ledger results missing from it. Schema in the header of

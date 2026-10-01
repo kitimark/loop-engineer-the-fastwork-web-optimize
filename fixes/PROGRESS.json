@@ -1,7 +1,7 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T17:20:00Z",
- "updatedBy": "ts-progress",
+ "updatedAt": "2026-10-01T17:49:00Z",
+ "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
  "complaints": [
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T17:49:00Z", "text": "New rule from you: checks that need an iPhone but no timing number now run on the iPhone simulator on the Mac; the real phone stays for timing tests and your sittings. The carousel test (P14) started at 17:42 (about 30-35 min); your sitting comes next." },
   { "at": "2026-10-01T17:20:00Z", "text": "Coming up for you: a sitting on the phone that compares the original page with today's best build (the countdown fix and F3 together)." },
   { "at": "2026-10-01T17:10:00Z", "text": "The robot finger turned out to play every stroke as a quick flick, so its results so far don't count (tool problem I-042). The countdown fix's robot test (P-032) was void; all robot-finger tests wait for the tool fix. The phone runs the carousel test (P14) meanwhile." },
   { "at": "2026-10-01T16:40:00Z", "text": "Touch-listener blind test scored: neither you nor the second tester felt a difference (2 of 4 pairs each, the same as guessing)." },
@@ -117,7 +118,7 @@
    "stage": "D",
    "fixes": "The small rotating profile pictures near the top (the 'blinking small profiles' you noticed) cost a 25-30 ms whole-page layout about once a second, even when you are not scrolling.",
    "gate": "P14: find which part of the carousel change escapes to the whole page.",
-   "next": "P14 phone block, running now.",
+   "next": "P14 phone block, running now (started 17:42, about 30-35 minutes).",
    "owner": "fix-scroll-engine with de-pm-hero",
    "checks": [ { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "" } ],
    "details": [
@@ -133,7 +134,7 @@
    "stage": "D",
    "fixes": "At rest at the top of the page, the countdown ticks every second, and some ticks make a slow frame. This first finds which part of the tick is slow; then the digits could run on the GPU instead.",
    "gate": "P-037: name the slow part of the tick before any build.",
-   "next": "P-037 attribution run on the phone. A build only after the countdown fix (cdwc) lands.",
+   "next": "P-037 attribution run on the phone. A build only after the countdown fix (cdwc) lands; then a simulator check (no timing) comes first.",
    "owner": "fix-nav-morph",
    "checks": [ { "id": "P-037", "what": "phone attribution run at rest", "result": "" } ],
    "details": [

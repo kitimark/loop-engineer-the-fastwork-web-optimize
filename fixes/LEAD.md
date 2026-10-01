@@ -127,6 +127,11 @@ the lesson behind each rule is its §1 table). A topic skips nothing; a stage ca
 - **Prediction misses.** A model with two misses in [`PREDICTIONS.md`](PREDICTIONS.md) (measured outside its
   interval) is reviewed by its author's team before it drives another build; the lead holds that build's ticket.
 
+**Phone or Simulator (user standing rule, 2026-10-01 17:5xZ).** A job that needs an iPhone but no performance number
+(tool mechanism checks, WDA/gesture compile tests, inspector-connection bugs, page-state/DOM checks, script dry runs)
+runs on the iOS Simulator in a normal chrome-measure hold (≤ ~7 min); the phone is only for timing and perception (S/W/M/G
+blocks, sentinels, Timeline attribution, F tests, user sittings); Simulator timing is never a verdict (F-084).
+
 **Slot tickets (phone access).** Only ticketed builds go on the phone. A ticket names: build + served hashes; the
 ONE named control on the same base and its hashes; the driver (S/W/M/G/F); the one question; the prediction id;
 the "if X then Y" decision for each outcome; the probe set; the served ports, each with one uncounted warm-up load
