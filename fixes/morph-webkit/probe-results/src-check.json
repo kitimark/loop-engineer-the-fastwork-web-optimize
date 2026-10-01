@@ -1,0 +1,207 @@
+{
+ "res": {
+  "base": {
+   "panelAt": [
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    },
+    {
+     "n": 21,
+     "withSrc": 0,
+     "decoded": 0
+    }
+   ],
+   "idle": {
+    "lt": [
+     [
+      3227,
+      128
+     ],
+     [
+      3630,
+      269
+     ],
+     [
+      4966,
+      203
+     ],
+     [
+      5663,
+      105
+     ]
+    ],
+    "srcLast3s": 0,
+    "srcTotal": 0
+   },
+   "scroll": {
+    "srcWrites": 21,
+    "srcByScrollY": {
+     "1632": 21
+    },
+    "lt": []
+   },
+   "atMorph": {
+    "morph": "1",
+    "panel": {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    }
+   },
+   "errors": []
+  },
+  "src": {
+   "panelAt": [
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    },
+    {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    }
+   ],
+   "idle": {
+    "lt": [
+     [
+      2845,
+      120
+     ],
+     [
+      3600,
+      283
+     ],
+     [
+      4857,
+      209
+     ],
+     [
+      5820,
+      111
+     ]
+    ],
+    "srcLast3s": 0,
+    "srcTotal": 21
+   },
+   "scroll": {
+    "srcWrites": 0,
+    "srcByScrollY": {},
+    "lt": []
+   },
+   "atMorph": {
+    "morph": "1",
+    "panel": {
+     "n": 21,
+     "withSrc": 21,
+     "decoded": 21
+    }
+   },
+   "errors": []
+  }
+ },
+ "diff": 0.05
+}

@@ -142,6 +142,13 @@ Next build: `mw10e-ghb` = gh + b (CSS db01137a…, JS = gh), to test whether the
 remaining candidates are the nav box's own per-frame layout/repaint (R2 clip-path) and the layer creation at the
 tween start (R3).
 
+**Mislabel in b (de-morph).** `.start-selling-morph-backdrop` has no backdrop-filter. The per-frame variable
+`backdrop-filter: blur(20px*(1-m))` is on the nav itself (`.start-selling-top-nav.svelte-1dcozpm`, CSS 11387). So
+b/gb/ghb removed only the panel filter and the platform filter.
+
+`mw10e-ghbn` = ghb + `.start-selling-top-nav.is-morphing { backdrop-filter: none }` (CSS 253943ac…, JS = gh).
+Diagnostic only.
+
 ### Middle-of-page frame at y≈1960 (de-middle, `research/design-engineering/middle.md`)
 
 Claim: the morph IO on `#platform` (rootMargin 200%) fires at y≈1830 and causes an 86-106 ms frame. Two hypotheses:
@@ -153,8 +160,37 @@ Builds on aw1-10e:
 - `mw10e-e1`: #6 v05 on aw1-10e. In the zone, listeners arm passive, and switch to blocking only at the end.
   It replaces `mw-d-passive`, which sits on aw1-10c and would mix bases.
 
-Chrome state check (short lane): both reach morph 1 at the end and return to 0. de-middle's R1 (images `src`
-at the idle pre-mount, `inert` until the morph, listeners once passive) waits for e1/e2.
+Chrome state check (short lane): both reach morph 1 at the end and return to 0.
+
+**iPhone e1/e2** (iphone-runner, 09:41-09:48Z, control passed, hashes matched):
+
+| build | long frame, ms@y | median |
+|---|---|---|
+| control | 90@1965, 114@1969, 94@1967 | 94 |
+| e1 | 105@1965, 94@1966, 86@1963 | 94 (H1a rejected) |
+| e2 | 96@2243, 105@2239, 85@2242 | the frame moves with the margin |
+
+- The panel was pre-mounted at scroll start 9/9 (H1b rejected).
+- The R3 src logger names the frame 9/9: a burst of ≥ 12 panel `img` src writes, because the IO sets `b`, and `b` sources the images.
+
+### Candidate `mw10e-src` (landable, JS f7716dc3…, CSS = base)
+
+After the idle pre-mount, the panel's column images get their `src` in idle time:
+- two per `requestIdleCallback` slice (`setTimeout(150)` on Safari);
+- in first-render order;
+- with the same scroll-aware re-arm as the mount.
+
+`b`/`E` still source anything not yet reached, so the morph shows the same images. `inert` is unchanged (still
+lifted at the IO, as before).
+
+Chrome check (`src-check.mjs`, short lane, mobile 6x, mechanism/state only; `probe-results/src-check.json`):
+- All 21 panel images are sourced and decoded within 1 s after settle at y=0.
+- The scroll 0 → 2600 has 0 src writes; the base had 21 at y=1632, the IO edge.
+- The load-phase long tasks are the same 4 in both: 120-283 ms vs 105-269 ms. No new > 50 ms task.
+- 0 src writes in idle at y=0.
+- The morph screenshot differs by 0.05 %.
+
+de-middle's other R1 items (`inert` until the morph, listeners once passive) are not needed for this frame.
 
 ## Composited morph (N2), if b names the blur
 
