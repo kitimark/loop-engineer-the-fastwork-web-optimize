@@ -164,6 +164,9 @@ iphone-runner, is still in progress.
     fix does not touch (the countdown faces are in the morph panel at the page end, not in the hero). So it is not
     read as an effect.
   - The lag the user names is at the hero and the page end, in both arms.
+  - Pair 3's recordings (one finger run per page, so info only, mgmt-ops-5): moving frames >34 ms were 54 for C vs
+    65 for V, and >50 ms were 11 vs 13. Free finger runs differ run to run, so this says nothing either way.
+  - Logged in the P-032 row as the F stage (console C-001). V was preferred in 0 of 2 pairs, and the catch pair passed.
 - **What this means for landing.** The P-029 result predicted this: the fix removes the faces' repaint and about −80
   layers, and the gain is in the morph tween frames. Free swipes don't isolate those frames.
   - The landing gate stays P-032 (G, the landing pair): PASS lands it, NULL or WORSE does not.
