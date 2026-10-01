@@ -20,7 +20,7 @@
         R.pending.push(['class', desc(m.target), (add.length ? '+' + add.join('+') : '') + (del.length ? '-' + del.join('-') : '')]);
       } else R.pending.push([m.attributeName.replace('data-start-selling-', '').replace('data-', ''), desc(m.target), (m.oldValue ?? '') + '->' + v]);
     }
-  }).observe(document.documentElement, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['data-start-selling-render', 'data-start-selling-scene', 'data-fw-wc', 'class'] });
+  }).observe(document, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['data-start-selling-render', 'data-start-selling-scene', 'data-fw-wc', 'class'] });
   // only .pain / #people class changes are interesting; drop other class churn at frame time
   const keepClass = (p) => p[0] !== 'class' || /^(section\.pain|#people)/.test(p[1]);
   let last = performance.now();
