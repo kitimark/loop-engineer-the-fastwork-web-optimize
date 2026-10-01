@@ -3,7 +3,8 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft. `patch.diff` is variant 03 (sha256 160d69a0…); **the committed `results.json` predates it**:
+**Status:** mechanism verified (counts only, see "Mechanism probe"); timing gain inconclusive.
+`patch.diff` is variant 03 (sha256 160d69a0…); **the committed `results.json` predates it**:
 it measured variant 02 (no `active` prop; `results.json` `patch.sha256` 2feaf189…), with old tools (before
 I-002) at host load 9.6-19.5. It will be replaced by the final `ab --runs 5`, which is held for the host-load
 gate (ts-i017) or a quiet window. The only difference between 02 and 03 is the `active` prop (hunk 4 below),
@@ -74,6 +75,62 @@ noise: a mid-spring digit shows at a different phase in each shot.
 - Metrics it should move: idle-phase main-thread time / rAF work (once I-002 adds an idle phase to
   verify). In the scroll phase it is expected to be invisible, and it is.
 
+## Mechanism probe (counts only)
+
+Probe `scratchpad/countdown-idle-raf/probe.mjs` (copy of the method below; raw output in the worktree's
+`out/countdown-probe/probe.json`). It ran 2026-10-01 00:01-00:04Z in one short-lane `lock.mjs run` hold, with
+the servers inside the hold. Chrome mobile 430x932 DPR3, CPU 6x, cold isolated context per page. Targets in
+order ABC/CBA, n=2 each: base, **03** (`patch.diff` 160d69a0) and **05** (`variants/05.diff`). Host load1 was
+8.9-14.7, so the run is **contaminated** for timings. The counts (style writes, layers, parity) don't depend
+on load. Label: **mechanism, counts only**.
+
+Method:
+- **Face writes:** a `MutationObserver` counts `style` attribute mutations on `.svelte-1quva9c` elements
+  (digit faces and the strip) during a 6 s idle window.
+- **Timers:** CDP `Performance.getMetrics` deltas over the same window.
+- **Layers:** CDP `LayerTree` layer count; `will-change: transform` elements inside `[role=timer]`.
+- **Parity:** 12 samples x every `sliding-number`. The face aligned with its cell (within 1 px) must
+  read `data-value`. A mid-spring sample reads `?`; that is expected, and the rate is the same on every
+  side.
+- **Windows:** "top" is 6 s at scrollY 0: the hero countdown in view; the morph-panel countdown not
+  mounted yet. "mid" follows a `scrollTo(0, 0.45 * height)`: the smooth scroll didn't move the hero out of
+  view (`timersInViewMid` = [true, false]), and the morph-panel countdown was mounted but outside the
+  viewport.
+
+| per 6 s idle window, n=2 | base | 03 (160d69a0) | 05 (one strip per digit) |
+|---|---|---|---|
+| top: face style writes | 3750 [3470-4030] | **712 [709-715]** (-81 %) | **314 [283-346]** (-92 %) |
+| mid: face style writes (hero + mounted off-viewport panel countdown) | 6175 [6160-6190] | **664 [598-729]** (-89 %) | **292 [290-294]** (-95 %) |
+| compositing layers (CDP LayerTree, page total, top) | 111, 106 | 111, 106 | **39, 34** (-72) |
+| `will-change: transform` elements in the countdown | 80, 80 | 80, 80 | **8, 8** |
+| digit parity ok/n (12 samples x 4 numbers) | 46/48, 45/48 | 46/48, 45/48 | 45/48, 45/48 |
+| frames > 20 ms (top / mid) | 0 / 0 | 0 / 0 | 0 / 0 |
+| page errors | 0 | 0 | 0 |
+| *indicative only (load 9-15):* mid ScriptDuration ms | 228 [220-237] | 133 [119-147] | 118 [115-120] |
+| *indicative only:* mid RecalcStyleDuration ms | 656 [628-683] | 413 [396-430] | 454 [445-462] |
+| *indicative only:* top / mid TaskDuration ms | 3334 / 4450 | 3226 / 3611 | 2890 / 3785 |
+
+What it shows:
+- **03, clamp:** with the hero in view, face writes drop 5.3x (10 -> ~2 per spring frame).
+- **03, off-viewport pause:** the mounted, off-viewport panel countdown adds ~2400 writes per 6 s in
+  base and ~0 in 03 (mid minus top: base +2425, 03 -48).
+- **05:** layers drop from 80 to 8 per countdown and writes another 2x; parity is unchanged.
+- **Parity:** every miss on every side is a `?` (a sample taken mid-spring, no face aligned), except one
+  05 sample that read the old digit (`07` vs `06`) in the tick-to-first-frame window. The visible digit is
+  correct whenever it is at rest.
+
+**F-009 (the ~60 ms frame at y~2154, styleAndLayout 44-47 ms, only visible change = `span.face`
+transform writes): 160d69a0 does not cover it.** The face writes are probably not its cost. Per the
+probe, removing ~3000 writes per 6 s saves only ~26 ms of style recalc in total (top window: 378 -> 352
+ms), well under 0.1 ms per frame. A transform write on a `will-change` layer needs no layout either, yet
+that frame spends 44-47 ms in style+layout. The likelier cost is the first style/layout of newly
+mounted content in that frame: the morph-panel countdown's 80 faces, which are 80 new `will-change`
+layers, plus the panel itself, which mounts when `#platform` comes within 200 %. Proposed coverage:
+- (a) #13 lazy mount, which moves the mount out of the scroll;
+- (b) variant 05, which creates 8 layers per countdown instead of 80: a candidate next variant, with
+  the counts above;
+- (c) check: the all-wave1 combined run attributes that frame with and without the mount.
+
 ## Before / after
 
 `node tools/fix.mjs ab countdown-idle-raf --runs 5` (Chrome, mobile 430x932 DPR3, CPU 6x, ABBA order,
@@ -123,9 +180,9 @@ iPhone: not used.
 |---|---|---|---|---|---|---|---|---|---|
 | countdown-idle-raf/01 | A/A baseline vs baseline (noise floor, scroll+morph) | reference | reference | old-tools (load 2.8-5.8) | >20 ms pooled 54-78, LoAF 195-283 ms, forced 34-83 ms, n=5 | `out/ab/_aa/2026-09-30T21-11-55-249Z/results-aa.json` (worktree) | spread of >20 ms frames is ~+-12 at n=5 | sent to all owners | n/a (A/A reference, no variant) |
 | countdown-idle-raf/02 | IO off-screen pause + clamp faces to +-1 cell (no `active` prop) | fewer rAF springs and style writes, so >20 ms frames / script time drop | within noise | old-tools, contaminated (load 9.6-19.5) | >20 ms 82 [76-103] -> 99 [85-103], LoAF 316 -> 348 ms, n=5 | `variants/02.diff`; commit 630d944 (was 6b52c9c before rebase) `results.json` | countdown frames are < 50 ms, so they are invisible to scroll-phase LoAF; the effect needs an idle/probe metric | superseded by /03 | pending runner |
-| countdown-idle-raf/03 | /02 + `active` prop (the call site can pause a mounted but invisible countdown) | as /02, plus no springs in nav-morph's hidden morph panel (inert without nav-morph's call site) | see "Before / after" | see "Before / after" | see "Before / after" | `patch.diff` = `variants/03.diff`, `results.json` | - | on branch | pending runner |
+| countdown-idle-raf/03 | /02 + `active` prop (the call site can pause a mounted but invisible countdown) | as /02, plus no springs in nav-morph's hidden morph panel (inert without nav-morph's call site) | mechanism verified (counts); timing gain not yet measured (final A/B held for the host gate) | counts: load-independent; timings in the probe contaminated (load1 8.9-14.7) | face style writes per 6 s, top 3750 [3470-4030] -> 712 [709-715], mid 6175 [6160-6190] -> 664 [598-729], n=2; parity unchanged; layers unchanged (80 will-change) | `patch.diff` = `variants/03.diff` (160d69a0); README "Mechanism probe"; `results.json` is still variant 02's | clamp + IO pause cut writes 5-9x; LoAF can't see sub-50 ms work, so use counters | on branch | pending runner |
 | countdown-idle-raf/04 | drop `.face{will-change:transform}` only (~80 layers per countdown -> 0) | fewer compositing layers | abandoned: queue slot dropped for the lock budget, never measured | - | - | `variants/04.diff` (rebuilt) | - | superseded by /05 | pending runner |
-| countdown-idle-raf/05 | ONE `will-change` strip per digit (11 static faces, one transform write per frame) on top of /03 | ~80 -> ~8 layers per countdown, 1 write/frame per animating digit (architecture review) | see probe | see probe | see probe | `variants/05.diff` (full overlay, not stacked), probe `out/countdown-probe/probe.json` | - | probe in the final slot | pending runner |
+| countdown-idle-raf/05 | ONE `will-change` strip per digit (11 static faces, one transform write per frame) on top of /03 | ~80 -> ~8 layers per countdown, 1 write/frame per animating digit (architecture review) | better on counts (mechanism); timing not measured | counts: load-independent; timings contaminated (load1 8.9-14.7) | will-change elements per countdown 80 -> 8, page compositing layers 111/106 -> 39/34; face writes top 3750 -> 314, mid 6175 -> 292, n=2; parity 45/48 (same sampling misses) | `variants/05.diff` (full overlay, not stacked); README "Mechanism probe" | one transform per digit instead of 10 (or 2): fewer layers and writes; candidate for F-009's mount frame | candidate next variant (needs its own A/B) | pending runner |
 | countdown-idle-raf/06 | CSS `transition: transform` per face instead of the rAF spring (TOPICS.md suggestion) | no rAF at all | abandoned before editing: the spring's 0<->9 wrap sweeps through every digit, and per-face transitions would move wrapping faces (-4 -> +5 cells) through the visible cell | - | - | no patch kept (never edited) | keep the spring; cut its cost instead | dropped | no patch kept (never edited) |
 | countdown-idle-raf/07 | stop the `setInterval` entirely while off-screen | zero timer work off-screen | abandoned before editing: on re-entry the stale digits would roll visibly to the current time; a 1 Hz snap costs almost nothing | - | - | no patch kept (never edited) | snap, don't stop the clock | dropped | no patch kept (never edited) |
 
