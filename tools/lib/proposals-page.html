@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proposals</title>
+<link rel="stylesheet" href="/console-nav.css">
+<style>
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e3e1da;
+  --accent: #2f5bd3; --accent-ink: #ffffff; --accent-soft: #e8eefc;
+  --ok: #23824a; --ok-soft: #e4f3ea; --bad: #c62f2f; --bad-soft: #fbe9e7; --warn: #8a5a00; --warn-soft: #fdf3dc;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161716; --card: #202221; --ink: #ecebe6; --muted: #9b9a93; --line: #34362f;
+    --accent: #7c9bff; --accent-ink: #0f1424; --accent-soft: #232b45;
+    --ok: #5cc68a; --ok-soft: #1d3326; --bad: #ff6b6b; --bad-soft: #3a2020; --warn: #f0c060; --warn-soft: #3a3220;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161716; --card: #202221; --ink: #ecebe6; --muted: #9b9a93; --line: #34362f;
+  --accent: #7c9bff; --accent-ink: #0f1424; --accent-soft: #232b45;
+  --ok: #5cc68a; --ok-soft: #1d3326; --bad: #ff6b6b; --bad-soft: #3a2020; --warn: #f0c060; --warn-soft: #3a3220;
+  --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 24px 20px 80px; }
+header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+header h1 { font-size: 22px; margin: 0; font-weight: 650; }
+.sub { color: var(--muted); font-size: 14px; flex: 1 1 240px; }
+.status.off { color: var(--bad); font-weight: 600; }
+.intro { color: var(--muted); font-size: 15px; margin: 0 0 18px; max-width: 760px; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow); }
+h2.section { font-size: 15px; color: var(--muted); font-weight: 650; margin: 24px 0 10px; text-transform: uppercase; letter-spacing: .04em; }
+.list a.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; text-decoration: none; color: inherit; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); margin-bottom: 8px; }
+.list a.row:hover { border-color: var(--accent); }
+.list a.row.cur { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.list .t { font-weight: 650; flex: 1 1 260px; }
+.list .m { color: var(--muted); font-size: 13px; }
+.chip { display: inline-block; font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); white-space: nowrap; }
+.chip.waiting { background: var(--bad); color: #fff; font-weight: 650; }
+.chip.accepted { background: var(--ok-soft); color: var(--ok); }
+.chip.rejected { background: var(--bad-soft); color: var(--bad); }
+.chip.changes-requested { background: var(--warn-soft); color: var(--warn); }
+.chip.muted { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.detail h2.title { margin: 4px 0 6px; font-size: 24px; line-height: 1.25; }
+.meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+.block { margin: 16px 0 0; }
+.block h3 { margin: 0 0 4px; font-size: 16px; }
+.block p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.block ul { margin: 0; padding-left: 20px; }
+.block li { margin: 3px 0; overflow-wrap: anywhere; }
+.tablewrap { overflow-x: auto; }
+table.gain { border-collapse: collapse; width: 100%; font-size: 15px; }
+table.gain th { text-align: left; font-size: 13px; color: var(--muted); font-weight: 600; padding: 4px 10px 4px 0; }
+table.gain td { padding: 6px 10px 6px 0; vertical-align: top; border-top: 1px solid var(--line); }
+table.gain td.n { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 650; }
+table.gain .how { color: var(--muted); font-size: 13px; }
+.tag { font-size: 11px; font-weight: 700; letter-spacing: .03em; padding: 1px 6px; border-radius: 4px; background: var(--warn-soft); color: var(--warn); white-space: nowrap; }
+.tag.CONFIRMED { background: var(--ok-soft); color: var(--ok); }
+.tag.estimate { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
+.tag.phone { background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
+.decision { border-radius: 12px; padding: 10px 14px; margin: 12px 0 0; font-size: 15px; background: var(--accent-soft); }
+.decision.accepted { background: var(--ok-soft); }
+.decision.rejected { background: var(--bad-soft); }
+.decision.changes-requested { background: var(--warn-soft); }
+.decision p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* compare */
+.cmp-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 4px 0 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { font: inherit; font-size: 14px; border: 0; background: var(--card); color: var(--ink); padding: 8px 14px; cursor: pointer; min-height: 40px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.pairs { display: flex; gap: 6px; flex-wrap: wrap; }
+.pairs button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer; min-height: 32px; }
+.pairs button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 650; }
+.caption { font-size: 14px; color: var(--muted); margin: 0 0 8px; }
+.side { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .side { grid-template-columns: 1fr; } }
+figure { margin: 0; }
+figure figcaption { font-size: 13px; font-weight: 650; margin-bottom: 4px; display: flex; gap: 8px; align-items: baseline; justify-content: space-between; }
+figure img, figure video { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #000; }
+.stage { position: relative; max-width: 560px; margin: 0 auto; user-select: none; }
+.stage img { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); }
+.stage .over { position: absolute; inset: 0; }
+.stage .over img { width: 100%; height: 100%; object-fit: fill; }
+.stage .split { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5); pointer-events: none; }
+.stage .lbl { position: absolute; top: 8px; font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: rgba(0,0,0,.65); color: #fff; pointer-events: none; }
+.stage .lbl.l { left: 8px; } .stage .lbl.r { right: 8px; }
+.range { display: block; width: 100%; max-width: 560px; margin: 10px auto 0; }
+.blinkbar { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 10px; font-size: 14px; }
+button.btn { font: inherit; font-size: 15px; cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 8px 16px; min-height: 42px; }
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 650; }
+button.btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 650; }
+button.btn.bad { background: var(--bad); border-color: var(--bad); color: #fff; font-weight: 650; }
+button.btn.warn { background: var(--warn); border-color: var(--warn); color: #fff; font-weight: 650; }
+button.btn[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--accent-soft); }
+button.btn:disabled { opacity: .55; cursor: not-allowed; }
+.live { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.live a.btn { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); text-decoration: none; font-weight: 600; }
+.hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.choices { display: flex; gap: 8px; flex-wrap: wrap; }
+textarea { width: 100%; min-height: 90px; font: inherit; font-size: 15px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); margin: 10px 0 8px; }
+.err { color: var(--bad); font-weight: 600; margin: 6px 0 0; }
+.empty { color: var(--muted); }
+details.hist { margin-top: 14px; font-size: 14px; }
+details.hist summary { cursor: pointer; color: var(--muted); }
+details.hist li { color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<!--console-menu-->
+<div class="wrap">
+  <header>
+    <h1>Proposals</h1>
+    <span class="sub" id="upd">loading…</span>
+  </header>
+  <p class="intro">Each proposal swaps an expensive effect on the page for a cheaper one that should look the same, or nearly the same. Compare the original (A) with the proposal (B), then accept it, reject it, or ask for a change.</p>
+  <main>
+    <div id="list" class="list"></div>
+    <div id="detail"></div>
+  </main>
+</div>
+<script src="/console-nav.js"></script>
+<script>
+'use strict';
+// The console's proposals page (ts-proposals). Data: GET /api/proposals (list), GET /api/proposals/<id> (one), media
+// from /media/<id>/<name>. Decisions: POST /api/proposals/<id>/decide|undo with the x-console header. Every string
+// from the data is shown with textContent (el()), never as HTML.
+var ID = /^PR-\d{3,6}$/;
+var STATE_TEXT = { proposed: 'waiting for you', accepted: 'accepted', rejected: 'rejected', 'changes-requested': 'change requested' };
+var AREA_TEXT = { hero: 'Top of the page (hero)', middle: 'Middle of the page', end: 'End of the page', whole: 'Whole page' };
+var VERB = { accept: 'Accept', reject: 'Reject', change: 'Request change' };
+
+function el(tag, attrs) {
+  var n = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    var v = attrs[k];
+    if (v === undefined || v === null || v === false) continue;
+    if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else n.setAttribute(k, v === true ? '' : v);
+  }
+  for (var i = 2; i < arguments.length; i++) {
+    var c = arguments[i];
+    if (c === undefined || c === null || c === false) continue;
+    n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return n;
+}
+function when(iso) { return iso ? iso.slice(0, 10) + ' ' + iso.slice(11, 16) + 'Z' : ''; }
+/** Only same-origin /media/ paths become a src; only localhost http(s) URLs become a link. */
+function mediaSrc(p) { return typeof p === 'string' && /^\/media\/PR-\d{3,6}\/[A-Za-z0-9.-]+$/.test(p) ? p : null; }
+function localUrl(u) {
+  try { var x = new URL(u); return /^https?:$/.test(x.protocol) && ['localhost', '127.0.0.1', '[::1]'].indexOf(x.hostname) >= 0 ? x.href : null; } catch (e) { return null; }
+}
+function currentId() { var h = decodeURIComponent(location.hash.slice(1)); return ID.test(h) ? h : null; }
+
+// ---- state kept across refreshes ----
+var listSig = '', detailSig = '', current = null, drafts = {}, pick = {}, view = {}, pair = {}, blinkTimer = null, slider = {};
+
+// ---- the list ----
+function renderList(items) {
+  var box = document.getElementById('list');
+  box.replaceChildren();
+  var waiting = items.filter(function (p) { return p.state === 'proposed'; });
+  var rest = items.filter(function (p) { return p.state !== 'proposed'; });
+  function row(p) {
+    var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id },
+      el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: STATE_TEXT[p.state] || p.state }),
+      el('span', { class: 't', text: p.title }),
+      el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') }));
+    return a;
+  }
+  box.appendChild(el('h2', { class: 'section', text: 'Waiting for you (' + waiting.length + ')' }));
+  if (!waiting.length) box.appendChild(el('p', { class: 'empty', text: 'Nothing waiting. New proposals show up here with a chime.' }));
+  waiting.forEach(function (p) { box.appendChild(row(p)); });
+  if (rest.length) {
+    box.appendChild(el('h2', { class: 'section', text: 'Decided (' + rest.length + ')' }));
+    rest.forEach(function (p) { box.appendChild(row(p)); });
+  }
+}
+
+// ---- compare ----
+function stopBlink() { if (blinkTimer) { clearInterval(blinkTimer); blinkTimer = null; } }
+function compareBlock(p) {
+  var c = p.compare || {}, shots = c.shots || [], wrap = el('div', { class: 'block' }, el('h3', { text: 'Compare' }));
+  var aL = (c.a && c.a.label) || 'Original', bL = (c.b && c.b.label) || 'Proposal';
+  if (shots.length) {
+    var v = view[p.id] || c.view || 'side', i = Math.min(pair[p.id] || 0, shots.length - 1), s = shots[i];
+    var bar = el('div', { class: 'cmp-bar' });
+    var seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'How to compare' });
+    [['side', 'Side by side'], ['slider', 'Slider'], ['blink', 'Blink']].forEach(function (o) {
+      var b = el('button', { type: 'button', 'aria-pressed': String(v === o[0]), text: o[1] });
+      b.addEventListener('click', function () { view[p.id] = o[0]; stopBlink(); renderDetail(current, true); });
+      seg.appendChild(b);
+    });
+    bar.appendChild(seg);
+    if (shots.length > 1) {
+      var pairs = el('div', { class: 'pairs', role: 'group', 'aria-label': 'Scroll position' });
+      shots.forEach(function (x, k) {
+        var b = el('button', { type: 'button', 'aria-pressed': String(k === i), text: x.caption || ('Position ' + (k + 1)) });
+        b.addEventListener('click', function () { pair[p.id] = k; renderDetail(current, true); });
+        pairs.appendChild(b);
+      });
+      bar.appendChild(pairs);
+    }
+    wrap.appendChild(bar);
+    if (s.caption) wrap.appendChild(el('p', { class: 'caption', text: s.caption }));
+    var A = mediaSrc(s.a), B = mediaSrc(s.b);
+    function full(src, label) { return src ? el('a', { href: src, target: '_blank', rel: 'noopener noreferrer', text: 'full size' }) : null; }
+    if (v === 'side') {
+      wrap.appendChild(el('div', { class: 'side' },
+        el('figure', null, el('figcaption', null, el('span', { text: 'A · ' + aL }), full(A)), A ? el('img', { src: A, alt: 'A: ' + aL + (s.caption ? ', ' + s.caption : '') }) : null),
+        el('figure', null, el('figcaption', null, el('span', { text: 'B · ' + bL }), full(B)), B ? el('img', { src: B, alt: 'B: ' + bL + (s.caption ? ', ' + s.caption : '') }) : null)));
+    } else if (v === 'slider') {
+      var pos = slider[p.id] === undefined ? 50 : slider[p.id];
+      var over = el('div', { class: 'over' }, el('img', { src: B, alt: '' }));
+      var line = el('div', { class: 'split' });
+      var stage = el('div', { class: 'stage' }, el('img', { src: A, alt: 'A: ' + aL + ' (left of the line), B: ' + bL + ' (right)' }), over, line,
+        el('span', { class: 'lbl l', text: 'A · ' + aL }), el('span', { class: 'lbl r', text: 'B · ' + bL }));
+      var range = el('input', { type: 'range', class: 'range', min: '0', max: '100', step: '1', value: String(pos), 'aria-label': 'Split between A (left) and B (right)' });
+      function apply(x) { over.style.clipPath = 'inset(0 0 0 ' + x + '%)'; line.style.left = 'calc(' + x + '% - 1px)'; }
+      apply(pos);
+      range.addEventListener('input', function () { slider[p.id] = Number(range.value); apply(range.value); });
+      wrap.appendChild(stage); wrap.appendChild(range);
+      wrap.appendChild(el('p', { class: 'hint', text: 'Left of the line: A (' + aL + '). Right of the line: B (' + bL + '). Drag the slider or use the arrow keys.' }));
+    } else {
+      var showB = false;
+      var img = el('img', { src: A, alt: 'A: ' + aL });
+      var tag = el('span', { class: 'lbl l', text: 'A · ' + aL });
+      var st = el('div', { class: 'stage' }, img, tag);
+      function flip(toB) { showB = toB === undefined ? !showB : toB; img.src = showB ? B : A; img.alt = (showB ? 'B: ' + bL : 'A: ' + aL); tag.textContent = showB ? 'B · ' + bL : 'A · ' + aL; tb.textContent = showB ? 'Show A' : 'Show B'; }
+      var tb = el('button', { type: 'button', class: 'btn primary', text: 'Show B' });
+      tb.addEventListener('click', function () { stopBlink(); auto.checked = false; flip(); });
+      var auto = el('input', { type: 'checkbox', id: 'blink-auto' });
+      auto.addEventListener('change', function () { stopBlink(); if (auto.checked) blinkTimer = setInterval(function () { flip(); }, 800); });
+      // preload B so the swap is instant
+      if (B) { var pre = new Image(); pre.src = B; }
+      st.tabIndex = 0;
+      st.setAttribute('aria-label', 'Blink compare: press space to swap A and B');
+      st.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); stopBlink(); auto.checked = false; flip(); } });
+      wrap.appendChild(st);
+      wrap.appendChild(el('div', { class: 'blinkbar' }, tb, el('label', { for: 'blink-auto' }, auto, ' swap by itself every 0.8 s')));
+      wrap.appendChild(el('p', { class: 'hint', text: 'The label in the corner always says which one you see.' }));
+    }
+  }
+  var vid = c.video;
+  if (vid && (mediaSrc(vid.both) || (mediaSrc(vid.a) && mediaSrc(vid.b)))) {
+    wrap.appendChild(el('h3', { text: 'Recording', style: 'margin-top:16px' }));
+    if (mediaSrc(vid.both)) {
+      wrap.appendChild(el('figure', null, el('figcaption', { text: 'A and B' }), el('video', { src: mediaSrc(vid.both), controls: true, muted: true, playsinline: true, preload: 'metadata' })));
+    } else {
+      var va = el('video', { src: mediaSrc(vid.a), controls: true, muted: true, playsinline: true, preload: 'metadata' });
+      var vb = el('video', { src: mediaSrc(vid.b), controls: true, muted: true, playsinline: true, preload: 'metadata' });
+      wrap.appendChild(el('div', { class: 'side' }, el('figure', null, el('figcaption', { text: 'A · ' + aL }), va), el('figure', null, el('figcaption', { text: 'B · ' + bL }), vb)));
+      var both = el('button', { type: 'button', class: 'btn', text: 'Play both from the start' });
+      both.addEventListener('click', function () { [va, vb].forEach(function (x) { try { x.currentTime = 0; var pr = x.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }); });
+      wrap.appendChild(el('div', { class: 'cmp-bar', style: 'margin-top:8px' }, both));
+    }
+  }
+  if (!shots.length && !vid) wrap.appendChild(el('p', { class: 'empty', text: 'No screenshots in this proposal.' }));
+  // open live
+  var la = c.a && localUrl(c.a.url), lb = c.b && localUrl(c.b.url);
+  if (la || lb) {
+    var live = el('div', { class: 'live' });
+    if (la) live.appendChild(el('a', { class: 'btn', href: la, target: '_blank', rel: 'noopener noreferrer', text: 'Open A live: ' + aL }));
+    if (lb) live.appendChild(el('a', { class: 'btn', href: lb, target: '_blank', rel: 'noopener noreferrer', text: 'Open B live: ' + bL }));
+    wrap.appendChild(el('h3', { text: 'Try it yourself', style: 'margin-top:16px' }));
+    wrap.appendChild(live);
+    wrap.appendChild(el('p', { class: 'hint', text: 'These open on this Mac only (localhost). The page server may have stopped since the proposal was made. To see it on the phone, ask the lead.' }));
+  }
+  return wrap;
+}
+
+// ---- the decision ----
+function post(id, act, body) {
+  return fetch('/api/proposals/' + id + '/' + act, { method: 'POST', headers: { 'content-type': 'application/json', 'x-console': '1' }, body: JSON.stringify(body) })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }); });
+}
+function decisionBlock(p) {
+  var box = el('div', { class: 'block card', style: 'margin-top:18px' });
+  var err = el('p', { class: 'err', role: 'alert' });
+  if (p.state !== 'proposed') {
+    var d = p.decision || {};
+    box.appendChild(el('h3', { text: 'Your decision' }));
+    box.appendChild(el('div', { class: 'decision ' + p.state }, el('strong', { text: (STATE_TEXT[p.state] || p.state).replace(/^./, function (x) { return x.toUpperCase(); }) }),
+      el('span', { class: 'meta', text: ' ' + when(d.at) + (d.rev ? ' · revision ' + d.rev : '') }), d.notes ? el('p', { text: d.notes }) : null));
+    if (p.state === 'changes-requested') box.appendChild(el('p', { class: 'hint', text: p.by + ' will revise it; the new revision comes back here, waiting for you.' }));
+    var undo = el('button', { type: 'button', class: 'btn', text: 'Change my decision' });
+    undo.addEventListener('click', function () {
+      undo.disabled = true;
+      post(p.id, 'undo', { rev: p.rev }).then(function () { detailSig = ''; load(); }).catch(function (e) { err.textContent = e.message; undo.disabled = false; });
+    });
+    box.appendChild(el('div', { class: 'choices', style: 'margin-top:10px' }, undo));
+    box.appendChild(err);
+    return box;
+  }
+  box.appendChild(el('h3', { text: 'Your decision' }));
+  var choice = pick[p.id] || null;
+  var choices = el('div', { class: 'choices' });
+  [['accept', 'ok'], ['reject', 'bad'], ['change', 'warn']].forEach(function (o) {
+    var b = el('button', { type: 'button', class: 'btn' + (choice === o[0] ? ' ' + o[1] : ''), 'aria-pressed': String(choice === o[0]), text: VERB[o[0]] });
+    b.addEventListener('click', function () { pick[p.id] = o[0]; renderDetail(current, true); var t = document.getElementById('notes'); if (t) t.focus(); });
+    choices.appendChild(b);
+  });
+  box.appendChild(choices);
+  if (choice) {
+    var ta = el('textarea', { id: 'notes', 'aria-label': 'Notes', placeholder: choice === 'change' ? 'What should change? (needed)' : 'Notes (optional): why, or what you noticed' });
+    ta.value = drafts[p.id] || '';
+    ta.addEventListener('input', function () { drafts[p.id] = ta.value; send.disabled = choice === 'change' && !ta.value.trim(); });
+    var send = el('button', { type: 'button', class: 'btn primary', text: VERB[choice] + ' revision ' + p.rev });
+    send.disabled = choice === 'change' && !(drafts[p.id] || '').trim();
+    send.addEventListener('click', function () {
+      send.disabled = true; err.textContent = '';
+      post(p.id, 'decide', { value: choice, notes: ta.value, rev: p.rev }).then(function () { delete drafts[p.id]; delete pick[p.id]; detailSig = ''; load(); })
+        .catch(function (e) { err.textContent = e.message; send.disabled = false; if (/revised/.test(e.message)) { detailSig = ''; load(); } });
+    });
+    box.appendChild(ta);
+    box.appendChild(el('div', { class: 'choices' }, send));
+  } else box.appendChild(el('p', { class: 'hint', text: 'Pick one; you can add notes before you send it.' }));
+  box.appendChild(err);
+  return box;
+}
+
+// ---- one proposal ----
+function para(text) { return (text || '').split(/\n\s*\n/).map(function (t) { return el('p', { text: t }); }); }
+function section(title, nodes) {
+  var b = el('div', { class: 'block' }, el('h3', { text: title }));
+  nodes.forEach(function (n) { if (n) b.appendChild(n); });
+  return b;
+}
+function gainTable(rows) {
+  var t = el('table', { class: 'gain' }, el('thead', null, el('tr', null, el('th', { text: 'What' }), el('th', { text: 'Before' }), el('th', { text: 'After' }), el('th', { text: 'How we know' }))));
+  var tb = el('tbody');
+  rows.forEach(function (g) {
+    tb.appendChild(el('tr', null,
+      el('td', null, g.what),
+      el('td', { class: 'n', text: g.before }),
+      el('td', { class: 'n', text: g.after }),
+      el('td', null, el('span', { class: 'tag ' + g.tag, text: g.tag === 'estimate' ? 'estimate' : g.tag }), g.needsPhone ? el('span', { class: 'tag phone', text: 'phone check needed' }) : null,
+        g.how ? el('div', { class: 'how', text: g.how }) : null)));
+  });
+  t.appendChild(tb);
+  return el('div', { class: 'tablewrap' }, t);
+}
+function renderDetail(p, force) {
+  var box = document.getElementById('detail');
+  if (!p) { stopBlink(); box.replaceChildren(); return; }
+  var sig = JSON.stringify(p);
+  if (!force && sig === detailSig) return;
+  if (!force && document.activeElement && document.activeElement.id === 'notes') return; // don't redraw under the user's typing
+  detailSig = sig;
+  stopBlink();
+  var card = el('article', { class: 'card detail', 'data-id': p.id });
+  card.appendChild(el('div', { class: 'meta' },
+    el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: STATE_TEXT[p.state] || p.state }),
+    el('span', { text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + ' · revision ' + p.rev + ' · ' + when(p.proposedAt || p.createdAt) }),
+    p.topic ? el('span', { class: 'chip muted', text: p.topic }) : null,
+    p.thread && /^T-\d{1,6}$/.test(p.thread) ? el('a', { href: '/threads#' + p.thread, text: 'thread ' + p.thread }) : null));
+  card.appendChild(el('h2', { class: 'title', text: p.title }));
+  var revs = p.revisions || [];
+  if (revs.length > 1) card.appendChild(el('p', { class: 'hint', text: 'Revision ' + p.rev + ': ' + revs[revs.length - 1].note }));
+  card.appendChild(section('What costs', para(p.problem)));
+  card.appendChild(section('The idea', para(p.idea)));
+  card.appendChild(section('Why it looks the same', para(p.looksSame)));
+  var ul = el('ul');
+  (p.visualDiff || []).forEach(function (t) { ul.appendChild(el('li', { text: t })); });
+  card.appendChild(section('What looks different, and when you would notice', [ul]));
+  if (p.gain && p.gain.length) card.appendChild(section('What it saves', [gainTable(p.gain)]));
+  card.appendChild(section('Risk', para(p.risk)));
+  card.appendChild(compareBlock(p));
+  card.appendChild(decisionBlock(p));
+  var hist = el('details', { class: 'hist' }, el('summary', { text: 'History' }));
+  var hl = el('ul');
+  revs.forEach(function (r) { hl.appendChild(el('li', { text: when(r.at) + ' revision ' + r.rev + ' by ' + r.by + ': ' + r.note })); });
+  (p.decisions || []).forEach(function (d) { hl.appendChild(el('li', { text: when(d.at) + ' ' + (STATE_TEXT[d.value] || d.value) + ' (revision ' + d.rev + ')' + (d.notes ? ': ' + d.notes : '') })); });
+  hist.appendChild(hl);
+  card.appendChild(hist);
+  box.replaceChildren(card);
+}
+
+// ---- loading ----
+function setUpd(text, off) { var u = document.getElementById('upd'); u.textContent = text; u.className = 'sub' + (off ? ' status off' : ''); }
+function load() {
+  return fetch('/api/proposals', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (v) {
+    var items = v.proposals || [];
+    var s = JSON.stringify(items) + '|' + currentId();
+    if (s !== listSig) { listSig = s; renderList(items); }
+    var waiting = items.filter(function (p) { return p.state === 'proposed'; }).length;
+    setUpd(waiting ? waiting + ' waiting for you · live' : 'nothing waiting · live');
+    var id = currentId();
+    if (!id) { current = null; renderDetail(null); return; }
+    return fetch('/api/proposals/' + id, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      current = j && j.proposal; renderDetail(current);
+      if (!current) document.getElementById('detail').replaceChildren(el('p', { class: 'empty', text: id + ' is not here (withdrawn, or not posted yet).' }));
+    });
+  }).catch(function () { setUpd('not connected: is console.mjs serve running?', true); });
+}
+window.addEventListener('hashchange', function () { detailSig = ''; listSig = ''; load().then(function () { var d = document.getElementById('detail'); if (d && d.firstChild && d.scrollIntoView) d.scrollIntoView({ block: 'start' }); }); });
+if (window.ConsoleNav) ConsoleNav.onChange = function () { load(); }; // a proposal came or went
+load().then(function () {
+  // no proposal chosen: open the oldest waiting one
+  if (!currentId()) { var first = document.querySelector('#list a.row'); if (first && /waiting/.test(first.firstChild.className)) location.replace(first.getAttribute('href')); }
+});
+setInterval(load, 10000);
+</script>
+</body>
+</html>

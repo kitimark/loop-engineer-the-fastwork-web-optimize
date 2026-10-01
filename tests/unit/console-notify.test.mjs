@@ -142,13 +142,14 @@ test('stepWatcher (serve --notify): silent at start, one notification per new st
 });
 
 test('menuHtml: the same top bar on every page, plain links, the current page highlighted, the badge on "Your steps"', () => {
-  const steps = S.menuHtml('steps'), prog = S.menuHtml('progress'), stat = S.menuHtml('status'), thr = S.menuHtml('threads');
-  for (const m of [steps, prog, stat, thr]) {
+  const steps = S.menuHtml('steps'), prog = S.menuHtml('progress'), stat = S.menuHtml('status'), thr = S.menuHtml('threads'), prop = S.menuHtml('proposals');
+  for (const m of [steps, prog, stat, thr, prop]) {
     assert.match(m, /<nav class="menu" aria-label="Console pages">/);
     assert.match(m, /href="\/">Your steps<span class="badge" data-badge hidden>0<\/span><\/a>/);
     assert.match(m, /href="\/progress">Progress<\/a>/);
     assert.match(m, /href="\/status">Status<\/a>/);
     assert.match(m, /href="\/threads">Threads<span class="badge" data-thread-badge hidden>0<\/span><\/a>/);
+    assert.match(m, /href="\/proposals">Proposals<span class="badge" data-badge-proposals hidden>0<\/span><\/a>/);
     for (const id of ['nav-sound', 'nav-desktop', 'nav-remind', 'nav-test', 'nav-theme', 'nav-banner']) assert.ok(m.includes(`id="${id}"`), id);
     assert.equal((m.match(/aria-current="page"/g) || []).length, 1);
   }
@@ -158,8 +159,10 @@ test('menuHtml: the same top bar on every page, plain links, the current page hi
   assert.match(thr, /class="mbtn on" aria-current="page" title="[^"]*" href="\/threads"/);
   assert.equal(thr.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the threads page: the same bar');
   assert.equal(stat.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the status page: the same bar');
+  assert.match(prop, /class="mbtn on" aria-current="page" title="[^"]*" href="\/proposals"/);
+  assert.equal(prop.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the proposals page: the same bar');
   assert.equal(steps.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'identical apart from the highlight');
-  for (const f of ['console-page.html', 'progress-page.html', 'status-page.html', 'threads-page.html']) {
+  for (const f of ['console-page.html', 'progress-page.html', 'status-page.html', 'threads-page.html', 'proposals-page.html']) {
     const html = readFileSync(new URL(`../../tools/lib/${f}`, import.meta.url), 'utf8');
     assert.equal(html.split('<!--console-menu-->').length, 2, `${f}: one menu slot`);
     assert.ok(html.includes('<script src="/console-nav.js"></script>') && html.includes('<link rel="stylesheet" href="/console-nav.css">'), f);
@@ -341,4 +344,27 @@ test('createFeed (/api/events): the current state at once, a new step pushed, he
     res.emit('close');
     assert.equal(feed.subscribers(), 0, 'a closed client is dropped');
   } finally { feed.close(); }
+});
+
+test('console-nav.js: proposals (ts-proposals): a new one shows a banner and chimes once, Open goes to /proposals#id, the title counts it, no reminder', () => {
+  const wvp = (steps, props, nowMs = T0) => ({ ...wv(steps, nowMs), proposals: { count: props.length, items: props.map(([id, title]) => ({ id, title, status: 'proposed', yourTurn: true, updatedAt: new Date(T0).toISOString() })) } });
+  const p = fakePage();
+  p.es.emit(wvp([], [['PR-001', 'Old']]));
+  assert.equal(p.els['nav-banner'].hidden, true, 'what was there on open is not announced');
+  assert.equal(p.document.title, '(1) Fix progress');
+  assert.equal(p.oscillators.length, 0);
+  p.es.emit(wvp([['C-001', 'A step']], [['PR-001', 'Old'], ['PR-002', 'Glow as an image']]));
+  assert.equal(p.document.title, '(3) Fix progress', 'steps + proposals');
+  assert.equal(p.els['nav-banner'].hidden, false);
+  assert.equal(p.els['nav-banner'].children[0].textContent, 'New proposal: Glow as an image');
+  assert.equal(p.els['nav-banner'].children[1].textContent, 'Open PR-002');
+  const osc = p.oscillators.length;
+  assert.ok(osc >= 2, 'chimed');
+  for (let t = T0 + 10000; t <= T0 + 20 * 60000; t += 60000) p.es.emit(wvp([['C-001', 'A step']], [['PR-001', 'Old'], ['PR-002', 'Glow as an image']], t));
+  assert.ok(p.oscillators.length <= osc + 1, 'no proposal reminder (at most the step\'s one quiet reminder)');
+  p.es.emit(wvp([['C-001', 'A step']], [['PR-001', 'Old'], ['PR-002', 'Glow as an image'], ['PR-003', 'Blur as an image']], T0 + 21 * 60000));
+  p.els['nav-banner'].children[1].click();
+  assert.equal(p.location.href, '/proposals#PR-003');
+  p.es.emit(wvp([], [], T0 + 22 * 60000));
+  assert.equal(p.document.title, 'Fix progress');
 });

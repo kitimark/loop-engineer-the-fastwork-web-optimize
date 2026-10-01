@@ -69,6 +69,9 @@
 //   node tools/console.mjs thread assign <id> --to <agent>[,<agent>] --by lead [--remove]
 //   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
 //
+// Proposals (ts-proposals): a design engineer's PoC for the user to compare and accept, reject or send back:
+//   node tools/console.mjs proposal post|list|show|revise|publish|withdraw|decide|wait …   (header of tools/lib/proposal-cli.mjs)
+//
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -216,6 +219,7 @@ async function thread() {
 }
 
 async function main() {
+  if (argv[0] === 'proposal') return (await import('./lib/proposal-cli.mjs')).run(argv.slice(1));
   if (!cmd || cmd === 'help' || flag('help')) { console.log('see the header of tools/console.mjs'); return cmd ? 0 : EXIT.usage; }
   if (cmd === 'serve') return serve();
   if (cmd === 'thread') return thread();

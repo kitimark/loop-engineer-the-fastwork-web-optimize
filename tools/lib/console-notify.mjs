@@ -18,6 +18,7 @@ import { list, phase } from './console.mjs';
 import { sanitize } from './progress.mjs';
 import { threadNotificationText } from './console-threads.mjs';
 import { iso } from './store.mjs';
+import { waitingProposals } from './proposal.mjs';
 
 export const DEFAULT_REMIND_MIN = 3;
 export const OSASCRIPT = '/usr/bin/osascript';
@@ -38,15 +39,19 @@ export function userTurn(s) {
 
 /** One line of plain text: control characters and line breaks become spaces. */
 export const oneLine = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f\u2028\u2029]/g, ' ').replace(/\s+/g, ' ').trim();
-const safeId = (id) => (/^C-\d{1,6}$/.test(id) ? id : 'C-?');
+const safeId = (id) => (/^(?:C|PR)-\d{1,6}$/.test(id) ? id : 'C-?');
 
-/** What the badge and the notifications get: ids, sanitized titles, status, turn, times. Nothing else. */
-export function waitingView(steps = list({ pending: true }), { remindMin = DEFAULT_REMIND_MIN } = {}) {
+/**
+ * What the badge and the notifications get: ids, sanitized titles, status, turn, times. Nothing else.
+ * `proposals` (ts-proposals): the proposals waiting for the user's decision, the same shape (proposal.mjs waitingProposals).
+ */
+export function waitingView(steps = list({ pending: true }), { remindMin = DEFAULT_REMIND_MIN, proposals = waitingProposals() } = {}) {
   const w = steps.map((s) => ({
     id: safeId(s.id), title: oneLine(sanitize(s.title, 160)), status: s.status, yourTurn: userTurn(s),
     updatedAt: s.updatedAt, queuedAt: s.queuedAt,
   }));
-  return { now: iso(), count: w.length, yourTurn: w.filter((x) => x.yourTurn).length, remindMin, steps: w };
+  const pr = proposals.map((p) => ({ ...p, id: safeId(p.id), title: oneLine(sanitize(p.title, 160)) }));
+  return { now: iso(), count: w.length, yourTurn: w.filter((x) => x.yourTurn).length, remindMin, steps: w, proposals: { count: pr.length, items: pr } };
 }
 
 /**
@@ -74,6 +79,7 @@ export function diffSteps(state, steps, nowMs, remindMs) {
 
 /** Notification title and body for an event: the step id and its sanitized title only. */
 export function notificationText(step, kind = 'new') {
+  if (kind === 'proposal') return { title: 'Console: new proposal', body: `${safeId(step.id)}: ${oneLine(sanitize(step.title, 120)) || '(no title)'}` };
   return {
     title: kind === 'remind' ? 'Console: still waiting for you' : 'Console: new step',
     body: `${safeId(step.id)}: ${oneLine(sanitize(step.title, 120)) || '(no title)'}`,

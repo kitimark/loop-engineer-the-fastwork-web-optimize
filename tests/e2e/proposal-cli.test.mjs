@@ -1,0 +1,236 @@
+// Console proposals end to end (ts-proposals): `console.mjs proposal …` on a temp state dir ($FW_STATE_DIR) with a
+// page server on port 0 (never 5173 or the lead's 5559). Fake images (tests/fixtures/fake-media.mjs) and a fake LAN
+// address (192.168.77.12). Checks: post (JSON and Markdown) copies the media into the store and scrubs text, a LAN
+// compare URL is refused, list/show, the page and its menu entry, the API without LAN text, media with strict names
+// and Range, the POST guards (x-console, Host), decide/undo with a stale-revision check, revise, withdraw, and
+// `proposal wait` (MET 0 with the decision, TIMEOUT 3, NEVER 4, --any for one author), the badge model.
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { tempDir, node, nodeAsync, tool, startProc, request } from '../helpers.mjs';
+import { writePng, writeMp4, pngBytes } from '../fixtures/fake-media.mjs';
+
+const CON = tool('console.mjs');
+const LAN = 'https://192.168.77.12:5612/';
+let state, env, srv, base, src;
+const cli = (...a) => node(CON, ['proposal', ...a], { env });
+const cliAsync = (...a) => nodeAsync(CON, ['proposal', ...a], { env });
+const get = (p, headers = {}) => request(new URL(p, base).href, { headers });
+const postJson = (p, body, headers = { 'x-console': '1' }) => request(new URL(p, base).href, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
+const json = (r) => JSON.parse(r.text);
+const postedId = (r) => { assert.equal(r.code, 0, r.out); const m = r.stdout.match(/^POSTED (PR-\d+): /m); assert.ok(m, r.stdout); return m[1]; };
+
+function proposal(over = {}) {
+  return {
+    schema: 'fw-proposal/1', title: 'Hero glow as a pre-rendered image', area: 'hero', topic: 'style-recalc-r4',
+    problem: `Every scroll frame restyles 412 elements. Measured on ${LAN}.`, idea: 'Draw the glow once into an image.',
+    looksSame: 'The glow is static while you scroll.', visualDiff: ['The glow no longer follows the cursor.'],
+    gain: [{ what: 'Elements restyled per frame', before: '412', after: '38', tag: 'OBSERVED', how: 'Chrome trace, 3 runs' },
+      { what: 'Layers', before: '41', after: '12', tag: 'estimate', how: 'layer count', needsPhone: true }],
+    risk: 'A design change needs a new image.',
+    compare: { a: { label: 'Original', url: 'https://localhost:5612/' }, b: { label: 'PoC', url: 'https://localhost:5613/' }, shots: [{ caption: 'Top', a: 'a-0.png', b: 'b-0.png' }], view: 'blink' },
+    ...over,
+  };
+}
+const writeProposal = (name, p) => { const f = join(src, name); writeFileSync(f, typeof p === 'string' ? p : JSON.stringify(p)); return f; };
+
+before(async () => {
+  state = tempDir('fw-proposal-e2e-');
+  env = { FW_STATE_DIR: state };
+  src = tempDir('fw-proposal-e2e-src-');
+  writePng(join(src, 'a-0.png'), 8, 6, [10, 20, 30]);
+  writePng(join(src, 'b-0.png'), 8, 6, [10, 20, 30], [250, 250, 250]);
+  writePng(join(src, 'a-1.png'), 8, 6);
+  writePng(join(src, 'b-1.png'), 8, 6);
+  writeMp4(join(src, 'a.mp4'));
+  writeMp4(join(src, 'b.mp4'));
+  srv = await startProc(process.execPath, [CON, 'serve', '--port', '0'], { env, ready: (s) => { const m = s.match(/^CONSOLE_URL=(\S+)$/m); return m && m[1]; } });
+  base = srv.url;
+});
+after(async () => { await srv?.stop(); });
+
+test('post: PR-001, media copied into the store, LAN text scrubbed and reported, the console link printed', () => {
+  assert.notEqual(srv.port, 5173); assert.notEqual(srv.port, 5559);
+  const r = cli('post', '--by', 'de-illusion-style', '--file', writeProposal('p1.json', proposal()), '--video-a', join(src, 'a.mp4'), '--video-b', join(src, 'b.mp4'));
+  assert.equal(postedId(r), 'PR-001');
+  assert.match(r.stderr, /scrubbed url in problem \(Hard rule 12\)/);
+  assert.match(r.stdout, /1 screenshot pair\(s\), video, copied into the console store/);
+  assert.match(r.stdout, /on the user console http:\/\/localhost:\d+\/proposals#PR-001/);
+  const dir = join(state, 'console', 'proposals', 'PR-001');
+  assert.deepEqual(readdirSync(dir).sort(), ['r1-a-1.png', 'r1-b-1.png', 'r1-video-a.mp4', 'r1-video-b.mp4']);
+  const stored = readFileSync(join(state, 'console', 'proposals', 'PR-001.json'), 'utf8');
+  assert.ok(!stored.includes('192.168'), 'no LAN address in the store');
+  assert.ok(!stored.includes(src), 'no source path in the store');
+});
+
+test('post refuses a LAN compare URL, a missing --by or file, and a broken proposal (exit 1, nothing stored)', () => {
+  const lan = cli('post', '--by', 'x', '--file', writeProposal('lan.json', proposal({ compare: { ...proposal().compare, b: { label: 'PoC', url: LAN } } })));
+  assert.equal(lan.code, 1);
+  assert.match(lan.stderr, /compare\.b\.url: must be a localhost URL/);
+  assert.ok(!lan.stderr.includes('192.168'), 'the refusal does not echo the address');
+  assert.match(cli('post', '--file', join(src, 'p1.json')).stderr, /--by <your agent name> is required/);
+  assert.match(cli('post', '--by', 'x').stderr, /--file <proposal\.json\|md> is required/);
+  assert.match(cli('post', '--by', 'x', '--file', writeProposal('bad.json', proposal({ gain: [] }))).stderr, /gain: at least one row/);
+  assert.match(cli('post', '--by', 'x', '--file', writeProposal('pair.json', proposal()), '--shot-a', join(src, 'a-1.png')).stderr, /pair up by order/);
+  assert.equal(readdirSync(join(state, 'console', 'proposals')).filter((f) => f.endsWith('.json')).length, 1);
+});
+
+test('post a Markdown proposal with --shot-a/--shot-b/--caption; a draft is not on the page', () => {
+  const md = `---
+title: Middle cards without backdrop blur
+area: middle
+a: Original | http://localhost:5700/
+b: PoC | http://localhost:5701/
+---
+## Problem
+The blur repaints 3 large layers per frame.
+## Idea
+A pre-blurred image behind the cards.
+## Looks the same
+The cards do not move against their background.
+## Visual difference
+- Content behind a card no longer shows through blurred while it scrolls.
+## Gain
+| what | before | after | tag | how |
+|---|---|---|---|---|
+| Paint area per frame | 2.1 MP | 0.3 MP | OBSERVED | paint rects, 3 runs |
+## Risk
+Low.
+`;
+  const id = postedId(cli('post', '--by', 'de-illusion-composite', '--file', writeProposal('p2.md', md), '--shot-a', join(src, 'a-0.png'), '--shot-b', join(src, 'b-0.png'), '--caption', 'Cards, scrollY 2400', '--shot-a', join(src, 'a-1.png'), '--shot-b', join(src, 'b-1.png')));
+  assert.equal(id, 'PR-002');
+  const s = cli('show', id);
+  assert.match(s.stdout, /^PR-002 {2}\[proposed rev 1\] {2}middle {2}by de-illusion-composite: Middle cards without backdrop blur/);
+  assert.match(s.stdout, /Paint area per frame: 2\.1 MP -> 0\.3 MP \[OBSERVED\]/);
+  assert.match(s.stdout, /shot 1 "Cards, scrollY 2400": r1-a-1\.png \| r1-b-1\.png/);
+  const d = postedId(cli('post', '--by', 'de-illusion-composite', '--draft', '--file', writeProposal('d.json', { title: 'Later idea', area: 'end' })));
+  assert.equal(d, 'PR-003');
+  assert.match(cli('list').stdout, /PR-003 {2}\[draft rev 1\]/);
+  assert.match(cli('list', '--waiting').stdout, /^PR-001 .*\nPR-002 /);
+  assert.ok(!cli('list', '--waiting').stdout.includes('PR-003'));
+  assert.deepEqual(JSON.parse(cli('list', '--by', 'de-illusion-composite', '--json').stdout).map((p) => p.id), ['PR-002', 'PR-003']);
+});
+
+test('the page: menu entry on every console page, the proposals page, the API, nothing LAN, nothing external', async () => {
+  for (const p of ['/', '/progress', '/proposals']) {
+    const r = await get(p);
+    assert.equal(r.status, 200, p);
+    assert.match(r.text, /href="\/proposals">Proposals<span class="badge" data-badge-proposals hidden>0<\/span><\/a>/, p);
+  }
+  const page = await get('/proposals');
+  assert.match(page.text, /<title>Proposals<\/title>/);
+  assert.match(page.text, /class="mbtn on" aria-current="page" title="[^"]*" href="\/proposals"/);
+  assert.match(page.headers['content-security-policy'], /media-src 'self'/);
+  assert.match(page.headers['content-security-policy'], /default-src 'none'/);
+  const list = json(await get('/api/proposals'));
+  assert.deepEqual(list.proposals.map((p) => [p.id, p.state]), [['PR-001', 'proposed'], ['PR-002', 'proposed']]);
+  const one = await get('/api/proposals/PR-001');
+  assert.equal(one.status, 200);
+  const v = json(one).proposal;
+  assert.equal(v.compare.shots[0].a, '/media/PR-001/r1-a-1.png');
+  assert.equal(v.compare.video.b, '/media/PR-001/r1-video-b.mp4');
+  assert.equal(v.gain[1].needsPhone, true);
+  assert.equal(v.history, undefined);
+  for (const t of [one.text, JSON.stringify(list)]) assert.ok(!t.includes('192.168') && !t.includes(src), t);
+  assert.equal((await get('/api/proposals/PR-003')).status, 404, 'a draft is not served');
+  assert.equal((await get('/api/proposals/PR-999')).status, 404);
+  const w = json(await get('/api/waiting'));
+  assert.equal(w.proposals.count, 2);
+  assert.deepEqual(w.proposals.items.map((p) => p.id), ['PR-001', 'PR-002']);
+  assert.deepEqual(Object.keys(w.proposals.items[0]).sort(), ['id', 'queuedAt', 'status', 'title', 'updatedAt', 'yourTurn']);
+});
+
+test('media: the stored bytes with the right type; Range; strict names; no traversal; drafts hidden; localhost only', async () => {
+  const img = await get('/media/PR-001/r1-b-1.png');
+  assert.equal(img.status, 200);
+  assert.equal(img.headers['content-type'], 'image/png');
+  assert.equal(img.headers['x-content-type-options'], 'nosniff');
+  assert.deepEqual(img.body, pngBytes(8, 6, [10, 20, 30], [250, 250, 250]));
+  const part = await get('/media/PR-001/r1-video-a.mp4', { range: 'bytes=4-11' });
+  assert.equal(part.status, 206);
+  assert.equal(part.headers['content-type'], 'video/mp4');
+  assert.equal(part.text, 'ftypisom');
+  assert.match(part.headers['content-range'], /^bytes 4-11\/\d+$/);
+  assert.equal((await get('/media/PR-001/r1-video-a.mp4', { range: 'bytes=9999-' })).status, 416);
+  for (const p of ['/media/PR-001/..%2FPR-001.json', '/media/PR-001/../PR-001.json', '/media/PR-001/r1-a-1.svg', '/media/PR-001/r2-a-1.png', '/media/PR-1/r1-a-1.png', '/media/PR-001/', '/media/PR-001/r1-a-1.png%00']) {
+    assert.equal((await get(p)).status, 404, p);
+  }
+  const lan = await request(new URL('/media/PR-001/r1-a-1.png', base).href, { headers: { host: '192.168.77.12:' + srv.port } });
+  assert.equal(lan.status, 421, 'localhost Host only');
+});
+
+test('POST guards: x-console header, localhost Host, JSON body; decide with a stale revision is refused', async () => {
+  assert.equal((await postJson('/api/proposals/PR-001/decide', { value: 'accept' }, {})).status, 403);
+  const h = await request(new URL('/api/proposals/PR-001/decide', base).href, { method: 'POST', headers: { 'x-console': '1', host: 'evil.invalid:' + srv.port }, body: '{}' });
+  assert.equal(h.status, 421);
+  const nj = await request(new URL('/api/proposals/PR-001/decide', base).href, { method: 'POST', headers: { 'x-console': '1' }, body: 'not json' });
+  assert.equal(nj.status, 400);
+  assert.equal((await postJson('/api/proposals/PR-001/delete', {})).status, 404);
+  assert.equal((await postJson('/api/proposals/PR-003/decide', { value: 'accept' })).status, 404, 'no decision on a draft');
+  const stale = await postJson('/api/proposals/PR-001/decide', { value: 'accept', rev: 7 });
+  assert.equal(stale.status, 409);
+  assert.match(json(stale).error, /was revised/);
+  const noNote = await postJson('/api/proposals/PR-001/decide', { value: 'change', rev: 1 });
+  assert.equal(noNote.status, 409);
+  assert.match(json(noNote).error, /say what to change/);
+});
+
+test('wait: MET 0 with the decision after the user decides on the page; undo; revise; --any; TIMEOUT 3; NEVER 4', async () => {
+  const waiting = cliAsync('wait', 'PR-001', '--until', 'decided', '--timeout', '20', '--json');
+  const anyWait = cliAsync('wait', '--any', '--by', 'de-illusion-style', '--timeout', '20', '--quiet');
+  await new Promise((r) => setTimeout(r, 700));
+  const r = await postJson('/api/proposals/PR-001/decide', { value: 'change', notes: `Keep the glow moving (seen on ${LAN})`, rev: 1 });
+  assert.equal(r.status, 200, r.text);
+  assert.equal(json(r).proposal.state, 'changes-requested');
+  const w = await waiting;
+  assert.equal(w.code, 0, w.out);
+  const d = JSON.parse(w.stdout);
+  assert.deepEqual([d.id, d.rev, d.value], ['PR-001', 1, 'changes-requested']);
+  assert.match(d.notes, /^Keep the glow moving \(seen on <link>\)$/, 'the user\'s notes are scrubbed too');
+  const any = await anyWait;
+  assert.equal(any.code, 0, any.out);
+  assert.match(any.stdout, /^MET a decision on a proposal by de-illusion-style .*"decisions":\[\{"id":"PR-001"/);
+  // the user changes their mind, then decides again; then the author revises
+  assert.equal((await postJson('/api/proposals/PR-001/undo', { rev: 1 })).status, 200);
+  assert.equal(json(await get('/api/proposals/PR-001')).proposal.state, 'proposed');
+  assert.equal((await postJson('/api/proposals/PR-001/decide', { value: 'change', notes: 'still: keep it moving', rev: 1 })).status, 200);
+  const rv = cli('revise', 'PR-001', '--by', 'de-illusion-style', '--note', 'the glow moves again (CSS transform only)', '--file', join(src, 'p1.json'), '--shot-a', join(src, 'a-1.png'), '--shot-b', join(src, 'b-1.png'));
+  assert.equal(rv.code, 0, rv.out);
+  assert.match(rv.stdout, /^REVISED PR-001 {2}\[proposed rev 2\]/);
+  assert.ok(existsSync(join(state, 'console', 'proposals', 'PR-001', 'r2-a-2.png')));
+  assert.equal((await get('/media/PR-001/r2-b-2.png')).status, 200);
+  const stale = await postJson('/api/proposals/PR-001/decide', { value: 'accept', rev: 1 });
+  assert.equal(stale.status, 409, 'a page that still shows revision 1 cannot accept revision 2');
+  // CLI decide (the user answered in chat) and the plain-text MET
+  const waitText = cliAsync('wait', 'PR-001', '--timeout', '20', '--quiet');
+  await new Promise((r2) => setTimeout(r2, 500));
+  assert.match(cli('decide', 'PR-001', '--by', 'lead', '--value', 'accept', '--notes', 'user said yes in chat').stdout, /^DECIDED PR-001 {2}\[accepted rev 2\]/);
+  const wt = await waitText;
+  assert.equal(wt.code, 0, wt.out);
+  assert.match(wt.stdout, /^MET proposal PR-001 decided: \{"id":"PR-001","rev":2,"value":"accepted","notes":"user said yes in chat"/);
+  // TIMEOUT and NEVER
+  const to = cli('wait', 'PR-002', '--timeout', '1', '--quiet');
+  assert.equal(to.code, 3, to.out);
+  assert.match(to.stdout, /^TIMEOUT proposal PR-002 decided after \d+ s: proposed, rev 1/);
+  const never = cliAsync('wait', 'PR-002', '--timeout', '20', '--quiet');
+  await new Promise((r3) => setTimeout(r3, 500));
+  assert.match(cli('withdraw', 'PR-002', '--by', 'de-illusion-composite', '--note', 'superseded').stdout, /^WITHDRAWN PR-002 {2}\[withdrawn rev 1\]/);
+  const nv = await never;
+  assert.equal(nv.code, 4, nv.out);
+  assert.match(nv.stdout, /^NEVER proposal PR-002 decided: it was withdrawn/);
+  assert.equal((await get('/api/proposals/PR-002')).status, 404, 'a withdrawn proposal leaves the page');
+  assert.equal(cli('wait').code, 1);
+  assert.match(cli('wait', '--any').stderr, /--any needs --by/);
+});
+
+test('publish a draft after adding shots; unknown commands and ids are usage errors', () => {
+  assert.match(cli('publish', 'PR-003', '--by', 'de-illusion-composite').stderr, /problem: required/);
+  const rv = cli('revise', 'PR-003', '--by', 'de-illusion-composite', '--note', 'complete', '--file', join(src, 'p1.json'), '--publish');
+  assert.equal(rv.code, 0, rv.out);
+  assert.match(rv.stdout, /^REVISED PR-003 {2}\[proposed rev 2\]/);
+  assert.equal(cli('frobnicate').code, 1);
+  assert.match(cli('show', 'X-1').stderr, /bad proposal id/);
+  assert.match(cli('show', 'PR-77').stderr, /no proposal PR-077/);
+  assert.equal(cli('help').code, 0);
+});

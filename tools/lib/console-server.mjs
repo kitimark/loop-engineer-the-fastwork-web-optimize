@@ -25,6 +25,11 @@
 //   POST /api/threads/<T-id>/<act>  act = reply {text} | read {n} | close | reopen  (the user, from the page)
 //   Thread POSTs: like the step POSTs (localhost Host, x-console: 1), plus an Origin, when sent, must be this server's
 //   localhost origin, and a body over 64 KB gets 413.
+//   GET  /proposals              the proposals page (tools/lib/proposals-page.html, ts-proposals): PoCs to compare and decide
+//   GET  /api/proposals          {now, proposals: [summaries]} (waiting first; no drafts, no withdrawn ones)
+//   GET  /api/proposals/<id>     one proposal (proposal.mjs publicView: text, gain, compare with /media/ URLs; no history)
+//   POST /api/proposals/<id>/<act>  act = decide {value: accept|reject|change, notes, rev} | undo {rev}
+//   GET  /media/<id>/<name>      a proposal's screenshot or video, from the store only (strict names; Range for video)
 // Both pages carry the same menu (menuHtml, injected at <!--console-menu-->), the current page highlighted.
 // startServer(…, {notify: true}) (`console.mjs serve --notify`): a macOS notification per new step and one reminder
 // (console-notify.mjs; osascript through execFile with an argv array, off by default, local only).
@@ -38,6 +43,8 @@ import { currentView } from './progress.mjs';
 import { currentStatusView } from './status.mjs';
 import { waitingView, stepWatcher, createNotifier, DEFAULT_REMIND_MIN } from './console-notify.mjs';
 import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER } from './console-threads.mjs';
+import { pageProposals, publicView as proposalView, get as getProposal, decide as decideProposal, undoDecision, mediaFile } from './proposal.mjs';
+import { statSync, createReadStream } from 'node:fs';
 
 /** The page (plain HTML, inline CSS and JS, no external requests). Read per request: an edit shows on reload. */
 const PAGE_FILE = new URL('./console-page.html', import.meta.url);
@@ -46,6 +53,8 @@ const PROGRESS_PAGE_FILE = new URL('./progress-page.html', import.meta.url);
 const progressPage = () => readFileSync(PROGRESS_PAGE_FILE, 'utf8');
 const STATUS_PAGE_FILE = new URL('./status-page.html', import.meta.url);
 const statusPage = () => readFileSync(STATUS_PAGE_FILE, 'utf8');
+const PROPOSALS_PAGE_FILE = new URL('./proposals-page.html', import.meta.url);
+const proposalsPage = () => readFileSync(PROPOSALS_PAGE_FILE, 'utf8');
 const NAV_JS_FILE = new URL('./console-nav.js', import.meta.url);
 const NAV_CSS_FILE = new URL('./console-nav.css', import.meta.url);
 const THREADS_PAGE_FILE = new URL('./threads-page.html', import.meta.url);
@@ -59,6 +68,7 @@ export function menuHtml(current) {
     + `<a class="mbtn${on('status')}" title="Who is doing what, in priority order" href="/status">Status</a>`
     + `<a class="mbtn${on('progress')}" title="Where the fixes stand" href="/progress">Progress</a>`
     + `<a class="mbtn${on('threads')}" title="Your questions to the agents, one thread per topic" href="/threads">Threads<span class="badge" data-thread-badge hidden>0</span></a>`
+    + `<a class="mbtn${on('proposals')}" title="Look-alike changes to compare and accept" href="/proposals">Proposals<span class="badge" data-badge-proposals hidden>0</span></a>`
     + `<span class="menu-sp"></span>`
     + `<details class="alerts" id="nav-alerts"><summary id="nav-alerts-sum">Alerts</summary><div class="alerts-panel">`
     + `<button type="button" id="nav-sound" aria-pressed="true">Sound: on</button>`
@@ -101,7 +111,7 @@ function send(res, code, body, type = 'application/json; charset=utf-8') {
   });
   res.end(data);
 }
-const CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+const CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
 /**
  * The waiting feed: checks the store every `intervalMs`, pushes `event: waiting` to every /api/events client on a
@@ -111,6 +121,7 @@ export function createFeed({ remindMin = DEFAULT_REMIND_MIN, notify = null, inte
   const subs = new Set();
   const watch = notify ? stepWatcher({ notify, remindMin }) : null;
   const twatch = notify ? threadWatcher({ notify }) : null; // a new reply: 'reply' / 'thread' (no reminders for threads)
+  const watchProposals = notify ? stepWatcher({ notify: (p) => notify(p, 'proposal'), remindMin: 0 }) : null; // new proposals only, no reminder
   let sig = null, view = null, beat = Date.now(), tsig = null, tview = null;
   const write = (res, v) => { try { res.write(`event: waiting\ndata: ${JSON.stringify(v)}\n\n`); } catch {} };
   const writeT = (res, v) => { try { res.write(`event: threads\ndata: ${JSON.stringify(v)}\n\n`); } catch {} };
@@ -126,8 +137,9 @@ export function createFeed({ remindMin = DEFAULT_REMIND_MIN, notify = null, inte
     }
     let v;
     try { v = waitingView(undefined, { remindMin }); } catch { return; } // a half-written step file: next tick
-    const s = JSON.stringify(v.steps);
+    const s = JSON.stringify([v.steps, v.proposals]);
     if (watch) { try { watch(v.steps, Date.parse(v.now)); } catch {} }
+    if (watchProposals && v.proposals) { try { watchProposals(v.proposals.items, Date.parse(v.now)); } catch {} }
     view = v;
     if (s !== sig) { sig = s; beat = Date.now(); for (const r of subs) write(r, v); }
     else if (Date.now() - beat >= heartbeatMs) { beat = Date.now(); for (const r of subs) { write(r, v); if (tview) writeT(r, tview); } }
@@ -147,7 +159,7 @@ export function createFeed({ remindMin = DEFAULT_REMIND_MIN, notify = null, inte
       const v = this.current();
       write(res, v);
       try { const tv = this.currentThreads(); writeT(res, tv); if (!subs.size) tsig = JSON.stringify([tv.badge, tv.threads]); } catch {}
-      if (!subs.size) sig = JSON.stringify(v.steps);
+      if (!subs.size) sig = JSON.stringify([v.steps, v.proposals]);
       subs.add(res);
       res.on('close', () => subs.delete(res));
     },
@@ -163,6 +175,69 @@ function readBody(req, max = 64 * 1024) {
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
+}
+
+// ---- proposals (ts-proposals) ----
+const PROPOSAL_ACTIONS = {
+  decide: (id, b) => decideProposal(id, { value: b.value, notes: b.notes, rev: b.rev, who: 'user' }),
+  undo: (id, b) => undoDecision(id, { rev: b.rev, who: 'user' }),
+};
+
+/** A stored screenshot or video; a single bytes=a-b range for video seeking. */
+function sendMedia(req, res, m) {
+  const size = statSync(m.file).size;
+  const h = {
+    'content-type': m.type, 'cache-control': 'private, max-age=86400', 'accept-ranges': 'bytes',
+    'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'content-security-policy': CSP,
+    'cross-origin-resource-policy': 'same-origin',
+  };
+  const r = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+  if (r && (r[1] || r[2])) {
+    let start = r[1] ? Number(r[1]) : Math.max(0, size - Number(r[2]));
+    let end = r[1] && r[2] ? Math.min(Number(r[2]), size - 1) : size - 1;
+    if (start >= size || start > end) { res.writeHead(416, { ...h, 'content-range': `bytes */${size}` }); return res.end(); }
+    res.writeHead(206, { ...h, 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1 });
+    return createReadStream(m.file, { start, end }).on('error', () => res.destroy()).pipe(res);
+  }
+  res.writeHead(200, { ...h, 'content-length': size });
+  return createReadStream(m.file).on('error', () => res.destroy()).pipe(res);
+}
+
+/** The proposals routes; true when handled. */
+export async function proposalRoute(req, res, u) {
+  if (req.method === 'GET' && (u.pathname === '/proposals' || u.pathname === '/proposals.html')) { send(res, 200, withMenu(proposalsPage(), 'proposals'), 'text/html; charset=utf-8'); return true; }
+  if (req.method === 'GET' && u.pathname === '/api/proposals') { send(res, 200, { now: iso(), proposals: pageProposals() }); return true; }
+  let m = u.pathname.match(/^\/api\/proposals\/(PR-\d{3,6})$/);
+  if (m && req.method === 'GET') {
+    let v = null;
+    try { v = proposalView(getProposal(m[1])); } catch {}
+    if (!v || v.id !== m[1]) send(res, 404, { error: `no proposal ${m[1]}` }); else send(res, 200, { now: iso(), proposal: v });
+    return true;
+  }
+  m = u.pathname.match(/^\/media\/(PR-\d{3,6})\/([A-Za-z0-9.-]{1,40})$/);
+  if (m && req.method === 'GET') {
+    const f = mediaFile(m[1], m[2]);
+    let visible = false;
+    try { visible = !!proposalView(getProposal(m[1])); } catch {}
+    if (!f || !visible) send(res, 404, { error: 'not found' }); else sendMedia(req, res, f);
+    return true;
+  }
+  m = u.pathname.match(/^\/api\/proposals\/(PR-\d{3,6})\/([a-z]+)$/);
+  if (m && req.method === 'POST') {
+    if (req.headers['x-console'] !== '1') { send(res, 403, { error: 'missing x-console header' }); return true; }
+    const act = PROPOSAL_ACTIONS[m[2]];
+    if (!act) { send(res, 404, { error: `unknown action ${m[2]}` }); return true; }
+    let body = {};
+    const raw = await readBody(req);
+    if (raw) { try { body = JSON.parse(raw); } catch { send(res, 400, { error: 'body is not JSON' }); return true; } }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) body = {};
+    let cur = null;
+    try { cur = proposalView(getProposal(m[1])); } catch {}
+    if (!cur) { send(res, 404, { error: `no proposal ${m[1]}` }); return true; }
+    try { send(res, 200, { proposal: proposalView(await act(m[1], body)) }); } catch (e) { send(res, 409, { error: e.message }); }
+    return true;
+  }
+  return false;
 }
 
 const localHost = (h, port) => h === `localhost:${port}` || h === `127.0.0.1:${port}` || h === `[::1]:${port}`;
@@ -256,6 +331,7 @@ export function handler(port, feed = null) {
         try { return send(res, 200, { step: publicView(await act(m[1], body || {})) }); } catch (e) { return send(res, 409, { error: e.message }); }
       }
       if (await threadRoute(req, res, u, port(), feed)) return;
+      if (await proposalRoute(req, res, u)) return;
       return send(res, 404, { error: 'not found' });
     } catch (e) {
       return send(res, 500, { error: e.message || String(e) });

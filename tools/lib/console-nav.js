@@ -9,6 +9,9 @@
 //   - threads (ts-console-threads): the "Threads" badge (threads with unread replies or a question for the user), and
 //     on a new agent reply a banner (Open -> /threads#T-003), the chime and a desktop notification; the same rule as
 //     console-threads.mjs diffThreads, from the `threads` events (polling fallback: /api/thread-feed). No reminders.
+//   - proposals (ts-proposals): the "Proposals" badge (proposals waiting for the user's decision) and, on a new one, a
+//     banner (Open -> /proposals#PR-001), the chime and a desktop notification; no reminders. From the `proposals`
+//     field of the same `waiting` events.
 // Data: the `waiting` events of GET /api/events (server-sent events: delivered at once even in a hidden tab, where
 // Chrome may hold chained timers to one wake-up a minute after 5 min hidden; a polling fallback on /api/waiting).
 // Only step ids and server-sanitized titles reach a notification. Nothing here loads anything from outside.
@@ -53,6 +56,7 @@
   }
   var ID = /^C-\d{1,6}$/;
   var TID = /^T-\d{1,6}$/;
+  var PID = /^PR-\d{1,6}$/;
   var core = { diffSteps: diffSteps, diffThreads: diffThreads, titleWith: titleWith };
   root.ConsoleNotify = core;
   if (typeof document === 'undefined') return;
@@ -153,6 +157,7 @@
   }
   function openStep(id) {
     if (TID.test(id)) { openThread(id); return; }
+    if (PID.test(id)) { if (location.pathname === '/proposals') location.hash = id; else location.href = '/proposals#' + id; return; }
     if (!ID.test(id)) return;
     if (onStepsPage() && reveal(id)) { try { history.replaceState(null, '', '#' + id); } catch (e) {} return; }
     location.href = '/#' + id;
@@ -169,7 +174,7 @@
     b.className = 'nav-banner' + (kind === 'remind' ? ' remind' : '');
     var txt = document.createElement('span');
     txt.className = 'nb-text';
-    var lead = kind === 'remind' ? 'Still waiting for you: ' : kind === 'reply' ? 'New reply in ' + s.id + ': ' : kind === 'thread' ? 'New thread ' + s.id + ': ' : 'New step: ';
+    var lead = kind === 'remind' ? 'Still waiting for you: ' : kind === 'reply' ? 'New reply in ' + s.id + ': ' : kind === 'thread' ? 'New thread ' + s.id + ': ' : kind === 'proposal' ? 'New proposal: ' : 'New step: ';
     txt.textContent = lead + s.title + (list.length > 1 ? ' (+' + (list.length - 1) + ' more)' : '');
     var open = document.createElement('button');
     open.type = 'button'; open.className = 'nb-open'; open.textContent = 'Open ' + s.id;
@@ -184,20 +189,27 @@
 
   // ---- badge and title ----
   var baseTitle = document.title.replace(/^\(\d+\) /, '');
-  var stepCount = 0, threadCount = 0;
+  var stepCount = 0, threadCount = 0, proposalCount = 0;
   function setCount(n) {
     stepCount = n;
     document.querySelectorAll('[data-badge]').forEach(function (e) {
       e.textContent = String(n); e.hidden = !(n > 0); e.setAttribute('aria-label', n + ' waiting for you');
     });
-    document.title = titleWith(baseTitle, stepCount + threadCount);
+    document.title = titleWith(baseTitle, stepCount + threadCount + proposalCount);
   }
   function setThreadCount(n) {
     threadCount = n;
     document.querySelectorAll('[data-thread-badge]').forEach(function (e) {
       e.textContent = String(n); e.hidden = !(n > 0); e.setAttribute('aria-label', n + ' thread(s) with news for you');
     });
-    document.title = titleWith(baseTitle, stepCount + threadCount);
+    document.title = titleWith(baseTitle, stepCount + threadCount + proposalCount);
+  }
+  function setProposalCount(n) {
+    proposalCount = n;
+    document.querySelectorAll('[data-badge-proposals]').forEach(function (e) {
+      e.textContent = String(n); e.hidden = !(n > 0); e.setAttribute('aria-label', n + ' proposal(s) waiting for your decision');
+    });
+    document.title = titleWith(baseTitle, stepCount + threadCount + proposalCount);
   }
 
   // ---- the waiting feed ----
@@ -216,6 +228,7 @@
   function handle(v, changed) {
     last = v;
     if (typeof v.remindMin === 'number') serverRemind = v.remindMin;
+    if (v.proposals) setProposalCount(v.proposals.count || 0);
     setCount(v.count);
     var nowMs = Date.now() + skew, remMs = remindMin() * 60000;
     // this tab: banners
@@ -226,6 +239,7 @@
     if (news.length) showBanner('new', news); else if (rem.length) showBanner('remind', rem);
     // a step banner goes when its steps are finished (a thread banner stays until dismissed or opened)
     if (bannerIds.length && ID.test(bannerIds[0]) && !v.steps.some(function (s) { return bannerIds.indexOf(s.id) >= 0; })) hideBanner();
+    if (v.proposals && Array.isArray(v.proposals.items)) proposalsFeed(v.proposals.items, nowMs);
     // every tab of this browser together: chime and desktop notification once
     withLock(function () {
       var r = diffSteps(loadShared(nowMs), v.steps, nowMs, remMs);
@@ -243,10 +257,31 @@
     });
     if (changed && typeof api.onChange === 'function') { try { api.onChange(v); } catch (e) {} }
   }
+  // proposals: a banner per new one in this tab; the chime and desktop notification once per browser; no reminders
+  var proposalTab = null;
+  function proposalsFeed(items, nowMs) {
+    var rows = items.filter(function (p) { return PID.test(p.id); });
+    var mine = diffSteps(proposalTab, rows, nowMs, 0);
+    proposalTab = mine.state;
+    if (mine.events.length) showBanner('proposal', mine.events.map(function (e) { return e.step; }));
+    if (bannerIds.length && PID.test(bannerIds[0]) && !rows.some(function (p) { return bannerIds.indexOf(p.id) >= 0; })) hideBanner();
+    withLock(function () {
+      var st = null;
+      try { st = JSON.parse(get('console-proposal-state') || 'null'); } catch (e) { st = null; }
+      if (!st || typeof st !== 'object' || !(nowMs - (st.at || 0) < 30000)) st = null; // no tab alive for 30 s: reseed silently
+      var r = diffSteps(st, rows, nowMs, 0);
+      r.state.at = nowMs;
+      set('console-proposal-state', JSON.stringify(r.state));
+      if (r.events.length) {
+        chime(false);
+        r.events.slice(0, 3).forEach(function (e) { desktop('New proposal: ' + e.step.id, e.step.title, e.step.id); });
+      }
+    });
+  }
   var sig = '';
   function receive(v) {
     if (!v || !Array.isArray(v.steps)) return;
-    var s = JSON.stringify(v.steps);
+    var s = JSON.stringify([v.steps, v.proposals || null]);
     var changed = s !== sig; sig = s;
     var t = Date.parse(v.now); if (!isNaN(t)) skew = t - Date.now(); // only fresh data sets the clock
     handle(v, changed); // unchanged (a heartbeat): only the time moved on, for reminders
