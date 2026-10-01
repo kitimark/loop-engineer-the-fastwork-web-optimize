@@ -279,6 +279,10 @@ between tool calls.
    (58, 2054) inside Composite-after-paint beside a Cloudflare-beacon PerformanceObserver callback (image-load size
    invalidation after the src swap? UNRESOLVED); ~31 RenderView-rooted after script-less style recalc (some CSS
    animation, UNRESOLVED); ~7 countdown tick = 398x52 subtree at (16, 920).
+   **P-032 BLOCKED 15:1xZ by I-038** (morph-log hook = 2nd inspector connection hangs the gesture tool; iphone-runner's
+   I-039 is a duplicate -> lead merges); lead approved amendment (b) (t0 = first defaultPrevented touchmove per end push),
+   second-read OK 15:2xZ with 5 conditions (see the P-032 row); runs hook-free after P11 Block A (running ~15:20Z) + cooling.
+   Caffeinate: lead restarted 15:12Z for 2 h (max) -> ends ~17:12Z, remind ~17:00Z.
    **I-037 [open, blocking]:** iPhone tools pick a background app's about:blank web view instead of Safari's tab.
    Lead 15:0xZ: 7b(f) option (A) not taken to the user (rebases change the staged tree; enforcement layer); (f) stays a
    design in ts-lock-bundle's ticket; tell the lead if short-lane waits exceed ~15 min again.
@@ -339,7 +343,7 @@ between tool calls.
    --max-seconds 600 -- node tools/iphone.mjs wda build --owner iphone-runner` (normal lane, iphone lease, xcodebuild
    capped at 540 s); gesture key `pinReversals` -> `pin` (`pin.excursions`, `pin.fight`, `pin.bounces`); first G run:
    check perStroke `endLagMs` is not always 0 (review-gesture-2 B1).
-6. Caffeinate: the lead renewed early (task b2ex1m6o9, 3 h, ~14:43Z to ~17:43Z) -> remind at ~17:30Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
+6. Caffeinate: the 3 h run was killed at 30 min (background default timeout); restarted 15:12Z for 2 h -> ends ~17:12Z, remind ~17:00Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
 7. **Toolsmith asks from ts-analysis (review-stats T3 nits; need a lead spawn):** (nit 1) `tools/bench.mjs` calls
    `gainVerdict` at :555 and :689 without try/catch; since 86424b0 bench-stats throws on non-finite input, so a null/NaN
    scenario metric crashes bench (and in reconfirm loses later topics' tier B results) instead of INCONCLUSIVE. Fix
