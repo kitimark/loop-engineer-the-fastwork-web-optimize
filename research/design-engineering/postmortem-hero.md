@@ -496,3 +496,22 @@ Setup:
   - In the window +1550..1750 after the flip, the max dt is 17-18 ms in 27/27 hero runs (`win3.mjs`). With no
     event there and no frame, this is a null control, not evidence either way.
   - A test needs the baseline (A, `filter 1.6s`) in a hero block.
+
+### 7.6 Claim status (CLAUDE.md "Platform claims")
+
+WebKit source was read on 2026-10-01 from `github.com/WebKit/WebKit` at `main`. No commit is pinned because
+the GitHub API was rate-limited. The phone's Safari build may differ from `main`.
+
+| claim in §7 | status | reference / decisive check |
+|---|---|---|
+| A Timeline `Layout` record's `root` is the layout root's absolute quad, and the root is the subtree root or else the RenderView. So root = viewport quad means a full layout from the RenderView. | **CONFIRMED** (on `main`) | `Source/WebCore/page/LocalFrameViewLayoutContext.cpp` L257 (`layoutRoot = subtreeLayoutRoot() ? subtreeLayoutRoot() : renderView()`), L301 (`layoutRoot->absoluteQuads(layoutAreas)`), L335; `inspector/agents/page/PageTimelineAgent.cpp` L226-238 (`appendLayoutRoot(layoutAreas[0])`) |
+| On the phone, the rotator's layouts are full layouts | OBSERVED (in our setup; follows from the row above if the phone build matches `main`) | ST-4 A2: the root quad changes or it doesn't |
+| Layout-boundary criteria (non-visible overflow + fixed width/height + new formatting context, or layout + size containment) | **CONFIRMED** (on `main`) | `Source/WebCore/rendering/RenderObject.cpp` `isLayoutBoundary` L519-556, `markContainingBlocksForLayout` L596-660 |
+| `.is-carousel` meets those criteria on the phone | UNRESOLVED | decisive check: ST-4 A2 (`contain: strict` makes it a boundary on any version that has the containment rule) |
+| W3 path: a full layout already pending absorbs a subtree root | CONFIRMED that the path exists; UNRESOLVED whether it fires here | `LocalFrameViewLayoutContext.cpp` `scheduleSubtreeLayout` L778-781: if the RenderView needs layout and there is no subtree root, it marks up to the RenderView |
+| The countdown dirties no layout | OBSERVED (Timeline records, 3/3 captures) | ST-4 control vs rotoff idle counts |
+| `avatars-exit` width/flex-basis steps need layout every frame (not composited) | OBSERVED / unchecked | the reference to check is WebKit's accelerated-property list for CSS animations; A3 dropped for now |
+
+The Chrome ST-4 build check (fix-scroll-engine, 12:24Z) is valid as a build check: childList 75/75 vs 0/0;
+`contain: strict` is applied. Its Layout roots are Chrome's: all three arms report document-rooted layouts,
+`st4-strict` included. That is **not** evidence for WebKit's root and does not change A2's prediction.
