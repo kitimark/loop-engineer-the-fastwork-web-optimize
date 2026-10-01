@@ -223,9 +223,25 @@ between tool calls.
    then the phone block) -> P5 ST-1 (P-018) -> P9 (P-026) -> **P-030** listener split (~25 min) -> **P-031 G** (rAF-rate
    pages; earlier if the phone idles) -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. re-keep-op gain block: placed
    when fix-hero-exit sends its ticket; right BEFORE it, same session: one untimed attribution run at rest, re-keep-op vs
-   re-keep (LayerTree read of the card + idle Paint events over it), because a non-composited opacity-0.999 card may paint
+   re-keep (LayerTree read of the card + idle Paint events over it; ticket P-033 VALIDATED 14:1xZ, after P11 + P14, lead: no
+   jump ahead), because a non-composited opacity-0.999 card may paint
    through a transparency layer on every repaint (UNRESOLVED; F-075 CONFIRMED the premise: presence flip none<->value in
    StyleDifference, claims-audit §2.8 762fc40).
+   **14:1xZ:** P4 paused for the user's cdwc blind swipe A/B (pairs on mw10e-cdwc; pair 1 = "same" saved; pair 2 page 2
+   running after a Safari-inspector stall); if it stalls again the phone goes back to P4 and the swipe test is
+   rescheduled (lead). **review-cdwc NEEDS-WORK** (evidence + wording only): fix-nav-morph runs a short-lane
+   inertness probe (panel scene paused, 0 faces with will-change at every 250 px step, both builds) + DPR 3 frozen-clock
+   countdown crop (expect 0 %); a clean n=5 `--on aw1-10e --frame-log` only if the probe fails. Lead B3: NO waiver ->
+   **P-032 G block aw1-10e vs mw10e-cdwc right after P4** (card from fix-nav-morph pending). P-029 (4) moving p95
+   recorded OUTSIDE [28, 45] on the better side (median 23). **F-076 (UNRESOLVED) -> P-034 gate** on any countdown-ca
+   ticket; put it in the fix-countdown-idle-raf spawn prompt (de-oss-map waits on it).
+   **arch-sim** (iOS Simulator fidelity): normal chrome-measure holds <= 420 s, announced to mgmt-ops each time;
+   `--port auto`; own iwdp `-c null:9231,SIMULATOR:9232` (iwdp attaches only configured devices, so never the phone);
+   no iphone lease; results tagged meta.device "simulator".
+   **ts-analysis eea3c06 -> review-stats NEEDS-WORK** (cross-block driver pooling unwarned; "near thresholds" line pools
+   frames across runs, §5.3): ts-analysis fixing; lands only after ACCEPT. Protocol questions (lead 14:1xZ): (a) A5
+   "threshold-sensitive" wording vs code (code flags when gt46 or gt54 differs from gt50, stricter) -> doc-protocol-v2;
+   (b) phone p50/p95 minimum shift (now 1 Chrome tick 8.33 ms) -> arch-claims (arch-lead ended). Answers: pending.
    **Pacing v2 (de-unknowns-ux e64b6de, pacing-result §4):** verdict accepted on intent (§0/§2), OBSERVED, one user, not
    rested; §3 sign erratum added with the scoring commit, kept visible. **Lead rule 13:5xZ: pre-registered rules get a
    second reader (arch-claims or mgmt-ops) BEFORE data arrives.** de-unknowns-ux drafts a pacing v3 (touch A/B) plan; it
@@ -355,7 +371,9 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `ts-iphone-run` (T1a f8e7d5a), `ts-analysis` (T3), `ts-render-signals` (T6+T7, I-032, in test:chrome) | protocol v2 tools | alive |
 | `arch-sim` | iOS Simulator fidelity (user work stream, lead 14:0xZ): research, plan, probe the Simulator against real-device records; Simulator runs are host-heavy -> always inside chrome-measure holds (≤ 10 min), slot like research holds | alive |
 | `ts-sim` | toolsmith: tools/sim.mjs from arch-sim's spec (lead spawns when the spec arrives) | not yet spawned |
-| `review-cdwc` | fix-reviewer of mw10e-cdwc (fix-nav-morph 051d0aa) | alive |
+| `review-cdwc` | fix-reviewer of mw10e-cdwc (fix-nav-morph 051d0aa): NEEDS-WORK 14:1xZ (B1-B4) | done |
+| `review-stats` | fix-reviewer of ts-analysis eea3c06 (phone thresholds): NEEDS-WORK 14:1xZ | alive |
+| `review-t1a` | re-check of ts-iphone-run 7c83786 / f28f47e / 8d4f6a1 | alive |
 | `ts-wait` | toolsmith (lead spawn 13:3xZ, user request): blocking wait commands so agents stop sleep-loop polling; may ask iphone-runner + others what waiting hurt most | alive |
 | `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); WDA runner + iproxy left running for iphone-runner | done |
 | `res-layerpainted` | F-059/F-064/F-066 stamped, F-068 limitation posted | done |
