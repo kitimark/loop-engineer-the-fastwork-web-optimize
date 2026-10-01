@@ -1,11 +1,29 @@
 // Minimal Chrome DevTools Protocol client (Node >= 22: built-in fetch + WebSocket).
 // No dependencies. Used by tools/mirror.mjs --crawl and tools/verify.mjs.
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 export const CHROME_MAC = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+
+/**
+ * SIGKILL pid and all its descendants, synchronously (usable in an 'exit' handler). The tree is read
+ * with one `ps` before anything is killed: once the root dies its children are reparented and lost.
+ */
+export function killTree(pid) {
+  const pids = [pid];
+  try {
+    const kids = {};
+    for (const l of (spawnSync('ps', ['-A', '-o', 'pid=,ppid='], { encoding: 'utf8', timeout: 3000 }).stdout || '').split('\n')) {
+      const m = l.trim().match(/^(\d+)\s+(\d+)$/);
+      if (m) (kids[m[2]] ||= []).push(Number(m[1]));
+    }
+    for (let i = 0; i < pids.length; i++) for (const k of kids[pids[i]] || []) if (!pids.includes(k)) pids.push(k);
+  } catch {}
+  for (const p of pids) { try { process.kill(p, 'SIGKILL'); } catch {} }
+  return pids;
+}
 
 export function chromePath() {
   if (process.env.CHROME) return process.env.CHROME;
@@ -42,8 +60,9 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
   // Never leave the browser behind when this process exits early (crash, or SIGTERM/SIGINT handled by the
   // chrome-measure lock, which calls process.exit): it would keep the profile dir locked for the next run.
   // Registered at once, not after the DevTools port is up: a signal during the launch (verify now launches
-  // after its host recheck, I-023) must not orphan the browser either.
-  const killOnExit = () => { try { proc.kill('SIGKILL'); } catch {} };
+  // after its host recheck, I-023) must not orphan the browser either. The whole process tree: a browser
+  // SIGKILLed while it is still starting leaves its helpers (GPU, network, renderers) running.
+  const killOnExit = () => killTree(proc.pid);
   process.on('exit', killOnExit);
   let version;
   let exited = false;
@@ -60,10 +79,17 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
     proc,
     port,
     wsUrl: version.webSocketDebuggerUrl,
-    async close() {
-      process.off('exit', killOnExit);
-      try { proc.kill('SIGTERM'); } catch {}
-      await sleep(300);
+    /**
+     * SIGTERM, wait for the exit (up to graceMs), then SIGKILL the whole tree and wait again: resolves
+     * once the browser is gone, so a relaunch on the same profile dir cannot find it still locked (I-023).
+     */
+    async close({ graceMs = 5000 } = {}) {
+      try {
+        if (exited) return;
+        try { proc.kill('SIGTERM'); } catch {}
+        for (let t = 0; t < graceMs && !exited; t += 50) await sleep(50);
+        if (!exited) { killTree(proc.pid); for (let t = 0; t < 3000 && !exited; t += 50) await sleep(50); }
+      } finally { process.off('exit', killOnExit); }
     },
   };
 }

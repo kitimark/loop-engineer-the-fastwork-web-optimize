@@ -9,6 +9,7 @@
 //      FAKE_CHROME_CRASH_AT=<method>  exit abruptly (no reply) when this CDP method arrives, like a browser crash
 //      FAKE_CHROME_HANG_AT=<method>   never answer this CDP method (a hung browser; verify's watchdog, I-023)
 //      FAKE_CHROME_EXIT_AFTER=<method>  answer it, then exit at the next command (a browser gone between runs, I-023)
+//      FAKE_CHROME_IGNORE_SIGTERM=1     ignore SIGTERM (a browser that will not quit; close() must SIGKILL it)
 import http from 'node:http';
 import { createHash } from 'node:crypto';
 import { writeFileSync, appendFileSync } from 'node:fs';
@@ -135,7 +136,10 @@ server.listen(port, '127.0.0.1', () => {
   if (profile) writeFileSync(join(profile, 'DevToolsActivePort'), `${p}\n/devtools/browser/fake`);
   log({ method: '(started)', params: { port: p, profile } });
 });
-for (const s of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(s, () => { log({ method: '(exit)', params: { signal: s } }); process.exit(0); });
+for (const s of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(s, () => {
+  if (s === 'SIGTERM' && process.env.FAKE_CHROME_IGNORE_SIGTERM) return log({ method: '(sigterm-ignored)', params: {} }); // a browser that will not quit
+  log({ method: '(exit)', params: { signal: s } }); process.exit(0);
+});
 // Safety net only: exit 15 s after the launching process is gone. A real Chrome would stay; the tests
 // check within a few seconds that verify.mjs itself stops its browser, which this grace keeps visible.
 const parent = process.ppid;

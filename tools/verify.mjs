@@ -32,19 +32,21 @@
 // max memory pressure and decompressions/s. `host.loadInvalid` (contaminated) when load1 at start > 10,
 // other CPU in the scroll phase > 25 %, memory pressure >= warn, or the lock was granted by the gate's
 // timeout; `host.loadWarn` at load1 > 6 or other CPU > 20 %.
-// Sleep and hangs (incident I-023; the Mac's Maintenance Sleep, I-026): the recheck runs before Chrome is
-// launched (run 1) or while it is pinged (later runs), stops after --max-wait s of wall time or at a host
-// sleep, and a Chrome that exited or stopped answering is relaunched before the run (host.chromeRelaunched,
-// a warning). host.sleptSec / host.woke: a sleep inside the run makes it contaminated. [--watchdog 300]: a
-// step with no progress for that many seconds (monotonic, plus the step's own budget) fails verify with a
-// WATCHDOG error, which closes Chrome and frees the lock; 0 = off.
+// Sleep and hangs (incident I-023; the Mac's Maintenance Sleep, I-026): the recheck stops after --max-wait s
+// of wall time, or one window after a host sleep; Chrome (launched before run 1's recheck) is pinged after
+// every window, and one that exited or stopped answering is relaunched before the run (host.chromeRelaunched,
+// a warning). [--chrome-warm 10]: no run starts sooner than that after its Chrome launched
+// (host.chromeWarmedSec = the wait it took). host.sleptSec / host.woke: a sleep inside the run makes it
+// contaminated. [--watchdog 300]: once the lock is held, a step with no progress for that many seconds
+// (monotonic, plus the step's own budget) fails verify with a WATCHDOG error, which closes Chrome and frees
+// the lock; 0 = off.
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
 import { LOGGER, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
-import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo } from './lib/host.mjs';
+import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock } from './lib/host.mjs';
 
 const ROOT = REPO;
 const argv = process.argv.slice(2);
@@ -69,17 +71,21 @@ const num = (n, d) => { const v = Number(opt(n, d)); if (!Number.isFinite(v) || 
 const MAX_WAIT = num('max-wait', THRESHOLDS.recheckMaxWaitSec);
 const QUIET = { ...THRESHOLDS, quietMaxLoad1: num('max-load', THRESHOLDS.quietMaxLoad1), quietMaxBusyPct: num('max-busy', THRESHOLDS.quietMaxBusyPct) };
 const WATCHDOG = num('watchdog', THRESHOLDS.watchdogStallSec);
+const CHROME_WARM = num('chrome-warm', THRESHOLDS.chromeWarmSec);
 mkdirSync(OUT, { recursive: true });
 
 // ---- watchdog (incident I-023) --------------------------------------------------------------------
 // Every step of the measurement calls progress(step, extraSec). A step that makes no progress for
 // --watchdog s (+ its own extra: the recheck's --max-wait, the scroll eval's 600 s timeout, --idle)
 // fails verify with a clear error; the exit handlers then free the chrome-measure lock and kill Chrome.
+// Armed only once the lock is held (armWatchdog() in main()): waiting in the queue is not a stall.
 // Measured on the process's monotonic clock: a host sleep (I-026) stops it too, so a sleep is not a
 // stall; a run with a sleep in it is flagged by the host record instead. --watchdog 0 = off.
 const wd = { step: 'start', extraSec: 0, at: performance.now(), where: '' };
 function progress(step, extraSec = 0) { wd.step = step; wd.extraSec = extraSec; wd.at = performance.now(); }
-if (WATCHDOG > 0) {
+function armWatchdog() {
+  if (!(WATCHDOG > 0)) return;
+  progress('start');
   setInterval(() => {
     const idle = (performance.now() - wd.at) / 1000;
     if (idle <= WATCHDOG + wd.extraSec) return;
@@ -88,15 +94,17 @@ if (WATCHDOG > 0) {
   }, Math.min(5000, Math.max(100, WATCHDOG * 250))).unref();
 }
 
-// ---- the browser: launched after the first host recheck, checked before every run (I-023) ---------
-// One Chrome serves all runs (each run gets a fresh isolated context), as before. New: it starts only
-// after the first recheck (not during a long wait), and before every later run it must answer
-// Browser.getVersion (also pinged after every recheck window); if it exited or stopped answering, verify
-// relaunches it and flags that run (host.chromeRelaunched; I-023 A/A: CDP closed during a 60 s recheck).
+// ---- the browser: one Chrome, kept alive across the rechecks, relaunched when gone (I-023) ----------
+// One Chrome serves all runs (each run gets a fresh isolated context), as before, launched before the
+// first recheck so it has idled through at least one recheck window when run 1 starts (as since
+// 77693c3). New: after every recheck window and before every run it must answer Browser.getVersion;
+// if it exited or stopped answering, verify relaunches it and flags that run (host.chromeRelaunched;
+// I-023 A/A: CDP closed during a 60 s recheck). A run never starts sooner than --chrome-warm s
+// (default 10) after its Chrome launched (review-i023: a just-launched Chrome measures cold).
 let browser = null, launches = 0;
 const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${what}: no answer in ${ms} ms`)), ms).unref())]);
 async function openChrome() {
-  progress('chrome launch');
+  progress('chrome launch', 30); // launchChrome waits up to 15 s for the DevTools port
   const ch = await launchChrome({ port: Number(opt('port', 0)), profileDir: resolve(ROOT, opt('profile', 'out/chrome-verify-profile')) });
   let exited = false;
   ch.proc.on('exit', () => { exited = true; });
@@ -104,7 +112,7 @@ async function openChrome() {
   // allow the mirror's self-signed --https certificate (this dedicated Chrome only)
   await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true }).catch(() => {});
   launches++;
-  browser = { ch, cdp, exited: () => exited };
+  browser = { ch, cdp, exited: () => exited, launchedAt: (await hostClock()).mono() };
 }
 async function chromeAlive() {
   if (!browser || browser.exited() || browser.cdp.closedError) return false;
@@ -118,6 +126,16 @@ async function ensureChrome() {
   if (relaunch) { process.stdout.write('(Chrome exited or stopped answering: relaunching) '); await closeChrome(); }
   await openChrome();
   return relaunch;
+}
+/** Wait until the browser has been up --chrome-warm s (on the host clock; a stubbed host's in tests). */
+async function warmChrome() {
+  const c = await hostClock();
+  const left = CHROME_WARM - (c.mono() - browser.launchedAt) / 1000;
+  if (!(left > 0)) return 0;
+  progress('chrome warm-up', CHROME_WARM);
+  process.stdout.write(`(Chrome warm-up ${Math.round(left * 10) / 10} s) `);
+  await c.sleep(left * 1000);
+  return left;
 }
 /** The host recheck before a run (I-017), capped in wall time (I-023); pings Chrome after every window. */
 async function recheckHost() {
@@ -204,7 +222,7 @@ function summarize(perf) {
   };
 }
 
-async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, chromeRelaunched = false } = {}) {
+async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, chromeRelaunched = false, warmedSec = 0 } = {}) {
   const vp = VIEWPORTS[vpName];
   const hostPhases = {};
   const runStart = await snapshot();
@@ -262,7 +280,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   hostPhases.scroll = await hostEnd(h, chromePid);
 
   // morph phase: push past the end (wheel on desktop, touch drag on mobile)
-  progress('morph phase');
+  progress('morph phase', 10); // wheel or touch gestures plus a 2 s settle
   h = await hostStart(chromePid);
   await page.eval(RESET);
   if (vp.mobile) {
@@ -305,7 +323,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   const sl = slept(runStart, runEnd); // did the Mac sleep during the run (I-026)?
   const hostRec = {
     load1Start: runStart.load1, load1End: runEnd.load1, freeMemMB: runStart.freeMemMB, freeMemMBEnd: runEnd.freeMemMB,
-    sleptSec: sl.sleptSec, woke: sl.woke, chromeRelaunched,
+    sleptSec: sl.sleptSec, woke: sl.woke, chromeRelaunched, chromeWarmedSec: Math.round(warmedSec * 10) / 10,
     recheck, gate: gate || null, phases: hostPhases,
     ...(runStart.stub ? { stub: runStart.stub } : {}),
   };
@@ -350,6 +368,7 @@ async function main() {
   }
   // the lock's host admission gate (tools/lib/lock.mjs): how this hold (or the outer one we re-entered) was granted
   const gate = lockHolder?.gate ? { ...lockHolder.gate, gateTimeout: !!lockHolder.gateTimeout } : null;
+  armWatchdog(); // from here on verify holds the lock: a stall must end it
   const results = [];
   try {
     for (const vpName of vpList) {
@@ -358,9 +377,11 @@ async function main() {
         for (const t of order) {
           wd.where = `${vpName} run ${run + 1}/${RUNS} ${t.label}`;
           process.stdout.write(`[${vpName} run ${run + 1}/${RUNS}] ${t.label} ${t.url} ... `);
-          const recheck = await recheckHost(); // before (re)launching Chrome: no idle browser during a long wait
+          if (!browser) await openChrome(); // first run: Chrome idles (pinged) through the recheck, as since 77693c3
+          const recheck = await recheckHost();
           const chromeRelaunched = await ensureChrome();
-          const r = await measure(browser.cdp, t, vpName, run, { chromePid: browser.ch.proc.pid, gate, recheck, chromeRelaunched });
+          const warmedSec = await warmChrome();
+          const r = await measure(browser.cdp, t, vpName, run, { chromePid: browser.ch.proc.pid, gate, recheck, chromeRelaunched, warmedSec });
           results.push(r);
           const s = r.scrollSummary;
           console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}`);
@@ -403,7 +424,7 @@ async function main() {
   const measured = results.filter((r) => !r.diff);
   const invalid = measured.filter((r) => r.host.loadInvalid), warn = measured.filter((r) => !r.host.loadInvalid && r.host.loadWarn);
   const hostSum = {
-    ...(await hostInfo()), chromeLaunches: launches, watchdogSec: WATCHDOG,
+    ...(await hostInfo()), chromeLaunches: launches, watchdogSec: WATCHDOG, chromeWarmSec: CHROME_WARM,
     thresholds: THRESHOLDS, recheck: { maxWaitSec: MAX_WAIT, maxLoad1: QUIET.quietMaxLoad1, maxBusyPct: QUIET.quietMaxBusyPct }, gate,
     contaminated: invalid.length > 0, contaminatedRuns: invalid.length, warnRuns: warn.length, runsTotal: measured.length,
     ...(measured[0]?.host.stub ? { stub: measured[0].host.stub } : {}),

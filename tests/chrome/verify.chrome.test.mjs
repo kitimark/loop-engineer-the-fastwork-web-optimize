@@ -32,17 +32,21 @@ after(() => srv?.stop());
 
 test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', async () => {
   const p = nodeAsync(tool('verify.mjs'), [`fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out'), '--result', join(d, 'r.json'), '--profile', join(d, 'profile'), '--owner', OWNER + '-verify', '--max-wait', '10'], { env: { ...REAL_HOST, ...lock.env }, timeout: 600000 });
+  // the hold this file runs under: its own chromeLock(), or, under `npm run test:chrome`, the wrapper's
+  // `lock.mjs run` hold that chromeLock() re-entered (I-022)
+  const outer = holder();
+  assert.ok(outer, 'this file holds chrome-measure');
   let seen = null, other = null, done = false;
   p.then(() => (done = true));
-  while (!done) { const h = holder(); if (h?.owner === OWNER) seen = h; else if (h) other = h; await sleep(200); }
+  while (!done) { const h = holder(); if (h?.token === outer.token) seen = h; else if (h) other = h; await sleep(200); }
   const r = await p;
   assert.equal(r.code, 0, r.out);
-  assert.ok(seen, 'the real chrome-measure lock was held (by this file) while measuring');
+  assert.ok(seen, 'the real chrome-measure lock was held (by this file or its wrapper) while measuring');
   assert.equal(seen.kind, 'process');
-  assert.equal(seen.pid, process.pid);
+  if (outer.owner === OWNER) assert.equal(seen.pid, process.pid);
   assert.equal(other, null, `nobody else held it meanwhile: ${JSON.stringify(other)}`);
   assert.doesNotMatch(r.out, /\[lock chrome-measure\] busy/, 'verify.mjs re-entered the hold instead of queueing');
-  assert.equal(holder()?.owner, OWNER, "verify.mjs's exit does not release the file's hold");
+  assert.equal(holder()?.token, outer.token, "verify.mjs's exit does not release the file's hold");
 
   const res = JSON.parse(readFileSync(join(d, 'r.json'), 'utf8'));
   const x = res.results[0];
@@ -81,6 +85,7 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
 });
 
 test('verify.mjs: SIGTERM mid-run closes the dedicated Chrome', async () => {
+  const outer = holder(); // this file's hold, or the test:chrome wrapper's (I-022)
   const profile = join(d, 'profile-kill');
   const v = await startProc(process.execPath, [tool('verify.mjs'), `fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out2'), '--profile', profile, '--owner', OWNER + '-kill', '--max-wait', '0'], { env: { ...REAL_HOST, ...lock.env }, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 600000 });
   const chromeUp = () => run('pgrep', ['-f', `user-data-dir=${profile}`]).stdout.trim();
@@ -92,6 +97,6 @@ test('verify.mjs: SIGTERM mid-run closes the dedicated Chrome', async () => {
   for (let i = 0; i < 60 && left; i++) { await sleep(100); left = chromeUp(); }
   if (left) run('pkill', ['-f', `user-data-dir=${profile}`]);
   assert.equal(left, '', 'Chrome must not outlive verify.mjs');
-  assert.equal(holder()?.owner, OWNER, "killing verify.mjs leaves the file's hold (released in after())");
+  assert.equal(holder()?.token, outer.token, "killing verify.mjs leaves the file's (or its wrapper's) hold (released in after())");
   assert.equal(existsSync(join(d, 'r2.json')), false);
 });

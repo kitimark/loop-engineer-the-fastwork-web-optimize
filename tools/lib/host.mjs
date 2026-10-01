@@ -32,13 +32,14 @@
 //                                      pressure, window length)
 //   waitQuiet({maxWaitSec=60, windowSec, thresholds, samplers, onSample})  async
 //                                      sample windows until quiet() or maxWaitSec of WALL time (a host
-//                                      sleep ends the wait at once, I-023); onSample may throw to abort
+//                                      sleep ends the wait after one more window, I-023); onSample may throw
 //                                      -> {quiet, waitedSec, windows, last, reasons, sleptSec, suspended}
 //   treeCpuSec(rootPid, {samplers}) async   CPU seconds used so far by rootPid and its descendants (ps)
 //   classifyRun(rec, t=THRESHOLDS)     per-run flags -> {loadInvalid, loadWarn, reasons, warnings}
 //                                      rec: {load1Start, otherBusyPct, pressureMax, gateTimeout, recheckQuiet,
 //                                      sleptSec, woke, recheckSleptSec, chromeRelaunched}
 //   hostInfo({samplers})       async   {cpus, model, loadavg}
+//   hostClock({samplers})      async   {mono(), sleep(ms)} of the samplers (fake in tests)
 //   describe(sample)                   one-line text: "load1 3.1 | cpu 12 % busy (sys 4 %) | mem pressure normal"
 //
 // Stubbing: every function takes {samplers} (partial; merged over the defaults). $FW_TEST_HOST=<module
@@ -75,6 +76,8 @@ export const DEFAULTS = Object.freeze({
                          // jitter and timer coalescing stay far below 1 s)
   watchdogStallSec: 300, // verify.mjs: a step with no progress for this long (monotonic) fails the run and frees
                          // the lock; the scroll step gets its own 600 s eval timeout on top
+  chromeWarmSec: 10,     // verify.mjs: a run starts no sooner than this after its Chrome launched (review-i023:
+                         // 77693c3's runs met a Chrome idle for >= one 10 s recheck window; keep that)
 });
 
 const ENV = { FW_GATE_MAX_LOAD1: 'quietMaxLoad1', FW_GATE_MAX_BUSY: 'quietMaxBusyPct', FW_GATE_MAX_WAIT: 'gateMaxWaitSec' };
@@ -239,14 +242,15 @@ export function quiet(x, t = THRESHOLDS) {
 
 /**
  * Sample windows of `windowSec` until quiet(), ceil(maxWaitSec / windowSec) windows (at least one), or
- * maxWaitSec of wall time, whichever comes first. A host sleep (slept()) inside a window ends the wait at
- * once (I-023: six 10 s windows took 1953 s of wall time across a Maintenance Sleep). onSample(last, q)
- * runs after every window (await-ed; it may throw to abort, e.g. verify's Chrome keepalive).
+ * maxWaitSec of wall time, whichever comes first. A host sleep (slept()) inside a window ends the wait
+ * after exactly one more window (I-023: six 10 s windows took 1953 s of wall time across a Maintenance
+ * Sleep; review: the host is rarely quiet right after a wake, so the result is that fresh window's).
+ * onSample(last, q) runs after every window (await-ed; it may throw to abort, e.g. verify's Chrome keepalive).
  */
 export async function waitQuiet({ maxWaitSec = THRESHOLDS.recheckMaxWaitSec, windowSec, thresholds: t = THRESHOLDS, samplers, onSample } = {}) {
   const win = windowSec ?? t.quietMinWindowSec;
   const maxWindows = Math.max(1, Math.ceil(maxWaitSec / win - 1e-9));
-  let windows = 0, last = null, q = null, sleptSec = 0, suspended = false;
+  let windows = 0, last = null, q = null, sleptSec = 0, suspended = false, afterWake = false;
   const first = await snapshot({ samplers });
   const { s } = await resolveSamplers(samplers);
   let a = first;
@@ -255,11 +259,13 @@ export async function waitQuiet({ maxWaitSec = THRESHOLDS.recheckMaxWaitSec, win
     const b = await snapshot({ samplers });
     last = between(a, b); a = b; windows++;
     sleptSec += last.sleptSec || 0;
-    if (last.suspended) suspended = true;
     q = quiet(last, t);
+    if (last.suspended) { suspended = true; q = { quiet: false, reasons: [...q.reasons, `host slept ${last.sleptSec ?? '?'} s in this window`] }; }
     await onSample?.(last, q);
     const waitedSec = r1((b.at - first.at) / 1000);
-    if (q.quiet || suspended || windows >= maxWindows || waitedSec >= maxWaitSec) return { quiet: q.quiet, waitedSec, windows, last, reasons: q.reasons, sleptSec: r1(sleptSec), suspended };
+    const done = afterWake || (!last.suspended && (q.quiet || windows >= maxWindows || waitedSec >= maxWaitSec));
+    if (done) return { quiet: q.quiet, waitedSec, windows, last, reasons: q.reasons, sleptSec: r1(sleptSec), suspended };
+    if (last.suspended) afterWake = true; // one fresh window after the wake, then stop whatever it says
   }
 }
 
@@ -304,6 +310,12 @@ export function classifyRun(rec = {}, t = THRESHOLDS) {
 }
 
 export function pressureName(p) { return p == null ? 'unknown' : p <= 1 ? 'normal' : p < 4 ? 'warn' : 'critical'; }
+
+/** The samplers' monotonic clock and sleep (a stubbed host's fake clock in tests): {mono(), sleep(ms)}. */
+export async function hostClock({ samplers } = {}) {
+  const { s } = await resolveSamplers(samplers);
+  return { mono: () => s.mono(), sleep: (ms) => s.sleep(ms) };
+}
 
 /** {cpus, model, loadavg} of the host (through the samplers, so a stubbed host stays stubbed). */
 export async function hostInfo({ samplers } = {}) {

@@ -13,7 +13,7 @@
 //   node tools/fix.mjs serve <topic> [-- serve.mjs args]  # baseline + overlay on a per-worktree port
 //   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--idle 6] [--no-screens] [-- serve.mjs args]
 //   node tools/fix.mjs ab --aa [--runs 5]             # baseline vs baseline: the noise floor
-//   ab host guard (I-017): [--max-wait 60] [--max-load 6] [--max-busy 20] [--watchdog 300] go to verify.mjs (recheck before
+//   ab host guard (I-017): [--max-wait 60] [--max-load 6] [--max-busy 20] [--watchdog 300] [--chrome-warm 10] go to verify.mjs (recheck before
 //                  each run); a run started at load1 > 10, other CPU > 25 %, memory pressure >= warn or
 //                  after a gate-timeout grant contaminates the result: verdicts get "CONTAMINATED (host): "
 //   --on <other>   (edit, diff, serve, ab) stack this fix on another fix's overlay, e.g. a combined wave:
@@ -38,7 +38,7 @@ const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const passthrough = dd >= 0 ? argv.slice(dd + 1) : null;
-const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on', '--max-wait', '--max-load', '--max-busy', '--watchdog'];
+const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on', '--max-wait', '--max-load', '--max-busy', '--watchdog', '--chrome-warm'];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
@@ -408,7 +408,7 @@ async function cmdAb(t) {
 
   const verifyFile = join(outDir, 'verify.json');
   const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--idle', String(idle), '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : []),
-    ...['max-wait', 'max-load', 'max-busy', 'watchdog'].flatMap((k) => (opt(k) !== undefined ? [`--${k}`, String(opt(k))] : []))];
+    ...['max-wait', 'max-load', 'max-busy', 'watchdog', 'chrome-warm'].flatMap((k) => (opt(k) !== undefined ? [`--${k}`, String(opt(k))] : []))];
   verifyProc = spawn(process.execPath, vArgs, { stdio: 'inherit' });
   const code = await new Promise((res) => verifyProc.on('exit', (c) => res(c)));
   kill();

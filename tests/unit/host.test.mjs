@@ -40,7 +40,7 @@ test('THRESHOLDS: the documented defaults; FW_GATE_* env overrides; bad values a
   assert.deepEqual({ ...host.DEFAULTS }, {
     quietMaxBusyPct: 20, quietMaxLoad1: 6, quietMaxPressure: 1, quietMinWindowSec: 10, gateMaxWaitSec: 600, recheckMaxWaitSec: 60,
     invalidLoad1: 10, invalidOtherBusyPct: 25, invalidPressure: 2, warnLoad1: 6, warnOtherBusyPct: 20,
-    suspendMinSec: 2, watchdogStallSec: 300,
+    suspendMinSec: 2, watchdogStallSec: 300, chromeWarmSec: 10,
   });
   const t = host.thresholds({ FW_GATE_MAX_LOAD1: '4', FW_GATE_MAX_BUSY: '15', FW_GATE_MAX_WAIT: '120' });
   assert.equal(t.quietMaxLoad1, 4);
@@ -122,18 +122,25 @@ test('waitQuiet() on a host that stays busy past every window: stops at the cap,
   assert.deepEqual([odd.windows, odd.waitedSec], [3, 30], 'a cap between windows ends after the window that crosses it');
 });
 
-test('waitQuiet() across a host sleep: ends at once with the sleep recorded; the wall-time cap holds (I-023, I-026)', async () => {
+test('waitQuiet() across a host sleep: one fresh window after the wake, then stops; the sleep is recorded (I-023, I-026)', async () => {
   // the A/B of I-023: busy host, the Mac sleeps 1890 s in the 2nd window; before the fix the wait ran on
   // for 6 windows and 1953 s of wall time
   const s = fakeSamplers({ busy: () => 0.3, suspend: [{ at: 1_015_000, sec: 1890 }] });
   const seen = [];
-  const r = await host.waitQuiet({ maxWaitSec: 60, samplers: s, onSample: (x) => seen.push([x.sleptSec, x.suspended]) });
-  assert.equal(r.windows, 2, 'the window with the sleep is the last one');
+  const r = await host.waitQuiet({ maxWaitSec: 60, samplers: s, onSample: (x, q) => seen.push([x.sleptSec, x.suspended, q.quiet]) });
+  assert.equal(r.windows, 3, 'the window with the sleep, then one more');
   assert.equal(r.suspended, true);
   assert.equal(r.sleptSec, 1890);
-  assert.equal(r.waitedSec, 1910, 'wall time, sleep included');
+  assert.equal(r.waitedSec, 1920, 'wall time, sleep included');
   assert.equal(r.quiet, false);
-  assert.deepEqual(seen, [[0, false], [1890, true]]);
+  assert.deepEqual(seen, [[0, false, false], [1890, true, false], [0, false, false]]);
+  // a quiet host: the window with the sleep never counts as quiet; the fresh one after the wake decides
+  const qs = fakeSamplers({ busy: () => 0.05, suspend: [{ at: 1_005_000, sec: 600 }] });
+  const rq = await host.waitQuiet({ maxWaitSec: 60, samplers: qs });
+  assert.deepEqual([rq.windows, rq.quiet, rq.suspended, rq.sleptSec], [2, true, true, 600]);
+  // the sleep in the last allowed window still gets its fresh window (past the window count, never longer)
+  const ls = fakeSamplers({ busy: () => 0.3, suspend: [{ at: 1_015_000, sec: 100 }] });
+  assert.equal((await host.waitQuiet({ maxWaitSec: 20, samplers: ls })).windows, 3);
   // slept(): wall minus monotonic, or a new wake time alone
   assert.deepEqual(host.slept({ at: 0, mono: 0, wakeAt: 5 }, { at: 12000, mono: 10000, wakeAt: 5 }), { sleptSec: 2, woke: false, suspended: false }, '2 s is jitter, not sleep');
   assert.deepEqual(host.slept({ at: 0, mono: 0, wakeAt: 5 }, { at: 13000, mono: 10000, wakeAt: 5 }), { sleptSec: 3, woke: false, suspended: true });

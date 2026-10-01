@@ -72,7 +72,7 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
   assert.deepEqual(res.viewports, ['mobile']);
   assert.equal(res.runs, 1);
   assert.deepEqual(res.targets, [{ label: 'a', url: 'http://127.0.0.1:9/' }]);
-  assert.deepEqual(Object.keys(res.host).sort(), ['chromeLaunches', 'contaminated', 'contaminatedRuns', 'cpus', 'gate', 'loadavg', 'model', 'recheck', 'runsTotal', 'stub', 'thresholds', 'warnRuns', 'watchdogSec']);
+  assert.deepEqual(Object.keys(res.host).sort(), ['chromeLaunches', 'chromeWarmSec', 'contaminated', 'contaminatedRuns', 'cpus', 'gate', 'loadavg', 'model', 'recheck', 'runsTotal', 'stub', 'thresholds', 'warnRuns', 'watchdogSec']);
   assert.equal(res.host.stub, FAKE_HOST, 'the tests run on the fake host, and the result says so');
   assert.equal(res.results.length, 1);
   const r = res.results[0];
@@ -240,7 +240,7 @@ test('host record per run and phase on a quiet host: CPU busy/sys, Chrome tree, 
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
   const h = res.results[0].host;
-  assert.deepEqual(Object.keys(h).sort(), ['chromeRelaunched', 'freeMemMB', 'freeMemMBEnd', 'gate', 'load1End', 'load1Start', 'loadInvalid', 'loadWarn', 'phases', 'reasons', 'recheck', 'sleptSec', 'stub', 'warnings', 'woke']);
+  assert.deepEqual(Object.keys(h).sort(), ['chromeRelaunched', 'chromeWarmedSec', 'freeMemMB', 'freeMemMBEnd', 'gate', 'load1End', 'load1Start', 'loadInvalid', 'loadWarn', 'phases', 'reasons', 'recheck', 'sleptSec', 'stub', 'warnings', 'woke']);
   assert.deepEqual(Object.keys(h.phases), ['idle', 'scroll', 'morph']);
   for (const [name, p] of Object.entries(h.phases)) {
     assert.ok(p.windowSec > 0, `${name} window ${p.windowSec}`);
@@ -332,16 +332,16 @@ test('I-023: a host that stays busy past every window: the recheck stops at --ma
   assert.equal(res.host.chromeLaunches, 1);
 });
 
-test('I-023/I-026: a host sleep ends the recheck at once and is recorded; a sleep inside the run contaminates it', async () => {
+test('I-023/I-026: a host sleep ends the recheck after one fresh window and is recorded; a sleep inside the run contaminates it', async () => {
   const { d, env, args } = setup();
-  // fake monotonic time: the recheck's first window ends at 10 s; a 1890 s sleep at 5 s lands in it. The
-  // run (~7 s of real time from fake ~10.5 s) then sleeps 500 s at fake 13 s.
-  const r = await nodeAsync(VERIFY, args('sleepy', ['--idle', '0', '--no-lock']), { env: { ...env, FAKE_HOST_BUSY: '0.3', FAKE_HOST_SUSPEND: '5000:1890,13000:500' } });
+  // fake monotonic time: Chrome launches at ~0, the recheck's 1st window (0-10 s) holds a 1890 s sleep at 5 s, the
+  // fresh 2nd window ends at 20 s; the run (~7 s of real time from fake ~20 s) then sleeps 500 s at fake 22 s.
+  const r = await nodeAsync(VERIFY, args('sleepy', ['--idle', '0', '--no-lock']), { env: { ...env, FAKE_HOST_BUSY: '0.3', FAKE_HOST_SUSPEND: '5000:1890,22000:500' } });
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
   const h = res.results[0].host;
-  assert.deepEqual([h.recheck.windows, h.recheck.suspended, h.recheck.sleptSec], [1, true, 1890], 'not 6 windows and 1953 s');
-  assert.ok(h.recheck.waitedSec >= 1900 && h.recheck.waitedSec < 1901, `wall time ${h.recheck.waitedSec}`);
+  assert.deepEqual([h.recheck.windows, h.recheck.suspended, h.recheck.sleptSec], [2, true, 1890], 'the sleep window plus one fresh window, not 6 windows and 1953 s');
+  assert.ok(h.recheck.waitedSec >= 1910 && h.recheck.waitedSec < 1911, `wall time ${h.recheck.waitedSec}`);
   assert.match(r.stdout, /\(the host slept 1890 s during the recheck; measuring now\)/);
   assert.ok(h.warnings.includes('host slept 1890 s during the recheck before the run'));
   assert.equal(h.sleptSec, 500);
@@ -363,6 +363,24 @@ test('I-023: Chrome gone between runs (exited during the recheck): relaunched be
   assert.equal(res.host.chromeLaunches, 2);
   assert.equal(readLog(env.FAKE_CHROME_LOG).filter((l) => l.method === '(started)').length, 2);
   assert.match(r.stdout, /\(Chrome exited or stopped answering: relaunching\)/);
+  // review-i023: never measure a just-launched Chrome. Run 1's Chrome idled through the 10 s recheck
+  // window; the relaunched one waits --chrome-warm (10 s, on the fake host clock here) before run 2
+  assert.deepEqual(res.results.map((x) => x.host.chromeWarmedSec), [0, 10]);
+  assert.match(r.stdout, /\(Chrome exited or stopped answering: relaunching\) \(Chrome warm-up 10 s\)/);
+  assert.equal(res.host.chromeWarmSec, 10);
+});
+
+test('review-i023: the watchdog starts once the lock is held, so a verify queued longer than --watchdog still measures', async () => {
+  const { d, env, args } = setup();
+  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'long-holder'], { env }).code, 0);
+  const p = nodeAsync(VERIFY, args('queued', ['--idle', '0', '--watchdog', '2']), { env, timeout: 60000 });
+  await sleep(4500); // > 2 x --watchdog in the queue
+  assert.deepEqual(JSON.parse(node(LOCK, ['status', 'chrome-measure', '--json'], { env }).stdout)[0].queue.map((w) => w.owner), ['queued'], 'still waiting, not killed');
+  assert.equal(node(LOCK, ['release', 'chrome-measure', '--owner', 'long-holder'], { env }).code, 0);
+  const r = await p;
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.stderr, /WATCHDOG/);
+  assert.ok(existsSync(join(d, 'result.json')));
 });
 
 test('I-023 watchdog: a step with no progress fails verify with a clear error, frees the lock and closes Chrome', async () => {
@@ -370,7 +388,7 @@ test('I-023 watchdog: a step with no progress fails verify with a clear error, f
   const t0 = Date.now();
   const r = await nodeAsync(VERIFY, args('hung', ['--idle', '0', '--watchdog', '2']), { env: { ...env, FAKE_CHROME_HANG_AT: 'Input.synthesizeScrollGesture' }, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
-  assert.match(r.stderr, /WATCHDOG: no progress for \d+ s in step "morph phase" \(mobile run 1\/1 a\) \(limit 2 s, --watchdog 2\); aborting so Chrome is closed and the chrome-measure lock is freed/);
+  assert.match(r.stderr, /WATCHDOG: no progress for \d+ s in step "morph phase" \(mobile run 1\/1 a\) \(limit 12 s, --watchdog 2\); aborting so Chrome is closed and the chrome-measure lock is freed/);
   assert.ok(Date.now() - t0 < 30000, 'failed within seconds, not after the hang');
   assert.equal(holder(env.FW_STATE_DIR), null, 'lock released');
   const chromePid = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === '(started)').pid;

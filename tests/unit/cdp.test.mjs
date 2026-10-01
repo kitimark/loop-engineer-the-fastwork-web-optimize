@@ -61,3 +61,39 @@ test('launch (port 0 via DevToolsActivePort), sessions, eval, events and errors 
   }
   assert.notEqual(ch.proc.exitCode ?? ch.proc.signalCode, null, 'close() stops the browser');
 });
+
+test('close(): resolves only once the browser is gone; one that ignores SIGTERM is SIGKILLed after the grace (I-023)', async () => {
+  process.env.CHROME = FAKE;
+  const d = tempDir('fw-cdp-close-');
+  // a well-behaved browser exits on SIGTERM: close() returns as soon as it did
+  const a = await cdp.launchChrome({ port: 0, profileDir: join(d, 'a') });
+  await a.close();
+  assert.notEqual(a.proc.exitCode ?? a.proc.signalCode, null, 'gone when close() resolves');
+  // a stubborn one: SIGTERM ignored, SIGKILL after graceMs, still gone when close() resolves
+  process.env.FAKE_CHROME_IGNORE_SIGTERM = '1';
+  try {
+    const b = await cdp.launchChrome({ port: 0, profileDir: join(d, 'b') });
+    const t0 = Date.now();
+    await b.close({ graceMs: 300 });
+    assert.equal(b.proc.signalCode, 'SIGKILL');
+    assert.ok(Date.now() - t0 >= 300, 'waited the grace first');
+  } finally { delete process.env.FAKE_CHROME_IGNORE_SIGTERM; }
+});
+
+test('killTree(): SIGKILLs a process and all its descendants, read before the root dies (I-023)', async () => {
+  const { spawn } = await import('node:child_process');
+  // parent -> child -> grandchild, all sleeping; the parent prints the two descendant pids
+  const grand = 'setTimeout(() => {}, 60000)';
+  const child = `const c = require('child_process').spawn(process.execPath, ['-e', ${JSON.stringify(grand)}], { stdio: 'ignore' }); console.log(c.pid); setTimeout(() => {}, 60000)`;
+  const parent = `const c = require('child_process').spawn(process.execPath, ['-e', ${JSON.stringify(child)}], { stdio: ['ignore', 'pipe', 'ignore'] }); c.stdout.once('data', (d) => console.log(c.pid + ' ' + String(d).trim())); setTimeout(() => {}, 60000)`;
+  const p = spawn(process.execPath, ['-e', parent], { stdio: ['ignore', 'pipe', 'ignore'] });
+  const line = await new Promise((res) => p.stdout.once('data', (d) => res(String(d).trim())));
+  const pids = [p.pid, ...line.split(' ').map(Number)];
+  const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+  assert.ok(pids.every(alive));
+  const killed = cdp.killTree(p.pid);
+  assert.deepEqual([...killed].sort(), [...pids].sort());
+  let left = pids;
+  for (let i = 0; i < 40 && (left = pids.filter(alive)).length; i++) await new Promise((r) => setTimeout(r, 50));
+  assert.deepEqual(left, [], 'descendants survived');
+});
