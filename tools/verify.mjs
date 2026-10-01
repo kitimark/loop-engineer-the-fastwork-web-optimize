@@ -362,6 +362,11 @@ async function diffImages(cdp, a, b) {
 function median(xs) { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; }
 
 async function main() {
+  // A signal must end verify through process.exit, so the 'exit' handlers run (lib/cdp.mjs kills the
+  // Chrome tree, lib/lock.mjs releases an own hold). lib/lock.mjs installs such handlers only for an own
+  // process hold; a verify that re-entered an outer hold (`lock.mjs run`, test:chrome) or ran with
+  // --no-lock died on SIGTERM with its Chrome left running (test:chrome on 48ace89).
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => process.exit(130));
   let lockHolder = null;
   if (!flag('no-lock')) {
     ({ holder: lockHolder } = await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel, idle: IDLE } }));

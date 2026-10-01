@@ -222,6 +222,21 @@ test('SIGTERM mid-run: lock released and the browser does not outlive verify.mjs
   assert.ok(gone, 'Chrome was left running (and would keep the profile dir locked for the next run)');
 });
 
+test('SIGTERM without an own lock hold (re-entered `lock.mjs run` hold, test:chrome, --no-lock): the browser does not outlive verify.mjs either', async () => {
+  // lib/lock.mjs installs its signal handlers only for an own process hold; verify.mjs installs its own
+  // so the exit handlers (Chrome tree kill) run (test:chrome on 48ace89 left 11 Chrome processes)
+  const { env, args } = setup();
+  const v = await startProc(process.execPath, [VERIFY, ...args('nolock', ['--no-lock'])], { env, ready: (s) => /\[mobile run 1\/1\]/.test(s) });
+  let started;
+  for (let i = 0; i < 200 && !(started = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === '(started)')); i++) await sleep(50);
+  assert.ok(alive(started.pid));
+  await v.stop('SIGTERM');
+  let gone = false;
+  for (let i = 0; i < 60 && !(gone = !alive(started.pid)); i++) await sleep(50);
+  if (!gone) process.kill(started.pid, 'SIGKILL');
+  assert.ok(gone, 'Chrome was left running after SIGTERM to a verify without its own hold');
+});
+
 test('browser crash mid-run: verify.mjs fails fast (no hang) and releases the lock', async () => {
   const { env, args } = setup();
   const t0 = Date.now();
