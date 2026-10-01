@@ -97,18 +97,71 @@ export function overscroll(seg) {
 }
 
 /**
- * Pin vs rubber-band fight at the end: direction reversals of scrollY of at least `minSwing` px while within
- * `zone` px of maxY (hysteresis: a reversal counts once the page has moved minSwing back from the extreme).
+ * The pin fight at the end of the page (research/architecture/finger-simulation.md §2 "Rubber band": "the end
+ * overscroll fights the pin: 5220<->5312/5334, 8-50 reversals per dwell"; §5(c) V1 "pin alternation ... >= 1 per
+ * push block on aw1-10c, 0-1 on mw-g"), from the recorder's frames and touches (review-gesture 4).
+ *
+ * Two counts over the frames within `zone` px of maxY (maxY per frame, from its innerHeight):
+ * - reversals: direction changes of scrollY by >= `minSwing` px (hysteresis: one counts when the page has moved
+ *   minSwing back from the last extreme; the first move only sets the direction). One 5220 -> 5312 -> 5220
+ *   cycle is up to 2 reversals.
+ * - excursions: round trips out past maxY + minSwing (counted on the way out; the next one needs a return to
+ *   <= maxY + 2 first). One cycle = 1 excursion.
+ * Each is split by touch phase, from the passive touch listeners (a frame belongs to the phase at its time):
+ * - touching: a finger is down (touchstart .. touchend/cancel of a sequence). A scripted stroke's finger moves
+ *   one way only (or holds still), so every reversal here is the page moving against the finger: the morph's
+ *   scrollTo pin fighting the drag/overscroll. This is the pin fight.
+ * - afterLift: from a touchend to the next touchstart. iOS's rubber band after a lift (or a fling into the end)
+ *   goes out and comes back once: <= 1 reversal and <= 1 excursion per lift window, a bounce. Anything more in
+ *   one window is oscillation: `extraReversals` = sum of max(0, reversals - 1) per window.
+ * - noTouch: before the first touch of the segment.
+ * fight = touching.reversals + afterLift.extraReversals; bounces = after-lift windows with exactly 1 reversal.
+ * The frames alone cannot tell a fight from a bounce (F2 in iphone-wave2: one 5260<->5412 bounce, judged by
+ * hand); the touch split is what can.
+ *
+ * Relation to iphone-wave2's "8 reversals" (fixes/iphone-wave2/README.md §2b, column "pin fight (scrollY
+ * reversals >= 20 px at the end)": E1 1, E1b 8, F1 0, F2 1, B2 ~50): those came from `record` frames only (no
+ * touches) and count round trips, i.e. `excursions`. On the same frames (docH 6035) this function gives
+ * excursions E1 2, E1b 7, F1 1, F2 2, B2 pass 2 46 (reversals 4, 13, 1, 2, 91). Compare the finger references
+ * with `excursions` (or with reversals / 2), and the V1 "per push block" criterion with `perMark`.
+ *
+ * Returns {reversals, excursions, touching, afterLift, noTouch, fight, bounces, touchData, perTouch, perMark,
+ * swings}. perTouch[k] (touch sequence k = stroke k when aligned): {touching, afterLift} reversal counts.
+ * perMark: {<mark name>: {reversals, excursions, touching, afterLift}} for the frames from that mark to the next
+ * ("(start)" before the first mark; a name used twice sums).
  */
 export function pinReversals(seg, { minSwing = 20, zone = 150 } = {}) {
   const mY = maxYOf(seg);
+  const seqs = touchSequences(seg);
+  const marks = [...(seg.marks || [])].sort((a, b) => a[0] - b[0]);
+  const touchData = (seg.touches || []).length > 0;
+  const z = () => ({ reversals: 0, excursions: 0 });
+  const out = { reversals: 0, excursions: 0, touching: z(), afterLift: { ...z(), windows: 0, extraReversals: 0 }, noTouch: z(), perTouch: seqs.map(() => ({ touching: 0, afterLift: 0 })), perMark: {}, swings: [] };
+  // phase at frame time t (frames come in time order): k = the last sequence that started at or before t
+  let k = -1;
+  const phaseAt = (t) => {
+    while (k + 1 < seqs.length && seqs[k + 1].start <= t) k++;
+    if (k < 0) return ['noTouch', -1];
+    return seqs[k].end === null || t <= seqs[k].end ? ['touching', k] : ['afterLift', k];
+  };
+  let mi = -1;
+  const markAt = (t) => { while (mi + 1 < marks.length && marks[mi + 1][0] <= t) mi++; return mi < 0 ? '(start)' : marks[mi][1]; };
+  const bump = (kind, t) => {
+    out[kind]++;
+    const [ph, q] = phaseAt(t);
+    out[ph][kind]++;
+    if (kind === 'reversals' && q >= 0) out.perTouch[q][ph]++;
+    const m = (out.perMark[markAt(t)] ??= { reversals: 0, excursions: 0, touching: 0, afterLift: 0 });
+    m[kind]++;
+    if (kind === 'reversals' && ph !== 'noTouch') m[ph]++;
+  };
   // dir 0: no direction yet (track min/max until the page has moved minSwing one way); then follow the
   // extreme in the current direction and count a reversal when the page is minSwing back from it.
-  let dir = 0, ext = null, lo = null, hi = null, count = 0;
-  const swings = [];
+  let dir = 0, ext = null, lo = null, hi = null, outside = false;
   for (const f of seg.frames || []) {
-    const y = f[2];
-    if (y < mY(f) - zone) { dir = 0; ext = lo = hi = null; continue; }
+    const y = f[2], top = mY(f);
+    if (y < top - zone) { dir = 0; ext = lo = hi = null; outside = false; continue; }
+    if (!outside && y >= top + minSwing) { outside = true; bump('excursions', f[0]); } else if (outside && y <= top + 2) outside = false;
     if (dir === 0) {
       lo = lo === null ? y : Math.min(lo, y); hi = hi === null ? y : Math.max(hi, y);
       if (y - lo >= minSwing) { dir = 1; ext = y; } else if (hi - y >= minSwing) { dir = -1; ext = y; }
@@ -116,12 +169,17 @@ export function pinReversals(seg, { minSwing = 20, zone = 150 } = {}) {
     }
     if (dir * (y - ext) > 0) { ext = y; continue; }
     if (Math.abs(y - ext) >= minSwing) {
-      count++;
-      if (swings.length < 60) swings.push([f[0], ext, y]);
+      bump('reversals', f[0]);
+      if (out.swings.length < 60) out.swings.push([f[0], ext, y]);
       dir = -dir; ext = y;
     }
   }
-  return { count, swings };
+  out.afterLift.windows = out.perTouch.filter((p) => p.afterLift > 0).length;
+  out.afterLift.extraReversals = out.perTouch.reduce((a, p) => a + Math.max(0, p.afterLift - 1), 0);
+  out.bounces = out.perTouch.filter((p) => p.afterLift === 1).length;
+  out.fight = out.touching.reversals + out.afterLift.extraReversals;
+  out.touchData = touchData;
+  return out;
 }
 
 /** Touch sequences (touchstart .. touchend/cancel) with their touchmove counts. */
@@ -195,6 +253,18 @@ export function morphStats(morphFrames, { skipFirst = true } = {}) {
   return { frames: act.length, p50: q(0.5), p95: q(0.95), gt50Pct: act.length ? Math.round((1000 * act.filter((x) => x > 50).length) / act.length) / 10 : null };
 }
 
+/** pinReversals() summaries of several segments added up (perMark by mark name). */
+function sumPin(pins) {
+  const add = (a, b) => { for (const [k, v] of Object.entries(b)) if (typeof v === 'number') a[k] = (a[k] || 0) + v; return a; };
+  const r = { reversals: 0, excursions: 0, fight: 0, bounces: 0, touching: {}, afterLift: {}, noTouch: {}, perMark: {}, touchData: pins.length > 0 && pins.every((p) => p.touchData) };
+  for (const p of pins) {
+    for (const k of ['reversals', 'excursions', 'fight', 'bounces']) r[k] += p[k];
+    for (const k of ['touching', 'afterLift', 'noTouch']) add(r[k], p[k]);
+    for (const [m, v] of Object.entries(p.perMark)) add((r.perMark[m] ??= {}), v);
+  }
+  return r;
+}
+
 /**
  * Whole-run summary. `segments`: recorder buffers (one per page load); `strokes`: the runner's per-stroke
  * records in execution order, each with `seg` (segment index) and `kin` (compiled kinematics).
@@ -204,14 +274,16 @@ export function summarizeRun(segments, strokes = [], { morph = [] } = {}) {
     const seqs = touchSequences(seg);
     const mine = strokes.filter((s) => s.seg === i);
     const aligned = seqs.length === mine.length;
+    const pin = pinReversals(seg);
     const perStroke = mine.map((s, k) => {
       const q = aligned ? seqs[k] : null;
       const next = aligned && seqs[k + 1] ? seqs[k + 1].start : Infinity;
       const m = q && q.end !== null ? momentumTau(seg, q.end, { tNext: next }) : null;
-      return { id: s.id, profile: s.kin.profile, dir: s.kin.dir, px: s.kin.px, liftoffPxPerS: s.kin.liftoffPxPerS, touchStart: q?.start ?? null, contactMs: q && q.end !== null ? Math.round(q.end - q.start) : null, touchmoves: q?.moves ?? null, prevented: q?.prevented ?? null, moveHz: q?.moveHz ?? null, startY: q?.startY ?? null, tauS: m?.tauS ?? null, postReleaseTravelPx: m?.travelPx ?? null };
+      return { id: s.id, profile: s.kin.profile, dir: s.kin.dir, px: s.kin.px, liftoffPxPerS: s.kin.liftoffPxPerS, touchStart: q?.start ?? null, contactMs: q && q.end !== null ? Math.round(q.end - q.start) : null, touchmoves: q?.moves ?? null, prevented: q?.prevented ?? null, moveHz: q?.moveHz ?? null, startY: q?.startY ?? null, tauS: m?.tauS ?? null, postReleaseTravelPx: m?.travelPx ?? null, pinTouching: aligned ? pin.perTouch[k].touching : null, pinAfterLift: aligned ? pin.perTouch[k].afterLift : null };
     });
+    const { perTouch, swings, ...pinSum } = pin;
     return {
-      href: seg.href, frames: (seg.frames || []).length, bands: frameBands(seg), toolbar: toolbarTransitions(seg.frames || []), overscroll: overscroll(seg), pin: { count: pinReversals(seg).count },
+      href: seg.href, frames: (seg.frames || []).length, bands: frameBands(seg), toolbar: toolbarTransitions(seg.frames || []), overscroll: overscroll(seg), pin: { ...pinSum, swings: swings.slice(0, 20) },
       touchmove: touchmoveStats(seg), touchSequences: seqs.length, strokes: mine.length, aligned, perStroke,
     };
   });
@@ -222,7 +294,7 @@ export function summarizeRun(segments, strokes = [], { morph = [] } = {}) {
     segments: segOut,
     touchmove: { ...tm, preventedPct: tm.total ? Math.round((1000 * tm.prevented) / tm.total) / 10 : null, endPreventedPct: tm.endTotal ? Math.round((1000 * tm.endPrevented) / tm.endTotal) / 10 : null },
     toolbar: { transitions: tb.length, medianMs: median(tb), minMs: tb.length ? Math.min(...tb) : null, maxMs: tb.length ? Math.max(...tb) : null },
-    pinReversals: segOut.reduce((a, s) => a + s.pin.count, 0),
+    pin: sumPin(segOut.map((s) => s.pin)),
     overscroll: { minY: Math.min(...segOut.map((s) => s.overscroll.minY ?? Infinity)), maxOverPx: Math.max(...segOut.map((s) => s.overscroll.maxOverPx ?? -Infinity)) },
     momentum: { flings: flings.length, tauMedianS: median(flings), tauS: flings },
     morph: morph.length ? morphStats(morph.flatMap((m) => (m.frames || []).slice(1)), { skipFirst: false }) : null,

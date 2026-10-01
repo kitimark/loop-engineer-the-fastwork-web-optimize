@@ -4,6 +4,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { REPO } from '../helpers.mjs';
 import { RECORDER_JS, READ_JS, STATE_JS, markJs, toolbarTransitions, pinReversals, overscroll, touchSequences, touchmoveStats, momentumTau, frameBands, morphStats, summarizeRun } from '../../tools/lib/gesture-rec.mjs';
 
 function fakeWindow() {
@@ -89,10 +92,55 @@ test('pinReversals and overscroll at the end: 5220 <-> 5312 fights count, small 
   const ys = [4000, 5000, 5220, 5230, 5312, 5300, 5220, 5225, 5334, 5220, 5215, 5222, 3000, 3100, 3000];
   const seg = { ...END, frames: ys.map((y, i) => F(i * 17, y)) };
   const p = pinReversals(seg);
-  assert.equal(p.count, 3, JSON.stringify(p.swings)); // 5312->5220, 5220->5334, 5334->5220 (the first push up only sets the direction)
-  assert.deepEqual(pinReversals({ ...END, frames: [5220, 5230, 5221, 5229, 5222].map((y, i) => F(i, y)) }).count, 0, 'jitter < 20 px');
+  assert.equal(p.reversals, 3, JSON.stringify(p.swings)); // 5312->5220, 5220->5334, 5334->5220 (the first push up only sets the direction)
+  assert.equal(p.excursions, 2, 'two round trips past maxY + 20: 5312, 5334');
+  assert.deepEqual([p.touchData, p.noTouch, p.touching.reversals, p.fight], [false, { reversals: 3, excursions: 2 }, 0, 0], 'no touches recorded: all in noTouch');
+  assert.deepEqual(p.perMark, { '(start)': { reversals: 3, excursions: 2, touching: 0, afterLift: 0 } });
+  assert.deepEqual(pinReversals({ ...END, frames: [5220, 5230, 5221, 5229, 5222].map((y, i) => F(i, y)) }).reversals, 0, 'jitter < 20 px');
   assert.deepEqual(overscroll(seg), { minY: 3000, maxOverPx: 114, atY: 5334 });
   assert.equal(overscroll({ ...END, frames: [F(0, 10), F(1, -74), F(2, 0)] }).minY, -74);
+});
+
+test('pinReversals splits by touch phase and mark window: a fight while touching, a bounce after lift, oscillation after lift (review-gesture 4)', () => {
+  const T = (t, k, n) => [t, k, n, 1, 0, 5220, 500];
+  const seg = {
+    ...END,
+    marks: [[0, 'push1'], [75, 'push2']],
+    touches: [T(1, 's', 1), T(55, 'e', 0), T(80, 's', 1), T(95, 'e', 0)],
+    frames: [[0, 5220], [10, 5260], [20, 5312], [30, 5220], [40, 5312], [50, 5312], [60, 5250], [70, 5220], [90, 5225], [100, 5300], [110, 5220], [120, 5300], [130, 5220]].map(([t, y]) => F(t, y)),
+  };
+  const p = pinReversals(seg);
+  // push 1: held at the end, the page alternates against the still finger (2 reversals touching), then one
+  // return after the lift (a bounce); push 2: after its lift the page keeps oscillating (4 reversals)
+  assert.deepEqual([p.reversals, p.excursions], [7, 4]);
+  assert.deepEqual(p.touching, { reversals: 2, excursions: 2 });
+  assert.deepEqual(p.afterLift, { reversals: 5, excursions: 2, windows: 2, extraReversals: 3 });
+  assert.deepEqual(p.noTouch, { reversals: 0, excursions: 0 });
+  assert.deepEqual(p.perTouch, [{ touching: 2, afterLift: 1 }, { touching: 0, afterLift: 4 }]);
+  assert.equal(p.bounces, 1);
+  assert.equal(p.fight, 5, 'touching 2 + after-lift reversals beyond one per lift 3');
+  assert.equal(p.touchData, true);
+  assert.deepEqual(p.perMark, { push1: { reversals: 3, excursions: 2, touching: 2, afterLift: 1 }, push2: { reversals: 4, excursions: 2, touching: 0, afterLift: 4 } });
+  // summarizeRun: per stroke (aligned) and whole-run sums
+  const kin = { profile: 'still', dir: 'up', px: 300, liftoffPxPerS: 0 };
+  const r = summarizeRun([seg, seg], [0, 1, 0, 1].map((s, i) => ({ id: `s${i + 1}`, seg: s, kin })).sort((a, b) => a.seg - b.seg));
+  assert.deepEqual(r.segments[0].perStroke.map((x) => [x.pinTouching, x.pinAfterLift]), [[2, 1], [0, 4]]);
+  assert.deepEqual([r.pin.reversals, r.pin.excursions, r.pin.fight, r.pin.bounces, r.pin.touching.reversals, r.pin.afterLift.extraReversals], [14, 8, 10, 2, 4, 6]);
+  assert.deepEqual(r.pin.perMark.push2, { reversals: 8, excursions: 4, touching: 0, afterLift: 8 });
+});
+
+test('pinReversals vs iphone-wave2\'s finger counts (frames only): excursions are its round trips, reversals about twice', () => {
+  const raw = join(REPO, 'fixes', 'iphone-wave2', 'raw');
+  if (!existsSync(join(raw, 'finger-E1b.json'))) return; // documented calibration; the data lives with that topic
+  const count = (f) => JSON.parse(readFileSync(join(raw, f), 'utf8')).segments.map((s) => pinReversals({ docH: 6035, ...s })).reduce((a, p) => [a[0] + p.excursions, a[1] + p.reversals], [0, 0]);
+  // wave2 README §2b: E1 1, E1b 8, F1 0, F2 1 (judged a bounce), B2 ~50 (pass 2)
+  assert.deepEqual(count('finger-E1b.json'), [7, 13]);
+  assert.deepEqual(count('finger-F1.json'), [1, 1]);
+  assert.deepEqual(count('finger-F2.json'), [2, 2]);
+  assert.deepEqual(count('finger-E1.json'), [2, 4]);
+  const b2 = JSON.parse(readFileSync(join(raw, 'finger-B2.json'), 'utf8')).segments[1];
+  const p = pinReversals({ docH: 6035, ...b2 });
+  assert.deepEqual([p.excursions, p.reversals], [46, 91]);
 });
 
 test('touch sequences and touchmove stats: prevented ratio overall and at the end', () => {

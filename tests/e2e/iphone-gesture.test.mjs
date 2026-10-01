@@ -120,6 +120,10 @@ test('gesture end to end on the fake phone: strokes as real touches, recorder, m
   const still = sm.segments[0].perStroke.find((p) => p.profile === 'still' && p.dir === 'down');
   assert.equal(still.tauS, null, 'no momentum after a still stroke');
   assert.ok(sm.toolbar.transitions >= 1);
+  // pin fight split by touch phase (review-gesture 4): touch data present, a count per stroke (the fake clamps at maxY: no fight)
+  assert.equal(sm.pin.touchData, true);
+  assert.ok(sm.segments[0].perStroke.every((p) => Number.isInteger(p.pinTouching) && Number.isInteger(p.pinAfterLift)));
+  assert.equal(sm.pin.fight, 0);
   // loops: the traverse ended at the end, the fling-to-top loop at the top
   assert.equal(doc.run.loops[0].until, 'atEnd');
   assert.equal(doc.run.loops.at(-1).until, 'atTop');

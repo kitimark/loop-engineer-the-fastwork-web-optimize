@@ -294,7 +294,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   if (res.aborted) res.aborted = scrub(res.aborted);
   doc.summary = summarizeRun(res.segments, res.strokes, { morph: res.morph });
   writeFileSync(out, JSON.stringify(doc));
-  log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, toolbar: doc.summary.toolbar, pinReversals: doc.summary.pinReversals, overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));
+  log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));
   log(`saved ${out}`);
   if (res.aborted) throw new Error(`gesture run aborted: ${res.aborted} (partial data saved in ${out})`);
   return 0;
