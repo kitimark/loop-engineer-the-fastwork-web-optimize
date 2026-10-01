@@ -72,6 +72,11 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
   }
   assert.equal(typeof x.host.loadInvalid, 'boolean');
   assert.equal(x.host.recheck.windows >= 1, true);
+  // I-023/I-026: real sleep detection (monotonic vs wall clock, kern.waketime) and one Chrome, not relaunched
+  assert.equal(typeof x.host.sleptSec, 'number');
+  assert.ok(x.host.sleptSec < 2 || x.host.loadInvalid, `slept ${x.host.sleptSec} s but not contaminated`);
+  assert.equal(x.host.chromeRelaunched, false);
+  assert.equal(typeof x.host.recheck.suspended, 'boolean');
   assert.deepEqual(Object.keys(x.origins).filter((o) => !/^https:\/\/localhost:\d+/.test(o) && !o.startsWith('data:')), [], 'no request left the machine');
 });
 
@@ -79,6 +84,8 @@ test('verify.mjs: SIGTERM mid-run closes the dedicated Chrome', async () => {
   const profile = join(d, 'profile-kill');
   const v = await startProc(process.execPath, [tool('verify.mjs'), `fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '2', '--no-screens', '--out', join(d, 'out2'), '--profile', profile, '--owner', OWNER + '-kill', '--max-wait', '0'], { env: { ...REAL_HOST, ...lock.env }, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 600000 });
   const chromeUp = () => run('pgrep', ['-f', `user-data-dir=${profile}`]).stdout.trim();
+  // Chrome starts right after the run's header line (after the host recheck, I-023)
+  for (let i = 0; i < 100 && !chromeUp(); i++) await sleep(100);
   assert.ok(chromeUp(), 'Chrome is running with the dedicated profile');
   await v.stop('SIGTERM');
   let left = chromeUp();

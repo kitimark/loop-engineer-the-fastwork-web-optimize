@@ -7,6 +7,8 @@
 //
 // Env: FAKE_CHROME_LOG=<file>  append one JSON line per CDP command ({pid, method, params, sessionId})
 //      FAKE_CHROME_CRASH_AT=<method>  exit abruptly (no reply) when this CDP method arrives, like a browser crash
+//      FAKE_CHROME_HANG_AT=<method>   never answer this CDP method (a hung browser; verify's watchdog, I-023)
+//      FAKE_CHROME_EXIT_AFTER=<method>  answer it, then exit at the next command (a browser gone between runs, I-023)
 import http from 'node:http';
 import { createHash } from 'node:crypto';
 import { writeFileSync, appendFileSync } from 'node:fs';
@@ -45,11 +47,16 @@ function evaluate(expr) {
   return undefined;
 }
 
-let n = 0;
+let n = 0, dying = false;
 function handle(msg, send) {
   const { id, method, params = {}, sessionId } = msg;
   log({ method, params: method === 'Runtime.evaluate' ? { expression: params.expression.slice(0, 120) } : params, sessionId });
   if (process.env.FAKE_CHROME_CRASH_AT === method) { log({ method: '(crash)', params: {} }); process.exit(1); }
+  if (process.env.FAKE_CHROME_HANG_AT === method) { log({ method: '(hang)', params: {} }); return; } // never answers
+  // FAKE_CHROME_EXIT_AFTER: answer that method, then exit (unanswered) at the next command, like a browser
+  // that went away between runs; deterministic, unlike a timer racing verify's next call
+  if (dying) { log({ method: '(exit-after)', params: {} }); process.exit(0); }
+  if (process.env.FAKE_CHROME_EXIT_AFTER === method) dying = true;
   const reply = (result) => send({ id, result, ...(sessionId ? { sessionId } : {}) });
   const event = (m, p) => send({ method: m, params: p, sessionId });
   if (method.startsWith('Input.')) input = true;

@@ -32,14 +32,19 @@
 // max memory pressure and decompressions/s. `host.loadInvalid` (contaminated) when load1 at start > 10,
 // other CPU in the scroll phase > 25 %, memory pressure >= warn, or the lock was granted by the gate's
 // timeout; `host.loadWarn` at load1 > 6 or other CPU > 20 %.
+// Sleep and hangs (incident I-023; the Mac's Maintenance Sleep, I-026): the recheck runs before Chrome is
+// launched (run 1) or while it is pinged (later runs), stops after --max-wait s of wall time or at a host
+// sleep, and a Chrome that exited or stopped answering is relaunched before the run (host.chromeRelaunched,
+// a warning). host.sleptSec / host.woke: a sleep inside the run makes it contaminated. [--watchdog 300]: a
+// step with no progress for that many seconds (monotonic, plus the step's own budget) fails verify with a
+// WATCHDOG error, which closes Chrome and frees the lock; 0 = off.
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
-import os from 'node:os';
 import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
 import { LOGGER, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
-import { THRESHOLDS, snapshot, waitQuiet, treeCpuSec, classifyRun } from './lib/host.mjs';
+import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo } from './lib/host.mjs';
 
 const ROOT = REPO;
 const argv = process.argv.slice(2);
@@ -63,7 +68,68 @@ if (!Number.isFinite(IDLE) || IDLE < 0) { console.error(`--idle must be a number
 const num = (n, d) => { const v = Number(opt(n, d)); if (!Number.isFinite(v) || v < 0) { console.error(`--${n} must be a number >= 0 (got "${opt(n)}")`); process.exit(2); } return v; };
 const MAX_WAIT = num('max-wait', THRESHOLDS.recheckMaxWaitSec);
 const QUIET = { ...THRESHOLDS, quietMaxLoad1: num('max-load', THRESHOLDS.quietMaxLoad1), quietMaxBusyPct: num('max-busy', THRESHOLDS.quietMaxBusyPct) };
+const WATCHDOG = num('watchdog', THRESHOLDS.watchdogStallSec);
 mkdirSync(OUT, { recursive: true });
+
+// ---- watchdog (incident I-023) --------------------------------------------------------------------
+// Every step of the measurement calls progress(step, extraSec). A step that makes no progress for
+// --watchdog s (+ its own extra: the recheck's --max-wait, the scroll eval's 600 s timeout, --idle)
+// fails verify with a clear error; the exit handlers then free the chrome-measure lock and kill Chrome.
+// Measured on the process's monotonic clock: a host sleep (I-026) stops it too, so a sleep is not a
+// stall; a run with a sleep in it is flagged by the host record instead. --watchdog 0 = off.
+const wd = { step: 'start', extraSec: 0, at: performance.now(), where: '' };
+function progress(step, extraSec = 0) { wd.step = step; wd.extraSec = extraSec; wd.at = performance.now(); }
+if (WATCHDOG > 0) {
+  setInterval(() => {
+    const idle = (performance.now() - wd.at) / 1000;
+    if (idle <= WATCHDOG + wd.extraSec) return;
+    console.error(`\nverify.mjs: WATCHDOG: no progress for ${Math.round(idle)} s in step "${wd.step}"${wd.where ? ` (${wd.where})` : ''} (limit ${WATCHDOG + wd.extraSec} s, --watchdog ${WATCHDOG}); aborting so Chrome is closed and the chrome-measure lock is freed (incident I-023)`);
+    process.exit(1);
+  }, Math.min(5000, Math.max(100, WATCHDOG * 250))).unref();
+}
+
+// ---- the browser: launched after the first host recheck, checked before every run (I-023) ---------
+// One Chrome serves all runs (each run gets a fresh isolated context), as before. New: it starts only
+// after the first recheck (not during a long wait), and before every later run it must answer
+// Browser.getVersion (also pinged after every recheck window); if it exited or stopped answering, verify
+// relaunches it and flags that run (host.chromeRelaunched; I-023 A/A: CDP closed during a 60 s recheck).
+let browser = null, launches = 0;
+const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${what}: no answer in ${ms} ms`)), ms).unref())]);
+async function openChrome() {
+  progress('chrome launch');
+  const ch = await launchChrome({ port: Number(opt('port', 0)), profileDir: resolve(ROOT, opt('profile', 'out/chrome-verify-profile')) });
+  let exited = false;
+  ch.proc.on('exit', () => { exited = true; });
+  const cdp = await CDP.connect(ch.wsUrl);
+  // allow the mirror's self-signed --https certificate (this dedicated Chrome only)
+  await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true }).catch(() => {});
+  launches++;
+  browser = { ch, cdp, exited: () => exited };
+}
+async function chromeAlive() {
+  if (!browser || browser.exited() || browser.cdp.closedError) return false;
+  try { await withTimeout(browser.cdp.send('Browser.getVersion'), 10000, 'Browser.getVersion'); return true; } catch { return false; }
+}
+async function closeChrome() { const b = browser; browser = null; if (b) { b.cdp.close(); await b.ch.close(); } }
+/** Chrome up and answering before a run; returns true when it had to be relaunched. */
+async function ensureChrome() {
+  if (browser && (await chromeAlive())) return false;
+  const relaunch = !!browser;
+  if (relaunch) { process.stdout.write('(Chrome exited or stopped answering: relaunching) '); await closeChrome(); }
+  await openChrome();
+  return relaunch;
+}
+/** The host recheck before a run (I-017), capped in wall time (I-023); pings Chrome after every window. */
+async function recheckHost() {
+  if (!(MAX_WAIT > 0)) return null;
+  progress('host recheck', MAX_WAIT + 60);
+  const w = await waitQuiet({ maxWaitSec: MAX_WAIT, thresholds: QUIET, onSample: async () => { progress('host recheck', MAX_WAIT + 60); if (browser) await chromeAlive(); } });
+  const recheck = { quiet: w.quiet, waitedSec: w.waitedSec, windows: w.windows, reasons: w.reasons, sleptSec: w.sleptSec, suspended: w.suspended, last: w.last };
+  if (w.suspended) process.stdout.write(`(the host slept ${w.sleptSec} s during the recheck; measuring now) `);
+  else if (!w.quiet) process.stdout.write(`(host not quiet after ${w.waitedSec} s: ${w.reasons.join(', ')}; measuring anyway) `);
+  else if (w.windows > 1) process.stdout.write(`(waited ${w.waitedSec} s for a quiet host) `);
+  return recheck;
+}
 
 // ---- host record per phase (tools/lib/host.mjs) ---------------------------------------------------
 // start: Chrome's tree CPU (ps) first, then the tick snapshot; end: ticks first, then ps. So the ps and
@@ -138,18 +204,12 @@ function summarize(perf) {
   };
 }
 
-async function measure(cdp, t, vpName, run, { chromePid, gate } = {}) {
+async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, chromeRelaunched = false } = {}) {
   const vp = VIEWPORTS[vpName];
-  let recheck = null;
-  if (MAX_WAIT > 0) {
-    const w = await waitQuiet({ maxWaitSec: MAX_WAIT, thresholds: QUIET });
-    recheck = { quiet: w.quiet, waitedSec: w.waitedSec, windows: w.windows, reasons: w.reasons, last: w.last };
-    if (!w.quiet) process.stdout.write(`(host not quiet after ${w.waitedSec} s: ${w.reasons.join(', ')}; measuring anyway) `);
-    else if (w.windows > 1) process.stdout.write(`(waited ${w.waitedSec} s for a quiet host) `);
-  }
   const hostPhases = {};
   const runStart = await snapshot();
   const loadBefore = runStart.load1;
+  progress('open page');
   const page = await cdp.newIsolatedPage();
   const requests = [];
   const errors = [];
@@ -168,7 +228,9 @@ async function measure(cdp, t, vpName, run, { chromePid, gate } = {}) {
   await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
   await page.send('Page.addScriptToEvaluateOnNewDocument', { source: LOGGER });
   await page.send('Page.bringToFront');
+  progress('load + settle', 60);
   await gotoAndSettle(page, t.url, { quietMs: 2000 });
+  progress('settle + throttle', 10);
   await sleep(1500);
   const state = await page.eval(`({
     kit: Object.keys(window).filter(k => k.startsWith('__sveltekit')),
@@ -184,12 +246,14 @@ async function measure(cdp, t, vpName, run, { chromePid, gate } = {}) {
   // idle phase: same logger, no input, at the top of the page (before any scrolling)
   let idlePerf = null;
   if (IDLE > 0) {
+    progress('idle phase', IDLE);
     const h = await hostStart(chromePid);
     await page.eval(RESET);
     await sleep(IDLE * 1000);
     idlePerf = await page.eval(COLLECT_AT);
     hostPhases.idle = await hostEnd(h, chromePid);
   }
+  progress('scroll phase', 600); // the scroll eval has its own 600 s timeout
   let h = await hostStart(chromePid);
   await page.eval(RESET);
   const scroll = await page.eval(SCROLL, { timeout: 600000 });
@@ -198,6 +262,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate } = {}) {
   hostPhases.scroll = await hostEnd(h, chromePid);
 
   // morph phase: push past the end (wheel on desktop, touch drag on mobile)
+  progress('morph phase');
   h = await hostStart(chromePid);
   await page.eval(RESET);
   if (vp.mobile) {
@@ -211,6 +276,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate } = {}) {
   const morphState = await page.eval(`document.querySelector('.start-selling-top-nav')?.className`);
   await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
 
+  progress('screenshots', 120);
   const shots = {};
   if (SCREENS && run === 0) {
     // Screenshots from a fresh load (unthrottled), walking down the page in small steps so the
@@ -234,13 +300,16 @@ async function measure(cdp, t, vpName, run, { chromePid, gate } = {}) {
   for (const r of requests) { try { const o = new URL(r.url).origin; const k = o + (r.failed ? ' (blocked/failed)' : ''); origins[k] = (origins[k] || 0) + 1; } catch {} }
   const firstParty = requests.filter((r) => { try { const u = new URL(r.url); return u.origin === new URL(t.url).origin; } catch { return false; } });
   const runEnd = await snapshot();
+  progress('report');
   const pressures = Object.values(hostPhases).map((p) => p.pressureMax).filter((x) => x != null);
+  const sl = slept(runStart, runEnd); // did the Mac sleep during the run (I-026)?
   const hostRec = {
     load1Start: runStart.load1, load1End: runEnd.load1, freeMemMB: runStart.freeMemMB, freeMemMBEnd: runEnd.freeMemMB,
+    sleptSec: sl.sleptSec, woke: sl.woke, chromeRelaunched,
     recheck, gate: gate || null, phases: hostPhases,
     ...(runStart.stub ? { stub: runStart.stub } : {}),
   };
-  Object.assign(hostRec, classifyRun({ load1Start: runStart.load1, otherBusyPct: hostPhases.scroll?.otherBusyPct, pressureMax: pressures.length ? Math.max(...pressures) : null, gateTimeout: !!gate?.gateTimeout, recheckQuiet: recheck ? recheck.quiet : undefined }));
+  Object.assign(hostRec, classifyRun({ load1Start: runStart.load1, otherBusyPct: hostPhases.scroll?.otherBusyPct, pressureMax: pressures.length ? Math.max(...pressures) : null, gateTimeout: !!gate?.gateTimeout, recheckQuiet: recheck ? recheck.quiet : undefined, sleptSec: sl.sleptSec, woke: sl.woke, recheckSleptSec: recheck?.sleptSec, chromeRelaunched }));
   return {
     label: t.label, url: t.url, viewport: vpName, run, loadavg1: { before: r1(loadBefore), after: r1(runEnd.load1) }, host: hostRec, state, scroll, morphState, shots, shimStats,
     idleSummary: idlePerf ? { ...summarize(idlePerf), scrollY: idlePerf.scrollY } : null, scrollSummary: summarize(scrollPerf), morphSummary: summarize(morphPerf),
@@ -281,33 +350,35 @@ async function main() {
   }
   // the lock's host admission gate (tools/lib/lock.mjs): how this hold (or the outer one we re-entered) was granted
   const gate = lockHolder?.gate ? { ...lockHolder.gate, gateTimeout: !!lockHolder.gateTimeout } : null;
-  const ch = await launchChrome({ port: Number(opt('port', 0)), profileDir: resolve(ROOT, opt('profile', 'out/chrome-verify-profile')) });
-  const cdp = await CDP.connect(ch.wsUrl);
-  // allow the mirror's self-signed --https certificate (this dedicated Chrome only)
-  await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true }).catch(() => {});
   const results = [];
   try {
     for (const vpName of vpList) {
       for (let run = 0; run < RUNS; run++) {
         const order = run % 2 ? [...targets].reverse() : targets; // ABBA: cancel slow drift across a session
         for (const t of order) {
+          wd.where = `${vpName} run ${run + 1}/${RUNS} ${t.label}`;
           process.stdout.write(`[${vpName} run ${run + 1}/${RUNS}] ${t.label} ${t.url} ... `);
-          const r = await measure(cdp, t, vpName, run, { chromePid: ch.proc.pid, gate });
+          const recheck = await recheckHost(); // before (re)launching Chrome: no idle browser during a long wait
+          const chromeRelaunched = await ensureChrome();
+          const r = await measure(browser.cdp, t, vpName, run, { chromePid: browser.ch.proc.pid, gate, recheck, chromeRelaunched });
           results.push(r);
           const s = r.scrollSummary;
           console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}`);
         }
       }
       if (SCREENS && targets.length > 1) {
+        wd.where = `${vpName} screenshot diff`;
+        progress('screenshot diff', 60);
+        await ensureChrome();
         const ref = targets[0];
         for (const t of targets.slice(1)) for (const name of ['top', 'middle', 'bottom']) {
           const a = join(OUT, `${vpName}-${ref.label}-${name}.png`), b = join(OUT, `${vpName}-${t.label}-${name}.png`);
-          const d = await diffImages(cdp, a, b).catch((e) => ({ error: e.message }));
+          const d = await diffImages(browser.cdp, a, b).catch((e) => ({ error: e.message }));
           results.push({ diff: true, viewport: vpName, a: ref.label, b: t.label, shot: name, ...d });
         }
       }
     }
-  } finally { cdp.close(); await ch.close(); }
+  } finally { progress('close'); await closeChrome(); }
 
   // ---- report ----------------------------------------------------------------------------------
   const rows = [];
@@ -332,7 +403,7 @@ async function main() {
   const measured = results.filter((r) => !r.diff);
   const invalid = measured.filter((r) => r.host.loadInvalid), warn = measured.filter((r) => !r.host.loadInvalid && r.host.loadWarn);
   const hostSum = {
-    cpus: os.cpus().length, model: os.cpus()[0]?.model, loadavg: os.loadavg(),
+    ...(await hostInfo()), chromeLaunches: launches, watchdogSec: WATCHDOG,
     thresholds: THRESHOLDS, recheck: { maxWaitSec: MAX_WAIT, maxLoad1: QUIET.quietMaxLoad1, maxBusyPct: QUIET.quietMaxBusyPct }, gate,
     contaminated: invalid.length > 0, contaminatedRuns: invalid.length, warnRuns: warn.length, runsTotal: measured.length,
     ...(measured[0]?.host.stub ? { stub: measured[0].host.stub } : {}),

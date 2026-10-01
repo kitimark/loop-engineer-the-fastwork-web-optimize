@@ -5,17 +5,26 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { TESTS, node } from '../helpers.mjs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { TESTS, node, cleanEnv, tempDir } from '../helpers.mjs';
 import * as host from '../../tools/lib/host.mjs';
 
 const FAKE_HOST = join(TESTS, 'fixtures', 'fake-host.mjs');
 
-/** Synthetic host: 8 CPUs, a fake clock advanced by sleep(), busy/load/pressure from functions of fake time. */
-function fakeSamplers({ busy = () => 0.1, load = () => 2, pressure = () => 1, decomp = () => 0, procs } = {}) {
-  let t = 1_000_000, busyMs = 0, totalMs = 0, last = t, dec = 0;
-  const adv = () => { const dt = t - last; last = t; totalMs += dt; busyMs += dt * busy(t); dec += (dt / 1000) * decomp(t); };
+/**
+ * Synthetic host: 8 CPUs, a fake monotonic clock t advanced by sleep(), busy/load/pressure from functions
+ * of fake time. suspend: [{at, sec}]: the host sleeps sec s once t passes at (wall clock jumps, ticks and
+ * t stand still, wake changes), like the Maintenance Sleep of I-026.
+ */
+function fakeSamplers({ busy = () => 0.1, load = () => 2, pressure = () => 1, decomp = () => 0, procs, suspend = [] } = {}) {
+  let t = 1_000_000, busyMs = 0, totalMs = 0, last = t, dec = 0, jump = 0, wake = 1;
+  const sus = suspend.map((x) => ({ ...x, done: false }));
+  const check = () => { for (const x of sus) if (!x.done && t >= x.at) { x.done = true; jump += x.sec * 1000; wake++; } };
+  const adv = () => { check(); const dt = t - last; last = t; totalMs += dt; busyMs += dt * busy(t); dec += (dt / 1000) * decomp(t); };
   return {
-    now: () => t,
+    now: () => { check(); return t + jump; },
+    mono: () => { check(); return t; },
+    wake: () => { check(); return wake; },
     sleep: async (ms) => { t += ms; },
     cpus: () => { adv(); return Array.from({ length: 8 }, () => ({ times: { user: busyMs * 0.75, nice: 0, sys: busyMs * 0.25, idle: totalMs - busyMs, irq: 0 } })); },
     loadavg: () => [load(t), 0, 0],
@@ -31,6 +40,7 @@ test('THRESHOLDS: the documented defaults; FW_GATE_* env overrides; bad values a
   assert.deepEqual({ ...host.DEFAULTS }, {
     quietMaxBusyPct: 20, quietMaxLoad1: 6, quietMaxPressure: 1, quietMinWindowSec: 10, gateMaxWaitSec: 600, recheckMaxWaitSec: 60,
     invalidLoad1: 10, invalidOtherBusyPct: 25, invalidPressure: 2, warnLoad1: 6, warnOtherBusyPct: 20,
+    suspendMinSec: 2, watchdogStallSec: 300,
   });
   const t = host.thresholds({ FW_GATE_MAX_LOAD1: '4', FW_GATE_MAX_BUSY: '15', FW_GATE_MAX_WAIT: '120' });
   assert.equal(t.quietMaxLoad1, 4);
@@ -101,6 +111,38 @@ test('waitQuiet(): 10 s windows until quiet, or gives up after maxWaitSec (alway
   assert.equal((await host.waitQuiet({ maxWaitSec: 0, samplers: fakeSamplers({ busy: () => 0.9 }) })).windows, 1);
 });
 
+test('waitQuiet() on a host that stays busy past every window: stops at the cap, never later (I-023)', async () => {
+  // busy for the whole wait and beyond: exactly ceil(maxWait / window) windows, waitedSec = the cap
+  const s = fakeSamplers({ busy: () => 0.3 });
+  const t0 = s.t;
+  const r = await host.waitQuiet({ maxWaitSec: 60, samplers: s });
+  assert.deepEqual({ quiet: r.quiet, windows: r.windows, waitedSec: r.waitedSec, sleptSec: r.sleptSec, suspended: r.suspended }, { quiet: false, windows: 6, waitedSec: 60, sleptSec: 0, suspended: false });
+  assert.equal(s.t - t0, 60000, 'no time spent past the cap');
+  const odd = await host.waitQuiet({ maxWaitSec: 25, samplers: fakeSamplers({ busy: () => 0.3 }) });
+  assert.deepEqual([odd.windows, odd.waitedSec], [3, 30], 'a cap between windows ends after the window that crosses it');
+});
+
+test('waitQuiet() across a host sleep: ends at once with the sleep recorded; the wall-time cap holds (I-023, I-026)', async () => {
+  // the A/B of I-023: busy host, the Mac sleeps 1890 s in the 2nd window; before the fix the wait ran on
+  // for 6 windows and 1953 s of wall time
+  const s = fakeSamplers({ busy: () => 0.3, suspend: [{ at: 1_015_000, sec: 1890 }] });
+  const seen = [];
+  const r = await host.waitQuiet({ maxWaitSec: 60, samplers: s, onSample: (x) => seen.push([x.sleptSec, x.suspended]) });
+  assert.equal(r.windows, 2, 'the window with the sleep is the last one');
+  assert.equal(r.suspended, true);
+  assert.equal(r.sleptSec, 1890);
+  assert.equal(r.waitedSec, 1910, 'wall time, sleep included');
+  assert.equal(r.quiet, false);
+  assert.deepEqual(seen, [[0, false], [1890, true]]);
+  // slept(): wall minus monotonic, or a new wake time alone
+  assert.deepEqual(host.slept({ at: 0, mono: 0, wakeAt: 5 }, { at: 12000, mono: 10000, wakeAt: 5 }), { sleptSec: 2, woke: false, suspended: false }, '2 s is jitter, not sleep');
+  assert.deepEqual(host.slept({ at: 0, mono: 0, wakeAt: 5 }, { at: 13000, mono: 10000, wakeAt: 5 }), { sleptSec: 3, woke: false, suspended: true });
+  assert.deepEqual(host.slept({ at: 0, mono: 0, wakeAt: 5 }, { at: 10000, mono: 10000, wakeAt: 6 }), { sleptSec: 0, woke: true, suspended: true });
+  assert.deepEqual(host.slept({ at: 0 }, { at: 10000 }), { sleptSec: null, woke: false, suspended: false }, 'old snapshots: unknown');
+  // onSample may abort the wait (verify's Chrome keepalive)
+  await assert.rejects(host.waitQuiet({ maxWaitSec: 60, samplers: fakeSamplers({ busy: () => 0.3 }), onSample: async () => { throw new Error('Chrome gone'); } }), /Chrome gone/);
+});
+
 test('treeCpuSec(): the root pid plus all descendants from ps, nothing else; parsePsTime formats', async () => {
   const procs = () => ({ 100: { ppid: 1, cpuSec: 10 }, 101: { ppid: 100, cpuSec: 2.5 }, 102: { ppid: 101, cpuSec: 1 }, 200: { ppid: 1, cpuSec: 99 }, 201: { ppid: 200, cpuSec: 7 } });
   assert.equal(await host.treeCpuSec(100, { samplers: { procs } }), 13.5);
@@ -111,9 +153,7 @@ test('treeCpuSec(): the root pid plus all descendants from ps, nothing else; par
   assert.equal(host.parsePsTime('1:02:03.5'), 3723.5);
   assert.equal(host.parsePsTime('2-01:00:00'), 2 * 86400 + 3600);
   assert.equal(host.parsePsTime('n/a'), null);
-  // the real ps: this process tree used some CPU
-  const mine = await host.treeCpuSec(process.pid);
-  assert.equal(typeof mine, 'number');
+  // the real ps: tests/chrome/host-real.chrome.test.mjs (no default test reads the real host, I-024)
 });
 
 test('classifyRun(): loadInvalid at load1 > 10, other CPU > 25 %, pressure >= warn or a gate-timeout grant; loadWarn at load1 > 6, other > 20 %', () => {
@@ -137,17 +177,35 @@ test('describe(): the one-line host summary for lock.mjs status and verify outpu
   assert.match(host.describe({ load1: 30, busyPct: 68, sysPct: 33, windowSec: 3, pressure: 2, stub: '/x/fake.mjs' }), /mem pressure warn \| STUBBED \(\/x\/fake\.mjs\)$/);
 });
 
-test('default samplers on this machine: numbers, not errors', async () => {
-  const a = await host.snapshot();
-  assert.ok(a.ticks.total > 0);
-  assert.equal(typeof a.load1, 'number');
-  assert.ok(a.freeMemMB > 0);
-  if (process.platform === 'darwin') {
-    assert.ok([1, 2, 4].includes(a.pressure), `pressure ${a.pressure}`);
-    assert.equal(typeof a.decompressions, 'number');
+test('I-024: no default test reads the real host: real samplers refuse in a test process, the fake host covers every sampler, and every tool subprocess gets it', async () => {
+  // 1. in this (node --test) process, without a stub, every real sampler throws instead of reading or waiting
+  assert.ok(process.env.NODE_TEST_CONTEXT, 'running under node --test');
+  assert.equal(host.realHostRefused(), true);
+  await assert.rejects(host.snapshot(), /real host sampler "pressure" used inside a test process.*I-024/);
+  await assert.rejects(host.waitQuiet({ maxWaitSec: 60 }), /I-024/);
+  await assert.rejects(host.treeCpuSec(process.pid), /real host sampler "procs"/);
+  assert.equal(host.realHostRefused({ NODE_TEST_CONTEXT: 'child', FW_TEST_HOST: '' }), false, "FW_TEST_HOST='' opts in (Chrome tests)"); // I-024 scan: no tool runs here
+  assert.equal(host.realHostRefused({}), false, 'outside tests: the real host');
+  // 2. the fake host exports every default sampler, so a stubbed tool never falls through to the real host
+  const fake = await import(new URL('../fixtures/fake-host.mjs', import.meta.url).href);
+  assert.deepEqual(Object.keys(host.DEFAULT_SAMPLERS).filter((k) => typeof fake[k] !== 'function'), []);
+  // 3. a stub that lacks a sampler refuses it instead of reading the real one
+  const partial = join(tempDir('fw-host-'), 'partial-host.mjs');
+  writeFileSync(partial, 'export const loadavg = () => [1, 1, 1];\n');
+  const r = node('--input-type=module', ['-e', `import('${new URL('../../tools/lib/host.mjs', import.meta.url).href}').then((h) => h.snapshot()).then(() => console.log('READ'), (e) => console.log(e.message))`], { env: { FW_TEST_HOST: partial } });
+  assert.match(r.stdout, /real host sampler "pressure" used under FW_TEST_HOST=.*which does not export it/);
+  // 4. every tool subprocess of the default suite runs on the fake host: helpers.cleanEnv sets it, and no
+  //    unit / e2e / hook test switches it off (only tests/chrome may pass FW_TEST_HOST: '')
+  assert.equal(cleanEnv().FW_TEST_HOST, FAKE_HOST);
+  assert.equal(cleanEnv().NODE_TEST_CONTEXT, undefined, 'tool subprocesses rely on FW_TEST_HOST, not on the test-process guard');
+  const offenders = [];
+  for (const dir of ['unit', 'e2e', 'hooks']) for (const f of readdirSync(join(TESTS, dir))) {
+    if (!f.endsWith('.mjs')) continue;
+    const src = readFileSync(join(TESTS, dir, f), 'utf8');
+    const code = src.split('\n').filter((l) => !l.includes('// I-024 scan: no tool runs here')).join('\n').replace(/\/\/.*$/gm, '');
+    if (/FW_TEST_HOST\s*(:|=)\s*(''|""|undefined|null)|delete\s+[\w.]+\.FW_TEST_HOST|DEFAULT_SAMPLERS\.\w+\(/.test(code)) offenders.push(`${dir}/${f}`);
   }
-  const x = await host.sample({ since: a });
-  assert.ok(x.busyPct === null || (x.busyPct >= 0 && x.busyPct <= 100));
+  assert.deepEqual(offenders, [], 'default tests that switch the fake host off');
 });
 
 test('$FW_TEST_HOST replaces the samplers process-wide, and every reading says it is stubbed', () => {

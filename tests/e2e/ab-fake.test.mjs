@@ -13,6 +13,11 @@ const FAKE = join(TESTS, 'fixtures', 'fake-chrome.mjs');
 let repo, fx;
 const fix = (args, env = {}) => node(join(repo.wt, 'tools', 'fix.mjs'), args, { cwd: repo.wt, env });
 const readLog = (f) => (existsSync(f) ? readFileSync(f, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []);
+/** verify starts Chrome after the host recheck before run 1 (I-023), i.e. after "[mobile run 1/1]". */
+async function chromeStarted(f) {
+  for (let i = 0; i < 200; i++) { const s = readLog(f).find((l) => l.method === '(started)'); if (s) return s; await sleep(50); }
+  throw new Error('fake Chrome did not start');
+}
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 
 before(() => {
@@ -32,7 +37,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   const envA = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'aa.jsonl'), FAKE_HOST_LOAD1: '12',
     FW_GATE_MAX_LOAD1: '20' }; // ... which the lock's host gate (I-016) admits only with its load1 limit raised
   const [ab, aa] = await Promise.all([
-    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens', '--max-wait', '20'], { cwd: repo.wt, env: envB }),
+    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens', '--max-wait', '20', '--watchdog', '120'], { cwd: repo.wt, env: envB }),
     nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', '--aa', '--runs', '1', '--idle', '0', '--no-screens'], { cwd: repo.wt, env: envA }),
   ]);
   assert.equal(ab.code, 0, ab.out);
@@ -43,10 +48,11 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(res.topic, 'fast-nav');
   assert.equal(res.kind, 'A/B');
   assert.equal(res.git.branch, 'wt/ab-wt');
-  const { hostThresholds, hostRecheck, ...cfgRest } = res.config;
+  const { hostThresholds, hostRecheck, watchdogSec, ...cfgRest } = res.config;
   assert.deepEqual(cfgRest, { cpu: 6, viewport: 'mobile', runs: 1, idle: 1, serveArgs: ['--vendors=local', '--https', '--latency', '150'], baseline: 'site-pretty', stackedOn: null, order: 'ABBA (alternating per run)' });
   assert.equal(hostThresholds.invalidLoad1, 10, 'thresholds copied into config');
   assert.deepEqual(hostRecheck, { maxWaitSec: 20, maxLoad1: 6, maxBusyPct: 20 }, 'ab passes --max-wait to verify.mjs');
+  assert.equal(watchdogSec, 120, 'ab passes --watchdog to verify.mjs (I-023)');
   assert.equal(res.patch.file, 'fixes/fast-nav/patch.diff');
   assert.equal(res.patch.sha256, sha256(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'patch.diff'))));
   assert.deepEqual([res.patch.files, res.patch.added, res.patch.removed], [1, 1, 1]);
@@ -126,7 +132,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
 test('SIGTERM on ab: no server, verify.mjs or browser left running, lock released', async () => {
   const env = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state-kill'), FAKE_CHROME_LOG: join(repo.root, 'kill.jsonl') };
   const p = await startProc(process.execPath, [join(repo.wt, 'tools', 'fix.mjs'), 'ab', 'fast-nav', '--runs', '1', '--no-screens'], { cwd: repo.wt, env, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 30000 });
-  const chromePid = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === '(started)').pid;
+  const chromePid = (await chromeStarted(env.FAKE_CHROME_LOG)).pid;
   const lockFile = join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json');
   const verifyPid = JSON.parse(readFileSync(lockFile, 'utf8')).pid;
   const stamp = readdirSync(join(repo.wt, 'out', 'ab', 'fast-nav')).sort().pop();
@@ -144,7 +150,7 @@ test('SIGTERM on ab: no server, verify.mjs or browser left running, lock release
 test('two SIGTERMs on ab, the second during its exit: ab still exits via its handler and leaves nothing running (incident I-009)', async () => {
   const env = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state-kill2'), FAKE_CHROME_LOG: join(repo.root, 'kill2.jsonl'), SLOW_EXIT_DIR: tempDir('fw-2sig-') };
   const p = await startProc(process.execPath, ['--import', SLOW_EXIT, join(repo.wt, 'tools', 'fix.mjs'), 'ab', 'fast-nav', '--runs', '1', '--no-screens'], { cwd: repo.wt, env, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 30000 });
-  const chromePid = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === '(started)').pid;
+  const chromePid = (await chromeStarted(env.FAKE_CHROME_LOG)).pid;
   const lockFile = join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json');
   const verifyPid = JSON.parse(readFileSync(lockFile, 'utf8')).pid;
   const stamp = readdirSync(join(repo.wt, 'out', 'ab', 'fast-nav')).sort().pop();

@@ -227,6 +227,10 @@ export function chromeLock(owner, meta = {}, { waitSec = Number(process.env.FW_T
   const lock = {
     owner, env: {},
     async acquire() {
+      // the Chrome suite measures the real machine: opt this test process into the real host samplers,
+      // which tools/lib/host.mjs refuses inside node --test otherwise (I-024); the lock's host gate
+      // samples it while this file queues
+      if (process.env.FW_TEST_HOST === undefined) process.env.FW_TEST_HOST = '';
       const { acquire, heldEnv } = await import('../tools/lib/lock.mjs');
       handle = await acquire('chrome-measure', { owner, kind: 'process', meta, timeoutSec: waitSec });
       lock.env = { FW_LOCK_HELD: heldEnv('chrome-measure', handle.holder.token) };

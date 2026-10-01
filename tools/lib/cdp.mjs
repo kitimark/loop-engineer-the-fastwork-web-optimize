@@ -39,6 +39,12 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
     'about:blank',
   ];
   const proc = spawn(chromePath(), args, { stdio: 'ignore', detached: false });
+  // Never leave the browser behind when this process exits early (crash, or SIGTERM/SIGINT handled by the
+  // chrome-measure lock, which calls process.exit): it would keep the profile dir locked for the next run.
+  // Registered at once, not after the DevTools port is up: a signal during the launch (verify now launches
+  // after its host recheck, I-023) must not orphan the browser either.
+  const killOnExit = () => { try { proc.kill('SIGKILL'); } catch {} };
+  process.on('exit', killOnExit);
   let version;
   let exited = false;
   proc.on('exit', () => { exited = true; });
@@ -49,11 +55,7 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
     } catch {}
     await sleep(100);
   }
-  if (!version) { proc.kill(); throw new Error(`Chrome did not open a DevTools port (${port || 'auto'})${exited ? ': it exited at once — is another Chrome already using profile ' + profileDir + '?' : ''}`); }
-  // Never leave the browser behind when this process exits early (crash, or SIGTERM/SIGINT handled by the
-  // chrome-measure lock, which calls process.exit): it would keep the profile dir locked for the next run.
-  const killOnExit = () => { try { proc.kill('SIGKILL'); } catch {} };
-  process.on('exit', killOnExit);
+  if (!version) { process.off('exit', killOnExit); proc.kill(); throw new Error(`Chrome did not open a DevTools port (${port || 'auto'})${exited ? ': it exited at once — is another Chrome already using profile ' + profileDir + '?' : ''}`); }
   return {
     proc,
     port,

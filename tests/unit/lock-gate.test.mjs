@@ -23,7 +23,8 @@ const UNKNOWN = { quiet: null, reasons: ['not measured yet'] };
 function samplers(busyAt) {
   let t = 5_000_000, busy = 0, total = 0, windows = 0;
   return {
-    now: () => t, sleep: async (ms) => { t += ms; total += ms * 8; busy += ms * 8 * busyAt(windows++); },
+    now: () => t, mono: () => t, wake: () => 1, procs: () => ({}), // a complete host: the real one is refused in tests (I-024)
+    sleep: async (ms) => { t += ms; total += ms * 8; busy += ms * 8 * busyAt(windows++); },
     cpus: () => Array.from({ length: 8 }, () => ({ times: { user: busy / 8, nice: 0, sys: 0, idle: (total - busy) / 8, irq: 0 } })),
     loadavg: () => [1, 1, 1], freemem: () => 1e9, pressure: () => 1, decompressions: () => 0,
   };
