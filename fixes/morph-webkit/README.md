@@ -357,6 +357,9 @@ whether the listener is passive. Two diagnostics, both on noinert:
 - **Zone gate:** inside the handlers (`u`), as in F1.
 - **Why:** with a non-passive window touchmove, the whole page becomes a synchronous touch region (F-055). With element listeners,
   only those two subtrees do. Arming restyles only them (`Element::invalidateEventListenerRegions`), but it happens at setup anyway.
+  - **Status update (mgmt-ops-5, 12:5xZ):** arch-claims' audit marks F-055's touch-region part UNSUPPORTED on iOS
+    26.6. F3's case then rests on its other half: no listener add at the IO edge (the NAMED y≈1960 cause), the same as F1.
+    Block B now tests F3 as an alternative to F1, not as a touch-region gain.
 - **Behaviour check** (`touch-check.mjs`, Chrome, touch emulation; `probe-results/touch-check.json`):
   - At the end of the page #platform spans the whole viewport (top −949, bottom 932 at 430x932; the card is 1880 px tall), so
     every touch there starts on #platform or the nav. The behaviour gap I feared (a touch above #platform) does not exist in
