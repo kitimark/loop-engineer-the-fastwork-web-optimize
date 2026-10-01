@@ -1,0 +1,35 @@
+# fastwork mirror fix: r3a-feed-fade
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply r3a-feed-fade --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -5145,8 +5145,22 @@
+   padding: 12px var(--feed-inset) 0;
+   flex: auto;
+   overflow: hidden;
+-  -webkit-mask-image: linear-gradient(#000 calc(100% - 32px), #0000);
+-  mask-image: linear-gradient(#000 calc(100% - 32px), #0000);
++  /* R3 diagnostic (a): the bottom fade as a white overlay instead of mask-image. The panel behind is solid #fff
++     (.start-selling-profile-panel), so content * a + #fff * (1 - a) gives the same pixels; without a mask the
++     spinning vinyl can composite instead of repainting the masked body. isolation keeps the stacking context
++     the mask created; position: relative anchors the overlay (no absolute descendant of the body uses the body
++     as its containing block: they all sit in positioned .vinyl / .card boxes). */
++  position: relative;
++  isolation: isolate;
++}
++.body.svelte-ty4hd7::after {
++  content: "";
++  z-index: 1;
++  pointer-events: none;
++  background: linear-gradient(#fff0, #fff);
++  height: 32px;
++  position: absolute;
++  inset: auto 0 0;
+ }
+ .panel.svelte-ty4hd7 {
+   animation: 0.32s cubic-bezier(0.22, 1, 0.36, 1) svelte-ty4hd7-feed-panel-in;

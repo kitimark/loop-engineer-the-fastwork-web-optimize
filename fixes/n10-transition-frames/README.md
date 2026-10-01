@@ -3,7 +3,13 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). Diffs contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** diagnosis. Ablation overlays built for the iPhone; no fix yet.
+**Status:** **stopped, superseded by e1/e2** (lead decision 09:50Z). The y≈1960 frame's cause is the morph IO
+image burst, not `.pain`: in iphone-runner's e1/e2 block (09:48Z, F-043) the frame is ≥ 12 `img` src assignments in
+the `#platform` morph IO callback (9/9 runs; control 94 ms at y 1967, e1 passive listeners 94 ms at 1965, e2 IO
+rootMargin 150 % moves it to ≈ 2240, ~96 ms), as de-middle predicted (`research/design-engineering/middle.md` §2).
+fix-nav-morph (cluster B) owns that fix. The ablations a-d were dropped from the phone queue and never ran; their
+overlays and `patch.diff`s stay as a record. The `.pain` background switch is handled separately by R2
+(`fixes/r2-bg-layers`).
 **Owner:** fix-scroll-engine (lead decision 07:07Z). Base: `aw1-10e` (all-wave1 + scroll-engine /10e, landed 60f66b6; JS 3e2f599a…, CSS c6aad94b…). The ablations were rebuilt on aw1-10e at 08:50Z.
 
 ## Symptom
