@@ -478,6 +478,61 @@ Chrome mechanism check: 430x775 and 430x932, counts only, one short-lane hold ea
 - re-contain-js also bounds the F-058 rotator: .is-carousel is inside #people. Its rotator ticks are a second
   readout of the same boundary, next to st4-strict's inner boundary on .is-carousel.
 
+### P3 phone block (ST-2 re-dur / re-keep, baseline-A, ST-2d): results
+
+iphone-runner ran P3 on 2026-10-01, 13:35-13:44Z.
+- **Setup:** iPhone 15 Pro Max, iOS 26.6.1 Safari, 80 %, 40.8 → 39.8 °C, not charging, Low Power Mode off. Driver W:
+  6 s idle, top → y 1745, Timeline on every counted run.
+- **Order:** Q1 D2 K3 Q4 K5 D6, then baseline-A B7 B8, then the ST-2d fling-hold on Q (QF9-11: W to 1100,
+  1.5 s hold, one 700 px flick).
+- **Sentinels:** both Timeline-off Q runs passed (S-open: scroll 58.0, bottom 60.1; S-end: scroll 57.7).
+- **Served hashes:** checked at block start.
+
+Read (OBSERVED, Timeline records, n = 2 per arm):
+- **Offsets:** from the start of the crossing frame (y 687), with Layouts ≥ 2 ms (scratch
+  `p3/flip.cjs`, `p3/table.cjs`).
+- **Rotator exclusion:** de-pm-hero's rule (`scratchpad/de-pm-hero/p3x.mjs`). This read only flags rotator
+  Layouts, approximately.
+- **Root and size:** every Layout listed is rooted at the whole view (430x775). Each costs 12-18 ms.
+- **Timing:** the phone's reveal-end frames sit at **+ 700 / + 900 / + 1150**. The Chrome figures were
+  + 745 / + 940 / + 1130 from the scroll write, and the phone t0 is ~ 40 ms earlier. The three match the opacity
+  0.7 s, filter/transform 0.9 s and `is-future-shrinking` ends.
+- **Who pays:** most of these Layouts are paid inside the logger's rAF style flush (`loop:5`). The dirtier is a
+  style change at a transition end, as F-049 describes.
+
+| window (ms after flip) | Q (Q1, Q4) | re-dur (D2, D6) | re-keep (K3, K5) | baseline-A (B7, B8) |
+|---|---|---|---|---|
+| flip (+ 4 / + 47) | 13 ms Layouts; dt 45-46 | same; 47 | same; 45-50 | 18-19 ms; 50-53 |
+| + 500 | none at + 500 (other Layouts at + 549 / + 589-620) | **12 ms at + 501 / + 502** | none | per-frame Layouts |
+| + 700 (opacity end) | 12-13 ms; dt 34-35 | **none**; dt 25-26 | 12-14 ms; dt 32-35 | 13 ms; dt 52-54 (Composite-dominated) |
+| + 900 (filter/transform end) | 12-14 ms; dt 33 | 14-18 ms; dt 32-41 | **none ≥ 2 ms; dt 17 / 17** | 15-17 ms; dt 35-39 |
+| + 1150 (is-future-shrinking) | 18 ms; dt 39-41 (the 1588-1600 frame) | 14-17 ms; dt 35-39 | **none; dt 28-31** | 14 ms; dt 46-47 |
+| + 1645 (baseline-A filter 1.6 s) | n/a | n/a | n/a | not separable: per-frame Layouts from the scroll handler (L11303) start at + 1119, and the y ≈ 1985 frame (dt 121-124) also falls in this window |
+
+Verdicts on P-019 (OBSERVED, n = 2 per arm):
+- **re-dur HIT.** The opacity-end Layout leaves + 700 in 2/2 runs. It is present in 9/9 runs without the
+  change: Q, re-keep and the QF runs. A 12 ms Layout appears at + 501 / + 502, which is the predicted
+  + 545 ± 20 shifted by the phone's t0. The + 900 Layout stays.
+- **re-keep HIT.**
+  - At + 900, no Layout ≥ 2 ms, and the frame is 17 ms (Q: 33).
+  - At + 1150, the `is-future-shrinking` frame loses its 18 ms Layout (dt 28-31 against Q's 39-41). That is
+    the 1588-1600 frame iphone-runner saw only in Q and re-dur runs.
+  - + 700 is unchanged, as predicted.
+  - Hero-window frames > 34 ms: K 2 / 3 against Q 4 / 3 and re-dur 3 / 4.
+- **Mechanism.** arch-claims CONFIRMED the presence-flip layout from the WebKit source. On the phone it is
+  OBSERVED for this card: each presence flip at a transition end costs one 12-18 ms whole-view Layout, and
+  keeping the end values off `none` / 1 removes it.
+- **baseline-A:** heavier flip frame (18-19 ms Layout, dt 50-53) and + 700 frames of 52-54 ms (Composite). The
+  third frame predicted at ≈ + 1645 is UNRESOLVED: it is masked by baseline-A's per-frame scroll-handler
+  Layouts and the y ≈ 1985 frame.
+- **ST-2d (P-020):** in the hold at y ≈ 1100, the + 700 (15-16 ms) and + 900 (16-18 ms) reveal-end Layouts
+  still fire at rest. So they come from the reveal transition (postmortem Card 4), not from scrolling or tile
+  coverage (U5). de-pm-hero: the other Layouts in the hold are rotator ticks.
+
+**Next (proposal, not built):** a fix candidate `re-keep-op` = re-keep plus the card's resting opacity
+kept below 1 (0.999). It would take the + 700 Layout too, leaving only the flip pair. A permanent blur(0px)
+filter layer on the full-section card has to be checked first (row 19's note).
+
 ## Risks, conflicts, follow-ups
 
 - Keyframes deliberately avoid `var()` of animated custom properties (Safari resolves them against the
@@ -559,8 +614,8 @@ The header's "rebuild with" line names the scratch topic it was generated from:
 | hero-exit-scroll-timeline/15 | DIAGNOSTIC v7copyop = 09 with the phone `.hero-copy` exit as opacity only (no transform animation on the copy) | same candidate from the other side: with no transform animation on `.hero-copy`, overlap testing stays on | pending (iPhone) | diagnostic (copy no longer lifts 8 px) | none yet | patch `variants/15.diff` (on aw1-10e) | | iPhone bisect requested |
 | hero-exit-scroll-timeline/16 | h1 = aw1-10e + #people reveal without the visibility flip (opacity 0 + `inert` while hidden, reveal blur to `blur(0px)`, filter none and inert off ~1 s later) | the 0.72 flip frame loses its inherited toggle and first raster: y≈625-745 from 43-63 to ≤ 34 ms (de-hero, derived) | provisional: parity confirmed, gain pending (iPhone) | clean (Chrome counts + frozen-frame parity) | reveal pixel diff vs P2 0-0.21 % at 6 points; idle at y=0 identical; a11y stricter (baseline leaks the profile tablist while hidden) | patch `variants/16.diff`; README "h1"; probes h1a/, h1idle.json (scratch) | memory: ~14 MB backing store for the hidden card at DPR 3 | iPhone hero-A: flip pair median 56 → 45 ms vs P2 (n=3), y≈50 unchanged, no new settle frame; partial gain (target ≤ 34 met 0/3) |
 | hero-exit-scroll-timeline/17 | h1v2 = aw1-10e + v2 (09) + h1 | v2's y≈50 removal without its y≈700 cost, if the cost was the flip's raster | provisional: parity confirmed, gain pending (iPhone) | clean (as 16) | reveal pixel diff vs P 0-0.15 %; idle identical | patch `variants/17.diff` | candidate final if the phone confirms | iPhone hero-A: flip pair median 65 → 52 ms vs P (35-77, noisy), y≈50 stays gone; v2's extra flip cost remains (52 vs h1 45) |
-| hero-exit-scroll-timeline/18 | DIAGNOSTIC re-dur = aw1-10e + the #people card's reveal opacity transition 0.7 → 0.5 s (ST-2, postmortem-hero Card 4) | the flip + ~745 ms long frame is the opacity transition reaching 1 (WebKit StyleDifference forces a layout when opacity crosses opaque): it moves to flip + 545 ± 20 ms, the + ~940 frame stays | pending (iPhone ST-2) | diagnostic (reveal fades 0.2 s faster) | see "ST-2 / ST-1 builds" | patch `variants/18.diff` (on aw1-10e), CSS 890da4b0, JS = aw1-10e 3e2f599a | | ticket via mgmt-ops-4 |
-| hero-exit-scroll-timeline/19 | DIAGNOSTIC re-keep = aw1-10e + the revealed card ends at `filter: blur(0px); transform: translateY(0)` instead of `none` (ST-2) | filter/transform never switch to none at the transition end, so the + ~940 frame loses its layout (< 2 ms) while + ~745 stays | pending (iPhone ST-2) | pixel parity expected (blur(0)/translateY(0) render as none) | see "ST-2 / ST-1 builds" | patch `variants/19.diff` (on aw1-10e), CSS 78047ec2, JS = aw1-10e 3e2f599a | a permanent blur(0px) filter on a full-section card may keep a filter layer: check before turning it into a fix | ticket via mgmt-ops-4 |
+| hero-exit-scroll-timeline/18 | DIAGNOSTIC re-dur = aw1-10e + the #people card's reveal opacity transition 0.7 → 0.5 s (ST-2, postmortem-hero Card 4) | the flip + ~745 ms long frame is the opacity transition reaching 1 (WebKit StyleDifference forces a layout when opacity crosses opaque): it moves to flip + 545 ± 20 ms, the + ~940 frame stays | HIT (iPhone P3, n=2, OBSERVED): opacity-end Layout gone from + 700 in 2/2 (present 9/9 elsewhere), new 12 ms Layout at + 501/502; + 900 kept | diagnostic (reveal fades 0.2 s faster) | see "ST-2 / ST-1 builds" | patch `variants/18.diff` (on aw1-10e), CSS 890da4b0, JS = aw1-10e 3e2f599a | | ticket via mgmt-ops-4 |
+| hero-exit-scroll-timeline/19 | DIAGNOSTIC re-keep = aw1-10e + the revealed card ends at `filter: blur(0px); transform: translateY(0)` instead of `none` (ST-2) | filter/transform never switch to none at the transition end, so the + ~940 frame loses its layout (< 2 ms) while + ~745 stays | HIT (iPhone P3, n=2, OBSERVED): + 900 no Layout ≥ 2 ms, dt 17/17 (Q 33/33); + 1150 shrink-frame Layout gone too; + 700 kept; > 34 frames 2/3 vs Q 4/3 | pixel parity expected (blur(0)/translateY(0) render as none) | see "ST-2 / ST-1 builds" | patch `variants/19.diff` (on aw1-10e), CSS 78047ec2, JS = aw1-10e 3e2f599a | a permanent blur(0px) filter on a full-section card may keep a filter layer: check before turning it into a fix | ticket via mgmt-ops-4 |
 | hero-exit-scroll-timeline/20 | DIAGNOSTIC v2-endearly = v2 (09) with every hero-exit range ending at `contain 70%` (before the 0.72 flip) and the blur kept at its end value (fill forwards) (ST-1 optional arm, postmortem-hero Card 1) | if v2's +11 ms in the flip pair comes from live ViewTimeline effects (H2a/H2b), it goes away; y≈50 stays ≤ 37 | pending (iPhone, only if ST-1 says H2a/H2b) | NOT parity by design: the exit completes at 0.70 instead of 1.0 (copy opacity 0 at the flip instead of ~0.28); the animations stay attached in their after phase (fill), so it tests "effects changing in the flip frame", not "effects present" | see "ST-2 / ST-1 builds" | patch `variants/20.diff` (on aw1-10e), CSS ed7a87ea, JS = P 71d76d69 | | ticket via mgmt-ops-4 |
 | hero-exit-scroll-timeline/21 | DIAGNOSTIC nomask = aw1-10e + the earn button carries `mask-image: var(--nav-earn-mask)` (240 %, no-repeat) while pilled too, so the is-hero-pill drop no longer switches mask-image none -> some; unmask/sheen animations kept (P9, D5 candidate a) | if the mask presence owns frame 1's 13-14 ms whole-view Layout, it goes; navw keeps it | pending (iPhone P9, P-026); Chrome mechanism PASS | parity 0.000 % (nav top, nav settled, card) | see "P9 builds" | patch `variants/21.diff` (on aw1-10e), CSS fd90c0f2, JS = aw1-10e 3e2f599a | | ticket via mgmt-ops-5 |
 | hero-exit-scroll-timeline/22 | DIAGNOSTIC navw = aw1-10e + phone nav-actions box `width: 232px; height: 36px; justify-content: flex-end; contain: layout size` (rect constant across the drop, relayout boundary); max-width/padding/gap transitions kept (P9, D5 candidate b) | if the nav's auto-width change owns frame 1's Layout, it goes; nomask keeps it | pending (iPhone P9, P-026); Chrome mechanism PASS | parity 0.000 % (nav top, nav settled, card); the transparent box covers x 150-390 of the bar (hit-testing over the logo during the morph) | see "P9 builds" | patch `variants/22.diff` (on aw1-10e), CSS ec57cba0, JS = aw1-10e 3e2f599a | an explicit width alone is not a WebKit relayout boundary (needs overflow clip or size+layout containment), hence the contain | ticket via mgmt-ops-5 |
