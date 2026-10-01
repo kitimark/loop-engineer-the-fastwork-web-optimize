@@ -18,7 +18,7 @@
 // `/usr/bin/git push`, `sh -c 'git push'` (https://code.claude.com/docs/en/permissions.md, "What a
 // Bash rule doesn't match"). This hook splits compound commands (&&, ||, ;, |, &, newlines, $( ),
 // backticks, subshells), strips env assignments and wrappers (timeout, env, nice, nohup, sudo, xargs,
-// command, ...), recurses into `sh|bash|zsh -c`, `eval` and shell heredocs, parses git's global
+// command, `node .../lock.mjs run <resource> ... --`, ...), recurses into `sh|bash|zsh -c`, `eval` and shell heredocs, parses git's global
 // options (-C, -c, --git-dir, ...), and expands git aliases.
 //
 // Failure policy: exit 2 is the only exit code that blocks; any other failure (crash, timeout,
@@ -293,6 +293,14 @@ function unwrap(words, findings) {
       continue;
     }
     if (b === 'watch') { w.shift(); while (w[0] && w[0].startsWith('-')) { const o = w.shift(); if (/^-[nd]$/.test(o)) w.shift(); } return { argv: w, viaShell: true }; }
+    // `node [node opts] <...>/lock.mjs run <resource> [opts] -- <cmd...>`: lock.mjs runs <cmd> under the lock,
+    // so <cmd> is what gets invoked (review-snapshot: an override inside a lock run must still ask)
+    if (b === 'node' || b === 'nodejs') {
+      let k = 1;
+      while (w[k] && w[k].startsWith('-')) k++;
+      const dd = w.indexOf('--', k + 2);
+      if (w[k] && base(w[k]) === 'lock.mjs' && w[k + 1] === 'run' && dd > 0) { w = w.slice(dd + 1); continue; }
+    }
     break;
   }
   return w.length ? { argv: w } : null;

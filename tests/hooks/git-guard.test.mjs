@@ -166,6 +166,24 @@ ALLOW.push(
   'node tools/baseline.mjs pin --prettier 3.9.9',
 );
 DENY.push('FW_BASELINE_UPDATE=b1-0123abcd git commit --no-verify -m x'); // deny wins over ask
+// `node tools/lock.mjs run <resource> [opts] -- <cmd>` is a wrapper: the command after `--` is analysed too
+// (review-snapshot: a baseline override inside a lock run must still ask; git inside it is guarded as well)
+ASK.push(
+  "node tools/lock.mjs run chrome-measure --owner t -- sh -c 'FW_BASELINE_ALLOW_MODIFIED=1 node tools/fix.mjs ab t --runs 5'",
+  'node tools/lock.mjs run chrome-measure --owner t --short --max-seconds 300 -- env FW_BASELINE_ALLOW_MODIFIED=1 node tools/serve.mjs',
+  'node /abs/repo/tools/lock.mjs run chrome-measure --owner t -- FW_BASELINE_UPDATE=b1-0123abcd git commit -m x',
+  'FW_LOCK_OWNER=t node tools/lock.mjs run chrome-measure -- bash -c "FW_BASELINE_ALLOW_MODIFIED=1 node tools/verify.mjs a=http://127.0.0.1:1/"',
+);
+DENY.push(
+  'node tools/lock.mjs run chrome-measure --owner t -- git push',
+  "node tools/lock.mjs run chrome-measure --owner t -- sh -c 'git merge feature'",
+);
+ALLOW.push(
+  'node tools/lock.mjs run chrome-measure --owner t --short --max-seconds 300 -- npm test',
+  "node tools/lock.mjs run chrome-measure --owner t -- sh -c 'node tools/fix.mjs ab t --runs 5 && node probe.mjs'",
+  'node tools/lock.mjs status',
+  'node tools/lock.mjs run chrome-measure --owner t',
+);
 
 for (const c of DENY) test(`deny: ${JSON.stringify(c)}`, () => assert.equal(runHook(bash(c)).decision, 'deny'));
 for (const c of ALLOW) test(`allow: ${JSON.stringify(c)}`, () => assert.equal(runHook(bash(c)).decision, 'allow'));
