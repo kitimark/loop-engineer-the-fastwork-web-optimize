@@ -657,9 +657,20 @@ our best current stack. Both are served over `site-pretty` with `--vendors=local
 - **The first start (17:17Z) aborted at the warm-ups.**
   - Safari's inspector gave no page target, then a page target whose evaluate never answered.
   - The user fixed it from the console (C-009 to C-012): reload, a new tab, force-quit Safari, then typing the URL.
-- **Sentinels (S, Timeline off, C):** S-open 56.6 fps, S-end 56.5 fps. Scroll ≥ 44 holds.
-- **Runner's quick readout** (`p14an.mjs`, not the scorer's): Layout records ≥ 10 ms per phase. "View" means rooted at the
-  whole viewport. Frame counts are dt > 34 / > 50.
+- **Sentinels (S, Timeline off, C):** S-open bottom 60.2 / scroll 56.6 fps; S-end bottom 60.2 / scroll 56.5 fps. Both
+  pass (bottom ≥ 58, scroll ≥ 44).
+- **Scored result** (fix-scroll-engine `p14score.cjs`, cross-checked by de-pm-hero; their READMEs hold the verdict):
+
+| arm | rotator ticks with a whole-view Layout ≥ 10 ms | band | tick Layout median |
+|---|---|---|---|
+| C aw1-10e | 67/67 | view | 20.6 ms |
+| V1 st4-noswap | 2/67 (idle 0/36) | gone | 0.1 ms |
+| V2 re-contain-js | 8/67 (61/67 rooted at #people instead) | gone | 11.7 ms |
+
+  - The scroll phase and the ≥ 89 ms frame at y≈1960 are unchanged in every arm, rotoff included.
+- **Runner's quick readout** (`p14an.mjs`, superseded by the scored result above): all Layout records ≥ 10 ms per phase,
+  not only rotator ticks. Its "view" test (root quad from 0,0, ≥ 400 x 700) is crude; a 430x1327 #people root can pass
+  it. Frame counts are dt > 34 / > 50.
 
 | run | idle 6 s: view / other L≥10 | idle >34/>50 | scroll 3.3 s: view / other | scroll >34/>50 | hold 2 s: view / other |
 |---|---|---|---|---|---|
@@ -682,11 +693,10 @@ our best current stack. Both are served over `site-pretty` with `--vendors=local
 | V1 st4-noswap | 0 / 0 / 0 | 0 / 0 / 0 | 0 | 20 ms | 60.0 |
 | V2 re-contain-js | 61 / 40 / 13 | 3 / 0 / 0 | 51 | 47 ms | 59.1 |
 
-- **Reading (OBSERVED, in our setup; the P-025 verdict is the scorer's):**
-  - V1 (no swap) removes every ≥ 10 ms view Layout at rest, like rotoff does. Its idle frames match rotoff's.
-  - V2 (contain) moves the rest-phase Layouts from the view root into subtrees. It keeps about as many ≥ 10 ms Layouts
-    and fewer > 50 ms frames, but the > 34 ms idle frames at y 1500 stay (40 vs 47).
-  - The scroll-phase view Layouts drop from 24-29 (C) to 13-15 (V1) and 2 (V2).
+- **Runner's reading (OBSERVED, in our setup):**
+  - V1 (no swap) removes the rest-phase ≥ 10 ms Layouts, like rotoff does. Its idle frames match rotoff's.
+  - V2 (contain) moves them off the view root. It cuts the > 50 ms idle frames at y 1500 (11 → 0), but most > 34 ms ones
+    stay (47 → 40, threshold-sensitive: > 30 61, > 38 13).
 - **Files** stay in `out/iphone-runner/` (Timeline records are large): `p14-{C1,C5,C9,A2,A6,A7,B3,B4,B8,R10}.json` +
   `.tl.json`, `p14-S-{open,end}.json`, `p14-idle-{C,A,B}.json`, `p14.log`. The arm letters A/B in these file names are
   V1/V2, not the sitting's A/B.
