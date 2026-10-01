@@ -178,6 +178,21 @@ Per question class:
      D +700 is a pure absence test; a Sim Layout near +500 is reported apart, not credited.
    - Status: the phone mechanism is CONFIRMED (claims-audit §2.8, F-075); the bimodality and chance rates are
      OBSERVED on our phone data.
+   **Amendment 7 (16:12Z, class 3 operationalized before any FP-2 data was read; scorer `tools/score3.mjs`, sha256
+   `3326013bf0899e43`, frozen now).**
+   - Position: both sides are WebKit at 430x775 on the same snapshot, so their crossings coincide and raw y stands
+     in for crossing coordinates **only if docH matches** (the scorer refuses otherwise). A dt > 34 frame of the
+     scroll phase covers [yStart − 60, yEnd + 60]; centres every 10 px; recurring = slow in ≥ ⌈2/3·n⌉ phone runs
+     or ≥ 2 of 4 Sim runs; a section = a maximal run of recurring centres. hit and false as in rule 3.
+   - Phone references: baseline arm R/goal-B1..B3; aw1-10e arm R/ctl-B18, B19, B20 (the last three passing
+     controls, picked now).
+   - **Ceiling, phone vs phone (aw1-10e, 3 vs 4 different control runs):** hit 71 / 71 / 83 %, false 43 / 17 /
+     29 %. Chance (the Sim side shifted circularly by 250..maxY−250 px): hit mean 45-53 %, max 71-100 %. So at
+     dt > 34 the phone itself only reaches "lead generator only", and a 50 % hit is chance. Rule 3 stays the
+     verdict; next to it the Sim is reported **against the phone ceiling** (hit ≥ 71 % and false ≤ 43 % = "as
+     reproducible as the phone itself") and against the chance rate.
+   - Secondary, reported only: the same score at dt > 50 (phone B1-B3 vs phone B17-B20: hit 100 %, false 25 %,
+     chance hit mean 23 %: sparser sections discriminate) and at the ±4 ms twins (dt > 30 / 38).
 5. **Touch path (functional).** Binary facts from FP-6 vs the phone's finger records (handler ran, resize storm
    present, pin fight present). **Usable** if all agree.
 
