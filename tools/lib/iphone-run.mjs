@@ -5,7 +5,7 @@
 // Sequence (every driver): lease check, then the lease is renewed to outlast the run (lock.mjs renew); no timed
 // run while a NORMAL chrome-measure hold runs (`WAIT`, checked again after the settle; short-lane holds pass;
 // --allow-during-measure for diagnostics); Safari not on the certificate warning; scrollTo(0, instant) + reload;
-// the probe options (--y-source raf|scroll|none) and a load-frame logger (`early`) from the reconnect; readyState
+// the probe options (--y-source raf|raf-legacy|scroll|none) and a load-frame logger (`early`) from the reconnect; readyState
 // complete; the battery (idevicediagnostics AppleSmartBattery: temperature, charging, capacity; --no-battery);
 // settle (--settle, default 8 s); then ONE in-page expression: page facts, stateAtStart (+ --state), --tops, the
 // std probe, the driver, stop, Resource Timing. The page is polled at <= 1 Hz (1.5 s) and the result read back in
@@ -30,7 +30,7 @@ import { openTab, sleep } from './wip.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE } from './iphone-url.mjs';
-import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
+import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, Y_READS, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
 
 export const DEVICE = 'iPhone 15 Pro Max, iOS 26.6.1 Safari';
 /** Files whose code shapes a run's stimulus and numbers: recorded per run (meta.tool), like `gesture`'s. */
@@ -52,7 +52,7 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--hold 2000] [--cycles 3]                              morph (M; --hold in ms, as __fwMorphDrive takes it)
     [--tops id=selector,...]                                document tops before/after the timed window
     [--state <file.js>]                                     an expression whose value joins stateAtStart.custom
-    [--y-source raf|scroll|none]                            where the probe's y comes from (default raf; see iphone-probe.mjs)
+    [--y-source raf|raf-legacy|scroll|none]                 where the probe's y comes from (default raf; raf-legacy = probe v1)
     [--no-battery]                                          skip the idevicediagnostics battery read at start and end
     [--allow-during-measure]                                run although a normal chrome-measure hold is running`;
 
@@ -215,7 +215,7 @@ export function finish(o, owner, raw, { now = new Date() } = {}) {
     build: o.labels.build, run: o.labels.run ?? o.label, block: o.labels.block, arm: o.labels.arm, pos: o.labels.pos, warmup: o.labels.warmup,
     owner, date: now.toISOString(), device: DEVICE, href: raw.pre?.href, ua: raw.pre?.ua, vw: raw.pre?.vw, vh0: raw.pre?.vh0, dpr: raw.pre?.dpr,
     params: { settleMs: o.settleMs, ...o.params },
-    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, ySource: raw.ySource ?? o.params.ySource ?? 'raf', settings: deviceSettings(raw.pre?.settings, raw.battery?.start), battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver), error: raw.err || null,
+    wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: Y_READS[raw.ySource ?? o.params.ySource ?? 'raf'] ?? null, yReadCounts: raw.yReads ?? null, settings: deviceSettings(raw.pre?.settings, raw.battery?.start), battery: raw.battery ?? null, served: raw.served || null, tool: toolVersion(o.driver), error: raw.err || null,
   };
   const out = resolve(REPO, o.out || join('out', 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));
   const json = { meta, ...doc, tops: raw.tops, topsPost: raw.topsPost, stateAtStart: raw.stateAtStart, early: raw.early, driverResult: raw.driverResult, pre: raw.pre, post: raw.post };
