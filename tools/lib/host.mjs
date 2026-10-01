@@ -159,6 +159,15 @@ async function stubFromEnv() {
 // `node --test` process without one, the real samplers refuse (FW_TEST_HOST='' opts in, Chrome tests).
 const refuse = (name, why) => () => { throw new Error(`host.mjs: real host sampler "${name}" used ${why} (incident I-024)`); };
 export function realHostRefused(env = process.env) { return !!env.NODE_TEST_CONTEXT && env.FW_TEST_HOST !== ''; }
+/**
+ * The converse (review-i027): a stubbed host ($FW_TEST_HOST) outside a test, driving a Chrome that is not a
+ * test fixture (tests/fixtures/*), i.e. a real run whose waits and host record would be fake. verify.mjs
+ * refuses it, so a stubbed host never yields a verdict on a real measurement. A test is a `node --test`
+ * process or a tool started from one with the fake Chrome ($CHROME = tests/fixtures/fake-chrome.mjs).
+ */
+export function stubOutsideTest(env = process.env) {
+  return !!env.FW_TEST_HOST && !env.NODE_TEST_CONTEXT && !(env.CHROME && /[\\/]tests[\\/]fixtures[\\/][^\\/]+$/.test(resolve(env.CHROME)));
+}
 async function resolveSamplers(samplers) {
   const st = await stubFromEnv();
   let base = DEFAULT_SAMPLERS;

@@ -361,7 +361,7 @@ test('I-023: a host that stays busy past every window: the recheck stops at --ma
 test('I-023/I-026: a host sleep ends the recheck after one fresh window and is recorded; a sleep inside the run contaminates it', async () => {
   const { d, env, args } = setup();
   // fake monotonic time: Chrome launches at ~0, the recheck's 1st window (0-10 s) holds a 1890 s sleep at 5 s, the
-  // fresh 2nd window ends at 20 s; the run (~7 s of real time from fake ~20 s) then sleeps 500 s at fake 22 s.
+  // fresh 2nd window ends at 20 s; the run (from fake ~20 s; its own waits are on that fake clock too, I-027) then sleeps 500 s at fake 22 s.
   const r = await nodeAsync(VERIFY, args('sleepy', ['--idle', '0', '--no-lock']), { env: { ...env, FAKE_HOST_BUSY: '0.3', FAKE_HOST_SUSPEND: '5000:1890,22000:500' } });
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
@@ -535,4 +535,32 @@ test('--frame-log: [t, dt, scrollY] for every frame of every phase (E5); the def
   const src = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === 'Page.addScriptToEvaluateOnNewDocument').params.source;
   assert.match(src, /S\.log\.push/);
   assert.notEqual(src, LOGGER);
+});
+
+test('review-i027 1: the real host (FW_TEST_HOST \'\') keeps the real clock: a 1 s idle phase takes >= 1 s of wall time', async () => {
+  // npm test's guard against an unconditional clock swap (before, only test:chrome caught one). Real samplers:
+  // the recheck's quiet() window (10 s, real time) passes at once with these thresholds, so ~10-15 s of waiting.
+  const { d, env, args } = setup();
+  const real = { ...env, FW_TEST_HOST: '', FW_GATE_MAX_BUSY: '100', FW_GATE_MAX_LOAD1: '10000' }; // I-024 exception: review-i027 real-clock guard
+  const r = await nodeAsync(VERIFY, args('realclock', ['--idle', '1', '--no-lock']), { env: real, timeout: 180000 });
+  assert.equal(r.code, 0, r.out);
+  const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  assert.equal(res.results[0].host.stub, undefined, 'not stubbed');
+  const st = steps(readLog(env.FAKE_CHROME_LOG));
+  assert.deepEqual(st.slice(0, 4).map((x) => x.s), ['state', 'cpu 3', 'reset', 'collect']);
+  assert.ok(st[3].t - st[2].t >= 1000, `the 1 s idle window took ${st[3].t - st[2].t} ms of wall time`);
+  assert.ok(res.results[0].host.phases.idle.windowSec >= 1);
+});
+
+test('review-i027 2: verify refuses a stubbed host outside a test unless Chrome is a test fixture (no verdict from a fake host)', () => {
+  for (const chrome of [undefined, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']) {
+    const { d, env, args } = setup();
+    const e = { ...env, FW_TEST_HOST: FAKE_HOST };
+    if (chrome) e.CHROME = chrome; else delete e.CHROME;
+    const r = node(VERIFY, args('stubbed'), { env: e });
+    assert.equal(r.code, 2, r.out);
+    assert.match(r.stderr, /stubbed host \(FW_TEST_HOST=.*fake-host\.mjs\) outside a test/);
+    assert.equal(existsSync(join(d, 'state')), false, 'refused before the lock');
+    assert.equal(existsSync(join(d, 'result.json')), false, 'no result');
+  }
 });

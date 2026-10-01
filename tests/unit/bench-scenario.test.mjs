@@ -8,7 +8,7 @@ import { node, FAKE_HOST } from '../helpers.mjs';
 const SCENARIO = new URL('../../tools/lib/bench-scenario.mjs', import.meta.url).href;
 
 test('real host (no FW_TEST_HOST): scenarioClock() is Date.now + setTimeout, unchanged', async () => {
-  assert.equal(process.env.FW_TEST_HOST, undefined, 'this test process has no host stub');
+  assert.ok(!process.env.FW_TEST_HOST, 'this test process has no host stub');
   const { scenarioClock } = await import(SCENARIO);
   const c = await scenarioClock();
   assert.equal(c.stub, undefined);

@@ -65,7 +65,7 @@ import { REPO, checkoutId } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
 import { loggerSource, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
 import { TRACE_START, TRACE_ARM, TRACE_DISARM, BUCKETS, BUCKET_LABELS, attributeFrames } from './lib/trace-frames.mjs';
-import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock } from './lib/host.mjs';
+import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock, stubOutsideTest } from './lib/host.mjs';
 
 const ROOT = REPO;
 const argv = process.argv.slice(2);
@@ -174,6 +174,7 @@ async function recheckHost() {
 // Settle, the idle window, the morph tail and the screenshot pauses wait on T. A real host: Date.now +
 // setTimeout, exactly as before. A stubbed host ($FW_TEST_HOST, tests only; every result records it as
 // host.stub): the stub's fake clock, so a fake-Chrome run costs no wall time. There is no other switch.
+// A stub outside a test with a real Chrome is refused (main(), host.mjs stubOutsideTest, review-i027).
 let T = { now: () => Date.now(), sleep };
 async function useHostClock() { const c = await hostClock(); if (c.stub) T = { now: () => c.mono(), sleep: (ms) => c.sleep(ms) }; }
 
@@ -459,6 +460,11 @@ async function main() {
   // process hold; a verify that re-entered an outer hold (`lock.mjs run`, test:chrome) or ran with
   // --no-lock died on SIGTERM with its Chrome left running (test:chrome on 48ace89).
   for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => process.exit(130));
+  if (stubOutsideTest()) {
+    // review-i027: a stubbed host would put fake waits and a fake host record under a real Chrome's numbers
+    console.error(`verify: a stubbed host (FW_TEST_HOST=${process.env.FW_TEST_HOST}) outside a test, with a real Chrome: refused; unset FW_TEST_HOST to measure`);
+    process.exit(2);
+  }
   await useHostClock();
   let lockHolder = null;
   if (!flag('no-lock')) {
