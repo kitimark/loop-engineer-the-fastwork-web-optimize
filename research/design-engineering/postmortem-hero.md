@@ -485,6 +485,16 @@ The section's only containment is lifted while the rotator runs.
   inactive.
 - The rotator only runs while `dE` is active (`sE`, L2689-2694).
 
+**Evidence on W1 (P-033 step 0, fix-scroll-engine `layout-containment/idle6-8.cjs`, OBSERVED):**
+- At rest, within 0-60 ms of a rotator tick, 23/26 and 22/27 small Layouts (~0.1 ms) have a 104×32 root quad.
+  That is exactly `.is-carousel`'s CSS box (width 104px, height 32px).
+- 14-15 of them sit in Composite after the paints, with no RecalculateStyles before them. That fits an image
+  load changing intrinsic size inside the carousel.
+- So the phone's WebKit appears to treat the carousel as a layout boundary for that dirtying. If so, W1 is
+  weakened and W2 or W3 (something in the tick itself marks above the carousel) gains.
+- The element identity rests on size only. The decisive check: the element at the quad's position in phone
+  geometry. The cause of the load-time Layout is UNRESOLVED.
+
 **Verdict (§2.3 form):**
 - **Dirtier: LOCATED.** Code, cadence and Timeline agree in 3/3 captures and 47/47 layouts ≥10 ms. NAMED needs
   the ablation in 7.4.
