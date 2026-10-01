@@ -48,6 +48,7 @@ const VARIANTS = [
   { label: '01-task', overlay: 'vendor-scrollend--task', scenarios: ['A'] },
   { label: '02-idle', overlay: 'vendor-scrollend', scenarios: ['A', 'B', 'C', 'D'] },
   { label: '03-drop', overlay: 'vendor-scrollend--drop', scenarios: ['A'] },
+  { label: '02-debug', overlay: 'vendor-scrollend--debug', scenarios: ['D', 'B'] }, // 02 + console markers, for diagnosis only
 ].filter((v) => !ONLY.length || ONLY.includes(v.label));
 
 async function startServer(label, overlay) {
@@ -161,12 +162,13 @@ async function scenario(cdp, v, url, sc, profile, hook = true) {
   } else if (sc === 'B' || sc === 'D') {
     scroll = await step('jump', page.eval(`(async () => { window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }); await new Promise(r => setTimeout(r, 300)); return { y: scrollY, t: Math.round(performance.now()) }; })()`), 10000);
     if (sc === 'B') {
-      // the visitor switches tab/app 300 ms after the scroll: visibilitychange(hidden), page stays alive
-      const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank', browserContextId: page.browserContextId, newWindow: false });
-      await cdp.send('Target.activateTarget', { targetId });
+      // the visitor switches app 300 ms after the scroll: minimize the window -> visibilitychange(hidden), page stays alive
+      const { windowId } = await cdp.send('Browser.getWindowForTarget', { targetId: page.targetId });
+      await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'minimized' } });
       await sleep(1500);
-      scroll.hidden = await step('hidden', page.eval('({ vis: document.visibilityState, dl: window.__n11.dl.slice(-4), hits: window.__n11.hits.length })'), 10000);
-      await cdp.send('Target.closeTarget', { targetId }).catch(() => {});
+      scroll.hidden = await step('hidden', page.eval('({ vis: document.visibilityState, dl: window.__n11.dl.slice(-5), hits: window.__n11.hits.length })'), 10000);
+      await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'normal' } }).catch(() => {});
+      await sleep(300);
     }
   } else if (sc === 'C') {
     scroll = await page.eval(`(async () => { window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }); await new Promise(r => setTimeout(r, 400)); const yb = scrollY; window.scrollTo({ top: 0, behavior: 'instant' }); await new Promise(r => setTimeout(r, 300)); return { yBottom: yb, y: scrollY, t: Math.round(performance.now()) }; })()`);
