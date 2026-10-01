@@ -160,6 +160,13 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    (+ `document.cookie`, ~3 ms MinorGC), the vendor residual; (2) y=727, 1/3 loads, 50 ms = `Document::recalcStyle` 21.7 ms
    forced by the nav's `ee()` (JS 13223: getComputedStyle on `.start-selling-profile-sticky` + 2 rects per nav pass) =
    N12's area; N12 v5 removes that getComputedStyle. Candidate match for the iPhone's ~50 ms frame at y≈700.
+   **F-030 (fix-hero-exit's first-scroll probe, 08:20Z, aw1-10c, Chrome mobile unthrottled, n=1):** /10c's will-change
+   window flips `data-fw-wc` on countdown `span.face` ~930 times per scroll step, ~1,500 attribute writes/s plus layer churn
+   **even at y=0 at idle, inside the hero** (faces slide out of their overflow:hidden digit window; IO clips by ancestors).
+   A regression we introduced, in the area the user feels. Lead decision: if the counts probe confirms, the /10c hotfix
+   (`se10e-aw1`: drop `.face` from fwWCSel or observe the digit container) lands after parity + a short review, before
+   the phone confirms gain; on the phone it joins the hero block as P2. **Lesson:** review-10c missed idle churn; every
+   topic adding observers/listeners/attribute writes now gets an idle-counts probe at y=0 before landing (LEAD.md §4).
    **Order from 07:07Z:** N13 confirm hold -> N10 (iPhone-led) -> /10d -> hero-exit (y≈50) -> countdown 05/08; I-018's traced
    run ahead of later normals; N12 + #6 land after the finger verdict. -> N12 `--on aw1-10c` -> /10d -> hero-exit -> countdown 05/08; I-018's traced run goes
    ahead of any later normal once re-reviewed (N13 before N12: > 100 ms frame class before the 20-34 ms band, principle 1).

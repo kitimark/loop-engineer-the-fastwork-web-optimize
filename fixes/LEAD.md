@@ -163,6 +163,11 @@ again after. A well-documented null or rejected result (README `Status: rejected
 landing. For a tool fix that changes measurement code: `prompt: "tool fix, incident I-<nnn>,
 worktree <abs path>, branch <b>"`.
 
+Reviewer checklist addition (lead decision 2026-10-01, F-030): every topic that adds observers (IO, RO, MO), listeners or
+attribute/style writes gets an **idle-counts probe at y=0** (and at one parked mid-page position) before landing: callbacks/s
+and writes/s at rest, base vs patched, in the short lane. review-10c missed /10c's will-change window flipping
+`data-fw-wc` on the countdown faces ~1,500 times/s at idle in the hero; an A/B over the scroll phase cannot see it.
+
 ## 5. Land (rebase + fast-forward only)
 
 `git worktree list` shows each worktree and branch. Keep the main checkout clean (`git status
