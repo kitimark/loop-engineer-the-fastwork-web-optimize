@@ -23,9 +23,17 @@ Fields:
   in `fixes/<topic>/variants/<nn>.diff`), so `bench mech|gain --experiment <topic>/<nn>` reproduces the row,
   a failure included. `pending runner` until `tools/bench.mjs` lands; `no patch kept` when the variant can't
   be rebuilt (say why).
+- Protocol v2 fields (`research/architecture/measurement-protocol-v2.md`; rows before it leave them empty):
+  - **driver**: what produced the key numbers: `chrome-ab` (`fix.mjs ab`), `chrome-probe` (short lane, counts),
+    or phone `S` scripted / `W` window / `M` morph driver / `G` WDA gesture / `F` finger (§5.4). A row with two
+    drivers is two rows.
+  - **prediction**: the `fixes/PREDICTIONS.md` id written before the first timed run, or `none` (with why: a
+    probe, an ablation arm, a fast path).
+  - **attribution**: the D verdict of the card the variant was built on, `NAMED` / `LOCATED` / `UNEXPLAINED` /
+    `fast path`, and its role for an ablation arm (`positive`, `negative`, `position`).
 
-| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status | bench |
-|---|---|---|---|---|---|---|---|---|---|
+| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status | bench | driver | prediction | attribution |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | phone-invisible-shrink/01 | Gate future `l` and platform `n` on the exact CSS phone media query (skip `--future-shrink` / `--platform-shrink` writes, the easing rAF and the rect-read-after-write); cache the `MediaQueryList`s in profile `oe`/`ce` | On phones CSS already neutralises the shrink, so the writes are pure cost; forced style+layout ms, frames >20 ms and fps should improve | better (scroll fps and morph fps; other rows within noise) | old-tools, contaminated (load 8-20.2) | mobile 6x n=5: fps 66.5 [62.7-69.9] -> 71.6 [70.7-74.1]; >20 ms 104 [94-133] -> 82 [68-94]; forced 94 [46-116] -> 31 [27-83] ms | `fixes/phone-invisible-shrink/results.json` (createdAt 2026-09-30T22:07Z); README "Before / after" | T1, T2; the future callback `l` leaves the LoAF top list; P2 (easing tail removal shifts side-job timing) came out of its review | landed | pending runner: `fixes/phone-invisible-shrink/patch.diff` (main) |
 | phone-invisible-shrink/02 | /01, desktop viewport A/B | Desktop runs the baseline branch, so no regression | within noise | old-tools, contaminated (load 7.5-17.6) | desktop 6x n=5: fps 70.7 [66.3-73.4] -> 68.5 [68.4-72]; >20 ms 125 [111-156] -> 148 [127-150] | `results.json` `desktopRun`; WT:a6013 `out/ab/phone-invisible-shrink/results-desktop.json` | Only the MQL cache changes on desktop; the slightly worse medians were host noise | landed | pending runner: same diff as /01 |
 | phone-invisible-shrink/03 | /01 on the real iPhone (scripted scroll, plain http) | Fewer long frames on the phone | better | clean (device; ran in parallel to Chrome) | iPhone n=3+3: fps 52.4-53.2 -> 55.0-56.1; >20 ms 60-64 -> 40-43; >34 ms 14-22 -> 10-13; >50 ms unchanged | README "iPhone"; raw WT:a6013 `out/iphone/phone-invisible-shrink-{base,fix}N.json` | The win also shows on WebKit; >50 ms frames come from other topics | landed | pending runner: same diff as /01 |
