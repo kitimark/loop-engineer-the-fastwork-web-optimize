@@ -80,9 +80,36 @@ Nothing visual changes. What analytics sees changes in one way: the GA4 `scroll`
 the visitor pauses (1.5 s + idle), or at page hide, not at the scroll end. The threshold and event
 parameters are the same.
 
+## Analytics parity (probe, 1x, short lane, no timing claims)
+
+`research/vendor-scrollend/probe.mjs`. It runs one Chrome, mobile 430x932, `--vendors=local --https
+--latency 150`. It logs every foreign fetch/sendBeacon/XHR on top of `tools/vendor-shim.js`, which
+still answers them locally, plus the shim's per-host counters, every `dataLayer` push, and the window
+`scrollend`/`resize` listeners (`DOMDebugger.getEventListeners`). Unload events are recorded in
+`localStorage` too, because CDP dropped some console messages during unload (run 11).
+
+| scenario | base | 01 task | 02 quiet-idle | 03 drop (what-if) |
+|---|---|---|---|---|
+| listeners | gtag `scrollend`+`resize` at `gtag/js:903` | wrapped (`analytics.js`) | wrapped (`analytics.js:153`); page's own listeners untouched | none |
+| A smooth scroll to the bottom | 1x `scroll` (percent_scrolled 90), pushed ~1.4 s before the scroll ends | same, 1 hit | 1 hit, pushed ~1.5 s after the last scroll input (53-63 ms after the scroll script ends) | no `scroll` hit (expected) |
+| C bottom, back to top 400 ms later | 1 hit at the scrollend | - | 1 hit, pushed at y=0 with the deepest depth (shadowed `scrollTop`) | - |
+| D bottom, leave 300 ms later | 1 hit at the scrollend | - | 1 hit, from the `pagehide` flush (fetch keepalive 7 ms after `pagehide`) | - |
+| other vendors (Amplitude, Hotjar, Cloudflare) | same per-host counts in every variant | | | |
+
+Data: `research/vendor-scrollend/data/probe-2026-10-01T02-35-01-789Z.json` (A, C, 01, 03),
+`…T03-15-43-024Z.json` (D), `…T02-56-51-304Z.json` and `…T03-10-08-549Z.json` (pagehide diagnosis).
+Host: load1 1.5-5, CPU 77-81 % idle, `caffeinate -dis` (I-026).
+The "B" tab-switch/minimize hide could not be produced in this Chrome: the window flags keep the
+page `visible`. So `visibilitychange` is not exercised separately, only the `pagehide` path (D).
+
 ## Experiments tried
 
-(filled from the probe and A/B below)
+| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status | bench |
+|---|---|---|---|---|---|---|---|---|---|
+| vendor-scrollend/01 | `setTimeout(0)` deferral of the tag's scrollend/resize call (`variants/01.diff`) | moves the ~60 ms out of the scrollend dispatch | functional parity ok. Timing: not measured; by mechanism it only re-attributes the LoAF (the same task one turn later) | 1x probe only | push time same as base (~1.4 s before the scroll ends) | probe run 8 | a monolithic task can't leave the frame budget by changing its task boundary | dropped (no expected gain) | pending runner |
+| vendor-scrollend/02 | quiet-idle deferral (1.5 s without input, then rIC), deepest-depth shadow, pagehide/visibilitychange flush (`variants/02.diff` = `patch.diff`) | the frame leaves the scroll; it runs while the visitor reads | parity ok in A/C/D; timing pending (final slot, `--on all-wave1` + `phases.mjs`) | 1x probe | 1 hit everywhere, same params | probe runs 8, 12 | see "Before / after" | on branch | pending runner |
+| vendor-scrollend/03 | what-if, **needs the site's GA setting** (EM "Scrolls" off): tag listener dropped (`variants/03.diff`) | ceiling: no tag frame at all | no GA4 `scroll` event (by design); timing pending (1 run in `phases.mjs`) | 1x probe | 0 scroll hits | probe run 8 | only the GA admin can remove the cost | what-if only | pending runner |
+| vendor-scrollend/probe-1..7 | probe tool attempts | - | broke: run 1 chrome-error (self-signed cert not accepted); run 6 hit the 180 s cap silently; run 7 lost to host sleep (I-026); run 9 "B" could not hide the page | - | - | commits 9764e0f, 41b58d9, I-026 | load guard, bounded steps, caffeinate; console is unreliable during unload | fixed | no patch kept |
 
 ## Before / after
 
