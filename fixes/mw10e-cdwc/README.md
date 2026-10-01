@@ -113,8 +113,10 @@ iphone-runner, is still in progress.
       handler. Only a downward finger move (or wheel up) reverses it.
     - Every tween lasts 680 ms (`ZM` r = 680, cubic ease-out, clock = `performance.now()` in the handler).
   - **Forward tweens in finger-protocol-v1 (asPerformed): exactly 2 per run.**
-    - Push 1 (first stroke after the "push" mark). m = 0: hero and traverse moves are never prevented (no-hook test
-      run, aw1-10e).
+    - Push 1 (first stroke after the "push" mark). m = 0 at its start: by the code, k is false away from the end zone
+      while C() is false, so hero and traverse moves are never prevented.
+      - The hook-free test runs showed the same, but they played every stroke as a ~50 ms flick (I-042 interim,
+        ts-gesture, OBSERVED). So the observed prevented counts must be checked again after I-042.
     - The up stroke of drag-into-end (560 px / 1500 ms). The down stroke before it (450 px / 700 ms) starts the
       reverse tween on its first move. That tween ends about 700 ms after the stroke starts, and the 300 ms pause
       follows, so m = 0 at rest with about 300 ms margin.
@@ -130,10 +132,17 @@ iphone-runner, is still in progress.
     - So the window ends up to 1 frame later, and the activation frame stays inside it.
     - Per tween the scorer flags "t0-lag": frames between the OS delivery (timeStamp) and the handler, which cannot
       carry m > 0. The flag is reported and changes no rule.
-    - WDA sends one touchmove per still stroke (hook-free test run g32-w32b-C), so t0 is that move.
-    - Scorer: a local script that rebuilds the state from the touch rows. It was checked on that test run: push 1 was
-      the only forward tween, and the held phase gave 597 frames. The run was void, because WDA timed out at
-      drag-into-end.
+    - Withdrawn: "WDA sends one touchmove per still stroke". That was an artifact of the I-042 flicks: pointerMove
+      durations were dropped, so a 940 ms move arrived as one touchmove.
+    - The scorer does not assume one move per stroke. It runs the state machine over every touchmove, with n taken
+      between consecutive moves of a sequence.
+    - With real stroke durations, the reverse tween of the drag-into-end down stroke (700 ms) ends about 20 ms before
+      the stroke does. The last few down moves then scroll the page, which the scorer ignores because they are not
+      prevented. The up stroke's tween starts at its first prevented move with n ≥ 1, once the end zone (`O`) holds
+      again.
+    - Scorer: a local script that rebuilds the state from the touch rows. Its run on the void flick-mode test run
+      (push 1 was the only forward tween, 597 held frames) only shows that the code paths run. It is redone on the
+      first valid post-I-042 run, before any counted run is scored.
   - **Held m = 1 phase** (prediction 4 and its +8 ms WORSE rule are kept). It covers the frames with stamp from
     (handler time of t0's move) + 680 + 300 ms until the next reverse move, counting only frames while a finger is
     down (a stroke's touchstart to touchend).
