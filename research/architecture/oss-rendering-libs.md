@@ -95,20 +95,33 @@ scroll-driven animations, 26.4+). "Verdict" ranks the mechanism for iPhone 15 Pr
 | `position: sticky` | yes | scrolling tree (UI process), no main-thread work per frame | – | apple-smooth-scroll.md §2.9, `ScrollingTreeStickyNode.cpp` |
 | passive vs non-passive touch listeners | window/document/body touch passive by default since 11.3 | a non-passive listener makes its region synchronous: the UI-process scroll waits for the main thread | regions are computed in the rendering update and pushed to the scrolling tree, so **adding** a listener costs a region update in that frame | bug https://bugs.webkit.org/show_bug.cgi?id=184250; WebKit PR https://github.com/WebKit/WebKit/pull/68980: "touch event regions must be calculated and propagated to the scrolling tree before dispatching touch events" (GTK/WPE port of the iOS model; iOS keeps the trees in the UI process) |
 
-### 1.3 Why `linear()` is main-thread on the phone (surprise 1, in detail)
+### 1.3 Why `linear()` is main-thread on the phone, iOS 26.x (surprise 1, in detail)
+
+Status (claims audit by arch-claims, F-065, which amends F-048): **CONFIRMED for iOS 26.x** (26.6.1), including
+`steps()`. It is **not expected to hold on Safari 27**: the deciding preference is on by default on WebKit `main`
+(below). Line numbers are WebKit `main` read 2026-10-01; the Safari 26 branch (`safari-7624-branch`) numbers are
+given where arch-claims checked them. The device check is still P0 (§3).
 
 - WebKit has two acceleration paths. `KeyframeEffect::canBeAccelerated()` returns early on the **threaded** path:
   `if (canHaveAcceleratedRepresentation()) return !animation->pending() && (… || protect(animation->timeline())->canBeAccelerated());`
   (`Source/WebCore/animation/KeyframeEffect.cpp:2005-2007`, source). Otherwise it falls through to the **legacy
   Core Animation** checks:
-  `if (m_isAssociatedWithProgressBasedTimeline) return false;` (2012) and
-  `#if USE(CA) … if (m_someKeyframesUseLinearTimingFunctionWithPoints || isLinearTimingFunctionWithPoints(timingFunction())) return false;`
-  (2015-2021; `steps()` the same).
-- `canHaveAcceleratedRepresentation()` (3276-3287) takes the threaded path for scroll timelines when
-  `threadedScrollDrivenAnimationsEnabled()`, and for time-based animations only when
-  `threadedTimeBasedAnimationsEnabled()` (source).
+  `if (m_isAssociatedWithProgressBasedTimeline) return false;` (2012), then inside `#if USE(CA)`
+  `if (m_someKeyframesUseStepsTimingFunction || is<StepsTimingFunction>(timingFunction())) return false;` (2016;
+  7624 branch l.1959) and
+  `if (m_someKeyframesUseLinearTimingFunctionWithPoints || isLinearTimingFunctionWithPoints(timingFunction())) return false;`
+  (2019; 7624 branch l.1962). CONFIRMED (source, F-065).
+- `canHaveAcceleratedRepresentation()` (3276-3287) only reads the settings: it takes the threaded path for scroll
+  timelines when `threadedScrollDrivenAnimationsEnabled()`, and for time-based animations only when
+  `threadedTimeBasedAnimationsEnabled()` (source). The exclusions themselves are the lines above, after its early
+  return.
+- The deciding preference: `ThreadedTimeBasedAnimationsEnabled` is `unstable`, default `false`, in
+  `safari-7624-branch` (`UnifiedWebPreferences.yaml` l.8339-8352) and `stable`, default `true`, on `main`.
+  CONFIRMED (source, F-065). So the legacy path, and with it this whole section, applies to iOS 26.x.
 - The legacy path hands CA a `CAMediaTimingFunction`, which exists only for cubic-bezier and the identity linear
-  function (`PlatformCAAnimationCocoa.mm:130-151`, `ASSERT(LinearTimingFunction::identity() == timingFunction)`, source).
+  function (`PlatformCAAnimationCocoa.mm:130-151`, `toCAMediaTimingFunction`,
+  `ASSERT(LinearTimingFunction::identity() == timingFunction)`). This is the reason for the exclusions. CONFIRMED
+  (source, F-065).
 - **Flag history for threaded time-based animations** (source + vendor doc):
   - enabled in Safari Technology Preview 238, 2026-02-26 (https://webkit.org/blog/17848/release-notes-for-safari-technology-preview-238/:
     "Enabled threaded time-based animation resolution");
@@ -118,7 +131,7 @@ scroll-driven animations, 26.4+). "Verdict" ranks the mechanism for iPhone 15 Pr
   - re-enabled 2026-09-26 (https://github.com/WebKit/WebKit/pull/75004, "take 4").
   - The Safari 26.4 notes ship only threaded **scroll-driven** animations. No 26.5, 26.6 or 27.0 note mentions
     time-based threading.
-- **Conclusion (inference, strong):** iOS 26.6.1 runs time-based CSS transitions, `@keyframes` and WAAPI on the
+- **Conclusion (CONFIRMED by source for iOS 26.x, F-065; device check P0):** iOS 26.6.1 runs time-based CSS transitions, `@keyframes` and WAAPI on the
   legacy CA path. A `linear(<points>)` or `steps()` easing therefore turns them into main-thread animations: style
   plus layer commit every frame, and they stall with the main thread. Scroll-driven animations are not affected.
 - **Verify on the device before relying on it** (P0 in §3, 10 min). This reverses advice in webkit.md §10/rec 1,
