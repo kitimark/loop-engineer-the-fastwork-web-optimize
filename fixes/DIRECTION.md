@@ -125,7 +125,26 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    Chrome slot; land-into-base waits for the iPhone scripted check (iPhone queue item 9).
    **Measurement note:** the aw1-10c baseline gave > 34 ms 5 [5-9] in N12's hold vs 3-4 in /10c's own hold: the
    cross-session spread on > 34 ms is about ±2, so quote > 34 ms only within one hold (A vs B), never across holds.
-   Updated order: part 4 (done) -> N13 -> N12 `--on aw1-10c` -> /10d -> hero-exit -> countdown 05/08; I-018's traced run goes
+   **N13 storm-catch (06:45-06:54Z, 24 fresh loads of aw1-10c, 12 traced, load1 3.6-8.1, mechanism only):** 0/24 storms
+   (0/29 on any /10c base vs 2/12 without, Fisher p ≈ 0.08); one confirm hold on all-wave1 without /10c decides: >= 2
+   storms -> /10c credited with removing it, 0 -> N13 closed "rare, not reproducible" (587df6f).
+   **GOAL STATUS 2026-10-01 07:00Z.** *Chrome (mobile 6x):* page-owned > 50 ms frames 0 on aw1-10c; 1 vendor frame per run
+   (gtag `onscrollend`, GA Enhanced Measurement "Scrolls"), removable only by the site's GA setting (N11/03 what-if shows
+   it); the lead takes it to the user. *iPhone goal check* (iphone-runner, scripted n=3, B P P B B P, baseline -> aw1-10c):
+   fps 52.8 -> 57.1 (disjoint), > 20 ms 76 -> 46, **> 34 ms 16 -> 9, > 50 ms 5 -> 3**, > 100 ms 1 -> 1 (worst 113 -> 106).
+   Goal not met on the phone. Left > 50 ms every run: **~106 ms at y≈1960-1970 (pain entry, the N10 "unexplained" frame) =
+   #1 iPhone target**; 51-55 ms at y≈50 (first scroll out of the hero); ~50 ms at y≈700 (people) and ~1000 (profile) in
+   2/3. The commission cluster (2650-2990) is mostly gone.
+   **Lead decision 07:07Z: N10 transition-frames -> fix-scroll-engine, the #1 target** (the y≈1970 frame); /10d behind
+   it; the N13 confirm hold stays. Plan: (1) iphone-runner, after the finger tests: iPhone item 1 (R3 cv logger +
+   MutationObserver) on aw1-10c through y 1700-2200, n=3, plus a Safari Timeline capture if possible; (2) fix-scroll-engine
+   builds aw1-10c ablation overlays (only while chrome-measure is free or short-held): (a) `.pain`/commission-card blur off,
+   (b) `.pain` content-visibility visible from load, (c) will-change windows off at the pain boundary, (d) `is-pain-dark`
+   frozen; iphone-runner runs each vs aw1-10c, n=3 through y 1700-2200 plus one full-page pass; (3) the ablation that
+   removes the frame names the cause class -> real fix (pre-warm / hysteresis / smaller blur) -> Chrome parity + mech
+   (short lane) -> iPhone A/B. hero-exit resumes for the y≈50 frame once N10 has a cause.
+   **Order from 07:07Z:** N13 confirm hold -> N10 (iPhone-led) -> /10d -> hero-exit (y≈50) -> countdown 05/08; I-018's traced
+   run ahead of later normals; N12 + #6 land after the finger verdict. -> N12 `--on aw1-10c` -> /10d -> hero-exit -> countdown 05/08; I-018's traced run goes
    ahead of any later normal once re-reviewed (N13 before N12: > 100 ms frame class before the 20-34 ms band, principle 1).
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
