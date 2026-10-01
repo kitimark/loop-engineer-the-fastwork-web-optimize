@@ -104,6 +104,7 @@ dropped.
 | ctl-B8 | 07:32 | 40.8 | 44 / 13 | 59.6 | 37.3 | fail |
 | ctl-B9 | 07:44 | 51.8 | 19 / 6 | 59.4 | 60.0 | pass (after 10-15 min locked, case off, fan) |
 | ctl-B10 | 08:16 | 22.8 | 42 / 34 | 60.4 | 45.3 | fail (right after the finger tests) |
+| ctl-B11 | 08:24 | 52.6 | 19 / 8 | 59.3 | 40.4 | fail (bottom); the morph finger block ran anyway (lead) |
 
 The failure signature: static idle rAF stays at 60, but under scroll load the scroll phase drops to
 16-41 fps and the bottom phase to 32-48 fps with most frames > 20 ms (30 Hz steps), i.e. the phone
@@ -153,6 +154,38 @@ morph" = y >= 4485, all frames, because the morph pins scrollY at 5220):
   site), the first A1 attempts (no scroll in the window) and C1 (no scroll; the user stopped).
 - Not done: the C/D pair (aw1-10c vs aw1-10c + #6 v05, overlay `aw1-10c-6` built and served) and the
   finger part of DIRECTION item 7; postponed by the lead until the user has time.
+
+## 2b. Morph finger block: aw1-10c vs mw-g-pinclamp-osb (08:24-08:36Z)
+
+**Conditions: warm phone** (control ctl-B11 at 08:24Z: scroll 52.6 fps, idle 59.3, but bottom 40.4 fps
+= fail; the lead ran the block anyway, B g g B alternation spreads the heat over both sides). A 2 s idle
+rAF check before every run: 59.5-60.5 fps.
+Pages, blind for the user: E = aw1-10c (:5441, 757e2cbc/c6aad94b), F = g = `mw-g-pinclamp-osb` on
+aw1-10c (fix-nav-morph's worktree `agent-a277ea00c8773c1ea`, served from its overlays: JS 7eb48223, CSS
+c6aad94b). Instruments per run: the frame recorder (`rec.mjs`) and fix-nav-morph's
+`fixes/morph-webkit/morph-log.mjs` (per frame: --morph, nav classes, page-rAF JS ms, pin
+scrollTo calls, touchmoves and whether they were prevented). Order E1, (E1b), F1, F2; E2 skipped by
+the lead (verdict clear, saves heat and the user's time). E1 was not per protocol (user), kept as data
+only; the reload in E1 also dropped the logger until re-installed.
+
+| run | user | morph-active frames | p50 / p95 ms | > 50 ms | worst | pin fight (scrollY reversals >= 20 px at the end) | pin scrollTo calls | touchmoves prevented |
+|---|---|---|---|---|---|---|---|---|
+| E1 (aw1-10c, not per protocol) | (redo) | 2848 | 23 / 37 | 45 | 132 | 1 (5220<->5267) | n/a | n/a |
+| E1b (aw1-10c) | "laggy" | 949 | 24 / 73 | 94 (10 %) | 230 | **8 (5220<->5334)** | 73 | 431 / 470 |
+| F1 (g) | "same laggy" | 481 | 17 / 86 | 102 (21 %) | 148 | **0** | 0 | 300 / 318 |
+| F2 (g) | "same laggy" | 277 | 19 / 117 | 73 (26 %) | 199 | 1 (5260<->5412, toolbar expanded: one rubber-band bounce, not a pin fight) | 0 | 165 / 184 |
+
+In every run the slow frames are **rendering, not script**: median page-rAF JS 0-1 ms against 39-66
+ms for the rest of the frame (style/layout/paint/composite).
+
+**Verdict:** g does what it targets (the pin `scrollTo` and its fight with the rubber band are gone:
+0 pin calls, 0-1 reversals vs 73 calls and 8 reversals), but the user feels no difference, because
+the morph's own render cost is unchanged or worse: 50-230 ms frames while the morph is active on
+both. The morph's per-frame paint/composite (no JS) is the end-of-page lag. Next: morph render
+ablations (blur/backdrop/large layers of the morph panel) with a scripted morph driver.
+
+Earlier finger runs agree: the B2 pass 2 dwell at the pin (aw1-10c, 08:06Z) ran ~13 fps with 50
+reversals 5220<->5312 (section 2).
 
 ## 3. Scripted queue (DIRECTION "iPhone scripted-check queue")
 
