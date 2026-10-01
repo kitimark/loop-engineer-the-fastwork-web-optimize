@@ -22,7 +22,7 @@ test('fix.mjs ab --runs 1 --cpu 2 with real Chrome', async () => {
   assert.equal(fix('edit', 'nav-cache', PAGE_JS).code, 0);
   const f = join(repo.wt, 'fixes', 'nav-cache', 'overlay', PAGE_JS.slice(1));
   writeFileSync(f, readFileSync(f, 'utf8').replace('function tick() {\n  const n = document.querySelector(".start-selling-top-nav");', 'const nav = document.querySelector(".start-selling-top-nav");\nfunction tick() {\n  const n = nav;'));
-  const r = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'nav-cache', '--runs', '1', '--cpu', '2', '--idle', '1', '--max-wait', '10'], { cwd: repo.wt, env: { ...lock.env, FW_STATE_DIR: join(common, 'fastwork-mirror'), FW_LOCK_OWNER: `test-chrome-ab-${process.pid}`, FW_TEST_HOST: '', FW_GATE_MAX_WAIT: '60' }, timeout: 600000 });
+  const r = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'nav-cache', '--runs', '1', '--cpu', '2', '--idle', '1', '--max-wait', '10', '--cdp-metrics'], { cwd: repo.wt, env: { ...lock.env, FW_STATE_DIR: join(common, 'fastwork-mirror'), FW_LOCK_OWNER: `test-chrome-ab-${process.pid}`, FW_TEST_HOST: '', FW_GATE_MAX_WAIT: '60' }, timeout: 600000 });
   assert.equal(r.code, 0, r.out);
   assert.doesNotMatch(r.out, /\[lock chrome-measure\] busy/, 'fix.mjs ab / verify.mjs re-entered the hold instead of queueing');
   const res = JSON.parse(readFileSync(join(repo.wt, 'fixes', 'nav-cache', 'results.json'), 'utf8'));
@@ -48,7 +48,7 @@ test('fix.mjs ab --runs 1 --cpu 2 with real Chrome', async () => {
   assert.equal(res.host.runsTotal, 2);
   assert.equal(typeof res.host.otherCpuPctMax, 'number');
   assert.match(res.markdown, /host: \d+ of 2 runs contaminated/);
-  // per-phase CDP deltas (I-018) in results and markdown
+  // per-phase CDP deltas (--cdp-metrics, I-018) in results and markdown
   assert.ok(res.metrics.scroll.cdpStyleCount.baseline.median >= 0);
   assert.match(res.markdown, /^\| scroll: style recalcs \(CDP\) \|/m);
   assert.match(res.markdown, /^\| idle: layouts \(CDP\) \|/m);

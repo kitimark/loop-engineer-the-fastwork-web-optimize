@@ -6,7 +6,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, tool, TESTS, sleep, startProc, FAKE_HOST } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, tool, TESTS, sleep, startProc, FAKE_HOST, cdpTokens } from '../helpers.mjs';
+import { TRACE_START } from '../../tools/lib/trace-frames.mjs';
 import { LOGGER, RESET, COLLECT, COLLECT_AT } from '../../tools/lib/perf-page.mjs';
 
 const FAKE = join(TESTS, 'fixtures', 'fake-chrome.mjs');
@@ -418,13 +419,31 @@ test('I-023 watchdog: a step with no progress fails verify with a clear error, f
   assert.equal(bad.code, 2);
 });
 
-// ---- per-phase CDP metrics (default), --trace-frames, --frame-log (incident I-018, E5) ------------------
+// ---- per-frame attribution, all opt-in: --cdp-metrics, --trace-frames, --frame-log (incident I-018, E5) ---
 const CDP_STEP = { cdpScriptMs: 50, cdpStyleMs: 20, cdpLayoutMs: 10, cdpTaskMs: 200, cdpStyleCount: 5, cdpLayoutCount: 3, cdpV8CompileMs: 4, cdpDevToolsMs: 1 };
 const cdpOf = (s) => Object.fromEntries(Object.keys(CDP_STEP).map((k) => [k, s[k]]));
+// The golden: every CDP command verify.mjs sent on main before I-018 (05967e9), 2 runs with an idle phase,
+// recorded with tests/helpers.mjs cdpTokens(). A default run must send exactly these, in this order.
+const GOLDEN = JSON.parse(readFileSync(join(TESTS, 'fixtures', 'verify-default-cdp.json'), 'utf8'));
 
-test('Performance.getMetrics per phase by default: enabled once per page, read at every phase boundary, deltas in every phase summary', async () => {
+test('default run (no I-018 flags): exactly the CDP commands of verify.mjs before I-018 (golden), no Performance.*', async () => {
   const { d, env, args } = setup();
-  const r = await nodeAsync(VERIFY, args('cdp', ['--idle', '1', '--max-wait', '0']), { env });
+  const a = args('golden', ['--idle', '1', '--max-wait', '0']);
+  a[a.indexOf('--runs') + 1] = '2'; // the first --runs wins: replace setup()'s, don't append
+  const r = await nodeAsync(VERIFY, a, { env });
+  assert.equal(r.code, 0, r.out);
+  const log = readLog(env.FAKE_CHROME_LOG);
+  assert.equal(log.some((l) => /^(Performance|Tracing)\./.test(l.method)), false);
+  assert.deepEqual(cdpTokens(log), GOLDEN);
+  const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  assert.deepEqual(res.measurement, { cdpMetrics: false, traceFrames: false, frameLog: false });
+  assert.equal('cdpStyleMs' in res.results[0].scrollSummary, false);
+  assert.equal('traceFrames' in res.results[0], false);
+});
+
+test('--cdp-metrics: Performance.getMetrics enabled once per page, read at every phase boundary, deltas in every phase summary', async () => {
+  const { d, env, args } = setup();
+  const r = await nodeAsync(VERIFY, args('cdp', ['--idle', '1', '--max-wait', '0', '--cdp-metrics']), { env });
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
   const x = res.results[0];
@@ -438,34 +457,59 @@ test('Performance.getMetrics per phase by default: enabled once per page, read a
   const seq = log.map((l) => (l.method === 'Performance.getMetrics' ? 'M' : step(l))).filter((s) => s === 'M' || s === 'reset' || s === 'collect');
   assert.deepEqual(seq, ['M', 'reset', 'collect', 'M', 'M', 'reset', 'collect', 'M', 'M', 'reset', 'collect', 'M']);
   assert.match(r.stdout, /style 20ms\/5x layout 10ms\/3x script 50ms/);
-
+  // apart from the Performance.* commands, the same sequence as a default run
   const B = setup();
-  const rb = await nodeAsync(VERIFY, B.args('nocdp', ['--idle', '0', '--max-wait', '0', '--no-cdp-metrics']), { env: B.env });
+  const rb = await nodeAsync(VERIFY, B.args('nocdp', ['--idle', '1', '--max-wait', '0']), { env: B.env });
   assert.equal(rb.code, 0, rb.out);
-  const xb = JSON.parse(readFileSync(join(B.d, 'result.json'), 'utf8')).results[0];
-  assert.equal('cdpStyleMs' in xb.scrollSummary, false);
-  assert.equal(readLog(B.env.FAKE_CHROME_LOG).some((l) => l.method.startsWith('Performance.')), false, '--no-cdp-metrics: the pre-I-018 measurement');
+  assert.deepEqual(cdpTokens(log.filter((l) => !l.method.startsWith('Performance.'))), cdpTokens(readLog(B.env.FAKE_CHROME_LOG)));
 });
 
-test('--trace-frames: traces the scroll phase, attributes each frame > 20 ms, and says tracing perturbs timing', async () => {
+test('--trace-frames: traces the scroll phase, attributes its own frames > 20 ms, checks completeness, says tracing perturbs timing', async () => {
   const { d, env, args } = setup();
   const r = await nodeAsync(VERIFY, args('trace', ['--idle', '0', '--max-wait', '0', '--trace-frames']), { env });
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
   const x = res.results[0];
-  // tests/fixtures/trace-fixture.mjs: two frames > 20 ms (see tests/unit/trace-frames.test.mjs)
-  assert.deepEqual(x.traceSummary, { frames: 2, scriptMs: 8, styleMs: 21, layoutMs: 6, paintMs: 3, otherMs: 3, idleMs: 17, styleElements: 1020 });
+  // tests/fixtures/trace-fixture.mjs: two frames > 20 ms in the logger's window (see tests/unit/trace-frames.test.mjs)
+  const z = { script: 0, style: 0, layout: 0, paint: 0, other: 0, offMain: 0 };
+  assert.deepEqual(x.traceSummary, { frames: 2, scriptMs: 8, styleMs: 21, layoutMs: 6, paintMs: 3, otherMs: 3, offMainMs: 17, gt34: 0, gt50: 0, styleElements: 1020, gt34ByClass: z, gt50ByClass: z, partial: false });
   assert.equal(x.traceFrames.frames.length, 2);
-  assert.equal(x.traceFrames.events, 11);
+  assert.deepEqual(x.traceFrames.summary.window, { from: 1000, to: 1106 }, 'the window the page reported');
+  assert.equal(x.traceFrames.events, 13);
+  assert.equal(x.traceFrames.dataLossOccurred, false);
+  assert.equal(x.traceFrames.bufferPercentMax, 12.3, 'Tracing.bufferUsage');
+  assert.equal(x.traceFrames.summary.lastEventCoversLastFrame, true);
+  // the fake's canned logger frames (54, 4 > 20 ms) are not the fixture's rAF timestamps: the check shows both
+  assert.deepEqual(x.traceFrames.check, { loggerFrames: 54, loggerGt20: 4, traceWindowFrames: 4, traceGt20: 2 });
   assert.match(x.traceFrames.note, /tracing perturbs timing/);
   assert.equal(res.measurement.traceFrames, true);
-  assert.match(r.stdout, /trace >20ms 2: script 8 style 21 layout 6 paint 3 idle 17ms/);
-  assert.match(r.stdout, /^trace-frames: traced: tracing perturbs timing/m);
+  assert.equal(res.measurement.traceBufferKb, TRACE_START.traceConfig.traceBufferSizeInKb);
+  assert.match(r.stdout, /trace >20ms 2: script 8 style 21 layout 6 paint 3 other 3 offMain 17ms; >34ms 0 \(-\) >50ms 0 \(-\)/);
+  assert.match(r.stdout, /^trace-frames: traced: tracing perturbs timing.*offMain = other \(compositor\/raster\/GPU\/vsync; GPU not separated\)/m);
   const log = readLog(env.FAKE_CHROME_LOG);
-  const start = log.find((l) => l.method === 'Tracing.start');
-  assert.ok(start.params.traceConfig.includedCategories.includes('devtools.timeline'));
+  assert.deepEqual(log.find((l) => l.method === 'Tracing.start').params, TRACE_START, 'explicit buffer size, recordUntilFull, buffer usage reports');
   const order = log.map((l) => (l.method.startsWith('Tracing.') ? l.method : step(l))).filter((s) => ['Tracing.start', 'Tracing.end', 'reset', 'scroll', 'collect'].includes(s));
   assert.deepEqual(order.slice(0, 5), ['Tracing.start', 'reset', 'scroll', 'collect', 'Tracing.end'], 'the trace covers exactly the scroll phase');
+});
+
+test('--trace-frames: data loss marks the trace partial; a trace that never completes is traceFrames.error and the run goes on', async () => {
+  const A = setup();
+  const ra = await nodeAsync(VERIFY, A.args('loss', ['--idle', '0', '--max-wait', '0', '--trace-frames']), { env: { ...A.env, FAKE_CHROME_TRACE: 'dataloss' } });
+  assert.equal(ra.code, 0, ra.out);
+  const xa = JSON.parse(readFileSync(join(A.d, 'result.json'), 'utf8')).results[0];
+  assert.equal(xa.traceFrames.dataLossOccurred, true);
+  assert.equal(xa.traceSummary.partial, true);
+  assert.deepEqual(xa.traceFrames.summary.partialReasons, ['trace data loss (buffer full)']);
+  assert.match(ra.stdout, /PARTIAL TRACE: trace data loss/);
+
+  const B = setup();
+  const rb = await nodeAsync(VERIFY, B.args('hang', ['--idle', '0', '--max-wait', '0', '--trace-frames', '--trace-timeout', '1']), { env: { ...B.env, FAKE_CHROME_TRACE: 'nocomplete' } });
+  assert.equal(rb.code, 0, rb.out);
+  const xb = JSON.parse(readFileSync(join(B.d, 'result.json'), 'utf8')).results[0];
+  assert.match(xb.traceFrames.error, /Tracing\.tracingComplete not received within 1 s \(--trace-timeout; 13 events so far\)/);
+  assert.equal(xb.traceSummary, null);
+  assert.equal(xb.morphState, 'start-selling-top-nav is-morph', 'the morph phase still ran');
+  assert.match(rb.stdout, /trace: Tracing\.tracingComplete not received/);
 });
 
 test('--frame-log: [t, dt, scrollY] for every frame of every phase (E5); the default injects the plain LOGGER', async () => {

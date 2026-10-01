@@ -13,8 +13,9 @@
 //   node tools/fix.mjs serve <topic> [-- serve.mjs args]  # baseline + overlay on a per-worktree port
 //   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--idle 6] [--no-screens] [-- serve.mjs args]
 //   node tools/fix.mjs ab --aa [--runs 5]             # baseline vs baseline: the noise floor
-//   ab per-frame attribution (I-018): per-phase CDP script/style/layout deltas always; [--trace-frames] (opt-in,
-//                  perturbs timing) attributes frames >20 ms; [--frame-log] (E5) keeps [t, dt, scrollY] for tools/frames.mjs
+//   ab per-frame attribution (I-018), all opt-in: [--cdp-metrics] per-phase CDP script/style/layout deltas; [--trace-frames]
+//                  (perturbs timing) attributes frames >20 ms, writes results-trace.json, never results.json; [--frame-log] (E5)
+//                  keeps [t, dt, scrollY] for tools/frames.mjs
 //   ab host guard (I-017): [--max-wait 60] [--max-load 6] [--max-busy 20] [--watchdog 300] [--chrome-warm 10] go to verify.mjs (recheck before
 //                  each run); a run started at load1 > 10, other CPU > 25 %, memory pressure >= warn or
 //                  after a gate-timeout grant contaminates the result: verdicts get "CONTAMINATED (host): "
@@ -35,14 +36,15 @@ import { createHash } from 'node:crypto';
 import http from 'node:http';
 import { REPO, mirrorHome, resolveTree, isLinkedWorktree, gitCommonDir, sharedStateDir, autoPortBase, checkoutId, sha256File } from './lib/paths.mjs';
 import { allStatus } from './lib/lock.mjs';
+import { stats } from './lib/ab-stats.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const passthrough = dd >= 0 ? argv.slice(dd + 1) : null;
 const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on', '--max-wait', '--max-load', '--max-busy', '--watchdog', '--chrome-warm'];
-// passed through to verify.mjs by ab (I-018): --trace-frames (perturbs timing), --frame-log (E5), --no-cdp-metrics
-const AB_FLAGS = ['trace-frames', 'frame-log', 'no-cdp-metrics'];
+// passed through to verify.mjs by ab (I-018), all opt-in: --trace-frames (perturbs timing), --frame-log (E5), --cdp-metrics
+const AB_FLAGS = ['trace-frames', 'frame-log', 'cdp-metrics'];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
@@ -298,50 +300,19 @@ async function startServer(label, stateFile, extra) {
   }
   proc.kill(); die(`${label} server did not start`, 1);
 }
-const median = (xs) => { const s = [...xs].sort((a, b) => a - b); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
 const r1 = (x) => (x == null ? null : Math.round(x * 10) / 10);
 const METRICS = {
   scroll: [['fps', 'fps', +1], ['gt20', 'frames >20 ms', -1], ['gt34', 'frames >34 ms', -1], ['gt50', 'frames >50 ms', -1], ['gt100', 'frames >100 ms', -1], ['max', 'worst frame ms', -1], ['p95', 'p95 frame ms', -1], ['loafMs', 'LoAF ms', -1], ['loafScriptMs', 'LoAF script ms', -1], ['forcedLayoutMs', 'forced style+layout ms (in LoAF)', -1]],
   morph: [['fps', 'fps', +1], ['gt50', 'frames >50 ms', -1], ['loafMs', 'LoAF ms', -1], ['forcedLayoutMs', 'forced style+layout ms (in LoAF)', -1]],
   // verify.mjs --trace-frames (I-018): main-thread time inside the scroll phase's frames > 20 ms, by kind
-  trace: [['frames', 'frames >20 ms (traced)', -1], ['scriptMs', 'script ms in them', -1], ['styleMs', 'style ms in them', -1], ['layoutMs', 'layout ms in them', -1], ['paintMs', 'paint ms in them', -1], ['otherMs', 'other main-thread ms in them', -1], ['idleMs', 'main thread idle ms in them', -1], ['styleElements', 'elements style-recalculated in them', -1]],
+  trace: [['frames', 'frames >20 ms (traced)', -1], ['scriptMs', 'script ms in them', -1], ['styleMs', 'style ms in them', -1], ['layoutMs', 'layout ms in them', -1], ['paintMs', 'paint ms in them', -1], ['otherMs', 'other main-thread ms in them', -1], ['offMainMs', 'other (compositor/raster/GPU/vsync; GPU not separated) ms in them', -1], ['gt34', 'frames >34 ms (traced)', -1], ['gt50', 'frames >50 ms (traced)', -1], ['styleElements', 'elements style-recalculated in them', -1]],
 };
-// CDP Performance.getMetrics deltas per phase (verify.mjs, I-018; absent with --no-cdp-metrics / older verify.json)
+// CDP Performance.getMetrics deltas per phase (verify.mjs --cdp-metrics, I-018; absent by default)
 const CDP_METRICS = [['cdpScriptMs', 'script ms (CDP)', -1], ['cdpStyleMs', 'style recalc ms (CDP)', -1], ['cdpLayoutMs', 'layout ms (CDP)', -1], ['cdpStyleCount', 'style recalcs (CDP)', -1], ['cdpLayoutCount', 'layouts (CDP)', -1], ['cdpTaskMs', 'main-thread task ms (CDP)', -1]];
 METRICS.scroll.push(...CDP_METRICS);
 METRICS.morph.push(...CDP_METRICS);
 // idle phase (verify.mjs --idle, before scrolling): the same metrics as the scroll phase
 METRICS.idle = METRICS.scroll;
-function stats(results, vp, labelA, labelB) {
-  const out = {};
-  for (const [phase, list] of Object.entries(METRICS)) {
-    const key = `${phase}Summary`;
-    const A = results.filter((r) => !r.diff && r.viewport === vp && r.label === labelA).sort((a, b) => a.run - b.run);
-    const B = results.filter((r) => !r.diff && r.viewport === vp && r.label === labelB).sort((a, b) => a.run - b.run);
-    if (![...A, ...B].some((r) => r[key])) continue; // --idle 0 / no --trace-frames: phase not recorded
-    out[phase] = {};
-    for (const [m, name, dir] of list) {
-      if (![...A, ...B].some((r) => typeof r[key]?.[m] === 'number')) continue; // e.g. no CDP metrics recorded
-      const a = A.map((r) => r[key]?.[m]).filter((x) => typeof x === 'number'), b = B.map((r) => r[key]?.[m]).filter((x) => typeof x === 'number');
-      const ma = median(a), mb = median(b);
-      const n = Math.min(a.length, b.length);
-      let verdict = n < 3 ? `n=${n} (need >=3 runs for a verdict)` : 'within noise';
-      if (n >= 3) {
-        const better = dir > 0 ? Math.min(...b) > Math.max(...a) : Math.max(...b) < Math.min(...a);
-        const worse = dir > 0 ? Math.max(...b) < Math.min(...a) : Math.min(...b) > Math.max(...a);
-        if (better) verdict = 'better (ranges do not overlap)'; else if (worse) verdict = 'WORSE (ranges do not overlap)';
-      }
-      out[phase][m] = {
-        name, higherIsBetter: dir > 0,
-        baseline: { median: r1(ma), min: r1(Math.min(...a)), max: r1(Math.max(...a)), runs: a },
-        patched: { median: r1(mb), min: r1(Math.min(...b)), max: r1(Math.max(...b)), runs: b },
-        delta: r1(mb - ma), deltaPct: ma ? r1((100 * (mb - ma)) / Math.abs(ma)) : null,
-        pairedDeltas: b.slice(0, n).map((x, i) => r1(x - a[i])), verdict,
-      };
-    }
-  }
-  return out;
-}
 /** Host state of an A/B from verify's per-run records (tools/lib/host.mjs classifyRun). */
 function hostSummary(v) {
   const rs = v.results.filter((r) => !r.diff);
@@ -428,7 +399,7 @@ async function cmdAb(t) {
 
   const v = JSON.parse(readFileSync(verifyFile, 'utf8'));
   const lb = 'base', lf = aa ? 'base2' : 'fix';
-  const metrics = stats(v.results, viewport, lb, lf);
+  const metrics = stats(v.results, viewport, lb, lf, METRICS);
   const runsOf = (l) => v.results.filter((r) => !r.diff && r.label === l);
   const norm = (e) => String(e).replace(/https?:\/\/(localhost|127\.0\.0\.1|[\d.]+):\d+/g, '<origin>');
   const errs = (l) => [...new Set(runsOf(l).flatMap((r) => r.errors).map(norm))];
@@ -456,7 +427,9 @@ async function cmdAb(t) {
     raw: relative(REPO, verifyFile),
   };
   result.markdown = markdown(metrics, { ...cfg, host });
-  const resFile = aa ? join(outDir, 'results-aa.json') : join(topicDir(t), 'results.json');
+  // a traced A/B is not comparable with untraced ones: it never replaces the deliverable results.json (I-018 review)
+  const traced = flag('trace-frames');
+  const resFile = aa ? join(outDir, traced ? 'results-aa-trace.json' : 'results-aa.json') : join(topicDir(t), traced ? 'results-trace.json' : 'results.json');
   writeFileSync(resFile, JSON.stringify(result, null, 1));
   console.log('\n' + result.markdown + '\n');
   if (regressions.newErrors.length) console.log('NEW ERRORS on the patched page:\n  ' + regressions.newErrors.join('\n  '));

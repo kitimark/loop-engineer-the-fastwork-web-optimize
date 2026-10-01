@@ -10,6 +10,7 @@
 //      FAKE_CHROME_HANG_AT=<method>   never answer this CDP method (a hung browser; verify's watchdog, I-023)
 //      FAKE_CHROME_EXIT_AFTER=<method>  answer it, then exit at the next command (a browser gone between runs, I-023)
 //      FAKE_CHROME_IGNORE_SIGTERM=1     ignore SIGTERM (a browser that will not quit; close() must SIGKILL it)
+//      FAKE_CHROME_TRACE=nocomplete|dataloss  Tracing.end: never send tracingComplete | report dataLossOccurred
 //      FAKE_CHROME_METRICS=step         Performance.getMetrics: all of verify's counters (+ Timestamp) grow by
 //                                       METRIC_STEP per read (I-018); default: the bench per-session six
 //      FAKE_CHROME_BENCH=1  tools/bench.mjs mode: on Page.navigate, fetch <origin>/bench-fake.json from the
@@ -44,7 +45,7 @@ let frameLog = false; // the injected logger keeps [t, dt, scrollY] (verify.mjs 
 // (one read at its start, one at its end) is exactly STEP (durations in s, as Chrome reports them).
 export const METRIC_STEP = { ScriptDuration: 0.05, RecalcStyleDuration: 0.02, LayoutDuration: 0.01, TaskDuration: 0.2, RecalcStyleCount: 5, LayoutCount: 3, V8CompileDuration: 0.004, DevToolsCommandDuration: 0.001 };
 let metricCalls = 0;
-import { TRACE_TS, TRACE_EVENTS } from './trace-fixture.mjs'; // --trace-frames: rAF timestamps + a synthetic trace
+import { TRACE_TS, TRACE_EVENTS, TRACE_SYNC, TRACE_WINDOW } from './trace-fixture.mjs'; // --trace-frames: rAF timestamps + a synthetic trace
 
 // ---- tools/bench.mjs mode (FAKE_CHROME_BENCH=1) ------------------------------------------------------
 const BENCH = process.env.FAKE_CHROME_BENCH === '1';
@@ -79,8 +80,8 @@ function evaluate(expr) {
   if (expr.includes('kit: Object.keys(window)')) return { kit: ['__sveltekit_fake'], nav: 'start-selling-top-nav', hero: 'hero', h: 3000, shim: null, vendors: { gtag: 'undefined', amplitude: 'undefined', hj: 'undefined', dataLayer: 1 } };
   if (expr.includes('window.__perf.frames.length=0')) { input = false; return true; }
   if (expr.includes("window.scrollBy({ top: 250, behavior: 'smooth' })") && expr.includes('still >= 4')) { input = true; return { ms: 5000, ticks: 16, y: 2068, h: 3000 }; }
-  if (expr.includes("performance.mark('__fw_trace_sync')")) return 1000;
-  if (expr.includes('window.__fwTrace; S.on = false')) return TRACE_TS;
+  if (expr.includes("performance.mark('__fw_trace_sync')")) return TRACE_SYNC;
+  if (expr.includes('window.__fwTrace; S.on = false')) return { ts: TRACE_TS, ...TRACE_WINDOW };
   if (expr.includes('p.on = false')) {
     const fr = input ? FRAMES : IDLE_FRAMES;
     const r = input ? { frames: FRAMES, loaf: LOAF, on: false } : { frames: IDLE_FRAMES, loaf: IDLE_LOAF, on: false };
@@ -127,9 +128,12 @@ function handle(msg, send) {
       return reply({ metrics: [{ name: 'Timestamp', value: 1000 + metricCalls }, ...Object.entries(METRIC_STEP).map(([name, v]) => ({ name, value: Math.round(v * metricCalls * 1e6) / 1e6 }))] });
     }
     case 'DOMDebugger.getEventListeners': return reply({ listeners: (bench.get(sessionId)?.data.listeners) || [] });
+    case 'Tracing.start': reply({}); return event('Tracing.bufferUsage', { percentFull: 0.123, eventCount: 42 });
     case 'Tracing.end': {
       reply({});
-      setTimeout(() => { event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(0, 5) }); event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(5) }); event('Tracing.tracingComplete', { dataLossOccurred: false }); }, 10);
+      // FAKE_CHROME_TRACE=nocomplete: the events, but never tracingComplete; =dataloss: complete with data loss
+      const mode = process.env.FAKE_CHROME_TRACE;
+      setTimeout(() => { event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(0, 5) }); event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(5) }); if (mode !== 'nocomplete') event('Tracing.tracingComplete', { dataLossOccurred: mode === 'dataloss' }); }, 10);
       return;
     }
     case 'Runtime.evaluate': {

@@ -8,6 +8,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { LOGGER, RESET, COLLECT, COLLECT_AT, loggerSource } from '../../tools/lib/perf-page.mjs';
+import { TRACE_ARM, TRACE_DISARM, attributeFrames } from '../../tools/lib/trace-frames.mjs';
+import { TRACE_TS, TRACE_EVENTS, TRACE_SYNC, TRACE_WINDOW } from '../fixtures/trace-fixture.mjs';
 
 function page(source = LOGGER) {
   let now = 0, raf = [], observer = null;
@@ -27,6 +29,7 @@ function page(source = LOGGER) {
     deliver(...starts) { observer({ getEntries: () => starts.map((s) => ({ startTime: s, duration: 60, blockingDuration: 10, renderStart: 0, styleAndLayoutStart: 0, scripts: [] })) }); },
     reset() { return run(RESET); },
     collect(at = false) { return run(at ? COLLECT_AT : COLLECT); },
+    run,
     ctx,
   };
 }
@@ -99,4 +102,29 @@ test('loggerSource(): the default is exactly LOGGER; --frame-log adds [t, dt, sc
   const b = p.collect();
   assert.deepEqual(b.log, [[99, 17, 152]], 'a new phase starts a new log; the interval straddling the reset is not logged, like frames');
   assert.deepEqual(b.frames, [17]);
+});
+
+// --trace-frames (incident I-018 review): the trace recorder (TRACE_ARM) runs next to LOGGER; the window it
+// reports (the phase's t0, the last frame recorded before COLLECT) clips the traced frames to exactly the
+// phase's frames[], so the traced frames > 20 ms are the phase's gt20 (fixture: tests/fixtures/trace-fixture.mjs).
+test('--trace-frames window: traced frames == the logger frames of the phase; traced frames > 20 ms == its gt20', () => {
+  const p = page();
+  p.ctx.performance.mark = (name) => ({ name, startTime: p.ctx.performance.now() });
+  p.at(TRACE_SYNC);
+  assert.equal(p.run(TRACE_ARM), TRACE_SYNC, 'the mark is the clock sync point');
+  const [first, ...rest] = TRACE_TS;
+  p.frame(first); // before the reset
+  p.at(TRACE_WINDOW.t0); p.reset();
+  for (const t of rest.filter((t) => t <= TRACE_WINDOW.lastOn)) p.frame(t);
+  p.at(1120);
+  const scroll = p.collect();
+  for (const t of rest.filter((t) => t > TRACE_WINDOW.lastOn)) p.frame(t); // after COLLECT
+  const d = p.run(TRACE_DISARM);
+  assert.deepEqual(d, { ts: TRACE_TS, t0: TRACE_WINDOW.t0, lastOn: TRACE_WINDOW.lastOn });
+  const r = attributeFrames(TRACE_EVENTS, { frameTs: d.ts, syncStartTime: TRACE_SYNC, window: { from: d.t0, to: d.lastOn } });
+  const gt20 = scroll.frames.filter((x) => x > 20).length;
+  assert.equal(gt20, 2);
+  assert.equal(r.summary.frames, gt20, 'traced frames > 20 ms == the phase gt20');
+  assert.equal(r.summary.windowFrames, scroll.frames.length, 'traced frames == the phase frames');
+  assert.deepEqual(r.frames.map((f) => f.dur), scroll.frames.filter((x) => x > 20));
 });

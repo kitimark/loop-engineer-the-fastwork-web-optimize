@@ -37,7 +37,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   const envA = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'aa.jsonl'), FAKE_CHROME_METRICS: 'step', FAKE_HOST_LOAD1: '12',
     FW_GATE_MAX_LOAD1: '20' }; // ... which the lock's host gate (I-016) admits only with its load1 limit raised
   const [ab, aa] = await Promise.all([
-    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens', '--max-wait', '20', '--watchdog', '120'], { cwd: repo.wt, env: envB }),
+    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens', '--max-wait', '20', '--watchdog', '120', '--cdp-metrics'], { cwd: repo.wt, env: envB }),
     nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', '--aa', '--runs', '1', '--idle', '0', '--no-screens', '--trace-frames'], { cwd: repo.wt, env: envA }),
   ]);
   assert.equal(ab.code, 0, ab.out);
@@ -49,7 +49,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(res.kind, 'A/B');
   assert.equal(res.git.branch, 'wt/ab-wt');
   const { hostThresholds, hostRecheck, watchdogSec, measurement, ...cfgRest } = res.config;
-  assert.deepEqual(measurement, { cdpMetrics: true, traceFrames: false, frameLog: false }, 'what verify recorded (I-018)');
+  assert.deepEqual(measurement, { cdpMetrics: true, traceFrames: false, frameLog: false }, 'what verify recorded (I-018): --cdp-metrics passed through');
   assert.deepEqual(cfgRest, { cpu: 6, viewport: 'mobile', runs: 1, idle: 1, serveArgs: ['--vendors=local', '--https', '--latency', '150'], baseline: 'site-pretty', stackedOn: null, order: 'ABBA (alternating per run)' });
   assert.equal(hostThresholds.invalidLoad1, 10, 'thresholds copied into config');
   assert.deepEqual(hostRecheck, { maxWaitSec: 20, maxLoad1: 6, maxBusyPct: 20 }, 'ab passes --max-wait to verify.mjs');
@@ -64,7 +64,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(sc.patched.source, 'overlay');
   assert.equal(sc.patched.sha256, sc.overlaySha256);
   assert.equal(sc.baseline.sha256, sha256(fx.prettyFiles[PAGE_JS]));
-  // + the per-phase CDP Performance.getMetrics deltas (I-018)
+  // + the per-phase CDP Performance.getMetrics deltas (--cdp-metrics, I-018)
   assert.deepEqual(Object.keys(res.metrics.scroll), ['fps', 'gt20', 'gt34', 'gt50', 'gt100', 'max', 'p95', 'loafMs', 'loafScriptMs', 'forcedLayoutMs', 'cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpStyleCount', 'cdpLayoutCount', 'cdpTaskMs']);
   assert.deepEqual(Object.keys(res.metrics.morph), ['fps', 'gt50', 'loafMs', 'forcedLayoutMs', 'cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpStyleCount', 'cdpLayoutCount', 'cdpTaskMs']);
   assert.deepEqual([res.metrics.scroll.cdpStyleCount.baseline.median, res.metrics.scroll.cdpLayoutMs.name, res.metrics.morph.cdpScriptMs.patched.median], [5, 'layout ms (CDP)', 50]);
@@ -89,6 +89,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.deepEqual(fps.patched, { median: 50, min: 50, max: 50, runs: [50] });
   assert.equal(fps.delta, 0);
   assert.deepEqual(fps.pairedDeltas, [0]);
+  assert.equal(fps.n, 1, 'complete pairs (I-018 review)');
   assert.equal(fps.verdict, 'n=1 (need >=3 runs for a verdict)');
   assert.equal(res.metrics.scroll.forcedLayoutMs.baseline.median, 25);
   assert.deepEqual(res.regressions.newErrors, []);
@@ -113,7 +114,8 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
 
   const aaDirs = readdirSync(join(repo.wt, 'out', 'ab', '_aa'));
   assert.equal(aaDirs.length, 1);
-  const aaRes = JSON.parse(readFileSync(join(repo.wt, 'out', 'ab', '_aa', aaDirs[0], 'results-aa.json'), 'utf8'));
+  const aaRes = JSON.parse(readFileSync(join(repo.wt, 'out', 'ab', '_aa', aaDirs[0], 'results-aa-trace.json'), 'utf8'));
+  assert.equal(existsSync(join(repo.wt, 'out', 'ab', '_aa', aaDirs[0], 'results-aa.json')), false, 'a traced A/A is not the noise floor file');
   assert.equal(aaRes.kind, 'A/A noise floor');
   assert.equal(aaRes.patch, null);
   assert.deepEqual(aaRes.servedCheck, []);
@@ -122,6 +124,8 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(aaRes.config.idle, 0);
   assert.deepEqual(Object.keys(aaRes.metrics), ['scroll', 'morph', 'trace'], '--trace-frames passed through: the trace rows (I-018)');
   assert.equal(aaRes.metrics.trace.styleMs.baseline.median, 21);
+  assert.deepEqual(Object.keys(aaRes.metrics.trace), ['frames', 'scriptMs', 'styleMs', 'layoutMs', 'paintMs', 'otherMs', 'offMainMs', 'gt34', 'gt50', 'styleElements']);
+  assert.match(aaRes.markdown, /^\| trace: other \(compositor\/raster\/GPU\/vsync; GPU not separated\) ms in them \| 17 \[17-17\]/m);
   assert.equal(aaRes.config.measurement.traceFrames, true);
   assert.match(aaRes.markdown, /^traced \(--trace-frames\): tracing perturbs timing/m);
   assert.doesNotMatch(aaRes.markdown, /\| idle:/);
@@ -135,6 +139,16 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.match(aa.stdout, /^\*\*host: 2 of 2 runs contaminated/m);
   // no lock left behind
   assert.equal(existsSync(join(repo.root, 'state', 'locks', 'chrome-measure.json')), false);
+
+  // a traced A/B (I-018 review): results-trace.json; the deliverable results.json stays as it was
+  const deliverable = readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results.json'), 'utf8');
+  const tr = await nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '0', '--no-screens', '--trace-frames'], { cwd: repo.wt, env: { ...envB, FAKE_CHROME_LOG: join(repo.root, 'ab-trace.jsonl') } });
+  assert.equal(tr.code, 0, tr.out);
+  assert.equal(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results.json'), 'utf8'), deliverable, 'results.json untouched');
+  const trRes = JSON.parse(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'results-trace.json'), 'utf8'));
+  assert.deepEqual(trRes.config.measurement.traceFrames, true);
+  assert.deepEqual(Object.keys(trRes.metrics), ['scroll', 'morph', 'trace']);
+  assert.match(tr.stdout, /^wrote fixes\/fast-nav\/results-trace\.json/m);
 });
 
 test('SIGTERM on ab: no server, verify.mjs or browser left running, lock released', async () => {

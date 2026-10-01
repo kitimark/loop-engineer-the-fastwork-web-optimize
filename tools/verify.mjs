@@ -21,13 +21,19 @@
 // the scroll-jacked header morph). Screenshots at top/middle/bottom are compared pixel-wise.
 // No Tracing is used by default (in-page LoAF attribution only).
 //
-// Per-phase main-thread work (incident I-018), on by default: CDP Performance.getMetrics is enabled once
-// per page and read at each phase boundary (outside the in-page recording window); each phase summary
-// gets the deltas cdpScriptMs, cdpStyleMs, cdpLayoutMs, cdpTaskMs, cdpStyleCount, cdpLayoutCount (and
-// cdpV8CompileMs, cdpDevToolsMs). --no-cdp-metrics turns it off (the pre-I-018 measurement).
-//   [--trace-frames]  opt-in: a devtools.timeline trace over the scroll phase attributes every frame > 20 ms
-//                     to script / style / layout / paint / other / idle main-thread time plus the elements
-//                     its style recalcs touched (lib/trace-frames.mjs): run.traceFrames, run.traceSummary.
+// Per-frame attribution (incident I-018), all opt-in: without these flags a run sends exactly the CDP
+// commands it sent before I-018 (tests/e2e/verify-fake.test.mjs golden sequence).
+//   [--cdp-metrics]   CDP Performance.getMetrics, enabled once per page and read at each phase boundary
+//                     (outside the in-page recording window); each phase summary gets the deltas cdpScriptMs,
+//                     cdpStyleMs, cdpLayoutMs, cdpTaskMs, cdpStyleCount, cdpLayoutCount (and cdpV8CompileMs,
+//                     cdpDevToolsMs). Opt-in until an interleaved A/A shows it costs nothing.
+//   [--trace-frames]  a devtools.timeline trace over the scroll phase attributes every frame > 20 ms of the
+//                     phase's own window to script / style / layout / paint / other main-thread time and
+//                     offMain (compositor / raster / GPU / vsync: GPU is not separated), plus the elements its
+//                     style recalcs touched, and counts frames > 34 / > 50 ms per class (lib/trace-frames.mjs):
+//                     run.traceFrames, run.traceSummary. Records dataLossOccurred and marks a trace `partial`
+//                     when it ends before the last frame; a trace that never completes (--trace-timeout s,
+//                     default 180) is run.traceFrames.error, the run goes on.
 //                     TRACING PERTURBS TIMING: frame numbers of a traced run are not comparable with untraced.
 //   [--frame-log]     opt-in (E5): run.frameLog.<phase> = [[t, dt, scrollY], ...] for every frame, for
 //                     tools/frames.mjs (long-frame clusters by scroll position). Reads scrollY in the rAF
@@ -58,7 +64,7 @@ import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
 import { loggerSource, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
-import { TRACE_CATEGORIES, TRACE_ARM, TRACE_DISARM, attributeFrames } from './lib/trace-frames.mjs';
+import { TRACE_START, TRACE_ARM, TRACE_DISARM, BUCKETS, BUCKET_LABELS, attributeFrames } from './lib/trace-frames.mjs';
 import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock } from './lib/host.mjs';
 
 const ROOT = REPO;
@@ -74,7 +80,7 @@ const vpSel = opt('viewport', 'desktop');
 const vpList = vpSel === 'both' ? ['desktop', 'mobile'] : [vpSel];
 const OUT = resolve(ROOT, opt('out', 'out/verify'));
 const SCREENS = !flag('no-screens');
-const CDP_METRICS = !flag('no-cdp-metrics'), TRACE = flag('trace-frames'), FRAME_LOG = flag('frame-log');
+const CDP_METRICS = flag('cdp-metrics'), TRACE = flag('trace-frames'), FRAME_LOG = flag('frame-log');
 // Idle phase length in seconds, recorded after settle + throttle and before the scroll phase; 0 = off.
 // The scroll and morph phases run exactly as without it, just IDLE seconds later. Default 6 s: the
 // carousel ticks every 3 s, so a 5 s window caught 1 or 2 ticks and idle LoAF ms went bimodal.
@@ -86,6 +92,7 @@ const MAX_WAIT = num('max-wait', THRESHOLDS.recheckMaxWaitSec);
 const QUIET = { ...THRESHOLDS, quietMaxLoad1: num('max-load', THRESHOLDS.quietMaxLoad1), quietMaxBusyPct: num('max-busy', THRESHOLDS.quietMaxBusyPct) };
 const WATCHDOG = num('watchdog', THRESHOLDS.watchdogStallSec);
 const CHROME_WARM = num('chrome-warm', THRESHOLDS.chromeWarmSec);
+const TRACE_TIMEOUT = num('trace-timeout', 180);
 mkdirSync(OUT, { recursive: true });
 
 // ---- watchdog (incident I-023) --------------------------------------------------------------------
@@ -197,19 +204,24 @@ function cdpDelta(a, b) {
   for (const [k, name, f] of CDP_KEYS) if (typeof a[k] === 'number' && typeof b[k] === 'number') out[name] = Math.round((b[k] - a[k]) * f * 10) / 10;
   return out;
 }
-// the trace of --trace-frames: page-session Tracing, events collected until tracingComplete
+// the trace of --trace-frames: page-session Tracing, events collected until tracingComplete; the buffer's
+// fill level (Tracing.bufferUsage) and tracingComplete.dataLossOccurred are kept. A trace that does not
+// complete within --trace-timeout s is an error of this run's traceFrames, not of the run.
 async function traceStart(page) {
-  const events = [];
-  const off = page.on((m) => { if (m.method === 'Tracing.dataCollected') events.push(...m.params.value); });
-  await page.send('Tracing.start', { traceConfig: { includedCategories: TRACE_CATEGORIES }, transferMode: 'ReportEvents' });
-  return { events, off };
+  const tr = { events: [], bufferPercentMax: null };
+  tr.off = page.on((m) => {
+    if (m.method === 'Tracing.dataCollected') tr.events.push(...m.params.value);
+    if (m.method === 'Tracing.bufferUsage' && typeof m.params.percentFull === 'number') tr.bufferPercentMax = Math.max(tr.bufferPercentMax ?? 0, Math.round(m.params.percentFull * 1000) / 10);
+  });
+  await page.send('Tracing.start', TRACE_START);
+  return tr;
 }
 async function traceEnd(page, tr) {
-  const done = page.waitFor((m) => m.method === 'Tracing.tracingComplete', 180000);
+  const done = page.waitFor((m) => m.method === 'Tracing.tracingComplete', TRACE_TIMEOUT * 1000);
   await page.send('Tracing.end');
-  await done;
-  tr.off();
-  return tr.events;
+  try { const c = await done; return { events: tr.events, dataLossOccurred: c.params?.dataLossOccurred ?? null, bufferPercentMax: tr.bufferPercentMax }; }
+  catch { return { events: tr.events, error: `Tracing.tracingComplete not received within ${TRACE_TIMEOUT} s (--trace-timeout; ${tr.events.length} events so far)`, bufferPercentMax: tr.bufferPercentMax }; }
+  finally { tr.off(); }
 }
 
 // ---- page side: LOGGER (injected before any page script), RESET / COLLECT per phase: lib/perf-page.mjs
@@ -264,6 +276,15 @@ function summarize(perf) {
     noLoaf: perf.noLoaf,
   };
 }
+
+/** The numbers of a run's trace that fix.mjs ab compares (its "trace" rows); null when the trace failed. */
+function traceSummary(tf) {
+  const s = tf.summary;
+  if (!s) return null;
+  return { frames: s.frames, ...Object.fromEntries(BUCKETS.map((k) => [k + 'Ms', s[k + 'Ms']])), gt34: s.gt34.frames, gt50: s.gt50.frames, styleElements: s.styleElements,
+    gt34ByClass: s.gt34.dominant, gt50ByClass: s.gt50.dominant, partial: s.partial };
+}
+const byClass = (d) => BUCKETS.filter((k) => d[k]).map((k) => `${k} ${d[k]}`).join(', ') || '-';
 
 async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, chromeRelaunched = false, warmedSec = 0 } = {}) {
   const vp = VIEWPORTS[vpName];
@@ -330,9 +351,14 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   cdpPhase.scroll = cdpDelta(m, await cdpMetrics(page));
   let traceFrames = null;
   if (TRACE) {
-    const frameTs = await page.eval(TRACE_DISARM);
-    const events = await traceEnd(page, tr);
-    traceFrames = { ...attributeFrames(events, { frameTs, syncStartTime }), events: events.length, note: 'tracing perturbs timing: not comparable with untraced runs' };
+    const d = await page.eval(TRACE_DISARM);
+    const te = await traceEnd(page, tr);
+    const window = { from: d.t0, to: d.lastOn }; // the logger's window: the phase's frames[] exactly (lib/trace-frames.mjs)
+    const att = te.error ? { error: te.error } : attributeFrames(te.events, { frameTs: d.ts, syncStartTime, window, dataLossOccurred: te.dataLossOccurred });
+    traceFrames = { ...att, events: te.events.length, dataLossOccurred: te.dataLossOccurred ?? null, bufferPercentMax: te.bufferPercentMax,
+      // the trace's frames vs the logger's: equal unless the two rAF recorders saw different frames
+      check: { loggerFrames: scrollPerf.frames.length, loggerGt20: scrollPerf.frames.filter((x) => x > 20).length, traceWindowFrames: att.summary?.windowFrames ?? null, traceGt20: att.summary?.frames ?? null },
+      note: 'tracing perturbs timing: not comparable with untraced runs' };
   }
 
   // morph phase: push past the end (wheel on desktop, touch drag on mobile)
@@ -388,7 +414,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   return {
     label: t.label, url: t.url, viewport: vpName, run, loadavg1: { before: r1(loadBefore), after: r1(runEnd.load1) }, host: hostRec, state, scroll, morphState, shots, shimStats,
     idleSummary: idlePerf ? { ...summarize(idlePerf), ...cdpPhase.idle, scrollY: idlePerf.scrollY } : null, scrollSummary: { ...summarize(scrollPerf), ...cdpPhase.scroll }, morphSummary: { ...summarize(morphPerf), ...cdpPhase.morph },
-    ...(TRACE ? { traceFrames, traceSummary: traceFrames.summary ? { frames: traceFrames.summary.frames, scriptMs: traceFrames.summary.scriptMs, styleMs: traceFrames.summary.styleMs, layoutMs: traceFrames.summary.layoutMs, paintMs: traceFrames.summary.paintMs, otherMs: traceFrames.summary.otherMs, idleMs: traceFrames.summary.idleMs, styleElements: traceFrames.summary.styleElements } : null } : {}),
+    ...(TRACE ? { traceFrames, traceSummary: traceSummary(traceFrames) } : {}),
     ...(FRAME_LOG ? { frameLog: { idle: idlePerf?.log ?? null, scroll: scrollPerf.log ?? null, morph: morphPerf.log ?? null } } : {}),
     requests: requests.length, origins,
     notFound: firstParty.filter((r) => r.status >= 400).map((r) => `${r.status} ${new URL(r.url).pathname}`),
@@ -448,7 +474,7 @@ async function main() {
           const r = await measure(browser.cdp, t, vpName, run, { chromePid: browser.ch.proc.pid, gate, recheck, chromeRelaunched, warmedSec });
           results.push(r);
           const s = r.scrollSummary;
-          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms${s.cdpStyleCount != null ? `  style ${s.cdpStyleMs}ms/${s.cdpStyleCount}x layout ${s.cdpLayoutMs}ms/${s.cdpLayoutCount}x script ${s.cdpScriptMs}ms` : ''}${r.traceSummary ? `  trace >20ms ${r.traceSummary.frames}: script ${r.traceSummary.scriptMs} style ${r.traceSummary.styleMs} layout ${r.traceSummary.layoutMs} paint ${r.traceSummary.paintMs} idle ${r.traceSummary.idleMs}ms` : r.traceFrames?.error ? `  trace: ${r.traceFrames.error}` : ''}  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}`);
+          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms${s.cdpStyleCount != null ? `  style ${s.cdpStyleMs}ms/${s.cdpStyleCount}x layout ${s.cdpLayoutMs}ms/${s.cdpLayoutCount}x script ${s.cdpScriptMs}ms` : ''}${r.traceSummary ? `  trace >20ms ${r.traceSummary.frames}: script ${r.traceSummary.scriptMs} style ${r.traceSummary.styleMs} layout ${r.traceSummary.layoutMs} paint ${r.traceSummary.paintMs} other ${r.traceSummary.otherMs} offMain ${r.traceSummary.offMainMs}ms; >34ms ${r.traceSummary.gt34} (${byClass(r.traceSummary.gt34ByClass)}) >50ms ${r.traceSummary.gt50} (${byClass(r.traceSummary.gt50ByClass)})${r.traceSummary.partial ? ` PARTIAL TRACE: ${r.traceFrames.summary.partialReasons.join('; ')}` : ''}` : r.traceFrames?.error ? `  trace: ${r.traceFrames.error}` : ''}  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}`);
         }
       }
       if (SCREENS && targets.length > 1) {
@@ -494,8 +520,8 @@ async function main() {
     ...(measured[0]?.host.stub ? { stub: measured[0].host.stub } : {}),
   };
   console.log(`host: ${invalid.length} of ${measured.length} runs contaminated${invalid.length ? ` (${[...new Set(invalid.flatMap((r) => r.host.reasons))].join('; ')}): verdicts provisional` : ''}${warn.length ? `; ${warn.length} warn (${[...new Set(warn.flatMap((r) => r.host.warnings))].join('; ')})` : ''}${hostSum.stub ? `  [host STUBBED: ${hostSum.stub}]` : ''}`);
-  const measurement = { cdpMetrics: CDP_METRICS, traceFrames: TRACE, frameLog: FRAME_LOG, ...(TRACE ? { note: 'traced: tracing perturbs timing, frame numbers are not comparable with untraced runs' } : {}) };
-  if (TRACE) console.log(`trace-frames: ${measurement.note}`);
+  const measurement = { cdpMetrics: CDP_METRICS, traceFrames: TRACE, frameLog: FRAME_LOG, ...(TRACE ? { note: 'traced: tracing perturbs timing, frame numbers are not comparable with untraced runs', traceBufferKb: TRACE_START.traceConfig.traceBufferSizeInKb, traceTimeoutSec: TRACE_TIMEOUT } : {}) };
+  if (TRACE) console.log(`trace-frames: ${measurement.note}; offMain = ${BUCKET_LABELS.offMain}`);
   writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, host: hostSum, rows, results }, null, 1));
   console.log('details: ' + file);
 }

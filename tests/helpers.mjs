@@ -242,3 +242,16 @@ export function chromeLock(owner, meta = {}, { waitSec = Number(process.env.FW_T
   };
   return lock;
 }
+
+/**
+ * The CDP commands of a fake-Chrome log (tests/fixtures/fake-chrome.mjs, $FAKE_CHROME_LOG) as stable
+ * tokens "<method> <params JSON>": browser-assigned ids dropped, strings over 160 chars hashed. For golden
+ * tests of what a tool sends (verify.mjs's default sequence, incident I-018 review).
+ */
+export function cdpTokens(log) {
+  const VOLATILE = new Set(['targetId', 'browserContextId', 'objectId', 'sessionId']);
+  const norm = (v) => (typeof v === 'string' ? (v.length > 160 ? `sha256:${sha256(v).slice(0, 16)}` : v)
+    : Array.isArray(v) ? v.map(norm)
+      : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).filter(([k]) => !VOLATILE.has(k)).map(([k, x]) => [k, norm(x)])) : v);
+  return log.filter((l) => l.method && !l.method.startsWith('(')).map((l) => `${l.method} ${JSON.stringify(norm(l.params ?? {}))}`);
+}

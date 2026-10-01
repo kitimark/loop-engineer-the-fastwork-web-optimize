@@ -95,11 +95,19 @@ test('verify.mjs --trace-frames --frame-log: a real trace is clock-synced and at
   assert.equal(x.traceFrames.error, undefined, x.traceFrames.error);
   assert.ok(x.traceFrames.events > 100, `trace events ${x.traceFrames.events}`);
   assert.ok(x.traceFrames.summary.mainThreadEvents > 10, 'the main thread was found via the sync mark');
-  for (const k of ['frames', 'scriptMs', 'styleMs', 'layoutMs', 'paintMs', 'otherMs', 'idleMs', 'styleElements']) assert.equal(typeof x.traceSummary[k], 'number', k);
+  for (const k of ['frames', 'scriptMs', 'styleMs', 'layoutMs', 'paintMs', 'otherMs', 'offMainMs', 'gt34', 'gt50', 'styleElements']) assert.equal(typeof x.traceSummary[k], 'number', k);
   for (const f of x.traceFrames.frames) {
-    const sum = f.scriptMs + f.styleMs + f.layoutMs + f.paintMs + f.otherMs + f.idleMs;
+    const sum = f.scriptMs + f.styleMs + f.layoutMs + f.paintMs + f.otherMs + f.offMainMs;
     assert.ok(Math.abs(sum - f.dur) < 1, `frame at ${f.t}: parts ${sum} vs ${f.dur} ms`);
   }
+  // complete (I-018 review): no data loss, the main thread's events reach the last frame
+  assert.equal(x.traceFrames.dataLossOccurred, false);
+  assert.equal(x.traceFrames.summary.lastEventCoversLastFrame, true);
+  assert.equal(x.traceSummary.partial, false, JSON.stringify(x.traceFrames.summary.partialReasons));
+  // clipped to the logger window: the trace's frames are the scroll phase's frames
+  const c = x.traceFrames.check;
+  assert.equal(c.traceWindowFrames, c.loggerFrames, JSON.stringify(c));
+  assert.equal(c.traceGt20, x.scrollSummary.gt20, JSON.stringify(c));
   assert.ok(x.frameLog.scroll.length > 10);
   const ys = x.frameLog.scroll.map((f) => f[2]);
   assert.ok(ys[ys.length - 1] > ys[0], 'scrollY grows during the scroll phase');

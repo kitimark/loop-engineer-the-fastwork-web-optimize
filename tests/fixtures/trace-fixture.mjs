@@ -1,11 +1,20 @@
 // A synthetic --trace-frames recording, shared by tests/fixtures/fake-chrome.mjs (what the fake browser
-// answers) and tests/unit/trace-frames.test.mjs (the expected attribution).
-// --trace-frames: the page's rAF timestamps (ms) and a synthetic trace. The sync mark is at 5,000,000 µs
-// of trace time = page time 1000 ms. Two frames > 20 ms: 1016-1046 (30 ms) and 1062-1090 (28 ms).
-export const TRACE_TS = [1000, 1016, 1046, 1062, 1090, 1106];
+// answers) and tests/unit/trace-frames.test.mjs, tests/unit/perf-page.test.mjs (the expected attribution).
+// --trace-frames: the page's rAF timestamps (ms) and a synthetic trace. The sync mark is at 4,990,000 µs
+// of trace time = page time 990 ms (TRACE_SYNC), so trace µs = page ms * 1000 + 4,000,000.
+// The logger's window (TRACE_WINDOW) is RESET at 1000 ms .. the last frame recorded before COLLECT, 1106:
+//   992-1016 (24 ms) began before the reset: not a frame of the phase (a TimerFire in it)
+//   1016-1046 (30 ms) and 1062-1090 (28 ms): the two frames > 20 ms of the phase
+//   1106-1150 (44 ms) ended after COLLECT: not a frame of the phase (a FunctionCall in it, which also
+//   shows the trace reaches past the last frame)
+export const TRACE_SYNC = 990;
+export const TRACE_TS = [992, 1016, 1046, 1062, 1090, 1106, 1150];
+export const TRACE_WINDOW = { t0: 1000, lastOn: 1106 };
 export const TRACE_EVENTS = [
   { ph: 'M', name: 'thread_name', pid: 1, tid: 7, args: { name: 'CrRendererMain' } },
-  { ph: 'I', name: '__fw_trace_sync', cat: 'blink.user_timing', pid: 1, tid: 7, ts: 5000000 },
+  { ph: 'I', name: '__fw_trace_sync', cat: 'blink.user_timing', pid: 1, tid: 7, ts: 4990000 },
+  // before the window
+  { ph: 'X', name: 'TimerFire', pid: 1, tid: 7, ts: 4995000, dur: 10000 },
   // frame 1: a rAF callback with a forced layout inside, a style recalc of 120 elements, a paint
   { ph: 'X', name: 'FunctionCall', pid: 1, tid: 7, ts: 5017000, dur: 12000 },
   { ph: 'X', name: 'Layout', pid: 1, tid: 7, ts: 5020000, dur: 4000, args: { beginData: { dirtyObjects: 40 } } },
@@ -16,6 +25,8 @@ export const TRACE_EVENTS = [
   { ph: 'X', name: 'UpdateLayoutTree', pid: 1, tid: 7, ts: 5064000, dur: 15000, args: { elementCount: 900 } },
   { ph: 'B', name: 'Layout', pid: 1, tid: 7, ts: 5080000 },
   { ph: 'E', name: 'Layout', pid: 1, tid: 7, ts: 5082000 },
+  // after the window
+  { ph: 'X', name: 'FunctionCall', pid: 1, tid: 7, ts: 5107000, dur: 30000 },
   // another thread: ignored
   { ph: 'X', name: 'FunctionCall', pid: 1, tid: 8, ts: 5017000, dur: 25000 },
 ];
