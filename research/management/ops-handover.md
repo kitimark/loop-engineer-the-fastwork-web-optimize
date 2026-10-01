@@ -238,7 +238,7 @@ between tool calls.
    **Swipe A/B (cdwc F stage) PAUSED after pairs 1-2 (both "same"; user feels the lag at the hero and the page end; tab
    stalled twice, some recordings lost); pair 3 moves to ts-user-console's console (iphone-runner keeps the key so it
    stays blind). User-facing steps go through the console once it lands, not the lead's chat.
-   **PHONE ORDER (lead 14:3xZ, supersedes the NOW line above):** P4 (started ~14:3xZ; block A + T1a A/A, 10 min, block B) -> P-032 G cdwc (VALIDATED, ~20 min) ->
+   **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A, 10 min, block B) -> P-032 G cdwc (VALIDATED, ~20 min) ->
    P11 Block A + P14 -> P12 -> P10 -> P5 -> P-033 gain (VALIDATED; step 0 fills any free phone gap) -> P9 -> P-030 ->
    P-031 G -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. P-033 "within noise" -> bundle candidate, not standalone.
    **F-076 / P-034 owner = fix-nav-morph after cdwc lands** (lead: same countdown code; no fix-countdown-idle-raf spawn).
