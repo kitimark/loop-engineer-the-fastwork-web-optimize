@@ -233,6 +233,20 @@ What fires on aw1-10c:
    transitions. Layout count per step jumps from 1-4 to 25-31 at y 450-600. This sits inside the iPhone
    hero window (y 0-900). It belongs to the layout-animations topic area (T5).
 
+**Second probe (stack capture, aw1-10c only):**
+- **Faces (F-030):** 168 `.face` elements in two countdowns (`div.countdown` in the hero copy,
+  `div.countdown.inverse`). A flipping face sits on screen (box top 376-412 px at y=0) but has
+  intersection rect 0, or ratio 0.01 at y=50. So the flips are clipping by the digit's `overflow`
+  ancestor while the faces slide, not the 50 % rootMargin. This confirms the inference in item 2.
+- **The 6 writes (F-031):** Svelte's style setter (runtime chunk `BSBv9QXB.js` 2858/2868), called from JS
+  3939-3941. That is the hero `script-accent` word cycle (`width` of the accent and frame, `top`, `right`,
+  `bottom` and `left` of the paint): a periodic timer, not scroll-triggered. It only coincided with the
+  y=25 and y=300 steps. Layout-animations' area.
+- **People-o (F-032, new):** `.start-selling-future-people-o` (CSS 2480-2496) gets `is-stack` and then
+  `is-expanded` from a scroll position (y≈300 on mobile). Its 0.92 s `grid-template-columns` / `height`
+  transition reflows the future `h2` every frame. Layout-animations' README assumed it runs only on
+  hover. Unowned, posted as a pitfall.
+
 ## Risks, conflicts, follow-ups
 
 - Keyframes deliberately avoid `var()` of animated custom properties (Safari resolves them against the
