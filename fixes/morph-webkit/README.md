@@ -239,6 +239,47 @@ changes only those 2 tabindex attributes. No CSS rule selects `[tabindex]` or `[
 - **Risk:** the mount task itself might now cost more on WebKit, because the subtree is styled without inert. It runs in idle
   time and is scroll-guarded.
 
+
+**iPhone noinert vs control.** iphone-runner ran this 10:33-10:40Z, order C N N C C N, control ctl-B18 passed, with a per-type
+logger that has no event cap. **Verdict: no win.**
+
+| build | long frame, ms@y | median |
+|---|---|---|
+| control | 102@1962, 91@1947, 106@1965 | 102 |
+| noinert | 98@1962, 99@1968, 95@1962 | 98 |
+
+- On noinert, the long frame carries only the 2 `tabindex` writes, 3/3. So neither `inert` nor the image src writes are the
+  cost (F-044 is refined, not confirmed).
+- The idle mount frame did not grow: median 53 ms on the control, 51 ms on noinert.
+
+What the IO edge still does on noinert:
+1. it writes `b`. The Svelte effects that depend on `b` are the 21 src writes (no-ops, already sourced) and the 2 tabindex writes;
+2. `I()` adds the window `wheel` (non-passive), `touchstart` (passive) and `touchmove` (non-passive) listeners.
+
+e1 armed passive listeners at the edge and did not help. A remaining hypothesis: on iOS, adding any touch listener invalidates the
+document's event-tracking regions, which are recomputed during a paint pass over all layers. That cost does not depend on
+whether the listener is passive. Two diagnostics, both on noinert:
+
+| build | JS | what moves out of the edge frame | what the edge still does |
+|---|---|---|---|
+| `mw10e-na` | 26d4d54889da… | listeners: armed once at setup, never toggled | writes `b` (2 tabindex writes) |
+| `mw10e-nb` | 78ce0637395e… | the `b` write: `E` sets `b` at the morph start | adds the 3 listeners |
+
+- In `mw10e-na` the handlers still preventDefault only at the end (`k()`), but `M()` runs `O()`, a `getBoundingClientRect`, on every
+  touchmove page-wide. So na is diagnostic only.
+- In `mw10e-nb` the panel links become tabbable at the morph start instead of the edge. Also diagnostic only.
+- Chrome check (`noinert-check.mjs` with `BUILDS`, short lane; `probe-results/na-nb-check.json`):
+  - the edge events are exactly as the table says: na `tabindex×2@1632`, no listener change; nb `+wheel/+touchstart/+touchmove@1632`,
+    no mutation;
+  - both builds reach morph 1, with the same tabbable set and hits at the morph;
+  - morph screenshots differ from base by 0.07 % / 0.09 %; no errors;
+  - Chrome 6x had one 51 ms long task in the scroll on base and noinert, and none on na/nb (n=1 each, so not a claim).
+- **Reading:**
+  - if na drops the frame and nb keeps it, the listener add is the cost. The landable fix is then to arm the listeners
+    once in idle time, which needs a cheaper `O()` gate (for example, `u` checked first);
+  - if nb drops the frame, the cost is the `b` effect flush;
+  - if neither drops it, the cost is a non-JS change at that scroll position.
+
 de-middle's other R1 items (`inert` until the morph, listeners once passive) are not needed for this frame.
 
 ### R8 and R5a on gh (de-morph): `mw10e-ghr8`, `mw10e-ghr85a`

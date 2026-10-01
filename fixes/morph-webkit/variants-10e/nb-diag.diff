@@ -1,0 +1,88 @@
+# fastwork mirror fix: mw10e-nb
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw10e-nb --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13343,7 +13343,7 @@
+       te = R
+         ? new IntersectionObserver(
+             ([e]) => {
+-              ((u = !!e?.isIntersecting), u && z(b, !0), I());
++              ((u = !!e?.isIntersecting), I()); // DIAG(mw10e-nb): no b write at the IO edge (E sets b at the morph start)
+             },
+             { rootMargin: `200% 0px` },
+           )
+@@ -13367,21 +13367,44 @@
+   // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
+   // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
+   // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
+-  // 64px nav) and inert, and its images get their src only when the original would have mounted it (b / E).
++  // 64px nav), and its images get their src only when the original would have mounted it (b / E).
++  // perf(morph-noinert): the pre-mounted panel is NOT inert. Lifting `inert` at the 200% zone edge restyled the
++  // whole panel subtree in the IO frame (~90 ms on the iPhone at y~1960, F-044). What inert did before the edge,
++  // where the original had no panel at all, is covered without it: pointer-events:none on the panel until
++  // .is-expanded (CSS), aria-hidden while --morph < 0.35, and the panel's focusables out of the tab order until
++  // b / E (tabindex -1: the CTA button already has it until --morph 0.55; the RSVP and privacy links get it here).
++  // From the edge on, everything is exactly as in the original (mounted, not inert, links tabbable).
+   // The mount waits while the user is scrolling (a scroll event in the last 300 ms): it re-arms a 300 ms timer,
+   // so a scroll that starts right after load doesn't get the mount in its first frames (Safari has no rIC).
+-  let __mnt = N(!1);
++  // perf(morph-idle-src): the IO callback at the 200% zone edge (y~1830 on the iPhone) set b, and b gave the
++  // pre-mounted panel's 12+ column images their src all at once: a ~95 ms frame (fetch/decode/layout of a
++  // dozen images). Now, after the idle pre-mount, the images get their src in idle time, two per slice, in
++  // first-render order (__srcN counts how many are sourced); b / E still source any image not reached yet,
++  // so the morph shows the same images as before. Same scroll-aware re-arm as the mount.
++  let __mnt = N(!1),
++    __srcN = N(0),
++    __srcOrder = new Map(),
++    __srcI = (e) => (__srcOrder.has(e) || __srcOrder.set(e, __srcOrder.size), __srcOrder.get(e));
+   ne(() => {
+     let e = 0,
+       t = 0,
+       o = -1e9,
++      __c = 0,
+       i = () => {
+         o = performance.now();
+       },
++      __q = (f) => {
++        window.requestIdleCallback ? (e = window.requestIdleCallback(f, { timeout: 1e3 })) : (t = window.setTimeout(f, 150));
++      },
++      __src = () => {
++        if (performance.now() - o < 300) {
++          t = window.setTimeout(__src, 300);
++          return;
++        }
++        ((__c += 2), z(__srcN, __c), __c < __srcOrder.size ? __q(__src) : window.removeEventListener(`scroll`, i));
++      },
+       n = () => {
+-        performance.now() - o < 300
+-          ? (t = window.setTimeout(n, 300))
+-          : (window.removeEventListener(`scroll`, i), z(__mnt, !0));
++        performance.now() - o < 300 ? (t = window.setTimeout(n, 300)) : (z(__mnt, !0), __q(__src));
+       },
+       r = () => {
+         window.requestIdleCallback
+@@ -13437,7 +13460,8 @@
+               var n = sN();
+               let r;
+               (l(() => {
+-                (k(n, `src`, s(b) || s(E) ? s(t)[0] : void 0), (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
++                (k(n, `src`, s(b) || s(E) || __srcI(s(t)[0]) < s(__srcN) ? s(t)[0] : void 0),
++                  (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
+               }),
+                 f(e, n));
+             },
+@@ -13496,7 +13520,8 @@
+         M(w),
+         M(a),
+         l(() => {
+-          ((a.inert = !(s(b) || s(E))),
++          (k(__rsvpB, `tabindex`, s(b) || s(E) ? void 0 : -1),
++            k(N, `tabindex`, s(b) || s(E) ? void 0 : -1),
+             k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
+             k(a, `aria-hidden`, s(x) < 0.35),
+             t(m, s(o).header.future),
