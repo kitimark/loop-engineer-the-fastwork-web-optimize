@@ -155,6 +155,11 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    (baseline: a 100 ms layout-dominated frame among 13 frames > 34 ms). Chrome next targets: (1) the two "other" frames
    (needs V8 sampling + GC categories and `--frame-log` for scrollY), (2) the 429-element style recalc at +1.1 s; the
    gtag frame stays the vendor residual.
+   **"Other" class named (fix-scroll-engine, 08:14Z, aw1-10c, 3 loads, CPU-profiler trace, load1 4.6-5.3, attribution
+   only; F-029):** with V8 sampling the RunTask self time is JS: (1) y=4750, 3/3 loads, 67-83 ms = gtag `onscrollend`
+   (+ `document.cookie`, ~3 ms MinorGC), the vendor residual; (2) y=727, 1/3 loads, 50 ms = `Document::recalcStyle` 21.7 ms
+   forced by the nav's `ee()` (JS 13223: getComputedStyle on `.start-selling-profile-sticky` + 2 rects per nav pass) =
+   N12's area; N12 v5 removes that getComputedStyle. Candidate match for the iPhone's ~50 ms frame at y≈700.
    **Order from 07:07Z:** N13 confirm hold -> N10 (iPhone-led) -> /10d -> hero-exit (y≈50) -> countdown 05/08; I-018's traced
    run ahead of later normals; N12 + #6 land after the finger verdict. -> N12 `--on aw1-10c` -> /10d -> hero-exit -> countdown 05/08; I-018's traced run goes
    ahead of any later normal once re-reviewed (N13 before N12: > 100 ms frame class before the 20-34 ms band, principle 1).
