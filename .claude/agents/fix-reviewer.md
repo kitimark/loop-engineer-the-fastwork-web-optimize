@@ -89,7 +89,8 @@ card templates: `fixes/_template/CARDS.md`; done items 9-14 in `fixes/README.md`
     crossing, not raw y; the served hashes of every phone run match the slot ticket and the build card.
 15. **Phone block hygiene:** heat note, warm-up run, sentinel passed on every control (a failing control voids the
     runs since the last passing one; in a Timeline block the sentinel is the two uncounted Timeline-OFF control
-    runs, after the warm-up and at the block end, protocol §5.2), within-block comparison against the exact base,
+    runs, after the warm-up and at the block end, protocol §5.2; the start one may be skipped only if Timeline-on
+    control data already meets both bottom ≥58 and scroll ≥44), within-block comparison against the exact base,
     phone frames in ms (dt > 50 goal, dt > 34; no k forms on the phone) and median [IQR] with every run; no frames
     pooled across runs. Warm-up per arm's port; battery temp and Low Power Mode per run; the ±4 ms twin counts
     (dt > 46 / > 54 for > 50, dt > 30 / > 38 for > 34) reported, a verdict flagged threshold-sensitive when either

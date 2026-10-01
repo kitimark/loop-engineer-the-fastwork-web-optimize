@@ -295,7 +295,9 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
   - The two sentinel runs carry the ≥58 fps bottom / ≥44 fps scroll rule (S/W); a failure voids the block as usual.
   - Counted runs are judged within the block only. Each counted C run's fps with Timeline on is recorded as
     information (it measures the Timeline overhead), not as a sentinel.
-  - If Timeline-on control data already shows C ≥44 fps scroll, the extra runs shrink to the end sentinel only.
+  - If Timeline-on control data already meets **both** criteria (bottom ≥58 fps and scroll ≥44 fps), the extra
+    runs shrink to the end sentinel only. Scroll alone is not enough (P-033: aw1-10e's Timeline-on bottom fps was
+    under 58 in 3 of 5 P3 runs). Lead, CLAUDE.md 77c480e.
 - Heat note in every block record (case off, charger state, room, last block end time), plus **battery
   temperature and charging state per run** (A4: `AppleSmartBattery` Temperature / IsCharging at run start and end,
   T1a+); the heat trend is reported per block and used as a covariate when a block is borderline.
