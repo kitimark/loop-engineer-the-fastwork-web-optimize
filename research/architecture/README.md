@@ -315,3 +315,15 @@ the canary-drift plan; review checklist additions; the ranked tool/doc/topic exe
 arch-devtools (`devtools-methodology.md`), de-devtools (`devtools-render-metrics.md`), arch-safari
 (`safari-inspector-probing.md`) and de-safari (`safari-render-signals.md`): on iOS the rAF gap does not include
 render-server GPU time, so render-bound fixes (backdrop, filters) get their own device class and gate.
+
+## Unknown fields: validity of the experiments (arch-unknowns, 2026-10-01)
+
+[`unknowns-validity.md`](unknowns-validity.md): 12 ranked unknowns in the conditions and design of our measurements,
+each with evidence, the cheapest probe, value and owner. Top: (U1) the Mac's display/power state tracks the Chrome
+baseline floor (display on ~75-78 fps, display off / DarkWake ~92-94: the canary drift and the "gated tools" floor may be
+the host, not the tools); (U2) a WebKit rAF gap is the rendering-update start, not a vsync count: 75 % of phone gaps
+≥ 34 ms are off the 8.33 ms grid, and the #people frame's ">50 ms" status flips between dt > 50 and k ≥ 7; (U3) the
+scripted drivers never reach the finger's p90 speed (3.5k px/s), the collapsed-toolbar geometry or the scroll-up
+direction. Also: phone heat as a covariate, per-origin warm-up, in-window network work, the countdown's hard expiry
+(2026-11-02 05:00Z), Chrome field trials in a persistent profile, unrecorded phone settings. Render-pipeline unknowns:
+`research/design-engineering/unknowns-render.md`; perception: `research/design-engineering/unknowns-ux.md`.
