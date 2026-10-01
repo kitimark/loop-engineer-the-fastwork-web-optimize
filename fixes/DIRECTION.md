@@ -86,6 +86,9 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    only") -> hero-exit -> countdown 05/08 (behind N12 unless /10c fails to remove the y≈2100-2150 frame) -> E4 (folded
    into the attribution step). Every A/B `--on all-wave1` (`fix.mjs apply all-wave1` after rebasing on 0e8f288), holds
    <= 10 min.
+   **N11 done 2026-10-01 05:15Z: mechanism only, not counted** (fea23a5; ledger row below). Left > 50 ms targets: the
+   F-011 render frame (/10c) and the analytics.js idle-callback frame (whether it lands in the scroll phase is a question
+   for the I-018 attribution slot).
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N4 / N10 fixes (N3 rejected 2026-10-01, F-015) as their prototypes pass Tier A.
@@ -117,6 +120,7 @@ Sources: E1-E5 `research/architecture/measurement-review.md`; W1-W3 / R1-R3 `res
 | R3 statechange event timing | yes | fix-scroll-engine (E2) | inside the E2 slot |
 | AV1 apple-verify: scroll-metrics-cache success metric (`research/architecture/apple-verify.md`) | yes | fix-nav-morph (N12) | success = forced style+layout ms in the scroll phase -> ~0 (all-wave1 already 0 in Chrome); judge N12 on it plus > 34 ms |
 | AV2 apple-verify: "countdown-idle-raf moves up" | **no** (lead 05:05Z) | - | idle rAF 48-95/s at rest is a battery/idle-cost item, not a > 50/> 34 ms frame source; all-wave1 already gates countdown writes; countdown 05/08 stays after hero-exit |
+| N11 vendor-scrollend result (lead 2026-10-01 05:2xZ) | **mechanism only, not counted**; 02 not in wave-2 combines | - (owner done) | gtag frame phase-shifted, not removed (analytics.js idle-callback LoAF 50-61 ms in 3/5); > 50 ms 2 → 2, > 34 ms 3 → 4 within noise (fea23a5). 03 = site-owner GA advice. Open for the I-018 attribution slot: does that idle-callback frame fall inside the scroll phase? |
 | AV3 F-016 (430x932 trips apple.com base tier), F-017 (per-call debounce in Apple analytics), F-021 (`html { scroll-behavior: smooth }`: scripted scrollTo must pass `behavior:'instant'`) | yes, as pitfalls | every owner writing a probe | F-021 applies to every scripted scroll driver on our page |
 
 iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain http per I-003), in order:

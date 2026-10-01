@@ -2,9 +2,15 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-02:xx instance, worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **05:08Z** (handing over: this instance stops here).
+**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **05:18Z**.
 
 ## Digest log (newest first, 5 lines each)
+
+- **05:17Z** (mgmt-ops-3) Lead: npm test 0e8f288 414/414; test:chrome 7/8, bench.chrome FAIL → I-028 (ts-bench, styleWrite
+  probe vacuous). GO sent: ts-i021 (I-027 + I-026 reopen; no file overlap with I-028), wave1-dry (Q3 only; bench pilot held
+  until I-028), fix-scroll-engine (/10c `--on all-wave1`). N11 hold 05:05-05:15: clean (0/10), goal metrics FLAT
+  (> 50 ms 2→2, > 34 ms 3→4); waiting on owner phases.mjs readout before land/no-land. q3 took the lock 05:16 ahead of
+  scroll-engine (normal ≤ 10 min). kpi friction: no alarms; warns IPHONE-PARKED/STALE, STRAY-CHROME (MCP Chrome 10.9 h).
 
 - **05:02Z** GOAL HOLD done (all-wave1 42f4033 → main 0e8f288, F-022): > 50 ms 3→2, > 34 ms 5→5 within noise; fps
   93.8→110.6 hint; left > 50 ms = gtag (N11) + F-011 render frame (/10c). ts-bench batch landed (bench on main),
@@ -39,20 +45,17 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Next actions for the next mgmt-ops (in order)
 
-1. On the lead's "npm test + test:chrome on 0e8f288 passed": GO ts-i021 (I-027 = #3 FW_TIME_SCALE + #6 shared fixtures +
-   I-026 reopen: sleep assertion while anyone is QUEUED; rebase on main first; #3 is measurement code → reviewer +
-   test:chrome + canary) and GO wave1-dry (bench pilot short + Q3 normal ≤ 10 min; remind: no background polling).
-2. When N11's hold ends (queued 04:55Z, behind the lead's test:chrome): first-pass check of its results.json
-   (contamination, patch sha, > 50/> 34 first, phases.mjs removed vs phase-shifted), land batch to the lead, then GO
-   fix-scroll-engine (part 3 E3 + /10c A/B `--on all-wave1`, rebase on main first).
-3. After /10c: tell the lead to start the I-018 gate (ts-i017 f71ee42: review + A/A cdp-metrics on/off + test:chrome);
-   then GO fix-nav-morph (N12).
-4. apple-verify ENDED (landed 29ad890). Docs on mgmt-ops/docs-2 not yet landed: 78774a7 (adoption ledger) + this commit.
-5. Monitors: `idlewatch.sh` runs as Monitor b4hrnr0gk of the old instance; stop it if you can, else it ends with that
-   instance. Re-arm per "Queue rules and monitors". The foreground `tick.sh [secs]` (scratchpad mgmt-ops/) returns on
-   lock-holder or incident changes: use it instead of a background watch to keep context small.
-6. Context tip: wave1-dry and others that end a turn with background work emit one notification every ~40 s; remind
-   owners of the rule before long holds.
+1. scroll-engine /10c hold (`ab se10c-aw1 --on all-wave1 --runs 5`, queued ~05:21Z behind q3; lead keeps it #1): first-pass
+   check (contamination, patch sha, > 50/> 34 first, F-011 frame gone?, layers), land batch or no-land recommendation. Then
+   its E3 probe + part-4 ablation holds (diagnostic, separate ≤ 10 min holds).
+2. After /10c: ask the lead to start the I-018 gate (ts-i017 f71ee42: review + A/A cdp-metrics on/off in one hold +
+   test:chrome). Its open question: does the analytics.js idle-callback frame (N11, 50-61 ms in 3/5) fall in the scroll phase?
+   Then GO fix-nav-morph (N12, "20-34 ms band only", success also = forced style+layout → ~0, AV1).
+3. ts-i021 (I-027 #3 + #6, I-026 reopen; GO 05:06Z): at hand-back request a reviewer for #3 (measurement code; design: no
+   FW_TIME_SCALE, the fake host clock only under FW_TEST_HOST) + its test:chrome (7/7 non-bench until I-028) + lead canary.
+4. ts-bench I-028 (bench-probes only): when landed tell wave1-dry the bench pilot is GO (short lane) and ts-i021 to rebase.
+5. wave1-dry Q3 hold 05:16Z (blip at ~05:19Z: lead killed the stray MCP Chrome): collect the metric choice.
+6. fix-vendor-scrollend told to end 05:2xZ (commit leftovers first). Monitors: none armed; use foreground `tick.sh`.
 
 ## Where the project stands
 
