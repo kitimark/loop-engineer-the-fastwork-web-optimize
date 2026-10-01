@@ -2,8 +2,9 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
-**mgmt-ops-5** (from 11:26Z; mgmt-ops-4 ran 08:52-11:25Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-6** (at ~60 % context). Last update: **11:3xZ**.
+**mgmt-ops-6** (from 17:28Z; mgmt-ops-5 ran 11:26-17:28Z, mgmt-ops-4 08:52-11:25Z), worktree
+`.claude/worktrees/mgmt-ops-2` (sparse, on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-7** (at
+~60 % context). Last update: **17:3xZ**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +17,11 @@ snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-6** (at ~60 % con
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **17:3xZ** (mgmt-ops-6) Took over from mgmt-ops-5 (17:28Z). Landed: ts-progress 7614401 + c9ceb98 (console Progress
+  page, fixes/PROGRESS.json). PREDICTIONS: P-032 (b) G-based items marked G-invalid (flick, I-042, F-085); P-031 G,
+  P-035 G, P-036 G marked BLOCKED until I-042. Phone: P14 (W) -> user sitting (lead, owner `user`) -> ts-gesture I-042
+  probe -> P-033 gain -> P-038 -> P12 -> P10 -> P5 -> P9. Caffeinate reminder ~18:30Z.
 
 - **12:3xZ** Landed bd6762e (docs-2 P-029 row, F-059 corrections; doc-protocol-v2 layerPainted M148+, rAF 60 Hz, L13).
   P1 HIT (P-017), P2 miss (P-016b). Lead: P10 right after P-029 (same session, 10 min cooling); runs count only with the
@@ -290,6 +296,12 @@ between tool calls.
    (pointerMove durations dropped) -> ALL G data so far is invalid as a finger proxy; G stays blocked. I-035 RESOLVED
    (8935a7d, npm test 730/730). Console server stopped at its 2 h limit 17:16Z (lead restarts). After ts-progress lands:
    keep fixes/PROGRESS.json current on every P-row result, verdict or land.
+   **PROGRESS.json (ts-progress, landed 7614401 + c9ceb98):** After every P-row result/verdict/drop/land: update
+   fixes/PROGRESS.json (changes + checks[].result + next + updatedAt), run `node tools/console.mjs progress --check`,
+   land with the docs batch; the page flags ledger results missing from it. Schema in the header of
+   tools/lib/progress.mjs (fw-progress/1); plain words outside `details`; every `best[]` number has tag + driver in
+   plain words + ref; updatedAt never later than now; updatedBy = own name; no URLs/IPs/hosts/device ids/names; when
+   I-042 lands or a G block runs, update `next` of cdwc, f3-arm-scope, nonpassive-touch.
    **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A PASSED (ABBA aw1-10e S, on vs off: dt>50 3 vs 7, dt>34 18 vs 21, fps
    57.4 vs 57.3; T1a now absolute; minShift revisit CLOSED: HL p95 on-off +0.48 ms, n=2/arm (crude), stays 4 ms,
    ts-analysis 14:3xZ), 10 min, block B) -> P-033 step 0
@@ -395,7 +407,8 @@ between tool calls.
 5. ts-gesture notes (apply once landed): `wda build` = `node tools/lock.mjs run chrome-measure --owner iphone-runner
    --max-seconds 600 -- node tools/iphone.mjs wda build --owner iphone-runner` (normal lane, iphone lease, xcodebuild
    capped at 540 s); gesture key `pinReversals` -> `pin` (`pin.excursions`, `pin.fight`, `pin.bounces`); first G run:
-   check perStroke `endLagMs` is not always 0 (review-gesture-2 B1).
+   check perStroke `endLagMs` is not always 0 (review-gesture-2 B1). (17:3xZ: moot until I-042; every G stroke so far
+   was a ~50 ms flick, F-085; redo this check on the first valid G run after the fix.)
 6. Caffeinate: the 3 h run was killed at 30 min (background default timeout); restarted 15:12Z, renewed 16:4xZ for 2 h -> ends ~18:45Z, remind ~18:30Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
 7. **Toolsmith asks from ts-analysis (review-stats T3 nits; need a lead spawn):** (nit 1) `tools/bench.mjs` calls
    `gainVerdict` at :555 and :689 without try/catch; since 86424b0 bench-stats throws on non-finite input, so a null/NaN
@@ -477,10 +490,10 @@ between tool calls.
 Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
 incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
 
-| address | owns | state (12:2xZ) |
+| address | owns | state (12:2xZ; mgmt-ops, ts-* rows 17:3xZ) |
 |---|---|---|
 | `main` | lead: lands, resolves, reorders locks, spawns, user | alive |
-| `mgmt-ops-5` (spawned by the lead; mgmt-ops-4 ended) | ops hub, iPhone queue, DIRECTION, handover, land batches, PREDICTIONS | alive |
+| `mgmt-ops-6` (spawned by the lead 17:2xZ; mgmt-ops-5 ENDED 17:28Z, mgmt-ops-4 ended) | ops hub, iPhone queue, DIRECTION, handover, land batches, PREDICTIONS, PROGRESS.json | alive |
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, controls, logger | alive |
 | `fix-nav-morph` (a277ea00c8773c1ea) | morph (gh, ghbn, R8/R5, R2), y≈1960 IO frame (src, noinert: no win), N12 | alive, holds rebase |
 | `fix-hero-exit` (a77e2ec753b6381fb) | hero window y 0-900: v2, h1, ST-2 builds, D5, hero-B | alive |
@@ -489,16 +502,17 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | arch-lead = `ae2d21af96d758d16` | measurement protocol v2 | ENDED 11:4xZ (docs follow-ups -> doc-protocol-v2) |
 | arch-safari = `a765c480ea490a443`, de-safari = `a4ce1669dd33aa4dc` | Safari probing / iOS time model (read-only) | alive |
 | arch-devtools = `ad5593c3c7d3b8c97`, de-devtools = `a21e6c00411aba4d8` | Chrome DevTools method (read-only) | done |
-| `ts-iphone-run` (T1a f8e7d5a), `ts-analysis` (T3), `ts-render-signals` (T6+T7, I-032, in test:chrome) | protocol v2 tools | alive |
+| `ts-iphone-run` (T1a f8e7d5a), `ts-analysis` (T3), `ts-render-signals` (T6+T7, I-032) | protocol v2 tools; 17:3xZ: ts-iphone-run owes N1 (pickTab errors leak the LAN host into gesture JSON; no gesture JSON in committed files until it lands), then I-038; ts-render-signals owes the I-032 land request (B1 58857d0 ACCEPT, rebase + clean test:chrome after 16:45Z) | alive |
 | `arch-sim` | iOS Simulator fidelity (user work stream, lead 14:0xZ): research, plan, probe the Simulator against real-device records; Simulator runs are host-heavy -> always inside chrome-measure holds (≤ 10 min), slot like research holds | alive |
 | `ts-sim` | toolsmith: tools/sim.mjs from arch-sim's spec (lead spawns when the spec arrives) | not yet spawned |
 | `review-cdwc` | fix-reviewer of mw10e-cdwc (fix-nav-morph 051d0aa): NEEDS-WORK 14:1xZ (B1-B4) | done |
 | `review-stats` | fix-reviewer of ts-analysis eea3c06 (phone thresholds): NEEDS-WORK 14:1xZ; re-check 8409b95+ef802b9 ACCEPT-WITH-NOTES 14:2xZ | alive |
 | `ts-user-console` | toolsmith: tools/console.mjs local user step console (user-facing steps go there once landed) | alive |
-| `ts-lock-bundle` | toolsmith: handover item 7b (I-035, --no-timing, gate a-c, flaky fixture d, display-off tests e) | alive |
+| `ts-progress` (a5748ebf9e8a3b086) | console Progress page + fixes/PROGRESS.json (landed 7614401 + c9ceb98) | done |
+| `ts-lock-bundle` | toolsmith: handover item 7b; I-035 landed 8935a7d; f10193c, a17909d, fb59f13, bb07e33, 14e503f (on c6ff3ea) wait for a fix-reviewer (lead: after the user sitting); (f) shelved for good | alive |
 | `review-t1a` | re-check of ts-iphone-run 7c83786 / f28f47e / 8d4f6a1 | alive |
 | `ts-wait` | toolsmith (lead spawn 13:3xZ, user request): blocking wait commands so agents stop sleep-loop polling; may ask iphone-runner + others what waiting hurt most | alive |
-| `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); WDA runner + iproxy left running for iphone-runner | done |
+| `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); owns I-042 (G strokes play as flicks, F-085): phone probe slot after the user sitting | alive |
 | `res-layerpainted` | F-059/F-064/F-066 stamped, F-068 limitation posted | done |
 | `doc-protocol-v2` (aa630a1a8c0adae9f) | v2 docs pass (LEAD, README DoD, AGENT_PROMPT, fix-reviewer, EXPERIMENTS, CLAUDE.md); not ops docs | alive |
 | `arch-unknowns` (ENDED; C1 spec in unknowns-validity U1), `de-unknowns-render`, `de-unknowns-ux` (a47fed2b13de28ab2: pacing page F5, P-024) | unknowns hunt | de-* alive |
