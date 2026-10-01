@@ -3,7 +3,8 @@
 // handed to bench-stats, which throws on it since f153307. Finite values pass through unchanged.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { series } from '../../tools/lib/bench-gain.mjs';
+import { series, calibrationPower } from '../../tools/lib/bench-gain.mjs';
+import { hostStateSummary } from '../../tools/lib/host.mjs';
 
 const run = (side, v, extra = {}) => ({ side, host: { load1Start: 1 }, scenarios: { s: { ms: v, ...extra } } });
 
@@ -25,4 +26,19 @@ test('series: null / NaN / undefined / Infinity / a string go to errors naming t
   ]);
   assert.equal(bad.hosts.length, 8, 'every run with the scenario keeps its host record (the contamination gate)');
   assert.deepEqual(series([run('A', 1)], 's', 'other').errors, ['other not a finite number (undefined) on side A'], 'a metric the scenario never produced');
+});
+
+test('calibrationPower (review-host-state N2, ts-lock-bundle c): a stored calibration counts in the gain host state; another display state tags it', () => {
+  const p = (display, fullWake) => ({ display, fullWake, powerSource: 'AC', displaySleepPrevented: true });
+  const cal = { band: 'clean', runs: [0, 1].flatMap((pair) => ['A', 'B'].map((side) => ({ side, pair, host: { load1Start: 1, power: { start: p('off', false), end: p('off', false) } } }))) };
+  const cr = calibrationPower(cal);
+  assert.deepEqual(cr.map((r) => [r.label, r.run, r.power.start.display]), [['calibration-A', 0, 'off'], ['calibration-B', 0, 'off'], ['calibration-A', 1, 'off'], ['calibration-B', 1, 'off']]);
+  const gain = ['A', 'B'].map((side) => ({ label: side, run: 0, power: { start: p('on', true), end: p('on', true) } }));
+  const h = hostStateSummary([...cr, ...gain]);
+  assert.equal(h.tag, 'HOST-DISPLAY-CHANGED');
+  assert.match(h.reasons[0], /^the arms differ: calibration-A display off, DarkWake vs calibration-B display off, DarkWake vs A display on, FullWake vs B display on, FullWake$/);
+  assert.equal(hostStateSummary([...calibrationPower({ runs: cal.runs.map((r) => ({ ...r, host: { ...r.host, power: { start: p('on', true), end: p('on', true) } } })) }), ...gain]).tag, null, 'the same state: no tag');
+  // no calibration, no runs, or one from before T8+ (no host.power): nothing known, nothing tagged
+  assert.deepEqual([calibrationPower(null), calibrationPower({}), calibrationPower(undefined)], [[], [], []]);
+  assert.equal(hostStateSummary([...calibrationPower({ runs: [{ side: 'A', pair: 0, host: { load1Start: 1 } }] }), ...gain]).tag, null);
 });

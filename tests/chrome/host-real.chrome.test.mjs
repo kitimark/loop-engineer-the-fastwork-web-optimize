@@ -35,3 +35,25 @@ test('default samplers on this machine: numbers, not errors; ps finds this proce
   assert.equal(x.suspended, false, `no host sleep in a 1 s window (slept ${x.sleptSec} s)`);
   assert.equal(typeof tree, 'number');
 });
+
+// ts-lock-bundle (e): hostPower() on this machine (T8+, I-033). The default suite feeds hostPower only fake readings
+// (tests/fixtures/fake-host.mjs and synthetic pmset / osascript text), so this is the one check that the four real
+// commands answer and parse. What stays untested without hardware: a real display-off or DarkWake reading (the
+// test runs with the display on and the user present), and the CGDisplayIsAsleep answer with no display attached.
+// Manual check for the user or lead (not automated: it sleeps the display): `pmset displaysleepnow`, wait 10 s
+// without touching the Mac, then from ssh or a scheduled job: node -e "import('./tools/lib/host.mjs').then(async (h) =>
+// console.log(await h.hostPower()))" -> display 'off'; fullWake false only once the Mac drops to DarkWake.
+test('hostPower on this machine: every field read (no null), no stub; a lit display is FullWake', { skip: process.platform !== 'darwin' && 'macOS only (pmset, osascript)' }, () => {
+  const code = `import('${HOST}').then(async (h) => console.log(JSON.stringify(await h.hostPower())));`;
+  const r = node('--input-type=module', ['-e', code], { env: { FW_TEST_HOST: '' } });
+  assert.equal(r.code, 0, r.out);
+  const p = JSON.parse(r.stdout);
+  assert.equal(p.stub, undefined, 'the real samplers');
+  assert.ok(['on', 'off'].includes(p.display), `display ${p.display}`);
+  assert.equal(typeof p.fullWake, 'boolean');
+  assert.ok(Array.isArray(p.capabilities) && p.capabilities.includes('CPU'), `capabilities ${p.capabilities}`);
+  assert.ok(p.powerSource != null, 'pmset -g ps names a source');
+  for (const k of ['displaySleepPrevented', 'systemSleepPrevented', 'userActive']) assert.equal(typeof p[k], 'boolean', `${k} ${p[k]}`);
+  assert.ok(Math.abs(Date.parse(p.at) - Date.now()) < 60000);
+  if (p.display === 'on') assert.equal(p.fullWake, true, 'a lit display has the Graphics capability (no DarkWake)');
+});

@@ -70,4 +70,11 @@ export function hostRange(hosts) {
   const o = hosts.map((h) => h.otherBusyPct).filter((x) => x != null);
   return { load1Min: l.length ? Math.min(...l) : null, load1Max: l.length ? Math.max(...l) : null, otherBusyMax: o.length ? Math.max(...o) : null, stub: hosts.find((h) => h.stub)?.stub };
 }
+/**
+ * A stored calibration's runs (bench-results.json calibration.runs, compactRuns: side, pair, host.power) as
+ * hostStateSummary input, labelled calibration-A / calibration-B, so a gain judged against that floor counts the
+ * floor's display / wake state too (review-host-state N2, ts-lock-bundle (c)). [] without a calibration or runs;
+ * a run without host.power (a calibration from before T8+) gives no reading.
+ */
+export const calibrationPower = (cal) => (cal?.runs || []).map((r) => ({ label: `calibration-${r.side}`, run: r.pair, power: r.host?.power }));
 export const fmtHost = (r) => `load1 ${r.load1Min ?? '?'}-${r.load1Max ?? '?'}, other CPU <= ${r.otherBusyMax ?? '?'} %${r.stub ? ', HOST STUBBED' : ''}`;

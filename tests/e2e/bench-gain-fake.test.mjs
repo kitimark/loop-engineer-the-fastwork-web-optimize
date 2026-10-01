@@ -234,3 +234,31 @@ test('T8+ (I-033): display / wake recorded per run; a change refuses calibration
   assert.match(r.stdout, /^host state: display on, FullWake, power AC, display-sleep assertion yes$/m);
   assert.deepEqual([results('fast-nav').gain.verdict, results('fast-nav').gain.hostState.tag, results('fast-nav').gain.hostState.display], ['HOLDS', null, ['on']]);
 });
+
+test('review-host-state N2 (ts-lock-bundle c): a gain judged against a calibration stored in another display / wake state is tagged HOST-DISPLAY-CHANGED and exits 3', async (t) => {
+  const resFile = join(repo.wt, 'fixes', 'fast-nav', 'bench-results.json');
+  const keep = readFileSync(resFile, 'utf8');
+  t.after(() => writeFileSync(resFile, keep));
+  // the A/A runs with the display asleep in DarkWake throughout: one state, so it is stored
+  const ASLEEP = { FAKE_HOST_DISPLAY: '0', FAKE_HOST_FULLWAKE: '0' };
+  let r = await bench('n2-cal', ['calibrate', 'fast-nav'], ASLEEP);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^host state: display off, DarkWake, /m);
+  assert.deepEqual([results('fast-nav').calibration.hostState.tag, results('fast-nav').calibration.runs[0].host.power.start.display], [null, 'off']);
+  const res = results('fast-nav');
+  delete res.authored;
+  writeFileSync(resFile, JSON.stringify(res, null, 1));
+  // the gain runs lit, one state throughout: the floor came from another state
+  r = await bench('n2-gain', ['gain', 'fast-nav']);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^host state: display off\/on, DarkWake\/FullWake, .*; HOST-DISPLAY-CHANGED: the arms differ: calibration-[AB] display off, DarkWake vs calibration-[AB] display off, DarkWake vs [AB] display on, FullWake vs [AB] display on, FullWake$/m);
+  assert.match(r.stdout, /^GAIN HOST-DISPLAY-CHANGED: HOLDS fast-nav styleLayoutMs: .* \[not authored: HOST-DISPLAY-CHANGED\] -> /m);
+  const after = results('fast-nav');
+  assert.equal(after.authored, undefined);
+  assert.deepEqual([after.gain.verdict, after.gain.hostState.tag], ['HOST-DISPLAY-CHANGED: HOLDS', 'HOST-DISPLAY-CHANGED']);
+  assert.deepEqual(Object.keys(after.gain.hostState.byLabel).sort(), ['A', 'B', 'calibration-A', 'calibration-B']);
+  // calibrate fits its own floor: the stored one's state is never compared
+  r = await bench('n2-recal', ['calibrate', 'fast-nav']);
+  assert.equal(r.code, 0, r.out);
+  assert.deepEqual([results('fast-nav').calibration.hostState.tag, Object.keys(results('fast-nav').calibration.hostState.byLabel).sort()], [null, ['A', 'B']]);
+});

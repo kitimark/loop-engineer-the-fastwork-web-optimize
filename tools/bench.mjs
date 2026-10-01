@@ -42,7 +42,9 @@
 // Tier B host state (T8+, I-033): every gain run records display on/off, FullWake/DarkWake, power source and the
 // display-sleep assertion just before and after it (runs[].host.power); a display or wake change within a run,
 // between runs or between the sides gets "HOST-DISPLAY-CHANGED: " before the verdict (hostState.tag), with the same
-// consequences as a BASELINE-* tag. The Chrome profile's field-trial hashes are logged as chromeProfile.
+// consequences as a BASELINE-* tag. The Chrome profile's field-trial hashes are logged as chromeProfile. A gain judged
+// against a stored calibration counts that calibration's runs too (sides calibration-A/B, review-host-state N2): a floor
+// measured in another display / wake state than the gain gets the same tag (calibrations from before T8+ carry none).
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -513,7 +515,7 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   try {
     m = await measureGain({ aOverlays: baseOv, bOverlays: calibrateMode ? baseOv : [sides.pb.dest], scenarios: [sc], o, runDir, log: (s) => console.log(s), gateTimeout });
   } finally { lock.release(); }
-  const { series, hostRange, fmtHost } = await import('./lib/bench-gain.mjs');
+  const { series, hostRange, fmtHost, calibrationPower } = await import('./lib/bench-gain.mjs');
   const ser = series(m.runs, sc.key, sc.metric);
   const range = hostRange(ser.hosts);
   const cur = { toolsSha: toolsSha(), chromeMajor: chromeMajor(m.chrome), setting: setting(o.timeDomain, o.cpu) };
@@ -521,7 +523,11 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   const bTag = baselineFlag();
   // T8+ (I-033): display / wake per run (side = arm, pair = run); a change within a run, between runs or between the
   // sides tags every verdict HOST-DISPLAY-CHANGED, refuses calibration and authoring and exits 3, like a BASELINE-* tag
-  const hostState = hostStateSummary(m.runs.filter((r) => r.scenarios[sc.key]).map((r) => ({ label: r.side, run: r.pair, power: r.host.power })));
+  // ts-lock-bundle (c), review-host-state N2: a gain is judged against the stored calibration's floor, so that A/A's
+  // runs (sides calibration-A / calibration-B) count too: a floor measured in another display / wake state than the
+  // gain tags the verdict (as reconfirm's own A/A does, B2). Calibrations from before T8+ carry no power: not counted.
+  const calibRuns = calibrateMode ? [] : calibrationPower(res.calibration);
+  const hostState = hostStateSummary([...calibRuns, ...m.runs.filter((r) => r.scenarios[sc.key]).map((r) => ({ label: r.side, run: r.pair, power: r.host.power }))]);
   const hTag = hostState.tag;
   const vTag = [bTag, hTag].filter(Boolean).join(': ') || null;
   console.log(describeHostState(hostState));
@@ -680,7 +686,7 @@ async function cmdReconfirm() {
   // Tier B: per --gain topic, its own normal hold: an A/A first when its floor is missing or stale, then
   // baseline vs _landed, one page per run
   if (gainSet.length) {
-    const { series, hostRange, fmtHost } = await import('./lib/bench-gain.mjs');
+    const { series, hostRange, fmtHost, calibrationPower } = await import('./lib/bench-gain.mjs');
     const cur0 = { toolsSha: report.toolsSha, setting: setting(o.timeDomain, o.cpu) };
     const fresh = (i) => i.results?.calibration && i.results.calibration.toolsSha === cur0.toolsSha && i.results.calibration.setting === cur0.setting && i.results.calibration.chromeMajor === chromeMajor(report.chrome) && i.results.calibration.band === 'clean';
     for (const i of items.filter((x) => gainSet.includes(x.topic))) {
@@ -708,7 +714,8 @@ async function cmdReconfirm() {
       // T8+ (I-033): the display / wake state over the floor's A/A (sides aa-A, aa-B) and the gain runs: a change inside either,
       // or a floor measured in another state than the gain (review-host-state B2), tags this topic's line and the reconfirm
       const powerOf = (runs, pre) => runs.filter((r) => r.scenarios[sc.key]).map((r) => ({ label: pre + r.side, run: r.pair, power: r.host.power }));
-      const hostState = hostStateSummary([...powerOf(aaRuns, 'aa-'), ...powerOf(m.runs, '')]);
+      // ... and when the floor is the stored calibration (no A/A here), that calibration's runs (N2, ts-lock-bundle (c))
+      const hostState = hostStateSummary([...(floor ? powerOf(aaRuns, 'aa-') : calibrationPower(i.results?.calibration)), ...powerOf(m.runs, '')]);
       report.tierB[i.topic] = { ...v, metric: sc.metric, values: { baseline: ser.a, patched: ser.b }, host: hostRange(ser.hosts), hostState, calibration: floor ? 'reconfirm A/A' : 'bench-results.json' };
       console.log(describeHostState(hostState));
       console.log(`GAIN ${flagged(hostState.tag, v.verdict)} ${i.topic} ${sc.metric}${v.shift != null ? `: HL shift ${fmt(v.shift)} [${fmt(v.ci?.lo)}, ${fmt(v.ci?.hi)}], p ${fmt(v.p)}, budget ${fmt(v.budget)}` : ''} (${fmtHost(hostRange(ser.hosts))})${v.verdict !== 'HOLDS' ? `: ${v.reason}` : ''}`);
