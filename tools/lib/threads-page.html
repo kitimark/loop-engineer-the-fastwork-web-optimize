@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threads</title>
+<link rel="stylesheet" href="/console-nav.css">
+<style>
+/* The user console's Threads page (ts-console-threads): one conversation per topic. Every text is rendered with
+   textContent (never as HTML); only http://localhost / 127.0.0.1 links become links. Nothing loads from outside. */
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e3e1da;
+  --accent: #2f5bd3; --accent-ink: #ffffff; --accent-soft: #e8eefc;
+  --ok: #23824a; --ok-soft: #e4f3ea; --rec: #c62f2f; --rec-soft: #fbe9e7; --warn: #8a5a00; --warn-soft: #fdf3dc;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161716; --card: #202221; --ink: #ecebe6; --muted: #9b9a93; --line: #34362f;
+    --accent: #7c9bff; --accent-ink: #0f1424; --accent-soft: #232b45;
+    --ok: #5cc68a; --ok-soft: #1d3326; --rec: #ff6b6b; --rec-soft: #3a2020; --warn: #e8b85c; --warn-soft: #3a3220;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161716; --card: #202221; --ink: #ecebe6; --muted: #9b9a93; --line: #34362f;
+  --accent: #7c9bff; --accent-ink: #0f1424; --accent-soft: #232b45;
+  --ok: #5cc68a; --ok-soft: #1d3326; --rec: #ff6b6b; --rec-soft: #3a2020; --warn: #e8b85c; --warn-soft: #3a3220;
+  --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 24px 20px 80px; }
+header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+header h1 { font-size: 22px; margin: 0; font-weight: 650; }
+header .sub { color: var(--muted); font-size: 15px; flex: 1 1 240px; }
+.status { font-size: 13px; color: var(--muted); }
+.status.off { color: var(--rec); font-weight: 600; }
+button { font: inherit; cursor: pointer; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 8px 16px; min-height: 44px; }
+button:disabled { cursor: not-allowed; opacity: .5; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 650; }
+button.quiet { border-color: transparent; background: transparent; color: var(--muted); }
+button.quiet:hover { color: var(--ink); text-decoration: underline; }
+button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+details.new > summary { cursor: pointer; font-weight: 650; list-style: none; }
+details.new > summary::-webkit-details-marker { display: none; }
+details.new > summary::before { content: "+ "; color: var(--accent); }
+label.small { display: block; font-size: 14px; color: var(--muted); margin: 10px 0 4px; }
+input[type=text], textarea { width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+textarea { min-height: 96px; resize: vertical; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.row .sp { flex: 1 1 auto; }
+.hint { font-size: 13px; color: var(--muted); }
+ul.threads { list-style: none; margin: 0; padding: 0; }
+ul.threads li { margin: 0 0 10px; }
+a.trow { display: block; text-decoration: none; color: inherit; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
+a.trow:hover { border-color: var(--accent); }
+a.trow.news { border: 2px solid var(--accent); }
+.trow .t { font-weight: 650; overflow-wrap: anywhere; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 14px; margin-top: 4px; }
+.pill { display: inline-block; font-size: 13px; padding: 1px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); }
+.pill.open { background: var(--bg); border: 1px solid var(--line); }
+.pill.answered { background: var(--ok-soft); color: var(--ok); }
+.pill.waiting-on-you { background: var(--warn-soft); color: var(--warn); font-weight: 650; }
+.pill.closed { background: var(--bg); color: var(--muted); }
+.unread { display: inline-block; min-width: 22px; padding: 0 7px; border-radius: 999px; background: #c62f2f; color: #fff; font-size: 13px; font-weight: 700; line-height: 22px; text-align: center; }
+.chip { font-size: 13px; padding: 1px 8px; border-radius: 6px; border: 1px solid var(--line); }
+a.chip { color: var(--accent); text-decoration: none; }
+h2.section { font-size: 16px; color: var(--muted); font-weight: 600; margin: 28px 0 10px; }
+details.closed > summary { cursor: pointer; color: var(--muted); font-weight: 600; margin: 24px 0 10px; }
+.empty { text-align: center; color: var(--muted); padding: 36px 12px; border: 2px dashed var(--line); border-radius: 18px; }
+.back { margin-bottom: 10px; }
+.back a { color: var(--accent); text-decoration: none; font-size: 15px; }
+#tv-title { font-size: 22px; margin: 4px 0 6px; line-height: 1.3; overflow-wrap: anywhere; }
+ol.msgs { list-style: none; margin: 16px 0; padding: 0; }
+ol.msgs li { margin: 0 0 12px; padding: 12px 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
+ol.msgs li.you { background: var(--accent-soft); border-color: transparent; margin-left: 40px; }
+ol.msgs li.agent { margin-right: 40px; }
+ol.msgs li.new { border: 2px solid var(--accent); }
+ol.msgs li.ask { border-left: 4px solid var(--warn); }
+.mhead { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+.mhead b { color: var(--ink); }
+.mtext { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.mtext a { color: var(--accent); }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px; max-width: calc(100% - 32px); }
+@media (max-width: 520px) { ol.msgs li.you { margin-left: 16px; } ol.msgs li.agent { margin-right: 16px; } }
+</style>
+</head>
+<body>
+<!--console-menu-->
+<div class="wrap">
+  <header>
+    <h1>Threads</h1>
+    <span class="sub">Ask the agents one topic per thread. Replies arrive here, so you can catch up topic by topic.</span>
+    <span id="conn" class="status">connecting…</span>
+  </header>
+
+  <section id="list-view">
+    <details class="new card" id="new">
+      <summary>New thread</summary>
+      <form id="new-form" autocomplete="off">
+        <label class="small" for="new-title">Topic, one line</label>
+        <input type="text" id="new-title" maxlength="160" placeholder="e.g. Why does the hero still stutter on the phone?" required>
+        <label class="small" for="new-text">Your question</label>
+        <textarea id="new-text" maxlength="8000" required></textarea>
+        <label class="small" for="new-topic">Status item (optional, e.g. hero-exit)</label>
+        <input type="text" id="new-topic" maxlength="41" pattern="[a-z0-9][a-z0-9-]{0,40}">
+        <div class="row"><span class="hint">Ctrl/⌘+Enter sends. The lead reads it and replies or hands it to the agent on that topic.</span><span class="sp"></span><button class="primary" type="submit" id="new-send">Start thread</button></div>
+      </form>
+    </details>
+    <ul class="threads" id="threads"></ul>
+    <details class="closed" id="closed-box" hidden><summary id="closed-sum">Closed</summary><ul class="threads" id="closed"></ul></details>
+  </section>
+
+  <section id="thread-view" hidden>
+    <div class="back"><a href="#" id="back">← All threads</a></div>
+    <h2 id="tv-title"></h2>
+    <div class="meta" id="tv-meta"></div>
+    <ol class="msgs" id="tv-msgs"></ol>
+    <form class="card" id="reply-form" autocomplete="off">
+      <label class="small" for="reply-text" id="reply-label">Your reply</label>
+      <textarea id="reply-text" maxlength="8000" required></textarea>
+      <div class="row"><button type="button" class="quiet" id="tv-close">Close thread</button><span class="sp"></span><span class="hint">Ctrl/⌘+Enter sends</span><button class="primary" type="submit" id="reply-send">Send</button></div>
+    </form>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="/console-nav.js"></script>
+<script>
+'use strict';
+var TID = /^T-\d{1,6}$/;
+var LOCAL = /https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d{1,5})?(?:\/[\w\-./#?=&%~+:]*)?/g;
+var current = null, curThread = null, listSig = '', busy = false;
+function $(id) { return document.getElementById(id); }
+function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function toast(msg) { var t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, 4000); }
+function ago(iso) {
+  var s = (Date.now() - Date.parse(iso)) / 1000;
+  if (!(s >= 0)) return '';
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.round(s / 60) + ' min ago';
+  if (s < 86400) return Math.round(s / 3600) + ' h ago';
+  return new Date(iso).toLocaleDateString();
+}
+function who(by) { return by === 'user' ? 'You' : by; }
+var STATE = { open: 'waiting for the agents', answered: 'answered', 'waiting-on-you': 'waiting on you', closed: 'closed' };
+
+/** Text with only localhost links made clickable; everything else as text. */
+function richText(node, text) {
+  var s = String(text), i = 0, m;
+  LOCAL.lastIndex = 0;
+  while ((m = LOCAL.exec(s))) {
+    if (m.index > i) node.appendChild(document.createTextNode(s.slice(i, m.index)));
+    var a = el('a', null, m[0]); a.href = m[0]; a.rel = 'noreferrer';
+    node.appendChild(a);
+    i = m.index + m[0].length;
+  }
+  if (i < s.length) node.appendChild(document.createTextNode(s.slice(i)));
+}
+
+function api(method, path, body) {
+  var o = { method: method, cache: 'no-store', headers: {} };
+  if (method === 'POST') { o.headers = { 'content-type': 'application/json', 'x-console': '1' }; o.body = JSON.stringify(body || {}); }
+  return fetch(path, o).then(function (r) {
+    $('conn').textContent = 'live'; $('conn').className = 'status';
+    return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; });
+  }, function (e) { $('conn').textContent = 'console server not reachable'; $('conn').className = 'status off'; throw e; });
+}
+
+// ---- list ----
+function row(t) {
+  var li = el('li'), a = el('a', 'trow' + (t.unread || t.state === 'waiting-on-you' ? ' news' : ''));
+  a.href = '#' + t.id;
+  a.appendChild(el('div', 't', t.title));
+  var m = el('div', 'meta');
+  m.appendChild(el('span', 'pill ' + t.state, STATE[t.state] || t.state));
+  if (t.unread) m.appendChild(el('span', 'unread', String(t.unread)));
+  m.appendChild(el('span', null, t.id));
+  if (t.topic) m.appendChild(el('span', 'chip', t.topic));
+  m.appendChild(el('span', null, ago(t.lastAt) + ', ' + who(t.lastBy)));
+  m.appendChild(el('span', null, t.count + (t.count === 1 ? ' message' : ' messages')));
+  if (t.assignees && t.assignees.length) m.appendChild(el('span', null, '→ ' + t.assignees.join(', ')));
+  a.appendChild(m); li.appendChild(a);
+  return li;
+}
+function loadList() {
+  return api('GET', '/api/threads').then(function (j) {
+    var sig = JSON.stringify(j.threads);
+    if (sig === listSig) return; listSig = sig;
+    var open = j.threads.filter(function (t) { return t.status !== 'closed'; });
+    var closed = j.threads.filter(function (t) { return t.status === 'closed'; });
+    var ul = $('threads'); ul.replaceChildren();
+    if (!open.length) { var e = el('li', 'empty'); e.appendChild(el('b', null, 'No open threads')); e.appendChild(document.createTextNode('Start one above: one topic per thread.')); ul.appendChild(e); }
+    open.forEach(function (t) { ul.appendChild(row(t)); });
+    var cu = $('closed'); cu.replaceChildren();
+    closed.forEach(function (t) { cu.appendChild(row(t)); });
+    $('closed-box').hidden = !closed.length;
+    $('closed-sum').textContent = 'Closed (' + closed.length + ')';
+    if (!j.threads.length) $('new').open = true;
+  }).catch(function () {});
+}
+
+// ---- one thread ----
+function renderThread(t) {
+  curThread = t;
+  $('tv-title').textContent = t.title;
+  var m = $('tv-meta'); m.replaceChildren();
+  m.appendChild(el('span', 'pill ' + t.state, STATE[t.state] || t.state));
+  m.appendChild(el('span', null, t.id));
+  if (t.topic) { var a = el('a', 'chip', 'Status: ' + t.topic); a.href = '/status#' + t.topic; m.appendChild(a); }
+  m.appendChild(el('span', null, 'started ' + ago(t.createdAt) + ' by ' + who(t.createdBy)));
+  if (t.assignees.length) m.appendChild(el('span', null, 'handled by lead, ' + t.assignees.join(', ')));
+  var ol = $('tv-msgs'); ol.replaceChildren();
+  t.messages.forEach(function (x) {
+    var li = el('li', (x.by === 'user' ? 'you' : 'agent') + (x.by !== 'user' && x.n > t.readUser ? ' new' : '') + (x.ask ? ' ask' : ''));
+    li.id = t.id + '-' + x.n;
+    var h = el('div', 'mhead'); h.appendChild(el('b', null, who(x.by)));
+    var tm = el('span', null, ago(x.at)); tm.title = x.at; h.appendChild(tm);
+    if (x.ask) h.appendChild(el('span', 'pill waiting-on-you', 'asks you'));
+    li.appendChild(h);
+    var p = el('p', 'mtext'); richText(p, x.text); li.appendChild(p);
+    ol.appendChild(li);
+  });
+  $('tv-close').textContent = t.status === 'closed' ? 'Reopen thread' : 'Close thread';
+  $('reply-label').textContent = t.status === 'closed' ? 'Write to reopen it' : 'Your reply';
+  markRead();
+}
+function loadThread(id, scroll) {
+  return api('GET', '/api/threads/' + id).then(function (j) {
+    var first = !curThread || curThread.id !== id;
+    var grew = curThread && curThread.id === id && j.thread.messages.length > curThread.messages.length;
+    renderThread(j.thread);
+    if (first || grew || scroll) { var last = $('tv-msgs').lastElementChild; if (last) last.scrollIntoView({ block: 'nearest' }); }
+  }).catch(function (e) { toast(e.message); show(null); });
+}
+function markRead() {
+  var t = curThread;
+  if (!t || document.visibilityState !== 'visible' || !t.messages.length) return;
+  var n = t.messages[t.messages.length - 1].n;
+  if (t.readUser >= n) return;
+  t.readUser = n;
+  api('POST', '/api/threads/' + t.id + '/read', { n: n }).catch(function () {});
+}
+
+// ---- views ----
+function show(id) {
+  current = id && TID.test(id) ? id : null;
+  $('list-view').hidden = !!current; $('thread-view').hidden = !current;
+  if (current) {
+    curThread = null;
+    $('reply-text').value = store('thread-draft-' + current) || '';
+    loadThread(current, true);
+  } else { listSig = ''; loadList(); }
+}
+function route() { show(location.hash.slice(1)); }
+window.addEventListener('hashchange', route);
+$('back').addEventListener('click', function (e) { e.preventDefault(); location.hash = ''; });
+
+// ---- forms ----
+function sendKeys(form) { form.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); form.requestSubmit(); } }); }
+sendKeys($('new-form')); sendKeys($('reply-form'));
+$('new-title').value = store('thread-draft-new-title') || '';
+$('new-text').value = store('thread-draft-new') || '';
+$('new-title').addEventListener('input', function () { store('thread-draft-new-title', this.value); });
+$('new-text').addEventListener('input', function () { store('thread-draft-new', this.value); });
+$('reply-text').addEventListener('input', function () { if (current) store('thread-draft-' + current, this.value); });
+$('new-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  if (busy) return; busy = true; $('new-send').disabled = true;
+  var topic = $('new-topic').value.trim();
+  api('POST', '/api/threads', { title: $('new-title').value, text: $('new-text').value, topic: topic || undefined }).then(function (j) {
+    store('thread-draft-new-title', null); store('thread-draft-new', null);
+    $('new-title').value = ''; $('new-text').value = ''; $('new-topic').value = '';
+    location.hash = j.thread.id;
+  }).catch(function (e) { toast(e.message); }).then(function () { busy = false; $('new-send').disabled = false; });
+});
+$('reply-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  if (busy || !current) return; busy = true; $('reply-send').disabled = true;
+  var id = current;
+  api('POST', '/api/threads/' + id + '/reply', { text: $('reply-text').value }).then(function (j) {
+    store('thread-draft-' + id, null); $('reply-text').value = '';
+    renderThread(j.thread);
+    var last = $('tv-msgs').lastElementChild; if (last) last.scrollIntoView({ block: 'nearest' });
+  }).catch(function (e) { toast(e.message); }).then(function () { busy = false; $('reply-send').disabled = false; });
+});
+$('tv-close').addEventListener('click', function () {
+  if (!curThread) return;
+  var act = curThread.status === 'closed' ? 'reopen' : 'close';
+  api('POST', '/api/threads/' + curThread.id + '/' + act, {}).then(function (j) { renderThread(j.thread); }).catch(function (e) { toast(e.message); });
+});
+
+// ---- live updates (the threads feed of /console-nav.js) ----
+function refresh() { if (current) loadThread(current); else loadList(); }
+if (window.ConsoleNav) {
+  ConsoleNav.openThread = function (id) { if (location.hash === '#' + id) loadThread(id, true); else location.hash = id; };
+  ConsoleNav.readingThread = function () { return current; };
+  ConsoleNav.onThreads = refresh;
+}
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { refresh(); markRead(); } });
+setInterval(refresh, 15000); // a fallback; the feed refreshes at once
+route();
+</script>
+</body>
+</html>

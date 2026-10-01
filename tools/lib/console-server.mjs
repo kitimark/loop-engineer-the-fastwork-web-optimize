@@ -16,6 +16,15 @@
 //   GET  /api/events             the same as server-sent events (`event: waiting`): at once, on every change (the
 //                                store is checked every 500 ms) and every 10 s as a heartbeat
 //   GET  /console-nav.js|.css    the shared top bar of both pages (menu, badge, banner, chime, desktop notifications)
+//   GET  /threads                the threads page (tools/lib/threads-page.html; ts-console-threads, console-threads.mjs)
+//   GET  /api/threads            {now, threads: [summary]} (the user's unread first, closed last)
+//   GET  /api/threads/<T-id>     {thread} (messages; no agents' read marks, no history)
+//   GET  /api/thread-feed        the badge / notification model (console-threads.mjs feedView: ids, sanitized titles,
+//                                counts); also pushed as `event: threads` on /api/events
+//   POST /api/threads            {title, text, topic?}: the user starts a thread
+//   POST /api/threads/<T-id>/<act>  act = reply {text} | read {n} | close | reopen  (the user, from the page)
+//   Thread POSTs: like the step POSTs (localhost Host, x-console: 1), plus an Origin, when sent, must be this server's
+//   localhost origin, and a body over 64 KB gets 413.
 // Both pages carry the same menu (menuHtml, injected at <!--console-menu-->), the current page highlighted.
 // startServer(…, {notify: true}) (`console.mjs serve --notify`): a macOS notification per new step and one reminder
 // (console-notify.mjs; osascript through execFile with an argv array, off by default, local only).
@@ -28,6 +37,7 @@ import { writeJson, readJson, iso } from './store.mjs';
 import { currentView } from './progress.mjs';
 import { currentStatusView } from './status.mjs';
 import { waitingView, stepWatcher, createNotifier, DEFAULT_REMIND_MIN } from './console-notify.mjs';
+import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER } from './console-threads.mjs';
 
 /** The page (plain HTML, inline CSS and JS, no external requests). Read per request: an edit shows on reload. */
 const PAGE_FILE = new URL('./console-page.html', import.meta.url);
@@ -38,14 +48,17 @@ const STATUS_PAGE_FILE = new URL('./status-page.html', import.meta.url);
 const statusPage = () => readFileSync(STATUS_PAGE_FILE, 'utf8');
 const NAV_JS_FILE = new URL('./console-nav.js', import.meta.url);
 const NAV_CSS_FILE = new URL('./console-nav.css', import.meta.url);
+const THREADS_PAGE_FILE = new URL('./threads-page.html', import.meta.url);
+const threadsPage = () => readFileSync(THREADS_PAGE_FILE, 'utf8');
 
-/** The shared top bar of every page; `current` = 'steps' | 'status' | 'progress' (highlighted, aria-current). Plain links. */
+/** The shared top bar of every page; `current` = 'steps' | 'status' | 'progress' | 'threads' (highlighted, aria-current). Plain links. */
 export function menuHtml(current) {
   const on = (k) => (k === current ? ' on" aria-current="page' : '');
   return `<nav class="menu" aria-label="Console pages"><div class="menu-in">`
     + `<a class="mbtn${on('steps')}" title="What the agents need from you" href="/">Your steps<span class="badge" data-badge hidden>0</span></a>`
     + `<a class="mbtn${on('status')}" title="Who is doing what, in priority order" href="/status">Status</a>`
     + `<a class="mbtn${on('progress')}" title="Where the fixes stand" href="/progress">Progress</a>`
+    + `<a class="mbtn${on('threads')}" title="Your questions to the agents, one thread per topic" href="/threads">Threads<span class="badge" data-thread-badge hidden>0</span></a>`
     + `<span class="menu-sp"></span>`
     + `<details class="alerts" id="nav-alerts"><summary id="nav-alerts-sum">Alerts</summary><div class="alerts-panel">`
     + `<button type="button" id="nav-sound" aria-pressed="true">Sound: on</button>`
@@ -97,23 +110,34 @@ const CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 's
 export function createFeed({ remindMin = DEFAULT_REMIND_MIN, notify = null, intervalMs = 500, heartbeatMs = 10000 } = {}) {
   const subs = new Set();
   const watch = notify ? stepWatcher({ notify, remindMin }) : null;
-  let sig = null, view = null, beat = Date.now();
+  const twatch = notify ? threadWatcher({ notify }) : null; // a new reply: 'reply' / 'thread' (no reminders for threads)
+  let sig = null, view = null, beat = Date.now(), tsig = null, tview = null;
   const write = (res, v) => { try { res.write(`event: waiting\ndata: ${JSON.stringify(v)}\n\n`); } catch {} };
+  const writeT = (res, v) => { try { res.write(`event: threads\ndata: ${JSON.stringify(v)}\n\n`); } catch {} };
   const tick = () => {
-    if (!subs.size && !watch) { view = null; sig = null; return; } // nobody listens: no store reads
+    if (!subs.size && !watch) { view = null; sig = null; tview = null; tsig = null; return; } // nobody listens: no store reads
+    let tv = null;
+    try { tv = threadFeedView(); } catch {} // a half-written thread file: next tick
+    if (tv) {
+      if (twatch) { try { twatch(tv.threads); } catch {} }
+      tview = tv;
+      const ts = JSON.stringify([tv.badge, tv.threads]);
+      if (ts !== tsig) { tsig = ts; for (const r of subs) writeT(r, tv); }
+    }
     let v;
     try { v = waitingView(undefined, { remindMin }); } catch { return; } // a half-written step file: next tick
     const s = JSON.stringify(v.steps);
     if (watch) { try { watch(v.steps, Date.parse(v.now)); } catch {} }
     view = v;
     if (s !== sig) { sig = s; beat = Date.now(); for (const r of subs) write(r, v); }
-    else if (Date.now() - beat >= heartbeatMs) { beat = Date.now(); for (const r of subs) write(r, v); }
+    else if (Date.now() - beat >= heartbeatMs) { beat = Date.now(); for (const r of subs) { write(r, v); if (tview) writeT(r, tview); } }
   };
   tick();
   const timer = setInterval(tick, intervalMs);
   timer.unref?.();
   return {
     current: () => view || waitingView(undefined, { remindMin }),
+    currentThreads: () => tview || threadFeedView(),
     subscribe(req, res) {
       res.writeHead(200, {
         'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', connection: 'keep-alive',
@@ -122,6 +146,7 @@ export function createFeed({ remindMin = DEFAULT_REMIND_MIN, notify = null, inte
       res.write('retry: 2000\n\n');
       const v = this.current();
       write(res, v);
+      try { const tv = this.currentThreads(); writeT(res, tv); if (!subs.size) tsig = JSON.stringify([tv.badge, tv.threads]); } catch {}
       if (!subs.size) sig = JSON.stringify(v.steps);
       subs.add(res);
       res.on('close', () => subs.delete(res));
@@ -141,6 +166,65 @@ function readBody(req, max = 64 * 1024) {
 }
 
 const localHost = (h, port) => h === `localhost:${port}` || h === `127.0.0.1:${port}` || h === `[::1]:${port}`;
+
+/** Thread POSTs: x-console: 1 (no cross-origin page sends it without a preflight we never answer) and, when the
+ *  browser sends an Origin, this server's own localhost origin. Returns an error message, or null when allowed. */
+export function threadPostRefusal(req, port) {
+  if (req.headers['x-console'] !== '1') return 'missing x-console header';
+  const o = req.headers.origin;
+  if (o !== undefined && !(o === `http://localhost:${port}` || o === `http://127.0.0.1:${port}` || o === `http://[::1]:${port}`)) return 'foreign origin';
+  return null;
+}
+
+/** A JSON body of at most `max` bytes: {body} | {status, error} (413 too large, 400 not a JSON object). */
+function readJsonBody(req, max = 64 * 1024) {
+  return new Promise((resolve) => {
+    let n = 0, over = false; const chunks = [];
+    req.on('data', (c) => { n += c.length; if (n > max) over = true; else chunks.push(c); });
+    req.on('error', () => resolve({ status: 400, error: 'request error' }));
+    req.on('end', () => {
+      if (over) return resolve({ status: 413, error: 'body too large (64 KB max)' });
+      const raw = Buffer.concat(chunks).toString('utf8');
+      if (!raw) return resolve({ body: {} });
+      try { const b = JSON.parse(raw); return resolve(b && typeof b === 'object' && !Array.isArray(b) ? { body: b } : { status: 400, error: 'body is not a JSON object' }); } catch { return resolve({ status: 400, error: 'body is not JSON' }); }
+    });
+  });
+}
+
+const THREAD_ACTIONS = {
+  reply: (id, b) => replyUser(id, { text: b.text }),
+  read: (id, b) => markRead(id, USER, b.n),
+  close: (id) => setStatus(id, { status: 'closed', fromPage: true }),
+  reopen: (id) => setStatus(id, { status: 'open', fromPage: true }),
+};
+
+/** The thread routes; returns true when it answered. */
+async function threadRoute(req, res, u, port, feed) {
+  const p = u.pathname;
+  if (req.method === 'GET' && (p === '/threads' || p === '/threads.html')) { send(res, 200, withMenu(threadsPage(), 'threads'), 'text/html; charset=utf-8'); return true; }
+  if (req.method === 'GET' && p === '/api/thread-feed') { send(res, 200, feed ? feed.currentThreads() : threadFeedView()); return true; }
+  if (req.method === 'GET' && p === '/api/threads') { send(res, 200, { now: iso(), threads: listThreads().map((t) => threadSummary(t)).sort(pageOrder) }); return true; }
+  const one = p.match(/^\/api\/threads\/(T-\d{1,6})$/);
+  if (req.method === 'GET' && one) {
+    try { send(res, 200, { thread: pageThread(getThread(one[1])) }); } catch (e) { send(res, 404, { error: e.message }); }
+    return true;
+  }
+  const act = p.match(/^\/api\/threads\/(T-\d{1,6})\/([a-z]+)$/);
+  if (req.method === 'POST' && (p === '/api/threads' || act)) {
+    const refused = threadPostRefusal(req, port);
+    if (refused) { send(res, 403, { error: refused }); return true; }
+    const fn = act ? THREAD_ACTIONS[act[2]] : null;
+    if (act && !fn) { send(res, 404, { error: `unknown action ${act[2]}` }); return true; }
+    const b = await readJsonBody(req);
+    if (b.error) { send(res, b.status, { error: b.error }); return true; }
+    try {
+      const r = act ? await fn(act[1], b.body) : await createThread({ title: b.body.title, text: b.body.text, topic: b.body.topic, fromPage: true });
+      send(res, 200, { thread: pageThread(r.thread) });
+    } catch (e) { send(res, /^no thread /.test(e.message) ? 404 : 409, { error: e.message }); }
+    return true;
+  }
+  return false;
+}
 
 export function handler(port, feed = null) {
   return async (req, res) => {
@@ -171,6 +255,7 @@ export function handler(port, feed = null) {
         if (raw) { try { body = JSON.parse(raw); } catch { return send(res, 400, { error: 'body is not JSON' }); } }
         try { return send(res, 200, { step: publicView(await act(m[1], body || {})) }); } catch (e) { return send(res, 409, { error: e.message }); }
       }
+      if (await threadRoute(req, res, u, port(), feed)) return;
       return send(res, 404, { error: 'not found' });
     } catch (e) {
       return send(res, 500, { error: e.message || String(e) });

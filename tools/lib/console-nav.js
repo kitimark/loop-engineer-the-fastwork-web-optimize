@@ -5,7 +5,10 @@
 //   - notifications when a new step arrives: a banner with an Open button, a short Web Audio chime (mute: Alerts ->
 //     Sound), a desktop notification once the user grants permission with a button (never asked on load), and one
 //     reminder per step left on the user's turn for N minutes (default from the server, 3; Alerts -> Remind after);
-//   - the theme switch (auto / light / dark), shared by both pages.
+//   - the theme switch (auto / light / dark), shared by both pages;
+//   - threads (ts-console-threads): the "Threads" badge (threads with unread replies or a question for the user), and
+//     on a new agent reply a banner (Open -> /threads#T-003), the chime and a desktop notification; the same rule as
+//     console-threads.mjs diffThreads, from the `threads` events (polling fallback: /api/thread-feed). No reminders.
 // Data: the `waiting` events of GET /api/events (server-sent events: delivered at once even in a hidden tab, where
 // Chrome may hold chained timers to one wake-up a minute after 5 min hidden; a polling fallback on /api/waiting).
 // Only step ids and server-sanitized titles reach a notification. Nothing here loads anything from outside.
@@ -33,8 +36,24 @@
     return { state: { seeded: true, open: open }, events: events };
   }
   function titleWith(base, n) { return (n > 0 ? '(' + n + ') ' : '') + base; }
+  /** Same rule as console-threads.mjs diffThreads: seed silently; 'reply' when an unread thread's lastAgentN grew,
+   *  'thread' for an unseen thread with unread replies (the lead started it). */
+  function diffThreads(state, threads) {
+    var seeded = !!(state && state.seeded);
+    var prev = (state && state.seen) || {};
+    var seen = {}, events = [];
+    for (var i = 0; i < threads.length; i++) {
+      var t = threads[i];
+      seen[t.id] = t.lastAgentN;
+      if (!seeded || !(t.unread > 0)) continue;
+      if (!Object.prototype.hasOwnProperty.call(prev, t.id)) events.push({ kind: 'thread', thread: t });
+      else if (t.lastAgentN > prev[t.id]) events.push({ kind: 'reply', thread: t });
+    }
+    return { state: { seeded: true, seen: seen }, events: events };
+  }
   var ID = /^C-\d{1,6}$/;
-  var core = { diffSteps: diffSteps, titleWith: titleWith };
+  var TID = /^T-\d{1,6}$/;
+  var core = { diffSteps: diffSteps, diffThreads: diffThreads, titleWith: titleWith };
   root.ConsoleNotify = core;
   if (typeof document === 'undefined') return;
 
@@ -127,7 +146,13 @@
     if (b) { try { b.focus({ preventScroll: true }); } catch (e) {} }
     return true;
   }
+  function openThread(id) {
+    if (!TID.test(id)) return;
+    if (location.pathname === '/threads' && typeof api.openThread === 'function') { api.openThread(id); return; }
+    location.href = '/threads#' + id;
+  }
   function openStep(id) {
+    if (TID.test(id)) { openThread(id); return; }
     if (!ID.test(id)) return;
     if (onStepsPage() && reveal(id)) { try { history.replaceState(null, '', '#' + id); } catch (e) {} return; }
     location.href = '/#' + id;
@@ -144,7 +169,8 @@
     b.className = 'nav-banner' + (kind === 'remind' ? ' remind' : '');
     var txt = document.createElement('span');
     txt.className = 'nb-text';
-    txt.textContent = (kind === 'remind' ? 'Still waiting for you: ' : 'New step: ') + s.title + (list.length > 1 ? ' (+' + (list.length - 1) + ' more)' : '');
+    var lead = kind === 'remind' ? 'Still waiting for you: ' : kind === 'reply' ? 'New reply in ' + s.id + ': ' : kind === 'thread' ? 'New thread ' + s.id + ': ' : 'New step: ';
+    txt.textContent = lead + s.title + (list.length > 1 ? ' (+' + (list.length - 1) + ' more)' : '');
     var open = document.createElement('button');
     open.type = 'button'; open.className = 'nb-open'; open.textContent = 'Open ' + s.id;
     open.addEventListener('click', function () { hideBanner(); openStep(s.id); });
@@ -158,11 +184,20 @@
 
   // ---- badge and title ----
   var baseTitle = document.title.replace(/^\(\d+\) /, '');
+  var stepCount = 0, threadCount = 0;
   function setCount(n) {
+    stepCount = n;
     document.querySelectorAll('[data-badge]').forEach(function (e) {
       e.textContent = String(n); e.hidden = !(n > 0); e.setAttribute('aria-label', n + ' waiting for you');
     });
-    document.title = titleWith(baseTitle, n);
+    document.title = titleWith(baseTitle, stepCount + threadCount);
+  }
+  function setThreadCount(n) {
+    threadCount = n;
+    document.querySelectorAll('[data-thread-badge]').forEach(function (e) {
+      e.textContent = String(n); e.hidden = !(n > 0); e.setAttribute('aria-label', n + ' thread(s) with news for you');
+    });
+    document.title = titleWith(baseTitle, stepCount + threadCount);
   }
 
   // ---- the waiting feed ----
@@ -189,7 +224,8 @@
     var news = mine.events.filter(function (e) { return e.kind === 'new'; }).map(function (e) { return e.step; });
     var rem = mine.events.filter(function (e) { return e.kind === 'remind'; }).map(function (e) { return e.step; });
     if (news.length) showBanner('new', news); else if (rem.length) showBanner('remind', rem);
-    if (bannerIds.length && !v.steps.some(function (s) { return bannerIds.indexOf(s.id) >= 0; })) hideBanner();
+    // a step banner goes when its steps are finished (a thread banner stays until dismissed or opened)
+    if (bannerIds.length && ID.test(bannerIds[0]) && !v.steps.some(function (s) { return bannerIds.indexOf(s.id) >= 0; })) hideBanner();
     // every tab of this browser together: chime and desktop notification once
     withLock(function () {
       var r = diffSteps(loadShared(nowMs), v.steps, nowMs, remMs);
@@ -216,15 +252,47 @@
     handle(v, changed); // unchanged (a heartbeat): only the time moved on, for reminders
   }
   function tickReminders() { if (last) handle(last, false); }
+  // ---- the threads feed ----
+  var threadTab = null, threadSig = '';
+  function receiveThreads(v) {
+    if (!v || !Array.isArray(v.threads)) return;
+    var s = JSON.stringify(v.threads);
+    var changed = s !== threadSig; threadSig = s;
+    setThreadCount(v.badge || 0);
+    // the thread the user is reading right now (visible page) raises nothing
+    var reading = document.visibilityState === 'visible' && typeof api.readingThread === 'function' ? api.readingThread() : null;
+    var rows = v.threads.filter(function (t) { return TID.test(t.id); });
+    var mine = diffThreads(threadTab, rows);
+    threadTab = mine.state;
+    var ev = mine.events.filter(function (e) { return e.thread.id !== reading; });
+    if (ev.length) showBanner(ev[0].kind, ev.map(function (e) { return e.thread; }));
+    withLock(function () {
+      var st = null;
+      try { st = JSON.parse(get('console-thread-state') || 'null'); } catch (e) { st = null; }
+      var nowMs = Date.now();
+      if (!st || typeof st !== 'object' || !(nowMs - (st.at || 0) < 30000)) st = null; // no tab alive for 30 s: reseed silently
+      var r = diffThreads(st, rows);
+      r.state.at = nowMs;
+      set('console-thread-state', JSON.stringify(r.state));
+      var n = r.events.filter(function (e) { return e.thread.id !== reading; });
+      if (n.length) {
+        chime(false);
+        n.slice(0, 3).forEach(function (e) { desktop((e.kind === 'thread' ? 'New thread: ' : 'New reply: ') + e.thread.id, e.thread.title, e.thread.id); });
+      }
+    });
+    if (changed && typeof api.onThreads === 'function') { try { api.onThreads(v); } catch (e) {} }
+  }
   var polling = null;
   function poll() {
     fetch('/api/waiting', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(receive).catch(function () {});
+    fetch('/api/thread-feed', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(receiveThreads).catch(function () {});
   }
   function startPolling() { if (!polling) { poll(); polling = setInterval(poll, 1000); } }
   function connect() {
     if (!root.EventSource) { startPolling(); return; }
     var es = new EventSource('/api/events');
     es.addEventListener('waiting', function (e) { try { receive(JSON.parse(e.data)); } catch (x) {} });
+    es.addEventListener('threads', function (e) { try { receiveThreads(JSON.parse(e.data)); } catch (x) {} });
     es.onopen = function () { if (polling) { clearInterval(polling); polling = null; } };
     es.onerror = function () { if (es.readyState === 2) { startPolling(); setTimeout(connect, 30000); } }; // CLOSED (e.g. an older server): poll, retry later
   }
@@ -281,7 +349,8 @@
     applyTheme(theme());
   }
 
-  var api = { core: core, reveal: reveal, openStep: openStep, onChange: null, chime: chime };
+  // threads page hooks: openThread(id) (navigate in place), readingThread() -> the id shown and visible, onThreads(feed)
+  var api = { core: core, reveal: reveal, openStep: openStep, openThreadLink: openThread, onChange: null, chime: chime, openThread: null, readingThread: null, onThreads: null };
   root.ConsoleNav = api;
   wire();
   connect();

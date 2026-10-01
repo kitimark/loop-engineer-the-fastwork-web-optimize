@@ -142,21 +142,24 @@ test('stepWatcher (serve --notify): silent at start, one notification per new st
 });
 
 test('menuHtml: the same top bar on every page, plain links, the current page highlighted, the badge on "Your steps"', () => {
-  const steps = S.menuHtml('steps'), prog = S.menuHtml('progress'), stat = S.menuHtml('status');
-  for (const m of [steps, prog, stat]) {
+  const steps = S.menuHtml('steps'), prog = S.menuHtml('progress'), stat = S.menuHtml('status'), thr = S.menuHtml('threads');
+  for (const m of [steps, prog, stat, thr]) {
     assert.match(m, /<nav class="menu" aria-label="Console pages">/);
     assert.match(m, /href="\/">Your steps<span class="badge" data-badge hidden>0<\/span><\/a>/);
     assert.match(m, /href="\/progress">Progress<\/a>/);
     assert.match(m, /href="\/status">Status<\/a>/);
+    assert.match(m, /href="\/threads">Threads<span class="badge" data-thread-badge hidden>0<\/span><\/a>/);
     for (const id of ['nav-sound', 'nav-desktop', 'nav-remind', 'nav-test', 'nav-theme', 'nav-banner']) assert.ok(m.includes(`id="${id}"`), id);
     assert.equal((m.match(/aria-current="page"/g) || []).length, 1);
   }
   assert.match(steps, /class="mbtn on" aria-current="page" title="[^"]*" href="\/"/);
   assert.match(prog, /class="mbtn on" aria-current="page" title="[^"]*" href="\/progress"/);
   assert.match(stat, /class="mbtn on" aria-current="page" title="[^"]*" href="\/status"/);
+  assert.match(thr, /class="mbtn on" aria-current="page" title="[^"]*" href="\/threads"/);
+  assert.equal(thr.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the threads page: the same bar');
   assert.equal(stat.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the status page: the same bar');
   assert.equal(steps.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'identical apart from the highlight');
-  for (const f of ['console-page.html', 'progress-page.html', 'status-page.html']) {
+  for (const f of ['console-page.html', 'progress-page.html', 'status-page.html', 'threads-page.html']) {
     const html = readFileSync(new URL(`../../tools/lib/${f}`, import.meta.url), 'utf8');
     assert.equal(html.split('<!--console-menu-->').length, 2, `${f}: one menu slot`);
     assert.ok(html.includes('<script src="/console-nav.js"></script>') && html.includes('<link rel="stylesheet" href="/console-nav.css">'), f);

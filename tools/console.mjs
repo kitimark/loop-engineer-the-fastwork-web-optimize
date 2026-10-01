@@ -53,6 +53,21 @@
 //
 // Status board (read-only; the same content as the page's Status tab, /status; agents report with tools/status.mjs):
 //   node tools/console.mjs status [--all] [--json]          # every workstream: priority, state, waits, owner, note
+// Threads (ts-console-threads, user request 2026-10-02): the user asks one topic per thread on the page (/threads);
+// the lead, or an agent the lead assigned, replies here. The user's text is printed as typed (their own message to us:
+// never copy it into committed files without scrubbing it); agent text is scrubbed before it is stored (Hard rule 12).
+//   node tools/console.mjs thread wait --as <agent> [--thread T-3] [--timeout 3600] [--json] [--quiet]
+//        # background: exit 0 printing NEW <thread> #<n> by user … for EVERY unread user message in the threads you
+//        # follow (the lead: all; others: the ones assigned to them), then marks them read for you only; 3 TIMEOUT;
+//        # 4 NEVER (--thread closed). Re-arm it after each wake. An assignment wakes the assignee on the backlog.
+//   node tools/console.mjs thread list [--unread --as <agent>] [--all] [--json]   # open threads (--all: closed too)
+//   node tools/console.mjs thread show <id> [--as <agent>] [--json]               # --as: marks it read for <agent>
+//   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask]
+//        # the lead always; others only when assigned ("ask the lead to assign you"). --ask: you need an answer from
+//        # the user (the thread shows "waiting on you"). Prints REPLIED T-003 #4 and anything that was scrubbed.
+//   node tools/console.mjs thread new --by lead --title "…" --text "…"|--file <f> [--topic <status id>] [--to <agent>] [--ask]
+//   node tools/console.mjs thread assign <id> --to <agent>[,<agent>] --by lead [--remove]
+//   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
 //
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';
@@ -64,9 +79,10 @@ import { pollUntil, parseSec, EXIT, httpGet } from './lib/wait.mjs';
 import { autoPortBase } from './lib/paths.mjs';
 import { currentView, renderText, readProgress } from './lib/progress.mjs';
 import { currentStatusView, renderText as statusText } from './lib/status.mjs';
+import * as TH from './lib/console-threads.mjs';
 
 const argv = process.argv.slice(2);
-const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -118,9 +134,91 @@ async function serve() {
   return new Promise(() => {}); // until a signal
 }
 
+/** `console.mjs thread <sub> [<id>] …` (see the header). */
+async function thread() {
+  const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
+  const [, sub, idArg] = pos;
+  const as = () => opt('as', process.env.FW_AGENT);
+  const textArg = () => {
+    const f = opt('file');
+    if (f !== undefined && opt('text') !== undefined) throw new Error('give --text or --file, not both');
+    if (f === '-') return readFileSync(0, 'utf8');
+    if (f !== undefined) return readFileSync(f, 'utf8');
+    return opt('text');
+  };
+  const scrubNote = (sc) => (sc && sc.length ? `\nscrubbed before storing (Hard rule 12): ${sc.join(', ')}` : '');
+  if (!sub || sub === 'help') { console.log('see the header of tools/console.mjs (Threads)'); return sub ? 0 : EXIT.usage; }
+  if (sub === 'list') {
+    if (flag('unread') && !as()) throw new Error('--unread needs --as <agent>');
+    let items = TH.listThreads();
+    if (!flag('all')) items = items.filter((t) => t.status !== 'closed');
+    if (flag('unread')) items = items.filter((t) => TH.unreadFor(t, as()).length);
+    if (flag('json')) { console.log(JSON.stringify(items.map((t) => ({ ...TH.summary(t), ...(as() && { unreadFor: TH.unreadFor(t, as()).length }) })), null, 1)); return 0; }
+    if (!items.length) console.log(flag('unread') ? `no threads with unread user messages for ${as()}` : 'no threads');
+    for (const t of items) console.log(TH.threadLine(t, as()));
+    return 0;
+  }
+  if (sub === 'new') {
+    const r = await TH.createThread({ by: by(), title: opt('title'), text: textArg(), topic: opt('topic'), to: opt('to'), ask: flag('ask') });
+    console.log(`STARTED ${r.thread.id}: ${r.thread.title}${r.thread.assignees.length ? ` (assigned: ${r.thread.assignees.join(', ')})` : ''}${scrubNote(r.scrubbed)}`);
+    return 0;
+  }
+  if (sub === 'wait') {
+    const w = TH.threadWaitCondition({ as: as(), thread: opt('thread') });
+    const timeoutSec = opt('timeout') !== undefined ? parseSec(opt('timeout')) : 3600;
+    if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${opt('timeout')}`);
+    const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
+    const r = await pollUntil(w.check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
+    if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
+    if (r.result !== 'met') { console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`); return EXIT.timeout; }
+    // a burst (the user sends two or three lines in a row): settle a moment, then print everything unread at once
+    await new Promise((res) => setTimeout(res, 1000));
+    const again = w.check();
+    const news = JSON.parse(again.met ? again.detail : r.detail);
+    await TH.commitWait(w.reader, news);
+    if (flag('json')) console.log(JSON.stringify(news, null, 1));
+    else {
+      for (const t of news) console.log(TH.newsText(t, w.reader));
+      console.log(`MET ${w.what}: ${news.reduce((n, t) => n + t.messages.length, 0)} new message(s) in ${news.map((t) => t.id).join(', ')} (after ${r.waitedSec} s); marked read for ${w.reader}. Re-arm: node tools/console.mjs thread wait --as ${w.reader}`);
+    }
+    return EXIT.met;
+  }
+  if (!idArg) throw new Error(`usage: node tools/console.mjs thread ${sub} <id> … (see the header of tools/console.mjs)`);
+  const id = TH.parseThreadId(idArg);
+  if (sub === 'show') {
+    let t = TH.getThread(id);
+    if (as() && as() !== TH.USER) { await TH.markRead(id, as()); t = TH.getThread(id); }
+    if (flag('json')) { console.log(JSON.stringify(t, null, 1)); return 0; }
+    console.log(TH.threadLine(t, as()));
+    for (const m of t.messages) {
+      console.log(`  #${m.n} ${m.by}${m.ask ? ' (asks the user)' : ''} at ${m.at}:`);
+      for (const l of String(m.text).split('\n')) console.log(`    ${l}`);
+    }
+    for (const h of t.history) console.log(`  ${h.at} ${h.who} ${h.action}${h.note ? `: ${h.note}` : ''}`);
+    return 0;
+  }
+  if (sub === 'reply') {
+    const r = await TH.replyAgent(id, { by: by(), text: textArg(), ask: flag('ask') });
+    console.log(`REPLIED ${id} #${r.n}${flag('ask') ? ' (waiting on the user)' : ''}${scrubNote(r.scrubbed)}`);
+    return 0;
+  }
+  if (sub === 'assign') {
+    const r = await TH.assign(id, { by: by(), to: opt('to'), remove: flag('remove') });
+    console.log(`${flag('remove') ? 'UNASSIGNED' : 'ASSIGNED'} ${id}: ${r.thread.assignees.join(', ') || '(nobody: only the lead)'}`);
+    return 0;
+  }
+  if (sub === 'close' || sub === 'reopen') {
+    await TH.setStatus(id, { status: sub === 'close' ? 'closed' : 'open', by: by(), note: opt('note') });
+    console.log(`${sub === 'close' ? 'CLOSED' : 'REOPENED'} ${id}`);
+    return 0;
+  }
+  throw new Error(`unknown thread command "${sub}" (see the header of tools/console.mjs)`);
+}
+
 async function main() {
   if (!cmd || cmd === 'help' || flag('help')) { console.log('see the header of tools/console.mjs'); return cmd ? 0 : EXIT.usage; }
   if (cmd === 'serve') return serve();
+  if (cmd === 'thread') return thread();
   if (cmd === 'url') { const u = await serverUrl(); if (!u) { console.log('NO SERVER: node tools/console.mjs serve (run it in the background)'); return 3; } console.log(`CONSOLE_URL=${u}`); return 0; }
   if (cmd === 'post') {
     let parts = opt('parts');

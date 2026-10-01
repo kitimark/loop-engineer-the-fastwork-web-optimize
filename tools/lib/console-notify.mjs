@@ -16,6 +16,7 @@ import { execFile } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { list, phase } from './console.mjs';
 import { sanitize } from './progress.mjs';
+import { threadNotificationText } from './console-threads.mjs';
 import { iso } from './store.mjs';
 
 export const DEFAULT_REMIND_MIN = 3;
@@ -86,11 +87,12 @@ export function osascriptArgv({ title, body }) {
 
 /**
  * A notifier for `serve --notify`: notify(step, kind) builds the argv and runs osascript (execFile, no shell).
+ * kind 'new' | 'remind' (a step), 'reply' | 'thread' (a thread, console-threads.mjs: id and sanitized title only).
  * exec/platform/log are injectable for tests. Returns the argv (null where macOS notifications don't exist).
  */
 export function createNotifier({ exec = execFile, platform = process.platform, log = process.env.FW_CONSOLE_NOTIFY_LOG, onError } = {}) {
   return (step, kind = 'new') => {
-    const argv = osascriptArgv(notificationText(step, kind));
+    const argv = osascriptArgv(kind === 'reply' || kind === 'thread' ? threadNotificationText(step, kind) : notificationText(step, kind));
     if (log) { appendFileSync(log, JSON.stringify({ cmd: OSASCRIPT, argv }) + '\n'); return argv; }
     if (platform !== 'darwin') return null;
     exec(OSASCRIPT, argv, { timeout: 10000, windowsHide: true }, (e) => { if (e && onError) onError(e); });
