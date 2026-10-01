@@ -107,8 +107,9 @@ the hooks of its own branch), `git config merge.ff only`, `git config pull.rebas
 `node --test 'tests/hooks/*.test.mjs'`. Known gaps: git started from a script (`node -e`, `find -exec`)
 is not seen by git-guard, but the git hooks still refuse merge commits and pushes; a human can switch
 the git hooks off, so for the user rule 1 stays a promise. `node tools/lock.mjs run … -- <cmd>` is
-pre-approved; git-guard checks the command after `--` (and a `sh -c` inside it) like any other, but
-never run git through it.
+pre-approved; for any command naming `lock.mjs` (any argument order, any node options) git-guard checks
+everything after the first `--` that follows it, and a `sh -c` inside that, like any other command;
+still never run git through it.
 <!-- END hard-rules -->
 
 ## Calibrated measurement setting
@@ -182,9 +183,11 @@ node tools/baseline.mjs sparse --off  # check out your branch's own committed co
 - No `baseline.json` (a branch from before the snapshot commit): unchecked, as before; rebase.
 - The check is not only at start: `verify.mjs` re-checks after every run (a flagged run gets `baseline:
   {snapshot, state, tag}`, verify.json `baseline.flaggedRuns`), and `fix.mjs ab` / `bench.mjs` prefix every
-  verdict with `BASELINE-MODIFIED: ` (or `-MISMATCH`, `-CHANGED`, ...) when the baseline was not the pinned
-  snapshot throughout (`FW_BASELINE_ALLOW_MODIFIED=1`, or a re-mirror mid-A/B); bench then exits 3 and stores
-  no calibration or authored effect. Such a result is invalid: re-measure on the committed snapshot.
+  verdict with `BASELINE-MODIFIED: ` (or `-MISMATCH`, `-REPINNED` for a new pin mid-run, `-TIMEOUT` when the
+  check's git hung for 10 s, ...) when the baseline was not the pinned snapshot throughout
+  (`FW_BASELINE_ALLOW_MODIFIED=1`, or a re-mirror mid-A/B); bench then exits 3 and stores no calibration or
+  authored effect. Such a result is invalid: re-measure on the committed snapshot. (bench's own
+  `BASELINE-CHANGED` is something else: a `patch.diff` made on another mirror.)
 - A branch never carries a snapshot change: `npm run test:unit` fails with `SCOPE SNAPSHOT` (no `FW_TOOLING`
   opt-out) when `site/`, `site-pretty/` or `baseline.json` differ from its merge-base with `main` (a revert
   or cherry-pick skips pre-commit); restore them as the message says. The lead checks the same before
