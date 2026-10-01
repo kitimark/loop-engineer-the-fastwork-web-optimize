@@ -284,7 +284,12 @@ between tool calls.
 7d. **NEW RULE (user, CLAUDE.md 71ad57d):** a browser/engine limitation is OBSERVED until confirmed against docs, spec,
    engine source or a bug tracker (cited). mgmt-ops signs no card that relies on an OBSERVED claim as its mechanism
    (experiments that TEST a claim are fine); route arch-claims' refuted/weakened claims to owners and amend tickets.
-7c. **F-059: limitation CONFIRMED (source), cause CORRECTED, empirical check pending** (res-layerpainted 12:2xZ):
+7c. **F-059 / F-064: CONFIRMED by source AND check (13:0xZ, F-066):** Chrome 154 0 layerPainted in all 4 arms, CfT 143
+   8/10 (root contents layer); CompositeAfterPaint theory REFUTED (143 has CAP and still fires). paint-rects --on/off
+   A/A: scroll 86.6 -> 66.6 fps, so "never in timing runs" stands. New caveat (res-layerpainted, OBSERVED/inference): a
+   will-change layer whose only change is a solid background colour gets no layerPainted and no paint on 143 (solid-colour
+   layer = property update?), so paint counts/rects may miss such changes; routed to doc-protocol-v2 + ts-render-signals.
+   History (12:2xZ):
    layerPainted is dead on M148+ because of Chromium 1bf9d9eb ("[HiC] Allow cc::Layer update rect mutation during
    paint callback", crbug 488803411): `LayerTreeHost::WillCommit` resets update_rect before probe::LayerTreePainted;
    not CompositeAfterPaint. Decisive 7-arm check (Chrome 154 vs CfT 143, ~70 s short lane) -> ts-render-signals.
