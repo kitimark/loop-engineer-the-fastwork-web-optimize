@@ -550,7 +550,61 @@ around #people). One uncounted st4-rotoff attribution run follows. The source is
 
 - **Cost prediction:** wherever the root moves off the view, the rotator's Layout drops below 1 ms (carousel)
   or to at most half of C's median (#people).
-- **Idle at y 0:** v>=3 drops in proportion to the rotator's share (2 writes/s).
+- **Idle at y 0:** dt>34 (and dt>50) drop in proportion to the rotator's share (2 writes/s). Phone frame
+  columns follow CLAUDE.md: ms only, with ±4 ms counts.
 
 The A2 prediction in 7.4 assumed C's carousel is *not* a boundary on the phone. This table replaces it: on
 `main`'s rules V1 should change nothing unless W1 holds.
+
+### 7.8 The user's finger run F3: "small user profile blinking" follows the rotator's cycle (OBSERVED, rAF timing only)
+
+**The run.**
+- F3 page 1 is a blind finger run on build aw1-10e (:5476), 12:54Z, recorded with `iphone.mjs record`. It is
+  rAF-only, with no Timeline attached.
+- The user's words: "i saw small user profile are blinking. and animation of hero section and end of the page
+  are laggy the same." The lead's gloss: the #people avatar carousel.
+- Data: iphone-runner `out/iphone-runner/finger/F3-p1.json`. Scripts: scratchpad `de-pm-hero/f3.mjs`,
+  `f3b.mjs`.
+
+**Idle before the first touch.** The page sat still at y 1500 for 41.5 s (2404 frames):
+
+| dt>34 | dt>50 | >30 | >38 | >46 | >54 |
+|---|---|---|---|---|---|
+| 76 | 15 | 83 | 57 | 21 | 8 |
+
+dt>50 is threshold-sensitive (21 / 15 / 8 across ±4 ms).
+
+- **Pattern:** the long frames come in pairs about 225-240 ms apart, and the pairs repeat every **1050 ms**
+  (median of 40 cycles, range 876-1067). That is about 1.9 long frames per cycle.
+- **This matches the rotator** (§7.2): about 800 ms dwell plus the 220 ms exit phase, timer at
+  `2.DyWL8TcE.js:11571`. A plausible split is one frame at the swap (`{#if}` flip plus insert) and one at the
+  exit end (removal). That split is OBSERVED in our setup; the cause is not yet attributed for this run.
+- **Headline counts.** The record's headline `gt34` 118 / `gt50` 24 includes these idle frames. The scroll
+  figures are the "while scrollY changes" counts: 737 frames, dt>34 34, dt>50 9, max 353 ms at the first touch
+  (y 1522).
+- **During the scroll,** the long frames cluster at y 1500-2000, while the carousel is still on screen. From
+  2000 to 4580 they are sparse.
+
+**What "blinking" is: UNRESOLVED.** rAF timing cannot separate two readings:
+- **(a) Perceived design motion.** The designed exit/pop animation (`avatars-exit`, `avatars-pop`, CSS
+  L2888/L2905) reads as blinking at this cadence.
+- **(b) A real blank frame.** The swap inserts new `img` renderers (§7.2 templates); if one paints before its
+  image is decoded, a slot shows empty for one or more frames.
+
+**Decisive checks:**
+1. **Frame grabs.** WDA `/screenshot` at 14-17/s over the carousel at y 1500 on aw1-10e, about 2 min (queued with
+   iphone-runner after the finger batch). An empty avatar slot in any frame means (b); a continuous exit/pop
+   means (a). The `ioscap` screen recording would be better, but it waits on the terminal's Camera permission.
+2. **Timeline run.** P14's uncounted st4-rotoff slot is now a Timeline attribution run, reading Paint and
+   Decode records next to the rotator's Layouts. With the rotator off, the 1050 ms pairs, and with them the
+   blinking, should disappear.
+
+**For P14.**
+- **C's baseline:** the Timeline-off control sentinels idle 6 s at y 0. That gives about 5-6 cycles per
+  run. Read pairs per 1.05 s cycle there.
+- **Between arms:** compare pairs per cycle in the idle phase of the Timeline-on counted runs. Mark that column
+  Timeline-on, since the Timeline may inflate dt.
+- **A Timeline-off comparison between arms** (one uncounted run per arm, idle at y 1500, +about 5 min) is an
+  add-on requested from mgmt-ops-5.
+- **Prediction:** about 2 dt>34 frames per cycle on C. Any arm that moves the layout root off the view drops
+  toward under 1 per cycle.
