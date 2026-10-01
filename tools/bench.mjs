@@ -14,6 +14,7 @@
 //   node tools/bench.mjs calibrate <topic> [--on <o>] [--runs 5] [--cpu 6] [--time-domain timeTicks|threadTicks] [--max-load 6]
 //        Tier B noise floor: the topic's scenario as an A/A (baseline vs baseline), ABBA; minEffect = half
 //        the Moses CI width. Refused unless every run was clean (tools/lib/host.mjs). Normal lane.
+//        Needs only bench.json, no patch.diff (I-029): calibrate before the first patch exists.
 //   node tools/bench.mjs gain <topic> [--on <o>] [--runs 5] [--cpu 6] [--time-domain ...] [--max-load 6] [--experiment <topic>/<nn>] [--live]
 //        Tier B: the topic's micro-scenario (bench.json gain) at 6x, served like fix.mjs ab
 //        (--vendors=local --https --latency 150), 5 fresh pages per side ABBA, Performance.getMetrics
@@ -309,6 +310,14 @@ function prepareSides(t, { on = null, exp = null, live = false }) {
   return { source, drift, baseBuild, pb };
 }
 
+/** The baseline side only (site-pretty, or + the --on overlay): for calibrate's A/A. */
+function prepareBase(on) {
+  if (!on) return { baseBuild: null };
+  const baseBuild = build(`on-${on}`, targetParts(on));
+  if (baseBuild.bad.length) { console.log(`CONFLICT building --on ${on}:\n  ${baseBuild.bad.map((b) => `${b.name}: ${b.error}`).join('\n  ')}`); return { exit: 1 }; }
+  return { baseBuild };
+}
+
 async function cmdMech(t) {
   checkTopic(t);
   requireWorktree();
@@ -470,7 +479,9 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   if (exp && (exp.expect.gain === undefined || exp.expect.gain === 'broke')) { console.log(`GAIN SKIPPED ${expId}: expect.gain is ${exp.expect.gain ?? 'not set'} (a break is judged by bench mech: parity / checks expected to fail)`); return 0; }
   const o = gainOpts();
   const on = opt('on') || null;
-  const sides = prepareSides(t, { on, exp, live: flag('live') });
+  // calibrate is an A/A of the baseline (+ --on): it needs no patch.diff, so a topic can calibrate before
+  // its first patch exists (I-029); gain needs the patched side
+  const sides = calibrateMode ? prepareBase(on) : prepareSides(t, { on, exp, live: flag('live') });
   if (sides.exit != null) return sides.exit;
   const sc = gainScenario(t, spec);
   const owner = opt('owner', process.env.FW_LOCK_OWNER || `bench-${t}`);

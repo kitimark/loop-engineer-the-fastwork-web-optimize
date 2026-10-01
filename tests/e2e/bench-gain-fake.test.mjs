@@ -119,6 +119,21 @@ test('gain: HOLDS from ABBA runs at 6x in the normal lane, authors the effect on
   assert.match(r.stdout, /^GAIN HOLDS .*\(WARN band, load1 8-8/m);
 });
 
+test('calibrate needs no patch.diff: the A/A measures the baseline only (I-029); gain still needs one', async () => {
+  mkdirSync(join(repo.wt, 'fixes', 'fresh-topic'), { recursive: true });
+  writeFileSync(join(repo.wt, 'fixes', 'fresh-topic', 'bench.json'), JSON.stringify(spec('fresh-topic'), null, 1));
+  let r = await bench('fresh-cal', ['calibrate', 'fresh-topic']);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /A\/A: site-pretty twice/);
+  assert.match(r.stdout, /^CALIBRATED fresh-topic styleLayoutMs: minEffect /m);
+  const c = results('fresh-topic').calibration;
+  assert.deepEqual([c.patch, c.band], [null, 'clean']);
+  r = await bench('fresh-gain', ['gain', 'fresh-topic']);
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.stderr, /fixes\/fresh-topic\/patch.diff not found/);
+  rmSync(join(repo.wt, 'fixes', 'fresh-topic'), { recursive: true, force: true });
+});
+
 test('gain --experiment: expected outcome per row; broke and iphone rows are skipped', async () => {
   let r = await bench('e1', ['gain', 'fast-nav', '--experiment', 'fast-nav/01']);
   assert.equal(r.code, 0, r.out);
