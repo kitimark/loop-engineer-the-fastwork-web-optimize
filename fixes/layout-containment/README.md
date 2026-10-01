@@ -247,8 +247,47 @@ Both builds do what they say (A1: the rotator writes nothing; A2: `contain: stri
 lays out from the document root in all three (total 1690) with 13-31 dirty objects, so Chrome does not show the
 carousel as a layout root even with `contain: strict`; that says nothing about WebKit (W1-W3 are phone questions).
 
-Phone question (merged P14 boundary block, sent to mgmt-ops-5 at 12:5xZ; agreed by de-pm-hero, arch-claims and fix-hero-exit):
-- Arms: C aw1-10e, V1 st4-strict, V2 fix-hero-exit's re-contain-js (CSS 288c2ebe, JS 3579d857: a ResizeObserver sizes #people, then `contain: layout size`; plain re-contain at 100svh failed parity because the card is 1329 px tall). Chrome parity PASS: rects and docH identical, 0 #people writes during the reveal. Snapshot `<scratchpad>/hero-exit/snap/re-contain-js`, CSS 288c2ebec580, JS 3579d857cab9; rotator L11571 (unchanged), RO callback L11606, write L11614.
+Phone question (merged P14 boundary block). Sent to mgmt-ops-5 at 12:5xZ and agreed by de-pm-hero, arch-claims and
+fix-hero-exit. **Re-registered at 15:3xZ** on the lead's instruction: V1 swapped from st4-strict to st4-noswap, with
+mgmt-ops-5 as second reader.
+
+**Why V1 changed (DOM check, Chrome short lane 15:26-15:27Z, counts only).** Probe: `<scratchpad>/layout-containment/who.mjs`, at
+430x775, raw `who-2226/`.
+- **The 104x32 root is the carousel.** In both re-keep (the s0 build) and aw1-10e, `.start-selling-avatars.is-carousel`
+  is the only 104x32 element on the page. It sits at doc (58.3, 2023.9) inside `#people > card > pill > proof`, with
+  display flex, overflow hidden and contain none. The phone quad is (58, 2054): x matches to 0.3 px, and the 30 px
+  y offset is within the known Chrome-phone difference.
+  - So the phone's WebKit already uses the carousel as a layout root, at least for the load-time dirtying
+    (OBSERVED).
+  - W1 ("the carousel is not a boundary on the phone") is out. V1 = `contain: strict` on the carousel would
+    only repeat C, so it is dropped.
+- **Correction: the 398x52 root is the fixed top nav, not a countdown strip.** The s0 rest sits at scrollY 904
+  (`s0-rk.json` marks). `.start-selling-top-nav` is `position: fixed`, 398x52 at (16, 16), i.e. page (16, 920).
+  So the countdown 1 s tick's small Layout is rooted at the top nav.
+- **Both rotator ticks swap DOM.** The loop at JS L11560-11580 runs `f(800)`, then S=true, then `f(220)`, then x+1
+  with S=false. S picks the if-block at L11689-11690: `ge`, the 5-img exit/enter block, or `_e`, the 4-img keyed
+  each, keyed by URL.
+  - So both the exit-start tick and the swap tick remove and insert img renderers in the carousel.
+  - In s0-rk / s0-rkop (`tick2.cjs`), the ≥10 ms whole-view Layouts fall 0-60 ms after both tick types: 31/31
+    after exit-start and 21/21 after swap, out of 19 + 19 ticks.
+  - The `avatars-exit` width steps (60-240 ms after exit-start) coincide only with small (<5 ms) whole-view Layouts:
+    135/142.
+
+**New V1, st4-noswap** (`<scratchpad>/layout-containment/snap2/st4-noswap`, read-only; JS b8c085d9b619, CSS
+c6aad94b455f = aw1-10e):
+- the if-block always renders `_e` (L11690);
+- the keyed each is keyed by slot (`(e) => e`, L11681), so x+1 updates `src` in place.
+
+Chrome mechanism check (5 s, counts only):
+
+| build | carousel childList adds / removes | src changes | imgs |
+|---|---|---|---|
+| aw1-10e | 69 / 66 | 0 | – |
+| st4-noswap | **0 / 0** | **20** | 4 |
+
+- st4-noswap is a probe, not a landing candidate. The avatars change without the slide, which is a visible difference.
+
+- Arms: C aw1-10e, **V1 st4-noswap** (was st4-strict), V2 fix-hero-exit's re-contain-js (CSS 288c2ebe, JS 3579d857: a ResizeObserver sizes #people, then `contain: layout size`; plain re-contain at 100svh failed parity because the card is 1329 px tall). Chrome parity PASS: rects and docH identical, 0 #people writes during the reveal. Snapshot `<scratchpad>/hero-exit/snap/re-contain-js`, CSS 288c2ebec580, JS 3579d857cab9; rotator L11571 (unchanged), RO callback L11606, write L11614.
 - Order:
   1. 3 warm-ups, one per arm.
   2. 1 Timeline-OFF control sentinel. Skip it if Timeline-on control data with C ≥44 already exists.
@@ -272,24 +311,25 @@ Phone question (merged P14 boundary block, sent to mgmt-ops-5 at 12:5xZ; agreed 
     at a 104x32 box at (58, 2054). Most sit inside Composite after Paint, beside a beacon PerformanceObserver
     callback, with no RecalculateStyles before them. Likely an image-load size invalidation after the src swap
     (OBSERVED; cause UNRESOLVED; idle8.cjs).
-  - That box is already its own layout root on the phone. Don't count these small Layouts under any P14 column:
-    they are image-load Layouts, not the tick's.
-  - **The box is probably the carousel itself.** de-pm-hero matched it to `.is-carousel` by size (postmortem-hero
-    §7.3, b03648c). The aw1-10e snapshot CSS L2887-2893 gives it `width: 104px; height: 32px; overflow: hidden`.
-    - That already fits WebKit's relayout-boundary rule (non-visible overflow, fixed width and height), so the
-      phone may treat the carousel as a boundary in C already (OBSERVED, identity by size only).
-    - Pre-read for P14: expect V1 (`contain: strict` on the carousel) to look like C. If both are view-rooted, the
-      §7.7 table already points away from W1 and toward a dirtier in the tick itself or above the carousel.
-    - Decisive check, not run (the lead stopped further digging): which element sits at (58, 2054) at 430x775.
-- Reading, pre-registered in de-pm-hero's postmortem-hero.md §7.7 (6ed6767, was 84bb7a2 before rebase) and agreed by arch-claims. A self-dirtied
-  renderer's climb starts at its container, so `contain: strict` on the carousel cannot stop a self-dirty; only
-  the #people boundary can.
-  - C view, V1 carousel: W1. The phone's WebKit did not treat the carousel as a boundary in C (the WebKit build
-    string matters).
-  - C and V1 view, V2 #people: the escape is inside #people but above the carousel (a self-dirty, which is UNRESOLVED
-    with no trigger found, or a second dirtier, or W2). The fix belongs above the carousel.
-  - All three view: W3, or a dirtier outside #people. The rotoff run says how many view-rooted layouts remain.
+  - That box is the carousel (DOM check above), already its own layout root on the phone. Don't count these
+    small Layouts under any P14 column: they are image-load Layouts, not the tick's. In V1 the `src` updates in
+    place, so expect more of them there; they stay out of every column.
+- Reading, re-registered at 15:3xZ for V1 = st4-noswap. It follows de-pm-hero's postmortem-hero.md §7.7 (6ed6767)
+  with the carousel row replaced, because the DOM check put W1 out. The tick Layout is the ≥10 ms whole-view one
+  counted as above.
+  - C view, V1 gone (no ≥10 ms whole-view Layout after ≥75 % of ticks, or tick Layouts rooted at the carousel):
+    the insert/remove of img renderers is the escape (W2, the swap path). Fix direction: rotate by `src`/transform
+    inside fixed slots, not by keyed insert/remove.
+  - C view, V1 still view-rooted ≥10 ms at most ticks: the DOM swap is not the escape. W3 (the exit width steps
+    above the carousel) or another dirtier in the tick. Read the st4-rotoff run for how many view-rooted Layouts
+    remain with the rotator off.
+  - V2 rooted at #people with tick Layout ≤ half of C's: the #people boundary contains it whatever the dirtier is
+    (fix-hero-exit's direction). V2 still view-rooted: the escape is outside #people or the boundary does not hold
+    on this WebKit build.
   - C not view-rooted: the C build moved. Stop.
+- Prediction (written before the block): V1 removes the ≥10 ms whole-view tick Layouts (W2); idle dt>34 drops by
+  about the rotator's share of C's idle long frames; V2 rooted at #people at ≤ half of C's tick cost. The headline
+  target stays the ≥101 ms rebuild frame at y≈1960 (lead's instruction); P14 does not test it.
 - No overlap with lc-cq3: in the SSR HTML the mobile deck is in the hero section, the stage visuals and kr-arms are
   in a later section, and `.is-carousel` is inside #people.
 
