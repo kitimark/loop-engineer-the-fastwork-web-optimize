@@ -524,6 +524,17 @@ Setup:
     InvalidateLayout under the spring rAF. The spring writes transforms on `will-change` faces, which is not a
     Layout change by the §2.8 rule. So which style change dirties the spring-frame Layouts is UNRESOLVED. The
     decisive check: the RecalculateStyles before each such Layout, in spring frames outside the accent windows.
+  - **Decisive check done (fix-scroll-engine, `layout-containment/idle4.cjs`, `idle5.cjs`):** the spring as
+    dirtier is REFUTED by the check.
+    - Outside the accent windows, spring frames hold a small Layout in 27/210 and 27/216 (~13 %); non-spring
+      frames in 26/112 and 27/117 (~23 %).
+    - The spring's rAF subtrees hold only ScheduleStyleRecalculation, no InvalidateLayout.
+    - Most of the F-081 "spring" row sits inside the accent windows, which cover ~12.4 of the 20 s.
+  - **What is left, all OBSERVED (time association only):**
+    - The accent `stroke-dashoffset` draw drives most small Layouts. Why WebKit marks layout for an SVG stroke
+      change is UNRESOLVED; it needs a WebKit reference.
+    - Outside the accent windows, 26/65 and 27/67 small Layouts fall 0-60 ms after a rotator tick, against
+      ~8-10 % if uniform. That makes the rotator the leading candidate.
 - **Idle and rest-to-motion:** the rotator is the main source of whole-view layout at y 0.
   - It keeps running in the hero, because the hero is within one viewport of its element.
   - Any "idle quiet" assumption (I-002's 6 s idle; the rest-to-motion note in §6) includes 2 whole-view layouts
