@@ -68,6 +68,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
+  `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
+  ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
+  (user blind finger pick), 8207797 scene-scope V1+R4a+R4b (RB; root hunt parked), f230912 illusion-composite PoCs.
+  HERO F-108 = the accent word's draw/erase (h7): de-illusion-style takes draw/erase (containment first, then frames/
+  video; PR-001 changes-requested: user wants pixel-identical, apple.com-style frames/video); fix-scroll-engine takes the
+  morph start (h8). ms-1 REFUTED img src writes on the phone. AGENT_ROLES item 8: how DEs post proposals. I-045 open.
 - **20:4xZ T-002 20:37Z: usage 78 %, hero + page-end only until 04:20 reset** (21:20Z). Live: fix-scroll-engine (st6
   rotator, F-108 dirtier), fix-scene-scope (RB r4-v3 + morph start), iphone-runner (their finger checks); all else parked.
   mgmt-ops-6 PARKED (lead resumes after 21:20Z). Unlanded: nothing. Phone: no lease, waits for root-hunt tickets.

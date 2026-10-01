@@ -175,6 +175,11 @@ Sources: [sub-agents](https://code.claude.com/docs/en/sub-agents.md),
      the background; reply with `thread reply T-nnn --by <you> --text "…"` (`--ask` when you need the user's
      answer, `--file` for long text) in plain words for the user; close with `thread close T-nnn --by <you> --note
      "…"` once answered. Never paste the user's thread text into commits or findings unscrubbed.
+  8. **Design engineers post a PoC to the user as a proposal** (ts-proposals, `research/architecture/console-proposals.md`
+     §7): `node tools/console.mjs proposal post --by <you> --file out/proposal-<slug>.json` with screenshot pairs at
+     matching scroll positions (localhost pages in Chrome, 430x932) and an honest `visualDiff`; arm `proposal wait <id>
+     --until decided` in the background; on `changes-requested` revise with `proposal revise <id> --note …`; never land
+     a PoC the user has not accepted. Look-alikes must be pixel-identical to the user (frame sequences / video welcome).
   - **Why agents went unnamed (verified by the lead, 10:3xZ):** after a context compaction the lead's
     Agent schema no longer listed `name`, but the tool still accepts it (a probe spawn registered as
     "probe-name"). The agent type is not the blocker: named general-purpose agents message each other
