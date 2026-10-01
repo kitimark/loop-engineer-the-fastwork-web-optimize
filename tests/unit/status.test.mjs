@@ -151,6 +151,36 @@ test('derive: queue positions, holder, pending steps by the owner, blocking inci
   assert.deepEqual(S.derive(S.get('b'), live).derived, []);
 });
 
+test('I-044: the owner drops a derived incident link with --unlink; a later --waiting-on incident re-links it; none clears', async () => {
+  // iphone-runner reported I-001 (blocking) and I-002 (blocking); the phone-queue row runs something unrelated to I-001
+  const i1 = (await I.open({ by: 'iphone-runner', title: 'WDA slow', error: 'wda timeout', blocking: true })).incident.id;
+  const i2 = (await I.open({ by: 'iphone-runner', title: 'proxy down', error: 'proxy refused', blocking: true })).incident.id;
+  await S.set('phone-queue', { by: 'iphone-runner', kind: 'phone', title: 'Phone blocks', state: 'measuring' });
+  const live = await P.gatherLive();
+  const incs = (id) => S.derive(S.get(id), live).derived.filter((d) => d.kind === 'incident').map((d) => d.ref);
+  assert.deepEqual(incs('phone-queue'), [i1, i2]);
+  // an unlink alone is a change (no "nothing changed"), kept across later transitions
+  const r = await S.set('phone-queue', { by: 'iphone-runner', unlink: `incident:${i1}` });
+  assert.deepEqual(r.item.unlinked, [i1]);
+  assert.deepEqual(incs('phone-queue'), [i2]);
+  await S.set('phone-queue', { by: 'iphone-runner', state: 'researching', note: 'attribution runs' });
+  assert.deepEqual(incs('phone-queue'), [i2], 'a state change keeps the unlink');
+  assert.deepEqual(S.get('phone-queue').history.at(-2).changes, { unlinked: [i1] });
+  await S.set('phone-queue', { by: 'iphone-runner', unlink: i2 });   // bare id works too; lists accumulate
+  assert.deepEqual(S.get('phone-queue').unlinked, [i1, i2]);
+  assert.deepEqual(incs('phone-queue'), []);
+  assert.deepEqual(S.itemView(S.get('phone-queue'), { live }).unlinked, [i1, i2]);
+  // waiting on it explicitly re-links it
+  await S.set('phone-queue', { by: 'iphone-runner', state: 'waiting', waitingOn: `incident:${i1}` });
+  assert.deepEqual(S.get('phone-queue').unlinked, [i2]);
+  assert.deepEqual(incs('phone-queue'), [i1]);
+  await S.set('phone-queue', { by: 'iphone-runner', unlink: 'none' });
+  assert.equal(S.get('phone-queue').unlinked, undefined);
+  assert.deepEqual(incs('phone-queue'), [i1, i2]);
+  await assert.rejects(S.set('phone-queue', { by: 'iphone-runner', unlink: 'chrome' }), /bad --unlink "chrome"/);
+  await assert.rejects(S.set('phone-queue', { by: 'iphone-runner', unlink: 'none' }), /nothing changed/);
+});
+
 test('derive: a self-reported wait that is over is flagged (resolved incident, finished or unknown item)', async () => {
   const inc = (await I.open({ by: 'x', title: 'gone soon', error: 'e1' })).incident;
   await add('dep', { state: 'landed' });

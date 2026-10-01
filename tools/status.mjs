@@ -16,6 +16,9 @@
 //        #   (cleared if not given); waiting needs one; ready-to-land defaults to lead:"land request".
 //        # The board adds what it already knows: your place in the Chrome/phone queue, your pending console steps,
 //        # blocking incidents that name you. Never report a URL, address, e-mail or path (refused, Hard rule 12).
+//        # --unlink incident:I-0NN[,…] | none: drop a derived "blocked by I-0NN" line when that incident (yours, still
+//        #   open) is not what this workstream waits on (kept across later sets; none restores; I-044). Prints
+//        #   "; unlinked I-0NN". A later --waiting-on incident:I-0NN links it again.
 //   node tools/status.mjs mine --by <agent>                 # your items (on resume)
 //   node tools/status.mjs list [--all] [--state s] [--kind k] [--owner a] [--json]   # priority order; --all adds finished
 //   node tools/status.mjs show <id> [--json]                # one item with live waits and history
@@ -31,7 +34,7 @@ import { set, setPriority, get, list, buildStatusView, itemView, renderText, sho
 import { gatherLive, readProgress } from './lib/progress.mjs';
 
 const argv = process.argv.slice(2);
-const VALUED = ['--by', '--state', '--note', '--next', '--waiting-on', '--kind', '--title', '--owner', '--progress', '--refs', '--alias', '--file'];
+const VALUED = ['--by', '--state', '--note', '--next', '--waiting-on', '--kind', '--title', '--owner', '--progress', '--refs', '--alias', '--file', '--unlink'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg, arg2] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -69,10 +72,11 @@ async function main() {
   if (cmd === 'set') {
     const r = await set(arg, {
       by: by(), state: opt('state'), note: opt('note'), next: opt('next'), waitingOn: opt('waiting-on'), kind: opt('kind'), title: opt('title'),
-      owner: opt('owner'), progress: opt('progress'), refs: opt('refs'), aliases: opt('alias'),
+      owner: opt('owner'), progress: opt('progress'), refs: opt('refs'), aliases: opt('alias'), unlink: opt('unlink'),
     });
     const it = r.item;
-    const w = it.waitingOn ? `; waiting on ${it.waitingOn.kind}${it.waitingOn.target ? ':' + it.waitingOn.target : ''}${it.waitingOn.text ? ` "${it.waitingOn.text}"` : ''}` : '';
+    const w = (it.waitingOn ? `; waiting on ${it.waitingOn.kind}${it.waitingOn.target ? ':' + it.waitingOn.target : ''}${it.waitingOn.text ? ` "${it.waitingOn.text}"` : ''}` : '')
+      + (opt('unlink') !== undefined && it.unlinked?.length ? `; unlinked ${it.unlinked.join(', ')}` : '');
     console.log(r.created ? `ADDED ${it.id}: ${it.state}${w}` : `SET ${it.id}: ${it.state}${r.prevState !== it.state ? ` (was ${r.prevState})` : ''}${w}`);
     return 0;
   }

@@ -90,6 +90,12 @@ test('derived waits on the board: lock queue, the owner\'s console step, a block
   assert.equal(c.code, 0, c.out);
   assert.equal(c.stdout.replace(/live \d\d:\d\dZ/, ''), r.stdout.replace(/live \d\d:\d\dZ/, ''));
   assert.equal(JSON.parse(node(CON, ['status', '--json'], { env }).stdout).schema, 'fw-status/1');
+  // I-044: the owner drops the derived link to an incident unrelated to the current work
+  const u = st('set', 'cdwc', '--by', 'fix-nav-morph', '--unlink', 'incident:I-001');
+  assert.equal(u.code, 0, u.out);
+  assert.match(u.stdout, /^SET cdwc: waiting; waiting on review; unlinked I-001$/m);
+  assert.doesNotMatch(st('list').stdout, /blocked by I-001/);
+  assert.match(st('show', 'cdwc').stdout, /not shown here \(unlinked by the owner\): I-001/);
 });
 
 test('GET /status: the page, in the menu (highlighted); /api/status: the model, scrubbed, read-only, localhost only', async () => {

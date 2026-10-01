@@ -10,8 +10,9 @@
 //
 // Derived waits (read at view time from progress.mjs gatherLive, never stored, never overwriting the self-report):
 // the owner queued on chrome-measure / iphone ("#2 of 3 in line"), holding one ("using Chrome now"), a pending console
-// step posted by the owner ("waiting on you"), an active blocking incident naming the owner. A self-reported wait on an
-// incident or a workstream that is already over is flagged.
+// step posted by the owner ("waiting on you"), an active blocking incident naming the owner (unless the owner dropped
+// that link with `set --unlink I-0NN`, I-044: the incident is real but not what this workstream waits on). A
+// self-reported wait on an incident or a workstream that is already over is flagged.
 //
 // Hard rule 12: every stored string is checked with progress.mjs findPersonal and refused (no URL, IP address, local
 // host name, e-mail, device id or home path); every string shown is sanitize()d again, live ones included.
@@ -152,6 +153,18 @@ function parseRefs(v) {
   return [...new Set(list)];
 }
 
+/** --unlink: "I-042", "incident:I-042" or a comma list of them; "none" clears. Returns [ids] or null (I-044). */
+export function parseUnlink(v) {
+  const list = (Array.isArray(v) ? v : String(v).split(',')).map((x) => String(x).trim()).filter(Boolean);
+  if (list.length === 1 && /^none$/i.test(list[0])) return null;
+  if (!list.length) throw new Error('--unlink needs an incident (incident:I-042) or none');
+  return [...new Set(list.map((x) => {
+    const m = /^(?:incident:)?I-?(\d{1,4})$/i.exec(x);
+    if (!m) throw new Error(`bad --unlink "${x}" (a derived incident link to drop: incident:I-042; none restores all)`);
+    return `I-${m[1].padStart(3, '0')}`;
+  }))];
+}
+
 function parseAliases(v) {
   const list = (Array.isArray(v) ? v : String(v).split(',')).map((x) => String(x).trim()).filter(Boolean);
   if (list.length > 8) throw new Error('at most 8 --alias names');
@@ -194,7 +207,8 @@ function pushHistory(it, entry) {
 
 /**
  * An agent reports its workstream. Creates the item on first use when `kind` and `title` are given.
- * opts: {by, state, note, next, waitingOn (string; 'none' clears), kind, title, owner, progress, refs, aliases}
+ * opts: {by, state, note, next, waitingOn (string; 'none' clears), kind, title, owner, progress, refs, aliases,
+ *   unlink ("I-042[,…]": blocking incidents the board stops deriving for this item, kept until 'none'; I-044)}
  * `state` given = a full transition report: the self-reported wait becomes what this call gives (cleared if none;
  * 'ready-to-land' defaults to lead:"land request"; 'waiting' needs one). Without `state`, unmentioned fields stay.
  * Returns {item, created, prevState}.
@@ -216,6 +230,7 @@ export async function set(id, opts = {}) {
   if (opts.aliases !== undefined) v.aliases = parseAliases(opts.aliases);
   const waitGiven = opts.waitingOn !== undefined;
   const wait = waitGiven ? parseWaiting(opts.waitingOn) : undefined;
+  const unlink = opts.unlink !== undefined ? parseUnlink(opts.unlink) : undefined;
 
   return withGuard(GUARD, () => {
     mkdirSync(statusDir(), { recursive: true });
@@ -238,6 +253,11 @@ export async function set(id, opts = {}) {
     if (state === 'waiting' && !newWait) throw new Error('--state waiting needs --waiting-on <what> (chrome, phone, user, lead, agent:<name>, review:<name>, incident:I-0NN, item:<id>, other:"<text>")');
     if (v.state !== undefined && v.state !== it.state) { changes.state = v.state; it.state = v.state; it.stateSince = now; }
     put('waitingOn', newWait);
+    // unlinked incidents (I-044): --unlink adds, 'none' clears; a self-reported wait on one links it again
+    let unl = unlink === undefined ? it.unlinked || [] : unlink === null ? [] : [...new Set([...(it.unlinked || []), ...unlink])];
+    if (newWait?.kind === 'incident') unl = unl.filter((x) => x !== newWait.target);
+    if (JSON.stringify(unl) !== JSON.stringify(it.unlinked || [])) changes.unlinked = unl;
+    if (unl.length) it.unlinked = unl; else delete it.unlinked;
     if (!created && !Object.keys(changes).length) throw new Error('nothing changed (give --state, --note, --next, --waiting-on or another field)');
     it.updatedAt = now;
     it.updatedBy = by;
@@ -291,7 +311,7 @@ export function derive(it, live = {}, byId = new Map()) {
     if (names.has(s.by)) derived.push({ kind: 'user', ref: s.id, plain: `waiting on you: ${s.id} ${sanitize(s.title, 120)}` });
   }
   for (const inc of live.incidents || []) {
-    if (!inc.blocking) continue;
+    if (!inc.blocking || (it.unlinked || []).includes(inc.id)) continue;
     const hit = names.has(inc.reportedBy) || (inc.affected || []).some((a) => names.has(a.by) && a.blocking !== false);
     if (hit) derived.push({ kind: 'incident', ref: inc.id, plain: `blocked by ${inc.id}: ${sanitize(inc.title, 120)}` });
   }
@@ -324,7 +344,7 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     priority: Number.isInteger(it.priority) ? it.priority : null,
     state: it.state, statePlain: st.plain, group: st.group, groupLabel: GROUPS[st.group] || st.group,
     stateSince: it.stateSince || null, stateForMin: minutes(it.stateSince, now),
-    waiting, derived, flags, liveWait,
+    waiting, derived, flags, liveWait, unlinked: [...(it.unlinked || [])],
     waitingOnYou: waiting?.kind === 'user' || derived.some((d) => d.kind === 'user'),
     note: s(it.note, LIMITS.note), next: s(it.next, LIMITS.next),
     updatedAt: it.updatedAt || it.createdAt || null, updatedBy: s(it.updatedBy || it.createdBy, 80), ageMin,
@@ -431,6 +451,7 @@ export function showText(it, v) {
   const L = [itemText(v)];
   if (v.refs.length) L.push(`      refs: ${v.refs.join(', ')}`);
   if (v.aliases.length) L.push(`      also known on the locks/console as: ${v.aliases.join(', ')}`);
+  if (v.unlinked?.length) L.push(`      incidents not shown here (unlinked by the owner): ${v.unlinked.join(', ')}`);
   L.push('  history:');
   for (const h of it.history || []) L.push(`    ${h.at} ${sanitize(h.by, 80)} ${h.action}${h.changes && Object.keys(h.changes).length ? ' ' + sanitize(JSON.stringify(h.changes), 400) : ''}${h.note ? `: ${sanitize(h.note, 200)}` : ''}`);
   return L.join('\n');
