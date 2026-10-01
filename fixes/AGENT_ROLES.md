@@ -135,7 +135,11 @@ Sources: [sub-agents](https://code.claude.com/docs/en/sub-agents.md),
      the lead only lands, resolves incidents, reorders locks, spawns and talks to the user.
   3. **If a name fails, use the ID** from the directory or `ListAgents`; never drop the message.
   4. **Long waits run in the background** (lock queues, holds, `incident.mjs wait`, phone recordings), so
-     messages reach the agent mid-wait. Send peers what they need before the final report, which goes
+     messages reach the agent mid-wait, each as **one command that exits by itself**, never a hand-made
+     `sleep`/`until`/retry loop (`CLAUDE.md` "Agent communication"): your turn on a lock with `lock.mjs run`
+     or `acquire … --wait` (the iPhone too: `lock.mjs acquire iphone --owner <you> --ttl 900 --url <u> --wait 3600`,
+     FIFO, exit 3 keeps your place), a lock state read-only with `lock.mjs wait <res> --until …`, a log line,
+     server, URL, commit or pid with `wait.mjs`. Send peers what they need before the final report, which goes
      only to the spawner.
   5. **Every spawn gets `name: <role>-<topic>`**: `fix-<topic>`, `ts-<incident or topic>`,
      `review-<topic>`, `de-<area>`, `arch-<topic>`, `mgmt-ops-<N>`. Names are **unique per session**: a
