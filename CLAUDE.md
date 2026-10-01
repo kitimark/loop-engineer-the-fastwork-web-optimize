@@ -352,6 +352,11 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   (localhost only, prints `CONSOLE_URL=`) and reads answers with `console.mjs list`. The store
   `.git/fastwork-mirror/console/` is shared by every worktree and stays local; posted URLs may name the LAN host, so
   never copy them into committed files (Hard rule 12).
+- **Status board** (`tools/status.mjs`, console `/status`): report your workstream's state at every transition, when
+  a wait starts or ends, and on resume (`status.mjs mine --by <you>`): `node tools/status.mjs set <id> --by <you>
+  --state researching|designing|implementing|testing|measuring|reviewing|coordinating|waiting|ready-to-land|parked|landed|done|dropped
+  --note "<one plain line>" [--next "…"] [--waiting-on lead:"land request"|agent:<name>|incident:I-0NN|…]`. The board
+  adds your Chrome/phone queue place, console steps and blocking incidents itself; only the lead sets priority.
 - **Ask the owner of the question directly.** mgmt-ops is the hub for the rest; the lead lands, resolves
   incidents, reorders locks, spawns and talks to the user.
 - Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
