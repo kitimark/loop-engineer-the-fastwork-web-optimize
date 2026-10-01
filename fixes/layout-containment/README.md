@@ -204,8 +204,17 @@ Frame counts per run, C1 C4 C5 C8 | V2 V3 V6 V7:
 - **Reading.** F-052/U3 is a real mechanism but not a cost. Lifting the interleaved Layout out of style recalc
   saves nothing, because the same layout work stays dirty and runs right after. P-028's "−15 ms upper bound"
   rested on U2 (WEAKENED above), and the phone confirms the weakening.
-- The ≥100 ms rebuild frame at the y≈1960 crossing has only 22-36 ms of Layout. Most of its time is elsewhere
-  and is not this topic's.
+- The ≥100 ms rebuild frame at the y≈1960 crossing has only 22-36 ms of Layout. Self time by record type, all
+  8 runs (`<scratchpad>/layout-containment/rebuild.mjs`):
+  - Composite 37-73 ms (median ~46);
+  - Layout 22-36 ms;
+  - RecalculateStyles 15-16 ms;
+  - Paint ~3 ms;
+  - script 1-4 ms.
+
+  So about half the frame is WebKit's Composite record, which is the layer flush (OBSERVED, cause unknown). The
+  frame is the lead's headline target; its Composite share belongs to the owner of the y≈1960 crossing, not
+  to this topic.
 
 **Block B: skipped (topic owner's call).** By the literal gate it is indicated: C showed nested Layouts and V
 removed them. But Block A shows that removing them saves no frame time.
