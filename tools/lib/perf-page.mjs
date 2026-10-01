@@ -27,6 +27,22 @@ export const LOGGER = `(() => {
   } catch (e) { S.noLoaf = String(e); }
 })();`;
 
+/**
+ * The logger to inject. {frameLog: false} is exactly LOGGER (the default measurement). {frameLog: true}
+ * (verify.mjs --frame-log, E5) also keeps __perf.log = [[t, dt, scrollY], ...] for every recorded frame,
+ * cleared when a new phase starts (t0 changes). Opt-in because reading scrollY in the rAF callback can
+ * force a style + layout in Blink when the page dirtied them before rAF: it may move or add work in the
+ * very frames being measured. Everything else is the same code.
+ */
+export function loggerSource({ frameLog = false } = {}) {
+  if (!frameLog) return LOGGER;
+  const push = 'S.frames.push(t - last);';
+  if (!LOGGER.includes(push)) throw new Error('perf-page: LOGGER changed, update loggerSource');
+  // the frame push is the body of an `if` without braces: wrap both statements so the log keeps the same condition
+  return LOGGER.replace(push, `{ ${push} if (S.logT0 !== S.t0) { S.log = []; S.logT0 = S.t0; } S.log.push([Math.round(t * 10) / 10, Math.round((t - last) * 10) / 10, Math.round(scrollY)]); }`)
+    .replace('const S = window.__perf = { frames: [], loaf: [], on: false, t0: 0 };', 'const S = window.__perf = { frames: [], loaf: [], on: false, t0: 0, log: [], logT0: 0 };');
+}
+
 /** Start a recording phase: clear the buffers, stamp the phase start, switch recording on. */
 export const RESET = 'window.__perf.frames.length=0; window.__perf.loaf.length=0; window.__perf.t0=performance.now(); window.__perf.on=true';
 

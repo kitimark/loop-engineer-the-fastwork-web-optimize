@@ -34,7 +34,7 @@ const SCROLL_MORPH = ['reset', 'scroll', 'collect', 'reset', 'input', 'input', '
 
 function setup() {
   const d = tempDir('fw-verify-');
-  const env = { CHROME: FAKE, FW_STATE_DIR: join(d, 'state'), FAKE_CHROME_LOG: join(d, 'chrome.jsonl') };
+  const env = { CHROME: FAKE, FW_STATE_DIR: join(d, 'state'), FAKE_CHROME_LOG: join(d, 'chrome.jsonl'), FAKE_CHROME_METRICS: 'step' };
   const args = (owner, extra = []) => ['a=http://127.0.0.1:9/', '--runs', '1', '--viewport', 'mobile', '--cpu', '3', '--no-screens', '--out', join(d, 'out'), '--result', join(d, 'result.json'), '--profile', join(d, 'profile'), '--owner', owner, ...extra];
   return { d, env, args };
 }
@@ -416,4 +416,70 @@ test('I-023 watchdog: a step with no progress fails verify with a clear error, f
   assert.ok(gone, 'Chrome was left running');
   const bad = node(VERIFY, args('bad', ['--watchdog', '-1']), { env });
   assert.equal(bad.code, 2);
+});
+
+// ---- per-phase CDP metrics (default), --trace-frames, --frame-log (incident I-018, E5) ------------------
+const CDP_STEP = { cdpScriptMs: 50, cdpStyleMs: 20, cdpLayoutMs: 10, cdpTaskMs: 200, cdpStyleCount: 5, cdpLayoutCount: 3, cdpV8CompileMs: 4, cdpDevToolsMs: 1 };
+const cdpOf = (s) => Object.fromEntries(Object.keys(CDP_STEP).map((k) => [k, s[k]]));
+
+test('Performance.getMetrics per phase by default: enabled once per page, read at every phase boundary, deltas in every phase summary', async () => {
+  const { d, env, args } = setup();
+  const r = await nodeAsync(VERIFY, args('cdp', ['--idle', '1', '--max-wait', '0']), { env });
+  assert.equal(r.code, 0, r.out);
+  const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  const x = res.results[0];
+  // the fake's counters grow by one step per read, and each phase is one read at its start and one at its end
+  for (const ph of ['idleSummary', 'scrollSummary', 'morphSummary']) assert.deepEqual(cdpOf(x[ph]), CDP_STEP, ph);
+  assert.deepEqual(res.measurement, { cdpMetrics: true, traceFrames: false, frameLog: false });
+  const log = readLog(env.FAKE_CHROME_LOG);
+  assert.equal(log.filter((l) => l.method === 'Performance.enable').length, 1);
+  assert.equal(log.filter((l) => l.method === 'Performance.getMetrics').length, 6);
+  // the reads sit outside the in-page window: never between a phase's RESET and its COLLECT
+  const seq = log.map((l) => (l.method === 'Performance.getMetrics' ? 'M' : step(l))).filter((s) => s === 'M' || s === 'reset' || s === 'collect');
+  assert.deepEqual(seq, ['M', 'reset', 'collect', 'M', 'M', 'reset', 'collect', 'M', 'M', 'reset', 'collect', 'M']);
+  assert.match(r.stdout, /style 20ms\/5x layout 10ms\/3x script 50ms/);
+
+  const B = setup();
+  const rb = await nodeAsync(VERIFY, B.args('nocdp', ['--idle', '0', '--max-wait', '0', '--no-cdp-metrics']), { env: B.env });
+  assert.equal(rb.code, 0, rb.out);
+  const xb = JSON.parse(readFileSync(join(B.d, 'result.json'), 'utf8')).results[0];
+  assert.equal('cdpStyleMs' in xb.scrollSummary, false);
+  assert.equal(readLog(B.env.FAKE_CHROME_LOG).some((l) => l.method.startsWith('Performance.')), false, '--no-cdp-metrics: the pre-I-018 measurement');
+});
+
+test('--trace-frames: traces the scroll phase, attributes each frame > 20 ms, and says tracing perturbs timing', async () => {
+  const { d, env, args } = setup();
+  const r = await nodeAsync(VERIFY, args('trace', ['--idle', '0', '--max-wait', '0', '--trace-frames']), { env });
+  assert.equal(r.code, 0, r.out);
+  const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  const x = res.results[0];
+  // tests/fixtures/trace-fixture.mjs: two frames > 20 ms (see tests/unit/trace-frames.test.mjs)
+  assert.deepEqual(x.traceSummary, { frames: 2, scriptMs: 8, styleMs: 21, layoutMs: 6, paintMs: 3, otherMs: 3, idleMs: 17, styleElements: 1020 });
+  assert.equal(x.traceFrames.frames.length, 2);
+  assert.equal(x.traceFrames.events, 11);
+  assert.match(x.traceFrames.note, /tracing perturbs timing/);
+  assert.equal(res.measurement.traceFrames, true);
+  assert.match(r.stdout, /trace >20ms 2: script 8 style 21 layout 6 paint 3 idle 17ms/);
+  assert.match(r.stdout, /^trace-frames: traced: tracing perturbs timing/m);
+  const log = readLog(env.FAKE_CHROME_LOG);
+  const start = log.find((l) => l.method === 'Tracing.start');
+  assert.ok(start.params.traceConfig.includedCategories.includes('devtools.timeline'));
+  const order = log.map((l) => (l.method.startsWith('Tracing.') ? l.method : step(l))).filter((s) => ['Tracing.start', 'Tracing.end', 'reset', 'scroll', 'collect'].includes(s));
+  assert.deepEqual(order.slice(0, 5), ['Tracing.start', 'reset', 'scroll', 'collect', 'Tracing.end'], 'the trace covers exactly the scroll phase');
+});
+
+test('--frame-log: [t, dt, scrollY] for every frame of every phase (E5); the default injects the plain LOGGER', async () => {
+  const { d, env, args } = setup();
+  const r = await nodeAsync(VERIFY, args('flog', ['--idle', '1', '--max-wait', '0', '--frame-log']), { env });
+  assert.equal(r.code, 0, r.out);
+  const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
+  const x = res.results[0];
+  assert.equal(res.measurement.frameLog, true);
+  assert.deepEqual(Object.keys(x.frameLog), ['idle', 'scroll', 'morph']);
+  assert.equal(x.frameLog.scroll.length, 54);
+  assert.deepEqual(x.frameLog.scroll[0], [1016.7, 16.7, 10]);
+  assert.equal(x.frameLog.idle.length, 102);
+  const src = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === 'Page.addScriptToEvaluateOnNewDocument').params.source;
+  assert.match(src, /S\.log\.push/);
+  assert.notEqual(src, LOGGER);
 });

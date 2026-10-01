@@ -48,4 +48,8 @@ test('fix.mjs ab --runs 1 --cpu 2 with real Chrome', async () => {
   assert.equal(res.host.runsTotal, 2);
   assert.equal(typeof res.host.otherCpuPctMax, 'number');
   assert.match(res.markdown, /host: \d+ of 2 runs contaminated/);
+  // per-phase CDP deltas (I-018) in results and markdown
+  assert.ok(res.metrics.scroll.cdpStyleCount.baseline.median >= 0);
+  assert.match(res.markdown, /^\| scroll: style recalcs \(CDP\) \|/m);
+  assert.match(res.markdown, /^\| idle: layouts \(CDP\) \|/m);
 });

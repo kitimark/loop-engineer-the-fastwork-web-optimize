@@ -7,9 +7,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { LOGGER, RESET, COLLECT, COLLECT_AT } from '../../tools/lib/perf-page.mjs';
+import { LOGGER, RESET, COLLECT, COLLECT_AT, loggerSource } from '../../tools/lib/perf-page.mjs';
 
-function page() {
+function page(source = LOGGER) {
   let now = 0, raf = [], observer = null;
   const ctx = {
     scrollY: 0,
@@ -19,7 +19,7 @@ function page() {
   };
   ctx.window = ctx;
   vm.createContext(ctx);
-  vm.runInContext(LOGGER, ctx);
+  vm.runInContext(source, ctx);
   const run = (expr) => JSON.parse(JSON.stringify(vm.runInContext(expr, ctx)));
   return {
     at(t) { now = t; },
@@ -78,4 +78,25 @@ test('entries delivered after COLLECT are dropped (recording off), as before', (
   p.deliver(18);
   assert.deepEqual(r.loaf, []);
   assert.equal(p.ctx.__perf.loaf.length, 0);
+});
+
+test('loggerSource(): the default is exactly LOGGER; --frame-log adds [t, dt, scrollY] per recorded frame, per phase', () => {
+  assert.equal(loggerSource(), LOGGER);
+  assert.equal(loggerSource({ frameLog: false }), LOGGER);
+  const p = page(loggerSource({ frameLog: true }));
+  p.frame(4);
+  p.at(4); p.reset();
+  p.ctx.scrollY = 100; p.frame(20);
+  p.ctx.scrollY = 150; p.frame(54);
+  p.at(60);
+  const a = p.collect();
+  assert.deepEqual(a.frames, [16, 34], 'frames unchanged');
+  assert.deepEqual(a.log, [[20, 16, 100], [54, 34, 150]]);
+  p.frame(66); // recording off: nothing logged
+  p.at(70); p.reset();
+  p.ctx.scrollY = 151.6; p.frame(82); p.frame(99);
+  p.at(100);
+  const b = p.collect();
+  assert.deepEqual(b.log, [[99, 17, 152]], 'a new phase starts a new log; the interval straddling the reset is not logged, like frames');
+  assert.deepEqual(b.frames, [17]);
 });

@@ -13,6 +13,8 @@
 //   node tools/fix.mjs serve <topic> [-- serve.mjs args]  # baseline + overlay on a per-worktree port
 //   node tools/fix.mjs ab <topic> [--runs 5] [--cpu 6] [--viewport mobile] [--idle 6] [--no-screens] [-- serve.mjs args]
 //   node tools/fix.mjs ab --aa [--runs 5]             # baseline vs baseline: the noise floor
+//   ab per-frame attribution (I-018): per-phase CDP script/style/layout deltas always; [--trace-frames] (opt-in,
+//                  perturbs timing) attributes frames >20 ms; [--frame-log] (E5) keeps [t, dt, scrollY] for tools/frames.mjs
 //   ab host guard (I-017): [--max-wait 60] [--max-load 6] [--max-busy 20] [--watchdog 300] [--chrome-warm 10] go to verify.mjs (recheck before
 //                  each run); a run started at load1 > 10, other CPU > 25 %, memory pressure >= warn or
 //                  after a gate-timeout grant contaminates the result: verdicts get "CONTAMINATED (host): "
@@ -39,6 +41,8 @@ const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const passthrough = dd >= 0 ? argv.slice(dd + 1) : null;
 const VALUED = ['--runs', '--cpu', '--viewport', '--idle', '--lines', '--from', '--max', '--on', '--max-wait', '--max-load', '--max-busy', '--watchdog', '--chrome-warm'];
+// passed through to verify.mjs by ab (I-018): --trace-frames (perturbs timing), --frame-log (E5), --no-cdp-metrics
+const AB_FLAGS = ['trace-frames', 'frame-log', 'no-cdp-metrics'];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
@@ -299,7 +303,13 @@ const r1 = (x) => (x == null ? null : Math.round(x * 10) / 10);
 const METRICS = {
   scroll: [['fps', 'fps', +1], ['gt20', 'frames >20 ms', -1], ['gt34', 'frames >34 ms', -1], ['gt50', 'frames >50 ms', -1], ['gt100', 'frames >100 ms', -1], ['max', 'worst frame ms', -1], ['p95', 'p95 frame ms', -1], ['loafMs', 'LoAF ms', -1], ['loafScriptMs', 'LoAF script ms', -1], ['forcedLayoutMs', 'forced style+layout ms (in LoAF)', -1]],
   morph: [['fps', 'fps', +1], ['gt50', 'frames >50 ms', -1], ['loafMs', 'LoAF ms', -1], ['forcedLayoutMs', 'forced style+layout ms (in LoAF)', -1]],
+  // verify.mjs --trace-frames (I-018): main-thread time inside the scroll phase's frames > 20 ms, by kind
+  trace: [['frames', 'frames >20 ms (traced)', -1], ['scriptMs', 'script ms in them', -1], ['styleMs', 'style ms in them', -1], ['layoutMs', 'layout ms in them', -1], ['paintMs', 'paint ms in them', -1], ['otherMs', 'other main-thread ms in them', -1], ['idleMs', 'main thread idle ms in them', -1], ['styleElements', 'elements style-recalculated in them', -1]],
 };
+// CDP Performance.getMetrics deltas per phase (verify.mjs, I-018; absent with --no-cdp-metrics / older verify.json)
+const CDP_METRICS = [['cdpScriptMs', 'script ms (CDP)', -1], ['cdpStyleMs', 'style recalc ms (CDP)', -1], ['cdpLayoutMs', 'layout ms (CDP)', -1], ['cdpStyleCount', 'style recalcs (CDP)', -1], ['cdpLayoutCount', 'layouts (CDP)', -1], ['cdpTaskMs', 'main-thread task ms (CDP)', -1]];
+METRICS.scroll.push(...CDP_METRICS);
+METRICS.morph.push(...CDP_METRICS);
 // idle phase (verify.mjs --idle, before scrolling): the same metrics as the scroll phase
 METRICS.idle = METRICS.scroll;
 function stats(results, vp, labelA, labelB) {
@@ -308,10 +318,11 @@ function stats(results, vp, labelA, labelB) {
     const key = `${phase}Summary`;
     const A = results.filter((r) => !r.diff && r.viewport === vp && r.label === labelA).sort((a, b) => a.run - b.run);
     const B = results.filter((r) => !r.diff && r.viewport === vp && r.label === labelB).sort((a, b) => a.run - b.run);
-    if (phase === 'idle' && ![...A, ...B].some((r) => r[key])) continue; // --idle 0: no idle phase recorded
+    if (![...A, ...B].some((r) => r[key])) continue; // --idle 0 / no --trace-frames: phase not recorded
     out[phase] = {};
     for (const [m, name, dir] of list) {
-      const a = A.map((r) => r[key][m]), b = B.map((r) => r[key][m]);
+      if (![...A, ...B].some((r) => typeof r[key]?.[m] === 'number')) continue; // e.g. no CDP metrics recorded
+      const a = A.map((r) => r[key]?.[m]).filter((x) => typeof x === 'number'), b = B.map((r) => r[key]?.[m]).filter((x) => typeof x === 'number');
       const ma = median(a), mb = median(b);
       const n = Math.min(a.length, b.length);
       let verdict = n < 3 ? `n=${n} (need >=3 runs for a verdict)` : 'within noise';
@@ -363,6 +374,7 @@ function markdown(metrics, cfg) {
   for (const [phase, ms] of Object.entries(metrics)) for (const v of Object.values(ms)) {
     rows.push(`| ${phase}: ${v.name} | ${v.baseline.median} [${v.baseline.min}-${v.baseline.max}] | ${v.patched.median} [${v.patched.min}-${v.patched.max}] | ${v.delta > 0 ? '+' : ''}${v.delta}${v.deltaPct != null ? ` (${v.deltaPct > 0 ? '+' : ''}${v.deltaPct}%)` : ''} | ${v.verdict} |`);
   }
+  if (cfg.measurement?.traceFrames) rows.push('', 'traced (--trace-frames): tracing perturbs timing; frame numbers of this A/B are not comparable with untraced ones (compare the trace rows within this A/B only).');
   if (cfg.host) rows.push('', hostLine(cfg.host));
   return rows.join('\n');
 }
@@ -407,7 +419,7 @@ async function cmdAb(t) {
   }
 
   const verifyFile = join(outDir, 'verify.json');
-  const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--idle', String(idle), '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : []),
+  const vArgs = [join(REPO, 'tools', 'verify.mjs'), `base=${base.url}`, `${aa ? 'base2' : 'fix'}=${fix.url}`, '--runs', String(runs), '--cpu', String(cpu), '--viewport', viewport, '--idle', String(idle), '--out', outDir, '--result', verifyFile, '--owner', topic, ...(flag('no-screens') ? ['--no-screens'] : []), ...AB_FLAGS.filter(flag).map((f) => `--${f}`),
     ...['max-wait', 'max-load', 'max-busy', 'watchdog', 'chrome-warm'].flatMap((k) => (opt(k) !== undefined ? [`--${k}`, String(opt(k))] : []))];
   verifyProc = spawn(process.execPath, vArgs, { stdio: 'inherit' });
   const code = await new Promise((res) => verifyProc.on('exit', (c) => res(c)));
@@ -432,7 +444,7 @@ async function cmdAb(t) {
   const host = hostSummary(v);
   if (host.contaminated) for (const ms of Object.values(metrics)) for (const x of Object.values(ms)) x.verdict = CONTAMINATED + x.verdict;
   const cfg = { cpu, viewport, runs, idle, serveArgs: serveArgs(), baseline: BASE_NAME + (ON ? ` + fixes/${ON}/overlay` : ''), stackedOn: ON, order: 'ABBA (alternating per run)',
-    hostThresholds: v.host.thresholds ?? null, hostRecheck: v.host.recheck ?? null, watchdogSec: v.host.watchdogSec ?? null };
+    hostThresholds: v.host.thresholds ?? null, hostRecheck: v.host.recheck ?? null, watchdogSec: v.host.watchdogSec ?? null, measurement: v.measurement ?? null };
   const result = {
     topic, kind: aa ? 'A/A noise floor' : 'A/B', createdAt: new Date().toISOString(),
     git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD'), checkout: checkoutId() },

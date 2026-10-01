@@ -10,6 +10,8 @@
 //      FAKE_CHROME_HANG_AT=<method>   never answer this CDP method (a hung browser; verify's watchdog, I-023)
 //      FAKE_CHROME_EXIT_AFTER=<method>  answer it, then exit at the next command (a browser gone between runs, I-023)
 //      FAKE_CHROME_IGNORE_SIGTERM=1     ignore SIGTERM (a browser that will not quit; close() must SIGKILL it)
+//      FAKE_CHROME_METRICS=step         Performance.getMetrics: all of verify's counters (+ Timestamp) grow by
+//                                       METRIC_STEP per read (I-018); default: the bench per-session six
 //      FAKE_CHROME_BENCH=1  tools/bench.mjs mode: on Page.navigate, fetch <origin>/bench-fake.json from the
 //        served page (so the baseline and the overlay can differ) and answer the bench probes from it:
 //        {windows: {label: {probeId: n}}, probes: {probe: n} (any window), frames, snapshot, capped, errors, listeners, metricsStep: {name: n},
@@ -37,6 +39,12 @@ export const IDLE_FRAMES = [...Array(100).fill(16.7), 30, 55];
 export const IDLE_LOAF = [{ start: 50, duration: 55, blocking: 5, render: 10, styleLayout: 8,
   scripts: [{ url: 'http://localhost:1234/_app/immutable/nodes/2.fixture.js', fn: 'spring', pos: 42, invoker: 'FrameRequestCallback', type: 'user-callback', dur: 40, forced: 6, pause: 0 }] }];
 let input = false; // any scroll script / Input.* event since the last recorder reset?
+let frameLog = false; // the injected logger keeps [t, dt, scrollY] (verify.mjs --frame-log)
+// Performance.getMetrics: cumulative counters that grow by one STEP per call, so every phase delta
+// (one read at its start, one at its end) is exactly STEP (durations in s, as Chrome reports them).
+export const METRIC_STEP = { ScriptDuration: 0.05, RecalcStyleDuration: 0.02, LayoutDuration: 0.01, TaskDuration: 0.2, RecalcStyleCount: 5, LayoutCount: 3, V8CompileDuration: 0.004, DevToolsCommandDuration: 0.001 };
+let metricCalls = 0;
+import { TRACE_TS, TRACE_EVENTS } from './trace-fixture.mjs'; // --trace-frames: rAF timestamps + a synthetic trace
 
 // ---- tools/bench.mjs mode (FAKE_CHROME_BENCH=1) ------------------------------------------------------
 const BENCH = process.env.FAKE_CHROME_BENCH === '1';
@@ -71,8 +79,13 @@ function evaluate(expr) {
   if (expr.includes('kit: Object.keys(window)')) return { kit: ['__sveltekit_fake'], nav: 'start-selling-top-nav', hero: 'hero', h: 3000, shim: null, vendors: { gtag: 'undefined', amplitude: 'undefined', hj: 'undefined', dataLayer: 1 } };
   if (expr.includes('window.__perf.frames.length=0')) { input = false; return true; }
   if (expr.includes("window.scrollBy({ top: 250, behavior: 'smooth' })") && expr.includes('still >= 4')) { input = true; return { ms: 5000, ticks: 16, y: 2068, h: 3000 }; }
+  if (expr.includes("performance.mark('__fw_trace_sync')")) return 1000;
+  if (expr.includes('window.__fwTrace; S.on = false')) return TRACE_TS;
   if (expr.includes('p.on = false')) {
+    const fr = input ? FRAMES : IDLE_FRAMES;
     const r = input ? { frames: FRAMES, loaf: LOAF, on: false } : { frames: IDLE_FRAMES, loaf: IDLE_LOAF, on: false };
+    // frame log: t from 1000 ms on, scrollY 10 px per frame while scrolling (0 when idle)
+    if (frameLog) { let t = 1000; r.log = fr.map((dt, i) => { t += dt; return [Math.round(t * 10) / 10, dt, input ? 10 * (i + 1) : 0]; }); }
     return expr.includes('o.scrollY = scrollY') ? { ...r, scrollY: input ? 2068 : 0 } : r;
   }
   if (expr.includes("document.querySelector('.start-selling-top-nav')?.className")) return 'start-selling-top-nav is-morph';
@@ -101,13 +114,24 @@ function handle(msg, send) {
     case 'Target.attachToTarget': return reply({ sessionId: `session${++n}` });
     case 'Page.captureScreenshot': return reply({ data: PNG });
     case 'Browser.getVersion': return reply({ product: 'FakeChrome/1.0' });
+    case 'Page.addScriptToEvaluateOnNewDocument': frameLog = params.source.includes('S.log.push'); return reply({ identifier: '1' });
     case 'Performance.getMetrics': {
-      const st = bench.get(sessionId) || { data: {} };
-      st.calls = (st.calls || 0) + 1;
-      const step = st.data.metricsStep || {};
-      return reply({ metrics: ['LayoutCount', 'RecalcStyleCount', 'LayoutDuration', 'RecalcStyleDuration', 'ScriptDuration', 'TaskDuration'].map((name) => ({ name, value: st.calls * (step[name] || 0) })) });
+      if (process.env.FAKE_CHROME_METRICS !== 'step') { // tools/bench.mjs and lib/cdp.mjs helpers: per-session steps from the page data
+        const st = bench.get(sessionId) || { data: {} };
+        st.calls = (st.calls || 0) + 1;
+        const step = st.data.metricsStep || {};
+        return reply({ metrics: ['LayoutCount', 'RecalcStyleCount', 'LayoutDuration', 'RecalcStyleDuration', 'ScriptDuration', 'TaskDuration'].map((name) => ({ name, value: st.calls * (step[name] || 0) })) });
+      }
+      // FAKE_CHROME_METRICS=step (verify.mjs tests, I-018): every counter grows by METRIC_STEP per read
+      metricCalls++;
+      return reply({ metrics: [{ name: 'Timestamp', value: 1000 + metricCalls }, ...Object.entries(METRIC_STEP).map(([name, v]) => ({ name, value: Math.round(v * metricCalls * 1e6) / 1e6 }))] });
     }
     case 'DOMDebugger.getEventListeners': return reply({ listeners: (bench.get(sessionId)?.data.listeners) || [] });
+    case 'Tracing.end': {
+      reply({});
+      setTimeout(() => { event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(0, 5) }); event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(5) }); event('Tracing.tracingComplete', { dataLossOccurred: false }); }, 10);
+      return;
+    }
     case 'Runtime.evaluate': {
       if (params.returnByValue === false) return reply({ result: { type: 'object', objectId: `obj${++n}` } });
       const v = (BENCH ? benchEvaluate(params.expression, sessionId) : undefined) ?? evaluate(params.expression);

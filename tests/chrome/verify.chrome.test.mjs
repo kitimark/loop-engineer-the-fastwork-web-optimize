@@ -61,6 +61,9 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
     assert.ok(s.fps > 0);
     for (const k of ['p50', 'p95', 'max', 'gt20', 'gt34', 'gt50', 'gt100', 'loafCount', 'loafMs', 'loafScriptMs', 'forcedLayoutMs']) assert.equal(typeof s[k], 'number', `${ph}.${k}`);
     assert.equal(s.noLoaf, undefined, 'long-animation-frame observer available');
+    // per-phase CDP Performance.getMetrics deltas (I-018)
+    for (const k of ['cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpTaskMs', 'cdpStyleCount', 'cdpLayoutCount']) assert.ok(typeof s[k] === 'number' && s[k] >= 0, `${ph}.${k} ${s[k]}`);
+    assert.ok(s.cdpTaskMs > 0, `${ph}: main-thread task time ${s.cdpTaskMs}`);
   }
   assert.ok(x.scripts.includes(PAGE_JS));
   assert.ok(x.scripts.includes('/__vendor/' + VENDOR_KEY), 'CF beacon rewritten to the local vendor copy');
@@ -82,6 +85,25 @@ test('verify.mjs: one real mobile run at CPU 2x under the chrome-measure lock', 
   assert.equal(x.host.chromeRelaunched, false);
   assert.equal(typeof x.host.recheck.suspended, 'boolean');
   assert.deepEqual(Object.keys(x.origins).filter((o) => !/^https:\/\/localhost:\d+/.test(o) && !o.startsWith('data:')), [], 'no request left the machine');
+});
+
+test('verify.mjs --trace-frames --frame-log: a real trace is clock-synced and attributed; the frame log has scrollY (I-018, E5)', async () => {
+  const r = await nodeAsync(tool('verify.mjs'), [`fx=${srv.url}`, '--runs', '1', '--viewport', 'mobile', '--cpu', '4', '--idle', '1', '--no-screens', '--out', join(d, 'out3'), '--result', join(d, 'r3.json'), '--profile', join(d, 'profile3'), '--owner', OWNER + '-trace', '--max-wait', '0', '--trace-frames', '--frame-log'], { env: { ...REAL_HOST, ...lock.env }, timeout: 600000 });
+  assert.equal(r.code, 0, r.out);
+  const res = JSON.parse(readFileSync(join(d, 'r3.json'), 'utf8'));
+  const x = res.results[0];
+  assert.equal(x.traceFrames.error, undefined, x.traceFrames.error);
+  assert.ok(x.traceFrames.events > 100, `trace events ${x.traceFrames.events}`);
+  assert.ok(x.traceFrames.summary.mainThreadEvents > 10, 'the main thread was found via the sync mark');
+  for (const k of ['frames', 'scriptMs', 'styleMs', 'layoutMs', 'paintMs', 'otherMs', 'idleMs', 'styleElements']) assert.equal(typeof x.traceSummary[k], 'number', k);
+  for (const f of x.traceFrames.frames) {
+    const sum = f.scriptMs + f.styleMs + f.layoutMs + f.paintMs + f.otherMs + f.idleMs;
+    assert.ok(Math.abs(sum - f.dur) < 1, `frame at ${f.t}: parts ${sum} vs ${f.dur} ms`);
+  }
+  assert.ok(x.frameLog.scroll.length > 10);
+  const ys = x.frameLog.scroll.map((f) => f[2]);
+  assert.ok(ys[ys.length - 1] > ys[0], 'scrollY grows during the scroll phase');
+  assert.equal(x.frameLog.scroll.length, x.scrollSummary.frames, 'one log entry per recorded frame');
 });
 
 test('verify.mjs: SIGTERM mid-run closes the dedicated Chrome', async () => {

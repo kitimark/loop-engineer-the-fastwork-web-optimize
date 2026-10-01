@@ -19,7 +19,19 @@
 // scrolls; --idle 0 skips it), then while the page is smooth-scrolled with window.scrollBy({top:250,behavior:'smooth'}) every 300 ms to the
 // bottom ("scroll" phase), and then pushed past the end with wheel / touch gestures ("morph" phase,
 // the scroll-jacked header morph). Screenshots at top/middle/bottom are compared pixel-wise.
-// No Tracing is used (in-page LoAF attribution only).
+// No Tracing is used by default (in-page LoAF attribution only).
+//
+// Per-phase main-thread work (incident I-018), on by default: CDP Performance.getMetrics is enabled once
+// per page and read at each phase boundary (outside the in-page recording window); each phase summary
+// gets the deltas cdpScriptMs, cdpStyleMs, cdpLayoutMs, cdpTaskMs, cdpStyleCount, cdpLayoutCount (and
+// cdpV8CompileMs, cdpDevToolsMs). --no-cdp-metrics turns it off (the pre-I-018 measurement).
+//   [--trace-frames]  opt-in: a devtools.timeline trace over the scroll phase attributes every frame > 20 ms
+//                     to script / style / layout / paint / other / idle main-thread time plus the elements
+//                     its style recalcs touched (lib/trace-frames.mjs): run.traceFrames, run.traceSummary.
+//                     TRACING PERTURBS TIMING: frame numbers of a traced run are not comparable with untraced.
+//   [--frame-log]     opt-in (E5): run.frameLog.<phase> = [[t, dt, scrollY], ...] for every frame, for
+//                     tools/frames.mjs (long-frame clusters by scroll position). Reads scrollY in the rAF
+//                     callback, which can force a style/layout if the page dirtied it: opt-in for that reason.
 //
 // Host state (incident I-017, postmortem 2026-09-30 (d); rules in tools/lib/host.mjs):
 //   [--max-wait 60] [--max-load 6] [--max-busy 20]
@@ -45,7 +57,8 @@ import { resolve, join, dirname } from 'node:path';
 import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
-import { LOGGER, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
+import { loggerSource, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
+import { TRACE_CATEGORIES, TRACE_ARM, TRACE_DISARM, attributeFrames } from './lib/trace-frames.mjs';
 import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock } from './lib/host.mjs';
 
 const ROOT = REPO;
@@ -61,6 +74,7 @@ const vpSel = opt('viewport', 'desktop');
 const vpList = vpSel === 'both' ? ['desktop', 'mobile'] : [vpSel];
 const OUT = resolve(ROOT, opt('out', 'out/verify'));
 const SCREENS = !flag('no-screens');
+const CDP_METRICS = !flag('no-cdp-metrics'), TRACE = flag('trace-frames'), FRAME_LOG = flag('frame-log');
 // Idle phase length in seconds, recorded after settle + throttle and before the scroll phase; 0 = off.
 // The scroll and morph phases run exactly as without it, just IDLE seconds later. Default 6 s: the
 // carousel ticks every 3 s, so a 5 s window caught 1 or 2 ticks and idle LoAF ms went bimodal.
@@ -169,6 +183,35 @@ async function hostEnd(start, chromePid) {
   };
 }
 
+// ---- CDP Performance.getMetrics per phase (I-018) ---------------------------------------------------
+const CDP_KEYS = [['ScriptDuration', 'cdpScriptMs', 1000], ['RecalcStyleDuration', 'cdpStyleMs', 1000], ['LayoutDuration', 'cdpLayoutMs', 1000], ['TaskDuration', 'cdpTaskMs', 1000],
+  ['RecalcStyleCount', 'cdpStyleCount', 1], ['LayoutCount', 'cdpLayoutCount', 1], ['V8CompileDuration', 'cdpV8CompileMs', 1000], ['DevToolsCommandDuration', 'cdpDevToolsMs', 1000]];
+async function cdpMetrics(page) {
+  if (!CDP_METRICS) return null;
+  const { metrics } = await page.send('Performance.getMetrics');
+  return Object.fromEntries(metrics.map((m) => [m.name, m.value]));
+}
+function cdpDelta(a, b) {
+  if (!a || !b) return {};
+  const out = {};
+  for (const [k, name, f] of CDP_KEYS) if (typeof a[k] === 'number' && typeof b[k] === 'number') out[name] = Math.round((b[k] - a[k]) * f * 10) / 10;
+  return out;
+}
+// the trace of --trace-frames: page-session Tracing, events collected until tracingComplete
+async function traceStart(page) {
+  const events = [];
+  const off = page.on((m) => { if (m.method === 'Tracing.dataCollected') events.push(...m.params.value); });
+  await page.send('Tracing.start', { traceConfig: { includedCategories: TRACE_CATEGORIES }, transferMode: 'ReportEvents' });
+  return { events, off };
+}
+async function traceEnd(page, tr) {
+  const done = page.waitFor((m) => m.method === 'Tracing.tracingComplete', 180000);
+  await page.send('Tracing.end');
+  await done;
+  tr.off();
+  return tr.events;
+}
+
 // ---- page side: LOGGER (injected before any page script), RESET / COLLECT per phase: lib/perf-page.mjs
 
 const SCROLL = `new Promise((res) => {
@@ -244,7 +287,8 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   await page.send('Emulation.setDeviceMetricsOverride', vp);
   if (vp.mobile) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
-  await page.send('Page.addScriptToEvaluateOnNewDocument', { source: LOGGER });
+  if (CDP_METRICS) await page.send('Performance.enable');
+  await page.send('Page.addScriptToEvaluateOnNewDocument', { source: loggerSource({ frameLog: FRAME_LOG }) });
   await page.send('Page.bringToFront');
   progress('load + settle', 60);
   await gotoAndSettle(page, t.url, { quietMs: 2000 });
@@ -262,26 +306,38 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   await page.send('Emulation.setCPUThrottlingRate', { rate: CPU });
   await sleep(1000);
   // idle phase: same logger, no input, at the top of the page (before any scrolling)
+  // phase boundaries: CDP metrics, then host (start); host, then CDP metrics (end); all outside RESET..COLLECT
+  const cdpPhase = {};
   let idlePerf = null;
   if (IDLE > 0) {
     progress('idle phase', IDLE);
-    const h = await hostStart(chromePid);
+    const m = await cdpMetrics(page), h = await hostStart(chromePid);
     await page.eval(RESET);
     await sleep(IDLE * 1000);
     idlePerf = await page.eval(COLLECT_AT);
     hostPhases.idle = await hostEnd(h, chromePid);
+    cdpPhase.idle = cdpDelta(m, await cdpMetrics(page));
   }
-  progress('scroll phase', 600); // the scroll eval has its own 600 s timeout
-  let h = await hostStart(chromePid);
+  progress('scroll phase', 600); // the scroll eval has its own 600 s timeout (covers the trace too)
+  let tr = null, syncStartTime = null;
+  if (TRACE) { tr = await traceStart(page); syncStartTime = await page.eval(TRACE_ARM); }
+  let m = await cdpMetrics(page), h = await hostStart(chromePid);
   await page.eval(RESET);
   const scroll = await page.eval(SCROLL, { timeout: 600000 });
   await sleep(500);
   const scrollPerf = await page.eval(COLLECT);
   hostPhases.scroll = await hostEnd(h, chromePid);
+  cdpPhase.scroll = cdpDelta(m, await cdpMetrics(page));
+  let traceFrames = null;
+  if (TRACE) {
+    const frameTs = await page.eval(TRACE_DISARM);
+    const events = await traceEnd(page, tr);
+    traceFrames = { ...attributeFrames(events, { frameTs, syncStartTime }), events: events.length, note: 'tracing perturbs timing: not comparable with untraced runs' };
+  }
 
   // morph phase: push past the end (wheel on desktop, touch drag on mobile)
   progress('morph phase', 10); // wheel or touch gestures plus a 2 s settle
-  h = await hostStart(chromePid);
+  m = await cdpMetrics(page); h = await hostStart(chromePid);
   await page.eval(RESET);
   if (vp.mobile) {
     for (let i = 0; i < 4; i++) await page.send('Input.synthesizeScrollGesture', { x: 215, y: 700, yDistance: -500, speed: 1200, gestureSourceType: 'touch', repeatCount: 1 });
@@ -291,6 +347,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   await sleep(2000);
   const morphPerf = await page.eval(COLLECT);
   hostPhases.morph = await hostEnd(h, chromePid);
+  cdpPhase.morph = cdpDelta(m, await cdpMetrics(page));
   const morphState = await page.eval(`document.querySelector('.start-selling-top-nav')?.className`);
   await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
 
@@ -330,7 +387,9 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   Object.assign(hostRec, classifyRun({ load1Start: runStart.load1, otherBusyPct: hostPhases.scroll?.otherBusyPct, pressureMax: pressures.length ? Math.max(...pressures) : null, gateTimeout: !!gate?.gateTimeout, recheckQuiet: recheck ? recheck.quiet : undefined, sleptSec: sl.sleptSec, woke: sl.woke, recheckSleptSec: recheck?.sleptSec, chromeRelaunched }));
   return {
     label: t.label, url: t.url, viewport: vpName, run, loadavg1: { before: r1(loadBefore), after: r1(runEnd.load1) }, host: hostRec, state, scroll, morphState, shots, shimStats,
-    idleSummary: idlePerf ? { ...summarize(idlePerf), scrollY: idlePerf.scrollY } : null, scrollSummary: summarize(scrollPerf), morphSummary: summarize(morphPerf),
+    idleSummary: idlePerf ? { ...summarize(idlePerf), ...cdpPhase.idle, scrollY: idlePerf.scrollY } : null, scrollSummary: { ...summarize(scrollPerf), ...cdpPhase.scroll }, morphSummary: { ...summarize(morphPerf), ...cdpPhase.morph },
+    ...(TRACE ? { traceFrames, traceSummary: traceFrames.summary ? { frames: traceFrames.summary.frames, scriptMs: traceFrames.summary.scriptMs, styleMs: traceFrames.summary.styleMs, layoutMs: traceFrames.summary.layoutMs, paintMs: traceFrames.summary.paintMs, otherMs: traceFrames.summary.otherMs, idleMs: traceFrames.summary.idleMs, styleElements: traceFrames.summary.styleElements } : null } : {}),
+    ...(FRAME_LOG ? { frameLog: { idle: idlePerf?.log ?? null, scroll: scrollPerf.log ?? null, morph: morphPerf.log ?? null } } : {}),
     requests: requests.length, origins,
     notFound: firstParty.filter((r) => r.status >= 400).map((r) => `${r.status} ${new URL(r.url).pathname}`),
     scripts: [...new Set(firstParty.filter((r) => r.type === 'Script').map((r) => new URL(r.url).pathname))].sort(),
@@ -389,7 +448,7 @@ async function main() {
           const r = await measure(browser.cdp, t, vpName, run, { chromePid: browser.ch.proc.pid, gate, recheck, chromeRelaunched, warmedSec });
           results.push(r);
           const s = r.scrollSummary;
-          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}`);
+          console.log(`fps ${s.fps}  >20ms ${s.gt20}  >34ms ${s.gt34}  >50ms ${s.gt50}  >100ms ${s.gt100}  LoAF ${s.loafMs}ms  forced ${s.forcedLayoutMs}ms${s.cdpStyleCount != null ? `  style ${s.cdpStyleMs}ms/${s.cdpStyleCount}x layout ${s.cdpLayoutMs}ms/${s.cdpLayoutCount}x script ${s.cdpScriptMs}ms` : ''}${r.traceSummary ? `  trace >20ms ${r.traceSummary.frames}: script ${r.traceSummary.scriptMs} style ${r.traceSummary.styleMs} layout ${r.traceSummary.layoutMs} paint ${r.traceSummary.paintMs} idle ${r.traceSummary.idleMs}ms` : r.traceFrames?.error ? `  trace: ${r.traceFrames.error}` : ''}  morph LoAF ${r.morphSummary.loafMs}ms${r.idleSummary ? `  idle fps ${r.idleSummary.fps} >50ms ${r.idleSummary.gt50} LoAF ${r.idleSummary.loafMs}ms` : ''}  (${r.notFound.length} 404s, ${r.errors.length} errors)  host: load1 ${r.host.load1Start}, other CPU ${r.host.phases.scroll?.otherBusyPct ?? '?'} %${r.host.loadInvalid ? `  CONTAMINATED: ${r.host.reasons.join('; ')}` : r.host.loadWarn ? `  warn: ${r.host.warnings.join('; ')}` : ''}`);
         }
       }
       if (SCREENS && targets.length > 1) {
@@ -435,7 +494,9 @@ async function main() {
     ...(measured[0]?.host.stub ? { stub: measured[0].host.stub } : {}),
   };
   console.log(`host: ${invalid.length} of ${measured.length} runs contaminated${invalid.length ? ` (${[...new Set(invalid.flatMap((r) => r.host.reasons))].join('; ')}): verdicts provisional` : ''}${warn.length ? `; ${warn.length} warn (${[...new Set(warn.flatMap((r) => r.host.warnings))].join('; ')})` : ''}${hostSum.stub ? `  [host STUBBED: ${hostSum.stub}]` : ''}`);
-  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, host: hostSum, rows, results }, null, 1));
+  const measurement = { cdpMetrics: CDP_METRICS, traceFrames: TRACE, frameLog: FRAME_LOG, ...(TRACE ? { note: 'traced: tracing perturbs timing, frame numbers are not comparable with untraced runs' } : {}) };
+  if (TRACE) console.log(`trace-frames: ${measurement.note}`);
+  writeFileSync(file, JSON.stringify({ cpu: CPU, idle: IDLE, viewports: vpList, runs: RUNS, targets, measurement, host: hostSum, rows, results }, null, 1));
   console.log('details: ' + file);
 }
 
