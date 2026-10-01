@@ -394,9 +394,38 @@ test('move (I-019): the dry run shows before/after and leaves the files byte-ide
   assert.equal(d.after[0].movedBy, 'lead');
   assert.deepEqual(snapshot(), before);
   assert.ok(!existsSync(lf('audit.log')));
+  // I-035: a move to the entry's own position is not "nothing to do" while the entry lacks the lead's mark (see below);
+  // once marked, it is
   const same = await X.moveWaiter(R, { owner: 'a', to: 1, by: 'lead', reason: 'x', apply: true });
-  assert.equal(same.changed, false, 'already there: nothing to do');
-  assert.deepEqual(snapshot(), before);
+  assert.deepEqual([same.changed, same.marked, same.applied], [false, true, true]);
+  const marked = snapshot();
+  const again = await X.moveWaiter(R, { owner: 'a', to: 1, by: 'lead', reason: 'x', apply: true });
+  assert.deepEqual([again.changed, again.marked, again.applied], [false, false, false], 'already there and marked: nothing to do');
+  assert.deepEqual(snapshot(), marked);
+});
+
+test('I-035: a move to the entry\'s own position marks it movedBy lead (one audit line), so short jobs no longer pass it', async () => {
+  await queueOf('a');
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, false);
+  assert.deepEqual(order(), ['a', 's']);
+  const dry = await X.moveWaiter(R, { owner: 'a', to: 1, by: 'lead', reason: 'E1 first' });
+  assert.deepEqual([dry.from, dry.to, dry.changed, dry.marked, dry.applied], [1, 1, false, true, false]);
+  assert.equal(L.status(R).queue[0].movedBy, undefined, 'the dry run writes nothing');
+  const m = await X.moveWaiter(R, { owner: 'a', to: 1, by: 'lead', reason: 'E1 first', apply: true });
+  assert.deepEqual([m.from, m.to, m.changed, m.marked, m.applied], [1, 1, false, true, true]);
+  assert.match(m.note, /short lane: the lead's move puts "a" ahead of the short jobs behind it \(s\)/);
+  const a = L.status(R).queue[0];
+  assert.equal(a.movedBy, 'lead', 'the mark is on disk (it was only in the printed "after" line before I-035)');
+  assert.ok(Math.abs(Date.parse(a.movedAt) - Date.now()) < 5000);
+  assert.deepEqual(order(), ['a', 's'], 'nobody moved');
+  const lines = auditLines();
+  assert.equal(lines.length, 1);
+  assert.deepEqual([lines[0].code, lines[0].owner, lines[0].from, lines[0].to, lines[0].reason], ['queue-move', 'a', 1, 1, 'E1 first']);
+  assert.match(lines[0].fix, /mark "a" \(#1\) as moved by lead/);
+  await L.release(R, { owner: 'h' });
+  assert.equal(L.status(R).next, 'a', 'the lead\'s mark wins over the short lane (I-020)');
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 'a', kind: 'lease' })).ok, true);
 });
 
 test('move (I-019): positions count live waiters only (as status shows them); stale entries stay for the acquirers to prune', async () => {

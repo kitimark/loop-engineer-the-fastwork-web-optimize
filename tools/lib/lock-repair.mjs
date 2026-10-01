@@ -275,16 +275,19 @@ function planMove(r, { owner, to, by, now }) {
     ? (live.some((w) => !w.short) ? 'short lane: a short job is served by the short-lane rule; its place only orders it among other short jobs' : null)
     : ahead.length ? `short lane: queued short jobs ahead of "${owner}" (${ahead.join(', ')}) are still served first at a hand-over while their ${SHORT_DRAIN_SEC} s drain budget lasts (I-007/I-011/I-020)`
     : behind.length ? `short lane: the lead's move puts "${owner}" ahead of the short jobs behind it (${behind.join(', ')}); it is served before them (I-020)` : null;
-  return { resource: r, owner, from, to, changed: from !== to, holder, before: live, after, queue, file: F.queue, note };
+  // I-035: a move to the entry's own position still records the lead's mark (movedBy: served before the short jobs
+  // behind it, I-020; never passed at its host gate, I-030): `marked`. Only an entry already marked by `by` is a no-op.
+  return { resource: r, owner, from, to, changed: from !== to, marked: from === to && target.movedBy !== by, holder, before: live, after, queue, file: F.queue, note };
 }
 
 /**
  * The lead reorders the queue: move waiting `owner` to live position `to` (1-based, as `status` shows it).
  * opts: {owner, to, by, reason, apply=false}. Dry run by default (reads only). With apply: under the
  * resource's guard, re-plans, writes the queue atomically and appends one audit line (code "queue-move").
- * Only a waiting entry moves; its `since` is kept and `movedBy`/`movedAt` are recorded in it. Refuses the
+ * Only a waiting entry moves; its `since` is kept and `movedBy`/`movedAt` are recorded in it (also when it is
+ * already at `to`: `marked`, I-035; a no-op only for an entry already marked by `by`). Refuses the
  * holder, a non-waiter, a position outside the live queue, and `by` other than "lead".
- * Returns {resource, owner, from, to, changed, applied, holder, before, after, file, note}.
+ * Returns {resource, owner, from, to, changed, marked, applied, holder, before, after, file, note}.
  */
 export async function moveWaiter(r, { owner, to, by, reason, apply = false } = {}) {
   checkName(r);
@@ -297,10 +300,11 @@ export async function moveWaiter(r, { owner, to, by, reason, apply = false } = {
   return withGuard(r, () => {
     const now = Date.now();
     const p = planMove(r, { owner, to, by, now });
-    if (!p.changed) return { ...strip(p), applied: false };
+    if (!p.changed && !p.marked) return { ...strip(p), applied: false };
     writeJsonAtomic(join(lockDir(), p.file), p.queue);
+    const fix = p.changed ? `move "${owner}" from #${p.from} to #${p.to} (since ${p.after[p.to - 1].since} kept)` : `mark "${owner}" (#${p.from}) as moved by ${by}, position kept (I-035)`;
     audit({ ts: iso(now), by, reason, resource: r, code: 'queue-move', file: p.file, owner, from: p.from, to: p.to,
-      fix: `move "${owner}" from #${p.from} to #${p.to} (since ${p.after[p.to - 1].since} kept)`, before: p.before.map((w) => w.owner), after: p.after.map((w) => w.owner) });
+      fix, before: p.before.map((w) => w.owner), after: p.after.map((w) => w.owner) });
     return { ...strip(p), applied: true };
   });
 }
