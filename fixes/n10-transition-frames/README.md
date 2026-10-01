@@ -47,3 +47,12 @@ Base for comparison: the same with `fixes/aw1-10c/overlay`.
 `JSON.stringify(__r3.summary(1700, 2200))`. It names each frame > 34 ms by the transitions that landed in it or in
 the frame before: cv state changes (capture phase), render/scene/fw-wc attribute flips, and `.pain` / `#people`
 class changes.
+
+## Related diagnostic: I-018 "other" frames (08:14Z, mechanism/attribution, timing not claimed, load1 4.6-5.3)
+
+CPU-profiler trace (`toplevel`, `devtools.timeline`, `disabled-by-default-v8.cpu_profiler`, `v8.gc`, `blink`, `loading`),
+aw1-10c, 3 fresh loads, mobile 6x, verify-style scroll, rAF frame log with scrollY. Traces in the worktree's `out/i018-other-0814/`.
+
+- **3/3 loads**: +6.07-6.09 s after scroll start, y=4750, 67-83 ms. This is gtag `onscrollend` JS (`FunctionCall` 58-68 ms: `l.Ug`, `l.apply`, `js:364`, `get cookie` / `CookieJar::Cookies`) plus a ~3 ms MinorGC (N11).
+- **1/3 loads**: +1.08 s, y=727, 50 ms: `Document::recalcStyle` 21.7, paint 6.8, compositor update 5.1. Samples are mostly `(program)`, plus the nav's `ee()` (JS 13223: `getComputedStyle` of `.start-selling-profile-sticky` + 2 rects per pass), `getBoundingClientRect` and `elementsFromPoint`. A forced style recalc from the nav (N12, F-029).
+- Without the CPU profiler, both show as `RunTask` self time with no timeline child. Neither is a Blink-internal mystery.
