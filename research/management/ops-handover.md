@@ -211,28 +211,27 @@ BATCH shas. **Stamp times from `date -u`** (mgmt-ops-4 drifted ~5-10 min ahead t
 `sh <scratchpad>/mgmt-ops/tick2.sh 150-240` (returns on incident changes; prints lock + phone state); messages arrive
 between tool calls.
 
-1. **iPhone order** (updated 13:2xZ by mgmt-ops-5; lead-ranked): DONE: P0 (P-023), P1 (P-017 HIT), P2 (P-016b miss),
-   F2 pre-check (VALID), finger batch F1-F6 (12:4x-13:2xZ; F6-try3 apple.com 0 >50 / 1 >34 moving, user "feel the
-   same": smooth, a little laggy; F6-try2 had 300/1027 moving frames at ~8 ms = rAF above 60 Hz on apple.com, OBSERVED,
-   cause asked of arch-claims), ca-check re-run wca2 (captured, `window.__ca` filled; analysis waits for a free
-   chrome-measure), **P-029 HIT** (13:17-13:25Z). **13:4xZ:** P3 started ~13:36Z, PAUSED by the user's pacing v2 session
-   ("ready for pacing", lead 13:4xZ; ~10 min lease, ~5 user min). P3 RESTARTS FRESH afterwards if the pause broke the block (warm-ups + S-open +
-   all counted runs + S-end, no splicing; ~50 min + 10 min cooling) -> ~14:05-15:05Z; P4 (+ T1a on/off A/A in its
-   warm-up) after 10 min cooling, ~15:15Z. Remaining order: P3 ST-2 + baseline-A (P-019/P-020,
-   ~50 min with Timeline sentinels; 16 ms rotator-drop kept) -> P4 A = F1 arm-load (P-013), B = F3 arm-scope (P-022) ->
-   P11 Block A (P-028, ~40 min; Block B conditional) + **P14** (P-025, ~47-48 min; C aw1-10e, V1 st4-strict, V2
-   re-contain-js `<scratchpad>/hero-exit/snap/re-contain-js`; separate sentinels) -> P12 -> P5 ST-1 (P-018) -> P9 (P-026)
-   -> **P-030** listener split (~25 min) -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13.
+1. **iPhone order** (updated 13:5xZ by mgmt-ops-5; lead-ranked): DONE: P0 (P-023), P1 (P-017 HIT), P2 (P-016b miss),
+   F2 pre-check, finger batch F1-F6 (F6-try3 apple.com 0 >50 / 1 >34 moving; F6-try2 ~80 Hz stretches = F-071),
+   ca-check wca2 (captured, `window.__ca` filled; analysis waits for a free chrome-measure), **P-029 HIT** (13:17-13:25Z),
+   **P3 HIT** (13:35-13:44Z: P-019 re-dur + re-keep HIT, baseline-A third frame unresolved; P-020: reveal-end Layouts
+   fire at rest = Card 4), **pacing v2 s1** (13:45-13:50Z: late-gap clip 8/8, P10 RELEASED). **NOW:** P4 ~14:00Z (A = F1
+   arm-load P-013, B = F3 arm-scope P-022; T1a on/off A/A in its warm-up slot, definition from ts-iphone-run) -> P11
+   Block A (P-028, ~40 min; Block B conditional) + **P14** (P-025, ~47-48 min; C aw1-10e, V1 st4-strict, V2
+   re-contain-js `<scratchpad>/hero-exit/snap/re-contain-js`; separate sentinels) -> P12 -> **P10** (P-024, own gate: P1
+   then the phone block) -> P5 ST-1 (P-018) -> P9 (P-026) -> **P-030** listener split (~25 min) -> **P-031 G** (rAF-rate
+   pages; earlier if the phone idles) -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. re-keep-op gain block: placed
+   when fix-hero-exit sends its ticket.
+   **Pacing v2 (de-unknowns-ux e64b6de, pacing-result §4):** verdict accepted on intent (§0/§2), OBSERVED, one user, not
+   rested; §3 sign erratum added with the scoring commit, kept visible. **Lead rule 13:5xZ: pre-registered rules get a
+   second reader (arch-claims or mgmt-ops) BEFORE data arrives.** de-unknowns-ux drafts a pacing v3 (touch A/B) plan; it
+   could replace P-031's F part.
    **F-071 [OBSERVED] (arch-claims 13:2xZ):** finger/touch scrolls show sustained 12-13 ms (~80 Hz) rAF stretches
    (F6-try2 563/1027, try3 171/1385; fastwork E1 seg1 43/352, A1 seg2 30/816); S/W runs and idle show 16-17 ms. fps
    and frame counts from F/G runs do not compare with S/W runs; ms thresholds unaffected. ver-rafrate checks the cause;
    proposed CLAUDE.md qualifier after verification: "60 Hz idle and in scripted scrolls; ~80 Hz observed in finger scrolls".
    **WDA signing profile expires 2026-10-08T12:19:35Z** (free team, ts-gesture): re-run `wda build` before then.
-   **HELD:** P10 (P-024) until the pacing v2 session (next finger batch: ~10 min lease, ~5 user min, user rested, before
-   any finger test, never sharing a lease with a timed block). **Pacing v2 page READY** (d28c2cb on main:
-   research/design-engineering/pacing/v2.html + v2.js; `node tools/serve.mjs --root research/design-engineering/pacing
-   --port auto`, `/v2.html`; user line: "Part 1: 9 pairs, watch A then B, tap the smoother one. Part 2: rate 8 clips
-   1-5. About 3 minutes."; iphone-runner has the serving steps; F5 result = F-069 OBSERVED n=1).
+   Pacing v2 page: research/design-engineering/pacing/v2.html (d28c2cb); F5 result = F-069 OBSERVED n=1.
    **Phone scoring (lead, CLAUDE.md 668b612, supersedes the v>=3 decision):** dt > 50 goal (target 0) + dt > 34, counts
    at ±4 ms (dt>46/54, dt>30/38), "threshold-sensitive" if the verdict differs; no k forms on the phone; Low Power Mode
    per run. fix-reviewer check 15 updated (13da193).
