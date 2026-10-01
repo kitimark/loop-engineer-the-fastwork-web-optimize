@@ -22,8 +22,8 @@ analyze the render complexity of each topic". Lead of this note: `de-morph`.
 
 | member | scope | note | status |
 |---|---|---|---|
-| `de-hero` | hero window, y 0-900 (ring splash, orbit, exit, first scroll frames out of the hero, #people entry) | `hero.md` (expected) | **pending**: not committed when this README was written |
 | `de-middle` | everything between, including the y ≈ 1970 pain-entry frame; page-wide mechanisms: blur, content-visibility, will-change, layers | [`middle.md`](middle.md) | done |
+| `de-hero` | hero window, y 0-900 (ring splash, orbit, exit, first scroll frames out of the hero, #people entry) | [`hero.md`](hero.md) | done; covers the iPhone hero block (v2: y≈50 gone, y≈700 +11 ms, §2D) |
 | `de-morph` (lead) | end of page: `#platform`, the nav morph panel, the touch scroll-jack/pin | [`morph-endpage.md`](morph-endpage.md) | done |
 
 ## Method (shared by the three notes)
@@ -67,7 +67,10 @@ rows (unranked "-", for the lead to place) are in; de-hero's slot is a placehold
 | 2 | **Clip-path morph + exact color-mix cross-fade** (nav at its final box while morphing; `clip-path: inset(round)`; `#131922` layer at opacity m over `#ffffff1a`) | end of page | no layout or repaint per moving frame → 16.7 ms gaps (GPU-bound ~8-12 ms) | medium (backdrop clipped by clip-path? bar alignment) | fix-nav-morph | morph-endpage R2 |
 | 3 | **No layer creation at the tween start** (keep the track layers; one strip per countdown digit; or activate the scene on arm) | end of page | first frames 91-96 ms → ~50 ms | none (same pixels); +15 MB held | fix-nav-morph, fix-countdown-idle-raf | morph-endpage R5/R6 |
 | 4 | **WAAPI tween with the exact easing `cubic-bezier(1/3,1,2/3,1)`** | end of page | the morph stops depending on the main thread (touch frames +10-30 ms today) | medium (interruption, readers of `--morph`) | fix-nav-morph | morph-endpage R3 |
-| - | *(de-hero's top refactors: placeholder)* | hero y 0-900 | - | - | - | `hero.md` |
+| h1 | **Take the 0.72 flip apart** (pre-raster the future card while invisible: `opacity: 0` + `inert` instead of `visibility: hidden`; reveal blur `blur(14px)→blur(0px)` with matching lists; no inherited toggle in the reveal frame) | hero → #people, y≈587-745 | the y≈625-745 pair (43-63 ms on all builds) → ≤ 34 ms | medium (a11y/inert; raster earlier, +12-90 MB) | fix-large-area-blur + phone-invisible-shrink (fix-hero-exit coordinates) | hero R1 |
+| h2 | **Hero exit on a scroll timeline (v2) + /10e** | hero y 0-900 | measured y≈50 43 → 35 ms; −2-6 ms of style per hero frame; **+11 ms at y≈700 to bisect** (§2D) | low (parity shown) | fix-hero-exit, fix-scroll-engine | hero R2 |
+| h3 | **Countdown: one strip per digit, no per-face `will-change`** (12-glyph strip `9 0 1 … 9 0` at `translateY(−(a+1)·c)`) | hero (and morph panel, = morph R6) | 160 → 0-16 layers; 10 → 1 writes per spring frame; 1 Hz idle spikes 35-58 ms | low (exact within ±1 cell) | fix-countdown-idle-raf | hero R3 |
+| h4 | People-o equivalent-pixel FLIP (word spans + WAAPI translate + clip-path), plus `transition: none` while the card is invisible | #people, slow scroll only | 0.92 s of per-frame layout → ~0 | medium | fix-hero-exit (P3) | hero R4 |
 | - | **Morph IO does nothing heavy in a scroll frame** (images get `src` at the idle pre-mount, `inert` until the morph starts, listeners registered once and passive, blocking only at the end). The y ≈ 1960 frame starts at y 1834-1867 = the `#platform` 200 % IO threshold (4155 − 3·775 = 1830), not `.pain` | middle (y ≈ 1830-1970) | 105 ms → 17-35 ms, **if** ablations e1 (`mw-d-passive`) / e2 (margin 150 % → frame moves to y ≈ 2218) confirm | none (panel invisible) | fix-nav-morph | middle R1, §2 |
 | - | **Section background switches as solid-colour composited layers** (`is-pain-dark`, `.commission.shrinking` on an empty `::before`, W3) | middle | 10-20 ms → < 2 ms per crossing (y ≈ 888, commission end) | low (z-order of the pseudo; frozen-frame diff) | fix-scroll-engine (N10) | middle R2 |
 | - | **Stop the per-frame feed repaint** (373 × 344 rect repainted every frame over y 1600-2500; cause unattributed) | middle | −2-5 ms on every frame there | low | profile-showcase owner (layout-animations scope) | middle R3 |
