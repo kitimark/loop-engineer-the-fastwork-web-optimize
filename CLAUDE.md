@@ -128,9 +128,12 @@ stage closed by a card; the lead signs D (the attribution card): `fixes/LEAD.md`
   threshold), never by raw y (Chrome and phone y differ by ~77 px).
 - **Frame thresholds.** Chrome (120 Hz, vsync-aligned stamps): k = round(dt / 8.333 ms), ">34" = k≥5 (dt ≥ 37.5 ms),
   ">50" = k≥7 (dt ≥ 54.17 ms), medians compare as ticks; the legacy ms columns stay for one wave, and a verdict that
-  differs between the two is "threshold-sensitive". Phone (Safari rAF at 60 Hz by WebKit default, CONFIRMED: pref
-  PreferPageRenderingUpdatesNear60FPSEnabled; its 1 ms stamps mark the rendering-update start and are not
-  vsync-quantized above one vsync, claims-audit §2.3): goal dt > 50 ms (target 0) and dt > 34, plus the counts at
+  differs between the two is "threshold-sensitive". Phone (Safari: WebKit requests a 60 Hz display link as a hint
+  only, CONFIRMED: pref PreferPageRenderingUpdatesNear60FPSEnabled, preferredFramesPerSecond=60; Core Animation picks
+  the actual rate and may run faster, e.g. 80 Hz, claims-audit §2.7. Idle and scripted runs (S/W/M) show 16-17 ms
+  gaps; finger runs show stretches of 12-13 ms gaps (~80 Hz), trigger UNRESOLVED (F-071), so fps and frame counts
+  from F/G runs don't compare with S/W/M runs, the ms thresholds do. Its 1 ms stamps mark the rendering-update
+  start and are not vsync-quantized above one vsync, claims-audit §2.3): goal dt > 50 ms (target 0) and dt > 34, plus the counts at
   ±4 ms (dt>46/54, dt>30/38); a verdict that differs across ±4 ms is "threshold-sensitive"; no k forms on the
   phone; record Low Power Mode (30 Hz).
 
