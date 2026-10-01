@@ -115,3 +115,19 @@ test('a test process never starts a real caffeinate: without FW_CAFFEINATE, no a
   } finally { process.env.FW_CAFFEINATE = FAKE; }
   assert.deepEqual(await calls(0), []);
 });
+
+test('ts-lock-bundle (a): the head waiter held at the host gate keeps the Mac awake too (queue assertion), until it gives up', async () => {
+  // a busy fake host for this acquire only (its samplers advance fake time: no real 10 s windows)
+  let t = 7_000_000, busy = 0, total = 0;
+  const s = {
+    now: () => t, mono: () => t, wake: () => 1, procs: () => ({}),
+    sleep: async (ms) => { t += ms; total += ms * 8; busy += ms * 8 * 0.7; await sleep(5); },
+    cpus: () => Array.from({ length: 8 }, () => ({ times: { user: busy / 8, nice: 0, sys: 0, idle: (total - busy) / 8, irq: 0 } })),
+    loadavg: () => [1, 1, 1], freemem: () => 1e9, pressure: () => 1, decompressions: () => 0,
+  };
+  await assert.rejects(L.acquire('chrome-measure', { owner: 'gated', kind: 'process', timeoutSec: 0.3, pollMs: 50, log: () => {}, hostSamplers: s }), /timed out after 0\.3 s waiting for a quiet host/);
+  const c = await calls(1);
+  assert.deepEqual(c.map((x) => x.args), [['-i', '-s', '-t', '600']], 'the shared queue assertion, started by the gated waiter (nobody holds the lock)');
+  assert.equal(JSON.parse(readFileSync(join(state, 'locks', 'chrome-measure.queue-awake.json'), 'utf8')).pid, c[0].pid);
+  process.kill(c[0].pid, 'SIGTERM');
+});

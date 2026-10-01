@@ -100,7 +100,8 @@ export const LEASE_POLICY = { 'chrome-measure': { defaultTtlSec: 600, maxHoldSec
 // HANDOVER_FRESH_SEC must exceed the slowest poll of a waiting loop (acquire(): 15.5 s; `acquire --wait`: 15 s).
 export const NEXT_POLL_MS = 1000;
 export const HANDOVER_FRESH_SEC = 30;
-// the iphone protocol (CLAUDE.md) has waiters retry every 2-5 min, so there a stale lastSeen means nothing: strict FIFO
+// iphone waiters queue with `lock.mjs acquire iphone … --wait` (or re-run acquire within 10 min, CLAUDE.md), not by
+// fast polling, so there a stale lastSeen means nothing: strict FIFO
 const SLOW_POLL_RESOURCES = new Set(['iphone']);
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 const capMs = (r, h) => (LEASE_POLICY[r] && h.kind === 'lease' && !h.short ? Date.parse(h.acquiredAt) + LEASE_POLICY[r].maxHoldSec * 1000 : Infinity);
@@ -398,17 +399,25 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
   let lastLog = 0, wait = pollMs;
   const gated = !!GATED[r] && !short;
   let host = gated ? { quiet: null, reasons: ['not measured yet'] } : undefined;
+  // ts-lock-bundle (b): the gate's timeout counts awake time, like its cap (review-host-state B1): the host sleep the
+  // gate windows saw is subtracted, and a window the host slept through never ends in a throw (one fresh window decides)
+  let gateSleptMs = 0, sleptLast = false;
   for (;;) {
     const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, maxSec, held, host, thresholds: T });
-    if (!res.ok && !res.gated) keepAwakeQueued(r); // queued behind someone: no system sleep while anyone waits either (I-026 reopened)
+    // queued behind someone, or the head waiter held at the host gate on a host measured not quiet (ts-lock-bundle (a);
+    // not the first, unmeasured round every gated grant takes): no system sleep while anyone waits (I-026 reopened);
+    // a gate wait is minutes of waiting too, and a sleep in it only stretches it (I-033)
+    if (!res.ok && (!res.gated || host.quiet === false)) keepAwakeQueued(r);
     if (res.gated) {
       // our turn, but the host is not (known to be) quiet: measure one window, then try again at once
       if (host.quiet === false && Date.now() - lastLog > 30000) {
         log(`[lock ${r}] free, but the host is not quiet (${host.reasons.join(', ')}); waiting since ${res.gate.since}, granted anyway after ${T.gateMaxWaitSec} s`);
         lastLog = Date.now();
       }
-      if (Date.now() - t0 > timeoutSec * 1000) { await dequeue(r, owner); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s waiting for a quiet host`); }
+      if (!sleptLast && Date.now() - t0 - gateSleptMs > timeoutSec * 1000) { await dequeue(r, owner); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s waiting for a quiet host${gateSleptMs ? ` (awake time; the host slept ${Math.round(gateSleptMs / 1000)} s more)` : ''}`); }
       host = await gateSample({ thresholds: T, samplers: hostSamplers }); // its sleep is summed by tryAcquire (I-033)
+      sleptLast = !!host.sample?.suspended;
+      if (sleptLast) gateSleptMs += (host.sample.sleptSec || 0) * 1000;
       continue;
     }
     if (gated) host = { quiet: null, reasons: ['not measured yet'] }; // the window restarts at the next hand-over

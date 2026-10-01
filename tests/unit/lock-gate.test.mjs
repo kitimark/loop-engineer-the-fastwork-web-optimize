@@ -335,3 +335,67 @@ test('review-host-state N3: the gate\'s sleep sum survives a short job passing t
   const g = await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: { ...QUIET, sample: { ...QUIET.sample, sleptSec: 0, woke: false } } });
   assert.deepEqual([g.ok, g.holder.gate.sleptSec, g.holder.gate.woke], [true, 27, true]);
 });
+
+test('ts-lock-bundle (b): a host sleep in a gate window that outlasts acquire()\'s timeoutSec does not throw on wake: awake time counts, one fresh window decides', async () => {
+  // the first window takes 1.2 s of real time (past timeoutSec 1) and the host "slept" 600 s in it (wall clock jumps, wake count rises)
+  let t = 11_000_000, jump = 0, wake = 1, windows = 0;
+  const s = {
+    now: () => t + jump, mono: () => t, wake: () => wake, procs: () => ({}),
+    sleep: async (ms) => { if (windows++ === 0) { await sleep(1200); jump += 600000; wake++; } t += ms; },
+    cpus: () => Array.from({ length: 8 }, () => ({ times: { user: t * 0.05, nice: 0, sys: 0, idle: t * 0.95, irq: 0 } })),
+    loadavg: () => [1, 1, 1], freemem: () => 1e9, pressure: () => 1, decompressions: () => 0,
+  };
+  const h = await L.acquire(R, { owner: 'woke', kind: 'lease', timeoutSec: 1, pollMs: 20, log: () => {}, hostSamplers: s });
+  assert.equal(windows, 2, 'the window with the sleep, then one fresh window after the wake');
+  assert.deepEqual([h.holder.gate.quiet, h.holder.gate.sleptSec, h.holder.gateTimeout], [true, 600, undefined]);
+  h.release();
+  // awake time past timeoutSec still ends the wait (a busy host that never sleeps)
+  let u = 12_000_000, busy = 0, total = 0;
+  const b = {
+    now: () => u, mono: () => u, wake: () => 1, procs: () => ({}),
+    sleep: async (ms) => { u += ms; total += ms * 8; busy += ms * 8 * 0.7; await sleep(5); },
+    cpus: () => Array.from({ length: 8 }, () => ({ times: { user: busy / 8, nice: 0, sys: 0, idle: (total - busy) / 8, irq: 0 } })),
+    loadavg: () => [1, 1, 1], freemem: () => 1e9, pressure: () => 1, decompressions: () => 0,
+  };
+  await assert.rejects(L.acquire(R, { owner: 'busy', kind: 'lease', timeoutSec: 0.3, pollMs: 20, log: () => {}, hostSamplers: b }), /timed out after 0\.3 s waiting for a quiet host$/);
+  assert.deepEqual(L.status(R).queue, [], 'it left the queue');
+});
+
+// review-lock-bundle N2: one test per mechanism of (b); the test above passes with either one alone.
+// Fake host: window `i` (1-based) can take real time, jump the wall clock (sleptSec), bump the wake count, or be busy.
+const gateHost = (plan) => {
+  let t = 13_000_000, jump = 0, wake = 1, busy = 0, total = 0, w = 0;
+  return {
+    now: () => t + jump, mono: () => t, wake: () => wake, procs: () => ({}),
+    sleep: async (ms) => {
+      const p = plan[++w] || {};
+      if (p.realMs) await sleep(p.realMs);
+      if (p.jumpMs) jump += p.jumpMs;
+      if (p.woke) wake++;
+      t += ms; total += ms * 8; busy += ms * 8 * (p.busy ? 0.7 : 0.05);
+    },
+    cpus: () => Array.from({ length: 8 }, () => ({ times: { user: busy / 8, nice: 0, sys: 0, idle: (total - busy) / 8, irq: 0 } })),
+    loadavg: () => [1, 1, 1], freemem: () => 1e9, pressure: () => 1, decompressions: () => 0,
+    windows: () => w,
+  };
+};
+
+test('ts-lock-bundle (b), N2: right after a slept window the timeout is not checked (!sleptLast), even when awake time is past it', async () => {
+  // window 1: a wake (kern.waketime changed) with ~0 s of measured sleep, 400 ms of real time > timeoutSec 0.2; window 2 quiet.
+  // Subtracting gateSleptMs (~0) would not save it: only the skipped check after a slept window does.
+  const s = gateHost({ 1: { realMs: 400, woke: true } });
+  const h = await L.acquire(R, { owner: 'woke0', kind: 'lease', timeoutSec: 0.2, pollMs: 20, log: () => {}, hostSamplers: s });
+  assert.equal(s.windows(), 2, 'the slept window, then one fresh window decides');
+  assert.equal(h.holder.gate.quiet, true);
+  h.release();
+});
+
+test('ts-lock-bundle (b), N2: the sleep a gate window saw is subtracted from the timeout (- gateSleptMs) after a later awake window too', async () => {
+  // window 1: the host slept 600 s (wall clock jump) and took 400 ms of real time; window 2 awake but busy (sleptLast
+  // false again), window 3 quiet. At the check before window 3 only the subtracted 600 s keeps the wait alive.
+  const s = gateHost({ 1: { realMs: 400, jumpMs: 600000 }, 2: { busy: true } });
+  const h = await L.acquire(R, { owner: 'slept600', kind: 'lease', timeoutSec: 0.2, pollMs: 20, log: () => {}, hostSamplers: s });
+  assert.equal(s.windows(), 3);
+  assert.equal(h.holder.owner, 'slept600');
+  h.release();
+});
