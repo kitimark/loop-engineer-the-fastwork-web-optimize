@@ -60,11 +60,44 @@ done criteria are `fixes/README.md` "Definition of done"; check each one.
    `screenshotDiffPct` <= 0.4 per shot, otherwise `Read` the PNGs in the run directory next to
    `results.json` `raw` (`mobile-base-*.png` vs `mobile-fix-*.png`) and judge the difference.
 
+## Protocol v2 checks
+
+`research/architecture/measurement-protocol-v2.md` §7 (stages and sign-offs: `fixes/LEAD.md` "Stages and gates";
+card templates: `fixes/_template/CARDS.md`; done items 9-14 in `fixes/README.md`). Each missing item is blocking.
+
+7. **Attribution.** The card is NAMED and the lead's sign-off (or fast-path call) is cited. Each ablation arm has
+   its mechanism check (computed style, mutation counts, layer count) and was measured in the same block against
+   the same control; at least one negative sibling arm; a position-moving arm is not the positive control. No
+   evidence comes from a capped logger (the R3 logger capped at 12 events per frame, L3).
+8. **Device class = gate.** Phone-only fixes have a phone ABBA block; render-bound fixes have Instruments hitch
+   data, not only rAF; touch-only fixes have G or F runs; iOS Paint ms is read together with Composite. A
+   Chrome-only verdict states its blind spots (GPU, raster, WebKit layerization, threaded presentation).
+9. **Idle triple** (callbacks/s, writes/s, mutations/s by type, rAF/s at y=0, parked mid-page after a scroll, at
+   the pin): present for base and fix, none higher without a stated reason.
+10. **Position-bin census diff on both devices:** no 250 px bin (or the topic window) worse by ≥1 tick median or
+    +1 frame k≥5 per run, every bin, not only the targeted one.
+11. **Prediction.** The `fixes/PREDICTIONS.md` row exists and predates the first timed run; measured vs predicted
+    recorded; the closure check passed; the baseline is the same driver, base and heat class, ≤24 h old. A model
+    on its second miss needs its team's review before it drives another build.
+12. **Driver scope.** Every claim names its driver and stays inside what it covers (S: no toolbar, touch, bounce;
+    W: no touch; M: no touch, bounce, pin); a morph change has G or F.
+13. **Scenarios not run** are listed: idle after scroll, reload while scrolled, early input, scroll up, toolbar,
+    rubber band.
+14. **Geometry and hashes.** Attribution probes ran at the phone geometry (430x775 / 430x815), positions are by
+    crossing, not raw y; the served hashes of every phone run match the slot ticket and the build card.
+15. **Phone block hygiene:** heat note, warm-up run, sentinel passed on every control (a failing control voids the
+    runs since the last passing one), within-block comparison against the exact base, ticks (k≥5, k≥7) and
+    median [IQR] with every run; no frames pooled across runs. Chrome numbers compare only within one hold while
+    `fixes/LEAD.md` "Canary drift" stands.
+16. **Build card:** frozen-frame diff 0 %, backdrop/filter look check (Page.snapshotRect doesn't render
+    `backdrop-filter`), a11y diff when `inert` / `visibility` / `aria-*` / focusable content changed,
+    memory/layers note, debug hooks (`__fwMorphDrive`, loggers) stripped from `patch.diff`.
+
 ## Tool-fix mode
 
 When the prompt says "tool fix, incident I-<nnn>" (a toolsmith's branch that changes measurement code:
 `verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`, or what `serve.mjs` / `vendor-shim.js` serve), replace
-checks 2-6 with these. Read the report with `node tools/incident.mjs show I-<nnn>`.
+checks 2-16 with these. Read the report with `node tools/incident.mjs show I-<nnn>`.
 
 1. **Scope.** `git -C <wt> diff --stat main...HEAD`: one commit, only `tools/`, `tests/` (and
    `package.json` if a script changed); the subject names the incident.
