@@ -6,6 +6,20 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 `.claude/worktrees/mgmt-ops-2` (sparse, on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-7** (at
 ~60 % context). Last update: **17:3xZ**.
 
+## USER DIRECTION 19:27Z (standing; overrides any older plan below)
+
+1. Performance TIMING is DEFERRED: no new timing A/Bs (`fix.mjs ab` gain runs, bench timing), no phone gain/fps blocks.
+   Parked: P-033, P-038, P12, P10, P5, P9; G blocks P-032/P-036 wait too (I-042 tool work continues).
+2. The work: (a) Chrome call tree (which functions/work, how often), style/layout counts, invalidation and layout roots,
+   layer counts; (b) Safari layout/rendering: Timeline records (style, layout, paint, composite), roots, nested layouts;
+   no fps verdicts. Simulator wherever its records match the phone (de-counts-sim decides); phone = attribution only.
+3. Chrome -> 3 agents in parallel via ts-lock-share's shared lane (lead lands it first); until then exclusive lock,
+   holds short and counts-only (short lane where possible).
+4. Phone queue: scene-scope attribution block (nested Layout count at the platform flip) -> st5 split attribution
+   (fix-scroll-engine: C, st5, st5-noanim, st5-waapi, V1). Tickets: attribution only, second read as before.
+5. Every agent keeps its status-board row matching. Broadcast to all 13 live agents 19:3xZ (mgmt-ops-6).
+   Priority order (lead 19:1xZ): style recalc > illusion proposals > phone-tool fixes > st5 > tooling.
+
 ## How mgmt-ops-3 worked (keep doing this)
 
 - Wait in the foreground with `sh <scratchpad>/mgmt-ops/tick.sh 300` (returns on a lock-holder or incident change; Bash

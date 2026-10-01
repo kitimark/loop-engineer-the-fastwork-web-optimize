@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T19:28:00Z",
+ "updatedAt": "2026-10-01T19:31:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T19:31:00Z", "text": "Your decision: timing tests are on hold. The team now finds out what work the page does and how often (Chrome call tree, style and layout counts, layers) and records Safari's layout and drawing work. The phone is only used for those recordings." },
   { "at": "2026-10-01T19:28:00Z", "text": "Carousel fix (st5) tested on the phone: the picture swap no longer re-lays out the page, but the start of each slide still does about half the time. Hitches at rest fell by more than half. Next step is the lead's call." },
   { "at": "2026-10-01T19:16:00Z", "text": "New work, the user's second priority: look for cheaper ways to draw effects that look the same, and show each one to the user to accept or reject." },
   { "at": "2026-10-01T19:12:00Z", "text": "Two small items (the endless sweep animations and the image sizes) are parked until the bigger style fixes have phone results, so effort stays on the largest slow frames." },
@@ -43,7 +44,7 @@
    ],
    "felt": { "answer": "same", "text": "3 blind swipe pairs on the real page; one was a same-vs-same check, which you passed. You did not prefer the fix in either real pair." },
    "gate": "P-032: with a robot finger on the phone, the fix must show fewer slow frames at the start of the panel motion than without it, in every run.",
-   "next": "P-032 again, as a fresh run, once the robot-finger tool is fixed (I-042). If it passes, it lands; if not, it does not land: harmless, but nothing you would feel.",
+   "next": "Paused by your decision (19:27Z): timing tests are on hold. P-032 (robot-finger timing test) waits; the robot-finger tool fix itself continues.",
    "owner": "fix-nav-morph",
    "checks": [ { "id": "P-032", "what": "robot-finger test on the phone", "result": "" } ],
    "details": [
@@ -68,7 +69,7 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "P-036 on the phone once the robot-finger tool is fixed (I-042, right after P-032), then review, then your blind swipe test.",
+   "next": "Paused by your decision (19:27Z): timing tests are on hold. P-036 and the blind swipe test wait; the robot-finger tool fix itself continues.",
    "owner": "fix-nav-morph",
    "checks": [
     { "id": "P-022", "what": "scripted phone block: is the y≈1960 frame gone?", "result": "yes, 4 of 4 runs" },
@@ -93,7 +94,7 @@
    ],
    "felt": { "answer": "not-yet" },
    "gate": "P-033 gain block on the phone: fewer frames over 34 ms in the reveal, in every run.",
-   "next": "P-033 gain block. Frames over 50 ms can't move here (there are none in this window), so even a pass would likely be bundled with the next combined wave, not landed alone.",
+   "next": "Paused by your decision (19:27Z): timing tests are on hold. The P-033 gain test on the phone is parked.",
    "owner": "fix-hero-exit",
    "checks": [ { "id": "P-033", "what": "phone gain block (its step 0 safety check passed)", "result": "" } ],
    "details": [
@@ -111,7 +112,7 @@
    "fixes": "The card's blur fade uses an easing type that iPhone Safari freezes while the page is busy (CONFIRMED). The same curve written as a standard easing keeps moving and may make each reveal frame cheaper.",
    "felt": { "answer": "not-yet" },
    "gate": "P-038: on the phone, the reveal frames must cost less (composite and style time) in every run.",
-   "next": "P-038 on the phone, after the P-033 block.",
+   "next": "Paused by your decision (19:27Z): timing tests are on hold. The P-038 phone test is parked.",
    "owner": "fix-hero-exit",
    "checks": [ { "id": "P-038", "what": "phone block: is each reveal frame cheaper?", "result": "" } ],
    "details": [
@@ -127,7 +128,7 @@
    "stage": "F",
    "fixes": "The small rotating profile pictures near the top (the 'blinking small profiles' you noticed) cost a 25-30 ms whole-page layout about once a second, even when you are not scrolling.",
    "gate": "Cause found (P14): swapping the pictures in and out is what makes the whole page re-lay out. Next gate: a build that keeps the pictures in place must remove that layout on the phone.",
-   "next": "The st5 phone test gave a mixed result: the swap is fixed, the slide start is not. The lead decides next: a test that splits the slide start, a test of the overall gain, or park it.",
+   "next": "Mixed st5 result. Next: count where the start of each slide still re-lays out the page (two new test builds, counts in Chrome, then a Safari recording on the phone; no timing test).",
    "owner": "fix-scroll-engine with de-pm-hero",
    "checks": [ { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "Yes. With the pictures kept in place, the whole-page layout at each tick was gone in 65 of 67 ticks (scripted scroll, OBSERVED). A layout boundary around the section removed the hitches over 50 ms at rest (11 to 0) but kept most frames over 34 ms; each layout got cheaper, not by half." }, { "id": "P-039", "what": "st5 phone test: does the real fix also stop the whole-page layout?", "result": "Partly. The picture swap no longer re-lays out the page (1 of 31 ticks), but the start of each slide still does in 15 of 33 ticks. At rest, hitches over 34 ms fell from 70 to 29 in 40 s, and over 50 ms from 4 to 0 (OBSERVED)." } ],
    "details": [
@@ -145,7 +146,7 @@
    "fixes": "All of today's candidate fixes together: the countdown fix, the panel fix, the card reveal fix and F3.",
    "felt": { "answer": "better", "text": "Your own look on the phone (not blind): on the hero and at the end of the page, B felt quite a bit smoother than the original." },
    "gate": "Each part still needs its own phone test and review before it can land; the combined build is a preview.",
-   "next": "The parts go through their own phone tests (robot-finger tool fix first). Your idea about style recalculation is being checked separately.",
+   "next": "Paused by your decision (19:27Z): timing tests are on hold. The parts wait for their own tests; your idea about style recalculation is being worked on first.",
    "owner": "iphone-runner (builds), lead",
    "checks": [],
    "details": [
@@ -161,7 +162,7 @@
    "fixes": "You saw style recalculation taking about 19-20 ms at times, more than a 60 Hz frame allows (16.7 ms). Your two guesses: complex nested CSS makes selector matching slow, or the images (rotation, resizing) cost work every frame. You also asked about smaller images and plain-CSS effects.",
    "felt": { "answer": "not-yet" },
    "gate": "Find out whether either guess explains the slow frames before anything is built.",
-   "next": "Top priority (your decision). de-style-recalc proposed a fix: pause the page's hidden scenes in a narrower way so fewer elements get their style recalculated. fix-scene-scope builds it, checks it in Chrome, then it goes to the phone next.",
+   "next": "Top priority. fix-scene-scope checks its narrower scene pause in Chrome (counts), then records it on the phone: how many nested layouts happen at the section switch (a recording, not a timing test).",
    "owner": "de-style-recalc, fix-scene-scope",
    "checks": [],
    "details": [
@@ -327,7 +328,7 @@
   }
  ],
  "upcoming": [
-  { "title": "Possible fix for slow style recalculation: a phone test, fast-tracked", "when": "as soon as de-style-recalc proposes one", "item": "style-recalc" },
-  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the P-036 robot-finger test passes", "item": "f3-arm-scope" }
+  { "title": "Phone recording of the scene-scope fix: style and layout counts, no timing", "when": "after its Chrome count check", "item": "style-recalc" },
+  { "title": "Blind swipe test of F3 (middle of the page)", "when": "paused: timing and feel tests are on hold", "item": "f3-arm-scope" }
  ]
 }
