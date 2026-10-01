@@ -75,7 +75,9 @@ test('I-037: no iPhone tool picks the first listed target or connects to any tar
   }
   const g = read('lib/gesture-run.mjs');
   assert.match(g, /wipPage\(\{ appId: front\.pid \? `PID:\$\{front\.pid\}` : null \}\)/, 'gesture: Safari\'s pid from WDA picks its tab');
-  assert.match(g, /c = await openTab\(\(\) => true, o\);/);
+  // the first connect: any page by default (I-038 added the `match` option), narrowed by Safari's appId
+  assert.match(g, /export function wipPage\(\{ appId = null, match = \(\) => true, /);
+  assert.match(g, /c = await openTab\(match, o\);/);
   assert.match(g, /c = await openTab\(host, o\);/);
 });
 

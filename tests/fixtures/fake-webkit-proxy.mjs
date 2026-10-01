@@ -30,6 +30,9 @@
 // background about:blank web view (PID:1304) whose websocket opens but never answers a command, like the real one.
 // --extra-tabs-after-reload (review-t1a N1): from the first reload on, Safari also lists a second tab on the same host
 // ("second copy", so a reconnect by host is AMBIGUOUS) and an unrelated private tab ("Private Inbox", another LAN host).
+// --one-client-per-page (incident I-038): like ios_webkit_debug_proxy, a page has one inspector client; a newer
+// connection takes it, and the older one's next command is answered with a close (1001 "Page 9222/1 claimed by
+// local") and never run (iwdp_start_devtools / iwdp_on_frame).
 import http from 'node:http';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
@@ -78,6 +81,8 @@ const DOC_H = Number(arg('doc-height') || 6035);
 const WIDTH = Number(arg('width') || 430);
 const BLANK_VIEW = process.argv.includes('--blank-view');
 const EXTRA_TABS = process.argv.includes('--extra-tabs-after-reload');
+const ONE_CLIENT = process.argv.includes('--one-client-per-page');
+const owner = new Map(); // page path -> the socket that holds the page
 const HIDE_AFTER = arg('hide-after-strokes') === null ? Infinity : Number(arg('hide-after-strokes'));
 let hidden = false, strokesPlayed = 0;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -173,6 +178,9 @@ server.on('upgrade', (req, sock) => {
   sock.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
   if (req.url === '/devtools/page/2') { log({ blankViewConnected: true }); sock.on('data', () => {}); sock.on('error', () => {}); return; } // the background view: silent
   const send = (o) => { if (!sock.destroyed) sock.write(frame(JSON.stringify(o))); };
+  if (owner.has(req.url)) log({ pageTaken: req.url });
+  owner.set(req.url, sock);
+  sock.on('close', () => { if (owner.get(req.url) === sock) owner.delete(req.url); });
   const targetId = `page-${tab.gen}`; // target ids change on every navigation, like iOS
   send({ method: 'Target.targetCreated', params: { targetInfo: { targetId, type: 'page' } } });
   const handle = async (msg) => {
@@ -206,6 +214,12 @@ server.on('upgrade', (req, sock) => {
       if (op === 9) { sock.write(Buffer.concat([Buffer.from([0x8a, payload.length]), payload])); continue; }
       parts.push(payload);
       if (!fin) continue;
+      if (ONE_CLIENT && owner.get(req.url) !== sock) { // someone took our page: close 1001 instead of an answer
+        const reason = Buffer.from('Page 9222/1 claimed by local');
+        sock.end(Buffer.concat([Buffer.from([0x88, 2 + reason.length, 0x03, 0xe9]), reason]));
+        log({ stolenClose: req.url });
+        return;
+      }
       const text = Buffer.concat(parts).toString('utf8'); parts = [];
       try { handle(JSON.parse(text)).catch((e) => log({ error: String(e) })); } catch (e) { log({ error: String(e) }); }
     }

@@ -9,6 +9,15 @@ import { lanSafeUrl, lanSafeText } from './iphone-url.mjs';
 
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// One remote inspector per page (incident I-038). WebKit's RemoteInspector keeps one connection per target and
+// silently ignores a second client's setup while one exists (RemoteInspectorCocoa.mm receivedSetupMessage:
+// `if (m_targetConnectionMap.contains(targetIdentifier)) return;`), and forwards any client's data to the holder's
+// connection (receivedDataMessage), whose replies go to the holder: CONFIRMED, github.com/WebKit/WebKit main, read
+// 2026-10-01. So while Safari's Web Inspector on the Mac (Develop menu) is attached to the tab, our connection gets no
+// page target or no answers, and it can take the tab whenever ours lets go (a reload, a reconnect). Named in every
+// such failure, since we cannot see that client.
+export const INSPECTOR_HINT = 'is another inspector client attached to this tab, e.g. Safari\'s Web Inspector (Develop menu) on the Mac? Close it: one remote inspector per page (I-038)';
+
 // Every failure closes the socket before it throws (incident I-043: a "no page target" left it open, so one
 // `iphone.mjs open` held up to 6 sockets to the proxy, one per openTab try, until the process exited).
 export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
@@ -23,6 +32,21 @@ export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
   } catch (e) { fail(e); } finally { clearTimeout(openTimer); }
   let id = 0, innerId = 0;
   const targets = {}, pending = new Map(), listeners = [];
+  // A closed connection fails fast (incident I-038). ios_webkit_debug_proxy keeps ONE inspector client per page: a newer
+  // connection to the tab takes the page from this one (iwdp_start_devtools, "Taking page ... from local"), and this
+  // one's next command is answered with a close, code 1001 "Page <port>/<n> claimed by ...", never forwarded
+  // (iwdp_on_frame, "someone stole our page?"): CONFIRMED, github.com/google/ios-webkit-debug-proxy
+  // src/ios_webkit_debug_proxy.c (master, read 2026-10-01); seen on the Simulator with morph-log's connection. Every
+  // later command used to wait out its timeout on the dead socket.
+  let closed = null, selfClosed = false;
+  const closedError = () => Object.assign(new Error(selfClosed ? 'inspector connection closed (by this tool)'
+    : `inspector connection closed by the proxy (code ${closed.code}${closed.reason ? ` "${closed.reason}"` : ''}): another inspector connection took this tab (one per page, I-038)`), { closed: true });
+  ws.addEventListener('close', (ev) => {
+    closed = { code: ev.code, reason: ev.reason || '', self: selfClosed, at: Date.now() };
+    const e = closedError();
+    for (const p of pending.values()) p.rej(e);
+    pending.clear();
+  });
   ws.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
     if (m.method === 'Target.targetCreated') { targets[m.params.targetInfo.type] = m.params.targetInfo.targetId; return; }
@@ -34,11 +58,12 @@ export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
     }
   };
   await sleep(800);
-  if (!targets.page) fail(new Error('no page target (phone locked / Safari backgrounded?)'));
+  if (!targets.page) fail(new Error(`no page target (phone locked / Safari backgrounded? or ${INSPECTOR_HINT})`));
   const send = (method, params = {}, type = 'page', tmo = timeoutMs) => new Promise((res, rej) => {
+    if (closed) { rej(closedError()); return; }
     const targetId = targets[type] ?? targets.page;
     const iid = ++innerId;
-    const timer = setTimeout(() => { pending.delete(iid); rej(new Error(`${method} timed out after ${tmo}ms`)); }, tmo);
+    const timer = setTimeout(() => { pending.delete(iid); rej(new Error(`${method} timed out after ${tmo}ms (${INSPECTOR_HINT})`)); }, tmo);
     pending.set(iid, {res: v => { clearTimeout(timer); res(v); }, rej: e => { clearTimeout(timer); rej(e); }});
     ws.send(JSON.stringify({id: ++id, method: 'Target.sendMessageToTarget',
       params: {targetId, message: JSON.stringify({id: iid, method, params})}}));
@@ -48,7 +73,9 @@ export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
     if (r.wasThrown) throw new Error(JSON.stringify(r.result));
     return r.result.value;
   };
-  return {ws, targets, send, evaluate, on: (fn) => listeners.push(fn), close: () => ws.close()};
+  return {ws, targets, send, evaluate, on: (fn) => listeners.push(fn), close: () => { selfClosed = true; ws.close(); },
+    /** null while open; {code, reason, self, at} once closed (self: by close()) */
+    get closed() { return closed; }};
 }
 
 // Which listed target is Safari's tab (incident I-037). The proxy's /json lists every inspectable web view on the
@@ -118,7 +145,7 @@ export async function openTab(match, {tries = 6, port = Number(process.env.FW_IP
       await sleep(1000 * 2 ** i);
     }
   }
-  throw new Error(`BLOCKED: cannot reach Safari tab (${lastErr?.message}). Unlock the iPhone and bring Safari to the foreground.`);
+  throw new Error(`BLOCKED: cannot reach Safari tab (${lastErr?.message}). Unlock the iPhone, bring Safari to the foreground, and close any Web Inspector attached to the tab on the Mac (Safari's Develop menu; one remote inspector per page, I-038).`);
 }
 
 // Navigate the tab (Page.navigate is unavailable on iOS 26) and reconnect once the new URL is listed.

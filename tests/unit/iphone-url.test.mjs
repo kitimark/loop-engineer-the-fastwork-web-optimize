@@ -75,6 +75,8 @@ test('lanSafeText (review-t1a N1): every LAN url and bare LAN host in free text 
       'no tab matching "lan-host:5492"; targets: http://lan-host:5492/ [PID:613], about:blank [PID:1304]'],
     ['(http://172.16.0.9:61000/sub/?x=1).', '(http://lan-host:61000/sub/?x=1).'], // trailing punctuation is not part of the url
     ['"url":"http://10.1.2.3:5441/","t":"x"', '"url":"http://lan-host:5441/","t":"x"'],
+    // JSON text (gesture --inject values, I-038): a url stops at an escape, so `\"` survives and the JSON still parses
+    [JSON.stringify({ h: 'http://10.9.8.7:1/a?q="x"' }), JSON.stringify({ h: 'http://lan-host:1/a?q="x"' })],
     ['https://example.com/?u=http://192.168.1.2/&v=/10.0.0.1/', 'https://example.com/?u=http://lan-host/&v=/lan-host/'],
     ['at 100.64.1.1. user@192.168.1.4 ::ffff:169.254.3.4 phone.local:5492', 'at lan-host. user@lan-host ::ffff:lan-host lan-host:5492'],
     ['ws://localhost:9222/devtools/page/1 http://127.0.0.1:5300/ 203.0.113.5:80 http://203.0.113.5/x', null], // loopback, public: kept

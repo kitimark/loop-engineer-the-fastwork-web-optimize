@@ -1,12 +1,20 @@
 #!/usr/bin/env node
 // Stand-in for fixes/morph-webkit/morph-log.mjs (install | read --owner <o> --label <l> --out <file>) in the
 // `iphone.mjs gesture --morph-log` test: install logs, read writes a small log in morph-log's frame format
-// ([t, dt, scrollY, --morph, nav classes, ...]) to --out.
+// ([t, dt, scrollY, --morph, nav classes, ...]) to --out. With FAKE_MORPH_PEER=1 each call also opens its own inspector
+// connection to the tab on FW_IPHONE_PORT, like the real one, which takes the tab from the gesture run's connection
+// (incident I-038): install closes it, read just exits.
 import { appendFileSync, writeFileSync } from 'node:fs';
 const a = process.argv.slice(2);
 const opt = (n) => { const i = a.indexOf(`--${n}`); return i < 0 ? null : a[i + 1]; };
 if (process.env.FAKE_MORPH_LOG) appendFileSync(process.env.FAKE_MORPH_LOG, JSON.stringify(a) + '\n');
 if (!opt('owner')) { console.error('morph-log: --owner required'); process.exit(2); }
+if (process.env.FAKE_MORPH_PEER === '1') {
+  const { openTab } = await import('../../tools/lib/wip.mjs');
+  const c = await openTab(() => true, { tries: 2 });
+  await c.evaluate('1');
+  if (a[0] === 'install') c.close();
+}
 if (a[0] === 'install') { console.log('installed on fake'); process.exit(0); }
 if (a[0] === 'read') {
   const frames = [[0, 16, 0, null, ''], [16, 17, 5220, 0.4, 'm'], [33, 60, 5220, 1, 'me'], [50, 30, 5220, 1, 'me'], [66, 16, 4000, 0, '']];

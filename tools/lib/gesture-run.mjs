@@ -1,7 +1,8 @@
 // `node tools/iphone.mjs gesture <script.json> --owner <o>`: play a compiled gesture script on the iPhone.
 // Strokes go to WebDriverAgent (tools/lib/wda.mjs, real OS-level touches); everything else goes over the
 // WebKit Inspector Protocol (tools/lib/wip.mjs): the recorder (tools/lib/gesture-rec.mjs), marks, `until`
-// polls and the pull-to-refresh check, reloads, and optionally the morph logger. NEW MEASUREMENT CODE (a new
+// polls and the pull-to-refresh check, reloads, and optionally an in-page logger (--inject, on this same
+// connection) or the morph logger (--morph-log, a separate process with its own connection: I-038). NEW MEASUREMENT CODE (a new
 // stimulus, research/architecture/finger-simulation.md): gesture numbers compare only with gesture numbers of
 // the same script hash, never with `iphone.mjs scroll` or finger runs.
 //
@@ -13,7 +14,8 @@
 // asked for /source or elements, and SIGINT/SIGTERM stop between strokes (a stroke in flight finishes: WDA
 // plays it as one unit).
 import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
+import { resolve, dirname, join, basename } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { openTab, safariTab, sleep } from './wip.mjs';
@@ -34,7 +36,7 @@ export const TOOL_FILES = ['tools/iphone.mjs', 'tools/lib/gesture.mjs', 'tools/l
  * a sha256 (16 hex) of each file as it ran plus of the injected recorder, so two gesture results compare
  * only when these match (like the script hash for the stimulus).
  */
-export function toolVersion(root = REPO, { morphLog } = {}) {
+export function toolVersion(root = REPO, { morphLog, inject } = {}) {
   const git = (...a) => { const r = spawnSync('git', ['-C', root, ...a], { encoding: 'utf8', timeout: 10000 }); return r.status === 0 ? r.stdout.trim() : null; };
   const h = (s) => createHash('sha256').update(s).digest('hex').slice(0, 16);
   const files = {};
@@ -42,32 +44,63 @@ export function toolVersion(root = REPO, { morphLog } = {}) {
   const st = git('status', '--porcelain', '--', ...TOOL_FILES);
   const v = { gitHead: git('rev-parse', 'HEAD'), dirty: st === null ? null : st.length > 0, files, recorder: h(RECORDER_JS), compiler: COMPILER_VERSION };
   if (morphLog) { const f = resolve(morphLog); let sha = null; try { sha = h(readFileSync(f)); } catch {} v.morphLog = { file: f.startsWith(root + '/') ? f.slice(root.length + 1) : f, sha }; } // the --morph-log script shapes res.morph (review-gesture-2)
+  if (inject) { const f = resolve(inject); let sha = null; try { sha = h(readFileSync(f)); } catch {} v.inject = { file: f.startsWith(root + '/') ? f.slice(root.length + 1) : f, sha }; } // the --inject module runs in the page
   return v;
 }
 
-/** The page over WIP. `match`: tab matcher for openTab (a host string after the first connect). `appId`: Safari's
- *  app on the proxy's list ("PID:<pid>" from WDA's activeAppInfo), so no other app's web view is picked (I-037). */
-export function wipPage({ appId = null } = {}) {
+/** The page over WIP. `appId`: Safari's app on the proxy's list ("PID:<pid>" from WDA's activeAppInfo), so no other
+ *  app's web view is picked (I-037). `match`: the first connect's tab matcher (openTab; default any page); after it,
+ *  reconnects match the tab by its host.
+ *
+ *  Survives another inspector connection to the tab (incident I-038): ios_webkit_debug_proxy keeps one client per
+ *  page, so morph-log's install / read process took the tab, and the run's next command got a close (ws code 1001)
+ *  instead of an answer (wip.mjs connect, CONFIRMED in the proxy's source); every later call used to time out on the
+ *  dead socket. Now a call on a connection the proxy closed first reconnects to the tab (taking it back), and a call
+ *  answered by the close is retried once on the new connection when it is idempotent (state, install, read, href,
+ *  reload's request; mark too: the proxy does not forward a command it answers with a close, and at worst a mark is
+ *  recorded twice). `evaluate` (--inject's expressions, unknown code) reconnects first but is never retried. The
+ *  in-page recorder lives in the document, so a reconnect loses nothing. Every reconnect is listed in
+ *  `page.reconnects` [{at, code, during}] (saved as run.reconnects). */
+export function wipPage({ appId = null, match = () => true, log = (s) => console.error(s) } = {}) {
   const o = appId ? { appId } : {};
   let c = null, host = null;
+  const reconnects = [];
+  const live = async (during) => { // the proxy closed it (not we): reconnect to the same tab
+    if (!c || !c.closed || c.closed.self) return c;
+    const was = c.closed;
+    log(`inspector connection closed by the proxy (code ${was.code}) before ${during}: reconnecting (I-038)`);
+    c = await openTab(host, o);
+    reconnects.push({ at: new Date().toISOString(), code: was.code, during });
+    return c;
+  };
+  const call = async (expr, during, { retry = true } = {}) => {
+    await live(during);
+    try { return await c.evaluate(expr); } catch (e) {
+      if (!retry || !e?.closed || c.closed?.self) throw e;
+      await live(during);
+      return c.evaluate(expr);
+    }
+  };
   const page = {
+    reconnects,
     async connect() {
-      c = await openTab(() => true, o);
+      c = await openTab(match, o);
       host = new URL(await c.evaluate('location.href')).host;
       return page;
     },
     async state() {
       const macBefore = Date.now();
-      const [y, maxY, ih, pageT, vis, iw] = await c.evaluate(STATE_JS);
+      const [y, maxY, ih, pageT, vis, iw] = await call(STATE_JS, 'state');
       return { y, maxY, ih, pageT, vis, iw, macBefore, macAfter: Date.now() };
     },
-    install: () => c.evaluate(RECORDER_JS),
-    mark: (name) => c.evaluate(markJs(name)),
-    async read() { const v = await c.evaluate(READ_JS); return v ? JSON.parse(v) : null; },
-    href: () => c.evaluate('location.href'),
+    install: () => call(RECORDER_JS, 'install'),
+    evaluate: (expr) => call(expr, 'inject', { retry: false }), // --inject's expressions, on this connection (I-038)
+    mark: (name) => call(markJs(name), 'mark'),
+    async read() { const v = await call(READ_JS, 'read'); return v ? JSON.parse(v) : null; },
+    href: () => call('location.href', 'href'),
     /** location.reload() from the top (Safari restores the scroll position otherwise), reconnect to the new document. */
     async reload() {
-      await c.evaluate(`window.__fwgOld = 1; scrollTo(0, 0); setTimeout(() => location.reload(), 400); 'ok'`);
+      await call(`window.__fwgOld = 1; scrollTo(0, 0); setTimeout(() => location.reload(), 400); 'ok'`, 'reload');
       c.close();
       await sleep(1200);
       for (let i = 0; ; i++) {
@@ -88,7 +121,9 @@ const holds = (cond, s) => (cond.kind === 'atEnd' ? s.y >= s.maxY - 2 : cond.kin
 
 /**
  * Execute a compiled program. `wda`: a session from wda.mjs createSession (actions()); `page`: wipPage();
- * `check()`: throws to abort (lease lost, signal); `morph`: optional {install(seg), read(seg)}.
+ * `check()`: throws to abort (lease lost, signal); `morph`: optional {install(seg), read(seg)}; `inject`: optional
+ * loadInject() result, evaluated through page.evaluate on the run's own connection (its reads land in res.inject,
+ * which exists only then, and with morph: true also in res.morph).
  * Resolves with {strokes, segments, untils, reloads, loops, morph, errors, aborted}; never loses the
  * recorded data: on an error it still reads the recorder and returns what it has (aborted = the reason).
  *
@@ -99,15 +134,17 @@ const holds = (cond, s) => (cond.kind === 'atEnd' ? s.y >= s.maxY - 2 : cond.kin
  * that differ by < 1 px (waiting up to `stillTimeoutMs` for momentum to end), both >= the stroke's pull guard
  * (a page still coasting toward the top would otherwise pass a one-sample check and reach 0 mid-stroke).
  */
-export async function runProgram(prog, { wda, page, check = () => {}, morph = null, pollMs = 100, settleMs = 300, stillGapMs = 100, stillTimeoutMs = 5000, endZonePx = 150, log = (s) => console.error(s) }) {
+export async function runProgram(prog, { wda, page, check = () => {}, morph = null, inject = null, pollMs = 100, settleMs = 300, stillGapMs = 100, stillTimeoutMs = 5000, endZonePx = 150, log = (s) => console.error(s) }) {
   const screenW = prog.screen?.[0] ?? 430;
   const res = { strokes: [], segments: [], untils: [], reloads: [], loops: [], morph: [], errors: [], aborted: null };
+  if (inject) res.inject = [];
   let seg = null;
   const sync = async () => { const s = await page.state(); if (seg) seg.sync.push([s.macBefore, s.pageT, s.macAfter]); return s; };
   const openSeg = async () => {
     await page.install();
     seg = { index: res.segments.length, sync: [], startWall: new Date().toISOString() };
     if (morph) { try { await morph.install(seg.index); } catch (e) { res.errors.push(`morph-log install: ${e.message}`); } }
+    if (inject) { try { await page.evaluate(inject.install(seg.index)); } catch (e) { res.errors.push(`inject install: ${e.message || JSON.stringify(e)}`); } }
     return sync();
   };
   const closeSeg = async () => {
@@ -118,6 +155,14 @@ export async function runProgram(prog, { wda, page, check = () => {}, morph = nu
     try { buf = await page.read(); } catch (e) { res.errors.push(`recorder read: ${e.message}`); }
     res.segments.push({ ...(buf || { frames: [], touches: [], marks: [] }), sync: s.sync, startWall: s.startWall });
     if (morph) { try { const m = await morph.read(s.index); if (m) res.morph.push(m); } catch (e) { res.errors.push(`morph-log read: ${e.message}`); } }
+    if (inject) {
+      try {
+        let v = await page.evaluate(inject.read(s.index));
+        if (typeof v === 'string') { try { v = JSON.parse(v); } catch {} }
+        res.inject.push({ seg: s.index, name: inject.name, value: v ?? null });
+        if (inject.morph && v && Array.isArray(v.frames)) res.morph.push({ seg: s.index, frames: v.frames, summary: v.summary ?? null });
+      } catch (e) { res.errors.push(`inject read: ${e.message || JSON.stringify(e)}`); }
+    }
   };
   async function waitCond(cond, timeoutMs) {
     const t0 = Date.now();
@@ -218,6 +263,35 @@ export async function runProgram(prog, { wda, page, check = () => {}, morph = nu
   return res;
 }
 
+/**
+ * `--inject <logger.mjs>` (I-038): an in-page logger evaluated on the gesture tool's OWN inspector connection, so no
+ * second connection opens and closes next to it (with --morph-log's separate process, the run's connection stopped
+ * answering after the hook's connection closed: 0 strokes, 3 of 3 on the phone; OBSERVED, cause unknown).
+ * The module exports `install` and `read`, each an expression string or a function ({seg, label}) returning one;
+ * optional `name` (default: the file name) and `morph: true`. install runs right after each recorder install (every
+ * page load), read right after each segment's recorder read; read's value (a JSON string is parsed) is stored as
+ * run.inject[] {seg, name, value}, and with morph: true its {frames, summary} also feed run.morph / summary.morph
+ * (frames in morph-log's format [t, dt, scrollY, --morph, classes]).
+ */
+export async function loadInject(file, { label = 'run' } = {}) {
+  const f = resolve(file);
+  if (!existsSync(f)) throw new Error(`--inject ${file}: no such file`);
+  const m = await import(pathToFileURL(f).href);
+  const expr = (k) => {
+    const v = m[k];
+    if (typeof v === 'string') return () => v;
+    if (typeof v === 'function') {
+      return (seg) => {
+        const e = v({ seg, label });
+        if (typeof e !== 'string') throw new Error(`--inject ${file}: ${k}() must return an expression string`);
+        return e;
+      };
+    }
+    throw new Error(`--inject ${file}: export ${k} (an expression string, or a function ({seg, label}) returning one)`);
+  };
+  return { file: f, name: typeof m.name === 'string' ? m.name : basename(f).replace(/\.m?js$/, ''), morph: m.morph === true, install: expr('install'), read: expr('read') };
+}
+
 /** `--morph-log <path to morph-log.mjs>`: install after each recorder install, read before each segment ends. */
 function morphHook(script, { owner, label, outBase }) {
   const run = (args) => {
@@ -265,10 +339,12 @@ export async function gestureCmd({ log = console.log, ...args }) {
 }
 
 async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub }) {
-  if (!arg) throw new Error('usage: node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--morph-log <morph-log.mjs>] [--out file] [--dry-run]');
+  if (!arg) throw new Error('usage: node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>] [--out file] [--dry-run]');
   const file = resolve(arg);
   const script = JSON.parse(readFileSync(file, 'utf8'));
   const prog = compileScript(script, { params: cliParams(argv) });
+  if (opt('inject') && opt('morph-log')) throw new Error('--inject and --morph-log both feed run.morph: pass one (--inject runs on this connection, I-038)');
+  const inject = opt('inject') ? await loadInject(opt('inject'), { label: opt('label', 'run') }) : null; // before WDA or the page are touched
   const head = `${prog.name} v${prog.version} hash ${prog.hash.slice(0, 12)} params ${JSON.stringify(prog.params)}: ${prog.strokes.length} strokes, ~${Math.round(prog.estMs / 1000)} s`;
   if (flag('dry-run')) {
     log(head);
@@ -310,24 +386,28 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     log(`GESTURE ${head} on ${await page.href()}`);
     const morphLog = opt('morph-log');
     if (morphLog && !existsSync(morphLog)) throw new Error(`--morph-log ${morphLog}: no such file`);
+    if (morphLog) log('warning: --morph-log runs a separate process with its own inspector connection per segment, which takes the tab from this run\'s connection (the proxy allows one per page, I-038): the run reconnects (run.reconnects), but prefer --inject <logger.mjs>, which runs on this connection');
     res = await runProgram(prog, {
       wda: session, page,
       morph: morphLog ? morphHook(resolve(morphLog), { owner, label, outBase: out.replace(/\.json$/, '') }) : null,
+      inject,
       check: () => { if (stop.reason) throw new Abort(stop.reason); if (!lease()) throw new Abort('lost the iphone lease (expired or released): stopped between strokes'); },
     });
   } finally {
     process.off('SIGINT', onSig); process.off('SIGTERM', onSig);
+    if (res && page?.reconnects.length) res.reconnects = page.reconnects; // the proxy closed the run's connection (I-038)
     page?.close();
     await session.close();
   }
   const doc = {
-    meta: { kind: 'gesture', owner, label, date: new Date(ts).toISOString(), device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', tool: toolVersion(REPO, { morphLog: opt('morph-log') }), wda: { ref: readConfig().ref || WDA_REF, build: st.build?.version ?? null, os: st.os?.version ?? null }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file },
+    meta: { kind: 'gesture', owner, label, date: new Date(ts).toISOString(), device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', tool: toolVersion(REPO, { morphLog: opt('morph-log'), inject: opt('inject') }), wda: { ref: readConfig().ref || WDA_REF, build: st.build?.version ?? null, os: st.os?.version ?? null }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file },
     program: { name: prog.name, version: prog.version, compiler: prog.compiler, hash: prog.hash, params: prog.params, estMs: prog.estMs, strokes: prog.strokes },
     run: res,
   };
   const saved = (s) => lanSafeText(scrub(s)); // the record is committed under research/ (review-t1a N1)
   res.errors = res.errors.map(saved);
   if (res.aborted) res.aborted = saved(res.aborted);
+  if (res.inject) res.inject = JSON.parse(lanSafeText(JSON.stringify(res.inject))); // a logger's values may carry the page's href
   doc.summary = summarizeRun(res.segments, res.strokes, { morph: res.morph });
   writeFileSync(out, JSON.stringify(doc));
   log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, motion: doc.summary.motion, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));

@@ -99,7 +99,7 @@ export function lanSafeUrl(u) {
 export function lanSafeText(t) {
   if (typeof t !== 'string' || !t) return t;
   return t
-    .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s"'<>`]+/gi, (u) => {
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s"'<>`\\]+/gi, (u) => {
       const tail = (u.match(/[),.;:\]]+$/) || [''])[0];
       const core = tail ? u.slice(0, -tail.length) : u;
       return lanSafeUrl(core) + tail;

@@ -340,6 +340,75 @@ test('--morph-log: installed after each page load, read per segment, morph-activ
   assert.deepEqual(doc.summary.morph, { frames: 6, p50: 30, p95: 60, gt50Pct: 33.3 });
   // the morph logger's code is part of the tool version (review-gesture-2)
   assert.deepEqual(doc.meta.tool.morphLog, { file: 'tests/fixtures/fake-morph-log.mjs', sha: sha16(readFileSync(join(FIX, 'fake-morph-log.mjs'))) });
+  assert.match(r.out, /warning: --morph-log runs a separate process with its own inspector connection per segment.*prefer --inject/, 'I-038');
+  assert.ok(!('inject' in doc.run), 'no --inject: no run.inject');
+  assert.ok(!('reconnects' in doc.run), 'nothing closed the run\'s connection: no run.reconnects');
+});
+
+test('--morph-log survives morph-log\'s own connection taking the tab from the run\'s connection (one client per page, I-038)', async () => {
+  const phone = await fakePhone(['--one-client-per-page']);
+  lock('acquire', 'iphone', '--owner', 'me');
+  const out = join(phone.dir, 'mp.json');
+  const t0 = Date.now();
+  const r = await nodeAsync(IPHONE, ['gesture', scriptFile([{ type: 'reload' }, S({}), { type: 'mark', name: 'mid' }, { type: 'reload' }, S({})]), '--owner', 'me', '--label', 'mp', '--out', out, '--morph-log', join(FIX, 'fake-morph-log.mjs')],
+    { env: { ...phone.env, FAKE_MORPH_PEER: '1' }, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.ok(Date.now() - t0 < 30000, 'no command waited out its 15 s timeout on a dead connection');
+  const wip = phone.wip();
+  assert.ok(wip.filter((x) => x.pageTaken).length >= 4, 'each morph-log install and read took the tab');
+  assert.equal(wip.filter((x) => x.stolenClose).length, 3, 'the run\'s next command after each, but the last read, was answered with a close');
+  const doc = JSON.parse(readFileSync(out, 'utf8'));
+  assert.deepEqual(doc.run.errors, []);
+  assert.equal(doc.run.aborted, null);
+  assert.equal(actionsCalls(phone.wda()).length, 2);
+  assert.deepEqual(doc.run.morph.map((m) => m.seg), [0, 1]);
+  assert.ok(doc.run.segments.length === 2 && doc.run.segments.every((s) => s.frames.length > 5), 'the recorder data survives the reconnects');
+  assert.deepEqual(doc.run.segments[0].marks.map((m) => m[1]), ['mid']);
+  // one reconnect after each install (the segment's state poll) and after the first read (the reload); the last read is
+  // followed by nothing that needs the page
+  assert.deepEqual((doc.run.reconnects || []).map((x) => [x.code, x.during]), [[1001, 'state'], [1001, 'reload'], [1001, 'state']], r.out);
+  assert.match(r.out, /inspector connection closed by the proxy \(code 1001\) before (state|reload): reconnecting \(I-038\)/);
+  assert.doesNotMatch(r.out, /timed out/);
+});
+
+test('--inject (I-038): the logger runs on the run\'s own connection after each page load, read per segment; values and morph stats saved', async () => {
+  const phone = await fakePhone();
+  lock('acquire', 'iphone', '--owner', 'me');
+  const out = join(phone.dir, 'inj.json');
+  const r = await nodeAsync(IPHONE, ['gesture', scriptFile([{ type: 'reload' }, S({}), { type: 'reload' }, S({})]), '--owner', 'me', '--label', 'inj', '--out', out, '--inject', join(FIX, 'fake-inject.mjs')],
+    { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.out, /warning: --morph-log/);
+  const doc = JSON.parse(readFileSync(out, 'utf8'));
+  assert.deepEqual(doc.run.errors, []);
+  assert.deepEqual(doc.run.inject.map((x) => [x.seg, x.name, x.value.summary.seg, x.value.summary.label]), [[0, 'fake-mlog', 0, 'inj'], [1, 'fake-mlog', 1, 'inj']]);
+  for (const x of doc.run.inject) assert.ok(x.value.frames.length > 5 && x.value.summary.frames === x.value.frames.length, JSON.stringify(x.value.summary));
+  assert.deepEqual(doc.run.morph.map((m) => m.seg), [0, 1], 'morph: true feeds run.morph');
+  assert.ok(doc.summary.morph && doc.summary.morph.frames > 0, JSON.stringify(doc.summary.morph));
+  assert.ok(doc.run.segments.every((s) => s.frames.length > 5), 'the recorder still records');
+  assert.equal(actionsCalls(phone.wda()).length, 2);
+  // the logger's code is part of the tool version, like --morph-log's
+  assert.deepEqual(doc.meta.tool.inject, { file: 'tests/fixtures/fake-inject.mjs', sha: sha16(readFileSync(join(FIX, 'fake-inject.mjs'))) });
+});
+
+test('--inject is refused with --morph-log, and a missing or malformed logger is refused, before WDA or the page are touched (I-038)', async () => {
+  const phone = await fakePhone();
+  lock('acquire', 'iphone', '--owner', 'me');
+  const f = scriptFile([{ type: 'reload' }, S({})]);
+  const run = (...extra) => nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', join(phone.dir, 'x.json'), ...extra], { env: phone.env, timeout: 30000 });
+  let r = await run('--inject', join(FIX, 'fake-inject.mjs'), '--morph-log', join(FIX, 'fake-morph-log.mjs'));
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /--inject and --morph-log both feed run\.morph: pass one/);
+  r = await run('--inject', join(phone.dir, 'nope.mjs'));
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /--inject .*nope\.mjs: no such file/);
+  const bad = join(phone.dir, 'bad.mjs');
+  writeFileSync(bad, 'export const install = "1";\n');
+  r = await run('--inject', bad);
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /export read \(an expression string/);
+  assert.deepEqual(phone.wda(), [], 'no WDA call');
+  assert.ok(!existsSync(join(phone.dir, 'x.json')));
 });
 
 // ---- wda build | start | status | stop -------------------------------------------------------------------
