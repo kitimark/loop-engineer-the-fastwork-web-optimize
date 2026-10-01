@@ -159,24 +159,31 @@ Never quote "frames >20 ms" as "dropped frames" (arch-devtools §2a).
   primary to ticks after one Chrome A/A and one phone A/A show both; any verdict that differs between the two
   is reported as "threshold-sensitive".
 - Dropped ratio with each device's own period (G8) is report-only.
-- **Phone (A5):** the tick model is exact on Chrome only. On the phone, Safari's rAF runs at 60 Hz (WebKit default
+- **The tick model above is Chrome's.** Phone rate: Safari's rAF runs at 60 Hz (WebKit default
   PreferPageRenderingUpdatesNear60FPSEnabled = true: UnifiedWebPreferences.yaml main l.4810-4818,
-  safari-7624-branch ~l.6395; AnimationFrameRate.cpp l.35-66; bug 173434; CONFIRMED, claims-audit P9) and the rAF
+  safari-7624-branch ~l.6395; AnimationFrameRate.cpp l.35-66; bug 173434; CONFIRMED, claims-audit P9), and the rAF
   timestamp is the WebContent rendering-update start at 1 ms resolution, not a vsync (Document.cpp l.8959, Page.cpp
-  l.2424-2428; CONFIRMED, claims-audit P10). The nominal phone gap is 16.67 ms = 2 ticks; 8.33 ms is a unit there,
-  not a grid (75 % of gaps ≥34 ms fall off it, arch-unknowns V-U2). Low Power Mode halves it to 30 Hz
-  (halfSpeedThrottlingReasons). Phone verdicts report
-  both forms (dt > 50 and k≥7; dt > 34 and k≥5) and flag frames within 4 ms of a threshold; a verdict that differs
-  between the forms is "threshold-sensitive" (the goal count did: aw1-10c ">50" 3/3/2 vs k≥7 1/2/1).
+  l.2424-2428; CONFIRMED, claims-audit P10). Low Power Mode halves rAF to 30 Hz (halfSpeedThrottlingReasons).
+- **A5 (phone thresholds).** Safari's rAF stamps mark the start of the rendering update at 1 ms resolution and are not
+  vsync-quantized above one vsync (claims-audit §2.3 re-bin: 198 349 gaps, smooth tail 25-75 ms, catch-up gaps
+  < 12 ms). The phone verdict therefore uses ms thresholds only:
+  - goal: dt > 50 ms (the user's goal), target 0;
+  - secondary: dt > 34 ms;
+  - sensitivity: also report the counts at the threshold ± 4 ms (dt > 46 / dt > 54; dt > 30 / dt > 38). A verdict
+    that differs between the −4 and +4 counts is 'threshold-sensitive'.
+
+  k forms are not used on the phone. Record Low Power Mode per run (rAF halves to 30 Hz). Chrome keeps k≥5 / k≥7
+  (BeginFrame stamps are vsync-aligned). (Adopted by the lead 2026-10-01, CLAUDE.md 668b612; replaces the
+  provisional dual-form rule and the v≥3 proposal.)
 
 ### 3.3 Primary and diagnostic metrics per device and driver
 
 | device / driver | primary | diagnostic |
 |---|---|---|
 | Chrome A/B (`fix.mjs ab`) | frames >50 and >34 per phase, within ONE hold (>34 varies ±2 across holds) | fps, >20, p50/p95, LoAF, forced ms, cdp counts, trace classes |
-| phone S / W | frames k≥5 and k≥7 in the topic window and the full pass; topic-window median ticks | fps, phase fps, Timeline counts |
-| phone M (morph driver) | moving-m p50 and p95 ticks; held m=1 p95; **time-since-tween-start profile** (fwd/rev) and \|Δm\|-weighted dt (A6) | per-m-bin dt (replaced as the profile: the cost tracks time since start, not m), Timeline heavy-paint share (frames with ≥80 Paint records), layer/filter counts |
-| phone G / F | frames k≥7 per pass; morph-active p95; touch input delay (§3.6) | everything above |
+| phone S / W | frames dt > 34 and dt > 50 (plus ±4 ms counts, A5) in the topic window and the full pass; topic-window median dt (ms) | fps, phase fps, Timeline counts |
+| phone M (morph driver) | moving-m p50 and p95 dt (ms); held m=1 p95; **time-since-tween-start profile** (fwd/rev) and \|Δm\|-weighted dt (A6) | per-m-bin dt (replaced as the profile: the cost tracks time since start, not m), Timeline heavy-paint share (frames with ≥80 Paint records), layer/filter counts |
+| phone G / F | frames dt > 50 (plus ±4 ms counts) per pass; morph-active p95; touch input delay (§3.6) | everything above |
 
 Every metric names what it can't see in the README that quotes it. MWFI (motion-weighted frame interval,
 Σdx·dt / Σdx; de-unknowns-ux, 3/3 user verdicts) is reported next to the counts as a candidate until the pacing page

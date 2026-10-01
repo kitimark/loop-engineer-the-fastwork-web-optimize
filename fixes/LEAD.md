@@ -135,9 +135,8 @@ minutes. mgmt-ops validates it, the lead
 ranks the queue (by [`DIRECTION.md`](DIRECTION.md)). **Reorders only at block boundaries**; a running block is
 never interrupted. A rejected ticket gets its reason in one message. Block rules (warm-up, sentinel, ≤9 counted
 runs, ABBA order, max 2 blocks): `CLAUDE.md` "Shared devices" and protocol §5, plus (amendments A3-A6): warm-up
-per arm's port, not only the control's (A3); battery temperature and charging state per run (A4); phone verdicts
-in both threshold forms, dt > 50 / k≥7 and dt > 34 / k≥5, frames within 4 ms of a threshold flagged, a verdict
-that differs between the forms is threshold-sensitive (A5); M runs report the time-since-tween-start profile and
+per arm's port, not only the control's (A3); battery temperature and charging state per run (A4); thresholds:
+phone: dt > 50 / dt > 34 plus counts at ±4 ms (threshold-sensitive if they differ); Chrome: k forms (A5); M runs report the time-since-tween-start profile and
 the |Δm|-weighted dt (A6).
 
 **Canary drift (L8, protocol §6.3).** The canary page drifted from ~92 fps (04:25Z, 93b4af2 tools) to 78 and

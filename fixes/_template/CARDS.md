@@ -6,9 +6,9 @@ One card per stage gate ([`research/architecture/measurement-protocol-v2.md`](..
 attribution cards as they close, not at the end. Cite raw files by path (worktree `out/…` or `research/…`), never only
 numbers. Positions are in **crossing coordinates** (protocol §3.4: y_i = elementTop_i − f_i·V_i, V_i = the
 frame's innerHeight for IO rootMargins and JS reads, lvh 815 / svh 775 on the phone for CSS vh ranges; elementTop_i
-from the same run; Δ = 0 inside [yStart, yEnd]; Chrome and phone are compared by crossing, never by raw y). Frame thresholds are in ticks (k = round(dt / 8.333); k≥5 = dt ≥ 37.5 ms,
-k≥7 = dt ≥ 54.17 ms, the exact midpoints). On the phone, report both forms (dt > 50 / k≥7, dt > 34 / k≥5) and flag
-frames within 4 ms of a threshold; disagreement = threshold-sensitive (A5).
+from the same run; Δ = 0 inside [yStart, yEnd]; Chrome and phone are compared by crossing, never by raw y). Frame thresholds (A5): phone: dt > 50 / dt > 34 plus counts at ±4 ms
+(threshold-sensitive if they differ); Chrome: k forms (k = round(dt / 8.333); k≥5 = dt ≥ 37.5 ms, k≥7 = dt ≥ 54.17 ms,
+the exact midpoints).
 
 ## R: census card (owner signs)
 
@@ -16,7 +16,7 @@ frames within 4 ms of a threshold; disagreement = threshold-sensitive (A5).
 CENSUS <topic> · base <overlay or "baseline"> + hashes · <date UTC>
 phone: driver <S|W|M|G|F>, runs <n ≥3>, heat class <cool|warm> + battery temp per run (A4), probe <std version>   raw: <paths>
 chrome: verify --frame-log at 430x932 (gain) and 430x775 / 430x815 (position)       raw: <paths>
-| cluster (crossing ± Δ px) | device | runs with it (of n) | frames k≥5 / k≥7 per run | median dt (ticks) | driver |
+| cluster (crossing ± Δ px) | device | runs with it (of n) | frames per run: phone dt > 34 / dt > 50 (±4 ms counts), Chrome k≥5 / k≥7 | median dt (phone ms, Chrome ticks) | driver |
 |---|---|---|---|---|---|
 reproducible (≥2/3 runs at the same crossing): <list>
 rare (finger-only, toolbar, load-time; needs F or G runs before any work): <list>
