@@ -1,0 +1,69 @@
+# fastwork mirror fix: illusion-typing-chunks
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/user-bplus/overlay: apply user-bplus first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply illusion-typing-chunks --on user-bplus
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js dbd5fdb4f1fb7e255aa2a34e435e0d1031446826ec9015df8df094f07fceaa83
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2477,15 +2477,28 @@
+       D = async (e) => {
+         if ((z(d, !0), !(await f(420, e)))) return !1;
+         (z(h, !0), z(g, !0));
+-        for (let t = 1; t <= s(o).length; t += 1)
+-          if ((z(p, s(o).slice(0, t), !0), !(await f(28, e)))) return !1;
++        // illusion-typing-chunks: 2 characters per 56 ms instead of 1 per 28 ms (same total time, half the
++        // text writes, each a style + layout of the message line)
++        for (let t = 2, fwTcL = s(o).length; ; t += 2) {
++          if ((z(p, s(o).slice(0, Math.min(t, fwTcL)), !0), !(await f(56, e)))) return !1;
++          if (t >= fwTcL) break;
++        }
+         return (
+           z(g, !1),
+           !(await f(180, e)) ||
+           (z(_, !0), !(await f(480, e))) ||
+-          !(await S(e, 0, 100, 1100, (e) => {
+-            (z(b, e, !0), z(C, e / 100));
+-          })) ||
++          // illusion-typing-chunks: the "$N" count-up text changes at most every ~50 ms (the bar still moves
++          // every frame); the last value (100) is always written
++          !(await S(
++            e,
++            0,
++            100,
++            1100,
++            ((fwTcT) => (e) => {
++              let fwTcQ = performance.now();
++              ((e >= 100 || fwTcQ - fwTcT >= 48) && ((fwTcT = fwTcQ), z(b, e, !0)), z(C, e / 100));
++            })(-1e9),
++          )) ||
+           !(await f(120, e)) ||
+           !(await S(e, 18, 0, 900, (e) => z(x, e, !0))) ||
+           !(await f(1600, e))
+@@ -11880,8 +11893,12 @@
+           n = ``;
+         for (; !e;) {
+           let i = s(o)[t];
+-          for (let t = 1; t <= i.query.length; t += 1)
+-            if (e || ((n = i.query.slice(0, t)), z(p, n, !0), !(await r(32)))) return;
++          // illusion-typing-chunks: 2 characters per 64 ms instead of 1 per 32 ms (same speed, half the text
++          // writes; each one restyles and lays out inside #platform's size containers, F-099/F-101)
++          for (let t = 2, fwTcL = i.query.length; ; t += 2) {
++            if (e || ((n = i.query.slice(0, Math.min(t, fwTcL))), z(p, n, !0), !(await r(64)))) return;
++            if (t >= fwTcL) break;
++          }
+           if (s(g)) {
+             if ((z(x, s(y), !0), z(y, t, !0), z(v, !0), !(await r(700)))) return;
+             (z(v, !1), z(x, null));
+@@ -11890,7 +11907,9 @@
+             z(g, !0);
+           }
+           if (!(await r(3e3))) return;
+-          for (; n.length;) if (e || ((n = n.slice(0, -1)), z(p, n, !0), !(await r(18)))) return;
++          // illusion-typing-chunks: delete 3 characters per 54 ms instead of 1 per 18 ms (same speed, a third of
++          // the writes)
++          for (; n.length;) if (e || ((n = n.slice(0, -3)), z(p, n, !0), !(await r(54)))) return;
+           t = (t + 1) % s(o).length;
+         }
+       }

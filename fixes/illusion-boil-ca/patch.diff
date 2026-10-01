@@ -1,0 +1,104 @@
+# fastwork mirror fix: illusion-boil-ca
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/user-bplus/overlay: apply user-bplus first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply illusion-boil-ca --on user-bplus
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -163,13 +163,13 @@
+   animation: 0.72s cubic-bezier(0.4, 0, 0.2, 1) 0.12s forwards commission-underline-draw;
+ }
+ .commission-underline.idle .frame-0 {
+-  animation: 0.6s step-end infinite three-frame-zero;
++  animation: 0.6s linear infinite three-frame-zero;
+ }
+ .commission-underline.idle .frame-1 {
+-  animation: 0.6s step-end infinite three-frame-one;
++  animation: 0.6s linear infinite three-frame-one;
+ }
+ .commission-underline.idle .frame-2 {
+-  animation: 0.6s step-end infinite three-frame-two;
++  animation: 0.6s linear infinite three-frame-two;
+ }
+ @keyframes commission-underline-draw {
+   to {
+@@ -458,7 +458,7 @@
+   width: 1.5px;
+   height: 1em;
+   margin-left: 1px;
+-  animation: 0.9s step-end infinite typing-caret;
++  animation: 0.9s linear infinite typing-caret;
+   display: inline-block;
+ }
+ .referral-fee {
+@@ -603,7 +603,7 @@
+ }
+ @keyframes typing-caret {
+   0%,
+-  49% {
++  49.95% {
+     opacity: 1;
+   }
+   50%,
+@@ -678,14 +678,14 @@
+   overflow: visible;
+ }
+ .zero-frame.frame-0 {
+-  animation: 0.6s step-end infinite three-frame-zero;
++  animation: 0.6s linear infinite three-frame-zero;
+ }
+ .zero-frame.frame-1 {
+-  animation: 0.6s step-end infinite three-frame-one;
++  animation: 0.6s linear infinite three-frame-one;
+   transform: translate(0.35%, 0.4%);
+ }
+ .zero-frame.frame-2 {
+-  animation: 0.6s step-end infinite three-frame-two;
++  animation: 0.6s linear infinite three-frame-two;
+   transform: translate(-0.25%, 0.35%);
+ }
+ .why-bring {
+@@ -1295,14 +1295,14 @@
+   animation: 0.45s forwards svelte-1fn2go6-fill-out;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-0:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-0;
++  animation: 0.6s linear infinite svelte-1fn2go6-idle-0;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-1:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-1;
++  animation: 0.6s linear infinite svelte-1fn2go6-idle-1;
+   transform: translate(0.25%, 0.3%);
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-2:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-2;
++  animation: 0.6s linear infinite svelte-1fn2go6-idle-2;
+   transform: translate(-0.2%, 0.35%);
+ }
+ :is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
+@@ -9142,13 +9142,21 @@
+   width: 1.5px;
+   height: 16px;
+   margin-left: 1px;
+-  animation: 1s step-end infinite start-selling-agents-ask-caret;
++  animation: 1s linear infinite start-selling-agents-ask-caret;
+   display: inline-block;
+ }
+ @keyframes start-selling-agents-ask-caret {
+-  50% {
++  0%,
++  49.95% {
++    opacity: 1;
++  }
++  50%,
++  99.95% {
+     opacity: 0;
+   }
++  to {
++    opacity: 1;
++  }
+ }
+ .start-selling-platform-visual.is-search .start-selling-platform-agents-ask-title {
+   --ask-cascade-i: 0;

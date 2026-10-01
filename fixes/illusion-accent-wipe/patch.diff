@@ -1,0 +1,83 @@
+# fastwork mirror fix: illusion-accent-wipe
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/user-bplus/overlay: apply user-bplus first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply illusion-accent-wipe --on user-bplus
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -1313,8 +1313,73 @@
+ }
+ :is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
+   .is-idle-frame-0.svelte-1fn2go6 {
++  opacity: 1;
++}
++/* illusion-accent-wipe (PoC): the word is revealed / hidden by a moving clip window instead of drawing the stroke
++   with stroke-dashoffset (a Layout difference on WebKit every frame, F-097, on the paths of all 3 boil frames).
++   .paint carries a static clip (inset -30%, so idle strokes that overflow the box are not cut) and slides by
++   -140% of its width; the visible frame-0 SVG slides +140% at the same time, so the word stands still while the
++   clip edge sweeps across it. Two transform animations, same duration and easing as the stroke draw: compositor
++   only, no per-frame style or layout. Draw-in reveals left to right; draw-out hides right to left (the original
++   un-draws from the path end back to its start). */
++.script-accent.svelte-1fn2go6 .paint.svelte-1fn2go6 {
++  clip-path: inset(-30%);
++}
++.is-drawing-in.svelte-1fn2go6 .accent-path.svelte-1fn2go6,
++.is-drawing-out.svelte-1fn2go6 .accent-path.svelte-1fn2go6 {
++  stroke-dasharray: none;
++  stroke-dashoffset: 0;
++  animation: none;
++}
++.is-drawing-in.svelte-1fn2go6 .accent-fill.svelte-1fn2go6,
++.is-drawing-out.svelte-1fn2go6 .accent-fill.svelte-1fn2go6 {
+   opacity: 1;
++  animation: none;
+ }
++.is-drawing-in.svelte-1fn2go6 .paint.svelte-1fn2go6 {
++  animation: 0.9s cubic-bezier(0.4, 0, 0.2, 1) both fw-accent-wipe-in;
++}
++.is-drawing-in.svelte-1fn2go6 .is-idle-frame-0.svelte-1fn2go6 {
++  animation: 0.9s cubic-bezier(0.4, 0, 0.2, 1) both fw-accent-wipe-in-counter;
++}
++.is-drawing-out.svelte-1fn2go6 .paint.svelte-1fn2go6 {
++  animation: 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards fw-accent-wipe-out;
++}
++.is-drawing-out.svelte-1fn2go6 .is-idle-frame-0.svelte-1fn2go6 {
++  animation: 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards fw-accent-wipe-out-counter;
++}
++@keyframes fw-accent-wipe-in {
++  0% {
++    transform: translateX(-140%);
++  }
++  to {
++    transform: none;
++  }
++}
++@keyframes fw-accent-wipe-in-counter {
++  0% {
++    transform: translateX(140%);
++  }
++  to {
++    transform: none;
++  }
++}
++@keyframes fw-accent-wipe-out {
++  0% {
++    transform: none;
++  }
++  to {
++    transform: translateX(-140%);
++  }
++}
++@keyframes fw-accent-wipe-out-counter {
++  0% {
++    transform: none;
++  }
++  to {
++    transform: translateX(140%);
++  }
++}
+ @keyframes svelte-1fn2go6-stroke-in {
+   0% {
+     stroke-dashoffset: 1px;
