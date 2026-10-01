@@ -603,8 +603,12 @@ Moving frames (0 < m < 1), dt in ms:
 | moving p95, prediction (4) | 44-64 (45/44/45/64) | 23-29 (23/23/29/23) | 28-45 | outside the interval, on the good side (median 23) |
 | Composite − Paint p50, first 300 ms | 19.9 ms | 16.3 | — | — |
 
-- g-cdwc wins every moving-frame column and the result holds across the ±4 ms band, so it is not
-  threshold-sensitive. Frames over 34 ms drop from 47-58 per run to 0-1, and frames over 50 ms from 1-27 to 0.
+- g-cdwc wins every moving-frame column. Frames over 34 ms drop from 47-58 per run to 0-1, and frames over 50 ms from
+  1-27 to 0.
+  - Corrected (review-cdwc B5, either-twin rule of 77c480e): >34 is not threshold-sensitive (>30 56-66 vs 0-2, >38 28-55
+    vs 0).
+  - >50 is threshold-sensitive: the >54 twin is 0/1/3/20 vs 0, and the ranges overlap.
+  - Near-band frames: g-cdwc 31-35 ms in (30, 38]; g many in (46, 54].
 - Held m=1: g-cdwc p95 17, max 17-25, 0 frames over 34 ms in all four runs. g: p95 17-18, max 35-57, 2-7 frames
   over 34 ms per run. So the per-second digit repaint at the hold costs nothing measurable.
 - The mechanism is the same as P-017's on gh: the gain does not need R1. The landable fix `mw10e-cdwc` (the same rule on
