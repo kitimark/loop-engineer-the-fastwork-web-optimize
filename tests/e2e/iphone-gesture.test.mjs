@@ -8,7 +8,7 @@
 // the real locks.
 import { test, before, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, nodeAsync, tool, freePort, startProc, TESTS, REPO, sleep } from '../helpers.mjs';
 import { compileScript } from '../../tools/lib/gesture.mjs';
@@ -207,7 +207,10 @@ function wdaEnv() {
   return { home, logs, env: { ...env, FW_WDA_HOME: home, FW_XCODEBUILD: join(FIX, 'fake-xcodebuild.mjs'), FW_IPROXY: join(FIX, 'fake-iproxy.mjs'), FW_IDEVICE_ID: '/usr/bin/false', FW_SECURITY: '/usr/bin/false', FAKE_XCODEBUILD_LOG: join(logs, 'xb.jsonl'), FAKE_IPROXY_LOG: join(logs, 'ip.jsonl'), FAKE_WDA_LOG: join(logs, 'wda.jsonl') } };
 }
 
-test('wda build: lease; refused while someone measures; sources outside the repo, fetched by an explicit clone command', () => {
+/** `wda build` inside our own chrome-measure hold, the only way it runs (review-gesture 1). */
+const heldBuild = (w, args, extra = {}) => node(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--max-seconds', '600', '--', process.execPath, IPHONE, 'wda', 'build', '--owner', 'me', ...args], { env: { ...w.env, ...extra }, timeout: 60000 });
+
+test('wda build: lease; only inside our own chrome-measure hold (not on a free lock, not under someone\'s short job); sources outside the repo', () => {
   const w = wdaEnv();
   const wda = (...a) => node(IPHONE, ['wda', ...a], { env: w.env, timeout: 30000 });
   assert.match(wda('build').stderr, /--owner <topic> is required/);
@@ -218,27 +221,44 @@ test('wda build: lease; refused while someone measures; sources outside the repo
   assert.match(r.stdout, new RegExp(`^sources: +missing; run: git clone --depth 1 --branch v[0-9.]+ https://github\\.com/appium/WebDriverAgent ${w.home}/WebDriverAgent$`, 'm'));
   assert.match(r.stdout, /^build: +none/m);
   assert.match(r.stdout, /^wda: +not reachable/m);
-  lock('acquire', 'chrome-measure', '--owner', 'measurer', '--ttl', '300');
-  r = wda('build', '--owner', 'me');
-  assert.equal(r.code, 1);
-  assert.match(r.stderr, /refusing wda build: chrome-measure is held by "measurer" \(a normal hold: someone is measuring\)/);
-  lock('release', 'chrome-measure', '--owner', 'measurer');
-  lock('acquire', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '120');
-  r = wda('build', '--owner', 'me');
-  assert.equal(r.code, 1);
-  assert.match(r.stderr, /WebDriverAgent sources missing .* Fetch them once:\n {2}git clone --depth 1 --branch/s, 'a short-lane holder does not block the build');
-  lock('release', 'chrome-measure', '--owner', 'npm-test');
+  const HOLD = /\n {2}node tools\/lock\.mjs run chrome-measure --owner me --max-seconds 600 -- node tools\/iphone\.mjs wda build --owner me/;
   mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
-  r = wda('build', '--owner', 'me');
+  const xbCalls = () => (existsSync(w.env.FAKE_XCODEBUILD_LOG) ? readFileSync(w.env.FAKE_XCODEBUILD_LOG, 'utf8').trim().split('\n').filter(Boolean).length : 0);
+  // a free lock: a queued A/B would be granted it mid-build
+  r = wda('build', '--owner', 'me', '--team', 'ABCDE12345', '--udid', '00008130-0011223344556677');
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /refusing wda build: chrome-measure is free, but this process does not hold it/);
+  assert.match(r.stderr, HOLD);
+  // someone measuring
+  lock('acquire', 'chrome-measure', '--owner', 'measurer', '--ttl', '300');
+  r = wda('build', '--owner', 'me', '--team', 'ABCDE12345', '--udid', '00008130-0011223344556677');
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /refusing wda build: chrome-measure is held by "measurer", not by this process/);
+  lock('release', 'chrome-measure', '--owner', 'measurer');
+  // someone's short-lane job (npm test): it ends within 300 s and the next A/B would start mid-build
+  lock('acquire', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '120');
+  r = wda('build', '--owner', 'me', '--team', 'ABCDE12345', '--udid', '00008130-0011223344556677');
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /refusing wda build: chrome-measure is held by "npm-test" \(a short-lane job\), not by this process/);
+  lock('release', 'chrome-measure', '--owner', 'npm-test');
+  assert.equal(xbCalls(), 0, 'xcodebuild never ran outside our hold');
+  // inside our own hold (lock.mjs run): the remaining checks
+  rmSync(join(w.home, 'WebDriverAgent'), { recursive: true });
+  r = heldBuild(w, []);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /WebDriverAgent sources missing .* Fetch them once:\n {2}git clone --depth 1 --branch/s);
+  mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
+  r = heldBuild(w, []);
   assert.equal(r.code, 1);
   assert.match(r.stderr, /no signing team .*Xcode > Settings > Accounts/s);
-  r = node(IPHONE, ['wda', 'build', '--owner', 'me', '--team', 'ABCDE12345'], { env: w.env });
+  r = heldBuild(w, ['--team', 'ABCDE12345']);
   assert.match(r.stderr, /no iPhone .*on USB/);
-  r = node(IPHONE, ['wda', 'build', '--owner', 'me', '--team', 'ABCDE12345', '--udid', '00008130-0011223344556677'], { env: { ...w.env, FAKE_XCODEBUILD_FAIL: '1' } });
+  r = heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677'], { FAKE_XCODEBUILD_FAIL: '1' });
   assert.equal(r.code, 1);
   assert.match(r.stderr, /xcodebuild build-for-testing failed \(exit 65\).*requires a development team/s);
-  r = node(IPHONE, ['wda', 'build', '--owner', 'me', '--team', 'ABCDE12345', '--udid', '00008130-0011223344556677'], { env: w.env });
+  r = heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677']);
   assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /inside your chrome-measure hold \(stopped after 540 s\)/);
   assert.match(r.stdout, /^WDA_BUILT .*WebDriverAgentRunner_iphoneos26\.6-arm64\.xctestrun$/m);
   assert.doesNotMatch(r.out, /ABCDE12345|0011223344556677/, 'account and device ids are not printed in full');
   const args = JSON.parse(readFileSync(w.env.FAKE_XCODEBUILD_LOG, 'utf8').trim().split('\n').at(-1));
@@ -253,7 +273,7 @@ test('wda start (lease) runs the runner and iproxy, activates Safari; status see
   const w = wdaEnv();
   mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
   lock('acquire', 'iphone', '--owner', 'me');
-  assert.equal(node(IPHONE, ['wda', 'build', '--owner', 'me', '--team', 'ABCDE12345', '--udid', '00008130-0011223344556677'], { env: w.env }).code, 0);
+  assert.equal(heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677']).code, 0);
   let r = node(IPHONE, ['wda', 'start'], { env: w.env });
   assert.match(r.stderr, /--owner <topic> is required/);
   r = await nodeAsync(IPHONE, ['wda', 'start', '--owner', 'me', '--timeout', '30'], { env: w.env, timeout: 60000 });

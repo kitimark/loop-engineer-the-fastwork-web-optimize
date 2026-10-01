@@ -1,21 +1,33 @@
-// tools/lib/wda-runner.mjs and tools/lib/gesture-run.mjs pure helpers: when `wda build` may run (Hard rule 7),
+// tools/lib/wda-runner.mjs and tools/lib/gesture-run.mjs pure helpers: when `wda build` may run (Hard rule 7: only in our own hold),
 // the provisioning-profile expiry, the xcodebuild/iproxy arguments (everything outside the repo), id masking,
 // and the gesture CLI's --param/--variant parsing.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildGate, parseExpiry, mask, buildArgs, runnerArgs, iproxyArgs, cloneCommand, WDA_REF, wdaHome } from '../../tools/lib/wda-runner.mjs';
+import { buildGate, BUILD_MAX_SEC, parseExpiry, mask, buildArgs, runnerArgs, iproxyArgs, cloneCommand, WDA_REF, wdaHome } from '../../tools/lib/wda-runner.mjs';
 import { cliParams } from '../../tools/lib/gesture-run.mjs';
 import { REPO } from '../helpers.mjs';
 
 const holder = (o) => ({ resource: 'chrome-measure', owner: 'x', kind: 'lease', token: 'aaaaaaaaaaaa', expiresAt: new Date(Date.now() + 60000).toISOString(), ...o });
 
-test('buildGate: free, stale or short-lane holder -> go; a normal holder blocks unless we run inside its hold', () => {
-  assert.equal(buildGate({ holder: null, stale: null }, ''), null);
-  assert.equal(buildGate({ holder: holder({ expiresAt: new Date(Date.now() - 1000).toISOString() }), stale: 'expired' }, ''), null);
-  assert.equal(buildGate({ holder: holder({ short: true, maxSec: 300 }), stale: null }, ''), null);
-  assert.match(buildGate({ holder: holder({ owner: 'fix-a' }), stale: null }, ''), /held by "fix-a" \(a normal hold: someone is measuring\).*--short --max-seconds 300 -- node tools\/iphone\.mjs wda build/);
-  assert.equal(buildGate({ holder: holder(), stale: null }, 'chrome-measure:aaaaaaaaaaaa'), null, 'inside our own lock.mjs run hold');
-  assert.notEqual(buildGate({ holder: holder(), stale: null }, 'chrome-measure:bbbbbbbbbbbb'), null);
+test('buildGate: only inside our own chrome-measure hold (review-gesture 1: a free lock or a short holder is not enough)', () => {
+  const HOLD = /node tools\/lock\.mjs run chrome-measure --owner me --max-seconds 600 -- node tools\/iphone\.mjs wda build --owner me/;
+  const no = (s, held) => { const g = buildGate(s, held, { owner: 'me' }); assert.equal(g.ok, false, JSON.stringify(g)); assert.match(g.reason, HOLD); return g.reason; };
+  // free or stale: someone's A/B could be granted the lock mid-build
+  assert.match(no({ holder: null, stale: null }, ''), /chrome-measure is free, but this process does not hold it/);
+  assert.match(no({ holder: holder({ expiresAt: new Date(Date.now() - 1000).toISOString() }), stale: 'expired' }, 'chrome-measure:aaaaaaaaaaaa'), /is free/);
+  // someone else's short-lane job (npm test): their hold ends in <= 300 s and the next A/B starts mid-build
+  assert.match(no({ holder: holder({ owner: 'npm-test', short: true, maxSec: 300 }), stale: null }, ''), /held by "npm-test" \(a short-lane job\), not by this process/);
+  assert.match(no({ holder: holder({ owner: 'fix-a' }), stale: null }, ''), /held by "fix-a", not by this process/);
+  assert.match(no({ holder: holder(), stale: null }, 'chrome-measure:bbbbbbbbbbbb'), /not by this process/);
+  // ours (lock.mjs run set FW_LOCK_HELD): go, with xcodebuild capped before the hold ends
+  const now = Date.now();
+  let g = buildGate({ holder: holder({ expiresAt: undefined }), stale: null }, 'chrome-measure:aaaaaaaaaaaa', { now });
+  assert.deepEqual(g, { ok: true, timeoutMs: BUILD_MAX_SEC * 1000 }, 'a normal hold (no expiry): the normal-hold cap');
+  g = buildGate({ holder: holder({ short: true, maxSec: 300, expiresAt: new Date(now + 305000).toISOString() }), stale: null }, 'chrome-measure:aaaaaaaaaaaa', { now });
+  assert.deepEqual(g, { ok: true, timeoutMs: 290000 }, 'our short hold: stop 15 s before it expires');
+  g = buildGate({ holder: holder({ expiresAt: new Date(now + 40000).toISOString() }), stale: null }, 'chrome-measure:aaaaaaaaaaaa', { now, owner: 'me' });
+  assert.equal(g.ok, false);
+  assert.match(g.reason, /your chrome-measure hold ends in 40 s: too little for a build/);
 });
 
 test('parseExpiry reads ExpirationDate from a decoded provisioning profile', () => {

@@ -12,9 +12,13 @@
 //   wda status                   sources, build, profile expiry, runner/iproxy pids, /status (no lease)
 //   wda build --owner <o> [--ref vX] [--team ID] [--udid UDID] [--bundle-id ID]
 //                                lease-guarded (xcodebuild talks to the device); xcodebuild build-for-testing is
-//                                minutes of Mac CPU, so only while chrome-measure is free, held by a short-lane
-//                                job, or inside your own hold (Hard rule 7). The first build registers the device
-//                                with the user's Apple account (free provisioning): the user's own one-time step
+//                                minutes of Mac CPU, so it runs only INSIDE your own chrome-measure hold
+//                                (Hard rule 7: nobody's A/B can start mid-build):
+//                                  node tools/lock.mjs run chrome-measure --owner <o> --max-seconds 600 -- \
+//                                    node tools/iphone.mjs wda build --owner <o>
+//                                xcodebuild is stopped before the hold ends (a short hold's expiry) and after
+//                                BUILD_MAX_SEC in a normal hold. The first build registers the device with the
+//                                user's Apple account (free provisioning): the user's own one-time step
 //   wda start --owner <o>        lease-guarded: xcodebuild test-without-building + iproxy, wait for /status,
 //                                bring Safari to the front
 //   wda stop                     kill our runner and iproxy (no lease: cleanup must always work)
@@ -76,17 +80,28 @@ function profileExpiry() {
   return r.status === 0 ? parseExpiry(r.stdout) : null;
 }
 
+/** A normal hold's xcodebuild cap: inside the ~10 min a normal chrome-measure hold may last (CLAUDE.md). */
+export const BUILD_MAX_SEC = 540;
+export const buildHoldCmd = (owner = '<you>') => `node tools/lock.mjs run chrome-measure --owner ${owner} --max-seconds 600 -- node tools/iphone.mjs wda build --owner ${owner}`;
+
 /**
- * May `wda build` (minutes of xcodebuild) run now? Only while chrome-measure is free/stale, held by a
- * short-lane job (npm test, bench mech), or held by an ancestor of this process (`lock.mjs run`).
- * Returns null (go) or the reason it may not.
+ * May `wda build` (minutes of xcodebuild) run now? Only inside this process's own chrome-measure hold: the
+ * live holder's token is in $FW_LOCK_HELD (set by `lock.mjs run` for its command). Seeing the lock free, or
+ * held by someone else's short-lane job, is not enough: a queued A/B would start mid-build (Hard rule 7).
+ * Returns {ok: true, timeoutMs} (the build must end before the hold does) or {ok: false, reason}.
  */
-export function buildGate(s = lockStatus('chrome-measure'), held = process.env.FW_LOCK_HELD) {
+export function buildGate(s = lockStatus('chrome-measure'), held = process.env.FW_LOCK_HELD, { owner, now = Date.now() } = {}) {
   const h = s.holder;
-  if (!h || s.stale || staleReason(h)) return null;
-  if (h.short) return null;
-  if (parseHeld(held)['chrome-measure'] === h.token) return null;
-  return `chrome-measure is held by "${h.owner}" (a normal hold: someone is measuring). xcodebuild would load the Mac (Hard rule 7). Wait until it is free, or run it in the short lane: node tools/lock.mjs run chrome-measure --owner <you> --short --max-seconds 300 -- node tools/iphone.mjs wda build`;
+  const live = h && !s.stale && !staleReason(h, now);
+  const mine = parseHeld(held)['chrome-measure'];
+  if (live && mine && mine === h.token) {
+    const left = h.expiresAt ? Date.parse(h.expiresAt) - now - 15000 : Infinity;
+    const timeoutMs = Math.min(BUILD_MAX_SEC * 1000, left);
+    if (timeoutMs < 60000) return { ok: false, reason: `your chrome-measure hold ends in ${Math.max(0, Math.round((left + 15000) / 1000))} s: too little for a build. Run it in a fresh hold:\n  ${buildHoldCmd(owner)}` };
+    return { ok: true, timeoutMs };
+  }
+  const who = live ? `chrome-measure is held by "${h.owner}"${h.short ? ' (a short-lane job)' : ''}, not by this process` : 'chrome-measure is free, but this process does not hold it';
+  return { ok: false, reason: `${who}. xcodebuild is minutes of Mac CPU: it runs only inside your own hold, so no A/B starts mid-build (Hard rule 7):\n  ${buildHoldCmd(owner)}` };
 }
 
 function readPid(name) {
@@ -161,9 +176,9 @@ export async function wdaCmd({ sub, opt, requireLease, log = console.log }) {
     return 0;
   }
   if (sub === 'build') {
-    requireLease(); // xcodebuild talks to the device (provisioning, preparing it for development): lease holders only
-    const gate = buildGate();
-    if (gate) throw new Error(`refusing wda build: ${gate}`);
+    const owner = requireLease(); // xcodebuild talks to the device (provisioning, preparing it for development): lease holders only
+    const gate = buildGate(undefined, undefined, { owner });
+    if (!gate.ok) throw new Error(`refusing wda build: ${gate.reason}`);
     const cfg = readConfig();
     cfg.ref = opt('ref', cfg.ref || WDA_REF);
     if (!existsSync(join(srcDir(), 'WebDriverAgent.xcodeproj'))) throw new Error(`WebDriverAgent sources missing in ${srcDir()} (kept outside the repo, never committed). Fetch them once:\n  ${cloneCommand(cfg.ref)}`);
@@ -175,11 +190,11 @@ export async function wdaCmd({ sub, opt, requireLease, log = console.log }) {
     Object.assign(cfg, { team, udid, bundleId });
     writeConfig(cfg);
     const blog = join(wdaHome(), 'build.log');
-    log(`building WebDriverAgent ${cfg.ref} for device ${mask(udid)}, team ${mask(team)} (log: ${blog}); a few minutes of Mac CPU; Xcode's automatic signing registers this device with the signed-in Apple account`);
+    log(`building WebDriverAgent ${cfg.ref} for device ${mask(udid)}, team ${mask(team)} (log: ${blog}); a few minutes of Mac CPU inside your chrome-measure hold (stopped after ${Math.round(gate.timeoutMs / 1000)} s); Xcode's automatic signing registers this device with the signed-in Apple account`);
     const fd = openSync(blog, 'w');
-    const r = spawnSync(exe('xcodebuild', 'FW_XCODEBUILD'), buildArgs({ udid, team, bundleId }), { cwd: srcDir(), stdio: ['ignore', fd, fd], timeout: 20 * 60000 });
+    const r = spawnSync(exe('xcodebuild', 'FW_XCODEBUILD'), buildArgs({ udid, team, bundleId }), { cwd: srcDir(), stdio: ['ignore', fd, fd], timeout: gate.timeoutMs });
     closeSync(fd);
-    if (r.status !== 0) throw new Error(`xcodebuild build-for-testing failed (exit ${r.status ?? r.signal}); last lines of ${blog}:\n${tail(blog)}\nIf it is about signing or the account: ${SETUP}`);
+    if (r.status !== 0) throw new Error(`xcodebuild build-for-testing ${r.error?.code === 'ETIMEDOUT' ? `stopped after ${Math.round(gate.timeoutMs / 1000)} s (before your chrome-measure hold ends); re-run it in a fresh hold` : 'failed'} (exit ${r.status ?? r.signal});last lines of ${blog}:\n${tail(blog)}\nIf it is about signing or the account: ${SETUP}`);
     const x = findXctestrun();
     if (!x) throw new Error(`build succeeded but no .xctestrun in ${derivedData()}/Build/Products`);
     log(`WDA_BUILT ${x}`);
