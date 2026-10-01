@@ -499,8 +499,10 @@ Setup:
 
 ### 7.6 Claim status (CLAUDE.md "Platform claims")
 
-WebKit source was read on 2026-10-01 from `github.com/WebKit/WebKit` at `main`. No commit is pinned because
-the GitHub API was rate-limited. The phone's Safari build may differ from `main`.
+WebKit source was read on 2026-10-01 from `github.com/WebKit/WebKit` at `main`. It is pinned to commit
+**`a1fb7ce122d0cd99f7d6cc82775f02565e266ece`**, the head of `main` per `commits/main.atom` (updated
+2026-10-01T11:28:47Z). All three files cited below were re-fetched at that commit, and they are byte-identical to
+the copies the line numbers were taken from. The phone's Safari build may differ from this commit.
 
 | claim in §7 | status | reference / decisive check |
 |---|---|---|
