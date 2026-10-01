@@ -65,6 +65,7 @@ export function cleanEnv(extra = {}) {
   for (const k of ['FW_MIRROR_HOME', 'FW_STATE_DIR', 'FW_BASE', 'FW_ALLOW_MAIN', 'FW_LOCK_OWNER', 'FW_LOCK_HELD', 'PORT', 'CHROME', 'FW_IPHONE_PORT', 'FW_IPHONE_DEVICE_PORT', 'NODE_TEST_CONTEXT', 'FW_PRECOMMIT_TEST_CMD', 'FW_GATE_MAX_LOAD1', 'FW_GATE_MAX_BUSY', 'FW_GATE_MAX_WAIT', 'FW_TOOLING']) delete env[k];
   for (const k of Object.keys(env)) if (/^FAKE_HOST_/.test(k)) delete env[k];
   env.FW_TEST_HOST = FAKE_HOST;
+  env.FW_CAFFEINATE = 'off'; // no real sleep assertions from tests (I-026); a test passes the fake via `extra`
   // a git hook exports GIT_DIR / GIT_INDEX_FILE / ...: never let them redirect the temp repos' git calls
   for (const k of Object.keys(env)) if (/^GIT_/.test(k)) delete env[k];
   return { ...env, GIT_AUTHOR_NAME: 'fw-test', GIT_AUTHOR_EMAIL: 'fw-test@example.invalid', GIT_COMMITTER_NAME: 'fw-test', GIT_COMMITTER_EMAIL: 'fw-test@example.invalid', ...extra };

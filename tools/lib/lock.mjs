@@ -56,6 +56,7 @@ import os from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { sharedStateDir, REPO } from './paths.mjs';
 import { THRESHOLDS, sample, quiet } from './host.mjs';
+import { keepAwake, stopAwake } from './awake.mjs';
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -371,10 +372,12 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
     if (res.ok) {
       if (Date.now() - t0 > 1500) log(`[lock ${r}] acquired after ${Math.round((Date.now() - t0) / 1000)} s`);
       let done = false;
+      keepAwake(r, res.holder); // no system sleep while chrome-measure is held (I-026, lib/awake.mjs)
       const rel = () => {
         if (done) return; done = true;
         // synchronous best effort (also used from the 'exit' handler)
         try { const h = readJson(holderFile(r), null); if (h && h.token === res.holder.token) unlinkSync(holderFile(r)); } catch {}
+        stopAwake(r, res.holder.token);
       };
       if (kind === 'process') {
         process.on('exit', rel);

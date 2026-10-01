@@ -5,7 +5,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, startProc, tool, sleep } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, startProc, tool, sleep, TESTS } from '../helpers.mjs';
 
 const LOCK = tool('lock.mjs');
 let state, env;
@@ -242,6 +242,31 @@ test('I-024: run --short past --max-seconds kills the whole tree: SIGTERM-ignori
   for (let i = 0; i < 40 && !(gone = left.every((p) => !alive(p))); i++) await sleep(50);
   for (const p of left) if (alive(p)) process.kill(p, 'SIGKILL');
   assert.ok(gone, 'no process of the short job outlives its hold (I-024: a test tree ran 13 min past it)');
+});
+
+test('I-026: every chrome-measure hold runs under caffeinate: run (-w its pid), a lease (-t until expiry), ended on release', async () => {
+  const log = join(state, 'caffeinate.jsonl');
+  const cenv = { ...env, FW_CAFFEINATE: join(TESTS, 'fixtures', 'fake-caffeinate.mjs'), FAKE_CAFFEINATE_LOG: log };
+  const calls = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
+  const r = node(LOCK, ['run', 'chrome-measure', '--owner', 'ab', '--', process.execPath, '-e', 'setTimeout(() => {}, 300)'], { env: cenv });
+  assert.equal(r.code, 0, r.out);
+  for (let i = 0; i < 60 && !calls().length; i++) await sleep(50);
+  const [run] = calls();
+  assert.deepEqual(run.args.slice(0, 3), ['-i', '-s', '-w']);
+  for (let i = 0; i < 60 && alive(run.pid); i++) await sleep(50);
+  assert.ok(!alive(run.pid), 'gone with the hold');
+  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'lease'], { env: cenv }).code, 0);
+  for (let i = 0; i < 60 && calls().length < 2; i++) await sleep(50);
+  const lease = calls()[1];
+  assert.deepEqual(lease.args.slice(0, 3), ['-i', '-s', '-t']);
+  assert.ok(Number(lease.args[3]) > 590 && Number(lease.args[3]) <= 600, lease.args.join(' '));
+  assert.ok(alive(lease.pid), 'a lease keeps it after the CLI exits');
+  assert.equal(node(LOCK, ['release', 'chrome-measure', '--owner', 'lease'], { env: cenv }).code, 0);
+  for (let i = 0; i < 60 && alive(lease.pid); i++) await sleep(50);
+  const stopped = !alive(lease.pid);
+  if (!stopped) process.kill(lease.pid, 'SIGKILL');
+  assert.ok(stopped, 'release ends the lease\'s assertion');
+  assert.ok(!existsSync(join(state, 'locks', 'chrome-measure.awake.json')));
 });
 
 test('run: killing the lock holder also stops the command (the lock never outlives the work)', async () => {

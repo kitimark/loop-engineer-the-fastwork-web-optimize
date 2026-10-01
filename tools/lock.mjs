@@ -32,7 +32,9 @@
 // it the command keeps running, but it warns and `status` shows OVERDUE; split long measurements into
 // holds of 5-10 min. Hand-over: the waiter served next polls every ~1 s; a waiter not seen for 30 s is
 // skipped at a hand-over (it keeps its place), so keep polling (`run`, `acquire --wait`). The iphone
-// keeps strict FIFO (its waiters retry every 2-5 min by protocol).
+// keeps strict FIFO (its waiters retry every 2-5 min by protocol). Every chrome-measure hold runs under a
+// `caffeinate -i -s` assertion (I-026: Maintenance Sleep stalled a hold 472 s): -w <holder pid> for a
+// process hold, -t <until expiry> for a lease (replaced on renew), ended on release (lib/awake.mjs).
 //
 // Lock state looks wrong (a stale "short" last grant starving the short lane, a queue entry that never
 // goes away, a leftover guard dir)? Never edit the lock JSON by hand (incident I-012); use:
@@ -65,6 +67,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS } from './lib/host.mjs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
+import { keepAwake, stopAwake } from './lib/awake.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -182,15 +185,17 @@ async function main() {
       pause = Math.min(short ? 3000 : 15000, pause * 1.5);
       res = await attempt();
     }
+    if (res.ok && !res.inherited) keepAwake(resource, res.holder); // a lease keeps the Mac awake until it expires (I-026)
     if (res.ok) { console.log(`ACQUIRED ${resource} for "${owner}"${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}${res.reentrant ? ' (renewed)' : ''}${sh(res.holder)}${res.holder.gateTimeout ? ' after a host-gate TIMEOUT: the host was not quiet, measurements in this hold are contaminated' : ''}`); console.log(JSON.stringify(res.holder, null, 1)); return 0; }
     const who = res.holder ? `held by "${res.holder.owner}" since ${res.holder.acquiredAt}${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}`
       : res.gated ? `free, but the host is not quiet (${res.gate.reasons.join(', ')}; waiting since ${res.gate.since}, granted anyway after ${THRESHOLDS.gateMaxWaitSec} s)` : `free, but "${res.next}" is next`;
     console.log(`BUSY ${resource}: ${who}. You ("${owner}") are #${res.position} in the queue; run acquire again within 10 min to keep your place (a hand-over serves waiters that keep polling, e.g. with --wait; one not seen for 30 s is skipped but keeps its place).`);
     return 3;
   }
-  if (cmd === 'renew') { const h = await renew(resource, { owner, ttlSec: Number(opt('ttl', 900)) }); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }
+  if (cmd === 'renew') { const h = await renew(resource, { owner, ttlSec: Number(opt('ttl', 900)) }); keepAwake(resource, h); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }
   if (cmd === 'release') {
     const h = await release(resource, { owner, force: flag('force') });
+    if (h) stopAwake(resource, h.token);
     console.log(h ? `RELEASED ${resource} (was "${h.owner}"${staleReason(h) ? ', stale' : ''})` : `${resource} was not held`);
     return 0;
   }
