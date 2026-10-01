@@ -289,6 +289,10 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
   runs end with a jump to the bottom and a 3 s hold to give the sentinel.
 - A failing control **voids every run since the last passing control**; the block stops, the phone cools
   (§5.3: by battery temperature, `wait.mjs phone-temp`, at most 10 min), and the block restarts.
+- **Park Safari (`iphone.mjs park`) after every block** (I-047: a test page left open keeps animating and heating
+  the phone; `iphone.mjs run` parks after each run unless `--no-park`), then cool with `wait.mjs phone-temp
+  --below auto`: `iphone.mjs run` records each control run's (`--arm C`, or `--heat-sentinel`) verdict in
+  `meta.sentinel` next to `meta.battery`, and auto takes the last passing one today minus 0.5 °C (38 if none).
 - **Timeline blocks (lead decision 2026-10-01 12:5xZ).** A block whose counted runs capture Timeline (every counted
   run, every arm, the control included; P3, P11, P14, the listener ticket, and any later one): the sentinel is a
   heat/device-state check whose thresholds were set with Timeline OFF, so it moves to dedicated runs.
@@ -311,9 +315,7 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
   passed today), at most 10 min: `node tools/wait.mjs phone-temp --below <°C>` (one read per minute; default
   `--timeout 600`, and a TIMEOUT means go on); the sentinel still decides validity (lead rule 2026-10-01 21:32Z,
   user T-009, replacing the fixed 10 min). Battery temperature lags the SoC, so it is a cooling cue, never a
-  validity check. `--below auto` is not built: no tool records the sentinel verdict, so the operator takes the
-  temperature from the passing sentinel run's battery record (`meta.battery` of an `iphone.mjs run` file, or the
-  runner's own battery log). (Exception, lead 2026-10-01 19:56Z, while timing is deferred: attribution-only blocks
+  validity check. `--below auto` computes the number from the run records (§5.2, I-047). (Exception, lead 2026-10-01 19:56Z, while timing is deferred: attribution-only blocks
   skip the cooling between blocks; the Timeline-OFF heat sentinel at start and end decides, a failing one means
   cooling (the same `wait.mjs phone-temp` rule) plus a redo; `fixes/LEAD.md` "Timing deferred".)
 - 2 arms: **C V V C C V V C** (4 vs 4). 3 arms: a 3×3 rotated Latin square (C A B / A B C / B C A), n=3 per arm.

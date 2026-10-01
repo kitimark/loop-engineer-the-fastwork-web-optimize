@@ -536,7 +536,7 @@ iPhone protocol on top of the lease:
 Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages and gates"):
 - **Blocks.** Only ticketed builds, served from immutable snapshot copies. A block: one question, one named control
   on the same base, one uncounted warm-up run per arm's port (A3/U5), then ≤9 counted runs in C V V C C V V C order (3 arms: a rotated
-  Latin square); 10 min cooling between blocks; at most 2 blocks per question (sequential rule, §5.3).
+  Latin square); park Safari (`iphone.mjs park`) after every block; 10 min cooling between blocks; at most 2 blocks per question (sequential rule, §5.3).
 - **Sentinel** (static idle is no heat check, F-028): every control run reaches bottom ≥58 fps and scroll ≥44 fps
   (S/W) or held m=1 p95 ≤18 ms (M). A failing control voids every run since the last passing one; the phone cools
   until the battery temperature is at or below the last passing sentinel's minus 0.5 °C, 38 if none today
