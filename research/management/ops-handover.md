@@ -251,6 +251,16 @@ between tool calls.
    both k>=5/k>=7 and >34/>50); **U5 open -> T2**: `iphone.mjs run --warmup` is only a label, so tickets keep the
    uncounted warm-up per served port by hand until T2 lands. T1a review starts after the probeVersion bump (raf-legacy
    optional since the A9 lift, lead 747d80a).
+7b. **Toolsmith queue (lead 11:5xZ; spawn after T8+ / I-034 land, not urgent):** (1) I-035: `lock.mjs repair --move X
+   --to <X's current position> --apply` prints "moved by lead" but writes no movedBy, so short jobs pass X (workaround:
+   move to 2, then to 1). (2) Proposal: `lock.mjs run --no-timing` (or similar) that skips the host gate and marks the
+   hold non-measuring (the wda build waited for quiet while the user worked at the Mac); no arch spawn (lead 12:0xZ): the
+   I-035 toolsmith writes the proposal in the same task; the lead's measurement-code fix-reviewer is the sign-off (a
+   non-measuring hold must never let a timing run start on a loud host).
+7c. **F-059 / protocol §3.7 + §6.2 (bf2bc30) are PROVISIONAL** (lead 12:1xZ): "LayerTree.layerPainted dead on Chrome
+   154" rests on two probes' zero counts only; the user challenged it. res-layerpainted (lead spawn) researches it and
+   ts-render-signals runs the decisive short-lane check. Do NOT digest F-059 into FINDINGS.md until the verdict; if
+   refuted, route the doc corrections to doc-protocol-v2.
 8. Backlog for mgmt-lead (none urgent): as before (recheck pauses, gate.since, WindowServer in the gate, verify has no
    load phase, trace buffer, review-10e note (a)); plus T8+ host record (ts-host-state), protocol amendments A1-A9.
 
