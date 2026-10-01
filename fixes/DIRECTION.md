@@ -327,8 +327,16 @@ baseline fps is ~76 with the display on vs ~93 in DarkWake, so the "~93 fps floo
 may be the host, not the tools. **From 11:01:46Z every hold runs display-on** (`caffeinate -d -i -s`, user-approved; lead
 restarts it every 2 h), which matches how the user uses the site. Chrome results before 11:01Z compare with later ones
 **only if `pmset` shows the display was on**; **the DarkWake runs (00:17-06:21Z, ~93 fps baselines) compare with nothing
-after them.** Back-tagging existing results.json/canaries from `pmset -g log` is a desk task (fix-scroll-engine, for the
-T8 host-record ticket). Also U2: phone rAF timestamps are off the vsync grid -> every phone verdict in k-ticks AND
+after them.** **Back-tag done (fix-scroll-engine 1a00842, `research/host-display-state/README.md`, 27 verify.json holds
+from `pmset -g log`):** plain baseline 63.5-78.3 fps display-on (7 holds) vs 92.2-93.8 DarkWake (3 holds), no overlap;
+aw1-10c 108.6 off vs 95.3 on; battery vs AC no visible effect. **Display on (FullWake) continuously since 06:22:55Z**, so
+every hold after 06:22Z is comparable (also before caffeinate -d); display on 09-30 16:59 -> 10-01 00:16:55; asleep
+00:20-02:31 and 04:00-04:36 (short DarkWakes); DarkWake 02:31-04:00 and 04:36:15-06:21:51. No hold has a display change
+inside it, so within-hold A/Bs stay valid. The 75 -> 93 jump is confounded with the tools change; only 92 -> 76 isolates
+the display (U1's interleaved on/off A/A is still the controlled test). Canary times corrected: 04:00-04:02Z A/A 92.2
+(the "04:25Z canary" can't exist: asleep 04:20:48-04:36:15), 08:27-08:30Z 78.3, 09:48-09:53Z 75.9. T8 input: the 04:00Z
+A/A slept 27 s inside the gate phase but verify.json says sleptSec 0 / woke false -> record wake type and display state
+per run. Also U2: phone rAF timestamps are off the vsync grid -> every phone verdict in k-ticks AND
 legacy ms; U5: the warm-up covers every arm's port; U7/U9: `Date.now()` + settings fingerprint per run (T2 schema).
 **Gesture/WDA tool landed (main 5d357b1, review-gesture-2 ACCEPT):** the G driver exists; its first real run (V1: aw1-10c
 vs mw-g) waits for the user's one-time WDA signing setup. **Bundled user asks (lead presents after arch-lead's
