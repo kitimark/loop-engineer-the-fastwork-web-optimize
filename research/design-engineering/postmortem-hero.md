@@ -250,6 +250,18 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
       setup**: that a `none` → non-`none` transform change triggers a WebKit layout and `translateY(0)` →
       `scale(1)` does not. It is part of condition 1's reference check. re-keep-op's build card may cite the code
       path, not the WebKit rule.
+    - **Condition 1 update: mechanism CONFIRMED** by arch-claims in WebKit-7624.4.5 source (claims-audit §2.8,
+      762fc40; board F-075). Lifting condition 1 is the lead's decision.
+      - **Transform flip:** `StyleDifference.cpp` l.191-193 returns Layout when `hasTransform()` flips, and
+        `hasTransform()` means "not `none`" (`StyleTransformData.h` l.50). So `none` → `scale(1)` causes a Layout.
+      - **No flip:** `translateY(0)` → `scale(1)` is only a context-sensitive Transform change (l.194-197).
+        `RenderElement::adjustStyleDifference` (l.302-316) then makes it RecompositeLayer or Overflow if the card
+        has a layer, and Layout only if it has none.
+      - **Opacity and filter:** the same rule covers the +700 / +900 ends, through an isOpaque flip and a
+        hasFilters/hasTransform flip.
+      - **Why the root is the view:** no layout boundary sits above the card (RenderObject.cpp l.523-562,
+        598-660).
+      - **Still OBSERVED:** the tie of each frame to this rule (the re-dur and re-keep ablations, n=2).
 - **Fix only after NAMED:** end states that keep presence. `blur(0px)` / `translateY(0)` remove the +940
   layout. For opacity, either align its duration with the 0.9 s pair (two long frames → one) or end at 0.999.
   The 0.999 end needs a render-server check: group opacity on a full-section layer may cost an offscreen pass
