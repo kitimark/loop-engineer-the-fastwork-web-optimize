@@ -1,11 +1,12 @@
 // tools/prettify.mjs on a copy: site/ -> site-pretty/ with parseable, reformatted JS/CSS, HTML and
 // site/ untouched, vendor scripts (odd file names) formatted with the babel parser. It shells out to
-// `npx prettier@3`; the test runs it offline-first and is skipped if prettier is not in the npx cache.
+// `npx prettier@<baseline.json prettier, else 3>`; the test runs it offline-first and is skipped if prettier is not in the npx cache.
+// A committed site-pretty/ (the baseline snapshot) is refused without --new-snapshot.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cpSync, readFileSync, rmSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { tempDir, run, TOOLS, sha256 } from '../helpers.mjs';
+import { tempDir, run, git, TOOLS, sha256 } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS, PAGE_CSS, VENDOR_FILE } from '../fixtures/baseline.mjs';
 
 const npmEnv = { npm_config_prefer_offline: 'true', npm_config_update_notifier: 'false', npm_config_fund: 'false', npm_config_audit: 'false' };
@@ -43,4 +44,20 @@ test('prettify refuses to run without site/', () => {
   const r = run(process.execPath, [join(d, 'tools', 'prettify.mjs')], { cwd: d });
   assert.equal(r.code, 1);
   assert.match(r.stderr, /site\/ missing/);
+});
+
+test('a committed site-pretty/ (the baseline snapshot) is never rebuilt without --new-snapshot', () => {
+  const d = tempDir('fw-pretty-snap-');
+  cpSync(join(TOOLS, 'prettify.mjs'), join(d, 'tools', 'prettify.mjs'));
+  const fx = makeFixtureHome(d);
+  git(d, 'init', '-q', '-b', 'main');
+  git(d, 'add', 'site', 'site-pretty');
+  git(d, 'commit', '-q', '-m', 'snapshot');
+  const before = hash(fx.pretty);
+  const r = run(process.execPath, [join(d, 'tools', 'prettify.mjs')], { cwd: d });
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.stderr, /^PRETTIFY-REFUSED: .*site-pretty is part of the committed baseline snapshot \(\d+ tracked files/);
+  assert.match(r.stderr, /node tools\/prettify\.mjs --new-snapshot/);
+  assert.deepEqual(hash(fx.pretty), before, 'site-pretty/ untouched (refused before rm/npx)');
+  assert.equal(git(d, 'status', '--porcelain', '--', 'site', 'site-pretty'), '');
 });

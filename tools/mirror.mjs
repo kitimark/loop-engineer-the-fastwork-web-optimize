@@ -9,6 +9,13 @@
 //                                         #   Hotjar, Cloudflare beacon) for `serve --vendors=local`
 //   node tools/mirror.mjs --refresh       # re-download even what is cached
 //   node tools/mirror.mjs --missing       # also fetch paths the local server logged as 404
+//   node tools/mirror.mjs --new-snapshot  # required once site/ is the committed baseline snapshot (see below)
+//
+// site/ is the study's frozen baseline snapshot, committed on main and pinned by baseline.json
+// (tools/lib/baseline.mjs). Over a tracked site/ mirror.mjs refuses (exit 2, MIRROR-REFUSED) unless
+// --new-snapshot is given: then it updates the working tree only, and the result is a git diff the user
+// reviews and, if wanted, commits in the authorized form (CLAUDE.md "Baseline snapshot"). It never
+// stages or commits anything. Taking a new snapshot is the user's decision, never an agent's.
 //
 // No dependencies (Node >= 22). Polite: honours robots.txt, sequential by default (--concurrency N),
 // small delay between requests, caches everything already on disk (content-hashed files are never
@@ -18,6 +25,7 @@ import { dirname, join, resolve, extname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { spawnSync } from 'node:child_process';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -56,6 +64,26 @@ const ASSET_EXT = /\.(?:m?js|css|json|webmanifest|png|jpe?g|gif|webp|avif|svg|ic
 const NEVER = [/^\/api(\/|$)/, /^\/cdn-cgi\//, /^\/__data\.json/];
 // Always try these (SvelteKit / PWA plumbing the client may request at runtime).
 const EXTRA = ['/_app/version.json', '/_app/env.js', '/site.webmanifest', '/favicon.ico', '/favicon.svg', '/icon-192.png', '/apple-touch-icon.png', '/robots.txt'];
+
+// ---------------------------------------------------------------- the committed baseline snapshot
+/** Number of git-tracked files under `dir` (0 when it doesn't exist or isn't in a git work tree). */
+function trackedFiles(dir) {
+  if (!existsSync(dir)) return 0;
+  const r = spawnSync('git', ['ls-files', '--', '.'], { cwd: dir, encoding: 'utf8', env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' } });
+  return r.status === 0 ? r.stdout.split('\n').filter(Boolean).length : 0;
+}
+const NEW_SNAPSHOT = flag('new-snapshot');
+const TRACKED = trackedFiles(OUT);
+if (TRACKED && !NEW_SNAPSHOT) {
+  console.error(`MIRROR-REFUSED: ${OUT} is the committed baseline snapshot (${TRACKED} tracked files, pinned by baseline.json);
+re-mirroring would change the baseline every agent measures. A new snapshot is the user's decision only:
+  node tools/mirror.mjs --new-snapshot [--crawl --vendors]   # updates the working tree; never commits
+  node tools/prettify.mjs --new-snapshot
+then review it (git status --short site site-pretty; git diff --stat -- site site-pretty) and commit it in the
+authorized form (CLAUDE.md "Baseline snapshot"), or discard it:
+  git restore --source=HEAD --staged --worktree -- site site-pretty && git clean -fd -- site site-pretty`);
+  process.exit(2);
+}
 
 mkdirSync(META, { recursive: true });
 const manifestPath = join(META, 'manifest.json');
@@ -414,6 +442,15 @@ async function main() {
   const total = Object.values(manifest.files).filter((f) => f.status === 200).length;
   log(`\ndone: ${total} files in site/ (fetched ${stats.fetched} = ${(stats.bytes / 1e6).toFixed(2)} MB, cached ${stats.cached}, 304 ${stats.notModified}, 404 ${stats.missing}, robots-skipped ${stats.skippedRobots})`);
   log(`vendor scripts saved: ${Object.keys(manifest.vendors).length}`);
+  if (TRACKED) {
+    log(`\nNEW SNAPSHOT CANDIDATE in ${OUT} (working tree only; nothing staged or committed). Next, the user decides:`);
+    log('  node tools/prettify.mjs --new-snapshot');
+    log('  git status --short site site-pretty | head; git diff --stat -- site site-pretty   # review');
+    log('  keep:    git add site site-pretty && node tools/baseline.mjs pin --prettier <exact version> && git add baseline.json');
+    log('           FW_BASELINE_UPDATE=<id printed by pin> git commit -m "baseline: snapshot <id>"   # on main, nothing else staged');
+    log('  discard: git restore --source=HEAD --staged --worktree -- site site-pretty && git clean -fd -- site site-pretty');
+    log('Until then every agent tool refuses with BASELINE-MODIFIED (agents: node tools/baseline.mjs sparse --off).');
+  }
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

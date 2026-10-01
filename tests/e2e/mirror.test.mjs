@@ -1,13 +1,14 @@
 // tools/mirror.mjs against a local fixture origin (never the live site): resource discovery from
 // HTML / Link header / CSS / JS (imports, new URL, template literals) / SVG / webmanifest, robots.txt,
 // NEVER-list, manifest headers + sha256, 404 + redirect bookkeeping, and the second run's caching
-// (hashed files not re-fetched, HTML revalidated with If-None-Match -> 304).
+// (hashed files not re-fetched, HTML revalidated with If-None-Match -> 304), and the snapshot guard (a
+// committed site/ is re-mirrored only with --new-snapshot, never staged or committed).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, nodeAsync, tool, sha256 } from '../helpers.mjs';
+import { tempDir, nodeAsync, tool, sha256, git } from '../helpers.mjs';
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
 const ROUTES = {
@@ -125,4 +126,30 @@ test('--refresh re-downloads everything', async () => {
   const paths = hits.map((h) => h.path);
   assert.ok(paths.includes('/_app/entry.js'));
   assert.equal(hits.find((h) => h.path === '/').inm, undefined);
+});
+
+test('a committed site/ (the baseline snapshot) is only re-mirrored with --new-snapshot, into the working tree, never committed', async () => {
+  const repo = tempDir('fw-mirror-snap-');
+  git(repo, 'init', '-q', '-b', 'main');
+  cpSync(tool('mirror.mjs'), join(repo, 'tools', 'mirror.mjs'));
+  cpSync(out, join(repo, 'site'), { recursive: true });
+  git(repo, 'add', 'site');
+  git(repo, 'commit', '-q', '-m', 'snapshot');
+  const head = git(repo, 'rev-parse', 'HEAD');
+  const run = (...a) => nodeAsync(join(repo, 'tools', 'mirror.mjs'), ['--origin', origin, '--delay', '0', '--no-sourcemap-probe', ...a], { cwd: repo });
+  hits.length = 0;
+  const no = await run();
+  assert.equal(no.code, 2, no.out);
+  assert.match(no.stderr, /^MIRROR-REFUSED: .*site is the committed baseline snapshot \(\d+ tracked files/);
+  assert.match(no.stderr, /node tools\/mirror\.mjs --new-snapshot/);
+  assert.deepEqual(hits, [], 'refused before any request');
+  assert.equal(git(repo, 'status', '--porcelain', '--', 'site'), '', 'site/ untouched');
+  const yes = await run('--new-snapshot');
+  assert.equal(yes.code, 0, yes.out);
+  assert.match(yes.stdout, /NEW SNAPSHOT CANDIDATE in .*site \(working tree only; nothing staged or committed\)/);
+  assert.match(yes.stdout, /FW_BASELINE_UPDATE=<id printed by pin> git commit/);
+  assert.ok(hits.length > 0);
+  assert.equal(git(repo, 'rev-parse', 'HEAD'), head, 'never commits');
+  assert.equal(git(repo, 'diff', '--cached', '--name-only'), '', 'never stages');
+  assert.match(git(repo, 'status', '--porcelain', '--', 'site'), /site\/\.mirror\/manifest\.json/, 'the result is a git diff to review');
 });
