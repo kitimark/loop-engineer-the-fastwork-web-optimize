@@ -316,6 +316,12 @@ performance.mark arrives as TimeStamp, RenderingFrame 16.6-16.7 ms steady) -> §
 is invisible to rAF): **render-bound, LOCATED**, no more rAF blocks; 1-min computed-style mechanism check owed; the real
 verdict waits for T10 / Instruments hitches (the user's Instruments pairing gates the render-bound class). ghr8 dropped
 for now, revisit after hitches.
+**y≈1960 frame NAMED (iPhone, na/nb block ended ~10:43Z + P2b Timeline):** edge frame C 104/107 ms, **na (wheel/touch
+listeners armed once at setup) 34/35 = gone**, nb (no `b` at the edge) 84/101 = stays; na costs nothing elsewhere
+(scroll fps 57.0/57.6 vs 55.4/56.3, whole-scroll > 50 ms 0/0 vs 3/1, idle and load equal). P2b: RecalculateStyles 34-42 ms
+(incl. Layout 19-24) + Composite 58-72 ms, JS ~1 ms. Mechanism: the window wheel/touch listener add at the morph IO edge
+(likely event-region invalidation over all layers). fix-nav-morph sends the attribution card to the lead, then builds the
+landable fix (listeners armed at idle + a cheap touchmove gate); touch-only class -> G or F before landing.
 **iPhone queue (v2, lead-approved 10:5xZ):** na/nb + P2b (Timeline attribution of the y≈1960 frame) -> morph attribution
 session (de-safari P2/P3) -> hero 2 blocks + P3b (LayerTree census y 580/780 before any v6/v7 bisect) -> R2 bg -> /10d ->
 N12 -> R3/h3. Only ticketed builds; reorders only at block boundaries.
