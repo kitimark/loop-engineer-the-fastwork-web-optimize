@@ -20,7 +20,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }
    // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
    let __navEls = {};
-@@ -13056,17 +13062,114 @@
+@@ -13056,17 +13062,119 @@
            (window.clearTimeout(l), f());
        };
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
@@ -41,6 +41,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      __nsG = !1,
 +      __nsPy = NaN,
 +      __nsForce = !0,
++      __nsHot = 0,
 +      __nsMq = window.matchMedia(`(width >= 861px) and (prefers-reduced-motion: no-preference)`),
 +      __nsOnScroll = () => {
 +        __nsY = window.scrollY;
@@ -71,11 +72,12 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          // transforms (and transitions), so ee() compares *visual* rects: no closed form matches it. Keep the
 +          // real rect test, but only in a window around the section (transform shift < 0.1 x card height,
 +          // ~340 px on desktop); outside it ee() is false. On phones the profile is not sticky: no reads at all.
++          // The window starts from the section top, not the sticky's own rect: a re-measure while it is stuck
++          // (mid-scroll, e.g. a deferred section rendering) would give its stuck position.
 +          if (e.position === `sticky` && t) {
-+            let r = R(i),
-+              a = R(t),
++            let a = R(t),
 +              o = Math.max(window.innerHeight, 600);
-+            n.prof = { e: i, s: t, T: Number.parseFloat(e.top), lo: r.t - Number.parseFloat(e.top) - o, hi: a.b + o };
++            n.prof = { e: i, s: t, T: Number.parseFloat(e.top), lo: a.t - Number.parseFloat(e.top) - o, hi: a.b + o };
 +          }
 +        }
 +        for (let e of document.querySelectorAll(
@@ -124,7 +126,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          }
 +        (a !== __nsGeo.sig && ((__nsGeo.sig = a), (__nsForce = !0)),
 +          z(v, __nsEE(n), !0),
-+          (__nsForce || o || C() || !(__nsPy === __nsPy) || __nsCross(__nsPy, r)) && ((__nsG = F()), (__nsForce = !1)),
++          // after a forced or edge-crossing hit test, keep testing for 1 s: class flips start 0.9 s CSS
++          // transform transitions (future card) that move the hit boundary with no further class change
++          (__nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r)) && (__nsHot = performance.now() + 1e3),
++          (__nsForce || o || C() || performance.now() < __nsHot) && ((__nsG = F()), (__nsForce = !1)),
 +          (__nsPy = r),
 +          z(g, __nsG, !0));
 +        let t = __nsGeo.track;
@@ -141,7 +146,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        y = () => document.querySelector(`.start-selling-platform`),
        S = () => {
-@@ -13145,6 +13248,19 @@
+@@ -13145,6 +13253,19 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -161,7 +166,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      (R && te && te.observe(R), _(), m());
      let ne = dE(L, { manageAnimations: !1 });
      return (
-@@ -13157,7 +13273,13 @@
+@@ -13157,7 +13278,13 @@
            P(),
            ne(),
            e.removeEventListener(`change`, m),

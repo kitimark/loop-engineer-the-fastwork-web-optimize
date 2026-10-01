@@ -1,0 +1,183 @@
+# fastwork mirror fix: nav-scroll-handler
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/wave1-partial/overlay: apply wave1-partial first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply nav-scroll-handler --on wave1-partial
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 7ee343c82579bd58517bf3de761f9821188e0dd8a0254c75b169ab7d31229ca4
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13013,6 +13013,12 @@
+     for (let r of document.elementsFromPoint(t, n))
+       if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
+     return j(null);
++  }
++  // perf(nav-scroll-handler): the viewport y of F()'s probe point (nav is fixed), measured with the offsets
++  function __navProbeY() {
++    if (!T) return 32;
++    let e = T.getBoundingClientRect();
++    return e.top + Math.min(e.height, 64) / 2;
+   }
+   // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
+   let __navEls = {};
+@@ -13056,17 +13062,119 @@
+           (window.clearTimeout(l), f());
+       };
+     e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
++    // perf(nav-scroll-handler): the nav state (profile-sticky hidden, on-dark theme, hero pill) used to cost a
++    // getComputedStyle + 4 rect reads + an elementsFromPoint hit test on every scroll frame. Now the document
++    // offsets are measured once (__nsMeasure: ResizeObserver on the page root, breakpoint MQ, fonts.ready,
++    // resize) and each frame derives the state from the scroll position captured in the scroll event:
++    // - hero pill: (scrollY - trackTop) >= 0.72 * max(1, trackHeight - innerHeight), the same formula;
++    // - profile sticky: no reads where it can't be stuck (phones: not sticky at all; desktop: outside a window
++    //   around the section); inside the window the same two rect reads as ee(), minus its getComputedStyle;
++    // - theme: the real hit test F() runs only in frames where the probe line crosses a cached section edge
++    //   (+-12 px), inside a section whose shrink/enter class is on (sticky + scaled content moves the hit
++    //   boundary without layout), after any class change on the theme sections, while the morph is active,
++    //   and after a re-measure; otherwise the last answer stands.
++    let __nsY = window.scrollY,
++      __nsVh = window.innerHeight,
++      __nsGeo = null,
++      __nsG = !1,
++      __nsPy = NaN,
++      __nsForce = !0,
++      __nsHot = 0,
++      __nsMq = window.matchMedia(`(width >= 861px) and (prefers-reduced-motion: no-preference)`),
++      __nsOnScroll = () => {
++        __nsY = window.scrollY;
++      },
++      __nsOnResize = () => {
++        ((__nsVh = window.innerHeight), (__nsY = window.scrollY), (__nsGeo = null));
++      },
++      __nsInvalidate = () => {
++        __nsGeo = null;
++      },
++      __nsMeasure = () => {
++        let y = window.scrollY,
++          R = (e) => {
++            let t = e.getBoundingClientRect();
++            return { t: t.top + y, b: t.bottom + y };
++          },
++          n = { track: null, prof: null, edges: [], probe: 32, zones: [], cls: [...document.querySelectorAll(`.commission, .start-selling-future, .start-selling-platform, .pain`)], sig: `` },
++          r = __navEl(`.hero-track`),
++          i = __navEl(`.start-selling-profile-sticky`);
++        if (((__nsY = y), (__nsVh = window.innerHeight), r)) {
++          let e = R(r);
++          n.track = { t: e.t, h: e.b - e.t };
++        }
++        if (i) {
++          let e = window.getComputedStyle(i),
++            t = i.closest(`#profile-showcase, .start-selling-profile`);
++          // the sticky profile sits inside .start-selling-future-card, which is translated/scaled by scroll-driven
++          // transforms (and transitions), so ee() compares *visual* rects: no closed form matches it. Keep the
++          // real rect test, but only in a window around the section (transform shift < 0.1 x card height,
++          // ~340 px on desktop); outside it ee() is false. On phones the profile is not sticky: no reads at all.
++          // The window starts from the section top, not the sticky's own rect: a re-measure while it is stuck
++          // (mid-scroll, e.g. a deferred section rendering) would give its stuck position.
++          if (e.position === `sticky` && t) {
++            let a = R(t),
++              o = Math.max(window.innerHeight, 600);
++            n.prof = { e: i, s: t, T: Number.parseFloat(e.top), lo: a.t - Number.parseFloat(e.top) - o, hi: a.b + o };
++          }
++        }
++        for (let e of document.querySelectorAll(
++          `.hero-track, .commission, .commission-card, .start-selling-future-card, .pain, .start-selling-platform-card, .start-selling-platform`,
++        )) {
++          let t = R(e);
++          n.edges.push(t.t, t.b);
++        }
++        // moving zones: inside these sections the hit boundary moves with sticky children and scroll-driven
++        // scale transforms (no layout, no ResizeObserver), so the real hit test runs every frame there while
++        // a shrink/enter class is on
++        for (let e of n.cls) e.matches(`.pain`) || n.zones.push({ e, ...R(e) });
++        ((n.probe = __navProbeY()), n.edges.sort((e, t) => e - t), (__nsGeo = n), (__nsForce = !0));
++      },
++      __nsEE = (e) => {
++        let t = __nsGeo.prof;
++        if (!t || !Number.isFinite(t.T) || e < t.lo || e > t.hi) return !1;
++        let n = t.e.getBoundingClientRect(),
++          r = t.s.getBoundingClientRect();
++        return n.top <= t.T + 1 && r.bottom > n.bottom + 1;
++      },
++      __nsCross = (e, t) => {
++        let n = Math.min(e, t) - 12,
++          r = Math.max(e, t) + 12;
++        for (let e of __nsGeo.edges) {
++          if (e > r) return !1;
++          if (e >= n) return !0;
++        }
++        return !1;
++      };
+     let _ = () => {
+-        (z(v, ee(), !0), z(g, F(), !0));
+-        let t = __navEl(`.hero-track`);
++        __nsGeo || __nsMeasure();
++        let n = __nsY,
++          r = n + __nsGeo.probe,
++          a = ``,
++          o = !1;
++        // theme classes (shrinking, entering, ...) are toggled by other engine callbacks in the same frame:
++        // compare the class names directly (no layout) instead of waiting for a MutationObserver microtask
++        for (let e of __nsGeo.cls) a += e.className + `|`;
++        for (let e of __nsGeo.zones)
++          if (r >= e.t - 12 && r <= e.b + 12 && /shrink|enter/.test(e.e.className)) {
++            o = !0;
++            break;
++          }
++        (a !== __nsGeo.sig && ((__nsGeo.sig = a), (__nsForce = !0)),
++          z(v, __nsEE(n), !0),
++          // after a forced or edge-crossing hit test, keep testing for 1 s: class flips start 0.9 s CSS
++          // transform transitions (future card) that move the hit boundary with no further class change
++          (__nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r)) && (__nsHot = performance.now() + 1e3),
++          (__nsForce || o || C() || performance.now() < __nsHot) && ((__nsG = F()), (__nsForce = !1)),
++          (__nsPy = r),
++          z(g, __nsG, !0));
++        let t = __nsGeo.track;
+         if (!t || e.matches) {
+           z(p, !0);
+           return;
+         }
+-        let n = t.getBoundingClientRect(),
+-          r = Math.max(1, n.height - window.innerHeight),
+-          i = Math.min(r, Math.max(0, -n.top));
+-        z(p, i / r >= 0.72);
++        let i = Math.max(1, t.h - __nsVh);
++        z(p, n - t.t >= 0.72 * i);
+       },
+       y = () => document.querySelector(`.start-selling-platform`),
+       S = () => {
+@@ -13145,6 +13253,19 @@
+             { rootMargin: `200% 0px` },
+           )
+         : void 0;
++    // perf(nav-scroll-handler): re-measure on layout changes (page root size: lazy images, deferred sections,
++    // mounts), breakpoints, fonts and resizes. html/body are height:100%, so the root box never grows with the
++    // content: observe the content root (.start-selling) as well.
++    let __nsRo = new ResizeObserver(() => __nsMeasure()),
++      __nsRoot = document.querySelector(`.start-selling`);
++    (__nsRo.observe(document.documentElement),
++      __nsRoot && __nsRo.observe(__nsRoot),
++      window.addEventListener(`scroll`, __nsOnScroll, { passive: !0 }),
++      window.addEventListener(`resize`, __nsOnResize, { passive: !0 }),
++      __nsMq.addEventListener(`change`, __nsInvalidate),
++      e.addEventListener(`change`, __nsInvalidate),
++      t.addEventListener(`change`, __nsInvalidate),
++      document.fonts?.ready.then(__nsInvalidate));
+     (R && te && te.observe(R), _(), m());
+     let ne = dE(L, { manageAnimations: !1 });
+     return (
+@@ -13157,7 +13278,13 @@
+           P(),
+           ne(),
+           e.removeEventListener(`change`, m),
+-          t.removeEventListener(`change`, m));
++          t.removeEventListener(`change`, m),
++          __nsRo.disconnect(),
++          window.removeEventListener(`scroll`, __nsOnScroll),
++          window.removeEventListener(`resize`, __nsOnResize),
++          __nsMq.removeEventListener(`change`, __nsInvalidate),
++          e.removeEventListener(`change`, __nsInvalidate),
++          t.removeEventListener(`change`, __nsInvalidate));
+       }
+     );
+   });

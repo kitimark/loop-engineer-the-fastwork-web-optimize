@@ -1,0 +1,117 @@
+{
+ "date": "2026-10-01T06:39:01.916Z",
+ "baseOverlay": "/Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-a277ea00c8773c1ea/fixes/aw1-10c/overlay",
+ "fixOverlay": "/private/tmp/claude-501/-Users-<user>-source-fastwork-com-web-optimize/391f6dee-c7ee-40f4-93c3-f4c2dce764ec/scratchpad/nav-scroll-handler/fix-full",
+ "regions": {
+  "base": [
+   13204,
+   13349
+  ],
+  "fix": [
+   13204,
+   13465
+  ]
+ },
+ "parity": {
+  "mobile": {
+   "steps": 124,
+   "maxY": [
+    5345,
+    5345
+   ],
+   "mismatchCount": 2,
+   "mismatches": [
+    {
+     "y": 2231,
+     "base": "is-on-dark",
+     "fix": ""
+    },
+    {
+     "y": 2251,
+     "base": "is-on-dark",
+     "fix": ""
+    }
+   ],
+   "baseStateChanges": 8,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  },
+  "desktop": {
+   "steps": 168,
+   "maxY": [
+    8448,
+    8448
+   ],
+   "mismatchCount": 1,
+   "mismatches": [
+    {
+     "y": 2001,
+     "base": "is-scroll-hidden is-profile-sticky-hidden",
+     "fix": ""
+    }
+   ],
+   "baseStateChanges": 12,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  },
+  "mobile-shift": {
+   "steps": 130,
+   "maxY": [
+    5645,
+    5645
+   ],
+   "mismatchCount": 0,
+   "mismatches": [],
+   "baseStateChanges": 8,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  },
+  "desktop-rtl": {
+   "steps": 168,
+   "maxY": [
+    8448,
+    8448
+   ],
+   "mismatchCount": 0,
+   "mismatches": [],
+   "baseStateChanges": 12,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  },
+  "mobile-rtl": {
+   "steps": 124,
+   "maxY": [
+    5345,
+    5345
+   ],
+   "mismatchCount": 2,
+   "mismatches": [
+    {
+     "y": 2231,
+     "base": "is-on-dark",
+     "fix": ""
+    },
+    {
+     "y": 2251,
+     "base": "is-on-dark",
+     "fix": ""
+    }
+   ],
+   "baseStateChanges": 8,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  }
+ },
+ "wallMs": 80414,
+ "monoMs": 80414
+}
