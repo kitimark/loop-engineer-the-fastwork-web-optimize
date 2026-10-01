@@ -2,9 +2,11 @@
 // item T3). Pure functions, no I/O; CLI: tools/stats.mjs; tests: tests/unit/stats.test.mjs.
 // ANALYSIS CODE: these functions decide phone-block verdicts. A change here changes verdicts; call it out.
 //
-// Ticks (§3.2): both devices present at 120 Hz, so a frame's dt is read as k = round(dt / 8.333) ticks.
-//   On time = k <= 2. ">34" = k >= 5 (dt >= 37.5 ms), ">50" = k >= 7 (dt >= 54.17 ms; the protocol rounds
-//   it to 54.2). Legacy columns dt > 34 / dt > 50 are kept for one wave (`frameCounts`).
+// Ticks (§3.2, Chrome only): Chrome stamps are vsync-aligned at 120 Hz, so a frame's dt is read as
+//   k = round(dt / 8.333) ticks. On time = k <= 2. ">34" = k >= 5 (dt >= 37.5 ms), ">50" = k >= 7 (dt >= 54.17
+//   ms; the protocol rounds it to 54.2). Legacy columns dt > 34 / dt > 50 are kept for one wave (`frameCounts`).
+// Phone (CLAUDE.md "Frame thresholds"): no k forms (Safari's 1 ms stamps are not vsync-quantized); dt > 50 and
+//   dt > 34 in ms, each also counted at +-4 ms (PHONE_TWINS); medians compare raw.
 // Robust summaries: median, quartiles by linear interpolation (R type 7 / numpy default), IQR.
 // Two-sample (one block, §5.3): exact one-sided Mann-Whitney (tools/lib/bench-stats.mjs: full enumeration
 //   of the splits of the pooled values, ties = 1/2 in U, so tied tick values give the exact conditional p)
@@ -72,8 +74,9 @@ export function summary(xs) {
 
 /**
  * Per-run frame counts: tick histogram, k>=5, k>=7, on-time (k<=2) (Chrome forms); dt>34 / dt>50 and the
- * phone's +-4 ms counts dt>30/38, dt>46/54, near34 = 30 < dt <= 38, near50 = 46 < dt <= 54 (frames within
- * 4 ms of a goal threshold; CLAUDE.md "Frame thresholds", names agreed with ts-iphone-run). Strict ">".
+ * phone's +-4 ms counts dt>30/38, dt>46/54, near34 = #(30 < dt <= 38), near50 = #(46 < dt <= 54), i.e. dt in
+ * (th-4, th+4], half-open (th-4 excluded, th+4 included): the frames whose classification differs between the -4 and +4 ms counts (gt30 - gt38, gt46 - gt54; CLAUDE.md "Frame
+ * thresholds", names agreed with ts-iphone-run's nearThreshold). Strict ">".
  */
 export function frameCounts(dts) {
   const d = num(dts), hist = {};
@@ -195,24 +198,32 @@ export function compareBlocks(blocks, dir = 'lower') {
 
 export const BLOCK1_ALPHA = 1 / 70; // U = 0 at 4 vs 4
 const DEFAULT_MIN_SHIFT = { ms: TICK_MS, ticks: 1, count: 1 };
+// Phone ms metrics (arch-claims decision, 2026-10-01; protocol §5 by doc-protocol-v2): 1 ms stamps with no vsync
+// grid (claims-audit §2.3), so the minimum shift is the +-4 ms threshold-sensitivity band, not a Chrome tick, and
+// medians compare in whole ms (rounded; equal rounded medians tie). T1a's A/A may raise it: a parameter change.
+export const PHONE_MIN_SHIFT_MS = 4;
 
 /**
  * blocks: [{control, variant}] (1 or 2 so far; per-run scalars of ONE metric). unit 'ms' | 'ticks' | 'count'.
- * predicted: the predicted improvement (positive, metric units) or null. Returns {decision: 'win' |
- * 'futile' | 'block2' | 'no-win', reason, rule, stats}.
+ * predicted: the predicted improvement (positive, metric units) or null. platform 'chrome' | 'phone' sets
+ * the defaults: ms minShift 8.333 (1 tick) | 4, ms medians compared as 'ticks' | 'ms1' (whole ms); counts
+ * and ticks are unchanged (minShift 1, medians 'raw'). minShift / medianCompare override them. Returns
+ * {decision: 'win' | 'futile' | 'block2' | 'no-win', reason, rule, stats}; stats.choices records the rule used.
  */
-export function sequentialDecision({ blocks, dir = 'lower', unit = 'ms', predicted = null, minShift = null, alpha = 0.05, block1Alpha = BLOCK1_ALPHA, medianCompare = null }) {
+export function sequentialDecision({ blocks, dir = 'lower', unit = 'ms', predicted = null, minShift = null, alpha = 0.05, block1Alpha = BLOCK1_ALPHA, medianCompare = null, platform = 'chrome' }) {
   if (!['lower', 'higher'].includes(dir)) throw new Error(`bad dir: ${dir}`);
   if (!(unit in DEFAULT_MIN_SHIFT)) throw new Error(`bad unit: ${unit} (ms | ticks | count)`);
   if (!blocks?.length) throw new Error('sequentialDecision: no blocks');
   if (blocks.length > 2) throw new Error('sequentialDecision: at most 2 blocks (a third only by the lead)');
   checkBlocks(blocks, 'sequentialDecision');
-  const ms = minShift ?? DEFAULT_MIN_SHIFT[unit];
+  if (!['chrome', 'phone'].includes(platform)) throw new Error(`bad platform: ${platform} (chrome | phone)`);
+  const phoneMs = platform === 'phone' && unit === 'ms';
+  const ms = minShift ?? (phoneMs ? PHONE_MIN_SHIFT_MS : DEFAULT_MIN_SHIFT[unit]);
   const f = (x) => (x == null ? '-' : Math.round(x * 1000) / 1000);
-  // ms medians compare as ticks on Chrome (§3.2); the phone has no k forms (CLAUDE.md, claims-audit §2.3): 'raw'
-  const mcmp = medianCompare ?? (unit === 'ms' ? 'ticks' : 'raw');
-  if (!['ticks', 'raw'].includes(mcmp)) throw new Error(`bad medianCompare: ${mcmp} (ticks | raw)`);
-  const choices = { unit, dir, minShift: ms, predicted, alpha, block1Alpha, medianCompare: mcmp };
+  // ms medians compare as ticks on Chrome (§3.2); the phone has no k forms (CLAUDE.md, claims-audit §2.3): whole ms
+  const mcmp = medianCompare ?? (phoneMs ? 'ms1' : unit === 'ms' ? 'ticks' : 'raw');
+  if (!['ticks', 'ms1', 'raw'].includes(mcmp)) throw new Error(`bad medianCompare: ${mcmp} (ticks | ms1 | raw)`);
+  const choices = { platform, unit, dir, minShift: ms, predicted, alpha, block1Alpha, medianCompare: mcmp };
   {
     const { control, variant } = blocks[0];
     const s = compareBlock(control, variant, dir);
@@ -222,9 +233,9 @@ export function sequentialDecision({ blocks, dir = 'lower', unit = 'ms', predict
       : { decision, stoppedAt: 1, reason: `block 1 stopped (${decision}): ${reason}; block 2 is outside the protocol (lead only) and was not evaluated`, rule, stats });
     const rule = `block 1: win iff U = 0 and p <= ${f(block1Alpha)} and HL >= max(minShift ${f(ms)}, predicted/2 ${predicted != null ? f(predicted / 2) : '-'}); futile iff variant median worse, or medians equal and HL <= 0`;
     if (s.u === 0 && s.p <= block1Alpha + 1e-12 && s.shift >= need - 1e-9) return stop('win', `U = 0, p ${f(s.p)}, HL ${f(s.shift)} >= ${f(need)}`, rule, stats);
-    const asTicks = mcmp === 'ticks';
-    const mc = asTicks ? tick(s.control.median) : s.control.median, mv = asTicks ? tick(s.variant.median) : s.variant.median;
-    const medians = `medians ${asTicks ? `${mc} vs ${mv} ticks` : `${f(mc)} vs ${f(mv)}`}`;
+    const asTicks = mcmp === 'ticks', q = asTicks ? tick : mcmp === 'ms1' ? Math.round : (x) => x;
+    const mc = q(s.control.median), mv = q(s.variant.median);
+    const medians = `medians ${asTicks ? `${mc} vs ${mv} ticks` : mcmp === 'ms1' ? `${mc} vs ${mv} ms (whole ms)` : `${f(mc)} vs ${f(mv)}`}`;
     if (better(mc, mv, dir)) return stop('futile', `variant median worse (${medians})`, rule, stats);
     if (mc === mv && s.shift <= 0) return stop('futile', `${medians} equal and HL ${f(s.shift)} <= 0`, rule, stats);
     if (blocks.length === 1) return { decision: 'block2', reason: `U ${s.u}, p ${f(s.p)}, HL ${f(s.shift)} (need U = 0, p <= ${f(block1Alpha)}, HL >= ${f(need)}); ${medians}: run block 2`, rule, stats };
@@ -367,9 +378,9 @@ export const METRICS = {
 };
 
 /**
- * Every phone verdict is reported both ways (§3.2; arch-unknowns U2: phone rAF timestamps are off the
- * vsync grid): a tick metric and its legacy ms twin. k5 <-> gt34, k7 <-> gt50 (a verdict that differs is
- * "threshold-sensitive"), p50Ms <-> p50Ticks, p95Ms <-> p95Ticks (one that differs is "tick-sensitive").
+ * Chrome: every verdict is reported both ways (§3.2; arch-unknowns U2), a tick metric and its legacy ms twin.
+ * k5 <-> gt34, k7 <-> gt50 (a verdict that differs is "threshold-sensitive"), p50Ms <-> p50Ticks, p95Ms <->
+ * p95Ticks (one that differs is "tick-sensitive"). The phone uses PHONE_TWINS below instead.
  */
 export const TWIN = { k5: 'gt34', gt34: 'k5', k7: 'gt50', gt50: 'k7', p50Ms: 'p50Ticks', p50Ticks: 'p50Ms', p95Ms: 'p95Ticks', p95Ticks: 'p95Ms' };
 export const twinKind = (metric) => (/^(k|gt)\d/.test(metric) ? 'threshold-sensitive' : 'tick-sensitive');
@@ -377,7 +388,9 @@ export const twinKind = (metric) => (/^(k|gt)\d/.test(metric) ? 'threshold-sensi
 /**
  * The phone has no k forms (CLAUDE.md "Frame thresholds": Safari rAF stamps are 1 ms, not vsync-quantized):
  * goal dt>50 and dt>34, each checked at +-4 ms (dt>46/54, dt>30/38); a verdict that differs across them is
- * "threshold-sensitive". Medians on the phone compare raw (ms), not as ticks.
+ * "threshold-sensitive". Conservative: the verdict is flagged when EITHER the -4 or the +4 count's verdict
+ * differs from the goal count's (this catches every case "differs between the -4 and +4 counts" does, and
+ * more). Medians on the phone compare raw (ms), not as ticks.
  */
 export const PHONE_TWINS = { gt50: ['gt46', 'gt54'], gt34: ['gt30', 'gt38'] };
 export const K_FORMS = new Set(['k5', 'k7', 'p50Ticks', 'p95Ticks']);
@@ -425,10 +438,32 @@ export function blocksFromRuns(runs, metric) {
 }
 
 /**
+ * Frames near the phone thresholds, per arm and block, per run (§5.3: every run, never frames pooled across
+ * runs or blocks): {arm: [{block, runs: [{source, run, pos, frames, near50, near34, gt50, gt34}], near50, near34,
+ * gt50, gt34 (each summary() over the block's runs: median [IQR])}]}, counted runs only, blocks in id order.
+ */
+export const NEAR_KEYS = ['near50', 'near34', 'gt50', 'gt34'];
+export function nearByBlock(runs) {
+  const counted = runs.filter((r) => !r.warmup && !r.void), out = {};
+  const ids = [...new Set(counted.map((r) => r.block))].sort(compareBlockIds);
+  for (const arm of [...new Set(counted.map((r) => r.arm))].sort((x, y) => (x === 'C' ? -1 : y === 'C' ? 1 : String(x).localeCompare(String(y))))) {
+    out[arm] = ids.map((b) => {
+      const rs = counted.filter((r) => r.arm === arm && r.block === b).sort((x, y) => (x.pos ?? 0) - (y.pos ?? 0)).map((r) => {
+        const c = frameCounts(r.frames.map((f) => f.dt));
+        return { source: r.source || r.label || null, run: r.run ?? null, pos: r.pos ?? null, frames: c.n, ...Object.fromEntries(NEAR_KEYS.map((k) => [k, c[k]])) };
+      });
+      return rs.length ? { block: b, runs: rs, ...Object.fromEntries(NEAR_KEYS.map((k) => [k, summary(rs.map((x) => x[k]))])) } : null;
+    }).filter(Boolean);
+  }
+  return out;
+}
+
+/**
  * Block-shape warnings (§5.2, §5.3), per block: <= 9 counted runs; n per arm (4 for 2 arms, 3 for 3 arms);
  * exactly one warm-up, before the first counted run; counted runs in the ABBA / Latin-square order by pos;
  * control runs without a sentinel record (`meta.sentinel`: T2 sets it and `void`; T3 does not judge it);
- * counted runs of more than one driver (F-071).
+ * counted runs of more than one driver, or none (F-071), a warm-up of another driver; across blocks, a variant
+ * arm whose decision would pool blocks of different drivers.
  */
 export function blockWarnings(runs) {
   const out = [];
@@ -456,6 +491,18 @@ export function blockWarnings(runs) {
     // totals don't compare across drivers (the ms-threshold counts do; CLAUDE.md "Frame thresholds")
     const drivers = [...new Set(counted.map((r) => r.driver ?? '?'))].sort();
     if (drivers.length > 1) out.push(`${tag}: mixed drivers ${drivers.map((d) => `${d} ${counted.filter((r) => (r.driver ?? '?') === d).length}`).join(', ')} (a block names one driver; F-071: fps and frame totals of F/G and S/W/M runs don't compare; '?' = no meta.driver)`);
+    else if (drivers[0] === '?') out.push(`${tag}: no meta.driver on its ${counted.length} counted run(s): driver unknown (a block names one driver)`);
+    const wd = warm.map((r) => r.driver ?? '?').filter((d) => drivers.length && !drivers.includes(d));
+    if (wd.length) out.push(`${tag}: warm-up driver ${wd.join(', ')} is not the counted runs' (${drivers.join(', ')})`);
+  }
+  // one decision pools every block of a variant arm (van Elteren): its blocks must share one driver (§5: a claim
+  // names one driver), which the per-block check above can't see (block 1 all S, block 2 all F)
+  if (ids.length > 1) {
+    const counted = runs.filter((r) => !r.warmup && !r.void);
+    for (const arm of [...new Set(counted.map((r) => r.arm))].filter((a) => a != null && a !== 'C')) {
+      const per = ids.map((b) => [b, [...new Set(counted.filter((r) => r.block === b && (r.arm === 'C' || r.arm === arm)).map((r) => r.driver ?? '?'))].sort()]).filter(([, d]) => d.length);
+      if (new Set(per.flatMap(([, d]) => d)).size > 1) out.push(`arm ${arm}: blocks ${per.map(([b, d]) => `${b ?? '-'} ${d.join('+')}`).join(', ')}: one decision mixes drivers (F-071)`);
+    }
   }
   return out;
 }

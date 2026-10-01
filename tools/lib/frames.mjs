@@ -3,7 +3,9 @@
 // frames longer than `minMs` of many runs into scrollY buckets and reports the positions where a long
 // frame occurs in at least `minShare` of the runs. Input: per-frame logs [t, dt, scrollY] from
 // verify.mjs --frame-log (verify.json: results[].frameLog.<phase>) or from tools/iphone.mjs scroll
-// (out/iphone/*.json: frames + marks.<phase>). CLI: tools/frames.mjs.
+// (out/iphone/*.json: frames + marks.<phase>), or fw-iphone-run/1 files of `iphone.mjs run` (their `fields`
+// name the tuple: [t, dt, yStart, yEnd, ...]; read here as [t, dt, yEnd], the y the frame ends at; frames
+// without a y, e.g. --y-source none, are not placed in a bucket). CLI: tools/frames.mjs.
 import { basename } from 'node:path';
 
 /** Runs [{label, run, source, frames: [[t, dt, y], ...]}] from one parsed JSON file. */
@@ -13,7 +15,10 @@ export function runsFromJson(json, { file = '', phase = 'scroll' } = {}) {
   }
   if (Array.isArray(json?.frames)) {
     const m = json.marks?.[phase];
-    const frames = m ? json.frames.filter(([t]) => t >= m[0] && t <= m[1]) : json.frames;
+    let frames = m ? json.frames.filter(([t]) => t >= m[0] && t <= m[1]) : json.frames;
+    // fw-iphone-run/1: index 2 is yStart, so take yEnd by name (review-stats item 7)
+    const iy = Array.isArray(json.fields) ? json.fields.indexOf('yEnd') : -1;
+    if (iy >= 0) frames = frames.map((f) => [f[0], f[1], f[iy]]);
     return [{ label: json.meta?.label || basename(file).replace(/-\d+\.json$/, '').replace(/\.json$/, ''), run: 0, source: file, frames }];
   }
   return [];
@@ -35,7 +40,7 @@ export function clusters(runs, { minMs = 34, bucketPx = 50, minShare = 0.6 } = {
     const n = rs.length;
     const hits = rs.map((r) => {
       const m = new Map(); // bucket -> [frames, ms]
-      for (const [, dt, y] of r.frames) if (dt > minMs) { const b = Math.floor(y / bucketPx); const v = m.get(b) || [0, 0]; v[0]++; v[1] += dt; m.set(b, v); }
+      for (const [, dt, y] of r.frames) if (dt > minMs && Number.isFinite(y)) { const b = Math.floor(y / bucketPx); const v = m.get(b) || [0, 0]; v[0]++; v[1] += dt; m.set(b, v); }
       return m;
     });
     const all = [...new Set(hits.flatMap((m) => [...m.keys()]))].sort((a, b) => a - b);

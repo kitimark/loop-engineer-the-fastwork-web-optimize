@@ -318,7 +318,7 @@ test('input: Chrome [t, dt, y] and §5.5 tuples and objects normalise; iPhone ru
 
 test('blockWarnings: n per arm, one warm-up first, ABBA order by pos, missing sentinel records', () => {
   const order = blockOrder(2);
-  const ok = [{ block: 1, arm: 'C', warmup: true, void: false, pos: 0, sentinel: { pass: true } }, ...order.map((arm, i) => ({ block: 1, arm, warmup: false, void: false, pos: i + 1, sentinel: arm === 'C' ? { pass: true } : null }))];
+  const ok = [{ block: 1, arm: 'C', warmup: true, void: false, pos: 0, sentinel: { pass: true }, driver: 'S' }, ...order.map((arm, i) => ({ block: 1, arm, warmup: false, void: false, pos: i + 1, sentinel: arm === 'C' ? { pass: true } : null, driver: 'S' }))];
   assert.deepEqual(blockWarnings(ok), []);
   const noSentinel = ok.map((r) => ({ ...r, sentinel: null }));
   assert.deepEqual(blockWarnings(noSentinel), ['block 1: sentinel not checked here (T2 sets void); 4 control run(s) carry no sentinel record']);
@@ -330,8 +330,8 @@ test('blockWarnings: n per arm, one warm-up first, ABBA order by pos, missing se
   assert.ok(blockWarnings(short).includes('block 1: arm C has 3 counted runs (expected 4)'));
   assert.ok(blockWarnings(ok.filter((r) => !r.warmup)).includes('block 1: 0 warm-up runs (expected 1)'));
   assert.ok(blockWarnings(ok.map((r) => ({ ...r, pos: null }))).includes('block 1: run positions (meta.pos) missing: order not checked'));
-  const latin = blockOrder(3).map((arm, i) => ({ block: 2, arm, warmup: false, void: false, pos: i + 1, sentinel: 1 }));
-  assert.deepEqual(blockWarnings([{ block: 2, arm: 'C', warmup: true, pos: 0 }, ...latin]), []);
+  const latin = blockOrder(3).map((arm, i) => ({ block: 2, arm, warmup: false, void: false, pos: i + 1, sentinel: 1, driver: 'W' }));
+  assert.deepEqual(blockWarnings([{ block: 2, arm: 'C', warmup: true, pos: 0, driver: 'W' }, ...latin]), []);
 });
 
 test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over a dir, place, usage errors', () => {
@@ -436,6 +436,28 @@ test('phone: medians compare raw (no ticks), legacy drivers, legacy finger rows,
   assert.equal(d.decision, 'futile', d.reason);
   assert.equal(d.stats.choices.medianCompare, 'raw');
   assert.throws(() => sequentialDecision({ blocks: [b], unit: 'ms', medianCompare: 'k' }), /bad medianCompare/);
+  assert.throws(() => sequentialDecision({ blocks: [b], unit: 'ms', platform: 'tv' }), /bad platform/);
+  // phone ms metrics (arch-claims): min shift 4 ms, medians in whole ms. Medians 35.1 vs 35.4 differ by < 1 ms:
+  // a tie (35 vs 35), and HL 4.8 > 0 -> block 2, not futile (raw they'd be futile). HL by hand: -5.4 x6, 4.8 x6,
+  // 10 x2, 20.2 x2 -> 4.8.
+  const sub1 = { control: [30, 30, 40.2, 40.2], variant: [35.4, 35.4, 35.4, 20] };
+  d = sequentialDecision({ blocks: [sub1], unit: 'ms', platform: 'phone' });
+  assert.equal(d.decision, 'block2', d.reason);
+  assert.match(d.reason, /medians 35 vs 35 ms \(whole ms\)/);
+  assert.deepEqual([d.stats.choices.platform, d.stats.choices.minShift, d.stats.choices.medianCompare], ['phone', 4, 'ms1']);
+  assert.equal(sequentialDecision({ blocks: [sub1], unit: 'ms', platform: 'phone', medianCompare: 'raw' }).decision, 'futile');
+  // HL 5 ms with U = 0 at 4 vs 4: meets the phone's 4 ms, not Chrome's 8.333 (Chrome: medians 5 vs 4 ticks -> block 2)
+  const hl5 = { control: [40, 41, 42, 43], variant: [35, 36, 37, 38] };
+  d = sequentialDecision({ blocks: [hl5], unit: 'ms', platform: 'phone' });
+  assert.equal(d.decision, 'win', d.reason);
+  assert.match(d.reason, /HL 5 >= 4$/);
+  d = sequentialDecision({ blocks: [hl5], unit: 'ms' });
+  assert.equal(d.decision, 'block2', d.reason);
+  assert.deepEqual([d.stats.choices.platform, d.stats.choices.minShift, d.stats.choices.medianCompare], ['chrome', 8.333333333333334, 'ticks']);
+  // counts and an explicit minShift are unchanged by the platform
+  d = sequentialDecision({ blocks: [{ control: [6, 7, 7, 8], variant: [3, 4, 4, 4] }], unit: 'count', platform: 'phone' });
+  assert.deepEqual([d.decision, d.stats.choices.minShift, d.stats.choices.medianCompare], ['win', 1, 'raw']);
+  assert.equal(sequentialDecision({ blocks: [hl5], unit: 'ms', platform: 'phone', minShift: 6 }).decision, 'block2');
   // device and driver per run; files from before T1a: record -> F, scroll -> S, else unknown
   assert.deepEqual([driverOf({ meta: { driver: 'M' } }), driverOf({ summary: { whileScrollYChanges: {} } }), driverOf({ maxY: 9, marks: { scroll: [0, 1] } }), driverOf({ frames: [] })], ['M', 'F', 'S', null]);
   assert.equal(runsFromJson({ results: [{ label: 'a', run: 1, frameLog: { scroll: [[0, 16, 0]] } }] })[0].device, 'chrome');
@@ -446,8 +468,14 @@ test('phone: medians compare raw (no ticks), legacy drivers, legacy finger rows,
   assert.deepEqual([v1.frames[0].yStart, v1.frames[0].yEnd, v1.frames[0].innerHeight], [5, 9, null]);
   // F-071: one block mixing drivers is warned (counted runs only; '?' = no meta.driver)
   const order = blockOrder(2);
-  const blk = (drv) => [{ block: 1, arm: 'C', warmup: true, pos: 0, driver: 'F', sentinel: 1 }, ...order.map((arm, i) => ({ block: 1, arm, warmup: false, void: false, pos: i + 1, sentinel: 1, driver: drv(i) }))];
+  const blk = (drv, b = 1, warm = 'S') => [{ block: b, arm: 'C', warmup: true, pos: 0, driver: warm, sentinel: 1 }, ...order.map((arm, i) => ({ block: b, arm, warmup: false, void: false, pos: i + 1, sentinel: 1, driver: drv(i) }))];
   assert.deepEqual(blockWarnings(blk(() => 'S')), []);
+  // no driver at all, and a warm-up of another driver, are warned too
+  assert.deepEqual(blockWarnings(blk(() => null, 1, null)), ['block 1: no meta.driver on its 8 counted run(s): driver unknown (a block names one driver)']);
+  assert.deepEqual(blockWarnings(blk(() => 'S', 1, 'F')), ["block 1: warm-up driver F is not the counted runs' (S)"]);
+  // review-stats B1: block 1 all S + block 2 all F passes each block's check, but one decision would pool them
+  assert.deepEqual(blockWarnings([...blk(() => 'S', 1), ...blk(() => 'F', 2, 'F')]), ['arm V: blocks 1 S, 2 F: one decision mixes drivers (F-071)']);
+  assert.deepEqual(blockWarnings([...blk(() => 'S', 1), ...blk(() => 'S', 2)]), []);
   assert.deepEqual(blockWarnings(blk((i) => (i < 6 ? 'S' : i === 6 ? 'F' : null))), ["block 1: mixed drivers ? 1, F 1, S 6 (a block names one driver; F-071: fps and frame totals of F/G and S/W/M runs don't compare; '?' = no meta.driver)"]);
 });
 
@@ -464,21 +492,28 @@ test('stats.mjs runs on phone files: gt50 at +-4 ms, threshold-sensitive, near t
   // gt50 wins (C 6-8 vs V 3-4); gt54 counts 0 everywhere (tie, HL 0) -> futile; gt46 (C 6-8 vs V 9-10) is worse
   let r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50']);
   assert.equal(r.code, 0, r.stderr);
+  assert.doesNotMatch(r.stdout, /--device/);
   assert.match(r.stdout, /^metric gt50 \(count, lower is better\) on phone, twins gt46, gt54; 9 run\(s\), 1 warm-up\/void skipped/m);
   assert.match(r.stdout, /^arm V vs C: DECISION WIN: U = 0, p 0.014, HL 3 >= 1$/m);
   assert.match(r.stdout, /^ {2}both ways: gt50 WIN \| gt46 FUTILE \(.*\) \| gt54 FUTILE \(.*\) {2}THRESHOLD-SENSITIVE$/m);
   assert.match(r.stdout, /^WARN threshold-sensitive: arm V: gt50 win vs gt46 futile$/m);
-  assert.match(r.stdout, /^ {2}near thresholds, arm V \(4 counted run\(s\), 80 frames\): near50 39 \(gt50 15\) {2}near34 0 \(gt34 39\)$/m);
+  // review-stats B2 (§5.3, never pooled): per run, and median [IQR] per arm and block. V runs (pos 2 3 6 7):
+  // near50 = 52 + 48 ms frames 9 10 10 10 -> 10 [9.75-10]; gt50 3 4 4 4 -> 4 [3.75-4]; near34 0; gt34 = near50
+  assert.match(r.stdout, /^ {2}arm V block 1: near50 10 \[9.75-10\] {2}near34 0 \[0-0\] {2}gt50 4 \[3.75-4\] {2}gt34 10 \[9.75-10\]$/m);
+  assert.match(r.stdout, /^ {4}pos 2 .*r2.json: 20 frames {2}near50 9 {2}near34 0 {2}gt50 3 {2}gt34 9$/m);
+  assert.match(r.stdout, /^ {2}arm C block 1: near50 7 \[6.75-7.25\]/m);
+  assert.doesNotMatch(r.stdout, /counted run\(s\), \d+ frames\)/, 'no frame totals pooled across runs');
   assert.doesNotMatch(r.stdout, /mixed drivers|sentinel not checked/);
   const j = JSON.parse(node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50', '--json']).stdout);
   assert.deepEqual([j.device, j.medianCompare, j.twin, j.twins, j.thresholdSensitive, j.sensitiveArms, Object.keys(j.twinsArms)], ['phone', 'raw', 'gt46', ['gt46', 'gt54'], true, ['V'], ['gt46', 'gt54']]);
-  assert.deepEqual(j.near.C, { runs: 4, frames: 80, near50: 28, near34: 0, gt50: 28, gt34: 28 });
+  assert.deepEqual(j.near.C.map((b) => [b.block, b.runs.map((x) => x.pos), b.runs.map((x) => x.near50), b.near50.median, b.near50.q1, b.near50.q3]), [[1, [1, 4, 5, 8], [6, 7, 7, 8], 7, 6.75, 7.25]]);
+  assert.deepEqual(j.near.V[0].runs[0], { source: join(d, 'p', 'r2.json'), run: 0, pos: 2, frames: 20, near50: 9, near34: 0, gt50: 3, gt34: 9 });
   assert.equal(j.arms.V.stats.choices.medianCompare, 'raw');
   // a metric without a twin on the phone: decided alone
   r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'p50Ms']);
   assert.equal(r.code, 0, r.stderr);
   assert.match(r.stdout, /^ {2}both ways: p50Ms \S+ \(no twin\)$/m);
-  assert.match(r.stdout, /medians compared as raw/);
+  assert.match(r.stdout, /unit ms; min shift 4; medians compared as ms1/);
   // no k forms on the phone; --device chrome reads the same files the Chrome way
   for (const k of ['k5', 'k7', 'p50Ticks', 'p95Ticks']) {
     r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', k]);
@@ -487,6 +522,7 @@ test('stats.mjs runs on phone files: gt50 at +-4 ms, threshold-sensitive, near t
   }
   r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'k7', '--device', 'chrome']);
   assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /^WARN --device chrome on phone files: Chrome rules \(k forms, tick medians\) on phone data$/m);
   assert.match(r.stdout, /^ {2}both ways: k7 FUTILE \| gt50 WIN \(.*\) {2}THRESHOLD-SENSITIVE$/m); // 52 ms is k = 6, not k >= 7
   assert.equal(node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50', '--device', 'tv']).code, 2);
   // phone and Chrome runs in one analysis are refused

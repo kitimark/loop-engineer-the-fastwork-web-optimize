@@ -49,6 +49,11 @@ test('iPhone logs: frames inside marks.<phase>, labelled by meta.label', () => {
   assert.equal(r.label, 'baseline');
   assert.equal(r.frames.length, 191);
   assert.deepEqual(runsFromJson({ nothing: 1 }), []);
+  // fw-iphone-run/1: index 2 is yStart; the frame ends at yEnd (by name). A frame without a y gets no bucket.
+  const v1 = { fields: ['t', 'dt', 'yStart', 'yEnd', 'innerHeight'], frames: [[0, 60, 90, 130, 775], [60, 60, null, null, 775]], meta: { label: 'v1' } };
+  const [s] = runsFromJson(v1);
+  assert.deepEqual(s.frames, [[0, 60, 130], [60, 60, null]]);
+  assert.deepEqual(clusters([s], { minShare: 1 })[0].clusters.map((x) => [x.y0, x.y1, x.framesPerRun]), [[100, 150, 1]]);
 });
 
 test('frames.mjs CLI: prints clusters per label and the A/A comparison; --json; usage errors', () => {
