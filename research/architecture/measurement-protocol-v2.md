@@ -141,7 +141,7 @@ Never quote "frames >20 ms" as "dropped frames" (arch-devtools §2a).
 ### 3.2 Tick quantization (both devices at 120 Hz)
 
 - Tick k = round(dt / 8.333). On-time = k ≤ 2 (one 60 Hz rAF interval).
-- Thresholds at tick midpoints: **">34" = dt ≥ 37.5 ms (k≥5)**, **">50" = dt ≥ 54.2 ms (k≥7)**.
+- Thresholds at tick midpoints: **">34" = dt ≥ 37.5 ms (k≥5)**, **">50" = dt ≥ 54.17 ms (k≥7)** (exact midpoints 4.5 and 6.5 × 8.333; code uses the exact values).
 - Report a tick histogram per run; p50 is coarse (moves in 8.33 ms steps), so medians are compared as ticks.
 - **Transition:** keep the legacy ms columns (>34, >50 as dt > 34 / > 50) alongside for one wave. Switch the
   primary to ticks after one Chrome A/A and one phone A/A show both; any verdict that differs between the two
@@ -279,8 +279,8 @@ or F (M never bounces). F runs are scheduled by the lead in batches, not per top
 block; arch-safari rates its overhead medium and unmeasured. Resolution: it joins the standard block only after
 its on/off A/A passes, i.e. no tick-median shift and no extra k≥5 frames; rAF stays the A/B metric either way.) Send `Page.disable`
 then `Page.enable` before `Timeline.start`, and again after every reconnect (target ids change on navigation);
-`Page.enable` starts WebKit's inspector stopwatch, nothing else does (vendor source; real durations on 26.6.1 are
-still an inference until one probe call). Records are serialised on the main thread, so the overhead is
+`Page.enable` starts WebKit's inspector stopwatch, nothing else does (vendor source; **confirmed on 26.6.1**, F-047: all
+1922 records timed, `performance.mark` arrives as TimeStamp, RenderingFrame 16.6-16.7 ms steady). Records are serialised on the main thread, so the overhead is
 medium. Read `RenderingFrame` segments per frame (Script, Layout, Paint+Composite, Other) and gap − frame
 (≈ UI apply + tick wait). Check Composite's children before reading it as raster: a timer or IO callback that
 runs during the flush wait nests under it. A large "Other" = layer churn or event-region walks. A render-server
@@ -371,7 +371,7 @@ until T1/T2 land: iphone-runner applies §5 by hand with the 12-event cap remove
 
 | topic | state | next step under v2 |
 |---|---|---|
-| y≈1960 (nav-morph) | LOCATED: `inert` removal at the IO edge (F-044); src rejected | no-inert-flip ablation (mw10e-noinert) 4v4 vs aw1-10e with an inert/mutation counter; plus de-safari P2b (one attribution pass, RenderingFrame segments y 1830-1990: Other = event/AX region walk, Script = IO callback, Layout = wide invalidation); record src as rejected in the ledger |
+| y≈1960 (nav-morph) | LOCATED: `inert` removal at the IO edge (F-044); src rejected. **Update 11:00Z: NAMED** (first v2 D card): the window wheel/touch listener add at the IO edge; positive arm 104/107 → 34/35 ms, negative arm 84/101; P2b RecalculateStyles 34-42 ms + Composite 58-72 ms, JS ~1 ms | no-inert-flip ablation (mw10e-noinert) 4v4 vs aw1-10e with an inert/mutation counter; plus de-safari P2b (one attribution pass, RenderingFrame segments y 1830-1990: Other = event/AX region walk, Script = IO callback, Layout = wide invalidation); record src as rejected in the ledger |
 | ghbn | diagnostic | mechanism check: computed `backdrop-filter: none` on `header.start-selling-top-nav` during the morph, Chrome + WebKit. **Two pre-registered predictions** (de-safari P1): de-morph "moving p50 ≤20 ms and the hump flattens" (backdrop on the rAF path) vs de-safari "ghbn within ±2 ms of ghb, hump stays" (render-server term). M block vs ghb, m-bins; record Animation Hitches over the same cycles once T10 works. If rAF is flat and hitches fall, R8 is a render-bound fix (§2.3) |
 | morph g/gh/ghb | — | de-safari P2 (RenderingFrame by m bin: where the filter ms live) and P3 (LayerTree paintCount over one gh cycle: do the size-fixed children still repaint?) in one attribution session; P4 recalibrates the raster rate from P2's frames, P5 the first tween frame |
 | R8 / R5 (ghr8, ghr85a) | built | wait for ghbn to NAME the backdrop; G/F before landing |
@@ -404,8 +404,8 @@ finger batch plus the one-time Instruments pairing (~30 min of the user's time).
 ## 10. Inputs and open items
 
 - **arch-safari**: answered Q1-Q5, folded into §3.1, §3.7, §5.5 (`research/architecture/safari-inspector-probing.md`,
-  d3aa186). Still inference until tried on 26.6.1: real Timeline durations after `Page.enable`, the cost of
-  `layersForNode` on this page's tree.
+  d3aa186). Confirmed on 26.6.1: real Timeline durations after
+  `Page.disable`/`Page.enable` (F-047). Still inference: the cost of `layersForNode` on this page's tree.
 - **de-safari**: answered Q1-Q4 (`research/design-engineering/safari-render-signals.md`, 8240e5b). Folded: L13, the
   render-bound device class, RenderingFrame segments, the WebKit Paint clip, probes that change what they measure,
   and P1-P6 in §8.3. **Open:**
