@@ -121,6 +121,15 @@ scrolling (`--idle 6`, I-002; `--idle 0` reproduces the pre-I-002 sequence). Com
 sides were measured with the same tools version (I-002 changed phase boundaries). Confirm winners on
 the real iPhone when possible.
 
+Protocol v2 (`research/architecture/measurement-protocol-v2.md`): every topic goes R → I → D → F → V → L, each
+stage closed by a card; the lead signs D (the attribution card): `fixes/LEAD.md` "Stages and gates".
+- **Phone geometry for attribution.** Gain A/Bs stay at 430x932; probes that ask *where* a frame happens run at the
+  iPhone's 430x775 (scripted) / 430x815 (collapsed toolbar), and positions compare by crossing (the nearest code
+  threshold), never by raw y (Chrome and phone y differ by ~77 px).
+- **Tick thresholds** (both devices run at 120 Hz): k = round(dt / 8.333 ms); ">34" = dt ≥ 37.5 ms (k≥5), ">50" =
+  dt ≥ 54.2 ms (k≥7); medians compare as ticks. The legacy ms columns stay for one wave; a verdict that differs
+  between the two is "threshold-sensitive".
+
 ## Fix workflow in a worktree (start to finish)
 
 ```sh
@@ -295,7 +304,7 @@ the local `HEAD`, so **commit the tooling first**: a worktree only has committed
   Teammates load this CLAUDE.md, not the lead's conversation: put the topic and the prompt from
   `fixes/AGENT_PROMPT.md` in the spawn prompt. Permission prompts of teammates appear in the lead.
 
-Team conventions (messages go to the lead and to teammates named in `fixes/TOPICS.md` conflicts):
+Team conventions (messages go to the owner of the question, see "Agent communication"):
 - One teammate owns one topic (or one conflict cluster from `fixes/TOPICS.md`) and one worktree.
 - **Read `fixes/FINDINGS.md` before you edit** (techniques that won, pitfalls that cost a review round,
   measurement lessons) and the live board: `node tools/finding.mjs list --unread --as <you>` (at start and
@@ -320,6 +329,20 @@ Team conventions (messages go to the lead and to teammates named in `fixes/TOPIC
   split longer work into separate holds and requeue after each.
 - **Use the iPhone while you wait for Chrome.** The phone renders by itself, so an iPhone check barely
   loads the Mac and runs in parallel with Chrome measurements (lease, plain http per I-003).
+
+## Agent communication
+
+Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
+- **Named spawns** `<role>-<topic>` (`fix-<topic>`, `ts-<incident>`, `review-<topic>`, `de-<area>`, `arch-<topic>`,
+  `mgmt-ops-<N>`), unique per session. Every spawn prompt carries the **peer directory** (live copy:
+  `research/management/ops-handover.md`); if a name fails, use the agent ID; never drop the message.
+- **Ask the owner of the question directly.** mgmt-ops is the hub for the rest; the lead lands, resolves
+  incidents, reorders locks, spawns and talks to the user.
+- Messages reach you only at your next tool round: **run long waits in the background** (lock queues, holds,
+  `incident.mjs wait`, phone recordings). Send peers what they need before your final report, which goes only to
+  your spawner.
+- **Report your branch** with `git branch --show-current` in your own worktree, never from the git status in your
+  context (it is the session's, i.e. another agent's).
 
 ## Unexpected problems: incidents
 
@@ -430,3 +453,16 @@ iPhone protocol on top of the lease:
    the lead confirms the user is ready.
 4. Release and message the lead "iPhone released (<topic>)". Never hold it while idle; never
    navigate the phone without the lease; waiters queue instead of polling faster than every 2 min.
+
+Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages and gates"):
+- **Blocks.** Only ticketed builds, served from immutable snapshot copies. A block: one question, one named control
+  on the same base, one uncounted warm-up run, then ≤9 counted runs in C V V C C V V C order (3 arms: a rotated
+  Latin square); 10 min cooling between blocks; at most 2 blocks per question (sequential rule, §5.3).
+- **Sentinel** (static idle is no heat check, F-028): every control run reaches bottom ≥58 fps and scroll ≥44 fps
+  (S/W) or held m=1 p95 ≤18 ms (M). A failing control voids every run since the last passing one; the phone cools
+  10 min and the block restarts.
+- **Drivers:** S `iphone.mjs scroll`, W window run, M morph driver (`__fwMorphDrive`), G WDA gesture, F finger via
+  the lead. A claim names its driver; touch, bounce, pin and toolbar effects need G or F before landing.
+- Never during a timed block: an attached Web Inspector, paint rects or debug borders, `layersForNode`, heap
+  snapshots, polling faster than ~1 Hz (§5.5). Attribution runs get real Timeline durations with `Page.disable` →
+  `Page.enable` → `Timeline.start` on the page target, re-sent after every navigation (F-047).
