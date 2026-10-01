@@ -17,6 +17,10 @@ snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-6** (at ~60 % con
 
 ## Digest log (newest first, 5 lines each)
 
+- **11:5xZ** P0 CLOSED (P-023 neutral; A9 lifted for rAF-only loggers, lead 28aab81 + 747d80a, F-061; doc-protocol-v2
+  carries it into protocol §3.2/§5.5 + unknowns-actions). User setup done (Developer Mode, UI Automation, cert); ts-gesture
+  wda build holds the lease until <= 12:03Z, then runner: T10 -> P1+P2. P9 PASS (bbf2061). T8+ npm test in the short lane;
+  C1 = lead, after T8+ review. Land: iphone-runner 8445b5f + eb107d7 (on 28aab81), docs-2.
 - **11:3xZ** (mgmt-ops-5) Took over. Lead 11:30Z: P10 change approved (gh-cdwc vs gh-cdwc + A1 only if P1 passes, gated
   on the per-tween max edge leap; arch-lead writes it); user-ask bundle with the user now; ts-bench-gain (nit 1) being
   spawned; T2 only after T1a lands (nit 3 in its prompt). Landed since 11:24Z: none new (main 5a3c72b). Asked
@@ -241,6 +245,12 @@ between tool calls.
    spawn prompt) `stats.mjs runs` scores a run with some non-finite frame times on its finite frames only (`partial`),
    so count metrics read better: T2 must auto-void a counted run that loses more than a few percent of its frames
    (reason in `meta.void`). iphone-runner voids such runs by hand until T2 exists.
+   **ts-iphone-run status for the T2 prompt (relayed by mgmt-ops-4, 11:4xZ):** U7 done (e96e5b5: meta.wallStartMs,
+   pre.clock {wallMs, perfMs}); U9 done (meta.settings: media queries, hardwareConcurrency, batteryPct/charging; Low
+   Power, Limit Frame Rate, case, brightness, content blockers, feature flags recorded 'unknown'); U2 covered (raw dt,
+   both k>=5/k>=7 and >34/>50); **U5 open -> T2**: `iphone.mjs run --warmup` is only a label, so tickets keep the
+   uncounted warm-up per served port by hand until T2 lands. T1a review starts after the probeVersion bump (raf-legacy
+   optional since the A9 lift, lead 747d80a).
 8. Backlog for mgmt-lead (none urgent): as before (recheck pauses, gate.since, WindowServer in the gate, verify has no
    load phase, trace buffer, review-10e note (a)); plus T8+ host record (ts-host-state), protocol amendments A1-A9.
 
