@@ -130,6 +130,29 @@ Landing caveats (F stage, if the phone says it pays): the stage rule depends on 
 `100vw` having no classic scrollbar (true on phones; a ≤640 px desktop window with classic scrollbars would differ
 by the scrollbar width); the slot and arm constants copy the CSS sizes, so a design change must update both.
 
+## P11 phone ticket (final, sent to mgmt-ops-5)
+
+- **Block A** (required), base aw1-10e. The rebuild frame happens mid-scroll at the y≈1960 crossing.
+  - Arms: C aw1-10e, V aw1-cq3.
+  - Order:
+    1. 2 warm-ups, one per arm.
+    2. A Timeline-OFF control sentinel.
+    3. 8 counted runs, C V V C C V V C.
+    4. A Timeline-OFF control sentinel.
+    5. 1 uncounted lc-base run for P12.
+  - About 40 min including cooling.
+- **Block B** (conditional), base lc-base. The listeners attach at setup.
+  - Arms: C lc-base, V lc-cq3, same structure as Block A.
+  - It runs only if Block A shows the nested Layout in C and its removal in V.
+- **Driver:** W at 430x775, 6 s idle at y 0, then top → y≥2900.
+- **Timeline:** depth 8 on every counted run.
+- **Frame columns:** dt>50 / dt>34 with the ±4 ms counts.
+- **Readouts:**
+  - nested-in-RecalculateStyles Layout count and ms (F-052/U3);
+  - the rebuild-frame root quad and Layout ms;
+  - invstack (U2);
+  - P12's tldump on lc-base.
+
 ## ST-4 builds (de-pm-hero's question, P-025; built here, read out by de-pm-hero)
 
 | build | change on aw1-10e | served hashes |
