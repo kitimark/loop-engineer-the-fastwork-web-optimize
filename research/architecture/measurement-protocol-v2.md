@@ -4,7 +4,10 @@ Status: **FINAL DRAFT for approval** (2026-10-01, ~11:15Z). Built from the team 
 fix-scroll-engine, fix-hero-exit, mgmt-ops-4), arch-devtools (`research/architecture/devtools-methodology.md`,
 3096c8e), de-devtools (`research/design-engineering/devtools-render-metrics.md`, 97b1a41), arch-safari
 (`research/architecture/safari-inspector-probing.md`, d3aa186) and de-safari
-(`research/design-engineering/safari-render-signals.md`). Open items: §10.
+(`research/design-engineering/safari-render-signals.md`). Open items: §10. Amended ~11:50Z with A1-A9 from
+`unknowns-actions.md` §4 (lead's OK): phone segment card and closure on segments (§2.3, §4), axis + decoupling run
+(§2.3), per-arm warm-up and battery state (§5.2), dual phone thresholds (§3.2), M-run time profile (§3.3), display
+state (§6.3), logger-layout caveat (§5.5), checklist items 11-12 (§7).
 It replaces nothing yet. The lead approves it; then the doc changes in §8 make it binding.
 
 Scope: how we go from "a frame is slow" to a landed fix, and what evidence each step needs, on Chrome, the
@@ -81,11 +84,20 @@ A fix is built only on a **NAMED** card. Fields:
      (computed style, mutation counts, layer count). An arm without it is void (L2).
    - A position-moving ablation (e.g. e2, staging work earlier) proves **where the trigger is**, not what costs:
      it can never be the positive control alone (L3).
+   - **Axis + decoupling run (A2):** the card names the axis the frame is locked to (y / crossing, time since a
+     named event, or m) and carries one run that moves that axis apart from the others (hold at another y, change a
+     hold or transition length, shift a threshold). Scripted drivers make y, time and m collinear; three cards
+     picked the co-located event, not the cause (unknowns-actions X3). No decoupling run → at most LOCATED.
 4. **Device class:**
    - **Chrome-measurable:** the frame exists in Chrome at 6x in the same crossing → Chrome A/B is the gate,
      the phone confirms.
    - **Phone-only:** absent or flat in Chrome (raster, allocation, GPU, WebKit layerization) → a phone ABBA
-     block is the gate; Chrome is a no-regression and parity check.
+     block is the gate; Chrome is a no-regression and parity check. **Before an F build (A1)** a phone-only card
+     carries a **phone Timeline segment card** for the frame: Script / Style / Layout / Paint+Composite / Other and
+     gap − frame, ≥3 captures, and states which segment the fix removes. A Chrome counter going to 0 proves the
+     mechanism ran, not that the phone saves: WebKit pays whole-document style or whole-view layout for changes Blink
+     treats as local (window wheel/touch listener add/remove, opacity crossing 1 or filter/transform crossing
+     `none`, resized composited layers, `linear()`/`steps()` easings; F-054, unknowns-actions X1).
    - **Render-bound (phone):** the cost is in the render server (backdrop/filter passes): rAF can't score it
      (L13). Gate = render-hitch time per s and Renders/GPU in Instruments, ABBA like §5.3; rAF is a no-regression
      check. Until the Instruments route is verified on this device, such a fix is held at LOCATED.
@@ -147,6 +159,10 @@ Never quote "frames >20 ms" as "dropped frames" (arch-devtools §2a).
   primary to ticks after one Chrome A/A and one phone A/A show both; any verdict that differs between the two
   is reported as "threshold-sensitive".
 - Dropped ratio with each device's own period (G8) is report-only.
+- **Phone (A5):** the tick model is exact on Chrome only. On the phone the rAF timestamp is the rendering-update
+  start, not a vsync, and 75 % of gaps ≥34 ms fall off the 8.33 ms grid (arch-unknowns V-U2). Phone verdicts report
+  both forms (dt > 50 and k≥7; dt > 34 and k≥5) and flag frames within 4 ms of a threshold; a verdict that differs
+  between the forms is "threshold-sensitive" (the goal count did: aw1-10c ">50" 3/3/2 vs k≥7 1/2/1).
 
 ### 3.3 Primary and diagnostic metrics per device and driver
 
@@ -154,10 +170,12 @@ Never quote "frames >20 ms" as "dropped frames" (arch-devtools §2a).
 |---|---|---|
 | Chrome A/B (`fix.mjs ab`) | frames >50 and >34 per phase, within ONE hold (>34 varies ±2 across holds) | fps, >20, p50/p95, LoAF, forced ms, cdp counts, trace classes |
 | phone S / W | frames k≥5 and k≥7 in the topic window and the full pass; topic-window median ticks | fps, phase fps, Timeline counts |
-| phone M (morph driver) | moving-m p50 and p95 ticks; held m=1 p95; m-bin profile | per-m-bin dt, layer/filter counts |
+| phone M (morph driver) | moving-m p50 and p95 ticks; held m=1 p95; **time-since-tween-start profile** (fwd/rev) and \|Δm\|-weighted dt (A6) | per-m-bin dt (replaced as the profile: the cost tracks time since start, not m), Timeline heavy-paint share (frames with ≥80 Paint records), layer/filter counts |
 | phone G / F | frames k≥7 per pass; morph-active p95; touch input delay (§3.6) | everything above |
 
-Every metric names what it can't see in the README that quotes it.
+Every metric names what it can't see in the README that quotes it. MWFI (motion-weighted frame interval,
+Σdx·dt / Σdx; de-unknowns-ux, 3/3 user verdicts) is reported next to the counts as a candidate until the pacing page
+(unknowns-actions F5) picks the primary perceptual metric.
 
 ### 3.4 Position
 
@@ -203,7 +221,10 @@ Every F-stage build has a **prediction card** before its first timed run:
 1. Build + hashes, base + hashes, driver, metric(s).
 2. **Baseline:** same driver, same base, same heat class, ≤24 h old; raw file cited. A finger baseline never
    predicts a driver run, and vice versa (L1).
-3. **Closure check:** the model reproduces the base's measured value within one tick (or it isn't used).
+3. **Closure check:** the model reproduces the base's measured value within one tick (or it isn't used). For a
+   phone-only class (A1) the closure is done on **phone segments**: the model reproduces Layout and Composite
+   separately, within a tick each; a serial sum of code-read terms is not a closure (the phone frame is often a max
+   of parallel bounds, and every phone layout is whole-view, 12-17 ms; unknowns-actions X4).
 4. **Term breakdown:** which pipeline terms the fix removes, each with its constant labelled *calibrated* (from a
    measured ablation on this device) or *assumed*.
 5. **Prediction:** delta with an interval; which metric source can see it (§3.1: a threaded move is invisible to
@@ -222,13 +243,17 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
 (I-003); Safari tab reloaded per run.
 
 ### 5.2 Heat and warm-up
-- One **uncounted warm-up run** before the first control of each block (F-042: cold first runs are slow).
+- One **uncounted warm-up run** before the first control of each block (F-042: cold first runs are slow), and
+  **one per arm's port** (A3): each origin has its own cold caches and backing stores, so a variant's first run on
+  a fresh port is not counted either. Note screen-lock state before the block (P8 sizes the effect).
 - **Sentinel under load:** static idle is NOT a heat check (F-028: it stays at 60 while the phone throttles).
   Every control run must reach bottom-phase ≥58 fps and scroll ≥44 fps (S/W); M runs: held m=1 p95 ≤18 ms; W
   runs end with a jump to the bottom and a 3 s hold to give the sentinel.
 - A failing control **voids every run since the last passing control**; the block stops, the phone cools
   10 min, and the block restarts.
-- Heat note in every block record (case off, charger state, room, last block end time).
+- Heat note in every block record (case off, charger state, room, last block end time), plus **battery
+  temperature and charging state per run** (A4: `AppleSmartBattery` Temperature / IsCharging at run start and end,
+  T1a+); the heat trend is reported per block and used as a covariate when a block is borderline.
 
 ### 5.3 Blocks and n (resolving n≥6 vs ≤9-run blocks)
 - A block: ≤9 counted runs, **one question**, one named control on the same base. 10 min cooling between blocks.
@@ -293,6 +318,13 @@ ShowRepaintCounter; `layersForNode`; heap snapshots; `Runtime.evaluate` polling 
 or element queries; xctrace System Trace; Safari's own Web Inspector attached to the tab (a second frontend shares
 the agents).
 
+**Logger-layout caveat (A9):** the logger reads `scrollY` in rAF, which on WebKit forces a synchronous layout
+whenever y≠0 (R-U1). A read mostly changes *who pays* a layout that is already dirty (40 of 59 whole-view layouts
+in the hero captures had no reader at all), but a logger-paid *second* layout in a frame may be ours. Until the P0
+y-source A/A picks a source that adds nothing, phone absolute counts and Timeline segment cards carry a
+"logger-layout" caveat; A/B deltas between arms with the same logger stay valid. Any new probe gets an on/off A/A
+before its numbers are read as absolute.
+
 **Probe overhead:** page-side probes self-time their callbacks (`performance.now` around each, ms per frame in the
 log; a run whose probe ms exceeds 1 ms in a counted frame flags that frame). Protocol-side probes
 (Timeline, CPU, Memory) get one interleaved on/off A/A (n=3 each) per probe version.
@@ -320,6 +352,10 @@ hold per A/B, compare within a hold.
    fixed synthetic CPU page as a host yardstick.
 3. Tools differ → bisect 93b4af2..HEAD over the measurement code. Host differs → document the band.
 4. Until resolved: compare only within one hold; flag any canary outside the 76-78 fps band.
+5. **Display state (A7):** the Mac's display state alone separates the floors (plain baseline 63.5-78.3 fps
+   display-on vs 92.2-93.8 DarkWake over 27 holds, no overlap; ddc3450). Every hold records display / wake / power
+   (T8+) and keeps it constant (`caffeinate -d -u` or recorded "off"); a canary is checked against display state
+   before any tools bisect, and results from different display states never compare.
 
 ## 7. Review checklist additions (fix-reviewer)
 
@@ -335,6 +371,11 @@ hold per A/B, compare within a hold.
 8. Phone geometry used for attribution; served hashes match the ticket.
 9. Heat notes; sentinel passed; within-block vs the exact base.
 10. Backdrop look check, a11y diff, memory/layers note.
+11. (A8, X1) Does the fix change a transition or animation end value (to or from `opacity:1`, `filter:none`,
+    `transform:none`), a layer's presence, a composited layer's size, an easing to `linear()`/`steps()`, or a
+    window/document wheel/touch listener? If yes, a phone segment card (§2.3) backs the claim, not a Chrome counter.
+12. (A8, X8, A2) Does the claim's driver cover the class (speed, toolbar, slow drag, scroll-up, start after load,
+    touch)? Does the attribution card name its axis and carry a decoupling run?
 
 ## 8. Ranked execution plan
 

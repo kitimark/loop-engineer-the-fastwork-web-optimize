@@ -193,7 +193,7 @@ Fixed-size morph diagnostic; ghr85a (R5a); R7; R8 nav half (not pixel-exact: the
 under the nav); a1 (until P1/P2 place the transient; P1 positive makes a targeted countdown fix first); h4 (until
 K24 is explained); V-U10 inspector-detached A/A and V-U12 docH (low value, folded into T1a+ fields).
 
-## 4. Protocol v2 amendments (proposed; arch-lead applies them to `measurement-protocol-v2.md` on the lead's OK)
+## 4. Protocol v2 amendments (applied to `measurement-protocol-v2.md` on the lead's OK)
 
 - **A1 (§2.3, X1/X4):** a phone-only class needs a phone Timeline segment card before an F build; the closure check
   reproduces Layout and Composite separately.
