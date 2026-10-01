@@ -70,7 +70,7 @@ test('short jobs are exempt: granted past a head normal waiter held by the gate;
   // the short-lane drain budget is used up, so without the gate the normal waiter would be served first
   mkdirSync(join(state, 'locks'), { recursive: true });
   const t = Date.now();
-  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - 290000).toISOString(), token: 'aaaaaaaaaaaa' }));
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - (L.SHORT_DRAIN_SEC - 10) * 1000).toISOString(), token: 'aaaaaaaaaaaa' }));
   const s = await L.tryAcquire(R, { owner: 'npm-test', kind: 'lease', short: true, maxSec: 120 });
   assert.equal(s.ok, true, 'short job passes the gated head waiter');
   const since = readJson(`${R}.queue.json`)[0].gate.since;
@@ -89,7 +89,7 @@ test('without the gate holding the head, a short job past the drain budget still
   assert.equal((await L.tryAcquire(R, { owner: 'normal2', kind: 'lease' })).ok, false);
   await L.release(R, { owner: 'normal' });
   const t = Date.now();
-  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - 290000).toISOString(), token: 'aaaaaaaaaaaa' }));
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - (L.SHORT_DRAIN_SEC - 10) * 1000).toISOString(), token: 'aaaaaaaaaaaa' }));
   for (let i = 0; i < 2; i++) {
     const s = await L.tryAcquire(R, { owner: 'npm-test', kind: 'lease', short: true, maxSec: 120 });
     assert.equal(s.ok, false, 'normal2 is next (drain budget used up) and not held by the gate');
@@ -129,11 +129,11 @@ test('review-gate R1: once a gate wait reaches the cap, short jobs no longer pas
   // short-lane budget used up, so only the gate exemption could let a short job through
   mkdirSync(join(state, 'locks'), { recursive: true });
   const t = Date.now();
-  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - 290000).toISOString(), token: 'aaaaaaaaaaaa' }));
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - (L.SHORT_DRAIN_SEC - 10) * 1000).toISOString(), token: 'aaaaaaaaaaaa' }));
   const s1 = await L.tryAcquire(R, { owner: 'npm-test', kind: 'lease', short: true, maxSec: 60, thresholds: T });
   assert.equal(s1.ok, true, 'before the cap: exempt');
   await L.release(R, { owner: 'npm-test' });
-  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - 290000).toISOString(), token: 'bbbbbbbbbbbb' }));
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - (L.SHORT_DRAIN_SEC - 10) * 1000).toISOString(), token: 'bbbbbbbbbbbb' }));
   await sleep(1100);
   // the head waiter's gate record is fresh (it keeps polling), but its wait has reached the cap
   const q = readJson(`${R}.queue.json`);

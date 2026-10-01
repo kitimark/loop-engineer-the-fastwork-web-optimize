@@ -416,15 +416,21 @@ test('move (I-019): positions count live waiters only (as status shows them); st
   await assert.rejects(X.moveWaiter(R, { owner: 'gone', to: 1, by: 'lead', reason: 'x', apply: true }), /"gone" is not waiting/);
 });
 
-test('move (I-019): the short lane drain rule still applies to a moved normal waiter', async () => {
+test('move (I-019/I-020): a normal waiter the lead moves ahead of short jobs is served before them; behind one, the short lane goes first', async () => {
   await queueOf('a', 'b');
   assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, false);
   const d = await X.moveWaiter(R, { owner: 'b', to: 1, by: 'lead', reason: 'x', apply: true });
   assert.deepEqual(order(), ['b', 'a', 's']);
-  assert.match(d.note, /short lane/);
+  assert.match(d.note, /short lane: the lead's move puts "b" ahead of the short jobs behind it \(s\)/);
   await L.release(R, { owner: 'h' });
-  assert.equal(L.status(R).next, 's', 'a queued short job still goes first at the hand-over (I-007/I-011)');
-  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, true);
-  await L.release(R, { owner: 's' });
-  assert.equal(L.status(R).next, 'b', 'then the moved normal waiter, ahead of a');
+  assert.equal(L.status(R).next, 'b', 'the lead\'s priority wins over the short lane (I-020)');
+  assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 'b', kind: 'lease' })).ok, true);
+  await L.release(R, { owner: 'b' });
+  assert.equal(L.status(R).next, 's', 'then the short lane as usual: s before the unmoved a');
+  // moved behind a short job: that short job still goes first
+  const e = await X.moveWaiter(R, { owner: 'a', to: 2, by: 'lead', reason: 'y', apply: true });
+  assert.deepEqual(order(), ['s', 'a']);
+  assert.match(e.note, /short lane: queued short jobs ahead of "a" \(s\) are still served first/);
+  assert.equal(L.status(R).next, 's');
 });

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir } from '../helpers.mjs';
+import { tempDir, sleep } from '../helpers.mjs';
 
 const L = await import('../../tools/lib/lock.mjs');
 const R = 'test-res';
@@ -405,15 +405,15 @@ test('short lane with old clients: a short last-grant record older than any shor
 });
 
 test('short lane cannot starve normal waiters: a short run ends within SHORT_DRAIN_SEC, then the normal waiter goes', async () => {
-  assert.ok(L.SHORT_DRAIN_SEC >= L.SHORT_MAX_SEC && L.SHORT_DRAIN_SEC <= 600);
+  assert.ok(L.SHORT_DRAIN_SEC >= 3 * L.SHORT_MAX_SEC && L.SHORT_DRAIN_SEC <= 900, 'drain all queued shorts, but a normal waiter waits at most ~15 min (I-020)');
   assert.equal((await L.tryAcquire(R, { owner: 's1', ...SHORT })).ok, true);
   const lg = readJson(`${R}.last-grant.json`);
   assert.equal(lg.short, true);
   assert.equal(lg.runStart, lg.at, 'the first short grant after a normal one starts a run');
   await L.tryAcquire(R, { owner: 'n1' });
   await L.tryAcquire(R, { owner: 's2', ...SHORT });
-  // the run started 250 s ago (s1 was its latest job): s2's 90 s would end it past the budget
-  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ ...lg, runStart: new Date(Date.now() - 250000).toISOString() }));
+  // the run started SHORT_DRAIN_SEC - 50 s ago (s1 was its latest job): s2's 90 s would end it past the budget
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ ...lg, runStart: new Date(Date.now() - (L.SHORT_DRAIN_SEC - 50) * 1000).toISOString() }));
   assert.equal(L.status(R).next, 'n1');
   await L.release(R, { owner: 's1' });
   assert.equal((await L.tryAcquire(R, { owner: 's2', ...SHORT })).ok, false);
@@ -423,6 +423,38 @@ test('short lane cannot starve normal waiters: a short run ends within SHORT_DRA
   const s2 = await L.tryAcquire(R, { owner: 's2', ...SHORT });
   assert.equal(s2.ok, true);
   assert.equal(readJson(`${R}.last-grant.json`).runStart, s2.holder.acquiredAt, 'a new run');
+});
+
+test('I-020: at a hand-over ALL queued shorts (180/240/300 s caps, ~100 s each) drain before the queued normal waiter', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'n1' })).ok, true);
+  await L.tryAcquire(R, { owner: 'n2' });
+  const caps = { s1: 180, s2: 240, s3: 300 };
+  for (const [o, maxSec] of Object.entries(caps)) await L.tryAcquire(R, { owner: o, short: true, maxSec });
+  const order = [];
+  for (let i = 0; i < 4; i++) {
+    const held = L.status(R).holder.owner;
+    await L.release(R, { owner: held });
+    // each short job really ran ~100 s: move the run start back (the 300 s budget allowed only s1 here)
+    const lg = readJson(`${R}.last-grant.json`);
+    if (lg.runStart) writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ ...lg, runStart: new Date(Date.parse(lg.runStart) - 100000).toISOString(), at: new Date(Date.parse(lg.at) - 100000).toISOString() }));
+    const won = [];
+    for (const w of L.status(R).queue) if ((await L.tryAcquire(R, { owner: w.owner, ...(w.short ? { short: true, maxSec: caps[w.owner] } : {}) })).ok) won.push(w.owner);
+    assert.equal(won.length, 1, `one winner at hand-over ${i + 1}: ${won}`);
+    order.push(won[0]);
+  }
+  assert.deepEqual(order, ['s1', 's2', 's3', 'n2']);
+});
+
+test('I-020: the drain cap still ends a short run: a short that would end past SHORT_DRAIN_SEC waits for the normal waiter', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'n1' })).ok, true);
+  await L.tryAcquire(R, { owner: 'n2' });
+  await L.tryAcquire(R, { owner: 's9', short: true, maxSec: 300 });
+  await L.release(R, { owner: 'n1' });
+  const t = Date.now();
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 240, at: new Date(t - 5000).toISOString(), runStart: new Date(t - (L.SHORT_DRAIN_SEC - 200) * 1000).toISOString(), token: 'cccccccccccc' }));
+  assert.equal(L.status(R).next, 'n2', '700 s into the run + 300 s > 900 s');
+  assert.equal((await L.tryAcquire(R, { owner: 's9', short: true, maxSec: 300 })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 'n2' })).ok, true);
 });
 
 test('a second SIGTERM while the lock\'s signal handler exits does not skip the other exit handlers (incident I-008)', async () => {
@@ -457,4 +489,99 @@ test('a second SIGTERM while the lock\'s signal handler exits does not skip the 
   assert.deepEqual(await exited, { code: 130, signal: null }, 'exited via the handler, not killed by the second SIGTERM');
   assert.ok(existsSync(done), 'the later exit listener (the browser kill) ran to completion');
   assert.equal(L.status(R).holder, null, 'lock released');
+});
+
+// Incident I-020 (research/architecture/tools-speed.md #1, #4): an idle lease kept chrome-measure for
+// 40 min; hand-overs waited 8-15 s for the next waiter's backoff; a head waiter that retries every few
+// minutes could keep a free lock unused for up to its queue TTL.
+const ago = (s) => new Date(Date.now() - s * 1000).toISOString();
+const CM = 'chrome-measure';
+
+test('I-020: a normal chrome-measure lease gets a default TTL and a hard cap; other resources and short leases unchanged', async () => {
+  const { defaultTtlSec, maxHoldSec } = L.LEASE_POLICY[CM];
+  assert.ok(defaultTtlSec >= 600 && maxHoldSec >= defaultTtlSec, 'the TTL must exceed an A/B plus a probe');
+  const a = await L.tryAcquire(CM, { owner: 'a', kind: 'lease' });
+  assert.equal(a.ok, true);
+  assert.ok(Math.abs(Date.parse(a.holder.expiresAt) - Date.now() - defaultTtlSec * 1000) < 5000, 'no --ttl: the default TTL, not forever');
+  await assert.rejects(L.tryAcquire(CM, { owner: 'a', kind: 'lease', ttlSec: maxHoldSec + 1 }), /capped at \d+ s.*lock\.mjs run chrome-measure/);
+  await assert.rejects(L.tryAcquire(CM, { owner: 'z', kind: 'lease', ttlSec: 2400 }), /capped/, 'refused before queueing');
+  assert.deepEqual(L.status(CM).queue, []);
+  // renewals and re-entrant refreshes never pass acquiredAt + maxHoldSec
+  const h = readJson(`${CM}.json`);
+  h.acquiredAt = ago(maxHoldSec - 60);
+  writeFileSync(lockFile(`${CM}.json`), JSON.stringify(h));
+  const rn = await L.renew(CM, { owner: 'a', ttlSec: 600 });
+  assert.equal(rn.capped, true);
+  assert.ok(Math.abs(Date.parse(rn.expiresAt) - (Date.parse(h.acquiredAt) + maxHoldSec * 1000)) < 1000, 'renew is clamped to the cap');
+  const re = await L.tryAcquire(CM, { owner: 'a', kind: 'lease', ttlSec: 600 });
+  assert.equal(re.reentrant, true);
+  assert.ok(Date.parse(re.holder.expiresAt) <= Date.parse(h.acquiredAt) + maxHoldSec * 1000 + 1, 're-entry is clamped too');
+  await L.release(CM, { owner: 'a' });
+  // a process hold (verify.mjs, fix.mjs ab, lock.mjs run) has no TTL; a short lease keeps its max-seconds
+  const p = await L.tryAcquire(CM, { owner: 'p', kind: 'process' });
+  assert.equal(p.holder.expiresAt, undefined);
+  await L.release(CM, { owner: 'p' });
+  const s = await L.tryAcquire(CM, { owner: 's', kind: 'lease', short: true, maxSec: 150 });
+  assert.ok(Date.parse(s.holder.expiresAt) - Date.now() <= 150000);
+  await L.release(CM, { owner: 's' });
+  // other resources: no policy
+  const o = await L.tryAcquire(R, { owner: 'o', kind: 'lease' });
+  assert.equal(o.holder.expiresAt, undefined);
+  assert.equal((await L.tryAcquire(R, { owner: 'o', kind: 'lease', ttlSec: 7200 })).ok, true);
+  assert.equal(L.LEASE_POLICY.iphone, undefined, 'the iphone lease keeps its own CLI default');
+});
+
+test('I-020: at a hand-over a head waiter not seen for HANDOVER_FRESH_SEC is skipped but keeps its place', async () => {
+  const now = new Date().toISOString();
+  assert.equal((await L.tryAcquire(R, { owner: 'h', kind: 'lease' })).ok, true);
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([
+    { owner: 'slow', kind: 'lease', since: ago(300), lastSeen: ago(L.HANDOVER_FRESH_SEC + 10), queueTtlSec: 600 },
+    { owner: 'recent', kind: 'lease', since: ago(200), lastSeen: ago(L.HANDOVER_FRESH_SEC - 10), queueTtlSec: 600 },
+    { owner: 'live', kind: 'lease', since: now, lastSeen: now, queueTtlSec: 600 },
+  ]));
+  assert.equal(L.status(R).next, 'recent', 'a head polled within the window is not skipped');
+  await L.release(R, { owner: 'h' });
+  assert.equal((await L.tryAcquire(R, { owner: 'live', kind: 'lease' })).ok, false, 'a fresh head still goes first');
+  assert.equal((await L.tryAcquire(R, { owner: 'recent', kind: 'lease' })).ok, true);
+  await L.release(R, { owner: 'recent' });
+  assert.deepEqual(L.status(R).queue.map((w) => w.owner), ['slow', 'live']);
+  assert.equal(L.status(R).next, 'live', 'the stale head is skipped');
+  assert.equal((await L.tryAcquire(R, { owner: 'live', kind: 'lease' })).ok, true, 'the next live waiter is served instead of leaving the lock idle');
+  assert.deepEqual(L.status(R).queue.map((w) => w.owner), ['slow'], 'the skipped waiter keeps its place');
+  await L.release(R, { owner: 'live' });
+  // when it retries it counts as seen (it is the caller) and is served
+  assert.equal((await L.tryAcquire(R, { owner: 'slow', kind: 'lease' })).ok, true);
+  // nobody fresh: the head goes first as before
+  await L.release(R, { owner: 'slow' });
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([
+    { owner: 'x', kind: 'lease', since: ago(300), lastSeen: ago(200), queueTtlSec: 600 },
+    { owner: 'y', kind: 'lease', since: ago(100), lastSeen: ago(100), queueTtlSec: 600 },
+  ]));
+  assert.equal(L.status(R).next, 'x');
+});
+
+test('I-020: the iphone keeps strict FIFO (its protocol retries every 2-5 min, so an old lastSeen means nothing)', async () => {
+  const now = new Date().toISOString();
+  assert.equal((await L.tryAcquire('iphone', { owner: 'h', kind: 'lease', ttlSec: 900 })).ok, true);
+  writeFileSync(lockFile('iphone.queue.json'), JSON.stringify([
+    { owner: 'retrier', kind: 'lease', since: ago(300), lastSeen: ago(120), queueTtlSec: 600 },
+    { owner: 'poller', kind: 'lease', since: now, lastSeen: now, queueTtlSec: 600 },
+  ]));
+  await L.release('iphone', { owner: 'h' });
+  assert.equal(L.status('iphone').next, 'retrier');
+  assert.equal((await L.tryAcquire('iphone', { owner: 'poller', kind: 'lease', ttlSec: 900 })).ok, false);
+  assert.equal((await L.tryAcquire('iphone', { owner: 'retrier', kind: 'lease', ttlSec: 900 })).ok, true);
+});
+
+test('I-020: the waiter that is next polls about every NEXT_POLL_MS, so a hand-over is not lost in its backoff', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'h', kind: 'lease' })).ok, true);
+  let grantedAt = 0;
+  const p = L.acquire(R, { owner: 'w', kind: 'lease', log: () => {} }).then((x) => { grantedAt = Date.now(); return x; });
+  await sleep(6200); // default backoff polls at ~2.3 s, ~5.5 s, ~10 s: the old code would next poll 3-5 s after this release
+  const releasedAt = Date.now();
+  await L.release(R, { owner: 'h' });
+  const x = await p;
+  assert.equal(x.holder.owner, 'w');
+  assert.ok(grantedAt - releasedAt < L.NEXT_POLL_MS + 800, `granted ${grantedAt - releasedAt} ms after the release`);
+  x.release();
 });

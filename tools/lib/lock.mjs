@@ -18,13 +18,14 @@
 // `queueTtlSec` (default 10 min) is dropped, so a crashed waiter never blocks the queue. A queue place
 // belongs to the waiting process: killing a waiting verify.mjs / fix.mjs ab / `lock.mjs run` (SIGTERM,
 // Ctrl-C) gives it up, and a restart queues at the back. To keep a place without a live process, queue
-// a lease with `lock.mjs acquire` (retry within 10 min).
+// a lease with `lock.mjs acquire` (retry within 10 min). At a hand-over, though, only waiters seen within
+// HANDOVER_FRESH_SEC compete (I-020): a waiter that is not polling is skipped and keeps its place.
 //
 // Short lane (incident I-007): a waiter that asks for `short` with a `maxSec` (<= SHORT_MAX_SEC; the
 // pre-commit `npm test`, ~35 s) still waits for the current holder (never preempts), but at the next
 // hand-over it is served before earlier normal waiters (5-min A/Bs). Queued short jobs drain back to
-// back while the run of consecutive short grants still fits SHORT_DRAIN_SEC (from the first short
-// grant, counting the next job's max-seconds); then the next normal waiter goes first
+// back (all of them, I-020) while the run of consecutive short grants still fits SHORT_DRAIN_SEC (900 s,
+// from the first short grant, counting the next job's max-seconds); then the next normal waiter goes first
 // (<resource>.last-grant.json records the last grant and when the short run started), so shorts
 // can't starve the queue: a waiting normal job is delayed by at most SHORT_DRAIN_SEC. A short holder expires at acquiredAt + maxSec
 // (no --ttl, re-acquire or renew stretches it); `lock.mjs run --short` also kills its command then.
@@ -68,12 +69,29 @@ const guardDir = (r) => join(lockDir(), `${r}.guard`);
 const lastGrantFile = (r) => join(lockDir(), `${r}.last-grant.json`);
 export const SHORT_MAX_SEC = 300;
 const SHORT_QUEUE_TTL_SEC = 60;
-export const SHORT_DRAIN_SEC = 300; // a run of back-to-back short jobs ends within this (incident I-011)
+// a run of back-to-back short jobs ends within this (I-011: 300 s; I-020: 900 s, so a hand-over drains all
+// queued short jobs, e.g. 180 + 240 + 300 s, now that normal holds are <= ~10 min)
+export const SHORT_DRAIN_SEC = 900;
 /** Resources whose normal waiters pass the host admission gate (I-016). */
 export const GATED = Object.freeze({ 'chrome-measure': true });
 export const hostAlertsFile = () => join(lockDir(), 'host-alerts.log');
 const GATE_FRESH_MS = 60000; // a waiter's gate record counts as "waiting for quiet" while refreshed within this
+// Incident I-020 (research/architecture/tools-speed.md #1): a normal *lease* on chrome-measure holds the
+// Mac between an agent's turns (one sat idle 4 min of a 40-min lease). Measure in one process hold
+// (`lock.mjs run chrome-measure -- sh -c '…'`); a lease gets a default TTL and can't outlive
+// acquiredAt + maxHoldSec (--ttl above it is refused; renew / re-entry are clamped). Process holds and
+// short leases are unchanged; the iphone lease keeps its CLI default (900 s).
+export const LEASE_POLICY = { 'chrome-measure': { defaultTtlSec: 600, maxHoldSec: 1200 } };
+// Incident I-020 (#4): fast hand-over. The waiter served next polls every NEXT_POLL_MS (others keep
+// their backoff), and at a hand-over a waiter whose lastSeen is older than HANDOVER_FRESH_SEC (it is not
+// polling: a CLI `acquire` retried every few minutes) is skipped; it keeps its place for the next one.
+// HANDOVER_FRESH_SEC must exceed the slowest poll of a waiting loop (acquire(): 15.5 s; `acquire --wait`: 15 s).
+export const NEXT_POLL_MS = 1000;
+export const HANDOVER_FRESH_SEC = 30;
+// the iphone protocol (CLAUDE.md) has waiters retry every 2-5 min, so there a stale lastSeen means nothing: strict FIFO
+const SLOW_POLL_RESOURCES = new Set(['iphone']);
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+const capMs = (r, h) => (LEASE_POLICY[r] && h.kind === 'lease' && !h.short ? Date.parse(h.acquiredAt) + LEASE_POLICY[r].maxHoldSec * 1000 : Infinity);
 
 /** Parse FW_LOCK_HELD ("<resource>:<token>,...") into {resource: token}. */
 export function parseHeld(s) {
@@ -135,7 +153,7 @@ export function status(r) {
   checkName(r);
   const h = readJson(holderFile(r), null);
   const q = pruneQueue(readJson(queueFile(r), []));
-  const next = q.length ? q[nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h))].owner : null;
+  const next = q.length ? q[nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h), Date.now(), undefined, r)].owner : null;
   return { resource: r, holder: h, stale: h ? staleReason(h) : null, queue: q, next };
 }
 
@@ -162,12 +180,22 @@ function shortRunStart(lg, now = Date.now()) {
   return lastGrantShort(lg, now) ? Date.parse(lg.runStart || lg.at) : null;
 }
 
-/** Index of the waiter served at the next hand-over: FIFO, except the short lane (see header). */
-function nextIndex(q, lg, now = Date.now()) {
-  const s = q.findIndex((w) => w.short), n = q.findIndex((w) => !w.short);
-  if (s < 0 || n < 0) return 0;
+/**
+ * Index (in q) of the waiter served at the next hand-over: FIFO, except the short lane (see header), among
+ * the waiters seen within HANDOVER_FRESH_SEC (`caller`, the one polling now, counts as seen); if none was,
+ * among all. Not for SLOW_POLL_RESOURCES, whose waiters retry every few minutes by protocol.
+ */
+function nextIndex(q, lg, now = Date.now(), caller, r) {
+  let pool = q.map((w, i) => [w, i]);
+  if (!SLOW_POLL_RESOURCES.has(r)) {
+    const fresh = pool.filter(([w]) => w.owner === caller || now - Date.parse(w.lastSeen) <= HANDOVER_FRESH_SEC * 1000);
+    if (fresh.length) pool = fresh;
+  }
+  const s = pool.find(([w]) => w.short), n = pool.find(([w]) => !w.short);
+  if (!s || !n) return pool[0][1];
+  if (n[0].movedBy && n[1] < s[1]) return n[1]; // the lead moved this normal waiter ahead of these short jobs (I-019): its priority wins (I-020)
   const start = shortRunStart(lg, now) ?? now;
-  return now - start + (q[s].maxSec || SHORT_MAX_SEC) * 1000 <= SHORT_DRAIN_SEC * 1000 ? s : n;
+  return now - start + (s[0].maxSec || SHORT_MAX_SEC) * 1000 <= SHORT_DRAIN_SEC * 1000 ? s[1] : n[1];
 }
 
 /**
@@ -197,6 +225,11 @@ export async function tryAcquire(r, opts) {
     ttlSec = kind === 'process' ? maxSec + 5 : maxSec; // + the grace `lock.mjs run` gives the command after SIGTERM
     queueTtlSec = Math.min(queueTtlSec, SHORT_QUEUE_TTL_SEC);
   }
+  const pol = !short && kind === 'lease' && LEASE_POLICY[r];
+  if (pol) {
+    if (ttlSec > pol.maxHoldSec) throw new Error(`a ${r} lease is capped at ${pol.maxHoldSec} s (asked --ttl ${ttlSec}); measure inside one process hold instead: node tools/lock.mjs run ${r} --owner <topic> -- sh -c '<ab && probe>' (I-020)`);
+    ttlSec ||= pol.defaultTtlSec;
+  }
   return withGuard(r, () => {
     const now = Date.now();
     let h = readJson(holderFile(r), null);
@@ -213,7 +246,7 @@ export async function tryAcquire(r, opts) {
     }
     if (h && h.owner === owner && (h.kind === 'lease' || h.pid === pid)) {
       // re-entrant for the same owner: refresh the TTL
-      if (ttlSec && !h.short) h.expiresAt = new Date(now + ttlSec * 1000).toISOString();
+      if (ttlSec && !h.short) h.expiresAt = new Date(Math.min(now + ttlSec * 1000, capMs(r, h))).toISOString();
       writeJson(holderFile(r), h);
       return { ok: true, holder: h, reentrant: true };
     }
@@ -221,7 +254,7 @@ export async function tryAcquire(r, opts) {
     const lg = readJson(lastGrantFile(r), {});
     const seen = effectiveLastGrant(lg, h);
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
-    const ni = q.length ? nextIndex(q, seen, now) : -1;
+    const ni = q.length ? nextIndex(q, seen, now, owner, r) : -1;
     // short jobs are exempt from the host gate: the first short waiter may pass a head normal waiter held by it
     const headOk = q.length === 0 || mine === ni || (short && GATED[r] && gateHolding(q[ni], now, T) && mine === q.findIndex((w) => w.short));
     let gateRec;
@@ -264,7 +297,7 @@ export async function tryAcquire(r, opts) {
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     writeJson(queueFile(r), q);
-    return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, seen, now)].owner };
+    return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r)].owner };
   });
 }
 
@@ -302,9 +335,10 @@ export async function renew(r, { owner, ttlSec }) {
     const h = readJson(holderFile(r), null);
     if (!h || h.owner !== owner || staleReason(h)) throw new Error(`${r} is not held by "${owner}"${h ? ` (holder: ${h.owner}${staleReason(h) ? ', stale' : ''})` : ''}`);
     if (h.short) throw new Error(`${r} is held by "${owner}" as a short job (max ${h.maxSec} s); a short job cannot be renewed`);
-    h.expiresAt = new Date(Date.now() + ttlSec * 1000).toISOString();
+    const want = Date.now() + ttlSec * 1000, cap = capMs(r, h);
+    h.expiresAt = new Date(Math.min(want, cap)).toISOString();
     writeJson(holderFile(r), h);
-    return h;
+    return want > cap ? { ...h, capped: true } : h;
   });
 }
 
@@ -358,7 +392,8 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       log(`[lock ${r}] busy: ${h ? `held by "${h.owner}" (${h.kind}${h.pid ? ' pid ' + h.pid : ''}, since ${h.acquiredAt}${h.expiresAt ? ', expires ' + h.expiresAt : ''})` : handover}; you are #${res.position} in queue`);
       lastLog = Date.now();
     }
-    await sleep(wait + Math.random() * 500);
+    // the waiter served next polls fast (I-020): a hand-over no longer waits out its backoff
+    await sleep(res.next === owner ? Math.min(wait, NEXT_POLL_MS) + Math.random() * 100 : wait + Math.random() * 500);
     wait = Math.min(maxPollMs, Math.round(wait * 1.5));
   }
 }

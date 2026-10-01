@@ -62,7 +62,7 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
   assert.ok(seen, 'chrome-measure was held during the run');
   assert.equal(seen.owner, 'vtest');
   assert.equal(seen.kind, 'process');
-  assert.deepEqual(seen.meta, { cmd: 'verify', targets: ['a=http://127.0.0.1:9/'], cpu: 3, runs: 1, viewport: 'mobile' });
+  assert.deepEqual(seen.meta, { cmd: 'verify', targets: ['a=http://127.0.0.1:9/'], cpu: 3, runs: 1, viewport: 'mobile', idle: 6 }, 'the holder meta records the idle length (I-020)');
   assert.equal(holder(A.env.FW_STATE_DIR), null, 'released on exit');
   assert.equal(existsSync(join(B.d, 'state')), false, '--no-lock never touches the lock dir');
 

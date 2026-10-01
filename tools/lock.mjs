@@ -12,7 +12,8 @@
 //
 // --short --max-seconds N (N <= 300; default 120): the short lane for jobs like `npm test` (~35 s).
 // Waits for the current holder, then is served before earlier normal waiters (queued short jobs run
-// back to back while the run fits 300 s, SHORT_DRAIN_SEC; then a normal waiter). The hold ends at N s: `run` kills the command (and its children) and
+// back to back, all of them, while the run fits 900 s, SHORT_DRAIN_SEC (I-020); then a normal waiter; a normal
+// waiter the lead moved ahead of short jobs goes before them). The hold ends at N s: `run` kills the command (and its children) and
 // exits 124; a short lease just expires (it cannot be renewed). Keep polling while you wait (`run`
 // and `acquire --wait` do): a short queue place is dropped after 60 s without a retry.
 //
@@ -24,6 +25,14 @@
 // probe, another `lock.mjs run`) uses this one hold instead of queueing behind it; e.g.
 //   node tools/lock.mjs run chrome-measure --owner <topic> -- sh -c 'node tools/fix.mjs ab <topic> --runs 5 && node probe.mjs'
 // Resources: chrome-measure (verify.mjs takes it automatically), iphone (lease, TTL default 900 s).
+//
+// chrome-measure (incident I-020): measure in ONE `run` hold (servers started inside its sh -c), not a lease.
+// A normal lease there defaults to --ttl 600 and can't outlive acquiredAt + 1200 s (--ttl above it is
+// refused, renew is clamped). A normal `run` declares its length with --max-seconds (default 600): past
+// it the command keeps running, but it warns and `status` shows OVERDUE; split long measurements into
+// holds of 5-10 min. Hand-over: the waiter served next polls every ~1 s; a waiter not seen for 30 s is
+// skipped at a hand-over (it keeps its place), so keep polling (`run`, `acquire --wait`). The iphone
+// keeps strict FIFO (its waiters retry every 2-5 min by protocol).
 //
 // Lock state looks wrong (a stale "short" last grant starving the short lane, a queue entry that never
 // goes away, a leftover guard dir)? Never edit the lock JSON by hand (incident I-012); use:
@@ -43,7 +52,8 @@
 // "queue-move" line to locks/audit.log. Only waiting entries move (never the holder); only --by lead; the
 // entry keeps its `since` and records movedBy/movedAt (status: "moved by lead"). Positions are the live
 // queue as status shows it. Waiters keep their entries (and pids) and are granted in the new order; the
-// short lane still serves queued short jobs first within its drain budget (I-007/I-011).
+// short lane serves queued short jobs first within its drain budget (I-007/I-011), except short jobs
+// behind a normal waiter the lead moved: the move wins (I-020).
 //
 // Host gate (I-016): a normal waiter of chrome-measure whose turn it is is granted only on a quiet host
 // (lib/host.mjs quiet(): CPU <= 20 % over 10 s, load1 <= 6, memory pressure normal), or after 600 s
@@ -52,7 +62,7 @@
 // single acquire may take ~10 s; BUSY then says "host not quiet". `status` samples the host for 3 s and
 // prints a host line with the gate state (--no-host skips it).
 import { spawn } from 'node:child_process';
-import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample } from './lib/lock.mjs';
+import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS } from './lib/host.mjs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
 
@@ -68,12 +78,15 @@ const owner = opt('owner', process.env.FW_LOCK_OWNER);
 const short = flag('short');
 const maxSec = short ? Number(opt('max-seconds', 120)) : undefined;
 const sh = (w) => (w.short ? ` (short, max ${w.maxSec} s)` : '');
+const NORMAL_HOLD_SEC = 600; // a normal chrome-measure hold should end within ~10 min (I-020); `run --max-seconds` declares another length
+// a normal hold that declared its length (`run --max-seconds`, I-020) and passed it
+const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > Date.parse(h.acquiredAt) + h.meta.expectSec * 1000 ? ` OVERDUE (past its ${h.meta.expectSec} s; split long measurements into holds of 5-10 min, I-020)` : '');
 
 function fmt(s) {
   const h = s.holder;
   let line = `${s.resource.padEnd(15)} `;
   if (!h) line += s.next ? `free, handing over to "${s.next}"` : 'free';
-  else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}\n${' '.repeat(16)}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + ' '.repeat(16) + JSON.stringify(h.meta) : ''}`;
+  else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}\n${' '.repeat(16)}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + ' '.repeat(16) + JSON.stringify(h.meta) : ''}`;
   if (s.queue.length) line += `\n${' '.repeat(16)}queue: ${fmtQueue(s.queue)}`;
   return line;
 }
@@ -164,17 +177,18 @@ async function main() {
     const t0 = Date.now();
     let pause = short ? 1000 : 5000;
     while (!res.ok && (Date.now() - t0) / 1000 < waitSec) {
-      if (!res.gated) await new Promise((r) => setTimeout(r, Math.min(pause, waitSec * 1000 - (Date.now() - t0) + 10)));
-      pause = Math.min(short ? 3000 : 30000, pause * 1.5);
+      // the waiter served next polls fast (I-020); others back off to 15 s, well inside the 30 s a waiter may go unseen before a hand-over skips it
+      if (!res.gated) await new Promise((r) => setTimeout(r, Math.min(res.next === owner ? NEXT_POLL_MS : pause, waitSec * 1000 - (Date.now() - t0) + 10)));
+      pause = Math.min(short ? 3000 : 15000, pause * 1.5);
       res = await attempt();
     }
     if (res.ok) { console.log(`ACQUIRED ${resource} for "${owner}"${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}${res.reentrant ? ' (renewed)' : ''}${sh(res.holder)}${res.holder.gateTimeout ? ' after a host-gate TIMEOUT: the host was not quiet, measurements in this hold are contaminated' : ''}`); console.log(JSON.stringify(res.holder, null, 1)); return 0; }
     const who = res.holder ? `held by "${res.holder.owner}" since ${res.holder.acquiredAt}${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}`
       : res.gated ? `free, but the host is not quiet (${res.gate.reasons.join(', ')}; waiting since ${res.gate.since}, granted anyway after ${THRESHOLDS.gateMaxWaitSec} s)` : `free, but "${res.next}" is next`;
-    console.log(`BUSY ${resource}: ${who}. You ("${owner}") are #${res.position} in the queue; run acquire again within 10 min to keep your place.`);
+    console.log(`BUSY ${resource}: ${who}. You ("${owner}") are #${res.position} in the queue; run acquire again within 10 min to keep your place (a hand-over serves waiters that keep polling, e.g. with --wait; one not seen for 30 s is skipped but keeps its place).`);
     return 3;
   }
-  if (cmd === 'renew') { const h = await renew(resource, { owner, ttlSec: Number(opt('ttl', 900)) }); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}`); return 0; }
+  if (cmd === 'renew') { const h = await renew(resource, { owner, ttlSec: Number(opt('ttl', 900)) }); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }
   if (cmd === 'release') {
     const h = await release(resource, { owner, force: flag('force') });
     console.log(h ? `RELEASED ${resource} (was "${h.owner}"${staleReason(h) ? ', stale' : ''})` : `${resource} was not held`);
@@ -183,6 +197,10 @@ async function main() {
   if (cmd === 'dequeue') { const q = await dequeue(resource, owner); console.log(`left the ${resource} queue; ${q.length} waiting`); return 0; }
   if (cmd === 'run') {
     if (!rest.length) throw new Error('usage: node tools/lock.mjs run <resource> --owner X -- <cmd> [args]');
+    // a normal hold declares its length (I-020): --max-seconds, default NORMAL_HOLD_SEC on chrome-measure; past it the
+    // command keeps running (a measurement is never killed), but it warns and `status` shows the hold OVERDUE
+    const expectSec = !short && (opt('max-seconds') !== undefined || LEASE_POLICY[resource]) ? Number(opt('max-seconds', NORMAL_HOLD_SEC)) : undefined;
+    if (expectSec !== undefined) { if (!(expectSec > 0)) throw new Error(`--max-seconds must be a number of seconds > 0 (got ${opt('max-seconds')})`); meta.expectSec = expectSec; }
     const { release: rel, holder } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, timeoutSec: Number(opt('timeout', 3600)) });
     // a short job runs in its own process group, so reaching --max-seconds stops the whole tree (npm test -> node --test -> ...);
     // FW_LOCK_HELD: the command's own verify.mjs / fix.mjs ab / nested run re-enter this hold instead of queueing behind it
@@ -198,8 +216,10 @@ async function main() {
       kill('SIGTERM');
       setTimeout(() => kill('SIGKILL'), 3000).unref();
     }, maxSec * 1000);
+    const warn = expectSec && setTimeout(() => console.error(`[lock ${resource}] this hold passed its ${expectSec} s (--max-seconds; I-020): it keeps running, but split long measurements into lock.mjs run holds of 5-10 min so short jobs get in at each hand-over`), expectSec * 1000);
     const code = await new Promise((r) => child.on('exit', (c, s) => r(c ?? (s ? 1 : 0))));
     clearTimeout(timer);
+    clearTimeout(warn);
     if (overran) kill('SIGKILL'); // anything in the group that ignored SIGTERM
     rel();
     return overran ? 124 : code;

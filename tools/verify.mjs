@@ -277,7 +277,7 @@ function median(xs) { const s = [...xs].sort((a, b) => a - b); return s[Math.flo
 async function main() {
   let lockHolder = null;
   if (!flag('no-lock')) {
-    ({ holder: lockHolder } = await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel } }));
+    ({ holder: lockHolder } = await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel, idle: IDLE } }));
   }
   // the lock's host admission gate (tools/lib/lock.mjs): how this hold (or the outer one we re-entered) was granted
   const gate = lockHolder?.gate ? { ...lockHolder.gate, gateTimeout: !!lockHolder.gateTimeout } : null;

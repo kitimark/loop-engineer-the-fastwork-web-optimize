@@ -238,7 +238,8 @@ export async function repair(r, { by, reason, apply = false, forceHolder = false
 // in place (keeping `since` and, since I-019, `movedBy`/`movedAt`) and grants the entry nextIndex() picks
 // among the live entries. So moving an entry inside that array is all a reorder needs: under the guard no
 // acquirer can interleave, every waiter keeps its entry, and the moved one is granted in its new place.
-// The short lane (I-007/I-011) still picks the first short waiter over normal ones within its drain budget.
+// The short lane (I-007/I-011) still picks the first short waiter over normal ones within its drain budget,
+// except that a normal waiter the lead moved ahead of short jobs is served before them (I-020).
 
 /** A queue entry an acquirer would keep (the same test as pruneQueue in lib/lock.mjs). */
 const liveWaiter = (w, now) => isObj(w) && typeof w.owner === 'string' && !!w.owner && !Number.isNaN(Date.parse(w.lastSeen))
@@ -269,10 +270,11 @@ function planMove(r, { owner, to, by, now }) {
   const rest = raw.filter((w) => w !== target);
   const at = to - 1 < others.length ? rest.indexOf(others[to - 1]) : rest.indexOf(others[others.length - 1]) + 1;
   const queue = [...rest.slice(0, at), moved, ...rest.slice(at)];
-  const shorts = live.filter((w) => w.short).map((w) => w.owner);
-  const note = !target.short && shorts.length
-    ? `short lane: queued short jobs (${shorts.join(', ')}) are still served before normal waiters at a hand-over while their ${SHORT_DRAIN_SEC} s drain budget lasts (I-007/I-011)`
-    : target.short && live.some((w) => !w.short) ? 'short lane: a short job is served by the short-lane rule; its place only orders it among other short jobs' : null;
+  const ahead = after.slice(0, to - 1).filter((w) => w.short).map((w) => w.owner), behind = after.slice(to).filter((w) => w.short).map((w) => w.owner);
+  const note = target.short
+    ? (live.some((w) => !w.short) ? 'short lane: a short job is served by the short-lane rule; its place only orders it among other short jobs' : null)
+    : ahead.length ? `short lane: queued short jobs ahead of "${owner}" (${ahead.join(', ')}) are still served first at a hand-over while their ${SHORT_DRAIN_SEC} s drain budget lasts (I-007/I-011/I-020)`
+    : behind.length ? `short lane: the lead's move puts "${owner}" ahead of the short jobs behind it (${behind.join(', ')}); it is served before them (I-020)` : null;
   return { resource: r, owner, from, to, changed: from !== to, holder, before: live, after, queue, file: F.queue, note };
 }
 

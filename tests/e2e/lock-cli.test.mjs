@@ -111,6 +111,55 @@ test('--wait N blocks until the holder releases, or gives up with exit 3', async
   assert.equal(holder('w').owner, 'b');
 });
 
+test('I-020: --wait as the next waiter takes a freed lock within about a second (was the 5 s first pause)', async () => {
+  assert.equal(lock('acquire', 'w', '--owner', 'a').code, 0);
+  const waiting = lockAsync('acquire', 'w', '--owner', 'b', '--wait', '20');
+  for (let i = 0; i < 100 && !statusJson('w').queue.length; i++) await sleep(50);
+  await sleep(300);
+  const t0 = Date.now();
+  assert.equal(lock('release', 'w', '--owner', 'a').code, 0);
+  const r = await waiting;
+  assert.equal(r.code, 0, r.out);
+  assert.ok(Date.now() - t0 < 2500, `granted ${Date.now() - t0} ms after the release`);
+});
+
+test('I-020: a chrome-measure lease defaults to a TTL and is capped; "use lock.mjs run" in the refusal', () => {
+  const a = lock('acquire', 'chrome-measure', '--owner', 'lease-topic');
+  assert.equal(a.code, 0, a.out);
+  const h = holder('chrome-measure');
+  assert.ok(Math.abs(Date.parse(h.expiresAt) - Date.now() - 600000) < 10000, 'default TTL 600 s');
+  assert.match(a.stdout, /ACQUIRED chrome-measure for "lease-topic" until /);
+  assert.equal(lock('release', 'chrome-measure', '--owner', 'lease-topic').code, 0);
+  const big = lock('acquire', 'chrome-measure', '--owner', 'lease-topic', '--ttl', '2400');
+  assert.equal(big.code, 1);
+  assert.match(big.stderr, /capped at 1200 s.*lock\.mjs run chrome-measure --owner <topic> -- sh -c/);
+  assert.equal(holder('chrome-measure'), null);
+  const iphone = lock('acquire', 'iphone', '--owner', 'phone', '--ttl', '2400');
+  assert.equal(iphone.code, 0, 'the iphone lease has no such cap');
+});
+
+test('I-020: a normal `run` on chrome-measure declares its length (--max-seconds, default 600); past it: a warning and OVERDUE in status, never a kill', async () => {
+  const lockFile = join(state, 'locks', 'chrome-measure.json');
+  const child = `setTimeout(() => { console.log('DONE'); process.exit(4); }, 2600);`;
+  const p = lockAsync('run', 'chrome-measure', '--owner', 'long-ab', '--max-seconds', '1', '--', process.execPath, '-e', child);
+  let h = null;
+  for (let i = 0; i < 100 && !h; i++) { await sleep(50); h = holder('chrome-measure'); }
+  assert.equal(h.meta.expectSec, 1);
+  assert.equal(h.short, undefined, 'still a normal hold');
+  await sleep(1600);
+  assert.match(lock('status', 'chrome-measure').stdout, /held by "long-ab" .*OVERDUE \(past its 1 s/);
+  const r = await p;
+  assert.equal(r.code, 4, 'the command ran to its end: a measurement is never killed');
+  assert.match(r.stdout, /DONE/);
+  assert.match(r.stderr, /\[lock chrome-measure\] this hold passed its 1 s .*split long measurements/);
+  assert.equal(existsSync(lockFile), false, 'released');
+  const d = lock('run', 'chrome-measure', '--owner', 'plain', '--', process.execPath, '-e', `console.log(JSON.parse(require('fs').readFileSync(${JSON.stringify(lockFile)}, 'utf8')).meta.expectSec)`);
+  assert.equal(d.code, 0, d.out);
+  assert.equal(d.stdout.trim(), '600', 'default: ~10 min per normal hold');
+  const other = lock('run', 'w', '--owner', 'plain', '--', process.execPath, '-e', `console.log(JSON.stringify(JSON.parse(require('fs').readFileSync(${JSON.stringify(join(state, 'locks', 'w.json'))}, 'utf8')).meta))`);
+  assert.equal(other.stdout.trim(), '{}', 'other resources: no declared length unless given');
+});
+
 test('run <res> -- cmd: holds the lock (process kind) while cmd runs, propagates exit code, releases', () => {
   const probe = `const h = JSON.parse(require('fs').readFileSync(${JSON.stringify(join(state, 'locks', 'chrome-measure.json'))}, 'utf8')); console.log('HOLDER ' + JSON.stringify(h)); process.exit(7);`;
   const r = lock('run', 'chrome-measure', '--owner', 'runner', '--note', 'n', '--', process.execPath, '-e', probe);
@@ -119,7 +168,7 @@ test('run <res> -- cmd: holds the lock (process kind) while cmd runs, propagates
   assert.equal(h.owner, 'runner');
   assert.equal(h.kind, 'process');
   assert.equal(typeof h.pid, 'number');
-  assert.deepEqual(h.meta, { note: 'n' });
+  assert.deepEqual(h.meta, { note: 'n', expectSec: 600 }, 'a normal chrome-measure run declares ~10 min (I-020)');
   assert.equal(holder('chrome-measure'), null, 'released after the command exits');
   assert.equal(lock('run', 'chrome-measure', '--owner', 'x').code, 1, 'run without -- cmd is a usage error');
 });
