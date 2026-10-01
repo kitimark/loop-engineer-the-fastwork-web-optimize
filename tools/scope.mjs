@@ -3,13 +3,15 @@
 // tooling (tools/, tests/, package.json, .githooks/, .claude/ except agents/) since its merge-base with
 // main, counting committed, staged, unstaged and untracked paths. `npm run test:unit` runs it before the
 // unit tests: roles that never change tooling run that instead of the full `npm test`.
+// It also fails (SCOPE SNAPSHOT, no opt-out) when a branch other than main or baseline/* changed the
+// committed baseline snapshot: site/, site-pretty/ or baseline.json (commits that skip pre-commit).
 //
 //   node tools/scope.mjs [--base <ref>] [--dir <checkout>] [--tooling]      (npm run test:scope)
 //     --dir: check another checkout, e.g. a reviewer checking a fix owner's worktree (default: cwd)
 //   FW_TOOLING=1 node tools/scope.mjs                    # same as --tooling: a toolsmith branch opts out
 //
-// Prints SCOPE OK | SCOPE TOOLING-ALLOWED (stdout) or SCOPE TOOLING (stderr, with the paths and what to do).
-// Exit codes: 0 clean or tooling explicitly allowed, 1 tooling changed, 2 usage or git error (e.g. no base).
+// Prints SCOPE OK | SCOPE TOOLING-ALLOWED (stdout) or SCOPE SNAPSHOT / SCOPE TOOLING (stderr, with the paths and what to do).
+// Exit codes: 0 clean or tooling explicitly allowed, 1 tooling or snapshot changed, 2 usage or git error (e.g. no base).
 import { checkScope, formatScope } from './lib/scope.mjs';
 
 const argv = process.argv.slice(2);

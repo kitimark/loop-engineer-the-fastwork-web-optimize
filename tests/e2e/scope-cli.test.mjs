@@ -46,3 +46,20 @@ test('scope.mjs in a fix worktree: clean -> 0; a touched tool -> 1 naming it; FW
   assert.equal(r.code, 2, r.out);
   assert.match(r.stderr, /no-such-branch/);
 });
+
+test('scope.mjs: a fix branch that carries a baseline snapshot change (e.g. from a revert, which skips pre-commit) -> 1, even with FW_TOOLING=1', () => {
+  const { wt } = makeTempRepo({ worktree: 'fix-snapshot' });
+  const scope = (args = [], env = {}) => node(tool('scope.mjs'), args, { cwd: wt, env });
+  mkdirSync(join(wt, 'site-pretty'), { recursive: true });
+  writeFileSync(join(wt, 'site-pretty', 'index.html'), '<p>new build</p>\n');
+  writeFileSync(join(wt, 'baseline.json'), '{}\n');
+  git(wt, 'add', 'site-pretty', 'baseline.json');
+  git(wt, 'commit', '-q', '-m', 'Revert "baseline: snapshot"');
+  for (const [args, env] of [[[], {}], [[], { FW_TOOLING: '1' }], [['--tooling'], {}]]) {
+    const r = scope(args, env);
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.stderr, /^SCOPE SNAPSHOT: 2 snapshot paths changed since merge-base [0-9a-f]+ with main on branch /m);
+    assert.match(r.stderr, /committed\s+baseline\.json/);
+    assert.match(r.stderr, /committed\s+site-pretty\/index\.html/);
+  }
+});
