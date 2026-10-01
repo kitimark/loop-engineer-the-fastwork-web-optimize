@@ -165,9 +165,15 @@ Phone question (merged P14 boundary block, sent to mgmt-ops-5 at 12:5xZ; agreed 
 - Driver W at 430x775: 6 s idle at y 0, then top → y≥2500, with a Timeline on every counted run.
 - Frame columns: dt>50 / dt>34 with the ±4 ms counts (CLAUDE.md 668b612).
 - Read per rotator tick and per reveal flip: the Layout root quad (viewport, carousel or #people) and its duration.
-- The discriminating read:
-  - C view-rooted and V1 carousel-rooted: the carousel dirties itself (size containment matters);
-  - both view-rooted: another dirtier, or a pending full layout (W3). The rotoff run names it.
+- Reading, pre-registered in de-pm-hero's postmortem-hero.md §7.7 (84bb7a2) and agreed by arch-claims. A self-dirtied
+  renderer's climb starts at its container, so `contain: strict` on the carousel cannot stop a self-dirty; only
+  the #people boundary can.
+  - C view, V1 carousel: W1. The phone's WebKit did not treat the carousel as a boundary in C (the WebKit build
+    string matters).
+  - C and V1 view, V2 #people: the escape is inside #people but above the carousel (a self-dirty, which is UNRESOLVED
+    with no trigger found, or a second dirtier, or W2). The fix belongs above the carousel.
+  - All three view: W3, or a dirtier outside #people. The rotoff run says how many view-rooted layouts remain.
+  - C not view-rooted: the C build moved. Stop.
 - No overlap with lc-cq3: in the SSR HTML the mobile deck is in the hero section, the stage visuals and kr-arms are
   in a later section, and `.is-carousel` is inside #people.
 
