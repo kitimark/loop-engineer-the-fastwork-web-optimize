@@ -234,8 +234,8 @@ between tool calls.
    control sentinel run after the warm-ups and one at the block end carry the >=58/>=44 rule (a failure voids the block);
    counted runs keep Timeline on in every arm, judged within the block; record counted C fps with Timeline on as info.
    If Timeline-on C >= 44 data exists, only the end sentinel is needed. doc-protocol-v2 writes it into protocol §5.
-   **Probe rule (lead 12:3xZ):** until T1a lands, runs count only with the probe P0 cleared (rAF-only logger). T1a
-   review ACCEPT (12:4xZ); deltas committed f8e7d5a on e0b3821 (npm test 630 before rebase, unit 308 after; docH null at
+   **Probe rule (lead 13:3xZ):** T1a landed (f8e7d5a) but counts as absolute only after a T1a on/off A/A in P4's warm-up
+   slot (approved); until then counted runs use the P0-cleared logger (P-029, P3 did). T1a deltas f8e7d5a on e0b3821 (npm test 630 before rebase, unit 308 after; docH null at
    y 0 / raf-legacy, told ts-analysis); phone dt>50/34 ±4 ms reporting is a separate measurement-code change (lead).
    **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (behind the countdown fix), h4.
    Countdown fix mw10e-cdwc (CSS 5dc6e8e37388 on aw1-10e; 269df637 differed only in a comment, never served) lands on phone gain evidence + review; mechanism wording stays
@@ -338,6 +338,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | arch-safari = `a765c480ea490a443`, de-safari = `a4ce1669dd33aa4dc` | Safari probing / iOS time model (read-only) | alive |
 | arch-devtools = `ad5593c3c7d3b8c97`, de-devtools = `a21e6c00411aba4d8` | Chrome DevTools method (read-only) | done |
 | `ts-iphone-run` (T1a f8e7d5a), `ts-analysis` (T3), `ts-render-signals` (T6+T7, I-032, in test:chrome) | protocol v2 tools | alive |
+| `ts-wait` | toolsmith (lead spawn 13:3xZ, user request): blocking wait commands so agents stop sleep-loop polling; may ask iphone-runner + others what waiting hurt most | alive |
 | `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); WDA runner + iproxy left running for iphone-runner | done |
 | `res-layerpainted` | F-059/F-064/F-066 stamped, F-068 limitation posted | done |
 | `doc-protocol-v2` (aa630a1a8c0adae9f) | v2 docs pass (LEAD, README DoD, AGENT_PROMPT, fix-reviewer, EXPERIMENTS, CLAUDE.md); not ops docs | alive |
