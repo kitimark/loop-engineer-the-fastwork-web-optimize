@@ -10,7 +10,8 @@
 //      FAKE_CHROME_HANG_AT=<method>   never answer this CDP method (a hung browser; verify's watchdog, I-023)
 //      FAKE_CHROME_EXIT_AFTER=<method>  answer it, then exit at the next command (a browser gone between runs, I-023)
 //      FAKE_CHROME_IGNORE_SIGTERM=1     ignore SIGTERM (a browser that will not quit; close() must SIGKILL it)
-//      FAKE_CHROME_TRACE=nocomplete|dataloss  Tracing.end: never send tracingComplete | report dataLossOccurred
+//      FAKE_CHROME_TRACE=nocomplete,dataloss,bigchunk  Tracing.end: never send tracingComplete | report
+//                                       dataLossOccurred | add one chunk of BIG_CHUNK events
 //      FAKE_CHROME_METRICS=step         Performance.getMetrics: all of verify's counters (+ Timestamp) grow by
 //                                       METRIC_STEP per read (I-018); default: the bench per-session six
 //      FAKE_CHROME_BENCH=1  tools/bench.mjs mode: on Page.navigate, fetch <origin>/bench-fake.json from the
@@ -45,7 +46,7 @@ let frameLog = false; // the injected logger keeps [t, dt, scrollY] (verify.mjs 
 // (one read at its start, one at its end) is exactly STEP (durations in s, as Chrome reports them).
 export const METRIC_STEP = { ScriptDuration: 0.05, RecalcStyleDuration: 0.02, LayoutDuration: 0.01, TaskDuration: 0.2, RecalcStyleCount: 5, LayoutCount: 3, V8CompileDuration: 0.004, DevToolsCommandDuration: 0.001 };
 let metricCalls = 0;
-import { TRACE_TS, TRACE_EVENTS, TRACE_SYNC, TRACE_WINDOW } from './trace-fixture.mjs'; // --trace-frames: rAF timestamps + a synthetic trace
+import { TRACE_TS, TRACE_EVENTS, TRACE_SYNC, TRACE_WINDOW, BIG_CHUNK } from './trace-fixture.mjs'; // --trace-frames: rAF timestamps + a synthetic trace
 
 // ---- tools/bench.mjs mode (FAKE_CHROME_BENCH=1) ------------------------------------------------------
 const BENCH = process.env.FAKE_CHROME_BENCH === '1';
@@ -131,9 +132,14 @@ function handle(msg, send) {
     case 'Tracing.start': reply({}); return event('Tracing.bufferUsage', { percentFull: 0.123, eventCount: 42 });
     case 'Tracing.end': {
       reply({});
-      // FAKE_CHROME_TRACE=nocomplete: the events, but never tracingComplete; =dataloss: complete with data loss
-      const mode = process.env.FAKE_CHROME_TRACE;
-      setTimeout(() => { event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(0, 5) }); event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(5) }); if (mode !== 'nocomplete') event('Tracing.tracingComplete', { dataLossOccurred: mode === 'dataloss' }); }, 10);
+      // FAKE_CHROME_TRACE (comma list): nocomplete: the events, but never tracingComplete; dataloss: complete
+      // with data loss; bigchunk: plus one chunk of BIG_CHUNK metadata events (more than a spread push takes)
+      const mode = (process.env.FAKE_CHROME_TRACE || '').split(',');
+      setTimeout(() => {
+        event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(0, 5) }); event('Tracing.dataCollected', { value: TRACE_EVENTS.slice(5) });
+        if (mode.includes('bigchunk')) event('Tracing.dataCollected', { value: Array.from({ length: BIG_CHUNK }, () => ({ ph: 'M', name: 'x', pid: 9, tid: 9 })) });
+        if (!mode.includes('nocomplete')) event('Tracing.tracingComplete', { dataLossOccurred: mode.includes('dataloss') });
+      }, 10);
       return;
     }
     case 'Runtime.evaluate': {

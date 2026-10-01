@@ -8,6 +8,9 @@
 //   1106-1150 (44 ms) ended after COLLECT: not a frame of the phase (a FunctionCall in it, which also
 //   shows the trace reaches past the last frame)
 export const TRACE_SYNC = 990;
+// FAKE_CHROME_TRACE=bigchunk: one dataCollected chunk with more events than a spread push(...chunk) takes
+// (~125k arguments, then RangeError)
+export const BIG_CHUNK = 200000;
 export const TRACE_TS = [992, 1016, 1046, 1062, 1090, 1106, 1150];
 export const TRACE_WINDOW = { t0: 1000, lastOn: 1106 };
 export const TRACE_EVENTS = [

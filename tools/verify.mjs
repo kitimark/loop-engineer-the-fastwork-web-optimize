@@ -210,7 +210,7 @@ function cdpDelta(a, b) {
 async function traceStart(page) {
   const tr = { events: [], bufferPercentMax: null };
   tr.off = page.on((m) => {
-    if (m.method === 'Tracing.dataCollected') tr.events.push(...m.params.value);
+    if (m.method === 'Tracing.dataCollected') for (const e of m.params.value) tr.events.push(e); // no spread: a large chunk would overflow the argument limit (RangeError)
     if (m.method === 'Tracing.bufferUsage' && typeof m.params.percentFull === 'number') tr.bufferPercentMax = Math.max(tr.bufferPercentMax ?? 0, Math.round(m.params.percentFull * 1000) / 10);
   });
   await page.send('Tracing.start', TRACE_START);

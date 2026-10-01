@@ -37,8 +37,8 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   const envA = { CHROME: FAKE, FW_STATE_DIR: join(repo.root, 'state'), FAKE_CHROME_LOG: join(repo.root, 'aa.jsonl'), FAKE_CHROME_METRICS: 'step', FAKE_HOST_LOAD1: '12',
     FW_GATE_MAX_LOAD1: '20' }; // ... which the lock's host gate (I-016) admits only with its load1 limit raised
   const [ab, aa] = await Promise.all([
-    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens', '--max-wait', '20', '--watchdog', '120', '--cdp-metrics'], { cwd: repo.wt, env: envB }),
-    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', '--aa', '--runs', '1', '--idle', '0', '--no-screens', '--trace-frames'], { cwd: repo.wt, env: envA }),
+    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', 'fast-nav', '--runs', '1', '--idle', '1', '--no-screens', '--max-wait', '20', '--watchdog', '120'], { cwd: repo.wt, env: envB }), // no I-018 flags: main's measurement
+    nodeAsync(join(repo.wt, 'tools', 'fix.mjs'), ['ab', '--aa', '--runs', '1', '--idle', '0', '--no-screens', '--trace-frames', '--cdp-metrics'], { cwd: repo.wt, env: envA }),
   ]);
   assert.equal(ab.code, 0, ab.out);
   assert.equal(aa.code, 0, aa.out);
@@ -49,7 +49,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(res.kind, 'A/B');
   assert.equal(res.git.branch, 'wt/ab-wt');
   const { hostThresholds, hostRecheck, watchdogSec, measurement, ...cfgRest } = res.config;
-  assert.deepEqual(measurement, { cdpMetrics: true, traceFrames: false, frameLog: false }, 'what verify recorded (I-018): --cdp-metrics passed through');
+  assert.deepEqual(measurement, { cdpMetrics: false, traceFrames: false, frameLog: false }, 'what verify recorded (I-018): a flagless ab is main\'s measurement');
   assert.deepEqual(cfgRest, { cpu: 6, viewport: 'mobile', runs: 1, idle: 1, serveArgs: ['--vendors=local', '--https', '--latency', '150'], baseline: 'site-pretty', stackedOn: null, order: 'ABBA (alternating per run)' });
   assert.equal(hostThresholds.invalidLoad1, 10, 'thresholds copied into config');
   assert.deepEqual(hostRecheck, { maxWaitSec: 20, maxLoad1: 6, maxBusyPct: 20 }, 'ab passes --max-wait to verify.mjs');
@@ -64,12 +64,11 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.equal(sc.patched.source, 'overlay');
   assert.equal(sc.patched.sha256, sc.overlaySha256);
   assert.equal(sc.baseline.sha256, sha256(fx.prettyFiles[PAGE_JS]));
-  // + the per-phase CDP Performance.getMetrics deltas (--cdp-metrics, I-018)
-  assert.deepEqual(Object.keys(res.metrics.scroll), ['fps', 'gt20', 'gt34', 'gt50', 'gt100', 'max', 'p95', 'loafMs', 'loafScriptMs', 'forcedLayoutMs', 'cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpStyleCount', 'cdpLayoutCount', 'cdpTaskMs']);
-  assert.deepEqual(Object.keys(res.metrics.morph), ['fps', 'gt50', 'loafMs', 'forcedLayoutMs', 'cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpStyleCount', 'cdpLayoutCount', 'cdpTaskMs']);
-  assert.deepEqual([res.metrics.scroll.cdpStyleCount.baseline.median, res.metrics.scroll.cdpLayoutMs.name, res.metrics.morph.cdpScriptMs.patched.median], [5, 'layout ms (CDP)', 50]);
-  assert.match(res.markdown, /^\| scroll: style recalc ms \(CDP\) \| 20 \[20-20\] \| 20 \[20-20\] \| 0 \(0%\) \| n=1/m);
-  assert.doesNotMatch(res.markdown, /trace-frames|traced/, 'no trace unless asked');
+  // a flagless ab (I-018 review): main's metric keys exactly, no CDP or trace rows, every metric with its n of pairs
+  assert.deepEqual(Object.keys(res.metrics.scroll), ['fps', 'gt20', 'gt34', 'gt50', 'gt100', 'max', 'p95', 'loafMs', 'loafScriptMs', 'forcedLayoutMs']);
+  assert.deepEqual(Object.keys(res.metrics.morph), ['fps', 'gt50', 'loafMs', 'forcedLayoutMs']);
+  for (const ms of Object.values(res.metrics)) for (const v of Object.values(ms)) assert.equal(v.n, 1, v.name);
+  assert.doesNotMatch(res.markdown, /\(CDP\)|\(traced\)|trace-frames|traced|^\| trace:/m, 'no CDP or trace rows unless asked');
   // idle phase (--idle 1): the same metrics as the scroll phase, from the fake's no-input recording
   assert.deepEqual(Object.keys(res.metrics), ['scroll', 'morph', 'idle']);
   assert.deepEqual(Object.keys(res.metrics.idle), Object.keys(res.metrics.scroll));
@@ -80,7 +79,7 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.deepEqual(ifps.patched, { median: 58.1, min: 58.1, max: 58.1, runs: [58.1] });
   assert.deepEqual([ifps.delta, ifps.deltaPct, ifps.pairedDeltas, ifps.verdict], [0, 0, [0], 'n=1 (need >=3 runs for a verdict)']);
   assert.deepEqual(Object.fromEntries(Object.entries(res.metrics.idle).map(([k, v]) => [k, v.baseline.median])),
-    { fps: 58.1, gt20: 2, gt34: 1, gt50: 1, gt100: 0, max: 55, p95: 16.7, loafMs: 55, loafScriptMs: 40, forcedLayoutMs: 6, cdpScriptMs: 50, cdpStyleMs: 20, cdpLayoutMs: 10, cdpStyleCount: 5, cdpLayoutCount: 3, cdpTaskMs: 200 });
+    { fps: 58.1, gt20: 2, gt34: 1, gt50: 1, gt100: 0, max: 55, p95: 16.7, loafMs: 55, loafScriptMs: 40, forcedLayoutMs: 6 });
   assert.match(res.markdown, /^\| idle: fps \| 58\.1 \[58\.1-58\.1\] \| 58\.1 \[58\.1-58\.1\] \| 0 \(0%\) \| n=1/m);
   assert.match(res.markdown, /^\| idle: forced style\+layout ms \(in LoAF\) \| 6 \[6-6\] \| 6 \[6-6\] \| 0 \(0%\) \| n=1/m);
   assert.equal(JSON.parse(readFileSync(join(repo.wt, res.raw), 'utf8')).idle, 1, 'ab passes --idle to verify.mjs');
@@ -127,6 +126,12 @@ test('ab --runs 1 (A/B) and ab --aa (A/A) produce complete results files', async
   assert.deepEqual(Object.keys(aaRes.metrics.trace), ['frames', 'scriptMs', 'styleMs', 'layoutMs', 'paintMs', 'otherMs', 'offMainMs', 'gt34', 'gt50', 'styleElements']);
   assert.match(aaRes.markdown, /^\| trace: other \(compositor\/raster\/GPU\/vsync; GPU not separated\) ms in them \| 17 \[17-17\]/m);
   assert.equal(aaRes.config.measurement.traceFrames, true);
+  // + the per-phase CDP Performance.getMetrics deltas (--cdp-metrics passed through, I-018)
+  assert.equal(aaRes.config.measurement.cdpMetrics, true);
+  assert.deepEqual(Object.keys(aaRes.metrics.scroll), ['fps', 'gt20', 'gt34', 'gt50', 'gt100', 'max', 'p95', 'loafMs', 'loafScriptMs', 'forcedLayoutMs', 'cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpStyleCount', 'cdpLayoutCount', 'cdpTaskMs']);
+  assert.deepEqual(Object.keys(aaRes.metrics.morph), ['fps', 'gt50', 'loafMs', 'forcedLayoutMs', 'cdpScriptMs', 'cdpStyleMs', 'cdpLayoutMs', 'cdpStyleCount', 'cdpLayoutCount', 'cdpTaskMs']);
+  assert.deepEqual([aaRes.metrics.scroll.cdpStyleCount.baseline.median, aaRes.metrics.scroll.cdpLayoutMs.name, aaRes.metrics.morph.cdpScriptMs.patched.median], [5, 'layout ms (CDP)', 50]);
+  assert.match(aaRes.markdown, /^\| scroll: style recalc ms \(CDP\) \| 20 \[20-20\] \| 20 \[20-20\] \| 0 \(0%\) \| CONTAMINATED \(host\): n=1/m);
   assert.match(aaRes.markdown, /^traced \(--trace-frames\): tracing perturbs timing/m);
   assert.doesNotMatch(aaRes.markdown, /\| idle:/);
   assert.equal(aaRes.metrics.scroll.fps.baseline.median, 50);

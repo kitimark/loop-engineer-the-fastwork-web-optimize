@@ -8,6 +8,7 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, nodeAsync, tool, TESTS, sleep, startProc, FAKE_HOST, cdpTokens } from '../helpers.mjs';
 import { TRACE_START } from '../../tools/lib/trace-frames.mjs';
+import { BIG_CHUNK } from '../fixtures/trace-fixture.mjs';
 import { LOGGER, RESET, COLLECT, COLLECT_AT } from '../../tools/lib/perf-page.mjs';
 
 const FAKE = join(TESTS, 'fixtures', 'fake-chrome.mjs');
@@ -492,11 +493,13 @@ test('--trace-frames: traces the scroll phase, attributes its own frames > 20 ms
   assert.deepEqual(order.slice(0, 5), ['Tracing.start', 'reset', 'scroll', 'collect', 'Tracing.end'], 'the trace covers exactly the scroll phase');
 });
 
-test('--trace-frames: data loss marks the trace partial; a trace that never completes is traceFrames.error and the run goes on', async () => {
+test('--trace-frames: data loss marks the trace partial; a huge dataCollected chunk is taken; a trace that never completes is traceFrames.error and the run goes on', async () => {
   const A = setup();
-  const ra = await nodeAsync(VERIFY, A.args('loss', ['--idle', '0', '--max-wait', '0', '--trace-frames']), { env: { ...A.env, FAKE_CHROME_TRACE: 'dataloss' } });
+  const ra = await nodeAsync(VERIFY, A.args('loss', ['--idle', '0', '--max-wait', '0', '--trace-frames']), { env: { ...A.env, FAKE_CHROME_TRACE: 'dataloss,bigchunk' } });
   assert.equal(ra.code, 0, ra.out);
   const xa = JSON.parse(readFileSync(join(A.d, 'result.json'), 'utf8')).results[0];
+  assert.equal(xa.traceFrames.error, undefined, 'a chunk of more events than a spread push(...) takes (RangeError) is collected');
+  assert.equal(xa.traceFrames.events, 13 + BIG_CHUNK);
   assert.equal(xa.traceFrames.dataLossOccurred, true);
   assert.equal(xa.traceSummary.partial, true);
   assert.deepEqual(xa.traceFrames.summary.partialReasons, ['trace data loss (buffer full)']);
