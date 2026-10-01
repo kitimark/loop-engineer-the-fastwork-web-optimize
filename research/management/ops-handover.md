@@ -53,6 +53,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **19:4xZ** User GO 19:41Z: iphone-runner runs the scene-scope ATTRIBUTION block (C=B, V1, V1i; W; Timeline; nested
+  Layouts at the #platform flip) = P-040/P-041 (ids assigned after the fact, predictions pre-data in the ticket msg;
+  hashes checked in parallel, match). st5-split ticket (fix-scroll-engine 2944262; C, V1, st5, noanim, waapi, st6) =
+  P-042..P-044, second read OK pending (1) band conflict (view >= 50 vs MIXED 25-75) and (2) device minutes; snap2 hashes
+  match; Sim if de-counts-sim's C/N gate passes. de-pm-hero land request 78c2b4b/372ecae/1ae7225 (F-102: WebKit
+  opacity/transform flip forces layout, CONFIRMED source; our cause UNRESOLVED; st6 = no-flip arm). de-counts-sim: 3
+  short chunks; WebKit has no restyle element count (CONFIRMED source), "345 -> 30" is Chrome-only.
 - **19:3xZ** Landed a22657a + b8a533c (ops), dfc8e08 STATUS BOARD (seed applied, lead set priorities, console /status).
   RULE: owners `status.mjs set <id> --by <me> --state … --note …` at every transition, `status.mjs mine` on resume; PROGRESS
   = user narrative, live state = board. Pinged all 13 live owners 19:28Z (ids per lead); report non-adopters ~19:43Z.
