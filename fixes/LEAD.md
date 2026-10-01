@@ -30,10 +30,12 @@ open an incident and have a toolsmith add one rather than editing the file.
 ```mermaid
 flowchart TD
     P[Plan wave N from TOPICS.md<br/>3-4 owners at a time, rolling] --> S[Spawn fix owners<br/>teammates or worktree subagents]
-    S --> R[Owner: evidence, helpers read<br/>bundle-mapper]
-    R --> F[Owner: overlay patch]
-    F --> M[Owner: fix.mjs ab under chrome-measure<br/>iPhone lease if touch-only]
-    M --> D[Owner: README + commit]
+    S --> R[Owner R + I: census card, event card<br/>helpers read: bundle-mapper]
+    R --> A{Lead signs D:<br/>attribution card NAMED?}
+    A -- LOCATED / UNEXPLAINED --> R
+    A -- NAMED or fast path --> F[Owner F: overlay under a new name,<br/>build card, prediction card]
+    F --> M[Owner: gate by device class<br/>fix.mjs ab under chrome-measure,<br/>phone block on a slot ticket]
+    M --> D[Owner: README + ledger rows + commit]
     D --> V{fix-reviewer}
     V -- NEEDS-WORK --> F
     V -- ACCEPT or documented REJECT --> L[Lead lands: tool fixes first,<br/>then the fix, rebase + ff-only]
@@ -70,6 +72,52 @@ flowchart TD
   last combined overlay (all waves) is measured in Chrome and on the iPhone; a final research
   write-up summarizes what helped, what didn't and why; `incident.mjs list` is empty; no lock
   holders, no leftover worktrees or branches besides `main`; history is linear.
+
+## Stages and gates (protocol v2, lead decision 2026-10-01)
+
+Every topic goes through six stages, each closed by a gate
+([`research/architecture/measurement-protocol-v2.md`](../research/architecture/measurement-protocol-v2.md) §2;
+the lesson behind each rule is its §1 table). A topic skips nothing; a stage can be short. Card templates:
+[`_template/CARDS.md`](_template/CARDS.md); the owner's steps: [`AGENT_PROMPT.md`](AGENT_PROMPT.md).
+
+| stage | question | closes with (gate) | signs off |
+|---|---|---|---|
+| R research | where and how often is it slow? | census card: ≥3 phone runs of one driver + Chrome at 932 and at phone geometry; clusters by crossing; a cluster in <2/3 runs goes on the "rare" list (needs F or G runs before any work) | owner |
+| I investigate | what changes in that frame? | event card: crossing table ±1 viewport, uncapped per-step probe (Chrome) and phone logger, hypotheses as element + selector + property, each checked by computed style in Chrome **and** WebKit | owner; mgmt-ops checks it is complete |
+| D distinguish | which mechanism and code, on which device? | **attribution card NAMED**: pipeline stage, code, positive + negative ablations with a mechanism check per arm, device class | **lead** |
+| F fix | does the build do only what we intended? | build card + prediction card + ledger row; slot ticket for phone time | owner; mgmt-ops validates the ticket |
+| V review | a win on the target device, no regression elsewhere? | review report (`fix-reviewer`, section 4) | fix-reviewer |
+| L land | | section 5 | lead |
+
+**What the lead signs.**
+- **D, for every topic.** The owner sends the attribution card; reply in one message: `D: NAMED, class
+  <Chrome-measurable | phone-only | render-bound | touch-only>, gate <Chrome A/B | phone ABBA | Instruments
+  hitches | G/F>` or `D: LOCATED|UNEXPLAINED, <what is missing>`. NAMED needs the positive ablation, ≥1 negative
+  sibling ablation and a mechanism check on every arm, all in one block against one control. A position-moving
+  ablation (staging work earlier) proves where the trigger is, never the cost. LOCATED may spend one more phone
+  block on ablations; it builds no fix. A render-bound fix stays LOCATED until the Instruments route (T10) is
+  verified on this device.
+- **Fast path**, when the mechanism is exact and countable in Chrome (a removed listener, a deleted redundant
+  write: counts → 0 by construction): a one-line card ("counts X→0, by code") and straight to F. Only the lead
+  says a topic qualifies.
+- **Also the lead's:** a third phone block for one question (the sequential rule stops at two, protocol §5.3),
+  and F (finger) runs, scheduled in batches, never per topic.
+- **Prediction misses.** A model with two misses in [`PREDICTIONS.md`](PREDICTIONS.md) (measured outside its
+  interval) is reviewed by its author's team before it drives another build; the lead holds that build's ticket.
+
+**Slot tickets (phone access).** Only ticketed builds go on the phone. A ticket names: build + served hashes; the
+ONE named control on the same base and its hashes; the driver (S/W/M/G/F); the one question; the prediction id;
+the "if X then Y" decision for each outcome; the probe set; expected minutes. mgmt-ops validates it, the lead
+ranks the queue (by [`DIRECTION.md`](DIRECTION.md)). **Reorders only at block boundaries**; a running block is
+never interrupted. A rejected ticket gets its reason in one message. Block rules (warm-up, sentinel, ≤9 counted
+runs, ABBA order, max 2 blocks): `CLAUDE.md` "Shared devices" and protocol §5.
+
+**Canary drift (L8, protocol §6.3).** The canary page drifted from ~92 fps (04:25Z, 93b4af2 tools) to 78 and
+75.9 fps (08:31Z, 10:08Z), unexplained. Until a hold-internal A/A of current vs 93b4af2 tools and the host record (T8) resolve it: **Chrome
+numbers compare only within one hold** (one `fix.mjs ab`, or one `lock.mjs run` that measures both sides), never
+across holds or against older results; flag any canary outside the 76-78 fps band and don't use that hold's
+numbers for a verdict. Tools differ → bisect 93b4af2..HEAD over the measurement code; host differs → document
+the band. Lift this rule here when it is resolved.
 
 ## 1. Before a wave
 
@@ -167,6 +215,15 @@ Reviewer checklist addition (lead decision 2026-10-01, F-030): every topic that 
 attribute/style writes gets an **idle-counts probe at y=0** (and at one parked mid-page position) before landing: callbacks/s
 and writes/s at rest, base vs patched, in the short lane. review-10c missed /10c's will-change window flipping
 `data-fw-wc` on the countdown faces ~1,500 times/s at idle in the hero; an A/B over the scroll phase cannot see it.
+
+Protocol v2 additions (§7; `fix-reviewer.md` "Protocol v2 checks"): the idle probe above becomes the **idle triple**
+(y=0, parked mid-page after a scroll, at the pin) for every topic, and the reviewer also checks: attribution card
+NAMED with a mechanism check per ablation and no capped logger as evidence; device class matches the gate used;
+**position-bin census diff on both devices** (no 250 px bin worse by ≥1 tick median or +1 frame k≥5 per run, not
+only the targeted bin; L5: hero v2 fixed y≈50 and grew y≈700 by ~10 ms); a prediction row with measured vs
+predicted and a passed closure check; claims scoped to drivers, touch-only fixes with G or F; scenarios not run
+listed; phone geometry for attribution and served hashes = the ticket's; heat notes, sentinel passed, within-block
+vs the exact base; backdrop look check, a11y diff, memory/layers note. A missing item is NEEDS-WORK, not a note.
 
 ## 5. Land (rebase + fast-forward only)
 
