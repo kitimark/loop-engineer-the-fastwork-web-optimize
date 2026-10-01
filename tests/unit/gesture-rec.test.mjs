@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from '../helpers.mjs';
-import { RECORDER_JS, READ_JS, STATE_JS, markJs, toolbarTransitions, pinReversals, overscroll, touchSequences, touchmoveStats, momentumTau, frameBands, morphStats, summarizeRun } from '../../tools/lib/gesture-rec.mjs';
+import { RECORDER_JS, READ_JS, STATE_JS, markJs, toolbarTransitions, pinReversals, overscroll, touchSequences, touchTime, touchmoveStats, momentumTau, frameBands, morphStats, summarizeRun } from '../../tools/lib/gesture-rec.mjs';
 
 function fakeWindow() {
   let now = 1000;
@@ -28,8 +28,8 @@ function fakeWindow() {
     run: (js) => vm.runInContext(js, ctx),
     frame(dt = 16.7) { now += dt; const q = rafQ.splice(0); q.forEach((cb) => cb(now)); },
     advance(dt) { now += dt; },
-    dispatch(type, { cancelable = true, prevent = false, touches = 1, y = 500 } = {}) {
-      const e = { type, cancelable, defaultPrevented: false, touches: { length: touches }, changedTouches: [{ clientY: y }] };
+    dispatch(type, { cancelable = true, prevent = false, touches = 1, y = 500, ts } = {}) {
+      const e = { type, cancelable, defaultPrevented: false, touches: { length: touches }, changedTouches: [{ clientY: y }], ...(ts === undefined ? {} : { timeStamp: ts }) };
       // the page's own (non-passive) handler ran first, the recorder's bubble listener on window last
       if (prevent && cancelable) e.defaultPrevented = true;
       for (const l of listeners.filter((x) => x.type === type)) l.fn(e);
@@ -52,20 +52,20 @@ test('recorder: frames like `record`, passive touch listeners, marks, idempotent
   w.dispatch('touchmove', { prevent: true });
   w.win.scrollY = 40;
   w.dispatch('touchmove', { cancelable: false });
-  w.dispatch('touchend', { touches: 0, y: 300 });
+  w.dispatch('touchend', { touches: 0, y: 300, ts: 1012.34 }); // the event's own timeStamp (rounded like t); the others have none: null
   const t = w.run(markJs('hero'));
   assert.ok(typeof t === 'number');
   assert.deepEqual(w.marks, ['fwg:hero']);
   w.win.innerHeight = 815; w.frame(16.7);
   assert.deepEqual(JSON.parse(JSON.stringify(w.run(STATE_JS))), [40, 5995 - 815, 815, 1050, 'visible', 430]);
   const r = JSON.parse(w.run(READ_JS));
-  assert.equal(r.v, 1);
+  assert.equal(r.v, 2);
   assert.equal(r.vh0, 775);
   assert.equal(r.docH, 5995);
   assert.deepEqual(r.frames.map((f) => f.length), [4, 4, 4], '[t, dt, scrollY, innerHeight] like iphone.mjs record');
   assert.deepEqual(r.frames.map((f) => [f[2], f[3]]), [[0, 775], [10, 775], [40, 815]]);
   assert.deepEqual(r.frames[1].slice(0, 2), [1033.3, 16.6]);
-  assert.deepEqual(r.touches.map((e) => e.slice(1)), [['s', 1, 1, 0, 10, 500], ['m', 1, 1, 1, 10, 500], ['m', 1, 0, 0, 40, 500], ['e', 0, 1, 0, 40, 300]]);
+  assert.deepEqual(r.touches.map((e) => e.slice(1)), [['s', 1, 1, 0, 10, 500, null], ['m', 1, 1, 1, 10, 500, null], ['m', 1, 0, 0, 40, 500, null], ['e', 0, 1, 0, 40, 300, 1012.3]]);
   assert.deepEqual(r.marks, [[1033.3, 'hero']]);
   // stopped: no more frames, touches or marks; a new install starts a fresh buffer
   w.frame(); w.dispatch('touchstart'); w.run(markJs('late'));
@@ -129,9 +129,9 @@ test('pinReversals splits by touch phase and mark window: a fight while touching
   assert.deepEqual(r.pin.perMark.push2, { reversals: 8, excursions: 4, touching: 0, afterLift: 8 });
 });
 
-test('pinReversals vs iphone-wave2\'s finger counts (frames only): excursions are its round trips, reversals about twice', () => {
+test('pinReversals vs iphone-wave2\'s finger counts (frames only): excursions are its round trips, reversals about twice', (t) => {
   const raw = join(REPO, 'fixes', 'iphone-wave2', 'raw');
-  if (!existsSync(join(raw, 'finger-E1b.json'))) return; // documented calibration; the data lives with that topic
+  if (!existsSync(join(raw, 'finger-E1b.json'))) return t.skip('fixes/iphone-wave2/raw/finger-*.json absent (the calibration data lives with that topic)');
   const count = (f) => JSON.parse(readFileSync(join(raw, f), 'utf8')).segments.map((s) => pinReversals({ docH: 6035, ...s })).reduce((a, p) => [a[0] + p.excursions, a[1] + p.reversals], [0, 0]);
   // wave2 README §2b: E1 1, E1b 8, F1 0, F2 1 (judged a bounce), B2 ~50 (pass 2)
   assert.deepEqual(count('finger-E1b.json'), [7, 13]);
@@ -141,6 +141,30 @@ test('pinReversals vs iphone-wave2\'s finger counts (frames only): excursions ar
   const b2 = JSON.parse(readFileSync(join(raw, 'finger-B2.json'), 'utf8')).segments[1];
   const p = pinReversals({ docH: 6035, ...b2 });
   assert.deepEqual([p.excursions, p.reversals], [46, 91]);
+});
+
+test('a touchend handler 150 ms late (slow page): phases use the event timeStamp, so the return after the lift is a bounce, not a fight (review-gesture-2 B1)', () => {
+  // [handler t, kind, n, cancelable, prevented, scrollY, clientY, e.timeStamp]
+  const T = (t, k, n, ts) => [t, k, n, 1, 0, 5220, 500, ts];
+  // finger down at 1, held at the end; lifted at 100 (event), its handler only runs at 250 (one long frame)
+  const frames = [[0, 5220], [20, 5260], [50, 5312], [80, 5312], [120, 5280], [150, 5225], [200, 5222], [260, 5220], [300, 5220]].map(([t, y]) => F(t, y));
+  const late = { ...END, frames, touches: [T(1.2, 's', 1, 1), T(250, 'e', 0, 100)] };
+  const q = touchSequences(late);
+  assert.deepEqual([q[0].start, q[0].end, q[0].endLagMs], [1, 100, 150]);
+  const p = pinReversals(late);
+  assert.equal(p.reversals, 1, JSON.stringify(p.swings));
+  assert.deepEqual([p.touching.reversals, p.afterLift.reversals, p.bounces, p.fight], [0, 1, 1, 0], 'the return at 120 ms is after the lift at 100');
+  // without a timeStamp (pre-v2 data, or an engine without one) the handler time is all there is: a fight
+  const old = pinReversals({ ...late, touches: late.touches.map((e) => e.slice(0, 7)) });
+  assert.deepEqual([old.touching.reversals, old.fight], [1, 1]);
+  // momentumTau and contactMs start at the event too
+  const kin = { profile: 'still', dir: 'up', px: 300, liftoffPxPerS: 0 };
+  const ps = summarizeRun([late], [{ id: 's1', seg: 0, kin }]).segments[0].perStroke[0];
+  assert.deepEqual([ps.contactMs, ps.endLagMs, ps.pinTouching, ps.pinAfterLift], [99, 150, 0, 1]);
+  // a timeStamp that is not on the performance.now() clock or is later than the handler is ignored
+  for (const ts of [0, -5, null, undefined, 1.7e12, 251, 250 - 5001, 'x']) assert.equal(touchTime([250, 'e', 0, 1, 0, 0, 0, ts]), 250, String(ts));
+  assert.equal(touchTime([250, 'e', 0, 1, 0, 0, 0, 250]), 250);
+  assert.equal(touchTime([250, 'e', 0, 1, 0, 0, 0]), 250);
 });
 
 test('touch sequences and touchmove stats: prevented ratio overall and at the end', () => {

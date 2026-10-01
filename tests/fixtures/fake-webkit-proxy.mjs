@@ -98,7 +98,7 @@ function newDocument() {
 }
 const maxY = (w) => DOC_H - w.innerHeight;
 function dispatch(type, { touches, clientY }) {
-  const e = { type, cancelable: type !== 'touchcancel', defaultPrevented: false, touches: { length: touches }, changedTouches: [{ clientY }] };
+  const e = { type, cancelable: type !== 'touchcancel', defaultPrevented: false, touches: { length: touches }, changedTouches: [{ clientY }], timeStamp: doc.win.performance.now() };
   const ls = doc.listeners.filter((l) => l.type === type);
   for (const l of [...ls.filter((x) => x.capture), ...ls.filter((x) => !x.capture)]) {
     e.preventDefault = l.passive ? () => {} : () => { if (e.cancelable) e.defaultPrevented = true; };

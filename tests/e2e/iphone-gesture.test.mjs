@@ -138,6 +138,9 @@ test('gesture end to end on the fake phone: strokes as real touches, recorder, m
   assert.equal(sm.pin.touchData, true);
   assert.ok(sm.segments[0].perStroke.every((p) => Number.isInteger(p.pinTouching) && Number.isInteger(p.pinAfterLift)));
   assert.equal(sm.pin.fight, 0);
+  // touches carry the event's own timeStamp (v2 recorder); the handler ran at or after it
+  assert.ok(seg.touches.every((e) => e.length === 8 && typeof e[7] === 'number' && e[7] <= e[0]), 'timeStamp recorded');
+  assert.ok(sm.segments[0].perStroke.every((p) => typeof p.endLagMs === 'number' && p.endLagMs >= 0));
   // loops: the traverse ended at the end, the fling-to-top loop at the top
   assert.equal(doc.run.loops[0].until, 'atEnd');
   assert.equal(doc.run.loops.at(-1).until, 'atTop');

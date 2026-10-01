@@ -4,8 +4,11 @@
 //
 // The recorder is `iphone.mjs record`'s frame log ([t, dt, scrollY, innerHeight] per rAF, same rounding)
 // plus, new here, passive touch listeners and the gesture's marks, so strokes align to frames exactly:
-//   touches: [t, kind, touches.length, cancelable, defaultPrevented, scrollY, clientY]
-//            kind s = touchstart, m = touchmove, e = touchend, c = touchcancel; t = performance.now()
+//   touches: [t, kind, touches.length, cancelable, defaultPrevented, scrollY, clientY, timeStamp]
+//            kind s = touchstart, m = touchmove, e = touchend, c = touchcancel; t = performance.now() in the
+//            handler; timeStamp = the event's own e.timeStamp (when the OS delivered it, same clock). On a slow
+//            page a handler runs up to one long frame after the event, so the summaries time touches by
+//            timeStamp when it is sane (touchTime) and keep the handler time as the fallback (review-gesture-2 B1).
 //   marks:   [t, name]   (also performance.mark("fwg:<name>"))
 // All listeners are {passive: true}: they never block scrolling. touchstart/end/cancel listen in the capture
 // phase on window (earliest timestamp); touchmove in the bubble phase on window, registered after the
@@ -19,14 +22,14 @@ export const RECORDER_JS = `(() => {
   if (window.__fwg && !window.__fwg.stop) return 'already installed';
   const R = (v) => Math.round(v * 10) / 10;
   const rAF = window.requestAnimationFrame.bind(window);
-  const r = window.__fwg = {v: 1, href: location.href, vw: innerWidth, vh0: innerHeight, t0: R(performance.now()), docH: document.documentElement.scrollHeight, frames: [], touches: [], marks: [], stop: false};
+  const r = window.__fwg = {v: 2, href: location.href, vw: innerWidth, vh0: innerHeight, t0: R(performance.now()), docH: document.documentElement.scrollHeight, frames: [], touches: [], marks: [], stop: false};
   let last = performance.now();
   const loop = (t) => { if (r.stop) return; r.frames.push([R(t), R(t - last), Math.round(scrollY), innerHeight]); last = t; rAF(loop); };
   rAF(loop);
   const on = (type, kind, capture) => addEventListener(type, (e) => {
     if (r.stop) return;
     const ct = e.changedTouches && e.changedTouches[0];
-    r.touches.push([R(performance.now()), kind, e.touches ? e.touches.length : 0, e.cancelable ? 1 : 0, e.defaultPrevented ? 1 : 0, Math.round(scrollY), ct ? Math.round(ct.clientY) : null]);
+    r.touches.push([R(performance.now()), kind, e.touches ? e.touches.length : 0, e.cancelable ? 1 : 0, e.defaultPrevented ? 1 : 0, Math.round(scrollY), ct ? Math.round(ct.clientY) : null, typeof e.timeStamp === 'number' ? R(e.timeStamp) : null]);
   }, {passive: true, capture});
   on('touchstart', 's', true); on('touchend', 'e', true); on('touchcancel', 'c', true); on('touchmove', 'm', false);
   return 'installed';
@@ -182,16 +185,26 @@ export function pinReversals(seg, { minSwing = 20, zone = 150 } = {}) {
   return out;
 }
 
-/** Touch sequences (touchstart .. touchend/cancel) with their touchmove counts. */
+/**
+ * When a recorded touch happened, on the frames' clock: the event's timeStamp (index 7) when it is sane (a
+ * number in (0, handler time], at most 5 s before the handler: same performance.now() clock, not epoch ms),
+ * else the handler time (index 0; also every recording from before v2). The handler can run a long frame
+ * late on this page, which would move a lift's first rubber-band frames into `touching` (review-gesture-2 B1).
+ */
+export const touchTime = (e) => { const ts = e[7]; return typeof ts === 'number' && ts > 0 && ts <= e[0] && e[0] - ts <= 5000 ? ts : e[0]; };
+
+/** Touch sequences (touchstart .. touchend/cancel) with their touchmove counts. start/end are touchTime;
+ *  endLagMs = how late the touchend handler ran after the event (0 without a usable timeStamp). */
 export function touchSequences(seg) {
   const seqs = [];
   let cur = null;
   for (const e of seg.touches || []) {
-    const [t, k, , cancelable, prevented, y] = e;
+    const [, k, , cancelable, prevented, y] = e;
+    const t = touchTime(e);
     if (k === 's') { if (!cur || e[2] <= 1) { cur = { start: t, end: null, startY: y, moves: 0, cancelable: 0, prevented: 0, firstMoveT: null, lastMoveT: null }; seqs.push(cur); } continue; }
     if (!cur) continue;
     if (k === 'm') { cur.moves++; cur.cancelable += cancelable; cur.prevented += prevented; cur.firstMoveT ??= t; cur.lastMoveT = t; }
-    else if ((k === 'e' || k === 'c') && e[2] === 0) { cur.end = t; cur.endY = y; cur.cancelled = k === 'c'; cur = null; }
+    else if ((k === 'e' || k === 'c') && e[2] === 0) { cur.end = t; cur.endLagMs = Math.round((e[0] - t) * 10) / 10; cur.endY = y; cur.cancelled = k === 'c'; cur = null; }
   }
   for (const s of seqs) s.moveHz = s.moves > 1 && s.lastMoveT > s.firstMoveT ? Math.round(((s.moves - 1) * 1000) / (s.lastMoveT - s.firstMoveT)) : null;
   return seqs;
@@ -206,7 +219,7 @@ export function touchmoveStats(seg) {
   let fi = 0;
   for (const e of seg.touches || []) {
     if (e[1] !== 'm') continue;
-    while (fi + 1 < fr.length && fr[fi + 1][0] <= e[0]) fi++;
+    while (fi + 1 < fr.length && fr[fi + 1][0] <= touchTime(e)) fi++;
     const maxY = fr.length ? (seg.docH1 ?? seg.docH) - fr[fi][3] : mY;
     total++; cancelable += e[3]; prevented += e[4];
     if (e[5] >= maxY - 2) { endTotal++; endPrevented += e[4]; }
@@ -279,7 +292,7 @@ export function summarizeRun(segments, strokes = [], { morph = [] } = {}) {
       const q = aligned ? seqs[k] : null;
       const next = aligned && seqs[k + 1] ? seqs[k + 1].start : Infinity;
       const m = q && q.end !== null ? momentumTau(seg, q.end, { tNext: next }) : null;
-      return { id: s.id, profile: s.kin.profile, dir: s.kin.dir, px: s.kin.px, liftoffPxPerS: s.kin.liftoffPxPerS, touchStart: q?.start ?? null, contactMs: q && q.end !== null ? Math.round(q.end - q.start) : null, touchmoves: q?.moves ?? null, prevented: q?.prevented ?? null, moveHz: q?.moveHz ?? null, startY: q?.startY ?? null, tauS: m?.tauS ?? null, postReleaseTravelPx: m?.travelPx ?? null, pinTouching: aligned ? pin.perTouch[k].touching : null, pinAfterLift: aligned ? pin.perTouch[k].afterLift : null };
+      return { id: s.id, profile: s.kin.profile, dir: s.kin.dir, px: s.kin.px, liftoffPxPerS: s.kin.liftoffPxPerS, touchStart: q?.start ?? null, contactMs: q && q.end !== null ? Math.round(q.end - q.start) : null, endLagMs: q?.endLagMs ?? null, touchmoves: q?.moves ?? null, prevented: q?.prevented ?? null, moveHz: q?.moveHz ?? null, startY: q?.startY ?? null, tauS: m?.tauS ?? null, postReleaseTravelPx: m?.travelPx ?? null, pinTouching: aligned ? pin.perTouch[k].touching : null, pinAfterLift: aligned ? pin.perTouch[k].afterLift : null };
     });
     const { perTouch, swings, ...pinSum } = pin;
     return {
