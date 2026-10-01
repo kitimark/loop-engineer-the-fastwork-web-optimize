@@ -29,7 +29,7 @@ import { createHash } from 'node:crypto';
 import { openTab, sleep } from './wip.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
-import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE } from './iphone-url.mjs';
+import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, LAN_HOST } from './iphone-url.mjs';
 import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, yReadsLabel, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
 
 export const DEVICE = 'iPhone 15 Pro Max, iOS 26.6.1 Safari';
@@ -223,22 +223,8 @@ export async function servedHashes(urls) {
   return out;
 }
 
-/** A URL with a LAN host (private / link-local / CGNAT IPv4, private / link-local IPv6, *.local or a dotless
- *  name) gets the placeholder host `lan-host`; scheme, port, path and query stay. Loopback and public hosts stay.
- *  Run files are committed under research/ (Hard rule 12: no LAN addresses; review-t1a B4). */
-export const LAN_HOST = 'lan-host';
-export function lanSafeUrl(u) {
-  if (typeof u !== 'string' || !u) return u;
-  let x; try { x = new URL(u); } catch { return u; }
-  const h = x.hostname.replace(/^\[|\]$/g, '').toLowerCase();
-  const v4 = h.match(/^(\d+)\.(\d+)\.\d+\.\d+$/);
-  const lan = v4 ? (+v4[1] === 10 || (+v4[1] === 172 && +v4[2] >= 16 && +v4[2] <= 31) || (+v4[1] === 192 && +v4[2] === 168) || (+v4[1] === 169 && +v4[2] === 254) || (+v4[1] === 100 && +v4[2] >= 64 && +v4[2] <= 127))
-    : h.includes(':') ? /^(fc|fd|fe[89ab])/.test(h)
-    : h.endsWith('.local') || (!h.includes('.') && h !== 'localhost');
-  if (!lan) return u;
-  x.hostname = LAN_HOST;
-  return x.href;
-}
+// lanSafeUrl / LAN_HOST live in iphone-url.mjs (iphone.mjs scroll and record use them too); re-exported here.
+export { lanSafeUrl, LAN_HOST };
 /** pre / post with their URLs through lanSafeUrl (href, Resource Timing names). */
 function lanSafe(o) {
   if (!o || typeof o !== 'object') return o;

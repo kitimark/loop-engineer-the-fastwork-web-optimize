@@ -75,3 +75,24 @@ export function landedProblem(landed, target, info) {
     : 'Check that the server is running and reachable from the iPhone (same Wi-Fi, LAN URL, not localhost).';
   return `Safari did not load ${target}: it shows "${title}" at ${landed?.href}${info ? ` (same-origin /__mirror/info: ${landed?.mirror || 'failed'})` : ''}. ${why}`;
 }
+
+/** A URL with a LAN host (private / link-local / CGNAT IPv4, private / link-local IPv6, *.local or a dotless
+ *  name) gets the placeholder host `lan-host`; scheme, port, path and query stay. Loopback and public hosts stay.
+ *  Run, scroll and record files are committed under research/ (Hard rule 12: no LAN addresses; review-t1a B4). */
+export const LAN_HOST = 'lan-host';
+export function lanSafeUrl(u) {
+  if (typeof u !== 'string' || !u) return u;
+  let x; try { x = new URL(u); } catch { return u; }
+  const h = x.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  const v4 = h.match(/^(\d+)\.(\d+)\.\d+\.\d+$/);
+  const lan = v4 ? (+v4[1] === 10 || (+v4[1] === 172 && +v4[2] >= 16 && +v4[2] <= 31) || (+v4[1] === 192 && +v4[2] === 168) || (+v4[1] === 169 && +v4[2] === 254) || (+v4[1] === 100 && +v4[2] >= 64 && +v4[2] <= 127))
+    : h.includes(':') ? /^(fc|fd|fe[89ab])/.test(h)
+    : h.endsWith('.local') || (!h.includes('.') && h !== 'localhost');
+  if (!lan) return u;
+  x.hostname = LAN_HOST;
+  return x.href;
+}
+/** A scroll / record result with its top-level href through lanSafeUrl (tools/iphone.mjs writes both through it). */
+export function lanSafeRecord(res) {
+  return res && typeof res === 'object' && 'href' in res ? { ...res, href: lanSafeUrl(res.href) } : res;
+}

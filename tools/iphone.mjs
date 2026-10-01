@@ -37,7 +37,7 @@ import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, sleep } from './lib/wip.mjs';
 import { status as lockStatus } from './lib/lock.mjs';
 import { REPO } from './lib/paths.mjs';
-import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE } from './lib/iphone-url.mjs';
+import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord } from './lib/iphone-url.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
@@ -145,7 +145,7 @@ async function main() {
     res.meta = { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', owner, label: opt('label', ''), date: new Date().toISOString() };
     const out = resolve(REPO, opt('out', join('out', 'iphone', `${owner}-${opt('label', 'run')}-${Date.now()}.json`)));
     mkdirSync(dirname(out), { recursive: true });
-    writeFileSync(out, JSON.stringify(res));
+    writeFileSync(out, JSON.stringify(lanSafeRecord(res))); // no LAN address in the file (Hard rule 12)
     console.log(JSON.stringify(res.summary, null, 1));
     console.log(`saved ${out}`);
     return;
@@ -170,7 +170,7 @@ async function main() {
     res.meta = { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', owner, label: opt('label', 'finger'), seconds: secs, date: new Date().toISOString() };
     const out = resolve(REPO, opt('out', join('out', 'iphone', `${owner}-${opt('label', 'finger')}-${Date.now()}.json`)));
     mkdirSync(dirname(out), { recursive: true });
-    writeFileSync(out, JSON.stringify(res));
+    writeFileSync(out, JSON.stringify(lanSafeRecord(res))); // no LAN address in the file (Hard rule 12)
     console.log(JSON.stringify(res.summary, null, 1));
     console.log(`saved ${out}`);
     return;

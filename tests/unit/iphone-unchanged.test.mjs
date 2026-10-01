@@ -3,6 +3,9 @@
 // (the finger-test frame logger) stay byte-identical, and so do the lease guard and `open`/`status`. This pins
 // the source of those blocks as they were before gesture/wda existed (2226d51). If one of them is changed on
 // purpose, that is a measurement-code change: call it out (CLAUDE.md, Hard rule 6) and update the pin.
+// The one intended change since 2226d51: scroll and record write their file through lanSafeRecord (no LAN address
+// on disk, Hard rule 12; what they measure is unchanged). The 2226d51 pins still hold for the blocks with that one
+// line put back, so everything else in them stays pinned.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -34,11 +37,20 @@ test('iphone.mjs: scroll, record, open, status, PROBE, summarize and requireLeas
     record: sha(block(src, "  if (cmd === 'record') {", '  }')),
   };
   assert.deepEqual(got, PINS);
+  for (const k of ['scroll', 'record']) {
+    const b = block(src, `  if (cmd === '${k}') {`, '  }');
+    assert.equal(b.split(LAN_SAFE_WRITE).length, 2, `${k} writes its file through lanSafeRecord, once`);
+    assert.equal(sha(b.replace(LAN_SAFE_WRITE, WRITE_83B7F7B)), PINS_83B7F7B[k], `${k}: only the file write changed since 2226d51`);
+  }
 });
+
+const LAN_SAFE_WRITE = '    writeFileSync(out, JSON.stringify(lanSafeRecord(res))); // no LAN address in the file (Hard rule 12)';
+const WRITE_83B7F7B = '    writeFileSync(out, JSON.stringify(res));';
+const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49' };
 
 const PINS = {
   requireLease: '138ba8339515624d', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '28dd691408056316', open: 'dabba5b174193021', scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49',
+  status: '28dd691408056316', open: 'dabba5b174193021', scroll: '99ba1cc448a2d825', record: '0061c1840ddf47c6', // lanSafeRecord write
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with
