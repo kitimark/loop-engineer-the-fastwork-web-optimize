@@ -4,7 +4,7 @@
 // (chromeLock: the queue wait is outside the per-test timeout, I-022); fix.mjs ab re-enters that hold.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { makeTempRepo, node, nodeAsync, run, REPO, chromeLock } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
@@ -12,6 +12,17 @@ import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
 const common = run('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: REPO }).stdout.trim();
 const lock = chromeLock(`test-chrome-ab-${process.pid}`, { cmd: 'fix-ab.chrome test' });
 before(() => lock.acquire(), { timeout: Infinity });
+
+/** Why the real host made a run CONTAMINATED: each run's classification and who used the CPU (I-031), from verify.json. */
+function hostDiag(abDir) {
+  try {
+    const v = JSON.parse(readFileSync(join(abDir, readdirSync(abDir).sort().pop(), 'verify.json'), 'utf8'));
+    return 'host per run:\n' + v.results.filter((r) => r.host).map((r) => JSON.stringify({
+      label: r.label, run: r.run, reasons: r.host.reasons, warnings: r.host.warnings, load1Start: r.host.load1Start,
+      otherScroll: r.host.phases?.scroll?.otherBusyPct, gate: r.host.gate, topProcs: r.host.topProcs, recheckTopProcs: r.host.recheck?.topProcs,
+    })).join('\n');
+  } catch (e) { return `host diagnostics unavailable: ${e.message}`; }
+}
 after(() => lock.release());
 
 test('fix.mjs ab --runs 1 --cpu 2 with real Chrome', async () => {
@@ -33,7 +44,7 @@ test('fix.mjs ab --runs 1 --cpu 2 with real Chrome', async () => {
     assert.ok(res.metrics.scroll.fps[side].median > 0, `${side} fps`);
     assert.equal(res.metrics.scroll.fps[side].runs.length, 1);
   }
-  assert.match(res.metrics.scroll.fps.verdict, /^n=1/);
+  assert.match(res.metrics.scroll.fps.verdict, /^n=1/, hostDiag(join(repo.wt, 'out', 'ab', 'nav-cache')));
   assert.equal(res.config.idle, 1, 'idle phase passed through (1 s keeps the run inside the 300 s short-lane hold)');
   for (const side of ['baseline', 'patched']) assert.ok(res.metrics.idle.fps[side].median > 0, `idle ${side} fps`);
   assert.match(res.markdown, /^\| idle: fps \|/m);
