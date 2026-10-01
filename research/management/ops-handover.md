@@ -263,10 +263,14 @@ between tool calls.
 7d. **NEW RULE (user, CLAUDE.md 71ad57d):** a browser/engine limitation is OBSERVED until confirmed against docs, spec,
    engine source or a bug tracker (cited). mgmt-ops signs no card that relies on an OBSERVED claim as its mechanism
    (experiments that TEST a claim are fine); route arch-claims' refuted/weakened claims to owners and amend tickets.
-7c. **F-059 / protocol §3.7 + §6.2 (bf2bc30) are PROVISIONAL** (lead 12:1xZ): "LayerTree.layerPainted dead on Chrome
-   154" rests on two probes' zero counts only; the user challenged it. res-layerpainted (lead spawn) researches it and
-   ts-render-signals runs the decisive short-lane check. Do NOT digest F-059 into FINDINGS.md until the verdict; if
-   refuted, route the doc corrections to doc-protocol-v2.
+7c. **F-059: limitation CONFIRMED (source), cause CORRECTED, empirical check pending** (res-layerpainted 12:2xZ):
+   layerPainted is dead on M148+ because of Chromium 1bf9d9eb ("[HiC] Allow cc::Layer update rect mutation during
+   paint callback", crbug 488803411): `LayerTreeHost::WillCommit` resets update_rect before probe::LayerTreePainted;
+   not CompositeAfterPaint. Decisive 7-arm check (Chrome 154 vs CfT 143, ~70 s short lane) -> ts-render-signals.
+   Corrections routed: doc-protocol-v2 = protocol §2.4 l.124, §3.7, §6.2 + devtools-render-metrics.md l.51/214/268/
+   283/292 + morph-endpage.md V3 l.333; ts-render-signals = paint-rects.mjs l.10-11 in its T6+T7 commit;
+   res-layerpainted posts the correcting finding. The lead digests F-059 into FINDINGS only after the check. paintCount
+   fallback stays; trace-snapshot rects are opt-in, attribution only.
 8. Backlog for mgmt-lead (none urgent): as before (recheck pauses, gate.since, WindowServer in the gate, verify has no
    load phase, trace buffer, review-10e note (a)); plus T8+ host record (ts-host-state), protocol amendments A1-A9.
 
