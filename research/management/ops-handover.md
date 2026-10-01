@@ -23,6 +23,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **18:5xZ** fix-scene-scope spawned (lead): de-style-recalc's proposal (`:where(*)` scene pause narrowed V1 / API pause
+  V1b / early flip V2 / panel + R4 V3, on B). PHONE ORDER: iphone-runner style-recalc block (lease to 19:12Z) ->
+  ts-gesture ~5 min -> fix-scene-scope W Timeline block (after its Chrome check + second read) -> P-039 st5 -> P-033 ->
+  P-038 -> P12 -> P10 -> P5 -> P9. ts-status-board seeded with the workstream map (mgmt-ops-6 18:5xZ). Landed fa7fc6b.
+
 - **18:4xZ LEAD PRIORITY ORDER:** (1) style recalc (de-style-recalc + iphone-runner's block, then a scene-scope fix);
   (2) phone-feeding tool fixes (ts-gesture I-042, ts-iphone-run I-038); (3) st5 / P-039; (4) lock-share, headless,
   status-board tooling; (5) the rest. New: ts-status-board (briefed on the PROGRESS split).
@@ -568,6 +573,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `ts-lock-share` | toolsmith (lead spawn 17:5xZ, user request): shared lane so functional-only jobs (npm test, Sim mechanism checks, bench mech, load-only sanity) run in parallel while timing keeps the exclusive slot; design first in research/architecture/lock-shared-lane.md for the lead, then implements under the I-041 rule | alive |
 | `ts-console-nav` | toolsmith (lead spawn 17:4xZ): user console menu + notifications | alive |
 | `ts-status-board` | toolsmith (lead spawn 18:4xZ, user request): live per-workstream status board (priority = lead only, state, waits from queues/console/incidents) on a console page next to /progress; design first in research/architecture/status-board.md (lead approves); briefed by mgmt-ops-6 on the PROGRESS.json split (board = workstreams + priority + waits; PROGRESS = user-facing fix narrative; link by item id). Once landed: keep the board in step with the lead | alive |
+| `fix-scene-scope` | fix owner (lead spawn 18:5xZ, PRIORITY 1 under style recalc): de-style-recalc's proposal, stacked on B: V1 narrow the `:where(*)` scene pause, V1b pause by API, V2 flip early, V3 panel + R4; Chrome check, then a W Timeline phone ticket (ahead of P-039 if both ready) | alive |
 | `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
 | `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | alive |
 | `ts-gesture` (Sim) | also owns the Simulator touch driver (`sim.mjs gesture`, after I-042 D1-D3 + safari-restart; lead 17:5xZ); the P-032 (b) Sim re-check waits on it | alive |
