@@ -250,11 +250,18 @@ between tool calls.
    ts-analysis 14:3xZ), 10 min, block B) -> P-033 step 0
    (lead 14:4xZ: after P4 B's end sentinel: F1 edge Timeline attribution run (fix-nav-morph), then P-033 step 0) -> 10 min cooling -> P-032 G cdwc (VALIDATED, ~20 min) -> 10 min cooling -> P-035 G-v3 (pacing v3, no user,
    ~20 min lease, filler; F-v3 waits for the user console) -> F3 G touch A/B aw1-10e vs mw10e-arm-scope (pacing v3 urls
-   mode; ticket from fix-nav-morph, lead 14:4xZ: F3 forward, F1 stops; P4 done 14:45Z, phone 40.9 °C) ->
+   mode for F; G = P-036 VALIDATED 14:5xZ, runner opens the arms directly; lead 14:4xZ: F3 forward, F1 stops; P4 done
+   14:45Z, phone 40.9 °C; P-033 step 0 PASS 14:47Z) ->
    P11 Block A + P14 -> P12 -> P10 -> P5 -> P-033 gain (VALIDATED; step 0 fills any free phone gap) -> P9 -> P-030 ->
    P-031 G -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. P-033 "within noise" -> bundle candidate, not standalone.
    **mw10e-cdwc landing branch fix/mw10e-cdwc 6652ad9** (on 77c480e): review-cdwc round 2 resolved B1/B2/B4, B5 fixed; lands only
    after P-032 PASS (rebase on current main first); no further review round. P4 block A (P-013) done 14:25-14:30Z.
+   **F-080 CONFIRMED (arch-oss-survey, 14:5xZ):** on the phone linear() freezes during main-thread blocks (transform +
+   filter), cubic-bezier and sampled WAAPI keep moving. Routed: PoC 2 blur-easing-cubic -> fix-hero-exit (h1 owner);
+   PoC 3 countdown-ca -> fix-nav-morph after cdwc (first attribute the countdown's 1 Hz idle spike; with P-034);
+   morph-ca -> fix-nav-morph (blur/opacity/scale usable; backdrop undecided, needs a larger-contrast lane).
+   arch-oss-survey: no unlanded commits. Step-0 side observation (idle whole-view Layouts at rest on #people: rotator
+   ~25-30 ms per tick; ~750 x 0.75 ms per 20 s from a per-frame RecalculateStyles) -> fix-scroll-engine + de-pm-hero.
    **F-076 / P-034 owner = fix-nav-morph after cdwc lands** (lead: same countdown code; no fix-countdown-idle-raf spawn).
    Toolsmith bundle: lead spawns after ts-wait's npm test on main (c4a1ee2) passes. ts-user-console (tools/console.mjs:
    user-facing step console, agents `console.mjs wait <id> --until started|answered`) in progress.
@@ -327,6 +334,16 @@ between tool calls.
    both k>=5/k>=7 and >34/>50); **U5 open -> T2**: `iphone.mjs run --warmup` is only a label, so tickets keep the
    uncounted warm-up per served port by hand until T2 lands. T1a review starts after the probeVersion bump (raf-legacy
    optional since the A9 lift, lead 747d80a).
+7c2. **ts-lock-bundle 7b (f) shared short holds: NOT implemented (proposal 14:5xZ, its own ticket if wanted).** "One holder"
+   is an invariant of status/release, FW_LOCK_HELD re-entry + keepAwake, last-grant + 900 s drain budget, doctor/repair,
+   wda buildGate, iphone measureGuard, `lock.mjs wait --until`, verify's gate record + holds.log. Design if wanted: a
+   separate `<r>.cohold.json` slot, granted only when holder AND requester are short, no live normal waiter (movedBy
+   counts as normal), drain budget unspent, slot free, different checkout; normal waiters need holder + slot free and pass
+   the host gate on a fresh window; release/stale/doctor/repair/status learn the slot. Gates: 2 concurrent `npm test` x3
+   on an idle host, 0 failures, wall time recorded (no gain if >= 2x one); a test that a normal grant never happens while
+   the slot is taken (incl. stale paths). Cheaper first: (A) pre-commit skips `npm test` when the same staged tree
+   (git write-tree) passed in the last N min (pass stamp in the shared git dir; changes .githooks = USER decision);
+   (B) slow fake-Chrome e2e files opt-in for commits outside their area (riskier). Today's queue: 7 entries, 6 short.
 7b. **Toolsmith queue (lead 11:5xZ; spawn after T8+ / I-034 land, not urgent):** (1) I-035: `lock.mjs repair --move X
    --to <X's current position> --apply` prints "moved by lead" but writes no movedBy, so short jobs pass X (workaround:
    move to 2, then to 1). (2) Proposal: `lock.mjs run --no-timing` (or similar) that skips the host gate and marks the
