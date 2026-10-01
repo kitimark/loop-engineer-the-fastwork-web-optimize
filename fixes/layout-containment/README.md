@@ -181,7 +181,7 @@ lays out from the document root in all three (total 1690) with 13-31 dirty objec
 carousel as a layout root even with `contain: strict`; that says nothing about WebKit (W1-W3 are phone questions).
 
 Phone question (merged P14 boundary block, sent to mgmt-ops-5 at 12:5xZ; agreed by de-pm-hero, arch-claims and fix-hero-exit):
-- Arms: C aw1-10e, V1 st4-strict, V2 fix-hero-exit's re-contain-js (CSS 288c2ebe, JS 3579d857: a ResizeObserver sizes #people, then `contain: layout size`; plain re-contain at 100svh failed parity because the card is 1329 px tall; pending its PASS).
+- Arms: C aw1-10e, V1 st4-strict, V2 fix-hero-exit's re-contain-js (CSS 288c2ebe, JS 3579d857: a ResizeObserver sizes #people, then `contain: layout size`; plain re-contain at 100svh failed parity because the card is 1329 px tall). Chrome parity PASS: rects and docH identical, 0 #people writes during the reveal. Snapshot `<scratchpad>/hero-exit/snap/re-contain-js`, CSS 288c2ebec580, JS 3579d857cab9; rotator L11571 (unchanged), RO callback L11606, write L11614.
 - Order:
   1. 3 warm-ups, one per arm.
   2. 1 Timeline-OFF control sentinel. Skip it if Timeline-on control data with C ≥44 already exists.
