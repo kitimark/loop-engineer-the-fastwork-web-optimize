@@ -1,0 +1,43 @@
+# fastwork mirror fix: se10b-w1
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/se10-w1/overlay: apply se10-w1 first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply se10b-w1 --on se10-w1
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 9b26b29df8fb08ddaf41f2c861cc65333c284720283eaf58779d4da64ce38079
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js ee1f995c28b90327fb82c2d1a0ad8512386f68185d44111bd7eb32652f2d6af9
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11774,6 +11774,11 @@
+ .start-selling [data-start-selling-scene="paused"] :where(*) {
+   animation-play-state: paused !important;
+ }
++/* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
++   element is inside its +-0.5 vh window; both edges are off screen, and /09's no-re-skip keeps the gate
++   from flapping, so the flips happen away from the viewport. */
++.start-selling [data-start-selling-scene="paused"],
++.start-selling [data-start-selling-scene="paused"] :where(*),
+ .start-selling [data-fw-wc="0"] {
+   will-change: auto !important;
+ }
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2756,8 +2756,16 @@
+   (e.manageAnimations &&
+     e.element &&
+     e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
+-    e.active !== t && ((e.active = t), t && sE(e, !0), e.onActiveChange?.(t), t && rE()));
++    e.active !== t &&
++      ((e.active = t),
++      t && sE(e, !0),
++      e.onActiveChange?.(t),
++      t && rE(),
++      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
++      // windows: re-scan once in idle time after a scene activates.
++      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
+ }
++var fwWCQ = 0;
+ // [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
+ // when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
+ // before it reaches the viewport (WebKit's own content-visibility margin is 0), and it is never re-skipped.
