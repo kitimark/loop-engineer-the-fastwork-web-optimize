@@ -3,7 +3,7 @@
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
 **mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **10:08Z**.
+snapshot), branch `mgmt-ops/docs-2`. Last update: **10:17Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +16,11 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:08Z**.
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **10:17Z** hero-A: h1 -11-13 ms at the flip (h1v2 52 vs P 65, h1 45 vs P2 56), <= 34 ms 1/6; y≈1250 41-51 ms frame in
+  all builds (unowned). fix-hero-exit rebasing (between blocks). Runner on mw10e-src. NEW read-only research (user
+  request): arch-devtools (research/architecture/devtools-methodology.md), de-devtools
+  (research/design-engineering/devtools-render-metrics.md); neither measures. Runner's 2 h background limit kills servers.
 
 - **10:08Z** (timestamps from `date -u` from here on; my 09:15-09:58 stamps ran ~10 min fast) main acce613 verified
   (npm test, test:chrome 9/9, canary 75.9/75.2 = the ~76-78 band, watch unchanged); rebase GO sent to fix-hero-exit (after
@@ -201,7 +206,8 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **10:08Z**.
 | arch-finger | plan landed 2226d51 (finger-simulation.md) | – | – |
 | ts-gesture | toolsmith: gesture.mjs + wda.mjs vs a fake WDA | user's one-time setup (Xcode, Developer Mode, UI Automation) | reviewer, then V0/V1 on the phone (queue b2) |
 | de-morph, de-hero, de-middle | notes landed (5c4fc37, 7576f74, 7d60f9f); de-morph resumed 09:3xZ to reconcile with the driver numbers | – | – |
-| de-apple | NEW (user request 09:3xZ): apple.com rendering math -> research/design-engineering/apple-math.md | – | reports to the lead |
+| arch-devtools, de-devtools | NEW (user request ~10:15Z), read-only: DevTools methodology / render-metric blind spots | – | report to the lead |
+| de-apple | landed 1babddb; NEW (user request 09:3xZ): apple.com rendering math -> research/design-engineering/apple-math.md | – | reports to the lead |
 | ts-i017, ts-i021, ts-bench, wave1-dry, N11, apple-verify | ENDED | – | do not resume without the lead |
 
 ## Priority order (user feedback 08:04Z; DIRECTION "Priority from user feedback")

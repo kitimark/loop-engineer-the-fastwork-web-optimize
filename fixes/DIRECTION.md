@@ -292,6 +292,10 @@ new > 50 ms task, morph diff 0.05 %; lead: if it wins with clean parity -> revie
 **/10d Chrome A/B (10:05Z, `ab se10d-aw1 --on aw1-10e`, n=5, 1/10 contaminated, provisional):** > 50 ms 2 [1-2] -> 2 [1-2],
 > 34 ms 4 [4-6] -> 4 [4-5], p95 17.3 -> 17.2 ms (the /10c +0.8 ms flag does not recur), screens <= 0.09 %. Neutral in
 Chrome; its value (Safari quiet-input gate, scroll-restore fix) shows only on the iPhone (check at the end of the queue).
+**hero-A (iPhone, ended ~10:16Z, control passed; worst frame in the y≈680-750 flip window, median of 3):** h1v2 52 (77/35/52)
+vs P 65; h1 45 vs P2 56 -> h1 cuts the flip ~11-13 ms, target <= 34 ms met in 1/6; v2's extra flip cost remains (h1v2 52
+vs h1 45) -> hero-B (v7copyop, v6noflip) tests it. y≈50 stays gone with v2; no new frame ~1 s after the flip; idle
+identical. A 41-51 ms frame at y≈1250 is in all four builds (unowned; fix-hero-exit names a candidate read-only).
 **iPhone queue (10:08Z):** hero-A -> mw10e-src (vs aw1-10e, warm-up control) -> ghbn (vs ghb, gh) -> ghr8 / ghr85a (vs gh)
 -> hero-B -> apple-ref (+ idle Timeline) -> R2 (+ r3a/r3b if cool) -> N12 -> /10d check; ts-gesture V0 after the user's
 setup. Blocks of ~9 runs with a 10 min gap (the phone heats after 15-20 min of back-to-back runs).
