@@ -427,6 +427,57 @@ Chrome mechanism check: 430x775, counts only, one short-lane hold (scratch `pr7/
 Card wording (mgmt-ops-5): navw changes the width and also adds `contain: layout size`. So a win for navw alone
 names "the nav box's relayout escapes it (auto width plus no relayout boundary)", not "auto width" alone.
 
+### Boundary diagnostic `re-contain` / `re-contain-js` (rows 24-25, in fix-scroll-engine's P14 block)
+
+Why: arch-claims' F-049 verdict (WebKit 26.6). A presence flip (opacity across 1; filter/transform to or from
+none) dirties layout, and the dirty mark climbs only to the first relayout boundary. In aw1-10e the reveal's
+card flips four times: at +~40, +745 and +945 ms, and at +1.13 s (is-future-shrinking). With no boundary
+above the card, each of those layouts is rooted at the view.
+
+The build is aw1-10e plus, on phones only:
+- `#people { contain: layout size; height: 100svh }`;
+- `#people > .start-selling-future-card { height: 100svh }`.
+
+Why this is enough:
+- #people's only child is the card.
+- Size + layout containment makes #people a boundary without an overflow clip.
+- svh does not move with the toolbar.
+- Nothing flips on #people itself: its classes select only the card child, and aw1-10e writes no
+  --future-shrink on phones.
+
+Parity rests on the card's content fitting in 100svh, which the Chrome check below measures.
+
+The lead asked for one block. So re-contain is an arm of fix-scroll-engine's P14 ticket: control aw1-10e,
+plus st4-strict, st4-rotoff and re-contain. arch-claims' prediction:
+- **Primary:** clean presence-flip frames get the #people box as Layout root, not the view. Frames are excluded
+  per F-058 (rotator) and for an accent swap within 16 ms.
+- **Secondary:** their durations fall below control's 12-16 ms (direction only).
+- **Failure:** view roots in clean frames mean a self-dirtier or a pending full layout, and W1/W2 go back to
+  UNRESOLVED.
+
+There is no noaccent arm in this block.
+
+Chrome mechanism check: 430x775 and 430x932, counts only, one short-lane hold each, Q = aw1-10e (scratch
+`probe8.mjs`, `pr8/`, `pr8b/`).
+- **re-contain: FAIL, withdrawn.** The card's content is 1328.86 px tall at 430 px wide, more than 100svh at
+  both heights. So `height: 100svh` cut #people by 554 px (775) and 397 px (932): the next section moved up,
+  docH dropped 5964 → 5410, and the seam diff was 72 %. The card's first screen (0.000 %), the flip timing, the
+  computed `contain: size layout` and 0 errors all held, but parity did not.
+- **re-contain-js (row 25): PASS.** CSS `#people.is-fw-sized { contain: layout size }`; JS adds a
+  ResizeObserver on the card (border-box size, which a transform does not change) in the start-selling-future
+  effect. It writes #people's height and adds the class (JS L11606-11616). The observer fires on layout-size
+  changes only (load, fonts, resize), never on the reveal's opacity/filter/transform flips.
+  - Computed contain is `size layout` from load.
+  - The #people, card and next-section rects and docH equal Q's at both heights.
+  - Parity: card 0.000 %; seam 0.000 % at 775 and 0.379 % at 932 (the phase-noise band).
+  - #people style writes during the 1.5 s reveal window: 0. Flip timing equals Q's within headless noise.
+    0 errors.
+  - JS lines 1-11597 are byte-identical to aw1-10e, so the rotator timer is still L11571 for de-pm-hero's
+    filter. A Layout dirtied by the observer carries L11614.
+  - Snapshot (read-only) for the phone: `<scratchpad>/hero-exit/snap/re-contain-js`.
+- re-contain-js also bounds the F-058 rotator: .is-carousel is inside #people. Its rotator ticks are a second
+  readout of the same boundary, next to st4-strict's inner boundary on .is-carousel.
+
 ## Risks, conflicts, follow-ups
 
 - Keyframes deliberately avoid `var()` of animated custom properties (Safari resolves them against the
@@ -514,3 +565,5 @@ The header's "rebuild with" line names the scratch topic it was generated from:
 | hero-exit-scroll-timeline/21 | DIAGNOSTIC nomask = aw1-10e + the earn button carries `mask-image: var(--nav-earn-mask)` (240 %, no-repeat) while pilled too, so the is-hero-pill drop no longer switches mask-image none -> some; unmask/sheen animations kept (P9, D5 candidate a) | if the mask presence owns frame 1's 13-14 ms whole-view Layout, it goes; navw keeps it | pending (iPhone P9, P-026); Chrome mechanism PASS | parity 0.000 % (nav top, nav settled, card) | see "P9 builds" | patch `variants/21.diff` (on aw1-10e), CSS fd90c0f2, JS = aw1-10e 3e2f599a | | ticket via mgmt-ops-5 |
 | hero-exit-scroll-timeline/22 | DIAGNOSTIC navw = aw1-10e + phone nav-actions box `width: 232px; height: 36px; justify-content: flex-end; contain: layout size` (rect constant across the drop, relayout boundary); max-width/padding/gap transitions kept (P9, D5 candidate b) | if the nav's auto-width change owns frame 1's Layout, it goes; nomask keeps it | pending (iPhone P9, P-026); Chrome mechanism PASS | parity 0.000 % (nav top, nav settled, card); the transparent box covers x 150-390 of the bar (hit-testing over the logo during the morph) | see "P9 builds" | patch `variants/22.diff` (on aw1-10e), CSS ec57cba0, JS = aw1-10e 3e2f599a | an explicit width alone is not a WebKit relayout boundary (needs overflow clip or size+layout containment), hence the contain | ticket via mgmt-ops-5 |
 | hero-exit-scroll-timeline/23 | DIAGNOSTIC split80 = aw1-10e + the #people reveal at 0.80 instead of 0.72 (nav pill drop stays at 0.72), postmortem Card 3 split trigger | the 0.72 frame alone shows the nav's share, the 0.80 frame the reveal's | pending (iPhone P9, Timeline-only); Chrome mechanism PASS | NOT parity (reveal ~60 px later; settled states identical) | see "P9 builds" | patch `variants/23.diff` (on aw1-10e), CSS = aw1-10e c6aad94b, JS 40b43ffa | | ticket via mgmt-ops-5 |
+| hero-exit-scroll-timeline/24 | DIAGNOSTIC re-contain = aw1-10e + phone `#people { contain: layout size; height: 100svh }`, card `height: 100svh`: the section becomes a sized WebKit relayout boundary above the card (arch-claims F-049 verdict, boundary term of P-019/P-026) | the reveal's presence-flip Layouts (+~40/+745/+945 ms, +1.13 s) get root = #people box, not the view; durations fall (direction only) | withdrawn: Chrome parity FAIL (card content 1328.86 px > 100svh; page 554 px shorter at 775) | FAIL: seam 72 %, docH 5964 → 5410; card first screen 0.000 % | see "Boundary diagnostic re-contain" | patch `variants/24.diff` (on aw1-10e), CSS 4cd770a6, JS = aw1-10e 3e2f599a | superseded by 25 | |
+| hero-exit-scroll-timeline/25 | DIAGNOSTIC re-contain-js = aw1-10e + phone `#people.is-fw-sized { contain: layout size }` with #people's height synced to the card's border box by a ResizeObserver (JS L11606-11616): a sized relayout boundary above the card and .is-carousel without a fixed height | the reveal's presence-flip Layouts (+~40/+745/+945 ms, +1.13 s) and the rotator ticks get root = #people box, not the view; durations fall (direction only) | pending (iPhone P14 V2, merged with ST-4); Chrome mechanism PASS | parity: rects/docH identical, card 0.000 %, seam 0.000 % / 0.379 % (775 / 932); 0 #people writes in the reveal | see "Boundary diagnostic" | patch `variants/25.diff` (on aw1-10e), CSS 288c2ebe, JS 3579d857 | the observer's write is at load only; its Layout carries L11614 | ticket via fix-scroll-engine (P14) |

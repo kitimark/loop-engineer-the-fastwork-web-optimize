@@ -1,0 +1,68 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--re-contain-js
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--re-contain-js --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -3554,6 +3554,13 @@
+     padding: 32px 20px 48px;
+     overflow: visible;
+   }
++  /* Boundary-ticket diagnostic `re-contain-js` (hero-exit, arch-claims F-049 verdict): #people (whose only
++     child is the card) becomes a sized relayout boundary, so the card's presence flips relayout only #people,
++     not the view. The card is taller than 100svh (1329 px at 430 px), so its height is synced from a
++     ResizeObserver on the card (JS, start-selling-future effect); the class is set only after the first write. */
++  #people.is-fw-sized {
++    contain: layout size;
++  }
+   .start-selling-future-header {
+     gap: 32px;
+     margin-bottom: 40px;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -11595,14 +11595,39 @@
+             }
+           }
+       },
+-      C = dE(u, { deferRendering: !0, element: h, onActiveChange: m });
++      C = dE(u, { deferRendering: !0, element: h, onActiveChange: m }),
++      // Boundary diagnostic `re-contain-js` (hero-exit): on phones (t = max-width 860px) #people gets
++      // contain: layout size (CSS .is-fw-sized) with its height synced to the card's border box, so the
++      // card's presence flips relayout only #people. The observer fires only when the card's layout size
++      // changes (load, fonts, resize), never on the reveal's opacity/filter/transform flips.
++      fwCard = h.querySelector(`.start-selling-future-card`),
++      fwH = -1,
++      // borderBoxSize is the untransformed layout size (the reveal's scale/translate don't change it).
++      fwSync = (es) => {
++        if (!t.matches) {
++          (fwH >= 0 && (h.classList.remove(`is-fw-sized`), h.style.removeProperty(`height`)), (fwH = -1));
++          return;
++        }
++        let e = es[es.length - 1],
++          b = e && e.borderBoxSize && e.borderBoxSize[0],
++          v = b ? b.blockSize : e ? e.contentRect.height : 0;
++        v > 0 && v !== fwH && ((fwH = v), (h.style.height = `${v}px`), h.classList.add(`is-fw-sized`));
++      },
++      fwRo = typeof ResizeObserver == `function` && fwCard ? new ResizeObserver(fwSync) : null,
++      // Re-observing delivers a fresh initial notification, so a switch back to phone width re-syncs.
++      fwMq = () => {
++        (fwSync([]), fwRo && (fwRo.unobserve(fwCard), fwRo.observe(fwCard, { box: `border-box` })));
++      };
+     return (
+       e.addEventListener(`change`, u),
+       t.addEventListener(`change`, u),
++      t.addEventListener(`change`, fwMq),
+       shrinkOffMq.addEventListener(`change`, u),
++      fwRo && fwRo.observe(fwCard, { box: `border-box` }),
+       _(),
+       l(),
+       () => {
++        (fwRo && fwRo.disconnect(), t.removeEventListener(`change`, fwMq));
+         a = !0;
+         for (let e of r) e();
+         ((r.length = 0), i && window.cancelAnimationFrame(i));
