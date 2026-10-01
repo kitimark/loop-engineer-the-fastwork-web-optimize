@@ -214,8 +214,11 @@ between tool calls.
 1. **iPhone order** (updated 13:2xZ by mgmt-ops-5; lead-ranked): DONE: P0 (P-023), P1 (P-017 HIT), P2 (P-016b miss),
    F2 pre-check (VALID), finger batch F1-F6 (12:4x-13:2xZ; F6-try3 apple.com 0 >50 / 1 >34 moving, user "feel the
    same": smooth, a little laggy; F6-try2 had 300/1027 moving frames at ~8 ms = rAF above 60 Hz on apple.com, OBSERVED,
-   cause asked of arch-claims). **NOW:** ca-check re-run (P-021; wca1 had an empty `window.__ca`; ioscap blocked by TCC
-   Camera, interim WDA /screenshot 14-17/s) -> **P-029** (g vs g-cdwc M block) -> P3 ST-2 + baseline-A (P-019/P-020,
+   cause asked of arch-claims), ca-check re-run wca2 (captured, `window.__ca` filled; analysis waits for a free
+   chrome-measure), **P-029 HIT** (13:17-13:25Z). **13:4xZ:** P3 started ~13:36Z, PAUSED by the user's pacing v2 session
+   ("ready for pacing", lead 13:4xZ; ~10 min lease, ~5 user min). P3 RESTARTS FRESH afterwards if the pause broke the block (warm-ups + S-open +
+   all counted runs + S-end, no splicing; ~50 min + 10 min cooling) -> ~14:05-15:05Z; P4 (+ T1a on/off A/A in its
+   warm-up) after 10 min cooling, ~15:15Z. Remaining order: P3 ST-2 + baseline-A (P-019/P-020,
    ~50 min with Timeline sentinels; 16 ms rotator-drop kept) -> P4 A = F1 arm-load (P-013), B = F3 arm-scope (P-022) ->
    P11 Block A (P-028, ~40 min; Block B conditional) + **P14** (P-025, ~47-48 min; C aw1-10e, V1 st4-strict, V2
    re-contain-js `<scratchpad>/hero-exit/snap/re-contain-js`; separate sentinels) -> P12 -> P5 ST-1 (P-018) -> P9 (P-026)
