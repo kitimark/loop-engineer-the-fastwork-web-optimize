@@ -1,9 +1,9 @@
 # mgmt-ops living state (updated with every digest)
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
-or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
-**mgmt-ops-4** (from 08:52Z; mgmt-ops-3 ran 05:04-08:55Z), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
-snapshot), branch `mgmt-ops/docs-2`. Last update: **11:17Z**.
+or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Last instance:
+**mgmt-ops-4** (08:52-11:25Z; handing over at the phone-back boundary), worktree `.claude/worktrees/mgmt-ops-2` (sparse,
+on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-5** (spawned by the lead). Last update: **11:24Z**.
 
 ## How mgmt-ops-3 worked (keep doing this)
 
@@ -16,6 +16,11 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **11:17Z**.
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **11:24Z** HANDOVER to mgmt-ops-5 at the phone-back boundary (11:22Z). Runner has the §3 order and the P0 logger-ysrc
+  ticket; ST-2 builds cleared (pr5; +1.13 s frame = `is-future-shrinking` transform none -> scale(1)). New topic N14
+  layout-containment -> fix-scroll-engine (TOPICS). /10d parked until its phone check. User-ask bundle in "Next
+  actions" item 2. Landed since 11:06Z: 4259051, fix-scroll-engine records 79202d8..b3e5df9, T3 stats 488b9df..e46c6bc.
 
 - **11:17Z** Lead adopted arch-lead's ranked list (unknowns-actions.md §3, 197c2fa): phone P0 y-source A/A -> P1/P2
   countdown + P-016b -> OSS ca-check -> P3 ST-2 -> P4 y≈1960 F1/F3 -> P11/P12 containment -> P5 ST-1 -> rest. Holds:
@@ -181,48 +186,54 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **11:17Z**.
   FW_TOOLING hook, iPhone.
 - **01:40Z** first digest after restart; incident candidate (hook npm test under load) became I-024 (lead).
 
-## Next actions for the next mgmt-ops (in order)
+## Next actions for the next mgmt-ops (in order; mgmt-ops-4 -> mgmt-ops-5, 11:24Z)
 
-1. iphone-runner (owns the phone; every block starts with a passing control: fails if bottom/idle < 58 fps or baseline
-   scroll < 44 fps). Its queue:
-   (a) HERO block: DONE 09:08Z (results in DIRECTION; routed to fix-hero-exit). fix-scroll-engine rebased after it.
-   (b) MORPH driver block (#1 priority): mw10e-f vs g (overscroll-behavior question), f vs fb, g vs gb, g vs ge, g vs gc,
-       n=3 each; `window.__fwMorphDrive({hold:2000,cycles:3})`, poll `window.__fwMD`; serve from fix-nav-morph's worktree
-       `node tools/fix.mjs serve <build> --on aw1-10e`.
-   (c) N12 block: aw1-10c vs n12v5-aw1 (matched pair, fix-nav-morph's worktree); hero window esp. y≈700 (F-029 nav ee()
-       forced style), middle, end, parity spots. If y≈700 goes → N12 enters the base (needs a review then).
-   (b1) + `h-fixedpanel` (fix-nav-morph builds it on aw1-10e, lead 09:12Z): queue it in the morph block next to
-       b-noblur as soon as fix-nav-morph sends label/URL; prediction (de-morph) h beats b by 20-35 ms per moving frame.
-   (b3) HERO BISECT (sent 09:13Z): v4nocards (CSS c9a4d089), v5noblur (CSS 005c825d) vs P frozen (JS 71d76d69 / CSS
-       8a14ac2e), P2 second ref, v3 (808e25a1) optional; y≈50 / y≈700 frames; fix-hero-exit 08be84c waits for it.
-   (b2) ts-gesture V0 smoke (~15 min) + V1 validation (~60 min), `research/architecture/finger-simulation.md` §5c, only
-       when ts-gesture reports its phone part ready (and the user's one-time setup is done); else skip to (c).
-   (d) N10 ablations, rebuilt on aw1-10e (0e62ccc; base `.../agent-a1722cf5058e25591/fixes/aw1-10e/overlay`; order
-       d, c, b, a; R3 logger); sent to iphone-runner 08:57Z.
-   After each block ends: tell the owners whose worktree it served from that they may now rebase + sparse.
-2. Results routing: hero → fix-hero-exit (then ONE Chrome A/B `--on aw1-10e` ≤ 10 min, > 50/> 34 in the hero window);
-   morph → fix-nav-morph (if b names the blur → N2 composited morph: fixed radii faded by opacity; the driver hook must be
-   stripped before landing; the pin-fix land patch is variants/g-pinclamp-osb.diff). N12 + #6 v05 land after the user's
-   finger verdict (C/D postponed until a morph render fix exists).
-3. WATCH (lead 08:31Z): canary A/A on 43e40ce fps 78.3 / > 20 ms 57 / p95 25 vs ~92 / ~25 at 04:25Z on 93b4af2. If the next
-   goal-hold A/A also shows ~78 fps → incident + A/A 93b4af2 vs 43e40ce in one hold.
-4. Caffeinate: now `caffeinate -d -i -s` (display on, user-approved) since 11:01:46Z; the lead restarts it every 2 h →
-   remind the lead at ~12:50Z.
-5. ts-gesture (WDA gesture tool, branch worktree-agent-a83a0f8d7c6fe96b6; applies once review-gesture-2 passes and the lead
-   lands it; the user's WDA setup is still pending): (a) `wda build` runs only inside its own NORMAL chrome-measure hold and
-   with the iphone lease, exactly `node tools/lock.mjs run chrome-measure --owner iphone-runner --max-seconds 600 -- node
-   tools/iphone.mjs wda build --owner iphone-runner` (not the short lane; xcodebuild capped at 540 s; refuses under any other
-   holder, incl. a short npm test). (b) Gesture summary key `pinReversals` is now `pin`: compare iphone-wave2's reversal
-   counts with `pin.excursions` (wave2 counted round trips; E1b: wave2 8, excursions 7, direction changes 13);
-   `pin.fight` = reversals while touching + reversals beyond the first after each lift; `pin.bounces` = lifts with exactly
-   one reversal.
-6. Backlog for mgmt-lead iteration 3 (none urgent): recheck pauses instead of contaminating; gate.since survives intervening
-   holds; WindowServer counted as measured system in the gate (I-031 answer: steady other CPU 17-20 % = WindowServer +
-   agent CLIs + iTerm; daemons tip it over 25 %); fewer concurrent agents during goal holds; verify has no measured load
-   phase; iphone wip.mjs stub clock; kpi rule on topProcs; trace buffer 300 → 32 MB + opt-in V8 categories; review-10e
-   note (a) JS comment 1,500 → 1,915/s.
+How mgmt-ops-4 worked (keep): **hub mode** (lead 10:35Z): owners, iphone-runner and research agents come to mgmt-ops;
+the lead only lands, resolves incidents, reorders locks, spawns and talks to the user. Validate slot tickets (protocol
+v2 §2.5: build + hashes, ONE control on the same base, driver, one question, prediction id, if-X-then-Y, probes,
+minutes; warm-up per served port, U5), log every prediction in `fixes/PREDICTIONS.md` before the run and the result
+after it, route results to the owner + the question's author, keep DIRECTION / handover / directory current, send LAND
+BATCH shas. **Stamp times from `date -u`** (mgmt-ops-4 drifted ~5-10 min ahead twice). Wait with
+`sh <scratchpad>/mgmt-ops/tick2.sh 150-240` (returns on incident changes; prints lock + phone state); messages arrive
+between tool calls.
 
-## Where the project stands (08:55Z)
+1. **iPhone order** (lead adopted arch-lead's `research/architecture/unknowns-actions.md` §3; phone back 11:22Z):
+   (1) P0 logger-ysrc A/A (ticket sent 11:2xZ; needs ts-iphone-run `--y-source` or hand-patched loggers) -> (2) P1
+   countdown probe P-017 (gh / gh-cdwc / gh-cdhid; fix-nav-morph builds) + P2 = P-016b (gh hold 900 vs 2000) -> (3) OSS
+   P0 ca-check (P-021; iphone-runner builds the page) -> (4) P3 ST-2 re-dur / re-keep (cleared by Chrome parity, pr5) +
+   ST-2d fling-hold (P-019, P-020) -> (5) P4 y≈1960 blocks: A = F1 mw10e-arm-load (P-013), B = F3 listener-scope
+   (P-022) or F2 (P-014/015) if F3 isn't ticketed -> (6) P11/P12 layout-containment (N14, fix-scroll-engine) + y≈2678
+   residual on na -> (7) P5 hero ST-1 (P-018; optional arm v2-endearly only on H2a/H2b) -> hero-B -> R2 bg (+ r3a/r3b)
+   -> /10d phone check (then a reviewer: lead) -> N12 -> P6-P10, P13 as ranked.
+   **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (until P1/P2), h4.
+2. **USER-ASK BUNDLE** (send to the lead as ONE list when it asks; the lead talks to the user):
+   - one-time WDA setup: Xcode Apple account, Developer Mode, Enable UI Automation, then Trust after the WDA build
+     (`wda build` only in its own NORMAL chrome-measure hold + the iphone lease; see item 5);
+   - T10 Instruments pairing check (`xcrun xctrace record --template 'Animation Hitches'` attaches to Safari; gates the
+     render-bound class: ghbn, morph backdrop, P7);
+   - C1 canary A/A with display on/off interleaved (needs the user's OK for `pmset displaysleepnow`);
+   - F6: navigate the phone to the Apple product page arch-apple studied (external navigation, user/lead approval);
+   - finger batch F1-F7 (~8-10 user min, `unknowns-actions.md` §3.5): settings check; `mw-stub` vs gh blind push past the
+     end (fix-nav-morph builds mw-stub); slow scroll y 1700-2300 aw1-10e vs F1; 3 flicks with touchstart timestamps +
+     Memory tracking; pacing page (de-unknowns-ux builds); 30 s on the Apple page; optional 240 fps clips. Plus the R2
+     clip-path/backdrop look (fw-clip-probe.html).
+3. **Results routing:** y≈1960 -> fix-nav-morph (touch-only class: G or F before landing; F1 landing gate = touch latency,
+   finger F4); morph -> fix-nav-morph + de-pm-morph (Composite carries the cost, ~78 layers per cycle; R1/R2 refuted);
+   hero -> fix-hero-exit + de-pm-hero; y-source -> arch-lead; ca-check -> arch-oss-survey + de-oss-map (if F-048
+   confirmed: OSS P2 blur-easing-cubic fixes our own T10 base and goes first); N14 -> fix-scroll-engine.
+4. **Pending lands (lead has them):** arch-lead 54f31a5, doc-protocol-v2 b4b2670 (U5 warm-up) + 5477db5 (A1-A9) /
+   c817435, ts-gesture follow-up (review-gesture-2 ACCEPT), de-oss-map 008e0d1 (if not yet). fix-scroll-engine's /10d
+   stays parked until its phone check (no base change mid-queue).
+5. ts-gesture notes (apply once landed): `wda build` = `node tools/lock.mjs run chrome-measure --owner iphone-runner
+   --max-seconds 600 -- node tools/iphone.mjs wda build --owner iphone-runner` (normal lane, iphone lease, xcodebuild
+   capped at 540 s); gesture key `pinReversals` -> `pin` (`pin.excursions`, `pin.fight`, `pin.bounces`); first G run:
+   check perStroke `endLagMs` is not always 0 (review-gesture-2 B1).
+6. Caffeinate: `caffeinate -d -i -s` (display on, user-approved) since 11:01:46Z; the lead restarts it every 2 h ->
+   remind at ~12:50Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
+7. Backlog for mgmt-lead (none urgent): as before (recheck pauses, gate.since, WindowServer in the gate, verify has no
+   load phase, trace buffer, review-10e note (a)); plus T8+ host record (ts-host-state), protocol amendments A1-A9.
+
+## Where the project stands (08:55Z; see DIRECTION for 11:2xZ)
 
 - main = 4edb872 (snapshot) on the wave-2 base `aw1-10e` = all-wave1 + scroll-engine /10e. Chrome: page-owned > 50 ms
   frames 0; 1 vendor frame per run (gtag `onscrollend`, removable only by the site's GA "Scrolls" setting; user-facing,
@@ -244,14 +255,14 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **11:17Z**.
 Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
 incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
 
-| address | owns | state (10:27Z) |
+| address | owns | state (11:23Z) |
 |---|---|---|
 | `main` | lead: lands, resolves, reorders locks, spawns, user | alive |
-| `mgmt-ops-4` (ID a1176a675fec4336d) | ops hub, iPhone queue, DIRECTION, handover, land batches | alive |
+| `mgmt-ops-5` (spawned by the lead) / mgmt-ops-4 (ending) | ops hub, iPhone queue, DIRECTION, handover, land batches, PREDICTIONS | – |
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, controls, logger | alive |
 | `fix-nav-morph` (a277ea00c8773c1ea) | morph (gh, ghbn, R8/R5, R2), y≈1960 IO frame (src, noinert: no win), N12 | alive, holds rebase |
-| `fix-hero-exit` (a77e2ec753b6381fb) | hero window y 0-900: v2, h1, hero-B, people-o | stopped (wakes on message) |
-| fix-scroll-engine = ID `a1722cf5058e25591` | /10d, R2 bg-layers, R3a/b, y≈1250 scene gate candidate (F-045) | stopped (wakes on message) |
+| `fix-hero-exit` (a77e2ec753b6381fb) | hero window y 0-900: v2, h1, ST-2 builds, D5, hero-B | alive |
+| fix-scroll-engine = ID `a1722cf5058e25591` | N14 layout-containment (R/I now), /10d (parked), R2 bg-layers, R3a/b | alive |
 | `ts-gesture` | WDA gesture tool (NEEDS-WORK; user setup pending) | alive |
 | arch-lead = `ae2d21af96d758d16` | measurement protocol v2 | alive |
 | arch-safari = `a765c480ea490a443`, de-safari = `a4ce1669dd33aa4dc` | Safari probing / iOS time model (read-only) | alive |

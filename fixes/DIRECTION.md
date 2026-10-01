@@ -365,6 +365,9 @@ ts-iphone-run (per-run context fields), T3+ ts-analysis (perceptual metrics MWFI
 `ts-host-state` (display, fullWake, power, Chrome version per hold). Chrome: C1 canary A/A display on/off (the lead asks
 the user first), C2-C4 later. Finger batch (§3.5, ~8-10 user min): settings check, mw-stub vs gh blind, y≈1960 slow
 scroll aw1-10e vs F1, flicks with touchstart timestamps, pacing page, Apple page, optional 240 fps clips.
+**Phone back 11:22Z** (after the user's personal use); iphone-runner runs the §3 order from P0. **New topic N14
+`layout-containment`** (TOPICS; lead 11:2xZ): owner fix-scroll-engine, R/I now as desk work + short-lane counts (probe
+`lc-cq` on na); P11 keeps its phone place. /10d stays parked until its phone check (no base change mid-queue).
 **HOLDS (no slot until named otherwise):** fixed-size morph diagnostic; ghr85a (R5a); R7; R8 nav half; a1 (until P1/P2
 place the start transient); h4 (until K24 is explained).
 **CAVEAT F-048 (arch-oss-survey, lead 11:1xZ):** CSS `linear()` easings run on the main thread in WebKit (iOS 26.x), and
