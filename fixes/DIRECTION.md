@@ -265,6 +265,17 @@ baseline (the hidden profile tabs leave the a11y tree; reviewer to confirm). Pho
 (+3.1 M CSS px) on aw1-10e, +0 on r2 (F-040); `.shrinking` repaints nothing extra in Chrome, so its WebKit effect needs
 the phone. **/10d prototype** `se10d-aw1` (e920843): mech clean (idle F-030 0/s, parity 0, scroll-restore fix, quiet-input
 gate); Chrome A/B after the e1/e2 verdict.
+**e1/e2 block (iphone-runner, ended 09:48Z): de-middle CONFIRMED.** Control 94 ms median @y≈1967; e1 (passive) 94 @1965
+(H1a rejected); e2 (IO margin 150 %) moves it to y≈2240 at ~96 ms; panel pre-mounted at scroll start 9/9 (not H1b); the
+R3 src/inert logger names it 9/9: **a burst of >= 12 img `src` assignments in that frame (the morph IO sourcing the panel
+images)** (F-043). Per the lead's standing decision the frame moves to **fix-nav-morph** (cluster B; de-middle R1: image
+sourcing at idle / `decode()` before the swap / spread over frames), ranked #2; **N10 a-d drop to the end of the queue.**
+Measurement note (F-042): the first scripted run after ~10 min idle is slow even on a cool phone; warm-up control first.
+**R2 clip probe:** WebKit computes both properties, but `Page.snapshotRect` doesn't capture `backdrop-filter`, so the
+answer needs the user's 2-second look (asked via the lead).
+**de-middle R3 named (F-041, fix-scroll-engine read-only):** the per-frame 373×344 feed repaint is likely the spinning
+vinyl (`.record.spinning` rotate, CSS 3880-3887) under `.feed .body` `overflow: hidden` + `mask-image` (CSS 5143-5150);
+fix options (a) mask -> `::after` white gradient overlay (equivalent pixels), (b) `will-change: transform` test. Owner: lead.
 **iPhone queue (09:38Z):** e1/e2 (aw1-10e control) -> morph-2 (ghb ABBA vs gh, g control; R2 clip probe) -> hero-A (h1v2 vs
 P, h1 vs P2) -> hero-B bisect (v7copyop, v6noflip, v4nocards, v5noblur vs P; v3
 dropped) -> **apple-ref** (user request via the lead: live apple.com AirPods Pro page, plus iPhone 18 Pro if the phone is
