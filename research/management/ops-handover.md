@@ -23,6 +23,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **18:4xZ** Landed: a3b2832 (docs-2), 1e0dedf (ts-lock-bundle 5 commits; announcements + CLAUDE.md --no-timing line =
+  lead), 511908f (P-039 ticket). P-039 st5 TICKET VALIDATED (second read 18:4xZ, row in PREDICTIONS). C-014 (lead): the
+  user's Mac Safari Web Inspector was attached to the phone in parallel = likely cause of the inspector wedges (I-038),
+  closed 18:41:48Z (noted in I-038). Phone: iphone-runner style-recalc block (lease to 18:58Z) -> ts-gesture (queued)
+  -> st5 (P-039) -> P-033 -> P-038 -> P12 -> P10 -> P5 -> P9. chrome-measure: de-style-recalc #1 (lead).
+
 - **18:3xZ USER PRIORITY (18:32Z): style recalculation is the HIGHEST priority** (overrides the order below). Phone:
   iphone-runner style-recalc Timeline attribution block on the sitting's A/B NOW -> ts-gesture ~5 min -> st5 / P-033 ->
   P-038 -> P12 -> P10 -> P5 -> P9. chrome-measure: de-style-recalc to #1 whenever it queues (lead moves it; tell the
