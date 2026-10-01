@@ -84,7 +84,10 @@ export function visitMetrics(v) {
   return m;
 }
 
-const loadOk = (m) => m.load.mode !== 'trace' || (m.load.busyShare >= 0.4 && m.load.busyShare <= 0.75 && m.load.skipped <= 0.2 * Math.max(1, m.load.chunks));
+// a trace-loaded visit is known by its state: in session mode the snapshot is taken after leave(), when the load
+// engine reports mode 'none' (found on F-v3 run 1, 2026-10-01; every visit there passed the rule when checked by state)
+const traceLoaded = (m) => m.load.mode === 'trace' || /-trace$|^scroll-/.test(m.state || '');
+const loadOk = (m) => !traceLoaded(m) ||(m.load.busyShare >= 0.4 && m.load.busyShare <= 0.75 && m.load.skipped <= 0.2 * Math.max(1, m.load.chunks));
 
 // ------------------------------------------------------------------------------------------------ inputs
 const docs = [];

@@ -435,3 +435,59 @@ Mechanics only; Chrome numbers say nothing about WebKit.
   - C1 is CONFIRMED: the wait comes once per touch sequence, at scroll start. That matches the registered G
     reading, so the reading is unchanged.
   - C2 stays UNRESOLVED.
+
+## 6. v3 F results (2026-10-01)
+
+Two sittings on the iPhone 15 Pro Max (Safari 26.6.1, iOS 18.7), driver F (a finger, no recorder), page at
+867fa88, scorer at 1b66d7b plus the load-check fix below. The two runs are **different viewers** and are scored
+separately: never pooled, because the pooled rule (§5.3) is for one viewer's set 1 + set 2.
+
+| | run 1 (console C-002) | run 2 (console C-004) |
+|---|---|---|
+| viewer | the user | a second tester (the user's note: "this is tester opinion, not me") |
+| set | 1 | 2 (every pair's order swapped) |
+| time | 15:49:59-15:58:55Z | 16:21:39-16:31:46Z (saved session; Start was tapped 16:12:09Z, before the reload) |
+| conditions | Low Power Mode off (rAF 17 ms); toolbar collapsed by the end (vh 775 → 815) | Low Power Mode off (rAF 16 ms); toolbar expanded (vh 775) at the start and at the read |
+| sheet | practice + 11 pairs, complete | practice + 11 pairs, complete; one accidental reload earlier; the saved sheet holds only the complete redo (trials 0-11 once each), the partial session before the reload was overwritten and is lost |
+| load delivered | every loaded visit busy 0.59-0.63 (steady 0.66), 0 skipped | the same |
+| control (drag) | PASS 2/2, ratings 4, 4 | PASS 2/2, ratings 1, 1 |
+| **passive (decision arm)** | **NOT FELT: scroll-passive chosen 2/4** (ratings 1, 1, 1, none) | **NOT FELT: 2/4** (ratings 2, 1, 1, 1) |
+| hero (direction) | 2/2 hero-none: the loaded scroll-linked effect felt worse (ratings 2, 2) | 2/2, the same (2, 2) |
+| steady (direction) | 2/2 drag-steady: the clumped trace felt worse than the same mean load spread evenly (5, 4) | 2/2, the same (2, 2) |
+| catch (identical) | rated 1 (same) | rated 1 (same) |
+| side | version 1 chosen 5/11 | version 1 chosen 3/11; in the passive arm, version 2 was picked in all 4 pairs, so that arm's 2/4 is the side preference |
+| retries ("try again") | many in the passive pairs (pair 3: 4, pair 5: 2, pair 11: 2) | few, except drag pair 9 (8 retries, rating 1) |
+
+**Reading (§5.3).**
+- Both viewers passed the control, so both sessions were sensitive.
+- Neither viewer felt the non-passive window `touchmove` listener under fastwork-like load. Each read is n = 1 viewer,
+  OBSERVED.
+- Per §5.3, the listener change must therefore win on G numbers alone (P-035, not yet run).
+- Both viewers gave the same direction on hero and steady:
+  - a scroll-linked rAF effect under the measured load is felt;
+  - clumped main-thread work is felt more than the same average work spread evenly.
+- The user rated those clearly (steady 5 and 4); the second tester rated them weakly (2 and 2).
+
+**Objective numbers from the finger visits (reported, not read; the G block is the pre-registered mechanism read).**
+- Touch-to-scroll p50 over visits (C2 UNRESOLVED, so within-page only):
+
+  | | passive | non-passive |
+  |---|---|---|
+  | run 1 | 71 ms | 83 ms |
+  | run 2 | 103 ms | 87 ms |
+
+  The two runs disagree in sign. With finger visits of varying length and number, these say nothing.
+- Cancelable share of touchmoves:
+  - non-passive: 0.40 (run 1), 0.50 (run 2);
+  - passive: 0.00 in both runs.
+- That is consistent with C1: only moves before the pan starts can be prevented. It is OBSERVED (the DOM part of C1 is
+  UNRESOLVED); G measures it under a fixed gesture.
+- Drag lag p90 (drag-none vs drag-trace): 15 vs 23 ms (run 1), 16 vs 23 ms (run 2). That is far smaller than in
+  Chrome (32 vs 83 ms), yet both viewers picked drag-none 2/2.
+
+**Scorer fix after the data (validity check only, the reading unchanged).**
+- What was wrong: in session mode a visit is saved after `leave()`, when the load engine reports mode `none`. So
+  `loadOk` skipped every session visit.
+- The fix: `loadOk` now finds trace-loaded visits by state name.
+- Checked by hand before the fix: every loaded visit in both runs passes the registered rule (busy 0.40-0.75,
+  skipped ≤ 20 %). So no reading changes.
