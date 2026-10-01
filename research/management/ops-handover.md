@@ -20,6 +20,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 6. Cooling (lead 19:56Z): attribution-only phone blocks skip the fixed 10-min cooling; the Timeline-OFF heat sentinel
    (start + end) decides, a failing one = cooling + redo. Timing/gain blocks keep the 10-min rule when they return
    (fixes/LEAD.md "Timing deferred", protocol v2 §5 note).
+7. USER (console T-001, 20:24Z): "slow frames on the phone are dominated by layout" tasks are HIGHEST priority. Board
+   (lead): style-recalc #1, fwreskip #1, r4-v3 #2, hero-carousel #2 (slide-start whole-page layout), count-checks #3
+   (Sim-vs-phone verdict gates moving the root hunt off the phone). Phone/Sim order: LAYOUT ROOT HUNT tickets
+   (fix-scene-scope H1-H4, fwReskip, morph start) first after the running st5 split; any other phone ticket that would
+   delay them is deferred. Timing stays deferred; lock-share stays the top Chrome tooling item.
 5. Every agent keeps its status-board row matching. Broadcast to all 13 live agents 19:3xZ (mgmt-ops-6).
    Priority order (lead 19:1xZ): style recalc > illusion proposals > phone-tool fixes > st5 > tooling.
 
@@ -56,6 +61,10 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **20:3xZ USER PRIORITY (T-001, 20:24Z): layout-dominated slow frames first** (see USER DIRECTION item 7). Layout root
+  hunt: t3 strict P-049/050/051 MISS, P-052 HIT (RB cuts steady-tween nested Layouts ~15x; neither arm changes the morph
+  start). F-106 H1 (will-change restore) REFUTED by WebKit source; F-107 fwReskip crossing = two writes in one step.
+  de-counts-sim holds chrome-measure since 20:30Z (Sim n1). st5 split on phone until ~20:40Z; then root-hunt tickets.
 - **20:2xZ** WORKTREE CLEANUP (lead, user request): 56 finished worktrees removed (their work on main; 6 leftover doc commits
   landed first); untracked results archived in `.git/fastwork-mirror/archive/worktrees/<agent-id>/` (146 MB, local only);
   11 orphan arch-sim serve.mjs stopped. Kept: live agents + parked fix-nav-morph (a277ea00, 48 unlanded) and fix-hero-exit
@@ -671,7 +680,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `de-illusion-composite` | research (lead spawn 19:1xZ, USER PRIORITY 2): cheaper look-alikes for compositing/layers/blur; same rules as de-illusion-style | alive |
 | `ts-proposals` | toolsmith (lead spawn 19:1xZ): console Proposals page (read, visual compare, Accept/Reject/Request change); full `npm test` in the short lane | alive |
 | `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
-| `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | alive |
+| `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | ended (landed 14806cb..8fa38f7; worktree removed 20:2xZ) |
+| `ts-console-threads` | toolsmith: console threads (one thread per topic for the user) | ended (landed 545cf85, 77d318c, fc07bb1; worktree removed 20:2xZ) |
 | `ts-gesture` (Sim) | also owns the Simulator touch driver (`sim.mjs gesture`, after I-042 D1-D3 + safari-restart; lead 17:5xZ); the P-032 (b) Sim re-check waits on it | alive |
 | `review-t1a` | re-check of ts-iphone-run 7c83786 / f28f47e / 8d4f6a1 | alive |
 | `ts-wait` | toolsmith (lead spawn 13:3xZ, user request): blocking wait commands so agents stop sleep-loop polling; may ask iphone-runner + others what waiting hurt most | alive |
