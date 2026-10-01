@@ -28,7 +28,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -2670,9 +2670,71 @@
+@@ -2670,9 +2670,74 @@
  function iE() {
    tE = 0;
    for (let e of $T) e.active && e.callback();
@@ -70,7 +70,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
 +// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
 +// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
-+var fwWCSel = `.commission-card, .face, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
++// [scroll-engine /10e] `.face` removed (F-030): the countdown faces slide in and out of their overflow:hidden digit
++// window, and IntersectionObserver clips by ancestors, so they flipped data-fw-wc continuously (~1,915
++// setAttribute calls/s at idle, measured at 6x; layer churn in the hero). Their will-change follows the scene gate again, as in wave 1.
++var fwWCSel = `.commission-card, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
 +  fwWCIO;
 +function fwWC() {
 +  if (!(`IntersectionObserver` in window)) return;
@@ -101,7 +104,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      ((nE = !0),
      window.addEventListener(`scroll`, rE, { passive: !0 }),
      window.addEventListener(`resize`, rE, { passive: !0 }));
-@@ -2689,7 +2751,7 @@
+@@ -2689,7 +2754,7 @@
  function sE(e, t) {
    if (!(!e.deferRendering || !e.element)) {
      if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
@@ -110,7 +113,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        return;
      }
      e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
-@@ -2700,7 +2762,7 @@
+@@ -2700,7 +2765,7 @@
                let t = e.element.getBoundingClientRect().height;
                t > 0 && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`);
              }
@@ -119,7 +122,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            }
          });
        }));
-@@ -2710,8 +2772,94 @@
+@@ -2710,8 +2775,94 @@
    (e.manageAnimations &&
      e.element &&
      e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
@@ -132,7 +135,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
 +      // windows: re-scan once in idle time after a scene activates.
 +      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
- }
++}
 +var fwWCQ = 0;
 +// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
 +// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
@@ -187,7 +190,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      ((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)),
 +      t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
 +      e.element.setAttribute(`data-start-selling-render`, `deferred`)));
-+}
+ }
 +function fwFar(e, t, n) {
 +  let r = fwFarG.get(n);
 +  r ||
@@ -215,7 +218,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
  function lE(e) {
    let t = e.getBoundingClientRect();
    return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
-@@ -2756,7 +2904,9 @@
+@@ -2756,7 +2907,9 @@
        onActiveChange: t.onActiveChange,
        renderFrame: 0,
      },
@@ -226,7 +229,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    return (
      $T.add(n),
      aE(),
-@@ -2766,9 +2916,16 @@
+@@ -2766,9 +2919,16 @@
      sE(n, n.active),
      t.onActiveChange?.(n.active),
      t.element && `IntersectionObserver` in window && (r = uE(n, t.element, t.rootMargin ?? `100% 0px`)),
