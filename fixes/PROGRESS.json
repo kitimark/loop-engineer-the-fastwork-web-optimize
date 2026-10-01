@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T19:31:00Z",
+ "updatedAt": "2026-10-01T19:55:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T19:55:00Z", "text": "Style fix recorded on the phone: the section switch does less work, but the same work shows up one frame later further down, so nothing is saved yet. Next: find out why it moved." },
   { "at": "2026-10-01T19:31:00Z", "text": "Your decision: timing tests are on hold. The team now finds out what work the page does and how often (Chrome call tree, style and layout counts, layers) and records Safari's layout and drawing work. The phone is only used for those recordings." },
   { "at": "2026-10-01T19:28:00Z", "text": "Carousel fix (st5) tested on the phone: the picture swap no longer re-lays out the page, but the start of each slide still does about half the time. Hitches at rest fell by more than half. Next step is the lead's call." },
   { "at": "2026-10-01T19:16:00Z", "text": "New work, the user's second priority: look for cheaper ways to draw effects that look the same, and show each one to the user to accept or reject." },
@@ -162,9 +163,9 @@
    "fixes": "You saw style recalculation taking about 19-20 ms at times, more than a 60 Hz frame allows (16.7 ms). Your two guesses: complex nested CSS makes selector matching slow, or the images (rotation, resizing) cost work every frame. You also asked about smaller images and plain-CSS effects.",
    "felt": { "answer": "not-yet" },
    "gate": "Find out whether either guess explains the slow frames before anything is built.",
-   "next": "Top priority. fix-scene-scope checks its narrower scene pause in Chrome (counts), then records it on the phone: how many nested layouts happen at the section switch (a recording, not a timing test).",
+   "next": "The phone recording shows the switch itself got cheaper, but the work moved to the next big frame a bit further down (y about 2990). fix-scene-scope is looking at why, and at fixing both frames together.",
    "owner": "de-style-recalc, fix-scene-scope",
-   "checks": [],
+   "checks": [ { "id": "P-040", "what": "phone recording: does the narrower pause (V1) remove the extra nested layout at the section switch?", "result": "Mostly. One real nested layout instead of two (the second shrank to 0.1 ms), and the style step got cheaper, but the next big frame (y about 2990) got more expensive, so the total did not drop (OBSERVED)." }, { "id": "P-041", "what": "same for the infinite-animations-only variant (V1i)", "result": "One nested layout in every run, cheapest style step, but the frame at y about 2990 grew even more; the two frames together cost more than before (OBSERVED)." } ],
    "details": [
     "User hypotheses from C-013 notes (lead relay 18:3xZ): (1) selector matching cost from nested/complex CSS; (2) image rotation/resizing per frame, image sizes, cap render triggers at 60 fps via native CSS. Checked (de-style-recalc, style-recalc-images.md 30eaa11): H1 nested CSS REFUTED (no nesting shipped, matching ~3 %; the spikes are invalidation scope with nested Layout in RecalculateStyles); H2 images oversized in memory (~35 MB derived) but not a per-frame cost. Ranked: 1 scene-scope (this item), 2 r4-v3, 3 st5 (hero-carousel), 4 fwreskip, 5-6 anim-transform, 7 image-size.",
     "fix-scene-scope (lead 18:5xZ): variants on B: V1 narrow the :where(*) scene pause, V1b pause by API, V2 flip early, V3 panel + R4; Chrome check, then a W Timeline phone block ahead of P-039."
@@ -328,7 +329,6 @@
   }
  ],
  "upcoming": [
-  { "title": "Phone recording of the scene-scope fix: style and layout counts, no timing", "when": "after its Chrome count check", "item": "style-recalc" },
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "paused: timing and feel tests are on hold", "item": "f3-arm-scope" }
  ]
 }

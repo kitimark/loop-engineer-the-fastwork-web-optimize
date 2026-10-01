@@ -53,6 +53,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **19:5xZ** scene-scope attribution block done (iphone-runner 19:44-19:52Z, 9/9, heat sentinels pass): nested Layouts
+  in the switch RS C 2 / V 2 raw (2nd 0.1 ms non-view -> 1) / I 1; RS self C 2.4-3.7, V 1.2-1.4, I 0.6-0.9 ms; but the
+  cost MOVED: fwReskip RS (y~2990) C 14 / V 18-21.5 / I 21-23 ms, switch + fwReskip C 32-35 / V 33-39 / I 39-41
+  (OBSERVED; P-040/P-041 scoring = fix-scene-scope). st5-split ticket validated (cfef9cf, bands as P-039, ~15-18 min) and
+  sent to the PHONE at once (phone free, de-counts-sim gate pending, Chrome queue 6+). I-044 (status.mjs stale "now" line).
 - **19:4xZ** User GO 19:41Z: iphone-runner runs the scene-scope ATTRIBUTION block (C=B, V1, V1i; W; Timeline; nested
   Layouts at the #platform flip) = P-040/P-041 (ids assigned after the fact, predictions pre-data in the ticket msg;
   hashes checked in parallel, match). st5-split ticket (fix-scroll-engine 2944262; C, V1, st5, noanim, waapi, st6) =
