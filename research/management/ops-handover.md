@@ -2,9 +2,15 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-02:xx instance, worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **02:55Z**.
+02:xx instance, worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **03:43Z**.
 
 ## Digest log (newest first, 5 lines each)
+
+- **03:43Z** I-023 chain: 48ace89 (review NEEDS-WORK) + 772e675 fixup (review ACCEPT) + a 3rd commit (verify installs its own
+  SIGINT/SIGTERM/SIGHUP handlers; re-entered holds had none and left Chrome running) committing now; test:chrome after it
+  (772e675 was 6/7). Lead lands all 3 when 7/7, review-i023 re-checks the 3rd (1 file), then I-026 rebase, canary
+  (`ab --aa --runs 1` + test:chrome), bench rebase (fake-chrome.mjs; review-bench ACCEPT-WITH-NOTES), then GO wave1-dry.
+  Wave 2 ready: N11 (parity incl. pagehide flush), N12 v4 (parity 0/5, "20-34 ms band only"), scroll-engine /10c in mech-c.
 
 - **02:55Z** Landed: I-021 0f29e7b+d10b132 (RESOLVED), I-020 4b1034e (RESOLVED), I-024B e7ce0e4, CLAUDE.md lock
   rules 10f7bee, N3 docs 6a0db1a, handover b579b78. I-027 (P2, ts-i021, after I-024A) opened. ts-i017 I-023/I-024A ETA
@@ -48,16 +54,16 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 | agent | state | waits on | next |
 |---|---|---|---|
-| ts-i017 | building I-023 + I-024A, rebase onto 10f7bee | – | ETA ~03:35Z + queue; message mgmt-ops when it queues → lead moves it to #1. Lands before ts-bench if ready first |
-| ts-prio | I-026 (every hold under caffeinate) | – | its batch landed (4b1034e, e7ce0e4) |
-| ts-i021 | handed back | GO after I-024A lands | I-027 |
-| ts-bench | rebasing 4 commits (f0fea0c, 8fdcad8, 3382e71, 3b974d2) onto 10f7bee (package.json/guardrails conflicts) | – | hook rerun → land batch + review request (one reviewer for its +28 additive lines in lib/cdp.mjs); canary shares I-023's slot; then ENDS. Pilot rerun + Q3/Q6 after the goal hold |
+| ts-i017 | I-023 3rd commit (signal handlers) holding 03:42Z | – | then test:chrome (ping lead for move if not first); lead lands 48ace89 + 772e675 + 3rd together at 7/7; resume review-i023 for a 1-file re-check |
+| ts-prio | ENDED | – | I-026 95f74dc (362/362) lands after I-023 (lead rebases, tests/helpers.mjs) |
+| ts-i021 | handed back, briefed | GO after I-024A lands (+ bench landed) | I-027: commit 1 = bench notes (a) expectSec 600, (b) reconfirm one hold per topic, (c) bench.chrome mech ≤ 120 s, (d) FW_TEST_HOST in bench-mech-fake; commit 2 = #3 FW_TIME_SCALE (measurement code: reviewer + test:chrome + canary) + #6 shared fixtures |
+| ts-bench | ENDED; batch 536c43d, ace6764, fe941dd, 239ff35 (399/399) | lead rebases after I-023 + I-026 (fake-chrome.mjs conflict: keep `let n = 0, dying = false` and the HANG_AT/EXIT_AFTER checks at the top of handle(); bench hostSnapshot gains mono/wakeAt/sleptSec/suspended) | review-bench ACCEPT-WITH-NOTES; notes (a)-(d) → I-027 |
 | ts-i002 | handed back; I-022 landed 36fd4b5 | I-023 + I-024A landed | resume it for full `npm run test:chrome` (short, split on 124) → lead resolves I-016/017/022; then ENDS |
-| wave1-dry | idle, no lock (do not message until GO: each message resumes it) | I-023 + canary | ONE announced hold (`lock.mjs run --max-seconds 1200`): guard; `ab --aa --runs 5`; `ab all-wave1 --runs 5`; `timeout 60 probe-countdown-active.mjs`; F-011 (y≈2100-2150) + F-009c (nav IO 46 ms) attribution; kill only on CONTAMINATED / gate TIMEOUT; commit probe with results |
-| fix-scroll-engine | mech10 re-run queued | short slot | run 1: cv churn 0 PASS, will-change out-of-window 0/506 PASS, idle LoAF PASS, un-skips UNCLEAR; NEW 339 ms scroll LoAF in v10 only (script 6 ms, "l" char 419618) + in-window layers 304→741: both gate /10's timing slot. Part 3/E3 + /10 A/B wait for GO |
-| fix-vendor-scrollend (N11) | short validation requeued with caffeinate; reported I-026 | short slot | partial (base only): gtag scrollend (gtag/js:903) 83 % spread inside gtag, no hotspot, so deferral is the only lever; final A/B `--on all-wave1` first in wave 2 |
-| fix-nav-morph | N12 v3 (moving-zone fallback) + desktop debug | short slots | v2: nav rect 1.71→0.14, gCS 0.85→0.01, efp 0.85→0.07 /frame; parity mobile 0/123, desktop 24/168, mobile-shift 2/130, desktop-rtl 24/168, mobile-rtl 0/123. A/B gate: parity 0 on all 5 + v3 cost. Asked to post the sticky/transformed theme-box pitfall |
-| apple-verify | waiting | GO after all-wave1 hold | 3 normal holds of 6-8 min (`--timeout 14400`); MCP Chrome kept until then (lead asks user to close after) |
+| wave1-dry | idle, no lock (do not message until GO: each message resumes it) | I-023 + canary | AFTER the hold (lead): pilot `bench mech phone-invisible-shrink --viewport mobile|desktop` (short) + Q3 (normal ≤ 10 min). ONE announced hold (`lock.mjs run --max-seconds 1200`): guard; `ab --aa --runs 5`; `ab all-wave1 --runs 5`; `timeout 60 probe-countdown-active.mjs`; F-011 (y≈2100-2150) + F-009c (nav IO 46 ms) attribution; kill only on CONTAMINATED / gate TIMEOUT; commit probe with results |
+| fix-scroll-engine | /10c mech-c (short) | – | /10b: ticket 4/4, 339 ms frame 1/5 (not repeating), layers -45..-84 top half but +104 MB area at bottom (profile-deck 70, #people 20, hero 14: sections behind the user that w1 re-skips). /10c = far re-skip behind the user only. Gate: layers ≤ w1 everywhere + ticket. Then GO for part 3 (E3) + A/B `--on all-wave1` after N11. F-019/F-020 |
+| fix-vendor-scrollend (N11) | READY, waiting GO | goal hold done | validation passed (1 GA4 scroll(90) hit in A/C/D, pagehide flush works; tab-switch hide untestable here). Approved final slot: `lock.mjs run chrome-measure --owner fix-vendor-scrollend --max-seconds 600 -- sh -c 'uptime; caffeinate -dis node tools/fix.mjs ab vendor-scrollend --runs 5 --on all-wave1; caffeinate -dis node research/vendor-scrollend/phases.mjs --on all-wave1 --runs 2 --drop-runs 1 --budget 200; uptime'` (first in wave 2) |
+| fix-nav-morph | READY (N12 v4 486264b + f0ba4a7), handed back | GO after N11 + /10c | parity 0/5; Tier A mobile rect 1.71→0.54, gCS→0.01, efp 0.86→0.45; LayoutCount unchanged → ticket "20-34 ms band only". Probe fails fast on blank page. #6 waits finger test, then N2; E4 after all-wave1 |
+| apple-verify | part 2: holds 2+3 done, hold 4 queued 03:41Z (our baseline + wave1-partial, same script) | normal slot | apple.com @6x 430x739: iPhone 18 Pro page 31-37 fps, 35-50 frames > 50 ms (560-1100 ms forced layout in onscroll, analytics re-reads ~300 offsets/event, non-passive touchmove); Vision Pro 105 fps / AirPods 76 / MacBook Pro 76, each 2 frames > 50 ms, render-bound. Lead asks user re MCP Chrome after |
 | countdown, layout-animations, N3 | stopped / done | – | do not resume |
 
 ## Wave-2 order (lead decisions, DIRECTION slot 3)
