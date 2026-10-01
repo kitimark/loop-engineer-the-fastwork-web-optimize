@@ -469,4 +469,5 @@ Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages a
 - Never during a timed block: an attached Web Inspector, paint rects or debug borders, `layersForNode`, heap
   snapshots, polling faster than ~1 Hz (§5.5). Attribution runs get real Timeline durations with `Page.disable` →
   `Page.enable` → `Timeline.start` on the page target, re-sent after every navigation (F-047). The logger's rAF
-  scrollY read is neutral (P0 A/A, P-023, 2026-10-01: equal layout and tick counts), so A9's caveat is lifted.
+  scrollY read is neutral (P0 A/A, P-023, 2026-10-01: equal layout and tick counts), so A9's caveat is lifted
+  for rAF-only loggers; reads in timers or MO/cv callbacks (winrun's step timer, the pre-T1a std probe) were not tested.
