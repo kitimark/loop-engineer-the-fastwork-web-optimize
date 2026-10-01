@@ -117,6 +117,14 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    attribution was coincidence; cause unknown). The storm needs scrolling and/or first entry into the platform region
    (~15 % of fresh loads, y≈4.7k): candidates first raster/decode of the platform layers, the #platform blur layer, the
    scroll-jack region, GC under scroll. Next: one diagnostic hold (~15-20 fresh loads with CDP tracing, storm traces only).
+   **N12 nav-scroll-handler on aw1-10c (06:31-06:39Z, `ab n12-aw1 --on aw1-10c --runs 5`, 1/10 contaminated, provisional):**
+   > 50 ms 2 [1-3] -> 2 [1-2], > 34 ms 5 [5-9] -> 5 [5-5], both within noise; AV1 forced style+layout already 1 [0-2] on
+   aw1-10c (nothing left to remove); hints > 20 ms 24 -> 18, fps 95.3 -> 99. Parity regressed on the /10c base (sticky
+   re-measured mid-scroll after a re-skip; 0.9 s future-card transition) -> v5. **Lead decision 06:46Z:** after v5 parity
+   = 0, land as a record ("mechanism + parity, gain 20-34 ms band not shown in Chrome, not in the wave-2 base"), no further
+   Chrome slot; land-into-base waits for the iPhone scripted check (iPhone queue item 9).
+   **Measurement note:** the aw1-10c baseline gave > 34 ms 5 [5-9] in N12's hold vs 3-4 in /10c's own hold: the
+   cross-session spread on > 34 ms is about ±2, so quote > 34 ms only within one hold (A vs B), never across holds.
    Updated order: part 4 (done) -> N13 -> N12 `--on aw1-10c` -> /10d -> hero-exit -> countdown 05/08; I-018's traced run goes
    ahead of any later normal once re-reviewed (N13 before N12: > 100 ms frame class before the 20-34 ms band, principle 1).
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
@@ -175,3 +183,6 @@ iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain 
    marquees) keep the render server compositing at idle (Timeline "Composite" count at an idle stop with all of
    them off-screen, vs the same stop with `animation-play-state: paused` injected). Method:
    `fixes/main-thread-infinite-animations/README.md` "iPhone pending".
+9. N12 nav-scroll-handler v5 vs aw1-10c (scripted scroll, n=3 each, order B P P B B P): > 34 ms frames and their scroll
+   positions, nav `L` time per scroll if the Web Inspector timeline shows it, and the parity spots (is-on-dark at
+   y≈2231/2251, profile-sticky at ≈2001). Decides whether N12 enters the wave-2 base (lead decision 06:46Z).

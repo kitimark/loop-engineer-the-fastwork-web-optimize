@@ -2,7 +2,7 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **06:32Z**.
+**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **06:40Z**.
 
 ## Digest log (newest first, 5 lines each)
 
@@ -69,9 +69,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
    park; then /10d.
 3. q3 (wave1-dry Q3-final, queued #3): metric choice final → commit a Q3 note → land batch. The pilot is done (tool OK);
    spec issues belong to phone-invisible-shrink's future bench author.
-4. I-018 (ts-i017): fixing review-i018's list (CDP metrics opt-in) → re-review → one traced run + test:chrome, ahead of later
-   normals → land; then ts-i021 rebases A/B/C on it, then I-030.
-5. Lead's caffeinate stopgap ends ~08:36Z: remind the lead at ~08:15Z if I-026 (ts-i021 commit A) hasn't landed.
+4. I-018 (ts-i017): 7 review items coded (unit 184/184), rebase on 05967e9 → e2e short + commit lease (not while a goal normal
+   is #1) → re-review → one traced run + test:chrome → land. Then ts-i021 rebases B/C/D (review-i027 ACCEPT-WITH-NOTES; D =
+   its notes) → test:chrome → lead canary → land, resolve I-027. I-030 (ts-i021, branch ts-i030 on 05967e9, unit 73/73):
+   commits when the queue is clear; reviewer requested.
+5. Caffeinate: the lead restarts it every 2 h (background-task cap) until the user sets pmset; current one ends ~08:37Z →
+   remind the lead at ~08:30Z. I-026 commit A landed 05967e9 (caffeinate while anyone is QUEUED); resolve on lead npm test.
 6. hero-exit (parked): on resume rebase, `--on aw1-10c`, calibrate `heroPointerEventsWrites` on ≥ 1e2c402.
 7. Queue rule: no new shorts while a goal-path normal is #1 (I-030 workaround); ping the lead at > 10 min waits.
 
@@ -103,8 +106,8 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 | agent | state | waits on | next |
 |---|---|---|---|
 | fix-scroll-engine | N13 probe done (visual ruled out); storm-catch queued #2 | lock | storm traces → fix or park; then /10d |
-| ts-i017 | I-018 a0efac7 NEEDS-WORK | its fixes, re-review | one traced run + test:chrome; lands before ts-i021 |
-| ts-i021 | committing A + B | I-018 on main | rebase, C, hand back A+B+C → reviewer + canary |
+| ts-i017 | I-018 fixes coded (184/184) | rebase 05967e9, 2 shorts, re-review | one traced run + test:chrome; lands before ts-i021 B/C/D |
+| ts-i021 | A landed 05967e9; B+C reviewed (ACCEPT-WITH-NOTES → D); I-030 coded | I-018 on main; queue clear | D, I-030 commit; B/C/D rebase on I-018 → test:chrome → canary |
 | wave1-dry | pilot done (tool OK); Q3-final queued #3 | lock | Q3 final → commit the Q3 note |
 | fix-nav-morph | N12 A/B `--on aw1-10c` holding ~06:31 | – | report → review → land; #6 waits finger test |
 | hero-exit | parked | wave-2 order (after N12) | + bench `heroPointerEventsWrites` calibration |
