@@ -7,7 +7,7 @@
 //   node tools/lock.mjs release iphone --owner <topic> [--force]
 //   node tools/lock.mjs dequeue iphone --owner <topic>          # stop waiting
 //   node tools/lock.mjs run chrome-measure --owner <topic> -- <cmd> [args...]   # hold while cmd runs
-//   node tools/lock.mjs run chrome-measure --owner <topic> --short --max-seconds 120 -- npm test
+//   node tools/lock.mjs run chrome-measure --owner <topic> --short --max-seconds 150 -- npm test
 //   node tools/lock.mjs acquire chrome-measure --owner <topic> --short --max-seconds 180 --wait 1800
 //
 // --short --max-seconds N (N <= 300; default 120): the short lane for jobs like `npm test` (~35 s).
@@ -61,7 +61,7 @@
 // contaminated). Short jobs are exempt. `acquire` samples one 10 s window when it is its turn, so a
 // single acquire may take ~10 s; BUSY then says "host not quiet". `status` samples the host for 3 s and
 // prints a host line with the gate state (--no-host skips it).
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS } from './lib/host.mjs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
@@ -205,26 +205,60 @@ async function main() {
     // a short job runs in its own process group, so reaching --max-seconds stops the whole tree (npm test -> node --test -> ...);
     // FW_LOCK_HELD: the command's own verify.mjs / fix.mjs ab / nested run re-enter this hold instead of queueing behind it
     const child = spawn(rest[0], rest.slice(1), { stdio: 'inherit', detached: short, env: { ...process.env, FW_LOCK_HELD: heldEnv(resource, holder.token) } });
-    const kill = (sig) => { try { if (short) process.kill(-child.pid, sig); else child.kill(sig); } catch {} };
+    // I-024: a short job's tree can leave the command's group (a nested `run --short` detaches its own
+    // command), and orphans lose their parent link once the command exits. So every kill also signals each
+    // descendant seen so far (pid + its group, re-checked by pgid against pid reuse), not only the group.
+    let seen = new Map();
+    const killTree = (sig) => {
+      const rows = psRows(), own = rows.find(([p]) => p === process.pid)?.[2];
+      for (const [p, g] of descendants(rows, child.pid)) seen.set(p, g);
+      const live = new Map(rows.map(([p, , g]) => [p, g]));
+      try { process.kill(-child.pid, sig); } catch {}
+      for (const [p, g] of seen) {
+        if (live.get(p) !== g) continue; // gone (or the pid was reused)
+        if (g !== own && g !== child.pid) { try { process.kill(-g, sig); } catch {} }
+        try { process.kill(p, sig); } catch {}
+      }
+    };
+    const kill = (sig) => { try { if (short) killTree(sig); else child.kill(sig); } catch {} };
     // acquire() releases the lock and exits on these signals; stop the command first, or it would keep
     // running (e.g. a throttled measurement) after the lock was handed to the next waiter.
-    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => kill(sig));
+    // a short job then gets SIGKILL too: acquire()'s handler releases the lock and exits right after this
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); if (short) kill('SIGKILL'); });
+    // wall-clock deadlines checked every second (I-026): a timer's clock stalls while the Mac sleeps
+    // (Maintenance Sleep / DarkWake), so after a wake the cap is enforced at once, not minutes later
     let overran = false;
-    const timer = short && setTimeout(() => {
-      overran = true;
-      console.error(`[lock ${resource}] "${rest.join(' ')}" exceeded --max-seconds ${maxSec}; stopping it and releasing the lock`);
-      kill('SIGTERM');
-      setTimeout(() => kill('SIGKILL'), 3000).unref();
-    }, maxSec * 1000);
+    const deadline = Date.now() + (maxSec || 0) * 1000;
+    const timer = short && setInterval(() => {
+      const now = Date.now();
+      if (!overran && now >= deadline) {
+        overran = true;
+        console.error(`[lock ${resource}] "${rest.join(' ')}" exceeded --max-seconds ${maxSec}; stopping it and releasing the lock`);
+        kill('SIGTERM');
+      } else if (overran && now >= deadline + 3000) kill('SIGKILL');
+    }, 250);
     const warn = expectSec && setTimeout(() => console.error(`[lock ${resource}] this hold passed its ${expectSec} s (--max-seconds; I-020): it keeps running, but split long measurements into lock.mjs run holds of 5-10 min so short jobs get in at each hand-over`), expectSec * 1000);
     const code = await new Promise((r) => child.on('exit', (c, s) => r(c ?? (s ? 1 : 0))));
-    clearTimeout(timer);
+    clearInterval(timer);
     clearTimeout(warn);
-    if (overran) kill('SIGKILL'); // anything in the group that ignored SIGTERM
+    if (overran) kill('SIGKILL'); // anything in the tree that ignored SIGTERM (or was orphaned when the command exited)
     rel();
     return overran ? 124 : code;
   }
   throw new Error(`unknown command ${cmd}`);
+}
+
+/** [pid, ppid, pgid] of every process (ps), or [] if ps fails. */
+function psRows() {
+  try { return execFileSync('ps', ['-A', '-o', 'pid=,ppid=,pgid='], { encoding: 'utf8' }).trim().split('\n').map((l) => l.trim().split(/\s+/).map(Number)); } catch { return []; }
+}
+/** [pid, pgid] of every descendant of root in the ps rows. */
+function descendants(rows, root) {
+  const kids = new Map();
+  for (const [p, pp, g] of rows) { if (!kids.has(pp)) kids.set(pp, []); kids.get(pp).push([p, g]); }
+  const out = [], stack = [root];
+  while (stack.length) for (const [p, g] of kids.get(stack.pop()) || []) { out.push([p, g]); stack.push(p); }
+  return out;
 }
 
 main().then((c) => process.exit(c), (e) => { console.error(e.message || e); process.exit(1); });

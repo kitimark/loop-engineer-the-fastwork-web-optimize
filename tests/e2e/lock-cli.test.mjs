@@ -220,6 +220,30 @@ test('run --short --max-seconds: a command that overruns is killed (with its chi
   assert.equal(ok.code, 5, 'a short run within its max propagates the exit code');
 });
 
+test('I-024: run --short past --max-seconds kills the whole tree: SIGTERM-ignoring child and grandchild, also one in its own process group', async () => {
+  const pids = join(state, 'pids');
+  // a grandchild that ignores SIGTERM in the command's group, and one that left it (detached: a nested
+  // `lock.mjs run --short` puts its command in a new group); the child ignores SIGTERM and waits for them
+  const gc = `process.on('SIGTERM', () => {}); require('fs').appendFileSync(${JSON.stringify(pids)}, process.pid + '\\n'); setInterval(() => {}, 1000);`;
+  const child = `process.on('SIGTERM', () => {}); const { spawn } = require('child_process');
+    spawn(process.execPath, ['-e', ${JSON.stringify(gc)}], { stdio: 'ignore' });
+    spawn(process.execPath, ['-e', ${JSON.stringify(gc)}], { stdio: 'ignore', detached: true });
+    console.log('CHILD UP'); setInterval(() => {}, 1000);`;
+  const t0 = Date.now();
+  const r = await lockAsync('run', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '2', '--', process.execPath, '-e', child);
+  const took = Date.now() - t0;
+  assert.equal(r.code, 124, r.out);
+  assert.match(r.stderr, /exceeded --max-seconds 2/);
+  assert.ok(took < 10000, `stopped at max-seconds + the SIGKILL grace, not later (${took} ms)`);
+  assert.equal(holder('chrome-measure'), null, 'released');
+  const left = readFileSync(pids, 'utf8').trim().split('\n').map(Number);
+  assert.equal(left.length, 2);
+  let gone = false;
+  for (let i = 0; i < 40 && !(gone = left.every((p) => !alive(p))); i++) await sleep(50);
+  for (const p of left) if (alive(p)) process.kill(p, 'SIGKILL');
+  assert.ok(gone, 'no process of the short job outlives its hold (I-024: a test tree ran 13 min past it)');
+});
+
 test('run: killing the lock holder also stops the command (the lock never outlives the work)', async () => {
   const pidFile = join(state, 'child.pid');
   const child = `require('fs').writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); console.log('CHILD UP'); setInterval(() => {}, 1000);`;
