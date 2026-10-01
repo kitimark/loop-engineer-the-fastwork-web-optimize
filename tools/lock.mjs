@@ -58,7 +58,7 @@
 // behind a normal waiter the lead moved: the move wins (I-020).
 //
 // Host gate (I-016): a normal waiter of chrome-measure whose turn it is is granted only on a quiet host
-// (lib/host.mjs quiet(): CPU <= 20 % over 10 s, load1 <= 6, memory pressure normal), or after 600 s
+// (lib/host.mjs quiet(): CPU <= 25 % over 10 s, load1 <= 6, memory pressure normal), or after 600 s
 // anyway (holder `gateTimeout: true`, a line in locks/host-alerts.log; verify.mjs marks those runs
 // contaminated). Short jobs pass it only during the first 120 s of that gate wait, through the short lane
 // or the gate exemption, and never a waiter the lead moved (I-030). FW_GATE_SHORT_PASS (seconds; 0 = never)

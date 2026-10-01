@@ -40,7 +40,7 @@
 //                     callback, which can force a style/layout if the page dirtied it: opt-in for that reason.
 //
 // Host state (incident I-017, postmortem 2026-09-30 (d); rules in tools/lib/host.mjs):
-//   [--max-wait 60] [--max-load 6] [--max-busy 20]
+//   [--max-wait 60] [--max-load 6] [--max-busy 25]
 // Before each run (each target of each run) verify waits, still holding the lock, until the host is
 // quiet (host CPU <= --max-busy % over a 10 s window, load1 <= --max-load, memory pressure normal) or
 // --max-wait seconds have passed (0 = no recheck); then it runs anyway and records that. Every run gets

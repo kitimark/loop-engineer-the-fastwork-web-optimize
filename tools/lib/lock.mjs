@@ -42,7 +42,7 @@
 //
 // Host admission gate (incident I-016, postmortem 2026-09-30 §3 (a)): for a gated resource
 // (chrome-measure), the waiter served next that is a *normal* job is granted only when the host is quiet
-// (tools/lib/host.mjs quiet(): CPU <= 20 % busy over a >= 10 s window, load1 <= 6, memory pressure
+// (tools/lib/host.mjs quiet(): CPU <= 25 % busy over a >= 10 s window, load1 <= 6, memory pressure
 // normal). Until then it keeps its place (the queue entry records `gate: {since, at, reasons, load1,
 // busyPct, pressure}`) and samples the host. Short jobs are exempt: they may be granted while the head
 // normal waiter waits for quiet (by the short lane, or past the drain budget by the gate exemption), but

@@ -60,8 +60,9 @@ import { pathToFileURL } from 'node:url';
 /** Defaults. Why these numbers: see the comments; recalibrate after the first quiet A/A (postmortem (a)). */
 export const DEFAULTS = Object.freeze({
   // --- quiet(): the admission rule (lock gate, verify's recheck before each run) ---
-  quietMaxBusyPct: 20,   // host CPU busy over the window, before Chrome starts (~1.6 of 8 cores). Provisional:
-                         // other processes used ~16-18 % at the quiet reference point (postmortem (a)).
+  quietMaxBusyPct: 25,   // host CPU busy over the window, before Chrome starts (~2 of 8 cores). Provisional:
+                         // other processes used ~16-18 % at the quiet reference point (postmortem (a)); raised from
+                         // 20 on 2026-10-01 (user decision: the gate waited too long; calibration pending).
   quietMaxLoad1: 6,      // I-017: frames >20 ms 66 at load1 < 6 vs 96-103 at 6-15 on the unchanged baseline (a step)
   quietMaxPressure: 1,   // memory pressure normal
   quietMinWindowSec: 10, // CPU window length the rule needs

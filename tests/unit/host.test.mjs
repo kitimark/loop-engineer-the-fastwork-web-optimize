@@ -38,7 +38,7 @@ function fakeSamplers({ busy = () => 0.1, load = () => 2, pressure = () => 1, de
 
 test('THRESHOLDS: the documented defaults; FW_GATE_* env overrides; bad values are refused', () => {
   assert.deepEqual({ ...host.DEFAULTS }, {
-    quietMaxBusyPct: 20, quietMaxLoad1: 6, quietMaxPressure: 1, quietMinWindowSec: 10, gateMaxWaitSec: 600, gateShortPassSec: 120, recheckMaxWaitSec: 60,
+    quietMaxBusyPct: 25, quietMaxLoad1: 6, quietMaxPressure: 1, quietMinWindowSec: 10, gateMaxWaitSec: 600, gateShortPassSec: 120, recheckMaxWaitSec: 60,
     invalidLoad1: 10, invalidOtherBusyPct: 25, invalidPressure: 2, warnLoad1: 6, warnOtherBusyPct: 20,
     suspendMinSec: 2, watchdogStallSec: 300, chromeWarmSec: 10,
   });
@@ -78,11 +78,11 @@ test('sample(): waits the window with the injected sleep, or measures from `sinc
   assert.equal(x.stub, undefined, 'not stubbed through FW_TEST_HOST');
 });
 
-test('quiet(): cpu <= 20 % over >= 10 s, load1 <= 6, pressure normal; each failing condition is named', () => {
-  const ok = { windowSec: 10, busyPct: 20, load1: 6, pressure: 1 };
+test('quiet(): cpu <= 25 % over >= 10 s, load1 <= 6, pressure normal; each failing condition is named', () => {
+  const ok = { windowSec: 10, busyPct: 25, load1: 6, pressure: 1 };
   assert.deepEqual(host.quiet(ok), { quiet: true, reasons: [] });
   assert.deepEqual(host.quiet({ ...ok, pressure: null }), { quiet: true, reasons: [] }, 'no pressure reading (not macOS) does not block');
-  assert.deepEqual(host.quiet({ ...ok, busyPct: 20.1 }).reasons, ['cpu 20.1 % > 20 %']);
+  assert.deepEqual(host.quiet({ ...ok, busyPct: 25.1 }).reasons, ['cpu 25.1 % > 25 %']);
   assert.deepEqual(host.quiet({ ...ok, load1: 6.2 }).reasons, ['load1 6.2 > 6']);
   assert.deepEqual(host.quiet({ ...ok, pressure: 2 }).reasons, ['mem pressure warn']);
   assert.deepEqual(host.quiet({ ...ok, pressureMax: 4 }).reasons, ['mem pressure critical']);
@@ -90,6 +90,14 @@ test('quiet(): cpu <= 20 % over >= 10 s, load1 <= 6, pressure normal; each faili
   assert.deepEqual(host.quiet({ ...ok, busyPct: null }).reasons, ['cpu unknown']);
   assert.equal(host.quiet(null).quiet, false);
   assert.equal(host.quiet({ ...ok, load1: 7 }, { ...host.DEFAULTS, quietMaxLoad1: 8 }).quiet, true, 'thresholds are a parameter');
+});
+
+test('quiet() default CPU bar is 25 % (user decision 2026-10-01, was 20 %): 24 % admits, 26 % does not', () => {
+  const at = (busyPct) => host.quiet({ windowSec: 10, busyPct, load1: 2, pressure: 1 });
+  assert.deepEqual(at(24), { quiet: true, reasons: [] }, '24 % busy is quiet (it was not under the old 20 % bar)');
+  assert.deepEqual(at(26), { quiet: false, reasons: ['cpu 26 % > 25 %'] });
+  assert.equal(host.quiet({ windowSec: 10, busyPct: 24, load1: 2, pressure: 1 }, host.thresholds({ FW_GATE_MAX_BUSY: '20' })).quiet, false,
+    'FW_GATE_MAX_BUSY=20 restores the old bar');
 });
 
 test('waitQuiet(): 10 s windows until quiet, or gives up after maxWaitSec (always at least one window)', async () => {
@@ -108,7 +116,7 @@ test('waitQuiet(): 10 s windows until quiet, or gives up after maxWaitSec (alway
   assert.equal(g.quiet, false);
   assert.equal(g.windows, 6);
   assert.equal(g.waitedSec, 60);
-  assert.deepEqual(g.reasons, ['cpu 90 % > 20 %', 'load1 12 > 6']);
+  assert.deepEqual(g.reasons, ['cpu 90 % > 25 %', 'load1 12 > 6']);
   assert.equal((await host.waitQuiet({ maxWaitSec: 0, samplers: fakeSamplers({ busy: () => 0.9 }) })).windows, 1);
 });
 
@@ -248,7 +256,7 @@ test('$FW_TEST_HOST replaces the samplers process-wide, and every reading says i
   assert.equal(x.load1, 7);
   assert.equal(x.pressure, 2);
   assert.ok(x.windowSec >= 10 && x.windowSec < 11, `fake clock window ${x.windowSec}`);
-  assert.deepEqual(x.q.reasons, ['cpu 50 % > 20 %', 'load1 7 > 6', 'mem pressure warn']);
+  assert.deepEqual(x.q.reasons, ['cpu 50 % > 25 %', 'load1 7 > 6', 'mem pressure warn']);
   assert.ok(x.tree >= 8, 'treeCpu from the stub: 0.8 cores over >= 10 s');
   // I-027: hostClock() says it is stubbed, and its 60 s sleep advances only the fake clock (verify.mjs runs
   // its settle / idle / morph waits on it under a stub, so the fake-Chrome tests cost no wall time)

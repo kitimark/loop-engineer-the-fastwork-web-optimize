@@ -16,7 +16,7 @@ beforeEach(() => { state = tempDir('fw-gate-'); process.env.FW_STATE_DIR = state
 const lockFile = (f) => join(state, 'locks', f);
 const readJson = (f) => JSON.parse(readFileSync(lockFile(f), 'utf8'));
 const QUIET = { quiet: true, reasons: [], sample: { load1: 2, busyPct: 8, sysPct: 2, pressure: 1, windowSec: 10 } };
-const BUSY = { quiet: false, reasons: ['cpu 60 % > 20 %'], sample: { load1: 14, busyPct: 60, sysPct: 20, pressure: 1, windowSec: 10 } };
+const BUSY = { quiet: false, reasons: ['cpu 60 % > 25 %'], sample: { load1: 14, busyPct: 60, sysPct: 20, pressure: 1, windowSec: 10 } };
 const UNKNOWN = { quiet: null, reasons: ['not measured yet'] };
 
 /** Fake host samplers for acquire(): busy fraction from a function of the number of windows measured. */
@@ -40,7 +40,7 @@ test('the head normal waiter keeps its place until the host is quiet; the grant 
   const busy = await L.tryAcquire(R, { owner: 'ab-topic', kind: 'lease', host: BUSY });
   assert.equal(busy.gated, true);
   assert.equal(busy.gate.since, since, 'the gate wait keeps its start');
-  assert.deepEqual([busy.gate.quiet, busy.gate.reasons, busy.gate.load1, busy.gate.busyPct], [false, ['cpu 60 % > 20 %'], 14, 60]);
+  assert.deepEqual([busy.gate.quiet, busy.gate.reasons, busy.gate.load1, busy.gate.busyPct], [false, ['cpu 60 % > 25 %'], 14, 60]);
   assert.deepEqual(readJson(`${R}.queue.json`).map((w) => [w.owner, w.gate.quiet]), [['ab-topic', false]], 'status can show why');
   // someone else queued behind it can't take the free lock either
   const other = await L.tryAcquire(R, { owner: 'later', kind: 'lease', host: QUIET });
@@ -60,7 +60,7 @@ test('gate timeout: after gateMaxWaitSec the waiter is granted anyway, marked ga
   const g = await L.tryAcquire(R, { owner: 'patient', kind: 'lease', host: BUSY, thresholds: T });
   assert.equal(g.ok, true);
   assert.equal(g.holder.gateTimeout, true);
-  assert.deepEqual([g.holder.gate.quiet, g.holder.gate.timeout, g.holder.gate.reasons, g.holder.gate.busyPct], [false, true, ['cpu 60 % > 20 %'], 60]);
+  assert.deepEqual([g.holder.gate.quiet, g.holder.gate.timeout, g.holder.gate.reasons, g.holder.gate.busyPct], [false, true, ['cpu 60 % > 25 %'], 60]);
   assert.ok(g.holder.gate.waitedSec >= 1);
   const alerts = readFileSync(L.hostAlertsFile(), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   assert.deepEqual(alerts.map((a) => [a.resource, a.owner, a.event, a.quiet]), [[R, 'patient', 'gate-timeout', false]]);
@@ -118,8 +118,8 @@ test('acquire(): samples 10 s windows while it is its turn, then takes the lock 
   const logs = [];
   const g = await L.acquire(R, { owner: 'verify2', kind: 'lease', pollMs: 20, log: (m) => logs.push(m), hostSamplers: busy, thresholds: { ...H.THRESHOLDS, gateMaxWaitSec: 1 } });
   assert.equal(g.holder.gateTimeout, true);
-  assert.deepEqual(g.holder.gate.reasons, ['cpu 70 % > 20 %']);
-  assert.match(logs.join('\n'), /free, but the host is not quiet \(cpu 70 % > 20 %\)/);
+  assert.deepEqual(g.holder.gate.reasons, ['cpu 70 % > 25 %']);
+  assert.match(logs.join('\n'), /free, but the host is not quiet \(cpu 70 % > 25 %\)/);
   g.release();
   assert.equal(existsSync(lockFile(`${R}.json`)), false);
 });

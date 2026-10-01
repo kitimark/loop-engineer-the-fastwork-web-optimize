@@ -28,12 +28,12 @@ test('acquire on a busy host: BUSY "host not quiet" (exit 3), keeps the head pla
   const busy = { FAKE_HOST_BUSY: '0.6' };
   const b = lock(busy, 'acquire', 'chrome-measure', '--owner', 'topic-a');
   assert.equal(b.code, 3, b.out);
-  assert.match(b.stdout, /^BUSY chrome-measure: free, but the host is not quiet \(cpu 60 % > 20 %; waiting since \S+, granted anyway after 600 s\)\. You \("topic-a"\) are #1/m);
+  assert.match(b.stdout, /^BUSY chrome-measure: free, but the host is not quiet \(cpu 60 % > 25 %; waiting since \S+, granted anyway after 600 s\)\. You \("topic-a"\) are #1/m);
   assert.equal(holder(), null);
   // someone else can't slip in on a quiet reading: topic-a is first
   assert.equal(lock({}, 'acquire', 'chrome-measure', '--owner', 'topic-b').code, 3);
   const st = lock(busy, 'status', 'chrome-measure');
-  assert.match(st.stdout, /chrome-measure gate CLOSED for "topic-a" \(cpu 60 % > 20 %\) since /);
+  assert.match(st.stdout, /chrome-measure gate CLOSED for "topic-a" \(cpu 60 % > 25 %\) since /);
   // a short job is exempt from the gate
   const s = lock(busy, 'acquire', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '60');
   assert.equal(s.code, 0, s.out);

@@ -292,7 +292,7 @@ test('host record per run and phase on a quiet host: CPU busy/sys, Chrome tree, 
   assert.equal(h.recheck.quiet, true);
   assert.equal(h.recheck.windows, 1, 'a quiet host passes the first 10 s window');
   assert.deepEqual([res.host.contaminated, res.host.contaminatedRuns, res.host.warnRuns, res.host.runsTotal], [false, 0, 0, 1]);
-  assert.deepEqual(res.host.recheck, { maxWaitSec: 60, maxLoad1: 6, maxBusyPct: 20 });
+  assert.deepEqual(res.host.recheck, { maxWaitSec: 60, maxLoad1: 6, maxBusyPct: 25 });
   assert.equal(res.host.thresholds.invalidLoad1, 10);
   assert.match(r.stdout, /host: load1 3\.5, other CPU 5 %\n/);
   assert.match(r.stdout, /^host: 0 of 1 runs contaminated {2}\[host STUBBED: .*fake-host\.mjs\]$/m);

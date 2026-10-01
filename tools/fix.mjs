@@ -16,7 +16,7 @@
 //   ab per-frame attribution (I-018), all opt-in: [--cdp-metrics] per-phase CDP script/style/layout deltas; [--trace-frames]
 //                  (perturbs timing) attributes frames >20 ms, writes results-trace.json, never results.json; [--frame-log] (E5)
 //                  keeps [t, dt, scrollY] for tools/frames.mjs
-//   ab host guard (I-017): [--max-wait 60] [--max-load 6] [--max-busy 20] [--watchdog 300] [--chrome-warm 10] go to verify.mjs (recheck before
+//   ab host guard (I-017): [--max-wait 60] [--max-load 6] [--max-busy 25] [--watchdog 300] [--chrome-warm 10] go to verify.mjs (recheck before
 //                  each run); a run started at load1 > 10, other CPU > 25 %, memory pressure >= warn or
 //                  after a gate-timeout grant contaminates the result: verdicts get "CONTAMINATED (host): "
 //   --on <other>   (edit, diff, serve, ab) stack this fix on another fix's overlay, e.g. a combined wave:

@@ -131,6 +131,7 @@ Priorities: P0 = before the next measurement that counts; P1 = this wave; P2 = n
   (sampler, long-lived processes only), and measure-parallel proposes 25 % for the same thing during a run.
   **Calibrate it** from the first quiet A/A, which records both numbers. CPU is the primary, fast signal.
   load1 stays as a guard because I-017's evidence is in load1 units and it catches runnable-thread storms.
+  2026-10-01: raised to 25 % (user decision; gate waits; calibration pending).
 - **Where.** `acquire()` already polls; it keeps the previous tick sample in memory and passes
   `host` into `tryAcquire`. The gate is applied only when granting a **normal** waiter of a resource
   that has a gate (chrome-measure; not iphone). If the host isn't quiet, the head normal waiter
