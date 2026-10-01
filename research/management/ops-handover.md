@@ -80,6 +80,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   22:2xZ: 4a903b2 (ts-lock-share shared-lane docs) landed. USER PRIORITY T-006 #5 (22:26Z): PR-001 (de-illusion-style, hero accent
   draw/erase frames) is the top of the testing lane: lead moved it to #1 in chrome-measure, board priority 1. Whenever
   de-illusion-style requeues, tell the lead at once so it moves the entry to the front. P-036 row: G on compiler v2 only (d72ee13644cc).
+  22:4xZ: 866ea63 and fd23ed0 (I-045 proposal decision events wake every wait) landed. USER RULE T-006 (PR-001 lesson,
+  AGENT_ROLES item 8): a changes-requested decision is the spec for the next revision of the SAME proposal: read it in
+  full (`proposal show`), relay it verbatim, answer with `proposal revise <id>` quoting the request first and answering
+  each point; arms not asked for go only under "also tried, not chosen", never as new proposals. PR-001 rev 2 = frames/
+  video only (de-illusion-style); A/B arms are no longer posted. Accent containment result (de-illusion-style, Chrome):
+  contain: layout size gives a 0-px diff on all 14 draws; its canvas-frames arm's first diff failed (alignment being
+  fixed); a Sim F-108 run comes next. I-049 (lead, 22:44Z): shared readers starve behind later exclusive holds.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6

@@ -181,6 +181,10 @@ Sources: [sub-agents](https://code.claude.com/docs/en/sub-agents.md),
      --until decided` in the background, then re-arm the printed `--until changed --since …` line (the user may undo or
      change a decision, I-045); on `changes-requested` revise with `proposal revise <id> --note …`; never land
      a PoC the user has not accepted. Look-alikes must be pixel-identical to the user (frame sequences / video welcome).
+     A `changes-requested` decision is the spec for the next revision of the SAME proposal (user, T-006, PR-001 lesson):
+     read it in full (`proposal show <id>`; list views truncate notes), relay it verbatim, answer it with `proposal revise
+     <id>` quoting the request in the first lines and answering each point. Arms the user didn't ask for go only into an
+     "also tried, not chosen" section, never as new proposals.
   - **Why agents went unnamed (verified by the lead, 10:3xZ):** after a context compaction the lead's
     Agent schema no longer listed `name`, but the tool still accepts it (a probe spawn registered as
     "probe-name"). The agent type is not the blocker: named general-purpose agents message each other
