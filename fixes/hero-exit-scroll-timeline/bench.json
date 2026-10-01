@@ -29,16 +29,22 @@
     "cueFilterAnimations": {
       "kind": "animations",
       "selector": ".scroll-float",
-      "props": ["filter"],
+      "props": [
+        "filter"
+      ],
       "state": "any",
-      "why": "On phones the patched cue blur is a scroll-driven animation on .scroll-float. The baseline only has the idle bob there (transform)."
+      "why": "On phones the patched cue blur is a scroll-driven animation on .scroll-float. The baseline only has the idle bob there (transform).",
+      "name": "hero-exit-blur"
     },
     "copyOpacityAnimations": {
       "kind": "animations",
       "selector": ".hero-copy",
-      "props": ["opacity"],
+      "props": [
+        "opacity"
+      ],
       "state": "any",
-      "why": "On phones the baseline .hero-copy has animation none (opacity comes from --exit-opacity). The patched exit is a scroll-driven opacity animation."
+      "why": "Counts only the patch exit animation (name filter). A selector-only count was flaky (3 vs 0): the baseline copy has other opacity animations inside it.",
+      "name": "hero-exit-copy"
     }
   },
   "mechanism": [
@@ -92,19 +98,63 @@
     {
       "viewport": "mobile",
       "segment": "hero",
-      "classes": [".hero", ".scroll-cue"],
-      "props": [[".hero-copy", "opacity", 0.01], [".mobile-deck .is-e", "opacity", 0.01], [".hero", "pointer-events"]],
+      "classes": [
+        ".hero",
+        ".scroll-cue"
+      ],
+      "props": [
+        [
+          ".hero-copy",
+          "opacity",
+          0.01
+        ],
+        [
+          ".mobile-deck .is-e",
+          "opacity",
+          0.01
+        ],
+        [
+          ".hero",
+          "pointer-events"
+        ]
+      ],
       "why": "The cue fade moves from .scroll-cue to .scroll-float on phones, so its opacity is compared in the README visual check (product of both), not here."
     },
     {
       "viewport": "desktop",
       "segment": "hero",
-      "classes": [".hero", ".orbit"],
-      "props": [[".hero-copy", "opacity", 0.01], [".scroll-cue", "opacity", 0.01], [".orbit .orbit-card", "opacity", 0.01], [".hero", "pointer-events"]]
+      "classes": [
+        ".hero",
+        ".orbit"
+      ],
+      "props": [
+        [
+          ".hero-copy",
+          "opacity",
+          0.01
+        ],
+        [
+          ".scroll-cue",
+          "opacity",
+          0.01
+        ],
+        [
+          ".orbit .orbit-card",
+          "opacity",
+          0.01
+        ],
+        [
+          ".hero",
+          "pointer-events"
+        ]
+      ]
     }
   ],
   "gain": {
-    "scenario": { "viewport": "mobile", "segment": "hero" },
+    "scenario": {
+      "viewport": "mobile",
+      "segment": "hero"
+    },
     "metric": "styleLayoutMs",
     "direction": "lower",
     "device": "chrome",
@@ -116,31 +166,60 @@
       "id": "hero-exit-scroll-timeline/01",
       "variant": "variants/01.diff",
       "device": "iphone",
-      "expect": { "parity": "fail", "gain": "broke" },
+      "expect": {
+        "parity": "fail",
+        "gain": "broke"
+      },
       "why": "v1 keyframes used animated custom properties: on Safari 26 the cue stayed at opacity 0 (P3). Chrome parity likely passes, so this needs the iPhone."
     },
     {
       "id": "hero-exit-scroll-timeline/02",
       "variant": "variants/02.diff",
-      "expect": { "mech": "pass", "parity": "pass" },
+      "expect": {
+        "mech": "pass",
+        "parity": "pass"
+      },
       "why": "v2 with the original local names, functionally the same as 04."
     },
     {
       "id": "hero-exit-scroll-timeline/04",
       "variant": "variants/04.diff",
-      "expect": { "mech": "pass", "parity": "pass", "gain": "better" },
+      "expect": {
+        "mech": "pass",
+        "parity": "pass",
+        "gain": "better"
+      },
       "why": "v2 on the plain baseline (the measured n=3 A/B)."
     },
     {
       "id": "hero-exit-scroll-timeline/06",
       "variant": "variants/06.diff",
-      "expect": { "mech": { "cue-exit-animated-mobile": "fail" }, "gain": "broke" },
+      "expect": {
+        "mech": {
+          "cue-exit-animated-mobile": "fail"
+        },
+        "gain": "broke"
+      },
       "why": "No exit blur, a visual change on purpose (attribution only). The cue filter animation is missing."
+    },
+    {
+      "id": "hero-exit-scroll-timeline/10",
+      "variant": "variants/10.diff",
+      "expect": {
+        "mech": "pass",
+        "parity": "pass",
+        "gain": "better"
+      },
+      "why": "P3: 09 plus the people-o snap and clip-path reveal on phones (F-032). Hero checks unchanged, heading layouts during the expand 25-30 per step to 0-4."
     },
     {
       "id": "hero-exit-scroll-timeline/09",
       "variant": "final",
-      "expect": { "mech": "pass", "parity": "pass", "gain": "better" },
+      "expect": {
+        "mech": "pass",
+        "parity": "pass",
+        "gain": "better"
+      },
       "why": "v2 restacked on aw1-10c (patch.diff). The gain is still to be measured on the iPhone hero window and Chrome."
     }
   ]
