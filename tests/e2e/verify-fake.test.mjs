@@ -54,7 +54,7 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
   const pa = nodeAsync(VERIFY, A.args('vtest'), { env: A.env });
   const pb = nodeAsync(VERIFY, B.args('nolock', ['--no-lock']), { env: B.env });
   let seen = null;
-  for (let i = 0; i < 200 && !seen; i++) { seen = holder(A.env.FW_STATE_DIR); await sleep(50); }
+  for (let i = 0; i < 1000 && !seen; i++) { seen = holder(A.env.FW_STATE_DIR); await sleep(10); }
   const [ra, rb] = await Promise.all([pa, pb]);
   assert.equal(ra.code, 0, ra.out);
   assert.equal(rb.code, 0, rb.out);
@@ -106,11 +106,15 @@ test('one mobile run: result JSON shape + exact summaries, emulation settings, l
 
   const log = readLog(A.env.FAKE_CHROME_LOG);
   const cmd = (m) => log.filter((l) => l.method === m).map((l) => l.params);
-  // idle window: throttled, no input, 6 s, directly before the unchanged scroll + morph phases
+  // idle window: throttled, no input, 6 s, directly before the unchanged scroll + morph phases. Under a
+  // stubbed host verify waits on the stub's clock (I-027): 6 s there, no wall time here; the host record
+  // measures the window on that clock (on a real host: Date.now + setTimeout as before, tests/chrome)
   const st = steps(log);
   assert.deepEqual(st.map((x) => x.s), ['state', 'cpu 3', 'reset', 'collect', ...SCROLL_MORPH]);
+  const idleWin = r.host.phases.idle.windowSec;
+  assert.ok(idleWin >= 6 && idleWin < 6.5, `idle window ${idleWin} s on the host clock`);
   const idleMs = st[3].t - st[2].t;
-  assert.ok(idleMs >= 5900 && idleMs < 9000, `idle window lasted ${idleMs} ms`);
+  assert.ok(idleMs < 1000, `the idle window took ${idleMs} ms of wall time under the fake host`);
   assert.ok(st[4].t - st[3].t < 1000, 'scroll phase starts right after the idle window');
   assert.deepEqual(cmd('Emulation.setCPUThrottlingRate'), [{ rate: 3 }, { rate: 1 }]);
   assert.deepEqual(cmd('Emulation.setDeviceMetricsOverride'), [{ width: 430, height: 932, deviceScaleFactor: 3, mobile: true }]);
@@ -210,7 +214,9 @@ test('a forged or stale FW_LOCK_HELD token does not let verify past someone else
 
 test('SIGTERM mid-run: lock released and the browser does not outlive verify.mjs', async () => {
   const { env, args } = setup();
-  const v = await startProc(process.execPath, [VERIFY, ...args('killed')], { env, ready: (s) => /\[mobile run 1\/1\]/.test(s) });
+  // Chrome never answers the throttle command, so verify is mid-run when the signal comes (I-027: a fake
+  // run no longer spends seconds in sleeps, so without it the run could end before the SIGTERM)
+  const v = await startProc(process.execPath, [VERIFY, ...args('killed')], { env: { ...env, FAKE_CHROME_HANG_AT: 'Emulation.setCPUThrottlingRate' }, ready: (s) => /\[mobile run 1\/1\]/.test(s) });
   // Chrome starts after the host recheck before run 1 (I-023)
   let started;
   for (let i = 0; i < 200 && !(started = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === '(started)')); i++) await sleep(50);
@@ -229,7 +235,7 @@ test('SIGTERM without an own lock hold (re-entered `lock.mjs run` hold, test:chr
   // lib/lock.mjs installs its signal handlers only for an own process hold; verify.mjs installs its own
   // so the exit handlers (Chrome tree kill) run (test:chrome on 48ace89 left 11 Chrome processes)
   const { env, args } = setup();
-  const v = await startProc(process.execPath, [VERIFY, ...args('nolock', ['--no-lock'])], { env, ready: (s) => /\[mobile run 1\/1\]/.test(s) });
+  const v = await startProc(process.execPath, [VERIFY, ...args('nolock', ['--no-lock'])], { env: { ...env, FAKE_CHROME_HANG_AT: 'Emulation.setCPUThrottlingRate' }, ready: (s) => /\[mobile run 1\/1\]/.test(s) });
   let started;
   for (let i = 0; i < 200 && !(started = readLog(env.FAKE_CHROME_LOG).find((l) => l.method === '(started)')); i++) await sleep(50);
   assert.ok(alive(started.pid));

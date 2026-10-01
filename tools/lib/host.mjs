@@ -311,10 +311,14 @@ export function classifyRun(rec = {}, t = THRESHOLDS) {
 
 export function pressureName(p) { return p == null ? 'unknown' : p <= 1 ? 'normal' : p < 4 ? 'warn' : 'critical'; }
 
-/** The samplers' monotonic clock and sleep (a stubbed host's fake clock in tests): {mono(), sleep(ms)}. */
+/**
+ * The samplers' monotonic clock and sleep (a stubbed host's fake clock in tests): {mono(), sleep(ms), stub}.
+ * `stub` is the $FW_TEST_HOST module path when the host is stubbed, else undefined (verify.mjs runs its
+ * measurement waits on this clock only then, I-027).
+ */
 export async function hostClock({ samplers } = {}) {
-  const { s } = await resolveSamplers(samplers);
-  return { mono: () => s.mono(), sleep: (ms) => s.sleep(ms) };
+  const { s, stub } = await resolveSamplers(samplers);
+  return { mono: () => s.mono(), sleep: (ms) => s.sleep(ms), stub };
 }
 
 /** {cpus, model, loadavg} of the host (through the samplers, so a stubbed host stays stubbed). */
