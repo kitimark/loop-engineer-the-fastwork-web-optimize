@@ -29,11 +29,23 @@ export const SPARSE_PATTERNS = ['/*', '!/site/', '!/site-pretty/'];
 export const ALLOW_ENV = 'FW_BASELINE_ALLOW_MODIFIED';
 export const EXIT_BASELINE = 3;
 
+/** How long one git call of the check may take (ms): verify.mjs re-checks between runs while it holds the
+ *  lock, so a hung git (a stuck index.lock, a slow disk) must not block it past its I-023 watchdog. */
+export const GIT_TIMEOUT_MS = 10000;
 /** git in `cwd`; never takes optional locks (index refresh), so checking the main checkout can't
- *  collide with the lead's git commands there. */
+ *  collide with the lead's git commands there. Killed after GIT_TIMEOUT_MS ({ok: false, timedOut: true}). */
 export function git(cwd, args) {
-  const r = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }, maxBuffer: 1 << 28 });
-  return { ok: r.status === 0, out: (r.stdout || '').replace(/\n$/, ''), err: (r.stderr || '').trim() };
+  const timeout = Number(process.env.FW_BASELINE_GIT_TIMEOUT_MS) || GIT_TIMEOUT_MS; // tests shorten it
+  const r = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }, maxBuffer: 1 << 28, timeout, killSignal: 'SIGKILL' });
+  const timedOut = r.error?.code === 'ETIMEDOUT';
+  return { ok: r.status === 0 && !r.error, out: (r.stdout || '').replace(/\n$/, ''), err: timedOut ? `timed out after ${timeout} ms` : (r.stderr || r.error?.message || '').trim(), ...(timedOut ? { timedOut: true } : {}) };
+}
+class GitTimeout extends Error {}
+/** git for baselineStatus: a timeout aborts the check (state "timeout"), any other failure is the caller's. */
+function gitChecked(cwd, args) {
+  const r = git(cwd, args);
+  if (r.timedOut) throw new GitTimeout(`git ${args.slice(0, 2).join(' ')} in ${cwd}: ${r.err}`);
+  return r;
 }
 const real = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
 
@@ -98,9 +110,21 @@ const RESTORE = (where) => `git -C ${where} restore --source=HEAD --staged --wor
 /**
  * Where the baseline of this checkout comes from and whether it is the pinned snapshot.
  * Returns {state, ok, snapshot, pin, homes, message}; state is one of
- *   ok | unpinned | override | bad-pin | missing | untracked | mismatch | modified.
+ *   ok | unpinned | override | bad-pin | missing | untracked | mismatch | modified | timeout
+ * (timeout: a git call of the check did not answer within GIT_TIMEOUT_MS; not usable, never a crash).
  */
 export function baselineStatus({ repo = REPO, env = process.env } = {}) {
+  try {
+    return checkStatus({ repo, env });
+  } catch (e) {
+    if (!(e instanceof GitTimeout)) throw e;
+    const raw = readPin(repo);
+    const pin = raw && !raw.error ? raw : null;
+    return { state: 'timeout', ok: false, snapshot: pin?.snapshot ?? null, pin, homes: [], message: `BASELINE-TIMEOUT: could not check the baseline: ${e.message}. Is a git command stuck in that checkout (index.lock)? Retry; report an incident (class env) if it persists.` };
+  }
+}
+function checkStatus({ repo, env }) {
+  const git = gitChecked;
   const raw = readPin(repo);
   const pin = raw && !raw.error ? raw : null;
   const res = (state, ok, message, extra = {}) => ({ state, ok, snapshot: pin?.snapshot ?? null, pin, message, ...extra });
@@ -171,13 +195,15 @@ export const CLEAN_STATES = new Set(['ok', 'unpinned', 'override']);
  * The verdict prefix for a measurement that started on baseline status `start` and ended on `end`
  * (a fresh baselineStatus() at the end of a run): null when both are clean and the same snapshot;
  * BASELINE-<STATE> when it did not measure the pinned snapshot (FW_BASELINE_ALLOW_MODIFIED=1) or the
- * baseline changed under it (a re-mirror mid-A/B); BASELINE-CHANGED when it changed to another clean
- * state (a re-pin). fix.mjs ab and bench.mjs prefix every verdict with it, like CONTAMINATED (host).
+ * baseline changed under it (a re-mirror mid-A/B; BASELINE-TIMEOUT when the re-check's git hung);
+ * BASELINE-REPINNED when it changed to another clean state (a new pin landed mid-run). Not to be confused
+ * with bench.mjs's BASELINE-CHANGED (a patch.diff made on another mirror). fix.mjs ab and bench.mjs
+ * prefix every verdict with it, like CONTAMINATED (host).
  */
 export function baselineTag(start, end = start) {
   if (!CLEAN_STATES.has(start.state)) return `BASELINE-${String(start.state).toUpperCase()}`;
   if (!end || (end.state === start.state && end.snapshot === start.snapshot)) return null;
-  return CLEAN_STATES.has(end.state) ? 'BASELINE-CHANGED' : `BASELINE-${String(end.state).toUpperCase()}`;
+  return CLEAN_STATES.has(end.state) ? 'BASELINE-REPINNED' : `BASELINE-${String(end.state).toUpperCase()}`;
 }
 
 export { mainCheckout };

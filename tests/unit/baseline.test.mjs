@@ -236,7 +236,29 @@ test('baselineTag: the verdict prefix for a measurement that did not stay on the
   // changed during the run: a re-mirror (modified), a re-pin (another clean snapshot), the pin removed
   assert.equal(baselineTag(S('ok'), S('modified')), 'BASELINE-MODIFIED');
   assert.equal(baselineTag(S('ok'), S('missing')), 'BASELINE-MISSING');
-  assert.equal(baselineTag(S('ok'), S('ok', 'b2-bbbbbbbb')), 'BASELINE-CHANGED');
-  assert.equal(baselineTag(S('ok'), S('unpinned', null)), 'BASELINE-CHANGED');
+  // a new pin mid-run: REPINNED, not bench.mjs's BASELINE-CHANGED (a patch made on another mirror; review-snapshot-fu)
+  assert.equal(baselineTag(S('ok'), S('ok', 'b2-bbbbbbbb')), 'BASELINE-REPINNED');
+  assert.equal(baselineTag(S('ok'), S('unpinned', null)), 'BASELINE-REPINNED');
+  assert.equal(baselineTag(S('ok'), S('timeout')), 'BASELINE-TIMEOUT');
   assert.equal(baselineTag(S('ok'), null), null, 'no end status: only the start counts');
+});
+
+test('a hung git in the check: state "timeout" after FW_BASELINE_GIT_TIMEOUT_MS, flagged, never a crash or a hang', () => {
+  // a fake git first on PATH: `git status` hangs (a stuck index.lock, a slow disk), everything else is the real git
+  const realGit = run('sh', ['-c', 'command -v git']).stdout.trim();
+  const bin = tempDir('fw-hung-git-');
+  writeFileSync(join(bin, 'git'), `#!/bin/sh\ncase " $* " in *" status "*) exec sleep 30;; esac\nexec ${realGit} "$@"\n`, { mode: 0o755 });
+  const t0 = Date.now();
+  // 3 s, not less: under the pre-commit suite's load a real git call can take ~1 s and must not time out first
+  const s = probe(repo.main, { PATH: `${bin}:${process.env.PATH}`, FW_BASELINE_GIT_TIMEOUT_MS: '3000' });
+  assert.ok(Date.now() - t0 < 25000, `returned after ${Date.now() - t0} ms`);
+  assert.equal(s.state, 'timeout');
+  assert.equal(s.ok, false);
+  assert.equal(s.snapshot, pinOf(repo.main).snapshot);
+  assert.match(s.message, /^BASELINE-TIMEOUT: could not check the baseline: git status .* timed out after 3000 ms/);
+  const src = `const b = await import(${JSON.stringify(join(repo.main, 'tools/lib/baseline.mjs'))});
+    console.log(b.GIT_TIMEOUT_MS, b.baselineTag({ state: 'ok', snapshot: 'x' }, b.baselineMeta(b.baselineStatus())));`;
+  const r = run(process.execPath, ['--input-type=module', '-e', src], { cwd: repo.main, env: { PATH: `${bin}:${process.env.PATH}`, FW_BASELINE_GIT_TIMEOUT_MS: '3000' } });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stdout.trim(), '10000 BASELINE-TIMEOUT', 'default 10 s; a run whose re-check hung is flagged');
 });
