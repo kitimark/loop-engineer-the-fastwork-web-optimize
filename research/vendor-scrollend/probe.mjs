@@ -72,7 +72,7 @@ const HOOK = `(() => {
   const foreign = (u) => { try { const x = new URL(String(u), location.href); return x.origin !== location.origin ? x.href : null; } catch { return null; } };
   const rec = (kind, u, body) => { if (String(u).indexOf('/__mirror/null?h=') === 0) u = 'https://' + decodeURIComponent(String(u).split('h=')[1]) + '/'; const f = foreign(u); if (!f) return; const b = body == null ? '' : typeof body === 'string' ? body : (body instanceof URLSearchParams ? body.toString() : '[' + (body && body.constructor && body.constructor.name) + ']');
     const e = { kind, url: f, body: b.slice(0, 4000), t: Math.round(performance.now()) }; L.hits.push(e); console.debug('__N11HIT__' + JSON.stringify(e)); };
-  const mark = (ev) => { const e = { ev: '(' + ev + ')', t: Math.round(performance.now()), y: Math.round(scrollY) }; L.dl.push(e); console.debug('__N11DL__' + JSON.stringify(e)); };
+  const mark = (ev) => { try { localStorage.setItem('n11dbg', (localStorage.getItem('n11dbg') || '') + '|hook ' + ev + '@' + Math.round(performance.now())); } catch (e) {} const e = { ev: '(' + ev + ')', t: Math.round(performance.now()), y: Math.round(scrollY) }; L.dl.push(e); console.debug('__N11DL__' + JSON.stringify(e)); };
   document.addEventListener('visibilitychange', () => mark('visibility:' + document.visibilityState), true);
   window.addEventListener('pagehide', () => mark('pagehide'), true);
   const wrapProp = (obj, name, kind, pick) => { let cur = obj[name]; const cache = new WeakMap();
@@ -182,13 +182,15 @@ async function scenario(cdp, v, url, sc, profile, hook = true) {
   // leave the page: visibilitychange(hidden) + pagehide, the vendors' unload flush
   await page.send('Page.navigate', { url: 'about:blank' });
   await sleep(1200);
+  let afterLeave = null;
+  if (v.label === '02-debug') { await page.send('Page.navigate', { url: url + 'robots.txt' }); await sleep(800); afterLeave = await step('afterLeave', page.eval("localStorage.getItem('n11dbg')"), 10000).catch((e) => String(e)); log('  localStorage n11dbg: ' + afterLeave); }
   await page.close();
   // a request passes several stacked fetch wrappers (shim, vendors): the hook can see it twice; count it once
   { const seen = new Set(); for (let i = hits.length - 1; i >= 0; i--) { const k = hits[i].url + '\u0000' + hits[i].body + '\u0000' + hits[i].t; if (seen.has(k)) hits.splice(i, 1); else seen.add(k); } }
   const events = hits.flatMap((h) => gaEvents(h).map((e) => ({ ...e, t: h.t, kind: h.kind, afterLeave: hits.indexOf(h) >= hitsBeforeLeave })));
   const hosts = {}; for (const h of hits) { const k = h.kind + ' ' + new URL(h.url).host; hosts[k] = (hosts[k] || 0) + 1; }
   return { variant: v.label, scenario: sc, listeners: ls, scroll, scrollDepthPushes: dl.filter((e) => e.ev === 'gtm.scrollDepth'), dlEvents: dl.map((e) => e.ev), dlBeforeLeave,
-    gaEvents: events, hitHosts: hosts, shimNeutered: shim, errors: [...new Set(errors)].slice(0, 10), profile: prof };
+    afterLeave, gaEvents: events, hitHosts: hosts, shimNeutered: shim, errors: [...new Set(errors)].slice(0, 10), profile: prof };
 }
 
 function attribute(prof) {

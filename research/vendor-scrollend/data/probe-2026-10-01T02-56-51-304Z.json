@@ -1,0 +1,359 @@
+{
+ "tool": "research/vendor-scrollend/probe.mjs",
+ "cpu": 1,
+ "tailS": 4,
+ "startedAt": "2026-10-01T02:56:51.305Z",
+ "host": {
+  "load1Before": 1.77734375,
+  "load1After": 2.1640625,
+  "cpuIdlePct": 77.4
+ },
+ "runs": [
+  {
+   "variant": "base",
+   "scenario": "load-no-hook",
+   "loc": {
+    "href": "https://localhost:59781/",
+    "h": 6240,
+    "kit": true,
+    "dl": 6
+   }
+  },
+  {
+   "variant": "02-debug",
+   "scenario": "D",
+   "listeners": [
+    "pagehide :8 capture",
+    "pagehide /analytics.js:97 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /analytics.js:157",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /analytics.js:157"
+   ],
+   "scroll": {
+    "y": 5344.5,
+    "t": 7960
+   },
+   "scrollDepthPushes": [],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "(dbg wrapper scrollend pending=0)",
+    "view_section",
+    "(pagehide)",
+    "(visibility:hidden)"
+   ],
+   "dlBeforeLeave": 8,
+   "gaEvents": [],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "02-debug",
+   "scenario": "B",
+   "listeners": [
+    "pagehide :8 capture",
+    "pagehide /analytics.js:97 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /analytics.js:157",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /analytics.js:157"
+   ],
+   "scroll": {
+    "y": 5344.5,
+    "t": 4006,
+    "hidden": {
+     "vis": "visible",
+     "dl": [
+      {
+       "ev": "gtm.dom",
+       "t": 742,
+       "y": 0
+      },
+      {
+       "ev": "view_section",
+       "t": 877,
+       "y": 0
+      },
+      {
+       "ev": "gtm.load",
+       "t": 1075,
+       "y": 0
+      },
+      {
+       "ev": "view_section",
+       "t": 3727,
+       "y": 5308
+      },
+      {
+       "ev": "gtm.scrollDepth",
+       "t": 5251,
+       "y": 5345
+      }
+     ],
+     "hits": 4
+    }
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 5251,
+     "y": 5345
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "(dbg wrapper scrollend pending=0)",
+    "view_section",
+    "(dbg runPending undefined pending=1 timer=0)",
+    "gtm.scrollDepth",
+    "(dbg call ok)",
+    "(pagehide)",
+    "(visibility:hidden)"
+   ],
+   "dlBeforeLeave": 11,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 5259,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "02-idle",
+   "scenario": "B",
+   "listeners": [
+    "pagehide :8 capture",
+    "pagehide /analytics.js:96 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /analytics.js:153",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /analytics.js:153"
+   ],
+   "scroll": {
+    "y": 5344.5,
+    "t": 7962,
+    "hidden": {
+     "vis": "visible",
+     "dl": [
+      {
+       "ev": "gtm.dom",
+       "t": 2821,
+       "y": 0
+      },
+      {
+       "ev": "view_section",
+       "t": 2988,
+       "y": 0
+      },
+      {
+       "ev": "gtm.load",
+       "t": 5035,
+       "y": 0
+      },
+      {
+       "ev": "view_section",
+       "t": 7681,
+       "y": 5308
+      },
+      {
+       "ev": "gtm.scrollDepth",
+       "t": 9220,
+       "y": 5345
+      }
+     ],
+     "hits": 4
+    }
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 9220,
+     "y": 5345
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "view_section",
+    "gtm.scrollDepth",
+    "(pagehide)",
+    "(visibility:hidden)"
+   ],
+   "dlBeforeLeave": 8,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 9228,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "profile": null
+  },
+  {
+   "variant": "base",
+   "scenario": "B",
+   "listeners": [
+    "pagehide :8 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "visibilitychange /__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 capture",
+    "pagehide /__vendor/www.googletagmanager.com/gtm.js:374",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:457",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:881",
+    "pagehide /__vendor/www.googletagmanager.com/gtag/js:866",
+    "pagehide /__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2",
+    "resize /_app/immutable/nodes/2.DyWL8TcE.js:2667 passive",
+    "resize /__vendor/www.googletagmanager.com/gtag/js:903",
+    "visibilitychange /_app/immutable/chunks/CzkAa0og.js:1262",
+    "scrollend /__vendor/www.googletagmanager.com/gtag/js:903"
+   ],
+   "scroll": {
+    "y": 5344.5,
+    "t": 4163,
+    "hidden": {
+     "vis": "visible",
+     "dl": [
+      {
+       "ev": "gtm.dom",
+       "t": 748,
+       "y": 0
+      },
+      {
+       "ev": "view_section",
+       "t": 885,
+       "y": 0
+      },
+      {
+       "ev": "gtm.load",
+       "t": 1240,
+       "y": 0
+      },
+      {
+       "ev": "gtm.scrollDepth",
+       "t": 3872,
+       "y": 5308
+      },
+      {
+       "ev": "view_section",
+       "t": 3887,
+       "y": 5308
+      }
+     ],
+     "hits": 4
+    }
+   },
+   "scrollDepthPushes": [
+    {
+     "ev": "gtm.scrollDepth",
+     "t": 3872,
+     "y": 5308
+    }
+   ],
+   "dlEvents": [
+    "gtm.js",
+    "set_user",
+    "page_view",
+    "gtm.dom",
+    "view_section",
+    "gtm.load",
+    "gtm.scrollDepth",
+    "view_section",
+    "(pagehide)",
+    "(visibility:hidden)"
+   ],
+   "dlBeforeLeave": 8,
+   "gaEvents": [
+    {
+     "en": "scroll",
+     "pct": "90",
+     "t": 3879,
+     "kind": "fetch",
+     "afterLeave": false
+    }
+   ],
+   "hitHosts": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "shimNeutered": {
+    "fetch sr-client-cfg.amplitude.com": 2,
+    "fetch api2.amplitude.com": 1,
+    "fetch www.google-analytics.com": 1
+   },
+   "errors": [],
+   "profile": null
+  }
+ ],
+ "seconds": 50
+}
