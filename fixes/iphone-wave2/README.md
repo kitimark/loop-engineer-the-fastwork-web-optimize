@@ -539,3 +539,71 @@ Most > 50 ms frames sit in the hero window on every page.
 
 F-048 holds: `linear()` easing freezes during the block, while cubic-bezier and keyframe-sampled animations keep
 moving. Posted as F-080, CONFIRMED for iOS 26.x by device plus source (F-065: KeyframeEffect.cpp canBeAccelerated rejects linear() points; PlatformCAAnimationCocoa.mm toCAMediaTimingFunction takes only cubic-bezier or identity linear; oss-rendering-libs.md §1.3).
+
+### 4k. P11 Block A (P-028): aw1-10e vs aw1-cq3, W + Timeline (15:13-15:20Z)
+
+- Arms: C = aw1-10e (:5497), V = aw1-cq3 (CSS 8b96dc588847, :5495).
+- Driver: W 430x775, 6 s idle at y 0, then top to 2900. Timeline depth 8 on every counted run (F-047).
+- Order: C V V C C V V C, then one lc-base Timeline run (L9, for P12).
+- Sentinels (S, Timeline off, on C): open 57.8 scroll / 60.0 bottom, end 57.9 / 60.2. Both pass.
+- Readout: `raw/p11an.mjs`, run over `p11-*.json` (in `raw/`) plus `p11-*.tl.json`. The `.tl.json` files are about
+  2.4 MB each and stay in `out/iphone-runner/`.
+- Raw files in this write-up have the LAN host replaced by `LAN` (from this commit on, older files included).
+
+| run | rebuild frame (y) | Layouts in that frame (ms) | of them nested in RecalcStyles | scroll phase nested | >30/>34/>38 | >46/>50/>54 |
+|---|---|---|---|---|---|---|
+| C1 | 127 ms (1979) | 6 (25.9) | 2 (24.6) | 35 (28.6 ms) | 12/8/7 | 3/3/3 |
+| V2 | 107 (1973) | 3 (33.4) | 0 | 0 | 9/7/3 | 1/1/1 |
+| V3 | 108 (1984) | 3 (34.0) | 0 | 0 | 12/5/3 | 2/1/1 |
+| C4 | 108 (1971) | 6 (35.4) | 2 (22.4) | 40 (38.8) | 8/7/4 | 1/1/1 |
+| C5 | 101 (1966) | 7 (35.9) | 2 (22.1) | 39 (38.3) | 12/6/6 | 3/1/1 |
+| V6 | 102 (1965) | 4 (21.9) | 0 | 0 | 8/7/5 | 3/2/1 |
+| V7 | 102 (1975) | 4 (33.5) | 0 | 0 | 10/9/5 | 2/1/1 |
+| C8 | 107 (1961) | 5 (34.5) | 2 (21.6) | 40 (38.0) | 10/7/6 | 3/1/1 |
+| L9 lc-base | 54 (2681) | 4 (43.2) | 2 (27.4) | 40 (44.0) | 15/9/5 | 1/1/0 |
+
+- cq3 removes the Layout nested in style recalc: 0 in every V run, against 2 per rebuild frame and 35-40 per scroll in C.
+  The same Layout cost still runs in the same frame, though. The edge frame stays at ≥101 ms in 8/8 runs.
+- >50 and >34 are within noise. The >38 twin leans to V (C 23 vs V 16), so the call is threshold-sensitive.
+- fix-scroll-engine's reading (README 2e364d6): nested Layout gone = HIT, rebuild-frame Layout −1.5 ms = MISS, frame
+  dt NULL. Block B (lc-base vs lc-cq3) was skipped by the owner.
+
+### 4l. User sitting via the console (15:32-16:35Z)
+
+The first sitting through `tools/console.mjs`. Every user step was posted there; nothing went through the lead's chat.
+
+- **Swipe pair 3 (C-001, 15:44-15:48Z):** a full redo of both pages. Answer "same", with the note "hero quite
+  smoother a little bit on page 2, overall, i think they're same".
+  - Key, unsealed now: page 1 = C mw10e-g (:5537), page 2 = V mw10e-g-cdwc (:5529).
+  - All three pairs: the C/C catch "same", V/C "almost same", C/V "same". The cdwc fix is NOT FELT in free swipes.
+  - Recordings `raw/finger/sw-p3-{1,2}-redo.json`. Moving frames >34/>50: 54/11 vs 65/13 (finger run, info only, F-071).
+  - Phone 41.2 / 38.5 °C.
+- **F-v3 run 1 (C-002, set 1, the user, 15:49-15:59Z):** answer "done". Saved as `fv3-set1.json`. LPM off; the toolbar
+  was collapsed at the end. de-unknowns-ux scores it.
+- **F-v3 run 2 (C-004, set 2, a SECOND TESTER, not the user, 16:12-16:33Z):** answer "done".
+  - The tester reloaded once by accident and redid every question.
+  - The saved session starts at 16:21:39Z, after the reload, and holds trials 0-11 once each, so there are no
+    pre-reload partials.
+  - Saved as `fv3-set2.json`. Score it separately from the user's run.
+- **USB drops:** both times, within seconds of an F-v3 answer, the phone dropped off USB (15:59-16:09Z, 16:33-16:35Z).
+  The iwdp device list was empty and WDA was unreachable. The user re-plugged both times (C-003, C-005). Both results
+  were read from the un-reloaded tab. Logged as I-040 (env).
+- The F-v3 result files are not committed here: each is about 1 MB and is de-unknowns-ux's data. They stay in
+  `out/iphone-runner/`.
+
+### 4m. P-032 G block, attempt 1 (16:52-17:04Z): void, WDA actions timeouts (I-042)
+
+The block was hook-free: C aw1-10e (:5497) vs V mw10e-cdwc (:5492), driver G (`finger-protocol-v1.json`).
+
+- The S-open sentinel (Timeline off, C) reached 56.9 fps, scroll ≥44 ok.
+- Every gesture run aborted with "WDA POST /actions: timed out after ~15.9 s":
+  - warm-ups C and V, and C3: at the drag-into-end stroke;
+  - C1 and C2: at stroke 1;
+  - C4: killed at its start, when I stopped the block.
+- Per-stroke WDA time was 8-15 s for gestures with 0.3-0.9 s of contact (C3: 9.2, 14.7, 11.1, 15.0, 2.3 for the fling,
+  6.4, 13.3, then 12.7-14.4 s). The run aborts at the first stroke that passes the limit.
+- WDA `/status` answered in 4 ms, ready, and `activeAppInfo` showed Safari, so the slowness is in the actions endpoint
+  only. Cause UNRESOLVED (I-042).
+- The phone warmed from 31.9 to 40.1 °C over the block.
+- No counted run is valid. Per the lead, these runs do not count against P-032's 2-block cap.
+- The gesture JSON stays in `out/` (lead ruling: no gesture records committed until N1 lands).

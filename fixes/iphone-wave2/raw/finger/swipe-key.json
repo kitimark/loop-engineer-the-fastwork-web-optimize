@@ -1,0 +1,3 @@
+{"test":"swipe A/B countdown fix (blind, private key until all picks are in)","decided":"2026-10-01T14:00Z by iphone-runner (presentation order shuffled from the lead's pairs)",
+ "C":"mw10e-g on aw1-10e (JS 22efa0ab69ba / CSS c6aad94b455f), ports 5521 and 5537","V":"mw10e-g-cdwc on aw1-10e (JS 22efa0ab69ba / CSS 5dc6e8e37388), port 5529",
+ "pairs":{"1":{"kind":"catch C/C","page1":"C :5521","page2":"C :5537"},"2":{"kind":"V/C (lead's pair 2)","page1":"V :5529","page2":"C :5521"},"3":{"kind":"C/V (lead's pair 1)","page1":"C :5537","page2":"V :5529"}}}
