@@ -40,6 +40,17 @@ test('redact: known ids and id-shaped strings are replaced; the rest of an xcode
   assert.equal(redact('device 000081300011223344556677', KNOWN), 'device <udid>');
 });
 
+test('redact: ECID / UniqueChipID and serial numbers; a generic device name is not a secret (review-gesture-2)', () => {
+  const dump = 'UniqueChipID: 1234567890123456\necid: 0x001A2B3C4D5E6F70\nECID="0x1A2B3C4D5E6F"\nSerialNumber: F2LZK0ABCDEF\nserial number = DMPXY12AB3CD\nunlabelled C02ZK1ABMD6R here';
+  const r = redact(dump);
+  for (const s of [/1234567890123456/, /001A2B3C4D5E6F70/, /1A2B3C4D5E6F/, /F2LZK0ABCDEF/, /DMPXY12AB3CD/, /C02ZK1ABMD6R/]) assert.doesNotMatch(r, s, r);
+  assert.match(r, /^UniqueChipID: <ecid>\necid: <ecid>\nECID="<ecid>"\nSerialNumber: <serial>\nserial number = <serial>\nunlabelled <serial> here$/);
+  // the factory default name (or a bare model) is left alone: replacing it would scrub every "iPhone" in a message
+  for (const n of ['iPhone', 'iPhone 15 Pro Max', 'iPad', 'iPad Air']) assert.equal(redact('iPhone 15 Pro Max, iOS 26.6.1 Safari on an iPhone', { deviceName: n }), 'iPhone 15 Pro Max, iOS 26.6.1 Safari on an iPhone', n);
+  // a chosen name is replaced case-sensitively only: "kitchen phone 7" in other words stays
+  assert.equal(redact('Kitchen Phone 7 / kitchen phone 7', { deviceName: 'Kitchen Phone 7' }), '<device-name> / kitchen phone 7');
+});
+
 test('redact leaves the tools\' own output alone: paths, URLs, hashes, ids of the study, numbers', () => {
   const keep = [
     'WDA_BUILT /Users/x/.cache/fw-wda/DerivedData/Build/Products/WebDriverAgentRunner_iphoneos26.6-arm64.xctestrun',
