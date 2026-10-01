@@ -21,7 +21,10 @@
 // rAF (every 16 ms), passive/non-passive listeners, performance.now()/mark, scrollTo, location.reload()
 // (a new document: new vm window, new target id). Options: --doc-height=N (default 6035: maxY 5220
 // collapsed), --prevent-at-end (a page touchmove handler that calls preventDefault at the end, like the
-// morph's scroll-jack), --foreground=<bundleId> for the fake WDA.
+// morph's scroll-jack), --foreground=<bundleId> for the fake WDA, --width=N (innerWidth, default 430; 932 is
+// landscape), --hide-after-strokes=N (document.visibilityState turns "hidden" after N strokes, as when another
+// app comes to the front), --jitter-at-end (near maxY the page runs a 60 px sawtooth, 1 px per 10 ms, and never
+// comes to rest, like a pin fight that does not stop).
 import http from 'node:http';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
@@ -67,6 +70,9 @@ async function evaluate(expr) {
 // ---- page model (--page / --wda-port) ------------------------------------------------------------------
 const PAGE = process.argv.includes('--page') || arg('wda-port') !== null;
 const DOC_H = Number(arg('doc-height') || 6035);
+const WIDTH = Number(arg('width') || 430);
+const HIDE_AFTER = arg('hide-after-strokes') === null ? Infinity : Number(arg('hide-after-strokes'));
+let hidden = false, strokesPlayed = 0;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let doc = null, momentum = null;
 function newDocument() {
@@ -74,8 +80,8 @@ function newDocument() {
   const listeners = [];
   let raf = [];
   const win = {
-    scrollY: 0, innerWidth: 430, innerHeight: 775,
-    document: { documentElement: { scrollHeight: DOC_H }, readyState: 'complete', get title() { return tab.title; } },
+    scrollY: 0, innerWidth: WIDTH, innerHeight: 775,
+    document: { documentElement: { scrollHeight: DOC_H }, readyState: 'complete', get title() { return tab.title; }, get visibilityState() { return hidden ? 'hidden' : 'visible'; } },
     location: { get href() { return tab.url; }, reload: () => { setTimeout(() => { tab.gen++; doc = newDocument(); log({ reloaded: tab.url, gen: tab.gen }); }, 100); } },
     performance: { now: () => performance.now() - t0, mark: () => {} },
     requestAnimationFrame: (cb) => { raf.push(cb); return raf.length; },
@@ -128,8 +134,12 @@ async function playStroke(body) {
     else if (a.type === 'pause') { await sleep(a.duration || 0); if (down) lastV = 0; }
     else if (a.type === 'pointerUp') { down = false; dispatch('touchend', { touches: 0, clientY: y }); if (Math.abs(lastV) > 0.3) startMomentum(lastV); }
   }
+  if (++strokesPlayed >= HIDE_AFTER) { hidden = true; log({ hidden: true, after: strokesPlayed }); }
 }
 if (PAGE) doc = newDocument();
+if (PAGE && process.argv.includes('--jitter-at-end')) { // a sawtooth: 1 px per 10 ms over maxY-59..maxY, never still for 100 ms
+  setInterval(() => { const w = doc?.win; if (!w || momentum) return; if (w.scrollY >= maxY(w) - 60) w.scrollY = maxY(w) - (Math.floor(Date.now() / 10) % 60); }, 8).unref?.();
+}
 
 // ---- minimal RFC 6455 server (text frames, close, ping) -----------------------------------------
 function frame(str) {

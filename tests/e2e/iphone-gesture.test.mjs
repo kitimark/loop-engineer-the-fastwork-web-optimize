@@ -171,6 +171,55 @@ test('runtime pull-to-refresh guard: a down stroke on a short page is refused be
   assert.ok(doc.run.segments[0].frames.length > 10, 'the recorder was read despite the abort');
 });
 
+test('pull guard: a down stroke waits for two still samples (momentum after a fling), then goes (review-gesture 5)', async () => {
+  const phone = await fakePhone();
+  const f = scriptFile([{ type: 'reload' }, S({}), S({ dir: 'down', px: 300, ms: 400, profile: 'still' })]);
+  lock('acquire', 'iphone', '--owner', 'me');
+  const out = join(phone.dir, 'still.json');
+  const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  const [fling, down] = JSON.parse(readFileSync(out, 'utf8')).run.strokes;
+  assert.equal(fling.guardY, null, 'an up stroke has no pull guard');
+  assert.equal(down.guardY.length, 2);
+  assert.ok(Math.abs(down.guardY[0] - down.guardY[1]) < 1 && down.guardY[0] >= 300, JSON.stringify(down));
+  assert.ok(down.stillWaitMs >= 500, `it waited for the fling's momentum to end: ${down.stillWaitMs} ms`);
+  assert.ok(down.sentAt - fling.returnedAt >= down.stillWaitMs);
+});
+
+test('pull guard: a page that never comes to rest is refused before the down stroke (review-gesture 5)', async () => {
+  const phone = await fakePhone(['--doc-height=1800', '--jitter-at-end']); // maxY 985 collapsed
+  const f = scriptFile([{ type: 'reload' }, S({}), { type: 'pause', ms: 300 }, S({}), { type: 'pause', ms: 300 }, S({ dir: 'down', px: 120, ms: 400, profile: 'still' })]);
+  lock('acquire', 'iphone', '--owner', 'me');
+  const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', join(phone.dir, 'jitter.json')], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /pull-to-refresh guard: s3 \(down 120 px\) the page did not come to rest in 5000 ms \(scrollY \d+ -> \d+\); nothing was sent/);
+  assert.equal(actionsCalls(phone.wda()).length, 2);
+});
+
+test('the page hidden mid-run (another app in front) stops before the next stroke (review-gesture 3)', async () => {
+  const phone = await fakePhone(['--hide-after-strokes=1']);
+  const f = scriptFile([{ type: 'reload' }, S({}), { type: 'pause', ms: 300 }, S({}), S({})]);
+  lock('acquire', 'iphone', '--owner', 'me');
+  const out = join(phone.dir, 'hidden.json');
+  const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /aborted: the page is not visible \(document\.visibilityState "hidden": Safari is no longer in front, or another tab is\): stopped before s2, nothing was sent/);
+  assert.equal(actionsCalls(phone.wda()).length, 1);
+  const doc = JSON.parse(readFileSync(out, 'utf8'));
+  assert.equal(doc.run.strokes.length, 1);
+  assert.ok(doc.run.segments[0].frames.length > 5, 'the recorder was read despite the abort');
+  assert.equal(phone.wda().at(-1).method, 'DELETE');
+});
+
+test('a landscape page (innerWidth != 430) is refused before the first stroke', async () => {
+  const phone = await fakePhone(['--width=932']);
+  lock('acquire', 'iphone', '--owner', 'me');
+  const r = await nodeAsync(IPHONE, ['gesture', scriptFile([S({})]), '--owner', 'me', '--out', join(phone.dir, 'land.json')], { env: phone.env, timeout: 30000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /the page is 932 px wide, the script is for 430 \(portrait\): rotated\? stopped before s1, nothing was sent/);
+  assert.equal(actionsCalls(phone.wda()).length, 0);
+});
+
 test('a lease lost mid-run stops before the next stroke', async () => {
   const phone = await fakePhone();
   const f = scriptFile([{ type: 'reload' }, { type: 'pause', ms: 6000 }, S({})]);

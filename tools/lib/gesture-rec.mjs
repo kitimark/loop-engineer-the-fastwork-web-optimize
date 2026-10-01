@@ -35,8 +35,9 @@ export const RECORDER_JS = `(() => {
 /** Mark the timeline (page clock); returns the page's performance.now(). */
 export const markJs = (name) => `(() => { const t = performance.now(); try { performance.mark(${JSON.stringify('fwg:' + name)}); } catch (e) {} if (window.__fwg && !window.__fwg.stop) window.__fwg.marks.push([Math.round(t * 10) / 10, ${JSON.stringify(name)}]); return t; })()`;
 
-/** [scrollY, maxY, innerHeight, performance.now()]: polled between strokes (until, pull guard, clock sync). */
-export const STATE_JS = `[Math.round(scrollY), document.documentElement.scrollHeight - innerHeight, innerHeight, Math.round(performance.now() * 10) / 10]`;
+/** [scrollY, maxY, innerHeight, performance.now(), document.visibilityState, innerWidth]: polled between strokes
+ *  (until, pull guard, clock sync) and before every stroke (visible? portrait?). */
+export const STATE_JS = `[Math.round(scrollY), document.documentElement.scrollHeight - innerHeight, innerHeight, Math.round(performance.now() * 10) / 10, document.visibilityState, innerWidth]`;
 
 /** Stop the recorder and return its buffer (JSON string), or null if it is not installed. */
 export const READ_JS = `(() => { const r = window.__fwg; if (!r) return null; r.stop = true; r.docH1 = document.documentElement.scrollHeight; r.t1 = Math.round(performance.now() * 10) / 10; return JSON.stringify(r); })()`;

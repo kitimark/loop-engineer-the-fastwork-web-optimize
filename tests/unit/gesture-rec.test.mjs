@@ -12,7 +12,7 @@ function fakeWindow() {
   const win = {
     scrollY: 0, innerWidth: 430, innerHeight: 775,
     location: { href: 'http://192.168.0.2:5441/' },
-    document: { documentElement: { scrollHeight: 5995 } },
+    document: { documentElement: { scrollHeight: 5995 }, visibilityState: 'visible' },
     performance: { now: () => now, mark: (n) => marks.push(n) },
     requestAnimationFrame: (cb) => { rafQ.push(cb); return rafQ.length; },
     addEventListener: (type, fn, opts) => listeners.push({ type, fn, opts }),
@@ -54,7 +54,7 @@ test('recorder: frames like `record`, passive touch listeners, marks, idempotent
   assert.ok(typeof t === 'number');
   assert.deepEqual(w.marks, ['fwg:hero']);
   w.win.innerHeight = 815; w.frame(16.7);
-  assert.deepEqual(JSON.parse(JSON.stringify(w.run(STATE_JS))), [40, 5995 - 815, 815, 1050]);
+  assert.deepEqual(JSON.parse(JSON.stringify(w.run(STATE_JS))), [40, 5995 - 815, 815, 1050, 'visible', 430]);
   const r = JSON.parse(w.run(READ_JS));
   assert.equal(r.v, 1);
   assert.equal(r.vh0, 775);

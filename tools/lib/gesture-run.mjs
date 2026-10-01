@@ -6,9 +6,11 @@
 // the same script hash, never with `iphone.mjs scroll` or finger runs.
 //
 // Safety, before and during a run: the iphone lease (checked before every op, and its TTL must cover the
-// run), Safari must be the app in front (WDA activeAppInfo), Safari must not show the certificate warning,
-// every down stroke is preceded by a scrollY check (pull-to-refresh), WDA is never asked for /source or
-// elements, and SIGINT/SIGTERM stop between strokes (a stroke in flight finishes: WDA plays it as one unit).
+// run), Safari must be the app in front at the start (WDA activeAppInfo) and the page visible and portrait
+// before every stroke (document.visibilityState, innerWidth), Safari must not show the certificate warning,
+// every down stroke waits for a still page (two scrollY samples) above its pull-to-refresh guard, WDA is never
+// asked for /source or elements, and SIGINT/SIGTERM stop between strokes (a stroke in flight finishes: WDA
+// plays it as one unit).
 import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -33,8 +35,8 @@ export function wipPage() {
     },
     async state() {
       const macBefore = Date.now();
-      const [y, maxY, ih, pageT] = await c.evaluate(STATE_JS);
-      return { y, maxY, ih, pageT, macBefore, macAfter: Date.now() };
+      const [y, maxY, ih, pageT, vis, iw] = await c.evaluate(STATE_JS);
+      return { y, maxY, ih, pageT, vis, iw, macBefore, macAfter: Date.now() };
     },
     install: () => c.evaluate(RECORDER_JS),
     mark: (name) => c.evaluate(markJs(name)),
@@ -66,8 +68,16 @@ const holds = (cond, s) => (cond.kind === 'atEnd' ? s.y >= s.maxY - 2 : cond.kin
  * `check()`: throws to abort (lease lost, signal); `morph`: optional {install(seg), read(seg)}.
  * Resolves with {strokes, segments, untils, reloads, loops, morph, errors, aborted}; never loses the
  * recorded data: on an error it still reads the recorder and returns what it has (aborted = the reason).
+ *
+ * Before EVERY stroke (review-gesture 3, 5): the page must be visible (document.visibilityState, so Safari
+ * is still the app in front and this tab the shown one: a notification, the app switcher or another app
+ * makes it hidden) and in portrait (innerWidth = the script's screen width); otherwise the run stops with
+ * nothing sent. Before a DOWN stroke the page must also be still: two scrollY samples `stillGapMs` apart
+ * that differ by < 1 px (waiting up to `stillTimeoutMs` for momentum to end), both >= the stroke's pull guard
+ * (a page still coasting toward the top would otherwise pass a one-sample check and reach 0 mid-stroke).
  */
-export async function runProgram(prog, { wda, page, check = () => {}, morph = null, pollMs = 100, settleMs = 300, log = (s) => console.error(s) }) {
+export async function runProgram(prog, { wda, page, check = () => {}, morph = null, pollMs = 100, settleMs = 300, stillGapMs = 100, stillTimeoutMs = 5000, log = (s) => console.error(s) }) {
+  const screenW = prog.screen?.[0] ?? 430;
   const res = { strokes: [], segments: [], untils: [], reloads: [], loops: [], morph: [], errors: [], aborted: null };
   let seg = null;
   const sync = async () => { const s = await page.state(); if (seg) seg.sync.push([s.macBefore, s.pageT, s.macAfter]); return s; };
@@ -98,22 +108,45 @@ export async function runProgram(prog, { wda, page, check = () => {}, morph = nu
       if (Math.abs(s.y - lastY) >= 1) { lastY = s.y; stableSince = Date.now(); }
     }
   }
+  /** page.state() that also stops the run when the page is hidden or not portrait. */
+  const shown = async (op) => {
+    const s = await page.state();
+    if (s.vis !== 'visible') throw new Abort(`the page is not visible (document.visibilityState "${s.vis}": Safari is no longer in front, or another tab is): stopped before ${op.id}, nothing was sent`);
+    if (s.iw !== screenW) throw new Abort(`the page is ${s.iw} px wide, the script is for ${screenW} (portrait): rotated? stopped before ${op.id}, nothing was sent`);
+    return s;
+  };
+  /** Two samples stillGapMs apart within 1 px, waiting up to stillTimeoutMs. */
+  async function stillPair(op) {
+    const t0 = Date.now();
+    let a = await shown(op);
+    for (;;) {
+      await sleep(stillGapMs);
+      const b = await shown(op);
+      if (Math.abs(b.y - a.y) < 1) return { ok: true, ys: [a.y, b.y], waitedMs: Date.now() - t0 };
+      if (Date.now() - t0 >= stillTimeoutMs) return { ok: false, ys: [a.y, b.y], waitedMs: Date.now() - t0 };
+      check();
+      a = b;
+    }
+  }
   async function runOps(ops, loop) {
     for (const op of ops) {
       check();
       if (op.op === 'stroke') {
-        let guardY = null;
+        let guardY = null, stillWaitMs = null;
         if (op.minScrollY !== null) {
-          const s = await page.state();
-          guardY = s.y;
-          if (s.y < op.minScrollY) {
-            const msg = `pull-to-refresh guard: ${op.id} (down ${op.kin.px} px) needs scrollY >= ${op.minScrollY}, the page is at ${s.y}`;
+          const p = await stillPair(op);
+          guardY = p.ys; stillWaitMs = p.waitedMs;
+          const lo = Math.min(...p.ys);
+          const why = !p.ok ? `the page did not come to rest in ${stillTimeoutMs} ms (scrollY ${p.ys[0]} -> ${p.ys[1]})`
+            : lo < op.minScrollY ? `needs scrollY >= ${op.minScrollY}, the page is at ${lo}` : null;
+          if (why) {
+            const msg = `pull-to-refresh guard: ${op.id} (down ${op.kin.px} px) ${why}`;
             if (loop) { log(`${msg}: ending the loop`); return 'break'; } // inside a runtime loop: nothing sent, the loop ends
             throw new Error(`${msg}; nothing was sent`);
           }
-        }
+        } else await shown(op);
         const t = await wda.actions(op.actions);
-        res.strokes.push({ id: op.id, seg: seg ? seg.index : null, kin: op.kin, sentAt: t.sentAt, returnedAt: t.returnedAt, httpMs: t.ms, guardY });
+        res.strokes.push({ id: op.id, seg: seg ? seg.index : null, kin: op.kin, sentAt: t.sentAt, returnedAt: t.returnedAt, httpMs: t.ms, guardY, stillWaitMs });
       } else if (op.op === 'pause') {
         const end = Date.now() + op.ms;
         while (Date.now() < end) { check(); await sleep(Math.min(250, end - Date.now())); }
