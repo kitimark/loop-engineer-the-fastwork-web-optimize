@@ -7,6 +7,8 @@
 // Clocks: `mono` is real monotonic time plus every sleep() taken through the stub (sleep resolves at once
 // and advances the clock), so a 10 s quiet window costs no wall time in a test. `now` (wall) is mono plus
 // any host sleep injected with FAKE_HOST_SUSPEND, so tests do not assume a monotonic wall clock (I-026).
+// CPU ticks, the Chrome tree CPU and decompressions accrue over the stub's sleeps only, not real time, so a
+// window's percentages are exact however loaded the test machine is (I-027 E).
 // Env (each value may be a timeline "v1:untilMs,v2:untilMs,v3": v1 until untilMs of fake monotonic time
 // after this module loaded, then the next):
 //   FAKE_HOST_LOAD1          load1 (default 1)
@@ -37,10 +39,13 @@ const chromeCores = timeline('FAKE_HOST_CHROME_CORES', 0.4), decomp = timeline('
 
 const N = 8;
 let last = 0, busyMs = 0, totalMs = 0, chromeSec = 0, decompN = 0;
-function advance() { // CPU time only runs while the host is awake: monotonic time
+// CPU time runs on the fake clock only: the sleeps taken through this stub (I-027 E). Real time between two
+// readings is the test process's own overhead, and it made verify's Chrome window (treeCpu outside the tick
+// snapshots) count extra Chrome time under load (chromeCpuPct 5.1 for 5). It never runs while the host sleeps.
+function advance() {
   checkSuspend();
-  const t = elapsed(), dt = Math.max(0, t - last);
-  last = t;
+  const dt = Math.max(0, offset - last);
+  last = offset;
   totalMs += dt; busyMs += dt * busy(); chromeSec += (dt / 1000) * chromeCores(); decompN += (dt / 1000) * decomp();
 }
 export function cpus() {

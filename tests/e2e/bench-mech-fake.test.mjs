@@ -233,3 +233,15 @@ test('mech refuses to write results in the main checkout (Hard rule 5)', () => {
   assert.match(r.stderr, /refusing to write fixes\/\*\/bench-results.json in the main checkout/);
   assert.equal(existsSync(join(benchEnv('main').FW_STATE_DIR, 'locks')), false, 'never queued');
 });
+
+test('review-i027: mech, gain, calibrate and reconfirm refuse a stubbed host outside a test with a real Chrome (exit 2, before the lock)', () => {
+  const REAL = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  for (const args of [['mech', 'fast-nav'], ['gain', 'fast-nav'], ['calibrate', 'fast-nav'], ['reconfirm']]) {
+    const env = benchEnv(`stub-${args[0]}`, { CHROME: REAL });
+    const r = node(join(repo.wt, 'tools', 'bench.mjs'), args, { cwd: repo.wt, env });
+    assert.equal(r.code, 2, `${args[0]}: ${r.out}`);
+    assert.match(r.stderr, /bench: a stubbed host \(FW_TEST_HOST=.*fake-host\.mjs\) outside a test, with a real Chrome: refused/);
+    assert.equal(existsSync(join(env.FW_STATE_DIR, 'locks')), false, `${args[0]}: never queued`);
+  }
+  assert.equal(node(join(repo.wt, 'tools', 'bench.mjs'), ['lint'], { cwd: repo.wt, env: benchEnv('stub-lint', { CHROME: REAL }) }).stderr.includes('stubbed host'), false, 'lint never runs Chrome');
+});
