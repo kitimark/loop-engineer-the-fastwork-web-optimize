@@ -346,6 +346,27 @@ whether the listener is passive. Two diagnostics, both on noinert:
 - If that latency is worse, F3 is the fallback: element-scoped listeners on #platform and the nav header, armed in idle and
   never removed (de-unknowns-render (c)). The behaviour risk is a touch that starts outside them at the end zone.
 
+### F3 `mw10e-arm-scope` (listener scope; lead + OSS survey P1, F-055)
+
+- **What it is:** F1 with the touch listeners moved off the window. Built on bare aw1-10e. JS 7b0d62225545…, CSS = base;
+  `variants-10e/arm-scope.diff` (+26 -7).
+- **touchstart** (passive) **and touchmove** (non-passive): on `#platform` and `header.start-selling-top-nav`, once at setup,
+  never removed.
+- **wheel**: stays on the window, once at setup (as in F1). Wheel creates no touch region, and desktop wheel anywhere still drives
+  the morph.
+- **Zone gate:** inside the handlers (`u`), as in F1.
+- **Why:** with a non-passive window touchmove, the whole page becomes a synchronous touch region (F-055). With element listeners,
+  only those two subtrees do. Arming restyles only them (`Element::invalidateEventListenerRegions`), but it happens at setup anyway.
+- **Behaviour check** (`touch-check.mjs`, Chrome, touch emulation; `probe-results/touch-check.json`):
+  - At the end of the page #platform spans the whole viewport (top −949, bottom 932 at 430x932; the card is 1880 px tall), so
+    every touch there starts on #platform or the nav. The behaviour gap I feared (a touch above #platform) does not exist in
+    this geometry.
+  - A 240 px upward swipe reaches morph 1 in base, F1 and F3 alike, both from y≈699 and from y≈88.
+- **Prediction (P1, lead):**
+  - the y≈1960 frame goes from k ≥ 12 to k ≤ 5 in 3/3 scripted runs;
+  - touch input delay is not worse than the control on G/F;
+  - the arming cost at setup is smaller than F1's whole-document rebuild (only the window wheel type changes the root).
+
 de-middle's other R1 items (`inert` until the morph, listeners once passive) are not needed for this frame.
 
 ### Morph driver round 2: ghbn vs ghb vs gh

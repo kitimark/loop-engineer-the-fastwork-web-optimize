@@ -1,0 +1,92 @@
+{
+ "base": {
+  "platform": {
+   "y0": 699,
+   "startsOn": "platform",
+   "geo": {
+    "pTop": -949,
+    "pBottom": 932,
+    "hBottom": 68,
+    "vh": 932,
+    "scrollY": 5345,
+    "maxY": 5345
+   },
+   "morphAfterSwipe": 1,
+   "errors": []
+  },
+  "above": {
+   "y0": 88,
+   "startsOn": "platform",
+   "geo": {
+    "pTop": -949,
+    "pBottom": 932,
+    "hBottom": 68,
+    "vh": 932,
+    "scrollY": 5345,
+    "maxY": 5345
+   },
+   "morphAfterSwipe": 1,
+   "errors": []
+  }
+ },
+ "mw10e-arm-load": {
+  "platform": {
+   "y0": 699,
+   "startsOn": "platform",
+   "geo": {
+    "pTop": -949,
+    "pBottom": 932,
+    "hBottom": 68,
+    "vh": 932,
+    "scrollY": 5345,
+    "maxY": 5345
+   },
+   "morphAfterSwipe": 1,
+   "errors": []
+  },
+  "above": {
+   "y0": 88,
+   "startsOn": "platform",
+   "geo": {
+    "pTop": -949,
+    "pBottom": 932,
+    "hBottom": 68,
+    "vh": 932,
+    "scrollY": 5345,
+    "maxY": 5345
+   },
+   "morphAfterSwipe": 1,
+   "errors": []
+  }
+ },
+ "mw10e-arm-scope": {
+  "platform": {
+   "y0": 699,
+   "startsOn": "platform",
+   "geo": {
+    "pTop": -949,
+    "pBottom": 932,
+    "hBottom": 68,
+    "vh": 932,
+    "scrollY": 5345,
+    "maxY": 5345
+   },
+   "morphAfterSwipe": 1,
+   "errors": []
+  },
+  "above": {
+   "y0": 88,
+   "startsOn": "platform",
+   "geo": {
+    "pTop": -949,
+    "pBottom": 932,
+    "hBottom": 68,
+    "vh": 932,
+    "scrollY": 5345,
+    "maxY": 5345
+   },
+   "morphAfterSwipe": 1,
+   "errors": []
+  }
+ }
+}
