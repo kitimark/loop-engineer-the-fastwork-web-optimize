@@ -8,7 +8,8 @@
 // Safety, before and during a run: the iphone lease (checked before every op, and its TTL must cover the
 // run), Safari must be the app in front at the start (WDA activeAppInfo) and the page visible and portrait
 // before every stroke (document.visibilityState, innerWidth), Safari must not show the certificate warning,
-// every down stroke waits for a still page (two scrollY samples) above its pull-to-refresh guard, WDA is never
+// every down stroke waits for a still page (two scrollY samples) above its pull-to-refresh guard (an up stroke
+// within 150 px of the end waits too, and is sent flagged stillOk: false if the page never rests), WDA is never
 // asked for /source or elements, and SIGINT/SIGTERM stop between strokes (a stroke in flight finishes: WDA
 // plays it as one unit).
 import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
@@ -33,13 +34,15 @@ export const TOOL_FILES = ['tools/iphone.mjs', 'tools/lib/gesture.mjs', 'tools/l
  * a sha256 (16 hex) of each file as it ran plus of the injected recorder, so two gesture results compare
  * only when these match (like the script hash for the stimulus).
  */
-export function toolVersion(root = REPO) {
+export function toolVersion(root = REPO, { morphLog } = {}) {
   const git = (...a) => { const r = spawnSync('git', ['-C', root, ...a], { encoding: 'utf8', timeout: 10000 }); return r.status === 0 ? r.stdout.trim() : null; };
   const h = (s) => createHash('sha256').update(s).digest('hex').slice(0, 16);
   const files = {};
   for (const f of TOOL_FILES) { try { files[f] = h(readFileSync(join(root, f))); } catch { files[f] = null; } }
   const st = git('status', '--porcelain', '--', ...TOOL_FILES);
-  return { gitHead: git('rev-parse', 'HEAD'), dirty: st === null ? null : st.length > 0, files, recorder: h(RECORDER_JS), compiler: COMPILER_VERSION };
+  const v = { gitHead: git('rev-parse', 'HEAD'), dirty: st === null ? null : st.length > 0, files, recorder: h(RECORDER_JS), compiler: COMPILER_VERSION };
+  if (morphLog) { const f = resolve(morphLog); let sha = null; try { sha = h(readFileSync(f)); } catch {} v.morphLog = { file: f.startsWith(root + '/') ? f.slice(root.length + 1) : f, sha }; } // the --morph-log script shapes res.morph (review-gesture-2)
+  return v;
 }
 
 /** The page over WIP. `match`: tab matcher for openTab (a host string after the first connect). */
@@ -94,7 +97,7 @@ const holds = (cond, s) => (cond.kind === 'atEnd' ? s.y >= s.maxY - 2 : cond.kin
  * that differ by < 1 px (waiting up to `stillTimeoutMs` for momentum to end), both >= the stroke's pull guard
  * (a page still coasting toward the top would otherwise pass a one-sample check and reach 0 mid-stroke).
  */
-export async function runProgram(prog, { wda, page, check = () => {}, morph = null, pollMs = 100, settleMs = 300, stillGapMs = 100, stillTimeoutMs = 5000, log = (s) => console.error(s) }) {
+export async function runProgram(prog, { wda, page, check = () => {}, morph = null, pollMs = 100, settleMs = 300, stillGapMs = 100, stillTimeoutMs = 5000, endZonePx = 150, log = (s) => console.error(s) }) {
   const screenW = prog.screen?.[0] ?? 430;
   const res = { strokes: [], segments: [], untils: [], reloads: [], loops: [], morph: [], errors: [], aborted: null };
   let seg = null;
@@ -150,7 +153,7 @@ export async function runProgram(prog, { wda, page, check = () => {}, morph = nu
     for (const op of ops) {
       check();
       if (op.op === 'stroke') {
-        let guardY = null, stillWaitMs = null;
+        let guardY = null, stillWaitMs = null, stillOk = null;
         if (op.minScrollY !== null) {
           const p = await stillPair(op);
           guardY = p.ys; stillWaitMs = p.waitedMs;
@@ -162,9 +165,20 @@ export async function runProgram(prog, { wda, page, check = () => {}, morph = nu
             if (loop) { log(`${msg}: ending the loop`); return 'break'; } // inside a runtime loop: nothing sent, the loop ends
             throw new Error(`${msg}; nothing was sent`);
           }
-        } else await shown(op);
+          stillOk = true;
+        } else {
+          // an up stroke in the end zone (the pin metric's zone) starts on a still page too, so the previous lift's
+          // rubber band returning under the new finger is not counted as a touching reversal (review-gesture-2).
+          // A page that never rests there (the pin itself) still gets the push, flagged stillOk: false.
+          const s0 = await shown(op);
+          if (s0.y >= s0.maxY - endZonePx) {
+            const p = await stillPair(op);
+            guardY = p.ys; stillWaitMs = p.waitedMs; stillOk = p.ok;
+            if (!p.ok) log(`warning: ${op.id} (up, at the end) sent on a page still moving after ${stillTimeoutMs} ms (scrollY ${p.ys[0]} -> ${p.ys[1]}): stillOk false, its touching reversals may include the previous lift's rubber band`);
+          }
+        }
         const t = await wda.actions(op.actions);
-        res.strokes.push({ id: op.id, seg: seg ? seg.index : null, kin: op.kin, sentAt: t.sentAt, returnedAt: t.returnedAt, httpMs: t.ms, guardY, stillWaitMs });
+        res.strokes.push({ id: op.id, seg: seg ? seg.index : null, kin: op.kin, sentAt: t.sentAt, returnedAt: t.returnedAt, httpMs: t.ms, guardY, stillWaitMs, stillOk });
       } else if (op.op === 'pause') {
         const end = Date.now() + op.ms;
         while (Date.now() < end) { check(); await sleep(Math.min(250, end - Date.now())); }
@@ -304,7 +318,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     await session.close();
   }
   const doc = {
-    meta: { kind: 'gesture', owner, label, date: new Date(ts).toISOString(), device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', tool: toolVersion(), wda: { ref: readConfig().ref || WDA_REF, build: st.build?.version ?? null, os: st.os?.version ?? null }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file },
+    meta: { kind: 'gesture', owner, label, date: new Date(ts).toISOString(), device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', tool: toolVersion(REPO, { morphLog: opt('morph-log') }), wda: { ref: readConfig().ref || WDA_REF, build: st.build?.version ?? null, os: st.os?.version ?? null }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file },
     program: { name: prog.name, version: prog.version, compiler: prog.compiler, hash: prog.hash, params: prog.params, estMs: prog.estMs, strokes: prog.strokes },
     run: res,
   };

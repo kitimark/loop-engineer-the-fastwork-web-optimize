@@ -211,10 +211,32 @@ test('pull guard: a page that never comes to rest is refused before the down str
   const phone = await fakePhone(['--doc-height=1800', '--jitter-at-end']); // maxY 985 collapsed
   const f = scriptFile([{ type: 'reload' }, S({}), { type: 'pause', ms: 300 }, S({}), { type: 'pause', ms: 300 }, S({ dir: 'down', px: 120, ms: 400, profile: 'still' })]);
   lock('acquire', 'iphone', '--owner', 'me');
-  const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', join(phone.dir, 'jitter.json')], { env: phone.env, timeout: 60000 });
+  const out = join(phone.dir, 'jitter.json');
+  const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /pull-to-refresh guard: s3 \(down 120 px\) the page did not come to rest in 5000 ms \(scrollY \d+ -> \d+\); nothing was sent/);
   assert.equal(actionsCalls(phone.wda()).length, 2);
+  // the up push s2 at the end waited too; the page never rested, so it went flagged (review-gesture-2)
+  assert.match(r.stderr, /warning: s2 \(up, at the end\) sent on a page still moving after 5000 ms \(scrollY \d+ -> \d+\): stillOk false/);
+  const [s1, s2] = JSON.parse(readFileSync(out, 'utf8')).run.strokes;
+  assert.equal(s1.stillOk, null, 's1 starts at the top: no wait');
+  assert.equal(s2.stillOk, false);
+  assert.ok(s2.stillWaitMs >= 5000);
+});
+
+test('an up push at the end starts on a still page: two still samples first (review-gesture-2)', async () => {
+  const phone = await fakePhone(['--doc-height=1800']);
+  const f = scriptFile([{ type: 'reload' }, S({}), { type: 'pause', ms: 300 }, S({ px: 200, ms: 400, profile: 'still' })]);
+  lock('acquire', 'iphone', '--owner', 'me');
+  const out = join(phone.dir, 'endpush.json');
+  const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  const [fling, push] = JSON.parse(readFileSync(out, 'utf8')).run.strokes;
+  assert.equal(fling.stillOk, null);
+  assert.equal(push.stillOk, true, JSON.stringify(push));
+  assert.ok(Math.abs(push.guardY[0] - push.guardY[1]) < 1);
+  assert.ok(push.stillWaitMs >= 100 && push.sentAt - fling.returnedAt >= push.stillWaitMs, JSON.stringify(push));
+  assert.doesNotMatch(r.stderr, /warning: s2/);
 });
 
 test('the page hidden mid-run (another app in front) stops before the next stroke (review-gesture 3)', async () => {
@@ -277,6 +299,8 @@ test('--morph-log: installed after each page load, read per segment, morph-activ
   assert.equal(doc.run.morph.length, 2);
   assert.ok(existsSync(doc.run.morph[1].file));
   assert.deepEqual(doc.summary.morph, { frames: 6, p50: 30, p95: 60, gt50Pct: 33.3 });
+  // the morph logger's code is part of the tool version (review-gesture-2)
+  assert.deepEqual(doc.meta.tool.morphLog, { file: 'tests/fixtures/fake-morph-log.mjs', sha: sha16(readFileSync(join(FIX, 'fake-morph-log.mjs'))) });
 });
 
 // ---- wda build | start | status | stop -------------------------------------------------------------------
