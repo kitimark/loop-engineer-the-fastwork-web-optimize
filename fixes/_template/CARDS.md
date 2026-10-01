@@ -38,7 +38,8 @@ hypotheses: | # | element + selector + property (or function + file:line) | comp
 ```
 ATTRIBUTION <topic> · cluster <crossing> · verdict NAMED | LOCATED | UNEXPLAINED
 1 pipeline stage: script | style | layout | paint recording | raster wait + allocation | Other (compositing update,
-  layer creation, event regions, IO) | UI apply | render server (GPU) | input
+  layer creation, event regions, IO) | tick wait (phone: gap − frame = next-tick wait + wake latency + post-flush,
+  not "UI apply", claims-audit P12) | render server (GPU) | input
   evidence: Chrome --trace-frames class of the frame; phone RenderingFrame segments (Script, Layout,
   Paint+Composite read together, Other, gap − frame) + page-rAF JS ms + filter element counts after the frame
   + LayerTree paintCount deltas around it; render-server suspect: Instruments Animation Hitches

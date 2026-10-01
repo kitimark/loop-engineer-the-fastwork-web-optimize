@@ -41,6 +41,12 @@ Still missing in Safari: `requestIdleCallback` (off by default through 27.x), Lo
   order (discrete interpolation) or have drop-shadow mid-list (vendor source, same file; commit
   https://www.mail-archive.com/webkit-changes@lists.webkit.org/msg210369.html). Write `blur(0px)` → `blur(8px)`,
   never `none` → `blur(8px)`.
+  *Correction 2026-10-01 (arch-claims, claims-audit P6): the last sentence is REFUTED on both paths.* An
+  empty filter list (`none`) interpolates with any list: legacy CA path GraphicsLayer.cpp `main` l.807-838,
+  GraphicsLayerCA.cpp l.4294-4328 (safari-7624-branch l.4252); threaded path AcceleratedEffect.cpp l.503-565
+  (`canInterpolate` accepts an empty list); FilterOperations.cpp l.94-115. What does fall back: two non-empty
+  lists with different function order, drop-shadow not last. Prefer `none` at **rest** for another reason:
+  a resting `blur(0px)` keeps the element composited (l.62 below). F-053 is right.
 - **Shorthand reset:** `animation` resets `animation-timeline` to `auto` (reset-only sub-property), so the
   longhands must come after it (MDN: https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/animation-timeline). This matches T12.
 - **P3 (var() of an animated custom property resolves against the base value):** I found no public WebKit
