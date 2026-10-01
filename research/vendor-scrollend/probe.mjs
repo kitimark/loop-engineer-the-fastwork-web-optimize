@@ -134,6 +134,8 @@ async function scenario(cdp, v, url, sc, profile) {
   await page.send('Page.bringToFront');
   await gotoAndSettle(page, url, { quietMs: 1500 });
   await sleep(800);
+  const loc = await page.eval('({ href: location.href, h: document.documentElement.scrollHeight })');
+  if (!/^https:\/\/localhost/.test(loc.href) || loc.h < 2000) throw new Error('page did not load: ' + JSON.stringify(loc));
   const ls = await listeners(page);
   await page.send('Debugger.disable');
   if (CPU > 1) await page.send('Emulation.setCPUThrottlingRate', { rate: CPU });
@@ -193,6 +195,8 @@ try {
   log('servers', Object.fromEntries(Object.entries(servers).map(([k, s]) => [k, s.url])));
   chrome = await launchChrome({ port: 0, profileDir: join(REPO, 'out', 'chrome-probe-n11'), windowSize: '430,932' });
   const cdp = await CDP.connect(chrome.wsUrl);
+  // allow the mirror's self-signed --https certificate (this dedicated Chrome only), as verify.mjs does
+  await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true });
   // A first, per variant (baseline first, with the profile), then B and C
   for (const sc of ['A', 'B', 'C']) for (const v of VARIANTS) {
     if (!v.scenarios.includes(sc)) continue;

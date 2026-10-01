@@ -89,6 +89,8 @@ async function run(cdp, v, url) {
   await page.send('Network.enable');
   await gotoAndSettle(page, url, { quietMs: 2000 });
   await sleep(1500);
+  const loc = await page.eval('({ href: location.href, h: document.documentElement.scrollHeight })');
+  if (!/^https:\/\/localhost/.test(loc.href) || loc.h < 2000) throw new Error('page did not load: ' + JSON.stringify(loc));
   await page.send('Emulation.setCPUThrottlingRate', { rate: CPU });
   await sleep(1000);
   const now = () => page.eval('Math.round(performance.now())');
@@ -132,6 +134,8 @@ try {
   for (const v of VARIANTS) servers[v.label] = await startServer(v.label, v.overlays);
   chrome = await launchChrome({ port: 0, profileDir: join(REPO, 'out', 'chrome-phases-n11'), windowSize: '430,932' });
   const cdp = await CDP.connect(chrome.wsUrl);
+  // allow the mirror's self-signed --https certificate (this dedicated Chrome only), as verify.mjs does
+  await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true });
   for (let i = 0; i < RUNS; i++) {
     const order = i % 2 ? [...VARIANTS].reverse() : VARIANTS; // ABBA
     for (const v of order) {
