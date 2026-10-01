@@ -137,6 +137,8 @@ test('measureGuard: a normal chrome-measure hold refuses a timed run (WAIT); fre
   const o = { allowDuringMeasure: false };
   assert.doesNotThrow(() => measureGuard(o, { holder: null }));
   assert.throws(() => measureGuard(o, { holder: { owner: 'fix-x' }, stale: false }), /^Error: WAIT: chrome-measure is held by "fix-x"/);
+  // a no-timing hold (a build on the Mac, granted without the host gate) refuses timed phone runs too (ts-lock-bundle)
+  assert.throws(() => measureGuard(o, { holder: { owner: 'wda-build', noTiming: true }, stale: false }), /^Error: WAIT: chrome-measure is held by "wda-build"/);
   assert.doesNotThrow(() => measureGuard(o, { holder: { owner: 'fix-x' }, stale: true }));
   assert.doesNotThrow(() => measureGuard(o, { holder: { owner: 'npm-test', short: true }, stale: false }));
   assert.doesNotThrow(() => measureGuard({ allowDuringMeasure: true }, { holder: { owner: 'fix-x' }, stale: false }));

@@ -336,6 +336,43 @@ test('review-host-state N3: the gate\'s sleep sum survives a short job passing t
   assert.deepEqual([g.ok, g.holder.gate.sleptSec, g.holder.gate.woke], [true, 27, true]);
 });
 
+test('no-timing hold (ts-lock-bundle): granted in its FIFO turn on a busy host without the gate; no timing acquirer re-enters it; the gate still holds the timing waiter after it', async () => {
+  // FIFO: a no-timing waiter behind a normal holder waits like anyone
+  assert.equal((await L.tryAcquire(R, { owner: 'h', kind: 'lease', host: QUIET })).ok, true);
+  const q = await L.tryAcquire(R, { owner: 'build', kind: 'process', noTiming: true, host: BUSY });
+  assert.deepEqual([q.ok, q.gated, q.position], [false, undefined, 1]);
+  assert.equal(readJson(`${R}.queue.json`)[0].noTiming, true, 'status can show it');
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', host: BUSY })).ok, false);
+  await L.release(R, { owner: 'h' });
+  // its turn on a BUSY host: granted at once, no gate record (it measures nothing)
+  const g = await L.tryAcquire(R, { owner: 'build', kind: 'process', noTiming: true, host: BUSY });
+  assert.deepEqual([g.ok, g.holder.noTiming, g.holder.gate, g.holder.gateTimeout], [true, true, undefined, undefined]);
+  assert.equal(existsSync(L.hostAlertsFile()), false);
+  // nothing timed runs inside it: a descendant (FW_LOCK_HELD) or the same owner, as a normal (gated) acquirer, throws
+  const held = L.heldEnv(R, g.holder.token, '');
+  for (const o of [{ owner: 'verify', kind: 'process', held, host: UNKNOWN }, { owner: 'verify', kind: 'process', held }, { owner: 'build', kind: 'process', host: UNKNOWN }]) {
+    await assert.rejects(L.tryAcquire(R, o), /chrome-measure is held by "build" as a no-timing hold .*a timing run \(verify\.mjs, fix\.mjs ab, bench, a normal lock\.mjs run\) never runs inside it/);
+  }
+  await assert.rejects(L.acquire(R, { owner: 'bench', kind: 'process', held, log: () => {}, hostSamplers: samplers(() => 0.05) }), /no-timing hold/, 'acquire() too (verify.mjs, fix.mjs ab, bench)');
+  // short jobs and nested no-timing runs may
+  assert.deepEqual([(await L.tryAcquire(R, { owner: 'npm-test', kind: 'process', short: true, maxSec: 60, held })).reentrant, (await L.tryAcquire(R, { owner: 'xcb', kind: 'process', noTiming: true, held })).reentrant], [true, true]);
+  assert.equal(L.status(R).holder.owner, 'build', 're-entry changes nothing');
+  await assert.rejects(L.tryAcquire(R, { owner: 'x', kind: 'process', noTiming: true, short: true, maxSec: 60 }), /--no-timing is for normal holds/);
+  // after it, the timing waiter passes the gate as usual: BUSY keeps it gated, QUIET grants with a gate record
+  await L.release(R, { owner: 'build' });
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', host: BUSY })).gated, true);
+  const t = await L.tryAcquire(R, { owner: 'ab', kind: 'lease', host: QUIET });
+  assert.deepEqual([t.ok, t.holder.gate.quiet, t.holder.noTiming], [true, true, undefined]);
+});
+
+test('no-timing hold (ts-lock-bundle): acquire() skips the gate windows (no host sample) and the holder says noTiming', async () => {
+  let windows = 0;
+  const s = { ...samplers(() => 0.9), sleep: async () => { windows++; } };
+  const h = await L.acquire(R, { owner: 'build', kind: 'lease', noTiming: true, pollMs: 20, log: () => {}, hostSamplers: s });
+  assert.deepEqual([h.holder.noTiming, h.holder.gate, windows], [true, undefined, 0]);
+  h.release();
+});
+
 test('ts-lock-bundle (b): a host sleep in a gate window that outlasts acquire()\'s timeoutSec does not throw on wake: awake time counts, one fresh window decides', async () => {
   // the first window takes 1.2 s of real time (past timeoutSec 1) and the host "slept" 600 s in it (wall clock jumps, wake count rises)
   let t = 11_000_000, jump = 0, wake = 1, windows = 0;
