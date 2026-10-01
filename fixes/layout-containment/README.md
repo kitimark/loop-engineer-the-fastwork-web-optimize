@@ -202,6 +202,22 @@ Phone question (merged P14 boundary block, sent to mgmt-ops-5 at 12:5xZ; agreed 
 - Driver W at 430x775: 6 s idle at y 0, then top → y≥2500, with a Timeline on every counted run.
 - Frame columns: dt>50 / dt>34 with the ±4 ms counts (CLAUDE.md 668b612).
 - Read per rotator tick and per reveal flip: the Layout root quad (viewport, carousel or #people) and its duration.
+  - **Which Layout counts for the tick.** Count the one in the frame right after the rotator TimerFire (L11571). In
+    s0-rk/s0-rkop that TimerFire holds InvalidateLayout in 37/38 ticks, and its next-frame Layout is the 25-30 ms
+    whole-view one (de-pm-hero §7.1).
+  - **Ignore the small post-paint Layouts.** Within 0-60 ms of a tick, 23/22 small Layouts (~0.1 ms) are rooted
+    at a 104x32 box at (58, 2054). Most sit inside Composite after Paint, beside a beacon PerformanceObserver
+    callback, with no RecalculateStyles before them. Likely an image-load size invalidation after the src swap
+    (OBSERVED; cause UNRESOLVED; idle8.cjs).
+  - That box is already its own layout root on the phone. Don't count these small Layouts under any P14 column:
+    they are image-load Layouts, not the tick's.
+  - **The box is probably the carousel itself.** de-pm-hero matched it to `.is-carousel` by size (postmortem-hero
+    §7.3, b03648c). The aw1-10e snapshot CSS L2887-2893 gives it `width: 104px; height: 32px; overflow: hidden`.
+    - That already fits WebKit's relayout-boundary rule (non-visible overflow, fixed width and height), so the
+      phone may treat the carousel as a boundary in C already (OBSERVED, identity by size only).
+    - Pre-read for P14: expect V1 (`contain: strict` on the carousel) to look like C. If both are view-rooted, the
+      §7.7 table already points away from W1 and toward a dirtier in the tick itself or above the carousel.
+    - Decisive check, not run (the lead stopped further digging): which element sits at (58, 2054) at 430x775.
 - Reading, pre-registered in de-pm-hero's postmortem-hero.md §7.7 (6ed6767, was 84bb7a2 before rebase) and agreed by arch-claims. A self-dirtied
   renderer's climb starts at its container, so `contain: strict` on the carousel cannot stop a self-dirty; only
   the #people boundary can.
