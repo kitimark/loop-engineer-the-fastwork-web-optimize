@@ -2,9 +2,15 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **06:16Z**.
+**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **06:32Z**.
 
 ## Digest log (newest first, 5 lines each)
+
+- **06:32Z** Landed: ts-bench I-028 follow-up 1e2c402 (ts-bench ENDED for good), docs b586b9a + ff00155. N13 forced-toggle
+  probe: 0 storms in 2 x 41 toggles → agents-ask visual NOT the trigger (F-027 supersedes F-026); N13 storm-catch hold
+  (≤ 24 fresh loads, traced/untraced alternating) queued #2. N12 A/B `--on aw1-10c` starting 06:31 (waited 14 min: I-030,
+  shorts pass a normal whose gate isn't settled; ts-i021 after I-027; workaround: no new shorts while a goal normal is #1).
+  Bench pilot: tool OK (styleWrite Proxy counts), VACUOUS/FAIL rows are spec choices. Lead caffeinate until ~08:36Z.
 
 - **06:16Z** Landed: /10c 8f9ebe5 (review-10c ACCEPT-WITH-NOTES; counts "> 50 ms 2 → 1 in the measured window, load-time
   cost bounded by mech probe, iPhone pending"), docs 1b8aeac + cc09344. Wave-2 base `aw1-10c` (hashes confirmed). E3 →
@@ -57,18 +63,17 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Next actions for the next mgmt-ops (in order)
 
-1. N13 (fix-scroll-engine): it names the forced-toggle probe before queueing; short-lane mechanism probe → fix → one A/B
-   `--on aw1-10c`. Then /10d.
-2. I-018 (ts-i017): fixing review-i018's list (CDP metrics opt-in + golden test, trace overflow detection, window
-   alignment, idle split, traced ab must not overwrite results.json, stats pairing) → re-review → one traced real-site 6x
-   run + test:chrome (ahead of later normals; ping lead when it queues) → land. Then ts-i021 rebases A/B/C on it.
-3. After N13 (or in parallel if the slot is free): GO fix-nav-morph N12 `--on aw1-10c` ("20-34 ms band only"; AV1 metric).
-4. ts-i021: A + B committed or committing; C (bench-scenario on the stubbed clock, mind FAKE_HOST_SUSPEND) after I-018.
-   At hand-back: reviewer for B+C + test:chrome + lead canary.
-5. wave1-dry: pilot (B spec, uncommitted, short lane) → report; Q3-final one normal entry → commit Q3 note → land batch.
-6. hero-exit (parked): when resumed, rebase, `--on aw1-10c`, calibrate `heroPointerEventsWrites` on ≥ 4f5667d.
-7. ts-bench (ENDED): its review-i028 follow-up commit when the lead resumes it.
-8. Ping the lead when a goal-path normal waits > 10 min behind shorts. Monitors: none; foreground `tick.sh`.
+1. N12 (fix-nav-morph) A/B `--on aw1-10c` holding from ~06:31: first pass (> 50/> 34 first, AV1 forced style+layout ms,
+   contamination, patch sha) → land/no-land rec → reviewer request to the lead if landable.
+2. N13 storm-catch hold (fix-scroll-engine, queued #2): storms n/N traced vs untraced, per-storm breakdown → decide fix or
+   park; then /10d.
+3. q3 (wave1-dry Q3-final, queued #3): metric choice final → commit a Q3 note → land batch. The pilot is done (tool OK);
+   spec issues belong to phone-invisible-shrink's future bench author.
+4. I-018 (ts-i017): fixing review-i018's list (CDP metrics opt-in) → re-review → one traced run + test:chrome, ahead of later
+   normals → land; then ts-i021 rebases A/B/C on it, then I-030.
+5. Lead's caffeinate stopgap ends ~08:36Z: remind the lead at ~08:15Z if I-026 (ts-i021 commit A) hasn't landed.
+6. hero-exit (parked): on resume rebase, `--on aw1-10c`, calibrate `heroPointerEventsWrites` on ≥ 1e2c402.
+7. Queue rule: no new shorts while a goal-path normal is #1 (I-030 workaround); ping the lead at > 10 min waits.
 
 ## Where the project stands
 
@@ -89,20 +94,21 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 | I-018 | fixing | ts-i017 | f71ee42 rebasing; gate = reviewer + A/A cdp-metrics on/off (one hold) + test:chrome; lands before ts-i021 |
 | I-026 | triaged P1 | ts-i021 | reopen: sleep assertion while anyone is QUEUED (commit A) |
 | I-027 | triaged P2 | ts-i021 | #6 fixtures (A), #3 stubbed-host clock in verify (B, measurement code), bench-scenario (C) |
-| I-028/I-029 | RESOLVED 57b997a / 4f5667d | – | review-i028 notes → one ts-bench follow-up commit (`changed` readback compare, cssText 0, docs) |
+| I-028/I-029 | RESOLVED 57b997a / 4f5667d + follow-up 1e2c402 | – | open doc item for the next toolsmith touch: inlineProp can't see Svelte style-attribute/cssText writes |
+| I-030 | triaged P2 | ts-i021 after I-027 | gateHolding(): shorts pass a head normal whose gate isn't open yet, even lead-moved; fix idea: movedBy normal never passed. Workaround: no new shorts while a goal normal is #1 |
 | I-016 | parked | lead | e4 hooks via short lane (user), f orphans P3 |
 
-## Who waits on what (06:16Z)
+## Who waits on what (06:32Z)
 
 | agent | state | waits on | next |
 |---|---|---|---|
-| fix-scroll-engine | /10c landed 8f9ebe5; E3 + part 4 done | – | N13 (forced-toggle probe → A/B `--on aw1-10c`), then /10d |
+| fix-scroll-engine | N13 probe done (visual ruled out); storm-catch queued #2 | lock | storm traces → fix or park; then /10d |
 | ts-i017 | I-018 a0efac7 NEEDS-WORK | its fixes, re-review | one traced run + test:chrome; lands before ts-i021 |
 | ts-i021 | committing A + B | I-018 on main | rebase, C, hand back A+B+C → reviewer + canary |
-| wave1-dry | pilot (B spec) + Q3-final requeue | lock (short + normal) | report pilot counts + Q3 final, commit the Q3 note |
-| fix-nav-morph | READY (N12 v4 486264b + f0ba4a7) | after N13 | GO = N12 A/B `--on aw1-10c`; #6 waits finger test |
+| wave1-dry | pilot done (tool OK); Q3-final queued #3 | lock | Q3 final → commit the Q3 note |
+| fix-nav-morph | N12 A/B `--on aw1-10c` holding ~06:31 | – | report → review → land; #6 waits finger test |
 | hero-exit | parked | wave-2 order (after N12) | + bench `heroPointerEventsWrites` calibration |
-| ts-bench, N11, apple-verify, ts-prio, ts-i002 | ENDED | – | ts-bench follow-up (review-i028 notes) when the lead resumes it |
+| ts-bench (for good), N11, apple-verify, ts-prio, ts-i002 | ENDED | – | ts-bench follow-up (review-i028 notes) when the lead resumes it |
 
 ## Wave-2 order (lead decisions, DIRECTION slot 3)
 
