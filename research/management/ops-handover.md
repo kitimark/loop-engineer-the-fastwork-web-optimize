@@ -311,7 +311,7 @@ between tool calls.
    --max-seconds 600 -- node tools/iphone.mjs wda build --owner iphone-runner` (normal lane, iphone lease, xcodebuild
    capped at 540 s); gesture key `pinReversals` -> `pin` (`pin.excursions`, `pin.fight`, `pin.bounces`); first G run:
    check perStroke `endLagMs` is not always 0 (review-gesture-2 B1).
-6. Caffeinate: the lead's `caffeinate -d` since 13:02Z, runs until ~15:02Z -> remind at ~14:50Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
+6. Caffeinate: the lead renewed early (task b2ex1m6o9, 3 h, ~14:43Z to ~17:43Z) -> remind at ~17:30Z. Display has been on since 06:22:55Z (back-tag ddc3450): holds after 06:22Z compare.
 7. **Toolsmith asks from ts-analysis (review-stats T3 nits; need a lead spawn):** (nit 1) `tools/bench.mjs` calls
    `gainVerdict` at :555 and :689 without try/catch; since 86424b0 bench-stats throws on non-finite input, so a null/NaN
    scenario metric crashes bench (and in reconfirm loses later topics' tier B results) instead of INCONCLUSIVE. Fix
