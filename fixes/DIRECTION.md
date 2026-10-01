@@ -84,3 +84,6 @@ iPhone scripted-check queue (when the phone is back; lease per CLAUDE.md, plain 
 3. Wave-1 combined confirmation (after the combined overlay exists).
 4. Combined wave-1 vs combined minus large-area-blur, /03 Timeline paint-area method, n=3, order B P P B B P: how much blur paint remains once phone-invisible-shrink is in (review-blur).
 5. large-area-blur final overlay (/06) scripted scroll + Timeline paint check, and a LayerTree count for the entry-animation part (owner's open items).
+6. Look-only: carousel follower alignment (device-pixel snap) on layout-animations v10 (5602e1d). Chrome
+   pixel diffs showed followers 0/±1 device px off from non-snapped `translate` (same in 03; equal by eye
+   in Chrome). Check whether the offset is visible on the phone; only then a snap follow-up slot (F-008).
