@@ -103,7 +103,7 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    **Wave-2 stacking base from 2026-10-01 06:10Z: `aw1-10c`** = `node tools/fix.mjs combine aw1-10c all-wave1 scroll-engine`
    (hashes confirmed identical to se10c-aw1 on 8f9ebe5: JS 757e2cbc…, CSS c6aad94b…); every later wave-2 A/B runs
    `--on aw1-10c`. **E3 (06:03-06:05Z, n=1, timing not claimed):** the animation ablation takes > 34 ms 4 -> 1 and finds a
-   rare 340-362 ms render storm at the agents-ask `is-caret` toggle (F-026) -> **new topic N13 platform-visual-anim-storm**
+   rare 340-362 ms render storm near the platform agents-ask visual (F-026) -> **new topic N13 platform-visual-anim-storm**
    (fix-scroll-engine, lead 06:10Z), ordered after part 4 and **before /10d** (a > 100 ms frame beats a p95 flag).
    **I-018 (06:1xZ, review-i018 NEEDS-WORK):** CDP metrics become opt-in (default = main exactly, golden test), so no
    on/off A/A gate; validation = one traced real-site 6x run + test:chrome after re-review. Part 4 and q3 may run before
@@ -112,6 +112,11 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    3 -> 5 (noise), > 20 ms 11 -> 17 worse (`animation:none` changes painted end states, not a clean ablation); the storm
    occurred in 0/6. CSS animations are not the source of the steady > 34/> 50 ms frames, only of the rare storm (~3 in ~22
    scroll passes, ≈ 15 %), so N13 uses a forced-toggle probe, not a plain 5-run A/B.
+   **N13 probe (06:17-06:19Z, short, aw1-10c, forced-toggle, 2 passes x 41 class changes):** 0 storms, 0 LoAF > 50 ms;
+   the visual's toggles start only ~5-11 animations, so the agents-ask visual is **not** the trigger (F-026's `is-caret`
+   attribution was coincidence; cause unknown). The storm needs scrolling and/or first entry into the platform region
+   (~15 % of fresh loads, y≈4.7k): candidates first raster/decode of the platform layers, the #platform blur layer, the
+   scroll-jack region, GC under scroll. Next: one diagnostic hold (~15-20 fresh loads with CDP tracing, storm traces only).
    Updated order: part 4 (done) -> N13 -> N12 `--on aw1-10c` -> /10d -> hero-exit -> countdown 05/08; I-018's traced run goes
    ahead of any later normal once re-reviewed (N13 before N12: > 100 ms frame class before the 20-34 ms band, principle 1).
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
