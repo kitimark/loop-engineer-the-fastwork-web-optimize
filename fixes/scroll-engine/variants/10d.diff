@@ -1,0 +1,103 @@
+# fastwork mirror fix: scroll-engine--10d
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/scroll-engine--10c/overlay: apply scroll-engine--10c first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply scroll-engine--10d --on scroll-engine--10c
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js e245804d65bc6f953da436f03784ad8814cda73eb12a6bf6b2e0e7eb0d98224d
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2677,9 +2677,22 @@
+ var fwDef = new Set(),
+   fwBooted = !1,
+   fwArmed = !1,
+-  fwQ = 0;
++  fwQ = 0,
++  fwLastInput = 0;
++// [scroll-engine /10d] quiet-input gate: an idle slot is not enough (Safari has no requestIdleCallback and
++// the 150 ms timer fired at ~load + 0.7 s even mid-gesture; Chrome's idle periods also occur between scroll
++// frames). Run only after 1.5 s without input (as vendor-scrollend/02); the IO un-skip stays the fallback.
++function fwNoteInput() {
++  fwLastInput = performance.now();
++}
++function fwQuiet(e) {
++  let t = 1500 - (performance.now() - fwLastInput);
++  t > 0 ? window.setTimeout(() => fwQuiet(e), t) : e();
++}
+ function fwIdle(e) {
+-  return window.requestIdleCallback ? window.requestIdleCallback(e, { timeout: 3e3 }) : window.setTimeout(e, 150);
++  return window.requestIdleCallback
++    ? window.requestIdleCallback(() => fwQuiet(e), { timeout: 3e3 })
++    : window.setTimeout(() => fwQuiet(e), 150);
+ }
+ function fwKick() {
+   fwArmed && !fwQ && fwDef.size && (fwQ = fwIdle(fwUnskipNext));
+@@ -2687,7 +2700,7 @@
+ function fwUnskipNext() {
+   fwQ = 0;
+   for (let e of fwDef) {
+-    (fwDef.delete(e), e.element?.getAttribute(`data-start-selling-render`) === `deferred` && sE(e, !0));
++    (fwDef.delete(e), !e.fwFar && e.element?.getAttribute(`data-start-selling-render`) === `deferred` && sE(e, !0));
+     break;
+   }
+   fwKick();
+@@ -2703,7 +2716,8 @@
+     (e) => {
+       for (let t of e) t.target.setAttribute(`data-fw-wc`, t.isIntersecting ? `1` : `0`);
+     },
+-    { rootMargin: `50% 0px 50% 0px` },
++    // [scroll-engine /10d] 100 % instead of 50 %: fewer layer promotions per scrolled distance (p95 flag).
++    { rootMargin: `100% 0px 100% 0px` },
+   );
+   for (let e of document.querySelectorAll(`.start-selling :is(${fwWCSel})`))
+     e.hasAttribute(`data-fw-wc`) || (e.setAttribute(`data-fw-wc`, `1`), fwWCIO.observe(e));
+@@ -2711,6 +2725,8 @@
+ function fwBoot() {
+   if (fwBooted) return;
+   fwBooted = !0;
++  for (let e of [`scroll`, `wheel`, `touchstart`, `touchmove`, `pointerdown`, `keydown`])
++    window.addEventListener(e, fwNoteInput, { passive: !0, capture: !0 });
+   let e = () =>
+     window.setTimeout(() => {
+       ((fwArmed = !0), fwKick(), fwIdle(fwWC));
+@@ -2735,7 +2751,7 @@
+ function sE(e, t) {
+   if (!(!e.deferRendering || !e.element)) {
+     if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
+-      (fwDef.delete(e), e.element.setAttribute(`data-start-selling-render`, `active`));
++      ((e.fwFar = !1), fwDef.delete(e), e.element.setAttribute(`data-start-selling-render`, `active`));
+       return;
+     }
+     e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
+@@ -2746,7 +2762,7 @@
+               let t = e.element.getBoundingClientRect().height;
+               t > 0 && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`);
+             }
+-            (e.element.setAttribute(`data-start-selling-render`, `deferred`), fwDef.add(e), fwKick());
++            (e.element.setAttribute(`data-start-selling-render`, `deferred`), e.fwFar || (fwDef.add(e), fwKick()));
+           }
+         });
+       }));
+@@ -2807,15 +2823,18 @@
+ function fwFM(e) {
+   return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
+ }
++// [scroll-engine /10d] the far flag also covers a section that is ALREADY deferred (page loaded scrolled
++// down): drop it from the idle queue so it isn't rendered while far above; the un-skip IO clears the flag.
+ function fwReskip(e, t) {
+   !e.deferRendering ||
+     !e.element ||
+     e.active ||
+-    e.element.getAttribute(`data-start-selling-render`) === `deferred` ||
+-    ((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)),
++    ((e.fwFar = !0),
+     fwDef.delete(e),
+-    t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
+-    e.element.setAttribute(`data-start-selling-render`, `deferred`));
++    e.element.getAttribute(`data-start-selling-render`) === `deferred` ||
++      ((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)),
++      t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
++      e.element.setAttribute(`data-start-selling-render`, `deferred`)));
+ }
+ function fwFar(e, t, n) {
+   let r = fwFarG.get(n);

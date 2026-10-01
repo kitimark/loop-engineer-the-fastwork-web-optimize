@@ -1,0 +1,245 @@
+# fastwork mirror fix: scroll-engine--10d
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply scroll-engine--10d
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11753,9 +11753,16 @@
+ }
+ .start-selling [data-start-selling-scene="paused"],
+ .start-selling [data-start-selling-scene="paused"] :where(*) {
+-  will-change: auto !important;
+   animation-play-state: paused !important;
+ }
++/* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
++   element is inside its +-0.5 vh window; both edges are off screen, and /09's no-re-skip keeps the gate
++   from flapping, so the flips happen away from the viewport. */
++.start-selling [data-start-selling-scene="paused"],
++.start-selling [data-start-selling-scene="paused"] :where(*),
++.start-selling [data-fw-wc="0"] {
++  will-change: auto !important;
++}
+ .start-selling [data-start-selling-render="deferred"] {
+   contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
+   content-visibility: auto;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2670,9 +2670,71 @@
+ function iE() {
+   tE = 0;
+   for (let e of $T) e.active && e.callback();
++}
++// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
++// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
++// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
++var fwDef = new Set(),
++  fwBooted = !1,
++  fwArmed = !1,
++  fwQ = 0,
++  fwLastInput = 0;
++// [scroll-engine /10d] quiet-input gate: an idle slot is not enough (Safari has no requestIdleCallback and
++// the 150 ms timer fired at ~load + 0.7 s even mid-gesture; Chrome's idle periods also occur between scroll
++// frames). Run only after 1.5 s without input (as vendor-scrollend/02); the IO un-skip stays the fallback.
++function fwNoteInput() {
++  fwLastInput = performance.now();
++}
++function fwQuiet(e) {
++  let t = 1500 - (performance.now() - fwLastInput);
++  t > 0 ? window.setTimeout(() => fwQuiet(e), t) : e();
++}
++function fwIdle(e) {
++  return window.requestIdleCallback
++    ? window.requestIdleCallback(() => fwQuiet(e), { timeout: 3e3 })
++    : window.setTimeout(() => fwQuiet(e), 150);
+ }
++function fwKick() {
++  fwArmed && !fwQ && fwDef.size && (fwQ = fwIdle(fwUnskipNext));
++}
++function fwUnskipNext() {
++  fwQ = 0;
++  for (let e of fwDef) {
++    (fwDef.delete(e), !e.fwFar && e.element?.getAttribute(`data-start-selling-render`) === `deferred` && sE(e, !0));
++    break;
++  }
++  fwKick();
++}
++// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
++// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
++// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
++var fwWCSel = `.commission-card, .face, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
++  fwWCIO;
++function fwWC() {
++  if (!(`IntersectionObserver` in window)) return;
++  fwWCIO ||= new IntersectionObserver(
++    (e) => {
++      for (let t of e) t.target.setAttribute(`data-fw-wc`, t.isIntersecting ? `1` : `0`);
++    },
++    // [scroll-engine /10d] 100 % instead of 50 %: fewer layer promotions per scrolled distance (p95 flag).
++    { rootMargin: `100% 0px 100% 0px` },
++  );
++  for (let e of document.querySelectorAll(`.start-selling :is(${fwWCSel})`))
++    e.hasAttribute(`data-fw-wc`) || (e.setAttribute(`data-fw-wc`, `1`), fwWCIO.observe(e));
++}
++function fwBoot() {
++  if (fwBooted) return;
++  fwBooted = !0;
++  for (let e of [`scroll`, `wheel`, `touchstart`, `touchmove`, `pointerdown`, `keydown`])
++    window.addEventListener(e, fwNoteInput, { passive: !0, capture: !0 });
++  let e = () =>
++    window.setTimeout(() => {
++      ((fwArmed = !0), fwKick(), fwIdle(fwWC));
++    }, 500);
++  document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
++}
+ function aE() {
+-  nE ||
++  (fwBoot(), nE) ||
+     ((nE = !0),
+     window.addEventListener(`scroll`, rE, { passive: !0 }),
+     window.addEventListener(`resize`, rE, { passive: !0 }));
+@@ -2689,7 +2751,7 @@
+ function sE(e, t) {
+   if (!(!e.deferRendering || !e.element)) {
+     if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
+-      e.element.setAttribute(`data-start-selling-render`, `active`);
++      ((e.fwFar = !1), fwDef.delete(e), e.element.setAttribute(`data-start-selling-render`, `active`));
+       return;
+     }
+     e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
+@@ -2700,7 +2762,7 @@
+               let t = e.element.getBoundingClientRect().height;
+               t > 0 && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`);
+             }
+-            e.element.setAttribute(`data-start-selling-render`, `deferred`);
++            (e.element.setAttribute(`data-start-selling-render`, `deferred`), e.fwFar || (fwDef.add(e), fwKick()));
+           }
+         });
+       }));
+@@ -2710,8 +2772,94 @@
+   (e.manageAnimations &&
+     e.element &&
+     e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
+-    e.active !== t && ((e.active = t), sE(e, t), e.onActiveChange?.(t), t && rE()));
++    e.active !== t &&
++      ((e.active = t),
++      t && sE(e, !0),
++      e.onActiveChange?.(t),
++      t && rE(),
++      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
++      // windows: re-scan once in idle time after a scene activates.
++      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
+ }
++var fwWCQ = 0;
++// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
++// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
++// before it reaches the viewport (WebKit's own content-visibility margin is 0), and it is never re-skipped.
++// Re-skipping changed the section's geometry at the scene gate's edge (gate flap, N9) and tore down and
++// rebuilt its layers on every pass (N10).
++var fwRG = new Map();
++function fwRM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%/, (e, t) => `${Math.max(150, +t + 50)}%`);
++}
++function fwRender(e, t, n) {
++  let r = fwRG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e) if (t.isIntersecting) for (let e of r.elements.get(t.target) ?? []) sE(e, !0);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwRG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
++}
++// [scroll-engine /10c] far re-skip, behind the user only: a rendered section that is more than its
++// un-skip margin + 25 % (1.75 vh for the default 100 % gate, 2.25 vh for .pain's 150 %) ABOVE the viewport
++// goes back to content-visibility (its height comes from the IO entry, no forced layout), which drops its
++// layers (w1 did this at the scene gate itself, which flapped: N9). It comes back through fwRender's IO
++// (gate + 50 %) on the way up, so the 0.25 vh band between the two edges is the hysteresis. Sections
++// ahead of the user are never re-skipped (they keep the idle un-skip).
++var fwFarG = new Map();
++function fwFM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
++}
++// [scroll-engine /10d] the far flag also covers a section that is ALREADY deferred (page loaded scrolled
++// down): drop it from the idle queue so it isn't rendered while far above; the un-skip IO clears the flag.
++function fwReskip(e, t) {
++  !e.deferRendering ||
++    !e.element ||
++    e.active ||
++    ((e.fwFar = !0),
++    fwDef.delete(e),
++    e.element.getAttribute(`data-start-selling-render`) === `deferred` ||
++      ((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)),
++      t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
++      e.element.setAttribute(`data-start-selling-render`, `deferred`)));
++}
++function fwFar(e, t, n) {
++  let r = fwFarG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e)
++            if (!t.isIntersecting && t.boundingClientRect.bottom < 0)
++              for (let e of r.elements.get(t.target) ?? []) fwReskip(e, t.boundingClientRect.height);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwFarG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
++}
+ function lE(e) {
+   let t = e.getBoundingClientRect();
+   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
+@@ -2756,7 +2904,9 @@
+       onActiveChange: t.onActiveChange,
+       renderFrame: 0,
+     },
+-    r;
++    r,
++    fwRd,
++    fwFd;
+   return (
+     $T.add(n),
+     aE(),
+@@ -2766,9 +2916,16 @@
+     sE(n, n.active),
+     t.onActiveChange?.(n.active),
+     t.element && `IntersectionObserver` in window && (r = uE(n, t.element, t.rootMargin ?? `100% 0px`)),
++    n.deferRendering &&
++      t.element &&
++      `IntersectionObserver` in window &&
++      (fwRd = fwRender(n, t.element, fwRM(t.rootMargin ?? `100% 0px`))),
++    n.deferRendering && t.element && `IntersectionObserver` in window && (fwFd = fwFar(n, t.element, fwFM(fwRM(t.rootMargin ?? `100% 0px`)))),
+     rE(),
+     () => {
+       (r?.(),
++        fwRd?.(),
++        fwFd?.(),
+         n.renderFrame && window.cancelAnimationFrame(n.renderFrame),
+         $T.delete(n),
+         n.manageAnimations && n.element && n.element.removeAttribute(`data-start-selling-scene`),
