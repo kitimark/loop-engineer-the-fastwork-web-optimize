@@ -521,6 +521,41 @@ All new names; existing overlays untouched (F-034). Diffs in `variants-10e/`.
 Tickets (validated by mgmt-ops-5): **P-029** g vs g-cdwc (M, C V V C C V V C; ranked right after ca-check) and
 **P10 = P-024** gh-cdwc vs gh-cdwc-a1. mw10e-stub goes to the finger batch as F2.
 
+**P-029 on the iPhone: PASS** (iphone-runner 13:17-13:25Z; g vs g-cdwc, driver M, hold 2000 × 3, C V V C C V V C,
+one warm-up per port; served g JS 22efa0ab69ba / CSS c6aad94b455f, g-cdwc JS 22efa0ab69ba / CSS 5dc6e8e37388;
+80 %, 34.1 → 37.4 °C, not charging, Low Power Mode off). Sentinel: the controls' held m=1 p95 was 17/17/17/18, so all
+passed; g8 sits exactly at 18 (A5 flag) and was the worst control. Raw: `out/iphone-runner/md-r29-*`,
+`mdtl-r29-{g,gc}`, `lt-r29-*`, `p029.log` in iphone-runner's checkout.
+
+Moving frames (0 < m < 1), dt in ms:
+
+| run | > 50 | > 34 | ±4 ms (>46/>54, >30/>38) | max | moving p50 |
+|---|---|---|---|---|---|
+| g1 | 1 | 51 | 3/0, 58/28 | 54 | 29 |
+| g4 | 2 | 48 | 2/1, 56/32 | 56 | 29 |
+| g5 | 3 | 47 | 4/3, 60/32 | 68 | 30 |
+| g8 | 27 | 58 | 37/20, 66/55 | 68 | 40 |
+| **gc2** | 0 | 0 | 0/0, 1/0 | 31 | 18 |
+| **gc3** | 0 | 0 | 0/0, 1/0 | 32 | 18 |
+| **gc6** | 0 | 1 | 0/0, 2/0 | 35 | 23 |
+| **gc7** | 0 | 0 | 0/0, 0/0 | 28 | 19 |
+
+| readout | g | g-cdwc | prediction | verdict |
+|---|---|---|---|---|
+| face-repaint frames, first 450 ms (Timeline) | 22/26 (85 %) | 0/32 (0 %) | ≤ 10 % | hit |
+| excess per fwd tween, first 450 ms (per-run medians) | 209 / 210 / 217 / 234 ms | 80 / 79 / 146 / 81 | −60 to −150 | hit (≈ −130) |
+| excess per rev tween | 210 / 210 / 186 / 294 | 37 / 38 / 120 / 50 | — | — |
+| layers at the hold | 113 | 33 | ≤ 40 | hit |
+| median dt, first 300 ms | 34-48 ms | 18-23.5 | — | — |
+| Composite − Paint p50, first 300 ms | 19.9 ms | 16.3 | — | — |
+
+- g-cdwc wins every moving-frame column and the result holds across the ±4 ms band, so it is not
+  threshold-sensitive. Frames over 34 ms drop from 47-58 per run to 0-1, and frames over 50 ms from 1-27 to 0.
+- Held m=1: g-cdwc p95 17, max 17-25, 0 frames over 34 ms in all four runs. g: p95 17-18, max 35-57, 2-7 frames
+  over 34 ms per run. So the per-second digit repaint at the hold costs nothing measurable.
+- The mechanism is the same as P-017's on gh: the gain does not need R1. The landable fix `mw10e-cdwc` (the same rule on
+  aw1-10e) goes to review.
+
 **F2 pre-check on the iPhone** (iphone-runner 12:4xZ, M driver, hold 2000 × 3, 80 % battery, 36.5 °C, not charging):
 **VALID.** Raw files: `out/iphone-runner/md-fpre-{stub,gh}.json`.
 
