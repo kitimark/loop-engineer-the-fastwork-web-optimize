@@ -441,3 +441,31 @@ test('gesture inside a session: strokes to WDA-sim, the page over the session pr
   assert.ok(j.run.segments[0].touches.length > 0, 'the page saw the touches');
   cleanedUp();
 });
+
+test('I-050: Safari restored an earlier session\'s tab (a dead server, never answers): gesture alone refuses (AMBIGUOUS, I-037); after open in the same session it picks only the open\'s host and never touches the stale tab; the next session refuses again', async () => {
+  const udid = setup();
+  const f = join(dir, 'script.json');
+  writeFileSync(f, JSON.stringify({ name: 'sim-e2e', version: 1, screen: [430, 932], steps: [{ type: 'stroke', dir: 'up', px: 300, ms: 500, profile: 'minjerk' }] }));
+  const url = `http://127.0.0.1:${env.FW_SIM_PORT}/`;
+  const wip = join(dir, 'wip.jsonl');
+  const e = { ...env, FAKE_WIP_LOG: wip, FAKE_IWDP_TAB: 'webkit', FAKE_IWDP_TAB_ARGS: `--wda-port=${env.FW_SIM_WDA_PORT} --url=${url} --doc-height=2800 --stale-tab=http://localhost:63765/` };
+  const gestureAlone = () => inHold([process.execPath, SIM, 'gesture', f, '--label', 'stale', '--out', join(dir, 'g0.json')], { timeout: 110000, e });
+  let r = await gestureAlone();
+  assert.match(r.out, /AMBIGUOUS: 2 tabs match any page: http:\/\/localhost:63765\/ \[PID:4242\], http:\/\/127\.0\.0\.1:\d+\/ \[PID:4242\]/, 'two Safari pages and no open: never picks one (I-037)');
+  const out = join(dir, 'g1.json'), shot = join(dir, 'shots', 'open.png');
+  r = await inHold(['sh', '-c', `"${process.execPath}" "${SIM}" open "${url}" --out "${shot}" && "${process.execPath}" "${SIM}" gesture "${f}" --label sg --out "${out}"`], { timeout: 110000, e });
+  assert.equal(r.code, 0, r.out);
+  noIds(r.out, udid);
+  assert.match(r.stdout, /Safari \(Simulator\) now on http:\/\/127\.0\.0\.1:\d+\/; screenshot /);
+  assert.match(r.stdout, /^Safari also lists 1 page of another server \(restored from an earlier session\?\): this session's scroll \/ record \/ run \/ gesture pick only tabs on 127\.0\.0\.1:\d+ \(I-050\)$/m);
+  assert.ok(!lines(wip).some((x) => x.staleConnected), 'nothing ever connects to the restored tab (it would never answer)');
+  assert.deepEqual(lines(wip).filter((x) => x.navigate), [], 'no navigation over the proxy');
+  const j = JSON.parse(readFileSync(out, 'utf8'));
+  assert.equal(j.run.aborted, null);
+  assert.equal(j.run.strokes.length, 1);
+  cleanedUp();
+  r = await gestureAlone();
+  assert.match(r.out, /AMBIGUOUS: 2 tabs match any page/, 'the record of an earlier session\'s open does not scope this one');
+  cleanedUp();
+});
+

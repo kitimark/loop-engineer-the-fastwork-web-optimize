@@ -47,6 +47,26 @@ test('I-037: several candidates fail (AMBIGUOUS) and name them; appId or preferA
   assert.equal(pickTab(twoSafari, 'example.org', { appId: 'PID:613' }).url, 'https://example.org/');
 });
 
+test('I-050: host (FW_TAB_HOST by default) keeps only the tabs on that host; two on it stay AMBIGUOUS; none on it names the host', () => {
+  const stale = { ...SAFARI, url: 'http://localhost:64250/', title: 'restored', webSocketDebuggerUrl: 'ws://localhost:9232/devtools/page/5' };
+  const mine = { ...SAFARI, url: 'http://localhost:5367/', webSocketDebuggerUrl: 'ws://localhost:9232/devtools/page/1' };
+  assert.throws(() => pickTab([stale, mine], ANY, noEnv), /AMBIGUOUS: 2 tabs match any page/, 'unscoped: the I-037 refusal');
+  assert.equal(pickTab([stale, mine], ANY, { ...noEnv, host: 'localhost:5367' }), mine);
+  assert.equal(pickTab([stale, BLANK, mine], (u) => u.startsWith('http'), { ...noEnv, host: 'localhost:5367' }), mine, 'a url matcher and the host together');
+  assert.throws(() => pickTab([stale, mine], ANY, { ...noEnv, host: 'localhost:5368' }), /no tab matching any page on localhost:5368 \(FW_TAB_HOST: this Simulator session's sim\.mjs open, I-050\)/);
+  assert.throws(() => pickTab([stale, mine], ANY, { ...noEnv, host: 'localhost' }), /no tab matching/, 'host:port, never a prefix');
+  const twin = { ...mine, url: 'http://localhost:5367/sub/', webSocketDebuggerUrl: 'ws://localhost:9232/devtools/page/6' };
+  assert.throws(() => pickTab([stale, mine, twin], ANY, { ...noEnv, host: 'localhost:5367' }), /AMBIGUOUS: 2 tabs match any page on localhost:5367/, 'two pages on the session\'s own host: still refused');
+  const old = process.env.FW_TAB_HOST;
+  try {
+    process.env.FW_TAB_HOST = 'localhost:5367';
+    assert.equal(pickTab([stale, mine], ANY, noEnv), mine);
+    assert.equal(safariTab([stale, mine], noEnv), mine);
+    delete process.env.FW_TAB_HOST;
+    assert.throws(() => safariTab([stale, mine], noEnv), /AMBIGUOUS/);
+  } finally { if (old === undefined) delete process.env.FW_TAB_HOST; else process.env.FW_TAB_HOST = old; }
+});
+
 test('I-037: FW_IPHONE_APPID is the default appId; entries without a websocket and blank urls are never candidates', () => {
   const old = process.env.FW_IPHONE_APPID;
   try {

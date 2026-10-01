@@ -87,6 +87,9 @@ export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
 //   - with FW_IPHONE_APPID=<appId> (or opts.appId) keeps only that app's tabs; otherwise, when `preferAppId` (the
 //     app openTab connected to last in this process, i.e. Safari's after the first connect) is among them, only
 //     that app's: a reconnect after a reload or navigation stays in Safari;
+//   - with FW_TAB_HOST=<host:port> (or opts.host) keeps only the tabs on that host: tools/sim.mjs sets it to the server
+//     of the session's last `sim.mjs open` (incident I-050: the Simulator's Safari restores an earlier session's tab,
+//     a dead server's page that never answers Runtime.evaluate, next to the one open added);
 //   - returns the one tab left, and throws when none is left or when several are (AMBIGUOUS: it never picks the
 //     first of several), naming every listed target (url, appId) so the user can close one or set the env.
 // The messages are printed and can end up in a saved gesture record (res.aborted), so every url and host in them
@@ -97,15 +100,17 @@ export async function connect(wsUrl, {timeoutMs = 15000} = {}) {
 export const isBlankUrl = (u) => !u || /^about:blank([?#]|$)/.test(String(u));
 const describeTab = (p, { title = false } = {}) => `${lanSafeUrl(p.url) || '(no url)'}${title && p.title ? ` "${p.title}"` : ''}${p.appId ? ` [${p.appId}]` : ''}`;
 const describeMatch = (m) => (typeof m === 'function' ? (m.length || String(m).replace(/\s/g, '') !== '()=>true' ? 'the matcher' : 'any page') : JSON.stringify(lanSafeText(String(m))));
-export function pickTab(pages, match = () => true, { appId = process.env.FW_IPHONE_APPID || null, preferAppId = null } = {}) {
+export const urlHost = (u) => { try { return new URL(u).host; } catch { return ''; } };
+export function pickTab(pages, match = () => true, { appId = process.env.FW_IPHONE_APPID || null, preferAppId = null, host = process.env.FW_TAB_HOST || null } = {}) {
   const all = (Array.isArray(pages) ? pages : []).filter((p) => p && p.webSocketDebuggerUrl);
   const listed = all.map((p) => describeTab(p)).join(', ') || '(none)';
   const ok = (p) => (typeof match === 'function' ? match(p.url) : String(p.url || '').includes(match));
   let c = all.filter((p) => !isBlankUrl(p.url) && ok(p));
+  if (host) c = c.filter((p) => urlHost(p.url) === host);
   if (appId) c = c.filter((p) => p.appId === appId);
   else if (preferAppId && c.some((p) => p.appId === preferAppId)) c = c.filter((p) => p.appId === preferAppId);
   if (c.length === 1) return c[0];
-  const which = `${describeMatch(match)}${appId ? ` in app ${appId} (FW_IPHONE_APPID)` : ''}`;
+  const which = `${describeMatch(match)}${host ? ` on ${lanSafeText(host)} (FW_TAB_HOST: this Simulator session's sim.mjs open, I-050)` : ''}${appId ? ` in app ${appId} (FW_IPHONE_APPID)` : ''}`;
   if (!c.length) {
     const blankOnly = all.length > 0 && all.every((p) => isBlankUrl(p.url));
     throw new Error(`no tab matching ${which} (blank web views are never picked, I-037); targets: ${listed}${blankOnly ? '. Safari shows no page: open any http page in Safari first' : ''}`);

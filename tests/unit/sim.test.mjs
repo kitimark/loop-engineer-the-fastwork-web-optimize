@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { join } from 'node:path';
-import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock } from '../../tools/lib/sim.mjs';
+import { statSync } from 'node:fs';
+import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock, openedTab, writeOpened, openedHost, openedFile, scopeTabs } from '../../tools/lib/sim.mjs';
 import { status as lockStatus } from '../../tools/lib/lock.mjs';
 import { simMeta, SIM_SETTINGS, runTarget } from '../../tools/lib/sim-scroll.mjs';
 import { tempDir } from '../helpers.mjs';
@@ -103,6 +104,50 @@ test('takeSimLock: one Simulator session at a time; a second waits, gives up aft
     await a.release(); // a stale handle never frees someone else's hold
     assert.equal(lockStatus(SIM_LOCK).holder.owner, 'two');
     await b.release();
+  } finally { if (prev === undefined) delete process.env.FW_STATE_DIR; else process.env.FW_STATE_DIR = prev; }
+});
+
+test('I-050 openedTab: the one tab on the url, or the one not listed before openurl; null while undecided; never the first of several', () => {
+  const ws = (n) => `ws://127.0.0.1:9232/devtools/page/${n}`;
+  const want = 'http://localhost:5367/';
+  const stale = { url: 'http://localhost:63765/', webSocketDebuggerUrl: ws(1), appId: 'PID:18026' };
+  const mine = { url: 'http://localhost:5367/', webSocketDebuggerUrl: ws(2), appId: 'PID:18026' };
+  assert.equal(openedTab([stale, mine], want, [stale]), mine, 'a restored tab on another host is not a candidate');
+  assert.equal(openedTab([stale], want, [stale]), null, 'not listed yet');
+  assert.equal(openedTab([{ ...mine, url: 'http://localhost:5367/other' }], want), null, 'another path');
+  const hashed = { ...mine, url: 'http://localhost:5367/#x' };
+  assert.equal(openedTab([hashed], want), hashed, 'a hash or query does not matter (host and path do)');
+  const sameUrl = { ...stale, url: want };
+  assert.equal(openedTab([sameUrl, mine], want, [sameUrl]), mine, 'restored on the same url: the new one');
+  assert.equal(openedTab([sameUrl, mine], want, [sameUrl, mine]), null, 'both listed before: undecided, not the first');
+  assert.equal(openedTab([sameUrl, mine], want, []), null, 'no listing before: undecided');
+  const reused = { ...stale, url: want }; // Safari navigated the restored tab itself: same websocket, new url
+  assert.equal(openedTab([reused], want, [stale]), reused);
+  assert.equal(openedTab([{ url: want }, 'x', null], want), null, 'no websocket, no candidate');
+});
+
+test('I-050 writeOpened / openedHost / scopeTabs: the host of this session\'s open (mode 600); another session\'s record or none scopes nothing; a caller\'s FW_TAB_HOST wins', () => {
+  const prev = process.env.FW_STATE_DIR;
+  process.env.FW_STATE_DIR = tempDir('fw-sim-opened-');
+  try {
+    const s1 = { id: 's1' }, s2 = { id: 's2' };
+    assert.equal(openedHost(s1), null, 'no record');
+    let env = {};
+    assert.equal(scopeTabs(s1, env), null);
+    assert.deepEqual(env, {});
+    writeOpened(s1, 'http://localhost:5367/path?q=1');
+    assert.equal(statSync(openedFile()).mode & 0o777, 0o600);
+    assert.equal(openedHost(s1), 'localhost:5367');
+    assert.equal(openedHost(s2), null, 'an earlier session\'s open does not scope this one');
+    assert.equal(openedHost(null), null);
+    env = {};
+    assert.equal(scopeTabs(s1, env), 'localhost:5367');
+    assert.equal(env.FW_TAB_HOST, 'localhost:5367');
+    env = { FW_TAB_HOST: 'localhost:9999' };
+    assert.equal(scopeTabs(s1, env), 'localhost:9999', 'set by the caller: kept');
+    env = {};
+    assert.equal(scopeTabs(s2, env), null);
+    assert.deepEqual(env, {});
   } finally { if (prev === undefined) delete process.env.FW_STATE_DIR; else process.env.FW_STATE_DIR = prev; }
 });
 

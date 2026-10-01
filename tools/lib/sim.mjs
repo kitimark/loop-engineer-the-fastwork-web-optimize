@@ -403,6 +403,39 @@ export function quitSimApp() {
   spawnSync(exe('FW_OSASCRIPT', 'osascript'), ['-e', 'quit app "Simulator"'], { encoding: 'utf8', timeout: 30000 });
 }
 
+// ---- open ------------------------------------------------------------------------------------------------------------
+/**
+ * The tab `sim.mjs open` opened (incident I-050): among the listed targets on `want`'s host and path, the only one,
+ * or else the only one that was not listed (same websocket and url) in `before`, the listing taken before simctl
+ * openurl; null while that is not decided (a restored tab on the same url and no new one yet). Never the first of
+ * several (I-037).
+ */
+export function openedTab(list, want, before = []) {
+  const w = new URL(want);
+  const on = (t) => { try { const u = new URL(t.url); return u.host === w.host && u.pathname === w.pathname; } catch { return false; } };
+  const hits = (Array.isArray(list) ? list : []).filter((t) => t && t.webSocketDebuggerUrl && on(t));
+  if (hits.length <= 1) return hits[0] ?? null;
+  const key = (t) => `${t.webSocketDebuggerUrl} ${t.url}`;
+  const old = new Set((Array.isArray(before) ? before : []).filter(Boolean).map(key));
+  const fresh = hits.filter((t) => !old.has(key(t)));
+  return fresh.length === 1 ? fresh[0] : null;
+}
+
+// The Simulator's Safari restores the tabs of the earlier session at launch (incident I-050: a dead server's page that
+// never answers Runtime.evaluate, so it can be neither read nor navigated away), and `open` adds a tab next to it.
+// `open` records its server's host for its session (sim/opened.json, mode 600); the session's later commands scope
+// every tab pick to that host (FW_TAB_HOST, tools/lib/wip.mjs pickTab), so a page of another server is never a
+// candidate. Two pages on the session's own host stay AMBIGUOUS (I-037). A record of another session is ignored.
+export const openedFile = () => file('opened.json');
+export function writeOpened(session, url) { writePrivate(openedFile(), JSON.stringify({ session: session.id, host: new URL(url).host, at: new Date().toISOString() })); }
+export function openedHost(session) { const o = readJson(openedFile(), null); return o && session?.id && o.session === session.id && o.host ? o.host : null; }
+/** Sets env.FW_TAB_HOST to the session's opened host (unless the caller set it); returns the host in force or null. */
+export function scopeTabs(session, env = process.env) {
+  const h = openedHost(session);
+  if (h && !env.FW_TAB_HOST) env.FW_TAB_HOST = h;
+  return env.FW_TAB_HOST || null;
+}
+
 // ---- boot / shutdown -------------------------------------------------------------------------------------------------
 export function deviceState(udid) { return listDevices().find((d) => d.udid === udid)?.state ?? null; }
 

@@ -37,6 +37,9 @@
 // fake devicectl and simctl call) quit and restart the fake Safari: --launch-ms=N (default 300), --launch-never,
 // --launch-blank (it restores no page; a URL opened in it shows one),
 // --fail-app=terminate|launch|url (the fake WDA fails that call).
+// --stale-tab=<url> (incident I-050): a second Safari tab (PID:4242, page/5) restored from an earlier session, listed
+// BEFORE the live one as the Simulator's Safari did; a dead server's page: its websocket opens and has a page target,
+// but it never answers a command (logged as {staleConnected}); not listed while Safari is not running.
 import http from 'node:http';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
@@ -48,6 +51,7 @@ const LOG = process.env.FAKE_WIP_LOG;
 const log = (o) => { if (LOG) appendFileSync(LOG, JSON.stringify({ t: Date.now(), ...o }) + '\n'); };
 
 const tab = { url: arg('url') || 'about:blank', title: 'start', warning: false, gen: 1, alive: true };
+const stale = arg('stale-tab') ? { url: arg('stale-tab'), title: 'restored' } : null; // I-050
 async function load(url) {
   if (url === 'about:blank') { Object.assign(tab, { url, title: '', warning: false }); tab.gen++; log({ navigated: url, warning: false, title: '' }); return; } // iphone.mjs park (I-047)
   try {
@@ -214,7 +218,8 @@ const server = http.createServer((req, res) => {
     const safari = { url: tab.url, title: tab.title, webSocketDebuggerUrl: ws(1), appId: 'PID:4242' };
     const extra = EXTRA_TABS && tab.gen > 1 ? [{ url: `${tab.url}copy/`, title: 'second copy', webSocketDebuggerUrl: ws(3), appId: 'PID:4242' },
       { url: 'http://192.168.0.9:8080/private/inbox', title: 'Private Inbox', webSocketDebuggerUrl: ws(4), appId: 'PID:4242' }] : [];
-    return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: ws(2), appId: 'PID:1304' }, safari, ...extra] : [safari, ...extra]));
+    const restored = stale ? [{ url: stale.url, title: stale.title, webSocketDebuggerUrl: ws(5), appId: 'PID:4242' }] : [];
+    return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: ws(2), appId: 'PID:1304' }, ...restored, safari, ...extra] : [...restored, safari, ...extra]));
   }
   res.statusCode = 404; res.end();
 });
@@ -223,6 +228,11 @@ server.on('upgrade', (req, sock) => {
   sock.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
   if (req.url === '/devtools/page/2') { log({ blankViewConnected: true }); sock.on('data', () => {}); sock.on('error', () => {}); return; } // the background view: silent
   const send = (o) => { if (!sock.destroyed) sock.write(frame(JSON.stringify(o))); };
+  if (stale && req.url === '/devtools/page/5') { // the restored tab: a page target that never answers a command (I-050)
+    log({ staleConnected: true });
+    send({ method: 'Target.targetCreated', params: { targetInfo: { targetId: 'stale-1', type: 'page' } } });
+    sock.on('data', () => {}); sock.on('error', () => {}); return;
+  }
   if (owner.has(req.url)) log({ pageTaken: req.url });
   owner.set(req.url, sock);
   sock.on('close', () => { if (owner.get(req.url) === sock) owner.delete(req.url); });

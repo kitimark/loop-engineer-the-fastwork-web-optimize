@@ -21,7 +21,9 @@
 //        open and wda start work inside it; scroll, record and run (timing) are refused. Every session (functional or
 //        not) holds the exclusive `simulator` process lock: one fw-sim, one session at a time.
 //   # inside a session (its <cmd>, e.g. sh -c '...'):
-//   node tools/sim.mjs open <url> [--out f.png]                simctl openurl, wait until Safari lists it, screenshot to out/sim/
+//   node tools/sim.mjs open <url> [--out f.png]                simctl openurl, wait until Safari lists it, screenshot to out/sim/;
+//        and records its server's host: the session's later scroll / record / run / gesture / safari-restart pick only tabs
+//        on it (FW_TAB_HOST), so a tab Safari restored from an earlier session is never a candidate (I-050)
 //   node tools/sim.mjs scroll [--label l] [--out f]            iphone.mjs scroll's probe and sequence -> out/sim/<owner>-<label>-<ts>.json
 //   node tools/sim.mjs record [--seconds 25] [--label l]       iphone.mjs record's frame logger
 //   node tools/sim.mjs run --driver scroll|window|morph ...    iphone.mjs run (std probe, fw-iphone-run/1) -> out/sim/<owner>-run-<label>-<ts>.json
@@ -101,6 +103,7 @@ async function main() {
     const { gestureTarget } = await import('./lib/sim-scroll.mjs');
     const dry = flag('dry-run');
     const session = dry ? null : S.requireSession({ owner: opt('owner'), timed: true });
+    if (session) S.scopeTabs(session); // only tabs on the server of this session's open (I-050)
     const requireSession = () => S.requireSession({ owner: session.owner, timed: true });
     const holdEndsAt = () => S.holdGate(undefined, undefined, { owner: session.owner }).endsAt ?? 0;
     return gestureCmd({ argv, arg, opt, flag, port: S.ports().tabs, requireLease: () => { requireSession(); return session.owner; },
@@ -108,6 +111,7 @@ async function main() {
   }
   if (['open', 'scroll', 'record', 'run', 'safari-restart'].includes(cmd)) {
     const session = S.requireSession({ owner: opt('owner'), timed: !['open', 'safari-restart'].includes(cmd) });
+    if (cmd !== 'open' && !(cmd === 'safari-restart' && opt('url'))) S.scopeTabs(session); // only tabs on the server of this session's open (I-050)
     const owner = session.owner;
     if (cmd === 'open') return openCmd(session, owner);
     if (cmd === 'safari-restart') {
@@ -136,24 +140,26 @@ async function main() {
 
 async function openCmd(session, owner) {
   if (!/^https?:\/\//.test(arg || '')) throw new Error('usage: node tools/sim.mjs open <url> (inside a session)');
-  const { openTab, sleep } = await import('./lib/wip.mjs');
-  const { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem } = await import('./lib/iphone-url.mjs');
+  const { openTab, urlHost, isBlankUrl, sleep } = await import('./lib/wip.mjs');
+  const { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, lanSafeText } = await import('./lib/iphone-url.mjs');
   const info = await mirrorInfo(arg);
   const target = iphoneTarget(arg, info);
   if (target.note) log(target.note);
   const cfg = S.readConfig();
   const p = S.ports();
+  const listTabs = async () => { try { return await (await fetch(`http://localhost:${p.tabs}/json`, { signal: AbortSignal.timeout(4000) })).json(); } catch { return []; } };
+  const before = await listTabs(); // tells the opened tab from one Safari restored on the same url (I-050)
   const r = S.simctl(['openurl', cfg.udid, target.url]);
   if (r.status !== 0) throw new Error(`simctl openurl failed (exit ${r.status})`);
   const want = new URL(target.url);
   let tab = null;
   for (let i = 0; i < 60 && !tab; i++) {
     await sleep(500);
-    const list = await (await fetch(`http://localhost:${p.tabs}/json`, { signal: AbortSignal.timeout(4000) })).json().catch(() => []);
-    tab = list.find((t) => { try { const u = new URL(t.url); return u.host === want.host && u.pathname === want.pathname; } catch { return false; } }) || null;
+    tab = S.openedTab(await listTabs(), target.url, before);
   }
-  if (!tab) throw new Error(`Safari in the Simulator never listed ${target.url} (30 s)`);
-  const c = await openTab(want.host, { port: p.tabs });
+  if (!tab) throw new Error(`Safari in the Simulator never listed ${target.url}, or listed it in several tabs and none of them new (30 s; I-037: not picking one)`);
+  // Safari may list tabs restored from an earlier session next to it (I-050): only pages on this server's host
+  const c = await openTab((u) => urlHost(u) === want.host, { port: p.tabs });
   try {
     for (let i = 0; i < 60; i++) { if ((await c.evaluate('document.readyState')) === 'complete') break; await sleep(500); }
     const landed = await c.evaluate(LANDED_JS);
@@ -163,6 +169,9 @@ async function openCmd(session, owner) {
     mkdirSync(dirname(shot), { recursive: true });
     const s = S.simctl(['io', cfg.udid, 'screenshot', shot]);
     log(`Safari (Simulator) now on ${landed.href}${s.status === 0 ? `; screenshot ${shot}` : '; screenshot failed'}`);
+    S.writeOpened(session, target.url); // this session's later commands pick only tabs on this host (I-050)
+    const others = (await listTabs()).filter((t) => t && t.webSocketDebuggerUrl && !isBlankUrl(t.url) && urlHost(t.url) !== want.host).length;
+    if (others) log(`Safari also lists ${others} page${others > 1 ? 's' : ''} of another server (restored from an earlier session?): this session's scroll / record / run / gesture pick only tabs on ${lanSafeText(want.host)} (I-050)`);
   } finally { c.close(); }
   return 0;
 }
