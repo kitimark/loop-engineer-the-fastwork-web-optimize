@@ -747,3 +747,60 @@ our best current stack. Both are served over `site-pretty` with `--vendors=local
   - The table went to de-style-recalc, fix-scene-scope and the lead (19:0xZ).
 - **Files** stay in `out/iphone-runner/`: `sr-{A7,B8,B9,A10,A11,B12}.json` + `.tl.json`, `sr2-S-{open,end}.json`,
   `sr2-score.json`, `sr2.sh`, `srscore.mjs`, and block 1 as `sr-{A1,B2,B3,A4,A5,B6}`, `sr-score-run1.json`.
+
+### 4q. P-039 st5 (ticket 511908f): C aw1-10e vs S st5 vs V1 st4-noswap, W + Timeline depth 8 (19:12-19:23Z)
+
+- **Setup:**
+  - Arms: C aw1-10e (JS 3e2f599a1632, CSS c6aad94b455f), S st5 (JS 268a68962d18, CSS e68c99631e80), V1 st4-noswap
+    (JS b8c085d9b619, CSS = C). Served hashes were checked at the start.
+  - W as P14 (§4o). One warm-up per port. Counted runs C1 S2 V3 / V4 C5 S6 / S7 V8 C9.
+  - Timeline-OFF S sentinels on C pass: open bottom 60.0 / scroll 57.1, end 60.0 / 57.7. Phone 41.9 → 39.4 °C, no LPM.
+- **Timeline-OFF idle at y 1500, 40 s per arm:**
+
+| arm | >30 / >34 / >38 | >46 / >50 / >54 | near | max | fps |
+|---|---|---|---|---|---|
+| C | 86 / 70 / 55 | 18 / 4 / 2 | 47 | 58 ms | 58.1 |
+| S st5 | 29 / 29 / 26 | 0 / 0 / 0 | 3 | 46 ms | 59.3 |
+| V1 st4-noswap | 1 / 1 / 1 | 1 / 0 / 0 | 1 | 49 ms | 60.0 |
+
+- **Scored by fix-scroll-engine (p14score), OBSERVED:**
+  - st5 is MIXED: the swap ticks are gone (1/31), but the slide-start ticks remain (15/33). C is 64/64; V1 has 4/63.
+  - The "cost moved" line did not trip, so there was no LayerTree read.
+  - Their README carries the write-up.
+- **Files** (`out/iphone-runner/`): `p039-{C1,S2,V3,V4,C5,S6,S7,V8,C9}.json` + `.tl.json`, `p039-Sent-{open,end}.json`,
+  `p039-idle-{C,S,V}.json`, `p039.sh`.
+
+From 19:27Z (user direction via the lead), phone timing blocks are deferred: P-033, P-038, P12, P10, P5 and P9 are
+parked. The phone now runs attribution only.
+
+### 4r. Scene-scope attribution (fix-scene-scope ticket, user GO 19:41Z): nested Layouts at the #platform switch (19:44-19:52Z)
+
+- **Setup:**
+  - All arms are on base B (`user-bplus`, JS dbd5fdb4f1fb): C = B (CSS cc8d1340b449), V = B+V1 (CSS 851c397012bc),
+    I = B+V1i (CSS 298587e0bb94).
+  - Immutable snaps `out/iphone-runner/snap/ss-{C,V,I}`. Served hashes were checked at the start against the ticket.
+  - W 430x775: 6 s idle, then scroll to the end. Timeline depth 10. One warm-up per port. Counted runs C1 V2 I3 / V4 I5 C6 / I7 C8 V9.
+  - Timeline-OFF heat sentinels on C pass: open bottom 60.2 / scroll 57.6, end 60.1 / 58.4. Phone 36.7-37.6 °C.
+  - Analyzer `out/iphone-runner/ssan.mjs`. The switch RS is the largest RS scheduled by `cE` :2762 at y 2400-2900.
+- **Switch RS at y ~2615** (ms; layouts per run in the order C1 C6 C8 / V2 V4 V9 / I3 I5 I7):
+
+| arm | RS total | RS self | nested Layouts | main view-rooted Layout |
+|---|---|---|---|---|
+| C | 17.8-20.8 | 2.4-3.7 | 2/2/2 (2nd: view-rooted, 1.1-1.5 ms) | 14.2-16.5 |
+| V | 14.9-18.1 | 1.2-1.4 | 2/2/2 (2nd: 0.1 ms, root 390x312, not the view) | 13.7-16.6 |
+| I | 17.2-18.3 | 0.6-0.9 | 1/1/1 | 16.3-17.8 |
+
+- **fwReskip RS at y ~2990** (:2821), RS / nested Layout in ms:
+  - C: 14.0-14.6 / 12.1-12.8
+  - V: 17.9-21.5 / 15.7-18.9
+  - I: 21.4-22.6 / 18.4-19.8
+  - Switch + fwReskip: C 32.0-35.1, V 32.8-39.0, I 39.3-40.9.
+  - RS ≥ 16 ms in y 2200-3100: C 1/1/1, V 1/1/2, I 2/2/2.
+- **Runner's reading (OBSERVED, in our setup, cause unknown):**
+  - V1i removes the second nested Layout. V1 turns it into a 0.1 ms scoped layout.
+  - Both arms cut RS self time, but neither shrinks the main view-rooted layout.
+  - Layout cost grows at the next intrinsic-size write (fwReskip).
+  - C's switch RS is smaller here than in §4p's B runs (17.8-20.8 vs 29.2-32.2 ms) on a cooler phone (37 vs 42 °C).
+  - Results went to fix-scene-scope, mgmt-ops-6 and the lead.
+- **Files** (`out/iphone-runner/`): `ss-{C1,V2,I3,V4,I5,C6,I7,C8,V9}.json` + `.tl.json`, `ss-Sent-{open,end}.json`,
+  `ss-score.json`, `ss.sh`, `ssan.mjs`.
