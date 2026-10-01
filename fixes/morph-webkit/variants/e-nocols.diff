@@ -1,0 +1,16 @@
+# fastwork mirror fix: mw-e-nocols
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10c/overlay: apply aw1-10c first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw-e-nocols --on aw1-10c
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11820,3 +11820,6 @@
+     scroll-behavior: auto;
+   }
+ }
++
++/* ablation mw-e (diagnostic only): the morph panel image columns do not animate */
++.start-selling-morph-col-track { animation: none !important; will-change: auto !important; }

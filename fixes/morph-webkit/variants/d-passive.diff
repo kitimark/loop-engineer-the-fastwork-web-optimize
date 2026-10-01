@@ -1,0 +1,120 @@
+# fastwork mirror fix: mw-d-passive
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10c/overlay: apply aw1-10c first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw-d-passive --on aw1-10c
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 757e2cbc44e7f245022767b04f618a3bd2b505138603d26079af89e7e04c25ad
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -5416,6 +5416,13 @@
+     transform: translateY(0);
+   }
+ }
++/* perf(morph-scrolljack-passive): only .start-selling-platform itself reads --morph-fade (filter, opacity);
++   non-inherited, so the per-frame write in the morph doesn't restyle the section's descendants. */
++@property --morph-fade {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 1;
++}
+ .start-selling-platform {
+   --morph-fade: 1;
+   box-sizing: border-box;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13246,7 +13246,9 @@
+       c = 0,
+       l = 0,
+       u = !1,
+-      d = !1,
++      d = 0,
++      __atEnd = !1,
++      __pf = null,
+       f = () => {
+         z(h, !0);
+       },
+@@ -13268,7 +13270,7 @@
+           i = Math.min(r, Math.max(0, -n.top));
+         z(p, i / r >= 0.72);
+       },
+-      y = () => document.querySelector(`.start-selling-platform`),
++      y = () => (__pf?.isConnected ? __pf : (__pf = document.querySelector(`.start-selling-platform`))),
+       S = () => {
+         let e = y();
+         if (!e) return;
+@@ -13282,7 +13284,7 @@
+       },
+       E = (t) => {
+         if (w !== t || a !== t) {
+-          if (((w = t), z(b, !0), e.matches)) {
++          if (((w = t), z(b, !0), I(), e.matches)) {
+             ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
+             return;
+           }
+@@ -13306,7 +13308,7 @@
+       },
+       k = (e) => C() || (e > 0 && O()),
+       A = (e) => {
+-        k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
++        k(e.deltaY) && (C() || (s = window.scrollY), d === 2 && e.cancelable && e.preventDefault(), D(e.deltaY));
+       },
+       j = (e) => {
+         c = e.touches[0]?.clientY ?? 0;
+@@ -13314,33 +13316,43 @@
+       M = (e) => {
+         let t = e.touches[0]?.clientY ?? c,
+           n = c - t;
+-        ((c = t), k(n) && (C() || (s = window.scrollY), e.preventDefault(), D(n)));
++        ((c = t), k(n) && (C() || (s = window.scrollY), d === 2 && e.cancelable && e.preventDefault(), D(n)));
+       },
+-      N = () => {
+-        d ||
+-          ((d = !0),
+-          window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
+-          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
+-          window.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++      // perf(morph-scrolljack-passive): d = 0 off, 1 passive, 2 blocking. Blocking wheel/touchmove
++      // listeners (which make every touch wait for the main thread) only while the jack can engage:
++      // morph active, or #platform's end in view (__atEnd, same test O() as the handlers). Elsewhere in
++      // the 200% zone the same handlers run passive, so a drag that reaches the end still starts the morph.
++      N = (t) => {
++        if (d === t) return;
++        d
++          ? (window.removeEventListener(`wheel`, A, !0), window.removeEventListener(`touchmove`, M, !0))
++          : window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 });
++        d = t;
++        window.addEventListener(`wheel`, A, { passive: t === 1, capture: !0 });
++        window.addEventListener(`touchmove`, M, { passive: t === 1, capture: !0 });
+       },
+       P = () => {
+         d &&
+-          ((d = !1),
++          ((d = 0),
+           window.removeEventListener(`wheel`, A, !0),
+           window.removeEventListener(`touchstart`, j, !0),
+           window.removeEventListener(`touchmove`, M, !0));
+       },
+       I = () => {
+-        u || C() ? N() : P();
++        C() || (u && __atEnd) ? N(2) : u ? N(1) : P();
++      },
++      __end = () => {
++        let e = O();
++        e !== __atEnd && ((__atEnd = e), I());
+       },
+       L = () => {
+-        (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
++        (_(), u && !C() && __end(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
+       },
+       R = y(),
+       te = R
+         ? new IntersectionObserver(
+             ([e]) => {
+-              ((u = !!e?.isIntersecting), u && z(b, !0), I());
++              ((u = !!e?.isIntersecting), u && z(b, !0), (__atEnd = u && O()), I());
+             },
+             { rootMargin: `200% 0px` },
+           )
