@@ -895,3 +895,76 @@ before the untimed at-rest check of re-keep-op vs re-keep (ticket via mgmt-ops-5
 **Next.** A build card for the end-state fix. Conditions 1 and 2 are lifted. The at-rest check above passed, so
 re-keep-op's gain block can go ahead. Also a page-wide pitfall: every reveal
 that ends at `opacity: 1` / `filter: none` / `transform: none` pays this frame on the phone.
+
+### 7.10 P-039 result: st5 (persistent slots) clears the swap tick but not the slide start; a WebKit source trigger
+
+**Block.** P-039, iPhone 15 Pro Max Safari, S driver, Timeline on in every counted run. Arms:
+- C aw1-10e (C1, C5, C9);
+- st5 (S2, S6, S7): 5 slots mounted for the page's life, `src` updated in place, `.is-sliding` on the carousel runs the
+  same exit / shift / pop keyframes, permanent `will-change: transform, translate, opacity`;
+- V1 st4-noswap (V3, V4, V8).
+
+fix-scroll-engine scored it first (`p039score.cjs`, layout-containment README 232e191). de-pm-hero cross-checked it
+with `de-pm-hero/p039rot.mjs`, `p039slide.mjs`, `p039seq.mjs` and `p039idle.mjs`. A tick is a slide start when it
+comes ≥450 ms after the previous tick, and a swap otherwise.
+
+| arm | slide-start ticks with a whole-view Layout ≥10 ms (de-pm-hero / fix-scroll-engine) | swap ticks | pooled (de-pm-hero) | Layout ms per 0-260 ms slide window |
+|---|---|---|---|---|
+| C | 33/33 | 34/34 | 100 % | 58.6 |
+| st5 | 20/33 (61 %) / 15/33 (45 %) | 2/34 / 1/31 | 31 % (MIXED) | 21.7 |
+| V1 | 3/33, scroll phase only | 4/33, scroll phase only | 10 % | 5.5 |
+
+**Idle at y 1500, Timeline off** (one uncounted 40 s run per arm, info only):
+
+| arm | >30 | >34 | >38 | >46 | >50 | >54 | max |
+|---|---|---|---|---|---|---|---|
+| C | 86 | 70 | 55 | 18 | 4 | 2 | 58 ms |
+| st5 | 29 | 29 | 26 | 0 | 0 | 0 | 46 ms |
+| V1 | 1 | 1 | 1 | 1 | 0 | 0 | 49 ms |
+
+**Predictions (pre-registered with fix-scroll-engine):**
+- gone ≤25 %: **MISS** for slide-start ticks; swap ticks pass;
+- tick Layout median <1 ms: HIT (0.3 ms);
+- idle near V1: **MISS** (dt>34 29 vs 1). dt>50 is 0, and that holds at both twins;
+- cost moved to Paint/Composite: not tripped. Paint is 1.1 vs 1.6 ms per tick and Composite 18.8 vs 17.7, so the clip-path
+  paint risk did not show;
+- snap-back flash at the swap: swap ticks are clean (Timeline only; a frame grab was not run).
+
+st5 roughly halves the long idle frames at y 1500 (dt>34: 70 → 29) and removes those over 50 ms. What remains is about
+one long frame per cycle, at the slide start.
+
+**Sequence at slide start** (S2, `p039seq.mjs`). The class toggle gives a RecalculateStyles and a ~0.1 ms Layout. The
+whole-view 19-30 ms Layout comes one or two frames later: an animation-frame RecalculateStyles emits InvalidateLayout,
+and then the Layout runs. Script dirties nothing at that point; the running animations' style does. In a 0-260 ms
+window there are 0-3 such Layouts, at offsets 0-237 ms (median 31).
+
+**A source-backed trigger.**
+- WebKit `Source/WebCore/style/StyleDifference.cpp`, function `miscDataChangeRequiresLayout`, read at the §7.6 pin
+  `a1fb7ce` and on `main` on 2026-10-02; line numbers were not taken. Two conditions return "requires layout":
+  - `if (a.opacity.isOpaque() != b.opacity.isOpaque())`, with the comment `// FIXME: We would like to use
+    SimplifiedLayout here, but we can't quite do that yet.`;
+  - `if (a.transform->hasTransform() != b.transform->hasTransform()) return true;`.
+- Changes to `translate`, `scale` and `rotate` only add a context-sensitive Transform difference; they do not require
+  layout. **CONFIRMED** (source) that these two flips require layout.
+- In st5 the flips fall exactly where the Layouts are:
+  - at slide start, the lead slot goes from `transform: none` to `scale(1)` (hasTransform flips);
+  - one frame later its opacity drops below 1 (isOpaque flips);
+  - at the slide end, `avatars-pop` reaches and holds `opacity: 1` (isOpaque flips);
+  - `avatars-shift` (translate only) and the resting next slot (`scale(.35)`, opacity 0) never flip.
+- C runs the same keyframes and V1 runs none, which fits all three arms.
+- §7.9's page-wide pitfall ("every reveal that ends at `opacity: 1` / `transform: none` pays this frame on the phone")
+  is the same rule.
+- **That these flips cause the whole-view Layouts here is UNRESOLVED.** Why the img's Layout climbs past the
+  carousel boundary to the view is still W2 (§7.3), unexplained.
+
+**Decisive check, which is also the fix candidate: st6 = st5 with no flips.**
+- Every slot rests at `transform: scale(1)`.
+- Opacity is kept off 1 throughout: resting 0.999, `avatars-exit` starts at 0.999, and `avatars-pop` ends at 0.999.
+- Nothing else changes.
+
+Prediction:
+- slide-start ticks ≤25 % whole-view (gone);
+- idle at y 1500 near V1 (dt>34 in single digits, dt>50 0, twins included).
+
+If slide-start Layouts persist, the flips are REFUTED as the cause. A Chrome mechanism check that both flips are gone
+comes first. This is §7.4 A3's "ends not at 1/none" as a measured rule.
