@@ -258,6 +258,13 @@ between tool calls.
    **15:2xZ state:** P11 Block A DONE (P-028: HIT mechanism, MISS ms, NULL frame time; Block B DROPPED by the owner;
    lc-cq3 not a candidate) -> P14 after P-032. P-032 CLEARED: fix-nav-morph's owed (A)/(B) in the row (2 forward
    tweens/run, (4) kept; scorer <scratchpad>/fix-nav-morph/p032-score.mjs).
+   **16:2xZ (resume after the usage reset):** landed f86290e (ts-analysis), c14b6b0 + a68376e (sim.mjs, review-sim
+   ACCEPT-WITH-NOTES, npm test 716/716), 19a383d (arch-sim). Simulator verdict F-084: classes 1, 2, 4 not usable, class 3
+   lead generator only, class 5 untested; FP-6 (gesture) not funded for now. Swipe pair 3 = "same" (0/2 V, catch passed):
+   cdwc not felt, landing rests on P-032 alone. F-v3 run 1 = C-002 (fv3-set1.json), run 2 = C-004 (user, 16:2xZ). Phone
+   next: C-004 -> cooling -> P-032 -> P14 -> P-035 G -> P-036 G. User question "phone over Wi-Fi, no cable": lead answered
+   UNRESOLVED, check offered after C-004, HOLD until the user replies. I-032 B1 (paint units/layerScale) open with
+   ts-render-signals. Digest to the lead every 30 min.
    **PHONE ORDER (lead 14:2xZ, supersedes the NOW line above):** P4 (started ~14:2xZ; block A + T1a A/A PASSED (ABBA aw1-10e S, on vs off: dt>50 3 vs 7, dt>34 18 vs 21, fps
    57.4 vs 57.3; T1a now absolute; minShift revisit CLOSED: HL p95 on-off +0.48 ms, n=2/arm (crude), stays 4 ms,
    ts-analysis 14:3xZ), 10 min, block B) -> P-033 step 0
