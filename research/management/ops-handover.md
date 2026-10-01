@@ -65,6 +65,11 @@ number (A/A + all-wave1) is one announced ~15 min hold. arch-apple #8 (reveal wi
 - Queue entries drop silently after 1 h: `lock.mjs run` has a default 3600 s acquire timeout (N11 and nav-morph lost
   their places this way; both requeued with longer timeouts). Tell long-waiting owners to pass `--timeout 14400`;
   candidate item for ts-prio (I-020) if waits stay long.
+- **I-026 (env, N11):** the Mac entered "Maintenance Sleep" mid-hold (09:23:25 local, 472 s); timeouts and lock caps
+  fired ~8 min late. May explain other odd holds (check against I-023's 1953 s wait). Workaround: `caffeinate -dis`
+  around the command inside the `sh -c`; tool-side fix (every hold under caffeinate) is for the lead/toolsmith.
+  N11 partial (base only): gtag scrollend at gtag/js:903 is 83 % spread inside gtag with no hotspot, so deferral is the
+  only lever; requeued with caffeinate.
 - No normal timing A/Bs until I-023 lands (lead, 01:15Z); mechanism and short-lane work continues.
 - Digest to the lead every ≤ 30 min: counts waiting/working/idle, backlog, memory, ALARM lines. Last digest 00:12Z.
 - mgmt-lead re-run was due ~01:00Z (iteration 2): remind the lead.
