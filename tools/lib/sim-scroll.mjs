@@ -14,6 +14,7 @@ import { CERT_WARNING_TITLE } from './iphone-url.mjs';
 import { sample as hostSample } from './host.mjs';
 import { ports, proxyCheck, readConfig, SIM_DEVICE } from './sim.mjs';
 import { TOOL_FILES } from './iphone-run.mjs';
+import { TOOL_FILES as GESTURE_TOOL_FILES } from './gesture-run.mjs';
 
 const PROBE = `(async () => {
   const fp = window.__fp = {frames: []};
@@ -149,4 +150,33 @@ export async function recordCmd({ session, owner, label = 'finger', seconds = 25
   log(JSON.stringify(res.summary, null, 1));
   log(`saved ${file}`);
   return file;
+}
+
+/**
+ * `sim.mjs gesture`: iphone.mjs gesture's target for the Simulator (tools/lib/gesture-run.mjs): the session and its
+ * normal hold instead of the iphone lease (checked before every op, and the hold must outlast the run plus the
+ * Simulator's shutdown), strokes to WDA-sim on the session's WDA port, the :9231 SIMULATOR check before the run, host
+ * load around it, meta.device "simulator" + meta.sim, out/sim/. Simulator gesture numbers are mechanism checks only
+ * (touchmove counts, dp per stroke), never timing verdicts (F-084): stats.mjs keeps meta.device "simulator" apart.
+ */
+export function gestureTarget(session, { requireSession, holdEndsAt, cleanupMs = 40000, now = () => Date.now(), check = proxyCheck, load = hostLoad }) {
+  let hostStart = null;
+  const left = () => holdEndsAt() - now() - cleanupMs;
+  return {
+    device: SIM_DEVICE, outDir: 'sim', wdaBase: `http://127.0.0.1:${ports().wda}`, toolFiles: [...SIM_TOOL_FILES, ...GESTURE_TOOL_FILES],
+    wdaHint: 'node tools/sim.mjs wda start (inside your session)', openHint: (u) => `node tools/sim.mjs open ${u}`,
+    async preflight(estMs) {
+      requireSession();
+      const need = estMs * 1.5 + 30000;
+      if (left() < need) throw new Error(`this gesture run needs about ${Math.ceil(need / 1000)} s, but your chrome-measure hold leaves ${Math.max(0, Math.floor(left() / 1000))} s before the Simulator must shut down: run it in a new hold (--max-seconds 420)`);
+      await check();
+      hostStart = await load();
+      return { pageUrl: null, pageSource: null };
+    },
+    lost() {
+      try { requireSession(); } catch (e) { return `lost the Simulator session: ${e.message}`; }
+      return left() > 0 ? null : 'your chrome-measure hold is ending: stopped between strokes so the Simulator can shut down in time';
+    },
+    extra: async () => ({ settings: { ...SIM_SETTINGS }, sim: simMeta(session, { hostStart, hostEnd: await load() }) }),
+  };
 }

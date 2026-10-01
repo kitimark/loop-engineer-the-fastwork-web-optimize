@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from '../helpers.mjs';
-import { profilePos, profileVel, compileStroke, compileScript, strokeOps, SAFE, STEP_MS, SCREEN } from '../../tools/lib/gesture.mjs';
+import { profilePos, profileVel, compileStroke, compileScript, strokeOps, segmentTimes, SAFE, SEG_MIN_MS, SEG_TOL_PX, SCREEN, COMPILER_VERSION } from '../../tools/lib/gesture.mjs';
 
 const PROTOCOL = JSON.parse(readFileSync(join(REPO, 'tools', 'gestures', 'finger-protocol-v1.json'), 'utf8'));
 const stroke = (o) => compileStroke({ dir: 'up', px: 400, ms: 600, profile: 'minjerk', pressMs: 40, holdMs: 0, x: 215, ...o });
@@ -27,7 +27,7 @@ test('profiles: minjerk starts and ends at rest; fling peaks at lift-off with 1.
   for (let u = 0; u < 1; u += 0.01) assert.ok(profileVel('fling', u) <= profileVel('fling', 1), 'fling: velocity never above its lift-off value');
 });
 
-test('compileStroke: touch down at the start, press pause, one pointerMove per 8 ms, lift', () => {
+test('compileStroke: touch down at the start, press pause, piecewise-linear moves of >= 40 ms, lift', () => {
   const c = stroke({ ms: 605 });
   const a = c.actions.actions[0];
   assert.deepEqual([a.type, a.id, a.parameters], ['pointer', 'finger1', { pointerType: 'touch' }]);
@@ -36,9 +36,8 @@ test('compileStroke: touch down at the start, press pause, one pointerMove per 8
   assert.deepEqual(a.actions[2], { type: 'pause', duration: 40 });
   assert.deepEqual(a.actions.at(-1), { type: 'pointerUp', button: 0 });
   const m = moves(c).slice(1);
-  assert.equal(m.length, Math.ceil(605 / STEP_MS));
-  assert.ok(m.slice(0, -1).every((x) => x.duration === STEP_MS));
-  assert.equal(m.at(-1).duration, 605 - STEP_MS * (m.length - 1));
+  assert.ok(m.length >= 8 && m.length <= 20, `${m.length} moves: a few per stroke, not one per 8 ms (I-042)`);
+  assert.ok(m.every((x) => x.duration >= SEG_MIN_MS), `every segment >= ${SEG_MIN_MS} ms: ${m.map((x) => x.duration)}`);
   assert.equal(m.reduce((t, x) => t + x.duration, 0), 605);
   assert.equal(m.at(-1).y, 280); // up 400 from 680
   assert.ok(m.every((x) => x.x === 215));
@@ -54,10 +53,41 @@ test('compileStroke: touch down at the start, press pause, one pointerMove per 8
   assert.equal(moves(d).at(-1).y, 630);
 });
 
+test('I-042, compiler v2: segments >= 40 ms that stay within 1 px of the profile; a 4.5 s drag is a few points, not 558', () => {
+  assert.equal(COMPILER_VERSION, 2);
+  const cases = [['minjerk', 450, 900], ['minjerk', 560, 600], ['fling', 520, 160], ['drag', 560, 4458], ['still', 200, 800], ['minjerk', 40, 40], ['fling', 300, 79], ['fling', 300, 90], ['drag', 560, 200]];
+  for (const [p, px, ms] of cases) {
+    const ts = segmentTimes(p, px, ms);
+    const tag = `${p} ${px} px ${ms} ms: ${ts}`;
+    assert.deepEqual([ts[0], ts.at(-1)], [0, ms], tag);
+    const segs = ts.slice(1).map((t, i) => t - ts[i]);
+    assert.ok(segs.every((d) => d >= SEG_MIN_MS), `${tag}: a segment under ${SEG_MIN_MS} ms`);
+    if (ms < 2 * SEG_MIN_MS) assert.equal(segs.length, 1, tag);
+    // a segment the greedy made LONGER than the minimum stays within tolerance (a 40 ms one, and the last, may be
+    // forced where the profile bends faster than 1 px per 40 ms)
+    const pos = (t) => px * profilePos(p, t / ms, ms);
+    for (let i = 1; i < ts.length - 1; i++) {
+      if (ts[i] - ts[i - 1] <= SEG_MIN_MS) continue;
+      for (let t = ts[i - 1]; t <= ts[i]; t += 1) {
+        const lin = pos(ts[i - 1]) + ((pos(ts[i]) - pos(ts[i - 1])) * (t - ts[i - 1])) / (ts[i] - ts[i - 1]);
+        assert.ok(Math.abs(lin - pos(t)) <= SEG_TOL_PX + 0.25, `${tag}: ${Math.abs(lin - pos(t)).toFixed(2)} px off at ${t} ms`);
+      }
+    }
+  }
+  assert.ok(segmentTimes('minjerk', 450, 900).length - 1 <= 20, 'a 900 ms minjerk: ~15 points (v1: 113)');
+  assert.ok(segmentTimes('drag', 560, 4458).length - 1 <= 8, 'a 4458 ms drag: the plateau is one segment (v1: 558)');
+  // the durations are what is sent: the compiled moves are the segment lengths
+  const c = stroke({ px: 450, ms: 900 });
+  const ts = segmentTimes('minjerk', 450, 900);
+  assert.deepEqual(moves(c).slice(1).map((x) => x.duration), ts.slice(1).map((t, i) => t - ts[i]));
+  assert.equal(c.kin.moves, ts.length - 1);
+});
+
 test('compileStroke kinematics: fling lifts off at ~1.875 px/ms, minjerk has (almost) stopped', () => {
   const f = stroke({ px: 520, ms: 160, profile: 'fling' });
   assert.equal(f.kin.analyticPeakPxPerS, 6094);
-  assert.ok(f.kin.liftoffPxPerS > 5900 && f.kin.liftoffPxPerS <= 6094, f.kin.liftoffPxPerS);
+  // v2: the last segment is >= 40 ms long and XCTest moves at its average speed (v1's last 8 ms sample: > 5900)
+  assert.ok(f.kin.liftoffPxPerS > 0.95 * 6094 && f.kin.liftoffPxPerS <= 6094, f.kin.liftoffPxPerS);
   assert.equal(f.kin.peakPxPerS, f.kin.liftoffPxPerS, 'fling: peak at lift-off');
   const mj = stroke({ px: 450, ms: 900 });
   assert.ok(mj.kin.liftoffPxPerS < 30, `minjerk ends near rest (${mj.kin.liftoffPxPerS})`);
@@ -167,8 +197,9 @@ test('the protocol script: both variants compile, ~1 min each; the compiled hash
   // Pinned: a change to the compiler, the profiles or the protocol script changes the stimulus. If that is
   // intended, bump the script's version (or COMPILER_VERSION) and update these; gesture numbers compare only
   // between runs with the same hash.
-  assert.equal(a.hash, '03aade25b820b5d39163e9c112c6d0aae801ad9f8ad8b8f87f3d58f2be8e5097');
-  assert.equal(s.hash, '6b27d1800ad7729b6da34715a427761553cc07cb45b049d69918f2ba3dc6327b');
+  // compiler v2 (I-042): v1 was 03aade25b820... / 6b27d1800ad7...
+  assert.equal(a.hash, 'ee84ebd4e9163f6b971b092905be79b8f4037f1318f44e70ffeb896bb4adb9b0');
+  assert.equal(s.hash, 'd6cc74723029a840796e3360ca76a3ea3201611b4d4513bb22659cc89cabdd89');
 });
 
 test('drag profile: smooth 150 ms ramps around a constant plateau, starts and ends at rest; plateau px/s in kin', () => {
@@ -186,9 +217,9 @@ test('drag profile: smooth 150 ms ramps around a constant plateau, starts and en
   const d = stroke({ px: 560, ms, profile: 'drag' });
   assert.equal(d.kin.plateauPxPerS, 130, '560 px over 4458 ms with 150 ms of ramps: 130 px/s');
   assert.equal(d.kin.analyticPeakPxPerS, 130);
-  assert.ok(Math.abs(d.kin.peakPxPerS - 130) <= 15, `sampled peak ${d.kin.peakPxPerS} (0.1 px rounding per 8 ms)`);
+  assert.ok(Math.abs(d.kin.peakPxPerS - 130) <= 15, `sampled peak ${d.kin.peakPxPerS}`);
   assert.ok(d.kin.liftoffPxPerS <= 15, `ends at rest (${d.kin.liftoffPxPerS})`);
-  assert.equal(moves(d).length, 1 + Math.ceil(ms / STEP_MS), 'the touch-down point, then one per 8 ms');
+  assert.ok(moves(d).length <= 1 + 8, `the touch-down point, then a few points: the plateau is one long segment (${moves(d).length - 1})`);
   // only drag strokes carry plateauPxPerS: the other profiles' kin (and so v1 scripts' hashes) are unchanged
   assert.equal('plateauPxPerS' in stroke({}).kin, false);
   assert.throws(() => stroke({ profile: 'swipe' }), /profile must be minjerk, fling, still or drag/);
@@ -212,5 +243,5 @@ test('the slow-drag script (U5): ~130 px/s drags through y 400-900 and back, aft
   assert.ok(p.estMs > 20000 && p.estMs < 60000, `estMs ${p.estMs}`);
   assert.equal(p.ops[2].ms, 6000, 'the 6 s idle phase at the top');
   assert.equal(compileScript(SLOW).hash, p.hash, 'deterministic');
-  assert.equal(p.hash, 'ffdf747c488974a788f6995c28f237b354f7367d736e86aba3ddb59da9109fbb', 'pinned like the protocol: a change is a new script version');
+  assert.equal(p.hash, '5bd9f52ed38ec521e5b37797113dcd007cca4648912fabf5b4460cc38793709c', 'pinned like the protocol: a change is a new script version (compiler v2, I-042; v1: ffdf747c4889...)');
 });

@@ -26,6 +26,12 @@
 //   node tools/sim.mjs record [--seconds 25] [--label l]       iphone.mjs record's frame logger
 //   node tools/sim.mjs run --driver scroll|window|morph ...    iphone.mjs run (std probe, fw-iphone-run/1) -> out/sim/<owner>-run-<label>-<ts>.json
 //   node tools/sim.mjs wda start                               WDA-sim on :8101 (the session stops it); `wda stop`
+//   node tools/sim.mjs safari-restart [--url U] [--via auto|wda|simctl] [--timeout 30]   quit + relaunch Safari (WDA-sim if up,
+//        else simctl), open U, wait until it answers (tools/lib/safari-restart.mjs; iphone.mjs safari-restart on the phone)
+//   node tools/sim.mjs gesture <script.json> [--label l] [--variant v] [--param k=v]... [--morph-log f] [--dry-run]
+//        iphone.mjs gesture on the Simulator: strokes to WDA-sim (start it first), page over the session's proxy
+//        -> out/sim/<owner>-gesture-<label>-<ts>.json, meta.device simulator + meta.sim. For mechanism checks (touch
+//        counts, prevented moves, dp per stroke); Simulator timing is never a verdict (F-084). --dry-run needs no session.
 //   # WDA for the Simulator, unsigned (no Apple ID), built once in your own normal hold (minutes of CPU):
 //   node tools/lock.mjs run chrome-measure --owner <o> --max-seconds 600 -- node tools/sim.mjs wda build --owner <o>
 //   # debugging parts of `session` (boot: in your own normal hold; shutdown / proxy stop: always allowed)
@@ -41,11 +47,11 @@ const argv = dd >= 0 ? all.slice(0, dd) : all;
 const rest = dd >= 0 ? all.slice(dd + 1) : [];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout'];
+const VALUED = ['--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout', '--url', '--via', '--variant', '--param', '--morph-log'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const log = (s) => console.log(S.scrub(String(s)));
 const err = (s) => console.error(S.scrub(String(s)));
-const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
+const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
 
 async function main() {
   if (cmd === 'setup') { S.setup({ runtime: opt('runtime', null), log }); return 0; }
@@ -87,10 +93,30 @@ async function main() {
   }
   if (cmd === 'wda' && arg === 'start') return S.wdaStart({ session: S.requireSession({ owner: opt('owner') }), log, timeoutMs: 1000 * Number(opt('timeout', 120)) });
   if (cmd === 'wda') throw new Error('usage: node tools/sim.mjs wda build --owner <o> (in your own normal hold) | start (inside a session) | stop');
-  if (['open', 'scroll', 'record', 'run'].includes(cmd)) {
-    const session = S.requireSession({ owner: opt('owner'), timed: cmd !== 'open' });
+  if (cmd === 'gesture') {
+    // the phone's gesture runner (tools/lib/gesture-run.mjs) with the Simulator as its target: strokes to WDA-sim,
+    // the page over the session's proxy; the session (inside your own normal hold) stands in for the iphone lease.
+    // Timed like record (it saves frame timing): refused in a functional session
+    const { gestureCmd } = await import('./lib/gesture-run.mjs');
+    const { gestureTarget } = await import('./lib/sim-scroll.mjs');
+    const dry = flag('dry-run');
+    const session = dry ? null : S.requireSession({ owner: opt('owner'), timed: true });
+    const requireSession = () => S.requireSession({ owner: session.owner, timed: true });
+    const holdEndsAt = () => S.holdGate(undefined, undefined, { owner: session.owner }).endsAt ?? 0;
+    return gestureCmd({ argv, arg, opt, flag, port: S.ports().tabs, requireLease: () => { requireSession(); return session.owner; },
+      target: dry ? null : gestureTarget(session, { requireSession, holdEndsAt }), usage: 'node tools/sim.mjs gesture <script.json> [--label l] [--variant v] [--param k=v]... [--morph-log <morph-log.mjs>] [--out file] [--dry-run] (inside a session)' });
+  }
+  if (['open', 'scroll', 'record', 'run', 'safari-restart'].includes(cmd)) {
+    const session = S.requireSession({ owner: opt('owner'), timed: !['open', 'safari-restart'].includes(cmd) });
     const owner = session.owner;
     if (cmd === 'open') return openCmd(session, owner);
+    if (cmd === 'safari-restart') {
+      const { safariRestart, wdaDriver, simctlDriver } = await import('./lib/safari-restart.mjs');
+      const p = S.ports();
+      await safariRestart({ drivers: [wdaDriver({ base: `http://127.0.0.1:${p.wda}` }), simctlDriver({ udid: S.readConfig().udid })], via: opt('via', 'auto'), url: opt('url', null),
+        port: p.tabs, timeoutMs: 1000 * Number(opt('timeout', 30)), log });
+      return 0;
+    }
     if (cmd === 'run') {
       const { runCmd } = await import('./lib/iphone-run.mjs');
       const { runTarget } = await import('./lib/sim-scroll.mjs');

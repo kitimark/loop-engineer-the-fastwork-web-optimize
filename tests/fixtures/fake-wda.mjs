@@ -7,6 +7,7 @@
 // test can assert that nothing ever asked for an accessibility snapshot.
 //
 //   import { startFakeWda } from './fake-wda.mjs';  const w = await startFakeWda({ latencyMs: 5 });  w.url, w.calls
+// safari-restart's calls (POST /wda/apps/terminate, /wda/apps/launch, /url) switch the foreground app and call onApp(kind, body).
 //   node tests/fixtures/fake-wda.mjs --port=0 [--latency=MS] [--playback] [--fail-actions=N,M] [--foreground=<bundleId>]
 //     prints FAKE_WDA_PORT=<port>; env FAKE_WDA_LOG=<file> appends one JSON line per call.
 import http from 'node:http';
@@ -31,11 +32,11 @@ export function validateActions(body) {
   return null;
 }
 
-export function startFakeWda({ port = 0, latencyMs = 0, playback = false, failActions = [], foreground = 'com.apple.mobilesafari', onStroke, log } = {}) {
+export function startFakeWda({ port = 0, latencyMs = 0, playback = false, failActions = [], foreground = 'com.apple.mobilesafari', onStroke, onApp, failApp = null, log } = {}) {
   const calls = [];
   const sessions = new Set();
   let nActions = 0, nSession = 0;
-  const state = { foreground, latencyMs, failActions: new Set(failActions), down: false };
+  const state = { foreground, latencyMs, failActions: new Set(failActions), down: false, running: new Set([foreground]) };
   const server = http.createServer((req, res) => {
     let raw = '';
     req.on('data', (d) => (raw += d));
@@ -62,6 +63,19 @@ export function startFakeWda({ port = 0, latencyMs = 0, playback = false, failAc
       if (req.method === 'POST' && sub === '/appium/settings') return send(200, { ...(body?.settings || {}) }, sid);
       if (req.method === 'POST' && sub === '/wda/apps/activate') { state.foreground = body?.bundleId; return send(200, null, sid); }
       if (req.method === 'GET' && (sub === '/wda/activeAppInfo' || req.url === '/wda/activeAppInfo')) return send(200, { pid: 4242, bundleId: state.foreground, name: state.foreground === 'com.apple.mobilesafari' ? 'Safari' : state.foreground, processArguments: { args: [], env: {} } }, sid ?? null);
+      // safari-restart: quit / start an app, open a URL in it (onApp lets the fake proxy follow; failApp: 'terminate'|'launch'|'url' fails that call)
+      if (req.method === 'POST' && ['/wda/apps/terminate', '/wda/apps/launch', '/url'].includes(sub)) {
+        const kind = sub.split('/').pop();
+        if (failApp === kind) return err(500, 'unknown error', `injected failure on ${kind} for ${body?.bundleId}`);
+        if (kind !== 'url' && typeof body?.bundleId !== 'string') return err(400, 'invalid argument', 'bundleId is required');
+        if (kind === 'url' && typeof body?.url !== 'string') return err(400, 'invalid argument', 'URL is required');
+        const app = body.bundleId || 'com.apple.mobilesafari';
+        const was = state.running.has(app);
+        if (kind === 'terminate') { state.running.delete(app); if (state.foreground === app) state.foreground = 'com.apple.springboard'; }
+        else { state.running.add(app); state.foreground = app; }
+        if (onApp) await onApp(kind, body);
+        return send(200, kind === 'terminate' ? was : null, sid);
+      }
       if (req.method === 'POST' && sub === '/actions') {
         nActions++;
         const bad = validateActions(body);

@@ -21,7 +21,7 @@ import { createHash } from 'node:crypto';
 import { openTab, safariTab, sleep } from './wip.mjs';
 import { compileScript, condText, COMPILER_VERSION } from './gesture.mjs';
 import { RECORDER_JS, READ_JS, STATE_JS, markJs, summarizeRun } from './gesture-rec.mjs';
-import { status as wdaStatus, createSession, SAFARI } from './wda.mjs';
+import { status as wdaStatus, createSession, SAFARI, SESSION_SETTINGS } from './wda.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeText } from './iphone-url.mjs';
@@ -36,12 +36,12 @@ export const TOOL_FILES = ['tools/iphone.mjs', 'tools/lib/gesture.mjs', 'tools/l
  * a sha256 (16 hex) of each file as it ran plus of the injected recorder, so two gesture results compare
  * only when these match (like the script hash for the stimulus).
  */
-export function toolVersion(root = REPO, { morphLog, inject } = {}) {
+export function toolVersion(root = REPO, { morphLog, inject, toolFiles = TOOL_FILES } = {}) {
   const git = (...a) => { const r = spawnSync('git', ['-C', root, ...a], { encoding: 'utf8', timeout: 10000 }); return r.status === 0 ? r.stdout.trim() : null; };
   const h = (s) => createHash('sha256').update(s).digest('hex').slice(0, 16);
   const files = {};
-  for (const f of TOOL_FILES) { try { files[f] = h(readFileSync(join(root, f))); } catch { files[f] = null; } }
-  const st = git('status', '--porcelain', '--', ...TOOL_FILES);
+  for (const f of toolFiles) { try { files[f] = h(readFileSync(join(root, f))); } catch { files[f] = null; } }
+  const st = git('status', '--porcelain', '--', ...toolFiles);
   const v = { gitHead: git('rev-parse', 'HEAD'), dirty: st === null ? null : st.length > 0, files, recorder: h(RECORDER_JS), compiler: COMPILER_VERSION };
   if (morphLog) { const f = resolve(morphLog); let sha = null; try { sha = h(readFileSync(f)); } catch {} v.morphLog = { file: f.startsWith(root + '/') ? f.slice(root.length + 1) : f, sha }; } // the --morph-log script shapes res.morph (review-gesture-2)
   if (inject) { const f = resolve(inject); let sha = null; try { sha = h(readFileSync(f)); } catch {} v.inject = { file: f.startsWith(root + '/') ? f.slice(root.length + 1) : f, sha }; } // the --inject module runs in the page
@@ -60,9 +60,10 @@ export function toolVersion(root = REPO, { morphLog, inject } = {}) {
  *  reload's request; mark too: the proxy does not forward a command it answers with a close, and at worst a mark is
  *  recorded twice). `evaluate` (--inject's expressions, unknown code) reconnects first but is never retried. The
  *  in-page recorder lives in the document, so a reconnect loses nothing. Every reconnect is listed in
- *  `page.reconnects` [{at, code, during}] (saved as run.reconnects). */
-export function wipPage({ appId = null, match = () => true, log = (s) => console.error(s) } = {}) {
-  const o = appId ? { appId } : {};
+ *  `page.reconnects` [{at, code, during}] (saved as run.reconnects). `port`: the proxy's tab port (default
+ *  wip.mjs's, the phone's; the Simulator session's for sim.mjs gesture). */
+export function wipPage({ appId = null, port = null, match = () => true, log = (s) => console.error(s) } = {}) {
+  const o = { ...(appId ? { appId } : {}), ...(port ? { port } : {}) };
   let c = null, host = null;
   const reconnects = [];
   const live = async (during) => { // the proxy closed it (not we): reconnect to the same tab
@@ -322,6 +323,37 @@ export function cliParams(argv) {
   return p;
 }
 
+/** The /appium/settings echo WDA returned for this run's session (I-042): the values of SESSION_SETTINGS' keys as WDA
+ *  applied them, and how many settings it echoed (the rest are WDA defaults, not recorded). */
+export function settingsEcho(echo) {
+  const e = echo && typeof echo === 'object' ? echo : {};
+  const o = {};
+  for (const k of Object.keys(SESSION_SETTINGS)) o[k] = k in e ? e[k] : null;
+  return { ...o, echoed: Object.keys(e).length };
+}
+
+/**
+ * Where a gesture run plays: the phone (default; the iphone lease guards it) or the Simulator (`sim.mjs gesture`: a
+ * Simulator session in the caller's own chrome-measure hold guards it, strokes go to WDA-sim). A target is
+ * {device, outDir, wdaBase, toolFiles, wdaHint, openHint(url), preflight(estMs) -> {pageUrl, pageSource},
+ *  lost() -> reason | null (checked before every op), extra() -> more meta fields}.
+ */
+export function phoneTarget({ owner }) {
+  const lease = () => { const s = lockStatus('iphone'); return s.holder && !s.stale && s.holder.owner === owner ? s.holder : null; };
+  return {
+    device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', outDir: 'iphone', wdaBase: undefined, toolFiles: TOOL_FILES,
+    wdaHint: `node tools/iphone.mjs wda start --owner ${owner}`, openHint: (u) => `node tools/iphone.mjs open ${u} --owner ${owner}`,
+    preflight(estMs) {
+      const h0 = lease();
+      const left = h0.expiresAt ? Date.parse(h0.expiresAt) - Date.now() : Infinity;
+      if (left < estMs * 1.5 + 30000) throw new Error(`your iphone lease ends in ${Math.round(left / 1000)} s, the run needs ~${Math.round(estMs / 1000)} s: node tools/lock.mjs renew iphone --owner ${owner} --ttl 900`);
+      return { pageUrl: h0.meta?.url ?? null, pageSource: 'your lease' };
+    },
+    lost: () => (lease() ? null : 'lost the iphone lease (expired or released): stopped between strokes'),
+    extra: () => ({}),
+  };
+}
+
 /**
  * The command. What it prints and the free-text strings it saves (errors, abort reason, foreground app) go
  * through redact() with wda-runner's config ids (Hard rule 12; review-gesture 2): e.g. the WDA runner's own
@@ -338,8 +370,9 @@ export async function gestureCmd({ log = console.log, ...args }) {
   }
 }
 
-async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub }) {
-  if (!arg) throw new Error('usage: node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>] [--out file] [--dry-run]');
+async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub, target = null,
+  usage = 'node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>] [--out file] [--dry-run]' }) {
+  if (!arg) throw new Error(`usage: ${usage}`);
   const file = resolve(arg);
   const script = JSON.parse(readFileSync(file, 'utf8'));
   const prog = compileScript(script, { params: cliParams(argv) });
@@ -353,27 +386,26 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     return 0;
   }
   const owner = requireLease();
-  const lease = () => { const s = lockStatus('iphone'); return s.holder && !s.stale && s.holder.owner === owner ? s.holder : null; };
-  const h0 = lease();
-  const left = h0.expiresAt ? Date.parse(h0.expiresAt) - Date.now() : Infinity;
-  if (left < prog.estMs * 1.5 + 30000) throw new Error(`your iphone lease ends in ${Math.round(left / 1000)} s, the run needs ~${Math.round(prog.estMs / 1000)} s: node tools/lock.mjs renew iphone --owner ${owner} --ttl 900`);
+  const tg = target || phoneTarget({ owner });
+  const { pageUrl, pageSource } = await tg.preflight(prog.estMs);
 
   // Safari's tab: there, not the certificate warning, the lease's page
   const list = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
   const tab = safariTab(list); // never a blank web view of another app, never the first of several (I-037)
-  if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (incident I-003)`);
-  let leaseUrl = h0.meta?.url;
+  if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: ${tg.openHint('<url>')} (incident I-003)`);
+  let leaseUrl = pageUrl;
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) { try { leaseUrl = iphoneTarget(leaseUrl, await mirrorInfo(leaseUrl)).url; } catch {} }
-  if (leaseUrl && !tab.url.startsWith(leaseUrl)) console.error(`warning: Safari shows ${tab.url}, your lease says ${h0.meta.url} (run: node tools/iphone.mjs open ${h0.meta.url} --owner ${owner})`);
+  if (leaseUrl && !tab.url.startsWith(leaseUrl)) console.error(`warning: Safari shows ${tab.url}, ${pageSource} says ${pageUrl} (run: ${tg.openHint(pageUrl)})`);
 
   // WDA: up, and Safari in front
-  const st = await wdaStatus().catch((e) => { throw new Error(`${e.message}\nStart it: node tools/iphone.mjs wda start --owner ${owner}`); });
+  const wdaOpts = { base: tg.wdaBase };
+  const st = await wdaStatus(wdaOpts).catch((e) => { throw new Error(`${e.message}\nStart it: ${tg.wdaHint}`); });
   if (!st?.ready) throw new Error('WDA answers /status but is not ready');
-  const session = await createSession();
+  const session = await createSession(wdaOpts);
   let page = null;
   const label = opt('label', 'run');
   const ts = Date.now();
-  const out = resolve(REPO, opt('out', join('out', 'iphone', `${owner}-gesture-${label}-${ts}.json`)));
+  const out = resolve(REPO, opt('out', join('out', tg.outDir, `${owner}-gesture-${label}-${ts}.json`)));
   mkdirSync(dirname(out), { recursive: true });
   let res;
   const stop = { reason: null };
@@ -381,8 +413,8 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   process.on('SIGINT', onSig); process.on('SIGTERM', onSig);
   try {
     const front = await session.activeApp();
-    if (front?.bundleId !== SAFARI) throw new Error(`refusing: ${scrub(front?.bundleId || 'an unknown app')} is in front, not Safari. Bring Safari to the front (node tools/iphone.mjs wda start --owner ${owner} activates it)`);
-    page = await wipPage({ appId: front.pid ? `PID:${front.pid}` : null }).connect(); // the proxy names apps by pid (I-037)
+    if (front?.bundleId !== SAFARI) throw new Error(`refusing: ${scrub(front?.bundleId || 'an unknown app')} is in front, not Safari. Bring Safari to the front (${tg.wdaHint} activates it)`);
+    page = await wipPage({ appId: front.pid ? `PID:${front.pid}` : null, port }).connect(); // the proxy names apps by pid (I-037)
     log(`GESTURE ${head} on ${await page.href()}`);
     const morphLog = opt('morph-log');
     if (morphLog && !existsSync(morphLog)) throw new Error(`--morph-log ${morphLog}: no such file`);
@@ -391,7 +423,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
       wda: session, page,
       morph: morphLog ? morphHook(resolve(morphLog), { owner, label, outBase: out.replace(/\.json$/, '') }) : null,
       inject,
-      check: () => { if (stop.reason) throw new Abort(stop.reason); if (!lease()) throw new Abort('lost the iphone lease (expired or released): stopped between strokes'); },
+      check: () => { if (stop.reason) throw new Abort(stop.reason); const why = tg.lost(); if (why) throw new Abort(why); },
     });
   } finally {
     process.off('SIGINT', onSig); process.off('SIGTERM', onSig);
@@ -400,7 +432,8 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     await session.close();
   }
   const doc = {
-    meta: { kind: 'gesture', owner, label, date: new Date(ts).toISOString(), device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', tool: toolVersion(REPO, { morphLog: opt('morph-log'), inject: opt('inject') }), wda: { ref: readConfig().ref || WDA_REF, build: st.build?.version ?? null, os: st.os?.version ?? null }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file },
+    meta: { kind: 'gesture', owner, label, date: new Date(ts).toISOString(), device: tg.device, tool: toolVersion(REPO, { morphLog: opt('morph-log'), inject: opt('inject'), toolFiles: tg.toolFiles }),
+      wda: { ref: readConfig().ref || WDA_REF, build: st.build?.version ?? null, os: st.os?.version ?? null, settings: settingsEcho(session.settings) }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file, ...(await tg.extra()) },
     program: { name: prog.name, version: prog.version, compiler: prog.compiler, hash: prog.hash, params: prog.params, estMs: prog.estMs, strokes: prog.strokes },
     run: res,
   };

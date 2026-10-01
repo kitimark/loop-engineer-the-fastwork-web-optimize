@@ -45,6 +45,11 @@ if (c === 'list' && r[0] === '-j' && r[1] === 'devices') {
   if (!d || d.state !== 'Booted') fail(`Unable to lookup in current state: ${d?.state} (${r[0]})`);
   d.safari = true; save();
   console.log(`${r[1]}: 4242`);
+} else if (c === 'terminate') { // safari-restart's simctl driver
+  const d = dev(r[0]);
+  if (!d || d.state !== 'Booted') fail(`Unable to terminate in current state: ${d?.state} (${r[0]})`);
+  if (!d.safari) fail(`An error was encountered processing the command (domain=com.apple.CoreSimulator.SimError, code=164): found nothing to terminate (${r[0]})`, 3);
+  d.safari = false; save();
 } else if (c === 'openurl') {
   const d = dev(r[0]);
   if (!d || d.state !== 'Booted') fail(`Unable to openurl in current state: ${d?.state} (${r[0]})`);

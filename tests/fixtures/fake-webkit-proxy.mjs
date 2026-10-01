@@ -33,6 +33,10 @@
 // --one-client-per-page (incident I-038): like ios_webkit_debug_proxy, a page has one inspector client; a newer
 // connection takes it, and the older one's next command is answered with a close (1001 "Page 9222/1 claimed by
 // local") and never run (iwdp_start_devtools / iwdp_on_frame).
+// safari-restart: the fake WDA's terminate / launch / url (or GET /__fake/app?kind=terminate|launch|url&url=U, what the
+// fake devicectl and simctl call) quit and restart the fake Safari: --launch-ms=N (default 300), --launch-never,
+// --launch-blank (it restores no page; a URL opened in it shows one),
+// --fail-app=terminate|launch|url (the fake WDA fails that call).
 import http from 'node:http';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
@@ -43,7 +47,7 @@ const arg = (n) => { const a = process.argv.find((x) => x.startsWith(`--${n}=`))
 const LOG = process.env.FAKE_WIP_LOG;
 const log = (o) => { if (LOG) appendFileSync(LOG, JSON.stringify({ t: Date.now(), ...o }) + '\n'); };
 
-const tab = { url: arg('url') || 'about:blank', title: 'start', warning: false, gen: 1 };
+const tab = { url: arg('url') || 'about:blank', title: 'start', warning: false, gen: 1, alive: true };
 async function load(url) {
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(5000) }); // default TLS verification, like an untrusting phone
@@ -135,13 +139,22 @@ function startMomentum(v) { // v: px/ms of scroll
   };
   setTimeout(tick, 16);
 }
+// Like XCTest (incident I-042, OBSERVED on the phone and the Simulator): the finger moves linearly from one path point
+// to the next over the pointerMove's duration, and touches are sampled along the way, one touchmove per
+// TOUCH_SAMPLE_MS (the phone's 16-17 ms for multi-move paths; --touch-sample-ms=N), the last at the point itself. A
+// move shorter than one sample gives one touchmove, as the compiler-v1 8 ms moves did.
+const TOUCH_SAMPLE_MS = Number(arg('touch-sample-ms') || 16);
 async function playStroke(body) {
   let y = 0, down = false, lastV = 0;
   for (const a of body.actions[0].actions) {
     if (a.type === 'pointerMove') {
-      if (a.duration) await sleep(a.duration);
-      const dy = a.y - y; y = a.y;
-      if (down) { const e = dispatch('touchmove', { touches: 1, clientY: y }); if (!e.defaultPrevented) scrollBy(-dy); lastV = a.duration ? -dy / a.duration : 0; }
+      const from = y, d = a.duration || 0;
+      const n = down && d > 0 ? Math.max(1, Math.round(d / TOUCH_SAMPLE_MS)) : 1;
+      for (let i = 1; i <= n; i++) {
+        if (d) await sleep(d / n);
+        const ny = from + ((a.y - from) * i) / n, step = ny - y; y = ny;
+        if (down) { const e = dispatch('touchmove', { touches: 1, clientY: y }); if (!e.defaultPrevented) scrollBy(-step); lastV = d ? -step / (d / n) : 0; }
+      }
     } else if (a.type === 'pointerDown') { down = true; momentum = null; dispatch('touchstart', { touches: 1, clientY: y }); }
     else if (a.type === 'pause') { await sleep(a.duration || 0); if (down) lastV = 0; }
     else if (a.type === 'pointerUp') { down = false; dispatch('touchend', { touches: 0, clientY: y }); if (Math.abs(lastV) > 0.3) startMomentum(lastV); }
@@ -149,6 +162,31 @@ async function playStroke(body) {
   if (++strokesPlayed >= HIDE_AFTER) { hidden = true; log({ hidden: true, after: strokesPlayed }); }
 }
 if (PAGE) doc = newDocument();
+
+// ---- Safari quit / start (safari-restart): from the fake WDA's onApp, or GET /__fake/app?kind=..&url=.. (fake devicectl / simctl)
+// A quit Safari lists no tab; a start lists its restored tab again after --launch-ms (default 300; --launch-never: never),
+// as a new document (new target id); a URL opened in it loads like a navigation.
+const LAUNCH_MS = Number(arg('launch-ms') || 300);
+const LAUNCH_NEVER = process.argv.includes('--launch-never');
+const LAUNCH_BLANK = process.argv.includes('--launch-blank'); // Safari starts but restores no page: only a URL opened in it lists one
+let pendingUrl = null, launching = false;
+function onApp(kind, body = {}) {
+  log({ app: kind, url: body.url ?? null });
+  if (kind === 'terminate') { tab.alive = false; launching = false; pendingUrl = null; return; }
+  if (kind === 'url') {
+    if (tab.alive) { setTimeout(() => load(body.url), 50); return; }
+    pendingUrl = body.url;
+    if (launching) return;
+  }
+  if (kind === 'launch' && tab.alive) return; // already running: like activate
+  launching = true; // a launch, or a URL that starts Safari
+  if (LAUNCH_NEVER) return;
+  setTimeout(async () => {
+    launching = false;
+    if (pendingUrl) { const u = pendingUrl; pendingUrl = null; await load(u); } else if (LAUNCH_BLANK) return;
+    tab.alive = true; tab.gen++; if (PAGE) doc = newDocument();
+  }, LAUNCH_MS);
+}
 if (PAGE && process.argv.includes('--jitter-at-end')) { // a sawtooth: 1 px per 10 ms over maxY-59..maxY, never still for 100 ms
   setInterval(() => { const w = doc?.win; if (!w || momentum) return; if (w.scrollY >= maxY(w) - 60) w.scrollY = maxY(w) - (Math.floor(Date.now() / 10) % 60); }, 8).unref?.();
 }
@@ -163,8 +201,14 @@ function frame(str) {
   return Buffer.concat([h, p]);
 }
 const server = http.createServer((req, res) => {
+  if (req.url.startsWith('/__fake/app?')) {
+    const q = new URL(req.url, 'http://x').searchParams;
+    onApp(q.get('kind'), { url: q.get('url') });
+    return res.end('ok');
+  }
   if (req.url === '/json') {
     res.setHeader('content-type', 'application/json');
+    if (!tab.alive) return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: `ws://127.0.0.1:${server.address().port}/devtools/page/2`, appId: 'PID:1304' }] : []));
     const ws = (n) => `ws://127.0.0.1:${server.address().port}/devtools/page/${n}`;
     const safari = { url: tab.url, title: tab.title, webSocketDebuggerUrl: ws(1), appId: 'PID:4242' };
     const extra = EXTRA_TABS && tab.gen > 1 ? [{ url: `${tab.url}copy/`, title: 'second copy', webSocketDebuggerUrl: ws(3), appId: 'PID:4242' },
@@ -229,7 +273,7 @@ server.on('upgrade', (req, sock) => {
 server.listen(Number(arg('port') || 0), '127.0.0.1', async () => {
   console.log(`FAKE_WIP_PORT=${server.address().port}`);
   if (arg('wda-port') !== null) {
-    const w = await startFakeWda({ port: Number(arg('wda-port')), foreground: arg('foreground') || undefined, log: process.env.FAKE_WDA_LOG, onStroke: (body) => (doc ? playStroke(body) : null) });
+    const w = await startFakeWda({ port: Number(arg('wda-port')), foreground: arg('foreground') || undefined, log: process.env.FAKE_WDA_LOG, onStroke: (body) => (doc ? playStroke(body) : null), onApp: (kind, body) => (body?.bundleId === 'com.apple.mobilesafari' ? onApp(kind, body) : null), failApp: arg('fail-app') });
     console.log(`FAKE_WDA_PORT=${w.port}`);
   }
 });

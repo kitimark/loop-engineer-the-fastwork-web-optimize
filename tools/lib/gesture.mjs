@@ -18,8 +18,14 @@
 // Any numeric field may be "$name" (a script param, overridable on the command line); any step may carry
 // `when: {param: value, ...}` and is kept only when every listed param has that value (variants).
 //
-// WebDriverAgent does not interpolate between the points of a path (FBW3CActionsSynthesizer.m), so every
-// stroke is emitted as one pointerMove per 8 ms (one 120 Hz touch sample): the velocity profile is ours.
+// Points (compiler v2, incident I-042): XCTest moves the finger linearly between the points of a path and
+// emits its own touch samples in between (OBSERVED 2026-10-01: one 900 ms pointerMove gave touchmoves every
+// 9 ms on the iPhone, every 17 ms on the Simulator). Each pointerMove costs XCTest ~120 ms of setup on the phone
+// (~50 ms on the Simulator) before the touch starts, and segments shorter than ~25 ms are not played as written
+// (17 ms: contact +31 %; 8 ms, compiler v1's one point per 120 Hz sample: the whole stroke collapsed into a
+// ~50 ms flick, which is why every v1 G run was void). So a stroke is a piecewise-linear path: segments of at
+// least SEG_MIN_MS (40), a new point only where a straight line would leave the profile by more than
+// SEG_TOL_PX (1 px): ~15 points for a 900 ms minjerk, 4 for a 4.5 s drag (v1: 113 and 558).
 //
 // Guards (the compiler refuses the script):
 // - safe zone x 140-290 / y 200-760: no edge swipes (back/forward), no status-bar tap (scroll to top),
@@ -30,10 +36,10 @@
 // - caps on px, ms, press/hold time and fling lift-off speed; px >= 40 so a stroke is never a tap.
 import { createHash } from 'node:crypto';
 
-export const COMPILER_VERSION = 1;
+export const COMPILER_VERSION = 2; // 2: piecewise-linear strokes of >= 40 ms segments (I-042); v1 hashes never compare
 export const SCREEN = Object.freeze([430, 932]);
 export const SAFE = Object.freeze({ x: Object.freeze([140, 290]), y: Object.freeze([200, 760]) });
-export const STEP_MS = 8;
+export const SEG_MIN_MS = 40, SEG_TOL_PX = 1, SEG_GRID_MS = 4;
 export const PULL_GUARD_Y = 300;
 export const SLOP_PX = 15; // pan hysteresis: an up drag of px moves the page at least px - SLOP_PX
 export const LIMITS = Object.freeze({
@@ -122,9 +128,34 @@ export function resolveParams(script, overrides = {}) {
 
 // ---- one stroke -> W3C actions ----------------------------------------------------------------------
 /**
+ * The stroke's points in time (ms from the start of the move, 0 and ms included): a piecewise-linear path that
+ * stays within SEG_TOL_PX of the profile (checked every SEG_GRID_MS), every segment >= SEG_MIN_MS (a stroke shorter
+ * than 2 * SEG_MIN_MS is one segment). Greedy: each segment is made as long as the tolerance allows, on a
+ * SEG_GRID_MS grid, leaving at least SEG_MIN_MS for the rest. I-042: XCTest interpolates each segment itself.
+ */
+export function segmentTimes(profile, px, ms) {
+  const pos = (t) => px * profilePos(profile, t / ms, ms);
+  const fits = (a, b) => {
+    const pa = pos(a), pb = pos(b);
+    for (let t = a + SEG_GRID_MS; t < b; t += SEG_GRID_MS) if (Math.abs(pa + ((pb - pa) * (t - a)) / (b - a) - pos(t)) > SEG_TOL_PX) return false;
+    return true;
+  };
+  const ts = [0];
+  let a = 0;
+  while (ms - a >= 2 * SEG_MIN_MS) {
+    let b = a + SEG_MIN_MS;
+    while (b + SEG_GRID_MS <= ms - SEG_MIN_MS && fits(a, b + SEG_GRID_MS)) b += SEG_GRID_MS;
+    ts.push(b);
+    a = b;
+  }
+  ts.push(ms);
+  return ts;
+}
+
+/**
  * Compile one stroke (already resolved numbers) to {actions, kin}. The finger touches down at the start,
- * waits pressMs, moves one point per 8 ms along the profile, waits holdMs, lifts. `dir` is the finger's
- * direction: up = the page scrolls down (scrollY grows).
+ * waits pressMs, moves along the profile through the points of segmentTimes(), waits holdMs, lifts. `dir` is
+ * the finger's direction: up = the page scrolls down (scrollY grows).
  */
 export function compileStroke(s, where = 'stroke') {
   const { dir, px, ms, profile, pressMs, holdMs, x } = s;
@@ -144,7 +175,8 @@ export function compileStroke(s, where = 'stroke') {
   inRange(y1, SAFE.y, where, 'end y (safe zone)');
   const contactMs = pressMs + ms + holdMs;
   if (contactMs > LIMITS.contactMs) fail(where, `pressMs + ms + holdMs = ${contactMs} exceeds ${LIMITS.contactMs}`);
-  const n = Math.ceil(ms / STEP_MS);
+  const ts = segmentTimes(profile, px, ms);
+  const n = ts.length - 1;
   const acts = [
     { type: 'pointerMove', duration: 0, x: r1(x), y: r1(y0) },
     { type: 'pointerDown', button: 0 },
@@ -152,8 +184,8 @@ export function compileStroke(s, where = 'stroke') {
   if (pressMs > 0) acts.push({ type: 'pause', duration: pressMs });
   let t = 0, prevY = y0, lastV = 0, peakV = 0;
   for (let i = 1; i <= n; i++) {
-    const d = i < n ? STEP_MS : ms - STEP_MS * (n - 1);
-    t += d;
+    const d = ts[i] - ts[i - 1];
+    t = ts[i];
     const y = r1(y0 + sign * px * profilePos(profile, t / ms, ms));
     lastV = Math.abs(y - prevY) / d; // px per ms over this sample
     peakV = Math.max(peakV, lastV);

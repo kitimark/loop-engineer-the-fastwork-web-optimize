@@ -156,11 +156,13 @@ test('ts-lock-share: session --functional in a shared reader slot of weight 3 (s
   const udid = setup();
   const e = { ...env, FW_LOCK_SHARED_JOIN_LOAD: '1000' };
   assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: e }).code, 0);
-  const out = join(dir, 'fn.json');
+  const out = join(dir, 'fn.json'), gScript = join(dir, 'fn-gesture.json');
+  writeFileSync(gScript, JSON.stringify({ name: 'fn', version: 1, screen: [430, 932], steps: [{ type: 'stroke', dir: 'up', px: 300, ms: 300, profile: 'minjerk' }] }));
   const probe = `const fs = require('fs'), { execFileSync: x } = require('child_process');
     const st = (r) => JSON.parse(x(process.execPath, [${JSON.stringify(LOCK)}, 'status', r, '--json'], { encoding: 'utf8' }))[0];
     let scroll; try { x(process.execPath, [${JSON.stringify(SIM)}, 'scroll', '--label', 'nope'], { encoding: 'utf8', stdio: 'pipe' }); scroll = 'ran'; } catch (err) { scroll = String(err.stderr); }
-    fs.writeFileSync(${JSON.stringify(out)}, JSON.stringify({ shared: process.env.FW_LOCK_SHARED || null, held: process.env.FW_LOCK_HELD || null, session: JSON.parse(fs.readFileSync(${JSON.stringify(join(env.FW_STATE_DIR, 'sim', 'session.json'))}, 'utf8')), cm: st('chrome-measure').holder, sim: st('simulator').holder, scroll }));`;
+    let gesture; try { x(process.execPath, [${JSON.stringify(SIM)}, 'gesture', ${JSON.stringify(gScript)}, '--label', 'nope'], { encoding: 'utf8', stdio: 'pipe' }); gesture = 'ran'; } catch (err) { gesture = String(err.stderr); }
+    fs.writeFileSync(${JSON.stringify(out)}, JSON.stringify({ shared: process.env.FW_LOCK_SHARED || null, held: process.env.FW_LOCK_HELD || null, session: JSON.parse(fs.readFileSync(${JSON.stringify(join(env.FW_STATE_DIR, 'sim', 'session.json'))}, 'utf8')), cm: st('chrome-measure').holder, sim: st('simulator').holder, scroll, gesture }));`;
   const fn = (lockArgs, e2 = e) => nodeAsync(LOCK, ['run', 'chrome-measure', ...lockArgs, '--max-seconds', '120', '--owner', 'me', '--', process.execPath, SIM, 'session', '--functional', '--owner', 'me', '--window', 'hidden', '--', ...childJs(probe)], { env: e2, timeout: 90000 });
   let r = await fn(['--shared', '--weight', 'simulator']);
   assert.equal(r.code, 0, r.out);
@@ -172,6 +174,7 @@ test('ts-lock-share: session --functional in a shared reader slot of weight 3 (s
   assert.deepEqual([c.cm.shared, c.cm.readers.map((x) => [x.owner, x.weight])], [true, [['me', 3]]]);
   assert.deepEqual([c.sim.owner, c.sim.kind], ['me', 'process'], 'the simulator lock is held for the session');
   assert.match(c.scroll, /refusing: this is a functional Simulator session.*takes no timing runs/s);
+  assert.match(c.gesture, /refusing: this is a functional Simulator session.*takes no timing runs/s, 'sim.mjs gesture saves frame timing: timed like record (I-042)');
   assert.match(r.stdout, /sim session [0-9a-f]{12} \(owner me, window hidden, functional, lock mode shared\)/);
   cleanedUp();
   const st = (res) => JSON.parse(node(LOCK, ['status', res, '--json'], { env: e }).stdout)[0];
@@ -387,5 +390,54 @@ test('open inside a session: simctl openurl (never the proxy), waits for the tab
   const calls = lines(env.FAKE_SIMCTL_LOG).filter((a) => a[0] === 'openurl');
   assert.equal(calls.length, 1);
   assert.equal(calls[0][2], `http://127.0.0.1:${env.FW_SIM_PORT}/`);
+  cleanedUp();
+});
+
+test('safari-restart inside a session: WDA-sim down, so simctl terminate + launch on the configured Simulator, then the tab answers; outside a session: refused', async () => {
+  const udid = setup();
+  let r = node(SIM, ['safari-restart'], { env });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /no live Simulator session/);
+  r = await inHold([process.execPath, SIM, 'safari-restart', '--timeout', '20'], { timeout: 110000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^restarting Safari via simctl$/m);
+  assert.match(r.stdout, /^SAFARI_RESTARTED via simctl in \d+ ms: /m);
+  noIds(r.out, udid);
+  const calls = lines(env.FAKE_SIMCTL_LOG);
+  const t = calls.findIndex((a) => a[0] === 'terminate');
+  assert.ok(t >= 0, 'simctl terminate was called');
+  assert.deepEqual(calls.slice(t, t + 2), [['terminate', udid, 'com.apple.mobilesafari'], ['launch', udid, 'com.apple.mobilesafari']]);
+  cleanedUp();
+});
+
+test('gesture inside a session: strokes to WDA-sim, the page over the session proxy, an out/sim record with meta.device "simulator"; outside a session: refused; --dry-run needs none', async () => {
+  const udid = setup();
+  const f = join(dir, 'script.json');
+  const S = (o) => ({ type: 'stroke', dir: 'up', px: 450, ms: 900, profile: 'minjerk', ...o });
+  writeFileSync(f, JSON.stringify({ name: 'sim-e2e', version: 1, screen: [430, 932], steps: [{ type: 'mark', name: 'go' }, S({}), { type: 'pause', ms: 300 }, S({ px: 300, ms: 300, profile: 'still', holdMs: 200 })] }));
+  let r = node(SIM, ['gesture', f, '--dry-run'], { env });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^GESTURE_HASH [0-9a-f]{64}$/m);
+  r = node(SIM, ['gesture', f], { env });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /no live Simulator session/);
+  const out = join(dir, 'gesture.json'), wdaLog = join(dir, 'wda.jsonl');
+  const e = { ...env, FAKE_IWDP_TAB: 'webkit', FAKE_IWDP_TAB_ARGS: `--wda-port=${env.FW_SIM_WDA_PORT} --url=http://127.0.0.1:1/ --doc-height=2800`, FAKE_WDA_LOG: wdaLog };
+  r = await inHold([process.execPath, SIM, 'gesture', f, '--label', 'sg', '--out', out], { timeout: 110000, e });
+  assert.equal(r.code, 0, r.out);
+  noIds(r.out, udid);
+  const j = JSON.parse(readFileSync(out, 'utf8'));
+  noIds(JSON.stringify(j), udid);
+  assert.deepEqual([j.meta.kind, j.meta.device, j.meta.owner, j.meta.label], ['gesture', 'simulator', 'me', 'sg']);
+  assert.equal(deviceOf(j), 'simulator', 'stats keeps it apart from phone and Chrome runs');
+  assert.ok(j.meta.sim.hostLoad.start && j.meta.sim.hostLoad.end);
+  assert.ok(Object.keys(j.meta.tool.files).includes('tools/lib/sim.mjs') && Object.keys(j.meta.tool.files).includes('tools/lib/gesture-run.mjs'));
+  assert.equal(typeof j.meta.wda.settings.echoed, 'number', 'the /appium/settings echo is recorded');
+  assert.equal(j.run.aborted, null);
+  assert.deepEqual(j.run.errors, []);
+  assert.equal(j.run.strokes.length, 2);
+  const acts = lines(wdaLog).filter((c) => /\/actions$/.test(c.path));
+  assert.equal(acts.length, 2, 'both strokes went to WDA-sim (the fake on the session\'s WDA port)');
+  assert.ok(j.run.segments[0].touches.length > 0, 'the page saw the touches');
   cleanedUp();
 });

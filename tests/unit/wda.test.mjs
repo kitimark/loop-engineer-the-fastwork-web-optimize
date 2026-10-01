@@ -51,10 +51,13 @@ test('an allowlist, not a denylist: exactly the calls wda.mjs makes; anything el
   const w = await fake();
   const sid = '8F3C2A10-1B2C-4D5E-9F00-0123456789AB';
   for (const [m, p] of [['GET', '/status'], ['POST', '/session'], ['POST', `/session/${sid}/appium/settings`], ['POST', `/session/${sid}/wda/apps/activate`],
-    ['GET', `/session/${sid}/wda/activeAppInfo`], ['POST', `/session/${sid}/actions`], ['DELETE', `/session/${sid}`]]) assert.ok(allowed(m, p), `${m} ${p}`);
+    ['GET', `/session/${sid}/wda/activeAppInfo`], ['POST', `/session/${sid}/actions`], ['DELETE', `/session/${sid}`],
+    // safari-restart (tools/lib/safari-restart.mjs): quit and start Safari, open a URL in it
+    ['POST', `/session/${sid}/wda/apps/terminate`], ['POST', `/session/${sid}/wda/apps/launch`], ['POST', `/session/${sid}/url`]]) assert.ok(allowed(m, p), `${m} ${p}`);
   const refused = [
     ['POST', '/status'], ['GET', '/session'], ['DELETE', '/session'], ['GET', `/session/${sid}/actions`], ['DELETE', `/session/${sid}/actions`],
-    ['POST', `/session/${sid}/wda/apps/launch`], ['POST', `/session/${sid}/wda/apps/terminate`], ['POST', `/session/${sid}/url`], ['GET', `/session/${sid}/screenshot`],
+    ['GET', `/session/${sid}/url`], ['POST', '/url'], ['POST', '/wda/apps/launchUnattached'], ['POST', `/session/${sid}/wda/apps/state`], ['GET', `/session/${sid}/wda/apps/list`],
+    ['POST', `/session/${sid}/wda/apps/terminate/x`], ['GET', `/session/${sid}/screenshot`],
     ['POST', `/session/${sid}/wda/keys`], ['POST', `/session/${sid}/wda/lock`], ['POST', '/wda/shutdown'], ['GET', '/wda/healthcheck'],
     ['GET', '/status?x=1'], ['GET', '/status/'], ['POST', `/session/${sid}/actions/../source`], ['POST', `/session/${sid}/../source/actions`],
     ['POST', '/session/a/b/actions'], ['POST', `/session//actions`], ['GET', '/STATUS'], ['get', '/status'],
@@ -66,7 +69,7 @@ test('an allowlist, not a denylist: exactly the calls wda.mjs makes; anything el
   // a refused path is named without ids (Hard rule 12): a session UUID is scrubbed
   await assert.rejects(request('GET', `/session/${sid}/source`, undefined, { base: w.url }), (e) => !e.message.includes(sid) && /<uuid>/.test(e.message));
   assert.equal(w.calls.length, 0, 'nothing reached WDA');
-  assert.deepEqual(ALLOWED.map(([m]) => m), ['GET', 'POST', 'POST', 'POST', 'GET', 'POST', 'DELETE']);
+  assert.deepEqual(ALLOWED.map(([m]) => m), ['GET', 'POST', 'POST', 'POST', 'GET', 'POST', 'POST', 'POST', 'POST', 'DELETE']);
 });
 
 test('errors: an injected 500, a 400 for a mouse pointer, an unknown session, latency past the timeout, nothing listening', async () => {

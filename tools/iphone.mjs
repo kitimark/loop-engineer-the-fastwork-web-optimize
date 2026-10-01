@@ -18,6 +18,9 @@
 //   node tools/iphone.mjs gesture tools/gestures/finger-protocol-v1.json --owner <topic> [--label l]
 //        [--variant asPerformed|slow] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>]
 //        [--dry-run]   # tools/lib/gesture-run.mjs; --inject runs an in-page logger on the run's own connection (I-038)
+//   node tools/iphone.mjs safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30]
+//        # quit + relaunch Safari (WDA apps endpoints, else devicectl --terminate-existing), open U if given, wait
+//        # until the proxy lists a page that answers Runtime.evaluate; prints SAFARI_RESTARTED (tools/lib/safari-restart.mjs)
 //
 // `scroll` is the calibrated scripted scroll (research/cpu-throttle-calibration/tools/iphone_scroll.mjs):
 // reload, settle 8 s, rAF frame logger, 3 s idle, scrollBy({top:250, behavior:'smooth'}) every 300 ms to
@@ -43,7 +46,7 @@ import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE,
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--ref', '--team', '--udid', '--bundle-id', '--timeout'];
+const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
 const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
@@ -181,7 +184,17 @@ async function main() {
   }
   if (cmd === 'gesture') return (await import('./lib/gesture-run.mjs')).gestureCmd({ argv, arg, opt, flag, requireLease, port: PORT });
   if (cmd === 'wda') return (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, requireLease });
+  if (cmd === 'safari-restart') {
+    requireLease();
+    const { safariRestart, wdaDriver, devicectlDriver } = await import('./lib/safari-restart.mjs');
+    const { readConfig } = await import('./lib/wda-runner.mjs');
+    const { WDA_URL } = await import('./lib/wda.mjs');
+    const known = readConfig();
+    await safariRestart({ drivers: [wdaDriver({ base: WDA_URL() }), devicectlDriver({ udid: known.udid })], via: opt('via', 'auto'), url: opt('url', null), port: PORT,
+      timeoutMs: 1000 * Number(opt('timeout', 30)), known, keepHttps: flag('keep-https') });
+    return;
+  }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease, port: PORT });
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25] | gesture <script.json> --owner <topic> [--dry-run] | wda status|build|start|stop | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | record --owner <topic> [--seconds 25] | gesture <script.json> --owner <topic> [--dry-run] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(() => process.exit(0), (e) => { console.error(e.message || e); process.exit(1); });

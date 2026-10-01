@@ -11,6 +11,8 @@
 //   POST /session/:id/wda/apps/activate            bring Safari to the front (activate, not launch)
 //   GET  /session/:id/wda/activeAppInfo            which app is in front
 //   POST /session/:id/actions                      one stroke (W3C pointer actions, pointerType touch)
+//   POST /session/:id/wda/apps/terminate|launch    quit / start Safari (safari-restart, tools/lib/safari-restart.mjs)
+//   POST /session/:id/url                          open a URL in Safari (XCUIDevice openUrl:withApplication:)
 //   DELETE /session/:id                            end the session
 // Never /source, element lookups or screenshots: an accessibility snapshot of Safari costs phone CPU while
 // we measure it. request() allows exactly the calls above (ALLOWED, method + path) and refuses anything else
@@ -29,6 +31,9 @@ export const ALLOWED = Object.freeze([
   ['POST', `/session/${SID}/wda/apps/activate`],
   ['GET', `/session/${SID}/wda/activeAppInfo`],
   ['POST', `/session/${SID}/actions`],
+  ['POST', `/session/${SID}/wda/apps/terminate`],
+  ['POST', `/session/${SID}/wda/apps/launch`],
+  ['POST', `/session/${SID}/url`],
   ['DELETE', `/session/${SID}`],
 ].map(([m, p]) => [m, new RegExp(`^${p}$`)]));
 export const allowed = (method, path) => ALLOWED.some(([m, re]) => m === method && re.test(path));
@@ -83,6 +88,10 @@ export async function createSession(opts = {}) {
     settings: await request('POST', `/session/${id}/appium/settings`, { settings: SESSION_SETTINGS }, opts),
     activate: (bundleId = SAFARI) => request('POST', `/session/${id}/wda/apps/activate`, { bundleId }, opts),
     activeApp: () => request('GET', `/session/${id}/wda/activeAppInfo`, undefined, opts),
+    /** safari-restart only: quit the app (true if it was running), start it (no quiescence wait), open a URL in it. */
+    terminate: (bundleId = SAFARI) => request('POST', `/session/${id}/wda/apps/terminate`, { bundleId }, { ...opts, timeoutMs: 30000 }),
+    launch: (bundleId = SAFARI) => request('POST', `/session/${id}/wda/apps/launch`, { bundleId, shouldWaitForQuiescence: false }, { ...opts, timeoutMs: 60000 }),
+    openUrl: (url, bundleId = SAFARI) => request('POST', `/session/${id}/url`, { url, bundleId }, { ...opts, timeoutMs: 30000 }),
     /** Play one stroke; resolves when WDA has played it back. Returns {sentAt, returnedAt, ms} (Mac epoch ms). */
     async actions(payload, { timeoutMs } = {}) {
       checkActions(payload);

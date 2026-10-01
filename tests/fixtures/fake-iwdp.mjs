@@ -32,7 +32,9 @@ const kids = [];
 const serve = (port, body) => http.createServer((req, res) => { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(req.url === '/json' ? body() : [])); }).on('error', (e) => console.error(`fake iwdp: port ${port}: ${e.code}`)).listen(port, '127.0.0.1');
 if (listPort) serve(listPort, () => devices.map(({ port, ...d }) => d));
 for (const d of devices) {
-  if (d.deviceId === 'SIMULATOR') kids.push(spawn(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), 'fake-run-proxy.mjs'), `--port=${d.port}`, ...String(process.env.FAKE_IWDP_TAB_ARGS || '').split(' ').filter(Boolean)], { stdio: 'ignore' }));
+  // $FAKE_IWDP_TAB=webkit: tests/fixtures/fake-webkit-proxy.mjs instead (its page model + fake WDA, for sim.mjs gesture)
+  const tabJs = process.env.FAKE_IWDP_TAB === 'webkit' ? 'fake-webkit-proxy.mjs' : 'fake-run-proxy.mjs';
+  if (d.deviceId === 'SIMULATOR') kids.push(spawn(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), tabJs), `--port=${d.port}`, ...String(process.env.FAKE_IWDP_TAB_ARGS || '').split(' ').filter(Boolean)], { stdio: 'ignore' }));
   else serve(d.port, () => []);
 }
 const bye = () => { for (const k of kids) { try { k.kill('SIGKILL'); } catch {} } process.exit(0); };

@@ -135,6 +135,10 @@ test('gesture end to end on the fake phone: strokes as real touches, recorder, m
   assert.equal(sm.segments[0].touchSequences, n);
   assert.equal(sm.segments[0].aligned, true);
   assert.ok(sm.touchmove.total > 50 && sm.touchmove.endPrevented > 10, JSON.stringify(sm.touchmove));
+  // compiler v2 sends few long segments; the touches are sampled along them (XCTest, I-042), so there are more
+  // touchmoves than pointerMoves sent
+  const moves = actionsCalls(calls).reduce((k, c) => k + c.body.actions[0].actions.filter((x) => x.type === 'pointerMove' && x.duration).length, 0);
+  assert.ok(sm.touchmove.total > moves, `touchmoves ${sm.touchmove.total} vs pointerMoves ${moves}`);
   assert.ok(sm.momentum.flings >= 2, JSON.stringify(sm.momentum));
   assert.ok(sm.momentum.tauMedianS > 0.3 && sm.momentum.tauMedianS < 0.7, `the fake decays with tau 0.45 s: ${sm.momentum.tauMedianS}`);
   const still = sm.segments[0].perStroke.find((p) => p.profile === 'still' && p.dir === 'down');
