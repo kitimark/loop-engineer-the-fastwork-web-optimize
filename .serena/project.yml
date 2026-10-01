@@ -79,10 +79,11 @@ line_ending:
 language_backend:
 
 # whether to use project's .gitignore files to ignore files
-# [fastwork] false on purpose: site-pretty/ is gitignored (Fastwork's code must never be committed) but it is
-# exactly the code fix agents navigate. .gitignore patterns are appended AFTER ignored_paths and the last
-# matching pattern wins, so a "!site-pretty/_app/" negation cannot beat .gitignore; instead ignored_paths
-# below mirrors /.gitignore by hand. Keep the two in sync when .gitignore changes.
+# [fastwork] false on purpose: the selective indexing below (only site-pretty/_app/ of the baseline, only
+# the fix overlays of worktrees) cannot be expressed through .gitignore: its patterns are appended AFTER
+# ignored_paths and the last matching pattern wins. Since 2026-10-01 site/ and site-pretty/ are the
+# committed baseline snapshot (no longer gitignored); ignored_paths below still leaves out site/ and
+# everything in site-pretty/ but _app/, and otherwise mirrors /.gitignore by hand. Keep it in sync.
 ignore_all_files_in_gitignore: false
 
 # advanced configuration option allowing to configure language server-specific options.
@@ -124,7 +125,8 @@ ls_additional_workspace_folders: []
 #     - "**/bin/**"
 #     - "**/obj/**"
 # Note: global ignored_paths from serena_config.yml are also applied additively.
-# [fastwork] Mirrors /.gitignore (ignore_all_files_in_gitignore is false, see above), except:
+# [fastwork] Mirrors /.gitignore (ignore_all_files_in_gitignore is false, see above), plus site/ (the committed
+# byte-identical snapshot: minified duplicates of site-pretty/), except:
 #   * site-pretty/_app/ (first-party SvelteKit bundles, ~1.4 MB JS) IS indexed; the rest of site-pretty/
 #     (images, fonts, third-party __vendor/ scripts) is not;
 #   * fix overlays inside Claude Code worktrees (.claude/worktrees/<wt>/fixes/<topic>/overlay/) ARE indexed,

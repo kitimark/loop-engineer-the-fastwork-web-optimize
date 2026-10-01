@@ -63,10 +63,12 @@ The lead has each fix checked against this list by a `fix-reviewer` agent
 
 ## Why an overlay instead of a copy of the site
 
-`site/` (29 MB) and `site-pretty/` (34 MB) are Fastwork's files: gitignored, never committed, and
-only present in the main checkout. A fresh worktree has neither. Instead of copying 63 MB into every
-worktree (or symlinking it, which would let one agent's edit change everyone's baseline), the tools
-find the baseline in the main checkout via `git rev-parse --git-common-dir`, and each fix keeps only
+`site/` (29 MB) and `site-pretty/` (31 MB) are Fastwork's files, committed on `main` as the study's
+frozen snapshot (user decision 2026-10-01, pinned by `baseline.json`, local only, never pushed; CLAUDE.md
+"Baseline snapshot"). `fix.mjs new` makes a fix worktree a sparse checkout without them. Instead of
+keeping a 61 MB copy in every worktree (or symlinking it, which would let one agent's edit change
+everyone's baseline), the tools read the main checkout's committed snapshot via `git rev-parse
+--git-common-dir`, check that it is the one the branch pins, unchanged, and each fix keeps only
 the files it changes in `overlay/`. `serve.mjs --overlay` serves those first. A typical fix touches
 one or two files (the 500 KB page chunk and/or the 274 KB page CSS).
 
