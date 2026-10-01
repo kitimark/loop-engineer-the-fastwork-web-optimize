@@ -180,6 +180,11 @@ Each item gives the unknown, the evidence, the cheapest probe, the expected valu
     catch pair.
   - Then 8 ratings of the isolated stall (g100) at 300-2400 px/s.
   - The reading was fixed before the data: [`pacing-result.md`](pacing-result.md) §3. P10 waits on it (lead, 2026-10-01).
+- *v2 result (session 1, 13:45Z, [`pacing-result.md`](pacing-result.md) §4):*
+  - Gaps near the slow end were picked as smoother in 8/8 forced choices (4/4 at full speed, 2/2 at 1/2 and 1/4).
+    That reverses F5-try2's eased pair and agrees with MWFI: gaps at peak velocity look worse.
+  - P10 is released to its P1 gate.
+  - Stall ratings by speed are inconsistent with session 1: no conclusion.
 
 **U4. Are rAF gaps under compositor scroll visible at all, and what does the y≈1960 frame show?**
 - *Unknown:* on iOS the page scrolls in the UI process. Only main-thread pixels wait on rAF: JS tweens,
