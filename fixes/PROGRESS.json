@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T17:49:00Z",
+ "updatedAt": "2026-10-01T17:51:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T17:51:00Z", "text": "From your request: a tool change is being designed so that tests and simulator checks can run side by side, while timing tests keep the Mac to themselves. A reviewer now checks the waiting lock-tool changes." },
   { "at": "2026-10-01T17:49:00Z", "text": "New rule from you: checks that need an iPhone but no timing number now run on the iPhone simulator on the Mac; the real phone stays for timing tests and your sittings. The carousel test (P14) started at 17:42 (about 30-35 min); your sitting comes next." },
   { "at": "2026-10-01T17:20:00Z", "text": "Coming up for you: a sitting on the phone that compares the original page with today's best build (the countdown fix and F3 together)." },
   { "at": "2026-10-01T17:10:00Z", "text": "The robot finger turned out to play every stroke as a quick flick, so its results so far don't count (tool problem I-042). The countdown fix's robot test (P-032) was void; all robot-finger tests wait for the tool fix. The phone runs the carousel test (P14) meanwhile." },

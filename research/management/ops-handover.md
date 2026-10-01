@@ -27,7 +27,8 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   fe7db9f..9e59002 (RESOLVED; main npm test 771/771), 5137637 (I-043 wip.mjs socket leak, ts-iphone-run). P14 (W)
   started 17:42Z (~30-35 min) -> user sitting (A = original baseline :5611, B = B+ with arm-scope-c :5647; lead holds
   the lease as `user`) -> ts-gesture (~5 min phone confirmation; I-042 D1-D3 + new `safari-restart` tool on the Sim).
-  Spawned: ts-console-nav (console menu + notifications). USER RULE: no-number iPhone jobs go to the Simulator (above).
+  Spawned: ts-console-nav (console menu + notifications), ts-lock-share (shared lane for functional-only jobs, design
+  first), review-lock-bundle (ts-lock-bundle's 5 commits). USER RULE: no-number iPhone jobs go to the Simulator (above).
 
 - **17:3xZ** (mgmt-ops-6) Took over from mgmt-ops-5 (17:28Z). Landed: ts-progress 7614401 + c9ceb98 (console Progress
   page, fixes/PROGRESS.json). PREDICTIONS: P-032 (b) G-based items marked G-invalid (flick, I-042, F-085); P-031 G,
@@ -315,7 +316,12 @@ between tool calls.
    ts-gesture), F-076 / P-034 face-layer check (fix-nav-morph, after cdwc lands; phone only if it decides a fix),
    de-unknowns-ux cancelable/DOM part (its timeStamp C2 part stays phone: Sim touches are host HID), R2 clip/backdrop
    look, T10 / Instruments-lane tooling dry runs. Told: ts-iphone-run, iphone-runner, ts-gesture, fix-nav-morph (acked);
-   de-unknowns-ux was resumed by mistake before the lead said "live agents only" (its ticket: split into Sim + phone).
+   de-unknowns-ux was resumed by mistake before the lead said "live agents only". **17:5xZ de-unknowns-ux:** C2 phone
+   slot after P-035 DROPPED (C2 read from the saved F drag visits, 68af31a, F-087: touch timeStamp taken before
+   main-thread dispatch, moves coalesced while blocked; OBSERVED, source UNRESOLVED, arch-claims has it; P-035's
+   N T T N N T drag runs repeat it); cancelable is logged by P-035 G on the phone at no cost, no Sim job. **No Sim touch
+   driver exists yet** (`sim.mjs gesture` not built, FP-6 untested; `iphone.mjs gesture` with FW_WDA_URL at WDA-sim
+   still asks for the iphone lease): every Sim job that needs strokes (P-032 (b) re-check) waits for one; ask ts-gesture.
    **PROGRESS.json (ts-progress, landed 7614401 + c9ceb98):** After every P-row result/verdict/drop/land: update
    fixes/PROGRESS.json (changes + checks[].result + next + updatedAt), run `node tools/console.mjs progress --check`,
    land with the docs batch; the page flags ledger results missing from it. Schema in the header of
@@ -529,7 +535,10 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `review-stats` | fix-reviewer of ts-analysis eea3c06 (phone thresholds): NEEDS-WORK 14:1xZ; re-check 8409b95+ef802b9 ACCEPT-WITH-NOTES 14:2xZ | alive |
 | `ts-user-console` | toolsmith: tools/console.mjs local user step console (user-facing steps go there once landed) | alive |
 | `ts-progress` (a5748ebf9e8a3b086) | console Progress page + fixes/PROGRESS.json (landed 7614401 + c9ceb98) | done |
-| `ts-lock-bundle` | toolsmith: handover item 7b; I-035 landed 8935a7d; f10193c, a17909d, fb59f13, bb07e33, 14e503f (on c6ff3ea) wait for a fix-reviewer (lead: after the user sitting); (f) shelved for good | alive |
+| `ts-lock-bundle` | toolsmith: handover item 7b; I-035 landed 8935a7d; f10193c, a17909d, fb59f13, bb07e33, 14e503f (on c6ff3ea) under review by review-lock-bundle (17:5xZ); (f) shelved for good | alive |
+| `review-lock-bundle` | fix-reviewer (read-only) of ts-lock-bundle's 5 commits (lead spawn 17:5xZ; off the "after the sitting" list) | alive |
+| `ts-lock-share` | toolsmith (lead spawn 17:5xZ, user request): shared lane so functional-only jobs (npm test, Sim mechanism checks, bench mech, load-only sanity) run in parallel while timing keeps the exclusive slot; design first in research/architecture/lock-shared-lane.md for the lead, then implements under the I-041 rule | alive |
+| `ts-console-nav` | toolsmith (lead spawn 17:4xZ): user console menu + notifications | alive |
 | `review-t1a` | re-check of ts-iphone-run 7c83786 / f28f47e / 8d4f6a1 | alive |
 | `ts-wait` | toolsmith (lead spawn 13:3xZ, user request): blocking wait commands so agents stop sleep-loop polling; may ask iphone-runner + others what waiting hurt most | alive |
 | `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); owns I-042 (G strokes play as flicks, F-085): phone probe slot after the user sitting | alive |
