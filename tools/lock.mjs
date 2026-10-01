@@ -60,7 +60,9 @@
 // Host gate (I-016): a normal waiter of chrome-measure whose turn it is is granted only on a quiet host
 // (lib/host.mjs quiet(): CPU <= 20 % over 10 s, load1 <= 6, memory pressure normal), or after 600 s
 // anyway (holder `gateTimeout: true`, a line in locks/host-alerts.log; verify.mjs marks those runs
-// contaminated). Short jobs are exempt. `acquire` samples one 10 s window when it is its turn, so a
+// contaminated). Short jobs pass it only during the first 120 s of that gate wait, through the short lane
+// or the gate exemption, and never a waiter the lead moved (I-030). FW_GATE_SHORT_PASS (seconds; 0 = never)
+// counts in the short job's own env: its process decides its grant. `acquire` samples one 10 s window when it is its turn, so a
 // single acquire may take ~10 s; BUSY then says "host not quiet". `status` samples the host for 3 s and
 // prints a host line with the gate state (--no-host skips it).
 import { spawn, execFileSync } from 'node:child_process';

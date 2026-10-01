@@ -45,9 +45,13 @@
 // (tools/lib/host.mjs quiet(): CPU <= 20 % busy over a >= 10 s window, load1 <= 6, memory pressure
 // normal). Until then it keeps its place (the queue entry records `gate: {since, at, reasons, load1,
 // busyPct, pressure}`) and samples the host. Short jobs are exempt: they may be granted while the head
-// normal waiter waits for quiet. After THRESHOLDS.gateMaxWaitSec (600 s; env FW_GATE_MAX_WAIT) the
-// waiter is granted anyway: the holder record gets `gateTimeout: true`, a line goes to
-// locks/host-alerts.log, and verify.mjs marks every run of that hold contaminated. Every gated grant
+// normal waiter waits for quiet (by the short lane, or past the drain budget by the gate exemption), but
+// only during the first THRESHOLDS.gateShortPassSec (120 s, at most the cap) of its gate wait, and never
+// past a waiter the lead moved (I-030); then no short job passes it until it is granted, so the host can
+// settle. FW_GATE_SHORT_PASS sets that window per process: a short job's grant is decided in the short
+// job's own process (its env), like every tryAcquire with the caller's THRESHOLDS. After
+// THRESHOLDS.gateMaxWaitSec (600 s; env FW_GATE_MAX_WAIT) the waiter is granted anyway: the holder record
+// gets `gateTimeout: true`, a line goes to locks/host-alerts.log, and verify.mjs marks every run of that hold contaminated. Every gated grant
 // records `gate: {quiet, waitedSec, reasons, load1, busyPct, sysPct, pressure}` in the holder. The host
 // sample is passed in by the caller (tryAcquire's `host`); acquire() and `lock.mjs acquire` take it.
 import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync } from 'node:fs';
@@ -185,8 +189,9 @@ function shortRunStart(lg, now = Date.now()) {
  * Index (in q) of the waiter served at the next hand-over: FIFO, except the short lane (see header), among
  * the waiters seen within HANDOVER_FRESH_SEC (`caller`, the one polling now, counts as seen); if none was,
  * among all. Not for SLOW_POLL_RESOURCES, whose waiters retry every few minutes by protocol.
+ * `T`: the polling process's THRESHOLDS (gateShortPassSec, gateMaxWaitSec).
  */
-function nextIndex(q, lg, now = Date.now(), caller, r) {
+function nextIndex(q, lg, now = Date.now(), caller, r, T = THRESHOLDS) {
   let pool = q.map((w, i) => [w, i]);
   if (!SLOW_POLL_RESOURCES.has(r)) {
     const fresh = pool.filter(([w]) => w.owner === caller || now - Date.parse(w.lastSeen) <= HANDOVER_FRESH_SEC * 1000);
@@ -195,17 +200,35 @@ function nextIndex(q, lg, now = Date.now(), caller, r) {
   const s = pool.find(([w]) => w.short), n = pool.find(([w]) => !w.short);
   if (!s || !n) return pool[0][1];
   if (n[0].movedBy && n[1] < s[1]) return n[1]; // the lead moved this normal waiter ahead of these short jobs (I-019): its priority wins (I-020)
+  if (gatePassDone(n[0], now, T)) return n[1]; // its host gate has waited out the short jobs' pass window (I-030)
   const start = shortRunStart(lg, now) ?? now;
   return now - start + (s[0].maxSec || SHORT_MAX_SEC) * 1000 <= SHORT_DRAIN_SEC * 1000 ? s[1] : n[1];
 }
 
+/** The short jobs' pass window at a normal waiter's host gate (I-030): gateShortPassSec, at most the cap. */
+const passWindowMs = (T) => Math.min(T.gateShortPassSec ?? T.gateMaxWaitSec, T.gateMaxWaitSec) * 1000;
+
 /**
- * The head normal waiter is held back by the host gate right now (so short jobs may pass it). Not once its
- * gate wait has reached the cap: then it is due (granted anyway) and short jobs queue behind it again,
- * under the normal short-lane drain rule (review-gate R1; otherwise shorts could keep passing it forever).
+ * A normal waiter whose host-gate wait began at least the pass window ago (I-030): no short job passes it any
+ * more, neither through the short-lane drain (nextIndex) nor through the gate exemption (gateHolding), so the
+ * host can settle and it is granted on a quiet host, not by a contaminated gate timeout. Freshness is the
+ * hand-over pool's (lastSeen), not gate.at: a waiter refreshes gate.at only while the lock is free, so behind
+ * a 300 s short its gate record looks stale exactly when this rule has to hold.
+ */
+function gatePassDone(w, now, T = THRESHOLDS) {
+  return !!(w && !w.short && w.gate && now - Date.parse(w.gate.since) >= passWindowMs(T));
+}
+
+/**
+ * The head normal waiter is held back by the host gate right now and short jobs may pass it. Never when the
+ * lead moved it (I-019 movedBy): the move wins, at the gate too (I-030). Otherwise only during the first
+ * gateShortPassSec of its gate wait (I-030: each short job keeps the host busy, so back-to-back shorts kept
+ * the gate closed and starved the waiter into a contaminated gate timeout); past it the host can settle.
+ * The window is at most the cap (review-gate R1: once due, it is granted next).
  */
 function gateHolding(w, now, T = THRESHOLDS) {
-  return !!(w && !w.short && w.gate && w.gate.quiet !== true && now - Date.parse(w.gate.at) < GATE_FRESH_MS && now - Date.parse(w.gate.since) < T.gateMaxWaitSec * 1000);
+  if (!w || w.short || w.movedBy || !w.gate || w.gate.quiet === true || now - Date.parse(w.gate.at) >= GATE_FRESH_MS) return false;
+  return !gatePassDone(w, now, T);
 }
 
 /**
@@ -255,8 +278,9 @@ export async function tryAcquire(r, opts) {
     const lg = readJson(lastGrantFile(r), {});
     const seen = effectiveLastGrant(lg, h);
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
-    const ni = q.length ? nextIndex(q, seen, now, owner, r) : -1;
+    const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
     // short jobs are exempt from the host gate: the first short waiter may pass a head normal waiter held by it
+    // (not one the lead moved, and only early in its gate wait: gateHolding, I-030)
     const headOk = q.length === 0 || mine === ni || (short && GATED[r] && gateHolding(q[ni], now, T) && mine === q.findIndex((w) => w.short));
     let gateRec;
     if (!h && headOk && GATED[r] && !short && host !== undefined) {
@@ -298,7 +322,7 @@ export async function tryAcquire(r, opts) {
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     writeJson(queueFile(r), q);
-    return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r)].owner };
+    return { ok: false, holder: h, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)].owner };
   });
 }
 

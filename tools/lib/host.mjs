@@ -63,6 +63,10 @@ export const DEFAULTS = Object.freeze({
   quietMaxPressure: 1,   // memory pressure normal
   quietMinWindowSec: 10, // CPU window length the rule needs
   gateMaxWaitSec: 600,   // lock gate: after this the head waiter is granted anyway (gateTimeout, run contaminated)
+  gateShortPassSec: 120, // lock gate (I-030): short jobs pass a gated normal waiter (short lane or gate exemption)
+                         // only this long into its gate wait (never one the lead moved); then the host can settle.
+                         // 120 + a 300 s short + two 10 s windows < 600: the last short let through ends well before
+                         // the cap. Env FW_GATE_SHORT_PASS counts in the short job's process (it decides its grant)
   recheckMaxWaitSec: 60, // verify.mjs: wait up to this before each run, then run anyway (flagged)
   // --- classifyRun(): was a finished run clean? (postmortem (d), I-017) ---
   invalidLoad1: 10,        // load1 at run start. 6-10: level shift only (spread unchanged, sd 7.5 -> 7.7 frames >20 ms);
@@ -80,9 +84,9 @@ export const DEFAULTS = Object.freeze({
                          // 77693c3's runs met a Chrome idle for >= one 10 s recheck window; keep that)
 });
 
-const ENV = { FW_GATE_MAX_LOAD1: 'quietMaxLoad1', FW_GATE_MAX_BUSY: 'quietMaxBusyPct', FW_GATE_MAX_WAIT: 'gateMaxWaitSec' };
+const ENV = { FW_GATE_MAX_LOAD1: 'quietMaxLoad1', FW_GATE_MAX_BUSY: 'quietMaxBusyPct', FW_GATE_MAX_WAIT: 'gateMaxWaitSec', FW_GATE_SHORT_PASS: 'gateShortPassSec' };
 
-/** DEFAULTS with env overrides (FW_GATE_MAX_LOAD1, FW_GATE_MAX_BUSY, FW_GATE_MAX_WAIT). */
+/** DEFAULTS with env overrides (FW_GATE_MAX_LOAD1, FW_GATE_MAX_BUSY, FW_GATE_MAX_WAIT, FW_GATE_SHORT_PASS). */
 export function thresholds(env = process.env) {
   const t = { ...DEFAULTS };
   for (const [k, name] of Object.entries(ENV)) {
