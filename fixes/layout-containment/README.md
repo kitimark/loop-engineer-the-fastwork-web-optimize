@@ -742,6 +742,56 @@ References: C aw1-10e (view at both tick types), V1 st4-noswap (gone).
   - **Against the simple form:** st5 has 40 frames with a carousel-rooted Layout and a separate <1 ms view Layout in the same RenderingFrame, mostly with 3 InvalidateLayouts. So a bounded carousel pass can coexist with the background full layout when it runs first. The order inside the frame (whether the flip is sampled before or after the background dirtier has scheduled its full layout) would decide which case you get. That order is UNRESOLVED; the frame tree with record order (`frametree.cjs`) is the next read.
 - **The rotator fix doesn't depend on that answer**, because st6 removes the flips. But the background full-layout state turns every small bounded layout on the page into a view-rooted one. It is a page-wide lever, posted as a finding.
 
+## Background full-layout dirtier (F-108, Sim h2-h7) and the morph start's first-time cost (h2-h8), PARKED
+
+Sim (fw-sim 15 Pro Max, Safari), RB = bplus JS dbd5fdb4f1fb + scene-scope RB CSS 0d7dfc79e703. Structure counts
+only; ms are indicative. Harness: `out/f108/wk/` (`wkcounts.mjs` with `ARM_JS`, `mstart.mjs` with
+`PRE_JS`/`PRE_WAIT_MS`/`POST_JS`). Scorers, hold scripts and predictions are in
+`<scratchpad>/layout-containment/`: `f108score.cjs`, `mscore.cjs`, `h2-hold.sh` (no-timing), `h8-hold.sh`
+(functional lane), `h8-arms.sh`, `f108-predictions.txt`. Status: OBSERVED in our setup.
+
+- **F-108 (finding F-110), the background full layout.** The idle frames at y 0 with a no-stack view-rooted Layout
+  are caused by the hero script accent's stroke draw/erase CSS animations. In h7, setting `animation:none` on them
+  (arm D) took the frames from 593/823 to 72/550. Hiding `.script-accent` (arm A) gave 30/527, and hiding
+  `.hero-copy` gave 27/248. The countdown, the CTA orbit, the hero orbit, the scroll cue and the boil filter (the
+  "I" arm) each left the count unchanged. The animations are recreated every cycle, which fits F-097. The
+  draw/erase animations belong to de-illusion-style; containment is their arm.
+- **The morph start's first-time cost.**
+  - The tween-1 start RS (the first rendering update after `__osb`, JS 13287) is 17-21 ms with 2 nested view
+    Layouts (about 6 ms and 2 ms). Tween 2 is 2-3 ms with 1 nested view Layout of 0.4 ms.
+  - The phone agrees: ms-1 (iphone-runner) measured 14-17 ms with 2 nested view Layouts for tween 1, and 0.2-0.5 ms
+    with none for tween 2.
+  - h8 P, the positive control: one full `__fwMorphDrive` cycle at idle made the measured tween 1 cost the same as
+    tween 2 (RS 2.4 ms, 1 nested view Layout of 0.5 ms). That CONFIRMS a first-time cost, as opposed to a cost that
+    returns after a long idle (Sim).
+  - Refuted, i.e. tween 1 kept 2 nested view Layouts:
+    - pre-flipping the scene to active and back (h2 F);
+    - pre-clearing inert (h3 I);
+    - blocking the panel img src writes (h4 S, and on the phone in ms-1, with `__nosrc`=21);
+    - a synchronous pre-open and revert in one task, with no rendered frame in between (h8 S: header classes
+      is-morphing/is-expanded/is-on-dark, `--morph` 1, every scene active, inert off, a forced style and layout
+      read);
+    - a pre-scroll to the bottom (h8 Y);
+    - a computed-style sweep of the header (h8 A);
+    - loading every font face (h8 FN; `document.fonts` status is the same before and after tween 1).
+  - Candidate (e) is refuted on the structure: no ancestor of the panel has contain, content-visibility or
+    container-type, and the header has 0 containers.
+  - Candidate (d): the panel imgs have no src before the first open.
+  - What remains: the warm-up needs a rendered frame of the open state or the real JS path. Style and layout caches
+    alone don't explain it.
+- **Plan for h9 (not run: parked by the user's T-001 direction, 2026-10-02 05:00 +07, until an active fix lands).**
+  The arms, in `h8-arms.sh` and `h9-inner.sh`:
+  - R: the open state rendered for 3 rAFs, then reverted. Visible, so a diagnostic only.
+  - SC: the panel's own `data-start-selling-scene` set to active and left that way. The panel stays at opacity 0.
+    If SC wins, also measure the idle frames at the bottom and the top with it on, and try a one-shot variant:
+    active for 1-3 frames at idle, then back.
+  - MO: `--morph` 0.002, rendered for 3 rAFs.
+  - E: content-visibility visible on the deferred sections.
+  - D: decode the header imgs.
+  - Every run logs the panel's countdown face and digit counts before and after (suspect: a lazily built
+    digit-face set) and the header's display:none and visibility:hidden elements.
+  - The verdict counts the nested view Layouts in the tween-1 start RS.
+
 ## Risks, conflicts, follow-ups
 
 - The orbit deck and the platform stage are hero-exit / platform topics' CSS: the rules touched are sizing only and
