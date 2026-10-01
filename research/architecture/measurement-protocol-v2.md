@@ -7,7 +7,7 @@ fix-scroll-engine, fix-hero-exit, mgmt-ops-4), arch-devtools (`research/architec
 (`research/design-engineering/safari-render-signals.md`). Open items: §10. Amended ~11:50Z with A1-A9 from
 `unknowns-actions.md` §4 (lead's OK): phone segment card and closure on segments (§2.3, §4), axis + decoupling run
 (§2.3), per-arm warm-up and battery state (§5.2), dual phone thresholds (§3.2), M-run time profile (§3.3), display
-state (§6.3), logger-layout caveat (§5.5), checklist items 11-12 (§7).
+state (§6.3), logger-layout caveat (§5.5; lifted 2026-10-01 for rAF-only loggers, P-023), checklist items 11-12 (§7).
 It replaces nothing yet. The lead approves it; then the doc changes in §8 make it binding.
 
 Scope: how we go from "a frame is slow" to a landed fix, and what evidence each step needs, on Chrome, the
@@ -331,6 +331,8 @@ in the hero captures had no reader at all), but a logger-paid *second* layout in
 y-source A/A picks a source that adds nothing, phone absolute counts and Timeline segment cards carry a
 "logger-layout" caveat; A/B deltas between arms with the same logger stay valid. Any new probe gets an on/off A/A
 before its numbers are read as absolute.
+**Status: lifted 2026-10-01 on P-023 (P0 logger y-source A/A neutral) for loggers that read scrollY once per rAF; not covered: scrollY reads in timer tasks (winrun's per-step timer, ~3.3 Hz) and the pre-T1a std probe's reads in MO/cv crossing callbacks (never used on the phone). Those two read paths keep the caveat until their own on/off A/A; the
+rule that any new probe gets an on/off A/A stands.**
 
 **Probe overhead:** page-side probes self-time their callbacks (`performance.now` around each, ms per frame in the
 log; a run whose probe ms exceeds 1 ms in a counted frame flags that frame). Protocol-side probes

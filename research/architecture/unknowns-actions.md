@@ -152,7 +152,7 @@ names an agent already running; "new" means a spawn.
 
 | # | action | owner | builds / driver | phone | deps | decides |
 |---|---|---|---|---|---|---|
-| P0 | **Logger y-source A/A** (R-U1), first item of the next slot; plus one pass with the `Heap` instrument (R-U11) | iphone-runner (+ ts-iphone-run's `--y-source`) | aw1-10e, y source raf vs scroll vs none, 3 passes each, Timeline; count frames with ≥2 layouts > 0.5 ms | ~10 | T1a flag, or a hand-patched logger copy | whether every Timeline-based card (hero 3-4, morph) needs a re-read |
+| P0 | **DONE (P-023): neutral, keep the rAF y source; the Heap pass is not evidence (0 GC events delivered; `Heap.enable` is likely needed).** **Logger y-source A/A** (R-U1), first item of the next slot; plus one pass with the `Heap` instrument (R-U11) | iphone-runner (+ ts-iphone-run's `--y-source`) | aw1-10e, y source raf vs scroll vs none, 3 passes each, Timeline; count frames with ≥2 layouts > 0.5 ms | ~10 | T1a flag, or a hand-patched logger copy | whether every Timeline-based card (hero 3-4, morph) needs a re-read |
 | P1 | **Morph countdown probe** (PM action 1; P-017) | fix-nav-morph (builds) + iphone-runner | gh vs gh-cdwc (faces `will-change:auto`) + gh-cdhid (hidden, upper bound) as 3rd arm, M driver, one Timeline cycle per arm | ~25 | none (builds are one CSS line) | whether the morph's start transient is the countdown faces; if yes, it outranks a1 |
 | P2 | **P-016b** hold 900 vs 2000 on gh (P-016 was invalid: hold 250 never rests at m=1) | iphone-runner | M driver, pair then C V V C if ambiguous | ~10-25 | same slot as P1 | cold-store share of the transient (H1) |
 | P3 | **ST-2 reveal ends vs deck coverage** (PH card 4 vs R-U5; ticket via mgmt-ops-4) | fix-hero-exit builds `re-dur`, `re-keep`; iphone-runner | aw1-10e control, hero-A W driver, C V V C alternating arms + 1 Timeline run per arm; plus **ST-2d fling-hold** on Q (one constant fling y 1100-1800, 1.5 s hold, resume flick; 1 Timeline + 2 counted); plus **baseline A** (filter 1.6 s, no aw1 override) 1 Timeline + 2 counted: PH predicts a third frame at ≈ +1645 ms. Scoring: exclude frames within 16 ms of a rotator InvalidateLayout (D3: the 1 Hz rotator can coincide with +745/+945) | ~45 | P0 (to read the Timelines right); D2 adds sibling reveals | which model owns y≈1250, then NAMED; the page-wide fix rule. F-048: aw1-10e's filter transition uses `linear(...)` (0.9 s), so `re-keep` also tries a cubic-bezier |
@@ -214,7 +214,7 @@ K24 is explained); V-U10 inspector-detached A/A and V-U12 docH (low value, folde
   before a tools bisect.
 - **A9 (§5.5, X9/K25):** the logger's y source is chosen by the P0 A/A; until then phone absolute counts and Timeline
   segment cards carry a "logger-layout" caveat (A/B deltas between arms with the same logger stay valid). Any new
-  probe gets an on/off A/A before its numbers are read as absolute.
+  probe gets an on/off A/A before its numbers are read as absolute. **Lifted:** lifted 2026-10-01 on P-023 (P0 logger y-source A/A neutral) for loggers that read scrollY once per rAF; not covered: scrollY reads in timer tasks (winrun's per-step timer, ~3.3 Hz) and the pre-T1a std probe's reads in MO/cv crossing callbacks (never used on the phone).
 - **A8 (§7):** review checklist: "does the fix change a transition end value, a layer presence or a window
   listener?" (X1); "does the claim's driver cover the class?" (X8).
 
