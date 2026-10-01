@@ -379,10 +379,33 @@ chosen state is `scroll-passive`, which counts toward "non-passive felt as worse
   serve both builds behind ports the viewer can't map, or use the runner mode.
 
 **Platform claims this design leans on (status).**
-- Whether WebKit on iOS makes a scroll wait for a non-passive window `touchmove` handler: **UNRESOLVED**. The
-  decisive local check is G's passive reading. The reference check goes to arch-claims.
-- What WebKit's touch `Event.timeStamp` marks (hardware time vs dispatch time): **UNRESOLVED**. The queue-delay
-  and touch-to-scroll numbers are read as within-page comparisons only.
+- **C1. Does WebKit on iOS make the scroll wait for a non-passive window `touchmove` handler? CONFIRMED, once per
+  touch sequence, at scroll start** (arch-claims, claims-audit §2.9, F-079; WebKit tag 7624.4.5).
+  - The wait:
+    - Only the first preventable touchmove holds back the pan, until the web process replies (WebPageProxy.cpp
+      4711-4734; WKContentViewInteraction.mm 10484-10485).
+    - Later moves of the sequence are sent without waiting (WKContentViewInteraction.mm 4174-4181, 2242-2248).
+    - Whether the handler calls `preventDefault` and the `capture` flag do not change this gate.
+  - Passive by default: a window listener without an explicit `{passive: false}` is passive and never makes the
+    scroll wait (Quirks.cpp 983-1008). V passes `{capture: true, passive: false}` explicitly, as fastwork does.
+  - **So the expected C-vs-V difference is touch-to-scroll start only, not the moving frames.** That is the G
+    passive reading as registered. F then tests whether a delay at the start of each stroke is felt.
+  - Still open:
+    - Whether later moves report `cancelable = false` in the DOM is UNRESOLVED (closed WebKitAdditions).
+    - G already logs `cancelable` per move (cancelable share per state), so G answers it.
+- **C2. What WebKit's touch `Event.timeStamp` marks (event creation at dispatch vs the earlier system touch time):
+  UNRESOLVED** (claims-audit §2.9). `Event::timeStamp` returns the creation time (Event.cpp 188-199), but the iOS
+  TouchEvent class is closed source.
+  - The queue-delay and touch-to-scroll numbers are read only as within-page comparisons (C vs V).
+  - The decisive check is reported, not read: G's touchmove queue delay (handler `performance.now()` minus
+    `timeStamp`) in `drag-none` vs `drag-trace`.
+    - About 0-2 ms in both means the stamp is taken at creation.
+    - Tens of ms more under the trace means it is taken earlier.
+- Drag touches can't mix into the scroll-start timings:
+  - In the scroll states #drag is hidden.
+  - In the drag states the list is hidden and the body does not scroll.
+  - So the non-passive #drag listeners (whose prevented touchstart keeps that sequence's moves preventable,
+    WKContentViewInteraction.mm 2238) only see drag-state touches.
 - The drag surface relies on `touch-action: none` plus `preventDefault` in a non-passive listener to stop page
   scroll. Both are in place. The Chrome check showed no scroll; the phone is unchecked until G.
 
@@ -408,6 +431,7 @@ Mechanics only; Chrome numbers say nothing about WebKit.
   2. the frozen stimulus;
   3. the exact G separation rule, its time base and the < 3 scroll starts void.
 - **Added with them, before any data:** the drag control at 3 runs each (see Control).
-- **Platform claims:** arch-claims owns the C1 and C2 reference checks. Both stay UNRESOLVED here until it reports.
-  The V arm registers its window touchmove with an explicit `{capture: true, passive: false}` (v3.js), so WebKit's
-  passive-by-default rule for window listeners does not apply to it.
+- **Platform claims:** arch-claims reported after the read (see "Platform claims" above).
+  - C1 is CONFIRMED: the wait comes once per touch sequence, at scroll start. That matches the registered G
+    reading, so the reading is unchanged.
+  - C2 stays UNRESOLVED.
