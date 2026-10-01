@@ -27,8 +27,12 @@ on a prediction card, and the runs were n=3 (not 4v4). They are recorded so the 
 | P-010 | de-safari | 10-01 ~10:30 | mw10e-ghbn vs mw10e-ghb | M | moving p50, hump | within ±2 ms of ghb, hump stays (render-server term) | as P-009 | **hit** on rAF (mechanism check owed) | – | rAF-neutral confirmed; whether the backdrop costs render-server time waits for Instruments hitches (T10) |
 | P-011 | fix-nav-morph | 10-01 10:3x | mw10e-na (listeners armed at setup) vs aw1-10e | S (C A B B A C) | y≈1960 edge frame | removed if the listener add at the IO edge costs | C 104/107 vs na 34/35 ms; neighbours ±2 frames 4-33 ms; scroll fps 57.0/57.6 vs 55.4/56.3; whole-scroll > 50 ms 0/0 vs 3/1 | **hit** | – | positive arm of the first NAMED card (v2 §2.3); P2b Timeline: RecalculateStyles 34-42 ms (incl. Layout 19-24) + Composite 58-72 ms, JS ~1 ms |
 | P-012 | fix-nav-morph | 10-01 10:3x | mw10e-nb (no `b` at the edge) vs aw1-10e | S | y≈1960 edge frame | stays if `b` is not the cost | nb 84/101 vs C 104/107 | **hit** | – | negative arm: the `b` effect flush is not the cost |
+| P-013 | fix-nav-morph | 10-01 10:58 | mw10e-arm-load (JS c6a3ac9256ea; listeners armed at setup) vs aw1-10e (JS 3e2f599a1632) | S, 1.5 s pause at y≈1200, C V V C C V V C | y≈1960 edge frame; load/settle | edge <= 37.5 ms; no new frame >= 37.5 ms in load/settle | (queued) | | | |
+| P-014 | fix-nav-morph | 10-01 10:58 | mw10e-arm-idle (JS afff5a38ee28; armed at the first 300 ms scroll-quiet after 1 vh) vs aw1-10e | S with pause, C V V C C V V C | edge frame; arming moment | edge <= 37.5 ms + one ~60-120 ms frame at the arming moment inside the pause | (queued) | | | |
+| P-015 | fix-nav-morph | 10-01 10:58 | mw10e-arm-idle vs aw1-10e | S without pause (1 uncounted check run) | edge frame | equals the control | (queued) | | | |
+| P-016 | de-pm-morph | 10-01 10:59 | mw10e-gh hold 250 vs hold 2000 (same build, JS 1df2484c / CSS a2b0be9a) | M (pair first, then C V V C C V V C if needed) | median dt of frames ending <= 300 ms after each tween start, by direction, in ticks | >= 1 tick shorter if the start transient is a CPU ramp / buffer purge after rest; within 1 tick if start events / velocity | (queued) | | | |
 
-Open (prediction cards owed before the run): the na-based landable fix (idle-armed listeners + touchmove gate), fixed-size morph diagnostic, ghr85a (R5a), hero-B
+Open (prediction cards owed before the run): fixed-size morph diagnostic, ghr85a (R5a), hero-B
 v6/v7 (de-hero: y≈700 back to ~52 ms), R2 bg-layers, r3a/r3b, /10d phone check, N12.
 
 Two-miss watch: **de-morph** (P-001, P-009 on rAF; P-009 is read under L13, so it counts only if Instruments also shows no change) → its model is reviewed before it drives another build
