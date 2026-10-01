@@ -35,6 +35,13 @@ const BASE = resolveTree('site-pretty');
 const SITE = resolveTree('site');
 const t0 = Date.now();
 const log = (...a) => console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s]`, ...a);
+const BUDGET_S = Number(opt('budget', 135)); // stop starting new scenarios after this, so partial results are saved
+// Every CDP step is bounded and logged, so a hang shows where it happened (the first real run hit the 180 s cap silently).
+async function step(name, p, ms = 30000) {
+  let to; const t = Date.now();
+  try { return await Promise.race([p, new Promise((_, rej) => { to = setTimeout(() => rej(new Error(`step "${name}" timed out after ${ms} ms`)), ms); })]); }
+  finally { clearTimeout(to); if (Date.now() - t > 3000) log(`  step ${name}: ${((Date.now() - t) / 1000).toFixed(1)}s`); }
+}
 
 const VARIANTS = [
   { label: 'base', overlay: null, scenarios: ['A', 'B', 'C'] },
@@ -112,7 +119,8 @@ async function listeners(page) {
     .map((l) => `${l.type} ${(scripts.get(l.scriptId) || '?').replace(/^https?:\/\/[^/]+/, '').replace(/\?.*/, '')}:${l.lineNumber + 1}${l.useCapture ? ' capture' : ''}${l.passive ? ' passive' : ''}${l.once ? ' once' : ''}`);
 }
 
-async function scenario(cdp, v, url, sc, profile) {
+async function scenario(cdp, v, url, sc, profile, hook = true) {
+  log(`start ${v.label} ${sc}${hook ? '' : ' (no hook)'}`);
   const page = await cdp.newIsolatedPage();
   page.scripts = new Map();
   const hits = []; const dl = []; const errors = [];
@@ -127,22 +135,25 @@ async function scenario(cdp, v, url, sc, profile) {
   });
   await page.send('Network.enable');
   await page.send('Debugger.enable');
+  await page.send('Debugger.setSkipAllPauses', { skip: true });
   await page.send('Emulation.setDeviceMetricsOverride', { width: 430, height: 932, deviceScaleFactor: 3, mobile: true });
   await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
-  await page.send('Page.addScriptToEvaluateOnNewDocument', { source: HOOK });
+  if (hook) await page.send('Page.addScriptToEvaluateOnNewDocument', { source: HOOK });
   await page.send('Page.bringToFront');
-  await gotoAndSettle(page, url, { quietMs: 1500 });
+  await step('load', gotoAndSettle(page, url, { quietMs: 1500, maxMs: 15000 }), 20000);
   await sleep(800);
-  const loc = await page.eval('({ href: location.href, h: document.documentElement.scrollHeight })');
+  const loc = await step('loc', page.eval('({ href: location.href, h: document.documentElement.scrollHeight, kit: Object.keys(window).some((k) => k.startsWith("__sveltekit")), dl: (window.dataLayer || []).length })'), 10000);
+  log(`  loaded ${JSON.stringify(loc)}`);
+  if (!hook) { await page.close(); return { variant: v.label, scenario: 'load-no-hook', loc }; }
   if (!/^https:\/\/localhost/.test(loc.href) || loc.h < 2000) throw new Error('page did not load: ' + JSON.stringify(loc));
-  const ls = await listeners(page);
+  const ls = await step('listeners', listeners(page), 10000);
   await page.send('Debugger.disable');
   if (CPU > 1) await page.send('Emulation.setCPUThrottlingRate', { rate: CPU });
-  if (profile) { await page.send('Profiler.enable'); await page.send('Profiler.setSamplingInterval', { interval: 100 }); await page.send('Profiler.start'); }
+  if (profile) { await page.send('Profiler.enable'); await page.send('Profiler.setSamplingInterval', { interval: 250 }); await page.send('Profiler.start'); }
   let scroll = null;
   if (sc === 'A') {
-    scroll = await page.eval(SCROLL, { timeout: 120000 });
+    scroll = await step('scroll', page.eval(SCROLL, { timeout: 120000 }), 60000);
     await sleep(TAIL_S * 1000);
   } else if (sc === 'B') {
     scroll = await page.eval(`(async () => { window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }); await new Promise(r => setTimeout(r, 300)); return { y: scrollY, t: Math.round(performance.now()) }; })()`);
@@ -151,9 +162,9 @@ async function scenario(cdp, v, url, sc, profile) {
     await sleep(TAIL_S * 1000);
   }
   let prof = null;
-  if (profile) { prof = (await page.send('Profiler.stop')).profile; await page.send('Profiler.disable'); }
+  if (profile) { prof = (await step('profile', page.send('Profiler.stop'), 20000)).profile; await page.send('Profiler.disable'); }
   if (CPU > 1) await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-  const shim = await page.eval('window.__mirrorVendorShim ? window.__mirrorVendorShim.neutered : null');
+  const shim = await step('shim', page.eval('window.__mirrorVendorShim ? window.__mirrorVendorShim.neutered : null'), 10000);
   const dlBeforeLeave = dl.length; const hitsBeforeLeave = hits.length;
   // leave the page: visibilitychange(hidden) + pagehide, the vendors' unload flush
   await page.send('Page.navigate', { url: 'about:blank' });
@@ -197,10 +208,18 @@ try {
   const cdp = await CDP.connect(chrome.wsUrl);
   // allow the mirror's self-signed --https certificate (this dedicated Chrome only), as verify.mjs does
   await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true });
-  // A first, per variant (baseline first, with the profile), then B and C
-  for (const sc of ['A', 'B', 'C']) for (const v of VARIANTS) {
-    if (!v.scenarios.includes(sc)) continue;
-    const r = await scenario(cdp, v, servers[v.label].url, sc, sc === 'A' && v.label === 'base');
+  // sanity: the plain baseline loads without the probe's hook (separates a hook problem from a load problem)
+  const byLabel = Object.fromEntries(VARIANTS.map((v) => [v.label, v]));
+  if (byLabel.base) { const r0 = await scenario(cdp, byLabel.base, servers.base.url, 'A', false, false); out.runs.push(r0); save(); }
+  // most valuable first: A base (with the profile) and 02, the hide flush (B), back-scroll (C), then 01 and 03
+  const ORDER = [['base', 'A'], ['02-idle', 'A'], ['02-idle', 'B'], ['base', 'B'], ['02-idle', 'C'], ['base', 'C'], ['01-task', 'A'], ['03-drop', 'A']];
+  for (const [label, sc] of ORDER) {
+    const v = byLabel[label];
+    if (!v || !v.scenarios.includes(sc)) continue;
+    if ((Date.now() - t0) / 1000 > BUDGET_S) { log(`budget ${BUDGET_S}s reached: skipping ${label} ${sc}`); out.skipped = [...(out.skipped || []), `${label} ${sc}`]; continue; }
+    let r;
+    try { r = await scenario(cdp, v, servers[v.label].url, sc, sc === 'A' && v.label === 'base'); }
+    catch (e) { log(`${label} ${sc} FAILED: ${e.message}`); out.runs.push({ variant: label, scenario: sc, error: e.message }); save(); continue; }
     if (r.profile) { writeFileSync(join(REPO, 'out', 'probe-n11-base.cpuprofile'), JSON.stringify(r.profile)); r.attribution = attribute(r.profile); delete r.profile; }
     out.runs.push(r);
     save();
