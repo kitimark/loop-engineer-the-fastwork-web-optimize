@@ -4,7 +4,7 @@
   "status": "authored",
   "supersededBy": null,
   "evidence": "README 'Before / after' (plain baseline, mobile 6x n=3, old tools: fps 63.7 -> 69.5, frames >20 ms 115 -> 91, disjoint) and 'Visual / behaviour parity'",
-  "notes": "Drafted by the fix owner. Counts are predicted from the code until the runner calibrates them on aw1-10c (patch.diff is stacked on aw1-10c).",
+  "notes": "Drafted by the fix owner. Counts are predicted from the code calibrated with bench mech on aw1-10c and aw1-10e (patch.diff is stacked on aw1-10e).",
   "segments": {
     "hero": {
       "from": "top",
@@ -220,7 +220,7 @@
         "parity": "pass",
         "gain": "better"
       },
-      "why": "v2 restacked on aw1-10c (patch.diff). The gain is still to be measured on the iPhone hero window and Chrome."
+      "why": "v2 restacked on aw1-10c, then aw1-10e (patch.diff). The gain is still to be measured on the iPhone hero window and Chrome."
     }
   ]
 }

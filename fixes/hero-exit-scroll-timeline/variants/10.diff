@@ -1,10 +1,10 @@
 # fastwork mirror fix: hero-exit-scroll-timeline--p3
 # baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
-# STACKED on fixes/aw1-10c/overlay: apply aw1-10c first, then this patch on top of it
-# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--p3 --on aw1-10c
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--p3 --on aw1-10e
 # contains excerpts of Fastwork's code: local branches only, never push
 # base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
-# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 757e2cbc44e7f245022767b04f618a3bd2b505138603d26079af89e7e04c25ad
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
 diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
@@ -164,7 +164,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -4381,6 +4381,22 @@
+@@ -4384,6 +4384,22 @@
        i = 0,
        a = 0,
        o = !1,
@@ -187,7 +187,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        s = () => {
          if (((i = 0), e.matches)) {
            (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
-@@ -4402,7 +4418,13 @@
+@@ -4405,7 +4421,13 @@
            window.clearTimeout(r),
            (r = 0),
            C.classList.add(`is-splash-done`),
@@ -202,7 +202,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        f = (e) => {
          let t = e - a,
-@@ -4426,6 +4448,7 @@
+@@ -4429,6 +4451,7 @@
            window.clearTimeout(r),
            (r = 0),
            (o = !1),
@@ -210,7 +210,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            C.classList.add(`is-preparing`),
            x.classList.add(`is-preparing`),
            C.classList.remove(`is-splash-done`, `is-expanding`),
-@@ -4457,15 +4480,36 @@
+@@ -4460,15 +4483,36 @@
        t.matches && d();
      };
      (t.addEventListener(`change`, h), window.addEventListener(`pageshow`, m));
