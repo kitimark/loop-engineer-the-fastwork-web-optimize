@@ -39,6 +39,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **19:3xZ** Landed a22657a + b8a533c (ops), dfc8e08 STATUS BOARD (seed applied, lead set priorities, console /status).
+  RULE: owners `status.mjs set <id> --by <me> --state … --note …` at every transition, `status.mjs mine` on resume; PROGRESS
+  = user narrative, live state = board. Pinged all 13 live owners 19:28Z (ids per lead); report non-adopters ~19:43Z.
+  P-039 st5 (19:12-19:23Z, valid): MIXED, swap ticks 1/31 view, slide-start 15/33; idle y1500 dt>34 70->29, >50 4->0;
+  cost-moved not tripped; next = lead (split block needs 3rd-block exception / gain block / park). I-042 D4 (phone,
+  OBSERVED): safari-restart 6.0 s; >= 25 ms segments within +8 %, 17 ms +31 %, 8 ms collapse; ~115-125 ms per pointerMove
+  before touch-down (Sim ~50); compile v2 = piecewise >= 40 ms segments (15-20 moves / 900 ms), COMPILER_VERSION 2: G
+  numbers compare only within v2. Phone: cooling to 19:33:30Z, then P-033 unless scene-scope's ticket is validated first.
 - **19:1xZ LEAD PRIORITY ORDER (supersedes 18:4xZ):** (1) style recalc (fix-scene-scope); (2) USER: illusion proposals
   (de-illusion-style, de-illusion-composite, ts-proposals; PROGRESS `illusion-proposals`): counts first, <= 2 batched
   Chrome holds each, queued after scene-scope + de-counts-chrome/-sim; no phone before the user Accepts; an accepted
