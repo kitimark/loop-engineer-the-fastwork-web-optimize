@@ -253,6 +253,21 @@ predicted 17-20 ms, and the p95 tail (~50 ms) is untouched by both. fix-nav-morp
 "b" variants never removed the nav's own per-frame backdrop blur (ghbn tests that; its first round at
 10:03Z was discarded, phone throttled).
 
+**ghbn / ghb / gh** (10:32-10:36Z, control ctl-B18 pass: 52.3 / 59.4 idle; ghbn = ghb + the nav backdrop off
+for the whole morph, JS 1df2484c / CSS 253943ac; three rounds ghbn ghb gh | gh ghb ghbn | ghbn ghb gh;
+idle rAF 60.5 after each round; held states p95 17 except gh7/gh9 with 59-100 ms held spikes):
+
+| build | moving p50 | p95 | > 50 ms | max |
+|---|---|---|---|---|
+| ghbn | 21 / 25 / 25 | 45 / 52 / 53 | 1 / 9 / 10 % | 52 / 59 / 58 |
+| ghb | 24 / 26 / 28 | 54 / 57 / 57 | 10 / 15 / 17 % | 58 / 67 / 67 |
+| gh | 29 / 24 / 27 | 84 / 44 / 59 | 18 / 1 / 12 % | 126 / 54 / 82 |
+
+Medians: p50 ghbn 25 / ghb 26 / gh 27, p95 52 / 57 / 59. All three blur levers together (panel, platform,
+nav) are worth ~2 ms of p50 and overlap at p95: **blur is not the transition cost on the phone.** What is
+left (~25 ms p50, ~50-60 ms p95) is most likely the per-frame size/shape change of the morphing box
+(layout + repaint); fix-nav-morph is building a fixed-size diagnostic. ghr8 was dropped as a result.
+
 **R2 clip probe** (`/fw-clip-probe.html`, :5466): computed B = `backdrop-filter: blur(20px)` +
 `clip-path: inset(100px 40px round 24px)`. WebKit's `Page.snapshotRect` does not render
 backdrop-filter at all (no blur even in the unclipped box A), so the question needs a human look.
@@ -281,3 +296,54 @@ sets filled that list. `mw10e-src` (JS f7716dc3) gives all 21 panel images their
 frame's only event is `inert` being removed from `div.start-selling-morph-panel`, 3/3. **The y~1965
 frame is the morph panel leaving `inert` at the IO edge** (its subtree becomes live and renders); the
 src burst only rode in the same frame.
+
+**noinert (10:26-10:31Z, control ctl-B16 pass 52.4 / 59.6):** `mw10e-noinert` (JS 972eeb01) never sets
+`inert` on the panel (tabindex toggles instead). The frame stays: control 102@1962, 91@1947, 106@1965 vs
+noinert 98@1962, 99@1968, 95@1962 (order C N N C C N); its only logged events are now two `tabindex`
+writes on the panel CTAs. Neighbours (+-2 frames) are 15-35 ms on both: one long frame, not a smear.
+So neither `inert`, nor img `src`, nor making the listeners passive (e1) is the cost; the na/nb block below
+names it.
+
+### 3d. na/nb split and the first phone Timeline (10:38-10:47Z)
+
+**Timeline timestamps (F-047, 10:39Z):** with `Page.disable` -> `Page.enable` -> `Timeline.enable` ->
+`setInstruments(['Timeline'])` -> `Timeline.start({maxCallStackDepth: 1})` on the page target, every record
+carries real start/end times and `performance.mark` arrives as a `TimeStamp` (1922/1922 records in the
+check), as research/architecture/safari-inspector-probing.md predicted. Timeline runs are attribution only,
+never A/B numbers.
+
+**na/nb block (10:40-10:43Z, control ctl-B19 pass: 53.7 / idle 60.2; order C A B B A C, top -> y 2500, r3
+logger uncapped):** fix-nav-morph's split of the IO edge path, on aw1-10e. na = the window listeners armed at
+setup instead of at the edge (JS 26d4d548), nb = no `b` write at the edge (JS 78ce0637); C = aw1-10e (JS
+3e2f599a); CSS c6aad94b for all. Worst frame in y 1850-2100 with its +-2 neighbours (ms@y):
+
+| run | neighbours | edge frame | after | scroll fps | > 50 ms (whole scroll) |
+|---|---|---|---|---|---|
+| C pc1 | 16 17 | **104@1962** | 23 14 | 55.4 | 3 |
+| na pa1 | 16 17 | 34@2002 | 11 10 | 57.0 | 0 |
+| nb pb1 | 11 17 | **84@1956** | 16 17 | 55.5 | 2 |
+| nb pb2 | 16 17 | **101@1975** | 15 23 | 54.8 | 2 |
+| na pa2 | 17 16 | 35@2057 | 12 11 | 57.6 | 0 |
+| C pc2 | 4 13 | **107@1962** | 33 10 | 56.3 | 1 |
+
+**na removes the frame; nb does not.** It's one long frame, not a smear. The nb frame has no logged
+attribute events at all, yet costs 84-101 ms. na moves no visible cost elsewhere: hero 0-900 > 50 ms is 0/0
+vs 2/0, idle at the top is 59.9/60.3 vs 60.2/60.1, and the worst load/settle frame is 61/59 vs 48/57 ms
+(`early`, in noise).
+
+**P2b attribution (Timeline on, 10:45-10:47Z):**
+
+| pass | frame | RenderingFrame | RecalculateStyles (Layout inside) | Composite (Layout / Paint inside) | Composite rest | JS |
+|---|---|---|---|---|---|---|
+| C tc1 | 100@1957 | 97.6 | 34.4 (18.9) | 58 (14 / 1.6) | ~42 | 1.4 (2 IO callbacks) |
+| C tc2 | 121@1977 | 128.8 | 41.9 (24.3 + 2.3) | 72 (17.8 / 2.1) | ~51 | 1.2 |
+| na ta1 | none > 34 ms in y 1700-2300 (max 30) | | | | | |
+
+The frame after it (tc1, 36 ms) holds a rAF callback with a forced 12.3 ms Layout, plus small Paints of
+the panel cards. So the y~1960 frame is a document-wide style recalc plus two layouts plus a ~40-50 ms
+paint-less Composite. That fits de-unknowns-render's prediction (registered before the result was known):
+adding the window touch/wheel listeners, passive or not, invalidates the event-listener regions, restyles
+from the root and re-walks every composited layer's event region. Arming them at setup (na) moves that to
+load time, where no long frame shows. Timeline records stay in `out/` (`e-tc*.tl.json`); the frame/summary
+JSON is in `raw/`.
+
