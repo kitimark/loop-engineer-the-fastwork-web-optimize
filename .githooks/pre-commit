@@ -3,31 +3,84 @@
 // `git config core.hooksPath .githooks`; the setting is shared by every worktree of the repo, and each
 // worktree runs the .githooks/ of its own checked-out branch).
 //
-// 1. Blocks committing mirrored Fastwork assets and secrets, even if someone used `git add -f`:
-//      site/  site-pretty/  out/  fixes/<topic>/overlay/  .serena/cache/  *.pem
-// 2. When the commit touches the tooling (tools/, tests/, package.json, .claude/settings.json,
+// 1. Blocks committing measurement output, overlays and secrets, even if someone used `git add -f`:
+//      out/  fixes/<topic>/overlay/  .serena/cache/  *.pem  site*/.mirror/missing-local.txt|chrome-profile/
+// 2. Protects the committed baseline snapshot (site/, site-pretty/, baseline.json; CLAUDE.md Hard rules
+//    3-4): any staged change there (added, modified, deleted) is refused, unless the commit is an
+//    authorized snapshot update, i.e. ALL of:
+//      - env FW_BASELINE_UPDATE=<snapshot id> equals "snapshot" in the staged baseline.json;
+//      - the staged site/ and site-pretty/ trees equal baseline.json "trees" (git write-tree --prefix),
+//        and the id's hash part matches them;
+//      - the commit touches nothing else;
+//      - it is committed on main (or a baseline/* branch), never on an agent's branch.
+//    Only the user, or the lead on the user's explicit instruction, sets FW_BASELINE_UPDATE
+//    (the Claude Code git-guard asks the user whenever a command sets it).
+// 3. When the commit touches the tooling (tools/, tests/, package.json, .claude/settings.json,
 //    .claude/hooks/, .githooks/), runs the test suite (`npm test`) and blocks the commit if it fails.
 //    FW_PRECOMMIT_TEST_CMD overrides the command (used by the hook's own tests).
 //
 // Tests run against the working tree, not only the staged snapshot: commit what you tested.
 // `git commit --no-verify` skips this hook; that is for humans in an emergency, never for agents.
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
-const git = (...a) => spawnSync('git', a, { encoding: 'utf8' });
+const git = (...a) => spawnSync('git', a, { encoding: 'utf8', maxBuffer: 1 << 28 });
 const top = git('rev-parse', '--show-toplevel').stdout.trim();
-const list = (filter) => git('diff', '--cached', '--name-only', '-z', `--diff-filter=${filter}`).stdout.split('\0').filter(Boolean);
+const list = (filter) => git('diff', '--cached', '--name-only', '--no-renames', '-z', `--diff-filter=${filter}`).stdout.split('\0').filter(Boolean);
 
-const FORBIDDEN = [/^site\//, /^site-pretty\//, /^out\//, /^fixes\/[^/]+\/overlay\//, /^\.serena\/cache\//, /\.pem$/i];
+const FORBIDDEN = [/^out\//, /^fixes\/[^/]+\/overlay\//, /^\.serena\/cache\//, /\.pem$/i, /^site(-pretty)?\/\.mirror\/(missing-local\.txt$|chrome-profile\/)/];
+const BASELINE = [/^site\//, /^site-pretty\//, /^baseline\.json$/];
+const TREES = ['site', 'site-pretty'];
 const TOOLING = [/^tools\//, /^tests\//, /^package\.json$/, /^\.claude\/settings\.json$/, /^\.claude\/hooks\//, /^\.githooks\//];
 
 const added = list('ACMRT'); // deleting a forbidden path that slipped in earlier is always allowed
 const bad = added.filter((f) => FORBIDDEN.some((re) => re.test(f)));
 if (bad.length) {
-  console.error('pre-commit: refusing to commit mirrored Fastwork assets / certificates / measurement output:');
+  console.error('pre-commit: refusing to commit overlays (Fastwork code) / certificates / measurement output / volatile mirror files:');
   for (const f of bad.slice(0, 20)) console.error('  ' + f);
   if (bad.length > 20) console.error(`  ... and ${bad.length - 20} more`);
   console.error('Unstage them: git restore --staged <path>   (these paths are gitignored for a reason; see CLAUDE.md)');
   process.exit(1);
+}
+
+const all = list('ACDMRTUXB');
+const base = all.filter((f) => BASELINE.some((re) => re.test(f)));
+if (base.length) {
+  const marker = process.env.FW_BASELINE_UPDATE || '';
+  const refuse = (why) => {
+    console.error(`pre-commit: BASELINE-MODIFIED: ${why}`);
+    console.error(`staged baseline paths (${base.length}):`);
+    for (const f of base.slice(0, 10)) console.error('  ' + f);
+    if (base.length > 10) console.error(`  ... and ${base.length - 10} more`);
+    console.error([
+      'site/, site-pretty/ and baseline.json are the frozen, committed baseline snapshot (CLAUDE.md Hard rules 3-4).',
+      'Not meant to change it? Restore the snapshot:',
+      '  git restore --source=HEAD --staged --worktree -- site site-pretty baseline.json && git clean -fd -- site site-pretty',
+      'A new snapshot is the user\'s decision; only the user, or the lead on the user\'s instruction, commits it, on main and alone:',
+      '  git add site site-pretty && node tools/baseline.mjs pin --prettier <version> && git add baseline.json',
+      '  FW_BASELINE_UPDATE=<snapshot id printed by pin> git commit -m "baseline: snapshot <id>"',
+    ].join('\n'));
+    process.exit(1);
+  };
+  if (!marker) refuse('this commit changes the committed baseline snapshot, and it is not an authorized snapshot update (FW_BASELINE_UPDATE is not set).');
+  const others = all.filter((f) => !BASELINE.some((re) => re.test(f)));
+  if (others.length) refuse(`a snapshot update must contain only site/, site-pretty/ and baseline.json; also staged: ${others.slice(0, 5).join(', ')}${others.length > 5 ? ', ...' : ''}`);
+  const branch = git('symbolic-ref', '-q', '--short', 'HEAD').stdout.trim();
+  if (!(branch === 'main' || branch.startsWith('baseline/'))) refuse(`snapshot updates are committed on main (or a baseline/* branch), not on "${branch || 'a detached HEAD'}".`);
+  const shown = git('show', ':baseline.json');
+  let pin = null;
+  try { pin = JSON.parse(shown.stdout); } catch {}
+  if (shown.status !== 0 || !pin) refuse('baseline.json is not staged (or not valid JSON): run node tools/baseline.mjs pin, then git add baseline.json.');
+  if (pin.snapshot !== marker) refuse(`FW_BASELINE_UPDATE=${marker} does not name the staged snapshot (baseline.json: ${pin.snapshot}).`);
+  const staged = {};
+  for (const t of TREES) {
+    const w = git('write-tree', `--prefix=${t}/`);
+    staged[t] = w.status === 0 ? w.stdout.trim() : '(none)';
+    if (staged[t] !== pin.trees?.[t]) refuse(`baseline.json trees.${t} (${pin.trees?.[t] ?? 'missing'}) is not the staged ${t}/ (${staged[t]}): re-run node tools/baseline.mjs pin after git add.`);
+  }
+  const h = createHash('sha256').update(TREES.map((t) => `${t} ${staged[t]}\n`).join('')).digest('hex');
+  if (!marker.endsWith('-' + h.slice(0, 8)) || pin.contentHash !== h) refuse(`snapshot id ${marker} / contentHash do not derive from the staged trees (expected ...-${h.slice(0, 8)}).`);
+  console.error(`pre-commit: authorized baseline snapshot update ${marker} on ${branch} (${base.length} paths)`);
 }
 
 const tooling = list('ACDMRT').filter((f) => TOOLING.some((re) => re.test(f)));

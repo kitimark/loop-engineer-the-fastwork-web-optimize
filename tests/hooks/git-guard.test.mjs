@@ -149,7 +149,23 @@ const ASK = [
   'git config alias.m "merge --no-ff"',
   'git remote add origin https://github.com/me/x.git',
   'git config set remote.origin.url https://example.com/x.git',
+  // the committed baseline snapshot: authorizing a snapshot commit / measuring a modified baseline is the user's call
+  'FW_BASELINE_UPDATE=b1789284481295-0123abcd git commit -m "baseline: snapshot"',
+  'git add baseline.json && FW_BASELINE_UPDATE=b1-0123abcd git commit -m x',
+  'export FW_BASELINE_UPDATE=b1-0123abcd; git commit -m x',
+  'FW_BASELINE_UPDATE=b1-0123abcd; export FW_BASELINE_UPDATE; git commit -m x',
+  'env FW_BASELINE_UPDATE=b1-0123abcd git commit -m x',
+  'sh -c "FW_BASELINE_UPDATE=b1-0123abcd git commit -m x"',
+  'FW_BASELINE_ALLOW_MODIFIED=1 node tools/serve.mjs --root site-pretty',
+  'export FW_BASELINE_ALLOW_MODIFIED=1',
 ];
+ALLOW.push(
+  'echo FW_BASELINE_UPDATE=b1-0123abcd',
+  'grep -rn FW_BASELINE_UPDATE .githooks',
+  'FW_BASELINE=1 node tools/baseline.mjs status',
+  'node tools/baseline.mjs pin --prettier 3.9.9',
+);
+DENY.push('FW_BASELINE_UPDATE=b1-0123abcd git commit --no-verify -m x'); // deny wins over ask
 
 for (const c of DENY) test(`deny: ${JSON.stringify(c)}`, () => assert.equal(runHook(bash(c)).decision, 'deny'));
 for (const c of ALLOW) test(`allow: ${JSON.stringify(c)}`, () => assert.equal(runHook(bash(c)).decision, 'allow'));

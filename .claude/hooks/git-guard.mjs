@@ -11,6 +11,8 @@
 //   ask (JSON permissionDecision "ask"):
 //     git config writes to core.hooksPath, merge.ff, pull.*, branch.*.rebase|mergeoptions, alias.*,
 //     remote.*;  git remote add|set-url|rename
+//     setting FW_BASELINE_UPDATE / FW_BASELINE_ALLOW_MODIFIED (VAR=..., export, env): the user's decision
+//     to commit a new baseline snapshot or to measure a modified one (CLAUDE.md Hard rules 3-4)
 //
 // Why a parser and not only permission rules: `Bash(git push *)` doesn't match `git -C . push`,
 // `/usr/bin/git push`, `sh -c 'git push'` (https://code.claude.com/docs/en/permissions.md, "What a
@@ -234,6 +236,14 @@ export function splitCommands(src, depth = 0) {
 // ---------------------------------------------------------------- command normalisation
 const ASSIGN = /^[A-Za-z_][A-Za-z0-9_]*=/;
 const GIT_CONFIG_ENV = /^(GIT_CONFIG_PARAMETERS|GIT_CONFIG_COUNT|GIT_CONFIG_KEY_\d+|GIT_CONFIG_VALUE_\d+)=/;
+// The committed baseline snapshot (CLAUDE.md Hard rules 3-4): authorizing a snapshot commit
+// (.githooks/pre-commit) or measuring a modified baseline (tools/lib/baseline.mjs) is the user's decision.
+const BASELINE_ENV = /^(FW_BASELINE_UPDATE|FW_BASELINE_ALLOW_MODIFIED)(=|$)/;
+function envWord(w, findings) {
+  const name = w.split('=')[0];
+  if (GIT_CONFIG_ENV.test(w)) findings.push(deny(`git config override through the environment (${name}) is not allowed: it can disable the git hooks. ${HOW}`));
+  else if (BASELINE_ENV.test(w)) findings.push(ask(`\`${name}\` authorizes ${name === 'FW_BASELINE_UPDATE' ? 'committing a new baseline snapshot (site/, site-pretty/, baseline.json)' : 'measuring a baseline that is not the committed snapshot'}: only the user decides that (CLAUDE.md Hard rules 3-4).`));
+}
 const KEYWORDS = new Set(['!', 'if', 'then', 'else', 'elif', 'do', 'while', 'until', '{', '}', 'exec', 'nocorrect', 'noglob', 'builtin']);
 const base = (p) => p.slice(p.lastIndexOf('/') + 1);
 
@@ -242,11 +252,11 @@ function unwrap(words, findings) {
   let w = words.slice();
   for (let guard = 0; guard < 32 && w.length; guard++) {
     const h = w[0];
-    if (ASSIGN.test(h)) { if (GIT_CONFIG_ENV.test(h)) findings.push(deny(`git config override through the environment (${h.split('=')[0]}) is not allowed: it can disable the git hooks. ${HOW}`)); w.shift(); continue; }
+    if (ASSIGN.test(h)) { envWord(h, findings); w.shift(); continue; }
     if (KEYWORDS.has(h)) { w.shift(); continue; }
     const b = base(h);
     if (b === 'export' || b === 'declare' || b === 'typeset' || b === 'local' || b === 'readonly') {
-      for (const a of w.slice(1)) if (GIT_CONFIG_ENV.test(a)) findings.push(deny(`git config override through the environment (${a.split('=')[0]}) is not allowed: it can disable the git hooks. ${HOW}`));
+      for (const a of w.slice(1)) envWord(a, findings);
       return null;
     }
     if (b === 'command') { if (w[1] === '-v' || w[1] === '-V') return null; w.shift(); if (w[0] === '-p') w.shift(); continue; }
@@ -264,7 +274,7 @@ function unwrap(words, findings) {
       w.shift();
       while (w[0] && (w[0].startsWith('-') || ASSIGN.test(w[0]))) {
         const o = w.shift();
-        if (GIT_CONFIG_ENV.test(o)) findings.push(deny(`git config override through the environment (${o.split('=')[0]}) is not allowed: it can disable the git hooks. ${HOW}`));
+        envWord(o, findings);
         if (o === '-u' || o === '--unset' || o === '-C' || o === '--chdir') w.shift();
         if (o === '-S' || o === '--split-string') { const s = w.shift() ?? ''; w = [...s.split(/\s+/).filter(Boolean), ...w]; }
         else if (o.startsWith('-S') && o.length > 2) w = [...o.slice(2).split(/\s+/).filter(Boolean), ...w];

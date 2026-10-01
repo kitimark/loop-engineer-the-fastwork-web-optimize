@@ -1,6 +1,8 @@
 // .githooks/pre-commit in a throwaway repo (core.hooksPath is set in *that* repo's config only):
-// blocks Fastwork assets / overlays / out/ / *.pem even when force-added, runs the test command only
-// when tooling is staged, blocks on failure, and never leaks git's hook env into the tests.
+// blocks overlays / out/ / *.pem / volatile mirror files even when force-added, refuses any change to the
+// committed baseline snapshot (site/, site-pretty/, baseline.json) except an authorized snapshot update,
+// runs the test command only when tooling is staged, blocks on failure, and never leaks git's hook env
+// into the tests.
 // FW_PRECOMMIT_TEST_CMD stands in for `npm test` (the real suite would recurse into itself).
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,14 +35,14 @@ test('non-tooling commits pass without running the tests', () => {
   assert.equal(existsSync(marker(repo.wt)), false);
 });
 
-for (const bad of ['site/index.html', 'site-pretty/_app/x.js', 'out/ab/t/verify.json', 'fixes/demo/overlay/_app/x.js', '.serena/cache/typescript/document_symbols.pkl', 'certs/lan-key.pem', 'tools/some.PEM']) {
+for (const bad of ['out/ab/t/verify.json', 'fixes/demo/overlay/_app/x.js', '.serena/cache/typescript/document_symbols.pkl', 'certs/lan-key.pem', 'tools/some.PEM', 'site/.mirror/missing-local.txt', 'site-pretty/.mirror/chrome-profile/Default/Cookies']) {
   test(`blocks force-added ${bad}`, () => {
     put(repo.wt, bad);
     git(repo.wt, 'add', '-f', bad);
     const before = head(repo.wt);
     const r = commit(repo.wt, 'exit 0');
     assert.notEqual(r.code, 0);
-    assert.match(r.stderr, /refusing to commit mirrored Fastwork assets/);
+    assert.match(r.stderr, /pre-commit: refusing to commit overlays/);
     assert.ok(r.stderr.includes('  ' + bad), r.stderr);
     assert.equal(head(repo.wt), before);
     git(repo.wt, 'restore', '--staged', bad);
@@ -90,4 +92,125 @@ test('the main checkout uses the same hook (core.hooksPath is shared config)', (
   assert.notEqual(r.code, 0);
   assert.match(r.stderr, /commit blocked/);
   git(repo.main, 'reset', '-q');
+});
+
+// ---- the committed baseline snapshot (site/, site-pretty/, baseline.json; CLAUDE.md Hard rules 3-4) ----
+// Only an authorized snapshot update may change it: FW_BASELINE_UPDATE=<id of the staged baseline.json>,
+// staged trees == pin, nothing else staged, committed on main (or baseline/*).
+const bcommit = (dir, marker, msg = 'baseline', extra = []) => run('git', ['commit', '-q', ...extra, '-m', msg], { cwd: dir, env: { FW_PRECOMMIT_TEST_CMD: 'exit 0', ...(marker === undefined ? {} : { FW_BASELINE_UPDATE: marker }) } });
+const pin = (dir) => {
+  const r = run(process.execPath, [join(dir, 'tools', 'baseline.mjs'), 'pin', '--prettier', '3.9.9'], { cwd: dir });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^PINNED b\d+-[0-9a-f]{8} /m);
+  git(dir, 'add', 'baseline.json');
+  return JSON.parse(readFileSync(join(dir, 'baseline.json'), 'utf8'));
+};
+const snapshotFiles = (dir, v) => {
+  put(dir, 'site/index.html', `<!doctype html><p>build ${v}</p>\n`);
+  put(dir, 'site/_app/version.json', `{"version":"178928448129${v}"}`);
+  put(dir, 'site/.mirror/manifest.json', JSON.stringify({ origin: 'https://fastwork.example', lastRun: '2026-09-30T19:03:53.263Z', files: {} }));
+  put(dir, 'site-pretty/index.html', `<!doctype html><p>build ${v}</p>\n`);
+  put(dir, 'site-pretty/_app/version.json', `{"version":"178928448129${v}"}`);
+};
+const refusedBaseline = (r, re) => {
+  assert.notEqual(r.code, 0, r.out);
+  assert.match(r.stderr, /pre-commit: BASELINE-MODIFIED: /);
+  assert.match(r.stderr, re);
+  assert.match(r.stderr, /git restore --source=HEAD --staged --worktree -- site site-pretty baseline\.json/, 'names the fix');
+};
+let s1;
+
+test('baseline: a first snapshot without the marker is refused; the authorized form (main, marker = staged pin) commits it', () => {
+  git(repo.main, 'reset', '-q');
+  snapshotFiles(repo.main, 5);
+  put(repo.main, 'site/.mirror/missing-local.txt', '/never-committed\n'); // gitignored: serve.mjs's 404 log
+  git(repo.main, 'add', 'site', 'site-pretty');
+  assert.doesNotMatch(git(repo.main, 'diff', '--cached', '--name-only'), /missing-local/);
+  const before = head(repo.main);
+  refusedBaseline(bcommit(repo.main), /not an authorized snapshot update/);
+  s1 = pin(repo.main);
+  assert.match(s1.snapshot, /^b1789284481295-[0-9a-f]{8}$/);
+  assert.equal(s1.prettier, '3.9.9');
+  assert.equal(s1.origin, 'https://fastwork.example');
+  assert.equal(s1.crawledAt, '2026-09-30T19:03:53.263Z');
+  refusedBaseline(bcommit(repo.main), /FW_BASELINE_UPDATE is not set/);
+  refusedBaseline(bcommit(repo.main, 'b1789284481295-00000000'), /does not name the staged snapshot/);
+  assert.equal(head(repo.main), before);
+  const ok = bcommit(repo.main, s1.snapshot, `baseline: snapshot ${s1.snapshot}`);
+  assert.equal(ok.code, 0, ok.out);
+  assert.match(ok.stderr, new RegExp(`authorized baseline snapshot update ${s1.snapshot} on main`));
+  assert.equal(git(repo.main, 'rev-parse', 'HEAD:site'), s1.trees.site);
+  assert.equal(git(repo.main, 'rev-parse', 'HEAD:site-pretty'), s1.trees['site-pretty']);
+  assert.equal(git(repo.main, 'status', '--porcelain', '--', 'site', 'site-pretty', 'baseline.json'), '', 'tracked and clean; missing-local.txt ignored');
+});
+
+test('baseline: a modified, deleted or added snapshot file is refused without the marker (also via commit -a)', () => {
+  const before = head(repo.main);
+  put(repo.main, 'site/index.html', '<!doctype html><p>a re-mirror</p>\n');
+  git(repo.main, 'add', 'site/index.html');
+  refusedBaseline(bcommit(repo.main), /not an authorized/);
+  git(repo.main, 'restore', '--staged', '--worktree', 'site/index.html');
+  git(repo.main, 'rm', '-q', 'site-pretty/index.html');
+  refusedBaseline(bcommit(repo.main), /not an authorized/);
+  git(repo.main, 'restore', '--staged', '--worktree', 'site-pretty/index.html');
+  put(repo.main, 'site/_app/immutable/new.js', 'x\n');
+  git(repo.main, 'add', 'site');
+  refusedBaseline(bcommit(repo.main), /not an authorized/);
+  git(repo.main, 'rm', '-q', '--cached', 'site/_app/immutable/new.js');
+  rmSync(join(repo.main, 'site/_app/immutable/new.js'));
+  put(repo.main, 'site/index.html', '<!doctype html><p>edited</p>\n');
+  refusedBaseline(bcommit(repo.main, undefined, 'sneaky', ['-a']), /not an authorized/);
+  git(repo.main, 'restore', '--staged', '--worktree', 'site/index.html');
+  assert.equal(head(repo.main), before);
+});
+
+test('baseline: the marker does not authorize a stale pin, a forged id, a mixed commit, a pin-only edit or an agent branch', () => {
+  const before = head(repo.main);
+  // stale pin: site/ changed and staged, baseline.json still describes the old trees
+  put(repo.main, 'site/index.html', '<!doctype html><p>new build</p>\n');
+  git(repo.main, 'add', 'site');
+  refusedBaseline(bcommit(repo.main, s1.snapshot), /trees\.site .* is not the staged site\//);
+  // a forged pin whose id does not derive from the staged trees
+  const p = pin(repo.main);
+  writeFileSync(join(repo.main, 'baseline.json'), JSON.stringify({ ...p, snapshot: 'b1789284481295-deadbeef' }));
+  git(repo.main, 'add', 'baseline.json');
+  refusedBaseline(bcommit(repo.main, 'b1789284481295-deadbeef'), /do not derive from the staged trees/);
+  // mixed with any other path
+  pin(repo.main);
+  put(repo.main, 'fixes/demo/notes.md', 'x\n');
+  git(repo.main, 'add', 'fixes/demo/notes.md');
+  refusedBaseline(bcommit(repo.main, p.snapshot), /must contain only site\/, site-pretty\/ and baseline\.json; also staged: fixes\/demo\/notes\.md/);
+  git(repo.main, 'rm', '-q', '--cached', 'fixes/demo/notes.md');
+  rmSync(join(repo.main, 'fixes/demo/notes.md'));
+  git(repo.main, 'restore', '--source=HEAD', '--staged', '--worktree', 'site', 'site-pretty', 'baseline.json');
+  // baseline.json alone is part of the snapshot too
+  writeFileSync(join(repo.main, 'baseline.json'), JSON.stringify({ ...s1, note: 'edited' }));
+  git(repo.main, 'add', 'baseline.json');
+  refusedBaseline(bcommit(repo.main), /not an authorized/);
+  git(repo.main, 'restore', '--source=HEAD', '--staged', '--worktree', 'baseline.json');
+  assert.equal(head(repo.main), before);
+  // an agent's branch (a worktree cut from main) can't commit a snapshot even with a correct marker
+  const wt = join(repo.main, '.claude', 'worktrees', 'snap-wt');
+  git(repo.main, 'worktree', 'add', '-q', wt, '-b', 'wt/snap');
+  put(wt, 'site/index.html', '<!doctype html><p>agent build</p>\n');
+  git(wt, 'add', 'site');
+  const q = pin(wt);
+  refusedBaseline(bcommit(wt, q.snapshot), /committed on main \(or a baseline\/\* branch\), not on "wt\/snap"/);
+  git(repo.main, 'worktree', 'remove', '--force', wt);
+});
+
+test('baseline: a second authorized snapshot on main replaces the first; ordinary commits stay unaffected', () => {
+  snapshotFiles(repo.main, 6);
+  git(repo.main, 'add', 'site', 'site-pretty');
+  const s2 = pin(repo.main);
+  assert.notEqual(s2.snapshot, s1.snapshot);
+  assert.match(s2.snapshot, /^b1789284481296-/);
+  const ok = bcommit(repo.main, s2.snapshot);
+  assert.equal(ok.code, 0, ok.out);
+  assert.equal(git(repo.main, 'rev-parse', 'HEAD:site'), s2.trees.site);
+  put(repo.main, 'research/notes.md', 'unrelated\n');
+  git(repo.main, 'add', 'research/notes.md');
+  const plain = bcommit(repo.main, undefined, 'notes');
+  assert.equal(plain.code, 0, plain.out);
+  assert.doesNotMatch(plain.stderr, /BASELINE/);
 });

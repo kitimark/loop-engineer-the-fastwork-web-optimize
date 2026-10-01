@@ -1,6 +1,11 @@
-# Mirrored third-party content (Fastwork's property) - never commit or push.
-site/
-site-pretty/
+# site/ and site-pretty/ are the study's frozen baseline snapshot, committed on main (user decision
+# 2026-10-01; pin: baseline.json). They stay Fastwork's property: never push (CLAUDE.md Hard rule 2).
+# A re-mirror shows up as a git diff there; .githooks/pre-commit refuses it unless it is an authorized
+# snapshot update. Volatile files the tools write into the snapshot dirs stay ignored:
+/site/.mirror/missing-local.txt
+/site-pretty/.mirror/missing-local.txt
+/site/.mirror/chrome-profile/
+/site-pretty/.mirror/chrome-profile/
 # Per-fix overlays hold full copies of modified Fastwork files: only patch.diff is committed (locally).
 fixes/*/overlay/
 # measurement output, Chrome profiles, generated certificates

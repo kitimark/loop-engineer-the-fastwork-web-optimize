@@ -62,7 +62,7 @@ export const FAKE_HOST = join(TESTS, 'fixtures', 'fake-host.mjs');
 /** A clean env for tool subprocesses: no inherited mirror/lock/port overrides unless given. */
 export function cleanEnv(extra = {}) {
   const env = { ...process.env };
-  for (const k of ['FW_MIRROR_HOME', 'FW_STATE_DIR', 'FW_BASE', 'FW_ALLOW_MAIN', 'FW_LOCK_OWNER', 'FW_LOCK_HELD', 'PORT', 'CHROME', 'FW_IPHONE_PORT', 'FW_IPHONE_DEVICE_PORT', 'NODE_TEST_CONTEXT', 'FW_PRECOMMIT_TEST_CMD', 'FW_GATE_MAX_LOAD1', 'FW_GATE_MAX_BUSY', 'FW_GATE_MAX_WAIT', 'FW_TOOLING']) delete env[k];
+  for (const k of ['FW_MIRROR_HOME', 'FW_STATE_DIR', 'FW_BASE', 'FW_ALLOW_MAIN', 'FW_LOCK_OWNER', 'FW_LOCK_HELD', 'PORT', 'CHROME', 'FW_IPHONE_PORT', 'FW_IPHONE_DEVICE_PORT', 'NODE_TEST_CONTEXT', 'FW_PRECOMMIT_TEST_CMD', 'FW_GATE_MAX_LOAD1', 'FW_GATE_MAX_BUSY', 'FW_GATE_MAX_WAIT', 'FW_TOOLING', 'FW_BASELINE_UPDATE', 'FW_BASELINE_ALLOW_MODIFIED']) delete env[k];
   for (const k of Object.keys(env)) if (/^FAKE_HOST_/.test(k)) delete env[k];
   env.FW_TEST_HOST = FAKE_HOST;
   env.FW_CAFFEINATE = 'off'; // no real sleep assertions from tests (I-026); a test passes the fake via `extra`
