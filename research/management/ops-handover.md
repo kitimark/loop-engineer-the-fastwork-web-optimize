@@ -222,7 +222,10 @@ between tool calls.
    re-contain-js `<scratchpad>/hero-exit/snap/re-contain-js`; separate sentinels) -> P12 -> **P10** (P-024, own gate: P1
    then the phone block) -> P5 ST-1 (P-018) -> P9 (P-026) -> **P-030** listener split (~25 min) -> **P-031 G** (rAF-rate
    pages; earlier if the phone idles) -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. re-keep-op gain block: placed
-   when fix-hero-exit sends its ticket.
+   when fix-hero-exit sends its ticket; right BEFORE it, same session: one untimed attribution run at rest, re-keep-op vs
+   re-keep (LayerTree read of the card + idle Paint events over it), because a non-composited opacity-0.999 card may paint
+   through a transparency layer on every repaint (UNRESOLVED; F-075 CONFIRMED the premise: presence flip none<->value in
+   StyleDifference, claims-audit §2.8 762fc40).
    **Pacing v2 (de-unknowns-ux e64b6de, pacing-result §4):** verdict accepted on intent (§0/§2), OBSERVED, one user, not
    rested; §3 sign erratum added with the scoring commit, kept visible. **Lead rule 13:5xZ: pre-registered rules get a
    second reader (arch-claims or mgmt-ops) BEFORE data arrives.** de-unknowns-ux drafts a pacing v3 (touch A/B) plan; it
