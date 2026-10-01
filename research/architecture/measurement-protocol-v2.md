@@ -121,7 +121,7 @@ straight to F. The lead decides if a topic qualifies.
 - **Idle triple** (counts: callbacks/s, writes/s, mutations/s, rAF/s) at y=0, parked mid-page after a scroll, and
   at the pin.
 - **Memory/layers note:** layer count at 3 fixed positions (Chrome `layerTreeDidChange` against a no-op control;
-  `layerPainted` fired 0 times for fix-scroll-engine, don't rely on it alone).
+  `LayerTree.layerPainted` never fires on Chrome M148+, §3.7, so per-layer `paintCount` deltas are the paint source).
 - **Prediction card** (§4) written before any timed run.
 - Debug hooks (`__fwMorphDrive`, loggers) stripped before landing; a phone build may carry them, the landed
   patch may not.
@@ -201,17 +201,23 @@ of the three without a stated reason.
 ### 3.7 Visual parity, paint, layers, memory, CLS
 
 - Parity: frozen-frame diff 0 % (P14); 0-0.4 % in `fix.mjs ab` is phase noise; backdrop by the user's eye.
-- **Chrome 154 (ts-render-signals probe, I-032):** `layerPainted` never fires (0 events against 360
-  `layerTreeDidChange` on a page that repaints every rAF; the DidPaint hook appears to have been dead since
-  CompositeAfterPaint). `--paint-rects` therefore falls back to per-layer `paintCount` deltas between consecutive
-  layer lists (`paintRects.source: 'paintCount'`). Its area is **layerMpx**, the full size of the layers that painted,
-  in physical px: an **upper bound**, never "paint area" or "clip". Deltas bind to the interval between two lists
+- **`LayerTree.layerPainted` is unavailable on Chrome M148+.** CONFIRMED (source: Chromium 1bf9d9eb, crbug
+  488803411, M148+), empirical check pending (ts-render-signals, Chrome 154 vs 143). Chromium 1bf9d9eb378c "[HiC]
+  Allow cc::Layer update rect mutation during paint callback" (main@{#1610086}, 2026-04-04, earliest 148.0.7773.0)
+  resets every `cc::Layer` update_rect in `LayerTreeHost::WillCommit` before `client_->WillCommit`;
+  `probe::LayerTreePainted` emits only for a non-empty update_rect, so the event worked M94-M147 and is dead from
+  M148. (Our probes saw it first: 0 events against 360 `layerTreeDidChange` on a page that repaints every rAF,
+  I-032. The earlier guess, "dead since CompositeAfterPaint", is REFUTED.)
+- **The paint source is the per-layer `paintCount` delta** between consecutive layer lists (`--paint-rects`,
+  `paintRects.source: 'paintCount'`). Its area is **layerMpx**, the full size of the layers that painted, in
+  physical px: an **upper bound**, never "paint area" or "clip". Deltas bind to the interval between two lists
   (`binding: 'interval'` when lists are sparser than frames). The probe is opt-in, never in gain runs, and gets an
-  on/off A/A. The `layerPainted` clip sum below applies only where it fires.
-- **Paint area: from CDP `LayerTree.layerPainted` only** (opt-in `verify --paint-rects`). The trace `Paint.clip`
-  is "unreliable and often wrong" per DevTools' own source: never an area source (corrects arch-devtools G3a; its
-  Paint *count* is fine). Chrome's area is a lower bound on WebKit's for resizing layers, exact for paint-only
-  switches. Phone area: WebKit Timeline `Paint` `data.clip` is usable (the RenderLayer's paint dirty rect, unlike
+  on/off A/A.
+- **Paint rects, when attribution needs them:** the trace snapshot route, categories `devtools.timeline.layers` +
+  `blink.invalidation` (`annotated_invalidation_rects`). It is heavy, so it is opt-in and for attribution only, never
+  a gain metric. The trace `Paint.clip` is "unreliable and often wrong" per DevTools' own source: never an area
+  source (corrects arch-devtools G3a; its Paint *count* is fine). A Chrome area is a lower bound on WebKit's for
+  resizing layers, exact for paint-only switches. Phone area: WebKit Timeline `Paint` `data.clip` is usable (the RenderLayer's paint dirty rect, unlike
   Chrome's trace clip): sum per layer (records nest and overlap, never a per-frame union), × 9 for device px;
   event-region paints emit no record, so this is visual paint only. Per 1 s chunk today, per frame in attribution
   runs. Paint ms on iOS is **recording** only; raster shows in the Composite tail (read them together).
@@ -351,7 +357,10 @@ hold per A/B, compare within a hold.
   phase (F-025). Each fix's README lists which scenarios it ran and which it didn't.
 - Opt-in `--trace-frames` additions: `DroppedFrame` states (G1), `Layerize`/`UpdateLayerTree`/`Commit` split out
   of `paint` (de-devtools rank 4), `--save-trace` (G6) so the Performance panel can open a run.
-- Opt-in `--paint-rects` (LayerTree.layerPainted where it fires, else paintCount deltas as a layer-size upper bound, §3.7; de-devtools rank 2).
+- Opt-in `--paint-rects`: per-layer `paintCount` deltas as a layer-size upper bound (§3.7; de-devtools rank 2).
+  `LayerTree.layerPainted` is unavailable on M148+ (Chromium 1bf9d9eb, crbug 488803411; CONFIRMED by source,
+  empirical check pending). Rects only from the opt-in trace snapshot route (`devtools.timeline.layers` +
+  `blink.invalidation`), for attribution.
 - Recalibrate 6x once per wave against the phone (G5), with the same logger on both sides.
 - Blind spots stated in every Chrome-only verdict: GPU, raster, WebKit layerization, threaded presentation.
 
@@ -397,7 +406,7 @@ hold per A/B, compare within a hold.
 | T3 | analysis lib: ticks, IQR, HL shift, exact MW, stratified block compare, crossing placement; `frames.mjs` reads both devices | S-M | analysis (flag) | — |
 | T2 | `iphone.mjs block`: snapshot serve, warm-up, sentinel, order, gaps, auto-void, `block.json` | M-L | device | T1a, T3 |
 | T6 | `--trace-frames`: DroppedFrame (G1), layer bucket split, `--save-trace` (G6); per-frame >34 tags | M | yes (opt-in) | — |
-| T7 | `verify --paint-rects` (layerPainted) + bench `layers` kind | M | yes (opt-in) | — |
+| T7 | `verify --paint-rects` (paintCount deltas; `layerPainted` unavailable on M148+, §3.7) + bench `layers` kind | M | yes (opt-in) | — |
 | T4 | crossings probe (Chrome short lane, counts) | M | no (bench) | T3 |
 | T8 | host record (Chrome version, memory, power, thermal) + canary command | S-M | yes | — |
 | T5 | verify scenarios: idle-after-scroll, reload-at, input-at-load, scroll-up, load phase, phone viewport | M-L | yes | T8, canary resolved |

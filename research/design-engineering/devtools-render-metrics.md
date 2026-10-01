@@ -49,12 +49,15 @@ This is a read-only study: no Chrome, no iPhone, no locks, no tool edits. Labels
    stats. We have equal or better counts, or the signal doesn't bear on these hotspots.
 5. **A Chrome trap the docs don't warn about:** DevTools' own source marks the trace `Paint` event's `clip` as
    "unreliable and often wrong" (vendor source). A paint-area metric must come from CDP `LayerTree.layerPainted`, not
-   from trace clips.
+   from trace clips. **M148+: unavailable.** `layerPainted` never fires from M148 on (Chromium 1bf9d9eb, crbug
+   488803411; CONFIRMED by source, empirical check pending; protocol v2 §3.7). The paint source is now the per-layer
+   `paintCount` delta (a layer-size upper bound); rects only from the opt-in trace snapshot route, for attribution.
 6. **Under 6x, Chrome slows only the main thread.** Raster and GPU stay unthrottled (render.md Q10). So
    presentation signals don't transfer to the iPhone, while **areas and counts do**: they are device-agnostic.
 7. **Top 3 additions (§6):**
    - (1) per-frame durations from WebKit's Timeline (`de-safari`; the execution stopwatch, §3);
-   - (2) per-frame paint area and per-layer paint counts in Chrome (`verify.mjs --paint-rects`);
+   - (2) per-frame paint area and per-layer paint counts in Chrome (`verify.mjs --paint-rects`; on M148+ the area is
+     a layer-size upper bound from `paintCount` deltas, see 5);
    - (3) Frames-track presentation states in `--trace-frames`.
 
 ## 1. The docs' model, and where WebKit/iOS adds terms
@@ -213,6 +216,14 @@ iPhone side:
   We'll remove it" (devtools-frontend `models/trace/types/TraceEvents.ts`, crbug 41402938; vendor source).
   - CDP `LayerTree.layerPainted` (layerId + clip per paint) is the usable source. Our infinite-animations probe
     already uses it.
+  - **M148+: unavailable.** Status: CONFIRMED (source: Chromium 1bf9d9eb, crbug 488803411, M148+), empirical
+    check pending. Chromium 1bf9d9eb378c "[HiC] Allow cc::Layer update rect mutation during paint callback"
+    (main@{#1610086}, 2026-04-04, earliest 148.0.7773.0) resets every `cc::Layer` update_rect in
+    `LayerTreeHost::WillCommit` before `client_->WillCommit`, and `probe::LayerTreePainted` emits only for a
+    non-empty update_rect: the event worked M94-M147 and never fires on our Chrome 154. Use instead:
+    - the per-layer `paintCount` delta between layer lists (`verify --paint-rects`; layer size, an upper bound);
+    - rects, for attribution only (opt-in, heavy): the trace snapshot route, categories `devtools.timeline.layers`
+      + `blink.invalidation` (`annotated_invalidation_rects`).
   - The trace category `disabled-by-default-devtools.timeline.invalidationTracking` names the node that invalidated
     the paint. That is DevTools' route to "why did this repaint", which is the feed rect's open question.
 - **Layers.** Our `paint` bucket hides `Layerize`, `UpdateLayerTree` and `Commit` (trace-frames KINDS). Split out,
@@ -265,7 +276,7 @@ iPhone side:
 | JS ≈ 1 ms | Scripting | none (morph JS ~1 ms) | trace `script` bucket; LoAF scripts | yes | Timeline `FunctionCall` counts (have); durations need §3 |
 | style 3 ms = 120-300 elements | Rendering: Recalculate Style, "Elements affected" | 0.72 flip (450-1150), hero JS exit (230/frame), morph (~150 + `#platform`) | trace `UpdateLayoutTree.elementCount` per frame | **yes** (`styleElements`) | Timeline `RecalculateStyles` counts (have); per-frame ms via §3 |
 | layout 2 ms, 0 dirty reads | Rendering: Layout; Forced reflow insight | morph g (nav subtree), people-o (slow finger only), nav `ee()` | Layout `dirtyObjects`; LoAF `forcedStyleAndLayoutDuration` | **yes** | Timeline `Layout` counts (have) |
-| raster 3 ms ≈ 1.5 Mpx text/images | Painting (record) + raster (off-thread in Chrome) | morph g 3.9-10.4 Mpx, y≈1830 3.6 Mpx, feed 1.15 Mpx/frame, 0.72 first raster 3-4 Mpx | **area**: `LayerTree.layerPainted` per frame. **ms**: not representative (raster unthrottled) | **no** (§6 rank 2) | Timeline `Paint` rects per chunk (have); per frame needs §3; per layer `paintCount` (de-safari) |
+| raster 3 ms ≈ 1.5 Mpx text/images | Painting (record) + raster (off-thread in Chrome) | morph g 3.9-10.4 Mpx, y≈1830 3.6 Mpx, feed 1.15 Mpx/frame, 0.72 first raster 3-4 Mpx | **area**: `LayerTree.layerPainted` per frame (**M148+: unavailable**, §4.2; `paintCount` deltas instead). **ms**: not representative (raster unthrottled) | **no** (§6 rank 2) | Timeline `Paint` rects per chunk (have); per frame needs §3; per layer `paintCount` (de-safari) |
 | allocation + new layers 2 ms ≈ 10 MB or 1 card | Composite: Layerize, layer count, Layers panel memory | morph g 11-29 MB/frame, morph first frame ~88 layers, /10c window flips 7-13 ms | layer count delta per frame (`layerTreeDidChange`); `Layerize` ms split out | **no** (rank 4) | `LayerTree` count and `memory` at positions (de-safari) |
 | blur ≲ 7 Mpx GPU; changing radius counts as paint | Painting "complexity" (docs); GPU in fact | morph ≈ 9 Mpx changing (nav backdrop, panel, `#platform`) | none: GPU unthrottled, Chrome's blur ≠ CA | **no, by design** | ablations (gb, ghb, ghbn) only; Timeline `Composite` counts |
 | rAF at rest = 0 | RAIL Idle | countdown 1 Hz, accent 3.15 s, 48-95 rAF/s at rest | idle-phase rAF count, LoAF | yes | idle Timeline counts (have) |
@@ -280,7 +291,7 @@ needs `npm run test:chrome`. An **opt-in** flag leaves default A/B runs comparab
 | rank | addition | tool to change | measurement code? | cost | value |
 |---|---|---|---|---|---|
 | 1 | **Per-frame durations from WebKit's Timeline** (send `Page.enable` before `Timeline.start`, §3), giving style/layout/paint/composite ms per frame on the phone | `de-safari`'s probe, then `tools/iphone.mjs` (a `timeline` mode) | no (iPhone tool; not part of Chrome A/B) | very low: one command, verified once on the phone, plus a toolsmith change with a fake-proxy test | **highest**: turns every iPhone term from derived to measured, settles the raster rate, splits the y≈1960 frame (decode vs paint vs JS) |
-| 2 | **Per-frame paint area and per-layer paint counts in Chrome**: `LayerTree.enable` + `layerPainted` rects, bucketed by rAF frame, summed Mpx per phase, top rects with layer and node | `tools/verify.mjs --paint-rects` (opt-in) + `lib/cdp.mjs`; or a bench probe kind `paintArea` | **yes** (opt-in; `LayerTree` adds per-commit overhead, so it only compares with other `--paint-rects` runs) | ~1 toolsmith day + fake-CDP tests | **high**: measured A_i per hotspot (lower bound for WebKit resizes, exact for paint-only switches); catches paint regressions that 6x hides; finds the feed rect's owner |
+| 2 | **Per-frame paint area and per-layer paint counts in Chrome**: `LayerTree.enable` + `layerPainted` rects, bucketed by rAF frame, summed Mpx per phase, top rects with layer and node. **M148+: unavailable** (`layerPainted` never fires, §4.2): shipped as per-layer `paintCount` deltas (layer-size upper bound); rects only from the opt-in trace snapshot route, for attribution | `tools/verify.mjs --paint-rects` (opt-in) + `lib/cdp.mjs`; or a bench probe kind `paintArea` | **yes** (opt-in; `LayerTree` adds per-commit overhead, so it only compares with other `--paint-rects` runs) | ~1 toolsmith day + fake-CDP tests | **high**: measured A_i per hotspot (lower bound for WebKit resizes, exact for paint-only switches); catches paint regressions that 6x hides; finds the feed rect's owner |
 | 3 | **Frames-track presentation states** in `--trace-frames`: add `disabled-by-default-devtools.timeline.frame`, count `DroppedFrame` events with and without `args.hasPartialUpdate` per phase (the Frames track's dropped/partial rule; = arch-devtools **G1**, `research/architecture/devtools-methodology.md`) | `tools/lib/trace-frames.mjs` + `verify.mjs` summary | **yes**, inside the already-opt-in traced runs (traced runs are not comparable to untraced ones anyway) | low: one category + a parser + tests | **medium-high for verdicts**: credits threaded refactors (h2, morph R3, countdown WAAPI); Chrome-only, says nothing about iPhone GPU |
 | 4 | **Layer creation per frame**: split `Layerize`/`UpdateLayerTree`/`Commit` out of the `paint` bucket; layer-count delta per frame from `layerTreeDidChange` | `trace-frames.mjs` (bucket split) + the `--paint-rects` session (count) | yes (bucket split changes `paint` ms: call it out) | low | **medium**: verifies a3 / R5 / h3 / /10c window flips in Chrome terms; Chrome layerization ≠ WebKit, so the iPhone `LayerTree` (de-safari) stays the truth |
 | 5 | **Invalidation tracking for attribution** (`disabled-by-default-devtools.timeline.invalidationTracking`) | a one-off `fixes/<topic>/probe.mjs` (short lane, counts only) | no | very low | **medium, one-shot**: names what repaints the feed rect (middle R3) and which roots the 0.72 flip invalidates |
@@ -289,7 +300,7 @@ needs `npm run test:chrome`. An **opt-in** flag leaves default A/B runs comparab
 
 **Not recommended:**
 - a paint-area metric from trace `Paint.clip` (unreliable per DevTools' own source). This **conflicts with arch-devtools G3a**,
-  which proposes exactly that sum; use G3a's per-phase Paint *count* if wanted, but take the area from `layerPainted` (rank 2);
+  which proposes exactly that sum; use G3a's per-phase Paint *count* if wanted, but take the area from `layerPainted` (rank 2; **M148+: unavailable**, so `paintCount` deltas or the opt-in trace snapshot route, §4.2);
 - Chrome raster or GPU ms as a proxy for the iPhone (unthrottled at 6x);
 - chrome-devtools MCP performance traces (Hard rule 8). `--trace-frames` and CDP do the same work under the lock.
 
