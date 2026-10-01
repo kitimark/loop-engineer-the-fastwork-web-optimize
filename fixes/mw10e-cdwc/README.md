@@ -101,15 +101,43 @@ from 113 to 33.
 The landing pair, aw1-10e vs mw10e-cdwc, has not run on the phone, and there is no G run yet. The lead ruled no waiver:
 a G block of aw1-10e vs mw10e-cdwc is ticketed right after P4 (mgmt-ops-5). F evidence: the user's blind swipe A/B, run by
 iphone-runner, is still in progress.
-- **P-032 amendment (b), before any counted data** (lead 15:1xZ; mgmt-ops-5's second read pending). Reason: I-038. A
-  morph-log hook's second inspector connection hangs the gesture tool's connection, so the run has no m. The
-  amendment:
-  - t0 = the stamp of the first touchmove with defaultPrevented=1 in each stroke that drives the morph (push and
-    dwell), from gesture-rec's touch rows.
-  - The morph's capture handler calls preventDefault and then drives m. In a no-hook test run (aw1-10e) every push
-    and dwell move shows defaultPrevented=1, and no hero or traverse move does.
-  - Fallback: the first touchmove of the stroke with scrollY at max. A run that uses it is flagged "t0-fallback".
-  - The window (t0, t0+450] and every verdict rule stay as registered.
+- **P-032 amendment (b), before any counted data** (lead 15:1xZ; second read OK by mgmt-ops-5, P-032 row, docs-2
+  788fb20). Reason: I-038. A morph-log hook's second inspector connection hangs the gesture tool's connection, so the
+  run has no m. Instead, the morph's state is rebuilt from gesture-rec's touch rows, using the handler code (aw1-10e
+  JS 12943-12950 and 13275-13320; the same lines in both arms):
+  - **State machine.** Each touchmove with defaultPrevented=1 (the morph's capture handler `M` called preventDefault)
+    sets a target from its finger delta, n = previous clientY − this clientY. The previous clientY comes from the
+    same touch sequence, starting at its touchstart.
+    - n ≥ 1 sets target 1 (forward); n ≤ −1 sets target 0 (reverse).
+    - A tween starts only when the target changes (`E`). Nothing returns m to 0 by itself: no timer, no touchend
+      handler. Only a downward finger move (or wheel up) reverses it.
+    - Every tween lasts 680 ms (`ZM` r = 680, cubic ease-out, clock = `performance.now()` in the handler).
+  - **Forward tweens in finger-protocol-v1 (asPerformed): exactly 2 per run.**
+    - Push 1 (first stroke after the "push" mark). m = 0: hero and traverse moves are never prevented (no-hook test
+      run, aw1-10e).
+    - The up stroke of drag-into-end (560 px / 1500 ms). The down stroke before it (450 px / 700 ms) starts the
+      reverse tween on its first move. That tween ends about 700 ms after the stroke starts, and the 300 ms pause
+      follows, so m = 0 at rest with about 300 ms margin.
+    - Not scored as forward tweens: pushes 2-3 and dwells 1-6. They are up strokes at m = 1, so their target stays
+      1 and no tween starts, whatever the gap.
+    - The registered "expected 3-10 forward tweens per run" was a driver-M figure. It is corrected here, before any
+      data, to 2. A run with fewer than 2 is void (as registered), so both must be present.
+  - **t0** = the timeStamp of the first prevented touchmove with n ≥ 1 while the rebuilt state is 0. Fallback: the
+    first touchmove of that stroke with scrollY at max, flagged "t0-fallback".
+    - The window (t0, t0+450] and every verdict rule stay as registered.
+    - Against the registered t0 (the last m = 0 frame), this t0 is up to 1 frame later. The move is delivered after
+      that frame, and the tween's first m > 0 frame is the rAF of a later rendering update.
+    - So the window ends up to 1 frame later, and the activation frame stays inside it. The scorer checks this per
+      tween: the first frame after the handler time has stamp > t0, else the tween is flagged.
+  - **Held m = 1 phase** (prediction 4 and its +8 ms WORSE rule are kept). It covers the frames with stamp from
+    (handler time of t0's move) + 680 + 300 ms until the next reverse move, counting only frames while a finger is
+    down (a stroke's touchstart to touchend).
+    - In v1 that is pushes 2-3 and dwells 1-6, about 12 s per run, plus any tail of the drag-into-end up stroke.
+    - p95 per run.
+  - Already in the row (mgmt-ops-5):
+    - the sentinel is S-driver runs on C after the warm-ups and at the end;
+    - the Timeline cycle uses the M driver;
+    - a WDA-timeout run is void and may be re-run within the 9-run cap.
 - Builds, each from an immutable snapshot over site-pretty:
   - C = mw10e-g (JS 22efa0ab69ba / CSS c6aad94b455f);
   - V = mw10e-g-cdwc (JS 22efa0ab69ba / CSS 5dc6e8e37388).
