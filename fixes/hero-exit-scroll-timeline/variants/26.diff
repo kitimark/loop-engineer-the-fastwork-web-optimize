@@ -1,0 +1,26 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--re-keep-op
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--re-keep-op --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2415,8 +2415,13 @@
+ }
+ .start-selling-future.is-visible > .start-selling-future-card {
+   visibility: visible;
+-  opacity: 1;
+-  filter: none;
++  /* Fix candidate `re-keep-op` (hero-exit, P3: re-keep HIT): the reveal ends at opacity 0.999 / blur(0px) /
++     translateY(0) instead of 1 / none / none, so no property crosses its presence boundary at a transition
++     end. On the phone each such crossing cost one 12-18 ms whole-view Layout at flip + 700 / + 900 / + 1150 ms
++     (OBSERVED, in our setup). 0.999 over the white card is visually identical. */
++  opacity: 0.999;
++  filter: blur(0px);
++  transform: translateY(0);
+   pointer-events: auto;
+   transition:
+     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),

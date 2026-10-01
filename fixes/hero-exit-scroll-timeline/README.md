@@ -529,9 +529,44 @@ Verdicts on P-019 (OBSERVED, n = 2 per arm):
   still fire at rest. So they come from the reveal transition (postmortem Card 4), not from scrolling or tile
   coverage (U5). de-pm-hero: the other Layouts in the hold are rotator ticks.
 
-**Next (proposal, not built):** a fix candidate `re-keep-op` = re-keep plus the card's resting opacity
-kept below 1 (0.999). It would take the + 700 Layout too, leaving only the flip pair. A permanent blur(0px)
-filter layer on the full-section card has to be checked first (row 19's note).
+**Next:** fix candidate `re-keep-op` (row 26, built, see below).
+
+### Fix candidate `re-keep-op` (row 26): Chrome check PASS, phone gain block pending
+
+- **Build.** re-keep plus the card's resting opacity 0.999. The revealed card rule ends at `opacity: 0.999;
+  filter: blur(0px); transform: translateY(0)` instead of `1 / none / none`, so none of the three properties
+  crosses its presence boundary at a transition end. The `is-future-shrinking` scale(1) write then goes
+  translateY(0) → scale(1), not none → scale(1).
+  - Overlay `fixes/hero-exit-scroll-timeline--re-keep-op/overlay`, on aw1-10e: CSS 507f0ca4, JS = aw1-10e
+    3e2f599a. Patch `variants/26.diff`.
+  - Read-only phone snapshot: `<scratchpad>/hero-exit/snap/re-keep-op`.
+- **Chrome check** (short-lane hold, untimed counts, no throttle): Q = aw1-10e, re-keep and re-keep-op, at
+  430x775 and 430x932. Script `<scratchpad>/hero-exit/probe9.mjs`; report `pr9/report.json`.
+  - **Settled values:** opacity `0.999`, filter `blur(0px)`, transform `matrix(1, 0, 0, 1, 0, 0)`.
+  - **Transitions:** the opacity transition ends at +735/744 and filter/transform at +935/944, as in Q.
+  - **Layers:** identical in the three builds (143 / 138 total). The card has one layer, whose only
+    compositing reason is `WillChangeTransform`, as in Q. blur(0px) and 0.999 add no filter or opacity
+    reason in Blink.
+  - **Paint counts:** scrolling 600 px through the card gives identical deltas in all three builds (67 / 73
+    total, card 58 / 57).
+  - **LayoutCount over the reveal:** 97 / 98, identical. Blink does not pay for the presence flip, so Chrome
+    cannot show the gain.
+  - **Pixel parity vs Q:**
+    - Card first screen: 0.000 % at both heights.
+    - Mid card (300 px in): 0.000 % at 775 and 0.398 % at 932. The same region shows 0.45-0.50 % for
+      re-keep vs Q too, which is avatar-carousel phase noise.
+  - **Errors:** none.
+- **Mechanism** (arch-claims, claims-audit §2.8, F-075): CONFIRMED in the WebKit-7624.4.5 source. In
+  StyleDifference.cpp l.191-209, `miscDataChangeRequiresLayout` returns Layout when hasTransform /
+  opacity.isOpaque / hasFilters flips. It fires on the flip, not because the transition ended. The ties to
+  these phone frames stay OBSERVED (the n=2 re-dur / re-keep ablations).
+- **Open risk** (arch-claims, UNRESOLVED, WebKit only):
+  - Once the transitions end, nothing found in the source keeps the card composited on iOS. A non-composited
+    layer at opacity 0.999 paints through `beginTransparencyLayer` on every repaint of its area.
+  - blur(0px) is an identity filter and is not painted.
+  - Decisive check: an untimed phone attribution run at rest, re-keep-op vs re-keep. It records whether the
+    card has its own layer and the Paint events over the card while idle; the carousel inside the card
+    repaints. This runs before the gain block's counted runs (ticket).
 
 ## Risks, conflicts, follow-ups
 
@@ -622,3 +657,4 @@ The header's "rebuild with" line names the scratch topic it was generated from:
 | hero-exit-scroll-timeline/23 | DIAGNOSTIC split80 = aw1-10e + the #people reveal at 0.80 instead of 0.72 (nav pill drop stays at 0.72), postmortem Card 3 split trigger | the 0.72 frame alone shows the nav's share, the 0.80 frame the reveal's | pending (iPhone P9, Timeline-only); Chrome mechanism PASS | NOT parity (reveal ~60 px later; settled states identical) | see "P9 builds" | patch `variants/23.diff` (on aw1-10e), CSS = aw1-10e c6aad94b, JS 40b43ffa | | ticket via mgmt-ops-5 |
 | hero-exit-scroll-timeline/24 | DIAGNOSTIC re-contain = aw1-10e + phone `#people { contain: layout size; height: 100svh }`, card `height: 100svh`: the section becomes a sized WebKit relayout boundary above the card (arch-claims F-049 verdict, boundary term of P-019/P-026) | the reveal's presence-flip Layouts (+~40/+745/+945 ms, +1.13 s) get root = #people box, not the view; durations fall (direction only) | withdrawn: Chrome parity FAIL (card content 1328.86 px > 100svh; page 554 px shorter at 775) | FAIL: seam 72 %, docH 5964 → 5410; card first screen 0.000 % | see "Boundary diagnostic re-contain" | patch `variants/24.diff` (on aw1-10e), CSS 4cd770a6, JS = aw1-10e 3e2f599a | superseded by 25 | |
 | hero-exit-scroll-timeline/25 | DIAGNOSTIC re-contain-js = aw1-10e + phone `#people.is-fw-sized { contain: layout size }` with #people's height synced to the card's border box by a ResizeObserver (JS L11606-11616): a sized relayout boundary above the card and .is-carousel without a fixed height | the reveal's presence-flip Layouts (+~40/+745/+945 ms, +1.13 s) and the rotator ticks get root = #people box, not the view; durations fall (direction only) | pending (iPhone P14 V2, merged with ST-4); Chrome mechanism PASS | parity: rects/docH identical, card 0.000 %, seam 0.000 % / 0.379 % (775 / 932); 0 #people writes in the reveal | see "Boundary diagnostic" | patch `variants/25.diff` (on aw1-10e), CSS 288c2ebe, JS 3579d857 | the observer's write is at load only; its Layout carries L11614 | ticket via fix-scroll-engine (P14) |
+| hero-exit-scroll-timeline/26 | FIX CANDIDATE re-keep-op = aw1-10e + the revealed card ends at `opacity: 0.999; filter: blur(0px); transform: translateY(0)` (re-keep + resting opacity below 1) | no presence flip at any reveal end: the + 700, + 900 and + 1150 whole-view Layouts (12-18 ms each on the phone) all go; the flip pair stays | pending (iPhone gain block, after P11+P14); Chrome check PASS | parity: card 0.000 % (775/932), mid 0.000 % / 0.398 % (carousel phase, as re-keep vs Q); layers and paint counts identical to Q | see "Fix candidate re-keep-op" | patch `variants/26.diff` (on aw1-10e), CSS 507f0ca4, JS = aw1-10e 3e2f599a | WebKit may paint a non-composited 0.999 card through a transparency layer on each repaint (arch-claims, UNRESOLVED): untimed attribution run first | ticket via mgmt-ops-5 |
