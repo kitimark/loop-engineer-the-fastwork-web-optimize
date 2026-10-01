@@ -158,6 +158,10 @@ by the scrollbar width); the slot and arm constants copy the CSS sizes, so a des
   - invstack (U2);
   - P12's tldump on lc-base.
 
+Lead decision: P11 Block A and P14 do not share sentinel runs. Each block keeps its own Timeline-off sentinels,
+after the warm-ups and at the block end (protocol §5.2). Both blocks are cleared to run after the ca-check re-run,
+P-029 and P10, in mgmt-ops-5's phone order.
+
 ## ST-4 builds (de-pm-hero's question, P-025; built here, read out by de-pm-hero)
 
 | build | change on aw1-10e | served hashes |
