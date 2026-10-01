@@ -376,8 +376,8 @@ whether the listener is passive. Two diagnostics, both on noinert:
 
   Both rows are within noise by the run-unit rule (the ranges overlap). The dt>34 row points the wrong way: V median 12
   vs C 8. Some of V's extra frames: armload2 55 ms @2147, and a cluster in the pause at y 1238-1249 in armload3/6
-  (48 and 52 ms). F1 arms at setup, not in the pause, so that cluster is unexplained (OBSERVED, in our setup, cause
-  unknown). I asked whether C shows it too.
+  (48 and 52 ms). The pause cluster is not F1's: C has it too (frames >34 ms at y 1248-1250 in every C run, 35-39 ms).
+  F1's maxima there are higher (48/52/51 ms), but n is small.
 - **Load and settle:**
 
   | arm | dt>34 per run | dt>50 per run | max per run (ms) |
@@ -389,8 +389,13 @@ whether the listener is passive. Two diagnostics, both on noinert:
   - The card's "no new frame ≥ 37.5 ms" clause is not met by count, but the ranges overlap (within noise).
 - **Reading:** F1 moves the y≈1960 frame from ~100 ms to 40-49 ms. That supports listener arming at the IO edge as most
   of that frame (OBSERVED; F-062, which listener costs it, is still UNRESOLVED and goes to P-030).
-  - Per the card's risk line, the remaining 40-49 ms edge frame (src ×21 + inert still in it) points to the restack:
-    F1 on noinert + src.
+  - r3 names none of F1's edge frames: "named 0" in every V run, e.g. 49@1988 [] and 40@1994 []. Every C edge frame is
+    named src ×21 + inert.
+    - So the 40-49 ms residual is not the src + inert pair, and the card's risk line ("with only those events in it")
+      does not apply. The noinert + src restack is not indicated by this data.
+    - The residual is a frame with no DOM event in r3's view, right at the edge. Its cause is UNRESOLVED (in our setup,
+      cause unknown).
+    - Decisive check: a Timeline attribution run on F1 at the edge, after block B's end sentinel (protocol §5.2).
   - Block B (F3 arm-scope, ~14:40Z) is the second and last block for this question (§5.3).
   - Not land-ready as is. The touch-latency (G/F) requirement above also still stands.
 
