@@ -13,13 +13,25 @@
 //   POST /session/:id/actions                      one stroke (W3C pointer actions, pointerType touch)
 //   DELETE /session/:id                            end the session
 // Never /source, element lookups or screenshots: an accessibility snapshot of Safari costs phone CPU while
-// we measure it. request() refuses those paths.
+// we measure it. request() allows exactly the calls above (ALLOWED, method + path) and refuses anything else
+// before any HTTP traffic, so a new WDA call is a deliberate edit here, not an accident.
 import { redact } from './redact.mjs';
 
 export const WDA_URL = () => process.env.FW_WDA_URL || 'http://127.0.0.1:8100';
 export const SAFARI = 'com.apple.mobilesafari';
 export const SESSION_SETTINGS = Object.freeze({ waitForIdleTimeout: 0, animationCoolOffTimeout: 0, defaultActiveApplication: SAFARI });
-const FORBIDDEN = /\/(source|element|elements|screenshot|accessibleSource)(\/|$)|\/wda\/(tap|touch|dragfromtoforduration|element)/i;
+const SID = '[A-Za-z0-9-]{1,64}';
+/** The only WDA calls this module makes (review-gesture: an allowlist, not a denylist). */
+export const ALLOWED = Object.freeze([
+  ['GET', '/status'],
+  ['POST', '/session'],
+  ['POST', `/session/${SID}/appium/settings`],
+  ['POST', `/session/${SID}/wda/apps/activate`],
+  ['GET', `/session/${SID}/wda/activeAppInfo`],
+  ['POST', `/session/${SID}/actions`],
+  ['DELETE', `/session/${SID}`],
+].map(([m, p]) => [m, new RegExp(`^${p}$`)]));
+export const allowed = (method, path) => ALLOWED.some(([m, re]) => m === method && re.test(path));
 
 export class WdaError extends Error {
   constructor(message, { status, error, path } = {}) { super(message); this.status = status; this.error = error; this.path = path; }
@@ -30,7 +42,7 @@ export class WdaError extends Error {
  * Throws WdaError on a non-2xx status, a W3C error body, a refused connection or a timeout.
  */
 export async function request(method, path, body, { base = WDA_URL(), timeoutMs = 15000 } = {}) {
-  if (FORBIDDEN.test(path)) throw new WdaError(`wda.mjs never calls ${path} (no accessibility snapshots while measuring)`, { path });
+  if (!allowed(method, path)) throw new WdaError(`wda.mjs never calls ${method} ${redact(String(path))}: not in its allowlist (no accessibility snapshots, element lookups or screenshots while measuring)`, { path });
   let res, text;
   try {
     res = await fetch(base.replace(/\/$/, '') + path, {

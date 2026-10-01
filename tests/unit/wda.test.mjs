@@ -3,7 +3,7 @@
 // actions, errors and latency surface as WdaError, and accessibility snapshots are never requested.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { request, status, createSession, checkActions, actionsMs, WdaError, SESSION_SETTINGS } from '../../tools/lib/wda.mjs';
+import { request, status, createSession, checkActions, actionsMs, WdaError, SESSION_SETTINGS, ALLOWED, allowed } from '../../tools/lib/wda.mjs';
 import { compileStroke } from '../../tools/lib/gesture.mjs';
 import { startFakeWda } from '../fixtures/fake-wda.mjs';
 import { freePort } from '../helpers.mjs';
@@ -45,6 +45,28 @@ test('never /source, element lookups or screenshots: refused before any HTTP cal
     await assert.rejects(request('GET', p, undefined, { base: w.url }), (e) => e instanceof WdaError && /never calls/.test(e.message), p);
   }
   assert.equal(w.calls.length, 0);
+});
+
+test('an allowlist, not a denylist: exactly the calls wda.mjs makes; anything else (other paths, methods, tricks) refused before HTTP', async () => {
+  const w = await fake();
+  const sid = '8F3C2A10-1B2C-4D5E-9F00-0123456789AB';
+  for (const [m, p] of [['GET', '/status'], ['POST', '/session'], ['POST', `/session/${sid}/appium/settings`], ['POST', `/session/${sid}/wda/apps/activate`],
+    ['GET', `/session/${sid}/wda/activeAppInfo`], ['POST', `/session/${sid}/actions`], ['DELETE', `/session/${sid}`]]) assert.ok(allowed(m, p), `${m} ${p}`);
+  const refused = [
+    ['POST', '/status'], ['GET', '/session'], ['DELETE', '/session'], ['GET', `/session/${sid}/actions`], ['DELETE', `/session/${sid}/actions`],
+    ['POST', `/session/${sid}/wda/apps/launch`], ['POST', `/session/${sid}/wda/apps/terminate`], ['POST', `/session/${sid}/url`], ['GET', `/session/${sid}/screenshot`],
+    ['POST', `/session/${sid}/wda/keys`], ['POST', `/session/${sid}/wda/lock`], ['POST', '/wda/shutdown'], ['GET', '/wda/healthcheck'],
+    ['GET', '/status?x=1'], ['GET', '/status/'], ['POST', `/session/${sid}/actions/../source`], ['POST', `/session/${sid}/../source/actions`],
+    ['POST', '/session/a/b/actions'], ['POST', `/session//actions`], ['GET', '/STATUS'], ['get', '/status'],
+  ];
+  for (const [m, p] of refused) {
+    assert.equal(allowed(m, p), false, `${m} ${p}`);
+    await assert.rejects(request(m, p, undefined, { base: w.url }), (e) => e instanceof WdaError && /never calls .* not in its allowlist/.test(e.message), `${m} ${p}`);
+  }
+  // a refused path is named without ids (Hard rule 12): a session UUID is scrubbed
+  await assert.rejects(request('GET', `/session/${sid}/source`, undefined, { base: w.url }), (e) => !e.message.includes(sid) && /<uuid>/.test(e.message));
+  assert.equal(w.calls.length, 0, 'nothing reached WDA');
+  assert.deepEqual(ALLOWED.map(([m]) => m), ['GET', 'POST', 'POST', 'POST', 'GET', 'POST', 'DELETE']);
 });
 
 test('errors: an injected 500, a 400 for a mouse pointer, an unknown session, latency past the timeout, nothing listening', async () => {
