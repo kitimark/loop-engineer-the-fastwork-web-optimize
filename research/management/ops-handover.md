@@ -226,7 +226,10 @@ between tool calls.
    proposed CLAUDE.md qualifier after verification: "60 Hz idle and in scripted scrolls; ~80 Hz observed in finger scrolls".
    **WDA signing profile expires 2026-10-08T12:19:35Z** (free team, ts-gesture): re-run `wda build` before then.
    **HELD:** P10 (P-024) until the pacing v2 session (next finger batch: ~10 min lease, ~5 user min, user rested, before
-   any finger test, never sharing a lease with a timed block; de-unknowns-ux builds the page, ~1 h desk).
+   any finger test, never sharing a lease with a timed block). **Pacing v2 page READY** (d28c2cb on main:
+   research/design-engineering/pacing/v2.html + v2.js; `node tools/serve.mjs --root research/design-engineering/pacing
+   --port auto`, `/v2.html`; user line: "Part 1: 9 pairs, watch A then B, tap the smoother one. Part 2: rate 8 clips
+   1-5. About 3 minutes."; iphone-runner has the serving steps; F5 result = F-069 OBSERVED n=1).
    **Phone scoring (lead, CLAUDE.md 668b612, supersedes the v>=3 decision):** dt > 50 goal (target 0) + dt > 34, counts
    at ±4 ms (dt>46/54, dt>30/38), "threshold-sensitive" if the verdict differs; no k forms on the phone; Low Power Mode
    per run. fix-reviewer check 15 updated (13da193).
