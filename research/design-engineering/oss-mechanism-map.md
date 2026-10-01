@@ -78,7 +78,7 @@ Lines quoted from the phone base `aw1-10e` are marked as such. Labels follow the
 | fact | source |
 |---|---|
 | Accelerated (render-server / Core Animation) properties: opacity, transform, translate, rotate, scale, offset-\*, filter, backdrop-filter. Everything else is main thread: custom properties, clip-path, colors, `color-mix`, width/height, background-position | vendor source, `AcceleratedEffect.cpp` `acceleratedPropertyFromCSSProperty` (`research/architecture/webkit.md` §1) |
-| Filter animations are accelerated only when the from/to lists match: `blur(0px)→blur(8px)`, never `none→blur(8px)` | vendor source (webkit.md §1) |
+| Filter animations are accelerated only when the from/to lists match: `blur(0px)→blur(8px)`, never `none→blur(8px)` | vendor source (webkit.md §1); **disputed** for `none`: `GraphicsLayer::validateFilterOperations` treats an empty list as matching anything (arch-oss-survey, §5.1); ca-check pair (d) settles it |
 | **Time-based animations on the phone take the legacy Core Animation path.** There, a `linear(<points>)` or `steps()` timing function, on the animation or on any keyframe, makes the animation main-thread (`KeyframeEffect.cpp` `canBeAccelerated`, the `USE(CA)` branch). Threaded time-based animations were toggled on and off on WebKit `main` through 2026-09; Safari 26.4 shipped only threaded *scroll-driven* animations. Scroll-driven animations are unaffected. **CA-safe forms:** a `cubic-bezier`, or keyframes pre-sampled every ~16 ms with linear segments (Svelte 5's transition pattern) | vendor source (arch-oss-survey, F-048); applying it to 26.6.1 is a strong inference, to be settled by the ca-check page (§5) |
 | CSS scroll-driven animations: main thread on 26.0-26.3, **threaded from 26.4**; the phone runs 26.6.1 | vendor doc, WebKit blog 26.4 (webkit.md) |
 | `var()` of an animated custom property resolves against its base value in Safari keyframes (P3) | data (hero-exit) |
@@ -215,7 +215,8 @@ Summary per column:
     - nav `_` (13002-13010, `z(p, …≥0.72)`).
   - At the crossing the future card goes from `visibility: hidden; opacity: 0; filter: blur(14px)` to
     `visible; opacity: 1; filter: none` with a 1.6 s filter transition (CSS 2393-2412). That is `blur(14px) → none`,
-    non-matching lists: not accelerated (webkit.md §1).
+    non-matching lists: not accelerated per webkit.md §1, but CA-eligible per `validateFilterOperations` ("Empty
+    filters match anything"; §5.1). ca-check decides.
   - The nav leaves `is-hero-pill` (max-width/padding/gap transitions: layout per frame).
   - People-o widens with `grid-template-columns` + `height` (F-032, slow finger only).
 - **Thread today:** main (style, layout, the reveal blur), plus the first raster of a 430×775 layer.
@@ -235,7 +236,8 @@ Summary per column:
   - 0.9 s: `cubic-bezier(0.2116, 0.7565, 0.4035, 0.9503)`.
 - **Caveat (mine).** The endpoint is still `none` (CSS 2408). If a `none` endpoint already keeps the filter off
   the CA path, the baseline was main-thread too, and the fix needs h1's `blur(0px)` endpoint **as well**. The
-  ca-check page decides this (§5).
+  ca-check page decides this (§5). WebKit's `validateFilterOperations` says the opposite ("Empty filters match
+  anything"; §5.1 point 2), so by source the cubic-bezier baseline was CA and no endpoint change is needed.
 - **Verdict:** library mechanisms add nothing beyond h1. The WebKit timing-function rule turns T10's form into a
   PoC (`blur-easing-cubic`).
 
@@ -532,6 +534,11 @@ We differ on three points.
      The PoC must then also carry h1's `blur(0px)` endpoint.
    - So "T10 moved the reveal onto the main thread" is a hypothesis, not a finding, until ca-check runs with the
      `none` vs `blur(0px)` pair (acked on F-048 with this caveat).
+   - **Update (arch-oss-survey, source).** WebKit `GraphicsLayer::validateFilterOperations` (`GraphicsLayer.cpp`
+     807-838, `main`) says "Empty filters match anything", and `none` is an empty list. By source, then,
+     `none→blur(14px)` stays CA-eligible on the legacy path: the cubic-bezier baseline was CA, and T10's `linear()`
+     is the regression. This contradicts webkit.md §1's "never `none→blur`" (§1 table, H3), so the device pair (d)
+     in ca-check settles it. If the source holds, blur-easing-cubic needs no endpoint change.
 3. **ca-check needs two more cases than first drafted:** the `none`-endpoint pair, and a `backdrop-filter` radius
    animation (it decides whether morph-ca's backdrop part can be CA at all). The scroll-driven control keeps the
    page honest: it must keep moving in every run.
@@ -543,7 +550,8 @@ diagnostic only; our own data (F-033, P-009/010, ghbn ≈ ghb ≈ gh) predicts t
 ## 6. Open items
 
 - **The ca-check results.** Is `linear()` on the legacy CA path main-thread on 26.6.1 (F-048 says yes, from source),
-  and does a `none` filter endpoint disqualify the animation on its own?
+  and does a `none` filter endpoint disqualify the animation on its own? (webkit.md §1 says yes; WebKit's
+  `validateFilterOperations` says no, "Empty filters match anything". The device pair decides.)
 - **Phone rAF JS share in the 20-34 ms band.** It gates refresh-cache. The v2 standard probe logs `jsMs` per frame
   (measurement-protocol-v2 §5.5), so a census of runs already taken with it answers the gate at no phone cost.
 - **Touch latency of a window-wide synchronous region vs an element-scoped one.** It needs G or F; the S driver
