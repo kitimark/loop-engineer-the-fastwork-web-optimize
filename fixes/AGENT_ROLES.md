@@ -14,6 +14,7 @@ file links to them instead of repeating them.
 | **wave integrator** | [`wave-integrator`](../.claude/agents/wave-integrator.md) | after a wave landed: `combine`, mechanical conflicts, combined A/B, interactions, iPhone confirmation, write-up | lead: worktree subagent, name `wave<N>` | opus / high | as fix owner | `fixes/all-wave<N>/`, `research/<nn>-wave<N>-results/` |
 | **mapper / researcher** | [`bundle-mapper`](../.claude/agents/bundle-mapper.md) | read-only answers: bundle code, callers, DOM reads/writes, results data, web-platform questions (incident class `research`) | a fix owner or integrator (helper), or the lead; always without `name` | sonnet / medium; per call `haiku` for mechanical jobs | Bash (read-only use), WebFetch, WebSearch, Serena (read) | nothing |
 | **reviewer** | [`fix-reviewer`](../.claude/agents/fix-reviewer.md) | adversarial review of a finished fix, a combined wave, or a measurement-code tool fix | lead, without `name` | opus / high; per call `fable` for a combined wave | Bash (read-only use), Serena (read) | nothing |
+| **verifier** | none yet (proposed `claim-verifier`); today `general-purpose` + `model: "sonnet"` + the brief in "Verifier" below | checks one platform claim (or a batch) against references and returns a claim card: CONFIRMED / WEAKENED / REFUTED / UNRESOLVED + the decisive local check | the lead, mgmt-ops, an architecture agent or a fix owner whose card needs the claim; name `ver-<claim>` | sonnet / medium; opus / high when the claim decides a phone block or the source is subtle (layout/compositing internals) | Bash (read-only use), WebFetch, WebSearch, Serena (read) | its claim card, sent to the claim's owner + mgmt-ops; no commits |
 
 Not separate agents, on purpose:
 - **Incident coordinator = the lead**, backed by the shared store `tools/incident.mjs`. See
@@ -24,6 +25,10 @@ Not separate agents, on purpose:
 - **Researcher = `bundle-mapper`.** Web-platform and WebKit-vs-Chrome questions have the same shape
   as its code questions (read, cite, answer in ~60 lines); a second read-only definition would only
   differ in its prompt.
+  The exception is the **verifier** (2026-10-01, after F-059): a mapper answers "what does the platform
+  do", a verifier is handed a claim the team already relies on and must try to break it (versions, how our
+  own probe could have produced the result) and return a status. Same tools, different stance and output,
+  so it gets its own name and brief ("Verifier" below), not a new permission set.
 
 ## Who may do what
 
@@ -44,6 +49,10 @@ Not separate agents, on purpose:
 | land on `main`, tell everyone to rebase | yes | no | no | no | no | no |
 | talk to the user | yes | via lead | via lead | via lead | no | no |
 | edit the enforcement layer | asks the user | no | no | no | no | no |
+
+The **verifier** has the mapper's column (read only, posts and acks findings, commits nothing, never measures,
+never holds a lock or the iPhone), plus one duty: it sends each REFUTED or WEAKENED verdict to the claim's
+owner and mgmt-ops at once, CC the lead when the claim reached the user.
 
 **Tooling roles vs the rest (I-021).** Only the toolsmith changes tooling (`tools/`, `tests/`,
 `package.json`, `.githooks/`, `.claude/` except `.claude/agents/`), plus a fix owner's section 1
@@ -196,9 +205,48 @@ iPhone or the locks. Parallel helpers buy reading throughput, not measurement th
 | Combine a wave, judge interactions, write it up | `wave-integrator` | opus / high | conflict judgement and statistics across patches |
 | Write the fix README | fix owner | (owner's) | the claims must come from whoever holds the evidence |
 | Adversarial review of diff + results | `fix-reviewer`, spawned by the lead | opus / high | fresh context is the point; statistics and behaviour parity need depth |
+| Check a platform claim against spec, docs, engine source, bug trackers | verifier `ver-<claim>` | sonnet / medium; opus / high when it decides a phone block | read and cite; the stance (try to break it, check versions and our probe) matters more than depth |
 | Review of a combined wave | `fix-reviewer` | opus / high, or `model: "fable"` | interactions between patches |
 | Review of a measurement-code tool fix | `fix-reviewer` (tool mode) | opus / high | A/B comparability for every topic |
 | Incident triage, landing, user contact | lead | the session's model/effort | — |
+
+## Verifier (`ver-<claim>`): platform claims against references
+
+Why: on 2026-10-01 a probe result ("LayerTree.layerPainted never fires on Chrome 154", F-059) became a protocol rule,
+a tool design and a statement to the user before anyone read a reference. CLAUDE.md "Platform claims: confirm
+against a reference" sets the rule; this is the role that does the checking. The audit and its history:
+[`research/architecture/claims-audit.md`](../research/architecture/claims-audit.md).
+
+- **What counts as a platform claim:** any statement about what a browser, engine, OS or device does (cost,
+  invalidation, threading, event timing, what a CDP/Web Inspector record means, tool overhead, the Mac's display
+  state, the CPU-throttle equivalence). Not: what our code does (that is read from the bundle).
+- **Who spawns:** the claim's owner (fix owner, de-/arch- author) as soon as a card, prediction or ticket leans on
+  an OBSERVED claim; mgmt-ops when a slot ticket does; the lead when a D signature or a user report would. One
+  verifier per claim or per batch of 3-6 claims of one subsystem; at most 3 at once per spawner.
+- **Model / effort:** sonnet / medium by default. Opus / high when the verdict decides a phone block or the source
+  path is long (WebKit layout/compositing invalidation, Chromium compositor/CDP agents).
+- **Read-only:** no Chrome, no iPhone, no locks, no commits, no repo edits. Web research carries no personal data
+  (Hard rule 12). Scratch: `<scratchpad>/<spawner-topic>/ver-<claim>/`.
+- **Plan, then execute.** First a 5-10 line plan per claim: which spec/docs/source files/bugs, and **how our own
+  probe could have produced the result another way** (event not enabled, wrong target, coalescing, a cap, the
+  wrong version); sent to the spawner (who forwards to the claim's owner), then executed.
+- **References, in order of weight:** spec; vendor docs (CDP, MDN, WebKit/Chromium blogs, release notes, Web
+  Inspector docs); engine source with its history (github.com/WebKit/WebKit, source.chromium.org; say when the
+  code landed so it is known whether **iOS 26.6.1 / Chrome 154** have it: `main` alone is not the device); bug
+  trackers (bugs.webkit.org, issues.chromium.org). Cite URL + line/commit/milestone.
+- **Output:** one claim card per claim ([`_template/CARDS.md`](_template/CARDS.md) "Claim card"): verdict
+  CONFIRMED / WEAKENED (which part stands) / REFUTED / UNRESOLVED, the version it applies to, the references, how
+  our probe could mislead, the decisive local check when references are silent (a Chrome counts-only short-lane
+  probe run by the topic owner, or a phone ticket through mgmt-ops), and what depends on it.
+- **Where it sits in R → I → D → F → V → L:** claims are born in I (hypotheses) and in desk research; the verifier
+  runs **in parallel with I and D**, never blocking a measurement that is already ticketed. Its verdict is due
+  **before the lead signs D** (`LEAD.md` "Stages and gates": no NAMED on an OBSERVED claim) and before a
+  prediction card uses the claim as a constant in F. V: `fix-reviewer` checks the card's "Platform claims relied
+  on" table like any other evidence. A verdict that lands after D re-opens D only if it is REFUTED or WEAKENED in
+  the part the mechanism uses.
+- **Findings board:** until the board has a status field (toolsmith spec in the audit), a finding that states a
+  platform claim begins its title with the status (`[OBSERVED]`, `[CONFIRMED]`), and the verifier posts the
+  verdict as a new finding that names the old id ("Correction to F-nnn" / "Confirms F-nnn").
 
 ## Serena (optional, read-only)
 

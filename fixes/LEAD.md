@@ -84,7 +84,7 @@ the lesson behind each rule is its §1 table). A topic skips nothing; a stage ca
 |---|---|---|---|
 | R research | where and how often is it slow? | census card: ≥3 phone runs of one driver + Chrome at 932 and at phone geometry; clusters by crossing; a cluster in <2/3 runs goes on the "rare" list (needs F or G runs before any work) | owner |
 | I investigate | what changes in that frame? | event card: crossing table ±1 viewport, uncapped per-step probe (Chrome) and phone logger, hypotheses as element + selector + property, each checked by computed style in Chrome **and** WebKit | owner; mgmt-ops checks it is complete |
-| D distinguish | which mechanism and code, on which device? | **attribution card NAMED**: pipeline stage, code, positive + negative ablations with a mechanism check per arm, the axis + one decoupling run (A2), device class; phone-only adds a phone Timeline segment card before F (A1) | **lead** |
+| D distinguish | which mechanism and code, on which device? | **attribution card NAMED**: pipeline stage, code, positive + negative ablations with a mechanism check per arm, the axis + one decoupling run (A2), device class; phone-only adds a phone Timeline segment card before F (A1); every platform claim it rests on CONFIRMED, or UNRESOLVED with its decisive check passed (no OBSERVED) | **lead** (after the verifier's verdict on any OBSERVED claim) |
 | F fix | does the build do only what we intended? | build card + prediction card + ledger row; slot ticket for phone time | owner; mgmt-ops validates the ticket |
 | V review | a win on the target device, no regression elsewhere? | review report (`fix-reviewer`, section 4) | fix-reviewer |
 | L land | | section 5 | lead |
@@ -102,6 +102,23 @@ the lesson behind each rule is its §1 table). A topic skips nothing; a stage ca
   ablation (staging work earlier) proves where the trigger is, never the cost. LOCATED may spend one more phone
   block on ablations; it builds no fix. A render-bound fix stays LOCATED until the Instruments route (T10) is
   verified on this device.
+- **Platform claims (CLAUDE.md "Platform claims: confirm against a reference"; audit:
+  [`research/architecture/claims-audit.md`](../research/architecture/claims-audit.md)).** Every D card lists the
+  browser/engine behaviours its mechanism rests on in its "Platform claims relied on" table
+  ([`_template/CARDS.md`](_template/CARDS.md)), each with a status and a reference. **The lead does not sign NAMED
+  while any claim the mechanism rests on is OBSERVED.** Reply instead: `D: LOCATED, platform claim <id> OBSERVED,
+  verifier ver-<claim> asked` and spawn (or ask mgmt-ops to spawn) a verifier (`AGENT_ROLES.md` "Verifier"). The
+  card's other evidence stands while the verifier works; nothing is re-measured unless the verdict changes the
+  mechanism. Accepted statuses for NAMED:
+  - **CONFIRMED** with a citation that applies to the device's build (WebKit `main` alone is not iOS 26.6.1:
+    the verifier says when the code landed, or the decisive local check below stands in for the version);
+  - **UNRESOLVED** with its decisive local check run and passed (a Chrome counts-only short-lane probe by the
+    owner, or a phone ablation in the D block itself): the check, not our earlier probe, then carries the claim.
+  A REFUTED claim sends the card back to I. The **fast path** needs no platform claim by construction ("counts
+  X→0, by code" is about our code, not the engine); if its one line names an engine behaviour, the rule applies.
+  The same rule holds for F prediction cards (a term whose constant comes from a platform claim says the claim's
+  status) and for anything the lead tells the user: an OBSERVED claim goes to the user as "in our setup, cause
+  unknown", never as a fact.
 - **Fast path**, when the mechanism is exact and countable in Chrome (a removed listener, a deleted redundant
   write: counts → 0 by construction): a one-line card ("counts X→0, by code") and straight to F. Only the lead
   says a topic qualifies.

@@ -30,7 +30,7 @@ crossing table: | threshold (IO edge, scene gate, scroll-timeline range, class t
 per-step probe (Chrome short lane, counts only, UNCAPPED): per y step: mutations by type + attribute,
   style / layout counts, layer count delta, scene attributes
 phone logger (same window, per frame, uncapped): same fields + dt, yStart, yEnd, innerHeight, m
-hypotheses: | # | element + selector + property (or function + file:line) | computed style Chrome | computed style WebKit | in this frame? |
+hypotheses: | # | element + selector + property (or function + file:line) | computed style Chrome | computed style WebKit | in this frame? | platform claim it needs (id + status) |
 ```
 
 ## D: attribution card (the lead signs)
@@ -50,8 +50,23 @@ ATTRIBUTION <topic> · cluster <crossing> · verdict NAMED | LOCATED | UNEXPLAIN
   axis: y/crossing | time since <named event> | m · decoupling run: <hold at another y | change hold/transition length | shift a threshold> → <result>   (no decoupling run → at most LOCATED; A2)
 4 device class: Chrome-measurable | phone-only | render-bound | touch-only  →  gate: Chrome A/B | phone ABBA | Instruments hitches | G/F
   phone-only: phone Timeline segment card before F: Script / Style / Layout / Paint+Composite / Other, gap − frame, ≥3 captures; which segment the fix removes (A1)
-5 lead: <D signed, date, or what is missing>
+5 platform claims relied on (CLAUDE.md "Platform claims"; ids from research/architecture/claims-audit.md or F-nnn):
+  | claim (one engine/browser behaviour, with the version: iOS 26.6.1 Safari / Chrome 154) | status OBSERVED / CONFIRMED / UNRESOLVED | reference (URL + line/commit/milestone; applies to the device build?) or decisive check run (raw path) | what in this card falls if it is wrong |
+  (no OBSERVED row on a NAMED card; "none: the mechanism is our own code" is a valid table)
+6 lead: <D signed, date, or what is missing>
 fast path (lead decides): "counts <X> → 0, by code (<file:line>)"
+```
+
+## Claim card (verifier `ver-<claim>`; one per claim or batch; the claim's owner and mgmt-ops get it at once)
+
+```
+CLAIM <id> · <exact wording as used, with its source: F-nnn / doc §> · came from <probe/tool + version, device, build>
+plan (sent to the owner before execution): <references to read; how our own probe could have produced the result>
+verdict CONFIRMED | WEAKENED (which part stands) | REFUTED | UNRESOLVED · applies to <iOS 26.6.1 / WebKit main only / Chrome 154>
+references: | what it says | URL + line / commit / milestone | version it applies to |
+how our probe could mislead: <…>
+decisive local check (UNRESOLVED): <one line: Chrome counts-only short lane by the owner, or phone ticket via mgmt-ops>
+depends on it: <cards, tickets, predictions, protocol rules, fixes> → <what changes>
 ```
 
 ## F: build card (owner)
@@ -76,7 +91,7 @@ PREDICTION <id> · author <you> · <date UTC>
 2 baseline: same driver, same base, same heat class, ≤24 h old: <value>, raw <path>  (a finger baseline never predicts a driver run; same Mac display state for Chrome baselines, A7)
 3 closure check: the model reproduces the base's measured value within one tick: <model value vs measured>
   phone-only class: closure on phone segments, Layout and Composite each within a tick (A1)
-4 terms removed: | term | constant | calibrated (ablation on this device: <ref>) or assumed |
+4 terms removed: | term | constant | calibrated (ablation on this device: <ref>) or assumed | platform claim behind the term (id + status) |
 5 prediction: <delta> [interval] · visible to <rAF gap | DroppedFrame | Timeline | Instruments> (a threaded move is invisible to rAF gaps)
 6 falsified if: <reading>
 7 decision: within interval → <…>; below → <…>; worse → <…>
