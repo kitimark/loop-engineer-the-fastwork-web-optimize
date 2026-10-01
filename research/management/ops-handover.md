@@ -257,6 +257,9 @@ between tool calls.
    hold non-measuring (the wda build waited for quiet while the user worked at the Mac); no arch spawn (lead 12:0xZ): the
    I-035 toolsmith writes the proposal in the same task; the lead's measurement-code fix-reviewer is the sign-off (a
    non-measuring hold must never let a timing run start on a loud host).
+7d. **NEW RULE (user, CLAUDE.md 71ad57d):** a browser/engine limitation is OBSERVED until confirmed against docs, spec,
+   engine source or a bug tracker (cited). mgmt-ops signs no card that relies on an OBSERVED claim as its mechanism
+   (experiments that TEST a claim are fine); route arch-claims' refuted/weakened claims to owners and amend tickets.
 7c. **F-059 / protocol §3.7 + §6.2 (bf2bc30) are PROVISIONAL** (lead 12:1xZ): "LayerTree.layerPainted dead on Chrome
    154" rests on two probes' zero counts only; the user challenged it. res-layerpainted (lead spawn) researches it and
    ts-render-signals runs the decisive short-lane check. Do NOT digest F-059 into FINDINGS.md until the verdict; if
@@ -286,25 +289,29 @@ between tool calls.
 Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
 incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
 
-| address | owns | state (11:23Z) |
+| address | owns | state (12:2xZ) |
 |---|---|---|
 | `main` | lead: lands, resolves, reorders locks, spawns, user | alive |
-| `mgmt-ops-5` (spawned by the lead) / mgmt-ops-4 (ending) | ops hub, iPhone queue, DIRECTION, handover, land batches, PREDICTIONS | – |
+| `mgmt-ops-5` (spawned by the lead; mgmt-ops-4 ended) | ops hub, iPhone queue, DIRECTION, handover, land batches, PREDICTIONS | alive |
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, controls, logger | alive |
 | `fix-nav-morph` (a277ea00c8773c1ea) | morph (gh, ghbn, R8/R5, R2), y≈1960 IO frame (src, noinert: no win), N12 | alive, holds rebase |
 | `fix-hero-exit` (a77e2ec753b6381fb) | hero window y 0-900: v2, h1, ST-2 builds, D5, hero-B | alive |
 | fix-scroll-engine = ID `a1722cf5058e25591` | N14 layout-containment (R/I now), /10d (parked), R2 bg-layers, R3a/b | alive |
 | `ts-gesture` | WDA gesture tool (NEEDS-WORK; user setup pending) | alive |
-| arch-lead = `ae2d21af96d758d16` | measurement protocol v2 | alive |
+| arch-lead = `ae2d21af96d758d16` | measurement protocol v2 | ENDED 11:4xZ (docs follow-ups -> doc-protocol-v2) |
 | arch-safari = `a765c480ea490a443`, de-safari = `a4ce1669dd33aa4dc` | Safari probing / iOS time model (read-only) | alive |
 | arch-devtools = `ad5593c3c7d3b8c97`, de-devtools = `a21e6c00411aba4d8` | Chrome DevTools method (read-only) | done |
 | `ts-iphone-run` (T1a), `ts-analysis` (T3), `ts-render-signals` (T6+T7, I-032) | protocol v2 tools | alive |
 | `doc-protocol-v2` (aa630a1a8c0adae9f) | v2 docs pass (LEAD, README DoD, AGENT_PROMPT, fix-reviewer, EXPERIMENTS, CLAUDE.md); not ops docs | alive |
-| `arch-unknowns`, `de-unknowns-render`, `de-unknowns-ux` | unknowns hunt (validity, render terms, perceived smoothness) -> arch-lead merges | alive |
+| `arch-unknowns` (ENDED; C1 spec in unknowns-validity U1), `de-unknowns-render`, `de-unknowns-ux` (a47fed2b13de28ab2: pacing page F5, P-024) | unknowns hunt | de-* alive |
 | `ts-gesture` (a83a0f8d7c6fe96b6 worktree) | fixing review-gesture-2 B1/B2 | alive |
 | `map-webkit-amplifiers` | D2 mapper (haiku): page-wide scan for the two WebKit amplifiers | alive |
-| `ts-host-state` | T8+ host record (display, fullWake, power, Chrome version per hold) | alive |
-| `de-pm-morph`, `de-pm-hero` | post-mortem of phone-tested refactors (morph gh/ghb/ghbn/hump/first frames; hero v2 y≈700, h1, y≈1250); Timeline captures via slot tickets with per-segment predictions | alive |
+| `ts-host-state` (a2bdbbb64c7731b2e) | T8+ host record: 599471e (MEASUREMENT CODE, npm test 592) | review-host-state (lead spawn) -> test:chrome + canary -> land -> C1 (lead) |
+| `ts-bench-gain` (aabf938f2344fa8fc) | I-034 landed 526642f | done |
+| `arch-claims` (ae93098a3c9f77a35) | claim audit (user rule CLAUDE.md 71ad57d "Platform claims: confirm against a reference"): research/architecture/claims-audit.md, verifiers ver-webkit-style / ver-webkit-ca / ver-chrome; refutations -> owners + mgmt-ops | alive |
+| `res-layerpainted` | F-059 verdict (layerPainted on Chrome 154); decisive check by ts-render-signals | alive |
+| `review-host-state` | fix-reviewer (measurement mode) of T8+ 599471e | alive |
+| `de-pm-morph`, `de-pm-hero` | post-mortems (postmortem-morph.md, postmortem-hero.md §7 D3 = avatar rotator, F-058, F-063) | ENDED (results via findings board) |
 | `arch-oss-survey` (a14e692b6f530f1c0), `de-oss-map` (af4a76a52eface067) | OSS rendering libraries survey + mechanism map -> 3-5 PoC shortlist for the lead (read-only) | alive |
 
 ## Who waits on what (08:55Z)
