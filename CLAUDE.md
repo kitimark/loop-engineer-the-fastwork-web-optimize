@@ -127,8 +127,9 @@ stage closed by a card; the lead signs D (the attribution card): `fixes/LEAD.md`
   iPhone's 430x775 (scripted) / 430x815 (collapsed toolbar), and positions compare by crossing (the nearest code
   threshold), never by raw y (Chrome and phone y differ by ~77 px).
 - **Tick thresholds** (frame gaps quantize at 8.33 ms on both devices; whether Safari rAF runs at 60 or 120 Hz is open, arch-unknowns): k = round(dt / 8.333 ms); ">34" = dt ≥ 37.5 ms (k≥5), ">50" =
-  dt ≥ 54.2 ms (k≥7); medians compare as ticks. The legacy ms columns stay for one wave; a verdict that differs
-  between the two is "threshold-sensitive".
+  dt ≥ 54.17 ms (k≥7); medians compare as ticks. The legacy ms columns stay for one wave; a verdict that differs
+  between the two is "threshold-sensitive". On the phone, report both forms (dt>50 / k≥7, dt>34 / k≥5); frames
+  within 4 ms of a threshold are flagged (A5).
 
 ## Fix workflow in a worktree (start to finish)
 
@@ -458,7 +459,7 @@ iPhone protocol on top of the lease:
 
 Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages and gates"):
 - **Blocks.** Only ticketed builds, served from immutable snapshot copies. A block: one question, one named control
-  on the same base, one uncounted warm-up run, then ≤9 counted runs in C V V C C V V C order (3 arms: a rotated
+  on the same base, one uncounted warm-up run per arm's port (A3/U5), then ≤9 counted runs in C V V C C V V C order (3 arms: a rotated
   Latin square); 10 min cooling between blocks; at most 2 blocks per question (sequential rule, §5.3).
 - **Sentinel** (static idle is no heat check, F-028): every control run reaches bottom ≥58 fps and scroll ≥44 fps
   (S/W) or held m=1 p95 ≤18 ms (M). A failing control voids every run since the last passing one; the phone cools
@@ -467,4 +468,5 @@ Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages a
   the lead. A claim names its driver; touch, bounce, pin and toolbar effects need G or F before landing.
 - Never during a timed block: an attached Web Inspector, paint rects or debug borders, `layersForNode`, heap
   snapshots, polling faster than ~1 Hz (§5.5). Attribution runs get real Timeline durations with `Page.disable` →
-  `Page.enable` → `Timeline.start` on the page target, re-sent after every navigation (F-047).
+  `Page.enable` → `Timeline.start` on the page target, re-sent after every navigation (F-047). Absolute phone
+  counts carry the logger-layout caveat until the P0 A/A (A9).
