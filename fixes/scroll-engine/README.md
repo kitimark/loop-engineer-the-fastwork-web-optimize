@@ -65,6 +65,7 @@ The remaining >50 ms frames per run are gtag `onscrollend` (~65 ms, vendor), the
 Frames >20 ms (p95 25.7 ms) are not LoAF-visible, so they are per-frame style and paint cost, which batching doesn't remove.
 
 **iPhone pending**: the phone was disconnected. **Finger test pending (user)** for toolbar-resize (queued in `fixes/FINGER_TESTS.md`).
+**iPhone / finger test pending for /10c (scroll-UP re-render)**: /10c re-skips hero-track and #people once they are > 1.75 vh behind the user. Scrolling back up re-renders each of them synchronously when it re-enters 1.5 vh (w1: at the 1 vh gate, plus WebKit's own content-visibility at 0 margin). Chrome's top-to-bottom A/B never exercises this path. Check: scroll to the bottom, then flick back to the top on the iPhone, and look for > 34 ms frames at y≈2.0-2.5 k (#people) and y≈1.5-2.0 k (hero-track). On the mgmt-ops iPhone list.
 
 ## Risks, conflicts, follow-ups
 
