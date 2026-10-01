@@ -128,6 +128,11 @@ carousel 248 / 279 → 16 / 13, fee spot style 511 / 438 → 326 / 339 ms, task 
 - At the top and at the carousel, idle layouts drop ~95 % (from ~45-66 layouts/s to ~3/s). The remaining
   ~600 style recalcs per 5 s (one per frame; headless rAF runs at ~120/s) come from other always-running
   animations (`scroll-float`, `vinyl-spin`, the accent's SVG stroke/idle frames, the countdown): other topics.
+  - *Note added 2026-10-02 (ts-headless; the line above is kept as written):* a later check measured headless
+    rAF at ~60/s on this Mac (59.7-60.0 fps in 9/9 runs, vs 119.6-119.9 headed): F-091,
+    `research/architecture/headless-functional.md` §3-4. Status: OBSERVED, cause unknown. The ~600 per 5 s count
+    above is consistent with 120/s, so this probe may not have run in the headless mode F-091 measured; the
+    count itself is a measured value either way. The layout ratios this section relies on don't depend on the rate.
 - At the fee spot the four platform sweeps were running off-screen in the baseline (the `#platform` scene is
   within ±1 viewport there). The gate pauses them: style-recalc time drops ~20-30 % and task time ~20-25 %.
 - The fee count-up only runs once (1.1 s when the bar enters the viewport), so its idle rows show the
