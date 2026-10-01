@@ -10,13 +10,15 @@ import { installSource, RESET, READ, QUIESCE, SNAPSHOT, GEOMETRY, SCROLL_TO, ben
 // chromeStyle: the shape Chrome 154 really has (I-028): no CSSStyleProperties / CSS2Properties, the
 // prototype carries only cssText / cssFloat and the methods, and every declaration has its camelCase
 // properties as OWN properties. Default: the Firefox / spec shape (accessors on the prototype).
-const FIREFOX_STYLE = `for (const p of ['height', 'width', 'pointerEvents']) Object.defineProperty(CSSStyleDeclaration.prototype, p, { get() { return this._p[p] ?? ''; }, set(v) { this._p[p] = v; }, configurable: true });`;
+// Both fakes serialize like an engine does (cssNorm): "translate3d(1.23456px, 0, 0)" reads back
+// "translate3d(1.23px, 0px, 0px)", null reads back "" (review-i028: compare readbacks, not written strings).
+const FIREFOX_STYLE = `for (const p of ['height', 'width', 'pointerEvents', 'transform']) Object.defineProperty(CSSStyleDeclaration.prototype, p, { get() { return this._p[p] ?? ''; }, set(v) { this._p[p] = cssNorm(v); }, configurable: true });`;
 const CHROME_STYLE = `
     Object.defineProperty(CSSStyleDeclaration.prototype, 'cssFloat', { get() { return this._p.float ?? ''; }, set(v) { this._p.float = v; }, configurable: true });
     const OwnStyle = CSSStyleDeclaration;
     CSSStyleDeclaration = function CSSStyleDeclaration() {
       const d = Reflect.construct(OwnStyle, [], CSSStyleDeclaration);
-      for (const p of ['height', 'width', 'pointerEvents', 'transform']) Object.defineProperty(d, p, { get() { return this._p[p] ?? ''; }, set(v) { this._p[p] = String(v); }, enumerable: true, configurable: false });
+      for (const p of ['height', 'width', 'pointerEvents', 'transform']) Object.defineProperty(d, p, { get() { return this._p[p] ?? ''; }, set(v) { this._p[p] = cssNorm(v); }, enumerable: true, configurable: false });
       return d;
     };
     CSSStyleDeclaration.prototype = OwnStyle.prototype;
@@ -27,6 +29,7 @@ function makePage({ chromeStyle = false } = {}) {
   // a tiny DOM: elements with classes and a parent chain; selectors ".a", "#id", "tag", ".a .b" (descendant)
   vm.runInContext(`
     var rafQ = [], tick = 0, records = [], observers = [], scrollY = 0, innerHeight = 900;
+    var cssNorm = (v) => (v == null ? '' : String(v).replace(/(\\d+\\.\\d\\d)\\d+/g, '$1').replace(/, 0(?=[,)])/g, ', 0px'));
     class Node {}
     class CharacterData extends Node {}
     var CSSStyleDeclaration = class CSSStyleDeclaration {
@@ -166,6 +169,8 @@ test('styleWrite on the Chrome shape (own camelCase properties, I-028): el.style
   assert.equal(p.run('nav._s._p.transform'), 'translateY(2px)');
   assert.equal(p.run('card.style.setProperty("--x", 1)'), 'set:--x', 'methods are bound to the real declaration (this, return value)');
   assert.equal(p.run('card.style.getPropertyValue("--x")'), '1');
+  p.frame(); // a new frame clears the dirty flag the writes above set
+  p.run('card.getBoundingClientRect()'); // a clean read: not counted
   p.run('card.style.width = "5px"; card.getBoundingClientRect()'); // an unprobed camelCase write still marks the frame dirty
   p.run('__bench.internal(() => { nav.style.transform = "x" })'); // the runner's own: never counted
   const r = p.val(READ('w'));
@@ -174,6 +179,54 @@ test('styleWrite on the Chrome shape (own camelCase properties, I-028): el.style
   assert.equal(p.ctx.__bench.activity - a0, 3, 'value changes: nav transform once (the repeat is a no-op), card height, --x');
   assert.equal(p.run('__bench.uninstall()'), true);
   assert.equal(p.run('nav.style === nav._s'), true, 'uninstall restores the plain declaration');
+});
+
+for (const chromeStyle of [false, true]) {
+  test(`same-value rewrites that the engine serializes are no activity: quiescence settles (${chromeStyle ? 'Chrome' : 'Firefox'} shape, review-i028)`, async () => {
+    const p = makePage({ chromeStyle });
+    p.run('document.createElement = () => new HTMLElement("div")');
+    p.install({ tf: { kind: 'styleWrite', prop: 'transform', selector: '.top-nav' } });
+    p.run(RESET('w'));
+    const a0 = p.ctx.__bench.activity;
+    // reads back "translate3d(1.23px, 0px, 0px)": the written string never equals the readback
+    p.run('nav.style.transform = "translate3d(1.23456px, 0, 0)"');
+    assert.equal(p.ctx.__bench.activity - a0, 1, 'the first write changes the value');
+    const q = p.run(QUIESCE());
+    for (let i = 0; i < 6; i++) { p.run('nav.style.transform = "translate3d(1.23456px, 0, 0)"'); p.frame(); }
+    for (let i = 0; i < 42; i++) p.frame(); // quiet frames, so a regression fails here instead of hanging
+    assert.deepEqual(JSON.parse(JSON.stringify(await q)), { frames: 2, capped: false }, 'settled after 2 quiet frames, not held open to the 40-frame cap');
+    assert.equal(p.ctx.__bench.activity - a0, 1);
+    assert.equal(p.val(READ('w')).counts.tf, 7, 'every write still counts as a write');
+  });
+}
+
+test('Chrome shape: a readAfterWrite-only plan turns the Proxy on; cssText, null and number writes go through; constructor unbound; styleWrite on cssText is an error', () => {
+  const p = makePage({ chromeStyle: true });
+  p.run('document.createElement = () => new HTMLElement("div")');
+  p.install({ raw: { kind: 'readAfterWrite', selector: '.card' } });
+  assert.equal(p.run('card.style !== card._s && card.style === card.style'), true, 'el.style is the Proxy');
+  assert.equal(p.run('card.style.constructor === CSSStyleDeclaration'), true, 'constructor passes through unbound');
+  p.run(RESET('w'));
+  p.frame();
+  p.run('card.style.height = 7; card.getBoundingClientRect()'); // a number write: marks dirty, read counts
+  assert.equal(p.run('card.style.height'), '7');
+  p.frame();
+  p.run('card.style.height = null; card.getBoundingClientRect()');
+  assert.equal(p.run('card.style.height'), '');
+  p.frame();
+  p.run('card.style.cssText = "height: 1px"; card.getBoundingClientRect()'); // the prototype cssText setter, through the Proxy
+  assert.equal(p.run('card._s._p.text'), 'height: 1px');
+  p.frame();
+  p.run('card.getBoundingClientRect()'); // clean
+  assert.deepEqual(p.val(READ('w')), { label: 'w', counts: { raw: 3 }, frames: 4, errors: [] });
+  for (const chromeStyle of [true, false]) {
+    const q = makePage({ chromeStyle });
+    q.run('document.createElement = () => new HTMLElement("div")');
+    q.install({ c: { kind: 'styleWrite', prop: 'cssText' } });
+    q.run(RESET('w'));
+    q.run('card.style.cssText = "height: 1px"');
+    assert.deepEqual(q.val(READ('w')), { label: 'w', counts: { c: 0 }, frames: 0, errors: ['styleWrite: "cssText" is not supported (it replaces the whole declaration); use inlineProp or setProperty'] }, chromeStyle ? 'Chrome' : 'Firefox');
+  }
 });
 
 test('installed at document start (no documentElement yet): style accessors and DOM writes are still wrapped; the observer starts at DOMContentLoaded', () => {

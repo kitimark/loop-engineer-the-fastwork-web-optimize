@@ -55,9 +55,11 @@ export function benchPage(cfg) {
   // neither interface: every CSSStyleDeclaration instance carries ~750 own properties and the prototype
   // only cssText / cssFloat / the methods (incident I-028, measured with one evaluate in Chrome
   // 154.0.8037.58). There, the element `style` getters return a Proxy of the declaration whose set trap
-  // sees the writes. Limitation: page code then gets the Proxy for el.style (same object every time,
-  // instanceof CSSStyleDeclaration holds, methods are bound to the real declaration), and only writes
-  // through el.style are seen, not through a CSSStyleRule's style or getComputedStyle.
+  // sees the writes. Page code then gets the Proxy for el.style: the same object every time, instanceof
+  // and .constructor as before, the CSSStyleDeclaration methods bound to the real declaration.
+  // styleWrite sees only `el.style.<prop> = v` (both shapes). It does NOT see writes through a
+  // CSSStyleRule's style, el.attributeStyleMap, setAttribute('style', ...), `el.style = "..."` (the
+  // style setter) or Element.animate; inlineProp (the style attribute) or setProperty probes cover some.
   const styleProtos = [];
   for (const C of [W.CSSStyleProperties, W.CSS2Properties, W.CSSStyleDeclaration]) {
     for (let o = C && C.prototype; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) if (styleProtos.indexOf(o) < 0) styleProtos.push(o);
@@ -71,16 +73,33 @@ export function benchPage(cfg) {
   const swProbes = ids.filter((id) => probes[id].kind === 'styleWrite');
   const needProxy = !protoCamel && (swProbes.length > 0 || kinds.has('readAfterWrite'));
   const proxies = new WeakMap();
-  let onStyleSet = null; // set below: (decl, prop, value) for writes through the Proxy
+  let onStyleSet = null; // set below: (decl, prop, before, after) for writes through the Proxy
+  // the declaration's own methods (setProperty, getPropertyValue, ...), bound to the real declaration;
+  // anything else (constructor, a page's own function property) passes through unbound
+  const declMethods = new Set();
+  for (const o of styleProtos) for (const n of Object.getOwnPropertyNames(o)) {
+    const d = n === 'constructor' ? null : Object.getOwnPropertyDescriptor(o, n);
+    if (d && typeof d.value === 'function') declMethods.add(n);
+  }
+  const readStyle = (t, k) => { try { return String(Reflect.get(t, k)); } catch (e) { return null; } };
   const proxyFor = (decl) => {
     let px = proxies.get(decl);
     if (px) return px;
     const bound = new Map();
     px = new Proxy(decl, {
-      set(t, k, v) { if (typeof k === 'string' && onStyleSet) onStyleSet(t, k, v); return Reflect.set(t, k, v); },
+      set(t, k, v) {
+        if (typeof k !== 'string' || !onStyleSet) return Reflect.set(t, k, v);
+        // changed = the engine's own readback differs before vs after the write: Chrome serializes
+        // ("translate3d(1px, 0, 0)" reads back "translate3d(1px, 0px, 0px)") and rounds, so comparing
+        // with the written string would call every same-value rewrite a change (review-i028)
+        const before = readStyle(t, k);
+        const ok = Reflect.set(t, k, v);
+        onStyleSet(t, k, before, readStyle(t, k));
+        return ok;
+      },
       get(t, k) {
         const v = Reflect.get(t, k);
-        if (typeof v !== 'function') return v;
+        if (typeof v !== 'function' || !declMethods.has(k)) return v;
         let b = bound.get(k);
         if (!b || b.fn !== v) { b = { fn: v, bound: v.bind(t) }; bound.set(k, b); }
         return b.bound;
@@ -105,27 +124,27 @@ export function benchPage(cfg) {
   const spProbes = ids.filter((id) => probes[id].kind === 'setProperty');
   if (DECL) {
     const getPV = DECL.getPropertyValue, getPP = DECL.getPropertyPriority;
-    patch(DECL, 'setProperty', (orig) => function (prop, value, prio) {
-      if (!B.paused) {
-        markWrite();
-        let changed = true;
-        try { changed = getPV.call(this, prop) !== String(value == null ? '' : value).trim(); } catch (e) {}
-        let seen = false;
-        for (const id of spProbes) {
-          const p = probes[id];
-          if (p.prop !== prop) continue;
-          if (p.selector && !matches(declEl.get(this), p.selector)) continue;
-          seen = true;
-          if (p.noop) {
-            let same = false;
-            try { same = getPV.call(this, prop) === String(value == null ? '' : value).trim() && (getPP.call(this, prop) || '') === (prio || ''); } catch (e) {}
-            if (!same) continue;
-          }
-          hit(id);
-        }
-        if (seen && changed) B.activity++;
+    // changed / no-op: the engine's readback (value and priority) before vs after the write, never the
+    // written string (engines serialize and round: review-i028)
+    const readPV = (d, prop) => { try { return [getPV.call(d, prop), getPP.call(d, prop) || '']; } catch (e) { return null; } };
+    patch(DECL, 'setProperty', (orig) => function (prop) {
+      if (B.paused) return Reflect.apply(orig, this, arguments);
+      const before = readPV(this, prop);
+      const ret = Reflect.apply(orig, this, arguments);
+      const after = readPV(this, prop);
+      const same = !!before && !!after && before[0] === after[0] && before[1] === after[1];
+      markWrite();
+      let seen = false;
+      for (const id of spProbes) {
+        const p = probes[id];
+        if (p.prop !== prop) continue;
+        if (p.selector && !matches(declEl.get(this), p.selector)) continue;
+        seen = true;
+        if (p.noop && !same) continue;
+        hit(id);
       }
-      return Reflect.apply(orig, this, arguments);
+      if (seen && !same) B.activity++;
+      return ret;
     });
     patch(DECL, 'removeProperty', (orig) => function () { markWrite(); return Reflect.apply(orig, this, arguments); });
     patch(DECL, 'cssText', (set) => function () { markWrite(); return Reflect.apply(set, this, arguments); }, 'set');
@@ -142,33 +161,32 @@ export function benchPage(cfg) {
     for (const x of mine) if (!probes[x].selector || matches(declEl.get(decl), probes[x].selector)) { hit(x); seen = true; }
     if (seen && changed) B.activity++;
   };
+  // cssText replaces the whole declaration: not a styleWrite property on any engine (use inlineProp or a
+  // setProperty probe); say so instead of counting 0 on Chrome and every write on Firefox
+  if (swByProp.cssText) { delete swByProp.cssText; err('styleWrite: "cssText" is not supported (it replaces the whole declaration); use inlineProp or setProperty'); }
   if (needProxy) {
-    const checked = {};
-    onStyleSet = (decl, prop, v) => {
-      if (prop === 'cssText') return; // its prototype setter is wrapped (markWrite) and runs through Reflect.set
+    onStyleSet = (decl, prop, before, after) => {
+      if (prop === 'cssText') return; // its prototype setter is wrapped (markWrite) and ran inside Reflect.set
       const mine = swByProp[prop];
       if (!mine) { if (!B.paused) markWrite(); return; }
-      let changed = true;
-      try { changed = String(Reflect.get(decl, prop)) !== String(v == null ? '' : v); } catch (e) {}
-      onCamelWrite(decl, mine, changed);
+      onCamelWrite(decl, mine, before === null || after === null || before !== after);
     };
     // a probe on a property this engine does not have can never count: say so (checked on a real
     // declaration, which exists only once an element does)
-    const checkProps = () => {
-      let d = null;
-      try { d = W.document.createElement('div').style; } catch (e) { return; }
-      for (const prop of Object.keys(swByProp)) if (!checked[prop]) { checked[prop] = 1; if (!(prop in d)) err('styleWrite: no style property "' + prop + '" on this browser'); }
-    };
-    checkProps();
+    let d = null;
+    try { d = W.document.createElement('div').style; } catch (e) {}
+    if (d) for (const prop of Object.keys(swByProp)) if (!(prop in d)) err('styleWrite: no style property "' + prop + '" on this browser');
   }
   const wrapAccessor = (prop, onSet) => {
     const o = accessorOwner(prop);
     const get = o && Object.getOwnPropertyDescriptor(o, prop).get;
-    if (!o || !patch(o, prop, (set) => function (v) {
-      let changed = true;
-      try { changed = !get || String(get.call(this)) !== String(v == null ? '' : v); } catch (e) {}
-      onSet(this, changed);
-      return Reflect.apply(set, this, arguments);
+    const read = (d) => { try { return get ? String(get.call(d)) : null; } catch (e) { return null; } };
+    if (!o || !patch(o, prop, (set) => function () {
+      const before = read(this);
+      const ret = Reflect.apply(set, this, arguments);
+      const after = read(this);
+      onSet(this, before === null || after === null || before !== after); // the readback, as on Chrome
+      return ret;
     }, 'set')) return false;
     return true;
   };
