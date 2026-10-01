@@ -255,10 +255,22 @@ dominate alone. f vs fb, g vs ge, g vs gc not run (lower priority). Next step fo
 blurs off, diagnostic: additive -> moving p50 ~17-20 ms, else a third term dominates) and an R2 probe page (does WebKit's
 `clip-path` clip `backdrop-filter`?); R2 (clip-path morph) is built only after the probe. de-morph reconciles its model
 with the driver numbers. **de-apple** (user request): apple.com's rendering math, `research/design-engineering/apple-math.md`.
-**iPhone queue (09:33Z):** e1/e2 (aw1-10e control) -> morph-2 (ghb ABBA vs gh, g control; R2 clip probe) -> hero bisect (v7copyop, v6noflip, v4nocards, v5noblur vs P; v3
+**h1 built (fix-hero-exit 6e0a49f, Chrome short lane only):** `--h1` (aw1-10e + h1, vs P2) and `--h1v2` (aw1-10e + v2 + h1,
+vs P; final candidate). Hidden `#people` card = opacity 0 + `inert` (armed at mount, rastered before the flip); the flip
+changes only opacity/filter/transform; blur 14px -> 0px, then `filter: none` + inert off after ~1 s. Parity 0-0.21 %
+across the reveal; idle at y=0 identical; cost: ~14 MB backing for the hidden card from mount; a11y stricter than the
+baseline (the hidden profile tabs leave the a11y tree; reviewer to confirm). Phone decides (flip pair target <= 34 ms).
+**de-middle R2 built (fix-scroll-engine 91d7571, `r2-bg-layers` on aw1-10e, CSS only):** frozen-frame parity 0 %
+(is-pain-dark forced on/off too); Chrome paint counts: each `is-pain-dark` switch repainted the root layer + `.pain-sticky`
+(+3.1 M CSS px) on aw1-10e, +0 on r2 (F-040); `.shrinking` repaints nothing extra in Chrome, so its WebKit effect needs
+the phone. **/10d prototype** `se10d-aw1` (e920843): mech clean (idle F-030 0/s, parity 0, scroll-restore fix, quiet-input
+gate); Chrome A/B after the e1/e2 verdict.
+**iPhone queue (09:38Z):** e1/e2 (aw1-10e control) -> morph-2 (ghb ABBA vs gh, g control; R2 clip probe) -> hero-A (h1v2 vs
+P, h1 vs P2) -> hero-B bisect (v7copyop, v6noflip, v4nocards, v5noblur vs P; v3
 dropped) -> **apple-ref** (user request via the lead: live apple.com AirPods Pro page, plus iPhone 18 Pro if the phone is
 cool, same driver and Timeline counts as aw1-10e, one block with a control; write-up in
-`research/architecture/apple-verify.md` "iPhone Safari check") -> N12 -> N10 a-d; ts-gesture V0/V1 when ready.
+`research/architecture/apple-verify.md` "iPhone Safari check") -> R2 bg-layers (B P P B, y≈850-1000 + commission end) ->
+N12 -> N10 a-d; ts-gesture V0/V1 when ready.
 
 ## Baseline freeze (user decision, 2026-10-01 ~07:35Z)
 
