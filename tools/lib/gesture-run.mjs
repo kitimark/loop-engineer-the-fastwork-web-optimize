@@ -14,15 +14,33 @@
 import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { openTab, sleep } from './wip.mjs';
-import { compileScript, condText } from './gesture.mjs';
+import { compileScript, condText, COMPILER_VERSION } from './gesture.mjs';
 import { RECORDER_JS, READ_JS, STATE_JS, markJs, summarizeRun } from './gesture-rec.mjs';
 import { status as wdaStatus, createSession, SAFARI } from './wda.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE } from './iphone-url.mjs';
 import { redact } from './redact.mjs';
-import { readConfig } from './wda-runner.mjs';
+import { readConfig, WDA_REF } from './wda-runner.mjs';
+
+/** The files whose code shapes a gesture run's stimulus and numbers (review-gesture 6: recorded per run). */
+export const TOOL_FILES = ['tools/iphone.mjs', 'tools/lib/gesture.mjs', 'tools/lib/gesture-run.mjs', 'tools/lib/gesture-rec.mjs', 'tools/lib/wda.mjs', 'tools/lib/wda-runner.mjs', 'tools/lib/wip.mjs'];
+
+/**
+ * Which tool version produced a run: the git HEAD of the checkout, whether those files differ from it, and
+ * a sha256 (16 hex) of each file as it ran plus of the injected recorder, so two gesture results compare
+ * only when these match (like the script hash for the stimulus).
+ */
+export function toolVersion(root = REPO) {
+  const git = (...a) => { const r = spawnSync('git', ['-C', root, ...a], { encoding: 'utf8', timeout: 10000 }); return r.status === 0 ? r.stdout.trim() : null; };
+  const h = (s) => createHash('sha256').update(s).digest('hex').slice(0, 16);
+  const files = {};
+  for (const f of TOOL_FILES) { try { files[f] = h(readFileSync(join(root, f))); } catch { files[f] = null; } }
+  const st = git('status', '--porcelain', '--', ...TOOL_FILES);
+  return { gitHead: git('rev-parse', 'HEAD'), dirty: st === null ? null : st.length > 0, files, recorder: h(RECORDER_JS), compiler: COMPILER_VERSION };
+}
 
 /** The page over WIP. `match`: tab matcher for openTab (a host string after the first connect). */
 export function wipPage() {
@@ -286,7 +304,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     await session.close();
   }
   const doc = {
-    meta: { kind: 'gesture', owner, label, date: new Date(ts).toISOString(), device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', wda: { build: st.build?.version ?? null, os: st.os?.version ?? null }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file },
+    meta: { kind: 'gesture', owner, label, date: new Date(ts).toISOString(), device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', tool: toolVersion(), wda: { ref: readConfig().ref || WDA_REF, build: st.build?.version ?? null, os: st.os?.version ?? null }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file },
     program: { name: prog.name, version: prog.version, compiler: prog.compiler, hash: prog.hash, params: prog.params, estMs: prog.estMs, strokes: prog.strokes },
     run: res,
   };

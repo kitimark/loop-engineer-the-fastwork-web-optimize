@@ -11,14 +11,19 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, nodeAsync, tool, freePort, startProc, TESTS, REPO, sleep } from '../helpers.mjs';
-import { compileScript } from '../../tools/lib/gesture.mjs';
+import { createHash } from 'node:crypto';
+import { compileScript, COMPILER_VERSION } from '../../tools/lib/gesture.mjs';
+import { TOOL_FILES } from '../../tools/lib/gesture-run.mjs';
+import { RECORDER_JS } from '../../tools/lib/gesture-rec.mjs';
+import { WDA_REF } from '../../tools/lib/wda-runner.mjs';
 import { pidAlive } from '../../tools/lib/lock.mjs';
 
+const sha16 = (b) => createHash('sha256').update(b).digest('hex').slice(0, 16);
 const IPHONE = tool('iphone.mjs'), LOCK = tool('lock.mjs');
 const FIX = join(TESTS, 'fixtures');
 const PROTOCOL = join(REPO, 'tools', 'gestures', 'finger-protocol-v1.json');
 let env;
-before(async () => { env = { FW_IPHONE_PORT: String(await freePort()), FW_IPHONE_DEVICE_PORT: String(await freePort()), FW_WDA_URL: `http://127.0.0.1:${await freePort()}` }; });
+before(async () => { env = { FW_WDA_HOME: tempDir('fw-wdahome-'), FW_IPHONE_PORT: String(await freePort()), FW_IPHONE_DEVICE_PORT: String(await freePort()), FW_WDA_URL: `http://127.0.0.1:${await freePort()}` }; });
 beforeEach(() => { env = { ...env, FW_STATE_DIR: tempDir('fw-gesture-') }; });
 const lock = (...a) => node(LOCK, a, { env });
 const procs = [];
@@ -93,6 +98,15 @@ test('gesture end to end on the fake phone: strokes as real touches, recorder, m
   assert.deepEqual(doc.run.errors, []);
   assert.equal(doc.program.hash, compileScript(JSON.parse(readFileSync(f, 'utf8'))).hash);
   assert.equal(doc.meta.kind, 'gesture');
+  // which tool version made the run (review-gesture 6): git HEAD, per-file hashes as run, recorder, WDA tag
+  const t = doc.meta.tool;
+  assert.match(t.gitHead, /^[0-9a-f]{40}$/);
+  assert.equal(typeof t.dirty, 'boolean');
+  assert.deepEqual(Object.keys(t.files), TOOL_FILES);
+  for (const f of TOOL_FILES) assert.equal(t.files[f], sha16(readFileSync(join(REPO, f))), f);
+  assert.equal(t.recorder, sha16(RECORDER_JS));
+  assert.equal(t.compiler, COMPILER_VERSION);
+  assert.equal(doc.meta.wda.ref, WDA_REF);
   // one page load (the script starts with a reload); every stroke ran in it
   assert.equal(doc.run.segments.length, 1);
   assert.equal(doc.run.reloads.length, 1);
