@@ -17,6 +17,14 @@
 //        # the ref (default main, any checkout: refs are shared) contains a commit / has a path / has a commit
 //        # whose subject matches; with none of these: it moves away from where it was when the wait started
 //   node tools/wait.mjs time <ISO time | 10m | 600>                # a cooling period, a block start (no --timeout)
+//   node tools/wait.mjs phone-temp --below <°C> [--every 60] [--timeout 600]
+//        # phone cooling between blocks (protocol v2 §5.3, user T-009): the iPhone's battery temperature
+//        # (AppleSmartBattery via tools/lib/iphone-run.mjs batteryInfo, over USB) is at or below <°C>. One read
+//        # per --every s (default 60, floor 30), one stderr line per read; MET `phone at X °C <= Y °C`; TIMEOUT
+//        # after --timeout (default 600 = the 10 min cap: go on, the sentinel decides); UNAVAILABLE exit 1 when
+//        # no reading comes (no device, no libimobiledevice) or 3 reads in a row fail. --below auto is refused:
+//        # no tool records the sentinel verdict; give the last passing sentinel's battery temperature minus
+//        # 0.5 °C, or 38 when there is none today. Reads only the battery: no lease, no page, no device ids.
 //
 // Common: --timeout <s|10m|2h> (default 3600; url/serve 120), --for <s> (the condition must hold that long),
 // --quiet (no stderr change lines). The wait itself only reads: it never takes a lock or a queue place.
@@ -25,12 +33,13 @@
 //   MET <what>: <detail> (after N s)              exit 0
 //   TIMEOUT <what> after N s: <last state>        exit 3   (nothing changed for you: wait again or look)
 //   NEVER <what>: <reason> (after N s)            exit 4   (e.g. the --pid process exited without the line)
+//   UNAVAILABLE phone-temp: <reason> (after N s)  exit 1   (no battery reading)
 //   usage errors                                  exit 1
 import { resolve } from 'node:path';
-import { pollUntil, parseSec, EXIT, fileCondition, serveCondition, urlCondition, pidsCondition, gitCondition, timeCondition } from './lib/wait.mjs';
+import { pollUntil, parseSec, EXIT, fileCondition, serveCondition, urlCondition, pidsCondition, gitCondition, timeCondition, phoneTempCondition, parseBelowC, PHONE_TEMP } from './lib/wait.mjs';
 
 const argv = process.argv.slice(2);
-const VALUED = ['--match', '--pid', '--timeout', '--status', '--ref', '--contains', '--path', '--grep', '--for'];
+const VALUED = ['--match', '--pid', '--timeout', '--status', '--ref', '--contains', '--path', '--grep', '--for', '--below', '--every'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, ...pos] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -50,7 +59,7 @@ function regex(v, name) {
   try { return new RegExp(v); } catch (e) { throw new Error(`--${name} is not a valid regular expression: ${e.message}`); }
 }
 
-function build() {
+async function build() {
   const need = (what) => { if (!pos[0]) throw new Error(`usage: node tools/wait.mjs ${cmd} <${what}> (see the header of tools/wait.mjs)`); return pos[0]; };
   if (cmd === 'file') {
     const p = resolve(need('path'));
@@ -85,21 +94,29 @@ function build() {
     if (opt('timeout') !== undefined) throw new Error('time: no --timeout (the time is the timeout)');
     return { what: `time ${new Date(at).toISOString()}`, check: timeCondition(at), defTimeout: Math.max(0, (at - Date.now()) / 1000) + 5, maxMs: 30000 };
   }
-  throw new Error(cmd ? `unknown wait "${cmd}": file, serve, url, pid, git or time (see the header of tools/wait.mjs)` : 'usage: node tools/wait.mjs file|serve|url|pid|git|time … [--timeout 3600] (see the header of tools/wait.mjs)');
+  if (cmd === 'phone-temp') {
+    if (opt('below') === undefined) throw new Error('usage: node tools/wait.mjs phone-temp --below <°C> [--every 60] [--timeout 600] (see the header of tools/wait.mjs)');
+    const belowC = parseBelowC(opt('below'));
+    const every = opt('every') !== undefined ? parseSec(opt('every')) : PHONE_TEMP.everySec;
+    if (!(every >= PHONE_TEMP.minEverySec)) throw new Error(`--every must be a number of seconds >= ${PHONE_TEMP.minEverySec} (keep phone polling gentle, protocol §5.5), got ${opt('every')}`);
+    const { batteryInfo } = await import('./lib/iphone-run.mjs'); // only here: the other waits don't load the phone code
+    return { what: 'phone-temp', check: phoneTempCondition(belowC, { read: batteryInfo }), defTimeout: PHONE_TEMP.timeoutSec, minMs: every * 1000, maxMs: every * 1000, never: { word: 'UNAVAILABLE', exit: EXIT.usage } };
+  }
+  throw new Error(cmd ? `unknown wait "${cmd}": file, serve, url, pid, git, time or phone-temp (see the header of tools/wait.mjs)` : 'usage: node tools/wait.mjs file|serve|url|pid|git|time|phone-temp … [--timeout 3600] (see the header of tools/wait.mjs)');
 }
 
 async function main() {
-  const usage = 'usage: node tools/wait.mjs file|serve|url|pid|git|time … [--timeout 3600] [--for S] [--quiet]; exit 0 met, 3 timeout, 4 never; see the header of tools/wait.mjs';
+  const usage = 'usage: node tools/wait.mjs file|serve|url|pid|git|time|phone-temp … [--timeout 3600] [--for S] [--quiet]; exit 0 met, 3 timeout, 4 never (phone-temp: 1 unavailable); see the header of tools/wait.mjs';
   if (cmd === 'help' || flag('help')) { console.log(usage); return 0; }
   if (!cmd) { console.error(usage); return EXIT.usage; }
-  const w = build();
+  const w = await build();
   const timeoutSec = opt('timeout') !== undefined ? num('timeout', opt('timeout')) : w.defTimeout ?? 3600;
   const holdSec = opt('for') !== undefined ? num('for', opt('for')) : 0;
   const quiet = flag('quiet');
   const onChange = quiet ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
   const r = await pollUntil(w.check, { timeoutSec, holdSec, onChange, ...(w.minMs && { minMs: w.minMs }), ...(w.maxMs && { maxMs: w.maxMs }) });
   if (r.result === 'met') { console.log(`MET ${w.what}: ${r.detail ?? r.state}${holdSec ? ` (held ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return EXIT.met; }
-  if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
+  if (r.result === 'never') { console.log(`${w.never?.word ?? 'NEVER'} ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return w.never?.exit ?? EXIT.never; }
   console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`);
   return EXIT.timeout;
 }

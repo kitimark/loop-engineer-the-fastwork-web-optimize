@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import http from 'node:http';
 import { tempDir, sleep, cleanEnv } from '../helpers.mjs';
-import { pollUntil, parseSec, BACKOFF, pidAlive, fileCondition, urlCondition, serveCondition, pidsCondition, gitCondition, timeCondition, parseLockCondition, lockConditionMet, lockState } from '../../tools/lib/wait.mjs';
+import { pollUntil, parseSec, BACKOFF, pidAlive, fileCondition, urlCondition, serveCondition, pidsCondition, gitCondition, timeCondition, parseLockCondition, lockConditionMet, lockState, phoneTempCondition, parseBelowC, fmtC, PHONE_TEMP } from '../../tools/lib/wait.mjs';
 
 /** A fake clock: sleep() advances it and records each pause. */
 function clock() {
@@ -254,4 +254,89 @@ test('lockConditionMet: each condition on status snapshots; a stale holder count
   assert.equal(met('position<=1', held, 'c'), false);
   assert.equal(met('position<=2', held, 'c'), true);
   assert.equal(met('position<=5', held, 'z'), false, 'not queued at all');
+});
+
+// ---- phone-temp (ts-phone-cool, user T-009): cool the phone until its battery temperature is low enough -----------
+
+test('parseBelowC: a temperature in degC; auto is refused with the documented fallback (no tool records the sentinel verdict)', () => {
+  assert.equal(parseBelowC('38'), 38);
+  assert.equal(parseBelowC('37.5'), 37.5);
+  assert.throws(() => parseBelowC('auto'), /--below auto is not available.*--below 38/s);
+  for (const v of [undefined, '', 'warm', '0', '-1', '80', 'NaN', '38x']) assert.throws(() => parseBelowC(v), /--below/, String(v));
+  assert.ok(PHONE_TEMP.minEverySec >= 30, 'the floor is 30 s (protocol §5.5: keep phone polling gentle)');
+  assert.equal(PHONE_TEMP.everySec, 60, 'default: one read per minute');
+  assert.equal(PHONE_TEMP.timeoutSec, 600, 'default: at most 10 min of cooling');
+  assert.equal(fmtC(38), '38.0');
+  assert.equal(fmtC(37.4), '37.4');
+  assert.equal(fmtC(38.59), '38.59');
+});
+
+/** A fake battery reader (batteryInfo's shape): one item per read, a number (degC) or an error string. */
+function fakeBattery(seq) {
+  const calls = [];
+  const read = () => { const v = seq[Math.min(calls.length, seq.length - 1)]; calls.push(v); return typeof v === 'number' ? { t: 'x', Temperature: Math.round(v * 100), temperatureC: v, CurrentCapacity: 80 } : { error: v }; };
+  return { read, calls };
+}
+const EVERY_MS = PHONE_TEMP.everySec * 1000;
+const coolPoll = (cond, c, extra = {}) => pollUntil(cond, { timeoutSec: 600, minMs: EVERY_MS, maxMs: EVERY_MS, now: c.now, sleep: c.sleep, ...extra });
+
+test('phoneTempCondition: one state line per read, met at or below the threshold, polled once per --every', async () => {
+  const c = clock();
+  const b = fakeBattery([39.2, 38.6, 38.0, 37.5]);
+  const seen = [];
+  const r = await coolPoll(phoneTempCondition(38, { read: b.read, now: c.now }), c, { onChange: (s) => seen.push(s) });
+  assert.equal(r.result, 'met');
+  assert.equal(r.detail, 'phone at 38.0 °C <= 38.0 °C', 'equal to the threshold counts (at or below)');
+  assert.deepEqual(seen, ['read 1: 39.2 °C > 38.0 °C', 'read 2: 38.6 °C > 38.0 °C', 'read 3: 38.0 °C <= 38.0 °C'], 'every read is its own line');
+  assert.equal(b.calls.length, 3);
+  assert.deepEqual(c.pauses, [EVERY_MS, EVERY_MS], 'one read per minute, never faster');
+  assert.equal(r.waitedSec, 120);
+});
+
+test('phoneTempCondition: TIMEOUT after --timeout with the last reading; reads never closer than the 30 s floor', async () => {
+  let c = clock();
+  let b = fakeBattery([40]);
+  let r = await coolPoll(phoneTempCondition(38, { read: b.read, now: c.now }), c);
+  assert.equal(r.result, 'timeout');
+  assert.equal(r.state, 'read 11: 40.0 °C > 38.0 °C');
+  assert.equal(b.calls.length, 11, 'reads at 0, 60, ..., 600 s');
+  // pollUntil cuts the last pause to the deadline: a check 1 s after a read reuses that read
+  c = clock();
+  b = fakeBattery([40]);
+  r = await coolPoll(phoneTempCondition(38, { read: b.read, now: c.now }), c, { timeoutSec: 61 });
+  assert.equal(r.result, 'timeout');
+  assert.equal(b.calls.length, 2, `no third read 1 s after the second (${b.calls.length})`);
+  assert.equal(r.state, 'read 2: 40.0 °C > 38.0 °C');
+});
+
+test('phoneTempCondition: no first reading -> never (unavailable) at once; later failures tolerated up to 3 in a row', async () => {
+  let c = clock();
+  let b = fakeBattery(['idevicediagnostics: ENOENT']);
+  let r = await coolPoll(phoneTempCondition(38, { read: b.read, now: c.now }), c);
+  assert.equal(r.result, 'never');
+  assert.equal(r.never, 'battery temperature unavailable (idevicediagnostics: ENOENT)');
+  assert.equal(b.calls.length, 1);
+
+  c = clock();
+  b = fakeBattery([39, 'idevicediagnostics exit 255', 37.9]);
+  const seen = [];
+  r = await coolPoll(phoneTempCondition(38, { read: b.read, now: c.now }), c, { onChange: (s) => seen.push(s) });
+  assert.equal(r.result, 'met', 'one failed read (a USB hiccup) does not end the wait');
+  assert.deepEqual(seen, ['read 1: 39.0 °C > 38.0 °C', 'read 2: failed (idevicediagnostics exit 255)', 'read 3: 37.9 °C <= 38.0 °C']);
+
+  c = clock();
+  b = fakeBattery([39, 'gone', 'gone', 'gone', 30]);
+  r = await coolPoll(phoneTempCondition(38, { read: b.read, now: c.now }), c);
+  assert.equal(r.result, 'never');
+  assert.equal(r.never, 'battery temperature unavailable (gone; 3 failed reads in a row)');
+  assert.equal(b.calls.length, 4);
+
+  c = clock();
+  r = await coolPoll(phoneTempCondition(38, { read: () => { throw new Error('boom'); }, now: c.now }), c);
+  assert.equal(r.result, 'never', 'a throwing reader counts as a failed read');
+  assert.equal(r.never, 'battery temperature unavailable (boom)');
+  c = clock();
+  r = await coolPoll(phoneTempCondition(38, { read: () => ({ t: 'x', CurrentCapacity: 80 }), now: c.now }), c);
+  assert.equal(r.result, 'never');
+  assert.equal(r.never, 'battery temperature unavailable (no Temperature in the battery reading)');
 });

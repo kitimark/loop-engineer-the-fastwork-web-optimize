@@ -9,7 +9,7 @@ import { writeFileSync, appendFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import http from 'node:http';
-import { tempDir, node, nodeAsync, tool, sleep, cleanEnv } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, tool, sleep, cleanEnv, TESTS } from '../helpers.mjs';
 
 const WAIT = tool('wait.mjs');
 const LOCK = tool('lock.mjs');
@@ -85,6 +85,40 @@ test('wait url / pid / time / git, and usage errors exit 1', async () => {
     assert.equal(e.code, 1, `${args.join(' ')}: ${e.out}`);
   }
   assert.equal(node(WAIT, ['--help']).code, 0);
+});
+
+// wait phone-temp (ts-phone-cool, user T-009): the battery through tools/lib/iphone-run.mjs batteryInfo, here the
+// fake idevicediagnostics ($FW_IDEVICEDIAGNOSTICS; 30.50 °C on its first call, with a serial that must not show)
+test('wait phone-temp: MET at once when cool, TIMEOUT with the last reading, UNAVAILABLE exit 1 without a device; no serials; usage', () => {
+  const FAKE_IDD = join(TESTS, 'fixtures', 'fake-idevicediagnostics.mjs');
+  const log = join(state, 'idd.log');
+  const calls = () => { try { return readFileSync(log, 'utf8').split('\n').filter(Boolean).length; } catch { return 0; } };
+  const iddEnv = { FW_IDEVICEDIAGNOSTICS: FAKE_IDD, FAKE_IDD_LOG: log };
+  const m = node(WAIT, ['phone-temp', '--below', '35'], { env: iddEnv });
+  assert.equal(m.code, 0, m.out);
+  assert.equal(m.stdout, 'MET phone-temp: phone at 30.5 °C <= 35.0 °C (after 0 s)\n');
+  assert.match(m.stderr, /\] read 1: 30\.5 °C <= 35\.0 °C\n/, 'one line per read on stderr');
+  assert.equal(calls(), 1);
+
+  const t = node(WAIT, ['phone-temp', '--below', '20', '--timeout', '1'], { env: iddEnv });
+  assert.equal(t.code, 3, t.out);
+  assert.equal(t.stdout, 'TIMEOUT phone-temp after 1 s: read 1: 30.6 °C > 20.0 °C\n');
+  assert.equal(calls(), 2, 'the check at the 1 s deadline reuses the first read (30 s floor)');
+  for (const r of [m, t]) assert.doesNotMatch(r.out, /FAKESERIAL|Serial|192\.168\./, 'no device ids or LAN addresses');
+
+  const u = node(WAIT, ['phone-temp', '--below', '38'], { env: { FW_IDEVICEDIAGNOSTICS: join(state, 'no-such-idevicediagnostics') } });
+  assert.equal(u.code, 1, u.out);
+  assert.equal(u.stdout, 'UNAVAILABLE phone-temp: battery temperature unavailable (idevicediagnostics: ENOENT) (after 0 s)\n');
+
+  const before = calls();
+  for (const args of [['phone-temp'], ['phone-temp', '--below', 'auto'], ['phone-temp', '--below', 'hot'], ['phone-temp', '--below', '38', '--every', '10'], ['phone-temp', '--below', '38', '--every', 'x'], ['phone-temp', '--below', '38', '--timeout', 'soon']]) {
+    const e = node(WAIT, args, { env: iddEnv });
+    assert.equal(e.code, 1, `${args.join(' ')}: ${e.out}`);
+    assert.equal(e.stdout, '', `${args.join(' ')}: no result line on a usage error`);
+  }
+  assert.match(node(WAIT, ['phone-temp', '--below', 'auto'], { env: iddEnv }).stderr, /--below auto is not available.*--below 38/);
+  assert.match(node(WAIT, ['phone-temp', '--below', '38', '--every', '10'], { env: iddEnv }).stderr, /--every must be .*>= 30/);
+  assert.equal(calls(), before, 'usage errors read no battery');
 });
 
 test('lock wait: released-by exits when the holder releases; position<=1 and mine as the queue moves; read-only', async () => {

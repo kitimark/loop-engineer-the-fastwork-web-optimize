@@ -195,6 +195,62 @@ export function gitCondition({ cwd = process.cwd(), ref = 'main', contains, path
   };
 }
 
+// ---- phone cooling (wait.mjs phone-temp; ts-phone-cool, user T-009) ---------------------------------
+
+/**
+ * `wait.mjs phone-temp` defaults: one battery read per minute (floor 30 s: protocol §5.5 keeps phone polling
+ * gentle), at most 10 min of cooling, and the wait gives up after 3 failed reads in a row.
+ */
+export const PHONE_TEMP = Object.freeze({ everySec: 60, minEverySec: 30, timeoutSec: 600, maxFailedReads: 3, fallbackC: 38 });
+
+/** A temperature as text: 38 -> "38.0", 37.4 -> "37.4", 38.59 -> "38.59" (the battery reports 1/100 degC). */
+export const fmtC = (x) => Number(x).toFixed(2).replace(/(\.\d)0$/, '$1');
+
+/**
+ * `--below <degC>`: a number in (0, 60). `auto` (the last passing sentinel's battery temperature minus 0.5 degC)
+ * is refused: no tool records the sentinel verdict (`iphone.mjs run` keeps the battery per run, but not whether the
+ * run passed the §5.2 sentinel; the phone runner judges it in its own scripts), so the operator gives the number.
+ */
+export function parseBelowC(v) {
+  if (String(v ?? '').trim() === 'auto') throw new Error(`--below auto is not available: no tool records the sentinel verdict. Give the battery temperature of the last passing sentinel today minus 0.5 °C, or --below ${fmtC(PHONE_TEMP.fallbackC)} when there is none (e.g. --below 38)`);
+  const n = /^\s*\d+(\.\d+)?\s*$/.test(String(v ?? '')) ? Number(v) : NaN;
+  if (!(n > 0 && n < 60)) throw new Error(`--below must be a battery temperature in °C between 0 and 60 (e.g. --below 38), got ${v}`);
+  return n;
+}
+
+/**
+ * The phone's battery temperature is at or below `belowC`. `read()` is one battery read in batteryInfo's shape
+ * (tools/lib/iphone-run.mjs: {temperatureC, ...} or {error}; only BATTERY_KEYS, never ids or serials). Each read
+ * is its own state ("read N: X °C > Y °C"), so the wait logs one line per read. A check sooner than `minGapMs`
+ * after the last read reuses it (pollUntil cuts its last pause to the deadline). No first reading, or
+ * `maxFailed` failed reads in a row: never (the CLI prints UNAVAILABLE, exit 1).
+ */
+export function phoneTempCondition(belowC, { read, now = Date.now, minGapMs = PHONE_TEMP.minEverySec * 1000, maxFailed = PHONE_TEMP.maxFailedReads } = {}) {
+  let n = 0, okReads = 0, failed = 0, lastAt = null, last = null;
+  const limit = fmtC(belowC);
+  return () => {
+    if (last && now() - lastAt < minGapMs) return last;
+    lastAt = now();
+    n++;
+    let b;
+    try { b = read(); } catch (e) { b = { error: e.message || String(e) }; }
+    const t = b && !b.error && typeof b.temperatureC === 'number' && Number.isFinite(b.temperatureC) ? b.temperatureC : null;
+    if (t === null) {
+      failed++;
+      const why = b?.error || 'no Temperature in the battery reading';
+      if (!okReads) last = { met: false, state: `read ${n}: failed (${why})`, never: `battery temperature unavailable (${why})` };
+      else if (failed >= maxFailed) last = { met: false, state: `read ${n}: failed (${why})`, never: `battery temperature unavailable (${why}; ${failed} failed reads in a row)` };
+      else last = { met: false, state: `read ${n}: failed (${why})` };
+      return last;
+    }
+    okReads++;
+    failed = 0;
+    const met = t <= belowC;
+    last = { met, state: `read ${n}: ${fmtC(t)} °C ${met ? '<=' : '>'} ${limit} °C`, detail: `phone at ${fmtC(t)} °C <= ${limit} °C` };
+    return last;
+  };
+}
+
 // ---- lock states (lock.mjs wait) --------------------------------------------------------------------
 
 /**
