@@ -254,6 +254,45 @@ scratchpad `arch-claims/ver-chrome-platform/src/`.
 - C2: interleaved A B C D D C B A (none / binding+rAF / LayerTree only / both), ≥ 3 each, quiet host, display state fixed.
 - C3 = U1(b): plain baseline `verify --runs 3 --idle 6` before and after `pmset displaysleepnow` in one hold. Add a viz trace that counts `OnDisplayLinkCallback` vs `OnTimerTick` per second in each state.
 
+### 2.7 Phone rAF above 60 Hz in finger scrolls (F-071, `ver-rafrate`)
+
+**Observation (F-071, our data).** In finger scrolls, moving frames come in sustained runs of 12-13 ms gaps (≈ 80 Hz),
+for example 13,12,14,11,13,12,13,13. On apple.com (F6-try2) 563 of 1027 moving gaps fall in 12-13 ms; in fastwork
+finger runs the share is smaller (E1: 43 of 352, A1: 30 of 816). Idle and scripted runs (S, W, M) show only
+16-17 ms. No run shows an ~8 ms (120 Hz) cadence. Script: scratchpad `arch-claims/f6.mjs`.
+
+**Verdict: "Safari rAF at 60 Hz" is WEAKENED.** WebKit asks for 60 Hz but does not enforce it. Source is tag
+WebKit-7624.4.5; main is the same on these points.
+- **WebKit only requests 60 Hz.** By default the iOS display link sets only `preferredFramesPerSecond = 60`, a hint,
+  with no frame-rate range (RemoteLayerTreeDrawingAreaProxyIOS.mm l.167-177, 206-227).
+- **Every tick drives an update.** `DisplayUpdate::relevantForUpdateFrequency` gives a rate factor of 1, so no tick is
+  dropped (DisplayUpdate.cpp l.33-41). Each tick goes to the web process as DisplayDidRefresh
+  (RemoteLayerTreeDrawingAreaProxy.mm l.799). `RemoteLayerTreeDrawingArea::scheduleRenderingUpdate` (l.560-580) has
+  no 16.7 ms gate. So the rAF cadence equals the display-link cadence.
+- **Core Animation picks the link rate. CONFIRMED by Apple's documentation**
+  (https://developer.apple.com/documentation/quartzcore/optimizing-iphone-and-ipad-apps-to-support-promotion-displays):
+  - "Core Animation arbitrates … and determines the refresh rate".
+  - Callbacks are not guaranteed "at the rate requested".
+  - "80Hz (12ms)" is listed as an iPhone rate.
+- **Candidate driver (plausible, unproven).** WebKit sets `preferredFrameRateRange` to (80, 120, 120) on every
+  accelerated CA animation it creates (PlatformCAAnimationRemote.mm l.609-613). A page with composited animations
+  therefore asks the system for 80-120 Hz. That could explain why apple.com's share is larger. Which request raises the
+  rate during a finger scroll is UNRESOLVED.
+- **Ruled out in the files read:**
+  - No site quirk or opt-in exists (Quirks.cpp; REFUTED).
+  - No touch- or scroll-triggered rate request exists, except for keyboard scrolling (REFUTED; the scan was not
+    exhaustive).
+  - Bug 272165 (fixed in 278949@main) applies only with the preference off.
+- **Decisive phone check (ticket via mgmt-ops-5).** Run a finger scroll on three pages and log the rAF gap histogram
+  for each: (i) no animations; (ii) one infinite composited transform animation; (iii) the same animation paused or on
+  `left`. Add idle runs with (ii), a gesture-driven (WDA, G) scroll vs a finger (F) scroll, and Low Power Mode on/off.
+  Record the "Prefer Page Rendering Updates near 60fps" feature flag on every run.
+- **How our probe could mislead.** The stamp marks the start of the rendering update, not a vsync. A finger scroll also
+  changes load and scrolling-tree traffic, so "touch" is not yet separable from "animation mix".
+
+**Already in force (lead):** fps and frame counts from finger (F) and gesture (G) runs don't compare with scripted runs
+(S, W, M). The ms thresholds still compare.
+
 ### 2.5 What changes because of §2 (for owners)
 
 | verdict | affected | change |
