@@ -4,6 +4,8 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** mechanism verified (counts only, see "Mechanism probe"); timing gain inconclusive.
+**Landing label: mechanism + review, gain pending combined (wave 1).** Review: review-countdown,
+ACCEPT-WITH-NOTES on 8619bef.
 `patch.diff` is variant 03 (sha256 160d69a0…); **the committed `results.json` predates it**:
 it measured variant 02 (no `active` prop; `results.json` `patch.sha256` 2feaf189…), with old tools (before
 I-002) at host load 9.6-19.5. It will be replaced by the final `ab --runs 5`, which is held for the host-load
@@ -11,7 +13,7 @@ gate (ts-i017) or a quiet window. The only difference between 02 and 03 is the `
 which is inert unless a call site passes it.
 **Topic:** see `fixes/TOPICS.md` (countdown-idle-raf)
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`. Pretty lines: `$E` (digit) 3823-3876,
-`tD` (number) 3878-3904, `cD` (countdown) 3918-3943. No CSS.
+`tD` (number) 3878-3904, `cD` (countdown) 3918-3982 (hunks at 3920, 3933, 3958). No CSS.
 
 ## Why it lags
 
@@ -77,8 +79,8 @@ noise: a mid-spring digit shows at a different phase in each shot.
 
 ## Mechanism probe (counts only)
 
-Probe `scratchpad/countdown-idle-raf/probe.mjs` (copy of the method below; raw output in the worktree's
-`out/countdown-probe/probe.json`). It ran 2026-10-01 00:01-00:04Z in one short-lane `lock.mjs run` hold, with
+Probe [`probe.mjs`](probe.mjs) (in this directory; `node fixes/countdown-idle-raf/probe.mjs <runs>`, only inside a
+`lock.mjs run chrome-measure` hold; it starts its own base / 03 / 05 servers and writes `out/countdown-probe/probe.json`; after the run only its paths were made repo-relative, the logic is unchanged). It ran 2026-10-01 00:01-00:04Z in one short-lane `lock.mjs run` hold, with
 the servers inside the hold. Chrome mobile 430x932 DPR3, CPU 6x, cold isolated context per page. Targets in
 order ABC/CBA, n=2 each: base, **03** (`patch.diff` 160d69a0) and **05** (`variants/05.diff`). Host load1 was
 8.9-14.7, so the run is **contaminated** for timings. The counts (style writes, layers, parity) don't depend
@@ -95,7 +97,10 @@ Method:
 - **Windows:** "top" is 6 s at scrollY 0: the hero countdown in view; the morph-panel countdown not
   mounted yet. "mid" follows a `scrollTo(0, 0.45 * height)`: the smooth scroll didn't move the hero out of
   view (`timersInViewMid` = [true, false]), and the morph-panel countdown was mounted but outside the
-  viewport.
+  viewport. **midY read 0 (smooth scroll); the actual mid position is unrecorded; the hero was in view in
+  both windows, so the hero off-screen pause and the `active` gate are not exercised here** (active:
+  verify in all-wave1). What the mid window does exercise is the IO pause of the panel countdown
+  (mounted, outside the viewport).
 
 | per 6 s idle window, n=2 | base | 03 (160d69a0) | 05 (one strip per digit) |
 |---|---|---|---|
@@ -120,16 +125,14 @@ What it shows:
   correct whenever it is at rest.
 
 **F-009 (the ~60 ms frame at y~2154, styleAndLayout 44-47 ms, only visible change = `span.face`
-transform writes): 160d69a0 does not cover it.** The face writes are probably not its cost. Per the
-probe, removing ~3000 writes per 6 s saves only ~26 ms of style recalc in total (top window: 378 -> 352
-ms), well under 0.1 ms per frame. A transform write on a `will-change` layer needs no layout either, yet
-that frame spends 44-47 ms in style+layout. The likelier cost is the first style/layout of newly
-mounted content in that frame: the morph-panel countdown's 80 faces, which are 80 new `will-change`
-layers, plus the panel itself, which mounts when `#platform` comes within 200 %. Proposed coverage:
-- (a) #13 lazy mount, which moves the mount out of the scroll;
-- (b) variant 05, which creates 8 layers per countdown instead of 80: a candidate next variant, with
-  the counts above;
-- (c) check: the all-wave1 combined run attributes that frame with and without the mount.
+transform writes): 160d69a0 does not cover it, and the face writes are not its cost.** Per the probe,
+removing ~3000 writes per 6 s saves only ~26 ms of style recalc in total (top window: 378 -> 352 ms;
+*indicative only*, load 9-15), well under 0.1 ms per frame; and a transform write on a `will-change`
+layer needs no layout, yet that frame spends 44-47 ms in style+layout. **F-011** attributes it: a
+no-script frame, the first render of a deferred section (the `#platform` content-visibility un-skip);
+with scroll-engine /09 the same ~45 ms cost moves ~50 px earlier, and the proposed fix is scroll-engine
+/10 (idle un-skip, wave 2). Countdown variants 05/08 are not coverage for this style+layout cost; they
+remain layer-count / memory variants (wave 2). The all-wave1 combined run checks the frame.
 
 ## Before / after
 
@@ -169,9 +172,8 @@ sides:
 - forced 34-83 ms
 - morph fps 105-112.5
 
-The patched >20 ms median (99) is above the A/A pool, but the baseline in this A/B run reached 103
-too, and the host load was 2-4x that of the A/A run. The verdict is "within noise" on every row: no
-claim of a scroll-phase win or loss.
+Measured at load 9.6-19.5 (>6): "within noise" is inconclusive, not a null result; the comparison with
+the load 2.8-5.8 A/A floor is void. No claim of a scroll-phase win or loss.
 
 Regressions: none. No new console errors, no new 404s, `morphReached` true on 5/5 runs on both
 sides, screenshot diffs <= 0.29 %.
@@ -183,7 +185,7 @@ iPhone: not used.
 | id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status | bench |
 |---|---|---|---|---|---|---|---|---|---|
 | countdown-idle-raf/01 | A/A baseline vs baseline (noise floor, scroll+morph) | reference | reference | old-tools (load 2.8-5.8) | >20 ms pooled 54-78, LoAF 195-283 ms, forced 34-83 ms, n=5 | `out/ab/_aa/2026-09-30T21-11-55-249Z/results-aa.json` (worktree) | spread of >20 ms frames is ~+-12 at n=5 | sent to all owners | n/a (A/A reference, no variant) |
-| countdown-idle-raf/02 | IO off-screen pause + clamp faces to +-1 cell (no `active` prop) | fewer rAF springs and style writes, so >20 ms frames / script time drop | within noise | old-tools, contaminated (load 9.6-19.5) | >20 ms 82 [76-103] -> 99 [85-103], LoAF 316 -> 348 ms, n=5 | `variants/02.diff`; commit 630d944 (was 6b52c9c before rebase) `results.json` | countdown frames are < 50 ms, so they are invisible to scroll-phase LoAF; the effect needs an idle/probe metric | superseded by /03 | pending runner |
+| countdown-idle-raf/02 | IO off-screen pause + clamp faces to +-1 cell (no `active` prop) | fewer rAF springs and style writes, so >20 ms frames / script time drop | within noise | old-tools, contaminated (load 9.6-19.5) | >20 ms 82 [76-103] -> 99 [85-103], LoAF 316 -> 348 ms, n=5 | `variants/02.diff` (sha 2feaf189); its run is the committed `results.json` | countdown frames are < 50 ms, so they are invisible to scroll-phase LoAF; the effect needs an idle/probe metric | superseded by /03 | pending runner |
 | countdown-idle-raf/03 | /02 + `active` prop (the call site can pause a mounted but invisible countdown) | as /02, plus no springs in nav-morph's hidden morph panel (inert without nav-morph's call site) | mechanism verified (counts); timing gain not yet measured (final A/B held for the host gate) | counts: load-independent; timings in the probe contaminated (load1 8.9-14.7) | face style writes per 6 s, top 3750 [3470-4030] -> 712 [709-715], mid 6175 [6160-6190] -> 664 [598-729], n=2; parity unchanged; layers unchanged (80 will-change) | `patch.diff` = `variants/03.diff` (160d69a0); README "Mechanism probe"; `results.json` is still variant 02's | clamp + IO pause cut writes 5-9x; LoAF can't see sub-50 ms work, so use counters | on branch | pending runner |
 | countdown-idle-raf/04 | drop `.face{will-change:transform}` only (~80 layers per countdown -> 0) | fewer compositing layers | abandoned: queue slot dropped for the lock budget, never measured | - | - | `variants/04.diff` (rebuilt) | - | superseded by /05 | pending runner |
 | countdown-idle-raf/05 | ONE `will-change` strip per digit (11 static faces, one transform write per frame) on top of /03 | ~80 -> ~8 layers per countdown, 1 write/frame per animating digit (architecture review) | better on counts (mechanism); timing not measured | counts: load-independent; timings contaminated (load1 8.9-14.7) | will-change elements per countdown 80 -> 8, page compositing layers 111/106 -> 39/34; face writes top 3750 -> 314, mid 6175 -> 292, n=2; parity 45/48 (same sampling misses) | `variants/05.diff` (full overlay, not stacked); README "Mechanism probe" | one transform per digit instead of 10 (or 2): fewer layers and writes; candidate for F-009's mount frame | candidate next variant (needs its own A/B) | pending runner |
@@ -193,15 +195,18 @@ iPhone: not used.
 
 ## Risks, conflicts, follow-ups
 
+- 03 alone without #13: `active` defaults to true; never worse than baseline.
 - Behaviour: desktop and phones run the same code. Reduced motion is unchanged: the `YE` check comes
   first. Off-screen digit changes snap, which the user can't see. At the IO edge (64 px margin), a
   digit could snap instead of spring during the frame before the observer callback arrives.
 - Overlap: **this patch defines the `active` contract that nav-morph's `morph-panel-lazy-mount` uses**:
   its call site at 13160 passes `cD(…, { inverse: !0, get active() { return s(E); } })`. Without this
-  patch (e.g. 630d944, variant 02) that prop is ignored, and the panel's countdown animates invisibly
+  patch (e.g. `variants/02.diff`, sha 2feaf189) that prop is ignored, and the panel's countdown animates invisibly
   for the whole visit (found by the wave-1 dry combine, wave1-dry 6d71548). Land both together, or this
   one first. Only `cD`'s body changed here, not the call site. It is independent of the scroll engine.
+- Open checks (later, in the wave-2 probe or the all-wave1 window, not before landing): (a) hero off-screen
+  count: instant scroll out, about 0 face writes per 6 s; back in view, at most 1 spring frame and parity ok;
+  (b) on all-wave1 with #13, panel countdown face writes = 0 while `E` is false.
 - Follow-ups:
   1. Final `ab --runs 5` of variant 03 with the idle phase (I-002), after the host-load gate.
-  2. Probe queued (count-only: layers, face style writes, digit parity, idle counters for base / 03 /
-     05). Variant 05 (one `will-change` strip per digit, architecture review) is in `variants/05.diff`.
+  2. Wave 2: variants 05 / 08 (counts probe and A/B, `--on all-wave1`).
