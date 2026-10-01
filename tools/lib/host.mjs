@@ -57,7 +57,7 @@ export const DEFAULTS = Object.freeze({
   invalidOtherBusyPct: 25, // host CPU minus the measured Chrome, scroll phase (measure-parallel's proposal)
   invalidPressure: 2,      // memory pressure warn or worse at any phase boundary
   warnLoad1: 6,            // the step: absolute numbers no longer comparable with the A/A floor (measured at load1 2.8-5.8)
-  warnOtherBusyPct: 15,
+  warnOtherBusyPct: 20,   // review-gate: other CPU during a live run is already ~14 % (WindowServer, serve, verify)
 });
 
 const ENV = { FW_GATE_MAX_LOAD1: 'quietMaxLoad1', FW_GATE_MAX_BUSY: 'quietMaxBusyPct', FW_GATE_MAX_WAIT: 'gateMaxWaitSec' };

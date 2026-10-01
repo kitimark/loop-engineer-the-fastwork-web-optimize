@@ -30,7 +30,7 @@ function fakeSamplers({ busy = () => 0.1, load = () => 2, pressure = () => 1, de
 test('THRESHOLDS: the documented defaults; FW_GATE_* env overrides; bad values are refused', () => {
   assert.deepEqual({ ...host.DEFAULTS }, {
     quietMaxBusyPct: 20, quietMaxLoad1: 6, quietMaxPressure: 1, quietMinWindowSec: 10, gateMaxWaitSec: 600, recheckMaxWaitSec: 60,
-    invalidLoad1: 10, invalidOtherBusyPct: 25, invalidPressure: 2, warnLoad1: 6, warnOtherBusyPct: 15,
+    invalidLoad1: 10, invalidOtherBusyPct: 25, invalidPressure: 2, warnLoad1: 6, warnOtherBusyPct: 20,
   });
   const t = host.thresholds({ FW_GATE_MAX_LOAD1: '4', FW_GATE_MAX_BUSY: '15', FW_GATE_MAX_WAIT: '120' });
   assert.equal(t.quietMaxLoad1, 4);
@@ -116,14 +116,15 @@ test('treeCpuSec(): the root pid plus all descendants from ps, nothing else; par
   assert.equal(typeof mine, 'number');
 });
 
-test('classifyRun(): loadInvalid at load1 > 10, other CPU > 25 %, pressure >= warn or a gate-timeout grant; loadWarn at load1 > 6, other > 15 %', () => {
+test('classifyRun(): loadInvalid at load1 > 10, other CPU > 25 %, pressure >= warn or a gate-timeout grant; loadWarn at load1 > 6, other > 20 %', () => {
   const c = (rec) => host.classifyRun(rec);
   assert.deepEqual(c({ load1Start: 5, otherBusyPct: 10, pressureMax: 1 }), { loadInvalid: false, loadWarn: false, reasons: [], warnings: [] });
   assert.deepEqual(c({ load1Start: 6 }), { loadInvalid: false, loadWarn: false, reasons: [], warnings: [] }, 'boundaries are exclusive');
   assert.deepEqual(c({ load1Start: 6.1 }).warnings, ['load1 6.1 > 6 at run start']);
   assert.deepEqual(c({ load1Start: 10 }), { loadInvalid: false, loadWarn: true, reasons: [], warnings: ['load1 10 > 6 at run start'] });
   assert.deepEqual(c({ load1Start: 10.1 }), { loadInvalid: true, loadWarn: false, reasons: ['load1 10.1 > 10 at run start'], warnings: [] });
-  assert.deepEqual(c({ otherBusyPct: 15.5 }).warnings, ['other CPU 15.5 % > 15 %']);
+  assert.deepEqual(c({ otherBusyPct: 20 }).warnings, [], 'other CPU 20 % is normal during a live run (review-gate)');
+  assert.deepEqual(c({ otherBusyPct: 20.5 }).warnings, ['other CPU 20.5 % > 20 %']);
   assert.deepEqual(c({ otherBusyPct: 25.5 }).reasons, ['other CPU 25.5 % > 25 %']);
   assert.deepEqual(c({ pressureMax: 2 }).reasons, ['mem pressure warn']);
   assert.deepEqual(c({ gateTimeout: true }).reasons, ['lock granted by gate timeout (host never quiet)']);

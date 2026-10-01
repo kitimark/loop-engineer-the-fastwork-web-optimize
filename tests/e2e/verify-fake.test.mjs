@@ -266,7 +266,7 @@ test('contaminated runs: load1 > 10 at run start, other CPU > 25 %, memory press
     [{ FAKE_HOST_BUSY: '0.4' }, true, ['other CPU 35 % > 25 %'], []],
     [{ FAKE_HOST_PRESSURE: '2' }, true, ['mem pressure warn'], []],
     [{ FAKE_HOST_LOAD1: '7' }, false, [], ['load1 7 > 6 at run start']],
-    [{ FAKE_HOST_BUSY: '0.22' }, false, [], ['other CPU 17 % > 15 %']],
+    [{ FAKE_HOST_BUSY: '0.27' }, false, [], ['other CPU 22 % > 20 %']],
   ];
   await Promise.all(cases.map(async ([fake, invalid, reasons, warnings]) => {
     const { d, env, args } = setup();

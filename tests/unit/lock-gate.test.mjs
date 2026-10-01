@@ -122,3 +122,40 @@ test('acquire(): samples 10 s windows while it is its turn, then takes the lock 
   g.release();
   assert.equal(existsSync(lockFile(`${R}.json`)), false);
 });
+
+test('review-gate R1: once a gate wait reaches the cap, short jobs no longer pass the head waiter; it is granted next', async () => {
+  const T = { ...H.THRESHOLDS, gateMaxWaitSec: 1 };
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY, thresholds: T })).gated, true);
+  // short-lane budget used up, so only the gate exemption could let a short job through
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  const t = Date.now();
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - 290000).toISOString(), token: 'aaaaaaaaaaaa' }));
+  const s1 = await L.tryAcquire(R, { owner: 'npm-test', kind: 'lease', short: true, maxSec: 60, thresholds: T });
+  assert.equal(s1.ok, true, 'before the cap: exempt');
+  await L.release(R, { owner: 'npm-test' });
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'x', short: true, maxSec: 120, at: new Date(t - 10000).toISOString(), runStart: new Date(t - 290000).toISOString(), token: 'bbbbbbbbbbbb' }));
+  await sleep(1100);
+  // the head waiter's gate record is fresh (it keeps polling), but its wait has reached the cap
+  const q = readJson(`${R}.queue.json`);
+  q[0].gate.at = new Date().toISOString();
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q));
+  for (let i = 0; i < 2; i++) assert.equal((await L.tryAcquire(R, { owner: 'npm-test2', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, false, 'no exemption after the cap');
+  const g = await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY, thresholds: T });
+  assert.equal(g.ok, true);
+  assert.equal(g.holder.gateTimeout, true);
+});
+
+test('review-gate R2: a lead\'s queue move (I-019 movedBy/movedAt) survives the gated waiter\'s refresh', async () => {
+  const X = await import('../../tools/lib/lock-repair.mjs');
+  assert.equal((await L.tryAcquire(R, { owner: 'holder', kind: 'lease' })).ok, true);
+  for (const o of ['a', 'b']) assert.equal((await L.tryAcquire(R, { owner: o, kind: 'lease', host: UNKNOWN })).ok, false);
+  await X.moveWaiter(R, { owner: 'b', to: 1, by: 'lead', reason: 'priority', apply: true });
+  await L.release(R, { owner: 'holder' });
+  const g = await L.tryAcquire(R, { owner: 'b', kind: 'lease', host: BUSY });
+  assert.equal(g.gated, true, 'b is first after the move, and the gate holds it');
+  const b = readJson(`${R}.queue.json`).find((w) => w.owner === 'b');
+  assert.equal(b.movedBy, 'lead');
+  assert.equal(typeof b.movedAt, 'string');
+  assert.equal(b.gate.quiet, false);
+  assert.deepEqual(readJson(`${R}.queue.json`).map((w) => w.owner), ['b', 'a']);
+});

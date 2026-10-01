@@ -170,8 +170,14 @@ function nextIndex(q, lg, now = Date.now()) {
   return now - start + (q[s].maxSec || SHORT_MAX_SEC) * 1000 <= SHORT_DRAIN_SEC * 1000 ? s : n;
 }
 
-/** The head normal waiter is held back by the host gate right now (so short jobs may pass it). */
-function gateHolding(w, now) { return !!(w && !w.short && w.gate && w.gate.quiet !== true && now - Date.parse(w.gate.at) < GATE_FRESH_MS); }
+/**
+ * The head normal waiter is held back by the host gate right now (so short jobs may pass it). Not once its
+ * gate wait has reached the cap: then it is due (granted anyway) and short jobs queue behind it again,
+ * under the normal short-lane drain rule (review-gate R1; otherwise shorts could keep passing it forever).
+ */
+function gateHolding(w, now, T = THRESHOLDS) {
+  return !!(w && !w.short && w.gate && w.gate.quiet !== true && now - Date.parse(w.gate.at) < GATE_FRESH_MS && now - Date.parse(w.gate.since) < T.gateMaxWaitSec * 1000);
+}
 
 /**
  * One acquisition attempt. Returns {ok:true, holder} or {ok:false, holder, position, queue, next, gated}.
@@ -217,7 +223,7 @@ export async function tryAcquire(r, opts) {
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
     const ni = q.length ? nextIndex(q, seen, now) : -1;
     // short jobs are exempt from the host gate: the first short waiter may pass a head normal waiter held by it
-    const headOk = q.length === 0 || mine === ni || (short && GATED[r] && gateHolding(q[ni], now) && mine === q.findIndex((w) => w.short));
+    const headOk = q.length === 0 || mine === ni || (short && GATED[r] && gateHolding(q[ni], now, T) && mine === q.findIndex((w) => w.short));
     let gateRec;
     if (!h && headOk && GATED[r] && !short && host !== undefined) {
       const since = (mine >= 0 && q[mine].gate?.since) || new Date(now).toISOString();
@@ -229,6 +235,7 @@ export async function tryAcquire(r, opts) {
       else {
         // not quiet (or not measured yet): keep the head place, record why for `status`
         const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, gate: g };
+        if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019) survives the gate (review-gate R2)
         if (mine >= 0) q[mine] = entry; else q.push(entry);
         writeJson(queueFile(r), q);
         return { ok: false, gated: true, gate: g, holder: null, position: q.findIndex((w) => w.owner === owner) + 1, queue: q, next: owner };

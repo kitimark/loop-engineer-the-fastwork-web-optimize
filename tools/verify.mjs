@@ -31,7 +31,7 @@
 // measured Chrome's CPU (its process tree, ps, read outside the timed window), other CPU = busy - Chrome,
 // max memory pressure and decompressions/s. `host.loadInvalid` (contaminated) when load1 at start > 10,
 // other CPU in the scroll phase > 25 %, memory pressure >= warn, or the lock was granted by the gate's
-// timeout; `host.loadWarn` at load1 > 6 or other CPU > 15 %.
+// timeout; `host.loadWarn` at load1 > 6 or other CPU > 20 %.
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import os from 'node:os';
