@@ -2,7 +2,7 @@
   "name": "slow-drag-v1",
   "version": 1,
   "screen": [430, 932],
-  "about": "U5 (research/design-engineering, de-unknowns-ux): a slow finger drag at ~130 px/s through the hero band y 400-900 and back, the finger held on the glass the whole way (no momentum), so every frame is a touch-driven frame. The first up drag collapses Safari's toolbar (the toolbar step), the down drag may bring it back. A drag of 560 px in 4458 ms has a 130 px/s plateau (tools/lib/gesture.mjs, profile drag). Override params with --param k=v.",
+  "about": "U5 (research/design-engineering, de-unknowns-ux): a slow finger drag at ~130 px/s through the hero band y 400-900 and back, the finger held on the glass the whole way (no momentum), so every frame is a touch-driven frame. The first up drag collapses Safari's toolbar (the toolbar step), the down drag may bring it back. A drag of 560 px in 4458 ms has a 130 px/s plateau (tools/lib/gesture.mjs, profile drag): that is the finger's speed; the page follows after ~15 px of pan slop and while the toolbar collapses its speed differs for the first ~100 ms. Override params with --param k=v.",
   "params": {
     "x": 215,
     "idleMs": 6000,

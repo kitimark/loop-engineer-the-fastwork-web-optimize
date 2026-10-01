@@ -309,16 +309,21 @@ export function motionPooled(lists) {
 
 /**
  * Touch to first scroll (U6): from a touchstart (touchTime) to the first frame whose scrollY differs from the
- * page's at the touchstart, ms; null when the page was still moving at the touchstart (the last two frames at
- * or before it differ) or nothing moved within maxMs. Frame-quantized (the rAF time of the first moved frame);
- * includes the pan slop (~15 px of finger travel before the page follows).
+ * page's at the touchstart, ms; null when the page was not at rest (scrollY changed within the restMs before
+ * the touchstart: the runner's still-pair rule, so the tail of a momentum does not count as rest) or nothing
+ * moved within maxMs. Frame-quantized (the rAF time of the first moved frame); includes the pan slop (~15 px of
+ * finger travel before the page follows).
  */
-export function touchToScrollMs(seg, start, { maxMs = 1500 } = {}) {
+export function touchToScrollMs(seg, start, { maxMs = 1500, restMs = 100 } = {}) {
   const fr = seg.frames || [];
   let i = 0;
   while (i < fr.length && fr[i][0] <= start) i++;
-  if (i < 2 || fr[i - 1][2] !== fr[i - 2][2]) return null;
+  // frames k .. i-1: the last restMs before the touch plus the frame before them (where the page stood then)
+  let k = i - 1;
+  while (k > 0 && fr[k][0] >= start - restMs) k--;
+  if (i - k < 2) return null;
   const y0 = fr[i - 1][2];
+  for (let j = k; j < i; j++) if (fr[j][2] !== y0) return null;
   for (let j = i; j < fr.length && fr[j][0] - start <= maxMs; j++) if (fr[j][2] !== y0) return r1(fr[j][0] - start);
   return null;
 }
@@ -353,7 +358,9 @@ export function summarizeRun(segments, strokes = [], { morph = [] } = {}) {
       const q = aligned ? seqs[k] : null;
       const next = aligned && seqs[k + 1] ? seqs[k + 1].start : Infinity;
       const m = q && q.end !== null ? momentumTau(seg, q.end, { tNext: next }) : null;
-      // the stroke's window: its touchstart to the next stroke's (finger and momentum), frames by their time
+      // the stroke's window: its touchstart to the next stroke's (finger and momentum), frames by their rAF time.
+      // The window's first frame has a dt that partly predates the touch: on a page at rest it has dx 0 (pan
+      // slop) and drops out of every metric; during the previous stroke's momentum it counts for this stroke.
       const fr = seg.frames || [];
       const idx = (t) => { const i = fr.findIndex((f) => f[0] >= t); return i < 0 ? fr.length : i; };
       const mo = q ? motionMetrics(fr, Math.max(1, idx(q.start)), next === Infinity ? fr.length : idx(next)) : null;

@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from '../helpers.mjs';
-import { RECORDER_JS, READ_JS, STATE_JS, markJs, toolbarTransitions, pinReversals, overscroll, touchSequences, touchTime, touchmoveStats, momentumTau, frameBands, morphStats, summarizeRun, motionMetrics, motionTick } from '../../tools/lib/gesture-rec.mjs';
+import { RECORDER_JS, READ_JS, STATE_JS, markJs, toolbarTransitions, pinReversals, overscroll, touchSequences, touchTime, touchmoveStats, momentumTau, frameBands, morphStats, summarizeRun, motionMetrics, motionTick, touchToScrollMs } from '../../tools/lib/gesture-rec.mjs';
 
 function fakeWindow() {
   let now = 1000;
@@ -296,6 +296,13 @@ test('summarizeRun: per-stroke motion (touchstart to the next touchstart), touch
   const moving = summarizeRun([{ ...seg, touches: touches.map((e) => (e[1] === 's' && e[0] < 100 ? [255, 's', 1, 1, 0, 130, 700, 250] : e)).filter((e) => e[0] !== 100 && e[0] !== 130) }], [{ id: 's1', seg: 0, kin: kin('fling') }, { id: 's2', seg: 0, kin: kin('fling') }]);
   assert.equal(moving.segments[0].perStroke[0].touchToScrollMs, null);
   assert.equal(moving.segments[0].perStroke[0].firstMoveCancelable, null, 'no touchmove in that sequence');
+  // at rest = no move in the 100 ms before the touch (stillPair's rule), not just the last two frames: the tail
+  // of a momentum (moved at 245, 265, 285; still at 300, 320) is not at rest at 330, and is at 390
+  assert.equal(touchToScrollMs(seg, 330), null);
+  assert.equal(touchToScrollMs(seg, 390), 230, 'at rest since 285: first move at 620');
+  assert.equal(touchToScrollMs(seg, 590), 30);
+  assert.equal(touchToScrollMs(seg, 590, { maxMs: 20 }), null, 'nothing moved within maxMs');
+  assert.equal(touchToScrollMs({ frames: fr.slice(0, 1) }, 10), null, 'one frame: no rest to judge');
   // not aligned: no per-stroke windows
   const un = summarizeRun([seg], [{ id: 's1', seg: 0, kin: kin('minjerk') }]);
   assert.deepEqual(pick(un.segments[0].perStroke[0]), [null, null, null, null, null, null, null]);
