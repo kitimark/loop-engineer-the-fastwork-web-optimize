@@ -1,0 +1,84 @@
+# fastwork mirror fix: se10c-w1
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/se10b-w1/overlay: apply se10b-w1 first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply se10c-w1 --on se10b-w1
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 34e09fb0a8389d893f1d13e253e44f660508eb4009305c69023bea3fbc8594c7
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2796,7 +2796,51 @@
+       (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
+     }
+   );
++}
++// [scroll-engine /10c] far re-skip, behind the user only: a rendered section that is more than its
++// un-skip margin + 25 % (1.75 vh for the default 100 % gate, 2.25 vh for .pain's 150 %) ABOVE the viewport
++// goes back to content-visibility (its height comes from the IO entry, no forced layout), which drops its
++// layers (w1 did this at the scene gate itself, which flapped: N9). It comes back through fwRender's IO
++// (gate + 50 %) on the way up, so the 0.25 vh band between the two edges is the hysteresis. Sections
++// ahead of the user are never re-skipped (they keep the idle un-skip).
++var fwFarG = new Map();
++function fwFM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
++}
++function fwReskip(e, t) {
++  !e.deferRendering ||
++    !e.element ||
++    e.active ||
++    e.element.getAttribute(`data-start-selling-render`) === `deferred` ||
++    ((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)),
++    fwDef.delete(e),
++    t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
++    e.element.setAttribute(`data-start-selling-render`, `deferred`));
+ }
++function fwFar(e, t, n) {
++  let r = fwFarG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e)
++            if (!t.isIntersecting && t.boundingClientRect.bottom < 0)
++              for (let e of r.elements.get(t.target) ?? []) fwReskip(e, t.boundingClientRect.height);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwFarG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
++}
+ function lE(e) {
+   let t = e.getBoundingClientRect();
+   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
+@@ -2842,7 +2886,8 @@
+       renderFrame: 0,
+     },
+     r,
+-    fwRd;
++    fwRd,
++    fwFd;
+   return (
+     $T.add(n),
+     aE(),
+@@ -2856,10 +2901,12 @@
+       t.element &&
+       `IntersectionObserver` in window &&
+       (fwRd = fwRender(n, t.element, fwRM(t.rootMargin ?? `100% 0px`))),
++    n.deferRendering && t.element && `IntersectionObserver` in window && (fwFd = fwFar(n, t.element, fwFM(fwRM(t.rootMargin ?? `100% 0px`)))),
+     rE(),
+     () => {
+       (r?.(),
+         fwRd?.(),
++        fwFd?.(),
+         n.renderFrame && window.cancelAnimationFrame(n.renderFrame),
+         $T.delete(n),
+         n.manageAnimations && n.element && n.element.removeAttribute(`data-start-selling-scene`),
