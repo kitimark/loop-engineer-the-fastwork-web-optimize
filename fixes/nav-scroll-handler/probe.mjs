@@ -61,6 +61,9 @@ async function openPage(cdp, url, vp, pre) {
   await gotoAndSettle(page, url, { quietMs: 2000 });
   await sleep(1500);
   page.errors = errors;
+  // fail fast on a blank page (cert error, wrong server): no nav or no scroll range means nothing to measure (F-014)
+  const ok = await page.eval(`!!document.querySelector('header.start-selling-top-nav') && document.documentElement.scrollHeight - innerHeight > 1000`);
+  if (!ok) throw new Error(`blank or unexpected page at ${url} (${vp}): no nav or no scroll range; check Security.setIgnoreCertificateErrors and the server`);
   return page;
 }
 const metrics = async (page) => Object.fromEntries((await page.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]));

@@ -94,6 +94,13 @@ prove a frame-time win.
 | desktop-rtl | 24/168 | 24/168 | 23/168 | 0/168 |
 | mobile-rtl | 2/123 | 0/123 | 0/123 | 0/123 |
 
+**A/B hypothesis (slot ticket): 20-34 ms band only.** N12 is not expected to remove any specific > 34 ms or
+> 50 ms frame. LayoutCount per frame is unchanged, so it removes no forced layout; it saves only script and
+hit-test time. That was ~0.1 ms per frame at CPU 1x (mobile ScriptDuration 137 -> 110 ms over 259 frames),
+roughly 0.6 ms per frame at 6x. Expected A/B outcome: frames > 20 ms and the mean frame time slightly lower,
+or within noise; > 34/> 50 ms counts unchanged. A drop in > 50 ms frames would need a different explanation
+than this patch.
+
 **A/B:** not run. The plan is `fix.mjs ab nav-scroll-handler --on all-wave1` after N11, in holds of 10 min or less (F-007).
 
 ## Experiments tried
