@@ -100,6 +100,20 @@ no frame > 50 ms; Chrome mobile 6x: frames > 50 ms -> 0, > 34 ms -> ~0). Evidenc
    at ~load + 0.65-0.8 s whatever the user does. Tool gap (mgmt-lead iteration 3 / toolsmith backlog, no incident yet):
    verify has no measured load phase at 6x, so load-time costs are invisible. Next: I-018 attribution hold, then
    scroll-engine E3/part-4 diagnostics, then /10d (Safari quiet-input gate, fwReskip fix, wider `will-change` window).
+   **Wave-2 stacking base from 2026-10-01 06:10Z: `aw1-10c`** = `node tools/fix.mjs combine aw1-10c all-wave1 scroll-engine`
+   (hashes confirmed identical to se10c-aw1 on 8f9ebe5: JS 757e2cbc…, CSS c6aad94b…); every later wave-2 A/B runs
+   `--on aw1-10c`. **E3 (06:03-06:05Z, n=1, timing not claimed):** the animation ablation takes > 34 ms 4 -> 1 and finds a
+   rare 340-362 ms render storm at the agents-ask `is-caret` toggle (F-026) -> **new topic N13 platform-visual-anim-storm**
+   (fix-scroll-engine, lead 06:10Z), ordered after part 4 and **before /10d** (a > 100 ms frame beats a p95 flag).
+   **I-018 (06:1xZ, review-i018 NEEDS-WORK):** CDP metrics become opt-in (default = main exactly, golden test), so no
+   on/off A/A gate; validation = one traced real-site 6x run + test:chrome after re-review. Part 4 and q3 may run before
+   its hold.
+   **Part 4 (06:06-06:11Z, `ab abl-aw1i --on se-aw1i --runs 3`, 0/6 contaminated, diagnostic):** > 50 ms 3 -> 3, > 34 ms
+   3 -> 5 (noise), > 20 ms 11 -> 17 worse (`animation:none` changes painted end states, not a clean ablation); the storm
+   occurred in 0/6. CSS animations are not the source of the steady > 34/> 50 ms frames, only of the rare storm (~3 in ~22
+   scroll passes, ≈ 15 %), so N13 uses a forced-toggle probe, not a plain 5-run A/B.
+   Updated order: part 4 (done) -> N13 -> N12 `--on aw1-10c` -> /10d -> hero-exit -> countdown 05/08; I-018's traced run goes
+   ahead of any later normal once re-reviewed (N13 before N12: > 100 ms frame class before the 20-34 ms band, principle 1).
 4. Single-topic clean re-runs (commission /05, layout-animations 05, countdown, pain, large-area-blur),
    only where the combined result or a Tier B benchmark needs one topic isolated; all after the host gate.
 5. N4 / N10 fixes (N3 rejected 2026-10-01, F-015) as their prototypes pass Tier A.

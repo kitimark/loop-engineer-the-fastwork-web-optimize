@@ -2,9 +2,15 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **05:58Z**.
+**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **06:16Z**.
 
 ## Digest log (newest first, 5 lines each)
+
+- **06:16Z** Landed: /10c 8f9ebe5 (review-10c ACCEPT-WITH-NOTES; counts "> 50 ms 2 → 1 in the measured window, load-time
+  cost bounded by mech probe, iPhone pending"), docs 1b8aeac + cc09344. Wave-2 base `aw1-10c` (hashes confirmed). E3 →
+  F-026 storm → N13 (fix-scroll-engine, forced-toggle probe, before /10d). Part 4 done (diagnostic). I-018 NEEDS-WORK →
+  CDP metrics opt-in, validation = one traced run + test:chrome. 05:56Z contamination = ts-i017 e2e outside the lock
+  (rule now in CLAUDE.md). wave1-dry: pilot-only spec (B) + Q3-final requeue.
 
 - **05:58Z** Landed: N11 fea23a5 (mechanism only), docs 7542538, I-028+I-029 4f5667d (ts-bench ENDED; review-i028
   ACCEPT-WITH-NOTES → one ts-bench follow-up commit, tracked in I-028 notes). /10c hold 05:39-05:46: > 50 ms 2→1 BETTER,
@@ -51,19 +57,18 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Next actions for the next mgmt-ops (in order)
 
-1. review-10c verdict (lead spawned, on a7b95d1) → lead lands /10c. Then fix-scroll-engine E3 probe hold (queued since
-   05:51, one entry), part-4 ablation after it (requeue between).
-2. I-018 gate (lead runs it): ts-i017 rebases f71ee42 → reviewer → A/A cdp-metrics on/off hold (goes AHEAD of q3 and E3:
-   ping the lead when it queues) + test:chrome. I-018 lands FIRST, then ts-i021 rebases A/B/C on it.
-   Open question for its attribution: is N11's analytics.js idle-callback frame (50-61 ms, 3/5) in the scroll phase?
-3. After I-018: GO fix-nav-morph (N12, "20-34 ms band only", success also forced style+layout → ~0, AV1).
-4. ts-i021: A (I-026 reopen + #6) + B (#3, measurement code) committing; C (bench-scenario sleeps on the stubbed clock,
-   lead-approved; mind ts-bench's FAKE_HOST_SUSPEND note) after I-018 rebase. At hand-back: request a reviewer for B+C,
-   its test:chrome, then the lead's canary.
-5. wave1-dry: bench pilot GO (4f5667d; quiesce-cap hits expected until ts-bench's I-028 follow-up) + Q3-final normal hold
-   (queued 05:28). Provisional Q3: styleLayoutMs in threadTicks. Ask it to commit research/bench/q3-metric.md → land batch.
-6. hero-exit (parked): when resumed, add "calibrate bench.json `heroPointerEventsWrites` on the fixed tool (≥ 4f5667d)".
-7. Ping the lead when a goal-path normal entry waits > 10 min behind shorts. Monitors: none; foreground `tick.sh`.
+1. N13 (fix-scroll-engine): it names the forced-toggle probe before queueing; short-lane mechanism probe → fix → one A/B
+   `--on aw1-10c`. Then /10d.
+2. I-018 (ts-i017): fixing review-i018's list (CDP metrics opt-in + golden test, trace overflow detection, window
+   alignment, idle split, traced ab must not overwrite results.json, stats pairing) → re-review → one traced real-site 6x
+   run + test:chrome (ahead of later normals; ping lead when it queues) → land. Then ts-i021 rebases A/B/C on it.
+3. After N13 (or in parallel if the slot is free): GO fix-nav-morph N12 `--on aw1-10c` ("20-34 ms band only"; AV1 metric).
+4. ts-i021: A + B committed or committing; C (bench-scenario on the stubbed clock, mind FAKE_HOST_SUSPEND) after I-018.
+   At hand-back: reviewer for B+C + test:chrome + lead canary.
+5. wave1-dry: pilot (B spec, uncommitted, short lane) → report; Q3-final one normal entry → commit Q3 note → land batch.
+6. hero-exit (parked): when resumed, rebase, `--on aw1-10c`, calibrate `heroPointerEventsWrites` on ≥ 4f5667d.
+7. ts-bench (ENDED): its review-i028 follow-up commit when the lead resumes it.
+8. Ping the lead when a goal-path normal waits > 10 min behind shorts. Monitors: none; foreground `tick.sh`.
 
 ## Where the project stands
 
@@ -87,15 +92,15 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 | I-028/I-029 | RESOLVED 57b997a / 4f5667d | – | review-i028 notes → one ts-bench follow-up commit (`changed` readback compare, cssText 0, docs) |
 | I-016 | parked | lead | e4 hooks via short lane (user), f orphans P3 |
 
-## Who waits on what (05:58Z)
+## Who waits on what (06:16Z)
 
 | agent | state | waits on | next |
 |---|---|---|---|
-| fix-scroll-engine | /10c deliverables a7b95d1; E3 queued 05:51 | review-10c, then lock behind I-018 A/A | E3 probe, then part 4; /10d (p95) open item only |
-| ts-i017 | rebasing I-018 f71ee42 (lead resumed it) | rebase + reviewer | A/A on/off hold (ahead of q3) + test:chrome; lands first |
+| fix-scroll-engine | /10c landed 8f9ebe5; E3 + part 4 done | – | N13 (forced-toggle probe → A/B `--on aw1-10c`), then /10d |
+| ts-i017 | I-018 a0efac7 NEEDS-WORK | its fixes, re-review | one traced run + test:chrome; lands before ts-i021 |
 | ts-i021 | committing A + B | I-018 on main | rebase, C, hand back A+B+C → reviewer + canary |
-| wave1-dry | pilot GO + Q3-final queued | lock (short + normal) | report pilot counts + Q3 final, commit the Q3 note |
-| fix-nav-morph | READY (N12 v4 486264b + f0ba4a7) | after I-018 | GO = N12 A/B `--on all-wave1`; #6 waits finger test |
+| wave1-dry | pilot (B spec) + Q3-final requeue | lock (short + normal) | report pilot counts + Q3 final, commit the Q3 note |
+| fix-nav-morph | READY (N12 v4 486264b + f0ba4a7) | after N13 | GO = N12 A/B `--on aw1-10c`; #6 waits finger test |
 | hero-exit | parked | wave-2 order (after N12) | + bench `heroPointerEventsWrites` calibration |
 | ts-bench, N11, apple-verify, ts-prio, ts-i002 | ENDED | – | ts-bench follow-up (review-i028 notes) when the lead resumes it |
 

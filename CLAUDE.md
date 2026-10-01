@@ -174,6 +174,8 @@ npm run test:all      # both
   runs it: `node tools/lock.mjs acquire chrome-measure --owner <you> --short --max-seconds 300 --wait 1800`,
   `git commit`, `node tools/lock.mjs release chrome-measure --owner <you>` (`fixes/INCIDENTS.md`). A
   short job waits for the current holder only, not for the queued 5-min A/Bs (incident I-007).
+- Outside a lock slot run unit test files only (`node --test tests/unit/<file>`); e2e/fake-Chrome files and
+  the full suite only via the short lane (they load the host and contaminate others' holds; 2026-10-01 05:56Z).
 - Changes to measurement code (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab`; `serve.mjs` and
   `vendor-shim.js` where they change what is served) must be called out explicitly: they affect the
   comparability of A/B results measured before and after. Run `npm run test:chrome` after them.
