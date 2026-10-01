@@ -1,10 +1,27 @@
 # mgmt-ops living state (updated with every digest)
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
-or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current mgmt-ops: the
-**mgmt-ops-3** (since 05:04Z), worktree `.claude/worktrees/mgmt-ops-2`, branch `mgmt-ops/docs-2`. Last update: **08:33Z**.
+or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Last instance:
+**mgmt-ops-3** (05:04-08:55Z, handing over at ~55 % context), worktree `.claude/worktrees/mgmt-ops-2` (sparse, on the
+snapshot), branch `mgmt-ops/docs-2`. Last update: **08:55Z**. Next instance: mgmt-ops-4 (spawned by the lead).
+
+## How mgmt-ops-3 worked (keep doing this)
+
+- Wait in the foreground with `sh <scratchpad>/mgmt-ops/tick.sh 300` (returns on a lock-holder or incident change; Bash
+  timeout 500000). No background monitors. Never end a turn with background work running.
+- Messages to agents resume them if they ended; that is fine for GOs. Iphone requests: message `iphone-runner` directly
+  for scripted checks (lead OK 07:25Z); finger tests only via the lead. The lead lands, resolves, reorders, spawns.
+- Every docs commit: rebase on main, `npm run test:unit`, commit, then a "LAND BATCH" message with the sha(s).
+- Quote goal progress as frames > 50 / > 34 ms (Chrome, within ONE hold) and iPhone numbers; > 34 ms varies ±2 across
+  holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 
 ## Digest log (newest first, 5 lines each)
+
+- **08:55Z** HANDOVER. Snapshot landed (4edb872): all worktrees rebase + `baseline.mjs sparse` between steps; done:
+  fix-hero-exit (7169a6a, 9e84199), mgmt-ops-2; HOLDING until their iPhone block ends: fix-nav-morph, fix-scroll-engine
+  (iphone-runner serves from them). Base `aw1-10e` (/10e F-030 hotfix landed 60f66b6). Morph: g fixes the jitter, not the
+  lag (rendering); scripted driver + mw10e-f/g/fb/gb/ge/gc queued on the phone as #1 after the hero block (B/P/P2/P3).
+  Marquee idle check clean. Canary-fps watch still open.
 
 - **08:33Z** Landed: ts-i021 stack 43e40ce (B-E + I-031; canary PASSED, npm test 462/462; I-027, I-031 RESOLVED), I-018.
   Morph root cause (fix-nav-morph): pin target 5312 > maxY 5220 → re-pins every frame against the bounce; candidate
@@ -81,80 +98,82 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Next actions for the next mgmt-ops (in order)
 
-0. Baseline freeze (user decision 07:35Z): ts-snapshot (lead's toolsmith) commits site/ + site-pretty/; nobody runs
-   mirror/prettify. Every iPhone block starts with a passing control (fails if bottom/idle < 58 fps or baseline scroll
-   < 44 fps).
-1. MORPH on WebKit (#1, fix-nav-morph resumed 08:08Z, lean context): #6 v05 C/D finger verdict (lead) → N12 + #6 land;
-   owner's phone logger (rAF gaps, pin scrollTo, panel state, touch passive) → relay to iphone-runner for finger record
-   runs; ablations (a) pin loop, (b) panel blur, (c) pre-mount, (d) passive → fix → iPhone finger A/B.
-2. HERO-EXIT (#2, fix-hero-exit resumed 08:06Z): rebase, aw1-10c, name the y≈50 frame (probes), bench calibration, iPhone
-   window y 0-900 via me → iphone-runner, then Chrome A/B `--on aw1-10c` (> 50/> 34 in the hero window).
-3. N10 (#3, fix-scroll-engine): ablations d, c, b, a ready (d24a656) for iphone-runner after the morph/hero blocks.
-   Spare Chrome: its "other"-class V8 diagnostic hold (queued 08:09).
-4. ts-i021: B-E + I-031 rebased on I-018 → ONE test:chrome → lead canary (covers I-018 + B) → land; resolve I-027, I-031.
-   Check the hook time (npm test ~280 s now, short cap 300 s).
-5. Caffeinate: the lead started a new 2 h one at 08:19Z (to ~10:19Z) → remind at ~10:10Z.
-5b. WATCH (lead 08:31Z, don't alarm yet): canary A/A on 43e40ce showed fps 78.3, > 20 ms 57, p95 25 ms vs the 04:25Z canary
-   on 93b4af2 (fps ~92, > 20 ms ~25); goal metrics similar (> 50 4 vs 4, > 34 6-8 vs 5). n=1, iPhone finger block serving
-   on the Mac. If the next goal-hold A/A also shows ~78 fps → incident: A/A 93b4af2 vs 43e40ce in one hold (I-018/I-027
-   level shift vs environment).
-5c. Baseline snapshot (ts-snapshot A-D rebasing on 43e40ce → reviewer → lead lands + snapshot commit): after it lands every
-   worktree runs `git rebase main` then `node tools/baseline.mjs sparse` between steps (never mid-A/B). Announce ONLY when
-   the lead says so. Side effect: bench toolsSha changes, stored gain calibrations read stale.
-6. Backlog (mgmt-lead iteration 3): recheck pauses instead of contaminating, gate.since across holds, verify load phase,
-   iphone wip.mjs stub clock, kpi rule on topProcs > 50 % of a core, trace buffer 300 → 32 MB with V8 categories opt-in.
+1. iphone-runner (owns the phone; every block starts with a passing control: fails if bottom/idle < 58 fps or baseline
+   scroll < 44 fps). Its queue:
+   (a) HERO block: B aw1-10c, P hero v2, P2 se10e-aw1 (= aw1-10e), P3 aw1-10e + hero v2 + people-o
+       (`.claude/worktrees/agent-a77e2ec753b6381fb/fixes/hero-exit-scroll-timeline--p3/overlay`). Window y 0-900 + idle at
+       y=0; is the y≈50 frame gone?
+   (b) MORPH driver block (#1 priority): mw10e-f vs g (overscroll-behavior question), f vs fb, g vs gb, g vs ge, g vs gc,
+       n=3 each; `window.__fwMorphDrive({hold:2000,cycles:3})`, poll `window.__fwMD`; serve from fix-nav-morph's worktree
+       `node tools/fix.mjs serve <build> --on aw1-10e`.
+   (c) N12 block: aw1-10c vs n12v5-aw1 (matched pair, fix-nav-morph's worktree); hero window esp. y≈700 (F-029 nav ee()
+       forced style), middle, end, parity spots. If y≈700 goes → N12 enters the base (needs a review then).
+   (d) N10 ablations (fix-scroll-engine rebuilding them on aw1-10e).
+   After each block ends: tell the owners whose worktree it served from that they may now rebase + sparse.
+2. Results routing: hero → fix-hero-exit (then ONE Chrome A/B `--on aw1-10e` ≤ 10 min, > 50/> 34 in the hero window);
+   morph → fix-nav-morph (if b names the blur → N2 composited morph: fixed radii faded by opacity; the driver hook must be
+   stripped before landing; the pin-fix land patch is variants/g-pinclamp-osb.diff). N12 + #6 v05 land after the user's
+   finger verdict (C/D postponed until a morph render fix exists).
+3. WATCH (lead 08:31Z): canary A/A on 43e40ce fps 78.3 / > 20 ms 57 / p95 25 vs ~92 / ~25 at 04:25Z on 93b4af2. If the next
+   goal-hold A/A also shows ~78 fps → incident + A/A 93b4af2 vs 43e40ce in one hold.
+4. Caffeinate: the lead's current one runs to ~10:19Z → remind the lead at ~10:10Z (restart every 2 h until the user sets
+   pmset).
+5. arch-finger researches OS-level touch simulation on the iPhone (WDA/XCUITest, safaridriver, simulator): its plan comes
+   via the lead; when it exists, morph/touch checks become scriptable.
+6. Backlog for mgmt-lead iteration 3 (none urgent): recheck pauses instead of contaminating; gate.since survives intervening
+   holds; WindowServer counted as measured system in the gate (I-031 answer: steady other CPU 17-20 % = WindowServer +
+   agent CLIs + iTerm; daemons tip it over 25 %); fewer concurrent agents during goal holds; verify has no measured load
+   phase; iphone wip.mjs stub clock; kpi rule on topProcs; trace buffer 300 → 32 MB + opt-in V8 categories; review-10e
+   note (a) JS comment 1,500 → 1,915/s.
 
-## Where the project stands
+## Where the project stands (08:55Z)
 
-- **Wave 1 complete on main** (F-013); labels "mechanism + review, gain pending combined". #6 morph-scrolljack-passive
-  v05 (63d6980e, nav-morph branch) lands only after the user's iPhone finger test.
-- **wave1-partial** is the only clean combined number: fps 74.9 → 95.4, > 20 ms 65 → 24 (hints only: goal progress is
-  quoted as frames > 50 ms and > 34 ms + iPhone, LEAD.md iteration 2).
-- **all-wave1 goal run** (one announced ~15 min hold, wave1-dry) blocked on I-023 + I-024A + the canary.
-- **N3 rejected** (a49e591, F-015: orbit `display:none`, all CSS animations ~1 ms/frame at 6x). Docs follow-up
-  6a0db1a (mgmt-ops). Its iPhone questions = DIRECTION iPhone queue item 7 (look-only). E3 stays with scroll-engine.
-- Landed since 01:15Z: a49e591 N3, d17c490 handover addendum, b71760f mgmt-lead iteration 2, 36fd4b5 I-022 harness,
-  554201a LEAD.md team ~8 + iteration-2 rules.
+- main = 4edb872 (snapshot) on the wave-2 base `aw1-10e` = all-wave1 + scroll-engine /10e. Chrome: page-owned > 50 ms
+  frames 0; 1 vendor frame per run (gtag `onscrollend`, removable only by the site's GA "Scrolls" setting; user-facing,
+  lead). I-018 attribution: remaining > 34 ms classes = gtag, nav `ee()` forced style (N12 v5 fixes), a 429-element
+  restyle at +1.1 s, paint.
+- iPhone (scripted, aw1-10c): > 50 ms 5→3, > 34 ms 16→9; user feels NO difference. Felt lag: morph pin (10-18 fps, render
+  cost, three per-frame blur radii suspected) and the hero window (y≈50 frame, F-032 people-o reflow).
+- Closed today: N11 (mechanism only, vendor), N13 (rare, not reproducible), I-018, I-026-I-031, I-028/029.
 
-## Incidents (07:31Z; resolved ones dropped, see `incident.mjs list`)
+## Incidents (08:55Z; see `incident.mjs list`)
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-018 | fixing | ts-i017 | review-i018 NEEDS-WORK fixed (CDP metrics opt-in); re-review → traced run → lands before ts-i021 B-E |
-| I-026 | resolve on lead npm test of 05967e9 | – | caffeinate while QUEUED landed |
-| I-027 | B/C/D(/E) after I-018 | ts-i021 | real host unchanged (review-i027); canary before land |
-| I-030 | landed 8bab8b7, resolve on lead npm test | – | shorts never pass a moved normal; 120 s pass window |
-| I-031 | open, env | ts-i021 after E | other CPU 20-26 % mid-hold; not iPhone/builds; log top-5 non-Chrome processes per run (log only) |
 | I-016 | parked | lead | e4 hooks via short lane (user), f orphans P3 |
+| – | all others resolved today (I-018, I-026 … I-031) | – | follow-ups are in the backlog line above |
 
-## Who waits on what (08:11Z)
+## Who waits on what (08:55Z)
 
 | agent | state | waits on | next |
 |---|---|---|---|
-| fix-nav-morph | RESUMED: morph on WebKit (#1) | C/D finger verdict; its logger | logger + ablations via me → iphone-runner |
-| fix-hero-exit | RESUMED (#2) | – | rebase, aw1-10c, name y≈50 frame, iPhone via me |
-| fix-scroll-engine | N10 (#3) ablations ready; "other" diagnostic queued | lock; phone after morph/hero | report "other" class |
-| iphone-runner | owns the phone; finger runs with the user (lead) | – | C/D pair, then morph logger runs, hero, N10 |
-| ts-i021 | stack landed 43e40ce | – | done unless the lead resumes it |
-| ts-snapshot | baseline freeze (lead's) | user approval of enforcement edits | – |
-| ts-i017, wave1-dry, ts-bench, N11, apple-verify | ENDED | – | do not resume without the lead |
+| iphone-runner | owns the phone; hero block (B/P/P2/P3) | – | morph driver block → N12 → N10 |
+| fix-nav-morph | morph owner (#1); driver + mw10e-* builds 4732f6c; holds rebase/sparse | morph driver block results | fb/gb decide → N2 composited morph |
+| fix-hero-exit | hero window owner (#2); rebased + sparse (7169a6a, 9e84199) | hero block results | one Chrome A/B `--on aw1-10e` |
+| fix-scroll-engine | N10 (#3); rebuilding ablations on aw1-10e; holds rebase/sparse | phone (last in queue) | ablation verdict → fix; /10d after |
+| ts-snapshot | delivered; follow-ups from review-snapshot (lead) | – | – |
+| arch-finger | research (finger simulation) | – | plan to the lead |
+| ts-i017, ts-i021, ts-bench, wave1-dry, N11, apple-verify | ENDED | – | do not resume without the lead |
 
-## Wave-2 order (lead decisions, DIRECTION slot 3)
+## Priority order (user feedback 08:04Z; DIRECTION "Priority from user feedback")
 
-N11 and scroll-engine /10 first (one ~7 min hold each) → N12 (nav-morph) → hero-exit → countdown 05/08 → E4. Every A/B
-`--on all-wave1`, normal holds ≤ 10 min; the goal hold (A/A + all-wave1) is the one ~15 min exception.
+(1) morph on WebKit (fix-nav-morph) → (2) hero window y 0-900 (fix-hero-exit) → (3) N10 y≈1970 (fix-scroll-engine) →
+/10d → countdown 05/08. Chrome-only 20-50 ms work on spare capacity. New variants `--on aw1-10e`; normal holds ≤ 10 min.
 
 ## Queue rules and monitors
 
 - Shorts: ONE 300 s lease for commit + hook, gate open; `--timeout 14400` on every `lock.mjs run`/`acquire` wait.
+- I-030 landed: shorts never pass a lead-moved normal and pass any gated normal only in its first 120 s. Still ping the
+  lead when a goal-path normal waits > 10 min. Quick shorts ≤ ~90 s while a goal normal is #1 are accepted.
+- Outside a lock slot: unit test files only (CLAUDE.md); no builds (combine, npx) while a normal holds chrome-measure.
 - HOLDER-IDLE > 5 min with 3+ waiting → lead IMMEDIATELY. Friction scan (`node research/management/tools/kpi.mjs
-  --friction`) at every check-in; ALARM in 2 consecutive check-ins → incident candidate.
-- Monitors (scratchpad `mgmt-ops/`): `idlewatch.sh` (Monitor b4hrnr0gk), `watch.sh` (Monitor bd08tclc1: holder,
-  incidents, findings). Scripts point at this worktree. On restart: stop them (TaskStop) and re-arm.
-- Measurement-code canary (LEAD.md iteration 2): any verify/cdp/fix-ab change lands only after `ab --aa --runs 1` on
-  main + passing test:chrome.
+  --friction`) at check-ins; ALARM in 2 consecutive check-ins → incident candidate.
+- No Monitors armed. Use the foreground `tick.sh` (scratchpad `mgmt-ops/`); it points at the mgmt-ops-2 worktree.
+- Measurement-code canary: any verify/cdp/fix-ab change lands only after `ab --aa --runs 1` on main + test:chrome.
+- Reviewer checklist (LEAD.md §4, F-030): topics adding observers/listeners/attribute writes get an idle-counts probe at
+  y=0 before landing.
 
 ## Open user-facing questions (lead holds them)
 
-Spotlight (pause indexing or wait); FW_TOOLING pre-commit block; I-026 sleep setting; iPhone back (#6 finger test,
-DIRECTION iPhone queue 1-7); closing the stray MCP Chrome after apple-verify part 2.
+Chrome vendor residual (gtag `onscrollend`, site GA "Scrolls" setting); pmset sleep setting (caffeinate stopgap); finger
+tests (C/D #6 postponed until a morph render fix exists); arch-finger's touch-simulation plan.

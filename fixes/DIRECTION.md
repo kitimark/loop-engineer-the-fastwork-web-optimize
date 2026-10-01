@@ -210,7 +210,12 @@ The user froze today's mirror build as the baseline: `site/` and `site-pretty/` 
 changes for those two paths only; rule 2, never push / no remote, stays). Toolsmith `ts-snapshot` builds it: `.gitignore`
 and pre-commit changes (the user approves the enforcement edits), a committed pin `baseline.json`, start-up checks that
 report BASELINE-MODIFIED, worktree access (sparse checkout or copies), a guard on `mirror.mjs`/`prettify.mjs`, and the
-CLAUDE.md wording. **Until it lands nobody runs `mirror.mjs` or `prettify.mjs`.** All results so far are on this build; the
+CLAUDE.md wording. **LANDED 2026-10-01 ~08:48Z: main 4edb872 "baseline: snapshot b1789284481295-4ad4a84a"** (tooling
+01db299..a27e872, review-snapshot ACCEPT-WITH-NOTES). Every worktree, between steps (never mid-A/B or mid-iPhone-block):
+`git rebase main`, then `node tools/baseline.mjs sparse` (drops the 61 MB copy; `fix.mjs doctor` shows the snapshot id).
+Results before and after are comparable (bytes identical, metadata only); a modified baseline makes the tools refuse with
+BASELINE-MODIFIED. Side effect: bench toolsSha changed, so stored gain calibrations read stale. **Nobody runs `mirror.mjs`
+or `prettify.mjs`.** All results so far are on this build; the
 pin makes later rebuilds comparable or explicitly not. arch-snapshot (research) wrote the versioned-baseline design.
 
 ## iPhone status (07:35Z)
