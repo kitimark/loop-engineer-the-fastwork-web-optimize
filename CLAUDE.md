@@ -374,6 +374,25 @@ continue; re-measure if it says "Re-measure".
 `wait --as <you> --topic <t> --timeout 3600` in the background. Store: `.git/fastwork-mirror/findings/`, seen by every worktree at once;
 only the lead folds findings into `fixes/FINDINGS.md` (`digest`) and `resolve`s them.
 
+## Platform claims: confirm against a reference
+
+A limitation, a browser or engine behaviour, or an unknown ("layerPainted never fires on Chrome 154", "WebKit
+lays out the whole view when …", "Safari runs `linear()` easings on the main thread") is **OBSERVED** while it
+rests only on our own probes. Before it becomes a fact in a finding, a protocol rule, a card, a fix decision or
+a report to the user, it is checked against a reference: the spec, official docs (CDP, MDN, WebKit/Chromium
+docs and blogs), the engine source and its history (source.chromium.org, github.com/WebKit/WebKit), or the bug
+tracker. Cite the link plus the line, commit or milestone.
+- **Status words:** OBSERVED (our data only, in our setup), CONFIRMED (a reference agrees; cited), REFUTED
+  (a reference or a decisive check disagrees), UNRESOLVED (references are silent; name the decisive local check).
+  Write the status next to the claim; an OBSERVED claim says "in our setup, cause unknown".
+- **Plan, then execute:** the claimant (or a verifier) first writes the research plan (docs, source, bugs, and
+  how our own probe could explain the result), sends it to the claim's owner, then does it.
+- Any Chrome check the research needs goes through the owner's lock hold, like any other measurement.
+- **The lead** never passes an OBSERVED claim to the user as fact, and asks for verification before
+  signing a card that depends on one.
+- Web research sends no personal data (Hard rule 12). Roles and the claim audit: `fixes/AGENT_ROLES.md`,
+  `research/architecture/claims-audit.md`.
+
 ## Serena (code navigation, read-only)
 
 Serena is configured in `.serena/project.yml` for **navigation only**: `find_symbol`,
