@@ -18,7 +18,8 @@
                   start (threaded scroll-driven, shipped in 26.4). Must move, or the trial is void.
     W             witness: rAF-driven transform. Must freeze during the block (proves the block is real).
   Block indicator: the top bar turns red in the frame before the block and back to grey after it.
-  ?auto=N runs N trials, one every 4 s, starting 3 s after load (default 4); ?block=ms changes the busy loop (default 1000).
+  ?auto=N runs N trials, ~3.6 s apart, starting ?start=ms after load (default 3000; auto default 4); ?block=ms changes
+  the busy loop (default 1000).
   Results (rAF frame log per trial, block start/end) are kept on window.__ca for the driver to read afterwards.
 -->
 <style>
@@ -121,7 +122,7 @@
     }));
   });
   R.run = async (n = TRIALS) => { for (let k = 1; k <= n; k++) { await trial(k); await new Promise((r) => setTimeout(r, 1000)); } R.done = true; bar.textContent = 'ca-check: all trials done'; };
-  if (TRIALS > 0) setTimeout(() => R.run(), 3000);
+  if (TRIALS > 0) setTimeout(() => R.run(), Number(q.get('start') ?? 3000));
 })();
 </script>
 </body>
