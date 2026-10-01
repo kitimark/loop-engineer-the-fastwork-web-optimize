@@ -39,6 +39,7 @@ test('bench mech with real Chrome: counts discriminate, parity holds, a wrong ex
       layouts: { kind: 'perfMetrics', metric: 'LayoutCount' },
       perFrame: { kind: 'layoutsPerFrame', metric: 'RecalcStyleCount' },
       scrollListeners: { kind: 'listeners', target: 'window', type: 'scroll', passive: true },
+      layerCount: { kind: 'layers', metric: 'count' }, // I-032: CDP LayerTree
     },
     mechanism: [
       { id: 'nav-cached', viewport: 'mobile', segment: 'page', probe: 'navQs', baseline: '>= 10', patched: '== 0', why: 'looked up once' },
@@ -48,6 +49,7 @@ test('bench mech with real Chrome: counts discriminate, parity holds, a wrong ex
       { id: 'layouts-counted', viewport: 'mobile', spot: 'idle', probe: 'layouts', baseline: '>= 0', patched: '>= 0', why: 'getMetrics deltas' },
       { id: 'per-frame', viewport: 'mobile', spot: 'idle', probe: 'perFrame', baseline: '>= 0', patched: '>= 0', why: 'ratio per frame' },
       { id: 'passive-scroll', viewport: 'mobile', segment: 'page', probe: 'scrollListeners', baseline: '>= 1', patched: '>= 1', why: 'DOMDebugger listeners' },
+      { id: 'layers-listed', viewport: 'mobile', segment: 'page', probe: 'layerCount', baseline: '>= 1', patched: '>= 1', why: 'LayerTree.layerTreeDidChange lists the layers (I-032)' },
     ],
     parity: [{ viewport: 'mobile', segment: 'page', attrs: [['body', 'data-y']] }],
   };

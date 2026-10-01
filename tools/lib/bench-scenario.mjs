@@ -1,6 +1,6 @@
 // Node side of the benchmark scenarios (tools/bench.mjs), driving one page over CDP:
 //   Tier A: stepped scroll with quiescence, spots, parity snapshots, in-page counters (bench-probes.mjs)
-//           plus the CDP-side probes (perfMetrics, layoutsPerFrame, listeners). Unthrottled, counts only.
+//           plus the CDP-side probes (perfMetrics, layoutsPerFrame, listeners, layers). Unthrottled, counts only.
 //   Tier B: the same segments/spots at a CPU throttle, without any probe installed, measuring
 //           Performance.getMetrics deltas and the rAF frame logger of verify.mjs (perf-page.mjs).
 import { gotoAndSettle, sleep, enablePerformance, getMetrics, eventListeners } from './cdp.mjs';
@@ -22,7 +22,7 @@ export const VIEWPORTS = {
   desktop: { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false },
   mobile: { width: 430, height: 932, deviceScaleFactor: 3, mobile: true },
 };
-export const CDP_KINDS = ['perfMetrics', 'layoutsPerFrame', 'listeners'];
+export const CDP_KINDS = ['perfMetrics', 'layoutsPerFrame', 'listeners', 'layers'];
 // Page settle times. FW_BENCH_TEST_FAST=1 shortens them for the fake-Chrome tests only; it is recorded in
 // every result (bench.mjs: timing / setting "test-fast"), so such a result never passes for a measured one.
 export const TEST_FAST = process.env.FW_BENCH_TEST_FAST === '1';
@@ -69,12 +69,40 @@ const listenerCount = (ls, p) => ls.filter((l) => l.type === p.type && (p.passiv
 export async function tierASession(cdp, url, plan, { settleMs = 10000, log = () => {} } = {}) {
   const pageProbes = {}, cdpProbes = {};
   for (const [id, p] of Object.entries(plan.probes)) (CDP_KINDS.includes(p.kind) ? cdpProbes : pageProbes)[id] = p;
-  const perf = Object.values(cdpProbes).some((p) => p.kind !== 'listeners');
+  const perf = Object.values(cdpProbes).some((p) => p.kind === 'perfMetrics' || p.kind === 'layoutsPerFrame');
+  const layerProbes = Object.entries(cdpProbes).filter(([, p]) => p.kind === 'layers');
   const T = await scenarioClock();
   const page = await openPage(cdp, { viewport: plan.viewport, source: installSource({ probes: pageProbes }), perf });
+  // layers probes (I-032): LayerTree enabled only when one is used; the latest layer list and the paint counts,
+  // and per window (between RESET and READ) the most layers listed and the layers new since the window began.
+  // paints: the rises of the per-layer paintCount between consecutive lists (layers already listed; a new layer's
+  // first count is not a paint here, it shows in `added`), as verify --paint-rects; LayerTree.layerPainted events
+  // only when no list carries paintCount (Chrome 148+ sends no layerPainted, Chromium 1bf9d9eb378c, F-064).
+  const lt = { ids: null, rises: 0, painted: 0, pc: new Map(), withPc: false, win: null };
+  if (layerProbes.length) page.on((m) => {
+    if (m.method === 'LayerTree.layerPainted') lt.painted++;
+    if (m.method === 'LayerTree.layerTreeDidChange' && Array.isArray(m.params?.layers)) {
+      lt.ids = m.params.layers.map((l) => String(l.layerId));
+      const pc = new Map();
+      for (const l of m.params.layers) if (typeof l.paintCount === 'number') {
+        lt.withPc = true; const id = String(l.layerId), was = lt.pc.get(id);
+        if (was !== undefined) lt.rises += l.paintCount >= was ? l.paintCount - was : l.paintCount; // a reset count: all new
+        pc.set(id, l.paintCount);
+      }
+      lt.pc = pc;
+      if (lt.win) { lt.win.max = Math.max(lt.win.max, lt.ids.length); for (const id of lt.ids) if (!lt.win.ids0.has(id)) lt.win.added.add(id); }
+    }
+  });
+  const layersBegin = () => { if (layerProbes.length) lt.win = { ids0: new Set(lt.ids || []), added: new Set(), max: lt.ids ? lt.ids.length : 0, r0: lt.rises, e0: lt.painted, known: !!lt.ids }; };
+  const layersEnd = () => {
+    const w = lt.win; lt.win = null;
+    const paints = w ? (lt.withPc ? lt.rises - w.r0 : lt.painted - w.e0) : NaN;
+    return w && (w.known || lt.ids) ? { count: lt.ids ? lt.ids.length : NaN, max: w.max, added: w.added.size, paints } : { count: NaN, max: NaN, added: NaN, paints };
+  };
   try {
     await gotoAndSettle(page, url, { quietMs: TIMING.quietA, clock: T });
     await page.eval(SETTLE(settleMs), { timeout: settleMs + 5000 });
+    if (layerProbes.length) await page.send('LayerTree.enable');
     await page.eval(SCROLL_TO(0));
     await page.eval(QUIESCE(QUIET_FRAMES, QUIET_CAP));
     const geometry = await page.eval(GEOMETRY({ segments: plan.segments, spots: plan.spots }));
@@ -104,6 +132,7 @@ export async function tierASession(cdp, url, plan, { settleMs = 10000, log = () 
         await page.eval(SCROLL_TO(g.start));
         await page.eval(QUIESCE(QUIET_FRAMES, QUIET_CAP), { timeout: 30000 });
         if (perf) m0 = await getMetrics(page);
+        layersBegin();
         await page.eval(RESET(w.label));
         await snap(g.start);
         for (let y = g.start + def.step; ; y += def.step) {
@@ -121,15 +150,18 @@ export async function tierASession(cdp, url, plan, { settleMs = 10000, log = () 
         await settle();
         await T.sleep((def.wait ?? 1) * 1000);
         if (perf) m0 = await getMetrics(page);
+        layersBegin();
         await page.eval(RESET(w.label));
         await T.sleep(def.window * 1000);
         await snap(g.y);
       }
       const r = await page.eval(READ(w.label));
       const m1 = perf ? await getMetrics(page) : null;
+      const lw = layerProbes.length ? layersEnd() : null;
       const counts = { ...r.counts };
       for (const [id, p] of Object.entries(cdpProbes)) {
         if (p.kind === 'listeners') counts[id] = lmax[id] ?? 0;
+        else if (p.kind === 'layers') counts[id] = lw[p.metric];
         else {
           const d = (m1[p.metric] ?? NaN) - (m0[p.metric] ?? NaN);
           counts[id] = p.kind === 'perfMetrics' ? d : (r.frames > 0 ? d / r.frames : NaN);

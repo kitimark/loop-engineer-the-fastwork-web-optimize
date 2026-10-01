@@ -40,6 +40,10 @@ export const PROBE_KINDS = {
   listeners: [['target', 'enum:window|document', true], ['type', 'str', true], ['passive', 'bool', false]],
   perfMetrics: [['metric', `enum:${PERF_METRICS.join('|')}`, true]],
   layoutsPerFrame: [['metric', 'enum:LayoutCount|RecalcStyleCount', true]],
+  // CDP LayerTree (incident I-032), per window: count = layers at the end, max = most layers listed, added = layers
+  // listed that were not there at the window's start, paints = paintCount rises of listed layers (layerPainted
+  // events only where no list has paintCount: Chrome 148+ sends none)
+  layers: [['metric', 'enum:count|max|added|paints', true]],
 };
 /** Probe kinds whose counters are exact in-page counts (quiescence watches the write kinds). */
 export const WRITE_KINDS = ['setProperty', 'inlineProp', 'styleWrite'];

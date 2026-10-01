@@ -136,6 +136,18 @@ test('lint: schema errors (unknown keys and kinds, references, expectations, sta
   assert.ok(Object.keys(PROBE_KINDS).includes('readAfterWrite'));
 });
 
+test('I-032 layers probe kind: metric count | max | added | paints, required', () => {
+  assert.deepEqual(PROBE_KINDS.layers, [['metric', 'enum:count|max|added|paints', true]]);
+  const ok = example();
+  ok.probes.layerCount = { kind: 'layers', metric: 'added' };
+  assert.deepEqual(lint(ok, { hasFile: () => true }).errors, []);
+  for (const [p, re] of [[{ kind: 'layers' }, /metric: required for kind layers/], [{ kind: 'layers', metric: 'area' }, /bad value "area"/]]) {
+    const s = example();
+    s.probes.l = p;
+    assert.ok(lint(s, { hasFile: () => true }).errors.some((e) => re.test(e)), p.metric ?? 'no metric');
+  }
+});
+
 test('lint: experiments[] need an existing variant diff (or "final") and an expected outcome that can detect a break', () => {
   const ok = { hasFile: (f) => ['variants/02.diff', 'variants/03.diff'].includes(f) };
   const cases = [
