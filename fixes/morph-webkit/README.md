@@ -190,6 +190,55 @@ Chrome check (`src-check.mjs`, short lane, mobile 6x, mechanism/state only; `pro
 - 0 src writes in idle at y=0.
 - The morph screenshot differs by 0.05 %.
 
+**iPhone src vs control.** iphone-runner ran this 10:24-10:31Z, order C S S C C S, control ctl-B17 passed. **Verdict: not a win.**
+
+| build | long frame, ms@y | median |
+|---|---|---|
+| control | 86@1966, 92@1964, 88@1942 | 88 |
+| src | 97@1960, 84@1950, 91@1963 | 91 |
+
+- The staging itself works: 21/21 images had their src at scroll start, and there were 0 src writes during the scroll.
+- **Correction (F-044):** the R3 logger caps each frame's event list at 12. On the control, the 12 src writes filled that list and
+  hid the frame's real trigger.
+- On src, the frame carries exactly one event, 3/3: `inert` is removed from `div.start-selling-morph-panel`. Lifting inert at the
+  IO edge restyles the whole panel subtree, and that is the ~90 ms frame. The src burst was only riding in the same frame.
+- The `inert` was not in the original. #13's pre-mount added it to keep the early-mounted panel out of reach.
+
+### Candidate `mw10e-noinert` (landable, JS 972eeb01c7da…, CSS = base; `variants-10e/noinert.diff`)
+
+Built on mw10e-src. The pre-mounted panel is never made inert, so nothing flips at the IO edge. Before the edge, inert's three
+jobs are covered by what is already there plus one guard:
+
+| inert's job before the edge | covered by |
+|---|---|
+| hit test | the panel CSS has `pointer-events: none` until `.is-expanded` |
+| accessibility tree | `aria-hidden` while --morph < 0.35 |
+| tab order | the CTA button already has tabindex -1 until --morph 0.55; the RSVP and privacy links now get tabindex -1 until `b`/`E` |
+
+From the edge on, everything is as in the original: the panel is mounted, not inert, and its links are tabbable. The edge frame now
+changes only those 2 tabindex attributes. No CSS rule selects `[tabindex]` or `[inert]`.
+
+**Chrome check** (`noinert-check.mjs`, short lane, mobile 6x; `probe-results/noinert-check.json`), base aw1-10e vs src vs noinert:
+
+| check | base | src | noinert |
+|---|---|---|---|
+| y = 0 after idle: inert / aria-hidden | true / true | true / true | false / true |
+| y = 0 after idle: tabbable panel focusables | 0 | 0 | 0 |
+| y = 0 after idle: panel hits on a nav grid | 0 | 0 | 0 |
+| y = 2600 (after the edge): tabbable panel focusables | rsvp + privacy | rsvp + privacy | rsvp + privacy |
+| y = 2600: panel hits | 0 | 0 | 0 |
+| at the morph (m = 1): tabbable / hits | cta + rsvp + privacy / same hits | same | same |
+| panel attribute writes in the scroll 0 → 2600 | src×21 + inert@1632 | inert@1608 | tabindex×2@1632 |
+| idle long tasks at y=0 | 5 load-phase | 5 | 4, no new one |
+| morph screenshot vs base | — | 0.09 % | 0.10 % |
+| exceptions | 0 | 0 | 0 |
+
+- **Remaining difference from the original before the edge:** the panel's invisible text (countdown, copyright) is findable with
+  find-in-page from load instead of from y≈1830. The original allows this after the edge.
+- **Phone question:** does the y≈1960 frame drop below 50 ms?
+- **Risk:** the mount task itself might now cost more on WebKit, because the subtree is styled without inert. It runs in idle
+  time and is scroll-guarded.
+
 de-middle's other R1 items (`inert` until the morph, listeners once passive) are not needed for this frame.
 
 ### R8 and R5a on gh (de-morph): `mw10e-ghr8`, `mw10e-ghr85a`

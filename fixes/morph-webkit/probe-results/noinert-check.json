@@ -1,0 +1,302 @@
+{
+ "res": {
+  "base": {
+   "idle": {
+    "lt": [
+     [
+      3346,
+      147
+     ],
+     [
+      3695,
+      59
+     ],
+     [
+      3841,
+      313
+     ],
+     [
+      5331,
+      222
+     ],
+     [
+      6313,
+      123
+     ]
+    ],
+    "mut": 0,
+    "sourced": 0
+   },
+   "a11yTop": {
+    "panel": true,
+    "inert": true,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "scroll": {
+    "mutations": {
+     "src@1632": 21,
+     "inert@1632": 1
+    },
+    "lt": []
+   },
+   "a11yEdge": {
+    "panel": true,
+    "inert": false,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [
+     "A.start-selling-morph-cta-rsvp",
+     "A."
+    ],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "atMorph": {
+    "morph": "1",
+    "a11y": {
+     "panel": true,
+     "inert": false,
+     "ariaHidden": "false",
+     "focusables": 3,
+     "tabbable": [
+      "BUTTON.start-selling-morph-cta",
+      "A.start-selling-morph-cta-rsvp",
+      "A."
+     ],
+     "panelHits": [
+      "DIV.start-selling-morph-veil",
+      "DIV.start-selling-morph-center",
+      "FOOTER.start-selling-morph-footer",
+      "P.start-selling-morph-title",
+      "DIV.unit",
+      "DIV.start-selling-morph-footer-end",
+      "SPAN.face",
+      "SPAN.label",
+      "P.",
+      "DIV.countdown",
+      "DIV.start-selling-morph-cta-stack",
+      "A.start-selling-morph-cta-rsvp",
+      "BUTTON.start-selling-morph-cta",
+      "svg.solar",
+      "path.",
+      "A.",
+      "SPAN.start-selling-morph-grad"
+     ],
+     "navRect": [
+      12,
+      908
+     ]
+    }
+   },
+   "errors": []
+  },
+  "src": {
+   "idle": {
+    "lt": [
+     [
+      3145,
+      124
+     ],
+     [
+      3284,
+      53
+     ],
+     [
+      3616,
+      267
+     ],
+     [
+      4840,
+      219
+     ],
+     [
+      5807,
+      113
+     ]
+    ],
+    "mut": 21,
+    "sourced": 21
+   },
+   "a11yTop": {
+    "panel": true,
+    "inert": true,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "scroll": {
+    "mutations": {
+     "inert@1608": 1
+    },
+    "lt": []
+   },
+   "a11yEdge": {
+    "panel": true,
+    "inert": false,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [
+     "A.start-selling-morph-cta-rsvp",
+     "A."
+    ],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "atMorph": {
+    "morph": "1",
+    "a11y": {
+     "panel": true,
+     "inert": false,
+     "ariaHidden": "false",
+     "focusables": 3,
+     "tabbable": [
+      "BUTTON.start-selling-morph-cta",
+      "A.start-selling-morph-cta-rsvp",
+      "A."
+     ],
+     "panelHits": [
+      "DIV.start-selling-morph-veil",
+      "DIV.start-selling-morph-center",
+      "FOOTER.start-selling-morph-footer",
+      "P.start-selling-morph-title",
+      "DIV.unit",
+      "DIV.start-selling-morph-footer-end",
+      "SPAN.face",
+      "SPAN.label",
+      "P.",
+      "DIV.countdown",
+      "DIV.start-selling-morph-cta-stack",
+      "A.start-selling-morph-cta-rsvp",
+      "BUTTON.start-selling-morph-cta",
+      "svg.solar",
+      "path.",
+      "A.",
+      "SPAN.start-selling-morph-grad"
+     ],
+     "navRect": [
+      12,
+      908
+     ]
+    }
+   },
+   "errors": []
+  },
+  "noinert": {
+   "idle": {
+    "lt": [
+     [
+      3164,
+      126
+     ],
+     [
+      3585,
+      274
+     ],
+     [
+      4874,
+      228
+     ],
+     [
+      5825,
+      119
+     ]
+    ],
+    "mut": 21,
+    "sourced": 21
+   },
+   "a11yTop": {
+    "panel": true,
+    "inert": false,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "scroll": {
+    "mutations": {
+     "tabindex@1632": 2
+    },
+    "lt": []
+   },
+   "a11yEdge": {
+    "panel": true,
+    "inert": false,
+    "ariaHidden": "true",
+    "focusables": 3,
+    "tabbable": [
+     "A.start-selling-morph-cta-rsvp",
+     "A."
+    ],
+    "panelHits": [],
+    "navRect": [
+     16,
+     52
+    ]
+   },
+   "atMorph": {
+    "morph": "1",
+    "a11y": {
+     "panel": true,
+     "inert": false,
+     "ariaHidden": "false",
+     "focusables": 3,
+     "tabbable": [
+      "BUTTON.start-selling-morph-cta",
+      "A.start-selling-morph-cta-rsvp",
+      "A."
+     ],
+     "panelHits": [
+      "DIV.start-selling-morph-veil",
+      "DIV.start-selling-morph-center",
+      "FOOTER.start-selling-morph-footer",
+      "P.start-selling-morph-title",
+      "DIV.unit",
+      "DIV.start-selling-morph-footer-end",
+      "SPAN.face",
+      "SPAN.label",
+      "P.",
+      "DIV.countdown",
+      "DIV.start-selling-morph-cta-stack",
+      "A.start-selling-morph-cta-rsvp",
+      "BUTTON.start-selling-morph-cta",
+      "svg.solar",
+      "path.",
+      "A.",
+      "SPAN.start-selling-morph-grad"
+     ],
+     "navRect": [
+      12,
+      908
+     ]
+    }
+   },
+   "errors": []
+  }
+ },
+ "diff": {
+  "src": 0.09,
+  "noinert": 0.1
+ }
+}
