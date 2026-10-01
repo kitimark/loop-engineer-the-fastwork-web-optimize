@@ -39,11 +39,18 @@ export function chromePath() {
 // screen defaults to 800x600 at devicePixelRatio 1 (CONFIRMED, components/headless/screen_info/headless_screen_info.h),
 // which moved layout by 1 px and screenshots by ~3 % against headed (OBSERVED). Functional checks therefore pin the
 // screen to this Mac's (1512x982 at DSF 2, lead decision Q3) and override the UA per page. Never used by timing tools.
+// HEADLESS_SCREEN is in CSS px (DIP), what the page's screen.width/height say in headed Chrome here.
 export const HEADLESS_SCREEN = Object.freeze({ width: 1512, height: 982, dpr: 2 });
-/** --screen-info for a headless launch (headless_screen_info.h format), e.g. {0,0 1512x982 devicePixelRatio=2}. */
+/**
+ * --screen-info for a headless launch (headless_screen_info.h format). Its WxH is in physical PIXELS (I-046, CONFIRMED:
+ * ui/display/headless/headless_screen_util.cc SetDisplayGeometry(display, bounds_in_pixels, …, device_pixel_ratio) sets
+ * the DIP bounds to ToCeiledSize(pixels / DSF); before this fix 1512x982 at DPR 2 gave the page a 756x491 screen). So the
+ * CSS size is multiplied by the DPR, rounded down (Chrome rounds pixels / DPR up): {0,0 3024x1964 devicePixelRatio=2}.
+ */
 export function screenInfoArg({ width = HEADLESS_SCREEN.width, height = HEADLESS_SCREEN.height, dpr = HEADLESS_SCREEN.dpr } = {}) {
   if (![width, height].every((x) => Number.isInteger(x) && x > 0) || !(dpr > 0 && dpr <= 4)) throw new Error(`bad screen ${width}x${height} dpr ${dpr}`);
-  return `--screen-info={0,0 ${width}x${height} devicePixelRatio=${dpr}}`;
+  const px = (css) => Math.floor(css * dpr + 1e-9);
+  return `--screen-info={0,0 ${px(width)}x${px(height)} devicePixelRatio=${dpr}}`;
 }
 /** Does this User-Agent come from a headless Chrome? */
 export const isHeadlessUA = (ua) => /\bHeadlessChrome\//.test(String(ua || ''));

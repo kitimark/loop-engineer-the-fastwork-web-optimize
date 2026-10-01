@@ -162,7 +162,7 @@ test('launchChrome: headless + args add --headless=new and the extra switches be
   const ch = await cdp.launchChrome({ port: 0, profileDir: join(d, 'profile'), headless: true, args: [si] });
   try {
     const argv = startedArgv(process.env.FAKE_CHROME_LOG);
-    assert.deepEqual(argv.slice(-3), ['--headless=new', '--screen-info={0,0 1512x982 devicePixelRatio=2}', 'about:blank']);
+    assert.deepEqual(argv.slice(-3), ['--headless=new', '--screen-info={0,0 3024x1964 devicePixelRatio=2}', 'about:blank']);
     assert.equal(ch.headless, true);
     assert.match(ch.userAgent, /\bHeadlessChrome\/1\.0\.0\.0\b/);
     assert.equal(cdp.headedUA(ch.userAgent), ch.userAgent.replace('HeadlessChrome/', 'Chrome/'));
@@ -176,8 +176,12 @@ test('launchChrome: headless + args add --headless=new and the extra switches be
 });
 
 test('headless helpers: screenInfoArg, isHeadlessUA, headedUA, tempProfileDir', () => {
-  assert.equal(cdp.screenInfoArg(), '--screen-info={0,0 1512x982 devicePixelRatio=2}');
-  assert.equal(cdp.screenInfoArg({ dpr: 3 }), '--screen-info={0,0 1512x982 devicePixelRatio=3}');
+  // I-046: --screen-info takes physical pixels (Chrome divides them by the DPR for screen.width/height), so the Mac's
+  // 1512x982 CSS px screen at DPR 2 is 3024x1964 pixels; HEADLESS_SCREEN stays in CSS px
+  assert.equal(cdp.screenInfoArg(), '--screen-info={0,0 3024x1964 devicePixelRatio=2}');
+  assert.equal(cdp.screenInfoArg({ dpr: 3 }), '--screen-info={0,0 4536x2946 devicePixelRatio=3}');
+  assert.equal(cdp.screenInfoArg({ dpr: 1.5 }), '--screen-info={0,0 2268x1473 devicePixelRatio=1.5}');
+  assert.equal(cdp.screenInfoArg({ width: 1001, height: 501, dpr: 1.5 }), '--screen-info={0,0 1501x751 devicePixelRatio=1.5}', 'pixels round down: Chrome rounds pixels / DPR up, so the page sees exactly 1001x501');
   assert.deepEqual(cdp.HEADLESS_SCREEN, { width: 1512, height: 982, dpr: 2 });
   assert.throws(() => cdp.screenInfoArg({ dpr: 0 }), /bad screen/);
   assert.throws(() => cdp.screenInfoArg({ width: 1.5 }), /bad screen/);

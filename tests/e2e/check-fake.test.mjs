@@ -65,7 +65,7 @@ test('two targets, mobile: headless + pinned screen, UA override before each nav
   const log = s.log();
   const started = log.find((l) => l.method === '(started)');
   assert.ok(started.params.argv.includes('--headless=new'), started.params.argv.join(' '));
-  assert.ok(started.params.argv.includes('--screen-info={0,0 1512x982 devicePixelRatio=2}'));
+  assert.ok(started.params.argv.includes('--screen-info={0,0 3024x1964 devicePixelRatio=2}'));
   assert.equal(log.filter((l) => l.method === 'Emulation.setCPUThrottlingRate').length, 0, 'functional: never throttled');
   // every navigation of a page session comes after that session's UA override, which names Chrome/, not HeadlessChrome/
   const navs = log.filter((l) => l.method === 'Page.navigate');
@@ -82,7 +82,7 @@ test('two targets, mobile: headless + pinned screen, UA override before each nav
   assert.equal(res.chromeMode, 'headless');
   assert.equal(res.timing, 'test-fast');
   assert.doesNotMatch(res.uaOverride, /Headless/);
-  assert.deepEqual(res.screenInfo, { width: 1512, height: 982, dpr: 2, arg: '--screen-info={0,0 1512x982 devicePixelRatio=2}' });
+  assert.deepEqual(res.screenInfo, { width: 1512, height: 982, dpr: 2, arg: '--screen-info={0,0 3024x1964 devicePixelRatio=2}' });
   // the shared lane where lib/lock.mjs has it and its switch is on (ts-lock-share), else the short lane
   assert.match(res.lock.mode, lockLib.SHARED_LANE ? /^(shared|short)$/ : /^short$/);
   assert.equal(res.lock.maxSec, 300);
@@ -122,7 +122,7 @@ test('--screen-dpr 3 --viewport desktop --no-screens: the switch follows, wheel 
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /CHECK OK: 1 page\(s\), headless .* DPR 3/);
   const started = s.log().find((l) => l.method === '(started)');
-  assert.ok(started.params.argv.includes('--screen-info={0,0 1512x982 devicePixelRatio=3}'));
+  assert.ok(started.params.argv.includes('--screen-info={0,0 4536x2946 devicePixelRatio=3}'));
   const res = s.result();
   assert.equal(res.screenInfo.dpr, 3);
   assert.equal(res.results[0].viewport, 'desktop');

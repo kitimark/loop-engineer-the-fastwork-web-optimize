@@ -141,10 +141,19 @@ function checkEvaluate(expr, sessionId) {
   return undefined;
 }
 
+// The headless virtual screen as Chrome builds it (I-046): --screen-info's WxH is in physical pixels, and the page's
+// screen.width/height are those pixels divided by devicePixelRatio, rounded up (ui/display/headless/headless_screen_util.cc
+// SetDisplayGeometry: bounds_in_pixels, size.InvScale(device_scale_factor), ToCeiledSize). No flag: 800x600 at DPR 1.
+function fakeScreen() {
+  const m = /^\{\s*-?\d+,-?\d+\s+(\d+)x(\d+)(?:.*devicePixelRatio=([\d.]+))?/.exec(arg('screen-info') || '');
+  const [w, h, dpr] = m ? [Number(m[1]), Number(m[2]), Number(m[3] || 1)] : [800, 600, 1];
+  return { dpr, screen: [Math.ceil(w / dpr), Math.ceil(h / dpr)] };
+}
+
 function evaluate(expr, event) {
   // tools/check.mjs: the host screen before emulation (--screen-info), the DOM fingerprint, the stepped walk (first: their bodies
   // contain substrings the verify.mjs answers below match)
-  if (expr.includes('__fwCheckPre')) return { dpr: 2, screen: [1512, 982], ua: FAKE_UA(HEADLESS) };
+  if (expr.includes('__fwCheckPre')) return { ...fakeScreen(), ua: FAKE_UA(HEADLESS) };
   if (expr.includes('__fwCheckDom')) return { elements: 42, tokens: ['div.orbit', 'main.hero', 'nav.start-selling-top-nav'] };
   if (expr.includes('__fwCheckWalk')) return { y: 2068, maxY: 2068, h: 3000, steps: 7 };
   if (expr.includes('kit: Object.keys(window)')) return { kit: ['__sveltekit_fake'], nav: 'start-selling-top-nav', hero: 'hero', h: 3000, shim: null, vendors: { gtag: 'undefined', amplitude: 'undefined', hj: 'undefined', dataLayer: 1 } };

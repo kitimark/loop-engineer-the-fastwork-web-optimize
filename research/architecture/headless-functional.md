@@ -21,6 +21,10 @@ Headless works for functional checks, with two required corrections.
    loads one script and one iframe fewer.
 2. **Give the virtual screen the host's DSF.** Use `--screen-info={0,0 1512x982 devicePixelRatio=2}`. Without it the layout
    shifts by 1 px, and screenshots differ from headed by ~3 %.
+   *Correction (I-046, 2026-10-02):* `--screen-info`'s WxH is in physical pixels (CONFIRMED,
+   ui/display/headless/headless_screen_util.cc `SetDisplayGeometry`: DIP bounds = ceil(pixels / DSF)), so the flag above
+   gave the page a 756x491 screen at DSF 2. The tools now pass `{0,0 3024x1964 devicePixelRatio=2}` (screen 1512x982,
+   as headed). The equivalence data below was taken with the 756x491 screen: the DSF was right, the screen size was not.
 
 With both corrections the headless page matches headed on every functional field we checked:
 

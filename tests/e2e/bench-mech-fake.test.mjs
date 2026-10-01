@@ -106,7 +106,7 @@ async function passAndLive(live, mtime) {
   assert.equal(m.mechPage, 'headed-equivalent');
   assert.match(m.uaOverride, /\bChrome\/1\.0\.0\.0/);
   assert.doesNotMatch(m.uaOverride, /Headless/);
-  assert.deepEqual(m.screenInfo, { width: 1512, height: 982, dpr: 2, arg: '--screen-info={0,0 1512x982 devicePixelRatio=2}' });
+  assert.deepEqual(m.screenInfo, { width: 1512, height: 982, dpr: 2, arg: '--screen-info={0,0 3024x1964 devicePixelRatio=2}' });
   assert.match(m.lock.mode, /^(short|shared)$/);
   assert.equal(m.lock.maxSec, 180);
   {
