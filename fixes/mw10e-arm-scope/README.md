@@ -27,6 +27,25 @@ then review.
   - So the wheel half is the likely mechanism, but which listener costs the frame on the device is UNRESOLVED
     (F-062). P-030 (C vs lw vs lt) decides it.
   - The listener add as the cause of the frame is OBSERVED.
+- **What the frame is made of** (fix-scroll-engine: Timeline split of the y≈1960 crossing frame in the P11 control
+  runs, where it lasts ≥ 101 ms; lead FYI 15:2xZ):
+
+  | phase | duration |
+  |---|---|
+  | Composite | 37-73 ms (median ~46 ms) |
+  | Layout | 22-36 ms |
+  | RecalculateStyles | 15-16 ms |
+  | Paint | ~3 ms |
+  | script | 1-4 ms |
+
+  - So most of the frame is the compositing that follows the style and layout invalidation, not the listener script.
+  - F3 removes the whole frame in block B (no frame >34 ms in the window, 4/4 runs), so the Composite part goes too.
+    That is inferred from dt alone: there is no Timeline split on V yet.
+  - Why Composite is large is OBSERVED and untested (in our setup, cause unknown). One candidate is the #people card's
+    own composited layer: 430x1328, 15.9 MB (de-pm-hero post-mortem §7.9). If the edge frame re-commits or re-rasters
+    that layer, its size would explain the Composite share, and also why F3's removal of the invalidation helps.
+    - The decisive local check: a Timeline plus LayerTree capture of the edge frame on C vs V (driver M or S, with
+      layer ids). It is not run.
 
 ## What changed
 
