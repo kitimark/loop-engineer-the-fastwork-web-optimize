@@ -362,6 +362,11 @@ whether the listener is passive. Two diagnostics, both on noinert:
     every touch there starts on #platform or the nav. The behaviour gap I feared (a touch above #platform) does not exist in
     this geometry.
   - A 240 px upward swipe reaches morph 1 in base, F1 and F3 alike, both from y≈699 and from y≈88.
+- **Listener check** (`noinert-check.mjs`, base vs F3; `probe-results/arm-scope-check.json`):
+  - F3 adds `+wheel` on the window and `+touchstart`/`+touchmove` on SECTION (#platform) and HEADER, all at y=0.
+  - At the edge it adds nothing. The base adds `+wheel/+touchstart/+touchmove` on the window at y=1632.
+  - Morph reaches 1; the screenshot differs from base by 0.14 %; no errors.
+  - The pre-existing `touchstart` on `<html>` is the same in both.
 - **Prediction (P1, lead):**
   - the y≈1960 frame goes from k ≥ 12 to k ≤ 5 in 3/3 scripted runs;
   - touch input delay is not worse than the control on G/F;
