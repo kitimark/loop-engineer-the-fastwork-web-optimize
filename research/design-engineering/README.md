@@ -25,6 +25,7 @@ analyze the render complexity of each topic". Lead of this note: `de-morph`.
 | `de-middle` | everything between, including the y ≈ 1970 pain-entry frame; page-wide mechanisms: blur, content-visibility, will-change, layers | [`middle.md`](middle.md) | done |
 | `de-hero` | hero window, y 0-900 (ring splash, orbit, exit, first scroll frames out of the hero, #people entry) | [`hero.md`](hero.md) | done; covers the iPhone hero block (v2: y≈50 gone, y≈700 +11 ms, §2D) |
 | `de-morph` (lead) | end of page: `#platform`, the nav morph panel, the touch scroll-jack/pin | [`morph-endpage.md`](morph-endpage.md) | done |
+| `de-devtools` | our render metrics against Chrome DevTools' guidance: each hotspot in the docs' pixel pipeline, what the Frames track / paint rects / Layers / Rendering tab show that we don't, the iPhone budget in RAIL terms, ranked measurement additions (WebKit side: `de-safari`) | [`devtools-render-metrics.md`](devtools-render-metrics.md) | done |
 | `de-apple` | the math behind apple.com's 14 scroll decisions (cost model, complexity class, trade-off each), a per-frame complexity budget for the iPhone, our hotspots against it | [`apple-math.md`](apple-math.md) | done; folds in the gh/gb/g driver result (§2.5) |
 
 ## Method (shared by the three notes)
