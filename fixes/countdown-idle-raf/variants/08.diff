@@ -1,0 +1,160 @@
+# fastwork mirror fix: countdown-idle-raf-v08
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply countdown-idle-raf-v08
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -1405,8 +1405,15 @@
+   visibility: hidden;
+   display: block;
+ }
+-.face.svelte-1quva9c {
++.strip.svelte-1quva9c {
++  display: block;
++  position: absolute;
++  inset: 0;
++}
++.countdown.is-live .strip.svelte-1quva9c {
+   will-change: transform;
++}
++.face.svelte-1quva9c {
+   justify-content: center;
+   align-items: center;
+   display: flex;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3815,19 +3815,23 @@
+   return Array.from({ length: r }, (e, t) => 10 ** (r - t - 1));
+ }
+ var YE = new xe(`(prefers-reduced-motion: reduce)`, !1),
+-  XE = Array.from({ length: 10 }, (e, t) => t),
++  /*countdown-idle-raf--layers: faces 0..9 plus a trailing 0 stacked in ONE strip; the strip moves, not the faces*/
++  XE = Array.from({ length: 11 }, (e, t) => t),
+   ZE = h(`<span class="face svelte-1quva9c" aria-hidden="true"> </span>`),
+   QE = h(
+-    `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
++    `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <span class="strip svelte-1quva9c"><!></span></span>`,
+   );
+ function $E(n, r) {
+   D(r, !0);
+   let i = R(() => qE(r.value, r.place)),
+     a = N(I(o(() => s(i)))),
+-    c = N(0);
++    c = N(0),
++    /*countdown-idle-raf: false while the countdown is off-screen*/
++    __cdAnimate = R(() => r.animate !== !1);
+   b(() => {
+     let e = s(i);
+-    if (YE.current) {
++    /*countdown-idle-raf: no spring while off-screen; snap like reduced motion*/
++    if (YE.current || !s(__cdAnimate)) {
+       z(a, e, !0);
+       return;
+     }
+@@ -3841,7 +3845,9 @@
+   });
+   var u = QE(),
+     d = e(u),
+-    h = V(d, 2),
++    __strip = V(d, 2),
++    h = e(__strip),
++    __stripStyle,
+     g = (n) => {
+       var r = p(),
+         i = O(r);
+@@ -3857,9 +3863,10 @@
+           (M(i),
+             l(
+               (e) => {
+-                ((o = S(i, ``, o, e)), t(u, r));
++                ((o = S(i, ``, o, e)), t(u, r % 10));
+               },
+-              [() => ({ transform: `translateY(${KE(r, s(a)) * s(c)}px)` })],
++              /*countdown-idle-raf--layers: static slot in the strip (changes only when the cell height does)*/
++              [() => ({ transform: `translateY(${r * s(c)}px)` })],
+             ),
+             f(n, i));
+         },
+@@ -3869,6 +3876,12 @@
+   (m(h, (e) => {
+     s(c) > 0 && e(g);
+   }),
++    M(__strip),
++    /*countdown-idle-raf--layers: one transform write per frame; strip slot i sits at (i - v mod 10) cells, which equals
++      KE(i % 10, v) for every face inside the cell, so the visible pixels match the per-face layout*/
++    l(() => {
++      __stripStyle = S(__strip, ``, __stripStyle, { transform: `translateY(${-((((s(a) % 10) + 10) % 10) * s(c))}px)` });
++    }),
+     M(u),
+     re(d, `offsetHeight`, (e) => z(c, e)),
+     f(n, u),
+@@ -3894,6 +3907,9 @@
+         get place() {
+           return s(n);
+         },
++        get animate() {
++          return t.animate;
++        },
+       });
+     },
+   ),
+@@ -3920,6 +3936,9 @@
+   let a = C(r, `inverse`, 3, !1),
+     o = R(WT),
+     c = N(null),
++    __cdVisible = N(!0),
++    /*countdown-idle-raf: optional `active` prop from the call site (false = mounted but not shown, e.g. opacity 0)*/
++    __cdActive = R(() => r.active !== !1),
+     u = R(() => (s(c) === null ? null : rD(s(c)))),
+     d = R(() => s(o).waitlist.units),
+     p = R(
+@@ -3933,11 +3952,22 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    let t = window.setInterval(e, 1e3);
++    let t = window.setInterval(e, 1e3),
++      /*countdown-idle-raf: digits spring only while the countdown is on screen*/
++      __cdIo =
++        typeof IntersectionObserver == `function`
++          ? new IntersectionObserver(
++              (e) => {
++                z(__cdVisible, e[e.length - 1].isIntersecting, !0);
++              },
++              { rootMargin: `64px 0px` },
++            )
++          : null;
+     return (
++      __cdIo?.observe(h),
+       document.addEventListener(`visibilitychange`, e),
+       () => {
+-        (window.clearInterval(t), document.removeEventListener(`visibilitychange`, e));
++        (window.clearInterval(t), __cdIo?.disconnect(), document.removeEventListener(`visibilitychange`, e));
+       }
+     );
+   });
+@@ -3958,6 +3988,9 @@
+               return s(u)[i];
+             },
+             padStart: i > 0,
++            get animate() {
++              return s(__cdVisible) && s(__cdActive);
++            },
+           });
+         },
+         p = (e) => {
+@@ -3975,7 +4008,9 @@
+   ),
+     M(h),
+     l(() => {
+-      ((g = U(h, 1, `countdown svelte-1666oc5`, null, g, { inverse: a() })), k(h, `aria-label`, s(p)));
++      /*countdown-idle-raf/08: strips are promoted (will-change) only while the countdown is on screen and active*/
++      ((g = U(h, 1, `countdown svelte-1666oc5`, null, g, { inverse: a(), "is-live": s(__cdVisible) && s(__cdActive) })),
++        k(h, `aria-label`, s(p)));
+     }),
+     f(n, h),
+     H());
