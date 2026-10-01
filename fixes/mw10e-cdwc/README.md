@@ -127,8 +127,13 @@ iphone-runner, is still in progress.
     - The window (t0, t0+450] and every verdict rule stay as registered.
     - Against the registered t0 (the last m = 0 frame), this t0 is up to 1 frame later. The move is delivered after
       that frame, and the tween's first m > 0 frame is the rAF of a later rendering update.
-    - So the window ends up to 1 frame later, and the activation frame stays inside it. The scorer checks this per
-      tween: the first frame after the handler time has stamp > t0, else the tween is flagged.
+    - So the window ends up to 1 frame later, and the activation frame stays inside it.
+    - Per tween the scorer flags "t0-lag": frames between the OS delivery (timeStamp) and the handler, which cannot
+      carry m > 0. The flag is reported and changes no rule.
+    - WDA sends one touchmove per still stroke (hook-free test run g32-w32b-C), so t0 is that move.
+    - Scorer: a local script that rebuilds the state from the touch rows. It was checked on that test run: push 1 was
+      the only forward tween, and the held phase gave 597 frames. The run was void, because WDA timed out at
+      drag-into-end.
   - **Held m = 1 phase** (prediction 4 and its +8 ms WORSE rule are kept). It covers the frames with stamp from
     (handler time of t0's move) + 680 + 300 ms until the next reverse move, counting only frames while a finger is
     down (a stroke's touchstart to touchend).
