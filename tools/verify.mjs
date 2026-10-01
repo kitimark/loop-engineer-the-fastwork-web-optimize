@@ -32,6 +32,10 @@
 // max memory pressure and decompressions/s. `host.loadInvalid` (contaminated) when load1 at start > 10,
 // other CPU in the scroll phase > 25 %, memory pressure >= warn, or the lock was granted by the gate's
 // timeout; `host.loadWarn` at load1 > 6 or other CPU > 20 %.
+// Who the other CPU is (I-031, log only: no effect on the recheck, the flags or any verdict):
+// `host.topProcs` and `host.recheck.topProcs` = {windowSec, top: [{pid, command, cpuPct}]}, the 5 busiest
+// processes outside the measured Chrome tree over the run (page open to report) and over the recheck, from
+// ps CPU-time deltas (% of one core, not ps's decayed %CPU). One ps (~20 ms) at each end, outside the phases.
 // Sleep and hangs (incident I-023; the Mac's Maintenance Sleep, I-026): the recheck stops after --max-wait s
 // of wall time, or one window after a host sleep; Chrome (launched before run 1's recheck) is pinged after
 // every window, and one that exited or stopped answering is relaunched before the run (host.chromeRelaunched,
@@ -46,7 +50,7 @@ import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
 import { acquire } from './lib/lock.mjs';
 import { LOGGER, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
-import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock, stubOutsideTest } from './lib/host.mjs';
+import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock, stubOutsideTest, procsSnapshot, topProcs } from './lib/host.mjs';
 
 const ROOT = REPO;
 const argv = process.argv.slice(2);
@@ -141,8 +145,10 @@ async function warmChrome() {
 async function recheckHost() {
   if (!(MAX_WAIT > 0)) return null;
   progress('host recheck', MAX_WAIT + 60);
+  const procs0 = await procsSnapshot(); // I-031, log only: one ps (~20 ms) on each side of the recheck windows
   const w = await waitQuiet({ maxWaitSec: MAX_WAIT, thresholds: QUIET, onSample: async () => { progress('host recheck', MAX_WAIT + 60); if (browser) await chromeAlive(); } });
-  const recheck = { quiet: w.quiet, waitedSec: w.waitedSec, windows: w.windows, reasons: w.reasons, sleptSec: w.sleptSec, suspended: w.suspended, last: w.last };
+  const recheck = { quiet: w.quiet, waitedSec: w.waitedSec, windows: w.windows, reasons: w.reasons, sleptSec: w.sleptSec, suspended: w.suspended, last: w.last,
+    topProcs: topProcs(procs0, await procsSnapshot(), { excludeRoot: browser?.ch.proc.pid }) };
   if (w.suspended) process.stdout.write(`(the host slept ${w.sleptSec} s during the recheck; measuring now) `);
   else if (!w.quiet) process.stdout.write(`(host not quiet after ${w.waitedSec} s: ${w.reasons.join(', ')}; measuring anyway) `);
   else if (w.windows > 1) process.stdout.write(`(waited ${w.waitedSec} s for a quiet host) `);
@@ -234,6 +240,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   const vp = VIEWPORTS[vpName];
   const hostPhases = {};
   const runStart = await snapshot();
+  const procsStart = await procsSnapshot(); // I-031, log only: before the page opens, outside every phase window
   const loadBefore = runStart.load1;
   progress('open page');
   const page = await cdp.newIsolatedPage();
@@ -326,6 +333,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
   for (const r of requests) { try { const o = new URL(r.url).origin; const k = o + (r.failed ? ' (blocked/failed)' : ''); origins[k] = (origins[k] || 0) + 1; } catch {} }
   const firstParty = requests.filter((r) => { try { const u = new URL(r.url); return u.origin === new URL(t.url).origin; } catch { return false; } });
   const runEnd = await snapshot();
+  const runTop = topProcs(procsStart, await procsSnapshot(), { excludeRoot: chromePid }); // I-031, after the last phase
   progress('report');
   const pressures = Object.values(hostPhases).map((p) => p.pressureMax).filter((x) => x != null);
   const sl = slept(runStart, runEnd); // did the Mac sleep during the run (I-026)?
@@ -333,6 +341,7 @@ async function measure(cdp, t, vpName, run, { chromePid, gate, recheck = null, c
     load1Start: runStart.load1, load1End: runEnd.load1, freeMemMB: runStart.freeMemMB, freeMemMBEnd: runEnd.freeMemMB,
     sleptSec: sl.sleptSec, woke: sl.woke, chromeRelaunched, chromeWarmedSec: Math.round(warmedSec * 10) / 10,
     recheck, gate: gate || null, phases: hostPhases,
+    topProcs: runTop, // I-031: log only, not passed to classifyRun
     ...(runStart.stub ? { stub: runStart.stub } : {}),
   };
   Object.assign(hostRec, classifyRun({ load1Start: runStart.load1, otherBusyPct: hostPhases.scroll?.otherBusyPct, pressureMax: pressures.length ? Math.max(...pressures) : null, gateTimeout: !!gate?.gateTimeout, recheckQuiet: recheck ? recheck.quiet : undefined, sleptSec: sl.sleptSec, woke: sl.woke, recheckSleptSec: recheck?.sleptSec, chromeRelaunched }));

@@ -263,3 +263,46 @@ test('hostClock() without a stub: the real clock (stub undefined), samplers pass
   await c.sleep(1500);
   assert.equal(c.mono(), 1500);
 });
+
+// ---- I-031: which other processes use the CPU (log only) ---------------------------------------------
+test('I-031 parsePsProcs(): pid, ppid, CPU seconds and the command basename (paths with spaces)', () => {
+  const text = [
+    '  427     1 1102:04.68 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer',
+    ' 9001     1   0:12.50 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    ' 9002  9001   0:01.00 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)',
+    '   77     1   0:00.10 mds_stores',
+    'garbage',
+  ].join('\n');
+  assert.deepEqual(host.parsePsProcs(text), {
+    427: { ppid: 1, cpuSec: 66124.68, command: 'WindowServer' },
+    9001: { ppid: 1, cpuSec: 12.5, command: 'Google Chrome' },
+    9002: { ppid: 9001, cpuSec: 1, command: 'Google Chrome Helper (Renderer)' },
+    77: { ppid: 1, cpuSec: 0.1, command: 'mds_stores' },
+  });
+});
+
+test('I-031 topProcs(): top 5 by CPU over the window (% of one core), the measured Chrome tree excluded', () => {
+  const p = (ppid, cpuSec, command) => ({ ppid, cpuSec, command });
+  const a = { at: 1000, procs: { 427: p(1, 100, 'WindowServer'), 9001: p(1, 50, 'Google Chrome'), 9002: p(9001, 20, 'Google Chrome Helper'), 10: p(1, 5, 'mds_stores'), 11: p(1, 1, 'a'), 12: p(1, 1, 'b'), 13: p(1, 1, 'c'), 14: p(1, 1, 'gone'), 15: p(1, 3, 'idle') } };
+  const b = { at: 11000, procs: { 427: p(1, 102.5, 'WindowServer'), 9001: p(1, 60, 'Google Chrome'), 9002: p(9001, 40, 'Google Chrome Helper'), 9003: p(9002, 5, 'Google Chrome Helper (GPU)'), 10: p(1, 6, 'mds_stores'), 11: p(1, 1.3, 'a'), 12: p(1, 1.2, 'b'), 13: p(1, 1.1, 'c'), 15: p(1, 3, 'idle'), 16: p(1, 0.7, 'new') } };
+  assert.deepEqual(host.topProcs(a, b, { excludeRoot: 9001 }), {
+    windowSec: 10,
+    top: [
+      { pid: 427, command: 'WindowServer', cpuPct: 25 },
+      { pid: 10, command: 'mds_stores', cpuPct: 10 },
+      { pid: 16, command: 'new', cpuPct: 7 }, // started inside the window: all its CPU time counts
+      { pid: 11, command: 'a', cpuPct: 3 },
+      { pid: 12, command: 'b', cpuPct: 2 },
+    ],
+  });
+  assert.equal(host.topProcs(a, b).top[0].command, 'Google Chrome Helper', 'without excludeRoot the Chrome tree ranks');
+  assert.equal(host.topProcs(null, b), null);
+  assert.equal(host.topProcs(a, { at: 1000, procs: b.procs }), null, 'no window');
+});
+
+test('I-031 procsSnapshot(): the procTable sampler and the monotonic clock of the samplers; never throws', async () => {
+  const t = 5000;
+  const s = { mono: () => t, procTable: () => ({ 1: { ppid: 0, cpuSec: 2, command: 'launchd' } }) };
+  assert.deepEqual(await host.procsSnapshot({ samplers: s }), { at: 5000, procs: { 1: { ppid: 0, cpuSec: 2, command: 'launchd' } } });
+  assert.equal(await host.procsSnapshot({ samplers: { mono: () => t, procTable: () => { throw new Error('ps failed'); } } }), null, 'log only: a failing ps never fails a run');
+});

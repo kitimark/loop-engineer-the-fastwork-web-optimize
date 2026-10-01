@@ -260,11 +260,19 @@ test('browser crash mid-run: verify.mjs fails fast (no hang) and releases the lo
 test('host record per run and phase on a quiet host: CPU busy/sys, Chrome tree, other CPU, load, pressure; clean', async () => {
   const { d, env, args } = setup();
   // fake host: 10 % busy, the measured Chrome tree 0.4 of 8 cores = 5 % -> other CPU 5 %
-  const r = await nodeAsync(VERIFY, args('hostrec', ['--idle', '1']), { env: { ...env, FAKE_HOST_BUSY: '0.1', FAKE_HOST_LOAD1: '3.5' } });
+  // I-031: other processes, among them a 3-core hog the host-wide numbers above do not include (log only)
+  const PROCS = '427:WindowServer:0.12,377:mds_stores:0.03,4242:hog:3';
+  const r = await nodeAsync(VERIFY, args('hostrec', ['--idle', '1']), { env: { ...env, FAKE_HOST_BUSY: '0.1', FAKE_HOST_LOAD1: '3.5', FAKE_HOST_PROCS: PROCS } });
   assert.equal(r.code, 0, r.out);
   const res = JSON.parse(readFileSync(join(d, 'result.json'), 'utf8'));
   const h = res.results[0].host;
-  assert.deepEqual(Object.keys(h).sort(), ['chromeRelaunched', 'chromeWarmedSec', 'freeMemMB', 'freeMemMBEnd', 'gate', 'load1End', 'load1Start', 'loadInvalid', 'loadWarn', 'phases', 'reasons', 'recheck', 'sleptSec', 'stub', 'warnings', 'woke']);
+  assert.deepEqual(Object.keys(h).sort(), ['chromeRelaunched', 'chromeWarmedSec', 'freeMemMB', 'freeMemMBEnd', 'gate', 'load1End', 'load1Start', 'loadInvalid', 'loadWarn', 'phases', 'reasons', 'recheck', 'sleptSec', 'stub', 'topProcs', 'warnings', 'woke']);
+  // I-031: the top non-Chrome processes over the run (start to end) and over the recheck, % of one core
+  const TOP = [{ pid: 4242, command: 'hog', cpuPct: 300 }, { pid: 427, command: 'WindowServer', cpuPct: 12 }, { pid: 377, command: 'mds_stores', cpuPct: 3 }];
+  assert.deepEqual(h.topProcs.top, TOP);
+  assert.ok(h.topProcs.windowSec > 1, `run window ${h.topProcs.windowSec}`);
+  assert.deepEqual(h.recheck.topProcs.top, TOP);
+  assert.ok(h.recheck.topProcs.windowSec >= 10, `recheck window ${h.recheck.topProcs.windowSec}`);
   assert.deepEqual(Object.keys(h.phases), ['idle', 'scroll', 'morph']);
   for (const [name, p] of Object.entries(h.phases)) {
     assert.ok(p.windowSec > 0, `${name} window ${p.windowSec}`);
