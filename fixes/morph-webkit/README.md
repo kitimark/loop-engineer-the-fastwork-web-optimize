@@ -399,6 +399,60 @@ whether the listener is passive. Two diagnostics, both on noinert:
   - Block B (F3 arm-scope, ~14:40Z) is the second and last block for this question (§5.3).
   - Not land-ready as is. The touch-latency (G/F) requirement above also still stands.
 
+**Block B, F3 vs aw1-10e (P4, iphone-runner, 14:40-14:45Z; ms only; raw: iphone-runner `out/iphone-runner/f-P4B-*.json`, `p4B.log`).**
+
+- **Setup:**
+  - Same driver and logger as block A. C = aw1-10e (:5476); V = mw10e-arm-scope (JS 7b0d62225545).
+  - Sentinel: bottom 60 fps, max 19-22 ms, all pass.
+  - The phone warmed to 40.9 °C by the end (warm, but the sentinel held). Battery 80 %, Low Power Mode off.
+- **Edge frame** (slowest frame in y 1940-2010, with its r3 name):
+
+  | arm | run 1 | run 2 | run 3 | run 4 |
+  |---|---|---|---|---|
+  | C | 115 @1978 | 118 @1973 | 110 @1980 | 106 @1969 |
+  | V | none >34 | none >34 | none >34 | none >34 |
+
+  - Every C edge frame is named src ×21 + inert.
+  - V's nearest slow frames are all unnamed and all later on the page: run 1 48 @2250; run 2 39 @2036, 43 @2081,
+    41 @2249; run 3 40 @2061; run 4 49 @2019, 9 px past the window.
+- **Card (P1, lead: "k ≥ 12 → k ≤ 5 in 3/3"; on the phone as ms, ≤ 41.7 ms): PASS.**
+  - Inside the window, 4 of 4 V runs pass, with no frame over 34 ms.
+  - Counting run 4's 49 @2019 as the edge, 3 of 4 pass. 49 ms is in the near band (46, 54].
+  - The card's other two parts are not tested by this block: touch input delay on G/F, and the arming cost at setup.
+- **Frames over 50 ms in y 1700-2200:**
+  - C 1/1/1/1 vs V 0/0/0/0: better.
+  - The 54 ms twin also reads better.
+  - The 46 ms twin does not: V's run 4 has 49 @2019, giving V 0/0/0/1, so the ranges overlap. The result is therefore
+    threshold-sensitive.
+- **Scroll phase:**
+
+  | arm | dt>50 per run | dt>34 per run |
+  |---|---|---|
+  | C | 2, 1, 2, 3 | 11, 9, 7, 11 |
+  | V | 1, 0, 0, 1 | 9, 10, 9, 10 |
+
+  Both rows are within noise (the ranges overlap). Unlike F1 in block A, the dt>34 count does not rise.
+- **Load and settle:**
+
+  | arm | dt>50 per run | dt>34 per run | max per run (ms) |
+  |---|---|---|---|
+  | C | 2, 1, 2, 1 | 5, 6, 9, 8 | 60, 55, 61, 60 |
+  | V | 1, 1, 0, 1 | 7, 5, 10, 8 | 58, 61, 46, 61 |
+
+  Within noise, with no new frame ≥ 54 ms. The pause at y 1249 (dt>34: C 2/2/2/3, V 1/1/2/3) is within noise too.
+- **Reading:**
+  - F3 removes the y≈1960 frame. Inside the window no frame exceeds 34 ms in 4 of 4 runs.
+  - F1, in block A, left 40-49 ms there in 3 of 4 runs.
+  - The two blocks have separate controls (C edges 100-116 vs 106-118 ms), so F3 vs F1 is not a within-block
+    comparison. It is suggestive only.
+  - Both arms leave unnamed 39-49 ms frames between y 2019 and 2250. Their cause is UNRESOLVED (in our setup, cause
+    unknown); the F1 Timeline attribution run is in progress.
+  - This was the second block on this question, so the sequential rule (§5.3) allows no third.
+  - F3 is the candidate going forward. Before it can land:
+    - a G/F touch-delay check;
+    - a Chrome regression A/B;
+    - review.
+
 ### F3 `mw10e-arm-scope` (listener scope; lead + OSS survey P1, F-055)
 
 - **What it is:** F1 with the touch listeners moved off the window. Built on bare aw1-10e. JS 7b0d62225545…, CSS = base;
