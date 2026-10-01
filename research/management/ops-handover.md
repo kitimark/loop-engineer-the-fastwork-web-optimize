@@ -108,7 +108,8 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **08:55Z**. Next instance: mgm
        `node tools/fix.mjs serve <build> --on aw1-10e`.
    (c) N12 block: aw1-10c vs n12v5-aw1 (matched pair, fix-nav-morph's worktree); hero window esp. y≈700 (F-029 nav ee()
        forced style), middle, end, parity spots. If y≈700 goes → N12 enters the base (needs a review then).
-   (d) N10 ablations (fix-scroll-engine rebuilding them on aw1-10e).
+   (d) N10 ablations, rebuilt on aw1-10e (0e62ccc; base `.../agent-a1722cf5058e25591/fixes/aw1-10e/overlay`; order
+       d, c, b, a; R3 logger); sent to iphone-runner 08:57Z.
    After each block ends: tell the owners whose worktree it served from that they may now rebase + sparse.
 2. Results routing: hero → fix-hero-exit (then ONE Chrome A/B `--on aw1-10e` ≤ 10 min, > 50/> 34 in the hero window);
    morph → fix-nav-morph (if b names the blur → N2 composited morph: fixed radii faded by opacity; the driver hook must be
@@ -150,7 +151,7 @@ snapshot), branch `mgmt-ops/docs-2`. Last update: **08:55Z**. Next instance: mgm
 | iphone-runner | owns the phone; hero block (B/P/P2/P3) | – | morph driver block → N12 → N10 |
 | fix-nav-morph | morph owner (#1); driver + mw10e-* builds 4732f6c; holds rebase/sparse | morph driver block results | fb/gb decide → N2 composited morph |
 | fix-hero-exit | hero window owner (#2); rebased + sparse (7169a6a, 9e84199) | hero block results | one Chrome A/B `--on aw1-10e` |
-| fix-scroll-engine | N10 (#3); rebuilding ablations on aw1-10e; holds rebase/sparse | phone (last in queue) | ablation verdict → fix; /10d after |
+| fix-scroll-engine | N10 (#3); ablations rebuilt on aw1-10e (0e62ccc); holds rebase/sparse | phone (last in queue) | ablation verdict → fix; /10d after |
 | ts-snapshot | delivered; follow-ups from review-snapshot (lead) | – | – |
 | arch-finger | research (finger simulation) | – | plan to the lead |
 | ts-i017, ts-i021, ts-bench, wave1-dry, N11, apple-verify | ENDED | – | do not resume without the lead |
