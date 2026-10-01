@@ -57,6 +57,25 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
    WebKit, and a transition that *starts* from such a value costs one in its first animated frame.
    **Derived:** why that layout costs 14 ms rather than 0.5 ms is not named (candidates: the card is a whole
    section's subtree; layer create/destroy; positioned descendants).
+4. **Who pays the long layouts (added after R-U1: our logger reads `scrollY` in rAF and forces layout).**
+   Every Layout ≥10 ms in t −0.5..2.6 s of the three captures, by payer (**data**: `payer.mjs`):
+
+   | capture | render update itself | page script | logger `loop` (scriptName "") |
+   |---|---|---|---|
+   | e-tc2 | 12 | 2 | 5 |
+   | e-tc1 | 15 | 2 | 5 |
+   | e-ta1 | 13 | 2 | 5 |
+
+   So 40 of 59 whole-view layouts happen with no reader; the 12-16 ms layout is not a probe artifact.
+   - The logger pays the flip+60 frame's first layout and the reveal-end frames (+700, +900); a few others
+     too.
+   - In the reveal-end frames it is the **only** long layout. A read only moves *who* pays a dirty layout,
+     unless something dirties it again later in the same frame. Without the logger, the same style
+     resolution should run in the render update: same frame, same cost (prediction for the y-source A/A).
+   - **The one possible double:** the flip+60 frame holds a logger-paid 12.1-12.5 ms layout *and* a
+     render-update 12.1-14.0 ms layout inside Composite, in 3/3 captures. The second follows a stackless
+     InvalidateLayout after the paints, next to a vendor PerformanceObserver callback (not our logger).
+     Without the logger the two may merge into one.
 
 ## 2. Case cards
 
@@ -144,7 +163,11 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
   - No per-frame layouts for 0.68 s after the flip (frames between are 0.1-0.5 ms). The nav's earn-button
     max-width transition does not run as layout on the phone.
 - **Broken assumption:** "two transition starts" is Chrome's picture. On the phone it is **three whole-view
-  layouts in two frames**, and the nav width transition plays no part.
+  layouts in two frames**, and the nav width transition plays no part. After the R-U1 check (§1.4):
+  - **certain:** two layouts, one per frame. Frame 1's is paid by page code (13.4-14.0 ms, 3/3). Frame 2's
+    render-update layout is 12.1-14.0 ms, 3/3.
+  - **unconfirmed:** the third (frame 2's logger-paid 12.1-12.5 ms) may be a probe double. The y-source A/A
+    decides.
   - **Derived from §1.3:** frame 1's card styles don't flip presence (opacity 0 → animated, filter blur(14px)
     → animated, transform translateY(48px) → animated), so the card's reveal is *not* frame 1's layout source.
     The source is another element whose style the flip writes change.
@@ -263,8 +286,33 @@ Scripts (scratch, not committed) live in `<scratchpad>/de-pm-hero/`:
     - `re-keep`: +940 frame Layout < 2 ms and dt ≤ 25 ms, +745 unchanged;
     - Q: both present.
   - Falsified if: both frames stay put in both arms.
-  - Decision: if confirmed, Card 4 → NAMED and a build card for the end-state fix. Post the page-wide pitfall
-    (every reveal ending at 1/none).
+  - **Rival, R-U5** (de-unknowns-render, `unknowns-render.md` 8de2df7):
+    - claim: the y 1249-1749 long frames are a forced ~15 ms layout + a 16-20 ms raster of the two deck panels
+      (402×857). iOS shrinks tile coverage at velocity 0, so backings detach and fully repaint on the next
+      flick; the period comes from the driver's flicks.
+    - prediction in this block: `re-dur` and `re-keep` change nothing; the frames stay tied to the flicks
+      (time since the last velocity-0 frame), not to the flip.
+    - data already against it for the +940 frame: in the hero block that frame comes 185-237 ms *after*
+      the scroll arrived and held at y 1237-1250, with no further flick. Also, t+1900 has a page-script
+      writer (L11538 → L3258).
+    - data compatible with both: the +700 / +900 frames do paint the 402×857 panels.
+  - **Arm ST-2d "fling-hold"** (de-unknowns-render's decoupling arm, build Q, no new build):
+    - driver: W over y 1100-1800 as one constant-velocity fling (~20 px/frame, no velocity-0 dips), a 1.5 s
+      hold at y 1800, then one short flick;
+    - runs: 1 Timeline + 2 counted, ~10 phone min;
+    - U5(a) predicts: at most one long frame at the fling start; no full 402×857 paint after the first 100 ms;
+      after the hold, the resuming flick repaints both panels (Composite ≥15 ms); flip timing irrelevant;
+    - Card 4 predicts: long frames at flip + 745 / + 945 whatever the velocity profile.
+  - **Readout per frame >34 ms:** time since the flip, time since the last velocity-0 frame, Layout ms (with
+    payer, §1.4), Composite ms, and whether a 402×857 paint clip is present.
+  - **Decision:**
+    - `re-dur` moves the frame and ST-2d leaves it → Card 4 NAMED, U5 out for these frames;
+    - `re-dur` changes nothing and ST-2d removes it → U5 NAMED, Card 4 retracted;
+    - both move → two mechanisms coincide (each owns its frames);
+    - neither → both rivals wrong; re-read.
+
+    If Card 4 holds, the next step is a build card for the end-state fix and the page-wide pitfall (every
+    reveal ending at 1/none).
 - **ST-3 (cheap, optional, existing build Q):** a W run with a 1.5 s hold at y 900. Prediction: the
   Layout ≥10 ms frames still come at flip + 745 / + 945 while held at y 900, where no scene gate can fire. It
   removes the last y-lock doubt without new builds.
