@@ -411,3 +411,131 @@ hold 250 the panel reverses at m <= 0.81 and never rests. Re-ticketed as P-016b 
 The Heap pass delivered no `Heap.garbageCollected` events (Heap.enable is probably needed too), so GC is still
 unmeasured.
 
+
+### 4c. P1 countdown probe (P-017) and P2 hold length (P-016b), 11:57-12:07Z
+
+- Builds: gh (CSS a2b0be9a), gh-cdwc (CSS 66aaffb6, countdown faces `will-change: auto`) and gh-cdhid (CSS 89c1492e), all
+  on JS 1df2484c. M driver, hold 2000 x 3, Latin square, warm-up per port.
+- **P-017 PASS.**
+  - Moving p50/p95: gh 22/42, 23/45, 27/57; cdwc 17/21, 17/23, 19/26; cdhid 17/22, 20/27 (cdhid5 disturbed).
+  - Excess over 16.7 ms in the first 450 ms of a forward tween: gh 170/190/228 ms vs cdwc 38/66/101 ms.
+  - Timeline: 76 % of early tween frames repaint the faces on gh, 0 % on cdwc. Composite minus Paint in the
+    first 300 ms: 25.1 ms (gh) vs 13.2 / 12.5 ms.
+  - Layers at the hold: gh 113, cdwc 33, cdhid 113.
+- **P-016b MISS.** Median dt in the first 300 ms: hold 2000 32.5/36.5 and 33.5/28 vs hold 900 27/33 and 32/44.
+
+### 4d. Finger batch F1-F6 (12:44-13:16Z, user via the lead)
+
+Recorder: `iphone.mjs record` (rAF dt + scrollY; no touch listener on purpose, because a window touch listener is what
+arm-load changes). Finger rAF runs at about 80 Hz while moving (F-071), so fps and counts here don't compare with S/W/M runs; ms thresholds do.
+
+- **F1, settings:** Reduce Motion off, Low Power Mode off, charge limit 80 %, no Safari extensions, feature flag
+  "Prefer Page Rendering Updates near 60fps" ON (the default). These hold for every phone run in this file.
+- **F2, push past the end, blind:** gh "laggy as the same", stub "smoother, but there's no content in there".
+  Pre-check (M): stub moving p50 17 ms, gh 23 ms with 7 frames > 50 ms, so F2 was valid.
+- **F3, slow scroll from y 1500, blind:** aw1-10e "small user profile are blinking ... hero section and end of the
+  page are laggy"; arm-load "same laggy, avatars still blinking". No felt difference.
+- **F4, flicks from the top, blind:** arm-load "timer quite smoother?", aw1-10e "same laggy, timer laggy". A weak,
+  single-trial preference for arm-load.
+- **F5, pacing page v1** (de-unknowns-ux): 14 trials rated. The first attempt failed because serve.mjs's CSP blocks
+  inline scripts (F-067). Result scored in research/design-engineering/pacing-result.md.
+- **F6, apple.com/iphone-18-pro:** "smooth, way smoother than fastwork, just have a little bit laggy". The try-3
+  recording moved 1385 frames: 1 > 34 ms, 0 > 50 ms, max 38 ms.
+
+Moving frames while scrollY changes (dt > 50 / > 34, with the ±4 ms twins > 46 / > 54 and > 30 / > 38):
+
+| page | moving | > 50 | > 34 | > 46 / > 54 | > 30 / > 38 | max |
+|---|---|---|---|---|---|---|
+| F2 stub | 200 | 2 | 14 | 2 / 1 | 16 / 10 | 75 |
+| F3 aw1-10e | 737 | 9 | 34 | 10 / 8 | 60 / 22 | 353 (first touch) |
+| F3 arm-load | 1237 | 18 | 77 | 30 / 10 | 93 / 59 | 76 |
+| F4 arm-load | 955 | 11 | 90 | 27 / 4 | 125 / 64 | 74 |
+| F4 aw1-10e | 551 | 23 | 86 | 29 / 20 | 110 / 62 | 102 |
+| F6 apple (try 3) | 1385 | 0 | 1 | 0 / 0 | 1 / 0 | 38 |
+
+F2 gh sat at the bottom for the whole recording (pushes only), so it has no moving frames: all frames > 50 29 (gh) vs 3
+(stub). Pacing v2 (13:45-13:50Z): the late-gap clip was chosen 4/4 at full speed; scored by de-unknowns-ux.
+
+### 4e. P-029: g vs g-cdwc, M driver (13:17-13:25Z; 80 %, 34.1 -> 37.4 C)
+
+C = mw10e-g (JS 22efa0ab / CSS c6aad94b), V = mw10e-g-cdwc (CSS 5dc6e8e3); hold 2000 x 3, C V V C C V V C. Sentinel: C held
+m=1 p95 17/17/17/18 (pass; g8 at the limit).
+
+| run | moving | > 50 | > 34 | > 46 / > 54 | > 30 / > 38 | max | p50 | held m=1 p95 / max |
+|---|---|---|---|---|---|---|---|---|
+| g1 | 125 | 1 | 51 | 3 / 0 | 58 / 28 | 54 | 29 | 17 / 36 |
+| g4 | 126 | 2 | 48 | 2 / 1 | 56 / 32 | 56 | 29 | 17 / 35 |
+| g5 | 122 | 3 | 47 | 4 / 3 | 60 / 32 | 68 | 30 | 17 / 37 |
+| g8 | 98 | 27 | 58 | 37 / 20 | 66 / 55 | 68 | 40 | 18 / 57 |
+| gc2 | 203 | 0 | 0 | 0 / 0 | 1 / 0 | 31 | 18 | 17 / 20 |
+| gc3 | 203 | 0 | 0 | 0 / 0 | 1 / 0 | 32 | 18 | 17 / 17 |
+| gc6 | 163 | 0 | 1 | 0 / 0 | 2 / 0 | 35 | 23 | 17 / 25 |
+| gc7 | 198 | 0 | 0 | 0 / 0 | 0 / 0 | 28 | 19 | 17 / 17 |
+
+Not threshold-sensitive. Attribution (one cycle each): face-repaint frames in the first 450 ms 85 % vs 0 %, Composite
+minus Paint (first 300 ms) 19.9 vs 16.3 ms, layers at the hold 113 vs 33.
+
+### 4f. P3: ST-2 re-dur / re-keep vs Q, baseline-A, ST-2d fling-hold (13:35-13:44Z; 40.8 -> 39.8 C)
+
+- Q aw1-10e, re-dur (CSS 890da4b0), re-keep (CSS 78047ec2), baseline-A (site-pretty, JS 4606120c / CSS 27776f3d).
+- W driver: 6 s idle, then top to 1745, Timeline on in every counted run (F-047 sequence).
+- Order: Q D K Q K D, then B x 2, then fling-hold on Q x 3 (W to 1100, 1.5 s hold, one 700 px flick).
+- Timeline-OFF S sentinels on Q: open 58.0 scroll / 60.1 bottom, end 57.7. Both pass.
+- fix-hero-exit's flip-relative reads (75d4f74): re-dur HIT (the opacity-end Layout moves from +700 to +500 ms),
+  re-keep HIT (no Layout at +900 or +1150), baseline-A +1645 unresolved.
+- de-pm-hero: the fling-hold rest frames (Layout 19-33 ms at y 1101-1103) are rotator ticks (JS L11571).
+
+### 4g. P4: y≈1960 blocks, F1 arm-load and F3 arm-scope (14:22-14:45Z)
+
+- Window driver to 2500 with a 1.5 s pause at y 1248, r3 inert logger, built-in bottom sentinel 59.7-60 fps in every
+  run, C V V C C V V C. The phone was warm (37.5 -> 40.9 C).
+- Slowest frame in the edge window y 1940-2010:
+  - C: 100-118 ms in 8/8 runs, all named "src img x21 + inert morph panel".
+  - arm-load (JS c6a3ac92): none above 34 ms, then 49, 40 and 42 ms, all unnamed. The ≤37.5 ms card is 1/4;
+    at 50 ms it passes 4/4, threshold-sensitive.
+  - arm-scope (JS 7b0d6222): none above 34 ms in 4/4. The nearest are 39-49 ms at y 2019-2250, unnamed.
+- Scroll-phase frames > 50 ms: C 1-3 per run, arm-load 1-3, arm-scope 0-1.
+- Neither arm added a frame of 54 ms or more in load or settle.
+- The pause cluster at y 1248 (35-52 ms) is present in both arms.
+- **T1a on/off A/A** (warm-up slot, ABBA on aw1-10e, S scroll phase), on vs off: > 50 ms 3 vs 7, > 34 ms 18 vs 21,
+  fps 57.4 vs 57.3. No probe cost visible; frame timing only.
+- F1 Timeline attribution run (depth 8): the edge frame did not occur (max 33 ms in y 1900-2100).
+
+### 4h. P-033 step 0: is the re-keep-op card composited at rest? (14:47Z)
+
+- Builds: re-keep (CSS 78047ec2) and re-keep-op (CSS 507f0ca4); 20 s rest on the card, then the LayerTree read.
+- Both arms give the card its own layer (reason willChange, 430x1328, 15.9 MB).
+- Whole-page Paint in the rest: 1263 records / 96.4 ms vs 1265 / 94.2 ms. fix-hero-exit does the per-cycle scoring.
+
+### 4i. Swipe A/B of the countdown fix, pairs 1-2 (14:00-14:15Z, blind)
+
+C = mw10e-g, V = mw10e-g-cdwc, each served from a snapshot on a neutral port. The pairs are C/V, V/C and a C/C catch, in
+shuffled order; the key stays sealed until pair 3 (after the user console lands).
+
+- Pair 1: "same".
+- Pair 2: "almost same, hero and end of page are laggy".
+
+Most > 50 ms frames sit in the hero window on every page.
+
+### 4j. OSS P0 ca-check (P-021), 13:16Z: which animations survive a main-thread block
+
+- Page: research/architecture/oss-rendering-libs/ca-check.html, served without CSP. serve.mjs's CSP blocked the inline
+  script on the first try (F-067).
+- Capture: WDA `/screenshot` at about 15/s (`wdacap.mjs`), with no inspector attached during the trials. ioscap needs
+  Camera permission for the terminal (TCC), which the user's setup list has.
+- 4 trials: a 1000 ms busy loop starting 300 ms into a 2000 ms animation. The page measured a rAF gap of 1001-1002 ms
+  every time.
+
+| lane | animation | moved frames in block (of ~15) | max diff |
+|---|---|---|---|
+| Ta | transform, cubic-bezier transition | 7, 7, 7, 7 | 54 |
+| Tb | same, `linear()` 31 points | **0, 0, 0, 0** | 0 |
+| Tc | WAAPI, 31 sampled keyframes | 7, 7, 7, 7 | 54 |
+| Fa / Fb / Fc | filter blur, the same three easings | 7 / **0** / 7 | 6-7 / 0 / 6-7 |
+| D1 / D2 | none -> blur(14px) vs blur(0) -> blur(14px) | 7 / 7 | 4 / 4 |
+| E | backdrop-filter 0 -> 20px | 0 (diff 0.2-0.5, at the threshold) | unresolved |
+| S | scroll() timeline control | 0 (trial 1, void), 3, 2, 3 | 66 |
+| W | rAF witness | 0 | 0 |
+
+F-048 holds: `linear()` easing freezes during the block, while cubic-bezier and keyframe-sampled animations keep
+moving. Posted as F-080, CONFIRMED for iOS 26.x by device plus source (F-065: KeyframeEffect.cpp canBeAccelerated rejects linear() points; PlatformCAAnimationCocoa.mm toCAMediaTimingFunction takes only cubic-bezier or identity linear; oss-rendering-libs.md §1.3).
