@@ -279,6 +279,10 @@ between tool calls.
    (58, 2054) inside Composite-after-paint beside a Cloudflare-beacon PerformanceObserver callback (image-load size
    invalidation after the src swap? UNRESOLVED); ~31 RenderView-rooted after script-less style recalc (some CSS
    animation, UNRESOLVED); ~7 countdown tick = 398x52 subtree at (16, 920).
+   **USER CONSOLE LIVE (lead 15:2xZ; tools/console.mjs 4698218, CLAUDE.md 9666bba; server from the lead at
+   localhost:5559):** EVERY user-facing step goes through `node tools/console.mjs post` (then `wait --until
+   started|recording|done|answered`), never the lead's chat. iphone-runner posts swipe pair 3 (redo page 1 + page 2, key
+   in --meta) in a phone gap after P11, never mid-block; de-unknowns-ux posts F-v3 after G-v3 (P-035).
    **P-032 BLOCKED 15:1xZ by I-038** (morph-log hook = 2nd inspector connection hangs the gesture tool; iphone-runner's
    I-039 is a duplicate -> lead merges); lead approved amendment (b) (t0 = first defaultPrevented touchmove per end push),
    second-read OK 15:2xZ with 5 conditions (see the P-032 row); runs hook-free after P11 Block A (running ~15:20Z) + cooling.
