@@ -133,9 +133,10 @@ stage closed by a card; the lead signs D (the attribution card): `fixes/LEAD.md`
   the actual rate and may run faster, e.g. 80 Hz, claims-audit §2.7. Idle and scripted runs (S/W/M) show 16-17 ms
   gaps; finger runs show stretches of 12-13 ms gaps (~80 Hz), trigger UNRESOLVED (F-071), so fps and frame counts
   from F/G runs don't compare with S/W/M runs, the ms thresholds do. Its 1 ms stamps mark the rendering-update
-  start and are not vsync-quantized above one vsync, claims-audit §2.3): goal dt > 50 ms (target 0) and dt > 34, plus the counts at
-  ±4 ms (dt>46/54, dt>30/38); a verdict that differs across ±4 ms is "threshold-sensitive"; no k forms on the
-  phone; record Low Power Mode (30 Hz).
+  start and are not vsync-quantized above one vsync, claims-audit §2.3): goal dt > 50 ms (target 0) and dt > 34, plus the ±4 ms twin counts
+  (dt>46/54 for >50, dt>30/38 for >34); a verdict is "threshold-sensitive" when either twin's verdict differs;
+  frames in the near bands (30, 38] / (46, 54] ms are flagged; phone minShift 4 ms (protocol §5.3); no k forms on
+  the phone; record Low Power Mode (30 Hz).
 
 ## Fix workflow in a worktree (start to finish)
 
@@ -499,7 +500,10 @@ Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages a
   Latin square); 10 min cooling between blocks; at most 2 blocks per question (sequential rule, §5.3).
 - **Sentinel** (static idle is no heat check, F-028): every control run reaches bottom ≥58 fps and scroll ≥44 fps
   (S/W) or held m=1 p95 ≤18 ms (M). A failing control voids every run since the last passing one; the phone cools
-  10 min and the block restarts.
+  10 min and the block restarts. **Timeline blocks** (every counted run captures Timeline): the sentinel is one
+  uncounted Timeline-OFF control run after the warm-up(s) and one at the block end (only the end one if Timeline-on
+  control data already meets both criteria, bottom ≥58 and scroll ≥44); counted runs keep Timeline on in every arm
+  and are judged within the block; attribution runs come after the end sentinel (protocol §5.2, 441f15f).
 - **Drivers:** S `iphone.mjs scroll`, W window run, M morph driver (`__fwMorphDrive`), G WDA gesture, F finger via
   the lead. A claim names its driver; touch, bounce, pin and toolbar effects need G or F before landing.
 - Never during a timed block: an attached Web Inspector, paint rects or debug borders, `layersForNode`, heap
