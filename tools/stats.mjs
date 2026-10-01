@@ -4,7 +4,7 @@
 //
 //   node tools/stats.mjs ticks <dt>...                        tick k of each frame time (k>=5 = ">34", k>=7 = ">50")
 //   node tools/stats.mjs summary <x>...                       n, median [q1-q3], IQR, min, max
-//   node tools/stats.mjs decide --c <x,x,..> --v <x,x,..> [--c .. --v ..] [--dir lower|higher] [--unit ms|ticks|count]
+//   node tools/stats.mjs decide --c <x,x,..> --v <x,x,..> [--c .. --v ..] [--dir lower|higher] [--unit ms|ticks|count] [--platform chrome|phone]
 //                               [--predicted <improvement>] [--min-shift <x>] [--alpha 0.05] [--json]
 //       one --c/--v pair per block (control, variant: per-run values of ONE metric); 1 block -> win / futile /
 //       block2, 2 blocks -> win / no-win (stratified exact van Elteren). Exit 0 always on a decision.
@@ -35,7 +35,7 @@ import { tick, summary, frameCounts, sequentialDecision, runsFromJson, blocksFro
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
-const VALUED = new Set(['--c', '--v', '--dir', '--unit', '--predicted', '--min-shift', '--alpha', '--metric', '--device', '--phase', '--thresholds', '--min-ms', '--lvh', '--svh', '--inner-height']);
+const VALUED = new Set(['--c', '--v', '--dir', '--unit', '--predicted', '--min-shift', '--alpha', '--metric', '--device', '--platform', '--phase', '--thresholds', '--min-ms', '--lvh', '--svh', '--inner-height']);
 const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i < 0 ? d : argv[i + 1]; };
 const all = (n) => argv.flatMap((a, i) => (a === `--${n}` ? [argv[i + 1]] : []));
 const positional = argv.slice(1).filter((a, i, arr) => !a.startsWith('--') && !VALUED.has(i > 0 ? arr[i - 1] : argv[0]));
@@ -67,7 +67,7 @@ function loadRuns(inputs, o) {
 function printDecision(d, title = '') {
   const s = d.stats, c = s.choices;
   console.log(`${title}DECISION ${d.decision.toUpperCase()}: ${d.reason}`);
-  console.log(`  test: ${s.test}; dir ${c.dir} (positive HL = variant better); unit ${c.unit}; min shift ${f(c.minShift)}; medians compared as ${c.medianCompare}`);
+  console.log(`  test: ${s.test}; platform ${c.platform}; dir ${c.dir} (positive HL = variant better); unit ${c.unit}; min shift ${f(c.minShift)}; medians compared as ${c.medianCompare}`);
   console.log(`  rule: ${d.rule}`);
   const blocks = s.perBlock || [s];
   blocks.forEach((b, i) => console.log(`  block ${i + 1}: control ${f(b.control.median)} [${f(b.control.q1)}-${f(b.control.q3)}] n=${b.n[0]}  variant ${f(b.variant.median)} [${f(b.variant.q1)}-${f(b.variant.q3)}] n=${b.n[1]}  U ${b.u}  p ${f(b.p)}  HL ${f(b.shift)}`));
@@ -86,7 +86,10 @@ if (cmd === 'ticks') {
   if (!cs.length || cs.length !== vs.length) die('decide: one --c and one --v per block');
   const blocks = cs.map((c, i) => ({ control: list(c, '--c'), variant: list(vs[i], '--v') }));
   let d;
-  try { d = sequentialDecision({ blocks, dir: opt('dir', 'lower'), unit: opt('unit', 'ms'), predicted: numOpt('predicted'), minShift: numOpt('min-shift'), alpha: numOpt('alpha') ?? 0.05 }); } catch (e) { die(e.message); }
+  // the values carry no device: a phone caller must say so (arch-claims: a forgotten platform silently gets tick rules)
+  const platform = opt('platform', null);
+  if (platform == null && opt('unit', 'ms') === 'ms') console.error('NOTE decide: platform chrome (default): 8.333 ms min shift, medians as ticks; pass --platform phone for phone runs (4 ms, whole-ms medians)');
+  try { d = sequentialDecision({ blocks, dir: opt('dir', 'lower'), unit: opt('unit', 'ms'), predicted: numOpt('predicted'), minShift: numOpt('min-shift'), alpha: numOpt('alpha') ?? 0.05, platform: platform ?? 'chrome' }); } catch (e) { die(e.message); }
   if (asJson) console.log(JSON.stringify(d, null, 1)); else printDecision(d);
 } else if (cmd === 'runs') {
   const metric = opt('metric', null);
@@ -98,7 +101,9 @@ if (cmd === 'ticks') {
   if (seen.length > 1) die(`runs: mixed devices (${seen.join(', ')}): analyse phone and Chrome runs separately`);
   const device = opt('device', seen[0]);
   if (!['phone', 'chrome'].includes(device)) die(`runs: --device phone|chrome (got ${device})`);
-  const deviceWarn = device !== seen[0] ? [`--device ${device} on ${seen[0]} files: ${device === 'chrome' ? 'Chrome rules (k forms, tick medians) on phone data' : 'phone rules (no k forms, raw medians) on Chrome data'}`] : [];
+  // the platform comes from the data (iPhone files -> phone); an explicit override is loud (stdout WARN + stderr)
+  const deviceWarn = device !== seen[0] ? [`PLATFORM OVERRIDE: --device ${device} on ${seen[0]} files: ${device === 'chrome' ? 'Chrome rules (k forms, 8.333 ms min shift, tick medians) on phone data' : 'phone rules (no k forms, 4 ms min shift, whole-ms medians) on Chrome data'}`] : [];
+  for (const w of deviceWarn) console.error(`WARN ${w}`);
   if (device === 'phone' && K_FORMS.has(metric)) die(`runs: no k forms on the phone (CLAUDE.md "Frame thresholds"); use gt50 / gt34 (${metric} -> ${metric === 'k7' ? 'gt50' : metric === 'k5' ? 'gt34' : metric.replace('Ticks', 'Ms')})`);
   const decideAll = (m) => {
     let g;

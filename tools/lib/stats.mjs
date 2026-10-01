@@ -327,6 +327,20 @@ const legacyRow = (f) => (Array.isArray(f) && f.length === 4 ? { t: f[0], dt: f[
  * from before T1a carry none: a legacy `iphone.mjs record` file (summary.whileScrollYChanges) is F, a legacy
  * `iphone.mjs scroll` file (maxY + marks.scroll) is S (ts-iphone-run); anything else stays null (unknown).
  */
+/**
+ * The platform a run file's data comes from, which sets the decision rules (sequentialDecision `platform`).
+ * verify.json is 'chrome'. A frame-log file (fw-iphone-run/1 of iphone-run.mjs, legacy iphone.mjs scroll/record)
+ * is 'phone' unless meta.device names Chrome: meta.device 'iPhone ...' (iphone-run.mjs DEVICE) -> phone,
+ * 'Chrome ...' / 'HeadlessChrome' -> chrome. The UA is not read (Chrome emulation can carry an iPhone UA).
+ */
+export function deviceOf(json) {
+  if (Array.isArray(json?.results)) return 'chrome';
+  const d = String(json?.meta?.device ?? '');
+  if (/iphone|ipad|\bios\b|safari/i.test(d)) return 'phone';
+  if (/chrome|chromium/i.test(d)) return 'chrome';
+  return 'phone';
+}
+
 export function driverOf(json) {
   if (json?.meta?.driver != null) return json.meta.driver;
   if (json?.summary?.whileScrollYChanges) return 'F';
@@ -345,7 +359,7 @@ export function driverOf(json) {
 export function runsFromJson(json, { phase = 'scroll', innerHeight = null, file = '' } = {}) {
   if (Array.isArray(json?.results)) {
     return json.results.filter((r) => !r.diff && r.frameLog?.[phase]).map((r) => ({
-      label: r.label, run: r.run, block: r.block ?? null, arm: r.arm ?? null, pos: null, device: 'chrome', driver: 'chrome', warmup: false, void: false, tops: {}, source: file,
+      label: r.label, run: r.run, block: r.block ?? null, arm: r.arm ?? null, pos: null, device: deviceOf(json), driver: 'chrome', warmup: false, void: false, tops: {}, source: file,
       frames: normFrames(r.frameLog[phase], innerHeight ?? r.innerHeight ?? null),
     }));
   }
@@ -362,7 +376,7 @@ export function runsFromJson(json, { phase = 'scroll', innerHeight = null, file 
       else warning = `no marks: all ${json.frames.length} frames used, incl. load and idle (pass --phase all to accept)`;
     }
     return [{ ...(warning ? { warning } : {}),
-      label: meta.label ?? null, run: meta.run ?? 0, block: meta.block ?? null, arm: meta.arm ?? null, pos: meta.pos ?? null, device: 'phone', driver: driverOf(json),
+      label: meta.label ?? null, run: meta.run ?? 0, block: meta.block ?? null, arm: meta.arm ?? null, pos: meta.pos ?? null, device: deviceOf(json), driver: driverOf(json),
       warmup: !!meta.warmup, void: !!meta.void, sentinel: meta.sentinel ?? json.sentinel ?? null, tops: json.tops || meta.tops || {}, source: file,
       frames: normFrames(json.fields ? fr : fr.map(legacyRow), innerHeight),
     }];

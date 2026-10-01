@@ -11,7 +11,7 @@ import {
   TICK_MS, tick, tickThresholdMs, quantile, median, summary, frameCounts, runMetrics, mannWhitney, hodgesLehmann,
   vanElteren, stratifiedShift, aligned, compareBlock, compareBlocks, sequentialDecision, blockOrder,
   crossingY, placeFrame, placeFrames, normalizeFrame, runsFromJson, blocksFromRuns, blockWarnings,
-  compareBlockIds, METRICS, TWIN, twinKind, twinsFor, K_FORMS, PHONE_TWINS, driverOf,
+  compareBlockIds, METRICS, TWIN, twinKind, twinsFor, K_FORMS, PHONE_TWINS, driverOf, deviceOf,
 } from '../../tools/lib/stats.mjs';
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`);
@@ -343,7 +343,7 @@ test('stats.mjs CLI: ticks, summary, decide (1 and 2 blocks, --json), runs over 
   r = node(tool('stats.mjs'), ['decide', '--c', '40,42,44,46', '--v', '30,32,34,36']);
   assert.equal(r.code, 0, r.stderr);
   assert.match(r.stdout, /^DECISION WIN: U = 0, p 0.014, HL 10 >= 8.333$/m);
-  assert.match(r.stdout, /test: exact Mann-Whitney, one-sided; dir lower .* unit ms; min shift 8.333; medians compared as ticks/);
+  assert.match(r.stdout, /test: exact Mann-Whitney, one-sided; platform chrome; dir lower .* unit ms; min shift 8.333; medians compared as ticks/);
   r = node(tool('stats.mjs'), ['decide', '--c', '40,41,42,43', '--v', '38,39,40,41', '--c', '50,52,54,56', '--v', '44,46,48,50', '--json']);
   const j = JSON.parse(r.stdout);
   assert.equal(j.decision, 'no-win');
@@ -461,6 +461,13 @@ test('phone: medians compare raw (no ticks), legacy drivers, legacy finger rows,
   // device and driver per run; files from before T1a: record -> F, scroll -> S, else unknown
   assert.deepEqual([driverOf({ meta: { driver: 'M' } }), driverOf({ summary: { whileScrollYChanges: {} } }), driverOf({ maxY: 9, marks: { scroll: [0, 1] } }), driverOf({ frames: [] })], ['M', 'F', 'S', null]);
   assert.equal(runsFromJson({ results: [{ label: 'a', run: 1, frameLog: { scroll: [[0, 16, 0]] } }] })[0].device, 'chrome');
+  // the platform comes from the data: meta.device first (iphone-run.mjs DEVICE, legacy files), else a frame-log file is phone
+  assert.deepEqual([
+    deviceOf({ results: [] }), deviceOf({ frames: [], meta: { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', schema: 'fw-iphone-run/1' } }),
+    deviceOf({ frames: [], meta: { device: 'HeadlessChrome 154 (430x775 emulation)', ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' } }),
+    deviceOf({ frames: [] }),
+  ], ['chrome', 'phone', 'chrome', 'phone']);
+  assert.equal(runsFromJson({ frames: [[0, 16, 0]], meta: { device: 'Chrome 154' } }, { phase: 'all' })[0].device, 'chrome');
   // a legacy finger row [t, dt, y, innerHeight] is not a fw-iphone-run/1 tuple: y is y, innerHeight is innerHeight
   const fin = runsFromJson({ frames: [[0, 16, 0, 775], [16, 40, 30, 815]], summary: { whileScrollYChanges: {} }, meta: {} }, { phase: 'all' })[0];
   assert.deepEqual([fin.device, fin.driver, fin.frames[1].yStart, fin.frames[1].yEnd, fin.frames[1].innerHeight], ['phone', 'F', 0, 30, 815]);
@@ -522,8 +529,24 @@ test('stats.mjs runs on phone files: gt50 at +-4 ms, threshold-sensitive, near t
   }
   r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'k7', '--device', 'chrome']);
   assert.equal(r.code, 0, r.stderr);
-  assert.match(r.stdout, /^WARN --device chrome on phone files: Chrome rules \(k forms, tick medians\) on phone data$/m);
   assert.match(r.stdout, /^ {2}both ways: k7 FUTILE \| gt50 WIN \(.*\) {2}THRESHOLD-SENSITIVE$/m); // 52 ms is k = 6, not k >= 7
+  assert.match(r.stdout, /^WARN PLATFORM OVERRIDE: --device chrome on phone files: Chrome rules \(k forms, 8.333 ms min shift, tick medians\) on phone data$/m);
+  assert.match(r.stderr, /^WARN PLATFORM OVERRIDE: --device chrome on phone files/m);
+  assert.match(r.stdout, /platform chrome;/);
+  // without --device the platform comes from the data: iPhone files decide by the phone rules
+  r = node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'p95Ms', '--json']);
+  assert.deepEqual(Object.values(JSON.parse(r.stdout).arms).map((x) => [x.stats.choices.platform, x.stats.choices.minShift, x.stats.choices.medianCompare]), [['phone', 4, 'ms1']]);
+  assert.doesNotMatch(r.stderr, /PLATFORM OVERRIDE/);
+  // decide takes bare values: --platform phone gives the phone rules; without it a NOTE says Chrome rules apply
+  r = node(tool('stats.mjs'), ['decide', '--c', '40,41,42,43', '--v', '35,36,37,38', '--platform', 'phone']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /^DECISION WIN: U = 0, p 0.014, HL 5 >= 4$/m);
+  assert.match(r.stdout, /platform phone; .* min shift 4; medians compared as ms1/);
+  assert.doesNotMatch(r.stderr, /NOTE/);
+  r = node(tool('stats.mjs'), ['decide', '--c', '40,41,42,43', '--v', '35,36,37,38']);
+  assert.match(r.stdout, /^DECISION BLOCK2: /m);
+  assert.match(r.stderr, /^NOTE decide: platform chrome \(default\).*--platform phone/m);
+  assert.equal(node(tool('stats.mjs'), ['decide', '--c', '1,2', '--v', '1,2', '--platform', 'tv']).code, 2);
   assert.equal(node(tool('stats.mjs'), ['runs', join(d, 'p'), '--metric', 'gt50', '--device', 'tv']).code, 2);
   // phone and Chrome runs in one analysis are refused
   writeFileSync(join(d, 'p', 'verify.json'), JSON.stringify({ results: [{ label: 'a', run: 1, block: 1, arm: 'C', frameLog: { scroll: [[0, 16, 0]] } }] }));
