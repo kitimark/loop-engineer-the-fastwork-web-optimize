@@ -84,4 +84,5 @@ TICKET <topic> · <build name> + served hashes · control <ONE name on the same 
 driver <S|W|M|G|F> · question: <one> · prediction <id>
 decisions: if <outcome A> then <…>; if <outcome B> then <…>; if <outcome C> then <…>
 probe set: <std | std + timeline (attribution run) | hitches> · expected minutes: <n>
+warm-up: one uncounted load per served origin/port, every arm incl. the control (caches are per origin, U5): <ports>
 ```

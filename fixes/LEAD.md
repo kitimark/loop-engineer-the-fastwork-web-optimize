@@ -107,7 +107,9 @@ the lesson behind each rule is its §1 table). A topic skips nothing; a stage ca
 
 **Slot tickets (phone access).** Only ticketed builds go on the phone. A ticket names: build + served hashes; the
 ONE named control on the same base and its hashes; the driver (S/W/M/G/F); the one question; the prediction id;
-the "if X then Y" decision for each outcome; the probe set; expected minutes. mgmt-ops validates it, the lead
+the "if X then Y" decision for each outcome; the probe set; the served ports, each with one uncounted warm-up load
+(every arm, control included, not one per block: browser caches are per origin, arch-unknowns U5); expected
+minutes. mgmt-ops validates it, the lead
 ranks the queue (by [`DIRECTION.md`](DIRECTION.md)). **Reorders only at block boundaries**; a running block is
 never interrupted. A rejected ticket gets its reason in one message. Block rules (warm-up, sentinel, ≤9 counted
 runs, ABBA order, max 2 blocks): `CLAUDE.md` "Shared devices" and protocol §5.
