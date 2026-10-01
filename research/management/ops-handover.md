@@ -251,8 +251,8 @@ between tool calls.
    (lead 14:2xZ: right after P4 B) -> 10 min cooling -> P-032 G cdwc (VALIDATED, ~20 min) ->
    P11 Block A + P14 -> P12 -> P10 -> P5 -> P-033 gain (VALIDATED; step 0 fills any free phone gap) -> P9 -> P-030 ->
    P-031 G -> hero-B -> R2 bg -> /10d -> N12 -> P6-P8, P13. P-033 "within noise" -> bundle candidate, not standalone.
-   **mw10e-cdwc landing branch fix/mw10e-cdwc 3d664c7** (on 77c480e): review-cdwc round 2 resolved B1/B2/B4; lands only
-   after P-032 PASS + B5 (one-line wording); no further review round. P4 block A (P-013) done 14:25-14:30Z.
+   **mw10e-cdwc landing branch fix/mw10e-cdwc 6652ad9** (on 77c480e): review-cdwc round 2 resolved B1/B2/B4, B5 fixed; lands only
+   after P-032 PASS (rebase on current main first); no further review round. P4 block A (P-013) done 14:25-14:30Z.
    **F-076 / P-034 owner = fix-nav-morph after cdwc lands** (lead: same countdown code; no fix-countdown-idle-raf spawn).
    Toolsmith bundle: lead spawns after ts-wait's npm test on main (c4a1ee2) passes. ts-user-console (tools/console.mjs:
    user-facing step console, agents `console.mjs wait <id> --until started|answered`) in progress.
