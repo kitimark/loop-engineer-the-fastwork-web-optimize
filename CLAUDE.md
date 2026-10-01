@@ -346,6 +346,11 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
 - **Named spawns** `<role>-<topic>` (`fix-<topic>`, `ts-<incident>`, `review-<topic>`, `de-<area>`, `arch-<topic>`,
   `mgmt-ops-<N>`), unique per session. Every spawn prompt carries the **peer directory** (live copy:
   `research/management/ops-handover.md`); if a name fails, use the agent ID; never drop the message.
+- **User console** (`tools/console.mjs`, 4698218): anything the user must do or answer (finger tests, swipe A/B,
+  yes/no, ratings) goes there, not into the lead's chat. The lead keeps `node tools/console.mjs serve` running
+  (localhost only, prints `CONSOLE_URL=`) and reads answers with `console.mjs list`. The store
+  `.git/fastwork-mirror/console/` is shared by every worktree and stays local; posted URLs may name the LAN host, so
+  never copy them into committed files (Hard rule 12).
 - **Ask the owner of the question directly.** mgmt-ops is the hub for the rest; the lead lands, resolves
   incidents, reorders locks, spawns and talks to the user.
 - Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
@@ -487,9 +492,13 @@ iPhone protocol on top of the lease:
 1. Acquire the lease, then message the lead: "iPhone acquired for <topic>: <LAN URL>".
 2. Scripted checks: `iphone.mjs scroll` for baseline and patched URLs (`fix.mjs serve` for each, or
    `serve.mjs --root site-pretty --port auto --https` for the plain baseline).
-3. Finger test (touch scroll-jack, toolbar resize): message the lead "need a finger scroll on <URL>,
-   top to bottom then push past the end". The lead asks the user; start `iphone.mjs record` when
-   the lead confirms the user is ready.
+3. Finger test (touch scroll-jack, toolbar resize, blind swipe A/B): post it to the **user console**, not the
+   chat: `node tools/console.mjs post --by <you> --kind action --record --title "<one line>" --instructions "<1-2
+   plain sentences>"`, or `--kind swipe-pair --url <A> --url2 <B> --meta '{"key":…}'` for a blind pair. Per part N:
+   `ack <id> --part N --state loading|ready` while the phone loads, then `wait <id> --until started --part N` in the
+   background; start `iphone.mjs record`, then `ack <id> --part N --state recording` (only now does the page say
+   "swipe"); `wait <id> --until done --part N` (at your cap `ack --state done`); finally `wait <id> --until answered`
+   prints `{value, notes, meta}`. Missed swipe: `redo <id> --part N --message "why"`. Exit 0 MET, 3 TIMEOUT, 4 NEVER.
 4. Release and message the lead "iPhone released (<topic>)". Never hold it while idle; never
    navigate the phone without the lease; waiters queue with `acquire iphone --wait` (first come first served,
    no hand-made retry loops).
