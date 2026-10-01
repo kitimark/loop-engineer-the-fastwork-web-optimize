@@ -313,6 +313,15 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
   - after block 2: pool n=8 per arm **stratified by block** (each run as its difference from its own block's
     control median, or van Elteren). Win if the stratified one-sided p ≤ 0.05 and the shift ≥ 1 tick.
   - 3-arm blocks pooled over 2 blocks give n=6 per arm (hero's n≥6), same stratified rule.
+- **Minimum shift and ties per platform** (arch-claims 2026-10-01 14:2xZ; `tools/stats.mjs` records the rule
+  applied in `choices.platform`). "1 tick" above is Chrome's unit:
+  - Chrome: p50/p95 minShift = 8.333 ms (1 tick); median futility compares in ticks.
+  - Phone: p50/p95 minShift = **4 ms**, the ±4 ms band of A5 (phone stamps are 1 ms and off the vsync grid above
+    one vsync, claims-audit §2.3). Median futility compares in whole ms (`ms1`): equal rounded medians are a tie.
+    Caveat (review-stats): rounding to whole ms has the same bin-edge effect as ticks (35.4 vs 35.6 ms counts as
+    a tie, i.e. futile).
+  - Count metrics (frames over a threshold): minShift 1 frame/run on both devices.
+  - Revisit after P4's T1a A/A: if |HL shift of p95| between the two A arms is ≥ 4 ms, the phone floor rises to it.
 - Report median [IQR] and every run. Never pool frames across runs; never compare across blocks without a shared
   control (heat moves p50 ~5 ms between blocks).
 
