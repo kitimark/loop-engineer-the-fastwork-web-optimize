@@ -23,6 +23,19 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## Digest log (newest first, 5 lines each)
 
+- **19:0xZ** Landed 30eaa11 (de-style-recalc DONE: style-recalc-images.md, F-093..F-096): H1 nested CSS REFUTED (scope, not
+  matching), H2 images = memory only. Ranked fixes 1 scene-scope, 2 R4+V3 (fix-scene-scope), 3 st5, 4 fwReskip, 5-6
+  sweep/packet -> transform, 7 image right-sizing (Sim memory + pixel check, no phone) -> PROGRESS items. ts-gesture I-042
+  D1-D3 (Sim, OBSERVED, n=1): >= 33 ms segments play as written, 25 ms stretch +31 %, today's 8 ms collapse to a 50 ms
+  flick, ~50 ms per pointerMove before touchstart; fix = compileStroke one move per >= 40 ms; phone D4 ~19:10Z <= 7 min.
+  **OPEN (track):** (a) §2.1's final B numbers: when iphone-runner's inspector-clean SR rerun lands, fix-scene-scope (or
+  mgmt-ops) appends them to style-recalc-images.md §2.1, append-only (re-read the y≈2615 and y≈5260 rows). (b) UNRESOLVED:
+  why the y≈2610 scene flip was cheap in ~30/35 older runs and costly in every B block-1 run (dirty-container hypothesis;
+  decisive = scene-scope's Chrome check of Layout dirty objects at the flip). (c) UNRESOLVED: Chrome's per-frame `.hero`
+  inline-style writes (40-55 ms at 6x, JS 4172) have no phone counterpart: skipped or priced low? (phone Timeline
+  FunctionCall at JS 4172 in an idle-hero window). (d) UNRESOLVED: `step-end` opacity boils (commission underline, B CSS
+  165-171) wake the main thread per step or per frame (§3.2).
+
 - **18:5xZ** fix-scene-scope spawned (lead): de-style-recalc's proposal (`:where(*)` scene pause narrowed V1 / API pause
   V1b / early flip V2 / panel + R4 V3, on B). PHONE ORDER: iphone-runner style-recalc block (lease to 19:12Z) ->
   ts-gesture ~5 min -> fix-scene-scope W Timeline block (after its Chrome check + second read) -> P-039 st5 -> P-033 ->

@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T18:54:00Z",
+ "updatedAt": "2026-10-01T19:03:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-01T19:03:00Z", "text": "Your two ideas checked: complex CSS is not the cause; the cost is how many elements each change touches. The images use more memory than needed but cost nothing per frame. Seven ranked fixes follow, scene-scope first." },
   { "at": "2026-10-01T18:54:00Z", "text": "A fix for slow style recalculation is being built (fix-scene-scope): it narrows how the page pauses its hidden scenes. After a Chrome check it goes to the phone next." },
   { "at": "2026-10-01T18:33:00Z", "text": "Your decision: style recalculation is now the top priority. The phone first records where style time goes in A and B; the robot-finger check and the other tests follow." },
   { "at": "2026-10-01T18:31:00Z", "text": "Your sitting: on the hero and at the end of the page, the best build felt quite a bit smoother than the original. Your idea that style recalculation causes the lag is now being checked by a new helper." },
@@ -161,8 +162,72 @@
    "owner": "de-style-recalc, fix-scene-scope",
    "checks": [],
    "details": [
-    "User hypotheses from C-013 notes (lead relay 18:3xZ): (1) selector matching cost from nested/complex CSS; (2) image rotation/resizing per frame, image sizes, cap render triggers at 60 fps via native CSS. Status: untested.",
+    "User hypotheses from C-013 notes (lead relay 18:3xZ): (1) selector matching cost from nested/complex CSS; (2) image rotation/resizing per frame, image sizes, cap render triggers at 60 fps via native CSS. Checked (de-style-recalc, style-recalc-images.md 30eaa11): H1 nested CSS REFUTED (no nesting shipped, matching ~3 %; the spikes are invalidation scope with nested Layout in RecalculateStyles); H2 images oversized in memory (~35 MB derived) but not a per-frame cost. Ranked: 1 scene-scope (this item), 2 r4-v3, 3 st5 (hero-carousel), 4 fwreskip, 5-6 anim-transform, 7 image-size.",
     "fix-scene-scope (lead 18:5xZ): variants on B: V1 narrow the :where(*) scene pause, V1b pause by API, V2 flip early, V3 panel + R4; Chrome check, then a W Timeline phone block ahead of P-039."
+   ]
+  },
+  {
+   "id": "r4-v3",
+   "title": "Panel push at the page end: less style work when it starts",
+   "area": "end",
+   "state": "diagnosing",
+   "stage": "I",
+   "fixes": "When the bottom panel starts to grow, about 700 elements get their style recalculated (11-14 ms). Two small CSS/JS changes would leave most of them out.",
+   "felt": {"answer": "not-yet"},
+   "gate": "Rank 2 of de-style-recalc's list: a Chrome check, then a phone test with the scripted panel driver; a robot or real finger before landing.",
+   "next": "fix-scene-scope adds it after the scene-scope build.",
+   "owner": "fix-scene-scope",
+   "checks": [],
+   "details": [
+    "style-recalc-images.md §5 rank 2: R4 on B (@property --morph, --morph-fade inherits:false; in nav-morph-all v04, not in B) + scene-scope V3 (panel exempt/narrowed, B JS 13567). Derived: ~545 inherited + 172 panel nodes leave the scope. M block; G/F before landing."
+   ]
+  },
+  {
+   "id": "fwreskip",
+   "title": "A size write in the middle of the page (y about 2990)",
+   "area": "middle",
+   "state": "diagnosing",
+   "stage": "I",
+   "fixes": "One frame around the middle costs 13-14 ms, mostly layout, because a section's size is set just as it comes near. Setting it earlier would remove most of it.",
+   "felt": {"answer": "not-yet"},
+   "gate": "Rank 4: measured in the same phone block as the scene-scope fix.",
+   "next": "Part of the scene-scope work (V4); no owner of its own yet.",
+   "owner": "fix-scene-scope (V4), scroll-engine topic",
+   "checks": [],
+   "details": [
+    "style-recalc-images.md §5 rank 4: fwReskip intrinsic-size write (B JS 2821), 13-14 ms at y~2990, ~1.6 ms style, 12 ms nested Layout; W, same block as rank 1."
+   ]
+  },
+  {
+   "id": "anim-transform",
+   "title": "Endless sweep and line animations in the platform section",
+   "area": "middle",
+   "state": "diagnosing",
+   "stage": "R",
+   "fixes": "Six endless light sweeps and 20 moving line packets repaint every frame while that section is on screen. Small each frame, but continuous; they could move with the GPU instead.",
+   "felt": {"answer": "not-yet"},
+   "gate": "Ranks 5-6: a visual-equivalence check, then a phone test of paint per second.",
+   "next": "No owner yet; after the higher-ranked fixes.",
+   "owner": "unassigned (lead)",
+   "checks": [],
+   "details": [
+    "style-recalc-images.md §5 ranks 5-6: doc-sweep background-position -> transform on a pseudo-element strip (6 infinite in #platform, B CSS 5834); stroke-dashoffset packets (20 paid-border/rail) -> transform/offset-distance or a mask. Paint <= 2.6 ms per frame (OBSERVED)."
+   ]
+  },
+  {
+   "id": "image-size",
+   "title": "Images bigger than they need to be (memory)",
+   "area": "whole",
+   "state": "diagnosing",
+   "stage": "R",
+   "fixes": "Several images are much larger than they are shown, using about 35 MB more memory than needed (estimate). This is not a per-frame cost, but it guards against the phone running low on memory.",
+   "felt": {"answer": "not-yet"},
+   "gate": "Rank 7: a memory check on the simulator plus a visual check (no visible change). No phone timing test.",
+   "next": "No owner yet; a new topic when the lead assigns it.",
+   "owner": "unassigned (lead)",
+   "checks": [],
+   "details": [
+    "style-recalc-images.md §5 rank 7, F-096: roles PNG 1282² -> ~1000², avatars -> 192², strawberry/orchestra/leobeer/weng -> ~600 wide, hero covers -> ~500 wide, srcset; ~35 of ~153 MB decoded (derived). Pixel diff <= 0.4 % at DPR 3. Simulator/Instruments memory only (user Sim rule)."
    ]
   },
   {
