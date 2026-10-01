@@ -1,0 +1,101 @@
+# fastwork mirror fix: rotator-st6
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply rotator-st6 --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2910,7 +2910,32 @@
+   animation:
+     0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
+     0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++/* st5: 5 persistent slots. Every slot keeps its own layer for the page's life (no layer gain/loss when the
++   slide starts or ends); the 5th waits at the pop's start state; .is-sliding (toggled by the rotator) runs the
++   same keyframes, easings and duration as the keyed version */
++.start-selling-avatars.is-carousel img {
++  will-change: transform, translate, opacity;
++  /* st6 (de-pm-hero's no-flip probe): every slot always has a transform and is never fully opaque, so no
++     style change ever flips hasTransform() or opacity isOpaque() (WebKit miscDataChangeRequiresLayout) */
++  transform: scale(1);
++  opacity: 0.999;
+ }
++.start-selling-avatars.is-carousel img.st5-next {
++  opacity: 0;
++  transform: scale(0.35);
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img.st5-next {
++  animation:
++    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
++    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
+ @keyframes avatars-shift {
+   0% {
+     translate: 0;
+@@ -2921,7 +2946,7 @@
+ }
+ @keyframes avatars-exit {
+   0% {
+-    opacity: 1;
++    opacity: 0.999;
+     translate: 0;
+     clip-path: ellipse(16px 16px at 50% 50%);
+     transform: scale(1);
+@@ -2939,7 +2964,7 @@
+     transform: scale(0.35);
+   }
+   to {
+-    opacity: 1;
++    opacity: 0.999;
+     transform: scale(1);
+   }
+ }
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -11480,7 +11480,7 @@
+ }
+ g([`pointerdown`, `pointermove`, `pointerup`, `click`]);
+ var dM = h(
+-    `<img loading="lazy" decoding="async" class="is-exit" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" class="is-enter" alt=""/>`,
++    `<img loading="lazy" decoding="async" class="st5-lead" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" class="st5-next" alt=""/>`,
+     1,
+   ),
+   fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
+@@ -11663,11 +11663,15 @@
+         i = V(r, 2),
+         a = V(i, 2),
+         o = V(a, 2);
++      /* st5: the 5 slots stay mounted for the page's life; x+1 updates src in place and S toggles
++         .is-sliding on the carousel (the slide runs on permanently layered imgs, see CSS), so neither
++         tick inserts/removes renderers or gains/loses layers */
+       (l(
+-        (e, t, s, c, l) => {
+-          (k(n, `src`, e), k(r, `src`, t), k(i, `src`, s), k(a, `src`, c), k(o, `src`, l));
++        (a0, a1, a2, a3, a4, sl) => {
++          (k(n, `src`, a0), k(r, `src`, a1), k(i, `src`, a2), k(a, `src`, a3), k(o, `src`, a4));
++          me.classList.toggle(`is-sliding`, sl);
+         },
+-        [() => E(0), () => E(1), () => E(2), () => E(3), () => E(4)],
++        [() => E(0), () => E(1), () => E(2), () => E(3), () => E(4), () => s(S)],
+       ),
+         f(e, t));
+     },
+@@ -11687,7 +11691,7 @@
+         f(e, t));
+     };
+   (m(he, (e) => {
+-    s(S) ? e(ge) : e(_e, -1);
++    e(ge); /* st5: always the persistent 5-slot block (the keyed 4-img `_e` branch is never used) */
+   }),
+     M(me));
+   var ve = V(me, 2),

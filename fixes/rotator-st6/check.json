@@ -1,0 +1,124 @@
+{
+ "topic": "rotator-st6",
+ "kind": "functional check",
+ "chromeMode": "headless",
+ "createdAt": "2026-10-01T20:55:19.252Z",
+ "git": {
+  "branch": "worktree-agent-a1722cf5058e25591",
+  "head": "8207797"
+ },
+ "config": {
+  "viewport": "mobile",
+  "serveArgs": [
+   "--vendors=local",
+   "--https",
+   "--latency",
+   "150"
+  ],
+  "baseline": "site-pretty + fixes/aw1-10e/overlay",
+  "baselineSnapshot": {
+   "snapshot": "b1789284481295-4ad4a84a",
+   "state": "ok"
+  },
+  "stackedOn": "aw1-10e",
+  "browser": "Chrome/154.0.8037.58",
+  "uaOverride": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "screenInfo": {
+   "width": 1512,
+   "height": 982,
+   "dpr": 2,
+   "arg": "--screen-info={0,0 1512x982 devicePixelRatio=2}"
+  },
+  "lock": {
+   "mode": "short",
+   "maxSec": 300
+  }
+ },
+ "note": "functional only (headless Chrome): no timing; screenshot diffs compare headless with headless (research/architecture/headless-functional.md). Never a gain verdict: that is fix.mjs ab.",
+ "servedCheck": [
+  {
+   "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+   "source": "overlay",
+   "sha256": "7e40587580d396647af6133c3dece8bec6d1ee5ba42ceaae65087348cf62c436"
+  },
+  {
+   "path": "/_app/immutable/nodes/2.DyWL8TcE.js",
+   "source": "overlay",
+   "sha256": "268a68962d186803988aad1298997fc400d1bebdcb92e3d45a03397c02d0230a"
+  }
+ ],
+ "verdict": "ok",
+ "regressions": {
+  "newErrors": [],
+  "fixedErrors": [],
+  "errorsBothSides": [],
+  "new404s": [],
+  "newFailures": [],
+  "morphReached": {
+   "baseline": true,
+   "patched": true
+  },
+  "screenshotDiffPct": {
+   "top": 0.15,
+   "middle": 0.01,
+   "bottom": 0.53
+  },
+  "domDiff": {
+   "elements": {
+    "baseline": 1509,
+    "patched": 1510
+   },
+   "added": [
+    "div.is-sliding",
+    "img.st5-lead",
+    "img.st5-next"
+   ],
+   "removed": []
+  }
+ },
+ "pages": [
+  {
+   "label": "base",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1509,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/rotator-st6/2026-10-01T20-54-07-110Z/mobile-base-top.png",
+    "middle": "out/check/rotator-st6/2026-10-01T20-54-07-110Z/mobile-base-middle.png",
+    "bottom": "out/check/rotator-st6/2026-10-01T20-54-07-110Z/mobile-base-bottom.png"
+   }
+  },
+  {
+   "label": "fix",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1510,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/rotator-st6/2026-10-01T20-54-07-110Z/mobile-fix-top.png",
+    "middle": "out/check/rotator-st6/2026-10-01T20-54-07-110Z/mobile-fix-middle.png",
+    "bottom": "out/check/rotator-st6/2026-10-01T20-54-07-110Z/mobile-fix-bottom.png"
+   }
+  }
+ ],
+ "raw": "out/check/rotator-st6/2026-10-01T20-54-07-110Z/check-raw.json"
+}
