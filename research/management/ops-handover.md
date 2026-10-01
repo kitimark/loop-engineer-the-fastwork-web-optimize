@@ -227,6 +227,10 @@ between tool calls.
    **Phone scoring (lead, CLAUDE.md 668b612, supersedes the v>=3 decision):** dt > 50 goal (target 0) + dt > 34, counts
    at ±4 ms (dt>46/54, dt>30/38), "threshold-sensitive" if the verdict differs; no k forms on the phone; Low Power Mode
    per run. fix-reviewer check 15 updated (13da193).
+   **Timeline-block sentinel (lead 12:5xZ, every Timeline block: P3, P11, P14, listener):** one uncounted Timeline-OFF
+   control sentinel run after the warm-ups and one at the block end carry the >=58/>=44 rule (a failure voids the block);
+   counted runs keep Timeline on in every arm, judged within the block; record counted C fps with Timeline on as info.
+   If Timeline-on C >= 44 data exists, only the end sentinel is needed. doc-protocol-v2 writes it into protocol §5.
    **Probe rule (lead 12:3xZ):** until T1a lands, runs count only with the probe P0 cleared (rAF-only logger). T1a
    review ACCEPT (12:4xZ), pending ts-iphone-run's commit + npm test.
    **Holds:** fixed-size morph diagnostic, ghr85a, R7, R8 nav half, a1 (behind the countdown fix), h4.
