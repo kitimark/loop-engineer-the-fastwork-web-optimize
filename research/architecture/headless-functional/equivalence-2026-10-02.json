@@ -1,0 +1,1491 @@
+{
+ "note": "ts-headless 2026-10-02, Chrome 154.0.8037.58, macOS, baseline snapshot b1789284481295-4ad4a84a vs fixes/all-wave1 overlay; served --vendors=local --https --latency 150; 430x932 DPR 3 touch, unthrottled. r2 label bug: CHROME=<screen wrapper> leaked from run C into A2 and P1-P3 (sh function prefix assignment), so A2 = headless + --screen-info DPR 2 WITHOUT UA override, P1-P3 = headless + screen-info + UA override.",
+ "cpu": {
+  "r1/probe-headed": {
+   "wallSec": 36.2,
+   "treeCpuSec": 24.46
+  },
+  "r1/probe-headless": {
+   "wallSec": 36.3,
+   "treeCpuSec": 15.97
+  },
+  "r1/verify-headed": {
+   "wallSec": 86.1,
+   "treeCpuSec": 54.61
+  },
+  "r1/verify-headless": {
+   "wallSec": 76.9,
+   "treeCpuSec": 32.88
+  },
+  "r2/A": {
+   "wallSec": 44.7,
+   "treeCpuSec": 25.69
+  },
+  "r2/A2": {
+   "wallSec": 36.3,
+   "treeCpuSec": 16.35
+  },
+  "r2/B": {
+   "wallSec": 36.5,
+   "treeCpuSec": 15.83
+  },
+  "r2/C": {
+   "wallSec": 36.8,
+   "treeCpuSec": 16.2
+  },
+  "r2/P": {
+   "wallSec": 38.2,
+   "treeCpuSec": 50.71
+  }
+ },
+ "verify": {
+  "headed": [
+   {
+    "label": "base",
+    "errors": 0,
+    "notFound": 0,
+    "morphReached": true,
+    "h": 6240,
+    "shimScripts": 6,
+    "scripts": 20,
+    "scrollY": 5345,
+    "browser": "Chrome/154.0.8037.58"
+   },
+   {
+    "label": "fix",
+    "errors": 0,
+    "notFound": 0,
+    "morphReached": true,
+    "h": 6240,
+    "shimScripts": 6,
+    "scripts": 21,
+    "scrollY": 5345,
+    "browser": "Chrome/154.0.8037.58"
+   },
+   {
+    "diff": "top",
+    "diffPct": 0.19
+   },
+   {
+    "diff": "middle",
+    "diffPct": 0
+   },
+   {
+    "diff": "bottom",
+    "diffPct": 0.55
+   }
+  ],
+  "headless": [
+   {
+    "label": "base",
+    "errors": 0,
+    "notFound": 0,
+    "morphReached": true,
+    "h": 6241,
+    "shimScripts": 5,
+    "scripts": 19,
+    "scrollY": 5346,
+    "browser": "Chrome/154.0.8037.58"
+   },
+   {
+    "label": "fix",
+    "errors": 0,
+    "notFound": 0,
+    "morphReached": true,
+    "h": 6241,
+    "shimScripts": 5,
+    "scripts": 19,
+    "scrollY": 5346,
+    "browser": "Chrome/154.0.8037.58"
+   },
+   {
+    "diff": "top",
+    "diffPct": 0.13
+   },
+   {
+    "diff": "middle",
+    "diffPct": 0
+   },
+   {
+    "diff": "bottom",
+    "diffPct": 0.55
+   }
+  ]
+ },
+ "probes": {
+  "r1-headed": {
+   "userAgentHeadless": false,
+   "product": "Chrome/154.0.8037.58",
+   "gpu": {
+    "gl": "(gl=egl-angle,angle=metal)",
+    "skia": "GraphiteDawnMetal",
+    "featureStatus": {
+     "2d_canvas": "enabled",
+     "direct_rendering_display_compositor": "disabled_off_ok",
+     "gpu_compositing": "enabled",
+     "multiple_raster_threads": "enabled_on",
+     "opengl": "enabled_on",
+     "rasterization": "enabled",
+     "raw_draw": "disabled_off_ok",
+     "skia_graphite": "enabled_on",
+     "trees_in_viz": "disabled_off",
+     "video_decode": "enabled",
+     "video_encode": "enabled",
+     "webgl": "enabled",
+     "webgpu": "enabled",
+     "webnn": "disabled_off"
+    }
+   },
+   "results": [
+    {
+     "label": "base",
+     "mode": "headed",
+     "preDpr": 2,
+     "preScreen": [
+      1512,
+      982
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1337,
+     "shimScripts": 6,
+     "domTokens": 444,
+     "layers": {
+      "count": 106,
+      "drawing": 101
+     },
+     "anims": {
+      "running": 7,
+      "finished": 1,
+      "paused": 7
+     },
+     "io": {
+      "observed": 9,
+      "entries": 9,
+      "intersecting": 2
+     },
+     "rafFps": 119.9,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.8
+    },
+    {
+     "label": "fix",
+     "mode": "headed",
+     "preDpr": 2,
+     "preScreen": [
+      1512,
+      982
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1510,
+     "shimScripts": 6,
+     "domTokens": 460,
+     "layers": {
+      "count": 120,
+      "drawing": 115
+     },
+     "anims": {
+      "paused": 10,
+      "running": 11,
+      "finished": 1
+     },
+     "io": {
+      "observed": 10,
+      "entries": 10,
+      "intersecting": 3
+     },
+     "rafFps": 119.9,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.7
+    }
+   ]
+  },
+  "r1-headless": {
+   "userAgentHeadless": true,
+   "product": "Chrome/154.0.8037.58",
+   "gpu": {
+    "gl": "(gl=egl-angle,angle=metal)",
+    "skia": "GraphiteDawnMetal",
+    "featureStatus": {
+     "2d_canvas": "enabled",
+     "direct_rendering_display_compositor": "disabled_off_ok",
+     "gpu_compositing": "enabled",
+     "multiple_raster_threads": "enabled_on",
+     "opengl": "enabled_on",
+     "rasterization": "enabled",
+     "raw_draw": "disabled_off_ok",
+     "skia_graphite": "enabled_on",
+     "trees_in_viz": "disabled_off",
+     "video_decode": "enabled",
+     "video_encode": "enabled",
+     "webgl": "enabled",
+     "webgpu": "enabled",
+     "webnn": "disabled_off"
+    }
+   },
+   "results": [
+    {
+     "label": "base",
+     "mode": "headless",
+     "preDpr": 1,
+     "preScreen": [
+      800,
+      600
+     ],
+     "uaHeadless": true,
+     "h": 6241,
+     "elements": 1335,
+     "shimScripts": 5,
+     "domTokens": 443,
+     "layers": {
+      "count": 103,
+      "drawing": 98
+     },
+     "anims": {
+      "running": 8,
+      "finished": 1,
+      "paused": 7
+     },
+     "io": {
+      "observed": 9,
+      "entries": 9,
+      "intersecting": 2
+     },
+     "rafFps": 59.9,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.7
+    },
+    {
+     "label": "fix",
+     "mode": "headless",
+     "preDpr": 1,
+     "preScreen": [
+      800,
+      600
+     ],
+     "uaHeadless": true,
+     "h": 6241,
+     "elements": 1508,
+     "shimScripts": 5,
+     "domTokens": 459,
+     "layers": {
+      "count": 116,
+      "drawing": 111
+     },
+     "anims": {
+      "paused": 10,
+      "running": 13,
+      "finished": 1
+     },
+     "io": {
+      "observed": 10,
+      "entries": 10,
+      "intersecting": 3
+     },
+     "rafFps": 59.8,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.6
+    }
+   ]
+  },
+  "r2-A-headed": {
+   "userAgentHeadless": false,
+   "product": "Chrome/154.0.8037.58",
+   "gpu": {
+    "gl": "(gl=egl-angle,angle=metal)",
+    "skia": "GraphiteDawnMetal",
+    "featureStatus": {
+     "2d_canvas": "enabled",
+     "direct_rendering_display_compositor": "disabled_off_ok",
+     "gpu_compositing": "enabled",
+     "multiple_raster_threads": "enabled_on",
+     "opengl": "enabled_on",
+     "rasterization": "enabled",
+     "raw_draw": "disabled_off_ok",
+     "skia_graphite": "enabled_on",
+     "trees_in_viz": "disabled_off",
+     "video_decode": "enabled",
+     "video_encode": "enabled",
+     "webgl": "enabled",
+     "webgpu": "enabled",
+     "webnn": "disabled_off"
+    }
+   },
+   "results": [
+    {
+     "label": "base",
+     "mode": "headed",
+     "preDpr": 2,
+     "preScreen": [
+      1512,
+      982
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1337,
+     "shimScripts": 6,
+     "domTokens": 444,
+     "layers": {
+      "count": 106,
+      "drawing": 101
+     },
+     "anims": {
+      "running": 7,
+      "finished": 1,
+      "paused": 7
+     },
+     "io": {
+      "observed": 9,
+      "entries": 9,
+      "intersecting": 2
+     },
+     "rafFps": 119.6,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 22
+    },
+    {
+     "label": "fix",
+     "mode": "headed",
+     "preDpr": 2,
+     "preScreen": [
+      1512,
+      982
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1510,
+     "shimScripts": 6,
+     "domTokens": 460,
+     "layers": {
+      "count": 115,
+      "drawing": 110
+     },
+     "anims": {
+      "paused": 10,
+      "running": 11,
+      "finished": 1
+     },
+     "io": {
+      "observed": 10,
+      "entries": 10,
+      "intersecting": 3
+     },
+     "rafFps": 119.7,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 21.7
+    }
+   ]
+  },
+  "r2-A2-headless-screen(no UA override; label bug)": {
+   "userAgentHeadless": true,
+   "product": "Chrome/154.0.8037.58",
+   "gpu": {
+    "gl": "(gl=egl-angle,angle=metal)",
+    "skia": "GraphiteDawnMetal",
+    "featureStatus": {
+     "2d_canvas": "enabled",
+     "direct_rendering_display_compositor": "disabled_off_ok",
+     "gpu_compositing": "enabled",
+     "multiple_raster_threads": "enabled_on",
+     "opengl": "enabled_on",
+     "rasterization": "enabled",
+     "raw_draw": "disabled_off_ok",
+     "skia_graphite": "enabled_on",
+     "trees_in_viz": "disabled_off",
+     "video_decode": "enabled",
+     "video_encode": "enabled",
+     "webgl": "enabled",
+     "webgpu": "enabled",
+     "webnn": "disabled_off"
+    }
+   },
+   "results": [
+    {
+     "label": "base",
+     "mode": "headed",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": true,
+     "h": 6240,
+     "elements": 1335,
+     "shimScripts": 5,
+     "domTokens": 443,
+     "layers": {
+      "count": 106,
+      "drawing": 101
+     },
+     "anims": {
+      "running": 8,
+      "finished": 1,
+      "paused": 7
+     },
+     "io": {
+      "observed": 9,
+      "entries": 9,
+      "intersecting": 2
+     },
+     "rafFps": 59.8,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.8
+    },
+    {
+     "label": "fix",
+     "mode": "headed",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": true,
+     "h": 6240,
+     "elements": 1508,
+     "shimScripts": 5,
+     "domTokens": 459,
+     "layers": {
+      "count": 120,
+      "drawing": 115
+     },
+     "anims": {
+      "paused": 10,
+      "running": 13,
+      "finished": 1
+     },
+     "io": {
+      "observed": 10,
+      "entries": 10,
+      "intersecting": 3
+     },
+     "rafFps": 60,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.7
+    }
+   ]
+  },
+  "r2-B-headless-ua": {
+   "userAgentHeadless": true,
+   "product": "Chrome/154.0.8037.58",
+   "gpu": {
+    "gl": "(gl=egl-angle,angle=metal)",
+    "skia": "GraphiteDawnMetal",
+    "featureStatus": {
+     "2d_canvas": "enabled",
+     "direct_rendering_display_compositor": "disabled_off_ok",
+     "gpu_compositing": "enabled",
+     "multiple_raster_threads": "enabled_on",
+     "opengl": "enabled_on",
+     "rasterization": "enabled",
+     "raw_draw": "disabled_off_ok",
+     "skia_graphite": "enabled_on",
+     "trees_in_viz": "disabled_off",
+     "video_decode": "enabled",
+     "video_encode": "enabled",
+     "webgl": "enabled",
+     "webgpu": "enabled",
+     "webnn": "disabled_off"
+    }
+   },
+   "results": [
+    {
+     "label": "base",
+     "mode": "headless-ua",
+     "preDpr": 1,
+     "preScreen": [
+      800,
+      600
+     ],
+     "uaHeadless": false,
+     "h": 6241,
+     "elements": 1337,
+     "shimScripts": 6,
+     "domTokens": 444,
+     "layers": {
+      "count": 103,
+      "drawing": 98
+     },
+     "anims": {
+      "running": 7,
+      "finished": 1,
+      "paused": 7
+     },
+     "io": {
+      "observed": 9,
+      "entries": 9,
+      "intersecting": 2
+     },
+     "rafFps": 59.9,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.7
+    },
+    {
+     "label": "fix",
+     "mode": "headless-ua",
+     "preDpr": 1,
+     "preScreen": [
+      800,
+      600
+     ],
+     "uaHeadless": false,
+     "h": 6241,
+     "elements": 1510,
+     "shimScripts": 7,
+     "domTokens": 458,
+     "layers": {
+      "count": 116,
+      "drawing": 111
+     },
+     "anims": {
+      "paused": 10,
+      "running": 5,
+      "finished": 1
+     },
+     "io": {
+      "observed": 10,
+      "entries": 10,
+      "intersecting": 3
+     },
+     "rafFps": 59.9,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.9
+    }
+   ]
+  },
+  "r2-C-headless-ua-screen": {
+   "userAgentHeadless": true,
+   "product": "Chrome/154.0.8037.58",
+   "gpu": {
+    "gl": "(gl=egl-angle,angle=metal)",
+    "skia": "GraphiteDawnMetal",
+    "featureStatus": {
+     "2d_canvas": "enabled",
+     "direct_rendering_display_compositor": "disabled_off_ok",
+     "gpu_compositing": "enabled",
+     "multiple_raster_threads": "enabled_on",
+     "opengl": "enabled_on",
+     "rasterization": "enabled",
+     "raw_draw": "disabled_off_ok",
+     "skia_graphite": "enabled_on",
+     "trees_in_viz": "disabled_off",
+     "video_decode": "enabled",
+     "video_encode": "enabled",
+     "webgl": "enabled",
+     "webgpu": "enabled",
+     "webnn": "disabled_off"
+    }
+   },
+   "results": [
+    {
+     "label": "base",
+     "mode": "headless-ua-screen",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1337,
+     "shimScripts": 6,
+     "domTokens": 444,
+     "layers": {
+      "count": 106,
+      "drawing": 101
+     },
+     "anims": {
+      "running": 7,
+      "finished": 1,
+      "paused": 7
+     },
+     "io": {
+      "observed": 9,
+      "entries": 9,
+      "intersecting": 2
+     },
+     "rafFps": 59.7,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.8
+    },
+    {
+     "label": "fix",
+     "mode": "headless-ua-screen",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1510,
+     "shimScripts": 6,
+     "domTokens": 460,
+     "layers": {
+      "count": 120,
+      "drawing": 115
+     },
+     "anims": {
+      "paused": 10,
+      "running": 13,
+      "finished": 1
+     },
+     "io": {
+      "observed": 10,
+      "entries": 10,
+      "intersecting": 3
+     },
+     "rafFps": 60,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.7
+    }
+   ]
+  },
+  "r2-P1-headless-ua-screen-parallel": {
+   "userAgentHeadless": true,
+   "product": "Chrome/154.0.8037.58",
+   "gpu": {
+    "gl": "(gl=egl-angle,angle=metal)",
+    "skia": "GraphiteDawnMetal",
+    "featureStatus": {
+     "2d_canvas": "enabled",
+     "direct_rendering_display_compositor": "disabled_off_ok",
+     "gpu_compositing": "enabled",
+     "multiple_raster_threads": "enabled_on",
+     "opengl": "enabled_on",
+     "rasterization": "enabled",
+     "raw_draw": "disabled_off_ok",
+     "skia_graphite": "enabled_on",
+     "trees_in_viz": "disabled_off",
+     "video_decode": "enabled",
+     "video_encode": "enabled",
+     "webgl": "enabled",
+     "webgpu": "enabled",
+     "webnn": "disabled_off"
+    }
+   },
+   "results": [
+    {
+     "label": "base",
+     "mode": "headless-ua",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1336,
+     "shimScripts": 6,
+     "domTokens": 442,
+     "layers": {
+      "count": 106,
+      "drawing": 101
+     },
+     "anims": {
+      "running": 5,
+      "finished": 1,
+      "paused": 7
+     },
+     "io": {
+      "observed": 9,
+      "entries": 9,
+      "intersecting": 2
+     },
+     "rafFps": 60,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 18.7
+    },
+    {
+     "label": "fix",
+     "mode": "headless-ua",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1510,
+     "shimScripts": 6,
+     "domTokens": 460,
+     "layers": {
+      "count": 120,
+      "drawing": 115
+     },
+     "anims": {
+      "paused": 10,
+      "running": 13,
+      "finished": 1
+     },
+     "io": {
+      "observed": 10,
+      "entries": 10,
+      "intersecting": 3
+     },
+     "rafFps": 59.9,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.8
+    }
+   ]
+  },
+  "r2-P2-headless-ua-screen-parallel": {
+   "userAgentHeadless": true,
+   "product": "Chrome/154.0.8037.58",
+   "gpu": {
+    "gl": "(gl=egl-angle,angle=metal)",
+    "skia": "GraphiteDawnMetal",
+    "featureStatus": {
+     "2d_canvas": "enabled",
+     "direct_rendering_display_compositor": "disabled_off_ok",
+     "gpu_compositing": "enabled",
+     "multiple_raster_threads": "enabled_on",
+     "opengl": "enabled_on",
+     "rasterization": "enabled",
+     "raw_draw": "disabled_off_ok",
+     "skia_graphite": "enabled_on",
+     "trees_in_viz": "disabled_off",
+     "video_decode": "enabled",
+     "video_encode": "enabled",
+     "webgl": "enabled",
+     "webgpu": "enabled",
+     "webnn": "disabled_off"
+    }
+   },
+   "results": [
+    {
+     "label": "base",
+     "mode": "headless-ua",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1336,
+     "shimScripts": 6,
+     "domTokens": 442,
+     "layers": {
+      "count": 111,
+      "drawing": 106
+     },
+     "anims": {
+      "running": 5,
+      "finished": 1,
+      "paused": 7
+     },
+     "io": {
+      "observed": 9,
+      "entries": 9,
+      "intersecting": 2
+     },
+     "rafFps": 59.8,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 18.7
+    },
+    {
+     "label": "fix",
+     "mode": "headless-ua",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1510,
+     "shimScripts": 6,
+     "domTokens": 460,
+     "layers": {
+      "count": 120,
+      "drawing": 115
+     },
+     "anims": {
+      "paused": 10,
+      "running": 11,
+      "finished": 1
+     },
+     "io": {
+      "observed": 10,
+      "entries": 10,
+      "intersecting": 3
+     },
+     "rafFps": 59.7,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.9
+    }
+   ]
+  },
+  "r2-P3-headless-ua-screen-parallel": {
+   "userAgentHeadless": true,
+   "product": "Chrome/154.0.8037.58",
+   "gpu": {
+    "gl": "(gl=egl-angle,angle=metal)",
+    "skia": "GraphiteDawnMetal",
+    "featureStatus": {
+     "2d_canvas": "enabled",
+     "direct_rendering_display_compositor": "disabled_off_ok",
+     "gpu_compositing": "enabled",
+     "multiple_raster_threads": "enabled_on",
+     "opengl": "enabled_on",
+     "rasterization": "enabled",
+     "raw_draw": "disabled_off_ok",
+     "skia_graphite": "enabled_on",
+     "trees_in_viz": "disabled_off",
+     "video_decode": "enabled",
+     "video_encode": "enabled",
+     "webgl": "enabled",
+     "webgpu": "enabled",
+     "webnn": "disabled_off"
+    }
+   },
+   "results": [
+    {
+     "label": "base",
+     "mode": "headless-ua",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1337,
+     "shimScripts": 7,
+     "domTokens": 442,
+     "layers": {
+      "count": 111,
+      "drawing": 106
+     },
+     "anims": {
+      "running": 5,
+      "finished": 1,
+      "paused": 7
+     },
+     "io": {
+      "observed": 9,
+      "entries": 9,
+      "intersecting": 2
+     },
+     "rafFps": 59.9,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 19.1
+    },
+    {
+     "label": "fix",
+     "mode": "headless-ua",
+     "preDpr": 2,
+     "preScreen": [
+      756,
+      491
+     ],
+     "uaHeadless": false,
+     "h": 6240,
+     "elements": 1510,
+     "shimScripts": 6,
+     "domTokens": 460,
+     "layers": {
+      "count": 120,
+      "drawing": 115
+     },
+     "anims": {
+      "paused": 10,
+      "running": 11,
+      "finished": 1
+     },
+     "io": {
+      "observed": 10,
+      "entries": 10,
+      "intersecting": 3
+     },
+     "rafFps": 59.8,
+     "morphReached": true,
+     "errors": 0,
+     "notFound": 0,
+     "fonts": [
+      "Google Sans 400 700 normal",
+      "Google Sans 400 700 normal",
+      "Playpen Sans Start Selling 400 600 normal"
+     ],
+     "platformFonts": {
+      "h1": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_Medium",
+        "isCustomFont": true,
+        "glyphCount": 14
+       }
+      ],
+      "body": [
+       {
+        "familyName": "Google Sans",
+        "postScriptName": "GoogleSans-Regular_opsz110000_wght",
+        "isCustomFont": true,
+        "glyphCount": 2
+       }
+      ],
+      ".start-selling-top-nav": []
+     },
+     "seconds": 17.8
+    }
+   ]
+  }
+ },
+ "screenshotDiffs": {
+  "r1": [
+   {
+    "a": "headed/mobile-base-top.png",
+    "b": "headless/mobile-base-top.png",
+    "diffPct": 3.15,
+    "anyPct": 12.55
+   },
+   {
+    "a": "headed/mobile-base-middle.png",
+    "b": "headless/mobile-base-middle.png",
+    "diffPct": 1.71,
+    "anyPct": 21.05
+   },
+   {
+    "a": "headed/mobile-base-bottom.png",
+    "b": "headless/mobile-base-bottom.png",
+    "diffPct": 2.17,
+    "anyPct": 41.84
+   },
+   {
+    "a": "headed-base-top.png",
+    "b": "headless-base-top.png",
+    "diffPct": 3.08,
+    "anyPct": 13.05
+   },
+   {
+    "a": "headed/mobile-fix-top.png",
+    "b": "headless/mobile-fix-top.png",
+    "diffPct": 3.16,
+    "anyPct": 12.61
+   },
+   {
+    "a": "headed/mobile-fix-middle.png",
+    "b": "headless/mobile-fix-middle.png",
+    "diffPct": 1.71,
+    "anyPct": 21.05
+   },
+   {
+    "a": "headed/mobile-fix-bottom.png",
+    "b": "headless/mobile-fix-bottom.png",
+    "diffPct": 2.34,
+    "anyPct": 41.87
+   },
+   {
+    "a": "headed-fix-top.png",
+    "b": "headless-fix-top.png",
+    "diffPct": 3.13,
+    "anyPct": 13.11
+   }
+  ],
+  "r2": [
+   {
+    "a": "A/headed-base-top.png",
+    "b": "A2/headed-base-top.png",
+    "diffPct": 0.35,
+    "anyPct": 8.17
+   },
+   {
+    "a": "A/headed-base-top.png",
+    "b": "B/headless-ua-base-top.png",
+    "diffPct": 3.15,
+    "anyPct": 13.1
+   },
+   {
+    "a": "A/headed-base-top.png",
+    "b": "C/headless-ua-screen-base-top.png",
+    "diffPct": 0.35,
+    "anyPct": 8.17
+   },
+   {
+    "a": "B/headless-ua-base-top.png",
+    "b": "P1/headless-ua-base-top.png",
+    "diffPct": 3.06,
+    "anyPct": 12.12
+   },
+   {
+    "a": "P1/headless-ua-base-top.png",
+    "b": "P2/headless-ua-base-top.png",
+    "diffPct": 0.32,
+    "anyPct": 0.38
+   },
+   {
+    "a": "A/headed-fix-top.png",
+    "b": "A2/headed-fix-top.png",
+    "diffPct": 0.37,
+    "anyPct": 8.38
+   },
+   {
+    "a": "A/headed-fix-top.png",
+    "b": "B/headless-ua-fix-top.png",
+    "diffPct": 3.15,
+    "anyPct": 13.12
+   },
+   {
+    "a": "A/headed-fix-top.png",
+    "b": "C/headless-ua-screen-fix-top.png",
+    "diffPct": 0.4,
+    "anyPct": 8.22
+   },
+   {
+    "a": "B/headless-ua-fix-top.png",
+    "b": "P1/headless-ua-fix-top.png",
+    "diffPct": 3.19,
+    "anyPct": 12.27
+   },
+   {
+    "a": "P1/headless-ua-fix-top.png",
+    "b": "P2/headless-ua-fix-top.png",
+    "diffPct": 0.08,
+    "anyPct": 0.19
+   }
+  ]
+ }
+}
