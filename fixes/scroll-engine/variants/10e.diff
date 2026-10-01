@@ -1,0 +1,22 @@
+# fastwork mirror fix: scroll-engine--10e
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/scroll-engine--10c/overlay: apply scroll-engine--10c first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply scroll-engine--10e --on scroll-engine--10c
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 7184f7553ace451e3f2d24ee6c94c8ac86f19e17ee7af96255b377b1d9125f42
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js e245804d65bc6f953da436f03784ad8814cda73eb12a6bf6b2e0e7eb0d98224d
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2695,7 +2695,10 @@
+ // [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
+ // asks for a layer keep it only from half a viewport before they enter until half a viewport after they
+ // leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
+-var fwWCSel = `.commission-card, .face, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
++// [scroll-engine /10e] `.face` removed (F-030): the countdown faces slide in and out of their overflow:hidden digit
++// window, and IntersectionObserver clips by ancestors, so they flipped data-fw-wc continuously (~1,500 writes/s at
++// idle, layer churn in the hero). Their will-change follows the scene gate again, as in wave 1.
++var fwWCSel = `.commission-card, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
+   fwWCIO;
+ function fwWC() {
+   if (!(`IntersectionObserver` in window)) return;

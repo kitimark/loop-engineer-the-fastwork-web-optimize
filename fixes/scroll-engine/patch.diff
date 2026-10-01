@@ -1,6 +1,6 @@
-# fastwork mirror fix: scroll-engine--10c
+# fastwork mirror fix: scroll-engine--10e
 # baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
-# rebuild the overlay with: node tools/fix.mjs apply scroll-engine--10c
+# rebuild the overlay with: node tools/fix.mjs apply scroll-engine--10e
 # contains excerpts of Fastwork's code: local branches only, never push
 # base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
 # base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
@@ -28,7 +28,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -2670,9 +2670,55 @@
+@@ -2670,9 +2670,58 @@
  function iE() {
    tE = 0;
    for (let e of $T) e.active && e.callback();
@@ -53,11 +53,14 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    break;
 +  }
 +  fwKick();
-+}
+ }
 +// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
 +// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
 +// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
-+var fwWCSel = `.commission-card, .face, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
++// [scroll-engine /10e] `.face` removed (F-030): the countdown faces slide in and out of their overflow:hidden digit
++// window, and IntersectionObserver clips by ancestors, so they flipped data-fw-wc continuously (~1,500 writes/s at
++// idle, layer churn in the hero). Their will-change follows the scene gate again, as in wave 1.
++var fwWCSel = `.commission-card, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
 +  fwWCIO;
 +function fwWC() {
 +  if (!(`IntersectionObserver` in window)) return;
@@ -78,14 +81,14 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      ((fwArmed = !0), fwKick(), fwIdle(fwWC));
 +    }, 500);
 +  document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
- }
++}
  function aE() {
 -  nE ||
 +  (fwBoot(), nE) ||
      ((nE = !0),
      window.addEventListener(`scroll`, rE, { passive: !0 }),
      window.addEventListener(`resize`, rE, { passive: !0 }));
-@@ -2689,7 +2735,7 @@
+@@ -2689,7 +2738,7 @@
  function sE(e, t) {
    if (!(!e.deferRendering || !e.element)) {
      if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
@@ -94,7 +97,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        return;
      }
      e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
-@@ -2700,7 +2746,7 @@
+@@ -2700,7 +2749,7 @@
                let t = e.element.getBoundingClientRect().height;
                t > 0 && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`);
              }
@@ -103,7 +106,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            }
          });
        }));
-@@ -2710,8 +2756,91 @@
+@@ -2710,8 +2759,91 @@
    (e.manageAnimations &&
      e.element &&
      e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
@@ -116,7 +119,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
 +      // windows: re-scan once in idle time after a scene activates.
 +      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
-+}
+ }
 +var fwWCQ = 0;
 +// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
 +// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
@@ -148,7 +151,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
- }
++}
 +// [scroll-engine /10c] far re-skip, behind the user only: a rendered section that is more than its
 +// un-skip margin + 25 % (1.75 vh for the default 100 % gate, 2.25 vh for .pain's 150 %) ABOVE the viewport
 +// goes back to content-visibility (its height comes from the IO entry, no forced layout), which drops its
@@ -196,7 +199,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
  function lE(e) {
    let t = e.getBoundingClientRect();
    return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
-@@ -2756,7 +2885,9 @@
+@@ -2756,7 +2888,9 @@
        onActiveChange: t.onActiveChange,
        renderFrame: 0,
      },
@@ -207,7 +210,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    return (
      $T.add(n),
      aE(),
-@@ -2766,9 +2897,16 @@
+@@ -2766,9 +2900,16 @@
      sE(n, n.active),
      t.onActiveChange?.(n.active),
      t.element && `IntersectionObserver` in window && (r = uE(n, t.element, t.rootMargin ?? `100% 0px`)),
