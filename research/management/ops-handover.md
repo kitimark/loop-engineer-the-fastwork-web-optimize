@@ -253,6 +253,20 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   fix-scene-scope: prediction row, then the 1440 rerun, then review-4. PHONE ORDER item 3 is now scene-scope RBi40pti
   (T-011 runs RBi40pti, NOT RBi40p). Board: phone-fwreskip-g1 refreshed (queued, waiting on the phone, ticket b5f24a5,
   P-057 e73676d); phone-queue next updated.
+  06:4xZ PHONE BACK: the iPhone is on USB since 06:26Z (user T-013; usbmux 1, proxy :9222 up, WDA up); T-011 resolved.
+  iphone-runner resumed and runs G1 (fwreskip, landing gate (iv), P-057); C-017 posted for the QuickTime recording
+  permission. Order after G1: PR-001 blocks, scene-scope RBi40pti (after its review-4), T-009 curve, I-042 check.
+  PR-001 rev 2 ACCEPTED by the user (06:31Z): all solutions OK, "a bit" of pixel difference acceptable, pick the best
+  performer. de-illusion-style resumed; lead OK on its plan: arms C, F1 tiles, F2 one-copy (memory-limited), F3 middle
+  layout, V HEVC-alpha video, B visible copy only; P-058 committed before data; 2 phone blocks (A: C F1 F2 F3; B: C V B),
+  then PR-001 rev 3 with the pick. Phone TIMING LIFTED FOR PR-001 ONLY (user told T-006 #22); everything else stays
+  timing-deferred. I-053 (tool, non-blocking): one proposal carrying several options for the user to pick; ts-i053
+  spawned, row i053-proposal-options. CONSOLE OUTAGE 01:50Z-06:17Z (it ran as a 2 h-capped Bash job); now detached via
+  nohup on :5559, the lead checks `console.mjs url` at each check-in.
+  06:5xZ scene-scope f03c024 (P-056b 8a6eee6 committed first): under q40ui's exact 1440 procedure the odd frame recurred
+  V 0/10, S0 0/10: "not reproduced". README blocking 2 and 3 fixed. review-scene-scope-4 spawned (focused re-check); the
+  user is asked in T-001 #17: (a) accept as noise, (b) a display-off rerun, (c) reject. fix-scene-scope parked. Lead
+  summarized T-008 for the user (#27).
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
@@ -886,7 +900,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `de-illusion-style` | research (lead spawn 19:1xZ, USER PRIORITY 2 "optical illusion is acceptable"): cheaper look-alike renderings for style/layout costs; counts first, <= 2 batched Chrome holds before first proposals (queued after scene-scope + de-counts pair); proposals to the user via ts-proposals' page; no phone before Accept | alive |
 | `de-illusion-composite` | research (lead spawn 19:1xZ, USER PRIORITY 2): cheaper look-alikes for compositing/layers/blur; same rules as de-illusion-style | alive |
 | `ts-proposals` | toolsmith (lead spawn 19:1xZ): console Proposals page (read, visual compare, Accept/Reject/Request change); full `npm test` in the short lane | alive |
-| `ts-progress-lane` | toolsmith (lead spawn 22:11Z): I-048, shared-lane readers missing from the progress page and status board | alive |
+| `ts-progress-lane` | toolsmith (lead spawn 22:11Z): I-048, shared-lane readers missing from the progress page and status board | ended (I-048 landed 9fd2d3a) |
+| `ts-i053` | toolsmith (lead spawn 06:4xZ): I-053, one proposal carries several options, the user picks one | alive |
 | `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
 | `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | ended (landed 14806cb..8fa38f7; worktree removed 20:2xZ) |
 | `ts-console-threads` | toolsmith: console threads (one thread per topic for the user) | ended (landed 545cf85, 77d318c, fc07bb1; worktree removed 20:2xZ) |
