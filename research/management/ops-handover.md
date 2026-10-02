@@ -8,6 +8,19 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **10:4xZ C1 signed; G1b voids; 7d14ed0 landed 10:16Z.**
+  - **Phone order (lead 10:4xZ):** G1b (running) -> T-011 -> **C1** -> T-009 -> I-042.
+  - **C1** (wi-stack, shell-hold-c "A + shrink hold", 366e693, P-063 pre-data): S6 = st6-rb (snap-a/st6rb, JS
+    59b23b3f57fd / CSS d22542d0b5f8) vs HC (snap-c/hc, 59b23b3f57fd / a3b34c3a3920); hashes re-checked by
+    mgmt-ops-7, both copies read-only; S driver, 8 runs S6 HC HC S6 S6 HC HC S6, ~25 min + cooling. **Signed by the
+    lead 10:4xZ** with 4 amendments (wi-stack writes them into the README and P-063): ±4 ms twins and near-band
+    flags; every S6 run is a sentinel, phone-temp --below auto, at most 2 blocks; a 1440 DOM geometry probe before
+    the land request (not before the phone run); a no-effect result reads "THREADED_ANIMATIONS UNRESOLVED", not refuted.
+  - **G1b stroke-gate voids:** no-pause arm 6 of 8 valid; runs 6P2b and 8B voided by the ±10 % stroke-fidelity gate
+    (+12.5 / +13.0 % off plan) and re-run by iphone-runner (the gate works as registered).
+  - **PITFALL (mgmt-ops, 10:3xZ):** when a peer's SendMessage resumes mgmt-ops, mgmt-ops runs pinned to that peer's
+    worktree and the harness refuses git in `.claude/worktrees/mgmt-ops-2`. Peers send ops requests anyway, and expect
+    ops to batch the docs commits until the lead resumes it. From a lead resume, use `git -C <abs worktree>`, never cd.
 - **10:1xZ A1 done, I-059 resolved, G1b running.** Main: a2c15e7 (ops docs), 62b4053 (I-059 B "Start over";
   I-059 RESOLVED; console restarted 10:00Z), wi-stack series 94b8010..e7d2de2.
   - **PR-003 A CONFIRMED on the phone** (A1, wi-stack): #people frame 2 median NB 44 vs C 42 vs V 74 ms, idle gain kept,
