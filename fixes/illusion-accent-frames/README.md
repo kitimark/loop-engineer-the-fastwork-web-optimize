@@ -4,7 +4,10 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** draft. PR-001 rev 2 was accepted (2026-10-02 06:31Z). Phone ticket P-058 ran (blocks A and B): no arm beats
-the SVG ("P-058 results" below). Rev 3 is posted as PR-004 (6 options, recommending "keep"); the visual recording is deferred by the user.
+the SVG ("P-058 results" below). Rev 3 was posted as PR-004 (6 options, recommending "keep"); the visual recording is deferred by the user.
+PR-004 rev 2 (a plain report plus 4 next steps) got changes-requested: the user asked whether the word was measured
+alone, without the page's other parts. It was not (see "Full page, not isolated" below). PR-004 rev 3 answers that and
+offers 4 options, recommending a word-alone test page.
 **Stage:** R / I (design-engineer PoC, illusion proposal; no D card)
 **Device class / gate:** phone-only (WebKit). Chrome is gated to the original SVG.
 **Driver(s) behind the claims:** Simulator functional sessions (no timing). Chrome per-draw trace counts (r14).
@@ -405,7 +408,21 @@ the start of block A's runs 1-7 (flagged, not void, per the Mac-load amendment).
 Timeline counts per 'you' draw (attribution runs after the end sentinel, counts only):
 - block A: C style 57-60, layout 56-58, paint 57-70; F2 style 30-43, layout 4-6, paint 31-39. F1 and F3 are low
   because rendering stalled, so they are not savings.
-- block B: not taken, dropped for good (lead 10-02: they would only explain options rev 3 recommends dropping; the phone goes to A1).
+- block B: taken by iphone-runner 09:47Z-09:49Z after all (`out/p058/tl-B-*.json` in its worktree); rev 3 and PR-004 rev 2
+  said "not taken" because I had missed the files (corrected in PR-004 rev 3). Per 'you' draw: C style 55-60, layout 55-59,
+  paint 55-67; V style 31-42, layout 4-6, paint 3-12; B style 57-59, layout 57-59, paint 58-70 (as C).
+
+**Full page, not isolated (answer to the user's PR-004 rev 2 note).** Every phone number above, and the Chrome r14 counts,
+were taken on the full page with every other part loaded and running; only the Simulator stall diagnosis used a
+word-only page. What that does to the numbers (OBSERVED unless tagged):
+- Style and layout run once per rendering update for the whole document (CONFIRMED: HTML Living Standard, "update the
+  rendering", html.spec.whatwg.org/multipage/webappapis.html, "Recalculate styles and update layout for doc", read
+  2026-10-02). Timeline counts are per frame, not per part, so they cannot be split into word and rest.
+- With 'you' on a canvas or video (F2, V), the page still did 30-43 style recalcs and 4-6 layouts per draw: mostly the
+  rest of the page.
+- C, 5 runs: the 2 s 'you' windows are 18 % of the 44 s idle and hold 4 of 31 frames > 50 ms (13 %) and 28 of 226 > 34 ms
+  (12 %). The whole idle had 0-12 frames > 50 ms per run on the same build. So the 1-3 frame differences between
+  the smooth arms are within the rest of the page's noise; the F1/F3 freezes are the word's own.
 
 **Eligibility (rule 1).**
 - F1 and F3: freeze (gaps up to 2065 / 639 ms, 3-25 live frames per draw against ~54). Not eligible.
