@@ -3,11 +3,13 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft. The pixel gate and the Simulator mechanism check pass. The phone ticket C1 is prepared and has not run.
-**Stage:** F (built and checked); V waits on phone ticket C1.
+**Status:** confirmed on the phone (C1, 2026-10-02). Spot (c) frame: S6 37 ms → HC 17 ms (median, 4 runs each, no
+overlap); the reveal and scroll guards hold. Land candidate on top of A. The scroll-wide >34 count did not fall with it
+(see "C1 result").
+**Stage:** V done (C1, S driver); L waits on the lead.
 **Device class / gate:** phone-only. The cost is in WebKit's compositor (backing stores), so the gate is a phone block
 (stack-test timing exception, lead 2026-10-02). Chrome is a pixel and no-layout check only.
-**Driver(s) behind the claims:** Simulator (structure only, never a gain); Chrome headless (pixels); phone S once C1 runs.
+**Driver(s) behind the claims:** Simulator (structure only, never a gain); Chrome headless (pixels); phone S (C1).
 **Prediction:** `fixes/PREDICTIONS.md` P-063 (pre-data).
 **Owner:** wi-stack (the lead gave it the profile shells for the B research; TOPICS names no owner).
 **Files touched:** `assets/2.gBuqKVzi.css`: one keyframes block and one rule, appended at the end. The JS is unchanged.
@@ -132,6 +134,32 @@ Time: 12 runs at about 1.5 min plus cooling, about 25 min.
 If confirmed, shell-hold-c is a land candidate on top of A. It has no finger component, so S is enough for its claim.
 A touch swipe on the deck during the window would need G or F; the rule then re-targets the shells, so that should be
 harmless (UNRESOLVED, not tested).
+
+## C1 result (phone, S driver, 2026-10-02; scored by wi-stack; all OBSERVED in our setup)
+
+**Block** (iphone-runner): one block, 8 of 8 counted runs valid. Served hashes were checked against the table before
+the block. Warm-ups, the open and end sentinels, and every counted S6 run pass (bottom 60.0-60.2 fps, scroll 57.6-58.6
+fps). Battery 37.2 → 38.9 °C, Low Power Mode off, rafHz 59. load1 at run start was 2.9-5.3. A shared weight-2 job
+(the I-062 toolsmith) ran beside runs 1-6 and is recorded in `meta.mac`. Nothing was attached and nothing was
+recorded. Every run has the `#people +is-future-shrinking` crossing. The data stays in iphone-runner's worktree
+(`out/c1/`, not committed).
+
+| row | S6 (st6-rb) | HC (shell-hold-c) | reading |
+|---|---|---|---|
+| **1. Spot (c) fn** | 36 / 40 / 37 / 37, median **37** | 17 / 17 / 16 / 17, median **17** | **Confirmed.** HC's median is ≤ 30 and also ≤ 26 and ≤ 34. All 4 HC fn are below all 4 S6 fn. No twin flips it, so it is not threshold-sensitive. fn >34: S6 4/4, HC 0/4 (>30: 4/4 vs 0/4; >38: 1/4 vs 0/4, so the S6 count is threshold-sensitive at >38, as forecast). 3 of 4 S6 fn are in the near band (30, 38]. |
+| 2. Window (1 s after the crossing), runs with a frame >34 | 4/4 (per run 1/1/2/1) | 2/4 (per run 0/1/1/0) | Context. Medians are 1 vs 0.5. At the >30 twin both are 1 per run: HC's remaining >30 window frame sits at +824-837 ms (33/42/33 ms in 3 runs; S6 has one there, 42 ms, in 1 run). It belongs to `section.commission +entering`, the next section, which the rule doesn't touch. The hold ends near +950 ms, so it doesn't line up with this frame. Cause unknown, n = 4. |
+| 3. Guard: reveal frame 2 | median 41.5 (43/41/41/42) | median 41.5 (42/42/41/39) | HC − S6 = 0, inside ± 8: pass |
+| 4. Guard: scroll dt>50 | median 1 (1/1/1/2) | median 0.5 (1/0/1/0) | HC − S6 = −0.5. Twins: >46 2 vs 2, >54 0.5 vs 0.5. No regression, and no twin flips it. |
+| 5. Context | scroll dt>34 7.5 (6/8/7/8), >30 9, >38 6; idle dt>34 0; bottom 60.0-60.2 | scroll dt>34 8 (8/8/8/7), >30 10, >38 6; idle dt>34 0; bottom 60.0-60.2 | Reported only. The spot (c) frame is gone in every HC run, yet the scroll-wide totals didn't fall: the other slow frames vary by about ±2 per run. A crossing map (`out/wi-stack/lag/slowmap.py`) finds no new frame in every HC run. HC has more near-34 frames at two keys (`avatars +is-sliding` 4/4 vs 2/4, `commission +entering` 3/4 vs 1/4; nearly all 32-44 ms). n = 4 can't tell this from noise. |
+
+**Verdict:** confirmed (row 1), and the guards pass (rows 3 and 4). P-063 is a **hit** on every interval (ratio ~1.11
+on HC − S6). The device behaved like WebKit's non-threaded path. ENABLE(THREADED_ANIMATIONS) itself stays UNRESOLVED
+by reference.
+
+**For the lead:**
+1. The gain is one ~20 ms frame per pass at spot (c). The page-wide scroll >34 count shows no gain in this block.
+2. If the two near-34 keys in row 5 matter for landing, the decisive check is a second C1 block (at most 2 per the
+   ticket) scored at those keys.
 
 ## Risks and overlaps
 
