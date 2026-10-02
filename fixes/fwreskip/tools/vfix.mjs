@@ -237,6 +237,26 @@ if (MODE === 'I') {
   }
 }
 
+if (MODE === 'N') {
+  // state census at the idle spots (P2 idle check follow-up): running animations per section, data-fw-wc=1 count,
+  // #people's inline style and computed content-visibility, at band 3100 and reversal 2850 (as MODE I reaches them).
+  const cnt = {};
+  const narms = process.env.NORDER ? process.env.NORDER.split(/\s+/).filter(Boolean).map((l) => ({ label: `${l}${(cnt[l] = (cnt[l] || 0) + 1)}`, url: arms.find((a) => a.label === l).url })) : arms;
+  const CENSUS = `const sec = (el) => { const s = el && el.closest && el.closest('section, [id], .hero-track'); return s ? (s.id ? '#' + s.id : '.' + String(s.className).split(' ')[0]) : '?'; };
+    const run = {}; for (const an of document.getAnimations()) { if (an.playState !== 'running') continue; const t = an.effect && an.effect.target; const k = sec(t) + ' ' + (an.animationName || an.transitionProperty || an.constructor.name); run[k] = (run[k] || 0) + 1; }
+    const wc = {}; for (const el of document.querySelectorAll('[data-fw-wc="1"]')) { const k = sec(el.parentElement); wc[k] = (wc[k] || 0) + 1; }
+    return { y: Math.round(scrollY), people: people.getAttribute(R), scene: people.getAttribute('data-start-selling-scene'), pStyle: people.getAttribute('style'), pCV: getComputedStyle(people).contentVisibility, running: run, nRunning: Object.values(run).reduce((a, b) => a + b, 0), wc };`;
+  for (const arm of narms) {
+    await go(arm.url);
+    const a = (res.arms[arm.label] = {});
+    for (const [name, gocode] of [['band', `await stepTo(3100);`], ['reversal', `await stepTo(2850);`]]) {
+      a[name] = await ev(`${gocode} await wait(1500); ${CENSUS}`);
+      log(`N ${arm.label} ${name} ${JSON.stringify(a[name])}`);
+    }
+    c.close(); c = null;
+  }
+}
+
 writeFileSync(join(outdir, `${MODE}.json`), JSON.stringify(res, null, 1));
 // park on about:blank (I-050)
 try { c = await openTab((u) => u.startsWith('http'), 2); await c.evaluate(`setTimeout(() => { location.href = 'about:blank'; }, 50); 'ok'`); await sleep(800); c.close(); } catch {}

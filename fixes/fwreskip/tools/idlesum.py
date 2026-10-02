@@ -19,7 +19,7 @@ for spot in spots:
         row = d[(spot, k)]
         if not any(any(v) for v in row.values()): continue
         cells = []
-        for arm in ('B', 'P', 'A'):
+        for arm in [a for a in ('B', 'P', 'Q', 'A') if a in row]:
             v = row.get(arm, [])
             cells.append(f'{arm} {statistics.median(v):.1f} [{min(v):.1f}-{max(v):.1f}] n{len(v)}' if v else f'{arm} -')
         print(f'  {k:38s} ' + ' | '.join(cells))
