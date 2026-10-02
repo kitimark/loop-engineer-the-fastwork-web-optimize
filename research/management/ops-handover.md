@@ -216,6 +216,9 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   arm, A/A)". The owner makes wording-only edits (new sha to follow, no re-review). The user is asked (i) the corner
   pixels and (ii) the up-pass trade in T-005 #19 (--ask). Landing gate (iv): the phone G/F fling check, backlog (g),
   when the iPhone is on USB.
+  04:1xZ PHONE ORDER (lead, supersedes the (a)-(g) order above): 1 phone-fwreskip-g1 (the G/F fling landing gate; ticket
+  in fix-scroll-engine's README, pending its report), 2 PR-001 (only if the user approves), 3 scene-scope ST, 4 the
+  T-009 cooldown curve, 5 the I-042 G check. The morph start (e) stays parked (user deferred, T-001 #14).
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
