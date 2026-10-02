@@ -27,7 +27,7 @@ const pocSrc = readFileSync(join(POC, NODE), 'utf8');
 const src = {
   base: baseSrc,
   still: once(baseSrc, '    if (YE.current) {\n      z(a, e, !0);', '    if (!0) {\n      z(a, e, !0);', 'still'),
-  faces: once(pocSrc, '__cdLive = R(() => s(__cdNear) && s(__cdActive)),', '__cdLive = R(() => !0),', 'faces'),
+  faces: once(pocSrc, '__cdLive = R(() => r.active !== !1),', '__cdLive = R(() => !0),', 'faces'),
   poc: pocSrc,
 };
 const write = (p, s) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, s); };

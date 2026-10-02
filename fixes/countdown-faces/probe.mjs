@@ -22,6 +22,7 @@ const MODE = process.argv[2] || 'counts';
 const ARMS = (process.argv[3] || (MODE === 'pixels' ? 'base,poc' : MODE === 'profile' ? 'base,still,poc' : 'base,still,faces,poc')).split(',');
 const RUNS = Number(process.argv[4] || 1);
 const WHICH = process.argv[5] || 'both'; // counts/profile: iso | full | both
+const ONLY = process.argv[6] ? process.argv[6].split(',') : null; // counts full: positions to measure (default: all)
 const OUT = join(WT, 'out/countdown-faces');
 mkdirSync(OUT, { recursive: true });
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
@@ -171,6 +172,11 @@ const POSITIONS = `(() => { const H = document.documentElement.scrollHeight, vh 
   const tb = t ? t.getBoundingClientRect().bottom + scrollY : 2 * vh;
   return { top: 0, heroExit: Math.round(vh), pastHero: Math.round(tb + 1.2 * vh), mid: Math.round(H * 0.55), end: Math.max(0, H - vh) }; })()`;
 
+// wait for the next second tick (the timer's aria-label / a digit's data-value changes; both arms write them on every
+// tick, seen or not), then 700 ms (that tick's roll is over): a 3000 ms window then holds exactly three ticks and their
+// rolls, in both arms (review r1 #3: windows aligned to the ticks)
+const TICK = `new Promise((res) => { const t0 = performance.now(), mo = new MutationObserver(() => { mo.disconnect(); setTimeout(() => res(Math.round(performance.now() - t0)), 700); });
+  mo.observe(document.querySelector('[role=timer]'), { subtree: true, attributes: true, attributeFilter: ['aria-label', 'data-value'] }); setTimeout(() => { mo.disconnect(); res(-1); }, 2500); })`;
 async function countsFull(cdp, arm, url, range, win = 3000) {
   const page = await openPage(cdp, { inject: MO });
   await gotoAndSettle(page, url, { quietMs: 2000 }); await sleep(1500);
@@ -178,17 +184,19 @@ async function countsFull(cdp, arm, url, range, win = 3000) {
   const pos = await page.eval(POSITIONS);
   const out = { arm, positions: {} };
   for (const [name, y] of Object.entries(pos)) {
-    const yy = await scrollTo(page, y); await sleep(1500);
+    if (ONLY && !ONLY.includes(name)) continue;
+    const yy = await scrollTo(page, y); await sleep(1000);
     const census = await page.eval(CENSUS);
     const faceIds = await faceBackendIds(page);
+    const tickWaitMs = await page.eval(TICK);
     await page.eval(`(Object.assign(window.__cdf, { on: true, style: {}, text: {}, nodes: {} }), 0)`);
     const m0 = await metrics(page);
     const { events } = await traced(page, () => sleep(win));
     const m1 = await metrics(page);
     const mo = await page.eval(`(window.__cdf.on = false, { style: window.__cdf.style, text: window.__cdf.text, nodes: window.__cdf.nodes })`);
-    const layers = await layerWindow(page, 1500, faceIds);
+    const layers = await layerWindow(page, 1000, faceIds);
     const census2 = await page.eval(CENSUS);
-    out.positions[name] = { y: yy, windowMs: win, census, censusAfter: census2, mutations: mo, metrics: mdelta(m0, m1), trace: analyzeTrace(events, range), layers };
+    out.positions[name] = { y: yy, windowMs: win, tickAligned: tickWaitMs >= 0, tickWaitMs, census, censusAfter: census2, mutations: mo, metrics: mdelta(m0, m1), trace: analyzeTrace(events, range), layers };
     log(arm, name, 'y', yy, JSON.stringify({ seen: census.map((c) => c.canBeSeen), styleWrites: mo.style, text: mo.text, ult: out.positions[name].trace?.updateLayoutTree, els: out.positions[name].trace?.elementsStyled, cdRaf: out.positions[name].trace?.cdRafCallbacks, faceLayers: layers.faceLayers, facePaints: layers.facePaints }));
   }
   out.errors = page.errors; await page.close();
@@ -266,16 +274,19 @@ async function profileIso(cdp, arm, url, range, win = 6000) {
 }
 
 // ---------- pixels: frozen frames ----------
-// Virtual clocks: Date.now (the countdown value) and performance.now (the spring's start time) are frozen while
-// window.__vt is set; the countdown's spring rAF callbacks (recognised by their source, `GE(`) are queued instead of
-// scheduled, and __step(t) runs them with timestamp t. Everything else on the page runs normally.
-const FREEZE = `(() => { const rDate = Date.now.bind(Date), rPerf = performance.now.bind(performance), rRaf = window.requestAnimationFrame.bind(window), rCaf = window.cancelAnimationFrame.bind(window);
-  window.__vd = null; window.__vt = null; const Q = new Map(); let id = 1e9; const src = new WeakMap();
-  const fromCd = () => /nodes\\/2\\.DyWL8TcE\\.js:3[89]\\d\\d:/.test(new Error().stack.split('\\n').slice(2, 4).join(' '));
+// Virtual clocks, for calls made from the countdown's own code (its line range in the arm's node file, from the stack):
+// Date.now (the countdown value) while window.__vd is set; performance.now (a target change's time) and
+// document.timeline.currentTime (the time of the frame being produced) while window.__vt / window.__vf are set; and the
+// rAF callbacks the countdown requests (the original's spring frames; the PoC's frames and its probe frame) are queued
+// instead of scheduled: __step(t) runs them as the frame with timestamp t. Everything else on the page runs normally.
+const freeze = (range) => `(() => { const rDate = Date.now.bind(Date), rPerf = performance.now.bind(performance), rRaf = window.requestAnimationFrame.bind(window), rCaf = window.cancelAnimationFrame.bind(window);
+  window.__vd = null; window.__vt = null; window.__vf = null; const Q = new Map(); let id = 1e9;
+  const fromCd = () => { const m = /nodes\\/2\\.DyWL8TcE\\.js:(\\d+):/.exec(new Error().stack.split('\\n').slice(2, 4).join(' ')); return !!m && +m[1] >= ${range[0]} && +m[1] <= ${range[1]}; };
   Date.now = () => (window.__vd !== null && fromCd() ? window.__vd : rDate());
   performance.now = () => (window.__vt !== null && fromCd() ? window.__vt : rPerf());
-  window.requestAnimationFrame = (cb) => { let s = src.get(cb); if (s === undefined) { s = String(cb).includes('GE('); src.set(cb, s); }
-    if (s && window.__vt !== null) { const k = ++id; Q.set(k, cb); return k; } return rRaf(cb); };
+  const tl = Object.getOwnPropertyDescriptor(AnimationTimeline.prototype, 'currentTime');
+  Object.defineProperty(AnimationTimeline.prototype, 'currentTime', { configurable: true, get() { return window.__vf !== null && fromCd() ? window.__vf : tl.get.call(this); } });
+  window.requestAnimationFrame = (cb) => { if (window.__vt !== null && fromCd()) { const k = ++id; Q.set(k, cb); return k; } return rRaf(cb); };
   window.cancelAnimationFrame = (k) => (Q.has(k) ? Q.delete(k) : rCaf(k));
   window.__step = (t) => { const cbs = [...Q.values()]; Q.clear(); for (const cb of cbs) cb(t); return cbs.length; };
   window.__queued = () => Q.size;
@@ -315,77 +326,112 @@ const SCENARIOS = [
   ['tens carry 10 -> 09', R(3, 4, 12, 10), R(3, 4, 12, 9)],
 ];
 const PHASES = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 18, 22, 26, 30, 34, 60];
-async function pixels(cdp, arm, url, dir) {
-  const page = await openPage(cdp, { inject: FREEZE });
+const PHASES120 = [0, 1, 2, 4, 8, 12, 20, 30, 45, 68];
+const RESUME_PH = [0, 1, 2, 3, 5, 8, 12, 20, 40];
+// Chrome's real frames (no throttling): are rAF stamps a regular grid, and is document.timeline.currentTime the frame's
+// stamp inside a frame (and what is it between frames)?
+const STAMPS = `new Promise((res) => { const out = []; let n = 0;
+  const f = (t) => { out.push([t, document.timeline.currentTime]); if (++n < 90) requestAnimationFrame(f);
+    else setTimeout(() => res({ frames: out, between: [performance.now(), document.timeline.currentTime, out.at(-1)[0]] }), 4); };
+  requestAnimationFrame(f); })`;
+function stampStats(x) {
+  const g = x.frames.slice(1).map(([t], i) => t - x.frames[i][0]); const min = Math.min(...g);
+  const reg = g.filter((d) => d < 1.5 * min);
+  return { frames: x.frames.length, minGap: +min.toFixed(4), maxGap: +Math.max(...g).toFixed(4), meanRegularGap: +(reg.reduce((a, b) => a + b, 0) / reg.length).toFixed(4),
+    distinctRegularGaps: [...new Set(reg.map((d) => d.toFixed(4)))].slice(0, 8), longGaps: g.length - reg.length,
+    timelineEqualsStamp: x.frames.filter(([t, c]) => t === c).length, timelineMaxDiff: +Math.max(...x.frames.map(([t, c]) => Math.abs(t - c))).toFixed(4),
+    betweenFrames: { now: +x.between[0].toFixed(3), timeline: x.between[1], lastStamp: x.between[2] } };
+}
+async function pixels(cdp, arm, url, dir, range) {
+  const page = await openPage(cdp, { inject: freeze(range) });
   await gotoAndSettle(page, url, { quietMs: 2000 }); await sleep(2500);
-  const shots = {}, state = {};
+  const shots = {}, state = {}, firstVisible = {};
   // what the digits show, as numbers: per digit, the faces inside the cell (|offset| < 1 cell): [digit, translateY px]
   const FACES = `[...document.querySelector('[role=timer]').querySelectorAll('.digit.svelte-1quva9c')].map((d) => { const h = d.offsetHeight;
     return [...d.querySelectorAll('.face.svelte-1quva9c')].map((f) => [f.textContent, Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(f.style.transform) || [])[1])]).filter(([, y]) => Math.abs(y) < h - 0.001).map(([t, y]) => t + '@' + y.toFixed(3)).sort().join(' '); })`;
+  // the frames right after a jump back: per real frame (read after the frame, in a task), the hero copy's opacity and the faces
+  const REC = `(() => { window.__ff = []; const hc = document.querySelector('.hero-copy'); let n = 0;
+    const rec = () => requestAnimationFrame(() => setTimeout(() => { window.__ff.push([+getComputedStyle(hc).opacity, ${FACES}]); if (++n < 12) rec(); }, 0)); rec(); return 0; })()`;
+  const stamps = stampStats(await page.eval(STAMPS));
   const clip = await page.eval(`(() => { const r = document.querySelector('[role=timer]').getBoundingClientRect(); return { x: r.left + scrollX - 4, y: r.top + scrollY - 4, width: r.width + 8, height: r.height + 8, scale: 1 }; })()`);
-  const T0 = 5e6, FR = 1000 / 60;
-  for (const [name, r0, r1] of SCENARIOS) {
-    // freeze at r0, settle every digit at rest
-    await page.eval(`(window.__vt = ${T0}, window.__vd = ${nowFor(r0)}, document.dispatchEvent(new Event('visibilitychange')), 0)`);
-    await page.eval(`new Promise((res) => setTimeout(() => { window.__step(${T0 + 1e4}); setTimeout(res, 50); }, 50))`);
-    await page.eval(`new Promise((res) => setTimeout(() => { window.__step(${T0 + 2e4}); setTimeout(res, 50); }, 50))`);
-    // change to r1 at virtual time T1, then walk the spring frame by frame (60 Hz steps)
-    const T1 = T0 + 1e5;
-    await page.eval(`(window.__vt = ${T1}, window.__vd = ${nowFor(r1)}, document.dispatchEvent(new Event('visibilitychange')), 0)`);
-    await page.eval('new Promise((r) => setTimeout(r, 30))');
-    let k = 0;
-    for (const ph of PHASES) {
-      while (k < ph) { k++; await page.eval(`(window.__step(${T1 + k * FR}), 0)`); }
-      await page.eval('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 20))))');
-      const { data } = await page.send('Page.captureScreenshot', { format: 'png', clip, captureBeyondViewport: false });
-      const key = `${name} | frame ${ph}`;
-      shots[key] = data; state[key] = await page.eval(FACES);
-      writeFileSync(join(dir, `${arm}-${SCENARIOS.findIndex((s) => s[0] === name)}-f${String(ph).padStart(2, '0')}.png`), Buffer.from(data, 'base64'));
+  const twoFrames = 'new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 20))))';
+  const shot = async (key, file) => {
+    await page.eval(twoFrames);
+    const { data } = await page.send('Page.captureScreenshot', { format: 'png', clip, captureBeyondViewport: false });
+    shots[key] = data; state[key] = await page.eval(FACES);
+    writeFileSync(join(dir, `${arm}-${file}.png`), Buffer.from(data, 'base64'));
+  };
+  const step = (t) => page.eval(`(window.__step(${t}), 0)`);
+  // a target change (tick) at virtual time t: the countdown reads Date.now in its visibilitychange handler
+  const tick = (t, r, extra = '') => page.eval(`(window.__vt = ${t}, window.__vd = ${nowFor(r)}, ${extra} document.dispatchEvent(new Event('visibilitychange')), new Promise((r) => setTimeout(r, 30)))`);
+  const pause = (ms) => page.eval(`new Promise((r) => setTimeout(r, ${ms}))`);
+  let T = 5e6;
+  // every digit at rest at r: change at T, settle with two long frames
+  const settle = async (r) => { T += 1e6; await tick(T, r); await step(T + 1e4); await pause(30); await step(T + 2e4); await pause(30); };
+  // a visible roll at the display rate (as before every real resume: the clock ticked in view first), so the PoC learns
+  // the frame period (__cdFrame) for that rate; 40 frames, then a long frame ends it
+  const learn = async (r, FR) => { T += 1e6; await tick(T + FR / 3, r); for (let k = 1; k <= 40; k++) await step(T + k * FR); await step(T + 1e4); await pause(30); await step(T + 2e4); await pause(30); };
+  // frame stamps are jittered like real ones: Chrome showed 120 Hz gaps of 7.4-9.4 ms on a 0.1 ms grid (round 2, `stamps`)
+  const J = (k) => (((k * 7919) % 21) - 10) / 10;
+  // rolls: the target changes a third of a frame after a frame (G); frames at G + k * FR + J(k)
+  for (const [hz, FR, scen, phases] of [[60, 1000 / 60, SCENARIOS, PHASES], [120, 1000 / 120, SCENARIOS.slice(0, 4), PHASES120]]) {
+    for (const [si, [name, r0, r1]] of scen.entries()) {
+      await settle(r0);
+      const G = T + 1e5; await tick(G + FR / 3, r1);
+      let k = 0;
+      for (const ph of phases) { while (k < ph) { k++; await step(G + k * FR + J(k)); } await shot(`${name} @${hz}Hz | frame ${ph}`, `${hz}-${si}-f${String(ph).padStart(3, '0')}`); }
+      await step(G + 1e5); T = G + 1e5;
     }
-    await page.eval(`(window.__step(${T1 + 1e5}), 0)`);
   }
-  // resume frames: the clock goes out of sight, its target changes, K frames later it comes back mid-frame
-  // (K*FR + FR/2 after the change); shots at the resume instant and on the frames after it
+  // resume: the clock goes out of sight, its target changes mid-frame (once, or twice), frames run, and in the next frame
+  // it comes back: both arms have stepped that frame (the PoC computes its spring out of sight without writing it, and
+  // writes it in the frame that shows the hero again). Shots at +0 (that frame) and the frames after it; plus the first real frame in
+  // which the hero copy is visible again (opacity > 0), read right after that frame was produced.
   const pos = await page.eval(POSITIONS);
-  const twoFrames = 'new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 120))))';
   const go = (y) => page.eval(`(window.scrollTo(0, ${y}), ${twoFrames})`);
   const HIDES = {
-    'fade-in (hero faded to opacity 0 at y=vh, then back)': { hide: () => go(pos.heroExit), show: () => go(0) },
-    'scroll back (hero > 1 viewport off-screen, then back)': { hide: () => go(pos.pastHero), show: () => go(0) },
+    'fade-in (hero faded to opacity 0 at y=vh, then back)': { hide: () => go(pos.heroExit) },
+    'scroll back (hero > 1 viewport off-screen, then back)': { hide: () => go(pos.pastHero) },
     'tab switch (hidden tab: no frames run; new second on return)': { tab: true },
   };
-  const RESUME_PH = [0, 1, 2, 3, 5, 8, 12, 20, 40];
-  let T = T0 + 1e6;
-  for (const [hname, h] of Object.entries(HIDES)) for (const K of [6, 15, 40]) {
-    const [r0, r1, r2] = [R(3, 4, 12, 40), R(3, 4, 12, 39), R(3, 4, 12, 38)];
-    const name = `resume: ${hname}, back ${K} frames after 40 -> 39`;
-    T += 1e6;
-    await page.eval(`(window.__vt = ${T}, window.__vd = ${nowFor(r0)}, document.dispatchEvent(new Event('visibilitychange')), 0)`);
-    await page.eval(`new Promise((res) => setTimeout(() => { window.__step(${T + 1e4}); setTimeout(res, 50); }, 50))`);
-    await page.eval(`new Promise((res) => setTimeout(() => { window.__step(${T + 2e4}); setTimeout(res, 50); }, 50))`);
-    const T1 = T + 1e5;
-    if (h.tab) await page.eval(`(window.__vt = ${T1 - 1e3}, window.__hidden = true, document.dispatchEvent(new Event('visibilitychange')), ${twoFrames})`);
+  const [r0, r1, r2] = [R(3, 4, 12, 40), R(3, 4, 12, 39), R(3, 4, 12, 38)];
+  const runs = [];
+  for (const [hz, FR, Ks] of [[60, 1000 / 60, [6, 15, 40]], [120, 1000 / 120, [12, 40]]]) {
+    for (const [hname, h] of Object.entries(HIDES)) for (const K of Ks) runs.push({ hz, FR, hname, h, K, ticks: [[0, r1]] });
+    runs.push({ hz, FR, hname: 'scroll back, two target changes out of sight (40 -> 39, then 39 -> 38 12 frames later at 60 Hz)', h: HIDES['scroll back (hero > 1 viewport off-screen, then back)'], K: hz === 60 ? 8 : 16, ticks: [[0, r1], [hz === 60 ? 12 : 24, r2]] });
+  }
+  for (const [ri, { hz, FR, hname, h, K, ticks }] of runs.entries()) {
+    const name = `resume @${hz}Hz: ${hname}, back ${K} frames after the ${ticks.length > 1 ? 'second change' : 'change 40 -> 39'}`;
+    await learn(r0, FR);
+    const G = T + 1e5;
+    if (h.tab) await page.eval(`(window.__vt = ${G - 1e3}, window.__hidden = true, document.dispatchEvent(new Event('visibilitychange')), ${twoFrames})`);
     else await h.hide();
-    await page.eval(`(window.__vt = ${T1}, window.__vd = ${nowFor(r1)}, document.dispatchEvent(new Event('visibilitychange')), 0)`);
-    await page.eval('new Promise((r) => setTimeout(r, 30))');
-    if (!h.tab) for (let k = 1; k <= K; k++) await page.eval(`(window.__step(${T1 + k * FR}), 0)`);
-    const Tr = T1 + K * FR + FR / 2;
-    if (h.tab) await page.eval(`(window.__vt = ${Tr}, window.__vd = ${nowFor(r2)}, window.__hidden = false, document.dispatchEvent(new Event('visibilitychange')), ${twoFrames})`);
-    else { await page.eval(`(window.__vt = ${Tr}, 0)`); await h.show(); }
-    await page.eval('new Promise((r) => setTimeout(r, 1500))'); // the rest of the page (hero copy fade-in) settles; the countdown's clock is frozen
     let k = 0;
-    for (const ph of RESUME_PH) {
-      while (k < ph) { k++; await page.eval(`(window.__step(${T1 + (K + k) * FR}), 0)`); }
-      await page.eval(twoFrames);
-      const { data } = await page.send('Page.captureScreenshot', { format: 'png', clip, captureBeyondViewport: false });
-      shots[`${name} | +${ph}`] = data; state[`${name} | +${ph}`] = await page.eval(FACES);
-      writeFileSync(join(dir, `${arm}-resume-${Object.keys(HIDES).indexOf(hname)}-K${K}-p${String(ph).padStart(2, '0')}.png`), Buffer.from(data, 'base64'));
+    for (const [tk, r] of ticks) { while (k < tk) { k++; if (!h.tab) await step(G + k * FR + J(k)); } await tick(G + tk * FR + FR / 3, r); }
+    const Kend = ticks.at(-1)[0] + K;
+    while (k < Kend) { k++; if (!h.tab) await step(G + k * FR + J(k)); }
+    if (h.tab) {
+      // the tab comes back between frames with a new second (the visibilitychange tick), as before
+      await tick(G + Kend * FR + FR / 2, r2, 'window.__hidden = false,');
+    } else {
+      const vf = G + (Kend + 1) * FR + J(Kend + 1);
+      await page.eval(`(window.__vf = ${vf}, window.__vt = ${vf + FR / 4}, window.__step(${vf}), ${REC})`); k = Kend + 1;
+      await go(0);
+      await pause(250);
+      const ff = await page.eval('window.__ff');
+      const i = ff.findIndex(([op]) => op > 0);
+      firstVisible[name] = i < 0 ? null : { frame: i, opacity: ff[i][0], faces: ff[i][1] };
+      await page.eval('(window.__vf = null, 0)');
     }
-    await page.eval(`(window.__step(${T1 + 1e5}), 0)`);
+    await pause(800); // the rest of the page (hero copy) settles; the countdown's clocks are frozen
+    const k0 = k;
+    for (const ph of RESUME_PH) { while (k < k0 + ph) { k++; await step(G + k * FR + J(k)); } await shot(`${name} | +${ph}`, `resume-${String(ri).padStart(2, '0')}-p${String(ph).padStart(2, '0')}`); }
+    await step(G + 1e5); T = G + 1e5;
   }
   const values = await page.eval(`[...document.querySelectorAll('[role=timer]')].map((t) => [...t.querySelectorAll('[data-testid=sliding-number]')].map((n) => n.dataset.value).join(':'))`);
   const errors = page.errors; await page.close();
-  return { arm, clip, shots, state, values, errors };
+  log(arm, 'stamps', JSON.stringify(stamps));
+  return { arm, clip, shots, state, firstVisible, stamps, values, errors };
 }
 
 // ---------- main ----------
@@ -406,13 +452,16 @@ try {
     const dir = join(OUT, `pixels-${STAMP}`); mkdirSync(dir, { recursive: true });
     const order = [...ARMS, ARMS[0]]; // A B A: the second A is the A/A control
     const got = [];
-    for (let i = 0; i < order.length; i++) { got.push(await pixels(cdp, order[i] + (i === order.length - 1 ? '-again' : ''), servers[order[i]].url, dir)); }
+    for (let i = 0; i < order.length; i++) { got.push(await pixels(cdp, order[i] + (i === order.length - 1 ? '-again' : ''), servers[order[i]].url, dir, ranges[order[i]])); }
     const cmp = (x, y) => Object.keys(x.shots).map((k) => ({ key: k, sameFaces: JSON.stringify(x.state[k]) === JSON.stringify(y.state[k]), ...(JSON.stringify(x.state[k]) === JSON.stringify(y.state[k]) ? {} : { faces: [x.state[k], y.state[k]] }), identicalBytes: x.shots[k] === y.shots[k], ...(x.shots[k] === y.shots[k] ? {} : pxDiff(Buffer.from(x.shots[k], 'base64'), Buffer.from(y.shots[k], 'base64'))) }));
     const blank = Object.entries(got[0].shots).filter(([, s]) => pxDiff(Buffer.from(s, 'base64'), Buffer.from(s, 'base64')).blank).map(([k]) => k);
-    res.results = { values: got.map((g) => [g.arm, g.values]), errors: got.map((g) => [g.arm, g.errors]), clip: got[0].clip, blankShots: blank,
+    const ffCmp = (x, y) => Object.keys(x.firstVisible).map((k) => ({ key: k, a: x.firstVisible[k], b: y.firstVisible[k], same: JSON.stringify(x.firstVisible[k]?.faces) === JSON.stringify(y.firstVisible[k]?.faces) }));
+    res.results = { values: got.map((g) => [g.arm, g.values]), errors: got.map((g) => [g.arm, g.errors]), clip: got[0].clip, blankShots: blank, stamps: got.map((g) => [g.arm, g.stamps]),
+      [`firstVisible ${got[0].arm} vs ${got[1].arm}`]: ffCmp(got[0], got[1]), [`firstVisible ${got[0].arm} vs ${got[2].arm} (A/A)`]: ffCmp(got[0], got[2]),
       [`${got[0].arm} vs ${got[1].arm}`]: cmp(got[0], got[1]), [`${got[0].arm} vs ${got[2].arm} (A/A)`]: cmp(got[0], got[2]) };
-    for (const [k, v] of Object.entries(res.results)) if (Array.isArray(v) && v[0]?.key) log(k, ':', v.filter((x) => !x.identicalBytes).length, 'of', v.length, 'shots differ in pixels,', v.filter((x) => !x.sameFaces).length, 'in face state', JSON.stringify(v.filter((x) => !x.identicalBytes || !x.sameFaces).map((x) => [x.key, x.diffPixels, x.maxChannelDelta, x.faces])));
+    for (const [k, v] of Object.entries(res.results)) if (Array.isArray(v) && v[0]?.key && !k.startsWith('firstVisible')) log(k, ':', v.filter((x) => !x.identicalBytes).length, 'of', v.length, 'shots differ in pixels,', v.filter((x) => !x.sameFaces).length, 'in face state', JSON.stringify(v.filter((x) => !x.identicalBytes || !x.sameFaces).map((x) => [x.key, x.diffPixels, x.maxChannelDelta, x.faces])));
     log('blank shots', blank.length);
+    for (const k of Object.keys(res.results).filter((k) => k.startsWith('firstVisible'))) log(k, ':', res.results[k].filter((x) => !x.same).length, 'of', res.results[k].length, 'differ', JSON.stringify(res.results[k].filter((x) => !x.same)));
   } else {
     for (let run = 0; run < RUNS; run++) {
       const order = run % 2 ? [...ARMS].reverse() : ARMS;

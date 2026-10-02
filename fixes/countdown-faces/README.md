@@ -3,47 +3,51 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (counts, call-tree attribution, frozen-frame pixel identity; no timing A/B by design)
-**Stage:** I (instrumented and attributed); a proposal decides whether it goes on to F
-**Device class / gate:** Chrome counts and call tree; WebKit counts on the Simulator. No phone timing blocks, no
+**Status:** round 2 (review r1 NEEDS-WORK addressed). Measured: counts, call-tree attribution, frozen-frame pixel
+identity. No timing A/B, by design.
+**Stage:** I (instrumented and attributed). A proposal (PR-007) decides whether it goes on to F. A phone segment
+card is needed before F/L (WebKit, see "WebKit").
+**Device class / gate:** Chrome counts and call tree; WebKit counts on the Simulator. No phone timing blocks and no
 timing A/B gain claim (timing was deferred project-wide when this ran).
-**Driver(s) behind the claims:** Chrome CDP probe (`probe.mjs`), frozen-frame harness (`probe.mjs pixels`), Simulator
-Timeline counter (`sim-counts.mjs`)
-**Topic:** user thread T-024 (the countdown re-renders while nobody can see it; each digit has 10 faces)
-**Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`:
-- spring/digit `$E` and its helpers (pretty 3804-3876);
-- `tD` (3878-3904);
-- countdown `cD` (3918-3982);
-- the hero `fD`: its exit-opacity function (~4163-4172) and the `cD` call (4333);
-- the morph panel's `cD` call (13160).
+**Driver(s) behind the claims:**
+- Chrome CDP probe (`probe.mjs counts|profile`);
+- frozen-frame harness (`probe.mjs pixels`);
+- spring model (`chain.mjs`);
+- Simulator Timeline counter (`sim-counts.mjs`).
+
+**Topic:** user thread T-024 (the countdown re-renders while nobody can see it; each digit has 10 faces).
+**Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` (pretty line numbers of the baseline):
+- spring/digit `$E` and its helpers (3805-3876);
+- `tD` (3894);
+- countdown `cD` (3920, 3958);
+- the hero `fD`: a state (4026), its exit-opacity function (4162-4174) and the `cD` call (4330);
+- the morph panel's `cD` call (13157).
 
 No CSS change.
 
 ## What the countdown costs today (research)
 
-The countdown is `cD`: one row of `tD` numbers. Each digit is a `$E`. A `$E` holds 10 absolutely
-positioned `.face` spans (0-9, `will-change: transform`), each with its own layer, and a spring `GE`
-(stiffness 280, damping 18, mass 0.3, 16 ms substeps). The spring runs on rAF on every target change, i.e. every
-second, and every frame writes `transform` on all 10 faces of each rolling digit.
+The countdown is `cD`: one row of `tD` numbers. Each digit is a `$E`, which holds 10 absolutely positioned `.face`
+spans (0-9, `will-change: transform`), each on its own layer. It runs a spring `GE` (stiffness 280, damping 18,
+mass 0.3, 16 ms substeps) on rAF at every target change, i.e. every second. Every frame it writes the spring value to
+a Svelte state, and the 10 faces of each rolling digit rewrite their `transform`.
 
-There are two instances:
-- the hero, `cD(xe, {})` at 4333;
-- the morph panel, `cD(e(h), {inverse: true})` at 13160, mounted once the page reaches it.
-
-Neither ever stops.
+There are two instances, and neither ever stops:
+- the hero, `cD(xe, {})` at 4330;
+- the morph panel, `cD(e(h), {inverse: true})` at 13157, mounted once the page reaches it.
 
 **Which instances render while nobody can see them** (census per `[role=timer]`: viewport, product of ancestor
-opacities, `data-start-selling-scene`, content-visibility). Chrome, 430x932, 3 s windows:
+opacities, `data-start-selling-scene`, content-visibility). Chrome, 430x932:
 
-| position | hero countdown | panel countdown | face style writes (base) |
-|---|---|---|---|
-| top (y 0) | visible | not mounted | 1620 |
-| heroExit (y = vh) | **in the viewport at opacity 0** (`.hero-copy` opacity × `--exit-opacity` = 0) | not mounted | 1460 |
-| pastHero / mid / end | off-screen (content-visibility:auto ancestor) | mounted at **opacity 0**, scene paused | 2730-3070 (both instances) |
+| position | hero countdown | panel countdown |
+|---|---|---|
+| top (y 0) | visible | not mounted |
+| heroExit (y = vh) | **in the viewport at opacity 0** (`.hero-copy` opacity × `--exit-opacity` = 0) | not mounted |
+| pastHero / mid / end | off-screen (content-visibility:auto ancestor) | mounted at **opacity 0**, scene paused |
 
 So the clock rolls in four hidden cases:
 1. off-screen;
-2. faded out in place (the hero's exit fade): a case we found that the original brief did not list;
+2. faded out in place (the hero's exit fade), a case the original brief did not list;
 3. the panel's opacity-0 mount;
 4. a background tab.
 
@@ -52,65 +56,91 @@ when running in background tabs or hidden iframes" (CONFIRMED, MDN
 `developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame`). So the tab case is already free, apart
 from the 1 Hz tick.
 
-**Per-tick work.** Base vs `still`, which is the baseline with the spring always snapping, i.e. the same page
-without the roll (`results.json` → `fullPage3s`):
-
-| 3 s window | base | still | what it means |
-|---|---|---|---|
-| top: face style invalidations | 1290 | 30 | ~43 writes per frame while a digit rolls |
-| top: elements styled | 3218 | 2108 | +1110 |
-| pastHero: elements styled | 7085 | 5607 | +1478, all of it unseen |
-| countdown rAF callbacks (top / pastHero / end) | 130 / 287 / 245 | 0 | |
-| layouts, paints | no countdown share | | see the claim below |
-| face layers (top) | 80 (of 106) | 80 | 0 once the panel scene is paused |
-
 - **Transform writes skip layout and paint:** CONFIRMED for compositor-layer elements. web.dev "Stick to
   compositor-only properties and manage layer count": "The best-performing version of the pixel pipeline avoids
-  both layout and paint, and only requires compositing changes". The caveat is that the element must be on its own
-  layer, which the faces are (`will-change: transform`). Our counts agree: the isolated base page has 0 layouts
-  and 0 paints in 6 s.
-- **Most of the cost is Svelte's reactive flush and style recalc, not the rAF callback itself:** OBSERVED (our own
-  trace, cause not checked against Svelte docs). FireAnimationFrame takes 345-800 ms per 3 s, while the callback's
-  own FunctionCall is 17-47 ms. The CPU profile below says the same: stacks that contain countdown code are only
-  2% of busy time.
+  both layout and paint, and only requires compositing changes". The faces are on their own layers
+  (`will-change: transform`).
+- **Most of the cost is Svelte's reactive flush and style recalc, not the spring math:** OBSERVED, in our setup
+  (Chrome traces). It is not checked against Svelte docs.
+  - Round 2 isolates it: the PoC runs the same rAF frames with the same spring math as the original and only skips
+    the state write while hidden.
+  - With that, the countdown's FireAnimationFrame time drops from 438-644 ms to 18-44 ms per 3 s (medians, n=3,
+    table below).
 
 ## What changed (PoC)
 
 **(a) 3 faces per digit instead of 10.** Each digit has 3 slots (`__cdSlots = [0,1,2]`).
 - Slot k shows cell position `p = round(v) - 1 + ((k - round(v) + 1) mod 3)`, digit `p mod 10`, at offset
-  `KE(digit, v)`. That is the same offset the original face of that digit gets, clamped to ±1 cell.
+  `KE(digit, v)`. That is the same offset the original gives the face of that digit, clamped to ±1 cell.
 - The two faces that can be inside the cell (`floor(v)`, `ceil(v)`) always have a slot.
 - A face at ≥ 1 cell is hidden by `.digit { overflow: hidden }`, just as the original parks its other 8 faces.
 - A node check over 110,002 values in [-1, 10] found 0 mismatches against the 10-face visible set.
-- The DOM order changes. Faces are `aria-hidden`; the readable value stays in `role=timer` / `aria-label` and in
-  `data-value`.
+- The DOM changes:
+  - Face order differs.
+  - Each digit's text is 3 digits instead of "0123456789". Find-in-page and text copied from the clock change with
+    it.
+  - Faces are `aria-hidden`, so screen readers are unaffected. The readable value stays in `role=timer` /
+    `aria-label` and in `data-value`.
 
-**(b) No animation while the clock can't be seen**, after apple.com's pattern (next section). `cD` computes `live`
-from two gates:
-- **near the viewport:** an IntersectionObserver with `rootMargin: 100% 0px`, a one-viewport lead like Apple's
-  play range;
-- **shown by the call site:** a new optional `active` prop.
-  - The hero passes `--exit-opacity > 0`. Its exit function sets a state through module aliases, because `fD`
-    shadows `N`/`z`/`s`.
-  - The panel passes `morph > 0.08`, the point where its opacity formula `clamp(0, (morph - 0.08) / 0.72, 1)`
-    leaves 0.
+**(b) No state writes while the clock can't be seen.** The digit's spring keeps running exactly as in the
+original: the same rAF frames, the same `GE(t, e, o - n)` steps and the same start value. While the clock is
+hidden, each frame only stores the value in a plain variable (`__cdV`). It does not write the Svelte state, so
+there is no flush, no face style write and no style recalc.
 
-There is no tab gate (see above).
+When the clock becomes visible again, a second effect writes the stored value at once.
+- The hero's visibility is set in its exit-opacity function, and the panel's in its morph spring. Both run inside
+  a frame (rAF), so the write lands in the frame that shows the clock again.
+- If the spring's own callback for that frame runs later in the same frame, it writes that frame's value itself.
+- The first frame that shows the clock therefore shows what the original shows for that frame. This fixes review
+  r1 Blocking 2 (the one-frame hop after an instant jump). The IntersectionObserver whose late callback caused it
+  is gone.
 
-While `live` is false a digit snaps to its target, like the reduced-motion path: no rAF. It remembers the last
-target change `{from, to, at}`.
+`live` comes from the call site, through an optional `active` prop on `cD` (the same name and meaning as topic #1's
+prop: false = mounted but not shown):
+- **Hero:** the exit function reads `.hero-copy`'s rect next to the rect it already reads, and sets
+  `active = --exit-opacity > 0 && .hero-copy within one viewport`.
+  - `r > 0` is exactly opacity > 0 (CSS 1734/1910/1932/2043, confirmed by review r1).
+  - Below the hero, `r` is already 0, so the one-viewport term rarely matters.
+  - `fD` shadows `N`/`z`/`s`, so it uses module aliases.
+- **Panel:** `morph > 0.08`, where its opacity formula `clamp(0, (morph - 0.08) / 0.72, 1)` leaves 0 (review r1:
+  equal to opacity > 0).
+- **No tab gate:** the browser already stops rAF in a background tab.
+- **Reduced motion** is unchanged (snap).
 
-**Resume (pixel identity).** When the clock becomes visible again within 1 s of a target change, the digit replays
-the frames an always-running spring would have run, then continues per rAF:
-- the frames are `GE(t, e, dt)` once per display interval `dt` from `at` up to now;
-- `dt` is the shortest rAF gap of the last finished roll, shared by all digits, 60 Hz until learned.
+### Why no replay (round 2 finding)
 
-This replay is required, because the original spring is **frame-rate dependent**. It runs semi-implicit Euler with
-ω·dt ≈ 0.5 and steps once per rAF. A one-shot `GE(from, to, elapsed)` matches a 60 Hz chain within 0.014 px but
-misses a 120 Hz chain by 3.6 px on a one-step roll and by 45 px on the 9→0 wrap. 60 Hz and 120 Hz chains of the
-base differ from each other by 3.3 px (finding F-137). The whole-frame replay lands exactly on one of base's
-possible trajectories (0 px outside base's own vsync-phase spread at 60 and 120 Hz;
-`out/countdown-faces/chain.mjs`).
+Round 1 skipped the rAF frames while hidden and replayed them on resume. The review showed that this was not exact
+when a tick falls mid-frame. A round-2 draft anchored the replay to real frame stamps (the first frame after the
+change, and the resume frame) and spread the frames in between evenly. `chain.mjs` runs that draft against the
+original, using the baseline's real `GE`. Results are the maximum shift over 300 random phases per case and every
+frame of the resume:
+
+| frame stamps | replay draft, 60 Hz | 120 Hz | shipped PoC |
+|---|---|---|---|
+| regular grid | ≤ 2.3e-11 px | ≤ 1.3e-10 px | 0 |
+| regular, 100 µs grid | ≤ 0.010 px | ≤ 0.093 px | 0 |
+| jittered ±1 ms on a 100 µs grid (like Chrome below) | ≤ 0.94 px | ≤ 1.58 px | 0 |
+| 1 frame dropped in 7 | ≤ 0.67 px | ≤ 30 px (9→0 wrap) | 0 |
+
+Real Chrome frames are not a regular grid. In the same pages the probe recorded 90 real rAF stamps per arm: 120 Hz
+gaps of 7.3-9.4 ms (mean 8.333) on a 0.1 ms grid (OBSERVED in our setup: Chrome, display on, no throttling;
+`results.json` → `pixels.realFrameStamps`). A replay can't know frames it did not see. So the shipped PoC keeps the
+frames and drops only the writes.
+
+"Shipped PoC: 0" is true by construction: it makes the same `GE` calls with the same arguments as the original. The
+model only confirms the bookkeeping.
+
+The precise claim: **for any sequence of frames, the PoC shows what the original computes for that sequence.** The
+original's own path also depends on which frames it gets (60 vs 120 Hz differ by 3.3 px; frame drops change it).
+The PoC page is cheaper, so its frame sequence can differ from the original's on the same device. That changes the
+clock's path only within the variation the original already has between runs.
+
+Side notes:
+- In those 270 real frames, `document.timeline.currentTime` equalled the rAF stamp every time. Between frames it
+  held the last stamp while `performance.now()` moved on (OBSERVED, Chrome).
+- Web Animations §4.3.2 states that `document.timeline.currentTime` "does not change in between calls to the update
+  animations and send events procedure" (CONFIRMED, w3.org/TR/web-animations-1). The round-2 draft relied on this;
+  the shipped PoC no longer needs it.
 
 ## The apple.com pattern this follows
 
@@ -118,166 +148,211 @@ User reference: https://www.apple.com/iphone-18-pro/, `media-card-gallery-conten
 `https://www.apple.com/v/iphone-18-pro/c/built/scripts/overview/main.built.js` and `.../styles/overview.built.css`
 (no personal data sent):
 - **Play range, not IntersectionObserver.** The gallery's animations play and pause from an AnimSystem scroll-range
-  keyframe (`play-pause-kf`, starting one viewport early, `a0t - 100vh`): `onEnter` plays, `onExit` calls `pause()`. The bundle's only IntersectionObserver serves keyboard navigation. Neither file uses
-  `content-visibility`.
+  keyframe (`play-pause-kf`, starting one viewport early, `a0t - 100vh`): `onEnter` plays, `onExit` calls `pause()`.
+  The bundle's only IntersectionObserver serves keyboard navigation. Neither file uses `content-visibility`.
 - `pause()` adds the class `paused` (`animation-play-state: paused` on the progress) and pauses the TimeGroup.
   **Resume continues where it stopped; it does not restart.**
 - `.gallery-item.out-of-view .card { display: none }` keeps only the slots next to the current one rendered. That is
   the same idea as keeping 3 faces.
-- There is no explicit background-tab code: the browser stops rAF (INFERRED from the absence plus MDN above).
+- We found no explicit background-tab code in those two files. UNRESOLVED whether Apple handles tabs elsewhere; the
+  browser stops rAF there anyway (MDN above).
 
-Our PoC uses an IntersectionObserver with the same one-viewport lead instead of a scroll-range engine, which this
-page doesn't have. The idea matches Apple's: pause outside the play range, and continue (catch up) rather than
-restart on re-entry.
+The PoC follows the same pattern: the call site decides visibility from scroll position, inside the scroll frame,
+and there is no IntersectionObserver. It differs in one way. The paused clock keeps its spring time running, so on
+return it shows the frame an always-running clock shows. It does not continue from where it stopped. A countdown
+must show the current time, so continuing from where it stopped would be wrong for it.
 
 ## Pixel identity (frozen frames)
 
 `probe.mjs pixels base,poc`: the arms run in order A B A, where the second A is an A/A control.
-- The countdown's own clocks are virtualised. `Date.now` and `performance.now` are frozen when called from the
-  countdown, and its spring rAF callbacks are queued and stepped at exact 60 Hz stamps. Everything else on the page
-  runs normally.
+- **Virtual clocks for the countdown's own code.** `Date.now` (the countdown value), `performance.now` (the time
+  of a target change) and `document.timeline.currentTime` are virtual. The code is matched by stack line, inside
+  the countdown's line range of each arm's file (`cdRange`: from `var UE` to `var lD`; no fixed regex, review r1
+  #10). The countdown's rAF callbacks are queued and stepped by the harness. Everything else on the page runs
+  normally.
+- **Frame stamps are jittered like real ones:** `G + k·FR + J(k)`, J in [-1, 1] ms on a 0.1 ms grid.
+- **Ticks fall mid-frame:** `T1 = G + FR/3` (review r1 Blocking 1c).
 - Screenshot clip: the hero `[role=timer]`, 384x96 CSS px at DPR 3.
-- Besides the pixels, each frame records the face state: every face inside the cell, as digit@translateY to 3
-  decimals.
+- Each shot also records the face state: every face inside the cell, as digit@translateY to 3 decimals.
+- **First visible frame after an instant jump back:** a recorder reads, after each real frame, the hero copy's
+  opacity and the face state. It compares the first frame in which the hero copy is visible again.
 
-| comparison | shots | differ in pixels | differ in face state | mid-roll shots | resume shots (mid-roll) |
-|---|---|---|---|---|---|
-| base vs PoC | 183 | **0** | **0** | 131 | 81 (51) |
-| base vs base (A/A) | 183 | 0 | 0 | 131 | 81 (51) |
+| comparison | shots | differ in pixels | differ in face state | first visible frame after the jump (face state) |
+|---|---|---|---|---|
+| base vs PoC | 295 | **0** | **0** | **0 of 12 differ** |
+| base vs base (A/A) | 295 | 0 | 0 | 0 of 12 |
 
-There were no blank shots and no page errors.
-- **Rolls** (102 shots, each at 17 spring phases from frame 0 to frame 60): one step down, one step up, the ones
-  wrap 0→9 with tens 4→3, 9→0 with tens 3→4 going up, a 4-unit carry (3d 04:00:00 → 03:59:59), and tens 10→09.
-- **Resume** (81 shots): 40→39, with the clock coming back 6, 15 or 40 frames after the change, half a frame into
-  the frame, shot at +0..+40 frames. Three ways of hiding:
-  - the hero faded to opacity 0 (y = vh), then scrolled back;
-  - more than 1 viewport off-screen, then back;
-  - a tab switch: visibilityState emulated hidden, no frames stepped, a new second on return.
-- Example, 6 frames after the change: both arms show `3@-5.893 4@30.107 | 7@-18.967 8@17.033` at the resume
-  instant.
-- In the tab case both show base's stale `40` at the return frame, then the same sweep.
-- An earlier run without the 1.5 s settle after scrolling back had pixel diffs in base A/A as well, from the hero
-  copy's own fade-in. Its face states were equal. The run above waits for the page to settle, and the countdown's
-  frozen clock does not move meanwhile.
-- The panel fade-in uses the same `active` mechanism, but the harness only checks the hero.
+There were no blank shots and no page errors. Shots by kind (base vs PoC, all 0 diffs):
+- **Rolls at 60 Hz (102):** 6 kinds × 17 phases, frame 0 to 60. One step down, one step up, the ones wrap 0→9 with
+  tens 4→3, 9→0 with tens 3→4 going up, a 4-unit carry (3d 04:00:00 → 03:59:59), and tens 10→09.
+- **Rolls at 120 Hz (40):** the first 4 kinds × 10 phases.
+- **Resume, 40→39 (81 at 60 Hz, 54 at 120 Hz):**
+  - the clock comes back 6, 15 or 40 frames after the change at 60 Hz, and 12 or 40 at 120 Hz;
+  - shots at +0 to +40 frames;
+  - three ways of hiding: faded to opacity 0 (y = vh), more than one viewport away, and a tab switch.
+- **Resume after two target changes while hidden (9 + 9):** 40→39, then 39→38 200 ms later, mid-roll (review r1
+  #7). Back 8 frames later at 60 Hz, 16 at 120 Hz.
+- **Example of a first visible frame**, 6 frames after the change, hero faded in at opacity 0.975: both arms show
+  `3@-5.124 4@30.876 | 7@-25.886 8@10.114`, mid-roll.
+
+Not shot:
+- the panel clock (the same digit code; its `active` comes from the morph spring, also in a rAF);
+- WebKit;
+- real 120 Hz hardware (the harness steps virtual 120 Hz stamps).
 
 ## Before / after: counts
 
-All numbers are from one run (n=1) at CPU 6x; ms columns are rough. Data: `results.json`.
+**Full page, round 2.** Base vs PoC, n=3 per arm, one exclusive hold. Each 3 s window starts 700 ms after a second
+tick, so it holds exactly three ticks and their rolls (review r1 #3). The tables give medians, with ranges for
+the noisy ones. ms values are rough (CPU 6x, not a timing A/B).
 
-**Isolated page** (one countdown alone with the page CSS, 8 digits, 6 s window, visible, so it rolls):
+| position (both clocks hidden) | face style writes | elements styled | style recalcs | layouts | paints | countdown rAF frames | countdown rAF ms (rough) |
+|---|---|---|---|---|---|---|---|
+| heroExit, base | 1580 (1200-1670) | 3068 | 253 | 153 (145-157) | 736 | 158 | 438 |
+| heroExit, PoC | **0** | **1709** | 286 | 164 (161-178) | 833 | 141 | **18** |
+| pastHero, base | 2260 (2150-3180) | 6416 | 287 | 73 | 769 | 223 | 571 |
+| pastHero, PoC | **0** | **5541** | 358 | 79 | 872 | 287 | **18** |
+| end, base | 2750 (2320-2870) | 5576 | 319 | 0 | 638 | 228 | 644 |
+| end, PoC | **0** | **5040** | 360 | 0 | 720 | 287 | **44** |
 
-| | base | PoC (a+b) | faces only (a) | still (floor) |
+**Why some counts go up with the PoC** (review r1 #5):
+- **More frames.** Hidden countdown frames now cost almost nothing, so Chrome at 6x produces more of them:
+  countdown rAF frames are 287 vs 223 at pastHero.
+- **Per frame, the PoC does less.** Elements styled per countdown frame are 19.3 vs 28.8 at pastHero and 17.6 vs
+  24.5 at end; paints per frame are 3.04 vs 3.45 and 2.51 vs 2.80.
+- **Recalcs and paints follow the frame count.** Style recalcs and paints scale with the number of frames. Most
+  of them are the rest of the page: the PoC writes no countdown style there at all.
+- **heroExit is not explained.** Layouts are +7 % and paints +13 % with fewer countdown frames (141 vs 158).
+  OBSERVED, cause unknown; not repeated beyond n=3.
+
+**Isolated page (round 1, n=1).** One countdown alone with the page CSS, 8 digits, 6 s window. It is visible, so it
+rolls. The round-2 PoC runs the same visible path as round 1, a state write on every frame, so these numbers still
+describe it. Per countdown frame, the windows were not tick-aligned:
+
+| | base | PoC | faces only (a) | still (floor) |
 |---|---|---|---|---|
-| face style writes | 3400 | **598** | 582 | 70 |
-| style recalcs | 293 | 277 | 270 | 6 |
-| elements styled | 3400 | **560** | 546 | 70 |
-| layouts / paints | 0 / 0 | **6 / 12** | 6 / 12 | 0 / 0 |
-| face-layer repaints | 0 | 11 | 2 | 0 |
-| countdown rAF callbacks | 347 | 283 | 276 | 0 |
+| face style writes per frame | 9.8 | **2.1** | 2.1 | - |
+| elements styled per frame | 9.8 | **2.0** | 2.0 | - |
+| layouts / paints per frame | 0 / 0 | 0.021 / 0.042 | 0.022 / 0.044 | 0 / 0 |
 | layers (face layers) | 86 (80) | **30 (24)** | 30 (24) | 86 (80) |
-| rough: tasks / style / countdown rAF ms | 677 / 43 / 226 | 306 / 16 / 78 | 297 / 27 / 77 | 49 / 4 / 0 |
+| countdown rAF frames in 6 s | 347 | 283 | 276 | 0 |
 
-**New cost of (a).** A slot's digit text changes once per roll (6 text changes in 6 s). Each change costs one small
-layout and about 2 face paints per second, where base has none. That is the price of 3 faces instead of 10.
+**What (a) costs.** A slot's digit text changes once per roll: 6 text changes in 6 s, giving about 1 small layout
+and 2 paints per second while the clock is visible. Base has none. That is the price of 3 faces instead of 10.
 
-**Full page** (3 s windows; base and still from one run, PoC from a run after the frame-replay change):
+The face-layer repaint counts (2 in the faces arm, 11 in the PoC arm) come from a separate 2 s LayerTree window
+that is not tick-aligned. The trace paint counts of the two arms are equal (12 / 12). The 2 vs 11 gap is
+unexplained (OBSERVED, n=1) and was not repeated.
 
-| position | base writes / els styled / cd rAF / face layers | PoC | still |
-|---|---|---|---|
-| top (visible) | 1620 / 3218 / 130 / 80 | 283 / 2343 / 140 / 24 | 40 / 2108 / 0 / 80 |
-| heroExit (opacity 0) | 1460 / 3185 / 138 / 80 | **9** / 2262 / **0** / 24 | 40 / 1638 / 0 / 80 |
-| pastHero (both hidden) | 3070 / 7085 / 287 / 0 | **15** / 5599 / **0** / 0 | 60 / 5607 / 0 / 0 |
-| mid | 2860 / 5800 / 251 / 0 | 15 / 5252 / 0 / 0 | 60 / 4983 / 0 / 0 |
-| end | 2730 / 5592 / 245 / 0 | 30 / 5038 / 0 / 0 | 80 / 5080 / 0 / 0 |
+Round 1's full-page `base`/`still` counts came from a shared-lane hold at load1 4.2-7.1, so their ms values are
+void. Its `faces` arm was an earlier build (range end 4038, not 4055). Both are kept in `results.json` → `round1`,
+labelled, and not used above.
 
-On the full page, layout and paint counts belong to the rest of the page (orbit, cards), so they don't show the
-countdown.
+## Call tree (Chrome CPU profile, round 2, n=1)
 
-## Call tree (Chrome CPU profile, one normal hold)
+`probe.mjs profile base,poc`: 100 µs sampling plus a trace, 6 s windows, CPU 6x, in the same hold.
 
-`probe.mjs profile base,still,poc`: 100 µs sampling plus a trace, 6 s windows, CPU 6x.
-- The **countdown frames** column counts samples whose stack contains countdown code (lines from `var UE` to
-  `cD`'s end).
-- The Svelte flush runs from the scheduler's microtask. Its stacks hold only runtime frames, so the column misses
-  it. The **base − still** difference is the better attribution.
-
-| window | busy ms base / still / PoC | countdown frames, base (share of busy) | style ms base / still / PoC | elements styled base / still / PoC |
+| window | busy ms base / PoC | countdown stack ms base / PoC | style ms base / PoC | elements styled base / PoC |
 |---|---|---|---|---|
-| isolated page | 433 / 42 / 328 | 19.6 ms | 13.4 / 1.4 / 7.7 | 2760 / 70 / 683 |
-| top | 2485 / 2446 / 2059 | 54.7 (2.2 %) | 128 / 101 / 123 | 8210 / 4255 / 4918 |
-| pastHero | 3308 / 1984 / 2170 | 57.3 (1.7 %) | 253 / 99 / 112 | 18052 / 11342 / 11213 |
-| end | 3264 / 2343 / 2030 | 76.5 (2.3 %) | 370 / 168 / 147 | 13570 / 10188 / 10140 |
+| top (visible) | 3468 / 3181 | 81 / 77 | 333 / 326 | 7280 / 4900 |
+| pastHero (hidden) | 4015 / 3251 | 59 / 29 | 476 / 376 | 18042 / 11169 |
+| end (hidden) | 4161 / 3346 | 81 / 40 | 583 / 491 | 12848 / 10122 |
 
-**The honest size.**
-- **Hidden clock:** a sizeable but rough share of the main thread. With the clock unseen (pastHero, end), base −
-  still is ~920-1320 busy ms per 6 s at 6x, i.e. 28-40 % of the window's busy time. The PoC is at the still
-  floor there.
-- **Visible clock:** the PoC keeps most of the per-frame cost. It still runs the rAF and the flush for the rolling
-  digits; it styles fewer elements per recalc and holds fewer layers.
-- **Top:** at n=1 the top window is inside noise (base 2485 vs still 2446).
-- **Not timing:** none of these are gain claims. They are n=1, 6x, attribution only.
+- **Hidden clock:** busy time is lower by ~760-815 ms per 6 s at 6x, about 19-20 % of base's busy time.
+  OBSERVED, n=1, Chrome 6x, not a timing A/B.
+  - Round 1's "28-40 %" (base − still) is withdrawn as a number. It was n=1, its busy-ms deltas did not add up
+    (review r1 #4), and the PoC no longer stops the rAF.
+- **Visible clock (top):** within noise at n=1.
+- The "countdown stack" column counts only samples whose stack contains countdown code. The Svelte flush runs from
+  the scheduler's microtask with runtime frames only, so this column misses it.
 
-## WebKit (iOS Simulator, counts only)
+## WebKit (iOS Simulator, counts only, round-2 build)
 
 `sim-counts.mjs` runs in a functional Simulator session: Mobile Safari, Web Inspector Timeline, 4 s windows, plain
-http on localhost. Simulator times never count, so these are record counts:
+http on localhost. Simulator times never count, so these are record counts (n=1):
 
-| position (Simulator y) | base RenderingFrame / RecalcStyles / Layout / Paint / countdown rAF | PoC |
+| position (Simulator y) | base RecalcStyles / Layout / Paint / countdown rAF | PoC |
 |---|---|---|
-| top (0) | 190 / 198 / 171 / 162 / 165 | 196 / 203 / 173 / 160 / 129 |
-| heroExit (775) | 193 / 200 / 198 / 319 / 90 | 193 / 201 / 212 / 281 / 87 |
-| pastHero (2560) | 208 / 197 / **211** / **186** / 215 | 150 / 123 / **114** / **84** / **0** |
+| top (0) | 197 / 156 / 151 / 136 | 203 / 173 / 157 / 135 |
+| heroExit (775) | 200 / 189 / 319 / 126 | 201 / 212 / 319 / 118 |
+| pastHero (2560) | 201 / **214** / **180** / 201 | 106 / **107** / **82** / 215 |
 
-- **pastHero (hidden clock):** WebKit does real work for it. Layouts drop 211 → 114, paints 186 → 84 and style
-  recalcs 197 → 123 per 4 s when the PoC stops it. This fits F-081 (WebKit idle small layouts tied to the countdown
-  spring's rAF).
-- **heroExit:** both arms still roll there. UNRESOLVED: the Simulator's shorter viewport probably leaves the hero
-  partly visible at y = innerHeight (`--exit-opacity` > 0), and then the PoC rolls by design. The decisive check is
-  to read `--exit-opacity` on `.hero-copy` at that y in a session.
-- **Visibly rolling digits:** the per-frame layout and paint counts are the same in both arms, as expected.
+- **pastHero (hidden clock):** the spring still runs every frame (215 countdown rAF), but WebKit's style recalcs,
+  layouts and paints halve. This fits F-081 (WebKit's idle small layouts tied to the countdown spring): they come
+  from the writes, not from the rAF itself (OBSERVED, n=1, Simulator).
+- **heroExit:** both arms still roll. UNRESOLVED: the Simulator's shorter viewport probably leaves the hero partly
+  visible at y = innerHeight (`--exit-opacity` > 0), and then the PoC rolls by design. The decisive check is to read
+  `--exit-opacity` on `.hero-copy` at that y in a session.
+- **Not checked on WebKit (review r1 #9):**
+  - There is no WebKit pixel or resume check.
+  - Two WebKit cost triggers were not measured on the phone: face layers going from 80 to 24, and text repaints
+    inside composited face layers (X1, F-054).
+  - Whether WebKit runs the exit callback and the write in the same rendering update is UNRESOLVED.
+  - The 120 Hz path on a real display is UNRESOLVED.
+  - A phone segment card is required before F/L.
+
+## Overlap with other topics (review r1 Blocking 3)
+
+- **Topic #1 `countdown-idle-raf`** (on main, ACCEPT-WITH-NOTES, patch v03) edits the same hunks: `$E` 3824, the
+  face clamp 3859, `tD` 3894, and `cD` 3920/3933/3958. **countdown-faces replaces #1; it does not stack on it.**
+  - #1 snaps a hidden digit to its target and stops its rAF. A clock that comes back within a roll then shows the
+    settled digit where the original is mid-roll, which is not pixel-identical.
+  - countdown-faces keeps the spring and skips the writes.
+  - #1's face clamp to ±1 cell is subsumed by (a), which keeps 3 faces with the same clamp.
+  - #1's IntersectionObserver (64 px) is replaced by call-site visibility in the scroll frame.
+  - The `animate` prop (`tD` → `$E`) and the optional `active` prop on `cD` keep #1's names and meaning, so call
+    sites written for #1 work unchanged.
+  - If #1 lands first, countdown-faces is rebased by taking its own `$E`/`tD`/`cD` hunks over #1's.
+  - PR-007's "pause-only" option is #1 v03's idea with the exact resume of this PoC and 10 faces kept.
+- **#13 `morph-panel-lazy-mount`** passes `get active() { return s(E); }` (morph > 0.001) at the panel site
+  (13157). That works with either #1 or countdown-faces. When both land, use the stricter `morph > 0.08`, where the
+  panel's opacity leaves 0.
+- **nav-morph's cdwc rule** (`will-change: auto` on panel faces) stays compatible (confirmed by fix-nav-morph).
+  Keep the class `.face.svelte-1quva9c`: 24 faces per 8-digit clock.
+- **`illusion-digit-layers`** (`.face { will-change: auto }`, CSS) stacks with this PoC.
+  - With 3 faces, it saves 24 layers instead of 80.
+  - Without layers, a face transform repaints the digit on every roll frame. That trade-off is that topic's to
+    measure.
+- **The hero exit function** (`fD` 4162-4174) gains one rect read (`.hero-copy`, next to the existing read, before
+  any write) and one state write. The hero-exit topics touch the same function.
+
+## Risks and limits
+
+- **Exact for the frames it gets.** On the same frame sequence the PoC shows exactly the original's frames. The
+  original's own path varies with frame timing, and so does the PoC's (see "Why no replay").
+- **The hidden spring still runs on rAF.** That is the price of being exact. A cheaper, non-identical variant would
+  snap while hidden (#1's approach); see PR-007 options.
+- **The saving ends at expiry.** At 2026-11-02 05:00Z the clock stops at zeros and the original stops rolling too
+  (review r1 #8).
+- **The tab-return sweep** is kept for pixel identity: base shows stale digits on return, then sweeps through up to
+  9 faces. Snapping it would be a visible change and a separate proposal option.
+- **Not covered:** phone timing and finger tests (deferred). The scenarios "scroll up", "toolbar resize" and
+  "rubber band" were not run.
+- **IntersectionObserver rootMargin** (review r1 #1) no longer applies here: the IO was removed.
+  - The finding stands for #1: the spec resolves a percentage rootMargin against the width.
+  - Chromium (`intersection_geometry.cc` ResolveMargin) and WebKit (`IntersectionObserver.cpp`
+    expandRootBoundsWithRootMargin) use the height, per review r1, CONFIRMED there.
+  - #1 uses px, so it is unaffected.
 
 ## Environment notes
 
-- Both normal Chrome holds started in a **DarkWake**: the lock printed "host not awake at the start of this hold",
-  and holds.log records display off, no full wake, system sleep prevented. `pmset -g log` shows **no sleep inside
-  either hold**:
-  - hold 1, 19:11:49-19:15:05Z: isolated counts for all 4 arms, PoC full-page counts and an earlier pixel run;
-  - hold 2, 20:10:13-20:14:50Z: pixels (the table above) and the call-tree profile.
-- These holds measure counts and frozen frames, plus the rough profile.
-- The base/still/faces full-page counts come from two earlier shared-lane holds, 15:43:00-15:44:56Z and
-  15:49:10-15:50:57Z. pmset shows no sleep inside them; the first sleep after them is at 15:52:37Z.
-- One shared-lane pixel attempt (17:54Z) spanned a Maintenance Sleep and was killed at its cap. It is void and
-  nothing from it is used: I-070 no longer keeps shared holds awake.
-- The Simulator hold (20:16:28-20:17:51Z, shared lane) had no sleep inside it either.
-- Countdown expiry is 2026-11-02 05:00Z. All runs here are before it; runs after it never compare.
-
-## Risks, conflicts, follow-ups
-
-- **Call sites owned by other topics.** The panel call site (13160) belongs to nav-morph (fix-nav-morph, parked).
-  The PoC adds `get active()` there (morph > 0.08). nav-morph's lazy mount (#13) passes `get active() { return
-  s(E); }` (morph > 0.001) at the same site. When both land, the panel's `active` should be the stricter one,
-  morph > 0.08, where the panel's opacity leaves 0.
-- **The cdwc rule** (nav-morph: `will-change: auto` on panel faces) stays compatible. Fewer faces means fewer layers
-  to drop.
-- **The hero exit function** (fD ~4163-4172) gains one state write. It is the same function the hero-exit topics
-  touch.
-- **Reduced motion** is unchanged (snap). **IntersectionObserver missing:** `near` stays true, which is base
-  behaviour.
-- **Resume more than 1 s after a target change** snaps. All rolls settle in under 0.6 s, so the snap equals base's
-  settled value.
-- **The learned display interval** is the shortest rAF gap of the last finished roll. With uneven 1 ms Safari stamps
-  it can be up to ~1 ms short. The resume frame then sits within base's own jitter spread but is not equal to
-  base's exact path for that phase.
-- **The tab-return sweep** (base shows stale digits, then sweeps through up to 9 faces) is kept for pixel identity.
-  Snapping it would be a visible change and a separate proposal option.
-- **Not covered here:** phone timing and finger tests (deferred). The scenarios "scroll up", "toolbar resize" and
-  "rubber band" were not run.
+- **Round-2 hold** (exclusive, 21:43:45-21:50:15Z, pixels + counts + profile): holds.log has awake:true, display
+  on, fullWake:true, userActive:true. `pmset -g log` shows no sleep inside it.
+- **Round-1 holds** (19:11:48-19:15:04Z and 20:10:13-20:14:50Z): holds.log has awake:true, display off,
+  fullWake:false and system sleep prevented, i.e. a DarkWake. pmset shows no sleep inside them (review r1 #11).
+- **A first round-2 hold (21:38:15-21:41:14Z)** measured the replay draft. It was stopped after its pixel part, by
+  me: the frame-stamp data in it led to the design change above. Its pixel result (0/295 under regular virtual
+  stamps) is superseded and not used.
+- **Simulator** (shared lane, 21:50:39-21:52:04Z): pmset shows no sleep inside it.
+- **Countdown expiry** is 2026-11-02 05:00Z. All runs here are before it; runs after it never compare.
 
 ## Files
 
-- `patch.diff`: the PoC (+106 -17).
-- `results.json`: all counts, call tree, pixel and Simulator summaries; baseline snapshot `b1789284481295-4ad4a84a`.
+- `patch.diff`: the PoC (+79 -16).
+- `results.json`: round-2 counts (n=3, tick-aligned), call tree, pixels (by kind, real frame stamps), Simulator,
+  and the served sha256 per arm; round-1 data under `round1`, labelled. Baseline snapshot `b1789284481295-4ad4a84a`.
+- `chain.mjs`: the spring model. It compares the round-2 replay draft and the shipped design with the original.
+- `mkresults.mjs`: builds `results.json` from the probe outputs in `out/countdown-faces/`.
 - `arms.mjs`: builds the arms (`still`, `faces`) and the isolated pages under `out/`.
 - `probe.mjs`: counts, profile and pixels.
 - `sim-counts.mjs`: Simulator Timeline counts.
