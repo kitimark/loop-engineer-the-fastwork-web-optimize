@@ -8,6 +8,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **14:1xZ (batch) Mac slept again; fix-image-size resumed; lock record repaired.**
+  - The Mac idle-slept again 14:01-14:17Z (C-024, the caffeinate question, is still unanswered).
+  - fix-image-size stalled (watchdog); the lead resumed it. Its first Sim session (P-066) started 14:18Z, shared w3 +
+    the simulator lock; the P-066 row was committed pre-data (5107519) before it.
+  - The lead repaired the stale chrome-measure last-grant record (`lock.mjs repair`, audited).
+  - Still unanswered by the user: C-024, PR-005 (fwreskip, rev 1), T-023 #3.
 - **13:4xZ (batch) ts-i063 batch in review; I-068 not-a-bug (Mac idle sleep); C-024 caffeinate question.**
   - **ts-i063 batch** on worktree-agent-afa5d960a2fe5d5e8: 3a85564, 8eab8ba, 99b37b3 (not landed). I-063: a functional
     sim session keeps fw-sim warm for FW_SIM_IDLE_SEC (default 600 s); a keeper shuts it down when idle or as soon as a
