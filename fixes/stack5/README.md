@@ -329,3 +329,68 @@ its frame. Script: `out/wi-stack/loo/layers.mjs` (not committed).
   - Hypothesis (OBSERVED, n=1, no reference yet): with blur-cubic, the cards' filter transition runs as an accelerated animation. WebKit's overlap test then cannot rule out overlap with the hidden profile shells, so they are painted at the reveal start. With RB's `linear()`, the transition runs on the main thread, and that painting waits until `+is-future-shrinking`.
   - That would make (c) and the frame-2 regression the same backing-store cost, in different places.
   - The decisive check is the same diff on NS and NB.
+
+## Phone ticket A1: option A of PR-003 (accepted 09:12:55Z, drop-blur), prepared, not run
+
+**Runner:** `iphone-runner`. **Slot:** right after PR-001 block B, before G1b (lead). Prediction **P-062**, committed
+before any data from this ticket.
+
+**Question.** Does dropping blur-cubic (NB = RB + st6) bring the #people frame 2 back to C's level, and does NB
+keep stack5's idle gain? The idle-carrier question has its own row.
+
+**Arms.** All are immutable copies (`chmod a-w`) in this worktree. From the main checkout that is
+`.claude/worktrees/agent-a93135040e12a061d/out/wi-stack/...`. The control is C.
+
+| arm | build | snapshot | `nodes/2.DyWL8TcE.js` | `assets/2.gBuqKVzi.css` |
+|---|---|---|---|---|
+| C (control) | RB | `snap-s5/best` | `dbd5fdb4f1fb` | `0d7dfc79e703` |
+| V | stack5 = RB + blur-cubic + st6 | `snap-s5/stack5` | `59b23b3f57fd` | `6e09b2c708fa` |
+| NB | RB + st6 (V − blur-cubic) | `snap-loo/noblur` | `59b23b3f57fd` | `e9603231b413` |
+
+**Serve.** One server per arm, as for S1, with `--port 0 --https --vendors=local --latency 150 --no-cache`. The
+phone uses each server's plain-http twin (I-003). Check every served hash against the table before the block.
+
+**Block** (protocol v2 §5, S driver, Timeline off, std probe, `--block A1`):
+
+1. Cool with `node tools/wait.mjs phone-temp --below auto` (≤ 10 min). Low Power Mode must be off. Park Safari.
+2. Run one uncounted warm-up per port: C, then V, then NB.
+3. Opening sentinel: one uncounted C run. It must reach bottom ≥ 58 fps and scroll ≥ 44 fps.
+4. Run 9 counted runs in a rotated Latin square: **C V NB · V NB C · NB C V**, `--run 1..9`, labels `A1-<arm><n>`.
+5. Run the end sentinel (C). Park Safari and stop the servers.
+
+Time: 14 runs (3 warm-ups, 2 sentinels, 9 counted) at about 1.5 min each with the opens is about 22 min, plus cooling (≤ 10 min). Call it about 30 min.
+
+**Validity.** As for S1.
+- Every counted C run must also pass the sentinel bar. A failing control voids every run since the last passing one; cool with `phone-temp --below auto`, then restart the block.
+- A run is void for a wrong hash, a missing bottom, Low Power Mode, or a touched phone.
+- Nothing may be attached during the block (§5.5).
+- No recordings (user T-018).
+
+**Scoring.** The frame rows come from `python3 out/wi-stack/lag/frame2.py <run dir>`:
+- frame 1 = the frame whose interval holds the `#people +is-visible` crossing; frame 2 = the next frame.
+- It also gives the idle-phase dt>34 count per run.
+- The scorer was checked on S1: C median 40.5 [34-45], 0/8 over 50 ms; V median 70 [66-113], 8/8.
+
+The phase rows come from `node tools/stats.mjs runs <dir> --metric gt34|gt50 --phase scroll|idle`.
+
+**Rows and decision** (fixed before data; 3 runs per arm):
+
+| row | read | decision |
+|---|---|---|
+| **1. Frame 2 (primary)** | median per arm, ±4 ms twins on the >50 count | A confirmed if NB's median is within C ± 8 ms **and** all 3 NB runs are below all 3 V runs. Otherwise A is not confirmed, and the lead decides. |
+| **2. Idle carrier** | idle-phase dt>34 per run, NB vs C and NB vs V | NB median ≤ 1 and below C's: st6 carries the idle gain, and A keeps it. NB ≥ 2 (about C's level): blur-cubic carried it, so A loses it. Report to the lead either way. |
+| 3. Guard | scroll dt>50 per run | an NB median more than 1 above C's is a regression. Report it, with no landing. |
+| 4. Context | scroll dt>34 per run, bottom | reported only. |
+
+## Option B research (lead: wi-stack owns it, below A in priority, Simulator only until A's block is done)
+
+User request (PR-003 decision, paraphrased): apply A first, and research B in parallel because it may perform better.
+
+The layer diff above changes B's premise.
+- It suggests the frame-2 cost may be the 4 hidden profile shells getting backing stores, because of overlap with the accelerated filter animation. That is not the card's own filter layer.
+- So B is tried in two forms, as Simulator arms on stack5:
+  - **B1** = `will-change: filter` on `.start-selling-future-card` before the reveal (the PR-003 idea);
+  - **B2** = keep the shells from being overlap-composited during the reveal, if a pixel-identical way exists.
+- Each arm must show 0 visible pixel difference against stack5 on a frozen clock.
+- Then a Simulator mechanism hold answers two questions: does frame 2's Composite drop, or only move? And what are the layer and memory counts? NS and NB go in the same hold, to test the overlap hypothesis.
+- All of this is Simulator / OBSERVED only.
