@@ -516,10 +516,12 @@ exclusive `--short` job.
 node tools/lock.mjs status                                   # who holds what, who is queued
 node tools/lock.mjs run chrome-measure --shared --weight 2 --max-seconds 300 --owner <topic> -- npm test   # functional, shared
 # Chrome: automatic. verify.mjs / fix.mjs ab wait for chrome-measure and release on exit or crash.
-# iPhone (one page at a time, ios_webkit_debug_proxy on :9221/:9222, LAN https://192.168.0.55:<port>/):
-node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://192.168.0.55:<port>/ --wait 3600   # in the background
+# iPhone (one page at a time, ios_webkit_debug_proxy on :9221/:9222, LAN https://lan:<port>/ or the twin's http://lan:<twin>/):
+#   host `lan`: the Mac's LAN address, resolved at run time (I-073); `node tools/lan.mjs [--url --port N]` prints it.
+#   It changes on a Wi-Fi reconnect: never type it, and never write it into a committed file (Hard rule 12).
+node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://lan:<port>/ --wait 3600   # in the background
 #   exit 0 = yours (the lease runs from now); exit 3 = still busy after --wait, your place is kept: run it again
-node tools/iphone.mjs open https://192.168.0.55:<port>/ --owner <topic>    # navigates Safari (location.href)
+node tools/iphone.mjs open https://lan:<port>/ --owner <topic>    # navigates Safari (location.href)
 node tools/iphone.mjs scroll --owner <topic> --label patched                 # scripted scroll, ~60 s
 node tools/iphone.mjs record --owner <topic> --seconds 25 --label finger     # human finger scroll (see below)
 node tools/lock.mjs renew iphone --owner <topic> --ttl 900                   # if you need longer

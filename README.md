@@ -122,8 +122,9 @@ What the server does to stay close to production:
 
 ### Opening it on the iPhone
 
-1. Run `node tools/serve.mjs`. It prints something like `LAN: http://192.168.0.55:5173/ (en0)`.
-   VPN and link-local interfaces are listed separately.
+1. Run `node tools/serve.mjs`. It prints something like `LAN: http://192.168.1.20:5173/ (en0)`.
+   VPN and link-local interfaces are listed separately. `node tools/lan.mjs` prints the address alone (it changes
+   on a Wi-Fi reconnect); the phone tools also accept `http://lan:<port>/` and resolve it at run time.
 2. Put the iPhone on the same Wi-Fi and open that URL in Safari. macOS may ask whether `node` can
    accept incoming connections: allow it, or add node under System Settings → Network → Firewall.
 3. For Web Inspector timelines, connect the phone by cable and turn on Settings → Safari → Advanced →
@@ -138,7 +139,7 @@ missing. **One vendor difference matters:** Hotjar refuses to start on `http:` p
 
 ```sh
 brew install mkcert && mkcert -install
-mkcert -cert-file out/certs/lan.pem -key-file out/certs/lan-key.pem localhost 127.0.0.1 192.168.0.55
+mkcert -cert-file out/certs/lan.pem -key-file out/certs/lan-key.pem localhost 127.0.0.1 "$(node tools/lan.mjs)"
 node tools/serve.mjs --https --vendors=local --cert out/certs/lan.pem --key out/certs/lan-key.pem
 # iPhone: AirDrop "$(mkcert -CAROOT)/rootCA.pem" to the phone, install the profile, then enable it in
 # Settings → General → About → Certificate Trust Settings.
