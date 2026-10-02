@@ -35,13 +35,13 @@ lead's review (8690486, NEEDS-WORK) sent back.
 - Simulator W driver (`srwin-sim.mjs`, Timeline depth 10) for the switch structure; ms there are attribution only.
   Copies for reproduction (P-053/P-055/P-056) in `fixes/scene-scope/tools/`: `srwin-sim.mjs` + `simtab.mjs` (from
   de-counts-sim's untracked `research/design-engineering/work-counts-webkit/`), `rsstat.mjs` (switch and scroll-phase
-  scoring, view-rooted counts), `pageframes3.mjs` (deterministic frozen frames), `pageframes4.mjs` (+ IO hold) + `ringstat.py` (frames re-check), `walkstat.py` (P-056b scoring), `rbi40ptcheck.sh` (the hold script: one mode per hold, server start, served-hash check, kill trap, host-awake log; each hold ran a frozen copy, `run-<mode>.sh`, never the file being edited) and `onset.mjs` + `onsetcmp.mjs` (sweep phase and onset, P-056a).
+  scoring, view-rooted counts), `pageframes3.mjs` (deterministic frozen frames), `pageframes4.mjs` (+ IO hold) + `ringstat.py` (frames re-check), `walkstat.py` (P-056b scoring), `rbi40ptcheck.sh` (the hold script: one mode per hold, server start, served-hash check, kill trap, host-awake log; each hold ran a frozen copy, `run-<mode>.sh`, never the file being edited) `onset.mjs` + `onsetcmp.mjs` (sweep phase and onset, P-056a), `anicensus.mjs` + `anistat.py` + `outstat.py` (animation census, P-056c), `pageframes5.mjs` + `motionstat.py` (motion frames, P-056c) and `clip.mjs` (Chrome screencast, illustration only).
 - Phone: S (blocks 1-2) and M (block 3), with Timeline, run by iphone-runner.
 **Predictions (strict scoring, fixes/PREDICTIONS.md):** P-040 MISS, P-041 HIT, P-045 HIT, P-046 HIT, P-047 FAIL,
 P-048 FAIL, P-049 MISS, P-050 MISS, P-051 MISS, P-052 HIT, P-053 HIT, P-054 inCQ HIT / restyled MISS, P-055 (a) HIT,
 (b) inCQ HIT / restyled MISS, P-056 (b) inCQ HIT / restyled MISS, (c) frames HIT / play state HIT / phase MISS at 1440,
 P-056a (a) nested HIT / cE Layout HIT / outer RS count MISS, (b) HIT, (c1) frames MISS (strict), (c2) phase and onset
-HIT (S, H).
+HIT (S, H), P-056c (a) census FAIL as written / post-hoc pass, (b) motion frames FAIL as written (an A/A raster variant).
 **Topic:** see `fixes/TOPICS.md` (scene-scope); user priority 1 ("style recalc")
 **Base:** STACKED on B = `fixes/user-bplus/patch.diff` (rebuilt as overlay `bplus`: JS dbd5fdb4f1fb, CSS cc8d1340b449)
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` (the paused-scene rule, B 11804-11815, baseline
@@ -415,6 +415,77 @@ deterministic A/A, and they change Chrome's raster path, so they are a measureme
     outside it, while C ran 350-369. The count swings about ±15 in both arms, so the interval should have been C's
     range ±15. Nested and cE Layout: **HIT**.
 - **Flip (b)** (q40uf): restyled 58/58/58, inCQ 0/0/0. **HIT** (RBi40pt 58/58/63).
+- **P-056c: does it still animate like today's site?** (PR-002 rev 1 came back changes-requested with that question;
+  prediction and pass rule committed before the data, b13f332.)
+  - Two probes, two different claims:
+    - **Census** (`tools/anicensus.mjs`, real clock): which animations run, in which state, and when each started.
+      This is the only evidence for "the cycle runs at the same moment".
+    - **Motion frames** (`tools/pageframes5.mjs`): at each scroll position the document timeline is stopped and every
+      running infinite animation is stepped to the same cycle time T in both builds (T = 0, 250, ..., 3750 ms). The
+      cycle time is equal by construction, so the frames show "it draws the same at the same moment", not when the
+      cycle runs.
+  - Conditions:
+    - Census holds 07:13-07:19Z (shared lane; load1 3.6, rising to 48.6 at 07:16, 7.6 at 07:19).
+    - Motion holds 07:34-07:37Z and 07:42-07:45Z (normal; load1 5.5-6).
+    - Post-hoc census Sx430, 07:50-07:52Z (load1 61 at start, 14 at end).
+    - The host was awake in every hold (UserIsActive 1). Served hashes were checked in every hold: S0/S0b
+      0d7dfc79e703/dbd5fdb4f1fb, V 10cf34974e67/7cea01ae081c.
+    - Frozen script `run-c6.sh` (a copy of `tools/rbi40ptcheck.sh`, modes c6c430/c6c1440/c6m430/c6m1440), and
+      `run-c6x.sh` for c6x430.
+  - **(a) Census.** Walk: from #platform top - 1.5 viewports to its bottom and back, 200 px instant scrolls, one per
+    150 ms. At each step, after 2 rAFs, `getAnimations()` is read. Loads: W0, then S0, V, S0b, V, S0, S0b. Scored by
+    `tools/anistat.py`:
+
+| run | #platform keys | set fails | state fails | timing fails | outside-count fails |
+|---|---|---|---|---|---|
+| H (`/#platform`) 430 | 46 | 0 | 0 | 0 (2 dash-in keys uninformative: A spread 67 ms > 260 ms / 4) | 0 |
+| H 1440 | 46 | 0 | 0 | 0 | 0 |
+| S (scroll in) 1440 | 46 | 0 | 0 | 0 | 29 |
+| S 430 | 43 | 0 | 0 | 92 | 55 |
+| S 430 again, post hoc: 8 A + 4 V loads (Sx430) | 43 | 0 | 0 | 0 | 0 |
+
+  - Every S fail traces to one of two causes:
+    - **A cold-server load.**
+      - In every S run, the 2nd and 3rd loads (V r1, S0b r1) are the first from their server. Each is slow: the walk
+        starts 8.3-14.5 s after navigation, against 4.5-4.7 s for the others.
+      - V r1 at 430: the titles start 67 ms later (startTime from scene=active 767 vs A 683-700; currentTime at the
+        first read 0 vs 67-83). The hero accent stroke (outside #platform) is in its out phase.
+      - S0b r1 at 1440 (an A load) shows the same signature: +67 ms, currentTime 0, stroke out.
+      - In Sx430 both cold loads show it, the A one (S0b r1: 767 ms, ct 0) and the V one (733 ms, ct 33).
+      - The cause is load order, not the build (OBSERVED, in our setup).
+    - **A one-frame read race.** At 430 y4198 (down), the future-card reveal reads finished in both V loads and running
+      in all 4 A loads. The future card is the section above #platform; its reveal is a 0.9 s transition.
+      - Sx430 recorded each outside animation's start: 33-34 ms after the walk's first read in every load, A and V.
+      - The read comes at 933 ms, the transition's end, so the state is a coin flip at the boundary.
+      - In Sx430 it read finished in one A load (S0 r1) and in no V load.
+  - Nothing at H, at either width, and nothing inside #platform at S1440, differs beyond the A/A.
+  - Row titles at H: startTime from scene=active 333-350 ms (430) and 300 ms (1440) in every load of both builds.
+  - **(b) Motion frames.** Positions: y 4000/4400/4900/5300 at 430x932 and 6500/7100/7600/8200 at 1440x900. Loads
+    W0, S0, V, S0b. Raster flags as in c1; IO held. Scored by `tools/motionstat.py`:
+
+| width | V vs S0 identical | S0b vs S0 identical | running infinite set |
+|---|---|---|---|
+| 430 | 64/64 | 64/64 | the same in every arm (8, 10, 10, 9 at the 4 positions) |
+| 1440 | 48/64 | 64/64 | the same in every arm (8, 10, 9, 2) |
+
+  - The 16 V frames that differ are y7100, every T: 116-117 px, max delta 1, bbox x 251-358, y 366-378.
+    - That box is the anti-aliasing of the profile stats digits ("฿240K", "43") and one divider. The digits sit in
+      the counter that P-056b already found in two states.
+    - The exact crop of V's frame (md5 43d861) also appears in P-056b hold 2's frozen y7100 frames (q40w2): S0 r8 and
+      r10, and V r8 and r10. That is 2 of 5 loads in each arm. Today's S0/S0b frames have the other state (9b4a67),
+      like the other 3 loads per arm there.
+    - So the difference is the known two-state raster variant, which A produces too.
+  - **Outcome under the rule as written:**
+    - (a) FAIL in the first run (S430; S1440 outside #platform).
+    - (b) FAIL at 1440 y7100: S0b did not differ in this run.
+    - Each named failure is also produced by A loads (Sx430, P-056b). Sx430 was added after the data, so it is
+      disclosed as post hoc.
+    - No difference is shown to be V-only, so the phone swipe A/B goes to the lead as an offer, not as a required step.
+  - Limits:
+    - `getAnimations()` forces a style update at every step in every arm, so the content-visibility race (c2) cannot
+      show here. c2 stays the evidence for it.
+    - Chrome only. Safari is T-011.
+    - A Chrome screencast of the titles (`tools/clip.mjs`, S0 and V, 430) is an illustration only, not scored.
 - Not run on RBi40pti: the phone (T-011) and the one-shot scenarios (a)-(d), which RBi40p passed. The line only adds
   an attribute that PMsweepIO's first callback would set anyway, and it touches no one-shot.
 

@@ -29,6 +29,7 @@ case "$MODE" in
   tiframes|tionset) ARMS="S0 S0b RBi40pti" ;;
   t4smoke|t4hold1|t4hold2) ARMS="S0 S0b RBi40pti" ;;
   t5a|t5b) ARMS="S0 S0b RBi40pti" ;;
+  c6c430|c6c1440|c6m430|c6m1440|c6smoke|c6x430) ARMS="S0 S0b RBi40pti" ;;
   *) echo "bad mode"; exit 2 ;;
 esac
 PIDS=""
@@ -103,6 +104,24 @@ case "$MODE" in
   t5b) rm -rf $O/q40w2 && mkdir -p $O/q40w2
         T="W0=$(U S0)"; for r in 6 7 8 9 10; do case $r in 7|9) T="$T RBi40ptir$r=$(U RBi40pti) S0r$r=$(U S0)" ;; *) T="$T S0r$r=$(U S0) RBi40ptir$r=$(U RBi40pti)" ;; esac; done
         CHROMEARGS="--disable-checker-imaging --disable-gpu-rasterization" SETTLE=600 VW=1440 VH=900 DPR=1 FY0=6000 FY1=7500 FSTEP=100 node $O/pageframes3.mjs $O/q40w2 $T; echo "pageframes3 1440 exit $?" ;;
+  c6smoke) rm -rf $O/q40xs && mkdir -p $O/q40xs/m $O/q40xs/clip
+        SCEN=S STEP=600 node $O/anicensus.mjs $O/q40xs S430 "S0=$(U S0)" "RBi40pti=$(U RBi40pti)"; echo "anicensus smoke exit $?"
+        CHROMEARGS="--disable-checker-imaging --disable-gpu-rasterization" SETTLE=600 HOLDIO=1 FY0=4800 FY1=4900 FSTEP=100 CAPY=4900 MSTEP=1000 node $O/pageframes5.mjs $O/q40xs/m "S0=$(U S0)" "RBi40pti=$(U RBi40pti)"; echo "pageframes5 smoke exit $?"
+        PX=40 node $O/clip.mjs $O/q40xs/clip "S0=$(U S0)"; echo "clip smoke exit $?" ;;
+  c6c430|c6c1440) WD=430; GEO="VW=430 VH=932 DPR=3"; [ $MODE = c6c1440 ] && { WD=1440; GEO="VW=1440 VH=900 DPR=1"; }
+        mkdir -p $O/q40x
+        T="W0=$(U S0) S0r1=$(U S0) RBi40ptir1=$(U RBi40pti) S0br1=$(U S0b) RBi40ptir2=$(U RBi40pti) S0r2=$(U S0) S0br2=$(U S0b)"
+        for sc in S H; do env $GEO SCEN=$sc STEP=200 DWELL=150 node $O/anicensus.mjs $O/q40x ${sc}$WD $T; echo "anicensus $sc $WD exit $?"; done ;;
+  c6x430) mkdir -p $O/q40x
+        T="W0=$(U S0) S0r1=$(U S0) RBi40ptir1=$(U RBi40pti) S0br1=$(U S0b) RBi40ptir2=$(U RBi40pti) S0br2=$(U S0b) S0r2=$(U S0) S0br3=$(U S0b) S0r3=$(U S0) RBi40ptir3=$(U RBi40pti) RBi40ptir4=$(U RBi40pti) S0r4=$(U S0) S0br4=$(U S0b)"
+        VW=430 VH=932 DPR=3 SCEN=S STEP=200 DWELL=150 node $O/anicensus.mjs $O/q40x Sx430 $T; echo "anicensus Sx 430 exit $?" ;;
+  c6m430) rm -rf $O/q40xm/w430 && mkdir -p $O/q40xm/w430
+        T="W0=$(U S0) S0=$(U S0) RBi40pti=$(U RBi40pti) S0b=$(U S0b)"
+        CHROMEARGS="--disable-checker-imaging --disable-gpu-rasterization" SETTLE=600 HOLDIO=1 FY0=3200 FY1=5300 FSTEP=100 CAPY=4000,4400,4900,5300 MSTEP=250 MEND=4000 node $O/pageframes5.mjs $O/q40xm/w430 $T; echo "pageframes5 430 exit $?" ;;
+  c6m1440) rm -rf $O/q40xm/w1440 $O/q40xc && mkdir -p $O/q40xm/w1440 $O/q40xc
+        T="W0=$(U S0) S0=$(U S0) RBi40pti=$(U RBi40pti) S0b=$(U S0b)"
+        CHROMEARGS="--disable-checker-imaging --disable-gpu-rasterization" SETTLE=600 HOLDIO=1 VW=1440 VH=900 DPR=1 FY0=6000 FY1=8400 FSTEP=100 CAPY=6500,7100,7600,8200 MSTEP=250 MEND=4000 node $O/pageframes5.mjs $O/q40xm/w1440 $T; echo "pageframes5 1440 exit $?"
+        node $O/clip.mjs $O/q40xc "W0=$(U S0)" "S0=$(U S0)" "RBi40pti=$(U RBi40pti)"; echo "clip exit $?" ;;
   tiflip) rm -rf $O/q40uf && mkdir -p $O/q40uf
         LISTCSS=$O/snap2/RBi40pti/_app/immutable/assets/2.gBuqKVzi.css node $O/flipprobe2.mjs RBi40pti "$(U RBi40pti)" $O/q40uf 3 2>&1 | grep -v '^$' | cut -c1-900; echo "flipprobe2 RBi40pti exit $?" ;;
   flip) rm -rf $O/q40tf && mkdir -p $O/q40tf
