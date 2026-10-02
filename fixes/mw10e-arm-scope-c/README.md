@@ -78,3 +78,47 @@ results, so only counts are given here.
     - Z2: overlap, no longer "V better or overlap".
     - Z3: overlap.
   - The decision rule stands: a SEPARATED-WORSE zone means F3 does not land as is.
+
+## P-036 heat check: why hero-none fails, and the proposed replacement (2026-10-02 23:4xZ, before any counted data)
+
+The opening heat check (hero-none on the pacing v3 page, G driver, v3-gesture.json v2 hash f2cef11cb363) failed 3 times
+in 3 records. The block stopped under the stop rule, and no counted run exists. Derived numbers:
+
+| record | battery | Mac load1 | origin | moving frames | p50 / p95 ms | moving > 20 ms |
+|---|---|---|---|---|---|---|
+| first attempt, opening check | 37.8 °C | 18 to 7.6 | cold (Safari restarted) | 608 | 17 / 29 | ~30 % |
+| warm-up (uncounted) | 38.0 °C | 5.9 | cold port | 601 | 17 / 30 | ~29 % |
+| re-run, opening check | 37.5 °C | 4.8 | warm | 604 | 17 / 29 | 29 % |
+
+What it is not:
+- **Not heat.**
+  - The three distributions are almost identical across 37.5-38.0 °C, Mac load1 4.8-18 and a cold or warm origin.
+  - The same evening the same phone passed all 17 of its sentinel and control checks in G2, P-065 and the st6 block,
+    with 0 failures, at 36.4-41.5 °C. Those are the standard S/W checks: bottom >= 58 fps and scroll >= 44 fps.
+- **Not the page or its copy.** v3.html, v3.js, v3.css and v3-gesture.json are unchanged since 4794919, the commit
+  P-035 registered. hero-none has no other record: the P-035 G block never ran (it waited for I-042), so this check
+  has never passed on any run.
+- **Not the toolbar.** The toolbar collapses once per run (775 to 815, ~4 s). Only 2 of the ~22 moving frames with an
+  innerHeight change are over 20 ms.
+- **Not the finger phase alone.** Gaps over 20 ms come in equal shares with the finger down (88 of 295) and in the
+  momentum after lift (85 of 287).
+
+What it is (OBSERVED, in our setup, cause unknown):
+- Under the G driver, moving rAF gaps on this phone fall into clusters of 12-13, 16-17, ~25 and ~29 ms.
+- During the slow drags they run in repeating pairs such as 29+13 or 25+25 ms.
+- The fastwork arms show the same clusters under the same driver: the warm-ups and the void runs, moving p95 37-42 ms.
+- This fits F-071 (G/F runs carry 12-13 ms stretches, trigger UNRESOLVED; fps and frame counts from F/G runs don't
+  compare with S/W/M runs).
+- A p95 <= 18 ms rule assumes a steady 16.7 ms cadence. That holds for scripted S/W/M runs, not for G runs. So
+  hero-none under G cannot tell heat apart: it fails at any temperature.
+- No platform claim is made here. The proposal below does not rest on why the cadence is irregular.
+
+**Proposed amendment (needs the lead's signature before any data):**
+- Replace the hero-none G sentinel with the protocol's standard S sentinel (CLAUDE.md "Phone blocks"):
+  `iphone.mjs scroll` on the C build at its own port, uncounted. It passes when bottom >= 58 fps and scroll >= 44 fps.
+- It runs after the two warm-ups and again after C4.
+- A failing S sentinel voids every counted run since the last pass. The phone then cools per §5.3: 0.5 °C below the
+  last passing sentinel, at most 10 min.
+- Everything else is unchanged: arms, script hash d72ee13644cc, order C V V C C V V C, void rules, scoring, decision
+  rule, quiet Mac, and the stop rule.
+- The stop rule now applies to the S sentinel: if it fails on a cool phone and a quiet Mac, the block stops.
