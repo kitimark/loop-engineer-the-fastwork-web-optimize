@@ -520,20 +520,23 @@ The full-page control **FP** is P-058's C snapshot, unchanged (`snap/C`: CSS `cc
 
 ### Phone ticket P-065 (word-alone)
 
-Owner of the run: `iphone-runner`, slotted by the lead after fix-scroll-engine's P2-1. Run JSON stays in `out/`
-(Hard rule 3). No recording (T-018).
+Owner of the run: `iphone-runner`, slotted by the lead (after G2 and the user's ioscap first-run step). Run JSON
+stays in `out/` (Hard rule 3). No recording (T-018). Approved at the lead's second read (10-02 11:4xZ) with one
+structural amendment, made before any data: two blocks, one question each (protocol §5: one question, one named
+control, ≤ 9 counted runs per block).
 
-**Question.** With nothing else on the page, do the drawing methods differ in slow frames? And how many of the full
-page's slow frames during the 'you' draws are the word's own?
+**Two questions, two blocks.**
+- **Block 1, isolation (the user's PR-004 question; runs first).** How many of the full page's slow frames during the
+  'you' draws are the word's own? FP (control) = the full page, P-058's control C; V = WA-C, the SVG alone. FP sits in
+  the same block, so the answer comes from one heat state, not from P-058's numbers in another block.
+- **Block 2, the arms alone.** With nothing else on the page, do the drawing methods differ? WA-C (control) vs WA-F2
+  (pictures alone) and WA-B (one visible copy alone).
+- **Phone time:** two blocks, ~35-40 min plus cooling, against rev 3's ~25 min (the lead tells the user).
+  **Short slot:** Block 1 alone; Block 2 follows in the next phone slot.
 
-**Arms (4), one block.**
-- FP: the full page, P-058's control C.
-- WA-C: the SVG alone.
-- WA-F2: pictures alone.
-- WA-B: one visible copy alone.
-
-FP sits in the same block, so the isolation question is answered within one block, on one heat state, not against
-P-058's numbers from another block.
+**What "alone" covers.** WebKit renders the title ~1 % differently on the word-alone page, by at most 8/255 (Simulator,
+OBSERVED, cause UNRESOLVED; "Simulator check" above). So Block 1 measures "the page around the word", including any
+layer or tiling difference that the smaller page brings, not only the other components' own work.
 
 **Serve** from the runner's checkout, one server per arm, restarted at the block start. `S` is the snapshot directory
 above. FP uses `--overlay $S/C`; the WA arms use `--overlay $S/WA-<arm>`.
@@ -559,21 +562,26 @@ node fixes/illusion-accent-frames/tools/readstats.mjs out/p065/P065-<n>-<arm>-st
 node tools/iphone.mjs park --owner <runner>
 ```
 
-**Block** (protocol §5):
-1. Park Safari; start the four servers.
+**Blocks** (protocol §5). Each block:
+1. Park Safari; start the block's servers (Block 1: FP, WA-C; Block 2: WA-C, WA-F2, WA-B).
 2. One uncounted warm-up W run per arm's port.
-3. Sentinel: `iphone.mjs run --driver scroll --probe std --arm C` on FP (bottom ≥ 58 fps, scroll ≥ 44 fps).
-4. 12 counted runs. The order is rows 1-3 of a Williams 4x4 (a = FP, b = WA-C, c = WA-F2, d = WA-B):
-   FP WA-C WA-B WA-F2 · WA-C WA-F2 FP WA-B · WA-F2 WA-B WA-C FP.
+3. Sentinel: `iphone.mjs run --driver scroll --probe std --arm C` on the full page (bottom ≥ 58 fps, scroll ≥ 44 fps).
+   Block 1: on FP. Block 2: on `/` of the WA-C server (the full page with the one export line; a heat check only).
+4. The counted runs below.
 5. End sentinel, as in step 3.
-6. Attribution runs, Timeline on, counts only, one per arm:
-   `node fixes/illusion-accent-frames/tools/tlcounts.mjs out/p065/tl-<arm>.json <URL> 46`.
+6. Attribution runs after the end sentinel, Timeline on, counts only, one per arm of the block:
+   `node fixes/illusion-accent-frames/tools/tlcounts.mjs out/p065/tl-<blk>-<arm>.json <URL> 46`.
 7. Park Safari.
 
-Estimate: ~14 min of counted runs (P-058 block B ran 9 in 10 min), plus ~5 min of warm-ups, ~3 min of sentinels and
-~4 min of attribution: ~26 min, plus cooling before it (`wait.mjs phone-temp --below auto`).
-Short slot: rows 1 and 3 only (n = 2, ~18 min), with the same rule. With n = 2 a non-overlap is weaker, and the result
-says so. Battery temperature and Mac load1 are logged per run, as P-058 (load1 > 8 is flagged, not void).
+Cool between the blocks with `node tools/wait.mjs phone-temp --below auto`.
+
+| block | control | arms | counted order | n per arm | minutes (ESTIMATE) |
+|---|---|---|---|---|---|
+| 1 isolation | FP | FP, WA-C | C V V C C V V C = FP WA-C WA-C FP FP WA-C WA-C FP | 4 | ~16 (8 runs, 2 warm-ups, 2 sentinels, 2 attribution) |
+| 2 arms alone | WA-C | WA-C, WA-F2, WA-B | rotated Latin square: WA-C WA-F2 WA-B · WA-F2 WA-B WA-C · WA-B WA-C WA-F2 | 3 | ~20 (9 runs, 3 warm-ups, 2 sentinels, 3 attribution) |
+
+`--block P065-1` / `P065-2`, labels `P065-<blk>-<n>-<arm>`. Battery temperature and Mac load1 are logged per run, as
+P-058 (load1 > 8 is flagged, not void).
 
 **Metrics.** As P-058 (`youdraws.mjs`): per 'you' draw (start + 2000 ms), counted per run (4 draws):
 - frames > 50 ms and > 34 ms, with the ±4 ms twins and the near bands;
@@ -585,7 +593,8 @@ Also the **whole 44 s idle**, all words: frames > 50 and > 34 per run, and the i
 here it carries the isolation question.
 
 **Run validity.** As P-058:
-- **VOID-ARM:** WA-F2's readstats `arm` is not F2; it is gated; or it has 0 canvas draws. Re-run once at the block end.
+- **VOID-ARM** (Block 2): WA-F2's readstats `arm` is not F2; it is gated; or it has 0 canvas draws. Re-run once at the
+  block end.
 - **VOID-ID:** fewer than 2 'you' draws in the idle, or an engaged draw at a non-'you' time.
 - **VOID:** scrollY ≠ 0; Low Power Mode; a missing JSON.
 - A failing sentinel voids the runs since the last passing one.
@@ -593,17 +602,17 @@ here it carries the isolation question.
 Predictions and the decision rule: P-065 in `fixes/PREDICTIONS.md`, registered before any phone data. In short:
 
 **Predictions** (OBSERVED basis: P-058 phone numbers, the Chrome counts above):
-- (a) WA-C's whole idle is quiet:
+- (a) Block 1: WA-C's whole idle is quiet:
   - > 50: 0 per run [0, 1];
   - > 34: ≤ 10 per run [0, 10];
   - FP: > 50 [0, 12] and > 34 [30, 60] per run, as P-058.
-- (b) In the 'you' windows, WA-C has fewer slow frames than FP:
+- (b) Block 1: in the 'you' windows, WA-C has fewer slow frames than FP:
   - > 34: WA-C [0, 3] against FP [3, 9] per run;
   - > 50: both [0, 2];
   - i.e. most of the full page's > 34 frames during 'you' come from the rest of the page.
 
   Low confidence: Chrome says the draw's style and paint work is nearly all the word's own.
-- (c) The arms alone are not separated: WA-F2 and WA-B within WA-C's range on > 50 and > 34 in the 'you' windows. No
+- (c) Block 2: the arms alone are not separated: WA-F2 and WA-B within WA-C's range on > 50 and > 34 in the 'you' windows. No
   arm beats the SVG alone.
 - (d) Timeline per 'you' draw (counts):
   - WA-C: style 50-60, layout 50-60, paint 50-70. That is FP's level: on WebKit the SVG draw itself lays out every
@@ -613,20 +622,20 @@ Predictions and the decision rule: P-065 in `fixes/PREDICTIONS.md`, registered b
 - (e) WA-C idle fps ≥ 59.5.
 
 **Decision rule.**
-1. **Isolation (the user's question).**
+1. **Block 1, isolation (the user's question).**
    - "The rest of the page adds slow frames in the word's windows" when FP's and WA-C's per-run ranges do not
      overlap on > 34 or > 50 in the 'you' windows, and both ±4 ms twins agree.
    - Otherwise: "the slow frames during the draws are the word's own (or noise)".
    - The whole idle is read the same way, for the page as a whole.
-2. **Arms alone.** As P-058 rules 1-3: eligibility, rank by > 50 then > 34 per 'you' window, and separation. An arm
+2. **Block 2, arms alone.** As P-058 rules 1-3: eligibility, rank by > 50 then > 34 per 'you' window, and separation. An arm
    beats the SVG alone only when its range lies wholly below WA-C's and the twins agree.
 3. **Recommendation.**
    - No arm beats WA-C: keep the SVG; the illusion topic closes.
    - An arm beats WA-C (P-058 found no full-page win): report "it saves the word's own cost, which the rest of the page
      hides today". Keep the SVG now, and offer a full-page re-test after the other fixes land. That would be a new
      question with its own row. F2's ~83 MB for 'you' is shown next to it.
-   - Threshold-sensitive or not separated: keep the SVG. No second block unless the user asks.
-4. **Counts.** Timeline counts are reported per arm with FP minus WA (the rest of the page's share). Counts only, not
+   - Threshold-sensitive or not separated: keep the SVG. No further block for either question unless the user asks.
+4. **Counts.** Timeline counts are reported per arm; Block 1 also as FP minus WA-C (the rest of the page's share). Counts only, not
    timing.
 
 ## Void results
