@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T15:45:00Z",
+ "updatedAt": "2026-10-02T15:50:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -302,6 +302,7 @@
   },
   {
    "id": "image-size",
+   "writeup": "fixes/image-size/README.md",
    "title": "Images bigger than they need to be (memory)",
    "area": "whole",
    "state": "dropped",

@@ -8,6 +8,9 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **15:5xZ image-size null write-up landed (909464c); fix-image-size done.** fixes/image-size/README.md + the P-066
+  outcome row; findings F-134 and F-135 posted. PROGRESS image-size writeup path added. ts-i063 rebases I-063 onto
+  0de8103 and fixes n1-n3; I-069 after. de-countdown (T-024) is researching.
 - **15:4xZ P-066 RETRACTED (falsified); image-size dropped; I-070 resolved; I-063 re-review accepted; T-024 ->
   de-countdown.**
   - **Correction to 15:1xZ:** fix-image-size retracted the P-066 HIT. With more sessions the within-session A/A of the
@@ -1366,7 +1369,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | done (phone disconnected, T-022) |
 | `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
-| `fix-image-size` (new 12:0xZ; ID af756241c686d490e) | image-size: P-066 falsified (no detectable saving), dropped; null write-up landing | alive |
+| `fix-image-size` (new 12:0xZ; ID af756241c686d490e) | image-size: P-066 falsified (no detectable saving), dropped; null write-up 909464c | done |
 | `de-countdown` (ID via ListAgents) | T-024 countdown-faces (board priority #1; apple.com off-screen-pause reference) | alive |
 | `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (user: no, thanks) |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
