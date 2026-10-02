@@ -8,6 +8,19 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **22:4xZ (batch) d637310 landed (7945951); S7 on main; I-073 RESOLVED; LAN scrub bc90d7a; new goal: phone heat (T-029 #4); P-068 = de-heat.**
+  - Landed: 7945951 (ops batch), 0066608 + 2182886 (S7 / P-067 ticket, pre-data), 5f37fcb (I-073 LAN resolver +
+    placeholder `lan-host`, CLAUDE.md edit with the user's OK; I-073 RESOLVED).
+  - **LAN scrub (lead's job, ops commit bc90d7a):** the Mac's LAN address replaced by `lan-host` (tools/lib/iphone-url.mjs
+    LAN_HOST) in 236 committed `fixes/iphone-wave2/raw/*.json` files (240 occurrences, href/host fields). Deterministic
+    byte replacement; every file parses as JSON; reverting the replacement restores the exact bytes. Nothing hashes the
+    raw files; the offline readers morph-clock-replay.mjs and unknowns-ux-metric.mjs print identical output before and
+    after. The only other LAN-style addresses in tracked files outside site*/ are fake test addresses (tests/, research/architecture,
+    README.md example): left as they are. Git history still holds the old bytes (local only, never pushed, rule 2).
+  - **User direction (T-029 #4, scrubbed): phone heat and energy (less work at rest, a cooler phone) becomes a goal next
+    to smoothness.** de-heat (research/phone-heat/) writes the ticket, Fastwork vs apple.com. **Every fix reports
+    "work at rest" from now on.**
+  - **P-068 = de-heat**, phone-heat ticket (pre-data, row on its branch; second read by ops before any phone queue).
 - **22:2xZ (batch) fwreskip dropped; user lifts the timing hold for st6 + F3 (T-027 #5); P-067 = S7; P-036 G re-read PASS; PR-007 accepted; I-073 landing, I-074 open.**
   - Landed: ed43bd0 (ops), 3e2ebe8 (fwreskip G2 scored: band >50 0 vs 0, >34 0 vs 0, No gain -> (B); P-064 filled),
     cf95b03 + 3c67f93 + 6890fe5 (countdown-faces PoC, round 2, review r2 notes).
@@ -410,7 +423,7 @@ Board rows `ops`, `phone-queue`, `fwreskip`, `best-stack` and `phone-stack-test`
   - Directory rows below that are older than 10-02 06:00Z are unverified.
 - **Open incidents.** I-056 only (ts-i056). I-053/054/055/057/058 are resolved.
 - **P-ids.** (P-059 wi-stack, P-060 fix-scroll-engine G1b, P-061 fix-scene-scope T-011,
-  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2, P-065 de-illusion-style word-alone, P-066 fix-image-size image-size, P-067 fix-scroll-engine S7 st6): next free P-068.
+  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2, P-065 de-illusion-style word-alone, P-066 fix-image-size image-size, P-067 fix-scroll-engine S7 st6, P-068 de-heat phone heat): next free P-069.
 - **Mechanics.**
   - PROGRESS.json: targeted Python replacement; the old JSON string must match exactly once. next/gate ≤ 300 chars,
     details ≤ 600. Bump `updatedAt` to the real `date -u`, never ahead.
@@ -1416,7 +1429,7 @@ between tool calls.
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
 | I-074 | open | ts-i074 | user T-028: proposals get a "Try it" panel with live original vs PoC iframes |
-| I-073 | landing (22:2xZ) | ts-i073 | LAN address resolver + placeholder; CLAUDE.md edit with the user's OK (T-026 #5) |
+| I-073 | RESOLVED (5f37fcb) | ts-i073 | LAN address resolver + placeholder; CLAUDE.md edit with the user's OK (T-026 #5) |
 | I-072 | open, non-blocking | lead | WDA e2e tests left 3 fake-xcodebuild/fake-iproxy orphans (14 h); killed by the lead; not sim-warm (ts-i063) |
 | I-071 | RESOLVED not-a-bug (Idle Sleep; test:chrome 13/13 at 17:38Z) | ts-i063 | test:chrome check.chrome failed (no check.json); bisect 9135b35 vs 0aa2227 |
 | I-070 | RESOLVED (0de8103) | ts-i070 | keep the Mac awake only during measurement holds (caffeinate -i -s) |
