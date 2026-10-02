@@ -739,6 +739,11 @@ Amended 2026-10-02 at the lead's second read, before any data: the gain line is 
 
   G2 (P-064) and an F run would cover the first three. They are optional confirmation once the phone is back.
 
+**User decision on PR-005 (2026-10-02 15:11Z): C, park and re-test** (no notes; (B) was recommended).
+- fwreskip stays unlanded and parked.
+- When the phone is back, G2 runs as ticketed above (P-064 stays open, pre-data), and an optional finger A/B may follow.
+- The result comes back to the user as A or B.
+
 ## Risks, conflicts, follow-ups
 
 - **Up-pass Layout (open item ii).** See above.
