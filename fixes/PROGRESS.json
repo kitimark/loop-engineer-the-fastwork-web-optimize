@@ -1,7 +1,7 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T10:14:00Z",
- "updatedBy": "mgmt-ops-6",
+ "updatedAt": "2026-10-02T10:45:00Z",
+ "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
  "complaints": [
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T10:45:00Z", "text": "New 'Best build' view: what today's best build (st6-rb) contains, what each fix gained on the phone, and what was tried and not applied, with the reason." },
   { "at": "2026-10-01T20:35:00Z", "text": "Carousel: the cause of the remaining layout is found. A build that avoids it (st6) removed it in 35 of 36 slide starts on the phone recording; it waits for timing tests to resume." },
   { "at": "2026-10-01T20:20:00Z", "text": "Second style recording: one extra layout at the section switch can be removed, but another whole-page layout stays; the team is hunting its trigger before any fix is timed." },
   { "at": "2026-10-01T20:08:00Z", "text": "Four cheaper look-alike proposals are ready for you to accept or reject; two more are coming. Your questions now have one thread per topic in the console." },
@@ -36,6 +37,8 @@
  "items": [
   {
    "id": "cdwc",
+   "inBuild": true,
+   "writeup": "fixes/iphone-wave2/README.md",
    "title": "Countdown fix: digits stop repainting when the end panel moves",
    "area": "end",
    "state": "testing",
@@ -62,6 +65,8 @@
   },
   {
    "id": "f3-arm-scope",
+   "inBuild": true,
+   "writeup": "fixes/iphone-wave2/README.md",
    "title": "F3: touch listeners set up once, removing the hitch in the middle",
    "area": "middle",
    "state": "testing",
@@ -88,6 +93,8 @@
   },
   {
    "id": "re-keep-op",
+   "inBuild": true,
+   "writeup": "fixes/iphone-wave2/README.md",
    "title": "Card reveal ends without a page re-layout (re-keep-op)",
    "area": "hero",
    "state": "testing",
@@ -109,6 +116,9 @@
   },
   {
    "id": "blur-cubic",
+   "inBuild": false,
+   "whyNot": "On the phone it made the frame where the people cards appear slower (74 vs 42 ms); you picked A, which leaves it out. Its early-layer variant (B) was cheaper in the Simulator but not below A.",
+   "writeup": "fixes/stack5/README.md",
    "title": "Card reveal blur with a standard easing curve (PoC 2)",
    "area": "hero",
    "state": "testing",
@@ -126,6 +136,11 @@
   },
   {
    "id": "hero-carousel",
+   "inBuild": true,
+   "writeup": "fixes/st6-rb/README.md",
+   "best": [
+    { "what": "slow frames (over 34 ms) at rest at the top of the page, per run", "before": "3 (2-4), build without it", "after": "0 (0-0)", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-062", "note": "phone block A1, 3 runs per arm; the build without it is RB" }
+   ],
    "title": "Avatar carousel: each tick re-lays out the whole page",
    "area": "hero",
    "state": "testing",
@@ -143,6 +158,7 @@
   },
   {
    "id": "best-stack",
+   "writeup": "fixes/stack5/README.md",
    "title": "Today's best combined build (your sitting)",
    "area": "whole",
    "state": "testing",
@@ -170,6 +186,8 @@
   },
   {
    "id": "style-recalc",
+   "inBuild": true,
+   "writeup": "fixes/scene-scope/README.md",
    "title": "Your idea: style recalculation (about 19-20 ms) causes the lag",
    "area": "whole",
    "state": "testing",
@@ -193,6 +211,8 @@
   },
   {
    "id": "illusion-proposals",
+   "inBuild": false,
+   "whyNot": "None of the 5 image or video ways to draw the hero's accent word beat today's drawing on the phone; your pick on the report (PR-004) is open.",
    "title": "Cheaper look-alike effects (user priority 2)",
    "area": "whole",
    "state": "diagnosing",
@@ -304,6 +324,8 @@
   },
   {
    "id": "wave1-base",
+   "inBuild": true,
+   "writeup": "fixes/iphone-wave2/README.md",
    "title": "Wave 1 combined (the base every fix builds on)",
    "area": "whole",
    "state": "base",
@@ -323,6 +345,7 @@
   },
   {
    "id": "lc-cq3",
+   "writeup": "fixes/layout-containment/README.md",
    "title": "Layout containment on size containers (lc-cq3)",
    "area": "whole",
    "state": "dropped",
@@ -334,6 +357,7 @@
   },
   {
    "id": "f1-arm-load",
+   "writeup": "fixes/iphone-wave2/README.md",
    "title": "F1: listeners armed at page load",
    "area": "middle",
    "state": "dropped",
@@ -344,6 +368,7 @@
   },
   {
    "id": "simulator-judge",
+   "writeup": "research/simulator/README.md",
    "title": "iOS Simulator as a stand-in for the phone",
    "area": "whole",
    "state": "dropped",
@@ -354,6 +379,7 @@
   },
   {
    "id": "nonpassive-touch",
+   "writeup": "research/design-engineering/README.md",
    "title": "Does the page's blocking touch listener delay the start of a scroll?",
    "area": "whole",
    "state": "dropped",
@@ -366,5 +392,16 @@
  ],
  "upcoming": [
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "paused: timing and feel tests are on hold", "item": "f3-arm-scope" }
- ]
+ ],
+ "build": {
+  "name": "st6-rb: the wave-1 base plus five fixes (the last one: the avatar carousel)",
+  "since": "2026-10-02T10:08:40Z",
+  "summary": "It removes the slow frames each included fix aimed at, each measured on the phone against the build before it, but the whole build has not yet been compared with the original page in one full phone scroll.",
+  "fixes": ["wave1-base", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel"],
+  "combined": [
+   { "what": "style work while the people cards scroll by, per run (iPhone Timeline)", "before": "118-123 ms", "after": "59-65 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
+   { "what": "style work in the middle of the page, per run (iPhone Timeline)", "before": "329-346 ms", "after": "207-222 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
+   { "what": "style work at the top, including 6 s at rest, per run (iPhone Timeline)", "before": "228-252 ms", "after": "322-330 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "worse in B+; the carousel fix, now in this build, removes the slow frames at rest there (A1), not re-measured as style time" }
+  ]
+ }
 }
