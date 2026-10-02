@@ -218,8 +218,13 @@ test('list shows every fix with overlay / patch / results state (skips _template
   assert.doesNotMatch(l.stdout, /_template/);
 });
 
-test('serve <topic>: baseline + overlay on an auto port with the calibrated defaults; SIGTERM stops the server', async () => {
+test('serve <topic>: baseline + overlay on an auto port with the calibrated defaults; SIGTERM stops the server', async (t) => {
+  // a failed assertion must not leave the server running: its live child kept this file's event loop up and hung
+  // npm test for 24 min (I-065); stop() on an already-stopped process is a no-op
+  const procs = [];
+  t.after(() => Promise.all(procs.map((x) => x.stop())));
   const s = await startProc(process.execPath, [join(repo.wt, 'tools', 'fix.mjs'), 'serve', 't1'], { cwd: repo.wt });
+  procs.push(s);
   assert.match(s.url, /^https:\/\/localhost:5[2-9]\d\d\/$/);
   assert.match(s.stdout(), /tools\/serve\.mjs --root .*site-pretty --overlay .*fixes\/t1\/overlay --port auto --state .*serve-t1\.json --vendors=local --https --latency 150/);
   const js = await request(s.url + PAGE_JS.slice(1));
@@ -239,6 +244,7 @@ test('serve <topic>: baseline + overlay on an auto port with the calibrated defa
 
   // passthrough args replace the defaults
   const p = await startProc(process.execPath, [join(repo.wt, 'tools', 'fix.mjs'), 'serve', 't1', '--', '--quiet', '--vendors=block'], { cwd: repo.wt });
+  procs.push(p);
   assert.match(p.url, /^http:\/\//);
   await p.stop();
   assert.equal(wt('serve', 'no-such-topic').code, 2);

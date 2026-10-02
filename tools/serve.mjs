@@ -41,6 +41,7 @@
 // request like any other.
 import http from 'node:http';
 import http2 from 'node:http2';
+import net from 'node:net';
 import os from 'node:os';
 import zlib from 'node:zlib';
 import { createHash, randomBytes, X509Certificate, createPrivateKey } from 'node:crypto';
@@ -400,8 +401,26 @@ let candidates;
 if (PORT_OPT === 'auto') { const b = autoPortBase(); candidates = Array.from({ length: 60 }, (_, i) => b + i); }
 else if (/^\d+$/.test(PORT_OPT)) candidates = [Number(PORT_OPT)];
 else { console.error(`--port must be a number, 0 or auto (got ${PORT_OPT})`); process.exit(2); }
-function tryListen(i) {
+// A port counts as free only when nothing listens on it at ANY local address (I-065): Node sets SO_REUSEADDR, and on
+// macOS a listen on 0.0.0.0:p succeeds beside another process's 127.0.0.1:p, after which "localhost" reaches that
+// process, not this server (a fix.test fixture's auto port hashed to the lead's console server on 127.0.0.1:5559: its
+// https request got plain http, EPROTO). Port choice only: nothing served changes.
+const PROBE_HOSTS = ['127.0.0.1', '0.0.0.0', '::1', '::'];
+function busyOn(port) {
+  return PROBE_HOSTS.reduce((prev, host) => prev.then((busy) => busy || new Promise((done) => {
+    const probe = net.createServer();
+    probe.once('error', (e) => done(e.code === 'EADDRINUSE' ? host : null)); // others (no IPv6 here, EACCES): the real listen reports them
+    probe.listen({ port, host, exclusive: true }, () => probe.close(() => done(null)));
+  })), Promise.resolve(null));
+}
+async function tryListen(i) {
   const port = candidates[i];
+  const busy = port ? await busyOn(port) : null;
+  if (busy) {
+    if (candidates.length > 1 && i + 1 < candidates.length) return tryListen(i + 1);
+    console.error(`port ${port} is already in use (something listens on ${busy}:${port}; another mirror server?). Use --port auto or --port 0.`);
+    process.exit(1);
+  }
   const onErr = (e) => {
     server.off('listening', onOk);
     if (e.code === 'EADDRINUSE' && i + 1 < candidates.length) return tryListen(i + 1);

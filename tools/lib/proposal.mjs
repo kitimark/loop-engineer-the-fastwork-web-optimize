@@ -453,8 +453,10 @@ async function change(id, who, action, fn) {
   const pid = parseProposalId(id);
   return withGuard(GUARD, () => {
     const p = get(pid);
-    const extra = fn(p) || {};
+    // one instant per change (I-065): the mutator stamps decision.at / proposedAt with the history entry's `now`; two
+    // clock reads drifted 1 ms apart under load, and a wait re-armed at decision.at re-reported that same decision
     const now = iso();
+    const extra = fn(p, now) || {};
     p.updatedAt = now;
     p.history.push({ at: now, who, action, ...extra });
     writeJson(fileOf(pid), p);
@@ -592,9 +594,9 @@ export async function publishProposal(id, { by }) {
   if (n.fields?.options) errs.push(...optionMediaErrors({ fields: n.fields, media: { options: n.fields.options.map(() => null) } }, cur.options));
   else if (!cur.compare.shots.length && !cur.compare.video) errs.push('compare: at least one screenshot pair or a video (proposal revise --shot-a … --shot-b …)');
   failIf(errs, `publish ${cur.id}`);
-  return change(cur.id, who, 'published', (p) => {
+  return change(cur.id, who, 'published', (p, now) => {
     if (p.state !== 'draft') throw new Error(`${p.id} is ${p.state}, not a draft`);
-    p.state = 'proposed'; p.proposedAt = iso();
+    p.state = 'proposed'; p.proposedAt = now;
     return { rev: p.rev };
   });
 }
@@ -624,7 +626,7 @@ export async function decide(id, { value, notes, rev, option, who = 'user' } = {
   const nt = notes == null || notes === '' ? undefined : scrubText(String(notes).trim().slice(0, LIMITS.notes)).text || undefined;
   if (state === 'changes-requested' && !nt) throw new Error('say what to change (the notes box)');
   const want = option == null || String(option).trim() === '' ? undefined : String(option).trim().slice(0, 80);
-  return change(id, String(who).slice(0, 80), 'decided', (p) => {
+  return change(id, String(who).slice(0, 80), 'decided', (p, now) => {
     if (rev !== undefined && rev !== null && rev !== '' && Number(rev) !== p.rev) throw new Error(`${p.id} was revised (now revision ${p.rev}, you saw ${rev}): reload the page`);
     if (p.state !== 'proposed') throw new Error(`${p.id} is ${p.state}, not waiting for a decision`);
     let picked;
@@ -637,7 +639,7 @@ export async function decide(id, { value, notes, rev, option, who = 'user' } = {
         picked = o.name;
       } else if (state === 'accepted') throw new Error(`${p.id} has ${p.options.length} options: say which one you accept (--option <name>: ${names})`);
     } else if (want !== undefined) throw new Error(`${p.id} has no options (--option is for a proposal with options)`);
-    const d = { value: state, notes: nt, at: iso(), who: String(who).slice(0, 80), rev: p.rev, ...(picked && { option: picked }) };
+    const d = { value: state, notes: nt, at: now, who: String(who).slice(0, 80), rev: p.rev, ...(picked && { option: picked }) };
     p.state = state;
     p.decision = d;
     p.decisions.push(d);

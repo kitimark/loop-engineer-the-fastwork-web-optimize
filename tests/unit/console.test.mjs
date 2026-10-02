@@ -300,6 +300,27 @@ test('I-059 B attempts: the user\'s Start over and the runner\'s redo share one 
   await assert.rejects(C.restart(q.id), /has no parts to start over/);
 });
 
+test('I-065 one instant per change: every time a change stamps equals its updatedAt and history entry, even when the clock ticks inside it', async (t) => {
+  // under load the clock moved 1 ms between the mutator's own iso() (endedAt, at.started, ...) and change()'s updatedAt
+  let now = Date.now() - 60000;
+  t.mock.method(Date, 'now', () => (now += 1)); // every read of the clock is 1 ms later than the one before
+  const s = await C.post({ by: 'iphone-runner', kind: 'action', title: 'tick', parts: [{ label: 'Open', gate: true }, { label: 'Play', ends: 'runner' }] });
+  const same = (r, v, what) => { assert.equal(v, r.updatedAt, what); assert.equal(r.history.at(-1).at, r.updatedAt, `${what}: history`); };
+  let r = await C.ack(s.id, { by: 'iphone-runner', part: 1, state: 'ready' }); same(r, r.parts[0].at.ready, 'ack ready');
+  r = await C.start(s.id, { part: 1 }); same(r, r.parts[0].at.started, 'start');
+  r = await C.done(s.id, { part: 1 }); same(r, r.parts[0].at.done, 'done');
+  r = await C.start(s.id, { part: 2 });
+  r = await C.ack(s.id, { by: 'iphone-runner', part: 2, state: 'recording' }); same(r, r.parts[1].at.recording, 'ack recording');
+  r = await C.restart(s.id); same(r, r.parts[1].attempts.at(-1).endedAt, 'restart: endedAt');
+  await C.ack(s.id, { by: 'iphone-runner', part: 1, state: 'ready' }); await C.start(s.id, { part: 1 });
+  r = await C.redo(s.id, { by: 'iphone-runner', part: 1 }); same(r, r.parts[0].attempts.at(-1).endedAt, 'redo: endedAt');
+  const q = await C.post({ by: 'r', kind: 'question', title: 'q', options: ['yes', 'no'] });
+  r = await C.answer(q.id, { value: 'yes' }); same(r, r.startedAt, 'answer: startedAt'); same(r, r.result.at, 'answer: result.at');
+  const k = await C.post({ by: 'r', kind: 'question', title: 'k', options: ['yes', 'no'] });
+  r = await C.skip(k.id); same(r, r.skippedAt, 'skip');
+  r = await C.reopen(k.id); same(r, r.queuedAt, 'reopen');
+});
+
 test('I-059 B ack --attempt: a stale ack from an earlier try is refused; the current attempt and no --attempt work as before', async () => {
   const s = await C.post({ by: 'iphone-runner', kind: 'action', title: 't', parts: [{ label: 'Play', ends: 'runner' }] });
   await C.start(s.id, { part: 1 });
