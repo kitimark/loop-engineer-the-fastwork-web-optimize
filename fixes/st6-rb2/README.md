@@ -156,7 +156,7 @@ node tools/iphone.mjs run --driver scroll --probe std --idle 20 --owner iphone-r
 - **Tick gate:** a run whose detected ticks are fewer than 0.8 × the expected count (idle s / 1.025 for starts) is left
   out of row 2 only.
 
-**Scoring:** `python3 out/st6t/st6score.py <counted run files>` (sha256 `7a8fed7fb4c3`; warm-ups are skipped).
+**Scoring:** `python3 out/st6t/st6score.py <counted run files>` (sha256 `772ef9e0e8a4`, with the per-run separation; first version `7a8fed7fb4c3`; warm-ups are skipped).
 - **Idle phase:** the frames inside `marks.idle`. Counts at > 50 and > 34, with twins > 46 / > 54 and > 30 / > 38;
   near-band frames listed.
 - **Ticks**, inside the idle phase:
@@ -168,6 +168,7 @@ node tools/iphone.mjs run --driver scroll --probe std --idle 20 --owner iphone-r
 - The scorer was checked on A1 (RB vs NB = RB + st6, 3 s idle):
   - idle > 34 sums C 9 vs NB 0;
   - tick frames > 34: C starts 7/9, swaps 3/6; NB 1/10;
+  - per run C 3, 2, 4 vs NB 0, 0, 0 (separated);
   - verdict Gain, not threshold-sensitive.
 - **The UI-process half of the FAIL rule is "not checked on the phone since T-018".** Main-thread FAIL is not read:
   S has no flinglog.
@@ -176,9 +177,9 @@ node tools/iphone.mjs run --driver scroll --probe std --idle 20 --owner iphone-r
 
 | row | read | decision |
 |---|---|---|
-| **1. Idle (primary)** | idle dt > 34 and > 50 sums | **Gain:** V's > 34 is at least 2 below C's **and** V's > 50 ≤ C's. A twin (> 30 / > 38 with > 46 / > 54) that flips it makes it threshold-sensitive, and that counts as not Gain. Otherwise **No gain**. |
+| **1. Idle (primary)** | idle dt > 34 per run, and idle dt > 50 sums | **Gain:** all three must hold: (a) **separated**: every V run's idle dt > 34 count is below every C run's; (b) V's > 34 sum is at least 2 below C's; (c) V's > 50 sum ≤ C's. If a twin flips the verdict, it is threshold-sensitive, and that counts as not Gain: > 30 / > 38 for (a) and (b), > 46 / > 54 for (c). Then the twin table is reported, not rounded. Otherwise **No gain**. |
 | 2. Ticks | the share of starts and swaps with a frame > 34 (and > 50), per arm | Reported with row 1. It is the mechanism readout: C high, V near 0 is st6's signature. |
-| 3. Guard | scroll dt > 50, median per run | A V median more than 1 above C's is a regression. Report it, with no landing claim. |
+| 3. Guard | scroll dt > 50: per arm, the median over its 4 runs of each run's count | A V median more than 1 above C's median is a regression. Report it, with no landing claim. |
 | 4. Context | scroll dt > 34, bottom and scroll fps | Reported only. |
 
 - Gain with no regression: st6's at-rest gain is confirmed on st6-rb2, and the result goes to the lead.
@@ -188,4 +189,6 @@ node tools/iphone.mjs run --driver scroll --probe std --idle 20 --owner iphone-r
 - Row 1 is Gain and not threshold-sensitive. C idle > 34 per run is 8-25 and V's is 0-2.
 - Row 2: C's starts > 34 in ≥ 50 %, C's swaps in ≥ 25 %, V's ticks in ≤ 10 %.
 - Row 3: no regression.
-- Falsified if V's idle > 34 sum is above C's − 2, or if C's ticks > 34 fall under 25 %.
+- Falsified if V's idle > 34 sum is above C's − 2, if any V run's idle > 34 count reaches the lowest C run's, or if C's ticks > 34 fall under 25 %.
+- Amended before any data, at mgmt-ops-7's second read (2026-10-02 22:2xZ). Row 1 now needs per-run separation (a), not
+  the 2-frame sum margin alone. Row 3 now names its statistic.
