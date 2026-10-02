@@ -27,8 +27,8 @@ lead's review (8690486, NEEDS-WORK) sent back.
 - The rotator-tick layout stays: the st5/st6 family is not byte-identical, and rotator-st6 is parked.
 
 **Stage:** F. PR-002 rev 2 accepted by the user (2026-10-02 08:07:38Z, no notes). D signed by the lead (NAMED, see
-"Cards"). Phone ticket T-011 written (section "Phone ticket T-011", prediction P-061); waiting for its phone slot,
-then the fix-reviewer on the final diff.
+"Cards"). T-011 ran on the phone 2026-10-02 10:43-10:58Z: P-061 (a), (b), (d) PASS, not exclusion-sensitive, same
+without the load-flagged runs (section "T-011 result"). Waiting for the fix-reviewer on the final diff, then the land request.
 **Device class / gate:** phone-only (WebKit's nested style/layout rounds, F-099). Gate: phone Timeline attribution (counts).
 **Driver(s) behind the claims:**
 - Chrome counts and state probes (`out/scene-scope/*.mjs`). Most are not committed. The frame, onset and scoring
@@ -1097,7 +1097,7 @@ second, no ms verdicts; `out/scene-scope/simidle.mjs`, `simidle.sh`).
   - Its pixel A/B and idle triple have run since (above): byte-identical, and equal. RBi40 was then the landing
     candidate; the review (8690486) replaced it with RBi40p (top of this README).
 
-## Phone ticket T-011: RBi40pti (prepared, not run)
+## Phone ticket T-011: RBi40pti (run 10:43-10:58Z, see "T-011 result")
 
 **Runner:** `iphone-runner`. **Slot:** in the lead's phone order, after stack test, PR-001 A/B and G1b. Second read:
 mgmt-ops-6. Prediction **P-061** (`fixes/PREDICTIONS.md`), committed before any phone data of this ticket. Attribution
@@ -1195,6 +1195,72 @@ C V V C, served hashes checked; `out/scene-scope/sweep-sim-*.json`). OBSERVED, S
   window: any extra title style work would show in it.
 - currentTime at +600 ms: C 1006-1073, then 749-801; V 702-797. The first C load is the high one. This is load timing,
   information only.
+
+## T-011 result (phone, iPhone 15 Pro Max, iOS 26.6.1, Timeline, OBSERVED)
+
+Run by iphone-runner on 2026-10-02 10:43-10:58Z, using the ticket above. C = ss-RB and V = RBi40pti, served from the read-only
+copies; the runner's `t011.sh` ran the served-hash check against the ticket table. W driver at 430x775; counted runs
+C1 V2 V3 C4 C5 V6 V7 C8. Scored by me with `SW=2500-2760 rsstat.mjs` on `sr-*.json`, and the sweep part with
+`sweepstate.mjs`. Attribution only; no timing verdict.
+
+**Heat sentinels** (Timeline off, S driver on C): both PASS.
+- Open, 10:45:13Z: 60.2 / 58.5 fps, battery 37.4 °C.
+- End, 10:51:57Z: 60.0 / 58.0 fps, battery 39.9-40.0 °C.
+- The phone had cooled to 38.0 °C before the block. Low Power Mode was off.
+
+**Deviations from the ticket.**
+- The warm-ups were "open, wait 6 s" per port (the text before 685d4a0), not uncounted W runs. The first counted run
+  per arm (C1, V2) is therefore the first full run on its port. Neither stands out: C1 has the lowest C RS (17.7 ms),
+  and V2 matches the other V runs.
+- The sweep part reran once (10:56-10:58Z). The first try was refused: the FW_TAB_HOST value didn't match the tab.
+  Nothing timed was affected.
+- The Mac-quiet hold was not taken (preferred, not blocking).
+  - load1 at run start (end): C1 63.9 (35.9), V2 35.9 (18.4), V3 18.4 (8.9), C4 8.9 (7.0), C5 7.0 (5.2), V6 5.2 (5.3),
+    V7 5.3 (4.0), C8 4.0 (15.5).
+  - The runner flagged C1, V2, V3 (a Simulator boot spike) and C8 (ended in a second spike).
+
+**Switch RS** (the first outermost RS after the cE write, y 2609-2624 in every run):
+
+| run | load flag | RS ms | nested Layouts (view-rooted) | Layouts <= 40 ms after the RS | scroll+push: nested-Layout ms / RS ms |
+|---|---|---|---|---|---|
+| C1 | flag | 17.7 | 2 (1: VIEW 16.6; + 390x312 0.1) | 0 | 54.5 / 485.3 |
+| C4 | | 19.8 | 2 (1: VIEW 18.2; + 390x312 0.1) | 0 | 45.2 / 463.4 |
+| C5 | | 21.3 | 2 (1: VIEW 20.0; + 390x312 0.1) | 0 | 48.5 / 500.6 |
+| C8 | flag (end) | 24.5 | 2 (1: VIEW 22.8; + 390x312 0.1) | 1: 104x32 0.1 ms, not view-rooted, not rot | 51.1 / 475.0 |
+| V2 | flag | 0.4 | 0 | 0 | 34.8 / 457.9 |
+| V3 | flag | 0.4 | 0 | 0 | 34.6 / 432.8 |
+| V6 | | 0.4 | 0 | 0 | 28.0 / 454.4 |
+| V7 | | 0.5 | 0 | 0 | 30.8 / 460.9 |
+
+**Sweep state** (`sweep-C.json`, `sweep-V.json`; one load per arm, after the end sentinel):
+- Off screen at the top: all 4 titles in both arms have the attribute set, CSS paused, and paused animations.
+  #platform scene is `paused`.
+- In view: onset C 51 / 42 / 32 / 33 ms, V 58 / 40 / 32 / 32 ms (doc / earn / secure / organized). currentTime at +600 ms:
+  C 721-749, V 703-740.
+- Back at the top: all titles paused again in both arms.
+
+**P-061, scored as written:**
+- (a) View-rooted nested Layouts in the switch RS: C 1 / 1 / 1 / 1, V 0 / 0 / 0 / 0. **PASS.**
+- (b) View-rooted Layouts >= 2 ms within 40 ms after the RS, in V: 0 in every run. **PASS.**
+  - Scored both ways, as the lead asked: no Layout marked `rot` falls in any run's window, so the count is 0 with and
+    without the exclusion. **Not exclusion-sensitive.**
+  - The exclusion was edited at 10:40Z and committed at 10:41:46Z (9bade2e, now 8c1a936). Both are before the block's
+    10:43Z start. No T-011 file existed or had been read by then.
+- (c) Information: switch RS V 0.4-0.5 ms (predicted <= 5); C 17.7-24.5 ms (predicted about 15-25).
+- (d) Sweep state: V matches C off screen, in view (every onset <= 58 ms, under the 150 ms bound) and back at the top.
+  **PASS.**
+- (e) Information: the scroll+push nested-Layout ms are lower in V: C 45.2-54.5 (median 49.8), V 28.0-34.8 (median 32.7).
+  RS totals overlap: C 463-501, V 433-461. Layouts outside the RS are about the same: C 358-478, V 391-479.
+- **Load:** without the flagged runs (C4, C5, V6, V7), every rule gives the same answer: C 1 / 1, V 0 / 0, nothing after
+  the RS, RS ms C 19.8 / 21.3 vs V 0.4 / 0.5.
+
+**Outcome:**
+- On the phone's WebKit, RBi40pti removes the switch RS's nested view Layout (about 17-23 ms per crossing in C), and
+  the layout does not reappear after the RS.
+- The JS line (PMsweepGate init-paused) holds the 4 row-title sweeps paused off screen and starts them in view, as
+  today's build does. The D card's open item "RBi40pti's JS line on WebKit" is RESOLVED by this decisive check.
+- Everything here is OBSERVED, phone, n = 4 per arm in one block.
+- Per the ticket: next is the fix-reviewer on the final diff, then the land request.
 
 ## Morph start (R4 / V3)
 
