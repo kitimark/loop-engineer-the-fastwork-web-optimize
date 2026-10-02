@@ -80,7 +80,8 @@ test('console.mjs progress: text, --json, --details; --check validates a file', 
 });
 
 test('I-048: the chrome-measure shared lane on the page, the API and the text: every reader, the weight against the cap, the switch', async () => {
-  const lock = (args) => node(tool('lock.mjs'), args, { env });
+  // I-057: a quiet host by injection, not by luck: the second reader's join check must not read the real load1
+  const lock = (args) => node(tool('lock.mjs'), args, { env: { ...env, FW_LOCK_LOAD1: '0.5', FW_LOCK_SHARED_JOIN_LOAD: '16', FW_LOCK_SHARED_JOIN_BUSY: '100' } });
   // the lane off, Chrome free: as before
   assert.match(node(CON, ['progress'], { env }).stdout, /^ {2}Chrome: free$/m);
   assert.equal(lock(['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e']).code, 0);
@@ -108,4 +109,22 @@ test('I-048: the chrome-measure shared lane on the page, the API and the text: e
     lock(['release', 'chrome-measure', '--shared', '--owner', 'fix-e2e-b']);
   }
   assert.match(node(CON, ['progress'], { env }).stdout, /^ {2}Chrome: free; shared lane on, cap 3$/m);
+});
+
+test('I-057: on a loaded host (injected load1 above the join load) a second reader is BUSY and queued; the page shows the one reader', async () => {
+  const lock = (args) => node(tool('lock.mjs'), args, { env: { ...env, FW_LOCK_LOAD1: '50', FW_LOCK_SHARED_JOIN_LOAD: '16', FW_LOCK_SHARED_JOIN_BUSY: '100' } });
+  assert.equal(lock(['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e']).code, 0);
+  const a = lock(['acquire', 'chrome-measure', '--shared', '--max-seconds', '120', '--weight', '2', '--owner', 'fix-e2e-a']);
+  assert.equal(a.code, 0, a.out); // the opener ignores load
+  try {
+    const b = lock(['acquire', 'chrome-measure', '--shared', '--max-seconds', '120', '--weight', '1', '--owner', 'fix-e2e-b']);
+    assert.equal(b.code, 3, b.out);
+    assert.match(b.out, /BUSY chrome-measure: shared by "fix-e2e-a" .*\(load1 50 > 16: no new reader joins a loaded host\)/);
+    const c = JSON.parse((await request(new URL('api/progress', base).href)).text).live.chrome;
+    assert.deepEqual(c.shared.readers.map((x) => x.owner), ['fix-e2e-a']);
+    assert.match(node(CON, ['progress'], { env }).stdout, /^ {2}Chrome: fix-e2e-a \(w2, since \d\d:\d\dZ\) \(shared lane 2\/3\)/m);
+  } finally {
+    lock(['dequeue', 'chrome-measure', '--shared', '--owner', 'fix-e2e-b']);
+    lock(['release', 'chrome-measure', '--shared', '--owner', 'fix-e2e-a']);
+  }
 });

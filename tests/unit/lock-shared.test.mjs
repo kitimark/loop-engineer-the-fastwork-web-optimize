@@ -235,6 +235,25 @@ test('join load: a joining reader needs load1 <= the cpu count; the opener does 
   assert.equal((await rd('b', { pid: b.queue[0].pid, load1: 7.9, ncpu: 8 })).ok, true);
 });
 
+test('I-057 FW_LOCK_LOAD1: a test-only stand-in for the host load1 in the join check (CLI tests stay hermetic); an explicit load1 wins', async () => {
+  const prev = process.env.FW_LOCK_LOAD1;
+  try {
+    await on();
+    assert.equal((await rd('a', { load1: undefined, ncpu: 8 })).ok, true);
+    process.env.FW_LOCK_LOAD1 = '50';
+    const b = await rd('b', { pid: livePid(), load1: undefined, ncpu: 8 });
+    assert.equal(b.ok, false);
+    assert.match(b.why, /load1 50 > 8: no new reader joins a loaded host/);
+    assert.equal((await rd('b', { pid: b.queue[0].pid, load1: 1, ncpu: 8 })).ok, true, 'an injected load1 (library tests) wins over the env');
+    process.env.FW_LOCK_LOAD1 = '0.5';
+    assert.equal((await rd('c', { pid: livePid(), load1: undefined, ncpu: 8 })).ok, true);
+    for (const bad of ['', 'x', '-1']) {
+      process.env.FW_LOCK_LOAD1 = bad; // not a load: the real os.loadavg, as before
+      assert.equal(L.envLoad1(), null, `"${bad}" is ignored`);
+    }
+  } finally { if (prev !== undefined) process.env.FW_LOCK_LOAD1 = prev; else delete process.env.FW_LOCK_LOAD1; }
+});
+
 test('I-051 join busy: once the reader has a CPU busy sample, busy <= the join busy limit decides, not load1', async () => {
   const prev = process.env.FW_LOCK_SHARED_JOIN_BUSY;
   delete process.env.FW_LOCK_SHARED_JOIN_BUSY;

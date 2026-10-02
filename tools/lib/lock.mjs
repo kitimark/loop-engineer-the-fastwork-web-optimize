@@ -151,6 +151,17 @@ export const sharedJoinLoad = (r = 'chrome-measure') => Number(process.env.FW_LO
  * both, for tests). load1 lags a Simulator boot by minutes (load1 132 at 33-42 % busy, 2026-10-02), so it applies only
  * until the reader has its first busy sample.
  */
+/**
+ * I-057: FW_LOCK_LOAD1, a test-only stand-in for the host load1 in a reader's join check, so CLI tests of the shared
+ * lane do not depend on the real load of the machine running them. A positive number (or 0), else null (real
+ * os.loadavg). An explicit `load1` option wins over it.
+ */
+export const envLoad1 = () => {
+  const s = process.env.FW_LOCK_LOAD1;
+  if (s === undefined || s.trim() === '') return null;
+  const n = Number(s);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+};
 export const sharedJoinBusy = (r = 'chrome-measure') => Number(process.env.FW_LOCK_SHARED_JOIN_BUSY) || sharedSwitch(r).joinBusy || SHARED_LANE.joinBusyPct;
 /** Cumulative cpu times of all cores, {idle, total} (ms): two of them give cpuBusyPct. */
 export function cpuTimes() {
@@ -507,7 +518,7 @@ function gateHolding(w, now, T = THRESHOLDS) {
  * whose turn it is gets {ok:false, gated:true, gate} until host.quiet, or until the gate times out.
  * `shared` (ts-lock-share): a reader of the shared lane (see header), with `weight` (1..cap) and `maxSec` (1..300);
  * `sharedHeld`: an FW_LOCK_SHARED string: a live reader token there re-enters that slot (shared acquirer) or refuses
- * at once (exclusive acquirer, B1). `load1` / `ncpu` / `now`: injected for tests (default: os.loadavg, the cpu
+ * at once (exclusive acquirer, B1). `load1` / `ncpu` / `now`: injected for tests (default: FW_LOCK_LOAD1, else os.loadavg, the cpu
  * count, Date.now). `mode`: 'exclusive' | 'short' | 'shared' | 'reentrant' | 'reentrant-exclusive' | 'reentrant-shared'.
  */
 export async function tryAcquire(r, opts) {
@@ -703,7 +714,7 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
       const lim = sharedJoinBusy(r);
       if (busyPct > lim) return wait(`CPU ${Math.round(busyPct)} % busy > ${lim} %: no new reader joins a busy host`);
     } else {
-      const ld = load1 ?? os.loadavg()[0], lim = ncpu ?? sharedJoinLoad(r);
+      const ld = load1 ?? envLoad1() ?? os.loadavg()[0], lim = ncpu ?? sharedJoinLoad(r);
       if (ld > lim) return wait(`load1 ${Math.round(ld * 10) / 10} > ${lim}: no new reader joins a loaded host`);
     }
     const x = reader();
