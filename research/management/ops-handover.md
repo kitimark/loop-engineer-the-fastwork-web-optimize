@@ -125,6 +125,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   (OBSERVED, Sim): the canvas moves out of the hero-copy layer, because of a half-device-px resample inside it. Queue
   (lead 00:2xZ): PR-001 v2 Sim hold first, fix-nav-morph right after (~00:27Z); flag only if it has not started by
   00:32Z. A shared slot running while an exclusive waiter sits at the host gate pass window is by design.
+  00:3xZ nav-morph/cdwc: fix-nav-morph FINISHED. P-032 Sim mechanism re-check clean (counts only, compiler v2
+  ee84ebd4e916, 2 runs: exactly 2 forward tweens per run as registered, every push/dwell move prevented, no one-move
+  flicks; t0 lag 10-19 ms OBSERVED, Sim). Committed 3ac33c5 + e7a9522 on worktree-agent-a277ea00c8773c1ea; lands with
+  the topic's review. cdwc row parked until timing returns. STROKE-FIDELITY GATE (lead decision 00:3xZ, registered before any phone data): phone G/F runs are void when any stroke's contact time is more than ±10 % off plan (symmetric); Simulator runs are never scored, so exempt; a block that voids runs at +10-20 % keeps the rule; a change needs a new registration before the next block. Why: the phone's
+  measured overshoot (+4 to +8 %, ts-gesture) passes; loosening to +20 % on Simulator data alone would be post hoc.
+  WHOEVER RESUMES THE PHONE BLOCK (backlog (d)/(e), P-032/P-036) APPLIES THIS GATE.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
