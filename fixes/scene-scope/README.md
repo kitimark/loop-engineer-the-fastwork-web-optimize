@@ -27,7 +27,8 @@ lead's review (8690486, NEEDS-WORK) sent back.
 - The rotator-tick layout stays: the st5/st6 family is not byte-identical, and rotator-st6 is parked.
 
 **Stage:** F. PR-002 rev 2 accepted by the user (2026-10-02 08:07:38Z, no notes). D signed by the lead (NAMED, see
-"Cards"). Waiting for the phone ticket (T-011), then the fix-reviewer on the final diff.
+"Cards"). Phone ticket T-011 written (section "Phone ticket T-011", prediction P-061); waiting for its phone slot,
+then the fix-reviewer on the final diff.
 **Device class / gate:** phone-only (WebKit's nested style/layout rounds, F-099). Gate: phone Timeline attribution (counts).
 **Driver(s) behind the claims:**
 - Chrome counts and state probes (`out/scene-scope/*.mjs`). Most are not committed. The frame, onset and scoring
@@ -35,13 +36,14 @@ lead's review (8690486, NEEDS-WORK) sent back.
 - Simulator W driver (`srwin-sim.mjs`, Timeline depth 10) for the switch structure; ms there are attribution only.
   Copies for reproduction (P-053/P-055/P-056) in `fixes/scene-scope/tools/`: `srwin-sim.mjs` + `simtab.mjs` (from
   de-counts-sim's untracked `research/design-engineering/work-counts-webkit/`), `rsstat.mjs` (switch and scroll-phase
-  scoring, view-rooted counts), `pageframes3.mjs` (deterministic frozen frames), `pageframes4.mjs` (+ IO hold) + `ringstat.py` (frames re-check), `walkstat.py` (P-056b scoring), `rbi40ptcheck.sh` (the hold script: one mode per hold, server start, served-hash check, kill trap, host-awake log; each hold ran a frozen copy, `run-<mode>.sh`, never the file being edited) `onset.mjs` + `onsetcmp.mjs` (sweep phase and onset, P-056a), `anicensus.mjs` + `anistat.py` + `outstat.py` (animation census, P-056c), `pageframes5.mjs` + `motionstat.py` (motion frames, P-056c) and `clip.mjs` (Chrome screencast, illustration only).
+  scoring, view-rooted counts), `pageframes3.mjs` (deterministic frozen frames), `pageframes4.mjs` (+ IO hold) + `ringstat.py` (frames re-check), `walkstat.py` (P-056b scoring), `rbi40ptcheck.sh` (the hold script: one mode per hold, server start, served-hash check, kill trap, host-awake log; each hold ran a frozen copy, `run-<mode>.sh`, never the file being edited) `onset.mjs` + `onsetcmp.mjs` (sweep phase and onset, P-056a), `anicensus.mjs` + `anistat.py` + `outstat.py` (animation census, P-056c), `pageframes5.mjs` + `motionstat.py` (motion frames, P-056c) `clip.mjs` (Chrome screencast, illustration only) and `sweepstate.mjs` (T-011's functional part: row-title sweep state off
+  screen, in view, back at the top; WebKit over wip).
 - Phone: S (blocks 1-2) and M (block 3), with Timeline, run by iphone-runner.
 **Predictions (strict scoring, fixes/PREDICTIONS.md):** P-040 MISS, P-041 HIT, P-045 HIT, P-046 HIT, P-047 FAIL,
 P-048 FAIL, P-049 MISS, P-050 MISS, P-051 MISS, P-052 HIT, P-053 HIT, P-054 inCQ HIT / restyled MISS, P-055 (a) HIT,
 (b) inCQ HIT / restyled MISS, P-056 (b) inCQ HIT / restyled MISS, (c) frames HIT / play state HIT / phase MISS at 1440,
 P-056a (a) nested HIT / cE Layout HIT / outer RS count MISS, (b) HIT, (c1) frames MISS (strict), (c2) phase and onset
-HIT (S, H), P-056c (a) census FAIL as written / post-hoc pass, (b) motion frames FAIL as written (an A/A raster variant).
+HIT (S, H), P-056c (a) census FAIL as written / post-hoc pass, (b) motion frames FAIL as written (an A/A raster variant), P-061 (T-011, pre-data).
 **Topic:** see `fixes/TOPICS.md` (scene-scope); user priority 1 ("style recalc")
 **Base:** STACKED on B = `fixes/user-bplus/patch.diff` (rebuilt as overlay `bplus`: JS dbd5fdb4f1fb, CSS cc8d1340b449)
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` (the paused-scene rule, B 11804-11815, baseline
@@ -1094,6 +1096,97 @@ second, no ms verdicts; `out/scene-scope/simidle.mjs`, `simidle.sh`).
   2: switch nested 0/0/0 vs I4's 1/1/1) at the same pixel risk.
   - Its pixel A/B and idle triple have run since (above): byte-identical, and equal. RBi40 was then the landing
     candidate; the review (8690486) replaced it with RBi40p (top of this README).
+
+## Phone ticket T-011: RBi40pti (prepared, not run)
+
+**Runner:** `iphone-runner`. **Slot:** in the lead's phone order, after stack test, PR-001 A/B and G1b. Second read:
+mgmt-ops-6. Prediction **P-061** (`fixes/PREDICTIONS.md`), committed before any phone data of this ticket. Attribution
+only (Timeline on, structure and ms where the time goes); no timing or fps verdict. Run JSON stays in `out/`.
+
+**Question.** On the phone's WebKit (iOS 26.6.1), does RBi40pti remove the #platform switch's nested view Layout without
+moving an 18 ms view Layout to right after the style recalc (RS), and does its JS line hold the 4 row-title sweeps like
+today's build? This is the D card's gate ("T-011 phone W Timeline") and its open item "RBi40pti's JS line on WebKit:
+UNRESOLVED".
+
+**Builds** (immutable copies, `chmod a-w`; check with `shasum -a 256 $S/_app/immutable/*/*` before serving):
+
+| arm | what | snapshot (from the main checkout) | CSS `2.gBuqKVzi.css` | JS `2.DyWL8TcE.js` |
+|---|---|---|---|---|
+| C | RB, today's landed build (the one named control) | `.claude/worktrees/agent-a7696771bf38f1229/out/iphone-runner/snap/ss-RB` | 0d7dfc79e703 | dbd5fdb4f1fb |
+| V | RBi40pti | `.claude/worktrees/agent-a49a278f1d0bd6803/out/scene-scope/snap2/RBi40pti` | 10cf34974e67 | 7cea01ae081c |
+
+V is the build every Chrome and Simulator result above measured. `patch.diff`'s JS (cd272085834c) differs from it only by
+two comment lines. If a snapshot is gone: C = `fix.mjs combine` of user-bplus + scene-scope at RB (iphone-runner's
+`snap.mjs`), V = `variants/23.diff` applied on C; copy, `chmod -R a-w`, check the hashes again.
+
+**Serve** (the runner's checkout; one server per arm, started at the block start; the phone uses each server's plain-http
+twin, I-003):
+
+```sh
+node tools/serve.mjs --root site-pretty --overlay $SC --port 0 --https --vendors=local --latency 150 --no-cache --state out/t011/serve-C.json
+node tools/serve.mjs --root site-pretty --overlay $SV --port 0 --https --vendors=local --latency 150 --no-cache --state out/t011/serve-V.json
+curl -s http://localhost:<port>/_app/immutable/nodes/2.DyWL8TcE.js | shasum -a 256    # and the CSS, per arm, against the table
+```
+
+**Block** (protocol v2 §5, a Timeline block; `--owner iphone-runner --block T011`; about 20 min):
+
+1. Heat: the Timeline-OFF sentinels below decide (attribution block, LEAD.md); Low Power Mode off (record it).
+2. Park Safari, start both servers, check the served hashes.
+3. Uncounted warm-up, one per port, C first: open the arm's URL, wait 6 s.
+4. Opening sentinel: one uncounted C run with Timeline **off** (S driver, as in `sr2.sh` (`one.sh <label> <C port>
+   scroll`), or `iphone.mjs run --driver scroll --probe std --arm C --block T011`): bottom >= 58 fps and scroll >= 44 fps.
+5. Counted runs, **C V V C C V V C** (8), each the W Timeline run of `sr2.sh`: battery read, `iphone.mjs open <arm URL>`,
+   then `TLDEPTH=10 IDLE_MS=6000 PUSH=1 HOLD_END_MS=3000 R3_Y0=0 R3_Y1=0 node out/iphone-runner/srwin.mjs
+   out/t011/sr-<arm><n>.json <arm><n> 0` (the phone's srwin; F-047 Timeline sequence; 430x775).
+6. End sentinel as in step 4. A failing sentinel voids the runs since the last passing one (cool, redo).
+7. Functional part, after the end sentinel (no timing; Timeline off): one load per arm, C then V: `iphone.mjs open
+   <arm URL>`, wait 9 s, then `node fixes/scene-scope/tools/sweepstate.mjs out/t011/sweep-<arm>.json <arm>`
+   (polls the page every 2 s, about 8 s per load). Then park Safari, stop the servers, release the lease.
+
+**Score** (scene-scope's tools, run from this branch or a checkout that has them):
+
+```sh
+SW=2500-2760 node fixes/scene-scope/tools/rsstat.mjs out/t011/sr-*.json
+```
+
+`rsstat.mjs` finds the switch (the `setAttribute<cE` ScheduleStyleRecalculation in the y window SW, then the first
+outermost RS after it). It reports the RS ms, its nested Layouts (view-rooted = root covering 0,0 .. 430 x viewport
+height; the D card counts only these, P-040's lesson), and every outermost Layout starting within 40 ms after that RS.
+If it finds no switch in 2500-2760, rerun with SW=2300-3000 and report the y. `sweepstate.mjs` prints per title: the
+`data-sweep-paused` attribute, the computed play state and the animation playState off screen at the top, in view
+(onset ms, currentTime at +600 ms) and back at the top.
+
+**If X then Y** (P-061):
+- V has 0 view-rooted nested Layouts in the switch RS **and** no view-rooted Layout >= 2 ms within 40 ms after it, in
+  every counted V run, and C has 1 in every C run: the D card's mechanism holds on the phone and the 18 ms layout did
+  not move. Then the fix-reviewer gets the final diff, and then the land request.
+- V has a view-rooted Layout >= 10 ms right after the RS (RBi40p's Sim pattern): the layout moved instead of going away.
+  Stop: report to the lead. V does not land as the layout fix.
+- V has >= 1 view-rooted nested Layout in the switch RS: the cut does not reach the nesting on the phone. Stop: report to
+  the lead.
+- C does not show 1 nested view Layout in every run (0, or 2 as B had): the depth model's phone prediction for RB misses.
+  Report to the lead (the signed D line names B's 2 nested Layouts, not RB's). V's own result is still scored.
+- sweepstate: V's titles are not paused off screen, or not running within 150 ms in view, or not paused again at the top:
+  the JS line does not hold on WebKit. Stop: V does not land.
+- A run with no switch found, or served hashes that do not match: void, rerun (at most 2 blocks, §5.3).
+
+**Simulator pre-check of the functional probe** (2026-10-02 08:24-08:26Z, shared functional session, fw-sim iOS 26.5;
+C V V C, served hashes checked; `out/scene-scope/sweep-sim-*.json`). OBSERVED, Simulator; the phone decides:
+
+| load | off screen at the top (4 titles) | in view: onset ms (doc / earn / secure / organized) | back at the top |
+|---|---|---|---|
+| C 1 | attr set, paused, paused | 74 / 32 / 64 / 42 | paused |
+| V 2 | attr set, paused, paused | 71 / 33 / 57 / 38 | paused |
+| V 3 | attr set, paused, paused | 69 / 32 / 76 / 38 | paused |
+| C 4 | attr set, paused, paused | 73 / 32 / 59 / 41 | paused |
+
+- The probe works on WebKit.
+- After settling, both arms carry the attribute off screen. In C the first IO callback sets it; in V the line sets it
+  earlier. So the off-screen read cannot tell the arms apart once the page has settled.
+- The window where they differ is the one frame before PMsweepIO's first callback. The W Timeline run covers that
+  window: any extra title style work would show in it.
+- currentTime at +600 ms: C 1006-1073, then 749-801; V 702-797. The first C load is the high one. This is load timing,
+  information only.
 
 ## Morph start (R4 / V3)
 
