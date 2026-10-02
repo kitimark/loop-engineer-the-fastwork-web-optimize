@@ -419,7 +419,7 @@ After v23 and v24, P2 was above B at the reversal spot, with no overlap for Reca
 
 ### Phone ticket G1b (P2): prepared, not run
 
-Owner of the run: `iphone-runner`. Queue order (lead): the stack test, then the PR-001 blocks, then G1b. No measurement has been made with this ticket. Recordings and run JSON stay in `out/`.
+Owner of the run: `iphone-runner`. Queue order (lead, 2c36b62): PR-001 A/B, then G1b, after the review passes; user steps jump the queue. No measurement has been made with this ticket. Recordings and run JSON stay in `out/`.
 
 **Why.** G1 block 1 (iphone-runner, OBSERVED, G driver, n=1 valid B) found no placeholder FAIL. But P's longest fling frame sat on the `#people` un-skip in 4 runs (65-92 ms), and once on the hero un-skip (69 ms). B's frame at the same moment was ≤ 50 ms, and B's maximum was 51-57 ms. P2 moves that un-skip out of the scroll when it can: while `#people` is still paired, it is un-skipped after 300 ms with no scroll event. That is the region between the hero's far edge and `#people`'s own far edge, where B has it rendered.
 
@@ -454,7 +454,12 @@ node tools/iphone.mjs gesture fixes/fwreskip/tools/fling-band-v2.json --owner <r
 1. **rest** arm (pause in band);
 2. **no-pause** arm.
 
-10 min cooling between blocks.
+**Phone rules for this ticket** (current as of main 2c36b62; `research/management/ops-handover.md`):
+- **User steps first** (user T-017). A posted console step the user waits on takes the phone next, ahead of G1b, even mid-queue. G1b yields at a run boundary and never at all gates such a step on cooling or a quiet hold. The F fallback below is itself a user step: post it only when the phone is free for it, and while it runs ack every change with a plain one-line `--message` (what is happening, ETA).
+- **Quiet hold: preferred, not blocking.** Run each recorded block in the lead's Mac-quiet form when one is available: `lock.mjs wait chrome-measure --until idle --for 60`, then `lock.mjs run chrome-measure --owner <runner> --no-timing --max-seconds 600 -- <part>`, requeued between parts. G1's recordings dropped frames at load1 38-94, and 4 of 8 lost the calibration frame. If no quiet hold comes, run anyway and log load1 at each run's start and end. The void rules (calibration frame, recording gaps) decide whether a recording counts.
+- **Cooling** between the two blocks, and after a failing sentinel: `node tools/wait.mjs phone-temp --below auto` (at most 10 min), never a fixed wait.
+- **Waits:** set the board row first (`status.mjs set … --state waiting --waiting-on …`, user T-016).
+- **Order:** after PR-001 A/B, and only once review-fwreskip-3 passes the P2 diff.
 
 **Run validity.** As in G1: the magenta frame must be on the recording, the gesture must reach y ≥ 3250, and WDA must play the stroke. Also:
 - B's `#people` must be `active` at the `fling` mark;
