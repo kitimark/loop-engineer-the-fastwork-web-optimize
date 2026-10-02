@@ -136,7 +136,8 @@ blocks, sentinels, Timeline attribution, F tests, user sittings); Simulator timi
 While performance timing is deferred (no timing A/Bs, no phone gain/fps blocks), the phone runs attribution-only blocks
 (Timeline records: style, layout, paint, composite, roots, nested layouts; no fps verdict). These skip the fixed 10-min
 cooling between blocks: the Timeline-OFF heat sentinel at block start and end decides (bottom >= 58, scroll >= 44); a
-failing sentinel means cooling, then a redo of the voided runs. Timing and gain blocks keep the 10-min rule when they return.
+failing sentinel means cooling, then a redo of the voided runs. Cooling, where a block needs it, is by battery temperature
+(user T-009, protocol §5.3): `node tools/wait.mjs phone-temp --below auto` (at most 10 min), never a fixed `wait.mjs time`.
 
 **Slot tickets (phone access).** Only ticketed builds go on the phone. A ticket names: build + served hashes; the
 ONE named control on the same base and its hashes; the driver (S/W/M/G/F); the one question; the prediction id;

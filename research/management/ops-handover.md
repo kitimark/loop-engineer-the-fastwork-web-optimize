@@ -18,8 +18,8 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 4. Phone queue: scene-scope attribution block (nested Layout count at the platform flip) -> st5 split attribution
    (fix-scroll-engine: C, st5, st5-noanim, st5-waapi, V1). Tickets: attribution only, second read as before.
 6. Cooling (lead 19:56Z): attribution-only phone blocks skip the fixed 10-min cooling; the Timeline-OFF heat sentinel
-   (start + end) decides, a failing one = cooling + redo. Timing/gain blocks keep the 10-min rule when they return
-   (fixes/LEAD.md "Timing deferred", protocol v2 §5 note).
+   (start + end) decides, a failing one = cooling + redo. Cooling = `node tools/wait.mjs phone-temp --below auto` (<=10 min,
+   protocol §5.3, user T-009), never a fixed `wait.mjs time` (lead 08:2xZ, user T-016; fixes/LEAD.md "Timing deferred").
 7. USER (console T-001, 20:24Z): "slow frames on the phone are dominated by layout" tasks are HIGHEST priority. Board
    (lead): style-recalc #1, fwreskip #1, r4-v3 #2, hero-carousel #2 (slide-start whole-page layout), count-checks #3
    (Sim-vs-phone verdict gates moving the root hunt off the phone). Phone/Sim order: LAYOUT ROOT HUNT tickets
@@ -42,6 +42,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 - Messages to agents resume them if they ended; that is fine for GOs. Iphone requests: message `iphone-runner` directly
   for scripted checks (lead OK 07:25Z); finger tests only via the lead. The lead lands, resolves, reorders, spawns.
 - Every docs commit: rebase on main, `npm run test:unit`, commit, then a "LAND BATCH" message with the sha(s).
+- USER STEPS FIRST (user T-017, 08:29Z): a posted console step the user waits on (swipe pair, finger test) takes the
+  phone next, ahead of any measurement block; never gated on cooling or a Mac-quiet hold; its recordings are evidence
+  only (log the load). Post a step only when the phone is free for it. Every agent running a step acks each change with
+  a plain one-line `--message` (doing what, ETA) so the user can follow it on the step page (T-017 08:31Z).
+- WAITS (lead 08:2xZ, user T-016): every wait sets its board row first (`status.mjs set <id> --state waiting
+  --waiting-on …`). No fixed `wait.mjs time` without a reason on the board; phone cooling is `wait.mjs phone-temp`. I-058
+  (tool, open): waits will post their reason to the board themselves.
 - Quote goal progress as frames > 50 / > 34 ms (Chrome, within ONE hold) and iPhone numbers; > 34 ms varies ±2 across
   holds. Success is judged on the iPhone under a finger first (user decision 08:04Z).
 - **Standing lead policy (lead-retrospective-24h.md §5, c220e82; lead 19:1xZ):** (1) two-speed loop: inner =
@@ -327,6 +334,32 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   CSS 0d7dfc79e703; V JS 59b23b3f57fd / CSS 6e09b2c708fa), one control (RB), driver S, warm-up per port, C V V C C V V
   C, ~15 min, Timeline off. One fix asked: a non-Timeline S block also holds every counted C run to the sentinel
   (bottom >=58, scroll >=44; a failing C voids runs since the last passing control). S1 is now next on the phone.
+  08:0xZ b58fa25 LANDED. S1 RUNNING: iphone-runner holds the iphone lease since 07:59Z (S block ~15 min, then the
+  lead-approved blind swipe pair in a Mac-quiet window). PR-002 rev 2 checks DONE (fix-scene-scope; P-056c 71fe09a
+  pre-data): census no per-animation difference beyond A/A; motion frames 430 V 64/64 identical, 1440 only a known A/A
+  digit raster variant; summary with the lead, waiting for the OK to `proposal revise`; optional blind swipe A/B only
+  after the lead's OK. st6 and the will-change selector: owner fix-scroll-engine (lead).
+  08:1xZ PR-002 rev 2 ACCEPTED by the user 08:07:38Z (no notes, no swipe). SCENE-SCOPE D SIGNED (lead): NAMED for the
+  nesting mechanism, class phone-only, gate T-011; the ~18 ms view Layout is LOCATED (row-title entries), mechanism
+  UNEXPLAINED, a separate card. S1 BLOCK 1: primary (scroll gt34) BLOCK2, idle gt34 WIN, P-059 HIT; lead approved
+  block 2 (iphone-runner from 08:17Z), then wi-stack runs the swipe pair C-019. T-015 QuickTime stuck dialogs: lead
+  quit QuickTime 08:14Z, nothing lost; root cause assigned to iphone-runner.
+  08:2xZ T-016 (user): iphone-runner cooled with a fixed `wait.mjs time 9m`. Cause: CLAUDE.md "Phone blocks" still says
+  "10 min cooling between blocks" (also the wait list "cooling: `wait.mjs time 10m`" and the sentinel "cools 10 min");
+  protocol §5.3 replaced it with `wait.mjs phone-temp`. LEAD.md and this handover fixed; CLAUDE.md left to the lead
+  (agent messages can't authorize CLAUDE.md edits). Waits rule added above. I-058 OPEN (tool): waits post their reason
+  to the board; toolsmith after the current land. Lead fixed CLAUDE.md (feb5936: lines 379/540 + "set your board row
+  before any wait"). 42c14a0 LANDED: I-053 options, I-055, I-057 RESOLVED; console restarted 08:22Z with options live.
+  08:3xZ S1 FINAL (stack test): pooled primary (scroll gt34) NO-WIN, p 0.162, THRESHOLD-SENSITIVE (gt30 WIN); idle gt34
+  WIN (block 1); scroll gt50 block 2 +1.5, pooled +1 (P-059 edge HIT). Block 2 ran at Mac load1 up to 96 and its scroll
+  phase was ~250 ms longer in both arms (OBSERVED; iphone-runner checks load vs run from the files).
+  NEW RULE (lead 08:28Z): S/W/M phone blocks also run in the Mac-quiet window (exclusive --no-timing hold, load1 <= 8 at
+  run start), not only recordings; needs I-056(b), which ts-i056 does first.
+  USER RULE T-017 (08:29Z/08:31Z): C-019 highest priority, don't make the user wait; user steps first (working rules).
+  T-011 TICKET (fix-scene-scope 96300df, RBi40pti) second read; P-061 = fix-scene-scope (T-011); next free P-062.
+  PHONE ORDER (supersedes 07:4xZ; user steps first, T-017): (0) any posted user step: now C-019 swipe pair (wi-stack);
+  (1) PR-001 blocks A/B; (2) G1b; (3) T-011 (scene-scope RBi40pti, W Timeline, ~20 min); (4) T-009 curve; (5) I-042
+  check. Post a user step only when the phone is free for it.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
@@ -920,12 +953,13 @@ between tool calls.
   cost, three per-frame blur radii suspected) and the hero window (y≈50 frame, F-032 people-o reflow).
 - Closed today: N11 (mechanism only, vendor), N13 (rare, not reproducible), I-018, I-026-I-031, I-028/029.
 
-## Incidents (08:55Z; see `incident.mjs list`)
+## Incidents (10-02 08:3xZ; see `incident.mjs list`)
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-016 | parked | lead | e4 hooks via short lane (user), f orphans P3 |
-| – | all others resolved today (I-018, I-026 … I-031) | – | follow-ups are in the backlog line above |
+| I-056 | triaged | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (needed by the 08:28Z rule: S/W/M blocks in the Mac-quiet window), (c) gesture-run guard, (d) shared readers log to holds.log |
+| I-058 | open | toolsmith (lead spawning) | waits invisible on the board; fixed-time waits where a probe exists (user T-016) |
+| – | resolved 10-02: I-053 (proposal options, 42c14a0), I-054 (Range, 67847b4), I-055 + I-057 (flaky e2e, 42c14a0) | – | console restarted 08:22Z with options live |
 
 ## Peer directory (F-046; keep current, send to every agent that joins)
 
