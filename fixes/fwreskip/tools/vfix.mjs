@@ -19,6 +19,14 @@ const BOOT = readFileSync(new URL('./boot.js', import.meta.url), 'utf8');
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { runAsync } from '../../../tools/lib/wip.mjs';
+// FLOG=1 (MODE T): install flinglog.mjs (v3) after the load and print its summary per run (functional check of the logger).
+const FLOG = process.env.FLOG === '1' ? await import('./flinglog.mjs') : null;
+const flsum = (fl) => {
+  const pf = fl.flips.filter((x) => x[2] === 'p').map((x) => { const prev = fl.scroll.filter((t) => t <= x[0]); const g = prev.length ? x[0] - prev[prev.length - 1] : null; return `${x[3]}@${x[1]} t${x[0]} gap${g}`; });
+  const st = { h: [null, null], p: [null, null] }; const ev = [...fl.flips.map((x) => [x[0], x[2], 'a', x[3]]), ...fl.io.map((x) => [x[0], x[1], 'i', x[2]])].sort((a, b) => a[0] - b[0]);
+  const bad = []; for (const e of ev) { const s = st[e[1]]; if (e[2] === 'a') s[0] = e[3]; else s[1] = e[3]; if (s[0] === 'deferred' && s[1] === 1) bad.push(`${e[1]}@t${e[0]}`); }
+  return `scroll ${fl.scroll.length} | flash ${JSON.stringify(fl.flash)} | io ${fl.io.length}: ${fl.io.map((x) => `${x[1]}${x[2]}/${x[3]}@t${x[0]}`).join(' ')} | p flips: ${pf.join(', ')} | deferred-while-intersecting: ${bad.join(' ') || 'none'}`;
+};
 
 const [outdir, ...targets] = process.argv.slice(2);
 mkdirSync(outdir, { recursive: true });
@@ -64,6 +72,7 @@ if (MODE === 'T') {
   const tarms = process.env.TORDER ? process.env.TORDER.split(/\s+/).filter(Boolean).map((l) => ({ label: `${l}${(cnt[l] = (cnt[l] || 0) + 1)}`, url: arms.find((a) => a.label === l).url })) : arms;
   for (const arm of tarms) {
     await go(arm.url);
+    if (FLOG) await c.evaluate(FLOG.install);
     const recs = [];
     c.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
     for (const [m, p] of [['Page.disable', {}], ['Page.enable', {}], ['Timeline.enable', {}], ['Timeline.setInstruments', { instruments: ['Timeline'] }], ['Timeline.start', { maxCallStackDepth: 5 }]]) { try { await c.send(m, p); } catch (e) { console.error(m, String(e.message || e)); } }
@@ -79,6 +88,7 @@ if (MODE === 'T') {
       if (${+(process.env.TDOWN2 || 0)}) { m.down2 = [performance.now()]; for (let i = 0; i < 60 && scrollY < ${+(process.env.TDOWN2 || 0)}; i++) { window.scrollBy({ top: 250, behavior: 'smooth' }); await wait(300); } m.down2.push(performance.now()); await wait(1500); }
       stop = true;
       MO.disconnect(); return { syncT, m, fr, mo, geo: geo() };`);
+    if (FLOG) { const fl = JSON.parse(await c.evaluate(FLOG.read)); writeFileSync(join(outdir, `T-${arm.label}.fl.json`), JSON.stringify(fl)); log(`  flinglog v${fl.v}: ${flsum(fl)}`); }
     try { await c.send('Timeline.stop'); } catch (e) {}
     await sleep(6000);
     try { await c.send('Page.disable'); } catch (e) {}
@@ -251,6 +261,15 @@ if (MODE === 'N') {
     const a = (res.arms[arm.label] = {});
     for (const [name, gocode] of [['band', `await stepTo(3100);`], ['reversal', `await stepTo(2850);`]]) {
       a[name] = await ev(`${gocode} await wait(1500); ${CENSUS}`);
+      // layer census (functional Sim only; never in a timed run): all layers and the ones for #people's subtree
+      try {
+        await c.send('LayerTree.enable', {});
+        const doc = await c.send('DOM.getDocument', {});
+        const lay = async (nodeId) => { const r = await c.send('LayerTree.layersForNode', { nodeId }); const ls = r.layers || []; return { n: ls.length, kb: Math.round(ls.reduce((s, l) => s + (l.memory || 0), 0) / 1024) }; };
+        const pq = await c.send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: '#people' });
+        a[name].layers = { all: await lay(doc.root.nodeId), people: pq.nodeId ? await lay(pq.nodeId) : null };
+        await c.send('LayerTree.disable', {});
+      } catch (e) { a[name].layers = String(e.message || e).slice(0, 120); }
       log(`N ${arm.label} ${name} ${JSON.stringify(a[name])}`);
     }
     c.close(); c = null;

@@ -12,7 +12,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
  function rE() {
    tE ||= window.requestAnimationFrame(iE);
 +  fwPair?.fwWith && fwIdleArm();
- }
++}
 +// [scroll-engine /10g] P2: un-skipping the section re-skipped with the hero costs one long frame while the user
 +// scrolls (G1 phone, OBSERVED: 65-92 ms on a fling into it). While it is still paired (between the hero's far edge
 +// and its own far edge, where the baseline has it rendered), un-skip it once scrolling has been idle for 300 ms,
@@ -21,7 +21,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  fwIdleT = 0;
 +function fwIdleArm() {
 +  (fwIdleT && window.clearTimeout(fwIdleT), (fwIdleT = window.setTimeout(fwIdleUnskip, 300)));
-+}
+ }
 +function fwIdleUnskip() {
 +  fwIdleT = 0;
 +  let e = fwPair;
@@ -42,7 +42,14 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    for (let e of $T) e.active && e.callback();
  }
  // [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
-@@ -2739,7 +2764,9 @@
+@@ -2734,12 +2759,15 @@
+     window.removeEventListener(`scroll`, rE),
+     window.removeEventListener(`resize`, rE),
+     tE && window.cancelAnimationFrame(tE),
+-    (tE = 0));
++    (tE = 0),
++    fwIdleT && (window.clearTimeout(fwIdleT), (fwIdleT = 0)));
+ }
  function sE(e, t) {
    if (!(!e.deferRendering || !e.element)) {
      if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
@@ -53,7 +60,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        return;
      }
      e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
-@@ -2811,7 +2838,16 @@
+@@ -2811,7 +2839,16 @@
  function fwFM(e) {
    return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
  }
@@ -71,7 +78,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    !e.deferRendering ||
      !e.element ||
      e.active ||
-@@ -2820,6 +2856,35 @@
+@@ -2820,6 +2857,35 @@
      fwDef.delete(e),
      t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
      e.element.setAttribute(`data-start-selling-render`, `deferred`));
@@ -107,3 +114,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
  }
  function fwFar(e, t, n) {
    let r = fwFarG.get(n);
+@@ -2913,6 +2979,7 @@
+         fwFd?.(),
+         n.renderFrame && window.cancelAnimationFrame(n.renderFrame),
+         $T.delete(n),
++        fwPair === n && (fwPair = null),
+         n.manageAnimations && n.element && n.element.removeAttribute(`data-start-selling-scene`),
+         n.deferRendering &&
+           n.element &&

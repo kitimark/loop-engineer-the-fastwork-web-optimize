@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status (rev 3, P2):** the lead approved P2 after G1 block 1 (P's longest fling frame sat on the `#people` un-skip, 65-92 ms, vs B ≤ 50 at that point; no placeholder FAIL). P2 = rev 2.1 plus an idle un-skip of the paired `#people` after 300 ms with no scroll event (section "P2"). Its Chrome invariants, geometry, pixels (byte-identical), Sim T with and without a pause in the band, and Sim idle all pass. **Next:** review of the P2 diff, then phone ticket G1b (prediction P-060). Everything below about rev 2.1 still describes P2 except where the P2 section says otherwise. In particular, (ii) and (iv) are re-asked by G1b. The rev 2.1 status follows.
+**Status (rev 3, P2):** the lead approved P2 after G1 block 1 (P's longest fling frame sat on the `#people` un-skip, 65-92 ms, vs B ≤ 50 at that point; no placeholder FAIL). P2 = rev 2.1 plus an idle un-skip of the paired `#people` after 300 ms with no scroll event (section "P2"). Its Chrome invariants, geometry, pixels (byte-identical), and Sim T with and without a pause in the band pass. Sim idle is **UNRESOLVED** (P2 above its same-hold control in Composite at the reversal spot, 3 of 3 holds; review-fwreskip-3 #3). review-fwreskip-3: PASS-WITH-FIXES; the fixes are in (P2b = P2 plus teardown, JS `b4ff6ec56cc2`; ticket G1b rev 2 with the tightened decision rule, no recordings per user T-018, flinglog v3). **Next:** phone ticket G1b (prediction P-060) after PR-001; before landing, the B/A/P2 idle hold and census (section "P2"). Everything below about rev 2.1 still describes P2 except where the P2 section says otherwise. In particular, (ii) and (iv) are re-asked by G1b. The rev 2.1 status follows.
 
 **Status (rev 2.1):** variant (a), rev 2.1, review 2 recheck ACCEPT (README and data). The functional and pixel checks ran in both engines (below). **Landing waits on a phone G or F check (item iv): touch effects need G/F before landing (protocol), and the phone is unplugged.** Two items are open for the user, none waived: (i) and (ii). (iii) is closed by the lead's decision; (iv) is the landing gate:
 - **(i) Chrome first-jump frame.** P's first frame after the first jump of a load differs from B by 182-603 px, max channel delta 4, in rounded corners (row 5f).
@@ -130,7 +130,7 @@ Probes, committed under `fixes/fwreskip/tools/` (no Fastwork code):
 - `boot.js`: bootstrap counters;
 - `tlinit.mjs`: Layout initiators; `tsum.mjs`: per-run Layouts ≥ 3 ms with initiators on the down / up / down2 passes (rows 3d, 3d2, 3r);
 - `idlesum.py`: Sim idle median and range per arm per spot (row 8);
-- `fling-band-v1.json` / `fling-band-v2.json` (WDA gesture scripts) and `flinglog.mjs` (`--inject` logger, v2 holds the flash >= 3 rAFs / 50 ms): phone tickets G1 and G1b;
+- `fling-band-v1.json` / `fling-band-v2.json` (WDA gesture scripts) and `flinglog.mjs` (`--inject` logger; v2 holds the flash >= 3 rAFs / 50 ms; v3 adds scroll-event stamps and IntersectionObserver entries, no layout reads): phone tickets G1 and G1b. `vfix.mjs` `FLOG=1` installs it in Sim T runs (functional check);
 - `vscore.py` / `vcross.py`: stamp-aligned frame compare;
 - `pxcmp.py`, `vidan.py`, `calan.py`;
 - `cdbg.mjs`, `cure.mjs`, `simtab.mjs`;
@@ -315,7 +315,7 @@ In the band (hero far edge to `#people`'s own far edge), B always has `#people` 
 
 ### Phone ticket G1 (item iv): block 1 run by iphone-runner (summary under G1b "Why")
 
-Owner of the run: `iphone-runner`, when the iPhone is on USB. No measurement has been made with this ticket. Recordings and run JSON stay in `out/` (Fastwork content; Hard rule 3).
+Owner of the run: `iphone-runner`, when the iPhone is on USB. No measurement has been made with this ticket. Recordings and run JSON stay in `out/` (Fastwork content; Hard rule 3). Since user rule T-018 (2026-10-02) no G1 run is made with a recording; G1b replaces the rest of G1.
 
 **Question.** During a finger fling up from the band, does P ever show `#people` (the profile-card deck) as a placeholder on screen, in a frame where B shows the deck? Driver G (WDA gesture), with F as the fallback. Prediction: **P-057** (`fixes/PREDICTIONS.md`): no FAIL in block 1 (~65 %) or block 2 (~80 %).
 
@@ -387,7 +387,8 @@ Expected time: about 15 min per block. Record the heat note and the battery temp
 **Change** (c6d13ca, JS `9fe824464da2`, CSS unchanged `0d7dfc79e703`). The down pass is unchanged: the pair re-skip at the hero's far edge stays, and so does the gain. New: while `#people` is paired (`fwWith` set, which only holds between the hero's far edge and `#people`'s own far edge), every scroll event re-arms a 300 ms `setTimeout`. When it fires, `#people` is un-skipped (`sE(e, true)`, which also clears `fwWith`). In that region B has `#people` rendered, so after a 300 ms pause P2's state there equals B's. Without a pause, P2 behaves as P. Past `#people`'s own far edge nothing changes. No `requestIdleCallback`: Safari support is unverified, and the lead OK'd a plain timer.
 - `rE` 2668-2671: re-arm while paired;
 - `fwPair` / `fwIdleArm` / `fwIdleUnskip` 2672-2685;
-- `fwReskip` 2887: remember the pair and arm the timer once.
+- `fwReskip` 2887: remember the pair and arm the timer once;
+- teardown (P2b, JS `b4ff6ec56cc2`, review-fwreskip-3 #5): `oE` 2755 also clears a pending timer (`fwIdleT && (clearTimeout(fwIdleT), fwIdleT = 0)`), and `dE`'s destructor drops the pair (`fwPair === n && (fwPair = null)`). Without them, a timer pending at a SvelteKit navigation would set `data-start-selling-render=active` again on an element the destructor had stripped. Neither line runs during a page session.
 
 The timer is armed only by scroll and resize events while a pair exists, so a page at rest runs no new code.
 
@@ -399,7 +400,7 @@ The timer is armed only by scroll and resize events while a pair exists, so a pa
 | P2-2 | Sim T **no pause** (THOLD 0: up-pass starts on the last down step; v21, n=3 per arm) | hero-end on the first descent 2, 3, - | as P: `#people` un-skips on the up-pass at 2952-2957 (cE, merged into the fwWC wc=0 Layout or its own 21.6 ms one). Up-pass totals 3, 4, 3 (one no-initiator Layout in Q2 at 2988), B 5, 3, 4. Second-descent holds again show the idle un-skip (26.7 / 21.7 / 27.9 ms) | **as predicted** (P-060 Sim no-pause: hit). Without a pause P2 = P |
 | P2-3 | Chrome invariants (c13; scenarios up, fling, J3, J4w, J1n, reload from XB 3771) | FAIL 0 except J4w (FAIL 1, positive control); sync 0 | identical counts. `#people` is `a` at XB, because the 1.5 s park un-skips it. J3 started with the hero rendered in P2 (an instant jump to the end lost the far re-skip, F-119), so heroPH 0 vs 1 | **pass** |
 | P2-4 | geometry + held screenshots: Chrome c14 (2990 / 3047 / 3300 / 3539 / 3800 / deck), Sim v22 (2990 / 3047 / deck, magenta-calibrated box) | | geometry identical at every stop (Chrome `#people` 1327.88 / top 933, Sim 1326.73 / 855.98, doc 6277 / 6035). Pixels: Chrome **6/6 IDENTICAL**, Sim **3/3 IDENTICAL**. Deck swipe 0→1, 1 active shell, scrollLeft 392 / 390 | **pass** (byte-identical) |
-| P2-5 | Sim idle, 10 s windows (v23 B Q, v24 Q B, v25 A Q; IWIN 2) | see below | see below | **pass** (no P2-specific cost; see below) |
+| P2-5 | Sim idle, 10 s windows (v23 B Q, v24 Q B, v25 A Q; IWIN 2) | see below | see below | **UNRESOLVED** (review-fwreskip-3 #3; was "pass"): P2 is above its same-hold control at the reversal spot in 3 of 3 holds for Composite; cause unknown (OBSERVED). B, A and P2 in one hold: v27 |
 | P2-6 | `npm run test:unit` | | | **pass** (555/555) |
 
 **P2-5, idle.** Median [min-max] per second (`tools/idlesum.py vres-v23.log vres-v24.log vres-v25.log`). At y0 and at the pin, all arms agree to within 0.6/s. At the band and reversal spots `#people` is `a` in every arm, P2 included (its 1.5 s park un-skipped it):
@@ -413,68 +414,123 @@ The timer is armed only by scroll and resize events while a pair exists, so a pa
 | reversal 2850 | Layout | 15.2 [13.3-16.3] | 19.6 [16.0-20.7] | 20.2 [20.1-20.4] |
 | reversal 2850 | Composite | 28.4 [27.2-29.8] | 37.1 [30.4-41.3] | 34.7 [33.4-36.0] |
 
-After v23 and v24, P2 was above B at the reversal spot, with no overlap for RecalculateStyles and Composite. Then A (the same build as B) came out where P2 is, and where B, P and A were in v14-v19 (RecalculateStyles 29.9 / 31.6 / 31.6, Layout 20.2 / 20.8 / 20.5). B's windows today are the low ones; same-build B vs A differs as much as P2 vs B. Cause unknown (OBSERVED). So no P2-specific idle cost is visible at n=6/4/2. The timer runs no code at rest, which is consistent with that.
+**Per hold** (review-fwreskip-3 #3), median [min-max] per second, n=2 windows per arm per hold; control = the other arm of the same hold:
 
-**What the Sim cannot say.** On the phone, the idle un-skip frame may cost more than the Sim's ~28 ms Layout (G1: 65-92 ms when the un-skip ran during a fling). At rest it can stall whatever animates on screen for one frame. That is P-060's hitch reading, decided in G1b.
+| hold (order) | spot | type | control | P2 | P2 above control, no overlap? |
+|---|---|---|---|---|---|
+| v23 (B Q) | band 3100 | RecalculateStyles | B 33.8 [33.1-34.5] | 38.2 [38.1-38.2] | yes |
+| v23 | band 3100 | Composite | B 41.8 [40.4-43.3] | 46.8 [45.2-48.3] | yes |
+| v23 | reversal 2850 | RecalculateStyles | B 24.5 [23.7-25.4] | 31.9 [31.6-32.3] | yes |
+| v23 | reversal 2850 | Layout | B 15.4 [14.4-16.3] | 20.7 [20.7-20.7] | yes |
+| v23 | reversal 2850 | Composite | B 27.6 [27.2-28.0] | 38.0 [36.9-39.0] | yes |
+| v24 (Q B) | band 3100 | RecalculateStyles | B 33.6 [32.3-35.0] | 33.2 [32.5-34.0] | no |
+| v24 | band 3100 | Composite | B 41.1 [39.0-43.3] | 41.5 [40.2-42.8] | no |
+| v24 | reversal 2850 | RecalculateStyles | B 26.4 [25.8-26.9] | 28.0 [27.7-28.3] | yes |
+| v24 | reversal 2850 | Layout | B 14.6 [13.3-15.9] | 16.5 [16.0-17.0] | yes |
+| v24 | reversal 2850 | Composite | B 29.4 [28.9-29.8] | 30.8 [30.4-31.2] | yes |
+| v25 (A Q) | band 3100 | RecalculateStyles | A 39.5 [39.3-39.8] | 39.6 [39.1-40.1] | no |
+| v25 | band 3100 | Composite | A 46.2 [45.2-47.3] | 48.8 [48.3-49.2] | yes |
+| v25 | reversal 2850 | RecalculateStyles | A 32.5 [31.6-33.4] | 33.1 [32.0-34.3] | no (overlap) |
+| v25 | reversal 2850 | Layout | A 20.2 [20.1-20.4] | 19.6 [18.7-20.5] | no |
+| v25 | reversal 2850 | Composite | A 34.7 [33.4-36.0] | 39.3 [37.3-41.3] | yes |
+
+**Reading: UNRESOLVED** (OBSERVED, cause unknown). Rev 3 said "no P2-specific idle cost"; review-fwreskip-3 showed that this overclaims, and it is withdrawn:
+- Composite/s at the reversal spot is above the same-hold control in **3 of 3** holds with no range overlap (+10.4, +1.4, +4.6/s). RecalculateStyles there is above in 2 of 3, band Composite in 2 of 3.
+- Rev 3's argument was "A (the same build as B) came out where P2 is". That holds for RecalculateStyles and Layout in v25, but not for Composite. And B and A never ran in the same hold, so B-vs-A mixes hold drift with build.
+- The DOM state per window (hero `d`, `#people` `a`) and the mutation rates are identical between arms, so the difference is not in what the page writes. One hypothesis (reviewer): animations that P2's later `#people` un-skip restarted are still running at the reversal spot.
+- Why v25 used A instead of B: after v23 and v24 had put P2 above B, v25 asked whether B's low numbers were the build or the hold, so it ran the same build as B (an A/A control) against P2. It answered for RecalculateStyles and Layout, not for Composite.
+- Next, before landing (not before G1b; review #3): one hold with **B, A and P2 together** (v27, `MODE=I IORDER="B Q A" IWIN=1`) and a census at the band and reversal spots per arm (v26 `MODE=N`: running animations per section, `data-fw-wc=1` count, `#people` style and content-visibility). Results: "P2b rechecks" below.
+
+The timer itself runs no code at rest. That does not settle the question, because the un-skip it caused earlier may leave different state behind.
+
+**What the Sim cannot say.** On the phone, the idle un-skip frame may cost more than the Sim's ~28 ms Layout (G1: 65-92 ms when the un-skip ran during a fling). It mostly fires in a pause between descent strokes (G1b "Question"), and it can stall whatever animates on screen for one frame. That is P-060's hitch reading, decided in G1b.
+
+**P2b rechecks** (teardown lines, review-fwreskip-3 #5; holds v26 + c15, v27): pending.
 
 ### Phone ticket G1b (P2): prepared, not run
 
-Owner of the run: `iphone-runner`. Queue order (lead, 2c36b62): PR-001 A/B, then G1b, after the review passes; user steps jump the queue. No measurement has been made with this ticket. Recordings and run JSON stay in `out/`.
+Owner of the run: `iphone-runner`. Queue order (lead, 2c36b62): PR-001 A/B, then G1b; review-fwreskip-3 passed the P2 diff with fixes, and the ticket fixes it asked for before G1b are in this section (rev 2 of the ticket, pre-data). User steps jump the queue. No measurement has been made with this ticket. Run JSON stays in `out/`. **No recordings** (user rule T-018, 2026-10-02): no QuickTime movie recording, no iOS Screen Recording, no camera. Everything G1b reads comes from the page itself: the gesture's frame log and `flinglog.mjs` v3.
 
 **Why.** G1 block 1 (iphone-runner, OBSERVED, G driver, n=1 valid B) found no placeholder FAIL. But P's longest fling frame sat on the `#people` un-skip in 4 runs (65-92 ms), and once on the hero un-skip (69 ms). B's frame at the same moment was ≤ 50 ms, and B's maximum was 51-57 ms. P2 moves that un-skip out of the scroll when it can: while `#people` is still paired, it is un-skipped after 300 ms with no scroll event. That is the region between the hero's far edge and `#people`'s own far edge, where B has it rendered.
 
 **Question.** For a fling up from the band, two things:
 - Does P2 remove P's long frame at the `#people` crossing when the user paused in the band (restMs 2000)?
-- What does the idle un-skip frame cost while the page is at rest, compared with B at the same rest?
+- What does the idle un-skip frame cost, compared with B at the same moment? In the rest arm it will mostly fire **between descent strokes**, not in the 2 s rest (review-fwreskip-3 #2): pairing happens at ~2988, the strokes run on to 3250, and each 150 px still stroke ends with a 150 ms hold plus pauseMs 300, about 450 ms with no scroll event. So the page is not at rest when the un-skip runs: it is the "pause, then scroll again at once" case. P-060's "with the page at rest" wording is read that way (clarified here before data; the P-060 row itself is unchanged).
 
-With no pause (restMs 0), P2 is expected to behave like P. Prediction: **P-060** (`fixes/PREDICTIONS.md`).
+With no pause (restMs 0), P2 is expected to behave like P. Prediction: **P-060** (`fixes/PREDICTIONS.md`), with the decision rule below (tightened before data, review-fwreskip-3 #1).
 
-**Builds.** Immutable snapshot copies, read-only, in this worktree's `out/fwreskip/snap-g1b/`:
+**Scope: RB only** (review-fwreskip-3 #7). G1b measures P2 on RB, not on stack5. In stack5, st6's five persistent `will-change` avatar layers (`.start-selling-avatars.is-carousel`, inside `#people`, JS 11257) come back with every `#people` un-skip, so P2's idle frame on stack5 may cost more than G1b shows. If stack5 lands first, re-run P2-1 (Sim T, pause in band: idle un-skip Layout ms plus a layer count) on top of it before fwreskip lands.
+
+**Builds.** Immutable snapshot copies, read-only, in this worktree's `out/fwreskip/snap-g1b2/`:
 
 | arm | role | files (sha256, first 12) |
 |---|---|---|
 | B = RB | control C | `nodes/2.DyWL8TcE.js` `dbd5fdb4f1fb`, `assets/2.gBuqKVzi.css` `0d7dfc79e703` |
-| P2 = fwreskip + idle un-skip on RB | variant V | `nodes/2.DyWL8TcE.js` `9fe824464da2`, `assets/2.gBuqKVzi.css` `0d7dfc79e703` |
+| P2b = fwreskip + idle un-skip on RB, with teardown | variant V | `nodes/2.DyWL8TcE.js` `b4ff6ec56cc2`, `assets/2.gBuqKVzi.css` `0d7dfc79e703` |
 
-Rebuild: `fix.mjs apply fwreskip --on rb` from this branch's `patch.diff` (c6d13ca or later). Serve as in G1, with `$S/P2` in place of `$S/P`.
+P2b is P2 (`9fe824464da2`, the old `snap-g1b/P2`, do not use) plus the two teardown lines from review-fwreskip-3 #5 (section "P2"). Neither line runs during a page session: the destructor runs only when the scene component is destroyed, and `oE` acts only when the last scene is gone. P-060 applies to P2b unchanged. Rebuild: `fix.mjs apply fwreskip --on rb` from this branch's `patch.diff`. Serve as in G1, with `$S/B` and `$S/P2b` from `snap-g1b2`.
 
 **Gesture** (`fixes/fwreskip/tools/fling-band-v2.json`). It is v1 plus two params: `pauseMs` (the pauses between descent strokes) and `settle`. Dry-run hashes 2026-10-02:
 - **rest** arm (defaults: restMs 2000, pauseMs 300, settle yes, fast fling): `e30bd43a60eb`;
 - **no-pause** arm (`--param restMs=0 --param pauseMs=0 --param settle=no`): `6b3617f860f8`.
 
-Each still stroke ends with a 150 ms hold, so even with pauseMs 0 the gap between strokes is about 190 ms plus the WDA step overhead. flinglog decides which runs really had no 300 ms pause.
+Each still stroke ends with a 150 ms hold, so even with pauseMs 0 the gap between strokes is about 190 ms plus the WDA step overhead. flinglog's scroll-event stamps decide which runs really had no 300 ms gap.
 
 ```sh
 node tools/iphone.mjs gesture fixes/fwreskip/tools/fling-band-v2.json --owner <runner> --label G1b-<arm><n> --inject fixes/fwreskip/tools/flinglog.mjs [--param restMs=0 --param pauseMs=0 --param settle=no]
 ```
 
-`flinglog.mjs` v2: same flip log. The calibration flash is now held for ≥ 3 rAFs and ≥ 50 ms (a one-vsync flash was missed by the ~58 fps capture in G1).
+**`flinglog.mjs` v3** (in-page only, no layout reads, the same in both arms):
+- `flips`: the MutationObserver log of the hero's and `#people`'s render attribute, as in v1/v2: [t, scrollY, h|p, value];
+- `scroll` (new, review-fwreskip-3 #4): the `timeStamp` of every scroll event, from a passive listener that reads nothing. A P2 idle un-skip must come ≥ 300 ms after the last scroll event before it; an `active` flip less than 300 ms after one is an `iE`/`cE` un-skip, not the timer. Whether WebKit on iOS keeps sending scroll events through a momentum fling is UNRESOLVED (no reference checked); these stamps show it for our runs;
+- `io` (new, for T-018): an IntersectionObserver (viewport, no margin) on the hero track and `#people`: [entry time, h|p, intersecting 0/1, render attribute at the callback];
+- `flash`: the magenta flash 3 s after install, held ≥ 3 rAFs and ≥ 50 ms, as in v2. With no recording it is only an in-page run marker: `flash` = [t0, tEnd, rAFs] must be present.
+Sim functional check of v3: hold v26 (section "P2").
 
-**Blocks.** Two blocks, one per gesture arm, each with a warm-up per port, sentinels as in G1, and **C V V C C V V C** = B P2 P2 B B P2 P2 B (8 runs, 4 per arm), recordings and the frame log for every run:
+**Blocks.** Two blocks, one per gesture arm, each with a warm-up per port, sentinels as in G1, and **C V V C C V V C** = B P2b P2b B B P2b P2b B (8 runs, 4 per arm), with the frame log and flinglog for every run:
 1. **rest** arm (pause in band);
 2. **no-pause** arm.
 
-**Phone rules for this ticket** (current as of main 2c36b62; `research/management/ops-handover.md`):
-- **User steps first** (user T-017). A posted console step the user waits on takes the phone next, ahead of G1b, even mid-queue. G1b yields at a run boundary and never at all gates such a step on cooling or a quiet hold. The F fallback below is itself a user step: post it only when the phone is free for it, and while it runs ack every change with a plain one-line `--message` (what is happening, ETA).
-- **Quiet hold: preferred, not blocking.** Run each recorded block in the lead's Mac-quiet form when one is available: `lock.mjs wait chrome-measure --until idle --for 60`, then `lock.mjs run chrome-measure --owner <runner> --no-timing --max-seconds 600 -- <part>`, requeued between parts. G1's recordings dropped frames at load1 38-94, and 4 of 8 lost the calibration frame. If no quiet hold comes, run anyway and log load1 at each run's start and end. The void rules (calibration frame, recording gaps) decide whether a recording counts.
+**Phone rules for this ticket** (current as of main 2c36b62 and T-018; `research/management/ops-handover.md`):
+- **No recordings, no camera** (user T-018). Nothing in this ticket needs one.
+- **User steps first** (user T-017). A posted console step the user waits on takes the phone next, ahead of G1b, even mid-queue. G1b yields at a run boundary and never gates such a step on cooling or a quiet hold. The F fallback (G1's, run with flinglog v3 and the frame log and no recording; reading 3 decides, the user's eye is a note) is itself a user step: post it only when the phone is free for it, and while it runs ack every change with a plain one-line `--message` (what is happening, ETA).
+- **Quiet hold: preferred, not blocking.** Run each block in the lead's Mac-quiet form when one is available: `lock.mjs wait chrome-measure --until idle --for 60`, then `lock.mjs run chrome-measure --owner <runner> --no-timing --max-seconds 600 -- <part>`, requeued between parts. The phone renders by itself, but WDA's step timing (the pauses that decide pause/no-pause) runs on the Mac. If no quiet hold comes, run anyway and log load1 at each run's start and end.
 - **Cooling** between the two blocks, and after a failing sentinel: `node tools/wait.mjs phone-temp --below auto` (at most 10 min), never a fixed wait.
 - **Waits:** set the board row first (`status.mjs set … --state waiting --waiting-on …`, user T-016).
-- **Order:** after PR-001 A/B, and only once review-fwreskip-3 passes the P2 diff.
+- **Order:** after PR-001 A/B.
 
-**Run validity.** As in G1: the magenta frame must be on the recording, the gesture must reach y ≥ 3250, and WDA must play the stroke. Also:
+**Run validity.** The gesture must reach y ≥ 3250, WDA must play the stroke, and flinglog's `flash` must be present (the page's rAF loop ran). Also:
+- **Void in either arm** when the `fling` mark's y is past the phone's crossing of `#people`'s own far edge (the pair is released there, so P2's paired state cannot exist; review-fwreskip-3 #6). Such a run is void, not a falsifier.
 - B's `#people` must be `active` at the `fling` mark;
-- in the rest arm, P2's `#people` must be `active` by the `fling` mark (flinglog: an `active` flip after the pair re-skip, before the mark). A run where it is not counts as a falsifier of P-060 (b), not as void;
-- in the no-pause arm, a P2 run whose `#people` was already `active` at the mark had a 300 ms pause anyway. Report it, and judge it with the rest arm.
+- in the rest arm, P2b's `#people` must be `active` by the `fling` mark (flinglog: an `active` flip after the pair re-skip, before the mark). A valid run where it is not counts as a falsifier of P-060 (b), not as void;
+- in the no-pause arm, a P2b run whose `#people` was already `active` at the mark had a ≥ 300 ms gap anyway (check `scroll`). Report it, and judge it with the rest arm.
+
+**Thresholds** (phone, CLAUDE.md "Frame thresholds"): every frame count is given at > 50 ms and > 34 ms, with the ±4 ms twins (> 46 / > 54 for > 50; > 30 / > 38 for > 34). Frames in the near bands (30, 38] and (46, 54] ms are flagged. A verdict is **threshold-sensitive** when it changes under either twin. A **long frame** is a frame > B's block max + 17 ms, where B's block max is the longest frame from `fling` to `end` over the block's valid B runs (P-060 falsifier a); its twins are B max + 13 and + 21 ms.
 
 **Readings, per run.**
-1. The longest frame from `fling` to `end`, and the frame at `#people`'s crossing (the flinglog flip in P; the same scrollY in B).
-2. Rest arm only: the frame that holds P2's idle un-skip (flinglog flip time). Compare it with B's frames at the same offset before the `fling` mark. Also report the recording at that frame: does any on-screen animation (countdown, carousel) stall?
-3. FAIL frames by the G1 rule.
+1. The longest frame from `fling` to `end`, and the frame at `#people`'s crossing (the flinglog flip in P2b; the same crossing in B, by threshold, not raw y).
+2. Rest arm, the idle un-skip: the frame that holds P2b's `active` flip (flinglog time), and
+   - where it fell: in a **descent pause** (scroll events resume before the `fling` mark) or in the **rest** (the next scroll event is the fling);
+   - its gap since the last scroll event (≥ 300 ms expected) and its offset to the next stroke start (the first scroll event after the flip);
+   - B's frame at the **same stroke-relative offset**: the same stroke (counted from the `descend` mark by scroll-event gaps) and the same offset to the next stroke start.
+   With no recording, a stall of an on-screen animation is seen only as this frame's dt. A compositor-driven animation that keeps running while the main thread stalls is not visible to G1b (not read).
+3. FAIL, main-thread half: from `flips` and `io`, any span in which the hero or `#people` intersects the viewport while its render attribute is `deferred` (in a P2b run, with no such span in any B run of the block). The UI-process half (the compositor scrolling ahead of the main thread into skipped content, open item iv) cannot be seen without a recording.
 
-**Decision** (P-060 falsifiers):
-- If the rest arm shows no long frame at the crossing and the idle un-skip frame is ≤ 50 ms in at least 2 of 4 runs, P2 replaces P as the landing candidate. The no-pause arm only records the case P2 does not cover.
-- If the idle un-skip frame is > 50 ms in 3 or 4 of 4 runs, the cost has only moved from the fling to the rest. That trade goes to the user with the numbers.
-- Any FAIL means back to design, as in G1.
+**Decision** (P-060 falsifiers; tightened before data):
+- **P2b replaces P** as the landing candidate only if both hold:
+  - no valid rest-arm P2b run has a long frame at the `#people` crossing, and
+  - the number of P2b idle un-skip frames > 50 ms (over the 4 rest-arm runs) is ≤ the number of B frames > 50 ms at the matching moment (reading 2, over the 4 B runs).
+- If the second condition fails (P2b has more > 50 ms frames at the un-skip than B at the same moment), the cost has moved from the fling to the pause. That trade goes to the user with the numbers.
+- Either verdict carries the threshold-sensitive label when a twin changes it.
+- Any main-thread FAIL (reading 3) means back to design, as in G1.
+- The no-pause arm only records the case P2b does not cover.
+- This replaces the rev 1 rule ("idle un-skip frame ≤ 50 ms in at least 2 of 4 runs"), which accepted two new > 50 ms frames although the goal is dt > 50 target 0.
+
+**What T-018 costs this ticket** (no recordings, decided before data):
+- The decision rows above (long frame at the crossing, the idle un-skip frame vs B, the twins) come from the frame log and flinglog. They are unchanged.
+- The FAIL rule is weaker: G1b sees only its main-thread half (reading 3). The question behind open item (iv), whether the UI process shows a skipped `#people` ahead of the main thread during a fast fling, is no longer checked by G1b. For it, fwreskip rests on G1 block 1 (recorded before T-018: no FAIL, n=1 valid B, OBSERVED) and on the user's eye in an F run (a note, not a verdict).
+- The rev 1 "does an on-screen animation stall" reading is dropped; only the frame's dt remains.
+- The calibration-frame void rule is gone with the recording. The `flash` record replaces it as a run check.
 
 ## Risks, conflicts, follow-ups
 
