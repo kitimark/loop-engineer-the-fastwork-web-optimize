@@ -41,13 +41,17 @@ async function renderPage(steps) {
     querySelectorAll: () => [],
     activeElement: null,
   };
-  const fetch = async () => ({ ok: true, json: async () => ({ now: new Date().toISOString(), steps }) });
+  const calls = [];
+  const fetch = async (url, init) => { calls.push({ url, init }); return { ok: true, json: async () => ({ now: new Date().toISOString(), steps }) }; };
   const noop = () => 0;
   new Function('window', 'document', 'location', 'fetch', 'setInterval', 'setTimeout', 'clearTimeout', JS)(
     {}, document, { hash: '' }, fetch, noop, noop, noop);
-  for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  await settle();
+  ids.open.calls = calls;
   return ids.open;
 }
+const settle = async () => { for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r)); };
+const tap = (root, label) => { const b = root.all().find((n) => n.tagName === 'button' && n.textContent === label); assert.ok(b, `a "${label}" button`); for (const f of b.listeners.click || []) f({ target: b }); };
 const buttons = (root) => root.all().filter((n) => n.tagName === 'button').map((b) => b.textContent);
 
 test('the fake DOM renders the page: an action at its Start, then Done after Start (unchanged behaviour)', async () => {
@@ -57,7 +61,7 @@ test('the fake DOM renders the page: an action at its Start, then Done after Sta
   assert.deepEqual(buttons(open), ['Start', 'Skip / not now']);
   await C.start(s.id, { part: 1 });
   open = await renderPage([C.publicView(C.get(s.id))]);
-  assert.deepEqual(buttons(open), ['Done', 'Skip / not now'], 'a user-ended part keeps its Done');
+  assert.deepEqual(buttons(open), ['Done', 'Start over', 'Skip / not now'], 'a user-ended part keeps its Done; a started step can be started over');
   assert.doesNotMatch(open.textContent, /ends by itself/);
 });
 
@@ -65,12 +69,12 @@ test('I-059: a runner-ended part has no Done button: "Running, please wait; this
   const s = await C.post({ by: 'iphone-runner', kind: 'action', title: 'Visual check', parts: [{ label: 'Open the page' }, { label: 'Versions 1-4 play', ends: 'runner' }] });
   await C.start(s.id, { part: 1 }); await C.done(s.id, { part: 1 });
   let open = await renderPage([C.publicView(C.get(s.id))]);
-  assert.deepEqual(buttons(open), ['Start versions 1-4 play', 'Skip / not now'], 'Start is still the user\'s');
+  assert.deepEqual(buttons(open), ['Start versions 1-4 play', 'Start over', 'Skip / not now'], 'Start is still the user\'s');
   assert.match(open.textContent, /After Start, don’t tap anything: this part ends by itself, and the console will say when\./);
   await C.start(s.id, { part: 2 });
   await C.ack(s.id, { by: 'iphone-runner', part: 2, message: 'version 2 of 4 playing' });
   open = await renderPage([C.publicView(C.get(s.id))]);
-  assert.deepEqual(buttons(open), ['Skip / not now'], 'no Done while the runner runs it');
+  assert.deepEqual(buttons(open), ['Start over', 'Skip / not now'], 'no Done while the runner runs it');
   assert.match(open.textContent, /Running, please wait; this ends by itself\./);
   assert.match(open.textContent, /version 2 of 4 playing/);
   assert.match(open.textContent, /Don’t tap anything; the console will say when\./);
@@ -81,5 +85,30 @@ test('I-059: a runner-ended part has no Done button: "Running, please wait; this
   await C.ack(r.id, { by: 'iphone-runner', part: 1, state: 'recording' });
   open = await renderPage([C.publicView(C.get(r.id))]);
   assert.match(open.textContent, /Recording… swipe now/);
-  assert.deepEqual(buttons(open), ['Skip / not now']);
+  assert.deepEqual(buttons(open), ['Start over', 'Skip / not now']);
+});
+
+test('I-059 "Start over": two taps (Keep going backs out), then POST restart; the new try shows on the part', async () => {
+  const s = await C.post({ by: 'iphone-runner', kind: 'action', title: 'Visual check', parts: [{ label: 'Open' }, { label: 'Play', ends: 'runner' }] });
+  const pendingPage = await renderPage([C.publicView(C.get(s.id))]);
+  assert.deepEqual(buttons(pendingPage), ['Start open', 'Skip / not now'], 'nothing to start over before the first Start');
+  await C.start(s.id, { part: 1 });
+  const open = await renderPage([C.publicView(C.get(s.id))]);
+  tap(open, 'Start over');
+  assert.match(open.textContent, /Start the whole step over\? Every part runs again from the first one; iphone-runner resets the phone first\./);
+  assert.deepEqual(buttons(open), ['Done', 'Yes, start over', 'Keep going', 'Skip / not now']);
+  tap(open, 'Keep going');
+  assert.deepEqual(buttons(open), ['Done', 'Start over', 'Skip / not now'], 'backed out: nothing sent');
+  assert.equal(open.calls.filter((c) => c.init?.method === 'POST').length, 0);
+  tap(open, 'Start over'); tap(open, 'Yes, start over');
+  await settle();
+  const posts = open.calls.filter((c) => c.init?.method === 'POST');
+  assert.deepEqual(posts.map((c) => c.url), [`/api/steps/${s.id}/restart`]);
+  assert.equal(posts[0].init.headers['x-console'], '1');
+  // what the page shows after the restart: part 1 again, try 2
+  await C.restart(s.id);
+  const again = await renderPage([C.publicView(C.get(s.id))]);
+  assert.match(again.textContent, /Open · try 2/);
+  assert.match(again.textContent, /You started over \(try 2\)\./);
+  assert.deepEqual(buttons(again), ['Start open', 'Start over', 'Skip / not now']);
 });

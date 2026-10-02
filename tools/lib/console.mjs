@@ -18,6 +18,16 @@
 //   A runner-ended part (I-059; `ends: "runner"` in --parts, or --runner-ends N[,M]) is ended by the agent only
 //   (`ack --part N --state done`): the page shows no Done button but "Running, please wait; this ends by itself",
 //   and a Done from the page is refused (403), so the user can't finish a part while the phone still plays.
+//
+// Attempts (I-059 B, user T-019: start the whole step over is enough for now): every part has an `attempt` (1 when
+// absent, as in step files from before) and `attempts[]`, its earlier tries {n, at, ended: redo|restart, by, endedAt};
+// the step has an `epoch` (0 when absent) that goes up by one on every reset. One core, resetFrom(), serves the
+// runner's `redo --part N` (parts N.. again) and the user's "Start over" on the page (`restart`: every part again; the
+// step stays active at part 1, not back in the queue). A reset gives each part that was reached a new attempt number,
+// so a runner labels its files with the attempt it got in the MET JSON. A wait that is still waiting when the epoch
+// changes ends with REDO (exit 5; `wait --until redo` waits for exactly that), and `ack --attempt N` refuses a stale
+// ack from an earlier try. Later, if the user finds friction (deferred on T-019): a per-part "redo this part" for the
+// user, and an undo window for an accidental Done.
 //   After the last part: the answer (buttons, yes/no or free text, with optional notes). A step with no
 //   parts (a question) goes from Start straight to the answer; one with parts and no answer options
 //   (an action) is answered "done" by the last part's Done.
@@ -33,7 +43,9 @@ export const OPEN = new Set(['pending', 'active']);
 /** Part states in order; a wait for state S on a part is met once the part reached S or a later one. */
 export const PART_STATES = ['waiting', 'loading', 'ready', 'started', 'recording', 'done'];
 export const ACK_STATES = ['loading', 'ready', 'recording', 'done'];
-export const WAIT_UNTIL = ['started', 'recording', 'done', 'answered'];
+export const WAIT_UNTIL = ['started', 'recording', 'done', 'answered', 'redo'];
+/** `console.mjs wait` exit code when the step was reset (redo / start over) while it waited (I-059). */
+export const EXIT_REDO = 5;
 /** Who ends a part: the user (Done, the default) or the runner (`ack --state done` only; I-059). */
 export const ENDS = ['user', 'runner'];
 const GUARD = 'console-store';
@@ -260,7 +272,7 @@ export async function start(id, { part, who = 'user' } = {}) {
       p.message = undefined;
     } else if (s.status === 'active') throw new Error(`${s.id} is already started`);
     if (s.status === 'pending') { s.status = 'active'; s.startedAt = now; }
-    return { part: s.cur < s.parts.length ? s.cur + 1 : undefined };
+    return s.cur < s.parts.length ? { part: s.cur + 1, attempt: attemptOf(s.parts[s.cur]) } : { part: undefined };
   });
 }
 
@@ -278,7 +290,7 @@ export async function done(id, { part, notes, who = 'user' } = {}) {
       throw e;
     }
     finishPart(s, i, iso(), notes);
-    return { part: i + 1 };
+    return { part: i + 1, attempt: attemptOf(p) };
   });
 }
 
@@ -287,16 +299,19 @@ export async function done(id, { part, notes, who = 'user' } = {}) {
  * (after Start), done (stop at its own cap). `message`: a short line shown on the part ("the phone tab is
  * slow, wait"); a message alone (no state) is allowed.
  */
-export async function ack(id, { state, part, message, by } = {}) {
+export async function ack(id, { state, part, message, by, attempt } = {}) {
   if (!by) throw new Error('--by <your agent name> is required');
   if (state !== undefined && !ACK_STATES.includes(state)) throw new Error(`--state must be one of ${ACK_STATES.join(', ')} (got ${state})`);
   if (state === undefined && message === undefined) throw new Error('give --state and/or --message');
+  const want = attempt === undefined || attempt === null || attempt === '' ? undefined : Number(attempt);
+  if (want !== undefined && !(Number.isInteger(want) && want >= 1)) throw new Error(`--attempt must be a whole number >= 1 (got ${attempt})`);
   return change(id, by, 'ack', (s) => {
     needOpen(s);
     if (s.cur >= s.parts.length) throw new Error(`${s.id} has no part left to ack (it is at the answer)`);
     const i = partIndex(s, part);
     if (i !== s.cur) throw new Error(`${s.id}: part ${i + 1} is not the current part (${s.cur + 1}); wait for part ${s.cur} done first`);
     const p = s.parts[i];
+    if (want !== undefined && want !== attemptOf(p)) throw new Error(`${s.id} part ${i + 1} is at attempt ${attemptOf(p)}: your ack for attempt ${want} is stale (${lastReset(s)}); wait for the new attempt's Start`);
     const now = iso();
     if (state === 'loading' || state === 'ready') {
       if (rank(p.state) >= rank('started')) throw new Error(`${s.id} part ${i + 1} is already ${p.state}: ${state} only before the user's Start`);
@@ -312,7 +327,7 @@ export async function ack(id, { state, part, message, by } = {}) {
     }
     if (message !== undefined) p.message = text(message, 300);
     else if (state) p.message = undefined;
-    return { part: i + 1, state, note: text(message, 300) };
+    return { part: i + 1, attempt: attemptOf(p), state, note: text(message, 300) };
   });
 }
 
@@ -365,9 +380,42 @@ export async function reopen(id, { who = 'user', agent = false } = {}) {
   });
 }
 
+export const attemptOf = (p) => p.attempt || 1;
+const epochOf = (s) => s.epoch || 0;
+/** The last reset in plain words, for refusals: "user started over at …" / "iphone-runner redid part 2 at …". */
+function lastReset(s) {
+  const h = [...s.history].reverse().find((x) => x.action === 'redo' || x.action === 'restart');
+  if (!h) return 'the step was reset';
+  return h.action === 'restart' ? `${h.who} started over at ${h.at}` : `${h.who} redid part ${h.part} at ${h.at}`;
+}
+
+/**
+ * The one reset core (I-059): parts i.. go back to waiting, the step to part i (active, no answer). Each part that was
+ * reached keeps its try in `attempts[]` and gets the next attempt number; the step's epoch goes up by one, which ends
+ * every wait still waiting (REDO). `how`: 'redo' (the runner, parts N..) | 'restart' (the user: every part).
+ */
+function resetFrom(s, i, { how, who, message }) {
+  const now = iso();
+  for (let j = i; j < s.parts.length; j++) {
+    const p = s.parts[j];
+    if (j < s.cur || rank(p.state) > rank('waiting')) {
+      (p.attempts ||= []).push({ n: attemptOf(p), at: p.at, ended: how, by: who, endedAt: now });
+      p.attempt = attemptOf(p) + 1;
+    }
+    p.state = 'waiting'; p.at = {}; p.message = undefined;
+  }
+  s.parts[i].message = text(message, 300);
+  s.cur = i;
+  s.status = 'active';
+  s.result = undefined;
+  s.epoch = epochOf(s) + 1;
+  return { part: i + 1, epoch: s.epoch, attempts: s.parts.map(attemptOf), note: text(message, 300) };
+}
+
 /**
  * The agent asks for part N again (e.g. the recording missed the swipe): parts N.. go back to waiting and
- * the step to part N (`message` is shown on it: why). The answer, if any, is cleared.
+ * the step to part N (`message` is shown on it: why). The answer, if any, is cleared. Each part reached gets a
+ * new attempt; waits still waiting end with REDO.
  */
 export async function redo(id, { part, by, message } = {}) {
   if (!by) throw new Error('--by <your agent name> is required');
@@ -376,12 +424,22 @@ export async function redo(id, { part, by, message } = {}) {
     if (!s.parts.length) throw new Error(`${s.id} has no parts (reopen it instead)`);
     const i = part === undefined ? Math.min(s.cur, s.parts.length - 1) : partIndex(s, part);
     if (i > s.cur) throw new Error(`${s.id} is at part ${s.cur + 1}: part ${i + 1} was not reached`);
-    for (let j = i; j < s.parts.length; j++) { s.parts[j].state = 'waiting'; s.parts[j].at = {}; s.parts[j].message = undefined; }
-    s.parts[i].message = text(message, 300);
-    s.cur = i;
-    s.status = 'active';
-    s.result = undefined;
-    return { part: i + 1, note: text(message, 300) };
+    return resetFrom(s, i, { how: 'redo', who: by, message });
+  });
+}
+
+/**
+ * The user's "Start over" (the page, two taps): every part again from part 1, a new attempt for each part reached;
+ * the step stays active (not back in the queue) and every wait still waiting ends with REDO, so the runner resets
+ * the phone first. Only a started step with parts (its answer not yet given).
+ */
+export async function restart(id, { who = 'user', notes } = {}) {
+  return change(id, who, 'restart', (s) => {
+    if (s.status !== 'active') throw new Error(`${s.id} is ${s.status}: only a started step can be started over`);
+    if (!s.parts.length) throw new Error(`${s.id} has no parts to start over`);
+    const r = resetFrom(s, 0, { how: 'restart', who });
+    s.parts[0].message = `You started over (try ${attemptOf(s.parts[0])}).`;
+    return { ...r, note: text(notes, 300) };
   });
 }
 
@@ -408,16 +466,35 @@ export function waitCondition(id, { until = 'answered', part } = {}) {
   const sid = parseId(id);
   const s0 = get(sid);
   let idx = null; // 0-based part, or null = the step itself
-  if (until !== 'answered' && s0.parts.length) {
+  if (until !== 'answered' && until !== 'redo' && s0.parts.length) {
     if (part !== undefined) idx = partIndex(s0, part);
     else if (until === 'started') idx = Math.min(s0.cur, s0.parts.length - 1);
     else { let last = -1; s0.parts.forEach((p, i) => { if (rank(p.state) >= rank('started')) last = i; }); idx = last >= 0 ? last : Math.min(s0.cur, s0.parts.length - 1); }
-  } else if (until !== 'answered' && until !== 'started') throw new Error(`${sid} has no parts: wait --until started or answered`);
+  } else if (until !== 'answered' && until !== 'started' && until !== 'redo') throw new Error(`${sid} has no parts: wait --until started, answered or redo`);
   const what = `console ${sid}${idx !== null ? ` part ${idx + 1}` : ''} ${until}`;
-  const check = () => {
+  const e0 = epochOf(s0);
+  const w = { what, check: null, redo: null };
+  /** The REDO detail: the last reset (who, what, from which part), every part's attempt now, the epoch. */
+  const redoDetail = (s) => {
+    const h = [...s.history].reverse().find((x) => x.action === 'redo' || x.action === 'restart') || {};
+    return { id: sid, action: h.action, by: h.who, at: h.at, part: h.part ?? 1, attempts: s.parts.map(attemptOf), epoch: epochOf(s), ...(h.note && { note: h.note }) };
+  };
+  w.check = () => {
     const s = get(sid);
     const st = s.status;
     let met, detail;
+    if (until === 'redo') {
+      if (epochOf(s) !== e0) return { met: true, state: `${st}, epoch ${epochOf(s)}`, detail: JSON.stringify(redoDetail(s)) };
+      if (st === 'skipped') return { met: false, state: st, never: 'the user skipped it (not now)' };
+      if (st === 'cancelled') return { met: false, state: st, never: 'it was cancelled' };
+      if (st === 'answered') return { met: false, state: st, never: 'it was answered (nothing left to redo)' };
+      return { met: false, state: `${st}, epoch ${e0}` };
+    }
+    if (epochOf(s) !== e0) {
+      // reset (start over / redo) while waiting: the runner must reset the phone, whatever the parts show now
+      w.redo = redoDetail(s);
+      return { met: false, state: `${st}, reset (epoch ${epochOf(s)})`, never: `REDO ${JSON.stringify(w.redo)}` };
+    }
     if (until === 'answered') {
       met = st === 'answered';
       detail = met ? { id: sid, by: s.by, title: s.title, value: s.result?.value, notes: s.result?.notes ?? null, ...(s.result?.scale !== undefined && { scale: s.result.scale }), at: s.result?.at, ...(s.meta && { meta: s.meta }) } : undefined;
@@ -427,7 +504,7 @@ export function waitCondition(id, { until = 'answered', part } = {}) {
     } else {
       const p = s.parts[idx];
       met = rank(p.state) >= rank(until);
-      detail = met ? { id: sid, part: idx + 1, state: p.state, at: p.at[until] ?? p.at.done ?? null } : undefined;
+      detail = met ? { id: sid, part: idx + 1, state: p.state, at: p.at[until] ?? p.at.done ?? null, attempt: attemptOf(p), epoch: epochOf(s) } : undefined;
     }
     const state = idx === null ? st : `${st}, part ${idx + 1} ${s.parts[idx].state}`;
     if (met) return { met: true, state, detail: JSON.stringify(detail) };
@@ -436,7 +513,7 @@ export function waitCondition(id, { until = 'answered', part } = {}) {
     if (st === 'answered') return { met: false, state, never: `it was answered before part ${idx + 1} reached ${until}` };
     return { met: false, state };
   };
-  return { what, check };
+  return w;
 }
 
 // ---- page view --------------------------------------------------------------------------------------
@@ -447,9 +524,9 @@ export function publicView(s) {
   return {
     id: s.id, by: s.by, kind: s.kind, title: s.title, instructions: s.instructions,
     url: show ? s.url : undefined,
-    status: s.status, phase: phase(s), cur: s.cur, rev: s.rev,
+    status: s.status, phase: phase(s), cur: s.cur, rev: s.rev, epoch: epochOf(s),
     answer: s.answer,
-    parts: s.parts.map((p) => ({ label: p.label, url: show ? p.url : undefined, instructions: p.instructions, record: p.record, gate: p.gate, ends: p.ends, state: p.state, at: p.at, message: p.message })),
+    parts: s.parts.map((p) => ({ label: p.label, url: show ? p.url : undefined, instructions: p.instructions, record: p.record, gate: p.gate, ends: p.ends, attempt: attemptOf(p), state: p.state, at: p.at, message: p.message })),
     result: s.result, createdAt: s.createdAt, queuedAt: s.queuedAt, startedAt: s.startedAt, updatedAt: s.updatedAt,
   };
 }

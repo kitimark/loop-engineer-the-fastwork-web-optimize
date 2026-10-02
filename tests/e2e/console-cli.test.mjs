@@ -91,7 +91,7 @@ test('swipe pair: wait --until started exits MET on Start, recording after ack, 
   assert.equal(st.json.step.parts[0].state, 'started');
   const r1 = await w1;
   assert.equal(r1.code, 0, r1.out);
-  assert.match(r1.stdout, new RegExp(`^MET console ${id} part 1 started: \\{"id":"${id}","part":1,"state":"started","at":"[^"]+"\\} \\(after \\d+ s\\)\\n$`));
+  assert.match(r1.stdout, new RegExp(`^MET console ${id} part 1 started: \\{"id":"${id}","part":1,"state":"started","at":"[^"]+","attempt":1,"epoch":0\\} \\(after \\d+ s\\)\\n$`));
   assert.ok(Date.now() - t0 < 5000, 'the runner hears Start within seconds');
   assert.equal(cli('ack', id, '--by', 'iphone-runner', '--part', '1', '--state', 'recording').code, 0);
   assert.equal((await req('/api/steps')).json.steps.find((s) => s.id === id).parts[0].state, 'recording', 'the page shows "recording… swipe now"');
@@ -183,6 +183,56 @@ test('I-059 --runner-ends: the page\'s Done is refused (403, plain message) on a
   assert.deepEqual([v.status, v.result.value], ['answered', 'done'], 'the last part, ended by the runner, finishes the action');
   // the page serves the runner-ended text
   assert.match((await req('/')).text, /Running, please wait; this ends by itself\./);
+});
+
+test('I-059 B Start over: the page\'s restart wakes the runner\'s waits (exit 5 REDO, --until redo MET), a stale ack --attempt exits 1', async () => {
+  const parts = JSON.stringify([{ label: 'Open the page' }, { label: 'Versions play', ends: 'runner' }]);
+  const id = postedId(cli('post', '--by', 'iphone-runner', '--kind', 'action', '--title', 'Visual check', '--parts', parts));
+  assert.equal((await click(id, 'restart')).status, 409, 'nothing to start over before the first Start');
+  assert.equal((await click(id, 'start', { part: 1 })).status, 200);
+  assert.equal((await click(id, 'done', { part: 1 })).status, 200);
+  const ws = cli('wait', id, '--until', 'started', '--part', '2', '--timeout', '1', '--json', '--quiet');
+  assert.equal(ws.code, 3, 'not started yet');
+  assert.equal((await click(id, 'start', { part: 2 })).status, 200);
+  const wd = cliAsync('wait', id, '--until', 'done', '--part', '2', '--timeout', '30', '--quiet');
+  const wr = cliAsync('wait', id, '--until', 'redo', '--timeout', '30', '--json', '--quiet');
+  await sleep(600);
+  const rs = await click(id, 'restart', { notes: 'I tapped the wrong thing' });
+  assert.equal(rs.status, 200, rs.text);
+  assert.deepEqual([rs.json.step.cur, rs.json.step.epoch, rs.json.step.parts.map((p) => p.attempt)], [0, 1, [2, 2]]);
+  const d = await wd;
+  assert.equal(d.code, 5, d.out);
+  const m = d.stdout.match(new RegExp(`^REDO console ${id} part 2 done: (\\{.*\\}) \\(after \\d+ s\\)$`, 'm'));
+  assert.ok(m, d.stdout);
+  assert.deepEqual((({ action, by, part, attempts, epoch, note }) => ({ action, by, part, attempts, epoch, note }))(JSON.parse(m[1])),
+    { action: 'restart', by: 'user', part: 1, attempts: [2, 2], epoch: 1, note: 'I tapped the wrong thing' });
+  const r = await wr;
+  assert.equal(r.code, 0, r.out);
+  assert.equal(JSON.parse(r.stdout).action, 'restart', '--until redo: MET with the JSON alone');
+  // the old cycle's late ack is refused; the new attempt's acks work
+  assert.equal((await click(id, 'start', { part: 1 })).status, 200);
+  assert.equal((await click(id, 'done', { part: 1 })).status, 200);
+  assert.equal((await click(id, 'start', { part: 2 })).status, 200);
+  const stale = cli('ack', id, '--by', 'iphone-runner', '--part', '2', '--attempt', '1', '--state', 'done');
+  assert.equal(stale.code, 1);
+  assert.match(stale.stderr, /is at attempt 2: your ack for attempt 1 is stale \(user started over at /);
+  const wd2 = cli('wait', id, '--until', 'started', '--part', '2', '--timeout', '5', '--json', '--quiet');
+  assert.equal(wd2.code, 0, wd2.out);
+  assert.equal(JSON.parse(wd2.stdout).attempt, 2, 'the MET JSON names the attempt (for file labels)');
+  assert.equal(cli('ack', id, '--by', 'iphone-runner', '--part', '2', '--attempt', '2', '--state', 'done').code, 0);
+  const sh = cli('show', id);
+  assert.match(sh.stdout, /part 2 Versions play: done runner-ends attempt 2/);
+  assert.match(sh.stdout, /user restart part 1 \(epoch 1\): I tapped the wrong thing/);
+  assert.equal(JSON.parse(cli('show', id, '--json').stdout).status, 'answered');
+  // the runner's own redo through the same core also ends a wait with REDO
+  const id2 = postedId(cli('post', '--by', 'iphone-runner', '--kind', 'action', '--title', 'Finger scroll', '--record'));
+  assert.equal((await click(id2, 'start', { part: 1 })).status, 200);
+  const w2 = cliAsync('wait', id2, '--until', 'recording', '--part', '1', '--timeout', '30', '--json', '--quiet');
+  await sleep(600);
+  assert.equal(cli('redo', id2, '--by', 'iphone-runner', '--part', '1', '--message', 'phone tab crashed').code, 0);
+  const r2 = await w2;
+  assert.equal(r2.code, 5, r2.out);
+  assert.deepEqual((({ action, by, attempts }) => ({ action, by, attempts }))(JSON.parse(r2.stdout)), { action: 'redo', by: 'iphone-runner', attempts: [2] });
 });
 
 test('stopping the server removes server.json; url then reports no server (exit 3)', async () => {

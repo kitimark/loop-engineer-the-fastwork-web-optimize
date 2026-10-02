@@ -32,11 +32,18 @@
 //        # until you ack recording, then "recording… swipe now". --meta: private to agents (e.g. the blind key and
 //        # the A/B order), never shown on the page, returned by wait --until answered. Forced choice: --options 1,2.
 //        # A session that runs on the phone page itself: --kind action --hide-url --options "done,stopped early".
-//   node tools/console.mjs wait <id> [--until started|recording|done|answered] [--part N] [--timeout 3600] [--json] [--quiet]
-//        # exit 0 MET (prints MET … : <json>; --json: the JSON alone), 3 TIMEOUT, 4 NEVER (skipped/cancelled), 1 usage.
-//        # in a sequence pass --part N (1-based). answered prints {value, notes, meta}.
-//   node tools/console.mjs ack <id> --by <agent> [--state loading|ready|recording|done] [--part N] [--message "<short line>"]
-//   node tools/console.mjs redo <id> --by <agent> [--part N] [--message "why"]   # ask part N again (e.g. the swipe was missed)
+//   node tools/console.mjs wait <id> [--until started|recording|done|answered|redo] [--part N] [--timeout 3600] [--json] [--quiet]
+//        # exit 0 MET (prints MET … : <json>; --json: the JSON alone), 3 TIMEOUT, 4 NEVER (skipped/cancelled), 1 usage,
+//        # 5 REDO (I-059): the step was reset while you waited (the user's "Start over" on the page, or a `redo`):
+//        # prints REDO … : {action: restart|redo, by, part, attempts: [per part], epoch}; reset the phone and wait for the
+//        # new Start. --until redo: MET on the next reset (run it in the background during a long runner-ended part).
+//        # in a sequence pass --part N (1-based). answered prints {value, notes, meta}; part waits add {attempt, epoch}:
+//        # label your files with the attempt (e.g. iphone.mjs record --label C-21-p2-a2).
+//   node tools/console.mjs ack <id> --by <agent> [--state loading|ready|recording|done] [--part N] [--message "<short line>"] [--attempt N]
+//        # --attempt N: refused (exit 1, "stale") when the part is at another attempt: a late ack from an earlier try
+//   node tools/console.mjs redo <id> --by <agent> [--part N] [--message "why"]   # ask part N again (e.g. the swipe was missed);
+//        # parts N.. get a new attempt; the user's "Start over" on the page is the same reset from part 1
+//        # Later, if friction (T-019, deferred): a per-part "redo this part" for the user; an undo window for a Done.
 //   node tools/console.mjs reopen <id> --by <agent>      # queue a skipped (or any) step again, from the start
 //   node tools/console.mjs cancel <id> --by <agent> [--note "..."]   # withdraw it (no longer needed)
 //
@@ -85,7 +92,7 @@
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { post, list, get, ack, redo, reopen, cancel, answer, waitCondition, line, parseId, consoleDir } from './lib/console.mjs';
+import { post, list, get, ack, redo, reopen, cancel, answer, waitCondition, line, parseId, consoleDir, attemptOf, EXIT_REDO } from './lib/console.mjs';
 import { runningServer, startServer } from './lib/console-server.mjs';
 import { DEFAULT_REMIND_MIN } from './lib/console-notify.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './lib/wait.mjs';
@@ -96,7 +103,7 @@ import * as TH from './lib/console-threads.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
-const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -114,11 +121,11 @@ function show(s) {
   const L = [line(s)];
   if (s.instructions) L.push(`  instructions: ${s.instructions}`);
   if (s.url) L.push(`  url: ${s.url}${s.showUrl === false ? ' (hidden on the page)' : ''}`);
-  s.parts.forEach((p, i) => L.push(`  part ${i + 1} ${p.label}: ${p.state}${p.gate ? ' gated' : ''}${p.record ? ' recorded' : ''}${p.ends === 'runner' ? ' runner-ends' : ''}${p.url ? ` ${p.url}` : ''}${p.message ? ` — "${p.message}"` : ''}`));
+  s.parts.forEach((p, i) => L.push(`  part ${i + 1} ${p.label}: ${p.state}${p.gate ? ' gated' : ''}${p.record ? ' recorded' : ''}${p.ends === 'runner' ? ' runner-ends' : ''}${attemptOf(p) > 1 ? ` attempt ${attemptOf(p)}` : ''}${p.url ? ` ${p.url}` : ''}${p.message ? ` — "${p.message}"` : ''}`));
   L.push(`  answer: ${s.answer.mode === 'buttons' ? s.answer.options.join(' / ') : s.answer.mode}${s.result ? ` -> ${JSON.stringify(s.result)}` : ''}`);
   if (s.meta) L.push(`  meta: ${JSON.stringify(s.meta)}`);
   L.push('  history:');
-  for (const h of s.history) L.push(`    ${h.at} ${h.who} ${h.action}${h.part ? ` part ${h.part}` : ''}${h.state ? ` ${h.state}` : ''}${h.note ? `: ${h.note}` : ''}${h.value !== undefined ? ` ${JSON.stringify(h.value)}` : ''}`);
+  for (const h of s.history) L.push(`    ${h.at} ${h.who} ${h.action}${h.part ? ` part ${h.part}` : ''}${h.attempt > 1 ? ` attempt ${h.attempt}` : ''}${h.state ? ` ${h.state}` : ''}${h.epoch ? ` (epoch ${h.epoch})` : ''}${h.note ? `: ${h.note}` : ''}${h.value !== undefined ? ` ${JSON.stringify(h.value)}` : ''}`);
   return L.join('\n');
 }
 
@@ -296,7 +303,7 @@ async function main() {
   if (!arg) throw new Error(`usage: node tools/console.mjs ${cmd} <id> … (see the header of tools/console.mjs)`);
   const id = parseId(arg);
   if (cmd === 'show') { const s = get(id); console.log(flag('json') ? JSON.stringify(s, null, 1) : show(s)); return 0; }
-  if (cmd === 'ack') { const s = await ack(id, { by: by(), state: opt('state'), part: opt('part'), message: opt('message') }); console.log(`ACKED ${line(s)}`); return 0; }
+  if (cmd === 'ack') { const s = await ack(id, { by: by(), state: opt('state'), part: opt('part'), message: opt('message'), attempt: opt('attempt') }); console.log(`ACKED ${line(s)}`); return 0; }
   if (cmd === 'redo') { const s = await redo(id, { by: by(), part: opt('part'), message: opt('message') }); console.log(`REDO ${line(s)}`); return 0; }
   if (cmd === 'reopen') { if (!by()) throw new Error('--by <your agent name> is required'); const s = await reopen(id, { who: by(), agent: true }); console.log(`REOPENED ${line(s)}`); return 0; }
   if (cmd === 'cancel') { const s = await cancel(id, { by: by(), note: opt('note') }); console.log(`CANCELLED ${line(s)}`); return 0; }
@@ -316,6 +323,10 @@ async function main() {
     startWait({ tool: 'console.mjs wait', owner: opt('as') ?? by() ?? poster, what: w.what, timeoutSec });
     const r = await pollUntil(w.check, { timeoutSec, onChange, minMs: 200, maxMs: 500, factor: 1.2 });
     if (r.result === 'met') { console.log(flag('json') ? r.detail : `MET ${w.what}: ${r.detail} (after ${r.waitedSec} s)`); return EXIT.met; }
+    if (r.result === 'never' && w.redo) { // I-059: reset (start over / redo) while waiting: reset the phone, then wait again
+      console.log(flag('json') ? JSON.stringify(w.redo) : `REDO ${w.what}: ${JSON.stringify(w.redo)} (after ${r.waitedSec} s)`);
+      return EXIT_REDO;
+    }
     if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
     console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`);
     return EXIT.timeout;

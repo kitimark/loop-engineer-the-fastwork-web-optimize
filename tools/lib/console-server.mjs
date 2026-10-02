@@ -2,7 +2,7 @@
 // small JSON API over the store in ./console.mjs. Localhost only (127.0.0.1), never port 5173.
 //   GET  /                       the page
 //   GET  /api/steps              {now, steps: [public views]} (open steps oldest first, then the last finished ones)
-//   POST /api/steps/<id>/<act>   act = start | done | answer | skip | reopen; JSON body {part, value, notes}
+//   POST /api/steps/<id>/<act>   act = start | done | answer | skip | reopen | restart; JSON body {part, value, notes}
 //                                (done on a runner-ended part: 403 with a plain message, I-059; other refusals 409)
 //   GET  /api/health             {ok, pid}
 //   GET  /progress               the fix-progress page (tools/lib/progress-page.html; read-only)
@@ -39,7 +39,7 @@
 // which this server never answers) and every request a localhost Host header (no DNS rebinding).
 import http from 'node:http';
 import { mkdirSync, unlinkSync, readFileSync } from 'node:fs';
-import { list, publicView, start, done, answer, skip, reopen, consoleDir, serverFile, OPEN } from './console.mjs';
+import { list, publicView, start, done, answer, skip, reopen, restart, consoleDir, serverFile, OPEN } from './console.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
 import { currentView } from './progress.mjs';
 import { currentStatusView } from './status.mjs';
@@ -91,6 +91,7 @@ const ACTIONS = {
   answer: (id, b) => answer(id, { value: b.value, notes: b.notes, scale: b.scale }),
   skip: (id, b) => skip(id, { notes: b.notes }),
   reopen: (id) => reopen(id, { who: 'user' }),
+  restart: (id, b) => restart(id, { notes: b.notes }), // the page's "Start over" (I-059): every part again, waits end with REDO
 };
 
 /** Steps for the page: open ones in queue order, then the most recently finished (answered/skipped). */

@@ -542,6 +542,9 @@ iPhone protocol on top of the lease:
    A part the runner ends itself (e.g. a phone run that cycles versions): post it with `--runner-ends N[,M]` (or
    `"ends":"runner"` in `--parts`); the page then shows no Done there, only "Running, please wait; this ends by
    itself" plus your latest `ack --message`, refuses the user's Done (I-059), and you end it with `ack --part N --state done`.
+   The user can "Start over" a started step (two taps): every part runs again with a new attempt, your waits exit 5
+   `REDO` (reset the phone, wait for the new Start; `wait --until redo` in the background during a long part); label
+   files with the `attempt` in the MET JSON and pass `ack --attempt N` so a late ack from an old try is refused.
 4. Release and message the lead "iPhone released (<topic>)". Never hold it while idle; never
    navigate the phone without the lease; waiters queue with `acquire iphone --wait` (first come first served,
    no hand-made retry loops).

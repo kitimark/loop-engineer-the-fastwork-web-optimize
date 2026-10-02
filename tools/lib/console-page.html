@@ -104,7 +104,7 @@ h2.section { font-size: 16px; color: var(--muted); font-weight: 600; margin: 36p
 <script src="/console-nav.js"></script>
 <script>
 'use strict';
-var steps = [], sig = '', skew = 0, drafts = {}, pending = false, hashDone = false;
+var steps = [], sig = '', skew = 0, drafts = {}, pending = false, hashDone = false, confirmOver = {};
 // the top bar, badge, theme and notifications: /console-nav.js (shared with /progress)
 
 // ---- tiny DOM helper ----
@@ -177,7 +177,7 @@ function progress(s) {
   var ul = el('ol', { class: 'steps', 'aria-label': 'Progress' });
   var cur = s.status === 'pending' ? 0 : s.cur;
   s.parts.forEach(function (p, i) {
-    ul.appendChild(el('li', { class: i < cur ? 'did' : i === cur ? 'now' : '' }, (i < cur ? '✓ ' : '') + p.label));
+    ul.appendChild(el('li', { class: i < cur ? 'did' : i === cur ? 'now' : '' }, (i < cur ? '✓ ' : '') + p.label + (p.attempt > 1 ? ' · try ' + p.attempt : '')));
   });
   if (s.answer.mode !== 'none') ul.appendChild(el('li', { class: cur >= s.parts.length ? 'now' : '' }, s.answer.mode === 'text' ? 'Your answer' : 'Your pick'));
   return ul;
@@ -279,13 +279,24 @@ function openCard(s, first) {
   } else if (s.status === 'pending' || s.phase === 'part') body = partPanel(s, s.status === 'pending' ? 0 : s.cur);
   else body = answerPanel(s);
   var skip = el('button', { class: 'quiet', type: 'button', onclick: function () { act(s.id, 'skip', { notes: notes(s) }, skip); } }, 'Skip / not now');
+  // I-059: "Start over" (two taps): every part again; the agent resets the phone first
+  var overBtn = null, overAsk = null;
+  if (s.status === 'active' && s.parts.length) {
+    if (confirmOver[s.id]) {
+      var yes = el('button', { class: 'primary', type: 'button', onclick: function () { delete confirmOver[s.id]; act(s.id, 'restart', {}, yes); } }, 'Yes, start over');
+      overAsk = el('div', { class: 'panel wait', role: 'group', 'aria-label': 'Start over?' },
+        el('p', { text: 'Start the whole step over? Every part runs again from the first one; ' + s.by + ' resets the phone first.' }),
+        el('div', { class: 'row' }, yes, el('button', { type: 'button', onclick: function () { delete confirmOver[s.id]; render(); } }, 'Keep going')));
+    } else overBtn = el('button', { class: 'quiet', type: 'button', onclick: function () { confirmOver[s.id] = true; render(); } }, 'Start over');
+  }
   return el('section', { class: 'card' + (first ? ' first' : ''), 'aria-label': s.title, 'data-id': s.id },
     el('div', { class: 'meta' }, el('span', { class: 'pill', text: 'from ' + s.by }), el('span', { text: s.id }), el('span', { text: 'posted ' + ago(s.createdAt) })),
     el('h2', { text: s.title }),
     s.instructions ? el('p', { class: 'instr', text: s.instructions }) : null,
     s.url ? el('p', { class: 'url' }, el('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer', text: s.url })) : null,
     progress(s), body,
-    el('div', { class: 'foot' }, skip));
+    overAsk,
+    el('div', { class: 'foot' }, overBtn, skip));
 }
 
 function render() {

@@ -271,6 +271,87 @@ test('I-059 backward compatibility: a step file from before (no ends anywhere) s
   assert.deepEqual(C.publicView(C.get(s.id)).parts.map((p) => p.ends), [undefined, undefined]);
 });
 
+test('I-059 B attempts: the user\'s Start over and the runner\'s redo share one reset; attempts[] keep every try; the epoch counts resets', async () => {
+  const s = await C.post({ by: 'iphone-runner', kind: 'action', title: 'Visual check', parts: [{ label: 'Open' }, { label: 'Play', ends: 'runner' }, { label: 'Notes' }] });
+  assert.deepEqual(C.publicView(s).parts.map((p) => p.attempt), [1, 1, 1]);
+  assert.equal(C.publicView(s).epoch, 0);
+  await assert.rejects(C.restart(s.id), /is pending: only a started step can be started over/);
+  await C.start(s.id, { part: 1 }); await C.done(s.id, { part: 1 }); await C.start(s.id, { part: 2 });
+  const t1 = C.get(s.id).parts[1].at.started;
+  let r = await C.restart(s.id, { notes: 'wrong tab' });
+  assert.deepEqual([r.status, r.cur, r.epoch, r.parts.map((p) => p.state).join()], ['active', 0, 1, 'waiting,waiting,waiting']);
+  assert.deepEqual(r.parts.map((p) => p.attempt), [2, 2, undefined], 'the parts reached get a new attempt; part 3 was never reached');
+  assert.deepEqual(r.parts[1].attempts, [{ n: 1, at: { started: t1 }, ended: 'restart', by: 'user', endedAt: r.updatedAt }]);
+  assert.equal(r.parts[0].message, 'You started over (try 2).');
+  const h = r.history.at(-1);
+  assert.deepEqual([h.who, h.action, h.epoch, h.attempts, h.note], ['user', 'restart', 1, [2, 2, 1], 'wrong tab']);
+  // the runner's redo goes through the same core
+  await C.start(s.id, { part: 1 });
+  r = await C.redo(s.id, { by: 'iphone-runner', part: 1, message: 'the page did not load' });
+  assert.deepEqual([r.epoch, r.parts.map((p) => p.attempt || 1)], [2, [3, 2, 1]]);
+  assert.deepEqual(r.parts[0].attempts.map((a) => [a.n, a.ended, a.by]), [[1, 'restart', 'user'], [2, 'redo', 'iphone-runner']]);
+  assert.equal(r.parts[0].message, 'the page did not load');
+  // the history of start / done / ack names the attempt
+  await C.start(s.id, { part: 1 });
+  assert.equal(C.get(s.id).history.at(-1).attempt, 3);
+  // a finished step: start over is refused (the runner can still redo it)
+  const q = await C.post({ by: 'r', kind: 'question', title: 'q' });
+  await C.start(q.id);
+  await assert.rejects(C.restart(q.id), /has no parts to start over/);
+});
+
+test('I-059 B ack --attempt: a stale ack from an earlier try is refused; the current attempt and no --attempt work as before', async () => {
+  const s = await C.post({ by: 'iphone-runner', kind: 'action', title: 't', parts: [{ label: 'Play', ends: 'runner' }] });
+  await C.start(s.id, { part: 1 });
+  await C.ack(s.id, { by: 'iphone-runner', part: 1, attempt: 1, message: 'v1' });
+  await C.restart(s.id);
+  await C.start(s.id, { part: 1 });
+  await assert.rejects(C.ack(s.id, { by: 'iphone-runner', part: 1, attempt: 1, state: 'done' }), /part 1 is at attempt 2: your ack for attempt 1 is stale \(user started over at [^)]+\)/);
+  assert.equal(C.get(s.id).parts[0].state, 'started', 'the stale done changed nothing');
+  await assert.rejects(C.ack(s.id, { by: 'r', part: 1, attempt: 'x', state: 'done' }), /--attempt must be a whole number/);
+  await C.ack(s.id, { by: 'iphone-runner', part: 1, attempt: '2', state: 'done' });
+  assert.equal(C.get(s.id).status, 'answered');
+});
+
+test('I-059 B waits: REDO when the step is reset while waiting (it wins over a met state), --until redo, attempt in the MET JSON', async () => {
+  const s = await C.post({ by: 'iphone-runner', kind: 'action', title: 't', parts: [{ label: 'Open' }, { label: 'Play', ends: 'runner' }] });
+  await C.start(s.id, { part: 1 });
+  let w = C.waitCondition(s.id, { until: 'done', part: 1 });
+  const red = C.waitCondition(s.id, { until: 'redo' });
+  assert.deepEqual([w.check().met, red.check().met, red.check().never], [false, false, undefined]);
+  await C.restart(s.id);
+  await C.start(s.id, { part: 1 }); await C.done(s.id, { part: 1 }); // the new try reached done: still REDO for the old wait
+  const c = w.check();
+  assert.equal(c.met, false);
+  assert.match(c.never, /^REDO /);
+  assert.deepEqual({ ...w.redo, at: undefined }, { id: s.id, action: 'restart', by: 'user', at: undefined, part: 1, attempts: [2, 1], epoch: 1 });
+  const m = red.check();
+  assert.equal(m.met, true);
+  assert.equal(JSON.parse(m.detail).action, 'restart');
+  // a new wait sees the new attempt in its MET JSON
+  w = C.waitCondition(s.id, { until: 'done', part: 1 });
+  assert.deepEqual((({ part, attempt, epoch }) => ({ part, attempt, epoch }))(JSON.parse(w.check().detail)), { part: 1, attempt: 2, epoch: 1 });
+  // --until redo ends NEVER when the step is answered, skipped or cancelled
+  const r2 = C.waitCondition(s.id, { until: 'redo' });
+  await C.start(s.id, { part: 2 }); await C.ack(s.id, { by: 'iphone-runner', part: 2, state: 'done' });
+  assert.match(r2.check().never, /answered/);
+  assert.throws(() => C.waitCondition(s.id, { until: 'later' }), /--until must be one of started, recording, done, answered, redo/);
+});
+
+test('I-059 B old step files (no attempt, no epoch) read as attempt 1, epoch 0, and reset normally', async () => {
+  const s = await C.post({ by: 'r', kind: 'action', title: 'old', parts: [{ label: 'A' }, { label: 'B' }] });
+  const { writeFileSync } = await import('node:fs');
+  await C.start(s.id, { part: 1 });
+  const old = C.get(s.id);
+  for (const p of old.parts) { delete p.attempt; delete p.attempts; }
+  delete old.epoch;
+  writeFileSync(join(C.consoleDir(), `${s.id}.json`), JSON.stringify(old));
+  assert.deepEqual(C.publicView(C.get(s.id)).parts.map((p) => p.attempt), [1, 1]);
+  assert.equal(C.publicView(C.get(s.id)).epoch, 0);
+  const r = await C.redo(s.id, { by: 'r', part: 1 });
+  assert.deepEqual([r.epoch, r.parts[0].attempt, r.parts[0].attempts.length], [1, 2, 1]);
+});
+
 test('I-059 userTurn: no reminder while a runner-ended part runs; the Start before it is still the user\'s turn', async () => {
   const { userTurn } = await import('../../tools/lib/console-notify.mjs');
   const s = await C.post({ by: 'r', kind: 'action', title: 't', parts: [{ label: 'Play', ends: 'runner' }] });
