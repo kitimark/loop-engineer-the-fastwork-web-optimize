@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T23:00:00Z",
+ "updatedAt": "2026-10-02T23:50:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And, if the heat test (P-068) shows Fastwork heats the phone more than apple.com, less work at rest so the phone stays cooler.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T23:50:00Z", "text": "The accent word test is done: on its own the word draws smoothly, so the slow frames there come from the rest of the page, and the word keeps today's drawing. Next on the phone: the carousel fix (st6), then F3, then the heat test (Fastwork vs apple.com, about 2 hours)." },
   { "at": "2026-10-02T23:00:00Z", "text": "New goal, if your assumption holds: a heat test (P-068) compares how warm Fastwork and apple.com make the phone. If Fastwork heats it more, less work at rest becomes a goal next to smooth scrolling. Every fix now reports its work at rest." },
   { "at": "2026-10-02T22:20:00Z", "text": "The scroll-size fix (fwreskip) is dropped: on the phone it gave no gain (0 slow frames with and without it). At your request two more fixes get a phone timing test: the avatar carousel fix (st6) and F3 (touch listeners set up once). They run after the word-alone test." },
   { "at": "2026-10-02T21:45:00Z", "text": "The phone is back. Its screen recorder passed its first run with the camera light off. The scroll-size test (G2) starts again after the Wi-Fi change; the word-alone test of the hero's accent word comes next." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T17:10:00Z", "text": "The robot finger turned out to play every stroke as a quick flick, so its results so far don't count (tool problem I-042). The countdown fix's robot test (P-032) was void; all robot-finger tests wait for the tool fix. The phone runs the carousel test (P14) meanwhile." },
   { "at": "2026-10-01T16:40:00Z", "text": "Touch-listener blind test scored: neither you nor the second tester felt a difference (2 of 4 pairs each, the same as guessing)." },
   { "at": "2026-10-01T16:45:00Z", "text": "Phone tests approved and queued: the avatar carousel at the top (P14) and the softer blur easing for the card reveal (P-038)." },
-  { "at": "2026-10-01T16:05:00Z", "text": "The iOS Simulator was checked as a stand-in for the phone: not usable as a judge of smoothness. The real iPhone stays the judge." },
-  { "at": "2026-10-01T15:48:00Z", "text": "Your three blind swipe pairs for the countdown fix all came back 'same'. It now lands only if the robot-finger test (P-032) passes." }
+  { "at": "2026-10-01T16:05:00Z", "text": "The iOS Simulator was checked as a stand-in for the phone: not usable as a judge of smoothness. The real iPhone stays the judge." }
  ],
  "items": [
   {
@@ -230,9 +230,9 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "You picked a test of the word alone (PR-004, 11:15Z). On Chrome the word's own drawing is about 15 % of its cost; the rest is the whole page redrawn every frame. The phone is back: its word-alone test (P-065) runs right after the scroll-size test G2.",
+   "next": "The word-alone test (P-065) is done: drawn alone, the accent word had no slow frames on the phone; the slow frames come from the rest of the page. The accent word keeps today's drawing; no other proposal is waiting for a phone test.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
-   "checks": [],
+   "checks": [ { "id": "P-065", "what": "phone: does the accent word drawn alone have slow frames?", "result": "No: 0 frames over 34 or 50 ms in every run alone; with the full page 4-8 over 34 ms in the same windows (separated). The cost is the rest of the page, so the drawing stays as it is (OBSERVED, 531b254)." } ],
    "details": [
     "Proposals waiting (lead 20:0xZ): de-illusion-style boil-ca, accent-wipe, typing-chunks; de-illusion-composite digit-layers (+2 coming). Hold-1 counts (Chrome 1x, 9.3 s, vs B): accent-wipe hero window Paint 2688 -> 61, ULT elements 7501 -> 6858, animation invalidations 6335 -> 5695; boil-ca no Chrome change (WebKit-only gain, F-048/F-065); no new errors/404s.",
     "User priority 2 (lead 19:1xZ), right after style recalc. de-illusion-style: style/layout costs; de-illusion-composite: compositing, layers, blur; ts-proposals: console Proposals page (read, visual compare, Accept/Reject/Request change). Counts first, at most 2 batched Chrome holds each before first proposals, queued after scene-scope and the de-counts pair; no phone before the user accepts; accepted -> fix topic + phone ticket via mgmt-ops.",

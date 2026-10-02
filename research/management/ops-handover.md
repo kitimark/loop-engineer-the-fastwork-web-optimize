@@ -8,6 +8,21 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **23:5xZ (batch) 626783b landed; P-065 closed (531b254); P-068 heat ticket read PASS; phone order set.**
+  - Landed: 626783b (ops), f2d71fd (X1 stage 2 needs the user's timing lift; a trigger goes to the lead), 3534e51 (S7
+    C vs V pixel check: bottom 0 px; 0.54 % vs baseline common to both arms, phase), **531b254 P-065 Block 1 scored:**
+    word alone 0 frames >34/>50 in every run; full page 4-8 >34 in the 'you' windows, separated, twins agree (the rest
+    of the page brings them); Block 2 skipped by rules 2/3 before any data; **topic closes, keep the SVG.** PROGRESS
+    illusion-proposals next + P-065 check updated.
+  - **P-068 second read (mgmt-ops-7) PASS** on 4bf2319 (de-heat; row between P-067 and P-069; heat.mjs 38f81442ccad):
+    arms F floor / A apple.com live (iphone-air fallback pre-set) / B baseline / X st6-rb2; H1 F A B X, H2 X B A F;
+    6-min segments, slope over 60-360 s corrected to 37.0 °C (k 0.045/min); verdicts need both sessions; charging
+    segments excluded (one re-run), user's charging setting recorded; phone settings fixed; VOID rules; no device ids
+    in output; nothing of apple.com committed. Ops asked for one line: the X swap (st6-rb2 + countdown-faces) decided
+    and logged before H1's first segment. **Lead: charging, X wording and the Mac-side apple.com fetches are still being
+    settled with de-heat; the lead lands 4bf2319 with those fixes.**
+  - **Phone order (lead):** S7 (P-067) -> F3 P-036 G -> **P-068 heat (2 sessions, ~1 h each)** -> X1 stage 2 only with the
+    user's timing lift. The user was told "after S7 and F3" (T-029 #6).
 - **23:2xZ (batch) 2d2555c landed; P-069 / X1 second read PASS; X1 stage 2 is a timing decision (needs the user's lift).**
   - **P-069 second read (mgmt-ops-7) PASS** on d7449c4 (de-countdown branch, row after P-067): V copy
     out/countdown-faces/snap-x1/poc JS 638b8e03e81c (read-only), x1.mjs 9de230198cf8. Settled pre-data: (a) stage-2
