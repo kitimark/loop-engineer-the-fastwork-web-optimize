@@ -7,6 +7,12 @@ compositing) with a cheaper one that looks the same or nearly the same. Each PoC
 **proposal** in the user console. The user reads it, compares the original and the PoC, and accepts it,
 rejects it, or asks for a change.
 
+**Options (I-053, ts-i053, 2026-10-02).** The user, on PR-001 (06:31Z): "the proposal feature could propose the
+multiple solution in the same proposal topics and allow user to decide which one". A proposal may now carry 2-6
+named **options** (§2.3), each with its own idea, visual difference, gain, risk and B shots against the shared
+original A; the user picks one when accepting, and every wait reports the pick as `option`. A proposal without
+options (every proposal before I-053) is stored, served and shown exactly as before.
+
 ## 1. Pieces
 
 | piece | file | what it does |
@@ -103,6 +109,54 @@ view: slider
 
 Screenshots and videos come from the CLI flags (§3) with a Markdown file.
 
+### 2.3 Options: several solutions in one proposal (I-053)
+
+When there is more than one way to do it, put them in one proposal as `options` instead of posting one proposal per
+way. The problem and the original A are shared; each option is a full solution of its own, compared against that
+same A. Mark the one you recommend, with a reason.
+
+```jsonc
+{
+  "schema": "fw-proposal/1",
+  "title": "Word swap without restyles",
+  "area": "hero",
+  "problem": "The word swap restyles 120 elements per frame.",         // shared, required
+  "idea": "Three ways to show the same swap without a restyle.",      // optional shared text (so are looksSame, risk)
+  "compare": { "a": { "label": "Original (SVG)", "url": "https://localhost:5612/" }, "view": "side" },
+  "options": [                                                          // 2-6
+    { "name": "tiles",                                                  // short id: a-z 0-9 . _ - (decide --option tiles)
+      "label": "Frames as tiles",                                       // what the user reads (default: the name)
+      "idea": "…", "looksSame": "…", "risk": "…",                       // looksSame may come from the shared one
+      "visualDiff": ["0 px differ at 7 frozen times"],
+      "gain": [{ "what": "Elements restyled per frame", "before": "120", "after": "0", "tag": "OBSERVED", "how": "Chrome trace, 3 runs" }],
+      "compare": { "b": { "label": "Tiles", "url": "http://localhost:5613/" },
+                   "shots": [{ "caption": "Top", "a": "out/a-0.png", "b": "out/tiles-0.png" }] } },
+    { "name": "video", "label": "Video, HEVC with alpha", "…": "…",
+      "compare": { "b": { "label": "Video" }, "video": { "a": "out/a.mp4", "b": "out/video.mp4" } } },
+    { "name": "copy", "label": "Visible copy only", "…": "…", "compare": { "b": { "label": "Copy" }, "shots": [ … ] } }
+  ],
+  "recommended": { "option": "tiles", "why": "Fewest restyles and 0 px differ." }   // optional
+}
+```
+
+- With `options`, `visualDiff`, `gain`, `compare.b`, `compare.shots` and `compare.video` go **in each option**
+  (at the top they are refused); `idea`, `looksSame` and `risk` may stand at the top as shared text. Every option
+  needs an idea, a visual difference, a gain row, a risk and a screenshot pair or a video (a draft only the names).
+- A's screenshots are given per pair in each option (the same file may repeat). Media are stored per option:
+  `r1-o2-a-1.png`, `r1-o2-video-b.mp4` (o2 = the second option).
+- CLI shots with options: `--option <name>` says which option `--shot-a/--shot-b/--video…` belong to (required
+  then; one option per call), e.g. `proposal post --file p.md --option tiles --shot-a a.png --shot-b t.png`, then
+  `proposal revise <id> --note "video clip" --option video --video-a a.mp4 --video-b v.mp4`.
+- Markdown: `## Option <name>: <label>` blocks, each with an optional `b: label | url` line and `### Idea`,
+  `### Looks the same`, `### Visual difference`, `### Gain`, `### Risk`; front matter `recommended: <name> | <why>`.
+- `revise --file`: the file's list replaces the old one, so options can be **added, changed or dropped**; an option
+  without new shots keeps the media of the old option with the same name (a renamed option needs new shots). A
+  file without `options` turns it back into one solution (and one with options turns a single one into options).
+- Decisions: on a proposal with options, **accept needs the option** (`decision.option` = its name; the page asks
+  "Which option do you accept?", the CLI takes `--option <name or label>`); a change request may name one ("About
+  which option?"); reject is for the whole proposal (to drop one option, request a change). An undo keeps the
+  undone pick as `wasOption` in the events.
+
 ## 3. CLI
 
 ```sh
@@ -116,7 +170,8 @@ node tools/console.mjs proposal revise <id> --by <agent> --note "<what changed>"
      # text fields; without it the text stays. Shots or videos given replace all old ones; none keep them.
 node tools/console.mjs proposal publish <id> --by <agent>          # draft -> proposed
 node tools/console.mjs proposal withdraw <id> --by <agent> [--note "..."]   # no longer offered (wait: NEVER)
-node tools/console.mjs proposal decide <id> --by lead --value accept|reject|change [--notes "..."]  # the user answered in chat
+node tools/console.mjs proposal decide <id> --by lead --value accept|reject|change [--option <name>] [--notes "..."]  # the user answered in chat
+     # options (§2.3): accept needs --option; post/revise take --option <name> for their --shot-a/--shot-b/--video flags
 node tools/console.mjs proposal wait <id> [--until decided|changed] [--since <ISO>] [--timeout 3600] [--json] [--quiet]
      # exit 0 MET, prints {id, rev, value, notes, at, title, was}; 3 TIMEOUT; 4 NEVER (withdrawn); 1 usage
      # decided: met while it stands decided (at once if it already is); --since T: a decision after T that still
@@ -136,6 +191,12 @@ so the change notified nobody. The waits now read the history, not only the stan
 `undecided` entry is an event `{id, n, event: decided|undecided, value, was, rev, notes, who, at, title, by}`
 (`was`: the decision undone; on a `decided` right after an undo, the decision it replaced). `--since` is strict
 (`at > since`), so re-arming with the printed hint never repeats an event.
+
+**The picked option (I-053).** Every decision JSON (`wait <id>`, `wait --any` decisions, `wait --until changed`
+decision) carries `option` (the name, or null), and every event `option` and `wasOption` (the pick an undo took
+back, or the one a re-decision replaced). The printed lines say it: `PROPOSAL PR-004 decided accepted, option: tiles
+(was accepted, option: video) by user at …`, `proposal list`/`show` `-> accepted, option: tiles`, and a plain
+`wait <id>` prints `  option: tiles` under its MET line.
 
 The lead's one standing wait covers proposals too: `node tools/console.mjs thread wait --as lead` (without
 `--thread`) also wakes on every decision event on every proposal, and an agent's `thread wait --as <agent>` on its
@@ -181,6 +242,14 @@ waiting proposals first (oldest first), then the decided ones (newest first). On
    on this Mac only (localhost), that the server may have stopped, and that the phone goes through the lead.
 5. Decision: **Accept**, **Reject**, **Request change**, each with the notes box (Request change needs a note).
 
+With options (I-053), items 2-4 become: the shared text, then "N ways to do it": one card per option side by side
+(label, "Recommended", the first gain row, the first visual difference), which are the tabs (click or arrow keys);
+the recommendation and its reason; and the chosen option in full (idea, looks the same, what looks different, gain,
+risk) with its own compare block (A vs this option's B, its own shot pairs and video). Accept shows "Which option
+do you accept?" (the option on screen is preselected) and the button names it ("Accept "Frames as tiles" (revision
+1)"); Request change offers "About which option? (optional)"; Reject says it turns down every option. A decided
+proposal shows "Accepted: <option>", and opens on that option. The list row says "· 3 options".
+
 Notifications: the menu badge counts waiting proposals, the tab title adds them to the steps count, and a new
 proposal raises a banner ("New proposal: …", Open -> `/proposals#PR-001`), the chime and a desktop notification
 (once per browser), and with `serve --notify` a macOS notification. Proposals are never reminded: they are not
@@ -191,7 +260,8 @@ urgent the way a gated finger test is.
 - Rule 3: screenshots and recordings are Fastwork-derived. The CLI **copies** them into the store
   (`.git/fastwork-mirror/console/proposals/<id>/`); the server serves them only to localhost (the console's
   Host check), from that directory only (`/media/PR-001/r1-a-1.png`; the name must match
-  `^r\d+-(a|b)-\d+\.(png|jpg|webp|gif)$` or `^r\d+-video-(a|b|both)\.(mp4|mov|webm)$`, so no path traversal).
+  `^r\d+-(o\d+-)?(a|b)-\d+\.(png|jpg|webp|gif)$` or `^r\d+-(o\d+-)?video-(a|b|both)\.(mp4|mov|webm)$`, the
+  `o<k>-` part for an option's media (I-053), so no path traversal).
 - Rule 12: compare URLs must be localhost. Every text field is scrubbed when stored (`progress.mjs sanitize`:
   URLs other than localhost, IP addresses, `*.local`/`*.lan` hosts, e-mail, device ids, home paths, plus
   `redact.mjs`), and the CLI prints what it scrubbed. Pixels can't be scrubbed: take screenshots of the
