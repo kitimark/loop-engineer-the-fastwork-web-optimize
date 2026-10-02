@@ -246,6 +246,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   first-load avatar Δ66); none are V-only. P-056a(c1) stays a strict MISS as written (the gap is in the frame check).
   review-scene-scope-3 spawned (read-only, fix-reviewer definition); fix-scene-scope parked waiting on it. After the
   verdict the lead takes the pixel numbers to the user (T-001), then signs or returns the D card.
+  06:2xZ review-scene-scope-3: NEEDS-WORK (medium-high); the fix is sound. Blocking: (1) the 1440 y7500 V-only frame
+  (hash 559c68ab9d) is still open: the 22/22 re-check used a shorter walk; rerun q40ui's exact procedure, >=10 loads per
+  arm, with a prediction row committed first; (2) README contradictions (candidate status, rows 17/23, risks,
+  scenarios); (3) the D-card WebKit claim is wrong and has no status word: mark it UNRESOLVED until T-011. Lead resumed
+  fix-scene-scope: prediction row, then the 1440 rerun, then review-4. PHONE ORDER item 3 is now scene-scope RBi40pti
+  (T-011 runs RBi40pti, NOT RBi40p). Board: phone-fwreskip-g1 refreshed (queued, waiting on the phone, ticket b5f24a5,
+  P-057 e73676d); phone-queue next updated.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
