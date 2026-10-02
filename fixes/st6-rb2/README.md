@@ -125,6 +125,14 @@ the current best build, st6-rb2, with the page at rest at the top? The control i
   exactly rotator-st6's JS. CSS +30 −2, which is rotator-st6's +27 −2 plus the coupling selector and its 2 comment lines.
 - So the block measures st6, with its coupling, on the best build, and nothing else.
 - C's rotator is the site's own: a keyed `{#if}` that swaps a 4-img and a 5-img block on each tick.
+- **Pixels, C vs V** (`fix.mjs check st6-ctl` and `check st6-rb2`, both CHECK OK, 2026-10-02 22:13Z / 22:28Z, headless
+  mobile; compared directly, threshold 8):
+  - bottom: 0 px;
+  - middle: 0 px;
+  - top: 0.144 %, the same as base~base A/A at 0.145 %. The extra bands are the hero's moving card and the "Scroll
+    down" animation phase.
+  - The bottom's 0.54 % vs the baseline is the same in both arms (C 0.555 %, V 0.549 %). It sits in the A/A bands
+    (0.156 %) plus 28 px of the moving dashed connector. So it is phase, and it is not a C-vs-V difference.
 
 **Serve.** One server per arm, as for G2:
 `node tools/serve.mjs --root site-pretty --overlay <snap>/<arm> --port 0 --https --vendors=local --latency 150 --no-cache --state …`.
