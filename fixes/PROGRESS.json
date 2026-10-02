@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T09:16:00Z",
+ "updatedAt": "2026-10-02T09:32:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -199,7 +199,7 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "First phone round: of the image-based ways, the one-picture-per-frame way did best, but none drew the word with fewer slow frames than today's version (2 runs each); two of them made the word pause mid-stroke. The second round (video and a lighter variant) is next.",
+   "next": "Second round done: none of the image or video ways beat today's drawing on the phone; a final proposal recommending to keep today's version comes next, after your recording check.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
    "checks": [],
    "details": [
@@ -210,7 +210,8 @@
     "02:3xZ 4 variants (OBSERVED, Sim): none ticks every frame; the whole page's rendering updates stop 1-2 s per canvas draw; SVG control in the same session clean at 54 ticks/draw; no errors; apply() 0-1 ms/tick; GPU-readback hypothesis unsupported. Next ~2 min hold: (a) engaged, nothing drawn; (b) one drawImage per tick; (c) SVG hidden, no canvas; (d) minimal standalone canvas page, no Fastwork code (Sim artifact vs our page). Then rev 2 whatever the outcome; likely parked pending a phone check.",
     "02:4xZ PR-001 rev 2 posted (state: proposed rev 2): frozen frames exact (142/142); live playback stalls in the Sim and on a minimal page with no Fastwork code, so the Sim cannot judge it. Parked for a phone check, not withdrawn; no savings claimed. User decides: approve the phone check (arm 1 tiles + arm 2 one-copy-per-frame, test only, ~83 MB ESTIMATE) or withdraw. de-illusion-style finished: 186fb5b (README, patch.diff, standalone page), not a land request yet; void list in README; F-120 (query-flag pitfall).",
     "06:4xZ PR-001 rev 2 ACCEPTED (user 06:31Z: all OK, a bit of pixel difference acceptable, best performance wins). Arms C, F1 tiles, F2 one-copy (memory-limited), F3 middle layout, V HEVC-alpha video, B visible copy only; P-058 before data; phone blocks A (C F1 F2 F3) and B (C V B), then rev 3 with the pick. Phone timing lifted for PR-001 only (T-006 #22).",
-   "09:0xZ PR-001 block A (C F1 F2 F3, W driver, 8/8 valid, load1 > 8 in runs 1-7 flagged): F2 the best canvas arm, but no frame gain over the SVG on the phone (n=2); F1 and F3 freeze mid-stroke. Recordings dropped (user T-018); the live visual look waits on the user. Block B (C V B) next, not gated."
+   "09:0xZ PR-001 block A (C F1 F2 F3, W driver, 8/8 valid, load1 > 8 in runs 1-7 flagged): F2 the best canvas arm, but no frame gain over the SVG on the phone (n=2); F1 and F3 freeze mid-stroke. Recordings dropped (user T-018); the live visual look waits on the user. Block B (C V B) next, not gated.",
+  "09:3xZ PR-001 block B (C V B) done: 9/9 valid, sentinels passed. P-058 overall: no arm beats the SVG on the phone (rule 4). F1/F3 freeze mid-stroke; V reaches the end of only 67 % of draws (its own start-detection bug); F2 and B eligible but not better. Rev 3 adds a 'keep' option and recommends it (de-illusion-style drafts, lead reviews). User approved visual route (b) (T-018 #11): C-021, the user's own screen recording, 4 parts, active."
    ]
   },
   {

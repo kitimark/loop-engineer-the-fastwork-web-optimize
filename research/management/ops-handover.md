@@ -8,6 +8,15 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **09:3xZ (later) PR-001 block B DONE; route (b) approved.** dc7ceb8 landed.
+  - Block B (C V B): 9/9 valid, sentinels passed. P-058 overall: no arm beats the SVG on the phone (rule 4). F1/F3
+    freeze mid-stroke; V reaches the end of only 67 % of draws (its own start-detection bug); F2 and B are eligible
+    but not better. PR-001 rev 3 adds a "keep" option and recommends it (de-illusion-style drafts, the lead reviews).
+  - The user APPROVED visual route (b) (T-018 #11): C-021, the user's own iPhone screen recording, 4 parts, ACTIVE.
+    No Mac camera; NO CAMERA still holds.
+  - Phone order now: C-021 (user step, first) -> block B attribution -> A1 (PR-003 A) -> G1b -> T-011 -> T-009 -> I-042.
+  - PR-003 change wait dropped: the lead's thread wait wakes on every proposal decision event (I-045).
+  - PROGRESS illusion-proposals: next = second round done, a final "keep" proposal after the recording check.
 - **09:3xZ I-056 LANDED on main d2d77ad** (lead's npm test 1037/1037 in the main checkout) and RESOLVED: phone runs no
   longer wait for shared groups; `--require-quiet` opts in to waiting. Open incidents: none. The lead confirmed A1's
   slot to iphone-runner (after PR-001 block B).
