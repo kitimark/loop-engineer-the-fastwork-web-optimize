@@ -8,7 +8,7 @@ local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling
 
 | | path | in git? | who writes it |
 |---|---|---|---|
-| (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `incident`, `finding`, `mirror`, `prettify`, `lib/`) | yes | any agent, with a covering test (Hard rule 6); usually a `toolsmith` per incident |
+| (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `ioscap`, `incident`, `finding`, `mirror`, `prettify`, `lib/`) | yes | any agent, with a covering test (Hard rule 6); usually a `toolsmith` per incident |
 | (b) research write-ups | `research/<nn-topic>/` (README, data, one-off tools) | yes | append new studies; don't rewrite history |
 | (c) baseline snapshot | `site/` (byte-identical), `site-pretty/` (Prettier 3.9.9 copy), pinned by `baseline.json`; agent worktrees are sparse and read the main checkout's | **yes, frozen on `main`** (local only, never pushed) | nobody; a new snapshot only by the user (`--new-snapshot`, then the authorized commit, "Baseline snapshot") |
 | (d) per-fix experiments | `fixes/<topic>/` `README.md`, `patch.diff`, `results.json` (+ gitignored `overlay/`) | deliverables only, local branches | one fix agent per topic, in its own worktree |
@@ -553,6 +553,15 @@ iPhone protocol on top of the lease:
 4. Release and message the lead "iPhone released (<topic>)". Never hold it while idle; never
    navigate the phone without the lease; waiters queue with `acquire iphone --wait` (first come first served,
    no hand-made retry loops).
+
+iPhone screen recorder (I-062; user T-018/T-019): only `tools/ioscap.mjs` may record the phone's screen. Its app
+(`out/ioscap/ioscap.app`, built by `ioscap.mjs build` in a `--no-timing` hold) opens nothing but the iOS screen
+device; QuickTime, camera listing, ffmpeg avfoundation, imagesnap and `screencapture -v` are denied (git-guard),
+and nobody opens the Mac camera. `record --owner <you> --seconds N` (max 600) needs the `iphone` lease, refuses in a
+`--shared` slot and prints numbers only (frames, distinct-frame rate, PTS gaps): nobody views frames. The first
+run (`--first-run`, the macOS Camera prompt) is the lead's only, with the user's console OK and the user watching.
+Output stays in the checkout's gitignored `out/iphone-screen/` (`.mov`, `.frames.json`, `.result.json`, `.json`):
+never commit or publish it (rule 3, 12).
 
 Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages and gates"):
 - **Blocks.** Only ticketed builds, served from immutable snapshot copies. A block: one question, one named control
