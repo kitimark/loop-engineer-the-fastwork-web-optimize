@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T10:45:00Z",
+ "updatedAt": "2026-10-02T10:48:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -188,11 +188,11 @@
    "id": "style-recalc",
    "inBuild": true,
    "writeup": "fixes/scene-scope/README.md",
-   "title": "Your idea: style recalculation (about 19-20 ms) causes the lag",
+   "title": "Section switch restyles only its own section (scene-scope)",
    "area": "whole",
    "state": "testing",
    "stage": "F",
-   "fixes": "You saw style recalculation taking about 19-20 ms at times, more than a 60 Hz frame allows (16.7 ms). Your two guesses: complex nested CSS makes selector matching slow, or the images (rotation, resizing) cost work every frame. You also asked about smaller images and plain-CSS effects.",
+   "fixes": "The fix: when a section's animations pause or start as you scroll, only that section is restyled, and two big style values no longer spread to the whole page. It came from your idea: style recalculation of about 19-20 ms, more than one 60 Hz frame (16.7 ms).",
    "felt": { "answer": "not-yet" },
    "gate": "Find out whether either guess explains the slow frames before anything is built.",
    "next": "You accepted it (08:07Z). Next: a check on the real iPhone with Safari's own timeline (T-011), after the stack test, PR-001 and the fwreskip test; then a review and landing.",
@@ -323,6 +323,27 @@
    ]
   },
   {
+   "id": "pin-clamp",
+   "inBuild": true,
+   "writeup": "fixes/iphone-wave2/README.md",
+   "title": "Panel pin clamp: no back-and-forth jump when you push past the end",
+   "area": "end",
+   "state": "testing",
+   "stage": "V",
+   "fixes": "When you pushed past the end of the page, the page could jump back and forth between two positions while the bottom panel grew. This keeps the pin inside the real page end and stops the bounce while the panel grows, so the jumping is gone.",
+   "best": [
+    { "what": "page jumping back and forth when you push past the end", "before": "present (scroll position 5220 <-> 5334)", "after": "gone", "tag": "OBSERVED", "driver": "finger", "note": "slow frames while the panel grows were not better (over 50 ms: 10 % before, 21-26 % with it)" }
+   ],
+   "felt": { "answer": "same", "text": "you called both versions laggy in that finger test; the jump itself was gone" },
+   "gate": "No phone gate of its own: it is checked as part of the whole build.",
+   "next": "Nothing on its own; the slow frames while the panel grows are tracked under the morph work.",
+   "owner": "fix-nav-morph",
+   "details": [
+    "mw10e-g = pin clamp (f, JS 68a00843) + overscroll-behavior-y: none while morphing (JS 22efa0ab69ba), on aw1-10e; carried in user-b/user-bplus/RB/st6-rb. It still carries the inert DEBUG __fwMorphDrive hook (runs only when called).",
+    "Morph finger block 10-01 08:15-08:37Z (warm phone, user): E1b (aw1-10c) pin fight scrollY 5220<->5334, morph p50 24 / p95 73 ms, >50 ms 10 %; g (F1/F2) pin fight gone, p50 17-19 / p95 86-117, >50 ms 21-26 % (OBSERVED, F driver, n=2). Root cause: pin target 5312 > maxY 5220 when the morph starts in the bounce (DIRECTION.md)."
+   ]
+  },
+  {
    "id": "wave1-base",
    "inBuild": true,
    "writeup": "fixes/iphone-wave2/README.md",
@@ -394,10 +415,10 @@
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "paused: timing and feel tests are on hold", "item": "f3-arm-scope" }
  ],
  "build": {
-  "name": "st6-rb: the wave-1 base plus five fixes (the last one: the avatar carousel)",
+  "name": "st6-rb: the wave-1 base plus six fixes (the last one: the avatar carousel)",
   "since": "2026-10-02T10:08:40Z",
   "summary": "It removes the slow frames each included fix aimed at, each measured on the phone against the build before it, but the whole build has not yet been compared with the original page in one full phone scroll.",
-  "fixes": ["wave1-base", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel"],
+  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel"],
   "combined": [
    { "what": "style work while the people cards scroll by, per run (iPhone Timeline)", "before": "118-123 ms", "after": "59-65 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
    { "what": "style work in the middle of the page, per run (iPhone Timeline)", "before": "329-346 ms", "after": "207-222 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
