@@ -457,7 +457,7 @@ The timer itself runs no code at rest. That does not settle the question, becaus
 | R6 | Sim idle, B, A and P2b in one hold again (v29, `IORDER="A Q B"`, IWIN 1) | Reversal counts/s: Composite B 31.2, P2b 34.9, A 31.0; RecalculateStyles 28.9 / 31.2 / 28.2; Layout 17.2 / 21.1 / 20.4; Paint 29.3 / 25.0 / 28.1 | P2's reversal Composite count is above every same-hold control in 5 of 5 holds (v23-v25, v27, v29), and its Paint count is lower in each one. Counts only, so this shows a different composite/paint split, not necessarily more work: the decisive check is durations (R7) |
 | R7 | Sim idle with **per-type durations** (v30, `IORDER="Q B A"`, IWIN 1; `vfix.mjs` MODE I now logs `ms` = summed record ms per second next to the counts) | Reversal ms/s: Composite B 53.1, P2b 52.2, A 61.6; Layout 43.8 / 54.6 / 58.4; RecalculateStyles 20.8 / 23.3 / 21.7; Paint 0.8 / 0.9 / 1.0; main-thread sum (styles, layout, paint, JS, timers, observers) 70.9 / 86.5 / 88.8. Band: P2b lowest of the three in Composite, styles and layout. Pin: Composite 742.9 / 765.3 / 734.4 (P2b +3 % over B, n=1), styles and paint lower. Reversal counts this time: Composite 41.6 / 39.1 / 33.8, so P2b is inside the B-A range (the 5-of-5 streak is now 5 of 6) | in time spent, P2b is inside the same-build B-A spread at the reversal spot and at or below it at the band. **No P2-specific idle cost found** (OBSERVED, Sim, n=1 window per arm; Sim ms are attribution only). The pin's +3 % Composite is inside what one window can show and the pin has `#people` skipped in every arm. P2-5 stays formally UNRESOLVED until the reviewer accepts durations as the deciding check |
 
-### Phone ticket G1b (P2): prepared, not run
+### Phone ticket G1b (P2): rest arm run 2026-10-02 (result below), no-pause arm pending
 
 Owner of the run: `iphone-runner`. Phone order (lead, 2026-10-02): PR-001 block B, then G1b, then PR-003's block if the user picks A, then T-011; review-fwreskip-3 passed the P2 diff with fixes, and the ticket fixes it asked for before G1b are in this section (rev 2 of the ticket, pre-data). User steps jump the queue. No measurement has been made with this ticket. Run JSON stays in `out/`. **No recordings** (user rule T-018, 2026-10-02): no QuickTime movie recording, no iOS Screen Recording, no camera. Everything G1b reads comes from the page itself: the gesture's frame log and `flinglog.mjs` v3.
 
@@ -544,6 +544,47 @@ Expected time: about 15 min per block (2 warm-ups, 2 sentinels and 8 counted run
 - The FAIL rule is weaker: G1b sees only its main-thread half (reading 3). The question behind open item (iv), whether the UI process shows a skipped `#people` ahead of the main thread during a fast fling, is no longer checked by G1b. For it, fwreskip rests on G1 block 1 (recorded before T-018: no FAIL, n=1 valid B, OBSERVED); the user's eye in an F run is supporting only (a note, not a verdict). **The G1b result and any land request state this word for word (lead): the UI-process half of the FAIL rule is "not checked on the phone since T-018".**
 - The rev 1 "does an on-screen animation stall" reading is dropped; only the frame's dt remains.
 - The calibration-frame void rule is gone with the recording. The `flash` record replaces it as a run check.
+
+### G1b result, rest arm (restMs 2000)
+
+Run by iphone-runner on 2026-10-02, ticket be4c331, scored here (scratchpad scripts `g1bscore.py` / `g1bcross.py`; run JSON in iphone-runner's `out/g1b/rest/`, not committed).
+- Setup: G driver, `fling-band-v2.json` (hash e30bd43a60eb), snapshot `snap-g1b2` (hashes checked), no recordings, frame log + flinglog v3.
+- Block order: B P2b P2b B B P2b P2b B.
+- Sentinels PASS: 60.2/57.9 at the start, 60.0/58.1 at the end. Battery 37.9 → 40.3 °C.
+- Mac load1 at run start was 41.8 / 24.0 / 14.8 / 9.3 for runs 1-4 and 5.9-6.6 for runs 5-8; each record keeps `meta.mac`. The phone stamps its own frames, and the un-skip frames below show no load pattern (55 at load 24, 45 at 14.8, 54 and 46 at ~6).
+
+**Validity.** All 8 counted runs are valid.
+- Stroke gate: within ±10 % in all 8 (worst +9.0 %). The uncounted B warm-up was +10.5 %.
+- Every run reached y ≥ 3250, the `flash` record is present, and there are no errors.
+- `fling` mark y is 3264-3286. That is before `#people`'s own far edge (≈3539): B never defers `#people` in the block, and P2b's pair is not released before the fling.
+- (b) holds: P2b's `#people` flips `active` before the mark in 4 of 4 runs.
+
+| reading | B (4 runs) | P2b (4 runs) |
+|---|---|---|
+| 1. longest frame `fling`→`end` (ms) | 48, 60, 59, 49 (the 60 and 59 at y ≈3155, the fling's start); block max 60 | 48, 49, 48, 47 |
+| 1. frame at `#people`'s crossing (max of the 3 frames after the post-fling `p` flip, y ≈2900-2970) | 48, 48, 47, 49 | 48, 49, 48, 46 |
+| 2. idle un-skip frame (the frame whose gap holds the flip) | 17, 17-18, 18, 17-18 at the same offset before the fling's first scroll event | **55, 45, 54, 46** |
+| 2. where it fell | | **at the start of the rest** in 4 of 4 runs: 301 ms after the last descent scroll event, 3.55-3.62 s before the fling's first scroll event; page still (y constant) |
+| 3. main-thread FAIL (hero or `#people` intersecting while `deferred`) | none | none |
+
+- **Long frame** threshold: > B max + 17 = 77 ms (twins 73 / 81). No P2b frame from `fling` to `end` comes near it, at the crossing or anywhere. P's 65-92 ms crossing frame from G1 is gone, and P2b's crossing frame equals B's (46-49 vs 47-49 ms).
+- **Idle un-skip vs B:**
+  - frames > 50 ms: P2b 2 of 4 (55, 54), B 0 of 4;
+  - twins: > 46: 2 vs 0; > 54: 1 vs 0;
+  - > 34 (twins > 30 / > 38): 4 of 4 vs 0;
+  - near-band flag: 54 ms is in (46, 54].
+- **The ticket's placement guess was wrong:** it expected the un-skip mostly between descent strokes. The pair forms during the last descent stroke (`p` `deferred` at y ≈3060-3080), so the 300 ms timer fires in the rest, as P-060's original "with the page at rest" said.
+
+**Decision (rule registered before data).**
+- Condition 1 holds: there is no long frame at the crossing.
+- Condition 2 fails: 2 > 50 ms un-skip frames against 0 for B. The verdict is the same at > 46 and > 54, so it is **not threshold-sensitive**.
+- So the rule's outcome is: **the cost has moved from the fling to the pause, and that trade goes to the user with the numbers.**
+  - P2b removes the 65-92 ms fling frame.
+  - In exchange it adds one 45-55 ms frame about 0.3 s after the user stops in the band. The page is not scrolling then, so what stalls is only what animates on screen at that moment.
+  - G1b cannot see that stall without a recording.
+- Reading 3 found no main-thread FAIL. The UI-process half of the FAIL rule is "not checked on the phone since T-018".
+- P-060 rest-arm items: flip before the mark 4/4 (hit); no long fling frame (hit); un-skip frame ≥ 34 ms in ≥ 2 of 4 and > 50 ms in ≥ 1 of 4 with B ≤ 34 (hit); falsifier (c) (> 50 ms in 3-4 of 4) not triggered at 2 of 4.
+- The no-pause block is still to run.
 
 ## Risks, conflicts, follow-ups
 
