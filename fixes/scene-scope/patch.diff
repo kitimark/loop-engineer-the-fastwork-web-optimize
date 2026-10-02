@@ -113,13 +113,15 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -3979,7 +3979,9 @@
+@@ -3979,7 +3979,11 @@
    let ts = row.querySelectorAll(
      `.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized`,
    );
 -  for (let e of ts) PMsweepIO.observe(e);
 +  // [scene-scope RBi40pti] start paused: the first IO callback can land in the frame where #platform turns
 +  // content-visibility:auto skipped, and a skipped subtree's style (the pause) waits until it is unskipped
++  // (status: the blocked recalc is CONFIRMED in Chromium source; that it holds back the pause is OBSERVED in Chrome,
++  // q40ti2; WebKit UNRESOLVED until T-011)
 +  for (let e of ts) (e.setAttribute(`data-sweep-paused`, ``), PMsweepIO.observe(e));
    // unobserve when the row's each-block item is destroyed ($effect.pre attaches to the row's branch effect;
    // its returned function is the effect's teardown)

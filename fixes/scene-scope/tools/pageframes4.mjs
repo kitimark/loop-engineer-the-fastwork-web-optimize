@@ -16,7 +16,7 @@
 // steps still freeze, without SETTLE, so the walk history matches a full walk). index.json is rewritten after every load.
 // usage: node pageframes4.mjs <outdir> <label>=<url>...   env FY0=3200 FY1=5300 FSTEP=100 VW=430 VH=932 DPR=3 HOLDIO=1 CAPY=""
 
-import { launchChrome, CDP, gotoAndSettle, sleep, screenInfoArg, headedUA, tempProfileDir } from '../../tools/lib/cdp.mjs';
+import { launchChrome, CDP, gotoAndSettle, sleep, screenInfoArg, headedUA, tempProfileDir } from '../../../tools/lib/cdp.mjs';
 import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 const [outdir, ...targets] = process.argv.slice(2);
