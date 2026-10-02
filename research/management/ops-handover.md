@@ -8,6 +8,17 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **09:2xZ second reads, both PASS.**
+  - **G1b** (fix-scroll-engine be4c331 on worktree-agent-a1722cf5058e25591): stroke-fidelity gate ±10 % in run
+    validity, ~15 min per block (~40 min for 2 with phone-temp cooling), P-060 "Amended pre-data 10-02 09:16Z" naming P2b
+    JS b4ff6ec56cc2 / snap-g1b2. Hashes re-checked: snap-g1b2/P2b JS b4ff6ec56cc2, B JS dbd5fdb4f1fb.
+  - **A1** (wi-stack 1ad3a61 on worktree-agent-a93135040e12a061d, rebased on cc2a029): PR-003 A ticket, C = RB
+    (snap-s5/best dbd5fdb4f1fb / 0d7dfc79e703), V = stack5 (59b23b3f57fd / 6e09b2c708fa), NB = RB+st6 (snap-loo/noblur
+    59b23b3f57fd / e9603231b413). All hashes match. S driver, Timeline off, warm-up per port, open/end sentinels plus every
+    counted C run, Latin square C V NB · V NB C · NB C V (9 runs), ~30 min, decision per row, P-062 pre-data. Note for
+    the runner: log load1 and battery temperature per run (A4).
+  - B research plan (B1 will-change: filter, B2 no overlap-compositing of the 4 hidden profile shells) is in the
+    same commit: Sim + pixel only until A1 is done.
 - **09:1xZ takeover.** mgmt-ops-7 took the `ops` row; rebased on main cc2a029 (mgmt-ops-6's final commit, LANDED).
   - **PR-003 DECIDED 09:12:55Z**: accepted, option A (drop-blur: RB + st6, no blur-cubic). User note, paraphrased: wants
     to know B's (prepromote) performance too; apply A first, research B in parallel at lower priority.
