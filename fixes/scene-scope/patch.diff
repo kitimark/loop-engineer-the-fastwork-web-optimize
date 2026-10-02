@@ -4,6 +4,7 @@
 # rebuild the overlay with: node tools/fix.mjs apply scene-scope --on bplus
 # contains excerpts of Fastwork's code: local branches only, never push
 # base-sha256 _app/immutable/assets/2.gBuqKVzi.css cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js dbd5fdb4f1fb7e255aa2a34e435e0d1031446826ec9015df8df094f07fceaa83
 diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
@@ -19,7 +20,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  syntax: "<number>";
 +  inherits: false;
 +  initial-value: 1;
- }
++}
 +/* [scene-scope R4b] --morph is written inline on the nav header (JS 13614) and read by the header and some of its
 +   descendants. Registered non-inheriting, a write restyles only the header plus the elements that take it with an
 +   explicit `inherit` (the consumers and the wrappers between them and the header), not the whole nav subtree. */
@@ -27,7 +28,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  syntax: "<number>";
 +  inherits: false;
 +  initial-value: 0;
-+}
+ }
 +.start-selling-top-nav-bar,
 +.start-selling-top-nav-logo,
 +.start-selling-top-nav-actions,
@@ -40,7 +41,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .hero-track.svelte-1p2vpne {
    background: #fff;
    height: 200vh;
-@@ -11801,15 +11826,69 @@
+@@ -11801,15 +11826,65 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -76,10 +77,6 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +.start-selling [data-start-selling-scene="paused"] .record,
 +.start-selling [data-start-selling-scene="paused"] .sb-drawer .surface,
 +.start-selling [data-start-selling-scene="paused"] .panel.svelte-ty4hd7,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-doc,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-earn,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-secure,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-organized,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-language-switch-menu,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav-btn,
@@ -113,3 +110,17 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling [data-fw-wc="0"] {
    will-change: auto !important;
  }
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3979,7 +3979,9 @@
+   let ts = row.querySelectorAll(
+     `.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized`,
+   );
+-  for (let e of ts) PMsweepIO.observe(e);
++  // [scene-scope RBi40pti] start paused: the first IO callback can land in the frame where #platform turns
++  // content-visibility:auto skipped, and a skipped subtree's style (the pause) waits until it is unskipped
++  for (let e of ts) (e.setAttribute(`data-sweep-paused`, ``), PMsweepIO.observe(e));
+   // unobserve when the row's each-block item is destroyed ($effect.pre attaches to the row's branch effect;
+   // its returned function is the effect's teardown)
+   PMpre(() => () => {

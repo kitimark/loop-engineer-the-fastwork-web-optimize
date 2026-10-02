@@ -3,8 +3,12 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** RB landed (8207797). **RBi40p** (`patch.diff` = `variants/17.diff`, CSS 24c2e85682fe) is the landing
-candidate. It replaces RBi40, which the lead's review (8690486, NEEDS-WORK) sent back.
+**Status:** RB landed (8207797). **RBi40pti** (`patch.diff` = `variants/23.diff`; CSS 10cf34974e67, JS 7cea01ae081c)
+is the landing candidate, in two steps: RBi40p (`variants/17.diff`, CSS only) then the row-title cut plus one JS line in
+PMsweepGate (lead decision 2026-10-02, option (a)). Section "RBi40pti: the candidate". RBi40p replaced RBi40, which the
+lead's review (8690486, NEEDS-WORK) sent back.
+- RBi40pti vs RBi40p, Sim W n=4 vs 3 controls: no Layout after the #platform switch RS (RBi40p: an 18.1 ms view Layout
+  right after it). Attribution only, no gain claim.
 - Its #platform cut is checked by querySelectorAll: no kept hero/people/commission/nav/sb-* entry matches anything under
   #platform.
 - Pixels: identical to RB at forced phase above #platform (OBSERVED). Inside #platform the claim rests on state
@@ -21,16 +25,18 @@ candidate. It replaces RBi40, which the lead's review (8690486, NEEDS-WORK) sent
 - Simulator W driver (`srwin-sim.mjs`, Timeline depth 10) for the switch structure; ms there are attribution only.
   Copies for reproduction (P-053/P-055/P-056) in `fixes/scene-scope/tools/`: `srwin-sim.mjs` + `simtab.mjs` (from
   de-counts-sim's untracked `research/design-engineering/work-counts-webkit/`), `rsstat.mjs` (switch and scroll-phase
-  scoring, view-rooted counts) and `pageframes3.mjs` (deterministic frozen frames).
+  scoring, view-rooted counts), `pageframes3.mjs` (deterministic frozen frames) and `onset.mjs` + `onsetcmp.mjs` (sweep phase and onset, P-056a).
 - Phone: S (blocks 1-2) and M (block 3), with Timeline, run by iphone-runner.
 **Predictions (strict scoring, fixes/PREDICTIONS.md):** P-040 MISS, P-041 HIT, P-045 HIT, P-046 HIT, P-047 FAIL,
 P-048 FAIL, P-049 MISS, P-050 MISS, P-051 MISS, P-052 HIT, P-053 HIT, P-054 inCQ HIT / restyled MISS, P-055 (a) HIT,
 (b) inCQ HIT / restyled MISS, P-056 (b) inCQ HIT / restyled MISS, (c) frames HIT / play state HIT / phase MISS at 1440,
-P-056a pending (RBi40pti).
+P-056a (a) nested HIT / cE Layout HIT / outer RS count MISS, (b) HIT, (c1) frames MISS (strict), (c2) phase and onset
+HIT (S, H).
 **Topic:** see `fixes/TOPICS.md` (scene-scope); user priority 1 ("style recalc")
 **Base:** STACKED on B = `fixes/user-bplus/patch.diff` (rebuilt as overlay `bplus`: JS dbd5fdb4f1fb, CSS cc8d1340b449)
-**Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only: the paused-scene rule (B 11804-11815, baseline
-11754-11758). No JS.
+**Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` (the paused-scene rule, B 11804-11815, baseline
+11754-11758) and, in RBi40pti only, one line of `/_app/immutable/nodes/2.DyWL8TcE.js` (PMsweepGate, JS 3982, owned by
+layout-animations; approved by the lead under scene-scope, finding F-124).
 **Line numbers:** "JS NNNN" means `/_app/immutable/nodes/2.DyWL8TcE.js` as served in B and in every arm here (the
 bplus overlay, dbd5fdb4f1fb), unless it says "baseline JS". "CSS NNNN" means `/_app/immutable/assets/2.gBuqKVzi.css` of
 the arm named. Sim stack frames print one line higher than the file (rootscore adds 1 to a line WebKit already
@@ -244,6 +250,72 @@ RBi40pt (`variants/21.diff`) = RBi40p minus the 4 row-title entries of the scene
   candidate becomes RBi40pti = RBi40pt + one JS line in PMsweepGate: each title starts with `data-sweep-paused`,
   and the IO callback lifts it when the title is on screen (P-056a, committed before the build).
 
+## RBi40pti: the candidate
+
+RBi40pti (`variants/23.diff` = `patch.diff`) = RBi40pt's CSS (10cf34974e67) + one line in PMsweepGate (JS 3982):
+
+```js
+for (let e of ts) (e.setAttribute(`data-sweep-paused`, ``), PMsweepIO.observe(e));
+```
+
+Each row title starts paused; PMsweepIO's callback lifts the attribute when the title is on screen (it already toggled
+it both ways). The code is layout-animations' (no active owner); the lead approved the line under scene-scope, coupling
+finding F-124. Prediction P-056a was committed before the build (4324bd5).
+
+**Measurement conditions.** Every Chrome hold here (04:48-05:20Z) ran with the display off: the lock printed the I-033
+notice, and `pmset -g assertions` showed UserIsActive 0 at the start and end of each hold. The deterministic frames are on
+the virtual clock and should not care. The onset probe is real time, so read its numbers as display-off. The frames use
+`--disable-checker-imaging --disable-gpu-rasterization` (as in "RBi40p: #platform pixels"). Those flags were needed for a
+deterministic A/A, and they change Chrome's raster path, so they are a measurement condition, not a shipping config.
+
+- **Frames (c1)** (`pageframes3.mjs`, 430x932 DPR 3 y 3200-5300 and 1440x900 DPR 1 y 6000-8400, step 100; q40ui, then
+  replications q40ur and q40ur2):
+  - 430: V vs S0 14/22 identical. The 8 others differ only in the profile-stats count-up ("43 Orders · 5 Rehires", JS
+    12238-12275: an IO-started rAF tween over 1080 ms), 76 px, max delta 1. The A/A differs there too: in q40ur, S0 vs
+    S0b was 0/10 identical, S0 vs V's second load 10/10, S0 vs V 2/10. The tween starts at a real-time IO callback, so
+    the virtual clock catches it at load-dependent points.
+  - 1440: V vs S0b 24/25. The one frame (y7500, 259 px, max delta 3, on the secure-network rings) showed in 1 of 7 V
+    loads at that frame and in 0 of 12 S0/S0b loads. Not reproduced in 6 more V loads. **UNEXPLAINED.** The spot chain
+    at (450, 8300) is the same in both arms (`spotprobe.mjs`).
+  - Strict scoring: **c1 MISS**, because the card said 0 differing frames. Every difference except that one frame sits
+    in a region the A/A also differs in.
+- **Phase and onset (c2)** (`out/scene-scope/onset.mjs` + `onsetcmp.mjs`, q40uo). Method: 3 reps per arm in the order
+  C V A, V A C, A C V (A = S0b). The probe calls no `getAnimations()` before a title is visible. Per title it records
+  the phase (currentTime at the first rAF after its first intersecting callback) and the onset (the first rAF where
+  currentTime advances), and measures the onset from first visibility, from the load event, and from the last
+  scene=active write. Medians, ms:
+
+| scenario | width | phase V / S0 / S0b | onset - visible (all arms) | onset - load: V - S0 (A/A) | onset - scene active: V - S0 (A/A) |
+|---|---|---|---|---|---|
+| S scroll-in (load + 2.5 s, 40 px per rAF) | 430 | 50 / 67 / 50 | 29-31 | -6 (-3..+1) | +5 (+3..+4) |
+| S | 1440 | 67 / 50 / 50 | 19-43, V - S0 <= 1 | +2 (-2..-1) | -3..-2 (0..+1) |
+| H `/#platform` (doc title only) | 430 | 67 / 67 / 67 | 28-29 | -11 (+2) | +1 (0) |
+| H | 1440 | 67 / 50 / 50 | 25-27 | -13 (-12) | +1 (-1) |
+
+  - S: phase within 17 ms and onset within 6 ms of S0 at both widths, about the size of the A/A. **HIT.**
+  - H: in every run the hash scroll lands after PMsweepIO's first callback. So
+    the case P-056a predicted to miss (a title on screen before that callback) did not occur, and H behaves like S.
+    **HIT.**
+  - J (information, not on the card): scrollIntoView of the doc title in the first task after it is inserted. Both
+    arms are bimodal: phase 0 or 33, onset 4-12 or 24-39 ms after visible. S0 itself shows both modes, and no V run
+    falls outside them. The "frozen at frame 0" risk did not show at either width.
+  - V's own phase is 33-67 ms, not the 0 I predicted. PMsweepGate runs about 290 ms after the titles are inserted,
+    just before the first scene write. So V pauses at the same moment RB does: one frame before the cv:auto skip,
+    which is why the race is gone.
+- **Sim W (a)** (w40i, w40j; arms C V V C + V C V; served hashes checked):
+
+| run | switch RS | view-rooted nested | Layout after the RS (40 ms) | outer RS count |
+|---|---|---|---|---|
+| S0 x3 | 18.5 / 19.9 / 20.4 ms | 1 / 1 / 1 | 0 | 350 / 364 / 369 |
+| RBi40pti x4 | 0.4 / 0.4 / 0.5 / 0.4 ms | 0 / 0 / 0 / 0 | 0 | 375 / 367 / 360 / 346 |
+
+  - RBi40p for comparison (w40p): RS 0.2, with an 18.1 ms cE-initiated view Layout right after it.
+  - RBi40pti has neither. Attribution only (Sim ms), no gain claim.
+  - The outer RS count swings about ±15 in both arms: **P-056a(a) count MISS**; nested and cE Layout **HIT**.
+- **Flip (b)** (q40uf): restyled 58/58/58, inCQ 0/0/0. **HIT** (RBi40pt 58/58/63).
+- Not run on RBi40pti: the phone (T-011) and the one-shot scenarios (a)-(d), which RBi40p passed. The line only adds
+  an attribute that PMsweepIO's first callback would set anyway, and it touches no one-shot.
+
 ## RBi40p: one-shot scenarios
 
 `out/scene-scope/scenprobe.mjs` parts a/b/c, compared by `scencmp.mjs`: every finite CSS animation unfinished in the
@@ -318,7 +390,18 @@ w40pw (S0 RBi40pw RBi40pw S0), w40p0 (RBi40p0 x2), w40b (B B RBi40pt RBi40pr). S
 - P-054 and P-055(b): listed-in-container HIT (0 and 5); the restyled bounds (≤23, ≤30) MISS, because they ignored
   Chrome's 54 tag invalidations (see "What RBi40p removes").
 
-## Functional check (RBi40p)
+## Functional check (RBi40pti, then RBi40p)
+
+RBi40pti: `node tools/fix.mjs check scene-scope --on bplus --viewport both --save` (shared lane, weight check,
+2026-10-02 05:29Z; `fixes/scene-scope/check.json`). The overlay now holds the CSS and the JS (bplus's JS plus the
+PMsweepGate line), checked against bplus.
+- CHECK OK, mobile and desktop: morph reached on both sides, 0 console errors, 0 4xx. Element count: desktop
+  1353 → 1353; mobile 1510 → 1509. The one missing element is an `img.is-enter` / `img.is-exit` pair present only in
+  the base capture, i.e. an image rotator caught mid-crossfade (phase). No A/A was run to confirm it.
+- Screenshot diff vs base: mobile top 0.12 %, middle 0, bottom 0; desktop top 0.07 %, middle 0, bottom 0. All inside
+  the 0-0.4 % countdown / orbit phase band.
+
+RBi40p (earlier):
 
 `node tools/fix.mjs check scene-scope --viewport both --save` (shared lane, weight check, 2026-10-02 03:11Z; headless,
 tools at or after d00ee9a; `fixes/scene-scope/check.json`). The overlay holds RBi40p's CSS only, so this check runs
@@ -355,12 +438,13 @@ it on the baseline JS, not on bplus's.
 
 ## What changed
 
-**Landing candidate now (`patch.diff` = `variants/17.diff`, regenerated 2026-10-02) = RBi40p (CSS 24c2e85682fe),
-stacked on bplus.** RB with the #platform-internal entries cut (section "RBi40p: what it cuts" above).
+**Landing candidate now (`patch.diff` = `variants/23.diff`, regenerated 2026-10-02) = RBi40pti, stacked on bplus:
+step 1 RBi40p (`variants/17.diff`, CSS 24c2e85682fe), step 2 the 4 row-title lines cut from the scene-paused list (CSS
+10cf34974e67) plus the PMsweepGate line (JS 7cea01ae081c; section "RBi40pti: the candidate").** Step 1 in detail: RB with the #platform-internal entries cut (section "RBi40p: what it cuts" above).
 - Against RB (landed in 8207797): the animation arm goes from 68 to 36 entries, the will-change arm from 17 to 13. The
   hero, people, commission, nav and sb-* entries are RB's; the R4a / R4b parts are as in RB.
-- CSS only. It adds or removes no observers, listeners or JS writes; the JS is byte-identical to RB's
-  (dbd5fdb4f1fb).
+- Step 1 is CSS only, with JS byte-identical to RB's (dbd5fdb4f1fb). Step 2 adds one attribute write per row title
+  at PMsweepGate time (4 writes per row creation), and no observers or listeners.
 - Evidence: the census, the #platform state evidence and the one-shot scenarios (above); the Sim structure count
   (P-053 HIT); flipprobe2 (P-054).
 - Still open: the phone ticket (T-011).
@@ -914,6 +998,7 @@ Abbreviations: Sim W = Simulator W driver (structure only); flipprobe = Chrome c
 | scene-scope/20 | RBi40p0 = RBi40p minus scene root (both lists) and the 4 row titles; CSS a80e69b94055 | the moved view Layout comes from the kept #platform matches | no switch layout | clean (Sim n=2) | cE-initiated layout 18.1 → none | "What RBi40p removes" | locates the next target | diagnostic (changes every scene root: not landable) | `variants/20.diff` | W | none (diagnostic) | LOCATED |
 | scene-scope/21 | RBi40pt = RBi40p minus the 4 row-title entries; CSS 10cf34974e67 | split /20: row titles | no switch layout | clean (Sim n=1) | none vs 18.1 ms | "What RBi40p removes" | the row titles carry it | diagnostic (needs a pixel check before any candidate) | `variants/21.diff` | W | none (diagnostic) | LOCATED |
 | scene-scope/22 | RBi40pr = RBi40p minus the scene-root entries; CSS 8184bceef75b | split /20: scene root | layout stays (21.0 ms) | clean (Sim n=1) | 21.0 ms after the RS | "What RBi40p removes" | the scene root is not it | diagnostic | `variants/22.diff` | W | none (diagnostic) | LOCATED (negative) |
+| scene-scope/23 | **RBi40pti** = RBi40pt + `data-sweep-paused` set on each row title before `PMsweepIO.observe` (JS 3982); CSS 10cf34974e67, JS 7cea01ae081c | removes RBi40p's 18 ms switch Layout without RBi40pt's 1440 phase race | no switch layout, phase and onset as RB | frames: A/A-region diffs + 1 unexplained 1440 frame (1 of 7 loads); Sim n=4 | switch RS 0.4-0.5 vs RB 18.5-20.4 ms, nested 0 | "RBi40pti: the candidate" | candidate (step 2 on /17) | `variants/23.diff` = `patch.diff` | W | none (attribution) | CANDIDATE |
 
 ## Cards (protocol v2)
 
@@ -933,7 +1018,12 @@ Attribution card (D), for the lead. **UNSIGNED**: no signed "D:" line exists; se
   are unchanged.
 - What the card does **not** cover: the ~18 ms view Layout that follows the RS in RBi40p (OBSERVED, Sim n=2; it moves
   out of the RS rather than going away). The split puts it on the 4 row-title entries (RBi40pt none, RBi40pr 21.0 ms;
-  n=1 each). Its mechanism is UNEXPLAINED; that is a separate card for the next target.
+  n=1 each), and RBi40pti, which cuts them, has none in 4 of 4 runs (Sim W, attribution). Why those 4 entries cause a
+  view Layout is UNEXPLAINED; that is a separate card.
+- RBi40pti's JS line rests on: Chromium blocks style recalc in a skipped (locked) subtree until unlock
+  (display_lock_context.h, CONFIRMED); a skipped subtree's CSS animations keep their time (WPT, CONFIRMED); that the
+  blocked recalc held back the play-state change is OBSERVED (q40ti2). Chrome-side only; on WebKit the line is
+  harmless either way (the attribute is set before any style).
 - Platform claims relied on: WebKit attribute invalidation (CONFIRMED, StyleInvalidator.cpp 29dd51e); WebKit CQ
   interleave per nesting level (CONFIRMED, StyleTreeResolver.cpp c0726d0, Document.cpp 079c1e3); non-bucketed
   `:is()` (CONFIRMED, F-100). WebKit `main` vs iOS 26.6.1: to be checked against the phone counts. Chrome's tag

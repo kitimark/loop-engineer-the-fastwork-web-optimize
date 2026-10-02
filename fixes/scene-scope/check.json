@@ -2,10 +2,10 @@
  "topic": "scene-scope",
  "kind": "functional check",
  "chromeMode": "headless",
- "createdAt": "2026-10-02T03:13:13.836Z",
+ "createdAt": "2026-10-02T05:31:32.166Z",
  "git": {
   "branch": "worktree-agent-a49a278f1d0bd6803",
-  "head": "db87fb3"
+  "head": "4324bd5"
  },
  "config": {
   "viewport": "both",
@@ -15,12 +15,12 @@
    "--latency",
    "150"
   ],
-  "baseline": "site-pretty",
+  "baseline": "site-pretty + fixes/bplus/overlay",
   "baselineSnapshot": {
    "snapshot": "b1789284481295-4ad4a84a",
    "state": "ok"
   },
-  "stackedOn": null,
+  "stackedOn": "bplus",
   "browser": "Chrome/154.0.8037.97",
   "uaOverride": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
   "screenInfo": {
@@ -40,7 +40,12 @@
   {
    "path": "/_app/immutable/assets/2.gBuqKVzi.css",
    "source": "overlay",
-   "sha256": "24c2e85682fe7f950ce8c00888548c4e53a9d826c82b7278eb71fab94d4450f9"
+   "sha256": "10cf34974e678ef7c364c45f9da0a32eabd255d25c872762f59245750ecfa878"
+  },
+  {
+   "path": "/_app/immutable/nodes/2.DyWL8TcE.js",
+   "source": "overlay",
+   "sha256": "7cea01ae081cad066666881ad33033dd4573128ecfdc2852224355aa09821406"
   }
  ],
  "verdict": "ok",
@@ -62,17 +67,20 @@
      "patched": true
     },
     "screenshotDiffPct": {
-     "top": 0.11,
-     "middle": 0.01,
+     "top": 0.12,
+     "middle": 0,
      "bottom": 0
     },
     "domDiff": {
      "elements": {
-      "baseline": 1337,
-      "patched": 1337
+      "baseline": 1510,
+      "patched": 1509
      },
      "added": [],
-     "removed": []
+     "removed": [
+      "img.is-enter",
+      "img.is-exit"
+     ]
     }
    },
    "desktop": {
@@ -86,14 +94,14 @@
      "patched": true
     },
     "screenshotDiffPct": {
-     "top": 0.1,
+     "top": 0.07,
      "middle": 0,
      "bottom": 0
     },
     "domDiff": {
      "elements": {
-      "baseline": 1180,
-      "patched": 1180
+      "baseline": 1353,
+      "patched": 1353
      },
      "added": [],
      "removed": []
@@ -110,7 +118,7 @@
    "notFound": [],
    "failed": 0,
    "morphReached": true,
-   "elements": 1337,
+   "elements": 1510,
    "walk": {
     "y": 5345,
     "maxY": 5345,
@@ -118,9 +126,9 @@
     "steps": 18
    },
    "shots": {
-    "top": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-base-top.png",
-    "middle": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-base-middle.png",
-    "bottom": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-base-bottom.png"
+    "top": "out/check/scene-scope/2026-10-02T05-29-23-862Z/mobile-base-top.png",
+    "middle": "out/check/scene-scope/2026-10-02T05-29-23-862Z/mobile-base-middle.png",
+    "bottom": "out/check/scene-scope/2026-10-02T05-29-23-862Z/mobile-base-bottom.png"
    }
   },
   {
@@ -131,7 +139,7 @@
    "notFound": [],
    "failed": 0,
    "morphReached": true,
-   "elements": 1337,
+   "elements": 1509,
    "walk": {
     "y": 5345,
     "maxY": 5345,
@@ -139,9 +147,9 @@
     "steps": 18
    },
    "shots": {
-    "top": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-fix-top.png",
-    "middle": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-fix-middle.png",
-    "bottom": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-fix-bottom.png"
+    "top": "out/check/scene-scope/2026-10-02T05-29-23-862Z/mobile-fix-top.png",
+    "middle": "out/check/scene-scope/2026-10-02T05-29-23-862Z/mobile-fix-middle.png",
+    "bottom": "out/check/scene-scope/2026-10-02T05-29-23-862Z/mobile-fix-bottom.png"
    }
   },
   {
@@ -152,7 +160,7 @@
    "notFound": [],
    "failed": 0,
    "morphReached": true,
-   "elements": 1180,
+   "elements": 1353,
    "walk": {
     "y": 8448,
     "maxY": 8448,
@@ -160,9 +168,9 @@
     "steps": 29
    },
    "shots": {
-    "top": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-base-top.png",
-    "middle": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-base-middle.png",
-    "bottom": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-base-bottom.png"
+    "top": "out/check/scene-scope/2026-10-02T05-29-23-862Z/desktop-base-top.png",
+    "middle": "out/check/scene-scope/2026-10-02T05-29-23-862Z/desktop-base-middle.png",
+    "bottom": "out/check/scene-scope/2026-10-02T05-29-23-862Z/desktop-base-bottom.png"
    }
   },
   {
@@ -173,7 +181,7 @@
    "notFound": [],
    "failed": 0,
    "morphReached": true,
-   "elements": 1180,
+   "elements": 1353,
    "walk": {
     "y": 8448,
     "maxY": 8448,
@@ -181,11 +189,11 @@
     "steps": 29
    },
    "shots": {
-    "top": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-fix-top.png",
-    "middle": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-fix-middle.png",
-    "bottom": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-fix-bottom.png"
+    "top": "out/check/scene-scope/2026-10-02T05-29-23-862Z/desktop-fix-top.png",
+    "middle": "out/check/scene-scope/2026-10-02T05-29-23-862Z/desktop-fix-middle.png",
+    "bottom": "out/check/scene-scope/2026-10-02T05-29-23-862Z/desktop-fix-bottom.png"
    }
   }
  ],
- "raw": "out/check/scene-scope/2026-10-02T03-11-08-140Z/check-raw.json"
+ "raw": "out/check/scene-scope/2026-10-02T05-29-23-862Z/check-raw.json"
 }
