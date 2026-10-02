@@ -83,10 +83,21 @@ const RESUME = (yHide, hideMs) => `(async () => {
   scrollTo({ top: ${yHide}, behavior: 'instant' }); await wait(${hideMs});
   const out = []; let n = 0, jumped = false;
   const timer = document.querySelector('[role=timer]');
-  const eff = () => { let o = 1; for (let e = timer; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity); return Math.round(o * 1000) / 1000; };
-  const ro = new ResizeObserver(() => { out.push({ t: performance.now(), y: scrollY, jumped, eo: X.exitOpacity(), op: eff(), p: X.painted() }); });
+  // amendment A1 (lead 10-02): the clock's rendered visibility per update. op = product of the computed opacity of the
+  // timer and every ancestor (parentElement chain); a value that does not parse as a number (e.g. '' on a
+  // display:contents wrapper) is skipped and counted in opSkip, never read as 0 (the 9a6f3f9ed143 field did Number('')).
+  // zeroAt names the first element whose computed opacity is 0. cv = checkVisibility({opacityProperty, visibilityProperty})
+  // where the engine has it (auxiliary only).
+  const desc = (e) => e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (e.classList.length ? '.' + [...e.classList].join('.') : '');
+  const vis = () => { let o = 1, skip = 0, zeroAt = null; for (let e = timer; e; e = e.parentElement) { const raw = getComputedStyle(e).opacity; const v = parseFloat(raw);
+    if (!Number.isFinite(v)) { skip++; continue; } if (v === 0 && !zeroAt) zeroAt = desc(e); o *= v; }
+    let cv = null; try { if (typeof timer.checkVisibility === 'function') cv = timer.checkVisibility({ opacityProperty: true, visibilityProperty: true }); } catch (err) { cv = 'err'; }
+    return { op: Math.round(o * 10000) / 10000, opSkip: skip, zeroAt, cv }; };
+  const chain = () => { const a = []; for (let e = timer; e; e = e.parentElement) { const cs = getComputedStyle(e); a.push([desc(e), cs.opacity, cs.display, cs.visibility]); } return a; };
+  X.chainHidden = chain();
+  const ro = new ResizeObserver(() => { out.push({ t: performance.now(), y: scrollY, jumped, eo: X.exitOpacity(), ...vis(), p: X.painted() }); });
   await new Promise((done) => { const loop = () => { ro.unobserve(el); ro.observe(el); if (++n === 4) setTimeout(() => { jumped = true; scrollTo({ top: 0, behavior: 'instant' }); }, 0); if (n < 24) requestAnimationFrame(loop); else done(); }; requestAnimationFrame(loop); });
-  ro.disconnect(); el.remove(); return out;
+  ro.disconnect(); el.remove(); await wait(1500); X.chainEnd = chain(); X.visEnd = vis(); return out;
 })()`;
 
 // ---------- Timeline summary ----------
@@ -183,15 +194,17 @@ async function sequence(c, range, { lt, resumeCheck }) {
     await sleep(650);
     recs = [];
     await ev('__x1.rafOn()');
+    const kWin0 = await ev('__x1.ticks');
     await c.send('Timeline.start', { maxCallStackDepth: 1 });
     if (jumpTo !== null) { await sleep(300); await ev(`(scrollTo({ top: ${jumpTo}, behavior: 'instant' }), 0)`); await sleep(WIN - 300); } else await sleep(WIN);
     await c.send('Timeline.stop');
+    const ticksInWindow = (await ev('__x1.ticks')) - kWin0;
     const raf = await ev('__x1.rafOff()');
     await sleep(1500);
     const lt1 = lt ? await layers(c) : null;
-    res.positions[name] = { y, yAtStart, jumpTo, census, tickWaitMs: Date.now() - tw, records: recs.length, ...summarize(recs, range, g, raf), lt: lt ? ltDelta(lt0, lt1) : undefined };
+    res.positions[name] = { y, yAtStart, jumpTo, ticksInWindow, census, tickWaitMs: Date.now() - tw, records: recs.length, ...summarize(recs, range, g, raf), lt: lt ? ltDelta(lt0, lt1) : undefined };
     const s = res.positions[name];
-    console.log(name, JSON.stringify(s.counts), 'segMs', JSON.stringify(s.segMs), lt ? `faceLayers ${s.lt.faceLayers} facePaints ${s.lt.facePaints}` : '');
+    console.log(name, 'ticks', ticksInWindow, JSON.stringify(s.counts), 'segMs', JSON.stringify(s.segMs), lt ? `faceLayers ${s.lt.faceLayers} facePaints ${s.lt.facePaints}` : '');
   }
   await c.send('Timeline.disable').catch(() => {});
   if (resumeCheck) {
@@ -201,10 +214,14 @@ async function sequence(c, range, { lt, resumeCheck }) {
     const judge = (r) => r && r.p.every((n) => n.d.every((d, i) => d && (d.t === String(n.v)[i] || Math.abs(d.off) >= 0.02)));
     const after = recsR.filter((r) => r.jumped && r.y === 0);
     const firstVisible = after.find((r) => r.op > 0) || null;
-    // op: the hero clock's effective opacity (product of computed opacity up the tree) in that rendering update
+    // op: the hero clock's rendered opacity (product of computed opacity up the tree) in that rendering update (A1)
+    const chainHidden = await ev('__x1.chainHidden'), chainEnd = await ev('__x1.chainEnd'), visEnd = await ev('__x1.visEnd');
     res.resumeCheck = { frames: recsR, firstAtTop: first || null, liveAtFirstFrame: judge(first), liveWhileHidden: judge(before),
       firstVisible, liveAtFirstVisible: judge(firstVisible), staleVisibleUpdates: after.filter((r) => r.op > 0 && !judge(r)).length,
-      updatesAtTopBeforeVisible: after.indexOf(firstVisible) };
+      updatesAtTopBeforeVisible: after.indexOf(firstVisible),
+      staleUpdates: after.filter((r) => !judge(r)).map((r) => ({ t: r.t, eo: r.eo, op: r.op, opSkip: r.opSkip, zeroAt: r.zeroAt, cv: r.cv })),
+      instrumentOk: !!(visEnd && visEnd.op > 0), visEnd, chainHidden, chainEnd };
+    console.log('resume-check A1: instrument ok (op > 0 at rest at top):', res.resumeCheck.instrumentOk, JSON.stringify(res.resumeCheck.visEnd), '| stale updates:', JSON.stringify(res.resumeCheck.staleUpdates));
     console.log('resume-check: first visible update', res.resumeCheck.updatesAtTopBeforeVisible, 'live', res.resumeCheck.liveAtFirstVisible, 'stale visible updates', res.resumeCheck.staleVisibleUpdates);
     console.log('resume-check: live at the first frame at y 0:', res.resumeCheck.liveAtFirstFrame, '| live while hidden:', res.resumeCheck.liveWhileHidden);
   }

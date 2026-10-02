@@ -597,6 +597,59 @@ case.
 
 The falsifier "S6 is not live at the first frame" is met as written. The phone parts are unscored.
 
+### Lead decisions on the stage-1 trigger (2026-10-02)
+
+- **(iii): explained post-data, lead 2026-10-02** (a signed lead deviation; the rule's text is unchanged). The
+  heroExit Layouts are page-driven:
+  - the view-sized Layouts are equal in both arms (C 148-167, V 149-150);
+  - the clock's own digit Paints go 80-83 → 0.
+- **(iv): not decided yet.** The "invisible at `--exit-opacity` 0" reading rested in part on the opacity field that
+  was broken. It gets a decisive re-check (amendment A1 below) before anyone reads it as explained.
+- **(i): goes to the user as one question after A1**, if (iv) is explained: run stage 2 (needs the user's timing
+  lift), or accept the small repaint rise as is.
+
+### Amendment A1: the decisive (iv) check (pre-registered before the re-run, lead 2026-10-02)
+
+**What is checked.** One Simulator session, base then PoC (`x1.mjs sim base,poc`), with the same sequence and
+windows as stage 1. It runs in the shared lane with weight simulator, counts only. x1.mjs goes from 9a6f3f9ed143 to
+5d0c9e4c41db and changes only in what the resume check and the windows record:
+- **Rendered opacity, per rendering update after the jump** (ResizeObserver callback: after rAF and layout, before
+  paint):
+  - `op` is the product of the computed `opacity` of the hero timer and every ancestor up the `parentElement` chain;
+  - a value that does not parse as a number is skipped and counted (`opSkip`), never read as 0. The 9a6f3f9ed143 field
+    used `Number(…)`, so an empty string, e.g. on a `display: contents` wrapper, became 0; this is a suspected cause,
+    to be confirmed by the chain dump;
+  - `zeroAt` names the first element whose computed opacity is 0.
+
+  Each update also records the shown digits (the face nearest offset 0 per digit), the live `data-value`, and
+  `--exit-opacity`.
+- **`checkVisibility({opacityProperty: true, visibilityProperty: true})`** is recorded as `cv`, as auxiliary data
+  only:
+  - MDN lists `checkVisibility()` as Baseline since March 2024
+    (developer.mozilla.org/en-US/docs/Web/API/Element/checkVisibility);
+  - WebKit support for the `opacityProperty` option is UNRESOLVED, so `cv` decides nothing.
+- **The full ancestor chain** (element, computed opacity, display, visibility) is recorded twice: while hidden, and at
+  rest at the top 1.5 s after the last update.
+- **Ticks per window:** `ticksInWindow` (the stage-1 gap). Validity needs ≥ 3 in every window.
+
+**Instrument validity.** At rest at the top, with the clock plainly on screen, `op` must be > 0 in both arms. If not,
+the instrument is still wrong: no decision is made, and the chain dump goes to the lead. The other validity rules
+are unchanged from stage 1:
+- hashes match;
+- `--exit-opacity` reads 0 at heroExit;
+- ≥ 3 ticks per window.
+
+**Outcomes** (V = PoC; C must be live in every update, as the control):
+- **V shows a stale digit in any update with `op` > 0: (iv) stands.** That is a visible stale frame, a real visual
+  bug, so it goes back to the code. The hero gate must turn on no later than the update in which the clock's rendered
+  opacity first exceeds 0, in the same frame, on the same rendered condition.
+- **Every stale V update has `op` exactly 0: (iv) is explained.** The stale digits are painted only while the clock is
+  fully transparent. Then (i) goes to the user as above.
+- **V shows no stale update at all in this session:** (iv) does not recur here, and is judged on session 2's
+  `--exit-opacity` data alone. That is weaker evidence, and it goes to the lead.
+
+**Not changed:** the stage-1 counts and their scoring, every trigger rule, and P-069.
+
 ## Overlap with other topics (review r1 Blocking 3)
 
 - **Topic #1 `countdown-idle-raf`** (on main, ACCEPT-WITH-NOTES, patch v03) edits the same hunks: `$E` 3824, the
