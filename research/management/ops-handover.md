@@ -219,6 +219,15 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   04:1xZ PHONE ORDER (lead, supersedes the (a)-(g) order above): 1 phone-fwreskip-g1 (the G/F fling landing gate; ticket
   in fix-scroll-engine's README, pending its report), 2 PR-001 (only if the user approves), 3 scene-scope ST, 4 the
   T-009 cooldown curve, 5 the I-042 G check. The morph start (e) stays parked (user deferred, T-001 #14).
+  04:2xZ (g) = phone-fwreskip-g1 TICKET (fix-scroll-engine, prepared, not run): b5f24a5 on worktree-agent-a1722cf5058e25591,
+  README "Phone ticket G1 (item iv)". Snapshots out/fwreskip/snap-g1/{B,P} in that worktree: B JS dbd5fdb4f1fb, P JS
+  96b876639c84, CSS 0d7dfc79e703 both (second read mgmt-ops-6 04:3xZ: all 4 sha256 prefixes match). Gesture
+  fling-band-v1.json, compiler v2 (fast 5,850 px/s hash 3195734415a8, medium 3,240 px/s hash f7cded2f3ea6); logger flinglog.mjs with a magenta calibration flash. Block
+  B P P B B P P B, fast; medium only if no FAIL; F via the console if G is inconclusive. Stroke-fidelity gate ±10 %
+  applies (lead 00:3xZ). Board item phone-fwreskip-g1, owner iphone-runner; fix-scroll-engine parked.
+  Second read: question, one control (B = RB), driver G (F fallback), warm-up per port, Timeline-off sentinel, ~15 min per
+  block, at most 2 blocks, void and FAIL rules written before data: OK. MISSING: a P-row in fixes/PREDICTIONS.md (the
+  owner's prediction for item (iv)); register it before the block runs.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
