@@ -28,6 +28,9 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
     opacity fixed, under a pre-registered amendment (ops re-reads it): clock visible with a stale digit -> back to the
     code; opacity 0 in every stale update -> explained. If (iv) is explained, only (i) remains and the lead asks the
     user for the stage-2 timing lift.
+  - **New user thread T-030: GPU/compositor-only CSS for animations.** de-gpu researches it in research/gpu-props/:
+    a Chrome vs WebKit reference table with status words, an audit of every animation on the page, the top 3-5
+    candidates. No phone, no timing.
 - **22:5xZ 1153c70 landed (main tip). P-068 amendment 56636f8 re-read: NEEDS-WORK (fallback scoring); lead holds 4bf2319+56636f8.**
   - Amendment (de-heat, heat.mjs 341a774801ae): every arm "held" (on the cable, not charging; state read 22:42Z, 80 %);
     `heat.mjs charge-wait` gate before each segment (<= 20 min); one non-held read excludes the segment, re-run last;
@@ -1525,6 +1528,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
 | `fix-image-size` (new 12:0xZ; ID af756241c686d490e) | image-size: P-066 falsified (no detectable saving), dropped; null write-up 909464c | done |
 | `de-countdown` (ID via ListAgents) | T-024 countdown-faces (board priority #1; apple.com off-screen-pause reference) | alive |
+| `de-heat` (a19ec71e8ca8fff91) | T-029 phone heat, P-068 ticket (research/phone-heat/) | done (ticket on main; iphone-runner runs it after F3) |
+| `de-gpu` (ID via ListAgents) | T-030 GPU/compositor-only CSS for animations (research/gpu-props/), no phone, no timing | alive |
 | `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (user: no, thanks) |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
 | `ts-i063` (spawned 12:05Z; ID via ListAgents) | I-063, I-065, I-066, I-069 (follow-up 5678f13 landed), I-068/I-071 (not-a-bug); I-071 check.chrome hardening staged, waits for an awake Mac | alive |
