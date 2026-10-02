@@ -8,6 +8,17 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **10:1xZ A1 done, I-059 resolved, G1b running.** Main: a2c15e7 (ops docs), 62b4053 (I-059 B "Start over";
+  I-059 RESOLVED; console restarted 10:00Z), wi-stack series 94b8010..e7d2de2.
+  - **PR-003 A CONFIRMED on the phone** (A1, wi-stack): #people frame 2 median NB 44 vs C 42 vs V 74 ms, idle gain kept,
+    P-062 HIT. Landed as st6-rb (df04a4a build with the scene-arm will-change selector, e7d2de2 results). B: WebKit source
+    refutes the filter-extent hypothesis (f4a7600); B pixel gate next (Sim only).
+  - **G1b is running on the phone now** (iphone-runner; fix-scroll-engine be4c331). Then T-011, T-009, I-042.
+  - **PR-004** (PR-001 follow-up, de-illusion-style): rev 2 = phone test report + 4 next-step options; WAITING ON THE USER.
+  - **T-019 #18**: the user asked for a hardened Mac-side iPhone screen recorder. de-iphone-screenrec researches (docs
+    only); a toolsmith follows; the first run needs the user's OK. NO CAMERA still holds until then.
+  - **I-060** (ts-i060, open): progress page "Right now" shows only who holds a device, not the job or the fix (user
+    T-020). ts-i060's full npm test ran in the shared lane at 10:12Z.
 - **09:4xZ (later) C-021/C-023 DEFERRED by the user** (T-019 #9, 09:43:56Z: make the test easier first).
   - iphone-runner stops the retry and returns to the queue: block B attribution -> A1 -> G1b -> T-011 -> T-009 -> I-042.
     It writes a grooming note for the next try: the user only starts and stops the recording; the phone plays everything.
@@ -1100,7 +1111,8 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-059 | open 09:35Z | ts-i059 | console: a runner-ended part can be marked Done by the user; fix (A) runner-ended parts + (B) "Start over" (T-019 #7) |
+| I-060 | open 09:47Z | ts-i060 | progress page "Right now": show the job and the fix, not only the holder (user T-020) |
+| I-059 | RESOLVED 10:0xZ, landed 17eeb1a + 62b4053 | ts-i059 | console: a runner-ended part can be marked Done by the user; fix (A) runner-ended parts + (B) "Start over" (T-019 #7) |
 | I-056 | RESOLVED 09:3xZ, landed d2d77ad (phone runs no longer wait for shared groups, `--require-quiet` opts in) | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (lets S/W/M blocks use the preferred quiet hold), (c) gesture-run guard, (d) shared readers log to holds.log |
 | I-058 | open | toolsmith (lead spawning) | waits invisible on the board; fixed-time waits where a probe exists (user T-016) |
 | – | resolved 10-02: I-053 (proposal options, 42c14a0), I-054 (Range, 67847b4), I-055 + I-057 (flaky e2e, 42c14a0) | – | console restarted 08:22Z with options live |
