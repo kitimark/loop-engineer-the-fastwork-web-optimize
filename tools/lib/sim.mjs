@@ -21,7 +21,7 @@
 // $FW_LSOF, $FW_IDEVICE_ID, $FW_XCODEBUILD, $FW_OPEN, $FW_OSASCRIPT. Ports: $FW_SIM_DEVICE_PORT (9231),
 // $FW_SIM_PORT (9232), $FW_SIM_WDA_PORT (8101); the phone's 9221/9222/8100 are refused.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync, openSync, closeSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync, openSync, closeSync, existsSync, lstatSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { sharedStateDir } from './paths.mjs';
@@ -427,8 +427,21 @@ export function openedTab(list, want, before = []) {
 // every tab pick to that host (FW_TAB_HOST, tools/lib/wip.mjs pickTab), so a page of another server is never a
 // candidate. Two pages on the session's own host stay AMBIGUOUS (I-037). A record of another session is ignored.
 export const openedFile = () => file('opened.json');
-export function writeOpened(session, url) { writePrivate(openedFile(), JSON.stringify({ session: session.id, host: new URL(url).host, at: new Date().toISOString() })); }
-export function openedHost(session) { const o = readJson(openedFile(), null); return o && session?.id && o.session === session.id && o.host ? o.host : null; }
+// It also records the page it landed on (`href`, its location.href; incident I-052): `open` and `fetched` connect to
+// exactly that page while Safari lists it, so a second open on the same host (openurl adds a tab) is not AMBIGUOUS.
+export function writeOpened(session, url, href = url) { writePrivate(openedFile(), JSON.stringify({ session: session.id, host: new URL(url).host, url: href, at: new Date().toISOString() })); }
+const ownOpened = (session) => { const o = readJson(openedFile(), null); return o && session?.id && o.session === session.id ? o : null; };
+export function openedHost(session) { return ownOpened(session)?.host || null; }
+export function openedUrl(session) { return ownOpened(session)?.url || null; }
+/**
+ * A tab url matcher for openTab (I-052): exactly `url` while `list` (the proxy's /json) has a page target on it; else any
+ * page on `host`; else any page. Several matches stay AMBIGUOUS in pickTab (I-037).
+ */
+export function pageMatcher(list, url, host) {
+  if (url && (Array.isArray(list) ? list : []).some((t) => t && t.webSocketDebuggerUrl && t.url === url)) return (u) => u === url;
+  if (host) return (u) => { try { return new URL(u).host === host; } catch { return false; } };
+  return () => true;
+}
 /** Sets env.FW_TAB_HOST to the session's opened host (unless the caller set it); returns the host in force or null. */
 export function scopeTabs(session, env = process.env) {
   const h = openedHost(session);
@@ -439,7 +452,78 @@ export function scopeTabs(session, env = process.env) {
 // ---- boot / shutdown -------------------------------------------------------------------------------------------------
 export function deviceState(udid) { return listDevices().find((d) => d.udid === udid)?.state ?? null; }
 
-/** Boot, wait for bootstatus, launch Safari and wait for its inspector socket. Throws on failure (the caller shuts down). */
+// Safari's HTTP cache persists across sessions in the device's data (incident I-052, F-115): an origin seen before
+// (localhost:<port>, and serve.mjs --port auto hands the same ports to different overlays) gets its hashed
+// `immutable` assets from the cache without a request, so a Simulator arm could silently run another arm's CSS / JS,
+// and serve --no-cache cannot evict an entry already stored. Every session therefore empties the two HTTP caches in
+// Safari's data container, WebKit's disk cache (Library/Caches/com.apple.mobilesafari/WebKit/NetworkCache) and
+// CFNetwork's (…/fsCachedData), after boot and before Safari launches, with Safari terminated (its networking
+// process owns the cache). Website data (localStorage, cookies, service-worker CacheStorage), tabs and the first-run
+// tip state are kept. A failure refuses the session. The path comes from `simctl get_app_container` and must be a
+// data container of this very device, or nothing is removed.
+export const SAFARI_CACHE_DIRS = Object.freeze([['NetworkCache', 'Library/Caches/com.apple.mobilesafari/WebKit/NetworkCache'], ['fsCachedData', 'Library/Caches/com.apple.mobilesafari/fsCachedData']]);
+const NOT_CONTAINER = 'could not clear Safari\'s HTTP cache (I-052): simctl get_app_container printed a path that is not a data container of fw-sim; nothing removed';
+export function safariCacheTargets(container, udid) {
+  const c = String(container ?? '').replace(/\n+$/, '');
+  const esc = String(udid || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!udid || /\/\.{1,2}(\/|$)/.test(c) || !new RegExp(`^/[^\\n]+/${esc}/data/Containers/Data/Application/[A-Za-z0-9-]+$`).test(c)) throw new Error(NOT_CONTAINER);
+  return SAFARI_CACHE_DIRS.map(([name, rel]) => ({ name, path: `${c}/${rel}` }));
+}
+const treeBytes = (p) => { let n = 0; let st; try { st = lstatSync(p); } catch { return 0; } if (!st.isDirectory()) return st.size; for (const e of readdirSync(p)) n += treeBytes(join(p, e)); return n; };
+/** Empty Safari's HTTP caches (see above). Safari must not run: it is terminated first. Returns {cleared, removedMB}. */
+export async function clearSafariCache(udid, { abort, log = () => {} } = {}) {
+  const t = await simctlAsync(['terminate', udid, SAFARI], { timeoutMs: 30000, abort }); // after a boot: "found nothing to terminate"
+  if (t.aborted) throw new Error('interrupted while clearing Safari\'s HTTP cache');
+  if (t.status === 0) await sleep(1500); // it was running: let its WebKit processes exit
+  const r = simctl(['get_app_container', udid, SAFARI, 'data'], { timeoutMs: 30000 });
+  if (r.status !== 0) throw new Error(`could not clear Safari's HTTP cache (I-052): simctl get_app_container failed (${scrub(failText(r))})`);
+  const removedMB = {};
+  for (const { name, path } of safariCacheTargets(r.stdout, udid)) {
+    removedMB[name] = Math.round(treeBytes(path) / 1024 / 1024 * 10) / 10;
+    rmSync(path, { recursive: true, force: true });
+    if (existsSync(path)) throw new Error(`could not clear Safari's HTTP cache (I-052): ${name} is still there`);
+  }
+  log(`Safari HTTP cache cleared before launch (I-052): ${Object.entries(removedMB).map(([k, v]) => `${k} ${v.toFixed(1)} MB`).join(', ')}`);
+  return { cleared: true, removedMB };
+}
+
+/** `sim.mjs fetched <part>`'s page read: every Resource Timing entry, its sizes and the page origin (JSON). */
+export const RESOURCES_JS = `JSON.stringify({origin: location.origin, entries: performance.getEntriesByType('resource').map((e) => ({name: e.name, transferSize: e.transferSize, encodedBodySize: e.encodedBodySize, decodedBodySize: e.decodedBodySize}))})`;
+/**
+ * Did the page fetch `part` over the network or take it from Safari's cache (I-052)? Resource Timing's transferSize
+ * (CONFIRMED, w3c.github.io/resource-timing #dom-performanceresourcetiming-transfersize): 0 for cache mode "local",
+ * 300 for "validated" (no body transferred), else encoded body size + 300. So only a body over the network is "network";
+ * the Simulator's Safari reported 300 / body 0 for a load our server never saw (OBSERVED, in our setup, 2026-10-02),
+ * so the server log is the decisive check. A cross-origin entry without Timing-Allow-Origin also reads 0, and an engine
+ * without the field gives undefined: both "unknown". `logText`: the server's log (serve.mjs: "<status> GET <path> …"
+ * per request), its GETs for `part` counted over the whole log.
+ * Returns {lines, code}: 0 every match came over the network (and the log has a GET), 3 cache / unknown / no GET,
+ * 1 no entry matches.
+ */
+export function fetchReport(page, part, { logText = null } = {}) {
+  const origin = page?.origin ?? null;
+  const hits = (page?.entries ?? []).filter((e) => typeof e?.name === 'string' && e.name.includes(part));
+  const verdict = (e) => {
+    if (typeof e.transferSize !== 'number') return 'unknown (no transferSize)';
+    if (e.transferSize === 300 && !(e.encodedBodySize > 0)) return 'validated (no body transferred)'; // the spec's cache mode "validated"
+    if (e.transferSize > 0) return 'network'; // encoded body size + 300
+    let o = null; try { o = new URL(e.name).origin; } catch {}
+    if (o !== origin) return 'unknown (cross-origin)';
+    return e.encodedBodySize > 0 || e.decodedBodySize > 0 ? 'cache' : 'unknown (no sizes)';
+  };
+  const lines = hits.map((e) => `${verdict(e).padEnd(10)} ${e.name} (transferSize ${e.transferSize ?? 'n/a'}, body ${e.encodedBodySize ?? 'n/a'} B)`);
+  let code = !hits.length ? 1 : hits.every((e) => verdict(e) === 'network') ? 0 : 3;
+  if (!hits.length) lines.push(`no resource of the page matches "${part}" (Resource Timing)`);
+  if (logText !== null) {
+    const gets = String(logText).split('\n').filter((l) => /^\d{3} GET \S+/.test(l) && l.split(' ')[2].includes(part.replace(/^https?:\/\/[^/]+/, ''))).length;
+    lines.push(`server log: ${gets} GET${gets === 1 ? '' : 's'} for ${part}`);
+    if (!gets && code === 0) code = 3;
+  }
+  return { lines, code };
+}
+
+/** Boot, wait for bootstatus, empty Safari's HTTP cache, launch Safari and wait for its inspector socket. Throws on
+ *  failure (the caller shuts down). Returns {safariCache}. */
 export async function bootDevice(udid, { abort, log = () => {}, bootTimeoutMs = 300000 } = {}) {
   const t0 = Date.now();
   let r = await simctlAsync(['boot', udid], { timeoutMs: 120000, abort });
@@ -448,12 +532,13 @@ export async function bootDevice(udid, { abort, log = () => {}, bootTimeoutMs = 
   r = await simctlAsync(['bootstatus', udid, '-b'], { timeoutMs: bootTimeoutMs, abort });
   if (r.aborted) throw new Error('interrupted during bootstatus');
   if (r.status !== 0) throw new Error(`simctl bootstatus failed (${r.timedOut ? 'timed out' : `exit ${r.status}`})`);
+  const safariCache = await clearSafariCache(udid, { abort, log });
   r = await simctlAsync(['launch', udid, SAFARI], { timeoutMs: 60000, abort });
   if (r.aborted) throw new Error('interrupted during the Safari launch');
   if (r.status !== 0) throw new Error(`simctl launch Safari failed (exit ${r.status})`);
   for (let i = 0; i < 60; i++) {
     if (abort?.aborted) throw new Error('interrupted while waiting for the inspector socket');
-    if (findSocket()) { log(`booted in ${Math.round((Date.now() - t0) / 1000)} s, Safari running`); return; }
+    if (findSocket()) { log(`booted in ${Math.round((Date.now() - t0) / 1000)} s, Safari running`); return { safariCache }; }
     await sleep(500);
   }
   throw new Error('Safari runs, but no web inspector socket appeared in 30 s');
@@ -606,7 +691,9 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   let code = 1;
   try {
     log(`sim session ${id} (owner ${owner}, window ${window}${functional ? `, functional, lock mode ${gate.mode}` : ''}): booting ${SIM_NAME}`);
-    await bootDevice(cfg.udid, { abort: ac.signal, log });
+    const boot = await bootDevice(cfg.udid, { abort: ac.signal, log });
+    rec.safariCache = boot?.safariCache ?? null; // meta.sim.safariCache of every record of this session (I-052)
+    writePrivate(sessionFile(), JSON.stringify(rec, null, 1));
     if (window === 'shown') { const was = simAppRunning(); openSimApp(cfg.udid); state.appOpened = !was; }
     if (interrupted) throw new Error(`interrupted by ${interrupted}`);
     await startProxy({ owner, session: id, log });

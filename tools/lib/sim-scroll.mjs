@@ -63,7 +63,8 @@ export const SIM_SETTINGS = Object.freeze({ lowPowerMode: 'n/a', batteryPct: 'n/
 export function simMeta(session, { hostStart = null, hostEnd = null } = {}) {
   const c = readConfig();
   return { runtime: c.runtime ?? null, runtimeBuild: c.runtimeBuild ?? null, deviceType: c.deviceType ?? null, xcode: c.xcode ?? null, window: session?.window ?? null, tipDismissed: session?.tipDismissed ?? null,
-    lockdownMode: 'not read (Simulator default: off)', hostLoad: { start: hostStart, end: hostEnd }, proxyPorts: session?.proxyPorts ?? null };
+    lockdownMode: 'not read (Simulator default: off)', hostLoad: { start: hostStart, end: hostEnd }, proxyPorts: session?.proxyPorts ?? null,
+    safariCache: session?.safariCache ?? null }; // I-052: Safari's HTTP cache emptied at boot ({cleared, removedMB})
 }
 const hostLoad = () => hostSample({ windowSec: 3 }).catch((e) => ({ error: e.message }));
 const outPath = (o, owner, label) => resolve(REPO, o.out || join('out', 'sim', `${owner}-${label}-${Date.now()}.json`));

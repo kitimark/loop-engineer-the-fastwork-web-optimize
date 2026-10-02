@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { join } from 'node:path';
 import { statSync } from 'node:fs';
-import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock, openedTab, writeOpened, openedHost, openedFile, scopeTabs } from '../../tools/lib/sim.mjs';
+import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock, openedTab, writeOpened, openedHost, openedFile, scopeTabs, safariCacheTargets, fetchReport, openedUrl, pageMatcher } from '../../tools/lib/sim.mjs';
 import { status as lockStatus } from '../../tools/lib/lock.mjs';
 import { simMeta, SIM_SETTINGS, runTarget } from '../../tools/lib/sim-scroll.mjs';
 import { tempDir } from '../helpers.mjs';
@@ -151,6 +151,32 @@ test('I-050 writeOpened / openedHost / scopeTabs: the host of this session\'s op
   } finally { if (prev === undefined) delete process.env.FW_STATE_DIR; else process.env.FW_STATE_DIR = prev; }
 });
 
+test('I-052 openedUrl / pageMatcher: the page this session\'s last open landed on, matched exactly while Safari lists it (a second open on the same host is no longer AMBIGUOUS); else the host; else any', () => {
+  const prev = process.env.FW_STATE_DIR;
+  process.env.FW_STATE_DIR = tempDir('fw-sim-opened-url-');
+  try {
+    const s1 = { id: 's1' }, s2 = { id: 's2' };
+    assert.equal(openedUrl(s1), null, 'no record');
+    writeOpened(s1, 'http://localhost:5947/?n=2', 'http://localhost:5947/?n=2#top');
+    assert.equal(openedUrl(s1), 'http://localhost:5947/?n=2#top', 'where the page landed (location.href)');
+    assert.equal(openedHost(s1), 'localhost:5947');
+    assert.equal(openedUrl(s2), null, 'an earlier session\'s open names no page in this one');
+    writeOpened(s1, 'http://localhost:5947/?n=3');
+    assert.equal(openedUrl(s1), 'http://localhost:5947/?n=3', 'without a landed href: the opened url');
+  } finally { if (prev === undefined) delete process.env.FW_STATE_DIR; else process.env.FW_STATE_DIR = prev; }
+  const ws = (n) => `ws://127.0.0.1:9232/devtools/page/${n}`;
+  const list = [{ url: 'http://localhost:63765/', webSocketDebuggerUrl: ws(5) }, { url: 'http://localhost:5947/?n=1', webSocketDebuggerUrl: ws(1) }, { url: 'http://localhost:5947/?n=2', webSocketDebuggerUrl: ws(2) }];
+  let m = pageMatcher(list, 'http://localhost:5947/?n=2', 'localhost:5947');
+  assert.deepEqual(list.map((t) => m(t.url)), [false, false, true], 'the last open\'s page only');
+  m = pageMatcher(list, 'http://localhost:5947/?n=9', 'localhost:5947');
+  assert.deepEqual(list.map((t) => m(t.url)), [false, true, true], 'not listed (it navigated on): the host, so two stay AMBIGUOUS (I-037)');
+  m = pageMatcher([{ url: 'http://localhost:5947/?n=2' }], 'http://localhost:5947/?n=2', 'localhost:5947');
+  assert.equal(m('http://localhost:5947/?n=1'), true, 'a listing without websockets proves nothing: the host');
+  m = pageMatcher(list, null, null);
+  assert.deepEqual(list.map((t) => m(t.url)), [true, true, true], 'no open in this session: any page (pickTab still scopes by FW_TAB_HOST)');
+  assert.equal(pageMatcher(list, null, 'localhost:5947')('not a url'), false);
+});
+
 test('iwdpConfigText: list port, each phone once at -1, then the Simulator; a non-id line is refused', () => {
   const a = '00008130-0011223344556677', b = 'abcdef0123456789abcdef0123456789abcdef01';
   assert.equal(iwdpConfigText([a, b, a], { list: 9231, tabs: 9232 }), `null:9231\n${a}:-1\n${b}:-1\n:9232\n`);
@@ -196,6 +222,53 @@ test('simMeta: device "simulator", runtime / Xcode / window / tip / ports / host
   assert.deepEqual(m.hostLoad, { start: { load1: 1 }, end: { load1: 2 } });
   for (const k of ['runtime', 'runtimeBuild', 'deviceType', 'xcode', 'lockdownMode']) assert.ok(k in m, k);
   assert.ok(!JSON.stringify(m).match(/udid/i), 'no udid field');
+  assert.equal(m.safariCache, null, 'I-052: a session record without the field (from before the fix): null, not "cleared"');
+  const c = { cleared: true, removedMB: { NetworkCache: 4, fsCachedData: 0 } };
+  assert.deepEqual(simMeta({ safariCache: c }).safariCache, c, 'I-052: every Simulator record says whether Safari\'s HTTP cache was emptied at boot');
+});
+
+test('I-052 fetchReport: transferSize > 0 network, 0 with a body cache, cross-origin / missing fields unknown; the server log\'s GETs; exit codes', () => {
+  const o = 'http://localhost:5367';
+  const css = `${o}/_app/immutable/assets/2.gBuqKVzi.css`, js = `${o}/_app/immutable/nodes/2.DyWL8TcE.js`;
+  const page = (entries) => ({ origin: o, entries });
+  let r = fetchReport(page([{ name: css, transferSize: 5120, encodedBodySize: 4800, decodedBodySize: 20000 }, { name: js, transferSize: 0, encodedBodySize: 9000, decodedBodySize: 30000 }]), '2.gBuqKVzi.css');
+  assert.equal(r.code, 0);
+  assert.match(r.lines[0], /^network\s+http:\/\/localhost:5367\/_app\/immutable\/assets\/2\.gBuqKVzi\.css \(transferSize 5120, body 4800 B\)$/);
+  r = fetchReport(page([{ name: js, transferSize: 0, encodedBodySize: 9000, decodedBodySize: 30000 }]), '2.DyWL8TcE.js');
+  assert.equal(r.code, 3);
+  assert.match(r.lines[0], /^cache\s/);
+  r = fetchReport(page([{ name: css, transferSize: 300, encodedBodySize: 0, decodedBodySize: 0 }]), 'x.css'.replace('x', '2.gBuqKVzi'));
+  assert.equal(r.code, 3, 'transferSize 300 = the spec\'s cache mode "validated": no body came over the network (the real Sim reported it for a load the server never saw)');
+  assert.match(r.lines[0], /^validated \(no body transferred\)\s/);
+  assert.equal(fetchReport(page([{ name: css, transferSize: 343, encodedBodySize: 43 }]), '.css').code, 0, 'encoded size + 300: network');
+  assert.equal(fetchReport(page([{ name: js }]), '.js').code, 3, 'no transferSize: unknown, never "network"');
+  assert.match(fetchReport(page([{ name: js }]), '.js').lines[0], /^unknown \(no transferSize\)/);
+  assert.match(fetchReport(page([{ name: 'http://cdn.example/x.js', transferSize: 0, encodedBodySize: 0 }]), 'x.js').lines[0], /^unknown \(cross-origin\)/);
+  r = fetchReport(page([]), 'nope.css');
+  assert.equal(r.code, 1);
+  assert.match(r.lines.at(-1), /no resource of the page matches "nope\.css"/);
+  const log = ['200 GET /_app/immutable/assets/2.gBuqKVzi.css 1.2ms', '200 GET / 3.0ms', '404 GET /favicon.ico 0.1ms'].join('\n');
+  r = fetchReport(page([{ name: css, transferSize: 5120, encodedBodySize: 4800 }]), '2.gBuqKVzi.css', { logText: log });
+  assert.equal(r.code, 0);
+  assert.equal(r.lines.at(-1), 'server log: 1 GET for 2.gBuqKVzi.css');
+  r = fetchReport(page([{ name: css, transferSize: 5120, encodedBodySize: 4800 }]), css, { logText: '200 GET / 3.0ms' });
+  assert.equal(r.code, 3, 'network per the page, but no GET in this server\'s log: another server answered');
+  assert.equal(r.lines.at(-1), `server log: 0 GETs for ${css}`);
+});
+
+test('I-052 safariCacheTargets: the two HTTP cache dirs under a data container of this device only; anything else refused', () => {
+  const udid = '0A1B2C3D-0000-4000-8000-00000000ABCD';
+  const app = `/Users/x/Library/Developer/CoreSimulator/Devices/${udid}/data/Containers/Data/Application/0F0F0F0F-0000-4000-8000-000000000001`;
+  assert.deepEqual(safariCacheTargets(app, udid), [
+    { name: 'NetworkCache', path: `${app}/Library/Caches/com.apple.mobilesafari/WebKit/NetworkCache` },
+    { name: 'fsCachedData', path: `${app}/Library/Caches/com.apple.mobilesafari/fsCachedData` }]);
+  assert.deepEqual(safariCacheTargets(`${app}\n`, udid).map((t) => t.name), ['NetworkCache', 'fsCachedData'], 'simctl\'s trailing newline');
+  for (const bad of ['', 'relative/data/Containers/Data/Application/x', `/Users/x/Library/Developer/CoreSimulator/Devices/OTHER-DEVICE/data/Containers/Data/Application/0F0F`,
+    `/Users/x/Library/Developer/CoreSimulator/Devices/${udid}/data`, `/Users/x/Library/Developer/CoreSimulator/Devices/${udid}/data/Containers/Data/Application/`,
+    `/Users/x/Library/Developer/CoreSimulator/Devices/${udid}/data/Containers/Data/Application/../../../..`, `${app}/a b\nc`]) {
+    assert.throws(() => safariCacheTargets(bad, udid), /not a data container of fw-sim/, JSON.stringify(bad));
+  }
+  assert.ok(!(() => { try { safariCacheTargets('/elsewhere', udid); } catch (e) { return e.message.includes(udid); } })(), 'the error never names the udid');
 });
 
 test('proxyCheck (before every timed run): exactly SIMULATOR passes; a phone that appeared later, or no Simulator, throws without printing its id', async () => {

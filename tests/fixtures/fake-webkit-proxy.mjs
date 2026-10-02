@@ -40,10 +40,12 @@
 // --stale-tab=<url> (incident I-050): a second Safari tab (PID:4242, page/5) restored from an earlier session, listed
 // BEFORE the live one as the Simulator's Safari did; a dead server's page: its websocket opens and has a page target,
 // but it never answers a command (logged as {staleConnected}); not listed while Safari is not running.
+// --resources=<file> (incident I-052): the page's Resource Timing entries (a JSON array, read at each request) for the
+// expression of tools/lib/sim.mjs RESOURCES_JS, answered as {origin, entries}.
 import http from 'node:http';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import { startFakeWda } from './fake-wda.mjs';
 
 const arg = (n) => { const a = process.argv.find((x) => x.startsWith(`--${n}=`)); return a ? a.slice(n.length + 3) : null; };
@@ -73,6 +75,9 @@ async function evaluate(expr) {
     let mirror = 0;
     if (!tab.warning) { try { mirror = (await fetch(new URL('/__mirror/info', tab.url), { signal: AbortSignal.timeout(5000) })).status; } catch {} }
     return { href: tab.url, title: tab.title, mirror };
+  }
+  if (arg('resources') && expr.includes("getEntriesByType('resource')")) { // I-052: sim.mjs fetched's Resource Timing read
+    return JSON.stringify({ origin: new URL(tab.url).origin, entries: JSON.parse(readFileSync(arg('resources'), 'utf8')) });
   }
   if (expr === 'location.href') return tab.url;
   if (expr === 'document.readyState') return 'complete';

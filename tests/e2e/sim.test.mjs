@@ -130,10 +130,58 @@ test('session: boot, proxy with the mode-600 config file (phones at -1), <cmd> w
   assert.equal(iw.cfgMode, '600');
   assert.equal(iw.cfg, `null:${env.FW_SIM_DEVICE_PORT}\n${PHONE}:-1\n:${env.FW_SIM_PORT}\n`, 'list port, every idevice_id entry once at -1, then the Simulator');
   assert.equal(statSync(cfgF).mode & 0o777, 0o600);
-  assert.deepEqual(simctlCalls().filter((x) => x !== 'list' && x !== 'create'), ['boot', 'bootstatus', 'launch', 'shutdown']);
+  assert.deepEqual(simctlCalls().filter((x) => x !== 'list' && x !== 'create'), ['boot', 'bootstatus', 'terminate', 'get_app_container', 'launch', 'shutdown'], 'Safari\'s HTTP cache is cleared before it launches (I-052)');
   assert.ok(!lines(env.FAKE_SIMTOOLS_LOG).some((x) => x.tool === 'open' || x.tool === 'osascript'), '--window hidden: no Simulator.app');
   for (const f of ['session.json', 'proxy.pid.json', 'proxy.log', 'config.json']) { const p = join(simDir(), f); if (existsSync(p)) noIds(readFileSync(p, 'utf8').replace(udid, ''), null); }
   assert.ok(!readFileSync(join(simDir(), 'proxy.log'), 'utf8').includes(PHONE));
+  cleanedUp();
+});
+
+test('I-052 session: Safari\'s HTTP caches (WebKit NetworkCache, fsCachedData) are emptied after boot, before Safari launches; website data, tabs and other apps untouched; recorded in the session; a container lookup failure refuses the session', async () => {
+  const udid = setup();
+  const app = join(dir, 'Devices', udid, 'data', 'Containers', 'Data', 'Application', '0F0F0F0F-0000-4000-8000-000000000001');
+  const put = (rel, bytes = 2048) => { const f = join(app, rel); mkdirSync(join(f, '..'), { recursive: true }); writeFileSync(f, Buffer.alloc(bytes, 1)); return f; };
+  put('Library/Caches/com.apple.mobilesafari/WebKit/NetworkCache/Version 17/Records/AB/Resource/0123', 3 * 1024 * 1024);
+  put('Library/Caches/com.apple.mobilesafari/WebKit/NetworkCache/Version 17/Blobs/0456', 1024 * 1024);
+  put('Library/Caches/com.apple.mobilesafari/fsCachedData/7A9B', 4096);
+  const keep = ['Library/WebKit/com.apple.mobilesafari/WebsiteData/LocalStorage/http_localhost_5367.localstorage', 'Library/Safari/SafariTabs.db',
+    'Library/Caches/com.apple.mobilesafari/WebKit/CacheStorage/salt', 'Library/Caches/com.apple.WebKit.GPU/x'].map((rel) => put(rel, 10));
+  const other = join(dir, 'Devices', udid, 'data', 'Containers', 'Data', 'Application', '1E1E1E1E-0000-4000-8000-000000000002', 'Library', 'Caches', 'WebKit', 'NetworkCache', 'f');
+  mkdirSync(join(other, '..'), { recursive: true }); writeFileSync(other, 'x');
+  const out = join(dir, 'sess.json');
+  const r = await inHold(childJs(`require('fs').writeFileSync(${JSON.stringify(out)}, require('fs').readFileSync(${JSON.stringify(join(env.FW_STATE_DIR, 'sim', 'session.json'))}))`));
+  assert.equal(r.code, 0, r.out);
+  noIds(r.out, udid);
+  assert.match(r.stdout, /^Safari HTTP cache cleared before launch \(I-052\): NetworkCache 4\.0 MB, fsCachedData 0\.0 MB$/m);
+  assert.ok(!existsSync(join(app, 'Library/Caches/com.apple.mobilesafari/WebKit/NetworkCache')), 'NetworkCache removed');
+  assert.ok(!existsSync(join(app, 'Library/Caches/com.apple.mobilesafari/fsCachedData')), 'fsCachedData removed');
+  for (const f of [...keep, other]) assert.ok(existsSync(f), `kept: ${f.slice(dir.length)}`);
+  const calls = lines(env.FAKE_SIMCTL_LOG).map((a) => a.slice(0, a[0] === 'get_app_container' ? 4 : 3));
+  const i = calls.findIndex((a) => a[0] === 'bootstatus');
+  assert.deepEqual(calls.slice(i + 1, i + 4), [['terminate', udid, 'com.apple.mobilesafari'], ['get_app_container', udid, 'com.apple.mobilesafari', 'data'], ['launch', udid, 'com.apple.mobilesafari']]);
+  const s = JSON.parse(readFileSync(out, 'utf8'));
+  assert.deepEqual(s.safariCache, { cleared: true, removedMB: { NetworkCache: 4, fsCachedData: 0 } });
+  cleanedUp();
+  // a second session on an empty cache: nothing to remove, still recorded as cleared
+  const r2 = await inHold(childJs(`require('fs').writeFileSync(${JSON.stringify(out)}, require('fs').readFileSync(${JSON.stringify(join(env.FW_STATE_DIR, 'sim', 'session.json'))}))`));
+  assert.equal(r2.code, 0, r2.out);
+  assert.match(r2.stdout, /^Safari HTTP cache cleared before launch \(I-052\): NetworkCache 0\.0 MB, fsCachedData 0\.0 MB$/m);
+  assert.deepEqual(JSON.parse(readFileSync(out, 'utf8')).safariCache, { cleared: true, removedMB: { NetworkCache: 0, fsCachedData: 0 } });
+  cleanedUp();
+  // no container path: the session refuses (an arm must never run on a stale cache), nothing runs, cleanup done
+  const r3 = await inHold(childJs('console.log("RAN")'), { e: { ...env, FAKE_SIMCTL_CONTAINER_FAIL: '1' } });
+  assert.notEqual(r3.code, 0);
+  assert.ok(!/^RAN$/m.test(r3.stdout), 'the command never ran');
+  assert.match(r3.out, /could not clear Safari's HTTP cache \(I-052\)/);
+  noIds(r3.out, udid);
+  cleanedUp();
+  // a path outside this device's data containers is never removed
+  put('Library/Caches/com.apple.mobilesafari/WebKit/NetworkCache/f', 10);
+  const odd = join(dir, 'elsewhere'); mkdirSync(join(odd, 'Library/Caches/com.apple.mobilesafari/WebKit/NetworkCache'), { recursive: true });
+  const r4 = await inHold(childJs('console.log("RAN")'), { e: { ...env, FAKE_SIMCTL_CONTAINER: odd } });
+  assert.notEqual(r4.code, 0);
+  assert.match(r4.out, /not a data container of fw-sim/);
+  assert.ok(existsSync(join(odd, 'Library/Caches/com.apple.mobilesafari/WebKit/NetworkCache')), 'nothing removed outside the device');
   cleanedUp();
 });
 
@@ -393,6 +441,34 @@ test('open inside a session: simctl openurl (never the proxy), waits for the tab
   cleanedUp();
 });
 
+test('I-052 fetched: after open, the page\'s Resource Timing says network (transferSize > 0) or cache, the server log\'s GETs back it; exit 0 / 3 / 1; outside a session: refused', async () => {
+  const udid = setup();
+  const url = `http://127.0.0.1:${env.FW_SIM_PORT}/`;
+  const res = join(dir, 'resources.json'), slog = join(dir, 'server.log'), wip = join(dir, 'wip.jsonl');
+  const entry = (transferSize) => [{ name: `${url}_app/immutable/assets/x.css`, transferSize, encodedBodySize: 43, decodedBodySize: 43 }, { name: `${url}favicon.ico`, transferSize: 300, encodedBodySize: 0, decodedBodySize: 0 }];
+  writeFileSync(res, JSON.stringify(entry(343)));
+  writeFileSync(slog, '200 GET /?n=1 0.2ms\n200 GET /_app/immutable/assets/x.css 1.1ms\n');
+  const e = { ...env, FAKE_WIP_LOG: wip, FAKE_IWDP_TAB: 'webkit', FAKE_IWDP_TAB_ARGS: `--url=${url} --resources=${res}` };
+  let r = node(SIM, ['fetched', 'x.css'], { env: e });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /no live Simulator session/);
+  const run = (tail) => inHold(['sh', '-c', `"${process.execPath}" "${SIM}" open "${url}" --out "${join(dir, 'o.png')}" && ${tail}`], { timeout: 110000, e });
+  r = await run(`"${process.execPath}" "${SIM}" fetched x.css --log "${slog}"`);
+  assert.equal(r.code, 0, r.out);
+  noIds(r.out, udid);
+  assert.match(r.stdout, /^network\s+http:\/\/127\.0\.0\.1:\d+\/_app\/immutable\/assets\/x\.css \(transferSize 343, body 43 B\)$/m);
+  assert.match(r.stdout, /^server log: 1 GET for x\.css$/m);
+  assert.match(r.stdout, /^FETCHED network: x\.css$/m);
+  writeFileSync(res, JSON.stringify(entry(0)));
+  r = await run(`"${process.execPath}" "${SIM}" fetched x.css; echo "CACHE $?"; "${process.execPath}" "${SIM}" fetched nope.css; echo "NONE $?"`);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^cache\s+http:\/\/127\.0\.0\.1:\d+\/_app\/immutable\/assets\/x\.css /m);
+  assert.match(r.stdout, /^FETCHED NOT-NETWORK: x\.css\nCACHE 3$/m);
+  assert.match(r.stdout, /^FETCHED none: nope\.css\nNONE 1$/m);
+  assert.deepEqual(lines(wip).filter((x) => x.navigate), [], 'fetched only reads: no navigation over the proxy');
+  cleanedUp();
+});
+
 test('safari-restart inside a session: WDA-sim down, so simctl terminate + launch on the configured Simulator, then the tab answers; outside a session: refused', async () => {
   const udid = setup();
   let r = node(SIM, ['safari-restart'], { env });
@@ -404,7 +480,7 @@ test('safari-restart inside a session: WDA-sim down, so simctl terminate + launc
   assert.match(r.stdout, /^SAFARI_RESTARTED via simctl in \d+ ms: /m);
   noIds(r.out, udid);
   const calls = lines(env.FAKE_SIMCTL_LOG);
-  const t = calls.findIndex((a) => a[0] === 'terminate');
+  const t = calls.findLastIndex((a) => a[0] === 'terminate'); // the last one: the session's boot terminates Safari too, before it clears the cache (I-052)
   assert.ok(t >= 0, 'simctl terminate was called');
   assert.deepEqual(calls.slice(t, t + 2), [['terminate', udid, 'com.apple.mobilesafari'], ['launch', udid, 'com.apple.mobilesafari']]);
   cleanedUp();

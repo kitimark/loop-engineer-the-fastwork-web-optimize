@@ -24,6 +24,10 @@
 //   node tools/sim.mjs open <url> [--out f.png]                simctl openurl, wait until Safari lists it, screenshot to out/sim/;
 //        and records its server's host: the session's later scroll / record / run / gesture / safari-restart pick only tabs
 //        on it (FW_TAB_HOST), so a tab Safari restored from an earlier session is never a candidate (I-050)
+//   node tools/sim.mjs fetched <url or path part> [--log <server log>]   did the last open's page get it over the network
+//        (Resource Timing transferSize > 0; plus the server log's GETs)? exit 0 yes, 3 cache / unknown / no GET, 1 no
+//        such resource (I-052; every session also empties Safari's HTTP cache before Safari launches, so a port an
+//        earlier session used serves this session's files; within a session Safari still caches immutable assets)
 //   node tools/sim.mjs scroll [--label l] [--out f]            iphone.mjs scroll's probe and sequence -> out/sim/<owner>-<label>-<ts>.json
 //   node tools/sim.mjs record [--seconds 25] [--label l]       iphone.mjs record's frame logger
 //   node tools/sim.mjs run --driver scroll|window|morph ...    iphone.mjs run (std probe, fw-iphone-run/1) -> out/sim/<owner>-run-<label>-<ts>.json
@@ -38,7 +42,7 @@
 //   node tools/lock.mjs run chrome-measure --owner <o> --max-seconds 600 -- node tools/sim.mjs wda build --owner <o>
 //   # debugging parts of `session` (boot: in your own normal hold; shutdown / proxy stop: always allowed)
 //   node tools/sim.mjs boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
 import * as S from './lib/sim.mjs';
@@ -49,11 +53,11 @@ const argv = dd >= 0 ? all.slice(0, dd) : all;
 const rest = dd >= 0 ? all.slice(dd + 1) : [];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout', '--url', '--via', '--variant', '--param', '--morph-log'];
+const VALUED = ['--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout', '--url', '--via', '--variant', '--param', '--morph-log', '--log'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const log = (s) => console.log(S.scrub(String(s)));
 const err = (s) => console.error(S.scrub(String(s)));
-const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
+const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
 
 async function main() {
   if (cmd === 'setup') { S.setup({ runtime: opt('runtime', null), log }); return 0; }
@@ -109,6 +113,24 @@ async function main() {
     return gestureCmd({ argv, arg, opt, flag, port: S.ports().tabs, requireLease: () => { requireSession(); return session.owner; },
       target: dry ? null : gestureTarget(session, { requireSession, holdEndsAt }), usage: 'node tools/sim.mjs gesture <script.json> [--label l] [--variant v] [--param k=v]... [--morph-log <morph-log.mjs>] [--out file] [--dry-run] (inside a session)' });
   }
+  if (cmd === 'fetched') {
+    // I-052: did the page in Safari fetch <part> over the network, or take it from the cache? (no navigation, no timing)
+    if (!arg) throw new Error('usage: node tools/sim.mjs fetched <url or path part> [--log <server log>] (inside a session, after open)');
+    const session = S.requireSession({ owner: opt('owner') });
+    const host = S.scopeTabs(session);
+    const { openTab } = await import('./lib/wip.mjs');
+    const tabs = S.ports().tabs;
+    let list = [];
+    try { list = await (await fetch(`http://localhost:${tabs}/json`, { signal: AbortSignal.timeout(4000) })).json(); } catch {}
+    const c = await openTab(S.pageMatcher(list, S.openedUrl(session), host), { port: tabs }); // the last open's page (I-052)
+    let page;
+    try { page = JSON.parse(await c.evaluate(S.RESOURCES_JS)); } finally { c.close(); }
+    const logText = opt('log') ? readFileSync(resolve(opt('log')), 'utf8') : null;
+    const rep = S.fetchReport(page, arg, { logText });
+    for (const l of rep.lines) log(l);
+    log(`FETCHED ${rep.code === 0 ? 'network' : rep.code === 1 ? 'none' : 'NOT-NETWORK'}: ${arg}`);
+    return rep.code;
+  }
   if (['open', 'scroll', 'record', 'run', 'safari-restart'].includes(cmd)) {
     const session = S.requireSession({ owner: opt('owner'), timed: !['open', 'safari-restart'].includes(cmd) });
     if (cmd !== 'open' && !(cmd === 'safari-restart' && opt('url'))) S.scopeTabs(session); // only tabs on the server of this session's open (I-050)
@@ -159,7 +181,8 @@ async function openCmd(session, owner) {
   }
   if (!tab) throw new Error(`Safari in the Simulator never listed ${target.url}, or listed it in several tabs and none of them new (30 s; I-037: not picking one)`);
   // Safari may list tabs restored from an earlier session next to it (I-050): only pages on this server's host
-  const c = await openTab((u) => urlHost(u) === want.host, { port: p.tabs });
+  // and of those the opened tab's own url while listed, so an earlier open's tab on the same host is no rival (I-052)
+  const c = await openTab(S.pageMatcher(await listTabs(), tab.url, want.host), { port: p.tabs });
   try {
     for (let i = 0; i < 60; i++) { if ((await c.evaluate('document.readyState')) === 'complete') break; await sleep(500); }
     const landed = await c.evaluate(LANDED_JS);
@@ -169,7 +192,7 @@ async function openCmd(session, owner) {
     mkdirSync(dirname(shot), { recursive: true });
     const s = S.simctl(['io', cfg.udid, 'screenshot', shot]);
     log(`Safari (Simulator) now on ${landed.href}${s.status === 0 ? `; screenshot ${shot}` : '; screenshot failed'}`);
-    S.writeOpened(session, target.url); // this session's later commands pick only tabs on this host (I-050)
+    S.writeOpened(session, target.url, landed.href); // later commands pick only tabs on this host (I-050); fetched: this page (I-052)
     const others = (await listTabs()).filter((t) => t && t.webSocketDebuggerUrl && !isBlankUrl(t.url) && urlHost(t.url) !== want.host).length;
     if (others) log(`Safari also lists ${others} page${others > 1 ? 's' : ''} of another server (restored from an earlier session?): this session's scroll / record / run / gesture pick only tabs on ${lanSafeText(want.host)} (I-050)`);
   } finally { c.close(); }

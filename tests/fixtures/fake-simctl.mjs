@@ -2,9 +2,12 @@
 // Stand-in for `xcrun simctl` in the tools/sim.mjs tests ($FW_SIMCTL: takes simctl's own arguments). State in the
 // JSON file $FAKE_SIMCTL_STATE: {runtimes: [...], devices: [{udid, name, state, deviceTypeIdentifier, runtimeId,
 // safari}]}; one JSON line of argv per call in $FAKE_SIMCTL_LOG. Like the real one, error messages name the UDID
-// (the tools must scrub them). Env: FAKE_SIMCTL_BOOT_MS (bootstatus delay), FAKE_SIMCTL_BOOT_FAIL=1.
+// (the tools must scrub them). Env: FAKE_SIMCTL_BOOT_MS (bootstatus delay), FAKE_SIMCTL_BOOT_FAIL=1; get_app_container
+// (I-052) prints $FAKE_SIMCTL_CONTAINER or <state dir>/Devices/<udid>/data/Containers/Data/Application/<uuid>, and
+// fails with FAKE_SIMCTL_CONTAINER_FAIL=1.
 // All ids are made up.
-import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 const a = process.argv.slice(2);
@@ -45,6 +48,14 @@ if (c === 'list' && r[0] === '-j' && r[1] === 'devices') {
   if (!d || d.state !== 'Booted') fail(`Unable to lookup in current state: ${d?.state} (${r[0]})`);
   d.safari = true; save();
   console.log(`${r[1]}: 4242`);
+} else if (c === 'get_app_container') { // I-052: Safari's data container (created on first use, like a booted device's)
+  const d = dev(r[0]);
+  if (!d || d.state !== 'Booted') fail(`Unable to lookup in current state: ${d?.state ?? 'Unknown'} (${r[0]})`);
+  if (r[1] !== 'com.apple.mobilesafari' || r[2] !== 'data') fail(`fake simctl: unexpected ${a.join(' ')}`, 2);
+  if (process.env.FAKE_SIMCTL_CONTAINER_FAIL) fail(`An error was encountered processing the command (domain=NSPOSIXErrorDomain, code=2):\nFailed to get the data container of ${r[1]} on ${r[0]}`, 2);
+  const p = process.env.FAKE_SIMCTL_CONTAINER || join(dirname(F), 'Devices', r[0], 'data', 'Containers', 'Data', 'Application', '0F0F0F0F-0000-4000-8000-000000000001');
+  mkdirSync(p, { recursive: true });
+  console.log(p);
 } else if (c === 'terminate') { // safari-restart's simctl driver
   const d = dev(r[0]);
   if (!d || d.state !== 'Booted') fail(`Unable to terminate in current state: ${d?.state} (${r[0]})`);
