@@ -368,8 +368,9 @@ async function pixels(cdp, arm, url, dir, range) {
   let T = 5e6;
   // every digit at rest at r: change at T, settle with two long frames
   const settle = async (r) => { T += 1e6; await tick(T, r); await step(T + 1e4); await pause(30); await step(T + 2e4); await pause(30); };
-  // a visible roll at the display rate (as before every real resume: the clock ticked in view first), so the PoC learns
-  // the frame period (__cdFrame) for that rate; 40 frames, then a long frame ends it
+  // a visible roll at the display rate before each resume run (as in real use: the clock ticked in view first); 40
+  // frames, then a long frame ends it. (The round-2 replay draft learned its frame period here; the shipped PoC needs
+  // nothing learned, it keeps the spring running.)
   const learn = async (r, FR) => { T += 1e6; await tick(T + FR / 3, r); for (let k = 1; k <= 40; k++) await step(T + k * FR); await step(T + 1e4); await pause(30); await step(T + 2e4); await pause(30); };
   // frame stamps are jittered like real ones: Chrome showed 120 Hz gaps of 7.4-9.4 ms on a 0.1 ms grid (round 2, `stamps`)
   const J = (k) => (((k * 7919) % 21) - 10) / 10;

@@ -91,14 +91,19 @@ When the clock becomes visible again, a second effect writes the stored value at
 - The hero's visibility is set in its exit-opacity function, and the panel's in its morph spring. Both run inside
   a frame (rAF), so the write lands in the frame that shows the clock again.
 - If the spring's own callback for that frame runs later in the same frame, it writes that frame's value itself.
+- Svelte flushes the write from a microtask. The HTML standard runs a microtask checkpoint after each callback it
+  invokes ("clean up after running script"), and that includes each rAF callback in "run the animation frame
+  callbacks". So the flush happens inside the same rendering update, before style and paint. This is the spec
+  reading, not separately verified in WebKit; see "WebKit".
 - The first frame that shows the clock therefore shows what the original shows for that frame. This fixes review
   r1 Blocking 2 (the one-frame hop after an instant jump). The IntersectionObserver whose late callback caused it
   is gone.
 
 `live` comes from the call site, through an optional `active` prop on `cD` (the same name and meaning as topic #1's
 prop: false = mounted but not shown):
-- **Hero:** the exit function reads `.hero-copy`'s rect next to the rect it already reads, and sets
-  `active = --exit-opacity > 0 && .hero-copy within one viewport`.
+- **Hero:** the exit function reads the rect of `div.hero` (`x`, bound at JS 4368, the element it writes
+  `--exit-opacity` on) next to the rect it already reads, and sets
+  `active = --exit-opacity > 0 && div.hero within one viewport`.
   - `r > 0` is exactly opacity > 0 (CSS 1734/1910/1932/2043, confirmed by review r1).
   - Below the hero, `r` is already 0, so the one-viewport term rarely matters.
   - `fD` shadows `N`/`z`/`s`, so it uses module aliases.
@@ -313,7 +318,7 @@ http on localhost. Simulator times never count, so these are record counts (n=1)
   - With 3 faces, it saves 24 layers instead of 80.
   - Without layers, a face transform repaints the digit on every roll frame. That trade-off is that topic's to
     measure.
-- **The hero exit function** (`fD` 4162-4174) gains one rect read (`.hero-copy`, next to the existing read, before
+- **The hero exit function** (`fD` 4162-4174) gains one rect read (`div.hero`, next to the existing read, before
   any write) and one state write. The hero-exit topics touch the same function.
 
 ## Risks and limits

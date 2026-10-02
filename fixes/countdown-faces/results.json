@@ -9,8 +9,9 @@
  },
  "servedSha256": {
   "base": "4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5",
-  "poc": "14eb4eaf13007aac1d2427b2acd146ebd86edc858feadf2c694e2a49178c8027",
-  "note": "sha256 of _app/immutable/nodes/2.DyWL8TcE.js as served per arm (base: the baseline's pretty copy, the probe's --root; poc: the overlay) at the time results.json was written"
+  "poc": "638b8e03e81ce0f9732b346eeb5aa4e3d804158a7609d1cd918b6f5f222401ad",
+  "pocMeasured": "14eb4eaf13007aac1d2427b2acd146ebd86edc858feadf2c694e2a49178c8027",
+  "note": "sha256 of _app/immutable/nodes/2.DyWL8TcE.js per arm (base: the baseline pretty copy, the probe --root; poc: the overlay now). pocMeasured is the overlay the round-2 hold served; the current one differs from it only in one code comment (review r2: div.hero, not .hero-copy)"
  },
  "arms": {
   "base": "frozen baseline",

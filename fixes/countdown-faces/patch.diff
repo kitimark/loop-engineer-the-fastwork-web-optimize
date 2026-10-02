@@ -143,8 +143,8 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 -    o = R(WT);
 +    o = R(WT),
 +    /*countdown-faces: false while the hero countdown can't be seen: --exit-opacity is 0 (.hero-copy, which holds the
-+    countdown, has opacity calc(var(--copy-in) * var(--exit-opacity))) or .hero-copy is more than one viewport away
-+    (the lead of apple.com's play ranges). Set in the exit callback below, in the same frame as the scroll, so the
++    countdown, has opacity calc(var(--copy-in) * var(--exit-opacity))) or div.hero (x, the element the exit callback
++    writes --exit-opacity on) is more than one viewport away (the lead of apple.com's play ranges). Set in the exit callback below, in the same frame as the scroll, so the
 +    first frame that shows the clock again already has the right digits*/
 +    __cdHeroShown = __cdState(!0);
    function c(e) {

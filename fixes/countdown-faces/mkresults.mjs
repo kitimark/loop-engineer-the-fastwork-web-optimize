@@ -27,7 +27,8 @@ const out = {
   servedSha256: {
     base: sha(join(resolveTree('site-pretty'), NODE)),
     poc: sha(join(WT, 'fixes/countdown-faces/overlay', NODE)),
-    note: `sha256 of ${NODE} as served per arm (base: the baseline's pretty copy, the probe's --root; poc: the overlay) at the time results.json was written`,
+    pocMeasured: "14eb4eaf13007aac1d2427b2acd146ebd86edc858feadf2c694e2a49178c8027",
+    note: `sha256 of ${NODE} per arm (base: the baseline pretty copy, the probe --root; poc: the overlay now). pocMeasured is the overlay the round-2 hold served; the current one differs from it only in one code comment (review r2: div.hero, not .hero-copy)`,
   },
   arms: { base: 'frozen baseline', poc: 'PoC: 3 faces per digit + no state writes while the clock cannot be seen (the spring keeps running)',
     still: '(round 1) baseline with the digit spring always snapping: the floor', faces: '(round 1) PoC part (a) only' },
