@@ -190,6 +190,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   worktree-agent-afc7d9fff1fcc6154 (README, patch.diff, tools/standalone.{html,js}; test:unit 555/555); not a land
   request yet, it waits on the user's decision; void list in its README; finding F-120 (query-flag pitfall). If
   approved, the phone check joins the phone backlog as (f) (the phone is still unplugged).
+  03:0xZ (lead): no new illusion owner; on approval de-illusion-style resumes for the PR-001 phone ticket (iphone-runner
+  runs it as (f)); de-illusion-composite's items stay parked off the page. h9 (morph start, fixes/layout-containment/README.md)
+  stays parked: the user deferred the morph-start first slide-in (T-001 #14); it resumes after fwreskip lands and only
+  if the user un-defers it. fwreskip f1 r1 corner diff (182-603 px, Δ4, = B's own fresh-raster frame, OBSERVED) is posted
+  to the user in T-005 #17: the user's call, together with the review result. The B2 up-pass +1 Layout (3 vs 2, A/A 3,
+  n=1) is being re-run at n=3.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
