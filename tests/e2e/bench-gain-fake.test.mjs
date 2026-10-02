@@ -4,7 +4,7 @@
 // host, contaminated runs -> INCONCLUSIVE, authoring from a clean HOLDS, experiments, device iphone.
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { makeTempRepo, node, nodeAsync, TESTS } from '../helpers.mjs';
 import { makeFixtureHome } from '../fixtures/baseline.mjs';
@@ -280,4 +280,56 @@ test('ts-headless: gain / calibrate measure timing headed only: --headless / --f
   assert.equal(log.filter((l) => l.method === 'Page.navigate').length, 0, 'no page measured');
   assert.equal(existsSync(join(env('hl-env').FW_STATE_DIR, 'locks', 'chrome-measure.json')), false, 'lock released');
   assert.equal(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'bench-results.json'), 'utf8'), before, 'nothing stored');
+});
+
+test('I-063 review-i063 B2/N1/N2 (MEASUREMENT CODE): a warm Simulator found inside the hold is shut down by bench before run 1, then a quiet wait; one before the hold (keeper dead) at the host gate; both recorded as simWarm in bench-results.json; one whose shutdown fails stops bench before any Chrome (WAIT, exit 1)', async () => {
+  // a warm fw-sim on the fake simctl (tests/fixtures/fake-simctl.mjs): config, device, warm.json, no keeper
+  const warmEnv = (name, { shutdownFail = false } = {}) => {
+    const e = env(name);
+    const simDir = join(e.FW_STATE_DIR, 'sim');
+    mkdirSync(simDir, { recursive: true });
+    const udid = 'F00DF00D-0000-4000-8000-000000000063'; // made up
+    const simctl = join(repo.root, `simctl-${name}.sh`);
+    writeFileSync(simctl, `#!/bin/sh\nexec "${process.execPath}" "${join(TESTS, 'fixtures', 'fake-simctl.mjs')}" "$@"\n`, { mode: 0o755 });
+    const state = join(repo.root, `simctl-${name}.json`);
+    writeFileSync(state, JSON.stringify({ runtimes: [], devices: [{ udid, name: 'fw-sim 15 Pro Max', state: 'Booted', deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro-Max', runtimeId: 'rt', shutdownFail }] }));
+    writeFileSync(join(simDir, 'config.json'), JSON.stringify({ udid }), { mode: 0o600 });
+    const now = new Date().toISOString();
+    writeFileSync(join(simDir, 'warm.json'), JSON.stringify({ id: 'w1', udid, runtimeId: 'rt', bootedAt: now, sessions: 1, lastOwner: 'me', lastSessionEndedAt: now, idleSec: 300, idleUntil: new Date(Date.now() + 300000).toISOString() }), { mode: 0o600 });
+    return { extra: { FW_SIMCTL: simctl, FAKE_SIMCTL_STATE: state }, dev: () => JSON.parse(readFileSync(state, 'utf8')).devices[0], warm: () => existsSync(join(simDir, 'warm.json')), simDir, state };
+  };
+  // N2: a warm device that appears inside the hold (after its gate): bench's own backstop shuts it down, then waits for
+  // a quiet host before run 1 (bench has no recheck before it without --max-load), recorded as simWarm.settle
+  let w = warmEnv('simown');
+  renameSync(join(w.simDir, 'warm.json'), join(w.simDir, 'warm.pending'));
+  const mk = `const fs = require('fs'); fs.renameSync(${JSON.stringify(join(w.simDir, 'warm.pending'))}, ${JSON.stringify(join(w.simDir, 'warm.json'))}); const s = JSON.parse(fs.readFileSync(${JSON.stringify(w.state)}, 'utf8')); s.devices[0].state = 'Booted'; fs.writeFileSync(${JSON.stringify(w.state)}, JSON.stringify(s));`;
+  { const s = JSON.parse(readFileSync(w.state, 'utf8')); s.devices[0].state = 'Shutdown'; writeFileSync(w.state, JSON.stringify(s)); }
+  let r = await nodeAsync(join(repo.wt, 'tools', 'lock.mjs'), ['run', 'chrome-measure', '--owner', 'bench-own', '--', 'sh', '-c', `"${process.execPath}" -e "$MK" && "${process.execPath}" tools/bench.mjs calibrate fast-nav`], { cwd: repo.wt, env: { ...env('simown'), ...w.extra, MK: mk }, timeout: 115000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /NOTE: a warm Simulator \(fw-sim, idle since \S+, keeper not running\) was still booted at the start of this bench hold: shut down before the first run/);
+  assert.match(r.stdout, /\[bench\] after the Simulator shutdown: quiet after [\d.]+ s \(I-063\)/);
+  let sw = results('fast-nav').calibration.simWarm;
+  assert.deepEqual([sw.action, sw.ok, sw.shutDown, sw.settle.quiet, 'gate' in sw], ['shut down', true, true, true, false]);
+  assert.ok(w.dev().state === 'Shutdown' && !w.warm());
+  // N1: a warm device before the hold: the host gate shuts it down (its keeper is dead)
+  w = warmEnv('simwarm');
+  r = await bench('simwarm', ['calibrate', 'fast-nav'], w.extra);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stderr, /\[lock chrome-measure\] a warm Simulator \(fw-sim\) at the host gate: shut down \(I-063\)/);
+  assert.match(r.stdout, /NOTE: the host gate of this hold found a warm Simulator \(fw-sim\): shut down, before the grant \(I-063; recorded as simWarm\)/);
+  sw = results('fast-nav').calibration.simWarm;
+  assert.deepEqual([sw.action, sw.ok, sw.gate, sw.keeperAlive], ['shut down', true, true, false]);
+  assert.ok(w.dev().state === 'Shutdown' && !w.warm());
+  // the shutdown fails: the gate stays closed (granted only at its cap, FW_GATE_MAX_WAIT), then bench's own backstop
+  // refuses before any Chrome starts; nothing is stored
+  const before = readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'bench-results.json'), 'utf8');
+  w = warmEnv('simfail', { shutdownFail: true });
+  r = await bench('simfail', ['calibrate', 'fast-nav'], { ...w.extra, FW_GATE_MAX_WAIT: '2' });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /a warm Simulator \(fw-sim\) at the host gate: shutdown FAILED \(.*\); the gate stays closed while it is booted \(I-063\)/);
+  assert.match(r.stdout, /WAIT: a warm Simulator \(fw-sim\) may still be booted and its shutdown failed \(.*\): nothing is timed beside it, so this bench hold stops here/);
+  assert.equal(existsSync(env('simfail').FAKE_CHROME_LOG), false, 'no Chrome started');
+  assert.ok(w.dev().state === 'Booted' && w.warm(), 'the record stays');
+  assert.equal(readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'bench-results.json'), 'utf8'), before, 'nothing stored');
+  assert.equal(existsSync(join(env('simfail').FW_STATE_DIR, 'locks', 'chrome-measure.json')), false, 'lock released');
 });

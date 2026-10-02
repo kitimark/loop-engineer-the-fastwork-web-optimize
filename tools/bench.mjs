@@ -58,7 +58,7 @@ import { REPO, resolveTree, checkoutId, isLinkedWorktree } from './lib/paths.mjs
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './lib/baseline.mjs';
 import { acquire, SHARED_LANE } from './lib/lock.mjs';
 import { reapWarm, reapNote } from './lib/sim-warm.mjs';
-import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T, stubOutsideTest, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
+import { snapshot as hostSnapshot, between as hostBetween, waitQuiet, THRESHOLDS as HOST_T, stubOutsideTest, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
 import { launchChrome, CDP, browserVersion, screenInfoArg, headedUA, tempProfileDir, HEADLESS_SCREEN } from './lib/cdp.mjs';
 import { lintTopic, loadSpec, lintSpec, GAIN_METRICS } from './lib/bench-spec.mjs';
 import { patchHeader, baselineDrift, buildOverlay, listFiles, sha256File, landedTopics, gitShow, gitRev } from './lib/bench-overlay.mjs';
@@ -201,8 +201,21 @@ async function takeLock(owner, { short, shared, maxSec, meta, onBudget }) {
   if (!bounded) {
     // I-063 (before the first timed run): a warm Simulator still booted at the start of a timing hold (its keeper dead
     // or late) is shut down now (under the simulator lock, never a live session's device), with a NOTE
-    const simWarm = await reapWarm({ reason: 'bench timing hold', by: 'bench' });
-    if (simWarm) { console.log(reapNote(simWarm, 'this bench hold')); l.simWarm = simWarm; }
+    // review-i063 B2: a failed shutdown measures nothing (WAIT, exit 1); N2: after a shutdown, wait for a quiet host
+    // before run 1 (bench has no recheck before it without --max-load), recorded as simWarm.settle; N1: the host
+    // gate's own attempt (lib/lock.mjs) is recorded when this hold found nothing more (gate: true)
+    const own = await reapWarm({ reason: 'bench timing hold', by: 'bench' });
+    if (own) {
+      console.log(reapNote(own, 'this bench hold'));
+      if (!own.ok) { l.release(); process.exit(1); }
+      if (own.shutDown) {
+        const q = await waitQuiet({ maxWaitSec: 120 });
+        own.settle = { quiet: q.quiet, waitedSec: q.waitedSec, reasons: q.reasons };
+        console.log(`[bench] after the Simulator shutdown: ${q.quiet ? 'quiet' : `NOT quiet (${q.reasons.join(', ')})`} after ${q.waitedSec} s (I-063)`);
+      }
+    } else if (l.simWarm) console.log(`NOTE: the host gate of this hold found a warm Simulator (fw-sim): ${l.simWarm.action}, before the grant (I-063; recorded as simWarm)`);
+    const sw = own ?? (l.simWarm ? { ...l.simWarm, gate: true } : null);
+    if (sw) l.simWarm = sw;
   }
   if (bounded && !l.reentrant) {
     // a short hold (or reader) ends at maxSec for everyone else: stop before that, never measure past it
@@ -571,7 +584,7 @@ async function cmdGain(t, { calibrateMode = false } = {}) {
   const hTag = hostState.tag;
   const vTag = [bTag, hTag].filter(Boolean).join(': ') || null;
   console.log(describeHostState(hostState));
-  const base = { at: new Date().toISOString(), seconds: Math.round((Date.now() - t0) / 1000), git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD') }, ...cur, chrome: m.chrome, baselineManifest: baselineManifest(), baselineSnapshot: snapMeta(bTag), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on, patch: calibrateMode ? null : sides.source, scenario: sc.key, metric: sc.metric, direction: sc.direction, runsPerSide: o.runs, cpu: o.cpu, timeDomain: o.timeDomain, host: range, hostState, chromeProfile: m.chromeProfile, values: { baseline: ser.a, patched: ser.b }, ...(ser.errors.length ? { errors: ser.errors } : {}) };
+  const base = { at: new Date().toISOString(), seconds: Math.round((Date.now() - t0) / 1000), git: { branch: git('rev-parse', '--abbrev-ref', 'HEAD'), head: git('rev-parse', '--short', 'HEAD') }, ...cur, chrome: m.chrome, baselineManifest: baselineManifest(), baselineSnapshot: snapMeta(bTag), baseline: BASE_NAME + (on ? ` + ${on}` : ''), on, patch: calibrateMode ? null : sides.source, scenario: sc.key, metric: sc.metric, direction: sc.direction, runsPerSide: o.runs, cpu: o.cpu, timeDomain: o.timeDomain, host: range, hostState, ...(lock.simWarm ? { simWarm: lock.simWarm } : {}), chromeProfile: m.chromeProfile, values: { baseline: ser.a, patched: ser.b }, ...(ser.errors.length ? { errors: ser.errors } : {}) };
   if (ser.errors.length || ser.a.length < o.runs || ser.b.length < o.runs) {
     console.log(`${what.toUpperCase()} INCONCLUSIVE ${t}: scenario errors: ${[...new Set(ser.errors)].join('; ') || 'missing runs'}`);
     return 3;

@@ -7,7 +7,7 @@ import http from 'node:http';
 import { join } from 'node:path';
 import { statSync } from 'node:fs';
 import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock, openedTab, writeOpened, openedHost, openedFile, scopeTabs, safariCacheTargets, fetchReport, openedUrl, pageMatcher, warmMismatch, DEVICE_TYPE } from '../../tools/lib/sim.mjs';
-import { timingDemand, idleSec, IDLE_SEC_DEFAULT, warmLine, warmSummary, realStateInTest } from '../../tools/lib/sim-warm.mjs';
+import { timingDemand, idleSec, IDLE_SEC_DEFAULT, warmLine, warmSummary, realStateInTest, reapResult, reapNote, settleSec } from '../../tools/lib/sim-warm.mjs';
 import { status as lockStatus } from '../../tools/lib/lock.mjs';
 import { simMeta, SIM_SETTINGS, runTarget } from '../../tools/lib/sim-scroll.mjs';
 import { tempDir } from '../helpers.mjs';
@@ -340,4 +340,36 @@ test('I-063 idleSec / warmMismatch / warmLine / realStateInTest: the idle timeou
   assert.equal(realStateInTest({ NODE_TEST_CONTEXT: 'child-v8' }), true);
   assert.equal(realStateInTest({ NODE_TEST_CONTEXT: 'child-v8', FW_STATE_DIR: '/tmp/x' }), false);
   assert.equal(realStateInTest({}), false);
+});
+
+test('I-063 review-i063 B1/B2/N3/N6: reapResult tells shut down / stale / gone / FAILED apart; reapNote is a WAIT on failure; warmLine says "booted" only when nothing says otherwise; settleSec', () => {
+  const before = { lastSessionEndedAt: '2026-10-02T12:09:00Z', keeperAlive: false };
+  const res = (status, stdout, stderr = '') => reapResult({ status, stdout, stderr }, before);
+  const done = res(0, 'fw-sim shut down\nSIM_WARM_SHUTDOWN (verify.mjs timing hold; by verify): fw-sim shut down, warm since x\n');
+  assert.deepEqual([done.action, done.ok, done.shutDown, 'stale' in done], ['shut down', true, true, false]);
+  const stale = res(0, 'SIM_WARM_SHUTDOWN (verify.mjs timing hold; by verify): fw-sim already shut down, warm since x\n');
+  assert.deepEqual([stale.action, stale.ok, stale.stale, 'shutDown' in stale], ['already shut down (a stale record, removed)', true, true, false]);
+  const gone = res(0, 'SIM_WARM none: no warm Simulator recorded\n');
+  assert.deepEqual([gone.action, gone.ok, 'shutDown' in gone], ['gone before the shutdown (the keeper or a session took it)', true, false]);
+  const failed = res(3, 'SIM_WARM_SHUTDOWN_FAILED (x; by verify): shutdown failed (exit 164); fw-sim is Booted; the warm record stays\n', 'the warm Simulator was not shut down: shutdown failed\n');
+  assert.deepEqual([failed.action, failed.ok, 'shutDown' in failed], ['shutdown FAILED', false, false]);
+  assert.match(failed.error, /the warm Simulator was not shut down/);
+  assert.equal(res(0, 'SIM_WARM_SHUTDOWN_FAILED (x; by y): z\n').ok, false, 'the FAILED line wins over exit 0');
+  assert.match(reapNote(failed, 'this verify hold'), /^WAIT: a warm Simulator \(fw-sim\) may still be booted and its shutdown failed \(.*\): nothing is timed beside it, so this verify hold stops here; node tools\/sim\.mjs doctor --fix/);
+  assert.match(reapNote(stale, 'this bench hold'), /^NOTE: a stale warm Simulator record .* at the start of this bench hold: fw-sim was not booted, the record was removed; nothing ran beside it/);
+  assert.match(reapNote(done, 'this verify hold'), /^NOTE: a warm Simulator \(fw-sim, idle since 2026-10-02T12:09:00Z, keeper not running\) was still booted at the start of this verify hold: shut down before the first run/);
+  assert.equal(reapNote(null), null);
+  // warmLine (N3): the real state, a record from before the Mac's last start, a dead keeper, a failed shutdown
+  const now = Date.parse('2026-10-02T12:10:00Z');
+  const s = { warm: { lastOwner: 'fix-a', sessions: 2, bootedAt: '2026-10-02T12:00:00Z', lastSessionEndedAt: '2026-10-02T12:09:00Z', idleUntil: '2026-10-02T12:19:00Z' }, keeper: { pid: 4242, alive: true } };
+  assert.match(warmLine(s, now, { devState: 'Shutdown' }), /^warm: STALE record: fw-sim is Shutdown \(the record of the session of "fix-a" at 2026-10-02T12:09:00Z\); node tools\/sim\.mjs shutdown clears it$/);
+  assert.match(warmLine(s, now, { devState: null }), /^warm: STALE record: fw-sim is not found/);
+  assert.match(warmLine({ ...s, stale: true }, now), /^warm: STALE record: the Mac restarted at \S+, after the session of "fix-a" at 2026-10-02T12:09:00Z \(fw-sim not booted since\)/);
+  assert.match(warmLine({ ...s, keeper: { pid: 4242, alive: false } }, now), /^warm: fw-sim recorded as booted \(state unchecked\), idle 60 s/);
+  assert.match(warmLine({ ...s, keeper: { pid: 4242, alive: false } }, now, { devState: 'Booted' }), /^warm: fw-sim booted, idle 60 s/);
+  assert.match(warmLine({ ...s, warm: { ...s.warm, shutdownFailed: { at: 'T1', by: 'keeper', why: 'w' } } }, now), /; its last shutdown FAILED \(T1, by keeper\): node tools\/sim\.mjs doctor --fix$/);
+  assert.deepEqual([warmSummary({ ...s, stale: true }, now).stale, warmSummary({ ...s, warm: { ...s.warm, shutdownFailed: { at: 'T1' } } }, now).shutdownFailed], [true, { at: 'T1' }]);
+  assert.equal(settleSec({}), 20);
+  assert.equal(settleSec({ FW_SIM_SETTLE_SEC: '0' }), 0);
+  assert.throws(() => settleSec({ FW_SIM_SETTLE_SEC: 'x' }), /FW_SIM_SETTLE_SEC must be a number of seconds >= 0/);
 });
