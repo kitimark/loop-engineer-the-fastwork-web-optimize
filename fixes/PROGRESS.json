@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T09:06:00Z",
+ "updatedAt": "2026-10-02T09:16:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -150,7 +150,7 @@
    "fixes": "All of today's candidate fixes together: the countdown fix, the panel fix, the card reveal fix and F3.",
    "felt": { "answer": "better", "text": "Your own look on the phone (not blind): on the hero and at the end of the page, B felt quite a bit smoother than the original." },
    "gate": "Each part still needs its own phone test and review before it can land; the combined build is a preview.",
-   "next": "You have the proposal (PR-003) with three ways to fix the slower frame at the people section; option A is recommended. Pick one there.",
+   "next": "You picked A; a phone check of it comes next, and B is being researched alongside.",
    "owner": "iphone-runner (builds), lead",
    "checks": [],
    "details": [
@@ -163,7 +163,8 @@
    "08:34Z C-019 answered: blind pick = V (stack5) over C (RB), rated 3/5; user: better, still a bit laggy. iphone-runner: V's worst frame at the #people entry 66-75 ms vs C 48-57 (no overlap, OBSERVED). wi-stack runs a Simulator leave-one-out (V without st6, V without blur-cubic).",
    "08:4xZ remaining-lag map of stack5 (wi-stack, files only; user T-017): #people frame 2 is the only V regression (+299 ms over 8 runs); three rows of unknown cause get one combined Simulator check each. Then one proposal lets you pick the order.",
    "08:5xZ leave-one-out (wi-stack, Simulator, OBSERVED): blur-cubic carries the #people frame-2 Composite cost, not st6; details pending. wi-stack posts the design as one proposal with options A/B/C.",
-   "09:0xZ PR-003 posted (wi-stack): three options for the #people frame-2 cost of blur-cubic, A recommended."
+   "09:0xZ PR-003 posted (wi-stack): three options for the #people frame-2 cost of blur-cubic, A recommended.",
+  "09:12Z PR-003 accepted, option A (drop-blur: RB + st6, no blur-cubic); B (prepromote) researched in parallel at lower priority. wi-stack writes A's phone ticket (C / stack5 / RB+st6, P-062), runs after PR-001 block B; B: Sim + pixel check only until A is done. fix-scroll-engine adds st6 to RB's will-change list."
    ]
   },
   {

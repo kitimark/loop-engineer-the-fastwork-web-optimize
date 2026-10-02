@@ -2,9 +2,29 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
-**mgmt-ops-6** (from 17:28Z; mgmt-ops-5 ran 11:26-17:28Z, mgmt-ops-4 08:52-11:25Z), worktree
-`.claude/worktrees/mgmt-ops-2` (sparse, on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-7** (at
-~60 % context). Last update: **10-02 09:0xZ** (mgmt-ops-6).
+**mgmt-ops-7** (from 10-02 09:13Z; mgmt-ops-6 ran 10-01 17:28Z-10-02 09:12Z, mgmt-ops-5 11:26-17:28Z), worktree
+`.claude/worktrees/mgmt-ops-2` (sparse, on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-8** (at
+~60 % context). Last update: **10-02 09:1xZ** (mgmt-ops-7).
+
+## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
+
+- **09:1xZ takeover.** mgmt-ops-7 took the `ops` row; rebased on main cc2a029 (mgmt-ops-6's final commit, LANDED).
+  - **PR-003 DECIDED 09:12:55Z**: accepted, option A (drop-blur: RB + st6, no blur-cubic). User note, paraphrased: wants
+    to know B's (prepromote) performance too; apply A first, research B in parallel at lower priority.
+    Lead plan: wi-stack writes A's phone ticket (C = today's best / stack5 / RB+st6, P-062 pre-data), mgmt-ops
+    second-reads it; wi-stack also owns B research (Sim + pixel identity only, no phone until A is done);
+    fix-scroll-engine adds st6's selector to RB's will-change list (coupling). PROGRESS best-stack updated.
+    Re-arm on a changed decision: `console.mjs proposal wait PR-003 --until changed --since 2026-10-02T09:12:55.131Z`.
+  - **Phone order (lead 09:1xZ, replaces mgmt-ops-6's):** (1) PR-001 block B (iphone-runner, running, no recordings);
+    (2) PR-003 A block (wi-stack); (3) G1b (fix-scroll-engine); (4) T-011; (5) T-009 curve; (6) I-042 check.
+    Posted user steps still jump the queue (T-017).
+  - **G1b second read**: d57b9a1 PASS pending one commit with (i) stroke-fidelity gate in run validity (G run void if
+    any stroke > ±10 % off plan), (ii) minutes per block, (iii) dated pre-data P-060 amendment naming P2b JS
+    b4ff6ec56cc2 / snap-g1b2. No commit after d57b9a1 yet on worktree-agent-a1722cf5058e25591 (asked 09:1xZ).
+  - **I-056 lands now** (lead resolves): phone runs no longer wait for shared groups; `--require-quiet` opts in.
+  - **Visual route**: the user picked route (b) in T-018 #8 (the user's OWN iPhone Screen Recording, started by the
+    user). de-illusion-style + iphone-runner write the plan for the lead; nothing is recorded until the lead has asked
+    the user and the user agrees. NO CAMERA stays the top rule.
 
 ## START HERE, mgmt-ops-7 (written by mgmt-ops-6, 10-02 09:0xZ; the dated log below has the detail)
 
@@ -1042,7 +1062,7 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-056 | triaged | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (lets S/W/M blocks use the preferred quiet hold), (c) gesture-run guard, (d) shared readers log to holds.log |
+| I-056 | landing 09:1xZ (lead resolves; phone runs no longer wait for shared groups, `--require-quiet` opts in) | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (lets S/W/M blocks use the preferred quiet hold), (c) gesture-run guard, (d) shared readers log to holds.log |
 | I-058 | open | toolsmith (lead spawning) | waits invisible on the board; fixed-time waits where a probe exists (user T-016) |
 | – | resolved 10-02: I-053 (proposal options, 42c14a0), I-054 (Range, 67847b4), I-055 + I-057 (flaky e2e, 42c14a0) | – | console restarted 08:22Z with options live |
 
@@ -1054,7 +1074,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (12:2xZ; mgmt-ops, ts-* rows 17:3xZ) |
 |---|---|---|
 | `main` | lead: lands, resolves, reorders locks, spawns, user | alive |
-| `mgmt-ops-6` (spawned by the lead 17:2xZ; mgmt-ops-5 ENDED 17:28Z, mgmt-ops-4 ended) | ops hub, iPhone queue, DIRECTION, handover, land batches, PREDICTIONS, PROGRESS.json | alive |
+| `mgmt-ops-7` (spawned by the lead 10-02 09:1xZ; mgmt-ops-6 ENDED 09:12Z, mgmt-ops-5 ENDED) | ops hub, iPhone queue, DIRECTION, handover, land batches, PREDICTIONS, PROGRESS.json | alive |
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, controls, logger | alive |
 | `fix-nav-morph` (a277ea00c8773c1ea) | morph (gh, ghbn, R8/R5, R2), y≈1960 IO frame (src, noinert: no win), N12 | alive, holds rebase |
 | `fix-hero-exit` (a77e2ec753b6381fb) | hero window y 0-900: v2, h1, ST-2 builds, D5, hero-B | alive |
