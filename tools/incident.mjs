@@ -10,7 +10,7 @@
 //        [--sig <dedup key>] [--new]
 //   node tools/incident.mjs list [--all] [--json]          # active incidents (--all: history too)
 //   node tools/incident.mjs show <id> [--json]
-//   node tools/incident.mjs wait <id> [--timeout 3600] [--poll 15]   # exit 0 when resolved/parked (prints the
+//   node tools/incident.mjs wait <id> [--as <you>] [--timeout 3600] [--poll 15]   # exit 0 when resolved/parked (prints the
 //                                                          # announcement), 3 on timeout; run it in the background
 // The lead (triage, dispatch, close):
 //   node tools/incident.mjs update <id> --by lead [--status open|triaged|fixing|parked] [--class ...] [--priority P0-P3]
@@ -23,9 +23,10 @@
 // Exit codes: 0 ok, 1 usage/error, 3 wait timed out.
 import { readFileSync } from 'node:fs';
 import { open, list, get, update, resolve, announcement, waitFor, parseId } from './lib/incident.mjs';
+import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
-const VALUED = ['--by', '--title', '--error', '--class', '--cmd', '--output', '--output-file', '--repro', '--env', '--suspect', '--blocking', '--workaround', '--sig', '--status', '--priority', '--assignee', '--affected', '--note', '--commit', '--resolution', '--timeout', '--poll'];
+const VALUED = ['--by', '--title', '--error', '--class', '--cmd', '--output', '--output-file', '--repro', '--env', '--suspect', '--blocking', '--workaround', '--sig', '--status', '--priority', '--assignee', '--affected', '--note', '--commit', '--resolution', '--timeout', '--poll', '--as'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -103,6 +104,7 @@ async function main() {
   }
   if (cmd === 'wait') {
     get(id); // fail fast on an unknown id
+    startWait({ tool: 'incident.mjs wait', owner: opt('as') ?? by(), what: `incident ${id} to be resolved or parked`, timeoutSec: Number(opt('timeout', 3600)) });
     const i = await waitFor(id, { timeoutSec: Number(opt('timeout', 3600)), pollMs: Number(opt('poll', 15)) * 1000 });
     if (!i) { const now = get(id); console.log(`STILL ${now.status.toUpperCase()} ${id} after ${opt('timeout', 3600)} s: ${now.title}`); return 3; }
     console.log(announcement(i));

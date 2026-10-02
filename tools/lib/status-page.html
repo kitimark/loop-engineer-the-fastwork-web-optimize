@@ -63,6 +63,7 @@ td.prio { width: 56px; }
 .chip.block { background: var(--bad-soft); }
 .chip.live { background: var(--ok-soft); }
 .chip.self { background: var(--warn-soft); }
+.chip.wait { background: transparent; border: 1px dashed var(--line); }
 .line { font-size: 14px; margin-top: 2px; }
 .line b { color: var(--muted); font-weight: 600; }
 .st { font-weight: 650; }
@@ -154,9 +155,9 @@ function waitChips(v) {
   var box = el('div', { class: 'meta' });
   if (v.waiting) box.appendChild(el('span', { class: 'chip ' + (v.waiting.kind === 'user' ? 'you' : 'self'), title: 'reported by the owner', text: v.waiting.plain }));
   v.derived.forEach(function (d) {
-    var cls = d.kind === 'user' ? 'you' : d.kind === 'incident' ? 'block' : d.kind === 'using' ? 'live' : '';
+    var cls = d.kind === 'user' ? 'you' : d.kind === 'incident' ? 'block' : d.kind === 'using' ? 'live' : d.kind === 'wait' ? 'wait' : '';
     if (d.kind === 'user' && STEP.test(d.ref || '')) box.appendChild(el('a', { class: 'chip you', href: '/#' + d.ref, text: d.plain }));
-    else box.appendChild(el('span', { class: 'chip ' + cls, title: 'seen live by the console', text: d.plain }));
+    else box.appendChild(el('span', { class: 'chip ' + cls, title: d.kind === 'wait' ? 'a wait command running now (' + d.tool + ')' : 'seen live by the console', text: d.plain }));
   });
   if (!box.childNodes.length) box.appendChild(el('span', { class: 'plain', text: '–' }));
   return box;
@@ -228,6 +229,13 @@ function render(v) {
     var tb = el('tbody');
     shown.forEach(function (x) { tb.appendChild(row(x)); });
     m.appendChild(el('div', { class: 'tablewrap' }, el('table', { class: 'board' }, el('thead', null, head), tb)));
+  }
+  // I-058: wait commands whose owner has no active row
+  var ow = v.otherWaits || [];
+  if (ow.length) {
+    var ol = el('ul');
+    ow.forEach(function (x) { ol.appendChild(el('li', null, el('b', { text: x.owner + ': ' }), x.plain, el('span', { class: 'plain', text: ' (' + x.tool + ')' }))); });
+    m.appendChild(el('section', { class: 'card', 'aria-label': 'Other waits' }, el('h2', { text: 'Other waits' }), el('div', { class: 'plain', text: 'Wait commands running now whose agent has no active row above.' }), ol));
   }
   var dl = document.getElementById('legend-dl');
   if (!dl.childNodes.length) v.states.forEach(function (s) { dl.append(el('dt', { text: s.key }), el('dd', { text: s.plain })); });

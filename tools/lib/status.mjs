@@ -13,7 +13,10 @@
 // chrome-measure shared group: "using Chrome now (shared)", I-048), a pending console
 // step posted by the owner ("waiting on you"), an active blocking incident naming the owner (unless the owner dropped
 // that link with `set --unlink I-0NN`, I-044: the incident is real but not what this workstream waits on). A
-// self-reported wait on an incident or a workstream that is already over is flagged.
+// self-reported wait on an incident or a workstream that is already over is flagged. A wait command the owner runs
+// right now (tools/lib/waits.mjs live records, I-058: wait.mjs, lock.mjs wait, console/incident/finding waits):
+// "waiting for <what> since 08:31Z (3 min, timeout 10 min)"; waits whose owner has no active row are listed under
+// "other waits" (view.otherWaits).
 //
 // Hard rule 12: every stored string is checked with progress.mjs findPersonal and refused (no URL, IP address, local
 // host name, e-mail, device id or home path); every string shown is sanitize()d again, live ones included.
@@ -23,6 +26,7 @@ import { sharedStateDir } from './paths.mjs';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
 import { findPersonal, sanitize, gatherLive } from './progress.mjs';
+import { waitPlain } from './waits.mjs';
 
 export const SCHEMA = 'fw-status/1';
 export const SEED_SCHEMA = 'fw-status-seed/1';
@@ -293,11 +297,11 @@ const LOCKS = [['chrome-measure', 'chrome', 'Chrome'], ['iphone', 'phone', 'the 
 
 /**
  * What the system knows about this workstream right now. live: progress.mjs gatherLive() shape
- * {locks: {iphone, 'chrome-measure'}: lock.status(), incidents: active list, steps: pending steps}.
+ * {locks: {iphone, 'chrome-measure'}: lock.status(), incidents: active list, steps: pending steps, waits: live wait records}.
  * Returns {derived: [{kind, plain, ref?, position?, of?}], flags: [plain], liveWait: bool}.
  */
-export function derive(it, live = {}, byId = new Map()) {
-  const names = new Set([it.owner, it.id, ...(it.aliases || [])].filter(Boolean));
+export function derive(it, live = {}, byId = new Map(), now = Date.now()) {
+  const names = itemNames(it);
   const derived = [];
   for (const [r, kind, label] of LOCKS) {
     const st = live.locks?.[r];
@@ -320,6 +324,9 @@ export function derive(it, live = {}, byId = new Map()) {
     const hit = names.has(inc.reportedBy) || (inc.affected || []).some((a) => names.has(a.by) && a.blocking !== false);
     if (hit) derived.push({ kind: 'incident', ref: inc.id, plain: `blocked by ${inc.id}: ${sanitize(inc.title, 120)}` });
   }
+  if (!isFinished(it.state)) for (const x of live.waits || []) {
+    if (names.has(x.owner)) derived.push({ kind: 'wait', tool: sanitize(x.tool, 40), since: x.since, plain: waitPlain(x, now) });
+  }
   const flags = [];
   const w = it.waitingOn;
   if (w?.kind === 'incident' && live.incidents && !live.incidents.some((i) => i.id === w.target)) flags.push(`it waits on ${w.target}, which is no longer open: update?`);
@@ -328,9 +335,12 @@ export function derive(it, live = {}, byId = new Map()) {
     if (!other) flags.push(`it waits on workstream ${w.target}, which is not on the board`);
     else if (isFinished(other.state)) flags.push(`it waits on ${w.target}, which is ${other.state}: update?`);
   }
-  const liveWait = derived.some((d) => d.kind === 'chrome' || d.kind === 'phone' || d.kind === 'using' || d.kind === 'user');
+  const liveWait = derived.some((d) => d.kind === 'chrome' || d.kind === 'phone' || d.kind === 'using' || d.kind === 'user' || d.kind === 'wait');
   return { derived, flags, liveWait };
 }
+
+/** The names a row answers to on the locks, the console and the wait records: owner, id, aliases. */
+const itemNames = (it) => new Set([it.owner, it.id, ...(it.aliases || [])].filter(Boolean));
 
 // ---- the view ----------------------------------------------------------------------------------------
 
@@ -338,7 +348,7 @@ const minutes = (from, now) => (from ? Math.max(0, Math.round((now - Date.parse(
 
 export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), staleAfterMin = staleMin() } = {}) {
   const st = STATES[it.state] || { group: 'working', plain: it.state };
-  const { derived, flags, liveWait } = derive(it, live, byId);
+  const { derived, flags, liveWait } = derive(it, live, byId, now);
   const ageMin = minutes(it.updatedAt || it.createdAt, now);
   const canStale = ['working', 'waiting', 'queued'].includes(st.group);
   const s = (x, n) => (x == null ? null : sanitize(x, n));
@@ -373,12 +383,16 @@ export function buildStatusView({ items = [], live = {}, now = Date.now(), stale
   const counts = { total: views.length, stale: 0, waitingOnYou: 0 };
   for (const g of GROUP_ORDER) counts[g] = 0;
   for (const v of views) { counts[v.group] = (counts[v.group] || 0) + 1; if (v.stale) counts.stale++; if (v.waitingOnYou) counts.waitingOnYou++; }
+  // I-058: live waits whose owner has no active row (the rows show their own owner's waits)
+  const active = new Set(items.filter((i) => !isFinished(i.state)).flatMap((i) => [...itemNames(i)]));
+  const otherWaits = (live.waits || []).filter((x) => !active.has(x.owner)).map((x) => ({ owner: sanitize(x.owner, 80), tool: sanitize(x.tool, 40), since: x.since, plain: waitPlain(x, now) }));
   return {
     schema: SCHEMA, now: new Date(now).toISOString(), staleAfterMin, counts,
     groups: GROUP_ORDER.map((k) => ({ key: k, label: GROUPS[k] })),
     kinds: Object.entries(KINDS).map(([key, label]) => ({ key, label })),
     states: STATE_NAMES.map((k) => ({ key: k, group: STATES[k].group, plain: STATES[k].plain })),
     items: views,
+    otherWaits,
     liveErrors: (live.errors || []).map((e) => sanitize(e, 200)),
   };
 }
@@ -448,6 +462,10 @@ export function renderText(view, { all = false } = {}) {
   for (const v of shown) L.push(itemText(v));
   const hidden = view.items.length - shown.length;
   if (hidden) L.push('', `(${hidden} finished; --all shows them)`);
+  if (view.otherWaits?.length) {
+    L.push('', 'OTHER WAITS (no active workstream row for their owner)');
+    for (const x of view.otherWaits) L.push(`  ${x.owner}: ${x.plain}  [${x.tool}]`);
+  }
   return L.join('\n');
 }
 

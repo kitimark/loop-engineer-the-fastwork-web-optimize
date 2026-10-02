@@ -37,6 +37,7 @@ import {
 } from './proposal.mjs';
 import { runningServer } from './console-server.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './wait.mjs';
+import { startWait } from './waits.mjs'; // I-058: live wait records for the status board
 
 const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option']);
 
@@ -131,6 +132,7 @@ async function wait(w, a) {
   const timeoutSec = a.one('timeout') !== undefined ? parseSec(a.one('timeout')) : 3600;
   if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${a.one('timeout')}`);
   const onChange = a.flag('quiet') ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
+  startWait({ tool: 'console.mjs proposal wait', owner: a.one('by', a.one('as')), what: w.what, timeoutSec });
   const r = await pollUntil(w.check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
   if (r.result === 'met') {
     const d = JSON.parse(r.detail);

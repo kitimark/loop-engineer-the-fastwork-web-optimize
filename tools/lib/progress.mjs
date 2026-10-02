@@ -249,7 +249,7 @@ function handoverView(ho) {
 
 /** Live sources, each failure-tolerant (a broken source shows as unavailable, never breaks the page). */
 export async function gatherLive() {
-  const live = { locks: {}, incidents: null, steps: null, errors: [] };
+  const live = { locks: {}, incidents: null, steps: null, waits: null, errors: [] };
   try {
     const L = await import('./lock.mjs');
     for (const r of ['iphone', 'chrome-measure']) {
@@ -263,6 +263,7 @@ export async function gatherLive() {
   } catch (e) { live.errors.push(`locks: ${e.message}`); }
   try { live.incidents = (await import('./incident.mjs')).list(); } catch (e) { live.errors.push(`incidents: ${e.message}`); }
   try { live.steps = (await import('./console.mjs')).list({ pending: true }); } catch (e) { live.errors.push(`console steps: ${e.message}`); }
+  try { live.waits = (await import('./waits.mjs')).listWaits(); } catch (e) { live.errors.push(`waits: ${e.message}`); } // I-058
   return live;
 }
 

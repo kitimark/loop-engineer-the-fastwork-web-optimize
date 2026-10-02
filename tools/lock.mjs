@@ -15,7 +15,8 @@
 // wait (run it in the background; ts-wait): blocks until the lock reaches a state, then prints ONE line and exits
 // 0 MET / 3 TIMEOUT (1 usage). It only reads the lock files (polls 1 s, backing off to 10 s; each change of state
 // goes to stderr): it takes no queue place and keeps none alive. To wait for your own turn use `run` or
-// `acquire --wait N` (the waits that keep your place).
+// `acquire --wait N` (the waits that keep your place). While it runs, the status board shows it on --owner's rows
+// (default $FW_LOCK_OWNER; tools/lib/waits.mjs, I-058).
 //   free               no live holder (someone queued may take it at once)
 //   idle               no live holder and nobody queued; with --for 120: stayed so for 120 s (a quiet window for CPU work)
 //   mine               held by --owner (e.g. your background `lock.mjs run` has started)
@@ -118,6 +119,7 @@ import { appendFileSync } from 'node:fs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, keepAwakeQueued } from './lib/awake.mjs';
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
+import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -401,6 +403,7 @@ async function waitCmd() {
   status(resource); // a bad resource name fails here, before the first poll
   const what = `${resource} ${lockConditionText(cond)}`;
   const onChange = flag('quiet') ? undefined : (state, s) => console.error(`[lock wait ${new Date().toISOString().slice(11, 19)}Z +${s}s] ${resource} ${state}`);
+  startWait({ tool: 'lock.mjs wait', owner, what: `lock ${what}${holdSec ? `, for ${holdSec} s` : ''}`, timeoutSec }); // I-058: shown on the status board
   const r = await pollUntil(() => lockConditionMet(cond, status(resource)), { timeoutSec, holdSec, onChange });
   if (r.result === 'met') { console.log(`MET ${what}: ${r.state}${holdSec ? ` (for ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return WAIT_EXIT.met; }
   console.log(`TIMEOUT ${what} after ${r.waitedSec} s: ${r.state}`);

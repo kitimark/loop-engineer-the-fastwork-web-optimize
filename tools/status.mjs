@@ -15,7 +15,9 @@
 //        #   other:"<text>", each with an optional :"<text>" (lead:"land request"). With --state the wait is replaced
 //        #   (cleared if not given); waiting needs one; ready-to-land defaults to lead:"land request".
 //        # The board adds what it already knows: your place in the Chrome/phone queue, your pending console steps,
-//        # blocking incidents that name you. Never report a URL, address, e-mail or path (refused, Hard rule 12).
+//        # blocking incidents that name you, and every wait command you run right now (wait.mjs, lock.mjs wait, console/
+//        # incident/finding waits: "now: waiting for <what> since 08:31Z (3 min, timeout 10 min)", I-058; waits whose owner has
+//        # no active row are listed under OTHER WAITS). Never report a URL, address, e-mail or path (refused, Hard rule 12).
 //        # --unlink incident:I-0NN[,…] | none: drop a derived "blocked by I-0NN" line when that incident (yours, still
 //        #   open) is not what this workstream waits on (kept across later sets; none restores; I-044). Prints
 //        #   "; unlinked I-0NN". A later --waiting-on incident:I-0NN links it again.
@@ -50,6 +52,7 @@ async function main() {
     const v = buildStatusView({ items: all, live });
     const keep = (x) => (!opt('state') || x.state === opt('state')) && (!opt('kind') || x.kind === opt('kind')) && (!owner || x.owner === owner || x.aliases.includes(owner));
     v.items = v.items.filter(keep);
+    if (owner) v.otherWaits = v.otherWaits.filter((x) => x.owner === owner);
     if (flag('json')) { console.log(JSON.stringify(v, null, 1)); return 0; }
     if (cmd === 'mine' && !v.items.length) { console.log(`no status items owned by ${owner}: node tools/status.mjs set <id> --by ${owner} --kind … --title "…" --state …`); return 0; }
     console.log(renderText(v, { all: flag('all') || cmd === 'mine' || !!opt('state') }));

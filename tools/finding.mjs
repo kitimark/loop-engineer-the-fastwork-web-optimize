@@ -31,6 +31,7 @@
 //        # this tool never edits fixes/FINDINGS.md; the lead pastes the digest, edits and commits it
 // --by / --as default to $FW_AGENT. Exit codes: 0 ok (POSTED, SIMILAR, ...), 1 usage/error, 3 wait timed out.
 import { list, get, post, ack, resolve, claim, waitFor, digest, parseId, stateLabel, claimTag, claimLabel, claimChangeLine } from './lib/finding.mjs';
+import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--as', '--kind', '--topics', '--topic', '--title', '--where', '--evidence', '--body', '--since', '--note', '--folded', '--timeout', '--poll', '--claim', '--ref', '--status'];
@@ -85,6 +86,8 @@ async function main() {
   if (cmd === 'digest') { process.stdout.write(digest({ since: opt('since') })); return 0; }
   if (cmd === 'wait') {
     const timeout = Number(opt('timeout', 3600));
+    const tp = opt('topic', opt('topics'));
+    if (agent('as')) startWait({ tool: 'finding.mjs wait', owner: agent('as'), what: `a new finding${tp ? ` on ${tp}` : ''}${opt('kind') ? ` (${opt('kind')})` : ''}`, timeoutSec: timeout });
     const fresh = await waitFor({ as: agent('as'), topic: opt('topic', opt('topics')), kind: opt('kind'), since: opt('since'), timeoutSec: timeout, pollMs: Number(opt('poll', 10)) * 1000 });
     if (!fresh) { console.log(`NO NEW FINDINGS after ${timeout} s`); return 3; }
     const times = [];

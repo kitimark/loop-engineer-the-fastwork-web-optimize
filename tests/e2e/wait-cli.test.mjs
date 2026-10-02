@@ -5,7 +5,7 @@
 // Temp lock dirs ($FW_STATE_DIR) only; no real locks, no port 5173, no phone.
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, appendFileSync, readFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, appendFileSync, readFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import http from 'node:http';
@@ -13,6 +13,7 @@ import { tempDir, node, nodeAsync, tool, sleep, cleanEnv, TESTS } from '../helpe
 
 const WAIT = tool('wait.mjs');
 const LOCK = tool('lock.mjs');
+const STATUS = tool('status.mjs');
 let state, env;
 beforeEach(() => { state = tempDir('fw-waitcli-'); env = { FW_STATE_DIR: state }; });
 const lock = (...a) => node(LOCK, a, { env });
@@ -21,7 +22,7 @@ const queue = (r) => { try { return JSON.parse(readFileSync(join(state, 'locks',
 
 test('wait file --match: exits 0 with the matching line once a background job writes it', async () => {
   const f = join(state, 'job.log');
-  const w = nodeAsync(WAIT, ['file', f, '--match', '^EXIT \\d+', '--timeout', '20']);
+  const w = nodeAsync(WAIT, ['file', f, '--match', '^EXIT \\d+', '--timeout', '20'], { env });
   await sleep(600);
   writeFileSync(f, 'working\n');
   await sleep(600);
@@ -36,14 +37,14 @@ test('wait file --match: exits 0 with the matching line once a background job wr
 test('wait file: TIMEOUT exit 3 with the last state; --pid of a finished writer: NEVER exit 4 at once', async () => {
   const f = join(state, 'x.log');
   writeFileSync(f, 'nothing\n');
-  const t = node(WAIT, ['file', f, '--match', 'DONE', '--timeout', '1', '--quiet']);
+  const t = node(WAIT, ['file', f, '--match', 'DONE', '--timeout', '1', '--quiet'], { env });
   assert.equal(t.code, 3, t.out);
   assert.match(t.stdout, /^TIMEOUT file .* after 1 s: no line matches \/DONE\/ yet \(8 bytes\)$/m);
   assert.equal(t.stderr, '', '--quiet: no change lines');
   const p = spawn(process.execPath, ['-e', '0'], { env: cleanEnv() });
   await new Promise((r) => p.on('exit', r));
   const t0 = Date.now();
-  const n = node(WAIT, ['file', f, '--match', 'DONE', '--pid', String(p.pid), '--timeout', '600']);
+  const n = node(WAIT, ['file', f, '--match', 'DONE', '--pid', String(p.pid), '--timeout', '600'], { env });
   assert.equal(n.code, 4, n.out);
   assert.match(n.stdout, new RegExp(`^NEVER file .*: process ${p.pid} exited and no line matched`));
   assert.ok(Date.now() - t0 < 5000, 'no hour-long wait for a dead writer');
@@ -54,37 +55,37 @@ test('wait serve: MET with MIRROR_URL once the state file names a live pid whose
   const url = `http://127.0.0.1:${s.address().port}/`;
   const f = join(state, 'serve-t.json');
   try {
-    const w = nodeAsync(WAIT, ['serve', f, '--timeout', '20']);
+    const w = nodeAsync(WAIT, ['serve', f, '--timeout', '20'], { env });
     await sleep(700);
     writeFileSync(f, JSON.stringify({ url, pid: process.pid }));
     const r = await w;
     assert.equal(r.code, 0, r.out);
     assert.match(r.stdout, new RegExp(`^MET serve .*: MIRROR_URL=${url.replace(/[.]/g, '\\.')} pid=${process.pid} \\(after \\d+ s\\)$`, 'm'));
   } finally { s.close(); }
-  const t = node(WAIT, ['serve', join(state, 'none.json'), '--timeout', '1', '--quiet']);
+  const t = node(WAIT, ['serve', join(state, 'none.json'), '--timeout', '1', '--quiet'], { env });
   assert.equal(t.code, 3);
   assert.match(t.stdout, /TIMEOUT serve .* after 1 s: no state file yet/);
 });
 
 test('wait url / pid / time / git, and usage errors exit 1', async () => {
   const p = spawn(process.execPath, ['-e', 'setTimeout(()=>{}, 1500)'], { env: cleanEnv() });
-  const r = node(WAIT, ['pid', String(p.pid), '--timeout', '20']);
+  const r = node(WAIT, ['pid', String(p.pid), '--timeout', '20'], { env });
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, new RegExp(`^MET pid ${p.pid}: pid ${p.pid} exited`));
-  const u = node(WAIT, ['url', 'http://127.0.0.1:9/', '--timeout', '1', '--quiet']);
+  const u = node(WAIT, ['url', 'http://127.0.0.1:9/', '--timeout', '1', '--quiet'], { env });
   assert.equal(u.code, 3, u.out);
   assert.match(u.stdout, /^TIMEOUT url http:\/\/127\.0\.0\.1:9\/ after 1 s: no answer/);
-  const tm = node(WAIT, ['time', '1']);
+  const tm = node(WAIT, ['time', '1', '--reason', 'test: a fixed second'], { env });
   assert.equal(tm.code, 0, tm.out);
   assert.match(tm.stdout, /^MET time \d{4}-/);
-  const g = node(WAIT, ['git', '--ref', 'HEAD', '--contains', 'HEAD', '--quiet']);
+  const g = node(WAIT, ['git', '--ref', 'HEAD', '--contains', 'HEAD', '--quiet'], { env });
   assert.equal(g.code, 0, g.out);
   assert.match(g.stdout, /^MET git HEAD contains HEAD/);
   for (const args of [[], ['bogus'], ['file'], ['pid', 'abc'], ['file', 'x', '--timeout', 'soon'], ['file', 'x', '--match', '('], ['git', '--path', 'a', '--grep', 'b'], ['time', '5', '--timeout', '9']]) {
-    const e = node(WAIT, args);
+    const e = node(WAIT, args, { env });
     assert.equal(e.code, 1, `${args.join(' ')}: ${e.out}`);
   }
-  assert.equal(node(WAIT, ['--help']).code, 0);
+  assert.equal(node(WAIT, ['--help'], { env }).code, 0);
 });
 
 // wait phone-temp (ts-phone-cool, user T-009): the battery through tools/lib/iphone-run.mjs batteryInfo, here the
@@ -94,31 +95,31 @@ test('wait phone-temp: MET at once when cool, TIMEOUT with the last reading, UNA
   const log = join(state, 'idd.log');
   const calls = () => { try { return readFileSync(log, 'utf8').split('\n').filter(Boolean).length; } catch { return 0; } };
   const iddEnv = { FW_IDEVICEDIAGNOSTICS: FAKE_IDD, FAKE_IDD_LOG: log };
-  const m = node(WAIT, ['phone-temp', '--below', '35'], { env: iddEnv });
+  const m = node(WAIT, ['phone-temp', '--below', '35'], { env: { ...env, ...iddEnv } });
   assert.equal(m.code, 0, m.out);
   assert.equal(m.stdout, 'MET phone-temp: phone at 30.5 °C <= 35.0 °C (after 0 s)\n');
   assert.match(m.stderr, /\] read 1: 30\.5 °C <= 35\.0 °C\n/, 'one line per read on stderr');
   assert.equal(calls(), 1);
 
-  const t = node(WAIT, ['phone-temp', '--below', '20', '--timeout', '1'], { env: iddEnv });
+  const t = node(WAIT, ['phone-temp', '--below', '20', '--timeout', '1'], { env: { ...env, ...iddEnv } });
   assert.equal(t.code, 3, t.out);
   assert.equal(t.stdout, 'TIMEOUT phone-temp after 1 s: read 1: 30.6 °C > 20.0 °C\n');
   assert.equal(calls(), 2, 'the check at the 1 s deadline reuses the first read (30 s floor)');
   for (const r of [m, t]) assert.doesNotMatch(r.out, /FAKESERIAL|Serial|192\.168\./, 'no device ids or LAN addresses');
 
-  const u = node(WAIT, ['phone-temp', '--below', '38'], { env: { FW_IDEVICEDIAGNOSTICS: join(state, 'no-such-idevicediagnostics') } });
+  const u = node(WAIT, ['phone-temp', '--below', '38'], { env: { ...env, FW_IDEVICEDIAGNOSTICS: join(state, 'no-such-idevicediagnostics') } });
   assert.equal(u.code, 1, u.out);
   assert.equal(u.stdout, 'UNAVAILABLE phone-temp: battery temperature unavailable (idevicediagnostics: ENOENT) (after 0 s)\n');
 
   const before = calls();
   for (const args of [['phone-temp'], ['phone-temp', '--below', 'hot'], ['phone-temp', '--below', '38', '--runs-dir', state], ['phone-temp', '--below', 'auto', '--driver', 'X'], ['phone-temp', '--below', '38', '--driver', 'M'], ['phone-temp', '--below', '38', '--every', '10'], ['phone-temp', '--below', '38', '--every', 'x'], ['phone-temp', '--below', '38', '--timeout', 'soon']]) {
-    const e = node(WAIT, args, { env: iddEnv });
+    const e = node(WAIT, args, { env: { ...env, ...iddEnv } });
     assert.equal(e.code, 1, `${args.join(' ')}: ${e.out}`);
     assert.equal(e.stdout, '', `${args.join(' ')}: no result line on a usage error`);
   }
-  assert.match(node(WAIT, ['phone-temp', '--below', '38', '--runs-dir', state], { env: iddEnv }).stderr, /--runs-dir and --driver go with --below auto/);
-  assert.match(node(WAIT, ['phone-temp', '--below', 'auto', '--driver', 'X'], { env: iddEnv }).stderr, /--driver is the next block's driver: S, W or M \(got X\)/);
-  assert.match(node(WAIT, ['phone-temp', '--below', '38', '--every', '10'], { env: iddEnv }).stderr, /--every must be .*>= 30/);
+  assert.match(node(WAIT, ['phone-temp', '--below', '38', '--runs-dir', state], { env: { ...env, ...iddEnv } }).stderr, /--runs-dir and --driver go with --below auto/);
+  assert.match(node(WAIT, ['phone-temp', '--below', 'auto', '--driver', 'X'], { env: { ...env, ...iddEnv } }).stderr, /--driver is the next block's driver: S, W or M \(got X\)/);
+  assert.match(node(WAIT, ['phone-temp', '--below', '38', '--every', '10'], { env: { ...env, ...iddEnv } }).stderr, /--every must be .*>= 30/);
   assert.equal(calls(), before, 'usage errors read no battery');
 });
 
@@ -132,27 +133,27 @@ test('wait phone-temp --below auto: 38 °C without a passing sentinel today; the
     mkdirSync(runs, { recursive: true });
     writeFileSync(join(runs, name), JSON.stringify({ meta: { schema: 'fw-iphone-run/1', kind: 'run', date: date.toISOString(), battery: { start: { temperatureC: endC - 1 }, end: { temperatureC: endC } }, sentinel: { driver: 'S', criterion: 'bottom >= 58 fps and scroll >= 44 fps', value: { bottom: 59, scroll: 55 }, pass: sentinelPass } } }));
   };
-  let r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs], { env: iddEnv });
+  let r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs], { env: { ...env, ...iddEnv } });
   assert.equal(r.code, 0, r.out);
   assert.equal(r.stdout, 'MET phone-temp --below auto: phone at 30.5 °C <= 38.0 °C (after 0 s)\n');
   assert.match(r.stderr, /^auto: --below 38\.0 °C \(no passing heat sentinel with a battery reading today in .*runs; 0 record\(s\) from today read\)$/m);
   rec('a-run-ctl-1.json', true, 31.0);
   rec('a-run-ctl-2.json', false, 33.0);
-  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs, '--timeout', '1'], { env: iddEnv });
+  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs, '--timeout', '1'], { env: { ...env, ...iddEnv } });
   assert.equal(r.code, 3, r.out);
   assert.equal(r.stdout, 'TIMEOUT phone-temp --below auto after 1 s: read 1: 30.6 °C > 30.5 °C\n', 'the failing sentinel after it does not count');
   assert.match(r.stderr, /^auto: --below 30\.5 °C = 31\.0 °C \(battery after the last passing heat sentinel today, .*a-run-ctl-1\.json, \d\d:\d\d:\d\dZ\) - 0\.5$/m);
   rec('a-run-ctl-3.json', true, 31.6);
-  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', `${join(state, 'none')},${runs}`], { env: iddEnv });
+  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', `${join(state, 'none')},${runs}`], { env: { ...env, ...iddEnv } });
   assert.equal(r.code, 0, r.out);
   assert.equal(r.stdout, 'MET phone-temp --below auto: phone at 30.7 °C <= 31.1 °C (after 0 s)\n', 'the newest passing one; comma-separated dirs');
   assert.doesNotMatch(r.out, /FAKESERIAL|Serial|192\.168\./);
   // --driver M (iphone-runner: M sentinels failed at 41.5 °C): auto is at most 39.5 °C; S/W are not capped
   rec('a-run-ctl-4.json', true, 41.0);
-  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs, '--driver', 'm'], { env: iddEnv });
+  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs, '--driver', 'm'], { env: { ...env, ...iddEnv } });
   assert.equal(r.stdout, 'MET phone-temp --below auto: phone at 30.8 °C <= 39.5 °C (after 0 s)\n');
   assert.match(r.stderr, /^auto: --driver M: capped at 39\.5 °C \(M blocks start at or below 39\.5 °C\)$/m);
-  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs, '--driver', 'S'], { env: iddEnv });
+  r = node(WAIT, ['phone-temp', '--below', 'auto', '--runs-dir', runs, '--driver', 'S'], { env: { ...env, ...iddEnv } });
   assert.equal(r.stdout, 'MET phone-temp --below auto: phone at 30.9 °C <= 40.5 °C (after 0 s)\n');
   assert.doesNotMatch(r.stderr, /capped/);
 });
@@ -207,4 +208,85 @@ test('acquire iphone --wait: a background waiter gets the lease in strict FIFO o
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /^ACQUIRED iphone for "b" until /);
   assert.equal(lock('acquire', 'iphone', '--owner', 'c').code, 3, 'c still waits: b holds it');
+});
+
+// I-058 (user T-016): a fixed `wait.mjs time` needs a reason, and every running wait shows on the status board by
+// itself (a record in $FW_STATE_DIR/waits/, removed on exit), so nobody has to remember to report it.
+const waitRecords = () => { try { return readdirSync(join(state, 'waits')).map((n) => JSON.parse(readFileSync(join(state, 'waits', n), 'utf8'))); } catch { return []; } };
+const until = async (cond, ms = 10000) => { const t0 = Date.now(); while (!cond()) { if (Date.now() - t0 > ms) return false; await sleep(100); } return true; };
+
+test('I-058 wait time: --reason is required (exit 1, the usage points at the probes); with one it waits as before', () => {
+  for (const args of [['time', '1'], ['time', '1', '--reason'], ['time', '1', '--reason', '--quiet']]) {
+    const e = node(WAIT, args, { env });
+    assert.equal(e.code, 1, `${args.join(' ')}: ${e.out}`);
+    assert.match(e.stderr, /--reason "<why no probe fits>"/);
+    assert.match(e.stderr, /phone-temp --below auto/);
+    assert.match(e.stderr, /lock\.mjs wait/);
+    assert.equal(e.stdout, '');
+  }
+  assert.deepEqual(waitRecords(), [], 'a refused wait registers nothing');
+});
+
+test('I-058 waits register while they run and go away on exit: wait.mjs (with the reason) and lock.mjs wait; the board shows them', async () => {
+  node(STATUS, ['set', 'blocks', '--by', 'iphone-runner', '--kind', 'phone', '--title', 'Phone blocks', '--state', 'measuring', '--note', 'block 3'], { env });
+  const tm = nodeAsync(WAIT, ['time', '4', '--reason', 'the block slot starts then', '--owner', 'iphone-runner', '--quiet'], { env });
+  const lw = lockAsync('wait', 'chrome-measure', '--until', 'held-by:nobody', '--owner', 'ts-x', '--timeout', '4', '--quiet');
+  const u = nodeAsync(WAIT, ['url', 'http://192.168.77.9:9/', '--timeout', '4', '--quiet'], { env: { ...env, FW_AGENT: 'fix-y' } });
+  assert.ok(await until(() => waitRecords().length === 3), `three records: ${JSON.stringify(waitRecords())}`);
+  const by = Object.fromEntries(waitRecords().map((r) => [r.owner, r]));
+  assert.match(by['iphone-runner'].what, /^a fixed timer until \d\d:\d\dZ$/);
+  assert.equal(by['iphone-runner'].reason, 'the block slot starts then');
+  assert.equal(by['iphone-runner'].tool, 'wait.mjs time');
+  assert.equal(by['ts-x'].what, 'lock chrome-measure held-by "nobody"');
+  assert.equal(by['ts-x'].timeoutSec, 4);
+  assert.equal(by['fix-y'].what, 'lan-host:9/ to answer', 'owner from $FW_AGENT; no LAN address stored');
+  const board = node(STATUS, ['list'], { env });
+  assert.equal(board.code, 0, board.out);
+  assert.match(board.stdout, /blocks {2}\[Phone\] Phone blocks\n.*\n {6}now: waiting for a fixed timer until \d\d:\d\dZ since \d\d:\d\dZ \(under a minute, timeout \d+ s\); reason: the block slot starts then/);
+  assert.match(board.stdout, /OTHER WAITS[^\n]*\n {2}(ts-x|fix-y): waiting for /);
+  assert.ok(!board.stdout.includes('192.168'));
+  assert.match(node(STATUS, ['show', 'blocks'], { env }).stdout, /now: waiting for a fixed timer/);
+  const [a, b, c] = await Promise.all([tm, lw, u]);
+  assert.match(a.stdout, /^MET time /, a.out);
+  assert.match(b.stdout, /^TIMEOUT chrome-measure held-by "nobody" after \d+ s: free\n$/, 'the result line is unchanged');
+  assert.equal(c.code, 3, c.out);
+  assert.deepEqual(waitRecords(), [], 'each wait removed its record on exit');
+  assert.doesNotMatch(node(STATUS, ['list'], { env }).stdout, /waiting for|OTHER WAITS/);
+});
+
+test('I-058 a killed wait leaves a record that no longer counts (dead pid); the next wait drops it', async () => {
+  const p = spawn(process.execPath, [WAIT, 'pid', String(process.pid), '--owner', 'fix-z', '--quiet'], { env: cleanEnv(env), stdio: 'ignore' });
+  assert.ok(await until(() => waitRecords().length === 1));
+  assert.equal(waitRecords()[0].what, `process ${process.pid} to exit`);
+  p.kill('SIGKILL');
+  await new Promise((r) => p.on('exit', r));
+  assert.equal(waitRecords().length, 1, 'SIGKILL: no exit handler ran');
+  assert.doesNotMatch(node(STATUS, ['list'], { env }).stdout, /fix-z/, 'a dead pid is not shown');
+  const t = node(WAIT, ['pid', String(p.pid), '--timeout', '5', '--quiet'], { env });
+  assert.equal(t.code, 0, t.out);
+  assert.deepEqual(waitRecords(), [], 'the dead record was dropped when the next wait started');
+});
+
+test('I-058 incident, finding and console waits register too (owner from --as, or the step\'s poster); their result lines are unchanged', async () => {
+  const INC = tool('incident.mjs'), FIND = tool('finding.mjs'), CON = tool('console.mjs');
+  assert.match(node(INC, ['open', '--by', 'fix-q', '--title', 'x broke', '--error', 'e', '--cmd', 'c', '--class', 'tool', '--blocking', 'no'], { env }).stdout, /^OPENED I-001/);
+  assert.match(node(CON, ['post', '--by', 'fix-s', '--kind', 'action', '--title', 'try it', '--instructions', 'do it'], { env }).stdout, /^POSTED C-001/);
+  const jobs = [
+    nodeAsync(INC, ['wait', 'I-001', '--as', 'fix-q', '--timeout', '3', '--poll', '1'], { env }),
+    nodeAsync(FIND, ['wait', '--as', 'fix-r', '--timeout', '3', '--poll', '1'], { env }),
+    nodeAsync(CON, ['wait', 'C-001', '--timeout', '3', '--quiet'], { env }),
+    nodeAsync(CON, ['thread', 'wait', '--as', 'fix-t', '--timeout', '3', '--quiet'], { env }),
+  ];
+  assert.ok(await until(() => waitRecords().length === 4), `four records: ${JSON.stringify(waitRecords())}`);
+  const by = Object.fromEntries(waitRecords().map((r) => [r.owner, r]));
+  assert.equal(by['fix-q'].what, 'incident I-001 to be resolved or parked');
+  assert.equal(by['fix-r'].what, 'a new finding');
+  assert.equal(by['fix-s'].what, 'console C-001 answered');
+  assert.match(by['fix-t'].what, /^a user reply in a console thread/);
+  const [i, f, c, t] = await Promise.all(jobs);
+  assert.match(i.stdout, /^STILL OPEN I-001 after 3 s: x broke\n$/);
+  assert.match(f.stdout, /^NO NEW FINDINGS after 3 s\n$/);
+  assert.match(c.stdout, /^TIMEOUT console C-001 answered after \d+ s: pending\n$/);
+  assert.match(t.stdout, /^TIMEOUT threads all for fix-t after \d+ s/);
+  assert.deepEqual(waitRecords(), []);
 });

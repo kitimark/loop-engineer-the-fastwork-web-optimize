@@ -112,6 +112,9 @@ test('GET /status: the page, in the menu (highlighted); /api/status: the model, 
   assert.equal(v.items[0].id, 'style-recalc');
   assert.equal(v.items[0].priority, 1);
   assert.ok(v.items.find((x) => x.id === 'ts-x').waitingOnYou);
+  assert.deepEqual(v.otherWaits, [], 'I-058: live waits of owners without a row (none running here)');
+  assert.match(p.text, /v\.otherWaits/, 'I-058: the page lists other waits');
+  assert.match(p.text, /d\.kind === 'wait'/, 'I-058: a running wait is its own chip');
   for (const bad of ['192.168', 'http://', '/Users/']) assert.ok(!r.text.includes(bad), `${bad} leaked`);
   assert.equal((await request(new URL('api/status', base).href, { method: 'POST', headers: { 'x-console': '1' } })).status, 404);
   const port = new URL(base).port;

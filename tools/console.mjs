@@ -88,6 +88,7 @@ import { autoPortBase } from './lib/paths.mjs';
 import { currentView, renderText, readProgress } from './lib/progress.mjs';
 import { currentStatusView, renderText as statusText } from './lib/status.mjs';
 import * as TH from './lib/console-threads.mjs';
+import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
 const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread'];
@@ -190,6 +191,7 @@ async function thread() {
     };
     const split = (c) => (c.met ? (c.detail.startsWith('[') ? { news: JSON.parse(c.detail), ev: [] } : JSON.parse(c.detail)) : null);
     const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
+    startWait({ tool: 'console.mjs thread wait', owner: w.reader, what: `a user reply ${opt('thread') ? `in ${opt('thread')}` : 'in a console thread'}${withProposals ? ' or a proposal decision' : ''}`, timeoutSec });
     const r = await pollUntil(check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
     if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
     if (r.result !== 'met') { console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`); return EXIT.timeout; }
@@ -304,6 +306,8 @@ async function main() {
     if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${opt('timeout')}`);
     const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
     // a local file read: poll fast, the user is waiting for "recording" after Start
+    let poster; try { poster = get(id).by; } catch {}
+    startWait({ tool: 'console.mjs wait', owner: opt('as') ?? by() ?? poster, what: w.what, timeoutSec });
     const r = await pollUntil(w.check, { timeoutSec, onChange, minMs: 200, maxMs: 500, factor: 1.2 });
     if (r.result === 'met') { console.log(flag('json') ? r.detail : `MET ${w.what}: ${r.detail} (after ${r.waitedSec} s)`); return EXIT.met; }
     if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
