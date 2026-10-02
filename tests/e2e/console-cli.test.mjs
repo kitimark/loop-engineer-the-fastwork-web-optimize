@@ -155,6 +155,36 @@ test('wait: NEVER (exit 4) when the user skips, TIMEOUT (exit 3), the user bring
   assert.equal(JSON.parse(cli('show', q, '--json').stdout).history.at(-1).who, 'lead');
 });
 
+test('I-059 --runner-ends: the page\'s Done is refused (403, plain message) on a runner-ended part; the runner\'s ack done ends it', async () => {
+  const parts = JSON.stringify([{ label: 'Open the page' }, { label: 'Versions 1-4 play' }]);
+  const bad = cli('post', '--by', 'iphone-runner', '--kind', 'action', '--title', 'x', '--parts', parts, '--runner-ends', '3');
+  assert.equal(bad.code, 1);
+  assert.match(bad.stderr, /--runner-ends takes part numbers 1-2/);
+  const id = postedId(cli('post', '--by', 'iphone-runner', '--kind', 'action', '--title', 'Visual check', '--parts', parts, '--runner-ends', '2'));
+  assert.match(cli('show', id).stdout, /part 2 Versions 1-4 play: waiting runner-ends/);
+  assert.doesNotMatch(cli('show', id).stdout, /part 1 Open the page: waiting runner-ends/);
+  // part 1 is the user's, as before
+  assert.equal((await click(id, 'start', { part: 1 })).status, 200);
+  assert.equal((await click(id, 'done', { part: 1 })).status, 200);
+  const st = await click(id, 'start', { part: 2 });
+  assert.equal(st.status, 200);
+  assert.equal(st.json.step.parts[1].ends, 'runner');
+  const wd = cliAsync('wait', id, '--until', 'done', '--part', '2', '--timeout', '30', '--json', '--quiet');
+  const d = await click(id, 'done', { part: 2 });
+  assert.equal(d.status, 403, d.text);
+  assert.match(d.json.error, /part 2 \(Versions 1-4 play\) ends by itself: iphone-runner marks it done when it has finished\. Nothing to tap; the console will say when\./);
+  assert.equal((await req('/api/steps')).json.steps.find((s) => s.id === id).parts[1].state, 'started', 'the refused Done changed nothing');
+  assert.equal(cli('ack', id, '--by', 'iphone-runner', '--part', '2', '--message', 'version 4 of 4').code, 0);
+  assert.equal(cli('ack', id, '--by', 'iphone-runner', '--part', '2', '--state', 'done').code, 0);
+  const r = await wd;
+  assert.equal(r.code, 0, r.out);
+  assert.equal(JSON.parse(r.stdout).state, 'done');
+  const v = JSON.parse(cli('show', id, '--json').stdout);
+  assert.deepEqual([v.status, v.result.value], ['answered', 'done'], 'the last part, ended by the runner, finishes the action');
+  // the page serves the runner-ended text
+  assert.match((await req('/')).text, /Running, please wait; this ends by itself\./);
+});
+
 test('stopping the server removes server.json; url then reports no server (exit 3)', async () => {
   const s2state = tempDir('fw-console-e2e2-');
   const e2 = { FW_STATE_DIR: s2state };

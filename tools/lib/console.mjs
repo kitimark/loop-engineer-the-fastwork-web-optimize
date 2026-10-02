@@ -15,6 +15,9 @@
 //           loading/ready: the agent prepares the part (a "gated" part: Start stays disabled until ready);
 //           started: the user clicked Start; recording: the agent's recorder runs ("recording… swipe now");
 //           done: the user clicked Done (or the agent acked done, e.g. at its recording cap).
+//   A runner-ended part (I-059; `ends: "runner"` in --parts, or --runner-ends N[,M]) is ended by the agent only
+//   (`ack --part N --state done`): the page shows no Done button but "Running, please wait; this ends by itself",
+//   and a Done from the page is refused (403), so the user can't finish a part while the phone still plays.
 //   After the last part: the answer (buttons, yes/no or free text, with optional notes). A step with no
 //   parts (a question) goes from Start straight to the answer; one with parts and no answer options
 //   (an action) is answered "done" by the last part's Done.
@@ -31,6 +34,8 @@ export const OPEN = new Set(['pending', 'active']);
 export const PART_STATES = ['waiting', 'loading', 'ready', 'started', 'recording', 'done'];
 export const ACK_STATES = ['loading', 'ready', 'recording', 'done'];
 export const WAIT_UNTIL = ['started', 'recording', 'done', 'answered'];
+/** Who ends a part: the user (Done, the default) or the runner (`ack --state done` only; I-059). */
+export const ENDS = ['user', 'runner'];
 const GUARD = 'console-store';
 const rank = (s) => PART_STATES.indexOf(s);
 
@@ -61,16 +66,35 @@ export function parseOptions(v) {
 }
 
 function normPart(p, i, defaults = {}) {
-  if (!p || typeof p !== 'object') throw new Error(`part ${i + 1}: an object {label, url?, instructions?, record?, gate?}`);
+  if (!p || typeof p !== 'object') throw new Error(`part ${i + 1}: an object {label, url?, instructions?, record?, gate?, ends?}`);
+  if (p.ends !== undefined && !ENDS.includes(p.ends)) throw new Error(`part ${i + 1}: ends must be "user" or "runner" (got ${JSON.stringify(p.ends)})`);
   return {
     label: text(p.label, 80) || `Part ${i + 1}`,
     url: checkUrl(p.url, `part ${i + 1} url`),
     instructions: text(p.instructions, 600),
     record: p.record ?? defaults.record ?? false,
     gate: p.gate ?? defaults.gate ?? false,
+    ...(p.ends === 'runner' && { ends: 'runner' }), // absent = the user ends it (Done), as before I-059
     state: 'waiting',
     at: {},
   };
+}
+
+/**
+ * --runner-ends "2" | "1,3" | "all" (1-based) -> the 0-based indexes of the parts the runner ends (I-059).
+ * `n` = the number of parts; a part out of range is refused.
+ */
+export function parseRunnerEnds(v, n) {
+  if (v == null || v === '' || v === false) return [];
+  const raw = String(v).trim();
+  if (raw === 'all') return Array.from({ length: n }, (_, i) => i);
+  const out = [];
+  for (const x of raw.split(',').map((y) => y.trim()).filter(Boolean)) {
+    if (!/^\d{1,2}$/.test(x) || Number(x) < 1 || Number(x) > n) throw new Error(`--runner-ends takes part numbers 1-${n} (comma-separated) or all, got ${v}`);
+    if (!out.includes(Number(x) - 1)) out.push(Number(x) - 1);
+  }
+  if (!out.length) throw new Error(`--runner-ends takes part numbers 1-${n} (comma-separated) or all, got ${v}`);
+  return out;
 }
 
 /** "1-5" -> {min: 1, max: 5, label}: an optional rating next to the pick (e.g. how different the pages felt). */
@@ -126,6 +150,7 @@ export function buildStep(p) {
     parts = p.parts;
   }
   parts = parts.map((x, i) => normPart(x, i, kind === 'swipe-pair' ? { record: true, gate: true } : {}));
+  for (const i of parseRunnerEnds(p.runnerEnds, parts.length)) parts[i].ends = 'runner';
   if (!parts.length && mode === 'none') throw new Error('a step without parts needs answer options');
   const scale = parseScale(p.scale, p.scaleLabel);
   if (scale && mode !== 'buttons') throw new Error('--scale goes with answer buttons (--options, --yesno or a swipe pair)');
@@ -247,6 +272,11 @@ export async function done(id, { part, notes, who = 'user' } = {}) {
     if (i !== s.cur) throw new Error(`${s.id}: part ${i + 1} is not the current part (${s.cur + 1})`);
     const p = s.parts[i];
     if (rank(p.state) < rank('started')) throw new Error(`${s.id} part ${i + 1} is not started (${p.state})`);
+    if (p.ends === 'runner') {
+      const e = new Error(`${s.id} part ${i + 1} (${p.label}) ends by itself: ${s.by} marks it done when it has finished. Nothing to tap; the console will say when.`);
+      e.status = 403; // the server's HTTP status (I-059); the runner ends it with: console.mjs ack <id> --part N --state done
+      throw e;
+    }
     finishPart(s, i, iso(), notes);
     return { part: i + 1 };
   });
@@ -419,7 +449,7 @@ export function publicView(s) {
     url: show ? s.url : undefined,
     status: s.status, phase: phase(s), cur: s.cur, rev: s.rev,
     answer: s.answer,
-    parts: s.parts.map((p) => ({ label: p.label, url: show ? p.url : undefined, instructions: p.instructions, record: p.record, gate: p.gate, state: p.state, at: p.at, message: p.message })),
+    parts: s.parts.map((p) => ({ label: p.label, url: show ? p.url : undefined, instructions: p.instructions, record: p.record, gate: p.gate, ends: p.ends, state: p.state, at: p.at, message: p.message })),
     result: s.result, createdAt: s.createdAt, queuedAt: s.queuedAt, startedAt: s.startedAt, updatedAt: s.updatedAt,
   };
 }

@@ -33,6 +33,7 @@ export function userTurn(s) {
   const p = s.parts[ph === 'pending' ? 0 : s.cur];
   if (!p) return true;
   if (p.state === 'waiting' || p.state === 'loading') return !p.gate;
+  if (p.ends === 'runner' && (p.state === 'started' || p.state === 'recording')) return false; // it ends by itself (I-059)
   if (p.state === 'started') return !p.record;
   return p.state === 'ready' || p.state === 'recording';
 }

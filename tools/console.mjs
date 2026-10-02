@@ -22,6 +22,9 @@
 //        [--instructions "<1-2 plain sentences>"] [--url <url>] [--url2 <url>] [--options a,b,c | --yesno | --text]
 //        [--record] [--gate] [--no-record] [--no-gate] [--show-url | --hide-url] [--parts '<json array>'] [--meta '<json>']
 //        [--scale 1-5 [--scale-label "How different did they feel?"]]   # an optional rating next to the pick
+//        [--runner-ends N[,M]|all]   # I-059: parts YOU end (ack --part N --state done), not the user; also per part
+//        #   "ends":"runner" in --parts. The page shows no Done there, only "Running, please wait; this ends by itself"
+//        #   with your latest --message, and refuses a user Done (403). E.g. a phone run that cycles versions by itself.
 //        # prints POSTED C-007. Kinds: question (yes/no unless --options/--text), choice (--options),
 //        # action (one part: Start, then Done; --record/--gate as below), swipe-pair (Page 1 = --url, Page 2 = --url2,
 //        # both gated and recorded, answer 1 / 2 / same, URLs hidden from the page: blind).
@@ -40,6 +43,8 @@
 // Swipe pair, runner side:  post … → ack C-7 --part 1 --state loading → (page ready) ack --part 1 --state ready
 //   → wait C-7 --until started --part 1 → start the recorder → ack --part 1 --state recording
 //   → wait --until done --part 1 → stop the recorder → the same for part 2 → wait --until answered
+// Runner-ended part (I-059), e.g. the phone cycles versions by itself: post … --runner-ends 2 → wait --until started
+//   --part 2 → run it, ack --part 2 --message "version 2 of 4" as it goes → ack --part 2 --state done when finished.
 //
 // Lead:
 //   node tools/console.mjs list [--pending] [--all] [--json]    # open and finished steps with their answers
@@ -91,7 +96,7 @@ import * as TH from './lib/console-threads.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
-const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -109,7 +114,7 @@ function show(s) {
   const L = [line(s)];
   if (s.instructions) L.push(`  instructions: ${s.instructions}`);
   if (s.url) L.push(`  url: ${s.url}${s.showUrl === false ? ' (hidden on the page)' : ''}`);
-  s.parts.forEach((p, i) => L.push(`  part ${i + 1} ${p.label}: ${p.state}${p.gate ? ' gated' : ''}${p.record ? ' recorded' : ''}${p.url ? ` ${p.url}` : ''}${p.message ? ` — "${p.message}"` : ''}`));
+  s.parts.forEach((p, i) => L.push(`  part ${i + 1} ${p.label}: ${p.state}${p.gate ? ' gated' : ''}${p.record ? ' recorded' : ''}${p.ends === 'runner' ? ' runner-ends' : ''}${p.url ? ` ${p.url}` : ''}${p.message ? ` — "${p.message}"` : ''}`));
   L.push(`  answer: ${s.answer.mode === 'buttons' ? s.answer.options.join(' / ') : s.answer.mode}${s.result ? ` -> ${JSON.stringify(s.result)}` : ''}`);
   if (s.meta) L.push(`  meta: ${JSON.stringify(s.meta)}`);
   L.push('  history:');
@@ -257,6 +262,7 @@ async function main() {
       by: by(), kind: opt('kind'), title: opt('title'), instructions: opt('instructions'), url: opt('url'), url2: opt('url2'),
       options: opt('options'), yesno: flag('yesno'), text: flag('text'), record: tri('record', 'no-record'), gate: tri('gate', 'no-gate'),
       showUrl: tri('show-url', 'hide-url'), parts, meta: opt('meta'), scale: opt('scale'), scaleLabel: opt('scale-label'),
+      runnerEnds: opt('runner-ends'),
     });
     console.log(`POSTED ${s.id}: ${s.title}`);
     const u = await serverUrl();

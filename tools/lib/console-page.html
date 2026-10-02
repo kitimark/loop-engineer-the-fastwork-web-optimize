@@ -66,6 +66,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible { outline: 3px sol
 .timer { font-variant-numeric: tabular-nums; }
 .spin { display: inline-block; width: 16px; height: 16px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: rot .9s linear infinite; vertical-align: -2px; margin-right: 8px; }
 @keyframes rot { to { transform: rotate(360deg); } }
+.ends { font-weight: 600; }
 .msg { font-size: 15px; padding: 8px 12px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); margin: 0 0 12px; }
 .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 12px; }
@@ -203,11 +204,22 @@ function partPanel(s, i) {
       el('h3', null, el('span', { class: 'spin', 'aria-hidden': 'true' }), (st === 'loading' ? 'Loading ' : 'Getting ') + p.label.toLowerCase() + (st === 'loading' ? ' on the phone…' : ' ready…')),
       el('p', { text: 'Wait a moment: Start turns on when ' + s.by + ' says it is ready.' }), msg, instr, url, startBtn(false));
   }
+  var runner = p.ends === 'runner'; // I-059: the agent ends this part itself; the user gets no Done button
   if (st === 'waiting' || st === 'loading' || st === 'ready') {
     return el('div', { class: 'panel' },
       el('h3', { text: st === 'ready' ? p.label + ' is ready.' : p.label }), msg, instr, url,
       p.record ? el('p', { text: 'After Start, wait until it says "recording", then go.' }) : null,
+      runner ? el('p', { class: 'ends', text: 'After Start, don’t tap anything: this part ends by itself, and the console will say when.' }) : null,
       startBtn(true));
+  }
+  if (runner && (st === 'started' || st === 'recording')) {
+    var rec = st === 'recording' && p.record;
+    return el('div', { class: 'panel ' + (rec ? 'rec' : 'wait'), role: 'status', 'data-runner-ends': '1' },
+      rec ? el('div', { class: 'recline' }, el('span', { class: 'dot', 'aria-hidden': 'true' }), 'Recording… swipe now', el('span', { class: 'timer', 'data-since': p.at.recording }))
+        : el('h3', null, el('span', { class: 'spin', 'aria-hidden': 'true' }), p.record ? 'Starting the recorder… don’t swipe yet.' : 'Running, please wait; this ends by itself.'),
+      msg, instr,
+      el('p', { class: 'ends', text: 'Don’t tap anything; the console will say when.' }),
+      el('div', { class: 'row' }, el('span', { class: 'status', text: (rec ? 'Recording for ' : 'Running for ') }, el('span', { class: 'timer', 'data-since': p.at.started }), ' · ' + s.by + ' ends this part')));
   }
   if (st === 'started' && p.record) {
     return el('div', { class: 'panel wait' },

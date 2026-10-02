@@ -539,6 +539,9 @@ iPhone protocol on top of the lease:
    background; start `iphone.mjs record`, then `ack <id> --part N --state recording` (only now does the page say
    "swipe"); `wait <id> --until done --part N` (at your cap `ack --state done`); finally `wait <id> --until answered`
    prints `{value, notes, meta}`. Missed swipe: `redo <id> --part N --message "why"`. Exit 0 MET, 3 TIMEOUT, 4 NEVER.
+   A part the runner ends itself (e.g. a phone run that cycles versions): post it with `--runner-ends N[,M]` (or
+   `"ends":"runner"` in `--parts`); the page then shows no Done there, only "Running, please wait; this ends by
+   itself" plus your latest `ack --message`, refuses the user's Done (I-059), and you end it with `ack --part N --state done`.
 4. Release and message the lead "iPhone released (<topic>)". Never hold it while idle; never
    navigate the phone without the lease; waiters queue with `acquire iphone --wait` (first come first served,
    no hand-made retry loops).

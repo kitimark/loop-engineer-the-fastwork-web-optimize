@@ -224,3 +224,60 @@ test('forced choice with an optional 1-5 rating; the rating comes back with the 
   await assert.rejects(C.answer(q.id, { value: 'yes', scale: 3 }), /has no rating scale/);
   assert.equal((await C.answer(q.id, { value: 'yes' })).result.scale, undefined, 'the rating is optional');
 });
+
+// ---- I-059: runner-ended parts (the agent ends them; the user gets no Done) ----
+test('I-059 runner-ended parts: ends:"runner" or --runner-ends; the user\'s Done is refused (403), the runner\'s ack done works', async () => {
+  const parts = [{ label: 'Open the page' }, { label: 'Versions 1-4 play', ends: 'runner' }, { label: 'Your notes' }];
+  const s = await C.post({ by: 'iphone-runner', kind: 'action', title: 'Visual check', parts });
+  assert.deepEqual(s.parts.map((p) => p.ends), [undefined, 'runner', undefined]);
+  assert.ok(!('ends' in s.parts[0]), 'a user-ended part keeps its old shape (no ends key)');
+  assert.deepEqual(C.parseRunnerEnds('2,3', 3), [1, 2]);
+  assert.deepEqual(C.parseRunnerEnds(' all ', 2), [0, 1]);
+  assert.deepEqual(C.parseRunnerEnds(undefined, 2), []);
+  for (const bad of ['0', '4', 'x', '1,,9', ',']) assert.throws(() => C.parseRunnerEnds(bad, 3), /--runner-ends takes part numbers 1-3/);
+  const b = C.buildStep({ by: 'a', kind: 'action', title: 't', parts: [{ label: 'A' }, { label: 'B' }], runnerEnds: '2' });
+  assert.deepEqual(b.parts.map((p) => p.ends), [undefined, 'runner']);
+  assert.equal(C.buildStep({ by: 'a', kind: 'action', title: 't', runnerEnds: '1' }).parts[0].ends, 'runner', 'a one-part action too');
+  assert.throws(() => C.buildStep({ by: 'a', kind: 'action', title: 't', parts: [{ label: 'A', ends: 'phone' }] }), /ends must be "user" or "runner"/);
+  // part 1: the user's Start and Done as before
+  await C.start(s.id, { part: 1 }); await C.done(s.id, { part: 1 });
+  // part 2: Start, then the user's Done is refused with a plain message; nothing changes
+  await C.start(s.id, { part: 2 });
+  const err = await C.done(s.id, { part: 2 }).then(() => null, (e) => e);
+  assert.ok(err, 'refused');
+  assert.equal(err.status, 403);
+  assert.match(err.message, /part 2 \(Versions 1-4 play\) ends by itself: iphone-runner marks it done when it has finished\. Nothing to tap/);
+  assert.equal(C.get(s.id).parts[1].state, 'started');
+  assert.equal(C.get(s.id).cur, 1);
+  await C.ack(s.id, { by: 'iphone-runner', part: 2, message: 'version 3 of 4' });
+  assert.equal(C.publicView(C.get(s.id)).parts[1].ends, 'runner', 'the page learns who ends it');
+  assert.equal(C.publicView(C.get(s.id)).parts[1].message, 'version 3 of 4');
+  await C.ack(s.id, { by: 'iphone-runner', part: 2, state: 'done' });
+  const after = C.get(s.id);
+  assert.deepEqual([after.parts[1].state, after.cur, after.status], ['done', 2, 'active']);
+  // part 3 is the user's again: Done finishes the action
+  await C.start(s.id, { part: 3 }); await C.done(s.id, { part: 3, notes: 'all fine' });
+  assert.deepEqual([C.get(s.id).status, C.get(s.id).result.value], ['answered', 'done']);
+});
+
+test('I-059 backward compatibility: a step file from before (no ends anywhere) still takes the user\'s Done', async () => {
+  const s = await C.post({ by: 'r', kind: 'action', title: 'old', parts: [{ label: 'A' }, { label: 'B' }] });
+  const { writeFileSync } = await import('node:fs');
+  const old = C.get(s.id);
+  for (const p of old.parts) delete p.ends;
+  writeFileSync(join(C.consoleDir(), `${s.id}.json`), JSON.stringify(old));
+  for (const p of [1, 2]) { await C.start(s.id, { part: p }); await C.done(s.id, { part: p }); }
+  assert.equal(C.get(s.id).status, 'answered');
+  assert.deepEqual(C.publicView(C.get(s.id)).parts.map((p) => p.ends), [undefined, undefined]);
+});
+
+test('I-059 userTurn: no reminder while a runner-ended part runs; the Start before it is still the user\'s turn', async () => {
+  const { userTurn } = await import('../../tools/lib/console-notify.mjs');
+  const s = await C.post({ by: 'r', kind: 'action', title: 't', parts: [{ label: 'Play', ends: 'runner' }] });
+  assert.equal(userTurn(C.get(s.id)), true, 'Start is the user\'s');
+  await C.start(s.id, { part: 1 });
+  assert.equal(userTurn(C.get(s.id)), false, 'running: nothing for the user to do');
+  const u = await C.post({ by: 'r', kind: 'action', title: 'u' });
+  await C.start(u.id, { part: 1 });
+  assert.equal(userTurn(C.get(u.id)), true, 'a user-ended part: Done is the user\'s (unchanged)');
+});

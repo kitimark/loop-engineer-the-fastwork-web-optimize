@@ -3,6 +3,7 @@
 //   GET  /                       the page
 //   GET  /api/steps              {now, steps: [public views]} (open steps oldest first, then the last finished ones)
 //   POST /api/steps/<id>/<act>   act = start | done | answer | skip | reopen; JSON body {part, value, notes}
+//                                (done on a runner-ended part: 403 with a plain message, I-059; other refusals 409)
 //   GET  /api/health             {ok, pid}
 //   GET  /progress               the fix-progress page (tools/lib/progress-page.html; read-only)
 //   GET  /api/progress           its model (tools/lib/progress.mjs currentView: curated fixes/PROGRESS.json + live
@@ -329,7 +330,7 @@ export function handler(port, feed = null) {
         let body = {};
         const raw = await readBody(req);
         if (raw) { try { body = JSON.parse(raw); } catch { return send(res, 400, { error: 'body is not JSON' }); } }
-        try { return send(res, 200, { step: publicView(await act(m[1], body || {})) }); } catch (e) { return send(res, 409, { error: e.message }); }
+        try { return send(res, 200, { step: publicView(await act(m[1], body || {})) }); } catch (e) { return send(res, e.status || 409, { error: e.message }); } // 403: a runner-ended part (I-059)
       }
       if (await threadRoute(req, res, u, port(), feed)) return;
       if (await proposalRoute(req, res, u)) return;
