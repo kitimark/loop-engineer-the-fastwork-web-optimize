@@ -147,6 +147,9 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   count check; no timing A/B. PROGRESS must not promise a speed-up.
   I-051 (ts-lock-share): building option (b), a CPU-busy join check, plus a "handing over to X (gated: reason)" status
   line; (a) keep fw-sim booted is REJECTED; the timing-gate candidate is deferred until timing resumes.
+  01:1xZ: I-052 landed (85ad9a0): every sim session empties Safari's HTTP cache at boot, so the never-seen-port-per-arm
+  rule is no longer needed ACROSS sessions (it supersedes the 00:2xZ workaround). WITHIN a session, check the server-log
+  GETs or `sim.mjs fetched`; a transferSize of 300 does not prove a network fetch (OBSERVED).
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
