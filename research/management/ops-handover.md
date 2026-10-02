@@ -227,7 +227,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   applies (lead 00:3xZ). Board item phone-fwreskip-g1, owner iphone-runner; fix-scroll-engine parked.
   Second read: question, one control (B = RB), driver G (F fallback), warm-up per port, Timeline-off sentinel, ~15 min per
   block, at most 2 blocks, void and FAIL rules written before data: OK. MISSING: a P-row in fixes/PREDICTIONS.md (the
-  owner's prediction for item (iv)); register it before the block runs.
+  owner's prediction for item (iv)); register it before the block runs. -> DONE: P-057, e73676d on
+  worktree-agent-a1722cf5058e25591 (rebased on e8fade9, no measurements): no FAIL in block 1 (fast, ~65 %) or block 2
+  (medium, ~80 %). It lands with the fwreskip branch, not via ops.
+  04:4xZ scene-scope: deterministic A/A converges 22/22 at 430 (RBi40p and RBi40pt both 22/22; blocking item 3 closed at
+  430). RBi40pt FAILED its P-056 phase falsifier at 1440 (sweeps start at 3433 of 4000 ms, n=1). Lead approved (a): a
+  one-line init-paused change in PMsweepGate (JS 3982), with a P-056a onset-time falsifier at 430 and 1440; (b)
+  desktop-only acceptance REJECTED. P-056/P-056a and P-057 live on the owners' branches until they land.
+  PR-001: the lead's proposal wait is re-armed; still "proposed rev 2", no user decision.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
