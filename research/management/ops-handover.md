@@ -8,6 +8,17 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **23:3xZ (b) fcfc391 landed (main = fcfc391). X1 A1b (P-069, de-countdown) VALID, 23:24Z; user chose X1 stage 2 (T-024 #8).** (iv) EXPLAINED as
+  pre-registered: V's 2 stale updates sit at rendered opacity exactly 0 in both arms; the clock is live from the first
+  visible update. (i) is with the user, T-024 #7, 3 options: a short countdown-only phone timing test (recommended),
+  accept and let the wave-2 timing run cover it, or hold the fix out of wave 2. Board countdown-faces waits on the user.
+  de-countdown's 5 commits 754e79e..dd87946 conflict with ops rows in PREDICTIONS.md; it is rebasing, the lead lands the
+  new tip; landed as 24b7db4.
+  - **User T-024 #8 (23:31Z): option 1, X1 stage 2** (countdown-only timed phone test): a scoped timing lift for that
+    test only. The user also asked de-gpu to look at the counting animation for GPU-friendly practices; any variant from
+    that is a separate PoC and question, not in the stage-2 block. Phone order: blind swipe C-026 (st6-rb2, loading) →
+    F3 P-036 re-run → X1 stage 2 (~20 min + cooling; before P-068 because it is short) → P-068 heat. PROGRESS: stage 2
+    in upcoming (item countdown-ca), user line 23:35Z. Board countdown-faces waits on iphone-runner.
 - **23:3xZ (batch) 512be87 landed (my 6afd23d, rebased); I-075 RESOLVED (aac5b4a); de-heat pre-flight 39a846d landed as 9ff40e6; P-036 amendment SIGNED; user T-031 #3: blind swipe original vs st6-rb2 now, wave-2 timing lift.**
   - **P-036** (F3 G, fix-nav-morph) amendment SIGNED by the lead 23:25Z: first attempt void (opening heat check failed:
     hero-none f2cef11cb363, moving gaps p50 17 / p95 29 ms, 37.8 °C, after a devicectl Safari restart, load1 18.4);
