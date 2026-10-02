@@ -12,7 +12,8 @@
 // settle (--settle, default 8 s); then ONE in-page expression: page facts, stateAtStart (+ --state), --tops, the
 // std probe, the driver, stop, Resource Timing. The page is polled at <= 1 Hz (1.5 s) and the result read back in
 // chunks; then the battery again, and the same-origin scripts/stylesheets the page loaded are fetched again from
-// the Mac and hashed (meta.served).
+// the Mac and hashed (meta.served). Not for a page off this Mac's loopback/LAN (a live site such as apple.com: no
+// requests from the Mac to it) or with --no-served: then meta.served is {skipped: true, reason} (I-075).
 //   S scroll : the `iphone.mjs scroll` stimulus: idle (--idle 3 s), scrollBy 250 px smooth every 300 ms to the
 //              bottom, bottom hold (--bottom 3 s). Phases idle, scroll, bottom.
 //   W window : [--from Y0: instant jump, 1 s] idle (--idle 3 s), the same steps until y >= --to Y, hold (--hold 2 s),
@@ -38,8 +39,8 @@ import { createHash } from 'node:crypto';
 import { openTab, safariTab, sleep, parkSafari, isBlankUrl } from './wip.mjs';
 import { status as lockStatus, phoneGuard, phoneMacRecord } from './lock.mjs';
 import { REPO } from './paths.mjs';
-import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, LAN_HOST } from './iphone-url.mjs';
-import { tryResolveLanUrl } from './lan.mjs';
+import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, LAN_HOST, isLanHost, isLoopbackHost } from './iphone-url.mjs';
+import { tryResolveLanUrl, isLanPlaceholder } from './lan.mjs';
 import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, yReadsLabel, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
 
 export const DEVICE = 'iPhone 15 Pro Max, iOS 26.6.1 Safari';
@@ -64,6 +65,9 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--state <file.js>]                                     an expression whose value joins stateAtStart.custom
     [--y-source raf|raf-legacy|scroll|none]                 where the probe's y comes from (default raf; raf-legacy = probe v1)
     [--no-battery]                                          skip the idevicediagnostics battery read at start and end
+    [--no-served]                                           don't fetch the page's scripts/stylesheets again from the Mac
+                                                            after the run (meta.served {skipped, reason}); automatic for
+                                                            a page whose host is not loopback or LAN (I-075)
     [--low-power on|off]                                    Low Power Mode as set on the phone (a page cannot read it;
                                                             rAF runs at 30 Hz when on); default unknown
     [--require-quiet]                                       WAIT while shared jobs (npm test, a Simulator session) hold
@@ -91,14 +95,65 @@ export function deviceSettings(page, battery = null, lowPower = 'unknown') {
 }
 
 /** The AppleSmartBattery keys kept from `idevicediagnostics ioregentry AppleSmartBattery` (a plist): only these,
- *  never serials or other ids (Hard rule 12). Temperature is in 1/100 degC. */
-export const BATTERY_KEYS = ['Temperature', 'IsCharging', 'ExternalConnected', 'FullyCharged', 'CurrentCapacity', 'MaxCapacity'];
+ *  never serials or other ids (Hard rule 12). Temperature (and VirtualTemperature) is in 1/100 degC. The power keys
+ *  (I-075: Voltage, Amperage, InstantAmperage, and AdapterDetails.Watts as AdapterWatts) are kept as read, descriptive
+ *  only: names CONFIRMED for Voltage/Amperage/Watts (xnu IOPM.h), their units in this raw entry UNRESOLVED
+ *  (research/phone-heat), so nothing is converted. Values come from the battery entry's own level, never from a nested
+ *  dict with a key of the same name (AdapterDetails has a Voltage of its own). */
+export const BATTERY_KEYS = ['Temperature', 'IsCharging', 'ExternalConnected', 'FullyCharged', 'CurrentCapacity', 'MaxCapacity', 'VirtualTemperature', 'Voltage', 'Amperage', 'InstantAmperage'];
+/** Nested values kept under a flat name: name -> [dict key, key]. */
+export const BATTERY_NESTED = { AdapterWatts: ['AdapterDetails', 'Watts'] };
+const BATTERY_CORE = BATTERY_KEYS.slice(0, 6); // the pre-I-075 keys: they mark the battery entry's own dict
+const scalar = (v) => typeof v === 'number' || typeof v === 'boolean';
+/** A small XML plist reader (dict, array, key, integer, real, string, true, false, data, date); null if it cannot
+ *  read the text (not a plist, truncated). <data> reads as null: it is never kept. */
+export function parsePlist(xml) {
+  const toks = String(xml).replace(/<\?xml[^>]*>|<!DOCTYPE[^>]*>|<!--[\s\S]*?-->/g, '').match(/<[^>]+>|[^<]+/g) || [];
+  let i = 0;
+  const eof = () => { if (i >= toks.length) throw new Error('eof'); };
+  const skipWs = () => { while (i < toks.length && !toks[i].startsWith('<') && !toks[i].trim()) i++; };
+  const text = (tag) => { let s = ''; while (i < toks.length && toks[i] !== `</${tag}>`) s += toks[i++]; eof(); i++; return s; };
+  function value() {
+    skipWs(); eof();
+    const t = toks[i++];
+    if (t === '<dict>') { const o = {}; for (;;) { skipWs(); eof(); if (toks[i] === '</dict>') { i++; return o; } if (toks[i] !== '<key>') throw new Error('key'); i++; const k = text('key'); o[k] = value(); } }
+    if (t === '<array>') { const a = []; for (;;) { skipWs(); eof(); if (toks[i] === '</array>') { i++; return a; } a.push(value()); } }
+    if (/^<dict\s*\/>$/.test(t)) return {};
+    if (/^<array\s*\/>$/.test(t)) return [];
+    if (/^<(string|data)\s*\/>$/.test(t)) return '';
+    if (/^<true\s*\/>$/.test(t)) return true;
+    if (/^<false\s*\/>$/.test(t)) return false;
+    const m = t.match(/^<(integer|real|string|data|date)>$/);
+    if (m) { const s = text(m[1]); return m[1] === 'integer' || m[1] === 'real' ? Number(s) : m[1] === 'data' ? null : s; }
+    if (t.startsWith('<plist')) return value();
+    throw new Error('tag');
+  }
+  try { return value(); } catch { return null; }
+}
+/** The shallowest dict with one of the core battery keys as a number/boolean: the AppleSmartBattery entry. */
+function batteryDict(root) {
+  const q = [root];
+  while (q.length) {
+    const d = q.shift();
+    if (!d || typeof d !== 'object') continue;
+    if (!Array.isArray(d) && BATTERY_CORE.some((k) => scalar(d[k]))) return d;
+    q.push(...Object.values(d));
+  }
+  return null;
+}
 export function parseBattery(xml) {
   const out = {};
-  for (const k of BATTERY_KEYS) {
-    const m = xml.match(new RegExp(`<key>${k}</key>\\s*<(integer|real|true|false)\\s*/?>(?:([^<]*)</\\1>)?`));
-    if (!m) continue;
-    out[k] = m[1] === 'true' ? true : m[1] === 'false' ? false : Number(m[2]);
+  const d = batteryDict(parsePlist(xml));
+  if (d) {
+    for (const k of BATTERY_KEYS) if (scalar(d[k])) out[k] = d[k];
+    for (const [name, [a, b]] of Object.entries(BATTERY_NESTED)) if (d[a] && typeof d[a] === 'object' && scalar(d[a][b])) out[name] = d[a][b];
+  } else {
+    // not a readable plist: the pre-I-075 first-match read, core keys only (the power keys need the entry's own level)
+    for (const k of BATTERY_CORE) {
+      const m = String(xml).match(new RegExp(`<key>${k}</key>\\s*<(integer|real|true|false)\\s*/?>(?:([^<]*)</\\1>)?`));
+      if (!m) continue;
+      out[k] = m[1] === 'true' ? true : m[1] === 'false' ? false : Number(m[2]);
+    }
   }
   if (!Object.keys(out).length) return { error: 'no AppleSmartBattery values in the output' };
   if (typeof out.Temperature === 'number') out.temperatureC = out.Temperature / 100;
@@ -157,6 +212,7 @@ export function parseRunArgs(argv) {
   o.sentinel = flag('heat-sentinel') || (o.labels.arm === 'C' && !o.labels.warmup);
   o.park = !flag('no-park');
   o.battery = !flag('no-battery');
+  o.served = !flag('no-served');
   o.lowPower = opt('low-power', 'unknown');
   if (!['on', 'off', 'unknown'].includes(o.lowPower)) throw new Error(`--low-power must be on or off (got ${o.lowPower})\n${USAGE}`);
   const ySource = opt('y-source', 'raf');
@@ -248,7 +304,9 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
     const raw = JSON.parse(s);
     raw.macStartMs = macStartMs;
     raw.battery = o.battery ? { start: batteryStart, end: batteryInfo() } : null;
-    raw.served = await servedHashes(await c.evaluate(RESOURCES_JS).catch(() => []));
+    const servedSkip = servedPolicy(raw.pre?.href ?? `http://${host}/`, { noServed: !o.served });
+    raw.served = servedSkip ?? await servedHashes(await c.evaluate(RESOURCES_JS).catch(() => []));
+    if (servedSkip) console.log(`served: not fetched (${servedSkip.reason})`);
     if (!target) raw.mac = phoneMacRecord(macGuard);
     if (target) await target.end?.();
     return finish(o, owner, raw, { target });
@@ -269,6 +327,19 @@ async function parkAfterRun(port, owner) {
  *  --allow-during-measure for diagnostics. Returns phoneGuard's {requireQuiet, allow, start} for phoneMacRecord. */
 export function measureGuard(o, st = lockStatus('chrome-measure'), env = process.env, { note = true, log = console.log, load1 } = {}) {
   return phoneGuard({ owner: o.owner, allow: o.allowDuringMeasure, requireQuiet: o.requireQuiet, st, env, note, log, load1 });
+}
+
+/**
+ * Whether the run fetches the page's scripts/stylesheets again from the Mac (I-075): null = fetch (a page on loopback,
+ * a LAN host or a `lan` placeholder: our own servers), else {skipped: true, reason}: --no-served, or a page on any
+ * other host (a live site such as apple.com gets no requests from the Mac). An unreadable href fetches, as before. Pure.
+ */
+export function servedPolicy(href, { noServed = false } = {}) {
+  if (noServed) return { skipped: true, reason: '--no-served' };
+  let h;
+  try { h = new URL(href).hostname; } catch { return null; }
+  if (!h || isLoopbackHost(h) || isLanHost(h) || isLanPlaceholder(h)) return null;
+  return { skipped: true, reason: `not a loopback or LAN page (host ${h}): no requests from the Mac to it` };
 }
 
 /** sha256/16 of each same-origin script/stylesheet the page loaded, fetched again from the Mac after the run. */

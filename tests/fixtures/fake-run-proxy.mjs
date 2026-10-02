@@ -9,7 +9,10 @@
 // {navigate: url}); the page itself stays, so a parked tab (about:blank) is what /json shows from then on.
 //
 //   node tests/fixtures/fake-run-proxy.mjs [--doc-height=2900] [--morph] [--cert-warning] [--port=N (default: any free port)]
-//   prints FAKE_WIP_PORT=<port>. Env FAKE_WIP_LOG=<file>: one JSON line per evaluate ({evaluate: head, len}) and reload.
+//        [--page-host=H]   the page (and the tab /json lists) says it is on http://H:<port>/ instead of 127.0.0.1 (I-075:
+//                          a non-local page; use a TEST-NET address such as 192.0.2.1, never a real site)
+//   prints FAKE_WIP_PORT=<port>. Env FAKE_WIP_LOG=<file>: one JSON line per evaluate ({evaluate: head, len}), reload and
+//   GET of the page's script ({get: path}).
 import http from 'node:http';
 import { createHash } from 'node:crypto';
 import { appendFileSync } from 'node:fs';
@@ -40,7 +43,7 @@ const server = http.createServer((req, res) => {
     res.setHeader('content-type', 'application/json');
     return res.end(JSON.stringify([{ url: listed ?? base, title: listed ? '' : flag('cert-warning') ? 'This Connection Is Not Private' : 'fake run page', webSocketDebuggerUrl: `ws://127.0.0.1:${server.address().port}/devtools/page/1` }]));
   }
-  if (req.url === '/_app/immutable/app.js') { res.setHeader('content-type', 'text/javascript'); return res.end(APP_JS); }
+  if (req.url === '/_app/immutable/app.js') { log({ get: req.url }); res.setHeader('content-type', 'text/javascript'); return res.end(APP_JS); }
   if (req.url === '/') { res.setHeader('content-type', 'text/html'); return res.end('<title>fake run page</title>'); }
   res.statusCode = 404; res.end();
 });
@@ -93,7 +96,7 @@ server.on('upgrade', (req, sock) => {
   sock.on('error', () => {});
 });
 server.listen(Number(arg('port') || 0), '127.0.0.1', () => {
-  base = `http://127.0.0.1:${server.address().port}/`;
+  base = `http://${arg('page-host') || '127.0.0.1'}:${server.address().port}/`;
   newPage();
   console.log(`FAKE_WIP_PORT=${server.address().port}`);
 });

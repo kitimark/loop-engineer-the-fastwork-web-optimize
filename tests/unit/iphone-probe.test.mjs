@@ -12,7 +12,7 @@ import * as P from '../../tools/lib/iphone-probe.mjs';
 import { phoneMacRecord } from '../../tools/lib/lock.mjs';
 
 process.env.FW_LOCK_LOAD1 = '0.5'; // I-056/I-057: a guard records load1; never the host's in a test
-import { parseRunArgs, measureGuard, estimateMs, finish, toolVersion, TOOL_FILES, UNREADABLE_SETTINGS, parseBattery, deviceSettings, batteryInfo, lanSafeUrl, LAN_HOST } from '../../tools/lib/iphone-run.mjs';
+import { parseRunArgs, measureGuard, estimateMs, finish, toolVersion, TOOL_FILES, UNREADABLE_SETTINGS, parseBattery, deviceSettings, batteryInfo, lanSafeUrl, LAN_HOST, servedPolicy, USAGE } from '../../tools/lib/iphone-run.mjs';
 
 const MT = P.MUT_TYPES;
 const counts = (o) => MT.map((k) => o[k] || 0);
@@ -247,7 +247,7 @@ test('battery: only the named AppleSmartBattery keys are kept (no serials), temp
     + '<key>Temperature</key>\n\t<integer>3125</integer><key>IsCharging</key><true/><key>ExternalConnected</key><true/><key>FullyCharged</key><false/>'
     + '<key>CurrentCapacity</key><integer>81</integer><key>MaxCapacity</key><integer>100</integer><key>Voltage</key><integer>4100</integer></dict></dict></plist>';
   const b = parseBattery(xml);
-  assert.deepEqual(b, { Temperature: 3125, IsCharging: true, ExternalConnected: true, FullyCharged: false, CurrentCapacity: 81, MaxCapacity: 100, temperatureC: 31.25 });
+  assert.deepEqual(b, { Temperature: 3125, IsCharging: true, ExternalConnected: true, FullyCharged: false, CurrentCapacity: 81, MaxCapacity: 100, Voltage: 4100, temperatureC: 31.25 }, 'Voltage is kept since I-075');
   assert.ok(!JSON.stringify(b).includes('SECRET'));
   assert.deepEqual(parseBattery('ERROR: no device'), { error: 'no AppleSmartBattery values in the output' });
   const st = deviceSettings({ dark: false }, b);
@@ -258,6 +258,107 @@ test('battery: only the named AppleSmartBattery keys are kept (no serials), temp
   process.env.FW_IDEVICEDIAGNOSTICS = join(tempDir('fw-nobin-'), 'missing');
   try { assert.deepEqual(batteryInfo(), { error: 'idevicediagnostics: ENOENT' }, 'no libimobiledevice: an error field, not a crash'); }
   finally { if (old === undefined) delete process.env.FW_IDEVICEDIAGNOSTICS; else process.env.FW_IDEVICEDIAGNOSTICS = old; }
+});
+
+// I-075 (de-heat, research/phone-heat): the power keys, from the battery entry's own level. The entry's keys come
+// sorted, so a nested dict (AdapterDetails, BatteryData) with a Voltage or Temperature of its own comes first.
+const IOS_LIKE = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IORegistry</key>
+	<dict>
+		<key>AdapterDetails</key>
+		<dict>
+			<key>Current</key>
+			<integer>2000</integer>
+			<key>Description</key>
+			<string>usb host</string>
+			<key>Voltage</key>
+			<integer>5000</integer>
+			<key>Watts</key>
+			<integer>10</integer>
+		</dict>
+		<key>Amperage</key>
+		<integer>-312</integer>
+		<key>BatteryData</key>
+		<dict>
+			<key>Temperature</key>
+			<integer>2222</integer>
+			<key>Voltage</key>
+			<integer>3999</integer>
+			<key>Blob</key>
+			<data>
+			AAEC
+			</data>
+		</dict>
+		<key>BatterySerialNumber</key>
+		<string>F5D0SECRET</string>
+		<key>CurrentCapacity</key>
+		<integer>80</integer>
+		<key>CellVoltage</key>
+		<array>
+			<integer>4012</integer>
+		</array>
+		<key>ExternalConnected</key>
+		<true/>
+		<key>FullyCharged</key>
+		<false/>
+		<key>InstantAmperage</key>
+		<integer>2</integer>
+		<key>IsCharging</key>
+		<false/>
+		<key>ManufactureDate</key>
+		<date>2024-01-01T00:00:00Z</date>
+		<key>MaxCapacity</key>
+		<integer>100</integer>
+		<key>Ratio</key>
+		<real>0.5</real>
+		<key>Temperature</key>
+		<integer>3780</integer>
+		<key>VirtualTemperature</key>
+		<integer>3655</integer>
+		<key>Voltage</key>
+		<integer>4012</integer>
+		<key>Empty</key>
+		<dict/>
+	</dict>
+</dict>
+</plist>`;
+
+test('I-075 battery power keys: Voltage, Amperage, InstantAmperage, VirtualTemperature and AdapterDetails.Watts, as read (no unit conversion), from the entry\'s own level', () => {
+  const b = parseBattery(IOS_LIKE);
+  assert.deepEqual(b, { Temperature: 3780, IsCharging: false, ExternalConnected: true, FullyCharged: false, CurrentCapacity: 80, MaxCapacity: 100,
+    VirtualTemperature: 3655, Voltage: 4012, Amperage: -312, InstantAmperage: 2, AdapterWatts: 10, temperatureC: 37.8 });
+  assert.equal(b.Voltage, 4012, 'not AdapterDetails.Voltage (5000) or BatteryData.Voltage (3999), which come first in the text');
+  assert.equal(b.Temperature, 3780, 'not BatteryData.Temperature');
+  assert.ok(!JSON.stringify(b).includes('SECRET') && !('Description' in b) && !('CellVoltage' in b), 'whitelisted keys only');
+  const r = parseBattery(IOS_LIKE.replace(/<key>AdapterDetails<\/key>[\s\S]*?<\/dict>/, ''));
+  assert.equal(r.AdapterWatts, undefined, 'no AdapterDetails: no AdapterWatts');
+  assert.equal(r.Voltage, 4012);
+});
+
+test('I-075 battery: an output that is not a readable plist keeps the pre-I-075 first-match read of the core keys only', () => {
+  const cut = IOS_LIKE.slice(0, IOS_LIKE.indexOf('<key>VirtualTemperature</key>')); // truncated: Temperature is in, the tail is not
+  const b = parseBattery(cut);
+  assert.deepEqual(b, { Temperature: 2222, IsCharging: false, ExternalConnected: true, FullyCharged: false, CurrentCapacity: 80, MaxCapacity: 100, temperatureC: 22.22 },
+    'the old regex read (first match in the text) and no power keys, which need the entry\'s level');
+  assert.equal(parseBattery('<plist><dict><key>Temperature</key><integer>3000</integer>').Temperature, 3000);
+  assert.deepEqual(parseBattery(''), { error: 'no AppleSmartBattery values in the output' });
+  // a readable plist without any battery key is no battery
+  assert.deepEqual(parseBattery('<plist><dict><key>Voltage</key><integer>4000</integer></dict></plist>'), { error: 'no AppleSmartBattery values in the output' });
+});
+
+test('I-075 servedPolicy: fetch for loopback, LAN and lan placeholders (the mirror, byte-identical default); skip for any other host or --no-served', () => {
+  for (const u of ['http://127.0.0.1:5200/', 'http://localhost:5201/x', 'https://[::1]:5202/', 'http://192.168.0.55:5203/', 'http://10.1.2.3/', 'http://172.20.0.1/', 'http://lan:5204/', 'http://lan-host:5205/', 'http://mac.local:5206/', 'not a url', undefined])
+    assert.equal(servedPolicy(u), null, `${u}: fetched as before`);
+  assert.deepEqual(servedPolicy('https://www.apple.com/macbook-pro/'), { skipped: true, reason: 'not a loopback or LAN page (host www.apple.com): no requests from the Mac to it' });
+  assert.deepEqual(servedPolicy('http://192.0.2.1:80/'), { skipped: true, reason: 'not a loopback or LAN page (host 192.0.2.1): no requests from the Mac to it' });
+  assert.deepEqual(servedPolicy('http://127.0.0.1:5200/', { noServed: true }), { skipped: true, reason: '--no-served' });
+  assert.deepEqual(servedPolicy('https://www.apple.com/', { noServed: true }), { skipped: true, reason: '--no-served' });
+  assert.equal(parseRunArgs(['--driver', 'scroll']).served, true);
+  assert.equal(parseRunArgs(['--driver', 'scroll', '--no-served']).served, false);
+  assert.match(USAGE, /\[--no-served\]/);
 });
 
 test('toolVersion: sha16 of every tool file plus the probe and driver code', () => {

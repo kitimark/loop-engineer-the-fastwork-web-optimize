@@ -13,6 +13,8 @@
 //        # in the background with output to a log; `node tools/wait.mjs file <log> --match '^RECORDING' --pid <pid>`
 //        # exits the moment it records (tell the lead then), NEVER (exit 4) if record failed first
 //   node tools/iphone.mjs park --owner <topic>                    # Safari to about:blank: after every block (I-047)
+//   node tools/iphone.mjs battery [--every 30] [--seconds N] [--out f.jsonl]   # battery log (I-075; no lease, no page):
+//        # one JSON line per idevicediagnostics read (BATTERY_KEYS only), every --every s for --seconds (lib/iphone-battery.mjs)
 //   node tools/lock.mjs release iphone --owner <topic>
 //
 // Simulated finger (real OS-level touches through WebDriverAgent over USB, research/architecture/
@@ -62,7 +64,7 @@ import { resolveLanUrl, tryResolveLanUrl } from './lib/lan.mjs';
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing'];
+const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing', '--every'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
 const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
@@ -156,6 +158,11 @@ async function main() {
     console.log('tabs:', JSON.stringify((await tabs().catch((e) => [{ error: `proxy not reachable on :${PORT} (${e.cause?.code || e.message})` }])).map((t) => ({ url: t.url, title: t.title, appId: t.appId, error: t.error }))));
     const s = lockStatus('iphone');
     console.log('lease:', s.holder ? `${s.holder.owner}${s.stale ? ' (stale: ' + s.stale + ')' : ''} until ${s.holder.expiresAt}` : 'free', s.queue.length ? `queue: ${s.queue.map((w) => w.owner).join(', ')}` : '');
+    return;
+  }
+  if (cmd === 'battery') { // I-075: read-only battery logger (lib/iphone-battery.mjs); no lease, no page, like wait.mjs phone-temp
+    const code = await (await import('./lib/iphone-battery.mjs')).batteryCmd({ opt });
+    if (code) process.exit(code);
     return;
   }
   if (cmd === 'open') {
@@ -261,6 +268,6 @@ async function main() {
     return;
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT });
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(0); }, async (e) => { console.error(e.message || e); await clearMark(); process.exit(1); });

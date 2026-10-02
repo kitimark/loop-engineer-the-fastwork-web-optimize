@@ -254,6 +254,36 @@ test('I-047: a control run records the heat-sentinel verdict next to the battery
   assert.equal(phone.events().filter((e) => e.navigate).length, 1, 'nothing navigated again');
 });
 
+test('I-075: served hashes are fetched for a local page (default unchanged); --no-served and a non-local page skip the fetch and record why', async () => {
+  let phone = await fakePhone(['--doc-height=1500']);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
+  const gets = () => phone.events().filter((e) => e.get);
+  let out = join(dir, 'local.json');
+  let r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--no-battery', '--no-park', '--out', out], phone.env);
+  assert.equal(r.code, 0, r.out);
+  assert.deepEqual(JSON.parse(readFileSync(out, 'utf8')).meta.served, { '/_app/immutable/app.js': createHash('sha256').update(APP_JS).digest('hex').slice(0, 16) }, 'the mirror default: hashed as before');
+  assert.equal(gets().length, 1, 'one GET of the page script from the Mac');
+  assert.doesNotMatch(r.stdout, /^served:/m);
+
+  out = join(dir, 'flag.json');
+  r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--no-battery', '--no-park', '--no-served', '--out', out], phone.env);
+  assert.equal(r.code, 0, r.out);
+  assert.deepEqual(JSON.parse(readFileSync(out, 'utf8')).meta.served, { skipped: true, reason: '--no-served' });
+  assert.equal(gets().length, 1, '--no-served: no GET');
+  assert.match(r.stdout, /^served: not fetched \(--no-served\)$/m);
+  await phone.stop();
+
+  phone = await fakePhone(['--doc-height=1500', '--page-host=192.0.2.1']); // TEST-NET-1 (RFC 5737): not loopback, not LAN
+  out = join(dir, 'ext.json');
+  r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--no-battery', '--no-park', '--out', out], phone.env);
+  assert.equal(r.code, 0, r.out);
+  const m = JSON.parse(readFileSync(out, 'utf8')).meta;
+  assert.match(m.href, /^http:\/\/192\.0\.2\.1:\d+\/$/);
+  assert.deepEqual(m.served, { skipped: true, reason: 'not a loopback or LAN page (host 192.0.2.1): no requests from the Mac to it' });
+  assert.equal(gets().length, 0, 'a non-local page: no request from the Mac');
+  assert.match(r.stdout, /^served: not fetched \(not a loopback or LAN page \(host 192\.0\.2\.1\)/m);
+});
+
 test('run while Safari shows the certificate warning: refused with the open hint, no reload', async () => {
   const phone = await fakePhone(['--cert-warning']);
   assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
