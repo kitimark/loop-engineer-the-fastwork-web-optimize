@@ -51,9 +51,14 @@
 // it the command keeps running, but it warns and `status` shows OVERDUE; split long measurements into
 // holds of 5-10 min. Hand-over: the waiter served next polls every ~1 s; a waiter not seen for 30 s is
 // skipped at a hand-over (it keeps its place), so keep polling (`run`, `acquire --wait`). The iphone
-// keeps strict FIFO (its waiters retry every 2-5 min by protocol). Every chrome-measure hold runs under a
-// `caffeinate -i -s` assertion (I-026: Maintenance Sleep stalled a hold 472 s): -w <holder pid> for a
-// process hold, -t <until expiry> for a lease (replaced on renew), ended on release (lib/awake.mjs).
+// keeps strict FIFO (its waiters retry every 2-5 min by protocol).
+// Keep awake only during measurements (I-070, user C-024; narrows I-026): a chrome-measure TIMING hold (a normal `run`,
+// verify.mjs / fix.mjs ab / bench taking the lock, a normal lease) runs under a `caffeinate -i -s` assertion: -w <holder
+// pid> for a process hold, -t <until expiry> for a lease (replaced on renew), ended on release; so does a --no-timing
+// `run` whose command wraps a phone part (iphone.mjs scroll|record|run|gesture) or a Simulator session (sim.mjs session),
+// and those tools keep themselves awake wherever they run (-w <own pid>). Never --shared or --short jobs, plain
+// --no-timing holds (builds), queue or gate waits. The holder record says `awake: true`, the holds.log line `awake`, and
+// `status` shows "keeping Mac awake" (with the per-process assertions). FW_NO_CAFFEINATE=1 turns it off (lib/awake.mjs).
 // Every chrome-measure `run` hold (exclusive, short, no-timing, shared reader; not a re-entry) writes one JSON line to
 // locks/holds.log at its end (I-056 (d)): owner, mode, weight / maxSec (shared), acquiredAt, endedAt, durationSec and
 // the exit code (124 with killed: "max-seconds" when --max-seconds stopped it, 130 with the signal when `run` was
@@ -124,7 +129,7 @@ import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleR
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
 import { appendFileSync } from 'node:fs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
-import { keepAwake, stopAwake, keepAwakeQueued } from './lib/awake.mjs';
+import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } from './lib/awake.mjs';
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import { describeHold } from './lib/lock.mjs';
@@ -165,12 +170,19 @@ function fmt(s) {
     for (const x of h.readers) line += `\n${pad}reader ${x.owner} (w${x.weight}, ${x.kind === 'process' ? `pid ${x.pid}` : 'lease'}, until ${x.deadline}) checkout ${x.checkout}${x.meta && Object.keys(x.meta).length ? ' ' + JSON.stringify(x.meta) : ''}`;
     if (h.format !== 'rw1') line += `\n${pad}format "${h.format}": unknown to this lock code (it waits as for an exclusive holder)`;
   }
-  else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}\n${pad}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + pad + JSON.stringify(h.meta) : ''}`;
+  else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}${awakeText(s)}\n${pad}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + pad + JSON.stringify(h.meta) : ''}`;
   if (s.queue.length) line += `\n${pad}queue: ${fmtQueue(s.queue)}`;
   // the lane's line only while it is in use (review-lock-share N1: with the switch off and nothing shared, status reads as on main)
   if (laneInUse(s)) { const sw = sharedSwitch(s.resource); line += `\n${pad}shared lane: ${laneText(sw)}`; }
   return line;
 }
+// I-070: a measurement hold's sleep assertion (caffeinate pid), or that it asked for one and none runs (off / no binary)
+const awakeText = (s) => {
+  if (!s.holder?.awake || s.stale) return '';
+  const a = holdAwake(s.resource, s.holder);
+  return a ? `, keeping Mac awake (caffeinate pid ${a.pid})` : ', a measurement hold, but no caffeinate runs (FW_NO_CAFFEINATE, no binary, or not macOS)';
+};
+const awakeLines = (list) => list.map((a) => `awake: keeping Mac awake for ${a.what} (pid ${a.pid}, caffeinate pid ${a.caffeinate}) since ${a.since}`);
 const laneText = (sw) => (sw.enabled ? `on (cap ${sw.cap}${sw.joinLoad ? `, join load ${sw.joinLoad}` : ''}${sw.joinBusy ? `, join busy ${sw.joinBusy} %` : ''})` : 'off');
 const laneInUse = (s) => !!GATED[s.resource] && (sharedSwitch(s.resource).enabled || isGroup(s.holder) || !!s.holder?.functional || s.queue.some((w) => w.shared || w.functional));
 const moved = (w) => (w.movedBy ? `, moved by ${w.movedBy}` : '');
@@ -204,8 +216,10 @@ async function main() {
   if (cmd === 'status') {
     const list = resource ? [status(resource)] : allStatus();
     const host = flag('no-host') ? null : await sample({ windowSec: 3 });
-    if (flag('json')) { console.log(JSON.stringify(list.map((s) => (GATED[s.resource] ? { ...s, ...(host ? { host } : {}), ...(laneInUse(s) ? { sharedLane: sharedSwitch(s.resource) } : {}) } : s)), null, 1)); return 0; }
+    const procs = awakeProcesses(); // I-070: phone parts and Sim sessions keeping the Mac awake themselves
+    if (flag('json')) { console.log(JSON.stringify(list.map((s) => (GATED[s.resource] ? { ...s, ...(host ? { host } : {}), ...(laneInUse(s) ? { sharedLane: sharedSwitch(s.resource) } : {}), awake: s.holder && !s.stale ? holdAwake(s.resource, s.holder) : null, awakeProcesses: procs } : s)), null, 1)); return 0; }
     for (const s of list) console.log(fmt(s));
+    if (!resource || GATED[resource]) for (const l of awakeLines(procs)) console.log(l);
     if (host) console.log(hostLine(host, list));
     return 0;
   }
@@ -300,7 +314,6 @@ async function main() {
       let r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host, ...sx });
       if (r.gated) { host = await gateSample(); r = await tryAcquire(resource, { owner, kind: 'lease', ttlSec, meta, short, maxSec, host, ...sx }); }
       else if (host) host = { quiet: null, reasons: ['not measured yet'] };
-      if (!r.ok && (!r.gated || host?.quiet === false)) keepAwakeQueued(resource); // queued behind someone or held at the host gate (also a BUSY exit 3 that comes back later): keep the Mac awake (I-026 reopened, ts-lock-bundle (a))
       return r;
     };
     let res = await attempt();
@@ -312,7 +325,7 @@ async function main() {
       pause = Math.min(short || shared ? 3000 : 15000, pause * 1.5);
       res = await attempt();
     }
-    if (res.ok && !res.inherited) keepAwake(resource, res.holder); // a lease keeps the Mac awake until it expires (I-026)
+    if (res.ok && !res.inherited) keepAwake(resource, res.holder); // a timing lease (holder.awake) keeps the Mac awake until it expires or is released (I-070)
     if (res.ok && res.reader) {
       const x = res.reader;
       console.log(`ACQUIRED ${resource} for "${owner}" (shared, weight ${x.weight}, max ${x.maxSec} s) until ${x.deadline}${res.reentrant ? ' (already held: the same reader)' : ''}; leave with: node tools/lock.mjs release ${resource} --shared --owner ${owner}`);
@@ -348,7 +361,9 @@ async function main() {
     // command keeps running (a measurement is never killed), but it warns and `status` shows the hold OVERDUE
     const expectSec = !short && !shared && (opt('max-seconds') !== undefined || LEASE_POLICY[resource]) ? Number(opt('max-seconds', NORMAL_HOLD_SEC)) : undefined;
     if (expectSec !== undefined) { if (!(expectSec > 0)) throw new Error(`--max-seconds must be a number of seconds > 0 (got ${opt('max-seconds')})`); meta.expectSec = expectSec; }
-    const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, ...(shared ? { shared, weight } : {}), timeoutSec: Number(opt('timeout', 3600)) });
+    // I-070: a --no-timing hold is a measurement (keeps the Mac awake) only when its command wraps a phone part or a Sim session
+    const awake = noTiming && wrapsMeasurement(rest) ? true : undefined;
+    const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, awake, ...(shared ? { shared, weight } : {}), timeoutSec: Number(opt('timeout', 3600)) });
     if (shared && mode === 'short') console.error(OFF_NOTICE(resource));
     // a shared run (or its off-mode stand-in, an exclusive short) is bounded like a short one: killed at --max-seconds
     const bounded = short || shared;
@@ -393,6 +408,7 @@ async function main() {
     const logHold = (end, rec) => {
       if (!logged) return;
       const line = { at: new Date().toISOString(), resource, owner, short: !!short || mode === 'short', mode, ...(noTiming ? { noTiming: true } : {}), ...(shared ? { functional: true, weight: reader?.weight ?? weight, maxSec } : {}),
+        awake: mode !== 'shared' && !!holder?.awake, // I-070: this hold kept the Mac awake (a measurement hold)
         acquiredAt: holdStart, endedAt: new Date(end).toISOString(), durationSec: Math.round((end - Date.parse(holdStart)) / 100) / 10, ...rec };
       try { appendFileSync(holdsLogFile(), JSON.stringify(line) + '\n'); } catch {}
     };

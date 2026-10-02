@@ -1,50 +1,88 @@
-// Keep the Mac awake while chrome-measure is held (incident I-026). On AC power the Mac entered
-// "Maintenance Sleep" for 472 s in the middle of a hold: every timer and --max-seconds fired ~8 min late
-// and the measurement in flight was worthless. While the lock is held, a `caffeinate -i -s` assertion runs:
-//   - a process hold (lock.mjs run, verify.mjs, fix.mjs ab): `-w <holder pid>`, so it ends with the holder
-//     even on a crash;
-//   - a lease (lock.mjs acquire): `-t <seconds until the lease expires>`, replaced on renew.
-// release ends it. The assertion's pid is recorded in locks/<resource>.awake.json with the holder's
-// token; a new assertion for the resource replaces the old one. $FW_CAFFEINATE picks the binary
-// (tests: tests/fixtures/fake-caffeinate.mjs; "off" disables it); without a binary there is no assertion,
-// and a test process ($NODE_TEST_CONTEXT) without $FW_CAFFEINATE never starts the real one.
+// Keep the Mac awake during MEASUREMENTS only (incident I-070, the user's answer to C-024: "Keep awake only during
+// measurements"; it narrows I-026, which kept every chrome-measure hold and every queued waiter awake).
 //
-// Reopened (I-026: Deep Idle sleep for 15 min while the lock was free and agents were queued): every
-// attempt that leaves a waiter queued also calls keepAwakeQueued(), which keeps ONE shared assertion per
-// resource, `caffeinate -i -s -t 600` (QUEUE_AWAKE_SEC, the normal queue-entry TTL), recorded in
-// locks/<resource>.queue-awake.json and replaced only when less than half of it is left. So the Mac
-// stays awake while anyone keeps polling, and at most ~10 min after the last poll.
+// What counts as a measurement (each gets one `caffeinate -i -s` assertion that ends with it):
+//   - a timing hold of chrome-measure: a normal exclusive hold (not --short, not --shared, not --no-timing): verify.mjs,
+//     fix.mjs ab, bench gain/calibrate/reconfirm taking the lock themselves, a normal `lock.mjs run` (-w <holder pid>), and
+//     a normal lease (`lock.mjs acquire`, -t <seconds until it expires>, replaced on renew). Its holder record carries
+//     `awake: true` (lib/lock.mjs tryAcquire, `awakeHold`);
+//   - a `lock.mjs run --no-timing` hold whose command wraps a phone part (iphone.mjs scroll|record|run|gesture) or a
+//     Simulator session (sim.mjs session): `wrapsMeasurement` on the command line (the hold covers the cooling waits
+//     between a block's runs too);
+//   - the measuring processes themselves, wherever they run (own hold, beside a shared group, inside any wrapper):
+//     iphone.mjs scroll|record|run|gesture and sim.mjs session (functional included: its memory counts are measured)
+//     call keepAwakeFor(), `caffeinate -i -s -w <own pid>`, recorded in locks/awake/<pid>.json.
+// Never: --shared jobs (npm test, fix.mjs check, probes, bench mech), --short jobs, plain --no-timing holds (builds),
+// queue waits and gate waits, wait.mjs, iphone/simulator leases. A --shared hold that wraps sim.mjs session needs nothing:
+// the session's own assertion covers it.
+//
+// Why -s too (lead, I-070): -i (PreventUserIdleSystemSleep) "has no effect if the system is in Dark Wake" (Apple
+// IOPMLib.h, kIOPMAssertPreventUserIdleSystemSleep; CONFIRMED). Once the Mac idle-slept between measurements, a hold that
+// starts in a DarkWake is kept up only by -s (PreventSystemSleep, AC power only; OBSERVED 2026-10-02 20:11:40-20:12:29: a
+// hold's caffeinate -i -s kept a DarkWake until it ended, Maintenance Sleep 9 s later). Both are assertions: no pmset
+// setting changes, no -d (the display may sleep), no sudo.
+//
+// Lifetime: -w <pid> ends the assertion with that process, crash included; a lease's -t ends it at expiry; release
+// (stopAwake) ends it at once. The hold assertion's pid is recorded in locks/<resource>.awake.json with the holder's
+// token; a new assertion for the resource replaces the old one.
+// Switches: FW_NO_CAFFEINATE=1 (or FW_CAFFEINATE=off) turns it off; $FW_CAFFEINATE picks the binary (tests:
+// tests/fixtures/fake-caffeinate.mjs); without a binary, or off macOS, it is a silent no-op; a test process
+// ($NODE_TEST_CONTEXT) without $FW_CAFFEINATE never starts the real one.
 import { spawn, execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { sharedStateDir } from './paths.mjs';
 
 export const AWAKE_RESOURCES = new Set(['chrome-measure']);
+/** The assertion flags: idle sleep (-i) and system sleep on AC (-s, holds a DarkWake); never -d, -u or settings. */
+export const AWAKE_FLAGS = Object.freeze(['-i', '-s']);
 const file = (r) => join(sharedStateDir(), 'locks', `${r}.awake.json`);
+const procDir = () => join(sharedStateDir(), 'locks', 'awake');
 
-function bin() {
-  const b = process.env.FW_CAFFEINATE;
-  if (b === 'off' || (b === undefined && process.env.NODE_TEST_CONTEXT)) return null;
+/** The caffeinate binary to use, or null (switched off, a test without a fake, not macOS, missing). */
+export function caffeinateBin(env = process.env, platform = process.platform) {
+  const b = env.FW_CAFFEINATE;
+  if (env.FW_NO_CAFFEINATE === '1' || b === 'off' || (b === undefined && env.NODE_TEST_CONTEXT)) return null;
+  if (!b && platform !== 'darwin') return null;
   const p = b || '/usr/bin/caffeinate';
   return existsSync(p) ? p : null;
 }
 
-/** Start the assertion for `holder` (replacing an earlier one). Returns its pid, or null (no binary, other resource). */
-export function keepAwake(r, holder) {
-  if (!AWAKE_RESOURCES.has(r) || !holder) return null;
-  stopAwake(r);
-  const b = bin();
+/** Spawn a detached caffeinate with `args`; its pid, or null. */
+function spawnCaffeinate(args) {
+  const b = caffeinateBin();
   if (!b) return null;
-  const left = holder.expiresAt ? (Date.parse(holder.expiresAt) - Date.now()) / 1000 : null;
-  const args = ['-i', '-s', ...(holder.kind === 'process' && holder.pid ? ['-w', String(holder.pid)] : ['-t', String(Math.max(1, Math.ceil(left ?? 600)))])];
   let c;
   try { c = b.endsWith('.mjs') ? spawn(process.execPath, [b, ...args], { detached: true, stdio: 'ignore' }) : spawn(b, args, { detached: true, stdio: 'ignore' }); } catch { return null; }
   c.on('error', () => {});
   c.unref();
-  if (!c.pid) return null;
-  try { mkdirSync(join(sharedStateDir(), 'locks'), { recursive: true }); writeFileSync(file(r), JSON.stringify({ token: holder.token, pid: c.pid, args })); } catch {}
-  return c.pid;
+  return c.pid || null;
 }
+
+/** A hold qualifies by itself (a timing hold of an awake resource), unless `awake` says otherwise (lib/lock.mjs). */
+export const awakeHold = (r, { short = false, shared = false, noTiming = false, awake } = {}) =>
+  AWAKE_RESOURCES.has(r) && !short && !shared && (awake ?? !noTiming);
+
+/** A command line (argv array or string) that runs a phone part or a Simulator session: a --no-timing hold around it measures. */
+export function wrapsMeasurement(cmd) {
+  const s = Array.isArray(cmd) ? cmd.join(' ') : String(cmd || '');
+  return /\biphone\.mjs['"]?\s+(?:scroll|record|run|gesture)\b|\bsim\.mjs['"]?\s+session\b/.test(s);
+}
+
+/** Start the assertion for `holder` (replacing an earlier one) when it is a measurement hold (holder.awake). Returns its pid, or null. */
+export function keepAwake(r, holder) {
+  if (!AWAKE_RESOURCES.has(r) || !holder?.awake) return null;
+  stopAwake(r);
+  const left = holder.expiresAt ? (Date.parse(holder.expiresAt) - Date.now()) / 1000 : null;
+  const args = [...AWAKE_FLAGS, ...(holder.kind === 'process' && holder.pid ? ['-w', String(holder.pid)] : ['-t', String(Math.max(1, Math.ceil(left ?? 600)))])];
+  const pid = spawnCaffeinate(args);
+  if (!pid) return null;
+  try { mkdirSync(join(sharedStateDir(), 'locks'), { recursive: true }); writeFileSync(file(r), JSON.stringify({ token: holder.token, pid, args, since: new Date().toISOString() })); } catch {}
+  return pid;
+}
+
+const isCaffeinate = (pid) => { try { return /caffeinate/.test(execFileSync('ps', ['-o', 'command=', '-p', String(pid)], { encoding: 'utf8' })); } catch { return false; } };
+const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 
 /** End the recorded assertion (only the one for `token`, if given). Synchronous (used from 'exit' handlers). */
 export function stopAwake(r, token) {
@@ -52,36 +90,44 @@ export function stopAwake(r, token) {
   try { rec = JSON.parse(readFileSync(file(r), 'utf8')); } catch { return false; }
   if (token && rec.token !== token) return false;
   try { unlinkSync(file(r)); } catch {}
-  let cmd = '';
-  try { cmd = execFileSync('ps', ['-o', 'command=', '-p', String(rec.pid)], { encoding: 'utf8' }); } catch {}
-  if (!/caffeinate/.test(cmd)) return false; // already gone, or the pid now belongs to another process
+  if (!isCaffeinate(rec.pid)) return false; // already gone, or the pid now belongs to another process
   try { process.kill(rec.pid, 'SIGTERM'); return true; } catch { return false; }
 }
 
-export const QUEUE_AWAKE_SEC = 600;
-const qfile = (r) => join(sharedStateDir(), 'locks', `${r}.queue-awake.json`);
-const isCaffeinate = (pid) => { try { return /caffeinate/.test(execFileSync('ps', ['-o', 'command=', '-p', String(pid)], { encoding: 'utf8' })); } catch { return false; } };
-const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+/** The live assertion of `holder`'s hold: {pid, args, since}, or null (none, another holder's, or gone). */
+export function holdAwake(r, holder) {
+  let rec;
+  try { rec = JSON.parse(readFileSync(file(r), 'utf8')); } catch { return null; }
+  return holder && rec.token === holder.token && pidAlive(rec.pid) ? rec : null;
+}
 
 /**
- * A waiter is queued for `r`: make sure the shared queue assertion has at least half of QUEUE_AWAKE_SEC
- * left (start or replace it). Cheap while it is fresh (a file read, no spawn). Returns its pid, or null.
- * Two waiters racing past a stale record may both start one; the extra one ends by itself within 10 min.
+ * A measuring process (iphone.mjs scroll|record|run|gesture, sim.mjs session) keeps the Mac awake for its own lifetime:
+ * `caffeinate -i -s -w <pid>`, ended by the process's exit (crash included). Once per process. Recorded in
+ * locks/awake/<pid>.json ({what, pid, caffeinate, args, since}) for `lock.mjs status`. Returns the caffeinate pid, or null.
  */
-export function keepAwakeQueued(r, now = Date.now()) {
-  if (!AWAKE_RESOURCES.has(r)) return null;
-  let rec = null;
-  try { rec = JSON.parse(readFileSync(qfile(r), 'utf8')); } catch {}
-  if (rec && rec.until - now > QUEUE_AWAKE_SEC * 500 && pidAlive(rec.pid)) return rec.pid;
-  const b = bin();
-  if (!b) return null;
-  const args = ['-i', '-s', '-t', String(QUEUE_AWAKE_SEC)];
-  let c;
-  try { c = b.endsWith('.mjs') ? spawn(process.execPath, [b, ...args], { detached: true, stdio: 'ignore' }) : spawn(b, args, { detached: true, stdio: 'ignore' }); } catch { return null; }
-  c.on('error', () => {});
-  c.unref();
-  if (!c.pid) return null;
-  try { mkdirSync(join(sharedStateDir(), 'locks'), { recursive: true }); writeFileSync(qfile(r), JSON.stringify({ pid: c.pid, until: now + QUEUE_AWAKE_SEC * 1000, args })); } catch {}
-  if (rec && rec.pid !== c.pid && isCaffeinate(rec.pid)) { try { process.kill(rec.pid, 'SIGTERM'); } catch {} }
-  return c.pid;
+const started = new Map();
+export function keepAwakeFor(what, pid = process.pid) {
+  if (started.has(pid)) return started.get(pid);
+  const args = [...AWAKE_FLAGS, '-w', String(pid)];
+  const c = spawnCaffeinate(args);
+  started.set(pid, c);
+  if (!c) return null;
+  try { mkdirSync(procDir(), { recursive: true }); writeFileSync(join(procDir(), `${pid}.json`), JSON.stringify({ what, pid, caffeinate: c, args, since: new Date().toISOString() })); } catch {}
+  return c;
+}
+
+/** The live per-process assertions (keepAwakeFor); records of ended processes are removed. */
+export function awakeProcesses() {
+  let names = [];
+  try { names = readdirSync(procDir()).filter((n) => /^\d+\.json$/.test(n)); } catch { return []; }
+  const out = [];
+  for (const n of names) {
+    const f = join(procDir(), n);
+    let rec = null;
+    try { rec = JSON.parse(readFileSync(f, 'utf8')); } catch {}
+    if (rec && pidAlive(rec.pid) && pidAlive(rec.caffeinate)) out.push(rec);
+    else { try { unlinkSync(f); } catch {} }
+  }
+  return out;
 }

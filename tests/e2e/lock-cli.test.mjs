@@ -244,7 +244,7 @@ test('I-024: run --short past --max-seconds kills the whole tree: SIGTERM-ignori
   assert.ok(gone, 'no process of the short job outlives its hold (I-024: a test tree ran 13 min past it)');
 });
 
-test('I-026: every chrome-measure hold runs under caffeinate: run (-w its pid), a lease (-t until expiry), ended on release', async () => {
+test('I-070 (C-024, narrows I-026): a timing hold runs under caffeinate: run (-i -s -w its pid), a lease (-t until expiry), ended on release; holds.log and status say so', async () => {
   const log = join(state, 'caffeinate.jsonl');
   const cenv = { ...env, FW_CAFFEINATE: join(TESTS, 'fixtures', 'fake-caffeinate.mjs'), FAKE_CAFFEINATE_LOG: log };
   const calls = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
@@ -255,12 +255,19 @@ test('I-026: every chrome-measure hold runs under caffeinate: run (-w its pid), 
   assert.deepEqual(run.args.slice(0, 3), ['-i', '-s', '-w']);
   for (let i = 0; i < 60 && alive(run.pid); i++) await sleep(50);
   assert.ok(!alive(run.pid), 'gone with the hold');
+  const line = readFileSync(join(state, 'locks', 'holds.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).pop();
+  assert.equal(line.owner, 'ab');
+  assert.equal(line.awake, true, 'holds.log records that the hold kept the Mac awake');
   assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'lease'], { env: cenv }).code, 0);
   for (let i = 0; i < 60 && calls().length < 2; i++) await sleep(50);
   const lease = calls()[1];
   assert.deepEqual(lease.args.slice(0, 3), ['-i', '-s', '-t']);
   assert.ok(Number(lease.args[3]) > 590 && Number(lease.args[3]) <= 600, lease.args.join(' '));
   assert.ok(alive(lease.pid), 'a lease keeps it after the CLI exits');
+  assert.equal(holder('chrome-measure').awake, true);
+  const st = node(LOCK, ['status', 'chrome-measure', '--no-host'], { env: cenv });
+  assert.match(st.stdout, new RegExp(`held by "lease".*, keeping Mac awake \\(caffeinate pid ${lease.pid}\\)`));
+  assert.equal(JSON.parse(node(LOCK, ['status', 'chrome-measure', '--no-host', '--json'], { env: cenv }).stdout)[0].awake.pid, lease.pid);
   assert.equal(node(LOCK, ['release', 'chrome-measure', '--owner', 'lease'], { env: cenv }).code, 0);
   for (let i = 0; i < 60 && alive(lease.pid); i++) await sleep(50);
   const stopped = !alive(lease.pid);
@@ -269,23 +276,52 @@ test('I-026: every chrome-measure hold runs under caffeinate: run (-w its pid), 
   assert.ok(!existsSync(join(state, 'locks', 'chrome-measure.awake.json')));
 });
 
-test('I-026 (reopened): a queued waiter keeps the Mac awake too, also a CLI acquire that exits BUSY: one shared caffeinate -t 600 per resource', async () => {
+test('I-070: a crashed timing `run` (SIGKILL) leaves no caffeinate behind (-w its pid)', async () => {
+  const log = join(state, 'caffeinate-k.jsonl');
+  const cenv = { ...env, FW_CAFFEINATE: join(TESTS, 'fixtures', 'fake-caffeinate.mjs'), FAKE_CAFFEINATE_LOG: log };
+  const calls = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
+  const pidFile = join(state, 'child-k.pid');
+  const p = await startProc(process.execPath, [LOCK, 'run', 'chrome-measure', '--owner', 'crash', '--', process.execPath, '-e', `require('fs').writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); console.log('CHILD UP'); setInterval(() => {}, 1000);`], { env: cenv, ready: (s) => /CHILD UP/.test(s) });
+  for (let i = 0; i < 60 && !calls().length; i++) await sleep(50);
+  const [c] = calls();
+  assert.deepEqual(c.args, ['-i', '-s', '-w', String(p.proc.pid)]);
+  p.proc.kill('SIGKILL');
+  try { process.kill(Number(readFileSync(pidFile, 'utf8')), 'SIGKILL'); } catch {}
+  for (let i = 0; i < 100 && alive(c.pid); i++) await sleep(50);
+  const gone = !alive(c.pid);
+  if (!gone) process.kill(c.pid, 'SIGKILL');
+  assert.ok(gone, 'the assertion ends with the crashed holder');
+});
+
+test('I-070 (C-024, replaces I-026 reopened): no caffeinate for a BUSY/queued acquire, a --short run, a --shared run or a plain --no-timing build; a --no-timing run wrapping a phone part keeps the Mac awake', async () => {
   const log = join(state, 'caffeinate-q.jsonl');
   const cenv = { ...env, FW_CAFFEINATE: join(TESTS, 'fixtures', 'fake-caffeinate.mjs'), FAKE_CAFFEINATE_LOG: log };
   const calls = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
-  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'holder'], { env: cenv }).code, 0);
-  for (let i = 0; i < 60 && calls().length < 1; i++) await sleep(50);
-  // two waiters that do not wait (exit 3, they come back within 10 min): the queue keeps one assertion alive
+  const quick = [process.execPath, '-e', 'setTimeout(() => {}, 100)'];
+  assert.equal(node(LOCK, ['run', 'chrome-measure', '--owner', 'st', '--short', '--max-seconds', '60', '--', ...quick], { env: cenv }).code, 0);
+  assert.equal(node(LOCK, ['run', 'chrome-measure', '--owner', 'npm', '--shared', '--weight', 'npm-test', '--max-seconds', '60', '--', ...quick], { env: cenv }).code, 0);
+  assert.equal(node(LOCK, ['run', 'chrome-measure', '--owner', 'build', '--no-timing', '--', ...quick], { env: cenv }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'commit', '--short', '--max-seconds', '60'], { env: cenv }).code, 0);
+  // a waiter that does not wait (exit 3): queued, no assertion
   for (const w of ['w1', 'w2']) assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', w, '--short', '--max-seconds', '60'], { env: cenv }).code, 3);
-  for (let i = 0; i < 60 && calls().length < 2; i++) await sleep(50);
-  await sleep(200);
-  const all = calls();
-  assert.equal(all.length, 2, `the lease's assertion plus ONE queue assertion: ${JSON.stringify(all.map((c) => c.args))}`);
-  assert.deepEqual(all[1].args, ['-i', '-s', '-t', '600']);
-  assert.ok(alive(all[1].pid), 'outlives the CLI that queued');
-  assert.equal(JSON.parse(readFileSync(join(state, 'locks', 'chrome-measure.queue-awake.json'), 'utf8')).pid, all[1].pid);
-  assert.equal(node(LOCK, ['release', 'chrome-measure', '--owner', 'holder'], { env: cenv }).code, 0);
-  for (const c of all) { try { process.kill(c.pid, 'SIGKILL'); } catch {} }
+  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'w3'], { env: cenv }).code, 3);
+  assert.equal(node(LOCK, ['release', 'chrome-measure', '--owner', 'commit'], { env: cenv }).code, 0);
+  for (const w of ['w1', 'w2', 'w3']) node(LOCK, ['dequeue', 'chrome-measure', '--owner', w], { env: cenv });
+  await sleep(300);
+  assert.deepEqual(calls(), [], 'nothing measured: nothing kept awake');
+  assert.ok(!existsSync(join(state, 'locks', 'chrome-measure.queue-awake.json')));
+  const logs = readFileSync(join(state, 'locks', 'holds.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  assert.deepEqual(logs.map((l) => [l.owner, l.awake]), [['st', false], ['npm', false], ['build', false]]);
+  // a --no-timing hold around a phone part (iphone.mjs scroll) is a measurement
+  const r = node(LOCK, ['run', 'chrome-measure', '--owner', 'phone', '--no-timing', '--', process.execPath, '-e', 'setTimeout(() => {}, 300) // node tools/iphone.mjs scroll --owner phone'], { env: cenv });
+  assert.equal(r.code, 0, r.out);
+  for (let i = 0; i < 60 && !calls().length; i++) await sleep(50);
+  const [c] = calls();
+  assert.deepEqual(c.args.slice(0, 3), ['-i', '-s', '-w']);
+  for (let i = 0; i < 60 && alive(c.pid); i++) await sleep(50);
+  assert.ok(!alive(c.pid), 'gone with the hold');
+  const last = readFileSync(join(state, 'locks', 'holds.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).pop();
+  assert.deepEqual([last.owner, last.noTiming, last.awake], ['phone', true, true]);
 });
 
 test('run: killing the lock holder also stops the command (the lock never outlives the work)', async () => {

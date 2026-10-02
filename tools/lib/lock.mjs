@@ -106,7 +106,7 @@ import os from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { sharedStateDir, REPO } from './paths.mjs';
 import { THRESHOLDS, sample, quiet } from './host.mjs';
-import { keepAwake, stopAwake, keepAwakeQueued } from './awake.mjs';
+import { keepAwake, stopAwake, awakeHold } from './awake.mjs'; // I-070: measurement holds only (user C-024)
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -591,6 +591,9 @@ function gateHolding(w, now, T = THRESHOLDS) {
  * `held`: an FW_LOCK_HELD string; a token matching the live holder re-enters it ({reentrant, inherited}).
  * `noTiming`: a normal job that measures nothing (a build, CPU work; `lock.mjs run --no-timing`): passes the host gate,
  * and its holder carries `noTiming: true`. A timing acquirer (normal, not noTiming) never re-enters such a hold: throws.
+ * `awake` (I-070): whether the new hold is a measurement that keeps the Mac awake (holder `awake: true`, lib/awake.mjs);
+ * default: a timing hold of chrome-measure (not short, shared or noTiming). `lock.mjs run --no-timing` passes true when
+ * its command wraps a phone part or a Simulator session; shared and short holds never get it.
  * `host`: for a GATED resource, the caller's latest host reading {quiet: true|false|null, reasons, sample}
  * (null quiet = not measured yet). Omitted: no gate (library callers that don't sample). A normal waiter
  * whose turn it is gets {ok:false, gated:true, gate} until host.quiet, or until the gate times out.
@@ -601,7 +604,7 @@ function gateHolding(w, now, T = THRESHOLDS) {
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, sharedHeld, load1, ncpu, busyPct } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, sharedHeld, load1, ncpu, busyPct, awake } = opts;
   let { ttlSec, queueTtlSec = 600, short = false } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
   if (noTiming && short) throw new Error('--no-timing is for normal holds (builds, CPU work); a short job passes the host gate already');
@@ -709,6 +712,9 @@ export async function tryAcquire(r, opts) {
         ...(short ? { short: true, maxSec } : {}),
         ...(shared ? { functional: true, weight } : {}), // the switch-off stand-in for a reader: a slot like one (N2)
         ...(noTiming ? { noTiming: true } : {}),
+        // I-070 (user C-024): a measurement hold keeps the Mac awake (lib/awake.mjs keepAwake): a timing hold by itself, a
+        // --no-timing one only when the caller says it wraps a phone part or a Simulator session (`awake`)
+        ...(awakeHold(r, { short, shared, noTiming, awake }) ? { awake: true } : {}),
         ...(gateRec ? { gate: gateRec, ...(gateRec.timeout ? { gateTimeout: true } : {}) } : {}),
       };
       if (gateRec?.timeout) { try { appendFileSync(hostAlertsFile(), JSON.stringify({ at: h.acquiredAt, resource: r, owner, event: 'gate-timeout', ...gateRec }) + '\n'); } catch {} }
@@ -928,7 +934,7 @@ export async function renew(r, { owner, ttlSec }) {
  * ({FW_LOCK_SHARED} for a reader, a re-entered slot or an off-mode shared hold; {FW_LOCK_HELD} for an exclusive hold,
  * plus FW_LOCK_SHARED when a shared acquire re-entered it).
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, shared = false, weight = 1, maxSec, held = process.env.FW_LOCK_HELD, sharedHeld = process.env.FW_LOCK_SHARED, timeoutSec = 3600, pollMs = 2000, maxPollMs = short || shared ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false, cpuSampler = cpuTimes, busyWindowMs = SHARED_LANE.busyWindowMs } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, shared = false, weight = 1, maxSec, held = process.env.FW_LOCK_HELD, sharedHeld = process.env.FW_LOCK_SHARED, timeoutSec = 3600, pollMs = 2000, maxPollMs = short || shared ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false, awake, cpuSampler = cpuTimes, busyWindowMs = SHARED_LANE.busyWindowMs } = {}) {
   const t0 = Date.now();
   // I-051: a waiting reader measures host CPU busy over its own polls (no extra window inside the guard)
   let cpuBase = shared ? { at: Date.now(), t: cpuSampler() } : null, busyPct;
@@ -945,11 +951,8 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       if (b !== null) busyPct = b;
       cpuBase = { at: Date.now(), t };
     }
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, maxSec, held, sharedHeld, host, thresholds: T, noTiming, busyPct });
-    // queued behind someone, or the head waiter held at the host gate on a host measured not quiet (ts-lock-bundle (a);
-    // not the first, unmeasured round every gated grant takes): no system sleep while anyone waits (I-026 reopened);
-    // a gate wait is minutes of waiting too, and a sleep in it only stretches it (I-033)
-    if (!res.ok && (!res.gated || host.quiet === false)) keepAwakeQueued(r);
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, maxSec, held, sharedHeld, host, thresholds: T, noTiming, awake, busyPct });
+    // a queued or gated waiter keeps nothing awake (I-070, user C-024: only measurements; I-026's queue assertion is gone)
     if (res.gated) {
       // our turn, but the host is not (known to be) quiet: measure one window, then try again at once
       if (host.quiet === false && Date.now() - lastLog > 30000) {
@@ -974,7 +977,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       // a reader of the shared group: leaves by its own token; the last one out closes the group
       if (Date.now() - t0 > 1500) log(`[lock ${r}] joined the shared group after ${Math.round((Date.now() - t0) / 1000)} s`);
       let done = false;
-      keepAwake(r, res.holder); // the group's assertion, replaced at each join (its expiresAt grows)
+      keepAwake(r, res.holder); // a no-op: a shared group is no measurement (I-070); its sim.mjs session keeps itself awake
       const token = res.reader.token;
       const rel = () => {
         if (done) return; done = true;
@@ -991,7 +994,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
     if (res.ok) {
       if (Date.now() - t0 > 1500) log(`[lock ${r}] acquired after ${Math.round((Date.now() - t0) / 1000)} s`);
       let done = false;
-      keepAwake(r, res.holder); // no system sleep while chrome-measure is held (I-026, lib/awake.mjs)
+      keepAwake(r, res.holder); // a measurement hold (holder.awake: timing, or `awake`) keeps the Mac awake until released (I-070, lib/awake.mjs)
       const rel = () => {
         if (done) return; done = true;
         // synchronous best effort (also used from the 'exit' handler)

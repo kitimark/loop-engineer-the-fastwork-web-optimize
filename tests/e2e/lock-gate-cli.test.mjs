@@ -48,29 +48,26 @@ test('acquire on a busy host: BUSY "host not quiet" (exit 3), keeps the head pla
   assert.match(h.gate.stub, /fake-host\.mjs$/, 'a stubbed host is visible in the holder record');
 });
 
-test('ts-lock-bundle (a), N3: a CLI acquire held at the host gate (free lock, busy host, BUSY exit 3) starts the shared queue assertion caffeinate -i -s -t 600; a quiet grant starts none', async () => {
+test('I-070 (C-024, replaces ts-lock-bundle (a) N3): a CLI acquire held at the host gate (BUSY exit 3) starts no caffeinate; a quiet grant of a timing lease starts its own -t one', async () => {
   const log = join(state, 'caffeinate-g.jsonl');
   const cenv = { FW_CAFFEINATE: join(TESTS, 'fixtures', 'fake-caffeinate.mjs'), FAKE_CAFFEINATE_LOG: log };
   const calls = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
-  const qf = join(state, 'locks', 'chrome-measure.queue-awake.json');
-  // quiet host: the gate passes on the one window, the lease is granted, no queue assertion (only the holder's own)
+  // quiet host: the gate passes on the one window, the timing lease is granted with its own assertion (a measurement)
   const ok = lock({ ...cenv, FW_STATE_DIR: join(state, 'quiet') }, 'acquire', 'chrome-measure', '--owner', 'quiet-topic');
   assert.equal(ok.code, 0, ok.out);
-  assert.equal(existsSync(join(state, 'quiet', 'locks', 'chrome-measure.queue-awake.json')), false, 'a granted acquire is not queued');
   for (let i = 0; i < 60 && calls().length < 1; i++) await sleep(50);
-  const holderCalls = calls(); // the holder's own assertion, if any
+  const holderCalls = calls();
+  assert.equal(holderCalls.length, 1);
+  assert.deepEqual(holderCalls[0].args.slice(0, 3), ['-i', '-s', '-t']);
   for (const c of holderCalls) { try { process.kill(c.pid, 'SIGKILL'); } catch {} }
-  // busy host: free lock, the gate closes on the measured window, BUSY exit 3 with the head place kept
+  // busy host: free lock, the gate closes on the measured window, BUSY exit 3 with the head place kept: no assertion
   const b = lock({ ...cenv, FAKE_HOST_BUSY: '0.6' }, 'acquire', 'chrome-measure', '--owner', 'topic-a');
   assert.equal(b.code, 3, b.out);
   assert.match(b.stdout, /^BUSY chrome-measure: free, but the host is not quiet/m);
   assert.equal(holder(), null);
-  for (let i = 0; i < 60 && calls().length <= holderCalls.length; i++) await sleep(50);
-  const q = calls().slice(holderCalls.length);
-  assert.equal(q.length, 1, `one queue assertion for the gated waiter: ${JSON.stringify(q.map((c) => c.args))}`);
-  assert.deepEqual(q[0].args, ['-i', '-s', '-t', '600']);
-  assert.equal(JSON.parse(readFileSync(qf, 'utf8')).pid, q[0].pid);
-  try { process.kill(q[0].pid, 'SIGKILL'); } catch {}
+  await sleep(300);
+  assert.equal(calls().length, holderCalls.length, `a gate wait keeps nothing awake: ${JSON.stringify(calls().map((c) => c.args))}`);
+  assert.equal(existsSync(join(state, 'locks', 'chrome-measure.queue-awake.json')), false);
 });
 
 test('gate timeout (FW_GATE_MAX_WAIT): granted anyway with gateTimeout, alert logged, and verify.mjs marks the runs contaminated', async () => {

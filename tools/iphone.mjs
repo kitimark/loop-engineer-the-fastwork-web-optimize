@@ -50,6 +50,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari } from './lib/wip.mjs';
 import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, describeHold } from './lib/lock.mjs';
+import { keepAwakeFor } from './lib/awake.mjs';
 import { parseJob, phoneRunText } from './lib/hold-job.mjs';
 import { basename, extname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
@@ -89,6 +90,7 @@ function runText() {
 let parseRunArgsSync = () => ({});
 function leaseAndMark() {
   const owner = requireLease();
+  keepAwakeFor(`iphone.mjs ${cmd} (${owner})`); // I-070: a phone run is a measurement: caffeinate -i -s -w <this pid>
   if (!runMark) {
     const text = runText();
     runMark = { owner, done: describeHold('iphone', { owner, run: { text, since: new Date().toISOString(), pid: process.pid } }).catch(() => null) };

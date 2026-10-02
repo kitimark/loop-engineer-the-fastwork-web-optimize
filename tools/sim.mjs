@@ -46,6 +46,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
 import * as S from './lib/sim.mjs';
+import { keepAwakeFor } from './lib/awake.mjs';
 
 const all = process.argv.slice(2);
 const dd = all.indexOf('--');
@@ -63,6 +64,7 @@ async function main() {
   if (cmd === 'setup') { S.setup({ runtime: opt('runtime', null), log }); return 0; }
   if (cmd === 'status') { for (const l of await S.statusLines()) log(l); return 0; }
   if (cmd === 'doctor') return S.doctor({ fix: flag('fix'), log });
+  if (cmd === 'session') keepAwakeFor(`sim.mjs session${flag('functional') ? ' --functional' : ''} (${opt('owner', process.env.FW_LOCK_OWNER)})`); // I-070: a Sim session measures (memory counts too): caffeinate -i -s -w <this pid>
   if (cmd === 'session') return S.session({ owner: opt('owner', process.env.FW_LOCK_OWNER), window: opt('window', 'shown'), cmd: rest[0], args: rest.slice(1), log, err, functional: flag('functional') });
   if (cmd === 'shutdown') {
     const live = S.liveSession();

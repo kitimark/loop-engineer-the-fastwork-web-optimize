@@ -67,6 +67,7 @@ export function cleanEnv(extra = {}) {
   for (const k of Object.keys(env)) if (/^FAKE_HOST_/.test(k)) delete env[k];
   env.FW_TEST_HOST = FAKE_HOST;
   env.FW_CAFFEINATE = 'off'; // no real sleep assertions from tests (I-026); a test passes the fake via `extra`
+  delete env.FW_NO_CAFFEINATE; // I-070: a test that passes the fake gets it, whatever the caller's shell says
   // a git hook exports GIT_DIR / GIT_INDEX_FILE / ...: never let them redirect the temp repos' git calls
   for (const k of Object.keys(env)) if (/^GIT_/.test(k)) delete env[k];
   return { ...env, GIT_AUTHOR_NAME: 'fw-test', GIT_AUTHOR_EMAIL: 'fw-test@example.invalid', GIT_COMMITTER_NAME: 'fw-test', GIT_COMMITTER_EMAIL: 'fw-test@example.invalid', ...extra };

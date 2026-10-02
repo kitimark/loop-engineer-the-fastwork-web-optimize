@@ -197,8 +197,8 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
   await guard();
   const need = o.settleMs + estimateMs(o) + 30000 + 2500;
   if (!target) {
-    // renew the lease to cover this run (iphone-runner did it before every run), through lock.mjs, which also
-    // keeps the Mac awake until the new expiry
+    // renew the lease to cover this run (iphone-runner did it before every run), through lock.mjs; the Mac stays awake
+    // through iphone.mjs's own assertion (I-070, lib/awake.mjs keepAwakeFor), not the iphone lease
     const ttl = Math.max(900, Math.ceil(need / 1000) + 60);
     const rn = spawnSync(process.execPath, [join(REPO, 'tools', 'lock.mjs'), 'renew', 'iphone', '--owner', owner, '--ttl', String(ttl)], { encoding: 'utf8', timeout: 30000 });
     if (rn.status !== 0) throw new Error(`could not renew the iphone lease: ${(rn.stderr || rn.stdout || '').trim()}`);

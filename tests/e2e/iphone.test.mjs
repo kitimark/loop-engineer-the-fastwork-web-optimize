@@ -260,3 +260,36 @@ test('I-060: a phone run marks the lease with what it runs (from --label, or --d
   assert.equal(r.code, 1, r.out);
   assert.equal(leaseFile().meta.run, undefined);
 });
+
+test('I-070 (C-024): scroll / record / run / gesture keep the Mac awake for their own lifetime (caffeinate -i -s -w <own pid>), gone after; status, open, park, a dry-run gesture and a refused run (no lease) do not', async () => {
+  const log = join(env.FW_STATE_DIR, 'caffeinate.jsonl');
+  const cenv = { ...env, FW_CAFFEINATE: join(TESTS, 'fixtures', 'fake-caffeinate.mjs'), FAKE_CAFFEINATE_LOG: log };
+  const calls = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
+  const alive = (p) => { try { process.kill(p, 0); return true; } catch { return false; } };
+  const wait = async (f) => { for (let i = 0; i < 100 && !f(); i++) await new Promise((r) => setTimeout(r, 50)); return f(); };
+  const ip = (args, timeout = 20000) => node(IPHONE, args, { env: cenv, timeout });
+  const GESTURE = join(TESTS, '..', 'tools', 'gestures', 'slow-drag-v1.json');
+  // no lease: refused before anything starts
+  assert.equal(ip(['scroll', '--owner', 'me']).code, 1);
+  assert.equal(ip(['status']).code, 0);
+  assert.equal(ip(['gesture', GESTURE, '--dry-run']).code, 0);
+  assert.equal(lock('acquire', 'iphone', '--owner', 'me').code, 0);
+  ip(['open', 'not-a-url', '--owner', 'me']);
+  ip(['park', '--owner', 'me']);
+  await new Promise((r) => setTimeout(r, 300));
+  assert.deepEqual(calls(), [], 'no measurement, no assertion');
+  // the phone runs: each fails on the missing proxy, after it started its own assertion
+  const runs = [['scroll', '--owner', 'me'], ['record', '--seconds', '1', '--owner', 'me'], ['run', '--driver', 'scroll', '--probe', 'std', '--owner', 'me'], ['gesture', GESTURE, '--owner', 'me']];
+  for (const [i, a] of runs.entries()) {
+    const r = ip(a, a[0] === 'record' ? 4000 : 20000);
+    assert.notEqual(r.code, 0, `${a[0]} cannot reach the (absent) phone: ${r.out}`);
+    assert.ok(await wait(() => calls().length > i), `${a[0]} started an assertion`);
+    const c = calls()[i];
+    assert.deepEqual(c.args.slice(0, 3), ['-i', '-s', '-w'], a[0]);
+    assert.ok(!alive(Number(c.args[3])), `${a[0]}: -w names the phone run's own process, which has ended`);
+    const gone = await wait(() => !alive(c.pid));
+    if (!gone) process.kill(c.pid, 'SIGKILL');
+    assert.ok(gone, `${a[0]}: the assertion ended with the run`);
+  }
+  assert.equal(calls().length, runs.length, 'one assertion per run');
+});
