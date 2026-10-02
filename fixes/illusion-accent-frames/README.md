@@ -179,8 +179,21 @@ through their test hook; B's SVG is seeked to t. Each frame is compared with C's
 | F1 | 137 (in 71, out 66: the session ended before out 858-900; rev 2 covered those with the same atlas, identical) | 0 | 0 | 0 |
 | F2 | 142 | 0 | 0 | 0 |
 | F3 | 142 | 0 | 0 | 0 |
-| V | PENDING: capture queued (Sim, shared lane). Expect small differences: 120 fps frames (a draw time t shows frame floor(t x 0.12)) and 4:2:0 chroma | | | |
+| V | 142 (in 71, out 71) | 140 (all but the empty first in frame and the empty last out frame) | 9059 of 61101 (14.8 %, in 299 ms) | 217 |
 | B | 142 | 0 | 0 | 0 |
+
+**V is the only arm that is not pixel-identical.** The alpha is composited correctly: the background never changes
+(0 of ~49,000 pure-background pixels change by more than 8 levels), and the ink is the same colour. Inside the
+strokes the mean is RGB (44, 49, 59) against (43, 49, 59). Breakdown of the fully drawn frame (in 900 ms, 9047
+pixels change):
+- 6811 by 1-2 levels (codec rounding inside the ink);
+- 493 by 3-8 levels and 1159 by 9-32 levels;
+- 582 by 33-64 levels, all on the anti-aliased stroke edges (4:2:0 chroma and 8-bit alpha);
+- 2 by more than 64 levels.
+
+While a stroke is still drawing, up to 127 pixels per frame change by more than 64 levels, at most 217 (out 481 ms).
+Most likely that is the moving tip (OBSERVED, not traced per pixel): a video frame lasts 8.3 ms (120 fps), so V shows the tip up to 8 ms behind the 1-ms reference.
+These are Simulator frames captured with the clock frozen, compared with C's frames (`cmp-V.json`).
 
 ### Live functional check (Simulator, OBSERVED, no timing claim)
 
@@ -306,7 +319,7 @@ timed.
 6. Attribution runs (Timeline).
 7. Park Safari.
 
-Cool 10 min between blocks. Record the battery temperature and the heat note per run.
+Cool between blocks with `node tools/wait.mjs phone-temp --below auto` (at most 10 min, protocol §5.3; never a fixed `wait.mjs time`). Record the battery temperature and the heat note per run.
 
 | block | arms | counted order (rotated Latin square) | n per arm |
 |---|---|---|---|
