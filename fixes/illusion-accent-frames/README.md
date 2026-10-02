@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** draft. PR-001 rev 2 was accepted (2026-10-02 06:31Z). Phone ticket P-058 ran (blocks A and B): no arm beats
-the SVG ("P-058 results" below). Rev 3 (6 options, recommending "keep") is drafted and waits for the lead; the visual recording is deferred by the user.
+the SVG ("P-058 results" below). Rev 3 is posted as PR-004 (6 options, recommending "keep"); the visual recording is deferred by the user.
 **Stage:** R / I (design-engineer PoC, illusion proposal; no D card)
 **Device class / gate:** phone-only (WebKit). Chrome is gated to the original SVG.
 **Driver(s) behind the claims:** Simulator functional sessions (no timing). Chrome per-draw trace counts (r14).
