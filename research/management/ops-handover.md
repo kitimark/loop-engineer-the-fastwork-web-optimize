@@ -8,6 +8,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **19:1xZ (batch) I-071 not-a-bug; ts-i063 follow-up blocked by Mac sleep cycling; de-countdown measuring.**
+  - a66dfd4 landed (ops). Nothing else on main since 17:15Z.
+  - **I-071 RESOLVED not-a-bug:** the 15:52Z test:chrome failure was an Idle Sleep. test:chrome passed 13/13 on
+    a66dfd4 at 17:38Z, run under caffeinate as a measurement.
+  - **ts-i063's follow-up commit is blocked:** since ~17:30Z the Mac cycles DarkWake / Maintenance Sleep, so the
+    pre-commit npm test can't finish (the T8+ display/wake test failed mid-sleep). It retries when the Mac stays awake.
+  - **de-countdown** holds chrome-measure since 19:11Z for its pixel diffs and isolated-page counts.
+  - Usage at 19:13Z: about 2.9 % of the window (lead's estimate).
 - **16:4xZ I-063 + I-069 landed (0aa2227); test:chrome failed -> I-071 (P1); Mac sleeping since 16:09Z.**
   - Landed 0aa2227: I-063 (859776b, da5de60, e35f0b4; **MEASUREMENT CODE**: lib/lock.mjs gate, verify, bench) and
     I-069; npm test 1282/1282; both RESOLVED. Sim users get warm reuse after a rebase.
@@ -1359,7 +1367,7 @@ between tool calls.
 | id | state | owner | note |
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
-| I-071 | open, P1 | ts-i063 | test:chrome check.chrome failed (no check.json); bisect 9135b35 vs 0aa2227 |
+| I-071 | RESOLVED not-a-bug (Idle Sleep; test:chrome 13/13 at 17:38Z) | ts-i063 | test:chrome check.chrome failed (no check.json); bisect 9135b35 vs 0aa2227 |
 | I-070 | RESOLVED (0de8103) | ts-i070 | keep the Mac awake only during measurement holds (caffeinate -i -s) |
 | I-069 | RESOLVED (0aa2227) | ts-i063 | sim safari-restart on a restored data: tab |
 | I-066 | RESOLVED (dc5651c) | ts-i063 | sparse worktree's leftover site*/ shadowed the baseline |
