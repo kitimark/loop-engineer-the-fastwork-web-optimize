@@ -306,3 +306,26 @@ Composite in the RenderingFrame after `#people +is-visible` (frame 2), Sim ms:
 - Unknowns (a) `+is-play`, (b) first scroll step, (c) `+is-future-shrinking`: each is one Composite-only frame
   (Sim 55-60, 60-73, 31-35 ms), equal in C, V and NB. Next proposed check: a layer-tree diff across each crossing.
 - Scripts and raw data: `out/wi-stack/loo/` (not committed).
+
+## Layer diff (Simulator, functional shared lane, hold `l1`, C and V once each; OBSERVED, n=1 per arm)
+
+The W walk is driven step by step (scrollBy 250 smooth, 300 ms). `LayerTree.layersForNode(document)` runs after
+every step, and each pair of snapshots is diffed. Each step spans about 300 ms, so a change is located to its step, not
+its frame. Script: `out/wi-stack/loo/layers.mjs` (not committed).
+
+- **(a) `+is-play`** (C and V the same): 12 layers are added in that step. Their backing stores total about 44 MB:
+  - with the reason "animation": `secure-network-rings` img 542x600 (11.4 MB), the shield (1.5 MB), and the faces and dashes;
+  - forced by the animating children (transform or overlap): `platform-visual` 640x512 (11.5 MB) and `agents-ask` 488x569 (9.8 MB), plus the ask field and ask list (9.2 MB).
+- **(b) First scroll step:** no layer is added or removed (C: +0 −0; V: one 24 KB face). The first-scroll Composite
+  frame is not new layers. Cause UNRESOLVED; the next look is the document and hero backing growth in step 2.
+- **(c) `+is-future-shrinking`** (C and V the same): the 4 `start-selling-profile-shell` layers get backing stores at once. They are 402x857 each, composited for "overlap", and go from 0 to 12 MB each: about 48 MB.
+- **`#people +is-visible`** (the stack5 regression):
+
+  | | C | V |
+  |---|---|---|
+  | overlap profile shells at this step | 4 shells added with 0 KB | 4 shells added with 12 MB each |
+  | total layer memory | 115 MB | 173 MB |
+
+  - Hypothesis (OBSERVED, n=1, no reference yet): with blur-cubic, the cards' filter transition runs as an accelerated animation. WebKit's overlap test then cannot rule out overlap with the hidden profile shells, so they are painted at the reveal start. With RB's `linear()`, the transition runs on the main thread, and that painting waits until `+is-future-shrinking`.
+  - That would make (c) and the frame-2 regression the same backing-store cost, in different places.
+  - The decisive check is the same diff on NS and NB.
