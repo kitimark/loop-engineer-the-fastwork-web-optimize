@@ -488,8 +488,13 @@ short, bounded jobs such as `npm test` and benchmark mechanism checks (`bench me
 <= 180 s); never for a timing measurement.
 A build or other CPU work that measures nothing takes a normal hold: `node tools/lock.mjs run chrome-measure
 --owner <you> --no-timing --max-seconds 600 -- <build>`. It waits its FIFO turn but skips the host gate; nothing
-timed (verify.mjs, fix.mjs ab, bench, a normal `run`) may run inside it, short jobs may, and a `--no-timing` run
-inside a timing hold refuses. Run only this checkout's tools inside it.
+timed on the Mac (verify.mjs, fix.mjs ab, bench, a normal `run`) may run inside it, short jobs may, and a `--no-timing` run
+inside a timing hold refuses. Run only this checkout's tools inside it. Phone runs are the exception (I-056): the phone
+stamps its own frames, so `iphone.mjs run|scroll|record|gesture` run inside their own hold (its command, or the same
+owner), and a recorded phone part runs in one to keep the Mac quiet: `node tools/lock.mjs run chrome-measure --owner <you>
+--no-timing --max-seconds 600 -- sh -c '<part>'`. Outside their own hold they refuse (WAIT, exit 1) beside a shared group
+or anyone else's normal hold; an exclusive short job does not stop them; `--allow-during-measure` is for diagnostics only.
+Every `run` hold, shared readers included, leaves one line in `locks/holds.log` (owner, weight, start, end, duration, exit code).
 Shared lane (`research/architecture/lock-shared-lane.md`, switched on by the lead 2026-10-02): jobs that time nothing
 (`npm test`, `fix.mjs check`, DOM probes, `bench mech`, `npm run test:chrome:fn`, a Simulator mechanism session) hold
 chrome-measure together: `node tools/lock.mjs run chrome-measure --shared --weight <n|job> --max-seconds N --owner <you>
