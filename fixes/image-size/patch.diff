@@ -1,0 +1,139 @@
+# fastwork mirror fix: image-size
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply image-size
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 selling/commission/avatar-john.jpg adb612e3c7081066a16bbbf1638d2cd0e073b02a0801bb87befdc6db9a45a5a8
+# base-sha256 selling/commission/client-avatar-1.png 4eae3d38c118cfec9440cab08d71572794e825b55681c74f8f4822a9b1437418
+# base-sha256 selling/commission/client-avatar-2.png b1837da3f15469eda479686e805fc739794804f7ebd793cf3171f16d48e05656
+# base-sha256 selling/commission/client-avatar-3.png e7d7b1ffb83b3286b815099942752929be8ca40008bbb4d2e5cfb03621a562dc
+# base-sha256 selling/hero/buttercup-avatar.jpg cad0c8879b79bb4cd5008c0830632f1204a24015063f82ce91e97266eb35328e
+# base-sha256 selling/hero/leobeer-cover.jpg 58d26d25949c395a43391c91249a8a945743daf2f2c8fe8890c81a4f26941baf
+# base-sha256 selling/hero/mod-avatar.jpg 89dae936a2f9f0dfd791d7077bb209e69cd2d6778d63c4dbf7b8132c633af970
+# base-sha256 selling/hero/nam-avatar.jpg f902d72b6a7e95384051b6d69b7b29a7a24e603526feacf3af0d72fb4e226fdf
+# base-sha256 selling/hero/nam-cover.jpg c004088ed56dbf41fb1c8e2948aa86c3e19de0f88e351568c442c2f9a6274536
+# base-sha256 selling/hero/peter-avatar.jpg 5272283fbefcdecd66acffd665b612e39438a6d714e7924f286bcbf8f758600f
+# base-sha256 selling/hero/peter-cover.jpg 7b59149f75287901ebc2ebf5212a0367976cde121df26b7f41597e4819c09790
+# base-sha256 selling/hero/slayalldeep-avatar.jpg d411a61bd64132361b666014d69abbb809483d4cb8c5b261079c45005c5f68f8
+# base-sha256 selling/hero/weng-avatar.jpg 87fabfeb7be459ca74b523fcd8fd2d551ef5c5d86df8de24fd98a21ab19096e2
+# base-sha256 selling/media/avatar-alt-2.jpg a8a5125c32b3fae4d0333567e8b49b2fd94b9e98d2dfc5617033f33cf073c4c8
+# base-sha256 selling/sellers/ai-automation/avatar.jpg da8ec4575335c26b6d3c047da8a1ecc4530acc543362ecfcf4c7289b73a3faf0
+# base-sha256 selling/sellers/ai-automation/logo-agicafet.jpg d93599cc4b7b0308366722ae8ba91dcfbb3daa75ed16011371d862eafaad3356
+# base-sha256 selling/sellers/ai-automation/logo-ai-alliance.jpg d3110bb8141c03cd2e09f3840a2c12bf8d2064135b8caecb2efca1c60c3b9ea0
+# base-sha256 selling/sellers/ai-automation/service-chatbot.jpg a416893af61550d49c14af365d3a5e9b101fd4391c5c1ebe87654e5f0a4f2aaa
+# base-sha256 selling/sellers/ai-automation/service-setup.jpg 0561e4cadf57512163d51601447b9acdd01e25bd6705f54109a2d336f9f8e705
+# base-sha256 selling/sellers/ai-video-editor/avatar.jpg a801ea1b76b2404103b7c4ad41906c4b5e43910425679d16c73cf60fbdb5dc94
+# base-sha256 selling/sellers/graphic-designer/avatar.jpg ae5c2d0f36a216402157136a17002bdb744adaea6a3a4300c9b22cda5b584314
+# base-sha256 selling/sellers/graphic-designer/logo-sf.jpg 974d0854819a9d22ab923a6882ed58579070f9efda9cd0325d39a1218a48672c
+# base-sha256 selling/sellers/graphic-designer/logo-supara.jpg 6f655bb688083c060db929542e4252e4cb19d5c205b5cef6fd273a082d863365
+# base-sha256 selling/sellers/photographer/avatar.jpg bd380fdf88f9851b9b81b15966e623bfe8f03861309eb6d912340425aa3ce3ba
+# base-sha256 selling/sellers/reviewers/r1.jpg 4982bf533b16a6e4d9de1a10fb33a1e9a00a9c704b1a9c691c3ffe64a17ba3c4
+# base-sha256 selling/sellers/reviewers/r10.jpg 2174b591a6e88a87d3e3791136d3c9cf5f7c3a76a41cecbd7add680b24075062
+# base-sha256 selling/sellers/reviewers/r11.jpg a75b4e091a081ce7e9409422a4be3ef989577dbe0e77a20835e9d6e417d73aa8
+# base-sha256 selling/sellers/reviewers/r12.jpg 7a51a0b104a660f2d61cd4c3e07f956ec9db29d02b5b340e84e62e16c836398b
+# base-sha256 selling/sellers/reviewers/r2.jpg cdfcdf853408c7fc1cf72c859ee2607c3fa601b26d5bc4f17002f48a44115c23
+# base-sha256 selling/sellers/reviewers/r3.jpg daa8e11d2a514743a769fe0d336f4a0f7e7bc6215864839166ae3e515c294bf6
+# base-sha256 selling/sellers/reviewers/r5.jpg 8f00037500f4a5a3e3cb1994622ca0fbd67bd1a00a965d5e1a12209c32bfbc72
+# base-sha256 selling/sellers/reviewers/r7.jpg bba34895d816cef020e6055399b113a91a5d7662f3340eea21c0cca6b2bc6f17
+# base-sha256 selling/sellers/reviewers/r8.jpg 63524b8519c8e647d3b8e1ce59a5e9509482d0b7569a025864b37cf6e53e9f59
+# base-sha256 selling/sellers/reviewers/r9.jpg c82b2a0ba2e027b6ef9c996712e6039dcb72fbd5a66a748241462139250e5d01
+# base-sha256 selling/sellers/sound-composer/avatar.jpg 8232a33ff779bb0186adbc07018363b9ddc9834d64666fcf91c86bc770fea0e5
+# base-sha256 selling/sellers/sound-composer/post-orchestra.jpg 405802d0d167cc4df89da72296326193de29452b29d06b042979ef71922c95da
+# base-sha256 selling/sellers/sound-composer/service-feature.jpg caad9fb8dcd818995d1e626653b6109bdaa5917426b6a2cd65c2b09d4c278429
+# base-sha256 selling/sellers/sound-composer/service-ost.jpg cab1c131c6e74fe19fa77e9cb2fdf28b3706a5c7ce6b440d435af162d878d466
+# base-sha256 selling/sellers/sound-composer/service-scoring.jpg acbe029b963fa235d80c1dd9102d39f7933e16adb4a68db1b55066f10dd016bc
+# base-sha256 selling/sellers/ux-ui-designer/avatar.jpg 49fbda987cb1d2521e0bd4e0862f852bdce717449d2fa3461ab76984ed539636
+# base-sha256 selling/sellers/video-editor/avatar.jpg 2387867e92f40d0b11384f9ed24fcfa2617f5f37976905b2df2a5a174ed8aaf5
+# base-sha256 selling/sellers/video-editor/service-eye.jpg 38f667cebd7d4b1aa530cdae9d2c3174c7eada7403d5280721c4524f5132e44d
+# base-sha256 selling/sellers/web-developer/avatar.jpg 06b8c6ee4a9e6d8b41deedbe3824c322d54b642d7ffe6f9ae083e2f0b7442914
+# base-sha256 selling/sellers/web-developer/logo-bigzweb.png c3f958e1ae0c17726914eb321a131e13a17808cf2e2850852147a2a0fd8ed212
+# base-sha256 selling/sellers/web-developer/service-dd-transport.jpg 665247c413f68567462c8e1f9957879950233aa23fdce3938cd89b4152332a8f
+diff --git a/selling/commission/avatar-john.jpg b/selling/commission/avatar-john.jpg
+Binary files a/selling/commission/avatar-john.jpg and b/selling/commission/avatar-john.jpg differ
+diff --git a/selling/commission/client-avatar-1.png b/selling/commission/client-avatar-1.png
+Binary files a/selling/commission/client-avatar-1.png and b/selling/commission/client-avatar-1.png differ
+diff --git a/selling/commission/client-avatar-2.png b/selling/commission/client-avatar-2.png
+Binary files a/selling/commission/client-avatar-2.png and b/selling/commission/client-avatar-2.png differ
+diff --git a/selling/commission/client-avatar-3.png b/selling/commission/client-avatar-3.png
+Binary files a/selling/commission/client-avatar-3.png and b/selling/commission/client-avatar-3.png differ
+diff --git a/selling/hero/buttercup-avatar.jpg b/selling/hero/buttercup-avatar.jpg
+Binary files a/selling/hero/buttercup-avatar.jpg and b/selling/hero/buttercup-avatar.jpg differ
+diff --git a/selling/hero/leobeer-cover.jpg b/selling/hero/leobeer-cover.jpg
+Binary files a/selling/hero/leobeer-cover.jpg and b/selling/hero/leobeer-cover.jpg differ
+diff --git a/selling/hero/mod-avatar.jpg b/selling/hero/mod-avatar.jpg
+Binary files a/selling/hero/mod-avatar.jpg and b/selling/hero/mod-avatar.jpg differ
+diff --git a/selling/hero/nam-avatar.jpg b/selling/hero/nam-avatar.jpg
+Binary files a/selling/hero/nam-avatar.jpg and b/selling/hero/nam-avatar.jpg differ
+diff --git a/selling/hero/nam-cover.jpg b/selling/hero/nam-cover.jpg
+Binary files a/selling/hero/nam-cover.jpg and b/selling/hero/nam-cover.jpg differ
+diff --git a/selling/hero/peter-avatar.jpg b/selling/hero/peter-avatar.jpg
+Binary files a/selling/hero/peter-avatar.jpg and b/selling/hero/peter-avatar.jpg differ
+diff --git a/selling/hero/peter-cover.jpg b/selling/hero/peter-cover.jpg
+Binary files a/selling/hero/peter-cover.jpg and b/selling/hero/peter-cover.jpg differ
+diff --git a/selling/hero/slayalldeep-avatar.jpg b/selling/hero/slayalldeep-avatar.jpg
+Binary files a/selling/hero/slayalldeep-avatar.jpg and b/selling/hero/slayalldeep-avatar.jpg differ
+diff --git a/selling/hero/weng-avatar.jpg b/selling/hero/weng-avatar.jpg
+Binary files a/selling/hero/weng-avatar.jpg and b/selling/hero/weng-avatar.jpg differ
+diff --git a/selling/media/avatar-alt-2.jpg b/selling/media/avatar-alt-2.jpg
+Binary files a/selling/media/avatar-alt-2.jpg and b/selling/media/avatar-alt-2.jpg differ
+diff --git a/selling/sellers/ai-automation/avatar.jpg b/selling/sellers/ai-automation/avatar.jpg
+Binary files a/selling/sellers/ai-automation/avatar.jpg and b/selling/sellers/ai-automation/avatar.jpg differ
+diff --git a/selling/sellers/ai-automation/logo-agicafet.jpg b/selling/sellers/ai-automation/logo-agicafet.jpg
+Binary files a/selling/sellers/ai-automation/logo-agicafet.jpg and b/selling/sellers/ai-automation/logo-agicafet.jpg differ
+diff --git a/selling/sellers/ai-automation/logo-ai-alliance.jpg b/selling/sellers/ai-automation/logo-ai-alliance.jpg
+Binary files a/selling/sellers/ai-automation/logo-ai-alliance.jpg and b/selling/sellers/ai-automation/logo-ai-alliance.jpg differ
+diff --git a/selling/sellers/ai-automation/service-chatbot.jpg b/selling/sellers/ai-automation/service-chatbot.jpg
+Binary files a/selling/sellers/ai-automation/service-chatbot.jpg and b/selling/sellers/ai-automation/service-chatbot.jpg differ
+diff --git a/selling/sellers/ai-automation/service-setup.jpg b/selling/sellers/ai-automation/service-setup.jpg
+Binary files a/selling/sellers/ai-automation/service-setup.jpg and b/selling/sellers/ai-automation/service-setup.jpg differ
+diff --git a/selling/sellers/ai-video-editor/avatar.jpg b/selling/sellers/ai-video-editor/avatar.jpg
+Binary files a/selling/sellers/ai-video-editor/avatar.jpg and b/selling/sellers/ai-video-editor/avatar.jpg differ
+diff --git a/selling/sellers/graphic-designer/avatar.jpg b/selling/sellers/graphic-designer/avatar.jpg
+Binary files a/selling/sellers/graphic-designer/avatar.jpg and b/selling/sellers/graphic-designer/avatar.jpg differ
+diff --git a/selling/sellers/graphic-designer/logo-sf.jpg b/selling/sellers/graphic-designer/logo-sf.jpg
+Binary files a/selling/sellers/graphic-designer/logo-sf.jpg and b/selling/sellers/graphic-designer/logo-sf.jpg differ
+diff --git a/selling/sellers/graphic-designer/logo-supara.jpg b/selling/sellers/graphic-designer/logo-supara.jpg
+Binary files a/selling/sellers/graphic-designer/logo-supara.jpg and b/selling/sellers/graphic-designer/logo-supara.jpg differ
+diff --git a/selling/sellers/photographer/avatar.jpg b/selling/sellers/photographer/avatar.jpg
+Binary files a/selling/sellers/photographer/avatar.jpg and b/selling/sellers/photographer/avatar.jpg differ
+diff --git a/selling/sellers/reviewers/r1.jpg b/selling/sellers/reviewers/r1.jpg
+Binary files a/selling/sellers/reviewers/r1.jpg and b/selling/sellers/reviewers/r1.jpg differ
+diff --git a/selling/sellers/reviewers/r10.jpg b/selling/sellers/reviewers/r10.jpg
+Binary files a/selling/sellers/reviewers/r10.jpg and b/selling/sellers/reviewers/r10.jpg differ
+diff --git a/selling/sellers/reviewers/r11.jpg b/selling/sellers/reviewers/r11.jpg
+Binary files a/selling/sellers/reviewers/r11.jpg and b/selling/sellers/reviewers/r11.jpg differ
+diff --git a/selling/sellers/reviewers/r12.jpg b/selling/sellers/reviewers/r12.jpg
+Binary files a/selling/sellers/reviewers/r12.jpg and b/selling/sellers/reviewers/r12.jpg differ
+diff --git a/selling/sellers/reviewers/r2.jpg b/selling/sellers/reviewers/r2.jpg
+Binary files a/selling/sellers/reviewers/r2.jpg and b/selling/sellers/reviewers/r2.jpg differ
+diff --git a/selling/sellers/reviewers/r3.jpg b/selling/sellers/reviewers/r3.jpg
+Binary files a/selling/sellers/reviewers/r3.jpg and b/selling/sellers/reviewers/r3.jpg differ
+diff --git a/selling/sellers/reviewers/r5.jpg b/selling/sellers/reviewers/r5.jpg
+Binary files a/selling/sellers/reviewers/r5.jpg and b/selling/sellers/reviewers/r5.jpg differ
+diff --git a/selling/sellers/reviewers/r7.jpg b/selling/sellers/reviewers/r7.jpg
+Binary files a/selling/sellers/reviewers/r7.jpg and b/selling/sellers/reviewers/r7.jpg differ
+diff --git a/selling/sellers/reviewers/r8.jpg b/selling/sellers/reviewers/r8.jpg
+Binary files a/selling/sellers/reviewers/r8.jpg and b/selling/sellers/reviewers/r8.jpg differ
+diff --git a/selling/sellers/reviewers/r9.jpg b/selling/sellers/reviewers/r9.jpg
+Binary files a/selling/sellers/reviewers/r9.jpg and b/selling/sellers/reviewers/r9.jpg differ
+diff --git a/selling/sellers/sound-composer/avatar.jpg b/selling/sellers/sound-composer/avatar.jpg
+Binary files a/selling/sellers/sound-composer/avatar.jpg and b/selling/sellers/sound-composer/avatar.jpg differ
+diff --git a/selling/sellers/sound-composer/post-orchestra.jpg b/selling/sellers/sound-composer/post-orchestra.jpg
+Binary files a/selling/sellers/sound-composer/post-orchestra.jpg and b/selling/sellers/sound-composer/post-orchestra.jpg differ
+diff --git a/selling/sellers/sound-composer/service-feature.jpg b/selling/sellers/sound-composer/service-feature.jpg
+Binary files a/selling/sellers/sound-composer/service-feature.jpg and b/selling/sellers/sound-composer/service-feature.jpg differ
+diff --git a/selling/sellers/sound-composer/service-ost.jpg b/selling/sellers/sound-composer/service-ost.jpg
+Binary files a/selling/sellers/sound-composer/service-ost.jpg and b/selling/sellers/sound-composer/service-ost.jpg differ
+diff --git a/selling/sellers/sound-composer/service-scoring.jpg b/selling/sellers/sound-composer/service-scoring.jpg
+Binary files a/selling/sellers/sound-composer/service-scoring.jpg and b/selling/sellers/sound-composer/service-scoring.jpg differ
+diff --git a/selling/sellers/ux-ui-designer/avatar.jpg b/selling/sellers/ux-ui-designer/avatar.jpg
+Binary files a/selling/sellers/ux-ui-designer/avatar.jpg and b/selling/sellers/ux-ui-designer/avatar.jpg differ
+diff --git a/selling/sellers/video-editor/avatar.jpg b/selling/sellers/video-editor/avatar.jpg
+Binary files a/selling/sellers/video-editor/avatar.jpg and b/selling/sellers/video-editor/avatar.jpg differ
+diff --git a/selling/sellers/video-editor/service-eye.jpg b/selling/sellers/video-editor/service-eye.jpg
+Binary files a/selling/sellers/video-editor/service-eye.jpg and b/selling/sellers/video-editor/service-eye.jpg differ
+diff --git a/selling/sellers/web-developer/avatar.jpg b/selling/sellers/web-developer/avatar.jpg
+Binary files a/selling/sellers/web-developer/avatar.jpg and b/selling/sellers/web-developer/avatar.jpg differ
+diff --git a/selling/sellers/web-developer/logo-bigzweb.png b/selling/sellers/web-developer/logo-bigzweb.png
+Binary files a/selling/sellers/web-developer/logo-bigzweb.png and b/selling/sellers/web-developer/logo-bigzweb.png differ
+diff --git a/selling/sellers/web-developer/service-dd-transport.jpg b/selling/sellers/web-developer/service-dd-transport.jpg
+Binary files a/selling/sellers/web-developer/service-dd-transport.jpg and b/selling/sellers/web-developer/service-dd-transport.jpg differ

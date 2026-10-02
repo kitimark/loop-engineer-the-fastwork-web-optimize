@@ -1,0 +1,1183 @@
+{
+ "topic": "image-size",
+ "baselineSnapshot": "b1789284481295-4ad4a84a",
+ "overlayId": "c5391b3e6971",
+ "tools": {
+  "sips": "sips-316",
+  "jpegtran": "libjpeg-turbo 3.1.2 (build 20250827), jpegtran and djpeg"
+ },
+ "rule": "target = min(1, need x 1.2) of natural size, only when <= 0.8; need = largest rendered box at DPR 3 over 9 viewports, object-fit- and transform-aware (census); JPEG quality = min(90, source quality estimated from its luminance table)",
+ "files": [
+  {
+   "path": "/selling/commission/avatar-john.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    480
+   ],
+   "natAfter": [
+    104,
+    156
+   ],
+   "bytesBefore": 24246,
+   "bytesAfter": 6256,
+   "sha256Before": "adb612e3c7081066a16bbbf1638d2cd0e073b02a0801bb87befdc6db9a45a5a8",
+   "sha256After": "fbf4583d67c5e813e5c7af0b730c13e20eddee42b994b7ebd462c8ccceb0e3d3",
+   "srcQuality": 87,
+   "quality": 87,
+   "need": 0.2708,
+   "t": 0.325,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 156 104 -s format jpeg -s formatOptions 87 <baseline>/selling/commission/avatar-john.jpg --out <overlay>/selling/commission/avatar-john.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/commission/client-avatar-1.png",
+   "format": "jpeg",
+   "natBefore": [
+    319,
+    479
+   ],
+   "natAfter": [
+    94,
+    141
+   ],
+   "bytesBefore": 24571,
+   "bytesAfter": 5186,
+   "sha256Before": "4eae3d38c118cfec9440cab08d71572794e825b55681c74f8f4822a9b1437418",
+   "sha256After": "e25333e4b3f013b5182103ba320e4daaf1f13ca7d89133f7d3aea978221d7856",
+   "srcQuality": 87,
+   "quality": 87,
+   "need": 0.2445,
+   "t": 0.2934,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": false,
+   "cmd": "sips -z 141 94 -s format jpeg -s formatOptions 87 <baseline>/selling/commission/client-avatar-1.png --out <overlay>/selling/commission/client-avatar-1.png && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/commission/client-avatar-2.png",
+   "format": "jpeg",
+   "natBefore": [
+    349,
+    479
+   ],
+   "natAfter": [
+    94,
+    129
+   ],
+   "bytesBefore": 26047,
+   "bytesAfter": 4938,
+   "sha256Before": "b1837da3f15469eda479686e805fc739794804f7ebd793cf3171f16d48e05656",
+   "sha256After": "4ba2b8baefcb07e24ad38a3d9dd9ac577bae23949280d280f13634a73c19ac1e",
+   "srcQuality": 87,
+   "quality": 87,
+   "need": 0.2235,
+   "t": 0.2682,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": false,
+   "cmd": "sips -z 129 94 -s format jpeg -s formatOptions 87 <baseline>/selling/commission/client-avatar-2.png --out <overlay>/selling/commission/client-avatar-2.png && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/commission/client-avatar-3.png",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    480
+   ],
+   "natAfter": [
+    144,
+    216
+   ],
+   "bytesBefore": 24553,
+   "bytesAfter": 8770,
+   "sha256Before": "e7d7b1ffb83b3286b815099942752929be8ca40008bbb4d2e5cfb03621a562dc",
+   "sha256After": "e35234fce4b65be0aa81f326e18469eaa7c22016d97cf3e9ce70fabcf90d13a1",
+   "srcQuality": 87,
+   "quality": 87,
+   "need": 0.375,
+   "t": 0.45,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 216 144 -s format jpeg -s formatOptions 87 <baseline>/selling/commission/client-avatar-3.png --out <overlay>/selling/commission/client-avatar-3.png && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/hero/buttercup-avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    250,
+    250
+   ],
+   "natAfter": [
+    138,
+    138
+   ],
+   "bytesBefore": 8138,
+   "bytesAfter": 7702,
+   "sha256Before": "cad0c8879b79bb4cd5008c0830632f1204a24015063f82ce91e97266eb35328e",
+   "sha256After": "9f007af9d7fa535670fc4e794ea5affe424bcda5f62334211f2f94ceb1b0a05f",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.46,
+   "t": 0.552,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 138 138 -s format jpeg -s formatOptions 88 <baseline>/selling/hero/buttercup-avatar.jpg --out <overlay>/selling/hero/buttercup-avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/hero/leobeer-cover.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    1200,
+    1148
+   ],
+   "natAfter": [
+    900,
+    861
+   ],
+   "bytesBefore": 212309,
+   "bytesAfter": 223529,
+   "sha256Before": "58d26d25949c395a43391c91249a8a945743daf2f2c8fe8890c81a4f26941baf",
+   "sha256After": "0eabe80f5bcfbf51dd8065844aa04e4a33541028313b9381d2d085dfbba8cf19",
+   "srcQuality": 86,
+   "quality": 86,
+   "need": 0.5122,
+   "t": 0.6146,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 861 900 -s format jpeg -s formatOptions 86 <baseline>/selling/hero/leobeer-cover.jpg --out <overlay>/selling/hero/leobeer-cover.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/hero/mod-avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    300,
+    300
+   ],
+   "natAfter": [
+    136,
+    136
+   ],
+   "bytesBefore": 11423,
+   "bytesAfter": 6185,
+   "sha256Before": "89dae936a2f9f0dfd791d7077bb209e69cd2d6778d63c4dbf7b8132c633af970",
+   "sha256After": "6ef32a65d5e587579821e9c4928bf6ebbdda36e81d306a2b0f89280378de255f",
+   "srcQuality": 86,
+   "quality": 86,
+   "need": 0.3767,
+   "t": 0.452,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 136 136 -s format jpeg -s formatOptions 86 <baseline>/selling/hero/mod-avatar.jpg --out <overlay>/selling/hero/mod-avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/hero/nam-avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    427
+   ],
+   "natAfter": [
+    166,
+    222
+   ],
+   "bytesBefore": 18867,
+   "bytesAfter": 9626,
+   "sha256Before": "f902d72b6a7e95384051b6d69b7b29a7a24e603526feacf3af0d72fb4e226fdf",
+   "sha256After": "76ccf8abf053914e2d79f74047bab0f2f6095c2e13a7a637b9fc5a030c43cb11",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.4313,
+   "t": 0.5175,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": false,
+   "cmd": "sips -z 222 166 -s format jpeg -s formatOptions 88 <baseline>/selling/hero/nam-avatar.jpg --out <overlay>/selling/hero/nam-avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/hero/nam-cover.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    1200,
+    1866
+   ],
+   "natAfter": [
+    895,
+    1392
+   ],
+   "bytesBefore": 388272,
+   "bytesAfter": 394082,
+   "sha256Before": "c004088ed56dbf41fb1c8e2948aa86c3e19de0f88e351568c442c2f9a6274536",
+   "sha256After": "61ffc5d1e0d45fb858d74baf31e4bf3a1e5923249a2e6e15a823b96c4517d213",
+   "srcQuality": 86,
+   "quality": 86,
+   "need": 0.6211,
+   "t": 0.7453,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": false,
+   "cmd": "sips -z 1392 895 -s format jpeg -s formatOptions 86 <baseline>/selling/hero/nam-cover.jpg --out <overlay>/selling/hero/nam-cover.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/hero/peter-avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    480
+   ],
+   "natAfter": [
+    140,
+    210
+   ],
+   "bytesBefore": 31401,
+   "bytesAfter": 12607,
+   "sha256Before": "5272283fbefcdecd66acffd665b612e39438a6d714e7924f286bcbf8f758600f",
+   "sha256After": "b1214534f85fb90bd0741d22728e1783d63b8c8294c06082c099092b82e4bc72",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.3604,
+   "t": 0.4325,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 210 140 -s format jpeg -s formatOptions 88 <baseline>/selling/hero/peter-avatar.jpg --out <overlay>/selling/hero/peter-avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/hero/peter-cover.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    1200,
+    2133
+   ],
+   "natAfter": [
+    800,
+    1422
+   ],
+   "bytesBefore": 351582,
+   "bytesAfter": 294305,
+   "sha256Before": "7b59149f75287901ebc2ebf5212a0367976cde121df26b7f41597e4819c09790",
+   "sha256After": "8700a216b04648ecc90e94308d960680b9a1cb4cb0cb8f0da34b6a65e4b14403",
+   "srcQuality": 86,
+   "quality": 86,
+   "need": 0.5124,
+   "t": 0.6149,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 1422 800 -s format jpeg -s formatOptions 86 <baseline>/selling/hero/peter-cover.jpg --out <overlay>/selling/hero/peter-cover.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/hero/slayalldeep-avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    322
+   ],
+   "natAfter": [
+    160,
+    161
+   ],
+   "bytesBefore": 16565,
+   "bytesAfter": 10096,
+   "sha256Before": "d411a61bd64132361b666014d69abbb809483d4cb8c5b261079c45005c5f68f8",
+   "sha256After": "d0aac18ff8b0fd52c39933fa4118a066767993108a5dd19bcd8730b67c75ac69",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.3594,
+   "t": 0.4312,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 161 160 -s format jpeg -s formatOptions 88 <baseline>/selling/hero/slayalldeep-avatar.jpg --out <overlay>/selling/hero/slayalldeep-avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/hero/weng-avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    322
+   ],
+   "natAfter": [
+    182,
+    183
+   ],
+   "bytesBefore": 19849,
+   "bytesAfter": 12139,
+   "sha256Before": "87fabfeb7be459ca74b523fcd8fd2d551ef5c5d86df8de24fd98a21ab19096e2",
+   "sha256After": "25ae1752e0e9a8d9e6c70a8ff0145d18a062fa6734b7aac4b93fe1b05e8a68b9",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.472,
+   "t": 0.5665,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": false,
+   "cmd": "sips -z 183 182 -s format jpeg -s formatOptions 88 <baseline>/selling/hero/weng-avatar.jpg --out <overlay>/selling/hero/weng-avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/media/avatar-alt-2.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    736,
+    920
+   ],
+   "natAfter": [
+    144,
+    180
+   ],
+   "bytesBefore": 79700,
+   "bytesAfter": 8853,
+   "sha256Before": "a8a5125c32b3fae4d0333567e8b49b2fd94b9e98d2dfc5617033f33cf073c4c8",
+   "sha256After": "9aee177ae4c177515b1569d8d97c2c6183e51d2cda1b38fcf11ffdd48dbca670",
+   "srcQuality": 80,
+   "quality": 80,
+   "need": 0.163,
+   "t": 0.1957,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 180 144 -s format jpeg -s formatOptions 80 <baseline>/selling/media/avatar-alt-2.jpg --out <overlay>/selling/media/avatar-alt-2.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/ai-automation/avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    480,
+    480
+   ],
+   "natAfter": [
+    260,
+    260
+   ],
+   "bytesBefore": 33686,
+   "bytesAfter": 19251,
+   "sha256Before": "da8ec4575335c26b6d3c047da8a1ecc4530acc543362ecfcf4c7289b73a3faf0",
+   "sha256After": "af448d00daccf9e37b73d4f51cb2e436007f55d835068260e98f514c062f2051",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.45,
+   "t": 0.54,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 260 260 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/ai-automation/avatar.jpg --out <overlay>/selling/sellers/ai-automation/avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/ai-automation/logo-agicafet.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    512,
+    512
+   ],
+   "natAfter": [
+    166,
+    166
+   ],
+   "bytesBefore": 36843,
+   "bytesAfter": 10445,
+   "sha256Before": "d93599cc4b7b0308366722ae8ba91dcfbb3daa75ed16011371d862eafaad3356",
+   "sha256After": "1f5676c800f6170112a345330742a7f9a79afb22204f26951a28b5357779461b",
+   "srcQuality": 92,
+   "quality": 90,
+   "need": 0.2695,
+   "t": 0.3234,
+   "fit": [
+    "contain"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 166 166 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/ai-automation/logo-agicafet.jpg --out <overlay>/selling/sellers/ai-automation/logo-agicafet.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/ai-automation/logo-ai-alliance.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    224,
+    228
+   ],
+   "natAfter": [
+    168,
+    171
+   ],
+   "bytesBefore": 6414,
+   "bytesAfter": 6333,
+   "sha256Before": "d3110bb8141c03cd2e09f3840a2c12bf8d2064135b8caecb2efca1c60c3b9ea0",
+   "sha256After": "92ef717dee2be25addd92216db7d25cdc0af59fdfefdceb7927cdcfb529935eb",
+   "srcQuality": 90,
+   "quality": 90,
+   "need": 0.6071,
+   "t": 0.7286,
+   "fit": [
+    "contain"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 171 168 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/ai-automation/logo-ai-alliance.jpg --out <overlay>/selling/sellers/ai-automation/logo-ai-alliance.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/ai-automation/service-chatbot.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    1448,
+    1086
+   ],
+   "natAfter": [
+    832,
+    624
+   ],
+   "bytesBefore": 131963,
+   "bytesAfter": 98827,
+   "sha256Before": "a416893af61550d49c14af365d3a5e9b101fd4391c5c1ebe87654e5f0a4f2aaa",
+   "sha256After": "775fe9e4309cb50c16106c5903c72c68aa4edc7e07ee284452c9f7e661d642c8",
+   "srcQuality": 86,
+   "quality": 86,
+   "need": 0.477,
+   "t": 0.5724,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 624 832 -s format jpeg -s formatOptions 86 <baseline>/selling/sellers/ai-automation/service-chatbot.jpg --out <overlay>/selling/sellers/ai-automation/service-chatbot.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/ai-automation/service-setup.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    1448,
+    1086
+   ],
+   "natAfter": [
+    832,
+    624
+   ],
+   "bytesBefore": 239197,
+   "bytesAfter": 154045,
+   "sha256Before": "0561e4cadf57512163d51601447b9acdd01e25bd6705f54109a2d336f9f8e705",
+   "sha256After": "c093eeddb9285f3a8c79221745e42b28ffe893314ffa61a8067d32851580d299",
+   "srcQuality": 86,
+   "quality": 86,
+   "need": 0.477,
+   "t": 0.5724,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 624 832 -s format jpeg -s formatOptions 86 <baseline>/selling/sellers/ai-automation/service-setup.jpg --out <overlay>/selling/sellers/ai-automation/service-setup.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/ai-video-editor/avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    480,
+    480
+   ],
+   "natAfter": [
+    138,
+    138
+   ],
+   "bytesBefore": 28910,
+   "bytesAfter": 6162,
+   "sha256Before": "a801ea1b76b2404103b7c4ad41906c4b5e43910425679d16c73cf60fbdb5dc94",
+   "sha256After": "b985bcb596610034520f4c8395835bb09835d49b7be40cf50d3fa9e1f948ff94",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.2396,
+   "t": 0.2875,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 138 138 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/ai-video-editor/avatar.jpg --out <overlay>/selling/sellers/ai-video-editor/avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/graphic-designer/avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    480,
+    480
+   ],
+   "natAfter": [
+    260,
+    260
+   ],
+   "bytesBefore": 43359,
+   "bytesAfter": 17499,
+   "sha256Before": "ae5c2d0f36a216402157136a17002bdb744adaea6a3a4300c9b22cda5b584314",
+   "sha256After": "66318351dcb18af3d82cf658ebfa1bf58a1e75791e7b30a9dba2f19850214316",
+   "srcQuality": 95,
+   "quality": 90,
+   "need": 0.45,
+   "t": 0.54,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 260 260 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/graphic-designer/avatar.jpg --out <overlay>/selling/sellers/graphic-designer/avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/graphic-designer/logo-sf.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    256,
+    256
+   ],
+   "natAfter": [
+    108,
+    108
+   ],
+   "bytesBefore": 6832,
+   "bytesAfter": 2842,
+   "sha256Before": "974d0854819a9d22ab923a6882ed58579070f9efda9cd0325d39a1218a48672c",
+   "sha256After": "891ed286f3a6eb2504eb6c1f31bc5bdbfed5f0fee8af1575ce2130b76ed69d8a",
+   "srcQuality": 92,
+   "quality": 90,
+   "need": 0.3516,
+   "t": 0.4219,
+   "fit": [
+    "contain"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 108 108 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/graphic-designer/logo-sf.jpg --out <overlay>/selling/sellers/graphic-designer/logo-sf.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/graphic-designer/logo-supara.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    256,
+    256
+   ],
+   "natAfter": [
+    108,
+    108
+   ],
+   "bytesBefore": 6459,
+   "bytesAfter": 2777,
+   "sha256Before": "6f655bb688083c060db929542e4252e4cb19d5c205b5cef6fd273a082d863365",
+   "sha256After": "16eff570cc99a93c7a813eb6913c6ae26902f4d61d64277f8609d2a71c9c9f1f",
+   "srcQuality": 92,
+   "quality": 90,
+   "need": 0.3516,
+   "t": 0.4219,
+   "fit": [
+    "contain"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 108 108 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/graphic-designer/logo-supara.jpg --out <overlay>/selling/sellers/graphic-designer/logo-supara.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/photographer/avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    730,
+    732
+   ],
+   "natAfter": [
+    365,
+    366
+   ],
+   "bytesBefore": 83341,
+   "bytesAfter": 32390,
+   "sha256Before": "bd380fdf88f9851b9b81b15966e623bfe8f03861309eb6d912340425aa3ce3ba",
+   "sha256After": "5aa2b248fb5cf41a84271658e968104b5ce91cd11fd697f3ba156f03cc35b04b",
+   "srcQuality": 95,
+   "quality": 90,
+   "need": 0.2964,
+   "t": 0.3557,
+   "fit": [
+    "cover",
+    "contain"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 366 365 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/photographer/avatar.jpg --out <overlay>/selling/sellers/photographer/avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r1.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    173,
+    173
+   ],
+   "bytesBefore": 16136,
+   "bytesAfter": 9727,
+   "sha256Before": "4982bf533b16a6e4d9de1a10fb33a1e9a00a9c704b1a9c691c3ffe64a17ba3c4",
+   "sha256After": "8e711fd1b3cb0936469d1670907089d9305b39211716f69587f0fc08958efd22",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.45,
+   "t": 0.54,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 173 173 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r1.jpg --out <overlay>/selling/sellers/reviewers/r1.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r10.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    130,
+    130
+   ],
+   "bytesBefore": 13926,
+   "bytesAfter": 6185,
+   "sha256Before": "2174b591a6e88a87d3e3791136d3c9cf5f7c3a76a41cecbd7add680b24075062",
+   "sha256After": "aae9664081678b02e8defd9d236849c458bad9052393ee0bcd50e989d2d6e444",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.3375,
+   "t": 0.405,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 130 130 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r10.jpg --out <overlay>/selling/sellers/reviewers/r10.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r11.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    130,
+    130
+   ],
+   "bytesBefore": 15859,
+   "bytesAfter": 6701,
+   "sha256Before": "a75b4e091a081ce7e9409422a4be3ef989577dbe0e77a20835e9d6e417d73aa8",
+   "sha256After": "5151d711a1a256e9b8dbaa62eef54e2623fea546e70fc3656938371acee1a9de",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.3375,
+   "t": 0.405,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 130 130 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r11.jpg --out <overlay>/selling/sellers/reviewers/r11.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r12.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    130,
+    130
+   ],
+   "bytesBefore": 18538,
+   "bytesAfter": 7159,
+   "sha256Before": "7a51a0b104a660f2d61cd4c3e07f956ec9db29d02b5b340e84e62e16c836398b",
+   "sha256After": "8bbff46aa34c6c566ef3e31e650ee95e3462d98ac642e794144b061bbfc2889a",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.3375,
+   "t": 0.405,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 130 130 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r12.jpg --out <overlay>/selling/sellers/reviewers/r12.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r2.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    173,
+    173
+   ],
+   "bytesBefore": 16080,
+   "bytesAfter": 9962,
+   "sha256Before": "cdfcdf853408c7fc1cf72c859ee2607c3fa601b26d5bc4f17002f48a44115c23",
+   "sha256After": "3a19386f35ac0c13c2d020380f0e3f739c2b2edbace0802f9a378629dc02ead4",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.45,
+   "t": 0.54,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 173 173 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r2.jpg --out <overlay>/selling/sellers/reviewers/r2.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r3.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    173,
+    173
+   ],
+   "bytesBefore": 17328,
+   "bytesAfter": 10094,
+   "sha256Before": "daa8e11d2a514743a769fe0d336f4a0f7e7bc6215864839166ae3e515c294bf6",
+   "sha256After": "0a9d1abd87d30775f32b5c57a4956814f19cfd77b7fd48d1ee645bb788b01be6",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.45,
+   "t": 0.54,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 173 173 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r3.jpg --out <overlay>/selling/sellers/reviewers/r3.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r5.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    144,
+    144
+   ],
+   "bytesBefore": 17598,
+   "bytesAfter": 7834,
+   "sha256Before": "8f00037500f4a5a3e3cb1994622ca0fbd67bd1a00a965d5e1a12209c32bfbc72",
+   "sha256After": "acd80128071df44b5803ea528af5dd802062d63c8f98785deb2aaba0e7d43e41",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.375,
+   "t": 0.45,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 144 144 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r5.jpg --out <overlay>/selling/sellers/reviewers/r5.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r7.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    130,
+    130
+   ],
+   "bytesBefore": 16819,
+   "bytesAfter": 6888,
+   "sha256Before": "bba34895d816cef020e6055399b113a91a5d7662f3340eea21c0cca6b2bc6f17",
+   "sha256After": "a52c6cceab8c5c28745effd8b1121399c978f59946ea0acbeb9cd4de0efd596c",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.3375,
+   "t": 0.405,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 130 130 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r7.jpg --out <overlay>/selling/sellers/reviewers/r7.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r8.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    159,
+    159
+   ],
+   "bytesBefore": 16409,
+   "bytesAfter": 8690,
+   "sha256Before": "63524b8519c8e647d3b8e1ce59a5e9509482d0b7569a025864b37cf6e53e9f59",
+   "sha256After": "dc6e5e03db0378ba7b2736c684324dcc5b069a023974962b2fbea6e41634fc57",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.4125,
+   "t": 0.495,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 159 159 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r8.jpg --out <overlay>/selling/sellers/reviewers/r8.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/reviewers/r9.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    320,
+    320
+   ],
+   "natAfter": [
+    159,
+    159
+   ],
+   "bytesBefore": 17596,
+   "bytesAfter": 8682,
+   "sha256Before": "c82b2a0ba2e027b6ef9c996712e6039dcb72fbd5a66a748241462139250e5d01",
+   "sha256After": "e933815e7be9ebc4805340f2a4346a6f8ea06fa606066e0a6c26fbebd49ecc52",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.4125,
+   "t": 0.495,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 159 159 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/reviewers/r9.jpg --out <overlay>/selling/sellers/reviewers/r9.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/sound-composer/avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    640,
+    640
+   ],
+   "natAfter": [
+    317,
+    317
+   ],
+   "bytesBefore": 30717,
+   "bytesAfter": 16134,
+   "sha256Before": "8232a33ff779bb0186adbc07018363b9ddc9834d64666fcf91c86bc770fea0e5",
+   "sha256After": "b495d5d76135b0c810f73521fe935dbca35b2eaab3c70ea2878cfeb48352d524",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.4125,
+   "t": 0.495,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 317 317 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/sound-composer/avatar.jpg --out <overlay>/selling/sellers/sound-composer/avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/sound-composer/post-orchestra.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    1600,
+    1067
+   ],
+   "natAfter": [
+    1239,
+    826
+   ],
+   "bytesBefore": 323367,
+   "bytesAfter": 326549,
+   "sha256Before": "405802d0d167cc4df89da72296326193de29452b29d06b042979ef71922c95da",
+   "sha256After": "214b61b9041f27f0eac2e944452e011f5e8bd80c6e3747678419a42a2cc251f1",
+   "srcQuality": 86,
+   "quality": 86,
+   "need": 0.645,
+   "t": 0.774,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": false,
+   "cmd": "sips -z 826 1239 -s format jpeg -s formatOptions 86 <baseline>/selling/sellers/sound-composer/post-orchestra.jpg --out <overlay>/selling/sellers/sound-composer/post-orchestra.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/sound-composer/service-feature.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    1272,
+    1272
+   ],
+   "natAfter": [
+    580,
+    580
+   ],
+   "bytesBefore": 546320,
+   "bytesAfter": 151604,
+   "sha256Before": "caad9fb8dcd818995d1e626653b6109bdaa5917426b6a2cd65c2b09d4c278429",
+   "sha256After": "a5b4bddb9c81c587daf88995418a4f63e9d14c0f56ced0dd4f5d05ef89fb265e",
+   "srcQuality": 95,
+   "quality": 90,
+   "need": 0.3797,
+   "t": 0.4557,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 580 580 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/sound-composer/service-feature.jpg --out <overlay>/selling/sellers/sound-composer/service-feature.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/sound-composer/service-ost.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    900,
+    900
+   ],
+   "natAfter": [
+    580,
+    580
+   ],
+   "bytesBefore": 67349,
+   "bytesAfter": 51965,
+   "sha256Before": "cab1c131c6e74fe19fa77e9cb2fdf28b3706a5c7ce6b440d435af162d878d466",
+   "sha256After": "190823ebead53d46dc7b61e2eaedfc67ba5982a0a661650974fb2c2703127f72",
+   "srcQuality": 86,
+   "quality": 86,
+   "need": 0.5367,
+   "t": 0.644,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 580 580 -s format jpeg -s formatOptions 86 <baseline>/selling/sellers/sound-composer/service-ost.jpg --out <overlay>/selling/sellers/sound-composer/service-ost.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/sound-composer/service-scoring.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    900,
+    900
+   ],
+   "natAfter": [
+    580,
+    580
+   ],
+   "bytesBefore": 165829,
+   "bytesAfter": 120376,
+   "sha256Before": "acbe029b963fa235d80c1dd9102d39f7933e16adb4a68db1b55066f10dd016bc",
+   "sha256After": "6de5a788c87d148fe3df00484d2558e14071aa79f192c067acbaf913681cb652",
+   "srcQuality": 86,
+   "quality": 86,
+   "need": 0.5367,
+   "t": 0.644,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 580 580 -s format jpeg -s formatOptions 86 <baseline>/selling/sellers/sound-composer/service-scoring.jpg --out <overlay>/selling/sellers/sound-composer/service-scoring.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/ux-ui-designer/avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    640,
+    640
+   ],
+   "natAfter": [
+    170,
+    170
+   ],
+   "bytesBefore": 67305,
+   "bytesAfter": 11370,
+   "sha256Before": "49fbda987cb1d2521e0bd4e0862f852bdce717449d2fa3461ab76984ed539636",
+   "sha256After": "dfbefc71a6271bb09af26ef60387fa38b8aa153dd32df53c552675bd4ba29012",
+   "srcQuality": 90,
+   "quality": 90,
+   "need": 0.2203,
+   "t": 0.2644,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 170 170 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/ux-ui-designer/avatar.jpg --out <overlay>/selling/sellers/ux-ui-designer/avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/video-editor/avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    480,
+    480
+   ],
+   "natAfter": [
+    260,
+    260
+   ],
+   "bytesBefore": 74245,
+   "bytesAfter": 27341,
+   "sha256Before": "2387867e92f40d0b11384f9ed24fcfa2617f5f37976905b2df2a5a174ed8aaf5",
+   "sha256After": "8a93258bbf0b9d181f464d17f6995d044331de7f61dd52bed29f83457211bb19",
+   "srcQuality": 95,
+   "quality": 90,
+   "need": 0.45,
+   "t": 0.54,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 260 260 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/video-editor/avatar.jpg --out <overlay>/selling/sellers/video-editor/avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/video-editor/service-eye.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    1400,
+    1099
+   ],
+   "natAfter": [
+    800,
+    628
+   ],
+   "bytesBefore": 175624,
+   "bytesAfter": 96437,
+   "sha256Before": "38f667cebd7d4b1aa530cdae9d2c3174c7eada7403d5280721c4524f5132e44d",
+   "sha256After": "005a624b98f05cda17135a272714595ebcf0716086d0d7bd6d74f4e8515aea5f",
+   "srcQuality": 93,
+   "quality": 90,
+   "need": 0.3707,
+   "t": 0.4449,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 628 800 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/video-editor/service-eye.jpg --out <overlay>/selling/sellers/video-editor/service-eye.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/web-developer/avatar.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    480,
+    480
+   ],
+   "natAfter": [
+    260,
+    260
+   ],
+   "bytesBefore": 36449,
+   "bytesAfter": 21833,
+   "sha256Before": "06b8c6ee4a9e6d8b41deedbe3824c322d54b642d7ffe6f9ae083e2f0b7442914",
+   "sha256After": "d8317bbbab78e4f4f6e5454397616fd231161c91e67bd35ae6119290a3d952a5",
+   "srcQuality": 88,
+   "quality": 88,
+   "need": 0.45,
+   "t": 0.54,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": true,
+   "exactRatio": true,
+   "cmd": "sips -z 260 260 -s format jpeg -s formatOptions 88 <baseline>/selling/sellers/web-developer/avatar.jpg --out <overlay>/selling/sellers/web-developer/avatar.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/web-developer/logo-bigzweb.png",
+   "format": "png",
+   "natBefore": [
+    256,
+    256
+   ],
+   "natAfter": [
+    108,
+    108
+   ],
+   "bytesBefore": 6603,
+   "bytesAfter": 2966,
+   "sha256Before": "c3f958e1ae0c17726914eb321a131e13a17808cf2e2850852147a2a0fd8ed212",
+   "sha256After": "06a95ad540e2e044771c6b686082317cede853a45f39d04a415812671a96275e",
+   "srcQuality": null,
+   "quality": null,
+   "need": 0.3516,
+   "t": 0.4219,
+   "fit": [
+    "contain"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 108 108 -s format png <baseline>/selling/sellers/web-developer/logo-bigzweb.png --out <overlay>/selling/sellers/web-developer/logo-bigzweb.png && strip PNG chunks sRGB,eXIf (in build.mjs)"
+  },
+  {
+   "path": "/selling/sellers/web-developer/service-dd-transport.jpg",
+   "format": "jpeg",
+   "natBefore": [
+    1400,
+    1400
+   ],
+   "natAfter": [
+    980,
+    980
+   ],
+   "bytesBefore": 231798,
+   "bytesAfter": 167285,
+   "sha256Before": "665247c413f68567462c8e1f9957879950233aa23fdce3938cd89b4152332a8f",
+   "sha256After": "cf9c2925b020fc62f84d825dbc0de9a05ec4b6de22affe40dfcfed6811abebef",
+   "srcQuality": 93,
+   "quality": 90,
+   "need": 0.5829,
+   "t": 0.6994,
+   "fit": [
+    "cover"
+   ],
+   "onPhone": false,
+   "exactRatio": true,
+   "cmd": "sips -z 980 980 -s format jpeg -s formatOptions 90 <baseline>/selling/sellers/web-developer/service-dd-transport.jpg --out <overlay>/selling/sellers/web-developer/service-dd-transport.jpg && jpegtran -copy all -optimize (lossless) (in build.mjs)"
+  }
+ ]
+}
