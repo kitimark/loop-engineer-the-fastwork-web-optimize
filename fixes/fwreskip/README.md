@@ -744,6 +744,48 @@ Amended 2026-10-02 at the lead's second read, before any data: the gain line is 
 - When the phone is back, G2 runs as ticketed above (P-064 stays open, pre-data), and an optional finger A/B may follow.
 - The result comes back to the user as A or B.
 
+### G2 result (phone, W driver, 2026-10-02/03): No gain, so (B)
+
+Run by `iphone-runner` as ticketed: block G2-1, C = S6 `59b23b3f57fd`, V = S6P2b `ad7f029e43c6`, CSS `d22542d0b5f8`, one warm-up per port, then C V V C C V V C. Scorer: scratchpad `g2score.py`. It skips warm-ups and sentinels. Band = scroll frames whose y range touches [2950, 3250]. Hold = frames inside the hold mark. Rest = the other scroll frames.
+
+| run | band n / max ms | band > 50 / > 34 (twins > 46, > 54, > 30, > 38) | hold max ms (@ ms after scroll end) | hold > 50 / > 34 | rest > 50 / > 34 | control sentinel bottom / scroll | load1 at start |
+|---|---|---|---|---|---|---|---|
+| 1C | 22 / 30 | 0 / 0 (0 0 0 0) | 25 (@31) | 0 / 0 | 0 / 1 | 59.0 / 59.8 | 25.9 (LOAD > 8) |
+| 2V | 20 / 25 | 0 / 0 (0 0 0 0) | 23 (@1153) | 0 / 0 | 0 / 2 | - | 15.9 (LOAD > 8) |
+| 3V | 22 / 21 | 0 / 0 (0 0 0 0) | 24 (@1164) | 0 / 0 | 0 / 1 | - | 11.1 (LOAD > 8) |
+| 4C | 21 / 28 | 0 / 0 (0 0 0 0) | 22 (@1180) | 0 / 0 | 0 / 1 | 59.3 / 59.2 | 7.8 |
+| 5C | 22 / 30 | 0 / 0 (0 0 0 0) | 26 (@29) | 0 / 0 | 0 / 1 | 59.0 / 59.8 | 5.7 |
+| 6V | 23 / 29 | 0 / 0 (0 0 0 0) | 25 (@19) | 0 / 0 | 0 / 1 | - | 4.6 |
+| 7V | 23 / 29 | 0 / 0 (0 0 0 0) | 25 (@1152) | 0 / 0 | 0 / 1 | - | 4.2 |
+| 8C | 21 / 30 | 0 / 0 (0 0 0 0) | 25 (@1166) | 0 / 0 | 0 / 1 | 59.0 / 60.2 | 10.5 (LOAD > 8) |
+
+- **Sums, band + hold:** > 50 is C 0 vs V 0, and > 34 is C 0 vs V 0. Every twin is 0 in both arms, and no frame falls in a near band.
+  - (i) fails: V is not 2 lower.
+  - V's band alone is not 2 lower either, so the result is not Mixed.
+  - No twin crosses the Gain line, so the result is not threshold-sensitive.
+  - **Verdict: No gain → (B), drop fwreskip.**
+- **Validity:**
+  - All 8 counted runs are valid. Every C run passed the sentinel. Both heat checks passed: block start 60.2 / 58.2, block end 60.2 / 57.9.
+  - rAF 59 Hz. Low Power Mode off. Battery 36.6 → 38.0 °C.
+  - Runs 1-3 and 8 started at load1 > 8. They are flagged, not void: each ran in its own exclusive hold, and their counts match runs 4-7.
+  - A first attempt was voided whole by the Wi-Fi/LAN change (T-026). It is not used here.
+  - No Timeline was recorded and nothing was recorded on screen (T-018).
+- **P-064:**
+  - C band max ≤ 38 ms in ≥ 3 of 4 runs: **hit**, 4 of 4 (30, 28, 30, 30).
+  - Band > 50 at 0-1 per arm: **hit**, 0 and 0.
+  - V hold ≥ 1 frame > 34 in ≥ 3 of 4 runs: **miss**, 0 of 4.
+  - Falsifier (C band ≥ 2 frames > 50 that V lacks): not triggered.
+- **Why the hold item missed (OBSERVED from the run's crossings, in our setup):**
+  - The W driver overshot `--to 3400` and held at yHold 3595-3599. That is past `#people`'s own far edge: C's `#people` render-deferred crossing is at y 3539-3552.
+  - In V, the hero and `#people` defer together at y 2994-3006, and `#people` is still past its far edge in the hold. So nothing gave V's idle un-skip work, and the 44-55 ms frame G1b saw never came.
+  - G2 therefore measured the gain side only. That is a gap in my ticket: I did not foresee the overshoot. The cost side still rests on G1b (RB, G driver: the un-skip frame was 44-55 ms, > 50 in 5 of 8 runs).
+  - The verdict does not depend on the hold. With no band gain, V cannot reach Gain or Mixed whatever its hold costs.
+- **What G2 adds to G1b + v34:**
+  - On the phone, with the W driver, on st6-rb, the descent past the hero's end is already short in C: band max 28-30 ms and nothing > 34. fwreskip has no long frame there to remove.
+  - This matches the Sim (v34: about 20 ms Sim layouts in S's band) and G1b (B 25-30 ms at the flip).
+- Main-thread FAIL is not read: W has no flinglog. The UI-process half of the FAIL rule is "not checked on the phone since T-018".
+- **Answer to the user's option C (park and re-test): B.** fwreskip stays unlanded and is dropped. Its README, patch and Sim/phone data stay as the record.
+
 ## Risks, conflicts, follow-ups
 
 - **Up-pass Layout (open item ii).** See above.
