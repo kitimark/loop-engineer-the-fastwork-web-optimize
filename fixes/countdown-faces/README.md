@@ -386,6 +386,10 @@ WebKit work, so there is no phone cost question.
 
 ### Stage 2: phone segment (only if (i) or (ii); after st6 S7 and F3)
 
+**Stage 2 needs the user's timing lift (deferral since 2026-10-02 02:27 +07).** It measures Timeline ms, so it is a
+timing block. If stage 1 triggers it, it is not queued with iphone-runner. The stage-1 readout and the trigger go to
+the lead, who asks the user in the console; stage 2 queues only after the user's yes (lead, 10-02 22:4xZ).
+
 **Ticket.**
 - **TICKET** countdown-faces X1 · V PoC `638b8e03e81c` / CSS `27776f3d4138` · control C base `4606120cf392` / CSS
   `27776f3d4138`, same snapshot.
