@@ -135,7 +135,7 @@ Every arm is built on the same base, C = the user's B+ build (`fixes/user-bplus/
 JS (HEcanvas v3). The manifest picks the path: tiles, one box per changed ms, a whole frame, or video. v3 reads no
 localStorage or query flags. Its manifest's `arm` field is what the run logs.
 
-| arm | what draws the 'you' word | per 60 Hz tick | 'you' assets | decoded, 'you' / 7 words (ESTIMATE) |
+| arm | what draws the 'you' word | per 60 Hz tick | 'you' assets | decoded: 'you' (sheet px x 4 B) / 7 words (ESTIMATE, x7) |
 |---|---|---|---|---|
 | C | the original SVG (CSS stroke-dashoffset) | - | - | - |
 | F1 | canvas, 16 px tiles of the changed area (rev 2 atlas) | 38-73 drawImage on average, up to 195 | 1 PNG 512x2291, 908,860 B | 4.5 / ~31 MB |
@@ -146,6 +146,24 @@ localStorage or query flags. Its manifest's `arm` field is what the run logs.
 
 B's CSS = C's CSS plus one rule: `.script-accent.svelte-1fn2go6:is(.is-drawing-in, .is-drawing-out)
 .is-idle-frame.svelte-1fn2go6:not(.is-idle-frame-0) :is(.accent-path, .accent-fill) { animation: none !important; }`.
+
+**F2 memory: 83 MB or 580 MB?** Both numbers are right; they measure different things.
+- Rev 2, which the user accepted, said about 83 MB. That is F2's real 'you' set: 863 frames of 216x117 device px,
+  both directions. They sit in 6 sheets, five of 1944x1989 and one of 1944x1287, at 4 bytes per px: 87,334,416 B
+  (83.3 MiB) decoded. This is what the phone check loads.
+- About 580 MB is 7 x 83 MB, an ESTIMATE for all seven words. Only 'you' is built. The other words would need
+  capturing, and their frame counts may differ (Thai, Chinese and Korean).
+- The table's "7 words" column uses the same x7 scaling for every arm.
+- The rev 3 proposal states both numbers, because the user approved on 83 MB.
+
+**Memory risk.**
+- WebKit can end a web page's process for using too much memory. `ProcessTerminationReason::ExceededMemoryLimit` is
+  in `Source/WebKit/Shared/ProcessTerminationReason.h`, WebKit main, read 2026-10-02. CONFIRMED that the mechanism
+  exists.
+- The iPhone's limit, and whether 83 MB (or ~580 MB) of decoded frames comes near it, is UNRESOLVED. Canvas
+  ImageBitmaps are created in the GPU process (see Results), so this memory may count there and not against the web
+  page.
+- Decisive local check: the per-process footprint during a run, if the runner can read it.
 
 Frame counts: out 565 changed ms, in 297-298. F1 has 3956 + 2067 tiles and at most 13 per ms. F2 and F3 have one
 patch per changed ms.
@@ -274,9 +292,11 @@ Cool 10 min between blocks. Record the battery temperature and the heat note per
 1. **Eligible to ship.** An arm is eligible when all of these hold:
    - it is engaged to the draw end in ≥ 75 % of its 'you' draws;
    - its recordings show no visual defect in the 'you' draws (a box, an offset, a flash, or a jump at a handback);
-   - no new console errors;
-   - decoded frame memory for the 7-word set ≤ **150 MB** (ESTIMATE, a project limit, not a platform fact). F2
-     (~580 MB) fails this. F2 is still measured. If F2 is fastest, rev 3 says so plainly and ships the best eligible arm.
+   - no new console errors.
+
+   Memory does not make an arm ineligible. The lead and the user set no limit. Rev 3 reports each arm's decoded memory
+   next to its timing and states the risk below. The user weighs memory against speed. If F2 wins on timing, rev 3
+   shows it with its memory, beside the runner-up.
 2. **Rank** all arms, eligible or not, by frames > 50 ms per 'you' draw: the per-run value, median across valid runs.
    Then rank by frames > 34 ms per 'you' draw. Then by pixel difference against C (fewer changed px wins).
    Across blocks: when the two blocks' C ranges do not overlap, rank by each arm's difference from its own block's C
