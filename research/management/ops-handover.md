@@ -8,6 +8,42 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **11:5xZ st6-rb2 landed (cff1a03, 11:49:57Z); PROGRESS build updated; I-065 open.**
+  - PROGRESS build: name "st6-rb2: the wave-1 base plus seven fixes", since 11:49:57Z, same 8 ids (style-recalc now in
+    its final RBi40pti form); summary caveat "the same fixes as before with the final version of the style fix; checked
+    by mechanism and pixels, not timed on the phone as a whole". The build has no writeup field (schema): fixes/st6-rb2/
+    README.md is cited in style-recalc's details. style-recalc got its first best[]: the T-011 switch layout 17-23 ms ->
+    gone (OBSERVED, W, P-061, attribution only). changes[] line added.
+  - I-064 landed in two rounds (8ec1c6d, 11bc722) with the user's YES (T-019) to deleting the old recorder.
+  - P-065 (word-alone, two blocks) landed as 60e6c85.
+  - **I-065 open** (not blocking): a flaky proposal unit test (ops saw test:unit 624/1 once at 11:5xZ, 625/0 on rerun).
+  - G2 is next on the phone after T-009.
+- **11:4xZ-b (batch) I-064 round 1 landed; st6-rb2 checks ran; P-065 to word-alone; phone order.**
+  - **I-064 round 1 landed as 8ec1c6d** (ioscap F2-F5). The user said YES in T-019 to deleting the old recorder. The
+    lead's npm test on main 8ec1c6d ran; round 2 (ts-i064: no frame viewing, wrappers unwrapped, asks on the wrapper
+    scripts) is on main as 11bc722. I-064 stays open (the lead resolves) and blocks the ioscap first run until then.
+  - **st6-rb2:** its Sim and pixel checks ran at 11:38Z (result not yet reported to ops); PROGRESS build unchanged
+    until it lands.
+  - **P-065** = de-illusion-style, word-alone (PR-004). The lead approved the ticket split into two blocks: Block 1
+    isolation (FP vs WA-C, 8 runs); Block 2 the arms alone (WA-C / WA-F2 / WA-B, 9 runs).
+  - **Phone order after T-009:** G2 (P-064), then the ioscap user step (once I-064 round 2 lands), then word-alone
+    Block 1, then Block 2.
+- **11:4xZ (batch) scene-scope and fwreskip landed; st6-rb2 restack planned.**
+  - **scene-scope landed as 1ce70e8 (11:2xZ):** the review wording fixes plus finding F-130. PROGRESS: style-recalc is
+    now state landed, stage L; P-061 added to its checks (T-011: the switch RS's view-rooted nested Layout, 17-23 ms per
+    crossing in C, gone in all 4 V runs; nothing moved into the window after it; OBSERVED, W driver). No best[] entry yet:
+    the build still carries RB, and RBi40pti joins it only with st6-rb2.
+  - **fwreskip landed as 491f2ce** (with d00815a, a7526e0): G2 (P-064) is pre-registered on main with the amended gain
+    line; P-060 measured (rest arm hit; no-pause arm misses "after the mark >= 3/4", >50 3/4 but >54 0/4,
+    threshold-sensitive; ratio n/a; lesson: the timer fires at the start of the rest). iphone-runner runs G2 after T-009.
+    PITFALL for PREDICTIONS.md conflicts (fix-scroll-engine): suffixed ids (P-056a/b/c) are easy to drop on rebase; check
+    them after any conflict.
+  - **st6-rb2 restack** (lead decision): HC with RB replaced by RBi40pti (40 #platform selectors and one gate line),
+    nothing else different. Accepted by mechanism: fix.mjs check, pixels against HC with an A/A, and a Sim W check of
+    both mechanisms, before G2's counted runs or after G2. When it lands, PROGRESS build becomes st6-rb2 with the caveat
+    "accepted by mechanism and pixels, not timed on the phone as a stack" (and style-recalc gets its T-011 best[] entry).
+    Do not change PROGRESS build before that land.
+  - **Batch rule (lead):** one land request when st6-rb2 lands (it changes PROGRESS) or at about 12:00Z, whichever first.
 - **11:5xZ G2 second read signed (lead 11:25Z, one amendment); 45a104b landed.** Correction to 11:4xZ: G2 no longer
   waits on the lead. Amendment: Gain needs V's >50 count in band + hold at least 2 lower than C's over the 4 runs per
   arm, with (ii) (V's >34 <= C's) still holding. Verdicts are checked in the order Gain -> Mixed -> No gain; a
@@ -183,12 +219,14 @@ Board rows `ops`, `phone-queue`, `fwreskip`, `best-stack` and `phone-stack-test`
   - Ended: fix-scene-scope (done until T-011), ts-i054, ts-i053 (once I-053/055/057 resolved).
   - Directory rows below that are older than 10-02 06:00Z are unverified.
 - **Open incidents.** I-056 only (ts-i056). I-053/054/055/057/058 are resolved.
-- **P-ids.** The next free id is P-065 (P-059 wi-stack, P-060 fix-scroll-engine G1b, P-061 fix-scene-scope T-011,
-  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2).
+- **P-ids.** (P-059 wi-stack, P-060 fix-scroll-engine G1b, P-061 fix-scene-scope T-011,
+  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2, P-065 de-illusion-style word-alone): next free P-066.
 - **Mechanics.**
   - PROGRESS.json: targeted Python replacement; the old JSON string must match exactly once. next/gate ≤ 300 chars,
     details ≤ 600. Bump `updatedAt` to the real `date -u`, never ahead.
   - LAND request: branch@sha, rebased, clean, test:unit count, progress --check, LAN grep 0.
+  - Batching (lead 10-02 11:5xZ): batch handover-only entries; at most one land request per ~30 min. Send one at
+    once only when it changes PROGRESS.json or something the user sees.
   - Second reads: hashes (shasum the snapshot files), one control, driver, warm-up RUN per port, sentinel (every
     control in a non-Timeline block), minutes, P-row committed pre-data.
 
@@ -1185,7 +1223,8 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-064 | open 11:2xZ | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
+| I-065 | open, not blocking | (lead) | flaky proposal unit test |
+| I-064 | rounds 1-2 landed (8ec1c6d, 11bc722); user YES to deleting the old recorder | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
 | I-063 | open 10:56Z | (lead) | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
 | I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
 | I-061 | RESOLVED 10:44Z (517fdb4) | (lead) | PROGRESS build data schema |
