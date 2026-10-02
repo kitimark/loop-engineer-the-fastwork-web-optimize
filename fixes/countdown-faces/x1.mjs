@@ -308,7 +308,8 @@ if (MODE === 'sim') {
     const R = rows.filter((x) => x.pos === pos && x.arm === arm); if (!R.length) continue;
     out[`${pos}/${arm}`] = Object.fromEntries(keys.map((k) => { const v = R.map((x) => x[k]).filter((x) => x != null).sort((a, b) => a - b); return [k, v.length ? { med: v[Math.floor((v.length - 1) / 2)] , min: v[0], max: v[v.length - 1], n: v.length } : null]; }));
   }
-  const sep = (pos, k) => { const a = out[`${pos}/C`]?.[k], b = out[`${pos}/V`]?.[k]; if (!a || !b) return null; return b.min > a.max ? 'V above' : b.max < a.min ? 'V below' : 'overlap'; };
+  // separated = every V run beyond every C run by >= 4 ms for ms sums (phone minShift, protocol §5.3; README stage-2 scoring)
+  const sep = (pos, k) => { const a = out[`${pos}/C`]?.[k], b = out[`${pos}/V`]?.[k]; if (!a || !b) return null; const g = /Ms$/.test(k) ? 4 : 0; return b.min - a.max >= Math.max(g, 1e-9) ? 'V above' : a.min - b.max >= Math.max(g, 1e-9) ? 'V below' : 'not separated'; };
   const verdict = {
     a_top_lpc: sep('top', 'lpcMs'), b_pastHero_slp: sep('pastHero', 'slpMs'), heroExit_slp: sep('heroExit', 'slpMs'), resume_lpc: sep('resume', 'lpcMs'),
     note: 'ranges over runs; separation = every V run beyond every C run. Simulator rows: read counts only.',

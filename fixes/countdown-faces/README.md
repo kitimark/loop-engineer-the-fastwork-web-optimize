@@ -462,6 +462,46 @@ served hashes and parks Safari after the run. Low Power Mode must be off.
 Other, gap − frame. Per arm it holds ≥ 3 captures (4 counted runs) and names the segment the fix removes: Style +
 Layout + Paint at pastHero.
 
+**Stage 2 block plan** (pre-data, before the iphone lease; after the user's timing lift in T-024 #8, 23:31Z, relayed
+by the lead). It adds only operational detail. The ticket, the block order, validity, the statistic, the table rows
+1-4 and P-069 above are unchanged.
+- **Operator:** de-countdown runs the block itself, under the lease owner `countdown-faces`, queued with
+  `lock.mjs acquire iphone --wait` (phone order: the blind swipe test, F3 P-036, then X1, then P-068). The commands
+  above that name `--owner iphone-runner` run with `--owner countdown-faces`.
+- **Arms on immutable copies.** Both arms run the same snapshot b1789284481295-4ad4a84a.
+  - C is the committed baseline `site-pretty`, served from the main checkout and checked by the baseline guard.
+  - V is the read-only copy `out/countdown-faces/snap-x1/poc` (chmod a-w, JS sha256 `638b8e03e81c`).
+  - Every run fetches both files again and checks their hashes (`x1.mjs phone`, VOID exit 3 on a mismatch).
+- **Servers:** one per arm, started at the block start and kept running to its end:
+  `serve.mjs --root site-pretty [--overlay out/countdown-faces/snap-x1/poc] --port auto --https --vendors=local --latency 150 --no-cache --state out/countdown-faces/x1/serve-<C|V>.json`.
+  The phone opens each server's plain-http twin, `http://lan:<twin>/` (resolved at run time, never written down).
+- **Driver:** `fixes/countdown-faces/x1-block.mjs A|B|C`. It runs the block's steps in order, renews the lease, and
+  stops on a failed heat check (exit 4).
+- **Holds.** Each part runs in its own `lock.mjs run chrome-measure --no-timing --max-seconds 600` hold, inside
+  `caffeinate -i`, so the Mac stays quiet. No part goes past 10 min:
+  - **Before A:** cool with `wait.mjs phone-temp --below auto` (≤ 10 min).
+  - **A:** warm-up C, warm-up V, heat check (open), counted runs 1 C, 2 V, 3 V, 4 C. About 8 min.
+  - **B:** counted runs 5 C, 6 V, 7 V, 8 C, then heat check (end). About 6 min.
+  - **C:** the attribution runs, C then V (`--lt --resume-check`). About 5 min.
+
+  Between holds the phone sits parked. A heat check that fails voids the counted runs since the last passing one;
+  the phone cools (`wait.mjs phone-temp`), and the voided runs are redone (§5.2). At most 2 blocks (§5.3).
+- **Validity, per run:**
+  - `ticksInWindow` ≥ 3 in every window (recorded since A1);
+  - the served hashes match;
+  - Low Power Mode is off (the user's setting; recorded as `--low-power off` on the heat checks);
+  - no Web Inspector attached;
+  - the phone is not touched.
+- **Scoring (i)** is row 1, as pre-registered:
+  - per counted run, the top window's Layout + Paint+Composite exclusive ms (`lpcMs`), 4 C runs vs 4 V runs;
+  - "V separated above" needs every V run above every C run by ≥ 4 ms. The scorer now applies this gap to every ms
+    sum; until now it compared ranges only.
+  - Rows 2-4 as in the table.
+  - The (i) trigger metric (face-layer repaints) is not a phone row: on the phone it is read only in the attribution
+    runs (`--lt`), as information.
+- **Outside the block:** any GPU-friendly variant from de-gpu's review is a separate PoC and a separate question. It is
+  not in these arms.
+
 **Prediction P-069** (`fixes/PREDICTIONS.md`, committed before any data):
 - **Simulator, n=2 per arm:**
   - S1: face layers at top go 80 → 24 exactly, and total layers C − V = 56 ± 2. Face-layer memory V/C is 0.30
@@ -787,3 +827,4 @@ Per update after the jump to y 0:
 - `sim-counts.mjs`: Simulator Timeline counts.
 - `x1.mjs`: the X1 segment card sequence (Simulator `sim`, phone `phone`, `score`); see "X1 phone segment card".
 - `x1-stage1.json`: X1 stage 1 counts (Simulator, n=2 per arm); see "Stage 1 readout".
+- `x1-block.mjs`: the X1 stage-2 phone block driver (parts A, B, C); see "Stage 2 block plan".
