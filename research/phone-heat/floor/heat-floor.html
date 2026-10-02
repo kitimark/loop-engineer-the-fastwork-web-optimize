@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heat floor</title>
+<style>
+  /* The heat floor (research/phone-heat, ticket P-068): a static page as tall as the Fastwork page on the phone
+     (docH 6035 px at 430 px wide) plus margin, so the W driver's --to 5000 is reachable. No images, no fonts, no
+     scripts, no animations, no transitions, no sticky or fixed elements: what remains is Safari, the display, the
+     probe the run injects, the reloads and scrolling itself. */
+  html { background: #fff; color: #222; font: 16px/1.5 -apple-system, system-ui, sans-serif; }
+  body { margin: 0; padding: 16px; }
+  main { min-height: 7000px; }
+  p { margin: 0 0 24px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Heat floor</h1>
+<p>This page is intentionally plain. It is the control arm of a phone heat comparison: the same scripted routine runs
+on it as on the other pages, so the difference in battery temperature slope between this page and another page is
+the cost of that page's own work.</p>
+<p>Nothing on this page moves by itself.</p>
+</main>
+</body>
+</html>
