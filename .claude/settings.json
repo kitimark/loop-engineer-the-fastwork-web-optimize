@@ -48,7 +48,8 @@
       "Bash(git commit *--no-verify*)",
       "Bash(git commit * -n *)",
       "Bash(git commit * -n)",
-      "Bash(git config *core.hooksPath*)"
+      "Bash(git config *core.hooksPath*)",
+      "Bash(node tools/ioscap.mjs record *--first-run*)"
     ],
     "deny": [
       "mcp__chrome-devtools__performance_start_trace",
@@ -73,6 +74,14 @@
       "Bash(node tools/lock.mjs run * -- gh *)",
       "Bash(git add -f *)",
       "Bash(git add --force *)",
+      "Bash(osascript *QuickTime*)",
+      "Bash(open *QuickTime*)",
+      "Bash(open *ioscap.app*)",
+      "Bash(system_profiler *SPCameraDataType*)",
+      "Bash(ffmpeg *avfoundation*)",
+      "Bash(imagesnap*)",
+      "Bash(screencapture *-v*)",
+      "Bash(screencapture *-V*)",
       "Edit(/site/**)",
       "Edit(/site-pretty/**)",
       "Edit(/.claude/worktrees/*/site/**)",

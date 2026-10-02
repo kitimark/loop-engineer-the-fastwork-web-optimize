@@ -13,6 +13,11 @@
 //     remote.*;  git remote add|set-url|rename
 //     setting FW_BASELINE_UPDATE / FW_BASELINE_ALLOW_MODIFIED (VAR=..., export, env): the user's decision
 //     to commit a new baseline snapshot or to measure a modified one (CLAUDE.md Hard rules 3-4)
+//     node tools/ioscap.mjs record --first-run (the run that shows the macOS Camera prompt, incident I-062)
+//   deny, recording routes other than tools/ioscap.mjs (incident I-062, user T-018/T-019): QuickTime Player
+//     (osascript, open), system_profiler SPCameraDataType (or a full report), ffmpeg -f avfoundation, imagesnap,
+//     screencapture -v/-V/-g/-G, inline swift/python/ruby/perl/osascript scripts using the capture APIs,
+//     ioscap.app started by hand (open, or its binary other than --selftest)
 //
 // Why a parser and not only permission rules: `Bash(git push *)` doesn't match `git -C . push`,
 // `/usr/bin/git push`, `sh -c 'git push'` (https://code.claude.com/docs/en/permissions.md, "What a
@@ -476,6 +481,42 @@ function analyzeCmd(cmd, ctx, findings, depth) {
   }
   if (prog === 'git') analyzeGit(argv, ctx, findings, depth);
   else if (prog === 'gh') analyzeGh(argv, findings);
+  else analyzeCapture(prog, argv, cmd, findings);
+}
+
+// ---------------------------------------------------------------- recording routes (incident I-062)
+// The user banned camera access (T-018: QuickTime's New Movie Recording opened the Mac's camera before the
+// iPhone source was chosen; an agent listed cameras). The one allowed route to the iPhone's screen is
+// `node tools/ioscap.mjs record` (T-019 #21), which can open nothing but the iOS screen device. Denied here:
+// QuickTime Player automation, camera listing (system_profiler SPCameraDataType, or a full report), ffmpeg's
+// avfoundation input, imagesnap, screencapture video/audio (-v/-V/-g/-G), inline scripts that use the capture
+// APIs, and starting ioscap.app other than through the wrapper. Asked: `ioscap.mjs record --first-run` (the
+// run that shows the macOS Camera prompt: only with the user's OK, after a console step).
+const NO_CAMERA = 'The only route that records the iPhone screen is `node tools/ioscap.mjs record` (incident I-062): it opens nothing but the iOS screen device. Other recording routes can open the Mac\'s own camera or list cameras, which the user banned (T-018).';
+const CAPTURE_API = /AVCapture|AVFoundation|CoreMediaIO|CMIOObject|ScreenCaptureKit|SCStream|cv2\.VideoCapture|VideoCapture\s*\(/;
+const SCRIPT_RUNNERS = new Set(['swift', 'xcrun', 'python', 'python3', 'ruby', 'perl', 'osascript']); // node has no capture API binding
+function analyzeCapture(prog, argv, cmd, findings) {
+  const rest = argv.slice(1);
+  const text = [...rest, ...cmd.heredocs].join('\n');
+  const no = (what) => findings.push(deny(`${what} is not allowed. ${NO_CAMERA}`));
+  if (prog === 'osascript' && /quicktime/i.test(text)) return no('QuickTime Player automation');
+  if (prog === 'open') {
+    if (rest.some((a) => /quicktime/i.test(a))) return no('Opening QuickTime Player');
+    if (rest.some((a) => /ioscap\.app/.test(a))) return no('Starting ioscap.app by hand (only `node tools/ioscap.mjs record` starts it, with the lease and the checks)');
+  }
+  if (prog === 'system_profiler') {
+    const types = rest.filter((a) => /^SP\w+DataType$/i.test(a));
+    if (types.some((t) => /^SPCameraDataType$/i.test(t))) return no('Listing cameras (system_profiler SPCameraDataType)');
+    if (!types.length && !rest.includes('-listDataTypes')) return no('A full system_profiler report (it lists the cameras)');
+  }
+  if (/^ff(mpeg|probe|play)$/.test(prog) && /avfoundation/i.test(text)) return no(`${prog} with the avfoundation input`);
+  if (prog === 'imagesnap') return no('imagesnap (it opens a camera)');
+  if (prog === 'screencapture' && rest.some((a) => /^-[A-Za-z]*[vVgG]/.test(a))) return no('screencapture video or audio recording');
+  if (prog === 'ioscap' && /ioscap\.app\/Contents\/MacOS\/ioscap$/.test(argv[0]) && !(rest.length === 1 && rest[0] === '--selftest')) return no('Running the ioscap app binary directly');
+  if (SCRIPT_RUNNERS.has(prog) && CAPTURE_API.test(text)) return no(`An inline ${prog} script that uses the capture APIs`);
+  if ((prog === 'node' || prog === 'nodejs') && rest.some((a) => base(a) === 'ioscap.mjs') && rest.includes('record') && rest.includes('--first-run')) {
+    findings.push(ask('`ioscap.mjs record --first-run` shows the macOS Camera prompt for the recorder app: only the lead runs it, with the user watching, after the user\'s OK in a console step (incident I-062).'));
+  }
 }
 
 /** Analyse one Bash command string. Returns { decision: 'deny'|'ask'|null, reason }. */
@@ -490,7 +531,8 @@ export function analyze(command, ctx = {}) {
 export const looksGuarded = (text) =>
   /\bgit\b/.test(text) && /\b(merge|pull|push|send-pack)\b/.test(text) ||
   /\bgh\b/.test(text) && /\b(create|fork|merge|sync)\b/.test(text) ||
-  /GIT_CONFIG_(PARAMETERS|COUNT|KEY_|VALUE_)|hookspath/i.test(text);
+  /GIT_CONFIG_(PARAMETERS|COUNT|KEY_|VALUE_)|hookspath/i.test(text) ||
+  /QuickTime|SPCameraDataType|avfoundation|\bimagesnap\b|\bscreencapture\b.*\s-[A-Za-z]*[vVgG]|ioscap\.app|AVCapture/i.test(text);
 
 // ---------------------------------------------------------------- hook entry point
 let raw = '';
