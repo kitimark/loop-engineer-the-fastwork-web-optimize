@@ -57,6 +57,7 @@ import https from 'node:https';
 import { REPO, resolveTree, checkoutId, isLinkedWorktree } from './lib/paths.mjs';
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './lib/baseline.mjs';
 import { acquire, SHARED_LANE } from './lib/lock.mjs';
+import { reapWarm, reapNote } from './lib/sim-warm.mjs';
 import { snapshot as hostSnapshot, between as hostBetween, THRESHOLDS as HOST_T, stubOutsideTest, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
 import { launchChrome, CDP, browserVersion, screenInfoArg, headedUA, tempProfileDir, HEADLESS_SCREEN } from './lib/cdp.mjs';
 import { lintTopic, loadSpec, lintSpec, GAIN_METRICS } from './lib/bench-spec.mjs';
@@ -197,6 +198,12 @@ async function takeLock(owner, { short, shared, maxSec, meta, onBudget }) {
   // with the same maxSec while the lane is off (acquire's mode says which)
   const bounded = short || shared;
   const l = await acquire('chrome-measure', { owner, kind: 'process', maxSec, ...(shared ? { shared, weight: SHARED_LANE.weights['bench-mech'] } : { short }), meta: bounded ? meta : { ...meta, expectSec: NORMAL_EXPECT_SEC } });
+  if (!bounded) {
+    // I-063 (before the first timed run): a warm Simulator still booted at the start of a timing hold (its keeper dead
+    // or late) is shut down now (under the simulator lock, never a live session's device), with a NOTE
+    const simWarm = await reapWarm({ reason: 'bench timing hold', by: 'bench' });
+    if (simWarm) { console.log(reapNote(simWarm, 'this bench hold')); l.simWarm = simWarm; }
+  }
   if (bounded && !l.reentrant) {
     // a short hold (or reader) ends at maxSec for everyone else: stop before that, never measure past it
     const t = setTimeout(() => {
