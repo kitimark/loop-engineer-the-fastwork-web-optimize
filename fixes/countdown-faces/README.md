@@ -682,6 +682,42 @@ decision.**
 Everything else in A1 is unchanged: the outcomes, the lead's control line, and one Simulator session (base then PoC)
 in the shared lane. Like stage 1's validity rule, this is a redo of an invalid session, in a new hold.
 
+**A1b run, 2026-10-02 23:24Z (`x1-sim-2026-10-02T23-24-48-864Z.json`, base then PoC, x1.mjs 191c8671c1ad): valid.
+(iv) is EXPLAINED per A1's pre-registered outcome.**
+
+Validity:
+- hashes match (JS `4606120cf392` / `638b8e03e81c`);
+- `--exit-opacity` is 0 at heroExit;
+- `ticksInWindow` is 4 in all 8 windows;
+- at rest at the top, `op` = 1 and `cv` = true in both arms;
+- the chain passes through `div.hero`: `div.countdown` < `header.hero-copy` < `div.hero` < `section.hero-track` < …
+
+Per update after the jump to y 0:
+
+| arm | updates 1-2 at y 0 | update 3 on |
+|---|---|---|
+| C | `--exit-opacity` 0, `op` 0 (`zeroAt` `header.hero-copy`), `cv` false; digits live | `op` 1; live in every update |
+| V | `--exit-opacity` 0, `op` **exactly 0** (`zeroAt` `header.hero-copy`), `cv` false; **stale** (seconds "10" for "02") | `op` 1; live in every update (`staleVisibleUpdates` 0) |
+
+- The control C is live in every update, so the control line does not apply.
+- V's 2 stale updates both have rendered opacity exactly 0. The first update with `op` > 0 is live, in both arms.
+- `op` goes 0 → 1 in one update: an instant jump to the top gives `--exit-opacity` 1 at once, with no fade.
+- So the stale digits are painted only while the clock is fully transparent: **no visible stale frame on WebKit**
+  (Simulator, n=1; the 2-update pattern is the same in all 4 sessions).
+- `cv` agrees with `op` in every update. It is auxiliary data; WebKit's `opacityProperty` support is still not
+  confirmed from a reference.
+
+**(i) in plain words, for the lead's question to the user.**
+- At the top of the page, with the clock visible and rolling, the Simulator counts how often WebKit repaints the
+  digit layers in 4 seconds. Today's page: 127 and 129. The new countdown: 137 and 130. That is 1-8 % more, in the two
+  pre-registered sessions.
+- At the same time, the new countdown paints less overall: about 40 % fewer paint records, and the digit repaints
+  outside those layers fall from about 100 to 4.
+- In the two later sessions (A1, A1b; not pre-registered for (i), information only) the order flipped: new 119 and
+  123 vs today's 145 and 127.
+- The Simulator can't time these repaints. Only a timed phone test (stage 2: about 20 min plus cooling, after P-068,
+  with the user's timing lift) can say whether the few extra layer repaints cost anything on the iPhone.
+
 **Not changed:** the stage-1 counts and their scoring, every trigger rule, and P-069.
 
 ## Overlap with other topics (review r1 Blocking 3)
