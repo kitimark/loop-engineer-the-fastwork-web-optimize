@@ -8,6 +8,16 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **12:4xZ (batch) P-066 issued to fix-image-size; fbe149f landed.**
+  - **P-066** (fix-image-size, card received 12:3xZ): image-size (48 raster files replaced at the same URL, markup
+    unchanged) vs baseline; Sim functional sessions (no timing), A B | B A over 2 sessions, + A/A if it fits; metric
+    Web Inspector Memory "images" (peak, end), layers, total, WebContent RSS, bytes, pixels. Predicted images delta
+    -3 to -25 MB (point ~-5 MB; WebKit's async decode at drawn size for large images, CONFIRMED for WebKit main, may
+    already shrink the large-image share). Falsified if ~0 or positive. Decision: in interval -> land as memory
+    insurance; ~0 -> park; worse -> drop. Ops asked for three pre-data fixes: a fixed ~0 fallback without an A/A
+    (e.g. |delta| < 3 MB), outcomes for a delta between the A/A spread and -3 MB and beyond -25 MB, and "Sim MB =
+    structure only" in the row. The row goes on its own branch, pre-data, before its first Sim session (none yet at
+    12:44Z: its holds so far were shared weight-1 and one 2 s --no-timing).
 - **12:3xZ a3abc07 landed (the lead rebased the batch on ecd4f88); PR-005 posted; T-023 answered.** Corrections to the
   12:2xZ digest:
   - **fwreskip: PR-005 posted** after the lead's review (A ship / B drop, recommended / C park + re-test).
@@ -266,7 +276,7 @@ Board rows `ops`, `phone-queue`, `fwreskip`, `best-stack` and `phone-stack-test`
   - Directory rows below that are older than 10-02 06:00Z are unverified.
 - **Open incidents.** I-056 only (ts-i056). I-053/054/055/057/058 are resolved.
 - **P-ids.** (P-059 wi-stack, P-060 fix-scroll-engine G1b, P-061 fix-scene-scope T-011,
-  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2, P-065 de-illusion-style word-alone): next free P-066.
+  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2, P-065 de-illusion-style word-alone, P-066 fix-image-size image-size): next free P-067.
 - **Mechanics.**
   - PROGRESS.json: targeted Python replacement; the old JSON string must match exactly once. next/gate ≤ 300 chars,
     details ≤ 600. Bump `updatedAt` to the real `date -u`, never ahead.
