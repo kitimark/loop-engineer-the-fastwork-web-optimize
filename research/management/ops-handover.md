@@ -8,6 +8,22 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **23:2xZ (batch) c7ecacd..253720a landed 23:03Z; S7 GAIN landed (6571b62); I-074 resolved; F3 P-036 G running; A1 re-read PASS.**
+  - Landed: 47b38a0 (**I-074 RESOLVED**: "Try it" in console proposals, original and PoC side by side), **6571b62 S7 /
+    P-067 scored Gain** (phone S, 20 s idle at the top, 8/8 valid, heat checks 60.2/58.3 and 60.2/57.7): idle >34 V
+    0,0,0,0 vs C 22,19,27,24, separated, not threshold-sensitive; ticks >34 V 0/152 vs C 103/152; guard scroll >50
+    median V 0.5 vs C 1 (no regression). PROGRESS hero-carousel: landed/L, P-067 first in best[], check, gate, next;
+    user line (the user also has it in T-027 #8).
+  - **I-075** (phone heat tooling) in its land test; de-heat's pre-flight line 39a846d lands after it. **I-076 OPEN**:
+    npm test wall time 285 s, close to the shared lane's 300 s cap.
+  - **F3 P-036 G block started 23:05Z** (iphone-runner). Then P-068 heat (~2 h), then X1 stage 2 only with the user's lift.
+  - **X1 amendment A1** (8163838, x1.mjs 5d0c9e4c41db) re-read **PASS** (rendered-opacity product per update, non-numbers
+    skipped and counted, zeroAt + chain dumps, cv auxiliary, ticksInWindow >= 3, instrument check op > 0 at rest in
+    both arms; outcomes: stale V digit at op > 0 -> (iv) stands; all stale at op 0 -> explained; none -> lead). Gap
+    closed by the lead before scoring: **C stale in any update -> no decision, chain dump to the lead.** Notes: op reads
+    opacity only (errs toward the code); one session, n = 1.
+  - Ops was pinned 23:13Z (re-pinned by its own message to de-countdown); lead fallback if pinned at a check-in: ops
+    writes the batch as a diff + message to scratchpad/mgmt-ops/batch-<HHMM>.{diff,msg}, the lead applies it.
 - **23:0xZ (batch) P-068 landed in full (e9dcfce, 08b7978, 98da974, 172d61e); X1 stage 1 scored, lead decisions.**
   - **P-068 reads closed (mgmt-ops-7):** ddc74d6 / 98da974 fallback fix PASS (attempt per segment, last attempt scored,
     `findLast` picks the end-of-session re-run, fallback gate TIMEOUT -> incomplete, exclusion over 0-360 s, user's
@@ -1496,7 +1512,9 @@ between tool calls.
 | id | state | owner | note |
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
-| I-074 | open | ts-i074 | user T-028: proposals get a "Try it" panel with live original vs PoC iframes |
+| I-074 | RESOLVED (47b38a0) | ts-i074 | user T-028: proposals get a "Try it" panel with live original vs PoC iframes |
+| I-076 | open | lead | npm test wall time 285 s, close to the shared lane's 300 s cap |
+| I-075 | open, land test | ts-i075 | phone heat tooling: battery logger, power keys, served-hash GETs on non-mirror pages |
 | I-073 | RESOLVED (5f37fcb) | ts-i073 | LAN address resolver + placeholder; CLAUDE.md edit with the user's OK (T-026 #5) |
 | I-072 | open, non-blocking | lead | WDA e2e tests left 3 fake-xcodebuild/fake-iproxy orphans (14 h); killed by the lead; not sim-warm (ts-i063) |
 | I-071 | RESOLVED not-a-bug (Idle Sleep; test:chrome 13/13 at 17:38Z) | ts-i063 | test:chrome check.chrome failed (no check.json); bisect 9135b35 vs 0aa2227 |

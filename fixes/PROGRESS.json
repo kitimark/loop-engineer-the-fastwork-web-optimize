@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T22:45:00Z",
+ "updatedAt": "2026-10-02T23:20:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And, if the heat test (P-068) shows Fastwork heats the phone more than apple.com, less work at rest so the phone stays cooler.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T23:20:00Z", "text": "The carousel fix (st6) passed its phone test on today's best build: resting at the top, no slow frames in any run with it, against about 20 per run without it. Scrolling did not get worse. The F3 robot-finger test is running now." },
   { "at": "2026-10-02T22:45:00Z", "text": "The accent word test is done: on its own the word draws smoothly, so the slow frames there come from the rest of the page, and the word keeps today's drawing. Next on the phone: the carousel fix (st6), then F3, then the heat test (Fastwork vs apple.com, about 2 hours)." },
   { "at": "2026-10-02T22:35:00Z", "text": "New goal, if your assumption holds: a heat test (P-068) compares how warm Fastwork and apple.com make the phone. If Fastwork heats it more, less work at rest becomes a goal next to smooth scrolling. Every fix now reports its work at rest." },
   { "at": "2026-10-02T22:20:00Z", "text": "The scroll-size fix (fwreskip) is dropped: on the phone it gave no gain (0 slow frames with and without it). At your request two more fixes get a phone timing test: the avatar carousel fix (st6) and F3 (touch listeners set up once). They run after the word-alone test." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T17:20:00Z", "text": "Coming up for you: a sitting on the phone that compares the original page with today's best build (the countdown fix and F3 together)." },
   { "at": "2026-10-01T17:10:00Z", "text": "The robot finger turned out to play every stroke as a quick flick, so its results so far don't count (tool problem I-042). The countdown fix's robot test (P-032) was void; all robot-finger tests wait for the tool fix. The phone runs the carousel test (P14) meanwhile." },
   { "at": "2026-10-01T16:40:00Z", "text": "Touch-listener blind test scored: neither you nor the second tester felt a difference (2 of 4 pairs each, the same as guessing)." },
-  { "at": "2026-10-01T16:45:00Z", "text": "Phone tests approved and queued: the avatar carousel at the top (P14) and the softer blur easing for the card reveal (P-038)." },
-  { "at": "2026-10-01T16:05:00Z", "text": "The iOS Simulator was checked as a stand-in for the phone: not usable as a judge of smoothness. The real iPhone stays the judge." }
+  { "at": "2026-10-01T16:45:00Z", "text": "Phone tests approved and queued: the avatar carousel at the top (P14) and the softer blur easing for the card reveal (P-038)." }
  ],
  "items": [
   {
@@ -145,17 +145,18 @@
    "inBuild": true,
    "writeup": "fixes/st6-rb/README.md",
    "best": [
+    { "what": "slow frames (over 34 ms) in 20 s at rest at the top of the page, per run, on today's best build", "before": "19-27, best build without it", "after": "0 (0-0)", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-067", "note": "phone block S7, 4 runs per arm, separated, not threshold-sensitive; carousel ticks with a slow frame 0 of 152 vs 103 of 152; scroll guard held" },
     { "what": "slow frames (over 34 ms) at rest at the top of the page, per run", "before": "3 (2-4), build without it", "after": "0 (0-0)", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-062", "note": "phone block A1, 3 runs per arm; the build without it is RB" }
    ],
    "title": "Avatar carousel: each tick re-lays out the whole page",
    "area": "hero",
-   "state": "testing",
-   "stage": "F",
+   "state": "landed",
+   "stage": "L",
    "fixes": "The small rotating profile pictures near the top (the 'blinking small profiles' you noticed) cost a 25-30 ms whole-page layout about once a second, even when you are not scrolling.",
-   "gate": "Cause found (P14): swapping the pictures in and out is what makes the whole page re-lay out. Next gate: a build that keeps the pictures in place must remove that layout on the phone.",
-   "next": "st6 is in the best build. You allowed its phone timing test (T-027 #5): ticket S7 (P-067) asks whether the page at rest at the top still has fewer slow frames with st6. It runs after the word-alone test, before F3.",
+   "gate": "Passed: S7 on the phone (P-067), at rest at the top, with every run separated and the scroll guard held.",
+   "next": "Done. The phone timing test S7 (P-067) confirmed it on today's best build: at rest at the top, 0 slow frames per run with it vs 19-27 without, and scrolling did not get worse. It stays in the best build.",
    "owner": "fix-scroll-engine with de-pm-hero",
-   "checks": [ { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "Yes. With the pictures kept in place, the whole-page layout at each tick was gone in 65 of 67 ticks (scripted scroll, OBSERVED). A layout boundary around the section removed the hitches over 50 ms at rest (11 to 0) but kept most frames over 34 ms; each layout got cheaper, not by half." }, { "id": "P-039", "what": "st5 phone test: does the real fix also stop the whole-page layout?", "result": "Partly. The picture swap no longer re-lays out the page (1 of 31 ticks), but the start of each slide still does in 15 of 33 ticks. At rest, hitches over 34 ms fell from 70 to 29 in 40 s, and over 50 ms from 4 to 0 (OBSERVED)." }, { "id": "P-044", "what": "phone recording: does the no-flip build (st6) stop the layout at the slide start?", "result": "Yes: 1 of 36 slide starts re-laid out the page, against 24 of 35 for st5 and every one for the original (OBSERVED)." } ],
+   "checks": [ { "id": "P-067", "what": "phone test S7: fewer slow frames at rest at the top with st6, on today's best build?", "result": "Yes: 0 slow frames over 34 ms in every run with it vs 22, 19, 27, 24 without; carousel ticks with a slow frame 0 of 152 vs 103 of 152; scrolling not worse (OBSERVED, 6571b62)." }, { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "Yes. With the pictures kept in place, the whole-page layout at each tick was gone in 65 of 67 ticks (scripted scroll, OBSERVED). A layout boundary around the section removed the hitches over 50 ms at rest (11 to 0) but kept most frames over 34 ms; each layout got cheaper, not by half." }, { "id": "P-039", "what": "st5 phone test: does the real fix also stop the whole-page layout?", "result": "Partly. The picture swap no longer re-lays out the page (1 of 31 ticks), but the start of each slide still does in 15 of 33 ticks. At rest, hitches over 34 ms fell from 70 to 29 in 40 s, and over 50 ms from 4 to 0 (OBSERVED)." }, { "id": "P-044", "what": "phone recording: does the no-flip build (st6) stop the layout at the slide start?", "result": "Yes: 1 of 36 slide starts re-laid out the page, against 24 of 35 for st5 and every one for the original (OBSERVED)." } ],
    "details": [
     "P14 scored (fix-scroll-engine README 12859a5, de-pm-hero cross-checking; iphone-wave2 4o): sentinels bottom 60.2/60.2, scroll 56.6/56.5; 9/9 runs, 67 ticks per arm. V1 st4-noswap 2/67 view ticks, median tick Layout 0.1 vs 20.6 ms (HIT). V2 re-contain-js 61/67 rooted at #people, 11.7 ms = 0.57 of C (MISS on <= 0.5). Idle 40 s at y 1500, Timeline off, window driver: dt>50 C 11 / V1 0 / V2 0, dt>34 47 / 0 / 40. Scroll phase unchanged; the y~1960 rebuild frame is present in every arm. Lead signed D (swap path). V1 is a probe only (no slide animation), it never lands.",
     "Rest attribution (P-033 step 0, OBSERVED): 40/41 rotator callbacks dirty a whole-view Layout 1-5 ms later, 12.8-43.6 ms, median 25-26 ms.",
