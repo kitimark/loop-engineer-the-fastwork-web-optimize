@@ -8,6 +8,25 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **21:4xZ (batch) 5678f13 landed (ts-i063 follow-up); phone back (T-025), ioscap first run C-025 PASSED; Wi-Fi reconnect (T-026) voids G2 runs; countdown-faces NEEDS-WORK; I-072 open.**
+  - Landed: cb2a3c8 (ops) and **5678f13** (ts-i063 follow-up, review-i063 ACCEPT; npm test on main 1286/1286 in the
+    shared lane 21:21-21:25Z). ts-i063's I-071 check.chrome hardening is still staged in its worktree and waits for
+    an awake Mac.
+  - **countdown-faces 97317db: review-countdown-faces NEEDS-WORK**, 3 blocking: (a) the resume pixel proof is
+    frame-aligned by the harness (lead decision: make the replay exact, anchored to the frame grid); (b) a one-frame
+    hop after an instant jump (IO timing); (c) the overlap with topic #1 countdown-idle-raf is not documented.
+    de-countdown is fixing them; its T-024 #6 progress went to the user.
+  - **Phone reconnected by the user (T-025, 21:28Z).** ioscap built (selftest 29/29, Apple Development signing).
+    **First run C-025 PASSED:** opened only "iOS Device", refused 0; the user confirmed the camera light stayed OFF
+    (T-025 #4). The recording ran 17 s past the user's Done because the lead messaged agents first; disclosed in
+    T-025 #3.
+  - **Wi-Fi reconnect (T-026, ~21:40Z):** the Mac's LAN address changed. G2 runs around it are void; iphone-runner
+    restarts its servers and re-runs G2 from the warm-ups. CLAUDE.md's example LAN URL (Shared devices block) is
+    stale; ops proposed an address-free wording to the lead (a CLAUDE.md edit asks the user).
+  - **I-072 OPEN (non-blocking):** the WDA e2e tests left 3 fake-xcodebuild/fake-iproxy orphans for 14 h; the lead
+    killed them. ts-i063: sim-warm can't cause it.
+  - Phone order: G2 (fwreskip, P-064), then P-065 word-alone Blocks 1-2 (de-illusion-style sent the arm letters).
+  - Usage ~8.8 % at 21:37Z (lead's estimate). PROGRESS: fwreskip and illusion-proposals `next` now say the phone is back.
 - **19:1xZ (batch) I-071 not-a-bug; ts-i063 follow-up blocked by Mac sleep cycling; de-countdown measuring.**
   - a66dfd4 landed (ops). Nothing else on main since 17:15Z.
   - **I-071 RESOLVED not-a-bug:** the 15:52Z test:chrome failure was an Idle Sleep. test:chrome passed 13/13 on
@@ -1367,6 +1386,7 @@ between tool calls.
 | id | state | owner | note |
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
+| I-072 | open, non-blocking | lead | WDA e2e tests left 3 fake-xcodebuild/fake-iproxy orphans (14 h); killed by the lead; not sim-warm (ts-i063) |
 | I-071 | RESOLVED not-a-bug (Idle Sleep; test:chrome 13/13 at 17:38Z) | ts-i063 | test:chrome check.chrome failed (no check.json); bisect 9135b35 vs 0aa2227 |
 | I-070 | RESOLVED (0de8103) | ts-i070 | keep the Mac awake only during measurement holds (caffeinate -i -s) |
 | I-069 | RESOLVED (0aa2227) | ts-i063 | sim safari-restart on a restored data: tab |
@@ -1391,14 +1411,14 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
 | `mgmt-ops-7` (spawned 10-02 09:1xZ; mgmt-ops-6 and earlier ENDED) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive |
-| `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | done (phone disconnected, T-022) |
+| `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | alive: phone back (T-025 21:28Z); re-runs G2 from the warm-ups after the T-026 Wi-Fi change, then P-065 |
 | `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
 | `fix-image-size` (new 12:0xZ; ID af756241c686d490e) | image-size: P-066 falsified (no detectable saving), dropped; null write-up 909464c | done |
 | `de-countdown` (ID via ListAgents) | T-024 countdown-faces (board priority #1; apple.com off-screen-pause reference) | alive |
 | `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (user: no, thanks) |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
-| `ts-i063` (spawned 12:05Z; ID via ListAgents) | I-063, I-065, I-066 (batch 3a85564, 8eab8ba, 99b37b3 in review), then I-068 (resolved not-a-bug) | alive |
+| `ts-i063` (spawned 12:05Z; ID via ListAgents) | I-063, I-065, I-066, I-069 (follow-up 5678f13 landed), I-068/I-071 (not-a-bug); I-071 check.chrome hardening staged, waits for an awake Mac | alive |
 | `ts-i070` (ID via ListAgents) | I-070: caffeinate only measurement holds (resolved 0de8103) | done |
 | `review-i063` (ID via ListAgents) | read-only fix-reviewer of ts-i063's batch (measurement code: host.simWarm) | alive |
 | `ts-i064` | I-064 toolsmith (rounds 1-2 landed 8ec1c6d, 11bc722) | done |

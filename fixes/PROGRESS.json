@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T15:50:00Z",
+ "updatedAt": "2026-10-02T21:45:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T21:45:00Z", "text": "The phone is back. Its screen recorder passed its first run with the camera light off. The scroll-size test (G2) starts again after the Wi-Fi change; the word-alone test of the hero's accent word comes next." },
   { "at": "2026-10-02T15:20:00Z", "text": "You chose to park the scroll-size fix (fwreskip) and test it again when the phone is back. The image-size fix is dropped: with more Simulator sessions, the memory it seemed to save turned out to be inside the normal variation, so no saving could be shown." },
   { "at": "2026-10-02T12:35:00Z", "text": "The phone is disconnected, so its tests wait. The scroll-size fix (fwreskip) now waits for your decision on PR-005; the word-alone test of the hero's accent word waits for the phone." },
   { "at": "2026-10-02T11:55:00Z", "text": "The best build is now st6-rb2: the same seven fixes, with the final version of the section-switch style fix. It was checked by how it works and by screenshots, not timed on the phone as a whole." },
@@ -229,7 +230,7 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "You picked a test of the word alone (PR-004, 11:15Z). On Chrome the word's own drawing is about 15 % of its cost; the rest is the whole page redrawn every frame. The phone test waits until the phone is back.",
+   "next": "You picked a test of the word alone (PR-004, 11:15Z). On Chrome the word's own drawing is about 15 % of its cost; the rest is the whole page redrawn every frame. The phone is back: its word-alone test (P-065) runs right after the scroll-size test G2.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
    "checks": [],
    "details": [
@@ -270,7 +271,7 @@
    "fixes": "Around the middle of the page, two frames cost about 20 ms each, mostly layout, while a large section (the people list) is still being drawn although it is about to leave the view. The chosen fix sets it aside earlier, so that work is not done while it cannot be seen.",
    "felt": {"answer": "not-yet"},
    "gate": "Lands only after checks that nothing on screen changes and a finger fling test on the real iPhone; no speed test while timing is on hold.",
-   "next": "You chose C on PR-005: it stays parked and is tested again (phone test G2) when the phone is back.",
+   "next": "You chose C on PR-005. The phone is back: phone test G2 runs again from the start after the Wi-Fi change (earlier G2 runs void).",
    "owner": "fix-scroll-engine (from fix-scene-scope)",
    "checks": [],
    "details": [
