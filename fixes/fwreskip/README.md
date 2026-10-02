@@ -3,9 +3,11 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** variant (a), rev 2, after review NEEDS-WORK. The functional and pixel checks ran in both engines (below). **Two items are open for the user, not waived:**
+**Status:** variant (a), rev 2.1, after review 2 NEEDS-WORK. The functional and pixel checks ran in both engines (below). **Landing waits on a phone G or F check (item iv): touch effects need G/F before landing (protocol), and the phone is unplugged.** Four items are open for the user, none waived:
 - **(i) Chrome first-jump frame.** P's first frame after the first jump of a load differs from B by 182-603 px, max channel delta 4, in rounded corners (row 5f).
-- **(ii) Up-pass Layout count on a reversal (Sim).** P 10 vs B 8 vs A/A 10, n=3 per arm (row 3r).
+- **(ii) Up-pass Layouts on a reversal (Sim).** Going up, P had a Layout with no initiator in 3 of 6 runs, B in 0 of 6, A/A in 2 of 6 (row 3r). Two of P's sit at or just after `#people`'s un-skip (2927, 2951), where only P un-skips anything. Likely caused by that extra un-skip; n=6, cause unknown.
+- **(iii) Sim idle.** Over 4 windows per arm per spot (B P A A P B), P's medians lie inside B's and A/A's ranges, except two at the reversal spot, by 0.1/s up (Layout) and 1/s down (Paint). One P window at y0 is high, where all builds run the same code (row 8, "Idle"). Kept open for the user.
+- **(iv) Finger fling up through the band (iOS), UNRESOLVED.** Our probes cannot see it; the decisive check is a phone G or F fling up from the band with a recording, B vs P (below).
 
 Condition 5 (no skipped section on screen) is met in every run where the baseline meets it. No timing A/B: timing is deferred by the user's direction. Simulator Timeline ms are attribution only, never a gain.
 
@@ -124,13 +126,14 @@ Probes, committed under `fixes/fwreskip/tools/` (no Fastwork code):
 - `vfix.mjs` (Sim) and `cfix.mjs` (Chrome headless 430x932 DPR 3, touch);
 - `inv.js`: per-rAF invariant log, stack-tagged writes, `__idle` counters;
 - `boot.js`: bootstrap counters;
-- `tlinit.mjs`: Layout initiators;
+- `tlinit.mjs`: Layout initiators; `tsum.mjs`: per-run Layouts ≥ 3 ms with initiators on the down / up / down2 passes (rows 3d, 3d2, 3r);
+- `idlesum.py`: Sim idle median and range per arm per spot (row 8);
 - `vscore.py` / `vcross.py`: stamp-aligned frame compare;
 - `pxcmp.py`, `vidan.py`, `calan.py`;
 - `cdbg.mjs`, `cure.mjs`, `simtab.mjs`;
 - hold scripts `vhold.sh` / `vinner.sh` / `chold.sh`.
 
-Holds v6-v13 and c5-c12 are on the rev 2 build (`96b876639c84`), except v6, which ran the guard build.
+Holds v6-v19 and c5-c12 are on the rev 2 build (`96b876639c84`), except v6, which ran the guard build. v14-v19 (review 2) are six Sim holds of one T run and one idle run each, B P A A P B over the holds for both (`TORDER` / `IORDER` in `vfix.mjs`).
 
 **Invariant** (lead, design choice 2): FAIL = `#people` or the hero intersects the viewport **and** `checkVisibility({contentVisibilityAuto: true})` is false. It is logged per rAF in both engines, before and after `iE` (a second rAF reader registered from a scroll listener after the page's).
 - WebKit honours the option: self-test `skippedChildCvAuto` false, plain true.
@@ -141,20 +144,21 @@ Holds v6-v13 and c5-c12 are on the rev 2 build (`96b876639c84`), except v6, whic
 | 1 | geometry at y2990 / 3047 / 3539 and the deck after scrolling back up (Sim v13, rev 2; v2 rev 1 the same) | `#people` 1326.73 / top 855.98 / next 1407.72 / doc 6035 at every stop | identical at every stop (`#people` deferred at 2990/3047, B active) | identical | **pass** |
 | 1c | same in Chrome (c12, rev 2; c1 rev 1 the same), stops 2990 / 3047 / 3539 / 3800 + deck | 1327.88 / 933 / 1328.88 / 6277 | identical (`#people` deferred at 3539/3800, B active) | identical | **pass** |
 | 2 | held screenshots, animations finished/paused, countdown digits and avatar carousel hidden: Sim v13 y2990 / 3047 / deck (web content box from a magenta calibration shot); Chrome c12 y2990 / 3047 / 3300 / 3539 / 3800 / deck (rev 2; v2/c1 on rev 1 the same) | | B vs P: Sim 3/3, Chrome 6/6 IDENTICAL | B vs A: Sim 3/3, Chrome 6/6 IDENTICAL | **pass** (byte-identical) |
-| 3 | Sim W down 0→3100, up →2500, down again (B2 v7, n=1 per arm; ms are attribution only) | down: 18.8+17.5 @3003 (hero re-skip + fwWC wc=1) | down: **nothing ≥ 3 ms at the re-skip or the fwWC flip** | down: 19.6+18.7 @2998 | **pass** going down |
-| 3d | down Layouts in [2900, 3100] at the hero end, v7 + v11 (n=3 per arm) | 2, 2, 2: hero re-skip (`setProperty<fwReskip:2822`) and fwWC wc=1 (`setAttribute<:2709`), every run | 0, 0, 0 from the re-skip or fwWC (P2 had 2 Layouts at 2946/2968 from countdown DOM updates, `before<mi:2188` / `remove<lr:1662`, plus `#people` scene=paused) | 2, 2, 3 (A2 +1 from countdown DOM updates, 2941) | **pass**: both hero-end Layouts gone in every P run |
-| 3r | **up-pass** 3100→2500, Layouts ≥ 3 ms in [2400, 3100] (v7 + v11, run order B P A \| B P A A P B) | **2, 3, 3 = 8** | **3, 4, 3 = 10** | **3, 3, 4 = 10** | **open (ii)**: P is +2 over B and equal to A/A in this sample; see below |
+| 3 | Sim W down 0→3100, up →2500, down again (B2 v7, n=1 per arm; ms are attribution only) | down: 18.8+17.5 @3003 (hero re-skip + fwWC wc=1) | first descent: **nothing ≥ 3 ms at the re-skip or the fwWC flip**; second descent: one 19.7 @3030 at the pair re-skip (row 3d2) | down: 19.6+18.7 @2998 | **pass** on the first descent (all runs: rows 3d, 3d2) |
+| 3d | **first descent**, Layouts ≥ 3 ms in [2900, 3100] at the hero end, v7 + v11 + v14-v19 (n=6 per arm; per-run table under "Open item (ii)") | hero re-skip (`setProperty<fwReskip:2822`) and fwWC wc=1 (`setAttribute<:2709`): **2 in 6 of 6**. Totals 2, 2, 2, 2, 5, 2 | from the re-skip or fwWC: **0 in 6 of 6**. Totals 0, 0, 3, 0, 0, 1: countdown DOM updates (`before<mi:2188`, `toggle<Zi:2852`), `#people` scene=paused, one with no initiator (P2 v11) | 2 in 5 of 5 captured (v15 A2's first descent is missing from its Timeline and flip log). Totals 2, 2, 3, 2, -, 2 | **pass** for the hero-end Layouts: P removes the re-skip and fwWC Layouts in every observed first descent. Other Layouts in that band remain, in P as in B |
+| 3d2 | **second descent** after the up-pass, same band, v7 + v14-v19 (n=4 per arm) | hero-end 2 in 4 of 4. Totals 4, 2, 2, 2 | hero-end 0 in 3 of 4. v7: one 19.7 @3030, the pair re-skip (`fwReskipOne:2844`) laid out by the page's own `getBoundingClientRect<l:11599`. Totals 3, 0, 0, 2 | hero-end 2 in 4 of 4. Totals 4, 2, 2, 3 | **mostly**: P removes them in 3 of 4; once the pair re-skip still cost a Layout |
+| 3r | **up-pass** 3100→2500, Layouts ≥ 3 ms in [2400, 3100], v7 + v11 + v14-v19 (n=6 per arm) | 3 in every run = **18**; no initiator in **0 of 6** | 4, 4, 3, 3, 3, 4 = **21**; no initiator in **3 of 6** (2927, 2951, 2677) | 4, 3, 4, 3, 4, 3 = **21**; no initiator in **2 of 6** (2718, 2743) | **open (ii)**: P +3 over B and equal to A/A in total; the P-only part is 2 of 6 runs near `#people`'s un-skip. See below |
 | 3b | flip log, every skip/un-skip of hero / `#people` with y (MutationObserver) | down: hero deferred @2995-3003; up: `#people` scene=active (rendered all along), hero active @2775-2788 | down: hero + `#people` deferred @2988-3007; up: **`#people` active exactly once** @2944-2954; hero active @2776-2792; down2: both deferred @2989 | as B | **pass**: no cycling, one `#people` un-skip per reversal |
 | 4 | `npm run test:unit` | | | | **pass** |
 | 5j | jumps J1 → `#people` top: Chrome from 3700 / 3800 (c5, c6, c7; n=8 per start per arm, alternating arm order), Sim from 3100 / 3450 (v8 B P A, v9 A P B; n=6 per start per arm) | FAIL 0, sync 0; hero placeholder 1 frame (heroPH 1) in every run | **FAIL 0**; sync fired once per jump, in the scroll event's frame; heroPH 1 (as B) | FAIL 0, sync 0, heroPH 1 | **pass** |
 | 5c | cold deck, Chrome J1 from 4500 (past `#people`'s own far edge; c8, n=3 per arm). This is the positive control | FAIL 1 in every run (`#people` deferred and on screen in the first frame) | FAIL 1, **sync 0** (`fwWith` already cleared) | FAIL 1 | **pass** (baseline behaviour, identical) |
 | 5n | negative control J1 from 3100 (hero not yet re-skipped), Chrome c9 | FAIL 0, sync 0, writes 0 | same | same | **pass** |
 | 5f | Chrome post-jump frames f1-f3 vs B, stamp-aligned (c5-c7) | | **f1 of r1 (first jump after a load): 182, 182, 603, 182 px, max Δ4, rounded corners**, 4 of 4 r1 runs; r2 and later: no Δ4 | f1: 1-827 px of Δ1 shimmer; **never Δ4** | **open (i)**, see below |
-| 5s | settled final shots after each jump | B vs P ≈8,000-10,000 px Δ11 in many runs | | B vs A same order (≈8-10 k px Δ11) | noise floor; **not identical in either pair** |
+| 5s | settled final shots after each jump (c5 + c6, n=11 per pair; `vres/c56-px.txt`) | | B vs P differ in **7 of 11** runs (8,147-10,052 px, Δ11) | B vs A differ in **4 of 11** (948-8,467 px, Δ11) | **not identical in either pair**; P differs more often in this sample |
 | 6 | deck swipe after scrolling back up (Sim v13, Chrome c12; rev 2) | active shell 0→1, 1 active shell, scrollLeft 0→390 (Sim) / 0→392 (Chrome) | same | same | **pass** |
-| 7 | invariant scenarios, Chrome c9 + c11 (XB=3771): W up 3771→3200; touch fling up 1600 px; J3 end→0; J4 end→`#people`; J4w (end reached by W steps); reload at 3771, then W up | FAIL 0 except J4/J4w (FAIL 1, positive control); sync 0 | FAIL 0 except J4w (FAIL 1, as B); **sync 0 in every scenario** | as B | **pass** |
+| 7 | invariant scenarios, Chrome c9 + c11 (XB=3771): W up 3771→3200; touch fling up 1600 px; J3 end→0; J4 end→`#people`; J4w (end reached by W steps); reload at 3771, then W up | FAIL 0 except J4/J4w (FAIL 1, positive control); sync 0 | FAIL 0 except J4w (FAIL 1, as B); **sync 0 in every scenario** | as B | **pass**, but after the reload the hero came back rendered in P and A (F-119), so the paired state was **not exercised after a reload** |
 | 7s | same on Sim v10: W up 3100→2500; smooth `scrollBy(-1600)` from 3100; J3; J4 | FAIL 0 except J4 (FAIL 1); sync 0; heroPH 1 on J3/J4 | identical counts; sync 0 | | **pass** |
-| 8 | idle, 10 s per spot (Chrome c10: bootstrap counters + MutationObserver; Sim v12: Timeline record counts + MutationObserver) | see "Idle" | | | **pass**: no new idle work |
+| 8 | idle, 10 s windows per spot (Chrome c10, n=1, B and P: bootstrap counters + MutationObserver; Sim v14-v19, 4 windows per arm per spot, B P A A P B: Timeline record counts + MutationObserver) | see "Idle" | | | **open (iii)** for the user: Chrome identical; on Sim no P-specific increase over B and A/A (two medians outside the B/A range at the reversal spot, by 0.1/s and -1/s) |
 
 ### Open item (i): the first-jump frame in Chrome
 
@@ -165,31 +169,45 @@ On the first jump after a load, P's first painted frame differs from B's by 182-
 - P c6 r1 f1 vs P c7 r1 f1: 0 px.
 - B r1 vs B r2 f1 within B: 74,871 px Δ36.
 
-So P's r1 f1 is the frame B itself paints whenever the deck rasters fresh after a load (a cold deck). The corner pattern is a raster-timing effect that B has too. **OBSERVED, cause unknown.**
+So P's r1 f1 is the frame B itself paints after a jump onto a cold deck. **Hypothesis**, OBSERVED, cause unknown: a raster-timing effect that B has too. An animation phase fits as well: every arm changes in the same corners from f1 to f2 (B 1,433 / 1,344, A 1,344, P 1,178 px, Δ6; B r2 1,011 px). Scope: the first jump only. A fling after load is unverified. A Chrome fling frame compare was not run: frames after a fling are not at the same scroll position across arms, so it needs frames matched by scroll position first.
 
 It is still a difference from B in the same scenario: r1 only, 182-603 px, max Δ4. The user's bar is byte-identical, so the lead puts it to the user. It is not waived here.
 
 ### Open item (ii): the up-pass Layout count on a reversal (Sim, attribution only)
 
-Event Layouts on the up-pass, with initiators (`tools/tlinit.mjs`):
+Per-run Layouts ≥ 3 ms (`tools/tsum.mjs`, initiators as `tools/tlinit.mjs`). Holds v7 (B P A), v11 (B P A A P B), v14-v19 (B P, A A, P B, B, P, A). v11 ran no second descent. "hero-end" = the hero re-skip and the fwWC wc=1 flip; countdown = DOM updates `before<mi:2188` / `toggle<Zi:2852`.
 
-| run | fwWC wc=0 (≈2950-2990) | `#people` un-skip | hero un-skip (≈2775-2792) | `#platform` scene paused (≈2600) | Layouts with no initiator |
-|---|---|---|---|---|---|
-| B v7 | 19.2 @2987 | n/a (rendered all along) | 20.1 @2775 | below 2500 | none |
-| B1 v11 | 25.2 @2980 | n/a | 23.0 @2788 | 18.7 @2597 | none |
-| B2 v11 | 26.0 @2982 | n/a | 24.1 @2783 | 23.8 @2600 | none |
-| P v7 | 20.0 @2954, **same Layout** as `#people` scene+render=active (`cE:2775`) | in the fwWC Layout | 20.9 @2778 | below 2500 | **20.0 @2927** |
-| P1 v11 | 28.4 @2951, same Layout as `#people` active | in the fwWC Layout | 22.5 @2776 | 24.5 @2585 | **21.0 @2951** (depth 2, same frame) |
-| P2 v11 | 25.5 @2950 (`#people` active; fwWC flip in the same frame) | same Layout | 21.1 @2792 | 23.3 @2602 | none |
-| A v7 | 25.4 @2978 | n/a | 22.4 @2771 | below 2500 | (22.3 @2918, `cE` `#people` scene active) |
-| A1 v11 | 22.7 @2990 | n/a | 22.7 @2776 | 24.0 @2585 | none |
-| A2 v11 | 23.0 @2987 | n/a | 21.8 @2778 | 23.3 @2591 | **18.9 @2718** (depth 2, `IL:loop` only) |
+| run | first descent [2900, 3100] | up: fwWC wc=0 (≈2950-3000) | up: `#people` un-skip | up: hero un-skip (≈2757-2792) | up: `#platform` scene paused (≈2585-2605) | up: no initiator | second descent [2900, 3100] |
+|---|---|---|---|---|---|---|---|
+| B v7 | 2 hero-end @3003 | 19.2 @2987 | n/a (rendered all along) | 20.1 @2775 | 20.5 @2587 | none | 4: hero-end 2 @3001, countdown 19.1 @2955, no initiator 18.4 @3001 |
+| B1 v11 | 2 hero-end @2995 | 25.2 @2980 | n/a | 23.0 @2788 | 18.7 @2597 | none | not run |
+| B2 v11 | 2 hero-end @2996 | 26.0 @2982 | n/a | 24.1 @2783 | 23.8 @2600 | none | not run |
+| B1 v14 | 2 hero-end (2989, 3042) | 24.6 @2990 | n/a | 21.6 @2775 | 21.9 @2585 | none | 2 hero-end (2987, 3040) |
+| B1 v16 | 5: hero-end 2 @2999, countdown 22.8 @2945, no initiator 19.2 @2954, countdown + `#people` scene=paused 17.9 @2962 | 23.4 @3000 | n/a | 22.1 @2790 | 18.8 @2601 | none | 2 hero-end @2999 |
+| B1 v17 | 2 hero-end (2987, 3040) | 21.2 @2988 | n/a | 21.2 @2792 | 20.1 @2605 | none | 2 hero-end (2987, 3021) |
+| P v7 | 0 | 20.0 @2954, **same Layout** as `#people` scene+render=active (`cE:2775`) | in the fwWC Layout | 20.9 @2778 | 25.3 @2594 | **20.0 @2927** | 3: countdown 21.8 @2943, countdown + scene paused 21.3 @2989, pair re-skip 19.7 @3030 (`getBoundingClientRect<l:11599`) |
+| P1 v11 | 0 | 28.4 @2951, same Layout as `#people` active | in the fwWC Layout | 22.5 @2776 | 24.5 @2585 | **21.0 @2951** (same frame) | not run |
+| P2 v11 | 3: countdown 21.8 @2946, countdown + scene paused 18.8 @2968, no initiator 20.6 @2968 | 25.5 @2950, `#people` active in the same Layout | same Layout | 21.1 @2792 | 23.3 @2602 | none | not run |
+| P1 v14 | 0 | 29.0 @2950, same Layout as `#people` active | same Layout | 23.9 @2774 | 19.3 @2596 | none | 0 |
+| P1 v16 | 0 | 25.8 @2949, same Layout as `#people` active | same Layout | 21.8 @2792 | 23.4 @2602 | none | 0 |
+| P1 v18 | 1: countdown 18.0 @2923 | 19.8 @2956, same Layout as `#people` active | same Layout | 20.6 @2757 | 20.0 @2592 | **18.5 @2677** | 2: countdown 18.3 @2941, countdown + scene paused 19.0 @2969 |
+| A v7 | 2 hero-end @2998 | 25.4 @2978 | n/a (22.3 @2918, `cE` `#people` scene active) | 22.4 @2771 | 24.7 @2587 | none | 4: countdown 25.2 @2931, countdown + scene paused 19.7 @2976, hero-end 2 @3038 |
+| A1 v11 | 2 hero-end (2989, 3042) | 22.7 @2990 | n/a | 22.7 @2776 | 24.0 @2585 | none | not run |
+| A2 v11 | 3: countdown 22.2 @2941, hero-end 2 (2987, 3040) | 23.0 @2987 | n/a | 21.8 @2778 | 23.3 @2591 | **18.9 @2718** | not run |
+| A1 v15 | 2 hero-end @2993 | 25.3 @2994 | n/a | 22.8 @2782 | 19.7 @2595 | none | 2 hero-end @2993 |
+| A2 v15 | not captured (no hero re-skip or fwWC flip in the Timeline or the flip log; 501 records vs ~760 in other v14-v19 runs) | 21.3 @2980 | n/a | 21.2 @2780 | 20.9 @2597 | **20.1 @2743** | 2 hero-end @2995 |
+| A1 v19 | 2 hero-end @2995 | 23.3 @2975 | n/a | 21.5 @2792 | 23.8 @2603 | none | 3: countdown 21.9 @2957, hero-end 2 @2994 |
 
-- **The event Layouts are the same in P and B:** fwWC, hero un-skip, `#platform`. P's `#people` un-skip costs no Layout of its own; it shares the fwWC one.
-- **The difference is the no-initiator Layouts.** P had one in 2 of 3 runs (20.0 @2927, 21.0 @2951). B had none in 3. A had one in 3 (18.9 @2718). With n=3 that is not separable from A/A, and it is not shown to be zero either.
-- It is reported as a possible cost of the fix on reversals: at most one ~20 ms Layout near 2930-2950 going up. Against it, going down, P removes both hero-end Layouts in every run (row 3d: B 2, 2, 2 → P 0, 0, 0).
+Rev 2's row 3r counted v7 as 2 / 3 / 3 (B / P / A): it placed v7's `#platform` Layout below 2500. `tsum.mjs` maps each Layout's y from that run's frame log and puts it at 2587-2594 in all three v7 arms, so v7 counts one more in every arm here.
 
-Per-250 px counts of Layouts ≥ 3 ms (`tools/bins.mjs`). These include unrelated work (countdown DOM updates `before<mi:2188`, `#platform` scene), so only the event rows above are attributable:
+- **Going down, P removes the hero-end Layouts:** 0 in 6 of 6 first descents (B and A/A: 2 in every captured run) and in 3 of 4 second descents. In v7's second descent the pair re-skip still cost one Layout, forced by the page's own `getBoundingClientRect` (l:11599). Other Layouts in that band remain in P as in B: countdown DOM updates, `#people` scene=paused, and Layouts with no initiator (P2 v11 down, B v16 down).
+- **Going up, the event Layouts are the same in P and B:** fwWC, hero un-skip, `#platform`. P's `#people` un-skip costs no Layout of its own; it shares the fwWC one in 6 of 6.
+- **The difference is the no-initiator Layouts:** P in 3 of 6 runs, B in 0 of 6, A/A in 2 of 6. By position:
+  - P v7 (2927) and P1 v11 (2951) sit at or just after `#people`'s un-skip (2954, and the same frame at 2951). Only P un-skips anything there. **Likely caused by that extra un-skip; n=6, cause unknown.**
+  - P1 v18 (2677) and both A/A ones (2718, 2743) come 37-80 px after the hero un-skip, where every arm does the same work. B has none there in 6 runs; A/A has the same code as B, so this one is not attributed to the patch.
+- It is reported as a possible cost of the fix on reversals: one ~20 ms Layout near 2930-2950 going up, in 2 of 6 runs. Against it, going down, P saves two ~18 ms Layouts at the hero end in every first descent (6 of 6).
+
+Per-250 px counts of Layouts ≥ 3 ms (`tools/bins.mjs`, v7 + v11 only). These include unrelated work (countdown DOM updates `before<mi:2188`, `#platform` scene), so only the event rows above are attributable:
 
 | dir | y | B (n=3) | P (n=3) | A (n=3) |
 |---|---|---|---|---|
@@ -215,19 +233,38 @@ Chrome c10 (per second; io/ro = observer callbacks, wAttr/wCls/wProp = attribute
 | parked 3500 after a reversal from 3771 | raf 24.4, wAttr 4, wProp 20; characterData 16.6 | **identical** |
 | pin (page end) | raf 0, wAttr 4, wProp 6.6 | **identical** |
 
-Sim v12 (Timeline records per second between two marks; MutationObserver counts):
-- The bootstrap script did not survive WebKit's reload (`boot false`). So the per-callback wrappers are missing on Sim, and the Timeline types stand in for them.
+Chrome c10 is one window per arm, B and P only.
 
-| spot | B | P |
-|---|---|---|
-| y0 | rAF 29.5, Layout 38.7, Paint 48.6, IO cb 2.0, FunctionCall 75.5; mut style 65.8 | rAF 33.0, Layout 39.9, Paint 50.2, IO cb 2.0, FunctionCall 82.4; mut style 74.5 |
-| parked 3100 (band) | rAF 21.4, Layout 24.4, Paint 63.8, IO 0.1; mut style 21.5, characterData 13.5 | rAF 24.5, Layout 27.4, Paint 78.5, IO 0.1; mut style 20.2, characterData 16.4 |
-| parked 2850 after a reversal (no rAF recorded in either arm) | Layout 22.8, Paint 29.2, IO 1.9; childList 16 | Layout 19.3, Paint 26.1, IO 1.9; childList 16 |
-| pin | Paint 236.2, Layout 58.2; mut style 6.6 | Paint 234.8, Layout 58.1; mut style 6.6 |
+Sim v14-v19 (review 2): Timeline records per second between two marks, plus MutationObserver counts. Four 10 s windows per arm per spot (two per hold), arms over the six holds B P A A P B. Median [min-max] per second (`tools/idlesum.py`, logs `vres-v14.log` … `vres-v19.log`):
+- The bootstrap script does not survive WebKit's reload (v12, `boot false`), so the Sim run has no per-callback wrappers and no reload; the Timeline types stand in for them.
+- The paired state is reached at the band spot: P logs `people:d` there, B and A `people:a`. At the reversal spot (2850) `#people` is rendered in every arm.
 
-- At y0 the two builds run the same code. There P is 5-12 % above B, which puts the spread of a single 10 s window at about that size.
-- In the band (3100), P's Paint (78.5 vs 63.8) and rAF (24.5 vs 21.4) are higher, by about as much as at y0. n=1, cause unknown. The same spot in Chrome is identical.
-- No new observer callbacks or attribute writes appear in P at any spot, in either engine.
+| spot | type | B | P | A (A/A) |
+|---|---|---|---|---|
+| y0 | rAF | 29.7 [29.3-30.0] | 29.6 [29.3-35.5] | 29.6 [29.2-29.6] |
+| y0 | FunctionCall | 76.0 [75.4-76.6] | 75.5 [75.0-87.1] | 75.0 [74.2-76.0] |
+| y0 | Layout | 41.4 [41.2-42.1] | 41.0 [38.0-43.5] | 41.1 [38.9-43.4] |
+| y0 | Paint | 48.0 [45.1-50.6] | 48.0 [47.3-49.6] | 48.0 [47.4-48.4] |
+| y0 | mut style | 66.4 [66.0-67.3] | 66.7 [66.2-82.3] | 66.1 [65.2-67.8] |
+| band 3100 | rAF | 18.1 [12.1-24.4] | 18.2 [12.3-24.4] | 18.3 [12.1-24.5] |
+| band 3100 | RecalculateStyles | 37.4 [35.9-38.5] | 37.7 [33.0-41.6] | 38.2 [36.4-40.6] |
+| band 3100 | Layout | 26.6 [25.7-27.4] | 27.0 [26.8-27.7] | 26.8 [26.1-27.6] |
+| band 3100 | Paint | 68.3 [58.3-78.0] | 67.6 [58.5-79.3] | 68.4 [59.1-78.9] |
+| band 3100 | Composite | 43.8 [42.0-45.9] | 46.0 [41.1-50.4] | 44.5 [42.7-48.8] |
+| band 3100 | IO callbacks | 0.2 [0.1-0.2] | 0.2 [0.1-0.2] | 0.2 [0.1-0.2] |
+| band 3100 | characterData | 15.1 [13.9-16.6] | 15.1 [14.0-16.6] | 15.2 [13.9-16.6] |
+| reversal 2850 | RecalculateStyles | 29.9 [28.4-30.0] | 31.6 [26.0-35.9] | 31.6 [27.7-34.3] |
+| reversal 2850 | Layout | 20.2 [19.0-20.7] | 20.8 [19.4-21.2] | 20.5 [18.3-20.7] |
+| reversal 2850 | Paint | 26.7 [26.4-27.0] | 25.4 [25.0-26.3] | 27.2 [26.8-27.6] |
+| reversal 2850 | Composite | 32.4 [31.8-33.7] | 35.2 [28.6-42.2] | 35.4 [29.8-38.7] |
+| pin | Layout | 58.1 [58.0-58.4] | 58.0 [57.8-58.1] | 58.5 [58.2-58.7] |
+| pin | Paint | 236.1 [236.0-236.2] | 236.1 [235.8-236.4] | 236.4 [235.9-236.6] |
+
+- Every P median lies inside the range of B's and A/A's eight windows at that spot, for every type logged (the full list is in `idlesum.py`'s output), except two at the reversal spot: Layout 20.8 vs at most 20.7 (+0.1/s) and Paint 25.4 vs at least 26.4 (lower). At that spot `#people` is rendered in every arm.
+- One P window at y0 is high (rAF 35.5, FunctionCall 87.1, mut style 82.3). At y0 all builds run the same code, and the other three P windows sit with B and A/A.
+- In the band, where P has `#people` skipped, the spread inside each arm is large (Paint 58-79 in every arm), and the three medians agree within 1-5 %. The v12 single window (P Paint 78.5 vs B 63.8, +23 %) fits inside that spread: it was window noise.
+- IO callback rates are equal in every arm at every spot. No new observer callbacks or attribute writes appear in P, in either engine.
+- The user decides item (iii); n=4 windows per arm per spot, attribution only.
 
 ### Sim capture calibration
 
@@ -237,7 +274,7 @@ Rev 1's row 5v recording claims are withdrawn as evidence. They include the J1 f
 
 ### What earlier statements became
 
-- Rev 1 line 131, "a deferred section on screen still renders": **REFUTED.** A section that a jump brings on screen while it is skipped stays skipped in that frame. We see it in both engines as heroPH 1 / FAIL 1 in the baseline. The spec agrees: "Proximity determinations other than the initial one take effect at the next rendering opportunity" (HTML, update the rendering, html.spec.whatwg.org/multipage/webappapis.html, read 2026-10-02). That is why variant (a) un-skips `#people` from `iE`, before style, in the scroll event's frame.
+- Rev 1 line 131, "a deferred section on screen still renders": **REFUTED.** A section that a jump brings on screen while it is skipped stays skipped in that frame. We see it in both engines as heroPH 1 / FAIL 1 in the baseline. The spec agrees: "Proximity determinations other than the initial one take effect at the next rendering opportunity". This is the HTML spec, not CSS Contain 2: event loop processing model, "update the rendering", the step that loops "Recalculate styles and update layout" and determines proximity to the viewport for each `content-visibility: auto` element (html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model, the note after that sub-step, citing [CSSCONTAIN]; read 2026-10-02). WebKit's behaviour here stays OBSERVED (Sim v8/v9 heroPH 1 in every arm). That is why variant (a) un-skips `#people` from `iE`, before style, in the scroll event's frame.
 - Rev 1 line 133, "not caused by the patch": dropped. The Sim recordings cannot carry that claim (calibration above).
 - Rev 1 row 5, "settled shots identical": wrong. The settled shots differ by ≈8-10 k px Δ11 for B vs P and for B vs A alike (row 5s). Rev 1 had no jump A/A; rev 2 has one.
 
@@ -260,8 +297,18 @@ The J4w scenario reaches the end by W steps to avoid it.
 - Idle after a long scroll session (beyond 10 s per spot).
 - Reduced motion.
 - Desktop widths.
-- Reload while scrolled ran in Chrome only (c11); not on Sim.
+- Reload while scrolled ran in Chrome only (c11); not on Sim. The paired state was not reached after the reload (row 7).
+- bfcache restore (back/forward to a scrolled page).
+- Resize and orientation change.
+- A finger fling on iOS (item iv).
 - The short reversal is covered by B2 (rows 3, 3r, 3b).
+
+### Open item (iv): touch and async scrolling (UNRESOLVED)
+
+In the band (hero far edge to `#people`'s own far edge), B always has `#people` rendered. P has it skipped and un-skips it from the main thread: from `cE`, `sE` or `iE`. On iOS the UI process scrolls ahead of the main thread. During a fast finger fling up through the band, while a ~20 ms Layout runs, the compositor could show the skipped deck before `iE` runs. B cannot show that.
+- `inv.js` cannot see it, because it runs on the main thread. Chrome's touch fling and Sim `scrollBy` cannot see it either.
+- The decisive check is a phone G (WDA gesture) or F (finger) fling up from the band with a screen recording, B vs P.
+- Per protocol (touch effects need G/F before landing), fwreskip does not land until that check runs. The phone is unplugged, so the fix waits for it.
 
 ## Risks, conflicts, follow-ups
 

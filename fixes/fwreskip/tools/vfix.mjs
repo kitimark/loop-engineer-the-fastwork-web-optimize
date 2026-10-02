@@ -200,41 +200,38 @@ if (MODE === 'X') {
 }
 
 if (MODE === 'I') {
-  // idle counts/s over IDLE_MS at y0, parked 3100 (W steps from 0), parked 2850 after a reversal from 3100, and the pin.
-  // Bootstrap counters via Page.setBootstrapScript (before page scripts); boot false means only MO counts are valid.
-  for (const arm of arms) {
+  // idle counts/s, IWIN windows of IDLE_MS each per spot: y0, parked 3100 (W steps from 0), parked 2850 after a reversal
+  // from 3100, and the pin. Timeline record types per second between the window's fwI0/fwI1 marks + MutationObserver
+  // counts. IORDER="B P A A P B" repeats arms (labels B1 P1 A1 A2 P2 B2). The WebKit bootstrap script does not survive
+  // a reload (v12, boot false), so no bootstrap/reload here.
+  const cnt = {};
+  const iarms = process.env.IORDER ? process.env.IORDER.split(/\s+/).filter(Boolean).map((l) => ({ label: `${l}${(cnt[l] = (cnt[l] || 0) + 1)}`, url: arms.find((a) => a.label === l).url })) : arms;
+  const IWIN = +(process.env.IWIN || 1), MS = +(process.env.IDLE_MS || 10000);
+  for (const arm of iarms) {
     const a = (res.arms[arm.label] = { spots: [] });
     await go(arm.url);
-    // bootstrap on this connection, then a same-origin reload (keeps the target when WebKit does not swap processes)
-    try { await c.send('Page.setBootstrapScript', { source: BOOT }); a.bootSet = true; } catch (e) { a.bootSet = String(e.message || e); }
-    await c.evaluate(`setTimeout(() => location.reload(), 50); 'ok'`).catch(() => {});
-    await sleep(2500);
-    try { await c.evaluate('1'); } catch (e) { try { c.close(); } catch {} c = await openTab(new URL(arm.url).host); a.reconnected = true; }
-    for (let i = 0; i < 60; i++) { if ((await c.evaluate('document.readyState')) === 'complete') break; await sleep(500); }
-    await sleep(6000);
-    a.boot = await ev(`return !!window.__fwCB;`);
-    log(`I ${arm.label} boot ${a.boot} (${a.bootSet}${a.reconnected ? ', reconnected' : ''})`);
     const recs = [];
     c.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
     for (const [m, p] of [['Page.disable', {}], ['Page.enable', {}], ['Timeline.enable', {}], ['Timeline.setInstruments', { instruments: ['Timeline'] }], ['Timeline.start', { maxCallStackDepth: 1 }]]) { try { await c.send(m, p); } catch (e) { console.error(m, String(e.message || e)); } }
     for (const [name, gocode] of [['y0', `await wait(500);`], ['band', `await stepTo(3100);`], ['reversal', `await stepTo(2850);`], ['pin', `await stepTo(document.documentElement.scrollHeight - innerHeight);`]]) {
-      const n0 = recs.length;
-      const s = await ev(`${gocode} await wait(2000); return { name: ${JSON.stringify(name)}, ...(await __idle(${+(process.env.IDLE_MS || 10000)})) };`);
-      await sleep(1500);
-      // Timeline record types between the fwI0 / fwI1 marks (top-level and nested), per second
-      const flat = []; const walk = (x) => { flat.push(x); for (const k of x.children || []) walk(k); };
-      for (const x of recs.slice(n0)) walk(x);
-      const mk = (id) => flat.find((x) => x.type === 'TimeStamp' && JSON.stringify(x.data || {}).includes(id));
-      const m0 = mk('fwI0'), m1 = mk('fwI1');
-      if (m0 && m1) {
-        const cnt = {}; for (const x of flat) if (x.startTime >= m0.startTime && x.startTime <= m1.startTime && x.type !== 'TimeStamp') { const k = x.type + (x.type === 'ObserverCallback' && x.data && x.data.type ? ':' + x.data.type : ''); cnt[k] = (cnt[k] || 0) + 1; }
-        s.tl = Object.fromEntries(Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, +(v / s.s).toFixed(1)]));
-      } else s.tl = 'marks not found';
-      a.spots.push(s);
-      log(`I ${arm.label} ${name} y${s.y} ${s.attrs} | ${JSON.stringify(s.per)} | mut ${JSON.stringify(s.mut)} | tl ${JSON.stringify(s.tl)}`);
+      await ev(`${gocode} await wait(1500); return 1;`);
+      for (let w = 0; w < IWIN; w++) {
+        const n0 = recs.length;
+        const s = await ev(`return { name: ${JSON.stringify(name)}, w: ${w}, ...(await __idle(${MS})) };`);
+        await sleep(800);
+        const flat = []; const walk = (x) => { flat.push(x); for (const k of x.children || []) walk(k); };
+        for (const x of recs.slice(n0)) walk(x);
+        const mk = (id) => flat.find((x) => x.type === 'TimeStamp' && JSON.stringify(x.data || {}).includes(id));
+        const m0 = mk('fwI0'), m1 = mk('fwI1');
+        if (m0 && m1) {
+          const k2 = {}; for (const x of flat) if (x.startTime >= m0.startTime && x.startTime <= m1.startTime && x.type !== 'TimeStamp') { const k = x.type + (x.type === 'ObserverCallback' && x.data && x.data.type ? ':' + x.data.type : ''); k2[k] = (k2[k] || 0) + 1; }
+          s.tl = Object.fromEntries(Object.entries(k2).sort((p, q) => q[1] - p[1]).map(([k, v]) => [k, +(v / s.s).toFixed(1)]));
+        } else s.tl = 'marks not found';
+        a.spots.push(s);
+        log(`I ${arm.label} ${name} w${w} y${s.y} ${s.attrs} | mut ${JSON.stringify(s.mut)} | tl ${JSON.stringify(s.tl)}`);
+      }
     }
     try { await c.send('Timeline.stop'); } catch (e) {}
-    try { await c.send('Page.setBootstrapScript', {}); } catch (e) {}
     try { await c.send('Page.disable'); } catch (e) {}
     c.close(); c = null;
   }
