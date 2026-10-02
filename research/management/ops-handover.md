@@ -309,6 +309,24 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   ~15 min + a recorded swipe pair (Mac-quiet window), after G1, before PR-001. P-ID REGISTRY: P-056/056a/056b/056c
   fix-scene-scope, P-057 fix-scroll-engine (G1), P-058 de-illusion-style (PR-001 phone), P-059 wi-stack (stack test);
   next free P-060. Rows live on the owners' branches until they land.
+  07:4xZ G1 BLOCK 1 FINAL (fwreskip): no FAIL; the white deck placeholder shows in B too; formally INCONCLUSIVE (B n=1,
+  the 1-frame magenta flash can be missed). Real finding: P adds 15-40 ms at the #people un-skip on a fast fling up
+  (P 65-92 ms vs B <=57). Block 2 CANCELLED on this build. P2 = the un-skip runs when idle, after 300 ms of rest;
+  P-060 committed pre-data (c6d13ca); snapshots out/fwreskip/snap-g1b/{B,P2}, second read OK (P2 JS 9fe824464da2,
+  B dbd5fdb4f1fb, CSS 0d7dfc79e703 both); flinglog v2, fling-band-v2.json. Next: Sim checks, review, then ticket G1b.
+  iphone-runner stops the G1 servers. PHONE ORDER (supersedes 07:1xZ): (1) stack test; (2) PR-001 blocks A/B; (3) G1b;
+  (4) PR-002 / T-011; (5) T-009 curve; (6) I-042 check. P-ID REGISTRY: + P-060 fix-scroll-engine (G1b); next free P-061.
+  LOAD: load1 175 (5-min 71) at 07:28Z during a Sim session (de-illusion-style). holds.log shows one short hold that
+  failed then: test-chrome (ts-i054's checkout) 07:22-07:26Z exit 1, re-run from 07:37Z. Shared-lane readers write no
+  hold record, so their failures and timeouts can't be checked from the lock logs (gap reported to the lead).
+  I-057 OPEN (tool, non-blocking): flaky e2e progress-cli I-048 shared-lane test (load1 > 16 refuses the 2nd reader); assigned to ts-i053.
+  07:5xZ I-054 LANDED 67847b4 + RESOLVED (serve.mjs HTTP Range; re-measure only for A/Bs that serve video or media).
+  Broadcast to active worktree agents: rebase between steps, never mid-hold. Sim-load: no cap change (lead). I-056 gets
+  item (d): shared-lane readers log exit code and duration to holds.log. ts-i056 spawned for I-056 (a)-(d).
+  S1 STACK TICKET second read (wi-stack 3ec9fc9, P-059 pre-data in the same commit): hashes OK (C JS dbd5fdb4f1fb /
+  CSS 0d7dfc79e703; V JS 59b23b3f57fd / CSS 6e09b2c708fa), one control (RB), driver S, warm-up per port, C V V C C V V
+  C, ~15 min, Timeline off. One fix asked: a non-Timeline S block also holds every counted C run to the sentinel
+  (bottom >=58, scroll >=44; a failing C voids runs since the last passing control). S1 is now next on the phone.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
@@ -945,7 +963,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `ts-progress-lane` | toolsmith (lead spawn 22:11Z): I-048, shared-lane readers missing from the progress page and status board | ended (I-048 landed 9fd2d3a) |
 | `ts-i053` | toolsmith (lead spawn 06:4xZ): I-053, one proposal carries several options, the user picks one | alive |
 | `wi-stack` | wave integrator (lead spawn 07:1xZ): stack5 = cdwc + f3-arm-scope + re-keep-op + blur-cubic + st6 on today's best; functional checks (shared), phone ticket best vs stack5 (S) + blind swipe pair, P-row first; ask mgmt-ops for shas/branches | alive |
-| `ts-i054` | toolsmith (lead spawn 06:5xZ): I-054, serve.mjs HTTP Range support (blocks PR-001 arm V); changes what serve.mjs serves (called out, test:chrome); expect a shared-lane npm test | alive |
+| `ts-i054` | toolsmith (lead spawn 06:5xZ): I-054, serve.mjs HTTP Range support (blocks PR-001 arm V); changes what serve.mjs serves (called out, test:chrome); expect a shared-lane npm test | ENDED (landed 67847b4) |
+| `ts-i056` | toolsmith (lead spawn 07:5xZ): I-056 phone measure guard (a) shared group passes as short, (b) same-owner --no-timing exception, (c) gesture-run.mjs guard, (d) shared readers log to holds.log | alive |
 | `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
 | `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | ended (landed 14806cb..8fa38f7; worktree removed 20:2xZ) |
 | `ts-console-threads` | toolsmith: console threads (one thread per topic for the user) | ended (landed 545cf85, 77d318c, fc07bb1; worktree removed 20:2xZ) |

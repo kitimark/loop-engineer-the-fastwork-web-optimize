@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T07:28:00Z",
+ "updatedAt": "2026-10-02T07:42:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -227,7 +227,7 @@
    "fixes": "Around the middle of the page, two frames cost about 20 ms each, mostly layout, while a large section (the people list) is still being drawn although it is about to leave the view. The chosen fix sets it aside earlier, so that work is not done while it cannot be seen.",
    "felt": {"answer": "not-yet"},
    "gate": "Lands only after checks that nothing on screen changes and a finger fling test on the real iPhone; no speed test while timing is on hold.",
-   "next": "The fling test on the iPhone ran; one possible visual difference (a blank card area for a moment) is being checked before landing.",
+   "next": "The fling test showed one slower frame on a fast fling up, when the people section starts drawing again. A new version does that drawing after you pause instead; it gets a Simulator check, then a phone test after PR-001.",
    "owner": "fix-scroll-engine (from fix-scene-scope)",
    "checks": [],
    "details": [
@@ -237,7 +237,8 @@
     "02:0xZ review-fwreskip on 6fd09a6 NEEDS-WORK: B1 Chrome one-frame #people placeholder after an instant jump from the band ~[3659, 3892] (C11 queued un-skip); B2 short reversal not run; B3 no idle triple; B4 scenarios list incomplete. Lead: no waiver; variant (a): synchronous un-skip of the fwWith partner in the rE scroll listener within ~1 vh, rule restricted to the hero's partner; rerun jump checks with controls n>=5, Sim reversal, idle triple; re-review. User told (T-005), incl. a correction: 'settled pixels identical' was too strong.",
     "03:3xZ review-fwreskip-2 on 3ce8ce3 NEEDS-WORK: review-1 B1/B2/B4 closed. Blocking: down-pass overstated (first descent per run B 2,2,2 / P 0,0,3 / A 2,2,3; down2 P 1 vs B 2); Sim idle not settled (Paint +23 % at 3100, n=1, no A arm); no-initiator Layouts sit at the extra #people un-skip; undeclared touch/async-scroll risk (iOS UI process scrolls ahead of iE, which un-skips from the main thread). Lead: no landing before a phone G/F fling check; Sim repeats B P A A P B (6 x 3.5 min). User told T-005 #18.",
     "03:5xZ review-fwreskip-2 recheck on f7f24f4: ACCEPT on README and data (high confidence; numbers recomputed, v7 recount legitimate). (iii) idle closed by the lead: no idle cost found (n=4 windows from 2 holds per arm, A/A). Owner makes wording-only edits (new sha, no re-review). User asked (i) corner pixels and (ii) the up-pass trade in T-005 #19. Landing gate (iv): phone G/F fling check when the iPhone is on USB.",
-    "07:1xZ G1 block 1: every recording dropped frames at load1 38-94 (Mac-quiet window applied since); 4 of 8 lost the calibration frame (VOID, re-run). A white deck placeholder at fling +1013 ms (7P) was also found in B (1B, 4B): not fwreskip's; under check; the landing gate holds."
+    "07:1xZ G1 block 1: every recording dropped frames at load1 38-94 (Mac-quiet window applied since); 4 of 8 lost the calibration frame (VOID, re-run). A white deck placeholder at fling +1013 ms (7P) was also found in B (1B, 4B): not fwreskip's; under check; the landing gate holds.",
+   "07:4xZ G1 block 1 final: no FAIL; the white deck shows in B too; formally inconclusive (B n=1). Finding: P adds 15-40 ms at the #people un-skip on a fast fling up (P 65-92 ms vs B <=57). Block 2 cancelled. P2 un-skips when idle, after 300 ms of rest (P-060, c6d13ca, before data); Sim checks and review, then phone G1b after PR-001."
    ]
   },
   {
