@@ -1,0 +1,76 @@
+# fastwork mirror fix: fwreskip
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/rb/overlay: apply rb first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply fwreskip --on rb
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js dbd5fdb4f1fb7e255aa2a34e435e0d1031446826ec9015df8df094f07fceaa83
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2739,7 +2739,9 @@
+ function sE(e, t) {
+   if (!(!e.deferRendering || !e.element)) {
+     if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
+-      (fwDef.delete(e), e.element.setAttribute(`data-start-selling-render`, `active`));
++      (fwDef.delete(e), (e.fwWith = null), e.element.setAttribute(`data-start-selling-render`, `active`));
++      // [scroll-engine /10f] a section re-skipped together with this one (fwReskip) comes back with it.
++      for (let n of $T) n.fwWith === e && sE(n, !0);
+       return;
+     }
+     e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
+@@ -2762,7 +2764,10 @@
+     e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
+     e.active !== t &&
+       ((e.active = t),
+-      t && sE(e, !0),
++      // [scroll-engine /10f] the scene gate does not un-skip a section re-skipped together with the section
++      // above it while that one is still skipped: both come back with the upper one (fwRender at gate + 50 %),
++      // which keeps the 0.25 vh hysteresis below the far edge. fwRender's own IO for this section still un-skips it.
++      t && !(e.fwWith && e.fwWith.element?.getAttribute(`data-start-selling-render`) === `deferred`) && sE(e, !0),
+       e.onActiveChange?.(t),
+       t && rE(),
+       // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
+@@ -2811,7 +2816,13 @@
+ function fwFM(e) {
+   return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
+ }
+-function fwReskip(e, t) {
++// [scroll-engine /10f] re-skip neighbours together. A containment flip (this section going back to
++// content-visibility) next to a big sibling that is still rendered relays that sibling out (Sim, OBSERVED:
++// the hero's re-skip at y~2988 relaid out the whole #people profile deck, ~20 ms; #people's own re-skip edge
++// is ~0.7 vh later). So the next deferRendering section in document order goes back in the same style
++// change when it is inactive and wholly above the viewport. Its rect is read before any write, so the read
++// finds the layout the IO callback ran after (no forced layout of the flip).
++function fwReskipOne(e, t) {
+   !e.deferRendering ||
+     !e.element ||
+     e.active ||
+@@ -2821,6 +2832,28 @@
+     t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
+     e.element.setAttribute(`data-start-selling-render`, `deferred`));
+ }
++function fwNextSection(e) {
++  let t = null;
++  for (let n of $T) {
++    if (n === e || !n.deferRendering || !(n.element instanceof HTMLElement)) continue;
++    let r = e.element.compareDocumentPosition(n.element);
++    !(r & Node.DOCUMENT_POSITION_FOLLOWING) ||
++      r & Node.DOCUMENT_POSITION_CONTAINED_BY ||
++      (t && !(n.element.compareDocumentPosition(t.element) & Node.DOCUMENT_POSITION_FOLLOWING)) ||
++      (t = n);
++  }
++  return t;
++}
++function fwReskip(e, t) {
++  if (!e.deferRendering || !e.element || e.active || e.element.getAttribute(`data-start-selling-render`) === `deferred`) return;
++  let n = fwNextSection(e),
++    r = null;
++  if (n && !n.active && n.element.getAttribute(`data-start-selling-render`) !== `deferred`) {
++    let i = n.element.getBoundingClientRect();
++    i.bottom < 0 && i.height > 0 && (r = i.height);
++  }
++  (fwReskipOne(e, t), r !== null && ((n.fwWith = e), fwReskipOne(n, r)));
++}
+ function fwFar(e, t, n) {
+   let r = fwFarG.get(n);
+   r ||
