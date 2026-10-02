@@ -1130,9 +1130,12 @@ curl -s http://localhost:<port>/_app/immutable/nodes/2.DyWL8TcE.js | shasum -a 2
 
 **Block** (protocol v2 §5, a Timeline block; `--owner iphone-runner --block T011`; about 20 min):
 
+0. Mac-quiet window (lead rule 10-02 08:28Z): the whole block runs inside one exclusive `--no-timing` chrome-measure hold
+   with load1 <= 8 at run start (needs I-056(b), ts-i056).
 1. Heat: the Timeline-OFF sentinels below decide (attribution block, LEAD.md); Low Power Mode off (record it).
 2. Park Safari, start both servers, check the served hashes.
-3. Uncounted warm-up, one per port, C first: open the arm's URL, wait 6 s.
+3. Uncounted warm-up RUN, one per port, C first: one W run as in step 5 (Timeline on, not scored; at least an S run),
+   labelled `wC0` / `wV0`.
 4. Opening sentinel: one uncounted C run with Timeline **off** (S driver, as in `sr2.sh` (`one.sh <label> <C port>
    scroll`), or `iphone.mjs run --driver scroll --probe std --arm C --block T011`): bottom >= 58 fps and scroll >= 44 fps.
 5. Counted runs, **C V V C C V V C** (8), each the W Timeline run of `sr2.sh`: battery read, `iphone.mjs open <arm URL>`,
