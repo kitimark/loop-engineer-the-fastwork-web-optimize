@@ -5,6 +5,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
+import os from 'node:os';
 import http2 from 'node:http2';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -83,6 +84,34 @@ test('--port auto: per-checkout port in 5200-5999; two servers from one checkout
   await Promise.all([a.stop(), b.stop()]);
 });
 
+// a plain-http listener on one address (like the console server on 127.0.0.1); null when the port is taken already
+const holdPort = (port, host) => new Promise((done) => {
+  const srv = net.createServer((c) => c.end('HTTP/1.1 418 not the mirror\r\nconnection: close\r\n\r\n'));
+  srv.once('error', () => done(null));
+  srv.listen(port, host, () => done(srv));
+});
+
+test('--port auto skips a port another process listens on at 127.0.0.1 or 0.0.0.0 (I-065: localhost reached the console server)', async () => {
+  const { autoPortBase } = await import('../../tools/lib/paths.mjs');
+  const base = autoPortBase();
+  // on macOS a listen on 0.0.0.0:p succeeded beside 127.0.0.1:p (SO_REUSEADDR), and https://localhost:p/ then reached the other process
+  const holders = [await holdPort(base, '127.0.0.1'), await holdPort(base + 1, '0.0.0.0')];
+  // and one on a LAN address, where the iPhone would reach the other process (when this Mac has one)
+  const lan = Object.values(os.networkInterfaces()).flat().find((a) => a && a.family === 'IPv4' && !a.internal)?.address;
+  if (lan) holders.push(await holdPort(base + 2, lan));
+  const first = lan ? base + 3 : base + 2;
+  try {
+    for (const https of [false, true]) {
+      const s = await serve(['--port', 'auto', '--quiet', ...(https ? ['--https'] : [])]);
+      assert.ok(s.port >= first && s.port < base + 60, `${s.port}: not past the held ports ${base} (127.0.0.1), ${base + 1} (0.0.0.0)${lan ? `, ${base + 2} (LAN)` : ''}`);
+      const r = await request(s.url + '__mirror/info');
+      assert.equal(r.status, 200, 'localhost reaches this mirror server (the holders answer 418)');
+      assert.equal(JSON.parse(r.text).root, fx.site);
+      await s.stop();
+    }
+  } finally { for (const h of holders) h?.close(); }
+});
+
 test('fixed --port N listens on exactly N; an occupied fixed port fails loudly instead of moving', async () => {
   const p = await freePort();
   const s = await serve(['--port', String(p), '--quiet']);
@@ -98,6 +127,15 @@ test('fixed --port N listens on exactly N; an occupied fixed port fails loudly i
     assert.match(r.stderr, new RegExp(`port ${busy} is already in use`));
     assert.doesNotMatch(r.stdout, /MIRROR_URL=/);
   } finally { blocker.close(); }
+  // held on 127.0.0.1 only (I-065): before, serve bound 0.0.0.0:N beside it and printed MIRROR_URL for a port localhost does not reach
+  const lo = await holdPort(await freePort(), '127.0.0.1');
+  try {
+    const n = lo.address().port;
+    const r = node(join(REPO, 'tools/serve.mjs'), ['--port', String(n)], { env, timeout: 10000 });
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.stderr, new RegExp(`port ${n} is already in use \\(something listens on 127\\.0\\.0\\.1:${n}`));
+    assert.doesNotMatch(r.stdout, /MIRROR_URL=/);
+  } finally { lo.close(); }
   const bad = node(join(REPO, 'tools/serve.mjs'), ['--port', 'eighty'], { env });
   assert.equal(bad.code, 2);
 });

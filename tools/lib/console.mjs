@@ -220,8 +220,10 @@ async function change(id, who, action, fn) {
   const sid = parseId(id);
   return withGuard(GUARD, () => {
     const s = get(sid);
-    const extra = fn(s) || {};
+    // one instant per change (I-065): the mutator stamps its times (at.*, endedAt, startedAt, result.at, ...) with the
+    // `now` of updatedAt and the history entry; separate clock reads drifted 1 ms apart under load
     const now = iso();
+    const extra = fn(s, now) || {};
     s.updatedAt = now;
     s.rev = (s.rev || 0) + 1;
     s.history.push({ at: now, who, action, ...extra });
@@ -258,9 +260,8 @@ function finishPart(s, i, now, notes) {
 
 /** The user clicked Start (on the step, or on the current part). `part` (1-based) guards against a stale page. */
 export async function start(id, { part, who = 'user' } = {}) {
-  return change(id, who, 'start', (s) => {
+  return change(id, who, 'start', (s, now) => {
     needOpen(s);
-    const now = iso();
     if (s.cur < s.parts.length) {
       const i = partIndex(s, part);
       if (i !== s.cur) throw new Error(`${s.id}: part ${i + 1} is not the current part (${s.cur + 1})`);
@@ -278,7 +279,7 @@ export async function start(id, { part, who = 'user' } = {}) {
 
 /** The user clicked Done on the current part (notes: only kept when this Done also answers the step). */
 export async function done(id, { part, notes, who = 'user' } = {}) {
-  return change(id, who, 'done', (s) => {
+  return change(id, who, 'done', (s, now) => {
     if (s.status !== 'active') throw new Error(`${s.id} is ${s.status}, not started`);
     const i = partIndex(s, part);
     if (i !== s.cur) throw new Error(`${s.id}: part ${i + 1} is not the current part (${s.cur + 1})`);
@@ -289,7 +290,7 @@ export async function done(id, { part, notes, who = 'user' } = {}) {
       e.status = 403; // the server's HTTP status (I-059); the runner ends it with: console.mjs ack <id> --part N --state done
       throw e;
     }
-    finishPart(s, i, iso(), notes);
+    finishPart(s, i, now, notes);
     return { part: i + 1, attempt: attemptOf(p) };
   });
 }
@@ -305,14 +306,13 @@ export async function ack(id, { state, part, message, by, attempt } = {}) {
   if (state === undefined && message === undefined) throw new Error('give --state and/or --message');
   const want = attempt === undefined || attempt === null || attempt === '' ? undefined : Number(attempt);
   if (want !== undefined && !(Number.isInteger(want) && want >= 1)) throw new Error(`--attempt must be a whole number >= 1 (got ${attempt})`);
-  return change(id, by, 'ack', (s) => {
+  return change(id, by, 'ack', (s, now) => {
     needOpen(s);
     if (s.cur >= s.parts.length) throw new Error(`${s.id} has no part left to ack (it is at the answer)`);
     const i = partIndex(s, part);
     if (i !== s.cur) throw new Error(`${s.id}: part ${i + 1} is not the current part (${s.cur + 1}); wait for part ${s.cur} done first`);
     const p = s.parts[i];
     if (want !== undefined && want !== attemptOf(p)) throw new Error(`${s.id} part ${i + 1} is at attempt ${attemptOf(p)}: your ack for attempt ${want} is stale (${lastReset(s)}); wait for the new attempt's Start`);
-    const now = iso();
     if (state === 'loading' || state === 'ready') {
       if (rank(p.state) >= rank('started')) throw new Error(`${s.id} part ${i + 1} is already ${p.state}: ${state} only before the user's Start`);
       p.state = state;
@@ -333,8 +333,8 @@ export async function ack(id, { state, part, message, by, attempt } = {}) {
 
 /** The user's answer (after the last part). value: one of the options, or the text (mode text). */
 export async function answer(id, { value, notes, scale, who = 'user' } = {}) {
-  return change(id, who, 'answer', (s) => {
-    if (s.status === 'pending' && s.parts.length === 0) { s.status = 'active'; s.startedAt = iso(); }
+  return change(id, who, 'answer', (s, now) => {
+    if (s.status === 'pending' && s.parts.length === 0) { s.status = 'active'; s.startedAt = now; }
     if (s.status !== 'active') throw new Error(`${s.id} is ${s.status}`);
     if (s.cur < s.parts.length) throw new Error(`${s.id} is at part ${s.cur + 1} of ${s.parts.length}: answer after the last part`);
     const v = value == null ? '' : String(value).trim();
@@ -348,17 +348,17 @@ export async function answer(id, { value, notes, scale, who = 'user' } = {}) {
       if (!Number.isInteger(rating) || rating < sc.min || rating > sc.max) throw new Error(`${s.id}: the rating must be ${sc.min}-${sc.max} (got ${scale})`);
     }
     s.status = 'answered';
-    s.result = { value: clip(v, 4000), notes: text(notes, 4000), ...(rating !== undefined && { scale: rating }), at: iso() };
+    s.result = { value: clip(v, 4000), notes: text(notes, 4000), ...(rating !== undefined && { scale: rating }), at: now };
     return { value: clip(v, 200) };
   });
 }
 
 /** The user said "skip / not now": the step leaves the queue; the waiting agent gets NEVER. */
 export async function skip(id, { who = 'user', notes } = {}) {
-  return change(id, who, 'skip', (s) => {
+  return change(id, who, 'skip', (s, now) => {
     needOpen(s);
     s.status = 'skipped';
-    s.skippedAt = iso();
+    s.skippedAt = now;
     if (notes) s.result = { value: undefined, notes: text(notes, 4000), at: s.skippedAt };
   });
 }
@@ -368,14 +368,14 @@ export async function skip(id, { who = 'user', notes } = {}) {
  * agent (any state but pending: after a skip, or to ask the whole step again).
  */
 export async function reopen(id, { who = 'user', agent = false } = {}) {
-  return change(id, who, 'reopen', (s) => {
+  return change(id, who, 'reopen', (s, now) => {
     if (s.status === 'pending') throw new Error(`${s.id} is already pending`);
     if (!agent && s.status !== 'skipped') throw new Error(`${s.id} is ${s.status}: only a skipped step can be brought back`);
     s.status = 'pending';
     s.cur = 0;
     s.result = undefined;
     s.startedAt = undefined;
-    s.queuedAt = iso();
+    s.queuedAt = now;
     for (const p of s.parts) { p.state = 'waiting'; p.at = {}; p.message = undefined; }
   });
 }
@@ -394,8 +394,7 @@ function lastReset(s) {
  * reached keeps its try in `attempts[]` and gets the next attempt number; the step's epoch goes up by one, which ends
  * every wait still waiting (REDO). `how`: 'redo' (the runner, parts N..) | 'restart' (the user: every part).
  */
-function resetFrom(s, i, { how, who, message }) {
-  const now = iso();
+function resetFrom(s, i, { how, who, message, now }) {
   for (let j = i; j < s.parts.length; j++) {
     const p = s.parts[j];
     if (j < s.cur || rank(p.state) > rank('waiting')) {
@@ -419,12 +418,12 @@ function resetFrom(s, i, { how, who, message }) {
  */
 export async function redo(id, { part, by, message } = {}) {
   if (!by) throw new Error('--by <your agent name> is required');
-  return change(id, by, 'redo', (s) => {
+  return change(id, by, 'redo', (s, now) => {
     if (!['active', 'answered'].includes(s.status)) throw new Error(`${s.id} is ${s.status}`);
     if (!s.parts.length) throw new Error(`${s.id} has no parts (reopen it instead)`);
     const i = part === undefined ? Math.min(s.cur, s.parts.length - 1) : partIndex(s, part);
     if (i > s.cur) throw new Error(`${s.id} is at part ${s.cur + 1}: part ${i + 1} was not reached`);
-    return resetFrom(s, i, { how: 'redo', who: by, message });
+    return resetFrom(s, i, { how: 'redo', who: by, message, now });
   });
 }
 
@@ -434,10 +433,10 @@ export async function redo(id, { part, by, message } = {}) {
  * the phone first. Only a started step with parts (its answer not yet given).
  */
 export async function restart(id, { who = 'user', notes } = {}) {
-  return change(id, who, 'restart', (s) => {
+  return change(id, who, 'restart', (s, now) => {
     if (s.status !== 'active') throw new Error(`${s.id} is ${s.status}: only a started step can be started over`);
     if (!s.parts.length) throw new Error(`${s.id} has no parts to start over`);
-    const r = resetFrom(s, 0, { how: 'restart', who });
+    const r = resetFrom(s, 0, { how: 'restart', who, now });
     s.parts[0].message = `You started over (try ${attemptOf(s.parts[0])}).`;
     return { ...r, note: text(notes, 300) };
   });

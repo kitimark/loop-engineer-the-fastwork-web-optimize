@@ -328,6 +328,27 @@ test('I-045 --until decided --since: an undo alone does not wake it, the changed
   assert.match(wq.check().never, /withdrawn/);
 });
 
+test('I-065 one instant per change: decision.at and proposedAt equal their history entry, even when the clock ticks inside the change', async (t) => {
+  // under load the clock moved 1 ms between decision.at (taken in the mutator) and the history entry's at (taken in
+  // change() after it): a wait re-armed at decision.at then reported that same decision again as a change
+  const { proposal: p } = await P.postProposal({ by: 'de-tick', raw: sample(), baseDir: dir, draft: true });
+  assert.equal(p.state, 'draft');
+  let now = Date.now() - 60000; // a minute back, so nothing lands after the real clock (later tests' read marks)
+  t.mock.method(Date, 'now', () => (now += 1)); // every read of the clock is 1 ms later than the one before
+  const pub = await P.publishProposal(p.id, { by: 'de-tick' });
+  assert.equal(pub.proposedAt, pub.history.at(-1).at, 'publish: proposedAt is the history instant');
+  const d = await P.decide(p.id, { value: 'reject' });
+  assert.equal(d.decision.at, d.history.at(-1).at, 'decide: decision.at is the history instant');
+  assert.equal(d.decisions.at(-1).at, d.history.at(-1).at);
+  assert.equal(P.waitCondition(p.id, { until: 'changed', since: d.decision.at }).check().met, false, 're-armed at the decision: nothing new');
+  const plain = P.waitCondition(p.id);
+  const again = P.waitCondition(p.id, { until: 'changed', since: JSON.parse(plain.check().detail).at });
+  assert.equal(again.check().met, false, 'the plain wait\'s re-arm point does not re-report its own decision');
+  t.mock.restoreAll();
+  await P.undoDecision(p.id, { rev: 1 });
+  assert.deepEqual(JSON.parse(again.check().detail).events.map((e) => e.event), ['undecided'], 'the undo alone');
+});
+
 test('I-045 read marks: proposalNews reports each decision event once per reader; the lead sees all, an agent its own', async () => {
   assert.deepEqual(P.proposalNews('lead', { all: true }), [], 'no mark yet: nothing (a first wait never dumps the past)');
   await P.initProposalMark('lead');
