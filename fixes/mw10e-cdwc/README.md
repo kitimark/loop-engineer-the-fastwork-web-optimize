@@ -143,6 +143,28 @@ iphone-runner, is still in progress.
     - Scorer: a local script that rebuilds the state from the touch rows. Its run on the void flick-mode test run
       (push 1 was the only forward tween, 597 held frames) only shows that the code paths run. It is redone on the
       first valid post-I-042 run, before any counted run is scored.
+    - **Simulator mechanism re-check after I-042** (2026-10-02 ~00:25Z). Counts only; Simulator timing is never a
+      verdict.
+      - Setup: 2 runs of finger-protocol-v1 under compiler v2 (hash ee84ebd4e916) on aw1-10e, driver G on WDA-sim.
+        The overlay JS was fetched fresh from a never-used port with no-store.
+      - Both runs, by mark (moves / prevented moves per stroke):
+        - hero (4 strokes): 39-58 / 0;
+        - traverse (2): 9-13 / 0;
+        - fling-top, toolbar, reload-scroll: 8-26 / 0;
+        - push (3): 27-31 / all;
+        - dwell (6): 17-23 / all;
+        - drag-into-end down stroke: 38-46 / 33-44; up stroke: 84-91 / all;
+        - drag-back: 44-46 / 36.
+      - So the code-derived claims hold: hero and traverse moves are never prevented, and push and dwell moves always
+        are.
+      - The scorer finds exactly 2 forward tweens per run (push 1 and the drag-into-end up stroke), both from
+        prevented moves (no t0-fallback).
+      - A still stroke now carries 17-31 touchmoves, so the one-move-per-stroke artifact is gone.
+      - Both tweens in both runs carry the t0-lag flag: 1 frame between OS delivery and the handler, 10-19 ms
+        (OBSERVED, Simulator; reported, changes no rule).
+      - Stroke contact was 2-17 % longer than planned on the Simulator; the phone, per ts-gesture, was within +8 %.
+        So the scorer's ±10 % stroke-fidelity void rule would void these Simulator runs. That rule is a scorer
+        addition, not registered. It is to be settled with the lead before any phone data.
   - **Held m = 1 phase** (prediction 4 and its +8 ms WORSE rule are kept). It covers the frames with stamp from
     (handler time of t0's move) + 680 + 300 ms until the next reverse move, counting only frames while a finger is
     down (a stroke's touchstart to touchend).
