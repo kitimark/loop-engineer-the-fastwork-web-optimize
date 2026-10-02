@@ -196,6 +196,21 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   if the user un-defers it. fwreskip f1 r1 corner diff (182-603 px, Δ4, = B's own fresh-raster frame, OBSERVED) is posted
   to the user in T-005 #17: the user's call, together with the review result. The B2 up-pass +1 Layout (3 vs 2, A/A 3,
   n=1) is being re-run at n=3.
+  03:3xZ: 438f933 landed (layout-containment README: F-108 cause, morph-start h2-h8, h9 parked per T-001).
+  review-fwreskip-2 on 3ce8ce3: NEEDS-WORK. Review-1 B1/B2/B4 closed; (i) survived a vcross rerun. Blocking: (1) the
+  down-pass is overstated (first descent per run B 2,2,2 / P 0,0,3 / A 2,2,3; down2 P 1 vs B 2); (2) Sim idle not settled
+  (Paint +23 % at 3100, n=1, no A arm); (3) the no-initiator Layouts sit at the extra #people un-skip; (4) undeclared
+  touch/async-scroll risk (on iOS the UI process scrolls ahead of iE, which un-skips from the main thread). Lead: fwreskip
+  does NOT land before a phone G/F fling check (protocol): it waits on the phone (backlog (g)). Sim repeats: 6
+  back-to-back holds of 3.5 min, B P A A P B. User told T-005 #18.
+  review-scene-scope-2 on dfb15bc: NEEDS-WORK. Census and cut correct; the RBi40 failure modes stay gone. D card sent back:
+  count view-rooted nested Layouts only (B 2 / RB 1 / RBi40pw 1 / RBi40p 0) and state that it does not explain the
+  ~18 ms layout. Blocking: fix.mjs check ran on baseline JS (rerun --on bplus); README speed-ish wording and a false
+  "overlap" line; #platform pixels are state evidence, not byte identity (fix: deterministic A/A, timer hold or virtual
+  time). Lead: RBi40p does not land alone (stepping stone: same switch cost, same recalc count, plus a coupling to fwWCSel
+  and the 50 % margin). Next: RBi40pt (+ the 4 row-title entries), own P-row, deterministic pixel A/A first, check
+  --on bplus, Sim W n>=3. User told T-001 #16.
+  PHONE BACKLOG add (g): fwreskip phone G/F fling check (lead 03:3xZ), before it may land.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6

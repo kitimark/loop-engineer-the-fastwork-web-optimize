@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T02:42:00Z",
+ "updatedAt": "2026-10-02T03:36:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -166,13 +166,14 @@
    "fixes": "You saw style recalculation taking about 19-20 ms at times, more than a 60 Hz frame allows (16.7 ms). Your two guesses: complex nested CSS makes selector matching slow, or the images (rotation, resizing) cost work every frame. You also asked about smaller images and plain-CSS effects.",
    "felt": { "answer": "not-yet" },
    "gate": "Find out whether either guess explains the slow frames before anything is built.",
-   "next": "The strongest variant visibly softens the small avatar photos in Chrome, so it is not signed. The smaller part failed review: it changed a few frames (the hero hint after a reload, the accent line on a fling). A narrower cut, inside the platform section only, is built next and reviewed again.",
+   "next": "The narrower cut is correct but saves little alone; the remaining ~18 ms layout traced to 4 row-title animations. The next build cuts those too, checked frame by frame against a frozen-clock original.",
    "owner": "de-style-recalc, fix-scene-scope",
    "checks": [ { "id": "P-040", "what": "phone recording: does the narrower pause (V1) remove the extra nested layout at the section switch?", "result": "Mostly. One real nested layout instead of two (the second shrank to 0.1 ms), and the style step got cheaper, but the next big frame (y about 2990) got more expensive, so the total did not drop (OBSERVED)." }, { "id": "P-041", "what": "same for the infinite-animations-only variant (V1i)", "result": "One nested layout in every run, cheapest style step, but the frame at y about 2990 grew even more; the two frames together cost more than before (OBSERVED)." } ],
    "details": [
     "User hypotheses from C-013 notes (lead relay 18:3xZ): (1) selector matching cost from nested/complex CSS; (2) image rotation/resizing per frame, image sizes, cap render triggers at 60 fps via native CSS. Checked (de-style-recalc, style-recalc-images.md 30eaa11): H1 nested CSS REFUTED (no nesting shipped, matching ~3 %; the spikes are invalidation scope with nested Layout in RecalculateStyles); H2 images oversized in memory (~35 MB derived) but not a per-frame cost. Ranked: 1 scene-scope (this item), 2 r4-v3, 3 st5 (hero-carousel), 4 fwreskip, 5-6 anim-transform, 7 image-size.",
     "fix-scene-scope (lead 18:5xZ): variants on B: V1 narrow the :where(*) scene pause, V1b pause by API, V2 flip early, V3 panel + R4; Chrome check, then a W Timeline phone block ahead of P-039.",
-    "01:4xZ review of RBi40 (8690486) NEEDS-WORK: the V1i one-shot cut changes reachable frames (<=600 px: hero scroll-cue copy-in after a reload while scrolled or a bfcache restore; accent stroke paused mid-way on a fling); pixel checks were phase-blind and missed #platform (y>=4082); mechanism and regression checks missing for the landing build. Decision: build RBi40p (cut only #platform-internal one-shots + tracks + will-change classes; keep hero/people/commission/nav/sb-* entries), re-review; no user-acceptance route."
+    "01:4xZ review of RBi40 (8690486) NEEDS-WORK: the V1i one-shot cut changes reachable frames (<=600 px: hero scroll-cue copy-in after a reload while scrolled or a bfcache restore; accent stroke paused mid-way on a fling); pixel checks were phase-blind and missed #platform (y>=4082); mechanism and regression checks missing for the landing build. Decision: build RBi40p (cut only #platform-internal one-shots + tracks + will-change classes; keep hero/people/commission/nav/sb-* entries), re-review; no user-acceptance route.",
+    "03:3xZ review-scene-scope-2 on dfb15bc NEEDS-WORK: census and cut correct, RBi40 failure modes gone. D card back: count view-rooted nested Layouts only (B 2 / RB 1 / RBi40pw 1 / RBi40p 0); say it does not explain the ~18 ms layout. Blocking: check ran on baseline JS (rerun --on bplus); README speed-ish wording, false 'overlap' line; #platform pixels are state evidence, not byte identity (needs deterministic A/A). Lead: RBi40p does not land alone; next RBi40pt (+4 row-title entries), own P-row, pixel A/A first, check --on bplus, Sim W n>=3. User told T-001 #16."
    ]
   },
   {
@@ -220,15 +221,16 @@
    "stage": "I",
    "fixes": "Around the middle of the page, two frames cost about 20 ms each, mostly layout, while a large section (the people list) is still being drawn although it is about to leave the view. The chosen fix sets it aside earlier, so that work is not done while it cannot be seen.",
    "felt": {"answer": "not-yet"},
-   "gate": "Lands only after checks that nothing on screen changes (Chrome and Simulator pixels, jumps without a blank frame, card swipes); no speed test while timing is on hold.",
-   "next": "The first build failed review: after a sudden jump in the middle, Chrome showed one frame of an empty placeholder where the people section belongs. A corrected build brings it back at once on such jumps; then all checks run again and it is re-reviewed.",
+   "gate": "Lands only after checks that nothing on screen changes and a finger fling test on the real iPhone; no speed test while timing is on hold.",
+   "next": "The second review found it rosier than the data; Simulator repeats now. It can't land before a finger test on the real iPhone, which waits for the phone to be plugged in.",
    "owner": "fix-scroll-engine (from fix-scene-scope)",
    "checks": [],
    "details": [
     "style-recalc-images.md §5 rank 4: fwReskip intrinsic-size write (B JS 2821), 13-14 ms at y~2990, ~1.6 ms style, 12 ms nested Layout; W, same block as rank 1.",
     "00:4xZ (fix-scroll-engine): r6-r9 'stale layout state in #profile-showcase/#people, cured by re-creating its children' WITHDRAWN (probe artifact: hiding the shells shrank #people across the fwFar re-skip edge, so fwReskip deferred it). Revised, OBSERVED (Sim): each containment flip (y2988 hero deferred, y3047 platform-card will-change) costs ~20 ms only while #people (1327 px) is still rendered; its re-skip comes at ~y3539. Next r11 localizes the box; fix (a) re-skip #people no later than the hero or (b) structural #profile change.",
     "00:5xZ: r11/r12 box = the whole rendered profile deck relays out (~20 ms, OBSERVED, Sim); #people deferred at its correct size ~1-2 ms (attribution). Lead signed (a1h): when the hero far re-skips, also re-skip the next inactive deferRendering section wholly above the viewport until the hero un-skips (keeps hysteresis; own scroll-engine code). Checks before landing: geometry, A/A pixels Chrome + Sim, Sim W Layout <=3 ms at 2988/3047, jumps with no blank frame, deck swipe count; no timing A/B.",
-    "02:0xZ review-fwreskip on 6fd09a6 NEEDS-WORK: B1 Chrome one-frame #people placeholder after an instant jump from the band ~[3659, 3892] (C11 queued un-skip); B2 short reversal not run; B3 no idle triple; B4 scenarios list incomplete. Lead: no waiver; variant (a): synchronous un-skip of the fwWith partner in the rE scroll listener within ~1 vh, rule restricted to the hero's partner; rerun jump checks with controls n>=5, Sim reversal, idle triple; re-review. User told (T-005), incl. a correction: 'settled pixels identical' was too strong."
+    "02:0xZ review-fwreskip on 6fd09a6 NEEDS-WORK: B1 Chrome one-frame #people placeholder after an instant jump from the band ~[3659, 3892] (C11 queued un-skip); B2 short reversal not run; B3 no idle triple; B4 scenarios list incomplete. Lead: no waiver; variant (a): synchronous un-skip of the fwWith partner in the rE scroll listener within ~1 vh, rule restricted to the hero's partner; rerun jump checks with controls n>=5, Sim reversal, idle triple; re-review. User told (T-005), incl. a correction: 'settled pixels identical' was too strong.",
+    "03:3xZ review-fwreskip-2 on 3ce8ce3 NEEDS-WORK: review-1 B1/B2/B4 closed. Blocking: down-pass overstated (first descent per run B 2,2,2 / P 0,0,3 / A 2,2,3; down2 P 1 vs B 2); Sim idle not settled (Paint +23 % at 3100, n=1, no A arm); no-initiator Layouts sit at the extra #people un-skip; undeclared touch/async-scroll risk (iOS UI process scrolls ahead of iE, which un-skips from the main thread). Lead: no landing before a phone G/F fling check; Sim repeats B P A A P B (6 x 3.5 min). User told T-005 #18."
    ]
   },
   {
