@@ -481,3 +481,85 @@ test('HTTP Range (incident I-054): compressed and rewritten bodies neither adver
   assert.equal(shim.headers['accept-ranges'], undefined);
   await s.stop();
 });
+
+// ---- I-074: --frame-ancestors (the console's "Try it" panel frames the mirror) ----------------------------------------
+// serve.mjs is measurement-adjacent: without the flag every response must stay byte-for-byte what it was.
+const PINNED_DOC_HEADERS = {
+  'content-type': 'text/html; charset=utf-8',
+  'cache-control': 'public, max-age=0, must-revalidate',
+  'x-frame-options': 'SAMEORIGIN',
+  'x-content-type-options': 'nosniff',
+  'cross-origin-opener-policy': 'same-origin',
+  'cross-origin-resource-policy': 'same-origin',
+  'permissions-policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'access-control-allow-origin': '*',
+  'content-security-policy': CSP_LOCAL,
+  link: LINK,
+  'accept-ranges': 'bytes',
+};
+const VOLATILE = ['date', 'connection', 'etag', 'content-length', 'keep-alive'];
+const stable = (h) => Object.fromEntries(Object.entries(h).filter(([k]) => !VOLATILE.includes(k)));
+
+test('I-074: without --frame-ancestors the document headers are unchanged (pinned list, in order) and there is no framing line or state key', async () => {
+  const stateFile = join(fx.home, 'out', 'serve-noframe.json');
+  const s = await serve(['--port', '0', '--state', stateFile]);
+  const doc = await request(s.url, { headers: { 'accept-encoding': 'identity' } });
+  assert.deepEqual(stable(doc.headers), PINNED_DOC_HEADERS);
+  assert.deepEqual(Object.keys(stable(doc.headers)), Object.keys(PINNED_DOC_HEADERS), 'same header order');
+  assert.doesNotMatch(s.stdout(), /framing:/);
+  assert.equal('frameAncestors' in JSON.parse(readFileSync(stateFile, 'utf8')), false);
+  assert.equal('frameAncestors' in JSON.parse((await request(s.url + '__mirror/info')).text), false);
+  await s.stop();
+});
+
+test('I-074: --frame-ancestors drops x-frame-options and names the origins in the document CSP; nothing else changes', async () => {
+  const stateFile = join(fx.home, 'out', 'serve-frame.json');
+  const [plain, framed, one] = await Promise.all([
+    serve(['--port', '0', '--quiet']),
+    serve(['--port', '0', '--state', stateFile, '--frame-ancestors', 'http://localhost:5559,http://127.0.0.1:5559']),
+    serve(['--port', '0', '--quiet', '--frame-ancestors=http://127.0.0.1:6001', '--overlay', ovA]),
+  ]);
+  const want = "frame-ancestors 'self' http://localhost:5559 http://127.0.0.1:5559";
+  for (const path of ['', 'sub/', 'page.html']) {
+    const a = await request(plain.url + path, { headers: { 'accept-encoding': 'identity' } });
+    const b = await request(framed.url + path, { headers: { 'accept-encoding': 'identity' } });
+    assert.equal(b.status, 200, path);
+    assert.equal(b.headers['x-frame-options'], undefined, path);
+    const csp = b.headers['content-security-policy'];
+    assert.equal((csp.match(/frame-ancestors/g) || []).length, 1, `${path}: one frame-ancestors directive (a second is ignored)`);
+    assert.ok(csp.includes(want), `${path}: ${csp}`);
+    // the CSP is the plain one with only that directive replaced (or appended when the page had none)
+    const plainCsp = a.headers['content-security-policy'];
+    assert.equal(csp, /frame-ancestors/.test(plainCsp) ? plainCsp.replace("frame-ancestors 'self'", want) : `${plainCsp}; ${want}`, path);
+    const rest = (h) => { const x = stable(h); delete x['x-frame-options']; delete x['content-security-policy']; return x; };
+    assert.deepEqual(rest(b.headers), rest(a.headers), `${path}: every other header as without the flag`);
+    assert.equal(b.text, a.text, `${path}: same body`);
+  }
+  // non-documents: identical with and without the flag
+  for (const path of [PAGE_JS.slice(1), 'img/logo.png', 'nope']) {
+    const a = await request(plain.url + path), b = await request(framed.url + path);
+    assert.equal(b.status, a.status, path);
+    assert.deepEqual(stable(b.headers), stable(a.headers), path);
+  }
+  assert.match(framed.stdout(), /framing: documents may be framed by http:\/\/localhost:5559 http:\/\/127\.0\.0\.1:5559/);
+  assert.deepEqual(JSON.parse(readFileSync(stateFile, 'utf8')).frameAncestors, ['http://localhost:5559', 'http://127.0.0.1:5559']);
+  assert.deepEqual(JSON.parse((await request(framed.url + '__mirror/info')).text).frameAncestors, ['http://localhost:5559', 'http://127.0.0.1:5559']);
+  // the = form, with an overlay
+  const o = await request(one.url);
+  assert.equal(o.headers['x-frame-options'], undefined);
+  assert.match(o.headers['content-security-policy'], /frame-ancestors 'self' http:\/\/127\.0\.0\.1:6001(;|$)/);
+  assert.equal((await request(one.url + PAGE_JS.slice(1))).headers['x-mirror-source'], 'overlay');
+  await Promise.all([plain.stop(), framed.stop(), one.stop()]);
+});
+
+test('I-074: --frame-ancestors accepts only exact localhost / 127.0.0.1 origins with a port (else exit 2, nothing served)', () => {
+  for (const bad of [[], ['--quiet'], ['http://evil.example:5559'], ['http://localhost'], ['http://localhost:5559/'], ['http://localhost:5559/proposals'],
+    ['*'], ["'none'"], ['http://localhost:70000'], ['http://localhost:0'], ['localhost:5559'], ['ws://localhost:5559'], ['http://192.168.1.2:5559'],
+    ['http://localhost:5559,https://evil.example:1'], ['http://localhost.evil.example:5559']]) {
+    const r = node(join(REPO, 'tools/serve.mjs'), ['--port', '0', '--frame-ancestors', ...bad], { env, timeout: 10000 });
+    assert.equal(r.code, 2, `${JSON.stringify(bad)}: ${r.out}`);
+    assert.match(r.stderr, /--frame-ancestors/, JSON.stringify(bad));
+    assert.doesNotMatch(r.stdout, /MIRROR_URL=/, JSON.stringify(bad));
+  }
+});

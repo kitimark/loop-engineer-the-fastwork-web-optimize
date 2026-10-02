@@ -35,6 +35,16 @@
 //   POST /api/proposals/<id>/<act>  act = decide {value: accept|reject|change, notes, rev, option?} | undo {rev}
 //                                (option: I-053, the picked option's name on a proposal with options)
 //   GET  /media/<id>/<name>      a proposal's screenshot or video, from the store only (strict names; Range for video)
+//   POST /api/live/<id>/start    I-074 "Try it": {option?} -> {a, b, measuring, idleMin, version}: starts (or reuses) two
+//                                tools/serve.mjs children, A = the baseline, B = the baseline + the proposal's (option's)
+//                                live patch (tools/lib/live.mjs), on 127.0.0.1 with --frame-ancestors this console's origins;
+//                                404 when it has no live entry. Guarded like the thread POSTs (x-console, own Origin).
+//                                409 for a console opened at http://[::1]:<port>: open it at localhost or 127.0.0.1
+//                                (an IPv6 literal is no CSP host-source, CSP3 §2.3.1 grammar, so no frame-ancestors).
+//   POST /api/live/ping          {ok, measuring, running}: the open panel's heartbeat (every minute); 10 min without one
+//                                ($FW_CONSOLE_LIVE_IDLE_SEC) and the children are killed; also when the console exits.
+//                                measuring: chrome-measure has a timing hold (the panel shows a note, never blocks).
+//   The proposals page alone may frame http://localhost:* and http://127.0.0.1:* (CSP frame-src); nothing frames the console.
 // Both pages carry the same menu (menuHtml, injected at <!--console-menu-->), the current page highlighted.
 // startServer(…, {notify: true}) (`console.mjs serve --notify`): a macOS notification per new step and one reminder
 // (console-notify.mjs; osascript through execFile with an argv array, off by default, local only).
@@ -48,7 +58,8 @@ import { currentView, readWriteup } from './progress.mjs';
 import { currentStatusView } from './status.mjs';
 import { waitingView, stepWatcher, createNotifier, DEFAULT_REMIND_MIN } from './console-notify.mjs';
 import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER } from './console-threads.mjs';
-import { pageProposals, publicView as proposalView, get as getProposal, decide as decideProposal, undoDecision, mediaFile } from './proposal.mjs';
+import { pageProposals, publicView as proposalView, get as getProposal, decide as decideProposal, undoDecision, mediaFile, findOption } from './proposal.mjs';
+import { createLiveServers, measuringNow } from './live.mjs';
 import { statSync, createReadStream } from 'node:fs';
 
 /** The page (plain HTML, inline CSS and JS, no external requests). Read per request: an edit shows on reload. */
@@ -107,18 +118,20 @@ export function pageSteps() {
   return [...open, ...finished].map(publicView);
 }
 
-function send(res, code, body, type = 'application/json; charset=utf-8') {
+function send(res, code, body, type = 'application/json; charset=utf-8', csp = CSP) {
   const data = typeof body === 'string' ? body : JSON.stringify(body);
   res.writeHead(code, {
     'content-type': type,
     'cache-control': 'no-store',
     'x-content-type-options': 'nosniff',
     'referrer-policy': 'no-referrer',
-    'content-security-policy': CSP,
+    'content-security-policy': csp,
   });
   res.end(data);
 }
 const CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+/** I-074: the proposals page may frame the "Try it" page servers (localhost only; their ports are chosen at start). */
+export const PROPOSALS_CSP = CSP.replace("media-src 'self';", "media-src 'self'; frame-src http://localhost:* http://127.0.0.1:*;");
 
 /**
  * The waiting feed: checks the store every `intervalMs`, pushes `event: waiting` to every /api/events client on a
@@ -210,9 +223,42 @@ function sendMedia(req, res, m) {
   return createReadStream(m.file).on('error', () => res.destroy()).pipe(res);
 }
 
+/**
+ * I-074: the "Try it" routes; true when handled. `live()`: the console's page servers (createLiveServers), or null when
+ * this server has none (a handler built without them).
+ */
+async function liveRoute(req, res, u, port, live) {
+  const start = u.pathname.match(/^\/api\/live\/(PR-\d{3,6})\/start$/);
+  if (req.method !== 'POST' || !(start || u.pathname === '/api/live/ping')) return false;
+  const refused = threadPostRefusal(req, port);
+  if (refused) { send(res, 403, { error: refused }); return true; }
+  const srv = live ? live() : null;
+  if (!srv) { send(res, 404, { error: 'this console serves no live pages' }); return true; }
+  const b = await readJsonBody(req);
+  if (b.error) { send(res, b.status, { error: b.error }); return true; }
+  if (!start) { const running = srv.ping(); send(res, 200, { ok: true, measuring: measuringNow(), running: running.length }); return true; }
+  // the page servers name only http://localhost:<port> and http://127.0.0.1:<port> in frame-ancestors (an IPv6 literal
+  // is no CSP host-source), so a console opened at http://[::1]:<port> could not show them: say so instead of blank frames
+  if (/^\[/.test(String(req.headers.host || ''))) { send(res, 409, { error: `"Try it" works only when the console is opened at http://localhost:${port}/ or http://127.0.0.1:${port}/ (not [::1])` }); return true; }
+  let p = null;
+  try { p = getProposal(start[1]); } catch {}
+  if (!p || !proposalView(p)) { send(res, 404, { error: `no proposal ${start[1]}` }); return true; }
+  let target = p;
+  if (p.options?.length) {
+    target = typeof b.body.option === 'string' ? findOption(p, b.body.option) : null;
+    if (!target) { send(res, 400, { error: `${p.id} has options: say which one (option)` }); return true; }
+  }
+  if (!target.live?.blob) { send(res, 404, { error: `${p.id}${p.options?.length ? ` option ${target.name}` : ''} has no live pages (the author adds them: node tools/console.mjs proposal live …)` }); return true; }
+  try {
+    const urls = await srv.open({ blob: target.live.blob, base: target.live.base || 'site-pretty' });
+    send(res, 200, { a: urls.a, b: urls.b, measuring: measuringNow(), idleMin: Math.round(srv.idleMs / 6000) / 10, version: target.live.blob.slice(0, 12) });
+  } catch (e) { send(res, 503, { error: e.message }); }
+  return true;
+}
+
 /** The proposals routes; true when handled. */
 export async function proposalRoute(req, res, u) {
-  if (req.method === 'GET' && (u.pathname === '/proposals' || u.pathname === '/proposals.html')) { send(res, 200, withMenu(proposalsPage(), 'proposals'), 'text/html; charset=utf-8'); return true; }
+  if (req.method === 'GET' && (u.pathname === '/proposals' || u.pathname === '/proposals.html')) { send(res, 200, withMenu(proposalsPage(), 'proposals'), 'text/html; charset=utf-8', PROPOSALS_CSP); return true; }
   if (req.method === 'GET' && u.pathname === '/api/proposals') { send(res, 200, { now: iso(), proposals: pageProposals() }); return true; }
   let m = u.pathname.match(/^\/api\/proposals\/(PR-\d{3,6})$/);
   if (m && req.method === 'GET') {
@@ -308,7 +354,7 @@ async function threadRoute(req, res, u, port, feed) {
   return false;
 }
 
-export function handler(port, feed = null) {
+export function handler(port, feed = null, live = null) {
   return async (req, res) => {
     try {
       if (!localHost(req.headers.host || '', port())) return send(res, 421, { error: 'localhost only' });
@@ -346,6 +392,7 @@ export function handler(port, feed = null) {
       }
       if (await threadRoute(req, res, u, port(), feed)) return;
       if (await proposalRoute(req, res, u)) return;
+      if (await liveRoute(req, res, u, port(), live)) return;
       return send(res, 404, { error: 'not found' });
     } catch (e) {
       return send(res, 500, { error: e.message || String(e) });
@@ -365,11 +412,14 @@ export function runningServer() {
  * Listen on the first free port of `candidates` (127.0.0.1) and record it in server.json.
  * opts: {notify: false | true | fn(step, kind), remindMin: 3, onNotifyError}. Returns {server, port, url, feed, close()}.
  */
-export async function startServer(candidates, { notify = false, remindMin = DEFAULT_REMIND_MIN, onNotifyError } = {}) {
+export async function startServer(candidates, { notify = false, remindMin = DEFAULT_REMIND_MIN, onNotifyError, live: liveOpts = {} } = {}) {
   let port = 0;
   const notifyFn = typeof notify === 'function' ? notify : notify ? createNotifier({ onError: onNotifyError }) : null;
   const feed = createFeed({ remindMin, notify: notifyFn });
-  const server = http.createServer(handler(() => port, feed));
+  // I-074: the "Try it" page servers, created on the first panel open (they need this server's port for framing)
+  let liveSrv = null;
+  const live = () => (liveSrv ||= createLiveServers({ origins: [`http://localhost:${port}`, `http://127.0.0.1:${port}`], ...liveOpts }));
+  const server = http.createServer(handler(() => port, feed, live));
   for (const c of candidates) {
     if (c === 5173) continue; // the main session's mirror port, never
     const ok = await new Promise((resolve, reject) => {
@@ -390,7 +440,7 @@ export async function startServer(candidates, { notify = false, remindMin = DEFA
     feed.close();
     const done = new Promise((r) => server.close(() => r()));
     server.closeAllConnections?.();
-    return done;
+    return Promise.all([done, liveSrv ? liveSrv.close() : null]).then(() => {});
   };
-  return { server, port, url, feed, close };
+  return { server, port, url, feed, close, live: () => liveSrv };
 }

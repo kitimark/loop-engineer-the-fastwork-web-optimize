@@ -20,6 +20,12 @@
 // events and waits carry `option`. A proposal without `options` is stored, served and shown exactly as before.
 // States: draft -> proposed -> accepted | rejected | changes-requested; changes-requested -> (revise) proposed;
 //   draft | proposed | changes-requested -> withdrawn. Only `proposed` waits for the user.
+// Live pages (I-074, user T-028): `live: {patch: "fixes/<topic>/patch.diff", ref?: "HEAD"}` on the proposal (one solution)
+// or on each option names what the console's "Try it" panel serves as B: the baseline + that committed patch (A is the
+// baseline). Validation reads the patch from git (`<ref>:<patch>` in the checkout the command runs in) and keeps its
+// text in the console store by blob id (tools/lib/live.mjs); stored as {patch, ref, blob, base, files}. CLI:
+// post/revise --live-patch <path> [--live-ref <ref>] [--option <name>], and `proposal live <id>` (any state but
+// withdrawn; no new revision, the decision stands).
 // Hard rule 12: compare URLs must be localhost; every text field is scrubbed when stored (progress.mjs sanitize +
 // redact.mjs; localhost URLs are kept) and the scrubs are reported. The page renders text as text, never HTML.
 import { mkdirSync, readFileSync, statSync, openSync, readSync, closeSync, copyFileSync, existsSync } from 'node:fs';
@@ -29,6 +35,8 @@ import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs';
 import { sanitize, PERSONAL } from './progress.mjs';
 import { redact } from './redact.mjs';
+import { resolveLivePatch, storeLivePatch, storedLivePatch, patchBase, LIVE_PATCH, BLOB } from './live.mjs';
+import { patchHeader } from './bench-overlay.mjs';
 
 export const SCHEMA = 'fw-proposal/1';
 export const AREAS = ['hero', 'middle', 'end', 'whole'];
@@ -134,6 +142,7 @@ export function parseMarkdown(src) {
       const k = m[1].toLowerCase(), v = m[2].replace(/^["']|["']$/g, '');
       if (k === 'a' || k === 'b') out.compare[k] = labelUrl(v);
       else if (k === 'view') out.compare.view = v;
+      else if (k === 'live') out.live = { patch: v }; // I-074
       else if (k === 'looks-same' || k === 'lookssame') out.looksSame = v;
       else if (k === 'recommended') { const [option, ...why] = v.split('|'); out.recommended = { option: option.trim(), why: why.join('|').trim() }; }
       else if (['title', 'area', 'topic', 'thread', 'schema'].includes(k)) out[k] = v;
@@ -146,8 +155,9 @@ export function parseMarkdown(src) {
     const o = { name: om[1], ...(om[2] && { label: om[2].trim() }) };
     const [pre, ...subs] = text.split(/^###\s+/m);
     for (const l of pre.split('\n')) {
-      const m = l.match(/^\s*(b|label)\s*:\s*(.*?)\s*$/i);
+      const m = l.match(/^\s*(b|label|live)\s*:\s*(.*?)\s*$/i);
       if (m && m[1].toLowerCase() === 'b') o.compare = { b: labelUrl(m[2]) };
+      else if (m && m[1].toLowerCase() === 'live') o.live = { patch: m[2] }; // I-074
       else if (m) o.label = m[2];
     }
     for (const sp of subs) { const [h, t] = splitHead(sp); mdSection(o, h, t); }
@@ -216,7 +226,7 @@ export const OPTION_NAME = /^[a-z0-9][a-z0-9._-]{0,39}$/;
  * With `options` (I-053): 2-6 solutions, each {name, label, idea, looksSame, visualDiff, gain, risk, compare: {b, shots,
  * video}} against the shared compare.a; `recommended: {option, why}`; the CLI shots go to the option named by `option`.
  */
-export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = [], captions = [], video = {}, draft = false, option: cliOption } = {}) {
+export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = [], captions = [], video = {}, draft = false, option: cliOption, live: cliLive, repoDir = process.cwd() } = {}) {
   const E = [], scrubbed = [], warnings = [];
   if (!isObj(raw)) return { errors: ['the proposal must be a JSON object'], scrubbed, warnings };
   if (raw.schema !== undefined && raw.schema !== SCHEMA) E.push(`schema: must be "${SCHEMA}" (got ${JSON.stringify(raw.schema)})`);
@@ -325,6 +335,21 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     return { shots, video: vid };
   };
 
+  /**
+   * I-074: a live entry -> {patch, ref, blob, base, files[, text]} (text: freshly read from git, stored by persistLives),
+   * or undefined. A stored entry (with blob) is re-checked against the store, not git.
+   */
+  const liveOf = (v, path) => {
+    if (v === undefined || v === null || v === '') return undefined;
+    if (typeof v === 'string') v = { patch: v };
+    if (!isObj(v)) { E.push(`${path}: {patch: "fixes/<topic>/patch.diff", ref?: "HEAD"}`); return undefined; }
+    if (v.blob !== undefined) {
+      const text = BLOB.test(String(v.blob)) && LIVE_PATCH.test(String(v.patch)) ? storedLivePatch(v.blob) : null;
+      if (text === null) { E.push(`${path}.blob: not a patch in the console store; give {patch, ref} instead`); return undefined; }
+      return { patch: v.patch, ref: typeof v.ref === 'string' ? v.ref : 'HEAD', blob: v.blob, base: patchBase(text), files: patchHeader(text).files };
+    }
+    try { return resolveLivePatch({ patch: v.patch, ref: v.ref ?? 'HEAD', repoDir }); } catch (e) { E.push(`${path}.patch: ${e.message}`); return undefined; }
+  };
   const c = isObj(raw.compare) ? raw.compare : (raw.compare === undefined ? {} : (E.push('compare: an object {a, b, shots, video, view}'), {}));
   const cli = { shotsA, shotsB, captions, video };
   const anyCli = !!(shotsA.length || shotsB.length || Object.values(video).some(Boolean));
@@ -334,6 +359,8 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     if (cliOption !== undefined && cliOption !== null && cliOption !== '') E.push('--option: this proposal has no options (--option names the option that --shot-a/--shot-b/--video belong to)');
     if (raw.recommended !== undefined && raw.recommended !== null) E.push('recommended: only with options (it names the option you recommend)');
     Object.assign(f, solution(raw, ''));
+    const lv = liveOf(cliLive ?? raw.live, cliLive ? '--live-patch' : 'live');
+    if (lv) f.live = lv;
     f.compare = {};
     for (const s of ['a', 'b']) { const v = side(c[s], `compare.${s}`, s === 'a' ? 'Original' : 'PoC'); if (v) f.compare[s] = v; }
     viewOf();
@@ -345,6 +372,7 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
   f.looksSame = txt(raw.looksSame, 'looksSame', LIMITS.text, { required: false });
   f.risk = txt(raw.risk, 'risk', LIMITS.text, { required: false });
   for (const k of ['visualDiff', 'gain']) if (list(raw[k]).length) E.push(`${k}: with options, give it in each option (options[].${k})`);
+  if (raw.live !== undefined && raw.live !== null) E.push('live: with options, B goes in each option (options[].live)');
   f.visualDiff = [];
   f.gain = [];
   f.compare = {};
@@ -360,6 +388,7 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
   const target = cliOption === undefined || cliOption === null || cliOption === '' ? null : findOptionIn(opts.map((o, i) => ({ name: names[i], label: isObj(o) ? o.label : undefined })), String(cliOption));
   if (anyCli && cliOption == null) E.push(`this proposal has options: say which one the --shot-a/--shot-b/--video flags are for (--option <name>: ${names.join(', ')})`);
   if (cliOption != null && cliOption !== '' && !target) E.push(`--option: no option "${cliOption}" (options: ${names.join(', ')})`);
+  if (cliLive && (cliOption == null || cliOption === '')) E.push(`--live-patch: this proposal has options: say which one it is for (--option <name>: ${names.join(', ')})`);
   f.options = [];
   const optMedia = [];
   opts.slice(0, LIMITS.options).forEach((o, i) => {
@@ -372,6 +401,9 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     const out = { name, label: txt(o.label, `${p}label`, LIMITS.label, { required: false }) || name, ...solution(o, p, { looksSameShared: !!f.looksSame }) };
     const b = side(oc.b, `${p}compare.b`, out.label);
     out.compare = { b };
+    const mine = !!cliLive && target?.name === name;
+    const lv = liveOf(mine ? cliLive : o.live, mine ? '--live-patch' : `${p}live`);
+    if (lv) out.live = lv;
     f.options.push(out);
     optMedia.push(media(oc, p, target?.name === name ? cli : null));
   });
@@ -423,6 +455,13 @@ function storeMedia(id, rev, media, pre = '') {
   return { shots, video };
 }
 
+/** I-074: keep freshly read live patches in the store (by blob) and drop their text from the fields. */
+function persistLives(f) {
+  for (const x of [f, ...(f.options || [])]) {
+    if (x.live && x.live.text !== undefined) { storeLivePatch(x.live.blob, x.live.text); delete x.live.text; }
+  }
+}
+
 function failIf(errors, what) {
   if (errors.length) throw new Error(`${what}: the proposal is not valid:\n  ${errors.join('\n  ')}`);
 }
@@ -464,8 +503,8 @@ async function change(id, who, action, fn) {
   });
 }
 
-const FIELDS = ['schema', 'title', 'area', 'topic', 'thread', 'problem', 'idea', 'looksSame', 'visualDiff', 'gain', 'risk'];
-const OPTION_FIELDS = ['name', 'label', 'idea', 'looksSame', 'visualDiff', 'gain', 'risk'];
+const FIELDS = ['schema', 'title', 'area', 'topic', 'thread', 'problem', 'idea', 'looksSame', 'visualDiff', 'gain', 'risk', 'live'];
+const OPTION_FIELDS = ['name', 'label', 'idea', 'looksSame', 'visualDiff', 'gain', 'risk', 'live'];
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]));
 const MEDIA_MISSING = /^(?:options\[\d+\]\.)?compare: at least one screenshot pair/;
 const needBy = (by) => { if (!by || !String(by).trim()) throw new Error('--by <your agent name> is required'); return String(by).slice(0, 80); };
@@ -502,11 +541,12 @@ function optionMediaErrors(n, prev = []) {
  * Post a proposal: {by, raw, baseDir, shotsA, shotsB, captions, video, option, draft}. Validates, copies the media into
  * the store, assigns PR-NNN. Returns {proposal, scrubbed, warnings}. `option`: the option the CLI shots belong to.
  */
-export async function postProposal({ by, raw, baseDir, shotsA, shotsB, captions, video, option, draft = false }) {
+export async function postProposal({ by, raw, baseDir, shotsA, shotsB, captions, video, option, live, repoDir, draft = false }) {
   const who = needBy(by);
-  const n = normalize(raw, { baseDir, shotsA, shotsB, captions, video, option, draft });
+  const n = normalize(raw, { baseDir, shotsA, shotsB, captions, video, option, live, repoDir, draft });
   failIf(n.errors, 'post');
   return withGuard(GUARD, () => {
+    persistLives(n.fields);
     mkdirSync(proposalsDir(), { recursive: true });
     const id = nextId(readAll(proposalsDir(), 'PR'), 'PR');
     const now = iso();
@@ -532,7 +572,7 @@ export async function postProposal({ by, raw, baseDir, shotsA, shotsB, captions,
  * Options (I-053): raw's options replace the old list (add, change, drop); an option with new shots or a video (in raw,
  * or the CLI's with `option` naming it) gets them, one without keeps the media of the old option of the same name.
  */
-export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], shotsB = [], captions = [], video = {}, option, publish = false }) {
+export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], shotsB = [], captions = [], video = {}, option, live, repoDir, publish = false }) {
   const who = needBy(by);
   if (!note || !String(note).trim()) throw new Error('--note "<what changed, for the user>" is required');
   const cur = get(id);
@@ -541,10 +581,10 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
   // the new file's fields, or the current ones; media: the new ones, or the current ones kept
   const base = raw || storedRaw(cur);
   const hasNewMedia = !!(shotsA.length || shotsB.length || Object.values(video).some(Boolean) || raw?.compare?.shots?.length || raw?.compare?.video);
-  const n = normalize(base, { baseDir, shotsA, shotsB, captions, video, option, draft: true });
+  const n = normalize(base, { baseDir, shotsA, shotsB, captions, video, option, live, repoDir, draft: true });
   let errs = n.errors;
   if (!toDraft) {
-    errs = normalize(base, { baseDir, shotsA, shotsB, captions, video, option, draft: false }).errors.filter((e) => !MEDIA_MISSING.test(e));
+    errs = normalize(base, { baseDir, shotsA, shotsB, captions, video, option, live, repoDir, draft: false }).errors.filter((e) => !MEDIA_MISSING.test(e));
     if (n.fields.options) errs.push(...optionMediaErrors(n, cur.options));
     else {
       const anyMedia = hasNewMedia ? n.media.shots.length || n.media.video.a || n.media.video.both : cur.compare.shots.length || cur.compare.video;
@@ -559,6 +599,7 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
     const rev = p.rev + 1;
     const now = iso();
     const prevOptions = p.options || [];
+    persistLives(n.fields);
     if (n.fields.options) {
       const { options, ...rest } = n.fields;
       Object.assign(p, rest);
@@ -570,7 +611,7 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
       p.compare = { ...n.fields.compare, shots: media.shots, ...(Object.keys(media.video).length && { video: media.video }) };
       delete p.options;
     }
-    for (const k of ['topic', 'thread', 'recommended', 'idea', 'looksSame', 'risk']) if (n.fields[k] === undefined) delete p[k];
+    for (const k of ['topic', 'thread', 'recommended', 'idea', 'looksSame', 'risk', 'live']) if (n.fields[k] === undefined) delete p[k];
     p.rev = rev;
     p.state = toDraft ? 'draft' : 'proposed';
     if (!toDraft) p.proposedAt = now;
@@ -582,6 +623,35 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
     return p;
   });
   return { proposal: p, scrubbed: [...n.scrubbed, ...nt.found.map((k) => `note: ${k}`)], warnings: n.warnings };
+}
+
+/**
+ * I-074: set (or with `clear`, remove) the live B of a proposal, or of one option (`option`, required on a proposal with
+ * options): {patch: "fixes/<topic>/patch.diff", ref (default HEAD), repoDir (default cwd)}. Any state but withdrawn;
+ * no new revision and the decision stands (it only adds what the "Try it" panel serves).
+ */
+export async function setLive(id, { by, option, patch, ref, clear = false, repoDir = process.cwd() } = {}) {
+  const who = needBy(by);
+  const cur = get(id);
+  if (cur.state === 'withdrawn') throw new Error(`${cur.id} is withdrawn`);
+  const names = (cur.options || []).map((o) => o.name);
+  if (names.length && (option == null || option === '')) throw new Error(`${cur.id} has options: say which one B is for (--option <name>: ${names.join(', ')})`);
+  if (!names.length && option != null && option !== '') throw new Error(`${cur.id} has no options (--option is for a proposal with options)`);
+  if (names.length && !findOption(cur, option)) throw new Error(`no option "${option}" in ${cur.id} (options: ${names.join(', ')})`);
+  if (!clear && (patch == null || patch === '')) throw new Error('--patch fixes/<topic>/patch.diff is required (or --clear)');
+  let entry = null;
+  if (!clear) { try { entry = resolveLivePatch({ patch, ref: ref ?? 'HEAD', repoDir }); } catch (e) { throw new Error(`--patch: ${e.message}`); } }
+  return change(cur.id, who, 'live', (p) => {
+    if (p.state === 'withdrawn') throw new Error(`${p.id} is withdrawn`);
+    const target = p.options?.length ? findOption(p, option) : p;
+    if (!target) throw new Error(`no option "${option}" in ${p.id}`);
+    if (clear) delete target.live;
+    else {
+      storeLivePatch(entry.blob, entry.text);
+      target.live = { patch: entry.patch, ref: entry.ref, blob: entry.blob, base: entry.base, files: entry.files };
+    }
+    return { ...(p.options?.length && { option: target.name }), note: clear ? 'live B removed' : `live B: ${entry.patch} @ ${entry.blob.slice(0, 12)}` };
+  });
 }
 
 /** draft -> proposed (validated in full). */
@@ -825,6 +895,8 @@ export function proposalNewsText(e) {
 const media = (id, name) => (name ? `/media/${id}/${name}` : undefined);
 const viewShots = (id, c) => (c.shots || []).map((s) => ({ caption: s.caption, a: media(id, s.a), b: media(id, s.b), aSize: s.aSize, bSize: s.bSize }));
 const viewVideo = (id, v) => (v ? { a: media(id, v.a), b: media(id, v.b), both: media(id, v.both) } : undefined);
+/** I-074: what the page needs to know about a live B (the console serves it; no paths beyond the patch name). */
+const viewLive = (l) => (l && BLOB.test(String(l.blob)) ? { patch: l.patch, version: l.blob.slice(0, 12), files: (l.files || []).length } : undefined);
 
 /** What the page gets for one proposal: no history, media as /media/ URLs. Drafts and withdrawn: null. */
 export function publicView(p) {
@@ -833,6 +905,7 @@ export function publicView(p) {
   return {
     id: p.id, by: p.by, title: p.title, area: p.area, topic: p.topic, thread: p.thread, state: p.state, rev: p.rev,
     problem: p.problem, idea: p.idea, looksSame: p.looksSame, visualDiff: p.visualDiff, gain: p.gain, risk: p.risk,
+    ...(viewLive(p.live) && { live: viewLive(p.live) }),
     compare: {
       a: c.a, b: c.b, view: c.view || 'side',
       shots: viewShots(p.id, c),
@@ -842,6 +915,7 @@ export function publicView(p) {
     options: p.options?.length ? p.options.map((o) => ({
       name: o.name, label: o.label, idea: o.idea, looksSame: o.looksSame, visualDiff: o.visualDiff, gain: o.gain, risk: o.risk,
       compare: { b: o.compare?.b, shots: viewShots(p.id, o.compare || {}), video: viewVideo(p.id, o.compare?.video) },
+      ...(viewLive(o.live) && { live: viewLive(o.live) }),
     })) : undefined,
     recommended: p.options?.length ? p.recommended : undefined,
     decision: p.decision, decisions: p.decisions, revisions: p.revisions,
@@ -874,6 +948,8 @@ function solutionText(s, ind) {
   return L;
 }
 
+const liveText = (l) => `${l.patch} @ ${String(l.blob).slice(0, 12)} (${(l.files || []).length} file(s) on ${l.base || 'site-pretty'}; the console's "Try it" panel serves it)`;
+
 /** The text of `proposal show`. */
 export function showText(p) {
   const L = [line(p)];
@@ -885,6 +961,7 @@ export function showText(p) {
   const c = p.compare || {};
   if (p.options?.length) L.push(`  options: ${p.options.map((o) => o.name).join(', ')}${p.recommended ? `; recommended: ${p.recommended.option} (${p.recommended.why})` : ''}`);
   L.push(`  A: ${c.a?.label}${c.a?.url ? ` ${c.a.url}` : ''}${p.options?.length ? '' : `   B: ${c.b?.label}${c.b?.url ? ` ${c.b.url}` : ''}`}${c.view ? `   view: ${c.view}` : ''}`);
+  if (p.live) L.push(`  live B: ${liveText(p.live)}`);
   for (const [i, s] of (c.shots || []).entries()) L.push(`  shot ${i + 1}${s.caption ? ` "${s.caption}"` : ''}: ${s.a} | ${s.b}`);
   if (c.video) L.push(`  video: ${Object.entries(c.video).map(([k, v]) => `${k}=${v}`).join(' ')}`);
   L.push(`  media: ${mediaDir(p.id)}`);
@@ -896,6 +973,7 @@ export function showText(p) {
     L.push(`    B: ${oc.b?.label}${oc.b?.url ? ` ${oc.b.url}` : ''}${shots.length ? `   ${shots[0]}` : ''}`);
     for (const x of shots.slice(1)) L.push(`    ${x}`);
     if (oc.video) L.push(`    video: ${Object.entries(oc.video).map(([k, v]) => `${k}=${v}`).join(' ')}`);
+    if (o.live) L.push(`    live B: ${liveText(o.live)}`);
   }
   if (p.decision) L.push(`  decision: ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''} (rev ${p.decision.rev}, ${p.decision.at}, ${p.decision.who})${p.decision.notes ? `: ${p.decision.notes}` : ''}`);
   L.push('  history:');

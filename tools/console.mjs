@@ -87,7 +87,7 @@
 //   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
 //
 // Proposals (ts-proposals): a design engineer's PoC for the user to compare and accept, reject or send back:
-//   node tools/console.mjs proposal post|list|show|revise|publish|withdraw|decide|wait …   (header of tools/lib/proposal-cli.mjs)
+//   node tools/console.mjs proposal post|list|show|revise|live|publish|withdraw|decide|wait …   (header of tools/lib/proposal-cli.mjs)
 //
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';

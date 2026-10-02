@@ -17,6 +17,11 @@
 //   node tools/serve.mjs --port auto|0|N       # auto = per-checkout port from 5200-5999 (default in a git worktree);
 //                                              # 0 = any free port; N = exactly N (default 5173 in the main checkout)
 //   node tools/serve.mjs --state out/serve.json  # write {url, port, pid, root, overlay, ...} once listening
+//   node tools/serve.mjs --frame-ancestors http://localhost:5559[,http://127.0.0.1:5559]   # opt-in (I-074): documents
+//                                              # may be framed by these localhost origins (the user console's "Try it"
+//                                              # panel): no x-frame-options, CSP frame-ancestors 'self' + the origins.
+//                                              # Exact http(s)://localhost|127.0.0.1:<port> origins only, else exit 2.
+//                                              # Without the flag every header stays as before (tools/lib/framing.mjs).
 //
 // Baseline lookup: site/ and site-pretty/ are the snapshot committed on main; agent worktrees are sparse
 // and have neither. `--root` names are resolved against this checkout first, then against the main
@@ -53,6 +58,7 @@ import { withGuard } from './lib/lock.mjs';
 import { requireBaseline, baselineMeta } from './lib/baseline.mjs';
 import { parseRange } from './lib/http-range.mjs';
 import { lanInterfaces, isPhoneLan } from './lib/lan.mjs';
+import { parseFrameAncestors, allowFraming } from './lib/framing.mjs';
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = REPO;
@@ -78,6 +84,10 @@ let SELF_SIGNED = false; // --https without --cert/--key: the auto-created cert 
 let TWIN_PORT = null;
 const LATENCY = Number(opt('latency', 0)); // ms added before every response (rough CDN RTT emulation)
 if (!['block', 'local', 'off'].includes(VENDORS)) { console.error('--vendors must be block|local|off'); process.exit(2); }
+let FRAME_ANCESTORS = null; // I-074: opt-in; null = production's framing headers, unchanged
+if (args.some((a) => a === '--frame-ancestors' || a.startsWith('--frame-ancestors='))) {
+  try { FRAME_ANCESTORS = parseFrameAncestors(opt('frame-ancestors')); } catch (e) { console.error(e.message); process.exit(2); }
+}
 
 const manifestPath = join(MANIFEST_ROOT, '.mirror', 'manifest.json');
 if (!existsSync(manifestPath)) { console.error(`No ${manifestPath} — run \`node tools/mirror.mjs\` in the main checkout first (or set FW_MIRROR_HOME).`); process.exit(1); }
@@ -251,7 +261,7 @@ function handler(req, res) {
   }
   if (pathname === '/__mirror/info') {
     done(200);
-    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, root: ROOT, baseline: BASELINE, overlays: OVERLAYS.map((d) => ({ dir: d, files: listFiles(d) })), latency: LATENCY, https: HTTPS, selfSigned: SELF_SIGNED, httpTwin: TWIN_PORT, rewrites: REWRITES }, null, 1)));
+    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, root: ROOT, baseline: BASELINE, overlays: OVERLAYS.map((d) => ({ dir: d, files: listFiles(d) })), latency: LATENCY, https: HTTPS, selfSigned: SELF_SIGNED, httpTwin: TWIN_PORT, rewrites: REWRITES, ...(FRAME_ANCESTORS && { frameAncestors: FRAME_ANCESTORS }) }, null, 1)));
   }
   if (pathname.startsWith('/cdn-cgi/')) { done(204); return send(req, res, 204, {}, null); }
 
@@ -290,6 +300,7 @@ function handler(req, res) {
   if (isHtml) {
     Object.assign(headers, DOC_HEADERS);
     headers['content-security-policy'] = localCsp(info.csp);
+    if (FRAME_ANCESTORS) allowFraming(headers, FRAME_ANCESTORS); // I-074 (opt-in): the console may frame this document
     if (info.link) headers.link = info.link; // production's modulepreload Link header
   }
   const rewrite = isHtml && VENDORS === 'local' ? rewriteHtml : null;
@@ -365,6 +376,7 @@ function announce() {
   for (const d of OVERLAYS) console.log(`  overlay: ${d}  (${listFiles(d).length} files, served before the root)`);
   console.log(`  vendors=${VENDORS}  compress=${COMPRESS}  cache=${NO_CACHE ? 'no-store' : 'production headers'}${HTTPS ? '  (HTTP/2 + TLS)' : ''}${LATENCY ? `  latency=+${LATENCY}ms` : ''}`);
   if (REWRITES.length) console.log('  rewrites: ' + REWRITES.join(' | '));
+  if (FRAME_ANCESTORS) console.log(`  framing: documents may be framed by ${FRAME_ANCESTORS.join(' ')} (no x-frame-options; CSP frame-ancestors)`);
   console.log(`\n  local:  ${url}`);
   if (TWIN_PORT) console.log(`  http twin: http://localhost:${TWIN_PORT}/  (plain http, same files: for the iPhone, whose Safari stops at the ${SELF_SIGNED ? 'self-signed ' : ''}certificate warning)`);
   if (HOST === '0.0.0.0' || HOST === '::') {
@@ -379,7 +391,7 @@ function announce() {
   if (STATE_FILE) {
     mkdirSync(dirname(STATE_FILE), { recursive: true });
     const tmp = `${STATE_FILE}.${process.pid}.tmp`;
-    writeFileSync(tmp, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, httpTwin: TWIN_PORT, latency: LATENCY, checkout: ROOT_DIR, baseline: BASELINE, startedAt: new Date().toISOString() }, null, 1));
+    writeFileSync(tmp, JSON.stringify({ url, port: PORT, pid: process.pid, root: ROOT, overlays: OVERLAYS, vendors: VENDORS, https: HTTPS, httpTwin: TWIN_PORT, latency: LATENCY, checkout: ROOT_DIR, baseline: BASELINE, startedAt: new Date().toISOString(), ...(FRAME_ANCESTORS && { frameAncestors: FRAME_ANCESTORS }) }, null, 1));
     renameSync(tmp, STATE_FILE);
     let cleaned = false;
     const cleanup = () => { if (cleaned) return; cleaned = true; try { if (JSON.parse(readFileSync(STATE_FILE, 'utf8')).pid === process.pid) unlinkSync(STATE_FILE); } catch {} };

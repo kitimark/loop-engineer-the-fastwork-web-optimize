@@ -12,6 +12,11 @@
 //   proposal revise <id> --by <agent> --note "<what changed>" [--file …] [--shot-a … --shot-b …] [--video …] [--option <name>] [--publish]
 //        # options: the new file's list replaces the old one (add, change, drop options); an option without new shots
 //        # keeps those of the old option of the same name; --option <name> + --shot-a/--shot-b replaces that one's.
+//   proposal live <id> --by <agent> [--option <name>] --patch fixes/<topic>/patch.diff [--ref <git ref, default HEAD>]
+//        # I-074: what the console's "Try it" panel serves as B (A = the baseline): a committed patch, read from git
+//        # here (`<ref>:<patch>` in this checkout) and kept in the console store; any state but withdrawn, no new
+//        # revision, the decision stands. --clear removes it. post/revise take the same as --live-patch <path>
+//        # [--live-ref <ref>] (with options: plus --option <name>), or "live": {"patch": …} in the file (per option).
 //   proposal publish <id> --by <agent>                            # draft -> proposed
 //   proposal withdraw <id> --by <agent> [--note "..."]
 //   proposal decide <id> --by <who> --value accept|reject|change [--option <name>] [--notes "..."]   # the user answered in chat (lead)
@@ -32,14 +37,14 @@
 // --shot-a / --shot-b / --caption repeat (or take comma lists) and pair up by order.
 import { dirname, resolve } from 'node:path';
 import {
-  loadProposalFile, postProposal, reviseProposal, publishProposal, withdrawProposal, decide, listProposals, get,
+  loadProposalFile, postProposal, reviseProposal, publishProposal, withdrawProposal, decide, listProposals, get, setLive, findOption,
   waitCondition, waitAnyCondition, line, showText, parseProposalId, proposalNewsText,
 } from './proposal.mjs';
 import { runningServer } from './console-server.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './wait.mjs';
 import { startWait } from './waits.mjs'; // I-058: live wait records for the status board
 
-const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option']);
+const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref']);
 
 export function parseArgs(argv) {
   const multi = {}, pos = [], flags = new Set();
@@ -74,7 +79,9 @@ function inputs(a) {
   if (a.one('video')) video.both = a.one('video');
   if (a.one('video-a')) video.a = a.one('video-a');
   if (a.one('video-b')) video.b = a.one('video-b');
-  return { raw, baseDir: file ? dirname(resolve(file)) : process.cwd(), shotsA: a.many('shot-a'), shotsB: a.many('shot-b'), captions: a.many('caption'), video, option: a.one('option') };
+  if (a.one('live-ref') && !a.one('live-patch')) throw new Error('--live-ref goes with --live-patch fixes/<topic>/patch.diff');
+  const live = a.one('live-patch') ? { patch: a.one('live-patch'), ref: a.one('live-ref', 'HEAD') } : undefined; // I-074
+  return { raw, baseDir: file ? dirname(resolve(file)) : process.cwd(), shotsA: a.many('shot-a'), shotsB: a.many('shot-b'), captions: a.many('caption'), video, option: a.one('option'), live };
 }
 
 function report(r) {
@@ -115,6 +122,14 @@ export async function run(argv) {
     const r = await reviseProposal(id, { by: by(), note: a.one('note'), ...inputs(a), publish: a.flag('publish') });
     report(r);
     console.log(`REVISED ${line(r.proposal)}`);
+    return 0;
+  }
+  if (sub === 'live') {
+    const p = await setLive(id, { by: by(), option: a.one('option'), patch: a.one('patch'), ref: a.one('ref'), clear: a.flag('clear') });
+    const t = p.options?.length ? findOption(p, a.one('option')) : p;
+    console.log(t?.live ? `LIVE ${p.id}${p.options?.length ? ` option ${t.name}` : ''}: B = baseline + ${t.live.patch} @ ${t.live.blob.slice(0, 12)} (${t.live.files.length} file(s)); the console's "Try it" panel serves it` : `LIVE ${p.id}${p.options?.length ? ` option ${t?.name}` : ''}: removed`);
+    const u = await serverUrl();
+    if (u) console.log(`on the user console ${new URL(`proposals#${p.id}`, u).href}`);
     return 0;
   }
   if (sub === 'publish') { console.log(`PUBLISHED ${line(await publishProposal(id, { by: by() }))}`); return 0; }

@@ -129,6 +129,13 @@ fieldset.optpick { border: 1px solid var(--line); border-radius: 12px; margin: 1
 fieldset.optpick legend { font-size: 14px; font-weight: 650; padding: 0 4px; }
 fieldset.optpick label { display: flex; gap: 8px; align-items: center; padding: 5px 0; cursor: pointer; font-size: 15px; }
 fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
+/* I-074: try it live, the original (A) and the proposal (B) as real pages, side by side */
+.tryit h3 { margin: 0 0 4px; font-size: 16px; }
+.trybar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+.trynote { border-radius: 10px; padding: 8px 12px; margin: 8px 0; background: var(--warn-soft); color: var(--warn); font-weight: 600; font-size: 14px; }
+.trypair { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 6px; }
+.trypair figure { flex: 0 0 auto; }
+.trypair iframe { display: block; width: 430px; height: 932px; max-height: 85vh; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 </head>
@@ -143,6 +150,8 @@ fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
   <main>
     <div id="list" class="list"></div>
     <div id="detail"></div>
+    <div id="tryit"></div>
+    <div id="decide"></div>
   </main>
 </div>
 <script src="/console-nav.js"></script>
@@ -401,11 +410,122 @@ function gainTable(rows) {
   t.appendChild(tb);
   return el('div', { class: 'tablewrap' }, t);
 }
+/** The option on screen: the tab you picked, else the decided one, else the recommended one, else the first. */
+function curOptionName(p) {
+  var opts = p.options || [];
+  if (!opts.length) return null;
+  if (optionOf(p, optTab[p.id])) return optTab[p.id];
+  if (p.decision && optionOf(p, p.decision.option)) return p.decision.option;
+  if (p.recommended && optionOf(p, p.recommended.option)) return p.recommended.option;
+  return opts[0].name;
+}
+
+// ---- I-074: try it live ----
+// The console starts two page servers on this Mac when you open the panel (POST /api/live/<id>/start): A = the
+// original page, B = the original plus this proposal's (option's) patch. Both are framed here, 430x932 like the
+// phone. While the panel is open the page pings every minute; 10 min without a ping and the console stops them.
+// "One at a time" removes the hidden frame (unloads that page), so only one page runs.
+var TRY_NOTE = 'A measurement is running; scrolling here may disturb it';
+var tryKey = '', tryWanted = {}, tryMode = {}, tryShow = {}, tryBeat = null, tryUrls = null;
+function liveTarget(p) {
+  if (p.options && p.options.length) {
+    var o = optionOf(p, curOptionName(p));
+    return o && o.live ? { option: o.name, label: o.label || o.name, live: o.live } : null;
+  }
+  return p.live ? { option: null, label: null, live: p.live } : null;
+}
+function stopBeat() { if (tryBeat) { clearInterval(tryBeat); tryBeat = null; } tryUrls = null; }
+function livePost(path, body) {
+  return fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-console': '1' }, body: JSON.stringify(body || {}) })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }); });
+}
+function tryFrame(url, label) {
+  var f = el('iframe', { src: url, title: label, width: '430', height: '932', referrerpolicy: 'no-referrer', sandbox: 'allow-scripts allow-same-origin allow-forms' });
+  return el('figure', null, el('figcaption', null, el('span', { text: label }),
+    el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: 'open in a new tab' })), f);
+}
+function renderTryIt(p) {
+  var box = document.getElementById('tryit');
+  var t = p && liveTarget(p);
+  var key = t ? p.id + '|' + p.rev + '|' + (t.option || '') + '|' + t.live.version : '';
+  if (key === tryKey) return; // the frames stay loaded while the proposal refreshes around them
+  tryKey = key;
+  stopBeat();
+  if (!t) { box.replaceChildren(); return; }
+  var id = p.id;
+  var card = el('section', { class: 'card tryit', 'aria-label': 'Try it' });
+  card.appendChild(el('h3', { text: 'Try it: scroll the real pages' + (t.label ? ' (option: ' + t.label + ')' : '') }));
+  card.appendChild(el('p', { class: 'hint', text: 'A is the original page, B has this proposal applied (' + t.live.patch + ', version ' + t.live.version + '). Both open on this Mac only (localhost), 430x932 like the phone; scroll inside each one. Desktop Chrome or Safari is not the iPhone, so judge the look here and leave smoothness to the phone tests.' }));
+  var note = el('p', { class: 'trynote', role: 'status', text: TRY_NOTE });
+  note.hidden = true;
+  var err = el('p', { class: 'err', role: 'alert' });
+  var bar = el('div', { class: 'trybar' });
+  var pair = el('div', { class: 'trypair' });
+  var openBtn = el('button', { type: 'button', class: 'btn primary', text: 'Open both pages' });
+  var closeBtn = el('button', { type: 'button', class: 'btn', text: 'Close the pages' });
+  var seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'How to show them' });
+  var showBar = el('div', { class: 'seg', role: 'group', 'aria-label': 'Which page' });
+  function measuring(on) { note.hidden = !on; }
+  function draw() {
+    if (!tryUrls) { pair.replaceChildren(); seg.hidden = true; showBar.hidden = true; closeBtn.hidden = true; openBtn.hidden = false; return; }
+    openBtn.hidden = true; closeBtn.hidden = false; seg.hidden = false;
+    var one = tryMode[id] === 'one', show = tryShow[id] === 'b' ? 'b' : 'a';
+    seg.replaceChildren();
+    [['two', 'Side by side'], ['one', 'One at a time']].forEach(function (m) {
+      var b = el('button', { type: 'button', 'aria-pressed': String((one ? 'one' : 'two') === m[0]), text: m[1] });
+      b.addEventListener('click', function () { tryMode[id] = m[0]; draw(); });
+      seg.appendChild(b);
+    });
+    showBar.hidden = !one;
+    showBar.replaceChildren();
+    [['a', 'Show A (original)'], ['b', 'Show B (proposal)']].forEach(function (m) {
+      var b = el('button', { type: 'button', 'aria-pressed': String(show === m[0]), text: m[1] });
+      b.addEventListener('click', function () { tryShow[id] = m[0]; draw(); });
+      showBar.appendChild(b);
+    });
+    // only the frames on screen are in the document: a removed iframe unloads its page. A kept frame is never
+    // moved (moving an iframe reloads it): drop the unwanted one, add the missing one in place (A left, B right).
+    var want = one ? [show] : ['a', 'b'];
+    Array.prototype.slice.call(pair.children).forEach(function (f) { if (want.indexOf(f.getAttribute('data-side')) < 0) f.remove(); });
+    want.forEach(function (s) {
+      if (pair.querySelector('[data-side="' + s + '"]')) return;
+      var f = tryFrame(tryUrls[s], s === 'a' ? 'A: original' : 'B: proposal' + (t.label ? ' (' + t.label + ')' : ''));
+      f.setAttribute('data-side', s);
+      if (s === 'a') pair.insertBefore(f, pair.firstChild); else pair.appendChild(f);
+    });
+  }
+  function open() {
+    err.textContent = ''; openBtn.disabled = true; openBtn.textContent = 'Starting the page servers…';
+    var body = t.option ? { option: t.option } : {};
+    return livePost('/api/live/' + id + '/start', body).then(function (j) {
+      if (tryKey !== key) return;
+      var a = localUrl(j.a), b = localUrl(j.b);
+      if (!a || !b) throw new Error('the console sent no local page address');
+      tryUrls = { a: a, b: b }; tryWanted[id] = true;
+      measuring(j.measuring);
+      if (tryBeat) clearInterval(tryBeat);
+      tryBeat = setInterval(function () {
+        livePost('/api/live/ping', {}).then(function (r) {
+          measuring(r.measuring);
+          if (r.running < 2 && tryKey === key) { pair.replaceChildren(); open(); } // stopped meanwhile: start again
+        }).catch(function () {});
+      }, 60000);
+      draw();
+    }).catch(function (e) { err.textContent = e.message; }).then(function () { openBtn.disabled = false; openBtn.textContent = 'Open both pages'; });
+  }
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', function () { tryWanted[id] = false; stopBeat(); draw(); });
+  bar.appendChild(openBtn); bar.appendChild(closeBtn); bar.appendChild(seg); bar.appendChild(showBar);
+  card.appendChild(bar); card.appendChild(note); card.appendChild(err); card.appendChild(pair);
+  box.replaceChildren(card);
+  draw();
+  if (tryWanted[id]) open(); // you had it open: a new revision or option reopens it
+}
+
 /** I-053: the options as cards side by side (they are the tabs), then the chosen one in full with its own compare. */
 function optionsBlock(p) {
   var opts = p.options, rec = p.recommended && optionOf(p, p.recommended.option) ? p.recommended.option : null;
-  var decided = p.decision && optionOf(p, p.decision.option) ? p.decision.option : null;
-  var curName = optionOf(p, optTab[p.id]) ? optTab[p.id] : (decided || rec || opts[0].name);
+  var curName = curOptionName(p);
   var o = optionOf(p, curName);
   var wrap = el('div', { class: 'block' }, el('h3', { text: opts.length + ' ways to do it' }),
     el('p', { class: 'hint', text: 'Each option is compared with the same original (A). Look at each one, then accept the one you want.' }));
@@ -445,7 +565,7 @@ function optionsBlock(p) {
 }
 function renderDetail(p, force) {
   var box = document.getElementById('detail');
-  if (!p) { stopBlink(); box.replaceChildren(); return; }
+  if (!p) { stopBlink(); box.replaceChildren(); renderTryIt(null); document.getElementById('decide').replaceChildren(); return; }
   var sig = JSON.stringify(p);
   if (!force && sig === detailSig) return;
   if (!force && document.activeElement && document.activeElement.id === 'notes') return; // don't redraw under the user's typing
@@ -477,14 +597,18 @@ function renderDetail(p, force) {
     card.appendChild(section('Risk', para(p.risk)));
     card.appendChild(compareBlock(p));
   }
-  card.appendChild(decisionBlock(p));
+  // I-074: the decision and history go below the "Try it" panel, which keeps its own container so the framed
+  // pages are not reloaded each time the proposal is redrawn
+  var dec = el('div', { class: 'decide' }, decisionBlock(p));
   var hist = el('details', { class: 'hist' }, el('summary', { text: 'History' }));
   var hl = el('ul');
   revs.forEach(function (r) { hl.appendChild(el('li', { text: when(r.at) + ' revision ' + r.rev + ' by ' + r.by + ': ' + r.note })); });
   (p.decisions || []).forEach(function (d) { hl.appendChild(el('li', { text: when(d.at) + ' ' + (STATE_TEXT[d.value] || d.value) + (d.option ? ', option ' + optLabel(p, d.option) : '') + ' (revision ' + d.rev + ')' + (d.notes ? ': ' + d.notes : '') })); });
   hist.appendChild(hl);
-  card.appendChild(hist);
+  dec.appendChild(hist);
   box.replaceChildren(card);
+  renderTryIt(p);
+  document.getElementById('decide').replaceChildren(dec);
 }
 
 // ---- loading ----
