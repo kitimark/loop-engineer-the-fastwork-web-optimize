@@ -467,3 +467,50 @@ The lead set a strict pixel bar, checked with `out/wi-stack/a/checkb.mjs` in hea
 All of this is Chrome-headless data: Chrome's compositor is not WebKit's, so it says nothing about backing stores.
 ENABLE(THREADED_ANIMATIONS) stays UNRESOLVED (no device flag check unless B goes to the phone).
 
+
+### Option B: Simulator mechanism holds `s2`, `s3` (functional shared lane; Sim ms = structure, never a gain, F-084; OBSERVED)
+
+Simulator 15 Pro Max, 430x775. Two tools:
+- `layers.mjs`: a full walk with `LayerTree` after every 250 px step. Backing store = `LayerTree` memory, a Simulator number and not phone memory.
+- `entry.mjs` / `walk.mjs`: Timeline per RenderingFrame.
+
+In entry runs, a second run of the same arm straight after the first never saw `+is-visible` (scroll restoration), so it is void.
+
+**Backing stores (`s2`, n=1 per arm).** The 4 non-active, non-neighbour shells are 402x857 at about 12.1 MB each.
+
+| step | V | B2B | B2C | NB |
+|---|---|---|---|---|
+| `#people +is-visible` | 134 layers, 175 MB; 4 shells with backing ("overlap") | 129, 115 MB; the 4 shells 0 KB ("stacking") | 129, 126 MB; the 4 shells 0 KB | 129, 115 MB; the 4 shells 0 KB ("overlap") |
+| `+is-future-shrinking` (spot c) | 127, 162 MB; the 4 shells get backing | 127, 162 MB; the 4 shells get backing | **123, 115 MB; no shell backing** | 131, 162 MB; the 4 shells get backing |
+
+B2B removes the shells' backing at the reveal (V's extra 4 x 12 MB), down to NB's level. B2C also removes it at the
+shrink, where both V and NB pay it. This fits the source reading in "Layer diff": a hidden shell paints nothing, so it
+needs no backing store under an animating ancestor.
+
+**Frame 2 at the reveal (Composite ms inside the frame after `+is-visible`, Sim).** B2C is B2B at the reveal.
+
+| arm | runs (entry `s2`/`s3`, walk `s3`) | median |
+|---|---|---|
+| V | 92, 104, 122, 116 | ~110 |
+| B2B / B2C | 75, 68, 46, 59 | ~63 |
+| NB | 54, 41, 53 (e1: 45-54) | ~50 |
+
+The cost drops, but not to NB's level. The shell backing was part of blur-cubic's frame-2 cost, not all of it.
+
+**Spot (c), the shrink window (`walk.mjs`, worst rAF dt / longest frame).**
+
+| arm | runs | long frame |
+|---|---|---|
+| **B2C** (`s3`, n=2) | 21 and 17 ms worst rAF | none |
+| V (`s3` and `w1`) | 36-43 ms | 41-48 ms frame, Composite 31-37 |
+| NB (`s3` and `w1`) | 36-43 ms | 41-48 ms frame, Composite 31-37 |
+| C (`w1`) | 36-43 ms | 41-48 ms frame, Composite 31-37 |
+
+B2C removes the ~40 ms shrink frame in the Simulator.
+
+**Reading (OBSERVED, Simulator only, small n):**
+- B2B makes stack5's reveal frame cheaper but does not reach A's level. A already has the reveal without blur-cubic's cost.
+- The shrink hold (B2C's second rule) targets a frame that A (st6-rb) still has, and it does not need blur-cubic. It is
+  a candidate on top of A: "A + shrink hold".
+- That candidate needs its own pixel gate on the st6-rb base and a phone ticket before any claim.
+- ENABLE(THREADED_ANIMATIONS) stays UNRESOLVED.
