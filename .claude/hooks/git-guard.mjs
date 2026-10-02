@@ -18,6 +18,12 @@
 //     (osascript, open), system_profiler SPCameraDataType (or a full report), ffmpeg -f avfoundation, imagesnap,
 //     screencapture -v/-V/-g/-G, inline swift/python/ruby/perl/osascript scripts using the capture APIs,
 //     ioscap.app started by hand (open, or its binary other than --selftest)
+//   deny (incident I-064, review-ioscap F2-F4): Photo Booth and FaceTime (open, osascript, their binaries); ioscap
+//     by name or bundle id (open -a ioscap, open -b local.fw-study.ioscap, osascript) or any ioscap binary but
+//     <checkout>/out/ioscap/ioscap.app/Contents/MacOS/ioscap --selftest; swift/swiftc/swift-frontend (also through
+//     xcrun, or a swift script run by path) on tools/ioscap/ sources other than a -typecheck, on any .swift file
+//     that uses the capture APIs (the hook reads the file; one it cannot read is refused), on stdin or a file list,
+//     and SwiftPM build/run/test/package on a package whose sources use them
 //
 // Why a parser and not only permission rules: `Bash(git push *)` doesn't match `git -C . push`,
 // `/usr/bin/git push`, `sh -c 'git push'` (https://code.claude.com/docs/en/permissions.md, "What a
@@ -36,8 +42,10 @@
 // Input (stdin): {"tool_name":"Bash","tool_input":{"command":"..."},"cwd":"...", ...}
 // No dependencies; `node .claude/hooks/git-guard.mjs < input.json`.
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HOW = 'Land with rebase + fast-forward only: on the branch `git rebase main`, then in the main checkout `git merge --ff-only <branch>`; if that fails, rebase again. Never merge main into a branch. (CLAUDE.md "Hard rules" 1)';
 const NO_PUSH = 'Pushing is never allowed: there is no remote and Fastwork-derived content never leaves this machine. (CLAUDE.md "Hard rules" 2)';
@@ -297,6 +305,19 @@ function unwrap(words, findings) {
       while (w[0] && w[0].startsWith('-')) { const o = w.shift(); if (/^-[EeIiLlnPsd]$/.test(o)) w.shift(); if (o === '--') break; }
       continue;
     }
+    // `xcrun [opts] <tool> [args]` runs <tool> (I-064: `xcrun swift ...`); --find/--show-* only print a path
+    if (b === 'xcrun') {
+      w.shift();
+      let info = false;
+      while (w[0] && w[0].startsWith('-')) {
+        const o = w.shift();
+        if (/^--?(sdk|toolchain)$/.test(o)) { w.shift(); continue; }
+        if (/^(-f|--?find|--?show-sdk-.*|--?version|--?help|-h)$/.test(o)) { info = true; break; }
+        if (o === '--') break;
+      }
+      if (info) return null;
+      continue;
+    }
     if (b === 'watch') { w.shift(); while (w[0] && w[0].startsWith('-')) { const o = w.shift(); if (/^-[nd]$/.test(o)) w.shift(); } return { argv: w, viaShell: true }; }
     // `node [node opts] <...>/lock.mjs [opts] run [opts] <resource> [opts] -- <cmd...>` (or lock.mjs run
     // directly): lock.mjs runs <cmd> under the lock, so <cmd> is what gets invoked (review-snapshot: an
@@ -481,7 +502,7 @@ function analyzeCmd(cmd, ctx, findings, depth) {
   }
   if (prog === 'git') analyzeGit(argv, ctx, findings, depth);
   else if (prog === 'gh') analyzeGh(argv, findings);
-  else analyzeCapture(prog, argv, cmd, findings);
+  else analyzeCapture(prog, argv, cmd, ctx, findings);
 }
 
 // ---------------------------------------------------------------- recording routes (incident I-062)
@@ -495,14 +516,115 @@ function analyzeCmd(cmd, ctx, findings, depth) {
 const NO_CAMERA = 'The only route that records the iPhone screen is `node tools/ioscap.mjs record` (incident I-062): it opens nothing but the iOS screen device. Other recording routes can open the Mac\'s own camera or list cameras, which the user banned (T-018).';
 const CAPTURE_API = /AVCapture|AVFoundation|CoreMediaIO|CMIOObject|ScreenCaptureKit|SCStream|cv2\.VideoCapture|VideoCapture\s*\(/;
 const SCRIPT_RUNNERS = new Set(['swift', 'xcrun', 'python', 'python3', 'ruby', 'perl', 'osascript']); // node has no capture API binding
-function analyzeCapture(prog, argv, cmd, findings) {
+// I-064 (review-ioscap F2-F4)
+const CAMERA_APPS = /photo\s*booth|facetime/i; // both open the Mac camera (also com.apple.PhotoBooth, facetime:// URLs)
+const CAMERA_APP_BIN = /(QuickTime Player|Photo ?Booth|FaceTime)\.app\/Contents\/MacOS\//i;
+const HOOK_ROOT = (() => { const r = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..'); try { return realpathSync(r); } catch { return r; } })();
+const IOSCAP_SRC = /(^|\/)tools\/ioscap\//;
+const SWIFT_TOOLS = new Set(['swift', 'swiftc', 'swift-frontend']);
+const SWIFT_INFO = /^(--?version|--?help|-h)$/;
+const SWIFT_VALUED = new Set(['-e', '-swift-version', '-target', '-sdk', '-module-name', '-I', '-L', '-F', '-framework', '-Xcc', '-Xlinker',
+  '-Xfrontend', '-Xswiftc', '-D', '-j', '-o', '-resource-dir', '-toolchain', '-enable-upcoming-feature', '-enable-experimental-feature',
+  '--package-path', '--chdir', '-C', '--scratch-path', '-c', '--configuration', '--product']);
+const SWIFTPM = new Set(['build', 'run', 'test', 'package']);
+const cwdOf = (ctx) => (ctx.cwd && existsSync(ctx.cwd) ? ctx.cwd : process.cwd());
+function pathOf(arg, ctx) {
+  const p = resolve(cwdOf(ctx), arg.startsWith('~/') ? join(homedir(), arg.slice(2)) : arg);
+  try { return realpathSync(p); } catch { return p; }
+}
+/** A Swift source a command names: 'ioscap' (under tools/ioscap/), 'capture' (uses the capture APIs), 'unreadable', or null. */
+function swiftSource(arg, ctx) {
+  const p = pathOf(arg, ctx);
+  if (IOSCAP_SRC.test(arg) || IOSCAP_SRC.test(p)) return 'ioscap';
+  try {
+    const st = statSync(p);
+    if (!st.isFile() || st.size > 8 * 1024 * 1024) return 'unreadable';
+    return CAPTURE_API.test(readFileSync(p, 'utf8')) ? 'capture' : null;
+  } catch { return 'unreadable'; }
+}
+/** SwiftPM: the package's own .swift files (no Package.swift: nothing to build). Symlinked directories and huge trees are refused. */
+function swiftPackage(dir) {
+  if (!existsSync(join(dir, 'Package.swift'))) return null;
+  if (IOSCAP_SRC.test(`${dir}/`)) return 'ioscap';
+  let files = 0;
+  const walk = (d, depth) => {
+    if (depth > 12) return 'unreadable';
+    let ents;
+    try { ents = readdirSync(d, { withFileTypes: true }); } catch { return 'unreadable'; }
+    for (const e of ents) {
+      if (e.name === '.build' || e.name === '.git' || e.name === 'node_modules') continue;
+      const p = join(d, e.name);
+      if (e.isSymbolicLink()) { try { if (statSync(p).isDirectory()) return 'unreadable'; } catch { continue; } }
+      if (e.isDirectory()) { const r = walk(p, depth + 1); if (r) return r; continue; }
+      if (!e.name.endsWith('.swift')) continue;
+      if (++files > 2000) return 'unreadable';
+      const r = swiftSource(p, {});
+      if (r) return r;
+    }
+    return null;
+  };
+  return walk(dir, 0);
+}
+function analyzeSwift(prog, argv, ctx, no) {
+  const rest = argv.slice(1);
+  const why = {
+    ioscap: 'Running or compiling the recorder\'s sources (tools/ioscap/) other than through `node tools/ioscap.mjs` (selftest, build, record; a `swiftc -typecheck` is fine)',
+    capture: `${prog} on Swift code that uses the capture APIs`,
+    unreadable: `${prog} on a Swift file or package this guard cannot read (missing, too large, not a file, or a symlinked folder; write the file first, then run it in a separate command)`,
+  };
+  const check = (sources) => { for (const s of sources) { const r = swiftSource(s, ctx); if (r) return no(why[r]); } return undefined; };
+  if (prog.endsWith('.swift')) return check([argv[0]]); // a swift script run by its path (#!/usr/bin/swift)
+  if (rest.length && rest.every((a) => SWIFT_INFO.test(a))) return undefined;
+  if (rest.some((a) => a === '-' || a.startsWith('@') || a === '-filelist')) return no(`${prog} reading its source from stdin or a file list (this guard cannot check it)`);
+  if (prog === 'swift') {
+    let word, pkg;
+    for (let k = 0; k < rest.length; k++) {
+      const a = rest[k];
+      const eq = a.indexOf('=');
+      if (a.startsWith('--package-path=') || a.startsWith('--chdir=')) { pkg = a.slice(eq + 1); continue; }
+      if (SWIFT_VALUED.has(a)) { if (a === '--package-path' || a === '--chdir' || a === '-C') pkg = rest[k + 1]; k++; continue; }
+      if (a.startsWith('-')) continue;
+      if (word === undefined) word = a;
+    }
+    if (word === undefined) return rest.includes('-e') ? undefined : no('The Swift REPL or a script on stdin (this guard cannot check its input)');
+    if (SWIFTPM.has(word)) { const r = swiftPackage(pathOf(pkg ?? '.', ctx)); return r ? no(why[r]) : undefined; }
+    if (word === 'help') return undefined;
+    if (word === 'repl') return no('The Swift REPL (this guard cannot check its input)');
+    return check([word, ...rest.filter((a) => a !== word && a.endsWith('.swift'))]);
+  }
+  // swiftc / swift-frontend: every .swift argument is a source; tools/ioscap/ sources only in a typecheck that emits nothing
+  const typecheckOnly = rest.some((a) => a === '-typecheck' || a === '-parse') && !rest.some((a) => /^-(o|c|emit-.+|interpret|immediate|i)$/.test(a));
+  for (const s of rest.filter((a) => a.endsWith('.swift'))) {
+    const r = swiftSource(s, ctx);
+    if (r === 'ioscap' && typecheckOnly) continue;
+    if (r) return no(why[r]);
+  }
+  return undefined;
+}
+/** <checkout>/out/ioscap/ioscap.app/Contents/MacOS/ioscap of this checkout or one of its .claude/worktrees/<name>. */
+function isCheckoutIoscapExe(p) {
+  const m = /^(.*)\/out\/ioscap\/ioscap\.app\/Contents\/MacOS\/ioscap$/.exec(p);
+  return !!m && (m[1] === HOOK_ROOT || dirname(m[1]) === join(HOOK_ROOT, '.claude', 'worktrees'));
+}
+function analyzeCapture(prog, argv, cmd, ctx, findings) {
   const rest = argv.slice(1);
   const text = [...rest, ...cmd.heredocs].join('\n');
   const no = (what) => findings.push(deny(`${what} is not allowed. ${NO_CAMERA}`));
-  if (prog === 'osascript' && /quicktime/i.test(text)) return no('QuickTime Player automation');
+  if (prog === 'osascript') {
+    if (/quicktime/i.test(text)) return no('QuickTime Player automation');
+    if (CAMERA_APPS.test(text)) return no('Photo Booth or FaceTime automation (both open the Mac camera)');
+    if (/ioscap/i.test(text)) return no('Starting ioscap through AppleScript (only `node tools/ioscap.mjs record` starts it)');
+  }
   if (prog === 'open') {
     if (rest.some((a) => /quicktime/i.test(a))) return no('Opening QuickTime Player');
-    if (rest.some((a) => /ioscap\.app/.test(a))) return no('Starting ioscap.app by hand (only `node tools/ioscap.mjs record` starts it, with the lease and the checks)');
+    if (rest.some((a) => CAMERA_APPS.test(a))) return no('Opening Photo Booth or FaceTime (both open the Mac camera)');
+    if (rest.some((a) => /ioscap/i.test(a))) return no('Starting ioscap by hand (open -a/-b, the app bundle; only `node tools/ioscap.mjs record` starts it, with the lease and the checks)');
+  }
+  if (CAMERA_APP_BIN.test(argv[0]) || /^(QuickTime Player|Photo ?Booth|FaceTime)$/i.test(prog)) return no('Starting QuickTime Player, Photo Booth or FaceTime');
+  if (/(^|\/)ioscap\.app\/Contents\/MacOS\//.test(argv[0]) || prog === 'ioscap') {
+    if (!(isCheckoutIoscapExe(pathOf(argv[0], ctx)) && rest.length === 1 && rest[0] === '--selftest')) {
+      return no('Running an ioscap binary by hand (only <checkout>/out/ioscap/ioscap.app/Contents/MacOS/ioscap --selftest; recording only through `node tools/ioscap.mjs record`)');
+    }
   }
   if (prog === 'system_profiler') {
     const types = rest.filter((a) => /^SP\w+DataType$/i.test(a));
@@ -512,8 +634,8 @@ function analyzeCapture(prog, argv, cmd, findings) {
   if (/^ff(mpeg|probe|play)$/.test(prog) && /avfoundation/i.test(text)) return no(`${prog} with the avfoundation input`);
   if (prog === 'imagesnap') return no('imagesnap (it opens a camera)');
   if (prog === 'screencapture' && rest.some((a) => /^-[A-Za-z]*[vVgG]/.test(a))) return no('screencapture video or audio recording');
-  if (prog === 'ioscap' && /ioscap\.app\/Contents\/MacOS\/ioscap$/.test(argv[0]) && !(rest.length === 1 && rest[0] === '--selftest')) return no('Running the ioscap app binary directly');
   if (SCRIPT_RUNNERS.has(prog) && CAPTURE_API.test(text)) return no(`An inline ${prog} script that uses the capture APIs`);
+  if (SWIFT_TOOLS.has(prog) || prog.endsWith('.swift')) { analyzeSwift(prog, argv, ctx, no); return; }
   if ((prog === 'node' || prog === 'nodejs') && rest.some((a) => base(a) === 'ioscap.mjs') && rest.includes('record') && rest.includes('--first-run')) {
     findings.push(ask('`ioscap.mjs record --first-run` shows the macOS Camera prompt for the recorder app: only the lead runs it, with the user watching, after the user\'s OK in a console step (incident I-062).'));
   }
@@ -532,7 +654,8 @@ export const looksGuarded = (text) =>
   /\bgit\b/.test(text) && /\b(merge|pull|push|send-pack)\b/.test(text) ||
   /\bgh\b/.test(text) && /\b(create|fork|merge|sync)\b/.test(text) ||
   /GIT_CONFIG_(PARAMETERS|COUNT|KEY_|VALUE_)|hookspath/i.test(text) ||
-  /QuickTime|SPCameraDataType|avfoundation|\bimagesnap\b|\bscreencapture\b.*\s-[A-Za-z]*[vVgG]|ioscap\.app|AVCapture/i.test(text);
+  /QuickTime|SPCameraDataType|avfoundation|\bimagesnap\b|\bscreencapture\b.*\s-[A-Za-z]*[vVgG]|ioscap\.app|AVCapture/i.test(text) ||
+  /Photo\s*Booth|FaceTime|local\.fw-study\.ioscap|\b(open|osascript)\b.*\bioscap\b|\bswift(c|-frontend)?\b/i.test(text); // I-064
 
 // ---------------------------------------------------------------- hook entry point
 let raw = '';

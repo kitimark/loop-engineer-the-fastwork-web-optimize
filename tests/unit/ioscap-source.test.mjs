@@ -97,6 +97,16 @@ test('the permission prompt only behind --first-run; never asked otherwise', () 
   assert.match(m, /let firstRun = argv\.contains\("--first-run"\)/);
   // the requestAccess sits in the notDetermined branch, reachable only when firstRun let it through
   assert.ok(m.indexOf('if !firstRun { finish(3,') < m.indexOf('requestAccess'));
+  // I-064 (review-ioscap nit): the prompt block itself is gated on firstRun too, not only the earlier switch, and a
+  // notDetermined state without --first-run ends with exit 3 right there
+  const gate = 'if firstRun && AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {';
+  const g = m.indexOf(gate);
+  assert.ok(g >= 0, `the prompt block starts with: ${gate}`);
+  const elseAt = m.indexOf('} else if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {', g);
+  assert.ok(elseAt > g, 'an else branch for notDetermined without --first-run');
+  const r = m.indexOf('requestAccess');
+  assert.ok(g < r && r < elseAt, 'requestAccess sits inside the firstRun && notDetermined block');
+  assert.match(m.slice(elseAt, elseAt + 400), /^\} else if [^\n]*\{\s*finish\(3, /, 'the else branch ends the run with exit 3');
 });
 
 test('the self-test half imports Foundation only; the recorder handles --selftest before any capture call', () => {

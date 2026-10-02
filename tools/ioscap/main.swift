@@ -157,12 +157,15 @@ if stopRequested { finish(8, "stopped before recording; nothing was opened") }
 resultInfo["device"] = ["modelID": screenDevice.modelID, "manufacturer": screenDevice.manufacturer]
 
 // ---- 4. the permission prompt (first run only), now that the iPhone screen is there --------------------
-if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+// Gated on firstRun here too (I-064), not only by the switch in step 1: the prompt is reachable only with --first-run.
+if firstRun && AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
   say("asking for the Camera permission (the macOS prompt names ioscap; the user answers it)")
   var answered = false, granted = false
   AVCaptureDevice.requestAccess(for: .video) { ok in granted = ok; answered = true }
   spin(until: { answered || stopRequested }, seconds: accessWaitSec)
   if !granted { finish(3, answered ? "the Camera permission was not granted; nothing was opened" : "no answer to the Camera prompt within \(Int(accessWaitSec)) s; nothing was opened") }
+} else if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+  finish(3, "the Camera permission for ioscap was never asked. The first run is the lead's, with --first-run and the user watching (console step). Nothing was opened.")
 }
 let tccNow = AVCaptureDevice.authorizationStatus(for: .video)
 resultInfo["cameraPermission"] = tccName(tccNow)

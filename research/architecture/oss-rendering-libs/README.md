@@ -1,0 +1,1 @@
+ioscap.swift (6c5bcbb, an early unhardened iPhone screen-capture probe) was removed in incident I-064: the only iPhone screen recorder is tools/ioscap/, started only by `node tools/ioscap.mjs` (I-062).
