@@ -706,6 +706,39 @@ Amended 2026-10-02 at the lead's second read, before any data: the gain line is 
 
 **Prediction P-064** (`fixes/PREDICTIONS.md`): no gain. In C, the band max ≤ 38 ms in ≥ 3 of 4 runs, and the band > 50 count is 0-1 in each arm. V's hold has ≥ 1 frame > 34 in ≥ 3 of 4 runs (G1b: 8 of 8). Based on: the G1b descent preview above, G driver, n=8 per arm, B 25-30 ms at the flip. Falsified if C's band shows ≥ 2 frames > 50 over 4 runs that V does not have.
 
+### G2 on hold; Sim S vs T on st6-rb (hold v34); the case for (B) without G2
+
+**G2 is on hold.** The user disconnected the iPhone (T-022, 2026-10-02 11:53Z) before any G2 run: no servers, no runs, no data. The lead's plan without the phone:
+1. Run one Sim session on st6-rb, S6 vs S6P2b, counts only.
+2. If S's band shows no layout beyond the two that RB has, propose A/B/C to the user with (B) recommended.
+3. Both sides of the trade are then G1b's (RB, G driver), plus Sim counts on st6-rb. P-064 is marked "not run" if the user drops fwreskip.
+
+**Hold v34** (2026-10-02 11:58-12:00Z, shared lane, one Sim boot, `MOY=0`; Sim ms are attribution only):
+- Arms: S = S6 `59b23b3f57fd` and T = S6P2b `ad7f029e43c6`, CSS `d22542d0b5f8` for both. Hashes were checked from the served files.
+- Mode T, `TDOWN=3400 THOLD=3000 TUP=2500 TDOWN2=3100`, order S T T S.
+- Scorer: scratchpad `v34score.py`, together with vfix's own Layout list.
+
+| run | band layouts ≥ 3 ms (y 2950-3250, both descents) | hold layouts ≥ 3 ms (+ Composite ≥ 15 ms) | Sim rAF max in the first descent's band |
+|---|---|---|---|
+| S1 | 20.5 @ 2999 (d), 20.6 @ 3004 (D) | none | 35 |
+| S2 | 19.5 @ 2988, 20.0 @ 3041 (d); 20.0 @ 2988, 19.8 @ 3021 (D) | 20.1 @ 3207 after D (the second descent overshot past the band end) | 34 |
+| T1 | none | 20.9 @ 3431 + Composite 28.7, 18.9; 20.5 @ 3181 | 17 |
+| T2 | none (first descent invalid: Safari restored y 3181 on the reload, so the descent started inside the band) | 22.3 @ 3429 + Composite 21.2; 21.5 @ 3183 | (n/a) |
+
+- **Same structure as RB (v33 S/U, and the earlier RB holds):**
+  - S has the hero's far re-skip and the `data-fw-wc` flip, about 20 ms each, at y ≈ 2990-3040 on every descent.
+  - T has none there.
+  - T moves that work to the idle un-skip in every hold: about 21 ms of layout plus a 19-29 ms composite.
+  - **There is no layout in S's band beyond the two RB has.** st6-rb neither adds band work nor makes the un-skip cheaper.
+- **OBSERVED, in our setup:** the same ~20 ms Sim layout on RB did not show as a longer phone frame in G1b's descents. The frame at the flip was B 25-30 ms vs P2b 25-33 ms, with > 50 in 1 of 8 runs in both arms. What the phone showed on RB is therefore the best evidence available, for both sides of the trade.
+- **What the G1b + v34 basis does not cover:**
+  - the W driver's scripted descent on the phone;
+  - st6-rb on the phone;
+  - a finger (F) run;
+  - the UI-process half of the FAIL rule, which is "not checked on the phone since T-018".
+
+  G2 (P-064) and an F run would cover the first three. They are optional confirmation once the phone is back.
+
 ## Risks, conflicts, follow-ups
 
 - **Up-pass Layout (open item ii).** See above.
