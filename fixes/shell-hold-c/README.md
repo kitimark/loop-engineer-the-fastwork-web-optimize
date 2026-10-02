@@ -65,7 +65,23 @@ For 0.95 s after the class flips, the shells that are neither active nor next to
 | Simulator layers (`s4`, n=1 per arm; Simulator backing store, not phone memory) | `+is-future-shrinking`: S6 127 layers / 162 MB, the 4 shells at 12.1 MB each. HC 127 / **115 MB**, no shell backing. `+is-visible`: equal (S6 133 / 117 MB, HC 129 / 115 MB, shells 0 KB in both). |
 | Simulator shrink window (`walk.mjs`, `s4`; Sim ms = structure, never a gain) | S6: frame 43-44 ms at +6-7 ms (Composite 31-32), worst rAF 37-39, 3/3. **HC: no long frame, worst rAF 17, 2/2.** Run HC1 is void: it saw no class events. |
 
-## Phone ticket C1 (prepared, not run; queue: after T-011)
+## Geometry probe (lead amendment 3: "no-op by construction" proved, not assumed)
+
+`out/wi-stack/a/geom.mjs`, hold `g1`: headless Chrome, DOM rects only, no pixels, shared lane, weight probe. HC and S6
+each got a fresh load, a step-scroll to `+is-visible`, then to `+is-future-shrinking`. Rects were read at t0 (right
+after the flip; the hold animation's `currentTime` is 0) and at t_end (flip + ~940 ms; `currentTime` 900).
+**Visible clip** = the intersection of the viewport with every ancestor whose overflow is not `visible`.
+
+| width | shells the rule hides | t0 and t_end | in the visible clip |
+|---|---|---|---|
+| 430x932 | 2-5 (active 0, neighbour 1) | rects x 804..2370; clip x 0..430 (deck `overflow: auto hidden`, x -16..446); `visibility: hidden` from t0 through t_end | **0 of 4**, fully outside at both times |
+| 1440x900 | 0-3 (active 5, neighbour 4) | `display: none`, empty rects, no hold animation running (`currentTime` null); the deck has `overflow: visible` there, active shell x 352..1369 | **0 of 4**: no box at all, so the rule cannot change what is drawn |
+
+S6 has the same geometry, with the same shells matching the selector but no hold. At 1440 the only thing in
+x 804+ is the active shell 5, which the rule excludes. "No-op at 1440" therefore rests on `display: none` of every
+shell the rule matches (OBSERVED at both times in this probe), not on the shells' position.
+
+## Phone ticket C1 (second read signed by the lead 2026-10-02 with 4 amendments, now in the text; queue: after T-011)
 
 **Runner:** `iphone-runner`. **Question.** Does the shrink hold remove the spot (c) frame on the phone, without
 changing anything else? Prediction **P-063** was committed before any data from this ticket.
@@ -87,7 +103,9 @@ each server's plain-http twin (I-003). Check every served hash against the table
 Time: 12 runs at about 1.5 min plus cooling, about 25 min.
 
 **Validity.** As for A1:
-- Every counted S6 run must also pass the sentinel bar. A failing control voids every run since the last passing one.
+- **Every counted S6 run is a sentinel** (bottom ≥ 58 fps, scroll ≥ 44 fps). A failing one voids every run back to the
+  last passing sentinel. Cool with `node tools/wait.mjs phone-temp --below auto`, then restart. **At most 2 blocks** for
+  this question (sequential rule, §5.3).
 - A run is void for a wrong hash, a missing bottom, a missing `#people +is-future-shrinking` crossing, Low Power Mode
   or a touched phone.
 - Nothing may be attached (§5.5). No recordings (user T-018).
@@ -105,10 +123,10 @@ Time: 12 runs at about 1.5 min plus cooling, about 25 min.
 
 | row | read | decision |
 |---|---|---|
-| **1. Spot (c) fn (primary)** | fn per run, median per arm; >34 count with twins >30 / >38 | **Confirmed** if HC's fn median ≤ 30 ms **and** all 4 HC fn are below all 4 S6 fn. Otherwise not confirmed; report to the lead. |
+| **1. Spot (c) fn (primary)** | fn per run, median per arm; the ≤ 30 primary also at ≤ 26 / ≤ 34; fn >34 count also at >30 / >38; fn frames in the near bands (30, 38] and (46, 54] are flagged | **Confirmed** if HC's fn median ≤ 30 ms **and** all 4 HC fn are below all 4 S6 fn. Otherwise not confirmed; report to the lead. If any twin flips the verdict, the verdict is **threshold-sensitive**. If HC shows no effect, the verdict is **"no effect (THREADED_ANIMATIONS UNRESOLVED)"**, not "refuted": the device's build may run the card's animation on the threaded path, where the stack rule differs. |
 | 2. Window | per-run count of frames >34 in the 1 s window | context: HC should be about 1 lower per run (the other window frames, at +500-900 ms, are other work) |
 | 3. Guard: reveal | frame 2 at `+is-visible`, median | HC − S6 within ± 8 ms. HC is identical to S6 there, so a bigger shift means noise or heat: report it. |
-| 4. Guard: scroll | scroll dt>50 per run, median | HC more than 1 above S6 is a regression: no landing |
+| 4. Guard: scroll | scroll dt>50 per run, median, also at >46 / >54 | HC more than 1 above S6 is a regression: no landing (threshold-sensitive if a twin flips it) |
 | 5. Context | scroll dt>34, idle dt>34, bottom fps | reported only |
 
 If confirmed, shell-hold-c is a land candidate on top of A. It has no finger component, so S is enough for its claim.
