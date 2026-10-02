@@ -107,6 +107,7 @@ import { randomBytes } from 'node:crypto';
 import { sharedStateDir, REPO } from './paths.mjs';
 import { THRESHOLDS, sample, quiet } from './host.mjs';
 import { keepAwake, stopAwake, awakeHold } from './awake.mjs'; // I-070: measurement holds only (user C-024)
+import { warmSummary, reapWarmSync, reapNote } from './sim-warm.mjs';
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -315,7 +316,8 @@ const jobList = (jobs) => jobs.map((x) => `"${x.owner}"${x.weight ? ` w${x.weigh
 /** The Mac's state beside a phone run, for its record (I-056): {at, shared: sharedJobs, load1} (load1: FW_LOCK_LOAD1, else os.loadavg). */
 export function phoneMacState({ st = status('chrome-measure'), now = Date.now(), load1 } = {}) {
   const ld = load1 ?? envLoad1() ?? os.loadavg()[0];
-  return { at: new Date(now).toISOString(), shared: sharedJobs(st, now), load1: Math.round(ld * 100) / 100 };
+  const sw = warmSummary(undefined, now); // I-063: a warm (booted, idle) Simulator on the Mac, only when there is one
+  return { at: new Date(now).toISOString(), shared: sharedJobs(st, now), load1: Math.round(ld * 100) / 100, ...(sw ? { simWarm: sw } : {}) };
 }
 /** One note line when shared jobs run beside a phone run that does not wait for them, else null. */
 export function phoneMacNote(state) {
@@ -361,10 +363,20 @@ export function phoneRunRefusal({ owner, allow = false, requireQuiet = false, st
 export function phoneGuard({ owner, allow = false, requireQuiet = false, st = status('chrome-measure'), env = process.env, now = Date.now(), load1, note = true, log = console.log } = {}) {
   const why = phoneRunRefusal({ owner, allow, requireQuiet, st, env, now });
   if (why) throw new Error(why);
+  const quiet = !!(requireQuiet || phoneRequireQuiet(env));
+  // I-063: a warm Simulator (booted, idle, kept for the next sim session) is Mac load. A run that asks for a quiet Mac
+  // shuts it down first (sim.mjs shutdown --warm-only: under the simulator lock, never a live session's device) and
+  // WAITs if that fails; any other run goes with a NOTE and the warm state in its record (mac.start.simWarm)
+  let reaped = null;
+  if (quiet && !allow && warmSummary(undefined, now)) {
+    reaped = reapWarmSync({ reason: 'a phone run asks for a quiet Mac', by: owner || 'phone run', env });
+    if (reaped && !reaped.ok) throw new Error(`WAIT: a warm Simulator (fw-sim) is booted and this run asks for a quiet Mac, but its shutdown failed (${reaped.error || '?'}): node tools/sim.mjs shutdown, then retry (I-063)`);
+  }
   const start = phoneMacState({ st, now, load1 });
-  const line = note ? phoneMacNote(start) : null;
-  if (line) log(line);
-  return { requireQuiet: !!(requireQuiet || phoneRequireQuiet(env)), allow: !!allow, start };
+  if (reaped) start.simWarm = reaped;
+  const lines = note ? [phoneMacNote(start), reaped ? reapNote(reaped, 'this phone run') : start.simWarm ? `NOTE: a warm Simulator (fw-sim, booted and idle until ${start.simWarm.idleUntil}) is on the Mac beside this phone run: Mac-quiet is preferred, not required, so it runs and its record keeps it (mac.start.simWarm); --require-quiet or FW_PHONE_REQUIRE_QUIET=1 shuts it down first (I-063)` : null] : [];
+  for (const line of lines) if (line) log(line);
+  return { requireQuiet: quiet, allow: !!allow, start };
 }
 /** A phone run record's `mac` field (I-056): {requireQuiet, allow, start, end}, `end` read now; null without a guard. */
 export const phoneMacRecord = (g, end = phoneMacState()) => (g ? { requireQuiet: g.requireQuiet, allow: g.allow, start: g.start, end } : null);
