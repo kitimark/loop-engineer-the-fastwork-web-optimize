@@ -15,6 +15,8 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
     without the phone; the Mac lane is busy with the Simulator). r4-v3's Chrome check is parked too (fix-scene-scope
     isn't running); the lead revisits if the Mac lane goes idle.
   - Peer directory rewritten to this session's live agents; the 10-01 rows were removed (in git history).
+  - **ts-i063** spawned 12:05Z: owns I-063 (Simulator stays booted between sessions, idle shutdown) and I-065 (both
+    flakes), in two separate commits; both incidents now status fixing.
 - **12:1xZ (batch) No-phone plan posted (lead, T-022 #4, 11:55Z); phone released 11:56Z; T-023 opened.**
   - **On hold until the phone returns:** P-065 word-alone (2 blocks), G2 (P-064), the ioscap first run (hardening done).
   - **Now (Chrome/Sim only, no timing tests):** de-illusion-style: Sim tlcounts FP vs WA, then the 1 % pixel cause,
@@ -1255,9 +1257,9 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-065 | open, not blocking | (lead) | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
+| I-065 | fixing, not blocking | ts-i063 | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
 | I-064 | RESOLVED (11bc722); user YES to deleting the old recorder | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
-| I-063 | open 10:56Z | (lead) | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
+| I-063 | fixing (ts-i063) | ts-i063 | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
 | I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
 | I-061 | RESOLVED 10:44Z (517fdb4) | (lead) | PROGRESS build data schema |
 | I-060 | RESOLVED 10:44Z | ts-i060 | progress page "Right now": show the job and the fix, not only the holder (user T-020) |
@@ -1281,6 +1283,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `fix-image-size` (new 12:0xZ; ID via ListAgents) | image-size: Chrome pixels, Sim decoded memory (counts only), bytes; no timing; D fast-pathed by the lead; will ask ops for a P-id (next free P-066) | alive |
 | `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | alive |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
+| `ts-i063` (spawned 12:05Z; ID via ListAgents) | I-063 (the Simulator stays booted between sessions, with an idle shutdown) and I-065 (both flakes), two separate commits | alive |
 | `ts-i064` | I-064 toolsmith (rounds 1-2 landed 8ec1c6d, 11bc722) | done |
 | `wi-stack` (a93135040e12a061d) | best-stack, shell-hold-c (landed 81dbc9b), F-129; an optional Sim spot check is parked | done |
 | `fix-scene-scope` (a49a278f1d0bd6803) | scene-scope / RBi40pti (landed 1ce70e8), st6-rb2 restack (cff1a03); r4-v3 unassigned and parked | done (worktree kept) |
