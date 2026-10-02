@@ -8,7 +8,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
-- **23:5xZ (batch) 626783b landed; P-065 closed (531b254); P-068 heat ticket read PASS; phone order set.**
+- **22:4xZ (batch) 626783b landed; P-065 closed (531b254); P-068 heat ticket read PASS; phone order set.**
   - Landed: 626783b (ops), f2d71fd (X1 stage 2 needs the user's timing lift; a trigger goes to the lead), 3534e51 (S7
     C vs V pixel check: bottom 0 px; 0.54 % vs baseline common to both arms, phase), **531b254 P-065 Block 1 scored:**
     word alone 0 frames >34/>50 in every run; full page 4-8 >34 in the 'you' windows, separated, twins agree (the rest
@@ -23,7 +23,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
     settled with de-heat; the lead lands 4bf2319 with those fixes.**
   - **Phone order (lead):** S7 (P-067) -> F3 P-036 G -> **P-068 heat (2 sessions, ~1 h each)** -> X1 stage 2 only with the
     user's timing lift. The user was told "after S7 and F3" (T-029 #6).
-- **23:2xZ (batch) 2d2555c landed; P-069 / X1 second read PASS; X1 stage 2 is a timing decision (needs the user's lift).**
+- **22:3xZ (batch, b) 2d2555c landed; P-069 / X1 second read PASS; X1 stage 2 is a timing decision (needs the user's lift).**
   - **P-069 second read (mgmt-ops-7) PASS** on d7449c4 (de-countdown branch, row after P-067): V copy
     out/countdown-faces/snap-x1/poc JS 638b8e03e81c (read-only), x1.mjs 9de230198cf8. Settled pre-data: (a) stage-2
     trigger exact ("above" = both V sessions beyond both C sessions; an S2 hit, or S3 alone, opens stage 2; (iii)
@@ -35,12 +35,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
     is a timing decision and needs the user's lift; the lead asks in the console only if stage 1 triggers it.
     de-countdown adds that line to the ticket and routes any trigger to the lead. **Stage 1 may start now.**
   - Ops rule (lead): wherever ops is resumed, commit only in .claude/worktrees/mgmt-ops-2 with `git -C`.
-- **23:0xZ bc90d7a + a553980 landed (ff); no real LAN address left outside site*/ (lead's grep). PROGRESS goal line: heat goal added as CONDITIONAL** (the user framed it "if my assumption is right"): smooth scrolling; and, if P-068 shows Fastwork heats the phone more than apple.com, less work at rest. **When P-068 has a result: make it firm or drop it.**
+- **22:3xZ (a) bc90d7a + a553980 landed (ff); no real LAN address left outside site*/ (lead's grep). PROGRESS goal line: heat goal added as CONDITIONAL** (the user framed it "if my assumption is right"): smooth scrolling; and, if P-068 shows Fastwork heats the phone more than apple.com, less work at rest. **When P-068 has a result: make it firm or drop it.**
   - **P-069 = de-countdown, countdown-faces X1 segment card** (pre-data; stage 1 Simulator mechanism, 2 sessions, shared
     lane weight simulator; stage 2 short phone Timeline block only if a stage-1 WebKit cost question stays open, queued
     after S7 and F3). Ops asked for exact wording on: the stage-2 trigger, the P1/P2 statistic, stage-1 validity, the
     stage-2 Timeline-OFF sentinels. Second read when the row sha arrives. Next free P-070.
-- **22:4xZ (batch) d637310 landed (7945951); S7 on main; I-073 RESOLVED; LAN scrub bc90d7a; new goal: phone heat (T-029 #4); P-068 = de-heat.**
+- **22:2xZ (batch, b) d637310 landed (7945951); S7 on main; I-073 RESOLVED; LAN scrub bc90d7a; new goal: phone heat (T-029 #4); P-068 = de-heat.**
   - Landed: 7945951 (ops batch), 0066608 + 2182886 (S7 / P-067 ticket, pre-data), 5f37fcb (I-073 LAN resolver +
     placeholder `lan-host`, CLAUDE.md edit with the user's OK; I-073 RESOLVED).
   - **LAN scrub (lead's job, ops commit bc90d7a):** the Mac's LAN address replaced by `lan-host` (tools/lib/iphone-url.mjs
@@ -352,7 +352,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   - **PITFALL (mgmt-ops, 10:3xZ):** when a peer's SendMessage resumes mgmt-ops, mgmt-ops runs pinned to that peer's
     worktree and the harness refuses git in `.claude/worktrees/mgmt-ops-2`. Peers send ops requests anyway, and expect
     ops to batch the docs commits until the lead resumes it. From a lead resume, use `git -C <abs worktree>`, never cd.
-    **Lead rule (10-02 23:3xZ, 626783b):** when pinned, do the read-only work (second reads), reply to the peer and
+    **Lead rule (10-02 22:4xZ, after 626783b):** when pinned, do the read-only work (second reads), reply to the peer and
     queue the commit; the lead resumes ops from main at check-ins to commit. Never work around the guard.
 - **10:1xZ A1 done, I-059 resolved, G1b running.** Main: a2c15e7 (ops docs), 62b4053 (I-059 B "Start over";
   I-059 RESOLVED; console restarted 10:00Z), wi-stack series 94b8010..e7d2de2.
