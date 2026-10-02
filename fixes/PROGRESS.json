@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-01T20:35:00Z",
+ "updatedAt": "2026-10-02T00:05:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -166,7 +166,7 @@
    "fixes": "You saw style recalculation taking about 19-20 ms at times, more than a 60 Hz frame allows (16.7 ms). Your two guesses: complex nested CSS makes selector matching slow, or the images (rotation, resizing) cost work every frame. You also asked about smaller images and plain-CSS effects.",
    "felt": { "answer": "not-yet" },
    "gate": "Find out whether either guess explains the slow frames before anything is built.",
-   "next": "Second recording: one extra layout at the switch can go, but a separate whole-page layout (12-18 ms) stays in every version, and the frame at y about 2990 keeps its own. fix-scene-scope is hunting its trigger. The panel recording showed one variant mostly removes the per-frame layouts.",
+   "next": "The strongest variant is not pixel-identical yet: it visibly softens the small avatar photos in Chrome (Safari not checked yet), so it is not signed. A smaller part goes first, after a pixel check and a phone test.",
    "owner": "de-style-recalc, fix-scene-scope",
    "checks": [ { "id": "P-040", "what": "phone recording: does the narrower pause (V1) remove the extra nested layout at the section switch?", "result": "Mostly. One real nested layout instead of two (the second shrank to 0.1 ms), and the style step got cheaper, but the next big frame (y about 2990) got more expensive, so the total did not drop (OBSERVED)." }, { "id": "P-041", "what": "same for the infinite-animations-only variant (V1i)", "result": "One nested layout in every run, cheapest style step, but the frame at y about 2990 grew even more; the two frames together cost more than before (OBSERVED)." } ],
    "details": [
@@ -183,7 +183,7 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "Four proposals are ready for you on the new Proposals page: three from de-illusion-style (a cheaper underline blink, a cheaper accent sweep, typing shown in chunks) and one from de-illusion-composite (the countdown digits on fewer layers). Two more are coming.",
+   "next": "Top item: the hero accent sweep as prerecorded frames. Chrome: all 436 frames match the original, scrolling 68 of 72 checks (OBSERVED). The first Simulator copy made by Safari's engine came out bolder (1 of 109 frames match), likely the original still showing under the frames; being diagnosed.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
    "checks": [],
    "details": [
@@ -216,8 +216,8 @@
    "fixes": "One frame around the middle costs 13-14 ms, mostly layout, because a section's size is set just as it comes near. Setting it earlier would remove most of it.",
    "felt": {"answer": "not-yet"},
    "gate": "Rank 4: measured in the same phone block as the scene-scope fix.",
-   "next": "Part of the scene-scope work (V4); no owner of its own yet.",
-   "owner": "fix-scene-scope (V4), scroll-engine topic",
+   "next": "Now its own topic. The cost sits in a stale layout state in the people section, cleared when its children are rebuilt. Which element holds it is being narrowed down; the cause is not known yet.",
+   "owner": "fix-scroll-engine (from fix-scene-scope)",
    "checks": [],
    "details": [
     "style-recalc-images.md §5 rank 4: fwReskip intrinsic-size write (B JS 2821), 13-14 ms at y~2990, ~1.6 ms style, 12 ms nested Layout; W, same block as rank 1."
