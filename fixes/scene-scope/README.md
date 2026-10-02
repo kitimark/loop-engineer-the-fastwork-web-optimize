@@ -1199,7 +1199,8 @@ C V V C, served hashes checked; `out/scene-scope/sweep-sim-*.json`). OBSERVED, S
 ## T-011 result (phone, iPhone 15 Pro Max, iOS 26.6.1, Timeline, OBSERVED)
 
 Run by iphone-runner on 2026-10-02 10:43-10:58Z, using the ticket above. C = ss-RB and V = RBi40pti, served from the read-only
-copies; the runner's `t011.sh` ran the served-hash check against the ticket table. W driver at 430x775; counted runs
+copies. Served-hash check (the runner's `t011.sh`, 10:39:04Z): HASHES OK on both block servers, every hash as in the ticket
+table, `x-mirror-source: overlay`. An earlier server pair, started twice by a script slip, was stopped before the block. W driver at 430x775; counted runs
 C1 V2 V3 C4 C5 V6 V7 C8. Scored by me with `SW=2500-2760 rsstat.mjs` on `sr-*.json`, and the sweep part with
 `sweepstate.mjs`. Attribution only; no timing verdict.
 
