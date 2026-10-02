@@ -230,8 +230,9 @@ These are Simulator frames captured with the clock frozen, compared with C's fra
 
 ### Phone ticket P-058
 
-Owner of the run: `iphone-runner`, scheduled by the lead (PR-001 is third, after G1 and the stack test). No
-measurement has been made with this ticket. Run JSON and recordings stay in `out/` (Fastwork content; Hard rule 3).
+Owner of the run: `iphone-runner`, scheduled by the lead. Block A ran 10-02 from 08:42Z (warm-ups) to 08:59Z (last counted run). Block B waits for the
+user's answer on the camera-free route. Run JSON stays in `out/` (Fastwork content; Hard rule 3). No run is recorded
+(T-018).
 
 **Question.** On the iPhone, which way of drawing the hero's 'you' word gives the fewest slow frames during and just
 after its draws? The pre-registered rule is below.
@@ -330,10 +331,10 @@ Cool between blocks with `node tools/wait.mjs phone-temp --below auto` (at most 
 - *Why not blocking:* iphone-runner found that Mac load does not pace the S driver, which runs on the phone (ρ +0.11).
   W runs on the phone too. A run with load1 > 8 is flagged in the result, not voided.
 
-| block | arms | counted order (rotated Latin square) | n per arm |
-|---|---|---|---|
-| A | C F1 F2 F3 | C F1 F3 F2 · F2 F3 F1 C (rows 1 and 3 of a Williams 4x4) | 2 runs = 4 'you' draws in, 4 out |
-| B | C V B | C V B · V B C · B C V | 3 runs = 6 in, 6 out |
+| block | arms | counted order (rotated Latin square) | n per arm | minutes (ESTIMATE) |
+|---|---|---|---|---|
+| A | C F1 F2 F3 | C F1 F3 F2 · F2 F3 F1 C (rows 1 and 3 of a Williams 4x4) | 2 runs = 4 'you' draws in, 4 out | ~25 (as run), plus cooling |
+| B | C V B | C V B · V B C · B C V | 3 runs = 6 in, 6 out | 22-25, plus cooling |
 
 **Run validity.**
 - **VOID-ARM:** readstats' `arm` is not the run's arm (C and B: no arm; F1/F2/F3/V: their label), or an arm never
