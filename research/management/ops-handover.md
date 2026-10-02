@@ -235,6 +235,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   one-line init-paused change in PMsweepGate (JS 3982), with a P-056a onset-time falsifier at 430 and 1440; (b)
   desktop-only acceptance REJECTED. P-056/P-056a and P-057 live on the owners' branches until they land.
   PR-001: the lead's proposal wait is re-armed; still "proposed rev 2", no user decision.
+  05:4xZ scene-scope at ba384b1, candidate RBi40pti (variants/23.diff): P-056a phase + onset HIT at 430 and 1440.
+  Frames (c1) strict MISS: at 430 the count-up also differs in A/A; at 1440 the y7500 rings frame differed in 1/7 V loads
+  vs 0/12 S0 (unexplained). Sim W: view-rooted nested 0, no Layout after the switch RS. Outer RS count MISSES its
+  interval. Every Chrome hold ran with the display OFF (I-033). Lead resumed fix-scene-scope for one more frames hold:
+  pin the count-up so A/A is identical at 430; 20+20 interleaved loads of the y7500 frame with a Fisher p. Then
+  review-scene-scope-3, and the lead takes the 1440 numbers to the user (no pixel waiver by the lead).
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
