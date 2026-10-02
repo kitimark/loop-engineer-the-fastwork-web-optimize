@@ -1,0 +1,53 @@
+# fastwork mirror fix: scene-scope
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/bplus/overlay: apply bplus first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply scene-scope --on bplus
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css cc8d1340b449e168737ba4f8cd97c9a754dd1dae73b44ce9379603e44de04813
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11801,8 +11801,42 @@
+ html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
+   unicode-bidi: plaintext;
+ }
++/* [scene-scope V1] The paused-scene rules used to match every descendant (`:where(*)`). A rule whose subject is
++   universal makes an attribute change on the scene restyle the whole subtree (WebKit AttributeChangeInvalidation /
++   StyleInvalidator, Blink "invalidates subtree"): 172-399 elements at every scene flip. The subject is now the
++   list of elements that can carry a CSS animation (the subject compound of every `animation`/`animation-name`
++   rule in this file and DialogHeader.css; pseudo-elements were never matched by `:where(*)`), so a flip restyles
++   only those. animation-play-state is not inherited, so an unlisted element only differs by keeping a CSS
++   animation running while its scene is paused (CPU, not a visual change). */
+ .start-selling [data-start-selling-scene="paused"],
+-.start-selling [data-start-selling-scene="paused"] :where(*) {
++.start-selling
++  [data-start-selling-scene="paused"]
++  :is(
++    .commission-underline, .commission-underline path, .frame-0, .frame-1, .frame-2, .fee-avatar, .typing-caret,
++    .accent-path, .accent-fill, .is-idle-frame-0, .is-idle-frame-1, .is-idle-frame-2,
++    .orbit-card, .hero-copy, .scroll-cue, .scroll-float, .pain-note, .start-selling-people-o-preview,
++    .start-selling-avatars img, .start-selling-profile-body, .record, .sb-drawer .surface, .panel.svelte-ty4hd7,
++    .start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn,
++    .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized,
++    .start-selling-platform-cred-track, .start-selling-platform-cred-card,
++    .start-selling-platform-secure-currencies-track, .start-selling-platform-secure-swap,
++    .start-selling-platform-secure-swap-ch, .start-selling-platform-secure-network-rings,
++    .start-selling-platform-secure-network-face, .start-selling-platform-secure-network-dash,
++    .start-selling-platform-secure-network-shield, .start-selling-platform-secure-network-shield-logo-mark,
++    .start-selling-platform-secure-network-flag, .start-selling-platform-profile-reviews-track,
++    .start-selling-platform-profile-phone, .start-selling-platform-service-quote-step,
++    .start-selling-platform-invoice-doc-wrap, .start-selling-platform-invoice-card-enter,
++    .start-selling-platform-orders-card, .start-selling-platform-agents-ask-title,
++    .start-selling-platform-agents-ask-field, .start-selling-platform-agents-ask-service,
++    .start-selling-platform-service-card, .start-selling-platform-paid-confetti-piece,
++    .start-selling-platform-paid-border-packet, .start-selling-platform-paid-amount-char,
++    .start-selling-platform-paid-credit-char, .start-selling-platform-paid-confetti,
++    .start-selling-platform-paid-credit, .start-selling-platform-paid-transfer-layer,
++    .start-selling-platform-paid-transfer, .start-selling-platform-agents-bubble,
++    .start-selling-platform-agents-reply, .start-selling-platform-agents-card, .start-selling-morph-col-track,
++    .start-selling-language-switch-menu, .start-selling-top-nav-btn,
++    .sb-tooltip, .ring.svelte-16rtsv6, .sb-button .content, .sb-button .spinner, .sb-dialog
++  ) {
+   animation-play-state: paused !important;
+ }
+ /* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
