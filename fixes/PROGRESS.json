@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T00:05:00Z",
+ "updatedAt": "2026-10-02T00:47:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -213,14 +213,15 @@
    "area": "middle",
    "state": "diagnosing",
    "stage": "I",
-   "fixes": "One frame around the middle costs 13-14 ms, mostly layout, because a section's size is set just as it comes near. Setting it earlier would remove most of it.",
+   "fixes": "Around the middle of the page, two frames cost about 20 ms each, mostly layout, while a large section (the people list) is still being drawn although it is about to leave the view. Setting it aside earlier, or changing how that section is built, should remove most of it.",
    "felt": {"answer": "not-yet"},
-   "gate": "Rank 4: measured in the same phone block as the scene-scope fix.",
-   "next": "Now its own topic. The cost sits in a stale layout state in the people section, cleared when its children are rebuilt. Which element holds it is being narrowed down; the cause is not known yet.",
+   "gate": "The exact box is found first; the lead sees it before any fix is built.",
+   "next": "Earlier cause withdrawn (our own probe caused it). Now (OBSERVED, Simulator): two changes near the middle cost about 20 ms each only while the large people section is still drawn; it is set aside only much further down. Next: find the exact box, then pick a fix with the lead. Nothing built yet.",
    "owner": "fix-scroll-engine (from fix-scene-scope)",
    "checks": [],
    "details": [
-    "style-recalc-images.md §5 rank 4: fwReskip intrinsic-size write (B JS 2821), 13-14 ms at y~2990, ~1.6 ms style, 12 ms nested Layout; W, same block as rank 1."
+    "style-recalc-images.md §5 rank 4: fwReskip intrinsic-size write (B JS 2821), 13-14 ms at y~2990, ~1.6 ms style, 12 ms nested Layout; W, same block as rank 1.",
+    "00:4xZ (fix-scroll-engine): r6-r9 'stale layout state in #profile-showcase/#people, cured by re-creating its children' WITHDRAWN (probe artifact: hiding the shells shrank #people across the fwFar re-skip edge, so fwReskip deferred it). Revised, OBSERVED (Sim): each containment flip (y2988 hero deferred, y3047 platform-card will-change) costs ~20 ms only while #people (1327 px) is still rendered; its re-skip comes at ~y3539. Next r11 localizes the box; fix (a) re-skip #people no later than the hero or (b) structural #profile change."
    ]
   },
   {

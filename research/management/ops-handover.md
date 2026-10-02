@@ -113,8 +113,8 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   scene-scope: ST (RB + rotator-st6) NOT pixel-identical in Chrome: will-change:transform blurs the avatars by up to
   72/255 (≤2/255 without the transform); Sim checks pending, ST not signed. I4/I40 recommendation SIGNED: RBi lands
   first (after a pixel A/B on tools ≥d00ee9a and a phone ticket); I40 held until a Sim RBi40 count.
-  fwreskip: the ~20 ms sits in a stale layout state in #profile-showcase/#people, cleared by re-creating its children;
-  r7 isolates the element; mechanism UNRESOLVED. Usage: ~34 % ESTIMATE at 23:53Z, ~60 % expected by the 02:20Z reset.
+  fwreskip: [WITHDRAWN 00:4xZ, probe artifact, see below] "stale layout state in #profile-showcase/#people, cleared by
+  re-creating its children". Usage: ~34 % ESTIMATE at 23:53Z, ~60 % expected by the 02:20Z reset.
   00:1xZ: I-050 landed (7fa4251), RESOLVED; only I-051 open. SIM PITFALL (standing): Safari can serve stale immutable
   CSS/JS across reused ports, so every Sim arm server runs with --no-cache and its server log shows a GET check
   (de-illusion-style finding; lead alerted scene-scope, fwreskip, nav-morph). PR-001 Safari copy: half the mismatch was
@@ -131,6 +131,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   the topic's review. cdwc row parked until timing returns. STROKE-FIDELITY GATE (lead decision 00:3xZ, registered before any phone data): phone G/F runs are void when any stroke's contact time is more than ±10 % off plan (symmetric); Simulator runs are never scored, so exempt; a block that voids runs at +10-20 % keeps the rule; a change needs a new registration before the next block. Why: the phone's
   measured overshoot (+4 to +8 %, ts-gesture) passes; loosening to +20 % on Simulator data alone would be post hoc.
   WHOEVER RESUMES THE PHONE BLOCK (backlog (d)/(e), P-032/P-036) APPLIES THIS GATE.
+  fix-nav-morph done: the gate is in fixes/mw10e-cdwc/README.md (26de4ad, on top of 3ac33c5 + 66f5f9f + e7a9522, not
+  rebased); its scorer exempts Sim records. Nothing queued; it lands with the topic's review.
+  00:4xZ fwreskip CORRECTION (fix-scroll-engine, lead): the r6-r9 "stale layout state in #profile-showcase/#people, cured
+  by re-creating its children" is WITHDRAWN: a probe artifact (hiding the shells shrank #people across our own fwFar
+  re-skip edge, so fwReskip deferred it). Revised claim, OBSERVED in our setup (Sim): each containment flip (y2988 hero
+  deferred, y3047 platform-card will-change) costs ~20 ms only while #people (1327 px) is still rendered; its own re-skip
+  comes only at ~y3539. Next r11 localizes the box; then fix choice (a) re-skip #people no later than the hero or (b) a
+  structural change in #profile. No build until the lead has seen it.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
