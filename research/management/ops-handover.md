@@ -176,6 +176,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   playback is NOT pixel-identical. Per-draw counts (SVG ~58 recalcs vs canvas ~5) are distorted by the stall: never
   quote them as savings. Cause UNRESOLVED (hypothesis: GPU-process readback, accelerated ImageBitmap into a
   willReadFrequently canvas). Next: one Sim hold, 4 variants + an SVG rAF control + console errors. Rev 2 ON HOLD.
+  02:3xZ PR-001 4 variants (OBSERVED, Sim): none ticks every frame; the whole page's rendering updates stop 1-2 s per
+  canvas draw, while the SVG control in the same session runs clean (54 ticks per draw); no errors; apply() 0-1 ms per
+  tick; GPU-readback hypothesis UNSUPPORTED. Next ~2 min hold: (a) engaged, nothing drawn; (b) one drawImage per tick;
+  (c) SVG hidden, no canvas; (d) a minimal standalone canvas page with no Fastwork code (tells a Sim artifact from our
+  page). Then rev 2 whatever the outcome; likely parked pending a phone check.
+  BOARD HYGIENE (lead, standing): when the lead lands a tool or fix branch, ops sets its board row to landed in the same
+  pass as the handover entry (I-051 lock-share and I-052 rows sat at ready-to-land after landing).
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6

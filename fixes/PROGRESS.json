@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T02:20:00Z",
+ "updatedAt": "2026-10-02T02:31:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -184,14 +184,15 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "Top item: the hero accent sweep as prerecorded frames, for Safari only (Chrome keeps the original). On a stopped clock the frames match; in live playback on the Simulator the canvas stalls, so it is not smooth yet. Testing 4 variants. Cost est. 2.3 MB, 31 MB memory.",
+   "next": "Top item: the hero accent sweep as prerecorded frames, for Safari only (Chrome keeps the original). On a stopped clock the frames match; in live playback on the Simulator the whole page stalls 1-2 s per draw (all 4 variants). One more short test, with a page without the site's code, then a write-up.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
    "checks": [],
    "details": [
     "Proposals waiting (lead 20:0xZ): de-illusion-style boil-ca, accent-wipe, typing-chunks; de-illusion-composite digit-layers (+2 coming). Hold-1 counts (Chrome 1x, 9.3 s, vs B): accent-wipe hero window Paint 2688 -> 61, ULT elements 7501 -> 6858, animation invalidations 6335 -> 5695; boil-ca no Chrome change (WebKit-only gain, F-048/F-065); no new errors/404s.",
     "User priority 2 (lead 19:1xZ), right after style recalc. de-illusion-style: style/layout costs; de-illusion-composite: compositing, layers, blur; ts-proposals: console Proposals page (read, visual compare, Accept/Reject/Request change). Counts first, at most 2 batched Chrome holds each before first proposals, queued after scene-scope and the de-counts pair; no phone before the user accepts; accepted -> fix topic + phone ticket via mgmt-ops.",
     "02:0xZ PR-001 Sim arm parity run 3 PASSED: 71/71 frames in and out byte-identical (OBSERVED, Sim 26.5), whole-CSS-px canvas placement. GPU-process canvas default CONFIRMED in WebKit source; whether the shipping build uses it is UNRESOLVED. Next: sim-counts.",
-    "02:1xZ live FAILURE on WebKit (OBSERVED, Sim, Timeline off): each canvas draw gets only 2-8 rAF ticks, then none until the 900 ms end timer (word freezes, then jumps). 71/71 and 142/142 parity held only on a stopped clock (render(t) flushes via getImageData): live playback NOT pixel-identical. Per-draw counts (SVG ~58 vs canvas ~5 recalcs) are distorted by the stall: never quote as savings. Cause UNRESOLVED (hypothesis: GPU-process readback, accelerated ImageBitmap into a willReadFrequently canvas). Next: Sim hold, 4 variants + SVG rAF control. Rev 2 on hold."
+    "02:1xZ live FAILURE on WebKit (OBSERVED, Sim, Timeline off): each canvas draw gets only 2-8 rAF ticks, then none until the 900 ms end timer (word freezes, then jumps). 71/71 and 142/142 parity held only on a stopped clock (render(t) flushes via getImageData): live playback NOT pixel-identical. Per-draw counts (SVG ~58 vs canvas ~5 recalcs) are distorted by the stall: never quote as savings. Cause UNRESOLVED (hypothesis: GPU-process readback, accelerated ImageBitmap into a willReadFrequently canvas). Next: Sim hold, 4 variants + SVG rAF control. Rev 2 on hold.",
+    "02:3xZ 4 variants (OBSERVED, Sim): none ticks every frame; the whole page's rendering updates stop 1-2 s per canvas draw; SVG control in the same session clean at 54 ticks/draw; no errors; apply() 0-1 ms/tick; GPU-readback hypothesis unsupported. Next ~2 min hold: (a) engaged, nothing drawn; (b) one drawImage per tick; (c) SVG hidden, no canvas; (d) minimal standalone canvas page, no Fastwork code (Sim artifact vs our page). Then rev 2 whatever the outcome; likely parked pending a phone check."
    ]
   },
   {
