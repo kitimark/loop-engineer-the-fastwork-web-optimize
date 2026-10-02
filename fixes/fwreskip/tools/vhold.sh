@@ -12,7 +12,8 @@ date -u +"HOLD $TAG $MODE start %H:%M:%SZ"
 PIDS=""
 trap 'kill $PIDS 2>/dev/null' EXIT INT TERM
 for a in $ARMS; do
-  case $a in P|Q) OV=fixes/fwreskip/overlay,fixes/rb/overlay ;; *) OV=fixes/rb/overlay ;; esac
+  # P = the live overlay (P3 staged un-skip from 2026-10-02 on); Q = the exact P2b build G1b ran (immutable snapshot)
+  case $a in P) OV=fixes/fwreskip/overlay,fixes/rb/overlay ;; Q) OV=out/fwreskip/snap-g1b2/P2b ;; *) OV=fixes/rb/overlay ;; esac
   rm -f $O/vres/serve-$TAG-$a.json
   node tools/serve.mjs --root site-pretty --overlay $OV --port 0 --vendors=local --latency 150 --state $O/vres/serve-$TAG-$a.json > $O/vres/serve-$TAG-$a.log 2>&1 &
   PIDS="$PIDS $!"
