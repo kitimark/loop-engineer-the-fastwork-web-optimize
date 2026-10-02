@@ -428,7 +428,7 @@ Timeline counts per 'you' draw (attribution runs after the end sentinel, counts 
   > 30 overlap).
 
 **Verdict (rule 4): no arm beats the SVG on the phone.** Rev 3 recommends keeping the original SVG. F2's Timeline saving
-(about half the style recalcs and paints, ~10x fewer layouts per draw) is main-thread work only; it did not turn into
+(a third to a half fewer style recalcs and paints, ~10x fewer layouts per draw) is main-thread work only; it did not turn into
 fewer slow frames, and it costs ~83 MB for one word.
 
 **Visual check (C-021 / C-023, the user's own Screen Recording, numbers only).** `out/de-illusion-style/arms/visan.mjs`
