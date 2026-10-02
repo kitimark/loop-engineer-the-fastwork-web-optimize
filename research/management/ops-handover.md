@@ -8,6 +8,22 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **23:3xZ (batch) 512be87 landed (my 6afd23d, rebased); I-075 RESOLVED (aac5b4a); de-heat pre-flight 39a846d landed as 9ff40e6; P-036 amendment SIGNED; user T-031 #3: blind swipe original vs st6-rb2 now, wave-2 timing lift.**
+  - **P-036** (F3 G, fix-nav-morph) amendment SIGNED by the lead 23:25Z: first attempt void (opening heat check failed:
+    hero-none f2cef11cb363, moving gaps p50 17 / p95 29 ms, 37.8 °C, after a devicectl Safari restart, load1 18.4);
+    C1 V1 V2 VOID. Re-run: one uncounted warm-up of the heat-check page on its port before the opening check (A3),
+    quiet Mac (--require-quiet or the runner's own --no-timing hold), cooling §5.3, a failed opening check stops the
+    script, a second failure on a cool phone + quiet Mac stops the block for a page check by fix-nav-morph. Scoring
+    unchanged. UPDATE on the P-036 row; fix-nav-morph passed condition + stop rule to iphone-runner.
+  - **User T-031 #3 (23:27Z):** (a) YES, blind swipe test original vs st6-rb2 now; iphone-runner runs it before the
+    P-036 re-run (T-017), P-036 moves ~15 min. (b) YES, one full phone timing run of wave 2 once built and checked:
+    a scoped timing lift for the wave-2 build only; timing stays deferred elsewhere. PROGRESS: both in upcoming
+    (item best-stack) + one user line. Phone order now: blind swipe st6-rb2 → F3 P-036 re-run → P-068 heat (~2 h)
+    → X1 stage 2 only with the user's lift; wave-2 timing run when the build is checked.
+  - **I-074 "Try it" live:** console restarted 23:25Z, PR-007 live entry set (option full, patch 221a60aa94cb); user told
+    in T-028 #5. **ts-i076 spawned** for I-076 (npm test 293 s vs the 300 s cap) + I-072 (fixture orphans), board row
+    i076. Board: i063-sim parked (I-071 not a bug, optional hardening uncommitted); phone-heat waits on iphone-runner.
+  - Usage 23:27Z: window 23.5 M units, last 30 min 11.0 M; top main, de-heat, mgmt-ops-7, de-countdown, ts-i074.
 - **23:2xZ (batch) c7ecacd..253720a landed 23:03Z; S7 GAIN landed (6571b62); I-074 resolved; F3 P-036 G running; A1 re-read PASS.**
   - Landed: 47b38a0 (**I-074 RESOLVED**: "Try it" in console proposals, original and PoC side by side), **6571b62 S7 /
     P-067 scored Gain** (phone S, 20 s idle at the top, 8/8 valid, heat checks 60.2/58.3 and 60.2/57.7): idle >34 V
@@ -1513,10 +1529,10 @@ between tool calls.
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
 | I-074 | RESOLVED (47b38a0) | ts-i074 | user T-028: proposals get a "Try it" panel with live original vs PoC iframes |
-| I-076 | open | lead | npm test wall time 285 s, close to the shared lane's 300 s cap |
-| I-075 | open, land test | ts-i075 | phone heat tooling: battery logger, power keys, served-hash GETs on non-mirror pages |
+| I-076 | open, ts-i076 | ts-i076 | npm test wall time 285-293 s, close to the shared lane's 300 s cap; ts-i076 spawned 23:2xZ (with I-072) |
+| I-075 | RESOLVED (aac5b4a) | ts-i075 | phone heat tooling: battery logger, power keys, served-hash GETs on non-mirror pages |
 | I-073 | RESOLVED (5f37fcb) | ts-i073 | LAN address resolver + placeholder; CLAUDE.md edit with the user's OK (T-026 #5) |
-| I-072 | open, non-blocking | lead | WDA e2e tests left 3 fake-xcodebuild/fake-iproxy orphans (14 h); killed by the lead; not sim-warm (ts-i063) |
+| I-072 | open, non-blocking, ts-i076 | lead | WDA e2e tests left 3 fake-xcodebuild/fake-iproxy orphans (14 h); killed by the lead; not sim-warm (ts-i063) |
 | I-071 | RESOLVED not-a-bug (Idle Sleep; test:chrome 13/13 at 17:38Z) | ts-i063 | test:chrome check.chrome failed (no check.json); bisect 9135b35 vs 0aa2227 |
 | I-070 | RESOLVED (0de8103) | ts-i070 | keep the Mac awake only during measurement holds (caffeinate -i -s) |
 | I-069 | RESOLVED (0aa2227) | ts-i063 | sim safari-restart on a restored data: tab |

@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T23:20:00Z",
+ "updatedAt": "2026-10-02T23:30:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And, if the heat test (P-068) shows Fastwork heats the phone more than apple.com, less work at rest so the phone stays cooler.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T23:30:00Z", "text": "You said yes to two phone tests: a blind swipe test of the original page against today's best build, now; and one full phone timing run of wave 2 once it is built and checked. Other timing stays paused. The F3 robot-finger test restarts after that (its first try did not count)." },
   { "at": "2026-10-02T23:20:00Z", "text": "The carousel fix (st6) passed its phone test on today's best build: resting at the top, no slow frames in any run with it, against about 20 per run without it. Scrolling did not get worse. The F3 robot-finger test is running now." },
   { "at": "2026-10-02T22:45:00Z", "text": "The accent word test is done: on its own the word draws smoothly, so the slow frames there come from the rest of the page, and the word keeps today's drawing. Next on the phone: the carousel fix (st6), then F3, then the heat test (Fastwork vs apple.com, about 2 hours)." },
   { "at": "2026-10-02T22:35:00Z", "text": "New goal, if your assumption holds: a heat test (P-068) compares how warm Fastwork and apple.com make the phone. If Fastwork heats it more, less work at rest becomes a goal next to smooth scrolling. Every fix now reports its work at rest." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T17:49:00Z", "text": "New rule from you: checks that need an iPhone but no timing number now run on the iPhone simulator on the Mac; the real phone stays for timing tests and your sittings. The carousel test (P14) started at 17:42 (about 30-35 min); your sitting comes next." },
   { "at": "2026-10-01T17:20:00Z", "text": "Coming up for you: a sitting on the phone that compares the original page with today's best build (the countdown fix and F3 together)." },
   { "at": "2026-10-01T17:10:00Z", "text": "The robot finger turned out to play every stroke as a quick flick, so its results so far don't count (tool problem I-042). The countdown fix's robot test (P-032) was void; all robot-finger tests wait for the tool fix. The phone runs the carousel test (P14) meanwhile." },
-  { "at": "2026-10-01T16:40:00Z", "text": "Touch-listener blind test scored: neither you nor the second tester felt a difference (2 of 4 pairs each, the same as guessing)." },
-  { "at": "2026-10-01T16:45:00Z", "text": "Phone tests approved and queued: the avatar carousel at the top (P14) and the softer blur easing for the card reveal (P-038)." }
+  { "at": "2026-10-01T16:40:00Z", "text": "Touch-listener blind test scored: neither you nor the second tester felt a difference (2 of 4 pairs each, the same as guessing)." }
  ],
  "items": [
   {
@@ -443,7 +443,9 @@
   }
  ],
  "upcoming": [
-  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the robot-finger test P-036 (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" }
+  { "title": "Blind swipe test: the original page against today's best build", "when": "now, before the F3 robot-finger re-run (you said yes, T-031 #3)", "item": "best-stack" },
+  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the robot-finger test P-036 (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
+  { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
  "build": {
   "name": "st6-rb2: the wave-1 base plus seven fixes",
