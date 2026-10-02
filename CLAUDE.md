@@ -376,8 +376,10 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
     [--owner <you>] [--for S]` (to get your turn use `run` or `acquire --wait`); a quiet window for CPU work:
     `--until idle --for 120`;
   - main: `node tools/wait.mjs git --path <p> | --grep '<subject re>' | --contains <sha>`; a process: `wait.mjs pid
-    <pid>`; cooling: `wait.mjs time 10m`; `incident.mjs wait <id>`; `finding.mjs wait --as <you>`.
+    <pid>`; phone cooling: `wait.mjs phone-temp --below auto` (never a fixed `wait.mjs time`, user T-016); `incident.mjs wait <id>`; `finding.mjs wait --as <you>`.
   - A peer's reply has no command: wait on what the reply is about, or do other work.
+  - Before any wait, set your board row (`status.mjs set … --state waiting --waiting-on "<what>"`), so the user sees
+    who waits for what (user T-016, I-058).
   Send peers what they need before your final report, which goes only to your spawner.
 - **Report your branch** with `git branch --show-current` in your own worktree, never from the git status in your
   context (it is the session's, i.e. another agent's).
@@ -537,7 +539,7 @@ iPhone protocol on top of the lease:
 Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages and gates"):
 - **Blocks.** Only ticketed builds, served from immutable snapshot copies. A block: one question, one named control
   on the same base, one uncounted warm-up run per arm's port (A3/U5), then ≤9 counted runs in C V V C C V V C order (3 arms: a rotated
-  Latin square); park Safari (`iphone.mjs park`) after every block; 10 min cooling between blocks; at most 2 blocks per question (sequential rule, §5.3).
+  Latin square); park Safari (`iphone.mjs park`) after every block; between blocks cool with `node tools/wait.mjs phone-temp --below auto` (≤10 min, protocol §5.3); at most 2 blocks per question (sequential rule, §5.3).
 - **Sentinel** (static idle is no heat check, F-028): every control run reaches bottom ≥58 fps and scroll ≥44 fps
   (S/W) or held m=1 p95 ≤18 ms (M). A failing control voids every run since the last passing one; the phone cools
   until the battery temperature is at or below the last passing sentinel's minus 0.5 °C, 38 if none today
