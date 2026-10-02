@@ -20,6 +20,7 @@ const turnOn = () => assert.equal(lock('shared', 'on', 'chrome-measure', '--by',
 // a job that records its start / end (ms) and its FW_LOCK_* env, and runs `sec` seconds
 const job = (name, sec) => `const fs=require('fs');const f=${JSON.stringify(join(dir, name + '.json'))};const s=Date.now();setTimeout(()=>{fs.writeFileSync(f,JSON.stringify({s,e:Date.now(),shared:process.env.FW_LOCK_SHARED||null,held:process.env.FW_LOCK_HELD||null}))},${sec * 1000})`;
 const stamp = (name) => JSON.parse(readFileSync(join(dir, name + '.json'), 'utf8'));
+const holdsLog = () => (existsSync(join(state, 'locks', 'holds.log')) ? readFileSync(join(state, 'locks', 'holds.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
 
 test('switch CLI: lead only, with a reason; cap 3 by default, --cap, --join-load and --join-busy; status shows it only while in use (N1)', () => {
   const bad = lock('shared', 'on', 'chrome-measure', '--by', 'me', '--reason', 'x');
@@ -159,6 +160,36 @@ test('deadline: a reader overrunning --max-seconds is hard-killed (exit 124) bef
   assert.equal(alive(pid), false, 'the SIGTERM-ignoring command is dead');
   assert.ok(Date.now() < deadline, `run ended ${Date.now() - deadline} ms after the reader's deadline`);
   assert.equal(holder(), null, 'the reader left and closed the group');
+  // I-056 (d): the kill is auditable: the reader's holds.log line carries exit 124
+  const l = holdsLog();
+  assert.equal(l.length, 1);
+  assert.deepEqual([l[0].owner, l[0].mode, l[0].weight, l[0].maxSec, l[0].code, l[0].killed], ['stuck', 'shared', 1, 2, 124, 'max-seconds']);
+  assert.ok(l[0].durationSec >= 2 && l[0].durationSec < 10, `duration ${l[0].durationSec} s`);
+});
+
+test('I-056 (d): every shared reader writes one holds.log line (owner, weight, start, end, duration, exit code); a nested re-entry writes none; no display / wake record', async () => {
+  turnOn();
+  const nested = `const {spawnSync}=require('child_process');const r=spawnSync(process.execPath,[${JSON.stringify(LOCK)},'run','chrome-measure','--shared','--max-seconds','20','--owner','inner','--',process.execPath,'-e','0'],{stdio:'inherit'});process.exit(r.status===0?7:1)`;
+  const t0 = Date.now();
+  const [a, b] = await Promise.all([
+    lockAsync('run', 'chrome-measure', '--shared', '--weight', '2', '--max-seconds', '60', '--owner', 'npm-a', '--', process.execPath, '-e', nested),
+    lockAsync('run', 'chrome-measure', '--shared', '--weight', '1', '--max-seconds', '60', '--owner', 'fn-b', '--', process.execPath, '-e', 'process.exit(3)'),
+  ]);
+  assert.deepEqual([a.code, b.code], [7, 3], a.out + b.out);
+  const l = holdsLog().sort((x, y) => x.owner.localeCompare(y.owner));
+  assert.deepEqual(l.map((x) => [x.owner, x.mode, x.short, x.weight, x.maxSec, x.code]), [['fn-b', 'shared', false, 1, 60, 3], ['npm-a', 'shared', false, 2, 60, 7]], 'one line per reader, none for the nested re-entry');
+  for (const x of l) {
+    assert.ok(Date.parse(x.acquiredAt) >= t0 - 1000 && Date.parse(x.endedAt) >= Date.parse(x.acquiredAt) && Date.parse(x.at) >= Date.parse(x.endedAt), JSON.stringify(x));
+    assert.equal(x.durationSec, Math.round((Date.parse(x.endedAt) - Date.parse(x.acquiredAt)) / 100) / 10);
+    assert.equal(x.killed, undefined);
+    assert.ok(!('start' in x) && !('end' in x), 'a reader measures nothing: no display / wake record');
+  }
+  // switch off: the stand-in (an exclusive short job) logs as before, with the reader's weight
+  assert.equal(lock('shared', 'off', 'chrome-measure', '--by', 'lead', '--reason', 'e2e').code, 0);
+  assert.equal(lock('run', 'chrome-measure', '--shared', '--weight', '2', '--max-seconds', '30', '--owner', 'fn-off', '--', process.execPath, '-e', '0').code, 0);
+  const off = holdsLog().find((x) => x.owner === 'fn-off');
+  assert.deepEqual([off.mode, off.short, off.functional, off.weight, off.code], ['short', true, true, 2, 0]);
+  assert.equal(off.start.display, 'on', 'a short hold keeps its display / wake record');
 });
 
 test('acquire --shared lease + release --shared; wait --until held-by sees a reader', () => {

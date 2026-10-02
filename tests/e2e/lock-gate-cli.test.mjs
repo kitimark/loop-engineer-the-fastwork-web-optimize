@@ -107,6 +107,7 @@ test('T8+ (I-033): a chrome-measure `run` logs display / wake / display-sleep as
   let l = log();
   assert.equal(l.length, 1);
   assert.deepEqual([l[0].resource, l[0].owner, l[0].short, l[0].code, l[0].tag], ['chrome-measure', 'lit', false, 5, null]);
+  assert.ok(l[0].durationSec >= 0 && l[0].endedAt >= l[0].acquiredAt, 'I-056 (d): end and duration on every line');
   assert.deepEqual([l[0].start.display, l[0].start.fullWake, l[0].start.powerSource, l[0].start.displaySleepPrevented, l[0].end.display], ['on', true, 'AC', true, 'on']);
   assert.match(l[0].start.stub, /fake-host\.mjs$/);
   // no display-sleep assertion, and the display goes to sleep (DarkWake) during the hold
@@ -129,7 +130,7 @@ test('T8+ (I-033): a chrome-measure `run` logs display / wake / display-sleep as
   assert.equal(log().length, 3);
 });
 
-test('run --no-timing (ts-lock-bundle): granted on a busy host without the gate, shown as no-timing; a timing run inside refuses, a short one runs; no holds.log line', () => {
+test('run --no-timing (ts-lock-bundle): granted on a busy host without the gate, shown as no-timing; a timing run inside refuses, a short one runs; a holds.log line without display / wake state', () => {
   const N = JSON.stringify(process.execPath), Q = JSON.stringify(LOCK);
   const inner = [
     `${N} ${Q} status chrome-measure --no-host`,
@@ -143,7 +144,11 @@ test('run --no-timing (ts-lock-bundle): granted on a busy host without the gate,
   assert.match(r.stderr, /chrome-measure is held by "build" as a no-timing hold .* never runs inside it/);
   assert.match(r.stdout, /^short=0$/m);
   assert.doesNotMatch(r.stderr, /host is not quiet|display-sleep/);
-  assert.equal(existsSync(join(state, 'locks', 'holds.log')), false, 'a no-timing hold records no display / wake state');
+  // I-056 (d): the hold is logged (owner, duration, exit code) for audit, but it records no display / wake state
+  const l = readFileSync(join(state, 'locks', 'holds.log'), 'utf8').trim().split('\n').map((x) => JSON.parse(x));
+  assert.deepEqual(l.map((x) => [x.owner, x.mode, x.noTiming, x.code]), [['build', 'exclusive', true, 0]], 'one line, for the outer hold only (the nested short run re-entered it)');
+  assert.ok(!('start' in l[0]) && !('end' in l[0]), 'a no-timing hold records no display / wake state');
+  assert.ok(l[0].durationSec >= 0 && l[0].endedAt >= l[0].acquiredAt);
   assert.equal(existsSync(join(state, 'locks', 'host-alerts.log')), false);
   assert.equal(holder(), null, 'released');
   const a = lock({}, 'acquire', 'chrome-measure', '--owner', 'x', '--no-timing');

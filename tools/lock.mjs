@@ -51,9 +51,11 @@
 // keeps strict FIFO (its waiters retry every 2-5 min by protocol). Every chrome-measure hold runs under a
 // `caffeinate -i -s` assertion (I-026: Maintenance Sleep stalled a hold 472 s): -w <holder pid> for a
 // process hold, -t <until expiry> for a lease (replaced on renew), ended on release (lib/awake.mjs).
-// A chrome-measure `run` also records the display on/off, FullWake/DarkWake, power source and whether a
-// display-sleep-preventing assertion (caffeinate -d) was active at its start and end, one JSON line per hold in
-// locks/holds.log; it warns on stderr when no such assertion is active, the host is already asleep (display off or DarkWake) at the start, or the display / wake state changed (T8+, I-033).
+// Every chrome-measure `run` hold (exclusive, short, no-timing, shared reader; not a re-entry) writes one JSON line to
+// locks/holds.log at its end (I-056 (d)): owner, mode, weight / maxSec (shared), acquiredAt, endedAt, durationSec and
+// the exit code (124 with killed: "max-seconds" when --max-seconds stopped it, 130 with the signal when `run` was
+// signalled). A timing or short hold's line also records the display on/off, FullWake/DarkWake, power source and whether a
+// display-sleep-preventing assertion (caffeinate -d) was active at its start and end; it warns on stderr when no such assertion is active, the host is already asleep (display off or DarkWake) at the start, or the display / wake state changed (T8+, I-033).
 // A host sleep inside a gate window makes that window not quiet; the grant's gate record carries sleptSec / woke (I-033).
 //
 // --no-timing (run only; ts-lock-bundle): a normal hold for work that measures nothing (xcodebuild, other minutes of
@@ -363,7 +365,18 @@ async function main() {
     // acquire() releases the lock and exits on these signals; stop the command first, or it would keep
     // running (e.g. a throttled measurement) after the lock was handed to the next waiter.
     // a short job then gets SIGKILL too: acquire()'s handler releases the lock and exits right after this
-    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); if (bounded) kill('SIGKILL'); });
+    // I-056 (d): every own chrome-measure hold of a `run` (exclusive, short, no-timing, a shared reader; not a re-entry,
+    // whose outer hold logs) writes one holds.log line at its end: owner, mode, weight, start, end, duration, exit code
+    // (124 on the max-seconds kill, 130 on a signal), so shared failures and no-timing holds can be audited too
+    const logged = !!GATED[resource] && !reentrant;
+    const holdStart = mode === 'shared' ? reader.acquiredAt : holder.acquiredAt;
+    const logHold = (end, rec) => {
+      if (!logged) return;
+      const line = { at: new Date().toISOString(), resource, owner, short: !!short || mode === 'short', mode, ...(noTiming ? { noTiming: true } : {}), ...(shared ? { functional: true, weight: reader?.weight ?? weight, maxSec } : {}),
+        acquiredAt: holdStart, endedAt: new Date(end).toISOString(), durationSec: Math.round((end - Date.parse(holdStart)) / 100) / 10, ...rec };
+      try { appendFileSync(holdsLogFile(), JSON.stringify(line) + '\n'); } catch {}
+    };
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); if (bounded) kill('SIGKILL'); logHold(Date.now(), { code: 130, signal: sig }); });
     // wall-clock deadlines checked every second (I-026): a timer's clock stalls while the Mac sleeps
     // (Maintenance Sleep / DarkWake), so after a wake the cap is enforced at once, not minutes later.
     // A reader counts from its own acquiredAt: its SIGKILL (deadline + 3 s) lands inside its recorded deadline
@@ -381,15 +394,17 @@ async function main() {
     }, 250);
     const warn = expectSec && setTimeout(() => console.error(`[lock ${resource}] this hold passed its ${expectSec} s (--max-seconds; I-020): it keeps running, but split long measurements into lock.mjs run holds of 5-10 min so short jobs get in at each hand-over`), expectSec * 1000);
     const code = await new Promise((r) => child.on('exit', (c, s) => r(c ?? (s ? 1 : 0))));
+    const endedAt = Date.now();
     clearInterval(timer);
     clearTimeout(warn);
     if (overran) kill('SIGKILL'); // anything in the tree that ignored SIGTERM (or was orphaned when the command exited)
+    const exit = overran ? { code: 124, killed: 'max-seconds' } : { code };
     if (powerStart) {
       const powerEnd = await hostPower();
       const hs = hostStateSummary([{ label: owner, run: 0, power: { start: powerStart, end: powerEnd } }]);
-      try { appendFileSync(holdsLogFile(), JSON.stringify({ at: new Date().toISOString(), resource, owner, short: !!short || mode === 'short', mode, acquiredAt: holder.acquiredAt, code, start: powerStart, end: powerEnd, tag: hs.tag }) + '\n'); } catch {}
+      logHold(endedAt, { ...exit, start: powerStart, end: powerEnd, tag: hs.tag });
       if (hs.tag) console.error(`[lock ${resource}] ${hs.tag} during this hold: ${hs.reasons.join('; ')} (T8+, I-033)`);
-    }
+    } else logHold(endedAt, exit); // a no-timing hold or a shared reader: no display / wake record
     rel();
     return overran ? 124 : code;
   }
