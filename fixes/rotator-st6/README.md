@@ -10,6 +10,10 @@ counts only. Timing is deferred per the user's direction, so this fix has no gai
 hashes are JS `3e2f599a1632…` and CSS `c6aad94b455f…`. The result is JS `268a68962d18…` and CSS `7e40587580d3…`, the same
 bytes as the read-only `snap2/st6` copy that the phone blocks and the finger check served.
 
+**Owner and landing (2026-10-02):** st6's owner is now `fix-scroll-engine` (lead). The layout-containment agent that
+wrote it has ended, and `fixes/layout-containment/README.md` stays the evidence record only. st6 lands on RB, not
+aw1-10e. That build, with the scene-arm selector it needs (scene-scope R4 coupling), is `fixes/st6-rb/`: PR-003 option A.
+
 ## What it changes
 
 The rotator is the 104x32 avatar carousel. Its timer is `window.setTimeout` at JS L11571.
