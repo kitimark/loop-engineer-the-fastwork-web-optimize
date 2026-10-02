@@ -4,7 +4,43 @@ Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-op
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
 **mgmt-ops-6** (from 17:28Z; mgmt-ops-5 ran 11:26-17:28Z, mgmt-ops-4 08:52-11:25Z), worktree
 `.claude/worktrees/mgmt-ops-2` (sparse, on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-7** (at
-~60 % context). Last update: **17:3xZ**.
+~60 % context). Last update: **10-02 09:0xZ** (mgmt-ops-6).
+
+## START HERE, mgmt-ops-7 (written by mgmt-ops-6, 10-02 09:0xZ; the dated log below has the detail)
+
+- **Top rules, newest first.**
+  - NO CAMERA (T-018): no QuickTime movie recording, no camera capture API, no camera device listing. Recordings are
+    suspended until the user approves a route. The session log is kept as evidence (user T-018 #5, 09:02Z; not deleted).
+  - User steps first, with an ack `--message` at every change (T-017).
+  - Every wait sets its board row first (T-016, CLAUDE.md feb5936).
+  - Phone cooling = `wait.mjs phone-temp --below auto`.
+  - Quiet window for S/W/M = preferred, not blocking.
+  - Timing stays deferred, except PR-001 (phone) and the finished stack test.
+- **Phone order.** Posted user steps jump the queue. Then:
+  (1) PR-001 block B (iphone-runner; no recordings; not gated);
+  (2) G1b (fix-scroll-engine; in-page flash only; review-fwreskip-3 first);
+  (3) T-011 (fix-scene-scope RBi40pti, 06d2290; it has ended, the lead resumes it);
+  (4) T-009 curve;
+  (5) I-042 check.
+  The visual look at the PR-001 winner and any capture route WAIT ON THE USER. The lead posts these in T-018 together
+  with the ioscap account (iphone-runner's old AVFoundation capture binary from 10-01, pending) and the options:
+  (a) USB screenshots, (b) the user's own phone screen recording, (c) drop.
+- **Top investigation (T-017).** stack5's remaining lag.
+  - wi-stack built a files-only map: #people frame 2 is the only V regression, and the Sim leave-one-out puts it on
+    blur-cubic (OBSERVED).
+  - wi-stack posts ONE proposal with options A/B/C. Zero spawns for it; parked stays parked.
+- **Live agents (this session).** main (lead), iphone-runner, wi-stack, de-illusion-style, fix-scroll-engine,
+  ts-i056 (I-056 a-d), review-fwreskip-3, and the I-058 toolsmith (I-058 is resolved).
+  - Ended: fix-scene-scope (done until T-011), ts-i054, ts-i053 (once I-053/055/057 resolved).
+  - Directory rows below that are older than 10-02 06:00Z are unverified.
+- **Open incidents.** I-056 only (ts-i056). I-053/054/055/057/058 are resolved.
+- **P-ids.** The next free id is P-062 (P-059 wi-stack, P-060 fix-scroll-engine G1b, P-061 fix-scene-scope T-011).
+- **Mechanics.**
+  - PROGRESS.json: targeted Python replacement; the old JSON string must match exactly once. next/gate ≤ 300 chars,
+    details ≤ 600. Bump `updatedAt` to the real `date -u`, never ahead.
+  - LAND request: branch@sha, rebased, clean, test:unit count, progress --check, LAN grep 0.
+  - Second reads: hashes (shasum the snapshot files), one control, driver, warm-up RUN per port, sentinel (every
+    control in a non-Timeline block), minutes, P-row committed pre-data.
 
 ## USER DIRECTION 19:27Z (standing; overrides any older plan below)
 
