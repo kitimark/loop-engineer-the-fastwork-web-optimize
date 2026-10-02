@@ -4,7 +4,7 @@
 // safari}]}; one JSON line of argv per call in $FAKE_SIMCTL_LOG. Like the real one, error messages name the UDID
 // (the tools must scrub them). Env: FAKE_SIMCTL_BOOT_MS (bootstatus delay), FAKE_SIMCTL_BOOT_FAIL=1; get_app_container
 // (I-052) prints $FAKE_SIMCTL_CONTAINER or <state dir>/Devices/<udid>/data/Containers/Data/Application/<uuid>, and
-// fails with FAKE_SIMCTL_CONTAINER_FAIL=1.
+// fails with FAKE_SIMCTL_CONTAINER_FAIL=1. A device with `shutdownFail: true` in the state file refuses `shutdown`.
 // All ids are made up.
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -72,5 +72,8 @@ if (c === 'list' && r[0] === '-j' && r[1] === 'devices') {
   const d = dev(r[0]);
   if (!d) fail(`Invalid device: ${r[0]}`);
   if (d.state === 'Shutdown') fail(`Unable to shutdown device in current state: Shutdown (${r[0]})`);
+  // I-063 review B1: a device with `shutdownFail: true` in the state file refuses (and stays Booted); a file field, not
+  // an env var, so a test can switch it for a detached keeper that is already running
+  if (d.shutdownFail) fail(`An error was encountered processing the command (domain=com.apple.CoreSimulator.SimError, code=164):\nUnable to shutdown device ${r[0]}: timed out`, 164);
   d.state = 'Shutdown'; d.safari = false; save();
 } else fail(`fake simctl: unexpected ${a.join(' ')}`, 2);

@@ -24,8 +24,9 @@
 //        sim/warm.json and starts a keeper (`sim.mjs keeper <id>`, pidfile sim/keeper.pid.json; `status` shows both)
 //        that shuts it down FW_SIM_IDLE_SEC (default 600; 0 = shut down at the end as before) after the session, or
 //        as soon as chrome-measure has a timing holder or waiter, never while a session holds the simulator lock.
-//        The next session (either kind) takes the warm device over (same device, type and runtime; else refused): no
-//        boot; Safari quit, its HTTP cache emptied, relaunched, proxy restarted. A timing session always shuts down.
+//        The next functional session takes the warm device over (same device, type and runtime; else refused): no
+//        boot; Safari quit, its HTTP cache emptied, relaunched, proxy restarted. A timing session never starts warm: it
+//        shuts the warm device down and cold-boots (meta.sim boot.afterWarm), and always shuts down at its end.
 //   node tools/sim.mjs shutdown [--warm-only --reason r --by b]  now (--warm-only: only a warm device, under the
 //        simulator lock: verify.mjs / bench gain / quiet phone runs call it before timing, I-063)
 //   # inside a session (its <cmd>, e.g. sh -c '...'):
@@ -88,12 +89,27 @@ async function main() {
   if (cmd === 'shutdown') {
     const live = S.liveSession();
     if (live && !flag('force') && process.env.FW_SIM_SESSION !== live.id) throw new Error(`a live Simulator session runs (pid ${live.pid}, owner "${live.owner}"); it shuts the Simulator down itself. --force to shut down anyway`);
-    await S.stopOne('keeper', log); await S.stopOne('wda', log); await S.stopOne('proxy', log); // I-063: the warm device's keeper too
-    rmSync(warmFile(), { force: true });
-    const cfg = S.readConfig();
-    if (!cfg.udid) { log('no Simulator configured'); return 0; }
-    log(await S.shutdownDevice(cfg.udid, { log }));
-    return 0;
+    // review-i063 N4: under the simulator lock when no session lives (a keeper mid-shutdown, a session about to start);
+    // a live session holds that lock itself (its own command, or --force over it, goes without)
+    let lk = null;
+    if (!live) {
+      try { lk = await S.takeSimLock('sim-shutdown', { waitSec: 60, meta: { cmd: 'sim shutdown' }, log: () => {}, pollMs: 500 }); } catch (e) { err(`${e.message}; retry after it ends`); return 3; }
+    }
+    try {
+      const now = S.liveSession();
+      if (!live && now) throw new Error(`a Simulator session started (pid ${now.pid}, owner "${now.owner}"); it shuts the Simulator down itself`);
+      await S.stopOne('keeper', log); await S.stopOne('wda', log); await S.stopOne('proxy', log); // I-063: the warm device's keeper too
+      const cfg = S.readConfig();
+      if (!cfg.udid) { rmSync(warmFile(), { force: true }); log('no Simulator configured'); return 0; }
+      log(await S.shutdownDevice(cfg.udid, { log }));
+      // the warm record goes only once the device is shut down (review-i063 B1): after a failed shutdown it stays, so
+      // status / doctor / the timed tools' reap still see the booted device
+      let st = null;
+      try { st = S.deviceState(cfg.udid); } catch (e) { st = `unknown (${e.message})`; }
+      if (st !== null && st !== 'Shutdown') { err(`fw-sim is still ${st} after the shutdown${readWarm() ? ' (the warm record stays)' : ''}: node tools/sim.mjs doctor`); return 3; }
+      rmSync(warmFile(), { force: true });
+      return 0;
+    } finally { await lk?.release(); }
   }
   if (cmd === 'proxy' && arg === 'stop') { if (!(await S.stopOne('proxy', log))) log('proxy was not running (no pidfile)'); return 0; }
   if (cmd === 'boot' || (cmd === 'proxy' && arg === 'start')) {

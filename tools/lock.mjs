@@ -133,7 +133,7 @@ import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } fro
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import { describeHold } from './lib/lock.mjs';
-import { warmLine } from './lib/sim-warm.mjs';
+import { warmLine, warmSummary } from './lib/sim-warm.mjs';
 import { parseJob } from './lib/hold-job.mjs'; // I-060: what a hold is for
 
 const argv = process.argv.slice(2);
@@ -219,7 +219,9 @@ async function main() {
     const list = resource ? [status(resource)] : allStatus();
     const host = flag('no-host') ? null : await sample({ windowSec: 3 });
     const procs = awakeProcesses(); // I-070: phone parts and Sim sessions keeping the Mac awake themselves
-    if (flag('json')) { console.log(JSON.stringify(list.map((s) => (GATED[s.resource] ? { ...s, ...(host ? { host } : {}), ...(laneInUse(s) ? { sharedLane: sharedSwitch(s.resource) } : {}), awake: s.holder && !s.stale ? holdAwake(s.resource, s.holder) : null, awakeProcesses: procs } : s)), null, 1)); return 0; }
+    // review-i063: the simulator entry carries the warm device (simWarm: lib/sim-warm.mjs warmSummary) when there is one
+    const withWarm = (s) => { const w = s.resource === 'simulator' ? warmSummary() : null; return w ? { ...s, simWarm: w } : s; };
+    if (flag('json')) { console.log(JSON.stringify(list.map((s) => withWarm(GATED[s.resource] ? { ...s, ...(host ? { host } : {}), ...(laneInUse(s) ? { sharedLane: sharedSwitch(s.resource) } : {}), awake: s.holder && !s.stale ? holdAwake(s.resource, s.holder) : null, awakeProcesses: procs } : s)), null, 1)); return 0; }
     for (const s of list) console.log(fmt(s));
     if (!resource || GATED[resource]) for (const l of awakeLines(procs)) console.log(l);
     if (host) console.log(hostLine(host, list));

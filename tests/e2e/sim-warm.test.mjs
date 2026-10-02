@@ -5,7 +5,7 @@
 // status; the timed tools' backstop (verify.mjs, phone runs asking for a quiet Mac).
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, existsSync, statSync, chmodSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync, chmodSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, nodeAsync, run, tool, freePort, TESTS, sleep } from '../helpers.mjs';
 
@@ -57,6 +57,28 @@ const probe = () => `require('fs').writeFileSync(${JSON.stringify(sessOut())}, r
 /** a functional session in the shared lane (switch off: an exclusive short job) */
 const fn = (e = env) => nodeAsync(LOCK, ['run', 'chrome-measure', '--shared', '--weight', 'simulator', '--max-seconds', '120', '--owner', 'me', '--', process.execPath, SIM, 'session', '--functional', '--owner', 'me', '--window', 'hidden', '--', process.execPath, '-e', probe()], { env: e, timeout: 90000 });
 function noIds(text, udid) { for (const id of [PHONE, udid]) assert.ok(!text.toLowerCase().includes(id.toLowerCase()), `an id leaked: ${text}`); }
+/** fake simctl state edits (the state file is shared with detached keepers) */
+function devSet(fields) { const st = JSON.parse(readFileSync(env.FAKE_SIMCTL_STATE, 'utf8')); Object.assign(st.devices[0], fields); writeFileSync(env.FAKE_SIMCTL_STATE, JSON.stringify(st)); }
+/** a warm record by hand (no keeper), for the cases a live keeper would end before the code under test runs */
+const warmRec = (over = {}) => ({ id: 'abcabcabcabc', udid: device().udid, runtimeId: RUNTIME.identifier, bootedAt: new Date().toISOString(), sessions: 1, lastOwner: 'me', lastSessionEndedAt: new Date().toISOString(), idleSec: 300, idleUntil: new Date(Date.now() + 300000).toISOString(), ...over });
+/**
+ * A script that makes fw-sim warm (Booted, warm.json, no keeper; `shutdownFail`: simctl shutdown refuses) and then runs
+ * `cmd`, for `lock.mjs run chrome-measure -- sh <it>`: the warm device appears INSIDE a timing hold, after its host gate
+ * (which would otherwise shut it down first, review-i063 N1), as when the gate timed out or the hold was re-entered.
+ */
+function inHoldScript(cmd, { shutdownFail = false } = {}) {
+  const mk = join(dir, 'mkwarm.mjs');
+  writeFileSync(mk, `import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+const st = JSON.parse(readFileSync(${JSON.stringify(env.FAKE_SIMCTL_STATE)}, 'utf8'));
+Object.assign(st.devices[0], { state: 'Booted', shutdownFail: ${shutdownFail} });
+writeFileSync(${JSON.stringify(env.FAKE_SIMCTL_STATE)}, JSON.stringify(st));
+mkdirSync(${JSON.stringify(simDir())}, { recursive: true });
+writeFileSync(${JSON.stringify(join(simDir(), 'warm.json'))}, JSON.stringify(${JSON.stringify(warmRec())}));\n`);
+  const sh = join(dir, 'inhold.sh');
+  writeFileSync(sh, `set -e\n"${process.execPath}" "${mk}"\n${cmd.map((a) => `'${a.replace(/'/g, `'\\''`)}'`).join(' ')}\n`);
+  return sh;
+}
+const timingSession = () => [process.execPath, SIM, 'session', '--owner', 'me', '--window', 'hidden', '--', process.execPath, '-e', probe()];
 
 test('I-063: a functional session keeps fw-sim booted (Safari quit, warm.json mode 600, keeper); status / lock status / doctor show it; the next session reuses it without a boot (Safari reset); sim.mjs shutdown ends it', async () => {
   const udid = setup();
@@ -171,7 +193,7 @@ test('I-063 keeper vs a session (lead note 2): it never shuts fw-sim down while 
   node(SIM, ['shutdown'], { env });
 });
 
-test('I-063: a dead keeper is a LEAK in doctor; a normal (timing) session reuses the warm device but always shuts it down at its end', async () => {
+test('I-063: a dead keeper is a LEAK in doctor; a timing hold\'s host gate shuts the warm device down before the grant (review-i063 N1), so its timing session cold-boots and keeps nothing', async () => {
   const udid = setup();
   let r = await fn();
   assert.equal(r.code, 0, r.out);
@@ -182,12 +204,14 @@ test('I-063: a dead keeper is a LEAK in doctor; a normal (timing) session reuses
   assert.equal(d.code, 3, d.out);
   assert.match(d.stdout, /LEAK: fw-sim 15 Pro Max is Booted with no live session \(a warm record, but its keeper is gone\)/);
   assert.match(node(SIM, ['status'], { env }).stdout, /keeper pid \d+ DEAD: node tools\/sim\.mjs shutdown/);
+  assert.match(node(LOCK, ['status', 'simulator', '--no-host'], { env }).stdout, /warm: fw-sim recorded as booted \(state unchecked\), idle .*keeper pid \d+ DEAD/, 'lock.mjs status (no simctl) does not claim "booted" without its keeper (N3)');
   writeFileSync(env.FAKE_SIMCTL_LOG, '');
-  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--', process.execPath, SIM, 'session', '--owner', 'me', '--window', 'hidden', '--', process.execPath, '-e', probe()], { env, timeout: 90000 });
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--', ...timingSession()], { env, timeout: 90000 });
   assert.equal(r.code, 0, r.out);
   noIds(r.out, udid);
-  assert.equal(readJ(sessOut()).boot.mode, 'warm');
-  assert.deepEqual(simctlCalls(), ['bootstatus', 'terminate', 'get_app_container', 'launch', 'shutdown'], 'reused, then shut down: a timing session keeps nothing');
+  assert.match(r.stderr, /\[lock chrome-measure\] a warm Simulator \(fw-sim\) at the host gate: shut down \(I-063\)/);
+  assert.deepEqual([readJ(sessOut()).boot.mode, 'afterWarm' in readJ(sessOut()).boot], ['cold', false]);
+  assert.deepEqual(simctlCalls(), ['shutdown', 'boot', 'bootstatus', 'terminate', 'get_app_container', 'launch', 'shutdown'], 'the gate shut it down; a cold boot; a timing session keeps nothing');
   assert.ok(!warm() && !keeper());
   // doctor --fix on a warm device whose keeper died
   r = await fn();
@@ -227,38 +251,157 @@ test('I-063 phone runs: a warm fw-sim beside a phone run gives a NOTE and mac.st
   let r = await fn();
   assert.equal(r.code, 0, r.out);
   const guard = (q) => run(process.execPath, ['--input-type=module', '-e', `import { phoneGuard } from ${JSON.stringify(tool('lib/lock.mjs'))};
-    const g = phoneGuard({ owner: 'phone', requireQuiet: ${q}, st: { holder: null, queue: [] }, load1: 1 }); console.log('G ' + JSON.stringify(g));`], { env });
+    const g = phoneGuard({ owner: 'phone', requireQuiet: ${q}, st: { holder: null, queue: [] }, load1: 1 }); console.log('G ' + JSON.stringify(g));`], { env: { ...env, FW_SIM_SETTLE_SEC: '1' } });
   r = guard(false);
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /NOTE: a warm Simulator \(fw-sim, booted and idle until \S+\) is on the Mac beside this phone run/);
   let g = JSON.parse(r.stdout.match(/^G (.*)$/m)[1]);
   assert.equal(g.start.simWarm.keeperAlive, true);
   assert.equal(device().state, 'Booted', 'no shutdown without a quiet request');
+  const t0 = Date.now();
   r = guard(true);
   assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /waiting 1 s for the Mac to settle after the Simulator shutdown \(I-063; FW_SIM_SETTLE_SEC\)/, 'review-i063 N6: a settle after the shutdown');
+  assert.ok(Date.now() - t0 >= 1000, 'the settle waited');
   assert.match(r.stdout, /NOTE: a warm Simulator .* was still booted at the start of this phone run: shut down before the first run/);
   g = JSON.parse(r.stdout.match(/^G (.*)$/m)[1]);
-  assert.deepEqual([g.requireQuiet, g.start.simWarm.action, g.start.simWarm.ok], [true, 'shut down', true]);
+  assert.deepEqual([g.requireQuiet, g.start.simWarm.action, g.start.simWarm.ok, g.start.simWarm.shutDown, g.start.simWarm.settledSec], [true, 'shut down', true, true, 1]);
   assert.equal(device().state, 'Shutdown');
   assert.ok(!warm() && !keeper());
+  // review-i063 N3: a record from before the Mac's last start is STALE (lock.mjs status, no simctl); the reap finds
+  // fw-sim already shut down: no settle, recorded as stale
+  writeFileSync(join(simDir(), 'warm.json'), JSON.stringify(warmRec({ bootedAt: '2000-01-01T00:00:00.000Z', lastSessionEndedAt: '2000-01-01T00:10:00.000Z' })));
+  assert.match(node(LOCK, ['status', 'simulator', '--no-host'], { env }).stdout, /warm: STALE record: the Mac restarted at \S+, after the session of "me" at 2000-01-01T00:10:00\.000Z \(fw-sim not booted since\)/);
+  assert.match(node(SIM, ['status'], { env }).stdout, /^warm: {5}STALE record: fw-sim is Shutdown/m, 'sim.mjs status reads the real state');
+  const js = JSON.parse(node(LOCK, ['status', 'simulator', '--json', '--no-host'], { env }).stdout)[0];
+  assert.deepEqual([js.simWarm.stale, js.simWarm.lastSessionEndedAt], [true, '2000-01-01T00:10:00.000Z'], 'lock.mjs status --json carries the warm state');
+  r = guard(true);
+  assert.equal(r.code, 0, r.out);
+  assert.ok(!/settle/.test(r.stdout), 'nothing was shut down: no settle');
+  assert.match(r.stdout, /NOTE: a stale warm Simulator record \(fw-sim, session ended 2000-01-01T00:10:00\.000Z\) was found at the start of this phone run: fw-sim was not booted, the record was removed/);
+  g = JSON.parse(r.stdout.match(/^G (.*)$/m)[1]);
+  assert.deepEqual([g.start.simWarm.action, g.start.simWarm.ok, g.start.simWarm.stale, 'shutDown' in g.start.simWarm], ['already shut down (a stale record, removed)', true, true, false]);
+  assert.ok(!warm());
 });
 
-test('I-063 verify.mjs backstop (MEASUREMENT CODE: before the first run only): a warm fw-sim still booted at the start of the hold is shut down, a NOTE printed, host.simWarm recorded; without one nothing is recorded', async () => {
+test('I-063 verify.mjs (MEASUREMENT CODE: before the first run only): the host gate shuts a warm fw-sim down before the grant (N1); inside the hold verify\'s own backstop does; either is recorded as host.simWarm; a failed shutdown refuses (WAIT, exit 1: review-i063 B2); without one nothing is recorded', async () => {
   setup();
   let r = await fn();
   assert.equal(r.code, 0, r.out);
   const k = keeper();
-  process.kill(k.pid, 'SIGKILL'); // the keeper died: only the backstop is left
+  process.kill(k.pid, 'SIGKILL'); // the keeper died: only the gate and the backstop are left
   const e = { ...env, CHROME: FX('fake-chrome.mjs'), FAKE_CHROME_LOG: join(dir, 'chrome.jsonl'), FAKE_CHROME_METRICS: 'step', FW_MIRROR_HOME: dir };
   const args = (n) => ['a=http://127.0.0.1:9/', '--runs', '1', '--viewport', 'mobile', '--cpu', '3', '--no-screens', '--idle', '0', '--out', join(dir, `out${n}`), '--result', join(dir, `result${n}.json`), '--profile', join(dir, 'profile'), '--owner', 'v'];
+  const result = (n) => JSON.parse(readFileSync(join(dir, `result${n}.json`), 'utf8'));
+  // (1) verify's own hold: its host gate finds the warm device (keeper dead) and shuts it down before the grant
   r = await nodeAsync(VERIFY, args(1), { env: e, timeout: 120000 });
   assert.equal(r.code, 0, r.out);
-  assert.match(r.stdout, /NOTE: a warm Simulator \(fw-sim, idle since \S+, keeper not running\) was still booted at the start of this verify hold: shut down before the first run \(I-063; recorded as simWarm\)/);
-  const res = JSON.parse(readFileSync(join(dir, 'result1.json'), 'utf8'));
-  assert.deepEqual([res.host.simWarm.action, res.host.simWarm.ok, res.host.simWarm.keeperAlive], ['shut down', true, false]);
+  assert.match(r.stderr, /\[lock chrome-measure\] a warm Simulator \(fw-sim\) at the host gate: shut down \(I-063\)/);
+  assert.match(r.stdout, /NOTE: the host gate of this hold found a warm Simulator \(fw-sim\): shut down, before the grant \(I-063; recorded as simWarm\)/);
+  assert.deepEqual([result(1).host.simWarm.action, result(1).host.simWarm.ok, result(1).host.simWarm.keeperAlive, result(1).host.simWarm.gate], ['shut down', true, false, true]);
   assert.equal(device().state, 'Shutdown');
-  r = await nodeAsync(VERIFY, args(2), { env: e, timeout: 120000 });
+  // (2) a warm device that appears inside the hold (after its gate): verify's own backstop before the first run
+  const inHold = (n, o) => nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'v', '--', 'sh', inHoldScript([process.execPath, VERIFY, ...args(n)], o)], { env: e, timeout: 120000 });
+  r = await inHold(2);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /NOTE: a warm Simulator \(fw-sim, idle since \S+, keeper not running\) was still booted at the start of this verify hold: shut down before the first run \(I-063; recorded as simWarm\)/);
+  assert.deepEqual([result(2).host.simWarm.action, result(2).host.simWarm.ok, result(2).host.simWarm.shutDown, 'gate' in result(2).host.simWarm], ['shut down', true, true, false]);
+  assert.equal(device().state, 'Shutdown');
+  // (3) B2: its shutdown fails: verify measures nothing (WAIT, exit 1, no result), the record stays and says so
+  writeFileSync(e.FAKE_CHROME_LOG, '');
+  r = await inHold(3, { shutdownFail: true });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stdout, /WAIT: a warm Simulator \(fw-sim\) may still be booted and its shutdown failed \(.*\): nothing is timed beside it, so this verify hold stops here/);
+  assert.ok(!existsSync(join(dir, 'result3.json')), 'no result');
+  assert.equal(readFileSync(join(dir, 'chrome.jsonl'), 'utf8'), '', 'no Chrome started');
+  assert.equal(device().state, 'Booted');
+  assert.match(warm().shutdownFailed.why, /shutdown failed \(exit 164\).*; fw-sim is Booted/);
+  devSet({ shutdownFail: false });
+  assert.equal(node(SIM, ['shutdown'], { env }).code, 0);
+  // (4) no warm device: nothing printed, nothing recorded
+  r = await nodeAsync(VERIFY, args(4), { env: e, timeout: 120000 });
   assert.equal(r.code, 0, r.out);
   assert.ok(!/warm Simulator/.test(r.out));
-  assert.equal('simWarm' in JSON.parse(readFileSync(join(dir, 'result2.json'), 'utf8')).host, false);
+  assert.equal('simWarm' in result(4).host, false);
+});
+
+test('I-063 B1 (review-i063): a shutdown counts only when fw-sim reads Shutdown: on failure the keeper keeps the (marked) record and polls on, logging each line once; status, doctor, --warm-only and plain shutdown all say so; once the device can shut down, the keeper finishes', async () => {
+  setup();
+  let r = await fn();
+  assert.equal(r.code, 0, r.out);
+  const k = keeper();
+  devSet({ shutdownFail: true });
+  writeFileSync(join(simDir(), 'warm.json'), JSON.stringify({ ...warm(), idleUntil: new Date(Date.now() - 1000).toISOString() }));
+  const klog = () => (existsSync(join(simDir(), 'keeper.log')) ? readFileSync(join(simDir(), 'keeper.log'), 'utf8') : '');
+  await until(() => /SIM_WARM_SHUTDOWN_FAILED/.test(klog()), 10000, 'the keeper\'s failed shutdown');
+  await sleep(1500); // ~10 more polls, each a failed attempt
+  assert.equal(device().state, 'Booted');
+  assert.ok(alive(k.pid), 'the keeper keeps polling');
+  assert.ok(warm()?.shutdownFailed, 'the record stays, marked');
+  assert.match(warm().shutdownFailed.why, /shutdown failed \(exit 164\).*; fw-sim is Booted/);
+  assert.equal(klog().match(/SIM_WARM_SHUTDOWN_FAILED/g).length, 1, `N7: one line, not one per poll:\n${klog()}`);
+  assert.equal(klog().match(/but not now/g).length, 1, klog());
+  assert.ok(!/SIM_WARM_SHUTDOWN \(/.test(klog()), 'never logged as done');
+  assert.match(node(SIM, ['status'], { env }).stdout, /^warm: {5}fw-sim booted, .*its last shutdown FAILED \(\S+, by keeper\): node tools\/sim\.mjs doctor --fix$/m);
+  let d = node(SIM, ['doctor'], { env });
+  assert.equal(d.code, 3, d.out);
+  assert.match(d.stdout, /LEAK: fw-sim 15 Pro Max is Booted with no live session \(a warm record, but its last shutdown FAILED: /);
+  r = node(SIM, ['shutdown', '--warm-only', '--reason', 'verify.mjs timing hold', '--by', 'verify'], { env });
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^SIM_WARM_SHUTDOWN_FAILED \(verify\.mjs timing hold; by verify\): /m);
+  assert.ok(warm(), 'the record stays');
+  // plain shutdown (stops the keeper) and doctor --fix: not done while the device stays Booted
+  r = node(SIM, ['shutdown'], { env });
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stderr, /fw-sim is still Booted after the shutdown \(the warm record stays\)/);
+  assert.ok(warm() && !alive(k.pid));
+  d = node(SIM, ['doctor', '--fix'], { env });
+  assert.equal(d.code, 3, d.out);
+  assert.match(d.stdout, /NOT fixed: fw-sim 15 Pro Max is still Booted after the shutdown \(the warm record stays\)/);
+  assert.ok(warm());
+  devSet({ shutdownFail: false });
+  d = node(SIM, ['doctor', '--fix'], { env });
+  assert.equal(d.code, 0, d.out);
+  assert.ok(device().state === 'Shutdown' && !warm());
+  // the keeper path: it finishes once the device shuts down
+  r = await fn();
+  assert.equal(r.code, 0, r.out);
+  devSet({ shutdownFail: true });
+  writeFileSync(join(simDir(), 'warm.json'), JSON.stringify({ ...warm(), idleUntil: new Date(Date.now() - 1000).toISOString() }));
+  await until(() => warm()?.shutdownFailed, 10000, 'a failed attempt');
+  devSet({ shutdownFail: false });
+  await until(() => device().state === 'Shutdown' && !warm() && !keeper(), 10000, 'the retried shutdown');
+});
+
+test('I-063 N5 (review-i063): a timing session never takes over a warm device: it shuts it down under its simulator lock and cold-boots (boot.afterWarm); if that shutdown fails it refuses and the record stays', async () => {
+  const udid = setup();
+  writeFileSync(env.FAKE_SIMCTL_LOG, '');
+  let r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--', 'sh', inHoldScript(timingSession())], { env, timeout: 90000 });
+  assert.equal(r.code, 0, r.out);
+  noIds(r.out, udid);
+  assert.match(r.stdout, /booting fw-sim 15 Pro Max \(a timing session cold-boots: the warm device was shut down first, I-063\)/);
+  const b = readJ(sessOut()).boot;
+  assert.deepEqual([b.mode, b.sessionsOnBoot, typeof b.afterWarm?.shutDownAt, b.afterWarm?.sessions], ['cold', 1, 'string', 1]);
+  assert.deepEqual(simctlCalls(), ['shutdown', 'boot', 'bootstatus', 'terminate', 'get_app_container', 'launch', 'shutdown']);
+  assert.ok(!warm() && !keeper() && device().state === 'Shutdown');
+  rmSync(sessOut(), { force: true });
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--', 'sh', inHoldScript(timingSession(), { shutdownFail: true })], { env, timeout: 90000 });
+  assert.notEqual(r.code, 0, r.out);
+  assert.match(r.stderr, /refusing: a timing session cold-boots, but the warm fw-sim 15 Pro Max did not shut down \(shutdown failed \(exit 164\).*; it is Booted\): node tools\/sim\.mjs doctor --fix/);
+  assert.ok(!existsSync(sessOut()), 'its command never ran');
+  assert.ok(warm()?.shutdownFailed, 'the record stays, marked');
+  devSet({ shutdownFail: false });
+  assert.equal(node(SIM, ['shutdown'], { env }).code, 0);
+});
+
+test('I-063 N9 (review-i063): a functional session that ends while a timing hold waits for chrome-measure keeps nothing ("not keeping fw-sim booted")', async () => {
+  setup();
+  // its command queues a timing waiter (a lease, not short) behind the session's own slot
+  const q = `import { tryAcquire } from ${JSON.stringify(tool('lib/lock.mjs'))}; const r = await tryAcquire('chrome-measure', { owner: 'ab', kind: 'lease', ttlSec: 60 }); console.log('QUEUED ' + !r.ok);`;
+  const r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--shared', '--weight', 'simulator', '--max-seconds', '120', '--owner', 'me', '--', process.execPath, SIM, 'session', '--functional', '--owner', 'me', '--window', 'hidden', '--', process.execPath, '--input-type=module', '-e', q], { env, timeout: 90000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /QUEUED true/);
+  assert.match(r.stdout, /cleanup: not keeping fw-sim booted: "ab" waits for a timing hold of chrome-measure/);
+  assert.equal(device().state, 'Shutdown');
+  assert.ok(!warm() && !keeper());
 });

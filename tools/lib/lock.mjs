@@ -107,7 +107,7 @@ import { randomBytes } from 'node:crypto';
 import { sharedStateDir, REPO } from './paths.mjs';
 import { THRESHOLDS, sample, quiet } from './host.mjs';
 import { keepAwake, stopAwake, awakeHold } from './awake.mjs'; // I-070: measurement holds only (user C-024)
-import { warmSummary, reapWarmSync, reapNote } from './sim-warm.mjs';
+import { warmSummary, reapWarm, reapWarmSync, reapNote, settleSec } from './sim-warm.mjs';
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -371,10 +371,16 @@ export function phoneGuard({ owner, allow = false, requireQuiet = false, st = st
   if (quiet && !allow && warmSummary(undefined, now)) {
     reaped = reapWarmSync({ reason: 'a phone run asks for a quiet Mac', by: owner || 'phone run', env });
     if (reaped && !reaped.ok) throw new Error(`WAIT: a warm Simulator (fw-sim) is booted and this run asks for a quiet Mac, but its shutdown failed (${reaped.error || '?'}): node tools/sim.mjs shutdown, then retry (I-063)`);
+    if (reaped?.shutDown) {
+      // review-i063 N6: the shutdown itself is load; the run starts after a settle (FW_SIM_SETTLE_SEC, default 20 s)
+      const sec = settleSec(env);
+      if (sec > 0) { log(`waiting ${sec} s for the Mac to settle after the Simulator shutdown (I-063; FW_SIM_SETTLE_SEC)`); Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, sec * 1000); }
+      reaped.settledSec = sec;
+    }
   }
-  const start = phoneMacState({ st, now, load1 });
+  const start = phoneMacState({ st, now: reaped?.settledSec ? Date.now() : now, load1 });
   if (reaped) start.simWarm = reaped;
-  const lines = note ? [phoneMacNote(start), reaped ? reapNote(reaped, 'this phone run') : start.simWarm ? `NOTE: a warm Simulator (fw-sim, booted and idle until ${start.simWarm.idleUntil}) is on the Mac beside this phone run: Mac-quiet is preferred, not required, so it runs and its record keeps it (mac.start.simWarm); --require-quiet or FW_PHONE_REQUIRE_QUIET=1 shuts it down first (I-063)` : null] : [];
+  const lines = note ? [phoneMacNote(start), reaped ? reapNote(reaped, 'this phone run') : start.simWarm?.stale ? `NOTE: a stale warm Simulator record (written before the Mac restarted, so fw-sim is not booted) is in the record (mac.start.simWarm); node tools/sim.mjs shutdown clears it (I-063)` : start.simWarm ? `NOTE: a warm Simulator (fw-sim, ${start.simWarm.keeperAlive ? 'booted' : 'recorded as booted, keeper not running'} and idle until ${start.simWarm.idleUntil}) is on the Mac beside this phone run: Mac-quiet is preferred, not required, so it runs and its record keeps it (mac.start.simWarm); --require-quiet or FW_PHONE_REQUIRE_QUIET=1 shuts it down first (I-063)` : null] : [];
   for (const line of lines) if (line) log(line);
   return { requireQuiet: quiet, allow: !!allow, start };
 }
@@ -956,6 +962,10 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
   // ts-lock-bundle (b): the gate's timeout counts awake time, like its cap (review-host-state B1): the host sleep the
   // gate windows saw is subtracted, and a window the host slept through never ends in a throw (one fresh window decides)
   let gateSleptMs = 0, sleptLast = false;
+  // review-i063 N1: a warm Simulator (I-063) is Mac load: at the gate it counts as not quiet and is shut down (at most
+  // every 30 s; sim.mjs shutdown --warm-only, under the simulator lock) unless its live keeper does that first, so every
+  // timing hold settles without it. The grant carries the gate's last attempt as `simWarm` (verify.mjs records it).
+  let gateWarm = null, gateReapAt = 0, gateWarmSince = 0;
   const myEntry = shared ? (w) => (!!w.shared || !!w.functional) && (kind !== 'process' || w.pid === process.pid) : (w) => !w.shared;
   for (;;) {
     if (cpuBase && Date.now() - cpuBase.at >= busyWindowMs) {
@@ -972,7 +982,17 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
         lastLog = Date.now();
       }
       if (!sleptLast && Date.now() - t0 - gateSleptMs > timeoutSec * 1000) { await dequeue(r, owner, myEntry); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s waiting for a quiet host${gateSleptMs ? ` (awake time; the host slept ${Math.round(gateSleptMs / 1000)} s more)` : ''}`); }
+      const sw0 = r === 'chrome-measure' ? warmSummary() : null;
+      if (!sw0) gateWarmSince = 0; else gateWarmSince ||= Date.now();
+      // a live keeper shuts it down itself on seeing this waiter (2 s polls): the gate acts only for a dead or late one
+      if (sw0 && (!sw0.keeperAlive || sw0.stale || Date.now() - gateWarmSince >= 30000) && Date.now() - gateReapAt >= 30000) {
+        gateReapAt = Date.now();
+        gateWarm = await reapWarm({ reason: 'the host gate of a timing hold', by: owner });
+        if (gateWarm) log(`[lock ${r}] a warm Simulator (fw-sim) at the host gate: ${gateWarm.action}${gateWarm.ok ? '' : ` (${gateWarm.error || '?'}); the gate stays closed while it is booted`} (I-063)`);
+      }
       host = await gateSample({ thresholds: T, samplers: hostSamplers }); // its sleep is summed by tryAcquire (I-033)
+      const sw = r === 'chrome-measure' ? warmSummary() : null;
+      if (sw) host = { ...host, quiet: false, reasons: [...(host.reasons || []), `a warm Simulator (fw-sim) is ${sw.stale ? 'recorded' : 'booted'} on the Mac (I-063${gateWarm && !gateWarm.ok ? `; its shutdown failed: ${gateWarm.error || '?'}` : ''})`] };
       sleptLast = !!host.sample?.suspended;
       if (sleptLast) gateSleptMs += (host.sample.sleptSec || 0) * 1000;
       continue;
@@ -1022,7 +1042,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       }
       // the switch-off stand-in for a reader is a slot like one (N2): its command gets FW_LOCK_SHARED, never FW_LOCK_HELD
       const env = shared ? { FW_LOCK_SHARED: sharedEnv(r, res.holder.token, sharedHeld) } : { FW_LOCK_HELD: heldEnv(r, res.holder.token, held) };
-      return { holder: res.holder, release: rel, mode: res.mode, env };
+      return { holder: res.holder, release: rel, mode: res.mode, env, ...(gateWarm ? { simWarm: gateWarm } : {}) };
     }
     // no holder but not our turn: the lock is being handed over to the waiter served next
     const h = res.holder, handover = `free, handing over to "${res.next}"`;

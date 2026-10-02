@@ -656,9 +656,9 @@ async function main() {
     process.exit(2);
   }
   await useHostClock();
-  let lockHolder = null;
+  let lockHolder = null, gateWarm = null;
   if (!flag('no-lock')) {
-    ({ holder: lockHolder } = await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel, idle: IDLE } }));
+    ({ holder: lockHolder, simWarm: gateWarm = null } = await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel, idle: IDLE } }));
   }
   // the lock's host admission gate (tools/lib/lock.mjs): how this hold (or the outer one we re-entered) was granted
   const gate = lockHolder?.gate ? { ...lockHolder.gate, gateTimeout: !!lockHolder.gateTimeout } : null;
@@ -666,8 +666,14 @@ async function main() {
   // normally shut down by its keeper as soon as this hold queues; if it is still booted (keeper dead or late), shut it
   // down now (under the simulator lock, never a live session's device): the first run's host recheck then waits for
   // quiet as usual. Recorded as host.simWarm; nothing happens and nothing is recorded without a warm device.
-  const simWarm = await reapWarm({ reason: 'verify.mjs timing hold', by: 'verify' });
-  if (simWarm) console.log(reapNote(simWarm, 'this verify hold'));
+  // review-i063 B2: if the shutdown failed, verify measures nothing (WAIT, exit 1; the lock is released on exit).
+  // review-i063 N1: the host gate (lib/lock.mjs) shuts one down before the grant; its attempt is recorded when this
+  // hold found nothing more (gate: true; a hold re-entered from `lock.mjs run` does not see the outer gate's attempt)
+  const ownWarm = await reapWarm({ reason: 'verify.mjs timing hold', by: 'verify' });
+  const simWarm = ownWarm ?? (gateWarm ? { ...gateWarm, gate: true } : null);
+  if (ownWarm) console.log(reapNote(ownWarm, 'this verify hold'));
+  else if (gateWarm) console.log(`NOTE: the host gate of this hold found a warm Simulator (fw-sim): ${gateWarm.action}, before the grant (I-063; recorded as simWarm)`);
+  if (ownWarm && !ownWarm.ok) process.exit(1);
   armWatchdog(); // from here on verify holds the lock: a stall must end it
   const results = [];
   try {
