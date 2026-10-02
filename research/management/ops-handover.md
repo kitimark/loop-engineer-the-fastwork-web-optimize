@@ -8,6 +8,15 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **11:2xZ Corrections from the lead (the 11:1xZ digest was behind); caa3c68 landed.**
+  - I-060 and I-061 were resolved at 10:44Z. I-062 is resolved (4df8bb2, npm test 1149/1149 on main); its first run is
+    still gated on review-ioscap and the user's console step. I-063 stays open.
+  - **PR-004 ACCEPTED** by the user at 11:15:14Z: rev 3, option word-alone. de-illusion-style is building it.
+  - **C1 done** at 11:12Z: 8 valid runs; quick read HC fn 16-17 vs S6 36-40 (OBSERVED, not scored). wi-stack is scoring it.
+  - **I-042 phone check dropped**: G1b's stroke-gate data covers it; iphone-runner sends ops the write-up.
+  - **T-011 review: LAND WITH FIXES** (re-scored exactly); fix-scene-scope is doing the wording fixes.
+  - **Phone order after T-009:** user console steps (the ioscap first run), then P2-1+P5 (fix-scroll-engine), then
+    word-alone (de-illusion-style).
 - **11:1xZ T-011 scored; C1 running; I-062 landed; I-063 open; PR-004 rev 3.** Landed since 10:49Z: ca408c4 + ead9159
   (PROGRESS /build: st6-rb with 7 items, pin-clamp item, scene-scope retitle), 39786a2/71934c1/9b1e574/4df8bb2 (I-062
   ioscap), the illusion-accent-frames series f91dd4e..36a28b1 (de-illusion-style).
@@ -1138,8 +1147,9 @@ between tool calls.
 | id | state | owner | note |
 |---|---|---|---|
 | I-063 | open 10:56Z | (lead) | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
-| I-062 | landed 4df8bb2 (lead resolves) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
-| I-060 | open 09:47Z | ts-i060 | progress page "Right now": show the job and the fix, not only the holder (user T-020) |
+| I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
+| I-061 | RESOLVED 10:44Z (517fdb4) | (lead) | PROGRESS build data schema |
+| I-060 | RESOLVED 10:44Z | ts-i060 | progress page "Right now": show the job and the fix, not only the holder (user T-020) |
 | I-059 | RESOLVED 10:0xZ, landed 17eeb1a + 62b4053 | ts-i059 | console: a runner-ended part can be marked Done by the user; fix (A) runner-ended parts + (B) "Start over" (T-019 #7) |
 | I-056 | RESOLVED 09:3xZ, landed d2d77ad (phone runs no longer wait for shared groups, `--require-quiet` opts in) | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (lets S/W/M blocks use the preferred quiet hold), (c) gesture-run guard, (d) shared readers log to holds.log |
 | I-058 | open | toolsmith (lead spawning) | waits invisible on the board; fixed-time waits where a probe exists (user T-016) |
