@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T07:20:00Z",
+ "updatedAt": "2026-10-02T07:28:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -150,12 +150,13 @@
    "fixes": "All of today's candidate fixes together: the countdown fix, the panel fix, the card reveal fix and F3.",
    "felt": { "answer": "better", "text": "Your own look on the phone (not blind): on the hero and at the end of the page, B felt quite a bit smoother than the original." },
    "gate": "Each part still needs its own phone test and review before it can land; the combined build is a preview.",
-   "next": "You asked for it (07:07Z): the five ready fixes are being stacked on today's best build; next a phone test against today's best build, then a blind finger swipe for you.",
+   "next": "Three of the five fixes were already in today's best build. The phone test compares today's best with today's best plus the card blur easing and the carousel fix; then a blind finger swipe for you.",
    "owner": "iphone-runner (builds), lead",
    "checks": [],
    "details": [
     "C-013 18:0x-18:30Z, lead held the lease as owner user; A = original baseline, B = aw1-10e + g + cdwc + re-keep-op + arm-scope-c (iphone-wave2 4n). Not blind, one viewer, no frame data from this sitting: OBSERVED perception only.",
-    "07:0xZ user T-014 #3: stack test, then PR-001. wi-stack builds stack5 = cdwc + f3-arm-scope + re-keep-op + blur-cubic + st6 on today's best; functional checks in the shared lane; phone ticket best vs stack5 (S driver) + one blind swipe pair; P-row first. Timing hold lifted for the stack test only."
+    "07:0xZ user T-014 #3: stack test, then PR-001. wi-stack builds stack5 = cdwc + f3-arm-scope + re-keep-op + blur-cubic + st6 on today's best; functional checks in the shared lane; phone ticket best vs stack5 (S driver) + one blind swipe pair; P-row first. Timing hold lifted for the stack test only.",
+    "07:2xZ wi-stack: today's best RB (= bplus + scene-scope; JS dbd5fdb4f1fb, CSS 0d7dfc79e703) already carries cdwc, re-keep-op and F3. Lead pick A: C = RB, V = stack5 = RB + blur-cubic + st6 (JS 59b23b3f57fd, CSS 6e09b2c708fa). (B) rb-aw/stack5-aw built, not measured. P-059 (wi-stack) committed before phone data; one S block ~15 min + a recorded swipe pair in the Mac-quiet window. User corrected in T-014 #5."
    ]
   },
   {

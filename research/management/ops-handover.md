@@ -303,6 +303,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   T-014 #3 (user 07:07Z): "stack test, then PR-001". Timing hold lifted for the stack test only. wi-stack spawned (see
   directory). PHONE ORDER (supersedes 04:1xZ): (1) finish G1 (4 void re-runs + the white-deck check); (2) stack test;
   (3) PR-001 blocks A/B; (4) PR-002 / T-011; (5) T-009 curve; (6) I-042 check.
+  07:2xZ STACK TEST A/B (lead pick A): wi-stack found today's best RB (= bplus + scene-scope; JS dbd5fdb4f1fb, CSS
+  0d7dfc79e703) already carries cdwc, re-keep-op and F3. C = RB; V = stack5 = RB + blur-cubic + st6 (JS 59b23b3f57fd,
+  CSS 6e09b2c708fa). (B) rb-aw / stack5-aw was built and NOT measured. User corrected in T-014 #5. Ticket: one S block
+  ~15 min + a recorded swipe pair (Mac-quiet window), after G1, before PR-001. P-ID REGISTRY: P-056/056a/056b/056c
+  fix-scene-scope, P-057 fix-scroll-engine (G1), P-058 de-illusion-style (PR-001 phone), P-059 wi-stack (stack test);
+  next free P-060. Rows live on the owners' branches until they land.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
