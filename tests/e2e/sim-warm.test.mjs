@@ -7,13 +7,17 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, statSync, chmodSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, runAsync, run, tool, freePort, TESTS, sleep } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, runAsync, run, tool, freePort, TESTS, sleep, killFixtures } from '../helpers.mjs';
 
 const SIM = tool('sim.mjs'), LOCK = tool('lock.mjs'), VERIFY = tool('verify.mjs');
 const FX = (n) => join(TESTS, 'fixtures', n);
 const PHONE = '00008130-0011223344556677'; // made up
 const RUNTIME = { identifier: 'com.apple.CoreSimulator.SimRuntime.iOS-26-5', name: 'iOS 26.5', version: '26.5', buildversion: '23F77', isAvailable: true, platform: 'iOS' };
 let dir, env;
+// I-072: every fixture a test's tools started detached (runner, iproxy, iwdp, tab) dies with that test, pass or fail
+let fixturesSince = 0;
+beforeEach(() => { fixturesSince = Date.now(); });
+afterEach(() => { killFixtures({ since: fixturesSince }); });
 
 function wrapper(name, script, pre = []) {
   const f = join(dir, 'bin', name);

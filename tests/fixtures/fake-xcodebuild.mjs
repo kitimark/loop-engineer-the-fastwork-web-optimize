@@ -8,6 +8,7 @@
 // fake WDA). Both failures print what real xcodebuild prints there: the device's UDID and name, the team id,
 // the runner's bundle id, the Apple Account e-mail and the signing identity's person name (review-gesture 2:
 // the tools must scrub all of them before printing a log tail). All of these ids are made up.
+import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join, dirname } from 'node:path';
@@ -35,7 +36,7 @@ if (a.includes('build-for-testing')) {
     // a build that runs until killed, with a helper process in its group that ignores SIGTERM (like the
     // compilers/signing tools xcodebuild starts): writes xb.pid and helper.pid into the given directory
     const dir = process.env.FAKE_XCODEBUILD_SLOW;
-    const h = spawn(process.execPath, ['-e', "process.on('SIGTERM', () => {}); setInterval(() => {}, 1 << 30)"], { stdio: 'ignore' });
+    const h = spawn(process.execPath, ['--import', new URL('./lifeline.mjs', import.meta.url).href, '-e', "process.on('SIGTERM', () => {}); setInterval(() => {}, 1 << 30)"], { stdio: 'ignore' });
     writeFileSync(join(dir, 'helper.pid'), String(h.pid));
     writeFileSync(join(dir, 'xb.pid'), String(process.pid));
     console.log('Building... (slow fake)');

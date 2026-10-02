@@ -5,12 +5,12 @@
 // Covers research/simulator/README.md §7: the hold gate, the iwdp config (content, mode 600), UDIDs never in
 // stdout / stderr / JSON, the :9231 SIMULATOR-only check, cleanup on success, failure and SIGTERM (shutdown always,
 // only our own pids killed), meta.device / meta.sim.
-import { test, beforeEach } from 'node:test';
+import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, statSync, chmodSync, mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, tool, freePort, startProc, TESTS, sleep } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, tool, freePort, startProc, TESTS, sleep, killFixtures, LIFELINE, cleanEnv } from '../helpers.mjs';
 import { deviceOf } from '../../tools/lib/stats.mjs';
 
 const SIM = tool('sim.mjs'), LOCK = tool('lock.mjs');
@@ -20,6 +20,10 @@ const PHONE2 = '00008101-0A0B0C0D0E0F1011';
 const RUNTIME = { identifier: 'com.apple.CoreSimulator.SimRuntime.iOS-26-5', name: 'iOS 26.5', version: '26.5', buildversion: '23F77', isAvailable: true, platform: 'iOS' };
 const UUID = /[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}/i;
 let dir, env;
+// I-072: every fixture a test's tools started detached (runner, iproxy, iwdp, tab) dies with that test, pass or fail
+let fixturesSince = 0;
+beforeEach(() => { fixturesSince = Date.now(); });
+afterEach(() => { killFixtures({ since: fixturesSince }); });
 
 function wrapper(name, script, pre = []) {
   const f = join(dir, 'bin', name);
@@ -325,7 +329,7 @@ test('session: SIGTERM mid-<cmd> stops <cmd>\'s group, the proxy and the Simulat
   assert.ok(!alive(proxyPid), 'proxy stopped');
   cleanedUp();
   // a pidfile whose pid is not our proxy (reused pid): `proxy stop` removes the file, kills nothing
-  const sleeper = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1e9)'], { stdio: 'ignore' });
+  const sleeper = spawn(process.execPath, ['--import', LIFELINE, '-e', 'setInterval(() => {}, 1e9)'], { stdio: 'ignore', env: cleanEnv() }); // I-072: dies with this test process
   writeFileSync(join(simDir(), 'proxy.pid.json'), JSON.stringify({ pid: sleeper.pid, name: 'proxy', match: join(simDir(), 'iwdp.cfg') }));
   const r = node(SIM, ['proxy', 'stop'], { env });
   assert.equal(r.code, 0, r.out);
@@ -334,7 +338,7 @@ test('session: SIGTERM mid-<cmd> stops <cmd>\'s group, the proxy and the Simulat
   sleeper.kill('SIGKILL');
   // review-sim B1: the phone's WDA runner is `xcodebuild test-without-building` too; a wda pidfile whose pid now runs
   // such a command WITHOUT the Simulator's DerivedData-sim path is not ours: nothing killed (wda stop, doctor --fix)
-  const phoneRunner = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1e9)', 'test-without-building', '-xctestrun', '/x/DerivedData/Build/Products/W.xctestrun'], { stdio: 'ignore' });
+  const phoneRunner = spawn(process.execPath, ['--import', LIFELINE, '-e', 'setInterval(() => {}, 1e9)', 'test-without-building', '-xctestrun', '/x/DerivedData/Build/Products/W.xctestrun'], { stdio: 'ignore', env: cleanEnv() });
   writeFileSync(join(simDir(), 'wda.pid.json'), JSON.stringify({ pid: phoneRunner.pid, name: 'wda', match: join(dir, 'wda', 'DerivedData-sim'), session: 'gone' }));
   const w = node(SIM, ['wda', 'stop'], { env });
   assert.equal(w.code, 0, w.out);

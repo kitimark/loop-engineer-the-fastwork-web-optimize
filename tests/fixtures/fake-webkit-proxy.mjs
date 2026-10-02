@@ -42,6 +42,7 @@
 // but it never answers a command (logged as {staleConnected}); not listed while Safari is not running.
 // --resources=<file> (incident I-052): the page's Resource Timing entries (a JSON array, read at each request) for the
 // expression of tools/lib/sim.mjs RESOURCES_JS, answered as {origin, entries}.
+import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
 import http from 'node:http';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';

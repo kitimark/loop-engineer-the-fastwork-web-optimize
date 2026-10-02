@@ -13,6 +13,7 @@
 //                          a non-local page; use a TEST-NET address such as 192.0.2.1, never a real site)
 //   prints FAKE_WIP_PORT=<port>. Env FAKE_WIP_LOG=<file>: one JSON line per evaluate ({evaluate: head, len}), reload and
 //   GET of the page's script ({get: path}).
+import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
 import http from 'node:http';
 import { createHash } from 'node:crypto';
 import { appendFileSync } from 'node:fs';

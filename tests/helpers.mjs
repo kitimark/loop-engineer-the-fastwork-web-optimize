@@ -3,7 +3,7 @@
 // Everything a test creates (temp dirs, temp git repos/worktrees, child processes) is registered here
 // and removed in an 'exit' hook, so a failing or interrupted test still cleans up after itself.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, realpathSync, cpSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, realpathSync, cpSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -31,6 +31,8 @@ const realWorktrees = new Set(); // worktrees added to *this* repo (smoke test) 
 function cleanupSync() {
   for (const c of children) { try { c.kill('SIGKILL'); } catch {} }
   children.clear();
+  killFixtures();
+  if (fixtureDir) { try { rmSync(fixtureDir, { recursive: true, force: true }); } catch {} }
   for (const wt of realWorktrees) {
     spawnSync('git', ['-C', REPO, 'worktree', 'remove', '--force', wt], { stdio: 'ignore' });
   }
@@ -49,6 +51,48 @@ export function tempDir(prefix = 'fw-test-') {
   return d;
 }
 export function removeTemp(d) { try { rmSync(d, { recursive: true, force: true }); } catch {} tempDirs.delete(d); }
+// ---- long-lived fixtures (I-072) -------------------------------------------------------------------
+// The tools start some fixtures detached (fake xcodebuild runner, fake iproxy, fake iwdp and its Safari tab): own
+// process group, ppid 1 once the tool exits, so neither `children` above nor a lane's tree kill reaches them. Each
+// such fixture imports tests/fixtures/lifeline.mjs, which registers it in FIXTURE_DIR (via $FW_TEST_FIXTURES, set by
+// cleanEnv) and ends it once this process is gone ($FW_TEST_LIFELINE).
+export const FIXTURES = join(TESTS, 'fixtures');
+export const LIFELINE = pathToFileURL(join(FIXTURES, 'lifeline.mjs')).href;
+let fixtureDir = null;
+function fixtureRegistry() {
+  if (!fixtureDir) fixtureDir = realpathSync(mkdtempSync(join(os.tmpdir(), 'fw-fixtures-'))); // removed at exit (cleanupSync)
+  return fixtureDir;
+}
+/** The fixtures registered by this test process that still run: [{pid, script, at}]. */
+export function liveFixtures({ since = 0 } = {}) {
+  if (!fixtureDir || !existsSync(fixtureDir)) return [];
+  const recs = [];
+  for (const f of readdirSync(fixtureDir)) {
+    let r; try { r = JSON.parse(readFileSync(join(fixtureDir, f), 'utf8')); } catch { continue; }
+    if (Number.isInteger(r.pid) && r.at >= since) recs.push(r);
+  }
+  if (!recs.length) return [];
+  // only a live process whose command line names our fixtures dir (its script or --import lifeline.mjs): never a reused pid
+  const ps = spawnSync('ps', ['-ww', '-o', 'pid=,command=', '-p', recs.map((r) => r.pid).join(',')], { encoding: 'utf8' });
+  const ours = new Set(String(ps.stdout || '').split('\n').filter((l) => l.includes(FIXTURES)).map((l) => Number(l.trim().split(/\s+/)[0])));
+  return recs.filter((r) => ours.has(r.pid));
+}
+/**
+ * Kill the registered fixtures (since: only those registered at or after that Date.now()), each with its process
+ * group (a detached fixture leads one: the fake xcodebuild's helper, fake iwdp's tab). Synchronous, so the exit hook
+ * can use it; returns the pids killed. Wire it per test where a tool starts detached fixtures:
+ *   let t0; beforeEach(() => { t0 = Date.now(); }); afterEach(() => killFixtures({ since: t0 }));
+ */
+export function killFixtures({ since = 0 } = {}) {
+  const live = liveFixtures({ since });
+  for (const r of live) {
+    try { process.kill(-r.pid, 'SIGKILL'); } catch {}
+    try { process.kill(r.pid, 'SIGKILL'); } catch {}
+    try { rmSync(join(fixtureDir, `${r.pid}.json`), { force: true }); } catch {}
+  }
+  return live.map((r) => r.pid);
+}
+
 export function registerRealWorktree(p) { realWorktrees.add(p); }
 export function unregisterRealWorktree(p) { realWorktrees.delete(p); }
 
@@ -66,6 +110,8 @@ export function cleanEnv(extra = {}) {
   for (const k of Object.keys(env)) if (/^FW_SIM_/.test(k)) delete env[k]; // FW_SIM_SESSION, FW_SIM_PORT, FW_SIM_UDID, ... (a test run from inside a sim session)
   for (const k of Object.keys(env)) if (/^FAKE_HOST_/.test(k)) delete env[k];
   env.FW_TEST_HOST = FAKE_HOST;
+  env.FW_TEST_LIFELINE = String(process.pid); // I-072: long-lived fixtures end with this test process
+  env.FW_TEST_FIXTURES = fixtureRegistry();
   env.FW_CAFFEINATE = 'off'; // no real sleep assertions from tests (I-026); a test passes the fake via `extra`
   delete env.FW_NO_CAFFEINATE; // I-070: a test that passes the fake gets it, whatever the caller's shell says
   // a git hook exports GIT_DIR / GIT_INDEX_FILE / ...: never let them redirect the temp repos' git calls

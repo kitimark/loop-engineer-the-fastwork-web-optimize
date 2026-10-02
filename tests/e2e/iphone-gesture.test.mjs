@@ -6,11 +6,11 @@
 // - wda build|start|status|stop against fake xcodebuild/iproxy, with FW_WDA_HOME and FW_STATE_DIR in temp dirs.
 // Never the real phone, its proxy ports, the real WDA (FW_WDA_URL always points at a fake or a free port) or
 // the real locks.
-import { test, before, beforeEach, after } from 'node:test';
+import { test, before, beforeEach, afterEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, tool, freePort, startProc, TESTS, REPO, sleep } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, tool, freePort, startProc, TESTS, REPO, sleep, killFixtures } from '../helpers.mjs';
 import { createHash } from 'node:crypto';
 import { compileScript, COMPILER_VERSION } from '../../tools/lib/gesture.mjs';
 import { TOOL_FILES } from '../../tools/lib/gesture-run.mjs';
@@ -26,6 +26,10 @@ let env;
 before(async () => { env = { FW_WDA_HOME: tempDir('fw-wdahome-'), FW_IPHONE_PORT: String(await freePort()), FW_IPHONE_DEVICE_PORT: String(await freePort()), FW_WDA_URL: `http://127.0.0.1:${await freePort()}` }; });
 beforeEach(() => { env = { ...env, FW_STATE_DIR: tempDir('fw-gesture-') }; });
 const lock = (...a) => node(LOCK, a, { env });
+// I-072: every fixture a test's tools started detached (runner, iproxy, iwdp, tab) dies with that test, pass or fail
+let fixturesSince = 0;
+beforeEach(() => { fixturesSince = Date.now(); });
+afterEach(() => { killFixtures({ since: fixturesSince }); });
 const procs = [];
 after(() => Promise.all(procs.map((p) => p.stop())));
 

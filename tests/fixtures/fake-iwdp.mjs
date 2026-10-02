@@ -7,6 +7,7 @@
 // iwdp's device list; SIMULATOR's port runs tests/fixtures/fake-run-proxy.mjs (the fake Safari tab) as a child in
 // this process group; a phone that got a port is listed (that is what tools/lib/sim.mjs must catch) and serves [].
 // $FAKE_IWDP_LOG: one JSON line {argv, cfgMode, cfg} at start (the cfg text: only the TEST reads it).
+import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
 import http from 'node:http';
 import { readFileSync, statSync, appendFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';

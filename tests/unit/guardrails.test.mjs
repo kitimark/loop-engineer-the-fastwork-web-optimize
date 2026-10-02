@@ -34,7 +34,9 @@ test('package.json has the test scripts and the hook setup', () => {
   assert.match(s['test:chrome:fn'], /^node tools\/lock\.mjs run chrome-measure --shared --max-seconds 300 --weight test-chrome-fn --owner test-chrome-fn -- node --test /);
   assert.doesNotMatch(s['test:chrome:fn'], /verify\.chrome|fix-ab\.chrome|host-real\.chrome|tests\/chrome\/\*/);
   for (const f of ['vendor-shim', 'bench', 'check']) assert.match(s['test:chrome:fn'], new RegExp(`tests/chrome/${f}\\.chrome\\.test\\.mjs`), `${f}.chrome is functional`);
-  assert.match(s.test, /--test-concurrency=3/, 'postmortem 2026-09-30 fix (b)');
+  // postmortem 2026-09-30 fix (b) capped it at 3; I-076 (lead GO): 6, the suite waits on timers far more than it computes
+  // (c3: 299 s wall, c6: 160 s, both ~280 CPU-s), so the wall time stays well under the shared lane's 300 s kill
+  assert.match(s.test, /--test-concurrency=6 /, 'I-076');
   assert.equal(s['test:bench'], 'node tools/bench.mjs reconfirm', 'lead decision Q4: Tier A on everything landed');
   assert.match(s['test:all'], /npm test && npm run test:chrome/);
   assert.equal(s.setup, 'git config core.hooksPath .githooks');

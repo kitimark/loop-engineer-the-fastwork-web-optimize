@@ -10,6 +10,7 @@
 // safari-restart's calls (POST /wda/apps/terminate, /wda/apps/launch, /url) switch the foreground app and call onApp(kind, body).
 //   node tests/fixtures/fake-wda.mjs --port=0 [--latency=MS] [--playback] [--fail-actions=N,M] [--foreground=<bundleId>]
 //     prints FAKE_WDA_PORT=<port>; env FAKE_WDA_LOG=<file> appends one JSON line per call.
+import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
 import http from 'node:http';
 import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
