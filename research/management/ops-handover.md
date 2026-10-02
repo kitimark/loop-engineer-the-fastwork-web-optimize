@@ -8,6 +8,17 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **22:5xZ 1153c70 landed (main tip). P-068 amendment 56636f8 re-read: NEEDS-WORK (fallback scoring); lead holds 4bf2319+56636f8.**
+  - Amendment (de-heat, heat.mjs 341a774801ae): every arm "held" (on the cable, not charging; state read 22:42Z, 80 %);
+    `heat.mjs charge-wait` gate before each segment (<= 20 min); one non-held read excludes the segment, re-run last;
+    fallback = a whole session "charging"; a verdict needs both sessions in one charge state. X = "landed fixes without
+    the countdown fix" (X2 later); ops' H1/H2 line in. apple.com Mac-side GETs accepted, tracked in **I-075**.
+  - Held path, X wording, I-075: PASS. **Fallback path NEEDS-WORK:** (1) verdicts() builds a session's charge mode from
+    all its segments, so a fallback session (aborted held segments "kept but not used" + charging restart) always reads
+    held+charging -> "incomplete"; (2) `get()` takes the first match, i.e. an aborted held segment over the charging
+    re-run; (3) no outcome pre-registered for a fallback gate TIMEOUT (likely at an 80 % limit). Asked: an attempt
+    number per segment, score only the last attempt, a synthetic one-restart test, a TIMEOUT rule. Minor: say the
+    exclusion counts all samples 0-360 s. Ops re-reads only those lines when de-heat sends the sha.
 - **22:4xZ (batch) 626783b landed; P-065 closed (531b254); P-068 heat ticket read PASS; phone order set.**
   - Landed: 626783b (ops), f2d71fd (X1 stage 2 needs the user's timing lift; a trigger goes to the lead), 3534e51 (S7
     C vs V pixel check: bottom 0 px; 0.54 % vs baseline common to both arms, phase), **531b254 P-065 Block 1 scored:**
