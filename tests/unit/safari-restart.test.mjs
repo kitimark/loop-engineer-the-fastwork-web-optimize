@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, TESTS } from '../helpers.mjs';
-import { safariRestart, devicectlArgs, simctlDriver, devicectlDriver, waitForPage, isTarget, safe, VIAS, heldBy, heldTabs, INSPECTOR_HINT } from '../../tools/lib/safari-restart.mjs';
+import { safariRestart, devicectlArgs, simctlDriver, devicectlDriver, waitForPage, isTarget, safe, VIAS, heldBy, heldTabs, INSPECTOR_HINT, probeUrl, unreachableText } from '../../tools/lib/safari-restart.mjs';
 
 const UDID = '00008130-0011223344556677'; // made up
 const drv = (name, { up = true, fail = null, seen = [] } = {}) => ({ name, async available() { return up; },
@@ -63,6 +63,56 @@ test('--url: loaded in the restored tab (no new tab); with no restored page the 
   await assert.rejects(safariRestart({ drivers: [drv('wda', { fail: `device ${UDID} (Kim Phone) at http://192.168.0.7:8100/ refused` })], port: 1, known, log: quiet }),
     (e) => !e.message.includes(UDID) && !e.message.includes('Kim Phone') && !e.message.includes('192.168') && /<udid> \(<device-name>\) at http:\/\/lan-host:8100\/ refused/.test(e.message));
   assert.equal(safe(`x ${UDID} 10.0.0.5`, {}), 'x <udid> lan-host');
+});
+
+test('I-069: a restored data: tab whose navigation never lands: a server that answers gets a fresh tab via the driver; one that does not fails at once, naming it; the normal path probes nothing', async () => {
+  const url = 'http://localhost:5461/', DATA = 'data:text/html,';
+  // the restored tab is Safari's load-error page; the target shows only once `shows` says so (after the driver opened it)
+  const waiter2 = ({ calls, shows }) => async ({ target, timeoutMs }) => {
+    calls.push([target, timeoutMs]);
+    if (!target) return { tab: { url: DATA, webSocketDebuggerUrl: 'ws://x' }, landed: { href: DATA, title: null, mirror: 0 } };
+    if (!shows()) { const e = new Error(`Safari did not show ${target} within ${Math.round(timeoutMs / 1000)} s: no tab matching the matcher; targets: data:text/html, [PID]`); e.noPage = true; throw e; }
+    return { tab: { url: target }, landed: { href: target, title: 'Fastwork', mirror: 200 } };
+  };
+  let seen = [], calls = [], lines = [], probes = [];
+  const navigate = async () => {};
+  const reachOk = async (u) => { probes.push(u); return { ok: true, status: 200 }; };
+  let r = await safariRestart({ drivers: [drv('simctl', { seen })], url, port: 1, timeoutMs: 30000, restoreMs: 5000, wait: waiter2({ calls, shows: () => seen.some((s) => s[1] === 'open') }), navigate, reach: reachOk, log: (s) => lines.push(s) });
+  assert.deepEqual(seen, [['simctl', 'restart'], ['simctl', 'open', url]], 'a fresh tab via the driver');
+  assert.deepEqual(calls, [[null, 5000], [url, 5000], [url, 30000]], 'restored page, the navigation (restore window), then the new tab (full timeout)');
+  assert.deepEqual([r.opened, r.href, probes], ['driver', url, [url]]);
+  assert.ok(lines.includes(`the restored tab (a data: page) did not load it within 5 s: opening ${url} via simctl (a new tab)`), lines.join('\n'));
+  // the server is gone (the I-069 case): no new tab, an error that names the server, within the restore window
+  seen = []; calls = []; probes = [];
+  const reachDown = async (u) => { probes.push(u); return { ok: false, why: 'ECONNREFUSED' }; };
+  await assert.rejects(safariRestart({ drivers: [drv('simctl', { seen })], url, port: 1, restoreMs: 5000, wait: waiter2({ calls, shows: () => false }), navigate, reach: reachDown, log: quiet }),
+    (e) => e.message === `safari-restart: the server at ${url} does not answer from this Mac (ECONNREFUSED), so Safari can only show its load-error page (the data: tab it lists): start the server again (detached, e.g. nohup, so it survives a Mac sleep), check it with curl, then retry (I-069)`);
+  assert.deepEqual([seen, calls.length, probes], [[['simctl', 'restart']], 2, [url]]);
+  // the new tab never shows either, server up: the plain timeout (probed once); server gone with no restored page: named
+  seen = []; calls = []; probes = [];
+  await assert.rejects(safariRestart({ drivers: [drv('simctl', { seen })], url, port: 1, restoreMs: 5000, wait: waiter2({ calls, shows: () => false }), navigate, reach: reachOk, log: quiet }),
+    (e) => /^safari-restart: Safari did not show http:\/\/localhost:5461\/ within 30 s: no tab matching the matcher/.test(e.message) && !/does not answer/.test(e.message));
+  assert.deepEqual(probes, [url]);
+  await assert.rejects(safariRestart({ drivers: [drv('simctl')], url, port: 1, wait: async ({ target }) => { const e = new Error(`Safari did not ${target ? 'show it' : 'come back with a page'}`); e.noPage = true; throw e; }, reach: reachDown, log: quiet }),
+    /Safari did not show it; the server at http:\/\/localhost:5461\/ does not answer from this Mac \(ECONNREFUSED\), so Safari can only show its load-error page: start/);
+  // a navigation that lands probes nothing
+  probes = [];
+  r = await safariRestart({ drivers: [drv('wda')], url: 'http://127.0.0.1:1/x', port: 1, wait: waiter(), navigate, reach: reachDown, log: quiet });
+  assert.deepEqual([r.opened, probes], ['tab', []]);
+});
+
+test('I-069 probeUrl: any HTTP answer is ok (a 404 too); a closed port names its error code', async () => {
+  const http = await import('node:http');
+  const srv = http.createServer((q, s) => { s.statusCode = 404; s.end(); });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const { port } = srv.address();
+  try {
+    assert.deepEqual(await probeUrl(`http://127.0.0.1:${port}/x`), { ok: true, status: 404 });
+  } finally { await new Promise((r) => srv.close(r)); }
+  const down = await probeUrl(`http://127.0.0.1:${port}/`, { timeoutMs: 2000 });
+  assert.deepEqual(down, { ok: false, why: 'ECONNREFUSED' });
+  assert.deepEqual(await probeUrl('data:text/html,'), { ok: false, why: 'not http(s) (data:)' });
+  assert.match(unreachableText('http://h:1/', 'ECONNREFUSED'), /^the server at http:\/\/h:1\/ does not answer from this Mac \(ECONNREFUSED\), so Safari can only show its load-error page: start/);
 });
 
 test('waitForPage: polls until a page answers, else names the last reason after the timeout', async () => {

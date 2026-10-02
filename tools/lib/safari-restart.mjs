@@ -9,6 +9,10 @@
 // page at all does the driver open the URL (a new tab: WDA /url, devicectl --payload-url, simctl openurl; on the
 // Simulator each of those opened a new tab next to the restored one, OBSERVED 2026-10-01); (4) wait for a page whose
 // URL is the target, check it landed (certificate warning, I-003; landedProblem) and print it.
+// I-069: a navigation in the restored tab that shows nothing within the restore window is checked from the Mac: a
+// server that does not answer fails at once, naming it (Safari's load-error page was listed as a data:text/html tab);
+// a server that answers gets the URL in a fresh tab via the driver (that tab may not navigate). A target that never
+// shows also names an unreachable server.
 //
 // Drivers (`auto` takes the first available):
 //   wda        WebDriverAgent (wda.mjs): POST /wda/apps/terminate, /wda/apps/launch; open: /url with Safari's bundle
@@ -151,6 +155,31 @@ export async function waitForPage({ port, target = null, timeoutMs = 30000, poll
   throw e;
 }
 
+/**
+ * Does `url` answer from this Mac? Any HTTP response counts (self-signed certificates accepted); resolves
+ * {ok: true, status} or {ok: false, why} (ECONNREFUSED, timeout, ...), never rejects. Incident I-069: a server that is
+ * gone leaves Safari on its load-error page, which the WebKit proxy listed as a data:text/html tab (OBSERVED
+ * 2026-10-02, fix-image-size), so a navigation to it never "lands".
+ */
+export function probeUrl(url, { timeoutMs = 3000 } = {}) {
+  return new Promise((res) => {
+    let u;
+    try { u = new URL(url); } catch { return res({ ok: false, why: 'not a URL' }); }
+    if (!/^https?:$/.test(u.protocol)) return res({ ok: false, why: `not http(s) (${u.protocol})` });
+    let done = false;
+    const end = (v) => { if (!done) { done = true; res(v); } };
+    import(u.protocol === 'https:' ? 'node:https' : 'node:http').then((m) => {
+      const req = m.request(u, { method: 'HEAD', rejectUnauthorized: false, agent: false, timeout: timeoutMs }, (r) => { r.resume(); end({ ok: true, status: r.statusCode }); });
+      req.on('timeout', () => { req.destroy(); end({ ok: false, why: `no answer within ${Math.round(timeoutMs / 1000)} s` }); });
+      req.on('error', (e) => end({ ok: false, why: e.code || e.message }));
+      req.end();
+    }, (e) => end({ ok: false, why: e.message }));
+  });
+}
+
+/** The error for a target whose server does not answer from the Mac (I-069). */
+export const unreachableText = (target, why, restoredUrl = null) => `the server at ${target} does not answer from this Mac (${why}), so Safari can only show its load-error page${restoredUrl && /^data:/.test(restoredUrl) ? ' (the data: tab it lists)' : ''}: start the server again (detached, e.g. nohup, so it survives a Mac sleep), check it with curl, then retry (I-069)`;
+
 /** The proxy's page list (throws when it does not answer). */
 export const proxyTabs = async (port) => (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(3000) })).json();
 
@@ -165,7 +194,7 @@ export async function navigateTab(tab, url) {
  * `url` (see the header). `known`: ids to redact (wda-runner's config). Returns {via, ms, href, opened: 'tab'|'driver'|null};
  * throws an Error with a safe message. `wait` / `navigate` are injectable for the tests.
  */
-export async function safariRestart({ drivers, via = 'auto', url = null, port, timeoutMs = 30000, restoreMs = Math.min(10000, timeoutMs / 3), known = {}, keepHttps = false, log = console.log, wait = waitForPage, navigate = navigateTab, listTabs = proxyTabs } = {}) {
+export async function safariRestart({ drivers, via = 'auto', url = null, port, timeoutMs = 30000, restoreMs = Math.min(10000, timeoutMs / 3), known = {}, keepHttps = false, log = console.log, wait = waitForPage, navigate = navigateTab, listTabs = proxyTabs, reach = probeUrl } = {}) {
   if (!VIAS.includes(via)) throw new Error(`--via must be one of ${VIAS.join(', ')} (got ${safe(via, known)})`);
   if (url && !/^https?:\/\//.test(url)) throw new Error('--url must be an http(s) URL');
   try {
@@ -191,8 +220,28 @@ export async function safariRestart({ drivers, via = 'auto', url = null, port, t
     try { restored = await wait({ port, target: null, timeoutMs: target ? Math.min(restoreMs, timeoutMs) : timeoutMs }); } catch (e) { if (!target || !e.noPage) throw e; }
     let landed = restored?.landed;
     if (target) {
-      if (restored) { await navigate(restored.tab, target); opened = 'tab'; } else { log(`Safari restored no page: opening ${safe(target, known)} via ${d.name} (a new tab)`); await d.open(target); opened = 'driver'; }
-      ({ landed } = await wait({ port, target, timeoutMs }));
+      const restoredUrl = restored?.landed?.href || restored?.tab?.url || null;
+      let reached = null;
+      const reachable = async () => (reached ??= await reach(target));
+      const openNew = async (why) => { log(`${why}: opening ${safe(target, known)} via ${d.name} (a new tab)`); await d.open(target); opened = 'driver'; };
+      try {
+        if (restored) {
+          await navigate(restored.tab, target); opened = 'tab';
+          // I-069: the navigation in the restored tab must land within the restore window; if it does not, either the
+          // server is gone (fail now, saying so) or that tab does not navigate (a restored error page): a fresh tab
+          try { ({ landed } = await wait({ port, target, timeoutMs: Math.min(restoreMs, timeoutMs) })); } catch (e) {
+            if (!e.noPage) throw e;
+            const r = await reachable();
+            if (!r.ok) throw new Error(unreachableText(target, r.why, restoredUrl));
+            await openNew(`the restored tab${/^data:/.test(restoredUrl || '') ? ' (a data: page)' : ''} did not load it within ${Math.round(Math.min(restoreMs, timeoutMs) / 1000)} s`);
+          }
+        } else await openNew('Safari restored no page');
+        if (opened === 'driver') ({ landed } = await wait({ port, target, timeoutMs }));
+      } catch (e) {
+        if (!e.noPage) throw e;
+        const r = await reachable();
+        throw new Error(r.ok ? e.message : `${e.message}; ${unreachableText(target, r.why, restoredUrl)}`);
+      }
       const p = landedProblem(landed, target, info);
       if (p) throw new Error(p);
     }
