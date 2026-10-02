@@ -211,6 +211,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   and the 50 % margin). Next: RBi40pt (+ the 4 row-title entries), own P-row, deterministic pixel A/A first, check
   --on bplus, Sim W n>=3. User told T-001 #16.
   PHONE BACKLOG add (g): fwreskip phone G/F fling check (lead 03:3xZ), before it may land.
+  03:5xZ fwreskip: review-fwreskip-2 recheck on f7f24f4 ACCEPT on README and data (high confidence; numbers recomputed,
+  the v7 recount judged legitimate). (iii) idle closed by the lead: "no idle cost found (n=4 windows from 2 holds per
+  arm, A/A)". The owner makes wording-only edits (new sha to follow, no re-review). The user is asked (i) the corner
+  pixels and (ii) the up-pass trade in T-005 #19 (--ask). Landing gate (iv): the phone G/F fling check, backlog (g),
+  when the iPhone is on USB.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6

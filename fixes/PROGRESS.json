@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T03:36:00Z",
+ "updatedAt": "2026-10-02T03:58:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -222,7 +222,7 @@
    "fixes": "Around the middle of the page, two frames cost about 20 ms each, mostly layout, while a large section (the people list) is still being drawn although it is about to leave the view. The chosen fix sets it aside earlier, so that work is not done while it cannot be seen.",
    "felt": {"answer": "not-yet"},
    "gate": "Lands only after checks that nothing on screen changes and a finger fling test on the real iPhone; no speed test while timing is on hold.",
-   "next": "The second review found it rosier than the data; Simulator repeats now. It can't land before a finger test on the real iPhone, which waits for the phone to be plugged in.",
+   "next": "Data accepted by the independent review. Two small questions are with you (the corner pixels after a jump, and the trade on the way up). It lands after a finger test on the real iPhone, once the phone is plugged in.",
    "owner": "fix-scroll-engine (from fix-scene-scope)",
    "checks": [],
    "details": [
@@ -230,7 +230,8 @@
     "00:4xZ (fix-scroll-engine): r6-r9 'stale layout state in #profile-showcase/#people, cured by re-creating its children' WITHDRAWN (probe artifact: hiding the shells shrank #people across the fwFar re-skip edge, so fwReskip deferred it). Revised, OBSERVED (Sim): each containment flip (y2988 hero deferred, y3047 platform-card will-change) costs ~20 ms only while #people (1327 px) is still rendered; its re-skip comes at ~y3539. Next r11 localizes the box; fix (a) re-skip #people no later than the hero or (b) structural #profile change.",
     "00:5xZ: r11/r12 box = the whole rendered profile deck relays out (~20 ms, OBSERVED, Sim); #people deferred at its correct size ~1-2 ms (attribution). Lead signed (a1h): when the hero far re-skips, also re-skip the next inactive deferRendering section wholly above the viewport until the hero un-skips (keeps hysteresis; own scroll-engine code). Checks before landing: geometry, A/A pixels Chrome + Sim, Sim W Layout <=3 ms at 2988/3047, jumps with no blank frame, deck swipe count; no timing A/B.",
     "02:0xZ review-fwreskip on 6fd09a6 NEEDS-WORK: B1 Chrome one-frame #people placeholder after an instant jump from the band ~[3659, 3892] (C11 queued un-skip); B2 short reversal not run; B3 no idle triple; B4 scenarios list incomplete. Lead: no waiver; variant (a): synchronous un-skip of the fwWith partner in the rE scroll listener within ~1 vh, rule restricted to the hero's partner; rerun jump checks with controls n>=5, Sim reversal, idle triple; re-review. User told (T-005), incl. a correction: 'settled pixels identical' was too strong.",
-    "03:3xZ review-fwreskip-2 on 3ce8ce3 NEEDS-WORK: review-1 B1/B2/B4 closed. Blocking: down-pass overstated (first descent per run B 2,2,2 / P 0,0,3 / A 2,2,3; down2 P 1 vs B 2); Sim idle not settled (Paint +23 % at 3100, n=1, no A arm); no-initiator Layouts sit at the extra #people un-skip; undeclared touch/async-scroll risk (iOS UI process scrolls ahead of iE, which un-skips from the main thread). Lead: no landing before a phone G/F fling check; Sim repeats B P A A P B (6 x 3.5 min). User told T-005 #18."
+    "03:3xZ review-fwreskip-2 on 3ce8ce3 NEEDS-WORK: review-1 B1/B2/B4 closed. Blocking: down-pass overstated (first descent per run B 2,2,2 / P 0,0,3 / A 2,2,3; down2 P 1 vs B 2); Sim idle not settled (Paint +23 % at 3100, n=1, no A arm); no-initiator Layouts sit at the extra #people un-skip; undeclared touch/async-scroll risk (iOS UI process scrolls ahead of iE, which un-skips from the main thread). Lead: no landing before a phone G/F fling check; Sim repeats B P A A P B (6 x 3.5 min). User told T-005 #18.",
+    "03:5xZ review-fwreskip-2 recheck on f7f24f4: ACCEPT on README and data (high confidence; numbers recomputed, v7 recount legitimate). (iii) idle closed by the lead: no idle cost found (n=4 windows from 2 holds per arm, A/A). Owner makes wording-only edits (new sha, no re-review). User asked (i) corner pixels and (ii) the up-pass trade in T-005 #19. Landing gate (iv): phone G/F fling check when the iPhone is on USB."
    ]
   },
   {
