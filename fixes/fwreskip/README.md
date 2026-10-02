@@ -609,6 +609,33 @@ Run by iphone-runner on 2026-10-02 after the rest arm (same ticket, script and s
 - **Decision** (same rule as the rest arm): condition 1 holds and condition 2 fails. The cost moved from the fling to the pause. The UI-process half of the FAIL rule is "not checked on the phone since T-018".
 - P-060 no-pause items: the ticket expected the un-skip to fall inside the fling here. It did not, because of the WDA fling's start delay. That item can't be tested with the G driver; only a finger (F) run could.
 
+### Variant search after G1b: keep the fling fix, lose the idle frame (Sim only, attribution)
+
+The lead asked for this on 2026-10-02 after G1b, Simulator only, no new phone timing. Each hold is a Sim T run with a pause in the band (`TDOWN=3100 TUP=2500 TDOWN2=3100`), 2 holds per arm. B = RB; Q = the exact P2b build G1b ran (`snap-g1b2/P2b`); P = the variant. Window: 200 ms from the `#people` flip (`flipwin.py`).
+
+| hold | variant | P2b (Q) rAF max dt | variant rAF max dt | what happened |
+|---|---|---|---|---|
+| v31 | P3: every profile panel `content-visibility: hidden`, `#people` un-skips, then one panel revealed per frame (active first) | 30 / 33 | 35 / 45 | The composite did spread (19, 12, 6, 7, 6, 7 ms), but each reveal cost one full ~18 ms layout (the same size as any layout on this page). Worse; dropped. |
+| v32 | P4: `#people` un-skips under an inline `visibility: hidden`, unhidden 2 frames later | 35 / 33 | 31 / 33 | The ~26 ms composite still follows the un-skip's layout (P2b 30 / 27); the unhide frame is cheap (Composite 7.6). No split; dropped. |
+
+- B at the same offset: 17 / 17 in both holds.
+- **OBSERVED, in our setup, cause unknown:** the composite after the un-skip does not come from painting `#people`'s content (P4 hides it and the composite stays). Layer creation is a guess, not checked.
+- **Probe effect found:** in every Sim T hold so far, the un-skip's Layout ran inside the 300 ms timer, not in the next rendering update. The reason is the probe's MutationObserver: it reads `scrollY` in the task that flipped the attribute, and that read lays the page out. So the Sim has always shown the layout and the composite in two frames (25-30, then 30-35), while the phone (no such read) shows one 45-55 ms frame. `vfix.mjs` now has `MOY=0` (no `scrollY` read in the observer) for the next hold.
+- Next candidate, P5: P2b plus one forced read (`offsetHeight`) right after the un-skip in the timer. The layout then runs in the timer task, and only the composite is left for the rendering update. The lead approved one Sim T hold, B / Q / P5, with `MOY=0`.
+
+**P5 split criterion, registered 2026-10-02 before the hold.**
+- All numbers come from the `MOY=0` hold. That changes the probe, so they don't compare with any earlier Sim hold (v1-v32).
+- Window: 200 ms from the `#people` `active` flip, per hold (2 holds per arm), read with `flipwin.py` and `flipdetail.py`.
+- **Precondition (the Sim reproduces the phone's one frame).** In both Q holds, the un-skip's Layout (≥ 10 ms) runs inside a RenderingFrame, not inside the TimerFire. The same frame also holds a Composite of ≥ 10 ms.
+  - If that fails, the check is **inconclusive**: the Sim can't show the difference P5 aims at. P5 then goes to the phone only by the lead's call.
+- **P5 splits** when, in both P5 holds:
+  - (a) the un-skip's Layout (≥ 10 ms) runs inside the TimerFire, and the following Composite (≥ 10 ms) runs in a later RenderingFrame;
+  - (b) P5's rAF max dt is at least 8 ms below the Q hold's max dt in the same hold order.
+- **P5 does not split** when (a) or (b) fails in either hold.
+- **Control:** B's rAF max dt in the window is ≤ 20 ms. Otherwise the hold is void, and I re-run once.
+- The criterion says nothing about the phone. A split on the Sim only earns P5 a phone block.
+- Moving the un-skip into a scroll step does not help: in the descent it puts back the cost fwreskip removes, and in the fling it is rev 2.1 (65-92 ms on the phone). A longer idle delay only moves the same frame.
+
 ## Risks, conflicts, follow-ups
 
 - **Up-pass Layout (open item ii).** See above.

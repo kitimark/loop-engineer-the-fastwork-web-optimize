@@ -19,6 +19,8 @@ const BOOT = readFileSync(new URL('./boot.js', import.meta.url), 'utf8');
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { runAsync } from '../../../tools/lib/wip.mjs';
+// MOY=0 (MODE T): the MutationObserver logs no scrollY. Its scrollY read lays the page out inside the task that
+// flipped the attribute (the idle un-skip's timer), so with it the Sim always splits layout and composite (v31/v32).
 // FLOG=1 (MODE T): install flinglog.mjs (v3) after the load and print its summary per run (functional check of the logger).
 const FLOG = process.env.FLOG === '1' ? await import('./flinglog.mjs') : null;
 const flsum = (fl) => {
@@ -77,7 +79,7 @@ if (MODE === 'T') {
     c.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
     for (const [m, p] of [['Page.disable', {}], ['Page.enable', {}], ['Timeline.enable', {}], ['Timeline.setInstruments', { instruments: ['Timeline'] }], ['Timeline.start', { maxCallStackDepth: 5 }]]) { try { await c.send(m, p); } catch (e) { console.error(m, String(e.message || e)); } }
     const r = await ev(`
-      const fr = []; let last = performance.now(), stop = false; const syncT = performance.now(); performance.mark('tl-sync'); const mo = []; const MO = new MutationObserver((ms) => { const t = Math.round(performance.now() * 10) / 10; for (const m of ms) { const e = m.target; mo.push([t, Math.round(scrollY), (e.id ? '#' + e.id : '.' + String(e.className).split(' ')[0]), m.attributeName.replace('data-start-selling-', ''), e.getAttribute(m.attributeName)]); } }); MO.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['data-start-selling-render', 'data-start-selling-scene', 'data-fw-wc'] });
+      const fr = []; let last = performance.now(), stop = false; const syncT = performance.now(); performance.mark('tl-sync'); const mo = []; const MO = new MutationObserver((ms) => { const t = Math.round(performance.now() * 10) / 10; for (const m of ms) { const e = m.target; mo.push([t, ${process.env.MOY === '0' ? 'null' : 'Math.round(scrollY)'},(e.id ? '#' + e.id : '.' + String(e.className).split(' ')[0]), m.attributeName.replace('data-start-selling-', ''), e.getAttribute(m.attributeName)]); } }); MO.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['data-start-selling-render', 'data-start-selling-scene', 'data-fw-wc'] });
       const loop = (t) => { fr.push([Math.round(t * 10) / 10, Math.round((t - last) * 10) / 10, Math.round(scrollY), hero.getAttribute(R), people.getAttribute(R)]); last = t; if (!stop) requestAnimationFrame(loop); };
       requestAnimationFrame(loop);
       await wait(2000); const m = { down: [performance.now()] };
