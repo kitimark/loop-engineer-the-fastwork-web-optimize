@@ -78,8 +78,9 @@
 // (shelf B2). Invariant: the group's expiresAt >= every reader's hard deadline (a process reader: acquiredAt + maxSec
 // + killGraceSec, `lock.mjs run` kills it at maxSec; a lease reader: acquiredAt + maxSec), so old code clears the group
 // only when no reader can still run. A reader joins while the weights fit the switch file's cap (default
-// SHARED_LANE.defaultCap 3, at most SHARED_LANE.cap 4), load1 <= sharedJoinLoad() (default 2x the cpu count; the
-// switch file's joinLoad; not for the opener), and no exclusive waiter is queued (writer preference), except the
+// SHARED_LANE.defaultCap 3, at most SHARED_LANE.cap 4), host CPU busy <= sharedJoinBusy() over the reader's own
+// polls (default 75 %; the switch file's joinBusy; I-051), or before its first busy sample load1 <= sharedJoinLoad()
+// (default 2x the cpu count; the switch file's joinLoad); neither for the opener, and no exclusive waiter is queued (writer preference), except the
 // readers queued before the group opened, for batchJoinSec. The group opens at a hand-over like a short job (the short
 // lane, its drain budget, I-030 and lead moves apply to reader entries); right after a group, the exclusive waiters go
 // first, but never before a reader queued ahead of them, and a reader queued readerMaxWaitSec goes before any exclusive
@@ -125,7 +126,10 @@ export const GATED = Object.freeze({ 'chrome-measure': true });
 export const SHARED_LANE = Object.freeze({
   cap: 4, // weight units of all readers at once: the most the lead's switch may allow (--cap)
   defaultCap: 3, // the cap when the switch names none (the lead, 2026-10-02: 3 Chrome agents in parallel)
-  joinLoadPerCpu: 2, // a joining reader needs load1 <= this x the cpu count, unless the switch names --join-load
+  joinLoadPerCpu: 2, // a joining reader needs load1 <= this x the cpu count, unless the switch names --join-load; only
+  // before its first CPU busy sample (I-051)
+  joinBusyPct: 75, // I-051: a joining reader needs host CPU busy <= this (% of all cores), unless the switch names --join-busy
+  busyWindowMs: 1000, // I-051: a waiting reader's busy sample spans at least this much of its own polls
   maxSec: 300, // per reader; `lock.mjs run` kills its command at maxSec (SIGKILL 3 s later)
   batchJoinSec: 30, // readers queued before the group opened may join this long despite a waiting writer
   expiryGraceSec: 10, // group expiresAt = the latest reader deadline + this
@@ -141,6 +145,22 @@ export const GROUP_OWNER = '(shared)';
  * count (FW_LOCK_SHARED_JOIN_LOAD overrides both, for tests). Only readers join a loaded host; timing stays exclusive.
  */
 export const sharedJoinLoad = (r = 'chrome-measure') => Number(process.env.FW_LOCK_SHARED_JOIN_LOAD) || sharedSwitch(r).joinLoad || SHARED_LANE.joinLoadPerCpu * os.cpus().length;
+/**
+ * I-051: a joining reader needs host CPU busy <= this, measured over its own polls (cpuTimes deltas, at least
+ * busyWindowMs): the switch file's joinBusy (`--join-busy P`), else joinBusyPct (FW_LOCK_SHARED_JOIN_BUSY overrides
+ * both, for tests). load1 lags a Simulator boot by minutes (load1 132 at 33-42 % busy, 2026-10-02), so it applies only
+ * until the reader has its first busy sample.
+ */
+export const sharedJoinBusy = (r = 'chrome-measure') => Number(process.env.FW_LOCK_SHARED_JOIN_BUSY) || sharedSwitch(r).joinBusy || SHARED_LANE.joinBusyPct;
+/** Cumulative cpu times of all cores, {idle, total} (ms): two of them give cpuBusyPct. */
+export function cpuTimes() {
+  return os.cpus().reduce((a, c) => { const t = c.times; a.idle += t.idle; a.total += t.user + t.nice + t.sys + t.idle + t.irq; return a; }, { idle: 0, total: 0 });
+}
+/** Host CPU busy (% of all cores) between two cpuTimes() snapshots; null when no cpu time passed. */
+export function cpuBusyPct(a, b) {
+  const dt = b.total - a.total;
+  return dt > 0 ? Math.round(1000 * (1 - (b.idle - a.idle) / dt)) / 10 : null;
+}
 const switchFile = (r) => join(lockDir(), `${r}.shared.json`);
 export const isGroup = (h) => !!(h && h.shared === true);
 const knownGroup = (h) => isGroup(h) && h.format === SHARED_FORMAT && Array.isArray(h.readers);
@@ -184,24 +204,25 @@ export function sharedEnv(r, token, prev = process.env.FW_LOCK_SHARED) {
   return heldEnv(r, token, prev);
 }
 
-/** The lead's switch for the shared lane of `r`: {enabled, cap, joinLoad?}. Absent or unreadable = off. */
+/** The lead's switch for the shared lane of `r`: {enabled, cap, joinLoad?, joinBusy?}. Absent or unreadable = off. */
 export function sharedSwitch(r) {
   const x = readJson(switchFile(r), null);
   const cap = Number.isInteger(x?.cap) && x.cap >= 1 && x.cap <= SHARED_LANE.cap ? x.cap : SHARED_LANE.defaultCap;
-  return { enabled: x?.enabled === true, cap, ...(x?.joinLoad > 0 ? { joinLoad: x.joinLoad } : {}) };
+  return { enabled: x?.enabled === true, cap, ...(x?.joinLoad > 0 ? { joinLoad: x.joinLoad } : {}), ...(x?.joinBusy > 0 && x.joinBusy <= 100 ? { joinBusy: x.joinBusy } : {}) };
 }
 
 /** Turn the shared lane of `r` on or off (the lead only; audited in locks/audit.log). Readers already in a group stay. */
-export async function setSharedSwitch(r, { on, by, reason, cap, joinLoad } = {}) {
+export async function setSharedSwitch(r, { on, by, reason, cap, joinLoad, joinBusy } = {}) {
   checkName(r);
   if (!GATED[r]) throw new Error(`the shared lane exists only on ${Object.keys(GATED).join(', ')} (not "${r}")`);
   if (by !== 'lead') throw new Error('only the lead switches the shared lane (--by lead)');
   if (!reason) throw new Error('switching the shared lane needs --reason "<why>" (it goes into the audit log)');
   if (cap !== undefined && !(Number.isInteger(cap) && cap >= 1 && cap <= SHARED_LANE.cap)) throw new Error(`--cap must be an integer 1..${SHARED_LANE.cap} (got ${cap})`);
   if (joinLoad !== undefined && !(Number.isFinite(joinLoad) && joinLoad > 0)) throw new Error(`--join-load must be a load1 value > 0 (got ${joinLoad})`);
+  if (joinBusy !== undefined && !(Number.isFinite(joinBusy) && joinBusy > 0 && joinBusy <= 100)) throw new Error(`--join-busy must be a CPU busy % in (0, 100] (got ${joinBusy})`);
   return withGuard(r, () => {
     const before = readJson(switchFile(r), null);
-    const after = { enabled: !!on, ...(cap !== undefined ? { cap } : {}), ...(joinLoad !== undefined ? { joinLoad } : {}), by, reason, at: iso(Date.now()) };
+    const after = { enabled: !!on, ...(cap !== undefined ? { cap } : {}), ...(joinLoad !== undefined ? { joinLoad } : {}), ...(joinBusy !== undefined ? { joinBusy } : {}), by, reason, at: iso(Date.now()) };
     writeJson(switchFile(r), after);
     appendFileSync(join(lockDir(), 'audit.log'), JSON.stringify({ ts: after.at, by, reason, resource: r, code: 'shared-switch', file: `${r}.shared.json`, fix: on ? 'on' : 'off', before, after }) + '\n');
     return sharedSwitch(r);
@@ -460,7 +481,7 @@ function gateHolding(w, now, T = THRESHOLDS) {
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, sharedHeld, load1, ncpu } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, sharedHeld, load1, ncpu, busyPct } = opts;
   let { ttlSec, queueTtlSec = 600, short = false } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
   if (noTiming && short) throw new Error('--no-timing is for normal holds (builds, CPU work); a short job passes the host gate already');
@@ -526,7 +547,7 @@ export async function tryAcquire(r, opts) {
     const lg = readJson(lastGrantFile(r), {});
     const seen = effectiveLastGrant(lg, h);
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
-    if (lane) return readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap: sw.cap, queueTtlSec, load1, ncpu, T });
+    if (lane) return readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap: sw.cap, queueTtlSec, load1, ncpu, busyPct, T });
     let mine = q.findIndex((w) => w.owner === owner && !w.shared);
     // the switch went off while this shared job waited as a reader: its reader entry becomes this entry, in place (N10)
     if (shared && mine < 0) mine = q.findIndex((w) => w.shared && sameWaiter(w, owner, kind, pid));
@@ -615,7 +636,7 @@ export function groupGrant(g, now) {
  * Inside the guard, the shared lane on: join the live group, open one on a free lock at this reader's turn, or queue
  * (a short-lane entry with `shared: true`, keyed by owner + pid, or owner + checkout for a lease reader).
  */
-function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap, queueTtlSec, load1, ncpu, T }) {
+function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap, queueTtlSec, load1, ncpu, busyPct, T }) {
   // its reader entry, or the switch-off entry it queued with before the lead switched the lane on (N10): kept in place
   const isMine = (w) => (w.shared || w.functional) && sameWaiter(w, owner, kind, pid);
   const mine = q.findIndex(isMine);
@@ -645,8 +666,15 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
       && (used + (w.weight || 1) <= cap || now - Date.parse(w.since) >= SHARED_LANE.readerBypassSec * 1000));
     if (ahead) return wait(`"${ahead.owner}" queued first (readers join in queue order)`);
     if (used + weight > cap) return wait(`the shared group is full (weight ${used}/${cap}; this job needs ${weight})`);
-    const ld = load1 ?? os.loadavg()[0], lim = ncpu ?? sharedJoinLoad(r);
-    if (ld > lim) return wait(`load1 ${Math.round(ld * 10) / 10} > ${lim}: no new reader joins a loaded host`);
+    // I-051: CPU busy over the reader's own polls decides; load1 (it lags a Simulator boot by minutes) only before the
+    // reader's first busy sample
+    if (Number.isFinite(busyPct)) {
+      const lim = sharedJoinBusy(r);
+      if (busyPct > lim) return wait(`CPU ${Math.round(busyPct)} % busy > ${lim} %: no new reader joins a busy host`);
+    } else {
+      const ld = load1 ?? os.loadavg()[0], lim = ncpu ?? sharedJoinLoad(r);
+      if (ld > lim) return wait(`load1 ${Math.round(ld * 10) / 10} > ${lim}: no new reader joins a loaded host`);
+    }
     const x = reader();
     const g = groupWith(h, [...h.readers, x]);
     writeJson(holderFile(r), g);
@@ -748,8 +776,10 @@ export async function renew(r, { owner, ttlSec }) {
  * ({FW_LOCK_SHARED} for a reader, a re-entered slot or an off-mode shared hold; {FW_LOCK_HELD} for an exclusive hold,
  * plus FW_LOCK_SHARED when a shared acquire re-entered it).
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, shared = false, weight = 1, maxSec, held = process.env.FW_LOCK_HELD, sharedHeld = process.env.FW_LOCK_SHARED, timeoutSec = 3600, pollMs = 2000, maxPollMs = short || shared ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, shared = false, weight = 1, maxSec, held = process.env.FW_LOCK_HELD, sharedHeld = process.env.FW_LOCK_SHARED, timeoutSec = 3600, pollMs = 2000, maxPollMs = short || shared ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false, cpuSampler = cpuTimes, busyWindowMs = SHARED_LANE.busyWindowMs } = {}) {
   const t0 = Date.now();
+  // I-051: a waiting reader measures host CPU busy over its own polls (no extra window inside the guard)
+  let cpuBase = shared ? { at: Date.now(), t: cpuSampler() } : null, busyPct;
   let lastLog = 0, wait = pollMs;
   const gated = !!GATED[r] && !short && !shared && !noTiming;
   let host = gated ? { quiet: null, reasons: ['not measured yet'] } : undefined;
@@ -758,7 +788,12 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
   let gateSleptMs = 0, sleptLast = false;
   const myEntry = shared ? (w) => (!!w.shared || !!w.functional) && (kind !== 'process' || w.pid === process.pid) : (w) => !w.shared;
   for (;;) {
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, maxSec, held, sharedHeld, host, thresholds: T, noTiming });
+    if (cpuBase && Date.now() - cpuBase.at >= busyWindowMs) {
+      const t = cpuSampler(), b = cpuBusyPct(cpuBase.t, t);
+      if (b !== null) busyPct = b;
+      cpuBase = { at: Date.now(), t };
+    }
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, maxSec, held, sharedHeld, host, thresholds: T, noTiming, busyPct });
     // queued behind someone, or the head waiter held at the host gate on a host measured not quiet (ts-lock-bundle (a);
     // not the first, unmeasured round every gated grant takes): no system sleep while anyone waits (I-026 reopened);
     // a gate wait is minutes of waiting too, and a sleep in it only stretches it (I-033)

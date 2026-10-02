@@ -202,7 +202,7 @@ test('session: <cmd> fails -> its exit code, cleanup done; --window shown opens 
 
 test('ts-lock-share: session --functional in a shared reader slot of weight 3 (switch on) or its short form (switch off); the simulator lock held; timing commands refused; a light slot refused', async () => {
   const udid = setup();
-  const e = { ...env, FW_LOCK_SHARED_JOIN_LOAD: '1000' };
+  const e = { ...env, FW_LOCK_SHARED_JOIN_LOAD: '1000', FW_LOCK_SHARED_JOIN_BUSY: '100' };
   assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: e }).code, 0);
   const out = join(dir, 'fn.json'), gScript = join(dir, 'fn-gesture.json');
   writeFileSync(gScript, JSON.stringify({ name: 'fn', version: 1, screen: [430, 932], steps: [{ type: 'stroke', dir: 'up', px: 300, ms: 300, profile: 'minjerk' }] }));

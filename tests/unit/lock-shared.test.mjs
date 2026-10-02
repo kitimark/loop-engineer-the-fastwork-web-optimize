@@ -33,7 +33,7 @@ const ms = (s) => s * 1000;
 
 test('config: one constant holds the cap, the per-job weights and the bounds; the join load is 2x the cpu count', () => {
   assert.deepEqual(L.SHARED_LANE, {
-    cap: 4, defaultCap: 3, joinLoadPerCpu: 2, maxSec: 300, batchJoinSec: 30, expiryGraceSec: 10, killGraceSec: 5, readerMaxWaitSec: 600, readerBypassSec: 300,
+    cap: 4, defaultCap: 3, joinLoadPerCpu: 2, joinBusyPct: 75, busyWindowMs: 1000, maxSec: 300, batchJoinSec: 30, expiryGraceSec: 10, killGraceSec: 5, readerMaxWaitSec: 600, readerBypassSec: 300,
     weights: { check: 1, probe: 1, 'bench-mech': 1, 'test-chrome-fn': 1, 'npm-test': 2, simulator: 3 },
   });
   assert.ok(Object.isFrozen(L.SHARED_LANE) && Object.isFrozen(L.SHARED_LANE.weights));
@@ -41,6 +41,13 @@ test('config: one constant holds the cap, the per-job weights and the bounds; th
   const prev = process.env.FW_LOCK_SHARED_JOIN_LOAD;
   delete process.env.FW_LOCK_SHARED_JOIN_LOAD;
   try { assert.equal(L.sharedJoinLoad(), 2 * os.cpus().length); } finally { if (prev !== undefined) process.env.FW_LOCK_SHARED_JOIN_LOAD = prev; }
+  const prevB = process.env.FW_LOCK_SHARED_JOIN_BUSY;
+  delete process.env.FW_LOCK_SHARED_JOIN_BUSY;
+  try {
+    assert.equal(L.sharedJoinBusy(), 75, 'I-051: a joining reader needs CPU busy <= 75 % by default');
+    process.env.FW_LOCK_SHARED_JOIN_BUSY = '100';
+    assert.equal(L.sharedJoinBusy(), 100, 'FW_LOCK_SHARED_JOIN_BUSY overrides it (tests)');
+  } finally { if (prevB !== undefined) process.env.FW_LOCK_SHARED_JOIN_BUSY = prevB; else delete process.env.FW_LOCK_SHARED_JOIN_BUSY; }
   assert.equal(L.GROUP_OWNER, '(shared)');
   assert.equal(L.SHARED_FORMAT, 'rw1');
 });
@@ -59,10 +66,17 @@ test('switch: absent = off; only the lead turns it on or off, with a reason, aud
   const prev = process.env.FW_LOCK_SHARED_JOIN_LOAD;
   delete process.env.FW_LOCK_SHARED_JOIN_LOAD;
   try { assert.equal(L.sharedJoinLoad(R), 12, 'the switch file sets the join load'); } finally { if (prev !== undefined) process.env.FW_LOCK_SHARED_JOIN_LOAD = prev; }
+  await assert.rejects(L.setSharedSwitch(R, { on: true, by: 'lead', reason: 'x', joinBusy: 0 }), /--join-busy/);
+  await assert.rejects(L.setSharedSwitch(R, { on: true, by: 'lead', reason: 'x', joinBusy: 101 }), /--join-busy/);
+  await on({ cap: 4, joinLoad: 12, joinBusy: 60 });
+  assert.deepEqual(L.sharedSwitch(R), { enabled: true, cap: 4, joinLoad: 12, joinBusy: 60 });
+  const prevB = process.env.FW_LOCK_SHARED_JOIN_BUSY;
+  delete process.env.FW_LOCK_SHARED_JOIN_BUSY;
+  try { assert.equal(L.sharedJoinBusy(R), 60, 'the switch file sets the join busy limit (I-051)'); } finally { if (prevB !== undefined) process.env.FW_LOCK_SHARED_JOIN_BUSY = prevB; }
   await L.setSharedSwitch(R, { on: false, by: 'lead', reason: 'rollback' });
   assert.equal(L.sharedSwitch(R).enabled, false);
   const audit = readFileSync(LR.auditFile(), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
-  assert.deepEqual(audit.map((a) => [a.code, a.by, a.reason]), [['shared-switch', 'lead', 'test'], ['shared-switch', 'lead', 'test'], ['shared-switch', 'lead', 'rollback']]);
+  assert.deepEqual(audit.map((a) => [a.code, a.by, a.reason]), [['shared-switch', 'lead', 'test'], ['shared-switch', 'lead', 'test'], ['shared-switch', 'lead', 'test'], ['shared-switch', 'lead', 'rollback']]);
 });
 
 test('argument checks: max-seconds 1..300 and weight 1..cap are required; never with short or no iphone; an owner "(shared)" is no group', async () => {
@@ -219,6 +233,54 @@ test('join load: a joining reader needs load1 <= the cpu count; the opener does 
   assert.equal(b.ok, false);
   assert.match(b.why, /load1 8\.5 > 8/);
   assert.equal((await rd('b', { pid: b.queue[0].pid, load1: 7.9, ncpu: 8 })).ok, true);
+});
+
+test('I-051 join busy: once the reader has a CPU busy sample, busy <= the join busy limit decides, not load1', async () => {
+  const prev = process.env.FW_LOCK_SHARED_JOIN_BUSY;
+  delete process.env.FW_LOCK_SHARED_JOIN_BUSY;
+  try {
+    await on({ cap: 4 });
+    assert.equal((await rd('a', { load1: 139, busyPct: 100 })).ok, true, 'the opener ignores load and busy');
+    const pid = livePid();
+    // seen live 2026-10-02 00:42Z: load1 132 after a Simulator boot while the CPU was 33-42 % busy
+    const quiet = await rd('b', { pid, load1: 132, ncpu: 16, busyPct: 40 });
+    assert.equal(quiet.ok, true, 'a quiet CPU joins although load1 still carries the boot');
+    const busy = await rd('c', { pid: livePid(), load1: 2, ncpu: 16, busyPct: 80 });
+    assert.equal(busy.ok, false, 'a busy CPU keeps joins closed although load1 is low');
+    assert.match(busy.why, /CPU 80 % busy > 75 %/);
+    const first = await rd('c', { pid: busy.queue[0].pid, load1: 20, ncpu: 16 });
+    assert.equal(first.ok, false, 'before its first busy sample a reader goes by load1');
+    assert.match(first.why, /load1 20 > 16/);
+    assert.equal((await rd('c', { pid: busy.queue[0].pid, load1: 20, ncpu: 16, busyPct: 75 })).ok, true, 'busy = the limit joins');
+  } finally { if (prev !== undefined) process.env.FW_LOCK_SHARED_JOIN_BUSY = prev; }
+});
+
+test('I-051 cpu busy: from two cumulative cpu-time snapshots; null without elapsed time', () => {
+  assert.equal(L.cpuBusyPct({ idle: 100, total: 200 }, { idle: 130, total: 300 }), 70);
+  assert.equal(L.cpuBusyPct({ idle: 100, total: 200 }, { idle: 100, total: 200 }), null);
+  const t = L.cpuTimes();
+  assert.ok(t.total > 0 && t.idle >= 0 && t.idle <= t.total);
+});
+
+test('I-051 acquire: a waiting reader samples CPU busy over its own polls and joins once the CPU is quiet', async () => {
+  const prev = [process.env.FW_LOCK_SHARED_JOIN_LOAD, process.env.FW_LOCK_SHARED_JOIN_BUSY];
+  process.env.FW_LOCK_SHARED_JOIN_LOAD = '0.0001'; // load1 alone would never let it join
+  delete process.env.FW_LOCK_SHARED_JOIN_BUSY;
+  try {
+    await on({ cap: 4 });
+    assert.equal((await rd('a', { pid: livePid() })).ok, true);
+    // cumulative snapshots: 100 % busy, 100 % busy, then 10 % busy over the reader's polls
+    const snaps = [{ idle: 0, total: 0 }, { idle: 0, total: 100 }, { idle: 0, total: 200 }, { idle: 90, total: 300 }];
+    let n = 0;
+    const seen = [];
+    const b = await L.acquire(R, { owner: 'b', shared: true, weight: 1, maxSec: 60, held: '', sharedHeld: '', pollMs: 20, maxPollMs: 20, timeoutSec: 10,
+      cpuSampler: () => snaps[Math.min(n++, snaps.length - 1)], busyWindowMs: 0, log: (s) => seen.push(s) });
+    assert.equal(b.mode, 'shared');
+    assert.ok(n >= 4, `it sampled over its polls (${n})`);
+    b.release();
+  } finally {
+    for (const [k, v] of [['FW_LOCK_SHARED_JOIN_LOAD', prev[0]], ['FW_LOCK_SHARED_JOIN_BUSY', prev[1]]]) if (v !== undefined) process.env[k] = v; else delete process.env[k];
+  }
 });
 
 test('exclusivity: no exclusive acquirer (process, lease, short, gated) gets the lock while a reader holds it', async () => {

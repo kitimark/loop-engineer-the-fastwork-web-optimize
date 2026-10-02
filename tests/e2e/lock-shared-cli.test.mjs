@@ -10,7 +10,7 @@ import { tempDir, node, nodeAsync, tool, sleep } from '../helpers.mjs';
 
 const LOCK = tool('lock.mjs');
 let state, env, dir;
-beforeEach(() => { state = tempDir('fw-sharedcli-'); dir = tempDir('fw-sharedcli-out-'); env = { FW_STATE_DIR: state, FW_LOCK_SHARED_JOIN_LOAD: '1000' }; });
+beforeEach(() => { state = tempDir('fw-sharedcli-'); dir = tempDir('fw-sharedcli-out-'); env = { FW_STATE_DIR: state, FW_LOCK_SHARED_JOIN_LOAD: '1000', FW_LOCK_SHARED_JOIN_BUSY: '100' }; });
 const lock = (...a) => node(LOCK, a, { env });
 const lockAsync = (...a) => nodeAsync(LOCK, a, { env });
 const holder = () => { try { return JSON.parse(readFileSync(join(state, 'locks', 'chrome-measure.json'), 'utf8')); } catch { return null; } };
@@ -21,7 +21,7 @@ const turnOn = () => assert.equal(lock('shared', 'on', 'chrome-measure', '--by',
 const job = (name, sec) => `const fs=require('fs');const f=${JSON.stringify(join(dir, name + '.json'))};const s=Date.now();setTimeout(()=>{fs.writeFileSync(f,JSON.stringify({s,e:Date.now(),shared:process.env.FW_LOCK_SHARED||null,held:process.env.FW_LOCK_HELD||null}))},${sec * 1000})`;
 const stamp = (name) => JSON.parse(readFileSync(join(dir, name + '.json'), 'utf8'));
 
-test('switch CLI: lead only, with a reason; cap 3 by default, --cap and --join-load; status shows it only while in use (N1)', () => {
+test('switch CLI: lead only, with a reason; cap 3 by default, --cap, --join-load and --join-busy; status shows it only while in use (N1)', () => {
   const bad = lock('shared', 'on', 'chrome-measure', '--by', 'me', '--reason', 'x');
   assert.equal(bad.code, 1);
   assert.match(bad.stderr, /--by lead/);
@@ -33,6 +33,11 @@ test('switch CLI: lead only, with a reason; cap 3 by default, --cap and --join-l
   assert.match(on4.stdout, /^SHARED LANE chrome-measure: on \(cap 4, join load 12\)/);
   assert.match(lock('status', 'chrome-measure', '--no-host').stdout, /shared lane: on \(cap 4, join load 12\)/);
   assert.match(lock('shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e', '--join-load', '0').stderr, /--join-load/);
+  // I-051: --join-busy (CPU busy % a joining reader needs), shown with the lane
+  const onB = lock('shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e', '--cap', '4', '--join-busy', '60');
+  assert.match(onB.stdout, /^SHARED LANE chrome-measure: on \(cap 4, join busy 60 %\)/);
+  assert.match(lock('status', 'chrome-measure', '--no-host').stdout, /shared lane: on \(cap 4, join busy 60 %\)/);
+  assert.match(lock('shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e', '--join-busy', '101').stderr, /--join-busy/);
   assert.equal(lock('shared', 'off', 'chrome-measure', '--by', 'lead', '--reason', 'e2e').code, 0);
   quiet();
   // off but in use: an off-mode shared lease (a functional stand-in) shows the line

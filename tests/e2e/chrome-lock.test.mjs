@@ -41,7 +41,7 @@ test('under the npm run test:chrome wrapper (one lock.mjs run hold), the file an
 });
 
 test('ts-lock-share: under a `run --shared` wrapper (test:chrome:fn), a shared chromeLock file and its --shared tools re-enter the reader slot', async () => {
-  const env = { ...state(), FW_LOCK_SHARED_JOIN_LOAD: '1000' };
+  const env = { ...state(), FW_LOCK_SHARED_JOIN_LOAD: '1000', FW_LOCK_SHARED_JOIN_BUSY: '100' };
   assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env }).code, 0);
   const r = await runAsync(process.execPath, [LOCK, 'run', 'chrome-measure', '--shared', '--max-seconds', '60', '--weight', 'test-chrome-fn', '--owner', 'test-chrome-fn', '--', process.execPath, '--test', '--test-timeout=5000', FIXTURE], { env: { ...env, FIXTURE_SHARED: '1' }, timeout: 60000 });
   assert.equal(r.code, 0, r.out);
@@ -56,7 +56,7 @@ test('ts-lock-share: under a `run --shared` wrapper (test:chrome:fn), a shared c
 
 test('review-lock-share B1: a shared chromeLock file run on its own takes the plain exclusive hold (no bounded shared or short hold nobody would kill), switch off or on', async () => {
   for (const on of [false, true]) {
-    const env = { ...state(), FW_LOCK_SHARED_JOIN_LOAD: '1000' };
+    const env = { ...state(), FW_LOCK_SHARED_JOIN_LOAD: '1000', FW_LOCK_SHARED_JOIN_BUSY: '100' };
     if (on) assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env }).code, 0);
     const out = join(tempDir('fw-chromelock-b1-'), 'holder.json');
     const r = await runFixture(env, 20000, { FIXTURE_SHARED: '1', FIXTURE_HOLDER_OUT: out });
