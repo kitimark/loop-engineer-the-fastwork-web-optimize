@@ -23,6 +23,9 @@
 //     node fixes/countdown-faces/x1.mjs phone --url http://lan:<twin>/ --arm C|V --build base|poc --label X1-<n><arm> \
 //       [--run n] [--warmup] [--lt] [--resume-check] [--no-park]
 //   Score: node fixes/countdown-faces/x1.mjs score <x1 run json>...
+// Every scroll is behavior 'instant': the page sets html { scroll-behavior: smooth } (CSS 11738), so a bare
+// scrollTo(0, y) animates (fixed after Simulator session 1, which it voided). The sequence first visits pastHero
+// once so the panel clock is mounted in both arms.
 // Output: out/countdown-faces/x1/<label>.json (phone) or x1-sim-<stamp>.json. Served-hash check: a wrong
 // nodes/2.DyWL8TcE.js hash makes the run VOID (exit 3).
 import { spawn, execFileSync } from 'node:child_process';
@@ -77,10 +80,12 @@ const RESUME = (yHide, hideMs) => `(async () => {
   const X = window.__x1; const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const el = document.createElement('div'); el.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;pointer-events:none;opacity:0';
   document.body.append(el);
-  scrollTo(0, ${yHide}); await wait(${hideMs});
+  scrollTo({ top: ${yHide}, behavior: 'instant' }); await wait(${hideMs});
   const out = []; let n = 0, jumped = false;
-  const ro = new ResizeObserver(() => { out.push({ t: performance.now(), y: scrollY, jumped, p: X.painted() }); });
-  await new Promise((done) => { const loop = () => { ro.unobserve(el); ro.observe(el); if (++n === 4) setTimeout(() => { jumped = true; scrollTo(0, 0); }, 0); if (n < 24) requestAnimationFrame(loop); else done(); }; requestAnimationFrame(loop); });
+  const timer = document.querySelector('[role=timer]');
+  const eff = () => { let o = 1; for (let e = timer; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity); return Math.round(o * 1000) / 1000; };
+  const ro = new ResizeObserver(() => { out.push({ t: performance.now(), y: scrollY, jumped, eo: X.exitOpacity(), op: eff(), p: X.painted() }); });
+  await new Promise((done) => { const loop = () => { ro.unobserve(el); ro.observe(el); if (++n === 4) setTimeout(() => { jumped = true; scrollTo({ top: 0, behavior: 'instant' }); }, 0); if (n < 24) requestAnimationFrame(loop); else done(); }; requestAnimationFrame(loop); });
   ro.disconnect(); el.remove(); return out;
 })()`;
 
@@ -146,8 +151,11 @@ async function sequence(c, range, { lt, resumeCheck }) {
   if ((await ev(INSTALL)) === 'had') console.error('x1: recorder already installed (no reload?)');
   const g = await ev('__x1.geom()');
   const ys = await ev(YS);
+  // prime: visit pastHero once, so the panel clock is mounted in both arms before the top window (session-1 confound)
+  await ev(`(scrollTo({ top: ${ys.pastHero}, behavior: 'instant' }), 0)`); await sleep(2500);
+  await ev(`(scrollTo({ top: 0, behavior: 'instant' }), 0)`); await sleep(1500);
   // heroExit: the first y where --exit-opacity reads 0 (analytic guess from .hero-track, then verified; else searched)
-  const opAt = async (y) => { await ev(`(scrollTo(0, ${y}), 0)`); await evAsync(FRAMES2, '__x1f'); const v = await ev('__x1.exitOpacity()'); return v === null || v === '' ? NaN : Number(v); };
+  const opAt = async (y) => { await ev(`(scrollTo({ top: ${y}, behavior: 'instant' }), 0)`); await evAsync(FRAMES2, '__x1f'); const v = await ev('__x1.exitOpacity()'); return v === null || v === '' ? NaN : Number(v); };
   const exitOpacityAtVh = await opAt(ys.vh);
   let yExit = ys.exitGuess;
   if (!((await opAt(yExit)) === 0 && (await opAt(yExit - 8)) > 0)) {
@@ -156,8 +164,8 @@ async function sequence(c, range, { lt, resumeCheck }) {
     yExit = hi;
   }
   const pos = { top: 0, heroExit: yExit + 8, pastHero: ys.pastHero };
-  await ev('(scrollTo(0, 0), 0)'); await sleep(3000);
-  const res = { geom: g, exitOpacityAtVh, yExit, exitOpacityAtHeroExit: await (async () => { await ev(`(scrollTo(0, ${pos.heroExit}), 0)`); await evAsync(FRAMES2, '__x1f'); const v = await ev('__x1.exitOpacity()'); await ev('(scrollTo(0, 0), 0)'); await sleep(2000); return v; })(), positions: {} };
+  await ev("(scrollTo({ top: 0, behavior: 'instant' }), 0)"); await sleep(3000);
+  const res = { geom: g, exitOpacityAtVh, yExit, exitOpacityAtHeroExit: await (async () => { await ev(`(scrollTo({ top: ${pos.heroExit}, behavior: 'instant' }), 0)`); await evAsync(FRAMES2, '__x1f'); const v = await ev('__x1.exitOpacity()'); await ev("(scrollTo({ top: 0, behavior: 'instant' }), 0)"); await sleep(2000); return v; })(), positions: {} };
   let recs = [];
   c.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
   await c.send('Page.disable'); await c.send('Page.enable');
@@ -165,9 +173,10 @@ async function sequence(c, range, { lt, resumeCheck }) {
   await c.send('Timeline.setInstruments', { instruments: ['Timeline'] });
   const windows = [['top', 0, null], ['heroExit', pos.heroExit, null], ['pastHero', pos.pastHero, null], ['resume', pos.pastHero, 0]];
   for (const [name, y, jumpTo] of windows) {
-    if (name !== 'resume') { await ev(`(scrollTo(0, ${y}), 0)`); await sleep(2000); }
+    if (name !== 'resume') { await ev(`(scrollTo({ top: ${y}, behavior: 'instant' }), 0)`); await sleep(2000); }
     const lt0 = lt ? await layers(c) : null;
     const census = await ev('__x1.census()');
+    const yAtStart = await ev('scrollY');
     const k0 = await ev('__x1.ticks');
     const tw = Date.now();
     while ((await ev('__x1.ticks')) === k0 && Date.now() - tw < 2500) await sleep(40);
@@ -175,12 +184,12 @@ async function sequence(c, range, { lt, resumeCheck }) {
     recs = [];
     await ev('__x1.rafOn()');
     await c.send('Timeline.start', { maxCallStackDepth: 1 });
-    if (jumpTo !== null) { await sleep(300); await ev(`(scrollTo(0, ${jumpTo}), 0)`); await sleep(WIN - 300); } else await sleep(WIN);
+    if (jumpTo !== null) { await sleep(300); await ev(`(scrollTo({ top: ${jumpTo}, behavior: 'instant' }), 0)`); await sleep(WIN - 300); } else await sleep(WIN);
     await c.send('Timeline.stop');
     const raf = await ev('__x1.rafOff()');
     await sleep(1500);
     const lt1 = lt ? await layers(c) : null;
-    res.positions[name] = { y, jumpTo, census, tickWaitMs: Date.now() - tw, records: recs.length, ...summarize(recs, range, g, raf), lt: lt ? ltDelta(lt0, lt1) : undefined };
+    res.positions[name] = { y, yAtStart, jumpTo, census, tickWaitMs: Date.now() - tw, records: recs.length, ...summarize(recs, range, g, raf), lt: lt ? ltDelta(lt0, lt1) : undefined };
     const s = res.positions[name];
     console.log(name, JSON.stringify(s.counts), 'segMs', JSON.stringify(s.segMs), lt ? `faceLayers ${s.lt.faceLayers} facePaints ${s.lt.facePaints}` : '');
   }
@@ -190,7 +199,13 @@ async function sequence(c, range, { lt, resumeCheck }) {
     const first = recsR.find((r) => r.jumped && r.y === 0);
     const before = recsR.filter((r) => !r.jumped).pop();
     const judge = (r) => r && r.p.every((n) => n.d.every((d, i) => d && (d.t === String(n.v)[i] || Math.abs(d.off) >= 0.02)));
-    res.resumeCheck = { frames: recsR, firstAtTop: first || null, liveAtFirstFrame: judge(first), liveWhileHidden: judge(before) };
+    const after = recsR.filter((r) => r.jumped && r.y === 0);
+    const firstVisible = after.find((r) => r.op > 0) || null;
+    // op: the hero clock's effective opacity (product of computed opacity up the tree) in that rendering update
+    res.resumeCheck = { frames: recsR, firstAtTop: first || null, liveAtFirstFrame: judge(first), liveWhileHidden: judge(before),
+      firstVisible, liveAtFirstVisible: judge(firstVisible), staleVisibleUpdates: after.filter((r) => r.op > 0 && !judge(r)).length,
+      updatesAtTopBeforeVisible: after.indexOf(firstVisible) };
+    console.log('resume-check: first visible update', res.resumeCheck.updatesAtTopBeforeVisible, 'live', res.resumeCheck.liveAtFirstVisible, 'stale visible updates', res.resumeCheck.staleVisibleUpdates);
     console.log('resume-check: live at the first frame at y 0:', res.resumeCheck.liveAtFirstFrame, '| live while hidden:', res.resumeCheck.liveWhileHidden);
   }
   return res;

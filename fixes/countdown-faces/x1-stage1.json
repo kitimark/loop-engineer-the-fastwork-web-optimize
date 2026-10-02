@@ -1,0 +1,1664 @@
+{
+ "what": "countdown-faces X1 stage 1: WebKit (iOS Simulator, fw-sim 15 Pro Max) counts, base (C) vs PoC (V), n=2 per arm. Simulator ms never count (F-084); segMs is left out on purpose.",
+ "ticket": "fixes/countdown-faces/README.md \"X1 phone segment card\" (main 63485c8 + f2d71fd); prediction P-069",
+ "tool": "fixes/countdown-faces/x1.mjs sha256 9a6f3f9ed143",
+ "void": {
+  "x1-sim-2026-10-02T22-30-43-894Z.json": "smooth scroll (html scroll-behavior: smooth) moved every window; panel clock mounted in V only at top; --exit-opacity read \"1\" at heroExit"
+ },
+ "sessions": [
+  {
+   "file": "x1-sim-2026-10-02T22-38-47-266Z.json",
+   "order": [
+    "base",
+    "poc"
+   ],
+   "arms": {
+    "base": {
+     "served": {
+      "js": "4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5",
+      "css": "27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c",
+      "range": [
+       3789,
+       3982
+      ]
+     },
+     "yExit": 855,
+     "exitOpacityAtVh": 0.094,
+     "exitOpacityAtHeroExit": "0",
+     "positions": {
+      "top": {
+       "y": 0,
+       "yAtStart": 0,
+       "census": [
+        {
+         "inViewport": true,
+         "faces": 80
+        },
+        {
+         "inViewport": true,
+         "faces": 80
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 222,
+        "RecalculateStyles": 217,
+        "Layout": 196,
+        "Paint": 284,
+        "Composite": 228,
+        "FireAnimationFrame": 459,
+        "countdownRaf": 231,
+        "digitPaint": 106,
+        "viewLayout": 179
+       },
+       "lt": {
+        "ms": 6347,
+        "layers": [
+         122,
+         118
+        ],
+        "faceLayers": [
+         80,
+         80
+        ],
+        "faceNodes": [
+         160,
+         160
+        ],
+        "memoryMB": [
+         57.1,
+         56.7
+        ],
+        "faceMemoryMB": [
+         0.4,
+         0.4
+        ],
+        "facePaints": 127,
+        "facePaintedLayers": 34,
+        "otherPaints": 1263
+       }
+      },
+      "heroExit": {
+       "y": 863,
+       "yAtStart": 863,
+       "census": [
+        {
+         "inViewport": true,
+         "faces": 80
+        },
+        {
+         "inViewport": true,
+         "faces": 80
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 208,
+        "RecalculateStyles": 211,
+        "Layout": 195,
+        "Paint": 391,
+        "Composite": 213,
+        "FireAnimationFrame": 455,
+        "countdownRaf": 242,
+        "digitPaint": 83,
+        "viewLayout": 167
+       },
+       "lt": {
+        "ms": 6986,
+        "layers": [
+         127,
+         122
+        ],
+        "faceLayers": [
+         80,
+         80
+        ],
+        "faceNodes": [
+         160,
+         160
+        ],
+        "memoryMB": [
+         114.5,
+         114.1
+        ],
+        "faceMemoryMB": [
+         0.6,
+         0.6
+        ],
+        "facePaints": 169,
+        "facePaintedLayers": 36,
+        "otherPaints": 2022
+       }
+      },
+      "pastHero": {
+       "y": 2560,
+       "yAtStart": 2560,
+       "census": [
+        {
+         "inViewport": false,
+         "faces": 80
+        },
+        {
+         "inViewport": true,
+         "faces": 80
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 236,
+        "RecalculateStyles": 234,
+        "Layout": 247,
+        "Paint": 194,
+        "Composite": 238,
+        "FireAnimationFrame": 515,
+        "countdownRaf": 277,
+        "digitPaint": 85,
+        "viewLayout": 142
+       },
+       "lt": {
+        "ms": 7070,
+        "layers": [
+         38,
+         38
+        ],
+        "faceLayers": [
+         0,
+         0
+        ],
+        "faceNodes": [
+         160,
+         160
+        ],
+        "memoryMB": [
+         75.7,
+         75.7
+        ],
+        "faceMemoryMB": [
+         0,
+         0
+        ],
+        "facePaints": 0,
+        "facePaintedLayers": 0,
+        "otherPaints": 1722
+       }
+      },
+      "resume": {
+       "y": 2560,
+       "yAtStart": 2560,
+       "census": [
+        {
+         "inViewport": false,
+         "faces": 80
+        },
+        {
+         "inViewport": true,
+         "faces": 80
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 191,
+        "RecalculateStyles": 247,
+        "Layout": 246,
+        "Paint": 423,
+        "Composite": 193,
+        "FireAnimationFrame": 394,
+        "countdownRaf": 164,
+        "digitPaint": 129,
+        "viewLayout": 183
+       },
+       "lt": {
+        "ms": 7097,
+        "layers": [
+         38,
+         120
+        ],
+        "faceLayers": [
+         0,
+         80
+        ],
+        "faceNodes": [
+         160,
+         160
+        ],
+        "memoryMB": [
+         75.7,
+         51.8
+        ],
+        "faceMemoryMB": [
+         0,
+         0.4
+        ],
+        "facePaints": 46,
+        "facePaintedLayers": 25,
+        "otherPaints": 1969
+       }
+      }
+     },
+     "resumeCheck": {
+      "liveAtFirstFrame": true,
+      "liveWhileHidden": true,
+      "updates": [
+       {
+        "t": 0,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 26,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 48,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 71,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 116,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 247,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 322,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 497,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 577,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 614,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 650,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 686,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "10",
+        "secondsValue": "10"
+       },
+       {
+        "t": 722,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "~~",
+        "secondsValue": "09"
+       },
+       {
+        "t": 758,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "~~",
+        "secondsValue": "09"
+       },
+       {
+        "t": 793,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "~~",
+        "secondsValue": "09"
+       },
+       {
+        "t": 830,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "~~",
+        "secondsValue": "09"
+       },
+       {
+        "t": 867,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "~~",
+        "secondsValue": "09"
+       },
+       {
+        "t": 901,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "~~",
+        "secondsValue": "09"
+       },
+       {
+        "t": 955,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "0~",
+        "secondsValue": "09"
+       },
+       {
+        "t": 989,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "0~",
+        "secondsValue": "09"
+       },
+       {
+        "t": 1021,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "0~",
+        "secondsValue": "09"
+       },
+       {
+        "t": 1060,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 1098,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       }
+      ]
+     }
+    },
+    "poc": {
+     "served": {
+      "js": "638b8e03e81ce0f9732b346eeb5aa4e3d804158a7609d1cd918b6f5f222401ad",
+      "css": "27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c",
+      "range": [
+       3789,
+       4026
+      ]
+     },
+     "yExit": 855,
+     "exitOpacityAtVh": 0.094,
+     "exitOpacityAtHeroExit": "0",
+     "positions": {
+      "top": {
+       "y": 0,
+       "yAtStart": 0,
+       "census": [
+        {
+         "inViewport": true,
+         "faces": 24
+        },
+        {
+         "inViewport": true,
+         "faces": 24
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 237,
+        "RecalculateStyles": 226,
+        "Layout": 196,
+        "Paint": 172,
+        "Composite": 237,
+        "FireAnimationFrame": 449,
+        "countdownRaf": 212,
+        "digitPaint": 4,
+        "viewLayout": 162
+       },
+       "lt": {
+        "ms": 6814,
+        "layers": [
+         68,
+         62
+        ],
+        "faceLayers": [
+         24,
+         24
+        ],
+        "faceNodes": [
+         48,
+         48
+        ],
+        "memoryMB": [
+         57.1,
+         56.7
+        ],
+        "faceMemoryMB": [
+         0.4,
+         0.4
+        ],
+        "facePaints": 137,
+        "facePaintedLayers": 24,
+        "otherPaints": 878
+       }
+      },
+      "heroExit": {
+       "y": 863,
+       "yAtStart": 863,
+       "census": [
+        {
+         "inViewport": true,
+         "faces": 24
+        },
+        {
+         "inViewport": true,
+         "faces": 24
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 211,
+        "RecalculateStyles": 166,
+        "Layout": 187,
+        "Paint": 244,
+        "Composite": 215,
+        "FireAnimationFrame": 407,
+        "countdownRaf": 192,
+        "digitPaint": 0,
+        "viewLayout": 149
+       },
+       "lt": {
+        "ms": 7034,
+        "layers": [
+         71,
+         62
+        ],
+        "faceLayers": [
+         24,
+         24
+        ],
+        "faceNodes": [
+         48,
+         48
+        ],
+        "memoryMB": [
+         114.5,
+         113.9
+        ],
+        "faceMemoryMB": [
+         0.6,
+         0.6
+        ],
+        "facePaints": 161,
+        "facePaintedLayers": 24,
+        "otherPaints": 1461
+       }
+      },
+      "pastHero": {
+       "y": 2560,
+       "yAtStart": 2560,
+       "census": [
+        {
+         "inViewport": false,
+         "faces": 24
+        },
+        {
+         "inViewport": true,
+         "faces": 24
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 234,
+        "RecalculateStyles": 110,
+        "Layout": 108,
+        "Paint": 80,
+        "Composite": 236,
+        "FireAnimationFrame": 503,
+        "countdownRaf": 267,
+        "digitPaint": 0,
+        "viewLayout": 47
+       },
+       "lt": {
+        "ms": 7011,
+        "layers": [
+         38,
+         40
+        ],
+        "faceLayers": [
+         0,
+         0
+        ],
+        "faceNodes": [
+         48,
+         48
+        ],
+        "memoryMB": [
+         75.7,
+         75.7
+        ],
+        "faceMemoryMB": [
+         0,
+         0
+        ],
+        "facePaints": 0,
+        "facePaintedLayers": 0,
+        "otherPaints": 899
+       }
+      },
+      "resume": {
+       "y": 2560,
+       "yAtStart": 2560,
+       "census": [
+        {
+         "inViewport": false,
+         "faces": 24
+        },
+        {
+         "inViewport": true,
+         "faces": 24
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 181,
+        "RecalculateStyles": 190,
+        "Layout": 184,
+        "Paint": 290,
+        "Composite": 185,
+        "FireAnimationFrame": 437,
+        "countdownRaf": 215,
+        "digitPaint": 31,
+        "viewLayout": 162
+       },
+       "lt": {
+        "ms": 7085,
+        "layers": [
+         40,
+         66
+        ],
+        "faceLayers": [
+         0,
+         24
+        ],
+        "faceNodes": [
+         48,
+         48
+        ],
+        "memoryMB": [
+         75.7,
+         52.1
+        ],
+        "faceMemoryMB": [
+         0,
+         0.4
+        ],
+        "facePaints": 30,
+        "facePaintedLayers": 18,
+        "otherPaints": 974
+       }
+      }
+     },
+     "resumeCheck": {
+      "liveAtFirstFrame": false,
+      "liveWhileHidden": false,
+      "updates": [
+       {
+        "t": 0,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": null,
+        "secondsShown": "17",
+        "secondsValue": "09"
+       },
+       {
+        "t": 15,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": null,
+        "secondsShown": "17",
+        "secondsValue": "09"
+       },
+       {
+        "t": 33,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": null,
+        "secondsShown": "17",
+        "secondsValue": "09"
+       },
+       {
+        "t": 49,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": null,
+        "secondsShown": "17",
+        "secondsValue": "09"
+       },
+       {
+        "t": 93,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "17",
+        "secondsValue": "09"
+       },
+       {
+        "t": 210,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "17",
+        "secondsValue": "09"
+       },
+       {
+        "t": 279,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 456,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 554,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 600,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 633,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 665,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 697,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 732,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 765,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 798,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 832,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 863,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "09",
+        "secondsValue": "09"
+       },
+       {
+        "t": 914,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "0~",
+        "secondsValue": "08"
+       },
+       {
+        "t": 952,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "0~",
+        "secondsValue": "08"
+       },
+       {
+        "t": 985,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "0~",
+        "secondsValue": "08"
+       },
+       {
+        "t": 1015,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "0~",
+        "secondsValue": "08"
+       },
+       {
+        "t": 1049,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": null,
+        "secondsShown": "0~",
+        "secondsValue": "08"
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "file": "x1-sim-2026-10-02T22-51-47-268Z.json",
+   "order": [
+    "poc",
+    "base"
+   ],
+   "arms": {
+    "poc": {
+     "served": {
+      "js": "638b8e03e81ce0f9732b346eeb5aa4e3d804158a7609d1cd918b6f5f222401ad",
+      "css": "27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c",
+      "range": [
+       3789,
+       4026
+      ]
+     },
+     "yExit": 855,
+     "exitOpacityAtVh": 0.094,
+     "exitOpacityAtHeroExit": "0",
+     "positions": {
+      "top": {
+       "y": 0,
+       "yAtStart": 0,
+       "census": [
+        {
+         "inViewport": true,
+         "faces": 24
+        },
+        {
+         "inViewport": true,
+         "faces": 24
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 233,
+        "RecalculateStyles": 223,
+        "Layout": 190,
+        "Paint": 169,
+        "Composite": 235,
+        "FireAnimationFrame": 445,
+        "countdownRaf": 210,
+        "digitPaint": 4,
+        "viewLayout": 159
+       },
+       "lt": {
+        "ms": 6856,
+        "layers": [
+         68,
+         62
+        ],
+        "faceLayers": [
+         24,
+         24
+        ],
+        "faceNodes": [
+         48,
+         48
+        ],
+        "memoryMB": [
+         57.1,
+         56.8
+        ],
+        "faceMemoryMB": [
+         0.4,
+         0.4
+        ],
+        "facePaints": 130,
+        "facePaintedLayers": 24,
+        "otherPaints": 862
+       }
+      },
+      "heroExit": {
+       "y": 863,
+       "yAtStart": 863,
+       "census": [
+        {
+         "inViewport": true,
+         "faces": 24
+        },
+        {
+         "inViewport": true,
+         "faces": 24
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 211,
+        "RecalculateStyles": 167,
+        "Layout": 183,
+        "Paint": 245,
+        "Composite": 216,
+        "FireAnimationFrame": 402,
+        "countdownRaf": 186,
+        "digitPaint": 0,
+        "viewLayout": 150
+       },
+       "lt": {
+        "ms": 6970,
+        "layers": [
+         71,
+         62
+        ],
+        "faceLayers": [
+         24,
+         24
+        ],
+        "faceNodes": [
+         48,
+         48
+        ],
+        "memoryMB": [
+         114.5,
+         113.9
+        ],
+        "faceMemoryMB": [
+         0.6,
+         0.6
+        ],
+        "facePaints": 154,
+        "facePaintedLayers": 24,
+        "otherPaints": 1431
+       }
+      },
+      "pastHero": {
+       "y": 2560,
+       "yAtStart": 2560,
+       "census": [
+        {
+         "inViewport": false,
+         "faces": 24
+        },
+        {
+         "inViewport": true,
+         "faces": 24
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 239,
+        "RecalculateStyles": 93,
+        "Layout": 106,
+        "Paint": 80,
+        "Composite": 240,
+        "FireAnimationFrame": 449,
+        "countdownRaf": 209,
+        "digitPaint": 0,
+        "viewLayout": 32
+       },
+       "lt": {
+        "ms": 6958,
+        "layers": [
+         38,
+         40
+        ],
+        "faceLayers": [
+         0,
+         0
+        ],
+        "faceNodes": [
+         48,
+         48
+        ],
+        "memoryMB": [
+         75.7,
+         75.7
+        ],
+        "faceMemoryMB": [
+         0,
+         0
+        ],
+        "facePaints": 0,
+        "facePaintedLayers": 0,
+        "otherPaints": 881
+       }
+      },
+      "resume": {
+       "y": 2560,
+       "yAtStart": 2560,
+       "census": [
+        {
+         "inViewport": false,
+         "faces": 24
+        },
+        {
+         "inViewport": true,
+         "faces": 24
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 175,
+        "RecalculateStyles": 183,
+        "Layout": 174,
+        "Paint": 259,
+        "Composite": 179,
+        "FireAnimationFrame": 401,
+        "countdownRaf": 185,
+        "digitPaint": 23,
+        "viewLayout": 156
+       },
+       "lt": {
+        "ms": 7032,
+        "layers": [
+         40,
+         66
+        ],
+        "faceLayers": [
+         0,
+         24
+        ],
+        "faceNodes": [
+         48,
+         48
+        ],
+        "memoryMB": [
+         75.7,
+         52.1
+        ],
+        "faceMemoryMB": [
+         0,
+         0.4
+        ],
+        "facePaints": 22,
+        "facePaintedLayers": 17,
+        "otherPaints": 939
+       }
+      }
+     },
+     "resumeCheck": {
+      "liveAtFirstFrame": false,
+      "liveWhileHidden": false,
+      "updates": [
+       {
+        "t": 0,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": "0",
+        "secondsShown": "14",
+        "secondsValue": "05"
+       },
+       {
+        "t": 12,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": "0",
+        "secondsShown": "14",
+        "secondsValue": "05"
+       },
+       {
+        "t": 28,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": "0",
+        "secondsShown": "14",
+        "secondsValue": "05"
+       },
+       {
+        "t": 45,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": "0",
+        "secondsShown": "14",
+        "secondsValue": "05"
+       },
+       {
+        "t": 74,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "0",
+        "secondsShown": "14",
+        "secondsValue": "05"
+       },
+       {
+        "t": 209,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "0",
+        "secondsShown": "14",
+        "secondsValue": "05"
+       },
+       {
+        "t": 297,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "05",
+        "secondsValue": "05"
+       },
+       {
+        "t": 513,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "05",
+        "secondsValue": "05"
+       },
+       {
+        "t": 608,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "05",
+        "secondsValue": "05"
+       },
+       {
+        "t": 649,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "05",
+        "secondsValue": "05"
+       },
+       {
+        "t": 692,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "05",
+        "secondsValue": "05"
+       },
+       {
+        "t": 732,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "05",
+        "secondsValue": "05"
+       },
+       {
+        "t": 770,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "05",
+        "secondsValue": "05"
+       },
+       {
+        "t": 810,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "05",
+        "secondsValue": "05"
+       },
+       {
+        "t": 852,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "04"
+       },
+       {
+        "t": 914,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "04"
+       },
+       {
+        "t": 955,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "04"
+       },
+       {
+        "t": 992,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "04"
+       },
+       {
+        "t": 1025,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "04"
+       },
+       {
+        "t": 1063,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "04",
+        "secondsValue": "04"
+       },
+       {
+        "t": 1100,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "04",
+        "secondsValue": "04"
+       },
+       {
+        "t": 1125,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "04",
+        "secondsValue": "04"
+       },
+       {
+        "t": 1152,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "04",
+        "secondsValue": "04"
+       }
+      ]
+     }
+    },
+    "base": {
+     "served": {
+      "js": "4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5",
+      "css": "27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c",
+      "range": [
+       3789,
+       3982
+      ]
+     },
+     "yExit": 855,
+     "exitOpacityAtVh": 0.094,
+     "exitOpacityAtHeroExit": "0",
+     "positions": {
+      "top": {
+       "y": 0,
+       "yAtStart": 0,
+       "census": [
+        {
+         "inViewport": true,
+         "faces": 80
+        },
+        {
+         "inViewport": true,
+         "faces": 80
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 230,
+        "RecalculateStyles": 244,
+        "Layout": 200,
+        "Paint": 279,
+        "Composite": 233,
+        "FireAnimationFrame": 503,
+        "countdownRaf": 270,
+        "digitPaint": 96,
+        "viewLayout": 153
+       },
+       "lt": {
+        "ms": 6986,
+        "layers": [
+         122,
+         118
+        ],
+        "faceLayers": [
+         80,
+         80
+        ],
+        "faceNodes": [
+         160,
+         160
+        ],
+        "memoryMB": [
+         57.1,
+         56.7
+        ],
+        "faceMemoryMB": [
+         0.4,
+         0.4
+        ],
+        "facePaints": 129,
+        "facePaintedLayers": 32,
+        "otherPaints": 1286
+       }
+      },
+      "heroExit": {
+       "y": 863,
+       "yAtStart": 863,
+       "census": [
+        {
+         "inViewport": true,
+         "faces": 80
+        },
+        {
+         "inViewport": true,
+         "faces": 80
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 205,
+        "RecalculateStyles": 207,
+        "Layout": 187,
+        "Paint": 339,
+        "Composite": 210,
+        "FireAnimationFrame": 427,
+        "countdownRaf": 217,
+        "digitPaint": 80,
+        "viewLayout": 148
+       },
+       "lt": {
+        "ms": 6993,
+        "layers": [
+         127,
+         118
+        ],
+        "faceLayers": [
+         80,
+         80
+        ],
+        "faceNodes": [
+         160,
+         160
+        ],
+        "memoryMB": [
+         114.5,
+         113.9
+        ],
+        "faceMemoryMB": [
+         0.6,
+         0.6
+        ],
+        "facePaints": 170,
+        "facePaintedLayers": 34,
+        "otherPaints": 2016
+       }
+      },
+      "pastHero": {
+       "y": 2560,
+       "yAtStart": 2560,
+       "census": [
+        {
+         "inViewport": false,
+         "faces": 80
+        },
+        {
+         "inViewport": true,
+         "faces": 80
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 220,
+        "RecalculateStyles": 211,
+        "Layout": 227,
+        "Paint": 177,
+        "Composite": 222,
+        "FireAnimationFrame": 414,
+        "countdownRaf": 192,
+        "digitPaint": 97,
+        "viewLayout": 138
+       },
+       "lt": {
+        "ms": 7125,
+        "layers": [
+         38,
+         40
+        ],
+        "faceLayers": [
+         0,
+         0
+        ],
+        "faceNodes": [
+         160,
+         160
+        ],
+        "memoryMB": [
+         75.7,
+         75.7
+        ],
+        "faceMemoryMB": [
+         0,
+         0
+        ],
+        "facePaints": 0,
+        "facePaintedLayers": 0,
+        "otherPaints": 1693
+       }
+      },
+      "resume": {
+       "y": 2560,
+       "yAtStart": 2560,
+       "census": [
+        {
+         "inViewport": false,
+         "faces": 80
+        },
+        {
+         "inViewport": true,
+         "faces": 80
+        }
+       ],
+       "counts": {
+        "RenderingFrame": 175,
+        "RecalculateStyles": 235,
+        "Layout": 210,
+        "Paint": 343,
+        "Composite": 177,
+        "FireAnimationFrame": 366,
+        "countdownRaf": 152,
+        "digitPaint": 110,
+        "viewLayout": 141
+       },
+       "lt": {
+        "ms": 6981,
+        "layers": [
+         38,
+         122
+        ],
+        "faceLayers": [
+         0,
+         80
+        ],
+        "faceNodes": [
+         160,
+         160
+        ],
+        "memoryMB": [
+         75.7,
+         52.1
+        ],
+        "faceMemoryMB": [
+         0,
+         0.4
+        ],
+        "facePaints": 21,
+        "facePaintedLayers": 21,
+        "otherPaints": 1914
+       }
+      }
+     },
+     "resumeCheck": {
+      "liveAtFirstFrame": true,
+      "liveWhileHidden": true,
+      "updates": [
+       {
+        "t": 0,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": "0",
+        "secondsShown": "0~",
+        "secondsValue": "03"
+       },
+       {
+        "t": 24,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": "0",
+        "secondsShown": "0~",
+        "secondsValue": "03"
+       },
+       {
+        "t": 50,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": "0",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 75,
+        "y": 2560,
+        "jumped": false,
+        "exitOpacity": "0",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 122,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "0",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 253,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "0",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 334,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 586,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 694,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 734,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 775,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 815,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "03",
+        "secondsValue": "03"
+       },
+       {
+        "t": 855,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "03",
+        "secondsValue": "02"
+       },
+       {
+        "t": 895,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "02"
+       },
+       {
+        "t": 953,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "02"
+       },
+       {
+        "t": 992,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "02"
+       },
+       {
+        "t": 1027,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "02"
+       },
+       {
+        "t": 1060,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "0~",
+        "secondsValue": "02"
+       },
+       {
+        "t": 1096,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "02",
+        "secondsValue": "02"
+       },
+       {
+        "t": 1132,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "02",
+        "secondsValue": "02"
+       },
+       {
+        "t": 1166,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "02",
+        "secondsValue": "02"
+       },
+       {
+        "t": 1194,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "02",
+        "secondsValue": "02"
+       },
+       {
+        "t": 1220,
+        "y": 0,
+        "jumped": true,
+        "exitOpacity": "1",
+        "secondsShown": "02",
+        "secondsValue": "02"
+       }
+      ]
+     }
+    }
+   }
+  }
+ ]
+}

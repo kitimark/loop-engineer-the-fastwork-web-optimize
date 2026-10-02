@@ -484,6 +484,119 @@ Layout + Paint at pastHero.
   - S6 is not live at the first frame;
   - phone row 2 is not separated, or has V above.
 
+### Stage 1 readout (Simulator, 2026-10-02 22:38Z and 22:51Z, n=2 per arm; counts only)
+
+Data: `x1-stage1.json` (counts, LayerTree deltas, resume-check updates; no Simulator ms), from
+`out/countdown-faces/x1/x1-sim-2026-10-02T22-38-47-266Z.json` (order base, poc) and `…T22-51-47-268Z.json` (poc, base).
+Each session was one shared hold, weight simulator, a functional `sim.mjs` session (fw-sim 15 Pro Max).
+
+**Tool changes after the ticket** (x1.mjs was 9de230198cf8 in the ticket, now 9a6f3f9ed143). They change only how the
+sequence reaches its positions and what the resume check records; no window, count or rule changed.
+- Session 1 (22:30Z) is **VOID**. The page sets `html { scroll-behavior: smooth }` (CSS 11738), so the bare
+  `scrollTo(0, y)` calls animated. As a result:
+  - every window started off its y;
+  - the heroExit search landed at 775 vs 1552;
+  - `--exit-opacity` read "1" at heroExit;
+  - the panel clock was mounted at `top` in V only.
+- Fixes:
+  - every scroll is now `behavior: 'instant'`;
+  - a prime visit to pastHero mounts the panel clock in both arms before `top`;
+  - each window records `yAtStart`;
+  - each resume-check update records the hero's `--exit-opacity`.
+- The resume check also records `op`, the product of computed `opacity` up the hero timer's ancestors. It read 0 in
+  every update, in both arms, also with `--exit-opacity` 1, so it is broken (in our setup, cause unknown) and is not used.
+- **Gap.** The tool does not record the tick count inside each window, so validity check "≥ 3 ticks per window" was
+  not recorded. Indirect evidence that the clock ran:
+  - each window starts 650 ms after a detected tick and lasts 4 s;
+  - C's digit Paints are 80-129 per window;
+  - the resume check shows `data-value` advancing 1/s in both arms.
+
+**Validity.**
+- Served hashes match in all 4 arm runs: JS `4606120cf392` / `638b8e03e81c`, CSS `27776f3d4138`.
+- yExit is 855 in all 4 runs. Every window's `yAtStart` equals its y.
+- `--exit-opacity` reads 0 at heroExit (863) and 0.094 at y = innerHeight, in all 4 runs.
+- Ticks: not recorded (see the gap above).
+
+**Counts per 4 s window** (C = base, V = PoC; session 1, session 2; ratio = V/C within a session):
+
+| window | metric | C | V | V/C |
+|---|---|---|---|---|
+| top | face layers (LayerTree) | 80, 80 | 24, 24 | |
+| top | total layers | 122, 122 | 68, 68 | Δ 54, 54 |
+| top | face-layer memory MB | 0.4, 0.4 | 0.4, 0.4 | 1.0 |
+| top | face-layer repaints (layers repainted) | 127 (34), 129 (32) | 137 (24), 130 (24) | 1.08, 1.01 |
+| top | digit-sized Paints | 106, 96 | 4, 4 | 0.04 |
+| top | Layout / Paint (records) | 196 / 284, 200 / 279 | 196 / 172, 190 / 169 | 1.00 / 0.61, 0.95 / 0.61 |
+| heroExit | RecalcStyles / Layout / Paint | 211 / 195 / 391, 207 / 187 / 339 | 166 / 187 / 244, 167 / 183 / 245 | 0.79 / **0.96** / 0.62, **0.81** / **0.98** / 0.72 |
+| heroExit | view-sized Layouts; digit Paints | 167, 148; 83, 80 | 150, 149; 0, 0 | |
+| pastHero | RecalcStyles / Layout / Paint | 234 / 247 / 194, 211 / 227 / 177 | 110 / 108 / 80, 93 / 106 / 80 | 0.47 / 0.44 / 0.41, 0.44 / 0.47 / 0.45 |
+| pastHero | countdown rAF; digit Paints | 277, 192; 85, 97 | 267, 209; 0, 0 | 0.96, 1.09 |
+| resume | Layout / Paint / digit Paints | 246 / 423 / 129, 210 / 343 / 110 | 184 / 290 / 31, 174 / 259 / 23 | 0.75 / 0.69 / 0.24, 0.83 / 0.76 / 0.21 |
+
+At top and heroExit, both clocks are in the viewport (census). Face layers belong to the hero clock: the panel clock's
+faces are not composited, and C's digit Paints come from them. At pastHero, only the panel clock is in the viewport.
+
+**Resume check** (hidden 8 s at pastHero, instant jump to y 0, then every rendering update is read).
+- Both arms, both sessions: the first 2 updates at y 0 still have `--exit-opacity` 0. Session 2 recorded this
+  directly: at 74/209 ms in V and 122/253 ms in C. Session 1 shows the same 2-update pattern, but it has no opacity
+  field. The exit callback that writes `--exit-opacity` runs from the scroll engine's rAF, 2 rendering updates after
+  the jump on the Simulator.
+- **V** shows the seconds value from 8 s before (session 1: "17" for "09"; session 2: "14" for "05") in those 2
+  updates. It shows the live value in the 3rd update, the first one with `--exit-opacity` 1 (279 ms and 297 ms).
+- In the PoC code, the hero gate and `--exit-opacity` are set in the same call (exit callback, JS 4214 and 4221-4223
+  of the PoC build, sha256 638b8e03e81c). `.hero-copy`, which holds the clock, has `opacity: calc(var(--copy-in) * var(--exit-opacity))`
+  (CSS 1734; 2043 at this width).
+- So the stale digits are painted only at `--exit-opacity` 0. The tool's opacity-product field could not confirm this
+  (broken, above).
+- **C** is live in every update.
+
+**Trigger, as pre-registered (literal):**
+- (i) **holds, narrowly.** V's face-layer repaints at top (137, 130) are above C's range (127, 129), by 1-8 records
+  (1-8 %). V's digit Paints (4) are far below C's (96-106).
+- (ii) does not hold. At resume, V's Layout and digit Paints are below C's.
+- (iii) **holds.** At heroExit, V/C Layout is 0.96 and 0.98, and RecalcStyles is 0.81 in session 2. All are > 0.8.
+- (iv) **holds.** V's first update at y 0 shows a stale digit (2/2).
+
+(iii) and (iv) take precedence, so **the ticket's outcome is "no phone segment; X1 goes back to the code"**. The
+outcome and the readings below are sent to the lead, who decides. Stage 2 would need the user's timing lift in any
+case.
+
+**What each trigger rests on (for the lead's decision; not a re-scoring):**
+- **(iii)** was written to catch "the hidden skip does not work on WebKit". The skip does work:
+  - at pastHero, all three ratios are 0.41-0.47;
+  - at heroExit, digit Paints go 80-83 → 0 and Paint is 0.62-0.72.
+
+  The heroExit Layout count is not the clock's. 148-167 of C's and 149-150 of V's Layouts there are view-sized, about
+  the same in both arms. At pastHero, by contrast, C's Layouts drop out in V. Nothing in the clock code would change
+  that number.
+- **(iv)** was written to catch a visible one-frame hop. The stale updates are the 2 updates in which `--exit-opacity`
+  is still 0 in both arms. V goes live in the same update in which the clock becomes visible again. This rests on the
+  recorded `--exit-opacity` plus the CSS and code above. Whether the clock is visible on screen is OBSERVED in our
+  setup, not measured.
+- **(i)** holds on face-layer repaints only, by 1 and 8 records. At top, V has 40 % fewer Paint records than C and
+  about the same Layouts. The added per-layer repaints (V 5.4-5.7 per layer vs C 3.7-4.0) are real. Whether they cost
+  anything on the device is still a timing question.
+
+**P-069, Simulator part** (hit / miss against the pre-registered values):
+
+| | predicted | observed | |
+|---|---|---|---|
+| S1 face layers | 80 → 24 | 80 → 24 (2/2) | hit |
+| S1 total layers C − V | 56 ± 2 | 54, 54 | hit (edge) |
+| S1 face memory V/C | 0.30 [0.20, 0.45] | 1.0 (0.4 vs 0.4 MB) | **miss**. As the ticket allowed: WebKit seems to back only the faces inside the clip (OBSERVED, in our setup) |
+| S2 face repaints at top | C 0 [0, 3], V [4, 30] | C 127-129, V 130-137 | **miss** (C's face layers repaint too, cause unknown) |
+| S2 digit Paints at top | C [0, 4], V [4, 30] | C 96-106, V 4 | **miss** for C (the panel clock's non-composited faces), V hit (edge) |
+| S3 Layout at top V − C | [+2, +30] | 0, −10 | **miss** |
+| S4 pastHero ratios ≤ 0.6; rAF [0.8, 1.25] | | 0.41-0.47; 0.96, 1.09 | hit |
+| S5 opacity 0 at heroExit, > 0 at vh | | 0 / 0.094 (4/4) | hit |
+| S5 heroExit Layout, Paint V/C ≤ 0.7 | | Layout 0.96, 0.98; Paint 0.62, 0.72 | **miss** |
+| S6 live at the first frame at y 0, 2/2 | | C 2/2, V 0/2 (live at the first update with `--exit-opacity` 1, 2/2) | **miss as written** |
+| S6 V stale while hidden | | 2/2 | hit |
+| S6 resume digit Paints V − C | [+1, +24] | −98, −87 | **miss** |
+| stage 2 via (i) | ~85 % | (i) holds, but (iii) and (iv) take precedence | |
+
+The falsifier "S6 is not live at the first frame" is met as written. The phone parts are unscored.
+
 ## Overlap with other topics (review r1 Blocking 3)
 
 - **Topic #1 `countdown-idle-raf`** (on main, ACCEPT-WITH-NOTES, patch v03) edits the same hunks: `$E` 3824, the
@@ -550,3 +663,4 @@ Layout + Paint at pastHero.
 - `probe.mjs`: counts, profile and pixels.
 - `sim-counts.mjs`: Simulator Timeline counts.
 - `x1.mjs`: the X1 segment card sequence (Simulator `sim`, phone `phone`, `score`); see "X1 phone segment card".
+- `x1-stage1.json`: X1 stage 1 counts (Simulator, n=2 per arm); see "Stage 1 readout".
