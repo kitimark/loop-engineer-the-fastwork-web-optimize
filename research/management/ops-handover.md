@@ -8,6 +8,31 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **12:1xZ (batch) No-phone plan posted (lead, T-022 #4, 11:55Z); phone released 11:56Z; T-023 opened.**
+  - **On hold until the phone returns:** P-065 word-alone (2 blocks), G2 (P-064), the ioscap first run (hardening done).
+  - **Now (Chrome/Sim only, no timing tests):** de-illusion-style: Sim tlcounts FP vs WA, then the 1 % pixel cause,
+    then the Chrome call tree. fix-scroll-engine: Sim step 3 (S vs T on st6-rb), then an A/B/C proposal recommending
+    (B) drop fwreskip (the lead reviews the draft first; it rests on older-build phone data). st6-rb2: nothing pending.
+  - **iphone-runner parked**; T-009 partial curve (40 reads 11:13-11:55Z, on external power, label cool-t009-c1end):
+    38.9 -> 37.1 (+6 min) -> 35.7 (+13) -> 34.6 (+20) -> 33.8 (+26) -> 33.0 (+38) -> 32.9 C (+42); rates 0.24 / 0.16 /
+    0.09 / 0.05 C/min per 10-min band; not flat by the rule; floor ~33 C; 10 min cools ~2.4 C from 38.9, so
+    `phone-temp --below auto` ends inside its 10-min cap when the last passing sentinel ran at >= 37 C; targets under
+    ~34 need >= 25 min, under ~33.3 may never end (OBSERVED). It pre-builds the P-065 scripts.
+  - wi-stack done (best-stack done; optional Sim check of the F-129 spots avatars +is-sliding / commission +entering,
+    HC vs S6, structure only, if the lead assigns it; a second C1 block parked). fix-scene-scope done (r4-v3's Chrome
+    check needs no phone if assigned; its panel-driver phone test parked).
+  - **T-023** (user idea: Safari on the Mac as an iPhone stand-in): de-safari-mac (read-only researcher) is on it.
+  - **I-065** covers both flakes (the proposal test and console.test.mjs:274), P3.
+  - **Parked fixes without the phone** (ops note to the lead): image-size fully doable (Sim/Instruments memory + pixels,
+    no phone gate; unowned); anim-transform partly (Chrome pixels + Sim structure; gain needs the phone); re-keep-op,
+    cdwc, f3-arm-scope little (mechanisms CONFIRMED or Chrome done; their gates are phone/G/finger); blur-cubic no
+    (not applied, GPU cost).
+- **12:0xZ (batch) PHONE DISCONNECTED (user T-022, 11:53Z); 661c744 landed; I-064 resolved (11bc722).**
+  - The user is disconnecting the iPhone and asked the team to revise its plans. The phone queue (G2, the ioscap first
+    run, word-alone Blocks 1-2) is ON HOLD. iphone-runner stops T-009 and releases the phone. The lead asked
+    fix-scroll-engine and de-illusion-style for no-phone plans; ops collects a one-screen "revised plan without the
+    phone" (message to the lead, not a commit).
+  - I-065 (flaky unit tests) gets a second flake: console.test.mjs:274 (I-059 B attempts), a millisecond-boundary endedAt.
 - **11:5xZ st6-rb2 landed (cff1a03, 11:49:57Z); PROGRESS build updated; I-065 open.**
   - PROGRESS build: name "st6-rb2: the wave-1 base plus seven fixes", since 11:49:57Z, same 8 ids (style-recalc now in
     its final RBi40pti form); summary caveat "the same fixes as before with the final version of the style fix; checked
@@ -1223,8 +1248,8 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-065 | open, not blocking | (lead) | flaky proposal unit test |
-| I-064 | rounds 1-2 landed (8ec1c6d, 11bc722); user YES to deleting the old recorder | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
+| I-065 | open, not blocking | (lead) | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
+| I-064 | RESOLVED (11bc722); user YES to deleting the old recorder | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
 | I-063 | open 10:56Z | (lead) | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
 | I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
 | I-061 | RESOLVED 10:44Z (517fdb4) | (lead) | PROGRESS build data schema |
