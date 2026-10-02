@@ -107,6 +107,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   rAF-phase check (WebKit elapsed mod atlas step) is added to Sim d2. fix-nav-morph's Sim hold failed again (23:38Z: the
   dead stale tab doesn't answer Runtime.evaluate): blocked on I-050 (ts-phone-park, its top item). A mixed-version
   lock wait left Chrome free ~4 min (23:34-23:38Z); it cleared within the bound; ts-lock-share records it in lane §10.
+  00:0xZ: cbc7975 (lane capacity cap 3 vs 4, T-008; live mixed-version wait) landed. I-051 owner ts-lock-share after its
+  batch 3: measure the Sim boot cost first, then recommend keeping fw-sim booted between sessions, joins on CPU busy
+  instead of load1, or accepting it; coordinate the sim.mjs change with ts-phone-park, which lands I-050 first.
+  scene-scope: ST (RB + rotator-st6) NOT pixel-identical in Chrome: will-change:transform blurs the avatars by up to
+  72/255 (≤2/255 without the transform); Sim checks pending, ST not signed. I4/I40 recommendation SIGNED: RBi lands
+  first (after a pixel A/B on tools ≥d00ee9a and a phone ticket); I40 held until a Sim RBi40 count.
+  fwreskip: the ~20 ms sits in a stale layout state in #profile-showcase/#people, cleared by re-creating its children;
+  r7 isolates the element; mechanism UNRESOLVED. Usage: ~34 % ESTIMATE at 23:53Z, ~60 % expected by the 02:20Z reset.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
