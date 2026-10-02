@@ -8,6 +8,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **23:0xZ bc90d7a + a553980 landed (ff); no real LAN address left outside site*/ (lead's grep). PROGRESS goal line: heat goal added as CONDITIONAL** (the user framed it "if my assumption is right"): smooth scrolling; and, if P-068 shows Fastwork heats the phone more than apple.com, less work at rest. **When P-068 has a result: make it firm or drop it.**
+  - **P-069 = de-countdown, countdown-faces X1 segment card** (pre-data; stage 1 Simulator mechanism, 2 sessions, shared
+    lane weight simulator; stage 2 short phone Timeline block only if a stage-1 WebKit cost question stays open, queued
+    after S7 and F3). Ops asked for exact wording on: the stage-2 trigger, the P1/P2 statistic, stage-1 validity, the
+    stage-2 Timeline-OFF sentinels. Second read when the row sha arrives. Next free P-070.
 - **22:4xZ (batch) d637310 landed (7945951); S7 on main; I-073 RESOLVED; LAN scrub bc90d7a; new goal: phone heat (T-029 #4); P-068 = de-heat.**
   - Landed: 7945951 (ops batch), 0066608 + 2182886 (S7 / P-067 ticket, pre-data), 5f37fcb (I-073 LAN resolver +
     placeholder `lan-host`, CLAUDE.md edit with the user's OK; I-073 RESOLVED).
@@ -423,7 +428,7 @@ Board rows `ops`, `phone-queue`, `fwreskip`, `best-stack` and `phone-stack-test`
   - Directory rows below that are older than 10-02 06:00Z are unverified.
 - **Open incidents.** I-056 only (ts-i056). I-053/054/055/057/058 are resolved.
 - **P-ids.** (P-059 wi-stack, P-060 fix-scroll-engine G1b, P-061 fix-scene-scope T-011,
-  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2, P-065 de-illusion-style word-alone, P-066 fix-image-size image-size, P-067 fix-scroll-engine S7 st6, P-068 de-heat phone heat): next free P-069.
+  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2, P-065 de-illusion-style word-alone, P-066 fix-image-size image-size, P-067 fix-scroll-engine S7 st6, P-068 de-heat phone heat, P-069 de-countdown X1): next free P-070.
 - **Mechanics.**
   - PROGRESS.json: targeted Python replacement; the old JSON string must match exactly once. next/gate ≤ 300 chars,
     details ≤ 600. Bump `updatedAt` to the real `date -u`, never ahead.

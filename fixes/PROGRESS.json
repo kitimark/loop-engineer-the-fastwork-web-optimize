@@ -1,14 +1,15 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T22:20:00Z",
+ "updatedAt": "2026-10-02T23:00:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
- "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
+ "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And, if the heat test (P-068) shows Fastwork heats the phone more than apple.com, less work at rest so the phone stays cooler.",
  "complaints": [
   { "area": "hero", "text": "the top of the page (hero) and scrolling out of it feel laggy" },
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T23:00:00Z", "text": "New goal, if your assumption holds: a heat test (P-068) compares how warm Fastwork and apple.com make the phone. If Fastwork heats it more, less work at rest becomes a goal next to smooth scrolling. Every fix now reports its work at rest." },
   { "at": "2026-10-02T22:20:00Z", "text": "The scroll-size fix (fwreskip) is dropped: on the phone it gave no gain (0 slow frames with and without it). At your request two more fixes get a phone timing test: the avatar carousel fix (st6) and F3 (touch listeners set up once). They run after the word-alone test." },
   { "at": "2026-10-02T21:45:00Z", "text": "The phone is back. Its screen recorder passed its first run with the camera light off. The scroll-size test (G2) starts again after the Wi-Fi change; the word-alone test of the hero's accent word comes next." },
   { "at": "2026-10-02T15:20:00Z", "text": "You chose to park the scroll-size fix (fwreskip) and test it again when the phone is back. The image-size fix is dropped: with more Simulator sessions, the memory it seemed to save turned out to be inside the normal variation, so no saving could be shown." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T16:40:00Z", "text": "Touch-listener blind test scored: neither you nor the second tester felt a difference (2 of 4 pairs each, the same as guessing)." },
   { "at": "2026-10-01T16:45:00Z", "text": "Phone tests approved and queued: the avatar carousel at the top (P14) and the softer blur easing for the card reveal (P-038)." },
   { "at": "2026-10-01T16:05:00Z", "text": "The iOS Simulator was checked as a stand-in for the phone: not usable as a judge of smoothness. The real iPhone stays the judge." },
-  { "at": "2026-10-01T15:48:00Z", "text": "Your three blind swipe pairs for the countdown fix all came back 'same'. It now lands only if the robot-finger test (P-032) passes." },
-  { "at": "2026-10-01T15:20:00Z", "text": "Layout containment (lc-cq3) dropped: the work moved elsewhere, the slow frames did not get shorter." }
+  { "at": "2026-10-01T15:48:00Z", "text": "Your three blind swipe pairs for the countdown fix all came back 'same'. It now lands only if the robot-finger test (P-032) passes." }
  ],
  "items": [
   {
