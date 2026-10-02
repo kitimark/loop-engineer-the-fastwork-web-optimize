@@ -491,9 +491,11 @@ A build or other CPU work that measures nothing takes a normal hold: `node tools
 timed on the Mac (verify.mjs, fix.mjs ab, bench, a normal `run`) may run inside it, short jobs may, and a `--no-timing` run
 inside a timing hold refuses. Run only this checkout's tools inside it. Phone runs are the exception (I-056): the phone
 stamps its own frames, so `iphone.mjs run|scroll|record|gesture` run inside their own hold (its command, or the same
-owner), and a recorded phone part runs in one to keep the Mac quiet: `node tools/lock.mjs run chrome-measure --owner <you>
---no-timing --max-seconds 600 -- sh -c '<part>'`. Outside their own hold they refuse (WAIT, exit 1) beside a shared group
-or anyone else's normal hold; an exclusive short job does not stop them; `--allow-during-measure` is for diagnostics only.
+owner), and a phone part that wants a quiet Mac runs in one: `node tools/lock.mjs run chrome-measure --owner <you>
+--no-timing --max-seconds 600 -- sh -c '<part>'`. Outside their own hold they refuse (WAIT, exit 1) beside anyone else's
+normal hold; an exclusive short job does not stop them. Mac-quiet is preferred, not required: beside a shared group they
+run, print a NOTE and keep the Mac state in their record (`mac`: shared jobs, load1 at start and end); `--require-quiet`
+(or `FW_PHONE_REQUIRE_QUIET=1`) makes them WAIT for it instead. `--allow-during-measure` is for diagnostics only.
 Every `run` hold, shared readers included, leaves one line in `locks/holds.log` (owner, weight, start, end, duration, exit code).
 Shared lane (`research/architecture/lock-shared-lane.md`, switched on by the lead 2026-10-02): jobs that time nothing
 (`npm test`, `fix.mjs check`, DOM probes, `bench mech`, `npm run test:chrome:fn`, a Simulator mechanism session) hold
