@@ -15,9 +15,10 @@ fast each one heats the phone:
 - a near-empty page (the floor);
 - a heavy apple.com product page;
 - the original Fastwork page;
-- the Fastwork page with our fixes.
+- the Fastwork page with the landed fixes, **without the countdown fix** (see X below).
 
-A second question comes for free: does the best build on `main` run the phone cooler than the original?
+B vs A vs F answers the user's question. A second question comes for free: do the landed fixes run the phone cooler
+than the original? This test cannot answer it for the countdown fix, which is the largest cut to work at rest.
 
 What we know before data, from the code and from earlier phone runs (all OBSERVED in our setup):
 - The original page keeps working at rest. The countdown renders every frame, and the hero carousel swaps images every
@@ -40,7 +41,7 @@ The phone URLs use the `lan` placeholder (I-073; `node tools/lan.mjs` prints the
 | **F** floor | `http://lan:<pF>/heat-floor.html` | `node tools/serve.mjs --root site-pretty --overlay research/phone-heat/floor --port <pF> --vendors=local --latency 150` | `heat-floor.html` `30098372d8c1` |
 | **A** apple.com | `https://www.apple.com/macbook-pro/` (live) | Apple; Safari's own cache | the run's `meta.served` per cycle (same-origin JS/CSS hashes); `docH` from `pre` |
 | **B** Fastwork baseline | `http://lan:<pB>/` | `node tools/serve.mjs --root site-pretty --port <pB> --vendors=local --latency 150` | snapshot `b1789284481295-4ad4a84a`: JS `4606120cf392`, CSS `27776f3d4138` |
-| **X** Fastwork, best build on main | `http://lan:<pX>/` | `node tools/serve.mjs --root site-pretty --overlay <st6-rb2 snapshot copy> --port <pX> --vendors=local --latency 150` | **st6-rb2**: JS `7bf7c4657d21`, CSS `f523598b2a24` |
+| **X** Fastwork, landed fixes without the countdown fix | `http://lan:<pX>/` | `node tools/serve.mjs --root site-pretty --overlay <st6-rb2 snapshot copy> --port <pX> --vendors=local --latency 150` | **st6-rb2**: JS `7bf7c4657d21`, CSS `f523598b2a24` |
 
 - **Why the MacBook Pro page is "expensive".** The HTML was fetched from the Mac on 2026-10-03 with an iPhone user agent
   (sha256/12 `979e4fc32dbb`; it is live and changes). It has:
@@ -53,15 +54,19 @@ The phone URLs use the `lan` placeholder (I-073; `node tools/lan.mjs` prints the
   15 videos, 25 `anim-`). Static HTML counts are OBSERVED; what the phone actually does is recorded per run.
   **Fallback**, fixed now: if the warm-up run on A reports `docH` < 5800 px (the driver needs y 5000), or the URL
   redirects off the MacBook Pro page, use `https://www.apple.com/iphone-air/` for both sessions.
-- **X = st6-rb2** is the best build on `main` (PROGRESS `best`: seven fixes, `fixes/st6-rb2/README.md`). It is the
-  same build as S7's V arm, and S7's snapshot copy (`out/st6t/snap/V` in fix-scroll-engine's worktree,
-  `fixes/st6-rb2/README.md` S7) can be reused after a hash check.
-  - **It does not contain the countdown fix.** PR-007 (countdown-faces, accepted 22:08Z) is built on the baseline. It
-    replaces `countdown-idle-raf` and does not stack on st6-rb2: a `patch -F3` dry run of its patch over st6-rb2 fails
-    5 of 12 hunks. Rebasing it is de-countdown's job.
-  - **Amendment rule (pre-data):** if a stacked "st6-rb2 + countdown-faces" build exists with checked hashes before
-    the first counted segment, it replaces X. The ticket is re-read, and P-068's X lines move to the new build. Otherwise X stays
-    st6-rb2, and the countdown fix gets its own heat check later (a new ticket).
+- **X is "the landed fixes without the countdown fix".** It is st6-rb2, the best build on `main` (PROGRESS `best`:
+  seven fixes, `fixes/st6-rb2/README.md`). It is the same build as S7's V arm, and S7's snapshot copy (`out/st6t/snap/V`
+  in fix-scroll-engine's worktree, `fixes/st6-rb2/README.md` S7) can be reused after a hash check.
+  - **The countdown fix is not in this test.** It is the largest cut to work at rest, but it does not stack yet.
+    PR-007 (countdown-faces, accepted 22:08Z) is built on the baseline and replaces `countdown-idle-raf`. A `patch -F3`
+    dry run of its patch over st6-rb2 fails 5 of 12 hunks. Rebasing it is de-countdown's job. So X vs B measures the
+    other landed fixes only; "no detectable change" there says nothing about the countdown fix.
+  - **X2, later:** once an integrated build with the countdown fix exists, a follow-up ticket adds an X2 arm (B, F and
+    X2, same routine and scorer) so the countdown fix gets its own heat number.
+  - **Amendment rule (pre-data):** if a stacked "st6-rb2 + countdown-faces" build exists with checked hashes, it may
+    replace X only if that is decided, and its hashes logged in this ticket, **before H1's first segment**. Then the
+    ticket is re-read and P-068's X lines move to the new build. Once H1 has started on st6-rb2, H2 keeps st6-rb2,
+    whatever exists by then (the two sessions must measure the same X), and the stacked build waits for X2.
 - **F, the floor**, is a static page as tall as Fastwork on the phone (docH 6035 px in every recent Fastwork run;
   `min-height: 7000px`). It has no images, fonts, scripts, animations or sticky parts. What is left is Safari, the
   display, the reloads, scrolling, and the probe that `iphone.mjs run` injects, the same on every arm.
@@ -148,11 +153,43 @@ every within-session comparison.
     the 80 % limit or the load is UNRESOLVED). So battery watts are reported per segment, never decided on.
   - If `keys` shows a system-power key (a name with "SystemPower", "SystemLoad" or "PowerTelemetry"), report it to
     de-heat. Using it as a metric is a pre-data amendment, not a change made after data.
-- **Charging confounder.** `IsCharging` is logged every 30 s.
-  - A segment with any charging read is flagged and left out of the verdicts. That arm is re-run once at the session's
-    end if time allows; otherwise the verdict is "incomplete".
-  - Charging cannot be held constant from the Mac: iOS decides (80 % limit / Optimized Charging; arch-unknowns U4). The
-    user is asked once which charging setting is on, and the answer is recorded.
+- **Charging confounder.** `IsCharging` is logged every 30 s. The phone stays on the USB cable the whole time: the
+  Web Inspector link needs it. iOS decides when to charge (80 % limit / Optimized Charging; arch-unknowns U4), so
+  charging cannot be switched from the Mac. The user is asked once which charging setting is on, and the answer is
+  recorded.
+- **State read before the ticket** (10-02 22:42-22:45Z, the read-only `batteryInfo` call that `wait.mjs phone-temp`
+  uses; no lease, no page): on the cable, `IsCharging` false, `FullyCharged` false, `CurrentCapacity` 80 of 100,
+  37.8 °C, `Amperage` 0, `InstantAmperage` 2. So the battery is **held** at 80 %: the cable carries the load and the
+  battery neither charges nor discharges. That 80 % reads as not "full" fits an 80 % charge limit (OBSERVED in our
+  setup; whether it is the limit or Optimized Charging is UNRESOLVED, and the user's answer settles it). The earlier
+  log matches this: held in 250 of 317 reads, with short charging stretches after drifts to 77-78 %.
+
+### Charging rule (pre-registered)
+
+**Rule: every arm runs "held"** (on the cable, `IsCharging` false). This is the state the phone was in at the read
+above, so it is the expected one, and B, A, X and F are compared only in that state.
+1. **Gate before every segment:** `heat.mjs charge-wait --want held` runs first, then the temperature gate. It exits
+   0 at the first held read. If the phone is charging, it waits (a top-up from 77-78 % back to the limit takes a few
+   minutes) up to 20 min (`PRE.chargeGateS`), reading every 30 s.
+2. **During a segment:** a single read that is not held (charging, or off the cable) excludes that segment
+   (`chargeExcluded`). The arm is re-run once at the end of the session, after the gate. The arm order is kept: the
+   re-run goes last.
+3. Every segment line records its `chargeMode`, so the score can check the rule.
+
+**Fallback: the session runs "charging", and is compared as such.** It applies if the gate times out at 20 min (the
+phone keeps charging), or if a second segment in the same session is excluded for charging:
+- The session stops, and its segments so far are kept but not used.
+- It restarts from its first arm with `--charge-mode charging` and the gate `charge-wait --want charging`. Every arm
+  then runs while charging, and a segment with a held read is excluded instead.
+- **A cross-session verdict needs both sessions in the same state.** `heat.mjs score` checks this. If one session
+  ran held and the other charging, both verdicts are "incomplete (the sessions differ in charge state)", and each
+  session's deltas are reported separately. A third session in the matching state needs the lead.
+- **Caveat for a charging session:** charging adds its own heat, and that heat falls as the battery fills. Both arms
+  of a pair share it, and the reversed order in H2 cancels a steady trend. Its deltas are still read as "under
+  charging" and are never pooled with held ones.
+
+**Not chosen:** waiting for `FullyCharged` true. With an 80 % limit the phone may never report full while held, so
+the block could wait forever. "Held" is the steady state that the limit gives.
 
 ## Controls
 
@@ -220,7 +257,9 @@ runs; all not charging):
 ## Decision rules (pre-registered; `heat.mjs score`, sha256/12 in "Files")
 
 Per segment: the OLS slope of battery temperature against time over 60-360 s (11 reads), corrected to 37.0 °C (k =
-0.045). Per session h, Δ_h = corrected(B) − corrected(A); the same for B − X. Excluded: VOID and charging segments.
+0.045). Per session h, Δ_h = corrected(B) − corrected(A); the same for B − X. Excluded: VOID segments, and segments
+with any read outside the session's charge state ("Charging rule"). Both sessions must share one charge state;
+otherwise every verdict is "incomplete (the sessions differ in charge state)".
 
 | comparison | verdict | condition, BOTH sessions |
 |---|---|---|
@@ -281,10 +320,19 @@ Corrected slopes at 37.0 °C, per segment, °C/min:
   - Side effect: the Mac sends one GET for `https://www.apple.com/__mirror/info`. It carries no personal data.
 - **`iphone.mjs run` reloads whatever page Safari shows** (`tools/lib/iphone-run.mjs` runCmd). A lease URL that
   differs only prints a warning. `meta.href` passes `lanSafeUrl`, which leaves public hosts as they are.
-- After each run, `servedHashes` re-fetches the page's same-origin scripts and stylesheets from the Mac. For apple.com,
-  that is up to ~22 GETs to apple.com per cycle (15 scripts and 7 stylesheets in the HTML, only the same-origin ones;
-  no personal data), while the phone holds at y≈5000. The cycle's wall time
-  is recorded, so this is visible.
+- **The Mac-side GETs to apple.com.** After every run, `tools/lib/iphone-run.mjs` runCmd calls
+  `servedHashes(await c.evaluate(RESOURCES_JS))`. That function `fetch`es each same-origin script and stylesheet the
+  page loaded, from the Mac, and hashes it into `meta.served`. For apple.com that is up to ~22 GETs per cycle (15
+  scripts and 7 stylesheets in the HTML), sent while the phone holds at y≈5000. The cycle's wall time is recorded, so
+  this is visible. They carry no personal data: plain GETs for public files, with Node's default headers.
+  - **No skip exists today.** The call is unconditional: there is no flag, and no check whether the page is our
+    mirror. A read-only use of `iphone.mjs run` without the fetch does not exist either. `iphone.mjs scroll` (driver
+    S) is not the W routine, so switching would break "identical per arm".
+  - **Pre-registered handling:** the GETs are **accepted for now** on arm A, and logged as a known deviation. They
+    are tracked in incident I-075 (a skip for non-mirror pages, or a `--no-served` flag). If that lands on `main`
+    before H1's first segment, A runs with the skip (only Mac-side traffic and `meta.served` change; the phone does
+    the same work), and the run sheet names the flag. If it lands between H1 and H2, H2 keeps the H1 tooling so both
+    sessions match.
 - **No tool logs the battery on a schedule, and `BATTERY_KEYS` drops the power keys.** The research tool
   `research/phone-heat/heat.mjs` covers both without touching `tools/`:
   - it calls `idevicediagnostics ioregentry AppleSmartBattery` itself and parses the plist properly (depth-aware: a
@@ -296,12 +344,14 @@ Corrected slopes at 37.0 °C, per segment, °C/min:
   output), a `--dry-run` segment, and synthetic Newton-model samples through `score`, in three scenarios (Fastwork
   more, the same, apple.com more). All gave the expected verdicts.
 
-**Minimal toolsmith changes:** none is needed for this ticket. Two are recommended for later, since work at rest is
-now a goal and every fix reports it:
-1. `iphone.mjs battery [--every 30] [--seconds N] [--out f.jsonl]`, a scheduled logger, and `BATTERY_KEYS` extended
-   with the power keys the pre-flight confirms. This moves `heat.mjs`'s reader into `tools/` with tests.
-2. Optionally, `servedHashes` skips pages that are not our mirror (`mirrorInfo` null), or a `--no-served` flag. This
-   saves the apple.com re-fetches.
+**Minimal toolsmith changes:** none is needed for this ticket. All three below are tracked as **incident I-075**
+(`--class tool`, non-blocking), since work at rest is now a goal and every fix reports it:
+1. `iphone.mjs battery [--every 30] [--seconds N] [--out f.jsonl]`, a scheduled logger. This moves `heat.mjs`'s reader
+   (and its `charge-wait` gate) into `tools/`, with tests.
+2. `BATTERY_KEYS` extended with the power keys the pre-flight confirms (`Voltage`, `Amperage`, `InstantAmperage`,
+   `VirtualTemperature`, `AdapterDetails.Watts`).
+3. `servedHashes` skips pages that are not our mirror (`mirrorInfo` null), or a `--no-served` flag on `iphone.mjs
+   run`. This removes the apple.com re-fetches (see above).
 
 ## Run sheet (iphone-runner)
 
@@ -314,14 +364,18 @@ Pre-flight, once, before H1 (inside the `iphone` lease):
    `iphone.mjs open <url>` + one `iphone.mjs run --driver window … --warmup --label heat-warm-<arm>` (same flags as a
    cycle). From A's warm-up, check `docH` ≥ 5800 and the URL (else the fallback page).
 4. User console steps: the phone settings above, the charging setting, and room/AC "unchanged" for the session.
-5. Bring the phone into 36.0-37.0 °C (cool or pre-warm as above).
+5. Before H1 only: log which X is used (st6-rb2, or a stacked build per the amendment rule, with hashes) and whether
+   I-075's skip is on `main`. Both stay fixed for H2.
+6. Bring the phone into 36.0-37.0 °C (cool or pre-warm as above).
 
-Per segment (H1: F A B X; H2: X B A F):
+Per segment (H1: F A B X; H2: X B A F), the charging gate first, then the temperature gate, then the segment:
 ```sh
-node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "phone heat H1-1F" -- \
-  node research/phone-heat/heat.mjs segment --session H1 --seg 1 --arm F --url http://lan:<pF>/heat-floor.html --owner iphone-runner
+node research/phone-heat/heat.mjs charge-wait --want held          # exit 3 after 20 min = the fallback ("Charging rule")
 node tools/wait.mjs phone-temp --below 37.0 --every 30 --timeout 900 --reason "phone heat: cooling to the segment start window"
+node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "phone heat H1-1F" -- \
+  node research/phone-heat/heat.mjs segment --session H1 --seg 1 --arm F --charge-mode held --url http://lan:<pF>/heat-floor.html --owner iphone-runner
 ```
+In a fallback session, replace `held` with `charging` in both places.
 At the end: `node research/phone-heat/heat.mjs score --out out/phone-heat/score.json`. Send de-heat the score output,
 `samples.jsonl` and the console answers. de-heat commits the derived numbers: samples without URLs beyond the
 placeholder, and no apple.com run records.
@@ -334,6 +388,6 @@ placeholder, and no apple.com run records.
 
 ## Files
 
-- `heat.mjs`: battery reader, segment runner, pre-registered scorer. sha256/12 `38f81442ccad` at this commit.
+- `heat.mjs`: battery reader, segment runner, pre-registered scorer. sha256/12 `341a774801ae` at this commit (amended pre-data 10-02 22:4xZ: charge mode, `charge-wait` gate, charge-state exclusion; was `38f81442ccad` at 4bf2319).
 - `floor/heat-floor.html`: the floor page. sha256/12 `30098372d8c1`.
 - Results (after data): `results.json` and `samples.jsonl` (derived, LAN-scrubbed), plus a result section here.

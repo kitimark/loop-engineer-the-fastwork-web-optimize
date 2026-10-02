@@ -6,9 +6,12 @@
 //   node research/phone-heat/heat.mjs keys                      # AppleSmartBattery key NAMES (no values), depth <= 2
 //   node research/phone-heat/heat.mjs once [--label l]          # one battery sample to stdout (whitelisted keys)
 //   node research/phone-heat/heat.mjs segment --session H1|H2 --seg <n> --arm F|A|B|X --url <u> --owner <o>
-//        [--seconds 360] [--every 30] [--out out/phone-heat/samples.jsonl] [--dry-run]
+//        [--charge-mode held|charging] [--seconds 360] [--every 30] [--out out/phone-heat/samples.jsonl] [--dry-run]
 //        # open <u>; battery every --every s from t=0 to t=--seconds; back-to-back `iphone.mjs run` W cycles
 //        # (the ticket's routine) until t=--seconds; then park. Appends samples + one segment line to --out.
+//   node research/phone-heat/heat.mjs charge-wait [--want held|charging] [--every 30] [--timeout 1200]
+//        # the charging gate before each segment (README "Charging rule"): exit 0 MET when one read shows the wanted
+//        # state (held = on the cable and IsCharging false; charging = IsCharging true), 3 TIMEOUT, 1 no reading
 //   node research/phone-heat/heat.mjs score [--in out/phone-heat/samples.jsonl] [--out out/phone-heat/score.json]
 //
 // Hard rule 12: only whitelisted numeric/boolean battery keys are kept; `keys` prints names only; URLs go through
@@ -32,7 +35,10 @@ export const PRE = Object.freeze({
   moreC: 0.10,          // °C/min: "heats more" needs this in BOTH sessions (A vs B)
   sameC: 0.05,          // °C/min: "about the same" needs |delta| below this in BOTH sessions
   fixC: 0.05,           // °C/min: X vs B, "the fixes cool the phone" needs this in BOTH sessions
+  chargeGateS: 1200,    // charging gate: wait at most this long for the session's charge state before a segment
 });
+/** Charge state of one battery read: 'held' (on the cable, not charging), 'charging', or 'other' (off the cable). */
+export const chargeState = (b) => (b?.IsCharging === true ? 'charging' : b?.ExternalConnected === true && b?.IsCharging === false ? 'held' : 'other');
 export const KEEP = ['Temperature', 'VirtualTemperature', 'IsCharging', 'ExternalConnected', 'FullyCharged', 'CurrentCapacity', 'Voltage', 'Amperage', 'InstantAmperage'];
 
 // ---- a small XML plist reader (dict, array, key, integer, real, string, true, false, data, date) ----
@@ -101,6 +107,8 @@ const flag = (n) => argv.includes(`--${n}`);
 async function segment() {
   const session = opt('session'), seg = opt('seg'), arm = opt('arm'), url = opt('url'), owner = opt('owner');
   if (!/^H[12]$/.test(session || '') || !/^\d+$/.test(seg || '') || !/^[FABX]$/.test(arm || '') || !url || !owner) throw new Error('segment needs --session H1|H2 --seg <n> --arm F|A|B|X --url <u> --owner <o>');
+  const chargeMode = opt('charge-mode', 'held');
+  if (!['held', 'charging'].includes(chargeMode)) throw new Error('--charge-mode is held or charging');
   const seconds = Number(opt('seconds', 360)), every = Number(opt('every', 30)), idlePhase = Number(opt('idle-phase', PRE.idlePhaseS)), dry = flag('dry-run');
   const out = resolve(REPO, opt('out', 'out/phone-heat/samples.jsonl'));
   mkdirSync(dirname(out), { recursive: true });
@@ -144,7 +152,7 @@ async function segment() {
   if (voided) timers.forEach(clearTimeout);
   while (pending || (!voided && Date.now() - t0 < seconds * 1000 + 500)) await new Promise((res) => setTimeout(res, 250));
   await sh(['park', '--owner', owner]);
-  write({ kind: 'segment', id, session, seg: Number(seg), arm, url: lanSafeUrl(url), t0: new Date(t0).toISOString(), seconds, every, idlePhase, cycles, void: voided });
+  write({ kind: 'segment', id, session, seg: Number(seg), arm, chargeMode, url: lanSafeUrl(url), t0: new Date(t0).toISOString(), seconds, every, idlePhase, cycles, void: voided });
   console.log(`SEGMENT ${id} ${voided ? 'VOID (' + voided + ')' : 'DONE'}: ${cycles.length} cycles; ${out}`);
 }
 
@@ -163,7 +171,10 @@ export function scoreSegments(lines, pre = PRE) {
     const win = ss.filter((l) => l.sNominal >= pre.windowS[0] && l.sNominal <= pre.windowS[1]);
     const start = ss.find((l) => l.sNominal === 0);
     const charging = ss.some((l) => l.IsCharging === true);
-    const r = { id: g.id, session: g.session, arm: g.arm, n: win.length, startC: start?.tC ?? null, cycles: g.cycles?.length ?? 0, charging, void: g.void || (win.length < pre.minSamples ? `${win.length} samples in the window` : null) };
+    const chargeMode = g.chargeMode || 'held';
+    // excluded when any read is not the session's charge state (held: a charging or off-cable read; charging: a held one)
+    const chargeExcluded = ss.some((l) => chargeState(l) !== chargeMode);
+    const r = { id: g.id, session: g.session, arm: g.arm, n: win.length, startC: start?.tC ?? null, cycles: g.cycles?.length ?? 0, charging, chargeMode, chargeExcluded, void: g.void || (win.length < pre.minSamples ? `${win.length} samples in the window` : null) };
     if (win.length >= 2) {
       const f = ols(win.map((l) => [l.sNominal / 60, l.tC]));
       r.slope = round(f.slope); r.meanC = round(f.meanY, 2); r.corr = round(f.slope + pre.k * (f.meanY - pre.tRefC));
@@ -183,11 +194,15 @@ const median = (a) => { const s = [...a].sort((x, y) => x - y); return s.length 
 
 /** The ticket's decision rules over scored segments. Primary = corrected slopes; raw = check. */
 export function verdicts(segs, pre = PRE) {
-  const ok = segs.filter((s) => !s.void && !s.charging && typeof s.corr === 'number');
+  const ok = segs.filter((s) => !s.void && !(s.chargeExcluded ?? s.charging) && typeof s.corr === 'number');
+  // both sessions must share one charge state (README "Charging rule"); otherwise no cross-session verdict
+  const modes = ['H1', 'H2'].map((h) => [...new Set(segs.filter((s) => s.session === h).map((s) => s.chargeMode || 'held'))].join('+') || null);
+  const sameMode = modes[0] !== null && modes[0] === modes[1] && !modes[0].includes('+');
   const get = (session, arm, f) => ok.find((s) => s.session === session && s.arm === arm)?.[f];
   const pair = (a, b, f) => ['H1', 'H2'].map((h) => { const x = get(h, a, f), y = get(h, b, f); return typeof x === 'number' && typeof y === 'number' ? round(x - y) : null; });
   const both = (d, p) => d.every((v) => v !== null && p(v));
   const decide = (dc, dr, more, same, words) => {
+    if (!sameMode) return { verdict: 'incomplete (the sessions differ in charge state)', dCorr: dc, dRaw: dr };
     if (dc.some((v) => v === null)) return { verdict: 'incomplete', dCorr: dc, dRaw: dr };
     let v = both(dc, (x) => x >= more) ? words[0] : both(dc, (x) => x <= -more) ? words[1] : both(dc, (x) => Math.abs(x) < same) ? words[2] : 'inconclusive';
     const rawSame = v === words[0] ? both(dr, (x) => x > 0) : v === words[1] ? both(dr, (x) => x < 0) : true;
@@ -198,10 +213,30 @@ export function verdicts(segs, pre = PRE) {
     fastworkVsApple: decide(pair('B', 'A', 'corr'), pair('B', 'A', 'slope'), pre.moreC, pre.sameC, ['Fastwork heats more', 'apple.com heats more', 'about the same']),
     fixesVsBaseline: decide(pair('B', 'X', 'corr'), pair('B', 'X', 'slope'), pre.fixC, pre.fixC, ['the fixes cool the phone', 'the fixes heat the phone', 'no detectable change']),
   };
+  out.chargeMode = { H1: modes[0], H2: modes[1] };
   out.floorCheck = ['H1', 'H2'].map((h) => { const f = get(h, 'F', 'corr'); const others = ['A', 'B', 'X'].map((a) => get(h, a, 'corr')).filter((x) => typeof x === 'number'); return f === undefined ? null : others.every((x) => x > f); });
   const ex = (a) => ['H1', 'H2'].map((h) => { const x = get(h, a, 'corr'), f = get(h, 'F', 'corr'); return typeof x === 'number' && typeof f === 'number' ? round(x - f) : null; });
   out.excessOverFloor = { A: ex('A'), B: ex('B'), X: ex('X') };
   return out;
+}
+
+async function chargeWait() {
+  const want = opt('want', 'held'), every = Number(opt('every', 30)), timeout = Number(opt('timeout', PRE.chargeGateS));
+  if (!['held', 'charging'].includes(want)) throw new Error('--want is held or charging');
+  const t0 = Date.now();
+  let last = null, fails = 0;
+  for (;;) {
+    const b = await readBattery();
+    if (b.error) { if (++fails >= 3) { console.log(`UNAVAILABLE charge-wait: ${b.error}`); process.exit(1); } }
+    else {
+      fails = 0;
+      const p = pickBattery(b.d);
+      last = { state: chargeState(p), IsCharging: p.IsCharging, ExternalConnected: p.ExternalConnected, FullyCharged: p.FullyCharged, CurrentCapacity: p.CurrentCapacity, tC: p.tC };
+      if (last.state === want) { console.log(`MET charge-wait ${want} after ${Math.round((Date.now() - t0) / 1000)} s: ${JSON.stringify(last)}`); return; }
+    }
+    if (Date.now() - t0 + every * 1000 > timeout * 1000) { console.log(`TIMEOUT charge-wait ${want} after ${Math.round((Date.now() - t0) / 1000)} s: ${JSON.stringify(last)}`); process.exit(3); }
+    await new Promise((res) => setTimeout(res, every * 1000));
+  }
 }
 
 async function score() {
@@ -209,7 +244,7 @@ async function score() {
   const lines = readFileSync(inp, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const segs = scoreSegments(lines);
   const v = verdicts(segs);
-  for (const s of segs) console.log(`${s.id} ${s.arm}: start ${s.startC} mean ${s.meanC} slope ${s.slope} corr ${s.corr} C/min (idle ${s.idleSlope}, cycles ${s.cycleSlope}) n ${s.n} cycles ${s.cycles}${s.charging ? ' CHARGING' : ''}${s.void ? ' VOID ' + s.void : ''}${s.batteryW ? ' battery ' + s.batteryW.median + ' W' : ''}`);
+  for (const s of segs) console.log(`${s.id} ${s.arm}: start ${s.startC} mean ${s.meanC} slope ${s.slope} corr ${s.corr} C/min (idle ${s.idleSlope}, cycles ${s.cycleSlope}) n ${s.n} cycles ${s.cycles}${s.chargeMode === 'charging' ? ' [charge-mode charging]' : ''}${s.chargeExcluded ? ' EXCLUDED (charge state)' : s.charging ? ' CHARGING' : ''}${s.void ? ' VOID ' + s.void : ''}${s.batteryW ? ' battery ' + s.batteryW.median + ' W' : ''}`);
   console.log(JSON.stringify(v, null, 1));
   const o = opt('out'); if (o) { writeFileSync(resolve(REPO, o), JSON.stringify({ pre: PRE, segments: segs, verdicts: v }, null, 1)); console.log(`saved ${o}`); }
 }
@@ -220,6 +255,7 @@ async function main() {
   if (cmd === 'once') { const b = await readBattery(); console.log(JSON.stringify({ t: new Date().toISOString(), label: opt('label', ''), ...(b.error ? { error: b.error } : pickBattery(b.d)) })); return; }
   if (cmd === 'segment') return segment();
   if (cmd === 'score') return score();
-  console.log('usage: node research/phone-heat/heat.mjs keys | once [--label l] | segment --session H1|H2 --seg n --arm F|A|B|X --url u --owner o [--seconds 360] [--every 30] [--out f] [--dry-run] | score [--in f] [--out f]');
+  if (cmd === 'charge-wait') return chargeWait();
+  console.log('usage: node research/phone-heat/heat.mjs keys | once [--label l] | segment --session H1|H2 --seg n --arm F|A|B|X --url u --owner o [--seconds 360] [--every 30] [--out f] [--dry-run] | charge-wait [--want held|charging] [--every 30] [--timeout 1200] | score [--in f] [--out f]');
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch((e) => { console.error(e.message || e); process.exit(1); });
