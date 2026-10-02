@@ -103,3 +103,89 @@ start. This holds structure only; Simulator ms are never a verdict.
 
 - No phone block and no timing of the stack (lead option (a)). The F-129 keys are not measured.
 - Not re-run on this stack: tap, toolbar resize, rubber band (none were run on RBi40pti or HC either).
+
+## Phone ticket S7: st6's gain at rest, on st6-rb2 (pre-data; prediction P-067)
+
+**Owner:** `fix-scroll-engine` (st6). **Runner:** `iphone-runner`. **Order (lead, 2026-10-02 21:58Z):** after G2 and P-065, before F3.
+This is a timing block. The user allowed it as an exception to the timing hold, for this fix only (T-027 #5).
+
+**Question.** st6 removed the rotator's whole-view tick Layout on RB: slide-start view Layouts went from 71/71 to 1/36
+(`fixes/rotator-st6/README.md`). In A1 the idle dt > 34 count was C 3, 2, 4 vs NB 0, 0, 0. Is that gain still there on
+the current best build, st6-rb2, with the page at rest at the top? The control is the same build without st6.
+
+**Arms.** Immutable copies (`chmod a-w`) in this worktree. From the main checkout:
+`.claude/worktrees/agent-a1722cf5058e25591/out/st6t/snap/{C,V}`.
+
+| arm | build | `nodes/2.DyWL8TcE.js` | `assets/2.gBuqKVzi.css` |
+|---|---|---|---|
+| C (control) | st6-rb2 − st6 = `fix.mjs combine st6-ctl user-bplus scene-scope` (RBi40pti: JS as on main, CSS = T-011's V) + shell-hold-c's CSS block (`out/st6t/hold-delta.diff`, S6 → HC, `patch -F0`) | `0144d2cd032a` | `add63ff17fb7` |
+| V | **st6-rb2** (`fix.mjs apply st6-rb2`, as landed) | `7bf7c4657d21` | `f523598b2a24` |
+
+- C → V differs only by rotator-st6's own lines plus the coupling selector. Checked line by line: JS +9 −5, which is
+  exactly rotator-st6's JS. CSS +30 −2, which is rotator-st6's +27 −2 plus the coupling selector and its 2 comment lines.
+- So the block measures st6, with its coupling, on the best build, and nothing else.
+- C's rotator is the site's own: a keyed `{#if}` that swaps a 4-img and a 5-img block on each tick.
+
+**Serve.** One server per arm, as for G2:
+`node tools/serve.mjs --root site-pretty --overlay <snap>/<arm> --port 0 --https --vendors=local --latency 150 --no-cache --state …`.
+The phone uses the plain-http twin (I-003). Check every served hash against the table before the block.
+
+**Driver S**, the same in every run:
+```sh
+node tools/iphone.mjs run --driver scroll --probe std --idle 20 --owner iphone-runner --label S7-<n><arm> --arm <C|V> --build <C|st6-rb2> --run <n> --block S7 --low-power off
+```
+- Settle 8 s (the default), then a 20 s idle phase at the top, then the S scroll and a 3 s bottom phase.
+- The rotator ticks about every 1.02 s: `f(800)`, slide start, `f(220)`, swap (JS 11575 loop). So 20 s gives about
+  19 slide starts and 19 swaps per run.
+- The page is not touched.
+
+**Block** (protocol v2 §5, Timeline off, no recordings T-018):
+1. Cool with `node tools/wait.mjs phone-temp --below auto` (≤ 10 min). Low Power Mode must be off. Park Safari.
+2. Run one uncounted warm-up per port (`--warmup`): C, then V.
+3. Run the opening heat check: one uncounted C run. It must reach bottom ≥ 58 fps and scroll ≥ 44 fps.
+4. Run 8 counted runs: **C V V C C V V C**, `--run 1..8`.
+5. Run the end heat check (C). Park Safari and stop the servers.
+- Time: 12 runs at about 50 s, plus the opens, is about 15 min, plus cooling.
+
+**Validity.** As in G2 and A1:
+- Every counted C run must pass the sentinel bar. A failing control voids every run since the last passing one; cool,
+  then restart the block.
+- A run is void for a wrong served hash, Low Power Mode, a touched phone, or an attached inspector (§5.5).
+- Log load1 and the battery temperature for every run. A quiet Mac is preferred but does not block the run. A
+  LOAD > 8 run is flagged, not void.
+- **Tick gate:** a run whose detected ticks are fewer than 0.8 × the expected count (idle s / 1.025 for starts) is left
+  out of row 2 only.
+
+**Scoring:** `python3 out/st6t/st6score.py <counted run files>` (sha256 `7a8fed7fb4c3`; warm-ups are skipped).
+- **Idle phase:** the frames inside `marks.idle`. Counts at > 50 and > 34, with twins > 46 / > 54 and > 30 / > 38;
+  near-band frames listed.
+- **Ticks**, inside the idle phase:
+  - V: the class crossings on `div.start-selling-avatars`. `+is-sliding` is a start, `-is-sliding` a swap.
+  - C: the mutation rows with childList ≥ 13 (the 4↔5 block swap is 15 nodes per tick in A1's RB runs, OBSERVED). A
+    tick 150-400 ms after the previous one is a swap; any other is a start.
+  - Per tick: the max dt over frames k − 1 to t + 260 ms, where k is the tick's frame.
+- **Scroll:** dt > 50 and dt > 34 per run (guard and context).
+- The scorer was checked on A1 (RB vs NB = RB + st6, 3 s idle):
+  - idle > 34 sums C 9 vs NB 0;
+  - tick frames > 34: C starts 7/9, swaps 3/6; NB 1/10;
+  - verdict Gain, not threshold-sensitive.
+- **The UI-process half of the FAIL rule is "not checked on the phone since T-018".** Main-thread FAIL is not read:
+  S has no flinglog.
+
+**Rows and decision** (fixed before data; sums over the 4 C and the 4 V runs):
+
+| row | read | decision |
+|---|---|---|
+| **1. Idle (primary)** | idle dt > 34 and > 50 sums | **Gain:** V's > 34 is at least 2 below C's **and** V's > 50 ≤ C's. A twin (> 30 / > 38 with > 46 / > 54) that flips it makes it threshold-sensitive, and that counts as not Gain. Otherwise **No gain**. |
+| 2. Ticks | the share of starts and swaps with a frame > 34 (and > 50), per arm | Reported with row 1. It is the mechanism readout: C high, V near 0 is st6's signature. |
+| 3. Guard | scroll dt > 50, median per run | A V median more than 1 above C's is a regression. Report it, with no landing claim. |
+| 4. Context | scroll dt > 34, bottom and scroll fps | Reported only. |
+
+- Gain with no regression: st6's at-rest gain is confirmed on st6-rb2, and the result goes to the lead.
+- No gain: report to the lead. st6 stays on main, since it already landed with PR-003 A. The lead decides.
+
+**Prediction P-067** (`fixes/PREDICTIONS.md`, committed before any data):
+- Row 1 is Gain and not threshold-sensitive. C idle > 34 per run is 8-25 and V's is 0-2.
+- Row 2: C's starts > 34 in ≥ 50 %, C's swaps in ≥ 25 %, V's ticks in ≤ 10 %.
+- Row 3: no regression.
+- Falsified if V's idle > 34 sum is above C's − 2, or if C's ticks > 34 fall under 25 %.
