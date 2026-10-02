@@ -379,7 +379,8 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
     <pid>`; phone cooling: `wait.mjs phone-temp --below auto` (never a fixed `wait.mjs time`, user T-016); `incident.mjs wait <id>`; `finding.mjs wait --as <you>`.
   - A peer's reply has no command: wait on what the reply is about, or do other work.
   - Before any wait, set your board row (`status.mjs set … --state waiting --waiting-on "<what>"`), so the user sees
-    who waits for what (user T-016, I-058).
+    who waits for what (user T-016, I-058). Give any `wait.mjs` a `--reason "<plain words>"`: the board shows it in
+    place of a path or regex (I-060).
   Send peers what they need before your final report, which goes only to your spawner.
 - **Report your branch** with `git branch --show-current` in your own worktree, never from the git status in your
   context (it is the session's, i.e. another agent's).
@@ -527,6 +528,10 @@ node tools/lock.mjs release iphone --owner <topic>
 
 - Lock state looks wrong: `lock.mjs doctor`; the lead repairs with `lock.mjs repair … --apply` (audited).
   Never edit the lock JSON by hand.
+- **Say what a hold is for** (I-060, the progress page's "Right now"): `acquire|renew|run` take `--doing "<plain line>"
+  [--for <fix/agent>] [--eta-min N]`; mid-hold `lock.mjs doing <lock> --owner <you> --text "timing test for the blur
+  change, run 3 of 9" [--for …] [--eta-min N] | --clear`. Without it the page shows your board note.
+  `iphone.mjs scroll|record|run|gesture` mark their own run (from `--label`, or `--doing`). Plain words, nothing personal.
 
 iPhone protocol on top of the lease:
 1. Acquire the lease, then message the lead: "iPhone acquired for <topic>: <LAN URL>".
