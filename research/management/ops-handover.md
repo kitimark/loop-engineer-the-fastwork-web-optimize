@@ -241,6 +241,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   interval. Every Chrome hold ran with the display OFF (I-033). Lead resumed fix-scene-scope for one more frames hold:
   pin the count-up so A/A is identical at 430; 20+20 interleaved loads of the y7500 frame with a Fisher p. Then
   review-scene-scope-3, and the lead takes the 1440 numbers to the user (no pixel waiver by the lead).
+  06:1xZ scene-scope frames re-check 61b9b9b: 1440 y7500 V 0/22 vs S0 0/22 differing, p = 1 (pooled 1/23 vs 0/24,
+  p = 0.49). 430 with pageframes4 (IO hold): the remaining differences also show in A/A (y3900 "5" glyph 76 px Δ1; S0's
+  first-load avatar Δ66); none are V-only. P-056a(c1) stays a strict MISS as written (the gap is in the frame check).
+  review-scene-scope-3 spawned (read-only, fix-reviewer definition); fix-scene-scope parked waiting on it. After the
+  verdict the lead takes the pixel numbers to the user (T-001), then signs or returns the D card.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
