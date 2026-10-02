@@ -8,6 +8,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **23:4xZ C-026 blind swipe (T-031 #3 a) answered 23:41Z:** original (O, 4606120cf392/27776f3d4138) vs st6-rb2
+  (B, 7bf7c4657d21/f523598b2a24), coin page1 = O; the user picked page 2 = **B smoother**: the hero and the nav morph
+  quite a bit smoother than the original; still a little laggy (the user's guess: CPU work) and asks de-gpu whether
+  GPU work can smooth it further; the lead made that de-gpu's top task, incl. the toolbar-resize lead (innerHeightChanges
+  63/94 per swipe). Finger records (single F runs, not a counted block, OBSERVED): moving frames O 944 / B 895, >34 ms
+  122 / 81, >50 ms 44 / 13, max 100 / 96 ms; battery 37.4 → 39.1 °C, load1 ~4. PROGRESS best-stack
+  felt = the blind result, upcoming swipe entry removed, user line 23:45Z. Landed meanwhile: 3fb0ebb (de-countdown X1
+  stage 2 block plan, pre-data). Next on the phone: F3 P-036 re-run, then X1 stage 2, then P-068.
 - **23:3xZ (b) fcfc391 landed (main = fcfc391). X1 A1b (P-069, de-countdown) VALID, 23:24Z; user chose X1 stage 2 (T-024 #8).** (iv) EXPLAINED as
   pre-registered: V's 2 stale updates sit at rendered opacity exactly 0 in both arms; the clock is live from the first
   visible update. (i) is with the user, T-024 #7, 3 options: a short countdown-only phone timing test (recommended),
