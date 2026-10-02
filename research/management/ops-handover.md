@@ -8,6 +8,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **12:1xZ-b (batch) Lead decisions on the parked list; fix-image-size spawned; peer directory refreshed.**
+  - **image-size started:** fix-image-size (worktree). Gate: Chrome pixels, Simulator decoded memory (counts only) and
+    bytes; no timing. The lead fast-paths D. Expect a PREDICTIONS row request from it (next free P-066).
+  - **Stay parked:** anim-transform, re-keep-op, cdwc, f3-arm-scope, blur-cubic, the wi-stack Sim spot check (low value
+    without the phone; the Mac lane is busy with the Simulator). r4-v3's Chrome check is parked too (fix-scene-scope
+    isn't running); the lead revisits if the Mac lane goes idle.
+  - Peer directory rewritten to this session's live agents; the 10-01 rows were removed (in git history).
 - **12:1xZ (batch) No-phone plan posted (lead, T-022 #4, 11:55Z); phone released 11:56Z; T-023 opened.**
   - **On hold until the phone returns:** P-065 word-alone (2 blocks), G2 (P-064), the ioscap first run (hardening done).
   - **Now (Chrome/Sim only, no timing tests):** de-illusion-style: Sim tlcounts FP vs WA, then the 1 % pixel cause,
@@ -1264,57 +1271,24 @@ between tool calls.
 Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
 incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
 
-| address | owns | state (12:2xZ; mgmt-ops, ts-* rows 17:3xZ) |
+| address | owns | state (10-02 12:0xZ, refreshed by mgmt-ops-7) |
 |---|---|---|
-| `main` | lead: lands, resolves, reorders locks, spawns, user | alive |
-| `mgmt-ops-7` (spawned by the lead 10-02 09:1xZ; mgmt-ops-6 ENDED 09:12Z, mgmt-ops-5 ENDED) | ops hub, iPhone queue, DIRECTION, handover, land batches, PREDICTIONS, PROGRESS.json | alive |
-| `iphone-runner` (a7696771bf38f1229) | phone blocks, controls, logger | alive |
-| `fix-nav-morph` (a277ea00c8773c1ea) | morph (gh, ghbn, R8/R5, R2), y≈1960 IO frame (src, noinert: no win), N12 | alive, holds rebase |
-| `fix-hero-exit` (a77e2ec753b6381fb) | hero window y 0-900: v2, h1, ST-2 builds, D5, hero-B | alive |
-| fix-scroll-engine = ID `a1722cf5058e25591` | N14 layout-containment (R/I now), /10d (parked), R2 bg-layers, R3a/b | alive |
-| `ts-gesture` | WDA gesture tool (NEEDS-WORK; user setup pending) | alive |
-| arch-lead = `ae2d21af96d758d16` | measurement protocol v2 | ENDED 11:4xZ (docs follow-ups -> doc-protocol-v2) |
-| arch-safari = `a765c480ea490a443`, de-safari = `a4ce1669dd33aa4dc` | Safari probing / iOS time model (read-only) | alive |
-| arch-devtools = `ad5593c3c7d3b8c97`, de-devtools = `a21e6c00411aba4d8` | Chrome DevTools method (read-only) | done |
-| `ts-iphone-run` (T1a f8e7d5a), `ts-analysis` (T3), `ts-render-signals` (T6+T7, I-032) | protocol v2 tools; 17:3xZ: ts-iphone-run owes N1 (pickTab errors leak the LAN host into gesture JSON; no gesture JSON in committed files until it lands), then I-038; ts-render-signals owes the I-032 land request (B1 58857d0 ACCEPT, rebase + clean test:chrome after 16:45Z) | alive |
-| `arch-sim` | iOS Simulator fidelity (user work stream, lead 14:0xZ): research, plan, probe the Simulator against real-device records; Simulator runs are host-heavy -> always inside chrome-measure holds (≤ 10 min), slot like research holds | alive |
-| `ts-sim` | toolsmith: tools/sim.mjs from arch-sim's spec (lead spawns when the spec arrives) | not yet spawned |
-| `review-cdwc` | fix-reviewer of mw10e-cdwc (fix-nav-morph 051d0aa): NEEDS-WORK 14:1xZ (B1-B4) | done |
-| `review-stats` | fix-reviewer of ts-analysis eea3c06 (phone thresholds): NEEDS-WORK 14:1xZ; re-check 8409b95+ef802b9 ACCEPT-WITH-NOTES 14:2xZ | alive |
-| `ts-user-console` | toolsmith: tools/console.mjs local user step console (user-facing steps go there once landed) | alive |
-| `ts-progress` (a5748ebf9e8a3b086) | console Progress page + fixes/PROGRESS.json (landed 7614401 + c9ceb98) | done |
-| `ts-lock-bundle` | toolsmith: handover item 7b; I-035 landed 8935a7d; f10193c, a17909d, fb59f13, bb07e33, 14e503f (on c6ff3ea) under review by review-lock-bundle (17:5xZ); (f) shelved for good | alive |
-| `review-lock-bundle` | fix-reviewer (read-only) of ts-lock-bundle's 5 commits (lead spawn 17:5xZ): 18:0xZ NO BLOCKERS (f10193c ACCEPT; a17909d, fb59f13, bb07e33, 14e503f ACCEPT-WITH-NOTES); after landing: announce bench gain HOST-DISPLAY-CHANGED exit 3 until recalibration; host-real chrome test + test:chrome only with main's lock.mjs (I-041); CLAUDE.md line on `--no-timing` (lead) | done |
-| `ts-lock-share` | toolsmith (lead spawn 17:5xZ, user request): shared lane so functional-only jobs (npm test, Sim mechanism checks, bench mech, load-only sanity) run in parallel while timing keeps the exclusive slot; design first in research/architecture/lock-shared-lane.md for the lead, then implements under the I-041 rule | alive |
-| `ts-console-nav` | toolsmith (lead spawn 17:4xZ): user console menu + notifications | alive |
-| `ts-status-board` | toolsmith (lead spawn 18:4xZ, user request): live per-workstream status board (priority = lead only, state, waits from queues/console/incidents) on a console page next to /progress; design first in research/architecture/status-board.md (lead approves); briefed by mgmt-ops-6 on the PROGRESS.json split (board = workstreams + priority + waits; PROGRESS = user-facing fix narrative; link by item id). Once landed: keep the board in step with the lead | alive |
-| `fix-scene-scope` | fix owner (lead spawn 18:5xZ, PRIORITY 1 under style recalc): de-style-recalc's proposal, stacked on B: V1 narrow the `:where(*)` scene pause, V1b pause by API, V2 flip early, V3 panel + R4; Chrome check, then a W Timeline phone ticket (ahead of P-039 if both ready) | alive |
-| `de-illusion-style` | research (lead spawn 19:1xZ, USER PRIORITY 2 "optical illusion is acceptable"): cheaper look-alike renderings for style/layout costs; counts first, <= 2 batched Chrome holds before first proposals (queued after scene-scope + de-counts pair); proposals to the user via ts-proposals' page; no phone before Accept | alive |
-| `de-illusion-composite` | research (lead spawn 19:1xZ, USER PRIORITY 2): cheaper look-alikes for compositing/layers/blur; same rules as de-illusion-style | alive |
-| `ts-proposals` | toolsmith (lead spawn 19:1xZ): console Proposals page (read, visual compare, Accept/Reject/Request change); full `npm test` in the short lane | alive |
-| `ts-progress-lane` | toolsmith (lead spawn 22:11Z): I-048, shared-lane readers missing from the progress page and status board | ended (I-048 landed 9fd2d3a) |
-| `ts-i053` | toolsmith (lead spawn 06:4xZ): I-053, one proposal carries several options, the user picks one | alive |
-| `wi-stack` | wave integrator (lead spawn 07:1xZ): stack5 = cdwc + f3-arm-scope + re-keep-op + blur-cubic + st6 on today's best; functional checks (shared), phone ticket best vs stack5 (S) + blind swipe pair, P-row first; ask mgmt-ops for shas/branches | alive |
-| `ts-i054` | toolsmith (lead spawn 06:5xZ): I-054, serve.mjs HTTP Range support (blocks PR-001 arm V); changes what serve.mjs serves (called out, test:chrome); expect a shared-lane npm test | ENDED (landed 67847b4) |
-| `ts-i056` | toolsmith (lead spawn 07:5xZ): I-056 phone measure guard (a) shared group passes as short, (b) same-owner --no-timing exception, (c) gesture-run.mjs guard, (d) shared readers log to holds.log | alive |
-| `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
-| `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | ended (landed 14806cb..8fa38f7; worktree removed 20:2xZ) |
-| `ts-console-threads` | toolsmith: console threads (one thread per topic for the user) | ended (landed 545cf85, 77d318c, fc07bb1; worktree removed 20:2xZ) |
-| `ts-gesture` (Sim) | also owns the Simulator touch driver (`sim.mjs gesture`, after I-042 D1-D3 + safari-restart; lead 17:5xZ); the P-032 (b) Sim re-check waits on it | alive |
-| `review-t1a` | re-check of ts-iphone-run 7c83786 / f28f47e / 8d4f6a1 | alive |
-| `ts-wait` | toolsmith (lead spawn 13:3xZ, user request): blocking wait commands so agents stop sleep-loop polling; may ask iphone-runner + others what waiting hurt most | alive |
-| `ts-gesture` | gesture tool landed (3a3f895, 74f5abd); owns I-042 (G strokes play as flicks, F-085): phone probe slot after the user sitting | alive |
-| `res-layerpainted` | F-059/F-064/F-066 stamped, F-068 limitation posted | done |
-| `doc-protocol-v2` (aa630a1a8c0adae9f) | v2 docs pass (LEAD, README DoD, AGENT_PROMPT, fix-reviewer, EXPERIMENTS, CLAUDE.md); not ops docs | alive |
-| `arch-unknowns` (ENDED; C1 spec in unknowns-validity U1), `de-unknowns-render`, `de-unknowns-ux` (a47fed2b13de28ab2: pacing page F5, P-024) | unknowns hunt | de-* alive |
-| `map-webkit-amplifiers` | D2 mapper (haiku): page-wide scan for the two WebKit amplifiers | alive |
-| `ts-host-state` (a2bdbbb64c7731b2e) | T8+ host record landed 21ec95a + 34f6069 (I-033 RESOLVED) | done; C1 (lead, when the user is away) |
-| `ts-claims-board` | claims-audit §4: findings-board claim status + refs (lead spawn 12:5xZ) | alive |
-| `ts-bench-gain` (aabf938f2344fa8fc) | I-034 landed 526642f | done |
-| `arch-claims` (ae93098a3c9f77a35) | claim audit (user rule CLAUDE.md 71ad57d "Platform claims: confirm against a reference"): research/architecture/claims-audit.md, verifiers ver-webkit-style / ver-webkit-ca / ver-chrome; refutations -> owners + mgmt-ops | alive |
-| `review-host-state` | fix-reviewer (measurement mode) of T8+ 599471e | alive |
-| `de-pm-morph`, `de-pm-hero` (a3f2c31df32a28d11) | post-mortems (postmortem-morph.md, postmortem-hero.md §7 D3 = avatar rotator, F-058, F-063); de-pm-hero scores P14 offline (resumable) | de-pm-morph ENDED; de-pm-hero idle |
-| `arch-oss-survey` (a14e692b6f530f1c0), `de-oss-map` (af4a76a52eface067) | OSS rendering libraries survey + mechanism map -> 3-5 PoC shortlist for the lead (read-only) | alive |
+| `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
+| `mgmt-ops-7` (spawned 10-02 09:1xZ; mgmt-ops-6 and earlier ENDED) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive |
+| `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | parked (phone disconnected, T-022) |
+| `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (Sim step 3, then the A/B/C proposal recommending (B) drop); hero-carousel (parked) | alive |
+| `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
+| `fix-image-size` (new 12:0xZ; ID via ListAgents) | image-size: Chrome pixels, Sim decoded memory (counts only), bytes; no timing; D fast-pathed by the lead; will ask ops for a P-id (next free P-066) | alive |
+| `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | alive |
+| `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
+| `ts-i064` | I-064 toolsmith (rounds 1-2 landed 8ec1c6d, 11bc722) | done |
+| `wi-stack` (a93135040e12a061d) | best-stack, shell-hold-c (landed 81dbc9b), F-129; an optional Sim spot check is parked | done |
+| `fix-scene-scope` (a49a278f1d0bd6803) | scene-scope / RBi40pti (landed 1ce70e8), st6-rb2 restack (cff1a03); r4-v3 unassigned and parked | done (worktree kept) |
+
+Rows from the 10-01 session (fix-nav-morph, fix-hero-exit, ts-*, arch-*, de-*, review-*, and others) were removed at
+12:0xZ: those agents are not live in this session. Their owners in PROGRESS.json (fix-nav-morph for cdwc, f3-arm-scope
+and pin-clamp; fix-hero-exit for re-keep-op and blur-cubic) are now historical; ask the lead before messaging them. The
+old table is in this file's git history (before this commit).
 
 ## Who waits on what (08:55Z)
 
