@@ -259,7 +259,7 @@ npm run test:all      # both
 - Tool fixes go in **their own commit**, separate from fix deliverables, and are reported to the lead
   as an incident, who lands them on main (rebase + ff-only) so every worktree gets them. The lead
   runs `npm test` on the exact commit in the **main checkout** too: it has `site/`, worktrees don't.
-- `npm test` is about 55 s of CPU and 75 s wall (I-021): while others may be measuring, run it under the lock in the
+- `npm test` is about 55 s of CPU and 195-220 s wall (I-021; ~986 tests, lane doc §11): while others may be measuring, run it under the lock in the
   shared lane, `node tools/lock.mjs run chrome-measure --owner <you> --shared --weight 2 --max-seconds 300 -- npm test`
   (not `test:chrome`: it takes the lock itself), and hold a shared lease around a commit whose hook
   runs it: `node tools/lock.mjs acquire chrome-measure --owner <you> --shared --weight 2 --max-seconds 300 --wait 1800`,
