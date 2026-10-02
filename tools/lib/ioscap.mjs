@@ -148,7 +148,7 @@ export function holdKind(st = lockStatus('chrome-measure'), env = process.env) {
   const live = h && !st.stale && !staleReason(h);
   const mine = parseHeld(env.FW_LOCK_HELD)['chrome-measure'];
   if (live && mine && h.token === mine) return h.short ? 'short' : 'exclusive';
-  if (sharedSlot('chrome-measure', env.FW_LOCK_SHARED)) return 'shared';
+  if (sharedSlot('chrome-measure', env.FW_LOCK_SHARED || '')) return 'shared'; // '' not undefined: no fallback to process.env
   return null;
 }
 
