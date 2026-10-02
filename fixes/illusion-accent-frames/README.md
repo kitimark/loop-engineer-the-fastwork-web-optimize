@@ -321,6 +321,14 @@ timed.
 
 Cool between blocks with `node tools/wait.mjs phone-temp --below auto` (at most 10 min, protocol §5.3; never a fixed `wait.mjs time`). Record the battery temperature and the heat note per run.
 
+**Mac load** [amended 10-02 08:4xZ, pre-data, lead]. Log the Mac's load1 at each run start, every run.
+- *Preferred, not blocking:* run the blocks in the Mac-quiet window. That is an exclusive `--no-timing` chrome-measure
+  hold, with load1 ≤ 8 at each run start. Use it only if I-056(b) has landed by the time the blocks are due, so that
+  `iphone.mjs` does not wait on its own hold.
+- *Otherwise:* run without the hold, log load1, and do not wait for it.
+- *Why not blocking:* iphone-runner found that Mac load does not pace the S driver, which runs on the phone (ρ +0.11).
+  W runs on the phone too. A run with load1 > 8 is flagged in the result, not voided.
+
 | block | arms | counted order (rotated Latin square) | n per arm |
 |---|---|---|---|
 | A | C F1 F2 F3 | C F1 F3 F2 · F2 F3 F1 C (rows 1 and 3 of a Williams 4x4) | 2 runs = 4 'you' draws in, 4 out |
