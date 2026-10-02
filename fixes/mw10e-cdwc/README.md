@@ -163,8 +163,10 @@ iphone-runner, is still in progress.
       - Both tweens in both runs carry the t0-lag flag: 1 frame between OS delivery and the handler, 10-19 ms
         (OBSERVED, Simulator; reported, changes no rule).
       - Stroke contact was 2-17 % longer than planned on the Simulator; the phone, per ts-gesture, was within +8 %.
-        So the scorer's ±10 % stroke-fidelity void rule would void these Simulator runs. That rule is a scorer
-        addition, not registered. It is to be settled with the lead before any phone data.
+        The lead settled the stroke-fidelity rule before any phone data (registered in P-032/P-036, e0b8583):
+        - A phone G or F run is void when any stroke's contact time is more than 10 % off plan, in either
+          direction, or when the strokes sent and the touch sequences seen don't match.
+        - Simulator runs are exempt, so these two runs stand as mechanism checks.
   - **Held m = 1 phase** (prediction 4 and its +8 ms WORSE rule are kept). It covers the frames with stamp from
     (handler time of t0's move) + 680 + 300 ms until the next reverse move, counting only frames while a finger is
     down (a stroke's touchstart to touchend).
