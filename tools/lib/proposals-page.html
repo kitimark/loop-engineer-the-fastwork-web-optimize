@@ -113,6 +113,22 @@ textarea { width: 100%; min-height: 90px; font: inherit; font-size: 15px; paddin
 details.hist { margin-top: 14px; font-size: 14px; }
 details.hist summary { cursor: pointer; color: var(--muted); }
 details.hist li { color: var(--muted); }
+/* options (I-053): one proposal, several solutions; the cards are the tabs */
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin: 8px 0 4px; }
+.opts button.opt { font: inherit; text-align: left; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; min-height: 44px; }
+.opts button.opt:hover { border-color: var(--accent); }
+.opts button.opt[aria-selected="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); background: var(--accent-soft); }
+.opts .ol { font-weight: 650; display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline; }
+.opts .og { font-size: 13px; font-variant-numeric: tabular-nums; }
+.opts .od { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.chip.rec { background: var(--ok-soft); color: var(--ok); font-size: 12px; font-weight: 650; }
+.optpanel { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 4px; }
+.optpanel h3.oh { font-size: 18px; margin: 12px 0 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.rec-why { font-size: 14px; margin: 8px 0 0; padding: 8px 12px; border-radius: 10px; background: var(--ok-soft); overflow-wrap: anywhere; }
+fieldset.optpick { border: 1px solid var(--line); border-radius: 12px; margin: 10px 0 0; padding: 8px 12px 10px; }
+fieldset.optpick legend { font-size: 14px; font-weight: 650; padding: 0 4px; }
+fieldset.optpick label { display: flex; gap: 8px; align-items: center; padding: 5px 0; cursor: pointer; font-size: 15px; }
+fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 </head>
@@ -135,6 +151,9 @@ details.hist li { color: var(--muted); }
 // The console's proposals page (ts-proposals). Data: GET /api/proposals (list), GET /api/proposals/<id> (one), media
 // from /media/<id>/<name>. Decisions: POST /api/proposals/<id>/decide|undo with the x-console header. Every string
 // from the data is shown with textContent (el()), never as HTML.
+// Options (I-053): a proposal may carry several solutions (p.options), each with its own idea, visual difference,
+// gain, risk and B shots against the shared original A. The option cards are tabs; Accept asks which option, and
+// sends it as `option`. A proposal without options renders exactly as before.
 var ID = /^PR-\d{3,6}$/;
 var STATE_TEXT = { proposed: 'waiting for you', accepted: 'accepted', rejected: 'rejected', 'changes-requested': 'change requested' };
 var AREA_TEXT = { hero: 'Top of the page (hero)', middle: 'Middle of the page', end: 'End of the page', whole: 'Whole page' };
@@ -164,6 +183,7 @@ function currentId() { var h = decodeURIComponent(location.hash.slice(1)); retur
 
 // ---- state kept across refreshes ----
 var listSig = '', detailSig = '', current = null, drafts = {}, pick = {}, view = {}, pair = {}, blinkTimer = null, slider = {};
+var optTab = {}, optPick = {}; // I-053: the option shown, and the option picked in the decision box, per proposal
 
 // ---- the list ----
 function renderList(items) {
@@ -175,7 +195,7 @@ function renderList(items) {
     var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id },
       el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: STATE_TEXT[p.state] || p.state }),
       el('span', { class: 't', text: p.title }),
-      el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') }));
+      el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') + (p.options ? ' · ' + p.options + ' options' : '') }));
     return a;
   }
   box.appendChild(el('h2', { class: 'section', text: 'Waiting for you (' + waiting.length + ')' }));
@@ -189,11 +209,13 @@ function renderList(items) {
 
 // ---- compare ----
 function stopBlink() { if (blinkTimer) { clearInterval(blinkTimer); blinkTimer = null; } }
-function compareBlock(p) {
+/** p: {id, compare}; key: where the pair and slider positions are kept (one per option). */
+function compareBlock(p, key) {
+  var pk = key || p.id;
   var c = p.compare || {}, shots = c.shots || [], wrap = el('div', { class: 'block' }, el('h3', { text: 'Compare' }));
   var aL = (c.a && c.a.label) || 'Original', bL = (c.b && c.b.label) || 'Proposal';
   if (shots.length) {
-    var v = view[p.id] || c.view || 'side', i = Math.min(pair[p.id] || 0, shots.length - 1), s = shots[i];
+    var v = view[p.id] || c.view || 'side', i = Math.min(pair[pk] || 0, shots.length - 1), s = shots[i];
     var bar = el('div', { class: 'cmp-bar' });
     var seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'How to compare' });
     [['side', 'Side by side'], ['slider', 'Slider'], ['blink', 'Blink']].forEach(function (o) {
@@ -206,7 +228,7 @@ function compareBlock(p) {
       var pairs = el('div', { class: 'pairs', role: 'group', 'aria-label': 'Scroll position' });
       shots.forEach(function (x, k) {
         var b = el('button', { type: 'button', 'aria-pressed': String(k === i), text: x.caption || ('Position ' + (k + 1)) });
-        b.addEventListener('click', function () { pair[p.id] = k; renderDetail(current, true); });
+        b.addEventListener('click', function () { pair[pk] = k; renderDetail(current, true); });
         pairs.appendChild(b);
       });
       bar.appendChild(pairs);
@@ -284,13 +306,16 @@ function post(id, act, body) {
   return fetch('/api/proposals/' + id + '/' + act, { method: 'POST', headers: { 'content-type': 'application/json', 'x-console': '1' }, body: JSON.stringify(body) })
     .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }); });
 }
+function optionOf(p, name) { return (p.options || []).filter(function (o) { return o.name === name; })[0] || null; }
+function optLabel(p, name) { var o = optionOf(p, name); return o ? o.label || o.name : name; }
 function decisionBlock(p) {
   var box = el('div', { class: 'block card', style: 'margin-top:18px' });
   var err = el('p', { class: 'err', role: 'alert' });
+  var opts = p.options || [];
   if (p.state !== 'proposed') {
     var d = p.decision || {};
     box.appendChild(el('h3', { text: 'Your decision' }));
-    box.appendChild(el('div', { class: 'decision ' + p.state }, el('strong', { text: (STATE_TEXT[p.state] || p.state).replace(/^./, function (x) { return x.toUpperCase(); }) }),
+    box.appendChild(el('div', { class: 'decision ' + p.state }, el('strong', { text: (STATE_TEXT[p.state] || p.state).replace(/^./, function (x) { return x.toUpperCase(); }) + (d.option ? ': ' + optLabel(p, d.option) : '') }),
       el('span', { class: 'meta', text: ' ' + when(d.at) + (d.rev ? ' · revision ' + d.rev : '') }), d.notes ? el('p', { text: d.notes }) : null));
     if (p.state === 'changes-requested') box.appendChild(el('p', { class: 'hint', text: p.by + ' will revise it; the new revision comes back here, waiting for you.' }));
     var undo = el('button', { type: 'button', class: 'btn', text: 'Change my decision' });
@@ -312,19 +337,45 @@ function decisionBlock(p) {
   });
   box.appendChild(choices);
   if (choice) {
+    // options: Accept takes one of them (the one on screen, unless you pick another); a change request may name one
+    var chosen = null, fs = null;
+    function sendText() { return chosen ? VERB[choice] + ' "' + optLabel(p, chosen) + '" (revision ' + p.rev + ')' : VERB[choice] + ' revision ' + p.rev; }
+    if (opts.length && choice !== 'reject') {
+      var dflt = choice === 'accept' ? (optPick[p.id] || optTab[p.id] || (p.recommended && p.recommended.option) || opts[0].name) : (optPick[p.id + ':change'] || '');
+      if (!optionOf(p, dflt)) dflt = choice === 'accept' ? opts[0].name : '';
+      chosen = dflt || null;
+      fs = el('fieldset', { class: 'optpick' }, el('legend', { text: choice === 'accept' ? 'Which option do you accept?' : 'About which option? (optional)' }));
+      var rows = choice === 'accept' ? [] : [['', 'The proposal as a whole']];
+      opts.forEach(function (o) { rows.push([o.name, (o.label || o.name) + (p.recommended && p.recommended.option === o.name ? ' (recommended)' : '')]); });
+      rows.forEach(function (r, n) {
+        var id = 'optpick-' + n;
+        var input = el('input', { type: 'radio', name: 'optpick', id: id, value: r[0] });
+        input.checked = r[0] === (chosen || '');
+        input.addEventListener('change', function () {
+          chosen = r[0] || null;
+          if (choice === 'accept') optPick[p.id] = r[0]; else optPick[p.id + ':change'] = r[0];
+          send.textContent = sendText();
+        });
+        fs.appendChild(el('label', { for: id }, input, r[1]));
+      });
+    }
     var ta = el('textarea', { id: 'notes', 'aria-label': 'Notes', placeholder: choice === 'change' ? 'What should change? (needed)' : 'Notes (optional): why, or what you noticed' });
     ta.value = drafts[p.id] || '';
     ta.addEventListener('input', function () { drafts[p.id] = ta.value; send.disabled = choice === 'change' && !ta.value.trim(); });
-    var send = el('button', { type: 'button', class: 'btn primary', text: VERB[choice] + ' revision ' + p.rev });
+    var send = el('button', { type: 'button', class: 'btn primary', text: sendText() });
     send.disabled = choice === 'change' && !(drafts[p.id] || '').trim();
     send.addEventListener('click', function () {
       send.disabled = true; err.textContent = '';
-      post(p.id, 'decide', { value: choice, notes: ta.value, rev: p.rev }).then(function () { delete drafts[p.id]; delete pick[p.id]; detailSig = ''; load(); })
+      var body = { value: choice, notes: ta.value, rev: p.rev };
+      if (chosen) body.option = chosen;
+      post(p.id, 'decide', body).then(function () { delete drafts[p.id]; delete pick[p.id]; detailSig = ''; load(); })
         .catch(function (e) { err.textContent = e.message; send.disabled = false; if (/revised/.test(e.message)) { detailSig = ''; load(); } });
     });
+    if (fs) box.appendChild(fs);
+    if (opts.length && choice === 'reject') box.appendChild(el('p', { class: 'hint', text: 'Reject turns down every option. To drop only some of them, request a change instead.' }));
     box.appendChild(ta);
     box.appendChild(el('div', { class: 'choices' }, send));
-  } else box.appendChild(el('p', { class: 'hint', text: 'Pick one; you can add notes before you send it.' }));
+  } else box.appendChild(el('p', { class: 'hint', text: opts.length ? 'Pick one; Accept then asks which option. You can add notes before you send it.' : 'Pick one; you can add notes before you send it.' }));
   box.appendChild(err);
   return box;
 }
@@ -350,6 +401,48 @@ function gainTable(rows) {
   t.appendChild(tb);
   return el('div', { class: 'tablewrap' }, t);
 }
+/** I-053: the options as cards side by side (they are the tabs), then the chosen one in full with its own compare. */
+function optionsBlock(p) {
+  var opts = p.options, rec = p.recommended && optionOf(p, p.recommended.option) ? p.recommended.option : null;
+  var decided = p.decision && optionOf(p, p.decision.option) ? p.decision.option : null;
+  var curName = optionOf(p, optTab[p.id]) ? optTab[p.id] : (decided || rec || opts[0].name);
+  var o = optionOf(p, curName);
+  var wrap = el('div', { class: 'block' }, el('h3', { text: opts.length + ' ways to do it' }),
+    el('p', { class: 'hint', text: 'Each option is compared with the same original (A). Look at each one, then accept the one you want.' }));
+  var list = el('div', { class: 'opts', role: 'tablist', 'aria-label': 'Options' });
+  opts.forEach(function (x, n) {
+    var g = x.gain && x.gain[0], isCur = x.name === curName;
+    var b = el('button', { type: 'button', class: 'opt', role: 'tab', id: 'opt-tab-' + n, 'aria-selected': String(isCur), 'aria-controls': 'opt-panel', tabindex: isCur ? '0' : '-1' },
+      el('span', { class: 'ol' }, el('span', { text: x.label || x.name }), x.name === rec ? el('span', { class: 'chip rec', text: 'Recommended' }) : null),
+      g ? el('span', { class: 'og', text: g.what + ': ' + g.before + ' → ' + g.after }) : null,
+      x.visualDiff && x.visualDiff[0] ? el('span', { class: 'od', text: x.visualDiff[0] }) : null);
+    b.addEventListener('click', function () { optTab[p.id] = x.name; stopBlink(); renderDetail(current, true); var t = document.getElementById('opt-tab-' + n); if (t) t.focus(); });
+    b.addEventListener('keydown', function (e) {
+      var to = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? n + 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? n - 1 : null;
+      if (to === null) return;
+      e.preventDefault();
+      to = (to + opts.length) % opts.length;
+      optTab[p.id] = opts[to].name; stopBlink(); renderDetail(current, true);
+      var t = document.getElementById('opt-tab-' + to); if (t) t.focus();
+    });
+    list.appendChild(b);
+  });
+  wrap.appendChild(list);
+  if (rec && p.recommended.why) wrap.appendChild(el('p', { class: 'rec-why', text: 'Recommended by ' + p.by + ': ' + optLabel(p, rec) + '. ' + p.recommended.why }));
+  var panel = el('div', { class: 'optpanel', role: 'tabpanel', id: 'opt-panel', 'aria-labelledby': 'opt-tab-' + opts.indexOf(o) });
+  panel.appendChild(el('h3', { class: 'oh' }, el('span', { text: 'Option: ' + (o.label || o.name) }), o.name === rec ? el('span', { class: 'chip rec', text: 'Recommended' }) : null));
+  panel.appendChild(section('The idea', para(o.idea)));
+  if (o.looksSame) panel.appendChild(section('Why it looks the same', para(o.looksSame)));
+  var ul = el('ul');
+  (o.visualDiff || []).forEach(function (t) { ul.appendChild(el('li', { text: t })); });
+  panel.appendChild(section('What looks different, and when you would notice', [ul]));
+  if (o.gain && o.gain.length) panel.appendChild(section('What it saves', [gainTable(o.gain)]));
+  panel.appendChild(section('Risk', para(o.risk)));
+  var oc = o.compare || {};
+  panel.appendChild(compareBlock({ id: p.id, compare: { a: p.compare && p.compare.a, b: oc.b, view: p.compare && p.compare.view, shots: oc.shots, video: oc.video } }, p.id + ':' + o.name));
+  wrap.appendChild(panel);
+  return wrap;
+}
 function renderDetail(p, force) {
   var box = document.getElementById('detail');
   if (!p) { stopBlink(); box.replaceChildren(); return; }
@@ -368,19 +461,27 @@ function renderDetail(p, force) {
   var revs = p.revisions || [];
   if (revs.length > 1) card.appendChild(el('p', { class: 'hint', text: 'Revision ' + p.rev + ': ' + revs[revs.length - 1].note }));
   card.appendChild(section('What costs', para(p.problem)));
-  card.appendChild(section('The idea', para(p.idea)));
-  card.appendChild(section('Why it looks the same', para(p.looksSame)));
-  var ul = el('ul');
-  (p.visualDiff || []).forEach(function (t) { ul.appendChild(el('li', { text: t })); });
-  card.appendChild(section('What looks different, and when you would notice', [ul]));
-  if (p.gain && p.gain.length) card.appendChild(section('What it saves', [gainTable(p.gain)]));
-  card.appendChild(section('Risk', para(p.risk)));
-  card.appendChild(compareBlock(p));
+  if (p.options && p.options.length) {
+    // I-053: the shared text (if any), then the options
+    if (p.idea) card.appendChild(section('The idea', para(p.idea)));
+    if (p.looksSame) card.appendChild(section('Why it looks the same', para(p.looksSame)));
+    if (p.risk) card.appendChild(section('Risk', para(p.risk)));
+    card.appendChild(optionsBlock(p));
+  } else {
+    card.appendChild(section('The idea', para(p.idea)));
+    card.appendChild(section('Why it looks the same', para(p.looksSame)));
+    var ul = el('ul');
+    (p.visualDiff || []).forEach(function (t) { ul.appendChild(el('li', { text: t })); });
+    card.appendChild(section('What looks different, and when you would notice', [ul]));
+    if (p.gain && p.gain.length) card.appendChild(section('What it saves', [gainTable(p.gain)]));
+    card.appendChild(section('Risk', para(p.risk)));
+    card.appendChild(compareBlock(p));
+  }
   card.appendChild(decisionBlock(p));
   var hist = el('details', { class: 'hist' }, el('summary', { text: 'History' }));
   var hl = el('ul');
   revs.forEach(function (r) { hl.appendChild(el('li', { text: when(r.at) + ' revision ' + r.rev + ' by ' + r.by + ': ' + r.note })); });
-  (p.decisions || []).forEach(function (d) { hl.appendChild(el('li', { text: when(d.at) + ' ' + (STATE_TEXT[d.value] || d.value) + ' (revision ' + d.rev + ')' + (d.notes ? ': ' + d.notes : '') })); });
+  (p.decisions || []).forEach(function (d) { hl.appendChild(el('li', { text: when(d.at) + ' ' + (STATE_TEXT[d.value] || d.value) + (d.option ? ', option ' + optLabel(p, d.option) : '') + ' (revision ' + d.rev + ')' + (d.notes ? ': ' + d.notes : '') })); });
   hist.appendChild(hl);
   card.appendChild(hist);
   box.replaceChildren(card);

@@ -5,7 +5,8 @@
 // and Range, the POST guards (x-console, Host), decide/undo with a stale-revision check, revise, withdraw, and
 // `proposal wait` (MET 0 with the decision, TIMEOUT 3, NEVER 4, --any for one author or all), the badge model, and
 // I-045: every decision event (reject, undo, change) reaches `wait --any`, `wait <id> --until changed|decided --since`
-// and the lead's `thread wait --as lead`, each once.
+// and the lead's `thread wait --as lead`, each once. I-053: a proposal with options (post --option, the API and media,
+// accept needs an option, decide --option, every wait and the thread wait carry `option`).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -305,4 +306,78 @@ test('I-045: reject -> undo -> change on the page reaches wait --any, wait --unt
   assert.equal(ownJ.code, 0, ownJ.out);
   assert.deepEqual(JSON.parse(ownJ.stdout).map((x) => [x.kind, x.id, x.event, x.was]), [['proposal', id, 'undecided', 'changes-requested']]);
   assert.match(cli('wait', id, '--until', 'sometime').stderr, /--until must be decided or changed/);
+});
+
+// I-053 (user, PR-001 decision 2026-10-02 06:31Z): one proposal, several solutions; the user picks one when accepting.
+test('I-053 options: post with --option media, show/list, the API and media, accept needs an option, waits and thread wait carry it', async () => {
+  const opt = (name, b, over = {}) => ({
+    name, label: `Way ${name}`, idea: `Idea ${name}.`, looksSame: `Same ${name}.`, visualDiff: [`${name}: 0.2 % of pixels differ`],
+    gain: [{ what: 'Elements restyled per frame', before: '120', after: name === 'tiles' ? '0' : '6', tag: 'OBSERVED', how: 'Chrome trace, 3 runs' }],
+    risk: `Risk ${name}.`, compare: { b: { label: `B ${name}`, url: 'http://localhost:5613/' }, shots: [{ caption: 'Top', a: 'a-0.png', b }] }, ...over,
+  });
+  const file = writeProposal('opts.json', {
+    schema: 'fw-proposal/1', title: 'Word swap, three ways', area: 'hero', problem: `Restyles 120 elements per frame (seen on ${LAN}).`,
+    compare: { a: { label: 'Original', url: 'https://localhost:5612/' }, view: 'side' },
+    options: [opt('tiles', 'b-0.png'), opt('video', 'b-1.png', { compare: { b: { label: 'B video' } } }), opt('copy', 'b-1.png')],
+    recommended: { option: 'tiles', why: 'Fewest restyles.' },
+  });
+  // the CLI's media need --option when the proposal has options
+  assert.match(cli('post', '--by', 'de-opts', '--file', file, '--shot-a', join(src, 'a-1.png'), '--shot-b', join(src, 'b-1.png')).stderr, /say which one the --shot-a\/--shot-b\/--video flags are for/);
+  const r = cli('post', '--by', 'de-opts', '--file', file, '--option', 'video', '--video-a', join(src, 'a.mp4'), '--video-b', join(src, 'b.mp4'));
+  const id = postedId(r);
+  assert.match(r.stdout, /^ {2}3 options: tiles \(1 pair\(s\)\), video \(0 pair\(s\), video\), copy \(1 pair\(s\)\); recommended: tiles; media copied into the console store$/m);
+  assert.match(r.stderr, /scrubbed url in problem/);
+  assert.match(cli('list', '--waiting').stdout, new RegExp(`^${id} {2}\\[proposed rev 1\\] {2}hero {2}by de-opts: Word swap, three ways \\(3 options\\)$`, 'm'));
+  const show = cli('show', id).stdout;
+  assert.match(show, /^ {2}options: tiles, video, copy; recommended: tiles \(Fewest restyles\.\)$/m);
+  assert.match(show, /^ {2}option video "Way video":$/m);
+  assert.match(show, /^ {4}video: a=r1-o2-video-a\.mp4 b=r1-o2-video-b\.mp4$/m);
+  // the page's API: options with /media URLs; the list row counts them; the media are served
+  const v = json(await get(`/api/proposals/${id}`)).proposal;
+  assert.deepEqual(v.options.map((o) => [o.name, o.label, o.compare.b.label, o.compare.shots.length]), [['tiles', 'Way tiles', 'B tiles', 1], ['video', 'Way video', 'B video', 0], ['copy', 'Way copy', 'B copy', 1]]);
+  assert.equal(v.options[1].compare.video.b, `/media/${id}/r1-o2-video-b.mp4`);
+  assert.deepEqual(v.recommended, { option: 'tiles', why: 'Fewest restyles.' });
+  assert.ok(!JSON.stringify(v).includes('192.168'));
+  assert.equal(json(await get('/api/proposals')).proposals.find((p) => p.id === id).options, 3);
+  assert.equal((await get(`/media/${id}/r1-o3-b-1.png`)).status, 200);
+  assert.equal((await get(`/media/${id}/r1-o2-video-a.mp4`, { range: 'bytes=4-11' })).status, 206);
+  // the lead's standing thread wait: take what earlier tests left, so only this test's events follow
+  node(CON, ['thread', 'wait', '--as', 'lead', '--timeout', '0', '--quiet'], { env });
+  assert.equal(node(CON, ['thread', 'wait', '--as', 'lead', '--timeout', '0', '--quiet'], { env }).code, 3);
+  // accept without an option is refused; with one (name or label) it is stored and every wait reports it
+  const no = await postJson(`/api/proposals/${id}/decide`, { value: 'accept', rev: 1 });
+  assert.equal(no.status, 409);
+  assert.match(json(no).error, /has 3 options: say which one you accept \(--option <name>: tiles, video, copy\)/);
+  assert.equal((await postJson(`/api/proposals/${id}/decide`, { value: 'accept', rev: 1, option: 'nope' })).status, 409);
+  const waitJson = cliAsync('wait', id, '--timeout', '20', '--quiet', '--json');
+  const waitText = cliAsync('wait', id, '--timeout', '20', '--quiet');
+  await new Promise((res) => setTimeout(res, 700));
+  const ok = await postJson(`/api/proposals/${id}/decide`, { value: 'accept', rev: 1, option: 'Way video', notes: 'the smallest file' });
+  assert.equal(ok.status, 200, ok.text);
+  assert.deepEqual([json(ok).proposal.state, json(ok).proposal.decision.option], ['accepted', 'video']);
+  const wj = await waitJson;
+  assert.equal(wj.code, 0, wj.out);
+  const wd = JSON.parse(wj.stdout);
+  assert.deepEqual([wd.id, wd.value, wd.option], [id, 'accepted', 'video']);
+  const wt = await waitText;
+  assert.equal(wt.code, 0, wt.out);
+  assert.match(wt.stdout, /^MET proposal PR-\d+ decided: \{.*"option":"video"\}/);
+  assert.match(wt.stdout, /^ {2}option: video$/m);
+  assert.match(cli('show', id).stdout, /^ {2}decision: accepted, option: video \(rev 1, /m);
+  const lw = node(CON, ['thread', 'wait', '--as', 'lead', '--timeout', '5', '--quiet'], { env });
+  assert.equal(lw.code, 0, lw.out);
+  assert.match(lw.stdout, new RegExp(`^PROPOSAL ${id} decided accepted, option: video by user at \\S+: the smallest file$`, 'm'));
+  // the user changes their mind; the lead records the new pick from chat with decide --option
+  assert.equal((await postJson(`/api/proposals/${id}/undo`, { rev: 1 })).status, 200);
+  assert.match(cli('decide', id, '--by', 'lead', '--value', 'accept').stderr, /say which one you accept/);
+  assert.match(cli('decide', id, '--by', 'lead', '--value', 'reject', '--option', 'tiles').stderr, /reject is for the whole proposal/);
+  assert.match(cli('decide', id, '--by', 'lead', '--value', 'accept', '--option', 'tiles', '--notes', 'user said tiles in chat').stdout,
+    new RegExp(`^DECIDED ${id} {2}\\[accepted rev 1\\] {2}hero {2}by de-opts: Word swap, three ways \\(3 options\\) -> accepted, option: tiles \\(notes: user said tiles in chat\\)$`, 'm'));
+  const lw2 = node(CON, ['thread', 'wait', '--as', 'lead', '--timeout', '5', '--quiet', '--json'], { env });
+  assert.equal(lw2.code, 0, lw2.out);
+  assert.deepEqual(JSON.parse(lw2.stdout).filter((x) => x.kind === 'proposal').map((x) => [x.event, x.option, x.wasOption]), [['undecided', null, 'video'], ['decided', 'tiles', 'video']]);
+  const any = cli('wait', '--any', '--by', 'de-opts', '--since', wd.at, '--timeout', '5', '--quiet');
+  assert.equal(any.code, 0, any.out);
+  assert.match(any.stdout, new RegExp(`^PROPOSAL ${id} undecided \\(was accepted, option: video\\) by user at `, 'm'));
+  assert.match(any.stdout, new RegExp(`^PROPOSAL ${id} decided accepted, option: tiles \\(was accepted, option: video\\) by lead at \\S+: user said tiles in chat$`, 'm'));
 });

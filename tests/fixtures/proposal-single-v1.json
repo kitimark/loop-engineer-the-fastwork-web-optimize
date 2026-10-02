@@ -1,0 +1,126 @@
+{
+ "schema": "fw-proposal/1",
+ "id": "PR-001",
+ "by": "de-fixture",
+ "title": "Word swap as image frames",
+ "area": "hero",
+ "topic": "illusion-style",
+ "problem": "The word swap restyles 120 elements per frame.",
+ "idea": "Pre-rendered frames drawn on a canvas.",
+ "looksSame": "Each frame is the same pixels as the live word at that time.",
+ "risk": "A copy change needs new frames.",
+ "visualDiff": [
+  "None at the frozen times checked (0 px differ)."
+ ],
+ "gain": [
+  {
+   "what": "Elements restyled per frame",
+   "before": "120",
+   "after": "0",
+   "tag": "OBSERVED",
+   "how": "Chrome trace, 3 runs"
+  },
+  {
+   "what": "Layers",
+   "before": "9",
+   "after": "1",
+   "tag": "estimate",
+   "how": "layer count",
+   "needsPhone": true
+  }
+ ],
+ "compare": {
+  "a": {
+   "label": "Original (SVG)"
+  },
+  "b": {
+   "label": "Frames on canvas",
+   "url": "http://localhost:5613/"
+  },
+  "view": "side",
+  "shots": [
+   {
+    "caption": "Frozen at 0, 300, 600 ms",
+    "a": "r2-a-1.png",
+    "aSize": [
+     8,
+     6
+    ],
+    "b": "r2-b-1.png",
+    "bSize": [
+     8,
+     6
+    ]
+   },
+   {
+    "a": "r2-a-2.png",
+    "aSize": [
+     8,
+     6
+    ],
+    "b": "r2-b-2.png",
+    "bSize": [
+     8,
+     6
+    ]
+   }
+  ]
+ },
+ "state": "accepted",
+ "rev": 2,
+ "decision": {
+  "value": "accepted",
+  "notes": "ok, all three ways are fine",
+  "at": "2026-10-02T06:31:00.013Z",
+  "who": "user",
+  "rev": 2
+ },
+ "decisions": [
+  {
+   "value": "rejected",
+   "notes": "too different",
+   "at": "2026-10-01T21:02:13.000Z",
+   "who": "user",
+   "rev": 1
+  },
+  {
+   "value": "changes-requested",
+   "notes": "try frames like a video",
+   "at": "2026-10-01T21:04:04.964Z",
+   "who": "user",
+   "rev": 1
+  },
+  {
+   "value": "accepted",
+   "notes": "ok, all three ways are fine",
+   "at": "2026-10-02T06:31:00.013Z",
+   "who": "user",
+   "rev": 2
+  }
+ ],
+ "revisions": [
+  {
+   "rev": 1,
+   "at": "2026-10-01T20:00:00.000Z",
+   "by": "de-fixture",
+   "note": "first version"
+  },
+  {
+   "rev": 2,
+   "at": "2026-10-02T02:37:28.829Z",
+   "by": "de-fixture",
+   "note": "frames instead of a style swap"
+  }
+ ],
+ "createdAt": "2026-10-01T20:00:00.000Z",
+ "updatedAt": "2026-10-02T06:31:00.013Z",
+ "proposedAt": "2026-10-02T02:37:28.829Z",
+ "history": [
+  { "at": "2026-10-01T20:00:00.000Z", "who": "de-fixture", "action": "proposed", "rev": 1 },
+  { "at": "2026-10-01T21:02:13.000Z", "who": "user", "action": "decided", "value": "rejected", "rev": 1, "note": "too different" },
+  { "at": "2026-10-01T21:02:45.000Z", "who": "user", "action": "undecided", "was": "rejected", "rev": 1 },
+  { "at": "2026-10-01T21:04:04.964Z", "who": "user", "action": "decided", "value": "changes-requested", "rev": 1, "note": "try frames like a video" },
+  { "at": "2026-10-02T02:37:28.829Z", "who": "de-fixture", "action": "revised", "rev": 2, "note": "frames instead of a style swap" },
+  { "at": "2026-10-02T06:31:00.013Z", "who": "user", "action": "decided", "value": "accepted", "rev": 2, "note": "ok, all three ways are fine" }
+ ]
+}

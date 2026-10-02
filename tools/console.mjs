@@ -63,7 +63,8 @@
 //        # Without --thread it also wakes on proposal decision events (I-045): a decision, an undo, a changed decision,
 //        # on every proposal for the lead and on its own for an agent, each printed once as `PROPOSAL PR-001 decided
 //        # changes-requested (was rejected) by user at …: <notes>` (--json: items with kind: "proposal"). Its read mark
-//        # starts when it is first armed (<console>/proposal-reads.json): older decisions are not news.
+//        # starts when it is first armed (<console>/proposal-reads.json): older decisions are not news. On a proposal
+//        # with options (I-053) the line and the JSON name the picked one: `decided accepted, option: tiles`, option.
 //   node tools/console.mjs thread list [--unread --as <agent>] [--all] [--json]   # open threads (--all: closed too)
 //   node tools/console.mjs thread show <id> [--as <agent>] [--json]               # --as: marks it read for <agent>
 //   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask]

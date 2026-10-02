@@ -12,6 +12,12 @@
 //   {schema, title, area: hero|middle|end|whole, topic?, thread?, problem, idea, looksSame, visualDiff: [text],
 //    gain: [{what, before, after, tag: OBSERVED|CONFIRMED|estimate|UNRESOLVED|REFUTED, how, needsPhone?}], risk,
 //    compare: {a: {label, url?}, b: {label, url?}, shots: [{caption, a, b}], video?: {a, b} | {both}, view?}}
+// Options (I-053, user 2026-10-02: "propose the multiple solution in the same proposal … allow user to decide which
+// one"): instead of one solution, `options: [{name, label, idea, looksSame, visualDiff, gain, risk, compare: {b, shots,
+// video}}]` (2-6; name: a short id such as "tiles"), all against the shared problem and compare.a (a shared idea,
+// looksSame or risk may stand above them), and `recommended?: {option, why}`. Their media are stored as
+// r<rev>-o<k>-a-1.png. The user accepts ONE option (decision.option = its name); `decide --option`; the decision
+// events and waits carry `option`. A proposal without `options` is stored, served and shown exactly as before.
 // States: draft -> proposed -> accepted | rejected | changes-requested; changes-requested -> (revise) proposed;
 //   draft | proposed | changes-requested -> withdrawn. Only `proposed` waits for the user.
 // Hard rule 12: compare URLs must be localhost; every text field is scrubbed when stored (progress.mjs sanitize +
@@ -37,7 +43,7 @@ export const DECISION_VALUES = {
   reject: 'rejected', rejected: 'rejected',
   change: 'changes-requested', 'request-change': 'changes-requested', 'changes-requested': 'changes-requested',
 };
-export const LIMITS = { title: 120, text: 2000, item: 300, items: 12, gainWhat: 120, gainValue: 80, how: 300, caption: 120, label: 60, notes: 4000, note: 300, shots: 12, imageBytes: 15 * 1024 * 1024, videoBytes: 200 * 1024 * 1024 };
+export const LIMITS = { title: 120, text: 2000, item: 300, items: 12, gainWhat: 120, gainValue: 80, how: 300, caption: 120, label: 60, notes: 4000, note: 300, shots: 12, options: 6, imageBytes: 15 * 1024 * 1024, videoBytes: 200 * 1024 * 1024 };
 const GUARD = 'console-proposals';
 
 export const proposalsDir = () => join(consoleDir(), 'proposals');
@@ -86,7 +92,36 @@ const SECTION_KEYS = {
   gain: 'gain', gains: 'gain', risk: 'risk', risks: 'risk',
 };
 
-/** The Markdown form: front matter (title, area, topic, thread, a/b: "label | url", view) + "## Section" blocks. */
+/** One "## Section" (or "### Section" inside an option) of the Markdown form into `out`. */
+function mdSection(out, head, text) {
+  const key = SECTION_KEYS[head.trim().toLowerCase().replace(/[:.]$/, '')];
+  if (!key) return;
+  if (key === 'visualDiff') out.visualDiff = text.split('\n').map((l) => l.replace(/^\s*[-*]\s+/, '').trim()).filter(Boolean);
+  else if (key === 'gain') {
+    const rows = text.split('\n').filter((l) => /^\s*\|/.test(l)).map((l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim()));
+    const data = rows.filter((r) => !r.every((c) => /^:?-{2,}:?$/.test(c)));
+    const [hdr, ...rest] = data;
+    if (hdr) {
+      const idx = (n) => hdr.findIndex((h) => h.toLowerCase().replace(/[^a-z]/g, '') === n);
+      const col = { what: idx('what'), before: idx('before'), after: idx('after'), tag: idx('tag'), how: [idx('how'), idx('howmeasured')].find((i) => i >= 0) ?? -1, needsPhone: [idx('phone'), idx('needsphone')].find((i) => i >= 0) ?? -1 };
+      out.gain = rest.map((r) => {
+        const g = {};
+        for (const k of ['what', 'before', 'after', 'tag', 'how']) if (col[k] >= 0 && r[col[k]] !== undefined) g[k] = r[col[k]];
+        if (col.needsPhone >= 0 && /^(yes|true|needed|x)$/i.test(r[col.needsPhone] || '')) g.needsPhone = true;
+        return g;
+      });
+    }
+  } else out[key] = text;
+}
+
+const splitHead = (p) => { const nl = p.indexOf('\n'); return [(nl < 0 ? p : p.slice(0, nl)).trim(), (nl < 0 ? '' : p.slice(nl + 1)).trim()]; };
+const labelUrl = (v) => { const [label, url] = v.split('|').map((x) => x.trim()); return { label, ...(url && { url }) }; };
+
+/**
+ * The Markdown form: front matter (title, area, topic, thread, a/b: "label | url", view, recommended: "name | why") +
+ * "## Section" blocks. Options (I-053): "## Option <name>: <label>" blocks, each with an optional "b: label | url" line
+ * and "### Idea", "### Looks the same", "### Visual difference", "### Gain", "### Risk" sections.
+ */
 export function parseMarkdown(src) {
   const out = { schema: SCHEMA, compare: {} };
   let body = String(src).replace(/\r\n/g, '\n');
@@ -97,35 +132,26 @@ export function parseMarkdown(src) {
       const m = l.match(/^\s*([A-Za-z][\w-]*)\s*:\s*(.*?)\s*$/);
       if (!m) continue;
       const k = m[1].toLowerCase(), v = m[2].replace(/^["']|["']$/g, '');
-      if (k === 'a' || k === 'b') { const [label, url] = v.split('|').map((x) => x.trim()); out.compare[k] = { label, ...(url && { url }) }; }
+      if (k === 'a' || k === 'b') out.compare[k] = labelUrl(v);
       else if (k === 'view') out.compare.view = v;
       else if (k === 'looks-same' || k === 'lookssame') out.looksSame = v;
+      else if (k === 'recommended') { const [option, ...why] = v.split('|'); out.recommended = { option: option.trim(), why: why.join('|').trim() }; }
       else if (['title', 'area', 'topic', 'thread', 'schema'].includes(k)) out[k] = v;
     }
   }
-  const parts = body.split(/^##\s+/m).slice(1);
-  for (const p of parts) {
-    const nl = p.indexOf('\n');
-    const head = (nl < 0 ? p : p.slice(0, nl)).trim().toLowerCase().replace(/[:.]$/, '');
-    const text = (nl < 0 ? '' : p.slice(nl + 1)).trim();
-    const key = SECTION_KEYS[head];
-    if (!key) continue;
-    if (key === 'visualDiff') out.visualDiff = text.split('\n').map((l) => l.replace(/^\s*[-*]\s+/, '').trim()).filter(Boolean);
-    else if (key === 'gain') {
-      const rows = text.split('\n').filter((l) => /^\s*\|/.test(l)).map((l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim()));
-      const data = rows.filter((r) => !r.every((c) => /^:?-{2,}:?$/.test(c)));
-      const [hdr, ...rest] = data;
-      if (hdr) {
-        const idx = (n) => hdr.findIndex((h) => h.toLowerCase().replace(/[^a-z]/g, '') === n);
-        const col = { what: idx('what'), before: idx('before'), after: idx('after'), tag: idx('tag'), how: [idx('how'), idx('howmeasured')].find((i) => i >= 0) ?? -1, needsPhone: [idx('phone'), idx('needsphone')].find((i) => i >= 0) ?? -1 };
-        out.gain = rest.map((r) => {
-          const g = {};
-          for (const k of ['what', 'before', 'after', 'tag', 'how']) if (col[k] >= 0 && r[col[k]] !== undefined) g[k] = r[col[k]];
-          if (col.needsPhone >= 0 && /^(yes|true|needed|x)$/i.test(r[col.needsPhone] || '')) g.needsPhone = true;
-          return g;
-        });
-      }
-    } else out[key] = text;
+  for (const p of body.split(/^##\s+/m).slice(1)) {
+    const [head, text] = splitHead(p);
+    const om = head.match(/^option\s+([^\s:]+)\s*(?::\s*(.*))?$/i);
+    if (!om) { mdSection(out, head, text); continue; }
+    const o = { name: om[1], ...(om[2] && { label: om[2].trim() }) };
+    const [pre, ...subs] = text.split(/^###\s+/m);
+    for (const l of pre.split('\n')) {
+      const m = l.match(/^\s*(b|label)\s*:\s*(.*?)\s*$/i);
+      if (m && m[1].toLowerCase() === 'b') o.compare = { b: labelUrl(m[2]) };
+      else if (m) o.label = m[2];
+    }
+    for (const sp of subs) { const [h, t] = splitHead(sp); mdSection(o, h, t); }
+    (out.options ||= []).push(o);
   }
   return out;
 }
@@ -162,7 +188,8 @@ export function sniffMedia(file) {
 }
 
 /** Stored media names: what the server may serve (no path, no traversal). */
-export const MEDIA_NAME = /^r\d{1,4}-(?:(?:a|b)-\d{1,2}\.(?:png|jpg|webp|gif)|video-(?:a|b|both)\.(?:mp4|mov|webm))$/;
+// I-053: an option's media carry its 1-based index: r1-o2-a-1.png, r1-o2-video-b.mp4.
+export const MEDIA_NAME = /^r\d{1,4}-(?:o\d{1,2}-)?(?:(?:a|b)-\d{1,2}\.(?:png|jpg|webp|gif)|video-(?:a|b|both)\.(?:mp4|mov|webm))$/;
 export const MEDIA_TYPES = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm' };
 
 /** The stored file for GET /media/<id>/<name>, or null (bad id, bad name, missing). */
@@ -177,15 +204,21 @@ export function mediaFile(id, name) {
 // ---- normalize and validate --------------------------------------------------------------------------
 
 const list = (v) => (v == null || v === '' ? [] : Array.isArray(v) ? v : [v]);
+const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+const hasMedia = (m) => !!(m && (m.shots?.length || m.video?.a || m.video?.both));
+/** An option name: what `decide --option` and the decision carry. */
+export const OPTION_NAME = /^[a-z0-9][a-z0-9._-]{0,39}$/;
 
 /**
- * The author's raw object (+ CLI shots and videos) -> {fields, media: {shots: [{caption, a, b}], video}, errors,
- * scrubbed: ["problem: ip address", …], warnings}. Media paths are absolute (relative to baseDir); nothing is copied.
- * draft: only the title and area are required, and no media.
+ * The author's raw object (+ CLI shots and videos) -> {fields, media: {shots: [{caption, a, b}], video, options?:
+ * [{shots, video}]}, errors, scrubbed: ["problem: ip address", …], warnings}. Media paths are absolute (relative to
+ * baseDir); nothing is copied. draft: only the title and area are required (and option names), and no media.
+ * With `options` (I-053): 2-6 solutions, each {name, label, idea, looksSame, visualDiff, gain, risk, compare: {b, shots,
+ * video}} against the shared compare.a; `recommended: {option, why}`; the CLI shots go to the option named by `option`.
  */
-export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = [], captions = [], video = {}, draft = false } = {}) {
+export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = [], captions = [], video = {}, draft = false, option: cliOption } = {}) {
   const E = [], scrubbed = [], warnings = [];
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { errors: ['the proposal must be a JSON object'], scrubbed, warnings };
+  if (!isObj(raw)) return { errors: ['the proposal must be a JSON object'], scrubbed, warnings };
   if (raw.schema !== undefined && raw.schema !== SCHEMA) E.push(`schema: must be "${SCHEMA}" (got ${JSON.stringify(raw.schema)})`);
   const txt = (v, path, max, { required = !draft } = {}) => {
     if (v === undefined || v === null || (typeof v === 'string' && !v.trim())) { if (required) E.push(`${path}: required`); return undefined; }
@@ -208,92 +241,172 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     else f[k] = raw[k];
   }
   f.problem = txt(raw.problem, 'problem', LIMITS.text);
-  f.idea = txt(raw.idea, 'idea', LIMITS.text);
-  f.looksSame = txt(raw.looksSame, 'looksSame', LIMITS.text);
-  f.risk = txt(raw.risk, 'risk', LIMITS.text);
-  const vd = list(raw.visualDiff);
-  if (vd.length > LIMITS.items) E.push(`visualDiff: at most ${LIMITS.items} items`);
-  f.visualDiff = vd.slice(0, LIMITS.items).map((x, i) => txt(x, `visualDiff[${i}]`, LIMITS.item, { required: true })).filter((x) => x !== undefined);
-  if (!draft && !f.visualDiff.length) E.push('visualDiff: at least one item (an honest "what differs, when you would notice it"; "nothing visible" is an item too)');
-  const gain = raw.gain === undefined ? [] : Array.isArray(raw.gain) ? raw.gain : null;
-  if (!gain) E.push('gain: a list of {what, before, after, tag, how}');
-  else {
-    if (gain.length > LIMITS.items) E.push(`gain: at most ${LIMITS.items} rows`);
-    if (!draft && !gain.length) E.push('gain: at least one row');
-    f.gain = gain.slice(0, LIMITS.items).map((g, i) => {
-      const p = `gain[${i}]`;
-      if (!g || typeof g !== 'object' || Array.isArray(g)) { E.push(`${p}: an object {what, before, after, tag, how}`); return null; }
-      const row = {
-        what: txt(g.what, `${p}.what`, LIMITS.gainWhat, { required: true }),
-        before: txt(g.before, `${p}.before`, LIMITS.gainValue, { required: true }),
-        after: txt(g.after, `${p}.after`, LIMITS.gainValue, { required: true }),
-        tag: undefined,
-        how: txt(g.how, `${p}.how`, LIMITS.how, { required: !draft }),
-      };
-      const tag = GAIN_TAGS.find((t) => t.toLowerCase() === String(g.tag ?? '').toLowerCase());
-      if (!tag) E.push(`${p}.tag: one of ${GAIN_TAGS.join(', ')} (got ${JSON.stringify(g.tag)})`);
-      else row.tag = tag;
-      if (g.needsPhone !== undefined && typeof g.needsPhone !== 'boolean') E.push(`${p}.needsPhone: true or false`);
-      if (g.needsPhone === true) row.needsPhone = true;
-      if (row.how === undefined) delete row.how;
-      return row;
-    }).filter(Boolean);
-  }
-  // compare
-  const c = raw.compare && typeof raw.compare === 'object' && !Array.isArray(raw.compare) ? raw.compare : (raw.compare === undefined ? {} : (E.push('compare: an object {a, b, shots, video, view}'), {}));
-  f.compare = {};
-  for (const side of ['a', 'b']) {
-    const s = c[side] ?? {};
-    if (typeof s !== 'object' || Array.isArray(s)) { E.push(`compare.${side}: {label, url}`); continue; }
-    const label = txt(s.label, `compare.${side}.label`, LIMITS.label, { required: false }) || (side === 'a' ? 'Original' : 'PoC');
-    const out = { label };
+
+  /** One solution's text (the proposal itself, or one option): idea, looksSame, risk, visualDiff, gain. `p`: path prefix. */
+  const solution = (src, p, { looksSameShared = false } = {}) => {
+    const s = {};
+    s.idea = txt(src.idea, `${p}idea`, LIMITS.text);
+    s.looksSame = txt(src.looksSame, `${p}looksSame`, LIMITS.text, { required: !draft && !looksSameShared });
+    s.risk = txt(src.risk, `${p}risk`, LIMITS.text);
+    const vd = list(src.visualDiff);
+    if (vd.length > LIMITS.items) E.push(`${p}visualDiff: at most ${LIMITS.items} items`);
+    s.visualDiff = vd.slice(0, LIMITS.items).map((x, i) => txt(x, `${p}visualDiff[${i}]`, LIMITS.item, { required: true })).filter((x) => x !== undefined);
+    if (!draft && !s.visualDiff.length) E.push(`${p}visualDiff: at least one item (an honest "what differs, when you would notice it"; "nothing visible" is an item too)`);
+    const gain = src.gain === undefined ? [] : Array.isArray(src.gain) ? src.gain : null;
+    if (!gain) E.push(`${p}gain: a list of {what, before, after, tag, how}`);
+    else {
+      if (gain.length > LIMITS.items) E.push(`${p}gain: at most ${LIMITS.items} rows`);
+      if (!draft && !gain.length) E.push(`${p}gain: at least one row`);
+      s.gain = gain.slice(0, LIMITS.items).map((g, i) => {
+        const gp = `${p}gain[${i}]`;
+        if (!isObj(g)) { E.push(`${gp}: an object {what, before, after, tag, how}`); return null; }
+        const row = {
+          what: txt(g.what, `${gp}.what`, LIMITS.gainWhat, { required: true }),
+          before: txt(g.before, `${gp}.before`, LIMITS.gainValue, { required: true }),
+          after: txt(g.after, `${gp}.after`, LIMITS.gainValue, { required: true }),
+          tag: undefined,
+          how: txt(g.how, `${gp}.how`, LIMITS.how, { required: !draft }),
+        };
+        const tag = GAIN_TAGS.find((t) => t.toLowerCase() === String(g.tag ?? '').toLowerCase());
+        if (!tag) E.push(`${gp}.tag: one of ${GAIN_TAGS.join(', ')} (got ${JSON.stringify(g.tag)})`);
+        else row.tag = tag;
+        if (g.needsPhone !== undefined && typeof g.needsPhone !== 'boolean') E.push(`${gp}.needsPhone: true or false`);
+        if (g.needsPhone === true) row.needsPhone = true;
+        if (row.how === undefined) delete row.how;
+        return row;
+      }).filter(Boolean);
+    }
+    return s;
+  };
+  /** compare.a / compare.b (or an option's b): {label, url?}; localhost URLs only. */
+  const side = (s, path, dflt) => {
+    s ??= {};
+    if (!isObj(s)) { E.push(`${path}: {label, url}`); return undefined; }
+    const out = { label: txt(s.label, `${path}.label`, LIMITS.label, { required: false }) || dflt };
     if (s.url !== undefined && s.url !== null && s.url !== '') {
-      if (!isLocalUrl(s.url)) E.push(`compare.${side}.url: must be a localhost URL (http(s)://localhost:<port>/…), never a LAN address (Hard rule 12); got a non-localhost URL`);
+      if (!isLocalUrl(s.url)) E.push(`${path}.url: must be a localhost URL (http(s)://localhost:<port>/…), never a LAN address (Hard rule 12); got a non-localhost URL`);
       else out.url = new URL(String(s.url)).href;
     }
-    f.compare[side] = out;
-  }
-  if (c.view !== undefined && c.view !== '') { if (!VIEWS.includes(c.view)) E.push(`compare.view: one of ${VIEWS.join(', ')}`); else f.compare.view = c.view; }
+    return out;
+  };
   const abs = (p) => (typeof p === 'string' && p ? resolve(baseDir, p) : null);
-  const shots = [];
-  const fileShots = c.shots === undefined ? [] : Array.isArray(c.shots) ? c.shots : (E.push('compare.shots: a list of {caption, a, b}'), []);
-  fileShots.forEach((s, i) => {
-    if (!s || typeof s !== 'object' || !abs(s.a) || !abs(s.b)) { E.push(`compare.shots[${i}]: {caption, a: <file>, b: <file>}`); return; }
-    shots.push({ caption: txt(s.caption, `compare.shots[${i}].caption`, LIMITS.caption, { required: false }), a: abs(s.a), b: abs(s.b) });
-  });
-  if (shotsA.length !== shotsB.length) E.push(`--shot-a and --shot-b pair up by order: got ${shotsA.length} A and ${shotsB.length} B`);
-  else shotsA.forEach((a, i) => shots.push({ caption: txt(captions[i], `--caption ${i + 1}`, LIMITS.caption, { required: false }), a: resolve(a), b: resolve(shotsB[i]) }));
-  if (shots.length > LIMITS.shots) E.push(`at most ${LIMITS.shots} screenshot pairs (got ${shots.length})`);
-  const vid = {};
-  const cv = c.video === undefined ? {} : c.video && typeof c.video === 'object' ? c.video : (E.push('compare.video: {a, b} or {both}'), {});
-  for (const k of ['a', 'b', 'both']) if (abs(cv[k])) vid[k] = abs(cv[k]);
-  for (const k of ['a', 'b', 'both']) if (video[k]) vid[k] = resolve(video[k]);
-  if ((vid.a && !vid.b) || (vid.b && !vid.a)) E.push('video: give both A and B (or one combined clip as "both" / --video)');
-  if (!draft && !shots.length && !vid.a && !vid.both) E.push('compare: at least one screenshot pair (compare.shots or --shot-a/--shot-b) or a video');
-  // the files themselves
-  for (const [i, s] of shots.entries()) {
-    for (const side of ['a', 'b']) {
-      try { const m = sniffMedia(s[side]); if (m.kind !== 'image') E.push(`shot ${i + 1} ${side.toUpperCase()}: ${s[side]} is a video; screenshots are images`); else s[`${side}Info`] = m; }
-      catch (e) { E.push(`shot ${i + 1} ${side.toUpperCase()}: ${e.message}`); }
+  /** Screenshot pairs and videos of one solution: `c` its compare object, `p` the path prefix, `cli` the CLI media or null. */
+  const media = (c, p, cli) => {
+    const shots = [];
+    const fileShots = c.shots === undefined ? [] : Array.isArray(c.shots) ? c.shots : (E.push(`${p}compare.shots: a list of {caption, a, b}`), []);
+    fileShots.forEach((s, i) => {
+      if (!s || typeof s !== 'object' || !abs(s.a) || !abs(s.b)) { E.push(`${p}compare.shots[${i}]: {caption, a: <file>, b: <file>}`); return; }
+      shots.push({ caption: txt(s.caption, `${p}compare.shots[${i}].caption`, LIMITS.caption, { required: false }), a: abs(s.a), b: abs(s.b) });
+    });
+    if (cli) {
+      if (cli.shotsA.length !== cli.shotsB.length) E.push(`--shot-a and --shot-b pair up by order: got ${cli.shotsA.length} A and ${cli.shotsB.length} B`);
+      else cli.shotsA.forEach((a, i) => shots.push({ caption: txt(cli.captions[i], `--caption ${i + 1}`, LIMITS.caption, { required: false }), a: resolve(a), b: resolve(cli.shotsB[i]) }));
     }
-    if (s.aInfo?.width && s.bInfo?.width && (s.aInfo.width !== s.bInfo.width || s.aInfo.height !== s.bInfo.height)) warnings.push(`shot ${i + 1}: A is ${s.aInfo.width}x${s.aInfo.height}, B is ${s.bInfo.width}x${s.bInfo.height}; the slider and blink views line them up best at the same size`);
+    if (shots.length > LIMITS.shots) E.push(`${p ? `${p.slice(0, -1)}: ` : ''}at most ${LIMITS.shots} screenshot pairs (got ${shots.length})`);
+    const vid = {};
+    const cv = c.video === undefined ? {} : isObj(c.video) ? c.video : (E.push(`${p}compare.video: {a, b} or {both}`), {});
+    for (const k of ['a', 'b', 'both']) if (abs(cv[k])) vid[k] = abs(cv[k]);
+    if (cli) for (const k of ['a', 'b', 'both']) if (cli.video[k]) vid[k] = resolve(cli.video[k]);
+    if ((vid.a && !vid.b) || (vid.b && !vid.a)) E.push(`${p}video: give both A and B (or one combined clip as "both" / --video)`);
+    if (!draft && !shots.length && !vid.a && !vid.both) E.push(`${p}compare: at least one screenshot pair (compare.shots or --shot-a/--shot-b) or a video`);
+    // the files themselves
+    const sp = p ? `${p.slice(0, -1)} ` : '';
+    for (const [i, s] of shots.entries()) {
+      for (const ab of ['a', 'b']) {
+        try { const m = sniffMedia(s[ab]); if (m.kind !== 'image') E.push(`${sp}shot ${i + 1} ${ab.toUpperCase()}: ${s[ab]} is a video; screenshots are images`); else s[`${ab}Info`] = m; }
+        catch (e) { E.push(`${sp}shot ${i + 1} ${ab.toUpperCase()}: ${e.message}`); }
+      }
+      if (s.aInfo?.width && s.bInfo?.width && (s.aInfo.width !== s.bInfo.width || s.aInfo.height !== s.bInfo.height)) warnings.push(`${sp}shot ${i + 1}: A is ${s.aInfo.width}x${s.aInfo.height}, B is ${s.bInfo.width}x${s.bInfo.height}; the slider and blink views line them up best at the same size`);
+    }
+    for (const k of Object.keys(vid)) {
+      try { const m = sniffMedia(vid[k]); if (m.kind !== 'video') E.push(`${sp}video ${k}: ${vid[k]} is an image`); else vid[`${k}Info`] = m; }
+      catch (e) { E.push(`${sp}video ${k}: ${e.message}`); }
+    }
+    return { shots, video: vid };
+  };
+
+  const c = isObj(raw.compare) ? raw.compare : (raw.compare === undefined ? {} : (E.push('compare: an object {a, b, shots, video, view}'), {}));
+  const cli = { shotsA, shotsB, captions, video };
+  const anyCli = !!(shotsA.length || shotsB.length || Object.values(video).some(Boolean));
+  const viewOf = () => { if (c.view !== undefined && c.view !== '') { if (!VIEWS.includes(c.view)) E.push(`compare.view: one of ${VIEWS.join(', ')}`); else f.compare.view = c.view; } };
+  const hasOptions = raw.options !== undefined && raw.options !== null;
+  if (!hasOptions) {
+    if (cliOption !== undefined && cliOption !== null && cliOption !== '') E.push('--option: this proposal has no options (--option names the option that --shot-a/--shot-b/--video belong to)');
+    if (raw.recommended !== undefined && raw.recommended !== null) E.push('recommended: only with options (it names the option you recommend)');
+    Object.assign(f, solution(raw, ''));
+    f.compare = {};
+    for (const s of ['a', 'b']) { const v = side(c[s], `compare.${s}`, s === 'a' ? 'Original' : 'PoC'); if (v) f.compare[s] = v; }
+    viewOf();
+    const m = media(c, '', cli);
+    return { fields: f, media: m, errors: E, scrubbed, warnings };
   }
-  for (const k of Object.keys(vid)) {
-    try { const m = sniffMedia(vid[k]); if (m.kind !== 'video') E.push(`video ${k}: ${vid[k]} is an image`); else vid[`${k}Info`] = m; }
-    catch (e) { E.push(`video ${k}: ${e.message}`); }
+  // ---- options (I-053): the shared problem and original A, then 2-6 solutions ----
+  f.idea = txt(raw.idea, 'idea', LIMITS.text, { required: false });
+  f.looksSame = txt(raw.looksSame, 'looksSame', LIMITS.text, { required: false });
+  f.risk = txt(raw.risk, 'risk', LIMITS.text, { required: false });
+  for (const k of ['visualDiff', 'gain']) if (list(raw[k]).length) E.push(`${k}: with options, give it in each option (options[].${k})`);
+  f.visualDiff = [];
+  f.gain = [];
+  f.compare = {};
+  const a = side(c.a, 'compare.a', 'Original');
+  if (a) f.compare.a = a;
+  if (c.b !== undefined && c.b !== null) E.push('compare.b: with options, B goes in each option (options[].compare.b)');
+  if (c.shots !== undefined || c.video !== undefined) E.push('compare.shots: with options, B shots and videos go in each option (options[].compare.shots, .video)');
+  viewOf();
+  const opts = Array.isArray(raw.options) ? raw.options : (E.push('options: a list of {name, label, idea, looksSame, visualDiff, gain, risk, compare: {b, shots, video}}'), []);
+  if (Array.isArray(raw.options) && opts.length < 2) E.push('options: at least 2 (one solution: leave out "options")');
+  if (opts.length > LIMITS.options) E.push(`options: at most ${LIMITS.options}`);
+  const names = opts.map((o) => (isObj(o) && typeof o.name === 'string' ? o.name.trim() : ''));
+  const target = cliOption === undefined || cliOption === null || cliOption === '' ? null : findOptionIn(opts.map((o, i) => ({ name: names[i], label: isObj(o) ? o.label : undefined })), String(cliOption));
+  if (anyCli && cliOption == null) E.push(`this proposal has options: say which one the --shot-a/--shot-b/--video flags are for (--option <name>: ${names.join(', ')})`);
+  if (cliOption != null && cliOption !== '' && !target) E.push(`--option: no option "${cliOption}" (options: ${names.join(', ')})`);
+  f.options = [];
+  const optMedia = [];
+  opts.slice(0, LIMITS.options).forEach((o, i) => {
+    const p = `options[${i}].`;
+    if (!isObj(o)) { E.push(`options[${i}]: an object {name, label, idea, …}`); return; }
+    const name = names[i];
+    if (!OPTION_NAME.test(name)) { E.push(`${p}name: a short id (lower-case letters, digits, . _ -; at most 40), e.g. "tiles"`); return; }
+    if (names.indexOf(name) !== i) { E.push(`${p}name: "${name}" is used twice`); return; }
+    const oc = o.compare === undefined ? {} : isObj(o.compare) ? o.compare : (E.push(`${p}compare: {b, shots, video}`), {});
+    const out = { name, label: txt(o.label, `${p}label`, LIMITS.label, { required: false }) || name, ...solution(o, p, { looksSameShared: !!f.looksSame }) };
+    const b = side(oc.b, `${p}compare.b`, out.label);
+    out.compare = { b };
+    f.options.push(out);
+    optMedia.push(media(oc, p, target?.name === name ? cli : null));
+  });
+  if (raw.recommended !== undefined && raw.recommended !== null) {
+    const r = raw.recommended;
+    if (!isObj(r)) E.push('recommended: {option, why} (the option you recommend, and why)');
+    else {
+      const o = f.options.find((x) => x.name === r.option);
+      if (!o) E.push(`recommended.option: one of ${names.join(', ')} (got ${JSON.stringify(r.option)})`);
+      const why = txt(r.why, 'recommended.why', LIMITS.item, { required: true });
+      if (o && why) f.recommended = { option: o.name, why };
+    }
   }
-  return { fields: f, media: { shots, video: vid }, errors: E, scrubbed, warnings };
+  return { fields: f, media: { shots: [], video: {}, options: optMedia }, errors: E, scrubbed, warnings };
 }
 
-/** Copy the media into the store for revision `rev`; returns {shots: [{caption, a, b, w?, h?}], video: {a?, b?, both?}}. */
-function storeMedia(id, rev, media) {
+/** The option `want` names: its name, or its label (any case). null if none. */
+export function findOptionIn(options, want) {
+  const w = String(want ?? '').trim();
+  if (!w) return null;
+  return options.find((o) => o.name === w) || options.find((o) => o.name?.toLowerCase() === w.toLowerCase() || String(o.label ?? '').toLowerCase() === w.toLowerCase()) || null;
+}
+
+/**
+ * Copy the media into the store for revision `rev`; returns {shots: [{caption, a, b, w?, h?}], video: {a?, b?, both?}}.
+ * `pre`: "o2-" for option 2's media (I-053), "" for the proposal's own.
+ */
+function storeMedia(id, rev, media, pre = '') {
   const dir = mediaDir(id);
   mkdirSync(dir, { recursive: true });
   const shots = media.shots.map((s, i) => {
     const out = { ...(s.caption && { caption: s.caption }) };
     for (const side of ['a', 'b']) {
       const info = s[`${side}Info`];
-      const name = `r${rev}-${side}-${i + 1}.${info.ext}`;
+      const name = `r${rev}-${pre}${side}-${i + 1}.${info.ext}`;
       copyFileSync(s[side], join(dir, name));
       out[side] = name;
       if (info.width) out[`${side}Size`] = [info.width, info.height];
@@ -303,7 +416,7 @@ function storeMedia(id, rev, media) {
   const video = {};
   for (const k of ['a', 'b', 'both']) {
     if (!media.video[k]) continue;
-    const name = `r${rev}-video-${k}.${media.video[`${k}Info`].ext}`;
+    const name = `r${rev}-${pre}video-${k}.${media.video[`${k}Info`].ext}`;
     copyFileSync(media.video[k], join(dir, name));
     video[k] = name;
   }
@@ -350,17 +463,46 @@ async function change(id, who, action, fn) {
 }
 
 const FIELDS = ['schema', 'title', 'area', 'topic', 'thread', 'problem', 'idea', 'looksSame', 'visualDiff', 'gain', 'risk'];
+const OPTION_FIELDS = ['name', 'label', 'idea', 'looksSame', 'visualDiff', 'gain', 'risk'];
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]));
-const MEDIA_MISSING = /^compare: at least one screenshot pair/;
+const MEDIA_MISSING = /^(?:options\[\d+\]\.)?compare: at least one screenshot pair/;
 const needBy = (by) => { if (!by || !String(by).trim()) throw new Error('--by <your agent name> is required'); return String(by).slice(0, 80); };
+const storedHasMedia = (c) => !!(c && (c.shots?.length || c.video));
+
+/** A stored proposal as the author's raw object again (text, compare a/b/view, options without media): for re-validation. */
+function storedRaw(p) {
+  const c = p.compare || {};
+  return {
+    ...pick(p, FIELDS),
+    compare: pick({ a: c.a, b: c.b, view: c.view }, ['a', 'b', 'view']),
+    ...(p.options && { options: p.options.map((o) => ({ ...pick(o, OPTION_FIELDS), compare: pick({ b: o.compare?.b }, ['b']) })) }),
+    ...(p.recommended && { recommended: p.recommended }),
+  };
+}
+
+/** Store the normalized options with their media for revision `rev`; an option without new media keeps `prev`'s (same name). */
+function storeOptions(id, rev, n, prev = []) {
+  return n.fields.options.map((o, k) => {
+    const nm = n.media.options[k];
+    const old = prev.find((x) => x.name === o.name);
+    const m = hasMedia(nm) ? storeMedia(id, rev, nm, `o${k + 1}-`) : { shots: old?.compare?.shots || [], video: old?.compare?.video || {} };
+    return { ...o, compare: { ...o.compare, shots: m.shots, ...(Object.keys(m.video).length && { video: m.video }) } };
+  });
+}
+
+/** Errors for options that have no screenshots or video, new (`n`) or kept from `prev` (same name). */
+function optionMediaErrors(n, prev = []) {
+  return (n.fields.options || []).flatMap((o, k) => (hasMedia(n.media.options[k]) || storedHasMedia(prev.find((x) => x.name === o.name)?.compare)
+    ? [] : [`options[${k}] (${o.name}): at least one screenshot pair or a video`]));
+}
 
 /**
- * Post a proposal: {by, raw, baseDir, shotsA, shotsB, captions, video, draft}. Validates, copies the media into the
- * store, assigns PR-NNN. Returns {proposal, scrubbed, warnings}.
+ * Post a proposal: {by, raw, baseDir, shotsA, shotsB, captions, video, option, draft}. Validates, copies the media into
+ * the store, assigns PR-NNN. Returns {proposal, scrubbed, warnings}. `option`: the option the CLI shots belong to.
  */
-export async function postProposal({ by, raw, baseDir, shotsA, shotsB, captions, video, draft = false }) {
+export async function postProposal({ by, raw, baseDir, shotsA, shotsB, captions, video, option, draft = false }) {
   const who = needBy(by);
-  const n = normalize(raw, { baseDir, shotsA, shotsB, captions, video, draft });
+  const n = normalize(raw, { baseDir, shotsA, shotsB, captions, video, option, draft });
   failIf(n.errors, 'post');
   return withGuard(GUARD, () => {
     mkdirSync(proposalsDir(), { recursive: true });
@@ -370,6 +512,7 @@ export async function postProposal({ by, raw, baseDir, shotsA, shotsB, captions,
     const p = {
       schema: SCHEMA, id, by: who, ...n.fields,
       compare: { ...n.fields.compare, shots: media.shots, ...(Object.keys(media.video).length && { video: media.video }) },
+      ...(n.fields.options && { options: storeOptions(id, 1, n) }),
       state: draft ? 'draft' : 'proposed', rev: 1, decision: null, decisions: [],
       revisions: [{ rev: 1, at: now, by: who, note: 'first version' }],
       createdAt: now, updatedAt: now, ...(!draft && { proposedAt: now }),
@@ -381,25 +524,30 @@ export async function postProposal({ by, raw, baseDir, shotsA, shotsB, captions,
 }
 
 /**
- * A new revision: {by, note, raw?, baseDir, shotsA, shotsB, captions, video, publish}. From draft (stays a draft
+ * A new revision: {by, note, raw?, baseDir, shotsA, shotsB, captions, video, option, publish}. From draft (stays a draft
  * unless publish), proposed or changes-requested (-> proposed). Without raw the text stays; shots or videos given
  * replace the old ones, none keep them. rev+1; a decision on the old revision is no longer possible.
+ * Options (I-053): raw's options replace the old list (add, change, drop); an option with new shots or a video (in raw,
+ * or the CLI's with `option` naming it) gets them, one without keeps the media of the old option of the same name.
  */
-export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], shotsB = [], captions = [], video = {}, publish = false }) {
+export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], shotsB = [], captions = [], video = {}, option, publish = false }) {
   const who = needBy(by);
   if (!note || !String(note).trim()) throw new Error('--note "<what changed, for the user>" is required');
   const cur = get(id);
   if (!['draft', 'proposed', 'changes-requested'].includes(cur.state)) throw new Error(`${cur.id} is ${cur.state}: post a new proposal instead`);
   const toDraft = cur.state === 'draft' && !publish;
   // the new file's fields, or the current ones; media: the new ones, or the current ones kept
-  const base = raw || { ...pick(cur, FIELDS), compare: { a: cur.compare.a, b: cur.compare.b, view: cur.compare.view } };
+  const base = raw || storedRaw(cur);
   const hasNewMedia = !!(shotsA.length || shotsB.length || Object.values(video).some(Boolean) || raw?.compare?.shots?.length || raw?.compare?.video);
-  const n = normalize(base, { baseDir, shotsA, shotsB, captions, video, draft: true });
+  const n = normalize(base, { baseDir, shotsA, shotsB, captions, video, option, draft: true });
   let errs = n.errors;
   if (!toDraft) {
-    errs = normalize(base, { baseDir, shotsA, shotsB, captions, video, draft: false }).errors.filter((e) => !MEDIA_MISSING.test(e));
-    const anyMedia = hasNewMedia ? n.media.shots.length || n.media.video.a || n.media.video.both : cur.compare.shots.length || cur.compare.video;
-    if (!anyMedia) errs.push('compare: at least one screenshot pair or a video');
+    errs = normalize(base, { baseDir, shotsA, shotsB, captions, video, option, draft: false }).errors.filter((e) => !MEDIA_MISSING.test(e));
+    if (n.fields.options) errs.push(...optionMediaErrors(n, cur.options));
+    else {
+      const anyMedia = hasNewMedia ? n.media.shots.length || n.media.video.a || n.media.video.both : cur.compare.shots.length || cur.compare.video;
+      if (!anyMedia) errs.push('compare: at least one screenshot pair or a video');
+    }
   }
   failIf(errs, `revise ${cur.id}`);
   const nt = scrubText(String(note).trim().slice(0, LIMITS.note));
@@ -408,10 +556,19 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
     if (p.rev !== cur.rev || p.state !== cur.state) throw new Error(`${p.id} changed while revising (now rev ${p.rev}, ${p.state}); run it again`);
     const rev = p.rev + 1;
     const now = iso();
-    const media = hasNewMedia ? storeMedia(p.id, rev, n.media) : { shots: p.compare.shots, video: p.compare.video || {} };
-    Object.assign(p, n.fields);
-    p.compare = { ...n.fields.compare, shots: media.shots, ...(Object.keys(media.video).length && { video: media.video }) };
-    for (const k of ['topic', 'thread']) if (n.fields[k] === undefined) delete p[k];
+    const prevOptions = p.options || [];
+    if (n.fields.options) {
+      const { options, ...rest } = n.fields;
+      Object.assign(p, rest);
+      p.compare = { ...n.fields.compare, shots: [] };
+      p.options = storeOptions(p.id, rev, n, prevOptions);
+    } else {
+      const media = hasNewMedia ? storeMedia(p.id, rev, n.media) : { shots: p.compare.shots, video: p.compare.video || {} };
+      Object.assign(p, n.fields);
+      p.compare = { ...n.fields.compare, shots: media.shots, ...(Object.keys(media.video).length && { video: media.video }) };
+      delete p.options;
+    }
+    for (const k of ['topic', 'thread', 'recommended', 'idea', 'looksSame', 'risk']) if (n.fields[k] === undefined) delete p[k];
     p.rev = rev;
     p.state = toDraft ? 'draft' : 'proposed';
     if (!toDraft) p.proposedAt = now;
@@ -430,9 +587,10 @@ export async function publishProposal(id, { by }) {
   const who = needBy(by);
   const cur = get(id);
   if (cur.state !== 'draft') throw new Error(`${cur.id} is ${cur.state}, not a draft`);
-  const errs = normalize({ ...pick(cur, FIELDS), compare: { a: cur.compare.a, b: cur.compare.b, view: cur.compare.view } }, { draft: false }).errors
-    .filter((e) => !MEDIA_MISSING.test(e));
-  if (!cur.compare.shots.length && !cur.compare.video) errs.push('compare: at least one screenshot pair or a video (proposal revise --shot-a … --shot-b …)');
+  const n = normalize(storedRaw(cur), { draft: false });
+  const errs = n.errors.filter((e) => !MEDIA_MISSING.test(e));
+  if (n.fields?.options) errs.push(...optionMediaErrors({ fields: n.fields, media: { options: n.fields.options.map(() => null) } }, cur.options));
+  else if (!cur.compare.shots.length && !cur.compare.video) errs.push('compare: at least one screenshot pair or a video (proposal revise --shot-a … --shot-b …)');
   failIf(errs, `publish ${cur.id}`);
   return change(cur.id, who, 'published', (p) => {
     if (p.state !== 'draft') throw new Error(`${p.id} is ${p.state}, not a draft`);
@@ -451,23 +609,39 @@ export async function withdrawProposal(id, { by, note }) {
   });
 }
 
+/** The option of proposal `p` that `want` names (its name, or its label in any case), or null. */
+export const findOption = (p, want) => findOptionIn(p.options || [], want);
+
 /**
  * The user's decision (the page), or the lead's for a chat answer: value accept|reject|change (or the state names).
  * rev: the revision the user saw (refused when it was revised since). A change request needs notes.
+ * option (I-053): on a proposal with options, accept needs the option picked (its name or label); a change request may
+ * name one; reject is for the whole proposal. Stored as decision.option (the name).
  */
-export async function decide(id, { value, notes, rev, who = 'user' } = {}) {
+export async function decide(id, { value, notes, rev, option, who = 'user' } = {}) {
   const state = DECISION_VALUES[String(value ?? '').trim().toLowerCase()];
   if (!state) throw new Error(`the decision must be accept, reject or change (got ${JSON.stringify(value)})`);
   const nt = notes == null || notes === '' ? undefined : scrubText(String(notes).trim().slice(0, LIMITS.notes)).text || undefined;
   if (state === 'changes-requested' && !nt) throw new Error('say what to change (the notes box)');
+  const want = option == null || String(option).trim() === '' ? undefined : String(option).trim().slice(0, 80);
   return change(id, String(who).slice(0, 80), 'decided', (p) => {
     if (rev !== undefined && rev !== null && rev !== '' && Number(rev) !== p.rev) throw new Error(`${p.id} was revised (now revision ${p.rev}, you saw ${rev}): reload the page`);
     if (p.state !== 'proposed') throw new Error(`${p.id} is ${p.state}, not waiting for a decision`);
-    const d = { value: state, notes: nt, at: iso(), who: String(who).slice(0, 80), rev: p.rev };
+    let picked;
+    if (p.options?.length) {
+      const names = p.options.map((o) => o.name).join(', ');
+      if (want !== undefined) {
+        if (state === 'rejected') throw new Error(`reject is for the whole proposal; to drop one option, request a change (--value change --option ${want})`);
+        const o = findOption(p, want);
+        if (!o) throw new Error(`no option "${want}" in ${p.id} (options: ${names})`);
+        picked = o.name;
+      } else if (state === 'accepted') throw new Error(`${p.id} has ${p.options.length} options: say which one you accept (--option <name>: ${names})`);
+    } else if (want !== undefined) throw new Error(`${p.id} has no options (--option is for a proposal with options)`);
+    const d = { value: state, notes: nt, at: iso(), who: String(who).slice(0, 80), rev: p.rev, ...(picked && { option: picked }) };
     p.state = state;
     p.decision = d;
     p.decisions.push(d);
-    return { value: state, rev: p.rev, note: nt };
+    return { value: state, rev: p.rev, note: nt, ...(picked && { option: picked }) };
   });
 }
 
@@ -477,9 +651,10 @@ export async function undoDecision(id, { rev, who = 'user' } = {}) {
     if (!DECIDED.has(p.state)) throw new Error(`${p.id} is ${p.state}: nothing to change`);
     if (rev !== undefined && rev !== null && rev !== '' && Number(rev) !== p.rev) throw new Error(`${p.id} was revised (now revision ${p.rev}): reload the page`);
     const was = p.state;
+    const wasOption = p.decision?.option;
     p.state = 'proposed';
     p.decision = null;
-    return { was, rev: p.rev };
+    return { was, rev: p.rev, ...(wasOption && { wasOption }) };
   });
 }
 
@@ -503,16 +678,17 @@ const byAt = (a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0);
 /**
  * Every decision event in a proposal's history, oldest first: {id, n (history index), event: decided|undecided, value
  * (the new state), was (the decision it replaced: for undecided the one undone, for decided the one undone just
- * before it on the same revision, else null), rev, notes, who, at, title, by (the author)}.
+ * before it on the same revision, else null), rev, notes, who, at, title, by (the author), option (I-053: the option
+ * picked by this decision, else null), wasOption (the option of the decision in `was`, else null)}.
  */
 export function decisionEvents(p) {
   const out = [];
-  let undone = null;
+  let undone = null, undoneOption = null;
   (p.history || []).forEach((h, n) => {
     const base = { id: p.id, n, rev: h.rev ?? null, who: h.who, at: h.at, title: p.title, by: p.by };
-    if (h.action === 'decided') { out.push({ ...base, event: 'decided', value: h.value, was: undone, notes: h.note ?? null }); undone = null; }
-    else if (h.action === 'undecided') { out.push({ ...base, event: 'undecided', value: 'proposed', was: h.was ?? null, notes: null }); undone = h.was ?? null; }
-    else if (h.action === 'revised' || h.action === 'withdrawn') undone = null;
+    if (h.action === 'decided') { out.push({ ...base, event: 'decided', value: h.value, was: undone, notes: h.note ?? null, option: h.option ?? null, wasOption: undone ? undoneOption : null }); undone = null; undoneOption = null; }
+    else if (h.action === 'undecided') { out.push({ ...base, event: 'undecided', value: 'proposed', was: h.was ?? null, notes: null, option: null, wasOption: h.wasOption ?? null }); undone = h.was ?? null; undoneOption = h.wasOption ?? null; }
+    else if (h.action === 'revised' || h.action === 'withdrawn') { undone = null; undoneOption = null; }
   });
   return out;
 }
@@ -522,7 +698,7 @@ export const eventsSince = (items, t0) => items.flatMap(decisionEvents).filter((
 
 const decisionDetail = (p) => {
   const last = decisionEvents(p).filter((e) => e.event === 'decided').at(-1);
-  return { id: p.id, rev: p.decision.rev, value: p.decision.value, notes: p.decision.notes ?? null, at: p.decision.at, title: p.title, was: last?.was ?? null };
+  return { id: p.id, rev: p.decision.rev, value: p.decision.value, notes: p.decision.notes ?? null, at: p.decision.at, title: p.title, was: last?.was ?? null, option: p.decision.option ?? null };
 };
 
 /**
@@ -633,7 +809,9 @@ const flat = (s) => String(s ?? '').replace(/[\u0000-\u0009\u000b-\u001f\u007f\u
 
 /** The lines `thread wait` prints for one decision event. */
 export function proposalNewsText(e) {
-  const head = `PROPOSAL ${e.id} ${e.event === 'decided' ? `decided ${e.value}${e.was ? ` (was ${e.was})` : ''}` : `undecided (was ${e.was})`} by ${flat(e.who)} at ${e.at}`;
+  const opt = (o) => (o ? `, option: ${flat(o)}` : '');
+  const was = e.was ? ` (was ${e.was}${opt(e.wasOption)})` : '';
+  const head = `PROPOSAL ${e.id} ${e.event === 'decided' ? `decided ${e.value}${opt(e.option)}${was}` : `undecided${was || ` (was ${e.was})`}`} by ${flat(e.who)} at ${e.at}`;
   const notes = e.event === 'decided' ? (e.notes ? flat(e.notes).split('\n') : []) : ['back to proposed, waiting for the user'];
   const L = [notes.length ? `${head}: ${notes[0]}` : head, ...notes.slice(1).map((l) => `  ${l}`)];
   L.push(`  "${flat(e.title).replace(/\n/g, ' ')}" rev ${e.rev} by ${flat(e.by)}; show: node tools/console.mjs proposal show ${e.id}`);
@@ -643,6 +821,8 @@ export function proposalNewsText(e) {
 // ---- views -------------------------------------------------------------------------------------------
 
 const media = (id, name) => (name ? `/media/${id}/${name}` : undefined);
+const viewShots = (id, c) => (c.shots || []).map((s) => ({ caption: s.caption, a: media(id, s.a), b: media(id, s.b), aSize: s.aSize, bSize: s.bSize }));
+const viewVideo = (id, v) => (v ? { a: media(id, v.a), b: media(id, v.b), both: media(id, v.both) } : undefined);
 
 /** What the page gets for one proposal: no history, media as /media/ URLs. Drafts and withdrawn: null. */
 export function publicView(p) {
@@ -653,9 +833,15 @@ export function publicView(p) {
     problem: p.problem, idea: p.idea, looksSame: p.looksSame, visualDiff: p.visualDiff, gain: p.gain, risk: p.risk,
     compare: {
       a: c.a, b: c.b, view: c.view || 'side',
-      shots: (c.shots || []).map((s) => ({ caption: s.caption, a: media(p.id, s.a), b: media(p.id, s.b), aSize: s.aSize, bSize: s.bSize })),
-      video: c.video ? { a: media(p.id, c.video.a), b: media(p.id, c.video.b), both: media(p.id, c.video.both) } : undefined,
+      shots: viewShots(p.id, c),
+      video: viewVideo(p.id, c.video),
     },
+    // I-053: the solutions, each with its own text and B media (A is compare.a); undefined for a single proposal
+    options: p.options?.length ? p.options.map((o) => ({
+      name: o.name, label: o.label, idea: o.idea, looksSame: o.looksSame, visualDiff: o.visualDiff, gain: o.gain, risk: o.risk,
+      compare: { b: o.compare?.b, shots: viewShots(p.id, o.compare || {}), video: viewVideo(p.id, o.compare?.video) },
+    })) : undefined,
+    recommended: p.options?.length ? p.recommended : undefined,
     decision: p.decision, decisions: p.decisions, revisions: p.revisions,
     createdAt: p.createdAt, proposedAt: p.proposedAt, updatedAt: p.updatedAt,
   };
@@ -665,15 +851,25 @@ export function publicView(p) {
 export function pageProposals() {
   return listProposals().filter((p) => p.state !== 'draft').map((p) => ({
     id: p.id, by: p.by, title: p.title, area: p.area, state: p.state, rev: p.rev,
-    decision: p.decision ? { value: p.decision.value, at: p.decision.at } : null,
+    decision: p.decision ? { value: p.decision.value, at: p.decision.at, ...(p.decision.option && { option: p.decision.option }) } : null,
     shots: (p.compare?.shots || []).length, proposedAt: p.proposedAt, updatedAt: p.updatedAt,
+    ...(p.options?.length && { options: p.options.length }),
   }));
 }
 
 /** One line for `proposal list`. */
 export function line(p) {
-  const d = p.decision ? ` -> ${p.decision.value}${p.decision.notes ? ` (notes: ${String(p.decision.notes).split('\n')[0].slice(0, 120)})` : ''}` : '';
-  return `${p.id}  [${p.state} rev ${p.rev}]  ${p.area}  by ${p.by}: ${p.title}${d}`;
+  const d = p.decision ? ` -> ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''}${p.decision.notes ? ` (notes: ${String(p.decision.notes).split('\n')[0].slice(0, 120)})` : ''}` : '';
+  return `${p.id}  [${p.state} rev ${p.rev}]  ${p.area}  by ${p.by}: ${p.title}${p.options?.length ? ` (${p.options.length} options)` : ''}${d}`;
+}
+
+/** The text block of one solution (the proposal's own, or an option's) for `proposal show`, indented by `ind`. */
+function solutionText(s, ind) {
+  const L = [];
+  for (const [k, label] of [['idea', 'idea'], ['looksSame', 'looks the same'], ['risk', 'risk']]) if (s[k]) L.push(`${ind}${label}: ${s[k].replace(/\n/g, `\n${ind}  `)}`);
+  if (s.visualDiff?.length) { L.push(`${ind}visual difference:`); for (const v of s.visualDiff) L.push(`${ind}  - ${v}`); }
+  if (s.gain?.length) { L.push(`${ind}gain:`); for (const g of s.gain) L.push(`${ind}  ${g.what}: ${g.before} -> ${g.after} [${g.tag}]${g.needsPhone ? ' (phone check needed)' : ''}${g.how ? ` (${g.how})` : ''}`); }
+  return L;
 }
 
 /** The text of `proposal show`. */
@@ -685,13 +881,23 @@ export function showText(p) {
   if (p.visualDiff?.length) { L.push('  visual difference:'); for (const v of p.visualDiff) L.push(`    - ${v}`); }
   if (p.gain?.length) { L.push('  gain:'); for (const g of p.gain) L.push(`    ${g.what}: ${g.before} -> ${g.after} [${g.tag}]${g.needsPhone ? ' (phone check needed)' : ''}${g.how ? ` (${g.how})` : ''}`); }
   const c = p.compare || {};
-  L.push(`  A: ${c.a?.label}${c.a?.url ? ` ${c.a.url}` : ''}   B: ${c.b?.label}${c.b?.url ? ` ${c.b.url}` : ''}${c.view ? `   view: ${c.view}` : ''}`);
+  if (p.options?.length) L.push(`  options: ${p.options.map((o) => o.name).join(', ')}${p.recommended ? `; recommended: ${p.recommended.option} (${p.recommended.why})` : ''}`);
+  L.push(`  A: ${c.a?.label}${c.a?.url ? ` ${c.a.url}` : ''}${p.options?.length ? '' : `   B: ${c.b?.label}${c.b?.url ? ` ${c.b.url}` : ''}`}${c.view ? `   view: ${c.view}` : ''}`);
   for (const [i, s] of (c.shots || []).entries()) L.push(`  shot ${i + 1}${s.caption ? ` "${s.caption}"` : ''}: ${s.a} | ${s.b}`);
   if (c.video) L.push(`  video: ${Object.entries(c.video).map(([k, v]) => `${k}=${v}`).join(' ')}`);
   L.push(`  media: ${mediaDir(p.id)}`);
-  if (p.decision) L.push(`  decision: ${p.decision.value} (rev ${p.decision.rev}, ${p.decision.at}, ${p.decision.who})${p.decision.notes ? `: ${p.decision.notes}` : ''}`);
+  for (const o of p.options || []) {
+    L.push(`  option ${o.name} "${o.label}"${p.recommended?.option === o.name ? ' (recommended)' : ''}:`);
+    L.push(...solutionText(o, '    '));
+    const oc = o.compare || {};
+    const shots = (oc.shots || []).map((s, i) => `shot ${i + 1}${s.caption ? ` "${s.caption}"` : ''}: ${s.a} | ${s.b}`);
+    L.push(`    B: ${oc.b?.label}${oc.b?.url ? ` ${oc.b.url}` : ''}${shots.length ? `   ${shots[0]}` : ''}`);
+    for (const x of shots.slice(1)) L.push(`    ${x}`);
+    if (oc.video) L.push(`    video: ${Object.entries(oc.video).map(([k, v]) => `${k}=${v}`).join(' ')}`);
+  }
+  if (p.decision) L.push(`  decision: ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''} (rev ${p.decision.rev}, ${p.decision.at}, ${p.decision.who})${p.decision.notes ? `: ${p.decision.notes}` : ''}`);
   L.push('  history:');
-  for (const h of p.history) L.push(`    ${h.at} ${h.who} ${h.action}${h.rev ? ` rev ${h.rev}` : ''}${h.value ? ` ${h.value}` : ''}${h.note ? `: ${h.note}` : ''}`);
+  for (const h of p.history) L.push(`    ${h.at} ${h.who} ${h.action}${h.rev ? ` rev ${h.rev}` : ''}${h.value ? ` ${h.value}` : ''}${h.option ? `, option: ${h.option}` : ''}${h.note ? `: ${h.note}` : ''}`);
   return L.join('\n');
 }
 

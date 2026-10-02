@@ -28,7 +28,8 @@
 //   GET  /proposals              the proposals page (tools/lib/proposals-page.html, ts-proposals): PoCs to compare and decide
 //   GET  /api/proposals          {now, proposals: [summaries]} (waiting first; no drafts, no withdrawn ones)
 //   GET  /api/proposals/<id>     one proposal (proposal.mjs publicView: text, gain, compare with /media/ URLs; no history)
-//   POST /api/proposals/<id>/<act>  act = decide {value: accept|reject|change, notes, rev} | undo {rev}
+//   POST /api/proposals/<id>/<act>  act = decide {value: accept|reject|change, notes, rev, option?} | undo {rev}
+//                                (option: I-053, the picked option's name on a proposal with options)
 //   GET  /media/<id>/<name>      a proposal's screenshot or video, from the store only (strict names; Range for video)
 // Both pages carry the same menu (menuHtml, injected at <!--console-menu-->), the current page highlighted.
 // startServer(…, {notify: true}) (`console.mjs serve --notify`): a macOS notification per new step and one reminder
@@ -179,7 +180,7 @@ function readBody(req, max = 64 * 1024) {
 
 // ---- proposals (ts-proposals) ----
 const PROPOSAL_ACTIONS = {
-  decide: (id, b) => decideProposal(id, { value: b.value, notes: b.notes, rev: b.rev, who: 'user' }),
+  decide: (id, b) => decideProposal(id, { value: b.value, notes: b.notes, rev: b.rev, option: typeof b.option === 'string' ? b.option : undefined, who: 'user' }),
   undo: (id, b) => undoDecision(id, { rev: b.rev, who: 'user' }),
 };
 

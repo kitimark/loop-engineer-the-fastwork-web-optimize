@@ -3,13 +3,19 @@
 // Design: research/architecture/console-proposals.md.
 //
 //   proposal post --by <agent> --file <proposal.json|md> [--shot-a <img> --shot-b <img> [--caption "<where>"]]…
-//        [--video <clip of both> | --video-a <clip> --video-b <clip>] [--draft]          # prints POSTED PR-001: <title>
+//        [--video <clip of both> | --video-a <clip> --video-b <clip>] [--option <name>] [--draft]   # POSTED PR-001: <title>
+//        # options (I-053): the file's "options" list holds 2-6 solutions, each with its own idea, looksSame,
+//        # visualDiff, gain, risk and compare {b, shots, video} against the shared compare.a; "recommended":
+//        # {option, why}. --option <name>: the option the --shot-a/--shot-b/--video flags belong to (required then).
 //   proposal list [--waiting] [--all] [--by <agent>] [--json]   # waiting (proposed) first; --all adds withdrawn ones
 //   proposal show <id> [--json]
-//   proposal revise <id> --by <agent> --note "<what changed>" [--file …] [--shot-a … --shot-b …] [--video …] [--publish]
+//   proposal revise <id> --by <agent> --note "<what changed>" [--file …] [--shot-a … --shot-b …] [--video …] [--option <name>] [--publish]
+//        # options: the new file's list replaces the old one (add, change, drop options); an option without new shots
+//        # keeps those of the old option of the same name; --option <name> + --shot-a/--shot-b replaces that one's.
 //   proposal publish <id> --by <agent>                            # draft -> proposed
 //   proposal withdraw <id> --by <agent> [--note "..."]
-//   proposal decide <id> --by <who> --value accept|reject|change [--notes "..."]   # the user answered in chat (lead)
+//   proposal decide <id> --by <who> --value accept|reject|change [--option <name>] [--notes "..."]   # the user answered in chat (lead)
+//        # a proposal with options: accept needs --option (its name or label); change may name one; reject may not
 //   proposal wait <id> [--until decided|changed] [--since <ISO>] [--timeout 3600] [--json] [--quiet]
 //        # decided: met while it stands decided (at once if it already is); with --since: a decision made after it
 //        # that still stands (an undo alone does not wake it, the re-decision does). changed (--since default now):
@@ -17,7 +23,9 @@
 //   proposal wait --any [--by <agent>] [--since <ISO>] [--timeout 3600] [--json] [--quiet]
 //        # every decision event after --since (default now) on the agent's proposals, or on ALL proposals without
 //        # --by (the lead); prints {decisions: [standing ones], events: [{id, event: decided|undecided, value, was,
-//        # notes, who, at, rev, …}]} and one PROPOSAL line per event
+//        # notes, who, at, rev, option, wasOption, …}]} and one PROPOSAL line per event
+//        # I-053: every decision JSON carries "option" (the picked option's name, or null), and the printed lines say
+//        # ", option: <name>" (PROPOSAL PR-004 decided accepted, option: tiles by user at …; MET … then "  option: tiles")
 //        # exit 0 MET (prints MET … : <json>, then a "Re-arm: …" line with --since <the last event>; --json: the JSON
 //        # alone, the Re-arm line on stderr), 3 TIMEOUT, 4 NEVER (withdrawn), 1 usage. The lead's
 //        # `console.mjs thread wait --as lead` also wakes on every decision event, once (header of tools/console.mjs).
@@ -30,7 +38,7 @@ import {
 import { runningServer } from './console-server.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './wait.mjs';
 
-const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as']);
+const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option']);
 
 export function parseArgs(argv) {
   const multi = {}, pos = [], flags = new Set();
@@ -65,7 +73,7 @@ function inputs(a) {
   if (a.one('video')) video.both = a.one('video');
   if (a.one('video-a')) video.a = a.one('video-a');
   if (a.one('video-b')) video.b = a.one('video-b');
-  return { raw, baseDir: file ? dirname(resolve(file)) : process.cwd(), shotsA: a.many('shot-a'), shotsB: a.many('shot-b'), captions: a.many('caption'), video };
+  return { raw, baseDir: file ? dirname(resolve(file)) : process.cwd(), shotsA: a.many('shot-a'), shotsB: a.many('shot-b'), captions: a.many('caption'), video, option: a.one('option') };
 }
 
 function report(r) {
@@ -84,7 +92,8 @@ export async function run(argv) {
     report(r);
     const p = r.proposal;
     console.log(`POSTED ${p.id}: ${p.title}${p.state === 'draft' ? ' (draft: not shown to the user; proposal publish ' + p.id + ')' : ''}`);
-    console.log(`  ${p.compare.shots.length} screenshot pair(s)${p.compare.video ? ', video' : ''}, copied into the console store`);
+    if (p.options?.length) console.log(`  ${p.options.length} options: ${p.options.map((o) => `${o.name} (${o.compare.shots.length} pair(s)${o.compare.video ? ', video' : ''})`).join(', ')}${p.recommended ? `; recommended: ${p.recommended.option}` : ''}; media copied into the console store`);
+    else console.log(`  ${p.compare.shots.length} screenshot pair(s)${p.compare.video ? ', video' : ''}, copied into the console store`);
     const u = await serverUrl();
     if (p.state === 'proposed') console.log(u ? `on the user console ${new URL(`proposals#${p.id}`, u).href}; wait: node tools/console.mjs proposal wait ${p.id} --until decided (in the background)` : 'the console page is not running: ask the lead to start `node tools/console.mjs serve`');
     return 0;
@@ -111,7 +120,7 @@ export async function run(argv) {
   if (sub === 'withdraw') { console.log(`WITHDRAWN ${line(await withdrawProposal(id, { by: by(), note: a.one('note') }))}`); return 0; }
   if (sub === 'decide') {
     if (!by()) throw new Error('--by <who> is required (the user answered in chat: --by lead)');
-    console.log(`DECIDED ${line(await decide(id, { value: a.one('value'), notes: a.one('notes'), who: by() }))}`);
+    console.log(`DECIDED ${line(await decide(id, { value: a.one('value'), notes: a.one('notes'), option: a.one('option'), who: by() }))}`);
     return 0;
   }
   if (sub === 'wait') return wait(waitCondition(id, { until: a.one('until', 'decided'), since: a.one('since') }), a);
@@ -130,6 +139,7 @@ async function wait(w, a) {
     if (a.flag('json')) { console.log(r.detail); console.error(rearm); return EXIT.met; }
     console.log(`MET ${w.what}: ${r.detail} (after ${r.waitedSec} s)`);
     for (const e of d.events || []) console.log(proposalNewsText(e));
+    if (!d.events && d.option) console.log(`  option: ${d.option}`); // I-053: the option the user picked
     console.log(rearm);
     return EXIT.met;
   }
