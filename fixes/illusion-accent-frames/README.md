@@ -8,7 +8,9 @@ the SVG ("P-058 results" below). Rev 3 was posted as PR-004 (6 options, recommen
 PR-004 rev 2 (a plain report plus 4 next steps) got changes-requested: the user asked whether the word was measured
 alone, without the page's other parts. It was not (see "Full page, not isolated" below). PR-004 rev 3 answers that and
 offers 4 options, recommending a word-alone test page. The user accepted rev 3, option word-alone (11:15Z). The test page
-is built and checked in Chrome and the Simulator; phone ticket P-065 is pre-registered ("Word-alone test page" below).
+is built and checked in Chrome and the Simulator. P-065 Block 1 ran on the phone (10-02 evening). Alone, the word's draws
+make no slow frame; on the full page the slow frames in its windows come with the rest of the page. Block 2 was skipped by
+the pre-registered rules before any data, and the topic closes: **keep the SVG** ("P-065 results" below).
 **Stage:** R / I (design-engineer PoC, illusion proposal; no D card)
 **Device class / gate:** phone-only (WebKit). Chrome is gated to the original SVG.
 **Driver(s) behind the claims:** Simulator functional sessions (no timing). Chrome per-draw trace counts (r14).
@@ -719,6 +721,80 @@ Main-thread self time per 1.8 s draw window, trace, at 6x:
 
 **Still needs the phone:** both P-065 blocks (> 50 / > 34 ms frame counts per 'you' draw and over the 44 s idle), as
 ticketed.
+
+### P-065 results (Block 1 scored; Block 2 skipped)
+
+**Run.** iphone-runner, iPhone 15 Pro Max, W driver at the top (44 s idle, 2 'you' cycles per run), Timeline off, plain
+http.
+- 8 counted runs in C V V C C V V C order, none void. One warm-up per arm.
+- Heat checks: opening 60.2 / 57.5 fps and end 60.1 / 57.7 fps, both PASS. All four FP runs also passed as heat sentinels.
+- 59 Hz rAF, Low Power Mode off, Mac load1 2.9-6.6, every run in the runner's own exclusive hold.
+- Scored with `youdraws.mjs`. Run JSON stays in the runner's `out/p065/` (Hard rule 3).
+
+**'You' windows** (4 per run: draw start + 2000 ms):
+
+| run | build | > 50 (46 / 54) | > 34 (30 / 38) | live min | longest gap ms |
+|---|---|---|---|---|---|
+| 1 | FP | 0 (1 / 0) | 4 (8 / 3) | 53 | 47 |
+| 2 | WA-C | 0 (0 / 0) | 0 (0 / 0) | 54 | 19 |
+| 3 | WA-C | 0 (0 / 0) | 0 (0 / 0) | 54 | 21 |
+| 4 | FP | 1 (2 / 0) | 6 (11 / 4) | 53 | 54 |
+| 5 | FP | 0 (1 / 0) | 8 (11 / 3) | 54 | 50 |
+| 6 | WA-C | 0 (0 / 0) | 0 (0 / 0) | 54 | 21 |
+| 7 | WA-C | 0 (0 / 0) | 0 (0 / 0) | 54 | 19 |
+| 8 | FP | 1 (1 / 0) | 7 (11 / 4) | 53 | 51 |
+
+**Whole 44 s idle, all words:**
+
+| build | > 50 | > 54 twin | > 34 | > 30 / > 38 twins | fps |
+|---|---|---|---|---|---|
+| FP | 2, 14, 10, 8 | 0-6 | 43-51 | 56-66 / 29-34 | 59.6-59.8 |
+| WA-C | 0 in every run | 0 | 0 | 0 / 0 | 60.0 |
+
+WA-C's longest gap is 20-21 ms in every run.
+
+**WebKit Timeline counts per 'you' draw** (attribution runs after the end sentinel, 46 s, counts only):
+
+| build | style | layout | paint | rAF callbacks | timers |
+|---|---|---|---|---|---|
+| FP | 59.3 | 58 | 59.5 | 23.8 | 4.5 |
+| WA-C | 57 | 56.5 | 58.3 | 0 | 1 |
+| FP minus WA-C | +2.3 | +1.5 | +1.2 | +23.8 | +3.5 |
+
+**Decision rule 1 (isolation):**
+- **'You' windows, > 34:** FP 4-8 against WA-C 0. The ranges are separated and both twins agree. So **the rest of the page
+  adds the slow frames in the word's windows.**
+- **'You' windows, > 50:** FP 0-1 against WA-C 0. Not separated.
+- **Whole idle, > 34:** separated, twins agree.
+- **Whole idle, > 50:** FP 2-14 against 0, but the > 54 twin overlaps (FP 0-6). Threshold-sensitive.
+
+**Predictions:**
+- (a) hit, except FP's whole-idle > 50 reached 14 in one run, above the predicted [0, 12].
+- (b) hit.
+- (d) hit for WA-C.
+- (e) hit.
+- (c) not run.
+
+**Reading** (phone data, W driver, scripted, no finger):
+- Alone, the word's SVG draw makes no frame over 34 ms on the iPhone, and its longest gap is 21 ms.
+- On the full page, WebKit records almost the same style, layout and paint counts per draw, yet frames over 34 ms appear.
+  So the cost is per frame, from the rest of the page, not extra records. The Chrome call tree agrees (F-132, "Phone off"
+  section 3).
+
+**Caveats:**
+- The battery was at 41.5 °C at run 1, after an 11-min wait in the Mac queue; the opening heat check had shown 37.5 °C.
+  All sentinels passed, so the runs stay valid.
+- On the full page the title sits in a 5x larger composited layer ("Phone off" section 2). So "the rest of the page"
+  includes that layer.
+- Over the whole idle, > 50 is threshold-sensitive.
+
+**Block 2 skipped** (the lead's decision, before any Block 2 data). WA-C sat at 0 on > 50 and > 34 in every run. Under
+rule 2, an arm beats the SVG alone only when its range lies wholly below WA-C's, and nothing lies below 0. So Block 2 could
+not produce a win.
+
+**Decision (rule 3):** no arm beats WA-C, so **keep the SVG; the illusion topic closes.** The word's own draw is already
+free of slow frames on the phone. Any gain lies in the page's per-frame cost (layers, IntersectionObserver, paint
+invalidation), which other topics own.
 
 ## Void results
 
