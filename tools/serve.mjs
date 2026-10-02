@@ -29,6 +29,16 @@
 //
 // Served files are byte-identical to production except for the documented HTML rewrites
 // in --vendors=local mode (see README "Rewrites").
+//
+// Byte ranges (incident I-054): files from the root or an overlay answer `Range: bytes=a-b | a- | -n` with
+// 206 + Content-Range (416 + `Content-Range: bytes */size` when nothing is satisfiable) and send
+// `Accept-Ranges: bytes` on their 200s, because iOS Safari plays <video> only from servers that support
+// byte-range requests (Apple, Safari Web Content Guide, "Configuring Your Server"). Only one range is served:
+// a multi-range request gets the full 200. Ranges apply only when the response body is the file's own bytes:
+// a compressed (br/gzip) response, a rewritten body (the --vendors=local document) and the /__mirror and
+// /__vendor routes neither advertise nor honour them (full 200, as nginx does for gzipped responses).
+// If-None-Match is checked first (304); a non-matching If-Range gets the full 200. --latency delays a range
+// request like any other.
 import http from 'node:http';
 import http2 from 'node:http2';
 import os from 'node:os';
@@ -41,6 +51,7 @@ import { spawnSync } from 'node:child_process';
 import { REPO, mirrorHome, resolveTree, isLinkedWorktree, autoPortBase } from './lib/paths.mjs';
 import { withGuard } from './lib/lock.mjs';
 import { requireBaseline, baselineMeta } from './lib/baseline.mjs';
+import { parseRange } from './lib/http-range.mjs';
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = REPO;
@@ -152,10 +163,11 @@ function recordMissing(p) {
   try { mkdirSync(dirname(missingLog), { recursive: true }); appendFileSync(missingLog, p + '\n'); } catch {}
 }
 
-function send(req, res, status, headers, body, { compressible = false, etag } = {}) {
+/** Writes the response and returns the status sent (304/206/416 can replace the one asked for). */
+function send(req, res, status, headers, body, { compressible = false, etag, ranges = false } = {}) {
   if (etag) {
     headers.etag = etag;
-    if (req.headers['if-none-match'] === etag) { res.writeHead(304, headers); return res.end(); }
+    if (req.headers['if-none-match'] === etag) { res.writeHead(304, headers); res.end(); return 304; }
   }
   let out = body;
   const len = body ? (body.__c ? body.__c.buf.length : body.length) : 0;
@@ -165,9 +177,18 @@ function send(req, res, status, headers, body, { compressible = false, etag } = 
     if (enc) { out = typeof body === 'object' && body.__c ? encoded(body.__c, enc) : zlib[enc === 'br' ? 'brotliCompressSync' : 'gzipSync'](body); headers['content-encoding'] = enc; headers.vary = 'accept-encoding'; }
   }
   if (out && out.__c) out = out.__c.buf;
+  // I-054: byte ranges only over the file's own bytes (never over a compressed or rewritten body)
+  if (ranges && status === 200 && out && !headers['content-encoding']) {
+    headers['accept-ranges'] = 'bytes';
+    const ifRange = req.headers['if-range'];
+    const r = ifRange === undefined || (etag && ifRange === etag) ? parseRange(req.headers.range, out.length) : null;
+    if (r?.unsatisfiable) { status = 416; headers['content-range'] = `bytes */${out.length}`; out = null; }
+    else if (r) { status = 206; headers['content-range'] = `bytes ${r.start}-${r.end}/${out.length}`; out = out.subarray(r.start, r.end + 1); }
+  }
   headers['content-length'] = out ? out.length : 0;
   res.writeHead(status, headers);
   res.end(req.method === 'HEAD' ? undefined : out);
+  return status;
 }
 
 function vendorLookup(pathWithQuery) {
@@ -270,9 +291,9 @@ function handler(req, res) {
     headers['content-security-policy'] = localCsp(info.csp);
     if (info.link) headers.link = info.link; // production's modulepreload Link header
   }
-  const c = load(hit.file, isHtml && VENDORS === 'local' ? rewriteHtml : null);
-  done(200);
-  return send(req, res, 200, headers, { __c: c }, { compressible: COMPRESSIBLE.test(type), etag: c.etag });
+  const rewrite = isHtml && VENDORS === 'local' ? rewriteHtml : null;
+  const c = load(hit.file, rewrite);
+  return done(send(req, res, 200, headers, { __c: c }, { compressible: COMPRESSIBLE.test(type), etag: c.etag, ranges: !rewrite }));
 }
 
 function lanAddresses() {

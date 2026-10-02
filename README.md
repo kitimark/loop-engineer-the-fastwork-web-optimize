@@ -104,6 +104,12 @@ What the server does to stay close to production:
 - **Compression:** brotli (default) or gzip for text types, as Cloudflare does. The brotli quality
   differs, so transfer sizes differ slightly: `2.DyWL8TcE.js` is 96.5 KB locally against 116 KB live.
   Decoded bytes are identical.
+- **Byte ranges** (incident I-054): files from the root or an overlay answer a single `Range: bytes=…`
+  with 206 (416 when unsatisfiable) and send `Accept-Ranges: bytes`, because iOS Safari plays `<video>`
+  only from servers that support byte-range requests (Apple, [Safari Web Content Guide, "Configuring
+  Your Server"](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/CreatingVideoforSafarioniPhone/CreatingVideoforSafarioniPhone.html)).
+  A multi-range request gets the full 200. Compressed (br/gzip) and rewritten bodies neither advertise
+  nor honour ranges, so a browser's normal (non-Range) fetches are served exactly as before.
 - **Document headers:** production's `Link: modulepreload` header, COOP/CORP, `X-Frame-Options`,
   `Permissions-Policy`, `Referrer-Policy`, and production's CSP **with all third-party origins
   removed** (same hashes, `'self'` only for script/connect/img/frame). That CSP is the hard guarantee

@@ -5,6 +5,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
+import http2 from 'node:http2';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, startServe, startProc, node, tool, SLOW_EXIT, signalTwiceDuringExit, request, freePort, sha256, REPO, TESTS } from '../helpers.mjs';
@@ -322,4 +323,123 @@ test('--latency N delays every response by about N ms', async () => {
   assert.ok(f.ms < 250, `fast ${f.ms} ms`);
   assert.match(slow.stdout(), /latency=\+300ms/);
   await Promise.all([fast.stop(), slow.stop()]);
+});
+
+test('HTTP Range (incident I-054): 206 for bytes=a-b / a- / -n on overlay and baseline files, 416, Accept-Ranges, HEAD', async () => {
+  // iOS Safari plays <video> media only from servers that answer byte-range requests (Apple, Safari Web
+  // Content Guide, "Configuring Your Server"); without them an overlay mp4 never fired loadeddata.
+  const ovV = join(fx.home, 'ovV');
+  const MP4 = Buffer.from(Array.from({ length: 1000 }, (_, i) => (i * 7) & 0xff));
+  mkdirSync(join(ovV, 'media'), { recursive: true });
+  writeFileSync(join(ovV, 'media', 'clip.mp4'), MP4);
+  const s = await serve(['--port', '0', '--overlay', ovV]);
+  const clip = s.url + 'media/clip.mp4';
+
+  const full = await request(clip);
+  assert.equal(full.status, 200);
+  assert.deepEqual(full.body, MP4);
+  assert.equal(full.headers['accept-ranges'], 'bytes', 'a 200 advertises ranges');
+  assert.equal(full.headers['content-type'], 'video/mp4');
+  assert.equal(full.headers['x-mirror-source'], 'overlay');
+
+  const probe = await request(clip, { headers: { range: 'bytes=0-1' } }); // Safari's first media request
+  assert.equal(probe.status, 206);
+  assert.equal(probe.headers['content-range'], 'bytes 0-1/1000');
+  assert.equal(probe.headers['content-length'], '2');
+  assert.equal(probe.headers['accept-ranges'], 'bytes');
+  assert.equal(probe.headers['content-type'], 'video/mp4');
+  assert.equal(probe.headers['x-mirror-source'], 'overlay');
+  assert.equal(probe.headers['cache-control'], full.headers['cache-control']);
+  assert.equal(probe.headers.etag, full.headers.etag);
+  assert.deepEqual(probe.body, MP4.subarray(0, 2));
+
+  for (const [range, start, end] of [['bytes=100-199', 100, 199], ['bytes=900-', 900, 999], ['bytes=-50', 950, 999], ['bytes=990-5000', 990, 999], ['bytes=-5000', 0, 999]]) {
+    const r = await request(clip, { headers: { range } });
+    assert.equal(r.status, 206, range);
+    assert.equal(r.headers['content-range'], `bytes ${start}-${end}/1000`, range);
+    assert.equal(r.headers['content-length'], String(end - start + 1), range);
+    assert.deepEqual(r.body, MP4.subarray(start, end + 1), range);
+  }
+
+  for (const range of ['bytes=1000-', 'bytes=5000-6000', 'bytes=-0']) {
+    const r = await request(clip, { headers: { range } });
+    assert.equal(r.status, 416, range);
+    assert.equal(r.headers['content-range'], 'bytes */1000', range);
+    assert.equal(r.raw.length, 0, range);
+  }
+  // ignored (full 200): multi-range (documented choice), invalid syntax, other units, a stale If-Range
+  for (const headers of [{ range: 'bytes=0-1,10-11' }, { range: 'bytes=5-2' }, { range: 'items=0-1' }, { range: 'bytes=0-1', 'if-range': '"stale"' }]) {
+    const r = await request(clip, { headers });
+    assert.equal(r.status, 200, JSON.stringify(headers));
+    assert.deepEqual(r.body, MP4, JSON.stringify(headers));
+  }
+  assert.equal((await request(clip, { headers: { range: 'bytes=0-1', 'if-range': full.headers.etag } })).status, 206, 'a matching If-Range keeps the range');
+  assert.equal((await request(clip, { headers: { range: 'bytes=0-1', 'if-none-match': full.headers.etag } })).status, 304, 'If-None-Match still wins');
+
+  const head = await request(clip, { method: 'HEAD', headers: { range: 'bytes=10-19' } });
+  assert.equal(head.status, 206);
+  assert.equal(head.headers['content-range'], 'bytes 10-19/1000');
+  assert.equal(head.headers['content-length'], '10');
+  assert.equal(head.raw.length, 0);
+  const head200 = await request(clip, { method: 'HEAD' });
+  assert.equal(head200.status, 200);
+  assert.equal(head200.headers['accept-ranges'], 'bytes');
+  assert.equal(head200.headers['content-length'], '1000');
+  assert.equal(head200.raw.length, 0);
+  const head416 = await request(clip, { method: 'HEAD', headers: { range: 'bytes=2000-' } });
+  assert.equal(head416.status, 416);
+  assert.equal(head416.headers['content-range'], 'bytes */1000');
+
+  // a baseline (root) file gets ranges too
+  const png = await request(s.url + 'img/logo.png', { headers: { range: 'bytes=1-3' } });
+  assert.equal(png.status, 206);
+  assert.equal(png.headers['x-mirror-source'], 'base');
+  assert.equal(png.headers['content-range'], `bytes 1-3/${PNG.length}`);
+  assert.equal(png.headers['cache-control'], 'public, max-age=31536000, immutable');
+  assert.deepEqual(png.body, PNG.subarray(1, 4));
+  assert.match(s.stdout(), /^206 GET \/media\/clip\.mp4 /m, 'the log line names the real status');
+  assert.match(s.stdout(), /^416 GET \/media\/clip\.mp4 /m);
+  await s.stop();
+});
+
+test('HTTP Range (incident I-054): compressed and rewritten bodies neither advertise nor honour ranges; https and --latency still apply', async () => {
+  const s = await serve(['--port', '0', '--quiet', '--vendors=local', '--https', '--latency', '200']);
+  // a compressed response (br) is another representation: Range is ignored and no Accept-Ranges is sent (as nginx's gzip filter)
+  const br = await request(s.url + PAGE_CSS.slice(1), { headers: { 'accept-encoding': 'br', range: 'bytes=0-3' } });
+  assert.equal(br.status, 200);
+  assert.equal(br.headers['content-encoding'], 'br');
+  assert.equal(br.headers['accept-ranges'], undefined);
+  assert.equal(br.body.toString(), fx.min[PAGE_CSS]);
+  // the same file sent uncompressed is the file's own bytes: ranges apply (over https too)
+  const id = await request(s.url + PAGE_CSS.slice(1), { headers: { 'accept-encoding': 'identity', range: 'bytes=0-3' } });
+  assert.equal(id.status, 206);
+  assert.equal(id.headers['content-encoding'], undefined);
+  assert.equal(id.headers['accept-ranges'], 'bytes');
+  assert.equal(id.text, fx.min[PAGE_CSS].slice(0, 4));
+  assert.ok(id.ms >= 190, `--latency applies to range responses (${id.ms} ms)`);
+  // the same over HTTP/2 (what Safari and Chrome speak to --https)
+  const h2 = await new Promise((res, rej) => {
+    const session = http2.connect(s.url, { rejectUnauthorized: false });
+    session.on('error', rej);
+    const st = session.request({ ':path': '/img/logo.png', range: 'bytes=-4' });
+    const chunks = []; let hdrs;
+    st.on('response', (h) => { hdrs = h; });
+    st.on('data', (c) => chunks.push(c));
+    st.on('end', () => { session.close(); res({ headers: hdrs, body: Buffer.concat(chunks) }); });
+    st.on('error', rej);
+  });
+  assert.equal(h2.headers[':status'], 206);
+  assert.equal(h2.headers['content-range'], `bytes ${PNG.length - 4}-${PNG.length - 1}/${PNG.length}`);
+  assert.deepEqual(h2.body, PNG.subarray(PNG.length - 4));
+  // the rewritten document (vendor-shim injection) never advertises or honours ranges, compressed or not
+  for (const ae of ['identity', 'br']) {
+    const doc = await request(s.url, { headers: { 'accept-encoding': ae, range: 'bytes=0-3' } });
+    assert.equal(doc.status, 200, ae);
+    assert.equal(doc.headers['accept-ranges'], undefined, ae);
+    assert.match(doc.text, /vendor-shim\.js/, ae);
+  }
+  const shim = await request(s.url + '__mirror/vendor-shim.js', { headers: { 'accept-encoding': 'identity', range: 'bytes=0-3' } });
+  assert.equal(shim.status, 200);
+  assert.equal(shim.headers['accept-ranges'], undefined);
+  await s.stop();
 });
