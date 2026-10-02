@@ -1,0 +1,237 @@
+# fastwork mirror fix: countdown-faces
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply countdown-faces
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3805,6 +3805,17 @@
+   let n = ((t % 10) + 10) % 10,
+     r = (10 + e - n) % 10;
+   return r > 5 ? r - 10 : r;
++}
++/*countdown-faces: slot k shows the face at cell position p = round(v)-1..round(v)+1 with p = k (mod 3), so the
++two faces that can be inside the cell (floor(v), ceil(v)) always have a slot. Its digit is p mod 10 and its offset is
++KE(digit, v), the same number the original face of that digit gets. Offsets are parked at +-1 cell: .digit has
++overflow:hidden, so a face >= 1 cell away shows nothing, as at rest, where the original puts the neighbours at +-1.*/
++function __cdSlotFace(e, t) {
++  let n = Math.round(t),
++    r = n - 1 + ((((e - n + 1) % 3) + 3) % 3),
++    i = ((r % 10) + 10) % 10,
++    a = KE(i, t);
++  return [i, a < -1 ? -1 : a > 1 ? 1 : a];
+ }
+ function qE(e, t) {
+   return Math.floor(Math.abs(Math.floor(e)) / t) % 10;
+@@ -3816,6 +3827,14 @@
+ }
+ var YE = new xe(`(prefers-reduced-motion: reduce)`, !1),
+   XE = Array.from({ length: 10 }, (e, t) => t),
++  /*countdown-faces: 3 face slots per digit instead of 10 (current, next, one spare for the roll)*/
++  __cdSlots = [0, 1, 2],
++  /*countdown-faces: display frame interval in ms, shared by every digit (60 Hz until a rolling digit sees a shorter one)*/
++  __cdFrame = 1e3 / 60,
++  /*countdown-faces: the hero component (fD) shadows N/z/s with its own locals; it reaches state/set/get through these*/
++  __cdState = N,
++  __cdSet = z,
++  __cdGet = s,
+   ZE = h(`<span class="face svelte-1quva9c" aria-hidden="true"> </span>`),
+   QE = h(
+     `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
+@@ -3824,18 +3843,45 @@
+   D(r, !0);
+   let i = R(() => qE(r.value, r.place)),
+     a = N(I(o(() => s(i)))),
+-    c = N(0);
++    c = N(0),
++    /*countdown-faces: false while the countdown can't be seen (off-screen, faded out, mounted at opacity 0)*/
++    __cdLive = R(() => r.animate !== !1),
++    /*countdown-faces: the last target change {from, to, at}: a digit that becomes visible again mid-roll resumes
++    the roll where an always-running spring would be (pause and continue, not restart)*/
++    __cdLast = null;
+   b(() => {
+-    let e = s(i);
+-    if (YE.current) {
++    let e = s(i),
++      __live = s(__cdLive),
++      __now = performance.now();
++    (__cdLast === null || __cdLast.to !== e) && (__cdLast = { from: o(() => s(a)), to: e, at: __now });
++    /*countdown-faces: while hidden, snap like reduced motion: no rAF; a roll that ended >1 s ago (all end in <0.6 s) too*/
++    if (YE.current || !__live || __now - __cdLast.at > 1e3) {
+       z(a, e, !0);
+       return;
+     }
+-    let t = { value: o(() => s(a)), velocity: 0 },
+-      n = performance.now(),
++    /*countdown-faces: start from where an always-running spring is now. The original steps the spring once per
++    frame (GE(t, e, o - n)), so its path depends on the frame interval (60 vs 120 Hz differ by up to 3 px); replay
++    the frames it would have run, one display interval (__cdFrame, learned below) apart, from the target change.
++    Right after a target change (0 ms) nothing is replayed: the original start {value: current, velocity: 0}, n = now*/
++    let t = { value: __cdLast.from, velocity: 0 },
++      n = __now,
++      __done = !1;
++    if (__now > __cdLast.at) {
++      let __f = __cdFrame, __k = 1, __p = __cdLast.at;
++      for (; !__done && __cdLast.at + __k * __f <= __now; __k++) {
++        let __o = __cdLast.at + __k * __f, __s = GE(t, e, __o - __p);
++        ((__p = __o), (t = __s.state), (__done = __s.done));
++      }
++      n = __p;
++    }
++    if ((z(a, t.value, !0), __done)) return;
++    let __seen = !1,
++      __min = 1 / 0,
+       r = window.requestAnimationFrame(function i(o) {
++        /*countdown-faces: the display interval = the shortest gap between two rAF stamps in the last finished roll*/
++        (__seen && o - n > 4 && o - n < __min && (__min = o - n), (__seen = !0));
+         let s = GE(t, e, o - n);
+-        ((n = o), (t = s.state), z(a, t.value, !0), s.done || (r = window.requestAnimationFrame(i)));
++        ((n = o), (t = s.state), z(a, t.value, !0), s.done ? __min < 1 / 0 && (__cdFrame = __min) : (r = window.requestAnimationFrame(i)));
+       });
+     return () => window.cancelAnimationFrame(r);
+   });
+@@ -3848,7 +3894,7 @@
+       (_(
+         i,
+         16,
+-        () => XE,
++        () => __cdSlots,
+         (e) => e,
+         (n, r) => {
+           var i = ZE();
+@@ -3856,10 +3902,13 @@
+           var u = e(i, !0);
+           (M(i),
+             l(
+-              (e) => {
+-                ((o = S(i, ``, o, e)), t(u, r));
++              (e, d) => {
++                ((o = S(i, ``, o, e)), t(u, d));
+               },
+-              [() => ({ transform: `translateY(${KE(r, s(a)) * s(c)}px)` })],
++              [
++                () => ({ transform: `translateY(${__cdSlotFace(r, s(a))[1] * s(c)}px)` }),
++                () => __cdSlotFace(r, s(a))[0],
++              ],
+             ),
+             f(n, i));
+         },
+@@ -3894,6 +3943,9 @@
+         get place() {
+           return s(n);
+         },
++        get animate() {
++          return t.animate;
++        },
+       });
+     },
+   ),
+@@ -3920,6 +3972,12 @@
+   let a = C(r, `inverse`, 3, !1),
+     o = R(WT),
+     c = N(null),
++    /*countdown-faces: the digits roll only while the clock can be seen: near the viewport (IntersectionObserver)
++    and shown by the call site (optional `active` prop, false = mounted at opacity 0). A background tab needs no
++    gate: the browser runs no rAF callbacks there, so the original already rolls nothing (and keeps its look on return)*/
++    __cdNear = N(!0),
++    __cdActive = R(() => r.active !== !1),
++    __cdLive = R(() => s(__cdNear) && s(__cdActive)),
+     u = R(() => (s(c) === null ? null : rD(s(c)))),
+     d = R(() => s(o).waitlist.units),
+     p = R(
+@@ -3933,11 +3991,23 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    let t = window.setInterval(e, 1e3);
++    let t = window.setInterval(e, 1e3),
++      /*countdown-faces: one viewport of lead above and below, like apple.com's play/pause ranges (start 100vh
++      before the element), so a digit is rolling again before it scrolls into view*/
++      __cdIo =
++        typeof IntersectionObserver == `function`
++          ? new IntersectionObserver(
++              (e) => {
++                z(__cdNear, e[e.length - 1].isIntersecting);
++              },
++              { rootMargin: `100% 0px` },
++            )
++          : null;
+     return (
++      __cdIo?.observe(h),
+       document.addEventListener(`visibilitychange`, e),
+       () => {
+-        (window.clearInterval(t), document.removeEventListener(`visibilitychange`, e));
++        (window.clearInterval(t), __cdIo?.disconnect(), document.removeEventListener(`visibilitychange`, e));
+       }
+     );
+   });
+@@ -3958,6 +4028,9 @@
+               return s(u)[i];
+             },
+             padStart: i > 0,
++            get animate() {
++              return s(__cdLive);
++            },
+           });
+         },
+         p = (e) => {
+@@ -4026,7 +4099,10 @@
+         ),
+         f(n, i));
+     },
+-    o = R(WT);
++    o = R(WT),
++    /*countdown-faces: false while --exit-opacity is 0 (.hero-copy, which holds the countdown, has opacity
++    calc(var(--copy-in) * var(--exit-opacity)))*/
++    __cdHeroShown = __cdState(!0);
+   function c(e) {
+     return [e.role ? s(o).hero.professions[e.role] : null, e.location].filter(Boolean).join(` · `);
+   }
+@@ -4162,13 +4238,15 @@
+       o = !1,
+       s = () => {
+         if (((i = 0), e.matches)) {
+-          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
++          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``), __cdSet(__cdHeroShown, !0));
+           return;
+         }
+         let t = b.getBoundingClientRect(),
+           n = Math.max(1, t.height - window.innerHeight),
+           r = 1 - Math.min(n, Math.max(0, -t.top)) / n;
+-        (x.style.setProperty(`--exit-opacity`, String(r)), (x.style.pointerEvents = r < 0.05 ? `none` : ``));
++        (x.style.setProperty(`--exit-opacity`, String(r)),
++          (x.style.pointerEvents = r < 0.05 ? `none` : ``),
++          __cdSet(__cdHeroShown, r > 0));
+       },
+       c = () => {
+         i ||= window.requestAnimationFrame(s);
+@@ -4330,7 +4408,11 @@
+     be = e(ye, !0);
+   (M(ye), M(W));
+   var xe = V(W, 2);
+-  cD(xe, {});
++  cD(xe, {
++    get active() {
++      return __cdGet(__cdHeroShown);
++    },
++  });
+   var Se = V(xe, 2),
+     Ce = e(Se),
+     we = e(Ce),
+@@ -13157,7 +13239,14 @@
+         m = e(p, !0);
+       M(p);
+       var h = V(p, 2);
+-      (cD(e(h), { inverse: !0 }), M(h));
++      (cD(e(h), {
++        inverse: !0,
++        /*countdown-faces: .start-selling-morph-panel has opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph = JM(x)*/
++        get active() {
++          return s(x) > 0.08;
++        },
++      }),
++        M(h));
+       var g = V(h, 2),
+         v = e(g),
+         __ctaBellC = e(v),
