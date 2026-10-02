@@ -8,6 +8,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **14:4xZ (batch) review-i063 verdicts; 5th Mac sleep; Sim runs across a sleep are void.**
+  - The Mac idle-slept again 14:21-14:36Z (5 sleeps since 12:27Z, each ~15-16 min). fix-image-size stalled again; the
+    lead resumed it. **Rule (lead): any Simulator run that spans a sleep is void.** The lead repaired chrome-measure's
+    last-grant record again after that sleep (audited).
+  - **review-i063:** 8eab8ba (I-065) and 99b37b3 (I-066) ACCEPT-WITH-NOTES. 3a85564 (I-063) NEEDS-WORK: B1 a failed
+    shutdown is counted as done; B2 verify and bench measure beside a booted Simulator when the backstop fails.
+    ts-i063 splits the accepted two onto branch `ts-i063/flakes` to land first, then a fix round on I-063 and a re-review.
+  - Still unanswered by the user: C-024 (keep the Mac awake), PR-005, T-023 #3.
 - **14:1xZ (batch) Mac slept again; fix-image-size resumed; lock record repaired.**
   - The Mac idle-slept again 14:01-14:17Z (C-024, the caffeinate question, is still unanswered).
   - fix-image-size stalled (watchdog); the lead resumed it. Its first Sim session (P-066) started 14:18Z, shared w3 +
@@ -1307,10 +1315,10 @@ between tool calls.
 | id | state | owner | note |
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
-| I-066 | fixing (99b37b3, in review) | ts-i063 | sparse worktree's leftover site*/ shadowed the baseline |
-| I-065 | fixing (8eab8ba, in review), not blocking | ts-i063 | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
+| I-066 | fixing (99b37b3 ACCEPT-WITH-NOTES; lands via ts-i063/flakes) | ts-i063 | sparse worktree's leftover site*/ shadowed the baseline |
+| I-065 | fixing (8eab8ba ACCEPT-WITH-NOTES; lands via ts-i063/flakes), not blocking | ts-i063 | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
 | I-064 | RESOLVED (11bc722); user YES to deleting the old recorder | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
-| I-063 | fixing (ts-i063) | ts-i063 | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
+| I-063 | fixing (3a85564 NEEDS-WORK B1/B2; fix round + re-review) | ts-i063 | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
 | I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
 | I-061 | RESOLVED 10:44Z (517fdb4) | (lead) | PROGRESS build data schema |
 | I-060 | RESOLVED 10:44Z | ts-i060 | progress page "Right now": show the job and the fix, not only the holder (user T-020) |
