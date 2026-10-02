@@ -326,9 +326,23 @@ its frame. Script: `out/wi-stack/loo/layers.mjs` (not committed).
   | overlap profile shells at this step | 4 shells added with 0 KB | 4 shells added with 12 MB each |
   | total layer memory | 115 MB | 173 MB |
 
-  - Hypothesis (OBSERVED, n=1, no reference yet): with blur-cubic, the cards' filter transition runs as an accelerated animation. WebKit's overlap test then cannot rule out overlap with the hidden profile shells, so they are painted at the reveal start. With RB's `linear()`, the transition runs on the main thread, and that painting waits until `+is-future-shrinking`.
-  - That would make (c) and the frame-2 regression the same backing-store cost, in different places.
-  - The decisive check is the same diff on NS and NB.
+  - First hypothesis (overlap extent of the filter animation): **REFUTED by source.**
+    - WebKit's overlap map widens the animated extent for transform animations only.
+    - Refs: `RenderLayerCompositor.cpp` `computeExtent` / `isRunningTransformAnimation` (~2603, ~4511, WebKit `main` read 2026-10-02); bug [184539](https://bugs.webkit.org/show_bug.cgi?id=184539).
+    - The shells are overlap-composited in both arms anyway (table above). Only their backing stores differ.
+  - Mechanism now supported by source (CONFIRMED by source reading, non-threaded path; local check still OBSERVED). Three steps:
+    1. A `linear()` easing with points cannot run on Core Animation (`KeyframeEffect.cpp` `canBeAccelerated`, ~l.2019).
+       - If one effect on an element cannot be accelerated, the whole effect stack stays on the main thread (`KeyframeEffectStack::allowsAcceleration`, ~l.252).
+       - In C, RB's `linear()` filter therefore also keeps the card's `transform` and `opacity` reveal transitions off Core Animation.
+    2. In V, blur-cubic's cubic-bezier lets all three run on Core Animation, including the card's 0.9 s `translateY(48px)→0` transform transition.
+    3. Every composited descendant of an on-screen layer with a running transform animation gets a backing store, even when it is outside its coverage rect.
+       - Source: `GraphicsLayerCA.cpp`, `ancestorWithTransformAnimationIntersectsCoverageRect` (~l.2031-2047, ~l.3076-3080; its own FIXME: "Compute backing exactly for descendants of animating layers").
+       - The 4 deck shells are descendants of the card and sit off screen in the horizontal deck. They get 12 MB each for the reveal.
+    - `+is-future-shrinking` starts the card's `scale` transform transition in both arms, which fits (c) in both arms.
+  - Caveat, UNRESOLVED:
+    - Under `ENABLE(THREADED_ANIMATIONS)` the stack rule differs (`KeyframeEffect.cpp` ~l.2043).
+    - Whether the iOS 26 build has it on is a device feature-flag check.
+  - Source read by a sonnet helper (WebKit `main`, raw files, 2026-10-02). Line numbers are approximate to that copy.
 
 ## Phone ticket A1: option A of PR-003 (accepted 09:12:55Z, drop-blur), prepared, not run
 
@@ -365,6 +379,7 @@ Time: 14 runs (3 warm-ups, 2 sentinels, 9 counted) at about 1.5 min each with th
 - A run is void for a wrong hash, a missing bottom, Low Power Mode, or a touched phone.
 - Nothing may be attached during the block (§5.5).
 - No recordings (user T-018).
+- Log load1 and the battery temperature for every run (A4; mgmt-ops-7's second read). A quiet Mac is preferred but does not block the block.
 
 **Scoring.** The frame rows come from `python3 out/wi-stack/lag/frame2.py <run dir>`:
 - frame 1 = the frame whose interval holds the `#people +is-visible` crossing; frame 2 = the next frame.
