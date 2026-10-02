@@ -267,6 +267,26 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   V 0/10, S0 0/10: "not reproduced". README blocking 2 and 3 fixed. review-scene-scope-4 spawned (focused re-check); the
   user is asked in T-001 #17: (a) accept as noise, (b) a display-off rerun, (c) reject. fix-scene-scope parked. Lead
   summarized T-008 for the user (#27).
+  07:0xZ: review-scene-scope-4 ACCEPT; PR-002 (scene-scope RBi40pti) POSTED, linked in T-001, answers #17/#18;
+  fix-scene-scope parked on the user's decision (worktree-agent-a49a278f1d0bd6803, README 58f4df5 + 7f9d5ba); board
+  style-recalc waiting on user "PR-002 decision". I-054 (serve.mjs has no HTTP Range support: Safari never loads an
+  overlay <video>; blocks PR-001 arm V): ts-i054 spawned; measurement-adjacent (what is served), test:chrome.
+  COORDINATION GAP (lead 07:0xZ): G1 records with QuickTime on the Mac, so phone blocks are no longer Mac-independent.
+  At 06:54Z a shared-lane Simulator boot (de-illusion-style, w3) pushed load1 to 38.9 / CPU 99 % mid-G1. iphone-runner
+  logs load per run and checks the recordings for frame drops. DRAFT, NOT APPLIED (lead decides on that data): a
+  Mac-quiet window for phone blocks that record on the Mac.
+   1. Each counted part runs inside `node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing
+      --max-seconds 600 -- sh -c '<part>'` (exclusive: the shared group drains first and nothing joins; parts <= 10 min,
+      requeue between parts; the lead moves the runner to the front). --no-timing skips the host gate, so the part
+      first checks load (e.g. `lock.mjs wait chrome-measure --until idle --for 60` before queueing, and load1 logged
+      per run); a run with load1 above the gate's threshold is flagged, not counted, until the lead decides otherwise.
+   2. Tool gaps found while drafting (for a toolsmith if applied; read from tools/lib/iphone-run.mjs, lock.mjs):
+      (a) measureGuard (iphone.mjs run) passes a shared group, because the group reads as a short holder, so a Sim
+      boot does not stop a timed phone run; (b) it has no same-owner exception, so the runner's own --no-timing hold
+      would make iphone.mjs run WAIT (only --allow-during-measure, documented for diagnostics, passes); (c)
+      gesture-run.mjs (iphone.mjs gesture, G runs) calls no measureGuard at all.
+   3. Cost: everyone else waits about 20 min per block (2 x 10-min holds); phone blocks without Mac recording stay
+      outside the window.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
@@ -902,6 +922,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `ts-proposals` | toolsmith (lead spawn 19:1xZ): console Proposals page (read, visual compare, Accept/Reject/Request change); full `npm test` in the short lane | alive |
 | `ts-progress-lane` | toolsmith (lead spawn 22:11Z): I-048, shared-lane readers missing from the progress page and status board | ended (I-048 landed 9fd2d3a) |
 | `ts-i053` | toolsmith (lead spawn 06:4xZ): I-053, one proposal carries several options, the user picks one | alive |
+| `ts-i054` | toolsmith (lead spawn 06:5xZ): I-054, serve.mjs HTTP Range support (blocks PR-001 arm V); changes what serve.mjs serves (called out, test:chrome); expect a shared-lane npm test | alive |
 | `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
 | `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | ended (landed 14806cb..8fa38f7; worktree removed 20:2xZ) |
 | `ts-console-threads` | toolsmith: console threads (one thread per topic for the user) | ended (landed 545cf85, 77d318c, fc07bb1; worktree removed 20:2xZ) |
