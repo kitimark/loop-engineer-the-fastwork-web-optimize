@@ -353,13 +353,21 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   08:3xZ S1 FINAL (stack test): pooled primary (scroll gt34) NO-WIN, p 0.162, THRESHOLD-SENSITIVE (gt30 WIN); idle gt34
   WIN (block 1); scroll gt50 block 2 +1.5, pooled +1 (P-059 edge HIT). Block 2 ran at Mac load1 up to 96 and its scroll
   phase was ~250 ms longer in both arms (OBSERVED; iphone-runner checks load vs run from the files).
-  NEW RULE (lead 08:28Z): S/W/M phone blocks also run in the Mac-quiet window (exclusive --no-timing hold, load1 <= 8 at
-  run start), not only recordings; needs I-056(b), which ts-i056 does first.
+  QUIET WINDOW FOR S/W/M (lead 08:28Z, softened 08:3xZ): PREFERRED, NOT BLOCKING (load doesn't pace the S driver): run
+  S/W/M blocks in an exclusive --no-timing hold (load1 <= 8 at run start) when one is available, otherwise run anyway and
+  log the load; recorded parts keep the Mac-quiet window (07:1xZ). I-056(b) (ts-i056) makes the hold usable for them.
   USER RULE T-017 (08:29Z/08:31Z): C-019 highest priority, don't make the user wait; user steps first (working rules).
   T-011 TICKET (fix-scene-scope 96300df, RBi40pti) second read; P-061 = fix-scene-scope (T-011); next free P-062.
   PHONE ORDER (supersedes 07:4xZ; user steps first, T-017): (0) any posted user step: now C-019 swipe pair (wi-stack);
   (1) PR-001 blocks A/B; (2) G1b; (3) T-011 (scene-scope RBi40pti, W Timeline, ~20 min); (4) T-009 curve; (5) I-042
   check. Post a user step only when the phone is free for it.
+  08:4xZ c9bd0ae LANDED. C-019 ANSWERED 08:34Z (wi-stack): blind pick page 1 = V (stack5) over C (RB), rated 3/5;
+  user note (paraphrased): better, but still a bit laggy, can it improve? iphone-runner: V's worst frame at the #people
+  entry 66-75 ms vs C 48-57 (no overlap, OBSERVED). wi-stack runs a Sim leave-one-out (V-st6, V-blur-cubic). Load does not
+  pace the S driver (iphone-runner, rho +0.11), hence the quiet window is preferred, not blocking. PR-001 blocks: run by
+  iphone-runner (waiting for de-illusion-style's ticket with the V hashes). fix-scene-scope stopped; the lead resumes it
+  with the 3 T-011 fixes (warm-up run per port, quiet hold preferred, P-061 time 08:3x) when T-011 is near.
+  PHONE ORDER now: (1) PR-001 A/B; (2) G1b; (3) T-011; (4) T-009 curve; (5) I-042 check; user steps jump the queue.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
@@ -957,7 +965,7 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-056 | triaged | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (needed by the 08:28Z rule: S/W/M blocks in the Mac-quiet window), (c) gesture-run guard, (d) shared readers log to holds.log |
+| I-056 | triaged | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (lets S/W/M blocks use the preferred quiet hold), (c) gesture-run guard, (d) shared readers log to holds.log |
 | I-058 | open | toolsmith (lead spawning) | waits invisible on the board; fixed-time waits where a probe exists (user T-016) |
 | – | resolved 10-02: I-053 (proposal options, 42c14a0), I-054 (Range, 67847b4), I-055 + I-057 (flaky e2e, 42c14a0) | – | console restarted 08:22Z with options live |
 
