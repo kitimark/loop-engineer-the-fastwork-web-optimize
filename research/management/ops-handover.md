@@ -8,6 +8,18 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **23:2xZ (batch) 2d2555c landed; P-069 / X1 second read PASS; X1 stage 2 is a timing decision (needs the user's lift).**
+  - **P-069 second read (mgmt-ops-7) PASS** on d7449c4 (de-countdown branch, row after P-067): V copy
+    out/countdown-faces/snap-x1/poc JS 638b8e03e81c (read-only), x1.mjs 9de230198cf8. Settled pre-data: (a) stage-2
+    trigger exact ("above" = both V sessions beyond both C sessions; an S2 hit, or S3 alone, opens stage 2; (iii)
+    pastHero/heroExit ratio > 0.8 and (iv) a failed resume check take precedence: back to the code, no phone);
+    (b) per-run exclusive-ms sum per 4-tick window, range and median over 4 runs, separated = 4 vs 4 with a >= 4 ms gap,
+    no twins on ms sums; (c) stage 1 counts only: hashes match, >= 3 ticks per window, exit-opacity 0 at heroExit, else
+    redone once; (d) stage 2 Timeline-OFF S heat checks at open and end, attribution runs after (§5.2).
+  - **Lead decision:** X1 stage 2 is NOT attribution: its ms comparison decides whether the 3-face part lands, so it
+    is a timing decision and needs the user's lift; the lead asks in the console only if stage 1 triggers it.
+    de-countdown adds that line to the ticket and routes any trigger to the lead. **Stage 1 may start now.**
+  - Ops rule (lead): wherever ops is resumed, commit only in .claude/worktrees/mgmt-ops-2 with `git -C`.
 - **23:0xZ bc90d7a + a553980 landed (ff); no real LAN address left outside site*/ (lead's grep). PROGRESS goal line: heat goal added as CONDITIONAL** (the user framed it "if my assumption is right"): smooth scrolling; and, if P-068 shows Fastwork heats the phone more than apple.com, less work at rest. **When P-068 has a result: make it firm or drop it.**
   - **P-069 = de-countdown, countdown-faces X1 segment card** (pre-data; stage 1 Simulator mechanism, 2 sessions, shared
     lane weight simulator; stage 2 short phone Timeline block only if a stage-1 WebKit cost question stays open, queued
