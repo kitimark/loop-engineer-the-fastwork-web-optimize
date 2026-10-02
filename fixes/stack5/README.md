@@ -1,6 +1,8 @@
 # stack5: the five ready candidates stacked on today's best build (stack test, user T-014)
 
-Owner: `wi-stack` (wave integrator). Status: **combined; functional checks pass; phone ticket ready, not run.**
+Owner: `wi-stack` (wave integrator). Status: **S1 run (2 blocks), swipe pair answered, leave-one-out done (Sim).**
+Verdict: **idle gain holds; no scroll gain overall; a candidate worst-frame regression at the #people entry under
+investigation** (Sim leave-one-out: blur-cubic, not st6; OBSERVED).
 Prediction: **P-059** (`fixes/PREDICTIONS.md`), committed before any phone data of this ticket.
 Baseline snapshot: `b1789284481295-4ad4a84a`. There is no Chrome timing in this work (T-014 lifts the timing
 deferral for this phone stack test only).
@@ -117,7 +119,7 @@ The probe script is `out/wi-stack/mech.mjs` (gitignored); its output is in `out/
 Reading it: only blur-cubic and st6 differ between the arms. cdwc, F3, re-keep-op and the inert hook are
 present and identical in both, as the change-set check said.
 
-## Phone ticket S1: prepared, not run
+## Phone ticket S1 (run 2026-10-02, 2 blocks; results in "S1 results" below)
 
 **Runner:** `iphone-runner`. **Slot:** after fwreskip G1, before PR-001 (mgmt-ops-6). Run JSON stays in `out/`.
 
@@ -201,9 +203,9 @@ Report for each row:
 | **Block 2** (stats says block2) | a second block, same order, only with the lead's approval (max 2 blocks per question). |
 | **Any dt>50 row with V's median above C's**, outside P-059's interval | a regression: leave-one-out (V − st6, V − blur-cubic) on the next ticket; the lead decides. |
 
-## Blind finger swipe pair: draft (the lead OKs the post)
+## Blind finger swipe pair (posted as C-019; result in "Swipe pair result" below)
 
-This is not posted yet. It runs after S1, in a Mac-quiet window. Draft of the post:
+As posted after S1 (user T-017 made it top priority; no recording beyond the phone-side frame log):
 
 ```sh
 node tools/console.mjs post --by wi-stack --kind swipe-pair \
@@ -227,3 +229,80 @@ node tools/console.mjs post --by wi-stack --kind swipe-pair \
   - "same", or a pick against the S result, is reported as it is.
   - Recordings stay in `out/`.
   - The posted URLs name the LAN host, so they are never copied into committed files (Hard rule 12).
+
+## S1 results (runner `iphone-runner`, 2 blocks of 8, every sentinel and control run passed)
+
+Medians of per-run counts. The decision follows the table above; pooled = 16 runs (van Elteren over blocks).
+
+| row | block 1 C / V | block 1 | block 2 C / V | block 2 | pooled |
+|---|---|---|---|---|---|
+| scroll dt>34 (primary) | 8.5 / 6.5 | BLOCK2 (U 1, p 0.043) | 8.5 / 9 | FUTILE | **NO-WIN** (p 0.162); THRESHOLD-SENSITIVE: gt30 WIN (p 0.027) |
+| scroll dt>50 (guard) | 1.5 / 1.5 | FUTILE | 0.5 / 2 | V +1.5 | V +1 (P-059 HIT at the edge) |
+| idle dt>34 | 3 / 0 | WIN | | WIN | **WIN** |
+| idle dt>50 | 1 / 0 | BLOCK2 | | | |
+| bottom | 0 / 0 | | | | |
+
+- P-059: block 1 all HIT; pooled scroll dt>34 −0.5 HIT, scroll dt>50 +1 HIT at the edge of [−2, +1].
+- 6/8 block-2 runs had a longer scroll phase than block 1, cause unknown.
+- Run JSON: `iphone-runner`'s worktree, `out/stack5-s1/` (scores `score.txt`, `score2.txt`).
+
+## Swipe pair result (C-019)
+
+- Blind order from `crypto.randomInt`: page 1 = V (stack5), page 2 = C. load1 ≈ 6 during both parts.
+- The user picked page 1 (stack5), difference 3/5. Their note, paraphrased: better, but still a bit laggy; asked for
+  further improvement.
+- Phone-side frame logs (supporting only; finger runs don't compare with S runs, F-071): moving frames dt>50
+  V 7/760, C 19/828.
+
+## Remaining-lag map (S1 files, by crossing; lead request after C-019)
+
+Every scroll/idle frame dt>34 in the 16 S1 runs, grouped by the nearest crossing (phone y). Excess = sum(dt − 16.7)
+over the arm's 8 runs. **S1b2-V7 is the outlier run** (its 111/113/84 ms frames are the maxima quoted below).
+Script: `out/wi-stack/lag/sites.py` (not committed).
+
+| site (phone y) | V: frames/runs, median, max, excess | C: same | V−C excess | known cause |
+|---|---|---|---|---|
+| #people entry, frame after `+is-visible` (~50 ms later) | 8/8, 70, 113 (S1b2-V7), 465 | 7/7, 41, 45, 166 | **+299** | blur-cubic (see leave-one-out) |
+| #people entry, frame holding `+is-visible` | 8/8, 54, 69, 290 | 8/8, 53, 57, 283 | +7 | shared; partly the probe (below) |
+| y≈4515 platform-secure `+is-play` | 8/8, 45, 50, 221 | 8/8, 42.5, 48, 217 | +4 | unknown: Composite-only frame |
+| scroll start (y 0-60) | 8/8, 42, 50, 216 | 7/7, 42, 51, 183 | +33 | unknown: Composite-only frame |
+| y≈2990 hero-track render deferred | 8/8, 43, 46, 209 | 5/5, 43, 44, 128 | +82 | fwreskip (fix-scroll-engine) |
+| y≈1560 #people `+is-future-shrinking` | 6/6, 39.5, 111 (S1b2-V7), 208 | 6/6, 40, 49, 163 | +45 | unknown: mild Composite frame |
+| hero y 240-580, no crossing | 5/5, 38, 39, 102 | 7/7, 40, 53, 268 | −166 | none needed |
+| platform gate y 2485-2759 | 0 | 4 runs, 44, 46, 130 | −130 | PR-002 / T-011 |
+| idle at the top | 1 frame, 26 | 8/8, 44, 56, 631 | −605 | the idle win |
+| five smaller sites | each ≤ 97 | | | no action |
+
+Totals: V 2026, C 2401 (all phases); scroll only ≈ V 2000, C 1770.
+
+## Leave-one-out (Simulator, functional shared lane; Sim ms = structure, never a gain, F-084; OBSERVED)
+
+| arm | build | `nodes/2.DyWL8TcE.js` | `assets/2.gBuqKVzi.css` |
+|---|---|---|---|
+| NS = V − st6 | RB + blur-cubic | `dbd5fdb4f1fb` | `284843d02eec` |
+| NB = V − blur-cubic | RB + st6 | `59b23b3f57fd` | `e9603231b413` |
+
+Immutable copies in `out/wi-stack/snap-loo/{nost6,noblur}` (`chmod a-w`). Two holds, W driver (scrollBy 250 px
+smooth every 300 ms), Timeline on (Page.disable → Page.enable → Timeline.start, F-047), served hashes checked:
+`e1` (#people entry, C V NS NB NB NS V C) and `w1` (full walk, C V NB V C NB).
+
+Composite in the RenderingFrame after `#people +is-visible` (frame 2), Sim ms:
+
+| arm | e1 | w1 |
+|---|---|---|
+| C | 57.6, 42.5 | 51, 53 |
+| NB (RB + st6) | 54.0 (NB2 missed the event) | 45, 51 |
+| V | 94.8, 115.9 | 98, 92 |
+| NS (RB + blur-cubic) | 89.2, 110.0 | |
+
+- Script in that frame is ~23 ms in every arm; style and layout < 2 ms. Composite self time (nested paints removed)
+  agrees: C 18-28, NB 13-25, V 37-88, NS 37-61.
+- So blur-cubic, not st6, carries the phone's frame-2 regression. Probable mechanism (hypothesis, OBSERVED):
+  blur-cubic's `cubic-bezier` filter transition on `.start-selling-future-card` goes to Core Animation, which commits
+  it in one frame at the reveal start, where `linear()` (RB) ran per frame on the main thread.
+- Frame 1 (`+is-visible` itself): the ~20 ms Layout in it is our own MutationObserver reading `scrollY` (forced
+  layout); the page's rAF script there is 2-3 ms. The phone std probe spends 13-15 ms in the same frame. Whether
+  the phone's frame 1 is page work or probe is OBSERVED, open for a probe-off phone read.
+- Unknowns (a) `+is-play`, (b) first scroll step, (c) `+is-future-shrinking`: each is one Composite-only frame
+  (Sim 55-60, 60-73, 31-35 ms), equal in C, V and NB. Next proposed check: a layer-tree diff across each crossing.
+- Scripts and raw data: `out/wi-stack/loo/` (not committed).
