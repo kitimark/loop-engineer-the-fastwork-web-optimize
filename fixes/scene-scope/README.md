@@ -30,7 +30,8 @@ lead's review (8690486, NEEDS-WORK) sent back.
 "D:" line exists); it goes to the lead to sign or return.
 **Device class / gate:** phone-only (WebKit's nested style/layout rounds, F-099). Gate: phone Timeline attribution (counts).
 **Driver(s) behind the claims:**
-- Chrome counts and state probes (`out/scene-scope/*.mjs`, not committed).
+- Chrome counts and state probes (`out/scene-scope/*.mjs`). Most are not committed. The frame, onset and scoring
+  probes the RBi40pti claims rest on are committed in `fixes/scene-scope/tools/` (list below).
 - Simulator W driver (`srwin-sim.mjs`, Timeline depth 10) for the switch structure; ms there are attribution only.
   Copies for reproduction (P-053/P-055/P-056) in `fixes/scene-scope/tools/`: `srwin-sim.mjs` + `simtab.mjs` (from
   de-counts-sim's untracked `research/design-engineering/work-counts-webkit/`), `rsstat.mjs` (switch and scroll-phase
@@ -274,8 +275,8 @@ it both ways). The code is layout-animations' (no active owner); the lead approv
 finding F-124. Prediction P-056a was committed before the build (4324bd5).
 
 **Measurement conditions.** Every Chrome hold here (04:48-05:20Z) ran with the display off: the lock printed the I-033
-notice, and `pmset -g assertions` showed UserIsActive 0 at the start and end of each hold. The deterministic frames are on
-the virtual clock and should not care. The onset probe is real time, so read its numbers as display-off. The frames use
+notice, and `pmset -g assertions` showed UserIsActive 0 at the start and end of each hold. The virtual clock pins JS timers, but IO
+callbacks and real waits are real-time (HOLDIO=0), so host state can matter for the frames; see the 1440 A/A split. The onset probe is real time, so read its numbers as display-off. The frames use
 `--disable-checker-imaging --disable-gpu-rasterization` (as in "RBi40p: #platform pixels"). Those flags were needed for a
 deterministic A/A, and they change Chrome's raster path, so they are a measurement condition, not a shipping config.
 
@@ -342,25 +343,28 @@ deterministic A/A, and they change Chrome's raster path, so they are a measureme
 - **P-056b: q40ui's exact procedure at 1440** (prediction and decision rule committed before the run, 8a6eee6).
   - Conditions:
     - Two normal holds: 06:18-06:25Z and 06:25-06:32Z. The host was awake (UserIsActive 1 at start and end of both),
-      unlike q40ui (display off).
+      unlike q40ui (display off). Load also differed: q40ui load1 1.8; t5a 2.8 at start, 7.2 at end; t5b was granted
+      after the lock's "host not quiet (load1 7 > 6)" notice, 5.5 at start. The display-off, low-load condition was
+      not repeated.
     - Frozen script `run-t5.sh` (a copy of `tools/rbi40ptcheck.sh`, modes t5a/t5b) with a kill trap. Served hashes
       checked (S0 0d7dfc79e703/dbd5fdb4f1fb, V 10cf34974e67/7cea01ae081c, from snap2).
     - Harness: `pageframes3.mjs` itself, i.e. q40ui's (its IO behaviour is pageframes4's HOLDIO=0).
       `CHROMEARGS="--disable-checker-imaging --disable-gpu-rasterization" SETTLE=600 VW=1440 VH=900 DPR=1 FY0=6000
-      FY1=7500 FSTEP=100`, every step captured.
+      FY1=7500 FSTEP=100`, every step captured. FY1 is 7500 vs q40ui's 8400; the walk runs from y6000 to larger y,
+      so the frames up to y7500 are produced the same way.
     - One warm-up load per hold. 10 loads per arm: hold 1 V S0 S0 V V S0 S0 V V S0, hold 2 S0 V V S0 S0 V V S0 S0 V.
   - Scored by `walkstat.py` (`out/scene-scope/p056b.txt`):
 
 | y | off the modal S0 frame: V | S0 | what differs |
 |---|---|---|---|
 | 6000-6500 | 0/10 | 0/10 | — |
-| 6600-7300 | 5/10 | 5/10 | 122 px (or 107), max delta 1, bbox x 251-438: the same two off states in both arms, in loads r1/r2/r4/r8/r10 (V) and r2/r3/r4/r8/r10 (S0) |
+| 6600-7300 | 5/10 | 5/10 | 122 px (or 107), max delta 1, bbox x 251-438: the same two off variants (122 px, 107 px) in both arms, in loads r1/r2/r4/r8/r10 (V) and r2/r3/r4/r8/r10 (S0) |
 | 7400 | 5/10 | 5/10 | 50 px, max delta 1 (x 273-334, y 38-67) |
 | 7500 | **0/10** | **0/10** | — |
 
   - The q40ui odd hash 559c68ab9d2b appeared in **V 0/10, S0 0/10**. At y7500: off-modal V 0 vs S0 0, Fisher exact
     p = 1.
-  - At y6600-7400, q40ui's S0 sits in one of the two A/A states, and its S0b and V in the other. Both arms split 5/5.
+  - At y6600-7400, q40ui's S0 is on an off variant, and its S0b and V are on the modal frame. Each arm has 5 loads on the modal frame and 5 on the off variants.
   - Decision rule outcome: **(iii) not reproduced under the original procedure.** The facts go to the lead, who
     decides.
     - The frame was seen once (q40ui, 1 V load) and in 0 of 10 V and 0 of 10 S0 loads since.
