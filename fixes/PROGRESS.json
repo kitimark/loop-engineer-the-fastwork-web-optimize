@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T01:46:00Z",
+ "updatedAt": "2026-10-02T02:05:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -184,12 +184,13 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "Top item: the hero accent sweep as prerecorded frames. The canvas is for Safari only (its clock ticks in whole ms, CONFIRMED in WebKit source); Chrome keeps the original animation. Finer frames: first Simulator check 1 of 130 (likely our test hook), re-run queued. Cost est. 2.3 MB, 31 MB memory.",
+   "next": "Top item: the hero accent sweep as prerecorded frames. The canvas is for Safari only (its clock ticks in whole ms, CONFIRMED in WebKit source); Chrome keeps the original animation. Simulator: all 71 frames match exactly (OBSERVED). Next: count the work it saves. Cost est. 2.3 MB, 31 MB memory.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
    "checks": [],
    "details": [
     "Proposals waiting (lead 20:0xZ): de-illusion-style boil-ca, accent-wipe, typing-chunks; de-illusion-composite digit-layers (+2 coming). Hold-1 counts (Chrome 1x, 9.3 s, vs B): accent-wipe hero window Paint 2688 -> 61, ULT elements 7501 -> 6858, animation invalidations 6335 -> 5695; boil-ca no Chrome change (WebKit-only gain, F-048/F-065); no new errors/404s.",
-    "User priority 2 (lead 19:1xZ), right after style recalc. de-illusion-style: style/layout costs; de-illusion-composite: compositing, layers, blur; ts-proposals: console Proposals page (read, visual compare, Accept/Reject/Request change). Counts first, at most 2 batched Chrome holds each before first proposals, queued after scene-scope and the de-counts pair; no phone before the user accepts; accepted -> fix topic + phone ticket via mgmt-ops."
+    "User priority 2 (lead 19:1xZ), right after style recalc. de-illusion-style: style/layout costs; de-illusion-composite: compositing, layers, blur; ts-proposals: console Proposals page (read, visual compare, Accept/Reject/Request change). Counts first, at most 2 batched Chrome holds each before first proposals, queued after scene-scope and the de-counts pair; no phone before the user accepts; accepted -> fix topic + phone ticket via mgmt-ops.",
+    "02:0xZ PR-001 Sim arm parity run 3 PASSED: 71/71 frames in and out byte-identical (OBSERVED, Sim 26.5), whole-CSS-px canvas placement. GPU-process canvas default CONFIRMED in WebKit source; whether the shipping build uses it is UNRESOLVED. Next: sim-counts."
    ]
   },
   {
@@ -217,13 +218,14 @@
    "fixes": "Around the middle of the page, two frames cost about 20 ms each, mostly layout, while a large section (the people list) is still being drawn although it is about to leave the view. The chosen fix sets it aside earlier, so that work is not done while it cannot be seen.",
    "felt": {"answer": "not-yet"},
    "gate": "Lands only after checks that nothing on screen changes (Chrome and Simulator pixels, jumps without a blank frame, card swipes); no speed test while timing is on hold.",
-   "next": "The box is found: the whole profile card deck is laid out again (about 20 ms, OBSERVED, Simulator). A fix is being built: set that section aside together with the hero above it. It lands only after checks that nothing on screen changes.",
+   "next": "The first build failed review: after a sudden jump in the middle, Chrome showed one frame of an empty placeholder where the people section belongs. A corrected build brings it back at once on such jumps; then all checks run again and it is re-reviewed.",
    "owner": "fix-scroll-engine (from fix-scene-scope)",
    "checks": [],
    "details": [
     "style-recalc-images.md §5 rank 4: fwReskip intrinsic-size write (B JS 2821), 13-14 ms at y~2990, ~1.6 ms style, 12 ms nested Layout; W, same block as rank 1.",
     "00:4xZ (fix-scroll-engine): r6-r9 'stale layout state in #profile-showcase/#people, cured by re-creating its children' WITHDRAWN (probe artifact: hiding the shells shrank #people across the fwFar re-skip edge, so fwReskip deferred it). Revised, OBSERVED (Sim): each containment flip (y2988 hero deferred, y3047 platform-card will-change) costs ~20 ms only while #people (1327 px) is still rendered; its re-skip comes at ~y3539. Next r11 localizes the box; fix (a) re-skip #people no later than the hero or (b) structural #profile change.",
-    "00:5xZ: r11/r12 box = the whole rendered profile deck relays out (~20 ms, OBSERVED, Sim); #people deferred at its correct size ~1-2 ms (attribution). Lead signed (a1h): when the hero far re-skips, also re-skip the next inactive deferRendering section wholly above the viewport until the hero un-skips (keeps hysteresis; own scroll-engine code). Checks before landing: geometry, A/A pixels Chrome + Sim, Sim W Layout <=3 ms at 2988/3047, jumps with no blank frame, deck swipe count; no timing A/B."
+    "00:5xZ: r11/r12 box = the whole rendered profile deck relays out (~20 ms, OBSERVED, Sim); #people deferred at its correct size ~1-2 ms (attribution). Lead signed (a1h): when the hero far re-skips, also re-skip the next inactive deferRendering section wholly above the viewport until the hero un-skips (keeps hysteresis; own scroll-engine code). Checks before landing: geometry, A/A pixels Chrome + Sim, Sim W Layout <=3 ms at 2988/3047, jumps with no blank frame, deck swipe count; no timing A/B.",
+    "02:0xZ review-fwreskip on 6fd09a6 NEEDS-WORK: B1 Chrome one-frame #people placeholder after an instant jump from the band ~[3659, 3892] (C11 queued un-skip); B2 short reversal not run; B3 no idle triple; B4 scenarios list incomplete. Lead: no waiver; variant (a): synchronous un-skip of the fwWith partner in the rE scroll listener within ~1 vh, rule restricted to the hero's partner; rerun jump checks with controls n>=5, Sim reversal, idle triple; re-review. User told (T-005), incl. a correction: 'settled pixels identical' was too strong."
    ]
   },
   {

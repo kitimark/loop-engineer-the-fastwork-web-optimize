@@ -158,6 +158,18 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   "byte-identical" wording for scene-scope until then. PR-001: the w00 1-ms atlas is built; its first Sim parity run
   failed 1/130 (likely a test-hook artefact), re-run queued. ESTIMATES: 7 words ~2.3 MB WebP, ~31 MB decoded; rev 2
   must show decode timing and a cost/benefit table.
+  02:0xZ: I-051 RESOLVED (dd02aac CPU-busy join, 47bdb2d hand-over line, 42ca964 docs §12; npm test on main
+  1002/1002). NO incidents open. ts-lock-share and ts-phone-park done; iphone-runner (a7696771) done and parked (the
+  fwreskip phone check waits for the phone). PR-001: Sim arm parity run 3 PASSED, 71/71 in and out byte-identical
+  (OBSERVED, Sim 26.5), whole-CSS-px canvas placement; the GPU-process canvas default is CONFIRMED in source, whether the
+  shipping build uses it is UNRESOLVED; sim-counts next. The illusion-proposals PROGRESS line no longer cites the Chrome
+  436/436: the canvas is Safari-only (whole-ms clock, CONFIRMED in WebKit source), Chrome keeps the SVG.
+  review-fwreskip on 6fd09a6: NEEDS-WORK. B1 Chrome one-frame #people placeholder after an instant jump from the band
+  ~[3659, 3892] (C11 queued un-skip); B2 short reversal not run; B3 no idle triple; B4 scenarios list incomplete. Lead:
+  no waiver; fix-scroll-engine builds variant (a): synchronous un-skip of the fwWith partner in the rE scroll listener
+  within ~1 vh, rule restricted to the hero's partner; reruns the jump checks with controls n>=5, the Sim reversal and
+  the idle triple; re-review. 3959e8f (docs) may ride along. User told (T-005), with a correction: the lead's "settled
+  pixels identical" was too strong.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
