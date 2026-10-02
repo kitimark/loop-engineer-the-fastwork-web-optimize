@@ -3,9 +3,10 @@
 // in-page code and the pure post-processing live in tools/lib/iphone-probe.mjs; this file is the WIP orchestration.
 //
 // Sequence (every driver): lease check, then the lease is renewed to outlast the run (lock.mjs renew); no timed
-// run while someone else's NORMAL chrome-measure hold or a SHARED group holds it (`WAIT`, checked again after the settle;
-// exclusive short-lane holds and the runner's own hold, --no-timing included, pass: I-056; --allow-during-measure for
-// diagnostics); Safari not on the certificate warning; scrollTo(0, instant) + reload;
+// run while someone else's NORMAL chrome-measure hold holds it (`WAIT`, checked again after the settle; exclusive
+// short-lane holds and the runner's own hold, --no-timing included, pass; a SHARED group passes with a NOTE line and the
+// Mac state in meta.mac, unless --require-quiet or FW_PHONE_REQUIRE_QUIET=1: then it waits too; I-056;
+// --allow-during-measure for diagnostics); Safari not on the certificate warning; scrollTo(0, instant) + reload;
 // the probe options (--y-source raf|raf-legacy|scroll|none) and a load-frame logger (`early`) from the reconnect; readyState
 // complete; the battery (idevicediagnostics AppleSmartBattery: temperature, charging, capacity; --no-battery);
 // settle (--settle, default 8 s); then ONE in-page expression: page facts, stateAtStart (+ --state), --tops, the
@@ -35,7 +36,7 @@ import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { openTab, safariTab, sleep, parkSafari, isBlankUrl } from './wip.mjs';
-import { status as lockStatus, phoneRunRefusal } from './lock.mjs';
+import { status as lockStatus, phoneGuard, phoneMacRecord } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, LAN_HOST } from './iphone-url.mjs';
 import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, yReadsLabel, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
@@ -64,9 +65,12 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--no-battery]                                          skip the idevicediagnostics battery read at start and end
     [--low-power on|off]                                    Low Power Mode as set on the phone (a page cannot read it;
                                                             rAF runs at 30 Hz when on); default unknown
-    [--allow-during-measure]                                run beside someone else's chrome-measure hold or a shared
-                                                            group (diagnostics only; to keep the Mac quiet, run inside
-                                                            your own lock.mjs run chrome-measure --no-timing hold)
+    [--require-quiet]                                       WAIT while shared jobs (npm test, a Simulator session) hold
+                                                            chrome-measure (also FW_PHONE_REQUIRE_QUIET=1); default: run
+                                                            beside them, with a NOTE and the Mac state in meta.mac
+    [--allow-during-measure]                                run beside someone else's chrome-measure hold (diagnostics
+                                                            only; to keep the Mac quiet, run inside your own lock.mjs
+                                                            run chrome-measure --no-timing hold)
     [--heat-sentinel]                                       judge the run as the heat sentinel (default for --arm C
                                                             without --warmup): meta.sentinel {driver, criterion, value, pass}
     [--no-park]                                             keep the page open after the run (default: Safari parks
@@ -148,6 +152,7 @@ export function parseRunArgs(argv) {
   if (o.labels.arm !== null && !/^[A-Z]$/.test(o.labels.arm)) throw new Error(`--arm is one letter (C, V, A, B, ...), got ${o.labels.arm}`);
   o.stateFile = opt('state') ?? null;
   o.allowDuringMeasure = flag('allow-during-measure');
+  o.requireQuiet = flag('require-quiet');
   o.sentinel = flag('heat-sentinel') || (o.labels.arm === 'C' && !o.labels.warmup);
   o.park = !flag('no-park');
   o.battery = !flag('no-battery');
@@ -188,7 +193,7 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
   const owner = requireLease();
   const customStateJs = o.stateFile ? readFileSync(resolve(o.stateFile), 'utf8').trim().replace(/;\s*$/, '') : null;
   if (target) o.battery = false;
-  const guard = target ? target.guard : () => measureGuard({ ...o, owner });
+  const guard = target ? target.guard : (again) => measureGuard({ ...o, owner }, undefined, undefined, { note: !again });
   await guard();
   const need = o.settleMs + estimateMs(o) + 30000 + 2500;
   if (!target) {
@@ -223,7 +228,7 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
     if (target) await target.start?.();
     await sleep(o.settleMs);
     requireLease(); // still ours after the settle
-    await guard();
+    const macGuard = await guard(true); // its Mac state is the run's start (I-056)
     const macStartMs = Date.now();
     const started = await c.evaluate(startJs(o.driver, o.params, { customStateJs }));
     if (started !== 'started') throw new Error(`the run did not start in the page (${JSON.stringify(started)})`);
@@ -243,6 +248,7 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
     raw.macStartMs = macStartMs;
     raw.battery = o.battery ? { start: batteryStart, end: batteryInfo() } : null;
     raw.served = await servedHashes(await c.evaluate(RESOURCES_JS).catch(() => []));
+    if (!target) raw.mac = phoneMacRecord(macGuard);
     if (target) await target.end?.();
     return finish(o, owner, raw, { target });
   } finally { c.close(); if (reloaded && o.park && !target) await parkAfterRun(port, owner); }
@@ -256,12 +262,12 @@ async function parkAfterRun(port, owner) {
   } catch (e) { console.error(`warning: could not park Safari (${e.message}); run: node tools/iphone.mjs park --owner ${owner}`); }
 }
 
-/** No timed phone run while someone else's normal chrome-measure hold or a shared group holds it; short-lane holds
- *  (npm test --short, bench mech) and the runner's own hold (o.owner, or the hold FW_LOCK_HELD names) pass; I-056,
- *  lib/lock.mjs phoneRunRefusal. --allow-during-measure for diagnostics. */
-export function measureGuard(o, st = lockStatus('chrome-measure'), env = process.env) {
-  const why = phoneRunRefusal({ owner: o.owner, allow: o.allowDuringMeasure, st, env });
-  if (why) throw new Error(why);
+/** No timed phone run while someone else's normal chrome-measure hold holds it; short-lane holds (npm test --short,
+ *  bench mech) and the runner's own hold (o.owner, or the hold FW_LOCK_HELD names) pass; shared jobs pass with a NOTE
+ *  unless o.requireQuiet (--require-quiet) or FW_PHONE_REQUIRE_QUIET=1 (I-056, lib/lock.mjs phoneGuard).
+ *  --allow-during-measure for diagnostics. Returns phoneGuard's {requireQuiet, allow, start} for phoneMacRecord. */
+export function measureGuard(o, st = lockStatus('chrome-measure'), env = process.env, { note = true, log = console.log, load1 } = {}) {
+  return phoneGuard({ owner: o.owner, allow: o.allowDuringMeasure, requireQuiet: o.requireQuiet, st, env, note, log, load1 });
 }
 
 /** sha256/16 of each same-origin script/stylesheet the page loaded, fetched again from the Mac after the run. */
@@ -296,6 +302,7 @@ export function finish(o, owner, raw, { now = new Date(), target = null } = {}) 
     wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: yReadsLabel(raw.ySource ?? o.params.ySource ?? 'raf', o.driver), yReadCounts: raw.yReads ?? null, settings: target?.settings ?? deviceSettings(raw.pre?.settings, raw.battery?.start, o.lowPower),
     rafHz: doc.summary.rafHz, lowPowerSuspect: doc.summary.lowPowerSuspect, battery: raw.battery ?? null,
     sentinel: o.sentinel && !target ? sentinelVerdict(o.driver, doc.summary, raw.driverResult) : null, served: raw.served || null, tool: toolVersion(o.driver, REPO, target?.toolFiles), error: raw.err || null,
+    ...(raw.mac ? { mac: raw.mac } : {}), // I-056: shared jobs and load1 on the Mac at the run's start and end
     ...(target?.extra ? target.extra() : {}),
   };
   const out = resolve(REPO, o.out || join('out', target?.outDir ?? 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));

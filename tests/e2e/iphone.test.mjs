@@ -15,7 +15,7 @@ import { makeFixtureHome } from '../fixtures/baseline.mjs';
 const IPHONE = tool('iphone.mjs'), LOCK = tool('lock.mjs');
 let env;
 before(async () => {
-  env = { FW_IPHONE_PORT: String(await freePort()), FW_IPHONE_DEVICE_PORT: String(await freePort()) };
+  env = { FW_IPHONE_PORT: String(await freePort()), FW_IPHONE_DEVICE_PORT: String(await freePort()), FW_LOCK_LOAD1: '4.5' }; // load1: never the host's (I-056 records it, I-057)
 });
 beforeEach(() => { env = { ...env, FW_STATE_DIR: tempDir('fw-iphone-') }; });
 const iphone = (...a) => node(IPHONE, a, { env, timeout: 20000 });
@@ -68,7 +68,7 @@ test('with the lease: bad open URL is a usage error; unreachable proxy fails cle
   assert.doesNotMatch(r.stderr, /don't hold/);
 });
 
-test('I-056: scroll / record refuse (WAIT) beside someone else\'s normal hold or a shared group, before Safari; the runner\'s own --no-timing hold passes', () => {
+test('I-056: scroll / record refuse (WAIT) beside someone else\'s normal hold, and beside a shared group with --require-quiet, before Safari (by default a shared group only gets a NOTE); the runner\'s own --no-timing hold passes', () => {
   lock('acquire', 'iphone', '--owner', 'me');
   // past the guard, scroll fails at once on the missing proxy; record retries openTab, so it is cut short (4 s)
   const past = (r) => /fetch failed|ECONNREFUSED|openTab try 1/.test(r.stderr) && !/WAIT/.test(r.stderr);
@@ -83,9 +83,16 @@ test('I-056: scroll / record refuse (WAIT) beside someone else\'s normal hold or
   assert.equal(lock('release', 'chrome-measure', '--owner', 'fix-ab').code, 0);
   assert.equal(lock('shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e').code, 0);
   assert.equal(lock('acquire', 'chrome-measure', '--shared', '--weight', '3', '--max-seconds', '60', '--owner', 'sim-x').code, 0);
+  // default (Mac-quiet preferred, not required): past the guard, with one NOTE line
   for (const r of [iphone('scroll', '--owner', 'me'), rec()]) {
+    assert.ok(past(r), r.out);
+    assert.match(r.stdout, /^NOTE: shared jobs hold chrome-measure beside this phone run \("sim-x" w3; load1 4\.5\)/m);
+  }
+  // --require-quiet, or FW_PHONE_REQUIRE_QUIET=1: WAIT, before Safari
+  for (const r of [iphone('scroll', '--owner', 'me', '--require-quiet'), rec('--require-quiet'), node(IPHONE, ['scroll', '--owner', 'me'], { env: { ...env, FW_PHONE_REQUIRE_QUIET: '1' }, timeout: 20000 })]) {
     assert.equal(r.code, 1, r.out);
-    assert.match(r.stderr, /^WAIT: chrome-measure is held by the shared lane \("sim-x" w3\)/m);
+    assert.match(r.stderr, /^WAIT: chrome-measure is held by the shared lane \("sim-x" w3\), and this run asks for a quiet Mac/m);
+    assert.doesNotMatch(r.stderr, /fetch failed|ECONNREFUSED|openTab/);
   }
   assert.equal(lock('release', 'chrome-measure', '--shared', '--owner', 'sim-x').code, 0);
   // the runner's own hold: inside its --no-timing `run` (another owner name: FW_LOCK_HELD carries the hold) ...

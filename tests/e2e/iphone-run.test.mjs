@@ -187,23 +187,37 @@ test('run during a normal chrome-measure hold: WAIT, Safari untouched; a short-l
   assert.equal(JSON.parse(readFileSync(join(dir, 'c.json'), 'utf8')).meta.driver, 'S');
 });
 
-test('I-056: run beside a shared group: WAIT, Safari untouched; inside the runner\'s own lock.mjs run --no-timing hold it runs', async () => {
+test('I-056: run beside a shared group: by default it runs with a NOTE and meta.mac; --require-quiet / FW_PHONE_REQUIRE_QUIET=1 WAIT, Safari untouched; inside the runner\'s own lock.mjs run --no-timing hold it runs', async () => {
   const phone = await fakePhone(['--doc-height=1200']);
-  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
-  assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: phone.env }).code, 0);
-  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--shared', '--weight', '3', '--max-seconds', '120', '--owner', 'sim-x'], { env: phone.env }).code, 0);
+  const e = { ...phone.env, FW_LOCK_LOAD1: '5.5' }; // the run records load1: never the host's (I-057)
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: e }).code, 0);
+  assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: e }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--shared', '--weight', '3', '--max-seconds', '120', '--owner', 'sim-x'], { env: e }).code, 0);
   const args = ['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0'];
-  let r = await run([...args, '--out', join(dir, 'a.json')], phone.env);
-  assert.equal(r.code, 1, r.out);
-  assert.match(r.stderr, /^WAIT: chrome-measure is held by the shared lane \("sim-x" w3\)/m);
-  assert.deepEqual(phone.events().filter((e) => e.evaluate || e.reload), [], 'nothing evaluated, no reload');
-  assert.equal(node(LOCK, ['release', 'chrome-measure', '--shared', '--owner', 'sim-x'], { env: phone.env }).code, 0);
+  // --require-quiet, or FW_PHONE_REQUIRE_QUIET=1: WAIT before Safari is touched
+  for (const [a, ee] of [[['--require-quiet'], e], [[], { ...e, FW_PHONE_REQUIRE_QUIET: '1' }]]) {
+    const r = await run([...args, ...a, '--out', join(dir, 'w.json')], ee);
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.stderr, /^WAIT: chrome-measure is held by the shared lane \("sim-x" w3\), and this run asks for a quiet Mac/m);
+  }
+  assert.deepEqual(phone.events().filter((x) => x.evaluate || x.reload), [], 'nothing evaluated, no reload');
+  // default (Mac-quiet preferred, not required; user T-017): it runs, one NOTE, the Mac state in meta.mac
+  let r = await run([...args, '--no-park', '--out', join(dir, 'a.json')], e);
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stdout.match(/^NOTE: shared jobs hold chrome-measure beside this phone run \("sim-x" w3; load1 5\.5\)/gm)?.length, 1, 'one note line (the re-check after the settle prints none)');
+  const mac = JSON.parse(readFileSync(join(dir, 'a.json'), 'utf8')).meta.mac;
+  assert.deepEqual([mac.requireQuiet, mac.allow, mac.start.shared, mac.start.load1, mac.end.shared, mac.end.load1], [false, false, [{ owner: 'sim-x', weight: 3 }], 5.5, [{ owner: 'sim-x', weight: 3 }], 5.5]);
+  assert.ok(Date.parse(mac.end.at) >= Date.parse(mac.start.at));
+  assert.equal(node(LOCK, ['release', 'chrome-measure', '--shared', '--owner', 'sim-x'], { env: e }).code, 0);
   // the lead's convention: the recorded part inside the runner's own no-timing hold (the hold's name may differ: FW_LOCK_HELD)
   const out = join(dir, 'b.json');
-  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'g1-hold', '--no-timing', '--max-seconds', '120', '--', process.execPath, IPHONE, 'run', ...args, '--out', out], { env: phone.env, timeout: 90000 });
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'g1-hold', '--no-timing', '--max-seconds', '120', '--', process.execPath, IPHONE, 'run', ...args, '--require-quiet', '--out', out], { env: e, timeout: 90000 });
   assert.equal(r.code, 0, r.out);
   assert.doesNotMatch(r.stderr, /WAIT|no-timing hold/);
-  assert.equal(JSON.parse(readFileSync(out, 'utf8')).meta.driver, 'S');
+  assert.doesNotMatch(r.stdout, /NOTE: shared jobs/);
+  const b = JSON.parse(readFileSync(out, 'utf8')).meta;
+  assert.equal(b.driver, 'S');
+  assert.deepEqual([b.mac.requireQuiet, b.mac.start.shared, b.mac.end.shared], [true, [], []]);
 });
 
 test('I-047: a control run records the heat-sentinel verdict next to the battery and ends with Safari parked; the next run asks for open; --no-park keeps the page', async () => {

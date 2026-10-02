@@ -9,6 +9,9 @@ import { join } from 'node:path';
 import { tempDir } from '../helpers.mjs';
 import { createPage } from '../fixtures/fake-run-dom.mjs';
 import * as P from '../../tools/lib/iphone-probe.mjs';
+import { phoneMacRecord } from '../../tools/lib/lock.mjs';
+
+process.env.FW_LOCK_LOAD1 = '0.5'; // I-056/I-057: a guard records load1; never the host's in a test
 import { parseRunArgs, measureGuard, estimateMs, finish, toolVersion, TOOL_FILES, UNREADABLE_SETTINGS, parseBattery, deviceSettings, batteryInfo, lanSafeUrl, LAN_HOST } from '../../tools/lib/iphone-run.mjs';
 
 const MT = P.MUT_TYPES;
@@ -170,31 +173,73 @@ test('measureGuard: a normal chrome-measure hold refuses a timed run (WAIT); fre
   assert.doesNotThrow(() => measureGuard({ allowDuringMeasure: true }, { holder: { owner: 'fix-x' }, stale: false }));
 });
 
-test('I-056 measureGuard: a shared group (or its switch-off stand-in) refuses a recorded / timed phone run; the runner\'s own hold (same owner, or its FW_LOCK_HELD) passes', () => {
+test('I-056 measureGuard, default: a shared group (or its switch-off stand-in) does not stop a phone run: one NOTE line, the Mac state for the record; the runner\'s own hold (same owner, or its FW_LOCK_HELD) passes', () => {
   const o = { allowDuringMeasure: false, owner: 'iphone-runner' };
   const env = {};
+  const lines = [];
+  const g = (oo, st, e = env, x = {}) => measureGuard(oo, st, e, { log: (s) => lines.push(s), load1: 7.25, ...x }); // never the host's load1
   const future = new Date(Date.now() + 120000).toISOString(), past = new Date(Date.now() - 1000).toISOString();
   const group = (readers) => ({ holder: { resource: 'chrome-measure', owner: '(shared)', kind: 'lease', short: true, shared: true, format: 'rw1', token: 'aaaaaaaaaaaa', expiresAt: future, readers }, stale: null });
   const sim = { owner: 'de-counts-sim', token: 'bbbbbbbbbbbb', kind: 'lease', weight: 3, maxSec: 300, deadline: future };
-  // (a) the 06:54Z case: a Simulator session (shared, weight 3) must not run beside a recording; it used to pass as a "short holder"
-  assert.throws(() => measureGuard(o, group([sim]), env), (e) => /^WAIT: chrome-measure is held by the shared lane \("de-counts-sim" w3\)/.test(e.message) && /--no-timing/.test(e.message) && /I-056/.test(e.message));
-  assert.throws(() => measureGuard(o, group([sim, { ...sim, owner: 'npm-x', token: 'cccccccccccc', weight: 2 }]), env), /shared lane \("de-counts-sim" w3, "npm-x" w2\)/);
-  assert.doesNotThrow(() => measureGuard(o, group([{ ...sim, deadline: past }]), env), 'a group whose readers are all past their deadline holds nothing');
-  assert.throws(() => measureGuard(o, { holder: { ...group([sim]).holder, format: 'rw9' }, stale: null }, env), /^Error: WAIT: chrome-measure is held by the shared lane/, 'a group in an unknown format counts as held');
-  // the switch-off stand-in for a reader: an exclusive short hold with functional: true
-  assert.throws(() => measureGuard(o, { holder: { owner: 'de-counts-sim', short: true, functional: true, weight: 3, token: 'dddddddddddd' }, stale: null }, env), /^Error: WAIT: chrome-measure is held by "de-counts-sim" as a shared \(functional\) job/);
-  assert.throws(() => measureGuard({ ...o, owner: 'de-counts-sim' }, { holder: { owner: 'de-counts-sim', short: true, functional: true, weight: 3, token: 'dddddddddddd' }, stale: null }, env), /shared \(functional\) job/, 'a functional job is never the phone run\'s own hold, even under the same name');
-  assert.doesNotThrow(() => measureGuard({ ...o, allowDuringMeasure: true }, group([sim]), env), '--allow-during-measure stays the diagnostics escape');
+  // Mac-quiet is preferred, not required (the lead, 08:33Z; user T-017): the 06:54Z case now runs, with a note and the Mac state
+  const r = g(o, group([sim]));
+  assert.deepEqual({ requireQuiet: r.requireQuiet, allow: r.allow, shared: r.start.shared, load1: r.start.load1 }, { requireQuiet: false, allow: false, shared: [{ owner: 'de-counts-sim', weight: 3 }], load1: 7.25 });
+  assert.match(r.start.at, /^\d{4}-\d\d-\d\dT/);
+  assert.equal(lines.length, 1, 'one note line');
+  assert.match(lines[0], /^NOTE: shared jobs hold chrome-measure beside this phone run \("de-counts-sim" w3; load1 7\.25\)/);
+  assert.match(lines[0], /--require-quiet or FW_PHONE_REQUIRE_QUIET=1/);
+  lines.length = 0;
+  assert.deepEqual(g(o, group([sim, { ...sim, owner: 'npm-x', token: 'cccccccccccc', weight: 2 }])).start.shared, [{ owner: 'de-counts-sim', weight: 3 }, { owner: 'npm-x', weight: 2 }]);
+  assert.deepEqual(g(o, group([sim]), env, { note: false }).start.shared.length, 1);
+  assert.equal(lines.length, 1, 'note: false (the re-check after the settle) prints nothing');
+  lines.length = 0;
+  assert.deepEqual(g(o, group([{ ...sim, deadline: past }])).start.shared, [], 'a group whose readers are all past their deadline holds nothing');
+  assert.equal(lines.length, 0, 'no shared job: no note');
+  assert.deepEqual(g(o, { holder: { ...group([sim]).holder, format: 'rw9' }, stale: null }).start.shared, [{ owner: '(shared group, format "rw9")', weight: null }]);
+  const fn = { holder: { owner: 'de-counts-sim', short: true, functional: true, weight: 3, token: 'dddddddddddd' }, stale: null }; // switch-off stand-in
+  assert.deepEqual(g(o, fn).start.shared, [{ owner: 'de-counts-sim', weight: 3, laneOff: true }]);
+  const free = g(o, { holder: null }).start;
+  assert.deepEqual([free.shared, free.load1], [[], 7.25]);
   // (b) the runner's own hold: a --no-timing hold (or a normal one) of the same owner, or the hold this process inherits
   const nt = { owner: 'iphone-runner', kind: 'process', noTiming: true, token: 'eeeeeeeeeeee' };
-  assert.doesNotThrow(() => measureGuard(o, { holder: nt, stale: null }, env), 'same owner');
-  assert.doesNotThrow(() => measureGuard(o, { holder: { ...nt, noTiming: undefined }, stale: null }, env), 'same owner, a normal hold');
-  assert.doesNotThrow(() => measureGuard({ ...o, owner: 'g1-part' }, { holder: nt, stale: null }, { FW_LOCK_HELD: 'chrome-measure:eeeeeeeeeeee' }), 'inherited through lock.mjs run (FW_LOCK_HELD)');
-  assert.throws(() => measureGuard({ ...o, owner: 'g1-part' }, { holder: nt, stale: null }, { FW_LOCK_HELD: 'chrome-measure:ffffffffffff' }), /^Error: WAIT: chrome-measure is held by "iphone-runner"/, 'another hold\'s token');
-  assert.throws(() => measureGuard({ ...o, owner: 'g1-part' }, { holder: nt, stale: null }, { FW_LOCK_HELD: 'iphone:eeeeeeeeeeee' }), /WAIT/, 'a token for another resource');
-  assert.throws(() => measureGuard({ ...o, owner: 'someone' }, { holder: nt, stale: null }, env), (e) => /^WAIT: chrome-measure is held by "iphone-runner" \(a no-timing hold/.test(e.message) && /lock\.mjs run chrome-measure --owner someone --no-timing/.test(e.message));
-  // the token of a group is no exclusive hold: a reader slot is never a phone run's own hold
-  assert.throws(() => measureGuard(o, group([{ ...sim, owner: 'iphone-runner' }]), { FW_LOCK_HELD: 'chrome-measure:aaaaaaaaaaaa' }), /shared lane/);
+  assert.doesNotThrow(() => g(o, { holder: nt, stale: null }), 'same owner');
+  assert.doesNotThrow(() => g(o, { holder: { ...nt, noTiming: undefined }, stale: null }), 'same owner, a normal hold');
+  assert.doesNotThrow(() => g({ ...o, owner: 'g1-part' }, { holder: nt, stale: null }, { FW_LOCK_HELD: 'chrome-measure:eeeeeeeeeeee' }), 'inherited through lock.mjs run (FW_LOCK_HELD)');
+  assert.throws(() => g({ ...o, owner: 'g1-part' }, { holder: nt, stale: null }, { FW_LOCK_HELD: 'chrome-measure:ffffffffffff' }), /^Error: WAIT: chrome-measure is held by "iphone-runner"/, 'another hold\'s token');
+  assert.throws(() => g({ ...o, owner: 'g1-part' }, { holder: nt, stale: null }, { FW_LOCK_HELD: 'iphone:eeeeeeeeeeee' }), /WAIT/, 'a token for another resource');
+  assert.throws(() => g({ ...o, owner: 'someone' }, { holder: nt, stale: null }), (e) => /^WAIT: chrome-measure is held by "iphone-runner" \(a no-timing hold/.test(e.message) && /lock\.mjs run chrome-measure --owner someone --no-timing/.test(e.message));
+  // the phone run's record: start from the guard, end read at the end (lib/lock.mjs phoneMacRecord)
+  const end = { at: 'x', shared: [], load1: 1 };
+  assert.deepEqual(phoneMacRecord(r, end), { requireQuiet: false, allow: false, start: r.start, end });
+  assert.equal(phoneMacRecord(null, end), null);
+});
+
+test('I-056 measureGuard, --require-quiet / FW_PHONE_REQUIRE_QUIET=1: a shared group (or its switch-off stand-in) refuses (WAIT); the rest as by default', () => {
+  const o = { allowDuringMeasure: false, owner: 'iphone-runner', requireQuiet: true };
+  const env = {};
+  const g = (oo, st, e = env) => measureGuard(oo, st, e, { log: () => assert.fail('no note when it waits'), load1: 2 });
+  const future = new Date(Date.now() + 120000).toISOString(), past = new Date(Date.now() - 1000).toISOString();
+  const group = (readers) => ({ holder: { resource: 'chrome-measure', owner: '(shared)', kind: 'lease', short: true, shared: true, format: 'rw1', token: 'aaaaaaaaaaaa', expiresAt: future, readers }, stale: null });
+  const sim = { owner: 'de-counts-sim', token: 'bbbbbbbbbbbb', kind: 'lease', weight: 3, maxSec: 300, deadline: future };
+  assert.throws(() => g(o, group([sim])), (e) => /^WAIT: chrome-measure is held by the shared lane \("de-counts-sim" w3\), and this run asks for a quiet Mac \(--require-quiet\)/.test(e.message) && /--no-timing/.test(e.message) && /I-056/.test(e.message));
+  assert.throws(() => g(o, group([sim, { ...sim, owner: 'npm-x', token: 'cccccccccccc', weight: 2 }])), /shared lane \("de-counts-sim" w3, "npm-x" w2\)/);
+  assert.throws(() => g({ ...o, requireQuiet: false }, group([sim]), { FW_PHONE_REQUIRE_QUIET: '1' }), /asks for a quiet Mac \(FW_PHONE_REQUIRE_QUIET=1\)/, 'the env asks too');
+  assert.equal(measureGuard({ ...o, requireQuiet: false }, { holder: null }, { FW_PHONE_REQUIRE_QUIET: '1' }, { load1: 2 }).requireQuiet, true, 'the record says the env asked');
+  assert.equal(measureGuard({ ...o, requireQuiet: false }, group([sim]), { FW_PHONE_REQUIRE_QUIET: '0' }, { log: () => {}, load1: 2 }).requireQuiet, false, 'only "1" asks');
+  assert.doesNotThrow(() => g(o, group([{ ...sim, deadline: past }])), 'a group whose readers are all past their deadline holds nothing');
+  assert.throws(() => g(o, { holder: { ...group([sim]).holder, format: 'rw9' }, stale: null }), /^Error: WAIT: chrome-measure is held by the shared lane/, 'a group in an unknown format counts as held');
+  const fn = { holder: { owner: 'de-counts-sim', short: true, functional: true, weight: 3, token: 'dddddddddddd' }, stale: null };
+  assert.throws(() => g(o, fn), /^Error: WAIT: chrome-measure is held by a shared \(functional\) job, the shared lane is off \("de-counts-sim" w3\)/);
+  assert.throws(() => g({ ...o, owner: 'de-counts-sim' }, fn), /shared \(functional\) job/, 'a functional job is never the phone run\'s own hold, even under the same name');
+  assert.throws(() => g(o, group([{ ...sim, owner: 'iphone-runner' }]), { FW_LOCK_HELD: 'chrome-measure:aaaaaaaaaaaa' }), /shared lane/, 'a reader slot is never a phone run\'s own hold');
+  const noted = [];
+  assert.equal(measureGuard({ ...o, allowDuringMeasure: true }, group([sim]), env, { log: (s) => noted.push(s), load1: 2 }).allow, true, '--allow-during-measure stays the diagnostics escape');
+  assert.equal(noted.length, 1, 'and it notes the shared jobs it runs beside');
+  // unchanged: own hold passes, someone else's refuses, an exclusive short job passes
+  const nt = { owner: 'iphone-runner', kind: 'process', noTiming: true, token: 'eeeeeeeeeeee' };
+  assert.doesNotThrow(() => g(o, { holder: nt, stale: null }));
+  assert.throws(() => g({ ...o, owner: 'someone' }, { holder: nt, stale: null }), /^Error: WAIT: chrome-measure is held by "iphone-runner"/);
+  assert.doesNotThrow(() => g(o, { holder: { owner: 'npm-test', short: true }, stale: false }));
 });
 
 test('battery: only the named AppleSmartBattery keys are kept (no serials), temperature in degC; settings take charging and capacity from it', () => {
@@ -511,6 +556,12 @@ test('finish: one JSON per run (schema, meta with labels and tool hashes, measur
   assert.equal(m.settings.dark, true);
   assert.deepEqual([m.settings.batteryPct, m.settings.charging], [64, false], 'battery read fills U9 fields');
   assert.deepEqual(m.battery, raw.battery);
+  assert.equal('mac' in m, false, 'no guard record (lanRaw-like raw without mac): no meta.mac');
+  console.log = () => {};
+  let macOut;
+  const mac = { requireQuiet: false, allow: false, start: { at: 'a', shared: [{ owner: 'npm-x', weight: 2 }], load1: 9 }, end: { at: 'b', shared: [], load1: 4 } };
+  try { macOut = finish({ ...o, out: join(dir, 'mac.json') }, 'me', { ...raw, mac }); } finally { console.log = log; }
+  assert.deepEqual(JSON.parse(readFileSync(macOut, 'utf8')).meta.mac, mac, 'I-056: the Mac state (shared jobs, load1 at start and end) goes into meta.mac');
   assert.equal(m.ySource, 'raf');
   assert.equal(m.params.ySource, 'raf');
   assert.equal(m.probeVersion, 3, 'probe v3: placed by seen (v2: by time; v1, the first T1a commit = raf-legacy reads)');

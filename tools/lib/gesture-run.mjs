@@ -22,7 +22,7 @@ import { openTab, safariTab, sleep } from './wip.mjs';
 import { compileScript, condText, COMPILER_VERSION } from './gesture.mjs';
 import { RECORDER_JS, READ_JS, STATE_JS, markJs, summarizeRun } from './gesture-rec.mjs';
 import { status as wdaStatus, createSession, SAFARI, SESSION_SETTINGS } from './wda.mjs';
-import { status as lockStatus, phoneRunRefusal } from './lock.mjs';
+import { status as lockStatus, phoneGuard, phoneMacRecord } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeText } from './iphone-url.mjs';
 import { redact } from './redact.mjs';
@@ -338,23 +338,24 @@ export function settingsEcho(echo) {
  * {device, outDir, wdaBase, toolFiles, wdaHint, openHint(url), preflight(estMs) -> {pageUrl, pageSource},
  *  lost() -> reason | null (checked before every op), extra() -> more meta fields}.
  */
-export function phoneTarget({ owner, allowDuringMeasure = false }) {
+export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = false, log = console.log }) {
   const lease = () => { const s = lockStatus('iphone'); return s.holder && !s.stale && s.holder.owner === owner ? s.holder : null; };
+  let mac = null;
   return {
     device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', outDir: 'iphone', wdaBase: undefined, toolFiles: TOOL_FILES,
     wdaHint: `node tools/iphone.mjs wda start --owner ${owner}`, openHint: (u) => `node tools/iphone.mjs open ${u} --owner ${owner}`,
     preflight(estMs) {
-      // I-056: the measure guard of iphone.mjs run (lib/lock.mjs phoneRunRefusal): no G run beside someone else's normal
-      // hold or a shared group (the Mac records and drives the phone); the runner's own hold passes
-      const why = phoneRunRefusal({ owner, allow: allowDuringMeasure });
-      if (why) throw new Error(why);
+      // I-056: the measure guard of iphone.mjs run (lib/lock.mjs phoneGuard): no G run beside someone else's normal
+      // hold; the runner's own hold passes; shared jobs pass with a NOTE and the Mac state in meta.mac, unless
+      // --require-quiet or FW_PHONE_REQUIRE_QUIET=1
+      mac = phoneGuard({ owner, allow: allowDuringMeasure, requireQuiet, log });
       const h0 = lease();
       const left = h0.expiresAt ? Date.parse(h0.expiresAt) - Date.now() : Infinity;
       if (left < estMs * 1.5 + 30000) throw new Error(`your iphone lease ends in ${Math.round(left / 1000)} s, the run needs ~${Math.round(estMs / 1000)} s: node tools/lock.mjs renew iphone --owner ${owner} --ttl 900`);
       return { pageUrl: h0.meta?.url ?? null, pageSource: 'your lease' };
     },
     lost: () => (lease() ? null : 'lost the iphone lease (expired or released): stopped between strokes'),
-    extra: () => ({}),
+    extra: () => (mac ? { mac: phoneMacRecord(mac) } : {}), // I-056: shared jobs and load1 on the Mac at start and end
   };
 }
 
@@ -390,7 +391,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     return 0;
   }
   const owner = requireLease();
-  const tg = target || phoneTarget({ owner, allowDuringMeasure: flag('allow-during-measure') });
+  const tg = target || phoneTarget({ owner, allowDuringMeasure: flag('allow-during-measure'), requireQuiet: flag('require-quiet'), log });
   const { pageUrl, pageSource } = await tg.preflight(prog.estMs);
 
   // Safari's tab: there, not the certificate warning, the lease's page

@@ -69,6 +69,8 @@
 // no-timing runs may re-enter it. Phone runs (iphone.mjs run|scroll|record|gesture) refuse during someone else's no-timing
 // hold like during any normal hold, but run inside their own (phoneRunRefusal, I-056): the phone stamps its own frames, so
 // "nothing timed inside" means Mac timing; the hold is what keeps the Mac quiet while it records and drives the phone.
+// Beside a shared group they run by default (Mac-quiet preferred, not required) and record the Mac state in the run
+// record; --require-quiet (FW_PHONE_REQUIRE_QUIET=1) makes them wait for it (phoneGuard).
 // A no-timing run nested inside a timing hold (FW_LOCK_HELD) throws too (a short hold may host it). Run only this
 // checkout's tools inside a no-timing hold; an older checkout's verify/ab/bench would not refuse.
 //
@@ -295,37 +297,77 @@ export function timedInSlotRefusal(what, env = process.env) {
 
 /** The hold that keeps the Mac quiet for a recorded / timed phone run (I-056; the lead's convention, 2026-10-02). */
 export const phoneHoldCmd = (owner = '<you>') => `node tools/lock.mjs run chrome-measure --owner ${owner} --no-timing --max-seconds 600 -- sh -c '<phone part>'`;
+/** I-056: FW_PHONE_REQUIRE_QUIET=1 makes every phone run wait for shared jobs, as --require-quiet does. */
+export const phoneRequireQuiet = (env = process.env) => env.FW_PHONE_REQUIRE_QUIET === '1';
+/**
+ * The shared (functional) jobs holding chrome-measure in a status snapshot: [{owner, weight}] (empty: none). A group in a
+ * format this code does not know counts as one job of unknown weight; the switch-off stand-in for a reader (`functional:
+ * true`, an exclusive short hold) counts with `laneOff: true`.
+ */
+export function sharedJobs(st, now = Date.now()) {
+  const h = st?.holder;
+  if (!h || st.stale) return [];
+  if (isGroup(h)) return knownGroup(h) ? liveReaders(h, now).map((x) => ({ owner: x.owner, weight: x.weight || 1 })) : [{ owner: `(shared group, format "${h.format}")`, weight: null }];
+  if (h.functional) return [{ owner: h.owner, weight: h.weight || 1, laneOff: true }];
+  return [];
+}
+const jobList = (jobs) => jobs.map((x) => `"${x.owner}"${x.weight ? ` w${x.weight}` : ''}`).join(', ');
+/** The Mac's state beside a phone run, for its record (I-056): {at, shared: sharedJobs, load1} (load1: FW_LOCK_LOAD1, else os.loadavg). */
+export function phoneMacState({ st = status('chrome-measure'), now = Date.now(), load1 } = {}) {
+  const ld = load1 ?? envLoad1() ?? os.loadavg()[0];
+  return { at: new Date(now).toISOString(), shared: sharedJobs(st, now), load1: Math.round(ld * 100) / 100 };
+}
+/** One note line when shared jobs run beside a phone run that does not wait for them, else null. */
+export function phoneMacNote(state) {
+  if (!state?.shared?.length) return null;
+  return `NOTE: shared jobs hold chrome-measure beside this phone run (${jobList(state.shared)}; load1 ${state.load1}): Mac-quiet is preferred, not required, so it runs and its record keeps the Mac state (mac); --require-quiet or FW_PHONE_REQUIRE_QUIET=1 waits for them instead (I-056)`;
+}
 /**
  * I-056: why a phone run that records or times (iphone.mjs run|scroll|record|gesture on the phone) may not start now,
- * or null. The phone stamps its own frames, but the Mac records its screen (QuickTime) and drives it, so the run needs a
- * quiet Mac (06:54Z: a Simulator session in the shared lane pushed load1 to 38-94 and every recording dropped frames).
- * It refuses (WAIT, the caller exits 1 and retries later) while chrome-measure is held by:
- *  - a shared group with a live reader (or one in a format this code does not know), or the switch-off stand-in for a
- *    reader (`functional: true`): functional jobs (npm test, a Simulator session) load the Mac however short they are;
- *  - anyone else's normal hold (a goal A/B, a build, a --no-timing hold).
+ * or null. The phone stamps its own frames; the Mac drives it (and records its screen for a finger test). Mac load does
+ * not pace the S driver (iphone-runner: rho +0.11 over 16 runs), so Mac-quiet is preferred, not required (the lead's rule
+ * since 2026-10-02 08:33Z; user T-017: a console step the user waits on never waits on a Mac-quiet gate). It refuses
+ * (WAIT, the caller exits 1 and retries later) while chrome-measure is held by:
+ *  - anyone else's normal hold (a goal A/B, a build, a --no-timing hold);
+ *  - only with `requireQuiet` (--require-quiet, or FW_PHONE_REQUIRE_QUIET=1 in `env`): a shared group with a live
+ *    reader (or one in a format this code does not know), or the switch-off stand-in for a reader (`functional: true`).
+ *    Without it a shared job does not stop the run: phoneGuard prints phoneMacNote and the record keeps phoneMacState.
  * It passes on a free or stale lock, an exclusive short-lane job (npm test --short, bench mech: as before), and the
  * runner's own exclusive hold: the holder's token is in FW_LOCK_HELD (`lock.mjs run` exports it to its command) or the
  * holder is `owner` (the phone run's lease owner). That includes the runner's own --no-timing hold: timing that the phone
  * stamps is not Mac timing, so the no-timing rule (nothing timed inside) does not apply to it, and the hold keeps every
  * other job, shared ones included, off the Mac. `allow` (--allow-during-measure) passes anything: diagnostics only.
- * `st`: a status('chrome-measure') snapshot; `env`: where FW_LOCK_HELD comes from.
+ * `st`: a status('chrome-measure') snapshot; `env`: where FW_LOCK_HELD and FW_PHONE_REQUIRE_QUIET come from.
  */
-export function phoneRunRefusal({ owner, allow = false, st = status('chrome-measure'), env = process.env, now = Date.now() } = {}) {
+export function phoneRunRefusal({ owner, allow = false, requireQuiet = false, st = status('chrome-measure'), env = process.env, now = Date.now() } = {}) {
   const h = st?.holder;
   if (allow || !h || st.stale) return null;
   const how = `run it inside your own hold, which waits its turn and keeps everything else off the Mac: ${phoneHoldCmd(owner || '<you>')} (I-056); or pass --allow-during-measure for a diagnostic run`;
-  if (isGroup(h)) {
-    const live = knownGroup(h) ? liveReaders(h, now) : null; // a group in an unknown format: held, as old code reads it
-    if (live && !live.length) return null;
-    const who = live ? live.map((x) => `"${x.owner}" w${x.weight || 1}`).join(', ') : `format "${h.format}"`;
-    return `WAIT: chrome-measure is held by the shared lane (${who}): no recorded or timed iPhone run beside shared jobs (they load the Mac that records and drives the phone). Retry after the group ends, or ${how}`;
+  if (isGroup(h) || h.functional) {
+    const jobs = sharedJobs(st, now);
+    if (!jobs.length || !(requireQuiet || phoneRequireQuiet(env))) return null;
+    return `WAIT: chrome-measure is held by ${isGroup(h) ? 'the shared lane' : 'a shared (functional) job, the shared lane is off'} (${jobList(jobs)}), and this run asks for a quiet Mac (${requireQuiet ? '--require-quiet' : 'FW_PHONE_REQUIRE_QUIET=1'}). Retry after ${isGroup(h) ? 'the group ends' : 'it ends'}, drop the quiet request to run beside it (the record keeps the Mac state), or ${how}`;
   }
-  if (h.functional) return `WAIT: chrome-measure is held by "${h.owner}" as a shared (functional) job (the shared lane is off): no recorded or timed iPhone run beside it. Retry after it ends, or ${how}`;
   if (h.short) return null;
   const inherited = !!h.token && parseHeld(env.FW_LOCK_HELD)['chrome-measure'] === h.token;
   if (inherited || (owner && h.owner === owner)) return null;
   return `WAIT: chrome-measure is held by "${h.owner}" (${h.noTiming ? 'a no-timing hold: a build or CPU work' : 'a normal hold, e.g. a goal A/B'}): no timed iPhone runs meanwhile. Retry after it ends, or ${how}`;
 }
+/**
+ * The phone measure guard for one run (I-056): throws Error(phoneRunRefusal) when the run may not start, else returns
+ * {requireQuiet, allow, start: phoneMacState} and logs phoneMacNote (when `note`). Pass the result to phoneMacRecord at
+ * the end of the run: it becomes the record's `mac` field.
+ */
+export function phoneGuard({ owner, allow = false, requireQuiet = false, st = status('chrome-measure'), env = process.env, now = Date.now(), load1, note = true, log = console.log } = {}) {
+  const why = phoneRunRefusal({ owner, allow, requireQuiet, st, env, now });
+  if (why) throw new Error(why);
+  const start = phoneMacState({ st, now, load1 });
+  const line = note ? phoneMacNote(start) : null;
+  if (line) log(line);
+  return { requireQuiet: !!(requireQuiet || phoneRequireQuiet(env)), allow: !!allow, start };
+}
+/** A phone run record's `mac` field (I-056): {requireQuiet, allow, start, end}, `end` read now; null without a guard. */
+export const phoneMacRecord = (g, end = phoneMacState()) => (g ? { requireQuiet: g.requireQuiet, allow: g.allow, start: g.start, end } : null);
 
 function checkName(r) {
   if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(r)) throw new Error(`bad resource name "${r}"`);

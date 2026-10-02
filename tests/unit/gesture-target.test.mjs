@@ -7,6 +7,7 @@ import { tempDir } from '../helpers.mjs';
 
 process.env.FW_STATE_DIR = tempDir('fw-gtarget-');
 process.env.FW_SIM_WDA_PORT = '8199';
+process.env.FW_LOCK_LOAD1 = '3.5'; // the phone guard records load1 (I-056) and a reader's join checks it: never the host's (I-057)
 const { settingsEcho, phoneTarget, TOOL_FILES } = await import('../../tools/lib/gesture-run.mjs');
 const { gestureTarget, SIM_TOOL_FILES } = await import('../../tools/lib/sim-scroll.mjs');
 
@@ -27,11 +28,15 @@ test('phoneTarget: the iphone lease guards it; without the lease, lost() names i
   assert.match(t.wdaHint, /iphone\.mjs wda start --owner me/);
 });
 
-test('I-056 phoneTarget.preflight: the phone measure guard of iphone.mjs run (a G run refuses beside someone\'s normal hold or a shared group; the runner\'s own hold passes)', async () => {
+test('I-056 phoneTarget.preflight: the phone measure guard of iphone.mjs run (a G run refuses beside someone\'s normal hold; beside a shared group it notes and records the Mac state, or waits with --require-quiet; the runner\'s own hold passes)', async () => {
   const { tryAcquire, release, setSharedSwitch, releaseReader } = await import('../../tools/lib/lock.mjs');
   assert.equal((await tryAcquire('iphone', { owner: 'me', ttlSec: 900 })).ok, true);
-  const t = phoneTarget({ owner: 'me' });
+  const lines = [];
+  const t = phoneTarget({ owner: 'me', log: (s) => lines.push(s) });
+  assert.deepEqual(await t.extra(), {}, 'no guard yet: no meta.mac');
   assert.equal(t.preflight(60000).pageSource, 'your lease', 'chrome-measure free: the run goes');
+  assert.deepEqual((await t.extra()).mac.start.shared, []);
+  assert.equal(lines.length, 0);
   assert.equal((await tryAcquire('chrome-measure', { owner: 'fix-ab', ttlSec: 600 })).ok, true);
   assert.throws(() => t.preflight(60000), /^Error: WAIT: chrome-measure is held by "fix-ab" \(a normal hold/);
   assert.equal(phoneTarget({ owner: 'me', allowDuringMeasure: true }).preflight(60000).pageSource, 'your lease', '--allow-during-measure (diagnostics)');
@@ -42,7 +47,16 @@ test('I-056 phoneTarget.preflight: the phone measure guard of iphone.mjs run (a 
   await setSharedSwitch('chrome-measure', { on: true, by: 'lead', reason: 'unit test' });
   const g = await tryAcquire('chrome-measure', { owner: 'de-counts-sim', shared: true, weight: 3, maxSec: 120 }); // the opener: no load check
   assert.equal(g.ok, true);
-  assert.throws(() => t.preflight(60000), /^Error: WAIT: chrome-measure is held by the shared lane \("de-counts-sim" w3\)/);
+  // default (Mac-quiet preferred, not required): the G run goes, one NOTE, the Mac state in meta.mac
+  assert.equal(t.preflight(60000).pageSource, 'your lease');
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /^NOTE: shared jobs hold chrome-measure beside this phone run \("de-counts-sim" w3; load1 3\.5\)/);
+  const { mac } = await t.extra();
+  assert.deepEqual([mac.requireQuiet, mac.start.shared, mac.start.load1, mac.end.shared, mac.end.load1], [false, [{ owner: 'de-counts-sim', weight: 3 }], 3.5, [{ owner: 'de-counts-sim', weight: 3 }], 3.5]);
+  // --require-quiet (or FW_PHONE_REQUIRE_QUIET=1): it waits
+  assert.throws(() => phoneTarget({ owner: 'me', requireQuiet: true, log: () => {} }).preflight(60000), /^Error: WAIT: chrome-measure is held by the shared lane \("de-counts-sim" w3\), and this run asks for a quiet Mac/);
+  process.env.FW_PHONE_REQUIRE_QUIET = '1';
+  try { assert.throws(() => phoneTarget({ owner: 'me', log: () => {} }).preflight(60000), /FW_PHONE_REQUIRE_QUIET=1/); } finally { delete process.env.FW_PHONE_REQUIRE_QUIET; }
   await releaseReader('chrome-measure', g.reader.token);
   await release('iphone', { owner: 'me' });
 });
