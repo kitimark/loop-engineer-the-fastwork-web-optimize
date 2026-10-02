@@ -8,6 +8,26 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **23:0xZ (batch) P-068 landed in full (e9dcfce, 08b7978, 98da974, 172d61e); X1 stage 1 scored, lead decisions.**
+  - **P-068 reads closed (mgmt-ops-7):** ddc74d6 / 98da974 fallback fix PASS (attempt per segment, last attempt scored,
+    `findLast` picks the end-of-session re-run, fallback gate TIMEOUT -> incomplete, exclusion over 0-360 s, user's
+    80 % limit confirmed T-029 #8); 172d61e attempt marker PASS (heat.mjs d1ec5c5345f7; a gate timeout before any
+    attempt-2 segment scores incomplete; 8th synthetic check). heat.check.mjs read, not run by ops (de-heat: 8/8).
+    Runs after F3 (~2 h, 2 sessions); iphone-runner takes it from the README on main. **I-075** (tool, non-blocking):
+    battery logger, power keys in BATTERY_KEYS, skip of the Mac-side served-hash GETs on non-mirror pages (ts-i075 has
+    not replied to de-heat); rule: arm A uses a skip only if it lands before session 1, H2 keeps H1's tooling.
+  - **X1 stage 1 readout 754e79e (de-countdown), ops second read:** trigger and outcome applied as pre-registered:
+    (i), (iii), (iv) hold -> no phone stage, back to the code. Hits: face layers 80 -> 24 (2/2), total layers 54 (edge),
+    pastHero ratios 0.41-0.47, rAF 0.96/1.09, exit-opacity 0 at heroExit. Misses: face memory V/C 1.0, C repaints face
+    layers too, S3 0/-10, heroExit Layout 0.96/0.98, S6 V not live at the first update at y 0 (falsifier met as written;
+    the 2 stale updates are at --exit-opacity 0).
+  - **Lead decisions on X1 (23:0xZ):** (a) the x1.mjs change after the void session 1 (smooth scroll; 9de230198cf8 ->
+    9a6f3f9ed143; no window, count or rule changed) ACCEPTED, lead signs; (b) the missing per-window tick count is added
+    in the re-run; (c) (iii) ACCEPTED as page-driven, a signed post-data deviation (view-sized Layouts equal in both
+    arms; the clock's digit Paints 80 -> 0); **(iv) NOT accepted yet:** one more Simulator session with the rendered
+    opacity fixed, under a pre-registered amendment (ops re-reads it): clock visible with a stale digit -> back to the
+    code; opacity 0 in every stale update -> explained. If (iv) is explained, only (i) remains and the lead asks the
+    user for the stage-2 timing lift.
 - **22:5xZ 1153c70 landed (main tip). P-068 amendment 56636f8 re-read: NEEDS-WORK (fallback scoring); lead holds 4bf2319+56636f8.**
   - Amendment (de-heat, heat.mjs 341a774801ae): every arm "held" (on the cable, not charging; state read 22:42Z, 80 %);
     `heat.mjs charge-wait` gate before each segment (<= 20 min); one non-held read excludes the segment, re-run last;
