@@ -121,7 +121,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  // [scene-scope RBi40pti] start paused: the first IO callback can land in the frame where #platform turns
 +  // content-visibility:auto skipped, and a skipped subtree's style (the pause) waits until it is unskipped
 +  // (status: the blocked recalc is CONFIRMED in Chromium source; that it holds back the pause is OBSERVED in Chrome,
-+  // q40ti2; WebKit UNRESOLVED until T-011)
++  // q40ti2; WebKit OBSERVED on the phone, T-011, one sweep load per arm)
 +  for (let e of ts) (e.setAttribute(`data-sweep-paused`, ``), PMsweepIO.observe(e));
    // unobserve when the row's each-block item is destroyed ($effect.pre attaches to the row's branch effect;
    // its returned function is the effect's teardown)

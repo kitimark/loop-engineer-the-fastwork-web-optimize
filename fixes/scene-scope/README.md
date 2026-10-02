@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** RB landed (8207797). **RBi40pti** (`patch.diff` = `variants/23.diff` plus two comment lines, the status words review 3 asked for, JS cd272085834c; every measurement ran `variants/23.diff`, CSS 10cf34974e67, JS 7cea01ae081c, which differs from `patch.diff` by those comment lines only)
+**Status:** RB landed (8207797). **RBi40pti** (`patch.diff` = `variants/23.diff` plus two comment lines, the status words review 3 asked for, JS 0144d2cd032a, comment updated after T-011; every measurement ran `variants/23.diff`, CSS 10cf34974e67, JS 7cea01ae081c, which differs from `patch.diff` by those comment lines only)
 is the landing candidate, in two steps: RBi40p (`variants/17.diff`, CSS only) then the row-title cut plus one JS line in
 PMsweepGate (lead decision 2026-10-02, option (a)). Section "RBi40pti: the candidate". RBi40p replaced RBi40, which the
 lead's review (8690486, NEEDS-WORK) sent back.
@@ -17,9 +17,10 @@ lead's review (8690486, NEEDS-WORK) sent back.
   - P-056a(c1) is a strict **MISS** (it predicted 0 differing frames).
   - At 430, with the IO-held harness (`pageframes4.mjs`), the count-up is pinned. Every remaining difference also
     shows in the A/A (a glyph edge, delta 1; a first-load avatar decode, delta 66). None is V-only.
-  - **Open:** one 1440 frame (y7500, 259 px, max delta 3; 250 px on the ring/dash edges at delta 1, 9 px at the nav
+  - **Closed:** one 1440 frame (y7500, 259 px, max delta 3; 250 px on the ring/dash edges at delta 1, 9 px at the nav
     button edge) was seen in 1 V load in q40ui and in no baseline frame. Under q40ui's exact procedure (P-056b) it
-    came back in 0 of 10 V and 0 of 10 S0 loads: "not reproduced", and the lead decides.
+    came back in 0 of 10 V and 0 of 10 S0 loads: "not reproduced". Lead decision: closed: user accepted PR-002 rev 2,
+    08:07:38Z; the trip is also in today's build, not a visual change.
   - The frames cannot see the title sweeps (the freeze pauses every animation). c2 (phase and onset) is the evidence
     for the titles.
 - One-shot scenarios (a) reload, (b) early jump x3, (c) fling: inside the A/A. (d) Sim bfcache back: restored from the
@@ -28,7 +29,8 @@ lead's review (8690486, NEEDS-WORK) sent back.
 
 **Stage:** F. PR-002 rev 2 accepted by the user (2026-10-02 08:07:38Z, no notes). D signed by the lead (NAMED, see
 "Cards"). T-011 ran on the phone 2026-10-02 10:43-10:58Z: P-061 (a), (b), (d) PASS, not exclusion-sensitive, same
-without the load-flagged runs (section "T-011 result"). Waiting for the fix-reviewer on the final diff, then the land request.
+on every single run (section "T-011 result"). review-scene-scope: LAND WITH FIXES (wording only, applied). The lead
+accepted `fixes/scene-scope/tools/` and `variants/` in the land diff. Next: the land request.
 **Device class / gate:** phone-only (WebKit's nested style/layout rounds, F-099). Gate: phone Timeline attribution (counts).
 **Driver(s) behind the claims:**
 - Chrome counts and state probes (`out/scene-scope/*.mjs`). Most are not committed. The frame, onset and scoring
@@ -43,7 +45,7 @@ without the load-flagged runs (section "T-011 result"). Waiting for the fix-revi
 P-048 FAIL, P-049 MISS, P-050 MISS, P-051 MISS, P-052 HIT, P-053 HIT, P-054 inCQ HIT / restyled MISS, P-055 (a) HIT,
 (b) inCQ HIT / restyled MISS, P-056 (b) inCQ HIT / restyled MISS, (c) frames HIT / play state HIT / phase MISS at 1440,
 P-056a (a) nested HIT / cE Layout HIT / outer RS count MISS, (b) HIT, (c1) frames MISS (strict), (c2) phase and onset
-HIT (S, H), P-056c (a) census FAIL as written / post-hoc pass, (b) motion frames FAIL as written (an A/A raster variant), P-061 (T-011, pre-data).
+HIT (S, H), P-056c (a) census FAIL as written / post-hoc pass, (b) motion frames FAIL as written (an A/A raster variant), P-061 (T-011, phone W) (a) PASS, (b) PASS, (d) PASS.
 **Topic:** see `fixes/TOPICS.md` (scene-scope); user priority 1 ("style recalc")
 **Base:** STACKED on B = `fixes/user-bplus/patch.diff` (rebuilt as overlay `bplus`: JS dbd5fdb4f1fb, CSS cc8d1340b449)
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` (the paused-scene rule, B 11804-11815, baseline
@@ -367,8 +369,8 @@ deterministic A/A, and they change Chrome's raster path, so they are a measureme
   - The q40ui odd hash 559c68ab9d2b appeared in **V 0/10, S0 0/10**. At y7500: off-modal V 0 vs S0 0, Fisher exact
     p = 1.
   - At y6600-7400, q40ui's S0 is on an off variant, and its S0b and V are on the modal frame. Each arm has 5 loads on the modal frame and 5 on the off variants.
-  - Decision rule outcome: **(iii) not reproduced under the original procedure.** The facts go to the lead, who
-    decides.
+  - Decision rule outcome: **(iii) not reproduced under the original procedure.** The facts went to the lead.
+    Decision: closed: user accepted PR-002 rev 2, 08:07:38Z; the trip is also in today's build, not a visual change.
     - The frame was seen once (q40ui, 1 V load) and in 0 of 10 V and 0 of 10 S0 loads since.
     - No S0 load ever produced it, so it is not shown to be A/A noise.
     - Nothing in the cut or the line reaches the rings (code check above).
@@ -626,11 +628,11 @@ step 1 RBi40p (`variants/17.diff`, CSS 24c2e85682fe), step 2 the 4 row-title lin
   - Sim W: nested 0 and no cE Layout (HIT). The outer RS count is a MISS of [350, 370].
   - Flip: restyled 58 and inCQ 0 (HIT).
   - c2 phase and onset: HIT for S and H.
-  - c1 frozen frames: a strict MISS. At 430 every difference also shows in the A/A. One 1440 frame is still open
-    (P-056b: not reproduced in 10 + 10 loads; the lead decides).
+  - c1 frozen frames: a strict MISS. At 430 every difference also shows in the A/A. One 1440 frame (P-056b: not
+    reproduced in 10 + 10 loads) is closed: user accepted PR-002 rev 2, 08:07:38Z; the trip is also in today's
+    build, not a visual change.
   - The one-shot scenarios (a)-(d) ran on RBi40p only, not on RBi40pti.
-- Still open: the lead's decision on the 1440 y7500 frame (P-056b outcome iii) and the phone ticket (T-011), which
-  must run RBi40pti.
+- The phone ticket T-011 ran RBi40pti: P-061 (a), (b), (d) PASS (section "T-011 result").
 
 **Previous candidate RBi40 (CSS f54dbf45fc55; returned by the review 8690486, NEEDS-WORK).** RBi40 = RB with V1i's
 animation list (that step alone is RBi), minus the 4 platform classes, so it also cut hero, people and commission
@@ -1115,7 +1117,7 @@ UNRESOLVED".
 | C | RB, today's landed build (the one named control) | `.claude/worktrees/agent-a7696771bf38f1229/out/iphone-runner/snap/ss-RB` | 0d7dfc79e703 | dbd5fdb4f1fb |
 | V | RBi40pti | `.claude/worktrees/agent-a49a278f1d0bd6803/out/scene-scope/snap2/RBi40pti` | 10cf34974e67 | 7cea01ae081c |
 
-V is the build every Chrome and Simulator result above measured. `patch.diff`'s JS (cd272085834c) differs from it only by
+V is the build every Chrome and Simulator result above measured. `patch.diff`'s JS (0144d2cd032a; cd272085834c before the T-011 comment update) differs from it only by
 two comment lines. If a snapshot is gone: C = `fix.mjs combine` of user-bplus + scene-scope at RB (iphone-runner's
 `snap.mjs`), V = `variants/23.diff` applied on C; copy, `chmod -R a-w`, check the hashes again.
 
@@ -1208,24 +1210,28 @@ C1 V2 V3 C4 C5 V6 V7 C8. Scored by me with `SW=2500-2760 rsstat.mjs` on `sr-*.js
 - Open, 10:45:13Z: 60.2 / 58.5 fps, battery 37.4 °C.
 - End, 10:51:57Z: 60.0 / 58.0 fps, battery 39.9-40.0 °C.
 - The phone had cooled to 38.0 °C before the block. Low Power Mode was off.
+- Both sentinels ran beside fwreskip's Simulator session on the Mac (load1 62-70) and passed.
 
 **Deviations from the ticket.**
-- The warm-ups were "open, wait 6 s" per port (the text before 685d4a0), not uncounted W runs. The first counted run
-  per arm (C1, V2) is therefore the first full run on its port. Neither stands out: C1 has the lowest C RS (17.7 ms),
-  and V2 matches the other V runs.
+- The warm-ups were "open, wait 6 s" per port (the text before 685d4a0), not uncounted W runs. C's opening S sentinel
+  was a full run on C's port, so only V2 was a first full run on its port. V2 matches V3, V6 and V7 on (a), (b) and
+  (d), so there is no first-run effect on those rules.
 - The sweep part reran once (10:56-10:58Z). The first try was refused: the FW_TAB_HOST value didn't match the tab.
   Nothing timed was affected.
 - The Mac-quiet hold was not taken (preferred, not blocking).
   - load1 at run start (end): C1 63.9 (35.9), V2 35.9 (18.4), V3 18.4 (8.9), C4 8.9 (7.0), C5 7.0 (5.2), V6 5.2 (5.3),
     V7 5.3 (4.0), C8 4.0 (15.5).
-  - The runner flagged C1, V2, V3 (a Simulator boot spike) and C8 (ended in a second spike).
+  - The runner flagged C1, V2, V3 (a Simulator boot spike) and C8 (ended in a second spike). C4 also started above
+    load1 8 (8.9), so it is flagged too. The unflagged runs are C5, V6 and V7.
+  - C1 and V2 (start load1 64 / 36) had a W scroll phase about 290 ms shorter than the other runs (6678 / 6695 ms vs
+    6965-6995 ms), OBSERVED, n = 2: Mac load may pace the W driver. This affects only the (e) sums.
 
 **Switch RS** (the first outermost RS after the cE write, y 2609-2624 in every run):
 
-| run | load flag | RS ms | nested Layouts (view-rooted) | Layouts <= 40 ms after the RS | scroll+push: nested-Layout ms / RS ms |
+| run | load flag | RS ms | nested Layouts (view-rooted) | Layouts in the window after the RS (see below) | scroll+push: nested-Layout ms / RS ms |
 |---|---|---|---|---|---|
 | C1 | flag | 17.7 | 2 (1: VIEW 16.6; + 390x312 0.1) | 0 | 54.5 / 485.3 |
-| C4 | | 19.8 | 2 (1: VIEW 18.2; + 390x312 0.1) | 0 | 45.2 / 463.4 |
+| C4 | flag (start 8.9) | 19.8 | 2 (1: VIEW 18.2; + 390x312 0.1) | 0 | 45.2 / 463.4 |
 | C5 | | 21.3 | 2 (1: VIEW 20.0; + 390x312 0.1) | 0 | 48.5 / 500.6 |
 | C8 | flag (end) | 24.5 | 2 (1: VIEW 22.8; + 390x312 0.1) | 1: 104x32 0.1 ms, not view-rooted, not rot | 51.1 / 475.0 |
 | V2 | flag | 0.4 | 0 | 0 | 34.8 / 457.9 |
@@ -1246,22 +1252,31 @@ C1 V2 V3 C4 C5 V6 V7 C8. Scored by me with `SW=2500-2760 rsstat.mjs` on `sr-*.js
   - Scored both ways, as the lead asked: no Layout marked `rot` falls in any run's window, so the count is 0 with and
     without the exclusion. **Not exclusion-sensitive.**
   - The exclusion was edited at 10:40Z and committed at 10:41:46Z (9bade2e, now 8c1a936). Both are before the block's
-    10:43Z start. No T-011 file existed or had been read by then.
+    10:43Z start. No outcome data existed then; the serve logs (10:38:40Z) and the hash check (10:39:04Z) predate
+    the commit.
+  - The window `rsstat.mjs` really uses: from the RS end to 40 ms after it, cut at the next outermost RS. That RS came
+    2.7-15.1 ms after the switch RS (C 2.8 / 5.7 / 2.7 / 6.0, V 4.0 / 15.1 / 15.1 / 14.3 ms).
+  - The reviewer's re-check over the full 40 ms (no cut): V's only Layouts there are 0.1-0.2 ms (C's too).
+  - Layouts of 10 ms or more within 200 ms after the RS show up equally in both arms: C 0 / 2 / 0 / 2, V 0 / 2 / 0 / 2
+    (C1 C4 C5 C8, V2 V3 V6 V7). Nothing moved into V.
 - (c) Information: switch RS V 0.4-0.5 ms (predicted <= 5); C 17.7-24.5 ms (predicted about 15-25).
 - (d) Sweep state: V matches C off screen, in view (every onset <= 58 ms, under the 150 ms bound) and back at the top.
   **PASS.**
 - (e) Information: the scroll+push nested-Layout ms are lower in V: C 45.2-54.5 (median 49.8), V 28.0-34.8 (median 32.7).
   RS totals overlap: C 463-501, V 433-461. Layouts outside the RS are about the same: C 358-478, V 391-479.
-- **Load:** without the flagged runs (C4, C5, V6, V7), every rule gives the same answer: C 1 / 1, V 0 / 0, nothing after
-  the RS, RS ms C 19.8 / 21.3 vs V 0.4 / 0.5.
+- **Load:** the unflagged runs are C5, V6 and V7. The verdict holds on every single run, flagged or not: each C run has
+  1 view-rooted nested Layout (RS 17.7-24.5 ms), each V run 0 (RS 0.4-0.5 ms), and no run has a Layout >= 2 ms in the
+  window after the RS.
 
 **Outcome:**
 - On the phone's WebKit, RBi40pti removes the switch RS's nested view Layout (about 17-23 ms per crossing in C), and
   the layout does not reappear after the RS.
 - The JS line (PMsweepGate init-paused) holds the 4 row-title sweeps paused off screen and starts them in view, as
-  today's build does. The D card's open item "RBi40pti's JS line on WebKit" is RESOLVED by this decisive check.
+  today's build does. The D card's open item "RBi40pti's JS line on WebKit" is now OBSERVED on the phone (decisive check
+  T-011, one sweep-state load per arm).
 - Everything here is OBSERVED, phone, n = 4 per arm in one block.
-- Per the ticket: next is the fix-reviewer on the final diff, then the land request.
+- review-scene-scope re-scored T-011 from the raw files and matched these numbers: LAND WITH FIXES (wording only,
+  applied here). Next: the land request.
 
 ## Morph start (R4 / V3)
 
@@ -1347,7 +1362,7 @@ Abbreviations: Sim W = Simulator W driver (structure only); flipprobe = Chrome c
 | scene-scope/20 | RBi40p0 = RBi40p minus scene root (both lists) and the 4 row titles; CSS a80e69b94055 | the moved view Layout comes from the kept #platform matches | no switch layout | clean (Sim n=2) | cE-initiated layout 18.1 → none | "What RBi40p removes" | locates the next target | diagnostic (changes every scene root: not landable) | `variants/20.diff` | W | none (diagnostic) | LOCATED |
 | scene-scope/21 | RBi40pt = RBi40p minus the 4 row-title entries; CSS 10cf34974e67 | split /20: row titles | no switch layout | clean (Sim n=1) | none vs 18.1 ms | "What RBi40p removes" | the row titles carry it | diagnostic (needs a pixel check before any candidate) | `variants/21.diff` | W | none (diagnostic) | LOCATED |
 | scene-scope/22 | RBi40pr = RBi40p minus the scene-root entries; CSS 8184bceef75b | split /20: scene root | layout stays (21.0 ms) | clean (Sim n=1) | 21.0 ms after the RS | "What RBi40p removes" | the scene root is not it | diagnostic | `variants/22.diff` | W | none (diagnostic) | LOCATED (negative) |
-| scene-scope/23 | **RBi40pti** = RBi40pt + `data-sweep-paused` set on each row title before `PMsweepIO.observe` (JS 3982); CSS 10cf34974e67, JS 7cea01ae081c | removes RBi40p's 18 ms switch Layout without RBi40pt's 1440 phase race | no switch layout, phase and onset as RB | frames: P-056a(c1) strict MISS; 430 diffs A/A-only (IO-held harness); 1440 y7500 frame seen in 1 V load (q40ui), not reproduced under q40ui's procedure (P-056b: V 0/10, S0 0/10), lead decides; Sim n=4; outer RS count MISS of [350, 370] | switch RS 0.4-0.5 vs RB 18.5-20.4 ms, nested 0 | "RBi40pti: the candidate" | candidate (step 2 on /17) | `variants/23.diff` (`patch.diff` = it + 2 comment lines) | W | none (attribution) | CANDIDATE |
+| scene-scope/23 | **RBi40pti** = RBi40pt + `data-sweep-paused` set on each row title before `PMsweepIO.observe` (JS 3982); CSS 10cf34974e67, JS 7cea01ae081c | removes RBi40p's 18 ms switch Layout without RBi40pt's 1440 phase race | no switch layout, phase and onset as RB | frames: P-056a(c1) strict MISS; 430 diffs A/A-only (IO-held harness); 1440 y7500 frame seen in 1 V load (q40ui), not reproduced under q40ui's procedure (P-056b: V 0/10, S0 0/10), closed (user accepted PR-002 rev 2, 08:07:38Z; the trip is also in today's build, not a visual change); Sim n=4; outer RS count MISS of [350, 370] | switch RS 0.4-0.5 vs RB 18.5-20.4 ms, nested 0 | "RBi40pti: the candidate" | candidate (step 2 on /17) | `variants/23.diff` (`patch.diff` = it + 2 comment lines) | W | none (attribution) | CANDIDATE |
 
 ## Cards (protocol v2)
 
@@ -1387,11 +1402,13 @@ Check behind "2 nested Layouts in the RS": phone block 1, arm C = B, switch RS a
 
 **Scenarios run for RBi40p:** reload while scrolled (a), early jump (b, 3 reps), fling during an entrance (c), Sim
 bfcache back (d), walk down and back up (census), idle at top / mid / end (idle triple, RBi40). **Not run:** early input
-(tap), toolbar resize, rubber band; these need G or F on the phone (T-011).
+(tap), toolbar resize, rubber band; these need G or F on the phone.
 **Scenarios run for RBi40pti:**
 - Chrome: c2 S scroll-in, H hash load and J scrollIntoView, at 430 and 1440; the flip probe; the frozen frames (c1,
   P-056b).
 - Sim: W.
+- Phone: W with Timeline plus the sweep-state load (T-011).
+- Still not run on any arm: early input (tap), toolbar resize, rubber band. T-011 was W only; these need G or F.
 - Not re-run on RBi40pti: the one-shot scenarios (a)-(d), the census walk and the idle triple. These rest on
   RBi40p's results. The line adds only an attribute that PMsweepIO's first callback would set anyway.
 
@@ -1433,8 +1450,9 @@ The model is the Chrome count of elements restyled at the #platform enter flip (
   longer future work: RBi40pti cuts those entries and adds the PMsweepGate line.
   - Predictions: P-056 (RBi40pt) and P-056a (RBi40pti).
   - Pixel evidence: c2 for the title sweeps, plus the frozen frames. Their 1440 y7500 frame was not reproduced
-    under P-056b, and the lead decides.
-  - Still open: the phone (T-011).
+    under P-056b and is closed (user accepted PR-002 rev 2, 08:07:38Z; the trip is also in today's build, not a
+    visual change).
+  - Phone: T-011, P-061 (a), (b), (d) PASS (section "T-011 result").
 - Chrome-only: the kept bare-tag subjects (`.commission-underline path`, `.start-selling-avatars img`) invalidate
   every `path` / `img` under a flipped scene by tag (54 at the #platform flip). WebKit is not affected (full-match
   invalidation), so this is not a phone target.
