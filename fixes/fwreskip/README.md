@@ -634,6 +634,20 @@ The lead asked for this on 2026-10-02 after G1b, Simulator only, no new phone ti
 - **P5 does not split** when (a) or (b) fails in either hold.
 - **Control:** B's rAF max dt in the window is ≤ 20 ms. Otherwise the hold is void, and I re-run once.
 - The criterion says nothing about the phone. A split on the Sim only earns P5 a phone block.
+
+### P2-1 preview: the descent side in G1b's own runs (phone, G driver, RB, read after the fact)
+
+G1b was not designed for this: its descent is WDA strokes of 150 px, each with a hold and a pause, not the W driver's steps. It does pass the hero end in all 16 runs, though, so its frame logs show what fwreskip's gain side looks like on the phone. Not registered before data; it is a preview only (scratchpad `g1bdesc.py`).
+- **The hero's far re-skip** (flinglog `h` `deferred`, phone y 3081-3112): the longest frame within -50 to +250 ms of it is
+  - B 29, 30, 30, 29 (rest) and 25, 29, 29, 29 (no-pause);
+  - P2b 29, 25, 25, 25 and 30, 29, 33, 29.
+  - P2b re-skips `#people` 3-5 ms after the hero, as designed.
+- **Descent frames in y 2850-3300** (descend mark to the last descent scroll event + 100 ms, so the idle un-skip is excluded):
+  - max: B 37, 60, 34, 34 / 38, 36, 33, 46; P2b 34, 42, 33, 58 / 38, 46, 34, 37;
+  - > 50: B 1 of 8 runs, P2b 1 of 8; > 34: B 9 frames, P2b 7.
+  - The top frames sit at y≈3260-3286, ~280-380 ms after the flip, in both arms (the end of the last stroke), not at the flip.
+- So, **OBSERVED** (n=8 per arm, G driver, cause unknown): the ~20 ms Sim layout that fwreskip removes at the hero end does not show as a longer frame on the phone with this driver. B's frame at the flip is already 25-30 ms.
+- What this does not cover: the W driver (scripted steps), where the hero-end lag was first described, and RB + st6-rb. Both are P2-1's job on the phone.
 - Moving the un-skip into a scroll step does not help: in the descent it puts back the cost fwreskip removes, and in the fling it is rev 2.1 (65-92 ms on the phone). A longer idle delay only moves the same frame.
 
 ## Risks, conflicts, follow-ups
