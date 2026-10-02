@@ -4,7 +4,8 @@
 // (tools/lib/baseline.mjs checks it). Agent worktrees are sparse checkouts without it
 // (`node tools/baseline.mjs sparse`, applied by `fix.mjs new`), so tools look a tree up in this order:
 //   1. $FW_MIRROR_HOME: a directory that contains site/ (and usually site-pretty/)
-//   2. this checkout, if it has the tree (the main checkout; a worktree with its own copy)
+//   2. this checkout, if it has the tree (the main checkout; a worktree with its own copy; for site/ and site-pretty/
+//      only when its site/.mirror/manifest.json exists, I-066)
 //   3. the main checkout: dirname of `git rev-parse --git-common-dir`
 // mirrorHome() (shared out/certs, custom roots) is the main checkout for every worktree, also one with
 // its own copy. Worktrees read the baseline in place and never modify it; per-fix changes go into
@@ -72,7 +73,10 @@ export function resolveTree(p) {
     if (existsSync(h) || BASELINE_TREES.has(p)) return h;
   }
   const local = resolve(REPO, p);
-  if (existsSync(local)) return local;
+  // a baseline tree is this checkout's own only when the checkout holds a baseline (site/.mirror/manifest.json): after
+  // `baseline.mjs sparse` a worktree keeps the ignored site*/.mirror/missing-local.txt, and that leftover directory
+  // must not shadow the main checkout's snapshot (I-066)
+  if (existsSync(local) && (!BASELINE_TREES.has(p) || hasMirror(REPO))) return local;
   return resolve(mirrorHome(), p);
 }
 

@@ -3,7 +3,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { cpSync, mkdirSync } from 'node:fs';
+import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
 import { makeTempRepo, tempDir, run } from '../helpers.mjs';
 import { makeFixtureHome } from '../fixtures/baseline.mjs';
 
@@ -68,6 +68,23 @@ test('a worktree with its own copy of the snapshot reads it, but shares the main
   assert.equal(p.pretty, join(r2.wt, 'site-pretty'));
   assert.equal(p.home, r2.main, 'certs and custom roots stay shared');
   assert.equal(probe(r2.main).home, r2.main);
+});
+
+test('a sparse worktree\'s leftover site/ and site-pretty/ (only the ignored .mirror/missing-local.txt) do not shadow the main checkout (I-066)', () => {
+  const r3 = makeTempRepo({ worktree: 'sparse-left' });
+  makeFixtureHome(r3.main);
+  // what `baseline.mjs sparse` leaves behind: git drops the tracked files, the ignored ones stay
+  for (const t of ['site', 'site-pretty']) { mkdirSync(join(r3.wt, t, '.mirror'), { recursive: true }); writeFileSync(join(r3.wt, t, '.mirror', 'missing-local.txt'), 'x\n'); }
+  const p = probe(r3.wt);
+  assert.equal(p.site, join(r3.main, 'site'), 'site/ without a manifest counts as absent');
+  assert.equal(p.pretty, join(r3.main, 'site-pretty'), 'and so does site-pretty/ beside it');
+  assert.equal(p.home, r3.main);
+  // a custom root is still the worktree's own when it exists there
+  mkdirSync(join(r3.wt, 'custom-root'), { recursive: true });
+  assert.equal(probe(r3.wt).custom, join(r3.wt, 'custom-root'));
+  // with its own copy back (`sparse --off`), the worktree reads it again
+  makeFixtureHome(r3.wt);
+  assert.deepEqual([probe(r3.wt).site, probe(r3.wt).pretty], [join(r3.wt, 'site'), join(r3.wt, 'site-pretty')]);
 });
 
 test('ports and ids are deterministic per checkout and inside 5200-5999 (never 5173)', () => {
