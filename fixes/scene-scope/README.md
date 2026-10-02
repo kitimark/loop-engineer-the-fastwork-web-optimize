@@ -3,9 +3,10 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured: Chrome counts and functional parity; phone attribution blocks 1-3 done. Root hunt for the
-remaining layouts is under way (user priority since 20:24Z: layout).
-**Stage:** F. Builds V1 and R4b are ready. The D card is below; the lead signs after the root hunt.
+**Status:** RB landed (8207797). RBi is ready to land: the pixel A/B against RB is byte-identical, with a clean A/A.
+The RBi40 Sim count is equal, so RBi40 is next; it needs its own pixel A/B. The rotator-tick layout stays: the
+st5/st6 family is not byte-identical, and rotator-st6 is parked.
+**Stage:** F. RBi waits for the phone ticket (T-011). The D card is below.
 **Device class / gate:** phone-only (WebKit's nested style/layout rounds, F-099). Gate: phone Timeline attribution (counts).
 **Driver(s) behind the claims:**
 - Chrome counts and state probes (`out/scene-scope/*.mjs`, not committed).
@@ -16,6 +17,13 @@ P-048 FAIL, P-049 MISS, P-050 MISS, P-051 MISS, P-052 HIT.
 **Base:** STACKED on B = `fixes/user-bplus/patch.diff` (rebuilt as overlay `bplus`: JS dbd5fdb4f1fb, CSS cc8d1340b449)
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only: the paused-scene rule (B 11804-11815, baseline
 11754-11758). No JS.
+
+**Tools version (I-046, d00ee9a changed headless `--screen-info`).**
+- Ran on tools before d00ee9a, with a headless screen of 756x491 CSS px at DPR 2: every headless Chrome result here
+  except the RBi pixel A/B. That covers the mechanism check, the functional check with its bottom-shot A/A, the
+  carousel frame check (carf, carf2, carf3) and the visual-risk probe.
+- The page viewport was the device-metrics override in every run.
+- Ran after d00ee9a: the RBi pixel A/B and all Simulator runs. The Simulator does not use headless Chrome.
 
 Timing is deferred by the user (2026-10-01 19:27Z): this README makes **no timing claim**. Chrome numbers below are
 counts (elements restyled, invalidations, dirty layout objects, layers); durations are info only.
@@ -47,7 +55,17 @@ counts (elements restyled, invalidations, dirty layout objects, layers); duratio
 
 ## What changed
 
-**Landing candidate (`patch.diff`, regenerated 20:5xZ) = V1 + R4a + R4b (CSS 0d7dfc79e703), stacked on bplus.**
+**Landing candidate now (`patch.diff`, regenerated 00:5xZ 2026-10-02) = RBi = RB with V1i's animation list (CSS
+7eec24b73ba5), stacked on bplus.**
+- Against RB (landed in 8207797), it removes 52 entries from the animation arm and keeps the 18 infinite ones
+  (`.morph-col-track` and `.ring.svelte-16rtsv6` are the last two). Nothing else changes; the R4a / R4b parts are as
+  in RB.
+- Evidence: phone block 2 (switch nested Layouts 2 → 1 with I4); the RBi pixel A/B (byte-identical, below); the
+  visual-risk probe.
+- Still open: the phone ticket.
+- The next candidate is RBi40 (see "RBi40 Sim count"). It needs its own pixel A/B first.
+
+**Previous landing candidate (landed as 8207797) = V1 + R4a + R4b (CSS 0d7dfc79e703), stacked on bplus.**
 - `results.json` is hold 3's run of V1 alone (`fix.mjs ab --on bplus --runs 3`). Its timing columns are host-
   contaminated and not used; only its regression checks count.
 - RB has no Chrome A/B, because timing is deferred. Its evidence is the counts, the pixel diffs and phone block 3.
@@ -190,7 +208,8 @@ Readings:
 - Attribution rule from this: switch (or any crossing in y 1800-2820) attributions must split out layouts whose
   initiators trace to the rotator timer.
 
-**Fix: no new code.** Stack the landed rotator-st6 (f7d3b1b; user blind finger pick on aw1-10e) on bplus + RB.
+**Fix tried: no new code** (withdrawn, see "Result" below: not byte-identical). Stack the landed rotator-st6 (f7d3b1b;
+user blind finger pick on aw1-10e) on bplus + RB.
 - ST = S0 + `fixes/rotator-st6/patch.diff`. It applies cleanly: JS 59b23b3f57fd, CSS e9603231b413. S0 = bplus + RB:
   JS dbd5fdb4f1fb, CSS 0d7dfc79e703.
 - Immutable copies are in `out/scene-scope/snap2/{S0,ST}` (not committed).
@@ -279,17 +298,48 @@ pixels, no timing; `out/scene-scope/carframes.mjs`, `carframes2.mjs`, `carcmp.mj
   subsequently never changes under transform updates") is CONFIRMED by the Chrome 53 note
   (developer.chrome.com/blog/re-rastering-composite). Which raster scale Chrome picks here is UNRESOLVED; the decisive
   check would be the layer's raster scale in a Chrome layer dump.
-- Residual without will-change: transform: max delta 1-2 per channel, from st6's opacity 0.999 (ST vs STo1, which only
-  sets rest opacity 1: max delta 1) plus delta 2 on some edge px that S0wo also shows. Not byte-identical, but the
-  exact difference is: at most 2 of 255 per channel, inside the carousel only.
-- Safari: not checked. rotator-st6's own pixel check compared st6 with st5, both with this will-change list, so it
-  could not see this. Whether WebKit also keeps a low raster scale for these layers is UNRESOLVED; the decisive local
-  check is the same held-frame comparison in the Simulator (the phone is disconnected, T-011).
-- Consequence: ST as landed is a visible change in Chrome and cannot be signed under "byte-identical or the exact
-  difference stated up front" without stating this blur. The candidate change (for rotator-st6's owner to decide, not
-  made here): `will-change: opacity` (or `opacity, translate`) instead of `transform, translate, opacity`. Whether
-  that keeps st6's Safari result (0 slide-start and 0 swap layouts, and no layer gain or loss) is untested: it needs a
-  Sim structure rerun before it can replace st6's CSS.
+- Residual without will-change: transform: max delta 1-2 per channel, inside the carousel only. ST vs STo1 (rest
+  opacity 1 only) differs by delta 1, so part of it is st6's opacity 0.999.
+- Where the residual sits (carf3, vs S0):
+  - STwo1 (will-change: opacity, opacity 1 at rest and at the keyframe ends, transform: scale(1) kept): 0/39
+    identical. Slide frames delta 1, 1.1k-2.8k px. Rest frames delta 2, ~1.4-1.5k px over all 4 visible slots.
+  - Control S0wo = S0 + `will-change: opacity` only: 36/39 identical. The only 3 differing frames are the 3 rest
+    frames (delta 2, 1.4-1.5k px).
+  - S0's slide frames match because its imgs carry layers anyway while their animations run. At rest, S0 paints them
+    without a layer. So a layer on a resting img alone changes Chrome's pixels.
+
+**Simulator held frames** (`out/scene-scope/simframes.mjs`, `simcmp.mjs`; functional shared lane, 00:15-00:19Z;
+Mobile Safari 430x775 at 3x; 12 frames per arm: 2 slides at 0/60/120/180/220 ms plus 2 rests, all arms synced on the
+same avatar set; the carousel crop is located by a magenta overlay; byte-exact).
+- Fresh files (I-052): every arm on a new random port. Each server log shows 2 GETs of the CSS and 2 of the JS
+  (curl's hash check plus Safari's own). CSS: S0 0d7dfc79e703, ST e9603231b413, STwo a03eb1034898, STwo1 60b62257a761.
+- A/A S0 vs S0b: carousel 12/12 byte-identical. The rest of the screen differs by 475-3.5k px elsewhere on the page.
+- ST, STwo and STwo1 are byte-identical to each other in all 12 frames. So in Safari, will-change: transform does
+  not blur, and opacity 0.999 vs 1 does not show.
+- Each vs S0: 5/12 identical.
+  - Slide at 120 and 180 ms: identical.
+  - Slide at 0 and 60 ms: 3-12 px at delta 1.
+  - Slide at 220 ms (animations ended) and rest: 10.2k-12.3k of 51.8k crop px, max delta 16-17, an edge map over all
+    4 avatars (`out/scene-scope/simf-rest.png`). Not a visible blur, but not byte-identical.
+- The same pattern as Chrome's S0wo: the frames differ where S0's imgs rest without running animations.
+
+**Result: no byte-identical fix in the st5/st6 family; the resting layer changes raster in both engines (Chrome blur
+up to 72/255; Safari edge delta 16-17).** OBSERVED in our setup, cause unknown.
+- Chrome: 72/255 with will-change: transform; 2/255 with any other persistent layer (S0wo).
+- rotator-st6's own 0.00 % check compared st6 with st5, both carrying the persistent layer, so it could not see this.
+  F-114.
+- rotator-st6's owner (fix-scroll-engine) parked it, and the lead agreed (00:2xZ). Stacking ST on RB is withdrawn.
+  The Sim structure rerun of STwo/STwo1 was skipped by the lead's decision: no arm in this family can land under
+  byte-identity.
+- The switch window's rotator-tick layout (F-111) therefore stays. Any fix for it has to keep the imgs without a layer
+  at rest.
+- Idea sent to the lead and fix-scroll-engine, not built: "st5-nolayer". It keeps st5's JS (persistent slots, src set
+  in place, is-sliding toggle), which removes both keyed-swap layouts, and drops will-change and st6's resting
+  transform/opacity, so rest frames paint like S0. The slide-start flip layout probably stays. Animating `scale` /
+  `translate` instead of `transform` might avoid the flip: UNRESOLVED until someone checks the WebKit source.
+  - Lead's ruling: it is an idea for fix-scroll-engine, to be taken up only after fwreskip (a1h) is built and verified.
+  - Bar: byte-identical at every frame, mid-slide included; held rest frames alone do not prove it.
+  - Nothing is built until fix-scroll-engine picks it up and the lead has seen the plan.
 
 ### The switch's own RS: I4 vs I40 (recommendation for the lead)
 
@@ -329,6 +379,7 @@ The model: each arm removes one container nesting level of restyled elements und
   - block 2 also saw the y≈2990 nested layout at 18-20.5 ms, against I4's 14-19 (ms are info only; host noise is
     possible).
   - Neither is a pixel risk. Both are a work risk that nothing here has counted yet.
+  - Superseded by the RBi40 count below: in this build the first bullet does not happen.
 
 **Recommendation.**
 1. Land the I4 list cut on the current stack first: "RBi" = RB with V1i's animation list, with or without V4.
@@ -341,6 +392,72 @@ The model: each arm removes one container nesting level of restyled elements und
    and back at the top after passing #platform, RS / Layout records per second, RBi vs RBi40.
    - If that count is equal, I40 is the better arm (0 nested, RS ≈0) at the same pixel risk (none).
    - Otherwise stop at RBi.
+
+The lead signed this recommendation as written.
+
+**RBi pixel A/B** (headless Chrome, tools include d00ee9a (I-046), shared lane, 00:3x-00:47Z; pixels and states, no
+timing; `out/scene-scope/rbicheck.sh`, `carframes.mjs`, `pageframes.mjs`, `pagecmp.mjs`).
+- Build: S0 = RB (CSS 0d7dfc79e703, JS dbd5fdb4f1fb). RBi = S0's CSS with V1i's animation list: CSS 7eec24b73ba5,
+  same JS.
+- Served from fresh servers with `--no-cache`. curl hashes were checked on every port.
+- Arms: S0; S0b = the same files on a second server (the A/A); RBi; S0pc = S0 plus
+  `#people, #people * { animation-play-state: paused !important }`, the positive control for the state walk.
+
+| check | S0 vs S0b (A/A) | S0 vs RBi | S0 vs S0pc (positive control) |
+|---|---|---|---|
+| carousel held frames (method above, 39 per arm) | 39/39 byte-identical | 39/39 byte-identical | — |
+| switch region: frozen full-viewport frames at y 2300..3000 step 50 | 15/15 byte-identical | 15/15 byte-identical | 15/15 (#people is not in these frames) |
+| on-screen animation state walk, y 0..3400 step 100: steps with equal state sets | 32/35 | 29/35 | 12/35 |
+| on-screen samples paused / running, summed over the walk | 105 / 223 | 105 / 220 (S0: 105 / 220) | 164 / 207 |
+
+- Frozen frames: every animation is set to the same phase in every arm (finite ones at their end, infinite ones at 0),
+  imgs are decoded, then 2 rAFs pass before the shot.
+- Every RBi walk difference is the phase of a running cycle: the hero accent's stroke-in / stroke-out / idle (y 200,
+  500, 800, 1200) and the avatar tick (y 1500, 2100). The A/A shows the same kind at y 800, 1000 and 1100. RBi pauses
+  nothing on screen that S0 runs, and the paused count is equal.
+- The positive control works: it flips the on-screen #people animations (profile-fade, vinyl-spin, avatars-*) to
+  paused, and the walk sees it.
+- Verdict: RBi is byte-identical to RB in the carousel and the switch region, within the A/A. The lead accepted it.
+- Still open before landing: the phone ticket (when the phone is back, T-011).
+
+**RBi40 Sim count** (recommendation step 2; Simulator, functional shared lane, 00:48-00:52Z; record counts per
+second, no ms verdicts; `out/scene-scope/simidle.mjs`, `simidle.sh`).
+- Build: RBi40 = RBi minus the 4 platform classes (CSS f54dbf45fc55, JS dbd5fdb4f1fb).
+- Run order: RBi, RBi40, RBi40, RBi.
+- Each run:
+  - navigate, wait 6 s, then walk to the page end (250 px every 150 ms; this passes #platform and its un-skip);
+  - Timeline at depth 2: 8 s idle at the end, then scroll to the top, wait 2 s, and 8 s idle at the top;
+  - count outermost RecalculateStyles, Layout, Paint and Composite records, and take an animation census.
+- Fresh files (I-052): each arm on a new random port, `--no-cache`.
+  - CSS GETs: RBi 4 (curl + the first open + 2 runs), RBi40 3 (curl + 2 runs).
+  - JS GETs: RBi 3, RBi40 2. The JS is identical in both arms.
+
+| run | end: RS/s | end: Layout/s (nested) | end: Paint | end: anims / running | top: RS/s | top: Layout/s | top: Paint | top: anims / running |
+|---|---|---|---|---|---|---|---|---|
+| RBi 1 | 118.5 | 58.4 (0) | 1892 | 42 / 3 | 55.0 | 44.5 | 440 | 24 / 8 |
+| RBi40 2 | 117.1 | 57.2 (0) | 1864 | 42 / 3 | 55.6 | 38.4 | 398 | 22 / 6 |
+| RBi40 3 | 118.2 | 58.2 (0) | 1884 | 42 / 3 | 55.1 | 44.5 | 444 | 24 / 8 |
+| RBi 4 | 118.1 | 58.1 (0) | 1895 | 42 / 3 | 57.6 | 44.6 | 447 | 24 / 8 |
+
+- Equal. RBi40's ranges sit inside or at RBi's, except one top window (run 2) that is lower, with 2 fewer animations
+  on screen at the top. Same census at the end (42 / 3) in every run.
+- Why the 3 un-skipped tracks add nothing in this build (code read, CONFIRMED against the baseline source; CSS lines
+  are RBi40's):
+  - `.start-selling-platform-cred-track` and `.start-selling-platform-secure-currencies-track` have no markup. No JS
+    or HTML in `site-pretty/` emits `platform-cred-row`, `is-marquee-*` or `secure-currencies`; only the CSS has them
+    (CSS 6523-6547, 6687-6697). The rules are dead, so un-skipping them cannot start an animation.
+  - `.start-selling-platform-profile-reviews-track` animates only under
+    `.start-selling-platform-profile:not(.is-static).is-enter` (CSS 7569). `is-enter` is set by an IntersectionObserver
+    and cleared again when the profile visual drops below 35 % visible (JS 12024-12030, class at JS 12135). So it runs
+    only while its own visual is on screen, whatever the paused-scene rule says.
+  - `.start-selling-platform-stage-artboard` exists (JS). In RBi40 it keeps its `will-change` layer while #platform is
+    paused off screen. This costs compositing memory, not pixels or main-thread work; the count above shows no
+    difference.
+- Verdict for the recommendation's step 2: the count is equal. By the signed rule, I40 is the better arm (phone block
+  2: switch nested 0/0/0 vs I4's 1/1/1) at the same pixel risk.
+  - Before landing RBi40 it needs the same pixel A/B as RBi, plus the phone ticket.
+  - Not run yet. RBi40 differs from RBi only in rules for elements that are off screen or not rendered, so a
+    difference is unlikely, but it has not been checked.
 
 ## Morph start (R4 / V3)
 

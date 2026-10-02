@@ -7,7 +7,7 @@
 diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -1525,6 +1525,31 @@
+@@ -1525,7 +1525,32 @@
    syntax: "<angle>";
    inherits: false;
    initial-value: 0deg;
@@ -27,7 +27,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  syntax: "<number>";
 +  inherits: false;
 +  initial-value: 0;
-+}
+ }
 +.start-selling-top-nav-bar,
 +.start-selling-top-nav-logo,
 +.start-selling-top-nav-actions,
@@ -36,10 +36,11 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +.start-selling-morph-pill,
 +.start-selling-morph-panel {
 +  --morph: inherit;
- }
++}
  .hero-track.svelte-1p2vpne {
    background: #fff;
-@@ -11801,15 +11826,105 @@
+   height: 200vh;
+@@ -11801,15 +11826,57 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -48,77 +49,29 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +   StyleInvalidator, Blink "invalidates subtree"): 172-399 elements at every scene flip. The subject is now the
 +   list of elements that can carry a CSS animation (the subject compound of every `animation`/`animation-name`
 +   rule in this file and DialogHeader.css; pseudo-elements were never matched by `:where(*)`), so a flip restyles
-+   only those. animation-play-state is not inherited, so an unlisted element only differs by keeping a CSS
++   only those. [V1i] Only the INFINITE animations are paused; one-shot entrance animations (<= 1.7 s) finish even if
++   their scene pauses mid-way. animation-play-state is not inherited, so an unlisted element only differs by keeping a CSS
 +   animation running while its scene is paused (CPU, not a visual change). */
  .start-selling [data-start-selling-scene="paused"],
 -.start-selling [data-start-selling-scene="paused"] :where(*) {
-+.start-selling [data-start-selling-scene="paused"] .commission-underline,
-+.start-selling [data-start-selling-scene="paused"] .commission-underline path,
 +.start-selling [data-start-selling-scene="paused"] .frame-0,
 +.start-selling [data-start-selling-scene="paused"] .frame-1,
 +.start-selling [data-start-selling-scene="paused"] .frame-2,
-+.start-selling [data-start-selling-scene="paused"] .fee-avatar,
 +.start-selling [data-start-selling-scene="paused"] .typing-caret,
-+.start-selling [data-start-selling-scene="paused"] .accent-path,
-+.start-selling [data-start-selling-scene="paused"] .accent-fill,
 +.start-selling [data-start-selling-scene="paused"] .is-idle-frame-0,
 +.start-selling [data-start-selling-scene="paused"] .is-idle-frame-1,
 +.start-selling [data-start-selling-scene="paused"] .is-idle-frame-2,
-+.start-selling [data-start-selling-scene="paused"] .orbit-card,
-+.start-selling [data-start-selling-scene="paused"] .hero-copy,
-+.start-selling [data-start-selling-scene="paused"] .scroll-cue,
 +.start-selling [data-start-selling-scene="paused"] .scroll-float,
-+.start-selling [data-start-selling-scene="paused"] .pain-note,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-people-o-preview,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-avatars img,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-profile-body,
 +.start-selling [data-start-selling-scene="paused"] .record,
-+.start-selling [data-start-selling-scene="paused"] .sb-drawer .surface,
-+.start-selling [data-start-selling-scene="paused"] .panel.svelte-ty4hd7,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-doc,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-earn,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-secure,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-organized,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-cred-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-cred-card,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-currencies-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-swap,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-swap-ch,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-network-rings,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-network-face,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-network-dash,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-network-shield,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-network-shield-logo-mark,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-network-flag,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-profile-reviews-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-profile-phone,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-service-quote-step,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-invoice-doc-wrap,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-invoice-card-enter,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-orders-card,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-agents-ask-title,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-agents-ask-field,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-agents-ask-service,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-service-card,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-paid-confetti-piece,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-paid-border-packet,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-paid-amount-char,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-paid-credit-char,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-paid-confetti,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-paid-credit,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-paid-transfer-layer,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-paid-transfer,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-agents-bubble,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-agents-reply,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-agents-card,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-language-switch-menu,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav-btn,
-+.start-selling [data-start-selling-scene="paused"] .sb-tooltip,
-+.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6,
-+.start-selling [data-start-selling-scene="paused"] .sb-button .content,
-+.start-selling [data-start-selling-scene="paused"] .sb-button .spinner,
-+.start-selling [data-start-selling-scene="paused"] .sb-dialog {
++.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6 {
    animation-play-state: paused !important;
  }
  /* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
