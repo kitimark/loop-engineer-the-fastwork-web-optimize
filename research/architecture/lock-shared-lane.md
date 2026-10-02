@@ -104,8 +104,10 @@ dead pid is pruned at the next acquire.
   (`--test-concurrency=3`, ~60 CPU-s, bursts to 3 cores); Simulator session = 3.
 - A join (not the opener) also needs `load1 ≤ SHARED_JOIN_LOAD` (*as built after review:* default **2x the cpu count**, 16 here, the switch's `--join-load L` overrides it; lead decision: while timing is deferred the load gate matters only for timing jobs, which stay exclusive). This is a cheap synchronous
   read, so it adds no sampling window inside the guard. load1 lags, so the weight cap is the hard bound.
+  *Changed by I-051 (§12):* a join now needs CPU busy ≤ `--join-busy` (default 75 %), sampled over the reader's own
+  polls; load1 ≤ join load applies only before the reader's first busy sample.
 - `SHARED_MAX_SEC = 300` per reader, hard-killed at the deadline (`run`) or expired (lease), as `--short` is.
-- Env overrides for tests only: `FW_LOCK_SHARED_CAP`, `FW_LOCK_SHARED_JOIN_LOAD`.
+- Env overrides for tests only: `FW_LOCK_SHARED_CAP`, `FW_LOCK_SHARED_JOIN_LOAD`, `FW_LOCK_SHARED_JOIN_BUSY` (I-051).
 - I-024 risk (e2e timeouts on a loaded host): two npm tests (2+2) is the most the cap allows. Tests already use the
   fake host since 48ace89. If flakes show up, the lead lowers the cap via the switch file (§7) without a code change.
 
@@ -312,7 +314,8 @@ kept).
   deadline; they never co-hold.
 
 Switch-on line for the lead (after the canary): `node tools/lock.mjs shared on chrome-measure --by lead --reason
-"<why>"` (cap 3 and join load 2x cpus by default; `--cap N` 1..4, `--join-load L`). Off again: `shared off`.
+"<why>"` (cap 3 and join load 2x cpus by default; `--cap N` 1..4, `--join-load L`, `--join-busy P` since I-051).
+Off again: `shared off`.
 
 ## 10. I-049: readers starved by later exclusive waiters (as built)
 
@@ -341,8 +344,8 @@ group's last grant; after that both versions serve the short lane first.
 Seen live (lead, 2026-10-02): chrome-measure was free from about 23:34:30Z to 23:38:13Z. The hand-over went to
 de-illusion-style, whose waiter ran pre-I-049 code. fix-nav-morph's exclusive waiter was queued behind it, gated on
 host load. Neither took the lock for about 3.7 min, and the wait cleared by itself within the bound. Nothing showed the
-stall while it lasted. A follow-up idea, not built: `lock.mjs status` and the progress page could say "handing over to
-X (not seen for N s)".
+stall while it lasted. Built under I-051 (§12): `lock.mjs status` and the progress page now say whom a free lock hands
+over to, and why that waiter has not taken it.
 
 ## 11. Capacity: cap 3 vs cap 4 (T-008, measured 2026-10-02)
 
@@ -372,9 +375,47 @@ the share of all cores, sampled every 1 s; "bg" is the 10 s before the mix. Jobs
   10 % slower (78 s vs 69-74 s). Two Simulator sessions never overlap anyway (the `simulator` lock, §3).
 - **The join load binds only after a Simulator boot.** Mixes without one never reached load1 16. After a boot, load1
   stays above 16 for about 2-2.5 min while the CPU is back near 25 % busy, because load1 decays over one minute
-  (139 to 62 took 50 s). Joins stay closed for that time although the host has room. That cost is incident I-051.
+  (139 to 62 took 50 s). Joins stay closed for that time although the host has room. That cost is incident I-051;
+  joins now use CPU busy instead (§12).
 - **Above cap 4 needs code.** `SHARED_LANE.cap` (4) bounds the switch's `--cap` and `--weight` and the weight of the
   exclusive slot that re-entered jobs use. Raising it is a tool commit with the config and switch tests updated.
 - **Recommendation:** keep cap 4 and join load 16 (both are the lead's setting since 22:48Z). Don't go above 4 on this
   host.
 
+## 12. I-051: joins after a Simulator boot (measured 2026-10-02, as built)
+
+**Measured.** Every `sim.mjs session` boots fw-sim from cold. Host samples every 2 s from 23:57Z to 00:51Z (a gap
+00:27:46-00:31:18Z), with the lock state at each sample; 17 Simulator session starts:
+- A cold boot takes 11-12 s of wall time. It holds the CPU at 90 % busy or more for 4-22 s (median about 14 s), and
+  load1 peaks at 72-182. After a single boot load1 stays above 16 for about 150 s. An idle booted Simulator (about
+  230 processes) kept the CPU 40-55 % busy against a 20 % background for the first 2.5 min, with load1 still 26 at
+  165 s; after shutdown busy was back at 20 % at once.
+- Over the whole window load1 was above 16 for 2432 of 3000 s; for 2016 s of that the CPU was 75 % busy or less.
+- Join time lost (a group running, a queued reader that fits by weight, no exclusive waiter, load1 > 16): 0 s in the
+  first 30 min, 376 s in the last 20 min, in two episodes (00:31:20-00:33:07Z and 00:42:29-00:46:56Z). 370 of the
+  376 s would have joined under "CPU busy ≤ 75 % over 4 s".
+- Keeping fw-sim booted between sessions (option a) was rejected: an idle booted Simulator costs about 2.5 GB of
+  memory and 20-35 points of CPU for minutes, and needs Safari parked between sessions.
+
+**Rule now (option b; `readerAttempt`, test-first in tests/unit/lock-shared.test.mjs "I-051").**
+- A waiting reader samples host CPU busy from `os.cpus()` deltas between its own polls, at least
+  `SHARED_LANE.busyWindowMs` (1 s) apart, so no sampling window is added inside the guard.
+- A join needs busy ≤ `--join-busy` (switch, 0 < P ≤ 100), default `SHARED_LANE.joinBusyPct` = 75. load1 ≤ join
+  load (16) applies only before the reader's first busy sample. The opener is unchanged (no load check).
+- Mixed versions: pre-I-051 readers still check load1 and only join later; nothing else differs.
+- Not measurement code: the timing host gate (load1 ≤ 6, busy ≤ 25 %) is unchanged.
+
+**Hand-over line (also I-051).** While the lock is free and someone waits, `lock.mjs status` (and `--json`, field
+`handover`) and the progress page show: `free, handing over to "X" (gated: <reasons>)` when the waiter served next is
+held at its host gate (gate record at most 60 s old), `(not seen for N s)` when it has not polled for more than 5 s,
+else `(seen N s ago)`. In the sample the lock stood free with a gated waiter served next for 182 s in the first 30 min
+(e.g. 00:21:52-00:22:54Z and 00:24:22-00:25:12Z), and status showed only "handing over to X".
+
+### When timing resumes
+
+Timing A/Bs are deferred by the user (2026-10-02), so this is a candidate, not built. The timing gate (load1 ≤ 6 and
+busy ≤ 25 %) was open for 6 s in the 50 min sample: with Simulator sessions starting every few minutes, a timing
+waiter at the head of the queue mostly times out at the gate. fix-nav-morph's hold hit the gate timeout at 00:25:12Z
+after 603 s (load1 70.8, CPU 32.5 % busy); that hold was counts-only, so nothing was contaminated. Candidate rule: no
+new Simulator-weight reader opens a group while a gated timing waiter is at the head, so the host can settle for it.
+Decide it with fresh numbers when timing resumes.
