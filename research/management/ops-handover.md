@@ -8,6 +8,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **11:5xZ G2 second read signed (lead 11:25Z, one amendment); 45a104b landed.** Correction to 11:4xZ: G2 no longer
+  waits on the lead. Amendment: Gain needs V's >50 count in band + hold at least 2 lower than C's over the 4 runs per
+  arm, with (ii) (V's >34 <= C's) still holding. Verdicts are checked in the order Gain -> Mixed -> No gain; a
+  threshold-sensitive result counts as not Gain. fix-scroll-engine commits the amended ticket, then sends it to
+  iphone-runner. **Phone order:** T-009 (running), then G2 (P2-1+P5), unless I-064 lands first (then the ioscap
+  first-run console step goes before G2), then word-alone (de-illusion-style).
 - **11:4xZ I-042 phone check done from G1b data; P-064 issued (G2); P-060 measured.**
   - **I-042 phone check** (iphone-runner, from G1b's data, no block of its own): G strokes play faithfully within
     ±10 % on a quiet Mac. 23 G runs (16 counted, 4 warm-ups, 3 voided); the 20 kept runs have 160 strokes, all 8/8
