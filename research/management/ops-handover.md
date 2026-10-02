@@ -8,6 +8,16 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **11:3xZ C1 confirmed (81dbc9b); shell-hold-c in the best build; I-064 open.**
+  - **C1** (wi-stack, scored on iphone-runner's block, 8/8 runs valid): spot (c) frame S6 37 -> HC 17 ms (median, 4 runs each,
+    no overlap); the reveal and scroll guards hold; P-063 hit. Caveat: the page-wide scroll >34 count is unchanged (8 vs
+    7.5). It removes one slow frame at spot (c) and does not lower the page-wide count. PROGRESS: new item shell-hold-c
+    (inBuild, writeup fixes/shell-hold-c/README.md, that caveat) and added to build.fixes.
+  - **I-064 open** (blocks the ioscap first run): review-ioscap rated the recorder SAFE WITH FIXES; ts-i064 closes
+    F2-F5 (an old unhardened recorder still tracked in research/; Photo Booth and FaceTime not denied; `open -a ioscap`
+    skips the lease and the first-run ask; a rebuild keeps the Camera grant).
+  - **Phone order now:** P2-1+P5 (fix-scroll-engine), then word-alone (de-illusion-style); the ioscap first-run console
+    step slots in when I-064 lands.
 - **11:2xZ Corrections from the lead (the 11:1xZ digest was behind); caa3c68 landed.**
   - I-060 and I-061 were resolved at 10:44Z. I-062 is resolved (4df8bb2, npm test 1149/1149 on main); its first run is
     still gated on review-ioscap and the user's console step. I-063 stays open.
@@ -1146,6 +1156,7 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
+| I-064 | open 11:2xZ | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
 | I-063 | open 10:56Z | (lead) | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
 | I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
 | I-061 | RESOLVED 10:44Z (517fdb4) | (lead) | PROGRESS build data schema |

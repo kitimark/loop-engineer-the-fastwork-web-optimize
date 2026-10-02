@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T10:48:00Z",
+ "updatedAt": "2026-10-02T11:30:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T11:30:00Z", "text": "The best build gains a seventh fix: the profile cards that are off screen are hidden while the people section starts to shrink. On the phone it removes one slow frame there (37 to 17 ms); the count of slow frames over the whole scroll did not drop." },
   { "at": "2026-10-02T10:45:00Z", "text": "New 'Best build' view: what today's best build (st6-rb) contains, what each fix gained on the phone, and what was tried and not applied, with the reason." },
   { "at": "2026-10-01T20:35:00Z", "text": "Carousel: the cause of the remaining layout is found. A build that avoids it (st6) removed it in 35 of 36 slide starts on the phone recording; it waits for timing tests to resume." },
   { "at": "2026-10-01T20:20:00Z", "text": "Second style recording: one extra layout at the section switch can be removed, but another whole-page layout stays; the team is hunting its trigger before any fix is timed." },
@@ -323,6 +324,25 @@
    ]
   },
   {
+   "id": "shell-hold-c",
+   "inBuild": true,
+   "writeup": "fixes/shell-hold-c/README.md",
+   "title": "People section shrink: hide the off-screen profile cards while it starts",
+   "area": "middle",
+   "state": "testing",
+   "stage": "V",
+   "fixes": "When the people section starts to shrink, the phone briefly redraws profile cards that are off screen. This hides them for that moment, so one slow frame at that spot goes away. It does not lower the count of slow frames over the whole scroll.",
+   "best": [
+    { "what": "the frame where the people section starts to shrink (median)", "before": "37 ms, build without it", "after": "17 ms", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-063", "note": "phone block C1, 4 runs per arm, no overlap; slow frames over the whole scroll unchanged (8 vs 7.5)" }
+   ],
+   "gate": "Passed on the phone (C1): the spot frame fell and the reveal and scroll guards held.",
+   "next": "Landing is the lead's call. If two near-34 ms spots matter, a second C1 block scored there decides it.",
+   "owner": "wi-stack",
+   "details": [
+    "C1 (iphone-runner, scored by wi-stack, 81dbc9b): 8/8 runs valid; S6 st6-rb css d22542d0b5f8 vs HC css a3b34c3a3920, JS 59b23b3f57fd both. Spot (c) fn S6 36/40/37/37 vs HC 17/17/16/17; guards: reveal frame 2 median 41.5 both, scroll dt>50 1 vs 0.5. Scroll dt>34 7.5 vs 8; HC has more near-34 frames at avatars +is-sliding and commission +entering (n=4, can't tell from noise). P-063 hit."
+   ]
+  },
+  {
    "id": "pin-clamp",
    "inBuild": true,
    "writeup": "fixes/iphone-wave2/README.md",
@@ -415,10 +435,10 @@
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "paused: timing and feel tests are on hold", "item": "f3-arm-scope" }
  ],
  "build": {
-  "name": "st6-rb: the wave-1 base plus six fixes (the last one: the avatar carousel)",
-  "since": "2026-10-02T10:08:40Z",
+  "name": "st6-rb + shell-hold-c: the wave-1 base plus seven fixes",
+  "since": "2026-10-02T11:18:27Z",
   "summary": "It removes the slow frames each included fix aimed at, each measured on the phone against the build before it, but the whole build has not yet been compared with the original page in one full phone scroll.",
-  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel"],
+  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c"],
   "combined": [
    { "what": "style work while the people cards scroll by, per run (iPhone Timeline)", "before": "118-123 ms", "after": "59-65 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
    { "what": "style work in the middle of the page, per run (iPhone Timeline)", "before": "329-346 ms", "after": "207-222 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
