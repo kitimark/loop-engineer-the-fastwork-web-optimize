@@ -469,7 +469,7 @@ Owner of the run: `iphone-runner`. Phone order (lead, 2026-10-02): PR-001 block 
 
 With no pause (restMs 0), P2 is expected to behave like P. Prediction: **P-060** (`fixes/PREDICTIONS.md`), with the decision rule below (tightened before data, review-fwreskip-3 #1).
 
-**Scope: RB only** (review-fwreskip-3 #7). G1b measures P2 on RB, not on stack5. In stack5, st6's five persistent `will-change` avatar layers (`.start-selling-avatars.is-carousel`, inside `#people`, JS 11257) come back with every `#people` un-skip, so P2's idle frame on stack5 may cost more than G1b shows. If stack5 lands first, re-run P2-1 (Sim T, pause in band: idle un-skip Layout ms plus a layer count) on top of it before fwreskip lands.
+**Scope: RB only** (review-fwreskip-3 #7). G1b measures P2 on RB, not on stack5. In stack5, st6's five persistent `will-change` avatar layers (`.start-selling-avatars.is-carousel`, inside `#people`, JS 11257) come back with every `#people` un-skip, so P2's idle frame on stack5 may cost more than G1b shows. PR-003 option A (`fixes/st6-rb`, RB + st6 with its slot avatars in the paused-scene `will-change: auto` list) is expected to land before fwreskip (lead, 2026-10-02): then P2-1 (Sim T, pause in band: idle un-skip Layout ms plus a layer count) is re-run on RB + st6-rb, not on stack5, before fwreskip lands.
 
 **Builds.** Immutable snapshot copies, read-only, in this worktree's `out/fwreskip/snap-g1b2/`:
 
