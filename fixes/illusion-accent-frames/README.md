@@ -120,8 +120,8 @@ paused.
 - One full frame per tick: 'you' has 863 distinct frames, 83.2 MB decoded, ~4.0 MB PNG. Test only.
 - One bounding box per changed ms: 5.5-10.4 blits per tick (max 17), 18.6 MB decoded per word.
 
-**Video:** not pixel-identical. HEVC with alpha (the only transparent video Safari plays) is Main Profile with
-chroma_format_idc 1, i.e. 4:2:0. Source: Apple, "HEVC Video with Alpha Interoperability Profile". CONFIRMED.
+**Video:** not pixel-identical. HEVC with alpha (Apple's transparent video format, used for V) is Main Profile with
+chroma_format_idc 1, i.e. 4:2:0. CONFIRMED: Apple, "HEVC Video with Alpha Interoperability Profile (Preliminary)", v0.9, 2019-05-30 (developer.apple.com/av-foundation/HEVC-Video-with-Alpha-Interoperability-Profile.pdf), p. 4: "Both layers shall conform to Main Profile" and "Both Sequence Parameter Sets shall indicate chroma_format_idc equal to 1, meaning 4:2:0 chroma format." That Safari plays no other transparent video format is not cited (UNRESOLVED).
 
 ## PR-001 rev 3: arms and phone ticket P-058
 
@@ -405,10 +405,12 @@ the start of block A's runs 1-7 (flagged, not void, per the Mac-load amendment).
 Timeline counts per 'you' draw (attribution runs after the end sentinel, counts only):
 - block A: C style 57-60, layout 56-58, paint 57-70; F2 style 30-43, layout 4-6, paint 31-39. F1 and F3 are low
   because rendering stalled, so they are not savings.
-- block B: not taken (planned after the visual check, which the user deferred).
+- block B: not taken, dropped for good (lead 10-02: they would only explain options rev 3 recommends dropping; the phone goes to A1).
 
 **Eligibility (rule 1).**
 - F1 and F3: freeze (gaps up to 2065 / 639 ms, 3-25 live frames per draw against ~54). Not eligible.
+- V's pixels: colour at half resolution (4:2:0) is CONFIRMED by Apple's HEVC Video with Alpha Interoperability Profile
+  v0.9, p. 4 (cited under "Video" above); the softer edges and the trailing pen tip are OBSERVED in the Simulator frames.
 - V: 8 of 12 draws to the end (67 % < 75 %). Not eligible. Its 4 handbacks were all `drift`, at 66-84 ms. Cause, our
   own design (OBSERVED on the phone): V latches its start lag l0 at the first tick where `currentTime > 0 && !paused`,
   but the picture only advances 4-5 frames later. The lag then grows ~16.7 ms per frame and passes the 50 ms drift
