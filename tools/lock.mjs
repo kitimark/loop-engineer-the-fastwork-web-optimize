@@ -60,8 +60,10 @@
 // CPU) while it keeps measurements out (Hard rule 7). It waits its FIFO turn like any normal job, but skips the host
 // gate (it needs no quiet host: e.g. the user works at the Mac), records no display / wake state, and shows as
 // "(no-timing)" in status. Nothing timed runs inside it: a nested verify.mjs / fix.mjs ab / bench / normal `run`
-// refuses to start (exit 1, "no-timing hold"), timed iPhone runs refuse as during any normal hold, and every timing
-// waiter after it passes the gate on a fresh window. Short jobs and nested --no-timing runs may run inside it; a
+// refuses to start (exit 1, "no-timing hold"), and every timing waiter after it passes the gate on a fresh window. Phone
+// runs (iphone.mjs run|scroll|record|gesture) refuse during someone else's no-timing hold, but run inside their own (the
+// command of this `run`, or the same owner; I-056): the phone stamps its own frames, and the hold keeps the Mac quiet
+// while it records the phone's screen and drives it. Short jobs and nested --no-timing runs may run inside it; a
 // --no-timing run nested inside a timing hold refuses (exit 1). Run only this checkout's tools inside a no-timing
 // hold; an older checkout's verify/ab/bench would not refuse.
 //

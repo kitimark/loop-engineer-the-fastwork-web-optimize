@@ -68,6 +68,37 @@ test('with the lease: bad open URL is a usage error; unreachable proxy fails cle
   assert.doesNotMatch(r.stderr, /don't hold/);
 });
 
+test('I-056: scroll / record refuse (WAIT) beside someone else\'s normal hold or a shared group, before Safari; the runner\'s own --no-timing hold passes', () => {
+  lock('acquire', 'iphone', '--owner', 'me');
+  // past the guard, scroll fails at once on the missing proxy; record retries openTab, so it is cut short (4 s)
+  const past = (r) => /fetch failed|ECONNREFUSED|openTab try 1/.test(r.stderr) && !/WAIT/.test(r.stderr);
+  const rec = (...a) => node(IPHONE, ['record', '--seconds', '1', '--owner', 'me', ...a], { env, timeout: 4000 });
+  assert.equal(lock('acquire', 'chrome-measure', '--owner', 'fix-ab').code, 0);
+  for (const r of [iphone('scroll', '--owner', 'me'), rec()]) {
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.stderr, /^WAIT: chrome-measure is held by "fix-ab" \(a normal hold, e\.g\. a goal A\/B\): .*lock\.mjs run chrome-measure --owner me --no-timing/m);
+  }
+  assert.ok(past(iphone('scroll', '--owner', 'me', '--allow-during-measure')), 'scroll --allow-during-measure goes on to Safari');
+  assert.ok(past(rec('--allow-during-measure')), 'record --allow-during-measure goes on to Safari');
+  assert.equal(lock('release', 'chrome-measure', '--owner', 'fix-ab').code, 0);
+  assert.equal(lock('shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e').code, 0);
+  assert.equal(lock('acquire', 'chrome-measure', '--shared', '--weight', '3', '--max-seconds', '60', '--owner', 'sim-x').code, 0);
+  for (const r of [iphone('scroll', '--owner', 'me'), rec()]) {
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.stderr, /^WAIT: chrome-measure is held by the shared lane \("sim-x" w3\)/m);
+  }
+  assert.equal(lock('release', 'chrome-measure', '--shared', '--owner', 'sim-x').code, 0);
+  // the runner's own hold: inside its --no-timing `run` (another owner name: FW_LOCK_HELD carries the hold) ...
+  const r = lock('run', 'chrome-measure', '--owner', 'g1-hold', '--no-timing', '--max-seconds', '60', '--', 'sh', '-c',
+    `${JSON.stringify(process.execPath)} ${JSON.stringify(IPHONE)} scroll --owner me; echo "scroll=$?"`);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^scroll=1$/m);
+  assert.ok(past(r), `no refusal inside the own no-timing hold: ${r.stderr}`);
+  // ... or a hold of the same owner
+  assert.equal(lock('acquire', 'chrome-measure', '--owner', 'me').code, 0);
+  assert.ok(past(rec()), 'record in the same owner\'s hold goes on to Safari');
+});
+
 test('unknown command prints usage', () => {
   const r = iphone('dance');
   assert.equal(r.code, 0);

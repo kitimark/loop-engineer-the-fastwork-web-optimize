@@ -27,6 +27,26 @@ test('phoneTarget: the iphone lease guards it; without the lease, lost() names i
   assert.match(t.wdaHint, /iphone\.mjs wda start --owner me/);
 });
 
+test('I-056 phoneTarget.preflight: the phone measure guard of iphone.mjs run (a G run refuses beside someone\'s normal hold or a shared group; the runner\'s own hold passes)', async () => {
+  const { tryAcquire, release, setSharedSwitch, releaseReader } = await import('../../tools/lib/lock.mjs');
+  assert.equal((await tryAcquire('iphone', { owner: 'me', ttlSec: 900 })).ok, true);
+  const t = phoneTarget({ owner: 'me' });
+  assert.equal(t.preflight(60000).pageSource, 'your lease', 'chrome-measure free: the run goes');
+  assert.equal((await tryAcquire('chrome-measure', { owner: 'fix-ab', ttlSec: 600 })).ok, true);
+  assert.throws(() => t.preflight(60000), /^Error: WAIT: chrome-measure is held by "fix-ab" \(a normal hold/);
+  assert.equal(phoneTarget({ owner: 'me', allowDuringMeasure: true }).preflight(60000).pageSource, 'your lease', '--allow-during-measure (diagnostics)');
+  await release('chrome-measure', { owner: 'fix-ab' });
+  assert.equal((await tryAcquire('chrome-measure', { owner: 'me', ttlSec: 600 })).ok, true);
+  assert.equal(t.preflight(60000).pageSource, 'your lease', 'the same owner\'s hold');
+  await release('chrome-measure', { owner: 'me' });
+  await setSharedSwitch('chrome-measure', { on: true, by: 'lead', reason: 'unit test' });
+  const g = await tryAcquire('chrome-measure', { owner: 'de-counts-sim', shared: true, weight: 3, maxSec: 120 }); // the opener: no load check
+  assert.equal(g.ok, true);
+  assert.throws(() => t.preflight(60000), /^Error: WAIT: chrome-measure is held by the shared lane \("de-counts-sim" w3\)/);
+  await releaseReader('chrome-measure', g.reader.token);
+  await release('iphone', { owner: 'me' });
+});
+
 test('gestureTarget (Simulator): the session and the hold guard it; WDA-sim on the session WDA port; meta.sim and n/a settings', async () => {
   let T = 1_000_000, inSession = true, checks = 0;
   const END = T + 300000;

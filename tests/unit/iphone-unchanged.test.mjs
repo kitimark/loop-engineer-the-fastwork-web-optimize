@@ -7,7 +7,9 @@
 //   - scroll and record write their file through lanSafeRecord (no LAN address on disk, Hard rule 12);
 //   - scroll takes Safari's tab with safariTab(list), not list[0] (I-037: another app's about:blank web view can be
 //     listed first; several candidates now fail instead of picking the first);
-//   - status lists each target's appId (which app a web view belongs to, I-037).
+//   - status lists each target's appId (which app a web view belongs to, I-037);
+//   - scroll and record call measureGuard(owner) right after the lease check (I-056: WAIT beside someone else's normal
+//     chrome-measure hold or a shared group, like `run` and `gesture`); it refuses before Safari is touched.
 // The 2226d51 pins still hold for the blocks with those lines put back, so everything else in them stays pinned.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -56,17 +58,18 @@ const SAFARI_TAB = '    const tab = safariTab(list); // never a blank web view o
 const TAB_83B7F7B = "    const tab = list[0];\n    if (!tab) throw new Error('no Safari tab (unlock the iPhone, bring Safari to the front)');";
 const STATUS_APPID = '.map((t) => ({ url: t.url, title: t.title, appId: t.appId, error: t.error }))';
 const STATUS_83B7F7B = '.map((t) => ({ url: t.url, title: t.title, error: t.error }))';
+const GUARD = '\n    measureGuard(owner);'; // I-056
 /** [now, as in 2226d51] per block */
 const CHANGES = {
-  scroll: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B]],
-  record: [[LAN_SAFE_WRITE, WRITE_83B7F7B]],
+  scroll: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B], [GUARD, '']],
+  record: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [GUARD, '']],
   status: [[STATUS_APPID, STATUS_83B7F7B]],
 };
 const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49', status: '28dd691408056316' };
 
 const PINS = {
   requireLease: '138ba8339515624d', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '43e304a76f1bf0c9', open: 'dabba5b174193021', scroll: '3419c1ca7562d527', record: '0061c1840ddf47c6', // CHANGES
+  status: '43e304a76f1bf0c9', open: 'dabba5b174193021', scroll: '00f399e80dc4a35e', record: 'd9f69466b38639c6', // CHANGES
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with

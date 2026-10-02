@@ -33,6 +33,13 @@
 // it (--keep-https opts out, for a phone that trusts the cert) and after navigating fails loudly if
 // Safari is not on the mirror page (certificate warning), instead of leaving it there to be measured.
 //
+// Mac quiet (I-056): scroll, record, run and gesture (on the phone) refuse with WAIT (exit 1) while chrome-measure is held
+// by a shared group (npm test, a Simulator session: they load the Mac that records and drives the phone) or by someone
+// else's normal hold; an exclusive short-lane job passes, and so does the runner's own hold (its owner, or the hold
+// `lock.mjs run` exports in FW_LOCK_HELD), a --no-timing one included: the phone stamps its own frames, so a recorded
+// phone part runs inside `node tools/lock.mjs run chrome-measure --owner <o> --no-timing --max-seconds 600 -- sh -c
+// '<part>'`, which waits its turn and keeps every other job off the Mac. --allow-during-measure: diagnostics only.
+//
 // Protocol v2 runs (T1a, research/architecture/measurement-protocol-v2.md §5.4-5.5; tools/lib/iphone-run.mjs):
 //   node tools/iphone.mjs run --driver scroll|window|morph --probe std --owner <topic> [--label l] ...   (run --help)
 // one reload + settle + driver run with the standard probe (per-frame log, uncapped mutation counts by type,
@@ -40,7 +47,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari } from './lib/wip.mjs';
-import { status as lockStatus, timedInSlotRefusal } from './lib/lock.mjs';
+import { status as lockStatus, timedInSlotRefusal, phoneRunRefusal } from './lib/lock.mjs';
 import { REPO } from './lib/paths.mjs';
 import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord } from './lib/iphone-url.mjs';
 
@@ -60,6 +67,13 @@ function requireLease() {
     throw new Error(`you ("${owner}") don't hold the iphone lease${s.holder ? ` (holder: "${s.holder.owner}"${s.stale ? ', stale' : ''})` : ''}. Run: node tools/lock.mjs acquire iphone --owner ${owner}`);
   }
   return owner;
+}
+
+/** I-056: scroll and record refuse (WAIT, exit 1) like `run` and `gesture` beside someone else's normal chrome-measure
+ *  hold or a shared group; the runner's own hold passes (lib/lock.mjs phoneRunRefusal). --allow-during-measure: diagnostics. */
+function measureGuard(owner) {
+  const why = phoneRunRefusal({ owner, allow: flag('allow-during-measure') });
+  if (why) throw new Error(why);
 }
 
 async function tabs() {
@@ -127,6 +141,7 @@ async function main() {
   }
   if (cmd === 'scroll') {
     const owner = requireLease();
+    measureGuard(owner);
     const holder = lockStatus('iphone').holder;
     const list = await tabs();
     const tab = safariTab(list); // never a blank web view of another app, never the first of several (I-037)
@@ -162,6 +177,7 @@ async function main() {
     // Finger test: log rAF frames + scrollY while a human scrolls (touch-only paths: non-passive
     // touchmove scroll-jack, toolbar-collapse resize). The lead asks the user to scroll; see CLAUDE.md.
     const owner = requireLease();
+    measureGuard(owner);
     const secs = Number(opt('seconds', 25));
     const c = await openTab(() => true);
     await c.evaluate(`(() => { const r = window.__fr = {frames: [], href: location.href, vw: innerWidth, vh0: innerHeight}; let last = performance.now();
@@ -204,6 +220,6 @@ async function main() {
     return;
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease, port: PORT });
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] | park --owner <topic> | record --owner <topic> [--seconds 25] | gesture <script.json> --owner <topic> [--dry-run] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--allow-during-measure] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(() => process.exit(0), (e) => { console.error(e.message || e); process.exit(1); });

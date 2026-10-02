@@ -3,8 +3,9 @@
 // in-page code and the pure post-processing live in tools/lib/iphone-probe.mjs; this file is the WIP orchestration.
 //
 // Sequence (every driver): lease check, then the lease is renewed to outlast the run (lock.mjs renew); no timed
-// run while a NORMAL chrome-measure hold runs (`WAIT`, checked again after the settle; short-lane holds pass;
-// --allow-during-measure for diagnostics); Safari not on the certificate warning; scrollTo(0, instant) + reload;
+// run while someone else's NORMAL chrome-measure hold or a SHARED group holds it (`WAIT`, checked again after the settle;
+// exclusive short-lane holds and the runner's own hold, --no-timing included, pass: I-056; --allow-during-measure for
+// diagnostics); Safari not on the certificate warning; scrollTo(0, instant) + reload;
 // the probe options (--y-source raf|raf-legacy|scroll|none) and a load-frame logger (`early`) from the reconnect; readyState
 // complete; the battery (idevicediagnostics AppleSmartBattery: temperature, charging, capacity; --no-battery);
 // settle (--settle, default 8 s); then ONE in-page expression: page facts, stateAtStart (+ --state), --tops, the
@@ -34,7 +35,7 @@ import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { openTab, safariTab, sleep, parkSafari, isBlankUrl } from './wip.mjs';
-import { status as lockStatus } from './lock.mjs';
+import { status as lockStatus, phoneRunRefusal } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, LAN_HOST } from './iphone-url.mjs';
 import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, yReadsLabel, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
@@ -63,7 +64,9 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--no-battery]                                          skip the idevicediagnostics battery read at start and end
     [--low-power on|off]                                    Low Power Mode as set on the phone (a page cannot read it;
                                                             rAF runs at 30 Hz when on); default unknown
-    [--allow-during-measure]                                run although a normal chrome-measure hold is running
+    [--allow-during-measure]                                run beside someone else's chrome-measure hold or a shared
+                                                            group (diagnostics only; to keep the Mac quiet, run inside
+                                                            your own lock.mjs run chrome-measure --no-timing hold)
     [--heat-sentinel]                                       judge the run as the heat sentinel (default for --arm C
                                                             without --warmup): meta.sentinel {driver, criterion, value, pass}
     [--no-park]                                             keep the page open after the run (default: Safari parks
@@ -185,7 +188,7 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
   const owner = requireLease();
   const customStateJs = o.stateFile ? readFileSync(resolve(o.stateFile), 'utf8').trim().replace(/;\s*$/, '') : null;
   if (target) o.battery = false;
-  const guard = target ? target.guard : () => measureGuard(o);
+  const guard = target ? target.guard : () => measureGuard({ ...o, owner });
   await guard();
   const need = o.settleMs + estimateMs(o) + 30000 + 2500;
   if (!target) {
@@ -253,11 +256,12 @@ async function parkAfterRun(port, owner) {
   } catch (e) { console.error(`warning: could not park Safari (${e.message}); run: node tools/iphone.mjs park --owner ${owner}`); }
 }
 
-/** iphone-runner's interim rule (one.sh): no timed phone run while a NORMAL chrome-measure hold runs (a goal A/B);
- *  short-lane holds (npm test, bench mech) pass. --allow-during-measure for diagnostics. */
-export function measureGuard(o, st = lockStatus('chrome-measure')) {
-  if (o.allowDuringMeasure || !st.holder || st.stale || st.holder.short) return;
-  throw new Error(`WAIT: chrome-measure is held by "${st.holder.owner}" (a normal hold, e.g. a goal A/B): no timed iPhone runs meanwhile. Retry after it ends, or pass --allow-during-measure for a diagnostic run`);
+/** No timed phone run while someone else's normal chrome-measure hold or a shared group holds it; short-lane holds
+ *  (npm test --short, bench mech) and the runner's own hold (o.owner, or the hold FW_LOCK_HELD names) pass; I-056,
+ *  lib/lock.mjs phoneRunRefusal. --allow-during-measure for diagnostics. */
+export function measureGuard(o, st = lockStatus('chrome-measure'), env = process.env) {
+  const why = phoneRunRefusal({ owner: o.owner, allow: o.allowDuringMeasure, st, env });
+  if (why) throw new Error(why);
 }
 
 /** sha256/16 of each same-origin script/stylesheet the page loaded, fetched again from the Mac after the run. */

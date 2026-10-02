@@ -170,6 +170,33 @@ test('measureGuard: a normal chrome-measure hold refuses a timed run (WAIT); fre
   assert.doesNotThrow(() => measureGuard({ allowDuringMeasure: true }, { holder: { owner: 'fix-x' }, stale: false }));
 });
 
+test('I-056 measureGuard: a shared group (or its switch-off stand-in) refuses a recorded / timed phone run; the runner\'s own hold (same owner, or its FW_LOCK_HELD) passes', () => {
+  const o = { allowDuringMeasure: false, owner: 'iphone-runner' };
+  const env = {};
+  const future = new Date(Date.now() + 120000).toISOString(), past = new Date(Date.now() - 1000).toISOString();
+  const group = (readers) => ({ holder: { resource: 'chrome-measure', owner: '(shared)', kind: 'lease', short: true, shared: true, format: 'rw1', token: 'aaaaaaaaaaaa', expiresAt: future, readers }, stale: null });
+  const sim = { owner: 'de-counts-sim', token: 'bbbbbbbbbbbb', kind: 'lease', weight: 3, maxSec: 300, deadline: future };
+  // (a) the 06:54Z case: a Simulator session (shared, weight 3) must not run beside a recording; it used to pass as a "short holder"
+  assert.throws(() => measureGuard(o, group([sim]), env), (e) => /^WAIT: chrome-measure is held by the shared lane \("de-counts-sim" w3\)/.test(e.message) && /--no-timing/.test(e.message) && /I-056/.test(e.message));
+  assert.throws(() => measureGuard(o, group([sim, { ...sim, owner: 'npm-x', token: 'cccccccccccc', weight: 2 }]), env), /shared lane \("de-counts-sim" w3, "npm-x" w2\)/);
+  assert.doesNotThrow(() => measureGuard(o, group([{ ...sim, deadline: past }]), env), 'a group whose readers are all past their deadline holds nothing');
+  assert.throws(() => measureGuard(o, { holder: { ...group([sim]).holder, format: 'rw9' }, stale: null }, env), /^Error: WAIT: chrome-measure is held by the shared lane/, 'a group in an unknown format counts as held');
+  // the switch-off stand-in for a reader: an exclusive short hold with functional: true
+  assert.throws(() => measureGuard(o, { holder: { owner: 'de-counts-sim', short: true, functional: true, weight: 3, token: 'dddddddddddd' }, stale: null }, env), /^Error: WAIT: chrome-measure is held by "de-counts-sim" as a shared \(functional\) job/);
+  assert.throws(() => measureGuard({ ...o, owner: 'de-counts-sim' }, { holder: { owner: 'de-counts-sim', short: true, functional: true, weight: 3, token: 'dddddddddddd' }, stale: null }, env), /shared \(functional\) job/, 'a functional job is never the phone run\'s own hold, even under the same name');
+  assert.doesNotThrow(() => measureGuard({ ...o, allowDuringMeasure: true }, group([sim]), env), '--allow-during-measure stays the diagnostics escape');
+  // (b) the runner's own hold: a --no-timing hold (or a normal one) of the same owner, or the hold this process inherits
+  const nt = { owner: 'iphone-runner', kind: 'process', noTiming: true, token: 'eeeeeeeeeeee' };
+  assert.doesNotThrow(() => measureGuard(o, { holder: nt, stale: null }, env), 'same owner');
+  assert.doesNotThrow(() => measureGuard(o, { holder: { ...nt, noTiming: undefined }, stale: null }, env), 'same owner, a normal hold');
+  assert.doesNotThrow(() => measureGuard({ ...o, owner: 'g1-part' }, { holder: nt, stale: null }, { FW_LOCK_HELD: 'chrome-measure:eeeeeeeeeeee' }), 'inherited through lock.mjs run (FW_LOCK_HELD)');
+  assert.throws(() => measureGuard({ ...o, owner: 'g1-part' }, { holder: nt, stale: null }, { FW_LOCK_HELD: 'chrome-measure:ffffffffffff' }), /^Error: WAIT: chrome-measure is held by "iphone-runner"/, 'another hold\'s token');
+  assert.throws(() => measureGuard({ ...o, owner: 'g1-part' }, { holder: nt, stale: null }, { FW_LOCK_HELD: 'iphone:eeeeeeeeeeee' }), /WAIT/, 'a token for another resource');
+  assert.throws(() => measureGuard({ ...o, owner: 'someone' }, { holder: nt, stale: null }, env), (e) => /^WAIT: chrome-measure is held by "iphone-runner" \(a no-timing hold/.test(e.message) && /lock\.mjs run chrome-measure --owner someone --no-timing/.test(e.message));
+  // the token of a group is no exclusive hold: a reader slot is never a phone run's own hold
+  assert.throws(() => measureGuard(o, group([{ ...sim, owner: 'iphone-runner' }]), { FW_LOCK_HELD: 'chrome-measure:aaaaaaaaaaaa' }), /shared lane/);
+});
+
 test('battery: only the named AppleSmartBattery keys are kept (no serials), temperature in degC; settings take charging and capacity from it', () => {
   const xml = '<?xml version="1.0"?><plist><dict><key>IORegistry</key><dict><key>Serial</key><string>F5D0SECRET</string>'
     + '<key>Temperature</key>\n\t<integer>3125</integer><key>IsCharging</key><true/><key>ExternalConnected</key><true/><key>FullyCharged</key><false/>'

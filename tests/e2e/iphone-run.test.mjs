@@ -187,6 +187,25 @@ test('run during a normal chrome-measure hold: WAIT, Safari untouched; a short-l
   assert.equal(JSON.parse(readFileSync(join(dir, 'c.json'), 'utf8')).meta.driver, 'S');
 });
 
+test('I-056: run beside a shared group: WAIT, Safari untouched; inside the runner\'s own lock.mjs run --no-timing hold it runs', async () => {
+  const phone = await fakePhone(['--doc-height=1200']);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
+  assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: phone.env }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--shared', '--weight', '3', '--max-seconds', '120', '--owner', 'sim-x'], { env: phone.env }).code, 0);
+  const args = ['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0'];
+  let r = await run([...args, '--out', join(dir, 'a.json')], phone.env);
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /^WAIT: chrome-measure is held by the shared lane \("sim-x" w3\)/m);
+  assert.deepEqual(phone.events().filter((e) => e.evaluate || e.reload), [], 'nothing evaluated, no reload');
+  assert.equal(node(LOCK, ['release', 'chrome-measure', '--shared', '--owner', 'sim-x'], { env: phone.env }).code, 0);
+  // the lead's convention: the recorded part inside the runner's own no-timing hold (the hold's name may differ: FW_LOCK_HELD)
+  const out = join(dir, 'b.json');
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'g1-hold', '--no-timing', '--max-seconds', '120', '--', process.execPath, IPHONE, 'run', ...args, '--out', out], { env: phone.env, timeout: 90000 });
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.stderr, /WAIT|no-timing hold/);
+  assert.equal(JSON.parse(readFileSync(out, 'utf8')).meta.driver, 'S');
+});
+
 test('I-047: a control run records the heat-sentinel verdict next to the battery and ends with Safari parked; the next run asks for open; --no-park keeps the page', async () => {
   const phone = await fakePhone(['--doc-height=1500']);
   assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);

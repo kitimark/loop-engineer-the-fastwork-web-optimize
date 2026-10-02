@@ -66,7 +66,9 @@
 // carries `noTiming: true`. The gate's guarantee stays whole: a timing acquirer (a normal, gated one: verify.mjs,
 // fix.mjs ab, bench, a normal `lock.mjs run`) never re-enters a no-timing hold (FW_LOCK_HELD or same owner: it
 // throws), and after the hold every timing waiter passes the gate on a fresh window as usual. Short jobs and nested
-// no-timing runs may re-enter it. Timed iPhone runs refuse during it like during any normal hold (iphone-run.mjs).
+// no-timing runs may re-enter it. Phone runs (iphone.mjs run|scroll|record|gesture) refuse during someone else's no-timing
+// hold like during any normal hold, but run inside their own (phoneRunRefusal, I-056): the phone stamps its own frames, so
+// "nothing timed inside" means Mac timing; the hold is what keeps the Mac quiet while it records and drives the phone.
 // A no-timing run nested inside a timing hold (FW_LOCK_HELD) throws too (a short hold may host it). Run only this
 // checkout's tools inside a no-timing hold; an older checkout's verify/ab/bench would not refuse.
 //
@@ -289,6 +291,40 @@ export function timedInSlotRefusal(what, env = process.env) {
   if (!tok && env.FW_SIM_FUNCTIONAL !== '1') return null;
   const x = tok ? sharedSlot('chrome-measure', env.FW_LOCK_SHARED) : null;
   return `refusing: ${what} is a timing run, and this process runs inside ${tok ? `a shared (functional) slot${x ? ` of "${x.owner}"` : ''} (FW_LOCK_SHARED)` : 'a functional Simulator session (FW_SIM_FUNCTIONAL)'}: nothing timed runs in a functional slot, whatever the shared lane's switch says (review-lock-share N5/N6). Run it in its own normal hold: node tools/lock.mjs run chrome-measure --owner <you> -- <cmd>`;
+}
+
+/** The hold that keeps the Mac quiet for a recorded / timed phone run (I-056; the lead's convention, 2026-10-02). */
+export const phoneHoldCmd = (owner = '<you>') => `node tools/lock.mjs run chrome-measure --owner ${owner} --no-timing --max-seconds 600 -- sh -c '<phone part>'`;
+/**
+ * I-056: why a phone run that records or times (iphone.mjs run|scroll|record|gesture on the phone) may not start now,
+ * or null. The phone stamps its own frames, but the Mac records its screen (QuickTime) and drives it, so the run needs a
+ * quiet Mac (06:54Z: a Simulator session in the shared lane pushed load1 to 38-94 and every recording dropped frames).
+ * It refuses (WAIT, the caller exits 1 and retries later) while chrome-measure is held by:
+ *  - a shared group with a live reader (or one in a format this code does not know), or the switch-off stand-in for a
+ *    reader (`functional: true`): functional jobs (npm test, a Simulator session) load the Mac however short they are;
+ *  - anyone else's normal hold (a goal A/B, a build, a --no-timing hold).
+ * It passes on a free or stale lock, an exclusive short-lane job (npm test --short, bench mech: as before), and the
+ * runner's own exclusive hold: the holder's token is in FW_LOCK_HELD (`lock.mjs run` exports it to its command) or the
+ * holder is `owner` (the phone run's lease owner). That includes the runner's own --no-timing hold: timing that the phone
+ * stamps is not Mac timing, so the no-timing rule (nothing timed inside) does not apply to it, and the hold keeps every
+ * other job, shared ones included, off the Mac. `allow` (--allow-during-measure) passes anything: diagnostics only.
+ * `st`: a status('chrome-measure') snapshot; `env`: where FW_LOCK_HELD comes from.
+ */
+export function phoneRunRefusal({ owner, allow = false, st = status('chrome-measure'), env = process.env, now = Date.now() } = {}) {
+  const h = st?.holder;
+  if (allow || !h || st.stale) return null;
+  const how = `run it inside your own hold, which waits its turn and keeps everything else off the Mac: ${phoneHoldCmd(owner || '<you>')} (I-056); or pass --allow-during-measure for a diagnostic run`;
+  if (isGroup(h)) {
+    const live = knownGroup(h) ? liveReaders(h, now) : null; // a group in an unknown format: held, as old code reads it
+    if (live && !live.length) return null;
+    const who = live ? live.map((x) => `"${x.owner}" w${x.weight || 1}`).join(', ') : `format "${h.format}"`;
+    return `WAIT: chrome-measure is held by the shared lane (${who}): no recorded or timed iPhone run beside shared jobs (they load the Mac that records and drives the phone). Retry after the group ends, or ${how}`;
+  }
+  if (h.functional) return `WAIT: chrome-measure is held by "${h.owner}" as a shared (functional) job (the shared lane is off): no recorded or timed iPhone run beside it. Retry after it ends, or ${how}`;
+  if (h.short) return null;
+  const inherited = !!h.token && parseHeld(env.FW_LOCK_HELD)['chrome-measure'] === h.token;
+  if (inherited || (owner && h.owner === owner)) return null;
+  return `WAIT: chrome-measure is held by "${h.owner}" (${h.noTiming ? 'a no-timing hold: a build or CPU work' : 'a normal hold, e.g. a goal A/B'}): no timed iPhone runs meanwhile. Retry after it ends, or ${how}`;
 }
 
 function checkName(r) {
