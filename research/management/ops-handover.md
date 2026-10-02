@@ -388,6 +388,15 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   board); console restarted 08:54Z.
   LEAVE-ONE-OUT (wi-stack, Sim, OBSERVED): blur-cubic carries the #people frame-2 Composite, not st6 (details pending);
   wi-stack posts the design as ONE proposal with options A/B/C.
+  09:0xZ 525d916 LANDED. PR-001 BLOCK A DONE: 8/8 valid, sentinels passed; load1 > 8 in runs 1-7 (flagged, not void).
+  P-058 ticket (de-illusion-style, rebased: a5c6512 ticket, b6144af, ed6b323, 234d2b7, 0d6f1d2 V pixel, 9fe02d6 Mac
+  load, 730f3b5 youdraws fix, 7dbc973 no recordings) SECOND READ PASS for block B: all 6 arm hashes match (shared JS
+  a330f386556d; V mp4 7d5b834b69c5 / 8e8f113f8565, manifest 120f23bcae4f), runner has 67847b4 (Range), one control per
+  block, W at the top, warm-up per port, S sentinels, phone-temp cooling, B = 9 counted. Cosmetic asks: minutes per
+  block (B ~22-25 min + cooling), two stale lines. 7dbc973 changed the visual-defect criterion after block A's runs
+  were in (before analysis): disclosed, rev 3 names it. BLOCK B NEXT, NOT GATED (lead correction): runs without
+  recordings once iphone-runner has done tlcounts, the rebase and cooling. Only the live visual look at the winner and
+  any capture route (screenshots over USB / the user's own phone screen recording / drop) WAIT ON THE USER.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
