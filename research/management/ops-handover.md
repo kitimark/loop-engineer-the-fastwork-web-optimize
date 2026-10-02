@@ -170,6 +170,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   within ~1 vh, rule restricted to the hero's partner; reruns the jump checks with controls n>=5, the Sim reversal and
   the idle triple; re-review. 3959e8f (docs) may ride along. User told (T-005), with a correction: the lead's "settled
   pixels identical" was too strong.
+  02:1xZ PR-001 CORRECTION (de-illusion-style): real-time FAILURE on WebKit (OBSERVED, Sim, Timeline off, 50 s at y0).
+  Each canvas draw runs only 2-8 rAF ticks, then no rAF until the 900 ms end timer: the word freezes part-way, then
+  jumps. The 71/71 and 142/142 parity held only on a stopped clock (render(t) flushes with getImageData), so live
+  playback is NOT pixel-identical. Per-draw counts (SVG ~58 recalcs vs canvas ~5) are distorted by the stall: never
+  quote them as savings. Cause UNRESOLVED (hypothesis: GPU-process readback, accelerated ImageBitmap into a
+  willReadFrequently canvas). Next: one Sim hold, 4 variants + an SVG rAF control + console errors. Rev 2 ON HOLD.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
