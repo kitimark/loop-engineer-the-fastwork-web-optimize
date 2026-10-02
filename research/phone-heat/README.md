@@ -369,6 +369,14 @@ Corrected slopes at 37.0 °C, per segment, °C/min:
 Pre-flight, once, before H1 (inside the `iphone` lease):
 1. `node research/phone-heat/heat.mjs keys` (names only), then `node research/phone-heat/heat.mjs once --label preflight`.
    Send the key list to de-heat. If it holds a system-power key, that is an amendment before data.
+   Once I-075 is on `main`, run `node tools/iphone.mjs battery --seconds 1` right after `once` and compare the two
+   reads. `Temperature`, `IsCharging`, `ExternalConnected`, `FullyCharged`, `CurrentCapacity` and `MaxCapacity` must
+   match, give or take one sensor step if the reads straddle a change. If they differ, tell the lead and de-heat
+   before H1 (the reader and the tool disagree). The lead ran this check read-only at 10-02 23:08Z, comparing the
+   old (`main`) and new (992fe42) `batteryInfo` on the real phone in the same second. The six keys were identical,
+   with `Temperature` 3809 on both. The new keys read `VirtualTemperature` 3800, `Voltage` 4112, `Amperage` -88,
+   `InstantAmperage` -67 and `AdapterWatts` 15, so the depth-aware parse matches. The pre-flight repeats the check
+   on the day.
 2. Start the three servers (F, B, X; fresh fixed ports, plain http). Check the served hashes against the Arms table
    with `curl -s http://localhost:<port>/<path> | shasum -a 256`.
 3. Run one uncounted warm-up per arm (A3), A included:
