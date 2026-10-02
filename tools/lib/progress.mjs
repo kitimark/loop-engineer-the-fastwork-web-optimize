@@ -247,6 +247,99 @@ function handoverView(ho) {
   return { to, text: `handing over to ${to}${why ? ` (${why})` : ''}` };
 }
 
+// ---- what each device is used for, and who does what (I-060, user T-020) ----------------------------------------
+
+const pidRuns = (pid) => { if (!(pid > 0)) return false; try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+const isoMs = (s) => { const t = Date.parse(s); return Number.isFinite(t) ? t : null; };
+const durText = (min) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`);
+
+/** {min, text} for the time left until `endMs`: "about 20 min left" (an estimate) / "at most 5 min left" (a cap). */
+export function leftView(endMs, now, { cap = false } = {}) {
+  if (endMs === null || endMs === undefined) return null;
+  const min = Math.round((endMs - now) / 60000);
+  if (min < 0) return { min, text: cap ? 'past its planned end' : `${durText(-min)} past its estimate` };
+  if (min < 1) return { min: 0, text: cap ? 'ends within a minute' : 'about to finish' };
+  return { min, text: `${cap ? 'at most' : 'about'} ${durText(min)} left` };
+}
+
+/** The board rows of `owner` that are still open (not finished, not parked), the one using `resource` first. */
+function ownerRows(owner, board, resource) {
+  const rows = (board || []).filter((r) => (r.owner === owner || (r.aliases || []).includes(owner)) && !['finished', 'parked'].includes(r.group));
+  const rank = (r) => [r.derived?.some((d) => d.kind === 'using' && d.resource === resource) ? 0 : 1, r.stale ? 1 : 0, ['working', 'waiting', 'queued'].indexOf(r.group)];
+  return rows.map((r, i) => ({ r, i, k: rank(r) })).sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1] || a.k[2] - b.k[2] || a.i - b.i).map((x) => x.r);
+}
+
+const rowText = (r) => `${sanitize(r.title, 90)}${r.note ? `: ${sanitize(r.note, 200)}` : ''}`;
+
+/** One job on a device: the holder's (or a shared reader's) own description, else its board row; never a bare name. */
+function jobView({ owner, meta, since, end }, { board, resource, now, alive }) {
+  const by = sanitize(owner, 60);
+  const j = meta && meta.job && typeof meta.job.text === 'string' ? meta.job : null;
+  const rows = ownerRows(owner, board, resource);
+  const cur = rows[0] || null;
+  const what = j ? sanitize(j.text, 160) : cur ? rowText(cur) : null;
+  const left = j?.etaAt ? leftView(isoMs(j.etaAt), now) : end ? leftView(end, now, { cap: true }) : null;
+  const forWhom = j?.for ? sanitize(j.for, 60) : null;
+  const start = j?.at && isoMs(j.at) !== null && (since === null || isoMs(j.at) >= isoMs(since)) ? j.at : since;
+  const run = meta?.run && typeof meta.run.text === 'string' && alive(Number(meta.run.pid)) ? { text: sanitize(meta.run.text, 160), since: meta.run.since || null } : null;
+  const next = [...(cur?.next ? [sanitize(cur.next, 200)] : []), ...rows.slice(1).map((x) => sanitize(x.title, 90))].slice(0, 4);
+  return {
+    by, what, forWhom, source: j ? 'described' : cur ? 'status board' : 'none', since: start || null, left, run, next,
+    line: what ? `${what}${left ? `, ${left.text}` : ''}` : `${by} has not said what it runs (no job description, no status-board row)`,
+    byLine: `Run by ${by}${forWhom ? ` for ${forWhom}` : ''}, since ${hhmm(start)}.`,
+  };
+}
+
+/**
+ * I-060: what a device (iphone / chrome-measure) is used for, from lock.status() and the status board's item views
+ * ({free, jobs, waiting}): one job for an exclusive holder, one per live reader of a shared group. A job: the holder's
+ * own words (meta.job from `lock.mjs --doing` / `lock.mjs doing`), else its open board row (title: note), else a
+ * sentence saying it gave none; for whom; since; the time left (its estimate, or the planned end of a bounded hold:
+ * a `run --max-seconds`, a short job, a shared reader; never a renewable lease's TTL); the phone run going on now
+ * (meta.run, while its process runs); the holder's other open jobs as next. Never the meta's URL, checkout, token or pid.
+ */
+export function deviceView(st, { resource, board = [], now = Date.now(), alive = pidRuns } = {}) {
+  if (!st) return null;
+  const held = st.holder && !st.stale ? st.holder : null;
+  const ctx = { board, resource, now, alive };
+  const waiting = (st.queue || []).map((w) => sanitize(w.owner, 60));
+  if (!held) return { free: true, jobs: [], waiting };
+  const group = held.shared === true && held.format === 'rw1' && Array.isArray(held.readers);
+  const jobs = group
+    ? held.readers.map((x) => jobView({ owner: x.owner, meta: x.meta, since: x.acquiredAt || null, end: isoMs(x.deadline) }, ctx))
+    : [jobView({
+      owner: held.owner, meta: held.meta, since: held.acquiredAt || null,
+      // a planned end only for a bounded hold: a `run` that declared its length, a short job; a lease's TTL is renewed
+      end: held.meta?.expectSec && isoMs(held.acquiredAt) !== null ? isoMs(held.acquiredAt) + held.meta.expectSec * 1000 : held.short ? isoMs(held.expiresAt) : null,
+    }, ctx)];
+  return { free: false, jobs, waiting };
+}
+
+/**
+ * I-060: who is doing what, from the status board's item views: one line per agent with a working or waiting row
+ * that is up to date ({owner, id, doing, state, using, waits, also}; its main row first: working before waiting, in
+ * board order), and the rest folded ({owner, id, title, why: parked | not started | not updated for …}).
+ */
+export function agentsView(items = []) {
+  const open = items.filter((v) => v.group !== 'finished');
+  const shown = open.filter((v) => (v.group === 'working' || v.group === 'waiting') && !v.stale);
+  const order = [...shown.filter((v) => v.group === 'working'), ...shown.filter((v) => v.group === 'waiting')];
+  const byOwner = new Map();
+  for (const v of order) { if (!byOwner.has(v.owner)) byOwner.set(v.owner, []); byOwner.get(v.owner).push(v); }
+  const waitsOf = (v) => [...(v.waiting ? [sanitize(v.waiting.plain, 200)] : []), ...(v.derived || []).filter((d) => d.kind !== 'using').map((d) => sanitize(d.plain, 200))];
+  const agents = [...byOwner.entries()].map(([owner, [m, ...rest]]) => ({
+    owner: sanitize(owner, 60), id: m.id, doing: rowText(m), state: m.statePlain,
+    using: (m.derived || []).filter((d) => d.kind === 'using').map((d) => sanitize(d.plain, 80)),
+    waits: waitsOf(m),
+    also: rest.map((v) => { const w = waitsOf(v); return `${sanitize(v.title, 90)}${w.length ? ` (waiting on ${w.join('; ')})` : ''}`; }),
+  }));
+  const folded = open.filter((v) => !shown.includes(v)).map((v) => ({
+    owner: sanitize(v.owner, 60), id: v.id, title: sanitize(v.title, 90),
+    why: v.group === 'parked' ? 'parked' : v.group === 'queued' ? 'not started' : `not updated for ${durText(v.ageMin ?? 0)}`,
+  }));
+  return { agents, folded };
+}
+
 /** Live sources, each failure-tolerant (a broken source shows as unavailable, never breaks the page). */
 export async function gatherLive() {
   const live = { locks: {}, incidents: null, steps: null, waits: null, errors: [] };
@@ -295,7 +388,7 @@ function itemView(it, ledger, statusLinks = new Map()) {
  * The page / CLI model from the curated data and the live sources. Pure: every input passed in.
  * {now, summary, goal, complaints, changes, live, sections: [{key, label, items}], upcoming, waiting}
  */
-export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map() } = {}) {
+export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null } = {}) {
   const p = errors.length && !progress ? null : progress;
   const items = (p?.items || []).map((it) => itemView(it, ledger, statusLinks));
   const areaRank = (a) => Object.keys(AREAS).indexOf(a);
@@ -317,6 +410,11 @@ export function buildView({ progress, errors = [], ledger = new Map(), live = {}
     live: {
       phone: live.locks ? lockView(live.locks.iphone, now) : null,
       chrome: live.locks ? lockView(live.locks['chrome-measure'], now) : null,
+      // I-060: what each device is used for (the job, for whom, since, time left, the run now, next)
+      devices: live.locks ? {
+        phone: deviceView(live.locks.iphone, { resource: 'phone', board: board || [], now }),
+        chrome: deviceView(live.locks['chrome-measure'], { resource: 'chrome', board: board || [], now }),
+      } : null,
       incidents: live.incidents ? { open: inc.length, blocking: inc.filter((i) => i.blocking), list: inc } : null,
       errors: (live.errors || []).map((e) => sanitize(e, 200)),
     },
@@ -327,6 +425,7 @@ export function buildView({ progress, errors = [], ledger = new Map(), live = {}
       { key: 'dropped', label: 'Dropped or not felt', items: pick(['dropped']) },
     ],
     upcoming: (p?.upcoming || []).map((u) => ({ ...u })),
+    agents: board ? agentsView(board) : null, // I-060: one line per working agent; parked or stale rows folded
     // console steps waiting for the user now: id and title only (a step's URL or instructions may name the LAN host)
     waiting: live.steps ? live.steps.map((s) => ({ id: s.id, title: sanitize(s.title, 160), status: s.status })) : null,
   };
@@ -336,9 +435,14 @@ export function buildView({ progress, errors = [], ledger = new Map(), live = {}
 export async function currentView({ now = Date.now() } = {}) {
   const { data, errors } = readProgress();
   const live = await gatherLive();
-  let statusLinks = new Map();
-  try { const S = await import('./status.mjs'); statusLinks = S.progressLinks(S.buildStatusView({ items: S.list(), live, now })); } catch (e) { live.errors.push(`status board: ${e.message}`); }
-  return buildView({ progress: data, errors, ledger: readLedger(), live, now, statusLinks });
+  let statusLinks = new Map(), board = null;
+  try {
+    const S = await import('./status.mjs');
+    const sv = S.buildStatusView({ items: S.list(), live, now });
+    statusLinks = S.progressLinks(sv);
+    board = sv.items;
+  } catch (e) { live.errors.push(`status board: ${e.message}`); }
+  return buildView({ progress: data, errors, ledger: readLedger(), live, now, statusLinks, board });
 }
 
 // ---- text --------------------------------------------------------------------------------------------
@@ -366,6 +470,18 @@ function holderText(l, what) {
   return `${what}: ${h}${l.queue.length ? `, ${l.queue.length} waiting (${l.queue.join(', ')})` : ''}`;
 }
 
+/** I-060: a device's jobs under its holder line: "    doing: <job>. Run by <who> for <whom>, since <t>." + run now + next. */
+function deviceLines(d) {
+  if (!d) return [];
+  const L = [];
+  for (const j of d.jobs) {
+    L.push(`    doing: ${j.line}. ${j.byLine}`);
+    if (j.run) L.push(`    right now: ${j.run.text} (since ${hhmm(j.run.since)})`);
+    for (const n of j.next) L.push(`    next: ${n}`);
+  }
+  return L;
+}
+
 export function bestText(b) {
   return `${b.what}: ${b.before} -> ${b.after} (${b.tag}, ${b.driver}${b.ref ? `, ${b.ref}` : ''}${b.note ? `; ${b.note}` : ''})`;
 }
@@ -382,8 +498,8 @@ export function renderText(v, { details = false } = {}) {
   if (v.complaints.length) L.push(`You flagged: ${v.complaints.map((c) => c.text).join('; ')}`);
   if (v.changes.length) { L.push('', 'WHAT CHANGED'); for (const c of v.changes) L.push(`  ${hhmm(c.at)}  ${c.text}`); }
   L.push('', 'NOW');
-  L.push(`  ${holderText(v.live.phone, 'phone')}`);
-  L.push(`  ${holderText(v.live.chrome, 'Chrome')}`);
+  L.push(`  ${holderText(v.live.phone, 'phone')}`, ...deviceLines(v.live.devices?.phone));
+  L.push(`  ${holderText(v.live.chrome, 'Chrome')}`, ...deviceLines(v.live.devices?.chrome));
   if (v.live.incidents) {
     const b = v.live.incidents.blocking;
     L.push(`  ${v.live.incidents.open} open tool problem(s)${b.length ? `, ${b.length} blocking: ${b.map((i) => `${i.id} ${i.title}`).join('; ')}` : ', none blocking'}`);
@@ -405,6 +521,14 @@ export function renderText(v, { details = false } = {}) {
       if (it.next) L.push(`    next: ${it.next}`);
       if (details) for (const d of it.details) L.push(`      · ${d}`);
     }
+  }
+  if (v.agents && (v.agents.agents.length || v.agents.folded.length)) {
+    L.push('', 'WHO IS DOING WHAT');
+    for (const a of v.agents.agents) {
+      L.push(`  ${a.owner}: ${a.doing} (${[a.state, ...a.using].join('; ')})${a.waits.length ? `; waiting on: ${a.waits.join('; ')}` : ''}`);
+      for (const x of a.also) L.push(`    also: ${x}`);
+    }
+    if (v.agents.folded.length) L.push(`  (${v.agents.folded.length} more paused, not started or not updated: ${v.agents.folded.map((f) => `${f.owner} ${f.title} (${f.why})`).join('; ')})`);
   }
   L.push('', 'COMING UP FOR YOU');
   if (v.waiting) L.push(v.waiting.length ? `  waiting on the console now: ${v.waiting.map((w) => `${w.id} ${w.title}`).join('; ')}` : '  nothing waiting on the console now');

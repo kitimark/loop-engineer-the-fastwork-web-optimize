@@ -10,7 +10,10 @@
 //   - status lists each target's appId (which app a web view belongs to, I-037);
 //   - scroll and record call measureGuard(owner) right after the lease check (I-056: WAIT beside someone else's normal
 //     chrome-measure hold, and beside a shared group with --require-quiet, like `run` and `gesture`); it refuses before
-//     Safari is touched; its Mac state (shared jobs, load1) goes into the record as res.mac with the state at the end.
+//     Safari is touched; its Mac state (shared jobs, load1) goes into the record as res.mac with the state at the end;
+//   - scroll and record check the lease with leaseAndMark() (I-060): requireLease() plus one write of the run marker
+//     (meta.run: what runs, for the progress page) on the lease record, before Safari is touched; the marker is cleared
+//     after the run, outside the block. Nothing in the timed part changes.
 // The 2226d51 pins still hold for the blocks with those lines put back, so everything else in them stays pinned.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -62,16 +65,17 @@ const STATUS_83B7F7B = '.map((t) => ({ url: t.url, title: t.title, error: t.erro
 const GUARD = '\n    const mac = measureGuard(owner);'; // I-056
 const MAC = '\n    res.mac = phoneMacRecord(mac); // I-056: shared jobs and load1 on the Mac at start and end';
 /** [now, as in 2226d51] per block */
+const MARK = ['    const owner = leaseAndMark();', '    const owner = requireLease();']; // I-060
 const CHANGES = {
-  scroll: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B], [GUARD, ''], [MAC, '']],
-  record: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [GUARD, ''], [MAC, '']],
+  scroll: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B], [GUARD, ''], [MAC, ''], MARK],
+  record: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [GUARD, ''], [MAC, ''], MARK],
   status: [[STATUS_APPID, STATUS_83B7F7B]],
 };
 const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49', status: '28dd691408056316' };
 
 const PINS = {
   requireLease: '138ba8339515624d', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '43e304a76f1bf0c9', open: 'dabba5b174193021', scroll: '854a545b29b77379', record: '3ea598d23159d45b', // CHANGES
+  status: '43e304a76f1bf0c9', open: 'dabba5b174193021', scroll: '672582dfea18f487', record: 'a22ece491910c1cb', // CHANGES (I-060: leaseAndMark)
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with

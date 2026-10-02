@@ -290,3 +290,21 @@ test('I-058 incident, finding and console waits register too (owner from --as, o
   assert.match(t.stdout, /^TIMEOUT threads all for fix-t after \d+ s/);
   assert.deepEqual(waitRecords(), []);
 });
+
+test('I-060: any wait takes --reason; the board shows a file wait by its reason (or its kind), never the path or regex', async () => {
+  node(STATUS, ['set', 'blocks', '--by', 'iphone-runner', '--kind', 'phone', '--title', 'Phone blocks', '--state', 'measuring', '--note', 'block A1'], { env });
+  const log = join(tempDir('fw-waitcli-log-'), 'b2jrhp9be.output');
+  writeFileSync(log, '');
+  const jobs = [
+    nodeAsync(WAIT, ['file', log, '--match', 'A1-sent-open .*(PASS|FAIL)', '--timeout', '4', '--reason', 'the A1 phone block to finish', '--owner', 'iphone-runner', '--quiet'], { env }),
+    nodeAsync(WAIT, ['file', log, '--match', 'done', '--timeout', '4', '--owner', 'wi-stack', '--quiet'], { env }),
+  ];
+  assert.ok(await until(() => waitRecords().length === 2), `two records: ${JSON.stringify(waitRecords())}`);
+  assert.equal(waitRecords().find((r) => r.owner === 'iphone-runner').reason, 'the A1 phone block to finish');
+  const board = node(STATUS, ['list'], { env });
+  assert.equal(board.code, 0, board.out);
+  assert.match(board.stdout, /now: waiting: the A1 phone block to finish since \d\d:\d\dZ/);
+  assert.match(board.stdout, /OTHER WAITS[^\n]*\n(.*\n)*  wi-stack: waiting for a background job to report back since \d\d:\d\dZ/);
+  assert.ok(!board.stdout.includes('b2jrhp9be') && !board.stdout.includes('PASS|FAIL'), board.stdout);
+  await Promise.all(jobs);
+});

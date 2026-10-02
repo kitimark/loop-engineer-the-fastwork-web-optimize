@@ -4,6 +4,9 @@
 //   node tools/lock.mjs status [resource] [--json]
 //   node tools/lock.mjs acquire iphone --owner <topic> [--ttl 900] [--wait 0] [--url https://192.168.0.55:5231/] [--note "..."]
 //   node tools/lock.mjs renew   iphone --owner <topic> [--ttl 900]
+//   node tools/lock.mjs doing   iphone --owner <topic> --text "<plain line>" [--for <topic/agent>] [--eta-min N] | --clear
+//       acquire|renew|run take the same as --doing "<plain line>" [--for X] [--eta-min N] (I-060): what the hold is for,
+//       in plain words, shown on the progress page's "Right now" (lib/hold-job.mjs; nothing personal, Hard rule 12)
 //   node tools/lock.mjs release iphone --owner <topic> [--force]
 //   node tools/lock.mjs dequeue iphone --owner <topic>          # stop waiting
 //   node tools/lock.mjs run chrome-measure --owner <topic> -- <cmd> [args...]   # hold while cmd runs
@@ -124,6 +127,8 @@ import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, keepAwakeQueued } from './lib/awake.mjs';
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
+import { describeHold } from './lib/lock.mjs';
+import { parseJob } from './lib/hold-job.mjs'; // I-060: what a hold is for
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -131,7 +136,7 @@ const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const rest = dd >= 0 ? argv.slice(dd + 1) : [];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
-const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for', '--weight', '--cap', '--join-load', '--join-busy'];
+const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for', '--weight', '--cap', '--join-load', '--join-busy', '--doing', '--text', '--eta-min'];
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 // `shared on|off <resource>` has one more word
 const [cmd, resource] = pos[0] === 'shared' ? [pos[0], pos[2]] : pos;
@@ -261,6 +266,21 @@ async function main() {
   const meta = {};
   if (opt('url')) meta.url = opt('url');
   if (opt('note')) meta.note = opt('note');
+  // I-060: --doing "<plain line>" [--for X] [--eta-min N]; checked before anything is written
+  const jobOf = (text) => parseJob({ text, forWhom: opt('for'), etaMin: opt('eta-min') });
+  const jobLine = (j) => {
+    const extra = [j.for ? `for ${j.for}` : null, j.etaAt ? `about ${Math.max(0, Math.round((Date.parse(j.etaAt) - Date.now()) / 60000))} min left` : null].filter(Boolean);
+    return `${j.text}${extra.length ? ` (${extra.join('; ')})` : ''}`;
+  };
+  if (['acquire', 'run', 'renew'].includes(cmd) && opt('doing') !== undefined) meta.job = jobOf(opt('doing'));
+  if (cmd === 'doing') {
+    if (flag('clear')) { await describeHold(resource, { owner, job: null }); console.log(`CLEARED ${resource} "${owner}": no job description`); return 0; }
+    if (opt('text') === undefined) throw new Error(`usage: node tools/lock.mjs doing ${resource} --owner <you> --text "<plain line>" [--for <topic/agent>] [--eta-min N] | --clear`);
+    const job = jobOf(opt('text'));
+    await describeHold(resource, { owner, job });
+    console.log(`DOING ${resource} "${owner}": ${jobLine(job)}`);
+    return 0;
+  }
   if (cmd === 'acquire') {
     const ttlSec = Number(opt('ttl', resource === 'iphone' ? 900 : 0)) || undefined;
     const waitSec = Number(opt('wait', 0));
@@ -307,7 +327,7 @@ async function main() {
     console.log(`BUSY ${resource}: ${who}${res.why ? ` (${res.why})` : ''}. You ("${owner}") are #${res.position} in the queue; run acquire again within ${shared ? '60 s' : '10 min'} to keep your place (a hand-over serves waiters that keep polling, e.g. with --wait; one not seen for 30 s is skipped but keeps its place).`);
     return 3;
   }
-  if (cmd === 'renew') { const h = await renew(resource, { owner, ttlSec: Number(opt('ttl', 900)) }); keepAwake(resource, h); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }
+  if (cmd === 'renew') { const h = await renew(resource, { owner, ttlSec: Number(opt('ttl', 900)) }); keepAwake(resource, h); if (meta.job) await describeHold(resource, { owner, job: meta.job }); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }
   if (cmd === 'release') {
     const h = await release(resource, { owner, force: flag('force'), shared });
     if (h?.sharedReader) { console.log(`RELEASED ${resource} (shared reader "${h.owner}"${h.closed ? '; the group closed' : ''})`); return 0; }

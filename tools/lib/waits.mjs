@@ -101,11 +101,31 @@ export function listWaits({ now = Date.now(), alive = pidRuns } = {}) {
 
 const dur = (sec) => (sec < 60 ? `${sec} s` : sec < 3600 ? `${Math.round(sec / 60)} min` : `${Math.floor(sec / 3600)} h${Math.round((sec % 3600) / 60) ? ` ${Math.round((sec % 3600) / 60)} min` : ''}`);
 
-/** "waiting for <what> since 08:31Z (3 min, timeout 10 min); reason: <why>" (every part sanitized). */
+// I-060 (the lead, from the board): a wait's own text can be a file path, a regex, a pid or a scrubbed placeholder
+// ("a line of /private/tmp/…/<device id>/tasks/x.output to match /A1-sent-open .*(PASS|FAIL)/"), which the user can't
+// read. Such a wait is shown by its --reason, else by a plain kind of wait from its tool, never the path or regex.
+const TECHNICAL = /[/\\]|<[a-z][a-z ]*>|\bpid \d|\bprocess \d/;
+const KIND_OF_WAIT = {
+  'wait.mjs file': 'a background job to report back',
+  'wait.mjs serve': 'a mirror server to start',
+  'wait.mjs url': 'a server to answer',
+  'wait.mjs pid': 'a background process to finish',
+  'wait.mjs git': 'a commit to land on main',
+};
+/** Whether a wait's text is technical (a path, regex, pid or placeholder) rather than plain words. */
+export const technicalWait = (what) => TECHNICAL.test(sanitize(what, LIMITS.what));
+
+/**
+ * "waiting for <what> since 08:31Z (3 min, timeout 10 min); reason: <why>" (every part sanitized). A technical <what>
+ * (technicalWait) is not shown: "waiting: <why> since …" with a reason, else "waiting for <a plain kind of wait> since …".
+ */
 export function waitPlain(w, now = Date.now()) {
   const since = Date.parse(w.since);
   const min = Number.isFinite(since) ? Math.max(0, Math.round((now - since) / 60000)) : null;
   const bits = [min === null ? null : min < 1 ? 'under a minute' : `${min} min`, Number.isFinite(w.timeoutSec) ? `timeout ${dur(w.timeoutSec)}` : null].filter(Boolean);
   const at = typeof w.since === 'string' ? `${w.since.slice(11, 16)}Z` : '?';
-  return `waiting for ${sanitize(w.what, LIMITS.what)} since ${at}${bits.length ? ` (${bits.join(', ')})` : ''}${w.reason ? `; reason: ${sanitize(w.reason, LIMITS.reason)}` : ''}`;
+  const tail = ` since ${at}${bits.length ? ` (${bits.join(', ')})` : ''}`;
+  const reason = w.reason ? sanitize(w.reason, LIMITS.reason) : '';
+  if (technicalWait(w.what)) return reason ? `waiting: ${reason}${tail}` : `waiting for ${KIND_OF_WAIT[w.tool] || 'something to finish'}${tail}`;
+  return `waiting for ${sanitize(w.what, LIMITS.what)}${tail}${reason ? `; reason: ${reason}` : ''}`;
 }

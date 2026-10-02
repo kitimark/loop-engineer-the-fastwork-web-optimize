@@ -128,3 +128,23 @@ test('I-057: on a loaded host (injected load1 above the join load) a second read
     lock(['release', 'chrome-measure', '--shared', '--owner', 'fix-e2e-a']);
   }
 });
+
+test('I-060: "Right now" says what the phone does (lock.mjs doing), for whom and the time left; the API and the text; no LAN address', async () => {
+  const lk = (a) => node(tool('lock.mjs'), a, { env });
+  const d = lk(['doing', 'iphone', '--owner', 'iphone-runner', '--text', 'timing test for the blur change (PR-003 A), run 3 of 9', '--for', 'wi-stack', '--eta-min', '20']);
+  assert.equal(d.code, 0, d.out);
+  try {
+    const r = await request(new URL('api/progress', base).href);
+    const job = JSON.parse(r.text).live.devices.phone.jobs[0];
+    assert.match(job.line, /^timing test for the blur change \(PR-003 A\), run 3 of 9, about (19|20) min left$/);
+    assert.match(job.byLine, /^Run by iphone-runner for wi-stack, since \d\d:\d\dZ\.$/);
+    assert.equal(job.source, 'described');
+    for (const bad of ['192.168', 'http://', '/Users/']) assert.ok(!r.text.includes(bad), `${bad} leaked`);
+    const t = node(CON, ['progress'], { env });
+    assert.equal(t.code, 0, t.out);
+    assert.match(t.stdout, /doing: timing test for the blur change \(PR-003 A\), run 3 of 9, about (19|20) min left\. Run by iphone-runner for wi-stack/);
+    assert.ok(!t.stdout.includes('192.168'));
+  } finally {
+    assert.equal(lk(['doing', 'iphone', '--owner', 'iphone-runner', '--clear']).code, 0);
+  }
+});

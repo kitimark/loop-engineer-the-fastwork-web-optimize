@@ -49,14 +49,16 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari } from './lib/wip.mjs';
-import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord } from './lib/lock.mjs';
+import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, describeHold } from './lib/lock.mjs';
+import { parseJob, phoneRunText } from './lib/hold-job.mjs';
+import { basename, extname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
 import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord } from './lib/iphone-url.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via'];
+const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
 const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
@@ -69,6 +71,33 @@ function requireLease() {
     throw new Error(`you ("${owner}") don't hold the iphone lease${s.holder ? ` (holder: "${s.holder.owner}"${s.stale ? ', stale' : ''})` : ''}. Run: node tools/lock.mjs acquire iphone --owner ${owner}`);
   }
   return owner;
+}
+
+// I-060: a phone run (scroll|record|run|gesture) marks the lease with what it runs (meta.run {text, since, pid}; the
+// progress page's "Right now"), from --doing "<plain line>" or its own flags (lib/hold-job.mjs phoneRunText), and
+// clears it when it ends (a killed run leaves a marker whose pid is gone: the page ignores it). Best effort: a marker
+// that cannot be written never stops a run.
+let runMark = null;
+function runText() {
+  if (opt('doing') !== undefined) return parseJob({ text: opt('doing') }).text;
+  if (cmd === 'run') {
+    try { const o = parseRunArgsSync(argv.slice(argv.indexOf('run') + 1)); return phoneRunText('run', { label: o.label, driver: o.driver, labels: o.labels }); } catch { return phoneRunText('run', {}); }
+  }
+  const label = opt('label') ?? (cmd === 'gesture' && arg ? basename(arg, extname(arg)) : cmd === 'record' ? 'finger' : undefined);
+  return phoneRunText(cmd, { label });
+}
+let parseRunArgsSync = () => ({});
+function leaseAndMark() {
+  const owner = requireLease();
+  if (!runMark) {
+    const text = runText();
+    runMark = { owner, done: describeHold('iphone', { owner, run: { text, since: new Date().toISOString(), pid: process.pid } }).catch(() => null) };
+  }
+  return owner;
+}
+async function clearMark() {
+  if (!runMark) return;
+  try { await runMark.done; await describeHold('iphone', { owner: runMark.owner, run: null }); } catch {}
 }
 
 /** I-056: scroll and record refuse (WAIT, exit 1) like `run` and `gesture` beside someone else's normal chrome-measure
@@ -114,6 +143,8 @@ async function main() {
   // --shared`, in either switch state) or a functional Simulator session (FW_SIM_FUNCTIONAL, also via FW_IPHONE_PORT)
   const refusal = ['scroll', 'record', 'run', 'gesture'].includes(cmd) && !flag('help') ? timedInSlotRefusal(`iphone.mjs ${cmd}`) : null;
   if (refusal) { console.error(refusal); process.exit(2); }
+  if (['scroll', 'record', 'run', 'gesture'].includes(cmd) && !flag('help') && opt('doing') !== undefined) parseJob({ text: opt('doing') }); // I-060: a bad --doing fails before the phone is touched
+  if (cmd === 'run') parseRunArgsSync = (await import('./lib/iphone-run.mjs')).parseRunArgs;
   if (cmd === 'status') {
     const dev = await fetch(`http://localhost:${DEVICE_PORT}/json`, { signal: AbortSignal.timeout(4000) }).then((r) => r.json()).catch((e) => ({ error: `proxy not reachable on :${DEVICE_PORT} (${e.cause?.code || e.message})` }));
     console.log('device:', JSON.stringify(dev));
@@ -142,7 +173,7 @@ async function main() {
     return;
   }
   if (cmd === 'scroll') {
-    const owner = requireLease();
+    const owner = leaseAndMark();
     const mac = measureGuard(owner);
     const holder = lockStatus('iphone').holder;
     const list = await tabs();
@@ -179,7 +210,7 @@ async function main() {
   if (cmd === 'record') {
     // Finger test: log rAF frames + scrollY while a human scrolls (touch-only paths: non-passive
     // touchmove scroll-jack, toolbar-collapse resize). The lead asks the user to scroll; see CLAUDE.md.
-    const owner = requireLease();
+    const owner = leaseAndMark();
     const mac = measureGuard(owner);
     const secs = Number(opt('seconds', 25));
     const c = await openTab(() => true);
@@ -211,7 +242,7 @@ async function main() {
     console.log(r.already ? 'PARKED already: Safari shows no web page' : `PARKED Safari on about:blank (was ${r.from})`);
     return;
   }
-  if (cmd === 'gesture') return (await import('./lib/gesture-run.mjs')).gestureCmd({ argv, arg, opt, flag, requireLease, port: PORT });
+  if (cmd === 'gesture') return (await import('./lib/gesture-run.mjs')).gestureCmd({ argv, arg, opt, flag, requireLease: leaseAndMark, port: PORT });
   if (cmd === 'wda') return (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, requireLease });
   if (cmd === 'safari-restart') {
     requireLease();
@@ -223,7 +254,7 @@ async function main() {
       timeoutMs: 1000 * Number(opt('timeout', 30)), known, keepHttps: flag('keep-https') });
     return;
   }
-  if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease, port: PORT });
+  if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT });
   console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
-main().then(() => process.exit(0), (e) => { console.error(e.message || e); process.exit(1); });
+main().then(async () => { await clearMark(); process.exit(0); }, async (e) => { console.error(e.message || e); await clearMark(); process.exit(1); });

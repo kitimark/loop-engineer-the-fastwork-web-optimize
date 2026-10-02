@@ -50,7 +50,8 @@ h2.section { font-size: 15px; color: var(--muted); font-weight: 650; margin: 28p
 .now .box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
 .now .k { font-size: 13px; color: var(--muted); }
 .now .v { font-weight: 600; }
-.now .q { font-size: 13px; color: var(--muted); }
+.now .q, ul.agents .q { font-size: 13px; color: var(--muted); }
+.now .job { padding-top: 6px; margin-top: 6px; border-top: 1px solid var(--line); }
 ul.plain { list-style: none; margin: 0; padding: 0; }
 ul.plain li { padding: 6px 0; border-bottom: 1px solid var(--line); }
 ul.plain li:last-child { border-bottom: 0; }
@@ -118,26 +119,59 @@ function ago(min) { if (min === null || min === undefined) return ''; if (min < 
 var STAGES = ['R', 'I', 'D', 'F', 'V', 'L'];
 var open = {}; // which details are open, kept across refreshes
 
-function holder(label, l) {
+// I-060 (user T-020): one job on a device in plain words: what (and the time left), who runs it for whom since when,
+// the phone run going on now, and the holder's other jobs as "Next"
+function jobLines(box, j) {
+  box.appendChild(el('div', { class: 'v', text: j.line }));
+  box.appendChild(el('div', { class: 'q', text: j.byLine }));
+  if (j.run) box.appendChild(el('div', { class: 'q', text: 'Right now: ' + j.run.text + ' (since ' + hhmm(j.run.since) + ')' }));
+  j.next.forEach(function (n) { box.appendChild(el('div', { class: 'q', text: 'Next: ' + n })); });
+}
+
+function holder(label, l, d) {
   var box = el('div', { class: 'box' }, el('div', { class: 'k', text: label }));
   if (!l) { box.appendChild(el('div', { class: 'v', text: 'unknown' })); return box; }
+  var jobs = d && d.jobs ? d.jobs : [];
   if (l.shared) {
     // the chrome-measure shared lane (I-048): the readers' names first (user T-008), then the weight in use against
-    // the cap, then every reader with its weight and start time
+    // the cap, then every reader's job (I-060; without the device view: its weight and start time)
     var s = l.shared;
     var names = s.readers.map(function (x) { return x.owner; }).join(', ') || 'no live reader';
-    box.appendChild(el('div', { class: 'v', text: names + ' (shared lane ' + s.used + '/' + (s.cap === null ? '?' : s.cap) + ')' }));
-    s.readers.forEach(function (x) { box.appendChild(el('div', { class: 'q', text: x.owner + ' (w' + x.weight + ', since ' + hhmm(x.since) + ')' })); });
+    box.appendChild(el('div', { class: jobs.length ? 'q' : 'v', text: (jobs.length ? 'Shared by ' : '') + names + ' (shared lane ' + s.used + '/' + (s.cap === null ? '?' : s.cap) + ')' }));
+    if (jobs.length) jobs.forEach(function (j) { var sub = el('div', { class: 'job' }); jobLines(sub, j); box.appendChild(sub); });
+    else s.readers.forEach(function (x) { box.appendChild(el('div', { class: 'q', text: x.owner + ' (w' + x.weight + ', since ' + hhmm(x.since) + ')' })); });
     if (l.lane && !l.lane.on) box.appendChild(el('div', { class: 'q', text: 'switch off: no new reader joins' }));
     if (s.joinsClosed) box.appendChild(el('div', { class: 'q', text: 'joins closed: ' + s.closedBy + ' waits for Chrome alone' }));
   } else {
-    box.appendChild(el('div', { class: 'v', text: l.holder ? l.holder.owner : 'free' }));
-    if (l.holder) box.appendChild(el('div', { class: 'q', text: 'since ' + hhmm(l.holder.since) }));
-    else if (l.handover) box.appendChild(el('div', { class: 'q', text: l.handover.text })); // I-051: a stalled hand-over shows
+    if (l.holder && jobs.length) jobLines(box, jobs[0]);
+    else {
+      box.appendChild(el('div', { class: 'v', text: l.holder ? l.holder.owner : 'free' }));
+      if (l.holder) box.appendChild(el('div', { class: 'q', text: 'since ' + hhmm(l.holder.since) }));
+      else if (l.handover) box.appendChild(el('div', { class: 'q', text: l.handover.text })); // I-051: a stalled hand-over shows
+    }
     if (l.lane && l.lane.on) box.appendChild(el('div', { class: 'q', text: 'shared lane on, cap ' + l.lane.cap }));
   }
-  if (l.queue.length) box.appendChild(el('div', { class: 'q', text: l.queue.length + ' waiting: ' + l.queue.join(', ') }));
+  if (l.queue.length) box.appendChild(el('div', { class: 'q', text: 'In line after it: ' + l.queue.join(', ') }));
   return box;
+}
+
+// I-060: one line per working agent (what it does, what it waits on); parked, not started or stale rows folded
+function agentsSection(m, a) {
+  if (!a || (!a.agents.length && !a.folded.length)) return;
+  m.appendChild(el('h2', { class: 'section', text: 'Who is doing what' }));
+  var ul = el('ul', { class: 'plain card agents' });
+  a.agents.forEach(function (x) {
+    var li = el('li', null, el('b', { text: x.owner + ': ' }), x.doing);
+    li.appendChild(el('div', { class: 'q', text: [x.state].concat(x.using).join(' · ') }));
+    if (x.waits.length) li.appendChild(el('div', { class: 'q', text: 'Waiting on: ' + x.waits.join(' · ') }));
+    x.also.forEach(function (t) { li.appendChild(el('div', { class: 'q', text: 'Also: ' + t })); });
+    ul.appendChild(li);
+  });
+  if (!a.agents.length) ul.appendChild(el('li', { class: 'empty', text: 'Nobody is working on something right now.' }));
+  m.appendChild(ul);
+  var fd = detailsBox('__folded', 'Paused, not started or not updated (' + a.folded.length + ')',
+    a.folded.map(function (f) { return f.owner + ': ' + f.title + ' (' + f.why + ')'; }));
+  if (fd) m.appendChild(fd);
 }
 
 function stageRow(it) {
@@ -229,7 +263,8 @@ function render(v) {
     m.appendChild(ul);
   }
   m.appendChild(el('h2', { class: 'section', text: 'Right now' }));
-  var now = el('div', { class: 'now' }, holder('On the phone', v.live.phone), holder('On Chrome (Mac)', v.live.chrome));
+  var dev = v.live.devices || {};
+  var now = el('div', { class: 'now' }, holder('On the phone', v.live.phone, dev.phone), holder('On Chrome (Mac)', v.live.chrome, dev.chrome));
   if (v.live.incidents) {
     var ib = el('div', { class: 'box' }, el('div', { class: 'k', text: 'Tool problems' }),
       el('div', { class: 'v', text: v.live.incidents.open + ' open, ' + v.live.incidents.blocking.length + ' blocking' }));
@@ -238,6 +273,7 @@ function render(v) {
   }
   m.appendChild(now);
   v.live.errors.forEach(function (e) { m.appendChild(el('div', { class: 'banner', text: e })); });
+  agentsSection(m, v.agents);
 
   m.appendChild(el('h2', { class: 'section', text: 'Coming up for you' }));
   var cu = el('ul', { class: 'plain card' });

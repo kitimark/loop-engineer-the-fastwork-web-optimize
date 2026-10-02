@@ -659,8 +659,9 @@ export async function tryAcquire(r, opts) {
       return { ok: true, holder: h, reentrant: true, inherited: true, mode: shared ? 'reentrant-exclusive' : 'reentrant' };
     }
     if (same) {
-      // re-entrant for the same owner: refresh the TTL
+      // re-entrant for the same owner: refresh the TTL (and a new job description, I-060)
       if (ttlSec && !h.short) h.expiresAt = new Date(Math.min(now + ttlSec * 1000, capMs(r, h))).toISOString();
+      if (meta?.job) h.meta = { ...(h.meta || {}), job: meta.job };
       writeJson(holderFile(r), h);
       return { ok: true, holder: h, reentrant: true, mode: shared ? 'reentrant-exclusive' : 'reentrant' };
     }
@@ -869,6 +870,37 @@ export async function release(r, { owner, force = false, shared = false } = {}) 
   });
   if (out?.sharedReader && out.closed) stopAwake(r, out.groupToken);
   return out;
+}
+
+/**
+ * I-060: the holder describes what its hold is for (lib/hold-job.mjs; shown on the progress page). `job`: a parsed job
+ * ({text, for?, at, etaAt?}) sets it, null clears it, undefined leaves it. `run`: a phone run's marker ({text, since,
+ * pid}) sets it; null clears it only if `runPid` (default this process) set it. Only the live holder (or, in a shared
+ * group, the owner's own reader records) may describe it. Returns the updated holder, or {shared, readers} for a group.
+ */
+export async function describeHold(r, { owner, job, run, runPid = process.pid, now = Date.now() } = {}) {
+  checkName(r);
+  const apply = (m) => {
+    const meta = { ...(m || {}) };
+    if (job === null) delete meta.job; else if (job) meta.job = job;
+    if (run === null) { if (!meta.run || meta.run.pid === runPid) delete meta.run; } else if (run) meta.run = run;
+    return meta;
+  };
+  return withGuard(r, () => {
+    const h = readJson(holderFile(r), null);
+    if (!h || staleReason(h, now)) throw new Error(`${r} is not held${h ? ` (the last holder "${h.owner}" is stale)` : ''}: describe a job on your own live hold (node tools/lock.mjs status ${r})`);
+    if (knownGroup(h)) {
+      const live = liveReaders(h, now);
+      if (!live.some((x) => x.owner === owner)) throw new Error(`${r}: the shared group has no reader "${owner}" (readers ${readerList(h)})`);
+      const readers = h.readers.map((x) => (x.owner === owner && live.includes(x) ? { ...x, meta: apply(x.meta) } : x));
+      writeJson(holderFile(r), { ...h, readers });
+      return { shared: true, readers: readers.filter((x) => x.owner === owner) };
+    }
+    if (h.owner !== owner) throw new Error(`${r} is held by "${h.owner}", not "${owner}": only the holder describes its job`);
+    h.meta = apply(h.meta);
+    writeJson(holderFile(r), h);
+    return h;
+  });
 }
 
 /** Extend a lease. */

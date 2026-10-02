@@ -94,6 +94,24 @@ test('waitPlain: "waiting for <what> since hh:mmZ (n min, timeout t)" and the re
   assert.equal(W.waitPlain({ ...w, timeoutSec: 45 }, now), 'waiting for the phone to cool to 37.1 °C or below (auto) since 08:31Z (3 min, timeout 45 s)');
 });
 
+test('I-060: a wait whose text is a path, regex, pid or placeholder is shown by its --reason, else by a plain kind of wait; never the path or regex', () => {
+  const now = Date.parse('2026-10-02T08:34:00Z');
+  const base = { since: '2026-10-02T08:31:10.000Z', timeoutSec: 3600 };
+  const file = { ...base, tool: 'wait.mjs file', what: 'a line of /private/tmp/claude-501/x/0d6a2c4e-1f2b-4c3d-9e8f-123456789abc/tasks/b2jrhp9be.output to match /A1-sent-open .*(PASS|FAIL)/' };
+  assert.equal(W.waitPlain(file, now), 'waiting for a background job to report back since 08:31Z (3 min, timeout 1 h)');
+  assert.equal(W.waitPlain({ ...file, reason: 'the A1 phone block to finish' }, now), 'waiting: the A1 phone block to finish since 08:31Z (3 min, timeout 1 h)');
+  for (const [tool, what, plain] of [
+    ['wait.mjs serve', 'the mirror server of out/serve-x.json to answer', 'a mirror server to start'],
+    ['wait.mjs url', 'http://192.168.77.3:5200/ to answer', 'a server to answer'],
+    ['wait.mjs pid', 'process 4242 to exit', 'a background process to finish'],
+    ['wait.mjs git', 'a commit on main whose subject matches /I-060/', 'a commit to land on main'],
+    ['something else', 'x <device id> y', 'something to finish'],
+  ]) assert.equal(W.waitPlain({ ...base, tool, what }, now), `waiting for ${plain} since 08:31Z (3 min, timeout 1 h)`, tool);
+  assert.equal(W.technicalWait('the phone to cool to 37.1 °C or below (auto)'), false);
+  assert.equal(W.technicalWait('lock chrome-measure idle'), false);
+  assert.equal(W.technicalWait('main to contain abc1234'), false);
+});
+
 test('board: a live wait shows on its owner\'s active row as "now: waiting for …" (a live wait: not stale); others under OTHER WAITS', () => {
   const now = Date.parse('2026-10-02T12:00:00Z');
   const at = (min) => new Date(now - min * 60000).toISOString();
@@ -114,7 +132,7 @@ test('board: a live wait shows on its owner\'s active row as "now: waiting for �
   assert.deepEqual(v.otherWaits.map((x) => x.owner), ['ts-old', 'unknown']);
   const t = S.renderText(v);
   assert.match(t, /now: waiting for the phone to cool to 37\.1 °C or below \(auto\) since 11:57Z \(3 min, timeout 10 min\)/);
-  assert.match(t, /OTHER WAITS \(no active workstream row for their owner\)\n {2}ts-old: waiting for lock chrome-measure idle since 11:59Z \(1 min, timeout 1 h\) {2}\[lock\.mjs wait\]\n {2}unknown: waiting for <link> to answer/);
+  assert.match(t, /OTHER WAITS \(no active workstream row for their owner\)\n {2}ts-old: waiting for lock chrome-measure idle since 11:59Z \(1 min, timeout 1 h\) {2}\[lock\.mjs wait\]\n {2}unknown: waiting for a server to answer since 12:00Z/, "I-060: a URL wait is shown by its kind, not the (scrubbed) URL");
   assert.ok(!t.includes('192.168'), 'shown text is sanitized again');
   assert.ok(!S.renderText(S.buildStatusView({ items, live: {}, now })).includes('OTHER WAITS'));
 });

@@ -335,3 +335,46 @@ test('run with a forged, stale or other-resource FW_LOCK_HELD still queues behin
   assert.equal(holder('chrome-measure').owner, 'busy');
   assert.deepEqual(statusJson('chrome-measure').queue, []);
 });
+
+test('I-060: --doing [--for] [--eta-min] on acquire / renew / run describe the hold; `doing` updates or clears it mid-hold; only the holder; nothing personal', () => {
+  const a = lock('acquire', 'iphone', '--owner', 'iphone-runner', '--url', 'https://192.168.77.2:5231/', '--doing', 'timing test for the blur change, run 1 of 9', '--for', 'wi-stack', '--eta-min', '40');
+  assert.equal(a.code, 0, a.out);
+  let job = holder('iphone').meta.job;
+  assert.deepEqual([job.text, job.for, Math.round((Date.parse(job.etaAt) - Date.parse(job.at)) / 60000)], ['timing test for the blur change, run 1 of 9', 'wi-stack', 40]);
+  assert.equal(holder('iphone').meta.url, 'https://192.168.77.2:5231/', 'the lease URL stays where it was');
+  // mid-hold: the holder updates it; status shows it
+  const d = lock('doing', 'iphone', '--owner', 'iphone-runner', '--text', 'timing test for the blur change, run 3 of 9', '--for', 'wi-stack', '--eta-min', '20');
+  assert.equal(d.code, 0, d.out);
+  assert.match(d.stdout, /^DOING iphone "iphone-runner": timing test for the blur change, run 3 of 9 \(for wi-stack; about 20 min left\)$/m);
+  assert.equal(holder('iphone').meta.job.text, 'timing test for the blur change, run 3 of 9');
+  assert.match(lock('status', 'iphone').stdout, /run 3 of 9/);
+  // renew with a new job
+  assert.equal(lock('renew', 'iphone', '--owner', 'iphone-runner', '--ttl', '600', '--doing', 'park and cool down').code, 0);
+  job = holder('iphone').meta.job;
+  assert.deepEqual([job.text, job.for, job.etaAt], ['park and cool down', undefined, undefined]);
+  // anyone else, bad input, personal data: refused, nothing changed
+  for (const [args, re] of [
+    [['--owner', 'someone-else', '--text', 'x'], /iphone is held by "iphone-runner", not "someone-else"/],
+    [['--owner', 'iphone-runner'], /--text "<plain line>"/],
+    [['--owner', 'iphone-runner', '--text', 'see https://192.168.77.2:5231/'], /url.*Hard rule 12/],
+    [['--owner', 'iphone-runner', '--text', 'x', '--eta-min', 'soon'], /--eta-min/],
+  ]) {
+    const r = lock('doing', 'iphone', ...args);
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.stderr, re);
+  }
+  assert.equal(holder('iphone').meta.job.text, 'park and cool down');
+  assert.equal(lock('acquire', 'iphone', '--owner', 'iphone-runner', '--doing', 'x', '--for', 'a@b.invalid').code, 1, 'refused before anything is written');
+  // --clear
+  const c = lock('doing', 'iphone', '--owner', 'iphone-runner', '--clear');
+  assert.equal(c.code, 0, c.out);
+  assert.match(c.stdout, /^CLEARED iphone "iphone-runner": no job description$/m);
+  assert.equal(holder('iphone').meta.job, undefined);
+  // run: the job is on the process hold while the command runs
+  const probe = `const h = JSON.parse(require('fs').readFileSync(${JSON.stringify(join(state, 'locks', 'chrome-measure.json'))}, 'utf8')); console.log('JOB ' + JSON.stringify(h.meta.job));`;
+  const r = lock('run', 'chrome-measure', '--owner', 'fix-x', '--doing', 'A/B of the countdown fix, 5 runs', '--for', 'cdwc', '--', process.execPath, '-e', probe);
+  assert.equal(r.code, 0, r.out);
+  const rj = JSON.parse(r.stdout.match(/^JOB (.*)$/m)[1]);
+  assert.deepEqual([rj.text, rj.for], ['A/B of the countdown fix, 5 runs', 'cdwc']);
+  assert.equal(lock('doing', 'chrome-measure', '--owner', 'fix-x', '--text', 'x').code, 1, 'no hold: refused');
+});

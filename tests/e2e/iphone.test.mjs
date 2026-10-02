@@ -224,3 +224,39 @@ test('I-047: park needs the lease, navigates Safari\'s tab (not another app\'s b
   assert.deepEqual(phone.navigations(), ['about:blank'], 'parked once');
   assert.match(iphone('dance').stdout, /\| park --owner <topic> \|/, 'the usage names park');
 });
+
+test('I-060: a phone run marks the lease with what it runs (from --label, or --doing), clears it at its end; a killed run leaves a dead-pid marker the page ignores', async () => {
+  const { deviceView } = await import('../../tools/lib/progress.mjs');
+  const phone = await fakePhone(['--page']); // a page model: record's in-page logger runs
+  const state = phone.env.FW_STATE_DIR, outDir = tempDir('fw-iphone-out-');
+  const leaseFile = () => JSON.parse(readFileSync(join(state, 'locks', 'iphone.json'), 'utf8'));
+  lock('acquire', 'iphone', '--owner', 'me', '--url', 'http://192.168.77.3:5231/');
+  // a bad --doing is refused before the phone is touched
+  let r = await nodeAsync(IPHONE, ['record', '--owner', 'me', '--seconds', '1', '--doing', 'see http://192.168.77.3:5231/'], { env: phone.env, timeout: 20000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /--doing contains a url.*Hard rule 12/);
+  assert.equal(leaseFile().meta.run, undefined);
+  // during a record: meta.run from --label, with the run's pid; gone after it ends
+  const rec = (args) => startProc(process.execPath, [IPHONE, 'record', '--owner', 'me', '--out', join(outDir, `r-${Date.now()}.json`), ...args], { env: phone.env, ready: (s) => /^RECORDING/m.test(s), timeout: 30000 });
+  let p = await rec(['--seconds', '2', '--label', 'finger-a']);
+  procs.push(p);
+  let run = leaseFile().meta.run;
+  assert.equal(run.text, 'finger recording "finger-a" (a person scrolls the phone)');
+  assert.equal(run.pid, p.proc.pid);
+  assert.equal(leaseFile().meta.url, 'http://192.168.77.3:5231/', 'the lease URL stays');
+  assert.equal((await p.exited).code, 0, p.stdout() + p.stderr());
+  assert.equal(leaseFile().meta.run, undefined, 'cleared when the run ends');
+  // --doing wins over the label; a killed run leaves its marker, which the page ignores (its pid is gone)
+  p = await rec(['--seconds', '30', '--label', 'finger-b', '--doing', 'finger test for the blur change']);
+  procs.push(p);
+  assert.equal(leaseFile().meta.run.text, 'finger test for the blur change');
+  await p.stop('SIGKILL');
+  run = leaseFile().meta.run;
+  assert.equal(run.pid, p.proc.pid);
+  const view = deviceView({ holder: leaseFile(), queue: [] }, { resource: 'iphone', board: [] });
+  assert.equal(view.jobs[0].run, null, 'a dead run marker is not shown');
+  // a failing scroll (no proxy) clears its marker too
+  r = iphone('scroll', '--owner', 'me', '--label', 'patched');
+  assert.equal(r.code, 1, r.out);
+  assert.equal(leaseFile().meta.run, undefined);
+});

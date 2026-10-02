@@ -20,6 +20,8 @@
 //        # last resort (user T-016, I-058): wait on a probe when one exists (phone cooling is phone-temp, a job is
 //        # file/pid, a server serve/url, main git, a lock `lock.mjs wait`). --reason is required (exit 1 without it)
 //        # and shows on the status board next to the wait.
+//   Any wait takes --reason "<plain words>" too (I-060): the board and the progress page show a wait whose own text is
+//   a path, regex or pid by its reason ("waiting: the A1 phone block to finish"), else by its kind, never the path.
 //   node tools/wait.mjs phone-temp --below <°C>|auto [--runs-dir out/iphone] [--driver S|W|M] [--every 60] [--timeout 600]
 //        # phone cooling between blocks (protocol v2 §5.3, user T-009): the iPhone's battery temperature
 //        # (AppleSmartBattery via tools/lib/iphone-run.mjs batteryInfo, over USB) is at or below <°C>. One read
@@ -154,7 +156,7 @@ async function main() {
   const quiet = flag('quiet');
   const onChange = quiet ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
   // I-058: the board shows this wait while it runs (one record, removed on exit)
-  startWait({ tool: `wait.mjs ${cmd}`, owner: opt('owner') ?? opt('as'), what: `${w.plain}${holdSec ? `, held ${holdSec} s` : ''}`, timeoutSec, reason: w.reason });
+  startWait({ tool: `wait.mjs ${cmd}`, owner: opt('owner') ?? opt('as'), what: `${w.plain}${holdSec ? `, held ${holdSec} s` : ''}`, timeoutSec, reason: w.reason ?? ((r) => (r && !r.startsWith('--') ? r : undefined))(String(opt('reason') ?? '').trim()) }); // I-060: any wait may say why (--reason); the board shows that, not a path or regex
   const r = await pollUntil(w.check, { timeoutSec, holdSec, onChange, ...(w.minMs && { minMs: w.minMs }), ...(w.maxMs && { maxMs: w.maxMs }) });
   if (r.result === 'met') { console.log(`MET ${w.what}: ${r.detail ?? r.state}${holdSec ? ` (held ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return EXIT.met; }
   if (r.result === 'never') { console.log(`${w.never?.word ?? 'NEVER'} ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return w.never?.exit ?? EXIT.never; }
