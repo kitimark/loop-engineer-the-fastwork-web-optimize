@@ -344,7 +344,7 @@ its frame. Script: `out/wi-stack/loo/layers.mjs` (not committed).
     - Whether the iOS 26 build has it on is a device feature-flag check.
   - Source read by a sonnet helper (WebKit `main`, raw files, 2026-10-02). Line numbers are approximate to that copy.
 
-## Phone ticket A1: option A of PR-003 (accepted 09:12:55Z, drop-blur), prepared, not run
+## Phone ticket A1: option A of PR-003 (accepted 09:12:55Z, drop-blur); result in "A1 result" below
 
 **Runner:** `iphone-runner`. **Slot:** right after PR-001 block B, before G1b (lead). Prediction **P-062**, committed
 before any data from this ticket.
@@ -397,6 +397,23 @@ The phase rows come from `node tools/stats.mjs runs <dir> --metric gt34|gt50 --p
 | 3. Guard | scroll dt>50 per run | an NB median more than 1 above C's is a regression. Report it, with no landing. |
 | 4. Context | scroll dt>34 per run, bottom | reported only. |
 
+## A1 result (iphone-runner, 2026-10-02, 1 block; scored by wi-stack with `frame2.py` and `stats.mjs`)
+
+All 9 counted runs valid. Sentinels pass (open 60.2/58.2, end 60.2/58.1 fps bottom/scroll), and so does every C run.
+Battery 37.3 -> 39.4 °C, load1 3.5-5.7 with shared jobs beside most runs (each record's `mac`). The NB records carry
+`meta.arm` "V" with `meta.build` "NB": group by build.
+
+| row | C | NB | V | decision |
+|---|---|---|---|---|
+| 1. frame 2 (ms) | 42, 42, 37 (med 42) | 52, 41, 44 (med 44) | 79, 74, 72 (med 74) | NB within C ± 8, all NB < all V: **A confirmed** |
+| frame 2 >50 (twins >46 / >54) | 0/3 | 1/3 (1/3 / 0/3): **threshold-sensitive** | 3/3 | the 52 ms frame is in the near band |
+| 2. idle dt>34 | 3, 2, 4 (med 3) | 0, 0, 0 | 0, 0, 0 | st6 carries the idle gain; A keeps it |
+| 3. scroll dt>50 | 1, 1, 2 (med 1) | 2, 1, 2 (med 2) | 1, 3, 3 | +1, not more than 1: no regression |
+| 4. scroll dt>34 (context) | 7, 6, 10 | 9, 8, 7 | 11, 8, 7 | scroll fps 57.8-58.5, bottom 60.0-60.2 everywhere |
+
+P-062: every interval hit. A lands as **st6-rb** (= NB + the paused-scene `will-change` selector): the lead's rule
+was "equal by mechanism and pixels, then no extra phone block", and the checks pass (`fixes/st6-rb/README.md` "Checks").
+
 ## Option B research (lead: wi-stack owns it, below A in priority, Simulator only until A's block is done)
 
 User request (PR-003 decision, paraphrased): apply A first, and research B in parallel because it may perform better.
@@ -409,3 +426,44 @@ The layer diff above changes B's premise.
 - Each arm must show 0 visible pixel difference against stack5 on a frozen clock.
 - Then a Simulator mechanism hold answers two questions: does frame 2's Composite drop, or only move? And what are the layer and memory counts? NS and NB go in the same hold, to test the overlap hypothesis.
 - All of this is Simulator / OBSERVED only.
+
+### Option B results so far (Chrome pixel gate and toggle cost; Simulator mechanism hold still to run)
+
+B1 (card `will-change: transform, border-radius, filter` before the reveal) and B2 v1 (hide every non-active shell)
+were built first.
+- B2 v1 failed the pixel check: shell 1 peeks into the 430 viewport (x 412-802), so hiding it shows (1.5 % at t 0.15 s).
+- **B2b** hides only the shells that are neither active nor next to it, for the reveal window. It is CSS only, on
+  stack5, `assets/2.gBuqKVzi.css` `9d9cd2167474`:
+
+  ```css
+  @keyframes fw-b2-shell-hold { from, to { visibility: hidden; } }
+  .start-selling-future.is-visible
+    .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
+    animation: fw-b2-shell-hold 0.95s linear;
+  }
+  ```
+
+- **B2c** is B2b plus the same hold for `.is-future-shrinking` (spot (c)), `6ad0414af423`.
+
+Why it should work (source reading, the "Layer diff" section): an on-screen layer with a running transform animation
+gives every composited descendant a backing store. A hidden shell paints nothing, so it should need none.
+Whether WebKit then drops the backing is the Simulator hold's question.
+
+The lead set a strict pixel bar, checked with `out/wi-stack/a/checkb.mjs` in headless Chrome under a full freeze:
+- every timer cleared, and every animation outside the card paused;
+- each of the 61 frames (every 16.7 ms across the 0.95 s window) compared against V, with a V-vs-V A/A arm (VV);
+- a moving pass for the reveal: t 0-900 ms at y+120 and y+240;
+- "deck px" = differing pixels inside the deck rect plus 8 px;
+- a violation = a hidden shell whose rect is in view.
+
+| width, window | result |
+|---|---|
+| 430 shrink (B2C) | 0 px in all 61 frames, the same as VV |
+| 430 reveal (B2B), 3 runs | deck px 0 in every frame, except one after-scroll frame (`move-y840-t0`) that VV shows identically. 0 violations. Outside the deck, runs 1 and 2 had a B2B-only diff box (css x150-375, y314-432, t 50-150 ms) on the countdown widget. In run 3, B2B and VV both differ from V only in the countdown seconds digits (checked on saved frames). The deck clips (`overflow: auto hidden`, deck top 594), so a shell cannot paint there. Reading: per-load countdown values, blurred during the reveal (OBSERVED). |
+| 1440 reveal (B2B), 2 runs | non-active shells are `display: none` at 1440, so the rule has nothing to hide. Run 2: 0 px in every frozen frame and every moving frame from t 150 ms on; only t0 after-scroll frames differ, as in VV. A 159x17 photo-edge spot in run 1 did not recur. |
+| 1440 shrink (B2C) | not decidable by pixels: A/A differs by about 7-8 % per frame at y4312. A no-op by construction, as above. |
+| toggle cost (430) | `LayoutCount` +0 and `RecalcStyleCount` +24 from flip +0.8 s to +1.2 s, the same for V, VV and B2B: the hold adds no layout or style work of its own |
+
+All of this is Chrome-headless data: Chrome's compositor is not WebKit's, so it says nothing about backing stores.
+ENABLE(THREADED_ANIMATIONS) stays UNRESOLVED (no device flag check unless B goes to the phone).
+
