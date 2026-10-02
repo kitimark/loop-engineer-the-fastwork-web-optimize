@@ -115,6 +115,16 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   first (after a pixel A/B on tools ≥d00ee9a and a phone ticket); I40 held until a Sim RBi40 count.
   fwreskip: the ~20 ms sits in a stale layout state in #profile-showcase/#people, cleared by re-creating its children;
   r7 isolates the element; mechanism UNRESOLVED. Usage: ~34 % ESTIMATE at 23:53Z, ~60 % expected by the 02:20Z reset.
+  00:1xZ: I-050 landed (7fa4251), RESOLVED; only I-051 open. SIM PITFALL (standing): Safari can serve stale immutable
+  CSS/JS across reused ports, so every Sim arm server runs with --no-cache and its server log shows a GET check
+  (de-illusion-style finding; lead alerted scene-scope, fwreskip, nav-morph). PR-001 Safari copy: half the mismatch was
+  that stale CSS, half a real half-device-px placement blur in WebKit; a sweep is next.
+  I-052 (F-115, owner ts-phone-park): Sim Safari keeps cached immutable assets per origin and --no-cache does not evict
+  them. Workaround: a never-seen port per session plus the overlay GET count; the fix makes every Sim session start with
+  an empty Safari cache. Earlier cache-on Sim arm results are VOID (PR-001's d1 orig captures stand). PR-001 v2
+  (OBSERVED, Sim): the canvas moves out of the hero-copy layer, because of a half-device-px resample inside it. Queue
+  (lead 00:2xZ): PR-001 v2 Sim hold first, fix-nav-morph right after (~00:27Z); flag only if it has not started by
+  00:32Z. A shared slot running while an exclusive waiter sits at the host gate pass window is by design.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
