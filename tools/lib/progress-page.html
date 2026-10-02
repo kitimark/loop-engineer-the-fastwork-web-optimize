@@ -50,7 +50,7 @@ h2.section { font-size: 15px; color: var(--muted); font-weight: 650; margin: 28p
 .now .box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
 .now .k { font-size: 13px; color: var(--muted); }
 .now .v { font-weight: 600; }
-.now .q, ul.agents .q { font-size: 13px; color: var(--muted); }
+.now .q, ul.agents .q, ul.build .q, .goal .q, p.q { font-size: 13px; color: var(--muted); }
 .now .job { padding-top: 6px; margin-top: 6px; border-top: 1px solid var(--line); }
 ul.plain { list-style: none; margin: 0; padding: 0; }
 ul.plain li { padding: 6px 0; border-bottom: 1px solid var(--line); }
@@ -88,7 +88,7 @@ section[data-item] { scroll-margin-top: 80px; }
 <!--console-menu-->
 <div class="wrap">
   <header>
-    <h1>Fix progress</h1>
+    <h1 id="h1">Fix progress</h1>
     <span class="sub" id="upd">loading…</span>
   </header>
   <div id="banners"></div>
@@ -233,6 +233,57 @@ function itemCard(it, compact) {
   return card;
 }
 
+// I-061 (user T-021): today's best build. /build shows it in full; /progress shows a short card linking to it
+var BUILD_PAGE = /^\/build(\.html)?$/.test((typeof location !== 'undefined' && location.pathname) || '');
+function gainRow(t, b, extra) {
+  t.appendChild(el('tr', null,
+    el('td', null, b.what, b.note ? el('div', { class: 'note', text: b.note }) : null),
+    el('td', { class: 'ba', text: b.before + ' → ' + b.after }),
+    el('td', null, el('span', { class: 'tag ' + b.tag, text: b.tag }), el('div', { class: 'note', text: [b.driver].concat(extra || [], b.ref ? [b.ref] : []).join(' · ') }))));
+}
+function writeupLink(w) { return w ? el('a', { href: w.url, text: 'Write-up' }) : null; }
+function renderBuild(m, b) {
+  if (!b) { m.appendChild(el('p', { class: 'empty', text: 'No best build is written up yet (the "build" part of fixes/PROGRESS.json; mgmt-ops fills it in).' })); return; }
+  var head = el('section', { class: 'card goal', 'aria-label': 'Best build' }, el('p', null, el('b', { text: b.name })),
+    el('div', { class: 'q', text: 'The best build since ' + hhmm(b.since) + ' ' + String(b.since).slice(0, 10) + ' · ' + b.applied.length + ' fix' + (b.applied.length === 1 ? '' : 'es') + ' in it' }));
+  if (b.summary) head.appendChild(el('p', { class: 'fixes', text: b.summary }));
+  m.appendChild(head);
+  m.appendChild(el('h2', { class: 'section', text: 'In today’s best build' }));
+  var ul = el('ul', { class: 'plain card build' });
+  b.applied.forEach(function (a) {
+    var li = el('li', { 'data-fix': a.id }, el('b', { text: a.title }), a.writeup ? ' ' : null, writeupLink(a.writeup));
+    if (a.fixes) li.appendChild(el('div', { class: 'q', text: a.fixes }));
+    if (a.gain) { var t = el('table', { class: 'nums' }); gainRow(t, a.gain); li.appendChild(el('div', { class: 'tablewrap' }, t)); }
+    else li.appendChild(el('div', { class: 'q', text: 'No measured phone gain yet.' }));
+    if (a.felt) li.appendChild(el('div', { class: 'q', text: 'You: ' + a.felt.plain + (a.felt.text ? ' (' + a.felt.text + ')' : '') }));
+    var more = detailsBox('build-' + a.id, 'Its other numbers', a.more.map(function (x) { return x.what + ': ' + x.before + ' → ' + x.after + ' (' + x.tag + ', ' + x.driver + (x.ref ? ', ' + x.ref : '') + ')'; }));
+    if (more) li.appendChild(more);
+    ul.appendChild(li);
+  });
+  if (!b.applied.length) ul.appendChild(el('li', { class: 'empty', text: 'No fixes listed yet.' }));
+  m.appendChild(ul);
+  m.appendChild(el('h2', { class: 'section', text: 'The whole build vs the original page' }));
+  if (b.combined.length) {
+    var t = el('table', { class: 'nums' });
+    b.combined.forEach(function (c) { gainRow(t, c, ['measured ' + hhmm(c.when) + ' ' + String(c.when).slice(0, 10)].concat(c.how ? [c.how] : [])); });
+    m.appendChild(el('section', { class: 'card', 'aria-label': 'Whole build' }, el('div', { class: 'tablewrap' }, t)));
+  } else m.appendChild(el('p', { class: 'empty', text: 'Not measured as a whole yet.' }));
+  m.appendChild(el('h2', { class: 'section', text: 'Tried, not applied' }));
+  var tu = el('ul', { class: 'plain card build' });
+  b.tried.forEach(function (x) {
+    tu.appendChild(el('li', { 'data-fix': x.id }, el('b', { text: x.title + ': ' }), x.why || 'no reason written yet', x.writeup ? ' ' : null, writeupLink(x.writeup)));
+  });
+  if (!b.tried.length) tu.appendChild(el('li', { class: 'empty', text: 'Nothing dropped yet.' }));
+  m.appendChild(tu);
+  if (b.open.length) m.appendChild(el('p', { class: 'q' }, 'Still being worked on: ' + b.open.map(function (o) { return o.title; }).join('; ') + ' (', el('a', { href: '/progress', text: 'see Progress' }), ')'));
+}
+function buildCard(m, b) {
+  if (!b) return;
+  m.appendChild(el('section', { class: 'card', 'aria-label': 'Best build' },
+    el('div', { class: 'k', text: 'Today’s best build' }),
+    el('p', { class: 'fixes' }, el('b', { text: b.name }), ': ' + b.applied.length + ' fix' + (b.applied.length === 1 ? '' : 'es') + ' in it, ' + b.tried.length + ' tried and not applied. ', el('a', { href: '/build', text: 'See what is in it and why' }))));
+}
+
 function render(v) {
   var s = v.summary;
   document.getElementById('upd').textContent = s.updatedAt
@@ -246,6 +297,7 @@ function render(v) {
 
   var m = document.getElementById('main');
   m.replaceChildren();
+  if (BUILD_PAGE) { renderBuild(m, v.build); return; }
   if (v.goal || v.complaints.length) {
     var g = el('section', { class: 'card goal', 'aria-label': 'Goal' });
     if (v.goal) g.appendChild(el('p', { text: v.goal }));
@@ -256,6 +308,7 @@ function render(v) {
     }
     m.appendChild(g);
   }
+  buildCard(m, v.build);
   if (v.changes.length) {
     m.appendChild(el('h2', { class: 'section', text: 'What changed' }));
     var ul = el('ul', { class: 'plain card' });
@@ -318,6 +371,7 @@ function load() {
   });
 }
 if (window.ConsoleNav) ConsoleNav.onChange = function () { load(); }; // a step came or went: refresh "Coming up for you"
+if (BUILD_PAGE) { var h1 = document.getElementById('h1'); if (h1) h1.textContent = 'Today’s best build'; document.title = 'Best build'; }
 load();
 setInterval(load, 15000);
 </script>

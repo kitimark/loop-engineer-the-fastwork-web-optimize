@@ -8,6 +8,9 @@
 //   GET  /progress               the fix-progress page (tools/lib/progress-page.html; read-only)
 //   GET  /api/progress           its model (tools/lib/progress.mjs currentView: curated fixes/PROGRESS.json + live
 //                                locks, incidents and waiting steps; scrubbed of URLs, addresses and ids)
+//   GET  /build                  today's best build (the progress page's build view, I-061): what is in it, the whole
+//                                build vs the original, what was tried and not applied and why
+//   GET  /writeup/<path>         a write-up the build page links (a .md under fixes/ or research/; text/plain, scrubbed)
 //   GET  /status                 the status board (tools/lib/status-page.html; read-only): every workstream's priority,
 //                                state, waits (self-reported + derived from the locks, steps, incidents), owner, note
 //   GET  /api/status             its model (tools/lib/status.mjs currentStatusView; scrubbed like /api/progress)
@@ -41,7 +44,7 @@ import http from 'node:http';
 import { mkdirSync, unlinkSync, readFileSync } from 'node:fs';
 import { list, publicView, start, done, answer, skip, reopen, restart, consoleDir, serverFile, OPEN } from './console.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
-import { currentView } from './progress.mjs';
+import { currentView, readWriteup } from './progress.mjs';
 import { currentStatusView } from './status.mjs';
 import { waitingView, stepWatcher, createNotifier, DEFAULT_REMIND_MIN } from './console-notify.mjs';
 import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER } from './console-threads.mjs';
@@ -69,6 +72,7 @@ export function menuHtml(current) {
     + `<a class="mbtn${on('steps')}" title="What the agents need from you" href="/">Your steps<span class="badge" data-badge hidden>0</span></a>`
     + `<a class="mbtn${on('status')}" title="Who is doing what, in priority order" href="/status">Status</a>`
     + `<a class="mbtn${on('progress')}" title="Where the fixes stand" href="/progress">Progress</a>`
+    + `<a class="mbtn${on('build')}" title="What is in today's best build, how much it helps, and what was tried and not applied" href="/build">Best build</a>`
     + `<a class="mbtn${on('threads')}" title="Your questions to the agents, one thread per topic" href="/threads">Threads<span class="badge" data-thread-badge hidden>0</span></a>`
     + `<a class="mbtn${on('proposals')}" title="Look-alike changes to compare and accept" href="/proposals">Proposals<span class="badge" data-badge-proposals hidden>0</span></a>`
     + `<span class="menu-sp"></span>`
@@ -321,6 +325,13 @@ export function handler(port, feed = null) {
       if (req.method === 'GET' && u.pathname === '/api/steps') return send(res, 200, { now: iso(), steps: pageSteps() });
       if (req.method === 'GET' && (u.pathname === '/progress' || u.pathname === '/progress.html')) return send(res, 200, withMenu(progressPage(), 'progress'), 'text/html; charset=utf-8');
       if (req.method === 'GET' && u.pathname === '/api/progress') return send(res, 200, await currentView());
+      // I-061: today's best build (the progress page in its build view) and the write-ups it links (read-only, scrubbed)
+      if (req.method === 'GET' && (u.pathname === '/build' || u.pathname === '/build.html')) return send(res, 200, withMenu(progressPage(), 'build'), 'text/html; charset=utf-8');
+      if (req.method === 'GET' && u.pathname.startsWith('/writeup/')) {
+        let rel; try { rel = decodeURIComponent(u.pathname.slice('/writeup/'.length)); } catch { return send(res, 400, { error: 'bad path' }); }
+        const text = readWriteup(rel);
+        return text === null ? send(res, 404, { error: 'no such write-up (a .md file under fixes/ or research/)' }) : send(res, 200, text, 'text/plain; charset=utf-8');
+      }
       if (req.method === 'GET' && (u.pathname === '/status' || u.pathname === '/status.html')) return send(res, 200, withMenu(statusPage(), 'status'), 'text/html; charset=utf-8');
       if (req.method === 'GET' && u.pathname === '/api/status') return send(res, 200, await currentStatusView());
       const m = u.pathname.match(/^\/api\/steps\/(C-\d{1,6})\/([a-z]+)$/);

@@ -143,10 +143,12 @@ test('stepWatcher (serve --notify): silent at start, one notification per new st
 
 test('menuHtml: the same top bar on every page, plain links, the current page highlighted, the badge on "Your steps"', () => {
   const steps = S.menuHtml('steps'), prog = S.menuHtml('progress'), stat = S.menuHtml('status'), thr = S.menuHtml('threads'), prop = S.menuHtml('proposals');
-  for (const m of [steps, prog, stat, thr, prop]) {
+  const build = S.menuHtml('build'); // I-061
+  for (const m of [steps, prog, stat, thr, prop, build]) {
     assert.match(m, /<nav class="menu" aria-label="Console pages">/);
     assert.match(m, /href="\/">Your steps<span class="badge" data-badge hidden>0<\/span><\/a>/);
     assert.match(m, /href="\/progress">Progress<\/a>/);
+    assert.match(m, /href="\/build">Best build<\/a>/);
     assert.match(m, /href="\/status">Status<\/a>/);
     assert.match(m, /href="\/threads">Threads<span class="badge" data-thread-badge hidden>0<\/span><\/a>/);
     assert.match(m, /href="\/proposals">Proposals<span class="badge" data-badge-proposals hidden>0<\/span><\/a>/);
@@ -161,6 +163,8 @@ test('menuHtml: the same top bar on every page, plain links, the current page hi
   assert.equal(stat.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the status page: the same bar');
   assert.match(prop, /class="mbtn on" aria-current="page" title="[^"]*" href="\/proposals"/);
   assert.equal(prop.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the proposals page: the same bar');
+  assert.match(build, /class="mbtn on" aria-current="page" title="[^"]*" href="\/build"/);
+  assert.equal(build.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the best-build page: the same bar');
   assert.equal(steps.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'identical apart from the highlight');
   for (const f of ['console-page.html', 'progress-page.html', 'status-page.html', 'threads-page.html', 'proposals-page.html']) {
     const html = readFileSync(new URL(`../../tools/lib/${f}`, import.meta.url), 'utf8');

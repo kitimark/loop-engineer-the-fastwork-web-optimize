@@ -4,7 +4,7 @@
 // never show on the progress page. No port 5173, phone, Chrome, real locks or real store.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, tool, startProc, request } from '../helpers.mjs';
 
@@ -127,6 +127,41 @@ test('I-057: on a loaded host (injected load1 above the join load) a second read
     lock(['dequeue', 'chrome-measure', '--shared', '--owner', 'fix-e2e-b']);
     lock(['release', 'chrome-measure', '--shared', '--owner', 'fix-e2e-a']);
   }
+});
+
+test('I-061: /build (the best build, the same top bar with "Best build" on), /api/progress has it, /writeup serves only write-ups, scrubbed; progress --check validates build', async () => {
+  const st = tempDir('fw-build-e2e-'), root = tempDir('fw-build-root-');
+  mkdirSync(join(root, 'fixes', 'lc-cq3'), { recursive: true });
+  writeFileSync(join(root, 'fixes', 'lc-cq3', 'README.md'), '# lc-cq3\nmeasured on http://192.168.77.12:5497/\n');
+  const pb = {
+    ...progress,
+    items: [...progress.items, { id: 'lc-cq3', title: 'Container query trick', area: 'end', state: 'dropped', stage: 'F', why: 'no gain on the phone' }],
+    build: { name: 'stack5', since: '2026-10-02T08:00:00Z', fixes: ['cdwc'], combined: [{ what: 'frames over 50 ms', before: '4-9', after: '0-2', tag: 'OBSERVED', driver: 'scripted scroll', when: '2026-10-02T08:40:00Z', how: 'phone block A1, 9 runs' }] },
+  };
+  const pf = join(st, 'PROGRESS.json'); writeFileSync(pf, JSON.stringify(pb));
+  const e = { FW_STATE_DIR: st, FW_PROGRESS_FILE: pf, FW_PREDICTIONS_FILE: join(st, 'none.md'), FW_WRITEUP_ROOT: root };
+  const s = await startProc(process.execPath, [CON, 'serve', '--port', '0'], { env: e, ready: (x) => { const m = x.match(/^CONSOLE_URL=(\S+)$/m); return m && m[1]; } });
+  try {
+    const page = await request(new URL('build', s.url).href);
+    assert.equal(page.status, 200);
+    assert.match(page.text, /class="mbtn on" aria-current="page" title="[^"]*" href="\/build">Best build</);
+    const v = JSON.parse((await request(new URL('api/progress', s.url).href)).text);
+    assert.equal(v.build.name, 'stack5');
+    assert.deepEqual(v.build.tried.map((t) => [t.id, t.writeup?.url]), [['lc-cq3', '/writeup/fixes/lc-cq3/README.md']]);
+    const w = await request(new URL('writeup/fixes/lc-cq3/README.md', s.url).href);
+    assert.equal(w.status, 200);
+    assert.match(w.headers['content-type'], /^text\/plain/);
+    assert.equal(w.text, '# lc-cq3\nmeasured on <link>\n');
+    for (const bad of ['writeup/fixes/%2e%2e/%2e%2e/x.md', 'writeup/fixes/lc-cq3/missing.md', 'writeup/tools/a.md', 'writeup/%E0%A4%A']) {
+      assert.ok([400, 404].includes((await request(new URL(bad, s.url).href)).status), bad);
+    }
+    const t = node(CON, ['progress'], { env: e });
+    assert.match(t.stdout, /TODAY'S BEST BUILD: stack5/);
+    writeFileSync(pf, JSON.stringify({ ...pb, build: { ...pb.build, fixes: ['cdwc', 'lc-cq3'] } }));
+    const c = node(CON, ['progress', '--check', '--file', pf], { env: e });
+    assert.notEqual(c.code, 0, c.out);
+    assert.match(c.out, /a dropped item can't be in build\.fixes/);
+  } finally { await s.stop(); }
 });
 
 test('I-060: "Right now" says what the phone does (lock.mjs doing), for whom and the time left; the API and the text; no LAN address', async () => {

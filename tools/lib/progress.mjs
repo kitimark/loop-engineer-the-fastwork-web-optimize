@@ -35,11 +35,25 @@
 //     "gate": "<what must pass before it can land>", "next": "<next step>", "owner": "<agent>",
 //     "checks": [{ "id": "P-032", "what": "<plain>", "result": "<plain, or empty while it runs>" }],
 //     "why": "<dropped only: why, plain>",
-//     "details": ["<technical line>", …]
+//     "details": ["<technical line>", …],
+//     "inBuild": true|false,                     // optional (I-061): in today's best build; must agree with build.fixes
+//     "whyNot": "<not applied: why, one plain line>",                        // optional (I-061): tried, not applied
+//     "writeup": "fixes/<topic>/README.md"       // optional (I-061): its write-up (fixes/ or research/, a .md file)
 //   }],
-//   "upcoming": [{ "title": "<a step that will come to the user console>", "when": "<plain>", "item": "<item id>" }]
+//   "upcoming": [{ "title": "<a step that will come to the user console>", "when": "<plain>", "item": "<item id>" }],
+//   "build": {                                   // optional (I-061, user T-021): today's best build, the /build page
+//     "name": "<plain name>", "since": "<ISO: when it became the best build>",
+//     "summary": "<how it improves things, one plain sentence>",            // optional
+//     "fixes": ["<item id>", …],                 // the fixes applied in it; each item's first best[] entry is its gain
+//     "combined": [{ "what": "<metric, plain>", "before": "<the original page>", "after": "<this build>",
+//                    "tag": "OBSERVED|…", "driver": "<scripted|robot finger|finger|…>", "when": "<ISO: measured>",
+//                    "how": "<runs, block, phone, plain>", "ref": "P-062", "note": "<e.g. threshold-sensitive>" }]
+//   }
 // }
-import { readFileSync } from 'node:fs';
+// The /build page (I-061): in the build (each fix, its own phone gain and tag), the whole build vs the original (with
+// when and how it was measured), and "tried, not applied": every dropped item and every item with a whyNot, with
+// its reason and a link to its write-up (served read-only by the console at /writeup/<path>).
+import { readFileSync, existsSync, statSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from './paths.mjs';
 import { redact } from './redact.mjs';
@@ -67,6 +81,9 @@ export const STALE_HOURS = 3;
 const CHANGES_SHOWN = 5;
 const LEDGER_ID = /^P-\d{3}[a-z]?$/;
 const SLUG = /^[a-z0-9][a-z0-9-]{0,40}$/;
+const REF = /^(P-\d{3}[a-z]?|F-\d{3}|C-\d{3}|I-\d{3})$/;
+/** A write-up the console may serve (I-061): a .md file under fixes/ or research/, no '..', no hidden parts. */
+export const WRITEUP = /^(fixes|research)(\/(?!\.)[A-Za-z0-9_][A-Za-z0-9._-]{0,80}){1,4}\.md$/;
 
 // ---- personal data -----------------------------------------------------------------------------------
 
@@ -164,6 +181,43 @@ export function validateProgress(p) {
   arr(p.upcoming, 'upcoming', { optional: true, max: 20 }).forEach((u, i) => {
     str(u?.title, `upcoming[${i}].title`, { max: 160 }); str(u?.when, `upcoming[${i}].when`, { max: 160 });
     if (u?.item !== undefined && !ids.has(u.item)) E.push(`upcoming[${i}].item: no item "${u.item}"`);
+  });
+  // I-061: today's best build, and per item inBuild / whyNot / writeup
+  const inBuild = new Set();
+  if (p.build !== undefined) {
+    const b = p.build;
+    if (!b || typeof b !== 'object' || Array.isArray(b)) E.push('build: must be an object');
+    else {
+      str(b.name, 'build.name', { max: 80 });
+      if (!isIso(b.since)) E.push('build.since: must be an ISO UTC time (when it became the best build)');
+      str(b.summary, 'build.summary', { optional: true });
+      arr(b.fixes, 'build.fixes', { max: 30 }).forEach((id, i) => {
+        if (!ids.has(id)) E.push(`build.fixes[${i}]: no item "${id}"`);
+        else if (inBuild.has(id)) E.push(`build.fixes[${i}]: "${id}" twice`);
+        inBuild.add(id);
+      });
+      arr(b.combined, 'build.combined', { optional: true, max: 8 }).forEach((c, j) => {
+        const ct = `build.combined[${j}]`;
+        str(c?.what, `${ct}.what`, { max: 120 }); str(c?.before, `${ct}.before`, { max: 80 }); str(c?.after, `${ct}.after`, { max: 80 });
+        oneOf(c?.tag, TAGS, `${ct}.tag`);
+        str(c?.driver, `${ct}.driver`, { max: 60 });
+        if (!isIso(c?.when)) E.push(`${ct}.when: must be an ISO UTC time (when it was measured)`);
+        str(c?.how, `${ct}.how`, { optional: true, max: 160 });
+        if (c?.ref !== undefined && !REF.test(String(c.ref))) E.push(`${ct}.ref: a ledger, finding, console or incident id (P-029, F-084, C-001, I-038)`);
+        str(c?.note, `${ct}.note`, { optional: true, max: 160 });
+      });
+    }
+  }
+  (Array.isArray(p.items) ? p.items : []).forEach((it, i) => {
+    if (!it || typeof it !== 'object') return;
+    const at = `items[${i}]`;
+    if (it.inBuild !== undefined && typeof it.inBuild !== 'boolean') E.push(`${at}.inBuild: true or false`);
+    else if (it.inBuild === true && p.build === undefined) E.push(`${at}.inBuild: true, but there is no top-level build`);
+    else if (it.inBuild !== undefined && p.build !== undefined && it.inBuild !== inBuild.has(it.id)) E.push(`${at}.inBuild: ${it.inBuild}, but build.fixes ${inBuild.has(it.id) ? 'lists' : 'does not list'} "${it.id}"`);
+    if (inBuild.has(it.id) && it.state === 'dropped') E.push(`${at}: a dropped item can't be in build.fixes`);
+    if (inBuild.has(it.id) && it.whyNot !== undefined) E.push(`${at}.whyNot: "${it.id}" is in the build`);
+    str(it.whyNot, `${at}.whyNot`, { optional: true, max: 200 });
+    if (it.writeup !== undefined && !WRITEUP.test(String(it.writeup))) E.push(`${at}.writeup: a .md file under fixes/ or research/ (like fixes/<topic>/README.md)`);
   });
   // Hard rule 12: no personal data anywhere in the file
   const walk = (v, path) => {
@@ -384,11 +438,66 @@ function itemView(it, ledger, statusLinks = new Map()) {
   };
 }
 
+// ---- today's best build (I-061, user T-021) ---------------------------------------------------------------------
+
+/** The root write-ups are served from: this checkout ($FW_WRITEUP_ROOT in tests). */
+export const writeupRoot = () => process.env.FW_WRITEUP_ROOT || REPO;
+/** Whether a write-up path is allowed (WRITEUP) and is a file inside the root (no symlink out of it). */
+export function writeupExists(rel, root = writeupRoot()) {
+  if (!WRITEUP.test(String(rel))) return false;
+  try {
+    const real = realpathSync(join(root, rel)), base = realpathSync(root);
+    return real.startsWith(base + '/') && statSync(real).isFile();
+  } catch { return false; }
+}
+const WRITEUP_MAX = 512 * 1024;
+/** A write-up's text for the console's /writeup/<path> (read-only, scrubbed of personal data), or null. */
+export function readWriteup(rel, root = writeupRoot()) {
+  if (!writeupExists(rel, root)) return null;
+  const real = realpathSync(join(root, rel));
+  if (statSync(real).size > WRITEUP_MAX) return `(${rel} is larger than ${WRITEUP_MAX / 1024} KB; read it in the repository)`;
+  return sanitize(readFileSync(real, 'utf8'), WRITEUP_MAX);
+}
+
+/**
+ * The /build model: {name, since, summary, applied: [{id, title, fixes, gain, more, felt, writeup}], combined: [...],
+ * tried: [{id, title, state, why, writeup}], open: [{id, title, state}]} or null without a curated build.
+ * gain: the item's first best[] entry (its headline phone number), null if it has none yet. writeup: {path, url} when
+ * the file exists here (an item's `writeup`, else fixes/<id>/README.md).
+ */
+export function bestBuildView(p, { exists = writeupExists } = {}) {
+  const b = p?.build;
+  if (!b || typeof b !== 'object' || !Array.isArray(b.fixes)) return null;
+  const items = Array.isArray(p.items) ? p.items.filter((it) => it && typeof it === 'object') : [];
+  const byId = new Map(items.map((it) => [it.id, it]));
+  const link = (it) => {
+    for (const w of [it.writeup, `fixes/${it.id}/README.md`]) if (w && exists(w)) return { path: w, url: `/writeup/${w}` };
+    return null;
+  };
+  const inIt = new Set(b.fixes);
+  const applied = b.fixes.filter((id) => byId.has(id)).map((id) => {
+    const it = byId.get(id), best = Array.isArray(it.best) ? it.best : [];
+    return {
+      id, title: it.title, fixes: it.fixes || null, gain: best[0] || null, more: best.slice(1),
+      felt: it.felt ? { ...it.felt, plain: FELT_PLAIN[it.felt.answer] || it.felt.answer } : null, writeup: link(it),
+    };
+  });
+  const rest = items.filter((it) => !inIt.has(it.id) && it.state !== 'base' && it.state !== 'landed');
+  const tried = rest.filter((it) => it.state === 'dropped' || it.whyNot).map((it) => ({
+    id: it.id, title: it.title, state: it.state, why: it.whyNot || it.why || null, writeup: link(it),
+  }));
+  const open = rest.filter((it) => !(it.state === 'dropped' || it.whyNot)).map((it) => ({ id: it.id, title: it.title, state: it.state }));
+  return {
+    name: b.name, since: b.since, summary: b.summary || null, applied,
+    combined: (Array.isArray(b.combined) ? b.combined : []).map((c) => ({ ...c })), tried, open,
+  };
+}
+
 /**
  * The page / CLI model from the curated data and the live sources. Pure: every input passed in.
  * {now, summary, goal, complaints, changes, live, sections: [{key, label, items}], upcoming, waiting}
  */
-export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null } = {}) {
+export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null, writeups = writeupExists } = {}) {
   const p = errors.length && !progress ? null : progress;
   const items = (p?.items || []).map((it) => itemView(it, ledger, statusLinks));
   const areaRank = (a) => Object.keys(AREAS).indexOf(a);
@@ -405,6 +514,7 @@ export function buildView({ progress, errors = [], ledger = new Map(), live = {}
       newResults: items.reduce((n, i) => n + i.checks.filter((c) => c.newResult).length, 0),
     },
     goal: p?.goal || null,
+    build: bestBuildView(p, { exists: writeups }), // I-061: today's best build (null without one)
     complaints: (p?.complaints || []).map((c) => ({ ...c, areaLabel: AREAS[c.area] })),
     changes: [...(p?.changes || [])].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, CHANGES_SHOWN),
     live: {
@@ -486,6 +596,27 @@ export function bestText(b) {
   return `${b.what}: ${b.before} -> ${b.after} (${b.tag}, ${b.driver}${b.ref ? `, ${b.ref}` : ''}${b.note ? `; ${b.note}` : ''})`;
 }
 
+/** A whole-build number: "what: before -> after (tag, driver; measured 08:40Z 2026-10-02, how; ref; note)". */
+export function combinedText(c) {
+  return `${c.what}: ${c.before} -> ${c.after} (${c.tag}, ${c.driver}; measured ${hhmm(c.when)} ${String(c.when || '').slice(0, 10)}${c.how ? `, ${c.how}` : ''}${c.ref ? `; ${c.ref}` : ''}${c.note ? `; ${c.note}` : ''})`;
+}
+
+/** The best build as text lines (I-061; also the top of `console.mjs progress`). */
+export function buildLines(b) {
+  const L = [`TODAY'S BEST BUILD: ${b.name} (the best build since ${hhmm(b.since)} ${String(b.since).slice(0, 10)})`];
+  if (b.summary) L.push(`  ${b.summary}`);
+  L.push('  In it:');
+  for (const a of b.applied) L.push(`    - ${a.title}: ${a.gain ? bestText(a.gain) : 'no measured phone gain yet'}${a.writeup ? `  [${a.writeup.path}]` : ''}`);
+  if (!b.applied.length) L.push('    (no fixes listed)');
+  if (b.combined.length) { L.push('  The whole build vs the original page:'); for (const c of b.combined) L.push(`    ${combinedText(c)}`); }
+  if (b.tried.length) {
+    L.push('  Tried, not applied:');
+    for (const t of b.tried) L.push(`    - ${t.title}: ${t.why || 'no reason written yet'}${t.writeup ? `  [${t.writeup.path}]` : ''}`);
+  }
+  if (b.open.length) L.push(`  Still being worked on: ${b.open.map((o) => o.title).join('; ')}`);
+  return L;
+}
+
 /** The view as plain text (`console.mjs progress`); `details` adds the technical lines. */
 export function renderText(v, { details = false } = {}) {
   const L = [];
@@ -497,6 +628,7 @@ export function renderText(v, { details = false } = {}) {
   if (v.goal) L.push(`Goal: ${v.goal}`);
   if (v.complaints.length) L.push(`You flagged: ${v.complaints.map((c) => c.text).join('; ')}`);
   if (v.changes.length) { L.push('', 'WHAT CHANGED'); for (const c of v.changes) L.push(`  ${hhmm(c.at)}  ${c.text}`); }
+  if (v.build) L.push('', ...buildLines(v.build));
   L.push('', 'NOW');
   L.push(`  ${holderText(v.live.phone, 'phone')}`, ...deviceLines(v.live.devices?.phone));
   L.push(`  ${holderText(v.live.chrome, 'Chrome')}`, ...deviceLines(v.live.devices?.chrome));
