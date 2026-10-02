@@ -315,7 +315,7 @@ In the band (hero far edge to `#people`'s own far edge), B always has `#people` 
 
 Owner of the run: `iphone-runner`, when the iPhone is on USB. No measurement has been made with this ticket. Recordings and run JSON stay in `out/` (Fastwork content; Hard rule 3).
 
-**Question.** During a finger fling up from the band, does P ever show `#people` (the profile-card deck) as a placeholder on screen, in a frame where B shows the deck? Driver G (WDA gesture), with F as the fallback.
+**Question.** During a finger fling up from the band, does P ever show `#people` (the profile-card deck) as a placeholder on screen, in a frame where B shows the deck? Driver G (WDA gesture), with F as the fallback. Prediction: **P-057** (`fixes/PREDICTIONS.md`): no FAIL in block 1 (~65 %) or block 2 (~80 %).
 
 **Builds.** Immutable snapshot copies, read-only (`chmod a-w`), in this worktree's `out/fwreskip/snap-g1/` (path from the main checkout: `.claude/worktrees/agent-a1722cf5058e25591/out/fwreskip/snap-g1/`):
 
