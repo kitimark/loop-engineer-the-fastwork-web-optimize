@@ -8,6 +8,15 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **13:0xZ (batch) P-066 row filed pre-data; bbdf5b8 landed (lead, ff).**
+  - fix-image-size committed the P-066 row on worktree-agent-af756241c686d490e (5107519, one line in PREDICTIONS.md,
+    checked by ops), before any Sim session; it rides its land request. Gaps closed: ~0 = |delta| within the A/A spread,
+    or < 3 MB without an A/A; outcomes: [-25, -3] in both sessions = hit; ~0 = falsified, park; beyond the A/A spread
+    but above -3 = miss low, lead decides, no extra session; < -25 = miss high (good, land-eligible, lesson logged);
+    > ~0 = drop; sessions disagree = report both, no third without the lead; driver Sim functional, "Simulator MB are
+    structure only, never a phone gain". Overlay id c5391b3e6971 (45 files). It sends the measured line after it lands.
+  - **Land rule (lead 13:0xZ):** an idle ops can't wake itself for a 30-min window. When a task ends, send the land
+    request with the hand-back if the batch is older than 30 min; otherwise the lead picks it up at the next check-in.
 - **12:4xZ (batch) P-066 issued to fix-image-size; fbe149f landed.**
   - **P-066** (fix-image-size, card received 12:3xZ): image-size (48 raster files replaced at the same URL, markup
     unchanged) vs baseline; Sim functional sessions (no timing), A B | B A over 2 sessions, + A/A if it fits; metric
@@ -282,7 +291,8 @@ Board rows `ops`, `phone-queue`, `fwreskip`, `best-stack` and `phone-stack-test`
     details ≤ 600. Bump `updatedAt` to the real `date -u`, never ahead.
   - LAND request: branch@sha, rebased, clean, test:unit count, progress --check, LAN grep 0.
   - Batching (lead 10-02 11:5xZ): batch handover-only entries; at most one land request per ~30 min. Send one at
-    once only when it changes PROGRESS.json or something the user sees.
+    once only when it changes PROGRESS.json or something the user sees. Idle ops can't wake for a window (lead
+    13:0xZ): at the end of a task, send the land request with the hand-back if the batch is older than 30 min.
   - Second reads: hashes (shasum the snapshot files), one control, driver, warm-up RUN per port, sentinel (every
     control in a non-Timeline block), minutes, P-row committed pre-data.
 
