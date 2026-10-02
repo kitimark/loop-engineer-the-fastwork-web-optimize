@@ -3,8 +3,8 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft. Proposal PR-001 rev 2: frozen-frame parity passed. Live playback FAILED in the Simulator. Parked
-until a phone check, not withdrawn.
+**Status:** draft. PR-001 rev 2 was accepted (2026-10-02 06:31Z). The rev 3 arms are built, and phone ticket P-058 is
+prepared but not run ("PR-001 rev 3" below). Rev 3 is posted after the phone blocks.
 **Stage:** R / I (design-engineer PoC, illusion proposal; no D card)
 **Device class / gate:** phone-only (WebKit). Chrome is gated to the original SVG.
 **Driver(s) behind the claims:** Simulator functional sessions (no timing). Chrome per-draw trace counts (r14).
@@ -122,6 +122,173 @@ paused.
 
 **Video:** not pixel-identical. HEVC with alpha (the only transparent video Safari plays) is Main Profile with
 chroma_format_idc 1, i.e. 4:2:0. Source: Apple, "HEVC Video with Alpha Interoperability Profile". CONFIRMED.
+
+## PR-001 rev 3: arms and phone ticket P-058 (prepared, not run)
+
+The user accepted rev 2 (2026-10-02 06:31Z) and asked which solution performs best. A bit of pixel difference is now
+acceptable for PR-001 only. Timing claims are allowed for PR-001 only. The user's "3 ways" are the three frame layouts
+F1-F3 below. The rev 1 wipe stays out ("also tried, not chosen"). CSS `contain` stays out: refuted by WebKit source.
+
+### Arms
+
+Every arm is built on the same base, C = the user's B+ build (`fixes/user-bplus/overlay`). F1, F2, F3 and V share one
+JS (HEcanvas v3). The manifest picks the path: tiles, one box per changed ms, a whole frame, or video. v3 reads no
+localStorage or query flags. Its manifest's `arm` field is what the run logs.
+
+| arm | what draws the 'you' word | per 60 Hz tick | 'you' assets | decoded, 'you' / 7 words (ESTIMATE) |
+|---|---|---|---|---|
+| C | the original SVG (CSS stroke-dashoffset) | - | - | - |
+| F1 | canvas, 16 px tiles of the changed area (rev 2 atlas) | 38-73 drawImage on average, up to 195 | 1 PNG 512x2291, 908,860 B | 4.5 / ~31 MB |
+| F2 | canvas, the whole latest frame (one copy per frame) | 1 drawImage | 6 PNG sheets ≤ 2048 px, 1,540,135 B | 83.3 / ~580 MB |
+| F3 | canvas, one bounding box per changed ms | ~5-17 drawImage | 2 PNG sheets ≤ 2048 px, 1,303,356 B | 20.1 / ~140 MB |
+| V | HEVC with alpha (4:2:0), one `<video>` per direction, played from the draw start; handback when it drifts > 50 ms from the draw clock | - (media clock) | 2 MP4, 120 fps, 222x120, 117,919 + 116,284 B | video decoder buffers, not estimated |
+| B | the SVG; only the visible copy animates (CSS rule, illusion-accent-onecopy) | - | - | - |
+
+B's CSS = C's CSS plus one rule: `.script-accent.svelte-1fn2go6:is(.is-drawing-in, .is-drawing-out)
+.is-idle-frame.svelte-1fn2go6:not(.is-idle-frame-0) :is(.accent-path, .accent-fill) { animation: none !important; }`.
+
+Frame counts: out 565 changed ms, in 297-298. F1 has 3956 + 2067 tiles and at most 13 per ms. F2 and F3 have one
+patch per changed ms.
+
+### Pixel difference against C (Simulator, frozen clock, OBSERVED)
+
+Method: the WebKit frames of each arm at every 13th ms plus the last, in both directions. The arms render frame t
+through their test hook; B's SVG is seeked to t. Each frame is compared with C's 1-ms frames, a screenshot crop of
+279x219 device px (61,101 px) at 3x.
+
+| arm | frames compared | frames with any change | most changed px in one frame | max channel delta |
+|---|---|---|---|---|
+| F1 | 137 (in 71, out 66: the session ended before out 858-900; rev 2 covered those with the same atlas, identical) | 0 | 0 | 0 |
+| F2 | 142 | 0 | 0 | 0 |
+| F3 | 142 | 0 | 0 | 0 |
+| V | PENDING (I-054) | | | |
+| B | 142 | 0 | 0 | 0 |
+
+### Live functional check (Simulator, OBSERVED, no timing claim)
+
+44 s at the top per arm, plain rAF counter.
+- **F2:** engaged on both 'you' draws, 53-55 rAF ticks per 0.9 s draw. That equals the SVG draws on the same page. It
+  reached frame 884-900. No errors.
+- **F3:** engaged, but stalls like F1 in rev 2: 0-23 ticks per draw, gaps up to 1.27 s. This is a Simulator
+  observation, not a verdict. The phone decides.
+- **V:** never ready. `tools/serve.mjs` answered Safari's byte-range requests with 200, and the videos never loaded.
+  Incident I-054 (Range support in serve.mjs) is fixed by ts-i054, not yet landed. **Arm V's served-content path depends
+  on I-054's fix.** Apple: "HTTP servers hosting media files for iOS must support byte-range requests" (Safari Web
+  Content Guide, "Configuring Your Server").
+- 'you' cycle: draw-in at 22.0 s and draw-out at 24.2 s after navigation, period 21.44 s.
+
+### Phone ticket P-058
+
+Owner of the run: `iphone-runner`, scheduled by the lead (PR-001 is third, after G1 and the stack test). No
+measurement has been made with this ticket. Run JSON and recordings stay in `out/` (Fastwork content; Hard rule 3).
+
+**Question.** On the iPhone, which way of drawing the hero's 'you' word gives the fewest slow frames during and just
+after its draws? The pre-registered rule is below.
+
+**Builds.** Snapshot copies, read-only, in `.claude/worktrees/agent-afc7d9fff1fcc6154/out/de-illusion-style/arms/snap/`
+(from the main checkout), one overlay root per arm. Full sha256 in `snap/sha256.json`.
+
+| arm | files (sha256, first 12) |
+|---|---|
+| C | `assets/2.gBuqKVzi.css` `cc8d1340b449`, `nodes/2.DyWL8TcE.js` `dbd5fdb4f1fb` |
+| F1 | `assets/2.gBuqKVzi.css` `1885674d4ee7`, `nodes/2.DyWL8TcE.js` `092a5c0cc4ee`, `assets/accent-frames/manifest.json` `2e1cda7bea3e`, `w00.png` `33be5edafe41` |
+| F2 | CSS and JS as F1, `manifest.json` `d409535ca4ce`, `w00-0.png` `9eec489d78f8`, `w00-1.png` `652fcdbe0ce3`, `w00-2.png` `a11188a5d414`, `w00-3.png` `d3d732c9465b`, `w00-4.png` `ee7d720bcdbe`, `w00-5.png` `c52a4c8d4935` |
+| F3 | CSS and JS as F1, `manifest.json` `ca4ace2d6119`, `w00-0.png` `020d399b05fa`, `w00-1.png` `e1ed6204df4a` |
+| V | CSS and JS as F1, `manifest.json` `56d7c70fe43e`, `w00-in.mp4` `7d5b834b69c5`, `w00-out.mp4` `8e8f113f8565` |
+| B | `assets/2.gBuqKVzi.css` `7e6b070e15c2`, `nodes/2.DyWL8TcE.js` `dbd5fdb4f1fb` |
+
+Rebuild if gone: `node out/de-illusion-style/arms/snap.mjs out/de-illusion-style/arms/snap` in this worktree. Check the
+hashes before serving.
+
+**Serve** from the runner's checkout, one server per arm, restarted at the block start (`S` = the snapshot path).
+**V needs a serve.mjs with I-054's Range fix** (on main once landed). Without it V never loads, and its runs are VOID-ARM.
+
+```sh
+node tools/serve.mjs --root site-pretty --overlay $S/<arm> --port 0 --https --vendors=local --latency 150 --no-cache --state out/p058/serve-<arm>.json
+node tools/wait.mjs serve out/p058/serve-<arm>.json
+curl -s -D - -o /dev/null http://localhost:<port>/_app/immutable/nodes/2.DyWL8TcE.js   # x-mirror-source: overlay; shasum the body
+curl -s -D - -o /dev/null -H 'Range: bytes=0-1' http://localhost:<port>/_app/immutable/assets/accent-frames/w00-in.mp4   # V only: 206
+```
+
+**Driver W** at the top of the page, Timeline off. The page is never scrolled during the idle, so every arm keeps
+its draws:
+
+```sh
+node tools/iphone.mjs open <arm URL> --owner <runner>
+node tools/iphone.mjs run --driver window --probe std --owner <runner> --to 1 --settle 8 --idle 44 --hold 2 --sentinel 3 \
+  --block P058-<A|B> --build <arm> --arm <C for C, V otherwise> --pos <n> --label P058-<blk>-<n>-<arm> --no-park
+node fixes/illusion-accent-frames/tools/readstats.mjs out/p058/P058-<blk>-<n>-<arm>-stats.json   # the arm's own counters
+node tools/iphone.mjs park --owner <runner>
+```
+
+The 44 s idle (from ~8 s to ~52 s after navigation) holds two 'you' cycles: draw-in at ~22.0 / 43.5 s, draw-out at
+~24.2 / 45.6 s.
+
+**Recording.** One per counted run: QuickTime USB recording of the iPhone via osascript, the same method as
+iphone-runner's C-017. Use the same method for every run, and name each file by its label.
+
+**Metrics** (`node fixes/illusion-accent-frames/tools/youdraws.mjs <run.json>...`; per 'you' draw, window = draw start +
+2000 ms on the probe's frame stamps):
+- live frames in the 0.9 s draw;
+- longest gap;
+- frames > 50 ms and > 34 ms, with the ±4 ms twins (> 46 / > 54, > 30 / > 38) and the near bands;
+- engaged / handed back (arms);
+- the idle phase's own summary, all words, for context;
+- per run, from readstats: draws, canvas draws, run to the end, handbacks by reason (scroll, miss, drift, play), and
+  V's drift per draw (max and first 8 values, ms);
+- memory: decoded MB per arm as in the arms table (ESTIMATE). Also the WebContent footprint, if the runner has a way
+  to read it (I know none).
+
+Timeline counts (style / layout / paint per draw) come from **attribution runs after the end sentinel**, one per arm:
+`node fixes/illusion-accent-frames/tools/tlcounts.mjs out/p058/tl-<arm>.json <arm URL> 46`. These are counts only, not
+timed.
+
+**Blocks** (protocol §5). Each block:
+1. Park Safari and start the block's servers.
+2. One uncounted warm-up W run per arm's port.
+3. Sentinel: one uncounted control run, `iphone.mjs run --driver scroll --probe std --arm C` on C (bottom ≥ 58 fps,
+   scroll ≥ 44 fps).
+4. The counted runs below.
+5. End sentinel as in step 3.
+6. Attribution runs (Timeline).
+7. Park Safari.
+
+Cool 10 min between blocks. Record the battery temperature and the heat note per run.
+
+| block | arms | counted order (rotated Latin square) | n per arm |
+|---|---|---|---|
+| A | C F1 F2 F3 | C F1 F3 F2 · F2 F3 F1 C (rows 1 and 3 of a Williams 4x4) | 2 runs = 4 'you' draws in, 4 out |
+| B | C V B | C V B · V B C · B C V | 3 runs = 6 in, 6 out |
+
+**Run validity.**
+- **VOID-ARM:** readstats' `arm` is not the run's arm (C and B: no arm; F1/F2/F3/V: their label), or an arm never
+  became ready (`gate` set, or 0 canvas draws). Re-run once at the block end. A second VOID-ARM makes the arm
+  ineligible ("not engaged").
+- **VOID-ID:** an engaged draw that is not at a 'you' time (youdraws `void-id`), or fewer than 2 'you' draws inside the
+  idle phase.
+- **VOID:** scrollY ≠ 0 during the idle; Low Power Mode (rafHz ~30); a missing run JSON.
+- A failing sentinel voids the runs since the last passing one (CLAUDE.md "Phone blocks").
+- A missing recording does not void the numbers. The visual check needs at least 2 recorded runs per arm.
+
+**Decision rule (pre-registered with P-058).**
+1. **Eligible to ship.** An arm is eligible when all of these hold:
+   - it is engaged to the draw end in ≥ 75 % of its 'you' draws;
+   - its recordings show no visual defect in the 'you' draws (a box, an offset, a flash, or a jump at a handback);
+   - no new console errors;
+   - decoded frame memory for the 7-word set ≤ **150 MB** (ESTIMATE, a project limit, not a platform fact). F2
+     (~580 MB) fails this. F2 is still measured. If F2 is fastest, rev 3 says so plainly and ships the best eligible arm.
+2. **Rank** all arms, eligible or not, by frames > 50 ms per 'you' draw: the per-run value, median across valid runs.
+   Then rank by frames > 34 ms per 'you' draw. Then by pixel difference against C (fewer changed px wins).
+   Across blocks: when the two blocks' C ranges do not overlap, rank by each arm's difference from its own block's C
+   median.
+3. **Not separated.** The result is "not separated" when either holds:
+   - the top two arms' per-run ranges overlap on the deciding metric;
+   - the order of the top two changes under either ±4 ms twin. This is "threshold-sensitive", reported as such and
+     treated as not separated.
+
+   A decider block (C vs the top two) is then a new question with its own prediction row. P-058 runs no third block.
+4. A winner that does not beat C (C's range overlaps it on > 50 and > 34) is reported as "no arm beats the SVG on the
+   phone". In that case rev 3 recommends keeping the original SVG.
 
 ## Void results
 
