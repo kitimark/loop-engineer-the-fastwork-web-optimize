@@ -273,8 +273,8 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   overlay <video>; blocks PR-001 arm V): ts-i054 spawned; measurement-adjacent (what is served), test:chrome.
   COORDINATION GAP (lead 07:0xZ): G1 records with QuickTime on the Mac, so phone blocks are no longer Mac-independent.
   At 06:54Z a shared-lane Simulator boot (de-illusion-style, w3) pushed load1 to 38.9 / CPU 99 % mid-G1. iphone-runner
-  logs load per run and checks the recordings for frame drops. DRAFT, NOT APPLIED (lead decides on that data): a
-  Mac-quiet window for phone blocks that record on the Mac.
+  logs load per run and checks the recordings for frame drops. Draft below, APPLIED by the lead at 07:0xZ (see 07:1xZ):
+  a Mac-quiet window for phone blocks that record on the Mac.
    1. Each counted part runs inside `node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing
       --max-seconds 600 -- sh -c '<part>'` (exclusive: the shared group drains first and nothing joins; parts <= 10 min,
       requeue between parts; the lead moves the runner to the front). --no-timing skips the host gate, so the part
@@ -287,6 +287,22 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
       gesture-run.mjs (iphone.mjs gesture, G runs) calls no measureGuard at all.
    3. Cost: everyone else waits about 20 min per block (2 x 10-min holds); phone blocks without Mac recording stay
       outside the window.
+  07:1xZ MAC-QUIET WINDOW APPLIED (lead 07:0xZ; standing). Data (iphone-runner): every G1 block-1 recording dropped frames
+  (26-65 gaps > 1.5x median, max ~50 ms) at load1 38-94; 4 of 8 recordings lost the calibration frame (VOID). Form: an
+  idle wait (`lock.mjs wait chrome-measure --until idle --for 60`), then `lock.mjs run chrome-measure --owner
+  iphone-runner --no-timing --max-seconds 600 -- <part>`, one per part, requeued between parts. Only G runs inside it
+  for now (`iphone.mjs run` would WAIT on its own guard). Shared Sim and npm-test jobs wait ~10 min per recorded part
+  (de-illusion-style and ts-i054 told). I-056 OPEN (non-blocking): guard gaps (a)/(b)/(c) above; a toolsmith after
+  ts-i053/ts-i054 land. I-055 (flaky wda e2e test under load): ts-i053, separate commit after I-053.
+  G1: the white deck placeholder at fling +1013 ms (7P) also shows in B (1B, 4B): NOT fwreskip's; re-runs of the 4 void
+  recordings run in the quiet window; the landing gate holds until the check is done.
+  PR-002 = CHANGES-REQUESTED (user 07:00Z; paraphrased: does it still animate exactly like the live site? an illusion
+  almost no user can detect is acceptable; investigate and verify). Lead go for rev 2 (fix-scene-scope): per-animation
+  census (shared, probe w1), motion frames (2 normal holds), a side-by-side clip, P-056c committed before data; no
+  display-off rerun.
+  T-014 #3 (user 07:07Z): "stack test, then PR-001". Timing hold lifted for the stack test only. wi-stack spawned (see
+  directory). PHONE ORDER (supersedes 04:1xZ): (1) finish G1 (4 void re-runs + the white-deck check); (2) stack test;
+  (3) PR-001 blocks A/B; (4) PR-002 / T-011; (5) T-009 curve; (6) I-042 check.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
@@ -922,6 +938,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `ts-proposals` | toolsmith (lead spawn 19:1xZ): console Proposals page (read, visual compare, Accept/Reject/Request change); full `npm test` in the short lane | alive |
 | `ts-progress-lane` | toolsmith (lead spawn 22:11Z): I-048, shared-lane readers missing from the progress page and status board | ended (I-048 landed 9fd2d3a) |
 | `ts-i053` | toolsmith (lead spawn 06:4xZ): I-053, one proposal carries several options, the user picks one | alive |
+| `wi-stack` | wave integrator (lead spawn 07:1xZ): stack5 = cdwc + f3-arm-scope + re-keep-op + blur-cubic + st6 on today's best; functional checks (shared), phone ticket best vs stack5 (S) + blind swipe pair, P-row first; ask mgmt-ops for shas/branches | alive |
 | `ts-i054` | toolsmith (lead spawn 06:5xZ): I-054, serve.mjs HTTP Range support (blocks PR-001 arm V); changes what serve.mjs serves (called out, test:chrome); expect a shared-lane npm test | alive |
 | `de-style-recalc` | design engineer (lead spawn 18:3xZ, USER PRIORITY 1): tests the user's style-recalc hypotheses (selector matching, per-frame image work); fix proposals fast-tracked | alive |
 | `ts-headless` | toolsmith (lead spawn 17:5xZ, user request): headless Chrome functional checks, pairs with ts-lock-share's shared lane | ended (landed 14806cb..8fa38f7; worktree removed 20:2xZ) |
