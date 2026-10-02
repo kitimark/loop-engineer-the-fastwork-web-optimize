@@ -200,3 +200,59 @@ node tools/iphone.mjs run --driver scroll --probe std --idle 20 --owner iphone-r
 - Falsified if V's idle > 34 sum is above C's − 2, if any V run's idle > 34 count reaches the lowest C run's, or if C's ticks > 34 fall under 25 %.
 - Amended before any data, at mgmt-ops-7's second read (2026-10-02 22:2xZ). Row 1 now needs per-run separation (a), not
   the 2-frame sum margin alone. Row 3 now names its statistic.
+
+## S7 result (iphone-runner, 2026-10-02 22:48-22:59Z, 1 block; scored with `out/st6t/st6score.py` `772ef9e0e8a4`)
+
+**Validity:**
+- All 8 counted runs are valid. Served hashes were checked: C `0144d2cd032a` / `add63ff17fb7`, V `7bf7c4657d21` / `f523598b2a24`.
+- Heat checks passed: open 60.2 / 58.3, end 60.2 / 57.7 (bottom / scroll fps). Every counted C run passed the sentinel bar (table).
+- rAF 59 Hz and Low Power Mode off in every run. Battery 37.4 → 38.8 °C.
+- Runs 1-4 and 5-8 ran in two exclusive holds, with no shared job beside them.
+- 5C and 6V started at LOAD > 8. They are flagged, not void, and their counts match the other runs of their arm.
+- Tools: main 531b254 (`iphone.mjs` `2f88599c0749`, `lib/iphone-run.mjs` `13e92b221b90`). No Timeline, no recordings (T-018).
+
+| run | idle dt > 50 / > 34 (twins > 46, > 54, > 30, > 38) | idle max ms | starts with a frame > 34 / > 50 (max) | swaps > 34 / > 50 (max) | scroll > 50 / > 34 | sentinel bottom / scroll | load1 |
+|---|---|---|---|---|---|---|---|
+| 1C | 4 / 22 (9, 0, 27, 17) | 52 | 13 / 3 of 19 (52) | 9 / 3 of 19 (52) | 1 / 7 | 60.2 / 58.7 | 3.8 |
+| 2V | 0 / 0 (0, 0, 0, 0) | 23 | 0 / 0 of 19 (23) | 0 / 0 of 19 (19) | 1 / 7 | - | 3.7 |
+| 3V | 0 / 0 (0, 0, 0, 0) | 21 | 0 / 0 of 19 (19) | 0 / 0 of 19 (19) | 0 / 6 | - | 4.0 |
+| 4C | 7 / 19 (7, 4, 29, 11) | 60 | 17 / 7 of 19 (60) | 10 / 0 of 19 (46) | 1 / 8 | 60.2 / 58.5 | 3.8 |
+| 5C | 3 / 27 (6, 0, 29, 18) | 51 | 16 / 3 of 19 (51) | 13 / 3 of 19 (51) | 1 / 10 | 60.0 / 58.2 | 11.8 (LOAD > 8) |
+| 6V | 0 / 0 (0, 0, 0, 0) | 18 | 0 / 0 of 19 (18) | 0 / 0 of 19 (18) | 0 / 7 | - | 8.3 (LOAD > 8) |
+| 7V | 0 / 0 (0, 0, 0, 0) | 24 | 0 / 0 of 19 (18) | 0 / 0 of 19 (18) | 1 / 6 | - | 5.9 |
+| 8C | 4 / 24 (11, 0, 31, 17) | 54 | 14 / 3 of 19 (54) | 11 / 2 of 19 (52) | 1 / 10 | 60.2 / 58.3 | 4.6 |
+
+**Row 1, idle (primary): Gain, not threshold-sensitive.**
+- Per run, idle > 34 is V 0, 0, 0, 0 vs C 22, 19, 27, 24, so the arms are separated.
+- Sums: > 34 is V 0 vs C 92, and > 50 is V 0 vs C 18.
+- Every twin pair gives the same verdict: > 30 is V 0 vs C 116, > 38 is 0 vs 63, > 46 is 0 vs 33, > 54 is 0 vs 4.
+- C has 82 idle frames in the near bands (30, 38] and (46, 54]: 19, 21, 17 and 25 per run. V has no idle frame above 24 ms.
+
+**Row 2, ticks:**
+- C has a frame > 34 at 60/76 slide starts and 43/76 swaps; frames > 50 at 16/76 starts and 8/76 swaps.
+- V has none at 152 ticks: no frame > 34, and the tick max is 23 ms.
+- This is st6's mechanism readout from the Simulator and Timeline work (`fixes/rotator-st6/README.md`, view Layout 71/71 → 1/36). The timing on the phone now matches it, OBSERVED in our setup.
+
+**Row 3, guard:** the scroll > 50 median is V 0.5 vs C 1 (runs V 1, 0, 0, 1; C 1, 1, 1, 1). No regression.
+
+**Row 4, context:** scroll > 34 is V 7, 6, 7, 6 vs C 7, 8, 10, 10. Every C run's bottom / scroll fps is in the table.
+
+**Outcome:** st6's at-rest gain holds on st6-rb2, the current best build. Without st6, the page at rest at the top
+shows about one frame over 34 ms per second (19-27 per 20 s), and one over 50 ms every 3-7 s. With st6 it shows none.
+- Each of those frames comes at a rotator tick.
+- The rotator is in `#people`, below the fold, yet each tick still costs C a whole-view layout.
+- The UI-process half of the FAIL rule is "not checked on the phone since T-018". Main-thread FAIL is not read: S has no
+  flinglog.
+- n = 4 per arm, one block, one phone.
+
+**P-067:**
+- Hit:
+  - row 1 Gain, not threshold-sensitive;
+  - V's idle > 34 at 0-2 per run (all 0) and V's > 50 at 0-1 (all 0);
+  - the tick shares: C starts 79 % (≥ 50 %), C swaps 57 % (≥ 25 %), V 0 % (≤ 10 %);
+  - the guard.
+- Missed on two C intervals, each on one run, both high side:
+  - C idle > 34 per run 8-25 (27 in 5C);
+  - C > 50 per run 0-5 (7 in 4C).
+  The interval was scaled from A1's 3 s idle and was too narrow. The verdict does not depend on it.
+- No falsifier was triggered.
