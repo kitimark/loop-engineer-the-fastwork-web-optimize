@@ -3,32 +3,239 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** RB landed (8207797). RBi40, the arm the signed I4/I40 rule picks, is the landing candidate.
-- Its pixel A/B against RB is byte-identical, with a clean A/A.
-- Its Sim count and idle triple are equal to RB's.
-- RBi is also verified.
+**Status:** RB landed (8207797). **RBi40p** (`patch.diff` = `variants/17.diff`, CSS 24c2e85682fe) is the landing
+candidate. It replaces RBi40, which the lead's review (8690486, NEEDS-WORK) sent back.
+- Its #platform cut is checked by querySelectorAll: no kept hero/people/commission/nav/sb-* entry matches anything under
+  #platform.
+- Pixels: identical to RB at forced phase above #platform (OBSERVED). Inside #platform the claim rests on state
+  evidence; frames there are not deterministic in any arm, the A/A included (section "RBi40p: #platform pixels").
+- One-shot scenarios (a) reload, (b) early jump x3, (c) fling: inside the A/A. (d) Sim bfcache back: restored from the
+  bfcache, no held one-shot. The positive control separates in each.
 - The rotator-tick layout stays: the st5/st6 family is not byte-identical, and rotator-st6 is parked.
-**Stage:** F. Waiting for the fix-reviewer and the phone ticket (T-011). The D card is below.
+
+**Stage:** F. Waiting for the fix-reviewer and the phone ticket (T-011). The D card below is **unsigned** (no signed
+"D:" line exists); it goes to the lead to sign or return.
 **Device class / gate:** phone-only (WebKit's nested style/layout rounds, F-099). Gate: phone Timeline attribution (counts).
 **Driver(s) behind the claims:**
 - Chrome counts and state probes (`out/scene-scope/*.mjs`, not committed).
+- Simulator W driver (`srwin-sim.mjs`, Timeline depth 10) for the switch structure; ms there are attribution only.
 - Phone: S (blocks 1-2) and M (block 3), with Timeline, run by iphone-runner.
 **Predictions (strict scoring, fixes/PREDICTIONS.md):** P-040 MISS, P-041 HIT, P-045 HIT, P-046 HIT, P-047 FAIL,
-P-048 FAIL, P-049 MISS, P-050 MISS, P-051 MISS, P-052 HIT.
+P-048 FAIL, P-049 MISS, P-050 MISS, P-051 MISS, P-052 HIT, P-053 HIT, P-054 inCQ HIT / restyled MISS, P-055 (a) HIT,
+(b) inCQ HIT / restyled MISS.
 **Topic:** see `fixes/TOPICS.md` (scene-scope); user priority 1 ("style recalc")
 **Base:** STACKED on B = `fixes/user-bplus/patch.diff` (rebuilt as overlay `bplus`: JS dbd5fdb4f1fb, CSS cc8d1340b449)
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only: the paused-scene rule (B 11804-11815, baseline
 11754-11758). No JS.
+**Line numbers:** "JS NNNN" means `/_app/immutable/nodes/2.DyWL8TcE.js` as served in B and in every arm here (the
+bplus overlay, dbd5fdb4f1fb), unless it says "baseline JS". "CSS NNNN" means `/_app/immutable/assets/2.gBuqKVzi.css` of
+the arm named. Sim stack frames print one line higher than the file (rootscore adds 1 to a line WebKit already
+reports 1-based): `setAttribute<cE@2.DyWL8TcE.js:2763` is the `setAttribute` call at JS 2762.
 
 **Tools version (I-046, d00ee9a changed headless `--screen-info`).**
 - Ran on tools before d00ee9a, with a headless screen of 756x491 CSS px at DPR 2: every headless Chrome result here
-  except the RBi and RBi40 pixel A/Bs and the idle triple. That covers the mechanism check, the functional check with its bottom-shot A/A, the
-  carousel frame check (carf, carf2, carf3) and the visual-risk probe.
+  except the RBi, RBi40 and RBi40p checks and the idle triple. That covers the mechanism check, the functional check
+  with its bottom-shot A/A, the carousel frame check (carf, carf2, carf3) and the visual-risk probe.
 - The page viewport was the device-metrics override in every run.
-- Ran after d00ee9a: the RBi and RBi40 pixel A/Bs, the idle triple and all Simulator runs. The Simulator does not use headless Chrome.
+- Ran after d00ee9a: the RBi, RBi40 and RBi40p pixel and state checks, flipprobe2, the layer probe, the idle triple
+  and all Simulator runs. The Simulator does not use headless Chrome.
 
 Timing is deferred by the user (2026-10-01 19:27Z): this README makes **no timing claim**. Chrome numbers below are
-counts (elements restyled, invalidations, dirty layout objects, layers); durations are info only.
+counts (elements restyled, invalidations, dirty layout objects, layers); durations are info only, and Sim ms are
+attribution only.
+
+## What RBi40p removes, stated plainly
+
+**Fewer elements per recalc and a shorter style recalc at the #platform switch, but the same switch cost: the ~18 ms
+view Layout stays, it now runs right after the recalc instead of inside it.** Over the whole scroll the number of style
+recalcs does not change.
+
+At the #platform switch (Chrome flipprobe2 for elements, 3 reps; Sim W for the records, n≥2; B, RB and RBi40p all on
+JS dbd5fdb4f1fb):
+
+| | B (bplus, no scene-scope) | RB (landed) | RBi40p |
+|---|---|---|---|
+| Chrome: elements restyled in the flip's recalc | 345 | 99 / 99 / 104 | 66 / 66 / 66 |
+| Chrome: of those, "invalidation set matched class" | (subtree invalidation, 2 per flip) | 38 | 5 |
+| Chrome: subtree invalidations | 2 | 0 | 0 |
+| Chrome: listed elements under a size container | 279 of 341 descendants, depth 2 | 36, depth 1 | 0 |
+| Sim: the switch RecalculateStyles, self ms (attribution) | 3.1, 3.2 | 1.1-1.4 (4 runs) | 0.2, 0.2 |
+| Sim: nested Layouts inside it | 2, 2 [VIEW 18.1-19.0 + VIEW 1.5-1.6] | 2 (4 runs) [VIEW 18.2-20.1 + 0.1] | 0, 0 |
+| Sim: view Layout right after it (initiator cE `setAttribute`, JS 2762) | none | none | 1, 1 (18.1, 18.1 ms) |
+| Sim: RS + that Layout (attribution) | 22.8, 23.7 ms | 19.4-21.4 ms | 18.3, 18.3 ms |
+
+- WebKit's Timeline gives no element counts per recalc, so the element column is Chrome only. In Chrome, 54 of
+  RBi40p's 66 are "invalidation set matched tagName" in every arm (RB and RBi40pw too): the kept bare-tag subjects
+  `.commission-underline path` and `.start-selling-avatars img` make Chrome invalidate every `path` / `img` under the
+  flipped scene by tag. OBSERVED from the trace reasons; WebKit invalidates only elements that match the full rule
+  (`StyleInvalidator.cpp`, CONFIRMED, see "Why it lags"), so that part is Chrome-only.
+- Over the scroll and push phases (Sim, about 6.2 s per run; counts, ms as attribution):
+
+| | B (2 runs) | RB (4 runs) | RBi40p (2 runs) |
+|---|---|---|---|
+| outermost RecalculateStyles | 355, 363 | 352-368 | 350, 368 |
+| their total ms | 263, 270 | 254-281 | 225, 251 |
+| Layouts nested in them | 24 / 44.3 ms, 25 / 42.8 ms | 23-24 / 43.3-46.0 ms | 20 / 26.5 ms, 25 / 26.8 ms |
+| Layouts outside any RS | 315 / 543 ms, 318 / 562 ms | 308-320 / 473-540 ms | 313 / 487 ms, 311 / 517 ms |
+
+  The recalc count is unchanged; total RS ms and total Layout ms overlap RB's range. The ~18 ms that leaves the nested
+  column shows up in the outside column. Scored by `out/scene-scope/rsstat.mjs` on `out/scene-scope/simres/w40p-*`,
+  `w40pw-*`, `w40b-B*`.
+- **"The layout moves rather than goes away" is OBSERVED** (Sim, n=2 per arm; in our setup, cause unknown). It matches
+  phone block 2: I40 (the same #platform lists) had 0/0/0 nested Layouts at the switch, but its switch window sums
+  (49.3 / 71.2 / 51.0 ms) did not drop against C's (60.9 / 61.1 / 50.2 ms). The phone ticket (T-011) checks it on the
+  device.
+
+**The next target is that ~18 ms view Layout** (initiator cE `setAttribute`, JS 2762). Split diagnostics (Sim W,
+diagnostic arms only, never landing arms):
+
+| arm | #platform-matching entries left | view Layout at the switch (Sim) |
+|---|---|---|
+| RBi40p | scene root (both lists), 4 row titles, platform-card (will-change) | 18.1, 18.1 ms, right after the RS |
+| RBi40p0 = RBi40p minus scene root and row titles | platform-card only | none (2/2 runs; RS 0.3, 0.5 ms) |
+| RBi40pr = RBi40p minus the scene-root entries | 4 row titles, platform-card | 21.0 ms, right after the RS (1 run) |
+| RBi40pt = RBi40p minus the 4 row-title entries | scene root, platform-card | none (1 run; RS 0.4 ms) |
+
+- So the moved layout follows the 4 row-title animation entries (`.start-selling-platform-row-title-{doc,earn,secure,
+  organized}`), not the scene root. OBSERVED, n=1 per split arm; why a play-state change on 4 inline-block gradient
+  titles lays out the whole view in WebKit is not known. In RBi40pt the rotator tick at y≈2516 is the only big
+  layout in the window.
+- Cutting those entries is **not** in RBi40p: the row titles are infinite sweeps (V1i's list keeps them), so a cut
+  would let them run while #platform is paused. Before it can land it needs the pixel check of wherever a paused
+  #platform is visible, plus its own prediction. Not built as a candidate.
+
+## RBi40p: what it cuts and why the cut is #platform-only
+
+RBi40p = RB (landed) minus, from the animation arm, the 32 #platform-internal entries (29 one-shots that are
+IO-gated or dead, plus the 3 tracks: cred, secure-currencies, profile-reviews), and minus, from the will-change arm,
+stage-artboard and the same 3 tracks (S0 CSS 11864-11895 and 11920-11923). The hero, people, commission, nav and
+sb-* entries stay as in RB. CSS only; JS byte-identical to RB's.
+
+- **querySelectorAll census** (`out/scene-scope/scenprobe.mjs` census, walk 0 → end → 0, max per entry; q40pc).
+  Entries of RBi40p's lists that match anything under #platform: animation arm: the scene root and the 4 row titles;
+  will-change arm: the scene root, `.start-selling-platform-card`, and the `[data-fw-wc="0"]` gate (6 elements). **No
+  kept hero/people/commission/nav/sb-* entry matches an element under #platform**, and every cut entry matches 0
+  elements outside #platform (S0 census, same walk).
+- Cut entries never hold an unfinished one-shot in a paused scene: 0 over the walk, and 0 after each of 8 #platform
+  jumps (search visual, invoice, profile, secure network; each centred until its IO class is on, then 150 ms later
+  an instant jump to the top or the page end; 12 rAFs logged).
+- RBi40pw (diagnostic, `variants/19.diff`) = RBi40p with the 4 will-change entries kept. Its census adds
+  wc stage-artboard x4 and the reviews track (q40pc3).
+
+## RBi40p: #platform pixels
+
+**The claim rests on state evidence, and says so.** Frozen frames inside #platform are not deterministic in any arm,
+the A/A included, because page JS keeps running after the CSS freeze.
+
+- Method (`out/scene-scope/pageframes.mjs`, headless, 430x932 DPR 3, tools at or after d00ee9a; fresh ports,
+  `--no-cache`, served hashes checked): walk down in 100 px steps; at y 3200..5345 step 100 (22 frames) freeze every
+  animation at the same phase (finite at the end, infinite at 0), decode imgs, 2 rAFs, full-viewport PNG. Arms: S0
+  (RB), S0b (the same files on a second server: the A/A), RBi40p, and PCp = S0 + `profile-reviews-track` paused and
+  `#platform .start-selling-platform-rows { translate: 1px 0 }` (positive control).
+
+| check | S0 vs S0b (A/A) | S0 vs RBi40p | S0 vs PCp (positive control) |
+|---|---|---|---|
+| q40pp: frames byte-identical | 9/22 | 6/22 | 3/22; 0.3-1.8 M device px differ over y 3700-5100 |
+| q40pw: frames byte-identical | 11/22 | 10/22 (RBi40pw 10/22) | — |
+| paused-set walk, y ≥ 3100: on-screen paused animations per step | 3 per step | 3 per step | 4 at y 3800-4700 |
+
+- Every difference, the A/A's included, sits in a JS-driven region: the fee typing caret (page y≈3964), the
+  fee/referral area, and #platform visuals at y 4400 / 4600 / 5000 / 5100; plus isolated delta-1 pixels, which the A/A
+  also shows.
+- The fee visual (commission section, JS ~2440-2510) is an IO-started loop of timers and rAF tweens (about 5.4 s per
+  cycle); `.referral-fee.shown` has opacity and filter transitions. It keeps running after the freeze and starts new
+  animations. Its phase at y 4000 (referral-fee opacity): S0 0.22, S0b 0.27, RBi40p 0.06, RBi40pb 0.17 (q40pe). So
+  the frame differences track JS phase, not the arm.
+- Spot check (q40pq) at (266, 5048): the elementFromPoint chain `p.agents-ask-title` → `stage-artboard`
+  (will-change transform, `data-fw-wc="1"`) → `platform-card` is identical in S0, S0b, RBi40p, RBi40pw and RBi40pb.
+  The artboard keeps its layer on screen in RBi40p too, because #platform is active there.
+- Not tried: CDP `Emulation.setVirtualTimePolicy` to freeze timers and rAF together for a deterministic A/A. It did not
+  fit an existing hold; the state evidence above stands without it.
+- Verdict: within #platform, RBi40p pauses exactly what RB pauses on screen (paused sets equal at every step), the
+  positive control separates on both metrics, and the frame differences stay at the A/A's level. Above #platform the
+  RBi40 checks hold unchanged (carousel 39/39 and the switch region 15/15 byte-identical, below): RBi40p changes no
+  entry that matches there.
+
+## RBi40p: one-shot scenarios
+
+`out/scene-scope/scenprobe.mjs` parts a/b/c, compared by `scencmp.mjs`: every finite CSS animation unfinished in the
+first 90 rAFs after `scrollTo(0)`, its play state and currentTime at rAF 0, and its last unfinished rAF. Arms S0, S0b
+(A/A), RBi40p, PCcue = S0 + `.scroll-cue { animation-play-state: paused !important }` (positive control).
+
+| scenario | RBi40p vs S0 | S0b vs S0 (A/A) | PCcue vs S0 |
+|---|---|---|---|
+| (a) reload at y 4000 (restored), 2.5 s, scrollTo(0) (q40ps) | same keys; ct0 diff 0 ms; last-frame diff 1 | same keys; 33 ms; 0 | cue paused 90 of 90 rAFs (S0: 1) |
+| (b) early jump: 300 ms after the cue exists, jump to y 4000, 3 s, scrollTo(0); 3 reps (q40pb) | same keys; ct0 ≤17 ms; last ≤2; paused frames ≤2 | same keys; ≤33 ms; ≤2; ≤2 | reps 1 and 3: cue paused 89-90 rAFs; rep 2: cue absent |
+| (c) fling at 350 px/frame during `.is-drawing-in` (q40ps) | identical | identical | — |
+| (d) Sim bfcache back: scrolled to y 4000, away to a same-origin page, `history.back()`, scrollTo(0), 60 rAFs (simbf-bf40p) | restored from the bfcache (pageshow persisted, window mark kept); 0 paused unfinished one-shots; same keys as S0 except the hero accent's stroke-in (phase) | restored; 0 paused; stroke-in and the avatar tick at another phase | restored; the cue's copy-in paused in 60 of 60 rAFs |
+
+- (b) rep 1 is a cold first load in every arm (cue seen after 1.6-1.9 s, not running at the jump); reps 2-3 jump
+  while the cue's copy-in runs (117-133 ms in). The single run in q40ps had S0 without the cue key while S0b, RBi40p
+  and PCcue had it: phase, which the 3 reps show.
+
+## RBi40p: layers and the will-change gate
+
+- With bplus's fw-wc gate (scroll-engine /10, JS 2696-2714: `fwWCSel` includes `.start-selling-platform-stage-artboard`
+  and the 3 tracks; IntersectionObserver `rootMargin: 50% 0px 50% 0px`; CSS `[data-fw-wc="0"] { will-change: auto
+  !important }`), an element's will-change is `auto` whenever it is more than half a viewport off screen.
+- #platform is paused only far from the screen (it switches to active about one viewport before it enters), so the
+  gate already holds the cut elements at `auto` there. Layer probe (`out/scene-scope/layprobe.mjs`, 430x775): at
+  y 2407 (#platform paused) no element under #platform has a non-auto will-change in S0, RBi40pw or RBi40p, and
+  #platform has 4 animations, none running, in every arm. At y 5188 (the end at 775 px, #platform active) layers are
+  65 in all three arms.
+- Layer totals at y 2407: S0 54, RBi40pw 59, RBi40p 64. The extra layers are hero/people phase elements
+  (accent-svg idle frames, `span.digit`, `hero-cta`, avatar imgs), none under #platform. flipprobe2 shows the same
+  phase spread (layers before the #platform flip: RBi40pw 62/62/67, the others 57).
+- So "the artboard and tracks keep their will-change layers while #platform is paused" (written for RBi40 / I40) is
+  **wrong under the fw-wc gate**. The remaining exception is the first scan: `fwWC()` sets `data-fw-wc="1"` 500 ms
+  after load plus idle, before the IO's first callback sets the real value. In that window RB's paused arm forces
+  `auto`, RBi40p does not. Not counted; it is off screen.
+
+## RBi40p: Sim switch structure (W driver)
+
+Simulator (fw-sim 15 Pro Max), `srwin-sim.mjs` (Timeline depth 10, 6 s idle, push, hold), shared functional lane;
+fresh random ports per arm, `--no-cache`, served hashes and GET counts checked. Sessions w40p (S0 RBi40p RBi40p S0),
+w40pw (S0 RBi40pw RBi40pw S0), w40p0 (RBi40p0 x2), w40b (B B RBi40pt RBi40pr). Structure only; ms are attribution.
+
+| arm | runs | switch RS (y≈2610) nested Layouts | detail |
+|---|---|---|---|
+| B | 2 | 2, 2 | RS 22.8-23.7 ms, self 3.1-3.2, [VIEW 18.1-19.0 + VIEW 1.5-1.6] |
+| S0 = RB | 4 | 2 every run | RS 19.4-21.4 ms, [VIEW 18.2-20.1 + 390x312 0.1] |
+| RBi40pw | 2 | 1, 1 (P-055a HIT) | RS 19.6-19.7, [VIEW 18.9-19.0] |
+| RBi40p | 2 | 0, 0 (P-053 HIT) | RS 0.2; VIEW 18.1 ms right after it, initiator cE |
+| RBi40p0 | 2 | 0, 0 | RS 0.3-0.5; no cE-initiated layout |
+| RBi40pr | 1 | 0 | RS 0.1; VIEW 21.0 right after it, initiator cE |
+| RBi40pt | 1 | 0 | RS 0.4; no cE-initiated layout |
+
+- The container-depth model holds for the nested count in both directions: keeping the 4 will-change entries
+  (artboards and the reviews track, under the stage-visual containers, depth 1) gives 1, cutting them gives 0.
+- Rotator-tick layouts (`before<mi@BSBv9QXB:2188`, F-111) appear in every arm at y≈2510-2614 and are split out.
+
+## RBi40p: Chrome flip counts (flipprobe2)
+
+`out/scene-scope/flipprobe2.mjs` (430x775 DPR 3, 250 px step across each gate at CPU 6x, 3 reps, q40pf2):
+
+| flip | arm | elements restyled | class-matched / tag-matched invalidations | subtree inv. | listed under a container | layers |
+|---|---|---|---|---|---|---|
+| #platform enter | S0 (RB) | 99 / 99 / 104 | 38 / 54-58 | 0 | 36 (4 stage-visual containers), depth 1 | 57→57 |
+| | RBi40pw | 71 / 71 / 76 | 10 / 54-58 | 0 | 5, depth 1 | 62→62 |
+| | RBi40p | 66 / 66 / 66 | 5 / 54 | 0 | 0, depth 0 | 57→57 |
+| hero-track leave (rep 0) | all three | 138-143 | — | 1 | 0 | 135-145→59 |
+| people leave (rep 0) | all three | 28-90 (phase) | — | 0 | 0 | 54-59→51 |
+
+- List completeness at the top: 0 animation misses, 0 will-change misses in every arm.
+- P-054 and P-055(b): listed-in-container HIT (0 and 5); the restyled bounds (≤23, ≤30) MISS, because they ignored
+  Chrome's 54 tag invalidations (see "What RBi40p removes").
+
+## Functional check (RBi40p)
+
+`node tools/fix.mjs check scene-scope --viewport both --save` (shared lane, weight check, 2026-10-02 03:11Z; headless,
+tools at or after d00ee9a; `fixes/scene-scope/check.json`). The overlay holds RBi40p's CSS only, so this check runs
+it on the baseline JS, not on bplus's.
+- CHECK OK, mobile and desktop: morph reached on both sides, 0 console errors, 0 4xx, element counts equal
+  (mobile 1337 → 1337, desktop 1180 → 1180).
+- Screenshot diff vs base: mobile top 0.11 %, middle 0.01 %, bottom 0; desktop top 0.10 %, middle 0, bottom 0. All
+  inside the 0-0.4 % countdown / orbit phase band.
 
 ## Why it lags
 
@@ -57,28 +264,25 @@ counts (elements restyled, invalidations, dirty layout objects, layers); duratio
 
 ## What changed
 
-**Landing candidate now (`patch.diff`, regenerated 01:1xZ 2026-10-02) = RBi40 (CSS f54dbf45fc55), stacked on bplus.**
-RBi40 = RB with V1i's animation list (that step alone is RBi), minus the 4 platform classes. It is the arm the signed
-I4/I40 rule picks.
-- Against RB (landed in 8207797):
-  - The animation arm goes from 67 entries to 15 infinite ones. That is V1i's 18 minus cred-track,
-    secure-currencies-track and profile-reviews-track. RBi alone goes from 67 to 18.
-  - The will-change arm drops cred-track, secure-currencies-track, profile-reviews-track and stage-artboard.
-  - Nothing else changes; the R4a / R4b parts are as in RB.
+**Landing candidate now (`patch.diff` = `variants/17.diff`, regenerated 2026-10-02) = RBi40p (CSS 24c2e85682fe),
+stacked on bplus.** RB with the #platform-internal entries cut (section "RBi40p: what it cuts" above).
+- Against RB (landed in 8207797): the animation arm goes from 68 to 36 entries, the will-change arm from 17 to 13. The
+  hero, people, commission, nav and sb-* entries are RB's; the R4a / R4b parts are as in RB.
 - CSS only. It adds or removes no observers, listeners or JS writes; the JS is byte-identical to RB's
-  (dbd5fdb4f1fb). The idle triple below shows equal counts.
-- Evidence:
-  - phone block 2: switch nested Layouts 2 with RB, 1 with I4, 0 with I40;
-  - the RBi40 pixel A/B (byte-identical, below);
-  - the RBi40 Sim count (equal);
-  - the idle triple (equal);
-  - the visual-risk probe.
-- RBi (CSS 7eec24b73ba5) is also verified: its own pixel A/B is byte-identical (below).
-- Still open: the phone ticket.
+  (dbd5fdb4f1fb).
+- Evidence: the census, the #platform state evidence and the one-shot scenarios (above); the Sim structure count
+  (P-053 HIT); flipprobe2 (P-054).
+- Still open: the phone ticket (T-011).
 
-**Previous landing candidate (landed as 8207797) = V1 + R4a + R4b (CSS 0d7dfc79e703), stacked on bplus.**
+**Previous candidate RBi40 (CSS f54dbf45fc55; returned by the review 8690486, NEEDS-WORK).** RBi40 = RB with V1i's
+animation list (that step alone is RBi), minus the 4 platform classes, so it also cut hero, people and commission
+one-shots. The review asked to keep the hero, people, commission, nav and sb-* entries and cut only inside #platform:
+that is RBi40p. RBi40's checks (pixel A/B, idle triple, Sim count) are kept below as history.
+
+**Landed: RB = V1 + R4a + R4b (CSS 0d7dfc79e703), stacked on bplus, 8207797.**
 - `results.json` is hold 3's run of V1 alone (`fix.mjs ab --on bplus --runs 3`). Its timing columns are host-
-  contaminated and not used; only its regression checks count.
+  contaminated and not used; only its regression checks count. The `fix.mjs check` of RBi40p is in
+  "Functional check (RBi40p)" below.
 - RB has no Chrome A/B, because timing is deferred. Its evidence is the counts, the pixel diffs and phone block 3.
 - The V1-only CSS is kept in the untracked `fixes/scene-scope--v1` (851c397012bc).
 
@@ -383,8 +587,11 @@ The model: each arm removes one container nesting level of restyled elements und
 **Risks per arm:**
 - I4 (V1i): a one-shot entrance that is running when its scene pauses would finish offscreen instead of resuming
   later. The probe saw none. V4 is inert for visuals: no initial value, so the 100vh fallback still applies.
-- I40: the 3 marquee tracks keep animating, and the artboard and tracks keep their will-change layers, while #platform
-  is paused. They are never on screen then, so pixels cannot change. The cost moves, though:
+- I40: the 3 marquee tracks keep animating while #platform is paused. (This bullet first also said "the artboard and
+  tracks keep their will-change layers while #platform is paused". That is **wrong under bplus's fw-wc gate**: their
+  will-change is `auto` whenever they are more than half a viewport off screen, and #platform is paused only then;
+  see "RBi40p: layers and the will-change gate".) They are never on screen then, so pixels cannot change. The cost
+  moves, though:
   - after the one-way un-skip at y≈2200, these animations run for the rest of the page life, including at the top
     and at the page end;
   - block 2 also saw the y≈2990 nested layout at 18-20.5 ms, against I4's 14-19 (ms are info only; host noise is
@@ -519,15 +726,17 @@ second, no ms verdicts; `out/scene-scope/simidle.mjs`, `simidle.sh`).
     (CSS 6523-6547, 6687-6697). The rules are dead, so un-skipping them cannot start an animation.
   - `.start-selling-platform-profile-reviews-track` animates only under
     `.start-selling-platform-profile:not(.is-static).is-enter` (CSS 7569). `is-enter` is set by an IntersectionObserver
-    and cleared again when the profile visual drops below 35 % visible (JS 12024-12030, class at JS 12135). So it runs
-    only while its own visual is on screen, whatever the paused-scene rule says.
-  - `.start-selling-platform-stage-artboard` exists (JS). In RBi40 it keeps its `will-change` layer while #platform is
-    paused off screen. That may cost layer memory; this was not measured. The count above shows no main-thread
-    difference.
+    and cleared again when the profile visual drops below 35 % visible (baseline JS 12024-12030, class at baseline JS
+    12135; JS 12379 in B). So it runs only while its own visual is on screen, whatever the paused-scene rule says.
+  - `.start-selling-platform-stage-artboard` exists (JS). This bullet first said "In RBi40 it keeps its `will-change`
+    layer while #platform is paused off screen". Wrong under the fw-wc gate (JS 2696-2714): the artboard is in
+    `fwWCSel`, so its will-change is `auto` while it is more than half a viewport off screen, which is whenever
+    #platform is paused. The layer probe confirms it for RBi40p (no non-auto will-change under #platform at y 2407).
+    The count above shows no main-thread difference.
 - Verdict for the recommendation's step 2: the count is equal. By the signed rule, I40 is the better arm (phone block
   2: switch nested 0/0/0 vs I4's 1/1/1) at the same pixel risk.
-  - Its pixel A/B and idle triple have run since (above): byte-identical, and equal. RBi40 is the landing candidate.
-  - The phone ticket is still open.
+  - Its pixel A/B and idle triple have run since (above): byte-identical, and equal. RBi40 was then the landing
+    candidate; the review (8690486) replaced it with RBi40p (top of this README).
 
 ## Morph start (R4 / V3)
 
@@ -583,21 +792,59 @@ atOne p95 17/17 ms, pass; phone 35.7 → 38.6 °C, so arms compare at matched po
   - RA's `@property --morph-fade` is the same hunk as nav-morph's v04.
   - The lead settles the stacking when nav-morph unparks. Until then, RB lives under r4-v3, which I own.
 
+## Experiments tried
+
+Rows for `fixes/EXPERIMENTS.md` (DoD 7a). Every variant's diff is `fixes/scene-scope/variants/<nn>.diff` (stacked on
+bplus like `patch.diff`, except 18). Timing is deferred, so no row has a timing result; "validity" is about the counts.
+Abbreviations: Sim W = Simulator W driver (structure only); flipprobe = Chrome counts at the #platform enter flip.
+
+| id | variant | hypothesis | result | validity | key numbers | evidence | lesson | status | bench | driver | prediction | attribution |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| scene-scope/01 | V1: both `:where(*)` arms → flat lists (110 animation subjects, 16 will-change classes); CSS 851c397012bc | universal subject restyles the whole scene on the flip; flat lists stop the subtree invalidation | better (counts) | clean (counts, tools before d00ee9a) | #platform flip restyled 345 → 99, subtree inv 2 → 0; phone block 1 switch nested raw 2 (P-040 MISS) | README "Mechanism check", "Block 1" | flat lists, never `:is(<list>)` (F-098, F-100) | landed in RB (8207797) | `variants/01.diff` | chrome-probe; S | P-040 | NAMED (positive) |
+| scene-scope/02 | V1 written as `.scene :is(<list>)` (overlay scene-scope--is) | same as /01 in one selector | WORSE (flip ULT duration, info only) | clean (counts) | flip ULT 17-23 ms vs 7-12 flat (info) | F-098 | a multi-argument `:is()` subject is not bucketed | dropped | `variants/02.diff` | chrome-probe | none (probe) | NAMED (negative) |
+| scene-scope/03 | V1-anim-only: animation arm flat, will-change arm left `:where(*)` | the animation arm alone carries the subtree restyle | no change | clean (counts) | subtree inv 2 = C | README "Mechanism check" | either universal arm invalidates the subtree | dropped | `variants/03.diff` | chrome-probe | none (ablation) | NAMED (negative sibling) |
+| scene-scope/04 | V1i: animation list cut to the 18 infinite animations; CSS 298587e0bb94 | fewer listed elements under containers, one nesting level less | better (structure) | clean | flip restyled 23; phone block 1 nested 1/1/1 (P-041 HIT) | "Block 1" | one container level per listed depth (F-099) | superseded by RBi / RBi40p | `variants/04.diff` | chrome-probe; S | P-041 | NAMED |
+| scene-scope/05 | I4 = V1i + V4 (`@property --start-selling-intrinsic-block-size`) | V4 removes the y≈2990 nested layout | switch nested 1/1/1 (P-045 HIT); y≈2990 unchanged (P-047 FAIL) | clean (phone) | block 2 | "Block 2" | the y≈2990 layout is not the custom-property restyle | dropped (V4) | `variants/05.diff` | S | P-045, P-047 | LOCATED |
+| scene-scope/06 | I40 = I4 minus the 4 platform classes in both lists | depth 1 entries gone → 0 nested | switch nested 0/0/0 (P-046 HIT), window sums not lower; y≈2990 1/1/1 (P-048 FAIL) | clean (phone) | block 2 | "Block 2" | the layout moves out of the RS (see RBi40p) | superseded by RBi40 / RBi40p | `variants/06.diff` | S | P-046, P-048 | LOCATED |
+| scene-scope/07 | I40w = I40 minus `.start-selling-platform-card` from the will-change arm | platform-card's will-change restore triggers layout (H1) | abandoned (built; H1 refuted from source, F-106) | n/a | none | "Root hunt" | will-change changes recomposite, not layout (WebKit StyleDifference) | dropped | `variants/07.diff` | none | none | n/a |
+| scene-scope/08 | R4a = V1 + `@property --morph-fade` (non-inheriting); CSS dfb29cc686ee | the fade write stops restyling the section | within noise vs C at the start; trims fade frames | clean (phone) | block 3: start nested 2/2/2; tween nested 25-35 ms vs C 30-44 | "Morph start" | the fade is a small term | landed in RB | `variants/08.diff` | M | P-050 | LOCATED |
+| scene-scope/09 | R4b = RB: R4a + `@property --morph` + `--morph: inherit` on 7 consumers; CSS 0d7dfc79e703 | the per-frame `--morph` write stops restyling the nav subtree | better (structure) | clean (phone) | tween nested 30-44 → 1-3 ms; tween RS self 0.5-0.7 → 0.1-0.2 ms (P-052 HIT) | "Morph start" | register-and-inherit scopes a custom property (F-103) | landed (8207797) | `variants/09.diff` | M | P-049..P-052 | NAMED |
+| scene-scope/10 | X1 = I40 + `#platform { animation: none }` | animations under #platform cause the switch layout | abandoned (dropped for the rotator check) | n/a | none | "Root hunt" | the outside layout was the rotator (F-111) | dropped | `variants/10.diff` | none | none | n/a |
+| scene-scope/11 | X2 = I40 + deferred render never skips | the c-v flip at y≈2990 | abandoned (sent to fix-scroll-engine) | n/a | none | "Root hunt" | fwReskip belongs to fix-scroll-engine (F-107) | dropped | `variants/11.diff` | none | none | n/a |
+| scene-scope/12 | ST = RB + rotator-st6 (JS 59b23b3f57fd) | removes the rotator-tick layout from the switch window | broke (pixels): carousel 0/39 identical, max delta 72 | clean (counts, pixels) | Sim ticks with a view Layout 8/8 → 0/8 | "Switch root" | a resting layer re-rasters (F-114) | dropped (st6 parked) | `variants/12.diff` | chrome-probe; W | none (stack check) | NAMED (rotator) |
+| scene-scope/13 | STwo: ST with `will-change: opacity` only | keep st6 without the blur | broke (pixels): 0/39, delta 2 | clean | Chrome 0.4k-9.1k px | "Carousel frame check" | any resting layer changes Chrome raster | dropped | `variants/13.diff` | chrome-probe | none | n/a |
+| scene-scope/14 | STwo1: STwo + rest opacity 1 | as /13 | broke (pixels): 0/39, delta 2; Sim rest delta 16-17 | clean | ≤2.8k px | "Carousel frame check", "Simulator held frames" | same | dropped | `variants/14.diff` | chrome-probe; Sim frames | none | n/a |
+| scene-scope/15 | RBi = RB with V1i's animation list; CSS 7eec24b73ba5 | /04 on the landed stack | verified (pixels identical, state equal) | clean | carousel 39/39, switch 15/15 identical | "RBi pixel A/B" | — | superseded by RBi40p | `variants/15.diff` | chrome-probe | none | NAMED |
+| scene-scope/16 | RBi40 = RBi minus the 4 platform classes; CSS f54dbf45fc55 | /06 on the landed stack | verified, then returned by review 8690486 (cuts hero/people one-shots too) | clean | carousel 39/39, switch 15/15; Sim idle count equal | "RBi40 pixel A/B", "RBi40 Sim count" | cut only where the mechanism is | superseded by /17 | `variants/16.diff` | chrome-probe; Sim idle | none | NAMED |
+| scene-scope/17 | **RBi40p** = RB minus the 32 #platform animation entries and 4 will-change entries; CSS 24c2e85682fe | listed elements under #platform's containers → 0, so 0 nested Layouts at the switch | better (structure); same switch cost | clean (counts; Sim n=2) | flip restyled 99 → 66, listed in CQ 36 → 0; Sim switch nested 2 → 0, RS self 1.1-1.4 → 0.2 ms, RS + following Layout 19.4-21.4 → 18.3 ms | top of this README | the nested count can drop while the layout moves out of the RS | **landing candidate** | `variants/17.diff` = `patch.diff` | chrome-probe; W | P-053 (HIT), P-054 (inCQ HIT, restyled MISS) | NAMED (D card unsigned) |
+| scene-scope/18 | A+V1: V1 on the plain baseline (overlay scene-scope--a) | the mechanism without bplus | better (counts) | clean (counts) | restyled 344-354 → 101-109 | "Mechanism check" | the A vs B difference is liveness, not y | done (decoupling arm) | `variants/18.diff` (on the baseline) | chrome-probe | none | NAMED (decoupling) |
+| scene-scope/19 | RBi40pw = RBi40p with the 4 will-change entries kept; CSS f43d10d644ce | the will-change entries are the depth-1 term | as predicted: nested 1 | clean (Sim n=2) | Sim nested 1/1; flip restyled 71, inCQ 5 | "RBi40p: Sim switch structure" | depth model holds for will-change entries too | diagnostic | `variants/19.diff` | W; chrome-probe | P-055 ((a) HIT, (b) inCQ HIT, restyled MISS) | NAMED (positive, depth) |
+| scene-scope/20 | RBi40p0 = RBi40p minus scene root (both lists) and the 4 row titles; CSS a80e69b94055 | the moved view Layout comes from the kept #platform matches | no switch layout | clean (Sim n=2) | cE-initiated layout 18.1 → none | "What RBi40p removes" | locates the next target | diagnostic (changes every scene root: not landable) | `variants/20.diff` | W | none (diagnostic) | LOCATED |
+| scene-scope/21 | RBi40pt = RBi40p minus the 4 row-title entries; CSS 10cf34974e67 | split /20: row titles | no switch layout | clean (Sim n=1) | none vs 18.1 ms | "What RBi40p removes" | the row titles carry it | diagnostic (needs a pixel check before any candidate) | `variants/21.diff` | W | none (diagnostic) | LOCATED |
+| scene-scope/22 | RBi40pr = RBi40p minus the scene-root entries; CSS 8184bceef75b | split /20: scene root | layout stays (21.0 ms) | clean (Sim n=1) | 21.0 ms after the RS | "What RBi40p removes" | the scene root is not it | diagnostic | `variants/22.diff` | W | none (diagnostic) | LOCATED (negative) |
+
 ## Cards (protocol v2)
 
-Attribution card (D), for the lead:
+Attribution card (D), for the lead. **UNSIGNED**: no signed "D:" line exists; sent to the lead to sign or return.
 - Frame: phone y≈2615 RS (B: 29-32 ms; 2 nested Layouts). Axis: crossing of the #platform enter gate (top − 2 vh).
 - Mechanism: universal-subject paused-scene rule → whole-subtree restyle on the attribute flip → restyled elements
   under size containers → one style round + interleaved layout per nesting level.
 - Positive ablation: V1 (narrow lists) — Chrome: subtree invalidations 2 → 0, restyled 345 → 99. Negative sibling:
   V1-anim-only (no change). Decoupling: A vs B (same flip, #platform skipped vs live) moves the cost with liveness, not
   with y.
+- Depth ablation (Sim W, structure): RB 2 nested → RBi40pw (depth-1 will-change entries kept) 1 → RBi40p 0 (P-053,
+  P-055a HIT).
+- What the card does **not** cover: the ~18 ms view Layout that follows the RS in RBi40p (OBSERVED, Sim n=2; it moves
+  out of the RS rather than going away). The split puts it on the 4 row-title entries (RBi40pt none, RBi40pr 21.0 ms;
+  n=1 each). Its mechanism is UNEXPLAINED; that is a separate card for the next target.
 - Platform claims relied on: WebKit attribute invalidation (CONFIRMED, StyleInvalidator.cpp 29dd51e); WebKit CQ
   interleave per nesting level (CONFIRMED, StyleTreeResolver.cpp c0726d0, Document.cpp 079c1e3); non-bucketed
-  `:is()` (CONFIRMED, F-100). WebKit `main` vs iOS 26.6.1: to be checked against the phone counts.
+  `:is()` (CONFIRMED, F-100). WebKit `main` vs iOS 26.6.1: to be checked against the phone counts. Chrome's tag
+  invalidation of the bare-tag subjects: OBSERVED (trace reasons), Chrome-only, not relied on for the phone.
 
-**Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up · toolbar resize ·
-rubber band.
+**Scenarios run for RBi40p:** reload while scrolled (a), early jump (b, 3 reps), fling during an entrance (c), Sim
+bfcache back (d), walk down and back up (census), idle at top / mid / end (idle triple, RBi40). **Not run:** early input
+(tap), toolbar resize, rubber band; these need G or F on the phone (T-011).
 
 ## Risks, conflicts, follow-ups
 
@@ -605,6 +852,21 @@ rubber band.
   complete for this snapshot (0 misses). If st5 (scroll-engine) lands, add its carousel selectors
   (`.start-selling-avatars.is-carousel img` will-change; `.is-carousel.is-sliding img.st5-lead`, `img.st5-lead ~ img`,
   `~ img.st5-next` animations); whoever lands second adds them.
+- **Coupling with the fw-wc gate (fix-scroll-engine, acknowledged).** RBi40p drops stage-artboard and the 3 tracks
+  from the will-change arm because bplus's fw-wc gate already holds them at `auto` while #platform is paused. That
+  rests on two things fix-scroll-engine owns: those 4 classes staying in `fwWCSel` (JS 2702), and the
+  IntersectionObserver margin of 50 % (JS 2710) staying smaller than the distance between the #platform switch
+  and the screen (about one viewport). If either changes, the artboards could keep a will-change layer while #platform
+  is paused: layer memory and compositing, not pixels (off screen). Whoever changes the gate re-runs
+  `out/scene-scope/layprobe.mjs` (non-auto will-change under #platform at y 2407 must stay 0).
+- The first fw-wc scan sets `data-fw-wc="1"` 500 ms after load plus idle, before the IO's first callback; in that
+  window RB's paused arm forced `auto` on the 4 classes and RBi40p does not. Off screen, transient, not counted.
+- Next target (not in RBi40p): the ~18 ms view Layout right after the switch RS, which follows the 4 row-title entries
+  (split above). Any cut there lets the row-title sweeps run while #platform is paused, so it needs a pixel check of
+  every place a paused #platform is visible and its own prediction first.
+- Chrome-only: the kept bare-tag subjects (`.commission-underline path`, `.start-selling-avatars img`) invalidate
+  every `path` / `img` under a flipped scene by tag (54 at the #platform flip). WebKit is not affected (full-match
+  invalidation), so this is not a phone target.
 - fix-nav-morph: the cdwc `.face` will-change must stay `auto` in the panel; V1 only ever sets `auto`, so it holds.
 - V1b (pause via `getAnimations` in `cE`) needs fix-scroll-engine's approval; not built.
 - V2 (flip at idle): only if V1 leaves cost.

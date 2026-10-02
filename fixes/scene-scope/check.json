@@ -1,0 +1,191 @@
+{
+ "topic": "scene-scope",
+ "kind": "functional check",
+ "chromeMode": "headless",
+ "createdAt": "2026-10-02T03:13:13.836Z",
+ "git": {
+  "branch": "worktree-agent-a49a278f1d0bd6803",
+  "head": "db87fb3"
+ },
+ "config": {
+  "viewport": "both",
+  "serveArgs": [
+   "--vendors=local",
+   "--https",
+   "--latency",
+   "150"
+  ],
+  "baseline": "site-pretty",
+  "baselineSnapshot": {
+   "snapshot": "b1789284481295-4ad4a84a",
+   "state": "ok"
+  },
+  "stackedOn": null,
+  "browser": "Chrome/154.0.8037.97",
+  "uaOverride": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "screenInfo": {
+   "width": 1512,
+   "height": 982,
+   "dpr": 2,
+   "arg": "--screen-info={0,0 3024x1964 devicePixelRatio=2}"
+  },
+  "lock": {
+   "mode": "reentrant-shared",
+   "weight": 1,
+   "maxSec": 300
+  }
+ },
+ "note": "functional only (headless Chrome): no timing; screenshot diffs compare headless with headless (research/architecture/headless-functional.md). Never a gain verdict: that is fix.mjs ab.",
+ "servedCheck": [
+  {
+   "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+   "source": "overlay",
+   "sha256": "24c2e85682fe7f950ce8c00888548c4e53a9d826c82b7278eb71fab94d4450f9"
+  }
+ ],
+ "verdict": "ok",
+ "regressions": {
+  "newErrors": [],
+  "fixedErrors": [],
+  "errorsBothSides": [],
+  "new404s": [],
+  "newFailures": [],
+  "byViewport": {
+   "mobile": {
+    "newErrors": [],
+    "fixedErrors": [],
+    "errorsBothSides": [],
+    "new404s": [],
+    "newFailures": [],
+    "morphReached": {
+     "baseline": true,
+     "patched": true
+    },
+    "screenshotDiffPct": {
+     "top": 0.11,
+     "middle": 0.01,
+     "bottom": 0
+    },
+    "domDiff": {
+     "elements": {
+      "baseline": 1337,
+      "patched": 1337
+     },
+     "added": [],
+     "removed": []
+    }
+   },
+   "desktop": {
+    "newErrors": [],
+    "fixedErrors": [],
+    "errorsBothSides": [],
+    "new404s": [],
+    "newFailures": [],
+    "morphReached": {
+     "baseline": true,
+     "patched": true
+    },
+    "screenshotDiffPct": {
+     "top": 0.1,
+     "middle": 0,
+     "bottom": 0
+    },
+    "domDiff": {
+     "elements": {
+      "baseline": 1180,
+      "patched": 1180
+     },
+     "added": [],
+     "removed": []
+    }
+   }
+  }
+ },
+ "pages": [
+  {
+   "label": "base",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1337,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-base-top.png",
+    "middle": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-base-middle.png",
+    "bottom": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-base-bottom.png"
+   }
+  },
+  {
+   "label": "fix",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1337,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-fix-top.png",
+    "middle": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-fix-middle.png",
+    "bottom": "out/check/scene-scope/2026-10-02T03-11-08-140Z/mobile-fix-bottom.png"
+   }
+  },
+  {
+   "label": "base",
+   "viewport": "desktop",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1180,
+   "walk": {
+    "y": 8448,
+    "maxY": 8448,
+    "h": 9348,
+    "steps": 29
+   },
+   "shots": {
+    "top": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-base-top.png",
+    "middle": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-base-middle.png",
+    "bottom": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-base-bottom.png"
+   }
+  },
+  {
+   "label": "fix",
+   "viewport": "desktop",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1180,
+   "walk": {
+    "y": 8448,
+    "maxY": 8448,
+    "h": 9348,
+    "steps": 29
+   },
+   "shots": {
+    "top": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-fix-top.png",
+    "middle": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-fix-middle.png",
+    "bottom": "out/check/scene-scope/2026-10-02T03-11-08-140Z/desktop-fix-bottom.png"
+   }
+  }
+ ],
+ "raw": "out/check/scene-scope/2026-10-02T03-11-08-140Z/check-raw.json"
+}
