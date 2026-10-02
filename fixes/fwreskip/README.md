@@ -622,6 +622,7 @@ The lead asked for this on 2026-10-02 after G1b, Simulator only, no new phone ti
 - **OBSERVED, in our setup, cause unknown:** the composite after the un-skip does not come from painting `#people`'s content (P4 hides it and the composite stays). Layer creation is a guess, not checked.
 - **Probe effect found:** in every Sim T hold so far, the un-skip's Layout ran inside the 300 ms timer, not in the next rendering update. The reason is the probe's MutationObserver: it reads `scrollY` in the task that flipped the attribute, and that read lays the page out. So the Sim has always shown the layout and the composite in two frames (25-30, then 30-35), while the phone (no such read) shows one 45-55 ms frame. `vfix.mjs` now has `MOY=0` (no `scrollY` read in the observer) for the next hold.
 - Next candidate, P5: P2b plus one forced read (`offsetHeight`) right after the un-skip in the timer. The layout then runs in the timer task, and only the composite is left for the rendering update. The lead approved one Sim T hold, B / Q / P5, with `MOY=0`.
+- Moving the un-skip into a scroll step does not help: in the descent it puts back the cost fwreskip removes, and in the fling it is rev 2.1 (65-92 ms on the phone). A longer idle delay only moves the same frame.
 
 **P5 split criterion, registered 2026-10-02 before the hold.**
 - All numbers come from the `MOY=0` hold. That changes the probe, so they don't compare with any earlier Sim hold (v1-v32).
@@ -634,6 +635,22 @@ The lead asked for this on 2026-10-02 after G1b, Simulator only, no new phone ti
 - **P5 does not split** when (a) or (b) fails in either hold.
 - **Control:** B's rAF max dt in the window is ≤ 20 ms. Otherwise the hold is void, and I re-run once.
 - The criterion says nothing about the phone. A split on the Sim only earns P5 a phone block.
+
+**P5 result, hold v33** (2026-10-02 11:16-11:19Z, `MOY=0`; not comparable with v1-v32). B `dbd5fdb4f1fb`, Q = P2b `b4ff6ec56cc2`, P = P5 `d52aa7b70366`; then S / U for P2-1, below. **Verdict: P5 does not split** — (b) fails in both holds.
+
+| hold | Q (P2b): where the un-skip Layout ran; frames | P5: where the Layout ran; frames | (a) | (b) Q max − P5 max ≥ 8 |
+|---|---|---|---|---|
+| 1 | Layout 21.2 inside a 52.7 ms RenderingFrame, which also holds Composite 27.7; rAF dt 25, 33 | Layout 29.5 inside the TimerFire (32.8), Composite 28.8 after it; rAF dt 36, 35 | yes | 33 − 36 = −3: **no** |
+| 2 | Layout 24.3 inside a 41.7 ms RenderingFrame with Composite 26.7, then Composite 26.1; rAF dt 28, 31 | Layout 24.5 inside the TimerFire (26.6), Composite 22.6 in the next RenderingFrame; rAF dt 28, 29 | yes | 31 − 29 = 2: **no** |
+
+- Precondition holds: without the probe's read, P2b's layout and composite share one RenderingFrame in both holds. So the earlier Sim holds' split was the probe's doing, as suspected.
+- Control: B max dt 17 / 17. Valid.
+- P5 did what it was built to do: the layout moved into the timer task. The main thread still loses the same ~50 ms in a row, though: about 25 ms of layout and then 25-29 ms of composite, back to back. On the Sim, the rAF gaps come out the same (two 28-36 ms gaps in both builds). OBSERVED, in our setup. That P5 would split the phone's 45-55 ms frame into two shorter ones is not supported, so it gets no phone block (lead, 2026-10-02).
+- Weakness of the criterion, noted after the fact and changing nothing: the Sim's rAF stamps spread even P2b's single 52.7 ms RenderingFrame over two gaps (25 + 33), so (b) compares two-gap pairs in both builds. The RenderingFrame durations say the same thing: P2b 52.7 / 41.7 + 26, P5 50.1 + 28.8 / 26.6 + 25.1.
+
+**P2-1 Sim structure on st6-rb, hold v33** (S = st6-rb `59b23b3f57fd`, U = st6-rb + P5 `e15d3d7d3c52`; `MOY=0`). Sim structure only; it does not replace P2-1 on the phone.
+- First descent, Layouts ≥ 3 ms at the hero end: S 20.0 at 2987 and 20.2 at 3033 (the hero's far re-skip and the `data-fw-wc` flip); U none there. On st6-rb, fwreskip removes the same two ~20 ms Sim layouts as on RB.
+- Idle un-skip on st6-rb (U): Layout 20.6 / 21.4 (in the timer, P5) plus Composite 28.2 / 29.4; rAF dt 23, 33 / 24, 34. S at the same offset: 17 / 17. st6's avatar layers make the un-skip neither cheaper nor dearer than on RB (P5 on RB: Composite 28.8 / 22.6).
 
 ### P2-1 preview: the descent side in G1b's own runs (phone, G driver, RB, read after the fact)
 
@@ -648,7 +665,45 @@ G1b was not designed for this: its descent is WDA strokes of 150 px, each with a
   - The top frames sit at y≈3260-3286, ~280-380 ms after the flip, in both arms (the end of the last stroke), not at the flip.
 - So, **OBSERVED** (n=8 per arm, G driver, cause unknown): the ~20 ms Sim layout that fwreskip removes at the hero end does not show as a longer frame on the phone with this driver. B's frame at the flip is already 25-30 ms.
 - What this does not cover: the W driver (scripted steps), where the hero-end lag was first described, and RB + st6-rb. Both are P2-1's job on the phone.
-- Moving the un-skip into a scroll step does not help: in the descent it puts back the cost fwreskip removes, and in the fling it is rev 2.1 (65-92 ms on the phone). A longer idle delay only moves the same frame.
+
+### Phone ticket G2: P2-1, the descent gain (DRAFT, pre-data, for the lead's second read)
+
+Not sent to the queue yet. P5 did not split on the Sim (v33), so this ticket has one part, and V is S6P2b. The lead's order (2026-10-02): the user sees no proposal until both sides of the trade have phone numbers. P2-1 decides alone.
+
+**Question.** On the phone, with the W driver, does fwreskip shorten the frames where the descent passes the hero end? And is that gain big enough to pay for its idle un-skip cost?
+
+**Builds** (immutable, `out/fwreskip/snap-p21/`; built by patching st6-rb's JS with fwreskip's diff against RB; st6's change sits at JS 11483-11694, far from fwreskip's 2660-2900):
+
+| arm | build | JS / CSS sha256 (first 12) |
+|---|---|---|
+| C | S6 = RB + st6-rb (PR-003 A, on main) | `59b23b3f57fd` / `d22542d0b5f8` |
+| V | S6P2b = S6 + fwreskip P2b (P5 did not split, v33) | `ad7f029e43c6` / `d22542d0b5f8` |
+
+**Driver W**, the same command in both arms:
+```sh
+node tools/iphone.mjs run --driver window --probe std --from 2600 --to 3400 --idle 3 --hold 3 --owner <runner> --label G2-p21-<n><arm> --arm <C|V> --block G2-1
+```
+- The window starts below the hero's far edge and ends before `#people`'s own far edge. Phone y: hero re-skip ≈3080-3110 in G1b; `#people`'s far edge ≈3540 Sim, so ≈3620 phone.
+- The 3 s hold at 3400 is where V's idle un-skip fires, 300 ms after the last scroll event. So one run measures both sides of the trade.
+
+**Block:** warm-up per port, sentinels (bottom ≥ 58 / scroll ≥ 44), then C V V C C V V C (4 runs per arm). Phone rules as in G1b: no recordings (T-018), user steps first, quiet hold preferred, `phone-temp` cooling, waits on the board.
+
+**Readings, per run** (frames from the std probe's rAF log; phone thresholds > 50 and > 34 with twins > 46 / > 54 and > 30 / > 38; near bands flagged):
+1. **Band:** frames during the scroll whose y is in [2950, 3250]. This holds the hero's far re-skip and the platform card's `data-fw-wc` flip, by crossing, at Chrome-to-phone offset ≈ +77-100. Report the max dt and the counts.
+2. **Hold:** frames during the hold (the scroll's end + 3 s). Report the max dt, the counts, and the time of the longest frame from the scroll's end. V's idle un-skip is expected at ≈ +300 ms.
+3. **Rest of the window** (y < 2950 and y > 3250 in the scroll): counts only, as a check that the arms differ only at the band.
+
+**Decision rule** (registered before data; sums over the 4 C and the 4 V runs; "frames" = frames > the threshold):
+- **Gain, A recommended:** both of these must hold.
+  - (i) V's > 50 frames in band + hold < C's > 50 frames in band + hold.
+  - (ii) V's > 34 frames in band + hold ≤ C's.
+  - The size that justifies the idle cost is in the rule: the band gain must at least pay back the frames V adds in the hold, at both thresholds. A net > 50 count lower by ≥ 1 is the smallest gain that buys G1b's 45-55 ms idle frame.
+- **No gain, recommend (B), drop fwreskip:** V's band counts are ≥ C's band counts minus 1 at > 34, and not lower at > 50 (this includes V being worse). A one-frame difference over 4 runs is inside run-to-run noise (G1b: B's own band counts spread 0-2 per run). The 45-55 ms idle frame then buys nothing.
+- **Mixed, (B) still recommended, trade shown to the user:** V gains in the band, but the hold's added frames cancel it, so (i) or (ii) fails.
+- **Threshold-sensitive** when a twin changes the verdict. **Void run** as in G1b: sentinel failures, a run that doesn't reach 3400, and the stroke gate where it applies (W has no strokes, so it doesn't apply here).
+- The UI-process half of the FAIL rule is "not checked on the phone since T-018". Main-thread FAIL is not read in this part: the W driver has no flinglog.
+
+**Prediction** (sent to mgmt-ops for an id): no gain. In C, the band max ≤ 38 ms in ≥ 3 of 4 runs, and the band > 50 count is 0-1 in each arm. V's hold has ≥ 1 frame > 34 in ≥ 3 of 4 runs (G1b: 8 of 8). Based on: the G1b descent preview above, G driver, n=8 per arm, B 25-30 ms at the flip. Falsified if C's band shows ≥ 2 frames > 50 over 4 runs that V does not have.
 
 ## Risks, conflicts, follow-ups
 
