@@ -4,7 +4,9 @@
 // Draw starts: the std probe's class crossings on em.script-accent (+is-drawing-in / +is-drawing-out). The probe does not log the
 // word, so a 'you' draw is the one of its direction nearest to the cycle's 'you' times since navigation (Sim, 2026-10-02:
 // in 22.0 s, out 24.2 s, period 21.44 s; draws of one direction are >= 3 s apart, the tolerance is 1.2 s). In the arms the
-// '+is-canvas' crossing in the same batch marks an engaged draw; an engaged draw that is not a 'you' draw makes the run VOID-ID.
+// draw is engaged when the word is on the canvas/video right after the start batch: the last +/-is-canvas crossing at or before
+// start + 1 ms is '+is-canvas' (the arm adds it at the in-draw and keeps it through the out-draw, so an out-draw has no crossing
+// of its own; fixed 10-02 before any counted run was analysed). An engaged draw that is not a 'you' draw makes the run VOID-ID.
 // A '-is-canvas' before the draw's end (900 ms) is a handback (the reason is in the arm's own stats, readstats.mjs).
 //
 // Per 'you' draw, window W = (s, s + 2000 ms] on the probe's frame stamps (a frame row's t ends its gap; post-draw stalls count):
@@ -29,7 +31,8 @@ for (const f of files) {
   for (const s of starts) {
     const d = s.value.endsWith('in') ? 'in' : 'out', n = Math.round((s.t - T[d]) / PER), off = s.t - (T[d] + n * PER);
     const you = n >= 0 && Math.abs(off) <= TOL;
-    const eng = cr.some((c) => c.value === '+is-canvas' && Math.abs(c.t - s.t) <= 1);
+    const last = cr.filter((c) => (c.value === '+is-canvas' || c.value === '-is-canvas') && c.t <= s.t + 1).at(-1);
+    const eng = !!last && last.value === '+is-canvas';
     if (eng && !you) run.voidId.push(Math.round(s.t));
     if (!you) continue;
     if (idle && (s.t < idle[0] || s.t + 2000 > idle[1])) continue; // only draws whose whole window lies in the idle phase
