@@ -416,6 +416,15 @@ test('--inject is refused with --morph-log, and a missing or malformed logger is
 });
 
 // ---- wda build | start | status | stop -------------------------------------------------------------------
+// A detached helper (the fake iproxy) writes its log on its own schedule: poll for a non-empty file, bounded (I-055).
+async function readWhenWritten(file, what, timeoutMs = 10000) {
+  const end = Date.now() + timeoutMs;
+  for (;;) {
+    try { const s = readFileSync(file, 'utf8'); if (s.trim()) return s; } catch (e) { if (e.code !== 'ENOENT') throw e; }
+    if (Date.now() > end) assert.fail(`${what} (${file}) was not written within ${timeoutMs} ms`);
+    await sleep(50);
+  }
+}
 function wdaEnv() {
   const home = tempDir('fw-wdahome-');
   for (const f of ['fake-xcodebuild.mjs', 'fake-iproxy.mjs', 'fake-ideviceinfo.mjs']) chmodSync(join(FIX, f), 0o755);
@@ -542,6 +551,7 @@ test('wda start: a runner that fails to launch is a clean error whose xcodebuild
 
 test('wda start (lease) runs the runner and iproxy, activates Safari; status sees them; stop kills only them', async () => {
   const w = wdaEnv();
+  w.env.FAKE_IPROXY_DELAY_MS = '700'; // the fake runner is ready without iproxy, so its argv log may come late (I-055)
   mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
   lock('acquire', 'iphone', '--owner', 'me');
   assert.equal(heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677']).code, 0);
@@ -553,7 +563,7 @@ test('wda start (lease) runs the runner and iproxy, activates Safari; status see
   const pids = ['runner', 'iproxy'].map((n) => JSON.parse(readFileSync(join(env.FW_STATE_DIR, 'wda', `${n}.json`), 'utf8')));
   assert.ok(pids.every((p) => pidAlive(p.pid) && p.owner === 'me'));
   assert.ok(!JSON.stringify(pids).includes('0011223344556677'), 'pidfiles do not store the device id');
-  assert.deepEqual(JSON.parse(readFileSync(w.env.FAKE_IPROXY_LOG, 'utf8').trim()), ['8100:8100', '-u', '00008130-0011223344556677']);
+  assert.deepEqual(JSON.parse((await readWhenWritten(w.env.FAKE_IPROXY_LOG, 'the fake iproxy argv log')).trim()), ['8100:8100', '-u', '00008130-0011223344556677']);
   const calls = readFileSync(w.env.FAKE_WDA_LOG, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   assert.ok(calls.some((c) => c.path.endsWith('/wda/apps/activate') && c.body.bundleId === 'com.apple.mobilesafari'));
   // again: already running is fine
