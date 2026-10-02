@@ -8,6 +8,18 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **12:3xZ a3abc07 landed (the lead rebased the batch on ecd4f88); PR-005 posted; T-023 answered.** Corrections to the
+  12:2xZ digest:
+  - **fwreskip: PR-005 posted** after the lead's review (A ship / B drop, recommended / C park + re-test).
+    fix-scroll-engine waits on the user. PROGRESS fwreskip next updated.
+  - **ecd4f88 landed:** de-illusion-style's phone-off results plus F-132: on Chrome the 'you' draw is about 15 % of its
+    own cost; the rest is the full page's per-frame cost pulled up to 60 fps; Layerize 311 ms per draw (OBSERVED,
+    Chrome). PROGRESS illusion-proposals next/whyNot updated (word-alone picked, phone test on hold).
+  - **T-023 answered** (T-023 #3, waits on the user): Safari on the Mac can't stand in for timing; it can do WebKit
+    mechanism counts. Lead recommends a small experiment with the cached Playwright WebKit build (no user step); the
+    alternative, real Safari through safaridriver, needs `sudo safaridriver --enable` from the user once.
+  - **de-safari-mac and iphone-runner are done.**
+  - Land rule now: a land request only when something changes PROGRESS, or after 30 min.
 - **12:1xZ-b (batch) Lead decisions on the parked list; fix-image-size spawned; peer directory refreshed.**
   - **image-size started:** fix-image-size (worktree). Gate: Chrome pixels, Simulator decoded memory (counts only) and
     bytes; no timing. The lead fast-paths D. Expect a PREDICTIONS row request from it (next free P-066).
@@ -1277,11 +1289,11 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
 | `mgmt-ops-7` (spawned 10-02 09:1xZ; mgmt-ops-6 and earlier ENDED) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive |
-| `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | parked (phone disconnected, T-022) |
-| `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (Sim step 3, then the A/B/C proposal recommending (B) drop); hero-carousel (parked) | alive |
+| `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | done (phone disconnected, T-022) |
+| `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
 | `fix-image-size` (new 12:0xZ; ID via ListAgents) | image-size: Chrome pixels, Sim decoded memory (counts only), bytes; no timing; D fast-pathed by the lead; will ask ops for a P-id (next free P-066) | alive |
-| `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | alive |
+| `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (answered T-023 #3) |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
 | `ts-i063` (spawned 12:05Z; ID via ListAgents) | I-063 (the Simulator stays booted between sessions, with an idle shutdown) and I-065 (both flakes), two separate commits | alive |
 | `ts-i064` | I-064 toolsmith (rounds 1-2 landed 8ec1c6d, 11bc722) | done |

@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T11:55:00Z",
+ "updatedAt": "2026-10-02T12:35:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T12:35:00Z", "text": "The phone is disconnected, so its tests wait. The scroll-size fix (fwreskip) now waits for your decision on PR-005; the word-alone test of the hero's accent word waits for the phone." },
   { "at": "2026-10-02T11:55:00Z", "text": "The best build is now st6-rb2: the same seven fixes, with the final version of the section-switch style fix. It was checked by how it works and by screenshots, not timed on the phone as a whole." },
   { "at": "2026-10-02T11:40:00Z", "text": "The section-switch fix (restyle only its own section) is landed. On the iPhone it removes the whole-page layout at each section switch, about 17-23 ms each time." },
   { "at": "2026-10-02T11:30:00Z", "text": "The best build gains a seventh fix: the profile cards that are off screen are hidden while the people section starts to shrink. On the phone it removes one slow frame there (37 to 17 ms); the count of slow frames over the whole scroll did not drop." },
@@ -219,7 +220,7 @@
   {
    "id": "illusion-proposals",
    "inBuild": false,
-   "whyNot": "None of the 5 image or video ways to draw the hero's accent word beat today's drawing on the phone; your pick on the report (PR-004) is open.",
+   "whyNot": "None of the 5 image or video ways to draw the hero's accent word beat today's drawing on the phone; you asked to test the word alone next (PR-004).",
    "title": "Cheaper look-alike effects (user priority 2)",
    "area": "whole",
    "state": "diagnosing",
@@ -227,7 +228,7 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "The test report (PR-004) is waiting for you: none of the 5 ways gave fewer hitches than today's drawing. Pick a next step there; nothing changes on the page until you do.",
+   "next": "You picked a test of the word alone (PR-004, 11:15Z). On Chrome the word's own drawing is about 15 % of its cost; the rest is the whole page redrawn every frame. The phone test waits until the phone is back.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
    "checks": [],
    "details": [
@@ -268,7 +269,7 @@
    "fixes": "Around the middle of the page, two frames cost about 20 ms each, mostly layout, while a large section (the people list) is still being drawn although it is about to leave the view. The chosen fix sets it aside earlier, so that work is not done while it cannot be seen.",
    "felt": {"answer": "not-yet"},
    "gate": "Lands only after checks that nothing on screen changes and a finger fling test on the real iPhone; no speed test while timing is on hold.",
-   "next": "The fling test showed one slower frame on a fast fling up, when the people section starts drawing again. A new version does that drawing after you pause instead; it gets a Simulator check, then a phone test after PR-001.",
+   "next": "Your decision is open on PR-005: A ship it, B drop it (recommended: on the phone it removed about as many slow frames as it added), or C park it and test again when the phone is back.",
    "owner": "fix-scroll-engine (from fix-scene-scope)",
    "checks": [],
    "details": [
