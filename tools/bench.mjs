@@ -205,6 +205,7 @@ async function takeLock(owner, { short, shared, maxSec, meta, onBudget }) {
     // before run 1 (bench has no recheck before it without --max-load), recorded as simWarm.settle; N1: the host
     // gate's own attempt (lib/lock.mjs) is recorded when this hold found nothing more (gate: true)
     const own = await reapWarm({ reason: 'bench timing hold', by: 'bench' });
+    l.simWarm ??= l.holder?.gate?.simWarm ?? null; // the gate's reap, also an outer `lock.mjs run` hold's (review-i063)
     if (own) {
       console.log(reapNote(own, 'this bench hold'));
       if (!own.ok) { l.release(); process.exit(1); }

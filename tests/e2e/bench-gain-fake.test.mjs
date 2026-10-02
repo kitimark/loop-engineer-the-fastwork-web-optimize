@@ -320,13 +320,14 @@ test('I-063 review-i063 B2/N1/N2 (MEASUREMENT CODE): a warm Simulator found insi
   sw = results('fast-nav').calibration.simWarm;
   assert.deepEqual([sw.action, sw.ok, sw.gate, sw.keeperAlive], ['shut down', true, true, false]);
   assert.ok(w.dev().state === 'Shutdown' && !w.warm());
-  // the shutdown fails: the gate stays closed (granted only at its cap, FW_GATE_MAX_WAIT), then bench's own backstop
+  // the shutdown fails: the gate stays closed (granted at its cap, FW_GATE_MAX_WAIT 2 s, before its second attempt at
+  // 30 s would end the wait: tests/e2e/sim-warm.test.mjs n1), then bench's own backstop
   // refuses before any Chrome starts; nothing is stored
   const before = readFileSync(join(repo.wt, 'fixes', 'fast-nav', 'bench-results.json'), 'utf8');
   w = warmEnv('simfail', { shutdownFail: true });
   r = await bench('simfail', ['calibrate', 'fast-nav'], { ...w.extra, FW_GATE_MAX_WAIT: '2' });
   assert.equal(r.code, 1, r.out);
-  assert.match(r.stderr, /a warm Simulator \(fw-sim\) at the host gate: shutdown FAILED \(.*\); the gate stays closed while it is booted \(I-063\)/);
+  assert.match(r.stderr, /a warm Simulator \(fw-sim\) at the host gate: shutdown FAILED \(.*\); attempt 1 of 2 \(I-063\)/);
   assert.match(r.stdout, /WAIT: a warm Simulator \(fw-sim\) may still be booted and its shutdown failed \(.*\): nothing is timed beside it, so this bench hold stops here/);
   assert.equal(existsSync(env('simfail').FAKE_CHROME_LOG), false, 'no Chrome started');
   assert.ok(w.dev().state === 'Booted' && w.warm(), 'the record stays');

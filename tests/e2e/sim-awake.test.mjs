@@ -34,6 +34,7 @@ beforeEach(async () => {
     FAKE_MACAPP_STATE: join(dir, 'app'), FAKE_IDEVICE_IDS: PHONE, FAKE_IWDP_PHONES: PHONE,
     FW_SIM_DEVICE_PORT: String(await freePort()), FW_SIM_PORT: String(await freePort()), FW_SIM_WDA_PORT: String(await freePort()),
     FW_CAFFEINATE: FX('fake-caffeinate.mjs'), FAKE_CAFFEINATE_LOG: join(dir, 'caffeinate.jsonl'),
+    FW_SIM_IDLE_SEC: '0', // I-063: no warm device (and no detached keeper) after the functional session; review-i063
     FW_LOCK_SHARED_JOIN_LOAD: '1000', FW_LOCK_SHARED_JOIN_BUSY: '100',
   };
 });
