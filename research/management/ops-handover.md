@@ -8,6 +8,35 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **22:2xZ (batch) fwreskip dropped; user lifts the timing hold for st6 + F3 (T-027 #5); P-067 = S7; P-036 G re-read PASS; PR-007 accepted; I-073 landing, I-074 open.**
+  - Landed: ed43bd0 (ops), 3e2ebe8 (fwreskip G2 scored: band >50 0 vs 0, >34 0 vs 0, No gain -> (B); P-064 filled),
+    cf95b03 + 3c67f93 + 6890fe5 (countdown-faces PoC, round 2, review r2 notes).
+  - **fwreskip DROPPED** (G2 no gain; user told T-027 #7). PROGRESS: state dropped, why, P-064 check.
+  - **User asked for 2 more high-gain fixes (T-027 #3):** the lead picked hero-carousel st6 and f3-arm-scope; the user
+    lifted the timing hold for those two only (T-027 #5, 21:57Z). **Phone queue:** P-065 word-alone Blocks 1-2, then
+    st6 (S7, P-067, fix-scroll-engine), then F3 P-036 G (fix-nav-morph), then F3's blind swipe. PROGRESS next fields
+    and the upcoming row updated.
+  - **P-067 = fix-scroll-engine, phone ticket S7** (f328be1, pre-data): C = st6-rb2 − st6 (JS 0144d2cd032a, CSS
+    add63ff17fb7) vs V = st6-rb2 (7bf7c4657d21 / f523598b2a24, = main's st6-rb2 row), S driver `--idle 20`,
+    C V V C C V V C, primary idle dt>34/>50 sums; scorer st6score.py 7a8fed7fb4c3. **Second read (mgmt-ops-7) PASS
+    with 2 notes, to settle before data:** (1) Gain = V's >34 sum at least 2 below C's is a thin margin against a
+    predicted C 32-100 vs V 0-8 summed: add per-run separation (every V run below every C run) as the condition or the
+    confidence label, or keep sums knowingly; (2) the guard row's statistic ("median per run") needs exact wording.
+    Hashes of the 4 served files and the scorer checked on disk (read-only copies). **Both settled pre-data in
+    feeef69** (re-read PASS): Gain = (a) every V run's idle >34 below every C run's AND (b) sum margin >= 2 AND (c) V >50
+    sum <= C's, twins per part; new falsifier "any V run reaches the lowest C run"; guard = per-arm median over 4 runs,
+    V <= C + 1. Scorer now 772ef9e0e8a4 (checked on disk); A1 per run C 3,2,4 vs NB 0,0,0, separated.
+  - **P-036 G re-read PASS** (fix-nav-morph, ticket to iphone-runner 22:0xZ after T-027 #5): UPDATE line added to the
+    P-036 row in fixes/PREDICTIONS.md, plus fix-nav-morph's pre-data Simulator check (105c977, OBSERVED): V makes every
+    first touchmove cancelable (Z1 C 0/4 vs V 4/4), so the expectation is revised to Z1 V FLAGGED or WORSE possible,
+    Z2 overlap, Z3 overlap; the rule is unchanged.
+  - **countdown-faces:** round 2 (3c67f93) replaced the replay with an always-running hidden spring, exact by
+    construction (0 of 295 frames differ); busy-time "28-40 %" withdrawn, now 764-815 ms lower per 6 s (n=1).
+    **PR-007 ACCEPTED, option "full" (22:08:59Z)**; parked until a phone segment card (X1) ticket.
+  - **I-073** (LAN resolver + placeholder, CLAUDE.md edit with the user's OK T-026 #5): ts-i073, landing now.
+    **I-074 OPEN** (user T-028): a "Try it" panel with live original vs PoC iframes in proposals; ts-i074 building.
+  - **Lead list, scrub job (local-only hygiene):** ts-i073 reports 236 committed `fixes/iphone-wave2/raw/*.json` files
+    that still hold the Mac's raw LAN address (never pushed, rule 2; Hard rule 12 says it should not be committed).
 - **21:4xZ (batch) 5678f13 landed (ts-i063 follow-up); phone back (T-025), ioscap first run C-025 PASSED; Wi-Fi reconnect (T-026) voids G2 runs; countdown-faces NEEDS-WORK; I-072 open.**
   - Landed: cb2a3c8 (ops) and **5678f13** (ts-i063 follow-up, review-i063 ACCEPT; npm test on main 1286/1286 in the
     shared lane 21:21-21:25Z). ts-i063's I-071 check.chrome hardening is still staged in its worktree and waits for
@@ -381,7 +410,7 @@ Board rows `ops`, `phone-queue`, `fwreskip`, `best-stack` and `phone-stack-test`
   - Directory rows below that are older than 10-02 06:00Z are unverified.
 - **Open incidents.** I-056 only (ts-i056). I-053/054/055/057/058 are resolved.
 - **P-ids.** (P-059 wi-stack, P-060 fix-scroll-engine G1b, P-061 fix-scene-scope T-011,
-  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2, P-065 de-illusion-style word-alone, P-066 fix-image-size image-size): next free P-067.
+  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2, P-065 de-illusion-style word-alone, P-066 fix-image-size image-size, P-067 fix-scroll-engine S7 st6): next free P-068.
 - **Mechanics.**
   - PROGRESS.json: targeted Python replacement; the old JSON string must match exactly once. next/gate ≤ 300 chars,
     details ≤ 600. Bump `updatedAt` to the real `date -u`, never ahead.
@@ -1386,6 +1415,8 @@ between tool calls.
 | id | state | owner | note |
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
+| I-074 | open | ts-i074 | user T-028: proposals get a "Try it" panel with live original vs PoC iframes |
+| I-073 | landing (22:2xZ) | ts-i073 | LAN address resolver + placeholder; CLAUDE.md edit with the user's OK (T-026 #5) |
 | I-072 | open, non-blocking | lead | WDA e2e tests left 3 fake-xcodebuild/fake-iproxy orphans (14 h); killed by the lead; not sim-warm (ts-i063) |
 | I-071 | RESOLVED not-a-bug (Idle Sleep; test:chrome 13/13 at 17:38Z) | ts-i063 | test:chrome check.chrome failed (no check.json); bisect 9135b35 vs 0aa2227 |
 | I-070 | RESOLVED (0de8103) | ts-i070 | keep the Mac awake only during measurement holds (caffeinate -i -s) |

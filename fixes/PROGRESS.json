@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T21:45:00Z",
+ "updatedAt": "2026-10-02T22:20:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T22:20:00Z", "text": "The scroll-size fix (fwreskip) is dropped: on the phone it gave no gain (0 slow frames with and without it). At your request two more fixes get a phone timing test: the avatar carousel fix (st6) and F3 (touch listeners set up once). They run after the word-alone test." },
   { "at": "2026-10-02T21:45:00Z", "text": "The phone is back. Its screen recorder passed its first run with the camera light off. The scroll-size test (G2) starts again after the Wi-Fi change; the word-alone test of the hero's accent word comes next." },
   { "at": "2026-10-02T15:20:00Z", "text": "You chose to park the scroll-size fix (fwreskip) and test it again when the phone is back. The image-size fix is dropped: with more Simulator sessions, the memory it seemed to save turned out to be inside the normal variation, so no saving could be shown." },
   { "at": "2026-10-02T12:35:00Z", "text": "The phone is disconnected, so its tests wait. The scroll-size fix (fwreskip) now waits for your decision on PR-005; the word-alone test of the hero's accent word waits for the phone." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T16:45:00Z", "text": "Phone tests approved and queued: the avatar carousel at the top (P14) and the softer blur easing for the card reveal (P-038)." },
   { "at": "2026-10-01T16:05:00Z", "text": "The iOS Simulator was checked as a stand-in for the phone: not usable as a judge of smoothness. The real iPhone stays the judge." },
   { "at": "2026-10-01T15:48:00Z", "text": "Your three blind swipe pairs for the countdown fix all came back 'same'. It now lands only if the robot-finger test (P-032) passes." },
-  { "at": "2026-10-01T15:20:00Z", "text": "Layout containment (lc-cq3) dropped: the work moved elsewhere, the slow frames did not get shorter." },
-  { "at": "2026-10-01T14:45:00Z", "text": "F3 removed the 106-118 ms hitch in the middle of the page in 4 of 4 scripted runs; the F1 variant stopped." }
+  { "at": "2026-10-01T15:20:00Z", "text": "Layout containment (lc-cq3) dropped: the work moved elsewhere, the slow frames did not get shorter." }
  ],
  "items": [
   {
@@ -84,7 +84,7 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "Paused by your decision (19:27Z): timing tests are on hold. P-036 and the blind swipe test wait; the robot-finger tool fix itself continues.",
+   "next": "You allowed its phone tests (T-027 #5). The robot-finger test P-036 runs after the st6 test (ticket re-checked 22:1xZ); the blind swipe test follows it.",
    "owner": "fix-nav-morph",
    "checks": [
     { "id": "P-022", "what": "scripted phone block: is the y≈1960 frame gone?", "result": "yes, 4 of 4 runs" },
@@ -153,7 +153,7 @@
    "stage": "F",
    "fixes": "The small rotating profile pictures near the top (the 'blinking small profiles' you noticed) cost a 25-30 ms whole-page layout about once a second, even when you are not scrolling.",
    "gate": "Cause found (P14): swapping the pictures in and out is what makes the whole page re-lay out. Next gate: a build that keeps the pictures in place must remove that layout on the phone.",
-   "next": "Cause found: the slide animation briefly switches the pictures fully opaque or un-scaled, and Safari treats that as a reason to re-lay out. A build that never makes that switch (st6) removed it in 35 of 36 slide starts. st6 is now the candidate; its timing test waits until timing tests resume.",
+   "next": "st6 is in the best build. You allowed its phone timing test (T-027 #5): ticket S7 (P-067) asks whether the page at rest at the top still has fewer slow frames with st6. It runs after the word-alone test, before F3.",
    "owner": "fix-scroll-engine with de-pm-hero",
    "checks": [ { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "Yes. With the pictures kept in place, the whole-page layout at each tick was gone in 65 of 67 ticks (scripted scroll, OBSERVED). A layout boundary around the section removed the hitches over 50 ms at rest (11 to 0) but kept most frames over 34 ms; each layout got cheaper, not by half." }, { "id": "P-039", "what": "st5 phone test: does the real fix also stop the whole-page layout?", "result": "Partly. The picture swap no longer re-lays out the page (1 of 31 ticks), but the start of each slide still does in 15 of 33 ticks. At rest, hitches over 34 ms fell from 70 to 29 in 40 s, and over 50 ms from 4 to 0 (OBSERVED)." }, { "id": "P-044", "what": "phone recording: does the no-flip build (st6) stop the layout at the slide start?", "result": "Yes: 1 of 36 slide starts re-laid out the page, against 24 of 35 for st5 and every one for the original (OBSERVED)." } ],
    "details": [
@@ -266,14 +266,14 @@
    "id": "fwreskip",
    "title": "A size write in the middle of the page (y about 2990)",
    "area": "middle",
-   "state": "diagnosing",
+   "state": "dropped",
    "stage": "I",
+   "why": "No gain on the phone: in G2 (P-064) the build with it and the build without it both had 0 slow frames over 50 ms and over 34 ms in the band. Dropped (3e2ebe8).",
    "fixes": "Around the middle of the page, two frames cost about 20 ms each, mostly layout, while a large section (the people list) is still being drawn although it is about to leave the view. The chosen fix sets it aside earlier, so that work is not done while it cannot be seen.",
    "felt": {"answer": "not-yet"},
    "gate": "Lands only after checks that nothing on screen changes and a finger fling test on the real iPhone; no speed test while timing is on hold.",
-   "next": "You chose C on PR-005. The phone is back: phone test G2 runs again from the start after the Wi-Fi change (earlier G2 runs void).",
    "owner": "fix-scroll-engine (from fix-scene-scope)",
-   "checks": [],
+   "checks": [ { "id": "P-064", "what": "phone test G2: fewer slow frames in the middle with it than without?", "result": "No gain: 0 vs 0 frames over 50 ms and over 34 ms in the band (OBSERVED, W driver, on st6-rb). Dropped." } ],
    "details": [
     "style-recalc-images.md §5 rank 4: fwReskip intrinsic-size write (B JS 2821), 13-14 ms at y~2990, ~1.6 ms style, 12 ms nested Layout; W, same block as rank 1.",
     "00:4xZ (fix-scroll-engine): r6-r9 'stale layout state in #profile-showcase/#people, cured by re-creating its children' WITHDRAWN (probe artifact: hiding the shells shrank #people across the fwFar re-skip edge, so fwReskip deferred it). Revised, OBSERVED (Sim): each containment flip (y2988 hero deferred, y3047 platform-card will-change) costs ~20 ms only while #people (1327 px) is still rendered; its re-skip comes at ~y3539. Next r11 localizes the box; fix (a) re-skip #people no later than the hero or (b) structural #profile change.",
@@ -442,7 +442,7 @@
   }
  ],
  "upcoming": [
-  { "title": "Blind swipe test of F3 (middle of the page)", "when": "paused: timing and feel tests are on hold", "item": "f3-arm-scope" }
+  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the robot-finger test P-036 (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" }
  ],
  "build": {
   "name": "st6-rb2: the wave-1 base plus seven fixes",
