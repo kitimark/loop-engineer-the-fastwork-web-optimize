@@ -8,6 +8,19 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **15:4xZ P-066 RETRACTED (falsified); image-size dropped; I-070 resolved; I-063 re-review accepted; T-024 ->
+  de-countdown.**
+  - **Correction to 15:1xZ:** fix-image-size retracted the P-066 HIT. With more sessions the within-session A/A of the
+    Sim images-category peak is 6.6, 14.0 and 29.1 MB, so -14.5 / -17.1 MB is inside the noise: **FALSIFIED at the
+    metric's resolution** (no detectable saving). PR-006 withdrawn (a draft, never shown to the user). image-size is
+    dropped with a null write-up (land request from fix-image-size; PROGRESS gets its writeup path once that lands).
+    PROGRESS image-size: state dropped, why + P-066 check read "no detectable memory saving, dropped"; the 15:20Z
+    changes[] line rewritten.
+  - **I-070 RESOLVED** (0de8103, npm test 1264/1264 on main): keep the Mac awake only during measurements (timing
+    holds, phone parts, Sim sessions).
+  - **I-063 re-review ACCEPT-WITH-NOTES;** ts-i063 rebases onto I-070 and fixes n1-n3 before landing.
+  - **T-024** (the user's countdown request) -> new agent **de-countdown**, topic countdown-faces, board priority #1;
+    it uses the user's apple.com off-screen-pause reference.
 - **15:1xZ (batch) Flakes landed; user answers C-024 / PR-005 / T-023; P-066 HIT; I-069, I-070.**
   - Landed: ddfbc8c (ops), dc5651c (I-065 bdc2e04 + I-066; npm test 1257/1257; both RESOLVED), 8df1413 (fwreskip
     README, the PR-005 decision).
@@ -1327,12 +1340,12 @@ between tool calls.
 | id | state | owner | note |
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
-| I-070 | fixing, P2 | ts-i070 | keep the Mac awake only during measurement holds (caffeinate -i -s) |
+| I-070 | RESOLVED (0de8103) | ts-i070 | keep the Mac awake only during measurement holds (caffeinate -i -s) |
 | I-069 | triaged, P2 | ts-i063 | sim safari-restart on a restored data: tab |
 | I-066 | RESOLVED (dc5651c) | ts-i063 | sparse worktree's leftover site*/ shadowed the baseline |
 | I-065 | RESOLVED (bdc2e04) | ts-i063 | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
 | I-064 | RESOLVED (11bc722); user YES to deleting the old recorder | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
-| I-063 | fixing (3a85564 NEEDS-WORK B1/B2; fix round + re-review) | ts-i063 | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
+| I-063 | re-review ACCEPT-WITH-NOTES; n1-n3 + rebase on I-070, then lands | ts-i063 | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
 | I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
 | I-061 | RESOLVED 10:44Z (517fdb4) | (lead) | PROGRESS build data schema |
 | I-060 | RESOLVED 10:44Z | ts-i060 | progress page "Right now": show the job and the fix, not only the holder (user T-020) |
@@ -1353,11 +1366,12 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | done (phone disconnected, T-022) |
 | `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
-| `fix-image-size` (new 12:0xZ; ID via ListAgents) | image-size: Chrome pixels, Sim decoded memory (counts only), bytes; no timing; D fast-pathed by the lead; will ask ops for a P-id (next free P-066) | alive |
+| `fix-image-size` (new 12:0xZ; ID af756241c686d490e) | image-size: P-066 falsified (no detectable saving), dropped; null write-up landing | alive |
+| `de-countdown` (ID via ListAgents) | T-024 countdown-faces (board priority #1; apple.com off-screen-pause reference) | alive |
 | `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (user: no, thanks) |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
 | `ts-i063` (spawned 12:05Z; ID via ListAgents) | I-063, I-065, I-066 (batch 3a85564, 8eab8ba, 99b37b3 in review), then I-068 (resolved not-a-bug) | alive |
-| `ts-i070` (ID via ListAgents) | I-070: caffeinate only measurement holds | alive |
+| `ts-i070` (ID via ListAgents) | I-070: caffeinate only measurement holds (resolved 0de8103) | done |
 | `review-i063` (ID via ListAgents) | read-only fix-reviewer of ts-i063's batch (measurement code: host.simWarm) | alive |
 | `ts-i064` | I-064 toolsmith (rounds 1-2 landed 8ec1c6d, 11bc722) | done |
 | `wi-stack` (a93135040e12a061d) | best-stack, shell-hold-c (landed 81dbc9b), F-129; an optional Sim spot check is parked | done |
