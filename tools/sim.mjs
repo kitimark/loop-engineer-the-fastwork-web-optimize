@@ -20,6 +20,14 @@
 //     node tools/sim.mjs session --functional --owner <o> [--window shown|hidden] -- <cmd> [args]
 //        open and wda start work inside it; scroll, record and run (timing) are refused. Every session (functional or
 //        not) holds the exclusive `simulator` process lock: one fw-sim, one session at a time.
+//        I-063: a functional session that ran its <cmd> (no signal) does NOT shut fw-sim down: it quits Safari, records
+//        sim/warm.json and starts a keeper (`sim.mjs keeper <id>`, pidfile sim/keeper.pid.json; `status` shows both)
+//        that shuts it down FW_SIM_IDLE_SEC (default 600; 0 = shut down at the end as before) after the session, or
+//        as soon as chrome-measure has a timing holder or waiter, never while a session holds the simulator lock.
+//        The next session (either kind) takes the warm device over (same device, type and runtime; else refused): no
+//        boot; Safari quit, its HTTP cache emptied, relaunched, proxy restarted. A timing session always shuts down.
+//   node tools/sim.mjs shutdown [--warm-only --reason r --by b]  now (--warm-only: only a warm device, under the
+//        simulator lock: verify.mjs / bench gain / quiet phone runs call it before timing, I-063)
 //   # inside a session (its <cmd>, e.g. sh -c '...'):
 //   node tools/sim.mjs open <url> [--out f.png]                simctl openurl, wait until Safari lists it, screenshot to out/sim/;
 //        and records its server's host: the session's later scroll / record / run / gesture / safari-restart pick only tabs
@@ -42,11 +50,12 @@
 //   node tools/lock.mjs run chrome-measure --owner <o> --max-seconds 600 -- node tools/sim.mjs wda build --owner <o>
 //   # debugging parts of `session` (boot: in your own normal hold; shutdown / proxy stop: always allowed)
 //   node tools/sim.mjs boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
 import * as S from './lib/sim.mjs';
 import { keepAwakeFor } from './lib/awake.mjs';
+import { readWarm, warmFile } from './lib/sim-warm.mjs';
 
 const all = process.argv.slice(2);
 const dd = all.indexOf('--');
@@ -54,11 +63,11 @@ const argv = dd >= 0 ? all.slice(0, dd) : all;
 const rest = dd >= 0 ? all.slice(dd + 1) : [];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout', '--url', '--via', '--variant', '--param', '--morph-log', '--log'];
+const VALUED = ['--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout', '--url', '--via', '--variant', '--param', '--morph-log', '--log', '--reason', '--by'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const log = (s) => console.log(S.scrub(String(s)));
 const err = (s) => console.error(S.scrub(String(s)));
-const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
+const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force | --warm-only] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
 
 async function main() {
   if (cmd === 'setup') { S.setup({ runtime: opt('runtime', null), log }); return 0; }
@@ -66,10 +75,21 @@ async function main() {
   if (cmd === 'doctor') return S.doctor({ fix: flag('fix'), log });
   if (cmd === 'session') keepAwakeFor(`sim.mjs session${flag('functional') ? ' --functional' : ''} (${opt('owner', process.env.FW_LOCK_OWNER)})`); // I-070: a Sim session measures (memory counts too): caffeinate -i -s -w <this pid>
   if (cmd === 'session') return S.session({ owner: opt('owner', process.env.FW_LOCK_OWNER), window: opt('window', 'shown'), cmd: rest[0], args: rest.slice(1), log, err, functional: flag('functional') });
+  if (cmd === 'keeper') return S.keeper({ id: arg, log }); // I-063: started detached by a session that kept fw-sim booted
+  if (cmd === 'shutdown' && flag('warm-only')) {
+    // I-063: only the warm device (warm.json), under the simulator lock, never a live session's: the timed tools' backstop
+    if (!readWarm()) { log('SIM_WARM none: no warm Simulator recorded'); return 0; }
+    const r = await S.shutdownWarm({ reason: opt('reason', 'sim.mjs shutdown --warm-only'), by: opt('by', 'sim'), log });
+    if (r.done) return 0;
+    if (!readWarm()) { log(`SIM_WARM gone: ${r.why}`); return 0; }
+    err(`the warm Simulator was not shut down: ${r.why}`);
+    return 3;
+  }
   if (cmd === 'shutdown') {
     const live = S.liveSession();
     if (live && !flag('force') && process.env.FW_SIM_SESSION !== live.id) throw new Error(`a live Simulator session runs (pid ${live.pid}, owner "${live.owner}"); it shuts the Simulator down itself. --force to shut down anyway`);
-    await S.stopOne('wda', log); await S.stopOne('proxy', log);
+    await S.stopOne('keeper', log); await S.stopOne('wda', log); await S.stopOne('proxy', log); // I-063: the warm device's keeper too
+    rmSync(warmFile(), { force: true });
     const cfg = S.readConfig();
     if (!cfg.udid) { log('no Simulator configured'); return 0; }
     log(await S.shutdownDevice(cfg.udid, { log }));

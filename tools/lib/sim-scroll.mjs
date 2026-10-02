@@ -64,7 +64,8 @@ export function simMeta(session, { hostStart = null, hostEnd = null } = {}) {
   const c = readConfig();
   return { runtime: c.runtime ?? null, runtimeBuild: c.runtimeBuild ?? null, deviceType: c.deviceType ?? null, xcode: c.xcode ?? null, window: session?.window ?? null, tipDismissed: session?.tipDismissed ?? null,
     lockdownMode: 'not read (Simulator default: off)', hostLoad: { start: hostStart, end: hostEnd }, proxyPorts: session?.proxyPorts ?? null,
-    safariCache: session?.safariCache ?? null }; // I-052: Safari's HTTP cache emptied at boot ({cleared, removedMB})
+    safariCache: session?.safariCache ?? null, // I-052: Safari's HTTP cache emptied at boot ({cleared, removedMB})
+    boot: session?.boot ?? null }; // I-063: {mode: cold | warm (a booted fw-sim reused), bootedAt, sessionsOnBoot}
 }
 const hostLoad = () => hostSample({ windowSec: 3 }).catch((e) => ({ error: e.message }));
 const outPath = (o, owner, label) => resolve(REPO, o.out || join('out', 'sim', `${owner}-${label}-${Date.now()}.json`));
@@ -109,7 +110,7 @@ export async function scrollCmd({ session, owner, label = 'run', out, log = cons
   return file;
 }
 
-export const SIM_TOOL_FILES = ['tools/sim.mjs', 'tools/lib/sim.mjs', 'tools/lib/sim-scroll.mjs'];
+export const SIM_TOOL_FILES = ['tools/sim.mjs', 'tools/lib/sim.mjs', 'tools/lib/sim-scroll.mjs', 'tools/lib/sim-warm.mjs'];
 /**
  * `sim.mjs run`: iphone.mjs run's target for the Simulator (tools/lib/iphone-run.mjs runCmd): the session and its
  * normal hold instead of the iphone lease and measureGuard, the :9231 SIMULATOR check before the settle and again

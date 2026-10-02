@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { join } from 'node:path';
 import { statSync } from 'node:fs';
-import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock, openedTab, writeOpened, openedHost, openedFile, scopeTabs, safariCacheTargets, fetchReport, openedUrl, pageMatcher } from '../../tools/lib/sim.mjs';
+import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock, openedTab, writeOpened, openedHost, openedFile, scopeTabs, safariCacheTargets, fetchReport, openedUrl, pageMatcher, warmMismatch, DEVICE_TYPE } from '../../tools/lib/sim.mjs';
+import { timingDemand, idleSec, IDLE_SEC_DEFAULT, warmLine, warmSummary, realStateInTest } from '../../tools/lib/sim-warm.mjs';
 import { status as lockStatus } from '../../tools/lib/lock.mjs';
 import { simMeta, SIM_SETTINGS, runTarget } from '../../tools/lib/sim-scroll.mjs';
 import { tempDir } from '../helpers.mjs';
@@ -299,4 +300,44 @@ test('runTarget: the Simulator target of iphone.mjs run; renew() refuses a run t
   await assert.rejects(t.renew(61000), /needs about 61 s, but your chrome-measure hold leaves 60 s/);
   assert.deepEqual(Object.keys(t.extra()), ['sim']);
   assert.equal(t.extra().sim.window, 'hidden');
+});
+
+test('I-063 timingDemand: a normal holder or waiter of chrome-measure (verify, ab, bench, a normal run or lease) is timing; short, shared, functional (lane off), no-timing and stale ones are not', () => {
+  const q = (...w) => ({ holder: null, stale: null, queue: w });
+  assert.equal(timingDemand(q()), null);
+  assert.equal(timingDemand({ holder: { owner: 'ab', kind: 'process' }, stale: null, queue: [] }), 'chrome-measure is held by "ab" (a timing hold)');
+  assert.equal(timingDemand({ holder: { owner: 'ab', kind: 'process' }, stale: 'pid 1 is gone', queue: [] }), null, 'a stale holder holds nothing');
+  for (const h of [{ owner: 'npm', short: true, maxSec: 300 }, { owner: '(shared)', short: true, shared: true, readers: [] }, { owner: 'sim', short: true, functional: true, weight: 3 }, { owner: 'build', noTiming: true }]) {
+    assert.equal(timingDemand({ holder: h, stale: null, queue: [] }), null, JSON.stringify(h));
+    assert.equal(timingDemand(q({ ...h, since: 'x' })), null, `queued ${JSON.stringify(h)}`);
+  }
+  assert.equal(timingDemand(q({ owner: 'npm', short: true }, { owner: 'fix-x', kind: 'process' })), '"fix-x" waits for a timing hold of chrome-measure', 'a timing waiter behind a short one');
+});
+
+test('I-063 idleSec / warmMismatch / warmLine / realStateInTest: the idle timeout (default 600, 0 = never warm); a warm device is reused only as recorded (device, type, runtime); a test without its own state dir never reads the real one', () => {
+  assert.equal(IDLE_SEC_DEFAULT, 600);
+  assert.equal(idleSec({}), 600);
+  assert.equal(idleSec({ FW_SIM_IDLE_SEC: '0' }), 0);
+  assert.equal(idleSec({ FW_SIM_IDLE_SEC: '90' }), 90);
+  assert.throws(() => idleSec({ FW_SIM_IDLE_SEC: '-1' }), /FW_SIM_IDLE_SEC must be a number of seconds >= 0/);
+  const cfg = { udid: 'U1', deviceType: DEVICE_TYPE, runtimeId: 'rt26' };
+  const dev = { udid: 'U1', state: 'Booted', deviceTypeIdentifier: DEVICE_TYPE, runtimeId: 'rt26' };
+  const w = { udid: 'U1', runtimeId: 'rt26' };
+  assert.equal(warmMismatch(w, dev, cfg), null);
+  assert.equal(warmMismatch(null, dev, cfg), 'no warm record');
+  assert.match(warmMismatch(w, { ...dev, state: 'Shutting Down' }, cfg), /is Shutting Down/);
+  assert.equal(warmMismatch({ ...w, udid: 'U2' }, dev, cfg), 'the warm record names another device');
+  assert.equal(warmMismatch(w, { ...dev, deviceTypeIdentifier: 'x.iPhone-16' }, cfg), 'another device type');
+  assert.equal(warmMismatch(w, { ...dev, runtimeId: 'rt18' }, cfg), 'another iOS runtime');
+  assert.equal(warmMismatch({ ...w, runtimeId: 'rt18' }, dev, cfg), 'another iOS runtime');
+  const now = Date.parse('2026-10-02T12:10:00Z');
+  const s = { warm: { lastOwner: 'fix-a', sessions: 2, bootedAt: '2026-10-02T12:00:00Z', lastSessionEndedAt: '2026-10-02T12:09:00Z', idleUntil: '2026-10-02T12:19:00Z' }, keeper: { pid: 4242, alive: true } };
+  assert.equal(warmLine(s, now), 'warm: fw-sim booted, idle 60 s since the session of "fix-a" (2 session(s) on this boot since 2026-10-02T12:00:00Z); shuts down by 2026-10-02T12:19:00Z or when a timing hold is queued; keeper pid 4242');
+  assert.match(warmLine({ ...s, keeper: { pid: 4242, alive: false } }, now), /keeper pid 4242 DEAD: node tools\/sim\.mjs shutdown$/);
+  assert.match(warmLine({ ...s, keeper: null }, now), /keeper MISSING: node tools\/sim\.mjs shutdown$/);
+  assert.equal(warmLine(null), null);
+  assert.deepEqual(warmSummary(s, now), { bootedAt: '2026-10-02T12:00:00Z', lastSessionEndedAt: '2026-10-02T12:09:00Z', idleUntil: '2026-10-02T12:19:00Z', sessions: 2, keeperAlive: true, at: '2026-10-02T12:10:00.000Z' });
+  assert.equal(realStateInTest({ NODE_TEST_CONTEXT: 'child-v8' }), true);
+  assert.equal(realStateInTest({ NODE_TEST_CONTEXT: 'child-v8', FW_STATE_DIR: '/tmp/x' }), false);
+  assert.equal(realStateInTest({}), false);
 });

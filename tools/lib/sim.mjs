@@ -16,7 +16,9 @@
 //   - Navigation is `simctl openurl`, never the proxy; nothing here talks to :9221/:9222, WDA :8100 or iproxy.
 //   - `session` stops the proxy and WDA-sim (if it started them) and shuts the Simulator down in `finally` and on
 //     SIGINT/SIGTERM/SIGHUP; it kills only pids from its own pidfiles after checking their command lines, and
-//     never erases the device (Safari's first-run tip would come back).
+//     never erases the device (Safari's first-run tip would come back). I-063: a functional session that ran its
+//     command (no signal, no timing hold waiting) keeps it booted instead, Safari quit, for a keeper process to shut
+//     down after FW_SIM_IDLE_SEC or on demand (tools/lib/sim-warm.mjs; warmOut, keeper, shutdownWarm below).
 // Test doubles name the executables: $FW_SIMCTL (takes simctl's arguments; default `xcrun simctl`), $FW_IWDP,
 // $FW_LSOF, $FW_IDEVICE_ID, $FW_XCODEBUILD, $FW_OPEN, $FW_OSASCRIPT. Ports: $FW_SIM_DEVICE_PORT (9231),
 // $FW_SIM_PORT (9232), $FW_SIM_WDA_PORT (8101); the phone's 9221/9222/8100 are refused.
@@ -27,6 +29,7 @@ import { randomBytes } from 'node:crypto';
 import { sharedStateDir } from './paths.mjs';
 import { status as lockStatus, parseHeld, staleReason, pidAlive, tryAcquire, dequeue, release as lockRelease, isGroup, slotIn, timedInSlotRefusal, SHARED_LANE } from './lock.mjs';
 import { redact } from './redact.mjs';
+import { idleSec, readWarm, warmFile, keeperInfo, timingDemand, warmLine, warmState, SIM_MJS } from './sim-warm.mjs';
 
 export const SIM_NAME = 'fw-sim 15 Pro Max';
 export const DEVICE_TYPE = 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro-Max';
@@ -523,13 +526,18 @@ export function fetchReport(page, part, { logText = null } = {}) {
 }
 
 /** Boot, wait for bootstatus, empty Safari's HTTP cache, launch Safari and wait for its inspector socket. Throws on
- *  failure (the caller shuts down). Returns {safariCache}. */
-export async function bootDevice(udid, { abort, log = () => {}, bootTimeoutMs = 300000 } = {}) {
+ *  failure (the caller shuts down). Returns {safariCache}. `warm` (I-063): fw-sim is already booted (a warm device the
+ *  session took over): no boot; Safari is terminated (clearSafariCache does it), its HTTP cache emptied and Safari
+ *  launched again, so the session starts from the state a cold boot gives. */
+export async function bootDevice(udid, { abort, log = () => {}, bootTimeoutMs = 300000, warm = false } = {}) {
   const t0 = Date.now();
-  let r = await simctlAsync(['boot', udid], { timeoutMs: 120000, abort });
-  if (r.aborted) throw new Error('interrupted during boot');
-  if (r.status !== 0 && deviceState(udid) !== 'Booted') throw new Error(`simctl boot failed (${r.error ? r.error.code : `exit ${r.status}`}): ${r.stdout.trim().split('\n').slice(-2).join(' | ')}`);
-  r = await simctlAsync(['bootstatus', udid, '-b'], { timeoutMs: bootTimeoutMs, abort });
+  let r;
+  if (!warm) {
+    r = await simctlAsync(['boot', udid], { timeoutMs: 120000, abort });
+    if (r.aborted) throw new Error('interrupted during boot');
+    if (r.status !== 0 && deviceState(udid) !== 'Booted') throw new Error(`simctl boot failed (${r.error ? r.error.code : `exit ${r.status}`}): ${r.stdout.trim().split('\n').slice(-2).join(' | ')}`);
+  }
+  r = await simctlAsync(['bootstatus', udid, '-b'], { timeoutMs: bootTimeoutMs, abort }); // returns at once on a booted device
   if (r.aborted) throw new Error('interrupted during bootstatus');
   if (r.status !== 0) throw new Error(`simctl bootstatus failed (${r.timedOut ? 'timed out' : `exit ${r.status}`})`);
   const safariCache = await clearSafariCache(udid, { abort, log });
@@ -538,7 +546,7 @@ export async function bootDevice(udid, { abort, log = () => {}, bootTimeoutMs = 
   if (r.status !== 0) throw new Error(`simctl launch Safari failed (exit ${r.status})`);
   for (let i = 0; i < 60; i++) {
     if (abort?.aborted) throw new Error('interrupted while waiting for the inspector socket');
-    if (findSocket()) { log(`booted in ${Math.round((Date.now() - t0) / 1000)} s, Safari running`); return { safariCache }; }
+    if (findSocket()) { log(`${warm ? 'reused the booted fw-sim (no boot), Safari relaunched' : 'booted'} in ${Math.round((Date.now() - t0) / 1000)} s, Safari running`); return { safariCache }; }
     await sleep(500);
   }
   throw new Error('Safari runs, but no web inspector socket appeared in 30 s');
@@ -563,8 +571,9 @@ export async function statusLines() {
   try { dev = findDevice(cfg); } catch (e) { out.push(`device:   simctl failed (${e.message})`); }
   if (dev || cfg.udid) out.push(`device:   ${dev ? `${dev.name}: ${dev.state}` : 'not found (node tools/sim.mjs setup)'}`);
   const s = readSession();
-  out.push(`session:  ${s ? `${pidAlive(s.pid) ? 'live' : 'DEAD (stale record)'} pid ${s.pid}, owner ${s.owner}, window ${s.window}, since ${s.startedAt}` : 'none'}`);
-  for (const n of ['proxy', 'wda']) { const r = pidInfo(n); out.push(`${n.padEnd(9)} ${r ? (r.ours ? `running pid ${r.pid} since ${r.startedAt} (by ${r.owner})` : `stale pidfile (pid ${r.pid})`) : 'not running'}`); }
+  out.push(`session:  ${s ? `${pidAlive(s.pid) ? 'live' : 'DEAD (stale record)'} pid ${s.pid}, owner ${s.owner}, window ${s.window}, since ${s.startedAt}${s.boot ? `, ${s.boot.mode} start (session ${s.boot.sessionsOnBoot} on this boot)` : ''}` : 'none'}`);
+  out.push(`warm:     ${warmLine()?.replace(/^warm: /, '') ?? `none (idle timeout ${idleSec()} s after a functional session; FW_SIM_IDLE_SEC)`}`); // I-063
+  for (const n of ['proxy', 'wda', 'keeper']) { const r = pidInfo(n); out.push(`${n.padEnd(9)} ${r ? (r.ours ? `running pid ${r.pid} since ${r.startedAt} (by ${r.owner})` : `stale pidfile (pid ${r.pid})`) : 'not running'}`); }
   let p = null;
   try { p = ports(); } catch (e) { out.push(`ports:    ${e.message}`); }
   if (p) {
@@ -574,23 +583,108 @@ export async function statusLines() {
   return out;
 }
 
-/** `sim.mjs doctor [--fix]`: a booted fw-sim (or a running proxy / WDA-sim) without a live session is a leak. */
+/** `sim.mjs doctor [--fix]`: a booted fw-sim (or a running proxy / WDA-sim) without a live session is a leak, unless it
+ *  is the warm device of I-063 with its keeper running (warm.json and a live keeper of ours). */
 export async function doctor({ fix = false, log = console.log } = {}) {
   const cfg = readConfig();
   const live = liveSession();
   const dev = cfg.udid ? findDevice(cfg) : null;
+  const warm = readWarm();
+  const keeper = pidInfo('keeper');
+  const kept = !live && warm && keeper?.ours && dev?.state === 'Booted' && warm.udid === dev.udid; // the warm device, kept by its keeper
   const problems = [];
   if (!live && readSession()) problems.push('stale session record');
-  if (dev && dev.state !== 'Shutdown' && !live) problems.push(`LEAK: ${SIM_NAME} is ${dev.state} with no live session`);
+  if (dev && dev.state !== 'Shutdown' && !live && !kept) problems.push(`LEAK: ${SIM_NAME} is ${dev.state} with no live session${warm ? ` (a warm record, but its keeper ${keeper ? (keeper.ours ? 'runs for another device' : 'is gone') : 'is missing'})` : ''}`);
+  if (warm && !kept && !(dev && dev.state !== 'Shutdown' && !live)) problems.push(`stale warm record (${live ? 'a live session owns the device' : `fw-sim is ${dev?.state ?? 'not found'}`})`);
   for (const n of ['proxy', 'wda']) { const r = pidInfo(n); if (r && (!live || r.session !== live.id)) problems.push(`${n}: ${r.ours ? `running (pid ${r.pid}) outside a live session` : 'stale pidfile'}`); }
-  if (!problems.length) { log(`ok: ${live ? `live session pid ${live.pid} (owner ${live.owner})` : 'no session, nothing booted, no proxy'}`); return 0; }
+  if (keeper && !kept) problems.push(`keeper: ${keeper.ours ? `running (pid ${keeper.pid}) without a warm device to keep` : 'stale pidfile'}`);
+  if (!problems.length) { log(`ok: ${live ? `live session pid ${live.pid} (owner ${live.owner})` : kept ? warmLine() : 'no session, nothing booted, no proxy'}`); return 0; }
   for (const p of problems) log(p);
-  if (!fix) { log('run: node tools/sim.mjs doctor --fix (stops our proxy / WDA-sim, shuts fw-sim down)'); return 3; }
-  for (const n of ['wda', 'proxy']) await stopOne(n, log);
-  if (dev && dev.state !== 'Shutdown') await shutdownDevice(dev.udid, { log });
+  if (!fix) { log('run: node tools/sim.mjs doctor --fix (stops our proxy / WDA-sim / keeper, shuts fw-sim down)'); return 3; }
+  for (const n of ['wda', 'proxy', 'keeper']) if (n !== 'keeper' || !kept) await stopOne(n, log);
+  if (dev && dev.state !== 'Shutdown' && !live && !kept) await shutdownDevice(dev.udid, { log });
   if (!live) rmSync(sessionFile(), { force: true });
+  if (!kept) rmSync(warmFile(), { force: true });
   log('fixed');
   return 0;
+}
+
+// ---- the warm device (incident I-063; the state and its readers: tools/lib/sim-warm.mjs) ------------------------------
+/** The keeper's env: the caller's, without its lock / session handles (the keeper holds nothing of the session's). */
+function keeperEnv(env = process.env) {
+  const e = { ...env };
+  for (const k of ['FW_LOCK_HELD', 'FW_LOCK_SHARED', 'FW_SIM_SESSION', 'FW_SIM_FUNCTIONAL', 'FW_TAB_HOST']) delete e[k];
+  return e;
+}
+/** Is the Booted `dev` the warm device `w` recorded, of the configured type and runtime? Returns null if so, else why not. */
+export function warmMismatch(w, dev, cfg) {
+  if (!w) return 'no warm record';
+  if (!dev || dev.state !== 'Booted') return `${SIM_NAME} is ${dev?.state ?? 'not found'}`;
+  if (w.udid !== dev.udid || dev.udid !== cfg.udid) return 'the warm record names another device';
+  if (dev.deviceTypeIdentifier !== DEVICE_TYPE || (cfg.deviceType && dev.deviceTypeIdentifier !== cfg.deviceType)) return 'another device type';
+  if ((cfg.runtimeId && dev.runtimeId !== cfg.runtimeId) || (w.runtimeId && w.runtimeId !== dev.runtimeId)) return 'another iOS runtime';
+  return null;
+}
+/**
+ * Shut the warm fw-sim down (I-063) under the `simulator` lock (waits up to waitSec; a session or another shutdown that
+ * holds it wins): never while a session lives, and with `id` (the keeper) only while warm.json is still that record (a
+ * session that took the device over replaced or removed it). Stops the keeper unless `fromKeeper`. Returns {done, why}.
+ */
+export async function shutdownWarm({ reason, by = 'sim', id = null, waitSec = 60, fromKeeper = false, log = () => {} } = {}) {
+  let lk;
+  try { lk = await takeSimLock(`sim-${by}`.slice(0, 40).replace(/[^A-Za-z0-9_.:-]/g, '-'), { waitSec, meta: { cmd: `sim shutdown (${reason})` }, log: () => {}, pollMs: 500 }); } catch (e) { return { done: false, why: e.message }; }
+  try {
+    const w = readWarm();
+    if (id && (!w || w.id !== id)) return { done: false, why: 'superseded: the warm record changed (a session took the device over)' };
+    const live = liveSession();
+    if (live) return { done: false, why: `a live session (pid ${live.pid}, owner "${live.owner}") owns the device` };
+    if (!fromKeeper) await stopOne('keeper', log);
+    const cfg = readConfig();
+    const res = cfg.udid ? await shutdownDevice(cfg.udid, { log }) : 'no Simulator configured';
+    rmSync(warmFile(), { force: true });
+    log(`SIM_WARM_SHUTDOWN (${reason}; by ${by}): fw-sim ${res}${w ? `, warm since ${w.lastSessionEndedAt ?? '?'}` : ''}`);
+    return { done: true, why: res };
+  } finally { await lk.release(); }
+}
+/**
+ * `sim.mjs keeper <id>` (detached, started by a session that kept fw-sim booted): polls every pollMs and shuts the warm
+ * device down at its idle timeout or when chrome-measure has a timing holder or waiter. Backs off (and polls again)
+ * while anyone holds the simulator lock; exits when warm.json is no longer its record. Its pidfile goes with it.
+ */
+export async function keeper({ id, pollMs = Number(process.env.FW_SIM_KEEPER_POLL_MS || 2000), log = console.log } = {}) {
+  if (!id) throw new Error('usage: node tools/sim.mjs keeper <warm id> (started by sim.mjs session)');
+  const own = () => { const k = readJson(pidFile('keeper'), null); return k && k.pid === process.pid; };
+  try {
+    for (;;) {
+      const w = readWarm();
+      if (!w || w.id !== id) { log(`keeper ${id}: the warm record is gone or another one (a session took the device over, or it was shut down): exiting`); return 0; }
+      let why = Date.now() >= Date.parse(w.idleUntil) ? `idle ${Math.round((Date.now() - Date.parse(w.lastSessionEndedAt)) / 1000)} s` : null;
+      if (!why) { try { why = timingDemand(lockStatus('chrome-measure')); } catch {} }
+      if (why) {
+        const r = await shutdownWarm({ reason: why, by: 'keeper', id, waitSec: 0, fromKeeper: true, log });
+        if (r.done) return 0;
+        log(`keeper ${id}: ${why}, but not now: ${r.why}`);
+      }
+      await sleep(pollMs);
+    }
+  } finally { if (own()) rmSync(pidFile('keeper'), { force: true }); }
+}
+/**
+ * Hand the booted fw-sim to a keeper at the end of a functional session (I-063): Safari quit (no page keeps running),
+ * warm.json written, the keeper started. Returns the record, or null when the device is not Booted any more.
+ */
+export async function warmOut({ udid, owner, boot, idle, log = () => {} }) {
+  const t = await simctlAsync(['terminate', udid, SAFARI], { timeoutMs: 30000 }); // "found nothing to terminate" is fine
+  if (deviceState(udid) !== 'Booted') return null;
+  const dev = findDevice({ udid });
+  const now = Date.now();
+  const rec = { id: randomBytes(6).toString('hex'), udid, runtimeId: dev?.runtimeId ?? null, deviceType: dev?.deviceTypeIdentifier ?? null, bootedAt: boot.bootedAt, sessions: boot.sessionsOnBoot,
+    lastOwner: owner, lastSessionEndedAt: new Date(now).toISOString(), idleSec: idle, idleUntil: new Date(now + idle * 1000).toISOString(), safariQuit: t.status === 0 };
+  await stopOne('keeper', log); // a stray one (none normally: the session took the device over)
+  writePrivate(warmFile(), JSON.stringify(rec, null, 1));
+  const k = startDetached('keeper', process.execPath, [SIM_MJS, 'keeper', rec.id], { match: `keeper ${rec.id}`, owner, env: keeperEnv() });
+  log(`fw-sim kept booted for the next session (I-063): Safari quit; shuts down at ${rec.idleUntil} (idle ${idle} s, FW_SIM_IDLE_SEC), or as soon as a timing hold is queued, or on node tools/sim.mjs shutdown; keeper pid ${k.pid}`);
+  return rec;
 }
 
 // ---- WebDriverAgent on the Simulator (README §3.3): unsigned, its own DerivedData, port 8101, no iproxy -----------
@@ -673,13 +767,24 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   // sessions in a raised-cap group). Its wait leaves the boot, the command and the cleanup inside the hold.
   const left = Number.isFinite(gate.endsAt) ? (gate.endsAt - Date.now() - cleanupMs) / 1000 - 60 : 120;
   const simLock = await takeSimLock(owner, { waitSec: simLockWaitSec ?? Math.max(0, Math.min(120, Math.floor(left))), meta: { cmd: 'sim session', functional }, log: err });
-  let rec, id;
+  let rec, id, warm = null;
   try {
     const other = liveSession();
     if (other) throw new Error(`a Simulator session is already running (pid ${other.pid}, owner "${other.owner}")`);
-    if (dev.state !== 'Shutdown') throw new Error(`refusing: ${SIM_NAME} is already ${dev.state} (booted by someone else, or a leaked session: node tools/sim.mjs doctor)`);
+    // I-063: read the device again under the simulator lock (a keeper may have shut it down while this session waited);
+    // a Booted fw-sim is taken over only when it is the warm device of warm.json (same device, type and runtime)
+    const now = findDevice(cfg);
+    const w = readWarm();
+    if (now?.state !== 'Shutdown') {
+      const why = warmMismatch(w, now, cfg);
+      if (why) throw new Error(`refusing: ${SIM_NAME} is already ${now?.state ?? 'gone'} (booted by someone else, or a leaked session: node tools/sim.mjs doctor)${w ? `; the warm record does not match it (${why})` : ''}`);
+      warm = w;
+    }
+    await stopOne('keeper', () => {}); // the device is this session's now (a warm one), or the keeper's record is stale
+    rmSync(warmFile(), { force: true });
     id = randomBytes(6).toString('hex');
-    rec = { id, pid: process.pid, owner, window, startedAt: new Date().toISOString(), proxyPorts: p, tipDismissed: cfg.tip?.state ?? 'unchecked', ...(functional ? { functional: true, lock: { mode: gate.mode } } : {}) };
+    const boot = warm ? { mode: 'warm', bootedAt: warm.bootedAt, sessionsOnBoot: (warm.sessions || 1) + 1, idleSec: Math.round((Date.now() - Date.parse(warm.lastSessionEndedAt)) / 1000) } : { mode: 'cold', bootedAt: null, sessionsOnBoot: 1 };
+    rec = { id, pid: process.pid, owner, window, startedAt: new Date().toISOString(), proxyPorts: p, tipDismissed: cfg.tip?.state ?? 'unchecked', boot, ...(functional ? { functional: true, lock: { mode: gate.mode } } : {}) };
   } catch (e) { await simLock.release(); throw e; }
   writePrivate(sessionFile(), JSON.stringify(rec, null, 1));
   const ac = new AbortController();
@@ -687,11 +792,13 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   const onSig = (sig) => () => { if (!interrupted) { interrupted = sig; err(`sim session: ${sig}: stopping, then cleaning up`); } ac.abort(); };
   const handlers = ['SIGINT', 'SIGTERM', 'SIGHUP'].map((s) => [s, onSig(s)]);
   for (const [s, h] of handlers) process.on(s, h);
-  const state = { appOpened: false, wdaStarted: false };
+  const state = { appOpened: false, wdaStarted: false, ready: false };
   let code = 1;
   try {
-    log(`sim session ${id} (owner ${owner}, window ${window}${functional ? `, functional, lock mode ${gate.mode}` : ''}): booting ${SIM_NAME}`);
-    const boot = await bootDevice(cfg.udid, { abort: ac.signal, log });
+    log(`sim session ${id} (owner ${owner}, window ${window}${functional ? `, functional, lock mode ${gate.mode}` : ''}): ${warm ? `reusing the booted ${SIM_NAME} (I-063: idle ${rec.boot.idleSec} s, session ${rec.boot.sessionsOnBoot} on this boot)` : `booting ${SIM_NAME}`}`);
+    if (warm) { await stopOne('wda', () => {}); await stopOne('proxy', () => {}); } // none normally: the last session stopped them
+    const boot = await bootDevice(cfg.udid, { abort: ac.signal, log, warm: !!warm });
+    if (!warm) rec.boot.bootedAt = new Date().toISOString();
     rec.safariCache = boot?.safariCache ?? null; // meta.sim.safariCache of every record of this session (I-052)
     writePrivate(sessionFile(), JSON.stringify(rec, null, 1));
     if (window === 'shown') { const was = simAppRunning(); openSimApp(cfg.udid); state.appOpened = !was; }
@@ -703,6 +810,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     const timeoutMs = Number.isFinite(gate.endsAt) ? Math.max(1000, gate.endsAt - Date.now() - cleanupMs) : 0;
     log(`SIM_READY tabs :${p.tabs}; running: ${scrub([cmd, ...args].join(' '))}${timeoutMs ? ` (stopped after ${Math.round(timeoutMs / 1000)} s, before your hold ends)` : ''}`);
     const ids = knownIds();
+    state.ready = true;
     const r = await runChild(cmd, args, { env, timeoutMs, abort: ac.signal, onOut: (l, s) => (s === 'stdout' ? log : err)(scrub(l, ids)) });
     if (r.error) throw new Error(`could not start ${cmd}: ${r.error.code || r.error.message}`);
     code = r.timedOut ? 124 : r.aborted ? 128 + ({ SIGHUP: 1, SIGINT: 2, SIGTERM: 15 }[interrupted] || 15) : r.status ?? 128;
@@ -715,7 +823,17 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     const clog = (s) => log(`cleanup: ${scrub(s)}`);
     try { const w = pidInfo('wda'); if (w && w.session === id) await stopOne('wda', clog); } catch (e) { clog(`wda stop failed: ${e.message}`); }
     try { await stopOne('proxy', clog); } catch (e) { clog(`proxy stop failed: ${e.message}`); }
-    try { await shutdownDevice(cfg.udid, { log: clog }); } catch (e) { clog(`shutdown failed: ${e.message}`); }
+    // I-063: a functional session that got to its command and ended without a signal keeps fw-sim booted for the next
+    // one (a keeper shuts it down later); a timing session, an interrupted or failed start, FW_SIM_IDLE_SEC=0 or a
+    // timing hold waiting for chrome-measure shut it down now
+    let kept = null;
+    try {
+      const idle = idleSec();
+      const demand = functional && idle > 0 && state.ready && !interrupted ? timingDemand(lockStatus('chrome-measure')) : null;
+      if (demand) clog(`not keeping fw-sim booted: ${demand}`);
+      else if (functional && idle > 0 && state.ready && !interrupted) kept = await warmOut({ udid: cfg.udid, owner, boot: rec.boot, idle, log: clog });
+    } catch (e) { clog(`keeping fw-sim booted failed (${e.message}): shutting it down`); try { await stopOne('keeper', clog); } catch {} rmSync(warmFile(), { force: true }); kept = null; }
+    if (!kept) { try { await shutdownDevice(cfg.udid, { log: clog }); } catch (e) { clog(`shutdown failed: ${e.message}`); } }
     if (state.appOpened) { try { quitSimApp(); clog('Simulator.app quit'); } catch {} }
     rmSync(sessionFile(), { force: true });
     try { await simLock.release(); } catch (e) { clog(`${SIM_LOCK} lock release failed: ${e.message}`); }

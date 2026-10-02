@@ -133,6 +133,7 @@ import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } fro
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import { describeHold } from './lib/lock.mjs';
+import { warmLine } from './lib/sim-warm.mjs';
 import { parseJob } from './lib/hold-job.mjs'; // I-060: what a hold is for
 
 const argv = process.argv.slice(2);
@@ -174,6 +175,7 @@ function fmt(s) {
   if (s.queue.length) line += `\n${pad}queue: ${fmtQueue(s.queue)}`;
   // the lane's line only while it is in use (review-lock-share N1: with the switch off and nothing shared, status reads as on main)
   if (laneInUse(s)) { const sw = sharedSwitch(s.resource); line += `\n${pad}shared lane: ${laneText(sw)}`; }
+  if (s.resource === 'simulator') { const w = warmLine(); if (w) line += `\n${pad}${w}`; } // I-063: the booted, idle fw-sim and its keeper
   return line;
 }
 // I-070: a measurement hold's sleep assertion (caffeinate pid), or that it asked for one and none runs (off / no binary)

@@ -101,6 +101,7 @@ import { launchChrome, CDP, gotoAndSettle, sleep } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag } from './lib/baseline.mjs';
 import { acquire } from './lib/lock.mjs';
+import { reapWarm, reapNote } from './lib/sim-warm.mjs';
 import { loggerSource, RESET, COLLECT, COLLECT_AT } from './lib/perf-page.mjs';
 import { TRACE_START, TRACE_ARM, TRACE_DISARM, BUCKETS, BUCKET_LABELS, attributeFrames } from './lib/trace-frames.mjs';
 import { PAINT_BINDING, PAINT_ARM, PAINT_DISARM, PAINT_LAYER_SCALE, PAINT_NOTE, PAINT_UNITS, PAINT_SCALE_TAG, layerScales, streamItem, analyzePaints, topLayerIds, nodeLabel } from './lib/paint-rects.mjs';
@@ -661,6 +662,12 @@ async function main() {
   }
   // the lock's host admission gate (tools/lib/lock.mjs): how this hold (or the outer one we re-entered) was granted
   const gate = lockHolder?.gate ? { ...lockHolder.gate, gateTimeout: !!lockHolder.gateTimeout } : null;
+  // I-063 (MEASUREMENT CODE, before the first run only): a warm Simulator (fw-sim kept booted between sim sessions) is
+  // normally shut down by its keeper as soon as this hold queues; if it is still booted (keeper dead or late), shut it
+  // down now (under the simulator lock, never a live session's device): the first run's host recheck then waits for
+  // quiet as usual. Recorded as host.simWarm; nothing happens and nothing is recorded without a warm device.
+  const simWarm = await reapWarm({ reason: 'verify.mjs timing hold', by: 'verify' });
+  if (simWarm) console.log(reapNote(simWarm, 'this verify hold'));
   armWatchdog(); // from here on verify holds the lock: a stall must end it
   const results = [];
   try {
@@ -728,6 +735,7 @@ async function main() {
     contaminated: invalid.length > 0, contaminatedRuns: invalid.length, warnRuns: warn.length, runsTotal: measured.length,
     hostState: hostStateSummary(measured.map((r) => ({ label: r.label, run: r.run, power: r.host.power, chrome: r.host.chrome }))), // T8+ (I-033)
     ...(measured[0]?.host.stub ? { stub: measured[0].host.stub } : {}),
+    ...(simWarm ? { simWarm } : {}), // I-063: a warm Simulator found at the start of this hold, and what happened to it
   };
   console.log(describeHostState(hostSum.hostState));
   console.log(`host: ${invalid.length} of ${measured.length} runs contaminated${invalid.length ? ` (${[...new Set(invalid.flatMap((r) => r.host.reasons))].join('; ')}): verdicts provisional` : ''}${warn.length ? `; ${warn.length} warn (${[...new Set(warn.flatMap((r) => r.host.warnings))].join('; ')})` : ''}${hostSum.stub ? `  [host STUBBED: ${hostSum.stub}]` : ''}`);
