@@ -8,6 +8,17 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **13:4xZ (batch) ts-i063 batch in review; I-068 not-a-bug (Mac idle sleep); C-024 caffeinate question.**
+  - **ts-i063 batch** on worktree-agent-afa5d960a2fe5d5e8: 3a85564, 8eab8ba, 99b37b3 (not landed). I-063: a functional
+    sim session keeps fw-sim warm for FW_SIM_IDLE_SEC (default 600 s); a keeper shuts it down when idle or as soon as a
+    timing hold is queued; verify.mjs and bench shut down a leftover warm device before the first run (MEASUREMENT
+    CODE: host.simWarm; call out for A/B comparability, test:chrome after landing). I-065: three flakes fixed at the
+    root (1 ms clock drift in console/proposal; a serve auto-port collision with the console's 5559). I-066: a sparse
+    worktree's leftover site*/ no longer shadows the baseline. **review-i063** (read-only fix-reviewer) is reviewing it.
+    After landing, Sim users (fix-scroll-engine, de-illusion-style, fix-image-size) rebase to get warm reuse.
+  - **I-068 RESOLVED as not-a-bug:** the Mac idle-slept 12:55-13:11Z (also 12:27-12:43Z and 13:12-13:28Z), so the
+    thread wait overran. The lead posted console **C-024** (pending): keep the Mac awake with `caffeinate -i` for 4 h?
+  - PR-005 (fwreskip) is still proposed rev 1; T-023 still waits on the user.
 - **13:0xZ (batch) P-066 row filed pre-data; bbdf5b8 landed (lead, ff).**
   - fix-image-size committed the P-066 row on worktree-agent-af756241c686d490e (5107519, one line in PREDICTIONS.md,
     checked by ops), before any Sim session; it rides its land request. Gaps closed: ~0 = |delta| within the A/A spread,
@@ -1289,7 +1300,9 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-065 | fixing, not blocking | ts-i063 | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
+| I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
+| I-066 | fixing (99b37b3, in review) | ts-i063 | sparse worktree's leftover site*/ shadowed the baseline |
+| I-065 | fixing (8eab8ba, in review), not blocking | ts-i063 | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
 | I-064 | RESOLVED (11bc722); user YES to deleting the old recorder | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
 | I-063 | fixing (ts-i063) | ts-i063 | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
 | I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
@@ -1315,7 +1328,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `fix-image-size` (new 12:0xZ; ID via ListAgents) | image-size: Chrome pixels, Sim decoded memory (counts only), bytes; no timing; D fast-pathed by the lead; will ask ops for a P-id (next free P-066) | alive |
 | `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (answered T-023 #3) |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
-| `ts-i063` (spawned 12:05Z; ID via ListAgents) | I-063 (the Simulator stays booted between sessions, with an idle shutdown) and I-065 (both flakes), two separate commits | alive |
+| `ts-i063` (spawned 12:05Z; ID via ListAgents) | I-063, I-065, I-066 (batch 3a85564, 8eab8ba, 99b37b3 in review), then I-068 (resolved not-a-bug) | alive |
+| `review-i063` (ID via ListAgents) | read-only fix-reviewer of ts-i063's batch (measurement code: host.simWarm) | alive |
 | `ts-i064` | I-064 toolsmith (rounds 1-2 landed 8ec1c6d, 11bc722) | done |
 | `wi-stack` (a93135040e12a061d) | best-stack, shell-hold-c (landed 81dbc9b), F-129; an optional Sim spot check is parked | done |
 | `fix-scene-scope` (a49a278f1d0bd6803) | scene-scope / RBi40pti (landed 1ce70e8), st6-rb2 restack (cff1a03); r4-v3 unassigned and parked | done (worktree kept) |
