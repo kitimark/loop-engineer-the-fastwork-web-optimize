@@ -42,6 +42,9 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 - Messages to agents resume them if they ended; that is fine for GOs. Iphone requests: message `iphone-runner` directly
   for scripted checks (lead OK 07:25Z); finger tests only via the lead. The lead lands, resolves, reorders, spawns.
 - Every docs commit: rebase on main, `npm run test:unit`, commit, then a "LAND BATCH" message with the sha(s).
+- NO CAMERA, TOP RULE (user T-018, 08:49Z; user privacy): no agent opens QuickTime movie recording, any camera
+  capture API, or a camera device listing. Phone RECORDINGS ARE SUSPENDED until the user approves a route that never
+  touches the Mac camera. G1b uses in-page flash detection only. Tell every agent that touches the phone.
 - USER STEPS FIRST (user T-017, 08:29Z): a posted console step the user waits on (swipe pair, finger test) takes the
   phone next, ahead of any measurement block; never gated on cooling or a Mac-quiet hold; its recordings are evidence
   only (log the load). Post a step only when the phone is free for it. Every agent running a step acks each change with
@@ -368,6 +371,23 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   iphone-runner (waiting for de-illusion-style's ticket with the V hashes). fix-scene-scope stopped; the lead resumes it
   with the 3 T-011 fixes (warm-up run per port, quiet hold preferred, P-061 time 08:3x) when T-011 is near.
   PHONE ORDER now: (1) PR-001 A/B; (2) G1b; (3) T-011; (4) T-009 curve; (5) I-042 check; user steps jump the queue.
+  08:4xZ TOP INVESTIGATION (user T-017 08:36Z, paraphrased: investigate, tell the causes apart, design, then plan the
+  improvements; mind priority and token budget): wi-stack builds a FILES-ONLY remaining-lag map of stack5 (every V
+  dt>34 by crossing, sorted by excess ms, tagged by known cause); then the lead posts ONE proposal so the user picks the
+  order. Zero new spawns for it; parked topics stay parked. 2c36b62 landed (PROGRESS wording OK); the lead sent
+  fix-scene-scope the "preferred, not blocking" correction (it amends 06d2290).
+  08:4xZ LAG MAP IN (wi-stack): #people frame 2 is the only V regression (+299 ms over 8 runs); three unknown rows get
+  one combined Sim check each; user summary in T-017. review-fwreskip-3 spawned on fwreskip P2 (c6d13ca + f8cd750),
+  ahead of G1b. PR-001 BLOCK A RUNNING on the phone (iphone-runner, lease to 09:03Z); its ticket had no mgmt-ops second
+  read (went straight to the runner). I-056 and I-058 fixing (toolsmiths).
+  08:5xZ T-018 CAMERA INCIDENT (facts from iphone-runner, disclosed to the user): the iPhone recording route turned the
+  Mac camera on; it recorded ~08:46:57-08:48:15Z, plus an unsaved second recording to ~08:49:30Z; the agent viewed one
+  still frame; a camera device listing ran at 08:51-52Z; all files deleted and the deletion verified; C-020 withdrawn;
+  recording suspended; NO-CAMERA is the top working rule (above). P-058's visual-defect check (PR-001) is BLOCKED
+  without recordings: an alternative or a drop, to be decided (lead). I-058 LANDED 29e0cca + RESOLVED (waits on the
+  board); console restarted 08:54Z.
+  LEAVE-ONE-OUT (wi-stack, Sim, OBSERVED): blur-cubic carries the #people frame-2 Composite, not st6 (details pending);
+  wi-stack posts the design as ONE proposal with options A/B/C.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
