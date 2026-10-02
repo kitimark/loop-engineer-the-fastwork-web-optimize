@@ -7,7 +7,8 @@
 the SVG ("P-058 results" below). Rev 3 was posted as PR-004 (6 options, recommending "keep"); the visual recording is deferred by the user.
 PR-004 rev 2 (a plain report plus 4 next steps) got changes-requested: the user asked whether the word was measured
 alone, without the page's other parts. It was not (see "Full page, not isolated" below). PR-004 rev 3 answers that and
-offers 4 options, recommending a word-alone test page.
+offers 4 options, recommending a word-alone test page. The user accepted rev 3, option word-alone (11:15Z). The test page
+is built and checked in Chrome and the Simulator; phone ticket P-065 is pre-registered ("Word-alone test page" below).
 **Stage:** R / I (design-engineer PoC, illusion proposal; no D card)
 **Device class / gate:** phone-only (WebKit). Chrome is gated to the original SVG.
 **Driver(s) behind the claims:** Simulator functional sessions (no timing). Chrome per-draw trace counts (r14).
@@ -451,6 +452,182 @@ fewer slow frames, and it costs ~83 MB for one word.
 **Visual check (C-021 / C-023, the user's own Screen Recording, numbers only).** `out/de-illusion-style/arms/visan.mjs`
 finds the word by template match against the Simulator frame, fits the visits in nav.json, and scores each draw
 (frames, longest still, flash, jump, box, rest difference against C). No agent views the frames. Deferred by the user (T-019 #9: make the test easier first); rev 3 says so.
+
+## Word-alone test page (PR-004 rev 3, option word-alone, accepted 10-02 11:15Z)
+
+**What it is.** One page per arm with the hero title alone: "Show the world / what [word] can do". The word is the
+page's own accent component (`HE`), with the arm's own code and CSS. Nothing else from the page is on it: no orbit
+cards, countdown, buttons, other sections, router or analytics. 22 elements in `<body>`.
+- **Same CSS.** The four stylesheets of the full page (`app`, `DialogHeader`, `0`, `2`), byte for byte from the arm.
+- **Same place.** The title sits in the same chain of parents with the same classes and attributes: `start-selling` >
+  `main` > `section.hero-track` > `div.hero.is-ring-splash-done` > `header.hero-copy` > `div.hero-copy-main` > `h1`.
+  So the word lands on the same device pixels. That matters: F2's pictures only engage when the word sits at the
+  captured pixel phase.
+- **Same code.** `word-alone.js` imports Svelte's own `mount` (`k` from `chunks/BSBv9QXB.js`) and mounts `HE`. `HE`
+  is reached by one appended line in the arm's node JS, `export { HE as __fwHE };`. Nothing else in the JS changes. The
+  module's top level runs as on the full page (event delegation, selector registry, SvelteKit's fetch wrapper). The app
+  itself is not started.
+- **Same cycle.** 7 words, idle 2200 ms (first) / 1250 ms, draw-out 900 ms, draw-in 900 ms. The timing comes from the
+  component.
+
+**Builds.** Read-only snapshot copies in `.claude/worktrees/agent-afc7d9fff1fcc6154/out/de-illusion-style/arms/snap/WA-<arm>`.
+Each is an `--overlay` on `site-pretty`, and serves the test page at `/word-alone.html`. Each WA node JS is the arm's JS
+plus the one export line, byte for byte (checked: `wa/hashes.mjs`). Rebuild if gone:
+`node out/de-illusion-style/wa/build-wa.mjs`, from the arm snapshots (`snap/{C,F2,B}`, P-058).
+
+| arm | from | files (sha256, first 12) |
+|---|---|---|
+| WA-C | C (SVG, as shipped) | CSS `cc8d1340b449`, JS `dcc585773503` (= `dbd5fdb4f1fb` + export line), `word-alone.html` `a321a1404911`, `word-alone.js` `ed482f3b84b9` |
+| WA-F2 | F2 (one picture per frame) | CSS `1885674d4ee7`, JS `c39a875e9355` (= `a330f386556d` + export line), `manifest.json` `d409535ca4ce`, `w00-0..5.png` as F2, html and js as WA-C |
+| WA-B | B (one visible copy) | CSS `7e6b070e15c2`, JS `dcc585773503`, html and js as WA-C |
+
+The full-page control **FP** is P-058's C snapshot, unchanged (`snap/C`: CSS `cc8d1340b449`, JS `dbd5fdb4f1fb`), at `/`.
+
+**Chrome check (shared lane, 430x932 DPR 3, CPU 1x, counts only; `wa/check.mjs`, OBSERVED).**
+- **Works.** No console errors, exceptions, 404s or failed loads. The cycle runs:
+  you → คุณ → 你 → 너 → あなた → kamu → du → you, labels every 3.05 s, draws 1800-1804 ms.
+- **Same size and place.** em at x 167.016, y 238.516, 66.25 x 46.25 ('you', 40 px), the same as on the full page;
+  h1 at 69.266 / 192.516.
+- **Same pixels.** Word-alone against the full page, two held poses (first Thai word idle with its animations held at
+  300 ms; its draw-out held at 450 ms), crop = word + 24 px: 0 changed pixels in both poses, for all three arms.
+- **Main-thread work, per draw** (out + in, 1.8 s) **on the word-alone page:**
+
+  | arm | style recalcs | layouts | paints | between draws (1.25 s) |
+  |---|---|---|---|---|
+  | WA-C | 108 | 2 | 430 | 2-3 style, 1-2 layouts, 2-4 paints |
+  | WA-F2 | 108 | 2 | 430 | same as WA-C |
+  | WA-B | 108 | 2 | 218 | same as WA-C |
+
+  WA-F2 is the SVG in Chrome: F2's clock gate keeps the SVG on Chrome's 100 µs timeline, as on the full page.
+- **Compared with the full page** (r14, per 0.9 s draw, SVG): 58.6 style recalcs, 7.9 layouts, 220.5 paints. The word
+  alone has ~54 style recalcs, ~1 layout and ~215 paints per 0.9 s.
+  So in Chrome nearly all of the style and paint work in a draw is the word's own. The rest of the page adds about
+  7 layouts per draw (OBSERVED, counts, different window code).
+
+**Simulator check (one `sim.mjs session --functional`, Safari 26.5, 15 Pro Max; `wa/sim-hold.sh`, OBSERVED, no timing).**
+- **Works.** No errors in any arm. The draws run 897-906 ms with 53-55 rAF ticks each. No 404s.
+- **F2 engages.** On WA-F2, both 'you' draws went to the canvas, and every other word stayed on the SVG, as on the full
+  page. 28 frame requests, no gate.
+- **Pixels against the full page** (`frames/simpix.mjs`: same held pose, Simulator screenshots; crop = the title + 30 px).
+  - C and B, draw-out: 1.3 % of pixels differ, by at most 8 levels of 255.
+  - C and B, draw-in: 1.0 %, at most 2 levels.
+  - F2, 'you' on the canvas, draw-in: 1.1 %, at most 2 levels.
+  - The differences cover the title's text columns as well as the word's. My guess is that WebKit tiles and layers the
+    page differently when the page holds less (UNRESOLVED, not checked). Visually the word is the same.
+  - Below the title, the full page has its subtitle; the word-alone page is white there (expected).
+- **Fit to the W driver.** The 'you' draws fall at the same times as on the full page: draw-in ~22.8 / ~44.1 s,
+  draw-out ~24.9 / ~46.3 s after navigation, so 2 'you' cycles fall inside the 44 s idle.
+
+### Phone ticket P-065 (word-alone)
+
+Owner of the run: `iphone-runner`, slotted by the lead after fix-scroll-engine's P2-1. Run JSON stays in `out/`
+(Hard rule 3). No recording (T-018).
+
+**Question.** With nothing else on the page, do the drawing methods differ in slow frames? And how many of the full
+page's slow frames during the 'you' draws are the word's own?
+
+**Arms (4), one block.**
+- FP: the full page, P-058's control C.
+- WA-C: the SVG alone.
+- WA-F2: pictures alone.
+- WA-B: one visible copy alone.
+
+FP sits in the same block, so the isolation question is answered within one block, on one heat state, not against
+P-058's numbers from another block.
+
+**Serve** from the runner's checkout, one server per arm, restarted at the block start. `S` is the snapshot directory
+above. FP uses `--overlay $S/C`; the WA arms use `--overlay $S/WA-<arm>`.
+
+```sh
+node tools/serve.mjs --root site-pretty --overlay $S/<dir> --port 0 --https --vendors=local --latency 150 --no-cache --state out/p065/serve-<arm>.json
+node tools/wait.mjs serve out/p065/serve-<arm>.json
+curl -sk https://localhost:<port>/word-alone.html | shasum -a 256          # WA arms: a321a1404911...
+curl -sk https://localhost:<port>/_app/immutable/nodes/2.DyWL8TcE.js | shasum -a 256   # per the table
+```
+
+**URLs.**
+- FP: `https://<LAN>:<port>/`
+- WA arms: `https://<LAN>:<port>/word-alone.html`
+
+**Driver W**, as in P-058:
+
+```sh
+node tools/iphone.mjs open <URL> --owner <runner>
+node tools/iphone.mjs run --driver window --probe std --owner <runner> --to 1 --settle 8 --idle 44 --hold 2 --sentinel 3 \
+  --block P065 --build <FP|WA-C|WA-F2|WA-B> --arm <C for FP, V otherwise> --pos <n> --label P065-<n>-<arm> --no-park
+node fixes/illusion-accent-frames/tools/readstats.mjs out/p065/P065-<n>-<arm>-stats.json
+node tools/iphone.mjs park --owner <runner>
+```
+
+**Block** (protocol §5):
+1. Park Safari; start the four servers.
+2. One uncounted warm-up W run per arm's port.
+3. Sentinel: `iphone.mjs run --driver scroll --probe std --arm C` on FP (bottom ≥ 58 fps, scroll ≥ 44 fps).
+4. 12 counted runs. The order is rows 1-3 of a Williams 4x4 (a = FP, b = WA-C, c = WA-F2, d = WA-B):
+   FP WA-C WA-B WA-F2 · WA-C WA-F2 FP WA-B · WA-F2 WA-B WA-C FP.
+5. End sentinel, as in step 3.
+6. Attribution runs, Timeline on, counts only, one per arm:
+   `node fixes/illusion-accent-frames/tools/tlcounts.mjs out/p065/tl-<arm>.json <URL> 46`.
+7. Park Safari.
+
+Estimate: ~14 min of counted runs (P-058 block B ran 9 in 10 min), plus ~5 min of warm-ups, ~3 min of sentinels and
+~4 min of attribution: ~26 min, plus cooling before it (`wait.mjs phone-temp --below auto`).
+Short slot: rows 1 and 3 only (n = 2, ~18 min), with the same rule. With n = 2 a non-overlap is weaker, and the result
+says so. Battery temperature and Mac load1 are logged per run, as P-058 (load1 > 8 is flagged, not void).
+
+**Metrics.** As P-058 (`youdraws.mjs`): per 'you' draw (start + 2000 ms), counted per run (4 draws):
+- frames > 50 ms and > 34 ms, with the ±4 ms twins and the near bands;
+- live frames per draw;
+- the longest gap;
+- engaged to the end (WA-F2).
+
+Also the **whole 44 s idle**, all words: frames > 50 and > 34 per run, and the idle fps. P-058 used it only as context;
+here it carries the isolation question.
+
+**Run validity.** As P-058:
+- **VOID-ARM:** WA-F2's readstats `arm` is not F2; it is gated; or it has 0 canvas draws. Re-run once at the block end.
+- **VOID-ID:** fewer than 2 'you' draws in the idle, or an engaged draw at a non-'you' time.
+- **VOID:** scrollY ≠ 0; Low Power Mode; a missing JSON.
+- A failing sentinel voids the runs since the last passing one.
+
+Predictions and the decision rule: P-065 in `fixes/PREDICTIONS.md`, registered before any phone data. In short:
+
+**Predictions** (OBSERVED basis: P-058 phone numbers, the Chrome counts above):
+- (a) WA-C's whole idle is quiet:
+  - > 50: 0 per run [0, 1];
+  - > 34: ≤ 10 per run [0, 10];
+  - FP: > 50 [0, 12] and > 34 [30, 60] per run, as P-058.
+- (b) In the 'you' windows, WA-C has fewer slow frames than FP:
+  - > 34: WA-C [0, 3] against FP [3, 9] per run;
+  - > 50: both [0, 2];
+  - i.e. most of the full page's > 34 frames during 'you' come from the rest of the page.
+
+  Low confidence: Chrome says the draw's style and paint work is nearly all the word's own.
+- (c) The arms alone are not separated: WA-F2 and WA-B within WA-C's range on > 50 and > 34 in the 'you' windows. No
+  arm beats the SVG alone.
+- (d) Timeline per 'you' draw (counts):
+  - WA-C: style 50-60, layout 50-60, paint 50-70. That is FP's level: on WebKit the SVG draw itself lays out every
+    frame (OBSERVED in P-058: F2 and V drop layout to 4-6).
+  - WA-F2: style ≤ 12, layout ≤ 3.
+  - So most of the full-page F2's 30-43 style recalcs per draw were the rest of the page.
+- (e) WA-C idle fps ≥ 59.5.
+
+**Decision rule.**
+1. **Isolation (the user's question).**
+   - "The rest of the page adds slow frames in the word's windows" when FP's and WA-C's per-run ranges do not
+     overlap on > 34 or > 50 in the 'you' windows, and both ±4 ms twins agree.
+   - Otherwise: "the slow frames during the draws are the word's own (or noise)".
+   - The whole idle is read the same way, for the page as a whole.
+2. **Arms alone.** As P-058 rules 1-3: eligibility, rank by > 50 then > 34 per 'you' window, and separation. An arm
+   beats the SVG alone only when its range lies wholly below WA-C's and the twins agree.
+3. **Recommendation.**
+   - No arm beats WA-C: keep the SVG; the illusion topic closes.
+   - An arm beats WA-C (P-058 found no full-page win): report "it saves the word's own cost, which the rest of the page
+     hides today". Keep the SVG now, and offer a full-page re-test after the other fixes land. That would be a new
+     question with its own row. F2's ~83 MB for 'you' is shown next to it.
+   - Threshold-sensitive or not separated: keep the SVG. No second block unless the user asks.
+4. **Counts.** Timeline counts are reported per arm with FP minus WA (the rest of the page's share). Counts only, not
+   timing.
 
 ## Void results
 
