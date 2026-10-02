@@ -7,7 +7,24 @@
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -2739,7 +2739,9 @@
+@@ -2670,6 +2670,16 @@
+ }
+ function iE() {
+   tE = 0;
++  // [scroll-engine /10f] a section re-skipped early together with the hero (fwReskip) is rendered in the
++  // baseline at that point. When a jump lands it within half a viewport of the screen, un-skip it in this
++  // frame's rAF (the scroll event's frame), before the callbacks, so the frame that shows it has it
++  // rendered (an IO-driven un-skip lands one frame later). The hero itself is left to its own IOs.
++  for (let e of $T)
++    if (e.fwWith && e.element) {
++      let t = e.element.getBoundingClientRect(),
++        n = window.innerHeight / 2;
++      t.bottom > -n && t.top < window.innerHeight + n && sE(e, !0);
++    }
+   for (let e of $T) e.active && e.callback();
+ }
+ // [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
+@@ -2739,7 +2749,9 @@
  function sE(e, t) {
    if (!(!e.deferRendering || !e.element)) {
      if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
@@ -18,19 +35,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        return;
      }
      e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
-@@ -2762,7 +2764,10 @@
-     e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
-     e.active !== t &&
-       ((e.active = t),
--      t && sE(e, !0),
-+      // [scroll-engine /10f] the scene gate does not un-skip a section re-skipped together with the section
-+      // above it while that one is still skipped: both come back with the upper one (fwRender at gate + 50 %),
-+      // which keeps the 0.25 vh hysteresis below the far edge. fwRender's own IO for this section still un-skips it.
-+      t && !(e.fwWith && e.fwWith.element?.getAttribute(`data-start-selling-render`) === `deferred`) && sE(e, !0),
-       e.onActiveChange?.(t),
-       t && rE(),
-       // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
-@@ -2811,7 +2816,13 @@
+@@ -2811,7 +2823,16 @@
  function fwFM(e) {
    return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
  }
@@ -38,17 +43,21 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +// [scroll-engine /10f] re-skip neighbours together. A containment flip (this section going back to
 +// content-visibility) next to a big sibling that is still rendered relays that sibling out (Sim, OBSERVED:
 +// the hero's re-skip at y~2988 relaid out the whole #people profile deck, ~20 ms; #people's own re-skip edge
-+// is ~0.7 vh later). So the next deferRendering section in document order goes back in the same style
-+// change when it is inactive and wholly above the viewport. Its rect is read before any write, so the read
-+// finds the layout the IO callback ran after (no forced layout of the flip).
++// is ~0.7 vh later). So when the hero track goes back, the next deferRendering section in document order goes
++// back in the same style change if it is inactive and wholly above the viewport (only this pair fires at
++// 430 px; other pairs are not enabled). Its rect is read before any write (Sim initiators, v5: no Layout
++// started from this read). It comes back when its own scene gate opens (cE), with the hero (sE), or, until it
++// reaches its own far edge, in the same frame when a jump lands it near the screen (iE): the baseline still has
++// it rendered there.
 +function fwReskipOne(e, t) {
    !e.deferRendering ||
      !e.element ||
      e.active ||
-@@ -2821,6 +2832,28 @@
+@@ -2820,6 +2841,35 @@
+     fwDef.delete(e),
      t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
      e.element.setAttribute(`data-start-selling-render`, `deferred`));
- }
++}
 +function fwNextSection(e) {
 +  let t = null;
 +  for (let n of $T) {
@@ -62,15 +71,21 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  return t;
 +}
 +function fwReskip(e, t) {
-+  if (!e.deferRendering || !e.element || e.active || e.element.getAttribute(`data-start-selling-render`) === `deferred`) return;
-+  let n = fwNextSection(e),
++  if (!e.deferRendering || !e.element || e.active) return;
++  // [scroll-engine /10f] a section re-skipped early with the hero reaches its own far edge: from here on it is
++  // an ordinary re-skipped section, as in the baseline (no same-frame un-skip on jumps).
++  if (e.element.getAttribute(`data-start-selling-render`) === `deferred`) {
++    e.fwWith = null;
++    return;
++  }
++  // Only the hero track pairs (the one pair that fires at 430 px; the others are untested).
++  let n = e.element.classList.contains(`hero-track`) ? fwNextSection(e) : null,
 +    r = null;
 +  if (n && !n.active && n.element.getAttribute(`data-start-selling-render`) !== `deferred`) {
 +    let i = n.element.getBoundingClientRect();
 +    i.bottom < 0 && i.height > 0 && (r = i.height);
 +  }
 +  (fwReskipOne(e, t), r !== null && ((n.fwWith = e), fwReskipOne(n, r)));
-+}
+ }
  function fwFar(e, t, n) {
    let r = fwFarG.get(n);
-   r ||
