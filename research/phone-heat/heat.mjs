@@ -6,9 +6,10 @@
 //   node research/phone-heat/heat.mjs keys                      # AppleSmartBattery key NAMES (no values), depth <= 2
 //   node research/phone-heat/heat.mjs once [--label l]          # one battery sample to stdout (whitelisted keys)
 //   node research/phone-heat/heat.mjs segment --session H1|H2 --seg <n> --arm F|A|B|X --url <u> --owner <o>
-//        [--charge-mode held|charging] [--seconds 360] [--every 30] [--out out/phone-heat/samples.jsonl] [--dry-run]
+//        [--charge-mode held|charging] [--attempt 1] [--seconds 360] [--every 30] [--out out/phone-heat/samples.jsonl] [--dry-run]
 //        # open <u>; battery every --every s from t=0 to t=--seconds; back-to-back `iphone.mjs run` W cycles
 //        # (the ticket's routine) until t=--seconds; then park. Appends samples + one segment line to --out.
+//        # --attempt: the session's attempt (a fallback restart is attempt 2); score uses each session's last attempt only.
 //   node research/phone-heat/heat.mjs charge-wait [--want held|charging] [--every 30] [--timeout 1200]
 //        # the charging gate before each segment (README "Charging rule"): exit 0 MET when one read shows the wanted
 //        # state (held = on the cable and IsCharging false; charging = IsCharging true), 3 TIMEOUT, 1 no reading
@@ -107,14 +108,15 @@ const flag = (n) => argv.includes(`--${n}`);
 async function segment() {
   const session = opt('session'), seg = opt('seg'), arm = opt('arm'), url = opt('url'), owner = opt('owner');
   if (!/^H[12]$/.test(session || '') || !/^\d+$/.test(seg || '') || !/^[FABX]$/.test(arm || '') || !url || !owner) throw new Error('segment needs --session H1|H2 --seg <n> --arm F|A|B|X --url <u> --owner <o>');
-  const chargeMode = opt('charge-mode', 'held');
+  const chargeMode = opt('charge-mode', 'held'), attempt = Number(opt('attempt', 1));
+  if (!Number.isInteger(attempt) || attempt < 1) throw new Error('--attempt is a whole number >= 1');
   if (!['held', 'charging'].includes(chargeMode)) throw new Error('--charge-mode is held or charging');
   const seconds = Number(opt('seconds', 360)), every = Number(opt('every', 30)), idlePhase = Number(opt('idle-phase', PRE.idlePhaseS)), dry = flag('dry-run');
   const out = resolve(REPO, opt('out', 'out/phone-heat/samples.jsonl'));
   mkdirSync(dirname(out), { recursive: true });
   const { lanSafeUrl } = await import(join(REPO, 'tools/lib/iphone-url.mjs'));
   const node = process.execPath, iphone = join(REPO, 'tools/iphone.mjs');
-  const id = `${session}-${seg}${arm}`;
+  const id = attempt > 1 ? `${session}a${attempt}-${seg}${arm}` : `${session}-${seg}${arm}`; // unique per attempt: samples join by id
   // a segment is a measurement (I-070): one caffeinate -i -s assertion for this process, also over the idle phase,
   // where no iphone.mjs process runs (tools/lib/awake.mjs keepAwakeFor; its wrapsMeasurement does not see this command)
   if (!dry) (await import(join(REPO, 'tools/lib/awake.mjs'))).keepAwakeFor(`phone heat segment ${id}`);
@@ -127,7 +129,7 @@ async function segment() {
   const sample = async (sNominal) => {
     pending++;
     const b = await readBattery();
-    write({ kind: 'sample', id, session, seg: Number(seg), arm, t: new Date().toISOString(), s: sOf(), sNominal, ...(b.error ? { error: b.error } : pickBattery(b.d)) });
+    write({ kind: 'sample', id, session, attempt, seg: Number(seg), arm, t: new Date().toISOString(), s: sOf(), sNominal, ...(b.error ? { error: b.error } : pickBattery(b.d)) });
     pending--;
   };
   let n = 0;
@@ -152,7 +154,7 @@ async function segment() {
   if (voided) timers.forEach(clearTimeout);
   while (pending || (!voided && Date.now() - t0 < seconds * 1000 + 500)) await new Promise((res) => setTimeout(res, 250));
   await sh(['park', '--owner', owner]);
-  write({ kind: 'segment', id, session, seg: Number(seg), arm, chargeMode, url: lanSafeUrl(url), t0: new Date(t0).toISOString(), seconds, every, idlePhase, cycles, void: voided });
+  write({ kind: 'segment', id, session, attempt, seg: Number(seg), arm, chargeMode, url: lanSafeUrl(url), t0: new Date(t0).toISOString(), seconds, every, idlePhase, cycles, void: voided });
   console.log(`SEGMENT ${id} ${voided ? 'VOID (' + voided + ')' : 'DONE'}: ${cycles.length} cycles; ${out}`);
 }
 
@@ -174,7 +176,7 @@ export function scoreSegments(lines, pre = PRE) {
     const chargeMode = g.chargeMode || 'held';
     // excluded when any read is not the session's charge state (held: a charging or off-cable read; charging: a held one)
     const chargeExcluded = ss.some((l) => chargeState(l) !== chargeMode);
-    const r = { id: g.id, session: g.session, arm: g.arm, n: win.length, startC: start?.tC ?? null, cycles: g.cycles?.length ?? 0, charging, chargeMode, chargeExcluded, void: g.void || (win.length < pre.minSamples ? `${win.length} samples in the window` : null) };
+    const r = { id: g.id, session: g.session, attempt: g.attempt ?? 1, arm: g.arm, n: win.length, startC: start?.tC ?? null, cycles: g.cycles?.length ?? 0, charging, chargeMode, chargeExcluded, void: g.void || (win.length < pre.minSamples ? `${win.length} samples in the window` : null) };
     if (win.length >= 2) {
       const f = ols(win.map((l) => [l.sNominal / 60, l.tC]));
       r.slope = round(f.slope); r.meanC = round(f.meanY, 2); r.corr = round(f.slope + pre.k * (f.meanY - pre.tRefC));
@@ -194,11 +196,14 @@ const median = (a) => { const s = [...a].sort((x, y) => x - y); return s.length 
 
 /** The ticket's decision rules over scored segments. Primary = corrected slopes; raw = check. */
 export function verdicts(segs, pre = PRE) {
-  const ok = segs.filter((s) => !s.void && !(s.chargeExcluded ?? s.charging) && typeof s.corr === 'number');
+  // only each session's LAST attempt counts (a fallback restart supersedes the aborted attempt; README "Charging rule")
+  const lastAttempt = Object.fromEntries(['H1', 'H2'].map((h) => [h, Math.max(0, ...segs.filter((s) => s.session === h).map((s) => s.attempt ?? 1))]));
+  const live = segs.filter((s) => (s.attempt ?? 1) === lastAttempt[s.session]);
+  const ok = live.filter((s) => !s.void && !(s.chargeExcluded ?? s.charging) && typeof s.corr === 'number');
   // both sessions must share one charge state (README "Charging rule"); otherwise no cross-session verdict
-  const modes = ['H1', 'H2'].map((h) => [...new Set(segs.filter((s) => s.session === h).map((s) => s.chargeMode || 'held'))].join('+') || null);
+  const modes = ['H1', 'H2'].map((h) => [...new Set(live.filter((s) => s.session === h).map((s) => s.chargeMode || 'held'))].join('+') || null);
   const sameMode = modes[0] !== null && modes[0] === modes[1] && !modes[0].includes('+');
-  const get = (session, arm, f) => ok.find((s) => s.session === session && s.arm === arm)?.[f];
+  const get = (session, arm, f) => ok.findLast((s) => s.session === session && s.arm === arm)?.[f]; // the end-of-session re-run, if any
   const pair = (a, b, f) => ['H1', 'H2'].map((h) => { const x = get(h, a, f), y = get(h, b, f); return typeof x === 'number' && typeof y === 'number' ? round(x - y) : null; });
   const both = (d, p) => d.every((v) => v !== null && p(v));
   const decide = (dc, dr, more, same, words) => {
@@ -214,6 +219,7 @@ export function verdicts(segs, pre = PRE) {
     fixesVsBaseline: decide(pair('B', 'X', 'corr'), pair('B', 'X', 'slope'), pre.fixC, pre.fixC, ['the fixes cool the phone', 'the fixes heat the phone', 'no detectable change']),
   };
   out.chargeMode = { H1: modes[0], H2: modes[1] };
+  out.attempt = lastAttempt;
   out.floorCheck = ['H1', 'H2'].map((h) => { const f = get(h, 'F', 'corr'); const others = ['A', 'B', 'X'].map((a) => get(h, a, 'corr')).filter((x) => typeof x === 'number'); return f === undefined ? null : others.every((x) => x > f); });
   const ex = (a) => ['H1', 'H2'].map((h) => { const x = get(h, a, 'corr'), f = get(h, 'F', 'corr'); return typeof x === 'number' && typeof f === 'number' ? round(x - f) : null; });
   out.excessOverFloor = { A: ex('A'), B: ex('B'), X: ex('X') };

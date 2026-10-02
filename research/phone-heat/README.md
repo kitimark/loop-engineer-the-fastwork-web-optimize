@@ -155,14 +155,15 @@ every within-session comparison.
     de-heat. Using it as a metric is a pre-data amendment, not a change made after data.
 - **Charging confounder.** `IsCharging` is logged every 30 s. The phone stays on the USB cable the whole time: the
   Web Inspector link needs it. iOS decides when to charge (80 % limit / Optimized Charging; arch-unknowns U4), so
-  charging cannot be switched from the Mac. The user is asked once which charging setting is on, and the answer is
-  recorded.
+  charging cannot be switched from the Mac.
 - **State read before the ticket** (10-02 22:42-22:45Z, the read-only `batteryInfo` call that `wait.mjs phone-temp`
   uses; no lease, no page): on the cable, `IsCharging` false, `FullyCharged` false, `CurrentCapacity` 80 of 100,
   37.8 °C, `Amperage` 0, `InstantAmperage` 2. So the battery is **held** at 80 %: the cable carries the load and the
-  battery neither charges nor discharges. That 80 % reads as not "full" fits an 80 % charge limit (OBSERVED in our
-  setup; whether it is the limit or Optimized Charging is UNRESOLVED, and the user's answer settles it). The earlier
-  log matches this: held in 250 of 317 reads, with short charging stretches after drifts to 77-78 %.
+  battery neither charges nor discharges. The earlier log matches this: held in 250 of 317 reads, with short charging
+  stretches after drifts to 77-78 %.
+- **Confirmed by the user** (T-029 #8, via the lead, 10-02 ~22:5xZ): the phone's 80 % charging limit is on, and it
+  stays on, with the phone on the cable, for the whole test. So "held at 80 %" is the setting, not a guess; the
+  console question about the charging setting is answered and not asked again.
 
 ### Charging rule (pre-registered)
 
@@ -172,15 +173,22 @@ above, so it is the expected one, and B, A, X and F are compared only in that st
    0 at the first held read. If the phone is charging, it waits (a top-up from 77-78 % back to the limit takes a few
    minutes) up to 20 min (`PRE.chargeGateS`), reading every 30 s.
 2. **During a segment:** a single read that is not held (charging, or off the cable) excludes that segment
-   (`chargeExcluded`). The arm is re-run once at the end of the session, after the gate. The arm order is kept: the
-   re-run goes last.
-3. Every segment line records its `chargeMode`, so the score can check the rule.
+   (`chargeExcluded`). This counts **every read of the segment, 0-360 s** (13 reads), not only the 60-360 s fit
+   window. The arm is re-run once at the end of the session, after the gate. The arm order is kept: the re-run goes
+   last, and the score takes the arm's last valid segment in the session.
+3. Every segment line records its `chargeMode` and its session `attempt`, so the score can check the rule.
 
 **Fallback: the session runs "charging", and is compared as such.** It applies if the gate times out at 20 min (the
 phone keeps charging), or if a second segment in the same session is excluded for charging:
-- The session stops, and its segments so far are kept but not used.
-- It restarts from its first arm with `--charge-mode charging` and the gate `charge-wait --want charging`. Every arm
-  then runs while charging, and a segment with a held read is excluded instead.
+- The session stops. Its segments so far stay in `samples.jsonl` but are not used: they belong to attempt 1.
+- It restarts from its first arm as **attempt 2**: `--attempt 2 --charge-mode charging`, with the gate
+  `charge-wait --want charging`. Every arm then runs while charging, and a segment with a held read is excluded
+  instead. Segment ids carry the attempt (`H1a2-1F`), so the two attempts never mix.
+- **The score uses only each session's last attempt** (`verdicts()`: `attempt`, `live`): the charge mode, the arms
+  and the excluded segments all come from that attempt, never from the aborted one.
+- **If the fallback gate times out** (`charge-wait --want charging` exits 3 after 20 min: likely with the 80 % limit,
+  which may not start charging at all), the session ends there as **incomplete**. Its verdicts are "incomplete". A
+  new session needs the lead; it is never improvised on the spot.
 - **A cross-session verdict needs both sessions in the same state.** `heat.mjs score` checks this. If one session
   ran held and the other charging, both verdicts are "incomplete (the sessions differ in charge state)", and each
   session's deltas are reported separately. A third session in the matching state needs the lead.
@@ -363,7 +371,7 @@ Pre-flight, once, before H1 (inside the `iphone` lease):
 3. Run one uncounted warm-up per arm (A3), A included:
    `iphone.mjs open <url>` + one `iphone.mjs run --driver window … --warmup --label heat-warm-<arm>` (same flags as a
    cycle). From A's warm-up, check `docH` ≥ 5800 and the URL (else the fallback page).
-4. User console steps: the phone settings above, the charging setting, and room/AC "unchanged" for the session.
+4. User console steps: the phone settings above (the 80 % charging limit is already confirmed), and room/AC "unchanged" for the session.
 5. Before H1 only: log which X is used (st6-rb2, or a stacked build per the amendment rule, with hashes) and whether
    I-075's skip is on `main`. Both stay fixed for H2.
 6. Bring the phone into 36.0-37.0 °C (cool or pre-warm as above).
@@ -375,7 +383,8 @@ node tools/wait.mjs phone-temp --below 37.0 --every 30 --timeout 900 --reason "p
 node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "phone heat H1-1F" -- \
   node research/phone-heat/heat.mjs segment --session H1 --seg 1 --arm F --charge-mode held --url http://lan:<pF>/heat-floor.html --owner iphone-runner
 ```
-In a fallback session, replace `held` with `charging` in both places.
+In a fallback session, replace `held` with `charging` in both places and add `--attempt 2` to every `segment`. If the
+`charging` gate exits 3, stop the session (incomplete) and tell the lead.
 At the end: `node research/phone-heat/heat.mjs score --out out/phone-heat/score.json`. Send de-heat the score output,
 `samples.jsonl` and the console answers. de-heat commits the derived numbers: samples without URLs beyond the
 placeholder, and no apple.com run records.
@@ -388,6 +397,7 @@ placeholder, and no apple.com run records.
 
 ## Files
 
-- `heat.mjs`: battery reader, segment runner, pre-registered scorer. sha256/12 `341a774801ae` at this commit (amended pre-data 10-02 22:4xZ: charge mode, `charge-wait` gate, charge-state exclusion; was `38f81442ccad` at 4bf2319).
+- `heat.mjs`: battery reader, segment runner, pre-registered scorer. sha256/12 `1280a97d9f6d` at this commit (pre-data amendments, 10-02 22:4xZ: charge mode, `charge-wait` gate, charge-state exclusion, was `38f81442ccad` at 4bf2319, `341a774801ae` at 56636f8; 22:5xZ: session attempts, last-attempt scoring).
 - `floor/heat-floor.html`: the floor page. sha256/12 `30098372d8c1`.
+- `heat.check.mjs`: checks of the scorer on synthetic samples (held, exclusion over 0-360 s, end-of-session re-run, fallback restart with an aborted attempt, sessions in different charge states, fallback gate timeout): `node --test research/phone-heat/heat.check.mjs`, 7 pass. The two fallback checks fail on the 56636f8 scorer.
 - Results (after data): `results.json` and `samples.jsonl` (derived, LAN-scrubbed), plus a result section here.
