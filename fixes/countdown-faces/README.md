@@ -647,6 +647,11 @@ are unchanged from stage 1:
   fully transparent. Then (i) goes to the user as above.
 - **V shows no stale update at all in this session:** (iv) does not recur here, and is judged on session 2's
   `--exit-opacity` data alone. That is weaker evidence, and it goes to the lead.
+- **The control C is stale in any update after the jump: no decision.** The ancestor chain is dumped and sent to the
+  lead; neither "explained" nor "back to the code" applies. (Lead, before scoring, 23:14Z. The line was missing
+  from 8163838, as mgmt-ops-7's re-read noted. The A1 session had already run: it started 23:11Z, queued before the
+  re-read arrived. Its log had been opened before this line arrived, so the line is committed after the session ran,
+  not before. That log shows C live in every update.)
 
 **Not changed:** the stage-1 counts and their scoring, every trigger rule, and P-069.
 
