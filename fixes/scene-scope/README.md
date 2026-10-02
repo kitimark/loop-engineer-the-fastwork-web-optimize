@@ -1157,15 +1157,18 @@ SW=2500-2760 node fixes/scene-scope/tools/rsstat.mjs out/t011/sr-*.json
 `rsstat.mjs` finds the switch (the `setAttribute<cE` ScheduleStyleRecalculation in the y window SW, then the first
 outermost RS after it). It reports the RS ms, its nested Layouts (view-rooted = root covering 0,0 .. 430 x viewport
 height; the D card counts only these, P-040's lesson), and every outermost Layout starting within 40 ms after that RS.
-If it finds no switch in 2500-2760, rerun with SW=2300-3000 and report the y. `sweepstate.mjs` prints per title: the
+Each after-RS Layout is printed with its root and top frame. Hero-rotator-tick Layouts (`before<mi`
+`BSBv9QXB:2188`, `remove<lr :1662`; F-111; both arms lack rotator-st6) are marked `rot` and left out of the
+"view-rooted non-rotator" count that rule (b) reads (added 10-02 10:40Z, before any T-011 data; on phone block 1's 12
+runs the count is 0 in every run). If it finds no switch in 2500-2760, rerun with SW=2300-3000 and report the y. `sweepstate.mjs` prints per title: the
 `data-sweep-paused` attribute, the computed play state and the animation playState off screen at the top, in view
 (onset ms, currentTime at +600 ms) and back at the top.
 
 **If X then Y** (P-061):
-- V has 0 view-rooted nested Layouts in the switch RS **and** no view-rooted Layout >= 2 ms within 40 ms after it, in
+- V has 0 view-rooted nested Layouts in the switch RS **and** no view-rooted non-rotator Layout >= 2 ms within 40 ms after it, in
   every counted V run, and C has 1 in every C run: the D card's mechanism holds on the phone and the 18 ms layout did
   not move. Then the fix-reviewer gets the final diff, and then the land request.
-- V has a view-rooted Layout >= 10 ms right after the RS (RBi40p's Sim pattern): the layout moved instead of going away.
+- V has a view-rooted non-rotator Layout >= 10 ms right after the RS (RBi40p's Sim pattern): the layout moved instead of going away.
   Stop: report to the lead. V does not land as the layout fix.
 - V has >= 1 view-rooted nested Layout in the switch RS: the cut does not reach the nesting on the phone. Stop: report to
   the lead.

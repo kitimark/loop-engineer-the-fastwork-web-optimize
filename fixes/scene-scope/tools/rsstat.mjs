@@ -3,7 +3,8 @@
 // (1) The #platform switch: the cE write (ScheduleStyleRecalculation whose top frame is `setAttribute<cE@...`) in y
 //     window SW; the first outermost RecalculateStyles after it: total ms, nested Layouts (count, ms), self ms (total
 //     minus nested); then every outermost Layout that starts within 40 ms after that RS ends and before the next
-//     outermost RS (the "switch frame" Layout, wherever it runs).
+//     outermost RS (the "switch frame" Layout, wherever it runs), each with its root and top frame; rotator-tick
+//     Layouts (F-111) are marked "rot" and the view-rooted non-rotator ones counted apart (P-061 (b)).
 // (2) Over the scroll phase (marks.scroll .. marks.push end): outermost RS count, RS total ms, nested Layout count and
 //     ms, outermost Layout count and ms (all Layouts outside RS).
 // usage: node rsstat.mjs <run.json>...   env SW=2500-2760
@@ -35,8 +36,12 @@ for (const file of process.argv.slice(2)) {
     const nextRS = outerRS.find((x) => x.s > rs.e);
     const after = outerL.filter((z) => z.s >= rs.e && z.s <= rs.e + 40 && (!nextRS || z.s < nextRS.s));
     const ams = after.reduce((s, z) => s + z.e - z.s, 0);
+    // F-111: the hero avatar rotator's timer task (before<mi BSBv9QXB:2188, remove<lr :1662) can land in this window
+    // in arms without rotator-st6; such Layouts are listed with "rot" and left out of the non-rotator view count.
+    const isRot = (z) => /@BSBv9QXB\.js:(2188|1662)$/.test(top(z.st));
+    const afterNR = after.filter((z) => !isRot(z) && isView(z));
     const nv = nested.filter(isView);
-    sw = `switch y${yAt(rs.s)}: RS ${f1(rs.e - rs.s)} ms (self ${f1(rs.e - rs.s - nms)}, nested ${nested.length} = ${f1(nms)} ms, view-rooted ${nv.length} [${nested.map((z) => rootStr(z) + ' ' + f1(z.e - z.s)).join(' + ')}]); Layout after RS within 40 ms: ${after.length} = ${f1(ams)} ms; RS+after ${f1(rs.e - rs.s + ams)} ms`;
+    sw = `switch y${yAt(rs.s)}: RS ${f1(rs.e - rs.s)} ms (self ${f1(rs.e - rs.s - nms)}, nested ${nested.length} = ${f1(nms)} ms, view-rooted ${nv.length} [${nested.map((z) => rootStr(z) + ' ' + f1(z.e - z.s)).join(' + ')}]); Layout after RS within 40 ms: ${after.length} = ${f1(ams)} ms [${after.map((z) => rootStr(z) + ' ' + f1(z.e - z.s) + (isRot(z) ? ' rot' : '') + ' ' + top(z.st)).join('; ')}], view-rooted non-rotator ${afterNR.length} = ${f1(afterNR.reduce((s, z) => s + z.e - z.s, 0))} ms (max ${f1(Math.max(0, ...afterNR.map((z) => z.e - z.s)))}); RS+after ${f1(rs.e - rs.s + ams)} ms`;
   }
   // (2) scroll phase
   const [t0] = r.marks.scroll; const t1 = r.marks.push ? r.marks.push[1] : r.marks.scroll[1];
