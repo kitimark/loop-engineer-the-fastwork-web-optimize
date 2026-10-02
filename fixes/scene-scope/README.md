@@ -17,7 +17,7 @@ lead's review (8690486, NEEDS-WORK) sent back.
   - P-056a(c1) is a strict **MISS** (it predicted 0 differing frames).
   - At 430, with the IO-held harness (`pageframes4.mjs`), the count-up is pinned. Every remaining difference also
     shows in the A/A (a glyph edge, delta 1; a first-load avatar decode, delta 66). None is V-only.
-  - **Open:** one 1440 frame (y7500, 259 px, max delta 3; 223 px on the ring/dash edges, the rest at the nav
+  - **Open:** one 1440 frame (y7500, 259 px, max delta 3; 250 px on the ring/dash edges at delta 1, 9 px at the nav
     button edge) was seen in 1 V load in q40ui and in no baseline frame. Under q40ui's exact procedure (P-056b) it
     came back in 0 of 10 V and 0 of 10 S0 loads: "not reproduced", and the lead decides.
   - The frames cannot see the title sweeps (the freeze pauses every animation). c2 (phase and onset) is the evidence
@@ -290,9 +290,9 @@ deterministic A/A, and they change Chrome's raster path, so they are a measureme
     - The A/A S0 vs S0b was 16/25. The 9 differing frames are y6600-7400: 122 px with max delta 1 at y6600-7300
       (bbox x 251-438), and 50 px with max delta 1 at y7400. That S0 load was the first measured load. S0b and V
       agree there.
-    - The one V-only frame is y7500: 259 px with max delta 3. By `walkstat.py`'s count (any channel differs), 223 px
-      lie on the secure-network ring and dash edges, and the rest at the nav "Join waitlist" button edge (x
-      1100-1197, y about 44). Its hash 559c68ab9d2b matches no S0/S0b frame in any run.
+    - The one V-only frame is y7500: 259 px with max delta 3. By any-channel count, split by region, 250 px
+      lie on the secure-network ring and dash edges (max delta 1), and 9 px at the nav "Join waitlist" button edge (x
+      1196, y 44-52, max delta 3). Its hash 559c68ab9d2b matches no S0/S0b frame in any run.
     - The q40ur/q40ur2 loads started their walk at 7300/7400. They end in a different ring state at y7500 (the same in
       every arm), so they are not repeats of q40ui's frame.
     - The spot chain at (450, 8300) is the same in both arms (`spotprobe.mjs`). Re-run under q40ui's exact
