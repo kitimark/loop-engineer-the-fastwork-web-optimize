@@ -7,7 +7,7 @@
 diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -1525,7 +1525,32 @@
+@@ -1525,6 +1525,31 @@
    syntax: "<angle>";
    inherits: false;
    initial-value: 0deg;
@@ -27,7 +27,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  syntax: "<number>";
 +  inherits: false;
 +  initial-value: 0;
- }
++}
 +.start-selling-top-nav-bar,
 +.start-selling-top-nav-logo,
 +.start-selling-top-nav-actions,
@@ -36,11 +36,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +.start-selling-morph-pill,
 +.start-selling-morph-panel {
 +  --morph: inherit;
-+}
+ }
  .hero-track.svelte-1p2vpne {
    background: #fff;
-   height: 200vh;
-@@ -11801,15 +11826,57 @@
+@@ -11801,15 +11826,50 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -67,9 +66,6 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-earn,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-secure,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row-title-organized,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-cred-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-currencies-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-profile-reviews-track,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
 +.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6 {
    animation-play-state: paused !important;
@@ -90,10 +86,6 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +.start-selling [data-start-selling-scene="paused"] .start-selling-future-card,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-profile-shell,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-platform-card,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-stage-artboard,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-cred-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-secure-currencies-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-profile-reviews-track,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-morph,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
 +.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav,

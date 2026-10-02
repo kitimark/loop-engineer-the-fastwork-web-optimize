@@ -3,10 +3,12 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** RB landed (8207797). RBi is ready to land: the pixel A/B against RB is byte-identical, with a clean A/A.
-The RBi40 Sim count is equal, so RBi40 is next; it needs its own pixel A/B. The rotator-tick layout stays: the
-st5/st6 family is not byte-identical, and rotator-st6 is parked.
-**Stage:** F. RBi waits for the phone ticket (T-011). The D card is below.
+**Status:** RB landed (8207797). RBi40, the arm the signed I4/I40 rule picks, is the landing candidate.
+- Its pixel A/B against RB is byte-identical, with a clean A/A.
+- Its Sim count and idle triple are equal to RB's.
+- RBi is also verified.
+- The rotator-tick layout stays: the st5/st6 family is not byte-identical, and rotator-st6 is parked.
+**Stage:** F. Waiting for the fix-reviewer and the phone ticket (T-011). The D card is below.
 **Device class / gate:** phone-only (WebKit's nested style/layout rounds, F-099). Gate: phone Timeline attribution (counts).
 **Driver(s) behind the claims:**
 - Chrome counts and state probes (`out/scene-scope/*.mjs`, not committed).
@@ -20,10 +22,10 @@ P-048 FAIL, P-049 MISS, P-050 MISS, P-051 MISS, P-052 HIT.
 
 **Tools version (I-046, d00ee9a changed headless `--screen-info`).**
 - Ran on tools before d00ee9a, with a headless screen of 756x491 CSS px at DPR 2: every headless Chrome result here
-  except the RBi pixel A/B. That covers the mechanism check, the functional check with its bottom-shot A/A, the
+  except the RBi and RBi40 pixel A/Bs and the idle triple. That covers the mechanism check, the functional check with its bottom-shot A/A, the
   carousel frame check (carf, carf2, carf3) and the visual-risk probe.
 - The page viewport was the device-metrics override in every run.
-- Ran after d00ee9a: the RBi pixel A/B and all Simulator runs. The Simulator does not use headless Chrome.
+- Ran after d00ee9a: the RBi and RBi40 pixel A/Bs, the idle triple and all Simulator runs. The Simulator does not use headless Chrome.
 
 Timing is deferred by the user (2026-10-01 19:27Z): this README makes **no timing claim**. Chrome numbers below are
 counts (elements restyled, invalidations, dirty layout objects, layers); durations are info only.
@@ -55,15 +57,24 @@ counts (elements restyled, invalidations, dirty layout objects, layers); duratio
 
 ## What changed
 
-**Landing candidate now (`patch.diff`, regenerated 00:5xZ 2026-10-02) = RBi = RB with V1i's animation list (CSS
-7eec24b73ba5), stacked on bplus.**
-- Against RB (landed in 8207797), it removes 52 entries from the animation arm and keeps the 18 infinite ones
-  (`.morph-col-track` and `.ring.svelte-16rtsv6` are the last two). Nothing else changes; the R4a / R4b parts are as
-  in RB.
-- Evidence: phone block 2 (switch nested Layouts 2 → 1 with I4); the RBi pixel A/B (byte-identical, below); the
-  visual-risk probe.
+**Landing candidate now (`patch.diff`, regenerated 01:1xZ 2026-10-02) = RBi40 (CSS f54dbf45fc55), stacked on bplus.**
+RBi40 = RB with V1i's animation list (that step alone is RBi), minus the 4 platform classes. It is the arm the signed
+I4/I40 rule picks.
+- Against RB (landed in 8207797):
+  - The animation arm goes from 67 entries to 15 infinite ones. That is V1i's 18 minus cred-track,
+    secure-currencies-track and profile-reviews-track. RBi alone goes from 67 to 18.
+  - The will-change arm drops cred-track, secure-currencies-track, profile-reviews-track and stage-artboard.
+  - Nothing else changes; the R4a / R4b parts are as in RB.
+- CSS only. It adds or removes no observers, listeners or JS writes; the JS is byte-identical to RB's
+  (dbd5fdb4f1fb). The idle triple below shows equal counts.
+- Evidence:
+  - phone block 2: switch nested Layouts 2 with RB, 1 with I4, 0 with I40;
+  - the RBi40 pixel A/B (byte-identical, below);
+  - the RBi40 Sim count (equal);
+  - the idle triple (equal);
+  - the visual-risk probe.
+- RBi (CSS 7eec24b73ba5) is also verified: its own pixel A/B is byte-identical (below).
 - Still open: the phone ticket.
-- The next candidate is RBi40 (see "RBi40 Sim count"). It needs its own pixel A/B first.
 
 **Previous landing candidate (landed as 8207797) = V1 + R4a + R4b (CSS 0d7dfc79e703), stacked on bplus.**
 - `results.json` is hold 3's run of V1 alone (`fix.mjs ab --on bplus --runs 3`). Its timing columns are host-
@@ -418,7 +429,67 @@ timing; `out/scene-scope/rbicheck.sh`, `carframes.mjs`, `pageframes.mjs`, `pagec
 - The positive control works: it flips the on-screen #people animations (profile-fade, vinyl-spin, avatars-*) to
   paused, and the walk sees it.
 - Verdict: RBi is byte-identical to RB in the carousel and the switch region, within the A/A. The lead accepted it.
-- Still open before landing: the phone ticket (when the phone is back, T-011).
+  RBi is the "also verified" arm.
+
+**RBi40 pixel A/B** (same design and scripts as RBi's, `out/scene-scope/rbi40check.sh car|page`).
+- Tools include d00ee9a; two shared slots, 01:02-01:06Z.
+- Fresh random ports, `--no-cache`. Served CSS: S0 and S0b 0d7dfc79e703, RBi40 f54dbf45fc55; JS dbd5fdb4f1fb in all.
+- GETs of the CSS / JS per server log:
+  - carousel slot: 2 / 2 per arm;
+  - page slot: S0 3 / 3 (S0pc uses the S0 server), S0b 2 / 2, RBi40 2 / 2.
+
+| check | S0 vs S0b (A/A) | S0 vs RBi40 | S0 vs S0pc (positive control) |
+|---|---|---|---|
+| carousel held frames (39 per arm) | 39/39 byte-identical, max delta 0 | 39/39 byte-identical, max delta 0 | — |
+| switch region: frozen frames at y 2300..3000 step 50 | 15/15 byte-identical | 15/15 byte-identical | 15/15 (#people not in frame) |
+| state walk: steps with equal full state sets | 16/35 | 16/35 (S0b vs RBi40: 33/35) | 15/35 |
+| state walk: steps with equal **paused** sets | 35/35 | 35/35 | 17/35 |
+| paused / running samples over the walk | 105 / 220 (S0: 105 / 231) | 105 / 223 | 164 / 203 |
+
+- In this slot S0 ran out of phase with the other arms: the hero accent and avatar cycles were at different points.
+  So the full-state metric drops to 16/35 even in the A/A, and it no longer separates the positive control.
+- The paused-set metric ignores which running cycle is at which phase. It compares, per step, only the on-screen
+  animations that are paused.
+  - It gives 35/35 for the A/A and for RBi40, and 17/35 for the positive control.
+  - RBi's run (rbip) gives the same: S0 vs S0b 35/35, S0 vs RBi 35/35, S0 vs S0pc 17/35.
+- Verdict: RBi40 is byte-identical to RB in the carousel and the switch region, and pauses exactly what RB pauses on
+  screen.
+
+**Idle triple** (protocol v2 §3.5; `out/scene-scope/idletriple.mjs`; headless Chrome, CPU 1x, 430x932 DPR 3;
+counts only).
+- Two shared slots, 01:11Z (2 rounds; S0, S0b, RBi40, RBi) and 01:15Z (3 rounds; S0, RBi40). Fresh ports; GETs 3 / 3
+  and 4 / 4 per arm.
+- Spots: top (y 0); mid (walked down 250 px every 100 ms to y 2620, the switch, then parked); end (walked on to the
+  page end, y 5345, the morph pin).
+- At each spot: 2 s settle, then a 5 s window with no input. A document-start shim counts the page's own:
+  - callbacks: rAF + timer (setTimeout/setInterval) + observer (IO/RO/MO/PerformanceObserver);
+  - events: scroll, animation* and transition* events at window capture;
+  - writes: attribute mutation records (style / class / other);
+  - childList nodes added or removed.
+
+Per second; each cell lists the runs.
+
+| arm | spot | callbacks/s | rAF/s | writes/s | style writes/s | nodes/s | events/s |
+|---|---|---|---|---|---|---|---|
+| S0 (RB) | top | 38.6, 38.8, 50.4, 39.6, 38.6 | 26-38.8 | 64.2, 64.2, 96, 65.8, 63.8 | 58.4-90.6 | 31.2-32.4 | 12.8-13.4 |
+| S0b (A/A) | top | 38.6, 39.6 | 27, 27 | 64.2, 65.8 | 59.2, 60.4 | 31.2, 32.4 | 12.8, 13.2 |
+| RBi | top | 38.8, 38.6 | 27.2, 26 | 64.6, 63.8 | 59.6, 58.4 | 31.2, 32.4 | 13.4, 13.2 |
+| RBi40 | top | 37.6, 46.4, 39.8, 51.6, 46.4 | 26-39 | 62.2, 81.8, 66.6, 97.6, 82.2 | 57.2-91.8 | 31.2-32.4 | 13.2-13.4 |
+| S0 (RB) | mid | 10.4 (all 5) | 0 | 11.2, 11.2, 11.2, 10, 15.6 | 6-11.2 | 30 | 16.2-21.2 |
+| S0b (A/A) | mid | 9.6, 10.4 | 0 | 12.8, 10 | 8.6, 6 | 27, 30 | 16.2, 21.2 |
+| RBi | mid | 10.4, 10.4 | 0 | 10, 11.2 | 6, 7.2 | 30 | 16.2, 21.2 |
+| RBi40 | mid | 10.4 (all 5) | 0 | 10, 15.6, 11.2, 10.6, 11.2 | 6-11.2 | 30 | 16.2-21.2 |
+| S0 (RB) | end | 2 (all 5) | 0 | 11.2, 15.6, 11.2, 10.6, 11.2 | 6.6-11.2 | 0 | 0.6 |
+| S0b (A/A) | end | 2, 2 | 0 | 11.2, 10 | 7.2, 6 | 0 | 0.6 |
+| RBi | end | 2, 2 | 0 | 11.2, 11.2 | 7.2, 7.2 | 0 | 0.6 |
+| RBi40 | end | 2 (all 5) | 0 | 11.2, 10, 11.2, 10, 10 | 6-7.2 | 0 | 0.6 |
+
+- Equal at all three spots. Timer and observer callbacks, class and other writes, nodes and events match within the
+  A/A's spread: run for run equal, except S0b's one mid round at 0.6/s fewer observer callbacks.
+- The only spread is at the top, in rAF and style writes. It ranges from about 26 rAF / 64 writes per s to about
+  39 rAF / 96 writes per s, and the base covers the same range (S0, first round of the second slot: 38.8 rAF, 96
+  writes). So the arm does not cause it. Which hero work produces it was not checked.
+- The patch is CSS only. It adds or removes no observer, listener or JS write, and the JS is byte-identical.
 
 **RBi40 Sim count** (recommendation step 2; Simulator, functional shared lane, 00:48-00:52Z; record counts per
 second, no ms verdicts; `out/scene-scope/simidle.mjs`, `simidle.sh`).
@@ -451,13 +522,12 @@ second, no ms verdicts; `out/scene-scope/simidle.mjs`, `simidle.sh`).
     and cleared again when the profile visual drops below 35 % visible (JS 12024-12030, class at JS 12135). So it runs
     only while its own visual is on screen, whatever the paused-scene rule says.
   - `.start-selling-platform-stage-artboard` exists (JS). In RBi40 it keeps its `will-change` layer while #platform is
-    paused off screen. This costs compositing memory, not pixels or main-thread work; the count above shows no
+    paused off screen. That may cost layer memory; this was not measured. The count above shows no main-thread
     difference.
 - Verdict for the recommendation's step 2: the count is equal. By the signed rule, I40 is the better arm (phone block
   2: switch nested 0/0/0 vs I4's 1/1/1) at the same pixel risk.
-  - Before landing RBi40 it needs the same pixel A/B as RBi, plus the phone ticket.
-  - Not run yet. RBi40 differs from RBi only in rules for elements that are off screen or not rendered, so a
-    difference is unlikely, but it has not been checked.
+  - Its pixel A/B and idle triple have run since (above): byte-identical, and equal. RBi40 is the landing candidate.
+  - The phone ticket is still open.
 
 ## Morph start (R4 / V3)
 
