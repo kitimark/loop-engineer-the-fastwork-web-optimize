@@ -7,7 +7,7 @@
 - **(i) Chrome first-jump frame.** P's first frame after the first jump of a load differs from B by 182-603 px, max channel delta 4, in rounded corners (row 5f).
 - **(ii) Up-pass Layouts on a reversal (Sim).** Going up, P had a Layout with no initiator in 3 of 6 runs, B in 0 of 6, A/A in 2 of 6 (row 3r). Two of P's sit at or just after `#people`'s un-skip (2927, 2951), where only P un-skips anything. Likely caused by that extra un-skip; n=6, cause unknown.
 - **(iii) Sim idle: closed (lead's decision), no idle cost found** (n=4 windows from 2 holds per arm, with A/A). P's medians lie inside B's and A/A's ranges, except two at the reversal spot, by 0.1/s up (Layout) and 1/s down (Paint). One P window at y0 is high, where all builds run the same code (row 8, "Idle").
-- **(iv) Finger fling up through the band (iOS), UNRESOLVED.** Our probes cannot see it; the decisive check is a phone G or F fling up from the band with a recording, B vs P (below).
+- **(iv) Finger fling up through the band (iOS), UNRESOLVED.** Our probes cannot see it; the decisive check is a phone G or F fling up from the band with a recording, B vs P. Prepared as phone ticket G1 (below), not run.
 
 Condition 5 (no skipped section on screen) is met in every run where the baseline meets it. No timing A/B: timing is deferred by the user's direction. Simulator Timeline ms are attribution only, never a gain.
 
@@ -128,6 +128,7 @@ Probes, committed under `fixes/fwreskip/tools/` (no Fastwork code):
 - `boot.js`: bootstrap counters;
 - `tlinit.mjs`: Layout initiators; `tsum.mjs`: per-run Layouts ≥ 3 ms with initiators on the down / up / down2 passes (rows 3d, 3d2, 3r);
 - `idlesum.py`: Sim idle median and range per arm per spot (row 8);
+- `fling-band-v1.json` (WDA gesture script) and `flinglog.mjs` (`--inject` logger): phone ticket G1, not run;
 - `vscore.py` / `vcross.py`: stamp-aligned frame compare;
 - `pxcmp.py`, `vidan.py`, `calan.py`;
 - `cdbg.mjs`, `cure.mjs`, `simtab.mjs`;
@@ -309,6 +310,75 @@ In the band (hero far edge to `#people`'s own far edge), B always has `#people` 
 - `inv.js` cannot see it, because it runs on the main thread. Chrome's touch fling and Sim `scrollBy` cannot see it either.
 - The decisive check is a phone G (WDA gesture) or F (finger) fling up from the band with a screen recording, B vs P.
 - Per protocol (touch effects need G/F before landing), fwreskip does not land until that check runs. The phone is unplugged, so the fix waits for it.
+
+### Phone ticket G1 (item iv): prepared, not run
+
+Owner of the run: `iphone-runner`, when the iPhone is on USB. No measurement has been made with this ticket. Recordings and run JSON stay in `out/` (Fastwork content; Hard rule 3).
+
+**Question.** During a finger fling up from the band, does P ever show `#people` (the profile-card deck) as a placeholder on screen, in a frame where B shows the deck? Driver G (WDA gesture), with F as the fallback.
+
+**Builds.** Immutable snapshot copies, read-only (`chmod a-w`), in this worktree's `out/fwreskip/snap-g1/` (path from the main checkout: `.claude/worktrees/agent-a1722cf5058e25591/out/fwreskip/snap-g1/`):
+
+| arm | role | files (sha256, first 12) |
+|---|---|---|
+| B = RB | control C | `nodes/2.DyWL8TcE.js` `dbd5fdb4f1fb`, `assets/2.gBuqKVzi.css` `0d7dfc79e703` |
+| P = fwreskip on RB | variant V | `nodes/2.DyWL8TcE.js` `96b876639c84`, `assets/2.gBuqKVzi.css` `0d7dfc79e703` |
+
+If the copies are gone, rebuild them: B = `fixes/rb/overlay` (fix-scene-scope's `snap3/rb`); P = the same with `fixes/fwreskip/overlay` (from this branch's `patch.diff`, `fix.mjs apply fwreskip --on rb`) on top. Check the hashes above before serving.
+
+**Serve** (from the runner's checkout, one server per arm, restarted at the block start; `S` = the snapshot path above; plain-http twin for the phone, I-003):
+
+```sh
+node tools/serve.mjs --root site-pretty --overlay $S/B --port 0 --https --vendors=local --latency 150 --no-cache --state out/fwreskip-g1/serve-B.json
+node tools/serve.mjs --root site-pretty --overlay $S/P --port 0 --https --vendors=local --latency 150 --no-cache --state out/fwreskip-g1/serve-P.json
+node tools/wait.mjs serve out/fwreskip-g1/serve-B.json; node tools/wait.mjs serve out/fwreskip-g1/serve-P.json
+curl -s -D - -o /dev/null http://localhost:<port>/_app/immutable/nodes/2.DyWL8TcE.js   # x-mirror-source: overlay; then shasum the body against the table
+```
+
+**Gesture** (`fixes/fwreskip/tools/fling-band-v1.json`, compiler v2; dry-run 2026-10-02: fast hash `3195734415a8`, medium `f7cded2f3ea6`):
+- reload, 6 s idle at the top;
+- descend with `still` strokes (no momentum): 480 px / 700 ms until y ≥ 2900, then 150 px / 500 ms until y ≥ 3250 (the band; Sim crossings: hero far edge ≈2988, `#people`'s own far edge ≈3539). The run aborts if y < 3250;
+- settle, rest 2 s (the pair re-skip happens on the way down);
+- mark `fling`, then ONE finger stroke down (the page scrolls up), `fling` profile at x 215, y 220→740:
+  - **fast** (default): 520 px / 160 ms, lift-off ≈5,850 px/s;
+  - **medium**: `--param flingPx=400 --param flingMs=220`, lift-off ≈3,240 px/s;
+- 2.5 s coast, settle, mark `end`.
+
+```sh
+node tools/iphone.mjs gesture fixes/fwreskip/tools/fling-band-v1.json --owner <runner> --label G1-<arm><n> --inject fixes/fwreskip/tools/flinglog.mjs
+```
+
+`flinglog.mjs` adds no per-frame reads and forces no layout. It logs each render-attribute flip of the hero and `#people` with time and scrollY (to check the paired state at `fling` and to time `#people`'s un-skip). It also flashes the full viewport magenta for one rAF, 3 s into the idle phase, as the capture calibration.
+
+**Recording.** One screen recording per run, from before the gesture starts to after `end`: a QuickTime USB recording of the iPhone (New Movie Recording, camera = the iPhone, quality Maximum), or iOS Screen Recording. Use the same method for every run of a block. Name each file by its label. Judge frames at the recording's native rate; extract them with `ffmpeg -i <file> -vsync 0 frames/%05d.png`.
+
+**Block** (protocol §5; attribution only, no timing number):
+1. Park Safari; start both servers.
+2. Uncounted warm-up: one gesture run per arm's port (B, then P).
+3. Sentinel: one uncounted Timeline-off control run, `iphone.mjs run --driver scroll --probe std --arm C` on B (bottom ≥ 58 fps, scroll ≥ 44 fps).
+4. Counted: **C V V C C V V C** = B P P B B P P B, fast variant, 8 runs (4 per arm), each with a recording.
+5. End sentinel as in 3, then park Safari.
+
+Expected time: about 15 min per block. Record the heat note and the battery temperature per run. At most 2 blocks: block 2 = the same order with the medium variant, run only when block 1 has no FAIL.
+
+**Run validity.**
+- **Void** if the recording shows no magenta frame (failed capture; Sim CAL-1 lost it once).
+- **Void** if P's `#people` is not `deferred` at the `fling` mark (its last flip before the mark), or B's `#people` is `deferred` there (past its own far edge: not the band).
+- **Void** if the gesture aborted (y < 3250) or WDA did not play the stroke.
+- A failing sentinel voids the runs since the last passing one (CLAUDE.md "Phone blocks").
+
+**FAIL** (decided from the recordings, frames from `fling` to `end`): any frame of a P run in which `#people` is on screen as a placeholder (its area painted as plain page background, no deck), when no B run of the block shows that. The same rule applies to the hero placeholder. Report the frame, scrollY (from the run's frame log) and `#people`'s un-skip time from flinglog.
+
+**Decision.**
+- Any FAIL → fwreskip does not land; back to design (for example an earlier un-skip of the pair).
+- No FAIL in 4 of 4 valid P runs in block 1 and in block 2 → item (iv) passes for G. Landing goes back to the lead with items (i) and (ii) still open for the user.
+- G inconclusive (fewer than 3 valid runs per arm, or WDA cannot play the fling) → F, below.
+
+**F fallback** (console step, through the lead).
+- Position the phone in the band with the gesture at `--param fling=no` (it stops at y ≥ 3250 and leaves the page there). Start the recording, then post:
+  - `--kind action --record`, title "fwreskip: one fast flick up through the people cards";
+  - instructions "The page is a little below the people cards. When it says swipe: flick your finger fast DOWN the screen once, so the page shoots up, and let it coast to a stop. Do nothing else."
+- One part per arm, B P P B. The recording decides FAIL by the same rule; the user's eye is a note, not the verdict.
 
 ## Risks, conflicts, follow-ups
 
