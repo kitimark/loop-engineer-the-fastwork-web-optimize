@@ -139,6 +139,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   deferred, y3047 platform-card will-change) costs ~20 ms only while #people (1327 px) is still rendered; its own re-skip
   comes only at ~y3539. Next r11 localizes the box; then fix choice (a) re-skip #people no later than the hero or (b) a
   structural change in #profile. No build until the lead has seen it.
+  00:5xZ fwreskip: r11/r12 found the box: the whole rendered profile deck relays out (~20 ms, OBSERVED, Sim); deferring
+  #people with its correct size gives ~1-2 ms on the Sim (attribution, not a gain). Lead SIGNED option (a1h): when the
+  hero far re-skips, also re-skip the next inactive deferRendering section wholly above the viewport and keep it skipped
+  until the hero un-skips (keeps today's hysteresis; our own scroll-engine code, offscreen only). Before landing:
+  geometry, A/A pixels in Chrome and Sim, Sim W Layout ≤3 ms at 2988/3047, jumps with no blank frame, a deck swipe
+  count check; no timing A/B. PROGRESS must not promise a speed-up.
+  I-051 (ts-lock-share): building option (b), a CPU-busy join check, plus a "handing over to X (gated: reason)" status
+  line; (a) keep fw-sim booted is REJECTED; the timing-gate candidate is deferred until timing resumes.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
