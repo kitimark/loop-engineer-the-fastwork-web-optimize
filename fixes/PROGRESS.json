@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T23:45:00Z",
+ "updatedAt": "2026-10-02T23:50:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And, if the heat test (P-068) shows Fastwork heats the phone more than apple.com, less work at rest so the phone stays cooler.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T23:50:00Z", "text": "The F3 robot-finger test stopped again before any counted run: the phone's check page was not smooth even on a cool phone, so this is not heat. It waits until fix-nav-morph finds the cause. The countdown timing test runs now, then the heat test." },
   { "at": "2026-10-02T23:45:00Z", "text": "Blind swipe test done: you picked today's best build as smoother than the original, at the top and in the menu change. It still lags a little; de-gpu looks at whether the GPU can take more of the work. Next on the phone: the F3 robot-finger re-run." },
   { "at": "2026-10-02T23:35:00Z", "text": "You chose the short phone timing test of the countdown fix on its own (about 20 minutes plus cooling). It runs after the F3 robot-finger re-run and before the heat test. A GPU-friendly look at the counting animation is a separate idea, kept out of that test." },
   { "at": "2026-10-02T23:30:00Z", "text": "You said yes to two phone tests: a blind swipe test of the original page against today's best build, now; and one full phone timing run of wave 2 once it is built and checked. Other timing stays paused. The F3 robot-finger test restarts after that (its first try did not count)." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T18:31:00Z", "text": "Your sitting: on the hero and at the end of the page, the best build felt quite a bit smoother than the original. Your idea that style recalculation causes the lag is now being checked by a new helper." },
   { "at": "2026-10-01T17:59:00Z", "text": "Cause found for the blinking small profiles: each time the carousel swaps a picture in or out, the whole page re-lays out (P14 on the phone). A fix that keeps the pictures in place is next, right after your sitting." },
   { "at": "2026-10-01T17:51:00Z", "text": "From your request: a tool change is being designed so that tests and simulator checks can run side by side, while timing tests keep the Mac to themselves. A reviewer now checks the waiting lock-tool changes." },
-  { "at": "2026-10-01T17:49:00Z", "text": "New rule from you: checks that need an iPhone but no timing number now run on the iPhone simulator on the Mac; the real phone stays for timing tests and your sittings. The carousel test (P14) started at 17:42 (about 30-35 min); your sitting comes next." },
-  { "at": "2026-10-01T17:20:00Z", "text": "Coming up for you: a sitting on the phone that compares the original page with today's best build (the countdown fix and F3 together)." }
+  { "at": "2026-10-01T17:49:00Z", "text": "New rule from you: checks that need an iPhone but no timing number now run on the iPhone simulator on the Mac; the real phone stays for timing tests and your sittings. The carousel test (P14) started at 17:42 (about 30-35 min); your sitting comes next." }
  ],
  "items": [
   {
@@ -84,11 +84,11 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "You allowed its phone tests (T-027 #5). The robot-finger test P-036 runs after the st6 test (ticket re-checked 22:1xZ); the blind swipe test follows it.",
+   "next": "The robot-finger test P-036 stopped before any counted run: the phone's check page was not smooth even on a cool phone and a quiet Mac. fix-nav-morph looks for the cause; the test restarts only after the lead signs a new plan. The blind swipe test follows it.",
    "owner": "fix-nav-morph",
    "checks": [
     { "id": "P-022", "what": "scripted phone block: is the y≈1960 frame gone?", "result": "yes, 4 of 4 runs" },
-    { "id": "P-036", "what": "robot-finger touch-to-scroll test", "result": "" }
+    { "id": "P-036", "what": "robot-finger touch-to-scroll test", "result": "stopped twice before counted runs: the phone's check page failed (not heat, cause unknown); waits for a page check" }
    ],
    "details": [
     "Build mw10e-arm-scope-c (JS c6d3590576a7, comment-only re-cut of 7b0d62225545): touchstart passive + touchmove non-passive on #platform and the nav header, wheel on window, all once at setup.",
@@ -443,8 +443,8 @@
   }
  ],
  "upcoming": [
-  { "title": "Short phone timing test of the countdown fix on its own", "when": "after the F3 robot-finger re-run, before the heat test (you chose this, T-024 #8)", "item": "countdown-ca" },
-  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the robot-finger test P-036 (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
+  { "title": "Short phone timing test of the countdown fix on its own", "when": "now, then the heat test; the F3 robot-finger test waits for a page check (you chose this, T-024 #8)", "item": "countdown-ca" },
+  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the robot-finger test P-036, which waits for a page check (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
   { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
  "build": {

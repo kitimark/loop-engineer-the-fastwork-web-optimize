@@ -8,6 +8,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **23:4xZ (b) df0e21f landed (2259bf1 + df0e21f; scrub OK). P-036 re-run STOPPED under the stop rule:** the hero-none
+  heat check failed on a cool phone (37.5 °C) and a quiet Mac (load 4.8), inside iphone-runner's own hold: p95 29-30 ms,
+  ~290 of 1760 frames over 20 ms, 3 records. Not heat; OBSERVED, cause unknown. No counted runs. fix-nav-morph
+  explains the failure and the lead signs a plan before P-036 is requeued. Phone order now: X1 stage 2 (de-countdown
+  has the lease) → P-036 (after the page check + signature) → P-068. Board f3-arm-scope researching, waiting on
+  fix-nav-morph. PROGRESS: f3-arm-scope next + P-036 check result, upcoming reordered (X1 stage 2 now), user line
+  23:50Z. Log the explanation on the P-036 row when fix-nav-morph sends it.
 - **23:4xZ C-026 blind swipe (T-031 #3 a) answered 23:41Z:** original (O, 4606120cf392/27776f3d4138) vs st6-rb2
   (B, 7bf7c4657d21/f523598b2a24), coin page1 = O; the user picked page 2 = **B smoother**: the hero and the nav morph
   quite a bit smoother than the original; still a little laggy (the user's guess: CPU work) and asks de-gpu whether
