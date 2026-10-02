@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T09:00:00Z",
+ "updatedAt": "2026-10-02T09:06:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -150,7 +150,7 @@
    "fixes": "All of today's candidate fixes together: the countdown fix, the panel fix, the card reveal fix and F3.",
    "felt": { "answer": "better", "text": "Your own look on the phone (not blind): on the hero and at the end of the page, B felt quite a bit smoother than the original." },
    "gate": "Each part still needs its own phone test and review before it can land; the combined build is a preview.",
-   "next": "The slower frame as the people section comes in comes from the card blur easing, not the carousel fix (seen in the Simulator, not yet on the phone). A short proposal with a few ways to fix it comes to you next, so you can pick.",
+   "next": "You have the proposal (PR-003) with three ways to fix the slower frame at the people section; option A is recommended. Pick one there.",
    "owner": "iphone-runner (builds), lead",
    "checks": [],
    "details": [
@@ -162,7 +162,8 @@
    "08:3xZ S1 final: pooled primary (scroll dt>34) NO-WIN, p 0.162, threshold-sensitive (dt>30 WIN); idle dt>34 WIN (block 1); scroll dt>50 block 2 +1.5, pooled +1 (P-059 edge HIT). Block 2 ran at Mac load1 up to 96, scroll phase ~250 ms longer in both arms (OBSERVED). Next: the blind swipe pair C-019 (user priority, T-017).",
    "08:34Z C-019 answered: blind pick = V (stack5) over C (RB), rated 3/5; user: better, still a bit laggy. iphone-runner: V's worst frame at the #people entry 66-75 ms vs C 48-57 (no overlap, OBSERVED). wi-stack runs a Simulator leave-one-out (V without st6, V without blur-cubic).",
    "08:4xZ remaining-lag map of stack5 (wi-stack, files only; user T-017): #people frame 2 is the only V regression (+299 ms over 8 runs); three rows of unknown cause get one combined Simulator check each. Then one proposal lets you pick the order.",
-   "08:5xZ leave-one-out (wi-stack, Simulator, OBSERVED): blur-cubic carries the #people frame-2 Composite cost, not st6; details pending. wi-stack posts the design as one proposal with options A/B/C."
+   "08:5xZ leave-one-out (wi-stack, Simulator, OBSERVED): blur-cubic carries the #people frame-2 Composite cost, not st6; details pending. wi-stack posts the design as one proposal with options A/B/C.",
+   "09:0xZ PR-003 posted (wi-stack): three options for the #people frame-2 cost of blur-cubic, A recommended."
    ]
   },
   {
@@ -197,7 +198,7 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "You accepted it (06:31Z): pick the best-performing option, a little pixel difference is fine. Five ways to draw the hero's accent word are being built and will be compared on the real iPhone in two blocks, after the current phone test. Then the pick comes back to you.",
+   "next": "First phone round: of the image-based ways, the one-picture-per-frame way did best, but none drew the word with fewer slow frames than today's version (2 runs each); two of them made the word pause mid-stroke. The second round (video and a lighter variant) is next.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
    "checks": [],
    "details": [
@@ -207,7 +208,8 @@
     "02:1xZ live FAILURE on WebKit (OBSERVED, Sim, Timeline off): each canvas draw gets only 2-8 rAF ticks, then none until the 900 ms end timer (word freezes, then jumps). 71/71 and 142/142 parity held only on a stopped clock (render(t) flushes via getImageData): live playback NOT pixel-identical. Per-draw counts (SVG ~58 vs canvas ~5 recalcs) are distorted by the stall: never quote as savings. Cause UNRESOLVED (hypothesis: GPU-process readback, accelerated ImageBitmap into a willReadFrequently canvas). Next: Sim hold, 4 variants + SVG rAF control. Rev 2 on hold.",
     "02:3xZ 4 variants (OBSERVED, Sim): none ticks every frame; the whole page's rendering updates stop 1-2 s per canvas draw; SVG control in the same session clean at 54 ticks/draw; no errors; apply() 0-1 ms/tick; GPU-readback hypothesis unsupported. Next ~2 min hold: (a) engaged, nothing drawn; (b) one drawImage per tick; (c) SVG hidden, no canvas; (d) minimal standalone canvas page, no Fastwork code (Sim artifact vs our page). Then rev 2 whatever the outcome; likely parked pending a phone check.",
     "02:4xZ PR-001 rev 2 posted (state: proposed rev 2): frozen frames exact (142/142); live playback stalls in the Sim and on a minimal page with no Fastwork code, so the Sim cannot judge it. Parked for a phone check, not withdrawn; no savings claimed. User decides: approve the phone check (arm 1 tiles + arm 2 one-copy-per-frame, test only, ~83 MB ESTIMATE) or withdraw. de-illusion-style finished: 186fb5b (README, patch.diff, standalone page), not a land request yet; void list in README; F-120 (query-flag pitfall).",
-    "06:4xZ PR-001 rev 2 ACCEPTED (user 06:31Z: all OK, a bit of pixel difference acceptable, best performance wins). Arms C, F1 tiles, F2 one-copy (memory-limited), F3 middle layout, V HEVC-alpha video, B visible copy only; P-058 before data; phone blocks A (C F1 F2 F3) and B (C V B), then rev 3 with the pick. Phone timing lifted for PR-001 only (T-006 #22)."
+    "06:4xZ PR-001 rev 2 ACCEPTED (user 06:31Z: all OK, a bit of pixel difference acceptable, best performance wins). Arms C, F1 tiles, F2 one-copy (memory-limited), F3 middle layout, V HEVC-alpha video, B visible copy only; P-058 before data; phone blocks A (C F1 F2 F3) and B (C V B), then rev 3 with the pick. Phone timing lifted for PR-001 only (T-006 #22).",
+   "09:0xZ PR-001 block A (C F1 F2 F3, W driver, 8/8 valid, load1 > 8 in runs 1-7 flagged): F2 the best canvas arm, but no frame gain over the SVG on the phone (n=2); F1 and F3 freeze mid-stroke. Recordings dropped (user T-018); the live visual look waits on the user. Block B (C V B) next, not gated."
    ]
   },
   {

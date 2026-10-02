@@ -8,6 +8,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## START HERE, mgmt-ops-7 (written by mgmt-ops-6, 10-02 09:0xZ; the dated log below has the detail)
 
+mgmt-ops-6 FINAL (09:1xZ, ~60 % context): main carries every ops commit up to this one. G1b second read (d57b9a1)
+PASS with one pre-data fix asked: add the lead's stroke-fidelity gate (G run void if any stroke > ±10 % off plan) to its
+run validity; cosmetic: minutes per block, a dated P-060 amendment naming P2b b4ff6ec56cc2 / snap-g1b2. Check the
+owner's next commit for these before G1b takes the phone. Then any rerun of T-011 or P-058.
+Board rows `ops`, `phone-queue`, `fwreskip`, `best-stack` and `phone-stack-test` are current as of 09:0xZ.
+
 - **Top rules, newest first.**
   - NO CAMERA (T-018): no QuickTime movie recording, no camera capture API, no camera device listing. Recordings are
     suspended until the user approves a route. The session log is kept as evidence (user T-018 #5, 09:02Z; not deleted).
@@ -16,14 +22,15 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   - Phone cooling = `wait.mjs phone-temp --below auto`.
   - Quiet window for S/W/M = preferred, not blocking.
   - Timing stays deferred, except PR-001 (phone) and the finished stack test.
-- **Phone order.** Posted user steps jump the queue. Then:
+- **Phone order** (lead 09:1xZ). Posted user steps jump the queue. Then:
   (1) PR-001 block B (iphone-runner; no recordings; not gated);
-  (2) G1b (fix-scroll-engine; in-page flash only; review-fwreskip-3 first);
-  (3) T-011 (fix-scene-scope RBi40pti, 06d2290; it has ended, the lead resumes it);
-  (4) T-009 curve;
-  (5) I-042 check.
+  (2) G1b (fix-scroll-engine d57b9a1, snap-g1b2 P2b JS b4ff6ec56cc2; second read PASS pending the stroke-fidelity line);
+  (3) PR-003 option A's block, if the user picks A;
+  (4) T-011 (fix-scene-scope RBi40pti, 06d2290; it has ended, the lead resumes it);
+  (5) T-009 curve;
+  (6) I-042 check.
   The visual look at the PR-001 winner and any capture route WAIT ON THE USER. The lead posts these in T-018 together
-  with the ioscap account (iphone-runner's old AVFoundation capture binary from 10-01, pending) and the options:
+  with the ioscap account (iphone-runner's old AVFoundation capture binary from 10-01; sent in T-018 #7) and the options:
   (a) USB screenshots, (b) the user's own phone screen recording, (c) drop.
 - **Top investigation (T-017).** stack5's remaining lag.
   - wi-stack built a files-only map: #people frame 2 is the only V regression, and the Sim leave-one-out puts it on
@@ -433,6 +440,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   were in (before analysis): disclosed, rev 3 names it. BLOCK B NEXT, NOT GATED (lead correction): runs without
   recordings once iphone-runner has done tlcounts, the rebase and cooling. Only the live visual look at the winner and
   any capture route (screenshots over USB / the user's own phone screen recording / drop) WAIT ON THE USER.
+  09:1xZ ae7189d LANDED. T-018 #7: the ioscap account went to the user (built 10-01; requested camera permission twice,
+  denied; listed external devices only (the iPhone), never the Mac camera; no frame; source on main at
+  research/architecture/oss-rendering-libs/ioscap.swift, removal is the user's call). PR-001 BLOCK A RESULT: F2 is the
+  best canvas arm, but no frame gain over the SVG on the phone (n=2); F1 and F3 freeze mid-stroke. PR-003 POSTED
+  (wi-stack, 3 options for the blur-cubic #people cost, A recommended).
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
