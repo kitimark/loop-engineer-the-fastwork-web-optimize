@@ -8,6 +8,28 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **11:4xZ I-042 phone check done from G1b data; P-064 issued (G2); P-060 measured.**
+  - **I-042 phone check** (iphone-runner, from G1b's data, no block of its own): G strokes play faithfully within
+    ±10 % on a quiet Mac. 23 G runs (16 counted, 4 warm-ups, 3 voided); the 20 kept runs have 160 strokes, all 8/8
+    delivered, +1.5 to +10.5 % against the planned contact time (median +4.7 %); every stroke ran long, none short or
+    dropped; only one over +10 % (an uncounted warm-up, +10.5 %). The 3 voided runs (+12.5, +13.0 % at Mac load1 26-62;
+    +11.0 % at load1 12.5 falling to ~7) were re-run valid at load1 6-7. The overshoot grows with Mac load (OBSERVED in
+    our setup, cause unknown; likely Mac-side driver timing, not checked). Notes stay in iphone-runner's worktree
+    (out/iphone-runner/i042-phone-check.md, not committed).
+  - **P-064** = fix-scroll-engine, phone ticket G2 (P2-1): V = S6P2b (st6-rb + fwreskip P2b, JS ad7f029e43c6) vs C = S6
+    (JS 59b23b3f57fd), CSS d22542d0b5f8 both; W driver 2600 -> 3400, hold 3 s; counts >50 / >34 (+ twins) in the band
+    y [2950, 3250] and the 3 s hold. Predicted no gain (C band max <= 38 ms in >= 3/4; band >50 0-1 per arm; V's hold
+    >= 1 frame >34 in >= 3/4). Falsified if C's band has >= 2 frames >50 over 4 runs that V lacks. Decision: (A) only
+    if V has fewer >50 in band + hold AND V's >34 <= C's; otherwise (B) drop fwreskip (mixed: (B) with the trade shown
+    to the user). Ticket draft: fwreskip README "Phone ticket G2" at 1e845ee, awaiting the lead's second read; not queued.
+    The row lives on fix-scroll-engine's branch until it lands (like P-057, P-060).
+  - **P-060 measured** (G1b, fwreskip README "G1b result"): rest arm all hit (flip before the mark 4/4; no long fling
+    frame; idle un-skip frame >34 4/4, >50 2/4 (55, 54) vs B 0/4; falsifier (c) not triggered). No-pause arm: the
+    un-skip still fired in idle 4/4 (the WDA fling starts ~800 ms after its mark, so "inside the fling" can't be tested
+    with G); frames 54/44/51/54 vs B 15-18: >50 3/4, >54 0/4, threshold-sensitive. Lesson: the pair forms during the
+    last stroke, so the timer fires at the start of the rest (the ticket's "between strokes" guess was wrong).
+  - iphone-runner also confirms: G1b no-pause block done 10:33Z (data to fix-scroll-engine); T-011 done 10:58Z; C1
+    done 11:12Z; T-009 cooling curve running.
 - **11:3xZ C1 confirmed (81dbc9b); shell-hold-c in the best build; I-064 open.**
   - **C1** (wi-stack, scored on iphone-runner's block, 8/8 runs valid): spot (c) frame S6 37 -> HC 17 ms (median, 4 runs each,
     no overlap); the reveal and scroll guards hold; P-063 hit. Caveat: the page-wide scroll >34 count is unchanged (8 vs
@@ -155,7 +177,8 @@ Board rows `ops`, `phone-queue`, `fwreskip`, `best-stack` and `phone-stack-test`
   - Ended: fix-scene-scope (done until T-011), ts-i054, ts-i053 (once I-053/055/057 resolved).
   - Directory rows below that are older than 10-02 06:00Z are unverified.
 - **Open incidents.** I-056 only (ts-i056). I-053/054/055/057/058 are resolved.
-- **P-ids.** The next free id is P-062 (P-059 wi-stack, P-060 fix-scroll-engine G1b, P-061 fix-scene-scope T-011).
+- **P-ids.** The next free id is P-065 (P-059 wi-stack, P-060 fix-scroll-engine G1b, P-061 fix-scene-scope T-011,
+  P-062 wi-stack A1, P-063 wi-stack C1, P-064 fix-scroll-engine G2).
 - **Mechanics.**
   - PROGRESS.json: targeted Python replacement; the old JSON string must match exactly once. next/gate ≤ 300 chars,
     details ≤ 600. Bump `updatedAt` to the real `date -u`, never ahead.
