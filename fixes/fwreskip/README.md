@@ -3,10 +3,10 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** variant (a), rev 2.1, after review 2 NEEDS-WORK. The functional and pixel checks ran in both engines (below). **Landing waits on a phone G or F check (item iv): touch effects need G/F before landing (protocol), and the phone is unplugged.** Four items are open for the user, none waived:
+**Status:** variant (a), rev 2.1, review 2 recheck ACCEPT (README and data). The functional and pixel checks ran in both engines (below). **Landing waits on a phone G or F check (item iv): touch effects need G/F before landing (protocol), and the phone is unplugged.** Two items are open for the user, none waived: (i) and (ii). (iii) is closed by the lead's decision; (iv) is the landing gate:
 - **(i) Chrome first-jump frame.** P's first frame after the first jump of a load differs from B by 182-603 px, max channel delta 4, in rounded corners (row 5f).
 - **(ii) Up-pass Layouts on a reversal (Sim).** Going up, P had a Layout with no initiator in 3 of 6 runs, B in 0 of 6, A/A in 2 of 6 (row 3r). Two of P's sit at or just after `#people`'s un-skip (2927, 2951), where only P un-skips anything. Likely caused by that extra un-skip; n=6, cause unknown.
-- **(iii) Sim idle.** Over 4 windows per arm per spot (B P A A P B), P's medians lie inside B's and A/A's ranges, except two at the reversal spot, by 0.1/s up (Layout) and 1/s down (Paint). One P window at y0 is high, where all builds run the same code (row 8, "Idle"). Kept open for the user.
+- **(iii) Sim idle: closed (lead's decision), no idle cost found** (n=4 windows from 2 holds per arm, with A/A). P's medians lie inside B's and A/A's ranges, except two at the reversal spot, by 0.1/s up (Layout) and 1/s down (Paint). One P window at y0 is high, where all builds run the same code (row 8, "Idle").
 - **(iv) Finger fling up through the band (iOS), UNRESOLVED.** Our probes cannot see it; the decisive check is a phone G or F fling up from the band with a recording, B vs P (below).
 
 Condition 5 (no skipped section on screen) is met in every run where the baseline meets it. No timing A/B: timing is deferred by the user's direction. Simulator Timeline ms are attribution only, never a gain.
@@ -158,7 +158,7 @@ Holds v6-v19 and c5-c12 are on the rev 2 build (`96b876639c84`), except v6, whic
 | 6 | deck swipe after scrolling back up (Sim v13, Chrome c12; rev 2) | active shell 0→1, 1 active shell, scrollLeft 0→390 (Sim) / 0→392 (Chrome) | same | same | **pass** |
 | 7 | invariant scenarios, Chrome c9 + c11 (XB=3771): W up 3771→3200; touch fling up 1600 px; J3 end→0; J4 end→`#people`; J4w (end reached by W steps); reload at 3771, then W up | FAIL 0 except J4/J4w (FAIL 1, positive control); sync 0 | FAIL 0 except J4w (FAIL 1, as B); **sync 0 in every scenario** | as B | **pass**, but after the reload the hero came back rendered in P and A (F-119), so the paired state was **not exercised after a reload** |
 | 7s | same on Sim v10: W up 3100→2500; smooth `scrollBy(-1600)` from 3100; J3; J4 | FAIL 0 except J4 (FAIL 1); sync 0; heroPH 1 on J3/J4 | identical counts; sync 0 | | **pass** |
-| 8 | idle, 10 s windows per spot (Chrome c10, n=1, B and P: bootstrap counters + MutationObserver; Sim v14-v19, 4 windows per arm per spot, B P A A P B: Timeline record counts + MutationObserver) | see "Idle" | | | **open (iii)** for the user: Chrome identical; on Sim no P-specific increase over B and A/A (two medians outside the B/A range at the reversal spot, by 0.1/s and -1/s) |
+| 8 | idle, 10 s windows per spot (Chrome c10, n=1, B and P: bootstrap counters + MutationObserver; Sim v14-v19, n=4 windows from 2 holds per arm per spot, B P A A P B: Timeline record counts + MutationObserver) | see "Idle" | | | **closed (iii)**, lead's decision: no idle cost found. Chrome identical; on Sim no P-specific increase over B and A/A (two medians outside the B/A range at the reversal spot, by 0.1/s and -1/s) |
 
 ### Open item (i): the first-jump frame in Chrome
 
@@ -205,7 +205,7 @@ Rev 2's row 3r counted v7 as 2 / 3 / 3 (B / P / A): it placed v7's `#platform` L
 - **The difference is the no-initiator Layouts:** P in 3 of 6 runs, B in 0 of 6, A/A in 2 of 6. By position:
   - P v7 (2927) and P1 v11 (2951) sit at or just after `#people`'s un-skip (2954, and the same frame at 2951). Only P un-skips anything there. **Likely caused by that extra un-skip; n=6, cause unknown.**
   - P1 v18 (2677) and both A/A ones (2718, 2743) come 37-80 px after the hero un-skip, where every arm does the same work. B has none there in 6 runs; A/A has the same code as B, so this one is not attributed to the patch.
-- It is reported as a possible cost of the fix on reversals: one ~20 ms Layout near 2930-2950 going up, in 2 of 6 runs. Against it, going down, P saves two ~18 ms Layouts at the hero end in every first descent (6 of 6).
+- It is reported as a possible cost of the fix on reversals: one ~20 ms Layout near 2930-2950 going up, in 2 of 6 runs. Against it, going down, P has no hero-end Layout records in every first descent (6 of 6; B: 2, of about 18 ms each).
 
 Per-250 px counts of Layouts ≥ 3 ms (`tools/bins.mjs`, v7 + v11 only). These include unrelated work (countdown DOM updates `before<mi:2188`, `#platform` scene), so only the event rows above are attributable:
 
@@ -235,7 +235,7 @@ Chrome c10 (per second; io/ro = observer callbacks, wAttr/wCls/wProp = attribute
 
 Chrome c10 is one window per arm, B and P only.
 
-Sim v14-v19 (review 2): Timeline records per second between two marks, plus MutationObserver counts. Four 10 s windows per arm per spot (two per hold), arms over the six holds B P A A P B. Median [min-max] per second (`tools/idlesum.py`, logs `vres-v14.log` … `vres-v19.log`):
+Sim v14-v19 (review 2): Timeline records per second between two marks, plus MutationObserver counts. n=4 windows from 2 holds per arm per spot: two 10 s windows per hold, back to back, so the windows within a hold are phase-paired; arms over the six holds B P A A P B. Median [min-max] per second (`tools/idlesum.py`, logs `vres-v14.log` … `vres-v19.log`):
 - The bootstrap script does not survive WebKit's reload (v12, `boot false`), so the Sim run has no per-callback wrappers and no reload; the Timeline types stand in for them.
 - The paired state is reached at the band spot: P logs `people:d` there, B and A `people:a`. At the reversal spot (2850) `#people` is rendered in every arm.
 
@@ -262,9 +262,9 @@ Sim v14-v19 (review 2): Timeline records per second between two marks, plus Muta
 
 - Every P median lies inside the range of B's and A/A's eight windows at that spot, for every type logged (the full list is in `idlesum.py`'s output), except two at the reversal spot: Layout 20.8 vs at most 20.7 (+0.1/s) and Paint 25.4 vs at least 26.4 (lower). At that spot `#people` is rendered in every arm.
 - One P window at y0 is high (rAF 35.5, FunctionCall 87.1, mut style 82.3). At y0 all builds run the same code, and the other three P windows sit with B and A/A.
-- In the band, where P has `#people` skipped, the spread inside each arm is large (Paint 58-79 in every arm), and the three medians agree within 1-5 %. The v12 single window (P Paint 78.5 vs B 63.8, +23 %) fits inside that spread: it was window noise.
+- In the band, where P has `#people` skipped, the spread inside each arm is large (Paint 58-79 in every arm), and the three medians agree within 1-5 %. Window for window, P and B match: band Paint P 75.9 / 79.3 vs B 78.0 / 77.6 in the first window of each hold, 59.3 / 58.5 vs 59.0 / 58.3 in the second. So v12's single-window +23 % (P Paint 78.5 vs B 63.8) was a phase mismatch between the two windows, not a P cost.
 - IO callback rates are equal in every arm at every spot. No new observer callbacks or attribute writes appear in P, in either engine.
-- The user decides item (iii); n=4 windows per arm per spot, attribution only.
+- Item (iii) is closed by the lead's decision: no idle cost found (n=4 windows from 2 holds per arm, with A/A; attribution only).
 
 ### Sim capture calibration
 
