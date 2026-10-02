@@ -183,6 +183,13 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   page). Then rev 2 whatever the outcome; likely parked pending a phone check.
   BOARD HYGIENE (lead, standing): when the lead lands a tool or fix branch, ops sets its board row to landed in the same
   pass as the handover entry (I-051 lock-share and I-052 rows sat at ready-to-land after landing).
+  02:4xZ PR-001 REV 2 POSTED to the console (state: proposed rev 2). Frozen frames exact (142/142); live playback stalls
+  in the Sim, and so does a minimal page with no Fastwork code, so the Sim cannot judge it. Parked for a phone check, NOT
+  withdrawn; no savings claimed. The user decides: approve the phone check (arm 1 tiles + arm 2 one-copy-per-frame, test
+  only, ~83 MB ESTIMATE) or withdraw; the lead's wait on the decision is armed. de-illusion-style FINISHED: 186fb5b on
+  worktree-agent-afc7d9fff1fcc6154 (README, patch.diff, tools/standalone.{html,js}; test:unit 555/555); not a land
+  request yet, it waits on the user's decision; void list in its README; finding F-120 (query-flag pitfall). If
+  approved, the phone check joins the phone backlog as (f) (the phone is still unplugged).
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
