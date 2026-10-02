@@ -184,6 +184,7 @@ const iso = (t) => new Date(t).toISOString();
 export const hostAlertsFile = () => join(lockDir(), 'host-alerts.log');
 /** One JSON line per chrome-measure `lock.mjs run` hold: display / wake / assertion at its start and end (T8+, I-033). */
 export const holdsLogFile = () => join(lockDir(), 'holds.log');
+export const GATE_REAP_TRIES = 2; // review-i063 n1: failed warm-Simulator shutdowns at the host gate before its wait ends (WAIT)
 const GATE_FRESH_MS = 60000; // a waiter's gate record counts as "waiting for quiet" while refreshed within this
 // Incident I-020 (research/architecture/tools-speed.md #1): a normal *lease* on chrome-measure holds the
 // Mac between an agent's turns (one sat idle 4 min of a 40-min lease). Measure in one process hold
@@ -622,7 +623,7 @@ function gateHolding(w, now, T = THRESHOLDS) {
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, sharedHeld, load1, ncpu, busyPct, awake } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, sharedHeld, load1, ncpu, busyPct, awake, simWarm } = opts;
   let { ttlSec, queueTtlSec = 600, short = false } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
   if (noTiming && short) throw new Error('--no-timing is for normal holds (builds, CPU work); a short job passes the host gate already');
@@ -733,7 +734,7 @@ export async function tryAcquire(r, opts) {
         // I-070 (user C-024): a measurement hold keeps the Mac awake (lib/awake.mjs keepAwake): a timing hold by itself, a
         // --no-timing one only when the caller says it wraps a phone part or a Simulator session (`awake`)
         ...(awakeHold(r, { short, shared, noTiming, awake }) ? { awake: true } : {}),
-        ...(gateRec ? { gate: gateRec, ...(gateRec.timeout ? { gateTimeout: true } : {}) } : {}),
+        ...(gateRec ? { gate: { ...gateRec, ...(simWarm ? { simWarm } : {}) }, ...(gateRec.timeout ? { gateTimeout: true } : {}) } : {}), // review-i063: the gate's Simulator reap
       };
       if (gateRec?.timeout) { try { appendFileSync(hostAlertsFile(), JSON.stringify({ at: h.acquiredAt, resource: r, owner, event: 'gate-timeout', ...gateRec }) + '\n'); } catch {} }
       writeJson(holderFile(r), h);
@@ -965,7 +966,11 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
   // review-i063 N1: a warm Simulator (I-063) is Mac load: at the gate it counts as not quiet and is shut down (at most
   // every 30 s; sim.mjs shutdown --warm-only, under the simulator lock) unless its live keeper does that first, so every
   // timing hold settles without it. The grant carries the gate's last attempt as `simWarm` (verify.mjs records it).
-  let gateWarm = null, gateReapAt = 0, gateWarmSince = 0;
+  // review-i063 n1: a shutdown that fails twice at the gate ends this wait (dequeued, a WAIT error), instead of holding
+  // every queued timing job behind a closed gate until gateMaxWaitSec; n3: a failed attempt that the keeper (or a
+  // session) resolved later is annotated `resolvedLater`; the gate record of the grant carries it (`gate.simWarm`), so
+  // a tool that re-enters this hold (lock.mjs run -- sh -c 'fix.mjs ab ...') records it too
+  let gateWarm = null, gateReapAt = 0, gateWarmSince = 0, gateReapFails = 0;
   const myEntry = shared ? (w) => (!!w.shared || !!w.functional) && (kind !== 'process' || w.pid === process.pid) : (w) => !w.shared;
   for (;;) {
     if (cpuBase && Date.now() - cpuBase.at >= busyWindowMs) {
@@ -973,7 +978,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       if (b !== null) busyPct = b;
       cpuBase = { at: Date.now(), t };
     }
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, maxSec, held, sharedHeld, host, thresholds: T, noTiming, awake, busyPct });
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, maxSec, held, sharedHeld, host, thresholds: T, noTiming, awake, busyPct, simWarm: gateWarm });
     // a queued or gated waiter keeps nothing awake (I-070, user C-024: only measurements; I-026's queue assertion is gone)
     if (res.gated) {
       // our turn, but the host is not (known to be) quiet: measure one window, then try again at once
@@ -985,13 +990,20 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       const sw0 = r === 'chrome-measure' ? warmSummary() : null;
       if (!sw0) gateWarmSince = 0; else gateWarmSince ||= Date.now();
       // a live keeper shuts it down itself on seeing this waiter (2 s polls): the gate acts only for a dead or late one
-      if (sw0 && (!sw0.keeperAlive || sw0.stale || Date.now() - gateWarmSince >= 30000) && Date.now() - gateReapAt >= 30000) {
+      const reapMs = Number(process.env.FW_SIM_GATE_REAP_SEC || 30) * 1000;
+      if (sw0 && (!sw0.keeperAlive || sw0.stale || Date.now() - gateWarmSince >= reapMs) && Date.now() - gateReapAt >= reapMs) {
         gateReapAt = Date.now();
         gateWarm = await reapWarm({ reason: 'the host gate of a timing hold', by: owner });
-        if (gateWarm) log(`[lock ${r}] a warm Simulator (fw-sim) at the host gate: ${gateWarm.action}${gateWarm.ok ? '' : ` (${gateWarm.error || '?'}); the gate stays closed while it is booted`} (I-063)`);
+        gateReapFails = gateWarm && !gateWarm.ok ? gateReapFails + 1 : 0;
+        if (gateWarm) log(`[lock ${r}] a warm Simulator (fw-sim) at the host gate: ${gateWarm.action}${gateWarm.ok ? '' : ` (${gateWarm.error || '?'}); attempt ${gateReapFails} of ${GATE_REAP_TRIES}`} (I-063)`);
+        if (gateReapFails >= GATE_REAP_TRIES) {
+          await dequeue(r, owner, myEntry);
+          throw new Error(`[lock ${r}] WAIT: a warm Simulator (fw-sim) is booted and its shutdown failed ${gateReapFails} times at the host gate (${gateWarm.error || '?'}): nothing timed starts beside it, so this wait ends (dequeued); node tools/sim.mjs doctor --fix (or shutdown), then retry (I-063)`);
+        }
       }
       host = await gateSample({ thresholds: T, samplers: hostSamplers }); // its sleep is summed by tryAcquire (I-033)
       const sw = r === 'chrome-measure' ? warmSummary() : null;
+      if (!sw && gateWarm && !gateWarm.ok && !gateWarm.resolvedLater) { gateWarm = { ...gateWarm, resolvedLater: new Date().toISOString() }; gateReapFails = 0; }
       if (sw) host = { ...host, quiet: false, reasons: [...(host.reasons || []), `a warm Simulator (fw-sim) is ${sw.stale ? 'recorded' : 'booted'} on the Mac (I-063${gateWarm && !gateWarm.ok ? `; its shutdown failed: ${gateWarm.error || '?'}` : ''})`] };
       sleptLast = !!host.sample?.suspended;
       if (sleptLast) gateSleptMs += (host.sample.sleptSec || 0) * 1000;

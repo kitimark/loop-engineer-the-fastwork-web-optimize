@@ -651,6 +651,9 @@ export async function shutdownWarm({ reason, by = 'sim', id = null, waitSec = 60
   try {
     const w = readWarm();
     if (id && (!w || w.id !== id)) return { done: false, why: 'superseded: the warm record changed (a session took the device over)' };
+    // review-i063 n2: the record went while this call waited for the lock (the keeper or another reap won the race):
+    // nothing of ours to shut down, and no "stale record" to report
+    if (!w) return { done: false, gone: true, why: 'the warm record was removed before this shutdown got the simulator lock (the keeper or another shutdown did it)' };
     const live = liveSession();
     if (live) return { done: false, why: `a live session (pid ${live.pid}, owner "${live.owner}") owns the device` };
     const cfg = readConfig();
@@ -679,7 +682,8 @@ export async function shutdownWarm({ reason, by = 'sim', id = null, waitSec = 60
 export async function keeper({ id, pollMs = Number(process.env.FW_SIM_KEEPER_POLL_MS || 2000), checkMs = Number(process.env.FW_SIM_KEEPER_CHECK_MS || 30000), log = console.log } = {}) {
   if (!id) throw new Error('usage: node tools/sim.mjs keeper <warm id> (started by sim.mjs session)');
   const own = () => { const k = readJson(pidFile('keeper'), null); return k && k.pid === process.pid; };
-  let lastCheck = Date.now();
+  let lastCheck = Date.now(), fails = 0, retryAt = 0;
+  const retryBaseMs = Number(process.env.FW_SIM_KEEPER_RETRY_MS || 5000);
   // review-i063 N7: a shutdown that keeps failing (or a lock that stays busy) is retried every poll, but each distinct
   // line is logged once (seconds normalized), so keeper.log does not grow by a line every 2 s
   const seen = new Set();
@@ -698,10 +702,13 @@ export async function keeper({ id, pollMs = Number(process.env.FW_SIM_KEEPER_POL
         try { st = deviceState(w.udid); } catch {}
         if (st !== undefined && st !== 'Booted') why = `fw-sim is ${st ?? 'gone'} (shut down outside the keeper)`;
       }
-      if (why) {
+      if (why && Date.now() >= retryAt) {
         const r = await shutdownWarm({ reason: why, by: 'keeper', id, waitSec: 0, fromKeeper: true, log: once });
         if (r.done) return 0;
         once(`keeper ${id}: ${why}, but not now: ${r.why}`); // keep polling: a failed shutdown is retried
+        // review-i063 n1: a `simctl shutdown` that failed is retried with back-off (5 s, 10 s, ... up to 5 min), not
+        // every poll; a busy simulator lock (a session, a reap) is no failure and is retried at the next poll
+        if (r.failed) { fails++; retryAt = Date.now() + Math.min(retryBaseMs * 2 ** (fails - 1), 300000); } else retryAt = 0;
       }
       await sleep(pollMs);
     }

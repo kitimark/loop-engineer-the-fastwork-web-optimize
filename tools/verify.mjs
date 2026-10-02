@@ -661,14 +661,17 @@ async function main() {
     ({ holder: lockHolder, simWarm: gateWarm = null } = await acquire('chrome-measure', { owner: opt('owner', process.env.FW_LOCK_OWNER || checkoutId()), kind: 'process', meta: { cmd: 'verify', targets: targets.map((t) => t.label + '=' + t.url), cpu: CPU, runs: RUNS, viewport: vpSel, idle: IDLE } }));
   }
   // the lock's host admission gate (tools/lib/lock.mjs): how this hold (or the outer one we re-entered) was granted
-  const gate = lockHolder?.gate ? { ...lockHolder.gate, gateTimeout: !!lockHolder.gateTimeout } : null;
+  // (its Simulator reap, gate.simWarm, is recorded as host.simWarm below, not twice)
+  const { simWarm: holdWarm = null, ...gateRest } = lockHolder?.gate || {};
+  const gate = lockHolder?.gate ? { ...gateRest, gateTimeout: !!lockHolder.gateTimeout } : null;
+  gateWarm ??= holdWarm;
   // I-063 (MEASUREMENT CODE, before the first run only): a warm Simulator (fw-sim kept booted between sim sessions) is
   // normally shut down by its keeper as soon as this hold queues; if it is still booted (keeper dead or late), shut it
   // down now (under the simulator lock, never a live session's device): the first run's host recheck then waits for
   // quiet as usual. Recorded as host.simWarm; nothing happens and nothing is recorded without a warm device.
   // review-i063 B2: if the shutdown failed, verify measures nothing (WAIT, exit 1; the lock is released on exit).
   // review-i063 N1: the host gate (lib/lock.mjs) shuts one down before the grant; its attempt is recorded when this
-  // hold found nothing more (gate: true; a hold re-entered from `lock.mjs run` does not see the outer gate's attempt)
+  // hold found nothing more (gate: true; also the outer hold's gate when this one re-entered a `lock.mjs run`)
   const ownWarm = await reapWarm({ reason: 'verify.mjs timing hold', by: 'verify' });
   const simWarm = ownWarm ?? (gateWarm ? { ...gateWarm, gate: true } : null);
   if (ownWarm) console.log(reapNote(ownWarm, 'this verify hold'));

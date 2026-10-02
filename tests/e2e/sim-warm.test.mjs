@@ -7,7 +7,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, statSync, chmodSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, run, tool, freePort, TESTS, sleep } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, runAsync, run, tool, freePort, TESTS, sleep } from '../helpers.mjs';
 
 const SIM = tool('sim.mjs'), LOCK = tool('lock.mjs'), VERIFY = tool('verify.mjs');
 const FX = (n) => join(TESTS, 'fixtures', n);
@@ -300,6 +300,15 @@ test('I-063 verify.mjs (MEASUREMENT CODE: before the first run only): the host g
   assert.match(r.stdout, /NOTE: the host gate of this hold found a warm Simulator \(fw-sim\): shut down, before the grant \(I-063; recorded as simWarm\)/);
   assert.deepEqual([result(1).host.simWarm.action, result(1).host.simWarm.ok, result(1).host.simWarm.keeperAlive, result(1).host.simWarm.gate], ['shut down', true, false, true]);
   assert.equal(device().state, 'Shutdown');
+  // (1b) review-i063: verify re-entering an outer lock.mjs run hold (the usual sh -c 'fix.mjs ab' path) records that
+  // hold's gate reap from the holder's gate record (gate.simWarm), once (not again under host.gate)
+  devSet({ state: 'Booted' });
+  writeFileSync(join(simDir(), 'warm.json'), JSON.stringify(warmRec()));
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'v', '--', process.execPath, VERIFY, ...args(5)], { env: e, timeout: 120000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /NOTE: the host gate of this hold found a warm Simulator \(fw-sim\): shut down, before the grant/);
+  assert.deepEqual([result(5).host.simWarm.action, result(5).host.simWarm.ok, result(5).host.simWarm.gate, 'simWarm' in (result(5).host.gate || {})], ['shut down', true, true, false]);
+  assert.equal(device().state, 'Shutdown');
   // (2) a warm device that appears inside the hold (after its gate): verify's own backstop before the first run
   const inHold = (n, o) => nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'v', '--', 'sh', inHoldScript([process.execPath, VERIFY, ...args(n)], o)], { env: e, timeout: 120000 });
   r = await inHold(2);
@@ -325,12 +334,14 @@ test('I-063 verify.mjs (MEASUREMENT CODE: before the first run only): the host g
   assert.equal('simWarm' in result(4).host, false);
 });
 
-test('I-063 B1 (review-i063): a shutdown counts only when fw-sim reads Shutdown: on failure the keeper keeps the (marked) record and polls on, logging each line once; status, doctor, --warm-only and plain shutdown all say so; once the device can shut down, the keeper finishes', async () => {
+test('I-063 B1 (review-i063): a shutdown counts only when fw-sim reads Shutdown: on failure the keeper keeps the (marked) record and polls on (n1: retries backed off), logging each line once; status, doctor, --warm-only and plain shutdown all say so; once the device can shut down, the keeper finishes', async () => {
   setup();
-  let r = await fn();
+  const ek = { ...env, FW_SIM_KEEPER_RETRY_MS: '3000' }; // the keeper inherits it
+  let r = await fn(ek);
   assert.equal(r.code, 0, r.out);
   const k = keeper();
   devSet({ shutdownFail: true });
+  writeFileSync(env.FAKE_SIMCTL_LOG, '');
   writeFileSync(join(simDir(), 'warm.json'), JSON.stringify({ ...warm(), idleUntil: new Date(Date.now() - 1000).toISOString() }));
   const klog = () => (existsSync(join(simDir(), 'keeper.log')) ? readFileSync(join(simDir(), 'keeper.log'), 'utf8') : '');
   await until(() => /SIM_WARM_SHUTDOWN_FAILED/.test(klog()), 10000, 'the keeper\'s failed shutdown');
@@ -341,6 +352,7 @@ test('I-063 B1 (review-i063): a shutdown counts only when fw-sim reads Shutdown:
   assert.match(warm().shutdownFailed.why, /shutdown failed \(exit 164\).*; fw-sim is Booted/);
   assert.equal(klog().match(/SIM_WARM_SHUTDOWN_FAILED/g).length, 1, `N7: one line, not one per poll:\n${klog()}`);
   assert.equal(klog().match(/but not now/g).length, 1, klog());
+  assert.equal(simctlCalls().filter((c) => c === 'shutdown').length, 1, `n1: the failed simctl shutdown is retried after a back-off (3 s here), not every 150 ms poll: ${simctlCalls()}`);
   assert.ok(!/SIM_WARM_SHUTDOWN \(/.test(klog()), 'never logged as done');
   assert.match(node(SIM, ['status'], { env }).stdout, /^warm: {5}fw-sim booted, .*its last shutdown FAILED \(\S+, by keeper\): node tools\/sim\.mjs doctor --fix$/m);
   let d = node(SIM, ['doctor'], { env });
@@ -363,8 +375,8 @@ test('I-063 B1 (review-i063): a shutdown counts only when fw-sim reads Shutdown:
   d = node(SIM, ['doctor', '--fix'], { env });
   assert.equal(d.code, 0, d.out);
   assert.ok(device().state === 'Shutdown' && !warm());
-  // the keeper path: it finishes once the device shuts down
-  r = await fn();
+  // the keeper path: it finishes once the device shuts down (its retry after the back-off)
+  r = await fn(ek);
   assert.equal(r.code, 0, r.out);
   devSet({ shutdownFail: true });
   writeFileSync(join(simDir(), 'warm.json'), JSON.stringify({ ...warm(), idleUntil: new Date(Date.now() - 1000).toISOString() }));
@@ -404,4 +416,45 @@ test('I-063 N9 (review-i063): a functional session that ends while a timing hold
   assert.match(r.stdout, /cleanup: not keeping fw-sim booted: "ab" waits for a timing hold of chrome-measure/);
   assert.equal(device().state, 'Shutdown');
   assert.ok(!warm() && !keeper());
+});
+
+test('I-063 review-i063 n1/n2/n3: a warm fw-sim whose shutdown fails twice at the host gate ends the wait (WAIT, dequeued) instead of closing the gate for gateMaxWaitSec; a failed attempt the device later recovers from is annotated resolvedLater and kept in the holder\'s gate record (gate.simWarm) for tools that re-enter the hold; a reap whose record went is "gone", not "stale"', async () => {
+  setup();
+  const mkWarm = () => { devSet({ state: 'Booted', shutdownFail: true }); mkdirSync(simDir(), { recursive: true }); writeFileSync(join(simDir(), 'warm.json'), JSON.stringify(warmRec())); };
+  // n1: two failed reaps (every FW_SIM_GATE_REAP_SEC) end the wait; the record and the device stay; nobody is left queued
+  mkWarm();
+  const t0 = Date.now();
+  let r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--', process.execPath, '-e', '0'], { env: { ...env, FW_SIM_GATE_REAP_SEC: '1' }, timeout: 60000 });
+  assert.notEqual(r.code, 0, r.out);
+  assert.match(r.stderr, /\[lock chrome-measure\] a warm Simulator \(fw-sim\) at the host gate: shutdown FAILED \(.*\); attempt 1 of 2 \(I-063\)/);
+  assert.match(r.stderr, /attempt 2 of 2 \(I-063\)/);
+  assert.match(r.out, /WAIT: a warm Simulator \(fw-sim\) is booted and its shutdown failed 2 times at the host gate \(.*\): nothing timed starts beside it, so this wait ends \(dequeued\); node tools\/sim\.mjs doctor --fix/);
+  assert.ok(Date.now() - t0 < 30000, `fast, not gateMaxWaitSec: ${Date.now() - t0} ms`);
+  assert.deepEqual(readJ(join(env.FW_STATE_DIR, 'locks', 'chrome-measure.queue.json')) ?? [], [], 'dequeued');
+  assert.ok(!existsSync(join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json')), 'nothing granted');
+  assert.ok(device().state === 'Booted' && warm()?.shutdownFailed, 'the record stays, marked');
+  // n3 + item 3: the first gate reap fails, then the device goes (shut down outside the gate) before the second: the
+  // grant's gate record carries the failed attempt, annotated resolvedLater; the hold's command sees it (status --json)
+  mkWarm();
+  const p = nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--', process.execPath, LOCK, 'status', 'chrome-measure', '--json', '--no-host'], { env: { ...env, FW_SIM_GATE_REAP_SEC: '6' }, timeout: 60000 });
+  await until(() => readJ(join(simDir(), 'warm.json'))?.shutdownFailed?.by === 'me', 15000, 'the gate\'s failed attempt');
+  await sleep(500); // its sim.mjs shutdown --warm-only has exited
+  devSet({ state: 'Shutdown', shutdownFail: false });
+  rmSync(join(simDir(), 'warm.json'));
+  r = await p;
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stderr, /attempt 1 of 2/);
+  assert.ok(!/attempt 2 of 2/.test(r.stderr), r.stderr);
+  const held = JSON.parse(r.stdout.slice(r.stdout.indexOf('['))).find((x) => x.resource === 'chrome-measure').holder;
+  const sw = held.gate.simWarm;
+  assert.deepEqual([sw.ok, sw.action, typeof sw.resolvedLater], [false, 'shutdown FAILED', 'string'], JSON.stringify(held.gate));
+  // n2: a shutdown of a record that is gone by the time it holds the simulator lock: "gone", not a stale record
+  const probeGone = `import(${JSON.stringify(tool('lib/sim.mjs'))}).then(async (S) => console.log(JSON.stringify(await S.shutdownWarm({ reason: 't', by: 't' }))))`;
+  writeFileSync(env.FAKE_SIMCTL_LOG, '');
+  r = await runAsync(process.execPath, ['--input-type=module', '-e', probeGone], { env, timeout: 30000 });
+  assert.equal(r.code, 0, r.out);
+  const g = JSON.parse(r.stdout.trim().split('\n').at(-1));
+  assert.deepEqual([g.done, g.gone], [false, true]);
+  assert.match(g.why, /the warm record was removed before this shutdown got the simulator lock/);
+  assert.ok(!simctlCalls().includes('shutdown'), 'nothing shut down');
 });
