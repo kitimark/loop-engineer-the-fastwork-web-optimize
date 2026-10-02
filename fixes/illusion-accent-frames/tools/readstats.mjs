@@ -15,7 +15,7 @@ for (let i = 0; i < 10 && !c; i++) {
 }
 if (!c) { console.log('NO-TAB'); process.exit(1); }
 const r = JSON.parse(await c.evaluate(`JSON.stringify((() => { const a = window.__fwAccentCanvas; if (!a) return { arm: null };
-  const s = a.stats(); return { arm: s.arm, draws: s.draws, canvas: s.canvas, done: s.done, back: s.back, last: s.last, off: s.off, log: s.log, gate: a.gate || null, state: a.state() }; })())`));
+  const s = a.stats(); return { arm: s.arm, prime: s.prime || null, draws: s.draws, canvas: s.canvas, done: s.done, back: s.back, last: s.last, off: s.off, log: s.log, gate: a.gate || null, state: a.state() }; })())`));
 c.close();
 writeFileSync(out, JSON.stringify(r, null, 1));
-console.log(JSON.stringify({ arm: r.arm, draws: r.draws, canvas: r.canvas, done: r.done, back: r.back, gate: r.gate, drift: (r.log || []).filter((l) => l.dmax != null).map((l) => l.dmax) }));
+console.log(JSON.stringify({ arm: r.arm, prime: r.prime, draws: r.draws, canvas: r.canvas, done: r.done, back: r.back, gate: r.gate, drift: (r.log || []).filter((l) => l.dmax != null).map((l) => l.dmax) }));
