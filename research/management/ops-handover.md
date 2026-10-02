@@ -337,6 +337,8 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   - **PITFALL (mgmt-ops, 10:3xZ):** when a peer's SendMessage resumes mgmt-ops, mgmt-ops runs pinned to that peer's
     worktree and the harness refuses git in `.claude/worktrees/mgmt-ops-2`. Peers send ops requests anyway, and expect
     ops to batch the docs commits until the lead resumes it. From a lead resume, use `git -C <abs worktree>`, never cd.
+    **Lead rule (10-02 23:3xZ, 626783b):** when pinned, do the read-only work (second reads), reply to the peer and
+    queue the commit; the lead resumes ops from main at check-ins to commit. Never work around the guard.
 - **10:1xZ A1 done, I-059 resolved, G1b running.** Main: a2c15e7 (ops docs), 62b4053 (I-059 B "Start over";
   I-059 RESOLVED; console restarted 10:00Z), wi-stack series 94b8010..e7d2de2.
   - **PR-003 A CONFIRMED on the phone** (A1, wi-stack): #people frame 2 median NB 44 vs C 42 vs V 74 ms, idle gain kept,
