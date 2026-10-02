@@ -653,6 +653,35 @@ are unchanged from stage 1:
   re-read arrived. Its log had been opened before this line arrived, so the line is committed after the session ran,
   not before. That log shows C live in every update.)
 
+**A1 run, 2026-10-02 23:11Z (`x1-sim-2026-10-02T23-11-21-613Z.json`, base then PoC): instrument INVALID, no
+decision.**
+- `op` read 0 at rest at the top in both arms, with `zeroAt` = `div.start-selling-morph-panel` and `opSkip` 0.
+- The chain dump shows why. The resume check took `document.querySelector('[role=timer]')`, the first clock in
+  document order. That is the nav panel's countdown: `div.countdown.inverse` in
+  `header.start-selling-top-nav` > `div.start-selling-morph-panel` (opacity 0 at the top). It is not the hero clock.
+  - The digit reads (`painted()`), the tick observer and the census use the hero clock found at install, so only `op`,
+    `zeroAt` and `cv` were wrong.
+  - The same wrong element explains the 9a6f3f9ed143 field's constant 0. The suspected `Number('')` was not the cause:
+    no value was skipped (`opSkip` 0).
+- **Other A1 fields** (this is not an (iv) decision):
+  - `ticksInWindow` is 4 in all 8 windows;
+  - hashes match;
+  - `--exit-opacity` is 0 at heroExit;
+  - C is live in every update;
+  - V is stale in exactly 2 updates after the jump, both with `--exit-opacity` "0", and live from the 3rd. This is the
+    third session showing the 2-update pattern.
+- `cv` returned a boolean, so this WebKit has `checkVisibility()`. It read false for the panel clock, consistent with
+  that clock being transparent; that observation is for the panel clock only.
+
+**Amendment A1b** (pre-registered before the redo; the instrument fix only). x1.mjs goes from 5d0c9e4c41db to
+191c8671c1ad:
+- `op`, `zeroAt`, `cv` and the chain now use the hero clock found at install (`X.hero`, whose `.number` nodes
+  `painted()` reads).
+- Instrument validity also needs the at-rest chain to pass through `div.hero`.
+
+Everything else in A1 is unchanged: the outcomes, the lead's control line, and one Simulator session (base then PoC)
+in the shared lane. Like stage 1's validity rule, this is a redo of an invalid session, in a new hold.
+
 **Not changed:** the stage-1 counts and their scoring, every trigger rule, and P-069.
 
 ## Overlap with other topics (review r1 Blocking 3)

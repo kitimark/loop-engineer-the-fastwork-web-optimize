@@ -57,7 +57,7 @@ const INSTALL = `(() => {
   const timers = [...document.querySelectorAll('[role=timer]')];
   const hero = timers[0];
   const nums = [...hero.querySelectorAll('.number')];
-  const X = window.__x1 = { ticks: 0, lastTick: 0, raf: null };
+  const X = window.__x1 = { ticks: 0, lastTick: 0, raf: null, hero };
   const mo = new MutationObserver(() => { X.ticks++; X.lastTick = performance.now(); });
   mo.observe(nums[nums.length - 1], { attributes: true, attributeFilter: ['data-value'] });
   X.rafOn = () => { const s = X.raf = []; const f = (t) => { if (X.raf !== s) return; s.push(t); requestAnimationFrame(f); }; requestAnimationFrame(f); return 0; };
@@ -82,7 +82,7 @@ const RESUME = (yHide, hideMs) => `(async () => {
   document.body.append(el);
   scrollTo({ top: ${yHide}, behavior: 'instant' }); await wait(${hideMs});
   const out = []; let n = 0, jumped = false;
-  const timer = document.querySelector('[role=timer]');
+  const timer = X.hero; // A1b: the hero clock found at install (its .number nodes are the ones painted() reads); a document-order query found the nav panel's clock
   // amendment A1 (lead 10-02): the clock's rendered visibility per update. op = product of the computed opacity of the
   // timer and every ancestor (parentElement chain); a value that does not parse as a number (e.g. '' on a
   // display:contents wrapper) is skipped and counted in opSkip, never read as 0 (the 9a6f3f9ed143 field did Number('')).
@@ -220,7 +220,7 @@ async function sequence(c, range, { lt, resumeCheck }) {
       firstVisible, liveAtFirstVisible: judge(firstVisible), staleVisibleUpdates: after.filter((r) => r.op > 0 && !judge(r)).length,
       updatesAtTopBeforeVisible: after.indexOf(firstVisible),
       staleUpdates: after.filter((r) => !judge(r)).map((r) => ({ t: r.t, eo: r.eo, op: r.op, opSkip: r.opSkip, zeroAt: r.zeroAt, cv: r.cv })),
-      instrumentOk: !!(visEnd && visEnd.op > 0), visEnd, chainHidden, chainEnd };
+      instrumentOk: !!(visEnd && visEnd.op > 0 && chainEnd.some((e) => /^div\.hero(\.|$)/.test(e[0]))), visEnd, chainHidden, chainEnd };
     console.log('resume-check A1: instrument ok (op > 0 at rest at top):', res.resumeCheck.instrumentOk, JSON.stringify(res.resumeCheck.visEnd), '| stale updates:', JSON.stringify(res.resumeCheck.staleUpdates));
     console.log('resume-check: first visible update', res.resumeCheck.updatesAtTopBeforeVisible, 'live', res.resumeCheck.liveAtFirstVisible, 'stale visible updates', res.resumeCheck.staleVisibleUpdates);
     console.log('resume-check: live at the first frame at y 0:', res.resumeCheck.liveAtFirstFrame, '| live while hidden:', res.resumeCheck.liveWhileHidden);
