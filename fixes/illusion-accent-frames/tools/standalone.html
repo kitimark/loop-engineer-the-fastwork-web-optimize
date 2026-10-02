@@ -1,0 +1,14 @@
+<!doctype html>
+<!-- de-illusion-style, stall diagnosis (d): a standalone page with no Fastwork code. One canvas, the accent-frames atlas (loaded from
+     the serve path, never committed) as an ImageBitmap, a 900 ms sequence every 2 s, a plain rAF counter and a log of rAF gaps > 50 ms.
+     ?mode=one      one drawImage per rAF (a 216x117 region of the atlas, the region walking down the atlas)
+     ?mode=patches  the arm's work: clearRect + drawImage per patch of frames k0+1..k (k = elapsed whole ms), from manifest.json
+     ?src=img       draw from the decoded <img> instead of an ImageBitmap; ?wrf=0 accelerated canvas (default willReadFrequently)
+     Results: window.__sa = { raf, gaps: [[t, dt]], wins: [{ at, ticks, k }], origin }. Serve it and standalone.js next to the overlay (any path; the mirror CSP allows only same-origin scripts, no inline). -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>accent stall probe</title>
+<style>body{margin:0;background:#fff}canvas{position:absolute;left:150px;top:200px}</style>
+<canvas id="cv"></canvas>
+<script src="standalone.js"></script>
+
