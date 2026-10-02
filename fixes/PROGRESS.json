@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T09:32:00Z",
+ "updatedAt": "2026-10-02T09:45:00Z",
  "updatedBy": "mgmt-ops-6",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -199,7 +199,7 @@
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
    "gate": "The user accepts or rejects each proposal on the console page. Only an accepted one becomes a fix with a phone test.",
-   "next": "Second round done: none of the image or video ways beat today's drawing on the phone; a final proposal recommending to keep today's version comes next, after your recording check.",
+   "next": "Second round done: none of the image or video ways beat today's drawing on the phone; a final proposal recommending to keep today's version comes next. The recording check waits until it is made easier for you.",
    "owner": "de-illusion-style, de-illusion-composite (page: ts-proposals)",
    "checks": [],
    "details": [

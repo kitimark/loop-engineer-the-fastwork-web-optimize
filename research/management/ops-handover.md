@@ -8,6 +8,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **09:4xZ (later) C-021/C-023 DEFERRED by the user** (T-019 #9, 09:43:56Z: make the test easier first).
+  - iphone-runner stops the retry and returns to the queue: block B attribution -> A1 -> G1b -> T-011 -> T-009 -> I-042.
+    It writes a grooming note for the next try: the user only starts and stops the recording; the phone plays everything.
+  - PR-001 rev 3 ("keep" recommended) no longer waits on the recording: de-illusion-style drafts it now, the lead reviews.
+  - I-059 still lands first (before any new recording step).
 - **09:4xZ I-059 open; C-023 retry.** c393993 landed.
   - I-059 (tool, open, ts-i059): the console let the user tap Done on a part the runner ends itself (C-021 part 2
     marked done 5 s after start). The user accepted "retry entire process" for retriable steps (T-019 #7): ts-i059
