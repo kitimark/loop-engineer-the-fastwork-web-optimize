@@ -81,6 +81,21 @@ test('fallback in one session only: the sessions differ in charge state -> incom
   assert.equal(v.fixesVsBaseline.verdict, 'incomplete (the sessions differ in charge state)');
 });
 
+test('fallback gate TIMEOUT before attempt 2 wrote any segment: the attempt marker makes it incomplete', () => {
+  const L = [];
+  // attempt 1 (held): F excluded, A B X valid; F's re-run gate timed out -> fallback; the charging gate timed out too
+  makeSeg(L, { session: 'H1', seg: 1, arm: 'F', flipAt: 30 });
+  makeSeg(L, { session: 'H1', seg: 2, arm: 'A' }); makeSeg(L, { session: 'H1', seg: 3, arm: 'B' }); makeSeg(L, { session: 'H1', seg: 4, arm: 'X' });
+  session(L, 'H2', H2);
+  const marker = { kind: 'attempt', session: 'H1', attempt: 2, chargeMode: 'charging' };
+  const segs = scoreSegments(L);
+  assert.equal(verdicts(segs).fastworkVsApple.verdict, 'Fastwork heats more', 'without the marker, attempt 1 would be scored');
+  const v = verdicts(segs, undefined, [marker]);
+  assert.deepEqual(v.attempt, { H1: 2, H2: 1 });
+  assert.match(v.fastworkVsApple.verdict, /^incomplete/);
+  assert.match(v.fixesVsBaseline.verdict, /^incomplete/);
+});
+
 test('a fallback session that never finished (gate TIMEOUT) gives incomplete', () => {
   const L = [];
   makeSeg(L, { session: 'H1', seg: 1, arm: 'F' }); makeSeg(L, { session: 'H1', seg: 2, arm: 'A', flipAt: 60 });

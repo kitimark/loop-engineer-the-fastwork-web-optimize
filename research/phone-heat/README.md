@@ -181,9 +181,12 @@ above, so it is the expected one, and B, A, X and F are compared only in that st
 **Fallback: the session runs "charging", and is compared as such.** It applies if the gate times out at 20 min (the
 phone keeps charging), or if a second segment in the same session is excluded for charging:
 - The session stops. Its segments so far stay in `samples.jsonl` but are not used: they belong to attempt 1.
-- It restarts from its first arm as **attempt 2**: `--attempt 2 --charge-mode charging`, with the gate
-  `charge-wait --want charging`. Every arm then runs while charging, and a segment with a held read is excluded
-  instead. Segment ids carry the attempt (`H1a2-1F`), so the two attempts never mix.
+- It restarts from its first arm as **attempt 2**. First `heat.mjs attempt --session <h> --attempt 2 --charge-mode
+  charging` writes an attempt marker, **before** the gate. Then every segment runs with `--attempt 2 --charge-mode
+  charging`, behind the gate `charge-wait --want charging`. Every arm then runs while charging, and a segment with a
+  held read is excluded instead. Segment ids carry the attempt (`H1a2-1F`), so the two attempts never mix.
+- The marker makes attempt 2 the session's last attempt even if no segment of it ever runs. So a charging-gate
+  timeout before the first attempt-2 segment scores "incomplete", never attempt 1's verdict.
 - **The score uses only each session's last attempt** (`verdicts()`: `attempt`, `live`): the charge mode, the arms
   and the excluded segments all come from that attempt, never from the aborted one.
 - **If the fallback gate times out** (`charge-wait --want charging` exits 3 after 20 min: likely with the 80 % limit,
@@ -383,8 +386,9 @@ node tools/wait.mjs phone-temp --below 37.0 --every 30 --timeout 900 --reason "p
 node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "phone heat H1-1F" -- \
   node research/phone-heat/heat.mjs segment --session H1 --seg 1 --arm F --charge-mode held --url http://lan:<pF>/heat-floor.html --owner iphone-runner
 ```
-In a fallback session, replace `held` with `charging` in both places and add `--attempt 2` to every `segment`. If the
-`charging` gate exits 3, stop the session (incomplete) and tell the lead.
+In a fallback session: first `node research/phone-heat/heat.mjs attempt --session <h> --attempt 2 --charge-mode
+charging` (once, before its first gate). Then replace `held` with `charging` in both places, and add `--attempt 2` to
+every `segment`. If the `charging` gate exits 3, stop the session (incomplete) and tell the lead.
 At the end: `node research/phone-heat/heat.mjs score --out out/phone-heat/score.json`. Send de-heat the score output,
 `samples.jsonl` and the console answers. de-heat commits the derived numbers: samples without URLs beyond the
 placeholder, and no apple.com run records.
@@ -397,7 +401,7 @@ placeholder, and no apple.com run records.
 
 ## Files
 
-- `heat.mjs`: battery reader, segment runner, pre-registered scorer. sha256/12 `1280a97d9f6d` at this commit (pre-data amendments, 10-02 22:4xZ: charge mode, `charge-wait` gate, charge-state exclusion, was `38f81442ccad` at 4bf2319, `341a774801ae` at 56636f8; 22:5xZ: session attempts, last-attempt scoring).
+- `heat.mjs`: battery reader, segment runner, pre-registered scorer. sha256/12 `d1ec5c5345f7` at this commit. Pre-data history: `38f81442ccad` (ticket, e9dcfce); `341a774801ae` (22:4xZ, charge mode, `charge-wait` gate, charge-state exclusion, 08b7978); `1280a97d9f6d` (22:5xZ, session attempts, last-attempt scoring, 98da974); `d1ec5c5345f7` (22:5xZ, the `attempt` marker).
 - `floor/heat-floor.html`: the floor page. sha256/12 `30098372d8c1`.
-- `heat.check.mjs`: checks of the scorer on synthetic samples (held, exclusion over 0-360 s, end-of-session re-run, fallback restart with an aborted attempt, sessions in different charge states, fallback gate timeout): `node --test research/phone-heat/heat.check.mjs`, 7 pass. The two fallback checks fail on the 56636f8 scorer.
+- `heat.check.mjs`: checks of the scorer on synthetic samples (held, exclusion over 0-360 s, end-of-session re-run, fallback restart with an aborted attempt, sessions in different charge states, fallback gate timeout before and after attempt 2 wrote a segment): `node --test research/phone-heat/heat.check.mjs`, 8 pass. The two fallback-restart checks fail on the 08b7978 scorer, and the marker check fails on the 98da974 scorer.
 - Results (after data): `results.json` and `samples.jsonl` (derived, LAN-scrubbed), plus a result section here.

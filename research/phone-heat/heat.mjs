@@ -10,6 +10,9 @@
 //        # open <u>; battery every --every s from t=0 to t=--seconds; back-to-back `iphone.mjs run` W cycles
 //        # (the ticket's routine) until t=--seconds; then park. Appends samples + one segment line to --out.
 //        # --attempt: the session's attempt (a fallback restart is attempt 2); score uses each session's last attempt only.
+//   node research/phone-heat/heat.mjs attempt --session H1|H2 --attempt <n> --charge-mode held|charging [--out f]
+//        # marks the start of a new session attempt (a fallback restart), BEFORE its gate: if no segment of it follows
+//        # (the charging gate timed out), the score still sees the attempt and reports the session incomplete
 //   node research/phone-heat/heat.mjs charge-wait [--want held|charging] [--every 30] [--timeout 1200]
 //        # the charging gate before each segment (README "Charging rule"): exit 0 MET when one read shows the wanted
 //        # state (held = on the cable and IsCharging false; charging = IsCharging true), 3 TIMEOUT, 1 no reading
@@ -195,13 +198,15 @@ const round = (x, d = 3) => Math.round(x * 10 ** d) / 10 ** d;
 const median = (a) => { const s = [...a].sort((x, y) => x - y); return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2; };
 
 /** The ticket's decision rules over scored segments. Primary = corrected slopes; raw = check. */
-export function verdicts(segs, pre = PRE) {
+export function verdicts(segs, pre = PRE, markers = []) {
   // only each session's LAST attempt counts (a fallback restart supersedes the aborted attempt; README "Charging rule")
-  const lastAttempt = Object.fromEntries(['H1', 'H2'].map((h) => [h, Math.max(0, ...segs.filter((s) => s.session === h).map((s) => s.attempt ?? 1))]));
+  // attempt markers (`heat.mjs attempt`) count too: an attempt that started but wrote no segment still supersedes the last
+  const marks = markers.filter((m) => m.kind === 'attempt');
+  const lastAttempt = Object.fromEntries(['H1', 'H2'].map((h) => [h, Math.max(0, ...[...segs, ...marks].filter((s) => s.session === h).map((s) => s.attempt ?? 1))]));
   const live = segs.filter((s) => (s.attempt ?? 1) === lastAttempt[s.session]);
   const ok = live.filter((s) => !s.void && !(s.chargeExcluded ?? s.charging) && typeof s.corr === 'number');
   // both sessions must share one charge state (README "Charging rule"); otherwise no cross-session verdict
-  const modes = ['H1', 'H2'].map((h) => [...new Set(live.filter((s) => s.session === h).map((s) => s.chargeMode || 'held'))].join('+') || null);
+  const modes = ['H1', 'H2'].map((h) => [...new Set([...live, ...marks.filter((m) => m.attempt === lastAttempt[h])].filter((s) => s.session === h).map((s) => s.chargeMode || 'held'))].join('+') || null);
   const sameMode = modes[0] !== null && modes[0] === modes[1] && !modes[0].includes('+');
   const get = (session, arm, f) => ok.findLast((s) => s.session === session && s.arm === arm)?.[f]; // the end-of-session re-run, if any
   const pair = (a, b, f) => ['H1', 'H2'].map((h) => { const x = get(h, a, f), y = get(h, b, f); return typeof x === 'number' && typeof y === 'number' ? round(x - y) : null; });
@@ -224,6 +229,15 @@ export function verdicts(segs, pre = PRE) {
   const ex = (a) => ['H1', 'H2'].map((h) => { const x = get(h, a, 'corr'), f = get(h, 'F', 'corr'); return typeof x === 'number' && typeof f === 'number' ? round(x - f) : null; });
   out.excessOverFloor = { A: ex('A'), B: ex('B'), X: ex('X') };
   return out;
+}
+
+function markAttempt() {
+  const session = opt('session'), attempt = Number(opt('attempt')), chargeMode = opt('charge-mode');
+  if (!/^H[12]$/.test(session || '') || !Number.isInteger(attempt) || attempt < 2 || !['held', 'charging'].includes(chargeMode)) throw new Error('attempt needs --session H1|H2 --attempt <n >= 2> --charge-mode held|charging');
+  const out = resolve(REPO, opt('out', 'out/phone-heat/samples.jsonl'));
+  mkdirSync(dirname(out), { recursive: true });
+  appendFileSync(out, JSON.stringify({ kind: 'attempt', session, attempt, chargeMode, t: new Date().toISOString() }) + '\n');
+  console.log(`ATTEMPT ${session} ${attempt} (${chargeMode}) marked in ${out}`);
 }
 
 async function chargeWait() {
@@ -249,7 +263,7 @@ async function score() {
   const inp = resolve(REPO, opt('in', 'out/phone-heat/samples.jsonl'));
   const lines = readFileSync(inp, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const segs = scoreSegments(lines);
-  const v = verdicts(segs);
+  const v = verdicts(segs, PRE, lines.filter((l) => l.kind === 'attempt'));
   for (const s of segs) console.log(`${s.id} ${s.arm}: start ${s.startC} mean ${s.meanC} slope ${s.slope} corr ${s.corr} C/min (idle ${s.idleSlope}, cycles ${s.cycleSlope}) n ${s.n} cycles ${s.cycles}${s.chargeMode === 'charging' ? ' [charge-mode charging]' : ''}${s.chargeExcluded ? ' EXCLUDED (charge state)' : s.charging ? ' CHARGING' : ''}${s.void ? ' VOID ' + s.void : ''}${s.batteryW ? ' battery ' + s.batteryW.median + ' W' : ''}`);
   console.log(JSON.stringify(v, null, 1));
   const o = opt('out'); if (o) { writeFileSync(resolve(REPO, o), JSON.stringify({ pre: PRE, segments: segs, verdicts: v }, null, 1)); console.log(`saved ${o}`); }
@@ -262,6 +276,7 @@ async function main() {
   if (cmd === 'segment') return segment();
   if (cmd === 'score') return score();
   if (cmd === 'charge-wait') return chargeWait();
-  console.log('usage: node research/phone-heat/heat.mjs keys | once [--label l] | segment --session H1|H2 --seg n --arm F|A|B|X --url u --owner o [--seconds 360] [--every 30] [--out f] [--dry-run] | charge-wait [--want held|charging] [--every 30] [--timeout 1200] | score [--in f] [--out f]');
+  if (cmd === 'attempt') return markAttempt();
+  console.log('usage: node research/phone-heat/heat.mjs keys | once [--label l] | segment --session H1|H2 --seg n --arm F|A|B|X --url u --owner o [--seconds 360] [--every 30] [--out f] [--dry-run] | attempt --session H1|H2 --attempt n --charge-mode held|charging | charge-wait [--want held|charging] [--every 30] [--timeout 1200] | score [--in f] [--out f]');
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch((e) => { console.error(e.message || e); process.exit(1); });
