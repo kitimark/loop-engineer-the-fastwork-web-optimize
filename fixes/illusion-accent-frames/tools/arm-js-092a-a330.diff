@@ -1,0 +1,68 @@
+--- old.js	2026-10-02 15:04:13
++++ new.js	2026-10-02 15:09:37
+@@ -35,11 +35,21 @@
+     cur.el = el;
+     if (el == null) return void handback(`miss`);
+     if (VID) {
+-      // the video runs on its own media clock; the SVG takes over when it is more than man.video.drift ms off the draw's clock
+-      let d = cur.v.currentTime * 1e3 - el;
+-      cur.dmax = Math.max(cur.dmax, Math.abs(d));
++      // the video runs on its own media clock. Playback starts 2-4 frames after play() (Sim: frame 0 meanwhile, then it runs
++      // 33-67 ms behind the draw clock): the start lag l0 is logged per draw (the video is that late throughout, and its last l0 ms
++      // are cut at the draw end). The SVG takes over when the video has not moved by man.video.start ms, or when its lag moves
++      // more than man.video.drift ms away from l0
++      let v = cur.v, d = v.currentTime * 1e3 - el;
+       cur.ds.length < 8 && cur.ds.push(Math.round(d));
+-      if (el < man.n && Math.abs(d) > man.video.drift) return void handback(`drift`);
++      if (el < man.n) {
++        if (cur.l0 == null) {
++          if (v.currentTime > 0 && !v.paused) cur.l0 = Math.round(d);
++          else if (el > man.video.start) return void handback(`drift`);
++        } else {
++          cur.dmax = Math.max(cur.dmax, Math.abs(d - cur.l0));
++          if (Math.abs(d - cur.l0) > man.video.drift) return void handback(`drift`);
++        }
++      }
+       el < man.n ? (raf = requestAnimationFrame(tick)) : (st.done++, (cur.end = `done`));
+       return;
+     }
+@@ -85,6 +95,8 @@
+       if (!v) return (px.cancel(), (px = null), (cur = null), !1);
+       cur.v = v;
+       v.style.visibility = `visible`;
++      // from frame 0 (Sim: the first draw after the prime found currentTime at 0.415 s)
++      v.currentTime !== 0 && (v.currentTime = 0);
+       let p = v.play();
+       // a rejected play() (not allowed, or no data) hands back; the test hook's freeze() pauses on purpose and is ignored
+       p && p.catch && p.catch(() => cur && cur.v === v && !cur.frozen && handback(`play`));
+@@ -102,7 +114,7 @@
+   A.clear = () => {
+     // test counters (attribution only): per canvas draw, word slot, direction, start (page clock), rAF ticks run, last frame, last
+     // clock value, how it ended (done / a handback reason / cleared by the next state), video drift (max and first 8), apply ms
+-    cur && st.log.push({ w: cur.i, d: cur.dir, at: cur.at, t: cur.ticks, k: k0, el: cur.el == null ? null : Math.round(cur.el), end: cur.end || `clear`, dmax: VID ? Math.round(cur.dmax) : void 0, ds: VID ? cur.ds : void 0, ms: VID ? void 0 : cur.ms });
++    cur && st.log.push({ w: cur.i, d: cur.dir, at: cur.at, t: cur.ticks, k: k0, el: cur.el == null ? null : Math.round(cur.el), end: cur.end || `clear`, l0: VID ? cur.l0 : void 0, dmax: VID ? Math.round(cur.dmax) : void 0, ds: VID ? cur.ds : void 0, ms: VID ? void 0 : cur.ms });
+     st.log.length > 24 && st.log.shift();
+     raf && cancelAnimationFrame(raf);
+     raf = 0;
+@@ -246,8 +258,20 @@
+     if (!place()) return (gate({ place: Object.keys(st.off) }), cv.remove());
+     if (VID) {
+       // every video has its first frame before the arm can take a draw (loadeddata), else the SVG keeps every draw
++      // WebKit caps preload at metadata when the page does not load media data automatically (MediaElementSession
++      // AutoPreloadingNotPermitted, HTMLMediaElement.cpp; Sim: readyState stays 1). A muted inline play() is allowed and loads
++      // the data: prime each video with play() + pause() + seek to 0, still hidden
++      // each video's prime result is logged (st.prime: ok / skip / the rejection's name, e.g. NotAllowedError in Low Power Mode)
++      st.prime = {};
++      let prime = (v) =>
++        v.readyState >= 2
++          ? ((st.prime[v.src.split(`/`).pop()] = `skip`), 0)
++          : Promise.resolve(v.play())
++              .then(() => ((st.prime[v.src.split(`/`).pop()] = `ok`), v.pause(), new Promise((ok) => (v.addEventListener(`seeked`, ok, { once: !0 }), (v.currentTime = 0)))))
++              .then(() => (v.readyState >= 2 ? 0 : new Promise((ok) => v.addEventListener(`loadeddata`, ok, { once: !0 }))))
++              .catch((e) => Promise.reject((st.prime[v.src.split(`/`).pop()] = String((e && e.name) || e))));
+       try {
+-        await Promise.all(vids.flatMap((o) => (o ? Object.values(o) : [])).map((v) => (v.readyState >= 2 ? 0 : new Promise((ok, no) => (v.addEventListener(`loadeddata`, ok, { once: !0 }), v.addEventListener(`error`, () => no(v.error), { once: !0 }))))));
++        await Promise.all(vids.flatMap((o) => (o ? Object.values(o) : [])).map((v) => Promise.race([prime(v), new Promise((ok, no) => v.addEventListener(`error`, () => no(v.error && v.error.code), { once: !0 }))])));
+       } catch (e) {
+         return (gate({ video: String((e && e.code) || e) }), cv.remove());
+       }

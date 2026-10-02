@@ -141,7 +141,7 @@ localStorage or query flags. Its manifest's `arm` field is what the run logs.
 | F1 | canvas, 16 px tiles of the changed area (rev 2 atlas) | 38-73 drawImage on average, up to 195 | 1 PNG 512x2291, 908,860 B | 4.5 / ~31 MB |
 | F2 | canvas, the whole latest frame (one copy per frame) | 1 drawImage | 6 PNG sheets ≤ 2048 px, 1,540,135 B | 83.3 / ~580 MB |
 | F3 | canvas, one bounding box per changed ms | ~5-17 drawImage | 2 PNG sheets ≤ 2048 px, 1,303,356 B | 20.1 / ~140 MB |
-| V | HEVC with alpha (4:2:0), one `<video>` per direction, played from the draw start; handback when it drifts > 50 ms from the draw clock | - (media clock) | 2 MP4, 120 fps, 222x120, 117,919 + 116,284 B | video decoder buffers, not estimated |
+| V | HEVC with alpha (4:2:0), one `<video>` per direction, primed at load (muted play + pause), played from frame 0 at the draw start. Its start lag l0 is logged. Handback if it has not moved by 150 ms, or its lag moves > 50 ms from l0 | - (media clock) | 2 MP4, 120 fps, 222x120, 117,919 + 116,284 B | video decoder buffers, not estimated |
 | B | the SVG; only the visible copy animates (CSS rule, illusion-accent-onecopy) | - | - | - |
 
 B's CSS = C's CSS plus one rule: `.script-accent.svelte-1fn2go6:is(.is-drawing-in, .is-drawing-out)
@@ -179,7 +179,7 @@ through their test hook; B's SVG is seeked to t. Each frame is compared with C's
 | F1 | 137 (in 71, out 66: the session ended before out 858-900; rev 2 covered those with the same atlas, identical) | 0 | 0 | 0 |
 | F2 | 142 | 0 | 0 | 0 |
 | F3 | 142 | 0 | 0 | 0 |
-| V | PENDING (I-054) | | | |
+| V | PENDING: capture queued (Sim, shared lane). Expect small differences: 120 fps frames (a draw time t shows frame floor(t x 0.12)) and 4:2:0 chroma | | | |
 | B | 142 | 0 | 0 | 0 |
 
 ### Live functional check (Simulator, OBSERVED, no timing claim)
@@ -189,10 +189,30 @@ through their test hook; B's SVG is seeked to t. Each frame is compared with C's
   reached frame 884-900. No errors.
 - **F3:** engaged, but stalls like F1 in rev 2: 0-23 ticks per draw, gaps up to 1.27 s. This is a Simulator
   observation, not a verdict. The phone decides.
-- **V:** never ready. `tools/serve.mjs` answered Safari's byte-range requests with 200, and the videos never loaded.
-  Incident I-054 (Range support in serve.mjs) is fixed by ts-i054, not yet landed. **Arm V's served-content path depends
-  on I-054's fix.** Apple: "HTTP servers hosting media files for iOS must support byte-range requests" (Safari Web
-  Content Guide, "Configuring Your Server").
+- **V, step 1: no Range support.** `tools/serve.mjs` answered Safari's byte-range requests with 200, and the videos
+  never loaded. Incident I-054 is fixed on main (67847b4). **Arm V's served-content path depends on that fix.** Apple:
+  "HTTP servers hosting media files for iOS must support byte-range requests" (Safari Web Content Guide, "Configuring
+  Your Server").
+- **V, step 2: no preload.** With 206 answers, both videos stayed at readyState 1 (metadata), networkState idle, with
+  no error.
+  - WebKit adds `MediaElementSession::AutoPreloadingNotPermitted` when `!document->mediaDataLoadsAutomatically()`
+    (HTMLMediaElement.cpp:763-764; last commit on that file a09645c2ee47). Only a user gesture lifts it (:9259-9263).
+    CONFIRMED that the mechanism exists. UNRESOLVED that iOS Safari has the setting off; our result fits it.
+  - A muted `play()` resolved, and the videos then reached readyState 4 with [0, 0.909] s buffered. So V now primes
+    each video at load, and logs the result per video (`stats().prime`).
+  - `canPlayType('video/mp4; codecs="hvc1"')` returns "probably". MediaCapabilities `decodingInfo` (hvc1.1.6.L60.B0,
+    222x120, 120 fps) says supported: false, smooth: false in the Simulator. The clip plays anyway, so the Simulator
+    probably decodes it in software. V's Simulator timing does not stand for the phone.
+- **V, step 3: live** (start-lag design, 44 s). Engaged and run to the end on 4/4 'you' draws, 53-55 rAF ticks each, no
+  errors.
+  - The video starts moving 2-6 frames after `play()`, then holds a constant lag l0 of -34 to -53 ms: the drift after
+    start stays within 1 ms.
+  - So V shows each frame 34-53 ms late, and the last 34-53 ms of a draw are cut when the next state starts. This is a
+    timing difference, not a pixel one.
+  - The first 'you' draw after the prime found the video at 0.415 s and handed back (drift). V now seeks to 0 before
+    `play()`.
+  - An earlier variant without the start allowance handed back 2 of 4 draws at the 50 ms drift limit. A 1.5x
+    catch-up rate made the lag grow to 80-90 ms. Neither is used.
 - 'you' cycle: draw-in at 22.0 s and draw-out at 24.2 s after navigation, period 21.44 s.
 
 ### Phone ticket P-058
@@ -209,17 +229,29 @@ after its draws? The pre-registered rule is below.
 | arm | files (sha256, first 12) |
 |---|---|
 | C | `assets/2.gBuqKVzi.css` `cc8d1340b449`, `nodes/2.DyWL8TcE.js` `dbd5fdb4f1fb` |
-| F1 | `assets/2.gBuqKVzi.css` `1885674d4ee7`, `nodes/2.DyWL8TcE.js` `092a5c0cc4ee`, `assets/accent-frames/manifest.json` `2e1cda7bea3e`, `w00.png` `33be5edafe41` |
+| F1 | `assets/2.gBuqKVzi.css` `1885674d4ee7`, `nodes/2.DyWL8TcE.js` `a330f386556d`, `assets/accent-frames/manifest.json` `2e1cda7bea3e`, `w00.png` `33be5edafe41` |
 | F2 | CSS and JS as F1, `manifest.json` `d409535ca4ce`, `w00-0.png` `9eec489d78f8`, `w00-1.png` `652fcdbe0ce3`, `w00-2.png` `a11188a5d414`, `w00-3.png` `d3d732c9465b`, `w00-4.png` `ee7d720bcdbe`, `w00-5.png` `c52a4c8d4935` |
 | F3 | CSS and JS as F1, `manifest.json` `ca4ace2d6119`, `w00-0.png` `020d399b05fa`, `w00-1.png` `e1ed6204df4a` |
-| V | CSS and JS as F1, `manifest.json` `56d7c70fe43e`, `w00-in.mp4` `7d5b834b69c5`, `w00-out.mp4` `8e8f113f8565` |
+| V | CSS and JS as F1, `manifest.json` `120f23bcae4f` (drift 50, start 150), `w00-in.mp4` `7d5b834b69c5`, `w00-out.mp4` `8e8f113f8565` |
 | B | `assets/2.gBuqKVzi.css` `7e6b070e15c2`, `nodes/2.DyWL8TcE.js` `dbd5fdb4f1fb` |
+
+**The arm JS changed after the canvas arms' pixel checks: `092a5c0cc4ee` → `a330f386556d`.** The canvas path is
+byte-identical. All 4 hunks of the diff lie in code only arm V runs:
+- `tick()`'s `if (VID)` block: the start allowance and lag l0;
+- `go()`'s video branch: seek to 0 before `play()`;
+- `clear()`'s log entry: a video-only `l0` field;
+- `load()`'s `if (VID)` block: the prime.
+
+The diff is `fixes/illusion-accent-frames/tools/arm-js-092a-a330.diff`, between the HEcanvas function sources. Spliced
+into the page JS as `snap.mjs` does, the old source reproduces `092a5c0cc4ee` and the new one `a330f386556d`. So F1,
+F2 and F3's pixel results above stand for the new hash.
 
 Rebuild if gone: `node out/de-illusion-style/arms/snap.mjs out/de-illusion-style/arms/snap` in this worktree. Check the
 hashes before serving.
 
 **Serve** from the runner's checkout, one server per arm, restarted at the block start (`S` = the snapshot path).
-**V needs a serve.mjs with I-054's Range fix** (on main once landed). Without it V never loads, and its runs are VOID-ARM.
+**V needs a serve.mjs with I-054's Range fix** (main 67847b4 or later). Without it V never loads, and its runs are
+VOID-ARM.
 
 ```sh
 node tools/serve.mjs --root site-pretty --overlay $S/<arm> --port 0 --https --vendors=local --latency 150 --no-cache --state out/p058/serve-<arm>.json
@@ -253,7 +285,10 @@ iphone-runner's C-017. Use the same method for every run, and name each file by 
 - engaged / handed back (arms);
 - the idle phase's own summary, all words, for context;
 - per run, from readstats: draws, canvas draws, run to the end, handbacks by reason (scroll, miss, drift, play), and
-  V's drift per draw (max and first 8 values, ms);
+  V's start lag l0 and drift per draw (max |lag - l0| and the first 8 lag values, ms);
+- V's prime result per video (`prime`: ok, or the rejection's name). A rejected prime (Low Power Mode may refuse even
+  a muted `play()`) leaves V on the SVG for that run, and its draws count as not engaged. The 75 % rule covers it.
+  Pass Low Power Mode per run as set on the phone (`run --low-power on|off`); the probe's `lowPowerSuspect` flags a 30 Hz page;
 - memory: decoded MB per arm as in the arms table (ESTIMATE). Also the WebContent footprint, if the runner has a way
   to read it (I know none).
 
