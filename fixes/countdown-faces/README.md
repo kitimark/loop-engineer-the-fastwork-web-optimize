@@ -296,6 +296,190 @@ http on localhost. Simulator times never count, so these are record counts (n=1)
   - The 120 Hz path on a real display is UNRESOLVED.
   - A phone segment card is required before F/L.
 
+## X1 phone segment card: ticket (pre-data; prediction P-069)
+
+**Owner:** de-countdown. **Phone runner:** `iphone-runner`. **Order (lead, 10-02 22:1xZ):** Simulator first. The phone
+segment runs only if the Simulator leaves a WebKit cost question open; it is queued after st6 S7 and F3 in
+iphone-runner's queue. **Rules:**
+- No timing gain claim: this is attribution (Timeline segments and counts), not an fps or gain verdict.
+- No recordings (T-018).
+- Timeline-block rules from protocol v2 §5.2.
+- Written before any X1 data.
+
+**The question (one):** what does the PoC change in WebKit's rendering work?
+- **Clock visible:** 3 faces with changing text against 10 composited faces.
+- **Clock hidden:** no state writes.
+- **Resume:** the first frame back.
+- On the phone, in which Timeline segments (Script / Style / Layout / Paint+Composite / Other) does it land?
+
+**Arms.** Snapshot `b1789284481295-4ad4a84a`; both arms serve the baseline CSS `2.gBuqKVzi.css` `27776f3d4138`.
+
+| arm | build | `nodes/2.DyWL8TcE.js` | served from |
+|---|---|---|---|
+| C (control) | base | `4606120cf392` | `--root site-pretty`, no overlay |
+| V | PoC as landed (6890fe5, `patch.diff`) | `638b8e03e81c` | `--overlay .claude/worktrees/agent-a097ffbf8f44a4d14/out/countdown-faces/snap-x1/poc` (immutable copy, `chmod a-w`) |
+
+C → V differs only by `patch.diff` (+79 −16), with no CSS change. `x1.mjs` checks both served hashes at the start of
+every run; a wrong hash makes the run VOID (exit 3).
+
+**Tool:** `fixes/countdown-faces/x1.mjs` (committed with this ticket). One sequence per page load, the same on the
+Simulator and on the phone, with 4 windows. Each window starts 650 ms after a seconds tick and lasts 4 s, so it holds
+exactly 4 ticks and their rolls.
+1. `top` (y 0): the hero clock is visible and rolls.
+2. `heroExit`: the first y where `div.hero`'s `--exit-opacity` reads 0, plus 8 px. The tool finds it and logs
+   `--exit-opacity` at y = innerHeight. This settles round 2's UNRESOLVED heroExit, which sat at y = innerHeight.
+3. `pastHero` (hero-track bottom + 1.2 vh): both clocks are hidden.
+4. `resume`: the window starts at pastHero after the clock has been hidden ~9 s. 300 ms later there is an instant jump
+   to y 0.
+
+Per window, the tool records:
+- Timeline record counts: RenderingFrame, RecalculateStyles, Layout, Paint, Composite, countdown rAF.
+- Paint records with a digit-sized clip (≤ 1.5 × the digit's box): a face repaint.
+- Layout records with a view-sized root.
+- Exclusive ms per segment.
+- rAF dt counts > 34 / > 50 with their ±4 ms twins.
+
+With `--lt`, the tool also takes a LayerTree census before and after each window: layers, face layers, layer memory,
+and paintCount deltas on face layers, i.e. text repaints inside the composited face layers.
+
+With `--resume-check`, the tool hides the clock 8 s at pastHero, jumps to y 0, and reads the hero clock's digits in a
+ResizeObserver callback of every rendering update. That callback runs after the rAF callbacks and layout, before
+paint. The check: does the first update at y 0 show the live value (each digit equals `data-value`, or is mid-roll)?
+This is the decisive local check for "WebKit runs the exit callback and the write in the same rendering update"
+(UNRESOLVED above).
+
+### Stage 1: Simulator mechanism session (counts only; Simulator ms never count, F-084)
+
+```sh
+node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner countdown-faces -- \
+  node tools/sim.mjs session --functional --owner countdown-faces -- node fixes/countdown-faces/x1.mjs sim base,poc
+# second session, reversed order (n=2 per arm):
+node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner countdown-faces -- \
+  node tools/sim.mjs session --functional --owner countdown-faces -- node fixes/countdown-faces/x1.mjs sim poc,base
+node fixes/countdown-faces/x1.mjs score out/countdown-faces/x1/x1-sim-*.json
+```
+
+- `--lt` and `--resume-check` are always on in the Simulator. Each session is one shared hold of ≤ 300 s.
+- **Sentinel and validity (stage 1):** there is no heat sentinel; the Simulator gives counts only. A session counts
+  only if all of these hold:
+  - both served hashes match;
+  - every window holds ≥ 3 detected ticks;
+  - `--exit-opacity` reads 0 at the heroExit y.
+  Otherwise it is redone once, in a new hold.
+- **Statistic (stage 1):** per window, the record counts; per arm, the two sessions' values. "Above / below C's
+  range" means both V values lie beyond both C values. No twins or near bands: these are counts, not frame times.
+
+**Stage-1 readout → stage 2** (fixed now; the trigger is exact). The phone segment **runs if (i) or (ii)** holds:
+- (i) At `top`, either V's face-layer repaints (LayerTree) or V's digit-sized Paints lie above C's range. Here "above"
+  means both V sessions exceed both C sessions. That is the expected outcome (S2 predicts it): **a hit on S2 opens
+  stage 2.** The Simulator counts the added text repaints but can't time them, so whether they cost anything on the
+  device stays open. A hit on S3 alone (Layouts up, repaints not) also opens it.
+- (ii) At `resume`, V's Layout or digit-Paint count lies above C's range.
+
+The phone segment **does not run**, and X1 goes back to the code instead, if:
+- (iii) at `pastHero` or `heroExit`, V's RecalculateStyles, Layout or Paint is > 0.8 × C's in either session: the
+  hidden skip does not work on WebKit, which is a mechanism failure; or
+- (iv) the resume check fails: V's first update at y 0 shows a stale digit, a one-frame hop on WebKit.
+
+(iii) and (iv) take precedence over (i) and (ii). If none of (i)-(iv) holds, X1 closes on the Simulator: no added
+WebKit work, so there is no phone cost question.
+
+### Stage 2: phone segment (only if (i) or (ii); after st6 S7 and F3)
+
+**Ticket.**
+- **TICKET** countdown-faces X1 · V PoC `638b8e03e81c` / CSS `27776f3d4138` · control C base `4606120cf392` / CSS
+  `27776f3d4138`, same snapshot.
+- **Driver:** W, as the `x1.mjs phone` window sequence above. These are jumps and holds at fixed y with the page not
+  touched, at 430x775 (scripted geometry).
+- **Question:** the one above, read on the phone. **Prediction:** P-069.
+- **Probe set:** Timeline (depth 1) in every counted run, plus the in-page rAF logger. The std probe is not used in
+  counted runs: one inspector client per page (I-038), and x1 holds it.
+- **Expected time:** ~20 min, plus cooling.
+
+**Serve.** One server per arm, restarted at the block start. The phone opens each server's plain-http twin (I-003),
+host `lan` (I-073; never written down resolved).
+
+```sh
+node tools/serve.mjs --root site-pretty [--overlay <snap-x1/poc>] --port 0 --https --vendors=local --latency 150 --no-cache --state out/x1/serve-<arm>.json
+node tools/wait.mjs serve out/x1/serve-<arm>.json
+```
+
+**Per run:**
+
+```sh
+node tools/iphone.mjs open http://lan:<twin C|V>/ --owner iphone-runner
+node fixes/countdown-faces/x1.mjs phone --url http://lan:<twin>/ --arm C|V --build base|poc --label X1-<n><arm> --run <n>
+```
+
+`x1.mjs phone` reads the battery temperature and charging state at the start and end of each run (A4), checks the
+served hashes and parks Safari after the run. Low Power Mode must be off.
+
+**Block** (protocol v2 §5.2 Timeline-block order; attribution only, so no fixed cooling between blocks):
+1. Cool with `node tools/wait.mjs phone-temp --below auto` (≤ 10 min). Park Safari.
+2. Run one uncounted warm-up per arm's port (A3): `x1.mjs phone … --warmup`, C then V.
+3. **Heat check, open:** one uncounted Timeline-OFF control run on C's port,
+   `iphone.mjs run --driver scroll --probe std --arm C --block X1 --build base --low-power off`. It must reach bottom
+   ≥ 58 fps and scroll ≥ 44 fps. x1's Timeline-on C runs have no S scroll phase, so they can't replace this run.
+4. Run 8 counted runs, Timeline on in every arm: **C V V C C V V C** (`--run 1..8`).
+5. **Heat check, end:** as in step 3.
+6. Run the attribution runs, uncounted, after the end heat check: one per arm, `x1.mjs phone … --lt --resume-check`.
+   They give the device's LayerTree census, face-layer repaints and the resume check. `layersForNode` is never used in
+   a counted run (§5.5).
+7. Park Safari and stop the servers.
+
+**Validity:**
+- A failing heat check voids every counted run since the last passing one. Cool by `wait.mjs phone-temp`, then redo
+  (§5.2).
+- A run is void for:
+  - a wrong served hash;
+  - Low Power Mode;
+  - a touched phone;
+  - an attached Web Inspector (§5.5);
+  - a window with fewer than 3 detected ticks.
+- Log load1 per run. A LOAD > 8 run is flagged, not void.
+- At most 2 blocks for this question (§5.3).
+
+**Scoring:** `node fixes/countdown-faces/x1.mjs score out/countdown-faces/x1/X1-*.json`.
+- **Statistic:** for each run and window, the sum of the named segments' exclusive ms over the 4-tick window. Per arm,
+  the range (min-max) and the median over its 4 counted runs.
+- **"Separated"** means every V run lies beyond every C run (4 vs 4; U = 0), by at least 4 ms between the nearest V
+  and C runs. The 4 ms is the phone minShift, protocol §5.3.
+- **No twins or near bands** for these rows: they are ms sums, not frame counts. The dt > 50 / > 34 counts in row 4
+  carry their ±4 ms twins as usual.
+
+| row | read (per run, per 4-tick window) | decision |
+|---|---|---|
+| **1. top (clock visible)** | Layout + Paint+Composite exclusive ms; digit Paints; view Layouts | **V separated above C** → (a) has a WebKit cost on the device. The lead gets the segment card; PR-007 rev 7 offers "pause-only" ((b) alone, 10 faces kept) to the user; (a) is not landed until the user decides. **Not separated, or V below** → (a) has no measurable WebKit cost; "full" stays and X1 closes. |
+| 2. pastHero (clocks hidden) | Style + Layout + Paint+Composite ms; record counts | **V separated below** → (b) confirmed on the device (attribution, not a gain claim). **Not separated** → reported; (b) keeps its count claim only. **V separated above** → stop and report (regression). |
+| 3. resume | Layout + Paint+Composite ms, digit Paints | Reported with row 1. A resume window with V separated above C is read as row 1's cost. |
+| 4. context | dt > 50 / > 34 (twins), heroExit rows | Information only. A V frame > 50 in `top` that no C run has, in ≥ 2 V runs, counts as row 1's cost. |
+
+**The segment card** (A1) is the per-RenderingFrame table in each run file: Script / Style / Layout / Paint+Composite /
+Other, gap − frame. Per arm it holds ≥ 3 captures (4 counted runs) and names the segment the fix removes: Style +
+Layout + Paint at pastHero.
+
+**Prediction P-069** (`fixes/PREDICTIONS.md`, committed before any data):
+- **Simulator, n=2 per arm:**
+  - S1: face layers at top go 80 → 24 exactly, and total layers C − V = 56 ± 2. Face-layer memory V/C is 0.30
+    [0.20, 0.45]; near 1.0 would mean WebKit backs only the faces inside the clip.
+  - S2: face-layer repaints at top: C 0 [0, 3], V [4, 30]. Digit-sized Paints: C [0, 4], V [4, 30].
+  - S3: Layout at top, V − C is [+2, +30].
+  - S4: at pastHero, V/C RecalculateStyles, Layout and Paint are each ≤ 0.6. Countdown rAF V/C is [0.8, 1.25].
+  - S5: at heroExit, `--exit-opacity` is 0 in both arms. V/C Layout and Paint are ≤ 0.7. `--exit-opacity` > 0 at
+    y = innerHeight.
+  - S6: the resume check is live at the first frame at y 0 in both arms, 2/2. While hidden, C is live and V is stale.
+    Resume-window digit Paints, V − C, are [+1, +24].
+  - Stage 2 is triggered by (i) (~85 %).
+- **Phone:**
+  - Row 1: not separated, with |median V − median C| < 4 ms (~65 %).
+  - Row 2: V separated below, with median V/C 0.5 [0.3, 0.75] (~75 %).
+  - Frames > 50 per window: 0-1 per run in both arms.
+- **Falsified if:**
+  - S1's face layers are not 24;
+  - any S4 ratio is > 0.8;
+  - S6 is not live at the first frame;
+  - phone row 2 is not separated, or has V above.
+
 ## Overlap with other topics (review r1 Blocking 3)
 
 - **Topic #1 `countdown-idle-raf`** (on main, ACCEPT-WITH-NOTES, patch v03) edits the same hunks: `$E` 3824, the
@@ -361,3 +545,4 @@ http on localhost. Simulator times never count, so these are record counts (n=1)
 - `arms.mjs`: builds the arms (`still`, `faces`) and the isolated pages under `out/`.
 - `probe.mjs`: counts, profile and pixels.
 - `sim-counts.mjs`: Simulator Timeline counts.
+- `x1.mjs`: the X1 segment card sequence (Simulator `sim`, phone `phone`, `score`); see "X1 phone segment card".
