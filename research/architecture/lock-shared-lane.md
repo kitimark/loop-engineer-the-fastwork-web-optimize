@@ -338,3 +338,43 @@ and the guard settles the race. One mutual wait stays possible until every workt
 to an I-049 writer that defers to it. It is bounded by the group's last-grant record, which expires 335 s after the
 group's last grant; after that both versions serve the short lane first.
 
+Seen live (lead, 2026-10-02): chrome-measure was free from about 23:34:30Z to 23:38:13Z. The hand-over went to
+de-illusion-style, whose waiter ran pre-I-049 code. fix-nav-morph's exclusive waiter was queued behind it, gated on
+host load. Neither took the lock for about 3.7 min, and the wait cleared by itself within the bound. Nothing showed the
+stall while it lasted. A follow-up idea, not built: `lock.mjs status` and the progress page could say "handing over to
+X (not seen for N s)".
+
+## 11. Capacity: cap 3 vs cap 4 (T-008, measured 2026-10-02)
+
+Host: 8 cores (6P+2E), 16 GB. Each mix ran real jobs as `--shared` readers, re-entered inside one `--no-timing`
+exclusive hold of mine, so nothing else ran beside them and the cap did not limit the mix. One run per mix. CPU busy is
+the share of all cores, sampled every 1 s; "bg" is the 10 s before the mix. Jobs: npm = `npm test` (w2), check =
+`fix.mjs check large-area-blur` (w1), sim = `sim.mjs session --functional -- sim.mjs open <url>` (w3, cold boot).
+
+| mix | weight | wall | result | CPU busy mean / p90 | s above 90 % | load1 max |
+|---|---|---|---|---|---|---|
+| s-npm (npm) | 2 | 195 s | 942/942 | 40 % / 57 % (bg 28 %) | 0 | 7.9 |
+| s-check (check) | 1 | 69 s | pass | 37 % / 48 % | 0 | 8.1 |
+| m3 (npm + check) | 3 | 198 s (check 70 s) | pass | 45 % / 71 % | 5 | 7.7 |
+| m4a (2 npm) | 4 | 205 s, 207 s | 950/950 each | 54 % / 79 % | 4 | 10.8 |
+| m4b (4 checks) | 4 | 73-74 s | all pass | 57 % / 80 % (bg 20 %) | n/a | 11.7 |
+| m5 (2 npm + check) | 5 | 218 s, 219 s (check 74 s) | 965/965 each | 58 % / 96 % | 35 | 13.6 |
+| s-sim2 (sim) | 3 | 24 s (boot 11 s) | pass | 85 % / 100 % | 18 | 95 (43 at start) |
+| m4c2 (sim + check) | 4 | 78 s (sim 27 s, boot 12 s) | pass | 48 % / 100 % | 22 | 139 (75 at start) |
+
+- **No failures.** No I-024 e2e timeout in any mix. `npm test` takes 195-219 s of wall time; the note "75 s wall" in
+  CLAUDE.md (I-021) is out of date. Against the 300 s `--max-seconds` that leaves about 80 s of margin at weight 5.
+- **Cap 3 vs 4.** Cap 3 lets one npm test (w2) and one w1 job run together, so a second npm test waits about 200 s.
+  Cap 4 (two npm tests, or four checks) keeps the CPU p90 near 80 % and load1 below 12. Weight 5 still passed, but
+  it held the CPU above 90 % for 35 s and slowed each npm test by about 10 %.
+- **Simulator weight.** A cold boot uses the whole machine for about 20 s (CPU 100 %, load1 to 95-139). After that
+  the session costs little. Weight 3 stays: one check fits beside it at cap 4, and m4c2 passed with the check about
+  10 % slower (78 s vs 69-74 s). Two Simulator sessions never overlap anyway (the `simulator` lock, §3).
+- **The join load binds only after a Simulator boot.** Mixes without one never reached load1 16. After a boot, load1
+  stays above 16 for about 2-2.5 min while the CPU is back near 25 % busy, because load1 decays over one minute
+  (139 to 62 took 50 s). Joins stay closed for that time although the host has room. That cost is incident I-051.
+- **Above cap 4 needs code.** `SHARED_LANE.cap` (4) bounds the switch's `--cap` and `--weight` and the weight of the
+  exclusive slot that re-entered jobs use. Raising it is a tool commit with the config and switch tests updated.
+- **Recommendation:** keep cap 4 and join load 16 (both are the lead's setting since 22:48Z). Don't go above 4 on this
+  host.
+
