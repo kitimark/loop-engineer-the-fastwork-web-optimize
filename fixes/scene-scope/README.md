@@ -25,7 +25,7 @@ lead's review (8690486, NEEDS-WORK) sent back.
 - Simulator W driver (`srwin-sim.mjs`, Timeline depth 10) for the switch structure; ms there are attribution only.
   Copies for reproduction (P-053/P-055/P-056) in `fixes/scene-scope/tools/`: `srwin-sim.mjs` + `simtab.mjs` (from
   de-counts-sim's untracked `research/design-engineering/work-counts-webkit/`), `rsstat.mjs` (switch and scroll-phase
-  scoring, view-rooted counts), `pageframes3.mjs` (deterministic frozen frames) and `onset.mjs` + `onsetcmp.mjs` (sweep phase and onset, P-056a).
+  scoring, view-rooted counts), `pageframes3.mjs` (deterministic frozen frames), `pageframes4.mjs` (+ IO hold) + `ringstat.py` (frames re-check) and `onset.mjs` + `onsetcmp.mjs` (sweep phase and onset, P-056a).
 - Phone: S (blocks 1-2) and M (block 3), with Timeline, run by iphone-runner.
 **Predictions (strict scoring, fixes/PREDICTIONS.md):** P-040 MISS, P-041 HIT, P-045 HIT, P-046 HIT, P-047 FAIL,
 P-048 FAIL, P-049 MISS, P-050 MISS, P-051 MISS, P-052 HIT, P-053 HIT, P-054 inCQ HIT / restyled MISS, P-055 (a) HIT,
@@ -279,6 +279,49 @@ deterministic A/A, and they change Chrome's raster path, so they are a measureme
     at (450, 8300) is the same in both arms (`spotprobe.mjs`).
   - Strict scoring: **c1 MISS**, because the card said 0 differing frames. Every difference except that one frame sits
     in a region the A/A also differs in.
+- **Frames re-check (lead, after ba384b1)**. Two normal holds, 05:47-05:54Z and 05:54-06:01Z, with the display off
+  (I-033 notice; UserIsActive 0 at start and end). They were split because 44 loads at 1440 plus the 430 part do not
+  fit 600 s. Each ran a frozen script copy (`run-t4hold.sh`) with a kill trap. Served hashes were checked.
+  - Harness: `pageframes4.mjs` (copy in `tools/`) = pageframes3 + an IntersectionObserver hold (`HOLDIO=1`). While the
+    clock is virtual, IO callbacks are held instead of running when Chrome delivers them, which can be mid-advance at a
+    variable virtual time. Per observer and target, only the latest entry is kept, and it is delivered only when its
+    threshold bucket changed. Held entries are released at the start of every advance and before the freeze.
+  - The ring code check: `.start-selling-platform-secure.is-network` (JS 12621-12623 in B).
+    - Its own IO (≥ 0.35) sets `is-play`, which starts finite CSS entrance animations (CSS 7115-7150, pinned to their
+      end by the freeze).
+    - 1 s later (a virtual timer), `v` inserts the dash `<animate>` elements, calls `beginElement()`, and sets the
+      dash highlight `is-active`. The freeze pauses that SMIL at time 0.
+    - Neither the cut (title selectors only) nor the PMsweepGate line (title spans only) touches this subtree. The
+      cv:auto region around it is the same in every arm.
+  - 430, y 3800-4700, one load each of S0, V, S0b, V again (q40v/w430, HOLDIO=1). Differing px and max delta per frame:
+
+| y | S0 vs S0b (A/A) | V vs S0 | V vs S0b | V(2nd) vs S0b | V vs V(2nd) |
+|---|---|---|---|---|---|
+| 3800 | 3348, 66 | 3348, 66 | identical | identical | identical |
+| 3900 | 3631, 66 | 3707, 66 | 76, 1 | identical | 76, 1 |
+| 4000-4600 (7 frames) | 3631, 66 each | 3631, 66 each | identical | identical | identical |
+| 4700 | 2899, 2 | 2899, 2 | identical | identical | identical |
+| identical frames | 0/10 | 0/10 | 9/10 | 10/10 | 9/10 |
+
+  - The count-up is pinned: the mid-tween values at y3900 (฿236K, 42, 5) are the same in every load.
+    - The 76 px at y3900 is the edge of the glyph "5" (max delta 1). It differs V vs V, and S0 vs S0b in the
+      shared-lane smoke (q40vs: S0 vs S0b 9/10, the same 76 px).
+    - The 3348-3631 px (max delta 66) is the "Elena Rossi" testimonial avatar, decoded differently in the first
+      measured load (S0) only. At y4700 it shows through the frosted nav's backdrop. Cause unknown (OBSERVED; it is
+      outside #platform).
+    - Both are A/A noise. No frame differs only between arms.
+  - 1440, frame y7500 only (q40v/w1440a + q40v2/w1440b). HOLDIO=0, i.e. pageframes3's IO behaviour, so the rate is the
+    old harness's. Walk 7000 to 7500 step 100, freeze at every step, capture at 7500. 22 V and 22 S0 loads, interleaved
+    V S0 S0 V.
+    - Every one of the 44 frames is byte-identical to the modal S0 frame, which is also q40ui's S0 and S0b frame at
+      y7500. Differing: **V 0/22, S0 0/22, max delta 0, Fisher exact p = 1**.
+    - Pooled with q40ui (the same y7500 state), q40ui's V frame is 1 of 23 V loads vs 0 of 24 S0 loads, p = 0.49.
+      The shorter walks (q40ur from 7300, q40ur2 from 7400) land in another ring state at y7500, the same in all arms.
+  - Verdict:
+    - 1440 y7500 **identical**. The one q40ui frame is a one-off this check cannot attribute to V (p = 0.49), and
+      nothing in the cut or the line reaches the rings.
+    - 430 **unexplained nondeterminism also seen in A/A** (glyph edge, avatar decode). No difference is V-only.
+    - P-056a(c1) stays a strict MISS as written; the gap is in the frame check, not in the fix.
 - **Phase and onset (c2)** (`out/scene-scope/onset.mjs` + `onsetcmp.mjs`, q40uo). Method: 3 reps per arm in the order
   C V A, V A C, A C V (A = S0b). The probe calls no `getAnimations()` before a title is visible. Per title it records
   the phase (currentTime at the first rAF after its first intersecting callback) and the onset (the first rAF where
@@ -311,7 +354,9 @@ deterministic A/A, and they change Chrome's raster path, so they are a measureme
 
   - RBi40p for comparison (w40p): RS 0.2, with an 18.1 ms cE-initiated view Layout right after it.
   - RBi40pti has neither. Attribution only (Sim ms), no gain claim.
-  - The outer RS count swings about ±15 in both arms: **P-056a(a) count MISS**; nested and cE Layout **HIT**.
+  - Outer RS count: **MISS** of the card's interval [350, 370]. V ran 346-375, so two of its four runs (346, 375) fall
+    outside it, while C ran 350-369. The count swings about ±15 in both arms, so the interval should have been C's
+    range ±15. Nested and cE Layout: **HIT**.
 - **Flip (b)** (q40uf): restyled 58/58/58, inCQ 0/0/0. **HIT** (RBi40pt 58/58/63).
 - Not run on RBi40pti: the phone (T-011) and the one-shot scenarios (a)-(d), which RBi40p passed. The line only adds
   an attribute that PMsweepIO's first callback would set anyway, and it touches no one-shot.
