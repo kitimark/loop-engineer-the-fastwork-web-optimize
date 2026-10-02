@@ -150,6 +150,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
   01:1xZ: I-052 landed (85ad9a0): every sim session empties Safari's HTTP cache at boot, so the never-seen-port-per-arm
   rule is no longer needed ACROSS sessions (it supersedes the 00:2xZ workaround). WITHIN a session, check the server-log
   GETs or `sim.mjs fetched`; a transferSize of 300 does not prove a network fetch (OBSERVED).
+  01:4xZ scene-scope: review of RBi40 (8690486) NEEDS-WORK. The V1i one-shot cut changes reachable frames (at <=600 px
+  the hero scroll-cue copy-in after a reload while scrolled or a bfcache restore; the accent stroke paused mid-way on a
+  fling); the pixel checks were phase-blind and missed #platform (y>=4082); mechanism and regression checks are missing
+  for the landing build. Decision: build RBi40p (cut only the #platform-internal one-shots + tracks + will-change
+  classes; keep the hero/people/commission/nav/sb-* entries), then re-review; no user-acceptance route. PROGRESS: no
+  "byte-identical" wording for scene-scope until then. PR-001: the w00 1-ms atlas is built; its first Sim parity run
+  failed 1/130 (likely a test-hook artefact), re-run queued. ESTIMATES: 7 words ~2.3 MB WebP, ~31 MB decoded; rev 2
+  must show decode timing and a cost/benefit table.
 - **21:4xZ** (resumed after the usage reset) SHARED LANE ON 21:40Z (d777f3e + 087e36b..c05ec41; cap 3, join load 16;
   `sim.mjs session --functional` = shared slot weight 3). I-044 fixed e1515ad. PHONE COOLING BY TEMPERATURE (user T-009):
   ts-phone-cool builds `wait.mjs phone-temp` (replaces fixed cooling waits). Landed candidates: f7d3b1b rotator-st6
