@@ -8,6 +8,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **09:3xZ I-056 LANDED on main d2d77ad** (lead's npm test 1037/1037 in the main checkout) and RESOLVED: phone runs no
+  longer wait for shared groups; `--require-quiet` opts in to waiting. Open incidents: none. The lead confirmed A1's
+  slot to iphone-runner (after PR-001 block B).
+  - **Visual route (b): WAITING ON THE USER.** The lead posted the plan in T-018 #10 (an ask, ~8 min of the user's time,
+    right after block B if the user agrees). Nothing is recorded until the user agrees; NO CAMERA holds.
 - **09:2xZ second reads, both PASS.**
   - **G1b** (fix-scroll-engine be4c331 on worktree-agent-a1722cf5058e25591): stroke-fidelity gate ±10 % in run
     validity, ~15 min per block (~40 min for 2 with phone-temp cooling), P-060 "Amended pre-data 10-02 09:16Z" naming P2b
@@ -1073,7 +1078,7 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
-| I-056 | landing 09:1xZ (lead resolves; phone runs no longer wait for shared groups, `--require-quiet` opts in) | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (lets S/W/M blocks use the preferred quiet hold), (c) gesture-run guard, (d) shared readers log to holds.log |
+| I-056 | RESOLVED 09:3xZ, landed d2d77ad (phone runs no longer wait for shared groups, `--require-quiet` opts in) | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (lets S/W/M blocks use the preferred quiet hold), (c) gesture-run guard, (d) shared readers log to holds.log |
 | I-058 | open | toolsmith (lead spawning) | waits invisible on the board; fixed-time waits where a probe exists (user T-016) |
 | – | resolved 10-02: I-053 (proposal options, 42c14a0), I-054 (Range, 67847b4), I-055 + I-057 (flaky e2e, 42c14a0) | – | console restarted 08:22Z with options live |
 
