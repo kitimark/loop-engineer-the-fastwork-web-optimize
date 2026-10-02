@@ -8,6 +8,19 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **11:1xZ T-011 scored; C1 running; I-062 landed; I-063 open; PR-004 rev 3.** Landed since 10:49Z: ca408c4 + ead9159
+  (PROGRESS /build: st6-rb with 7 items, pin-clamp item, scene-scope retitle), 39786a2/71934c1/9b1e574/4df8bb2 (I-062
+  ioscap), the illusion-accent-frames series f91dd4e..36a28b1 (de-illusion-style).
+  - **T-011 scored** (fix-scene-scope): P-061 a/b/d PASS; in review.
+  - **C1 running** (iphone-runner, wi-stack ticket, signed 10:4xZ). Then the **P5 Sim hold** after C1, then T-009 (cooling
+    curve; the phone-queue row showed a T-009 battery read at 11:13Z), I-042.
+  - **I-062 landed** (tools/ioscap.mjs, a hardened recorder that can only open the iOS screen device; enforcement denies
+    other recording routes and asks on its first run). The first run is gated on review-ioscap and a console step for
+    the user. NO CAMERA holds.
+  - **I-063 open** (tool): sim.mjs session always cold-boots the Simulator (load1 60-70 for ~1 min), and a shared hold
+    (<= 300 s) cannot keep a device booted across holds.
+  - **PR-004 rev 3 posted** (de-illusion-style, 36a28b1): "did we measure the word alone? (no), and how to do it",
+    4 options; waits on the user.
 - **10:4xZ C1 signed; G1b voids; 7d14ed0 landed 10:16Z.**
   - **Phone order (lead 10:4xZ):** G1b (running) -> T-011 -> **C1** -> T-009 -> I-042.
   - **C1** (wi-stack, shell-hold-c "A + shrink hold", 366e693, P-063 pre-data): S6 = st6-rb (snap-a/st6rb, JS
@@ -1124,6 +1137,8 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
+| I-063 | open 10:56Z | (lead) | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
+| I-062 | landed 4df8bb2 (lead resolves) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
 | I-060 | open 09:47Z | ts-i060 | progress page "Right now": show the job and the fix, not only the holder (user T-020) |
 | I-059 | RESOLVED 10:0xZ, landed 17eeb1a + 62b4053 | ts-i059 | console: a runner-ended part can be marked Done by the user; fix (A) runner-ended parts + (B) "Start over" (T-019 #7) |
 | I-056 | RESOLVED 09:3xZ, landed d2d77ad (phone runs no longer wait for shared groups, `--require-quiet` opts in) | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (lets S/W/M blocks use the preferred quiet hold), (c) gesture-run guard, (d) shared readers log to holds.log |
