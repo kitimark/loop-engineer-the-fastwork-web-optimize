@@ -9,7 +9,9 @@
 // of its own; fixed 10-02 before any counted run was analysed). An engaged draw that is not a 'you' draw makes the run VOID-ID.
 // A '-is-canvas' before the draw's end (900 ms) is a handback (the reason is in the arm's own stats, readstats.mjs).
 //
-// Per 'you' draw, window W = (s, s + 2000 ms] on the probe's frame stamps (a frame row's t ends its gap; post-draw stalls count):
+// Per 'you' draw, window W = (s, s + 2000 ms] on the probe's frame stamps (a frame row's t ends its gap; post-draw stalls count).
+// A frame is in W when its gap (t - dt, t] overlaps W, so a stall that starts inside W and ends after it counts too
+// (fixed 10-02 after block A: F1's 1.8 s stalls after its in-draws closed at ~2.02 s and were missed; applies to every arm):
 //   live    frames in (s, s + 900]              gap     longest dt in W
 //   gt50 gt34 and the +-4 ms twins gt46/gt54, gt30/gt38, near34 (30, 38], near50 (46, 54]   (CLAUDE.md "Frame thresholds")
 //   eng     engaged on the canvas/video at the start (arms only)   back   handed back before 900 ms
@@ -37,7 +39,7 @@ for (const f of files) {
     if (!you) continue;
     if (idle && (s.t < idle[0] || s.t + 2000 > idle[1])) continue; // only draws whose whole window lies in the idle phase
     const back = cr.some((c) => c.value === '-is-canvas' && c.t > s.t && c.t < s.t + 880);
-    const w = fr.filter((x) => x.dt != null && x.t > s.t && x.t <= s.t + 2000), live = fr.filter((x) => x.t > s.t && x.t <= s.t + 900).length;
+    const w = fr.filter((x) => x.dt != null && x.t > s.t && x.t - x.dt < s.t + 2000), live = fr.filter((x) => x.t > s.t && x.t <= s.t + 900).length;
     const m = { d, n, at: Math.round(s.t), off: Math.round(off), eng, back, live, gap: Math.max(0, ...w.map((x) => x.dt)) };
     m.gt50 = w.filter((x) => x.dt > 50).length; m.gt34 = w.filter((x) => x.dt > 34).length;
     m.gt46 = w.filter((x) => x.dt > 46).length; m.gt54 = w.filter((x) => x.dt > 54).length;
