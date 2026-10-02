@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T12:35:00Z",
+ "updatedAt": "2026-10-02T15:20:00Z",
  "updatedBy": "mgmt-ops-7",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-02T15:20:00Z", "text": "You chose to park the scroll-size fix (fwreskip) and test it again when the phone is back. The image-size fix passed its Simulator memory check (about 15-17 MB less image memory); a proposal with 3 options comes to you after the lead's review." },
   { "at": "2026-10-02T12:35:00Z", "text": "The phone is disconnected, so its tests wait. The scroll-size fix (fwreskip) now waits for your decision on PR-005; the word-alone test of the hero's accent word waits for the phone." },
   { "at": "2026-10-02T11:55:00Z", "text": "The best build is now st6-rb2: the same seven fixes, with the final version of the section-switch style fix. It was checked by how it works and by screenshots, not timed on the phone as a whole." },
   { "at": "2026-10-02T11:40:00Z", "text": "The section-switch fix (restyle only its own section) is landed. On the iPhone it removes the whole-page layout at each section switch, about 17-23 ms each time." },
@@ -269,7 +270,7 @@
    "fixes": "Around the middle of the page, two frames cost about 20 ms each, mostly layout, while a large section (the people list) is still being drawn although it is about to leave the view. The chosen fix sets it aside earlier, so that work is not done while it cannot be seen.",
    "felt": {"answer": "not-yet"},
    "gate": "Lands only after checks that nothing on screen changes and a finger fling test on the real iPhone; no speed test while timing is on hold.",
-   "next": "Your decision is open on PR-005: A ship it, B drop it (recommended: on the phone it removed about as many slow frames as it added), or C park it and test again when the phone is back.",
+   "next": "You chose C on PR-005: it stays parked and is tested again (phone test G2) when the phone is back.",
    "owner": "fix-scroll-engine (from fix-scene-scope)",
    "checks": [],
    "details": [
@@ -303,14 +304,14 @@
    "id": "image-size",
    "title": "Images bigger than they need to be (memory)",
    "area": "whole",
-   "state": "diagnosing",
-   "stage": "R",
+   "state": "testing",
+   "stage": "V",
    "fixes": "Several images are much larger than they are shown, using about 35 MB more memory than needed (estimate). This is not a per-frame cost, but it guards against the phone running low on memory.",
    "felt": {"answer": "not-yet"},
-   "gate": "Rank 7: a memory check on the simulator plus a visual check (no visible change). No phone timing test.",
-   "next": "Parked: small gain, after scene-scope. It comes back once scene-scope and the panel fix have a phone result.",
-   "owner": "unassigned (lead)",
-   "checks": [],
+   "gate": "A memory check on the Simulator plus a visual check (no visible change). No phone timing test.",
+   "next": "The Simulator memory check passed. A proposal with 3 options comes to you after the lead's review.",
+   "owner": "fix-image-size",
+   "checks": [ { "id": "P-066", "what": "Simulator: does image memory drop with smaller image files?", "result": "Yes: peak image memory 14.5 and 17.1 MB lower in two sessions, against a same-build spread of 6.6 MB (OBSERVED; Simulator numbers show structure, not a phone gain)." } ],
    "details": [
     "style-recalc-images.md §5 rank 7, F-096: roles PNG 1282² -> ~1000², avatars -> 192², strawberry/orchestra/leobeer/weng -> ~600 wide, hero covers -> ~500 wide, srcset; ~35 of ~153 MB decoded (derived). Pixel diff <= 0.4 % at DPR 3. Simulator/Instruments memory only (user Sim rule)."
    ]

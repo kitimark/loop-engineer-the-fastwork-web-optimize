@@ -8,6 +8,18 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **15:1xZ (batch) Flakes landed; user answers C-024 / PR-005 / T-023; P-066 HIT; I-069, I-070.**
+  - Landed: ddfbc8c (ops), dc5651c (I-065 bdc2e04 + I-066; npm test 1257/1257; both RESOLVED), 8df1413 (fwreskip
+    README, the PR-005 decision).
+  - **C-024:** "Keep awake only during measurements" -> I-070 opened, ts-i070 spawned. It found I-026 already
+    caffeinates every hold and queue waiter; I-070 narrows that to measurement holds with `caffeinate -i -s` (-i alone is
+    useless in DarkWake, IOPMLib.h CONFIRMED).
+  - **PR-005: C** (park and re-test; G2 when the phone is back; P-064 stays open). PROGRESS fwreskip next updated.
+  - **T-023: "no, thanks"** (no Playwright WebKit experiment).
+  - **I-069** (P2): sim safari-restart on a restored data: tab never lands; triaged to ts-i063 after its I-063 round.
+  - **P-066 HIT** (Sim peak decoded-image memory): -14.5 / -17.1 MB vs A/A 6.6 MB, n=2, OBSERVED. fix-image-size drafts
+    a 3-option proposal for the lead's review. PROGRESS image-size: state testing, stage V, owner fix-image-size, P-066
+    check added.
 - **14:4xZ (batch) review-i063 verdicts; 5th Mac sleep; Sim runs across a sleep are void.**
   - The Mac idle-slept again 14:21-14:36Z (5 sleeps since 12:27Z, each ~15-16 min). fix-image-size stalled again; the
     lead resumed it. **Rule (lead): any Simulator run that spans a sleep is void.** The lead repaired chrome-measure's
@@ -1315,8 +1327,10 @@ between tool calls.
 | id | state | owner | note |
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
-| I-066 | fixing (99b37b3 ACCEPT-WITH-NOTES; lands via ts-i063/flakes) | ts-i063 | sparse worktree's leftover site*/ shadowed the baseline |
-| I-065 | fixing (8eab8ba ACCEPT-WITH-NOTES; lands via ts-i063/flakes), not blocking | ts-i063 | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
+| I-070 | fixing, P2 | ts-i070 | keep the Mac awake only during measurement holds (caffeinate -i -s) |
+| I-069 | triaged, P2 | ts-i063 | sim safari-restart on a restored data: tab |
+| I-066 | RESOLVED (dc5651c) | ts-i063 | sparse worktree's leftover site*/ shadowed the baseline |
+| I-065 | RESOLVED (bdc2e04) | ts-i063 | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
 | I-064 | RESOLVED (11bc722); user YES to deleting the old recorder | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
 | I-063 | fixing (3a85564 NEEDS-WORK B1/B2; fix round + re-review) | ts-i063 | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
 | I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
@@ -1340,9 +1354,10 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
 | `fix-image-size` (new 12:0xZ; ID via ListAgents) | image-size: Chrome pixels, Sim decoded memory (counts only), bytes; no timing; D fast-pathed by the lead; will ask ops for a P-id (next free P-066) | alive |
-| `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (answered T-023 #3) |
+| `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (user: no, thanks) |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
 | `ts-i063` (spawned 12:05Z; ID via ListAgents) | I-063, I-065, I-066 (batch 3a85564, 8eab8ba, 99b37b3 in review), then I-068 (resolved not-a-bug) | alive |
+| `ts-i070` (ID via ListAgents) | I-070: caffeinate only measurement holds | alive |
 | `review-i063` (ID via ListAgents) | read-only fix-reviewer of ts-i063's batch (measurement code: host.simWarm) | alive |
 | `ts-i064` | I-064 toolsmith (rounds 1-2 landed 8ec1c6d, 11bc722) | done |
 | `wi-stack` (a93135040e12a061d) | best-stack, shell-hold-c (landed 81dbc9b), F-129; an optional Sim spot check is parked | done |
