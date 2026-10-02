@@ -8,6 +8,22 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **16:4xZ I-063 + I-069 landed (0aa2227); test:chrome failed -> I-071 (P1); Mac sleeping since 16:09Z.**
+  - Landed 0aa2227: I-063 (859776b, da5de60, e35f0b4; **MEASUREMENT CODE**: lib/lock.mjs gate, verify, bench) and
+    I-069; npm test 1282/1282; both RESOLVED. Sim users get warm reuse after a rebase.
+  - **test:chrome failed:** check.chrome (no check.json) at 15:52Z; then the Mac's Maintenance Sleep (15:53-16:08Z)
+    cancelled the rest. `--short` holds get no caffeinate since I-070. **I-071 opened (P1, ts-i063):** bisect 9135b35
+    vs 0aa2227. The lead repaired the stale chrome-measure last-grant record again.
+  - **pmset since 16:08Z** (ops read, local log): DarkWake 16:08:33Z, Sleep ('Maintenance Sleep') 16:09:27Z, DarkWake
+    16:24:27Z, Sleep ('Sleep Service Back to Sleep') 16:25:11Z, DarkWake 16:40:15Z. No full Wake: the Mac has been
+    asleep since 16:09Z apart from ~1-min DarkWakes every ~15 min (dasd SleepService wake requests). It slept again
+    16:41-16:56Z: ops stalled mid-check-in (the lead's watchdog fired) and a pmset read hung until the wake. Sleeps the
+    lead counts this hour: 15:53-16:08, 16:25-16:40, 16:41-16:56Z.
+  - **T-024 #5** (de-countdown census, to the user): 2 countdowns x 80 faces roll in 4 hidden states, ~20-40 % of
+    main-thread busy at 6x (n=1, OBSERVED). The PoC is built and being measured.
+  - **CLAUDE.md suggestion (later, lead/user-owned; ops does not edit it):** document the warm Simulator
+    (`FW_SIM_IDLE_SEC`, default 600 s, keeper shutdown on idle or a queued timing hold) and that keep-awake applies
+    only to measurement holds (I-070: timing holds, phone parts, Sim sessions; not `--short`/shared jobs).
 - **15:5xZ image-size null write-up landed (909464c); fix-image-size done.** fixes/image-size/README.md + the P-066
   outcome row; findings F-134 and F-135 posted. PROGRESS image-size writeup path added. ts-i063 rebases I-063 onto
   0de8103 and fixes n1-n3; I-069 after. de-countdown (T-024) is researching.
@@ -1343,12 +1359,13 @@ between tool calls.
 | id | state | owner | note |
 |---|---|---|---|
 | I-068 | RESOLVED not-a-bug (Mac idle sleep; C-024) | ts-i063 | console thread wait overran its timeout |
+| I-071 | open, P1 | ts-i063 | test:chrome check.chrome failed (no check.json); bisect 9135b35 vs 0aa2227 |
 | I-070 | RESOLVED (0de8103) | ts-i070 | keep the Mac awake only during measurement holds (caffeinate -i -s) |
-| I-069 | triaged, P2 | ts-i063 | sim safari-restart on a restored data: tab |
+| I-069 | RESOLVED (0aa2227) | ts-i063 | sim safari-restart on a restored data: tab |
 | I-066 | RESOLVED (dc5651c) | ts-i063 | sparse worktree's leftover site*/ shadowed the baseline |
 | I-065 | RESOLVED (bdc2e04) | ts-i063 | flaky unit tests: a proposal test; console.test.mjs:274 ms-boundary endedAt |
 | I-064 | RESOLVED (11bc722); user YES to deleting the old recorder | ts-i064 | ioscap review fixes F2-F5; blocks the ioscap first run |
-| I-063 | re-review ACCEPT-WITH-NOTES; n1-n3 + rebase on I-070, then lands | ts-i063 | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
+| I-063 | RESOLVED (0aa2227; measurement code) | ts-i063 | sim.mjs session cold-boots the Simulator every hold; shared holds can't keep it booted |
 | I-062 | RESOLVED (4df8bb2; npm test 1149/1149) | ts-i062 | ioscap recorder; first run gated on review-ioscap + a console step |
 | I-061 | RESOLVED 10:44Z (517fdb4) | (lead) | PROGRESS build data schema |
 | I-060 | RESOLVED 10:44Z | ts-i060 | progress page "Right now": show the job and the fix, not only the holder (user T-020) |
