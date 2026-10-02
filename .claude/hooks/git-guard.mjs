@@ -24,6 +24,13 @@
 //     xcrun, or a swift script run by path) on tools/ioscap/ sources other than a -typecheck, on any .swift file
 //     that uses the capture APIs (the hook reads the file; one it cannot read is refused), on stdin or a file list,
 //     and SwiftPM build/run/test/package on a package whose sources use them
+//   deny (I-064 follow-up, nobody views frames): open of anything under out/iphone-screen/ or of a movie file,
+//     qlmanage/mpv/vlc/iina on those, any ffplay, ffmpeg frame exports (-f image2|image2pipe|sdl|..., an image output)
+//   wrappers unwrapped so every check sees the inner command (I-064): arch, caffeinate, script, launchctl
+//     submit|asuser|bsexec (besides env, nice, nohup, timeout, sudo, xargs, lock.mjs ... --, ...)
+//   Known limits (capture routes): xcodebuild projects are not scanned for the capture APIs; a subprocess call
+//     inside a script (python/ruby/node spawning open, ffmpeg, swift ...) is not seen, only inline capture-API text
+//     is; launchctl load/bootstrap of a plist and other wrappers (taskpolicy, ...) are not followed
 //
 // Why a parser and not only permission rules: `Bash(git push *)` doesn't match `git -C . push`,
 // `/usr/bin/git push`, `sh -c 'git push'` (https://code.claude.com/docs/en/permissions.md, "What a
@@ -318,6 +325,37 @@ function unwrap(words, findings) {
       if (info) return null;
       continue;
     }
+    // I-064 follow-up: more wrappers that run their argument as a command
+    if (b === 'arch') { // arch [-arm64|-x86_64|...] [-arch name] [-e VAR=val] [-d VAR] [-c] cmd
+      w.shift();
+      while (w[0] && w[0].startsWith('-')) { const o = w.shift(); if (o === '-arch' || o === '-d') w.shift(); else if (o === '-e') envWord(w.shift() ?? '', findings); }
+      continue;
+    }
+    if (b === 'caffeinate') { // caffeinate [-disimu] [-t secs] [-w pid] [cmd]
+      w.shift();
+      while (w[0] && w[0].startsWith('-')) { const o = w.shift(); if (/^-[a-z]*[tw]$/.test(o)) w.shift(); }
+      continue;
+    }
+    if (b === 'script') { // script [-adeFkqr] [-t time] [file [command ...]]; -p plays a transcript back
+      w.shift();
+      let play = false;
+      while (w[0] && w[0].startsWith('-')) { const o = w.shift(); if (o === '--') break; if (o.includes('p')) play = true; if (/^-[a-zA-Z]*[tT]$/.test(o)) w.shift(); }
+      if (play) return null;
+      w.shift(); // the transcript file
+      continue;
+    }
+    if (b === 'launchctl') { // launchctl asuser|bsexec <id> cmd...; launchctl submit ... -- cmd... (or -p program)
+      const verb = w[1];
+      if (verb === 'asuser' || verb === 'bsexec') { w = w.slice(3); continue; }
+      if (verb === 'submit') {
+        const dd = w.indexOf('--');
+        if (dd > 0) { w = w.slice(dd + 1); continue; }
+        const p = w.indexOf('-p');
+        if (p > 0 && w[p + 1] !== undefined) { w = [w[p + 1]]; continue; }
+        return null;
+      }
+      break;
+    }
     if (b === 'watch') { w.shift(); while (w[0] && w[0].startsWith('-')) { const o = w.shift(); if (/^-[nd]$/.test(o)) w.shift(); } return { argv: w, viaShell: true }; }
     // `node [node opts] <...>/lock.mjs [opts] run [opts] <resource> [opts] -- <cmd...>` (or lock.mjs run
     // directly): lock.mjs runs <cmd> under the lock, so <cmd> is what gets invoked (review-snapshot: an
@@ -606,10 +644,32 @@ function isCheckoutIoscapExe(p) {
   const m = /^(.*)\/out\/ioscap\/ioscap\.app\/Contents\/MacOS\/ioscap$/.exec(p);
   return !!m && (m[1] === HOOK_ROOT || dirname(m[1]) === join(HOOK_ROOT, '.claude', 'worktrees'));
 }
+// I-064 follow-up (1): nobody views the recordings' frames; the numbers (.json beside the .mov) stay readable
+const NO_FRAMES = 'Nobody views the iPhone screen recordings or their frames (user T-018/T-019, incident I-062): `node tools/ioscap.mjs record` prints numbers only; read the .json files beside the .mov.';
+const MOVIE = /\.(mov|mp4|m4v|avi|mkv|webm)$/i;
+const SCREEN_DIR = /(^|\/)out\/iphone-screen(\/|$)/;
+const FRAME_FILE = /\.(png|jpe?g|bmp|tiff?|webp|gif|heic)$/i;
+const FRAME_FORMATS = /^(image2|image2pipe|sdl2?|opengl|caca|xv|apng|gif|webp|mjpeg|singlejpeg)$/i;
+const VIEWERS = new Set(['qlmanage', 'mpv', 'mplayer', 'vlc', 'iina']);
+const isRecording = (a) => MOVIE.test(a) || SCREEN_DIR.test(a);
+function analyzeFrames(prog, argv, findings) {
+  const rest = argv.slice(1);
+  const no = (what) => findings.push(deny(`${what} is not allowed. ${NO_FRAMES}`));
+  if (prog === 'open' && rest.some(isRecording)) return no('Opening a screen recording or out/iphone-screen/');
+  if (prog === 'ffplay') return no('ffplay (it shows the frames)');
+  if (VIEWERS.has(prog.toLowerCase()) && rest.some(isRecording)) return no(`${prog} on a screen recording`);
+  if (prog === 'ffmpeg') {
+    const fmt = rest.some((a, k) => a === '-f' && FRAME_FORMATS.test(rest[k + 1] ?? ''));
+    const imageOut = rest.some((a, k) => FRAME_FILE.test(a) && rest[k - 1] !== '-i');
+    if (fmt || imageOut) return no('An ffmpeg frame export or preview');
+  }
+  return undefined;
+}
 function analyzeCapture(prog, argv, cmd, ctx, findings) {
   const rest = argv.slice(1);
   const text = [...rest, ...cmd.heredocs].join('\n');
   const no = (what) => findings.push(deny(`${what} is not allowed. ${NO_CAMERA}`));
+  analyzeFrames(prog, argv, findings);
   if (prog === 'osascript') {
     if (/quicktime/i.test(text)) return no('QuickTime Player automation');
     if (CAMERA_APPS.test(text)) return no('Photo Booth or FaceTime automation (both open the Mac camera)');
@@ -655,7 +715,8 @@ export const looksGuarded = (text) =>
   /\bgh\b/.test(text) && /\b(create|fork|merge|sync)\b/.test(text) ||
   /GIT_CONFIG_(PARAMETERS|COUNT|KEY_|VALUE_)|hookspath/i.test(text) ||
   /QuickTime|SPCameraDataType|avfoundation|\bimagesnap\b|\bscreencapture\b.*\s-[A-Za-z]*[vVgG]|ioscap\.app|AVCapture/i.test(text) ||
-  /Photo\s*Booth|FaceTime|local\.fw-study\.ioscap|\b(open|osascript)\b.*\bioscap\b|\bswift(c|-frontend)?\b/i.test(text); // I-064
+  /Photo\s*Booth|FaceTime|local\.fw-study\.ioscap|\b(open|osascript)\b.*\bioscap\b|\bswift(c|-frontend)?\b/i.test(text) || // I-064
+  /\b(open|qlmanage|mpv|vlc|iina)\b.*(\.(mov|mp4|m4v)\b|out\/iphone-screen)|\bffplay\b|\bffmpeg\b.*(image2|\.(png|jpe?g|webp|heic)\b)/i.test(text); // I-064 follow-up
 
 // ---------------------------------------------------------------- hook entry point
 let raw = '';

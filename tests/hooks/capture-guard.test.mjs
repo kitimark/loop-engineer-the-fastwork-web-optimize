@@ -109,6 +109,36 @@ const DENY = [
   'swift < probe.swift',
   'swift repl',
   'swiftc @args.txt',
+  // I-064 follow-up (1): nobody views frames (was allowed under I-062: a frame export is viewing)
+  'ffmpeg -i in.mov -vf fps=1 out_%03d.png',
+  'ffmpeg -i out/iphone-screen/a.mov -f image2 frames/%04d.jpg',
+  'ffmpeg -i a.mp4 -frames:v 1 shot.jpg',
+  'ffmpeg -i a.mov -vframes 1 -f image2pipe -',
+  'ffmpeg -i a.mov -f sdl preview',
+  'ffplay out/iphone-screen/a.mov',
+  'open out/iphone-screen/lead-screen-1.mov',
+  'open /x/out/iphone-screen/a.json',
+  'open clip.mp4',
+  'open -a IINA a.MOV',
+  'open -R out/iphone-screen/',
+  'qlmanage -p out/iphone-screen/a.mov',
+  'qlmanage -t -s 800 -o /tmp a.mov',
+  'mpv a.mov',
+  // I-064 follow-up (2): wrappers are unwrapped, so the checks see the inner command
+  'arch -arm64 open -a FaceTime',
+  'arch -x86_64 -e A=1 imagesnap x.jpg',
+  'caffeinate -i out/ioscap/ioscap.app/Contents/MacOS/ioscap record --out /x/out/iphone-screen/a.mov --seconds 5',
+  'caffeinate -t 60 -w 123 swift tools/ioscap/main.swift',
+  'script -q /dev/null open -a "Photo Booth"',
+  'script -q -t 0 /tmp/log system_profiler SPCameraDataType',
+  'launchctl submit -l x -- open -a FaceTime',
+  'launchctl submit -l x -p /tmp/ioscap',
+  'launchctl asuser 501 open -b local.fw-study.ioscap',
+  'launchctl bsexec 1 imagesnap -l',
+  'nohup ffmpeg -f avfoundation -i 0 x.mov',
+  'sudo -u someone system_profiler SPCameraDataType',
+  'timeout 5 qlmanage -p a.mov',
+  'nice -n 5 caffeinate -i arch -arm64 open -a "Photo Booth"',
 ];
 const ASK = [
   'node tools/ioscap.mjs record --owner lead --seconds 10 --first-run',
@@ -125,7 +155,6 @@ const ALLOW = [
   'screencapture -x shot.png',
   'open -a Simulator --args -CurrentDeviceUDID 1234',
   `osascript -e 'tell application "Simulator" to activate'`,
-  'ffmpeg -i in.mov -vf fps=1 out_%03d.png',
   'grep -n AVCaptureDevice tools/ioscap/main.swift',
   `node -e 'console.log("AVCaptureDevice")'`,
   'node --test tests/unit/ioscap-source.test.mjs',
@@ -142,6 +171,17 @@ const ALLOW = [
   'open -a Safari https://localhost:5300/',
   'grep -rn FaceTime tools/',
   'ls out/ioscap',
+  // I-064 follow-ups: the numbers stay readable; the wrappers still allow the wrapped allowed command
+  'ls out/iphone-screen',
+  'cat out/iphone-screen/lead-screen-1.json',
+  'node -e \'console.log(require("./out/iphone-screen/lead-screen-1.frames.json").frames.length)\'',
+  'ffprobe -v error -show_entries format=duration out/iphone-screen/a.mov',
+  'ffmpeg -i a.mov -c copy b.mov',
+  'caffeinate -i node tools/ioscap.mjs record --owner lead --seconds 10',
+  'arch -arm64 node --version',
+  'caffeinate -t 60',
+  'script -q /dev/null ls',
+  'launchctl list',
 ];
 
 for (const c of DENY) test(`deny: ${JSON.stringify(c)}`, () => assert.equal(decide(c), 'deny'));
@@ -164,6 +204,30 @@ test('settings.json (I-064): deny Photo Booth, FaceTime, ioscap by name or bundl
     'Edit(/tests/unit/ioscap-source.test.mjs)', 'Edit(/.claude/worktrees/*/tests/unit/ioscap-source.test.mjs)']) assert.ok(ask.includes(r), r);
   // never loosened: the I-062 rules are all still there
   for (const r of ['Bash(osascript *QuickTime*)', 'Bash(open *QuickTime*)', 'Bash(open *ioscap.app*)']) assert.ok(deny.includes(r), r);
+});
+
+test('settings.json (I-064 follow-ups): no Read of recordings or frames, ask before editing the wrapper scripts', () => {
+  const { ask = [], deny = [] } = JSON.parse(readFileSync(join(ROOT, '.claude', 'settings.json'), 'utf8')).permissions;
+  for (const base of ['/out/iphone-screen', '/.claude/worktrees/*/out/iphone-screen']) {
+    for (const ext of ['mov', 'mp4', 'm4v', 'png', 'jpg', 'jpeg', 'heic']) assert.ok(deny.includes(`Read(${base}/**/*.${ext})`), `${base} ${ext}`);
+    assert.ok(!deny.includes(`Read(${base}/**)`), 'the numbers JSON stays readable');
+  }
+  for (const r of ['Edit(/tools/ioscap.mjs)', 'Edit(/.claude/worktrees/*/tools/ioscap.mjs)',
+    'Edit(/tools/lib/ioscap.mjs)', 'Edit(/.claude/worktrees/*/tools/lib/ioscap.mjs)']) assert.ok(ask.includes(r), r);
+  for (const r of ['Bash(open *iphone-screen*)', 'Bash(qlmanage *)', 'Bash(ffplay *)']) assert.ok(deny.includes(r), r);
+});
+
+test('wrappers (arch, caffeinate, script, launchctl) are unwrapped for the git rules too', () => {
+  for (const c of ['arch -arm64 git push', 'caffeinate -i git merge feature', 'script -q /dev/null git push', 'launchctl submit -l x -- git push',
+    'launchctl asuser 501 git merge --no-ff x']) assert.equal(analyze(c, { cwd: ROOT }).decision, 'deny', c);
+  assert.equal(analyze('caffeinate -i git status', { cwd: ROOT }).decision, null);
+});
+
+test('the hook header names its known limits (xcodebuild, subprocess calls)', () => {
+  const src = readFileSync(join(ROOT, '.claude', 'hooks', 'git-guard.mjs'), 'utf8').slice(0, 6000);
+  assert.match(src, /Known limits/);
+  assert.match(src, /xcodebuild/);
+  assert.match(src, /subprocess/);
 });
 
 test('F4: the bundle id the guard denies is the one in tools/ioscap/Info.plist', () => {
@@ -221,6 +285,7 @@ test('F2: swift, swiftc, xcrun and a swift shebang script on a file that uses th
 
 test('F2-F4: the raw-text fallback (a command the guard cannot parse) blocks the new routes too', () => {
   for (const t of ['open -a "Photo Booth', "open -a FaceTime '", 'open -b local.fw-study.ioscap "', "open -a ioscap '",
-    'swift tools/ioscap/main.swift "', "xcrun swiftc x.swift '"]) assert.ok(looksGuarded(t), t);
+    'swift tools/ioscap/main.swift "', "xcrun swiftc x.swift '",
+    "open out/iphone-screen/a.mov '", 'qlmanage -p a.mov "', "ffmpeg -i a.mov -f image2 x%d.png '", 'ffplay a.mp4 "']) assert.ok(looksGuarded(t), t);
   assert.ok(!looksGuarded('ls -la out'), 'unrelated text');
 });
