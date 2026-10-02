@@ -3,9 +3,11 @@
 // The phone shows one page at a time, so every command that touches it requires the caller to hold
 // the "iphone" lease (tools/lock.mjs); read-only `status` does not.
 //
-//   node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://192.168.0.55:<port>/
+//   node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://lan:<port>/
 //   node tools/iphone.mjs status                                  # device + open tab (no lease needed)
-//   node tools/iphone.mjs open  https://192.168.0.55:<port>/ --owner <topic>   # navigate Safari (location.href)
+//   node tools/iphone.mjs open  https://lan:<port>/ --owner <topic>   # navigate Safari (location.href)
+//        # host `lan` (or `lan-host`): this Mac's LAN address, resolved at run time (lib/lan.mjs, `node tools/lan.mjs`
+//        # prints it; it changes on a Wi-Fi reconnect, I-073); also in the lease's --url and safari-restart --url
 //   node tools/iphone.mjs scroll --owner <topic> [--out out/iphone/<topic>-<label>.json] [--label patched]
 //   node tools/iphone.mjs record --owner <topic> [--seconds 25] [--label finger-patched]   # human scrolls meanwhile
 //        # in the background with output to a log; `node tools/wait.mjs file <log> --match '^RECORDING' --pid <pid>`
@@ -55,6 +57,7 @@ import { parseJob, phoneRunText } from './lib/hold-job.mjs';
 import { basename, extname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
 import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord } from './lib/iphone-url.mjs';
+import { resolveLanUrl, tryResolveLanUrl } from './lib/lan.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
@@ -158,8 +161,9 @@ async function main() {
   if (cmd === 'open') {
     requireLease();
     if (!/^https?:\/\//.test(arg || '')) throw new Error('usage: node tools/iphone.mjs open <url> --owner <topic>');
-    const info = await mirrorInfo(arg);
-    const target = iphoneTarget(arg, info, { keepHttps: flag('keep-https') });
+    const url = resolveLanUrl(arg); // http://lan:<port>/ -> this Mac's LAN address now (I-073)
+    const info = await mirrorInfo(url);
+    const target = iphoneTarget(url, info, { keepHttps: flag('keep-https') });
     if (target.note) console.log(target.note);
     const c = await openTab(() => true);
     let c2;
@@ -181,7 +185,7 @@ async function main() {
     const list = await tabs();
     const tab = safariTab(list); // never a blank web view of another app, never the first of several (I-037)
     if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (it opens a self-signed https mirror over its plain-http twin, incident I-003)`);
-    let leaseUrl = holder.meta?.url;
+    let leaseUrl = tryResolveLanUrl(holder.meta?.url); // a `lan` placeholder lease URL (I-073)
     if (leaseUrl && !tab.url.startsWith(leaseUrl)) { try { leaseUrl = iphoneTarget(leaseUrl, await mirrorInfo(leaseUrl)).url; } catch {} } // https lease URL, Safari on its http twin
     if (leaseUrl && !tab.url.startsWith(leaseUrl)) console.error(`warning: Safari shows ${tab.url}, your lease says ${holder.meta.url} (run: node tools/iphone.mjs open ${holder.meta.url} --owner ${owner})`);
     let c = await openTab(() => true);

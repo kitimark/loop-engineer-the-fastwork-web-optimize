@@ -39,6 +39,7 @@ import { openTab, safariTab, sleep, parkSafari, isBlankUrl } from './wip.mjs';
 import { status as lockStatus, phoneGuard, phoneMacRecord } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, LAN_HOST } from './iphone-url.mjs';
+import { tryResolveLanUrl } from './lan.mjs';
 import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, yReadsLabel, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
 
 export const DEVICE = 'iPhone 15 Pro Max, iOS 26.6.1 Safari';
@@ -208,7 +209,7 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
   const tab = safariTab(tabs); // never a blank web view of another app, never the first of several (I-037)
   if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (incident I-003)`);
   const holder = target ? null : lockStatus('iphone').holder;
-  let leaseUrl = holder?.meta?.url;
+  let leaseUrl = tryResolveLanUrl(holder?.meta?.url); // a `lan` placeholder lease URL (I-073)
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) { try { leaseUrl = iphoneTarget(leaseUrl, await mirrorInfo(leaseUrl)).url; } catch {} }
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) console.error(`warning: Safari shows ${tab.url}, your lease says ${holder.meta.url} (run: node tools/iphone.mjs open ${holder.meta.url} --owner ${owner})`);
 

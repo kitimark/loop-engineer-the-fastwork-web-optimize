@@ -25,6 +25,7 @@ import { status as wdaStatus, createSession, SAFARI, SESSION_SETTINGS } from './
 import { status as lockStatus, phoneGuard, phoneMacRecord } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeText } from './iphone-url.mjs';
+import { tryResolveLanUrl } from './lan.mjs';
 import { redact } from './redact.mjs';
 import { readConfig, WDA_REF } from './wda-runner.mjs';
 
@@ -398,7 +399,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   const list = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
   const tab = safariTab(list); // never a blank web view of another app, never the first of several (I-037)
   if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: ${tg.openHint('<url>')} (incident I-003)`);
-  let leaseUrl = pageUrl;
+  let leaseUrl = tryResolveLanUrl(pageUrl); // a `lan` placeholder lease URL (I-073)
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) { try { leaseUrl = iphoneTarget(leaseUrl, await mirrorInfo(leaseUrl)).url; } catch {} }
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) console.error(`warning: Safari shows ${tab.url}, ${pageSource} says ${pageUrl} (run: ${tg.openHint(pageUrl)})`);
 

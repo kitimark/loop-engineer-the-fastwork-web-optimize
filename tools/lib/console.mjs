@@ -36,6 +36,7 @@ import { join } from 'node:path';
 import { sharedStateDir } from './paths.mjs';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso, clip } from './store.mjs';
+import { resolveLanUrl } from './lan.mjs';
 
 export const KINDS = ['question', 'choice', 'action', 'swipe-pair'];
 export const STATUSES = ['pending', 'active', 'answered', 'skipped', 'cancelled'];
@@ -64,7 +65,7 @@ function checkUrl(u, what = 'url') {
   let p;
   try { p = new URL(String(u)); } catch { throw new Error(`bad ${what} "${u}" (a full http(s):// URL)`); }
   if (!/^https?:$/.test(p.protocol)) throw new Error(`bad ${what} "${u}" (http or https only)`);
-  return String(u);
+  return resolveLanUrl(String(u)); // http://lan:<port>/: the user's phone opens it, so the address now (I-073)
 }
 
 /** "1,2,same" or ['1','2','same'] -> ['1','2','same'] (trimmed, unique, at most 8). */

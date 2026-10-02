@@ -42,7 +42,6 @@
 import http from 'node:http';
 import http2 from 'node:http2';
 import net from 'node:net';
-import os from 'node:os';
 import zlib from 'node:zlib';
 import { createHash, randomBytes, X509Certificate, createPrivateKey } from 'node:crypto';
 import { readFileSync, statSync, existsSync, appendFileSync, mkdirSync, writeFileSync, unlinkSync, readdirSync, renameSync } from 'node:fs';
@@ -53,6 +52,7 @@ import { REPO, mirrorHome, resolveTree, isLinkedWorktree, autoPortBase } from '.
 import { withGuard } from './lib/lock.mjs';
 import { requireBaseline, baselineMeta } from './lib/baseline.mjs';
 import { parseRange } from './lib/http-range.mjs';
+import { lanInterfaces, isPhoneLan } from './lib/lan.mjs';
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = REPO;
@@ -297,12 +297,9 @@ function handler(req, res) {
   return done(send(req, res, 200, headers, { __c: c }, { compressible: COMPRESSIBLE.test(type), etag: c.etag, ranges: !rewrite }));
 }
 
-function lanAddresses() {
-  const out = [];
-  for (const [name, list] of Object.entries(os.networkInterfaces()))
-    for (const a of list || []) if (a.family === 'IPv4' && !a.internal) out.push({ name, address: a.address });
-  return out;
-}
+// Every non-internal IPv4 address, in the OS's order; isPhoneLan picks the iPhone-reachable ones. One rule with
+// tools/lan.mjs (lib/lan.mjs, incident I-073), which resolves the `lan` placeholder of phone URLs.
+const lanAddresses = () => lanInterfaces();
 
 /** {cert, key} buffers if both files exist and the key belongs to the certificate, else null. */
 function readSelfSigned(certFile, keyFile) {
@@ -372,7 +369,7 @@ function announce() {
   if (TWIN_PORT) console.log(`  http twin: http://localhost:${TWIN_PORT}/  (plain http, same files: for the iPhone, whose Safari stops at the ${SELF_SIGNED ? 'self-signed ' : ''}certificate warning)`);
   if (HOST === '0.0.0.0' || HOST === '::') {
     const all = lanAddresses().filter((a) => !a.address.startsWith('169.254.'));
-    const lan = all.filter((a) => /^(192\.168|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address) && !/^(utun|tun|tap|ppp|wg)/.test(a.name));
+    const lan = all.filter(isPhoneLan);
     for (const a of lan) console.log(`  LAN:    ${proto}://${a.address}:${PORT}/   (${a.name})${TWIN_PORT ? '' : '  <- open this on the iPhone (same Wi-Fi)'}`);
     if (TWIN_PORT) for (const a of lan) console.log(`  iPhone: http://${a.address}:${TWIN_PORT}/   (${a.name})  <- open this on the iPhone (same Wi-Fi; iphone.mjs open also switches an https URL of this server to it)`);
     for (const a of all.filter((x) => !lan.includes(x))) console.log(`  other:  ${proto}://${a.address}:${PORT}/   (${a.name}, VPN/other interface)`);

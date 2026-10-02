@@ -2,7 +2,9 @@
 // Cross-worktree locks for the shared physical resources (see tools/lib/lock.mjs).
 //
 //   node tools/lock.mjs status [resource] [--json]
-//   node tools/lock.mjs acquire iphone --owner <topic> [--ttl 900] [--wait 0] [--url https://192.168.0.55:5231/] [--note "..."]
+//   node tools/lock.mjs acquire iphone --owner <topic> [--ttl 900] [--wait 0] [--url https://lan:5231/] [--note "..."]
+//       --url host `lan` (or `lan-host`): this Mac's LAN address, kept as given and resolved by the phone tools at run time
+//       (lib/lan.mjs, `node tools/lan.mjs`; it changes on a Wi-Fi reconnect, I-073); acquire checks that it resolves now
 //   node tools/lock.mjs renew   iphone --owner <topic> [--ttl 900]
 //   node tools/lock.mjs doing   iphone --owner <topic> --text "<plain line>" [--for <topic/agent>] [--eta-min N] | --clear
 //       acquire|renew|run take the same as --doing "<plain line>" [--for X] [--eta-min N] (I-060): what the hold is for,
@@ -135,6 +137,7 @@ import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the
 import { describeHold } from './lib/lock.mjs';
 import { warmLine, warmSummary } from './lib/sim-warm.mjs';
 import { parseJob } from './lib/hold-job.mjs'; // I-060: what a hold is for
+import { resolveLanUrl } from './lib/lan.mjs';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -282,7 +285,7 @@ async function main() {
   if (!owner && cmd !== 'release') throw new Error('--owner <name> is required (use your fix topic)');
   if (noTiming && cmd !== 'run') throw new Error('--no-timing is for lock.mjs run (a normal hold that measures nothing: builds, CPU work)');
   const meta = {};
-  if (opt('url')) meta.url = opt('url');
+  if (opt('url')) { meta.url = opt('url'); if (cmd === 'acquire') resolveLanUrl(meta.url); } // a `lan` placeholder must resolve now (I-073)
   if (opt('note')) meta.note = opt('note');
   // I-060: --doing "<plain line>" [--for X] [--eta-min N]; checked before anything is written
   const jobOf = (text) => parseJob({ text, forWhom: opt('for'), etaMin: opt('eta-min') });

@@ -54,7 +54,7 @@ test('redact: ECID / UniqueChipID and serial numbers; a generic device name is n
 test('redact leaves the tools\' own output alone: paths, URLs, hashes, ids of the study, numbers', () => {
   const keep = [
     'WDA_BUILT /Users/x/.cache/fw-wda/DerivedData/Build/Products/WebDriverAgentRunner_iphoneos26.6-arm64.xctestrun',
-    'GESTURE finger-protocol-v1 v1 hash 03aade25b820 params {"variant":"asPerformed"}: 22 strokes, ~52 s on http://192.168.0.55:5441/',
+    'GESTURE finger-protocol-v1 v1 hash 03aade25b820 params {"variant":"asPerformed"}: 22 strokes, ~52 s on http://192.168.1.20:5441/',
     `GESTURE_HASH ${'03aade25b820b5d39163e9c112c6d0aae801ad9f8ad8b8f87f3d58f2be8e5097'}`,
     'com.apple.mobilesafari is in front',
     'pull-to-refresh guard: s12 (down 120 px) needs scrollY >= 300, the page is at 0; nothing was sent',

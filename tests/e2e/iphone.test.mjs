@@ -186,6 +186,25 @@ test('I-003: open <plain http mirror URL> works as before and checks it landed o
   assert.deepEqual(phone.navigations(), [lan(s)]);
 });
 
+test('I-073: open http://lan:<port>/ (and lan-host) resolves the placeholder to the LAN address now, then follows the I-003 twin rule; no LAN address fails before Safari', async () => {
+  const s = await mirror(['--https']);
+  const port = new URL(s.url).port, twin = (await infoOf(s)).httpTwin;
+  const phone = await fakePhone();
+  lock('acquire', 'iphone', '--owner', 'me');
+  const lanEnv = { ...phone.env, FW_LAN_ADDRESS: '127.0.0.1' }; // the fake phone and the mirror live on loopback
+  let r = await nodeAsync(IPHONE, ['open', `https://lan:${port}/sub/`, '--owner', 'me'], { env: lanEnv, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  const want = `http://127.0.0.1:${twin}/sub/`;
+  assert.match(r.stdout, new RegExp(`^Safari now on ${want.replace(/[./]/g, '\\$&')}$`, 'm'));
+  r = await nodeAsync(IPHONE, ['open', `http://lan-host:${twin}/`, '--owner', 'me'], { env: lanEnv, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.deepEqual(phone.navigations(), [want, `http://127.0.0.1:${twin}/`]);
+  r = await nodeAsync(IPHONE, ['open', `http://lan:${twin}/`, '--owner', 'me'], { env: { ...phone.env, FW_LAN_IFACES: '{}' }, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /no LAN address/);
+  assert.equal(phone.navigations().length, 2, 'Safari untouched');
+});
+
 test('I-037: another app\'s about:blank web view listed before Safari\'s tab is never picked; open drives Safari\'s tab; status shows appIds', async () => {
   const s = await mirror([]);
   const phone = await fakePhone(['--blank-view']);

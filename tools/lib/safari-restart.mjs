@@ -33,6 +33,7 @@ import { SAFARI, status as wdaStatus, createSession } from './wda.mjs';
 import { redact } from './redact.mjs';
 import { pickTab, connect, sleep } from './wip.mjs';
 import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, lanSafeText, isLanHost, isLoopbackHost } from './iphone-url.mjs';
+import { resolveLanUrl } from './lan.mjs';
 
 export const VIAS = ['auto', 'wda', 'devicectl', 'simctl'];
 
@@ -204,6 +205,7 @@ export async function safariRestart({ drivers, via = 'auto', url = null, port, t
   try {
     let target = null, info = null;
     if (url) {
+      url = resolveLanUrl(url); // http://lan:<port>/ -> this Mac's LAN address now (I-073)
       info = await mirrorInfo(url);
       const t = iphoneTarget(url, info, { keepHttps });
       if (t.note) log(safe(t.note, known));

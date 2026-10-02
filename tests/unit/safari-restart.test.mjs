@@ -132,7 +132,7 @@ test('I-069 follow-up (review-i063): probeUrl probes only loopback and private (
   } finally { await new Promise((r) => srv.close(r)); }
   assert.equal((await probeUrl('http://[::1]:1/', { timeoutMs: 2000 })).ok, false);
   // a LAN URL never reaches the message (it goes into incident text)
-  const t = unreachableText('https://192.168.0.55:5300/p', 'ETIMEDOUT', 'data:text/html,', {});
+  const t = unreachableText('https://192.168.1.20:5300/p', 'ETIMEDOUT', 'data:text/html,', {});
   assert.ok(!t.includes('192.168'), t);
   assert.match(t, /^the server at https:\/\/lan-host:5300\/p does not answer from this Mac \(ETIMEDOUT\), so Safari can only show its load-error page \(the data: tab it lists\)/);
   assert.match(unreachableText('http://h:1/', 'ECONNREFUSED'), /^the server at http:\/\/lan-host:1\/ does not answer/);

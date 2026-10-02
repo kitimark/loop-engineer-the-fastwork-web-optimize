@@ -515,7 +515,7 @@ test('morph driver on a page without __fwMorphDrive: the error is reported, the 
 
 test('lanSafeUrl: LAN hosts get a placeholder, scheme, port, path and query stay; loopback and public hosts stay', () => {
   assert.equal(LAN_HOST, 'lan-host');
-  assert.equal(lanSafeUrl('https://192.168.0.55:5234/a/b.js?x=1#h'), 'https://lan-host:5234/a/b.js?x=1#h');
+  assert.equal(lanSafeUrl('https://192.168.1.20:5234/a/b.js?x=1#h'), 'https://lan-host:5234/a/b.js?x=1#h');
   for (const h of ['10.0.0.7', '172.16.4.2', '172.31.255.1', '169.254.1.1', '100.100.1.2', 'my-mac.local', 'Someones-MacBook-Pro.local', 'nas', '[fd12::1]', '[fe80::1]']) assert.equal(new URL(lanSafeUrl(`http://${h}:8080/p`)).hostname, 'lan-host', h);
   for (const u of ['http://127.0.0.1:9/', 'https://localhost:5300/x', 'http://[::1]:5/', 'https://fastwork.com/', 'https://172.32.0.1/', 'https://8.8.8.8/']) assert.equal(lanSafeUrl(u), u, u);
   assert.equal(lanSafeUrl(null), null);
@@ -524,7 +524,7 @@ test('lanSafeUrl: LAN hosts get a placeholder, scheme, port, path and query stay
 
 test('finish: one JSON per run (schema, meta with labels and tool hashes, measurement part); a page error is saved, then thrown', async () => {
   const { raw } = await runInPage('window', { ...WIN, tops: [] });
-  const lan = 'https://192.168.0.55:5234/';
+  const lan = 'https://192.168.1.20:5234/';
   const lanRaw = { ...raw, pre: { ...raw.pre, href: lan }, post: { ...raw.post, href: lan, resources: [[lan + '_app/a.js', 'script', 1, 2, 3, 4], ['https://fastwork.com/x.js', 'script', 1, 2, 3, 4]] } };
   raw.served = { '/_app/a.js': '0123456789abcdef' };
   raw.macStartMs = 1790000000000;
