@@ -234,11 +234,12 @@ if (MODE === 'I') {
         const mk = (id) => flat.find((x) => x.type === 'TimeStamp' && JSON.stringify(x.data || {}).includes(id));
         const m0 = mk('fwI0'), m1 = mk('fwI1');
         if (m0 && m1) {
-          const k2 = {}; for (const x of flat) if (x.startTime >= m0.startTime && x.startTime <= m1.startTime && x.type !== 'TimeStamp') { const k = x.type + (x.type === 'ObserverCallback' && x.data && x.data.type ? ':' + x.data.type : ''); k2[k] = (k2[k] || 0) + 1; }
+          const k2 = {}, d2 = {}; for (const x of flat) if (x.startTime >= m0.startTime && x.startTime <= m1.startTime && x.type !== 'TimeStamp') { const k = x.type + (x.type === 'ObserverCallback' && x.data && x.data.type ? ':' + x.data.type : ''); k2[k] = (k2[k] || 0) + 1; if (typeof x.endTime === 'number') d2[k] = (d2[k] || 0) + (x.endTime - x.startTime) * 1000; }
           s.tl = Object.fromEntries(Object.entries(k2).sort((p, q) => q[1] - p[1]).map(([k, v]) => [k, +(v / s.s).toFixed(1)]));
+          s.ms = Object.fromEntries(Object.entries(d2).sort((p, q) => q[1] - p[1]).map(([k, v]) => [k, +(v / s.s).toFixed(2)]));
         } else s.tl = 'marks not found';
         a.spots.push(s);
-        log(`I ${arm.label} ${name} w${w} y${s.y} ${s.attrs} | mut ${JSON.stringify(s.mut)} | tl ${JSON.stringify(s.tl)}`);
+        log(`I ${arm.label} ${name} w${w} y${s.y} ${s.attrs} | mut ${JSON.stringify(s.mut)} | tl ${JSON.stringify(s.tl)} | ms ${JSON.stringify(s.ms || {})}`);
       }
     }
     try { await c.send('Timeline.stop'); } catch (e) {}
