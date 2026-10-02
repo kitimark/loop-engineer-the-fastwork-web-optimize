@@ -8,6 +8,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
 
+- **09:4xZ I-059 open; C-023 retry.** c393993 landed.
+  - I-059 (tool, open, ts-i059): the console let the user tap Done on a part the runner ends itself (C-021 part 2
+    marked done 5 s after start). The user accepted "retry entire process" for retriable steps (T-019 #7): ts-i059
+    builds (A) runner-ended parts + a minimal (B) "Start over".
+  - C-023 (retry of C-021, the user's own screen recording) hit the same Done bug at part 2 (09:42:24Z);
+    iphone-runner drives part 2 itself. Phone lease iphone-runner; then block B attribution, A1, G1b, T-011, T-009, I-042.
+  - fix-scroll-engine 918af20 + 1f39750: P2b inside the same-build B-A spread in Sim time spent; P2-1 re-run planned
+    on RB + st6-rb once PR-003 A lands.
 - **09:3xZ (later) PR-001 block B DONE; route (b) approved.** dc7ceb8 landed.
   - Block B (C V B): 9/9 valid, sentinels passed. P-058 overall: no arm beats the SVG on the phone (rule 4). F1/F3
     freeze mid-stroke; V reaches the end of only 67 % of draws (its own start-detection bug); F2 and B are eligible
@@ -1087,6 +1095,7 @@ between tool calls.
 
 | id | state | owner | note |
 |---|---|---|---|
+| I-059 | open 09:35Z | ts-i059 | console: a runner-ended part can be marked Done by the user; fix (A) runner-ended parts + (B) "Start over" (T-019 #7) |
 | I-056 | RESOLVED 09:3xZ, landed d2d77ad (phone runs no longer wait for shared groups, `--require-quiet` opts in) | ts-i056 | phone measure guard (a) shared group as short, (b) same-owner --no-timing exception (lets S/W/M blocks use the preferred quiet hold), (c) gesture-run guard, (d) shared readers log to holds.log |
 | I-058 | open | toolsmith (lead spawning) | waits invisible on the board; fixed-time waits where a probe exists (user T-016) |
 | – | resolved 10-02: I-053 (proposal options, 42c14a0), I-054 (Range, 67847b4), I-055 + I-057 (flaky e2e, 42c14a0) | – | console restarted 08:22Z with options live |
