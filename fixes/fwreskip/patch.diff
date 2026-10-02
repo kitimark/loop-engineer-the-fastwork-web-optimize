@@ -7,8 +7,26 @@
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -2670,6 +2670,16 @@
+@@ -2667,9 +2667,34 @@
+   nE = !1;
+ function rE() {
+   tE ||= window.requestAnimationFrame(iE);
++  fwPair?.fwWith && fwIdleArm();
  }
++// [scroll-engine /10g] P2: un-skipping the section re-skipped with the hero costs one long frame while the user
++// scrolls (G1 phone, OBSERVED: 65-92 ms on a fling into it). While it is still paired (between the hero's far edge
++// and its own far edge, where the baseline has it rendered), un-skip it once scrolling has been idle for 300 ms,
++// so a later scroll into it finds it rendered as in the baseline. A plain timer, no requestIdleCallback.
++var fwPair = null,
++  fwIdleT = 0;
++function fwIdleArm() {
++  (fwIdleT && window.clearTimeout(fwIdleT), (fwIdleT = window.setTimeout(fwIdleUnskip, 300)));
++}
++function fwIdleUnskip() {
++  fwIdleT = 0;
++  let e = fwPair;
++  ((fwPair = null), e?.fwWith && sE(e, !0));
++}
  function iE() {
    tE = 0;
 +  // [scroll-engine /10f] a section re-skipped early together with the hero (fwReskip) is rendered in the
@@ -24,7 +42,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    for (let e of $T) e.active && e.callback();
  }
  // [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
-@@ -2739,7 +2749,9 @@
+@@ -2739,7 +2764,9 @@
  function sE(e, t) {
    if (!(!e.deferRendering || !e.element)) {
      if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
@@ -35,7 +53,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        return;
      }
      e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
-@@ -2811,7 +2823,16 @@
+@@ -2811,7 +2838,16 @@
  function fwFM(e) {
    return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
  }
@@ -53,7 +71,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    !e.deferRendering ||
      !e.element ||
      e.active ||
-@@ -2820,6 +2841,35 @@
+@@ -2820,6 +2856,35 @@
      fwDef.delete(e),
      t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
      e.element.setAttribute(`data-start-selling-render`, `deferred`));
@@ -85,7 +103,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    let i = n.element.getBoundingClientRect();
 +    i.bottom < 0 && i.height > 0 && (r = i.height);
 +  }
-+  (fwReskipOne(e, t), r !== null && ((n.fwWith = e), fwReskipOne(n, r)));
++  (fwReskipOne(e, t), r !== null && ((n.fwWith = e), fwReskipOne(n, r), (fwPair = n), fwIdleArm()));
  }
  function fwFar(e, t, n) {
    let r = fwFarG.get(n);

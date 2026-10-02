@@ -15,7 +15,10 @@ export const install = `(() => {
   setTimeout(() => {
     const d = document.createElement('div');
     d.style.cssText = 'position:fixed;inset:0;background:#ff00ff;z-index:2147483647;pointer-events:none';
-    requestAnimationFrame((t0) => { document.body.appendChild(d); requestAnimationFrame((t1) => { d.remove(); L.flash = [Math.round(t0), Math.round(t1)]; }); });
+    // held >= 3 rAFs and >= 50 ms: a one-vsync flash (19-21 ms) was missed by the ~58 fps capture (G1 block 1)
+    requestAnimationFrame((t0) => { document.body.appendChild(d); let n = 0;
+      const hold = (t) => { if (++n >= 3 && t - t0 >= 50) { d.remove(); L.flash = [Math.round(t0), Math.round(t), n]; } else requestAnimationFrame(hold); };
+      requestAnimationFrame(hold); });
   }, 3000);
   return 'ok';
 })()`;

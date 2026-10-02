@@ -1,0 +1,41 @@
+{
+  "name": "fwreskip-fling-band-v2",
+  "version": 2,
+  "screen": [430, 932],
+  "about": "fwreskip open item (iv): reach the band (between the hero's far edge and #people's own far edge, Sim y 2988-3539) with slow still strokes, rest, then ONE finger fling down (page scrolls up), so #people comes back on screen from above at fling speed. Recording-judged (fixes/fwreskip/README.md, phone ticket G1). Variants: flingPx/flingMs (fast 520/160 = ~6.1 k px/s at lift-off; medium 400/220 = ~3.4 k px/s). v2 (P2, ticket G1b): pauseMs (the pauses between descent strokes, default 300) and settle; the no-pause arm is restMs=0 pauseMs=0 settle=no, so scrolling should never stay idle for the 300 ms that P2 needs before the fling.",
+  "params": {
+    "fling": "yes",
+    "x": 215,
+    "idleMs": 6000,
+    "restMs": 2000,
+    "pauseMs": 300,
+    "settle": "yes",
+    "flingPx": 520,
+    "flingMs": 160,
+    "afterMs": 2500
+  },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": "$idleMs" },
+
+    { "type": "mark", "name": "descend" },
+    { "type": "repeat", "times": 12, "until": "y>=2900", "steps": [
+      { "type": "stroke", "dir": "up", "px": 480, "ms": 700, "profile": "still" },
+      { "type": "pause", "ms": "$pauseMs" }
+    ] },
+    { "type": "repeat", "times": 6, "until": "y>=3250", "steps": [
+      { "type": "stroke", "dir": "up", "px": 150, "ms": 500, "profile": "still" },
+      { "type": "pause", "ms": "$pauseMs" }
+    ] },
+    { "type": "until", "when": { "settle": "yes" }, "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "until", "cond": "y>=3250", "timeoutMs": 1000 },
+    { "type": "pause", "ms": "$restMs" },
+
+    { "type": "mark", "name": "fling", "when": { "fling": "yes" } },
+    { "type": "stroke", "when": { "fling": "yes" }, "dir": "down", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "pause", "when": { "fling": "yes" }, "ms": "$afterMs" },
+    { "type": "until", "when": { "fling": "yes" }, "cond": "settled", "timeoutMs": 6000, "optional": true },
+    { "type": "mark", "name": "end" }
+  ]
+}

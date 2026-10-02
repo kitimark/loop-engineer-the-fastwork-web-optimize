@@ -73,7 +73,7 @@ if (MODE === 'T') {
       requestAnimationFrame(loop);
       await wait(2000); const m = { down: [performance.now()] };
       for (let i = 0; i < 60 && scrollY < ${+(process.env.TDOWN || 3700)}; i++) { window.scrollBy({ top: 250, behavior: 'smooth' }); await wait(300); }
-      m.down.push(performance.now()); await wait(1500); m.up = [performance.now()];
+      m.down.push(performance.now()); await wait(${+(process.env.THOLD ?? 1500)}); m.up = [performance.now()];
       for (let i = 0; i < 60 && scrollY > ${+(process.env.TUP || 2500)}; i++) { window.scrollBy({ top: -250, behavior: 'smooth' }); await wait(300); }
       m.up.push(performance.now()); await wait(1500);
       if (${+(process.env.TDOWN2 || 0)}) { m.down2 = [performance.now()]; for (let i = 0; i < 60 && scrollY < ${+(process.env.TDOWN2 || 0)}; i++) { window.scrollBy({ top: 250, behavior: 'smooth' }); await wait(300); } m.down2.push(performance.now()); await wait(1500); }
