@@ -20,13 +20,18 @@ const url = (arm) => `http://lan:${twin(arm)}/`;
 const node = (args, stdio = 'inherit') => execFileSync(process.execPath, args, { cwd: WT, stdio });
 const doing = (text) => { try { node([join(WT, 'tools/lock.mjs'), 'doing', 'chrome-measure', '--owner', OWNER, '--text', text, '--for', 'countdown-faces X1'], 'ignore'); } catch {} };
 const stamp = () => new Date().toISOString().slice(11, 19) + 'Z';
-const open = (arm) => node([join(WT, 'tools/iphone.mjs'), 'open', url(arm), '--owner', OWNER]);
+// Runs keep the page (--no-park): `iphone.mjs open` cannot reach a parked Safari (only about:blank views, I-037), so a
+// part that finds Safari parked brings it back with safari-restart (logged); Safari parks once, at the block end (I-047).
+const open = (arm) => {
+  try { node([join(WT, 'tools/iphone.mjs'), 'open', url(arm), '--owner', OWNER], ['ignore', 'inherit', 'ignore']); }
+  catch { console.log(`[${stamp()}] SAFARI-RESTART (open found no page) for ${arm}`); node([join(WT, 'tools/iphone.mjs'), 'safari-restart', '--owner', OWNER, '--url', url(arm), '--timeout', '40']); }
+};
 
 function x1(arm, label, extra = []) {
   doing(`countdown X1 phone: ${label}`);
   console.log(`[${stamp()}] ${label}`);
   open(arm);
-  node([join(WT, 'fixes/countdown-faces/x1.mjs'), 'phone', '--url', url(arm), '--arm', arm, '--build', BUILD[arm], '--label', label, ...extra]);
+  node([join(WT, 'fixes/countdown-faces/x1.mjs'), 'phone', '--url', url(arm), '--arm', arm, '--build', BUILD[arm], '--label', label, '--no-park', ...extra]);
   const r = JSON.parse(readFileSync(join(OUT, `${label}.json`), 'utf8'));
   const ticks = Object.fromEntries(Object.entries(r.positions || {}).map(([p, v]) => [p, v.ticksInWindow]));
   const few = Object.entries(ticks).filter(([, k]) => !(k >= 3));
@@ -39,7 +44,7 @@ function heat(tag) {
   console.log(`[${stamp()}] ${label}`);
   open('C');
   const out = join(OUT, `${label}.json`);
-  node([join(WT, 'tools/iphone.mjs'), 'run', '--driver', 'scroll', '--probe', 'std', '--owner', OWNER, '--arm', 'C', '--block', 'X1', '--build', 'base', '--low-power', 'off', '--label', label, '--out', out]);
+  node([join(WT, 'tools/iphone.mjs'), 'run', '--driver', 'scroll', '--probe', 'std', '--owner', OWNER, '--arm', 'C', '--block', 'X1', '--build', 'base', '--low-power', 'off', '--no-park', '--label', label, '--out', out]);
   const s = JSON.parse(readFileSync(out, 'utf8'));
   const sen = s.meta?.sentinel || s.sentinel;
   console.log(`[${stamp()}] ${label} sentinel ${JSON.stringify(sen)}`);
@@ -62,6 +67,7 @@ if (PART === 'A') {
   renew();
   x1('C', 'X1-attrC', ['--lt', '--resume-check']);
   x1('V', 'X1-attrV', ['--lt', '--resume-check']);
+  node([join(WT, 'tools/iphone.mjs'), 'park', '--owner', OWNER]);
 } else { console.error('usage: x1-block.mjs A|B|C'); process.exit(2); }
 doing(`countdown X1 phone: part ${PART} done`);
 console.log(`[${stamp()}] PART ${PART} DONE`);

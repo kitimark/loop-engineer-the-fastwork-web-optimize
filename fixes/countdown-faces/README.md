@@ -760,6 +760,26 @@ Per update after the jump to y 0:
 
 **Not changed:** the stage-1 counts and their scoring, every trigger rule, and P-069.
 
+### Stage 2 run log (phone block, 2026-10-02/03)
+
+**Driver amendment D1** (mechanics only, before any counted run or heat check; scoring, arms, order and validity
+rules unchanged). The block driver's 3fb0ebb version parked Safari after every run (x1.mjs and `iphone.mjs run`
+default, I-047), and `iphone.mjs open` cannot reach a parked Safari: it lists only about:blank views, and those are
+never picked (I-037). Part A stopped twice at an `open`:
+- 23:50:34-23:51:37Z: at the first `open`, before any run (Safari was still parked from the previous lease). No data.
+  Safari was brought back with `iphone.mjs safari-restart --url` (C's twin) at about 23:52Z.
+- 23:54:23-23:55:22Z: warm-up C ran (ticks 4 in every window), then the `open` for warm-up V failed. Nothing counted
+  had run; that warm-up is superseded by the redo of part A.
+
+D1 changes: every run in a part keeps the page (`--no-park`); a part that finds Safari parked brings it back with
+`safari-restart --url <first arm>` (logged as `SAFARI-RESTART`; it is followed by warm-ups in part A); Safari parks
+once at the block end (after part C, I-047). Part A is redone from the start.
+
+**Phone settings.** The user set the P-068 phone settings (C-027: Auto-Lock Never, Auto-Brightness off with a fixed
+brightness, Low Power Mode off) between 23:50:18Z and 23:51:53Z. Lead's rule: a run overlapping that window (+ about 1
+min) is "phone touched", so void. No run overlaps it: the first attempt recorded nothing, and the redo's first run
+started at 23:54:23Z. The setting holds for the whole block, in both arms.
+
 ## Overlap with other topics (review r1 Blocking 3)
 
 - **Topic #1 `countdown-idle-raf`** (on main, ACCEPT-WITH-NOTES, patch v03) edits the same hunks: `$E` 3824, the
