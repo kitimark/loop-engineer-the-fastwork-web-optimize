@@ -32,7 +32,7 @@ import { execFile } from 'node:child_process';
 import { SAFARI, status as wdaStatus, createSession } from './wda.mjs';
 import { redact } from './redact.mjs';
 import { pickTab, connect, sleep } from './wip.mjs';
-import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, lanSafeText } from './iphone-url.mjs';
+import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, lanSafeText, isLanHost, isLoopbackHost } from './iphone-url.mjs';
 
 export const VIAS = ['auto', 'wda', 'devicectl', 'simctl'];
 
@@ -160,12 +160,15 @@ export async function waitForPage({ port, target = null, timeoutMs = 30000, poll
  * {ok: true, status} or {ok: false, why} (ECONNREFUSED, timeout, ...), never rejects. Incident I-069: a server that is
  * gone leaves Safari on its load-error page, which the WebKit proxy listed as a data:text/html tab (OBSERVED
  * 2026-10-02, fix-image-size), so a navigation to it never "lands".
+ * Mirror servers only (lead, I-069 follow-up): a host that is neither loopback nor LAN is never contacted; the
+ * result is then {ok: null, why} (unknown: the caller treats it as "may answer").
  */
 export function probeUrl(url, { timeoutMs = 3000 } = {}) {
   return new Promise((res) => {
     let u;
     try { u = new URL(url); } catch { return res({ ok: false, why: 'not a URL' }); }
     if (!/^https?:$/.test(u.protocol)) return res({ ok: false, why: `not http(s) (${u.protocol})` });
+    if (!isLoopbackHost(u.hostname) && !isLanHost(u.hostname)) return res({ ok: null, why: 'not probed: not a loopback or LAN host' });
     let done = false;
     const end = (v) => { if (!done) { done = true; res(v); } };
     import(u.protocol === 'https:' ? 'node:https' : 'node:http').then((m) => {
@@ -177,8 +180,9 @@ export function probeUrl(url, { timeoutMs = 3000 } = {}) {
   });
 }
 
-/** The error for a target whose server does not answer from the Mac (I-069). */
-export const unreachableText = (target, why, restoredUrl = null) => `the server at ${target} does not answer from this Mac (${why}), so Safari can only show its load-error page${restoredUrl && /^data:/.test(restoredUrl) ? ' (the data: tab it lists)' : ''}: start the server again (detached, e.g. nohup, so it survives a Mac sleep), check it with curl, then retry (I-069)`;
+/** The error for a target whose server does not answer from the Mac (I-069); the URL through safe() (a LAN host never
+ *  reaches error or incident text). */
+export const unreachableText = (target, why, restoredUrl = null, known = {}) => `the server at ${safe(target, known)} does not answer from this Mac (${why}), so Safari can only show its load-error page${restoredUrl && /^data:/.test(restoredUrl) ? ' (the data: tab it lists)' : ''}: start the server again (detached, e.g. nohup, so it survives a Mac sleep), check it with curl, then retry (I-069)`;
 
 /** The proxy's page list (throws when it does not answer). */
 export const proxyTabs = async (port) => (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(3000) })).json();
@@ -232,7 +236,7 @@ export async function safariRestart({ drivers, via = 'auto', url = null, port, t
           try { ({ landed } = await wait({ port, target, timeoutMs: Math.min(restoreMs, timeoutMs) })); } catch (e) {
             if (!e.noPage) throw e;
             const r = await reachable();
-            if (!r.ok) throw new Error(unreachableText(target, r.why, restoredUrl));
+            if (r.ok === false) throw new Error(unreachableText(target, r.why, restoredUrl, known));
             await openNew(`the restored tab${/^data:/.test(restoredUrl || '') ? ' (a data: page)' : ''} did not load it within ${Math.round(Math.min(restoreMs, timeoutMs) / 1000)} s`);
           }
         } else await openNew('Safari restored no page');
@@ -240,7 +244,7 @@ export async function safariRestart({ drivers, via = 'auto', url = null, port, t
       } catch (e) {
         if (!e.noPage) throw e;
         const r = await reachable();
-        throw new Error(r.ok ? e.message : `${e.message}; ${unreachableText(target, r.why, restoredUrl)}`);
+        throw new Error(r.ok !== false ? e.message : `${e.message}; ${unreachableText(target, r.why, restoredUrl, known)}`);
       }
       const p = landedProblem(landed, target, info);
       if (p) throw new Error(p);

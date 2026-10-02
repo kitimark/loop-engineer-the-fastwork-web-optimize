@@ -83,6 +83,7 @@ async function main() {
     const r = await S.shutdownWarm({ reason: opt('reason', 'sim.mjs shutdown --warm-only'), by: opt('by', 'sim'), log });
     if (r.done) return 0;
     if (!readWarm()) { log(`SIM_WARM gone: ${r.why}`); return 0; }
+    if (r.busy) log(`SIM_WARM_BUSY: ${r.why}`); // the lock or a session holds it: lib/sim-warm.mjs reapResult tells it apart
     err(`the warm Simulator was not shut down: ${r.why}`);
     return 3;
   }

@@ -29,7 +29,7 @@ import { randomBytes } from 'node:crypto';
 import { sharedStateDir } from './paths.mjs';
 import { status as lockStatus, parseHeld, staleReason, pidAlive, tryAcquire, dequeue, release as lockRelease, isGroup, slotIn, timedInSlotRefusal, SHARED_LANE } from './lock.mjs';
 import { redact } from './redact.mjs';
-import { idleSec, readWarm, warmFile, keeperInfo, timingDemand, warmLine, warmState, SIM_MJS } from './sim-warm.mjs';
+import { idleSec, readWarm, warmFile, keeperInfo, timingDemand, warmLine, warmState, keeperRetryMs, SIM_MJS } from './sim-warm.mjs';
 
 export const SIM_NAME = 'fw-sim 15 Pro Max';
 export const DEVICE_TYPE = 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro-Max';
@@ -647,7 +647,8 @@ export function warmMismatch(w, dev, cfg) {
  */
 export async function shutdownWarm({ reason, by = 'sim', id = null, waitSec = 60, fromKeeper = false, log = () => {} } = {}) {
   let lk;
-  try { lk = await takeSimLock(`sim-${by}`.slice(0, 40).replace(/[^A-Za-z0-9_.:-]/g, '-'), { waitSec, meta: { cmd: `sim shutdown (${reason})` }, log: () => {}, pollMs: 500 }); } catch (e) { return { done: false, why: e.message }; }
+  // busy (review-i063 follow-up): the simulator lock or a live session holds the device; not a failed shutdown
+  try { lk = await takeSimLock(`sim-${by}`.slice(0, 40).replace(/[^A-Za-z0-9_.:-]/g, '-'), { waitSec, meta: { cmd: `sim shutdown (${reason})` }, log: () => {}, pollMs: 500 }); } catch (e) { return { done: false, busy: true, why: e.message }; }
   try {
     const w = readWarm();
     if (id && (!w || w.id !== id)) return { done: false, why: 'superseded: the warm record changed (a session took the device over)' };
@@ -655,7 +656,7 @@ export async function shutdownWarm({ reason, by = 'sim', id = null, waitSec = 60
     // nothing of ours to shut down, and no "stale record" to report
     if (!w) return { done: false, gone: true, why: 'the warm record was removed before this shutdown got the simulator lock (the keeper or another shutdown did it)' };
     const live = liveSession();
-    if (live) return { done: false, why: `a live session (pid ${live.pid}, owner "${live.owner}") owns the device` };
+    if (live) return { done: false, busy: true, why: `a live session (pid ${live.pid}, owner "${live.owner}") owns the device` };
     const cfg = readConfig();
     const res = cfg.udid ? await shutdownDevice(cfg.udid, { log }) : 'no Simulator configured';
     // done only when the device IS shut down now (review-i063 B1): a failed or timed-out `simctl shutdown` keeps the
@@ -683,7 +684,7 @@ export async function keeper({ id, pollMs = Number(process.env.FW_SIM_KEEPER_POL
   if (!id) throw new Error('usage: node tools/sim.mjs keeper <warm id> (started by sim.mjs session)');
   const own = () => { const k = readJson(pidFile('keeper'), null); return k && k.pid === process.pid; };
   let lastCheck = Date.now(), fails = 0, retryAt = 0;
-  const retryBaseMs = Number(process.env.FW_SIM_KEEPER_RETRY_MS || 5000);
+  const retryBaseMs = keeperRetryMs();
   // review-i063 N7: a shutdown that keeps failing (or a lock that stays busy) is retried every poll, but each distinct
   // line is logged once (seconds normalized), so keeper.log does not grow by a line every 2 s
   const seen = new Set();

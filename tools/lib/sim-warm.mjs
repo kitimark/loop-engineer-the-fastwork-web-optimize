@@ -92,6 +92,15 @@ export function warmSummary(s = warmState(), now = Date.now()) {
   return { bootedAt: w.bootedAt ?? null, lastSessionEndedAt: w.lastSessionEndedAt ?? null, idleUntil: w.idleUntil ?? null, sessions: w.sessions ?? null, keeperAlive: !!s.keeper?.alive, ...(s.stale ? { stale: true } : {}), ...(w.shutdownFailed ? { shutdownFailed: w.shutdownFailed } : {}), at: new Date(now).toISOString() };
 }
 /** Seconds a quiet phone run waits after a reap that shut fw-sim down (review-i063 N6; FW_SIM_SETTLE_SEC, default 20). */
+/** A positive number from env[name], else `def` (unset, empty, NaN, <= 0: review-i063 follow-up). */
+export function envPositive(name, def, env = process.env) {
+  const n = Number(env[name]);
+  return env[name] !== undefined && env[name] !== '' && Number.isFinite(n) && n > 0 ? n : def;
+}
+/** The host gate's warm-Simulator reap interval in ms (FW_SIM_GATE_REAP_SEC, default 30 s). */
+export const gateReapMs = (env = process.env) => envPositive('FW_SIM_GATE_REAP_SEC', 30, env) * 1000;
+/** The keeper's first retry after a failed shutdown in ms (FW_SIM_KEEPER_RETRY_MS, default 5000; doubles up to 5 min). */
+export const keeperRetryMs = (env = process.env) => envPositive('FW_SIM_KEEPER_RETRY_MS', 5000, env);
 export function settleSec(env = process.env) {
   const v = env.FW_SIM_SETTLE_SEC;
   if (v === undefined || v === '') return 20;
@@ -112,8 +121,10 @@ export const reapResult = (r, before) => {
   const ok = r.status === 0 && !/^SIM_WARM_SHUTDOWN_FAILED\b/m.test(out);
   const done = ok && /^SIM_WARM_SHUTDOWN\b/m.test(out);
   const already = done && /^SIM_WARM_SHUTDOWN\b.*: fw-sim already shut down/m.test(out);
-  const action = !ok ? 'shutdown FAILED' : already ? 'already shut down (a stale record, removed)' : done ? 'shut down' : 'gone before the shutdown (the keeper or a session took it)';
-  return { ...before, action, ok, ...(done && !already ? { shutDown: true } : {}), ...(already ? { stale: true } : {}), ...(ok ? {} : { error: out.trim().split('\n').slice(-2).join(' | ') }) };
+  // busy (review-i063 follow-up): the simulator lock or a live session held the device: not ok, but no failed shutdown
+  const busy = !ok && /^SIM_WARM_BUSY\b/m.test(out);
+  const action = busy ? 'busy (the simulator lock or a live session holds fw-sim)' : !ok ? 'shutdown FAILED' : already ? 'already shut down (a stale record, removed)' : done ? 'shut down' : 'gone before the shutdown (the keeper or a session took it)';
+  return { ...before, action, ok, ...(busy ? { busy: true } : {}), ...(done && !already ? { shutDown: true } : {}), ...(already ? { stale: true } : {}), ...(ok ? {} : { error: out.trim().split('\n').slice(-2).join(' | ') }) };
 };
 /**
  * The timed tools' backstop (I-063): if a warm fw-sim is recorded, shut it down now (`sim.mjs shutdown --warm-only`:
@@ -137,6 +148,7 @@ export function reapWarm({ reason, by = 'timed run', env = process.env } = {}) {
  */
 export function reapNote(r, what = 'this timing hold') {
   if (!r) return null;
+  if (!r.ok && r.busy) return `WAIT: a warm Simulator (fw-sim) may still be booted and could not be shut down now: the simulator lock or a live session holds it (${r.error || '?'}): nothing is timed beside it, so ${what} stops here; retry after that session ends (node tools/sim.mjs status) (I-063)`;
   if (!r.ok) return `WAIT: a warm Simulator (fw-sim) may still be booted and its shutdown failed (${r.error || '?'}): nothing is timed beside it, so ${what} stops here; node tools/sim.mjs doctor --fix (or shutdown), then retry (I-063)`;
   if (r.stale) return `NOTE: a stale warm Simulator record (fw-sim, session ended ${r.lastSessionEndedAt ?? '?'}) was found at the start of ${what}: fw-sim was not booted, the record was removed; nothing ran beside it (I-063; recorded as simWarm)`;
   return `NOTE: a warm Simulator (fw-sim, idle since ${r.lastSessionEndedAt ?? '?'}, keeper ${r.keeperAlive ? 'alive' : 'not running'}) was still booted at the start of ${what}: ${r.action} before the first run (I-063; recorded as simWarm)`;

@@ -7,7 +7,7 @@ import http from 'node:http';
 import { join } from 'node:path';
 import { statSync } from 'node:fs';
 import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock, openedTab, writeOpened, openedHost, openedFile, scopeTabs, safariCacheTargets, fetchReport, openedUrl, pageMatcher, warmMismatch, DEVICE_TYPE } from '../../tools/lib/sim.mjs';
-import { timingDemand, idleSec, IDLE_SEC_DEFAULT, warmLine, warmSummary, realStateInTest, reapResult, reapNote, settleSec } from '../../tools/lib/sim-warm.mjs';
+import { timingDemand, idleSec, IDLE_SEC_DEFAULT, warmLine, warmSummary, realStateInTest, reapResult, reapNote, settleSec, envPositive, gateReapMs, keeperRetryMs } from '../../tools/lib/sim-warm.mjs';
 import { status as lockStatus } from '../../tools/lib/lock.mjs';
 import { simMeta, SIM_SETTINGS, runTarget } from '../../tools/lib/sim-scroll.mjs';
 import { tempDir } from '../helpers.mjs';
@@ -359,6 +359,11 @@ test('I-063 review-i063 B1/B2/N3/N6: reapResult tells shut down / stale / gone /
   assert.match(reapNote(stale, 'this bench hold'), /^NOTE: a stale warm Simulator record .* at the start of this bench hold: fw-sim was not booted, the record was removed; nothing ran beside it/);
   assert.match(reapNote(done, 'this verify hold'), /^NOTE: a warm Simulator \(fw-sim, idle since 2026-10-02T12:09:00Z, keeper not running\) was still booted at the start of this verify hold: shut down before the first run/);
   assert.equal(reapNote(null), null);
+  // review-i063 follow-up: a busy device (SIM_WARM_BUSY, exit 3) is not ok but no failed shutdown
+  const busy = res(3, 'SIM_WARM_BUSY: the Simulator is busy: the simulator lock is held by "fix-a" (pid 1, since x); gave up after 60 s\n', 'the warm Simulator was not shut down: the Simulator is busy\n');
+  assert.deepEqual([busy.action, busy.ok, busy.busy, 'shutDown' in busy], ['busy (the simulator lock or a live session holds fw-sim)', false, true, false]);
+  assert.equal('busy' in failed, false);
+  assert.match(reapNote(busy, 'this verify hold'), /^WAIT: a warm Simulator \(fw-sim\) may still be booted and could not be shut down now: the simulator lock or a live session holds it \(.*gave up after 60 s.*\): nothing is timed beside it, so this verify hold stops here; retry after that session ends/);
   // warmLine (N3): the real state, a record from before the Mac's last start, a dead keeper, a failed shutdown
   const now = Date.parse('2026-10-02T12:10:00Z');
   const s = { warm: { lastOwner: 'fix-a', sessions: 2, bootedAt: '2026-10-02T12:00:00Z', lastSessionEndedAt: '2026-10-02T12:09:00Z', idleUntil: '2026-10-02T12:19:00Z' }, keeper: { pid: 4242, alive: true } };
@@ -372,4 +377,17 @@ test('I-063 review-i063 B1/B2/N3/N6: reapResult tells shut down / stale / gone /
   assert.equal(settleSec({}), 20);
   assert.equal(settleSec({ FW_SIM_SETTLE_SEC: '0' }), 0);
   assert.throws(() => settleSec({ FW_SIM_SETTLE_SEC: 'x' }), /FW_SIM_SETTLE_SEC must be a number of seconds >= 0/);
+});
+
+test('review-i063 follow-up: FW_SIM_GATE_REAP_SEC and FW_SIM_KEEPER_RETRY_MS: NaN, empty, 0 or negative fall back to the default', () => {
+  assert.equal(gateReapMs({}), 30000);
+  assert.equal(keeperRetryMs({}), 5000);
+  for (const v of ['', 'x', 'NaN', '0', '-1', '-0.5', 'Infinity']) {
+    assert.equal(gateReapMs({ FW_SIM_GATE_REAP_SEC: v }), 30000, `FW_SIM_GATE_REAP_SEC=${v}`);
+    assert.equal(keeperRetryMs({ FW_SIM_KEEPER_RETRY_MS: v }), 5000, `FW_SIM_KEEPER_RETRY_MS=${v}`);
+  }
+  assert.equal(gateReapMs({ FW_SIM_GATE_REAP_SEC: '1' }), 1000);
+  assert.equal(gateReapMs({ FW_SIM_GATE_REAP_SEC: '0.5' }), 500);
+  assert.equal(keeperRetryMs({ FW_SIM_KEEPER_RETRY_MS: '200' }), 200);
+  assert.equal(envPositive('X', 7, { X: '3' }), 3);
 });

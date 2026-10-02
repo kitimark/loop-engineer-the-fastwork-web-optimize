@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { twinUrl, iphoneTarget, landedProblem, mirrorInfo, lanSafeUrl, lanSafeRecord, lanSafeText, LAN_HOST } from '../../tools/lib/iphone-url.mjs';
+import { twinUrl, iphoneTarget, landedProblem, mirrorInfo, lanSafeUrl, lanSafeRecord, lanSafeText, LAN_HOST, isLanHost, isLoopbackHost } from '../../tools/lib/iphone-url.mjs';
 import * as run from '../../tools/lib/iphone-run.mjs';
 
 const SELF = { vendors: 'local', https: true, selfSigned: true, httpTwin: 61000 };
@@ -48,6 +48,15 @@ test('landedProblem: the mirror page passes; the warning page, a wrong origin or
 test('mirrorInfo: unreachable or non-http URLs give null, not a throw', async () => {
   assert.equal(await mirrorInfo('http://127.0.0.1:9/'), null);
   assert.equal(await mirrorInfo('about:blank'), null);
+});
+
+test('isLanHost / isLoopbackHost (review-i063 follow-up: the safari-restart probe asks only these)', () => {
+  for (const h of ['10.1.2.3', '172.16.0.1', '172.31.255.1', '192.168.0.55', '169.254.1.1', '100.64.0.1', 'mac.local', 'macbook', '[fd00::1]', 'fe80::1']) assert.ok(isLanHost(h), h);
+  for (const h of ['8.8.8.8', '172.32.0.1', '100.128.0.1', 'fastwork.com', 'localhost', '127.0.0.1', '::1', '2001:db8::1']) assert.ok(!isLanHost(h), h);
+  for (const h of ['localhost', 'a.localhost', '127.0.0.1', '127.1.2.3', '::1', '[::1]', 'LOCALHOST']) assert.ok(isLoopbackHost(h), h);
+  for (const h of ['192.168.0.1', 'fastwork.com', 'localhost.example.com', '128.0.0.1']) assert.ok(!isLoopbackHost(h), h);
+  assert.equal(lanSafeUrl('http://10.0.0.5:8100/x'), 'http://lan-host:8100/x');
+  assert.equal(lanSafeUrl('https://fastwork.com/'), 'https://fastwork.com/');
 });
 
 test('lanSafeRecord: a scroll / record result keeps everything but a LAN host in its href; iphone-run re-exports lanSafeUrl', () => {

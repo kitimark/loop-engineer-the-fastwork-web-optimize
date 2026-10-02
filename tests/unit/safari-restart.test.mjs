@@ -112,7 +112,48 @@ test('I-069 probeUrl: any HTTP answer is ok (a 404 too); a closed port names its
   const down = await probeUrl(`http://127.0.0.1:${port}/`, { timeoutMs: 2000 });
   assert.deepEqual(down, { ok: false, why: 'ECONNREFUSED' });
   assert.deepEqual(await probeUrl('data:text/html,'), { ok: false, why: 'not http(s) (data:)' });
-  assert.match(unreachableText('http://h:1/', 'ECONNREFUSED'), /^the server at http:\/\/h:1\/ does not answer from this Mac \(ECONNREFUSED\), so Safari can only show its load-error page: start/);
+  assert.match(unreachableText('http://127.0.0.1:1/', 'ECONNREFUSED'), /^the server at http:\/\/127\.0\.0\.1:1\/ does not answer from this Mac \(ECONNREFUSED\), so Safari can only show its load-error page: start/);
+});
+
+test('I-069 follow-up (review-i063): probeUrl probes only loopback and private (LAN) hosts; unreachableText prints the target through safe()', async () => {
+  // a public host is never requested: no answer either way (ok: null), so the caller opens a fresh tab as before
+  let asked = 0;
+  const http = await import('node:http');
+  const srv = http.createServer((q, s) => { asked++; s.end(); });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  try {
+    for (const u of ['https://fastwork.com/', 'http://8.8.8.8:1/', 'http://example.org:5200/x', 'http://[2001:db8::1]:1/']) {
+      assert.deepEqual(await probeUrl(u, { timeoutMs: 500 }), { ok: null, why: 'not probed: not a loopback or LAN host' }, u);
+    }
+    assert.equal(asked, 0);
+    // loopback and private hosts are probed (a closed port answers ECONNREFUSED at once)
+    assert.deepEqual(await probeUrl(`http://localhost:${srv.address().port}/`, { timeoutMs: 2000 }), { ok: true, status: 200 });
+    assert.equal(asked, 1);
+  } finally { await new Promise((r) => srv.close(r)); }
+  assert.equal((await probeUrl('http://[::1]:1/', { timeoutMs: 2000 })).ok, false);
+  // a LAN URL never reaches the message (it goes into incident text)
+  const t = unreachableText('https://192.168.0.55:5300/p', 'ETIMEDOUT', 'data:text/html,', {});
+  assert.ok(!t.includes('192.168'), t);
+  assert.match(t, /^the server at https:\/\/lan-host:5300\/p does not answer from this Mac \(ETIMEDOUT\), so Safari can only show its load-error page \(the data: tab it lists\)/);
+  assert.match(unreachableText('http://h:1/', 'ECONNREFUSED'), /^the server at http:\/\/lan-host:1\/ does not answer/);
+});
+
+test('I-069 follow-up: a target that was not probed (ok: null, as for a public host) gets a fresh tab and, if that fails too, the plain error with no server text', async () => {
+  // a loopback URL with a closed port (no mirror info, no network); `reach` is injected to answer "not probed"
+  const url = 'http://127.0.0.1:1/x', DATA = 'data:text/html,';
+  let seen = [];
+  const wait = (shows) => async ({ target, timeoutMs }) => {
+    if (!target) return { tab: { url: DATA, webSocketDebuggerUrl: 'ws://x' }, landed: { href: DATA, title: null, mirror: 0 } };
+    if (!shows()) { const e = new Error(`Safari did not show ${target} within ${Math.round(timeoutMs / 1000)} s`); e.noPage = true; throw e; }
+    return { tab: { url: target }, landed: { href: target, title: 'x', mirror: 0 } };
+  };
+  const reach = async () => ({ ok: null, why: 'not probed: not a loopback or LAN host' });
+  const r = await safariRestart({ drivers: [drv('simctl', { seen })], url, port: 1, restoreMs: 1000, wait: wait(() => seen.some((s) => s[1] === 'open')), navigate: async () => {}, reach, log: quiet });
+  assert.deepEqual([r.opened, seen], ['driver', [['simctl', 'restart'], ['simctl', 'open', url]]]);
+  seen = [];
+  await assert.rejects(safariRestart({ drivers: [drv('simctl', { seen })], url, port: 1, restoreMs: 1000, wait: wait(() => false), navigate: async () => {}, reach, log: quiet }),
+    (e) => /^safari-restart: Safari did not show http:\/\/127\.0\.0\.1:1\/x within/.test(e.message) && !/does not answer/.test(e.message));
+  assert.deepEqual(seen, [['simctl', 'restart'], ['simctl', 'open', url]]);
 });
 
 test('waitForPage: polls until a page answers, else names the last reason after the timeout', async () => {

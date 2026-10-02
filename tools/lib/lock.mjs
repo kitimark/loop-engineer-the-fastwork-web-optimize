@@ -107,7 +107,7 @@ import { randomBytes } from 'node:crypto';
 import { sharedStateDir, REPO } from './paths.mjs';
 import { THRESHOLDS, sample, quiet } from './host.mjs';
 import { keepAwake, stopAwake, awakeHold } from './awake.mjs'; // I-070: measurement holds only (user C-024)
-import { warmSummary, reapWarm, reapWarmSync, reapNote, settleSec } from './sim-warm.mjs';
+import { warmSummary, reapWarm, reapWarmSync, reapNote, settleSec, gateReapMs } from './sim-warm.mjs';
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -990,12 +990,14 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       const sw0 = r === 'chrome-measure' ? warmSummary() : null;
       if (!sw0) gateWarmSince = 0; else gateWarmSince ||= Date.now();
       // a live keeper shuts it down itself on seeing this waiter (2 s polls): the gate acts only for a dead or late one
-      const reapMs = Number(process.env.FW_SIM_GATE_REAP_SEC || 30) * 1000;
+      const reapMs = gateReapMs();
       if (sw0 && (!sw0.keeperAlive || sw0.stale || Date.now() - gateWarmSince >= reapMs) && Date.now() - gateReapAt >= reapMs) {
         gateReapAt = Date.now();
         gateWarm = await reapWarm({ reason: 'the host gate of a timing hold', by: owner });
-        gateReapFails = gateWarm && !gateWarm.ok ? gateReapFails + 1 : 0;
-        if (gateWarm) log(`[lock ${r}] a warm Simulator (fw-sim) at the host gate: ${gateWarm.action}${gateWarm.ok ? '' : ` (${gateWarm.error || '?'}); attempt ${gateReapFails} of ${GATE_REAP_TRIES}`} (I-063)`);
+        // a busy simulator lock (a session, another reap: --warm-only's 60 s lock wait ran out) is no failed shutdown:
+        // the gate stays closed and retries, without counting it (review-i063 follow-up)
+        gateReapFails = gateWarm && !gateWarm.ok ? gateReapFails + (gateWarm.busy ? 0 : 1) : 0;
+        if (gateWarm) log(`[lock ${r}] a warm Simulator (fw-sim) at the host gate: ${gateWarm.action}${gateWarm.ok ? '' : gateWarm.busy ? ` (${gateWarm.error || '?'}); retried, not counted as a failure` : ` (${gateWarm.error || '?'}); attempt ${gateReapFails} of ${GATE_REAP_TRIES}`} (I-063)`);
         if (gateReapFails >= GATE_REAP_TRIES) {
           await dequeue(r, owner, myEntry);
           throw new Error(`[lock ${r}] WAIT: a warm Simulator (fw-sim) is booted and its shutdown failed ${gateReapFails} times at the host gate (${gateWarm.error || '?'}): nothing timed starts beside it, so this wait ends (dequeued); node tools/sim.mjs doctor --fix (or shutdown), then retry (I-063)`);
@@ -1004,7 +1006,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       host = await gateSample({ thresholds: T, samplers: hostSamplers }); // its sleep is summed by tryAcquire (I-033)
       const sw = r === 'chrome-measure' ? warmSummary() : null;
       if (!sw && gateWarm && !gateWarm.ok && !gateWarm.resolvedLater) { gateWarm = { ...gateWarm, resolvedLater: new Date().toISOString() }; gateReapFails = 0; }
-      if (sw) host = { ...host, quiet: false, reasons: [...(host.reasons || []), `a warm Simulator (fw-sim) is ${sw.stale ? 'recorded' : 'booted'} on the Mac (I-063${gateWarm && !gateWarm.ok ? `; its shutdown failed: ${gateWarm.error || '?'}` : ''})`] };
+      if (sw) host = { ...host, quiet: false, reasons: [...(host.reasons || []), `a warm Simulator (fw-sim) is ${sw.stale ? 'recorded' : 'booted'} on the Mac (I-063${gateWarm && !gateWarm.ok ? `; ${gateWarm.busy ? 'its shutdown waits for the simulator lock' : 'its shutdown failed'}: ${gateWarm.error || '?'}` : ''})`] };
       sleptLast = !!host.sample?.suspended;
       if (sleptLast) gateSleptMs += (host.sample.sleptSec || 0) * 1000;
       continue;

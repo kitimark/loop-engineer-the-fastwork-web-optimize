@@ -433,6 +433,20 @@ test('I-063 review-i063 n1/n2/n3: a warm fw-sim whose shutdown fails twice at th
   assert.deepEqual(readJ(join(env.FW_STATE_DIR, 'locks', 'chrome-measure.queue.json')) ?? [], [], 'dequeued');
   assert.ok(!existsSync(join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json')), 'nothing granted');
   assert.ok(device().state === 'Booted' && warm()?.shutdownFailed, 'the record stays, marked');
+  // follow-up: a busy device (a live session holds it: --warm-only prints SIM_WARM_BUSY) is no failed shutdown: the
+  // gate retries without counting it, so the wait ends only at its cap (FW_GATE_MAX_WAIT), granted as a gate timeout;
+  // invalid FW_SIM_GATE_REAP_SEC falls back to 30 s (one reap in this short wait)
+  mkWarm();
+  writeFileSync(join(simDir(), 'session.json'), JSON.stringify({ id: 'busy1', pid: process.pid, owner: 'other' }));
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--', process.execPath, '-e', '0'], { env: { ...env, FW_SIM_GATE_REAP_SEC: '1', FW_GATE_MAX_WAIT: '4' }, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stderr, /a warm Simulator \(fw-sim\) at the host gate: busy \(the simulator lock or a live session holds fw-sim\) \(.*a live session .*owner "other".*\); retried, not counted as a failure \(I-063\)/);
+  assert.ok((r.stderr.match(/retried, not counted/g) || []).length >= 2, r.stderr);
+  assert.ok(!/attempt \d of 2|WAIT:/.test(r.stderr), r.stderr);
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--', process.execPath, '-e', '0'], { env: { ...env, FW_SIM_GATE_REAP_SEC: 'x', FW_GATE_MAX_WAIT: '3' }, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.equal((r.stderr.match(/retried, not counted/g) || []).length, 1, `FW_SIM_GATE_REAP_SEC=x: the 30 s default, one reap: ${r.stderr}`);
+  rmSync(join(simDir(), 'session.json'));
   // n3 + item 3: the first gate reap fails, then the device goes (shut down outside the gate) before the second: the
   // grant's gate record carries the failed attempt, annotated resolvedLater; the hold's command sees it (status --json)
   mkWarm();
