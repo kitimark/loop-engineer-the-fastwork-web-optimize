@@ -287,8 +287,9 @@ node tools/iphone.mjs park --owner <runner>
 The 44 s idle (from ~8 s to ~52 s after navigation) holds two 'you' cycles: draw-in at ~22.0 / 43.5 s, draw-out at
 ~24.2 / 45.6 s.
 
-**Recording.** One per counted run: QuickTime USB recording of the iPhone via osascript, the same method as
-iphone-runner's C-017. Use the same method for every run, and name each file by its label.
+**Recording: dropped** [amended 10-02 09:0xZ, during block A, before any counted run was analysed]. The user stopped
+all QuickTime and camera use by agents (T-018, 08:49Z). Runs are not recorded. The visual-defect criterion (decision
+rule 1) now uses other sources, listed there.
 
 **Metrics** (`node fixes/illusion-accent-frames/tools/youdraws.mjs <run.json>...`; per 'you' draw, window = draw start +
 2000 ms on the probe's frame stamps):
@@ -342,12 +343,20 @@ Cool between blocks with `node tools/wait.mjs phone-temp --below auto` (at most 
   idle phase.
 - **VOID:** scrollY ≠ 0 during the idle; Low Power Mode (rafHz ~30); a missing run JSON.
 - A failing sentinel voids the runs since the last passing one (CLAUDE.md "Phone blocks").
-- A missing recording does not void the numbers. The visual check needs at least 2 recorded runs per arm.
+- No run is recorded (T-018). The visual check uses the sources in decision rule 1.
 
 **Decision rule (pre-registered with P-058).**
 1. **Eligible to ship.** An arm is eligible when all of these hold:
    - it is engaged to the draw end in ≥ 75 % of its 'you' draws;
-   - its recordings show no visual defect in the 'you' draws (a box, an offset, a flash, or a jump at a handback);
+   - no visual defect in the 'you' draws (a box, an offset, a flash, or a jump at a handback). Without recordings
+     (T-018) this is judged from three sources:
+     - the Simulator frozen-pixel table above, for the drawn pixels (V's codec differences are disclosed, not a defect);
+     - the phone runs' handbacks, from readstats `back` by reason and youdraws `back`. Each one is a possible jump at
+       the switch to the SVG, and is listed per arm;
+     - the phone frame metrics. A gap is a visible freeze of the word mid-stroke, and it is reported as such, e.g.
+       "the word stops for up to 2.3 s" (F1, warm-up).
+     A live look at the winner on the phone (flash, box, jump) stays open. The user can do it, or it waits for a route
+     the user approves. Rev 3 says so;
    - no new console errors.
 
    Memory does not make an arm ineligible. The lead and the user set no limit. Rev 3 reports each arm's decoded memory
