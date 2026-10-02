@@ -512,8 +512,8 @@ The full-page control **FP** is P-058's C snapshot, unchanged (`snap/C`: CSS `cc
   - C and B, draw-out: 1.3 % of pixels differ, by at most 8 levels of 255.
   - C and B, draw-in: 1.0 %, at most 2 levels.
   - F2, 'you' on the canvas, draw-in: 1.1 %, at most 2 levels.
-  - The differences cover the title's text columns as well as the word's. My guess is that WebKit tiles and layers the
-    page differently when the page holds less (UNRESOLVED, not checked). Visually the word is the same.
+  - The differences cover the title's text columns as well as the word's. Visually the word is the same. The cause is
+    narrowed down in "Phone off" below: it follows the size of the title's own composited layer.
   - Below the title, the full page has its subtitle; the word-alone page is white there (expected).
 - **Fit to the W driver.** The 'you' draws fall at the same times as on the full page: draw-in ~22.8 / ~44.1 s,
   draw-out ~24.9 / ~46.3 s after navigation, so 2 'you' cycles fall inside the 44 s idle.
@@ -535,8 +535,9 @@ control, ≤ 9 counted runs per block).
   **Short slot:** Block 1 alone; Block 2 follows in the next phone slot.
 
 **What "alone" covers.** WebKit renders the title ~1 % differently on the word-alone page, by at most 8/255 (Simulator,
-OBSERVED, cause UNRESOLVED; "Simulator check" above). So Block 1 measures "the page around the word", including any
-layer or tiling difference that the smaller page brings, not only the other components' own work.
+OBSERVED; "Simulator check" above). The difference follows the title's composited layer, which is 393 x 459 px on the
+full page and 393 x 92 px alone ("Phone off" below). So Block 1 measures "the page around the word", including that
+smaller title layer, not only the other components' own work.
 
 **Serve** from the runner's checkout, one server per arm, restarted at the block start. `S` is the snapshot directory
 above. FP uses `--overlay $S/C`; the WA arms use `--overlay $S/WA-<arm>`.
@@ -548,19 +549,28 @@ curl -sk https://localhost:<port>/word-alone.html | shasum -a 256          # WA 
 curl -sk https://localhost:<port>/_app/immutable/nodes/2.DyWL8TcE.js | shasum -a 256   # per the table
 ```
 
-**URLs.**
-- FP: `https://<LAN>:<port>/`
-- WA arms: `https://<LAN>:<port>/word-alone.html`
+**URLs.** The phone opens each server's plain-http twin (I-003), as in P-058:
+- FP: `http://<LAN>:<http twin port>/`
+- WA arms: `http://<LAN>:<http twin port>/word-alone.html`
 
 **Driver W**, as in P-058:
 
 ```sh
 node tools/iphone.mjs open <URL> --owner <runner>
 node tools/iphone.mjs run --driver window --probe std --owner <runner> --to 1 --settle 8 --idle 44 --hold 2 --sentinel 3 \
-  --block P065 --build <FP|WA-C|WA-F2|WA-B> --arm <C for FP, V otherwise> --pos <n> --label P065-<n>-<arm> --no-park
-node fixes/illusion-accent-frames/tools/readstats.mjs out/p065/P065-<n>-<arm>-stats.json
+  --block P065-<blk> --build <FP|WA-C|WA-F2|WA-B> --arm <letter> --pos <n> --label P065-<blk>-<n>-<arm> --no-park
+node fixes/illusion-accent-frames/tools/readstats.mjs out/p065/P065-<blk>-<n>-<arm>-stats.json
 node tools/iphone.mjs park --owner <runner>
 ```
+
+**Arm letters** (amended at the lead's ruling on iphone-runner's question, 10-02, before any data; it replaces "C for FP,
+V otherwise", which left Block 2 without a named control and would have pooled its three arms as one `V`):
+- Block 1: FP = `C`, WA-C = `V`.
+- Block 2: WA-C = `C` (the block's named control), WA-F2 = `A`, WA-B = `B`. The counted order below is then
+  `tools/lib/stats.mjs` `blockOrder(3)`, C A B A B C B C A.
+- A counted `C` run (not a warm-up) is judged as a heat sentinel (`tools/lib/iphone-run.mjs`). So Block 2's WA-C runs judge
+  heat too, besides the S sentinels on `/`.
+- `readstats` runs after every run (cheap; it only matters for WA-F2's VOID-ARM).
 
 **Blocks** (protocol §5). Each block:
 1. Park Safari; start the block's servers (Block 1: FP, WA-C; Block 2: WA-C, WA-F2, WA-B).
@@ -637,6 +647,78 @@ Predictions and the decision rule: P-065 in `fixes/PREDICTIONS.md`, registered b
    - Threshold-sensitive or not separated: keep the SVG. No further block for either question unless the user asks.
 4. **Counts.** Timeline counts are reported per arm; Block 1 also as FP minus WA-C (the rest of the page's share). Counts only, not
    timing.
+
+### Phone off (T-022, 10-02 ~12:00Z): Simulator and Chrome results, no phone data
+
+P-065 is on hold while the iPhone is disconnected. These runs need no phone. They are counts and attribution, not
+timing, and none of them replaces a P-065 block. Scripts and raw output are in `out/de-illusion-style/wa/` (not
+committed).
+
+**1. WebKit Timeline counts per draw** (Simulator, `tlcounts.mjs`, 30 s per page, one session, `sim-tl-hold.sh`;
+OBSERVED, counts only).
+
+| page | style | layout | paint | rAF callbacks | timers |
+|---|---|---|---|---|---|
+| FP, 'you' draws | 58 | 57 | 60 | 34 | 4.5 |
+| WA-C, 'you' draws | 55.5 | 54.5 | 57 | 0 | 1 |
+| WA-B, 'you' draws | 55.5 | 55 | 57 | - | - |
+| WA-F2, 'you' on the canvas | 3 | 1 | 30 | 54.5 | - |
+
+- On WebKit, nearly every style, layout and paint record in a draw belongs to the word's own animation.
+- The rest of the page adds about 2-3 of each per draw, plus its rAF callbacks (~28-34 per draw) and timers.
+- So F2's full-page residual (30-43 style, 4-6 layout on the phone, P-058) is the rest of the page. Prediction (d)'s
+  values hold on the Simulator. This is not phone data.
+
+**2. The WebKit ~1 % title difference** (Simulator, held poses as in "Simulator check", `simpixh.mjs`, `bgchk.mjs`,
+LayerTree via `underlib.mjs`; OBSERVED).
+- **Not noise.** Each page repeated 0 px against itself in the title box. Full page vs word-alone repeated the
+  identical difference: 4137 / 2793 changed pixels, 94-98 % of them by 1/255.
+- **Only text pixels change.** 0 of ~280 k white pixels differ. The title's position is identical to 1/64 px on both
+  pages: the header is at 18.5, 160.09 and the em at 165.14, 206.09.
+- **Not the layers under the title.** The full page has four more composited layers there: the start-selling morph
+  tracks and centre. Hiding them leaves the difference unchanged.
+- **It follows the title's own layer.** The title is painted into `header.hero-copy`'s layer (will-change: opacity,
+  filter, transform). That layer is 393 x 459 px on the full page, because it also holds the countdown and the CTA
+  stack, and 393 x 92 px alone.
+  - Hiding the countdown and CTA with `visibility: hidden` keeps the layer at 459 px. The difference stays unchanged.
+  - Removing them with `display: none` shrinks the layer to 164 px. The difference drops to 2843 / 589 pixels, and
+    all of them change by only 1/255.
+- **Reading:** the difference scales with the size of the title's own layer, not with what else is drawn. WebKit's
+  mechanism (backing store size to raster) is UNRESOLVED. A reference would be WebKit's `GraphicsLayerCA` backing-store
+  code; I have not read it.
+- **For Block 1:** "the page around the word" includes a 5x larger title layer on the full page (WebKit's estimate:
+  6.5 MB against 1.5 MB). Its repaint count was about the same on both pages, 111-113 at the first held pose.
+
+**3. Chrome call tree per draw** (CPU 6x, 430x932 DPR 3, headless, shared lane, one run per page, 48 s, `calltree.mjs`;
+attribution, not an A/B; OBSERVED; 6x slows only the main thread).
+
+Main-thread self time per 1.8 s draw window, trace, at 6x:
+
+| | FP 'you' | FP other words | WA-C 'you' | WA-C other words |
+|---|---|---|---|---|
+| total self ms | 943 | 937 | 144 | 156 |
+| Layerize | 311 | 321 | 8 | 8 |
+| IntersectionObserver computeIntersections | 87 | 93 | 2 | 3 |
+| Paint | 83 | 79 | 26 | 25 |
+| PrePaint | 77 | 73 | 12 | 14 |
+| UpdateLayoutTree (style) | 75 | 70 | 16 | 18 |
+| Commit | 67 | 69 | 19 | 22 |
+| JS (FunctionCall) | 48 | 36 | 4 | 3 |
+
+- Both pages run ~108 frames per draw.
+- Between draws (1.25 s), FP still runs ~38 frames, 306 ms self; WA-C runs ~2.6 frames (the boil step), 8 ms.
+- A frame costs ~8 ms on FP (6x), drawing or not, and ~1.4 ms on WA-C.
+- **Reading:**
+  - In Chrome, the word's own work is ~15 % of a draw window on the full page.
+  - The rest is the full page's cost per frame, mostly Layerize, IntersectionObserver and PrePaint. The draw requests
+    that cost at 60 fps instead of the page's ~30 fps between draws.
+  - 'you' draws cost the same as any other word's.
+  - JS is small on both pages. On FP the top functions are the Svelte runtime (`chunks/BSBv9QXB.js`) and the
+    analytics vendor script, each ~1-4 ms per window at 6x.
+- Chrome's layerization is not WebKit's, so this attributes Chrome's cost only. Block 1 answers the question on the phone.
+
+**Still needs the phone:** both P-065 blocks (> 50 / > 34 ms frame counts per 'you' draw and over the 44 s idle), as
+ticketed.
 
 ## Void results
 
