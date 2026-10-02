@@ -26,8 +26,8 @@ lead's review (8690486, NEEDS-WORK) sent back.
   bfcache, no held one-shot. The positive control separates in each.
 - The rotator-tick layout stays: the st5/st6 family is not byte-identical, and rotator-st6 is parked.
 
-**Stage:** F. Waiting for the fix-reviewer and the phone ticket (T-011). The D card below is **unsigned** (no signed
-"D:" line exists); it goes to the lead to sign or return.
+**Stage:** F. PR-002 rev 2 accepted by the user (2026-10-02 08:07:38Z, no notes). D signed by the lead (NAMED, see
+"Cards"). Waiting for the phone ticket (T-011), then the fix-reviewer on the final diff.
 **Device class / gate:** phone-only (WebKit's nested style/layout rounds, F-099). Gate: phone Timeline attribution (counts).
 **Driver(s) behind the claims:**
 - Chrome counts and state probes (`out/scene-scope/*.mjs`). Most are not committed. The frame, onset and scoring
@@ -1183,7 +1183,12 @@ Abbreviations: Sim W = Simulator W driver (structure only); flipprobe = Chrome c
 
 ## Cards (protocol v2)
 
-Attribution card (D), for the lead. **UNSIGNED**: no signed "D:" line exists; sent to the lead to sign or return.
+Attribution card (D), **signed** by the lead after PR-002 rev 2 was accepted (08:07:38Z). The signed line, verbatim:
+
+> D (lead, 2026-10-02 08:1xZ): NAMED for the nesting mechanism, class phone-only, gate T-011 phone W Timeline (attribution, then phone ABBA once timing resumes for this topic). Basis: positive V1, negative V1-anim-only, decoupling A vs B, depth ablation; platform claims CONFIRMED (StyleInvalidator 29dd51e, StyleTreeResolver c0726d0 / Document 079c1e3, F-100); WebKit main vs iOS 26.6.1 checked against the phone's B Timeline, 2 nested Layouts in the RS as the depth model predicts. The ~18 ms view Layout: LOCATED on the 4 row-title entries (Sim, positional ablation proves where, not cost), mechanism UNEXPLAINED, a separate card. RBi40pti's JS line on WebKit: UNRESOLVED, decisive check T-011.
+
+Check behind "2 nested Layouts in the RS": phone block 1, arm C = B, switch RS at y≈2615: 2/2/2 nested Layouts (14.2-16.5 + 1.1-1.5 ms), section "Phone attribution blocks".
+
 - Mechanism: universal-subject paused-scene rule → whole-subtree restyle on the attribute flip → restyled elements
   under size containers → one style round + interleaved layout per nesting level. The card explains the nesting
   structure and the RS self time (Sim 3.1 → 0.2 ms) plus B's second ~1.5 ms round, not the ~18 ms layout, which exists
