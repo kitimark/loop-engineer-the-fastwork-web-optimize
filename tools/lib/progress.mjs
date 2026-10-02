@@ -235,7 +235,16 @@ export function lockView(st, now = Date.now()) {
     shared,
     lane: sw ? { on: !!sw.enabled, cap: sw.cap } : null,
     queue: queue.map((w) => sanitize(w.owner, 60)),
+    ...(st.handover && !held ? { handover: handoverView(st.handover) } : {}),
   };
+}
+
+/** I-051: lock.handoverInfo() for the page: whom a free lock is handing over to, and why that waiter has not taken it. */
+function handoverView(ho) {
+  const to = sanitize(ho.to, 60);
+  const why = Array.isArray(ho.gated) ? `gated: ${ho.gated.map((x) => sanitize(x, 80)).join(', ')}`
+    : Number.isFinite(ho.notSeenSec) ? `not seen for ${ho.notSeenSec} s` : Number.isFinite(ho.seenSec) ? `seen ${ho.seenSec} s ago` : '';
+  return { to, text: `handing over to ${to}${why ? ` (${why})` : ''}` };
 }
 
 /** Live sources, each failure-tolerant (a broken source shows as unavailable, never breaks the page). */
@@ -352,7 +361,7 @@ function holderText(l, what) {
   if (!l) return `${what}: unknown`;
   // with the lane's switch off and no group it reads as before the lane
   const lane = l.lane?.on ? `; shared lane on, cap ${l.lane.cap}` : '';
-  const h = l.shared ? sharedText(l) : `${l.holder ? `${l.holder.owner} (since ${hhmm(l.holder.since)})` : 'free'}${lane}`;
+  const h = l.shared ? sharedText(l) : `${l.holder ? `${l.holder.owner} (since ${hhmm(l.holder.since)})` : l.handover ? `free, ${l.handover.text}` : 'free'}${lane}`;
   return `${what}: ${h}${l.queue.length ? `, ${l.queue.length} waiting (${l.queue.join(', ')})` : ''}`;
 }
 

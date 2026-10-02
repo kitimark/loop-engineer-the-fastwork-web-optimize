@@ -255,6 +255,27 @@ test('I-051 join busy: once the reader has a CPU busy sample, busy <= the join b
   } finally { if (prev !== undefined) process.env.FW_LOCK_SHARED_JOIN_BUSY = prev; }
 });
 
+test('I-051 hand-over: a free lock names the waiter served next and why it has not taken it (gated, or not seen)', () => {
+  const now = Date.parse('2026-10-02T00:22:00Z');
+  const ago = (s) => new Date(now - s * 1000).toISOString();
+  const st = (w, o = {}) => ({ resource: R, holder: null, stale: null, next: 'fix-nav-morph', queue: [{ owner: 'scene-scope', lastSeen: ago(1) }, { owner: 'fix-nav-morph', since: ago(900), lastSeen: ago(1), ...w }], ...o });
+  // seen live 2026-10-02 00:21:52-00:22:54Z: the lock stood free while the head waited for a quiet host
+  const gated = L.handoverInfo(st({ gate: { since: ago(300), at: ago(2), quiet: false, reasons: ['cpu 32.5 % > 25 %', 'load1 70.8 > 6'] } }), now);
+  assert.deepEqual(gated, { to: 'fix-nav-morph', gated: ['cpu 32.5 % > 25 %', 'load1 70.8 > 6'], gatedSince: ago(300) });
+  assert.equal(L.handoverText(gated), 'handing over to "fix-nav-morph" (gated: cpu 32.5 % > 25 %, load1 70.8 > 6)');
+  // a waiter that stopped polling (or polls code that defers to someone else, I-049 mixed versions)
+  const gone = L.handoverInfo(st({ lastSeen: ago(42) }), now);
+  assert.deepEqual(gone, { to: 'fix-nav-morph', notSeenSec: 42 });
+  assert.equal(L.handoverText(gone), 'handing over to "fix-nav-morph" (not seen for 42 s)');
+  // an old gate record (not refreshed for a minute) is no gate; a fresh poll says when it was seen
+  const fresh = L.handoverInfo(st({ lastSeen: ago(1), gate: { since: ago(900), at: ago(120), quiet: false, reasons: ['load1 9 > 6'] } }), now);
+  assert.deepEqual(fresh, { to: 'fix-nav-morph', seenSec: 1 });
+  assert.equal(L.handoverText(fresh), 'handing over to "fix-nav-morph" (seen 1 s ago)');
+  assert.equal(L.handoverInfo(st({}, { holder: { owner: 'x' } }), now), null, 'held: no hand-over');
+  assert.equal(L.handoverInfo(st({}, { next: null, queue: [] }), now), null, 'free and nobody waits');
+  assert.equal(L.handoverText(null), '');
+});
+
 test('I-051 cpu busy: from two cumulative cpu-time snapshots; null without elapsed time', () => {
   assert.equal(L.cpuBusyPct({ idle: 100, total: 200 }, { idle: 130, total: 300 }), 70);
   assert.equal(L.cpuBusyPct({ idle: 100, total: 200 }, { idle: 100, total: 200 }), null);

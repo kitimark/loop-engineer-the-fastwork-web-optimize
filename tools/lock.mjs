@@ -112,7 +112,7 @@
 // The lane is OFF unless the lead switched it on; while off, --shared runs as an exclusive --short job (same
 // --max-seconds; a notice on stderr) whose command gets FW_LOCK_SHARED too, so nothing timed starts inside it. `status` shows the group, its readers and the switch.
 import { spawn, execFileSync } from 'node:child_process';
-import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct } from './lib/lock.mjs';
+import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct, handoverText } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
 import { appendFileSync } from 'node:fs';
 import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
@@ -145,7 +145,7 @@ const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > D
 function fmt(s) {
   const h = s.holder, pad = ' '.repeat(16);
   let line = `${s.resource.padEnd(15)} `;
-  if (!h) line += s.next ? `free, handing over to "${s.next}"` : 'free';
+  if (!h) line += s.next ? `free, ${handoverText(s.handover || { to: s.next })}` : 'free'; // I-051: and why it waits
   else if (isGroup(h) && Array.isArray(h.readers)) {
     // a shared group (ts-lock-share): its readers hold it together
     const used = h.readers.reduce((a, x) => a + (x.weight || 1), 0), n = h.readers.length;

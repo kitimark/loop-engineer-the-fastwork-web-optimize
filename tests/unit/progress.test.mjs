@@ -5,7 +5,7 @@
 // carries one. Every test uses its own $FW_STATE_DIR. Example addresses are private-range or .invalid; none is real.
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { tempDir, REPO } from '../helpers.mjs';
@@ -244,6 +244,31 @@ test('I-048 lockView: an exclusive holder and a free lock read as before; the la
   assert.equal(chromeLine(free({ enabled: false, cap: 3 })), '  Chrome: free');
   assert.equal(chromeLine(free({ enabled: true, cap: 4 })), '  Chrome: free; shared lane on, cap 4');
   assert.ok(!JSON.stringify(P.lockView(exclusiveStatus({ enabled: true, cap: 3 }), NOW)).match(/717171|x7x7|someone-private|192\.168/));
+});
+
+test('I-051 lockView: a free lock shows whom it is handing over to and why (gated reasons, or not seen), on the page too', () => {
+  const free = (handover) => ({ resource: 'chrome-measure', stale: null, next: 'fix-c', holder: null, handover,
+    queue: [{ owner: 'fix-c', kind: 'process', pid: 616161, checkout: `${HOME}/wt-c`, since: '2026-10-01T17:05:00Z', lastSeen: '2026-10-01T17:09:50Z' }] });
+  const g = P.lockView(free({ to: 'fix-c', gated: ['cpu 32.5 % > 25 %', 'load1 70.8 > 6'], gatedSince: '2026-10-01T17:05:00Z' }), NOW);
+  assert.deepEqual(g.handover, { to: 'fix-c', text: 'handing over to fix-c (gated: cpu 32.5 % > 25 %, load1 70.8 > 6)' });
+  assert.equal(chromeLine(free({ to: 'fix-c', gated: ['load1 70.8 > 6'] })), '  Chrome: free, handing over to fix-c (gated: load1 70.8 > 6), 1 waiting (fix-c)');
+  assert.equal(chromeLine(free({ to: 'fix-c', notSeenSec: 42 })), '  Chrome: free, handing over to fix-c (not seen for 42 s), 1 waiting (fix-c)');
+  assert.equal(chromeLine(free({ to: 'fix-c', seenSec: 1 })), '  Chrome: free, handing over to fix-c (seen 1 s ago), 1 waiting (fix-c)');
+  assert.equal(P.lockView(free(undefined), NOW).handover, undefined, 'no hand-over record: the view is as before');
+  assert.ok(!JSON.stringify(g).match(/616161|wt-c|someone-private/));
+  // the page shows the same text under "free"
+  const page = readFileSync(new URL('../../tools/lib/progress-page.html', import.meta.url), 'utf8');
+  assert.match(page, /l\.handover\.text/);
+});
+
+test('I-051 gatherLive: a free chrome-measure lock carries the hand-over record from lock.mjs', async () => {
+  assert.equal((await L.tryAcquire('chrome-measure', { owner: 'fix-z', kind: 'lease', ttlSec: 600, short: true, maxSec: 60 })).ok, true);
+  assert.equal((await L.tryAcquire('chrome-measure', { owner: 'fix-y', kind: 'lease', ttlSec: 600, short: true, maxSec: 60 })).ok, false);
+  await L.release('chrome-measure', { owner: 'fix-z' });
+  const v = P.lockView((await P.gatherLive()).locks['chrome-measure']);
+  assert.equal(v.holder, null);
+  assert.equal(v.handover.to, 'fix-y');
+  assert.match(v.handover.text, /^handing over to fix-y \(seen \d+ s ago\)$/);
 });
 
 test('I-048 gatherLive: the real shared group through lock.mjs (live readers only, the switch), joins closed by a writer', async () => {

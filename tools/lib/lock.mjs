@@ -377,13 +377,44 @@ function pruneQueue(q, now = Date.now(), queueTtlSec = 600) {
   return q.filter((w) => now - Date.parse(w.lastSeen) < (w.queueTtlSec ?? queueTtlSec) * 1000 && (!w.pid || w.kind !== 'process' || pidAlive(w.pid)));
 }
 
-/** Snapshot of one resource: {resource, holder, stale, queue, next} (next: the waiter served at the next hand-over). */
+/**
+ * Snapshot of one resource: {resource, holder, stale, queue, next, handover?} (next: the waiter served at the next
+ * hand-over; handover: handoverInfo() while the lock is free and someone waits, I-051).
+ */
 export function status(r) {
   checkName(r);
   const h = readJson(holderFile(r), null);
   const q = pruneQueue(readJson(queueFile(r), []));
   const next = q.length ? q[nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h), Date.now(), undefined, r)].owner : null;
-  return { resource: r, holder: h, stale: h ? staleReason(h) : null, queue: q, next };
+  const st = { resource: r, holder: h, stale: h ? staleReason(h) : null, queue: q, next };
+  const ho = handoverInfo(st);
+  return ho ? { ...st, handover: ho } : st;
+}
+
+// I-051: a stalled hand-over was invisible in status (2026-10-02 sample: the lock stood free with a gated waiter served
+// next for 182 s in 30 min, e.g. 00:21:52-00:22:54Z). The waiter served next polls every NEXT_POLL_MS; one not seen for
+// this long is not taking the lock.
+export const HANDOVER_STALL_SEC = 5;
+/**
+ * While `st` (a status()) is free and someone waits: {to, gated: [reasons], gatedSince} when the waiter served next is
+ * held at the host gate (its gate record refreshed within GATE_FRESH_MS), else {to, notSeenSec} when it has not polled
+ * for HANDOVER_STALL_SEC, else {to, seenSec}. null while held or with nobody waiting.
+ */
+export function handoverInfo(st, now = Date.now()) {
+  if (!st || st.holder || !st.next) return null;
+  const to = st.next, w = (st.queue || []).find((x) => x.owner === to);
+  if (!w) return { to };
+  const g = w.gate;
+  if (g && g.quiet !== true && now - Date.parse(g.at) <= GATE_FRESH_MS) return { to, gated: g.reasons?.length ? g.reasons : ['not measured yet'], gatedSince: g.since };
+  const seen = Math.max(0, Math.round((now - Date.parse(w.lastSeen)) / 1000));
+  if (!Number.isFinite(seen)) return { to };
+  return seen > HANDOVER_STALL_SEC ? { to, notSeenSec: seen } : { to, seenSec: seen };
+}
+/** 'handing over to "X" (gated: <reasons> | not seen for N s | seen N s ago)', '' for null. */
+export function handoverText(ho) {
+  if (!ho) return '';
+  const why = ho.gated ? `gated: ${ho.gated.join(', ')}` : ho.notSeenSec != null ? `not seen for ${ho.notSeenSec} s` : ho.seenSec != null ? `seen ${ho.seenSec} s ago` : '';
+  return `handing over to "${ho.to}"${why ? ` (${why})` : ''}`;
 }
 
 export function allStatus() {

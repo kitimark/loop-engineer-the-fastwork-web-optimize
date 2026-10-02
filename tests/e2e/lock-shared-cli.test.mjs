@@ -4,7 +4,7 @@
 // timing tools refuse --shared. Temp FW_STATE_DIR only (I-041); the fake host (cleanEnv) keeps the gate quiet.
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, nodeAsync, tool, sleep } from '../helpers.mjs';
 
@@ -43,6 +43,21 @@ test('switch CLI: lead only, with a reason; cap 3 by default, --cap, --join-load
   // off but in use: an off-mode shared lease (a functional stand-in) shows the line
   assert.equal(lock('acquire', 'chrome-measure', '--shared', '--max-seconds', '30', '--owner', 'fn').code, 0);
   assert.match(lock('status', 'chrome-measure', '--no-host').stdout, /shared lane: off/);
+});
+
+test('I-051 status: a free lock says whom it is handing over to and why that waiter has not taken it', () => {
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  const now = Date.now(), iso = (s) => new Date(now - s * 1000).toISOString();
+  const q = [{ owner: 'fix-x', kind: 'lease', checkout: '/tmp/x', since: iso(900), lastSeen: iso(1), queueTtlSec: 600,
+    gate: { since: iso(300), at: iso(2), quiet: false, reasons: ['load1 70.8 > 6'] } }];
+  writeFileSync(join(state, 'locks', 'chrome-measure.queue.json'), JSON.stringify(q));
+  assert.match(lock('status', 'chrome-measure', '--no-host').stdout, /free, handing over to "fix-x" \(gated: load1 70\.8 > 6\)/);
+  q[0].lastSeen = iso(25); delete q[0].gate;
+  writeFileSync(join(state, 'locks', 'chrome-measure.queue.json'), JSON.stringify(q));
+  assert.match(lock('status', 'chrome-measure', '--no-host').stdout, /free, handing over to "fix-x" \(not seen for 2[5-9] s\)/);
+  const js = JSON.parse(lock('status', 'chrome-measure', '--no-host', '--json').stdout)[0];
+  assert.equal(js.handover.to, 'fix-x');
+  assert.ok(js.handover.notSeenSec >= 25);
 });
 
 test('usage: --shared needs --max-seconds, never with --short / --no-timing, not on iphone', () => {
