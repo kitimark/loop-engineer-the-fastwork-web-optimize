@@ -3,8 +3,8 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft. PR-001 rev 2 was accepted (2026-10-02 06:31Z). The rev 3 arms are built, and phone ticket P-058 is
-prepared but not run ("PR-001 rev 3" below). Rev 3 is posted after the phone blocks.
+**Status:** draft. PR-001 rev 2 was accepted (2026-10-02 06:31Z). Phone ticket P-058 ran (blocks A and B): no arm beats
+the SVG ("P-058 results" below). Rev 3 (6 options, recommending "keep") is drafted and waits for the lead; the visual recording is deferred by the user.
 **Stage:** R / I (design-engineer PoC, illusion proposal; no D card)
 **Device class / gate:** phone-only (WebKit). Chrome is gated to the original SVG.
 **Driver(s) behind the claims:** Simulator functional sessions (no timing). Chrome per-draw trace counts (r14).
@@ -123,7 +123,7 @@ paused.
 **Video:** not pixel-identical. HEVC with alpha (the only transparent video Safari plays) is Main Profile with
 chroma_format_idc 1, i.e. 4:2:0. Source: Apple, "HEVC Video with Alpha Interoperability Profile". CONFIRMED.
 
-## PR-001 rev 3: arms and phone ticket P-058 (prepared, not run)
+## PR-001 rev 3: arms and phone ticket P-058
 
 The user accepted rev 2 (2026-10-02 06:31Z) and asked which solution performs best. A bit of pixel difference is now
 acceptable for PR-001 only. Timing claims are allowed for PR-001 only. The user's "3 ways" are the three frame layouts
@@ -376,6 +376,63 @@ Cool between blocks with `node tools/wait.mjs phone-temp --below auto` (at most 
 4. A winner that does not beat C (C's range overlaps it on > 50 and > 34) is reported as "no arm beats the SVG on the
    phone". In that case rev 3 recommends keeping the original SVG.
 
+### P-058 results (phone, W driver, OBSERVED)
+
+iPhone 15 Pro Max, iOS 26.6.1 Safari, 430x775, Low Power Mode off. Run by iphone-runner on 10-02: block A 08:42Z-08:59Z,
+block B counted runs 09:16Z-09:26Z. Every sentinel passed, no run was void, every V prime was `ok`. Counts are per run, i.e. per 4
+'you' draws (2 in, 2 out), in run order. Run JSON: the runner's `out/p058/` (gitignored). B runs carry `meta.arm: "V"`
+(the runner's flag sends every non-C build as V); `meta.build` is the key, and youdraws groups by it.
+
+**Post-data change, disclosed.** youdraws missed a stall that started inside a draw's 2000 ms window and ended after it
+(F1's 1.8-2.1 s stalls after its in-draws). The fix (ec9b414, after block A's data was in) counts a gap that overlaps
+the window: `x.t > s.t && x.t - x.dt < s.t + 2000`. It applies to every arm. It moved F1 run 1 from 6 to 8 frames
+> 50 ms and C run 1 from 1 to 2; nothing else changed. The visual-defect criterion of rule 1 changed earlier (7dbc973,
+after block A's runs were in, before any was analysed), when recordings were dropped (T-018).
+
+| block | arm | > 50 (46 / 54) | > 34 (30 / 38) | live frames per draw | longest gap ms | engaged to the end |
+|---|---|---|---|---|---|---|
+| A | C | 2, 0 (3/1, 2/0) | 8, 5 (11/7, 6/3) | 53-55 | 60 | - |
+| A | F1 | 8, 10 (8/10, 8/10) | 10, 11 (11/12, 9/10) | 3-24 | 2065 | 8 of 8 |
+| A | F2 | 1, 2 (2/5, 0/0) | 9, 11 (12/12, 8/9) | 53-55 | 53 | 8 of 8 |
+| A | F3 | 17, 17 (17/18, 16/15) | 22, 23 (22/23, 20/23) | 17-25 | 639 | 8 of 8 |
+| B | C | 2, 0, 0 (2/0/2, 1/0/0) | 6, 5, 4 (8/10/8, 5/5/3) | 53-55 | 57 | - |
+| B | V | 0, 1, 0 (3/1/1, 0/0/0) | 8, 7, 9 (9/10/12, 6/4/7) | 54-55 | 52 | 8 of 12 (67 %) |
+| B | B | 0, 3, 1 (1/4/1, 0/2/0) | 7, 7, 7 (8/11/13, 5/5/3) | 53-56 | 59 | - |
+
+Idle page fps (all words, context): C 59.4 / 59.8, F2 59.6 / 59.6, F3 55.3 / 55.4, F1 51.5 / 51.4. Mac load1 was > 8 at
+the start of block A's runs 1-7 (flagged, not void, per the Mac-load amendment).
+
+Timeline counts per 'you' draw (attribution runs after the end sentinel, counts only):
+- block A: C style 57-60, layout 56-58, paint 57-70; F2 style 30-43, layout 4-6, paint 31-39. F1 and F3 are low
+  because rendering stalled, so they are not savings.
+- block B: not taken (planned after the visual check, which the user deferred).
+
+**Eligibility (rule 1).**
+- F1 and F3: freeze (gaps up to 2065 / 639 ms, 3-25 live frames per draw against ~54). Not eligible.
+- V: 8 of 12 draws to the end (67 % < 75 %). Not eligible. Its 4 handbacks were all `drift`, at 66-84 ms. Cause, our
+  own design (OBSERVED on the phone): V latches its start lag l0 at the first tick where `currentTime > 0 && !paused`,
+  but the picture only advances 4-5 frames later. The lag then grows ~16.7 ms per frame and passes the 50 ms drift
+  limit. In the engaged draws l0 was -12 to -69 ms (the video runs behind the SVG's clock by that much, and the draw's
+  last 12-69 ms are cut). Fixable (latch l0 on the first frame that moves), but V's fully engaged draws did not beat C
+  on frames either, so no fix block is proposed; the user can ask for one.
+- F2 and B: eligible. F2 holds ~83 MB of decoded frames for 'you', 1 of the 7 words (ESTIMATE, arms table).
+
+**Rank (rule 2) and separation (rule 3).** Medians of > 50 per run: V 0, C 0 (A) / 0 (B), B 1, F2 1.5, F1 9, F3 17.
+- F2 vs C (block A): > 50 overlaps; threshold-sensitive (> 54: F2 0/0 vs C 2/0, looks better; > 46: 2/5 vs 3/1,
+  looks worse). > 34: F2 9, 11 vs C 8, 5, worse; the twins agree.
+- B vs C (block B): > 50 overlaps (also at 46 and 54). > 34: B 7, 7, 7 vs C 6, 5, 4, worse at 34; threshold-sensitive
+  (> 38: identical 5/5/3; > 30: overlap).
+- V vs C: > 50 overlaps (also at 46 and 54). > 34: V 8, 7, 9 vs C 6, 5, 4, worse at 34; threshold-sensitive (> 38 and
+  > 30 overlap).
+
+**Verdict (rule 4): no arm beats the SVG on the phone.** Rev 3 recommends keeping the original SVG. F2's Timeline saving
+(about half the style recalcs and paints, ~10x fewer layouts per draw) is main-thread work only; it did not turn into
+fewer slow frames, and it costs ~83 MB for one word.
+
+**Visual check (C-021 / C-023, the user's own Screen Recording, numbers only).** `out/de-illusion-style/arms/visan.mjs`
+finds the word by template match against the Simulator frame, fits the visits in nav.json, and scores each draw
+(frames, longest still, flash, jump, box, rest difference against C). No agent views the frames. Deferred by the user (T-019 #9: make the test easier first); rev 3 says so.
+
 ## Void results
 
 - **Query-string flags never reached the arm.** The SvelteKit router drops `location.search` via
@@ -390,8 +447,8 @@ Cool between blocks with `node tools/wait.mjs phone-temp --below auto` (at most 
 
 ## Risks, conflicts, follow-ups
 
-- The live stall decides this proposal. Next step, if the user approves: a phone check comparing the tile arm with a
-  one-blit-per-tick arm. Withdraw if both stall.
+- P-058 decided it: no arm beats the SVG on the phone, so rev 3 recommends keeping it. Open only if the user asks: a V
+  fix block (latch l0 on the first moving frame), as a new question with its own prediction row.
 - Placement is verified at scrollY 0 only. Sim-vs-phone frame identity is UNRESOLVED.
 - How often the phone's clock gives a ms with no frame (a handback) is UNRESOLVED.
 - reduced-motion is unchanged: the effect returns early before the arm is created.
