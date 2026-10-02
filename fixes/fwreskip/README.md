@@ -666,9 +666,9 @@ G1b was not designed for this: its descent is WDA strokes of 150 px, each with a
 - So, **OBSERVED** (n=8 per arm, G driver, cause unknown): the ~20 ms Sim layout that fwreskip removes at the hero end does not show as a longer frame on the phone with this driver. B's frame at the flip is already 25-30 ms.
 - What this does not cover: the W driver (scripted steps), where the hero-end lag was first described, and RB + st6-rb. Both are P2-1's job on the phone.
 
-### Phone ticket G2: P2-1, the descent gain (DRAFT, pre-data, for the lead's second read)
+### Phone ticket G2: P2-1, the descent gain (pre-data; approved by the lead at second read with the gain-threshold amendment below, 2026-10-02; prediction P-064)
 
-Not sent to the queue yet. P5 did not split on the Sim (v33), so this ticket has one part, and V is S6P2b. The lead's order (2026-10-02): the user sees no proposal until both sides of the trade have phone numbers. P2-1 decides alone.
+Owner of the run: `iphone-runner`. Phone order: right after T-009. The ioscap user step goes first if it unblocks earlier (I-064). P5 did not split on the Sim (v33), so this ticket has one part, and V is S6P2b. The lead's order (2026-10-02): the user sees no proposal until both sides of the trade have phone numbers. P2-1 decides alone.
 
 **Question.** On the phone, with the W driver, does fwreskip shorten the frames where the descent passes the hero end? And is that gain big enough to pay for its idle un-skip cost?
 
@@ -694,16 +694,17 @@ node tools/iphone.mjs run --driver window --probe std --from 2600 --to 3400 --id
 3. **Rest of the window** (y < 2950 and y > 3250 in the scroll): counts only, as a check that the arms differ only at the band.
 
 **Decision rule** (registered before data; sums over the 4 C and the 4 V runs; "frames" = frames > the threshold):
+Amended 2026-10-02 at the lead's second read, before any data: the gain line is now 2 frames, because one frame over 4 runs is noise. Verdicts are checked in this order: Gain → Mixed → No gain.
 - **Gain, A recommended:** both of these must hold.
-  - (i) V's > 50 frames in band + hold < C's > 50 frames in band + hold.
-  - (ii) V's > 34 frames in band + hold ≤ C's.
-  - The size that justifies the idle cost is in the rule: the band gain must at least pay back the frames V adds in the hold, at both thresholds. A net > 50 count lower by ≥ 1 is the smallest gain that buys G1b's 45-55 ms idle frame.
-- **No gain, recommend (B), drop fwreskip:** V's band counts are ≥ C's band counts minus 1 at > 34, and not lower at > 50 (this includes V being worse). A one-frame difference over 4 runs is inside run-to-run noise (G1b: B's own band counts spread 0-2 per run). The 45-55 ms idle frame then buys nothing.
-- **Mixed, (B) still recommended, trade shown to the user:** V gains in the band, but the hold's added frames cancel it, so (i) or (ii) fails.
-- **Threshold-sensitive** when a twin changes the verdict. **Void run** as in G1b: sentinel failures, a run that doesn't reach 3400, and the stroke gate where it applies (W has no strokes, so it doesn't apply here).
+  - (i) V's > 50 count in band + hold is **at least 2 lower** than C's.
+  - (ii) V's > 34 count in band + hold ≤ C's.
+  - This is the size of gain that buys the idle cost: after paying for the frames V adds in the hold, the band gain must still leave V at least 2 frames > 50 ahead of C. G1b's idle frame was > 50 in 5 of 8 runs.
+- **Mixed, (B) still recommended, trade shown to the user:** V's band alone has at least 2 fewer > 50 frames than C's band, but the hold's added frames cancel the gain, so (i) or (ii) fails.
+- **No gain, recommend (B), drop fwreskip:** anything that is neither Gain nor Mixed, including V being worse. A one-frame difference over 4 runs is inside run-to-run noise (G1b: B's own band counts spread 0-2 per run). The 45-55 ms idle frame then buys nothing.
+- **Threshold-sensitive** when a twin changes the verdict. A twin that moves the verdict across the Gain line (> 46 or > 54 for (i), > 30 or > 38 for (ii)) makes it threshold-sensitive, and **threshold-sensitive counts as not Gain**. **Void run** as in G1b: sentinel failures, a run that doesn't reach 3400, and the stroke gate where it applies (W has no strokes, so it doesn't apply here).
 - The UI-process half of the FAIL rule is "not checked on the phone since T-018". Main-thread FAIL is not read in this part: the W driver has no flinglog.
 
-**Prediction** (sent to mgmt-ops for an id): no gain. In C, the band max ≤ 38 ms in ≥ 3 of 4 runs, and the band > 50 count is 0-1 in each arm. V's hold has ≥ 1 frame > 34 in ≥ 3 of 4 runs (G1b: 8 of 8). Based on: the G1b descent preview above, G driver, n=8 per arm, B 25-30 ms at the flip. Falsified if C's band shows ≥ 2 frames > 50 over 4 runs that V does not have.
+**Prediction P-064** (`fixes/PREDICTIONS.md`): no gain. In C, the band max ≤ 38 ms in ≥ 3 of 4 runs, and the band > 50 count is 0-1 in each arm. V's hold has ≥ 1 frame > 34 in ≥ 3 of 4 runs (G1b: 8 of 8). Based on: the G1b descent preview above, G driver, n=8 per arm, B 25-30 ms at the flip. Falsified if C's band shows ≥ 2 frames > 50 over 4 runs that V does not have.
 
 ## Risks, conflicts, follow-ups
 
