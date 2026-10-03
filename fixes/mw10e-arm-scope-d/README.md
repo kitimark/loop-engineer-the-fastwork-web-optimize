@@ -176,8 +176,9 @@ card.
   INCOMPLETE, a failed one → VOID). Re-run on the P-036 records: both sentinels pass, zones unchanged, card part PASS.
 - Header ref `T`: **not in this build.** The touch target is still `document.querySelector('header.start-selling-top-nav')`
   at setup. `T` is the component's `bind:this` ref to the same element (JS ~13565-13570), so the swap is one
-  expression and behaviour-identical, but it changes the JS hash, and D's hash is the one in the phone ticket. It goes
-  into the build that lands after the phone answers (D's successor or E), with a token diff shown here.
+  expression and behaviour-identical, but it changes the JS hash. The lead (03:0xZ): what lands is byte-for-byte the
+  build the phone measured, so the `T` swap is its own small follow-up after landing, with a token diff, a Chrome
+  functional check and a review read.
 - Dangling refs: `touch-check.mjs` and `probe-results/` are now named as working-branch files; `touch-gap-check.mjs`,
   `pinhold-sim.mjs` and the pin-hold gestures land with this folder.
 - `aw1-10e` is not on `main`: stated in the header here and in `fixes/mw10e-arm-scope-c/README.md`.
