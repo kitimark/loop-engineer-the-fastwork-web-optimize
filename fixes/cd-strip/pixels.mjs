@@ -1,0 +1,231 @@
+// cd-strip frozen-frame identity harness (T-030). Adapted from de-countdown's fixes/countdown-faces/probe.mjs
+// `pixels` mode (virtual clocks for the countdown's own code, its rAF frames queued and stepped by the harness; credit
+// de-countdown). Changes: both clocks (hero, morph panel), the strip's state read next to the faces', the face state of
+// EVERY stepped frame (not only shot frames), instant scrolls (html has scroll-behavior: smooth), the target change
+// mid-frame everywhere (T1 = grid + FR/3), the first real frame after an instant jump, A B .. A order (last = A/A).
+//
+//   node fixes/cd-strip/pixels.mjs [arms=st6rb2,strip,strip-a] [clocks=hero,panel]
+// Arms: st6rb2 = fixes/st6-rb2/overlay (control), strip = fixes/cd-strip/overlay, strip-a = fixes/cd-strip--a/overlay,
+// orig = the baseline (no overlay). Counts lane only (no timing): run inside a chrome-measure hold, e.g.
+//   node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner cd-strip -- node fixes/cd-strip/pixels.mjs
+// Output: out/cd-strip/pixels-<stamp>.json + PNGs under out/cd-strip/pixels-<stamp>/.
+import { spawn } from 'node:child_process';
+import { existsSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { loadavg } from 'node:os';
+import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { inflateSync } from 'node:zlib';
+import { REPO as WT, resolveTree } from '../../tools/lib/paths.mjs';
+const { launchChrome, CDP, gotoAndSettle, sleep } = await import(join(WT, 'tools/lib/cdp.mjs'));
+
+const ARMS = (process.argv[2] || 'st6rb2,strip,strip-a').split(',');
+const CLOCKS = (process.argv[3] || 'hero,panel').split(',');
+const OUT = join(WT, 'out/cd-strip'); mkdirSync(OUT, { recursive: true });
+const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
+const BASE = resolveTree('site-pretty');
+const DIRS = { orig: null, st6rb2: join(WT, 'fixes/st6-rb2/overlay'), strip: join(WT, 'fixes/cd-strip/overlay'), 'strip-a': join(WT, 'fixes/cd-strip--a/overlay') };
+const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
+const log = (...a) => console.log(...a);
+const fileOf = (arm, f) => (DIRS[arm] && existsSync(join(DIRS[arm], f)) ? join(DIRS[arm], f) : join(BASE, f));
+const sha = (p) => createHash('sha256').update(readFileSync(p)).digest('hex').slice(0, 12);
+
+async function server(label, overlay) {
+  const st = join(OUT, `serve-px-${label}.json`); rmSync(st, { force: true });
+  const args = [join(WT, 'tools/serve.mjs'), '--root', BASE, ...(overlay ? ['--overlay', overlay] : []), '--port', '0', '--quiet', '--state', st, '--vendors=local', '--https', '--latency', '150', '--no-http-twin', '--no-cache'];
+  const p = spawn(process.execPath, args, { stdio: ['ignore', 'ignore', 'inherit'] });
+  for (let i = 0; i < 300; i++) { if (existsSync(st)) try { return { p, ...JSON.parse(readFileSync(st, 'utf8')) }; } catch {} await sleep(100); }
+  p.kill(); throw new Error(label + ' server did not start');
+}
+function cdRange(arm) {
+  const lines = readFileSync(fileOf(arm, NODE), 'utf8').split('\n');
+  const a = lines.findIndex((l) => l.startsWith('var UE = { stiffness')) + 1;
+  const b = lines.findIndex((l) => l.startsWith('var lD = h(')) + 1;
+  if (a < 1 || b <= a) throw new Error('countdown range not found for ' + arm);
+  return [a, b - 1];
+}
+async function openPage(cdp, inject) {
+  const page = await cdp.newIsolatedPage();
+  page.errors = [];
+  page.on((m) => {
+    if (m.method === 'Runtime.exceptionThrown') page.errors.push((m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text).split('\n')[0]);
+    if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') page.errors.push(`console: ${m.params.args.map((a) => a.value ?? a.description).join(' ')}`.slice(0, 300));
+  });
+  await page.send('Emulation.setDeviceMetricsOverride', { width: 430, height: 932, deviceScaleFactor: 3, mobile: true });
+  await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
+  await page.send('Page.addScriptToEvaluateOnNewDocument', { source: inject });
+  await page.send('Page.bringToFront');
+  return page;
+}
+// virtual clocks for calls from the countdown's own lines (as in countdown-faces probe.mjs)
+const freeze = (range) => `(() => { const rDate = Date.now.bind(Date), rPerf = performance.now.bind(performance), rRaf = window.requestAnimationFrame.bind(window), rCaf = window.cancelAnimationFrame.bind(window);
+  window.__vd = null; window.__vt = null; window.__vf = null; const Q = new Map(); let id = 1e9;
+  const fromCd = () => { const m = /nodes\\/2\\.DyWL8TcE\\.js:(\\d+):/.exec(new Error().stack.split('\\n').slice(2, 4).join(' ')); return !!m && +m[1] >= ${range[0]} && +m[1] <= ${range[1]}; };
+  Date.now = () => (window.__vd !== null && fromCd() ? window.__vd : rDate());
+  performance.now = () => (window.__vt !== null && fromCd() ? window.__vt : rPerf());
+  const tl = Object.getOwnPropertyDescriptor(AnimationTimeline.prototype, 'currentTime');
+  Object.defineProperty(AnimationTimeline.prototype, 'currentTime', { configurable: true, get() { return window.__vf !== null && fromCd() ? window.__vf : tl.get.call(this); } });
+  window.requestAnimationFrame = (cb) => { if (window.__vt !== null && fromCd()) { const k = ++id; Q.set(k, cb); return k; } return rRaf(cb); };
+  window.cancelAnimationFrame = (k) => (Q.has(k) ? Q.delete(k) : rCaf(k));
+  window.__step = (t) => { const cbs = [...Q.values()]; Q.clear(); for (const cb of cbs) cb(t); return cbs.length; };
+  window.__hidden = false;
+  Object.defineProperty(Document.prototype, 'visibilityState', { configurable: true, get: () => (window.__hidden ? 'hidden' : 'visible') });
+  Object.defineProperty(Document.prototype, 'hidden', { configurable: true, get: () => window.__hidden }); })();`;
+const TARGET = Date.parse('2026-11-02T12:00:00+07:00');
+const nowFor = (R) => TARGET - R * 1000 + 500;
+function pngPixels(buf) {
+  let o = 8, w, h, bpp, idat = [];
+  while (o < buf.length) { const len = buf.readUInt32BE(o), type = buf.toString('ascii', o + 4, o + 8), d = buf.subarray(o + 8, o + 8 + len);
+    if (type === 'IHDR') { w = d.readUInt32BE(0); h = d.readUInt32BE(4); bpp = d[9] === 6 ? 4 : 3; } else if (type === 'IDAT') idat.push(d); o += 12 + len; }
+  const raw = inflateSync(Buffer.concat(idat)); const stride = w * bpp; const px = Buffer.alloc(h * stride);
+  for (let y = 0; y < h; y++) { const f = raw[y * (stride + 1)], line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
+    for (let x = 0; x < stride; x++) { const a = x >= bpp ? px[y * stride + x - bpp] : 0, b = y ? px[(y - 1) * stride + x] : 0, c = x >= bpp && y ? px[(y - 1) * stride + x - bpp] : 0;
+      let v = line[x]; if (f === 1) v += a; else if (f === 2) v += b; else if (f === 3) v += (a + b) >> 1; else if (f === 4) { const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c; }
+      px[y * stride + x] = v & 255; } }
+  return { w, h, bpp, px };
+}
+function pxDiff(a, b) {
+  const A = pngPixels(a), B = pngPixels(b);
+  if (A.w !== B.w || A.h !== B.h) return { sizeMismatch: [A.w, A.h, B.w, B.h] };
+  let n = 0, max = 0;
+  for (let i = 0; i < A.px.length; i += A.bpp) { let d = 0; for (let c = 0; c < 3; c++) d = Math.max(d, Math.abs(A.px[i + c] - B.px[i + c])); if (d) n++; max = Math.max(max, d); }
+  return { w: A.w, h: A.h, diffPixels: n, maxChannelDelta: max };
+}
+function colours(b64) { const A = pngPixels(Buffer.from(b64, 'base64')); const s = new Set(); for (let i = 0; i < A.px.length && s.size < 40; i += A.bpp) s.add(A.px.readUIntBE(i, 3)); return s.size; }
+const R = (d, h, m, s) => d * 86400 + h * 3600 + m * 60 + s;
+const SCENARIOS = [
+  ['one step down (seconds 5 -> 4)', R(3, 4, 12, 35), R(3, 4, 12, 34)],
+  ['one step up (seconds 4 -> 5, clock set back)', R(3, 4, 12, 34), R(3, 4, 12, 35)],
+  ['ones wrap 0 -> 9 + tens 4 -> 3 (40 -> 39)', R(3, 4, 12, 40), R(3, 4, 12, 39)],
+  ['ones wrap 9 -> 0 + tens 3 -> 4 (39 -> 40, up)', R(3, 4, 12, 39), R(3, 4, 12, 40)],
+  ['carry 4 units (3d 04h 00m 00s -> 3d 03h 59m 59s)', R(3, 4, 0, 0), R(3, 3, 59, 59)],
+  ['tens carry 10 -> 09', R(3, 4, 12, 10), R(3, 4, 12, 9)],
+  ['two changes mid-roll (21 -> 20, then 20 -> 19 after 9 frames)', R(3, 4, 12, 21), R(3, 4, 12, 20), R(3, 4, 12, 19)],
+];
+const PHASES = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 18, 22, 26, 30, 34, 60];
+const PHASES120 = [0, 1, 2, 4, 8, 12, 20, 30, 45, 68];
+const RESUME_PH = [0, 1, 2, 3, 5, 8, 12, 20, 40];
+const POSITIONS = `(() => { const H = document.documentElement.scrollHeight, vh = innerHeight, t = document.querySelector('.hero-track');
+  const tb = t ? t.getBoundingClientRect().bottom + scrollY : 2 * vh;
+  return { heroExit: Math.round(vh), pastHero: Math.round(tb + 1.2 * vh), end: Math.max(0, H - vh) }; })()`;
+const TIMER = { hero: `document.querySelector('.hero-copy [role=timer]')`, panel: `document.querySelector('.start-selling-morph-panel [role=timer]')` };
+// what the digits show: per digit, the faces/cells inside the cell (|offset| < 1 cell) as digit@offset px (3 decimals)
+const STATE = (which) => `(() => { const t = ${TIMER[which]}; if (!t) return null; return [...t.querySelectorAll('.digit.svelte-1quva9c')].map((d) => { const h = d.offsetHeight; let v;
+    const st = d.querySelector('.strip.svelte-1quva9c');
+    if (st) { const T = Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(st.style.transform) || [])[1]); v = [...st.children].map((c) => [c.textContent, parseFloat(c.style.top) + T]); }
+    else v = [...d.querySelectorAll('.face.svelte-1quva9c')].map((f) => [f.textContent, Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(f.style.transform) || [])[1])]);
+    return v.filter(([, y]) => Math.abs(y) < h - 0.001).map(([t, y]) => t + '@' + (Object.is(+y.toFixed(3), -0) ? 0 : +y.toFixed(3)).toFixed(3)).sort().join(' '); }).join(' | '); })()`;
+const OPACITY = (which) => `(() => { let op = 1; for (let e = ${TIMER[which]}; e && e.nodeType === 1; e = e.parentElement) op *= +getComputedStyle(e).opacity; return op; })()`;
+
+async function run(cdp, arm, url, dir, range) {
+  const page = await openPage(cdp, freeze(range));
+  await gotoAndSettle(page, url, { quietMs: 2000 }); await sleep(2500);
+  const shots = {}, state = {}, frames = {}, firstVisible = {}, info = {};
+  const twoFrames = 'new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 20))))';
+  const go = (y) => page.eval(`(window.scrollTo({ top: ${y}, behavior: 'instant' }), ${twoFrames})`);
+  const pause = (ms) => page.eval(`new Promise((r) => setTimeout(r, ${ms}))`);
+  const step = (t) => page.eval(`(window.__step(${t}), 0)`);
+  const tick = (t, r, extra = '') => page.eval(`(window.__vt = ${t}, window.__vd = ${nowFor(r)}, ${extra} document.dispatchEvent(new Event('visibilitychange')), new Promise((r) => setTimeout(r, 30)))`);
+  const J = (k) => (((k * 7919) % 21) - 10) / 10; // frame jitter in [-1, 1] ms on a 0.1 ms grid
+  let T = 5e6;
+  const settle = async (r) => { T += 1e6; await tick(T, r); await step(T + 1e4); await pause(30); await step(T + 2e4); await pause(30); };
+  const pos = await page.eval(POSITIONS); info.pos = pos;
+  for (const which of CLOCKS) {
+    let clip;
+    if (which === 'panel') {
+      // mount the panel and open the morph (end pin), then freeze the page's CSS/WAAPI animations at t=0 in every arm
+      await go(pos.end); await pause(3000); await go(pos.end); await pause(2500);
+      // open the morph and keep it open (m = 1: panel opacity 1, scale 1, no blur) through the page's own driver path
+      // (E(1) after the pin; the hold outlasts the pass). Without it the panel stays at m = 0, invisible (opacity 0).
+      info.morphDriven = await page.eval(`(typeof window.__fwMorphDrive === 'function' && (window.__fwMorphDrive({ hold: 1e9, cycles: 1 }), true))`);
+      await pause(3500);
+      info.panelAnims = await page.eval(`(() => { const a = document.getAnimations(); for (const x of a) { x.pause(); x.currentTime = 0; } return a.length; })()`);
+      await pause(300);
+    } else await go(0);
+    info[which] = { opacity: await page.eval(OPACITY(which)), present: await page.eval(`!!${TIMER[which]}`) };
+    if (!info[which].present) { log(arm, which, 'timer not found'); continue; }
+    clip = await page.eval(`(() => { const r = ${TIMER[which]}.getBoundingClientRect(); return { x: r.left + scrollX - 4, y: r.top + scrollY - 4, width: r.width + 8, height: r.height + 8, scale: 1 }; })()`);
+    info[which].clip = clip;
+    const shot = async (key, file) => {
+      await page.eval(twoFrames);
+      const { data } = await page.send('Page.captureScreenshot', { format: 'png', clip, captureBeyondViewport: false });
+      shots[key] = data; state[key] = await page.eval(STATE(which));
+      writeFileSync(join(dir, `${arm}-${which}-${file}.png`), Buffer.from(data, 'base64'));
+    };
+    const fstep = async (key, t) => { await step(t); (frames[key] ||= []).push(await page.eval(STATE(which))); };
+    for (const [hz, FR, phases] of [[60, 1000 / 60, PHASES], [120, 1000 / 120, PHASES120]]) {
+      for (const [si, [name, r0, r1, r2]] of SCENARIOS.entries()) {
+        if (hz === 120 && si >= 4 && si !== 6) continue;
+        const key0 = `${which} @${hz}Hz ${name}`;
+        await settle(r0);
+        const G = T + 1e5; await tick(G + FR / 3, r1); // the change lands a third of a frame after a frame
+        let k = 0;
+        const second = r2 !== undefined ? (hz === 60 ? 9 : 18) : -1;
+        for (const ph of phases) {
+          while (k < ph) { k++; await fstep(key0, G + k * FR + J(k)); if (k === second) await tick(G + k * FR + FR / 3, r2); }
+          await shot(`${key0} | frame ${ph}`, `${hz}-${si}-f${String(ph).padStart(3, '0')}`);
+        }
+        while (k < phases.at(-1) + 20) { k++; await fstep(key0, G + k * FR + J(k)); }
+        await step(G + 1e5); T = G + 1e5;
+      }
+    }
+    if (which !== 'hero') continue;
+    // resume: hide, change mid-frame, frames run, instant jump back; first real frame with the hero copy visible is read
+    // right after it was produced; then shots at +0.. frames
+    const REC = `(() => { window.__ff = []; const hc = document.querySelector('.hero-copy'); let n = 0;
+      const rec = () => requestAnimationFrame(() => setTimeout(() => { window.__ff.push([+getComputedStyle(hc).opacity, ${STATE('hero')}]); if (++n < 12) rec(); }, 0)); rec(); return 0; })()`;
+    const HIDES = { 'fade-out at y=vh': () => go(pos.heroExit), 'scroll away (past hero)': () => go(pos.pastHero) };
+    const [a0, a1] = [R(3, 4, 12, 40), R(3, 4, 12, 39)];
+    let ri = 0;
+    for (const [hz, FR, Ks] of [[60, 1000 / 60, [6, 15, 40]], [120, 1000 / 120, [12, 40]]]) for (const [hname, hide] of Object.entries(HIDES)) for (const K of Ks) {
+      const name = `hero resume @${hz}Hz: ${hname}, back ${K} frames after 40 -> 39`;
+      T += 1e6; await tick(T + FR / 3, a0); for (let k = 1; k <= 40; k++) await step(T + k * FR); await step(T + 1e4); await pause(30); await step(T + 2e4); await pause(30);
+      const G = T + 1e5; await hide(); await pause(200);
+      await tick(G + FR / 3, a1);
+      let k = 0; while (k < K) { k++; await step(G + k * FR + J(k)); }
+      const vf = G + (K + 1) * FR + J(K + 1);
+      await page.eval(`(window.__vf = ${vf}, window.__vt = ${vf + FR / 4}, window.__step(${vf}), ${REC})`); k = K + 1;
+      await go(0); await pause(250);
+      const ff = await page.eval('window.__ff'); const i = ff.findIndex(([op]) => op > 0);
+      firstVisible[name] = i < 0 ? null : { frame: i, opacity: ff[i][0], faces: ff[i][1] };
+      await page.eval('(window.__vf = null, 0)');
+      await pause(800);
+      const k0 = k;
+      for (const ph of RESUME_PH) { while (k < k0 + ph) { k++; await step(G + k * FR + J(k)); } await shot(`${name} | +${ph}`, `resume-${String(ri).padStart(2, '0')}-p${String(ph).padStart(2, '0')}`); }
+      await step(G + 1e5); T = G + 1e5; ri++;
+    }
+  }
+  const errors = page.errors; await page.close();
+  return { arm, shots, state, frames, firstVisible, info, errors };
+}
+
+const order = [...ARMS, ARMS[0]];
+const servers = {}, ranges = {}, served = {};
+for (const arm of ARMS) { ranges[arm] = cdRange(arm); servers[arm] = await server(arm, DIRS[arm]); served[arm] = { js: sha(fileOf(arm, NODE)), css: sha(fileOf(arm, CSS)) }; }
+const ch = await launchChrome({ port: 0, profileDir: join(OUT, 'chrome-profile-pixels') });
+const cdp = await CDP.connect(ch.wsUrl);
+await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true }).catch(() => {});
+const res = { arms: ARMS, clocks: CLOCKS, ranges, served, browser: ch.browser, startedAt: new Date().toISOString(), load1: [loadavg()[0]] };
+const dir = join(OUT, `pixels-${STAMP}`); mkdirSync(dir, { recursive: true });
+const got = [];
+try {
+  for (let i = 0; i < order.length; i++) { const arm = order[i]; got.push(await run(cdp, arm + (i === order.length - 1 ? '-again' : ''), servers[arm].url, dir, ranges[arm])); res.load1.push(loadavg()[0]); }
+} finally { cdp.close(); await ch.close(); for (const s of Object.values(servers)) s.p.kill(); }
+const cmp = (x, y) => {
+  const shots = Object.keys(x.shots).map((k) => ({ key: k, sameState: x.state[k] === y.state[k], ...(x.state[k] === y.state[k] ? {} : { states: [x.state[k], y.state[k]] }),
+    identicalBytes: x.shots[k] === y.shots[k], ...(x.shots[k] === y.shots[k] ? {} : y.shots[k] ? pxDiff(Buffer.from(x.shots[k], 'base64'), Buffer.from(y.shots[k], 'base64')) : { missing: true }) }));
+  let fN = 0, fDiff = []; for (const k of Object.keys(x.frames)) (x.frames[k] || []).forEach((s, i) => { fN++; if (s !== y.frames[k]?.[i]) fDiff.push([k, i, s, y.frames[k]?.[i]]); });
+  const fv = Object.keys(x.firstVisible).map((k) => ({ key: k, same: JSON.stringify(x.firstVisible[k]) === JSON.stringify(y.firstVisible[k]), a: x.firstVisible[k], b: y.firstVisible[k] }));
+  return { shots: shots.length, shotsDifferPx: shots.filter((s) => !s.identicalBytes).length, shotsDifferState: shots.filter((s) => !s.sameState).length, differing: shots.filter((s) => !s.identicalBytes || !s.sameState),
+    frames: fN, framesDifferState: fDiff.length, frameDiffs: fDiff.slice(0, 20), firstVisible: fv.length, firstVisibleDiffer: fv.filter((f) => !f.same) };
+};
+res.blankShots = Object.entries(got[0].shots).filter(([, s]) => colours(s) < 2).map(([k]) => k);
+res.info = got.map((g) => [g.arm, g.info]); res.errors = got.map((g) => [g.arm, g.errors]);
+res.compare = {};
+for (let i = 1; i < got.length; i++) res.compare[`${got[0].arm} vs ${got[i].arm}`] = cmp(got[0], got[i]);
+res.endedAt = new Date().toISOString();
+const f = join(OUT, `pixels-${STAMP}.json`); writeFileSync(f, JSON.stringify(res, null, 1));
+for (const [k, v] of Object.entries(res.compare)) log(k, ': shots', v.shots, 'px-differ', v.shotsDifferPx, 'state-differ', v.shotsDifferState, '| frames', v.frames, 'state-differ', v.framesDifferState, '| firstVisible', v.firstVisible, 'differ', v.firstVisibleDiffer.length,
+  v.differing.length ? JSON.stringify(v.differing.slice(0, 6).map((d) => [d.key, d.diffPixels, d.maxChannelDelta, d.states])) : '');
+log('blank shots', res.blankShots.length, 'errors', JSON.stringify(res.errors.filter(([, e]) => e.length)), 'info', JSON.stringify(res.info.map(([a, i]) => [a, i.hero?.opacity, i.panel?.opacity, i.panelAnims])));
+log('wrote', f, 'load1', res.load1.map((x) => x.toFixed(1)).join(','));

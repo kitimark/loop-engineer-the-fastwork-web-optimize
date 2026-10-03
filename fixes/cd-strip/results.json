@@ -1,0 +1,51 @@
+{
+ "topic": "cd-strip",
+ "kind": "frozen-frame pixel identity (Chrome) + WebKit Simulator counts (Timeline Paint records, LayerTree layers/memory); no timing A/B, no gain claim (timing deferred, user 2026-10-02)",
+ "base": "st6-rb2 (stacked: node tools/fix.mjs apply cd-strip --on st6-rb2)",
+ "config": {
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "chromePixels": "headless Chrome, mobile 430x932 DPR3 touch, serve --https --latency 150 --vendors=local --no-cache, frozen countdown clocks, hand-stepped rAF with jitter, 60 and 120 Hz",
+  "simulator": "iOS 26.5 Simulator (fw-sim 15 Pro Max), functional sessions in the shared lane; Simulator ms never count (F-084)",
+  "measurementCodeChanged": false
+ },
+ "servedSha256Prefix": {
+  "st6rb2": { "js": "7bf7c4657d21", "css": "f523598b2a24" },
+  "strip_b": { "js": "358cd8ae16b9", "css": "ce6beca745a0" },
+  "strip_a": { "js": "358cd8ae16b9", "css": "305b8a705d8b" }
+ },
+ "arms": {
+  "st6rb2": "control: st6-rb2 overlay (10 layered faces per digit; panel faces unlayered by cdwc)",
+  "strip_b": "cd-strip default: one 11-cell strip per digit, one transform; panel strips unlayered (cdwc rule retargeted)",
+  "strip_a": "rejected variant (fixes/cd-strip--a): panel strips layered"
+ },
+ "pixels": {
+  "hero": { "raw": "out/cd-strip/pixels-2026-10-03T00-17-10-586Z.json", "shots": 259, "strip_b_shotsDifferPx": 0, "aa_shotsDifferPx": 0, "note": "state differences are 0.001 px readout rounding with identical bytes; first-visible frame index differs by one in A/B and A/A alike (IO timing), content identical" },
+  "panel": { "raw": "out/cd-strip/pixels-2026-10-03T00-37-14-365Z.json", "shots": 169, "morphHeldOpen": true, "strip_b_shotsDifferPx": 1, "strip_b_note": "whole-shot max channel delta 1 (16059 px), the A/A's noise class", "aa_shotsDifferPx": 2, "strip_a_shotsDifferPx": 67, "strip_a_note": "21-32 px per shot, max channel delta 131-204, moving frames only: layered glyph raster differs from st6-rb2's unlayered panel" }
+ },
+ "functionalCheck": { "raw": "out/check/cd-strip/2026-10-03T00-15-54-504Z/check.json", "result": "ok", "morphReached": true, "consoleErrors": 0, "http4xx": 0 },
+ "simulator": {
+  "raw": [
+   "out/cd-strip/sim/sim-2026-10-03T00-20-20-449Z.json",
+   "out/cd-strip/sim/sim-2026-10-03T00-47-25-402Z.json",
+   "out/cd-strip/sim/sim-2026-10-03T00-52-00-285Z.json",
+   "out/cd-strip/sim/sim-2026-10-03T01-03-03-384Z.json"
+  ],
+  "top4s": {
+   "heroClockPaintRecords": { "st6rb2": [13, 13], "strip_b": [0, 0], "strip_a": [0, 0] },
+   "panelClockPaintRecords": { "st6rb2": [3, 3], "strip_b": [3, 4], "strip_a": [0, 0] },
+   "clockLayers": { "st6rb2": 80, "strip_b": 8, "strip_a": 16 },
+   "pageLayers": { "st6rb2": 131, "strip_b": 55, "strip_a": 63 },
+   "clockBackingMB": { "st6rb2": 1.18, "strip_b": 2.1, "strip_a": 4.16 },
+   "pageLayerMemoryMB": { "st6rb2": 52.77, "strip_b": 53.69, "strip_a": 55.75 }
+  },
+  "morph": {
+   "tweenFirst450msFramesWithClockPaint": { "st6rb2": "0 of 12-15 (each of 4 tweens, 3 sessions)", "strip_b": "0 of 11-15", "strip_a": "6-12 of 10-12, all 8 strips per frame, rects follow the panel scale (17x382 -> 18x396)" },
+   "holdFramesWithClockPaint": { "st6rb2": "26-35 of 77-78", "strip_b": "14-27 of 75-79", "strip_a": "2 of 77-79" },
+   "holdClockPaintFrameDurMs_simOnly": { "st6rb2": "median 16.6-16.8, max 25-26", "strip_b": "median 16.9, max 26" },
+   "panelClockLayers": { "st6rb2": 0, "strip_b": 0, "strip_a": "8 (2.06 MB), reason willChange, also while the scene is paused" }
+  },
+  "censusArtefact": "LayerTree paintCount deltas between censuses are the same 117 ms and 4 s apart (st6-rb2 176/176/172, strip 24/24/24): they count the census, not rolls; not used as a repaint measure"
+ },
+ "verdict": "mechanism: hero clock WebKit Paint records 13 -> 0 per 4 s, clock layers 80 -> 8, panel tween paints 0 -> 0, pixel-identical to st6-rb2 (arm b). Frame gain: not measured (phone segment card needed). Arm a rejected (tween re-raster, not pixel-identical).",
+ "regressions": { "memory": "+0.92 MB page layer memory at the top (Sim): WebKit backs the whole strip", "visual": "none (arm b)" }
+}

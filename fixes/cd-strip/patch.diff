@@ -1,0 +1,108 @@
+# fastwork mirror fix: cd-strip
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/st6-rb2/overlay: apply st6-rb2 first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply cd-strip --on st6-rb2
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css f523598b2a24ede87f745d8b6d3b7c61e113559cc6dfdb35744b20bdbcffda97
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 7bf7c4657d21f1e94c666d582efccda65f20a5498626d22964bfbc5e35124f7a
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -1416,9 +1416,26 @@
+   justify-content: center;
+   align-items: center;
+   display: flex;
++  position: absolute;
++  inset: 0;
++}
++/* cd-strip: the strip takes the faces' box (inset 0 in .digit) and their layer; each cell is a face's box placed at
++   top k*c (set by the script), its glyph centred the same way */
++.strip.svelte-1quva9c {
++  will-change: transform;
++  display: block;
+   position: absolute;
+   inset: 0;
+ }
++.cell.svelte-1quva9c {
++  justify-content: center;
++  align-items: center;
++  display: flex;
++  position: absolute;
++  left: 0;
++  right: 0;
++  height: 100%;
++}
+ .number.svelte-1jfovfa {
+   font-variant-numeric: tabular-nums;
+   align-items: center;
+@@ -11934,6 +11951,10 @@
+    repainted in 76 % of the frames in each tween's first 450 ms (observed); without it, 0 %. Countdowns elsewhere on
+    the page are unchanged. */
+ .start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c {
++  will-change: auto;
++}
++/* cd-strip (panel arm b): the same for the digit strips that replace the faces */
++.start-selling-morph-panel .waitlist-closing-countdown .strip.svelte-1quva9c {
+   will-change: auto;
+ }
+ /* shell-hold-c (wi-stack): while #people starts shrinking (+is-future-shrinking, a 0.9 s scale transition on the card),
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4021,6 +4021,15 @@
+ var YE = new xe(`(prefers-reduced-motion: reduce)`, !1),
+   XE = Array.from({ length: 10 }, (e, t) => t),
+   ZE = h(`<span class="face svelte-1quva9c" aria-hidden="true"> </span>`),
++  /*cd-strip: one static strip per digit, cells 0-9 and a second 0 (the 9 -> 0 wrap). Cell k sits at top k*c and the
++  strip moves by translateY(-n*c), n = v mod 10, so cell k lands at (k - n)*c: for the two cells inside the digit that
++  is KE(digit, v)*c, the offset the original gives the face of that digit. The text never changes and the strip always
++  overlaps the clip: no text repaint, no backing store dropped and re-made when a face rolls back in (WebKit)*/
++  __cdStripT = h(
++    `<span class="strip svelte-1quva9c" aria-hidden="true"><span class="cell svelte-1quva9c">0</span><span class="cell svelte-1quva9c">1</span><span class="cell svelte-1quva9c">2</span><span class="cell svelte-1quva9c">3</span><span class="cell svelte-1quva9c">4</span><span class="cell svelte-1quva9c">5</span><span class="cell svelte-1quva9c">6</span><span class="cell svelte-1quva9c">7</span><span class="cell svelte-1quva9c">8</span><span class="cell svelte-1quva9c">9</span><span class="cell svelte-1quva9c">0</span></span>`,
++  ),
++  /*cd-strip: the strip's offset in px for spring value v and cell height c (the one place that maps value to offset)*/
++  __cdStripY = (v, c) => -((((v % 10) + 10) % 10) * c),
+   QE = h(
+     `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
+   );
+@@ -4050,28 +4059,18 @@
+     d = e(u),
+     h = V(d, 2),
+     g = (n) => {
+-      var r = p(),
+-        i = O(r);
+-      (_(
+-        i,
+-        16,
+-        () => XE,
+-        (e) => e,
+-        (n, r) => {
+-          var i = ZE();
+-          let o;
+-          var u = e(i, !0);
+-          (M(i),
+-            l(
+-              (e) => {
+-                ((o = S(i, ``, o, e)), t(u, r));
+-              },
+-              /*countdown-idle-raf: faces >= 1 cell away are clipped by .digit{overflow:hidden}; park them at +-1 cell so only the faces in view get a style write per frame*/
+-              [() => ({ transform: `translateY(${Math.max(-1, Math.min(1, KE(r, s(a)))) * s(c)}px)` })],
+-            ),
+-            f(n, i));
+-        },
+-      ),
++      var r = __cdStripT();
++      let o;
++      (l((e) => {
++        /*cd-strip: cell k at k*c px (c = the spacer's integer offsetHeight, as the original's face offsets use)*/
++        for (let t = 0; t < 11; t++) r.children[t].style.top = `${t * e}px`;
++      }, [() => s(c)]),
++        l(
++          (e) => {
++            o = S(r, ``, o, e);
++          },
++          [() => ({ transform: `translateY(${__cdStripY(s(a), s(c))}px)` })],
++        ),
+         f(n, r));
+     };
+   (m(h, (e) => {
