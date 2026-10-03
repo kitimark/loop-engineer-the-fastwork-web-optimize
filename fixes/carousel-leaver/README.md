@@ -854,7 +854,7 @@ geometry is equal, but the image content is resampled differently:
   stripes.
 
 **The suspect this points to.** WebKit's `ImageQualityController` (`Source/WebCore/rendering/ImageQualityController.cpp`,
-WebKit main, read 2026-10-04, CONFIRMED as source):
+CONFIRMED as source; commit and line numbers in "D4 result" below):
 - Each object's painted size is tracked per page view. When an image object is painted at two different sizes while
   the 500 ms timer (`lowQualityTimeThreshold`) is active, the view sets `m_animatedResizeIsActive`.
 - While that flag is set, every scaled bitmap on the view paints at `InterpolationQuality::Low`, and each such paint
@@ -930,14 +930,24 @@ Each n8 row lists, in order: t 0 / 17 / 33 / 50 / 67 / 83 / 100 / 133 / 167 / 20
 edge), static, on two faces (50.4 and 7.7 CSS px²). The A/A is 0.
 
 **Reading** (statuses kept separate, as ops asked):
-- **The mechanism is CONFIRMED in WebKit source**: `Source/WebCore/rendering/ImageQualityController.cpp`, WebKit
-  `main` as read on 2026-10-04 (raw.githubusercontent.com; no commit hash was shown).
-  - `chooseInterpolationQualityForBitmapOfSize(…, RenderBoxModelObject&, …)` returns `InterpolationQuality::Low` and
-    restarts the timer while `m_animatedResizeIsActive` is set.
-  - That flag is set when an object is painted at a second size while the 500 ms timer (`lowQualityTimeThreshold`) is
-    active.
-  - `highQualityRepaintTimerFired` clears it and repaints the tracked objects.
-  - `interpolationQualityFromStyle` maps `optimizeSpeed` to Low and `optimizeQuality` to Default.
+- **The mechanism is CONFIRMED in WebKit source**: `Source/WebCore/rendering/ImageQualityController.cpp` at WebKit
+  commit `789c0d1be2b744a5edf8c23e8836b02a81c31a6a` (2026-10-03, "[Image Redux] Use
+  Style::Image::interpolationQualityForImageDraw for SVG images as well"; the file's latest commit on `main` when read
+  on 2026-10-04,
+  https://github.com/WebKit/WebKit/blob/789c0d1be2b744a5edf8c23e8836b02a81c31a6a/Source/WebCore/rendering/ImageQualityController.cpp).
+  Line numbers are at that commit.
+  - L46: `lowQualityTimeThreshold { 500_ms }`. L50: the timer fires `highQualityRepaintTimerFired` after it.
+  - L146-228: `chooseInterpolationQualityForBitmapOfSize(…, RenderBoxModelObject&, …)`.
+    - L151-152: a style value wins first.
+    - L200-204: while `m_animatedResizeIsActive` is set, it returns `InterpolationQuality::Low` and restarts the timer.
+    - L209-213: a first paint, or a paint at the same size as the last one, returns Default and restarts the timer.
+    - L216-219: a new size after the timer has stopped returns Default.
+    - L221-227: a second size while the timer is active sets the flag and returns Low.
+  - L83-101: `highQualityRepaintTimerFired` clears the flag (L89) and repaints the tracked objects (L97-98).
+  - L108-122: `interpolationQualityFromStyle` maps `optimizeSpeed` to Low (L111-112) and `optimizeQuality` to Default
+    (L116-117).
+  - **Version gap:** the Simulator runs its iOS release's WebKit, not this `main` commit. That the release behaves the
+    same is OBSERVED (D4's pinned arms match the source's predictions), not cited.
 - **That it explains our numbers is OBSERVED in our setup**, now with a decisive local check:
   - Base paints its faces at Low from its first resize frame (t 17) through post300. Under our 250 ms settle loop it
     equals base pinned Low, 0 px.
@@ -973,6 +983,8 @@ edge), static, on two faces (50.4 and 7.7 CSS px²). The A/A is 0.
      start and end, which brings back the whole-view Layouts st6 removed (`fixes/rotator-st6/README.md`: view Layout
      71/71 → 1/36; S7 on the phone, idle dt > 34 at 19-27 per 20 s without st6, 0 with it).
    - That is the exact-versus-cheap conflict the spawn rule sends to the user.
+   - Whatever G is, it must close the quiet-rest difference too (ops, 2026-10-04): 523 px at max 81 is over T2's fill
+     limit of 64, so without a quiet-rest match G cannot reach T0, T1 or T2.
 2. **Split the 523 px first** (one describes-only arm pair: `transform: none` alone vs `opacity: 1` alone).
    - If only one of the two values paints differently, G could keep the other and change only it.
    - Either value still flips (st6's comment names both), so the conflict likely stays, but at half the cost.
