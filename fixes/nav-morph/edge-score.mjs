@@ -129,7 +129,7 @@ const out = { tool: 'fix-nav-morph edge-score.mjs', at: new Date().toISOString()
 const valid = (a) => out.runs.filter((r) => r.arm === a && !r.void);
 const C = valid('C'), V = valid('V');
 out.control = { valid: C.length, pass: C.filter((r) => r.controlCheck?.pass).length };
-out.control.verdict = out.control.pass >= 3 ? 'OK' : 'VOID (control does not reproduce the known edge frame)';
+out.control.verdict = out.control.pass >= 3 ? 'OK' : 'VOID (fewer than 3 of 4 C runs pass)';
 out.decision = { validV: V.length, gt34: decide(V, 'gt34'), gt30: decide(V, 'gt30'), gt38: decide(V, 'gt38') };
 out.decision.thresholdSensitive = out.decision.gt30 !== out.decision.gt34 || out.decision.gt38 !== out.decision.gt34;
 out.decision.final = out.control.verdict !== 'OK' ? 'VOID' : V.length < 4 ? `INCOMPLETE (${V.length} valid V runs)` : out.decision.gt34;

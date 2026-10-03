@@ -156,6 +156,11 @@ then the lead.
 
 **Ticket draft, rev 2** (answers mgmt-ops-10's second read, points 1-8, and the lead's corrections relayed by it).
 
+Status: ops second read PASS on db908c97 (scorer 8595714c83f9); the lead approved it as the ticket. After that, the
+scorer got one cosmetic fix: the block-void summary now prints "VOID (fewer than 3 of 4 C runs pass)". Final scorer
+hash ad0037856fa5, re-run on the fixture below with identical scores. Registration with mgmt-ops-10 (P-090 or later)
+only after T-052 lifts the I-098 pause; phone queue slot behind P-088.
+
 ```
 TICKET f3-edge-residual · prediction id: assigned at registration after T-052 lifts the timing pause (P-090 or later;
   P-089 is rest-script's)
@@ -178,7 +183,7 @@ order: C V V C C V V C (8 counted) · warm-up: one uncounted load per arm's port
 sentinel (§5.2, Timeline block): one uncounted Timeline-OFF S run on C after the warm-ups and one at the block end
   (bottom >= 58, scroll >= 44); a failing sentinel voids back to the last passing one
 per run: battery °C, charging state, thermal state (gate pair), LPM read (an LPM run is dropped and re-run)
-scorer: fixes/nav-morph/edge-score.mjs sha256/12 8595714c83f9 (hashed at this commit; re-hashed at registration)
+scorer: fixes/nav-morph/edge-score.mjs sha256/12 ad0037856fa5 (final; re-hashed at registration)
   node fixes/nav-morph/edge-score.mjs --line C=13083:13 --line V=13378:13 \
     --run C:<c1.json>:<c1.tl.json> --run V:<v1.json>:<v1.tl.json> ... (the 8 counted runs in block order) \
     --out out/nav-morph/edge/score.json
@@ -272,7 +277,7 @@ C e-tc1.json: crossing t 16245 y 1957; edge >34 2 (>30 2, >38 1); score split; 1
 V e-ta1.json: crossing t 16199 y 1860; edge >34 0 (>30 0, >38 0); score none
 C e-tc2.json: crossing t 16286 y 1977; edge >34 1 (>30 1, >38 1); score split; 121ms@+0 split {"style":42.7,"layout":18,"paint":4,"compositeRecord":50.2,"script":3.2} of 128.8; control check PASS (121 ms @0)
 C e-ta1.json: VOID no IntersectionObserver callback at 13345:13
-control 2/2 pass -> VOID (control does not reproduce the known edge frame)
+control 2/2 pass -> VOID (fewer than 3 of 4 C runs pass)
 decision: VOID (>34 CLOSE, >30 CLOSE, >38 CLOSE)
 ```
 
