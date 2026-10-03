@@ -9,8 +9,10 @@
   "visualDiff": [
     "During the motion, text inside the panel (title, buttons, countdown, logo) can sit up to about 1 device pixel off from today's. Largest shade 237 on text edges, 1.5 % of the screen in Chrome and 1.3 % in the Simulator at m 0.99. At m 0.5: 0.2-0.3 %, shade 175 (Chrome) / 131 (Simulator).",
     "Mid-morph, the panel's lower side edges blur slightly differently (fill shade up to 22 in Chrome, 59 in the Simulator, a few hundred CSS px).",
-    "At the moment the panel finishes opening, two single frames get a shade-5 change over the panel in the Simulator (the blur is switched off for one frame each). Not visible; T2 fill limit is 64. In Chrome those frames match today's; after an abrupt jump to open, one frame shows 44 CSS px of button-text edge at shade 53 (T2).",
-    "Safari only (OBSERVED, cause unknown): when the panel finishes opening, Safari can keep the last cut shape for a frame. We clear it with the one-frame blur switch above, a workaround with UNRESOLVED status. Without it the open panel stayed cut. In real motion the frame before it may be cut about 0.7 CSS px short at the bottom edge (an estimate, not measured frame by frame).",
+    "When the panel finishes opening (Simulator, phone width), two single frames show a shade-5 change over the panel: the switch-off frame and the blur-toggle frame two later (the blur is off for that frame). The frames between and after are exact. T2 fill limit is 64.",
+    "The same frames in Chrome at phone width are within shade 2. After an abrupt jump straight to open, the next frame shows 44 CSS px of button-text edge at shade 53 (T2); after a 0.99 -> 1 step it is exact. Desktop 1280 px: exact in every frame.",
+    "Safari only (OBSERVED in the iOS Simulator, cause unknown): when the panel finished opening, Safari kept the last cut shape, so the open panel stayed cut at the bottom. The one-frame blur switch above clears it. It is a workaround, and the cause is UNRESOLVED.",
+    "Not checked yet on the real iPhone. In real motion the last moving frame may be cut about 0.7 CSS px short at the bottom edge (an estimate, not measured frame by frame).",
     "Nothing changes on desktop or tablets wider than 640 px, or at rest."
   ],
   "gain": [
