@@ -67,7 +67,8 @@ export function simMeta(session, { hostStart = null, hostEnd = null } = {}) {
     lockdownMode: 'not read (Simulator default: off)', hostLoad: { start: hostStart, end: hostEnd }, proxyPorts: session?.proxyPorts ?? null,
     safariCache: session?.safariCache ?? null, // I-052: Safari's HTTP cache emptied at boot ({cleared, removedMB})
     boot: session?.boot ?? null, // I-063: {mode: cold | warm (a booted fw-sim reused), bootedAt, sessionsOnBoot}
-    background: session?.background?.settle ?? null }; // I-082: the Sim's own background CPU when the command started
+    background: session?.background?.settle ?? null, // I-082: the Sim's own background CPU when the command started
+    reduceMotion: session?.reduceMotion ?? null }; // I-100: {requested on|off, previous, value} when the session set it
 }
 const hostLoad = () => hostSample({ windowSec: 3 }).catch((e) => ({ error: e.message }));
 const outPath = (o, owner, label) => resolve(REPO, o.out || join('out', 'sim', `${owner}-${label}-${Date.now()}.json`));

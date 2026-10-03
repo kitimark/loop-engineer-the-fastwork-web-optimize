@@ -31,6 +31,7 @@ import { status as lockStatus, parseHeld, staleReason, pidAlive, tryAcquire, deq
 import { redact } from './redact.mjs';
 import { idleSec, readWarm, warmFile, keeperInfo, timingDemand, warmLine, warmState, keeperRetryMs, SIM_MJS } from './sim-warm.mjs';
 import * as BG from './sim-background.mjs';
+import { parseReduceMotion, applyReduceMotion, restoreReduceMotion, restorePending, readPending, pendingLine, fmtRM } from './sim-motion.mjs';
 
 // I-087 (user T-040): named devices, one at a time. `fw-sim` (the default, unchanged for every caller: config.json,
 // the same name and type) stands in for the iPhone 15 Pro Max; the iPads are the real tablet case for pixel checks
@@ -90,6 +91,8 @@ const pidFile = (name) => file(`${name}.pid.json`);
 export const logFile = (name) => file(`${name}.log`);
 /** I-082: the Simulator's background CPU, one JSON line per settle / window / summary, every session ({session, owner, kind}). */
 export const backgroundFile = () => file('background.jsonl');
+/** I-100: Reduce Motion set by a session and not restored yet (tools/lib/sim-motion.mjs). */
+export const motionFile = () => file('reduce-motion.json');
 function ensureDir() { mkdirSync(simDir(), { recursive: true, mode: 0o700 }); }
 const readJson = (f, d = null) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return d; } };
 function writePrivate(f, text) { ensureDir(); writeFileSync(f, text, { mode: 0o600 }); chmodSync(f, 0o600); }
@@ -641,7 +644,7 @@ export function fetchReport(page, part, { logText = null } = {}) {
  *  failure (the caller shuts down). Returns {safariCache}. `warm` (I-063): fw-sim is already booted (a warm device the
  *  session took over): no boot; Safari is terminated (clearSafariCache does it), its HTTP cache emptied and Safari
  *  launched again, so the session starts from the state a cold boot gives. */
-export async function bootDevice(udid, { abort, log = () => {}, bootTimeoutMs = 300000, warm = false } = {}) {
+export async function bootDevice(udid, { abort, log = () => {}, bootTimeoutMs = 300000, warm = false, beforeLaunch = null } = {}) {
   const t0 = Date.now();
   let r;
   if (!warm) {
@@ -653,6 +656,7 @@ export async function bootDevice(udid, { abort, log = () => {}, bootTimeoutMs = 
   if (r.aborted) throw new Error('interrupted during bootstatus');
   if (r.status !== 0) throw new Error(`simctl bootstatus failed (${r.timedOut ? 'timed out' : `exit ${r.status}`})`);
   const safariCache = await clearSafariCache(udid, { abort, log });
+  if (beforeLaunch) await beforeLaunch(); // I-100: device settings Safari reads at launch (Reduce Motion), Safari not running
   r = await simctlAsync(['launch', udid, SAFARI], { timeoutMs: 60000, abort });
   if (r.aborted) throw new Error('interrupted during the Safari launch');
   if (r.status !== 0) throw new Error(`simctl launch Safari failed (${r.timedOut ? 'timed out after 60 s' : r.signal ? `signal ${r.signal}` : `exit ${r.status}`})`);
@@ -690,6 +694,8 @@ export async function statusLines() {
   if (wr && wr.udid !== cfg.udid) devState = list ? (list.find((d) => d.udid === wr.udid)?.state ?? null) : undefined; // the warm line is about the warm device
   const s = readSession();
   out.push(`session:  ${s ? `${pidAlive(s.pid) ? 'live' : 'DEAD (stale record)'} pid ${s.pid}, owner ${s.owner}, window ${s.window}, since ${s.startedAt}${s.boot ? `, ${s.boot.mode} start (session ${s.boot.sessionsOnBoot} on this boot)` : ''}` : 'none'}`);
+  const pend = readPending(motionFile()); // I-100: Reduce Motion a session set and did not restore
+  if (pend) out.push(`motion:   ${pendingLine(pend)}`);
   out.push(`warm:     ${warmLine(undefined, undefined, { devState })?.replace(/^warm: /, '') ?? `none (idle timeout ${idleSec()} s after a functional session; FW_SIM_IDLE_SEC)`}`); // I-063
   for (const n of ['proxy', 'wda', 'keeper']) { const r = pidInfo(n); out.push(`${n.padEnd(9)} ${r ? (r.ours ? `running pid ${r.pid} since ${r.startedAt} (by ${r.owner})` : `stale pidfile (pid ${r.pid})`) : 'not running'}`); }
   let p = null;
@@ -750,6 +756,14 @@ async function doctorRun({ fix, log }) {
   if (warm && !kept && !(dev && dev.state !== 'Shutdown' && !live)) problems.push(`stale warm record (${live ? 'a live session owns the device' : `${device().key} is ${dev?.state ?? 'not found'}`})`);
   for (const n of ['proxy', 'wda']) { const r = pidInfo(n); if (r && (!live || r.session !== live.id)) problems.push(`${n}: ${r.ours ? `running (pid ${r.pid}) outside a live session` : 'stale pidfile'}`); }
   if (keeper && !kept) problems.push(`keeper: ${keeper.ours ? `running (pid ${keeper.pid}) without a warm device to keep` : 'stale pidfile'}`);
+  // I-100: Reduce Motion a session of this device set and did not restore (killed, or its restore failed): --fix restores
+  // it on a booted device with no live session (before a leak's shutdown); otherwise the next session does, at boot
+  const pend = readPending(motionFile());
+  if (pend && pend.device === device().key && !(live && live.id === pend.session)) {
+    if (fix && !live && dev?.state === 'Booted') {
+      try { const x = restorePending({ file: motionFile(), udid: dev.udid, device: device().key, simctl }); if (x) log(`Reduce Motion restored to ${fmtRM(x.previous)} (left ${fmtRM(x.set)} by session ${x.session}) (I-100)`); } catch (e) { log(`Reduce Motion restore failed (${scrub(e.message)}): ${pendingLine(pend)}`); }
+    } else log(pendingLine(pend));
+  }
   if (!problems.length) { log(`ok: ${live ? `live session pid ${live.pid} (owner ${live.owner})` : kept ? warmLine() : `no session, nothing booted, no proxy${otherWarm ? ` (${device().key}; the warm ${warmLabel(warmAny)}: node tools/sim.mjs doctor --device ${warmLabel(warmAny)})` : ''}`}`); return 0; }
   for (const p of problems) log(p);
   if (!fix) { log(`run: node tools/sim.mjs doctor --fix (stops our proxy / WDA-sim / keeper, shuts ${device().key} down)`); return 3; }
@@ -942,8 +956,9 @@ export async function wdaStart({ session, log = console.log, timeoutMs = 120000 
  * shut the Simulator down and quit Simulator.app if this session opened it, also on SIGINT/SIGTERM/SIGHUP.
  * Resolves <cmd>'s exit code (124: stopped before the hold ends; 128+n: a signal).
  */
-export async function session({ owner, window = 'shown', cmd, args = [], log = console.log, err = console.error, tip = null, cleanupMs = 40000, functional = false, simLockWaitSec } = {}) {
+export async function session({ owner, window = 'shown', cmd, args = [], log = console.log, err = console.error, tip = null, cleanupMs = 40000, functional = false, simLockWaitSec, reduceMotion = null } = {}) {
   if (!owner) throw new Error('--owner <you> is required');
+  const rmMode = parseReduceMotion(reduceMotion); // I-100: 'on' | 'off' | null; a bad value refuses before anything boots
   if (!WINDOWS.includes(window)) throw new Error(`--window must be shown or hidden (got ${window})`);
   if (!cmd) throw new Error(`usage: ${functional ? functionalCmd(owner) : holdCmd(owner)}`);
   const gate = holdGate(undefined, undefined, { owner, functional, what: functional ? 'a functional Simulator session' : undefined });
@@ -1041,7 +1056,19 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   try {
     log(`sim session ${id} (owner ${owner}, window ${window}${functional ? `, functional, lock mode ${gate.mode}` : ''}): ${warm ? `reusing the booted ${device().name} (I-063: idle ${rec.boot.idleSec} s, session ${rec.boot.sessionsOnBoot} on this boot)` : `booting ${device().name}${rec.boot.afterWarm ? ' (a timing session cold-boots: the warm device was shut down first, I-063)' : ''}`}`);
     if (warm) { await stopOne('wda', () => {}); await stopOne('proxy', () => {}); } // none normally: the last session stopped them
-    const boot = await bootDevice(cfg.udid, { abort: ac.signal, log, warm: !!warm });
+    // I-100: after Safari is terminated and before it launches: a Reduce Motion record an earlier session of this device
+    // left (killed before its cleanup, or its restore failed) is restored first; then --reduce-motion is applied
+    const beforeLaunch = () => {
+      const stale = restorePending({ file: motionFile(), udid: cfg.udid, device: device().key, simctl });
+      if (stale) log(`REDUCE_MOTION restored to ${fmtRM(stale.previous)}: session ${stale.session} (owner ${stale.owner}) set it ${fmtRM(stale.set)} and did not restore it (I-100)`);
+      if (rmMode) {
+        const a = applyReduceMotion({ file: motionFile(), udid: cfg.udid, mode: rmMode, session: id, owner, device: device().key, simctl, writeFile: writePrivate });
+        rec.reduceMotion = { ...a, ...(stale ? { staleRestored: stale } : {}) };
+        log(`REDUCE_MOTION ${rmMode}: the Simulator's Reduce Motion is ${fmtRM(a.value)} (was ${fmtRM(a.previous)}); restored at the end of this session (I-100)`);
+      } else if (stale) rec.reduceMotion = { requested: null, staleRestored: stale };
+    };
+    if (rmMode) rec.reduceMotion = { requested: rmMode };
+    const boot = await bootDevice(cfg.udid, { abort: ac.signal, log, warm: !!warm, beforeLaunch });
     if (!warm) rec.boot.bootedAt = new Date().toISOString();
     rec.safariCache = boot?.safariCache ?? null; // meta.sim.safariCache of every record of this session (I-052)
     writePrivate(sessionFile(), JSON.stringify(rec, null, 1));
@@ -1080,15 +1107,22 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     }
     try { const w = pidInfo('wda'); if (w && w.session === id) await stopOne('wda', clog); } catch (e) { clog(`wda stop failed: ${e.message}`); }
     try { await stopOne('proxy', clog); } catch (e) { clog(`proxy stop failed: ${e.message}`); }
+    // I-100: back to the Reduce Motion value this session found (only a record of this session's own); a failed restore
+    // keeps the record for the next session of this device, and the device is not kept warm with it
+    let motionDirty = false;
+    if (rmMode) {
+      try { const x = restoreReduceMotion({ file: motionFile(), udid: cfg.udid, session: id, simctl }); if (x) clog(`Reduce Motion restored to ${fmtRM(x.restored)} (I-100)`); } catch (e) { motionDirty = true; clog(`Reduce Motion restore failed (${e.message}): the record stays and the next ${device().key} session restores it; not keeping ${device().key} booted (I-100)`); }
+    }
     // I-063: a functional session that got to its command and ended without a signal keeps fw-sim booted for the next
     // one (a keeper shuts it down later); a timing session, an interrupted or failed start, FW_SIM_IDLE_SEC=0 or a
     // timing hold waiting for chrome-measure shut it down now
     let kept = null;
     try {
       const idle = idleSec();
-      const demand = functional && idle > 0 && state.ready && !interrupted ? timingDemand(lockStatus('chrome-measure')) : null;
+      const canKeep = functional && idle > 0 && state.ready && !interrupted && !motionDirty;
+      const demand = canKeep ? timingDemand(lockStatus('chrome-measure')) : null;
       if (demand) clog(`not keeping ${device().key} booted: ${demand}`);
-      else if (functional && idle > 0 && state.ready && !interrupted) kept = await warmOut({ udid: cfg.udid, owner, boot: rec.boot, idle, log: clog });
+      else if (canKeep) kept = await warmOut({ udid: cfg.udid, owner, boot: rec.boot, idle, log: clog });
     } catch (e) { clog(`keeping ${device().key} booted failed (${e.message}): shutting it down`); try { await stopOne('keeper', clog); } catch {} rmSync(warmFile(), { force: true }); kept = null; }
     if (!kept) { try { await shutdownDevice(cfg.udid, { log: clog }); } catch (e) { clog(`shutdown failed: ${e.message}`); } }
     if (state.appOpened) {

@@ -7,7 +7,7 @@
 // contentvisibilityautostatechange on document, performance.getEntriesByType('resource'), window scroll events
 // (fired before the frame's rAF callbacks when scrollY changed, after the frame's stamp is taken, capture
 // listeners first, a microtask checkpoint after each, as WebKit's rendering update does), a visualViewport
-// (listeners only), document.fonts, matchMedia, screen.
+// (listeners only), document.fonts, matchMedia (prefers-reduced-motion: the fake Simulator's setting, I-100), screen.
 // Every read of window.scrollY is counted (win.__scrollYReads), and every read of documentElement.scrollHeight
 // (win.__scrollHeightReads, win.__scrollHeightReadsAtY0 for those at scrollY 0), to test which y source reads what.
 // A simplification, not a browser: no layout at all, so the counts are reads, not forced layouts.
@@ -35,6 +35,21 @@
 //   - morph: true defines window.__fwMorphDrive({hold, cycles}) like fix-nav-morph's overlays: the nav's
 //     --morph goes 0 -> 1 over ~150 ms, holds, back, per cycle; __fwMD = JSON {all, moving, atOne, atZero, frames}.
 import vm from 'node:vm';
+import { readFileSync } from 'node:fs';
+
+/** I-100: in a sim.mjs test the page's prefers-reduced-motion follows the fake Simulator's Reduce Motion setting (the
+ *  booted device's com.apple.Accessibility ReduceMotionEnabled in $FAKE_SIMCTL_STATE, read at each call, like WebKit's
+ *  live update); FAKE_PAGE_IGNORES_RM=1 makes it never report reduce. Outside a sim test: no-preference. */
+function fakeReducedMotion() {
+  const f = process.env.FAKE_SIMCTL_STATE;
+  if (!f || process.env.FAKE_PAGE_IGNORES_RM) return false;
+  try { return JSON.parse(readFileSync(f, 'utf8')).devices.some((d) => d.state === 'Booted' && d.defaults?.['com.apple.Accessibility']?.ReduceMotionEnabled === true); } catch { return false; }
+}
+const fakeMatchMedia = (q) => {
+  if (q === '(prefers-reduced-motion: reduce)') return { matches: fakeReducedMotion() };
+  if (q === '(prefers-reduced-motion: no-preference)') return { matches: !fakeReducedMotion() };
+  return { matches: q === '(prefers-color-scheme: dark)' };
+};
 
 /** The one script tests/fixtures/fake-run-proxy.mjs serves (/_app/immutable/app.js), for the served-hash check. */
 export const APP_JS = "console.log('fake app');\n";
@@ -130,7 +145,7 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
     set scrollY(v) { sy = v; },
     innerWidth: 430, innerHeight: 815, devicePixelRatio: 3,
     navigator: { userAgent: 'FakeSafari/1.0 (fake-run-dom)', hardwareConcurrency: 6 },
-    matchMedia: (q) => ({ matches: q === '(prefers-color-scheme: dark)' }), Date, screen: { width: 430, height: 932 },
+    matchMedia: fakeMatchMedia, Date, screen: { width: 430, height: 932 },
     addEventListener: (type, fn, o) => winListeners.push({ type, fn, passive: !!(o && o.passive), capture: typeof o === 'object' ? !!(o && o.capture) : !!o }),
     removeEventListener: (type, fn) => { const i = winListeners.findIndex((l) => l.type === type && l.fn === fn); if (i >= 0) winListeners.splice(i, 1); },
     visualViewport: { listeners: [], addEventListener(type, fn) { this.listeners.push({ type, fn }); }, removeEventListener(type, fn) { const i = this.listeners.findIndex((l) => l.type === type && l.fn === fn); if (i >= 0) this.listeners.splice(i, 1); } },

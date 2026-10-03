@@ -229,6 +229,9 @@ test('simMeta: device "simulator", runtime / Xcode / window / tip / ports / host
   assert.equal(m.background, null, 'I-082: a session from before the fix has no background reading');
   const settle = { settled: false, waitedSec: 45, limitPct: 60, last: { bgPct: 130, top: [{ command: 'SleepWidgetExtension', kind: 'background', cpuPct: 100 }] } };
   assert.deepEqual(simMeta({ background: { settle, limitPct: 60 } }).background, settle, 'I-082: every Simulator record carries the Sim\'s background CPU when its command started');
+  assert.equal(m.reduceMotion, null, 'I-100: a session without --reduce-motion');
+  const rm = { requested: 'on', previous: false, value: true };
+  assert.deepEqual(simMeta({ reduceMotion: rm }).reduceMotion, rm, 'I-100: a record says when its session set Reduce Motion');
 });
 
 test('I-052 fetchReport: transferSize > 0 network, 0 with a body cache, cross-origin / missing fields unknown; the server log\'s GETs; exit codes', () => {

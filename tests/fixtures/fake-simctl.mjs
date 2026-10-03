@@ -8,6 +8,8 @@
 // I-078: a device in a transitional state ("Booting", "Shutting Down", "Creating") refuses boot and shutdown like the
 // real one; with `settleAt` (epoch ms) and `settleTo` in the state file it reaches settleTo at the first call from then
 // on (a shutdown or boot finishing by itself); without them it stays in transition.
+// I-100: `spawn <udid> defaults read|write|delete` keeps the device's defaults in the state file (devices[].defaults);
+// a device with `defaultsFail: true` refuses them.
 // All ids are made up.
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -72,6 +74,25 @@ if (c === 'list' && r[0] === '-j' && r[1] === 'devices') {
   const d = dev(r[0]);
   if (!d || d.state !== 'Booted') fail(`Unable to openurl in current state: ${d?.state} (${r[0]})`);
   d.lastUrl = r[1]; save();
+} else if (c === 'spawn') { // I-100: `spawn <udid> defaults read|write|delete <domain> <key> [-bool v]` (the device's own defaults)
+  const d = dev(r[0]);
+  if (!d || d.state !== 'Booted') fail(`Unable to lookup in current state: ${d?.state ?? 'Unknown'} (${r[0]})`);
+  const [tool, verb, domain, key, type, val] = r.slice(1);
+  if (tool !== 'defaults') fail(`fake simctl: unexpected ${a.join(' ')}`, 2);
+  // a device with `defaultsFail: true` in the state file refuses every defaults call (a file field, so a session's
+  // <cmd> can switch it on for that session's cleanup)
+  if (d.defaultsFail) fail(`An error was encountered processing the command (domain=com.apple.CoreSimulator.SimError, code=405):\ndefaults failed on ${r[0]}`, 1);
+  const dm = ((d.defaults ||= {})[domain] ||= {});
+  if (verb === 'read') {
+    if (!(key in dm)) fail(`\nThe domain/default pair of (${domain}, ${key}) does not exist`, 1);
+    console.log(dm[key] === true ? '1' : dm[key] === false ? '0' : String(dm[key]));
+  } else if (verb === 'write') {
+    if (type !== '-bool' || !['true', 'false'].includes(val)) fail(`fake simctl: unexpected ${a.join(' ')}`, 2);
+    dm[key] = val === 'true'; save();
+  } else if (verb === 'delete') {
+    if (!(key in dm)) fail(`Domain (${domain}) not found.\nDefaults have not been changed.`, 1);
+    delete dm[key]; save();
+  } else fail(`fake simctl: unexpected ${a.join(' ')}`, 2);
 } else if (c === 'io' && r[1] === 'screenshot') {
   writeFileSync(r[2], Buffer.from('89504e470d0a1a0a', 'hex'));
   console.error(`Wrote screenshot to: ${r[2]}`);

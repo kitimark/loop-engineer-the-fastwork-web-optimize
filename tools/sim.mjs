@@ -47,6 +47,15 @@
 //        per settle / window / summary, with the session id; $FW_SIM_BACKGROUND_LOG names it for <cmd>), and the settle
 //        reading to meta.sim.background of scroll / record / run / gesture records. Read-only: nothing in the Simulator
 //        is stopped (tools/lib/sim-background.mjs).
+//   --reduce-motion on|off (I-100, any session): sets the Simulator's Reduce Motion (Settings > Accessibility > Motion) after
+//        Safari is terminated and before it launches, and restores the value it found at the session's end (also after a
+//        failed <cmd> or a signal; a session killed with SIGKILL leaves <state>/sim/reduce-motion.json, and the next
+//        session of that device restores it at boot; status / doctor show it, doctor --fix restores it on a booted
+//        device). Recorded in the session record and meta.sim.reduceMotion. Every `open` in such a session checks that
+//        the page's prefers-reduced-motion agrees (REDUCE_MOTION page reduce|no-preference ...: ok, else it fails).
+//        Mechanism (simctl spawn defaults com.apple.Accessibility ReduceMotionEnabled): tools/lib/sim-motion.mjs.
+//   node tools/sim.mjs reduce-motion                          inside a session: the setting and the last open's page's
+//        prefers-reduced-motion; exit 0 when both match the session's --reduce-motion (or it set none), 3 when not
 //   node tools/sim.mjs background [--seconds 3]               one reading of the Simulator's background CPU now (read-only)
 //   node tools/sim.mjs shutdown [--warm-only --reason r --by b]  now (--warm-only: only a warm device, under the
 //        simulator lock: verify.mjs / bench gain / quiet phone runs call it before timing, I-063)
@@ -88,11 +97,11 @@ const argv = dd >= 0 ? all.slice(0, dd) : all;
 const rest = dd >= 0 ? all.slice(dd + 1) : [];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--device', '--settle-ms', '--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout', '--url', '--via', '--variant', '--param', '--morph-log', '--log', '--reason', '--by'];
+const VALUED = ['--device', '--settle-ms', '--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout', '--url', '--via', '--variant', '--param', '--morph-log', '--log', '--reason', '--by', '--reduce-motion'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const log = (s) => console.log(S.scrub(String(s)));
 const err = (s) => console.error(S.scrub(String(s)));
-const USAGE = 'usage: node tools/sim.mjs [--device fw-sim|fw-ipad|fw-ipad-a16|fw-ipad-mini] setup [--runtime r] | orient portrait|landscape | status | doctor [--fix] | background [--seconds 3] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force | --warm-only] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
+const USAGE = 'usage: node tools/sim.mjs [--device fw-sim|fw-ipad|fw-ipad-a16|fw-ipad-mini] setup [--runtime r] | orient portrait|landscape | status | doctor [--fix] | background [--seconds 3] | session [--functional] --owner <o> [--window shown|hidden] [--reduce-motion on|off] -- <cmd> | open <url> | reduce-motion | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force | --warm-only] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
 
 async function main() {
   // I-087: which Simulator: --device, else FW_SIM_DEVICE (a session's <cmd>), else (status / doctor / plain shutdown) the
@@ -104,7 +113,11 @@ async function main() {
   if (cmd === 'status') { for (const l of await S.statusLines()) log(l); return 0; }
   if (cmd === 'doctor') return S.doctor({ fix: flag('fix'), log });
   if (cmd === 'session') keepAwakeFor(`sim.mjs session${flag('functional') ? ' --functional' : ''} (${opt('owner', process.env.FW_LOCK_OWNER)})`); // I-070: a Sim session measures (memory counts too): caffeinate -i -s -w <this pid>
-  if (cmd === 'session') return S.session({ owner: opt('owner', process.env.FW_LOCK_OWNER), window: opt('window', 'shown'), cmd: rest[0], args: rest.slice(1), log, err, functional: flag('functional') });
+  if (cmd === 'session') {
+    // I-100: --reduce-motion on|off (given without a value, or with an empty one: refused by S.session before any boot)
+    const rmGiven = argv.some((a) => a === '--reduce-motion' || a.startsWith('--reduce-motion='));
+    return S.session({ owner: opt('owner', process.env.FW_LOCK_OWNER), window: opt('window', 'shown'), cmd: rest[0], args: rest.slice(1), log, err, functional: flag('functional'), reduceMotion: rmGiven ? (opt('reduce-motion') ?? '') : null });
+  }
   if (cmd === 'background') {
     // I-082: read-only, any time (one ps per end of the window)
     const BG = await import('./lib/sim-background.mjs');
@@ -201,6 +214,20 @@ async function main() {
     return gestureCmd({ argv, arg, opt, flag, port: S.ports().tabs, requireLease: () => { requireSession(); return session.owner; },
       target: dry ? null : gestureTarget(session, { requireSession, holdEndsAt }), usage: 'node tools/sim.mjs gesture <script.json> [--label l] [--variant v] [--param k=v]... [--morph-log <morph-log.mjs>] [--out file] [--dry-run] (inside a session)' });
   }
+  if (cmd === 'reduce-motion') {
+    // I-100: the Simulator's Reduce Motion setting and what the last open's page reports for prefers-reduced-motion;
+    // exit 0 when both match the session's --reduce-motion (or the session set none), 3 when not (read-only)
+    const session = S.requireSession({ owner: opt('owner') });
+    const M = await import('./lib/sim-motion.mjs');
+    const setting = M.readReduceMotion(S.readConfig().udid, { simctl: S.simctl });
+    const page = await pageEval(session, M.PAGE_MOTION_JS);
+    const want = session.reduceMotion?.requested ?? null;
+    const v = M.pageVerdict(page, want);
+    const settingOk = !want || setting === (want === 'on');
+    const why = !settingOk ? `MISMATCH: the setting should be ${want} (I-100)` : !v.ok ? `MISMATCH: the page should report ${want === 'on' ? 'reduce' : 'no-preference'} (I-100)` : 'ok';
+    log(`REDUCE_MOTION setting ${M.fmtRM(setting)}, page ${v.media} (${want ? `session --reduce-motion ${want}): ${why}` : 'session without --reduce-motion: not checked)'}`);
+    return settingOk && v.ok ? 0 : 3;
+  }
   if (cmd === 'fetched') {
     // I-052: did the page in Safari fetch <part> over the network, or take it from the cache? (no navigation, no timing)
     if (!arg) throw new Error('usage: node tools/sim.mjs fetched <url or path part> [--log <server log>] (inside a session, after open)');
@@ -248,6 +275,17 @@ async function main() {
   return cmd ? 1 : 0;
 }
 
+/** Evaluate `js` (returning JSON text) in the last open's page of this session (any page when none was opened). */
+async function pageEval(session, js) {
+  const host = S.scopeTabs(session);
+  const { openTab } = await import('./lib/wip.mjs');
+  const tabs = S.ports().tabs;
+  let list = [];
+  try { list = await (await fetch(`http://localhost:${tabs}/json`, { signal: AbortSignal.timeout(4000) })).json(); } catch {}
+  const c = await openTab(S.pageMatcher(list, S.openedUrl(session), host), { port: tabs });
+  try { return JSON.parse(await c.evaluate(js)); } catch { return null; } finally { c.close(); }
+}
+
 async function openCmd(session, owner) {
   if (!/^https?:\/\//.test(arg || '')) throw new Error('usage: node tools/sim.mjs open <url> (inside a session)');
   const { openTab, urlHost, isBlankUrl, sleep } = await import('./lib/wip.mjs');
@@ -281,6 +319,15 @@ async function openCmd(session, owner) {
     const s = S.simctl(['io', cfg.udid, 'screenshot', shot]);
     log(`Safari (Simulator) now on ${landed.href}${s.status === 0 ? `; screenshot ${shot}` : '; screenshot failed'}`);
     S.writeOpened(session, target.url, landed.href); // later commands pick only tabs on this host (I-050); fetched: this page (I-052)
+    if (session.reduceMotion?.requested) {
+      // I-100: a session that set Reduce Motion proves it on every page it opens: prefers-reduced-motion must agree
+      const { PAGE_MOTION_JS, pageVerdict } = await import('./lib/sim-motion.mjs');
+      let page = null;
+      try { page = JSON.parse(await c.evaluate(PAGE_MOTION_JS)); } catch {}
+      const v = pageVerdict(page, session.reduceMotion.requested);
+      if (!v.ok) throw new Error(v.line);
+      log(v.line);
+    }
     const others = (await listTabs()).filter((t) => t && t.webSocketDebuggerUrl && !isBlankUrl(t.url) && urlHost(t.url) !== want.host).length;
     if (others) log(`Safari also lists ${others} page${others > 1 ? 's' : ''} of another server (restored from an earlier session?): this session's scroll / record / run / gesture pick only tabs on ${lanSafeText(want.host)} (I-050)`);
   } finally { c.close(); }
