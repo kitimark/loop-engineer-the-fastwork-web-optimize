@@ -1099,6 +1099,43 @@ paint paths read so far (WebKit `789c0d1`):
   transparency layer. Our imgs have a visible 1 px border, so they are not bitmap-only (`isBitmapOnly`, L6650-6668).
 Neither predicts max 81 by itself.
 
+### P-090 addendum 1 (ops read of 00cb3d84; written before any hold runs)
+
+1. **Two or more of St / So / Sv match base.** Either value alone is enough. Part 2 takes the one with the simpler
+   no-flip value, or both, within the 3-candidate cap.
+2. **A/A floor and direction.**
+   - "X matches base" needs both directions: base~X n8 ≤ base~base2 n8 **and** base2~X n8 ≤ base~base2 n8, on screen.
+   - If base~base2 on screen has n8 ≥ 523 (the size of the effect under test), Hold A is inconclusive, not "S matches
+     base". It is re-run once in this ticket, and that is not a strike.
+   - **Masked passes (lead ruling).** If the A/A (base~base2) masks pixels in the leaver or face region, a match or a
+     T2 that holds only because of that mask is not a PASS. It goes to the lead as "mask-dependent", with the unmasked
+     counts: fill max, edge max, share and CSS px. tierq subtracts the A/A count instead of masking pixels, so each
+     line already prints the unmasked n8, and it is reported as printed.
+3. **The overrides must have applied** (VOID rule at read-out, from `simquiet.json` `slots`, every slot except
+   `.st5-next`):
+   - St: transform `none` and opacity 0.999.
+   - So: opacity 1 and transform still st6's `matrix(1, 0, 0, 1, 0, 0)`.
+   - Sv: will-change `auto`.
+   - Sw: all three.
+   - S: st6's values (matrix, 0.999, `transform, translate, opacity`).
+   An arm whose slots show otherwise is VOID, since S's own rule would have won and the split would mean nothing.
+4. **Sleeps (I-098).** A pmset Sleep or DarkWake inside a hold's window voids that hold; it is re-run. A kill at the
+   300 s limit voids only the arms that did not finish; they are re-run as a new hold. Neither is a strike.
+5. **Hold B windows.**
+   - A burst shot counts for a window (220-720 ms after the slide start, or after 720 ms) only if its whole simctl
+     window [t0, t1] lies inside that window. Shots that straddle a boundary are listed, not scored.
+   - Fewer than 2 whole shots inside 220-720 ms for base makes Hold B inconclusive, not falsified.
+6. **Scoreable predictions** (for PREDICTIONS.md):
+   - Hold A, on screen: P(S matches base) = 0.25.
+   - Hold A, snapshot (`nat`): P(exactly one of St / So matches base) = 0.6; given one, P(it is So) = 0.6.
+   - Hold B: P(the expectation holds as stated) = 0.55. That is: base's whole shots in 220-720 ms match Bs and none
+     matches base; base's whole shots after 720 ms match base; every whole S shot at rest positions matches S.
+7. **Part 2 bar, the five numbers.** tierq labels a whole diff fill or edge by majority. For the part-2 bar, any diff
+   with fill pixels is read against max ≤ 64, whatever its majority label. Hold A's match rule (n8) is unchanged.
+
+**Scope.** "On screen" means the Simulator's composited frame (rendered on the Mac's GPU), not the iPhone's. Claims
+from it are worded that way and stay OBSERVED in our setup until a source reference backs them.
+
 ## Deliverables
 
 - `patch.diff`: baseline-relative, st6-rb2 + **F** (CSS `a984ae7b7715` and st6-rb2's JS `7bf7c4657d21`), regenerated
