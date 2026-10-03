@@ -5,7 +5,55 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-9** (named spawn, agent ID acfd7a13b6014f754; from 10-03 00:0xZ; mgmt-ops-8 ran 10-02 23:5xZ-10-03 00:0xZ,
 mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014f754`, branch
 `worktree-agent-acfd7a13b6014f754`. Next instance: **mgmt-ops-10**, named (at ~60 % context). Last update:
-**10-03 00:1xZ** (mgmt-ops-9).
+**10-03 08:2xZ** (mgmt-ops-9, handover to mgmt-ops-10).
+
+## Handover mgmt-ops-9 -> mgmt-ops-10 (10-03 08:2xZ; read this first, then the log below)
+
+Main is at 313aafb, and every ops commit has landed. Next free P-id: **P-076**. No incidents are open.
+
+Owed by ops, in order:
+1. **P-073 result** (F3 B1 hot-held; fix-nav-morph owns the row; iphone-runner runs the block, counted run 6 of 9
+   at 08:09Z, eta ~09:09Z).
+   - Scorer `fixes/morph-webkit/p073-score.mjs` **30c16ec042c8** (4ece74c, verified).
+   - When the verdict comes: second-read the scored output against the card. Check the rows in order: D, then C, then
+     V; top-up only on the low bin; settle- and rule-sensitive flags; void-collapse and high-bin flags.
+   - Log it in PROGRESS f3-arm-scope (`next`, the P-036/P-073 checks, a change line). This gate decides F3's landing:
+     row 6 means the P-036 confirmation on D, then the user's F swipe.
+2. **P-074** (hero-exit-threaded's phone Timeline attribution block).
+   - The ticket is on hold until its post-review build hashes come; review-hero-exit was NEEDS-FIX. The gesture is
+     hero-pass-v1 c414f67158e33da3, the control st6-rb2.
+   - Ops asked for: the scorer and hash, the n = 2 read rule, how hand-over frames are located, what "matching
+     frames" means in C, and the void rules. Second-read before it takes the phone.
+3. **P-075** (arch-isolated-measure countdown pilot) PASSED at 5eade1e (judge 73679603afcd). Log its readout when it
+   comes. Its family FAIL/PASS lines decide whether frozen-rest deltas can stand in for full-page counts per count
+   (README §4.2 rule 2).
+4. **cd-strip / PR-008**: the user accepted land-strip at 06:52Z, and the lead holds it (proposal hold cd966b7).
+   - strip-tc S2 + G11 clean; G12, S3, G13 and G14 next; then PR-008 rev 2 goes to the lead, and the user decides
+     again.
+   - P-072 is written against the build the user chooses, before any phone data. Ops second-reads it.
+   - cd-roll-ca waits for that decision and then restarts its counted set.
+5. **Open lead promises to the user** (track until delivered; both in PROGRESS upcoming or the handover):
+   - (a) the per-fix rendering cost card (T-029 #23/#24; arch-isolated-measure, README §6, after the pilot);
+   - (b) macOS Safari/WebKit as a heat-free source (T-029 #25/#26; a plan goes to the lead first; installing STP or
+     Playwright browsers is the user's decision).
+6. **Heat goal agents:** fix-platform-idle (glint-ca + sweep-exact) and map-rest-script (read-only). Assign a P-id when
+   they ask.
+7. **Peer directory** ("## Peer directory", near the end of this file): refreshed at 08:2xZ. It has new rows for
+   mgmt-ops-10, fix-platform-idle, map-rest-script, arch-isolated-measure, ts-i082 and ts-proposal-hold (done). Send
+   it to every agent that joins.
+8. **Batches:** send a land request at each user-visible PROGRESS change, otherwise about every 30 min. The lead lands
+   at once.
+
+Method notes (from this shift):
+- PROGRESS limits: `next` and change text ≤ 300 chars; details ≤ 600; upcoming title ≤ 160; at most 30 changes, drop
+  the oldest. Run `console.mjs progress --check` and `npm run test:unit` before every land request. Edit through
+  python scripts in `<scratchpad>/mgmt-ops-N/` (the guard refuses compound shell and git commands).
+- Peer branches: read them with `git show <sha>:<path>` (objects are shared). Wait for a peer's commit with
+  `node tools/wait.mjs git --ref <their branch> --timeout 580` (no option = waits for the branch to move).
+- A second read checks the card against the scorer code line by line. Both P-073 and P-075 had a scorer branch that
+  did not match a card row (n = 2 verdict vs "fewer than 3 → void"; family verdict not computed). Verify the hash with
+  `git show <sha>:<file> | shasum -a 256`.
+- The lead never wants a pre-registered prediction restated: mark it superseded before data and register a new id.
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
@@ -2094,15 +2142,15 @@ between tool calls.
 Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
 incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
 
-| address | owns | state (10-02 12:0xZ by mgmt-ops-7; ops, fix-nav-morph, de-gpu, ts-i077 rows 10-03 00:1xZ by mgmt-ops-9) |
+| address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
-| `mgmt-ops-9` (named; ID acfd7a13b6014f754; from 10-03 00:0xZ) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive; message "mgmt-ops-9". mgmt-ops-8 (ace57ef63584bdfb6, unnamed) and earlier are RETIRED: don't message them |
-| `fix-nav-morph` (name) | f3-arm-scope (P-036 G, signed S-sentinel amendment a4b1790), cdwc (parked) | alive (10-03 00:0xZ): waits on iphone-runner for P-036 |
+| `mgmt-ops-10` (named; spawned by the lead after 10-03 08:2xZ) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive once spawned; message "mgmt-ops-10". mgmt-ops-9 (acfd7a13b6014f754) ends after mgmt-ops-10 acks the handover; mgmt-ops-8 and earlier are RETIRED |
+| `fix-nav-morph` (name) | f3-arm-scope (F3, D build; P-071 done, P-073 signed and running), panel-clock attribution pair (F-165), cdwc (parked) | alive (10-03 08:2xZ): waits on iphone-runner's P-073 block |
 | `de-gpu` (ae7885a4cf83f8d7b) | T-030 GPU/compositor-only CSS (research/gpu-props/, 41563ad, F-145) | done 10-03 00:1xZ |
-| `fix-cd-strip` (name) | cd-strip: countdown digits as sliding strips (T-030 F1, user priority #1); coordinates with de-countdown | alive (10-03 00:2xZ) |
-| `fix-hero-exit-threaded` (name) | hero-exit-threaded: hero exit as a scroll-driven animation, ST-1 split first (T-030 F2, user priority #1) | alive (10-03 00:2xZ) |
-| `fix-cd-roll-ca` (name) | cd-roll-ca: countdown roll on the GPU, stacks on cd-strip (T-030 #10, user priority #1) | alive (10-03 00:2xZ) |
+| `fix-cd-strip` (name) | cd-strip: countdown digits as sliding strips (T-030 F1, user priority #1); PR-008 on hold, rev 2 after G12-G14 | alive (10-03 08:2xZ) |
+| `fix-hero-exit-threaded` (name) | hero-exit-threaded: hero exit as a scroll-driven animation (T-030 F2); review NEEDS-FIX fixes, then P-074 ticket | alive (10-03 08:2xZ) |
+| `fix-cd-roll-ca` (name) | cd-roll-ca: countdown roll on the GPU, stacks on cd-strip (T-030 #10); paused until the strips decision | alive (10-03 08:2xZ) |
 | `fix-platform-idle` (name; new 10-03 07:2xZ) | heat goal (T-029, P-068: Fastwork warms the phone ~5x apple.com): glint-ca + sweep-exact, unparked | alive |
 | `map-rest-script` (name; new 10-03 07:2xZ) | heat goal: read-only map of the middle-section script work at rest | alive |
 | `ts-proposal-hold` (name; 10-03 07:2xZ) | T-030 #19: console proposal hold/unhold and a "stale: re-decide" state on revise | done: cd966b7 landed |
@@ -2113,7 +2161,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `arch-memory` (name) | T-032: agent memory into the project (proposal cfe3693, waits on the user's two OKs) | alive (10-03 00:2xZ) |
 | `fix-nav-morph` ID | a277ea00c8773c1ea; also takes the morph panel dvh height after P-036 | – |
 | ts-i077 (UNNAMED: agent ID a46d520fdb1912d3c; the name does not resolve) | I-077 (open after park), talks to the lead | done: I-077 resolved 793c8bc (10-03 00:5xZ) |
-| `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | alive: phone back (T-025 21:28Z); re-runs G2 from the warm-ups after the T-026 Wi-Fi change, then P-065 |
+| `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger | alive (10-03 08:2xZ): runs P-073 (counted run 6 of 9 at 08:09Z); P-074 (hero-exit) after it, once its ticket passes |
 | `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
 | `fix-image-size` (new 12:0xZ; ID af756241c686d490e) | image-size: P-066 falsified (no detectable saving), dropped; null write-up 909464c | done |
