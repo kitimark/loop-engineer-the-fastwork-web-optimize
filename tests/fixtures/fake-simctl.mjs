@@ -5,6 +5,9 @@
 // (the tools must scrub them). Env: FAKE_SIMCTL_BOOT_MS (bootstatus delay), FAKE_SIMCTL_BOOT_FAIL=1; get_app_container
 // (I-052) prints $FAKE_SIMCTL_CONTAINER or <state dir>/Devices/<udid>/data/Containers/Data/Application/<uuid>, and
 // fails with FAKE_SIMCTL_CONTAINER_FAIL=1. A device with `shutdownFail: true` in the state file refuses `shutdown`.
+// I-078: a device in a transitional state ("Booting", "Shutting Down", "Creating") refuses boot and shutdown like the
+// real one; with `settleAt` (epoch ms) and `settleTo` in the state file it reaches settleTo at the first call from then
+// on (a shutdown or boot finishing by itself); without them it stays in transition.
 // All ids are made up.
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -15,6 +18,10 @@ const F = process.env.FAKE_SIMCTL_STATE;
 if (process.env.FAKE_SIMCTL_LOG) appendFileSync(process.env.FAKE_SIMCTL_LOG, JSON.stringify(a) + '\n');
 const st = JSON.parse(readFileSync(F, 'utf8'));
 const save = () => writeFileSync(F, JSON.stringify(st, null, 1));
+const TRANSITIONAL = ['Creating', 'Booting', 'Shutting Down'];
+let settled = false;
+for (const d of st.devices) if (d.settleAt && Date.now() >= d.settleAt) { d.state = d.settleTo; delete d.settleAt; delete d.settleTo; settled = true; }
+if (settled) save();
 const dev = (u) => st.devices.find((d) => d.udid === u);
 const fail = (msg, code = 149) => { console.error(msg); process.exit(code); };
 const [c, ...r] = a;
@@ -36,7 +43,7 @@ if (c === 'list' && r[0] === '-j' && r[1] === 'devices') {
   const d = dev(r[0]);
   if (!d) fail(`Invalid device: ${r[0]}`);
   if (process.env.FAKE_SIMCTL_BOOT_FAIL) fail(`An error was encountered processing the command (domain=com.apple.CoreSimulator.SimError, code=405):\nUnable to boot device ${r[0]} because it is broken`);
-  if (d.state === 'Booted') fail(`Unable to boot device in current state: Booted (${r[0]})`);
+  if (d.state === 'Booted' || TRANSITIONAL.includes(d.state)) fail(`Unable to boot device in current state: ${d.state} (${r[0]})`);
   d.state = 'Booted'; save();
 } else if (c === 'bootstatus') {
   const d = dev(r[0]);
@@ -71,7 +78,7 @@ if (c === 'list' && r[0] === '-j' && r[1] === 'devices') {
 } else if (c === 'shutdown') {
   const d = dev(r[0]);
   if (!d) fail(`Invalid device: ${r[0]}`);
-  if (d.state === 'Shutdown') fail(`Unable to shutdown device in current state: Shutdown (${r[0]})`);
+  if (d.state === 'Shutdown' || TRANSITIONAL.includes(d.state)) fail(`Unable to shutdown device in current state: ${d.state} (${r[0]})`);
   // I-063 review B1: a device with `shutdownFail: true` in the state file refuses (and stays Booted); a file field, not
   // an env var, so a test can switch it for a detached keeper that is already running
   if (d.shutdownFail) fail(`An error was encountered processing the command (domain=com.apple.CoreSimulator.SimError, code=164):\nUnable to shutdown device ${r[0]}: timed out`, 164);

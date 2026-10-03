@@ -6,7 +6,9 @@
 //   idevice_id `idevice_id -l` (USB): the comma list $FAKE_IDEVICE_IDS one per line; `-n` (network): $FAKE_IDEVICE_NET_IDS;
 //              $FAKE_IDEVICE_ID_FAIL=1 (both) / -l / -n: that call exits 1.
 //   open       `open -a Simulator --args ...`: Simulator.app runs ($FAKE_MACAPP_STATE).
-//   osascript  `application "Simulator" is running` -> true/false; `quit app "Simulator"`.
+//   osascript  `application "Simulator" is running` -> true/false; `quit app "Simulator"` (I-078: with
+//              $FAKE_SIMAPP_QUIT_SHUTDOWN_MS=N every Booted device in $FAKE_SIMCTL_STATE goes "Shutting Down" and reaches
+//              Shutdown N ms later, as when Simulator.app shuts its devices down on quit, after the quit returns).
 // Every call appends {tool, argv} to $FAKE_SIMTOOLS_LOG. All ids are made up.
 import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'node:fs';
 
@@ -30,5 +32,13 @@ if (tool === 'lsof') {
 } else if (tool === 'osascript') {
   const e = a[a.indexOf('-e') + 1] || '';
   if (/is running/.test(e)) console.log(existsSync(app) && readFileSync(app, 'utf8') === 'true' ? 'true' : 'false');
-  else if (/^quit app/.test(e)) writeFileSync(app, 'false');
+  else if (/^quit app/.test(e)) {
+    writeFileSync(app, 'false');
+    const ms = process.env.FAKE_SIMAPP_QUIT_SHUTDOWN_MS;
+    if (ms) {
+      const st = JSON.parse(readFileSync(process.env.FAKE_SIMCTL_STATE, 'utf8'));
+      for (const d of st.devices) if (d.state === 'Booted') Object.assign(d, { state: 'Shutting Down', safari: false, settleAt: Date.now() + Number(ms), settleTo: 'Shutdown' });
+      writeFileSync(process.env.FAKE_SIMCTL_STATE, JSON.stringify(st, null, 1));
+    }
+  }
 } else { console.error(`fake-sim-tools: unknown tool ${tool}`); process.exit(2); }

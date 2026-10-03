@@ -312,6 +312,65 @@ test('session: refused when fw-sim is already booted (someone else\'s, or a leak
   assert.match(node(SIM, ['doctor'], { env }).stdout, /^ok: no session/m);
 });
 
+/** I-078: fake simctl device fields (state, settleAt, settleTo) */
+function devSet(fields) { const st = JSON.parse(readFileSync(env.FAKE_SIMCTL_STATE, 'utf8')); Object.assign(st.devices[0], fields); writeFileSync(env.FAKE_SIMCTL_STATE, JSON.stringify(st)); }
+/** resolves once the session `owner` holds the simulator lock (it then reads the device under it) */
+async function simLockHeld(owner = 'me', ms = 30000) {
+  const t = Date.now();
+  while (Date.now() - t < ms) {
+    const s = JSON.parse(node(LOCK, ['status', 'simulator', '--json', '--no-host'], { env }).stdout)[0];
+    if (s?.holder?.owner === owner) return;
+    await sleep(100);
+  }
+  assert.fail('the session never took the simulator lock');
+}
+
+test('I-078 session: fw-sim still Booting (someone else\'s boot) is waited out under the simulator lock, then the Booted device is refused as before; nothing shut down, never booted by us; one line says what it waited for', async () => {
+  const udid = setup();
+  devSet({ state: 'Booting' }); // stays in transition until the test lets it end
+  const p = inHold(childJs('0'));
+  await simLockHeld();
+  await sleep(700); // the session polls the transition
+  devSet({ settleAt: Date.now(), settleTo: 'Booted' });
+  const r = await p;
+  assert.notEqual(r.code, 0, r.out);
+  assert.match(r.stderr, /^sim session: waited \d+ s for fw-sim 15 Pro Max to finish Booting \(now Booted; I-078\)$/m);
+  assert.equal((r.out.match(/I-078/g) || []).length, 1, 'one line about the wait');
+  assert.match(r.stderr, /refusing: fw-sim 15 Pro Max is already Booted \(booted by someone else/);
+  assert.equal(device().state, 'Booted', 'someone else\'s device: never shut down');
+  assert.deepEqual(simctlCalls().filter((c) => !['list', 'create'].includes(c)), [], 'no boot, no shutdown');
+  noIds(r.out, udid);
+});
+
+test('I-078 session: a transition that does not end within FW_SIM_TRANSITION_SEC refuses (no boot, no shutdown); doctor calls it a transition, not a LEAK; doctor --fix waits for it, never shuts a device down mid-transition, and is ok once it ended', async () => {
+  const udid = setup();
+  devSet({ state: 'Shutting Down' });
+  const e1 = { ...env, FW_SIM_TRANSITION_SEC: '1' };
+  const r = await inHold(childJs('0'), { e: e1 });
+  assert.notEqual(r.code, 0, r.out);
+  assert.match(r.stderr, /refusing: fw-sim 15 Pro Max is still Shutting Down after waiting \d+ s for it to finish \(I-078/);
+  assert.ok(!/is already Shutting Down/.test(r.stderr), 'not "booted by someone else"');
+  assert.deepEqual(simctlCalls().filter((c) => !['list', 'create'].includes(c)), [], 'no boot, no shutdown');
+  noIds(r.out, udid);
+  let d = node(SIM, ['doctor'], { env: e1 });
+  assert.equal(d.code, 3, d.out);
+  assert.match(d.stdout, /^fw-sim 15 Pro Max is Shutting Down with no live session: a shutdown or boot in progress \(it ends by itself; a session waits for it, I-078\)/m);
+  assert.ok(!/LEAK/.test(d.stdout), d.stdout);
+  d = node(SIM, ['doctor', '--fix'], { env: e1 });
+  assert.equal(d.code, 3, d.out);
+  assert.match(d.stdout, /^waited \d+ s for fw-sim 15 Pro Max to finish Shutting Down \(still Shutting Down; I-078\)$/m);
+  assert.match(d.stdout, /NOT fixed: fw-sim 15 Pro Max is still Shutting Down \(never shut down mid-transition\)/);
+  assert.ok(!simctlCalls().includes('shutdown'), 'never shut down mid-transition');
+  devSet({ settleAt: Date.now() + 1200, settleTo: 'Shutdown' });
+  d = node(SIM, ['doctor', '--fix'], { env });
+  assert.equal(d.code, 0, d.out);
+  assert.match(d.stdout, /^waited \d+ s for fw-sim 15 Pro Max to finish Shutting Down \(now Shutdown; I-078\)$/m);
+  assert.match(d.stdout, /^ok: no session/m);
+  assert.ok(!simctlCalls().includes('shutdown'));
+  assert.equal(device().state, 'Shutdown');
+  noIds(d.out, udid);
+});
+
 test('session: SIGTERM mid-<cmd> stops <cmd>\'s group, the proxy and the Simulator (shutdown always); a foreign pid in a pidfile is never killed', async () => {
   setup();
   const marker = join(dir, 'child.pid');

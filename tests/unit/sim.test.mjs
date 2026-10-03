@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { join } from 'node:path';
 import { statSync } from 'node:fs';
-import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock, openedTab, writeOpened, openedHost, openedFile, scopeTabs, safariCacheTargets, fetchReport, openedUrl, pageMatcher, warmMismatch, DEVICE_TYPE } from '../../tools/lib/sim.mjs';
+import { holdGate, iwdpConfigText, parseLsofSockets, ports, scrub, mask, proxyCheck, IWDP_ID, SIM_DEVICE, SIM_WEIGHT, SIM_LOCK, takeSimLock, openedTab, writeOpened, openedHost, openedFile, scopeTabs, safariCacheTargets, fetchReport, openedUrl, pageMatcher, warmMismatch, DEVICE_TYPE, TRANSITIONAL, isTransitional, transitionWaitSec } from '../../tools/lib/sim.mjs';
 import { timingDemand, idleSec, IDLE_SEC_DEFAULT, warmLine, warmSummary, realStateInTest, reapResult, reapNote, settleSec, envPositive, gateReapMs, keeperRetryMs } from '../../tools/lib/sim-warm.mjs';
 import { status as lockStatus } from '../../tools/lib/lock.mjs';
 import { simMeta, SIM_SETTINGS, runTarget } from '../../tools/lib/sim-scroll.mjs';
@@ -390,4 +390,16 @@ test('review-i063 follow-up: FW_SIM_GATE_REAP_SEC and FW_SIM_KEEPER_RETRY_MS: Na
   assert.equal(gateReapMs({ FW_SIM_GATE_REAP_SEC: '0.5' }), 500);
   assert.equal(keeperRetryMs({ FW_SIM_KEEPER_RETRY_MS: '200' }), 200);
   assert.equal(envPositive('X', 7, { X: '3' }), 3);
+});
+
+test('I-078: transitional device states (they end by themselves) and FW_SIM_TRANSITION_SEC (default 60; 0 = no wait; a bad value throws)', () => {
+  assert.deepEqual(TRANSITIONAL, ['Creating', 'Booting', 'Shutting Down']);
+  for (const s of TRANSITIONAL) assert.equal(isTransitional(s), true, s);
+  for (const s of ['Shutdown', 'Booted', null, undefined, '']) assert.equal(isTransitional(s), false, String(s));
+  assert.equal(transitionWaitSec({}), 60);
+  assert.equal(transitionWaitSec({ FW_SIM_TRANSITION_SEC: '' }), 60);
+  assert.equal(transitionWaitSec({ FW_SIM_TRANSITION_SEC: '0' }), 0);
+  assert.equal(transitionWaitSec({ FW_SIM_TRANSITION_SEC: '2.5' }), 2.5);
+  assert.equal(transitionWaitSec({ FW_SIM_SETTLE_SEC: '1' }), 60, 'not the phone runs\' settle after a reap (I-063 N6)');
+  for (const v of ['x', '-1', 'Infinity']) assert.throws(() => transitionWaitSec({ FW_SIM_TRANSITION_SEC: v }), /FW_SIM_TRANSITION_SEC must be a number of seconds >= 0/);
 });

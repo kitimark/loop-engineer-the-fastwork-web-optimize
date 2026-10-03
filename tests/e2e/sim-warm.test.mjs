@@ -197,6 +197,40 @@ test('I-063 keeper vs a session (lead note 2): it never shuts fw-sim down while 
   node(SIM, ['shutdown'], { env });
 });
 
+test('I-078: Simulator.app quit shuts fw-sim down after the session\'s quit returns: the session\'s cleanup waits for Shutdown before it hands the simulator lock on (one line); one that ran out of time leaves it Shutting Down, and the next functional session waits it out under the lock and cold-boots (one line)', async () => {
+  const udid = setup();
+  // the window shown (the default): the session quits the Simulator.app it opened, which shuts fw-sim down slowly
+  const shown = (e) => nodeAsync(LOCK, ['run', 'chrome-measure', '--shared', '--weight', 'simulator', '--max-seconds', '120', '--owner', 'me', '--', process.execPath, SIM, 'session', '--functional', '--owner', 'me', '--', process.execPath, '-e', probe()], { env: e, timeout: 90000 });
+  // (a) the shutdown ends within the cleanup's wait: the next session finds fw-sim Shutdown
+  let r = await shown({ ...env, FAKE_SIMAPP_QUIT_SHUTDOWN_MS: '1500' });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /cleanup: fw-sim is Shutting Down after Simulator\.app quit: not kept/);
+  assert.match(r.stdout, /^cleanup: waited \d+ s for fw-sim to finish Shutting Down \(now Shutdown; I-078\)$/m);
+  assert.equal((r.out.match(/I-078/g) || []).length, 1, 'one line about the wait');
+  assert.equal(device().state, 'Shutdown', 'shut down before the simulator lock went to the next session');
+  assert.equal(warm(), null);
+  assert.equal(node(SIM, ['doctor'], { env }).code, 0);
+  // (b) the cleanup's wait runs out (FW_SIM_TRANSITION_SEC=1 stands in for a hold with no time left): still Shutting Down
+  const e = { ...env, FAKE_SIMAPP_QUIT_SHUTDOWN_MS: '600000' };
+  r = await shown({ ...e, FW_SIM_TRANSITION_SEC: '1' });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^cleanup: waited \d+ s for fw-sim to finish Shutting Down \(still Shutting Down: the next session waits for it; I-078\)$/m);
+  assert.equal(device().state, 'Shutting Down', 'still shutting down after the session released the simulator lock');
+  writeFileSync(env.FAKE_SIMCTL_LOG, '');
+  // the next session: before I-078 "refusing: fw-sim 15 Pro Max is already Shutting Down (booted by someone else ...)"
+  const p = shown({ ...env, FAKE_SIMAPP_QUIT_SHUTDOWN_MS: '300' }); // its own cleanup then waits briefly (a)
+  await until(() => JSON.parse(node(LOCK, ['status', 'simulator', '--json', '--no-host'], { env }).stdout)[0]?.holder?.owner === 'me', 30000, 'the session to take the simulator lock');
+  await sleep(700); // it polls the transition
+  devSet({ settleAt: Date.now(), settleTo: 'Shutdown' });
+  r = await p;
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stderr, /^sim session: waited \d+ s for fw-sim 15 Pro Max to finish Shutting Down \(now Shutdown; I-078\)$/m);
+  assert.equal((r.stderr.match(/I-078/g) || []).length, 1, 'one line about the wait');
+  assert.equal(readJ(sessOut()).boot.mode, 'cold');
+  assert.equal(simctlCalls()[0], 'boot', 'no shutdown of a device in transition; a cold boot once it is down');
+  noIds(r.out, udid);
+});
+
 test('I-063: a dead keeper is a LEAK in doctor; a timing hold\'s host gate shuts the warm device down before the grant (review-i063 N1), so its timing session cold-boots and keeps nothing', async () => {
   const udid = setup();
   let r = await fn();

@@ -454,6 +454,32 @@ export function scopeTabs(session, env = process.env) {
 
 // ---- boot / shutdown -------------------------------------------------------------------------------------------------
 export function deviceState(udid) { return listDevices().find((d) => d.udid === udid)?.state ?? null; }
+/** CoreSimulator's in-between device states (simctl list): they end by themselves; boot and shutdown refuse them. */
+export const TRANSITIONAL = Object.freeze(['Creating', 'Booting', 'Shutting Down']);
+export const isTransitional = (state) => TRANSITIONAL.includes(state);
+/** I-078: how long a session / doctor --fix waits for a transition to end (FW_SIM_TRANSITION_SEC, default 60). */
+export function transitionWaitSec(env = process.env) {
+  const v = env.FW_SIM_TRANSITION_SEC;
+  if (v === undefined || v === '') return 60;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0) throw new Error(`FW_SIM_TRANSITION_SEC must be a number of seconds >= 0 (got ${v})`);
+  return n;
+}
+/**
+ * I-078: wait (up to maxSec, polling simctl) while the device is in a transitional state, e.g. the last session's
+ * fw-sim still "Shutting Down" after Simulator.app quit. Only reads the state: never boots, shuts down or kills
+ * anything. Returns {from, state, waitedSec, settled}; `from` null/settled when there was nothing to wait for.
+ */
+export async function settleDevice(udid, { maxSec = transitionWaitSec(), pollMs = 500, abort } = {}) {
+  const t0 = Date.now();
+  const from = deviceState(udid);
+  let state = from;
+  while (isTransitional(state) && Date.now() - t0 < maxSec * 1000 && !abort?.aborted) {
+    await sleep(Math.min(pollMs, Math.max(0, maxSec * 1000 - (Date.now() - t0))));
+    state = deviceState(udid);
+  }
+  return { from, state, waitedSec: Math.round((Date.now() - t0) / 1000), settled: !isTransitional(state) };
+}
 
 // Safari's HTTP cache persists across sessions in the device's data (incident I-052, F-115): an origin seen before
 // (localhost:<port>, and serve.mjs --port auto hands the same ports to different overlays) gets its hashed
@@ -597,14 +623,22 @@ export async function doctor({ fix = false, log = console.log, lockWaitSec = 60 
 async function doctorRun({ fix, log }) {
   const cfg = readConfig();
   const live = liveSession();
-  const dev = cfg.udid ? findDevice(cfg) : null;
+  let dev = cfg.udid ? findDevice(cfg) : null;
+  if (fix && !live && isTransitional(dev?.state)) {
+    // I-078: a shutdown or boot in progress ends by itself: --fix waits for it (bounded) and judges the state it ends in
+    const from = dev.state, s = await settleDevice(dev.udid);
+    log(`waited ${s.waitedSec} s for ${SIM_NAME} to finish ${from} (${s.settled ? `now ${s.state ?? 'gone'}` : `still ${s.state}`}; I-078)`);
+    dev = findDevice(cfg);
+  }
+  const moving = !live && isTransitional(dev?.state); // I-078: in transition, not (yet) a leak; nothing to shut down
   const warm = readWarm();
   const keeper = pidInfo('keeper');
   // the warm device, kept by its keeper (not one whose last shutdown failed: review-i063 B1)
   const kept = !live && warm && !warm.shutdownFailed && keeper?.ours && dev?.state === 'Booted' && warm.udid === dev.udid;
   const problems = [];
   if (!live && readSession()) problems.push('stale session record');
-  if (dev && dev.state !== 'Shutdown' && !live && !kept) problems.push(`LEAK: ${SIM_NAME} is ${dev.state} with no live session${warm ? ` (a warm record, but ${warm.shutdownFailed ? `its last shutdown FAILED: ${warm.shutdownFailed.why}` : `its keeper ${keeper ? (keeper.ours ? 'runs for another device' : 'is gone') : 'is missing'}`})` : ''}`);
+  if (moving) problems.push(`${SIM_NAME} is ${dev.state} with no live session: a shutdown or boot in progress (it ends by itself; a session waits for it, I-078): run doctor again shortly${fix ? '' : ', or doctor --fix (waits for it)'}`);
+  else if (dev && dev.state !== 'Shutdown' && !live && !kept) problems.push(`LEAK: ${SIM_NAME} is ${dev.state} with no live session${warm ? ` (a warm record, but ${warm.shutdownFailed ? `its last shutdown FAILED: ${warm.shutdownFailed.why}` : `its keeper ${keeper ? (keeper.ours ? 'runs for another device' : 'is gone') : 'is missing'}`})` : ''}`);
   if (warm && !kept && !(dev && dev.state !== 'Shutdown' && !live)) problems.push(`stale warm record (${live ? 'a live session owns the device' : `fw-sim is ${dev?.state ?? 'not found'}`})`);
   for (const n of ['proxy', 'wda']) { const r = pidInfo(n); if (r && (!live || r.session !== live.id)) problems.push(`${n}: ${r.ours ? `running (pid ${r.pid}) outside a live session` : 'stale pidfile'}`); }
   if (keeper && !kept) problems.push(`keeper: ${keeper.ours ? `running (pid ${keeper.pid}) without a warm device to keep` : 'stale pidfile'}`);
@@ -612,6 +646,7 @@ async function doctorRun({ fix, log }) {
   for (const p of problems) log(p);
   if (!fix) { log('run: node tools/sim.mjs doctor --fix (stops our proxy / WDA-sim / keeper, shuts fw-sim down)'); return 3; }
   for (const n of ['wda', 'proxy', 'keeper']) if (n !== 'keeper' || !kept) await stopOne(n, log);
+  if (moving) { rmSync(sessionFile(), { force: true }); log(`NOT fixed: ${SIM_NAME} is still ${dev.state} (never shut down mid-transition); retry, or check it in Simulator.app`); return 3; }
   if (dev && dev.state !== 'Shutdown' && !live && !kept) {
     await shutdownDevice(dev.udid, { log });
     // review-i063 B1: fixed only when the device IS shut down; the warm record (if any) stays for the next try
@@ -819,7 +854,17 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     if (other) throw new Error(`a Simulator session is already running (pid ${other.pid}, owner "${other.owner}")`);
     // I-063: read the device again under the simulator lock (a keeper may have shut it down while this session waited);
     // a Booted fw-sim is taken over only when it is the warm device of warm.json (same device, type and runtime)
-    const now = findDevice(cfg);
+    let now = findDevice(cfg);
+    if (isTransitional(now?.state)) {
+      // I-078: a shutdown (or boot) still in progress, e.g. the last session's fw-sim after Simulator.app quit: wait for
+      // it to end inside this hold's budget (boot, command and cleanup still fit), then the rules below decide
+      const room = Number.isFinite(gate.endsAt) ? Math.floor((gate.endsAt - Date.now() - cleanupMs) / 1000) - 60 : Infinity;
+      const maxSec = Math.max(0, Math.min(transitionWaitSec(), room));
+      const s = await settleDevice(now.udid, { maxSec });
+      if (!s.settled) throw new Error(`refusing: ${SIM_NAME} is still ${s.state} after waiting ${s.waitedSec} s for it to finish (I-078; a shutdown or boot that does not end: node tools/sim.mjs doctor)`);
+      err(`sim session: waited ${s.waitedSec} s for ${SIM_NAME} to finish ${now.state} (now ${s.state ?? 'gone'}; I-078)`);
+      now = findDevice(cfg);
+    }
     const w = readWarm();
     if (now?.state !== 'Shutdown') {
       const why = warmMismatch(w, now, cfg);
@@ -903,6 +948,16 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
         if (st !== undefined && st !== 'Booted') { clog(`fw-sim is ${st ?? 'gone'} after Simulator.app quit: not kept`); try { await stopOne('keeper', clog); } catch {} rmSync(warmFile(), { force: true }); }
       }
     }
+    // I-078: a shutdown still in progress (Simulator.app shuts its devices down after the quit returns) ends before the
+    // simulator lock goes to the next session, within this hold's time (not after a signal: the join side waits then)
+    try {
+      const st = interrupted ? null : deviceState(cfg.udid);
+      if (isTransitional(st)) {
+        const room = Number.isFinite(gate.endsAt) ? Math.floor((gate.endsAt - Date.now()) / 1000) - 10 : Infinity;
+        const s = await settleDevice(cfg.udid, { maxSec: Math.max(0, Math.min(transitionWaitSec(), room)), abort: ac.signal });
+        clog(`waited ${s.waitedSec} s for fw-sim to finish ${st} (${s.settled ? `now ${s.state ?? 'gone'}` : `still ${s.state}: the next session waits for it`}; I-078)`);
+      }
+    } catch (e) { clog(`fw-sim state check failed: ${e.message}`); }
     rmSync(sessionFile(), { force: true });
     try { await simLock.release(); } catch (e) { clog(`${SIM_LOCK} lock release failed: ${e.message}`); }
     for (const [s, h] of handlers) process.off(s, h);

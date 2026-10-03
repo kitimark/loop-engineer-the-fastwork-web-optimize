@@ -20,6 +20,10 @@
 //     node tools/sim.mjs session --functional --owner <o> [--window shown|hidden] -- <cmd> [args]
 //        open and wda start work inside it; scroll, record and run (timing) are refused. Every session (functional or
 //        not) holds the exclusive `simulator` process lock: one fw-sim, one session at a time.
+//        I-078: a fw-sim still in transition (Shutting Down / Booting, e.g. the last session's after Simulator.app quit)
+//        is waited out under that lock (FW_SIM_TRANSITION_SEC, default 60, within the hold's time), never shut down;
+//        then the rules below apply. A session's cleanup likewise waits for a shutdown in progress (within its hold's
+//        time) before it hands the lock on. doctor reports a transition (not a leak); doctor --fix waits for it.
 //        I-063: a functional session that ran its <cmd> (no signal) does NOT shut fw-sim down: it quits Safari, records
 //        sim/warm.json and starts a keeper (`sim.mjs keeper <id>`, pidfile sim/keeper.pid.json; `status` shows both)
 //        that shuts it down FW_SIM_IDLE_SEC (default 600; 0 = shut down at the end as before) after the session, or
