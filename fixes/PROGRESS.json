@@ -74,7 +74,7 @@
     "text": "not built yet"
    },
    "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
-   "next": "Built: the top looks identical in all 259 test pictures and the hero clock stops redrawing (phone simulator). The review found the code fine but asked for more checks: simulator pictures, more Chrome cases, write-up fixes, counts at rest. Then the wave-2 phone run.",
+   "next": "In Chrome the top looks identical, but on the phone simulator the edges of the hero digits come out a shade lighter. fix-cd-strip looks for a variant that is exactly identical; if none exists, you get the options to choose from. Then the review and the wave-2 phone run.",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-070", "what": "wave-2 phone run: hero clock redraws gone, no new slow frames", "result": "" }],
    "details": [
@@ -167,7 +167,7 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "The robot-finger test passed, but the review found a possible slowdown when the page holds at the end, and a case where a touch is missed. fix-nav-morph checks both before your swipe test; F3 does not land until then.",
+   "next": "The missed-touch case is fixed in a new build. The possible slowdown when the page holds at the end did not show on the computer, so it gets a robot-finger check on the phone after the heat test, plus a short repeat of the touch test. Your swipe test waits until then.",
 
    "owner": "fix-nav-morph",
    "checks": [
@@ -180,6 +180,7 @@
     "Chrome regression A/B within noise on every row, 0 errors/404s, 0.13 % pixel diff.",
     "Strokes that start on the nav header are not covered by the robot test: only your finger test checks them.",
     "Review round 1 (review-f3-arm-scope, 10-03 01:4xZ): CHANGES REQUIRED. B1 (OBSERVED, cause unknown): V-only frame-rate drop at the end pin when the run settles at y 5215 (2/2 V vs 0/5 C). B2: touch-coverage gap mid-tween and at m=1, where the morph does not reverse. P-036 card part stands (scorer rerun identical, PASS without V2).",
+    "B1/B2 outcome (fix-nav-morph 909747c, 10-03 02:2xZ): B2 fixed in build mw10e-arm-scope-d (JS 999c4497f37e; window touch listeners while the morph is active; Chrome gap cases V fail, C and D pass). B1 UNRESOLVED: Simulator G pin repro and Chrome pin counts show no collapse and no arm difference; phone ticket G pin-hold C/V/D + Timeline after P-068; D then needs a short P-036 confirmation before landing.",
     "P-036 G block 10-03 00:28-01:10Z (iphone-runner; scored by fix-nav-morph 6fb21b2, ops second read PASS): median touch-to-scroll C / V Z1 196.8 / 192, Z2 193 / 194.5, Z3 189 / 189 ms, every zone overlap; S-open 60 / 58.9, S-end 60.2 / 57.1 fps PASS; C2 re-run in place (void first try); V2 hot (42.6-43.3 C); Z1 dt>50 per run C 2,1,3,2 vs V 1,16,3,2 (16 = the hot run), OBSERVED, G driver."
    ]
   },

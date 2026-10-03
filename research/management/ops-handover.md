@@ -9,6 +9,25 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **02:3xZ a265420 landed (ff). F3 B2 fixed, B1 unresolved; cd-strip WebKit hero-pixel delta; P-068 H1 F, A, B done.**
+  - Lead moved iphone-runner to chrome-measure #1 (audited) so the P-068 H1 segments stay back-to-back (fix-nav-morph
+    next); each segment runs in its own exclusive `--no-timing` hold (README line 92), never beside a shared group. I-077
+    phone confirmation is in the incident record (lead).
+  - **F3 (fix-nav-morph 909747c, on its branch):** B2 FIXED in new build mw10e-arm-scope-d (JS 999c4497f37e: window
+    touch listeners while the morph is active; Chrome gap cases at m=1 edge and below the nav mid-tween: V fails, C and D
+    pass). **B1 UNRESOLVED:** Simulator G pin repro and Chrome pin counts show no collapse and no arm difference. Phone
+    ticket after P-068: G pin-hold C/V/D, then Timeline; D also needs a short P-036 confirmation before landing. F
+    swipe stays postponed. A prediction card for the ticket takes **P-071** (ops second read).
+  - **cd-strip hero pixels (lead, OBSERVED, cause unknown):** in WebKit the hero digit edges are uniformly 1 level
+    lighter (delta <= 3); the static check (cell at 0) still differs, so it is not the offset. fix-cd-strip hunts a
+    pixel-identical layer variant (lead: no exception); if none exists it goes to the user as an options proposal.
+    cd-roll-ca rebases on whatever cd-strip lands; its review B1 is fixed in code, hidden-tab check queued.
+  - hero-exit-threaded: Chrome ablation located a 1-px copy shift in the copy's scroll-timeline animation; next a
+    WebKit Simulator screenshot check C/C/V plus the y300 at-rest layout count.
+  - P-068 H1: F, A, B done; X next after cooling to 37 °C (H1 ends ~02:35Z); H2 ETA not given yet.
+  - PROGRESS: F3 next (missed-touch case fixed, end-hold check on the phone after the heat test) + B1/B2 detail;
+    cd-strip next (simulator digit edges a shade lighter; identical variant hunted, else options for you).
+
 - **01:5xZ 3de2653 landed as 9b9c3ef (lead rebased it onto 5d656c3); main 77c9f75.** 5d656c3: de-countdown scopes the
   clock-down hypothesis to baseline arms (F-152, fix-pill-swap: st6-rb2 has no avatar swap and no 1 Hz heavy layout;
   OBSERVED, Simulator). 77c9f75: de-countdown plans the part (b) restack, stack order **st6-rb2 -> cd-strip ->
