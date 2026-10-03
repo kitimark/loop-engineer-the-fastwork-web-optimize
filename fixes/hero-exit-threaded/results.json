@@ -15,12 +15,16 @@
    "css": "f523598b2a24"
   },
   "V": {
-   "js": "301ec740291b",
+   "js": "d48d224adcd4",
    "css": "55ba45f138c9"
   },
   "V_66d2abe": {
    "js": "416e4a2ed34f",
    "css": "fc83846a8755"
+  },
+  "V_301ec740291b": {
+   "js": "301ec740291b",
+   "css": "55ba45f138c9"
   }
  },
  "arms": {
@@ -281,11 +285,11 @@
   "R4": "removed: the y884 paint burst came from the LayerTree census (acc20 without it: V 13 = C 13, C2 17)",
   "C1": "closed: Chrome desktop y50 within the six-arm A/A spread (par14: V vs same state 4.9k px max 3; same-state A/A up to 7.3k px max 7, same hero-copy box)"
  },
- "verdict": "mechanism win on the Simulator (no per-frame JS writer; full-hero repaints 21 -> 0, paint Mpx -66 %, layouts -25 %); pixel-identical except R1 (C-vs-C variation) and R2 (C session-dependent clip), for the user decision; R4 and C1 closed; review round 2 checks pass (toolbar, hand-over, jump; switch frame: no flash in V, probe could not reproduce it in 66d2abe either); no phone run, no timing number",
+ "verdict": "mechanism win on the Simulator (no per-frame JS writer; full-hero repaints 21 -> 0, paint Mpx -66 %, layouts -25 %); pixel-identical except R1 (C-vs-C variation) and R2 (C session-dependent clip), for the user decision; R4 and C1 closed; review rounds 2-3 pass (build ACCEPT-WITH-NOTES; heHold now ready-based) (toolbar, hand-over, jump; switch frame: no flash in V, probe could not reproduce it in 66d2abe either); no phone run, no timing number",
  "regressions": {
   "layers": "+6 compositing layers, layer memory -10 MB",
   "handOver": "+1 style recalc at the drop and at the armed re-add, 0 layout, 0 paint",
-  "functionalCheck": "fix.mjs check ok on 301ec740291b (mobile, desktop)"
+  "functionalCheck": "fix.mjs check ok on d48d224adcd4 (mobile, desktop)"
  },
  "reviewRound2": {
   "build": {
@@ -316,5 +320,39 @@
    "desktop Safari / iPad (>600 px)",
    "Safari 26.0-26.3"
   ]
+ },
+ "reviewRound3": {
+  "build": {
+   "js": "d48d224adcd4",
+   "css": "55ba45f138c9"
+  },
+  "inputs": "review-hero-exit delta re-review ACCEPT-WITH-NOTES on e36423f; mgmt-ops-10 P-074 read NEEDS-FIX",
+  "change": "heHold drops the inline --exit-opacity one frame after every hero-exit animation of the track reports ready (was: fixed frame N+1)",
+  "restoreSwitchFrame_r2i": "V (d48d) vs V1 (301e): countdown digits only, pgsR and settle; var already removed in the probe second frame in both (ready resolves within the switch frame on the Simulator, OBSERVED); V vs C = V1 vs C (clock + y800-900 band max 91, present at settle too: C session state)",
+  "functionalCheck": "fix.mjs check --viewport both ok (0 errors, 0 4xx, screenshot diff <= 0.54 %)",
+  "chromeParity": "not re-run: heCss false in Chrome (no GestureEvent), heHold never runs",
+  "wideBranch_deBreakpoints": "Chrome + GestureEvent stub on 301ec740291b: V vs C 0 px beyond A/A at 6 stops in 932x430, 1440, 1440 reduced motion; WebKit width 980 pending",
+  "wording": [
+   "mechanism 7: flash predicted by the review, not reproduced on the Simulator (OBSERVED), heHold kept as a guard",
+   "item 3: +1 Layout at the top crossing (phone .scroll-float blur flip), left to P-074",
+   "item 6: why 66d2abe jumped is unexplained"
+  ],
+  "scorer": {
+   "path": "fixes/hero-exit-threaded/p074/score074.mjs",
+   "sha256": "1d1fc26908f1",
+   "previous": "aaf93e3c485e",
+   "fixes": [
+    "rest hand-over frame = heRest TimerFire + next unit",
+    "missing --fn fails loudly",
+    "writer/heRest match the page script name",
+    "logger-rAF-first assumption stated",
+    "void runs dropped before pairing, no fallback",
+    "< 2 valid runs = not enough",
+    "(a) per arm, not combined",
+    "(b) per kind with a no-data state",
+    "heRest fires paired with the nearest rest mark, past-end fire not scored",
+    "C rest anchor without the +400 ms margin"
+   ]
+  }
  }
 }

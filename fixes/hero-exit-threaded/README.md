@@ -6,7 +6,8 @@
 **Status:** measured by mechanism and pixels (no timing: timing A/Bs deferred, user 2026-10-02). Not ready to land:
 the residuals in "Options" need the user's decision, and the phone Timeline attribution block (P-074, driver G,
 gesture `gestures/hero-pass-v1.json`) has not run. Review round 2 (review-hero-exit, NEEDS-FIX on 66d2abe) is
-answered in "Review round 2" below.
+answered in "Review round 2" below; the delta re-review (ACCEPT-WITH-NOTES on e36423f) and the P-074 ticket read
+(NEEDS-FIX) in "Review round 3". Current build: JS `d48d224adcd4`, CSS `55ba45f138c9`.
 **Stage:** V (build card below). D: ST-1 accepted by the lead 2026-10-03 01:17Z as "partly LOCATED" (H2a and H2c
 not supported on the Simulator; H2b Composite open, phone slot).
 **Device class / gate:** WebKit-only build (Safari / iOS). Chrome, Firefox and other engines run the baseline
@@ -130,10 +131,13 @@ heCss = `GestureEvent` in window &&
 7. **Switch frame (`heHold`).** The exit animations are created when `.he-css` arrives in `d()`, so they are
    pending in that first frame and the base values show. In the baseline the base values follow the inline
    `--exit-opacity`, so `d()` writes it once for the current scroll position (`s()`), keeps it through the first
-   frame, refreshes it in the next rAF and removes it one frame later. A mid-hero switch then draws the exited
-   hero, not the un-exited one: desktop Safari / iPad when `d()` fires 1.82 s after load while the page is
-   already scrolled, a bfcache `pageshow` mid-hero, a restored scroll position. Without it (66d2abe) that frame
-   showed the hero at full opacity, cards in place (review round 2, item 1).
+   frame, refreshes it in the next rAF and removes it one frame after every exit animation of the track reports
+   `ready` (no longer pending; not after a fixed frame count, so a pending that lasts longer, e.g. on Safari
+   26.0-26.3 or desktop, is covered too). A mid-hero switch then draws the exited hero, not the un-exited one:
+   desktop Safari / iPad when `d()` fires 1.82 s after load while the page is already scrolled, a bfcache `pageshow`
+   mid-hero, a restored scroll position. Without it, the review predicted a frame with the hero at full opacity and
+   the cards in place (review round 2, item 1, from WebKit's `canBeAccelerated` / `pending()`); the Simulator did not
+   reproduce that frame on 66d2abe (OBSERVED), so `heHold` is kept as a guard.
 
 The `dE` registration stays (the scene pause and render deferral are its side effects). In CSS mode its callback
 does only `heTf()`: a `scrollY` read, plus a class write when the state changes (`classList.contains` first; 66d2abe
@@ -322,16 +326,45 @@ above, title word synced to the same drawn word in every arm before timers are c
 | 1 switch frame mid-hero | restore at rest y300 that re-creates the animations: drop `he-css`, two frames, then `pageshow` (persisted) → `p()` + `d()`; freeze the frame after `d()` (r2h, arms C, V, V0 = 66d2abe) | V vs C: countdown digits only (V holds `--exit-opacity` 0.649 inline in that frame, as designed). **V0 vs C is also clean** (digits, clock): on the Simulator the new animations' pending frame did not show base values here, so the probe does not reproduce the flash the review predicted; `heHold` stays as a guard (it is what the review's source reading, `canBeAccelerated` / `pending()`, calls for). OBSERVED |
 | 1 (other probes) | synthetic `pageshow` without dropping the class (r2b); reload while scrolled (r2f, r2g) | r2b: V = V0 = C (no animation is re-created when `p()` and `d()` run in one task). Reload: `d()` had already switched (`he-css` on 0.9 s after the reload, while Safari was still restoring the scroll, y121) before a watcher could attach; a bootstrap-script watcher did not fire. Not captured |
 | 2 collapsed toolbar | WDA collapse stroke (innerHeight 775 → 815), then y150 / 230 / 300 / 500 / 700 / 840 (r2e) | V's copy opacity = C's = `1 - p` with innerHeight 815 at all 6 points (difference ≤ 1e-6) |
-| 3 filter at rest | top crossing y0 → 6 → 12, Timeline records per frame, timers cleared (r2c) | the one remaining flip (phone `.scroll-float`, none → `blur(0.009px)`) costs nothing extra: V's first frame from the top S1 L2 P55 vs C's per-step frame S1 L1 P54; V's later steps P0-1, C repaints P54 on every step |
+| 3 filter at rest | top crossing y0 → 6 → 12, Timeline records per frame, timers cleared (r2c) | the one remaining flip (phone `.scroll-float`, none → `blur(0.009px)`) costs one Layout record: V's first frame from the top S1 L2 P55 vs C's per-step frame S1 L1 P54 (+1 Layout, WebKit-only, an X1-class cost); V's later steps P0-1, C repaints P54 on every step. Left to the phone block (P-074 touchstart and y≈50 rows) |
 | 4 hand-over frames, same word | drop, armed and unarmed re-add, settle at y300/306 (r2a) | drop and settle: 0 px outside clock and digits. Re-add: V's frozen frame = C's own settled y306 frame (0 px outside the digits); C's frozen frame there is still its y300 frame (= C's drop frame, ±1 level), as in frz14: C draws the scroll one update later |
 | 4 (y0) | settled y0, C, C2, V (r2d) | V vs C = C2 vs C: the title accent phase and the digits only. r2b's extra card-band diff at y0 (V and V0 both vs C, max 45) was C's own session state: none in r2d |
 | 5 accent census | acc20 (above) | R4 removed |
-| 6 jump back into the hero | from rest at y3000, `scrollTo(300)`: first and second frame (r2b) | V vs C: browser chrome only (clock, back button). V0 (66d2abe) vs C, second frame: 460k px |
+| 6 jump back into the hero | from rest at y3000, `scrollTo(300)`: first and second frame (r2b) | V vs C: browser chrome only (clock, back button). V0 (66d2abe) vs C, second frame: 460k px. Why V0 jumped and V does not is unexplained: no change in the delta targets it (candidates: `heTf` now writes the class only on a state change, `heSc` ignores non-document scrolls) |
 | Chrome parity, new build | par15: mobile, phone, desktop × y50 / 895 / 909; C, C2-C4, V | computed-style diffs 0 everywhere. Max level within the A/A arms at 8 of 9 points. Mobile y909: V 7,110 px max 53, A/A there ≤ 919 px max 1; the same 53-level whole-frame pattern (same box) is C2 vs C at y895, i.e. the two Chrome raster states seen in par13/par14; Chrome runs C's code path in V (gate false). The y895 re-sample owed from par11: V 1,947 px max 1, within (C2 6,142 px max 53) |
 | functional | `fix.mjs check --viewport both` (headless Chrome) | ok: morph reached, 0 errors, 0 4xx; screenshot diff 0-0.12 %. The +174 elements are st6-rb2's (start-selling morph, st5 images), not this topic |
 
 Still untested: desktop Safari and iPad (viewport > 600 px: the Simulator is a phone, so the desktop CSS rules and the
 desktop `heRest` formula have computed-value parity only); Safari 26.0-26.3 (gate slice above).
+
+### Review round 3 (delta re-review ACCEPT-WITH-NOTES on e36423f, P-074 read NEEDS-FIX; build JS `d48d224adcd4`, CSS `55ba45f138c9`)
+
+Code change (the only one): `heHold` drops the inline `--exit-opacity` one frame after every hero-exit animation
+of the track reports `ready`, instead of a fixed frame later (mechanism 7). Wording: mechanism 7 (flash predicted,
+not reproduced, OBSERVED), item 3 (+1 Layout at the top crossing), item 6 (V0's jump unexplained).
+
+| check | how | result |
+|---|---|---|
+| restore switch frame | r2h's probe again (r2i, arms C, V = `d48d224adcd4`, V1 = `301ec740291b`), case pgsR and settle | V vs V1: countdown digits only (rows 1300-1400), also at settle (plus ±1-level bits): the ready-based drop draws the same frames. The var was already gone in the probe's second frame in both V builds, so on this Simulator `ready` resolves within the switch frame (OBSERVED). V vs C and V1 vs C: the same pattern in both cases, status-bar clock plus a band at y≈800-900 (max 91 levels) that is there at settle too, so C's session state, not the switch frame |
+| functional | `fix.mjs check --viewport both` | ok: morph reached, 0 errors, 0 4xx, screenshot diff ≤ 0.54 % (headless) |
+| Chrome parity | not re-run: Chrome has no `GestureEvent`, `heCss` is false, `heHold` never runs | unchanged from par15 |
+| wide branch (de-breakpoints, Chrome with a `GestureEvent` stub, on `301ec740291b`) | frozen frames at 6 stops, 932x430 DPR 3, 1440, 1440 reduced motion; C2 = A/A | V vs C 0 px beyond A/A everywhere; `he-css` on at every stop in V; 0 errors. Blink only, scripted scroll. The WebKit run at width 980 is pending |
+
+P-074 scorer (`p074/score074.mjs`, sha256 `1d1fc26908f1`), fixes from the review and the ops read:
+- V's rest hand-over frame = the heRest TimerFire record plus the next frame unit (the drop lands there), not the
+  unit that holds the timer.
+- A missing `--fn` line fails loudly.
+- The writer and heRest tests match the page script name (`nodes/2.DyWL8TcE.js`).
+- The logger-rAF-first assumption is stated in the header.
+- Void runs are dropped before pairing (valid run i with valid run i, no fallback to run 1).
+- An arm with fewer than 2 valid runs prints "not enough".
+- (a) is reported per arm (C positive control, V claim), never combined.
+- (b) is reported per kind (touchstart, rest) as in / OUT / "no data for <kind>".
+- heRest fires pair with the nearest rest mark (±800 ms); unpaired fires and the past-the-end fire (rest2, y > 780)
+  are printed, not scored.
+- C's rest anchor is its last moving frame at or before the rest mark (the +400 ms margin is gone).
+Smoke test on P-071's phone Timeline files (different build, lines adjusted): C share 0.634, two-run arms give
+in / in, a single run gives "not enough", rest with no heRest line gives "no data for rest".
 
 ## Options (residuals beyond A/A, for the user)
 
@@ -359,12 +392,40 @@ desktop `heRest` formula have computed-value parity only); Safari 26.0-26.3 (gat
 - Memory and layers: see the counts table.
 
 **Phone ticket P-074 (not run yet; a Timeline attribution block, not a gain block).**
-- Driver: G, gesture `gestures/hero-pass-v1.json` (two drags up through the hero with rests, two drags back).
-- Order: one uncounted warm-up per arm port, a Timeline-OFF sentinel, then C V V C with Timeline on, end sentinel.
-- Scored by mechanism, not time: share of moving hero-band frames that run the JS writer `s` (C) / none (V), the
-  hand-over frames (touchstart, rest drop) against C's same-phase frames, the y≈50 frame. Scorer, ranges and void
-  rules are registered in `fixes/PREDICTIONS.md` before any data.
-- Builds: immutable snapshot copies of this build (JS `301ec740291b`, CSS `55ba45f138c9`) and st6-rb2.
+- Question (one): on the iPhone, under a WDA finger drag (driver G), does V stop running the per-frame JS writer on
+  moving hero frames while C runs it, with hand-over frames that cost no more than C's same-phase frames?
+- Builds (immutable snapshot copies): V `out/snapshots/hext-V-<js hash>` (JS and CSS hashes: "Review round 3"
+  below), C = st6-rb2 `out/snapshots/st6rb2-C-7bf7c4657d21` (JS `7bf7c4657d21`, CSS `f523598b2a24`).
+- Driver G, gesture `gestures/hero-pass-v1.json` (file sha256 `e3f31872b82f`): two slow drags up through the hero
+  with 1 s rests, two drags back down. Ports: one `serve.mjs --port auto` per arm (5200-5999, plain http twin per
+  I-003), the actual ports in the block log; never 5173.
+- Order: one uncounted warm-up per arm port, a Timeline-OFF sentinel, then C V V C with Timeline on, end sentinel;
+  park Safari; cooling with `wait.mjs phone-temp --below auto`; each run in its own `--no-timing` hold; no user steps.
+  Expected about 25 min (8 runs at about 1.5 min, plus cooling up to 10 min).
+- Scorer `p074/score074.mjs` (sha256 in "Review round 3"), `--fn C:s=4391 --fn V:s=4493,heRest=4446`, band 1..780.
+  Every counted run is passed in block order; void runs are reported and dropped, valid runs pair in order.
+  (a) writer share per run (C 0.3..1.0, V 0..0.05), reported per arm: in / out / split / not enough. (b) V's
+  touchstart and rest hand-over frames vs C's, per kind: in / OUT / no data. (c) the y≈50 frame, descriptive.
+- Confidence before data: P(V in for (a)) 0.85, P(C in for (a)) 0.85, P((b) in for both kinds) 0.5 (the +1 Layout of
+  the top-crossing flip, item 3, may put touchstart 1 out).
+- Decisions:
+  - (a) C in, V in, (b) in for both kinds: the mechanism holds on the phone under G; V stage goes on with the user's
+    residual decisions (R1, R2); no further phone block for this question.
+  - (a) V out (V runs the writer on moving frames): the CSS path is not active on the phone (gate or switch); stop,
+    find the failing piece from the scorer's per-frame lines, back to F, new build and new ticket.
+  - (a) C out (the positive control does not see the writer): the measure failed, not the fix; no claim. Check the
+    scorer on C's data (script name, line, logger), re-read by ops, re-score the same data; new runs only if that
+    still fails.
+  - (a) split in an arm: no claim for that arm; at most one second block with the same ticket (sequential rule); a
+    second split goes to the lead as inconclusive.
+  - (a) not enough valid runs in an arm: treated as a void block.
+  - (b) OUT: name the rows. Only touchstart 1 (the top crossing): the known +1 Layout flip, reported as a residual
+    for the user decision, not a mechanism failure. Any other OUT row: V's hand-over costs more than C's; back to F.
+  - (b) no data for a kind: to the lead, no mechanism verdict on that kind; check marks and the heRest line on the
+    same data before any re-run.
+  - Block void (a failed sentinel, a second void at one position, Low Power Mode): no claim; cool, re-run the block
+    once; a second void goes to the lead.
+- Ranges, void rules and decisions are registered as P-074 in `fixes/PREDICTIONS.md` (by mgmt-ops) before any data.
 
 **Scenarios not run:**
 - (idle after scroll is covered: the rest hold, Simulator counts and frozen frames above);
