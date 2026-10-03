@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T09:16:00Z",
+ "updatedAt": "2026-10-03T09:30:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T09:25:00Z", "text": "The hero fix's phone trace got the go-ahead: the build, the trace plan and the warm start all passed their checks. It shows where the hero work happens on the phone, not timing." },
   { "at": "2026-10-03T09:13:00Z", "text": "The heat-reading trial is done: with Xcode's simulated \"Serious\" heat state, Safari kept 60 frames a second and the same slow-frame counts as normal (4 runs). We can't confirm the setting reached Safari, so it is no stand-in for a hot phone." },
   { "at": "2026-10-03T08:52:00Z", "text": "You accepted all five suggestions: fixes that make the page do less work can land on work counts plus one short phone no-worse check (the top three smoothness fixes keep the phone and your finger test); phone checks start warm, 38-40 °C." },
   { "at": "2026-10-03T08:35:00Z", "text": "F3's warm-phone test is done: no version showed the hitch, not even the original, so it can't tell whether F3 cures it. F3 doesn't land on this test; the next step is being decided." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-02T11:55:00Z", "text": "The best build is now st6-rb2: the same seven fixes, with the final version of the section-switch style fix. It was checked by how it works and by screenshots, not timed on the phone as a whole." },
   { "at": "2026-10-02T11:40:00Z", "text": "The section-switch fix (restyle only its own section) is landed. On the iPhone it removes the whole-page layout at each section switch, about 17-23 ms each time." },
   { "at": "2026-10-02T11:30:00Z", "text": "The best build gains a seventh fix: the profile cards that are off screen are hidden while the people section starts to shrink. On the phone it removes one slow frame there (37 to 17 ms); the count of slow frames over the whole scroll did not drop." },
-  { "at": "2026-10-02T10:45:00Z", "text": "New 'Best build' view: what today's best build (st6-rb) contains, what each fix gained on the phone, and what was tried and not applied, with the reason." },
-  { "at": "2026-10-01T20:35:00Z", "text": "Carousel: the cause of the remaining layout is found. A build that avoids it (st6) removed it in 35 of 36 slide starts on the phone recording; it waits for timing tests to resume." }
+  { "at": "2026-10-02T10:45:00Z", "text": "New 'Best build' view: what today's best build (st6-rb) contains, what each fix gained on the phone, and what was tried and not applied, with the reason." }
  ],
  "items": [
   {
@@ -74,7 +74,7 @@
     "text": "not built yet"
    },
    "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
-   "next": "Your 'land' choice is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, at 90 % fade, and extra layout-shift reports from the strips). After one more check, a corrected proposal comes to you and you decide again.",
+   "next": "Your 'land' choice is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, at 90 % fade, and extra layout-shift reports from the strips). The corrected proposal is coming to you now; you decide again.",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-072", "what": "wave-2 phone run of the strips: no new slow frames (prediction waits for your new decision)", "result": "" }],
    "details": [
@@ -104,7 +104,7 @@
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position (an earlier version matched the original on your phone); first explain why that version made one frame about 11 ms slower where the hero ends.",
-   "next": "The small code changes from the review are in, and the phone trace plan (P-074) passed the ops check except one line: it must say the phone starts warm. Next: that line, the reviewer's OK, then the phone trace of where the hero work happens (not timing).",
+   "next": "The review's code changes are in, the reviewer accepted the build, and the phone trace plan (P-074) passed every check. The phone trace of where the hero work happens (not timing) starts now, warm at 38-40 °C.",
    "owner": "fix-hero-exit-threaded",
    "checks": [],
    "details": [
