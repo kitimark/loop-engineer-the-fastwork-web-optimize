@@ -3,8 +3,9 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** round 4, "cells-only" on fix-cd-strip's strip-rw (lead, 2026-10-03 04:4xZ and 05:1xZ). Measured on
-cd-strip's strip-rw **dev** build (JS `5e37af69bcc4…`); the counted set waits for cd-strip's final verified hash.
+**Status:** round 4, "cells-only" on fix-cd-strip's strip-rw (lead, 2026-10-03 04:4xZ and 05:1xZ). Dev-base checks
+on strip-rw JS `5e37af69…` + CSS `9b2f89ea…` (C5/V6); counted session A on cd-strip's review-round-2 base (CSS
+`40078cb2…`, C6/V7); the rest of the counted set waits for cd-strip's PR-008 rev 2 (its base may change again).
 Rounds 1-3 (one animation per strip, on st6-rb2) passed review (round 3 PASS, `2af461dc…`); their sections are kept
 below as history, labelled.
 **Stage:** F (build card); D signed by the lead, fast path, 2026-10-03 01:35Z; V = the user's blind watched comparison
@@ -16,15 +17,16 @@ Timeline counts, frozen and running screenshots, layer census, and a hidden-page
 **Prediction:** counts only (below); no `fixes/PREDICTIONS.md` row while timing is deferred
 **Topic:** `research/gpu-props/README.md` G4 (user decision T-030 #10, "do cd-roll-ca as highest priority as well")
 **Stacked on:** `fix-cd-strip` strip-rw (its patch on st6-rb2): base `_app/immutable/nodes/2.DyWL8TcE.js` sha256
-`5e37af69bcc4…`, CSS `9b2f89ea58bd…` (cd-strip `patch.diff` `48bc7adf7f03…`, dev build); rebuild with
+`5e37af69bcc4…`, CSS `40078cb2d9cf…` (cd-strip `patch.diff` `1f3c26a16563…`; the dev build had CSS `9b2f89ea58bd…`,
+patch `48bc7adf7f03…`, same JS); rebuild with
 `node tools/fix.mjs apply cd-strip --on st6-rb2 --reset` then `node tools/fix.mjs apply cd-roll-ca --on cd-strip`.
 The cd-strip patch is not committed here (its owner's deliverable).
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` only (the CSS is cd-strip's, unchanged): new helpers after
 `__cdStripM` (`__crPath`, `__crAt`, `__crClock`, `__crWatch`, `__crCells`, a module-level `visibilitychange`
 listener), and in `$E` (the digit) the spring effect, `__crTops`/`__crStop`/`__crPlay`, and in the strip snippet `g`
 only the replay effect, `__crEl = w` and cd-strip's cell-top effect routed through `__crTops`. Built overlay sha256
-`73dff152e454…` (V6). Served from immutable snapshot copies `out/cd-roll-ca/snap/{C5,V6}` (hashes in `HASHES.txt`;
-earlier C, V, V3, C4, V4, V5), one-command server `out/cd-roll-ca/serve-snap.sh`.
+`73dff152e454…` (V6 = V7). Served from immutable snapshot copies `out/cd-roll-ca/snap/{C6,V7}` (hashes in
+`HASHES.txt`; earlier C, V, V3, C4, V4, V5, C5, V6), one-command server `out/cd-roll-ca/serve-snap.sh`.
 
 ## Why it lags
 
