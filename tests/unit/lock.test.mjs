@@ -377,6 +377,8 @@ const oldClientGrant = (owner) => {
 
 test('short lane with old clients: a normal grant made by old code (no last-grant write) counts once any new client sees it', async () => {
   assert.equal((await L.tryAcquire(R, { owner: 's0', ...SHORT })).ok, true);
+  // I-081: a short hold's record outlives it only while someone is queued, so n1 waits from s0's hold on
+  assert.equal((await L.tryAcquire(R, { owner: 'n1' })).ok, false);
   await L.release(R, { owner: 's0' });
   assert.equal(readJson(`${R}.last-grant.json`).short, true);
   oldClientGrant('old-ab');
@@ -585,4 +587,97 @@ test('I-020: the waiter that is next polls about every NEXT_POLL_MS, so a hand-o
   assert.equal(x.holder.owner, 'w');
   assert.ok(grantedAt - releasedAt < L.NEXT_POLL_MS + 800, `granted ${grantedAt - releasedAt} ms after the release`);
   x.release();
+});
+
+// I-081: an exclusive short grant's last-grant record (short, runStart) counts a short-lane drain across back-to-back
+// short grants, and within maxSec + 35 s of the grant it sends a normal waiter first once the drain budget is spent.
+// Released with nobody queued it was left on the idle lock, and doctor reported last-grant-short-outlived (I-080's
+// sibling for exclusive short holds: `lock.mjs acquire --short` + release, `lock.mjs run --short`).
+const LR = await import('../../tools/lib/lock-repair.mjs');
+const lastGrant = () => (existsSync(lockFile(`${R}.last-grant.json`)) ? readJson(`${R}.last-grant.json`) : null);
+const grantCodes = (afterSec = 0) => LR.doctor(R, { now: Date.now() + afterSec * 1000 })[0].problems.map((p) => p.code);
+
+test('I-081: a short lease released with nobody queued takes its last-grant record along; doctor stays clean', async () => {
+  const s = await L.tryAcquire(R, { owner: 'commit', kind: 'lease', ...SHORT });
+  assert.equal(s.ok, true);
+  assert.deepEqual([lastGrant().token, lastGrant().short], [s.holder.token, true]);
+  await L.release(R, { owner: 'commit' });
+  assert.equal(L.status(R).holder, null);
+  assert.equal(lastGrant(), null, 'nobody queued: the record decides nothing any more');
+  assert.deepEqual(grantCodes(SHORT.maxSec + 36), [], 'no last-grant-short-outlived once the lock stays idle');
+});
+
+test('I-081: a short process hold released (its handle, or its exit handler) with nobody queued takes its record along', async () => {
+  const h = await L.acquire(R, { owner: 'npm-test', kind: 'process', ...SHORT, timeoutSec: 1, pollMs: 30, log: () => {} });
+  assert.equal(h.mode, 'short');
+  assert.equal(lastGrant().token, h.holder.token);
+  h.release();
+  assert.equal(L.status(R).holder, null);
+  assert.equal(lastGrant(), null);
+  // `lock.mjs run --short` ends through the process's exit handler
+  const lib = JSON.stringify(new URL('../../tools/lib/lock.mjs', import.meta.url).href);
+  const r = spawnSync(process.execPath, ['--input-type=module', '-e',
+    `const L = await import(${lib}); const h = await L.acquire(${JSON.stringify(R)}, { owner: 'run-short', kind: 'process', short: true, maxSec: 90, timeoutSec: 2, pollMs: 50, log: () => {} }); console.log('IN', h.holder.token);`],
+    { env: { ...process.env, FW_STATE_DIR: state }, encoding: 'utf8', timeout: 15000 });
+  assert.match(r.stdout, /^IN [0-9a-f]{12}$/m, r.stderr);
+  assert.equal(L.status(R).holder, null);
+  assert.equal(lastGrant(), null, 'the exit handler took the record along');
+  assert.deepEqual(grantCodes(SHORT.maxSec + 36), []);
+});
+
+test('I-081: a short released while another short-lane job is queued keeps its record: the drain counts across consecutive short grants', async () => {
+  const s1 = await L.tryAcquire(R, { owner: 's1', kind: 'lease', ...SHORT });
+  assert.equal(s1.ok, true);
+  assert.equal((await L.tryAcquire(R, { owner: 's2', ...SHORT })).ok, false);
+  await L.release(R, { owner: 's1' });
+  assert.equal(lastGrant()?.token, s1.holder.token, 'kept: a short-lane job is queued');
+  const s2 = await L.tryAcquire(R, { owner: 's2', ...SHORT });
+  assert.equal(s2.ok, true);
+  assert.equal(lastGrant().runStart, s1.holder.acquiredAt, 'the run that started with s1 goes on');
+  // a normal waiter and another short queue meanwhile; the run (started SHORT_DRAIN_SEC - 50 s ago) has no room for s3's 90 s
+  await L.tryAcquire(R, { owner: 'n1' });
+  await L.tryAcquire(R, { owner: 's3', ...SHORT });
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ ...lastGrant(), runStart: new Date(Date.now() - (L.SHORT_DRAIN_SEC - 50) * 1000).toISOString() }));
+  await L.release(R, { owner: 's2' });
+  assert.equal(lastGrant()?.token, s2.holder.token, 'kept: waiters are queued');
+  assert.equal(L.status(R).next, 'n1', 'drain budget spent: the normal waiter goes first');
+  assert.equal((await L.tryAcquire(R, { owner: 's3', ...SHORT })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 'n1' })).ok, true);
+  assert.equal(lastGrant().owner, 'n1', 'its grant replaces the record');
+});
+
+test('I-081: a short released while only a normal waiter is queued keeps its record until that waiter\'s grant replaces it', async () => {
+  const s1 = await L.tryAcquire(R, { owner: 's1', kind: 'lease', ...SHORT });
+  assert.equal((await L.tryAcquire(R, { owner: 'ab' })).ok, false);
+  await L.release(R, { owner: 's1' });
+  assert.equal(lastGrant()?.token, s1.holder.token, 'kept: a normal waiter is queued (a short passing it at the host gate continues the run)');
+  assert.equal((await L.tryAcquire(R, { owner: 'ab' })).ok, true);
+  assert.deepEqual([lastGrant().owner, lastGrant().short, lastGrant().runStart], ['ab', false, undefined]);
+});
+
+test('I-081: release --force of a short holder with nobody queued takes the record along; another grant\'s record is never touched', async () => {
+  assert.equal((await L.tryAcquire(R, { owner: 'gone', kind: 'lease', ...SHORT })).ok, true);
+  await L.release(R, { owner: 'lead', force: true });
+  assert.equal(lastGrant(), null);
+  // a normal hold's record stays (no short grant), and a short handle whose record another grant replaced leaves that one
+  assert.equal((await L.tryAcquire(R, { owner: 'ab' })).ok, true);
+  await L.release(R, { owner: 'ab' });
+  assert.equal(lastGrant()?.owner, 'ab');
+  const h = await L.acquire(R, { owner: 'npm', kind: 'process', ...SHORT, timeoutSec: 1, pollMs: 30, log: () => {} });
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'other', short: true, maxSec: 90, at: new Date().toISOString(), token: 'dddddddddddd' }));
+  h.release();
+  assert.equal(L.status(R).holder, null);
+  assert.equal(lastGrant()?.token, 'dddddddddddd');
+});
+
+test('I-081 (intended change): after a short released with nobody queued, the next short on the idle lock starts a new drain run', async () => {
+  // no waiter was queued across the idle gap, so none was delayed by s1; a waiter that queues behind s2 is delayed at most
+  // SHORT_DRAIN_SEC from s2's grant, as before (lock code before I-081 continued s1's run here)
+  const t0 = Date.now();
+  const s1 = await L.tryAcquire(R, { owner: 's1', kind: 'lease', ...SHORT, now: t0 - 60000 });
+  assert.equal(s1.ok, true);
+  await L.release(R, { owner: 's1' });
+  const s2 = await L.tryAcquire(R, { owner: 's2', kind: 'lease', ...SHORT, now: t0 });
+  assert.equal(s2.ok, true);
+  assert.equal(lastGrant().runStart, new Date(t0).toISOString());
 });

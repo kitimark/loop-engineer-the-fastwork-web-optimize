@@ -452,3 +452,20 @@ test('ts-lock-bundle (b), N2: the sleep a gate window saw is subtracted from the
   assert.equal(h.holder.owner, 'slept600');
   h.release();
 });
+
+test('I-081: a short released while a normal waiter queues keeps its record: a short passing that waiter at the gate continues the run', async () => {
+  const s1 = await L.tryAcquire(R, { owner: 's1', kind: 'lease', short: true, maxSec: 120 });
+  assert.equal(s1.ok, true);
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY })).ok, false, 'queued behind s1');
+  await L.release(R, { owner: 's1' });
+  assert.equal(readJson(`${R}.last-grant.json`).token, s1.holder.token, 'kept: a normal waiter is queued');
+  assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY })).gated, true);
+  const s2 = await L.tryAcquire(R, { owner: 'npm-test', kind: 'lease', short: true, maxSec: 120 });
+  assert.equal(s2.ok, true, 'the gate exemption is unchanged');
+  assert.equal(readJson(`${R}.last-grant.json`).runStart, s1.holder.acquiredAt, 'the short run that started with s1 goes on');
+  await L.release(R, { owner: 'npm-test' });
+  assert.equal(readJson(`${R}.last-grant.json`).token, s2.holder.token, 'kept for the gated waiter');
+  const g = await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: QUIET });
+  assert.equal(g.ok, true);
+  assert.equal(readJson(`${R}.last-grant.json`).owner, 'normal');
+});

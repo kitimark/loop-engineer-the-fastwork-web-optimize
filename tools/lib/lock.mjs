@@ -26,7 +26,8 @@
 // hand-over it is served before earlier normal waiters (5-min A/Bs). Queued short jobs drain back to
 // back (all of them, I-020) while the run of consecutive short grants still fits SHORT_DRAIN_SEC (900 s,
 // from the first short grant, counting the next job's max-seconds); then the next normal waiter goes first
-// (<resource>.last-grant.json records the last grant and when the short run started), so shorts
+// (<resource>.last-grant.json records the last grant and when the short run started; a short hold that ends with
+// nobody queued takes its record along, I-081), so shorts
 // can't starve the queue: a waiting normal job is delayed by at most SHORT_DRAIN_SEC. A short holder expires at acquiredAt + maxSec
 // (no --ttl, re-acquire or renew stretches it); `lock.mjs run --short` also kills its command then.
 // A short waiter must keep polling: its queue entry is dropped after SHORT_QUEUE_TTL_SEC without a
@@ -455,6 +456,22 @@ function endGroupGrant(r, g, now = Date.now()) {
   const lg = readJson(lastGrantFile(r), null);
   if (!lg || !lg.shared || !g?.token || lg.token !== g.token) return;
   if (queuedWriter(pruneQueue(readJson(queueFile(r), []), now))) return;
+  try { unlinkSync(lastGrantFile(r)); } catch {}
+}
+
+/**
+ * Inside the guard, as the exclusive short holder `h` leaves the holder file (released, its process's handle or exit
+ * handler, or release --force, I-081): its last-grant record (short, runStart) counts a short-lane drain across
+ * back-to-back short grants, so it stays while anyone is queued (the next short grant continues the run; a normal waiter
+ * goes first once the budget is spent; a short passing a gated head continues it too). With nobody queued no waiter was
+ * delayed by this hold, and left on the idle lock the record outlived its window (doctor: last-grant-short-outlived), so
+ * it is removed: a later short on the idle lock starts a new run. Only its own record (same token) is touched.
+ */
+function endShortGrant(r, h, now = Date.now()) {
+  if (!h?.short || isGroup(h) || !h.token) return;
+  const lg = readJson(lastGrantFile(r), null);
+  if (!lg || !lg.short || lg.shared || lg.token !== h.token) return;
+  if (pruneQueue(readJson(queueFile(r), []), now).length) return;
   try { unlinkSync(lastGrantFile(r)); } catch {}
 }
 
@@ -911,6 +928,7 @@ export async function release(r, { owner, force = false, shared = false } = {}) 
     }
     if (!force && h.owner !== owner) throw new Error(`${r} is held by "${h.owner}", not "${owner}" (use --force only if that holder is really gone)`);
     unlinkSync(holderFile(r));
+    endShortGrant(r, h);
     return h;
   });
   if (out?.sharedReader && out.closed) stopAwake(r, out.groupToken);
@@ -1064,7 +1082,11 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       const rel = () => {
         if (done) return; done = true;
         // synchronous best effort (also used from the 'exit' handler)
-        try { const h = readJson(holderFile(r), null); if (h && h.token === res.holder.token) unlinkSync(holderFile(r)); } catch {}
+        const drop = () => { const h = readJson(holderFile(r), null); if (h && h.token === res.holder.token) { unlinkSync(holderFile(r)); return h; } return null; };
+        // a short hold leaves under the guard, so its last-grant record can go with it (I-081); if the guard is not
+        // reached in time, the holder goes as before and the record ends at its window (doctor: last-grant-short-outlived)
+        const guarded = res.holder.short && withGuardSync(r, () => { try { const h = drop(); if (h) endShortGrant(r, h); } catch {} return true; });
+        if (!guarded) { try { drop(); } catch {} }
         stopAwake(r, res.holder.token);
       };
       if (kind === 'process') {

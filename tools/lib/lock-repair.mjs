@@ -33,6 +33,8 @@
 //   last-grant-short-outlived no holder, and a short record older than its hold could run -> removed
 //   last-grant-group-closed  the shared group removed above was the last grant, and no exclusive waiter is queued
 //                            (its record decides nothing; lib/lock.mjs removes it the same way, I-080) -> removed
+//   last-grant-short-closed  the exclusive short holder removed above was the last grant, and nobody is queued
+//                            (lib/lock.mjs removes its record the same way when such a hold ends, I-081) -> removed
 //   guard-leftover           <r>.guard older than guardAgeSec (default 10)   -> removed (by taking the guard)
 //   tmp-leftover             <r>.*.tmp older than tmpAgeSec (default 60)     -> removed
 // A live holder is never removed without forceHolder, and the iphone lease of a live holder never.
@@ -90,14 +92,14 @@ export function diagnose(r, { now = Date.now(), guardAgeSec = 10, tmpAgeSec = 60
 
   // holder
   const hr = readRaw(P(F.holder));
-  let holder = null, holderLive = false, closedGroup = null;
+  let holder = null, holderLive = false, closedGroup = null, closedShort = null;
   if (hr.exists && !validHolder(hr.value)) {
     add({ code: 'holder-unparsable', file: F.holder, message: `holder record is ${hr.error ? `not JSON (${hr.error})` : 'not a holder (no owner / acquiredAt)'}; readers treat the lock as free`, fix: `move it aside to ${aside(F.holder)}`, before: clip(hr.raw), after: null },
       { kind: 'rename', file: F.holder, to: aside(F.holder), expectRaw: hr.raw });
   } else if (hr.exists) {
     const h = hr.value, why = staleReason(h, now);
     if (why) {
-      if (isGroup(h)) closedGroup = h;
+      if (isGroup(h)) closedGroup = h; else if (h.short) closedShort = h;
       add({ code: 'holder-stale', file: F.holder, message: `holder ${who(h)} is stale: ${why}`, fix: `remove it (recorded in ${F.lastStale}, as an acquirer would)`, before: h, after: null },
         { kind: 'unlink-holder', file: F.holder, token: h.token, record: { ...h, staleBecause: why } });
     } else if (forceHolder) {
@@ -105,7 +107,7 @@ export function diagnose(r, { now = Date.now(), guardAgeSec = 10, tmpAgeSec = 60
         add({ code: 'holder-live-refused', file: F.holder, message: `the iphone lease of live holder ${who(h)} is never removed by repair (release it: lock.mjs release iphone --owner ${h.owner})`, fix: 'none (refused)', before: h, after: h });
         holder = h; holderLive = true;
       } else {
-        if (isGroup(h)) closedGroup = h;
+        if (isGroup(h)) closedGroup = h; else if (h.short) closedShort = h;
       add({ code: 'holder-live-forced', file: F.holder, message: `holder ${who(h)} is LIVE (${h.kind}${h.pid ? ' pid ' + h.pid : ''}${h.expiresAt ? ', until ' + h.expiresAt : ''}), removal forced with --force-holder`, fix: `remove it (recorded in ${F.lastStale})`, before: h, after: null },
           { kind: 'unlink-holder', file: F.holder, token: h.token, record: { ...h, staleBecause: 'removed by lock.mjs repair --force-holder' } });
       }
@@ -181,6 +183,9 @@ export function diagnose(r, { now = Date.now(), guardAgeSec = 10, tmpAgeSec = 60
     }
   } else if (gr.exists && closedGroup && gr.value.shared && closedGroup.token && gr.value.token === closedGroup.token && !queuedWriter(queueAfter)) {
     add({ code: 'last-grant-group-closed', file: F.lastGrant, message: `no holder once the shared group (since ${closedGroup.acquiredAt}) is removed, and no exclusive waiter is queued: its record ${who(gr.value)} at ${gr.value.at} decides nothing (I-080)`, fix: 'remove the record (as lib/lock.mjs does when a group ends)', before: gr.value, after: null },
+      { kind: 'unlink', file: F.lastGrant, expectRaw: gr.raw });
+  } else if (gr.exists && closedShort && gr.value.short && !gr.value.shared && closedShort.token && gr.value.token === closedShort.token && !queueAfter.length) {
+    add({ code: 'last-grant-short-closed', file: F.lastGrant, message: `no holder once the short holder ${who(closedShort)} (since ${closedShort.acquiredAt}) is removed, and nobody is queued: its record at ${gr.value.at} decides nothing (I-081)`, fix: 'remove the record (as lib/lock.mjs does when a short hold ends with nobody queued)', before: gr.value, after: null },
       { kind: 'unlink', file: F.lastGrant, expectRaw: gr.raw });
   } else if (gr.exists && gr.value.short && now - Date.parse(gr.value.at) > ((gr.value.maxSec || SHORT_MAX_SEC) + SHORT_RECORD_GRACE_SEC) * 1000) {
     const g = gr.value;

@@ -149,6 +149,8 @@ test('repair dry run changes nothing (byte-identical files, no audit log)', asyn
 test('repair --apply fixes the I-011 case (old client wrote the holder, not the last grant) and audits it', async () => {
   // new code: a short npm test ran and released -> last grant short
   await L.tryAcquire(R, { owner: 'ts-x', kind: 'lease', short: true, maxSec: 120 });
+  // (I-081: the record outlives the short hold only while someone is queued: the normal waiter queues during it)
+  assert.equal((await L.tryAcquire(R, { owner: 'normal-waiter', kind: 'lease' })).ok, false);
   await L.release(R, { owner: 'ts-x' });
   assert.equal(get(`${R}.last-grant.json`).short, true);
   // old code: a normal A/B takes the lock by plain FIFO and does not write last-grant.json
@@ -462,4 +464,30 @@ test('move (I-019/I-020): a normal waiter the lead moves ahead of short jobs is 
   assert.deepEqual(order(), ['s', 'a']);
   assert.match(e.note, /short lane: queued short jobs ahead of "a" \(s\) are still served first/);
   assert.equal(L.status(R).next, 's');
+});
+
+test('I-081: repair of a stale exclusive short holder (killed without its exit handler) also removes its record unless someone waits', async () => {
+  const shortHolder = (pid) => {
+    const at = ago(20);
+    put(`${R}.json`, { resource: R, owner: 'npm-test', kind: 'process', pid, token: 'a1a1a1a1a1a1', acquiredAt: at, expiresAt: new Date(Date.parse(at) + 125000).toISOString(), short: true, maxSec: 120, meta: {} });
+    put(`${R}.last-grant.json`, { owner: 'npm-test', short: true, maxSec: 120, at, token: 'a1a1a1a1a1a1', runStart: at });
+  };
+  shortHolder(deadPid());
+  assert.deepEqual(codes(), ['holder-stale', 'last-grant-short-closed']);
+  await X.repair(R, { by: 'lead', reason: 't', apply: true });
+  assert.equal(existsSync(lf(`${R}.json`)), false);
+  assert.equal(existsSync(lf(`${R}.last-grant.json`)), false);
+  assert.deepEqual(X.doctor(R, { now: Date.now() + 200000 })[0].problems, [], 'no last-grant-short-outlived later');
+  // someone queued: only the holder goes, the record stays for the drain
+  shortHolder(deadPid());
+  const now = new Date().toISOString();
+  put(`${R}.queue.json`, [{ owner: 's2', kind: 'lease', since: now, lastSeen: now, queueTtlSec: 60, short: true, maxSec: 90 }]);
+  assert.deepEqual(codes(), ['holder-stale']);
+  await X.repair(R, { by: 'lead', reason: 't', apply: true });
+  assert.equal(get(`${R}.last-grant.json`).token, 'a1a1a1a1a1a1');
+  // a live short holder removed with --force-holder, nobody queued
+  put(`${R}.queue.json`, []);
+  shortHolder(process.pid);
+  assert.deepEqual(codes(), []);
+  assert.deepEqual(X.doctor(R, { forceHolder: true })[0].problems.map((p) => p.code), ['holder-live-forced', 'last-grant-short-closed']);
 });

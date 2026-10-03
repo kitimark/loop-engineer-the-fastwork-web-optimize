@@ -134,9 +134,9 @@ async function passAndLive(live, mtime) {
   const evals = log.filter((l) => l.method === 'Runtime.evaluate').map((l) => l.params.expression);
   assert.ok(evals.includes('window.__bench.reset("fast-nav:page")'));
   assert.ok(evals.includes('window.__bench.read("fast-nav:page")'));
-  // the short lane, 180 s; released
-  const lg = JSON.parse(readFileSync(join(benchEnv('pass').FW_STATE_DIR, 'locks', 'chrome-measure.last-grant.json'), 'utf8'));
-  assert.deepEqual([lg.owner, lg.short, lg.maxSec], ['bench-fast-nav', true, 180]);
+  // the short lane (the shared lane is off here), 180 s; released, and (I-081: nobody queued) its last-grant record with it
+  assert.deepEqual([m.lock.mode, m.lock.maxSec], ['short', 180]);
+  assert.equal(existsSync(join(benchEnv('pass').FW_STATE_DIR, 'locks', 'chrome-measure.last-grant.json')), false, 'no short record left behind');
   assert.equal(existsSync(join(benchEnv('pass').FW_STATE_DIR, 'locks', 'chrome-measure.json')), false);
   // --live uses the owner's overlay as it is now (here: the baseline bytes) -> nav-cached FAILS
   const l = await bench('live', 'mech', 'fast-nav', '--live', '--repeat', '1');
@@ -222,8 +222,8 @@ test('mech: --max-seconds stops at the budget (exit 124) and keeps the finished 
   assert.equal(p.sessions.mobile.baseline.length, 1);
   assert.equal(p.sessions.mobile.baseline[0].windows['slow-nav:page'].counts['slow-nav:navQs'], 30);
   assert.equal(p.sessions.mobile.patched.length, 0);
-  const lg = JSON.parse(readFileSync(join(benchEnv('budget').FW_STATE_DIR, 'locks', 'chrome-measure.last-grant.json'), 'utf8'));
-  assert.deepEqual([lg.short, lg.maxSec], [true, 8]);
+  assert.deepEqual(p.lock, { mode: 'short', maxSec: 8 }, 'held in the short lane for 8 s');
+  assert.equal(existsSync(join(benchEnv('budget').FW_STATE_DIR, 'locks', 'chrome-measure.last-grant.json')), false, 'I-081: no short record left behind');
   const bad = await bench('budget-bad', 'mech', 'slow-nav', '--max-seconds', '300');
   assert.equal(bad.code, 2, bad.out);
   assert.match(bad.stderr, /--max-seconds must be 5-180/);
