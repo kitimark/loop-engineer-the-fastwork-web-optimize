@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T16:00:00Z",
+ "updatedAt": "2026-10-03T16:25:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -11,6 +11,8 @@
  "changes": [
   { "at": "2026-10-03T16:00:00Z", "text": "You disconnected the iPhone (T-047): all phone tests are paused until you reconnect it. Then the hero test runs first, then the end-of-page check, then your countdown finger test." },
   { "at": "2026-10-03T15:45:00Z", "text": "Your new priority (T-046): the hero and the end-of-page menu animation on the graphics chip come first. Phone order: hero test, then the end-of-page check, then your countdown finger test. A combined best build becomes the A side of every Try-it." },
+  { "at": "2026-10-03T15:23:14Z", "text": "You accepted the hero change (PR-011, both items) under your new pixel rule; the avatar slider is looked into separately. Next for the hero: its phone test (P-081) and your finger test, once the iPhone is back." },
+  { "at": "2026-10-03T15:21:00Z", "text": "You accepted the wide pixel rule (PR-010): a fix that differs only in edge pixels or tiny shade steps, within set limits checked in Chrome and the Simulator, lands without asking you; anything bigger, or seen only in motion, still comes to you. Open fixes are being re-checked against it." },
   { "at": "2026-10-03T15:05:00Z", "text": "The Try-it panels you used for the pixel rule and the hero change compared against the original page, so they also showed earlier changes; a tool fix lets each option show only its own change. Revised proposals follow." },
   { "at": "2026-10-03T15:05:00Z", "text": "Fixed a display bug on the iPhone where the top bar and menu stopped following the page past its end; now matches the original." },
   { "at": "2026-10-03T14:30:00Z", "text": "The idle-animation fix has landed: the shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted (PR-009); the phone check found it no worse." },
@@ -36,9 +38,7 @@
   { "at": "2026-10-03T03:45:00Z", "text": "Heat test done, both sessions agree: Fastwork warms the phone clearly more than apple.com, which stays close to an empty page. Today's best build already cools it without the countdown fix (roughly a third to three-fifths of the extra heat gone; a rough figure). Less work at rest is now a firm goal." },
   { "at": "2026-10-03T01:15:00Z", "text": "The F3 robot-finger test passed, but the review found a possible slowdown when the page holds at the end, and a case where a touch is missed. Both are checked before your F3 swipe test, which is postponed. The heat test runs now." },
   { "at": "2026-10-03T01:00:00Z", "text": "Explained: the extra long frames past the hero in the countdown test come from the avatar pill swapping its picture, the same with or without the countdown fix, so that fix is clear for wave 2. On today's best build an earlier fix already removed that swap." },
-  { "at": "2026-10-03T00:30:00Z", "text": "Countdown timing test on the phone done, 8 runs valid: at the top the new countdown is no slower than the original, so the full fix stays; past the hero it does about 40 % less work. Open: past the hero it still shows a few more long frames; de-countdown traces why. Now: the F3 robot-finger test." },
-  { "at": "2026-10-03T00:12:00Z", "text": "GPU study done (T-030): most lag left is at the hero ending and the people cards; the toolbar resize is small. Three fixes now run at top priority: countdown digits as sliding strips, the hero ending off the main thread, and the GPU countdown roll (your call; you judge it blind)." },
-  { "at": "2026-10-02T23:58:00Z", "text": "The F3 robot-finger test has a new plan, signed by the lead before any data: the check page that never passed under the robot finger is replaced by the usual scripted heat check. Phone order: the countdown timing test now, then the F3 robot-finger test, then the heat test." }
+  { "at": "2026-10-03T00:30:00Z", "text": "Countdown timing test on the phone done, 8 runs valid: at the top the new countdown is no slower than the original, so the full fix stays; past the hero it does about 40 % less work. Open: past the hero it still shows a few more long frames; de-countdown traces why. Now: the F3 robot-finger test." }
  ],
  "items": [
   {
@@ -73,7 +73,7 @@
     "answer": "not-yet",
     "text": "not built yet"
    },
-   "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
+   "gate": "Looks identical, or within your accepted pixel rule (PR-010; T2 pending a reduced-motion check), then a phone test, your finger test and an independent review.",
    "next": "The phone check passed at the phone's real \"Serious\" heat state: no new slow frames, far less clock redrawing. It lands only after your finger test (blind swipe A/B), now third in the phone queue, after the hero and end-of-page checks.",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-079", "what": "phone block of strip-tc at the phone's real \"Serious\" heat state: no new slow frames, less clock redrawing", "result": "Yes: slow frames over 50 ms the same as without it (at the top and with the menu pinned); clock repaints in the first second back at the top 21 vs 54; 16 vs 48 clock layers kept in memory. One layout count could not be fully decided but cannot have failed." }],
@@ -104,8 +104,8 @@
     "answer": "not-yet",
     "text": "not built yet"
    },
-   "gate": "Identical at every scroll position (an earlier version matched the original on your phone); first explain why that version made one frame about 11 ms slower where the hero ends.",
-   "next": "Top priority (your T-046). You asked to try the hero change yourself before deciding on its look (PR-011): it is rebuilt on the combined best build, with a Try-it against that build. Its phone test (P-081) is first in the phone queue.",
+   "gate": "Identical at every scroll position, or within your accepted pixel rule (PR-010); you accepted its look (PR-011, both items, 15:23Z); then its phone test and your finger test.",
+   "next": "Top priority (your T-046). You accepted its look (PR-011, both items). It now waits only for its phone test (P-081, first in the phone queue) and then your finger test, once the iPhone is back.",
    "owner": "fix-hero-exit-threaded",
    "checks": [],
    "details": [
@@ -113,7 +113,8 @@
     "C-026 finger runs (F, one run per arm, OBSERVED): the first ~1000 px hold 63 of 81 moving long frames (>34 ms) in st6-rb2.",
     "Lead 10-03 03:2xZ: Chrome path gated to WebKit only (approved); WebKit residual -> A/A, then a hunt, then user options; accent paints at 1.5x block its phone ticket.",
     "Lead 05:1xZ: frozen frames done: R1 = C's own two raster states, R2 = deck-edge shadow, R3 = the unarmed first frame; trying a scroll-event re-add for R3. F-161 posted.",
-    "P-081 ticket d4f1f63: F build (JS 8e43f3792dbf, CSS cc74cd980e72) vs st6-rb2, G hero-pass-v1, C F F C n = 2, T-039 B gate per hold, scoreF 32ed5f4e81f9 + framesF 40d0d302c3f1; ops second read PASS 14:0xZ. Band y 1..780, clear of the page-end morph."
+    "P-081 ticket d4f1f63: F build (JS 8e43f3792dbf, CSS cc74cd980e72) vs st6-rb2, G hero-pass-v1, C F F C n = 2, T-039 B gate per hold, scoreF 32ed5f4e81f9 + framesF 40d0d302c3f1; ops second read PASS 14:0xZ. Band y 1..780, clear of the page-end morph.",
+    "PR-010 wide 15:21Z; PR-011 rev 1 ACCEPTED (accept-both) 15:23:14Z after the user undid the 14:44Z changes-requested (no rev 2). Items 1 and 2 re-tiered for the record only; item 2 (R6, photo detail max 88): fill > 64 -> T3, or edge (<= 128); owner decides with the five numbers."
    ]
   },
   {
@@ -137,7 +138,8 @@
     "Review round 2 PASS with nits (a57444b, JS 673b110d), sign-off held for the hide-check re-analysis (108/247.9 -> 3.29/0.27 px); round 3 PASS (dbb113f, JS 2af461dc). Blind test after cd-strip lands (lead's phone order).",
     "Lead 10-03 04:4xZ: rebuilds as 'cells-only' on cd-strip's strip-rb; the round-3 PASS (dbb113f) covered the earlier build.",
     "Lead 05:1xZ: adapts __crTops to cd-strip's strip-rw wrapper.",
-    "Lead 10-03 06:5xZ: counted set stopped until the new strip base (patch 1f3c26a16563, CSS 40078cb2d9cf); sessions so far are first-build data. Rebuild on it and restart the counted set. Simulator count results carry I-082 (SleepWidgetExtension burning a core, load1 37-108) as a caveat."
+    "Lead 10-03 06:5xZ: counted set stopped until the new strip base (patch 1f3c26a16563, CSS 40078cb2d9cf); sessions so far are first-build data. Rebuild on it and restart the counted set. Simulator count results carry I-082 (SleepWidgetExtension burning a core, load1 37-108) as a caveat.",
+    "PR-010 wide accepted 15:21Z (memory/illusion-must-be-pixel-identical.md): re-tier on resume with the five numbers (was near-identical). T2 lands after the numbers check; a motion-only difference stays a proposal (the blind side-by-side look)."
    ]
   },
   {
@@ -304,7 +306,8 @@
    "details": [
     "P-077 hit (PASS + PASS); phone hold h121509 under T-039 B: >50 V 2 vs C 1 + 1 no worse, fps 59.7 vs 60.2 - 2 no worse, twins >46/>54 WORSE carried by V1's 64 ms scroll-onset frame; lead 12:5xZ: (a) no worse, threshold-sensitive.",
     "Re-ticket e0f92804c521 (G3 inside @supports (-webkit-mask-clip: text)): carried by identity check, ops second read PASS 14:0xZ. Reduced-motion face-photo pixels flip load to load in C as well: lead 14:2xZ, load noise, OBSERVED, cause unknown; PR-009's 'reduced motion identical' stands.",
-    "Pixels: not identical by a few LSB (sweep and glint), so the look went to the user as PR-009; accepted, option \"both\", 10-03 10:31Z. Landed on main 501d9f7 (fixes/platform-idle only)."
+    "Pixels: not identical by a few LSB (sweep and glint), so the look went to the user as PR-009; accepted, option \"both\", 10-03 10:31Z. Landed on main 501d9f7 (fixes/platform-idle only).",
+    "PR-010 wide accepted 15:21Z: PR-009 was already accepted by the user, so landing stands; its tier goes on the record only (five numbers) when its owner is next woken."
    ]
   },
   {
