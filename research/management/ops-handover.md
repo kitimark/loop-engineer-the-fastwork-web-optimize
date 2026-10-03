@@ -9,6 +9,24 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- **09:3xZ open lead promises (handover item 5): both now have a deliverable on arch-isolated-measure's branch.**
+  - (a) The rendering cost card design is README §6 (f6614fa; §6.2 updated at 30a710b). Building it is a toolsmith
+    job in `tools/` (§6.4: event-aligned window from judge-tick, Paint-clip area, Chrome layer memory, Animation
+    failure reasons, md writer, with tests). Spawning it is the lead's call. PROGRESS upcoming is updated.
+  - (b) Mac Safari/WebKit as a heat-free source: README §7 desk research (no install, nothing run). Short answer: no
+    for the cost card. Mac layers and tiles take other code paths (CONFIRMED in WebKit source), and there is no
+    non-UI Timeline/LayerTree path without installing something. The Simulator stays the WebKit source. The lead
+    relays it to the user.
+- **09:3xZ P-076 result: family PASS, 0 of 3** (arch-isolated-measure 30a710b, README §4.5; ops second read PASS).
+  - judge-tick b84f4156010c re-run on p076-data: judge-tick.json is byte-identical (7c041f2d0009).
+  - Raw records: 18 loads per mode, no partial slot, no VOID; fires in fires1 everywhere (trace lineNumber 1-based,
+    OBSERVED); T matches each arm; FRZ clock = 2 everywhere. AA 0.3.
+  - Pairs: Vf-C -0.3 vs 0.0; C6-S -0.2 vs 0.0; V7-C6 -24.5 vs -25.0 (tol 3.8). Every pre-data confidence (0.6-0.75)
+    came out PASS.
+  - Ops cautions sent (wording only): (a) only V7-C6 is decisive; the other two pass at the tol floor on null effects.
+    (b) The median drops roll seconds (60-95 calls), so the card field is "steady-second countdown calls", not total
+    countdown script.
+  - Cost card §6.2 now takes per-event countdown script from FRZ. P-075's per-window FAIL stands.
 - **09:2xZ lead decisions.**
   - F3: the lead agreed fix-nav-morph's plan: the rendering cost card first, with a cold-first-pin row; no phone
     block, landing or parking until it reports. PROGRESS f3-arm-scope next, detail and upcoming are updated.
