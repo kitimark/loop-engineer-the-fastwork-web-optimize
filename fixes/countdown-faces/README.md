@@ -854,6 +854,40 @@ hidden, page at rest), V has fewer ms in total but more long frames:
   Layout at pastHero lay out, and why is it bigger in V? Possible checks: a Simulator `--lt` session, or the
   per-record Layout roots.
 
+**F-146 follow-up: Simulator probe, 2026-10-03 00:50Z** (`f146.mjs`; `out/countdown-faces/f146/f146-2026-10-03T00-50-03-109Z.json`; counts and
+attribution only, Simulator ms never count, F-084). One page load per arm. At pastHero (y 2560): a 4 s
+MutationObserver pass, then a 5 s Timeline with stacks (depth 8), base then PoC, served hashes checked.
+- **What drives the burst: the community pill's avatar block, not the countdown.**
+  - The avatar block in `div.start-selling-future-community-pill` (JS 11415-11447) swaps its template twice a second,
+    about 225 ms apart, then pauses about 800 ms.
+  - Each swap inserts and removes DOM (`before` ← JS 2187 ← 11428/11443, `remove` ← 1647/1661) and starts a
+    full-viewport Layout (root 430x775).
+  - The timing matches the once-a-second burst on the phone.
+- **The heavy full-viewport Layouts are the same in both arms.** In 5 s, Layouts > 3 ms: base 19, PoC 18; all 430x775,
+  at the same instants.
+- **PoC adds no write and no invalidation at pastHero.**
+  - Mutations: base 2794, PoC 84. Base's extra 2710 are face `style` writes in the hidden clocks: they keep rolling.
+  - The remaining 84 are the same targets in both arms:
+    - avatar childList 68;
+    - `data-value` 4 + 4 and `aria-label` 4 + 4 on the two clocks (the 1 s tick).
+  - No slot text is written while hidden, so (a) contributes nothing here. Neither does (b): no catch-up or resume
+    write while hidden.
+  - PoC's invalidation kinds are a subset of base's. Base's extra ones are the face `setProperty` chain (JS 2858 ←
+    2868) and the Layouts with roots 430x1630 (49) and 398x52 (52) that follow it.
+- **On the phone, the same Layouts run longer in V.**
+  - Frames with Layout > 15 ms at pastHero: C 6-10 per run (mean 20-27 ms), V 11-14 (mean 28-32 ms).
+  - C also spends 327-596 ms on light per-frame Layouts (the hidden faces rolling); V spends 12-13 ms.
+  - So the work V keeps is what both arms share, but on the phone it takes longer per Layout.
+  - **Hypothesis, UNRESOLVED:** with the per-frame work gone, the phone's CPU runs at a lower clock between bursts, so
+    the shared burst takes longer. The references are not checked.
+  - Decisive local check: a phone run of V with a fixed small per-frame load (a busy rAF of about 2 ms). If the
+    burst's Layout ms fall to C's, the clock explains it. Alternative: the Timeline's per-Layout record data on the
+    phone, from an attribution run, not a counted run.
+- **For the user's lag:** the long frames at pastHero come from the avatar block's once-a-second swap, which today's
+  page has too. A fix belongs to that component: avoid the template swap, or contain its layout (e.g. a fixed-size,
+  `contain: layout` box). It does not belong to the countdown. Any build that idles more (the strip included) may
+  show the same phone effect.
+
 **P-069 phone part:**
 - row 1 not separated: **in**; |median V − C| < 4 ms: **out** (19.2 ms, V lower);
 - row 2 V separated below: **in**; median V/C 0.62, in [0.3, 0.75];
@@ -931,5 +965,6 @@ hidden, page at rest), V has fewer ms in total but more long frames:
 - `x1.mjs`: the X1 segment card sequence (Simulator `sim`, phone `phone`, `score`); see "X1 phone segment card".
 - `x1-stage1.json`: X1 stage 1 counts (Simulator, n=2 per arm); see "Stage 1 readout".
 - `x1-block.mjs`: the X1 stage-2 phone block driver (parts A, B, C); see "Stage 2 block plan".
+- `f146.mjs`: the F-146 Simulator probe (mutations and Timeline invalidation stacks at pastHero, base vs PoC).
 - `x1-stage2.json`: the X1 stage-2 per-run window sums, counts, dt bins and long-frame counts (counted runs 1-8 and the
   attribution runs); see "Stage 2 readout".
