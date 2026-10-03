@@ -553,12 +553,29 @@ Desk test (scratch, not committed): chainJ's own `hold()` text with the lock cal
 A parts row with the EN label in its crop (F-199) counts as VOID. The reduced-motion legs have no moving frames, so
 their minimum is 0.
 
-**Deviation, ruled on by mgmt-ops-10 (accepted):** the Chrome harness (rot2.mjs, unchanged) takes no separate
-`quiet` shot. The Chrome legs need rest and intoview only, on one ground: rot2's rest shot is taken after a ≥ 2000 ms
-page quiet plus the 1200 ms settle, so ≥ 3.2 s after the last slide paint, far past F-200's 500 ms. (Whether Chrome
-still has an image-quality controller like WebKit's is **UNRESOLVED**: Blink inherited one from WebKit and nobody here
-has checked whether it still exists; the decisive check would be the current Blink source. The ruling does not rest on
-it.)
+**Deviation: Chrome has no quiet shot. Correction; open with the lead.** The Chrome harness (rot2.mjs, unchanged)
+takes no separate `quiet` shot. I first wrote that its rest shot comes after a ≥ 2000 ms page quiet plus the 1200 ms
+settle. mgmt-ops-10 accepted rest and intoview for Chrome on that ground (≥ 3.2 s after the last slide paint). The
+ground is **wrong**:
+- the 2000 ms quiet is at page load;
+- the rest shot waits for a slide start, then 400 ms, freezes at the next frame, and is captured after the 1200 ms
+  settle.
+
+Read from the v4 `ident4` records (slide `end` logpoint → capture, bounded by freeze + 1200 and the unfreeze), on all
+three widths and both arms:
+
+| shot | time since the last slide end |
+|---|---|
+| rest | 1383-1459 ms (the freeze comes 183-195 ms after that slide's end) |
+| intoview | 3906-3984 ms |
+
+The lead's condition (via mgmt-ops-10) is that a Chrome rest shot closer than 1.5 s to a slide or resize sends that
+leg back for a quiet shot. The Chrome rest shots fail it by design. So `chainJ.sh chrome` is **not queued** until the
+lead decides. The two options are a rot2 quiet shot (a harness change, which needs the lead under P-084), or a waiver.
+
+Whether Chrome still has an image-quality controller like WebKit's is **UNRESOLVED**. Blink inherited one from WebKit,
+and nobody here has checked whether it still exists; the decisive check is the current Blink source. No ruling rests on
+it. The Sim legs are unaffected: simrot2's quiet shot comes ≥ 2.5 s after a slide's fire with timers held.
 
 **4. The A/A mask works both ways.** The registration's "conservative direction" sentence is corrected above. Where the
 st6 A/A caught the other render state, the mask (aa > 8) also hides the fix's own d > 8 pixels.
