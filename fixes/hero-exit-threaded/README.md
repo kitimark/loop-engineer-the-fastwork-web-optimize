@@ -6,7 +6,8 @@
 **Status (2026-10-03, F round 9):** two candidate builds for the P-081 b-fm miss, N and Fb ("F round 9"). Both
 pass their Simulator pixel checks; N also passes in Chrome. Fb's stubbed-Blink reading is a named residual,
 information only. The phone ticket P-088 (C / N / Fb) is registered with ops and waits for the timing pause to lift
-(I-098, T-052). Nothing timed has run.
+(I-098, T-052). Nothing timed has run. The land candidate is now R2 (JS `924be86afac8`): R with the gate narrowed
+to touch phones, on the lead's ruling ("R2" below).
 **Earlier status:** F build done (rounds 4-8, "F rounds 4-8" below), measured by Simulator counts and frozen-frame pixels
 (no timing: timing A/Bs deferred, user 2026-10-02). Pixel decision: the user accepted PR-011 rev 1, option
 accept-both (2026-10-03 15:23Z; both items, see "Tiers under the wide rule"). P-081 (the F phone block) gave
@@ -429,6 +430,60 @@ was dropped when the user accepted rev 1. It is the land candidate.
   - Cause OBSERVED, not attributed: probably the `.he-bob` wrap of the cue.
   - Sent to mgmt-ops-10 for R's landing record (2026-10-03).
 
+### R2: R's gate narrowed to touch phones (build R2: JS `924be86afac8`, CSS `cc74cd980e72`)
+
+- **The lead's ruling (2026-10-03):** R takes the same narrowing as Fb's landing gate, and so does whichever P-088
+  arm lands. Reason: a configuration we can't pixel-check shouldn't run the new path.
+- **The change.** One expression in `heCss`: JS 4437-4441, with its comment at 4433-4436. R's gate is `GestureEvent` plus
+  scroll-driven animation support. R2 also requires `matchMedia('(hover: none) and (pointer: coarse)')` and
+  `Math.min(screen.width, screen.height) <= 600`.
+  - Snapshot: `out/snapshots/hext-R2-924be86afac8`, read-only.
+  - `patch.diff` is regenerated. Its other hunks only re-align; the hero lines are otherwise byte-identical to R.
+  - The line numbers below the gate move by +6 (R's `s` 4497 → 4503). A scorer run on R2 needs `s=4503`. P-088
+    does not use R.
+- **Gate truth table** (functional; shared lane; pmset: no Sleep or DarkWake in any of the three jobs,
+  18:56-19:05Z; data `out/hext/gate/`, scratchpad `simgate.mjs`, `chromegate.mjs`, `gateexpr.mjs`). "CSS mode" is
+  what the page did: `.he-on` on the track after the splash. That needs the gate and the `(max-width: 600px)` layout.
+
+  | where | GestureEvent | touch (hover none, pointer coarse) | screen (short side) | layout ≤ 600 | R gate / CSS mode | R2 gate / CSS mode |
+  |---|---|---|---|---|---|---|
+  | Sim iPhone 15 Pro Max, portrait | yes | yes | 430x932 (430) | yes | true / **on** | true / **on** (unchanged) |
+  | Sim iPad Pro 13 (M5), full screen | yes | yes | 1032x1376 (1032) | no (1032) | true / off | **false** / off |
+  | Sim iPad, window ≤ 600 px | | | | | **UNRESOLVED**: sim.mjs has no window resize | see the residual below |
+  | Chrome 154 desktop 1440x900 | no | no | 1512x982 | no | false / off | false / off |
+  | Chrome 154 phone emulation 430x932, touch | no | yes | 430x932 | yes | false / off | false / off |
+  | Chrome, phone + touch + `GestureEvent` stub | stub | yes | 430x932 | yes | true / on | true / on |
+  | Chrome, desktop 500x900 (mouse) + stub: a stand-in for a narrow Mac Safari window | stub | no | 1512x982 | yes | true / **on** | **false / off** |
+
+- **Phone path pixel spot check** (Sim iPhone, frozen frames at rest, run px13). Arms R, R2, and Rr (R again on its
+  own server, the A/A).
+  - At y0 and y300, R2 vs R is 0 px everywhere except the seconds cell of the countdown, which ticks between captures.
+    That cell is device x ≥ 900, rows 1290-1409: 2,783 / 2,924 px.
+  - That includes the days, hours and minutes cells (0 px), all other hero rows (0 px), and the status-bar clock
+    (0 px).
+  - The A/A Rr vs R differs in the same cell and in the clock (6,154 / 6,299 px).
+  - Every still-check shot was 0 px. The track was `he-on` in all three arms.
+  - So the phone draws R2 the same as R.
+- **Residual for R's landing record.**
+  - With a mouse or trackpad, Mac Safari and iPad windows 600 CSS px wide or less now take C's path, the original
+    behaviour, so there is no pixel risk. On the Mac the touch term is false. On an iPad in normal browsing,
+    `screen` is the display, whose short side is ≥ 744, so the screen term is false.
+  - **One configuration is still open: an iPad Private Browsing window 600 CSS px wide or less, used by finger only.**
+    - Private Browsing applies Advanced Fingerprinting Protection, which fixes the screen size to the viewport.
+      Reference: WebKit blog "Private Browsing 2.0" (webkit.org/blog/14795): "The screen size is fixed to the values
+      of `innerWidth` and `innerHeight`."
+    - In WebKit source (main 5d643104e491), `WebPageIOS.mm` lines 4641-4644 return the viewport's
+      `minimumLayoutSize()` on a non-phone idiom. So `screen` would report the window's size, ≤ 600.
+    - With a finger only, the touch term is true too, so R2's gate can be true there.
+    - Status: CONFIRMED from the reference and the source. Not run: the Simulator cannot open a narrow iPad window
+      (UNRESOLVED locally).
+    - The rare case is an iPad, in Private Browsing, in Split View or Slide Over, with no trackpad. There it runs the
+      phone path, which the phone checks covered at 430 px (OBSERVED, not checked on an iPad).
+    - To close it, R2 could add an iPhone-only term (for example `/iPhone|iPod/.test(navigator.userAgent)`). The
+      safe direction: an iPhone set to "Request Desktop Website" would fall back to C's path. That is the lead's
+      call; not done here.
+  - Phones keep the gate true, so the path P-081 and P-088 measure does not change.
+
 ## F round 9: go-live from rest (arms N and Fb; I-098 eased, non-timing jobs only)
 
 P-081 failed b-fm at the go-live from a rest at y≈548 (first-move 2 / 4: P 9-19 vs C 2-5). Two candidate builds
@@ -507,7 +562,8 @@ scroll-driven animations (`animation-timeline: view()` with `animation-range`), 
   boots full-screen iPads, I-087). So no pixel check exists for those cases.
 - **Fb's landing gate (stated in P-088): the gate narrowed to touch phones.** If Fb is the arm that goes to V, its
   land candidate adds `matchMedia('(hover: none) and (pointer: coarse)')` and a screen short side of 600 CSS px or less
-  to `heCss`, so iPad and Mac WebKit take C's path.
+  to `heCss`, so iPad and Mac WebKit take C's path. This is the same narrowing R2 carries; R2's truth table and its
+  one open case (an iPad Private Browsing window ≤ 600 px, used by finger only) apply to it.
   - That is a new build, so it gets a new P-id: the Simulator pixel set (px10, px12) and rc again, plus a short phone
     no-worse check.
   - It is not done before P-088: on the iPhone the narrowed gate is true, so P-088 measures the same path, and a

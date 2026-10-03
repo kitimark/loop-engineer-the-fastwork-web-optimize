@@ -510,10 +510,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            },
            [() => Math.round(s(b)), () => Math.round(s(x))],
          ),
-@@ -2671,8 +2672,57 @@
+@@ -2670,9 +2671,58 @@
+ function iE() {
    tE = 0;
    for (let e of $T) e.active && e.callback();
- }
++}
 +// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
 +// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
 +// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
@@ -534,7 +535,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    break;
 +  }
 +  fwKick();
-+}
+ }
 +// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
 +// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
 +// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
@@ -587,7 +588,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            }
          });
        }));
-@@ -2710,7 +2760,90 @@
+@@ -2710,8 +2760,91 @@
    (e.manageAnimations &&
      e.element &&
      e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
@@ -600,7 +601,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
 +      // windows: re-scan once in idle time after a scene activates.
 +      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
-+}
+ }
 +var fwWCQ = 0;
 +// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
 +// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
@@ -676,9 +677,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
- }
++}
  function lE(e) {
    let t = e.getBoundingClientRect();
+   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
 @@ -2756,7 +2889,9 @@
        onActiveChange: t.onActiveChange,
        renderFrame: 0,
@@ -775,7 +777,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      i = N(`idle`),
      a,
      o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
-@@ -3782,9 +3947,48 @@
+@@ -3782,10 +3947,49 @@
            bottom: s(o).paintBottom,
            left: s(o).paintLeft,
          })));
@@ -787,7 +789,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      }),
      f(t, d),
      H());
-+}
+ }
 +function HEflip(d, dw) {
 +  if (typeof d.animate != `function`) return;
 +  // html[dir=rtl]: .hero-title is row-reverse inside `.start-selling { direction: ltr }`, so the previous
@@ -821,9 +823,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  PMpre(() => () => {
 +    for (let e of ts) PMsweepIO.unobserve(e);
 +  });
- }
++}
  var UE = { stiffness: 280, damping: 18, mass: 0.3 },
    WE = 16;
+ function GE(e, t, n, r = UE) {
 @@ -3824,10 +4028,13 @@
    D(r, !0);
    let i = R(() => qE(r.value, r.place)),
@@ -905,7 +908,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            });
          },
          p = (e) => {
-@@ -4160,6 +4388,112 @@
+@@ -4160,6 +4388,118 @@
        i = 0,
        a = 0,
        o = !1,
@@ -951,9 +954,15 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // style every frame at rest; the bob on the two children separately drew 1-2 levels off). Same layout
 +      // (a flex column like the float); Svelte's node references (the label text) stay valid when moved.
 +      // The bob rules key on .he-on (parked and live), so parking never moves or restarts the bob.
++      // Touch phones only (the lead, 2026-10-03): GestureEvent also exists in macOS Safari (MAC_GESTURE_EVENTS)
++      // and on iPad, whose windows can be 600 CSS px wide or less; nobody pixel-checked the CSS path there, so
++      // those take the baseline path: a coarse pointer without hover and a screen whose short side is at most
++      // 600 CSS px (iPhone 430; iPad mini 744; Mac displays wider).
 +      heCss =
 +        `GestureEvent` in window &&
-+        !!window.CSS?.supports?.(`(animation-timeline: view()) and (animation-range: contain 0% contain 100%)`),
++        !!window.CSS?.supports?.(`(animation-timeline: view()) and (animation-range: contain 0% contain 100%)`) &&
++        window.matchMedia(`(hover: none) and (pointer: coarse)`).matches &&
++        Math.min(screen.width, screen.height) <= 600,
 +      heMode = !1,
 +      heIn = !0,
 +      heIO = null,
@@ -1018,7 +1027,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        s = () => {
          if (((i = 0), e.matches)) {
            (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
-@@ -4181,9 +4515,19 @@
+@@ -4181,9 +4521,19 @@
            window.clearTimeout(r),
            (r = 0),
            C.classList.add(`is-splash-done`),
@@ -1040,7 +1049,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          let t = e - a,
            r = O(t),
            i = j(t);
-@@ -4205,6 +4549,7 @@
+@@ -4205,6 +4555,7 @@
            window.clearTimeout(r),
            (r = 0),
            (o = !1),
@@ -1048,7 +1057,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            C.classList.add(`is-preparing`),
            x.classList.add(`is-preparing`),
            C.classList.remove(`is-splash-done`, `is-expanding`),
-@@ -4233,18 +4578,62 @@
+@@ -4233,18 +4584,62 @@
        };
      p();
      let h = () => {
@@ -1114,7 +1123,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            g());
        }
      );
-@@ -4726,6 +5115,10 @@
+@@ -4726,6 +5121,10 @@
          ((O = null), z(E, null));
        },
        d = () => {
@@ -1125,7 +1134,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          let e = document.querySelector(`.commission-card`);
          e && e.getBoundingClientRect().top < window.innerHeight * 0.995 && z(T, [], !0);
        };
-@@ -10776,11 +11169,14 @@
+@@ -10776,11 +11175,14 @@
      let t = ie(e);
      return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
    }
@@ -1142,7 +1151,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }
    function le() {
      let e = window.innerHeight * 1.45,
-@@ -11249,7 +11645,7 @@
+@@ -11249,7 +11651,7 @@
  }
  g([`pointerdown`, `pointermove`, `pointerup`, `click`]);
  var dM = h(
@@ -1151,7 +1160,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      1,
    ),
    fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
-@@ -11294,6 +11690,10 @@
+@@ -11294,6 +11696,10 @@
    ne(() => {
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = window.matchMedia(`(max-width: 860px)`),
@@ -1162,7 +1171,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        n = [],
        r = [],
        i = 0,
-@@ -11312,6 +11712,10 @@
+@@ -11312,6 +11718,10 @@
          if (g) {
            let t = T(g.getBoundingClientRect(), window.innerHeight),
              n = e.matches ? +(t >= 0.5) : w(t);
@@ -1173,7 +1182,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            ((o += (n - o) * (e.matches ? 1 : 0.22)),
              Math.abs(n - o) < 8e-4 && (o = n),
              h.style.setProperty(`--future-shrink`, String(o)),
-@@ -11360,6 +11764,7 @@
+@@ -11360,6 +11770,7 @@
      return (
        e.addEventListener(`change`, u),
        t.addEventListener(`change`, u),
@@ -1181,7 +1190,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        _(),
        l(),
        () => {
-@@ -11367,7 +11772,11 @@
+@@ -11367,7 +11778,11 @@
          for (let e of r) e();
          ((r.length = 0), i && window.cancelAnimationFrame(i));
          for (let e of n) window.clearTimeout(e);
@@ -1194,7 +1203,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        }
      );
    });
-@@ -11419,11 +11828,15 @@
+@@ -11419,11 +11834,15 @@
          i = V(r, 2),
          a = V(i, 2),
          o = V(a, 2);
@@ -1213,7 +1222,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        ),
          f(e, t));
      },
-@@ -11443,7 +11856,7 @@
+@@ -11443,7 +11862,7 @@
          f(e, t));
      };
    (m(he, (e) => {
@@ -1222,7 +1231,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(me));
    var ve = V(me, 2),
-@@ -12433,21 +12846,28 @@
+@@ -12433,21 +12852,28 @@
    ne(() => {
      let e = 0,
        t = matchMedia(`(prefers-reduced-motion: reduce)`),
@@ -1253,7 +1262,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      };
    });
    var h = WM();
-@@ -12652,6 +13072,7 @@
+@@ -12652,6 +13078,7 @@
                "is-secure-mesh": s(r).id === `document`,
              })));
          }),
@@ -1261,7 +1270,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(n, i));
      },
    ),
-@@ -12952,17 +13373,27 @@
+@@ -12952,17 +13379,27 @@
        ? !1
        : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
    }
@@ -1282,20 +1291,20 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    for (let r of document.elementsFromPoint(t, n))
 +      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
 +    return j(null);
-+  }
+   }
 +  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
 +  let __navEls = {};
 +  function __navEl(e) {
 +    let t = __navEls[e];
 +    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
-   }
++  }
    function ee() {
 -    let e = document.querySelector(`.start-selling-profile-sticky`);
 +    let e = __navEl(`.start-selling-profile-sticky`);
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12999,7 +13430,7 @@
+@@ -12999,7 +13436,7 @@
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
      let _ = () => {
          (z(v, ee(), !0), z(g, F(), !0));
@@ -1304,7 +1313,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          if (!t || e.matches) {
            z(p, !0);
            return;
-@@ -13017,13 +13448,20 @@
+@@ -13017,13 +13454,20 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -1327,7 +1336,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +13483,9 @@
+@@ -13045,9 +13489,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -1339,7 +1348,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +13493,56 @@
+@@ -13055,27 +13499,56 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -1403,7 +1412,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +13553,38 @@
+@@ -13086,7 +13559,38 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -1443,13 +1452,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13099,6 +13597,41 @@
-           ne(),
-           e.removeEventListener(`change`, m),
-           t.removeEventListener(`change`, m));
-+      }
-+    );
-+  });
+@@ -13102,6 +13606,41 @@
+       }
+     );
+   });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -1482,10 +1488,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-       }
-     );
-   });
-@@ -13118,10 +13651,24 @@
++      }
++    );
++  });
+   var I = uN();
+   let L, te;
+   var B = e(I),
+@@ -13118,10 +13657,24 @@
    var oe = V(ae, 2),
      le = e(oe, !0);
    (M(oe), M(ie), M(B));
@@ -1510,7 +1519,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +13687,7 @@
+@@ -13140,7 +13693,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -1519,7 +1528,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +13704,13 @@
+@@ -13157,7 +13710,13 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -1534,7 +1543,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +13746,8 @@
+@@ -13193,7 +13752,8 @@
          M(w),
          M(a),
          l(() => {
@@ -1544,7 +1553,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +13764,7 @@
+@@ -13210,7 +13770,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -1553,7 +1562,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13232,6 +13786,7 @@
+@@ -13232,6 +13792,7 @@
          })),
            k(I, `aria-label`, s(o).header.primary),
            (te = S(I, ``, te, e)),
