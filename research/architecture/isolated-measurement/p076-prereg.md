@@ -6,8 +6,8 @@ id comes from mgmt-ops-10. The lead asked for this check on 2026-10-03, after th
 | file | sha256/12 | role |
 |---|---|---|
 | `judge-tick.mjs` | b84f4156010c | scorer (rev of 3605ca71b0a3 after the mgmt-ops-10 read) |
-| `tick-probe.mjs` | d30b38cc15be | the probe: page loop, trace, fires0/fires1/cd/timers/countdownScreenChanges |
-| `tick-hold.mjs` | 3e8c1e4dce2c | starts one server per arm, hash-checks the served JS, runs the probe |
+| `tick-probe.mjs` | 967461d775ec | the probe (comment-only rev of d30b38cc15be): page loop, trace, fires0/fires1/cd/timers/countdownScreenChanges |
+| `tick-hold.mjs` | a344a6351f45 | (comment-only rev of 3e8c1e4dce2c) starts one server per arm, hash-checks the served JS, runs the probe |
 | `run-tick.sh` | 1c2ebd25142f | the two shared-lane slots |
 
 **P-075 stands as recorded.** Its family FAIL on countdown FunctionCalls per 4 s window is not re-scored. P-076 is a
@@ -45,6 +45,12 @@ P-076 asks whether FRZ predicts the full-page change once the count is cut at th
   - The trace's line base is not pinned down here, so the probe keeps both candidates, that line and the next one.
     The next line is the callback body and starts no function.
   - The scorer uses the non-empty candidate. If both are non-empty, the load is VOID.
+  - If the trace is 1-based, fires0 is the line above the callback, `ne(() => {`, the effect that sets up the interval.
+    It runs once at mount, before the window. Should it ever run inside the window, the load is VOID ("ambiguous fire
+    line"), which is the safe outcome.
+- **A slot that hits its 300 s cap.** The probe rewrites its output file (`partial: true`) after every load. A capped
+  slot's partial file is scored as it is, with no re-run. The builds run round robin, so the missing loads are rep 3
+  of the later arms, and those cells keep 2 loads. The readout says "partial slot".
 - **Countdown calls.** Every main-thread FunctionCall in the countdown range (`var UE = { stiffness` .. `var lD = h(`,
   ±1 line, as in P-075). Fires are included.
 - **Timer instances.** T is the number of `[role=timer]` elements on the page.

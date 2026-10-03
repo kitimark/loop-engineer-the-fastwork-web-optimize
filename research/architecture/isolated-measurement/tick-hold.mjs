@@ -1,5 +1,5 @@
-// P-076. Runs inside a shared-lane hold: start one server per arm, hash-check, run pilot-chrome.mjs for one mode, kill servers.
-// node chrome-hold.mjs <mode> <out.json> <reps> label=dir|-=sha12 ...
+// P-076. Runs inside a shared-lane hold: start one server per arm, hash-check, run tick-probe.mjs for one mode, kill servers.
+// node tick-hold.mjs <mode> <out.json> <reps> label=dir|-=sha12 ...
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';

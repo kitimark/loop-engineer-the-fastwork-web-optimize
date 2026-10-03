@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // P-076 per-second countdown check, Chrome (arch-isolated-measure). Derived from the P-075 probe; differences: 6 s window,
 // raw main-thread timestamps of the countdown interval fires and of all countdown FunctionCalls are recorded. Counts only.
-// For each rep (round robin over builds) and each mode: fresh page load, y 0, 2 s settle, mode injection, 1 s, 4 s trace.
+// For each rep (round robin over builds) and each mode: fresh page load, settle (1.5 s quiet), y 0, 1 s, mode injection, 1 s, 6 s trace.
 //   full    page as served
 //   freeze  everything OUTSIDE the countdown subtree ([role=timer], marked data-iso-keep) frozen: CSS play-state paused,
 //           Element.animate wrapped (paused unless the target is inside the keep subtree), running animations paused
 //           (except keep), SMIL paused (except svgs inside keep)
-// After the trace (outside the window): "countdown runs" check = 4 clipped screenshots of the clock 1.05 s apart,
-// number of changed consecutive pairs (0 = countdown stopped).
+// After the trace (outside the window): "countdown runs" check = 3 clipped screenshots of the clock 1.05 s apart,
+// number of changed consecutive pairs (0-2; 0 = countdown stopped).
 // Every load writes countdownScreenChanges (0 in FULL; in FRZ 0 also when the clock rect is missing), timers, fires0,
 // fires1 and cd. Run through tick-hold.mjs (run-tick.sh), never directly against a server you did not hash-check.
 // Usage: node tick-probe.mjs --out <json> --modes full|freeze[,..] --reps 3 --build C=<url> --build C2=<url> ...
