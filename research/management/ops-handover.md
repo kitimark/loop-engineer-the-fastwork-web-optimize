@@ -9,6 +9,20 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **04:1xZ main df55321: 68dc897 (ops), fe3d1e5 (de-heat P-068 nits: D1 raw-slope wording, ledger share marked
+  descriptive), df55321 (I-079 fix: `iphone.mjs gesture --timeline`, rebased from 2ff855d); lead runs npm test on
+  df55321, then resolves I-079.**
+  - **P-071 running** (iphone-runner): warm-ups C 03:40Z, D 03:44Z; S-open PASS 03:59Z (load1 10.8 at stamp, record
+    8.5 -> 7.0, flagged LOAD>8); C1 clean 04:00Z (load1 6.5). **Ops misread, no deviation:** at 04:02Z the lease's job
+    label already read "run V1" while the chain sat in the phone-temp gate between holds (C1's hold ended 04:01:55Z,
+    Safari parked); V1 had not run. Every counted run and both sentinels run in their own `--no-timing` hold
+    ("acquired after N s" in the run log); per the lead, each hold first waits up to 90 s for load1 <= 8, else the run
+    keeps a LOAD>8 flag. fix-nav-morph's conditional V1 ruling (count, flag, report with/without V1) is moot. Lesson:
+    the iphone lease's job text names the NEXT run during cooling; check chrome-measure holds.log, not the label.
+  - fix-nav-morph's state at its hand-back: `fix/f3-arm-scope` d20f7f7 (landing candidate, built on D, unlanded);
+    working branch `worktree-agent-a277ea00c8773c1ea` 50d7646; Timeline attribution waits for I-079 (now landed),
+    collapse results stay OBSERVED until it runs.
+
 - **03:4xZ 10ac0af landed. P-068 heat test scored; ops second read PASS; heat goal now firm.**
   - **P-068** (iphone-runner, H1 + H2, both attempt 1, held at 80 %, floor check pass both): score.json
     61219d594ea6 on samples.jsonl 3c14bcd297ce, scorer 1ca63e2b4d11. Ops re-ran `heat.mjs score --in` on the same
