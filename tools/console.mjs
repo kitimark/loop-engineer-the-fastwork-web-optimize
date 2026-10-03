@@ -245,6 +245,7 @@ async function thread() {
     if (as() && as() !== TH.USER) { await TH.markRead(id, as()); t = TH.getThread(id); }
     if (flag('json')) { console.log(JSON.stringify(t, null, 1)); return 0; }
     console.log(TH.threadLine(t, as()));
+    if (t.anchor) console.log(`  ${TH.anchorLine(t.anchor)}`); // I-090: a comment names its item
     for (const m of t.messages) {
       console.log(`  #${m.n} ${m.by}${m.ask ? ' (asks the user)' : ''} at ${m.at}:`);
       if (m.text || !m.images?.length) for (const l of String(m.text).split('\n')) console.log(`    ${l}`);

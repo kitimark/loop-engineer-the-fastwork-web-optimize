@@ -191,8 +191,10 @@ function detailsBox(key, summary, lines) {
   return d;
 }
 
+/** I-090: the comment anchor of a fix (console-comments.js; the same id on /progress and /build). */
+function anchorId(id) { return /^[a-z0-9][a-z0-9-]{0,40}$/.test(String(id)) ? 'progress:' + id : null; }
 function itemCard(it, compact) {
-  var card = el('section', { class: 'card item', 'aria-label': it.title, 'data-item': it.id });
+  var card = el('section', { class: 'card item', 'aria-label': it.title, 'data-item': it.id, 'data-anchor': anchorId(it.id), 'data-anchor-label': it.title });
   card.appendChild(el('div', { class: 'meta' },
     el('span', { class: 'chip', text: it.areaLabel }),
     it.attention ? el('span', { class: 'chip bad', text: 'new result' }) : null,
@@ -251,7 +253,7 @@ function renderBuild(m, b) {
   m.appendChild(el('h2', { class: 'section', text: 'In today’s best build' }));
   var ul = el('ul', { class: 'plain card build' });
   b.applied.forEach(function (a) {
-    var li = el('li', { 'data-fix': a.id }, el('b', { text: a.title }), a.writeup ? ' ' : null, writeupLink(a.writeup));
+    var li = el('li', { 'data-fix': a.id, 'data-anchor': anchorId(a.id), 'data-anchor-label': a.title }, el('b', { text: a.title }), a.writeup ? ' ' : null, writeupLink(a.writeup));
     if (a.fixes) li.appendChild(el('div', { class: 'q', text: a.fixes }));
     if (a.gain) { var t = el('table', { class: 'nums' }); gainRow(t, a.gain); li.appendChild(el('div', { class: 'tablewrap' }, t)); }
     else li.appendChild(el('div', { class: 'q', text: 'No measured phone gain yet.' }));
@@ -271,7 +273,7 @@ function renderBuild(m, b) {
   m.appendChild(el('h2', { class: 'section', text: 'Tried, not applied' }));
   var tu = el('ul', { class: 'plain card build' });
   b.tried.forEach(function (x) {
-    tu.appendChild(el('li', { 'data-fix': x.id }, el('b', { text: x.title + ': ' }), x.why || 'no reason written yet', x.writeup ? ' ' : null, writeupLink(x.writeup)));
+    tu.appendChild(el('li', { 'data-fix': x.id, 'data-anchor': anchorId(x.id), 'data-anchor-label': x.title }, el('b', { text: x.title + ': ' }), x.why || 'no reason written yet', x.writeup ? ' ' : null, writeupLink(x.writeup)));
   });
   if (!b.tried.length) tu.appendChild(el('li', { class: 'empty', text: 'Nothing dropped yet.' }));
   m.appendChild(tu);

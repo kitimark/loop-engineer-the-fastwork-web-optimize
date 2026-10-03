@@ -237,9 +237,9 @@ function renderList(items) {
 // ---- compare ----
 function stopBlink() { if (blinkTimer) { clearInterval(blinkTimer); blinkTimer = null; } }
 /** p: {id, compare}; key: where the pair and slider positions are kept (one per option). */
-function compareBlock(p, key) {
-  var pk = key || p.id;
-  var c = p.compare || {}, shots = c.shots || [], wrap = el('div', { class: 'block' }, el('h3', { text: 'Compare' }));
+function compareBlock(p, key, anchor) {
+  var pk = key || p.id, an = anchor || p.id; // I-090: the comment anchor of this block (PR-009 or PR-009/option:x)
+  var c = p.compare || {}, shots = c.shots || [], wrap = el('div', { class: 'block' }, el('h3', { text: 'Compare' })), outer = wrap;
   var aL = (c.a && c.a.label) || 'Original', bL = (c.b && c.b.label) || 'Proposal';
   if (shots.length) {
     var v = view[p.id] || c.view || 'side', i = Math.min(pair[pk] || 0, shots.length - 1), s = shots[i];
@@ -261,6 +261,8 @@ function compareBlock(p, key) {
       bar.appendChild(pairs);
     }
     wrap.appendChild(bar);
+    // I-090: the shot on screen can be commented; its caption is the label
+    wrap = wrap.appendChild(el('div', { class: 'shot', 'data-anchor': an + '/shot:' + (i + 1), 'data-anchor-label': s.caption || ('Position ' + (i + 1)) }));
     if (s.caption) wrap.appendChild(el('p', { class: 'caption', text: s.caption }));
     var A = mediaSrc(s.a), B = mediaSrc(s.b);
     function full(src, label) { return src ? el('a', { href: src, target: '_blank', rel: 'noopener noreferrer', text: 'full size' }) : null; }
@@ -300,15 +302,16 @@ function compareBlock(p, key) {
       wrap.appendChild(el('p', { class: 'hint', text: 'The label in the corner always says which one you see.' }));
     }
   }
+  wrap = outer;
   var vid = c.video;
   if (vid && (mediaSrc(vid.both) || (mediaSrc(vid.a) && mediaSrc(vid.b)))) {
     wrap.appendChild(el('h3', { text: 'Recording', style: 'margin-top:16px' }));
     if (mediaSrc(vid.both)) {
-      wrap.appendChild(el('figure', null, el('figcaption', { text: 'A and B' }), el('video', { src: mediaSrc(vid.both), controls: true, muted: true, playsinline: true, preload: 'metadata' })));
+      wrap.appendChild(el('figure', { 'data-anchor': an + '/video:both', 'data-anchor-label': 'Recording, A and B' }, el('figcaption', { text: 'A and B' }), el('video', { src: mediaSrc(vid.both), controls: true, muted: true, playsinline: true, preload: 'metadata' })));
     } else {
       var va = el('video', { src: mediaSrc(vid.a), controls: true, muted: true, playsinline: true, preload: 'metadata' });
       var vb = el('video', { src: mediaSrc(vid.b), controls: true, muted: true, playsinline: true, preload: 'metadata' });
-      wrap.appendChild(el('div', { class: 'side' }, el('figure', null, el('figcaption', { text: 'A · ' + aL }), va), el('figure', null, el('figcaption', { text: 'B · ' + bL }), vb)));
+      wrap.appendChild(el('div', { class: 'side' }, el('figure', { 'data-anchor': an + '/video:a', 'data-anchor-label': 'Recording A · ' + aL }, el('figcaption', { text: 'A · ' + aL }), va), el('figure', { 'data-anchor': an + '/video:b', 'data-anchor-label': 'Recording B · ' + bL }, el('figcaption', { text: 'B · ' + bL }), vb)));
       var both = el('button', { type: 'button', class: 'btn', text: 'Play both from the start' });
       both.addEventListener('click', function () { [va, vb].forEach(function (x) { try { x.currentTime = 0; var pr = x.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }); });
       wrap.appendChild(el('div', { class: 'cmp-bar', style: 'margin-top:8px' }, both));
@@ -575,7 +578,8 @@ function optionsBlock(p) {
   });
   wrap.appendChild(list);
   if (rec && p.recommended.why) wrap.appendChild(el('p', { class: 'rec-why', text: 'Recommended by ' + p.by + ': ' + optLabel(p, rec) + '. ' + p.recommended.why }));
-  var panel = el('div', { class: 'optpanel', role: 'tabpanel', id: 'opt-panel', 'aria-labelledby': 'opt-tab-' + opts.indexOf(o) });
+  var oa = /^[a-z0-9][a-z0-9._-]{0,39}$/.test(o.name) ? p.id + '/option:' + o.name : p.id; // I-090
+  var panel = el('div', { class: 'optpanel', role: 'tabpanel', id: 'opt-panel', 'aria-labelledby': 'opt-tab-' + opts.indexOf(o), 'data-anchor': oa !== p.id ? oa : null, 'data-anchor-label': 'Option: ' + (o.label || o.name) });
   panel.appendChild(el('h3', { class: 'oh' }, el('span', { text: 'Option: ' + (o.label || o.name) }), o.name === rec ? el('span', { class: 'chip rec', text: 'Recommended' }) : null));
   panel.appendChild(section('The idea', para(o.idea)));
   if (o.looksSame) panel.appendChild(section('Why it looks the same', para(o.looksSame)));
@@ -585,7 +589,7 @@ function optionsBlock(p) {
   if (o.gain && o.gain.length) panel.appendChild(section('What it saves', [gainTable(o.gain)]));
   panel.appendChild(section('Risk', para(o.risk)));
   var oc = o.compare || {};
-  panel.appendChild(compareBlock({ id: p.id, compare: { a: p.compare && p.compare.a, b: oc.b, view: p.compare && p.compare.view, shots: oc.shots, video: oc.video } }, p.id + ':' + o.name));
+  panel.appendChild(compareBlock({ id: p.id, compare: { a: p.compare && p.compare.a, b: oc.b, view: p.compare && p.compare.view, shots: oc.shots, video: oc.video } }, p.id + ':' + o.name, oa));
   wrap.appendChild(panel);
   return wrap;
 }
@@ -618,7 +622,7 @@ function renderDetail(p, force) {
   if (!force && !p.hold && document.activeElement && document.activeElement.id === 'notes') return;
   detailSig = sig;
   stopBlink();
-  var card = el('article', { class: 'card detail', 'data-id': p.id });
+  var card = el('article', { class: 'card detail', 'data-id': p.id, 'data-anchor': /^PR-\d{1,6}$/.test(p.id) ? p.id : null, 'data-anchor-label': p.title });
   var hb = holdBanner(p), sb = staleBanner(p);
   if (hb) card.appendChild(hb);
   if (sb) card.appendChild(sb);

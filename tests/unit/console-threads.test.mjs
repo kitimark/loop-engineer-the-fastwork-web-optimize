@@ -518,3 +518,30 @@ test('I-089 threads page: the user attaches images (type, count and size checked
   for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
   assert.deepEqual(p.calls.filter((c) => c.url.endsWith('/reply')).map((c) => JSON.parse(c.init.body)).at(-1), { text: 'plain' });
 });
+
+// ---- I-090 (user T-043): a comment's thread quotes its item, with a link back ------------------------------------------
+
+test('I-090 threads page: a comment shows its item as a quote with a link back; messages can be commented; a plain thread shows none', async () => {
+  const anchor = { page: 'proposals', item: 'PR-009/option:both/shot:2', quote: 'the blur edge', label: 'Blur the strip' };
+  const t = (await T.createThread({ title: 'Comment on PR-009', text: 'Looks soft', fromPage: true, anchor })).thread;
+  const view = T.pageThread(T.getThread(t.id));
+  const p = await threadsPage({ hash: `#${t.id}`, thread: view });
+  const box = p.ids['tv-anchor'];
+  assert.equal(box.hidden, false);
+  assert.equal(box.textContent, 'Comment on PR-009 option both, shot 2 "Blur the strip"Open itthe blur edge');
+  const link = box.all().find((n) => n.tagName === 'a');
+  assert.equal(link.href, '/proposals#PR-009');
+  assert.equal(box.all().find((n) => n.tagName === 'q').textContent, 'the blur edge');
+  const li = p.ids['tv-msgs'].children[0];
+  assert.equal(li.attrs['data-anchor'], `thread:${t.id}/msg:1`);
+  assert.equal(li.attrs['data-anchor-label'], 'Comment on PR-009 #1');
+  // a hand-edited store never puts a foreign link on the page
+  const bad = await threadsPage({ hash: `#${t.id}`, thread: { ...view, anchor: { ...view.anchor, url: 'javascript:alert(1)' } } });
+  assert.ok(!bad.ids['tv-anchor'].all().some((n) => n.tagName === 'a'), 'no link');
+  const plain = (await T.createThread({ title: 'x', text: 'y', fromPage: true })).thread;
+  const q = await threadsPage({ hash: `#${plain.id}`, thread: T.pageThread(T.getThread(plain.id)) });
+  assert.equal(q.ids['tv-anchor'].hidden, true);
+  // the list row names the item
+  const l = await threadsPage({ hash: '', list: [T.summary(T.getThread(t.id))] });
+  assert.ok(l.ids.threads.textContent.includes('comment on PR-009 option both, shot 2'), l.ids.threads.textContent);
+});
