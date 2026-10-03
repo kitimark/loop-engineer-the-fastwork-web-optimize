@@ -9,6 +9,18 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **07:3xZ main 566f3db (my 07:2xZ batch) landed; I-082 RESOLVED (7e28dce, npm test 1373/1373; Sim counts compare
+  only within one session, never across the rebase).**
+  - **P-073 scorer guard VERIFIED** (fix-nav-morph 4ece74c): `p073-score.mjs` sha256 **30c16ec042c8**, in the card and
+    the ledger row, `node --check` ok.
+    - Without a top-up, rows 5-7 need V.counted ≥ 3 (V at n = 2 → row 8).
+    - Ops nits done: start-read age (flag > 60 s), a `thermal` void field, a charge tie goes to the lead, and a flag
+      when a run has no battery read.
+    - The lead was told; iphone-runner starts the counted runs (lease "P-073", eta ~09:04Z). The ticket went to
+      iphone-runner with scorer 30c16ec042c8: ports C 5731, V 5732, D 5733, S 5734, warming page 5735 (lead GO).
+  - **fix-nav-morph cfc51c1:** arm-B Sim census for the panel-clock pair (F-165), counts only: 0 of 84 panel faces
+    composited, and v1c exposure equals D's. The A/D census and the pixel compare come after the P-073 block.
+
 - **07:2xZ main 7e28dce (I-082 fix: Sim sessions ran in the Simulator's own background CPU storm; npm test running,
   resolve pending) on 25fcad2 (my 06:5xZ batch).**
   - **Phone:** the user disconnected it at 07:01Z (T-033) and reconnected it at 07:09Z (T-033 #4/#5). The lead released
