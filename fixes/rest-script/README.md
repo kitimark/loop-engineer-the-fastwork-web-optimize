@@ -784,10 +784,23 @@ Every hold's `HASHES` line equals the chain-start line (option A hashes above); 
 
 | hold | result |
 |---|---|
-| chrome-430r | OK, PMSET OK. **Leg scored:** COVERAGE OK, REST-QUIET agree (rest T2, quiet T2), MASK OK |
+| chrome-430r | OK, PMSET OK. COVERAGE OK, REST-QUIET agree, MASK OK, but **fails registered decision rule 2** (below) |
 | chrome-1440-rec try 1 | **HOLD VOID**: rc 124, no EXIT 0, PMSET VOID (Maintenance Sleep 21:17:39Z, DarkWake 21:32:57Z). Excluded everywhere; a re-run, not a strike (lead) |
 | chrome-1440-rec try 2, chrome-1440-rep | OK, PMSET OK. **Leg VOID: coverage**, intoview record shot `since.resizeMs` 386.8 < 1500 (12/12 moving present) |
 | chrome-1440r | OK, PMSET OK. **Leg VOID: coverage**, intoview record shot `since.resizeMs` 490.5 < 1500 |
+
+**chrome-430r against rule 2 (mgmt-ops-10's read; the lead rules).** t2score gives **T2 on all five shots** (rest,
+quiet, jump-0, far-0, intoview). Every shot has the same numbers:
+- shade max 4 (fill 3, edge 4);
+- 10325 px differ, 10305 of them over the A/A (A/A max 4, 0 masked);
+- 0 counted px, share 0 %.
+
+Registered decision rule 2 requires every reduced-motion leg to be T0/T1 on every shot. Its T3 list includes
+"reduced motion beyond its A/A". By the registered rules this leg is therefore **T3**, not a pass; the prediction
+"every reduced-motion leg T0/T1" (P 0.75) failed here.
+
+The identical counts on every shot suggest a static difference of at most 4 shades over the same area. The cause is
+not examined (UNRESOLVED).
 
 **Keep-awake note.** From about 21:33:40Z to 21:36Z the holds (chrome-1440-rec try 2 and the start of chrome-1440-rep)
 ran under a `caffeinate -i -s` assertion that I attached to the chain. C-024 does not cover Chrome pixel holds; the
