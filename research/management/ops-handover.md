@@ -9,6 +9,25 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **06:1xZ ef16659 landed. F3 ruling; P-073 assigned, second read NEEDS-FIX.**
+  - **Lead's F3 ruling:** D proceeds on its own merit, gated on (1) the D2 Timeline attribution not naming D's
+    listener add/remove or other D changes, (2) a new hot-held block. P-071 ran at 37-38.6 °C; P-036's V-only
+    collapses were at 40.3-43.3 °C, so temperature is the new question that reopens B1. P-036 confirmation and the
+    user swipe wait for both gates. PROGRESS F3 `next` in the lead's plain words; upcoming swipe re-dated.
+  - **P-073** (fix-nav-morph; card "P-073 prediction card" in fixes/mw10e-arm-scope-d/README.md, 9dfca7f on
+    fix/f3-arm-scope, fe27e9a working; ledger row after P-071): B1 hot-held, C / V / D, arm-scope-touch-v1, counted =
+    capped runs only (re-run in place), band 40.0-41.0 °C at each run start, warming by uncounted W cycles on the
+    plain baseline page, idle >= 57 fps validity, S sentinel in band (a failure stops the block), collapse as P-071 +
+    a "sustained" second reading, budget <= 20 runs / 100 min, lead's decision table. **Ops second read NEEDS-FIX:**
+    (1) no row for D "not enough" (and say what an under-filled control means); (2) heat ceiling (park + void at >=
+    42.5 °C or an iOS thermal notice, cool to <= 41); (3) charge state per run, constant across arms, change = void;
+    (4) scope for the lead: his message said "C vs D", the card adds V as positive control (ops thinks V belongs).
+    **Lead accepted all four:** C / V / D, V kept as positive control; budget pressure from V's cap re-runs is for the
+    forced-cap v1c (Sim check first; if v1c fails, raise the budget or register "arm short of 3 -> inconclusive ->
+    lead"); D < 3 counted -> inconclusive -> lead, no landing; an under-filled C or V voids that arm's comparison.
+    Rev 2 list sent to fix-nav-morph (plus review-f3-arm-scope's three nits, text not seen by ops). Lead signs rev 2
+    after ops' PASS and the v1c Sim result. Ledger "next free" P-074.
+
 - **05:5xZ P-071 block done and scored (official, lead 05:5xZ); scorer second read PASS.**
   - Block 03:59-05:37Z, valid: S-open PASS 60.2/57.9 (LOAD>8 flag at stamp), S-end PASS 60.2/57.6; LPM off (C-027,
     idle rAF 59 Hz every run); battery 78-79 % held; 0 errors; every counted run and sentinel in its own

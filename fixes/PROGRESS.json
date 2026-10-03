@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T05:50:00Z",
+ "updatedAt": "2026-10-03T06:10:00Z",
  "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -176,7 +176,7 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "9 robot-finger runs: the pinned menu is no worse with F3. The original's stall at the end didn't show up, so whether F3 cures it is still open. One odd run of the landing version is being traced; then fix-nav-morph rules on landing, and your swipe test follows.",
+   "next": "One odd run is being traced, and one more phone test runs with the phone warm (40-41 °C), because the stall we worry about happened only when the phone was hot. Then the confirmation and your swipe test.",
 
    "owner": "fix-nav-morph",
    "checks": [
@@ -193,7 +193,8 @@
     "B1/B2 outcome (fix-nav-morph 909747c, 10-03 02:2xZ): B2 fixed in build mw10e-arm-scope-d (JS 999c4497f37e; window touch listeners while the morph is active; Chrome gap cases V fail, C and D pass). B1 UNRESOLVED: Simulator G pin repro and Chrome pin counts show no collapse and no arm difference; phone ticket G pin-hold C/V/D + Timeline after P-068; D then needs a short P-036 confirmation before landing.",
     "P-036 G block 10-03 00:28-01:10Z (iphone-runner; scored by fix-nav-morph 6fb21b2, ops second read PASS): median touch-to-scroll C / V Z1 196.8 / 192, Z2 193 / 194.5, Z3 189 / 189 ms, every zone overlap; S-open 60 / 58.9, S-end 60.2 / 57.1 fps PASS; C2 re-run in place (void first try); V2 hot (42.6-43.3 C); Z1 dt>50 per run C 2,1,3,2 vs V 1,16,3,2 (16 = the hot run), OBSERVED, G driver.",
     "P-071 G pin-hold-v2 block 10-03 03:59-05:37Z (iphone-runner; lead-scored 05:5xZ): valid (S-open PASS, LOAD>8 flag at stamp; S-end 60.2/57.6; LPM off; 0 errors). Pin collapse C 1/3 (C3, cycle phase 3 s after touchend, not a pin collapse; outside the rule, a miss on 'C clean ~90 %'), V 0/3, D 0/3: B1 not reproduced in the control, cure UNRESOLVED, no second block without a new question; V and D add no pin collapse. OBSERVED, G driver.",
-    "P-071 card units (per-run max dt over 2 cycles, n=3v3): arm C 70/64/74, V 68/64/69, D 70/98/66; disarm C 32/33/35, V 33/34/35, D 35/85/39: no separated-worse (twins 46/54 same). ~60 % prediction missed on its second half (D2 c2 disarm 85 ms). D2 outlier (arm 98 ms, 11 frames > 50): attribution before D lands. Exploratory only, not a gain: arm >50 C 10/11/14 vs V 8/7/9, threshold-sensitive. Scorer a90e807d4296 second-read by mgmt-ops-9, re-run byte-identical (score f8e231d4b617)."
+    "P-071 card units (per-run max dt over 2 cycles, n=3v3): arm C 70/64/74, V 68/64/69, D 70/98/66; disarm C 32/33/35, V 33/34/35, D 35/85/39: no separated-worse (twins 46/54 same). ~60 % prediction missed on its second half (D2 c2 disarm 85 ms). D2 outlier (arm 98 ms, 11 frames > 50): attribution before D lands. Exploratory only, not a gain: arm >50 C 10/11/14 vs V 8/7/9, threshold-sensitive. Scorer a90e807d4296 second-read by mgmt-ops-9, re-run byte-identical (score f8e231d4b617).",
+    "Lead ruling 10-03 06:0xZ: D proceeds on its own merit, gated on (1) the D2 Timeline attribution not naming D's listener add/remove or other D changes and (2) a hot-held block P-073 (40-41 °C at each run start, arm-scope-touch-v1, after the attribution chain; card by fix-nav-morph 9dfca7f, ops second read NEEDS-FIX: D not-enough row, heat ceiling, charge state, C/V/D scope to confirm). P-036 confirmation on D and the F swipe wait for both gates."
    ]
   },
   {
@@ -544,7 +545,7 @@
  "upcoming": [
   { "title": "Your choice on the countdown digit strips: land with a tiny fade difference, or park", "when": "once fix-cd-strip's write-up of the difference is done", "item": "cd-strip" },
   { "title": "Blind side-by-side look at the GPU countdown roll (cd-roll-ca)", "when": "once the digit strips (cd-strip) have landed (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
-  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after one odd robot-finger run is traced and fix-nav-morph rules on landing (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
+  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the odd-run trace and the warm-phone test (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
   { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
  "build": {
