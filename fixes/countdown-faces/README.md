@@ -780,6 +780,89 @@ brightness, Low Power Mode off) between 23:50:18Z and 23:51:53Z. Lead's rule: a 
 min) is "phone touched", so void. No run overlaps it: the first attempt recorded nothing, and the redo's first run
 started at 23:54:23Z. The setting holds for the whole block, in both arms.
 
+**The block, 2026-10-03** (driver c89a8b9, x1.mjs as in 3fb0ebb; lease countdown-faces; each part in its own
+`--no-timing` hold under `caffeinate -i`; servers per arm, http twins; Low Power Mode off; no Web Inspector; phone not
+touched):
+- Part A 23:59:49-00:07:25Z: `SAFARI-RESTART` at the part start (Safari was parked), warm-up C, warm-up V, heat check
+  (open) **PASS** (bottom 60, scroll 53.2 fps), runs 1 C, 2 V, 3 V, 4 C.
+- Part B 00:07:37-00:12:04Z: runs 5 C, 6 V, 7 V, 8 C, heat check (end) **PASS** (bottom 60, scroll 52 fps).
+- Part C 00:13:35-00:15:53Z: attribution runs C, V (`--lt --resume-check`); then Safari parked.
+- Battery 36.5 °C at the first warm-up, 37.5 at run 1, 39.5 at the end of run 8, 39.7 after the end heat check.
+- **Validity: all 8 counted runs valid.** `ticksInWindow` is 4 in every window of every run; served hashes match (C JS
+  `4606120cf392`, V JS `638b8e03e81c`, CSS `27776f3d4138`); both heat checks pass. One block, nothing redone.
+- **Instrument note (disclosed, no decision depends on it).** x1.mjs takes the first `[role=timer]` at install as the
+  hero clock. In run 1 C and the C attribution run that was the nav panel's clock (digit 17.28 x 34.56 CSS px; the
+  hero's is 18 x 36), so those two runs aligned their windows on the panel clock's tick and classified "digit-sized"
+  Paints with the panel digit size. In C both clocks tick on the same second, so the windows and the Timeline sums
+  are comparable; row 1 stays "not separated" with run 1 C dropped. The C attribution run's resume check is
+  instrument-invalid (`instrumentOk` false); V's is valid.
+
+### Stage 2 readout (phone, n=4 per arm, counted runs X1-1..8; scored by `x1.mjs score`, rows as pre-registered)
+
+Per-run sums over the 4-tick window, ms (sorted per arm; median = mean of the middle two; the scorer prints the lower
+middle value):
+
+| row | window, statistic | C (4 runs) | V (4 runs) | median V − C | separation (≥ 4 ms) | decision as pre-registered |
+|---|---|---|---|---|---|---|
+| **1** | top, Layout + Paint+Composite | 1028.9, 1038.9, 1053.3, 1065.4 | 1013.7, 1021.5, 1032.3, 1100.6 | **−19.2** (1046.1 → 1026.9) | **not separated** | **(a) has no measurable WebKit cost on the device: "full" stays, X1 closes** |
+| 2 | pastHero, Style + Layout + Paint+Composite | 877.5, 993.8, 1047.8, 1053.8 | 619.1, 630.6, 632.1, 645.8 | −389.5; V/C **0.62** | **V below** (gap 231.7) | **(b) confirmed on the device** (attribution, not a gain claim) |
+| 3 | resume, Layout + Paint+Composite | 1498.6, 1524.9, 1536.6, 1642.1 | 1438.4, 1490.9, 1501.0, 1533.4 | −34.8 | not separated (V not above) | no row-1 cost |
+| – | heroExit, Style + Layout + Paint+Composite (info) | 969.1, 1239.2, 1245.2, 1260.5 | 1118.0, 1119.6, 1123.7, 1131.2 | −120.6 | not separated | – |
+
+Row 1's other reads, at top: digit-sized Paints C 111-126, V 4-27; all Paints C 276-324, V 171-199; Layouts C 194-215,
+V 172-183; view-sized Layouts C 156-160, V 159-172.
+
+**Row 4 (information; frames at top, rAF dt, with ±4 ms twins).**
+
+| top window | run order | > 50 (> 46 / > 54) | > 34 (> 30 / > 38) | max dt, ms |
+|---|---|---|---|---|
+| C (1, 4, 5, 8) | | 0, 1, 2, 1 (0, 1, 2, 1 / 0, 1, 2, 1) | 1, 4, 3, 4 | 35, 59, 60, 56 |
+| V (2, 3, 6, 7) | | 1, 1, 1, 1 (2, 1, 1, 2 / 0, 1, 0, 0) | 2, 4, 4, 2 | 54, 60, 53, 53 |
+
+- Every V run has one frame > 50 at top. C has frames > 50 in 3 of its 4 runs, up to 60 ms, so these are not "V frames
+  that no C run has": row 4 adds no cost to row 1.
+- Threshold-sensitive: at the > 54 twin V has 1 frame in total vs C 4; at the > 46 twin V has 6 vs C 4.
+
+**What row 1 means for (a), in plain words.** The 3-slot faces (a) make WebKit repaint the digit layers a little
+more often (the stage-1 Simulator trigger). On the phone, with the clock visible and rolling, the layout and paint
+work of the whole page is the same within noise: the two arms' runs overlap (new 1013.7-1100.6 ms, today's
+1028.9-1065.4 ms; the new median is 19 ms lower), so there is no measurable cost. By the pre-registered rule, "full" ((a) + (b)) stays
+and X1 closes; no "pause-only" offer is needed.
+
+**Attribution runs** (uncounted, one per arm, after the end heat check; `--lt`):
+- At top: face layers C 80 / V 24 (as in the Simulator); face-layer repaints C 126 / V 134; face-layer memory
+  0.5 MB in both (V/C 1.0, as in the Simulator).
+- At pastHero: no face layers in either arm.
+- Resume check, V (valid): live at the first visible update at y 0 (`op` 1), 0 stale visible updates, 0 stale
+  updates at all. C: instrument-invalid (see the instrument note).
+
+**Post-hoc observation (not pre-registered; OBSERVED, in our setup, cause unknown).** At pastHero (the clocks
+hidden, page at rest), V has fewer ms in total but more long frames:
+
+| pastHero | C (1, 4, 5, 8) | V (2, 3, 6, 7) |
+|---|---|---|
+| RenderingFrame duration > 34 ms | 7, 2, 7, 2 | 11, 13, 12, 11 |
+| rAF dt > 34 (> 30 / > 38) | 5, 2, 6, 4 (5, 4, 7, 5 / 5, 0, 6, 1) | 5, 9, 8, 8 (6, 11, 9, 10 / 5, 5, 6, 6) |
+| rAF dt > 50 (> 46 / > 54) | 0, 0, 0, 1 (0, 0, 1, 1 / 0, 0, 0, 1) | 4, 0, 2, 2 (4, 3, 2, 3 / 4, 0, 0, 0) |
+| largest single-frame Layout, ms (runs 1 C, 2 V shown, and range) | 38.8 (29.5-39.4) | 61.1 (41.8-61.1) |
+
+- Both arms show a Layout burst about once a second at pastHero: C one or two frames of 35-39 ms Layout;
+  V two or three frames per second, the first 41-61 ms.
+- The windows are at rest, so these frames are not scroll jank as measured here. It is not a row-2 outcome either:
+  row 2 is the ms sum, and V is lower.
+- This is reported to the lead as an open question; nothing in this card decides on it. What does the once-a-second
+  Layout at pastHero lay out, and why is it bigger in V? Possible checks: a Simulator `--lt` session, or the
+  per-record Layout roots.
+
+**P-069 phone part:**
+- row 1 not separated: **in**; |median V − C| < 4 ms: **out** (19.2 ms, V lower);
+- row 2 V separated below: **in**; median V/C 0.62, in [0.3, 0.75];
+- frames > 50 at 0-1 per run per window: **out**:
+  - resume windows have 1-3 in both arms;
+  - pastHero V has up to 4;
+  - top C has up to 2.
+- Falsifiers: phone row 2 is separated with V below, so the phone falsifier is not met.
+
 ## Overlap with other topics (review r1 Blocking 3)
 
 - **Topic #1 `countdown-idle-raf`** (on main, ACCEPT-WITH-NOTES, patch v03) edits the same hunks: `$E` 3824, the
@@ -848,3 +931,5 @@ started at 23:54:23Z. The setting holds for the whole block, in both arms.
 - `x1.mjs`: the X1 segment card sequence (Simulator `sim`, phone `phone`, `score`); see "X1 phone segment card".
 - `x1-stage1.json`: X1 stage 1 counts (Simulator, n=2 per arm); see "Stage 1 readout".
 - `x1-block.mjs`: the X1 stage-2 phone block driver (parts A, B, C); see "Stage 2 block plan".
+- `x1-stage2.json`: the X1 stage-2 per-run window sums, counts, dt bins and long-frame counts (counted runs 1-8 and the
+  attribution runs); see "Stage 2 readout".

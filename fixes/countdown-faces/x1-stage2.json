@@ -1,0 +1,1547 @@
+{
+ "card": "X1 stage 2 (phone), countdown-faces; README \"Stage 2 readout\"",
+ "snapshot": "b1789284481295-4ad4a84a",
+ "driver": "x1-block.mjs c89a8b9, x1.mjs 3fb0ebb",
+ "runs": {
+  "1C": {
+   "arm": "C",
+   "startedAt": "2026-10-03T00:03:38.972Z",
+   "served": {
+    "js": "4606120cf392",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    37.5,
+    37.79
+   ],
+   "digit": [
+    17.28,
+    34.56
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1053.3,
+     "slpMs": 1165.5,
+     "segMs": {
+      "script": 42.3,
+      "style": 112.2,
+      "layout": 630.1,
+      "paintComposite": 423.2,
+      "other": 2805.1
+     },
+     "counts": {
+      "RenderingFrame": 238,
+      "RecalculateStyles": 252,
+      "Layout": 215,
+      "Paint": 321,
+      "Composite": 242,
+      "FireAnimationFrame": 584,
+      "countdownRaf": 342,
+      "digitPaint": 126,
+      "viewLayout": 158
+     },
+     "dt": {
+      "gt34": 1,
+      "gt30": 3,
+      "gt38": 0,
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "max": 35
+     },
+     "rfOver34": 2,
+     "maxFrameLayout": 23.2
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 841.6,
+     "slpMs": 969.1,
+     "segMs": {
+      "script": 55.3,
+      "style": 127.5,
+      "layout": 459,
+      "paintComposite": 382.6,
+      "other": 2975.4
+     },
+     "counts": {
+      "RenderingFrame": 229,
+      "RecalculateStyles": 237,
+      "Layout": 247,
+      "Paint": 409,
+      "Composite": 232,
+      "FireAnimationFrame": 494,
+      "countdownRaf": 262,
+      "digitPaint": 105,
+      "viewLayout": 135
+     },
+     "dt": {
+      "gt34": 3,
+      "gt30": 5,
+      "gt38": 3,
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "max": 45
+     },
+     "rfOver34": 6,
+     "maxFrameLayout": 31.7
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 900.7,
+     "slpMs": 993.8,
+     "segMs": {
+      "script": 53.9,
+      "style": 93.1,
+      "layout": 768.3,
+      "paintComposite": 132.4,
+      "other": 2962.1
+     },
+     "counts": {
+      "RenderingFrame": 241,
+      "RecalculateStyles": 235,
+      "Layout": 248,
+      "Paint": 193,
+      "Composite": 242,
+      "FireAnimationFrame": 517,
+      "countdownRaf": 275,
+      "digitPaint": 87,
+      "viewLayout": 164
+     },
+     "dt": {
+      "gt34": 5,
+      "gt30": 5,
+      "gt38": 5,
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "max": 46
+     },
+     "rfOver34": 7,
+     "maxFrameLayout": 38.8
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1642.1,
+     "slpMs": 1782.2,
+     "segMs": {
+      "script": 32.9,
+      "style": 140.1,
+      "layout": 1128.9,
+      "paintComposite": 513.2,
+      "other": 2214.6
+     },
+     "counts": {
+      "RenderingFrame": 215,
+      "RecalculateStyles": 269,
+      "Layout": 249,
+      "Paint": 469,
+      "Composite": 219,
+      "FireAnimationFrame": 443,
+      "countdownRaf": 187,
+      "digitPaint": 114,
+      "viewLayout": 205
+     },
+     "dt": {
+      "gt34": 8,
+      "gt30": 10,
+      "gt38": 5,
+      "gt50": 2,
+      "gt46": 2,
+      "gt54": 1,
+      "max": 97
+     },
+     "rfOver34": 9,
+     "maxFrameLayout": 46.4
+    }
+   }
+  },
+  "2V": {
+   "arm": "V",
+   "startedAt": "2026-10-03T00:04:36.532Z",
+   "served": {
+    "js": "638b8e03e81c",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    37.79,
+    38.19
+   ],
+   "digit": [
+    18,
+    36
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1021.5,
+     "slpMs": 1119.8,
+     "segMs": {
+      "script": 28.5,
+      "style": 98.3,
+      "layout": 571.5,
+      "paintComposite": 450,
+      "other": 2831.6
+     },
+     "counts": {
+      "RenderingFrame": 238,
+      "RecalculateStyles": 223,
+      "Layout": 175,
+      "Paint": 189,
+      "Composite": 239,
+      "FireAnimationFrame": 581,
+      "countdownRaf": 342,
+      "digitPaint": 18,
+      "viewLayout": 164
+     },
+     "dt": {
+      "gt34": 2,
+      "gt30": 4,
+      "gt38": 2,
+      "gt50": 1,
+      "gt46": 2,
+      "gt54": 0,
+      "max": 54
+     },
+     "rfOver34": 3,
+     "maxFrameLayout": 42.1
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 1012.5,
+     "slpMs": 1119.6,
+     "segMs": {
+      "script": 32.3,
+      "style": 107.1,
+      "layout": 622.8,
+      "paintComposite": 389.7,
+      "other": 2850.9
+     },
+     "counts": {
+      "RenderingFrame": 231,
+      "RecalculateStyles": 187,
+      "Layout": 202,
+      "Paint": 337,
+      "Composite": 234,
+      "FireAnimationFrame": 468,
+      "countdownRaf": 234,
+      "digitPaint": 0,
+      "viewLayout": 168
+     },
+     "dt": {
+      "gt34": 2,
+      "gt30": 5,
+      "gt38": 2,
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "max": 44
+     },
+     "rfOver34": 4,
+     "maxFrameLayout": 38.1
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 556.4,
+     "slpMs": 645.8,
+     "segMs": {
+      "script": 31.6,
+      "style": 89.4,
+      "layout": 456.1,
+      "paintComposite": 100.3,
+      "other": 3352.4
+     },
+     "counts": {
+      "RenderingFrame": 236,
+      "RecalculateStyles": 124,
+      "Layout": 104,
+      "Paint": 85,
+      "Composite": 235,
+      "FireAnimationFrame": 432,
+      "countdownRaf": 197,
+      "digitPaint": 3,
+      "viewLayout": 49
+     },
+     "dt": {
+      "gt34": 5,
+      "gt30": 6,
+      "gt38": 5,
+      "gt50": 4,
+      "gt46": 4,
+      "gt54": 4,
+      "max": 60
+     },
+     "rfOver34": 11,
+     "maxFrameLayout": 61.1
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1501,
+     "slpMs": 1644.8,
+     "segMs": {
+      "script": 33.7,
+      "style": 143.8,
+      "layout": 955.6,
+      "paintComposite": 545.4,
+      "other": 2340.6
+     },
+     "counts": {
+      "RenderingFrame": 214,
+      "RecalculateStyles": 216,
+      "Layout": 207,
+      "Paint": 402,
+      "Composite": 217,
+      "FireAnimationFrame": 440,
+      "countdownRaf": 186,
+      "digitPaint": 27,
+      "viewLayout": 189
+     },
+     "dt": {
+      "gt34": 7,
+      "gt30": 15,
+      "gt38": 5,
+      "gt50": 1,
+      "gt46": 3,
+      "gt54": 1,
+      "max": 99
+     },
+     "rfOver34": 7,
+     "maxFrameLayout": 55
+    }
+   }
+  },
+  "3V": {
+   "arm": "V",
+   "startedAt": "2026-10-03T00:05:34.526Z",
+   "served": {
+    "js": "638b8e03e81c",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    38.19,
+    38.5
+   ],
+   "digit": [
+    18,
+    36
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1013.7,
+     "slpMs": 1109.7,
+     "segMs": {
+      "script": 27.6,
+      "style": 96,
+      "layout": 574.5,
+      "paintComposite": 439.2,
+      "other": 2851.2
+     },
+     "counts": {
+      "RenderingFrame": 235,
+      "RecalculateStyles": 220,
+      "Layout": 172,
+      "Paint": 171,
+      "Composite": 238,
+      "FireAnimationFrame": 452,
+      "countdownRaf": 214,
+      "digitPaint": 4,
+      "viewLayout": 159
+     },
+     "dt": {
+      "gt34": 4,
+      "gt30": 4,
+      "gt38": 3,
+      "gt50": 1,
+      "gt46": 1,
+      "gt54": 1,
+      "max": 60
+     },
+     "rfOver34": 4,
+     "maxFrameLayout": 41.9
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 1018.5,
+     "slpMs": 1118,
+     "segMs": {
+      "script": 26.8,
+      "style": 99.5,
+      "layout": 586.9,
+      "paintComposite": 431.6,
+      "other": 2853.5
+     },
+     "counts": {
+      "RenderingFrame": 227,
+      "RecalculateStyles": 177,
+      "Layout": 188,
+      "Paint": 317,
+      "Composite": 228,
+      "FireAnimationFrame": 420,
+      "countdownRaf": 192,
+      "digitPaint": 0,
+      "viewLayout": 159
+     },
+     "dt": {
+      "gt34": 6,
+      "gt30": 7,
+      "gt38": 3,
+      "gt50": 1,
+      "gt46": 1,
+      "gt54": 1,
+      "max": 56
+     },
+     "rfOver34": 6,
+     "maxFrameLayout": 43.2
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 539.6,
+     "slpMs": 632.1,
+     "segMs": {
+      "script": 34.1,
+      "style": 92.5,
+      "layout": 429.8,
+      "paintComposite": 109.8,
+      "other": 3358
+     },
+     "counts": {
+      "RenderingFrame": 236,
+      "RecalculateStyles": 126,
+      "Layout": 104,
+      "Paint": 80,
+      "Composite": 238,
+      "FireAnimationFrame": 440,
+      "countdownRaf": 202,
+      "digitPaint": 0,
+      "viewLayout": 48
+     },
+     "dt": {
+      "gt34": 9,
+      "gt30": 11,
+      "gt38": 5,
+      "gt50": 0,
+      "gt46": 3,
+      "gt54": 0,
+      "max": 49
+     },
+     "rfOver34": 13,
+     "maxFrameLayout": 41.8
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1533.4,
+     "slpMs": 1670.7,
+     "segMs": {
+      "script": 32.3,
+      "style": 137.3,
+      "layout": 1044.2,
+      "paintComposite": 489.2,
+      "other": 2316.7
+     },
+     "counts": {
+      "RenderingFrame": 214,
+      "RecalculateStyles": 217,
+      "Layout": 208,
+      "Paint": 391,
+      "Composite": 217,
+      "FireAnimationFrame": 438,
+      "countdownRaf": 184,
+      "digitPaint": 27,
+      "viewLayout": 183
+     },
+     "dt": {
+      "gt34": 9,
+      "gt30": 16,
+      "gt38": 6,
+      "gt50": 3,
+      "gt46": 3,
+      "gt54": 2,
+      "max": 98
+     },
+     "rfOver34": 9,
+     "maxFrameLayout": 56
+    }
+   }
+  },
+  "4C": {
+   "arm": "C",
+   "startedAt": "2026-10-03T00:06:32.673Z",
+   "served": {
+    "js": "4606120cf392",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    38.5,
+    38.69
+   ],
+   "digit": [
+    18,
+    36
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1038.9,
+     "slpMs": 1143.1,
+     "segMs": {
+      "script": 36.2,
+      "style": 104.2,
+      "layout": 615.6,
+      "paintComposite": 423.3,
+      "other": 2809.3
+     },
+     "counts": {
+      "RenderingFrame": 235,
+      "RecalculateStyles": 229,
+      "Layout": 196,
+      "Paint": 276,
+      "Composite": 238,
+      "FireAnimationFrame": 450,
+      "countdownRaf": 212,
+      "digitPaint": 111,
+      "viewLayout": 156
+     },
+     "dt": {
+      "gt34": 4,
+      "gt30": 4,
+      "gt38": 3,
+      "gt50": 1,
+      "gt46": 1,
+      "gt54": 1,
+      "max": 59
+     },
+     "rfOver34": 4,
+     "maxFrameLayout": 41.9
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 1130.4,
+     "slpMs": 1239.2,
+     "segMs": {
+      "script": 46.2,
+      "style": 108.8,
+      "layout": 645.4,
+      "paintComposite": 485,
+      "other": 2718.2
+     },
+     "counts": {
+      "RenderingFrame": 222,
+      "RecalculateStyles": 195,
+      "Layout": 196,
+      "Paint": 433,
+      "Composite": 226,
+      "FireAnimationFrame": 414,
+      "countdownRaf": 188,
+      "digitPaint": 91,
+      "viewLayout": 165
+     },
+     "dt": {
+      "gt34": 4,
+      "gt30": 6,
+      "gt38": 4,
+      "gt50": 1,
+      "gt46": 1,
+      "gt54": 0,
+      "max": 52
+     },
+     "rfOver34": 4,
+     "maxFrameLayout": 33.4
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 944.3,
+     "slpMs": 1047.8,
+     "segMs": {
+      "script": 52.8,
+      "style": 103.5,
+      "layout": 770.3,
+      "paintComposite": 174,
+      "other": 2915.1
+     },
+     "counts": {
+      "RenderingFrame": 240,
+      "RecalculateStyles": 190,
+      "Layout": 188,
+      "Paint": 184,
+      "Composite": 242,
+      "FireAnimationFrame": 450,
+      "countdownRaf": 209,
+      "digitPaint": 104,
+      "viewLayout": 136
+     },
+     "dt": {
+      "gt34": 2,
+      "gt30": 4,
+      "gt38": 0,
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "max": 36
+     },
+     "rfOver34": 2,
+     "maxFrameLayout": 29.5
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1536.6,
+     "slpMs": 1679.6,
+     "segMs": {
+      "script": 45.2,
+      "style": 143,
+      "layout": 994.2,
+      "paintComposite": 542.4,
+      "other": 2288.6
+     },
+     "counts": {
+      "RenderingFrame": 210,
+      "RecalculateStyles": 241,
+      "Layout": 257,
+      "Paint": 497,
+      "Composite": 214,
+      "FireAnimationFrame": 507,
+      "countdownRaf": 256,
+      "digitPaint": 112,
+      "viewLayout": 188
+     },
+     "dt": {
+      "gt34": 8,
+      "gt30": 17,
+      "gt38": 6,
+      "gt50": 2,
+      "gt46": 2,
+      "gt54": 2,
+      "max": 97
+     },
+     "rfOver34": 8,
+     "maxFrameLayout": 40.3
+    }
+   }
+  },
+  "5C": {
+   "arm": "C",
+   "startedAt": "2026-10-03T00:07:42.773Z",
+   "served": {
+    "js": "4606120cf392",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    38.79,
+    39
+   ],
+   "digit": [
+    18,
+    36
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1065.4,
+     "slpMs": 1155.1,
+     "segMs": {
+      "script": 28.2,
+      "style": 89.7,
+      "layout": 633.6,
+      "paintComposite": 431.8,
+      "other": 2808.6
+     },
+     "counts": {
+      "RenderingFrame": 236,
+      "RecalculateStyles": 227,
+      "Layout": 204,
+      "Paint": 282,
+      "Composite": 238,
+      "FireAnimationFrame": 453,
+      "countdownRaf": 215,
+      "digitPaint": 113,
+      "viewLayout": 160
+     },
+     "dt": {
+      "gt34": 3,
+      "gt30": 4,
+      "gt38": 3,
+      "gt50": 2,
+      "gt46": 2,
+      "gt54": 2,
+      "max": 60
+     },
+     "rfOver34": 3,
+     "maxFrameLayout": 59.3
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 1153.3,
+     "slpMs": 1260.5,
+     "segMs": {
+      "script": 34.6,
+      "style": 107.2,
+      "layout": 665.2,
+      "paintComposite": 488.1,
+      "other": 2689.1
+     },
+     "counts": {
+      "RenderingFrame": 225,
+      "RecalculateStyles": 195,
+      "Layout": 200,
+      "Paint": 449,
+      "Composite": 229,
+      "FireAnimationFrame": 412,
+      "countdownRaf": 183,
+      "digitPaint": 95,
+      "viewLayout": 169
+     },
+     "dt": {
+      "gt34": 1,
+      "gt30": 3,
+      "gt38": 1,
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "max": 43
+     },
+     "rfOver34": 0,
+     "maxFrameLayout": 24.7
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 776.3,
+     "slpMs": 877.5,
+     "segMs": {
+      "script": 56,
+      "style": 101.2,
+      "layout": 598,
+      "paintComposite": 178.3,
+      "other": 3098.1
+     },
+     "counts": {
+      "RenderingFrame": 237,
+      "RecalculateStyles": 189,
+      "Layout": 186,
+      "Paint": 184,
+      "Composite": 236,
+      "FireAnimationFrame": 442,
+      "countdownRaf": 206,
+      "digitPaint": 104,
+      "viewLayout": 131
+     },
+     "dt": {
+      "gt34": 6,
+      "gt30": 7,
+      "gt38": 6,
+      "gt50": 0,
+      "gt46": 1,
+      "gt54": 0,
+      "max": 50
+     },
+     "rfOver34": 7,
+     "maxFrameLayout": 39.4
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1498.6,
+     "slpMs": 1639.8,
+     "segMs": {
+      "script": 38,
+      "style": 141.2,
+      "layout": 912.8,
+      "paintComposite": 585.8,
+      "other": 2332.5
+     },
+     "counts": {
+      "RenderingFrame": 213,
+      "RecalculateStyles": 261,
+      "Layout": 259,
+      "Paint": 509,
+      "Composite": 217,
+      "FireAnimationFrame": 514,
+      "countdownRaf": 260,
+      "digitPaint": 110,
+      "viewLayout": 192
+     },
+     "dt": {
+      "gt34": 9,
+      "gt30": 13,
+      "gt38": 6,
+      "gt50": 3,
+      "gt46": 4,
+      "gt54": 1,
+      "max": 95
+     },
+     "rfOver34": 9,
+     "maxFrameLayout": 52
+    }
+   }
+  },
+  "6V": {
+   "arm": "V",
+   "startedAt": "2026-10-03T00:08:40.977Z",
+   "served": {
+    "js": "638b8e03e81c",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    39,
+    39.09
+   ],
+   "digit": [
+    18,
+    36
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1100.6,
+     "slpMs": 1179.4,
+     "segMs": {
+      "script": 25.4,
+      "style": 78.8,
+      "layout": 634.2,
+      "paintComposite": 466.4,
+      "other": 2773
+     },
+     "counts": {
+      "RenderingFrame": 235,
+      "RecalculateStyles": 212,
+      "Layout": 183,
+      "Paint": 191,
+      "Composite": 239,
+      "FireAnimationFrame": 453,
+      "countdownRaf": 214,
+      "digitPaint": 7,
+      "viewLayout": 172
+     },
+     "dt": {
+      "gt34": 4,
+      "gt30": 4,
+      "gt38": 3,
+      "gt50": 1,
+      "gt46": 1,
+      "gt54": 0,
+      "max": 53
+     },
+     "rfOver34": 4,
+     "maxFrameLayout": 36.3
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 1015.7,
+     "slpMs": 1123.7,
+     "segMs": {
+      "script": 31.4,
+      "style": 108,
+      "layout": 595.6,
+      "paintComposite": 420.1,
+      "other": 2828
+     },
+     "counts": {
+      "RenderingFrame": 228,
+      "RecalculateStyles": 187,
+      "Layout": 193,
+      "Paint": 323,
+      "Composite": 231,
+      "FireAnimationFrame": 422,
+      "countdownRaf": 191,
+      "digitPaint": 0,
+      "viewLayout": 171
+     },
+     "dt": {
+      "gt34": 4,
+      "gt30": 6,
+      "gt38": 3,
+      "gt50": 1,
+      "gt46": 2,
+      "gt54": 0,
+      "max": 51
+     },
+     "rfOver34": 3,
+     "maxFrameLayout": 43.6
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 523.5,
+     "slpMs": 619.1,
+     "segMs": {
+      "script": 36,
+      "style": 95.6,
+      "layout": 421.6,
+      "paintComposite": 101.9,
+      "other": 3367.8
+     },
+     "counts": {
+      "RenderingFrame": 237,
+      "RecalculateStyles": 119,
+      "Layout": 95,
+      "Paint": 82,
+      "Composite": 237,
+      "FireAnimationFrame": 509,
+      "countdownRaf": 272,
+      "digitPaint": 0,
+      "viewLayout": 48
+     },
+     "dt": {
+      "gt34": 8,
+      "gt30": 9,
+      "gt38": 6,
+      "gt50": 2,
+      "gt46": 2,
+      "gt54": 0,
+      "max": 52
+     },
+     "rfOver34": 12,
+     "maxFrameLayout": 42.9
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1438.4,
+     "slpMs": 1574.5,
+     "segMs": {
+      "script": 28.6,
+      "style": 136.1,
+      "layout": 870.2,
+      "paintComposite": 568.2,
+      "other": 2411.4
+     },
+     "counts": {
+      "RenderingFrame": 214,
+      "RecalculateStyles": 222,
+      "Layout": 216,
+      "Paint": 413,
+      "Composite": 217,
+      "FireAnimationFrame": 509,
+      "countdownRaf": 255,
+      "digitPaint": 36,
+      "viewLayout": 196
+     },
+     "dt": {
+      "gt34": 7,
+      "gt30": 12,
+      "gt38": 5,
+      "gt50": 3,
+      "gt46": 3,
+      "gt54": 3,
+      "max": 98
+     },
+     "rfOver34": 7,
+     "maxFrameLayout": 54.3
+    }
+   }
+  },
+  "7V": {
+   "arm": "V",
+   "startedAt": "2026-10-03T00:09:38.917Z",
+   "served": {
+    "js": "638b8e03e81c",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    39.19,
+    39.29
+   ],
+   "digit": [
+    18,
+    36
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1032.3,
+     "slpMs": 1128.7,
+     "segMs": {
+      "script": 31.3,
+      "style": 96.4,
+      "layout": 574.8,
+      "paintComposite": 457.5,
+      "other": 2819
+     },
+     "counts": {
+      "RenderingFrame": 239,
+      "RecalculateStyles": 227,
+      "Layout": 175,
+      "Paint": 199,
+      "Composite": 240,
+      "FireAnimationFrame": 654,
+      "countdownRaf": 414,
+      "digitPaint": 27,
+      "viewLayout": 164
+     },
+     "dt": {
+      "gt34": 2,
+      "gt30": 2,
+      "gt38": 2,
+      "gt50": 1,
+      "gt46": 2,
+      "gt54": 0,
+      "max": 53
+     },
+     "rfOver34": 3,
+     "maxFrameLayout": 42.7
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 1022.3,
+     "slpMs": 1131.2,
+     "segMs": {
+      "script": 28.7,
+      "style": 108.9,
+      "layout": 600.8,
+      "paintComposite": 421.5,
+      "other": 2842.2
+     },
+     "counts": {
+      "RenderingFrame": 226,
+      "RecalculateStyles": 182,
+      "Layout": 186,
+      "Paint": 321,
+      "Composite": 230,
+      "FireAnimationFrame": 483,
+      "countdownRaf": 253,
+      "digitPaint": 0,
+      "viewLayout": 163
+     },
+     "dt": {
+      "gt34": 3,
+      "gt30": 5,
+      "gt38": 3,
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "max": 46
+     },
+     "rfOver34": 4,
+     "maxFrameLayout": 43.8
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 535.7,
+     "slpMs": 630.6,
+     "segMs": {
+      "script": 37.6,
+      "style": 94.9,
+      "layout": 429.4,
+      "paintComposite": 106.3,
+      "other": 3353.4
+     },
+     "counts": {
+      "RenderingFrame": 238,
+      "RecalculateStyles": 125,
+      "Layout": 101,
+      "Paint": 82,
+      "Composite": 238,
+      "FireAnimationFrame": 507,
+      "countdownRaf": 269,
+      "digitPaint": 0,
+      "viewLayout": 49
+     },
+     "dt": {
+      "gt34": 8,
+      "gt30": 10,
+      "gt38": 6,
+      "gt50": 2,
+      "gt46": 3,
+      "gt54": 0,
+      "max": 51
+     },
+     "rfOver34": 11,
+     "maxFrameLayout": 42.9
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1490.9,
+     "slpMs": 1635.8,
+     "segMs": {
+      "script": 32.9,
+      "style": 144.9,
+      "layout": 953.9,
+      "paintComposite": 537,
+      "other": 2361.9
+     },
+     "counts": {
+      "RenderingFrame": 213,
+      "RecalculateStyles": 221,
+      "Layout": 210,
+      "Paint": 393,
+      "Composite": 218,
+      "FireAnimationFrame": 444,
+      "countdownRaf": 190,
+      "digitPaint": 28,
+      "viewLayout": 191
+     },
+     "dt": {
+      "gt34": 9,
+      "gt30": 16,
+      "gt38": 6,
+      "gt50": 2,
+      "gt46": 2,
+      "gt54": 2,
+      "max": 96
+     },
+     "rfOver34": 10,
+     "maxFrameLayout": 60.2
+    }
+   }
+  },
+  "8C": {
+   "arm": "C",
+   "startedAt": "2026-10-03T00:10:37.006Z",
+   "served": {
+    "js": "4606120cf392",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    39.39,
+    39.5
+   ],
+   "digit": [
+    18,
+    36
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1028.9,
+     "slpMs": 1135.8,
+     "segMs": {
+      "script": 43.2,
+      "style": 106.9,
+      "layout": 608.8,
+      "paintComposite": 420.1,
+      "other": 2809.9
+     },
+     "counts": {
+      "RenderingFrame": 235,
+      "RecalculateStyles": 230,
+      "Layout": 194,
+      "Paint": 324,
+      "Composite": 239,
+      "FireAnimationFrame": 582,
+      "countdownRaf": 343,
+      "digitPaint": 125,
+      "viewLayout": 159
+     },
+     "dt": {
+      "gt34": 4,
+      "gt30": 4,
+      "gt38": 3,
+      "gt50": 1,
+      "gt46": 1,
+      "gt54": 1,
+      "max": 56
+     },
+     "rfOver34": 2,
+     "maxFrameLayout": 38.7
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 1131.1,
+     "slpMs": 1245.2,
+     "segMs": {
+      "script": 35.9,
+      "style": 114.1,
+      "layout": 672.2,
+      "paintComposite": 458.9,
+      "other": 2731
+     },
+     "counts": {
+      "RenderingFrame": 224,
+      "RecalculateStyles": 203,
+      "Layout": 203,
+      "Paint": 460,
+      "Composite": 228,
+      "FireAnimationFrame": 474,
+      "countdownRaf": 246,
+      "digitPaint": 86,
+      "viewLayout": 167
+     },
+     "dt": {
+      "gt34": 3,
+      "gt30": 4,
+      "gt38": 1,
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "max": 45
+     },
+     "rfOver34": 4,
+     "maxFrameLayout": 34.9
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 955.3,
+     "slpMs": 1053.8,
+     "segMs": {
+      "script": 56.9,
+      "style": 98.5,
+      "layout": 779.5,
+      "paintComposite": 175.8,
+      "other": 2908
+     },
+     "counts": {
+      "RenderingFrame": 242,
+      "RecalculateStyles": 198,
+      "Layout": 194,
+      "Paint": 185,
+      "Composite": 242,
+      "FireAnimationFrame": 454,
+      "countdownRaf": 212,
+      "digitPaint": 105,
+      "viewLayout": 135
+     },
+     "dt": {
+      "gt34": 4,
+      "gt30": 5,
+      "gt38": 1,
+      "gt50": 1,
+      "gt46": 1,
+      "gt54": 1,
+      "max": 55
+     },
+     "rfOver34": 2,
+     "maxFrameLayout": 31.1
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1524.9,
+     "slpMs": 1669.7,
+     "segMs": {
+      "script": 41.3,
+      "style": 144.8,
+      "layout": 988.7,
+      "paintComposite": 536.2,
+      "other": 2299.2
+     },
+     "counts": {
+      "RenderingFrame": 210,
+      "RecalculateStyles": 251,
+      "Layout": 260,
+      "Paint": 493,
+      "Composite": 214,
+      "FireAnimationFrame": 439,
+      "countdownRaf": 188,
+      "digitPaint": 124,
+      "viewLayout": 182
+     },
+     "dt": {
+      "gt34": 9,
+      "gt30": 16,
+      "gt38": 6,
+      "gt50": 2,
+      "gt46": 2,
+      "gt54": 2,
+      "max": 97
+     },
+     "rfOver34": 7,
+     "maxFrameLayout": 47.9
+    }
+   }
+  },
+  "attrC": {
+   "arm": "C",
+   "startedAt": "2026-10-03T00:13:40.507Z",
+   "served": {
+    "js": "4606120cf392",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    40.69,
+    40.89
+   ],
+   "digit": [
+    17.28,
+    34.56
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1194.1,
+     "slpMs": 1311.2,
+     "segMs": {
+      "script": 38.9,
+      "style": 117.1,
+      "layout": 744.3,
+      "paintComposite": 449.8,
+      "other": 2678.7
+     },
+     "counts": {
+      "RenderingFrame": 236,
+      "RecalculateStyles": 234,
+      "Layout": 198,
+      "Paint": 286,
+      "Composite": 242,
+      "FireAnimationFrame": 454,
+      "countdownRaf": 212,
+      "digitPaint": 109,
+      "viewLayout": 178
+     },
+     "dt": {
+      "gt34": 1,
+      "gt30": 2,
+      "gt38": 1,
+      "gt50": 0,
+      "gt46": 1,
+      "gt54": 0,
+      "max": 48
+     },
+     "rfOver34": 4,
+     "maxFrameLayout": 28.4
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 859.2,
+     "slpMs": 1015,
+     "segMs": {
+      "script": 56.2,
+      "style": 155.8,
+      "layout": 532.6,
+      "paintComposite": 326.6,
+      "other": 2968.7
+     },
+     "counts": {
+      "RenderingFrame": 232,
+      "RecalculateStyles": 236,
+      "Layout": 217,
+      "Paint": 408,
+      "Composite": 233,
+      "FireAnimationFrame": 514,
+      "countdownRaf": 281,
+      "digitPaint": 105,
+      "viewLayout": 152
+     },
+     "dt": {
+      "gt34": 4,
+      "gt30": 4,
+      "gt38": 4,
+      "gt50": 1,
+      "gt46": 1,
+      "gt54": 1,
+      "max": 59
+     },
+     "rfOver34": 5,
+     "maxFrameLayout": 42.3
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 949.6,
+     "slpMs": 1014,
+     "segMs": {
+      "script": 41.8,
+      "style": 64.4,
+      "layout": 817.6,
+      "paintComposite": 132,
+      "other": 2965.1
+     },
+     "counts": {
+      "RenderingFrame": 238,
+      "RecalculateStyles": 184,
+      "Layout": 194,
+      "Paint": 192,
+      "Composite": 239,
+      "FireAnimationFrame": 513,
+      "countdownRaf": 274,
+      "digitPaint": 85,
+      "viewLayout": 138
+     },
+     "dt": {
+      "gt34": 5,
+      "gt30": 5,
+      "gt38": 4,
+      "gt50": 1,
+      "gt46": 3,
+      "gt54": 0,
+      "max": 52
+     },
+     "rfOver34": 5,
+     "maxFrameLayout": 37.9
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1722.5,
+     "slpMs": 1829.4,
+     "segMs": {
+      "script": 30.8,
+      "style": 106.9,
+      "layout": 1130.7,
+      "paintComposite": 591.8,
+      "other": 2181.4
+     },
+     "counts": {
+      "RenderingFrame": 220,
+      "RecalculateStyles": 260,
+      "Layout": 275,
+      "Paint": 499,
+      "Composite": 222,
+      "FireAnimationFrame": 479,
+      "countdownRaf": 220,
+      "digitPaint": 92,
+      "viewLayout": 231
+     },
+     "dt": {
+      "gt34": 6,
+      "gt30": 7,
+      "gt38": 5,
+      "gt50": 2,
+      "gt46": 2,
+      "gt54": 2,
+      "max": 106
+     },
+     "rfOver34": 7,
+     "maxFrameLayout": 50.7
+    }
+   }
+  },
+  "attrV": {
+   "arm": "V",
+   "startedAt": "2026-10-03T00:14:48.919Z",
+   "served": {
+    "js": "638b8e03e81c",
+    "css": "27776f3d4138"
+   },
+   "battery": [
+    40.89,
+    41.09
+   ],
+   "digit": [
+    18,
+    36
+   ],
+   "windows": {
+    "top": {
+     "ticks": 4,
+     "lpcMs": 1054,
+     "slpMs": 1155.7,
+     "segMs": {
+      "script": 37.3,
+      "style": 101.7,
+      "layout": 588.3,
+      "paintComposite": 465.7,
+      "other": 2812.8
+     },
+     "counts": {
+      "RenderingFrame": 239,
+      "RecalculateStyles": 228,
+      "Layout": 175,
+      "Paint": 186,
+      "Composite": 240,
+      "FireAnimationFrame": 520,
+      "countdownRaf": 280,
+      "digitPaint": 13,
+      "viewLayout": 164
+     },
+     "dt": {
+      "gt34": 2,
+      "gt30": 3,
+      "gt38": 2,
+      "gt50": 1,
+      "gt46": 2,
+      "gt54": 0,
+      "max": 51
+     },
+     "rfOver34": 3,
+     "maxFrameLayout": 40.3
+    },
+    "heroExit": {
+     "ticks": 4,
+     "lpcMs": 1016.6,
+     "slpMs": 1125,
+     "segMs": {
+      "script": 32.1,
+      "style": 108.4,
+      "layout": 619.6,
+      "paintComposite": 397,
+      "other": 2851.7
+     },
+     "counts": {
+      "RenderingFrame": 226,
+      "RecalculateStyles": 179,
+      "Layout": 184,
+      "Paint": 327,
+      "Composite": 230,
+      "FireAnimationFrame": 484,
+      "countdownRaf": 254,
+      "digitPaint": 0,
+      "viewLayout": 162
+     },
+     "dt": {
+      "gt34": 3,
+      "gt30": 4,
+      "gt38": 2,
+      "gt50": 1,
+      "gt46": 2,
+      "gt54": 1,
+      "max": 63
+     },
+     "rfOver34": 3,
+     "maxFrameLayout": 38.3
+    },
+    "pastHero": {
+     "ticks": 4,
+     "lpcMs": 562.4,
+     "slpMs": 654.8,
+     "segMs": {
+      "script": 35,
+      "style": 92.4,
+      "layout": 463.2,
+      "paintComposite": 99.2,
+      "other": 3327.4
+     },
+     "counts": {
+      "RenderingFrame": 234,
+      "RecalculateStyles": 122,
+      "Layout": 101,
+      "Paint": 84,
+      "Composite": 234,
+      "FireAnimationFrame": 490,
+      "countdownRaf": 256,
+      "digitPaint": 4,
+      "viewLayout": 48
+     },
+     "dt": {
+      "gt34": 5,
+      "gt30": 5,
+      "gt38": 5,
+      "gt50": 5,
+      "gt46": 5,
+      "gt54": 4,
+      "max": 61
+     },
+     "rfOver34": 10,
+     "maxFrameLayout": 60.7
+    },
+    "resume": {
+     "ticks": 4,
+     "lpcMs": 1516.2,
+     "slpMs": 1660.2,
+     "segMs": {
+      "script": 38.7,
+      "style": 144,
+      "layout": 988.2,
+      "paintComposite": 528,
+      "other": 2323.1
+     },
+     "counts": {
+      "RenderingFrame": 212,
+      "RecalculateStyles": 212,
+      "Layout": 207,
+      "Paint": 391,
+      "Composite": 216,
+      "FireAnimationFrame": 439,
+      "countdownRaf": 186,
+      "digitPaint": 28,
+      "viewLayout": 187
+     },
+     "dt": {
+      "gt34": 9,
+      "gt30": 15,
+      "gt38": 6,
+      "gt50": 2,
+      "gt46": 3,
+      "gt54": 2,
+      "max": 100
+     },
+     "rfOver34": 7,
+     "maxFrameLayout": 38.3
+    }
+   }
+  }
+ }
+}
