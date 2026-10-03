@@ -6,8 +6,12 @@
 **Status:** final build **strip-rw** (per-cell layers in an uncomposited wrapper re-based by one write; lead
 decision 2026-10-03 05:0xZ after review round 2), plus review round 2's B1 fix (the scene-pause rule covers strips and
 cells, CSS only); pixel identity in Chrome and WebKit (Simulator) with one residual delta-1 class under the 50 % hero
-fade (R-fade). **The user accepted it: PR-008, option land-strip, 2026-10-03 06:52:53Z** (lead, T-030 #18). WebKit
-counts on the Simulator; no timing run (timing A/Bs are deferred, user 2026-10-02)
+fade (R-fade). The user accepted it (PR-008 rev 1, option land-strip, 2026-10-03 06:52:53Z); **the lead put that on
+hold at 07:54Z** (the review round 3 checks found a Chrome delta-1 class at the 0.9 hero fade, which rev 1 did not
+state, and wrapper layout shifts in Chrome). A second build, **strip-tc** (cells moved by transform, wrapper never
+moves), has no clock layout shifts. **PR-008 rev 2 (posted 2026-10-03 09:2xZ): land-strip-tc (recommended), land-strip
+(strip-rw), park; the user decides again.** `patch.diff` stays strip-rw until then (section "Review round 3 and PR-008
+rev 2"). WebKit counts on the Simulator; no timing run (timing A/Bs are deferred, user 2026-10-02)
 **Stage:** F (build card below), review round 3 next. D: LOCATED, signed by the lead on the fast path (2026-10-03
 01:1xZ, no gain claim: the frame effect is measured only in the wave-2 phone run, so no phone segment card now)
 **Device class / gate:** render-bound / phone-only (WebKit paint and layer work; Chrome 6x can't stand in for it)
@@ -475,7 +479,67 @@ scene's bottom is f viewports above the viewport top, then 1.5 s settle and a La
   change the re-entry gain, and the gain is again a count of digit-sized records, not paint area.
 - At the top: hero clock layers 80 / 96 / 80, page layers 131 / 143 / 131, Layout per 4 s 178 / 178 / 178.
 
-G7, G8, G9: below, as they come.
+## Review round 3 and PR-008 rev 2 (G7-G17 Chrome, S1-S5 Simulator; 2026-10-03 07:0x-09:1xZ)
+
+Every run in the shared lane (counts and frozen frames only, no timing), A/A in the same run. Raw: `out/cd-strip/`
+(`g<N>.sh`/`.log`, `s<N>.sh`/`.log`, `pixels-*`, `idle-*`, `sim/`, `simpx/`), immutable arm copies `out/cd-strip/snap/`.
+Builds: strip-rw JS `5e37af69bcc4` / CSS `40078cb2d9cf` (this `patch.diff`); **strip-tc** JS `6fa0e1e8a221` / CSS
+`982a747d9263`: the wrapper never moves; one effect on [c, m] writes cell k `translateY((k − m)·c)`; CSS adds
+`.cell{top:0}` and keeps the B1 scene-pause lines (CSS 11932-11933); strip-tw JS `939154aebc29` (wrapper by transform),
+dropped: WebKit composites the wrapper (S1), the geometry that showed the strip-cl delta.
+
+**Why rev 2.** (1) G7 (07-05Z) counted 4-5 layout-shift reports per top window for strip-rw vs 2 for the faces; the
+tool did not yet record sources. G8/G9/G11 recorded them: the extra ones are `span.cdwrap` (the wrapper's `top`
+move), own score 0.000006-0.000355 per 5 s window, 6 of 8 windows above 0 over 3 runs (07-13Z 0/2, 07-23Z 3/3, 07-57Z
+3/3). A `top` move is a layout shift, a transform-only move is not (CONFIRMED: WICG Layout Instability, https://wicg.github.io/layout-instability/ §2.1-2.2,
+"unstable" is judged on the layout box's starting point, transforms excluded). (2) G7/G9 found a delta-1 class at the
+0.9 hero fade (clock opacity ~0.1) that rev 1 did not state; strip-rw before the B1 fix (9b2f) has it the same (16 vs 17
+of 84 shots in G7), so it is not the B1 fix.
+
+**Layout shifts and counts (Chrome, idle census, 5 s windows).**
+- Clock layout shifts: strip-tc 0 in 3 top windows (G11) + 6 top, 6 mid, 5 end windows (G16); strip-tw 0 (G11). The h1
+  rotator (`h1.svelte-1p2vpne`) shifts in every build, faces included: 0.001126 per 5 s.
+- LayoutCount/s, tc vs faces: top 1.8-2.2 vs 1.6-2.2 (9 and 8 windows, G11+G16), mid 1 vs 1, end 0 vs 0 (G16). strip-rw:
+  top 3.8-5.4, mid 2.8-3, end 1. RecalcStyleCount/s equal at every spot (top 51-56, mid 24-33, end 60).
+- Inline style writes/s (G16, same session): top tc 50.4-75.8 vs faces 58.4-78; **mid 22-26.4 vs 6-11.2, end 22-30.8 vs
+  6-7.2**. Off-screen the faces snap once per tick; strip-tc writes 11 cell transforms per whole-cell step (m change),
+  every tick there. strip-rw: mid 2-2.8, end 2-2.2 (06-25Z). tc's one count that goes up; stated in rev 2. G16 ran
+  past `--max-seconds 300` (exit 124, no JSON); the windows are recovered from its log lines (`idlelog.mjs`).
+- Chrome layers (G11 layer census): page 126 (faces: 80 face layers) vs 137-142 (8 strips + 88 cells) for every strip
+  build. Simulator (S2, S5): hero clock 96 layers vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; page 143-147 vs 131.
+
+**Pixels, Chrome (430x932 DPR 3 unless noted).**
+- G12: strip-tc hero + panel 0 of 428 (A/A 0). G17: panel in-between states (m 0.25/0.5/0.75) 0 of 63.
+- G13c (08-35Z), the 0.9 fade class, same session, order F rw tc F tc rw F (FADES 0.75,0.9, all-pairs): strip vs faces
+  8-11 of 21 shots at 0.9 (rw r1 10/11/9, rw r5 9/10/8, tc r2 10/10/11, tc r4 9/10/9 vs faces r0/r3/r6); faces A/A 4, 4, 2
+  (one 8-px spot on the minutes digits only). rw vs rw 4, tc vs tc 9, rw vs tc 6-9. Delta 1 everywhere. Spots (DPR 3
+  crop): days/hours digits up to 83 px, minutes digits 7-13 px, a card's top edge 23 px. At 0.75: 5 of 21 in every pair
+  (the paragraph reveal). rw and tc carry the same class.
+- Widths (cell c from the spacer's offsetHeight: 31 at 375, 36 at 430/768, 52 at 1440/1536):
+  - 375x812@3 fresh (G13, 259 shots): strip-rw, strip-tc and faces-again identical; faces' first run differs from all
+    three in 34 (1-84 px, delta 1).
+  - 412x915@2.625 fresh (G15, tc): 1 of 259 differs, the same shot the A/A differs on (338 px, delta 2).
+  - live resize from 430 (`heroresize`, FREEZE=1): 768x1024@2 and 1536x864@1.25 (not mobile): 0 of 21 for rw and tc
+    (G17); 1440x900@1: rw 0, tc 5 of 21 on a 1-px vertical line at a card's edge (82 px, delta 5), which faces-again
+    shows in 13 of 21 (G14b).
+  - Fresh loads at 768, 1440 and 1536@1.25 (G14, G14b, G15) are void: the faces A/A differs in every shot (the whole
+    clock lands a sub-pixel apart between loads, with FREEZE=1 and an 8 s settle; clip rect identical; OBSERVED, cause
+    unknown). After a live resize the A/A is stable.
+
+**Pixels, Simulator (WebKit).** strip-tc: hero at rest 0 (S2), fade90 0 of 5 and panel 0 of 6 (S3/S4); fade50x (S2,
+S4): 2 of 13 frames vs the A/A's 3 of 13 at the same spots (26 and 4 px, delta 1), and 2 of 13 vs 1 of 13 in the other
+session; pooled A/A 8 of 91 (9 %), tc 4 of 26 (15 %), rw 3 of 26 (12 %). strip-tw: hero 0 of 22 (S1), but composited
+wrapper.
+
+**Re-entry (S5, one session, faces / tc / rw).** Digit Paint records in the first 1 s back at the top 55 / 23 / 31; paint
+area 4.10 / 4.11 Mpx (unchanged). Morph pin m = 1 holds (S3): tc 1.32-1.34 Layout per frame, rw 1.32-1.37 (not re-run
+against the faces).
+
+**PR-008 rev 2** (posted 09:2xZ, `out/cd-strip/pr2/proposal.json`, filled by `pr2/fill.mjs` from `pr2/widths.json`): options
+land-strip-tc (recommended), land-strip (strip-rw), park; same-session rates first, then pooled; the Chrome 0.9 class
+in plain words in both build options, with rev 1's "Chrome shows nothing" corrected; tc's off-screen style-write cost
+side by side with rw's extra layouts. The rev 1 acceptance is stale; P-072 is not registered until the user decides
+again. If tc is chosen: port tc into the overlay, regenerate `patch.diff` and the hashes, tell fix-cd-roll-ca (C8/V9).
 
 ## Review answers (where each point is answered)
 
@@ -637,8 +701,11 @@ rubber band (all need a timed or phone run; the pixel harness covers the clock s
 
 ## Next
 
-- The user accepted land-strip (PR-008). Remaining: the G7-G9 re-runs, review round 3, P-072 registered against the
-  BUILD card before any phone data (second read by mgmt-ops-9), then the land request.
+- PR-008 rev 2 waits for the user's new decision (the rev 1 acceptance of land-strip is stale). On a final decision:
+  tc -> port strip-tc into the overlay, regenerate `patch.diff` and the hashes, new BUILD card, fix-cd-roll-ca takes
+  its tc branch (C8/V9); rw -> `patch.diff` stays, fix-cd-roll-ca session B; park -> stop, fix-cd-roll-ca stops. Then
+  P-072 registered against the chosen build card before any phone data (mgmt-ops second read), review round 3, land
+  request.
 - Phone: the frame effect is measured only in the wave-2 phone run against P-072 (D was signed on the fast path with
   no gain claim, so no separate phone segment card now).
 - P-032 (fix-nav-morph) is re-registered on the strip build after the D card.
@@ -646,8 +713,11 @@ rubber band (all need a timed or phone run; the pixel harness covers the clock s
 
 ## Risks, conflicts, follow-ups
 
-- R-fade and the possible pin cost (USER DECISION card): accepted by the user (PR-008, land-strip); the pin cost is
-  checked in the wave-2 phone run (P-072).
+- R-fade, the Chrome 0.9-fade class and the possible pin cost: in PR-008 rev 2 for the user's decision; the pin cost
+  is checked in the wave-2 phone run (P-072).
+- strip-tc writes 11 cell transforms per whole-cell step: off-screen inline style writes 22-31/s vs 6-11 (Chrome,
+  RecalcStyle and Layout counts unchanged). Gating those writes while the scene is paused is a possible follow-up with
+  its own count check (lead: not before the decision).
 - Scene pause: `.strip`/`.cell` must stay in st6-rb2's scene-pause list (scroll-engine /10b, scene-scope V1); dropping
   them keeps 96 hero clock layers in the paused-but-rendered band, where the faces have 0.
 - fix-cd-roll-ca relies on this build's shape: `w = r.firstChild` is the wrapper, cells are `w.children`; effect 1
@@ -670,10 +740,15 @@ rubber band (all need a timed or phone run; the pixel harness covers the clock s
 
 ## Files
 
-`patch.diff` (strip-rw), `../cd-strip--a/patch.diff` (arm a, rejected), `pixels.mjs` (Chrome frozen-frame harness),
+`patch.diff` (strip-rw), `../cd-strip--a/patch.diff` (arm a, rejected), `pixels.mjs` (Chrome frozen-frame harness;
+env `FADES` (herofade opacities), `ORDER` (an interleaved arm order, e.g. F rw tc F tc rw F, with all-pairs compares and
+runs labelled `<arm>-r<i>`), `FREEZE=1` (pause every `document.getAnimations()` at 0 before hero shots), `SETTLE` (ms
+after load), `RESIZE` (`WxHxDPR[x0]` list for the `heroresize` pass: a live `Emulation.setDeviceMetricsOverride` from
+430, the cell size recorded); each pixel diff carries its `bbox`),
 `simpx.mjs` (Simulator frozen-frame harness), `sim.mjs` (Simulator counts, the wrapper census and the `band` phase:
 LayerTree census in the paused-but-rendered band), `idle.mjs` (idle triple, adapted from scene-scope's
 `idletriple.mjs`; Layout and RecalcStyle counts via CDP `Performance.getMetrics`; `obsBy`: callbacks per observer class
-and PerformanceObserver entries per entryType; env `SPOTS`),
+and PerformanceObserver entries per entryType; layout-shift score per source set; a Chrome layer census; env `SPOTS`,
+`ROUNDS`, `LAYERS`; arms strip-tw and strip-tc), `simpx.mjs` also compares the test arm with the second control run,
 `snap.mjs` (immutable arm copies), `pool.mjs` (pools the Simulator fade50 shot differences by build and region:
 the R-fade table), `results.json`.

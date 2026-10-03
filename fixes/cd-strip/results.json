@@ -310,7 +310,7 @@
   },
   "note": "diff against the plain baseline, not st6-rb2"
  },
- "verdict": "mechanism (Sim): hero clock backing 1.18 -> 0.39 MB (48 -> 16 backed layers), re-entry clock Paint first 1 s 54-55 -> 23; no idle-paint gain; Chrome style writes/s lower at every spot, LayoutCount/s +1 to +3. Pixels: Chrome identical beyond its A/A; Simulator identical except residual R-fade (delta 1, fade50 mid-roll, 3/26 vs A/A 4/65) -> user decision. Frame gain: not measured (P-072 draft).",
+ "verdict": "mechanism (Sim): hero clock backing 1.18 -> 0.39 MB (48 -> 16 backed layers), re-entry clock Paint first 1 s 54-55 -> 23; no idle-paint gain; Chrome style writes/s lower at every spot, LayoutCount/s +1 to +3. Pixels: Chrome identical beyond its A/A; Simulator identical except residual R-fade (delta 1, fade50 mid-roll, 3/26 vs A/A 4/65) -> user decision. Frame gain: not measured (P-072 draft). | Review round 3: Chrome 0.9-fade delta-1 class in both strip builds (8-11/21 vs A/A 2-4/21); strip-rw wrapper layout shifts (tiny, not 0); strip-tc 0 clock shifts, Layout/RecalcStyle as faces, off-screen style writes up (22-31 vs 6-11/s). PR-008 rev 2 to the user.",
  "regressions": {
   "visual": "R-fade: delta-1 glyph-edge difference on the rolling seconds digit in single frames at 50 % hero fade (Simulator); user decision pending",
   "layout": "Chrome +1 to +3 layouts per s (wrapper top write); Sim 1 of 2 m=1 pin holds +8 Layout over the A/A range",
@@ -446,5 +446,73 @@
    },
    "verdict": "mechanism: hero clock WebKit Paint records 13 -> 0 per 4 s, clock layers 80 -> 8, panel tween paints 0 -> 0, pixel-identical to st6-rb2 (arm b). Frame gain: not measured (phone segment card needed). Arm a rejected (tween re-raster, not pixel-identical)."
   }
+ },
+ "review3": {
+  "at": "2026-10-03 07:0x-09:1xZ",
+  "builds": {
+   "strip-rw": {
+    "js": "5e37af69bcc4",
+    "css": "40078cb2d9cf",
+    "note": "this patch.diff"
+   },
+   "strip-tc": {
+    "js": "6fa0e1e8a221",
+    "css": "982a747d9263",
+    "note": "wrapper never moves; cell k translateY((k-m)*c) on [c, m]; .cell{top:0}; B1 scene-pause lines kept"
+   },
+   "strip-tw": {
+    "js": "939154aebc29",
+    "css": "40078cb2d9cf",
+    "note": "wrapper by transform; dropped: WebKit composites the wrapper (S1)"
+   }
+  },
+  "layoutShift": {
+   "claim": "a transform-only move is not a layout shift; a top move is: CONFIRMED, https://wicg.github.io/layout-instability/ s2.1-2.2",
+   "strip-rw": "span.cdwrap own score 0.000006-0.000355 per 5 s top window, 6 of 8 windows > 0 over 3 runs (07-13Z 0/2, 07-23Z 3/3, 07-57Z 3/3); G7 4-5 reports/window vs 2 before sources were recorded (not scored)",
+   "strip-tc": "0 from the clock in 3 top windows (G11) + 6 top, 6 mid, 5 end (G16)",
+   "rotator": "h1.svelte-1p2vpne 0.001126 per 5 s in every build"
+  },
+  "chromeCountsPerSec_G16": {
+   "windows": "faces 5/5/5, tc 6/6/5 (top/mid/end), 5 s each; killed at 300 s, recovered from g16.log",
+   "layout": {
+    "faces": "top 2-2.2, mid 1, end 0",
+    "tc": "top 2, mid 1, end 0",
+    "rw_0625Z": "top 5-5.2, mid 2.8-3, end 1"
+   },
+   "recalcStyle": {
+    "faces": "top 52.4-55.6, mid 24.4-32.6, end 60-60.2",
+    "tc": "top 53.6-54.4, mid 26.2-32.4, end 60"
+   },
+   "inlineStyleWrites": {
+    "faces": "top 58.4-78, mid 6-11.2, end 6-7.2",
+    "tc": "top 50.4-75.8, mid 22-26.4, end 22-30.8",
+    "rw_0625Z": "top 38.6-39.8, mid 2-2.8, end 2-2.2"
+   },
+   "note": "tc writes 11 cell transforms per whole-cell step; off-screen the clock snaps every tick"
+  },
+  "chromeLayers_G11": {
+   "faces": 126,
+   "strips": "137-142 (8 strips + 88 cells)"
+  },
+  "pixelsChrome": {
+   "G12": "tc hero + panel 0 of 428 (A/A 0)",
+   "G17_panelmid": "tc m 0.25/0.5/0.75 0 of 63",
+   "G13c_fade09": "same session, order F rw tc F tc rw F: strip vs faces 8-11 of 21 (rw 10/11/9, 9/10/8; tc 10/10/11, 9/10/9); faces A/A 4, 4, 2 (one 8-px minutes spot); rw-rw 4, tc-tc 9, rw-tc 6-9; delta 1; rw = tc",
+   "widths": {
+    "375@3 fresh (G13)": "rw, tc, faces-again identical over 259; faces first run differs in 34 (delta 1)",
+    "412@2.625 fresh (G15)": "tc 1 of 259, the same shot as the A/A (338 px, delta 2)",
+    "768@2 resize (G17)": "rw 0, tc 0 of 21",
+    "1536@1.25 resize (G17)": "rw 0, tc 0 of 21",
+    "1440@1 resize (G14b)": "rw 0, tc 5 of 21 (1-px card-edge line, 82 px, delta 5); faces A/A 13 of 21",
+    "fresh loads >= 768": "void: faces A/A differs in every shot (sub-pixel clock offset between loads; OBSERVED, cause unknown)"
+   }
+  },
+  "simulator": {
+   "tcPixels": "rest 0, fade90 0 of 5, panel 0 of 6, fade50x 2/13 vs A/A 3/13 same spots; other session 2/13 vs 1/13; pooled A/A 8/91, tc 4/26, rw 3/26",
+   "S5_reentry": "digit Paint records first 1 s faces/tc/rw 55/23/31, paint area 4.10/4.11 Mpx",
+   "layers": "hero clock 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; page 143-147 vs 131",
+   "pinHold": "tc 1.32-1.34 Layout per frame, rw 1.32-1.37 (not vs faces)"
+  },
+  "proposal": "PR-008 rev 2 posted 09:2xZ: land-strip-tc (recommended), land-strip, park; rev 1 acceptance stale; P-072 waits for the decision"
  }
 }
