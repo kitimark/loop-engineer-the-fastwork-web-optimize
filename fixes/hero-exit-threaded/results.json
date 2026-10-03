@@ -331,7 +331,7 @@
   "restoreSwitchFrame_r2i": "V (d48d) vs V1 (301e): countdown digits only, pgsR and settle; var already removed in the probe second frame in both (ready resolves within the switch frame on the Simulator, OBSERVED); V vs C = V1 vs C (clock + y800-900 band max 91, present at settle too: C session state)",
   "functionalCheck": "fix.mjs check --viewport both ok (0 errors, 0 4xx, screenshot diff <= 0.54 %)",
   "chromeParity": "not re-run: heCss false in Chrome (no GestureEvent), heHold never runs",
-  "wideBranch_deBreakpoints": "Chrome + GestureEvent stub on 301ec740291b: V vs C 0 px beyond A/A at 6 stops in 932x430, 1440, 1440 reduced motion; WebKit width 980 pending",
+  "wideBranch_deBreakpoints": "Chrome + GestureEvent stub on the round-2 build 301ec740291b (not d48d; heHold only defers the drop): V vs C 0 px beyond A/A at 6 stops in 932x430, 1440, 1440 reduced motion; WebKit width 980 pending",
   "wording": [
    "mechanism 7: flash predicted by the review, not reproduced on the Simulator (OBSERVED), heHold kept as a guard",
    "item 3: +1 Layout at the top crossing (phone .scroll-float blur flip), left to P-074",
@@ -353,6 +353,8 @@
     "heRest fires paired with the nearest rest mark, past-end fire not scored",
     "C rest anchor without the +400 ms margin"
    ]
-  }
+  },
+  "band800_r2j": "C, C2 (same st6-rb2 snapshot) and V d48d in one session: no y800-900 band (V vs C, V vs C2 at pgsR: clock, digits, 1 px; settle adds +-1-level bits max 1); C vs C2: clock, digits. The r2i band did not recur with the same V build: r2i C arm state, not a V difference (absent on re-run, not shown directly in C-vs-C)",
+  "ticketStartBand": "38-40 C, one start method (pre-warm on the plain baseline page under 38, phone-temp --below 40 over 40), met temperature logged (F-169), LPM runs dropped and re-run (T-029 #30)"
  }
 }

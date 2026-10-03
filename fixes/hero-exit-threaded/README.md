@@ -345,10 +345,11 @@ not reproduced, OBSERVED), item 3 (+1 Layout at the top crossing), item 6 (V0's 
 
 | check | how | result |
 |---|---|---|
-| restore switch frame | r2h's probe again (r2i, arms C, V = `d48d224adcd4`, V1 = `301ec740291b`), case pgsR and settle | V vs V1: countdown digits only (rows 1300-1400), also at settle (plus ±1-level bits): the ready-based drop draws the same frames. The var was already gone in the probe's second frame in both V builds, so on this Simulator `ready` resolves within the switch frame (OBSERVED). V vs C and V1 vs C: the same pattern in both cases, status-bar clock plus a band at y≈800-900 (max 91 levels) that is there at settle too, so C's session state, not the switch frame |
+| restore switch frame | r2h's probe again (r2i, arms C, V = `d48d224adcd4`, V1 = `301ec740291b`), case pgsR and settle | V vs V1: countdown digits only (rows 1300-1400), also at settle (plus ±1-level bits): the ready-based drop draws the same frames. The var was already gone in the probe's second frame in both V builds, so on this Simulator `ready` resolves within the switch frame (OBSERVED). V vs C and V1 vs C: the same pattern in both cases, status-bar clock plus a band at y≈800-900 image px (max 91 levels), at settle too |
+| the y≈800-900 band | r2j: the same probe with C, C2 (same st6-rb2 snapshot, own server) and V = `d48d224adcd4` in one session | the band is gone: V vs C and V vs C2 at pgsR show only the clock, the countdown digits and 1 px; C vs C2 shows clock and digits. At settle V vs C adds ±1-level bits (max 1, rows 700-1250, as in r2h). The band did not come back with the same V build, so it was the r2i C arm's state, not a V difference; C-vs-C did not reproduce it either (it is not shown directly, only absent on a re-run) |
 | functional | `fix.mjs check --viewport both` | ok: morph reached, 0 errors, 0 4xx, screenshot diff ≤ 0.54 % (headless) |
 | Chrome parity | not re-run: Chrome has no `GestureEvent`, `heCss` is false, `heHold` never runs | unchanged from par15 |
-| wide branch (de-breakpoints, Chrome with a `GestureEvent` stub, on `301ec740291b`) | frozen frames at 6 stops, 932x430 DPR 3, 1440, 1440 reduced motion; C2 = A/A | V vs C 0 px beyond A/A everywhere; `he-css` on at every stop in V; 0 errors. Blink only, scripted scroll. The WebKit run at width 980 is pending |
+| wide branch (de-breakpoints, Chrome with a `GestureEvent` stub, run on the round-2 build `301ec740291b`, not on `d48d224adcd4`; `heHold` only defers the drop) | frozen frames at 6 stops, 932x430 DPR 3, 1440, 1440 reduced motion; C2 = A/A | V vs C 0 px beyond A/A everywhere; `he-css` on at every stop in V; 0 errors. Blink only, scripted scroll. The WebKit run at width 980 is pending |
 
 P-074 scorer (`p074/score074.mjs`, sha256 `1d1fc26908f1`), fixes from the review and the ops read:
 - V's rest hand-over frame = the heRest TimerFire record plus the next frame unit (the drop lands there), not the
@@ -400,7 +401,10 @@ in / in, a single run gives "not enough", rest with no heRest line gives "no dat
   with 1 s rests, two drags back down. Ports: one `serve.mjs --port auto` per arm (5200-5999, plain http twin per
   I-003), the actual ports in the block log; never 5173.
 - Order: one uncounted warm-up per arm port, a Timeline-OFF sentinel, then C V V C with Timeline on, end sentinel;
-  park Safari; cooling with `wait.mjs phone-temp --below auto`; each run in its own `--no-timing` hold; no user steps.
+  park Safari; each run in its own `--no-timing` hold; no user steps.
+- Start band (user rule T-029 #30, `memory/phone-checks-start-warm.md`): every run starts at 38-40 °C with one start
+  method for all runs: under 38 °C pre-warm on the plain baseline page, over 40 °C `wait.mjs phone-temp --below 40`;
+  the temperature at which the band was met is logged per run (F-169). Low Power Mode runs are dropped and re-run.
   Expected about 25 min (8 runs at about 1.5 min, plus cooling up to 10 min).
 - Scorer `p074/score074.mjs` (sha256 in "Review round 3"), `--fn C:s=4391 --fn V:s=4493,heRest=4446`, band 1..780.
   Every counted run is passed in block order; void runs are reported and dropped, valid runs pair in order.
