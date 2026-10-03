@@ -491,3 +491,78 @@ test('I-081: repair of a stale exclusive short holder (killed without its exit h
   assert.deepEqual(codes(), []);
   assert.deepEqual(X.doctor(R, { forceHolder: true })[0].problems.map((p) => p.code), ['holder-live-forced', 'last-grant-short-closed']);
 });
+
+// ---- leave (backlog, the lead 2026-10-03): an owner's waiting entries leave the queue at once, audited -----------
+// A waiter whose process stopped (a killed `acquire --wait`, a lease reader nobody retries) lingered until the 30 s /
+// 10 min stale rules dropped it (a "ts-i093 shared w2" entry, 2026-10-03 16:0xZ).
+test('leave: removes every waiting entry of the owner (exclusive, short, reader; live or stale), keeps the others in order, one audit line', async () => {
+  await queueOf('a', 'x', 'b');
+  const q = get(`${R}.queue.json`);
+  const reader = { owner: 'x', kind: 'process', pid: process.pid, checkout: '/x', since: ago(100), lastSeen: ago(1), queueTtlSec: 60, short: true, maxSec: 60, shared: true, weight: 2 };
+  const dead = { ...reader, pid: deadPid(), weight: 1 };
+  const stale = { owner: 'x', kind: 'lease', checkout: '/y', since: ago(900), lastSeen: ago(700), queueTtlSec: 600 };
+  const moved = q.map((w) => (w.owner === 'b' ? { ...w, movedBy: 'lead', movedAt: ago(5) } : w));
+  put(`${R}.queue.json`, [...moved, reader, dead, stale]);
+  const h0 = readFileSync(lf(`${R}.json`), 'utf8');
+  const out = await X.leaveQueue(R, { owner: 'x', reason: 'stopped waiting' });
+  assert.equal(out.owner, 'x');
+  assert.equal(out.removed.length, 4, 'both of its entries in the live queue, a dead-pid reader entry and a stale one');
+  assert.deepEqual(out.removed.map((e) => !!e.running), [false, true, false, false], 'a process entry whose process still runs is flagged');
+  assert.deepEqual(out.removed.map((e) => [e.position, e.live]), [[2, true], [4, true], [null, false], [null, false]]);
+  assert.deepEqual(get(`${R}.queue.json`).map((w) => w.owner), ['a', 'b']);
+  assert.equal(get(`${R}.queue.json`)[1].movedBy, 'lead', 'the other entries are kept as they were');
+  assert.equal(readFileSync(lf(`${R}.json`), 'utf8'), h0, 'the holder is never touched');
+  assert.deepEqual(out.after.map((w) => w.owner), ['a', 'b']);
+  const lines = auditLines();
+  assert.equal(lines.length, 1);
+  assert.deepEqual([lines[0].code, lines[0].by, lines[0].reason, lines[0].resource, lines[0].owner], ['queue-leave', 'x', 'stopped waiting', R, 'x']);
+  assert.deepEqual(lines[0].before, ['a', 'x', 'b', 'x'], 'the live queue, as status shows it');
+  assert.deepEqual(lines[0].after, ['a', 'b']);
+  assert.equal(lines[0].removed.length, 4);
+  assert.deepEqual(codes(), [], 'doctor finds nothing left behind');
+});
+
+test('leave: --by names who removed them (the lead for another agent); a reason is optional', async () => {
+  await queueOf('x');
+  const out = await X.leaveQueue(R, { owner: 'x', by: 'lead' });
+  assert.equal(out.removed.length, 1);
+  const [l] = auditLines();
+  assert.equal(l.by, 'lead');
+  assert.ok(l.reason);
+});
+
+test('leave: never a holder: the holder (or a shared reader) keeps its hold; nothing queued writes nothing', async () => {
+  await queueOf('a');
+  const before = snapshot();
+  const h = await X.leaveQueue(R, { owner: 'h' });
+  assert.deepEqual(h.removed, []);
+  assert.equal(h.holds, true);
+  assert.equal(L.status(R).holder.owner, 'h');
+  const n = await X.leaveQueue(R, { owner: 'nobody' });
+  assert.deepEqual(n.removed, []);
+  assert.equal(n.holds, false);
+  assert.deepEqual(snapshot(), before, 'no queue write, no audit line');
+  // a shared reader that also queued an exclusive entry (B3): only the entry goes
+  const C = 'chrome-measure';
+  await L.setSharedSwitch(C, { on: true, by: 'lead', reason: 'test' });
+  const rd = await L.tryAcquire(C, { owner: 'fn', kind: 'lease', shared: true, weight: 1, maxSec: 60, load1: 0 });
+  assert.equal(rd.ok, true);
+  assert.equal((await L.tryAcquire(C, { owner: 'fn', kind: 'lease' })).ok, false);
+  const r = await X.leaveQueue(C, { owner: 'fn' });
+  assert.equal(r.removed.length, 1);
+  assert.equal(r.holds, true);
+  assert.deepEqual(L.status(C).holder.readers.map((x) => x.owner), ['fn'], 'the reader stays in the group');
+  assert.deepEqual(L.status(C).queue, []);
+});
+
+test('leave: a removed process entry whose process still runs is flagged (it re-queues at the back on its next poll)', async () => {
+  const kid = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 30000)'], { stdio: 'ignore' });
+  try {
+    await queueOf();
+    assert.equal((await L.tryAcquire(R, { owner: 'x', kind: 'process', pid: kid.pid })).ok, false);
+    const out = await X.leaveQueue(R, { owner: 'x' });
+    assert.equal(out.removed.length, 1);
+    assert.equal(out.removed[0].running, true);
+    assert.equal(out.removed[0].entry.pid, kid.pid);
+  } finally { kid.kill('SIGKILL'); }
+});

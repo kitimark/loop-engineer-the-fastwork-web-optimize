@@ -41,7 +41,7 @@
 import { readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, statSync, appendFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, SHORT_DRAIN_SEC, RESOURCES, SHARED_LANE, SHARED_FORMAT, isGroup, groupWith, groupGrant, queuedWriter } from './lock.mjs';
+import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, SHORT_DRAIN_SEC, RESOURCES, SHARED_LANE, SHARED_FORMAT, isGroup, groupWith, groupGrant, queuedWriter, liveReaders } from './lock.mjs';
 
 export const auditFile = () => join(lockDir(), 'audit.log');
 const files = (r) => ({ holder: `${r}.json`, queue: `${r}.queue.json`, lastGrant: `${r}.last-grant.json`, lastStale: `${r}.last-stale.json`, guard: `${r}.guard` });
@@ -353,5 +353,50 @@ export async function moveWaiter(r, { owner, to, by, reason, apply = false } = {
     audit({ ts: iso(now), by, reason, resource: r, code: 'queue-move', file: p.file, owner, from: p.from, to: p.to,
       fix, before: p.before.map((w) => w.owner), after: p.after.map((w) => w.owner) });
     return { ...strip(p), applied: true };
+  });
+}
+
+// ---- leave the queue (backlog, the lead 2026-10-03) ----------------------------------------------------------------
+// A waiter whose process stopped (a killed `acquire --wait`, a lease reader nobody retries) kept its entry until the
+// stale rules dropped it (30 s at a hand-over, its queue TTL: 60 s for short-lane entries, 10 min for others). `lock.mjs
+// leave` removes an owner's waiting entries at once, all kinds (exclusive, short, reader; process or lease; live or
+// already stale), under the guard, audited like repair. A holder is never touched: not the exclusive holder, not a reader
+// of a shared group (a reader leaves with release --shared, or when its process ends). `lock.mjs dequeue` stays as it
+// was (the caller's own exclusive entries, or with --shared its lease-reader entries; not audited).
+
+/**
+ * Remove every waiting entry of `owner` from the queue of `r` (one audit line, code "queue-leave", when any went).
+ * opts: {owner, by = owner, reason}. Returns {resource, owner, removed: [{entry, position, live, running}], holds,
+ * holder, before, after, file}: `position` is the entry's place in the live queue (as status shows it; null for an entry
+ * acquirers already ignore), `running`: a process entry whose process still runs (it re-queues at the back on its next
+ * poll unless it is stopped), `holds`: the owner holds `r` (exclusive or as a shared reader), which stays as it is.
+ */
+export async function leaveQueue(r, { owner, by, reason } = {}) {
+  checkName(r);
+  if (!owner) throw new Error('leave needs --owner <name>: whose waiting entries leave the queue');
+  by ||= owner;
+  reason ||= 'left the queue (lock.mjs leave)';
+  return withGuard(r, () => {
+    const now = Date.now(), F = files(r), dir = lockDir();
+    const qr = readRaw(join(dir, F.queue));
+    if (qr.exists && !Array.isArray(qr.value)) throw new Error(`${F.queue} is not a JSON array; run node tools/lock.mjs doctor ${r} first`);
+    const raw = qr.exists ? qr.value : [];
+    const live = raw.filter((w) => liveWaiter(w, now));
+    const hr = readRaw(join(dir, F.holder));
+    const holder = validHolder(hr.value) && !staleReason(hr.value, now) ? hr.value : null;
+    const holds = !!holder && (isGroup(holder) ? liveReaders(holder, now).some((x) => x.owner === owner) : holder.owner === owner);
+    const mine = raw.filter((w) => isObj(w) && w.owner === owner);
+    const removed = mine.map((w) => {
+      const i = live.indexOf(w);
+      return { entry: w, position: i >= 0 ? i + 1 : null, live: i >= 0, running: w.kind === 'process' && !!w.pid && pidAlive(w.pid) };
+    });
+    const after = live.filter((w) => !mine.includes(w));
+    const out = { resource: r, owner, removed, holds, holder, before: live, after, file: F.queue };
+    if (!removed.length) return out;
+    writeJsonAtomic(join(dir, F.queue), raw.filter((w) => !mine.includes(w)));
+    audit({ ts: iso(now), by, reason, resource: r, code: 'queue-leave', file: F.queue, owner,
+      fix: `remove ${removed.length} waiting entr${removed.length === 1 ? 'y' : 'ies'} of "${owner}"${holds ? ' (its hold is not touched)' : ''}`,
+      before: live.map((w) => w.owner), after: after.map((w) => w.owner), removed: mine });
+    return out;
   });
 }

@@ -13,6 +13,11 @@
 //       in plain words, shown on the progress page's "Right now" (lib/hold-job.mjs; nothing personal, Hard rule 12)
 //   node tools/lock.mjs release iphone --owner <topic> [--force]
 //   node tools/lock.mjs dequeue iphone --owner <topic>          # stop waiting
+//   node tools/lock.mjs leave chrome-measure --owner <o> [--by <who>] [--reason "<why>"] [--json]
+//       removes every waiting entry of <o> at once (exclusive, short, shared reader; process or lease; live or stale) and
+//       prints each; one "queue-leave" line in locks/audit.log (by defaults to <o>). Never touches a holder or a shared
+//       reader. Exit 0 also when nothing was queued (NOT QUEUED). A removed process entry whose process still runs
+//       re-queues at the back on its next poll: stop that process first. (dequeue: the caller's own entries, not audited.)
 //   node tools/lock.mjs run chrome-measure --owner <topic> -- <cmd> [args...]   # hold while cmd runs
 //   node tools/lock.mjs run chrome-measure --owner <topic> --short --max-seconds 150 -- npm test
 //   node tools/lock.mjs run chrome-measure --owner <topic> --no-timing --max-seconds 600 -- <build>   # CPU work, no host gate
@@ -132,7 +137,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct, handoverText } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
 import { appendFileSync } from 'node:fs';
-import { doctor, repair, moveWaiter, auditFile } from './lib/lock-repair.mjs';
+import { doctor, repair, moveWaiter, leaveQueue, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } from './lib/awake.mjs';
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
@@ -163,6 +168,9 @@ const weight = /^\d+$/.test(weightOpt) ? Number(weightOpt) : SHARED_LANE.weights
 const sh = (w) => (w.shared ? '' : w.short ? ` (short, max ${w.maxSec} s)` : w.noTiming ? ' (no-timing)' : '');
 const OFF_NOTICE = (r) => `[lock ${r}] the shared lane is off: running as an exclusive --short job (same --max-seconds); the lead switches it on (lock.mjs shared on ${r})`;
 const NORMAL_HOLD_SEC = 600; // a normal chrome-measure hold should end within ~10 min (I-020); `run --max-seconds` declares another length
+// a bounded run's tree gets this long after SIGTERM (at --max-seconds, or a signal to the run) before the SIGKILL (I-024);
+// it stays inside a reader's recorded deadline grace (SHARED_LANE.killGraceSec, 5 s)
+const KILL_GRACE_MS = 3000;
 // a normal hold that declared its length (`run --max-seconds`, I-020) and passed it
 const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > Date.parse(h.acquiredAt) + h.meta.expectSec * 1000 ? ` OVERDUE (past its ${h.meta.expectSec} s; split long measurements into holds of 5-10 min, I-020)` : '');
 
@@ -369,6 +377,22 @@ async function main() {
     console.log(`left the ${resource} queue; ${q.length} waiting`);
     return 0;
   }
+  if (cmd === 'leave') {
+    // every waiting entry of --owner (any kind, live or stale), audited; never a holder (lib/lock-repair.mjs leaveQueue)
+    const by = opt('by') || owner;
+    const x = await leaveQueue(resource, { owner, by, reason: opt('reason') });
+    if (flag('json')) { console.log(JSON.stringify(x, null, 1)); return 0; }
+    const holdNote = x.holds ? `; it holds ${resource}, which leave never touches (release it: node tools/lock.mjs release ${resource}${isGroup(x.holder) ? ' --shared' : ''} --owner ${owner}${isGroup(x.holder) ? ', or a process reader ends with its process' : ''})` : '';
+    if (!x.removed.length) { console.log(`NOT QUEUED ${resource}: "${owner}" has no waiting entry${holdNote || ` (queue: ${x.after.map((w) => w.owner).join(', ') || 'empty'})`}`); return 0; }
+    console.log(`LEFT ${resource}: removed ${x.removed.length} waiting entr${x.removed.length === 1 ? 'y' : 'ies'} of "${owner}" (by "${by}"), logged to ${auditFile()}`);
+    for (const { entry: w, position, running } of x.removed) {
+      const kind = [w.shared ? `shared w${w.weight || 1}` : w.short ? `short, max ${w.maxSec} s` : w.noTiming ? 'no-timing' : null, w.kind === 'process' ? `process pid ${w.pid}` : 'lease', `since ${w.since}`].filter(Boolean).join(', ');
+      console.log(`  - ${position ? `#${position}` : '(stale)'} "${w.owner}" (${kind})${running ? `: its process still runs and re-queues at the back on its next poll; stop it (kill ${w.pid})` : ''}`);
+    }
+    console.log(`  holder: ${x.holder ? `${isGroup(x.holder) ? `the shared group (${(x.holder.readers || []).map((r) => `"${r.owner}"`).join(', ')})` : `"${x.holder.owner}"${sh(x.holder)}`} (not touched)` : 'none'}`);
+    console.log(`  queue now: ${fmtQueue(x.after) || 'empty'}`);
+    return 0;
+  }
   if (cmd === 'run') {
     if (!rest.length) throw new Error('usage: node tools/lock.mjs run <resource> --owner X -- <cmd> [args]');
     // a normal hold declares its length (I-020): --max-seconds, default NORMAL_HOLD_SEC on chrome-measure; past it the
@@ -413,7 +437,7 @@ async function main() {
     const kill = (sig) => { try { if (bounded) killTree(sig); else child.kill(sig); } catch {} };
     // acquire() releases the lock and exits on these signals; stop the command first, or it would keep
     // running (e.g. a throttled measurement) after the lock was handed to the next waiter.
-    // a short job then gets SIGKILL too: acquire()'s handler releases the lock and exits right after this
+    // a bounded (short or shared) job then gets SIGKILL too, after its grace (graceKill below): acquire()'s handler releases the lock and exits right after this
     // I-056 (d): every own chrome-measure hold of a `run` (exclusive, short, no-timing, a shared reader; not a re-entry,
     // whose outer hold logs) writes one holds.log line at its end: owner, mode, weight, start, end, duration, exit code
     // (124 on the max-seconds kill, 130 on a signal), so shared failures and no-timing holds can be audited too
@@ -426,7 +450,14 @@ async function main() {
         acquiredAt: holdStart, endedAt: new Date(end).toISOString(), durationSec: Math.round((end - Date.parse(holdStart)) / 100) / 10, ...rec };
       try { appendFileSync(holdsLogFile(), JSON.stringify(line) + '\n'); } catch {}
     };
-    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); if (bounded) kill('SIGKILL'); logHold(Date.now(), { code: 130, signal: sig }); });
+    // a bounded run's tree gets the max-seconds path's grace (KILL_GRACE_MS) to clean up (temp Chrome profiles, I-095)
+    // before the SIGKILL that still reaches the whole tree (I-024); it waits synchronously: acquire()'s listener, which
+    // releases the lock and exits, runs right after this one, so the lock stays held until the tree is gone
+    const graceKill = () => {
+      for (const t = Date.now() + KILL_GRACE_MS; Date.now() < t && treeAlive(child.pid, seen);) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+      kill('SIGKILL');
+    };
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); if (bounded) graceKill(); logHold(Date.now(), { code: 130, signal: sig }); });
     // wall-clock deadlines checked every second (I-026): a timer's clock stalls while the Mac sleeps
     // (Maintenance Sleep / DarkWake), so after a wake the cap is enforced at once, not minutes later.
     // A reader counts from its own acquiredAt: its SIGKILL (deadline + 3 s) lands inside its recorded deadline
@@ -440,7 +471,7 @@ async function main() {
         overran = true;
         console.error(`[lock ${resource}] "${rest.join(' ')}" exceeded --max-seconds ${maxSec}; stopping it and releasing the lock`);
         kill('SIGTERM');
-      } else if (overran && now >= deadline + 3000) kill('SIGKILL');
+      } else if (overran && now >= deadline + KILL_GRACE_MS) kill('SIGKILL');
     }, 250);
     const warn = expectSec && setTimeout(() => console.error(`[lock ${resource}] this hold passed its ${expectSec} s (--max-seconds; I-020): it keeps running, but split long measurements into lock.mjs run holds of 5-10 min so short jobs get in at each hand-over`), expectSec * 1000);
     const code = await new Promise((r) => child.on('exit', (c, s) => r(c ?? (s ? 1 : 0))));
@@ -480,6 +511,19 @@ async function waitCmd() {
 /** [pid, ppid, pgid] of every process (ps), or [] if ps fails. */
 function psRows() {
   try { return execFileSync('ps', ['-A', '-o', 'pid=,ppid=,pgid='], { encoding: 'utf8' }).trim().split('\n').map((l) => l.trim().split(/\s+/).map(Number)); } catch { return []; }
+}
+/**
+ * Whether the command `root` or a process of its tree seen so far (`seen`: pid -> pgid, as killTree collects it) still
+ * runs: listed by ps, not a zombie (the command stays one until this process reaps it), same pgid (pid reuse).
+ */
+function treeAlive(root, seen) {
+  let rows;
+  try { rows = execFileSync('ps', ['-A', '-o', 'pid=,ppid=,pgid=,stat='], { encoding: 'utf8' }).trim().split('\n').map((l) => l.trim().split(/\s+/)); } catch { return false; }
+  const live = new Map(rows.filter((x) => !String(x[3]).startsWith('Z')).map((x) => [Number(x[0]), Number(x[2])]));
+  if (live.has(root)) return true;
+  for (const [p, g] of descendants(rows.map((x) => x.slice(0, 3).map(Number)), root)) if (live.get(p) === g) return true;
+  for (const [p, g] of seen) if (live.get(p) === g) return true;
+  return false;
 }
 /** [pid, pgid] of every descendant of root in the ps rows. */
 function descendants(rows, root) {

@@ -250,6 +250,39 @@ test('I-024: run --short past --max-seconds kills the whole tree: SIGTERM-ignori
   assert.ok(gone, 'no process of the short job outlives its hold (I-024: a test tree ran 13 min past it)');
 });
 
+// I-097 follow-up (the lead, 2026-10-03): a signal to a bounded run sent SIGKILL right after the signal, so a command's
+// cleanup never ran (I-095's temp Chrome profiles leaked, 75-155 MB each). Now the tree gets the grace the max-seconds
+// path gives (3 s) before the SIGKILL; I-024's whole-tree kill still holds after it.
+test('a signal to a bounded run (--short) gives the command a 3 s grace for its cleanup, then kills the whole tree', async () => {
+  const done = join(state, 'cleanup-done'), pids = join(state, 'pids');
+  // a command whose SIGTERM hook needs 1 s to clean up
+  const tidy = `process.on('SIGTERM', () => setTimeout(() => { require('fs').writeFileSync(${JSON.stringify(done)}, 'ok'); process.exit(0); }, 1000)); console.log('CHILD UP'); setInterval(() => {}, 1000);`;
+  const run = (code) => startProc(process.execPath, [LOCK, 'run', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '60', '--', process.execPath, '-e', code], { env, ready: (s) => /CHILD UP/.test(s) });
+  const stop = async (p) => { const t0 = Date.now(); p.proc.kill('SIGTERM'); const r = await p.exited; return { ...r, ms: Date.now() - t0 }; };
+  const a = await stop(await run(tidy));
+  assert.equal(readFileSync(done, 'utf8'), 'ok', 'the command finished its 1 s cleanup before the SIGKILL');
+  assert.equal(a.code, 130);
+  assert.ok(a.ms < 2900, `the run ends once the tree is gone, not after the whole grace (${a.ms} ms)`);
+  assert.equal(holder('chrome-measure'), null, 'released');
+  // I-024 kept: a SIGTERM-ignoring command and grandchild (one in its own process group) die at the end of the grace
+  const gc = `process.on('SIGTERM', () => {}); require('fs').appendFileSync(${JSON.stringify(pids)}, process.pid + '\\n'); setInterval(() => {}, 1000);`;
+  const stubborn = `process.on('SIGTERM', () => {}); const { spawn } = require('child_process');
+    spawn(process.execPath, ['-e', ${JSON.stringify(gc)}], { stdio: 'ignore' });
+    spawn(process.execPath, ['-e', ${JSON.stringify(gc)}], { stdio: 'ignore', detached: true });
+    const t = setInterval(() => { try { if (require('fs').readFileSync(${JSON.stringify(pids)}, 'utf8').trim().split('\\n').length === 2) { clearInterval(t); console.log('CHILD UP'); } } catch {} }, 20);
+    setInterval(() => {}, 1000);`;
+  const p = await run(stubborn);
+  const left = readFileSync(pids, 'utf8').trim().split('\n').map(Number);
+  const b = await stop(p);
+  assert.equal(b.code, 130);
+  assert.ok(b.ms >= 2500 && b.ms < 8000, `SIGKILL after the 3 s grace (${b.ms} ms)`);
+  assert.equal(holder('chrome-measure'), null, 'released');
+  let gone = false;
+  for (let i = 0; i < 40 && !(gone = left.every((x) => !alive(x))); i++) await sleep(50);
+  for (const x of left) if (alive(x)) process.kill(x, 'SIGKILL');
+  assert.ok(gone, 'no process of the short job outlives the signal and its grace (I-024)');
+});
+
 test('I-070 (C-024, narrows I-026): a timing hold runs under caffeinate: run (-i -s -w its pid), a lease (-t until expiry), ended on release; holds.log and status say so', async () => {
   const log = join(state, 'caffeinate.jsonl');
   const cenv = { ...env, FW_CAFFEINATE: join(TESTS, 'fixtures', 'fake-caffeinate.mjs'), FAKE_CAFFEINATE_LOG: log };

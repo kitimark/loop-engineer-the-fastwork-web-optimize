@@ -151,3 +151,35 @@ test('repair --move to the entry\'s own position (I-035): the dry run and --appl
   assert.match(again.stdout, /^MOVE test-res: "a" is already #1 and moved by "lead", nothing to do$/m);
   assert.deepEqual(bytes(), before, 'a repeat writes nothing');
 });
+
+test('leave (backlog, 2026-10-03): removes the owner\'s waiting entries, prints each, audits; never the holder; nothing queued is no error', () => {
+  assert.equal(lock('acquire', 'test-res', '--owner', 'h').code, 0);
+  assert.equal(lock('acquire', 'test-res', '--owner', 'a').code, 3);
+  assert.equal(lock('acquire', 'test-res', '--owner', 'gone').code, 3);
+  assert.equal(lock('acquire', 'test-res', '--owner', 'b', '--short', '--max-seconds', '60').code, 3);
+  const r = lock('leave', 'test-res', '--owner', 'gone', '--reason', 'its acquire --wait was killed');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^LEFT test-res: removed 1 waiting entry of "gone" \(by "gone"\), logged to .*audit\.log$/m);
+  assert.match(r.stdout, /^ {2}- #2 "gone" \(lease, since [^)]*\)$/m);
+  assert.match(r.stdout, /^ {2}holder: "h" \(not touched\)$/m);
+  assert.match(r.stdout, /^ {2}queue now: 1\. a \(since [^)]*\), 2\. b \(short, max 60 s, since [^)]*\)$/m);
+  assert.doesNotMatch(lock('status', 'test-res', '--no-host').stdout, /gone/);
+  const audit = readFileSync(lf('audit.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  assert.deepEqual(audit.map((x) => [x.code, x.owner, x.by, x.reason]), [['queue-leave', 'gone', 'gone', 'its acquire --wait was killed']]);
+  // the holder: never touched, said so
+  const before = bytes();
+  const hr = lock('leave', 'test-res', '--owner', 'h');
+  assert.equal(hr.code, 0, hr.out);
+  assert.match(hr.stdout, /^NOT QUEUED test-res: "h" has no waiting entry; it holds test-res, which leave never touches \(release it: node tools\/lock\.mjs release test-res --owner h\)$/m);
+  const nr = lock('leave', 'test-res', '--owner', 'nobody');
+  assert.equal(nr.code, 0, nr.out);
+  assert.match(nr.stdout, /^NOT QUEUED test-res: "nobody" has no waiting entry \(queue: a, b\)$/m);
+  assert.deepEqual(bytes(), before, 'nothing written');
+  // the lead removes another agent's entry: --by names it; --json
+  const j = JSON.parse(lock('leave', 'test-res', '--owner', 'a', '--by', 'lead', '--json').stdout);
+  assert.deepEqual([j.removed.length, j.removed[0].position, j.holds], [1, 1, false]);
+  assert.equal(JSON.parse(readFileSync(lf('audit.log'), 'utf8').trim().split('\n').pop()).by, 'lead');
+  const u = lock('leave', 'test-res');
+  assert.equal(u.code, 1);
+  assert.match(u.stderr, /--owner/);
+});

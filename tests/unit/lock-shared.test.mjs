@@ -420,6 +420,79 @@ test('I-049: age bound: a reader waiting readerMaxWaitSec goes before an exclusi
   assert.equal(b.opened, true);
 });
 
+// I-097 (2026-10-03 16:24-16:34Z): the lead moved iphone-runner's --no-timing phone hold to #1, and readers queued more
+// than readerMaxWaitSec passed it at every hand-over (the I-049 age bound came before the move) while the phone cooled.
+test('I-097: a lead-moved exclusive waiter at the head goes before readers past the I-049 age bound; they wait for its hold', async () => {
+  await on();
+  const now = Date.now();
+  const iso = (t) => new Date(t).toISOString();
+  const pB = livePid(), pR = livePid();
+  const old = now - ms(L.SHARED_LANE.readerMaxWaitSec) - 60000; // both readers waited past the bound
+  const runner = { owner: 'iphone-runner', kind: 'process', pid: pR, checkout: REPO, since: iso(now - 30000), lastSeen: iso(now), queueTtlSec: 600, noTiming: true };
+  const readers = [
+    { owner: 'fn-b', kind: 'process', pid: pB, checkout: REPO, since: iso(old), lastSeen: iso(now), queueTtlSec: 60, short: true, maxSec: 60, shared: true, weight: 1 },
+    { owner: 'fn-c', kind: 'lease', checkout: REPO, since: iso(old + 1000), lastSeen: iso(now), queueTtlSec: 60, short: true, maxSec: 60, shared: true, weight: 1 },
+  ];
+  // right after a group (the live case), and right after an exclusive hold (short lane on)
+  for (const lg of [L.groupGrant({ token: 'abcdefabcdef' }, now - 20000), { owner: 'w0', short: false, at: iso(now - 60000), token: '0123456789ab' }]) {
+    writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify(lg));
+    writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([runner, ...readers]));
+    assert.equal(L.status(R).next, 'fn-b', `unmoved: the I-049 age bound still serves the old reader first (${lg.owner})`);
+    writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([{ ...runner, movedBy: 'lead', movedAt: iso(now - 5000) }, ...readers]));
+    assert.equal(L.status(R).next, 'iphone-runner', `moved by the lead: the move wins over the age bound (${lg.owner})`);
+    const b = await rd('fn-b', { pid: pB, now });
+    assert.equal(b.ok, false, 'the old reader does not open a group past the moved head');
+    assert.equal(b.next, 'iphone-runner');
+    assert.match(b.why, /"iphone-runner" is served first/);
+    assert.equal(holder(), null);
+  }
+  const g = await L.tryAcquire(R, { owner: 'iphone-runner', kind: 'process', pid: pR, noTiming: true, now: now + 1000 });
+  assert.equal(g.ok, true, 'the moved phone hold is granted at this hand-over');
+  assert.equal(g.holder.noTiming, true);
+  assert.equal(L.status(R).queue.some((w) => w.owner === 'iphone-runner'), false, 'its entry (and the lead\'s mark) leaves with the grant');
+  for (const [o, x] of [['fn-b', { pid: pB }], ['fn-c', { kind: 'lease' }]]) assert.equal((await rd(o, { ...x, now: now + 2000 })).ok, false, `${o} waits for the moved hold to finish`);
+  await L.release(R, { owner: 'iphone-runner', force: true });
+  // after it, nothing is moved any more: the I-049 age bound applies again
+  const b = await rd('fn-b', { pid: pB, now: now + 3000 });
+  assert.equal(b.ok, true);
+  assert.equal(b.opened, true);
+});
+
+test('I-097: the move wins only from where the lead put it: moved behind an old reader, that reader goes first (FIFO, I-049)', async () => {
+  await on();
+  const now = Date.now();
+  const iso = (t) => new Date(t).toISOString();
+  const pB = livePid();
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify(L.groupGrant({ token: 'abcdefabcdef' }, now - 20000)));
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([
+    { owner: 'fn-b', kind: 'process', pid: pB, checkout: REPO, since: iso(now - ms(L.SHARED_LANE.readerMaxWaitSec) - 1000), lastSeen: iso(now), queueTtlSec: 60, short: true, maxSec: 60, shared: true, weight: 1 },
+    { owner: 'ab', kind: 'lease', checkout: REPO, since: iso(now - 30000), lastSeen: iso(now), queueTtlSec: 600, movedBy: 'lead', movedAt: iso(now - 5000) },
+  ]));
+  assert.equal(L.status(R).next, 'fn-b');
+});
+
+test('I-097: a lead-moved exclusive waiter closes joins to a running group even for the opening batch (readers wait for it)', async () => {
+  await on();
+  const t0 = Date.now();
+  assert.equal((await L.tryAcquire(R, { owner: 'w1', kind: 'lease', now: t0 })).ok, true);
+  const pB = livePid();
+  assert.equal((await rd('fn-a', { now: t0 + 1000 })).ok, false);
+  assert.equal((await rd('fn-b', { pid: pB, now: t0 + 2000 })).ok, false);
+  assert.equal((await L.tryAcquire(R, { owner: 'runner', kind: 'lease', noTiming: true, now: t0 + 3000 })).ok, false);
+  await L.release(R, { owner: 'w1' });
+  const t1 = t0 + 10000;
+  assert.equal((await rd('fn-a', { now: t1 })).opened, true, 'the short lane opens a group for the readers queued first');
+  // the lead moves the runner to the head while the group runs: the batch member fn-b no longer joins
+  const q = readJson(`${R}.queue.json`);
+  const i = q.findIndex((w) => w.owner === 'runner');
+  const moved = { ...q[i], movedBy: 'lead', movedAt: new Date(t1 + 1000).toISOString() };
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([moved, ...q.filter((_, j) => j !== i)]));
+  const b = await rd('fn-b', { pid: pB, now: t1 + 2000 });
+  assert.equal(b.ok, false, 'a batch member does not join past a lead-moved writer');
+  assert.match(b.why, /"runner" waits/);
+  assert.equal(holder().readers.length, 1, 'the group does not grow');
+});
+
 test('writer preference: an old-code waiter (no `shared` field) closes joins too, fresh or not', async () => {
   await on();
   assert.equal((await rd('fn-a')).ok, true);
@@ -853,6 +926,8 @@ old('old and new code agree on who is served next, or new code picks a reader th
     ['after a group: a reader queued before the normal waiter goes first in new code (I-049)', [rdr('fn-b', t(50)), short('npm-x', t(40)), normal('old-ab', t(30))], 'fn-b', 'old-ab'],
     ['after a group, no normal waiter: short-lane entries FIFO', [rdr('fn-b', t(50)), short('npm-x', t(40))], 'fn-b', 'fn-b'],
     ['after a group, no normal waiter: short-lane entries FIFO (exclusive short first)', [short('npm-x', t(50)), rdr('fn-b', t(40))], 'npm-x', 'npm-x'],
+    // I-097: the lead's move wins over the I-049 age bound, as it did before I-049: the versions agree again
+    ['after a group: a lead-moved normal waiter at the head goes before a reader past the age bound (I-097)', [{ ...normal('old-ab', t(30)), movedBy: 'lead', movedAt: t(5) }, rdr('fn-b', t(L.SHARED_LANE.readerMaxWaitSec + 60))], 'old-ab', 'old-ab'],
   ];
   // a real group: opened, then closed by its last reader while these waiters queue (its last-grant record, or none when
   // no exclusive waiter was queued at its end, I-080, is what both versions read)

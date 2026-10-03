@@ -89,7 +89,9 @@
 // readers queued before the group opened, for batchJoinSec. The group opens at a hand-over like a short job (the short
 // lane, its drain budget, I-030 and lead moves apply to reader entries); right after a group, the exclusive waiters go
 // first, but never before a reader queued ahead of them, and a reader queued readerMaxWaitSec goes before any exclusive
-// waiter (I-049: writer preference only closes joins; it does not reorder the queue). A reader's command gets FW_LOCK_SHARED=<r>:<reader token>, never FW_LOCK_HELD: a nested shared acquire re-enters
+// waiter (I-049: writer preference only closes joins; it does not reorder the queue), except one the lead moved ahead of
+// it (I-097: a lead move wins over that age bound, and such a waiter closes joins for the opening batch too, so the
+// running group only drains and the moved hold is served at its end). A reader's command gets FW_LOCK_SHARED=<r>:<reader token>, never FW_LOCK_HELD: a nested shared acquire re-enters
 // that slot (if it is no heavier than the slot), an exclusive one is refused at once (B1); readers are keyed by token,
 // not owner (B3); readers join in queue order (a heavier reader waiting for room holds the lighter ones behind it once it
 // has waited readerBypassSec; before that a reader that fits joins past it, I-049). The
@@ -599,10 +601,12 @@ function nextIndex(q, lg, now = Date.now(), caller, r, T = THRESHOLDS) {
   // except where I-049 below picks a reader: a reader runs new code, so it takes that turn itself)
   const s = pool.find(([w]) => w.short), n = pool.find(([w]) => !w.short);
   if (!s || !n) return pool[0][1];
-  // I-049 (shared readers starved): a reader that waited readerMaxWaitSec goes before any exclusive waiter
+  // the lead moved this normal waiter ahead of these short jobs (I-019): its priority wins (I-020), also over the I-049
+  // age bound below (I-097: readers queued 10 min passed a moved phone hold at every hand-over while the phone cooled)
+  if (n[0].movedBy && n[1] < s[1]) return n[1];
+  // I-049 (shared readers starved): a reader that waited readerMaxWaitSec goes before any exclusive waiter not moved
   const rd = pool.find(([w]) => w.shared);
   if (rd && now - Date.parse(rd[0].since) >= SHARED_LANE.readerMaxWaitSec * 1000) return rd[1];
-  if (n[0].movedBy && n[1] < s[1]) return n[1]; // the lead moved this normal waiter ahead of these short jobs (I-019): its priority wins (I-020)
   // I-049: an exclusive waiter never passes a reader queued before it (not after a group, not by its gate): writer
   // preference only closes joins to a running group. The short-lane entries go in queue order (s is at or before rd).
   if (rd && rd[1] < n[1]) return s[1];
@@ -840,6 +844,10 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
   if (h) {
     const writer = q.find((w) => !w.shared);
     const inBatch = mine >= 0 && Date.parse(q[mine].since) <= Date.parse(h.openedAt) && now - Date.parse(h.openedAt) <= SHARED_LANE.batchJoinSec * 1000;
+    // I-097: an exclusive waiter the lead moved ahead of this reader closes joins for the opening batch too: the group
+    // only drains, and the moved hold is served at its end
+    const moved = q.slice(0, mine >= 0 ? mine : q.length).find((w) => !w.shared && w.movedBy);
+    if (moved) return wait(`joins closed: "${moved.owner}" waits for an exclusive hold, moved ahead by ${moved.movedBy} (I-097)`);
     if (writer && !inBatch) return wait(`joins closed: "${writer.owner}" waits for an exclusive hold (writer preference)`);
     // readers join in queue order (review-lock-share N4; a reader that stopped polling does not hold the others up).
     // I-049 head-of-line: a reader that fits may pass readers ahead that do not fit now, while each of them has waited
