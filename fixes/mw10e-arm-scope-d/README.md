@@ -282,11 +282,19 @@ node id), so the mapping is by geometry and count:
   only), and why some morph frames repaint all 80 faces and others none. The decisive check is proposed below
   ("Proposed attribution item after P-073").
 
-## P-073 prediction card: B1 hot-held, C / V / D under arm-scope-touch-v1 (registered before any phone data)
+## P-073 prediction card: B1 hot-held, C / V / D under arm-scope-touch-v1c (rev 2; registered before any phone data)
 
 Asked by the lead after review round 2 (05:5xZ): P-071 ran at 37.1-38.6 °C, and P-036's V-only collapses ran at
 40.3-43.3 °C under another script. This block asks one question: **does V collapse at the capped pin when the phone
 is at 40-41 °C, and does D?** Second read: mgmt-ops-9 and review-f3-arm-scope; the lead signs. Id P-073 from mgmt-ops-9.
+
+**Rev 2** (answers the rev 1 second reads):
+- The driver is v1c, the forced-cap form of v1, with its step diff and Simulator counts per arm.
+- The counted-run rule is rewritten for v1c, and the settle point is registered (lead).
+- The budget is redone from v1c's cap rate.
+- Added: mgmt-ops-9's points (fewer than 3 counted runs in D, or in C/V; heat ceiling; charge state; scope C/V/D),
+  and the reviewer's nits (D-collapse row first, temperature at pin arrival, a flag on any collapse outside the
+  verdict).
 
 **What the P-036 records already say** (desk check of iphone-runner's gesture records, no device time; OBSERVED, in
 our setup, cause unknown):
@@ -302,7 +310,7 @@ our setup, cause unknown):
 - Cap rates in P-036: V 2 of 8 runs, C 5 of 7 (warm-ups and voided runs included).
 - P-071 (pin-hold-v2) capped all 13 runs at 5212-5219, with 13 pushes into the pin, at 37.1-38.6 °C: V 0 of 3.
 - So in V, "capped" and "≥ 40.3 °C" have only ever come together. The zone strokes before the pin (in
-  arm-scope-touch-v1, not in pin-hold-v2) are a third difference. This block holds heat and script at P-036's values.
+  arm-scope-touch-v1, not in pin-hold-v2) are a third difference. This block holds heat, the zone strokes and the capped pin exposure at P-036's values (rev 2: v1c, below).
 - The script's own idle phase (3 s at the top after reload) ran at 58.8-59.6 fps in every valid P-036 run, V2 at
   42.6 °C included.
 
@@ -311,18 +319,63 @@ our setup, cause unknown):
   V = `mw10e-arm-scope-c` (JS c6d3590576a7, the positive control: B1 was only ever seen in V), D = this build
   (JS 999c4497f37e). Immutable copies from `out/snapshots/`, one port per arm, plain http. New ports, never used by
   another build (F-115).
-- **Driver.** G, `fixes/morph-webkit/gestures/arm-scope-touch-v1.json` unchanged (compiler v2 hash d72ee13644cc),
-  the P-036 script. Timeline off in counted runs, as in P-036.
-- **Counted run = capped run.** A run counts only when its end loop ends "max/10", it settles at y 5212-5219 before
-  the `end` mark, and the pin pushes are prevented (≥ 90 % of their touchmoves; P-036's collapsed V1 and V2 had every
-  pin touchmove prevented, 34-47 per push, so this cannot drop a collapsed run). An uncapped run is listed with its
-  temperature and windows, is never in the verdict, and its arm is re-run in place (the C2 precedent in P-036).
+- **Driver (rev 2): G, `fixes/morph-webkit/gestures/arm-scope-touch-v1c.json`** (compiler v2 hash
+  **0653995a35be**), the forced-cap form of P-036's arm-scope-touch-v1 (d72ee13644cc), built so that no run can end
+  uncapped. Timeline off in counted runs, as in P-036.
+  - **Step diff against v1:** the only change is the last loop, the end loop at the pin. v1's
+    `{ "type": "repeat", "times": 10, "until": "atEnd", … }` becomes `{ "type": "repeat", "times": 10, … }` (the
+    `until` dropped; JSON line 58/59, `diff` of the two files), with the same steps (stroke up 480 → 700, still hold 150, pause 300). The compiled programs are identical in ops 0-47:
+    approach, zone strokes, transit passes and the first pin pass. v1c then always runs the 10 passes that v1 ran
+    only when capped ("max/10"), followed by the same 2 end pushes. The name, `derivedFrom` and `about` fields also
+    changed. The gesture language has only atEnd / atTop / settled / y>=N conditions, so no script can choose the
+    settle point (see the settle rule below).
+  - **Pin exposure, the same in every arm and equal to P-036's capped runs:** 10 passes ≈ 9 pushes after pin arrival,
+    then the 2 end pushes. P-036 capped V1 had 9 pushes (421/421 prevented) and C2 9 (423/423).
+  - **Simulator check of v1c (counts only; Simulator ms never count, F-084).** One run per arm,
+    `fixes/morph-webkit/pinhold-sim.mjs` in a normal 300 s hold, counted by `fixes/morph-webkit/v1c-count.mjs`.
+    Host caveats: load1 63 at the start of the first hold, and I-082 (Simulator SleepWidgetExtension burns a core,
+    load1 37-108).
+
+    | arm | cap reached | settle y | pushes to `end` | prevented (pin pushes) | end pushes | pin arrival → `end` |
+    |---|---|---|---|---|---|---|
+    | V | yes (10 passes) | 5212 | 9 | 453/453 | 38/38, 38/38 | 35.6 s |
+    | D | yes | 5216 | 9 | 440/440 | 38/38, 38/38 | 37.5 s |
+    | C | yes | **5220** | 9 | 435/435 | 32/32, 38/38 | 34.6 s |
+
+    v1c forced the full exposure in every arm. The settle point was not forced: low bin in V and D, high bin in C
+    (settle counts low / high: V 1/0, D 1/0, C 0/1). In P-036 the settle point and the exposure always came together
+    (low = capped = 10 passes, high = uncapped = 1 pass). v1c separates them, which is why the settle rule below
+    scores the bins apart.
+
+- **Counted run (rev 2).** A run counts when all of these hold:
+  - it reaches the pin (a frame at y ≥ 5200);
+  - it makes the full exposure: 9 pushes between pin arrival and the `end` mark, then the 2 end pushes;
+  - the pin pushes are prevented, ≥ 90 % of their touchmoves (P-036's collapsed V1 and V2 had every pin touchmove
+    prevented, 34-47 per push, so this rule cannot drop a collapsed run);
+  - the script ends without an abort or WDA error.
+
+  A run that fails any of these is void and re-run in place. It is listed with its temperature and windows and never
+  enters the verdict.
+- **Settle point (registered; lead 07:0xZ).** v1c cannot choose where the page settles. The Simulator settled at
+  5212 (V), 5216 (D) and 5220 (C); P-036 settled capped runs at 5215-5216 and uncapped ones at 5220-5222; P-071 at 5212-5219.
+  - Every counted run records its settle y: the scrollY of the last frame before the `end` mark.
+  - Runs are binned **low (5212-5219)** or **high (≥ 5220)**. Every P-036 collapse came from the low bin.
+  - Score each arm twice: on all its counted runs (the verdict), and on its low-bin runs only, by the same arm rule.
+  - If an arm's verdict differs between the two readings, the result is **settle-sensitive** and goes to the lead
+    with both readings, like a rule-sensitive one.
+  - Settle counts per arm (low / high) are reported in the result table.
 - **Order.** Rotated Latin square C V D / V D C / D C V, n = 3 counted per arm, 9 counted runs. One uncounted
   warm-up per arm's port first (it may be cold; P-071's wD).
-- **Budget.** At most 20 runs in all (counted, uncapped re-runs and voids; warm-ups and sentinels not included) and
-  100 min of block time. Each run in the runner's own `--no-timing` hold. When the budget ends first, the block is
-  scored on what was counted (an arm with < 3 counted runs is read by the arm rule on those, and 0 of 1 or 0 of 2 is
-  "not enough", reported as inconclusive). With P-036's cap rates, V may need about 2 attempts per counted run.
+- **Budget (rev 2, from v1c's cap rate).**
+  - v1c capped in every Simulator run (3 of 3 arms, one run each), against P-036's v1 cap rates of V 2/8 and C 5/7.
+    So the cap is no longer a source of re-runs. What is left are voids: heat band or ceiling, Low Power Mode, idle
+    fps, charge state, gesture abort, a pin push under 90 % prevented.
+  - **At most 14 runs in all** (9 counted plus up to 5 voids; warm-ups and sentinels not included) and **100 min of
+    block time**. A v1c run is about 2 min on the phone (~55 s to the pin, ~49 s at the pin, the end pushes); the rest
+    is heat handling.
+  - Each run goes in the runner's own `--no-timing` hold.
+  - When the budget ends first, the block is scored on what was counted, through the decision rows below: D with
+    fewer than 3 is inconclusive, and C or V with fewer than 3 voids that arm's comparison.
 - **Heat, the band.** Battery temperature (the runner's battery read, logged at the start and end of every run) must
   be **40.0-41.0 °C at each run's start**, the moment the script's reload is sent. A run that starts outside the band
   is void and re-run in place.
@@ -366,7 +419,14 @@ our setup, cause unknown):
   - V: collapses ~50 %, clean ~35 %, inconclusive ~15 %. (For: 2 of 2 capped hot V runs in P-036. Against: n = 2, and
     P-071's capped cool V 0 of 3 leaves heat and the zone strokes both open.)
   - D: any counted D run collapsed ~20 %. Given V collapses: D clean ~60 %.
-  - All 9 counted runs inside the budget ~65 %.
+  - All 9 counted runs inside the budget ~80 % (rev 1: ~65 % with v1's cap rates; heat handling is the main risk now).
+  - Settle points. The approach is the same as v1's, so P-036's settle rates should carry over: low bin = P-036's
+    cap rate, V 2 of 8 and C 5 of 7 (the Simulator gave 2 of 3 low). Predictions:
+    - V has ≥ 2 counted runs in the low bin ~35 %. Otherwise V's low-bin reading is "not enough", and only the
+      all-runs verdict stands for V.
+    - At least one arm settle-sensitive ~25 %.
+    - Given V collapses on all runs, its high-bin runs collapse too ~55 %: heat plus exposure suffice, not the settle
+      point.
 - **Decision (lead, registered before data; read top to bottom, the first matching row wins).**
 
   | V | D | reading |
@@ -380,8 +440,10 @@ our setup, cause unknown):
   - C with fewer than 3 counted runs: the C comparison is void (no control); to the lead with whatever V and D show.
   - C collapses (≥ 2 of 3): the collapse is not V-specific; B1 is re-framed with the lead.
   - A rule-sensitive verdict goes to the lead with both readings.
-  - **An uncapped hot run that collapses** (any arm; listed, never in the verdict) is flagged to the lead explicitly:
-    it would refute "the collapse comes only with the capped state", which this card's framing rests on.
+  - **A void run that collapses** (any arm; listed, never in the verdict) is flagged to the lead explicitly, with its
+    void reason. This is the rev 2 form of rev 1's "uncapped hot run" flag: v1c cannot end uncapped, so a short
+    exposure now shows up as a void.
+  - **A collapse in the high settle bin (≥ 5220)** is flagged to the lead too. Every P-036 collapse settled low.
 - **n.** At most 3 counted per arm: a mechanism and regression check, not a gain block. Nothing from it goes to the
   user as fact without the attribution run.
 
@@ -453,6 +515,11 @@ the user's line (st6-rb2) and the wave-2 stack do not.
 
 ## Risks
 
+- **Line note (lead, 07:1xZ): the panel clock under D.** D's line (CSS c6aad94b455f, aw1-10e) has a panel clock with
+  80 face layers. That stays so only until the countdown fixes land (cdwc's P-017 rule; cd-strip on the wave-2 stack).
+  The user's line, st6-rb2, has 0. F-165's full face repaints (the > 50 ms morph-frame Composites at the pin, in
+  every arm) are therefore a property of this line, not of D. Whether they are the cost of those frames is the
+  attribution item proposed after P-073.
 - **Desktop wheel, armed at load (from F3, unchanged here).** A window `wheel` listener with `{passive: false}`
   makes each wheel scroll wait for the main thread. CONFIRMED: https://developer.chrome.com/blog/scrolling-intervention-2
   says Chrome 73 made root-target (window, document, body) wheel listeners passive by default, and that
