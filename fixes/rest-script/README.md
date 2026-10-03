@@ -4,10 +4,10 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** draft (registration committed; data and verdicts follow in later commits)
-**Stage:** F (identity checks done in Chrome); D card P-078 registered below
+**Stage:** F; D card registered below (P-078 → P-080 → P-083, v3 current)
 **Device class / gate:** less-work (heat) fix: cost-card counts, full page, Chrome + Simulator, plus one short phone
 no-worse check (memory/less-work-landing-rule.md, user T-029 #30). No timing A/B (deferred, user rule).
-**Base:** `--on st6-rb2`; served overlay `_app/immutable/nodes/2.DyWL8TcE.js` sha256 `bf8ffd4ef7a3…`
+**Base:** `--on st6-rb2`; served overlay `_app/immutable/nodes/2.DyWL8TcE.js` sha256 `6c09e47961ba…` (v3; v1 bf8ffd4ef7a3, v2 a5286ebc4cb6)
 **Topic:** see `fixes/TOPICS.md` (rest-script), user T-029 heat goal, P-068
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`: `mM` (#people avatar rotator), `JT` (commission count-up),
 `hD` (pain notes interval), `EM` (profile count-up). Out of scope and untouched: `HE` (hero accent word), the
@@ -140,7 +140,11 @@ list runs from chainC.sh 667b34b16545, which packs two short jobs per shared hol
 census 430 + 430r, 375 + 768, 1024 + 1440) to halve the queue entries. Same outputs, same overlay check.
 chainD.sh 4ee1a69fafb1 is chainC from items-b on with a 2 h queue wait per hold (lead, 11:2xZ); no other change.
 
-### Registration v3 (P-080 rev 3, id from mgmt-ops; overlay 6c09e47961ba), before any v3 data
+### Registration v3 (**P-083**; overlay 6c09e47961ba), before any v3 data
+
+Second read PASS (mgmt-ops-10, 12:2xZ). P-080 is logged as a miss (v2 MORE at far y2796). **Lead's decision
+(12:3xZ, before any v3 score): v3 is the last automatic re-registration. A MORE anywhere in v3 stops the topic and
+the cause goes to the lead; no v4 without the lead's OK.**
 
 The v2 census at 430 (ic3, scored under the registered rule) gave a **MORE** at the `far` position y 2796: rAF
 callbacks 0/0 (C1/C2) vs 4, 4 (V) and code calls 17/17 vs 20, 20, floor 2. Same window: main frames 34/34 vs 13, 13,
@@ -150,8 +154,11 @@ registered: "any MORE → fix and re-register"): chainD stopped (census 375 + 76
 changed in one place:
 
 - `fwSetS` (slide starts, row far): instead of a stamping rAF, play an empty zero-length Web Animation
-  (`new Animation(new KeyframeEffect(null, null, 0), document.timeline)`). The engine resolves its start time in the
-  frame that starts it, like the slide's own CSS animations, and no script runs for it. The start is read only when
+  (`new Animation(new KeyframeEffect(null, null, 0), document.timeline)`). No script runs for it. That the engine
+  resolves its start time in the same frame as the slide's own CSS animations is **UNRESOLVED**: the spec makes the
+  start time the ready time and leaves readiness to the UA (Web Animations 1, "playing an animation" / pending play
+  task). The decisive local check is the identity trials below (far-started resumes in Chrome and on the Simulator);
+  a phase mismatch there is a miss, as registered below. The start is read only when
   the row comes near during that slide (`fwStart()` in `fwSync`); `fwF0` (the real start read when the row leaves
   mid-slide, v2) still wins. Teardown cancels it. `fwCap` is gone.
 
@@ -170,11 +177,37 @@ Simulator identity st6/fix + replays, Simulator census reps 1 and 2. Outputs `id
 
 ## Why it lags
 
-(to follow with the data)
+Not a scroll-jank fix: a heat (rest work) fix, user T-029. Four small pieces of script keep the main thread busy
+while nothing on screen changes, frame after frame or tick after tick:
+
+- `mM`, the #people avatar rotator: while the `#people` scene gate is active, a slide starts every 1020 ms
+  (800 ms wait, 220 ms slide). Each slide writes the five slot `src`s (`x`) and `.is-sliding` (`S`), so Svelte
+  flushes, the style is recalculated and the row is painted, even when the row is half a page or more off
+  screen.
+- `JT`, the commission count-up from 18 % to 0 %: it writes the state in every rAF frame of the tween, but the
+  rounded text changes only a few times.
+- `hD`, the pain notes: `setInterval(le, 3e3)` keeps firing at widths ≤ 860 px too, where the notes are hidden and
+  `le` returns at once: a timer wake-up every 3 s that does nothing.
+- `EM`, the profile count-up: it writes the four states in every frame, also when the rounded values are the
+  same as in the last frame.
 
 ## What changed
 
-(to follow)
+All changes are in `/_app/immutable/nodes/2.DyWL8TcE.js`, on top of st6-rb2.
+
+- `mM`: the rotator clock (`_`, with the scene gate's stall and restart) is unchanged. Its state lives in `fwX`
+  and `fwS` and is mirrored into `x`/`S` only while the avatar row is within half a viewport of the screen
+  (an IntersectionObserver with rootMargin `50% 0px`). Coming near, the state is written before the row can be
+  seen. A jump (scrollTo, anchor, history, resize) is caught in the same frame by the scroll-path `u` and by a
+  ResizeObserver on `<html>`, both using the row's cached document box. A slide in progress resumes at the
+  original's phase: its CSS animations get `startTime` = the slide's real start. When the row was near, that is
+  the slide's own animations, read when it leaves. When the row was far, it is the start time of an empty
+  zero-length Web Animation played with the slide (v3; no script runs per slide). When the scene pauses, the
+  frozen state is written at once.
+- `JT`: the 18 → 0 % tween skips the state write in frames where the shown (rounded) text is unchanged.
+- `hD`: the interval is not armed while `(max-width: 860px)` matches. Crossing above 860 px resumes it on the
+  original's 3 s grid with a `setTimeout`.
+- `EM`: the state write is skipped when the rounded values are unchanged.
 
 ## Cards (protocol v2)
 
