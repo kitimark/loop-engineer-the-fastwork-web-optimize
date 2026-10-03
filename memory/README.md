@@ -13,6 +13,8 @@ Every agent:
 - [Proposal decision is the spec](proposal-decision-is-the-spec.md): changes-requested means rev N+1 of the same proposal, every point answered
 - [No camera access](no-camera-access.md): never open a Mac camera; screen recording only via `ioscap.mjs`
 - [Keep awake only during measurements](keep-awake-only-during-measurements.md): `caffeinate -i -s` inside measurement holds only
+- [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test
+- [Phone checks start warm](phone-checks-start-warm.md): start at 38-40 °C, one start method per block; LPM runs dropped, not tested; no countdown-only test page
 
 Lead:
 - [Agent spawn names](agent-spawn-names.md): every spawn gets `name: <role>-<topic>`; check the first spawn after each compaction
