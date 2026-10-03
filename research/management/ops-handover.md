@@ -2,11 +2,33 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
-**mgmt-ops-8** (from 10-02 23:5xZ; mgmt-ops-7 ran 10-02 09:13Z-23:5xZ, mgmt-ops-6 10-01 17:28Z-10-02 09:12Z), worktree
-`.claude/worktrees/agent-ace57ef63584bdfb6`, branch `worktree-agent-ace57ef63584bdfb6`. Next instance: **mgmt-ops-9**
-(at ~60 % context). Last update: **10-02 23:5xZ** (mgmt-ops-8).
+**mgmt-ops-9** (named spawn, agent ID acfd7a13b6014f754; from 10-03 00:0xZ; mgmt-ops-8 ran 10-02 23:5xZ-10-03 00:0xZ,
+mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014f754`, branch
+`worktree-agent-acfd7a13b6014f754`. Next instance: **mgmt-ops-10**, named (at ~60 % context). Last update:
+**10-03 00:1xZ** (mgmt-ops-9).
 
-## mgmt-ops-8 log (from 10-02 23:5xZ, newest first; START HERE)
+## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
+
+- **00:1xZ mgmt-ops-9 took over** (lead spawn, named so peers can message "mgmt-ops-9"); rebased on main 25d952d
+  (mgmt-ops-8's last entry: I-077, X1 D1, X1 restarts, I-076/I-072; not repeated here). **mgmt-ops-8 (agent ID
+  ace57ef63584bdfb6) is retired:** it was spawned unnamed, so peers could not reach it by name. Peers message
+  **mgmt-ops-9**. Board row `ops` now owned by mgmt-ops-9.
+  - **User T-032 (00:01Z, paraphrased):** the user asked why agents show up as "general-purpose" and asked that they
+    follow the naming convention. Lead's answer: project agent types load only at session start, so a mid-session
+    spawn runs as general-purpose and reads its role file first (same role, other label); three spawns after the
+    lead's context compaction went out unnamed (the I-076 toolsmith, done; the ops hub, now replaced by mgmt-ops-9;
+    the I-077 toolsmith, kept running because it only talks to the lead), the lead's slip; every spawn is named again.
+    **Follow-up from the user in the same thread (00:02Z, paraphrased, open with the lead):** move all agent memory
+    into the project where an agent has nowhere to store it; investigate and restructure the project to support it.
+  - **I-077 toolsmith is unnamed:** board row `i077` says ts-i077, but `SendMessage` by that name won't resolve; use
+    agent ID a46d520fdb1912d3c (or the lead). It is reading the park/open code (00:03Z).
+  - Live at 00:03Z: de-countdown holds the phone and a `--no-timing` hold for X1 stage 2 part A (heat check);
+    iphone-runner queued #1 for the phone (P-036 re-run, then P-068 H1); load1 2.8.
+  - Waiting on: X1 stage 2 result (de-countdown), P-036 (iphone-runner + fix-nav-morph), P-068 H1/H2 (iphone-runner,
+    de-heat; afterwards the conditional heat line in the PROGRESS goal becomes firm or is dropped), de-gpu T-030
+    report (user's top priority: the lag left in st6-rb2, the toolbar-resize lead).
+
+## mgmt-ops-8 log (10-02 23:5xZ-10-03 00:0xZ, newest first)
 
 - **00:0xZ 91f8411 landed; lead's 9d6fa3c (CLAUDE.md npm test figures after I-076) on main; rebased.**
   - **I-077 OPEN** (tool, non-blocking; ts-i077 spawned): after `iphone.mjs run` parks Safari, `iphone.mjs open` can't
@@ -1610,16 +1632,19 @@ between tool calls.
 Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
 incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
 
-| address | owns | state (10-02 12:0xZ, refreshed by mgmt-ops-7) |
+| address | owns | state (10-02 12:0xZ by mgmt-ops-7; ops, fix-nav-morph, de-gpu, ts-i077 rows 10-03 00:1xZ by mgmt-ops-9) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
-| `mgmt-ops-7` (spawned 10-02 09:1xZ; mgmt-ops-6 and earlier ENDED) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive |
+| `mgmt-ops-9` (named; ID acfd7a13b6014f754; from 10-03 00:0xZ) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive; message "mgmt-ops-9". mgmt-ops-8 (ace57ef63584bdfb6, unnamed) and earlier are RETIRED: don't message them |
+| `fix-nav-morph` (name) | f3-arm-scope (P-036 G, signed S-sentinel amendment a4b1790), cdwc (parked) | alive (10-03 00:0xZ): waits on iphone-runner for P-036 |
+| `de-gpu` (name) | T-030 GPU/compositor-only CSS; user's top priority: lag left in st6-rb2, toolbar-resize lead | alive (10-03 00:0xZ) |
+| ts-i077 (UNNAMED: agent ID a46d520fdb1912d3c; the name does not resolve) | I-077 (open after park), talks to the lead | alive (10-03 00:0xZ) |
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | alive: phone back (T-025 21:28Z); re-runs G2 from the warm-ups after the T-026 Wi-Fi change, then P-065 |
 | `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
 | `fix-image-size` (new 12:0xZ; ID af756241c686d490e) | image-size: P-066 falsified (no detectable saving), dropped; null write-up 909464c | done |
-| `de-countdown` (ID via ListAgents) | T-024 countdown-faces (board priority #1; apple.com off-screen-pause reference) | alive |
-| `de-heat` (a19ec71e8ca8fff91) | T-029 phone heat, P-068 ticket (research/phone-heat/) | done (ticket on main; iphone-runner runs it after F3) |
+| `de-countdown` (ID via ListAgents) | T-024 countdown-faces (board priority #1; apple.com off-screen-pause reference) | alive: X1 stage 2 phone block running (10-03 00:0xZ) |
+| `de-heat` (a19ec71e8ca8fff91) | T-029 phone heat, P-068 ticket (research/phone-heat/) | waiting: iphone-runner runs P-068 H1/H2 after P-036 |
 | `de-gpu` (ID via ListAgents) | T-030 GPU/compositor-only CSS for animations (research/gpu-props/), no phone, no timing | alive |
 | `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (user: no, thanks) |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
