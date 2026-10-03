@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-03 20:1xZ** (mgmt-ops-10).
+**10-03 20:2xZ** (mgmt-ops-10).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -28,6 +28,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 20:2xZ **Correction (ops): the P-089 Chrome-leg ruling was wrong.** It rested on fix-rest-script's wording ("rest >= 3.2 s quiet") without a check of rot2. rot2's 2000 ms quiet is at page load (L108); the rest shot is slide start + 400 ms, freeze, + 1200 ms settle (L149, L128): 1383-1459 ms after the slide end in the v4 ident4 records (intoview 3906-3984 ms). Under the lead's 1.5 s condition every Chrome rest shot goes back. fix-rest-script holds `chainJ.sh chrome` (README 3de2eaed). Options sent to the lead: A rot2 quiet shot + `since` field (harness change, ops diff read), B waive with the numbers, C settle Blink's image-quality timer from Chromium source. Sim chain unaffected. Lesson: check a ticket's timing claims against its code before ruling.
 - 20:1xZ 5296256c landed. Lead: the Chrome-leg ruling stands on the >= 3.2 s ground only; "F-200 is WebKit-only" stays UNRESOLVED unless Chromium source is cited; at the P-089 result read, any Chrome rest shot < 1.5 s after a slide or resize sends that leg back for a quiet shot (relayed to fix-rest-script). P-090 probe repair as non-strike: agreed.
 - 20:1xZ **P-089 REGISTERED** (fix-rest-script addendum 931d7ee6, read PASS): pmcheck (per-hold pmset window from an in-hold stamp), hold VOID + one retry + leg stop in chainJ, t2aux coverage and unmasked; all hashes, selftests and re-runs reproduce (unmasked 1024/sim4: MASK OK). Chrome legs need rest/intoview only (accepted because rot2's rest is >= 3.2 s quiet; "F-200 is WebKit-only" flagged as an unchecked platform claim to mark UNRESOLVED or drop). Lane: chainJ sim then reduced after P-090 Holds A/B; chrome after fix-morph-gpu. **P-090 Hold A run 1 VOID before any shot** (20:13-20:16Z, SLOTS expression SyntaxError); probe repair 1 simquiet 7188a92a6782 (74ba400e, one line), not a strike; re-run allowed. Host load1 56.5 at 20:13Z noted to the lead.
 - 20:0xZ **P-090 REGISTERED** (fix-carousel-leaver addendum 8d35207b, read PASS): all 7 items and the lead's masked-pass ruling are in; simquiet records each slot's transform/opacity/will-change, so the override VOID rule can be read; probe hashes unchanged. Predictions: on screen P(S matches base) 0.25; snapshot P(exactly one of St/So) 0.6, P(So | one) 0.6; Hold B 0.55. Row added to PREDICTIONS.md. Hold A may queue now (Sim lane, first). P-089 addendum still owed.
