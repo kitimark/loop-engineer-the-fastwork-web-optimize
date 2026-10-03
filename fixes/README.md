@@ -140,3 +140,33 @@ limits are in `research/architecture/headless-functional.md`.
 after landing the fix branches with rebase + `--ff-only`, see [`LEAD.md`](LEAD.md)) applies the patches in order, reports which ones conflict, and
 leaves a combined overlay that `fix.mjs ab all-wave1` can measure. `--on <combined>` lets a later fix
 build on top of it (`edit`, `diff`, `serve`, `ab` all accept it).
+
+## Evidence keep-list and disk space
+
+Raw output in `out/` and the scratchpad is disposable, but the study's write-up needs the evidence behind each claim
+(user, T-049; the disk ran full in I-095). So every topic names what must survive a cleanup:
+
+- **What counts as evidence:** what a README, card, proposal (PR-…) or finding cites as a number or a picture: the run
+  records behind a verdict (`verify.json`, `bench-results.json`, `check.json`, phone run `.json`), the key frames or
+  screenshots a proposal shows, a trace only when a claim quotes it, a phone `.mov` only when a claim rests on watching
+  it. Not evidence: Chrome profiles, overlays (rebuilt from `patch.diff`), repeated iterations, full frame sequences.
+- **How:** commit `fixes/<topic>/evidence.json` (or `research/<topic>/evidence.json`) next to the README:
+
+  ```json
+  { "schema": "fw-evidence/1", "topic": "<topic>", "capMB": 200, "items": [
+    { "path": "out/<topic>/ab-1/verify.json", "why": "run records behind the 'better' verdict", "kind": "result", "for": "results.json" },
+    { "path": "out/<topic>/frames/top-patched.png", "why": "key frame shown in PR-0NN", "kind": "frames", "fastworkDerived": true } ] }
+  ```
+
+  `path` is relative to the checkout that holds the file (no absolute path, no `..`: Hard rule 12). The files stay
+  where they are, gitignored; never commit them. Screenshots and frames of the page are Fastwork-derived: mark them
+  `fastworkDerived: true` (the report flags them MUST KEEP; Hard rule 3). Cap: 200 MB per topic; more needs the lead's OK.
+  Before a worktree is removed, the lead copies its evidence to the same relative path in the main checkout (the
+  report finds it there).
+- **Throwaway Chrome profiles** remove themselves: a profile made with `tempProfileDir()` and launched by
+  `launchChrome()` (`tools/lib/cdp.mjs`) is deleted at `close()`, on an error exit and on SIGINT/SIGTERM/SIGHUP; only a
+  SIGKILL leaves it (with a marker file). Probes use `tempProfileDir()` for every throwaway profile, never a fixed
+  `chrome-profile` folder; `FW_KEEP_PROFILE=1` (`check.mjs`, `bench.mjs mech`: `--keep-profile`) keeps one to debug.
+- **Report, read-only:** `node tools/space.mjs report [--list out/space.tsv]` lists leftover profiles, `out/` of
+  finished worktrees, scratch folders, the evidence and the free space; it deletes nothing. `lock.mjs status` and
+  `fix.mjs doctor` print a WARNING under 10 GB free. Deleting is the user's decision.
