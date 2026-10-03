@@ -9,6 +9,25 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **03:4xZ 10ac0af landed. P-068 heat test scored; ops second read PASS; heat goal now firm.**
+  - **P-068** (iphone-runner, H1 + H2, both attempt 1, held at 80 %, floor check pass both): score.json
+    61219d594ea6 on samples.jsonl 3c14bcd297ce, scorer 1ca63e2b4d11. Ops re-ran `heat.mjs score --in` on the same
+    samples: output byte-identical. **Fastwork heats more** (B − A corrected 0.565/0.413, raw 0.433/0.365, both
+    >= 0.10, not start-sensitive); **the fixes cool the phone** (B − X 0.428/0.162, raw 0.337/0.141, both >= 0.05).
+    Corrected slopes F −0.085/−0.105, A 0.055/−0.013, B 0.62/0.40, X 0.192/0.238. Deviations D1-D4 in iphone-runner's
+    RUNLOG (H1-3B pre-warm likely inflates H1's B; H2 alone passes both verdicts). Write-up + ledger row: de-heat
+    2801f4a (README "Result"); **ops second read PASS** (re-score identical; D2 recompute with H2's B 0.40 -> B − A
+    +0.345, B − X +0.208 checked; misses stated as misses; system power descriptive, no units; "fixes cool" scoped to
+    st6-rb2 without the countdown fix). Nits, not blocking: D1's "low start biases the corrected slope upward" is
+    about the raw slope (the correction removes the modelled part); the ledger lesson's "32-61 %" lacks the README's
+    "descriptive". Per the pre-registered outcome: work at rest becomes a ranked goal (countdown first, then the
+    carousel); "the fixes cool the phone" goes into PROGRESS as a heat gain (change line 03:45Z, share marked a
+    rough figure). PROGRESS goal's conditional heat clause made firm.
+  - **Lead 03:24Z** moved iphone-runner's H2-4F to #1 (after ts-i079's npm test). hero-exit-threaded stays at I.
+  - **cd-roll-ca wording** (review finding 3): it is a watched blind side-by-side comparison, no touch; PROGRESS
+    item, gate, next and upcoming reworded.
+  - **Phone:** P-071 pin-hold started 03:34Z (warm-ups), iphone-runner, ops OK given.
+
 - **03:3xZ 5b1e544 landed. P-071 second read PASS; reviews; I-079 open.**
   - **P-071 PASS** at b88f100 (fix-nav-morph; card dd122cc, ledger row fedec12). All four round-1 points closed:
     S sentinel on C with void/cool/stop; arm-level >= 2/3 collapse, 0/3 clean, 1/3 inconclusive (V 55/30/15, D|V

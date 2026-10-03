@@ -1,14 +1,15 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T03:30:00Z",
+ "updatedAt": "2026-10-03T03:45:00Z",
  "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
- "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And, if the heat test (P-068) shows Fastwork heats the phone more than apple.com, less work at rest so the phone stays cooler.",
+ "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
  "complaints": [
   { "area": "hero", "text": "the top of the page (hero) and scrolling out of it feel laggy" },
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T03:45:00Z", "text": "Heat test done, both sessions agree: Fastwork warms the phone clearly more than apple.com, which stays close to an empty page. Today's best build already cools it without the countdown fix (roughly a third to three-fifths of the extra heat gone; a rough figure). Less work at rest is now a firm goal." },
   { "at": "2026-10-03T01:15:00Z", "text": "The F3 robot-finger test passed, but the review found a possible slowdown when the page holds at the end, and a case where a touch is missed. Both are checked before your F3 swipe test, which is postponed. The heat test runs now." },
   { "at": "2026-10-03T01:00:00Z", "text": "Explained: the extra long frames past the hero in the countdown test come from the avatar pill swapping its picture, the same with or without the countdown fix, so that fix is clear for wave 2. On today's best build an earlier fix already removed that swap." },
   { "at": "2026-10-03T00:30:00Z", "text": "Countdown timing test on the phone done, 8 runs valid: at the top the new countdown is no slower than the original, so the full fix stays; past the hero it does about 40 % less work. Open: past the hero it still shows a few more long frames; de-countdown traces why. Now: the F3 robot-finger test." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T19:28:00Z", "text": "Carousel fix (st5) tested on the phone: the picture swap no longer re-lays out the page, but the start of each slide still does about half the time. Hitches at rest fell by more than half. Next step is the lead's call." },
   { "at": "2026-10-01T19:16:00Z", "text": "New work, the user's second priority: look for cheaper ways to draw effects that look the same, and show each one to the user to accept or reject." },
   { "at": "2026-10-01T19:12:00Z", "text": "Two small items (the endless sweep animations and the image sizes) are parked until the bigger style fixes have phone results, so effort stays on the largest slow frames." },
-  { "at": "2026-10-01T19:03:00Z", "text": "Your two ideas checked: complex CSS is not the cause; the cost is how many elements each change touches. The images use more memory than needed but cost nothing per frame. Seven ranked fixes follow, scene-scope first." },
-  { "at": "2026-10-01T18:54:00Z", "text": "A fix for slow style recalculation is being built (fix-scene-scope): it narrows how the page pauses its hidden scenes. After a Chrome check it goes to the phone next." }
+  { "at": "2026-10-01T19:03:00Z", "text": "Your two ideas checked: complex CSS is not the cause; the cost is how many elements each change touches. The images use more memory than needed but cost nothing per frame. Seven ranked fixes follow, scene-scope first." }
  ],
  "items": [
   {
@@ -116,10 +116,10 @@
    "fixes": "Instead of script moving the digits every frame during each half-second roll, one GPU animation per digit per second: the most script work saved at the top and in the menu panel.",
    "felt": {
     "answer": "not-yet",
-    "text": "you judge it in a blind swipe test before it goes into a build"
+    "text": "you judge it in a blind side-by-side look before it goes into a build"
    },
-   "gate": "Within a fraction of a pixel of the original's motion (exact numbers at 60 and 120 Hz), and your blind swipe test, since it is not frame-for-frame identical.",
-   "next": "Built and reviewed: the third review passed. It waits for the digit strips (cd-strip) to land, then for your blind swipe test on the phone.",
+   "gate": "Within a fraction of a pixel of the original's motion (exact numbers at 60 and 120 Hz), and your blind side-by-side look on the phone, since it is not frame-for-frame identical.",
+   "next": "Built and reviewed: the third review passed. It waits for the digit strips (cd-strip) to land, then for your blind side-by-side look on the phone (you watch, no touching).",
    "owner": "fix-cd-roll-ca",
    "checks": [],
    "details": [
@@ -170,7 +170,7 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "The missed-touch case is fixed in a new build. The possible slowdown when the page holds at the end did not show on the computer, so it gets a robot-finger check on the phone after the heat test, plus a short repeat of the touch test. Your swipe test waits until then.",
+   "next": "The missed-touch case is fixed in a new build. The possible slowdown when the page holds at the end did not show on the computer, so it gets a robot-finger check on the phone, running now, then a short repeat of the touch test. Your swipe test waits until then.",
 
    "owner": "fix-nav-morph",
    "checks": [
@@ -533,7 +533,7 @@
   }
  ],
  "upcoming": [
-  { "title": "Blind swipe test of the GPU countdown roll (cd-roll-ca)", "when": "once it is built on top of the digit strips (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
+  { "title": "Blind side-by-side look at the GPU countdown roll (cd-roll-ca)", "when": "once the digit strips (cd-strip) have landed (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "postponed: the review found two things to check first (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
   { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
