@@ -666,6 +666,16 @@ in `out/rest-script/chainJ/`; data in `out/rest-script/p089/{fw-sim,fw-ipad}/`.
 
 - No counted pixel is fill: fill max 2, every counted pixel is edge. The EN label is in no crop (crop tops 308-762 CSS
   px).
+- **The fw-sim T1s are T1 only under the A/A mask** (mgmt-ops-10's read). Unmasked they are T2, still within the
+  numbers, so none is mask-dependent:
+
+  | label | edge max | counted px | CSS px | share |
+  |---|---|---|---|---|
+  | smooth-100 | 37 | 342 | 38 | 0.0114 % |
+  | far-0 | 52 | 974 | 108.22 | 0.0325 % |
+  | intoview | 37 | 456 | 50.67 | 0.0152 % |
+
+  Source: `out/rest-script/chainJ/fw-sim-unmasked.json`.
 - **Reduced motion is exact in WebKit** (T0/T1 on every shot).
 - **Not motion-only:** fw-sim has a static T2 (rest), and fw-ipad has static T2 shots (far-0, intoview).
 
@@ -728,6 +738,15 @@ The lead's conditions, and how each is met:
 
    Rest is still scored and compared with quiet. A T3 on one side only prints `REST-QUIET DISAGREE`, which goes to the
    lead and stays out of the verdict. Every rest, quiet and intoview row prints a `SINCE` line in the chain log.
+
+   **Verdict rule for each Chrome leg (430r, 1440, 1440r), the lead's condition through mgmt-ops-10:**
+   - The leg's tier is the worst tier over quiet, intoview and the moving labels. Rest is excluded.
+   - Rest is scored, printed with its `SINCE` line, and used only in the REST-QUIET comparison. A rest T3 is never the
+     leg's worst tier and never fails the leg; a disagreement goes to the lead.
+   - The Simulator legs keep their registered verdict (rest included).
+   - An intoview record shot that comes out VOID gets one re-run of the leg (`chainJ.sh leg <name>`), not a strike.
+     This can happen because it settles SETTLE = 1200 ms, so a slide end within about 300 ms before its freeze puts
+     `since` under 1500. The lead agreed to this rule.
 4. **mgmt-ops-10 reads the diff and re-hashes before any Chrome hold.** `chainJ.sh` now also appends a `HASHES` line
    to every hold's log: the overlay, every tool, `p089.hashes` and itself. A line that differs from the one taken at
    chain start makes the hold VOID (`hash-changed`).
