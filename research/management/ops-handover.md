@@ -9,6 +9,20 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **08:0xZ main 1ed2419 on cd966b7 on ec7eb08 (my 07:3xZ log).**
+  - **cd966b7** (user T-030 #19): console proposal hold/unhold, stale decisions on revise, decisionState. After npm
+    test on main the lead restarts the console and puts PR-008 on hold, so the user's acceptance shows as "under
+    review".
+  - **1ed2419** (arch-isolated-measure): the isolated measurement and heat plan for T-029. It covers heat-immune vs
+    heat-disturbed numbers, a frozen-rest harness, phone options and a countdown pilot.
+  - **P-075 = T-029 countdown isolation pilot** (arch-isolated-measure; prereg b89ec7f on worktree-agent-a41fb01cae3b26082,
+    `research/architecture/isolated-measurement/pilot-prereg.md`, confirmed by the lead).
+    - No phone: 3 shared-lane slots of ≤ 300 s each (2 Chrome probes, 1 Sim functional).
+    - Arms: C, C', countdown-faces V, cd-roll-ca, cd-strip.
+    - Question: do the full-page countdown count deltas match the frozen-rest deltas?
+    - Ops asked for a ledger row (prereg sha, arm hashes, scorer hash, decision rule) before data, then a second read.
+    - Next free **P-076**.
+
 - **07:3xZ main 566f3db (my 07:2xZ batch) landed; I-082 RESOLVED (7e28dce, npm test 1373/1373; Sim counts compare
   only within one session, never across the rebase).**
   - **P-073 scorer guard VERIFIED** (fix-nav-morph 4ece74c): `p073-score.mjs` sha256 **30c16ec042c8**, in the card and
@@ -2060,7 +2074,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `fix-cd-roll-ca` (name) | cd-roll-ca: countdown roll on the GPU, stacks on cd-strip (T-030 #10, user priority #1) | alive (10-03 00:2xZ) |
 | `fix-platform-idle` (name; new 10-03 07:2xZ) | heat goal (T-029, P-068: Fastwork warms the phone ~5x apple.com): glint-ca + sweep-exact, unparked | alive |
 | `map-rest-script` (name; new 10-03 07:2xZ) | heat goal: read-only map of the middle-section script work at rest | alive |
-| `ts-proposal-hold` (name; 10-03 07:2xZ) | T-030 #19: console proposal hold/unhold and a "stale: re-decide" state on revise | alive |
+| `ts-proposal-hold` (name; 10-03 07:2xZ) | T-030 #19: console proposal hold/unhold and a "stale: re-decide" state on revise | done: cd966b7 landed |
+| `arch-isolated-measure` (name; ID a41fb01cae3b26082) | T-029 isolated measurement and heat plan (1ed2419); countdown isolation pilot P-075 | alive |
 | `ts-i082` (name) | I-082: Sim sessions in the Simulator's background CPU storm (fix 7e28dce on main, resolve pending) | alive |
 | `fix-pill-swap` (name) | pill-swap: community-pill avatar template swap, full-viewport Layout 2/s at pastHero (JS 11415-11447; from F-146), on st6-rb2 | done: dropped at D (9df12de, 10-03 01:3xZ) |
 | `ts-i078` (name) | I-078: `sim session` refuses while fw-sim is "Shutting Down" (workaround: wait, retry) | done: I-078 resolved 84a0982 |
