@@ -4,7 +4,8 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** P-077 pre-registered runs made and scored: **PASS in Chrome and in the Simulator** (less-work gate met). Pixels
-are not identical, so the user decides the look (proposal posted by this topic); the phone no-worse check is the lead's,
+are not identical, so the user decides the look (proposal PR-009 on the console, options both / sweep-only /
+glint-only, recommended both); the phone no-worse check is the lead's,
 after the user's choice.
 **Stage:** F/V (D card P-077 signed by the lead; results below)
 **Gate:** less-work landing rule (user T-029 #30, `memory/less-work-landing-rule.md`): fewer work counts on the full page
@@ -81,7 +82,7 @@ Served A/B (st6-rb2 vs this build) frozen frames in Chrome. Animations were paus
 - Simulator (WebKit) frozen frames: sweep ≤ 10, glint ≤ 33 in visible phases, and ≤ 17 on the grey dashes' bottom edge in
   every phase. See "Simulator" below.
 
-### Proposal draft (for the lead to post; the user decides)
+### Proposal draft (posted as PR-009 after P-077 was scored; the user decides)
 
 Title: "Platform section: glint and colour sweep on the GPU (looks almost the same)".
 - What it saves: at the bottom of the page, the platform tail stops making the page redraw at rest.
