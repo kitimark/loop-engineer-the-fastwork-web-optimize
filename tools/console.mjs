@@ -96,9 +96,13 @@
 //   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
 //
 // Proposals (ts-proposals): a design engineer's PoC for the user to compare and accept, reject or send back:
-//   node tools/console.mjs proposal post|list|show|revise|live|publish|withdraw|decide|wait|hold|unhold …   (header of tools/lib/proposal-cli.mjs)
+//   node tools/console.mjs proposal post|list|show|revise|live|publish|withdraw|decide|wait|hold|unhold|talk …   (header of tools/lib/proposal-cli.mjs)
 //        # T-030: `proposal hold <id> --by <you> --note "…"` stops the user deciding (banner, buttons off) while a card is
 //        # being corrected; a revise after a decision makes it stale (re-decide) unless --keep-decision.
+//        # T-048: the user asks about a proposal under it on the page ("Questions and answers", or Comment on a part):
+//        # a console thread anchored on it, assigned at once to the author, so the author's `thread wait --as <you>`
+//        # wakes; `proposal talk <id> [--as <you>]` shows them, `thread reply <T-id> --by <you>` answers (shown under the
+//        # proposal). A question never changes the decision.
 //
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';

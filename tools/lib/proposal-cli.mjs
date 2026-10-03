@@ -33,6 +33,14 @@
 //        # --live-a-patch <path> [--live-a-ref <ref>] on post/revise, "live": {"patch": …, "a": {"patch": …, "ref": …}}
 //        # in the file. A is read and stored like B, on the same base tree (site-pretty or site; refused otherwise);
 //        # without it A is the plain baseline. The panel labels A with compare.a.label, else "Base: <A's patch>".
+//   proposal talk <id> [--as <agent>] [--json]     # T-048: the user's questions and comments on one proposal, every message
+//        # (threads anchored on it: from the page's "Ask a question" box, a reply box, or the Comment button on a part of
+//        # it), and how to answer; --as marks them read for you. A comment on a proposal is assigned at once to its
+//        # author (`by`), so `console.mjs thread wait --as <author>` wakes on it (the lead's too: it reads every thread).
+//        # Answer: `console.mjs thread reply <T-id> --by <you> --text "…" [--ask] [--image <png> --caption "…"]`; the
+//        # answer shows under the proposal. A question is never a decision: revise only after a change request.
+//   proposal talk [--by <author>] [--unanswered] [--json]   # the proposals with questions; --unanswered: the user's
+//        # last word is unanswered somewhere on it
 //   proposal publish <id> --by <agent>                            # draft -> proposed
 //   proposal withdraw <id> --by <agent> [--note "..."]
 //   proposal decide <id> --by <who> --value accept|reject|change [--option <name>] [--notes "..."]   # the user answered in chat (lead)
@@ -61,6 +69,7 @@ import {
   liveAWarning,
 } from './proposal.mjs';
 import { runningServer } from './console-server.mjs';
+import * as TALK from './proposal-talk.mjs'; // T-048
 import { pollUntil, parseSec, EXIT, httpGet } from './wait.mjs';
 import { startWait } from './waits.mjs'; // I-058: live wait records for the status board
 
@@ -128,6 +137,8 @@ export async function run(argv) {
     else console.log(`  ${p.compare.shots.length} screenshot pair(s)${p.compare.video ? ', video' : ''}, copied into the console store`);
     const u = await serverUrl();
     if (p.state === 'proposed') console.log(u ? `on the user console ${new URL(`proposals#${p.id}`, u).href}; wait: node tools/console.mjs proposal wait ${p.id} --until decided (in the background)` : 'the console page is not running: ask the lead to start `node tools/console.mjs serve`');
+    // T-048: questions on the page go to the author
+    if (p.state === 'proposed') console.log(`questions: the user can ask about it on the page; they come to you: keep node tools/console.mjs thread wait --as ${p.by} armed in the background (it also wakes on your decisions), answer with thread reply <T-id>; list: proposal talk ${p.id}`);
     return 0;
   }
   if (sub === 'list') {
@@ -139,6 +150,13 @@ export async function run(argv) {
   }
   // --any: only an explicit --by narrows it (an FW_AGENT in the lead's environment must not hide the others)
   if (sub === 'wait' && a.flag('any')) return wait(waitAnyCondition({ by: a.one('by', a.one('as')), since: a.one('since') }), a);
+  if (sub === 'talk' && !arg) { // T-048: the proposals with questions or comments
+    const rows = TALK.talkList({ by: a.one('by'), unanswered: a.flag('unanswered') });
+    if (a.flag('json')) console.log(JSON.stringify(TALK.talkIndex(), null, 1));
+    else if (!rows.length) console.log(a.flag('unanswered') ? 'no questions waiting for an answer' : 'no questions or comments on proposals');
+    else for (const l of rows) console.log(l);
+    return 0;
+  }
   if (!arg) throw new Error(`usage: node tools/console.mjs proposal ${sub} <id> … (see the header of tools/lib/proposal-cli.mjs)`);
   const id = parseProposalId(arg);
   if (sub === 'show') { const p = get(id); console.log(a.flag('json') ? JSON.stringify(withDecisionState(p), null, 1) : showText(p)); return 0; }
@@ -193,6 +211,12 @@ export async function run(argv) {
     return 0;
   }
   if (sub === 'wait') return wait(waitCondition(id, { until: a.one('until', 'decided'), since: a.one('since') }), a);
+  if (sub === 'talk') { // T-048: every question and comment on one proposal, with the answers
+    const as = a.one('as');
+    if (a.flag('json')) { get(id); console.log(JSON.stringify(TALK.talkThreads(id), null, 1)); } else console.log(TALK.talkText(id, as));
+    if (as) await TALK.markTalkRead(id, as);
+    return 0;
+  }
   throw new Error(`unknown proposal command "${sub}" (see the header of tools/lib/proposal-cli.mjs)`);
 }
 

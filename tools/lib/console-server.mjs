@@ -38,10 +38,15 @@
 //                                caps); the lead reads it (thread wait). Same guards as the thread POSTs, 64 KB.
 //                                I-096: every page is also its own anchor "part:page" (any line on it; the line goes
 //                                along as the quote), so the user can comment anywhere.
+//                                T-048: on a proposal (anchor page proposals) the thread is assigned at once to the
+//                                proposal's author (proposal-talk.mjs talkRoute), whose thread wait wakes on it too.
 //   Thread POSTs: like the step POSTs (localhost Host, x-console: 1), plus an Origin, when sent, must be this server's
 //   localhost origin, and a body over 64 KB gets 413.
 //   GET  /proposals              the proposals page (tools/lib/proposals-page.html, ts-proposals): PoCs to compare and decide
 //   GET  /api/proposals          {now, proposals: [summaries]} (waiting first; no drafts, no withdrawn ones)
+//   GET  /api/proposals/<id>/talk  T-048: {talk: {id, to, threads: [page threads anchored on it, oldest first]}}: the
+//                                questions and answers under the proposal (proposal-talk.mjs talkView); 404 when hidden.
+//                                /api/proposals adds talk: {count, open, waiting, unread, yourTurn} to a proposal with any.
 //   GET  /api/proposals/<id>     one proposal (proposal.mjs publicView: text, gain, compare with /media/ URLs; no history)
 //   POST /api/proposals/<id>/<act>  act = decide {value: accept|reject|change, notes, rev, option?} | undo {rev}
 //                                (option: I-053, the picked option's name on a proposal with options); 409 while the
@@ -73,6 +78,7 @@ import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summ
 import { PAGES as COMMENT_PAGES, normAnchor, commentTitle, markersFor } from './console-comments.mjs';
 import { pageProposals, publicView as proposalView, get as getProposal, decide as decideProposal, undoDecision, mediaFile, findOption } from './proposal.mjs';
 import { createLiveServers, measuringNow } from './live.mjs';
+import { talkRoute, talkView, talkIndex } from './proposal-talk.mjs';
 import { statSync, createReadStream } from 'node:fs';
 
 /** The page (plain HTML, inline CSS and JS, no external requests). Read per request: an edit shows on reload. */
@@ -276,7 +282,20 @@ async function liveRoute(req, res, u, port, live) {
 /** The proposals routes; true when handled. */
 export async function proposalRoute(req, res, u) {
   if (req.method === 'GET' && (u.pathname === '/proposals' || u.pathname === '/proposals.html')) { send(res, 200, withMenu(proposalsPage(), 'proposals'), 'text/html; charset=utf-8', PROPOSALS_CSP); return true; }
-  if (req.method === 'GET' && u.pathname === '/api/proposals') { send(res, 200, { now: iso(), proposals: pageProposals() }); return true; }
+  if (req.method === 'GET' && u.pathname === '/api/proposals') {
+    let talk = {};
+    try { talk = talkIndex(); } catch {} // T-048: questions per proposal; a half-written thread file: next poll
+    send(res, 200, { now: iso(), proposals: pageProposals().map((p) => (talk[p.id] ? { ...p, talk: talk[p.id] } : p)) });
+    return true;
+  }
+  // T-048: the questions and comments on one proposal (threads anchored on it), for the talk box under it
+  const tk = u.pathname.match(/^\/api\/proposals\/(PR-\d{3,6})\/talk$/);
+  if (tk && req.method === 'GET') {
+    let v = null;
+    try { v = talkView(tk[1]); } catch {}
+    if (!v || v.id !== tk[1]) send(res, 404, { error: `no proposal ${tk[1]}` }); else send(res, 200, { now: iso(), talk: v });
+    return true;
+  }
   let m = u.pathname.match(/^\/api\/proposals\/(PR-\d{3,6})$/);
   if (m && req.method === 'GET') {
     let v = null;
@@ -376,7 +395,8 @@ async function threadRoute(req, res, u, port, feed) {
     if (b.error) { send(res, b.status, { error: b.error }); return true; }
     try {
       const anchor = normAnchor(b.body.anchor), text = b.body.text;
-      const r = await createThread({ title: commentTitle(anchor, typeof text === 'string' ? text : ''), text, anchor, fromPage: true });
+      const route = talkRoute(anchor); // T-048: a comment on a proposal goes to its author too (and the lead)
+      const r = await createThread({ title: commentTitle(anchor, typeof text === 'string' ? text : ''), text, anchor, fromPage: true, ...(route?.to.length && { routeTo: route.to, routeNote: route.note }) });
       send(res, 200, { thread: pageThread(r.thread) });
     } catch (e) { send(res, 409, { error: e.message }); }
     return true;

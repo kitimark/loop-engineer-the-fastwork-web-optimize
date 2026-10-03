@@ -146,6 +146,24 @@ fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
 .trypair { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 6px; }
 .trypair figure { flex: 0 0 auto; }
 .trypair iframe { display: block; width: 430px; height: 932px; max-height: 85vh; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+/* T-048: questions and answers on a proposal (console threads anchored on it) */
+.talk h3 { margin: 0 0 4px; font-size: 16px; }
+.chip.q { background: var(--accent-soft); color: var(--ink); font-size: 12px; font-weight: 650; }
+.tq { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px; }
+.tq .tqh { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; font-size: 14px; color: var(--muted); }
+.tq .tqh b { color: var(--ink); }
+.tq ol { list-style: none; margin: 6px 0 0; padding: 0; }
+.tq li { margin: 8px 0; padding: 8px 12px; border-radius: 10px; background: var(--bg); }
+.tq li.mine { background: var(--accent-soft); }
+.tq .mw { font-size: 13px; color: var(--muted); }
+.tq .mt { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tq .mi { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.tq .mi figure { margin: 0; max-width: 220px; }
+.tq .mi img { display: block; max-width: 100%; border-radius: 6px; border: 1px solid var(--line); }
+.tq .mi figcaption { font-size: 13px; color: var(--muted); }
+.talk textarea { min-height: 60px; }
+.talk .tr { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.talk .tr .sp { flex: 1; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 </head>
@@ -161,6 +179,7 @@ fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
     <div id="list" class="list"></div>
     <div id="detail"></div>
     <div id="tryit"></div>
+    <div id="talk"></div>
     <div id="decide"></div>
   </main>
 </div>
@@ -176,6 +195,10 @@ fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
 // Holds and stale decisions (T-030): p.hold {by, note, at} puts a banner with the note on top of the proposal and turns
 // the decision buttons off (the server refuses a decision too); a decision already made is shown "under review". A
 // revision after a decision makes it stale (p.decisionState 'stale', p.staleDecision): a banner asks to decide again.
+// Questions (T-048): under the proposal, its conversation: the console threads anchored on it (GET
+// /api/proposals/<id>/talk), each with a reply box (POST /api/threads/<T>/reply), and an "Ask a question" box (POST
+// /api/comments with the proposal's anchor). The server hands them to the proposal's author (and the lead reads every
+// thread). Each section is a comment anchor of its own ("PR-009/section:gain"). A question is never a decision.
 var ID = /^PR-\d{3,6}$/;
 var STATE_TEXT = { proposed: 'waiting for you', accepted: 'accepted', rejected: 'rejected', 'changes-requested': 'change requested' };
 var AREA_TEXT = { hero: 'Top of the page (hero)', middle: 'Middle of the page', end: 'End of the page', whole: 'Whole page' };
@@ -217,7 +240,8 @@ function renderList(items) {
   function row(p) {
     var chip = p.hold ? el('span', { class: 'chip held', text: 'On hold' + (p.decision ? ' · ' + (STATE_TEXT[p.decision.value] || p.decision.value) + ', under review' : '') })
       : el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: p.decisionState === 'stale' ? 'decide again' : (STATE_TEXT[p.state] || p.state) });
-    var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id, 'data-anchor': /^PR-\d{1,6}$/.test(p.id) ? p.id : null, 'data-anchor-label': p.title }, chip, // I-096
+    var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id, 'data-anchor': /^PR-\d{1,6}$/.test(p.id) ? p.id : null, 'data-anchor-label': p.title, 'data-comment-to': toNames(p) }, chip, // I-096
+      talkChip(p.talk), // T-048
       el('span', { class: 't', text: p.title }),
       el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') + (p.options ? ' · ' + p.options + ' options' : '') + ' · to: ' + toNames(p) }));
     return a;
@@ -421,8 +445,11 @@ function decisionBlock(p) {
 
 // ---- one proposal ----
 function para(text) { return (text || '').split(/\n\s*\n/).map(function (t) { return el('p', { text: t }); }); }
-function section(title, nodes) {
-  var b = el('div', { class: 'block' }, el('h3', { text: title }));
+// T-048: each section is a comment anchor of its own ("PR-009/section:gain", "PR-009/option:tiles/section:risk")
+var SECTION_KEY = { 'What costs': 'problem', 'The idea': 'idea', 'Why it looks the same': 'looks-same', 'What looks different, and when you would notice': 'visual-diff', 'What it saves': 'gain', 'Risk': 'risk' };
+function section(title, nodes, an) {
+  var key = an && SECTION_KEY[title];
+  var b = el('div', { class: 'block', 'data-anchor': key ? an + '/section:' + key : null, 'data-anchor-label': key ? title : null }, el('h3', { text: title }));
   nodes.forEach(function (n) { if (n) b.appendChild(n); });
   return b;
 }
@@ -595,13 +622,13 @@ function optionsBlock(p) {
   var oa = /^[a-z0-9][a-z0-9._-]{0,39}$/.test(o.name) ? p.id + '/option:' + o.name : p.id; // I-090
   var panel = el('div', { class: 'optpanel', role: 'tabpanel', id: 'opt-panel', 'aria-labelledby': 'opt-tab-' + opts.indexOf(o), 'data-anchor': oa !== p.id ? oa : null, 'data-anchor-label': 'Option: ' + (o.label || o.name) });
   panel.appendChild(el('h3', { class: 'oh' }, el('span', { text: 'Option: ' + (o.label || o.name) }), o.name === rec ? el('span', { class: 'chip rec', text: 'Recommended' }) : null));
-  panel.appendChild(section('The idea', para(o.idea)));
-  if (o.looksSame) panel.appendChild(section('Why it looks the same', para(o.looksSame)));
+  panel.appendChild(section('The idea', para(o.idea), oa));
+  if (o.looksSame) panel.appendChild(section('Why it looks the same', para(o.looksSame), oa));
   var ul = el('ul');
   (o.visualDiff || []).forEach(function (t) { ul.appendChild(el('li', { text: t })); });
-  panel.appendChild(section('What looks different, and when you would notice', [ul]));
-  if (o.gain && o.gain.length) panel.appendChild(section('What it saves', [gainTable(o.gain)]));
-  panel.appendChild(section('Risk', para(o.risk)));
+  panel.appendChild(section('What looks different, and when you would notice', [ul], oa));
+  if (o.gain && o.gain.length) panel.appendChild(section('What it saves', [gainTable(o.gain)], oa));
+  panel.appendChild(section('Risk', para(o.risk), oa));
   var oc = o.compare || {};
   panel.appendChild(compareBlock({ id: p.id, compare: { a: p.compare && p.compare.a, b: oc.b, view: p.compare && p.compare.view, shots: oc.shots, video: oc.video } }, p.id + ':' + o.name, oa));
   wrap.appendChild(panel);
@@ -636,7 +663,7 @@ function renderDetail(p, force) {
   if (!force && !p.hold && document.activeElement && document.activeElement.id === 'notes') return;
   detailSig = sig;
   stopBlink();
-  var card = el('article', { class: 'card detail', 'data-id': p.id, 'data-anchor': /^PR-\d{1,6}$/.test(p.id) ? p.id : null, 'data-anchor-label': p.title });
+  var card = el('article', { class: 'card detail', 'data-id': p.id, 'data-anchor': /^PR-\d{1,6}$/.test(p.id) ? p.id : null, 'data-anchor-label': p.title, 'data-comment-to': toNames(p) });
   var hb = holdBanner(p), sb = staleBanner(p);
   if (hb) card.appendChild(hb);
   if (sb) card.appendChild(sb);
@@ -648,21 +675,21 @@ function renderDetail(p, force) {
   card.appendChild(el('h2', { class: 'title', text: p.title }));
   var revs = p.revisions || [];
   if (revs.length > 1) card.appendChild(el('p', { class: 'hint', text: 'Revision ' + p.rev + ': ' + revs[revs.length - 1].note }));
-  card.appendChild(section('What costs', para(p.problem)));
+  card.appendChild(section('What costs', para(p.problem), p.id));
   if (p.options && p.options.length) {
     // I-053: the shared text (if any), then the options
-    if (p.idea) card.appendChild(section('The idea', para(p.idea)));
-    if (p.looksSame) card.appendChild(section('Why it looks the same', para(p.looksSame)));
-    if (p.risk) card.appendChild(section('Risk', para(p.risk)));
+    if (p.idea) card.appendChild(section('The idea', para(p.idea), p.id));
+    if (p.looksSame) card.appendChild(section('Why it looks the same', para(p.looksSame), p.id));
+    if (p.risk) card.appendChild(section('Risk', para(p.risk), p.id));
     card.appendChild(optionsBlock(p));
   } else {
-    card.appendChild(section('The idea', para(p.idea)));
-    card.appendChild(section('Why it looks the same', para(p.looksSame)));
+    card.appendChild(section('The idea', para(p.idea), p.id));
+    card.appendChild(section('Why it looks the same', para(p.looksSame), p.id));
     var ul = el('ul');
     (p.visualDiff || []).forEach(function (t) { ul.appendChild(el('li', { text: t })); });
-    card.appendChild(section('What looks different, and when you would notice', [ul]));
-    if (p.gain && p.gain.length) card.appendChild(section('What it saves', [gainTable(p.gain)]));
-    card.appendChild(section('Risk', para(p.risk)));
+    card.appendChild(section('What looks different, and when you would notice', [ul], p.id));
+    if (p.gain && p.gain.length) card.appendChild(section('What it saves', [gainTable(p.gain)], p.id));
+    card.appendChild(section('Risk', para(p.risk), p.id));
     card.appendChild(compareBlock(p));
   }
   // I-074: the decision and history go below the "Try it" panel, which keeps its own container so the framed
@@ -679,6 +706,109 @@ function renderDetail(p, force) {
   document.getElementById('decide').replaceChildren(dec);
 }
 
+// ---- T-048: questions and answers (console threads anchored on the proposal; the Threads page shows them too) ----
+var talkSig = '', talkDrafts = {}, askDrafts = {}, talkBusy = false;
+function api(path, body) {
+  return fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-console': '1' }, body: JSON.stringify(body || {}) })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }); });
+}
+/** The list's chip: what the conversation on a proposal needs from the user. */
+function talkChip(k) {
+  if (!k || !k.count) return null;
+  var t = k.yourTurn ? 'a question for you' : k.unread ? k.unread + ' new answer' + (k.unread > 1 ? 's' : '') : k.waiting ? 'question sent' : k.count + ' question' + (k.count > 1 ? 's' : '');
+  return el('span', { class: 'chip q', text: t });
+}
+/** "about: what it saves" for a thread on a part of the proposal; nothing for the whole proposal. */
+function talkAbout(a) {
+  if (!a || !a.item || a.item.indexOf('/') < 0) return '';
+  return 'about: ' + String(a.itemText || '').replace(/^PR-\d+,?\s*/, '');
+}
+function talkImages(list) {
+  var box = el('div', { class: 'mi' });
+  (list || []).forEach(function (im, i) {
+    if (!im || typeof im.url !== 'string' || !/^\/thread-media\/T-\d{1,6}\/[A-Za-z0-9.-]+$/.test(im.url)) return;
+    var img = el('img', { src: im.url, alt: im.caption || ('Image ' + (i + 1)), loading: 'lazy' });
+    box.appendChild(el('figure', null, el('a', { href: im.url, target: '_blank', rel: 'noopener noreferrer' }, img), im.caption ? el('figcaption', { text: im.caption }) : null));
+  });
+  return box.firstChild ? box : null;
+}
+function talkThread(t, p) {
+  var who = (t.to && t.to.length ? t.to : ['lead']).join(', ');
+  var box = el('div', { class: 'tq', 'data-thread': t.id },
+    el('div', { class: 'tqh' }, el('b', { text: t.id }), talkAbout(t.anchor) ? el('span', { text: talkAbout(t.anchor) }) : null,
+      el('span', { text: t.status === 'closed' ? 'closed' : t.state === 'waiting-on-you' ? 'asks you' : t.state === 'answered' ? 'answered' : 'waiting for ' + who }),
+      el('a', { href: '/threads#' + t.id, text: 'open in Threads' })));
+  if (t.anchor && t.anchor.quote) box.appendChild(el('p', { class: 'hint', text: '“' + t.anchor.quote + '”' }));
+  var ol = el('ol');
+  (t.messages || []).forEach(function (m) {
+    var li = el('li', { class: m.by === 'user' ? 'mine' : null },
+      el('div', { class: 'mw', text: (m.by === 'user' ? 'You' : m.by) + ' · ' + when(m.at) + (m.ask ? ' · asks you' : '') }));
+    if (m.text || !(m.images && m.images.length)) li.appendChild(el('p', { class: 'mt', text: m.text || '' }));
+    var ims = talkImages(m.images);
+    if (ims) li.appendChild(ims);
+    ol.appendChild(li);
+  });
+  box.appendChild(ol);
+  if (t.status === 'closed') { box.appendChild(el('p', { class: 'hint', text: 'This one is closed. Reopen it in Threads to write more, or ask a new question below.' })); return box; }
+  var ta = el('textarea', { class: 'talk-in', 'aria-label': 'Reply in ' + t.id, placeholder: 'Reply…' });
+  ta.value = talkDrafts[t.id] || '';
+  ta.addEventListener('input', function () { talkDrafts[t.id] = ta.value; });
+  var send = el('button', { class: 'btn primary', type: 'button', text: 'Send' }), err = el('p', { class: 'err' });
+  function go() {
+    if (!ta.value.trim() || talkBusy) return;
+    talkBusy = true; send.disabled = true; err.textContent = '';
+    api('/api/threads/' + t.id + '/reply', { text: ta.value }).then(function () { delete talkDrafts[t.id]; talkSig = ''; })
+      .catch(function (e) { err.textContent = e.message; }).then(function () { talkBusy = false; send.disabled = false; loadTalk(true); });
+  }
+  send.addEventListener('click', go);
+  ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); go(); } });
+  box.appendChild(el('div', { class: 'tform', 'data-no-comment': true }, ta, el('div', { class: 'tr' }, el('span', { class: 'to', text: 'Goes to: ' }, el('b', { text: who })), el('span', { class: 'sp' }), send), err));
+  return box;
+}
+function askBox(p, to) {
+  var ta = el('textarea', { class: 'talk-ask', 'aria-label': 'Ask a question about ' + p.id, placeholder: 'What would you like to know about this proposal?' });
+  ta.value = askDrafts[p.id] || '';
+  ta.addEventListener('input', function () { askDrafts[p.id] = ta.value; });
+  var send = el('button', { class: 'btn primary', type: 'button', text: 'Ask' }), err = el('p', { class: 'err' });
+  function go() {
+    if (!ta.value.trim() || talkBusy) return;
+    talkBusy = true; send.disabled = true; err.textContent = '';
+    var label = String(p.title || '').slice(0, 120);
+    api('/api/comments', { anchor: { page: 'proposals', item: p.id, label: label }, text: ta.value }).then(function () { delete askDrafts[p.id]; talkSig = ''; })
+      .catch(function (e) { err.textContent = e.message; }).then(function () { talkBusy = false; send.disabled = false; loadTalk(true); });
+  }
+  send.addEventListener('click', go);
+  ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); go(); } });
+  return el('div', { class: 'tform', 'data-no-comment': true }, el('h4', { text: 'Ask a question' }), ta,
+    el('div', { class: 'tr' }, el('span', { class: 'to', text: 'Goes to: ' }, el('b', { text: to })), el('span', { class: 'sp' }), send), err);
+}
+function renderTalk(v) {
+  var box = document.getElementById('talk');
+  if (!v || !current || v.id !== current.id) { talkSig = ''; box.replaceChildren(); return; }
+  var sig = JSON.stringify(v);
+  if (sig === talkSig) return;
+  // don't redraw under the user's typing (the drafts are kept either way)
+  var f = document.activeElement;
+  if (f && f.tagName === 'TEXTAREA' && box.contains(f) && f.value) return;
+  talkSig = sig;
+  var to = (v.to && v.to.length ? v.to : ['lead']).join(', '), ts = v.threads || [];
+  var card = el('section', { class: 'card talk', 'data-anchor': ID.test(v.id) ? v.id : null, 'data-anchor-label': current.title, 'data-comment-to': to },
+    el('h3', { text: 'Questions and answers' + (ts.length ? ' (' + ts.length + ')' : '') }),
+    el('p', { class: 'hint', text: 'Ask anything about this proposal; ' + to + ' will answer here. A question is not a decision: nothing changes until you accept, reject or request a change below.' }));
+  ts.forEach(function (t) { card.appendChild(talkThread(t, current)); });
+  card.appendChild(askBox(current, to));
+  box.replaceChildren(card);
+  // the user has seen the answers shown here: mark them read, as the Threads page does
+  if (!document.hidden) ts.forEach(function (t) { var ms = t.messages || []; if (t.unread && ms.length) api('/api/threads/' + t.id + '/read', { n: ms[ms.length - 1].n }).catch(function () {}); });
+}
+function loadTalk(force) {
+  var id = currentId();
+  if (!id || !current) { renderTalk(null); return Promise.resolve(); }
+  if (force) talkSig = '';
+  return fetch('/api/proposals/' + id + '/talk', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { renderTalk(j && j.talk); }).catch(function () {});
+}
+
 // ---- loading ----
 function setUpd(text, off) { var u = document.getElementById('upd'); u.textContent = text; u.className = 'sub' + (off ? ' status off' : ''); }
 function load() {
@@ -689,15 +819,17 @@ function load() {
     var waiting = items.filter(function (p) { return p.state === 'proposed' && !p.hold; }).length;
     setUpd(waiting ? waiting + ' waiting for you · live' : 'nothing waiting · live');
     var id = currentId();
-    if (!id) { current = null; renderDetail(null); return; }
+    if (!id) { current = null; renderDetail(null); renderTalk(null); return; }
     return fetch('/api/proposals/' + id, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       current = j && j.proposal; renderDetail(current);
       if (!current) document.getElementById('detail').replaceChildren(el('p', { class: 'empty', text: id + ' is not here (withdrawn, or not posted yet).' }));
+      return loadTalk();
     });
   }).catch(function () { setUpd('not connected: is console.mjs serve running?', true); });
 }
 window.addEventListener('hashchange', function () { detailSig = ''; listSig = ''; load().then(function () { var d = document.getElementById('detail'); if (d && d.firstChild && d.scrollIntoView) d.scrollIntoView({ block: 'start' }); }); });
 if (window.ConsoleNav) ConsoleNav.onChange = function () { load(); }; // a proposal came or went
+if (window.ConsoleNav) ConsoleNav.onThreads = function () { load(); }; // T-048: an answer came: the list's chip and the talk
 load().then(function () {
   // no proposal chosen: open the oldest waiting one
   if (!currentId()) { var first = document.querySelector('#list a.row'); if (first && /waiting/.test(first.firstChild.className)) location.replace(first.getAttribute('href')); }

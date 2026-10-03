@@ -10,9 +10,10 @@
 // An anchor: {page, item, quote?, label?}
 //   page   steps | proposals | status | progress | build | threads
 //   item   per page (ITEM): steps "step:C-032"; proposals "PR-009", "PR-009/option:both", "PR-009/option:both/shot:2",
-//          "PR-009/video:b"; status "status:cd-strip"; progress and build "progress:style-recalc"; threads
-//          "thread:T-003" or "thread:T-003/msg:4"; and on every page "part:page" (I-096): anything on the page that is
-//          no item of its own (headings, filters, panels, list lines without an id); its quote is the line pointed at
+//          "PR-009/video:b", "PR-009/section:gain", "PR-009/option:both/section:risk" (T-048, SECTIONS); status
+//          "status:cd-strip"; progress and build "progress:style-recalc"; threads "thread:T-003" or "thread:T-003/msg:4";
+//          and on every page "part:page" (I-096): anything on the page that is no item of its own (headings, filters,
+//          panels, list lines without an id); its quote is the line pointed at
 //   quote  the selected text, plain, one line, at most LIMITS.quote chars (longer selections are cut with "…")
 //   label  the item's own title as the page shows it (one line, at most LIMITS.label), for the thread title
 // The user's own words: stored as typed (the local store, like any thread text); never HTML (the pages use textContent).
@@ -21,7 +22,10 @@ export const PAGES = ['steps', 'proposals', 'status', 'progress', 'build', 'thre
 export const LIMITS = Object.freeze({ item: 120, quote: 300, label: 120 });
 const SLUG = '[a-z0-9][a-z0-9-]{0,40}';
 const OPTION = '[a-z0-9][a-z0-9._-]{0,39}';
-const PR_ITEM = `PR-\\d{1,6}(?:\\/option:${OPTION})?(?:\\/(?:shot:\\d{1,2}|video:(?:a|b|both)))?`;
+/** T-048: the parts of a proposal a question can be about (the page's section headings), id -> plain words. */
+export const SECTIONS = Object.freeze({ problem: 'what costs', idea: 'the idea', 'looks-same': 'why it looks the same', 'visual-diff': 'what looks different', gain: 'what it saves', risk: 'risk' });
+const SECTION = `section:(?:${Object.keys(SECTIONS).join('|')})`;
+const PR_ITEM = `PR-\\d{1,6}(?:\\/option:${OPTION})?(?:\\/(?:shot:\\d{1,2}|video:(?:a|b|both)|${SECTION}))?`;
 // I-096 (user T-043 #6/#8: "comment anywhere"): a part of a page that is no item of its own ("part:page", the whole
 // page: headings, filters, panels); the line the user pointed at goes along as the quote.
 const PART = `part:${SLUG}`;
@@ -80,8 +84,13 @@ export function itemText(a) {
   if (isPart(it) && PAGE_WORDS[a?.page]) return it === 'part:page' ? `the ${PAGE_WORDS[a.page]} page` : `${PAGE_WORDS[a.page]}: ${it.slice('part:'.length).replace(/-/g, ' ')}`;
   if (a?.page === 'steps') return it.slice('step:'.length);
   if (a?.page === 'threads') return it.slice('thread:'.length).replace('/msg:', ' #');
-  if (a?.page === 'proposals') return it.split('/').map((p, i) => (i ? p.replace(':', ' ') : p)).join(', ').replace(', option ', ' option ');
+  if (a?.page === 'proposals') return it.split('/').map((p, i) => (!i ? p : p.startsWith('section:') ? SECTIONS[p.slice(8)] || p : p.replace(':', ' '))).join(', ').replace(', option ', ' option ');
   return it.replace(':', ' ');
+}
+
+/** T-048: the proposal a comment is about ("PR-009" for "PR-009/option:x/section:gain"), or null for other pages. */
+export function proposalOf(a) {
+  return a && a.page === 'proposals' && /^PR-/.test(String(a.item)) && ITEM.proposals.test(String(a.item)) ? String(a.item).split('/')[0] : null; // not "part:page"
 }
 
 /** The thread title for a comment: "Comment on <label or item>: <the first words of the comment>". */

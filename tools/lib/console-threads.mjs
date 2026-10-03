@@ -366,14 +366,18 @@ function addMessage(t, by, text, now, ask, images = []) {
  * A new thread. From the page: {title, text, topic, fromPage: true} (the user's text as typed). From the lead:
  * {by: 'lead', title, text, topic, ask, to} (scrubbed; `to`: agents to assign at once). `images` (I-089): see
  * prepareImages; with images the first message's text may be empty. `anchor` (I-090, the page's Comment box only):
- * see console-comments.mjs normAnchor. Returns {thread, scrubbed}.
+ * see console-comments.mjs normAnchor. `routeTo` (T-048, the server only, never the request body): agents a user's
+ * comment is handed to at once, e.g. a proposal's author (history: who "console", action assign, `routeNote`).
+ * Returns {thread, scrubbed}.
  */
-export async function createThread({ by, title, text, topic, ask, to, images, anchor, fromPage = false }) {
+export async function createThread({ by, title, text, topic, ask, to, images, anchor, routeTo, routeNote, fromPage = false }) {
   if (anchor != null && !fromPage) throw new Error('only the user\'s comments carry an anchor (the Comment box on a console page)');
+  if (routeTo != null && !fromPage) throw new Error('routeTo is for the user\'s comments; agents assign with --to');
   const who = fromPage ? USER : needAgent(by);
   if (!fromPage && who !== LEAD) throw new Error(`only the lead starts threads (--by lead); ${who}: ask the lead to start one and assign you`);
   const anc = anchor != null ? normAnchor(anchor) : null;
-  const assignees = fromPage ? [] : agentList(to, false);
+  const routed = fromPage && routeTo ? [...new Set(routeTo)].filter((n) => AGENT.test(String(n)) && n !== LEAD && n !== USER) : [];
+  const assignees = fromPage ? routed.slice(0, LIMITS.assignees) : agentList(to, false);
   if (assignees.length > LIMITS.assignees) throw new Error(`at most ${LIMITS.assignees} assignees`);
   let ttl = needText(title, 'the title', LIMITS.title).replace(/\s+/g, ' ');
   const img = prepareImages(images, { agent: !fromPage });
@@ -392,7 +396,7 @@ export async function createThread({ by, title, text, topic, ask, to, images, an
       id: nextId(listThreads(), 'T'), title: ttl, ...(tp && { topic: tp }), ...(anc && { anchor: anc }), status: 'open', createdBy: who,
       createdAt: now, updatedAt: now, rev: 1, assignees, messages: [], reads: {}, history: [],
     };
-    if (assignees.length) t.history.push({ at: now, who, action: 'assign', note: assignees.join(',') });
+    if (assignees.length) t.history.push({ at: now, who: fromPage ? 'console' : who, action: 'assign', note: fromPage && routeNote ? `${assignees.join(',')} (${oneLine(routeNote).slice(0, LIMITS.note)})` : assignees.join(',') });
     addMessage(t, who, body, now, !fromPage && !!ask, img.items);
     writeJson(fileOf(t.id), t);
     return { thread: t, scrubbed: [...scrubbed] };

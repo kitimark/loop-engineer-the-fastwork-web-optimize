@@ -213,6 +213,25 @@ test('console-comments.js: hover shows Comment; the box says who gets it; Send P
   assert.ok(p.calls.filter((c) => c.url === '/api/comments?page=steps').length >= 2, 'markers reloaded after sending');
 });
 
+test('console-comments.js (T-048): an enclosing data-comment-to names who reads it (a proposal: its author, lead); its words only', async () => {
+  const p = commentsPage({ page: 'proposals', build: (body, N) => {
+    const card = body.appendChild(new N('article', { 'data-anchor': 'PR-004', 'data-anchor-label': 'Glow tiles', 'data-comment-to': 'de-glow, lead<b>' }));
+    const sec = card.appendChild(new N('div', { 'data-anchor': 'PR-004/section:gain', 'data-anchor-label': 'What it saves' }));
+    return { gain: sec.appendChild(new N('p', {}, '412 to 38 elements')) };
+  } });
+  await p.settle();
+  p.fire(p.gain, 'mouseover');
+  p.fire(p.btn(), 'click');
+  const box = p.box();
+  assert.equal(box.querySelector('.cmt-what').textContent, 'Comment on What it saves');
+  assert.equal(box.querySelector('.cmt-to').textContent, 'Your comment goes to: de-glow, leadb', 'names only: no markup characters');
+  p.fire(box.querySelector('.cmt-cancel'), 'click');
+  // outside the card: back to the lead
+  p.fire(p.words, 'mouseover');
+  p.fire(p.btn(), 'click');
+  assert.equal(p.box().querySelector('.cmt-to').textContent, 'Your comment goes to: lead');
+});
+
 test('console-comments.js: a selection inside one item becomes the quote; across two items, or on the item\'s own buttons, nothing', async () => {
   const p = commentsPage();
   await p.settle();

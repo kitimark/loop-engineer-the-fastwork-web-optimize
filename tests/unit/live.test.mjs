@@ -264,7 +264,7 @@ test('parseMarkdown: "live:" in the front matter (one solution) and on an option
 
 test('proposals-page.html "Try it": two 430x932 iframes (A left, B right) from the console\'s local URLs only, one-at-a-time unloads the hidden one, the measuring note, heartbeat', () => {
   const html = readFileSync(new URL('../../tools/lib/proposals-page.html', import.meta.url), 'utf8');
-  assert.match(html, /<div id="detail"><\/div>\s*<div id="tryit"><\/div>\s*<div id="decide"><\/div>/, 'the panel has its own container between the card and the decision');
+  assert.match(html, /<div id="detail"><\/div>\s*<div id="tryit"><\/div>\s*(?:<div id="talk"><\/div>\s*)?<div id="decide"><\/div>/, 'the panel has its own container between the card and the decision'); // T-048: the questions block may follow it
   assert.match(html, /el\('iframe', \{ src: url, title: label, width: '430', height: '932',[^}]*sandbox: 'allow-scripts allow-same-origin allow-forms' \}\)/);
   assert.match(html, /var want = one \? \[show\] : \['a', 'b'\];/, 'side by side: both frames; one at a time: only the shown one');
   assert.match(html, /f\.remove\(\)/, 'the hidden frame is removed (its page unloads)');

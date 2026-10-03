@@ -297,7 +297,7 @@ test('proposals-page.html: option cards as tabs, the recommendation, Accept asks
   for (const sink of ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write', 'eval(', 'new Function', 'srcdoc']) assert.ok(!html.includes(sink), sink);
   for (const s of ["role: 'tablist'", "role: 'tab'", "role: 'tabpanel'", "'aria-selected'", "'Recommended'", "'Which option do you accept?'", "'About which option? (optional)'", "'The proposal as a whole'", 'ways to do it']) assert.ok(html.includes(s), s);
   assert.match(html, /if \(chosen\) body\.option = chosen;/, 'the picked option is sent with the decision');
-  assert.match(html, /if \(p\.options && p\.options\.length\) \{[\s\S]*\} else \{\n {4}card\.appendChild\(section\('The idea', para\(p\.idea\)\)\);/, 'a proposal without options keeps the old layout');
+  assert.match(html, /if \(p\.options && p\.options\.length\) \{[\s\S]*\} else \{\n {4}card\.appendChild\(section\('The idea', para\(p\.idea\)(?:, p\.id)?\)\);/, 'a proposal without options keeps the old layout'); // T-048: + the section's anchor
   assert.match(html, /: VERB\[choice\] \+ ' revision ' \+ p\.rev; \}/, 'the single-solution send button text is unchanged');
 });
 

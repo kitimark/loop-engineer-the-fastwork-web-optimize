@@ -4,7 +4,8 @@
 // element, when present, takes the marker). This script adds:
 //   - a small "Comment" button by the item under the pointer (hover), the item tapped or clicked (touch), or the text
 //     selected inside one item (the selection becomes the quote);
-//   - the comment box next to it: the quote, a text field, "Your comment goes to: lead" (I-084), Send / Cancel
+//   - the comment box next to it: the quote, a text field, "Your comment goes to: lead" (I-084; T-048: the names on an
+//     enclosing data-comment-to, e.g. a proposal's "de-hero, lead": the server assigns its author), Send / Cancel
 //     (Esc cancels, Ctrl/⌘+Enter sends). Sending POSTs /api/comments {anchor: {page, item, quote?, label?}, text};
 //     the server checks the anchor (console-comments.mjs) and starts a thread the lead reads;
 //   - a marker on every item that has comments ("2 comments"), linking to its newest thread, from GET
@@ -56,6 +57,12 @@
     for (var i = 0; i < all.length; i++) if (itemOf(all[i]) === id) return all[i];
     return a;
   }
+  /** T-048: who reads the comment: the page names them on an enclosing data-comment-to (a proposal: its author, lead). */
+  function toOf(a) {
+    var c = a.closest ? a.closest('[data-comment-to]') : null;
+    var t = c ? String(c.getAttribute('data-comment-to') || '').replace(/[^A-Za-z0-9_.\-, ]/g, '').trim() : '';
+    return t || 'lead';
+  }
 
   // ---- the floating "Comment" button ----
   var btn = el('button', 'cmt-btn', 'Comment');
@@ -90,7 +97,7 @@
   btn.addEventListener('click', function () { if (target) openBox(target, quote || (line && isPart(target) ? lineText(line) : '')); });
 
   // ---- the comment box ----
-  var box = null, boxAnchor = null, boxQuote = '', sending = false;
+  var box = null, boxAnchor = null, boxQuote = '', sending = false, boxTo = null;
   function openBox(a, q) {
     if (!box) build();
     var at = line && isPart(a) && line.isConnected !== false ? line : null;
@@ -98,6 +105,7 @@
     boxAnchor = a; boxQuote = (q || '').replace(/\s+/g, ' ').trim();
     if (boxQuote.length > QUOTE_MAX) boxQuote = boxQuote.slice(0, QUOTE_MAX - 1) + '…';
     box.querySelector('.cmt-what').textContent = 'Comment on ' + (a.getAttribute('data-anchor-label') || itemOf(a));
+    boxTo.textContent = toOf(a);
     var qn = box.querySelector('.cmt-quote'); qn.textContent = boxQuote; qn.hidden = !boxQuote;
     box.querySelector('.cmt-msg').textContent = '';
     box.hidden = false; btn.hidden = true;
@@ -111,7 +119,7 @@
     var what = el('div', 'cmt-what');
     var q = el('blockquote', 'cmt-quote');
     var ta = el('textarea'); ta.maxLength = 8000; ta.rows = 3; ta.placeholder = 'Your comment';
-    var to = el('p', 'cmt-to'); to.appendChild(document.createTextNode('Your comment goes to: ')); to.appendChild(el('b', null, 'lead'));
+    var to = el('p', 'cmt-to'); to.appendChild(document.createTextNode('Your comment goes to: ')); boxTo = el('b', null, 'lead'); to.appendChild(boxTo);
     var msg = el('p', 'cmt-msg'); msg.setAttribute('role', 'status');
     var row = el('div', 'cmt-row');
     var cancel = el('button', 'cmt-cancel', 'Cancel'); cancel.type = 'button';
