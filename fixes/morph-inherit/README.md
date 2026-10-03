@@ -194,8 +194,8 @@ read comes before any data. Queued after C-033 and P-081.
     `4604218c4041`, `--expect serious --max-c 44 --url http://lan:<twin B>/`) at its start and end. A hold counts only
     when both reads say Serious with Is Induced = No; otherwise it is re-run.
   - Stop at 44 °C battery or Critical, and cool before the next hold.
-  - Every gate failure goes to the lead. Two failing holds in a row stop the block and switch to A (the lead's
-    switch, recorded in the block log).
+  - Every gate failure goes to the lead. Two strikes (two gate-failed holds, not necessarily in a row) → roll back to
+    A, reported in T-039 (the lead's switch, recorded in the block log).
   - One start method: pre-warm on B's port (the baseline page; the driver is idle) the same way before every hold.
   - Logged per run: battery °C, charging state, the timer-grid median.
   - A Low Power Mode run or read is dropped and re-run.
@@ -292,7 +292,8 @@ read comes before any data. Queued after C-033 and P-081.
 - **Decisions** (if X then Y):
   - **DOM FAIL:** stop before any counted run. The fix does not work on the device. The failing rows go to the lead,
     then back to the fix (it is landed).
-  - **DOM PASS, EARN within, f50 and f34 no-worse:** morph-inherit passes its phone no-worse check. Reported to the
+  - **DOM PASS, EARN within (start `within` and visible not `beyond`; `undecided` allowed), f50 and f34 no-worse:**
+    morph-inherit passes its phone no-worse check. Reported to the
     lead; F3 continues on main + morph-inherit. No further block for this question.
   - **EARN beyond:** a user proposal (pixel/timing). It shows B's and M's fade onset and anchor per read, and says
     whether the start or the visible form is beyond. The frame verdict is still reported. Landing stays as it is
