@@ -483,8 +483,13 @@ our setup, cause unknown):
   - In rows 5-8, V is read by its all-runs reading, or by its low-bin reading after a top-up (see "V top-up").
   - A rule-sensitive or settle-sensitive arm goes to the lead with both readings, beside the row that matched. The
     lead decides; the row is not applied by itself.
-- **Scorer (rev 2.1, mgmt-ops-9 must-fix 3):** `fixes/morph-webkit/p073-score.mjs`, sha256 prefix d4854dd7061f,
-  committed with this card. It reads a manifest (records in block order, top-up marks, start method, Low Power
+- **Scorer (rev 2.1, mgmt-ops-9 must-fix 3; re-hashed after ops' re-read, the lead's signing condition):**
+  `fixes/morph-webkit/p073-score.mjs`, sha256 prefix 30c16ec042c8 (was d4854dd7061f, which lacked the guard below).
+  - Guard: without a top-up, rows 5-7 need V.counted ≥ 3; V at n = 2 falls to row 8 (synthetic test: V's third
+    run voided → row 8; before the fix it read row 7).
+  - Nits: the start battery read's age is reported and a read older than 60 s is flagged to the lead; a run with no
+    battery read inside it is flagged (ceiling unchecked); a manifest field `thermal` (iOS thermal notice) voids the
+    run; a charge-state tie voids nothing and goes to the lead. It reads a manifest (records in block order, top-up marks, start method, Low Power
   Mode, sentinel voids) and the runner's battery log, and computes everything above per run: validity, settle y and
   bin, pin pushes and end pushes, pooled prevented share, idle fps, temperatures at start / pin arrival / end,
   charge state, the windows, collapse, sustained/transient, onset. Per arm it gives the three readings and the

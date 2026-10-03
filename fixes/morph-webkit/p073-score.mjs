@@ -3,18 +3,22 @@
 //   node fixes/morph-webkit/p073-score.mjs <manifest.json> [--json out.json]
 // manifest: { "batt": "<battery log .jsonl>",
 //             "runs": [ { "arm": "C|V|D", "file": "<gesture record.json>", "topup": false,
-//                         "start": "direct|cooled|warmed", "lpm": false, "sentinelVoid": false, "note": "" }, ... ] }
-//   Runs in block order. "topup": true marks a V top-up run (after the Latin square). "lpm" and "sentinelVoid" come from
-//   the runner's notes (Low Power Mode on; voided by a failing sentinel). Everything else is computed here.
+//                         "start": "direct|cooled|warmed", "lpm": false, "sentinelVoid": false, "thermal": false,
+//                         "note": "" }, ... ] }
+//   Runs in block order. "topup": true marks a V top-up run (after the Latin square). "lpm", "sentinelVoid" and "thermal"
+//   come from the runner's notes (Low Power Mode on; voided by a failing sentinel; an iOS thermal notice during the run).
+//   Everything else is computed here.
 // Per run (rules of the card):
 //   program hash must be v1c 0653995a35be; pin arrival = first frame y >= 5200; settle y = scrollY of the last frame
 //   before the 'end' mark, bin low <= 5216 / high >= 5217 (lead 07:1xZ); pushes to end = touch sequences starting
 //   from pin arrival - 300 ms to 'end' (must be 9), end pushes = sequences after 'end' (must be 2); prevented pooled over
 //   the 9 pin pushes, >= 90 % in either bin; idle phase fps from 'idle' + 500 ms to 'z1' >= 57; battery: start read =
-//   last read at or before the record's start (+5 s), must be 40.0-41.0 C; any read during the run >= 42.5 C = void
-//   (ceiling); charge state (charging, external) the same at the start and end reads, and the same state across all
-//   counted runs (P-068 form: runs in the minority state are void); temperature at pin arrival = the read nearest the
-//   pin arrival (its distance is reported).
+//   last read at or before the record's start (+5 s), must be 40.0-41.0 C; its age is reported and a read older than
+//   60 s is flagged to the lead (ops nit a); any read during the run >= 42.5 C = void (ceiling); an iOS thermal notice
+//   ("thermal": true) = void; charge state (charging, external) the same at the start and end reads, and the same state
+//   across all counted runs (P-068 form: runs in the minority state are void; a tie between states voids nothing and
+//   goes to the lead, ops nit c); temperature at pin arrival = the read nearest the pin arrival (its distance is
+//   reported).
 //   Collapse (P-071): 2 s fps windows from pin arrival to the last frame; collapsed = 2 consecutive windows < 30 fps;
 //   sustained = >= 50 % of windows < 30, else transient; onset from pin arrival and from the nearest pin-push lift.
 // Per arm: reading on n runs: n >= 3 (first 3): >= 2 collapsed = collapses, 0 = clean, 1 = inconclusive; n = 2: 2/2
@@ -50,6 +54,7 @@ function scoreRun(m, idx) {
   if ((j.run?.errors || []).length) out.void.push(`${j.run.errors.length} gesture errors`);
   if (m.lpm) out.void.push('Low Power Mode');
   if (m.sentinelVoid) out.void.push('failing sentinel');
+  if (m.thermal) out.void.push('iOS thermal notice');
   // idle phase fps
   const idleF = fr.filter((f) => mIdle != null && mZ1 != null && f[0] >= mIdle + 500 && f[0] < mZ1);
   out.idleFps = idleF.length > 1 ? r1(((idleF.length - 1) * 1000) / (idleF[idleF.length - 1][0] - idleF[0][0])) : null;
@@ -75,7 +80,7 @@ function scoreRun(m, idx) {
   const endRead = batt.find((b) => b.ms >= t1 - 5000) ?? null;
   const during = batt.filter((b) => b.ms >= t0 - 5000 && b.ms <= t1 + 5000);
   const near = batt.length ? batt.reduce((a, b) => (Math.abs(b.ms - tp) < Math.abs(a.ms - tp) ? b : a)) : null;
-  out.temp = { start: startRead?.tempC ?? null, pin: near?.tempC ?? null, pinReadOffsetS: near ? r1((near.ms - tp) / 1000) : null, end: endRead?.tempC ?? null, max: during.length ? Math.max(...during.map((b) => b.tempC)) : null };
+  out.temp = { start: startRead?.tempC ?? null, startReadAgeS: startRead ? r1((t0 - startRead.ms) / 1000) : null, pin: near?.tempC ?? null, pinReadOffsetS: near ? r1((near.ms - tp) / 1000) : null, end: endRead?.tempC ?? null, max: during.length ? Math.max(...during.map((b) => b.tempC)) : null };
   out.charge = startRead ? `${startRead.charging ? 'charging' : 'held'}${startRead.external ? '+ext' : ''}` : null;
   const endCharge = endRead ? `${endRead.charging ? 'charging' : 'held'}${endRead.external ? '+ext' : ''}` : null;
   if (out.temp.start == null || out.temp.start < 40.0 || out.temp.start > 41.0) out.void.push(`start ${out.temp.start} C outside 40.0-41.0`);
@@ -103,8 +108,10 @@ const runs = man.runs.map(scoreRun);
 // charge state across counted runs (P-068 form): the majority state stands, runs in the other state are void
 const okRuns = () => runs.filter((r) => !r.void.length);
 const states = {}; for (const r of okRuns()) states[r.charge] = (states[r.charge] || 0) + 1;
-const major = Object.entries(states).sort((a, b) => b[1] - a[1])[0]?.[0];
-for (const r of okRuns()) if (Object.keys(states).length > 1 && r.charge !== major) r.void.push(`charge state ${r.charge}, block state ${major}`);
+const ranked = Object.entries(states).sort((a, b) => b[1] - a[1]);
+const major = ranked[0]?.[0];
+const chargeTie = ranked.length > 1 && ranked[0][1] === ranked[1][1];
+if (!chargeTie) for (const r of okRuns()) if (ranked.length > 1 && r.charge !== major) r.void.push(`charge state ${r.charge}, block state ${major}`);
 
 const reading = (rs, coll = (r) => r.collapsed) => {
   const n = rs.length, k = rs.filter(coll).length;
@@ -125,8 +132,9 @@ for (const a of ['C', 'V', 'D']) {
 }
 // decision, first match wins (card rev 2.1)
 const C = arms.C, V = arms.V, D = arms.D;
-const vTopup = V.topup > 0 || (V.all.v === 'clean' && V.settle.low < 2);
-const vTable = vTopup ? V.low.v : V.all.v;
+// ops re-read of rev 2.1: without a top-up, rows 5-7 need V.counted >= 3 (V at n = 2 falls to row 8)
+const vTopup = V.topup > 0 || (V.counted >= 3 && V.all.v === 'clean' && V.settle.low < 2);
+const vTable = vTopup ? V.low.v : V.counted >= 3 ? V.all.v : 'fewer than 3';
 let row;
 if (D.all.k > 0 || okRuns().some((r) => r.arm === 'D' && r.collapsed)) row = 'D: a counted run collapsed -> F3 does not land as is (build E)';
 else if (D.counted < 3) row = 'D: fewer than 3 counted runs -> inconclusive, to the lead, no landing';
@@ -137,6 +145,9 @@ else if (vTable === 'collapses' && D.all.v === 'clean') row = 'V collapses, D cl
 else if (vTable === 'clean' && D.all.v === 'clean') row = 'V clean, D clean -> heat does not reproduce B1 under this script; B1 UNRESOLVED; disclosed-risk landing is the lead\'s call';
 else row = 'V inconclusive or fewer than 3 counted runs, D clean -> V comparison void, to the lead, no build decision';
 const flags = [];
+if (chargeTie) flags.push(`charge-state tie (${ranked.map(([s, n]) => `${s} ${n}`).join(', ')}): no majority state, the lead decides which runs count`);
+for (const r of runs) if (r.temp?.startReadAgeS != null && r.temp.startReadAgeS > 60) flags.push(`run ${r.n} (${r.arm}) start battery read ${r.temp.startReadAgeS} s old`);
+for (const r of runs) if (r.temp && r.temp.max == null) flags.push(`run ${r.n} (${r.arm}) no battery read during the run: ceiling unchecked`);
 for (const a of ['C', 'V', 'D']) { if (arms[a].settleSensitive) flags.push(`${a} settle-sensitive`); if (arms[a].ruleSensitive) flags.push(`${a} rule-sensitive`); }
 for (const r of runs) { if (r.void.length && r.collapsed) flags.push(`void run ${r.n} (${r.arm}) collapsed: ${r.void.join('; ')}`); if (!r.void.length && r.collapsed && r.bin === 'high') flags.push(`run ${r.n} (${r.arm}) collapsed in the high bin`); }
 
