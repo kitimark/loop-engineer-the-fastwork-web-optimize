@@ -9,6 +9,24 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **03:3xZ 5b1e544 landed. P-071 second read PASS; reviews; I-079 open.**
+  - **P-071 PASS** at b88f100 (fix-nav-morph; card dd122cc, ledger row fedec12). All four round-1 points closed:
+    S sentinel on C with void/cool/stop; arm-level >= 2/3 collapse, 0/3 clean, 1/3 inconclusive (V 55/30/15, D|V
+    50/40/10); unit = per-run max over 2 cycles, n=3v3, separated-worse = every D > every C and median diff >= 16.7 ms
+    at > 50 (twins 46/54); LPM recorded, on = void. Pre-data amendment: arm window first touchmove -50 ms to lift
+    +500 ms (Sim 02:47Z: cycle 1 reopens by native scroll to the end, 0/27-28 prevented; cycle 2 31/31). iphone-runner
+    has ops' OK to start after P-068 H2. Ledger "next free" now P-072 (P-071 row on the owner's branch until it lands).
+  - **I-079** (open, tool, iphone-runner): `iphone.mjs gesture` cannot record WebKit Timeline during a WDA gesture
+    run; needed for P-071's attribution runs (not its counted runs); ts-i079 on it.
+  - **cd-roll-ca** review round 3 PASS (dbb113f, JS 2af461dc); blind test after cd-strip lands.
+  - **cd-strip:** lead picks strip + per-cell layers if its last pixel rows pass.
+  - **hero-exit-threaded:** Chrome path gated to WebKit only (lead approved); WebKit residual -> A/A, hunt, then user
+    options; accent paints at 1.5x block its phone ticket.
+  - **Flaky unit test** (5b1e544's first test:unit, 1 fail of 675): name lost (my grep kept only counts), 2 reruns
+    clean; no incident without a name. Ops keeps full logs (scratchpad/mgmt-ops-9/unit*.log) from now on.
+  - **Phone:** P-068 H2 segment 4 (F) at 03:2xZ; iphone-runner queued 3rd for its no-timing hold behind two shared
+    readers (ts-i079, fix-hero-exit-threaded).
+
 - **02:5xZ a02c915 landed (ff). P-071 card (fix-nav-morph, F3 B1 pin-hold) second read: NEEDS-FIX.**
   - **P-071** (bb33c14 on worktree-agent-a277ea00c8773c1ea; pre-data): C aw1-10e 3e2f599a1632 / V F3 c6d3590576a7 /
     D mw10e-arm-scope-d 999c4497f37e, CSS c6aad94b455f; G pin-hold-v2 2d3a97b742cf (transit to atEnd, 8 s idle at
