@@ -5,7 +5,8 @@
 
 **Status:** **parked** (2026-10-03 13:3xZ): v4 (P-084, the last iteration) missed pixel identity on the WebKit
 Simulator; see "v4 result: parked" below. Not for landing. **P-089** (2026-10-04): v4 re-judged under PR-010 T2,
-registered at the desk ("P-089 registration" + "P-089 addendum", mgmt-ops-10's second read), no new data yet.
+registered at the desk ("P-089 registration" + "P-089 addendum", mgmt-ops-10's second read). Simulator legs
+run 2026-10-03 20:22-20:46Z: all T0-T2, reduced motion exact ("P-089 Simulator results"); Chrome legs pending (option A).
 **Stage:** F, stopped; D card registered below (P-078 → P-080 → P-083 → P-084, v4 last iteration)
 **Device class / gate:** less-work (heat) fix: cost-card counts, full page, Chrome + Simulator, plus one short phone
 no-worse check (memory/less-work-landing-rule.md, user T-029 #30). No timing A/B (deferred, user rule).
@@ -642,6 +643,55 @@ at Low.
 - `chainJ.sh sim`, then `chainJ.sh reduced`, after fix-carousel-leaver's P-090 Holds A and B.
 - `chainJ.sh chrome` after fix-morph-gpu's re-runs.
 - These are non-timing shared-lane holds, allowed under the I-098 easing, with the pmset check per hold (item 1).
+
+### P-089 Simulator results (chainJ.sh sim + reduced, 2026-10-03 20:22-20:46Z), for mgmt-ops-10's result read
+
+The chains ran under the 931d7ee6 hashes, unchanged from start to end. The before and after lists are in
+`out/rest-script/chainJ/hashes-after-{sim,reduced}.txt`, together with chainJ's own start check:
+- overlay 520d5f1139c7, t2score 3e236a71ef6b, analyse 03b2df89340e, simrot2 4402c1a26160, rot2 ed3ef131efd4,
+  t2aux beeec0e6975a, pmcheck d36bd7437b7c, p089-sim 9883b649abab, p089-chrome 8efc59be0662, chainJ 6cbe3fc2a4a0,
+  p089.hashes 22c24a453f20.
+
+All 13 holds passed on the first try: rc 0, `EXIT 0`, no FATAL, no SIM2 VOID, and PMSET OK over each window. Logs are
+in `out/rest-script/chainJ/`; data in `out/rest-script/p089/{fw-sim,fw-ipad}/`.
+- **Mechanism check:** hook starts 10 and fires 9, in both arms, on both devices.
+- **Reduced-motion leg:** every run read `prefers-reduced-motion reduce` (`REDUCE_MOTION ... ok` in each step).
+- **Quiet shots:** none VOID. sinceFire is 2561 ms (st6) and 2565 ms (fix); no row mutation after a freeze.
+
+| leg | coverage | tiers | worst counted label | parts | mask |
+|---|---|---|---|---|---|
+| fw-sim (430, DPR 3) | OK, 12/12 moving | rest T2; **quiet T0**; far-0, intoview, smooth-100 T1; others T2 | outin-20: edge 57, 2661 px, 295.67 CSS px, 0.0887 %. Largest shade: edge 97 (jump-0, jump-215; 22 and 10 counted px) | all PASS, 0 device px | MASK OK |
+| fw-ipad (1032x1244, DPR 2) | OK, 12/12 moving | **rest T0, quiet T0**; others T2 | jump-100: edge 30, 853 px, 213.25 CSS px, 0.0166 %. Largest shade: edge 36 | all PASS, 0 device px | MASK OK |
+| fw-sim reduced motion | OK | rest, quiet T0; jump-0, far-0, intoview T1 (max d 2) | none | all PASS | MASK OK |
+
+- No counted pixel is fill: fill max 2, every counted pixel is edge. The EN label is in no crop (crop tops 308-762 CSS
+  px).
+- **Reduced motion is exact in WebKit** (T0/T1 on every shot).
+- **Not motion-only:** fw-sim has a static T2 (rest), and fw-ipad has static T2 shots (far-0, intoview).
+
+**F-200 readings** (pins, fw-sim, on rest, quiet and intoview):
+- **a:** fix vs st6 pinned optimizeQuality gives rest T2, quiet T0, intoview T1, the same as unpinned. So a is
+  **false** (rest is T2).
+- **b:** st6 vs st6 pinned optimizeSpeed has d > 8 on 3187, 1206 and 918 px. So b is **false**: st6 was not drawing at
+  Low, which is consistent with D4.
+- **c:** st6 vs st6 pinned optimizeQuality has 0 px with d > 8. So c is **false**.
+
+All three match the logged expectations. Under the registration, "a false" means the T2 numbers decide; the framing
+question is not raised.
+
+**Quiet rest is T0 in fw-sim** (logged P 0.25). The fw-sim rest difference is gone at quiet rest:
+- the rest shot is frozen about 180 ms after a slide end and shot 1200 ms later;
+- the quiet shot is frozen at the frame after a slide's fire and shot 2500 ms later.
+
+So in WebKit the difference is a transient after slides that outlasts 1.4 s and is gone by 2.5 s. That is longer than
+F-200's 500 ms: **OBSERVED in our setup, cause unknown**.
+
+Caveat: simrot2 (registered, unchanged) settles intoview replays 1200 ms after reaching the state, so X there may be
+about 1.2-1.4 s after an st6 slide end. fw-sim intoview is T1 and fw-ipad intoview is T2 (45.75 CSS px).
+
+**Status:** the Simulator legs (fw-sim, fw-ipad, fw-sim reduced motion) all hold T0-T2, with parts PASS, coverage OK
+and mask OK. With Chrome 375/430/1024 from v4 (all within T2, the 1024 legs unmasked too), no T2 PASS is claimed yet.
+The Chrome 430r, 1440 and 1440r legs still have to run, under option A (below).
 
 ## Why it lags
 
