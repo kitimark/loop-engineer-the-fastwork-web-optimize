@@ -25,6 +25,10 @@
   "V_301ec740291b": {
    "js": "301ec740291b",
    "css": "55ba45f138c9"
+  },
+  "F": {
+   "js": "8e43f3792dbf",
+   "css": "cc74cd980e72"
   }
  },
  "arms": {
@@ -284,8 +288,10 @@
   "R3": "removed by heSc",
   "R4": "removed: the y884 paint burst came from the LayerTree census (acc20 without it: V 13 = C 13, C2 17)",
   "C1": "closed: Chrome desktop y50 within the six-arm A/A spread (par14: V vs same state 4.9k px max 3; same-state A/A up to 7.3k px max 7, same hero-copy box)",
-  "R5": "WebKit width 980 (de-breakpoints, d48d224adcd4): orbit cards differ beyond A/A at y150-800 (0.2-0.65 % of frame, mostly 19-50 levels, one cell 121); OBSERVED, cause unknown; decisive check: cards computed translate/scale/filter V vs C at y150, y800"
+  "R5": "WebKit width 980 (de-breakpoints, d48d224adcd4): orbit cards differ beyond A/A at y150-800 (0.2-0.65 % of frame, mostly 19-50 levels, one cell 121); OBSERVED, cause unknown; F build: layouts wider than 600 px keep the baseline writer, so R5 cannot occur (lead accepted, OBSERVED)",
+  "R6": "F build: after a return to the top while live, C draws the deck cards differently from frame 1 to >= 120 ms and settles by 300 ms (C topS vs C topW300: 57,584 px, max 88; C2 the same); F draws the settled state at once. 1.6 % any level, 0.148 % / 592 CSS px2 over 8 levels, edge (fill max 3), on photos: T3, to the user. Cause in C UNRESOLVED (candidate: WebKit ImageQualityController low-quality draw + 500 ms high-quality repaint, mechanism CONFIRMED in source, not shown to apply)"
  },
+ "verdictF": "F build (8e43f3792dbf / cc74cd980e72): touchstart style work removed (S0 = C, V had 4); first move off the top = C exactly (S1 L2 P55); move paint area 3.91M -> 1.25M and 14.9M -> 0.83M px (C -> F); rest park costs more paint (P10 A682k vs C P5 A387k / C2 P4 A34k), accepted trade-off; parked frames T1; live-frame bits (max 1-2, y36 cue max 17) beyond A/A, PR-010 tier pending with the user; R6 deck item T3, to the user; no phone run on F yet (P-08x), no timing number",
  "verdict": "mechanism win on the Simulator (no per-frame JS writer; full-hero repaints 21 -> 0, paint Mpx -66 %, layouts -25 %); pixel-identical except R1 (C-vs-C variation) and R2 (C session-dependent clip), for the user decision; R4 and C1 closed; review rounds 2-3 pass (build ACCEPT-WITH-NOTES; heHold now ready-based) (toolbar, hand-over, jump; switch frame: no flash in V, probe could not reproduce it in 66d2abe either); no phone run, no timing number",
  "regressions": {
   "layers": "+6 compositing layers, layer memory -10 MB",
@@ -467,9 +473,36 @@
     },
     "touchstartCause": "the OUT rows are +2 RecalculateStyles with no extra Layout/Paint (except V2 ts1 y0: +1 L +2 P, while V1 ts1 y0 was in); consistent with heTS -> heOn adding .he-tf at touchstart (JS 4458-4462; OBSERVED, not attributed record by record)"
    },
-   "condition": "30 ms timer grid (WebKit DOM timer alignment, likely Xcode Serious left on; setInterval(1000) gap median 1020 ms vs 1005 in P-071, one-shot lateness p90 22-26 ms vs ~4; rAF 59 Hz, sentinels PASS); same in both arms",
-   "leadDecision": "scored as registered, labeled with the condition, counts as milestone-2 data; landing needs P-074b (normal-condition repeat, same ticket and scorer); finger swipe A/B waits for the normal condition",
-   "serversForP074b": "same serve.mjs command on out/snapshots/hext-V-d48d224adcd4 and st6rb2-C-7bf7c4657d21 (--port 0 --https --vendors=local --latency 150 --no-cache); ports are new on every start"
+   "condition": "30 ms timer grid (WebKit DOM timer alignment; cause: the phone's real thermal state Serious, not induced, checked with xctrace, Xcode device condition off; lead correction 2026-10-03); setInterval(1000) gap median 1020 ms vs 1005 in P-071, one-shot lateness p90 22-26 ms vs ~4; rAF 59 Hz, sentinels PASS; same in both arms",
+   "leadDecision": "scored as registered, labeled with the condition, counts as milestone-2 data; back to F (touchstart recalc, rest paint area, R5); P-074b (normal-condition repeat) first requested, then cancelled: the next block runs on the F build under a new prediction (P-08x) with the updated scorer, in the normal condition; finger swipe A/B only after that normal-condition data; no landing before",
+   "servers": "same serve.mjs command on out/snapshots/hext-V-d48d224adcd4 and st6rb2-C-7bf7c4657d21 (--port 0 --https --vendors=local --latency 150 --no-cache); ports are new on every start (written for P-074b, which was cancelled)"
   }
+ },
+ "fRounds": {
+  "build": { "js": "8e43f3792dbf", "css": "cc74cd980e72", "snapshot": "out/snapshots/hext-V-8e43f3792dbf" },
+  "rootCause": "per-frame style recalc while scroll-driven animations exist: WebAnimation::computeRelevance -> AnimationTimelinesController ticks every relevant animation -> KeyframeEffect::animationDidTick -> invalidate(); WebKit main 13a1f2916933547024ee020d94031096a41eb7cb (CONFIRMED)",
+  "design": "parked at rest (.he-on, baseline rules from the inline --exit-opacity, dE runs the baseline writer); live while scrolling (.he-css via heSc/heUp at top+30 < y < end, s() first for the pending frame, stale var while live); park by heRest 300 ms after the last scroll event (no finger) or at once at y <= top+30; touchstart sets a flag only; layouts > 600 px keep the writer",
+  "rounds": "F3 fc640177a022 (parking, +50 paints at go-live/park); F5 fead8ad082d6 (no var drop while live); F6 62ed5e1632a2 (park at y <= top+1); F7 8e43f3792dbf (30 px band, current); F8 CSS a022d5ad3a91 (exact card from at 0 %) not kept: no effect, R6 is C's own transient",
+  "costcard": {
+   "file": "costcard-f7.json",
+   "C": { "tsTop": "S0 L0 P0", "firstMove": "S1 L2 P55 A367751", "move": "S50 L148 P111 A3908288", "move2": "S61 L136 P81 A14911565", "tsMid": "S3 L3 P2", "scrollMid": "S6 L8 P5 A357559", "rest": "S5 L4 P5 A387312", "rest2": "S0 L0 P0" },
+   "F": { "tsTop": "S0 L0 P0", "firstMove": "S1 L2 P55 A367751", "move": "S51 L148 P104 A1245830", "move2": "S43 L135 P42 A830289", "tsMid": "S3 L3 P2", "scrollMid": "S5 L7 P8 A406944", "rest": "S11 L5 P10 A681585", "rest2": "S5 L1 P6 A315087" },
+   "C2": { "tsTop": "S0 L0 P0", "firstMove": "S1 L2 P55 A367751", "move": "S50 L147 P111 A3908288", "move2": "S60 L134 P82 A14912789", "tsMid": "S3 L3 P2", "scrollMid": "S6 L8 P7 A360025", "rest": "S6 L5 P4 A34463", "rest2": "S0 L0 P0" },
+   "V_round3": { "tsTop": "S4 L0 P0", "firstMove": "S5 L2 P55 A367751", "move": "S53 L147 P49 A1014104", "move2": "S43 L134 P41 A829065", "tsMid": "S4 L3 P3", "scrollMid": "S5 L7 P5 A25568", "rest": "S14 L6 P5 A55092", "rest2": "S7 L0 P0" },
+   "restRecalcsPerFrame": "4 s, timers cleared: y0 C 0 / F 0; y300 C 36 / F 33"
+  },
+  "pixels": {
+   "method": "Simulator frozen frames 1290x2796, F frame k vs C frame k+1, C2 = true A/A same session; beyond A/A = differs where C2 vs C does not; clock and countdown digit rows excluded (in the A/A)",
+   "parked": "T1: at rest, y0, settle, drop, 300/700/1500 ms after a return to the top: clock and digits only",
+   "firstScrollFromTop": "T1: y0 -> y6 frame 1, clock and digits only",
+   "pendingY306": "cue 4,368 px max 1 fill, 0 over 8; A/A 0",
+   "liveY306": "5,476 px (0.152 %, 608 CSS px2) max 1: copy glyph edges 1,058 + cue fill 4,418; 0 over 8; A/A 0",
+   "liveY57": "cue 5,884 px (0.163 %, 654 CSS px2) max 2 edge; 0 over 8; A/A 0",
+   "liveY36": "cue 8,565 px (0.237 %, 952 CSS px2) max 17 edge (fill max 2); 2,119 px over 8 (0.059 %, 235 CSS px2); A/A 0",
+   "tiers": "live bits: T2 under B with the report's area (over 8 levels); at any level > 0.1 %: T3 under B, T2 under C; R6: T3; PR-010 pending with the user",
+   "data": "out/hext/f7px1, f7px2, f7px3, f8px1 (gitignored)"
+  },
+  "scorer": { "file": "pF/scoreF.mjs", "sha256": "32ed5f4e81f9", "fn": "C:s=4391 F:s=4497,heRest=4449", "leadNote": "its P-074 replay shows the scorer works, not that the fix works" },
+  "expectedOnPhone": "(a) F writer share small but not 0 (parked writer inside y 1-30), about 0.01-0.03, inside 0..0.05; (b) touchstart in, first-move in, rest likely OUT on paint (accepted trade-off); OBSERVED basis: Simulator"
  }
 }

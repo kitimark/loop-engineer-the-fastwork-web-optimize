@@ -3,17 +3,16 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured by mechanism and pixels (no timing: timing A/Bs deferred, user 2026-10-02). Not ready to land:
-the phone Timeline attribution block P-074 ran on 2026-10-03 under the condition "30 ms timer grid" ("P-074 result"
-below; it counts as milestone-2 data). Landing needs P-074b, a repeat under normal conditions with the same ticket
-and scorer, and the finger swipe A/B waits for normal conditions too (lead, 2026-10-03). (a) is in for both arms: V runs
-no JS writer on moving frames on the phone. (b) touchstart is OUT on rows other than touchstart 1, so by the ticket
-this goes **back to F**. (b) rest has no data (a scorer limitation), and that goes to the lead. The residuals in
-"Options" (now including R5, WebKit at width 980) need the user's decision. Review round 2 (review-hero-exit, NEEDS-FIX on 66d2abe) is
-answered in "Review round 2" below; the delta re-review (ACCEPT-WITH-NOTES on e36423f) and the P-074 ticket read
-(NEEDS-FIX) in "Review round 3". Current build: JS `d48d224adcd4`, CSS `55ba45f138c9`.
-**Stage:** V (build card below). D: ST-1 accepted by the lead 2026-10-03 01:17Z as "partly LOCATED" (H2a and H2c
-not supported on the Simulator; H2b Composite open, phone slot).
+**Status:** F build done (rounds 4-8, "F rounds 4-8" below), measured by Simulator counts and frozen-frame pixels
+(no timing: timing A/Bs deferred, user 2026-10-02). Not ready to land. Next: the phone block on the F build under a
+new prediction (P-08x, registered by ops) in the normal condition, then the finger swipe A/B (lead, 2026-10-03).
+P-074 (V build, 30 ms timer grid) sent this back to F: touchstart OUT (+2 style recalcs), rest no data. The F build
+removes the touchstart style work (0 vs C 0), keeps the writer on wide layouts (R5), and parks the animations at rest.
+Open for the user: the deck item (R6, T3) and the PR-010 tier of the live-frame bits ("Pixel tiers").
+Earlier rounds: review round 2 (NEEDS-FIX on 66d2abe), round 3 (ACCEPT-WITH-NOTES on e36423f, P-074 ticket read
+NEEDS-FIX). Current build: JS `8e43f3792dbf`, CSS `cc74cd980e72` (snapshot `out/snapshots/hext-V-8e43f3792dbf`).
+**Stage:** F (build card in "F rounds 4-8"). D: ST-1 accepted by the lead 2026-10-03 01:17Z as "partly LOCATED"
+(H2a and H2c not supported on the Simulator; H2b Composite open, phone slot).
 **Device class / gate:** WebKit-only build (Safari / iOS). Chrome, Firefox and other engines run the baseline
 code (gate below). Evidence: Simulator counts and frozen-frame pixels, Chrome parity (headless).
 **Driver(s) behind the claims:** Simulator, functional sessions (scripted `scrollTo` steps, Timeline records,
@@ -23,9 +22,10 @@ code (gate below). Evidence: Simulator counts and frozen-frame pixels, Chrome pa
 **Base:** st6-rb2 (`fixes/st6-rb2/`, overlay JS sha256 `7bf7c4657d21…`, CSS `f523598b2a24…`).
 `patch.diff` is against the baseline snapshot, so it carries st6-rb2's changes too. Apply on the st6-rb2 overlay.
 **Files touched (delta over st6-rb2):**
-- `/_app/immutable/nodes/2.DyWL8TcE.js`: the hero `ne(() => …)` effect (overlay lines ~4383-4625). New helpers
-  `heCss`, `heTf`, `heRest`, `heOn`, `heTS`, `heTE`, `heWK`, `heSc`, `hePE`, `heWrap`, `heHold`, `heArm`, `heSync`.
-  Mode switch in `d()` and `p()`, the `dE` callback, cleanup.
+- `/_app/immutable/nodes/2.DyWL8TcE.js`: the hero `ne(() => …)` effect (overlay lines ~4383-4640). Helpers (F
+  build) `heCss`, `heLive`, `heRT`, `heRest`, `heTS`, `heTE`, `heSc`, `heUp`, `hePE`, `heWrap`, `heOff`, `heArm`,
+  `heSync`. Mode switch in `d()` and `p()`, the `dE` callback, cleanup.
+- `fixes/hero-exit-threaded/pF/scoreF.mjs`: the scorer for the F-build phone block (sha256 `32ed5f4e81f9`).
 - `fixes/hero-exit-threaded/gestures/hero-pass-v1.json`: the WDA gesture of the phone attribution block (P-074).
 - `/_app/immutable/assets/2.gBuqKVzi.css`: one new `@supports (animation-timeline: view()) and (animation-range:
   contain 0% contain 100%)` block after the hero rules (overlay lines ~2158-2320).
@@ -45,6 +45,117 @@ WebKit can paint.
   moving frames.
 - Simulator (this topic, OBSERVED): during a 12 px stepped scroll y356 → 884, C repaints a viewport-sized hero clip
   on every frame (21 frames, 20.2 Mpx of paint in the scroll phase).
+
+## F rounds 4-8 (current build: JS `8e43f3792dbf`, CSS `cc74cd980e72`)
+
+The lead's F instructions after P-074: (1) remove the touchstart style recalc, pixel-identical in every frame;
+(2) explain or cut the rest repaint (accepted as a trade-off); (3) R5 at width 980 (accepted: wide layouts keep the
+writer, OBSERVED); (4) a scorer for the F block (`pF/scoreF.mjs`), registered by ops as P-08x.
+
+**Root cause of the per-frame style recalc (CONFIRMED, WebKit source, main `13a1f2916933547024ee020d94031096a41eb7cb`).**
+`WebAnimation::computeRelevance` counts an animation on a scroll timeline as relevant unless it is idle; the
+`AnimationTimelinesController` ticks every relevant animation on every rendering update, and
+`KeyframeEffect::animationDidTick` calls `invalidate()`. So while the scroll-driven animations exist, every element
+that carries one gets a style recalc on every frame, whether the page moves or not. In the V build this showed up as
+1 recalc per frame at rest (C 0) and, on the phone, as the +2 RecalculateStyles of the touchstart rows (`.he-tf`
+arriving). Removing the animations (the class goes) stops it: 0 per frame in the Simulator.
+
+**Design: parked at rest, live while scrolling (phone layout, width ≤ 600 px, WebKit gate unchanged).**
+- **Parked** (`.he-on` only): no exit animation exists. The baseline's own rules draw the hero from the inline
+  `--exit-opacity` that `s()` writes, and the `dE` callback runs the baseline writer, as in C.
+- **Live** (`.he-css` added by `heUp`): `heSc` (capture-phase `scroll` listener on `window`, document scrolls only)
+  goes live on the first scroll event that lands at `top + 30 < y < end`. `s()` first writes the inline value for
+  the current `scrollY`, so the new animations' pending frame draws the right base values. While live the inline
+  value stays (stale): every property that reads it is animated (cards, copy, float), and the cue's own exit rule
+  is replaced by its value at `--exit-opacity` 1 (the float carries the cue's exit).
+- **Park**: `heRest`, 300 ms after the last scroll event with no finger down, writes `s()` for the final `scrollY`,
+  then removes `.he-css` (no pending frame on removal). A scroll to `y ≤ top + 30` parks at once (`heSc`).
+- **The 30 px band.** Below `top + 30` the parked writer runs, as in C. There the cue's blur is under 0.7 px, and the
+  float's animated blur drew the cue up to 78 levels off C at y6 (0 at y30; Simulator, OBSERVED, cause unknown).
+- **Touchstart** only sets a flag (`heTS`, no class, no style work); the copy's shift animation comes with `.he-css`.
+- **Wide layouts** (> 600 px: desktop and iPad Safari, a landscape phone) keep the baseline writer, so R5 cannot occur
+  (`heOff` leaves CSS mode when the layout widens).
+- Removed from the V build: `.he-tf`, `heOn`, `heWK`, `heTf`, `heHold`, the 600 ms disarm timer, and the inline copy
+  hold.
+
+**Rounds.** F3 (round 4, `fc640177a022`): parking; +50 paints at go-live and park. F5 (`fead8ad082d6`): no var drop
+while live, which removed those paints. F6 (`62ed5e1632a2`): park at once at `y ≤ top + 1`. F7 (`8e43f3792dbf`, the
+current build): the 30 px band. F8 (CSS `a022d5ad3a91`, not kept): an exact card `from` keyframe at 0 %, to remove the
+deck item. It changed nothing: the deck item is C's own transient (R6 below), so the CSS went back to `cc74cd980e72`.
+
+**Cost card (Simulator Timeline, `tools/costcard.mjs`, arms C / F / C2 = A/A; `costcard-f7.{json,md}`; the V column comes from
+the round-3 card `costcard.{json,md}`, another session, whose C matched this C except at rest: C S8 L7 P5 A36k).** S = RecalculateStyles, L = Layout, P = Paint records, A = paint area (device
+px). OBSERVED; Simulator counts, no ms.
+
+| event | C | V (P-074 build) | F (current) | C2 (A/A) |
+|---|---|---|---|---|
+| touchstart at the top | S0 L0 P0 | S4 L0 P0 | **S0 L0 P0** | S0 L0 P0 |
+| first move off the top | S1 L2 P55 A368k | S5 L2 P55 A368k | **S1 L2 P55 A368k** (= C) | S1 L2 P55 A368k |
+| move (stepped scroll in the hero) | S50 L148 P111 A3.91M | S53 L147 P49 A1.01M | S51 L148 P104 A1.25M | S50 L147 P111 A3.91M |
+| move2 (second pass) | S61 L136 P81 A14.9M | S43 L134 P41 A0.83M | S43 L135 P42 A0.83M | S60 L134 P82 A14.9M |
+| touchstart mid-hero | S3 L3 P2 | S4 L3 P3 | S3 L3 P2 | S3 L3 P2 |
+| scroll mid-hero | S6 L8 P5 A358k | S5 L7 P5 A26k | S5 L7 P8 A407k | S6 L8 P7 A360k |
+| rest (park) | S5 L4 P5 A387k | S14 L6 P5 A55k | S11 L5 P10 A682k | S6 L5 P4 A34k |
+| rest2 (past the end) | S0 L0 P0 | S7 L0 P0 | S5 L1 P6 A315k | S0 L0 P0 |
+
+Per-frame style recalcs at rest (rc, timers cleared, 4 s): y0 C 0 / F 0; y300 C 36 / F 33 (V before parking: 1 per
+frame more than C).
+- The first move off the top is C's frame exactly: inside the 30 px band F runs C's writer.
+- The rest repaint (instruction 2, the accepted trade-off): the park frame repaints the copy box (about 182k px) and
+  5 small cells, because the animated layers go and the baseline draws them again. One root-layer repaint (about 333k
+  px, the size of one C moving frame) follows at the page's next style change, 260-590 ms after the rest mark (the page
+  timer at JS 6642). Hypothesis: deferred layer teardown (OBSERVED, not attributed). C's own rest area varies 34k-387k
+  between C and C2.
+- rest2: the park past the end of the hero (the exit is complete, nothing visible changes) costs the same kind of
+  repaint; C does nothing there.
+
+**Pixels (frozen frames, Simulator 1290x2796; F frame k vs C frame k+1, because C's writer is one rAF late; C2 = the
+same C snapshot on its own server, a true A/A in the same session).** Tolerance report as in
+`research/pixel-tolerance/README.md` §1: area beyond A/A = pixels that differ where C2 vs C does not; ">8" = over 8
+levels; status-bar clock and countdown digit rows (in the A/A too) left out.
+
+| frame | F vs C beyond A/A | > 8 levels | max | edge / fill | A/A (C2 vs C) in that area | tier (PR-010, pending with the user) |
+|---|---|---|---|---|---|---|
+| parked: at rest, y0, settle, drop, 300 / 700 / 1500 ms after a return to the top | 0 | 0 | 0 | | clock and digits only | T1 |
+| first scroll from the top (y0 → y6, the band) | 0 | 0 | 0 | | clock and digits only | T1 |
+| go-live pending frame, y306 | 4,368 px, cue | 0 | 1 | fill | 0 | T2 (B and C) |
+| live y306, frames 1-2 | 5,476 px (0.152 %, 608 CSS px²): copy glyph edges 1,058, cue 4,418 | 0 | 1 | copy edge, cue fill | 0 | T2 under the report's area (> 8: 0 %); counted at any level 0.152 % > X = 0.1 %: T3 under B, T2 under C |
+| live y57 | 5,884 px (0.163 %, 654 CSS px²), cue | 0 | 2 | edge | 0 | same as y306 |
+| live y36 | 8,565 px (0.237 %, 952 CSS px²), cue | 2,119 px (0.059 %, 235 CSS px²) | 17 | edge (fill max 2) | 0 | T2 under B (E 17 ≤ 64, 0.059 % ≤ 0.1 %, 235 ≤ 300 CSS px²); at any level 0.237 %: T3 under B, T2 under C |
+| R6: return to the top while live, frames 1 to ≥ 120 ms | 57,584 px (1.6 %, 6,398 CSS px²), deck cards | 5,332 px (0.148 %, 592 CSS px²) | 88 | edge (fill max 3) | 0 | **T3** (photos; E 88 > 64; > 8 area 0.148 % > 0.1 %) |
+
+- No difference is "noise": the A/A arm shows none of them. The live-frame bits are motion-only: they show while
+  the page scrolls and up to 300 ms after; parked frames are T1.
+- PR-010 (b) defines the area as pixels over 8 levels; under that definition the y306 and y57 bits have area 0. The
+  tier column gives both readings, because the user has not chosen yet.
+- The other T2 conditions: (c) glyph edges and the blurred cue's gradient, no geometry, text, colour or order change;
+  (d) reduced motion runs C's code (the CSS block is under `prefers-reduced-motion: no-preference`, `heSc` returns
+  under reduce); (e) Chrome runs C's code (gate false; earlier parity par15), WebKit in the Simulator, phone width;
+  wider layouts run C's code; (f) true A/A in the same session; (g) no motion-path change (levels only, no shift).
+- **R6 (the deck after a return to the top while live).** F draws C's settled deck at once; C draws the deck cards
+  differently from frame 1 until at least 120 ms after the return and settles by 300 ms. C vs C itself (topS vs
+  topW300): the same 57,584 px, max 88; C2 the same as C. So F shows C's later frame early. Cross-session: F7 and
+  F8 at 120 ms are identical, so F3-F7's "deck item" was always this. Cause in C UNRESOLVED. A candidate: WebKit
+  paints an image whose drawn size changed recently at low interpolation quality and repaints it at high quality on a
+  timer (`ImageQualityController`, `lowQualityTimeThreshold { 500_ms }`, WebKit `Source/WebCore/rendering/
+  ImageQualityController.cpp`). The mechanism exists (CONFIRMED in source); that it causes C's transient here is
+  not shown. Decisive check: C's paint records over the deck cards between 120 and 500 ms after the return. Options for
+  the user: (a) accept (F shows C's own settled frame up to about 0.3 s early, only after a jump back to the top while
+  live); (b) reproduce C's transient in F (would mean degrading F's draw on purpose; no known way yet).
+
+**Build card (F).**
+- Builds: C = st6-rb2 JS `7bf7c4657d21` CSS `f523598b2a24`; V (P-074) JS `d48d224adcd4` CSS `55ba45f138c9`; F JS
+  `8e43f3792dbf` CSS `cc74cd980e72` (immutable snapshot `out/snapshots/hext-V-8e43f3792dbf`, re-checked by sha256).
+- Lines for the scorer (`--fn`): C `s=4391`; F `s=4497,heRest=4449` (also `heSc` 4464, `heUp` 4471).
+- Scorer `pF/scoreF.mjs` sha256 `32ed5f4e81f9` (score074 + nested heRest fires, a 'first-move' kind, a descriptive
+  timer-grid flag). Lead's note: "its P-074 replay shows the scorer works, not that the fix works."
+- What the scorer should see on the F build (from the Simulator, OBSERVED): (a) writer share F small but not 0: the
+  parked writer runs on moving frames inside y 1-30 (and on the way back up below y 30), a few frames per pass, about
+  0.01-0.03 of the moving band frames, inside 0..0.05; C 0.3..1.0. (b) touchstart: in (no style work at touchstart).
+  (b) first-move: in (C's frame inside the band). (b) rest: likely OUT on paint (the park repaint above, the accepted
+  trade-off).
+- Measurement code changed: none. a11y: unchanged from V (the `.he-bob` span only).
+- Data (gitignored): `out/hext/f7/` (cost card, rc), `out/hext/f7px1`-`f7px3`, `out/hext/f8px1` (pixels).
 
 ## What changed
 
@@ -84,7 +195,9 @@ heCss = `GestureEvent` in window &&
   deck, and a 1-device-px copy shift at boundary positions (frozen-scroll harness, earlier card). That violates
   the pixel-identity rule.
 
-**Mechanisms that keep WebKit identical (each found by a Simulator count or pixel diff, OBSERVED):**
+**Mechanisms that keep WebKit identical (each found by a Simulator count or pixel diff, OBSERVED).** This list
+describes the V build (P-074). In the F build, items 1 (`.he-tf`), 2 (pre-arm on touchstart / wheel / keydown),
+3 (rest hold of the copy shift) and 7 (`heHold`) are superseded by parking ("F rounds 4-8"); items 4, 5 and 6 stay.
 1. **`.he-css` / `.he-tf`.** `.he-css` (set in `d()`, removed in `p()`) enables the exit animations. The copy's
    shift (`transform`) is a separate animation, present only with `.he-tf`. While `.hero-copy` carries a
    transform animation, even an inactive one, WebKit repaints the title's script accent about 1.4x as often (the
@@ -444,15 +557,16 @@ in / in, a single run gives "not enough", rest with no heRest line gives "no dat
 **P-074 result (2026-10-03; runner iphone-runner; scored with the registered scorer `1d1fc26908f1`; condition: 30 ms
 timer grid).**
 - Condition (iphone-runner, from the Timelines; the lead's decision): every run had WebKit's 30 ms DOM timer
-  alignment on, the same in both arms. The likely cause is Xcode's Serious thermal condition left on.
+  alignment on, the same in both arms. The cause: the phone's real thermal state was Serious (not induced; checked
+  with xctrace; Xcode's device condition was off; lead correction, 2026-10-03).
   - The setInterval(1000) gap median was 1020 ms, against 1005 ms in P-071.
   - One-shot timer lateness p90 was 22-26 ms, against about 4 ms.
   - rAF stayed at 59 Hz, the frame median dt at 17 ms, and the sentinels passed.
   - Source: WebKit `Page::updateDOMTimerAlignmentInterval` sets 30 ms only under Low Power Mode or thermal
     mitigation, and LPM was off.
   - The result is scored exactly as registered and labeled with this condition. It counts as milestone-2 data.
-    Landing needs P-074b: a normal-condition repeat on the same ticket and scorer, registered by ops and run after
-    the user turns the condition off.
+    The lead first asked for P-074b, a normal-condition repeat on the same ticket and scorer, then cancelled it:
+    the next block runs on the F build under a new prediction (P-08x) in the normal condition ("F round 4").
   - Timer-driven pieces (`heRest`'s timer, the 600 ms `heT`) ran on that grid, so the rest rows' timing is
     condition-specific.
 - Validity: 4 counted runs (C1, V1, V2, C2), no void runs. Sentinels passed: open 60 / 58.8, end 60.2 / 58.4.
@@ -493,7 +607,7 @@ timer grid).**
 - Data: iphone-runner's `out/p074/` (gesture and Timeline files, `runs.jsonl`). Scores: this worktree's
   `out/hext/p074/score-p074.json` (registered) and `diag-nested.json` (diagnostic). Both are gitignored.
   `results.json` `phone.P074` holds the numbers.
-- Servers for P-074b: the immutable snapshots stay in this worktree's `out/snapshots/` (served JS
+- Servers (written for P-074b, now cancelled; the same command serves the F build's snapshot): the immutable snapshots stay in this worktree's `out/snapshots/` (served JS
   `hext-V-d48d224adcd4` and `st6rb2-C-7bf7c4657d21`, re-checked by sha256). Restart them identically, one per arm:
   `node tools/serve.mjs --root site-pretty --overlay out/snapshots/<snapshot> --port 0 --https --vendors=local
   --latency 150 --no-cache --state out/hext/p074/serve-<arm>.json`. The ports are new on every start (the plain

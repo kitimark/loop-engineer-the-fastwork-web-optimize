@@ -1,0 +1,7527 @@
+{
+ "tool": "tools/costcard.mjs",
+ "schema": "fw-costcard/1",
+ "topic": "hero-exit-threaded",
+ "generatedAt": "2026-10-03T12:06:44.912Z",
+ "inputs": [
+  "out/hext/f3/ho3/loads.json",
+  "out/hext/f3/ho3/C-tl.json",
+  "out/hext/f3/ho3/F3-tl.json",
+  "out/hext/f3/ho3/C2-tl.json"
+ ],
+ "arms": [
+  "C",
+  "F3"
+ ],
+ "control": "C",
+ "aa": "C2",
+ "dpr": 3,
+ "scriptFromFrz": null,
+ "rows": [
+  {
+   "element": "hero-exit",
+   "event": "ts-top",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.06850012496579438,
+        "min": 0.06850012496579438,
+        "max": 0.06850012496579438,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "layouts": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "paints": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 43.8,
+        "min": 43.8,
+        "max": 43.8,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 58.4,
+        "min": 58.4,
+        "max": 58.4,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0,
+       "style": 0,
+       "layout": 0,
+       "paint": 0
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.05906120839063078,
+        "min": 0.05906120839063078,
+        "max": 0.05906120839063078,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "layouts": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "paints": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 50.8,
+        "min": 50.8,
+        "max": 50.8,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 67.7,
+        "min": 67.7,
+        "max": 67.7,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0.02,
+       "style": 0,
+       "layout": 0,
+       "paint": 0
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": 7,
+        "tol": 8.200000000000003,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": 9.300000000000004,
+        "tol": 11,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.06260758335702121,
+        "min": 0.06260758335702121,
+        "max": 0.06260758335702121,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "layouts": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "paints": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 47.9,
+        "min": 47.9,
+        "max": 47.9,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 63.9,
+        "min": 63.9,
+        "max": 63.9,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0,
+       "style": 0,
+       "layout": 0,
+       "paint": 0
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 43.8,
+       "min": 43.8,
+       "max": 43.8,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 50.8,
+       "min": 50.8,
+       "max": 50.8,
+       "n": 1,
+       "delta": {
+        "d": 7,
+        "tol": 8.200000000000003,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 58.4,
+       "min": 58.4,
+       "max": 58.4,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 67.7,
+       "min": 67.7,
+       "max": 67.7,
+       "n": 1,
+       "delta": {
+        "d": 9.300000000000004,
+        "tol": 11,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "no element script per event",
+      "status": "UNRESOLVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread per event (1 element code calls per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1,
+       "min": 1,
+       "max": 1,
+       "n": 1,
+       "delta": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "element": "hero-exit",
+   "event": "scroll-top",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.13301537500228733,
+        "min": 0.13301537500228733,
+        "max": 0.13301537500228733,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 9,
+        "min": 9,
+        "max": 9,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 11,
+        "min": 11,
+        "max": 11,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "layouts": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "paints": {
+        "median": 55,
+        "min": 55,
+        "max": 55,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 367751.4322489328,
+        "min": 367751.4322489328,
+        "max": 367751.4322489328,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 37.6,
+        "min": 37.6,
+        "max": 37.6,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 67.7,
+        "min": 67.7,
+        "max": 67.7,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0.04,
+       "style": 3.18,
+       "layout": 34.03,
+       "paint": 0.65
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.14990745822433382,
+        "min": 0.14990745822433382,
+        "max": 0.14990745822433382,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 10,
+        "min": 10,
+        "max": 10,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 13,
+        "min": 13,
+        "max": 13,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "layouts": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "paints": {
+        "median": 105,
+        "min": 105,
+        "max": 105,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 555125.42724405,
+        "min": 555125.42724405,
+        "max": 555125.42724405,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 33.4,
+        "min": 33.4,
+        "max": 33.4,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 66.7,
+        "min": 66.7,
+        "max": 66.7,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 3.06,
+       "style": 8.65,
+       "layout": 19.85,
+       "paint": 1.3
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": 3,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": 50,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": 187373.9949951172,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": -4.200000000000003,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": -1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.13307258335407823,
+        "min": 0.13307258335407823,
+        "max": 0.13307258335407823,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 9,
+        "min": 9,
+        "max": 9,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 12,
+        "min": 12,
+        "max": 12,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "layouts": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "paints": {
+        "median": 55,
+        "min": 55,
+        "max": 55,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 367751.4322489328,
+        "min": 367751.4322489328,
+        "max": 367751.4322489328,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 37.6,
+        "min": 37.6,
+        "max": 37.6,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 67.6,
+        "min": 67.6,
+        "max": 67.6,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0.04,
+       "style": 3.29,
+       "layout": 34.77,
+       "paint": 0.78
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 37.6,
+       "min": 37.6,
+       "max": 37.6,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 33.4,
+       "min": 33.4,
+       "max": 33.4,
+       "n": 1,
+       "delta": {
+        "d": -4.200000000000003,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 67.7,
+       "min": 67.7,
+       "max": 67.7,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 66.7,
+       "min": 66.7,
+       "max": 66.7,
+       "n": 1,
+       "delta": {
+        "d": -1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 9,
+       "min": 9,
+       "max": 9,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 10,
+       "min": 10,
+       "max": 10,
+       "n": 1,
+       "delta": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "main thread per event (1 element code calls per event)",
+      "status": "OBSERVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread per event (3 element code calls per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 55,
+       "min": 55,
+       "max": 55,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 105,
+       "min": 105,
+       "max": 105,
+       "n": 1,
+       "delta": {
+        "d": 50,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 367751.4322489328,
+       "min": 367751.4322489328,
+       "max": 367751.4322489328,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 555125.42724405,
+       "min": 555125.42724405,
+       "max": 555125.42724405,
+       "n": 1,
+       "delta": {
+        "d": 187373.9949951172,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 2,
+       "min": 2,
+       "max": 2,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 1,
+       "min": 1,
+       "max": 1,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 1,
+       "min": 1,
+       "max": 1,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": {
+        "d": 3,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 11,
+       "min": 11,
+       "max": 11,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 13,
+       "min": 13,
+       "max": 13,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "element": "hero-exit",
+   "event": "move",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 2.072204041760415,
+        "min": 2.072204041760415,
+        "max": 2.072204041760415,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 27,
+        "min": 27,
+        "max": 27,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 239,
+        "min": 239,
+        "max": 239,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 21,
+        "min": 21,
+        "max": 21,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 47,
+        "min": 47,
+        "max": 47,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 317,
+        "min": 317,
+        "max": 317,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 50,
+        "min": 50,
+        "max": 50,
+        "n": 1
+       },
+       "layouts": {
+        "median": 145,
+        "min": 145,
+        "max": 145,
+        "n": 1
+       },
+       "paints": {
+        "median": 57,
+        "min": 57,
+        "max": 57,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 3680104,
+        "min": 3680104,
+        "max": 3680104,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 50,
+        "min": 50,
+        "max": 50,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 13,
+        "min": 13,
+        "max": 13,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 115.3,
+        "min": 115.3,
+        "max": 115.3,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 846.3,
+       "style": 120.96,
+       "layout": 1769.36,
+       "paint": 1.15
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 1.991642125067301,
+        "min": 1.991642125067301,
+        "max": 1.991642125067301,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 26,
+        "min": 26,
+        "max": 26,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 192,
+        "min": 192,
+        "max": 192,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 24,
+        "min": 24,
+        "max": 24,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 49,
+        "min": 49,
+        "max": 49,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 319,
+        "min": 319,
+        "max": 319,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 53,
+        "min": 53,
+        "max": 53,
+        "n": 1
+       },
+       "layouts": {
+        "median": 146,
+        "min": 146,
+        "max": 146,
+        "n": 1
+       },
+       "paints": {
+        "median": 49,
+        "min": 49,
+        "max": 49,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 1014104,
+        "min": 1014104,
+        "max": 1014104,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 50,
+        "min": 50,
+        "max": 50,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 13.1,
+        "min": 13.1,
+        "max": 13.1,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 96.4,
+        "min": 96.4,
+        "max": 96.4,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 1.84,
+       "style": 34.58,
+       "layout": 1755.39,
+       "paint": 0.83
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": -1,
+        "tol": 10,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": -47,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": 3,
+        "tol": 6,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": 2,
+        "tol": 10,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": 3,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 1,
+        "tol": 6,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": -8,
+        "tol": 108,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": -2666000,
+        "tol": 456367.8046793882,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": 0.09999999999999964,
+        "tol": 3.3999999999999986,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": -18.89999999999999,
+        "tol": 11.400000000000006,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 2.1812304583145306,
+        "min": 2.1812304583145306,
+        "max": 2.1812304583145306,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 32,
+        "min": 32,
+        "max": 32,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 239,
+        "min": 239,
+        "max": 239,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 24,
+        "min": 24,
+        "max": 24,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 47,
+        "min": 47,
+        "max": 47,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 322,
+        "min": 322,
+        "max": 322,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 50,
+        "min": 50,
+        "max": 50,
+        "n": 1
+       },
+       "layouts": {
+        "median": 148,
+        "min": 148,
+        "max": 148,
+        "n": 1
+       },
+       "paints": {
+        "median": 111,
+        "min": 111,
+        "max": 111,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 3908287.902339694,
+        "min": 3908287.902339694,
+        "max": 3908287.902339694,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 50,
+        "min": 50,
+        "max": 50,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 14.7,
+        "min": 14.7,
+        "max": 14.7,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 109.6,
+        "min": 109.6,
+        "max": 109.6,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 857.36,
+       "style": 126.66,
+       "layout": 1808.01,
+       "paint": 2.36
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 27,
+       "min": 27,
+       "max": 27,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 26,
+       "min": 26,
+       "max": 26,
+       "n": 1,
+       "delta": {
+        "d": -1,
+        "tol": 10,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 13,
+       "min": 13,
+       "max": 13,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 13.1,
+       "min": 13.1,
+       "max": 13.1,
+       "n": 1,
+       "delta": {
+        "d": 0.09999999999999964,
+        "tol": 3.3999999999999986,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 115.3,
+       "min": 115.3,
+       "max": 115.3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 96.4,
+       "min": 96.4,
+       "max": 96.4,
+       "n": 1,
+       "delta": {
+        "d": -18.89999999999999,
+        "tol": 11.400000000000006,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 239,
+       "min": 239,
+       "max": 239,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 192,
+       "min": 192,
+       "max": 192,
+       "n": 1,
+       "delta": {
+        "d": -47,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 50,
+       "min": 50,
+       "max": 50,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 50,
+       "min": 50,
+       "max": 50,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "main thread every frame (element code in 21 of 27 frames per event)",
+      "status": "OBSERVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread every frame (element code in 24 of 26 frames per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 57,
+       "min": 57,
+       "max": 57,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 49,
+       "min": 49,
+       "max": 49,
+       "n": 1,
+       "delta": {
+        "d": -8,
+        "tol": 108,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 3680104,
+       "min": 3680104,
+       "max": 3680104,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1014104,
+       "min": 1014104,
+       "max": 1014104,
+       "n": 1,
+       "delta": {
+        "d": -2666000,
+        "tol": 456367.8046793882,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 145,
+       "min": 145,
+       "max": 145,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 146,
+       "min": 146,
+       "max": 146,
+       "n": 1,
+       "delta": {
+        "d": 1,
+        "tol": 6,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 47,
+       "min": 47,
+       "max": 47,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 49,
+       "min": 49,
+       "max": 49,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 50,
+       "min": 50,
+       "max": 50,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 53,
+       "min": 53,
+       "max": 53,
+       "n": 1,
+       "delta": {
+        "d": 3,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 317,
+       "min": 317,
+       "max": 317,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 319,
+       "min": 319,
+       "max": 319,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 10,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "element": "hero-exit",
+   "event": "move-frame",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 2.072204041760415,
+        "min": 2.072204041760415,
+        "max": 2.072204041760415,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 27,
+        "min": 27,
+        "max": 27,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 8.851851851851851,
+        "min": 8.851851851851851,
+        "max": 8.851851851851851,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0.7777777777777778,
+        "min": 0.7777777777777778,
+        "max": 0.7777777777777778,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1.7407407407407407,
+        "min": 1.7407407407407407,
+        "max": 1.7407407407407407,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 11.74074074074074,
+        "min": 11.74074074074074,
+        "max": 11.74074074074074,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 1.8518518518518519,
+        "min": 1.8518518518518519,
+        "max": 1.8518518518518519,
+        "n": 1
+       },
+       "layouts": {
+        "median": 5.37037037037037,
+        "min": 5.37037037037037,
+        "max": 5.37037037037037,
+        "n": 1
+       },
+       "paints": {
+        "median": 2.111111111111111,
+        "min": 2.111111111111111,
+        "max": 2.111111111111111,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 136300.14814814815,
+        "min": 136300.14814814815,
+        "max": 136300.14814814815,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 1.8518518518518519,
+        "min": 1.8518518518518519,
+        "max": 1.8518518518518519,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 13,
+        "min": 13,
+        "max": 13,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 115.3,
+        "min": 115.3,
+        "max": 115.3,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 846.3,
+       "style": 120.96,
+       "layout": 1769.36,
+       "paint": 1.15
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 1.991642125067301,
+        "min": 1.991642125067301,
+        "max": 1.991642125067301,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 26,
+        "min": 26,
+        "max": 26,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 7.384615384615385,
+        "min": 7.384615384615385,
+        "max": 7.384615384615385,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0.9230769230769231,
+        "min": 0.9230769230769231,
+        "max": 0.9230769230769231,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1.8846153846153846,
+        "min": 1.8846153846153846,
+        "max": 1.8846153846153846,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 12.26923076923077,
+        "min": 12.26923076923077,
+        "max": 12.26923076923077,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 2.0384615384615383,
+        "min": 2.0384615384615383,
+        "max": 2.0384615384615383,
+        "n": 1
+       },
+       "layouts": {
+        "median": 5.615384615384615,
+        "min": 5.615384615384615,
+        "max": 5.615384615384615,
+        "n": 1
+       },
+       "paints": {
+        "median": 1.8846153846153846,
+        "min": 1.8846153846153846,
+        "max": 1.8846153846153846,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 39004,
+        "min": 39004,
+        "max": 39004,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 1.9230769230769231,
+        "min": 1.9230769230769231,
+        "max": 1.9230769230769231,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 13.1,
+        "min": 13.1,
+        "max": 13.1,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 96.4,
+        "min": 96.4,
+        "max": 96.4,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 1.84,
+       "style": 34.58,
+       "layout": 1755.39,
+       "paint": 0.83
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": -1,
+        "tol": 10,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": -1.4672364672364662,
+        "tol": 2.7662037037037024,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": 0.14529914529914534,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 0.14387464387464388,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": 0.5284900284900296,
+        "tol": 3.356481481481481,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": 0.18660968660968646,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 0.24501424501424474,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": -0.22649572649572658,
+        "tol": 2.7152777777777777,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": -97296.14814814815,
+        "tol": 28332.30240006541,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 0.07122507122507127,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": 0.09999999999999964,
+        "tol": 3.3999999999999986,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": -18.89999999999999,
+        "tol": 11.400000000000006,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 2.1812304583145306,
+        "min": 2.1812304583145306,
+        "max": 2.1812304583145306,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 32,
+        "min": 32,
+        "max": 32,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 7.46875,
+        "min": 7.46875,
+        "max": 7.46875,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0.75,
+        "min": 0.75,
+        "max": 0.75,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1.46875,
+        "min": 1.46875,
+        "max": 1.46875,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 10.0625,
+        "min": 10.0625,
+        "max": 10.0625,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 1.5625,
+        "min": 1.5625,
+        "max": 1.5625,
+        "n": 1
+       },
+       "layouts": {
+        "median": 4.625,
+        "min": 4.625,
+        "max": 4.625,
+        "n": 1
+       },
+       "paints": {
+        "median": 3.46875,
+        "min": 3.46875,
+        "max": 3.46875,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 122133.99694811544,
+        "min": 122133.99694811544,
+        "max": 122133.99694811544,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 1.5625,
+        "min": 1.5625,
+        "max": 1.5625,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 14.7,
+        "min": 14.7,
+        "max": 14.7,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 109.6,
+        "min": 109.6,
+        "max": 109.6,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 857.36,
+       "style": 126.66,
+       "layout": 1808.01,
+       "paint": 2.36
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 27,
+       "min": 27,
+       "max": 27,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 26,
+       "min": 26,
+       "max": 26,
+       "n": 1,
+       "delta": {
+        "d": -1,
+        "tol": 10,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 13,
+       "min": 13,
+       "max": 13,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 13.1,
+       "min": 13.1,
+       "max": 13.1,
+       "n": 1,
+       "delta": {
+        "d": 0.09999999999999964,
+        "tol": 3.3999999999999986,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 115.3,
+       "min": 115.3,
+       "max": 115.3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 96.4,
+       "min": 96.4,
+       "max": 96.4,
+       "n": 1,
+       "delta": {
+        "d": -18.89999999999999,
+        "tol": 11.400000000000006,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 8.851851851851851,
+       "min": 8.851851851851851,
+       "max": 8.851851851851851,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 7.384615384615385,
+       "min": 7.384615384615385,
+       "max": 7.384615384615385,
+       "n": 1,
+       "delta": {
+        "d": -1.4672364672364662,
+        "tol": 2.7662037037037024,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 1.8518518518518519,
+       "min": 1.8518518518518519,
+       "max": 1.8518518518518519,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1.9230769230769231,
+       "min": 1.9230769230769231,
+       "max": 1.9230769230769231,
+       "n": 1,
+       "delta": {
+        "d": 0.07122507122507127,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "main thread per event (1.7 element code calls per event)",
+      "status": "OBSERVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread per event (1.9 element code calls per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 2.111111111111111,
+       "min": 2.111111111111111,
+       "max": 2.111111111111111,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1.8846153846153846,
+       "min": 1.8846153846153846,
+       "max": 1.8846153846153846,
+       "n": 1,
+       "delta": {
+        "d": -0.22649572649572658,
+        "tol": 2.7152777777777777,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 136300.14814814815,
+       "min": 136300.14814814815,
+       "max": 136300.14814814815,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 39004,
+       "min": 39004,
+       "max": 39004,
+       "n": 1,
+       "delta": {
+        "d": -97296.14814814815,
+        "tol": 28332.30240006541,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 5.37037037037037,
+       "min": 5.37037037037037,
+       "max": 5.37037037037037,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5.615384615384615,
+       "min": 5.615384615384615,
+       "max": 5.615384615384615,
+       "n": 1,
+       "delta": {
+        "d": 0.24501424501424474,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 1.7407407407407407,
+       "min": 1.7407407407407407,
+       "max": 1.7407407407407407,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1.8846153846153846,
+       "min": 1.8846153846153846,
+       "max": 1.8846153846153846,
+       "n": 1,
+       "delta": {
+        "d": 0.14387464387464388,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 1.8518518518518519,
+       "min": 1.8518518518518519,
+       "max": 1.8518518518518519,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 2.0384615384615383,
+       "min": 2.0384615384615383,
+       "max": 2.0384615384615383,
+       "n": 1,
+       "delta": {
+        "d": 0.18660968660968646,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 11.74074074074074,
+       "min": 11.74074074074074,
+       "max": 11.74074074074074,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 12.26923076923077,
+       "min": 12.26923076923077,
+       "max": 12.26923076923077,
+       "n": 1,
+       "delta": {
+        "d": 0.5284900284900296,
+        "tol": 3.356481481481481,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "element": "hero-exit",
+   "event": "rest",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.7140797500032932,
+        "min": 0.7140797500032932,
+        "max": 0.7140797500032932,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 11,
+        "min": 11,
+        "max": 11,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 6,
+        "min": 6,
+        "max": 6,
+        "n": 1
+       },
+       "layouts": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "paints": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 33345.825854057446,
+        "min": 33345.825854057446,
+        "max": 33345.825854057446,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 8,
+        "min": 8,
+        "max": 8,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 9.8,
+        "min": 9.8,
+        "max": 9.8,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 9.8,
+        "min": 9.8,
+        "max": 9.8,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0.04,
+       "style": 4.99,
+       "layout": 89.07,
+       "paint": 0.06
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.7094710833625868,
+        "min": 0.7094710833625868,
+        "max": 0.7094710833625868,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 10,
+        "min": 10,
+        "max": 10,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 9,
+        "min": 9,
+        "max": 9,
+        "n": 1
+       },
+       "layouts": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "paints": {
+        "median": 59,
+        "min": 59,
+        "max": 59,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 734292.6086401078,
+        "min": 734292.6086401078,
+        "max": 734292.6086401078,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 8,
+        "min": 8,
+        "max": 8,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 9.9,
+        "min": 9.9,
+        "max": 9.9,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0.2,
+       "style": 8.16,
+       "layout": 63.66,
+       "paint": 0.95
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": -2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": -1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": -1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": 3,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": 56,
+        "tol": 6,
+        "beyondAA": true,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": 700946.7827860503,
+        "tol": 710155.1876207162,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": 0.09999999999999964,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": -2.8000000000000007,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.7086553333792835,
+        "min": 0.7086553333792835,
+        "max": 0.7086553333792835,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 11,
+        "min": 11,
+        "max": 11,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       },
+       "layouts": {
+        "median": 6,
+        "min": 6,
+        "max": 6,
+        "n": 1
+       },
+       "paints": {
+        "median": 6,
+        "min": 6,
+        "max": 6,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 388423.41966441553,
+        "min": 388423.41966441553,
+        "max": 388423.41966441553,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 8,
+        "min": 8,
+        "max": 8,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 9.9,
+        "min": 9.9,
+        "max": 9.9,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 9.9,
+        "min": 9.9,
+        "max": 9.9,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0.06,
+       "style": 5.4,
+       "layout": 111.11,
+       "paint": 0.3
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 7,
+       "min": 7,
+       "max": 7,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 7,
+       "min": 7,
+       "max": 7,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 9.8,
+       "min": 9.8,
+       "max": 9.8,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 9.9,
+       "min": 9.9,
+       "max": 9.9,
+       "n": 1,
+       "delta": {
+        "d": 0.09999999999999964,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 9.8,
+       "min": 9.8,
+       "max": 9.8,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 7,
+       "min": 7,
+       "max": 7,
+       "n": 1,
+       "delta": {
+        "d": -2.8000000000000007,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 7,
+       "min": 7,
+       "max": 7,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": -2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 8,
+       "min": 8,
+       "max": 8,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 8,
+       "min": 8,
+       "max": 8,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "main thread per event (2 element code calls per event)",
+      "status": "OBSERVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread per event (2 element code calls per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 59,
+       "min": 59,
+       "max": 59,
+       "n": 1,
+       "delta": {
+        "d": 56,
+        "tol": 6,
+        "beyondAA": true,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 33345.825854057446,
+       "min": 33345.825854057446,
+       "max": 33345.825854057446,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 734292.6086401078,
+       "min": 734292.6086401078,
+       "max": 734292.6086401078,
+       "n": 1,
+       "delta": {
+        "d": 700946.7827860503,
+        "tol": 710155.1876207162,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 2,
+       "min": 2,
+       "max": 2,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 2,
+       "min": 2,
+       "max": 2,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 6,
+       "min": 6,
+       "max": 6,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 9,
+       "min": 9,
+       "max": 9,
+       "n": 1,
+       "delta": {
+        "d": 3,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 11,
+       "min": 11,
+       "max": 11,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 10,
+       "min": 10,
+       "max": 10,
+       "n": 1,
+       "delta": {
+        "d": -1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "element": "hero-exit",
+   "event": "ts-mid",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.06198654160834849,
+        "min": 0.06198654160834849,
+        "max": 0.06198654160834849,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "layouts": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "paints": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 2292.3617078168318,
+        "min": 2292.3617078168318,
+        "max": 2292.3617078168318,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 64.5,
+        "min": 64.5,
+        "max": 64.5,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 64.5,
+        "min": 64.5,
+        "max": 64.5,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0,
+       "style": 1.4,
+       "layout": 52.98,
+       "paint": 0.01
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.07465254166163504,
+        "min": 0.07465254166163504,
+        "max": 0.07465254166163504,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "layouts": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "paints": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 2270.4352015154436,
+        "min": 2270.4352015154436,
+        "max": 2270.4352015154436,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 53.6,
+        "min": 53.6,
+        "max": 53.6,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 53.6,
+        "min": 53.6,
+        "max": 53.6,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0,
+       "style": 1.29,
+       "layout": 51.4,
+       "paint": 0.01
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": -21.926506301388144,
+        "tol": 166.84940817020833,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": -10.899999999999999,
+        "tol": 6.599999999999994,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": -10.899999999999999,
+        "tol": 6.599999999999994,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.06538858322892338,
+        "min": 0.06538858322892338,
+        "max": 0.06538858322892338,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "layouts": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "paints": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 2375.786411901936,
+        "min": 2375.786411901936,
+        "max": 2375.786411901936,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 61.2,
+        "min": 61.2,
+        "max": 61.2,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 61.2,
+        "min": 61.2,
+        "max": 61.2,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0,
+       "style": 1.5,
+       "layout": 53.15,
+       "paint": 0.02
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 64.5,
+       "min": 64.5,
+       "max": 64.5,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 53.6,
+       "min": 53.6,
+       "max": 53.6,
+       "n": 1,
+       "delta": {
+        "d": -10.899999999999999,
+        "tol": 6.599999999999994,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 64.5,
+       "min": 64.5,
+       "max": 64.5,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 53.6,
+       "min": 53.6,
+       "max": 53.6,
+       "n": 1,
+       "delta": {
+        "d": -10.899999999999999,
+        "tol": 6.599999999999994,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "no element script per event",
+      "status": "UNRESOLVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread per event (1 element code calls per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 2,
+       "min": 2,
+       "max": 2,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 2,
+       "min": 2,
+       "max": 2,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 2292.3617078168318,
+       "min": 2292.3617078168318,
+       "max": 2292.3617078168318,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 2270.4352015154436,
+       "min": 2270.4352015154436,
+       "max": 2270.4352015154436,
+       "n": 1,
+       "delta": {
+        "d": -21.926506301388144,
+        "tol": 166.84940817020833,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1,
+       "min": 1,
+       "max": 1,
+       "n": 1,
+       "delta": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 4,
+       "min": 4,
+       "max": 4,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "element": "hero-exit",
+   "event": "scroll-mid",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.131102874991484,
+        "min": 0.131102874991484,
+        "max": 0.131102874991484,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 9,
+        "min": 9,
+        "max": 9,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 11,
+        "min": 11,
+        "max": 11,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 6,
+        "min": 6,
+        "max": 6,
+        "n": 1
+       },
+       "layouts": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       },
+       "paints": {
+        "median": 6,
+        "min": 6,
+        "max": 6,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 358777.26239603106,
+        "min": 358777.26239603106,
+        "max": 358777.26239603106,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 38.1,
+        "min": 38.1,
+        "max": 38.1,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 68.6,
+        "min": 68.6,
+        "max": 68.6,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 20.14,
+       "style": 5.63,
+       "layout": 109.19,
+       "paint": 0.07
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.17037629161495715,
+        "min": 0.17037629161495715,
+        "max": 0.17037629161495715,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 10,
+        "min": 10,
+        "max": 10,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 13,
+        "min": 13,
+        "max": 13,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 6,
+        "min": 6,
+        "max": 6,
+        "n": 1
+       },
+       "layouts": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       },
+       "paints": {
+        "median": 59,
+        "min": 59,
+        "max": 59,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 595483.73043556,
+        "min": 595483.73043556,
+        "max": 595483.73043556,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 29.3,
+        "min": 29.3,
+        "max": 29.3,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 58.7,
+        "min": 58.7,
+        "max": 58.7,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 20.92,
+       "style": 64.41,
+       "layout": 107.13,
+       "paint": 0.97
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": 53,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": 236706.46803952893,
+        "tol": 2327.055930333212,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": -8.8,
+        "tol": 23,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": -9.899999999999991,
+        "tol": 17.599999999999994,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.15038808342069387,
+        "min": 0.15038808342069387,
+        "max": 0.15038808342069387,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 9,
+        "min": 9,
+        "max": 9,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 11,
+        "min": 11,
+        "max": 11,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 6,
+        "min": 6,
+        "max": 6,
+        "n": 1
+       },
+       "layouts": {
+        "median": 8,
+        "min": 8,
+        "max": 8,
+        "n": 1
+       },
+       "paints": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 357613.73443086445,
+        "min": 357613.73443086445,
+        "max": 357613.73443086445,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 26.6,
+        "min": 26.6,
+        "max": 26.6,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 59.8,
+        "min": 59.8,
+        "max": 59.8,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 18.19,
+       "style": 4.79,
+       "layout": 126.51,
+       "paint": 0.1
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 38.1,
+       "min": 38.1,
+       "max": 38.1,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 29.3,
+       "min": 29.3,
+       "max": 29.3,
+       "n": 1,
+       "delta": {
+        "d": -8.8,
+        "tol": 23,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 68.6,
+       "min": 68.6,
+       "max": 68.6,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 58.7,
+       "min": 58.7,
+       "max": 58.7,
+       "n": 1,
+       "delta": {
+        "d": -9.899999999999991,
+        "tol": 17.599999999999994,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 9,
+       "min": 9,
+       "max": 9,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 10,
+       "min": 10,
+       "max": 10,
+       "n": 1,
+       "delta": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "main thread per event (1 element code calls per event)",
+      "status": "OBSERVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread per event (3 element code calls per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 6,
+       "min": 6,
+       "max": 6,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 59,
+       "min": 59,
+       "max": 59,
+       "n": 1,
+       "delta": {
+        "d": 53,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 358777.26239603106,
+       "min": 358777.26239603106,
+       "max": 358777.26239603106,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 595483.73043556,
+       "min": 595483.73043556,
+       "max": 595483.73043556,
+       "n": 1,
+       "delta": {
+        "d": 236706.46803952893,
+        "tol": 2327.055930333212,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 7,
+       "min": 7,
+       "max": 7,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 7,
+       "min": 7,
+       "max": 7,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 1,
+       "min": 1,
+       "max": 1,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 6,
+       "min": 6,
+       "max": 6,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 6,
+       "min": 6,
+       "max": 6,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 11,
+       "min": 11,
+       "max": 11,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 13,
+       "min": 13,
+       "max": 13,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "element": "hero-exit",
+   "event": "move2",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 1.991177708376199,
+        "min": 1.991177708376199,
+        "max": 1.991177708376199,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 26,
+        "min": 26,
+        "max": 26,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 194,
+        "min": 194,
+        "max": 194,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 17,
+        "min": 17,
+        "max": 17,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 38,
+        "min": 38,
+        "max": 38,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 262,
+        "min": 262,
+        "max": 262,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 61,
+        "min": 61,
+        "max": 61,
+        "n": 1
+       },
+       "layouts": {
+        "median": 136,
+        "min": 136,
+        "max": 136,
+        "n": 1
+       },
+       "paints": {
+        "median": 82,
+        "min": 82,
+        "max": 82,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 14912786.654579485,
+        "min": 14912786.654579485,
+        "max": 14912786.654579485,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 41,
+        "min": 41,
+        "max": 41,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 13.1,
+        "min": 13.1,
+        "max": 13.1,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 97.4,
+        "min": 97.4,
+        "max": 97.4,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 682.53,
+       "style": 112.1,
+       "layout": 1686.76,
+       "paint": 2.18
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 1.835126041667536,
+        "min": 1.835126041667536,
+        "max": 1.835126041667536,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 25,
+        "min": 25,
+        "max": 25,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 156,
+        "min": 156,
+        "max": 156,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 21,
+        "min": 21,
+        "max": 21,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 40,
+        "min": 40,
+        "max": 40,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 263,
+        "min": 263,
+        "max": 263,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 43,
+        "min": 43,
+        "max": 43,
+        "n": 1
+       },
+       "layouts": {
+        "median": 136,
+        "min": 136,
+        "max": 136,
+        "n": 1
+       },
+       "paints": {
+        "median": 40,
+        "min": 40,
+        "max": 40,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 827840,
+        "min": 827840,
+        "max": 827840,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 41,
+        "min": 41,
+        "max": 41,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 13.6,
+        "min": 13.6,
+        "max": 13.6,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 85,
+        "min": 85,
+        "max": 85,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 1.2,
+       "style": 272.59,
+       "layout": 1641.77,
+       "paint": 0.66
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": -1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": -38,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": 4,
+        "tol": 4,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": -18,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 0,
+        "tol": 4,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": -42,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": -14084946.654579485,
+        "tol": 2443.380722168833,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": 0.5,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": -12.400000000000006,
+        "tol": 4.799999999999983,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 1.9439158332534134,
+        "min": 1.9439158332534134,
+        "max": 1.9439158332534134,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 25,
+        "min": 25,
+        "max": 25,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 194,
+        "min": 194,
+        "max": 194,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 19,
+        "min": 19,
+        "max": 19,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 38,
+        "min": 38,
+        "max": 38,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 262,
+        "min": 262,
+        "max": 262,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 60,
+        "min": 60,
+        "max": 60,
+        "n": 1
+       },
+       "layouts": {
+        "median": 134,
+        "min": 134,
+        "max": 134,
+        "n": 1
+       },
+       "paints": {
+        "median": 81,
+        "min": 81,
+        "max": 81,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 14911564.9642184,
+        "min": 14911564.9642184,
+        "max": 14911564.9642184,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 41,
+        "min": 41,
+        "max": 41,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 12.9,
+        "min": 12.9,
+        "max": 12.9,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 99.8,
+        "min": 99.8,
+        "max": 99.8,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 676.45,
+       "style": 110.89,
+       "layout": 1653.87,
+       "paint": 2.08
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 26,
+       "min": 26,
+       "max": 26,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 25,
+       "min": 25,
+       "max": 25,
+       "n": 1,
+       "delta": {
+        "d": -1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 13.1,
+       "min": 13.1,
+       "max": 13.1,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 13.6,
+       "min": 13.6,
+       "max": 13.6,
+       "n": 1,
+       "delta": {
+        "d": 0.5,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 97.4,
+       "min": 97.4,
+       "max": 97.4,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 85,
+       "min": 85,
+       "max": 85,
+       "n": 1,
+       "delta": {
+        "d": -12.400000000000006,
+        "tol": 4.799999999999983,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 194,
+       "min": 194,
+       "max": 194,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 156,
+       "min": 156,
+       "max": 156,
+       "n": 1,
+       "delta": {
+        "d": -38,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 41,
+       "min": 41,
+       "max": 41,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 41,
+       "min": 41,
+       "max": 41,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "main thread every frame (element code in 17 of 26 frames per event)",
+      "status": "OBSERVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread every frame (element code in 21 of 25 frames per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 82,
+       "min": 82,
+       "max": 82,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 40,
+       "min": 40,
+       "max": 40,
+       "n": 1,
+       "delta": {
+        "d": -42,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 14912786.654579485,
+       "min": 14912786.654579485,
+       "max": 14912786.654579485,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 827840,
+       "min": 827840,
+       "max": 827840,
+       "n": 1,
+       "delta": {
+        "d": -14084946.654579485,
+        "tol": 2443.380722168833,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 136,
+       "min": 136,
+       "max": 136,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 136,
+       "min": 136,
+       "max": 136,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 4,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 38,
+       "min": 38,
+       "max": 38,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 40,
+       "min": 40,
+       "max": 40,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 61,
+       "min": 61,
+       "max": 61,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 43,
+       "min": 43,
+       "max": 43,
+       "n": 1,
+       "delta": {
+        "d": -18,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 262,
+       "min": 262,
+       "max": 262,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 263,
+       "min": 263,
+       "max": 263,
+       "n": 1,
+       "delta": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "element": "hero-exit",
+   "event": "move2-frame",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 1.991177708376199,
+        "min": 1.991177708376199,
+        "max": 1.991177708376199,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 26,
+        "min": 26,
+        "max": 26,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 7.461538461538462,
+        "min": 7.461538461538462,
+        "max": 7.461538461538462,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0.6538461538461539,
+        "min": 0.6538461538461539,
+        "max": 0.6538461538461539,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1.4615384615384615,
+        "min": 1.4615384615384615,
+        "max": 1.4615384615384615,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 10.076923076923077,
+        "min": 10.076923076923077,
+        "max": 10.076923076923077,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0.07692307692307693,
+        "min": 0.07692307692307693,
+        "max": 0.07692307692307693,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 2.3461538461538463,
+        "min": 2.3461538461538463,
+        "max": 2.3461538461538463,
+        "n": 1
+       },
+       "layouts": {
+        "median": 5.230769230769231,
+        "min": 5.230769230769231,
+        "max": 5.230769230769231,
+        "n": 1
+       },
+       "paints": {
+        "median": 3.1538461538461537,
+        "min": 3.1538461538461537,
+        "max": 3.1538461538461537,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 573568.7174838263,
+        "min": 573568.7174838263,
+        "max": 573568.7174838263,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 1.5769230769230769,
+        "min": 1.5769230769230769,
+        "max": 1.5769230769230769,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 13.1,
+        "min": 13.1,
+        "max": 13.1,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 97.4,
+        "min": 97.4,
+        "max": 97.4,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 682.53,
+       "style": 112.1,
+       "layout": 1686.76,
+       "paint": 2.18
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 1.835126041667536,
+        "min": 1.835126041667536,
+        "max": 1.835126041667536,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 25,
+        "min": 25,
+        "max": 25,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 6.24,
+        "min": 6.24,
+        "max": 6.24,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0.84,
+        "min": 0.84,
+        "max": 0.84,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1.6,
+        "min": 1.6,
+        "max": 1.6,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 10.52,
+        "min": 10.52,
+        "max": 10.52,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0.08,
+        "min": 0.08,
+        "max": 0.08,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 1.72,
+        "min": 1.72,
+        "max": 1.72,
+        "n": 1
+       },
+       "layouts": {
+        "median": 5.44,
+        "min": 5.44,
+        "max": 5.44,
+        "n": 1
+       },
+       "paints": {
+        "median": 1.6,
+        "min": 1.6,
+        "max": 1.6,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 33113.6,
+        "min": 33113.6,
+        "max": 33113.6,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 1.64,
+        "min": 1.64,
+        "max": 1.64,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 13.6,
+        "min": 13.6,
+        "max": 13.6,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 85,
+        "min": 85,
+        "max": 85,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 1.2,
+       "style": 272.59,
+       "layout": 1641.77,
+       "paint": 0.66
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": -1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": -1.2215384615384615,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": 0.18615384615384611,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 0.13846153846153864,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": 0.4430769230769229,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 0.0030769230769230743,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": -0.6261538461538463,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 0.20923076923076955,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": -1.5538461538461537,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": -540455.1174838264,
+        "tol": 45787.762169819325,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 0.06307692307692303,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": 0.5,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": -12.400000000000006,
+        "tol": 4.799999999999983,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 1.9439158332534134,
+        "min": 1.9439158332534134,
+        "max": 1.9439158332534134,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 25,
+        "min": 25,
+        "max": 25,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 7.76,
+        "min": 7.76,
+        "max": 7.76,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 0.76,
+        "min": 0.76,
+        "max": 0.76,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 1.52,
+        "min": 1.52,
+        "max": 1.52,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 10.48,
+        "min": 10.48,
+        "max": 10.48,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 0.08,
+        "min": 0.08,
+        "max": 0.08,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 2.4,
+        "min": 2.4,
+        "max": 2.4,
+        "n": 1
+       },
+       "layouts": {
+        "median": 5.36,
+        "min": 5.36,
+        "max": 5.36,
+        "n": 1
+       },
+       "paints": {
+        "median": 3.24,
+        "min": 3.24,
+        "max": 3.24,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 596462.598568736,
+        "min": 596462.598568736,
+        "max": 596462.598568736,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 1.64,
+        "min": 1.64,
+        "max": 1.64,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 12.9,
+        "min": 12.9,
+        "max": 12.9,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 99.8,
+        "min": 99.8,
+        "max": 99.8,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 676.45,
+       "style": 110.89,
+       "layout": 1653.87,
+       "paint": 2.08
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 26,
+       "min": 26,
+       "max": 26,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 25,
+       "min": 25,
+       "max": 25,
+       "n": 1,
+       "delta": {
+        "d": -1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 13.1,
+       "min": 13.1,
+       "max": 13.1,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 13.6,
+       "min": 13.6,
+       "max": 13.6,
+       "n": 1,
+       "delta": {
+        "d": 0.5,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 97.4,
+       "min": 97.4,
+       "max": 97.4,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 85,
+       "min": 85,
+       "max": 85,
+       "n": 1,
+       "delta": {
+        "d": -12.400000000000006,
+        "tol": 4.799999999999983,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 7.461538461538462,
+       "min": 7.461538461538462,
+       "max": 7.461538461538462,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 6.24,
+       "min": 6.24,
+       "max": 6.24,
+       "n": 1,
+       "delta": {
+        "d": -1.2215384615384615,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 1.5769230769230769,
+       "min": 1.5769230769230769,
+       "max": 1.5769230769230769,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1.64,
+       "min": 1.64,
+       "max": 1.64,
+       "n": 1,
+       "delta": {
+        "d": 0.06307692307692303,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "main thread per event (1.5 element code calls per event)",
+      "status": "OBSERVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread per event (1.6 element code calls per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 3.1538461538461537,
+       "min": 3.1538461538461537,
+       "max": 3.1538461538461537,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1.6,
+       "min": 1.6,
+       "max": 1.6,
+       "n": 1,
+       "delta": {
+        "d": -1.5538461538461537,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 573568.7174838263,
+       "min": 573568.7174838263,
+       "max": 573568.7174838263,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 33113.6,
+       "min": 33113.6,
+       "max": 33113.6,
+       "n": 1,
+       "delta": {
+        "d": -540455.1174838264,
+        "tol": 45787.762169819325,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 5.230769230769231,
+       "min": 5.230769230769231,
+       "max": 5.230769230769231,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5.44,
+       "min": 5.44,
+       "max": 5.44,
+       "n": 1,
+       "delta": {
+        "d": 0.20923076923076955,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 1.4615384615384615,
+       "min": 1.4615384615384615,
+       "max": 1.4615384615384615,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1.6,
+       "min": 1.6,
+       "max": 1.6,
+       "n": 1,
+       "delta": {
+        "d": 0.13846153846153864,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 2.3461538461538463,
+       "min": 2.3461538461538463,
+       "max": 2.3461538461538463,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1.72,
+       "min": 1.72,
+       "max": 1.72,
+       "n": 1,
+       "delta": {
+        "d": -0.6261538461538463,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 10.076923076923077,
+       "min": 10.076923076923077,
+       "max": 10.076923076923077,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 10.52,
+       "min": 10.52,
+       "max": 10.52,
+       "n": 1,
+       "delta": {
+        "d": 0.4430769230769229,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "element": "hero-exit",
+   "event": "rest2",
+   "engine": "sim",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.7006185832433403,
+        "min": 0.7006185832433403,
+        "max": 0.7006185832433403,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 9,
+        "min": 9,
+        "max": 9,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "layouts": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "paints": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 4.3,
+        "min": 4.3,
+        "max": 4.3,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 10,
+        "min": 10,
+        "max": 10,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0.05,
+       "style": 0,
+       "layout": 0,
+       "paint": 0
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    },
+    "F3": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       1
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.7021658750018105,
+        "min": 0.7021658750018105,
+        "max": 0.7021658750018105,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 9,
+        "min": 9,
+        "max": 9,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "layouts": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "paints": {
+        "median": 54,
+        "min": 54,
+        "max": 54,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 347055.44306650595,
+        "min": 347055.44306650595,
+        "max": 347055.44306650595,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 7.1,
+        "min": 7.1,
+        "max": 7.1,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 7.1,
+        "min": 7.1,
+        "max": 7.1,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0.46,
+       "style": 11.34,
+       "layout": 1.86,
+       "paint": 1.78
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false,
+      "delta": {
+       "renderingFrames": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "rafFires": {
+        "d": -2,
+        "tol": 8,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "framesWithCode": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "codeCalls": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "functionCalls": {
+        "d": 0,
+        "tol": 10,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "timerFires": {
+        "d": 1,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "styleRecalcs": {
+        "d": 5,
+        "tol": 4,
+        "beyondAA": true,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "layouts": {
+        "d": 1,
+        "tol": 6,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "paints": {
+        "d": 54,
+        "tol": 8,
+        "beyondAA": true,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "pageClipArea": {
+        "d": 347055.44306650595,
+        "tol": 1758064,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "composites": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       },
+       "frameHz": {
+        "d": 2.8,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       },
+       "rafHz": {
+        "d": -2.9000000000000004,
+        "tol": 11.399999999999999,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "C2": {
+     "full": {
+      "loads": 1,
+      "reps": [
+       2
+      ],
+      "metrics": {
+       "events": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "seconds": {
+        "median": 0.7024596667615697,
+        "min": 0.7024596667615697,
+        "max": 0.7024596667615697,
+        "n": 1
+       },
+       "renderingFrames": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "rafFires": {
+        "median": 11,
+        "min": 11,
+        "max": 11,
+        "n": 1
+       },
+       "framesWithCode": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "codeCalls": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "functionCalls": {
+        "median": 14,
+        "min": 14,
+        "max": 14,
+        "n": 1
+       },
+       "timerFires": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 1
+       },
+       "styleRecalcs": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 1
+       },
+       "layouts": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "paints": {
+        "median": 4,
+        "min": 4,
+        "max": 4,
+        "n": 1
+       },
+       "pageClipArea": {
+        "median": 879032,
+        "min": 879032,
+        "max": 879032,
+        "n": 1
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementPaintMpx": {
+        "median": null,
+        "n": 0
+       },
+       "composites": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "n": 1
+       },
+       "frameHz": {
+        "median": 4.3,
+        "min": 4.3,
+        "max": 4.3,
+        "n": 1
+       },
+       "rafHz": {
+        "median": 15.7,
+        "min": 15.7,
+        "max": 15.7,
+        "n": 1
+       }
+      },
+      "msUnjudged": {
+       "script": 0.08,
+       "style": 5.16,
+       "layout": 20.79,
+       "paint": 0.24
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": null,
+      "animsAttributed": false
+     }
+    }
+   },
+   "aaSource": {
+    "full": "C vs C2, sim FULL, loads 1/1"
+   },
+   "fields": {
+    "0": {
+     "renderingFrames": {
+      "C": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "frameHz": {
+      "C": {
+       "mode": "full",
+       "median": 4.3,
+       "min": 4.3,
+       "max": 4.3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 7.1,
+       "min": 7.1,
+       "max": 7.1,
+       "n": 1,
+       "delta": {
+        "d": 2.8,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafHz": {
+      "C": {
+       "mode": "full",
+       "median": 10,
+       "min": 10,
+       "max": 10,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 7.1,
+       "min": 7.1,
+       "max": 7.1,
+       "n": 1,
+       "delta": {
+        "d": -2.9000000000000004,
+        "tol": 11.399999999999999,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "rafFires": {
+      "C": {
+       "mode": "full",
+       "median": 7,
+       "min": 7,
+       "max": 7,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": -2,
+        "tol": 8,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "composites": {
+      "C": {
+       "mode": "full",
+       "median": 3,
+       "min": 3,
+       "max": 3,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 2,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "1": {
+     "C": {
+      "mode": "full",
+      "text": "main thread every frame (element code in 2 of 3 frames per event)",
+      "status": "OBSERVED"
+     },
+     "F3": {
+      "mode": "full",
+      "text": "main thread per event (2 element code calls per event)",
+      "status": "OBSERVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 54,
+       "min": 54,
+       "max": 54,
+       "n": 1,
+       "delta": {
+        "d": 54,
+        "tol": 8,
+        "beyondAA": true,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "pageClipArea": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 347055.44306650595,
+       "min": 347055.44306650595,
+       "max": 347055.44306650595,
+       "n": 1,
+       "delta": {
+        "d": 347055.44306650595,
+        "tol": 1758064,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 1,
+       "min": 1,
+       "max": 1,
+       "n": 1,
+       "delta": {
+        "d": 1,
+        "tol": 6,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    },
+    "5": {
+     "codeCalls": {
+      "C": {
+       "mode": "full",
+       "median": 2,
+       "min": 2,
+       "max": 2,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 2,
+       "min": 2,
+       "max": 2,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C": {
+       "mode": "full",
+       "median": 0,
+       "min": 0,
+       "max": 0,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 5,
+       "min": 5,
+       "max": 5,
+       "n": 1,
+       "delta": {
+        "d": 5,
+        "tol": 4,
+        "beyondAA": true,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     },
+     "functionCalls": {
+      "C": {
+       "mode": "full",
+       "median": 9,
+       "min": 9,
+       "max": 9,
+       "n": 1,
+       "delta": null
+      },
+      "F3": {
+       "mode": "full",
+       "median": 9,
+       "min": 9,
+       "max": 9,
+       "n": 1,
+       "delta": {
+        "d": 0,
+        "tol": 10,
+        "beyondAA": false,
+        "lowPower": true,
+        "aaSource": "aa"
+       }
+      }
+     }
+    }
+   }
+  }
+ ],
+ "voids": [],
+ "skipped": [],
+ "sourceStatus": [
+  "Field 3, Sim: a Timeline Paint clip is in root-view coordinates (CONFIRMED, WebKit PageTimelineAgent::didPaint); that it matches getBoundingClientRect on iOS at scrollY > 0 is UNRESOLVED. Field 1, Sim: the behavioural reading (no element script per moving frame) is a method, OBSERVED; WebKit has no per-animation \"accelerated\" flag."
+ ]
+}
