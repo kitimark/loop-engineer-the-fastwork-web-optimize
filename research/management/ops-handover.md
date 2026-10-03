@@ -9,6 +9,37 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **06:5xZ main 158f77c (my 76fd3db) on 1fb0b49 (I-081 fix: an exclusive short grant left its last-grant record on
+  an idle lock; the lead resolves I-081 after npm test).**
+  - **F3 D2 gate SIGNED (lead 06:4xZ)** on fix-nav-morph's reading of iphone-runner's Timeline runs tD1-3/tC/tV
+    (G driver, Timeline on, n=1 per arm and 3 for D; files and shas in iphone-runner's `out/p071`; analyzers
+    `p071-tl.mjs` 0cc2217b49af, `p071-comp.mjs` e022de3b6a32). OBSERVED: no long frame names D's listener
+    add/remove (event dispatch < 1 ms); every >50 ms frame is one Composite with ~91-94 Paint children in every arm;
+    most Composite time lies outside the Paint children, cause UNRESOLVED; C3's collapse fits the down-stroke dip.
+    **D's land gate is now P-073 alone** (then P-036 confirmation, then the F swipe). Phone free after the runs.
+  - **fix-cd-strip 6ae6908**: strip-rw JS 5e37af69bcc4, CSS 9b2f89ea58bd, patch 48bc7adf7f03, base st6-rb2; P-070
+    unedited, superseded before data (strip-cl -> strip-rb -> strip-rw).
+  - **User ACCEPTED PR-008 land-strip at 06:52:53Z** (confirmed T-030 #18; stands, nothing withdrawn).
+    review-cd-strip-r2 NEEDS-FIX: (1) the hero .strip/.cell skipped st6-rb2's scene-pause will-change rule, so 96 hero
+    clock layers stayed up in the paused-but-rendered band, where the faces have 0; (2) the card's R-fade rate was pooled
+    across sessions; in the same sessions it is strip-rw 3/26 vs A/A 1/26. **New base:** patch 1f3c26a16563, JS
+    5e37af69bcc4 unchanged, CSS 40078cb2d9cf. Then re-check, re-card, review round 3, land. **P-072** goes into the
+    ledger against the new BUILD card before any phone data; ops second-reads it.
+  - **cd-roll-ca**: the counted set is stopped until it gets the new strip hashes; the sessions so far are first-build
+    data. It rebuilds on 1f3c26a16563 and restarts.
+  - **I-082** (env, not blocking): the Simulator's SleepWidgetExtension burns a core during sessions (load1 37-108).
+    ts-i082 is on it. Simulator count results carry it as a caveat.
+  - **F3 v1c** (Sim): it capped V (9 pushes, 453/453 prevented). The lead cut the check to D×1 + C×1; then P-073 rev 2.
+  - The lead answered T-030 #14 (06:35Z) and #16 (glint/sweep battery question).
+  - PROGRESS:
+    - F3 `next`: the odd run is traced and is not F3's code; the warm-phone test remains. Added a D2 detail; the
+      swipe "when" no longer mentions the trace.
+    - Change line 06:53Z: the user chose to land the strips.
+    - cd-strip `next`: the style fix is being re-checked; nothing for the user to decide. The P-072 check is to be
+      written against the corrected build. Added a detail.
+    - Dropped the upcoming "your choice" item.
+    - cd-roll-ca `next` and detail: rebuilds on the new base.
+
 - **06:4xZ main 915237a (I-080 fix: a shared group left its last-grant record on an idle lock; resolved).**
   - **I-081** open, not blocking (ts-i080 reported): an exclusive `--short` grant also leaves a short last-grant
     record on an idle lock (doctor: last-grant-short-outlived); owner **ts-i081** (worktree subagent, spawned 06:12Z).
