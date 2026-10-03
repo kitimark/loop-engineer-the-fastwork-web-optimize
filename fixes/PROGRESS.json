@@ -1,7 +1,7 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-02T23:58:00Z",
- "updatedBy": "mgmt-ops-8",
+ "updatedAt": "2026-10-03T00:25:00Z",
+ "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And, if the heat test (P-068) shows Fastwork heats the phone more than apple.com, less work at rest so the phone stays cooler.",
  "complaints": [
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T00:12:00Z", "text": "GPU study done (T-030): most lag left is at the hero ending and the people cards; the toolbar resize is small. Three fixes now run at top priority: countdown digits as sliding strips, the hero ending off the main thread, and the GPU countdown roll (your call; you judge it blind)." },
   { "at": "2026-10-02T23:58:00Z", "text": "The F3 robot-finger test has a new plan, signed by the lead before any data: the check page that never passed under the robot finger is replaced by the usual scripted heat check. Phone order: the countdown timing test now, then the F3 robot-finger test, then the heat test." },
   { "at": "2026-10-02T23:50:00Z", "text": "The F3 robot-finger test stopped again before any counted run: the phone's check page was not smooth even on a cool phone, so this is not heat. It waits until fix-nav-morph finds the cause. The countdown timing test runs now, then the heat test." },
   { "at": "2026-10-02T23:45:00Z", "text": "Blind swipe test done: you picked today's best build as smoother than the original, at the top and in the menu change. It still lags a little; de-gpu looks at whether the GPU can take more of the work. Next on the phone: the F3 robot-finger re-run." },
@@ -37,10 +38,71 @@
   { "at": "2026-10-01T18:54:00Z", "text": "A fix for slow style recalculation is being built (fix-scene-scope): it narrows how the page pauses its hidden scenes. After a Chrome check it goes to the phone next." },
   { "at": "2026-10-01T18:33:00Z", "text": "Your decision: style recalculation is now the top priority. The phone first records where style time goes in A and B; the robot-finger check and the other tests follow." },
   { "at": "2026-10-01T18:31:00Z", "text": "Your sitting: on the hero and at the end of the page, the best build felt quite a bit smoother than the original. Your idea that style recalculation causes the lag is now being checked by a new helper." },
-  { "at": "2026-10-01T17:59:00Z", "text": "Cause found for the blinking small profiles: each time the carousel swaps a picture in or out, the whole page re-lays out (P14 on the phone). A fix that keeps the pictures in place is next, right after your sitting." },
-  { "at": "2026-10-01T17:51:00Z", "text": "From your request: a tool change is being designed so that tests and simulator checks can run side by side, while timing tests keep the Mac to themselves. A reviewer now checks the waiting lock-tool changes." }
+  { "at": "2026-10-01T17:59:00Z", "text": "Cause found for the blinking small profiles: each time the carousel swaps a picture in or out, the whole page re-lays out (P14 on the phone). A fix that keeps the pictures in place is next, right after your sitting." }
  ],
  "items": [
+  {
+   "id": "cd-strip",
+   "writeup": "research/gpu-props/README.md",
+   "title": "Countdown digits as sliding strips",
+   "area": "hero",
+   "state": "testing",
+   "stage": "F",
+   "fixes": "Each countdown digit becomes one fixed strip of numbers that only slides, so Safari no longer redraws the digits on every tick, in the hero clock and in the menu panel's clock.",
+   "felt": {
+    "answer": "not-yet",
+    "text": "not built yet"
+   },
+   "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
+   "next": "Being built on top of today's best build (st6-rb2); it replaces part of the earlier countdown fix.",
+   "owner": "fix-cd-strip",
+   "checks": [],
+   "details": [
+    "de-gpu T-030 brief 1 (research/gpu-props/README.md section 6, 41563ad): removes WebKit digit repaints in the hero and morph-panel clocks; risk about 2 MB more memory per clock in WebKit; the morph gain needs the panel strips on their own layers (cdwc rule owner's OK).",
+    "Lead approved fix-cd-strip's D proposal (10-03 00:2xZ): the strip replaces countdown-faces (a), (b) stays. Stacks on F3 (fix-nav-morph sent its nodes/2 line range)."
+   ]
+  },
+  {
+   "id": "hero-exit-threaded",
+   "writeup": "research/gpu-props/README.md",
+   "title": "Hero ending run by Safari's scrolling thread",
+   "area": "hero",
+   "state": "diagnosing",
+   "stage": "I",
+   "fixes": "The hero's fade-out as you scroll becomes an animation tied to scrolling that Safari runs off the main thread, in the part of the page that held most of the slow frames in your last finger run.",
+   "felt": {
+    "answer": "not-yet",
+    "text": "not built yet"
+   },
+   "gate": "Identical at every scroll position (an earlier version matched the original on your phone); first explain why that version made one frame about 11 ms slower where the hero ends.",
+   "next": "A phone recording that splits the slow frame where the hero ends, before anything is built.",
+   "owner": "fix-hero-exit-threaded",
+   "checks": [],
+   "details": [
+    "de-gpu T-030 brief 2: re-apply hero-exit-scroll-timeline v2 on st6-rb2; Safari 26.4+ runs scroll-driven animations on the compositor thread (CONFIRMED, WebKit blog and source). ST-1 Timeline split first: v2 once added about +11 ms at y about 700 (cause not yet named, OBSERVED).",
+    "C-026 finger runs (F, one run per arm, OBSERVED): the first ~1000 px hold 63 of 81 moving long frames (>34 ms) in st6-rb2."
+   ]
+  },
+  {
+   "id": "cd-roll-ca",
+   "writeup": "research/gpu-props/README.md",
+   "title": "Countdown roll on the GPU",
+   "area": "hero",
+   "state": "testing",
+   "stage": "F",
+   "fixes": "Instead of script moving the digits every frame during each half-second roll, one GPU animation per digit per second: the most script work saved at the top and in the menu panel.",
+   "felt": {
+    "answer": "not-yet",
+    "text": "you judge it in a blind swipe test before it goes into a build"
+   },
+   "gate": "Within a fraction of a pixel of the original's motion (exact numbers at 60 and 120 Hz), and your blind swipe test, since it is not frame-for-frame identical.",
+   "next": "Prototypes the roll while the digit strips (cd-strip) are built; then builds on top of them.",
+   "owner": "fix-cd-roll-ca",
+   "checks": [],
+   "details": [
+    "de-gpu T-030 brief 3: within about 0.08 px of the original's motion; the original itself differs by 3.3 px between 60 and 120 Hz. Parked under the identical-only rule, then started at the user's request (T-030 #10, 00:10Z). Stacks on cd-strip."
+   ]
+  },
   {
    "id": "cdwc",
    "inBuild": true,
@@ -443,6 +505,7 @@
   }
  ],
  "upcoming": [
+  { "title": "Blind swipe test of the GPU countdown roll (cd-roll-ca)", "when": "once it is built on top of the digit strips (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
   { "title": "Short phone timing test of the countdown fix on its own", "when": "now, then the F3 robot-finger test, then the heat test (you chose this, T-024 #8)", "item": "countdown-ca" },
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the robot-finger test P-036, which runs after the countdown timing test (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
   { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }

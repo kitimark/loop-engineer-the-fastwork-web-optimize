@@ -9,6 +9,36 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **00:2xZ T-030 report landed (41563ad, de-gpu; F-145); three GPU fixes at user priority #1; arch-memory proposal
+  landed (cfe3693).** Rebased on main cfe3693.
+  - **de-gpu T-030 (done):** lag left in st6-rb2, C-026 finger runs (F, one run per arm, OBSERVED): the first ~1000 px
+    (hero exit + #people entry) hold 63 of 81 moving long frames; holding the morph at the end gives 91 frames > 34 ms
+    (median 20 ms) that the moving count misses; middle and bottom nearly clean (17 / 1 vs O 45 / 21). Toolbar resize:
+    real work in WebKit (CONFIRMED in source: fixed/sticky re-layout, vh/svh/dvh re-check) but small here (13-18 ms
+    mid-page), not a fix candidate. Side effect: the open morph panel's `calc(100dvh - 40px)` re-lays out per toolbar
+    frame (84/66/42 ms scrolling back up, one run, OBSERVED); fix-nav-morph takes it after P-036 (svh or px set once,
+    pixel-identical in both toolbar states). Safari 26.4+ runs scroll-driven animations on the compositor thread
+    (CONFIRMED, WebKit blog + source).
+  - **Lead spawned, NAMED:** `fix-cd-strip` (F1, digits as sliding strips, identical by construction; D proposal
+    APPROVED by the lead: the strip replaces countdown-faces (a), (b) stays; coordinates with de-countdown);
+    `fix-hero-exit-threaded` (F2, hero exit as a scroll-driven animation on st6-rb2, ST-1 Timeline split first: v2 once
+    +11 ms at y≈700, cause not named); `fix-cd-roll-ca` (user T-030 #10, 00:10Z: top priority too; stacks on cd-strip,
+    prototypes the roll first; judged by sub-pixel motion numbers at 60/120 Hz and a blind swipe before any build).
+    glint-ca, sweep-exact (battery/heat only) PARKED. fix-nav-morph sent both F1/F2 owners F3's nodes/2 range (~13307-13370);
+    F3 lands first, they stack on it.
+  - **T-032 #3 (user, paraphrased):** move agent memory into the project. arch-memory's proposal cfe3693 (inventory,
+    one structure: memory/ + CLAUDE.md import, scrubbed drafts of the lead notes; nothing moved) waits on the user's two
+    OKs in T-032.
+  - **P-068 scorer unassigned:** de-heat's run ended; it asks the lead to name who runs `node research/phone-heat/heat.mjs
+    score` (scorer d1ec5c5345f7) after H1+H2 and sends ops the verdict. Ops recommends iphone-runner (it runs the
+    sessions), ops second-reads. de-heat's note that 39a846d still waits to land is stale: it landed as 9ff40e6.
+  - **Phone:** X1 stage 2 block DONE (de-countdown board 00:2xZ: 8 counted runs valid, both heat checks pass); scoring
+    and write-up (README, P-069) pending, not logged as a result yet. iphone-runner took the phone 00:16Z for the P-036
+    re-run (signed S-sentinel plan): cooling from 41.1 °C, then 3 exclusive holds (quiet Mac). Host at 00:2xZ: load1 53,
+    memory pressure warn (shared group cd-strip + hero-exit-threaded Simulator); the exclusive holds wait for that group.
+  - PROGRESS: change line 00:12Z (T-030 result + three top-priority fixes), items cd-strip (F), hero-exit-threaded (I),
+    cd-roll-ca (F), upcoming: blind swipe of cd-roll-ca (oldest change dropped, 30 max).
+
 - **00:1xZ mgmt-ops-9 took over** (lead spawn, named so peers can message "mgmt-ops-9"); rebased on main 25d952d
   (mgmt-ops-8's last entry: I-077, X1 D1, X1 restarts, I-076/I-072; not repeated here). **mgmt-ops-8 (agent ID
   ace57ef63584bdfb6) is retired:** it was spawned unnamed, so peers could not reach it by name. Peers message
@@ -1637,14 +1667,19 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
 | `mgmt-ops-9` (named; ID acfd7a13b6014f754; from 10-03 00:0xZ) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive; message "mgmt-ops-9". mgmt-ops-8 (ace57ef63584bdfb6, unnamed) and earlier are RETIRED: don't message them |
 | `fix-nav-morph` (name) | f3-arm-scope (P-036 G, signed S-sentinel amendment a4b1790), cdwc (parked) | alive (10-03 00:0xZ): waits on iphone-runner for P-036 |
-| `de-gpu` (name) | T-030 GPU/compositor-only CSS; user's top priority: lag left in st6-rb2, toolbar-resize lead | alive (10-03 00:0xZ) |
+| `de-gpu` (ae7885a4cf83f8d7b) | T-030 GPU/compositor-only CSS (research/gpu-props/, 41563ad, F-145) | done 10-03 00:1xZ |
+| `fix-cd-strip` (name) | cd-strip: countdown digits as sliding strips (T-030 F1, user priority #1); coordinates with de-countdown | alive (10-03 00:2xZ) |
+| `fix-hero-exit-threaded` (name) | hero-exit-threaded: hero exit as a scroll-driven animation, ST-1 split first (T-030 F2, user priority #1) | alive (10-03 00:2xZ) |
+| `fix-cd-roll-ca` (name) | cd-roll-ca: countdown roll on the GPU, stacks on cd-strip (T-030 #10, user priority #1) | alive (10-03 00:2xZ) |
+| `arch-memory` (name) | T-032: agent memory into the project (proposal cfe3693, waits on the user's two OKs) | alive (10-03 00:2xZ) |
+| `fix-nav-morph` ID | a277ea00c8773c1ea; also takes the morph panel dvh height after P-036 | – |
 | ts-i077 (UNNAMED: agent ID a46d520fdb1912d3c; the name does not resolve) | I-077 (open after park), talks to the lead | alive (10-03 00:0xZ) |
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | alive: phone back (T-025 21:28Z); re-runs G2 from the warm-ups after the T-026 Wi-Fi change, then P-065 |
 | `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
 | `fix-image-size` (new 12:0xZ; ID af756241c686d490e) | image-size: P-066 falsified (no detectable saving), dropped; null write-up 909464c | done |
-| `de-countdown` (ID via ListAgents) | T-024 countdown-faces (board priority #1; apple.com off-screen-pause reference) | alive: X1 stage 2 phone block running (10-03 00:0xZ) |
-| `de-heat` (a19ec71e8ca8fff91) | T-029 phone heat, P-068 ticket (research/phone-heat/) | waiting: iphone-runner runs P-068 H1/H2 after P-036 |
+| `de-countdown` (a097ffbf8f44a4d14) | T-024 countdown-faces (board priority #1; apple.com off-screen-pause reference) | alive: X1 stage 2 phone block running (10-03 00:0xZ) |
+| `de-heat` (a19ec71e8ca8fff91) | T-029 phone heat, P-068 ticket (research/phone-heat/) | done (run ended 10-03 00:1xZ); P-068 H1/H2 run by iphone-runner after P-036, scorer to be named by the lead |
 | `de-gpu` (ID via ListAgents) | T-030 GPU/compositor-only CSS for animations (research/gpu-props/), no phone, no timing | alive |
 | `de-safari-mac` (ID via ListAgents) | T-023: Safari on the Mac as an iPhone stand-in (read-only research) | done (user: no, thanks) |
 | `review-ioscap` (ac18cae341e16fdc7) | privacy review of tools/ioscap.mjs (SAFE WITH FIXES -> I-064, resolved 11bc722) | done |
