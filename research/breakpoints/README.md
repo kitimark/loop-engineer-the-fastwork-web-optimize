@@ -11,10 +11,15 @@ in phone landscape (932x430) and with reduced motion (430 and 1440).
 - **Pixels.** The page looks the same as the baseline at 13 of 14 configs: every frozen-frame difference is within
   the page's own A/A noise, or is the hero accent word caught at another point of its 3 s timer (checked by
   masking it, and by a probe of its geometry), or is an entrance transition caught at another moment.
-- **One real difference.** At 1440 with reduced motion, the tilted hero card photos (and the nav's "EN" label)
-  render marginally sharper in st6-rb2, in 3 % of the frame at the top, while the baseline's A/A is 0 %. The layout
-  is the same and nothing is missing. Leading hypothesis (OBSERVED, cause UNRESOLVED): a layer raster-scale
-  history, §3.2. It is not pixel-identical, so the decision is the lead's (§6).
+- **One real difference.** At 1440 with reduced motion, the tilted hero card photos render marginally sharper in
+  st6-rb2: 3 % of the frame at the top, with a same-state A/A of 0 %. The layout is the same and nothing is missing.
+  The re-raster check (§3.2.1, 2026-10-04) found more:
+  - The photos have two renderings that depend on the page load, not only on the build.
+  - When the images arrive late (cold server), both builds draw the same "sharp" picture.
+  - On fast loads the baseline draws a "soft" one, 10 of 10 times; st6-rb2 draws the sharp one, 7 of 9 times
+    (otherwise one in between).
+  - Forcing a re-raster changes neither arm, so the raster-scale hypothesis is REFUTED. The cause is UNRESOLVED.
+  - It is not pixel-identical, so the decision is the lead's (§6).
 - **Counts.** st6-rb2's gains hold at every width measured (375-1280, touch and not): about 90 % fewer layouts at
   rest, about 40 % fewer layouts and 55-70 % fewer style recalcs while scrolling. Its known costs also hold: more
   paint events at rest and 15-23 more layers. No width reverses a count (§3.3, 9 of 15 configs; the rest were
@@ -146,10 +151,9 @@ How the flags were resolved:
   - st6-rb2 toggles will-change during boot (the scene gate, `data-fw-wc`), so it rebuilds these layers once
     layout has settled. The baseline keeps its first raster.
   - That would also explain the sharper 1920 thumbnail below.
-  - Decisive check (not run; the lead stopped new sweeps): in both arms, after load, toggle `will-change` off and
-    on for the cards (one forced re-raster each), then compare. If the arms then match, the hypothesis holds, and
-    st6-rb2 looks like a fresh raster rather than a changed render.
-  What it means for a user: on desktop with "reduce motion" on, the hero photos come out marginally crisper with
+  - Decisive check: in both arms, after load, toggle `will-change` off and on for the cards (one forced re-raster
+    each), then compare. Run on 2026-10-04: the hypothesis is REFUTED, see §3.2.1.
+  What it means for a user: on desktop with "reduce motion" on, the hero photos can come out marginally crisper with
   st6-rb2. Nothing moves, and nothing is missing. It is still not pixel-identical, so it goes to the lead (§6).
 - **768t top (0.091 %, A/A 0.001 %) and 1024 hero (0.394 %, A/A 0.09 %).** Both are the hero accent word. Its
   word and draw-in follow a 3 s timer, so a frozen frame catches it at a random point; here S caught a different
@@ -167,6 +171,68 @@ How the flags were resolved:
 - **1920 people (0.109 %, A/A 0.009 %).** One service thumbnail ("Original Soundtrack", the third service card).
   In S it is drawn sharper than in B and B2: same image, same place, text edges differ by up to 136 levels. That
   looks like a different raster scale of the same layer, not a layout change. The masked re-run of 1920 did not reproduce it (people 0.009 %, at most 11 levels, on one row). The element probe at that point (`probe-el.mjs`, after 2 s) caught S's future card still in its entrance transition (computed `opacity: 0.999`, `filter: blur(0px)`); B's card was already at rest. So this is the 1.6 s entrance caught at a different moment (load-time phase), not a steady difference.
+
+### 3.2.1 rm1440: the re-raster check and repeated loads (2026-10-04)
+
+The lead asked for this because PR-010 T2 requires reduced motion to be exact.
+- **Setup.** Chrome headless, 1440x900, DPR 1, reduced motion. Main at 97cc63a. Five shared-lane probe holds
+  (`out/breakpoints/hold16.log` to `hold19.log`). No Sleep or DarkWake fell inside any hold (pmset). Nothing timed.
+- **Method.** Shots are frozen and the countdown is masked. Numbers follow `research/pixel-tolerance/README.md` §1:
+  - largest shade: the largest per-channel difference anywhere in the frame;
+  - share and area: pixels more than 8 levels apart where the A/A pixel is 8 or less;
+  - "flat" (fill): the 3x3 neighbourhood in the baseline shot varies by 2 levels or less;
+  - CSS px² equals device px here, at DPR 1.
+
+**Re-raster toggle** (`probe-reraster.mjs`, arms B, S, B2 in fresh tabs of one Chrome; `out/breakpoints/rr1`). Each
+arm got two toggles: first inline `will-change: auto !important` on all 14 `.orbit-card`s, 2 rAF + 300 ms, then
+removed (2 rAF + 500 ms); then the same on every in-view element with a non-auto will-change (66-93, nav included).
+- The toggle took effect: computed `auto`, then back.
+- No arm changed against its own pre-toggle shot: at most 4 levels, 0 px over 8.
+- B2 stayed as different from B after the toggles as before (19.8 % of the frame at any level).
+- So a forced re-raster does not move a load from one rendering to the other. The raster-scale hypothesis above is
+  REFUTED in our setup.
+- In this run, B and S matched (4 px² over 8, largest shade 19), and B2 was the odd one out. That pointed at the load,
+  not the build.
+
+**Repeated loads** (`probe-loads.mjs`; 26 loads in 4 holds, `out/breakpoints/rr2` to `rr5`). Each shot is
+classified by a sharpness score (mean |Laplacian| of luminance over the card rects; top / hero):
+
+| load | images arrive | baseline (B) | st6-rb2 (S) |
+|---|---|---|---|
+| first load per server (cold, the server's first response) | ~3 s | sharp 18.8 / 15.7: 5 of 5 | sharp: 5 of 5 |
+| later loads (fast: ~40-70 ms), incl. browser cache off (`NOCACHE=1`) and hero photos held 1.5 s by CDP Fetch (`IMGDELAY=1500`) | 0.05-1.8 s | soft 15.0 / 12.7: 10 of 10 | sharp: 7 of 9; in between (17.0-17.4 / 15.0-15.6): 2 of 9 |
+
+The two renderings are stable classes:
+- B's soft loads are identical to each other (0 px over 8).
+- S's sharp loads are identical to B's sharp loads, except the nav's "EN" label (below).
+- Arrival time alone is not the switch: holding the photos for 1.5 s left B soft. Cache is not the switch either:
+  with the cache off, the second load was fast and soft. The cause is UNRESOLVED.
+
+The five numbers (rr5; the A/A is a true same-state A/A from the same session):
+
+| pair | largest shade | beyond A/A (> 8 levels) | CSS px² per element | edge or fill | static or moving |
+|---|---|---|---|---|---|
+| S fast vs B fast (A/A: B fast vs B fast, 0 px, max 0-1) | 118 | top 3.052 % (39,553 px²); hero 1.318 % (17,078 px²) | top: card6 11,983, card3 7,320, card7 5,516, card9 3,761, card2 3,727, 5 more cards 325-3,049; hero: card3 11,984, card1 2,774, 4 more 60-1,105 | 0 % flat: photo texture and edges (fill max 13, edge max 118) | static (reduced motion; same rects in every arm) |
+| S cold vs B cold (A/A: none; B cold vs B cold needs a second server) | 19 top, 11 hero | 4 px² top, 2 px² hero | one card each | edge | static |
+| B fast vs B cold (the baseline against itself) | 118 | top 3.058 % (39,632 px²); hero 1.324 % | the same cards, same areas, plus 83 px² "EN" | 0 % flat | static |
+
+Reading:
+- st6-rb2 draws no new picture. Its usual rendering is the baseline's own cold-load rendering: the same pixels
+  within 4 px² and 19 levels.
+- The difference is which of two baseline renderings a fast load lands on.
+- Against a same-state A/A (fast vs fast), it fails T2 by area: 3 % of the frame against 0.5 %, and up to
+  11,983 CSS px² per element against 2,000. It is also not "reduced motion exact".
+- Against the baseline's own load-to-load range (cold vs fast, the same pixels at 3.06 %), it is within A/A (T1).
+- Which A/A counts is a reading of PR-010 for the lead and the user, not a measurement.
+- The nav's "EN" label (14x8 px at x 1004-1018, y 43-51, 83 px, max 107) differs between cold and fast loads in both
+  arms alike: a load state, not the build.
+- Open:
+  - whether the soft fast-load rendering also occurs without reduced motion (the c1440 sweep caught one load per arm);
+  - the cause.
+- The decisive next check (not run): a Chrome trace with cc image-decode categories through `tools/lib/cdp.mjs` (not
+  the MCP), one fast B load and one fast S load. It would show the decode scale and filter quality per hero photo.
+- WebKit leg: not run. `tools/sim.mjs` cannot set reduced motion: there is no such option in sim.mjs or its libs, and
+  `xcrun simctl ui` offers only appearance, increase_contrast and content_size. UNRESOLVED.
 
 ### 3.3 Render and layout counts per width (census)
 
@@ -286,14 +352,18 @@ changed, and the device was never rotated. After the session, sim.mjs shut fw-si
 - **Parked by the lead (usage window), not run:**
   - census for c1280 (S, B2), c1440, c1920, c932l, rm430 and rm1440;
   - the live-resize holds (§3.4);
-  - the masked landscape re-check;
-  - the decisive raster check for the rm1440 difference.
+  - the masked landscape re-check.
+- **Reduced motion in WebKit.** sim.mjs cannot set it (§3.2.1): UNRESOLVED.
 
 ## 6. Open items for the lead
 
-1. **st6-rb2, reduced motion at 1440.** The hero photos render sharper (3 % of the frame; A/A 0 %). Decide whether
-   this is acceptable or needs the decisive check from §3.2 first. Evidence: `out/breakpoints/pix/png/rm1440/`
-   (heat images) and `out/breakpoints/hold14.log` (element probe) in this worktree.
+1. **st6-rb2, reduced motion at 1440.** On fast loads the hero photos render sharper than the baseline's: 3 % of the
+   frame, same-state A/A 0 %, 118 levels, up to 11,983 CSS px² per card, static.
+   - The re-raster check (§3.2.1) changed nothing.
+   - The sharp rendering is the baseline's own cold-load rendering.
+   - Same-state reading: T3 in a landed component, for the user.
+   - Load-to-load reading: T1.
+   - Evidence: `out/breakpoints/rr1` to `rr5` and `hold16.log` to `hold19.log` in this worktree.
 2. **st6-rb2 paints more at rest at every width** (+120 to +270 paint events in 4 s; +15-23 layers). This is not
    width-specific, and it may already be a known cost of the stack. A single attribution probe at 430 would name
    the part.
@@ -358,6 +428,8 @@ concrete:
 - `configs.mjs`: viewport configs. `sweep.mjs`: pix / pixr / census / resize. `run.sh`: one hold (two servers +
   sweep). `summarize.mjs`: tables from the JSON.
 - `probe-anims.mjs` (animations running at a stop), `probe-accent.mjs` (accent word geometry over time),
-  `probe-el.mjs` (what is drawn at a diff point).
+  `probe-el.mjs` (what is drawn at a diff point), `probe-reraster.mjs` (will-change toggle before and after shots,
+  tolerance report), `probe-loads.mjs` (repeated loads, rendering classes, sharpness; `ORDER`, `IMGDELAY`, `NOCACHE`),
+  `tolrep.mjs` (the five numbers of §3.2.1 from probe-loads shots, offline).
 - `sim-vp.mjs` + `simvp.sh`: the fw-sim width-980 check.
 - Output (gitignored): `out/breakpoints/` (JSON, PNG, heat images, logs).
