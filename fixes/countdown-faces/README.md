@@ -888,6 +888,37 @@ MutationObserver pass, then a 5 s Timeline with stacks (depth 8), base then PoC,
   `contain: layout` box). It does not belong to the countdown. Any build that idles more (the strip included) may
   show the same phone effect.
 
+**Clock-down hypothesis: research plan (status UNRESOLVED; lead 2026-10-03: no phone timing run, plan first).**
+The claim: on the iPhone, a page with less per-frame main-thread work runs its shared once-a-second burst (the avatar
+swap's full-viewport Layout) slower, because the CPU sits at a lower performance state between bursts. Plan:
+1. **References on iOS CPU frequency and core selection.**
+   - Apple's docs on Closed Loop Performance Control (CLPC), the scheduler and P/E cores: the Apple Platform docs and
+     WWDC sessions on energy efficiency ("Writing energy-efficient apps", "Tune CPU job scheduling for Apple silicon").
+   - XNU sources (github.com/apple-oss-distributions/xnu: `osfmk/kern/sched_clutch*`, the `thread_group` and
+     `perfcontrol` callouts) for how thread-group load drives the performance level and the move between E and P cores.
+   - Question to answer: does a mostly idle main thread with short bursts get scheduled on E cores, or at lower clocks,
+     so that a 20-30 ms burst runs measurably slower?
+2. **References on WebKit's idle behaviour.**
+   - WebKit source (github.com/WebKit/WebKit): the rendering-update scheduling (`RenderingUpdateScheduler`,
+     `DisplayRefreshMonitor`), and whether WebKit lowers the display-link rate or QoS when a page has no animation
+     work. Look for `RemoteLayerTreeDrawingArea` and the `preferredFramesPerSecond` path (claims-audit §2.7).
+   - Question to answer: does V's page (no per-frame layout at pastHero) get a different rendering cadence or thread QoS
+     than C's?
+3. **How our own probe could produce the same result.**
+   - (a) Timeline overhead: C records ~300 more Layout and style records per window than V. If recording overhead
+     inflated C's light frames, it would not shorten C's heavy ones, so it does not explain the V > C heavy-Layout ms.
+     Check: compare record counts against heavy-Layout ms per run.
+   - (b) The heavy frames differ in content: on the phone a C frame may merge the avatar Layout with a face Layout, or
+     split it differently. Check: per-Layout records in the uncounted attribution runs, with root size and dirty count
+     if WebKit gives them, and count the 430x775 roots per burst, C vs V.
+   - (c) Heat: V's runs alternate with C's (C V V C C V V C), and the battery rose steadily (37.5 → 39.5 °C), so the
+     arm order cannot produce a consistent V > C. Still, list the per-run temperature against heavy-Layout ms.
+   - (d) The 4-tick windows may catch a different number of swaps. Check: count the bursts per window on the phone
+     from the frame timeline (pairs about 225 ms apart).
+4. **Decisive local check, only if a decision depends on it** (none does now: the fix target is the pill swap either
+   way): one phone block of V vs V-with-a-fixed-2-ms-per-frame-rAF-load. If the load brings the burst's Layout ms
+   down to C's, the clock explains it.
+
 **P-069 phone part:**
 - row 1 not separated: **in**; |median V − C| < 4 ms: **out** (19.2 ms, V lower);
 - row 2 V separated below: **in**; median V/C 0.62, in [0.3, 0.75];
