@@ -752,7 +752,8 @@ control: C = st6-rb2, JS 7bf7c4657d21, CSS f523598b2a24; copy out/cd-strip/snap/
   b1789284481295-4ad4a84a)
 question: on the phone, does strip-tc keep the Simulator's mechanism (fewer clock repaints on re-entry, a third of the
   clock backing) without new slow frames at the top or at the morph pin?
-ports: two, one per arm, each served from its copy (serve.mjs --root <copy> --port auto, plain http twin per I-003);
+ports: two, one per arm, each served from its copy (serve.mjs --root site-pretty --overlay <copy> --port auto: the copy
+  holds only the two changed files, the rest comes from the pinned snapshot, as in the Simulator check; plain http twin per I-003);
   one uncounted warm-up load per port (A3/U5)
 thermal gate (user, T-039 B, #21; replaces the 38-40 °C start band as the gate): real thermal Serious. xctrace Thermal
   State (iphone-runner's method, about 40 s) read at the start and end of every phone hold; a hold counts only if both
