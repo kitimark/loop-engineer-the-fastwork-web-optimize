@@ -375,7 +375,11 @@ the probe `tick-probe.mjs` 967461d775ec. Data and scorer output are in `p076-dat
 
 - Per countdown second, every pre-cd-roll-ca build runs about 27-29 countdown calls in both modes. V7 runs 4, which is
   cd-roll-ca's own effect.
-- The tolerance is the 2-count floor, about 7 % of the C value, so this pass is not low-power.
+- **One decisive pair, two null pairs.** Only V7 − C6 tests a real effect (−24.5 vs −25.0). Vf − C and C6 − S have
+  dFRZ 0.0: they pass at the 2-count tolerance floor (about 7 % of the C value) on near-null effects.
+- **The metric is steady-second calls, not total countdown script.** The median drops the roll seconds: 60-95 calls,
+  about 1 second in 5 in C, S and C6 (V7's rolls stay at 5-6). Roll cost needs its own row on the card, e.g. the max
+  or mean per second, and P-076 doesn't cover it (mgmt-ops-10 read).
 - Per-second values inside one load show the multi-digit rolls directly: about 60 calls in a second with a tens roll,
   and 83-95 in one with more digits, against 27-29 otherwise. That is the post-hoc reading of P-075's per-window FAIL,
   now tested before the data: the window caught a varying number of multi-digit rolls.
@@ -425,9 +429,11 @@ contains whole events (§6.3).
 - **Layout and Paint counts** come from FRZ too, with a FULL row beside them for context.
   - They passed for every judged pair in both engines. That is P-075's answer to the §2.4 open item.
   - One Chrome paint pair passed exactly on its tolerance.
-- **The element's own script calls** (field 5) come from FRZ, counted per event, cut at the element's own events.
-  P-076 passed for the countdown family (§4.5), and P-075's per-window count failed. A new family uses FULL until its
-  own FULL-vs-FRZ check passes.
+- **The element's own script calls** (field 5) come from FRZ, counted per event and cut at the element's own events,
+  as "steady-event calls" (the median per event). This rests on P-076 for the countdown family (§4.5): one decisive
+  pair (V7 − C6) and two null pairs. P-075's per-window count failed.
+  - Roll or burst cost, e.g. the max or mean per event, is a separate row and not yet validated.
+  - A new family uses FULL until its own FULL-vs-FRZ check passes.
 - **Frame-driven counts come from the FULL page**: rendering frames, style recalcs per frame, composites, main frames,
   Layerize, PrePaint, IO per frame.
   - P-075's Sim V7 − C6 shows why: moving the countdown roll to the compositor saved about 59 frames per window with
