@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft (behaviour checked in Chrome; no timing)
+**Status:** draft. Behaviour checked in Chrome. P-071 phone block done (G, n = 3 per arm): D 0/3 collapse, listener churn not separated-worse, D2 flagged pending Timeline. B1 not reproduced (V 0/3).
 **Stage:** F (round 2 for review-f3-arm-scope: B2 fix, B1 open)
 **Device class / gate:** touch-only (G/F)
 **Driver(s) behind the claims:** Chrome CDP touch (behaviour), Simulator WDA-sim G (counts)
@@ -162,6 +162,72 @@ card.
     second block without a new question.
 - **n.** At most 3 runs per arm. This is a mechanism and regression check, not a gain block. Nothing from it goes to
   the user as fact without the Timeline attribution.
+
+## P-071 result (G, pin-hold-v2, 2026-10-03 ~03:35-05:0xZ, iphone-runner; scored by fix-nav-morph)
+
+All OBSERVED, in our setup. The phone stamps every number here; n = 3 per arm. Derived numbers only: no gesture
+record is committed (N1). Scored from iphone-runner's `out/p071/score-p071.json`.
+
+**Block validity**
+- 9 counted runs, all valid. Each ran in the runner's own exclusive `--no-timing` hold, after an in-hold wait for
+  load1 ≤ 8.
+- Every run's idle rAF rate is 59 Hz, so no run was in Low Power Mode.
+- Both sentinels pass: S-open bottom 60.2 / scroll 57.9 fps, S-end 60.2 / 57.6 fps.
+- Pin approach, the same in every run and arm:
+  - transit pushes 10-12 scroll natively, with 0 touchmoves prevented;
+  - push 12 overshoots into the end bounce (y 5414-5426);
+  - pushes 13-24 have every touchmove prevented;
+  - settle y is 5212-5219.
+
+**Metric 1: collapse** (2 consecutive 2 s windows < 30 fps, from pin arrival to the end of the run)
+
+| arm | runs collapsed | arm verdict |
+|---|---|---|
+| C | 1 of 3 (C3) | inconclusive |
+| V | 0 of 3 | **clean** |
+| D | 0 of 3 | **clean** |
+
+- C3 is not a pin collapse.
+  - Its two windows (27.5 and 25 fps) sit in the cycle phase, 9.2-12.9 s after the `cycle` mark: no touch, y steady
+    at 5255, morph closed, frames 26-77 ms.
+  - The dip starts 3 s after the nearest touchend and ends when the next up stroke begins.
+  - Every run of every arm dips more mildly in the same phase (33-46 fps windows).
+  - The push and 8 s idle phases run at 46-60 fps in all 9 runs.
+- The uncounted D warm-up collapsed (15-30 fps from the last transit push on, settle y 5230; a cold port, its first
+  load). It is outside the verdict.
+
+**Metric 2: arm and disarm windows** (per-run max dt over the run's two windows of a kind)
+
+| window | C | V | D | median D − C | verdict |
+|---|---|---|---|---|---|
+| arm, max dt (ms) | 70, 64, 74 | 68, 64, 69 | 70, **98**, 66 | 0 | not separated-worse |
+| arm, frames > 50 (46 / 54) | 10 (14/6), 11 (14/10), 14 (16/11) | 8, 7, 9 | 11 (14/8), **19 (20/16)**, 9 (13/5) | | |
+| disarm, max dt (ms) | 32, 33, 35 | 33, 34, 35 | 35, **85**, 39 | +6 | not separated-worse |
+| disarm, frames > 50 (46 / 54) | 0, 0, 0 | 0, 0, 0 | 0, **2 (3/2)**, 0 | | |
+
+- Neither D window is separated-worse. The verdict rests on the max, so the twin thresholds cannot change it: it is
+  not threshold-sensitive.
+- **D2 is an outlier in both window kinds.** Its cycle-2 arm window has only 27 frames and its disarm window only
+  24, against 39-46 everywhere else. Its 2 disarm frames over 50 ms are the only ones in any arm.
+  - That fails the "no D-only frame > 50 ms" half of the 60 % bucket.
+  - The cause is UNRESOLVED. The Timeline attribution run on D's cycle phase (I-079 `gesture --timeline`, queued
+    first) is the decisive check.
+
+**Against the predictions**
+- C clean ~90 %: **miss** (C3 is 1 of 3, inconclusive, a cycle-phase dip).
+- V: the clean branch (~30 %).
+- D: the prediction was conditional on V collapsing, which did not happen; D is clean.
+- Arm/disarm: the separation part is a hit. The "no D-only frame > 50 ms" part is a miss, on D2 alone.
+
+**Reading under the card**
+- **V clean → B1 is not reproduced under this script and stays UNRESOLVED.** It goes to the lead and the reviewer,
+  and there is no second block without a new question.
+- P-036's capped V runs (2/2) differed from these 9 in heat and script. P-036's V1 ran at 38.7-41.2 °C, V2 at
+  42.6-43.3 °C after an unparked gap, and both ran under arm-scope-touch-v1. Here the phone was at 37.1-38.6 °C,
+  parked between runs. Whether heat or the script state explains the difference is UNRESOLVED.
+- D shows no pin collapse and no separated-worse listener churn, with D2 flagged pending attribution.
+- The card's decision rule has no branch for "V clean, D clean". Whether D goes on to the P-036 confirmation and the
+  F swipe is the lead's call.
 
 ## Review round 1, non-blocking items: where each went
 
