@@ -264,8 +264,9 @@ async function liveRoute(req, res, u, port, live) {
   }
   if (!target.live?.blob) { send(res, 404, { error: `${p.id}${p.options?.length ? ` option ${target.name}` : ''} has no live pages (the author adds them: node tools/console.mjs proposal live …)` }); return true; }
   try {
-    const urls = await srv.open({ blob: target.live.blob, base: target.live.base || 'site-pretty' });
-    send(res, 200, { a: urls.a, b: urls.b, measuring: measuringNow(), idleMin: Math.round(srv.idleMs / 6000) / 10, version: target.live.blob.slice(0, 12) });
+    const aBlob = target.live.a?.blob || null; // I-093: A = the baseline + its own patch, when the entry names one
+    const urls = await srv.open({ blob: target.live.blob, base: target.live.base || 'site-pretty', aBlob });
+    send(res, 200, { a: urls.a, b: urls.b, measuring: measuringNow(), idleMin: Math.round(srv.idleMs / 6000) / 10, version: target.live.blob.slice(0, 12), ...(aBlob && { aVersion: aBlob.slice(0, 12) }) });
   } catch (e) { send(res, 503, { error: e.message }); }
   return true;
 }

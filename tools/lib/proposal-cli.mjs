@@ -28,6 +28,11 @@
 //        # here (`<ref>:<patch>` in this checkout) and kept in the console store; any state but withdrawn, no new
 //        # revision, the decision stands. --clear removes it. post/revise take the same as --live-patch <path>
 //        # [--live-ref <ref>] (with options: plus --option <name>), or "live": {"patch": …} in the file (per option).
+//        # I-093: A can be a build of its own too (e.g. the current best build, so a fix stacked on it shows only its
+//        # own changes): --a-patch fixes/<base>/patch.diff [--a-ref <ref>] here (also as --live-patch/--live-a-patch),
+//        # --live-a-patch <path> [--live-a-ref <ref>] on post/revise, "live": {"patch": …, "a": {"patch": …, "ref": …}}
+//        # in the file. A is read and stored like B, on the same base tree (site-pretty or site; refused otherwise);
+//        # without it A is the plain baseline. The panel labels A with compare.a.label, else "Base: <A's patch>".
 //   proposal publish <id> --by <agent>                            # draft -> proposed
 //   proposal withdraw <id> --by <agent> [--note "..."]
 //   proposal decide <id> --by <who> --value accept|reject|change [--option <name>] [--notes "..."]   # the user answered in chat (lead)
@@ -53,12 +58,13 @@ import { dirname, resolve } from 'node:path';
 import {
   loadProposalFile, postProposal, reviseProposal, publishProposal, withdrawProposal, decide, listProposals, get, setLive, findOption,
   waitCondition, waitAnyCondition, line, showText, parseProposalId, proposalNewsText, holdProposal, unholdProposal, withDecisionState,
+  liveAWarning,
 } from './proposal.mjs';
 import { runningServer } from './console-server.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './wait.mjs';
 import { startWait } from './waits.mjs'; // I-058: live wait records for the status board
 
-const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref']);
+const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref', '--live-a-patch', '--live-a-ref', '--a-patch', '--a-ref']);
 
 export function parseArgs(argv) {
   const multi = {}, pos = [], flags = new Set();
@@ -94,7 +100,11 @@ function inputs(a) {
   if (a.one('video-a')) video.a = a.one('video-a');
   if (a.one('video-b')) video.b = a.one('video-b');
   if (a.one('live-ref') && !a.one('live-patch')) throw new Error('--live-ref goes with --live-patch fixes/<topic>/patch.diff');
-  const live = a.one('live-patch') ? { patch: a.one('live-patch'), ref: a.one('live-ref', 'HEAD') } : undefined; // I-074
+  // I-093: --live-a-patch names A (the baseline + that patch) next to B
+  if (a.one('live-a-ref') && !a.one('live-a-patch')) throw new Error('--live-a-ref goes with --live-a-patch fixes/<topic>/patch.diff');
+  if (a.one('live-a-patch') && !a.one('live-patch')) throw new Error('--live-a-patch (A) goes with --live-patch fixes/<topic>/patch.diff (B)');
+  const aSide = a.one('live-a-patch') ? { a: { patch: a.one('live-a-patch'), ref: a.one('live-a-ref', 'HEAD') } } : {};
+  const live = a.one('live-patch') ? { patch: a.one('live-patch'), ref: a.one('live-ref', 'HEAD'), ...aSide } : undefined; // I-074
   return { raw, baseDir: file ? dirname(resolve(file)) : process.cwd(), shotsA: a.many('shot-a'), shotsB: a.many('shot-b'), captions: a.many('caption'), video, option: a.one('option'), live };
 }
 
@@ -162,9 +172,15 @@ export async function run(argv) {
     return 0;
   }
   if (sub === 'live') {
-    const p = await setLive(id, { by: by(), option: a.one('option'), patch: a.one('patch'), ref: a.one('ref'), clear: a.flag('clear') });
+    // I-093: --a-patch (or --live-a-patch) [--a-ref] names A next to B; without it A is the plain baseline
+    const aPatch = a.one('a-patch', a.one('live-a-patch')), aRef = a.one('a-ref', a.one('live-a-ref'));
+    if (aRef && !aPatch) throw new Error('--a-ref goes with --a-patch fixes/<topic>/patch.diff');
+    const p = await setLive(id, { by: by(), option: a.one('option'), patch: a.one('patch', a.one('live-patch')), ref: a.one('ref', a.one('live-ref')), ...(aPatch && { a: { patch: aPatch, ref: aRef ?? 'HEAD' } }), clear: a.flag('clear') });
     const t = p.options?.length ? findOption(p, a.one('option')) : p;
-    console.log(t?.live ? `LIVE ${p.id}${p.options?.length ? ` option ${t.name}` : ''}: B = baseline + ${t.live.patch} @ ${t.live.blob.slice(0, 12)} (${t.live.files.length} file(s)); the console's "Try it" panel serves it` : `LIVE ${p.id}${p.options?.length ? ` option ${t?.name}` : ''}: removed`);
+    const aText = t?.live?.a ? `; A = baseline + ${t.live.a.patch} @ ${t.live.a.blob.slice(0, 12)} (${t.live.a.files.length} file(s))` : '';
+    const warn = liveAWarning(t?.live);
+    if (warn) console.error(`warning: ${warn}`);
+    console.log(t?.live ? `LIVE ${p.id}${p.options?.length ? ` option ${t.name}` : ''}: B = baseline + ${t.live.patch} @ ${t.live.blob.slice(0, 12)} (${t.live.files.length} file(s))${aText}; the console's "Try it" panel serves it` : `LIVE ${p.id}${p.options?.length ? ` option ${t?.name}` : ''}: removed`);
     const u = await serverUrl();
     if (u) console.log(`on the user console ${new URL(`proposals#${p.id}`, u).href}`);
     return 0;
