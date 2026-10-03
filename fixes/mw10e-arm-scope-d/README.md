@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft. Behaviour checked in Chrome. P-071 phone block done (G, n = 3 per arm): D 0/3 collapse, listener churn not separated-worse, D2 flagged pending Timeline. B1 not reproduced (V 0/3).
+**Status:** draft. Behaviour checked in Chrome. P-071 phone block done (G, n = 3 per arm): D 0/3 collapse, listener churn not separated-worse, D2 flagged pending Timeline. B1 not reproduced at 37-38.6 °C (V 0/3); reopened by heat: hot-held block P-073 (card below, pre-data). D's land gate: D2 attribution + P-073.
 **Stage:** F (round 2 for review-f3-arm-scope: B2 fix, B1 open)
 **Device class / gate:** touch-only (G/F)
 **Driver(s) behind the claims:** Chrome CDP touch (behaviour), Simulator WDA-sim G (counts)
@@ -222,12 +222,107 @@ record is committed (N1). Scored from iphone-runner's `out/p071/score-p071.json`
 **Reading under the card**
 - **V clean → B1 is not reproduced under this script and stays UNRESOLVED.** It goes to the lead and the reviewer,
   and there is no second block without a new question.
-- P-036's capped V runs (2/2) differed from these 9 in heat and script. P-036's V1 ran at 38.7-41.2 °C, V2 at
-  42.6-43.3 °C after an unparked gap, and both ran under arm-scope-touch-v1. Here the phone was at 37.1-38.6 °C,
-  parked between runs. Whether heat or the script state explains the difference is UNRESOLVED.
+- P-036's capped V runs (2/2) differed from these 9 in heat and script. P-036's V1 ran at 40.3-41.2 °C (battery log,
+  V1 start 40.29; review round 2), V2 at 42.6-43.3 °C after an unparked gap, and both ran under arm-scope-touch-v1.
+  Here the phone was at 37.1-38.6 °C, parked between runs. Whether heat or the script state explains the difference
+  is UNRESOLVED.
+- **The question that reopens B1** (lead, 05:5xZ, after review round 2): does V collapse at the capped pin when the
+  phone is at 40-41 °C, P-036's temperature? It goes to the hot-held block P-073 below, not to a disclosed risk.
 - D shows no pin collapse and no separated-worse listener churn, with D2 flagged pending attribution.
 - The card's decision rule has no branch for "V clean, D clean". Whether D goes on to the P-036 confirmation and the
   F swipe is the lead's call.
+
+## P-073 prediction card: B1 hot-held, C / V / D under arm-scope-touch-v1 (registered before any phone data)
+
+Asked by the lead after review round 2 (05:5xZ): P-071 ran at 37.1-38.6 °C, and P-036's V-only collapses ran at
+40.3-43.3 °C under another script. This block asks one question: **does V collapse at the capped pin when the phone
+is at 40-41 °C, and does D?** Second read: mgmt-ops-9 and review-f3-arm-scope; the lead signs. Id P-073 from mgmt-ops-9.
+
+**What the P-036 records already say** (desk check of iphone-runner's gesture records, no device time; OBSERVED, in
+our setup, cause unknown):
+- arm-scope-touch-v1 ends in one of two states, decided by where the last transit pass lands:
+  - **capped:** settle at y 5215-5216, the end loop runs to its 10-pass cap ("max/10"), so 10 pushes go into the pin
+    over ~49 s, then the 2 end pushes;
+  - **uncapped:** settle at y 5220-5222, `atEnd` is true after 1 pass, and only the 2 end pushes follow (~9-12 s at
+    the pin in all).
+- **Every P-036 V collapse came in a capped run.** Capped V 2 of 2 collapsed (V1 start 40.29 °C, onset 4.3 s after
+  pin arrival, ~0.6 s after the 2nd pin push's lift; V2 start 42.59 °C, onset at arrival). Uncapped V 0 of 6 (V3 39.89,
+  V4 39.79, wV, attempt-1's wV, and attempt-1's voided V1/V2 at 38.2-39.8 °C). Capped C 0 of 5 (C2 38.69, C4 40.0, wC, attempt-1's
+  wC and voided C1).
+- Cap rates in P-036: V 2 of 8 runs, C 5 of 7 (warm-ups and voided runs included).
+- P-071 (pin-hold-v2) capped all 13 runs at 5212-5219, with 13 pushes into the pin, at 37.1-38.6 °C: V 0 of 3.
+- So in V, "capped" and "≥ 40.3 °C" have only ever come together. The zone strokes before the pin (in
+  arm-scope-touch-v1, not in pin-hold-v2) are a third difference. This block holds heat and script at P-036's values.
+- The script's own idle phase (3 s at the top after reload) ran at 58.8-59.6 fps in every valid P-036 run, V2 at
+  42.6 °C included.
+
+**Card**
+- **Builds.** As P-071: snapshot b1789284481295-4ad4a84a, CSS c6aad94b455f; C = `aw1-10e` (JS 3e2f599a1632),
+  V = `mw10e-arm-scope-c` (JS c6d3590576a7, the positive control: B1 was only ever seen in V), D = this build
+  (JS 999c4497f37e). Immutable copies from `out/snapshots/`, one port per arm, plain http. New ports, never used by
+  another build (F-115).
+- **Driver.** G, `fixes/morph-webkit/gestures/arm-scope-touch-v1.json` unchanged (compiler v2 hash d72ee13644cc),
+  the P-036 script. Timeline off in counted runs, as in P-036.
+- **Counted run = capped run.** A run counts only when its end loop ends "max/10", it settles at y 5212-5219 before
+  the `end` mark, and the pin pushes are prevented (≥ 90 % of their touchmoves; P-036's collapsed V1 and V2 had every
+  pin touchmove prevented, 34-47 per push, so this cannot drop a collapsed run). An uncapped run is listed with its
+  temperature and windows, is never in the verdict, and its arm is re-run in place (the C2 precedent in P-036).
+- **Order.** Rotated Latin square C V D / V D C / D C V, n = 3 counted per arm, 9 counted runs. One uncounted
+  warm-up per arm's port first (it may be cold; P-071's wD).
+- **Budget.** At most 20 runs in all (counted, uncapped re-runs and voids; warm-ups and sentinels not included) and
+  100 min of block time. Each run in the runner's own `--no-timing` hold. When the budget ends first, the block is
+  scored on what was counted (an arm with < 3 counted runs is read by the arm rule on those, and 0 of 1 or 0 of 2 is
+  "not enough", reported as inconclusive). With P-036's cap rates, V may need about 2 attempts per counted run.
+- **Heat, the band.** Battery temperature (the runner's battery read, logged at the start and end of every run) must
+  be **40.0-41.0 °C at each run's start**, the moment the script's reload is sent. A run that starts outside the band
+  is void and re-run in place.
+  - **Warming method, the same for every arm:** uncounted W cycles (`iphone.mjs run --driver window`) on the plain
+    baseline page (`site-pretty`, its own port, never an arm's port), the method of `research/phone-heat/README.md`
+    "Below 36.0 °C", until the battery reads ≥ 40.0 °C. Then open the arm's URL and start. A run warms the phone by
+    ~0.5-0.9 °C (P-036 C1 +0.6, V1 +0.9), so between runs the phone is parked and cools with `wait.mjs phone-temp
+    --below 41.0` (≤ 10 min), then is warmed again on the baseline page if it fell under 40.0. Each run records
+    `start: direct | cooled | warmed`.
+  - **P-036's unparked dwell is not reproduced on purpose.** V1 collapsed with no dwell before it (C1 then V1 in
+    one hold, 40.29 °C), so the dwell is not needed for the collapse; heat is the variable here, and it is brought in
+    the same way for every arm, on a page that is no arm. Safari is parked after every run.
+- **Validity per run.** Low Power Mode recorded; on = void. The script's idle phase (500 ms after the `idle` mark to
+  `z1`) must run at ≥ 57 fps (P-036 valid runs 58.8-59.6, the 42.6 °C V2 included), else void: this catches Low
+  Power Mode and a throttled phone, and it is read before the pin, so it cannot see the collapse.
+- **Sentinel.** The S sentinel stays (§5.2): it does not conflict with a hot phone. S/W checks passed with 0 failures
+  at 36.4-41.5 °C (`fixes/mw10e-arm-scope-c/README.md`), and P-036's S-end passed at 40.7 °C. It runs on C, its own
+  port, uncounted, once after the warm-ups with the phone in the band, and once at the block end; pass at bottom ≥ 58
+  and scroll ≥ 44 fps. Cooling to 38 °C would leave the band, so a failing sentinel voids every run since the last pass
+  and **stops the block** (no cool-and-restart); the lead decides on a re-run.
+- **Metric, collapse (as P-071).** Per counted run, from pin arrival (the first frame at y ≥ 5200) to the end of the
+  run, fps in consecutive 2 s windows. A run is **collapsed** when 2 consecutive windows are under 30 fps. An arm
+  **collapses** at ≥ 2 of 3, is **clean** at 0 of 3, and 1 of 3 is inconclusive.
+  - **Told apart from a dip like P-071's C3**, as a second reading: a collapsed run is also tagged **sustained** when
+    ≥ 50 % of its windows are under 30 fps (P-036 V1 27 of 29, V2 35 of 35; P-071 C3 2 of 36), else **transient**.
+    The decision uses the P-071 rule. If an arm's verdict changes when only sustained runs count, the result is
+    "rule-sensitive" and goes to the lead with both readings.
+  - Also reported per run, not in the verdict: onset time after pin arrival and after the nearest pin push's lift,
+    the minimum window, and the start/end temperature.
+- **Attribution, after the end sentinel.** One Timeline run (`Page.disable` → `Page.enable` → `Timeline.start`) on
+  a capped V in the band if V collapsed, and on D if any D run collapsed, naming the records in the collapsed frames.
+- **Predictions.**
+  - C: clean ~80 %, inconclusive ~15 %, collapses ~5 %.
+  - V: collapses ~50 %, clean ~35 %, inconclusive ~15 %. (For: 2 of 2 capped hot V runs in P-036. Against: n = 2, and
+    P-071's capped cool V 0 of 3 leaves heat and the zone strokes both open.)
+  - D: any counted D run collapsed ~20 %. Given V collapses: D clean ~60 %.
+  - All 9 counted runs inside the budget ~65 %.
+- **Decision (lead, registered before data).**
+
+  | V | D | reading |
+  |---|---|---|
+  | collapses | clean | D fixes B1: on to the P-036 confirmation on D, then the F swipe, then the land request (with the D2 gate) |
+  | clean | clean | heat does not reproduce B1 under this script; B1 stays UNRESOLVED; landing with B1 as a disclosed risk is the lead's call |
+  | any | any counted run collapsed | F3 does not land as is (next: build E, window-only touch listeners during the morph; Simulator and Chrome review before any phone time) |
+  | inconclusive (1 of 3) or not enough | clean | to the lead, no build decision |
+
+  - C collapses (≥ 2 of 3): the collapse is not V-specific; B1 is re-framed with the lead.
+  - A rule-sensitive verdict goes to the lead with both readings.
+- **n.** At most 3 counted per arm: a mechanism and regression check, not a gain block. Nothing from it goes to the
+  user as fact without the attribution run.
 
 ## Review round 1, non-blocking items: where each went
 
@@ -284,6 +379,9 @@ record is committed (N1). Scored from iphone-runner's `out/p071/score-p071.json`
    no phone time until E passes the Simulator and a Chrome review.
 2. P-036's card part transfers by argument: pre-morph D is byte-for-byte F3's listener set, and the zone strokes never
    arm the window. A confirmation run of P-036 on D (≥2 V-arm runs against C) is the honest minimum before landing.
+   - Outcome (P-071): V clean, so B1 was not reproduced at 37-38.6 °C. The lead (05:5xZ) reopened it on heat: the
+     hot-held block P-073 (card above), C / V / D at 40-41 °C under arm-scope-touch-v1. D's gate before landing is
+     the D2 Timeline attribution plus P-073; item 2 waits for both.
 3. The F swipe stays postponed until 1 and 2 are done.
 4. The Chrome regression A/B (`fix.mjs ab`) is not needed for the touch change: Chrome has no touch on the desktop
    A/B. It is deferred under the timing rule in any case.
