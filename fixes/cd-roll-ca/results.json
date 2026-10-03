@@ -1,22 +1,35 @@
 {
  "topic": "cd-roll-ca",
  "kind": "counts-and-positions (no timing; timing A/Bs deferred by the user 2026-10-02)",
- "date": "2026-10-03T01:31:55.758Z",
+ "date": "2026-10-03T02:17:12.113Z",
  "config": {
   "baselineStatus": "snapshot   b1789284481295-4ad4a84a",
   "stackedOn": "cd-strip (arm b) on st6-rb2",
   "baseJsSha256": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
-  "buildJsSha256": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
+  "buildJsSha256": "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5",
   "chrome": "Chrome/154.0.8037.97, 430x932 DPR 3 mobile, CPU 1x, served --vendors=local --latency 150 via fix.mjs serve",
   "webkit": "iOS Simulator fw-sim 15 Pro Max, Mobile Safari, Timeline counts (never times, F-084)",
+  "buildJsSha256Round1": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
+  "snapshots": {
+   "dir": "out/cd-roll-ca/snap/{C,V}",
+   "hashes": [
+    "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830  C/_app/immutable/nodes/2.DyWL8TcE.js",
+    "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  C/_app/immutable/assets/2.gBuqKVzi.css",
+    "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5  V/_app/immutable/nodes/2.DyWL8TcE.js",
+    "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V/_app/immutable/assets/2.gBuqKVzi.css"
+   ],
+   "serve": "sh out/cd-roll-ca/serve-snap.sh"
+  },
   "measurementCodeChanged": false,
   "probes": [
    "fixes/cd-roll-ca/roll-probe.mjs",
    "fixes/cd-roll-ca/comp-check.mjs",
-   "fixes/cd-roll-ca/sim-counts.mjs"
-  ]
+   "fixes/cd-roll-ca/sim-counts.mjs",
+   "fixes/cd-roll-ca/hide-check.mjs"
+  ],
+  "buildsMeasured": "counts (comp-check, sim-counts) and h60c on round 1 9ac52b08 (round 2 only adds the cancel of the start-frame rAF in __crStop and the hide time from document.timeline: no per-frame or per-tick change); h60d, headed2, hide-check V and fix.mjs check on round 2 673b110d; h60b and headed on an earlier pre-hero-only build"
  },
- "verdict": "countdown rAF callbacks 108 -> 4 per 4 s at y 0 (Chrome) and 107-110 -> 4-5 (WebKit Sim); hero roll within 0.15 px of the original at every 60 Hz frame (original's own stamp-jitter variation up to 0.61 px); at 120 Hz the build keeps the 60 Hz path (27.7 px max vs the original at 120 Hz, known and user-accepted)",
+ "verdict": "countdown rAF callbacks 108 -> 4 per 4 s at y 0 (Chrome) and 107-110 -> 4-5 (WebKit Sim); hero roll within 0.15 px of the original's ideal 60 Hz frames and 0.64 px on the same jittery stamps at CPU 1x (the original's own stamp-jitter variation on regular frames up to 0.80 px); at 120 Hz (and, modelled, 80 Hz or after a late first frame) the build keeps the regular 60 Hz path (27.7 px max vs the original at 120 Hz, known and user-accepted); hidden tab (real, Chrome): pending rAF callbacks <= 2 like C (round 1: one more per hidden tick), start value on show = held value, first frame after show within 0.27 px of the original model",
  "chromeCounts": {
   "note": "4 s at y 0; p2 = every other animation frozen, p1 = paused once (the accent cycle restarts)",
   "base_frozen": {
@@ -38,7 +51,12 @@
    },
    "stripAnimations": {
     "instances": 0,
-    "compositeFailedSeen": 0
+    "compositingDecisions": {
+     "composited": 0,
+     "compositeFailed": 0,
+     "noDecision": 0
+    },
+    "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
    }
   },
   "build_frozen": {
@@ -60,7 +78,12 @@
    },
    "stripAnimations": {
     "instances": 4,
-    "compositeFailedSeen": 0
+    "compositingDecisions": {
+     "composited": 0,
+     "compositeFailed": 0,
+     "noDecision": 4
+    },
+    "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
    }
   },
   "base_pausedOnce": {
@@ -82,7 +105,12 @@
    },
    "stripAnimations": {
     "instances": 0,
-    "compositeFailedSeen": 0
+    "compositingDecisions": {
+     "composited": 0,
+     "compositeFailed": 0,
+     "noDecision": 0
+    },
+    "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
    }
   },
   "build_pausedOnce": {
@@ -104,7 +132,12 @@
    },
    "stripAnimations": {
     "instances": 4,
-    "compositeFailedSeen": 0
+    "compositingDecisions": {
+     "composited": 0,
+     "compositeFailed": 0,
+     "noDecision": 4
+    },
+    "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
    }
   }
  },
@@ -659,6 +692,198 @@
     }
    ]
   },
+  "headless60_round2": {
+   "mode": "build",
+   "headless": true,
+   "cpu": 1,
+   "browser": "Chrome/154.0.8037.97",
+   "frames": 2405,
+   "frameDtMedianMs": 16.7,
+   "frameDtP95Ms": 16.7,
+   "rolls": 82,
+   "keyframesMax": 343,
+   "errTickRolls": {
+    "n": 1087,
+    "maxPx": 0.6433,
+    "p95Px": 0.0245,
+    "p99Px": 0.0943
+   },
+   "errForcedRolls": {
+    "n": 1370,
+    "maxPx": 0.2954,
+    "p95Px": 0.0199,
+    "p99Px": 0.0664
+   },
+   "startValueDiffPx": {
+    "n": 82,
+    "maxPx": 0.0064,
+    "p95Px": 0.0016,
+    "p99Px": 0.0064
+   },
+   "origJitterTickPx": {
+    "n": 1087,
+    "maxPx": 0.7957,
+    "p95Px": 0.0294,
+    "p99Px": 0.1279
+   },
+   "origJitterForcedPx": {
+    "n": 1370,
+    "maxPx": 0.5479,
+    "p95Px": 0.0427,
+    "p99Px": 0.1544
+   },
+   "errVsIdeal60TickPx": {
+    "n": 1087,
+    "maxPx": 0.1524,
+    "p95Px": 0.014,
+    "p99Px": 0.0228
+   },
+   "errVsIdeal60ForcedPx": {
+    "n": 1370,
+    "maxPx": 0.8433,
+    "p95Px": 0.0355,
+    "p99Px": 0.139
+   },
+   "startValueDiffForcedPx": {
+    "n": 44,
+    "maxPx": 0.0064,
+    "p95Px": 0.0053,
+    "p99Px": 0.0064
+   },
+   "worstRolls": [
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 0.6433
+    },
+    {
+     "i": 9,
+     "from": 0,
+     "to": 9,
+     "forced": true,
+     "maxPx": 0.2954
+    },
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 0.2497
+    },
+    {
+     "i": 15,
+     "from": 2.1629,
+     "to": 9,
+     "forced": true,
+     "maxPx": 0.1646
+    },
+    {
+     "i": 14,
+     "from": 0,
+     "to": 5,
+     "forced": false,
+     "maxPx": 0.1301
+    }
+   ]
+  },
+  "headed120_round2": {
+   "mode": "build",
+   "headless": false,
+   "cpu": 1,
+   "browser": "Chrome/154.0.8037.97",
+   "frames": 3604,
+   "frameDtMedianMs": 8.3,
+   "frameDtP95Ms": 9.4,
+   "rolls": 68,
+   "keyframesMax": 343,
+   "errTickRolls": {
+    "n": 1749,
+    "maxPx": 29.5886,
+    "p95Px": 3.154,
+    "p99Px": 15.8782
+   },
+   "errForcedRolls": {
+    "n": 2471,
+    "maxPx": 21.4511,
+    "p95Px": 4.0377,
+    "p99Px": 11.1506
+   },
+   "startValueDiffPx": {
+    "n": 68,
+    "maxPx": 0.2038,
+    "p95Px": 0.019,
+    "p99Px": 0.2038
+   },
+   "origJitterTickPx": {
+    "n": 1749,
+    "maxPx": 60.1887,
+    "p95Px": 6.0194,
+    "p99Px": 24.3358
+   },
+   "origJitterForcedPx": {
+    "n": 2471,
+    "maxPx": 47.1387,
+    "p95Px": 5.7828,
+    "p99Px": 16.5528
+   },
+   "errVsIdeal60TickPx": {
+    "n": 1749,
+    "maxPx": 58.7873,
+    "p95Px": 3.6919,
+    "p99Px": 17.0694
+   },
+   "errVsIdeal60ForcedPx": {
+    "n": 2471,
+    "maxPx": 29.3551,
+    "p95Px": 3.9458,
+    "p99Px": 13.1571
+   },
+   "startValueDiffForcedPx": {
+    "n": 39,
+    "maxPx": 0.2038,
+    "p95Px": 0.1892,
+    "p99Px": 0.2038
+   },
+   "worstRolls": [
+    {
+     "i": 15,
+     "from": 0.0155,
+     "to": 9,
+     "forced": false,
+     "maxPx": 29.5886
+    },
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 29.3687
+    },
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 29.0907
+    },
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 25.3917
+    },
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 24.8089
+    }
+   ]
+  },
   "offlineModel": {
    "gridVsOriginal60HzMaxPx": {
     "oneStep": 0.0167,
@@ -672,9 +897,352 @@
    "durationMaxMs": 566.7
   }
  },
+ "hiddenTab": {
+  "note": "hide-check.mjs: headed Chrome, a second tab activated for ~3 s, 4 cycles; pending = wrapped requestAnimationFrame callbacks (logger excluded); OBSERVED, Chrome only",
+  "C": {
+   "servedHash": {},
+   "summary": {
+    "hiddenConfirmed": true,
+    "framesWhileHidden": 0,
+    "maxPendingWhileHidden": 2,
+    "maxPendingAtShow": 2,
+    "hiddenRolls": 0,
+    "maxStartErrPx": 0,
+    "maxFirstFrameErrPx": 0,
+    "errors": 0
+   },
+   "per": [
+    {
+     "k": 0,
+     "hiddenMs": 3068.1,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 2,
+      "atShow": 2,
+      "after1s": 1
+     },
+     "hiddenRolls": 0,
+     "gapRolls": 0,
+     "firstFrameAfterShow": []
+    },
+    {
+     "k": 1,
+     "hiddenMs": 3014.9,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 1,
+      "atShow": 1,
+      "after1s": 0
+     },
+     "hiddenRolls": 0,
+     "gapRolls": 0,
+     "firstFrameAfterShow": []
+    },
+    {
+     "k": 2,
+     "hiddenMs": 3017.8,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 2,
+      "atShow": 2,
+      "after1s": 0
+     },
+     "hiddenRolls": 0,
+     "gapRolls": 0,
+     "firstFrameAfterShow": []
+    },
+    {
+     "k": 3,
+     "hiddenMs": 3016.7,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 1,
+      "atShow": 1,
+      "after1s": 0
+     },
+     "hiddenRolls": 0,
+     "gapRolls": 0,
+     "firstFrameAfterShow": []
+    }
+   ]
+  },
+  "V0_round1": {
+   "servedHash": {},
+   "summary": {
+    "hiddenConfirmed": true,
+    "framesWhileHidden": 0,
+    "maxPendingWhileHidden": 3,
+    "maxPendingAtShow": 4,
+    "hiddenRolls": 12,
+    "maxStartErrPx": 0.396,
+    "maxFirstFrameErrPx": 3.293,
+    "errors": 0
+   },
+   "per": [
+    {
+     "k": 0,
+     "hiddenMs": 3014.5,
+     "framesWhileHidden": 0,
+     "rollingAtHide": true,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 3,
+      "atShow": 3,
+      "after1s": 0
+     },
+     "hiddenRolls": 3,
+     "gapRolls": 3,
+     "firstFrameAfterShow": [
+      {
+       "i": 7,
+       "rollAt": "hidden tick",
+       "dtMs": 186.5,
+       "build": -39.858,
+       "originalModel": -39.734,
+       "errPx": 0.125
+      }
+     ]
+    },
+    {
+     "k": 1,
+     "hiddenMs": 3017.6,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 3,
+      "atShow": 3,
+      "after1s": 0
+     },
+     "hiddenRolls": 3,
+     "gapRolls": 4,
+     "firstFrameAfterShow": [
+      {
+       "i": 7,
+       "rollAt": "show tick",
+       "dtMs": 4.5,
+       "build": -321.278,
+       "originalModel": -321.278,
+       "errPx": 0
+      }
+     ]
+    },
+    {
+     "k": 2,
+     "hiddenMs": 3021.7,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 3,
+      "atShow": 3,
+      "after1s": 0
+     },
+     "hiddenRolls": 3,
+     "gapRolls": 6,
+     "firstFrameAfterShow": [
+      {
+       "i": 5,
+       "rollAt": "show tick",
+       "dtMs": -1,
+       "build": -324,
+       "originalModel": -324,
+       "errPx": 0
+      },
+      {
+       "i": 6,
+       "rollAt": "show tick",
+       "dtMs": -1.3,
+       "build": 0,
+       "originalModel": 0,
+       "errPx": 0
+      },
+      {
+       "i": 7,
+       "rollAt": "show tick",
+       "dtMs": -1.8,
+       "build": -108,
+       "originalModel": -108,
+       "errPx": 0
+      }
+     ]
+    },
+    {
+     "k": 3,
+     "hiddenMs": 3017,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 1,
+      "maxWhileHidden": 3,
+      "atShow": 4,
+      "after1s": 0
+     },
+     "hiddenRolls": 3,
+     "gapRolls": 3,
+     "firstFrameAfterShow": [
+      {
+       "i": 7,
+       "rollAt": "hidden tick",
+       "dtMs": 18.7,
+       "build": -215.275,
+       "originalModel": -211.982,
+       "errPx": 3.293
+      }
+     ]
+    }
+   ]
+  },
+  "V_round2": {
+   "servedHash": {},
+   "summary": {
+    "hiddenConfirmed": true,
+    "framesWhileHidden": 0,
+    "maxPendingWhileHidden": 2,
+    "maxPendingAtShow": 2,
+    "hiddenRolls": 13,
+    "maxStartErrPx": 0,
+    "maxFirstFrameErrPx": 0.274,
+    "errors": 0
+   },
+   "per": [
+    {
+     "k": 0,
+     "hiddenMs": 3014.6,
+     "framesWhileHidden": 0,
+     "rollingAtHide": true,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 1,
+      "atShow": 1,
+      "after1s": 0
+     },
+     "hiddenRolls": 3,
+     "gapRolls": 3,
+     "firstFrameAfterShow": [
+      {
+       "i": 7,
+       "rollAt": "hidden tick",
+       "dtMs": 222.7,
+       "build": -146.022,
+       "originalModel": -145.931,
+       "errPx": 0.091
+      }
+     ]
+    },
+    {
+     "k": 1,
+     "hiddenMs": 3026.5,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 2,
+      "atShow": 2,
+      "after1s": 0
+     },
+     "hiddenRolls": 4,
+     "gapRolls": 5,
+     "firstFrameAfterShow": [
+      {
+       "i": 6,
+       "rollAt": "hidden tick",
+       "dtMs": 897,
+       "build": -72,
+       "originalModel": -72,
+       "errPx": 0
+      },
+      {
+       "i": 7,
+       "rollAt": "show tick",
+       "dtMs": 4.5,
+       "build": -76.082,
+       "originalModel": -76.082,
+       "errPx": 0
+      }
+     ]
+    },
+    {
+     "k": 2,
+     "hiddenMs": 3022.2,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 1,
+      "atShow": 1,
+      "after1s": 0
+     },
+     "hiddenRolls": 3,
+     "gapRolls": 4,
+     "firstFrameAfterShow": [
+      {
+       "i": 7,
+       "rollAt": "show tick",
+       "dtMs": 2.2,
+       "build": -215.341,
+       "originalModel": -215.35,
+       "errPx": 0.009
+      }
+     ]
+    },
+    {
+     "k": 3,
+     "hiddenMs": 3018.5,
+     "framesWhileHidden": 0,
+     "rollingAtHide": true,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 1,
+      "atShow": 1,
+      "after1s": 0
+     },
+     "hiddenRolls": 3,
+     "gapRolls": 3,
+     "firstFrameAfterShow": [
+      {
+       "i": 7,
+       "rollAt": "hidden tick",
+       "dtMs": 88.8,
+       "build": -211.843,
+       "originalModel": -212.117,
+       "errPx": 0.274
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "pathCostPerTick": {
+  "medianMs": 0.04,
+  "p95Ms": 0.073,
+  "oneStepMedianMs": 0.035,
+  "note": "offline Node 24 micro-benchmark of __crPath (all 90 from/to pairs x 20) on this Mac under load; OBSERVED, not a page timing"
+ },
  "regressions": {
-  "check": "fix.mjs check cd-roll-ca --on cd-strip --viewport mobile: morph reached both, 0 errors, 0 4xx, elements 1542 -> 1542, pixel diff top 0.19 / middle 0.01 / bottom 0.39 % (noise class 0-0.4 %)",
-  "raw": "out/check/cd-roll-ca/2026-10-03T01-30-19-691Z/check.json"
+  "check": "round 2 (673b110d): fix.mjs check cd-roll-ca --on cd-strip --viewport mobile: morph reached both, 0 errors, 0 4xx, elements 1543 -> 1543, pixel diff top 0.14 / middle 0.01 / bottom 0.51 % (bottom above the 0.4 % band: the gradient accent words in another colour phase, looked at; no countdown in that shot)",
+  "raw": "out/check/cd-roll-ca/2026-10-03T02-14-47-205Z/check.json",
+  "round1": "out/check/cd-roll-ca/2026-10-03T01-30-19-691Z/check.json (top 0.19 / middle 0.01 / bottom 0.39 %)"
  },
  "raw": [
   "out/cd-roll-ca/probe-build-h60.json",
@@ -684,6 +1252,9 @@
   "out/cd-roll-ca/probe-base-h60.json",
   "out/cd-roll-ca/probe-base-headed.json",
   "out/cd-roll-ca/comp-check-*.json",
-  "out/cd-roll-ca/sim-counts-*.json"
+  "out/cd-roll-ca/sim-counts-*.json",
+  "out/cd-roll-ca/probe-build-h60d.json",
+  "out/cd-roll-ca/probe-build-headed2.json",
+  "out/cd-roll-ca/hide-{C,V0,V}.json"
  ]
 }

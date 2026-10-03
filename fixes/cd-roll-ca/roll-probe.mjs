@@ -17,6 +17,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { launchChrome, CDP, gotoAndSettle, sleep, tempProfileDir } from '../../tools/lib/cdp.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -99,7 +100,13 @@ try {
   await page.eval('window.__crLog.rec = false');
   const log = await page.eval('window.__crLog');
   const meta = await page.eval(`({ ua: navigator.userAgent, dpr: devicePixelRatio, w: innerWidth, h: innerHeight })`);
-  out = { tool: 'fixes/cd-roll-ca/roll-probe.mjs', mode, url, browser: chrome.browser, headless, cpu, seconds, jumps, seed: seed0, meta, jumpLog, log };
+  // sha256 of the served JS/CSS bodies (plain http snapshot servers; null when the fetch fails, e.g. self-signed https)
+  const servedHash = {};
+  for (const f of ['/_app/immutable/nodes/2.DyWL8TcE.js', '/_app/immutable/assets/2.gBuqKVzi.css']) {
+    try { servedHash[f] = createHash('sha256').update(Buffer.from(await (await fetch(new URL(f, url))).arrayBuffer())).digest('hex'); } catch { servedHash[f] = null; }
+  }
+  console.error('servedHash', JSON.stringify(servedHash));
+  out = { tool: 'fixes/cd-roll-ca/roll-probe.mjs', mode, url, browser: chrome.browser, headless, cpu, seconds, jumps, seed: seed0, meta, served, servedHash, jumpLog, log };
 } finally {
   await page.close(); cdp.close(); await chrome.close();
 }

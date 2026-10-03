@@ -7,7 +7,7 @@
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -4030,6 +4030,60 @@
+@@ -4030,6 +4030,61 @@
    ),
    /*cd-strip: the strip's offset in px for spring value v and cell height c (the one place that maps value to offset)*/
    __cdStripY = (v, c) => -((((v % 10) + 10) % 10) * c),
@@ -54,7 +54,8 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    typeof document < `u` &&
 +    document.addEventListener(`visibilitychange`, () => {
 +      document.hidden
-+        ? ((__crHideAt = performance.now()), (__crNoFrames = !0))
++        ? ((__crHideAt = typeof document.timeline?.currentTime == `number` ? document.timeline.currentTime : performance.now()),
++          (__crNoFrames = !0))
 +        : requestAnimationFrame(() => {
 +            document.hidden || (__crNoFrames = !1);
 +          });
@@ -68,7 +69,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    QE = h(
      `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
    );
-@@ -4039,15 +4093,63 @@
+@@ -4039,15 +4094,64 @@
      a = N(I(o(() => s(i)))),
      c = N(0),
      /*countdown-idle-raf: false while the countdown is off-screen*/
@@ -78,7 +79,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    __crEl = null,
 +    __crRoll = null,
 +    __crStop = () => {
-+      __crRoll && (__crRoll.A?.cancel(), (__crRoll = null));
++      __crRoll && (__crRoll.A?.cancel(), cancelAnimationFrame(__crRoll.F), (__crRoll = null));
 +    },
 +    /*cd-roll-ca: (re)start the roll's animation at its own t0 (so a restart for a new cell height continues in place).
 +    Keyword easing linear between the points: composited in Chrome and WebKit (no steps(), no linear() with points);
@@ -121,7 +122,8 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        (GE(o - n) with o < n steps nothing and sets n = o); one rAF per roll moves the start there, never per frame*/
 +      if (__crK) {
 +        let R0 = __crRoll;
-+        requestAnimationFrame((t) => {
++        /*at most one pending callback per digit, like the original: __crStop cancels it (a hidden tab keeps ticking)*/
++        R0.F = requestAnimationFrame((t) => {
 +          R0 === __crRoll && t < R0.t0 && ((R0.t0 = t), R0.A && (R0.A.startTime = t));
 +        });
 +      }
@@ -134,7 +136,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        n = performance.now(),
        r = window.requestAnimationFrame(function i(o) {
          let s = GE(t, e, o - n);
-@@ -4061,6 +4163,9 @@
+@@ -4061,6 +4165,9 @@
      g = (n) => {
        var r = __cdStripT();
        let o;
