@@ -5,8 +5,8 @@
 
 **Status:** P-077 pre-registered runs made and scored: **PASS in Chrome and in the Simulator** (less-work gate met). Pixels
 are not identical, so the user decides the look (proposal PR-009 on the console, options both / sweep-only /
-glint-only, recommended both); the phone no-worse check is the lead's,
-after the user's choice.
+glint-only, recommended both). Phone no-worse check, condition B: "no worse, threshold-sensitive (twins carried by
+the shared onset frame, V1 only, n = 2)". The lead accepted it; see "Phone no-worse block and the scroll-start check".
 **Stage:** F/V (D card P-077 signed by the lead; results below)
 **Gate:** less-work landing rule (user T-029 #30, `memory/less-work-landing-rule.md`): fewer work counts on the full page
 in Chrome and the Simulator, plus one short phone no-worse check. The pixel-identical rule still applies, and both parts
@@ -294,7 +294,9 @@ lead runs the phone no-worse check.
 ## Phone no-worse block and the scroll-start check
 
 **Phone block** (iphone-runner, condition B, hold h121509; scored by ops):
-- The registered rule passes: V's worst run has 2 frames > 50 ms, against C's best of 1 plus a margin of 1. Bottom fps is
+- **Verdict, as the lead accepted it: "no worse, threshold-sensitive (twins carried by the shared onset frame, V1 only,
+  n = 2)".** This is not a clean pass.
+- On the registered rule alone: V's worst run has 2 frames > 50 ms, against C's best of 1 plus a margin of 1. Bottom fps is
   59.7 against 60.2 minus 2.
 - Both ±4 ms twins fail, so the result is threshold-sensitive. The extra frame is V1's scroll-onset frame: 64 ms, ending
   at y 0.
