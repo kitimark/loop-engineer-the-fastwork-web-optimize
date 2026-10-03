@@ -954,6 +954,46 @@ the page.
   - top C has up to 2.
 - Falsifiers: phone row 2 is separated with V below, so the phone falsifier is not met.
 
+## Restack of part (b) on cd-strip (planned 2026-10-03; lead approved; not built yet)
+cd-strip (F-153) replaces part (a): each digit becomes one sliding strip instead of 10 faces. Part (b), the hidden-skip
+gate, rewrites the same `$E` body, so the plain-baseline `patch.diff` above does not apply on top of it. (b) will be
+rebuilt once cd-strip lands, on the lead's order.
+
+**Stack order (agreed with fix-cd-roll-ca and the lead):** st6-rb2 → cd-strip → cd-roll-ca → (b).
+- If (b) is rebuilt before cd-roll-ca lands, it goes on cd-strip alone.
+- Once cd-roll-ca lands, (b) is rebuilt on it.
+
+**How the gate and cd-roll-ca's Web Animation roll interact (hero clock):**
+- *Gate position.* At the top of cd-roll-ca's spring effect in `$E`, before its `YE.current || !s(__cdAnimate)`
+  branch, or folded into that branch.
+- *Hidden, target change.* Call `__crStop()` (cancel any running roll; `__crRoll = null`) and hold the target in
+  `__cdV`. Nothing else runs: no `animate()`, no `z(a, …)`, no inline transform write, no rAF.
+  - This removes exactly the per-tick writes that C still makes off-screen. In cd-roll-ca's snap path that is one
+    `a` write per tick, and through cd-strip's template effect one strip transform write per changed digit.
+- *Hidden edge, mid-roll.* `__crStop()` again. The strip keeps its last transform while off-screen, which nobody sees.
+- *Show.* One `z(a, __cdV, !0)` through the state, then clear `__cdV`. There is no direct style write and no animation.
+  - Why through the state: cd-roll-ca's next roll takes its start value from `a` (velocity 0). A direct style write
+    would leave `a` stale, and the next roll would start from the wrong value.
+  - The show frame is the snapped target, which is C's own off-screen snap. So the show frame never animates from a
+    stale value.
+- *Don't read `a` mid-roll.* Under cd-roll-ca, `a` is already the target during a roll (the animation shows the
+  path), so `a` is not the value on screen.
+- *No reset needed.* cd-roll-ca's `__crHideAt`/`__crNoFrames` track only a hidden tab (`visibilitychange`), not this
+  gate. Its one-shot `startTime` rAF does nothing once `__crRoll` changes.
+- *Panel clock.* `.countdown.inverse` keeps the rAF spring in cd-roll-ca, so the `r.active` panel gate is unchanged.
+
+**Checks (no timing run, no phone block):**
+- *Pixel parity.* `fixes/cd-strip/pixels.mjs` frozen frames, C vs V on the same base.
+  - Hero: at top and after resume.
+  - Panel: at m 0.25, 0.5, 0.75 and 1.
+  - The show frame: the first frame after the hero comes back. If cd-roll-ca has landed, this check runs with C =
+    cd-strip + cd-roll-ca.
+  - Pass: 0 px on the hero, and only noise-class shots on the panel.
+- *Simulator counts.* cd-strip's `sim.mjs` (clock Paint records, layers) and `f146.mjs` (mutations, heavy Layouts).
+  - Expected at pastHero: V has about 0 strip style writes per 4 s.
+  - Expected at top: V equals C.
+  - No paintCount deltas (F-149).
+
 ## Overlap with other topics (review r1 Blocking 3)
 
 - **Topic #1 `countdown-idle-raf`** (on main, ACCEPT-WITH-NOTES, patch v03) edits the same hunks: `$E` 3824, the
