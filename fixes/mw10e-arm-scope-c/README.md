@@ -122,3 +122,55 @@ What it is (OBSERVED, in our setup, cause unknown):
 - Everything else is unchanged: arms, script hash d72ee13644cc, order C V V C C V V C, void rules, scoring, decision
   rule, quiet Mac, and the stop rule.
 - The stop rule now applies to the S sentinel: if it fails on a cool phone and a quiet Mac, the block stops.
+
+The lead signed this amendment at 23:58Z (S sentinel on C, after the warm-ups and after C4).
+
+## P-036 result (G driver, 2026-10-03 00:28-01:10Z): card part PASS, every zone overlaps
+
+Run by iphone-runner on the signed plan, from the immutable copies (served hashes: C JS 3e2f599a1632, V JS
+c6d3590576a7, CSS c6aad94b455f). Script arm-scope-touch-v1, compiler v2 hash d72ee13644cc. Tools at main df0e21f,
+no rebase mid-block. Low Power Mode off. Scored by fix-nav-morph with the registered scorer. Derived numbers only:
+no gesture record is committed (N1).
+
+**Block validity**
+- Order C1 V1 | V2 C2 C3 V3 | V4 C4, i.e. C V V C C V V C. The bars mark the 3 holds, each in the runner's own
+  `--no-timing` hold. One uncounted warm-up per port (wC, wV) came first.
+- **Sentinels:** S-open PASS (bottom 60, scroll 58.9 fps, 38.9 °C). S-end PASS (bottom 60.2, scroll 57.1 fps,
+  40.7 °C). Both pass, so no counted run is voided.
+- **Counted runs:** all 8 are valid. Every zone has its 3-4 scored strokes, stroke maps and touch sequences agree,
+  and no timestamp was out of order.
+- **C2 was re-run in place.** The first C2 was killed at stroke 7 of 16 by the runner's job time limit (not a page
+  or phone fault). It is void and kept apart; the re-run kept the order.
+- **The runner's deviations, all disclosed in its run log:**
+  - **Heat:** Safari sat unparked for ~6 min between holds 1 and 2, so V2 ran on the hottest phone of the block
+    (42.6 to 43.3 °C). Every other counted run ran at 38.7-40.7 °C.
+  - **Mac load:** V2 and V4 started at load1 20 and 26. Those were decaying averages left by an earlier group of
+    shared jobs; load1 was 2.3-4.5 inside the holds.
+
+**Registered metric:** median touch-to-scroll per zone per run, in ms.
+
+| zone | C1 | C2 | C3 | C4 | V1 | V2 | V3 | V4 | med C | med V | V-C | verdict |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Z1 (< 1900) | 201 | 193 | 200.5 | 192.5 | 192.5 | 208.5 | 191.5 | 190 | 196.8 | 192 | -4.7 | overlap |
+| Z2 (2100-3300) | 192.5 | 193.5 | 191 | 194 | 192.5 | 196.5 | 191 | 196.5 | 193 | 194.5 | +1.5 | overlap |
+| Z3 (>= 3800) | 190 | 187 | 188 | 192 | 191 | 186 | 187 | 193 | 189 | 189 | 0 | overlap |
+
+- No zone is SEPARATED-WORSE, BETTER or FLAGGED. In no zone are one arm's runs all above the other's.
+- Without V2, the hot run, Z1 is still overlap: V 190-192.5 against C 192.5-201, which touch at 192.5. Every other
+  zone is unchanged.
+- The ~190 ms level is the same in both arms. It is the G driver's touch-down-to-first-scroll path, not the page.
+
+**Info only, not part of the card**
+- **First touchmove cancelable** (share of zone strokes, every run): Z1 C 0/4 vs V 4/4; Z2 and Z3 all strokes in
+  both arms. The phone shows the same dispatch effect as the Simulator check above (OBSERVED, in our setup).
+- **No cost from that cancelable dispatch in Z1.** Queue delay (median per run) is 14.5-17 ms in C and 15-17 ms in
+  V. Z1 touch-to-scroll is not higher in V.
+- So the pre-data expectation that Z1 might be FLAGGED or WORSE did not happen in this block.
+- **Frames during Z1 strokes (dt > 50 ms per run):** C 2, 1, 3, 2; V 1, 16, 3, 2.
+  - V2's 16 is the hot run: 42.6-43.3 °C after the unparked gap, and that run took ~2.5 min against ~1.1-1.7 for
+    the others. The other three V runs sit inside C's range.
+  - This is a G run, so the counts compare only on ms thresholds (F-071).
+  - dt > 34 ms: C 15, 10, 13, 15; V 10, 22, 14, 13.
+
+**Decision (registered rule):** overlap in every zone, so the card part passes. Next is the F stage through the
+console (on mgmt-ops' word), then the independent review, then landing.
