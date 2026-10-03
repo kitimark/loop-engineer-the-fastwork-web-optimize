@@ -99,6 +99,36 @@ data was read** (the runs themselves were already queued or running; their outpu
 Widths: 375, 430, 768 (touch), 1024, 1440, and 430 with reduced motion (Chrome). Simulator: its 430-wide iPhone.
 Chrome positions at 430: y 0, 932, 1864, 2300, 2796, 3728, 4660, `fee` and `pain` centred.
 
+### Registration v2 (P-078 rev 2, overlay a5286ebc4cb6), before any v2 data
+
+The first scored census (768, post-registration, v1 overlay bf8ffd4ef7a3) gave a **MORE** under the registered rule:
+at the `near` position y 2500, rAF callbacks 0/0 (C1/C2) vs 3, 4 (V), floor 2. Cause: v1 requested one rAF per slide
+start (`fwCap`, stamping the slide's first frame for a later resume) also while the row is near and the DOM runs the
+slide itself. Main frames, style recalcs, paints and code calls were SAME there. Decision (as registered: "any MORE →
+find the cause; fix and re-register"): all v1 chains stopped at 09:58Z (census 1024 cut mid-run; 1440, 430r, the
+Simulator runs and the second Chrome census never ran), and the fix changed:
+
+- `fwSetS`: the stamping rAF only while the row is far (`fwNear` false); near, no rAF.
+- `fwNearChange` (row leaves): when a slide runs and has no stamp, keep the slide's real start (`startTime` of the
+  row's running animations, i.e. the engine's own start frame), falling back to `document.timeline.currentTime`.
+
+Every v1 result (identity 375-1440 + 430r, items, census 430/375/768) is now a pre-registration check of a superseded
+build; the claims rest on the v2 runs only. New identity trial `outin` (rot.mjs, simrot.mjs): the row is in view at a
+slide's start, 20 or 60 ms into the slide the page jumps out of the 50 % margin and 80 ms later back; the return frame
+and the following frames are judged like every other entry. The prediction set, the classes, the pooled rule, the
+decisions and the phone bound above stay as registered (tocard v2 05daca3beb58, unchanged).
+
+v2 probe hashes (copies in `out/rest-script/probes/`): rot.mjs 327ac6201edb, simrot.mjs 0129d599e985, run-ident.sh
+96294223f5d4, run-ic.sh a832833fa77a, run-items.sh 7aa7e6b0c757, simrun.sh 06fdcd881bb3, simhold.sh e5fa49b5be45
+(toolbar count only now), simcen.sh 40ec0426eb57, chainB.sh 75aa8ae4c04c (the run list; refuses to start unless the
+overlay is a5286ebc4cb6). Unchanged: analyse.mjs 03b2df89340e, census.mjs b6bc0a5516cb, simcensus.mjs 98eff8b1425e,
+items.mjs 5dd60d0d3e56, items-analyse.mjs e492ff4044d5, rocount.mjs a2874fa946b0, simtb.mjs 406a1d5e0f84.
+
+v2 run list (chainB.sh, one shared probe hold at a time): Chrome identity 430, 1024, 375, 768, 1440, 430r; items 430,
+1024; pain sequences 1440 (600↔1440 ×2), 1024 (768↔1024 ×2), 600→1440, with Chrome observer counts (rocount); Chrome
+census 430, 375, 768, 1024, 1440, 430r; Simulator toolbar observer count (normal session, WDA), Simulator identity
+records st6/fix and replays; Simulator census reps 1 and 2.
+
 ## Why it lags
 
 (to follow with the data)
