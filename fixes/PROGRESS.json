@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T14:06:00Z",
+ "updatedAt": "2026-10-03T14:30:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T14:30:00Z", "text": "The idle-animation fix has landed: the shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted (PR-009); the phone check found it no worse." },
   { "at": "2026-10-03T14:06:00Z", "text": "The idle-animation fix was rebuilt so other browsers keep today's look; a check showed it draws exactly like the version the phone already tested, so that phone result carries over." },
   { "at": "2026-10-03T14:05:00Z", "text": "Found a display bug in today's best build on the iPhone: past the end of the page, the menu bar, logo and buttons don't follow the menu's grow animation (phone and simulator; cause not yet known). Comparisons still stand; the fix is being built." },
   { "at": "2026-10-03T12:55:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) passed its short phone check at the phone's real \"Serious\" heat state: no worse. One run had a slightly longer first scroll frame, which the fix does not touch." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-02T23:50:00Z", "text": "The F3 robot-finger test stopped again before any counted run: the phone's check page was not smooth even on a cool phone, so this is not heat. It waits until fix-nav-morph finds the cause. The countdown timing test runs now, then the heat test." },
   { "at": "2026-10-02T23:45:00Z", "text": "Blind swipe test done: you picked today's best build as smoother than the original, at the top and in the menu change. It still lags a little; de-gpu looks at whether the GPU can take more of the work. Next on the phone: the F3 robot-finger re-run." },
   { "at": "2026-10-02T23:35:00Z", "text": "You chose the short phone timing test of the countdown fix on its own (about 20 minutes plus cooling). It runs after the F3 robot-finger re-run and before the heat test. A GPU-friendly look at the counting animation is a separate idea, kept out of that test." },
-  { "at": "2026-10-02T23:30:00Z", "text": "You said yes to two phone tests: a blind swipe test of the original page against today's best build, now; and one full phone timing run of wave 2 once it is built and checked. Other timing stays paused. The F3 robot-finger test restarts after that (its first try did not count)." },
-  { "at": "2026-10-02T23:20:00Z", "text": "The carousel fix (st6) passed its phone test on today's best build: resting at the top, no slow frames in any run with it, against about 20 per run without it. Scrolling did not get worse. The F3 robot-finger test is running now." }
+  { "at": "2026-10-02T23:30:00Z", "text": "You said yes to two phone tests: a blind swipe test of the original page against today's best build, now; and one full phone timing run of wave 2 once it is built and checked. Other timing stays paused. The F3 robot-finger test restarts after that (its first try did not count)." }
  ],
  "items": [
   {
@@ -248,6 +248,63 @@
    "details": [
     "blur-cubic: T10 linear() tails of the reveal/hide blur replaced by exact cubic-bezier splits of cubic-bezier(0.16,1,0.3,1) 1.6 s (CSS 069725e4); max difference 0.64 px of blur.",
     "F-080 CONFIRMED: on the phone linear() freezes during main-thread blocks; cubic-bezier and sampled WAAPI keep moving. Reveal only; the hide tail is not measured yet."
+   ]
+  },
+  {
+   "id": "platform-idle",
+   "writeup": "fixes/platform-idle/README.md",
+   "title": "Shimmering security panel near the bottom: animate on the graphics chip",
+   "area": "end",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "The shimmer and sweep on the security panel near the bottom of the page kept the phone redrawing the whole time it was on screen, even at rest. Now the graphics chip runs them, so the phone does far less work there.",
+   "best": [
+    {
+     "what": "style updates in 20 s at rest at the bottom of the page (Chrome)",
+     "before": "1200",
+     "after": "40",
+     "tag": "OBSERVED",
+     "driver": "at rest, no scrolling",
+     "ref": "P-077",
+     "note": "Chrome count loads; paints about 2406 -> 163-169"
+    },
+    {
+     "what": "layouts in 20 s at rest at the bottom of the page (iPhone Simulator)",
+     "before": "about 1187",
+     "after": "40",
+     "tag": "OBSERVED",
+     "driver": "at rest, no scrolling",
+     "ref": "P-077",
+     "note": "Simulator count loads; paints about 4759 -> 20"
+    },
+    {
+     "what": "slow frames over 50 ms while scrolling, phone at its real \"Serious\" heat state",
+     "before": "1 and 1",
+     "after": "2",
+     "tag": "OBSERVED",
+     "driver": "scripted scroll",
+     "ref": "P-077",
+     "note": "no worse by the registered rule; threshold-sensitive: the extra frame is one long first scroll frame that the fix does not touch"
+    }
+   ],
+   "felt": {
+    "answer": "not-yet",
+    "text": "nothing to feel by finger: it saves work at rest"
+   },
+   "gate": "Passed: less work in Chrome and the Simulator, your OK on the look (PR-009, option \"both\"), and a short phone check, no worse.",
+   "next": "Done. The shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted; the phone check found it no worse.",
+   "owner": "fix-platform-idle",
+   "checks": [
+    {
+     "id": "P-077",
+     "what": "less work at rest at the bottom, then a short phone no-worse check at the \"Serious\" heat state",
+     "result": "Yes: far less work at rest in Chrome and the Simulator; phone no worse (one longer first scroll frame, not from the fix). The later rebuild draws the same as the tested version, so the result carries over."
+    }
+   ],
+   "details": [
+    "P-077 hit (PASS + PASS); phone hold h121509 under T-039 B: >50 V 2 vs C 1 + 1 no worse, fps 59.7 vs 60.2 - 2 no worse, twins >46/>54 WORSE carried by V1's 64 ms scroll-onset frame; lead 12:5xZ: (a) no worse, threshold-sensitive.",
+    "Re-ticket e0f92804c521 (G3 inside @supports (-webkit-mask-clip: text)): carried by identity check, ops second read PASS 14:0xZ. Reduced-motion face-photo pixels flip load to load in C as well: lead 14:2xZ, load noise, OBSERVED, cause unknown; PR-009's 'reduced motion identical' stands.",
+    "Pixels: not identical by a few LSB (sweep and glint), so the look went to the user as PR-009; accepted, option \"both\", 10-03 10:31Z. Landed on main 501d9f7 (fixes/platform-idle only)."
    ]
   },
   {
