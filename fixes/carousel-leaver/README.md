@@ -689,6 +689,64 @@ Sim fw-sim, phone width, DPR 3. Each arm loaded twice: base~base2, E~E2 and S~S2
   - That fits de-breakpoints' load-state finding (image arrival vs first raster, OBSERVED, UNRESOLVED).
   - Chrome 1440 at rest: A~S 1689 and A~F 1616, while S~F is 39. st6-rb2 differs there too, and F adds nothing.
 
+## st6-rb2 follow-up, D2 (describes only; written before it runs)
+
+**Route (lead, 2026-10-04, on F-198):** a bounded st6-rb2 follow-up first; a user proposal only if it fails.
+- st6-rb2's landing pixel check was Chrome-only ("0 px on the avatar imgs", `fixes/st6-rb2/README.md` rows 57-60).
+  PR-010's Chrome-and-Simulator rule came after it.
+- Step 1 is this diagnostic (describes only). Step 2 is build G = st6-rb2 + the smallest change that puts each slot at
+  the baseline's exact position and phase, with F's lines on top (G+F). G registers with mgmt-ops-10 as P-090 before
+  any scoring.
+- Stop condition: two build attempts. If neither reaches T2, this is written up and the lead takes st6-rb2's avatar
+  difference to the user as a proposal.
+- F stays parked until then.
+
+**Question.** In WebKit at phone width, what puts st6-rb2's faces at a different sub-pixel phase or scale from the
+baseline's, at rest and mid-slide?
+
+**Probe** `probe/simgeo.mjs` (sha `65c07d103536`). One shared-lane Simulator hold (weight simulator, `--max-seconds
+300`), `sim.mjs session --functional`, fw-sim (430 CSS px, DPR 3). Arms in order: base, S (`snap/S`, st6-rb2), F
+(`snap/F1`), base2, S2. Served hashes are checked as in simcrop (a mismatch voids the arm). The carousel is centred at
+0.5 vh as in D1, so the geometry is D1's.
+
+States per arm:
+- `rest0`: between slides, before any hold.
+- `t0`, `t100`, `t220`: the caught slide (same pathname as the first arm), animations paused at t.
+- `post`, `post300`: after the swap, at rest.
+
+Each state is one synchronous read, so it reflects a single frame of style and layout:
+- **env:** dpr, inner size, scroll, visualViewport.
+- **carousel:** its rect, and its device-px origin with the fractional part.
+- **ancestors** up to `<html>`: rect origin, transform, translate, opacity, filter, will-change, contain, isolation.
+- **each img:** class, src path, natural size, rect at 5 decimals, device-px origin (left x dpr, top x dpr) with
+  fractional parts, drawn content size in device px (rect minus borders, x dpr), and the computed transform,
+  translate, scale, opacity, width, flex-basis, margins, border width, object-fit/-position, will-change and
+  image-rendering, plus `decoding`/`loading`.
+
+After the states, `LayerTree.layersForNode(#people)` lists every composited layer (bounds, compositedBounds,
+paintCount). `reasonsForCompositingLayer` runs for the carousel and each img that has a layer.
+
+**Readout** (in this order, written to the README as a table per face, base vs S vs F at `rest0`, `t100` and `post`):
+1. Layout position: rect left/top (CSS px, and device px with the fractional part). Mid-slide positions are compared
+   after removing the translate and scale each build applies on purpose: base's box from its width and margin
+   keyframes, S's from translate and scale about the centre.
+2. Scale: rect size, computed transform/scale, and drawn content size against natural size.
+3. Ancestors: any transform, opacity, filter or will-change that differs between base and S.
+4. Layers: which faces and ancestors are composited in base and in S, their reasons, and the fractional part of
+   `compositedBounds`/`bounds`.
+5. A/A: base~base2 and S~S2 for every value above (equal expected; any difference is a load-state effect and is
+   reported).
+
+**What it decides** (describes only; the data decides nothing about landing):
+- **Fractional offset or scale:** a face's position differs between base and S/F by more than 0.001 CSS px at the
+  same state, or its device-px fraction or drawn size differs. Then G targets exactly that quantity (scope item 2).
+- **Geometry equal, layering differs:** every position, size and fraction agrees within 0.001 CSS px, and only the
+  compositing differs (layers, reasons, ancestor opacity/filter/transform). Then the cause is in how WebKit paints the
+  slot layers, not where they are. G would have to change the layering (st6's own mechanism), which is outside scope
+  item 2's wording. In that case the result and a proposed G go to the lead before anything is built.
+- Either reading stays OBSERVED in our setup until a WebKit source or doc reference confirms the painting path
+  (CLAUDE.md "Platform claims"). The research plan for that reference goes to the lead with the result.
+
 ## Deliverables
 
 - `patch.diff`: baseline-relative, st6-rb2 + **F** (CSS `a984ae7b7715` and st6-rb2's JS `7bf7c4657d21`), regenerated
