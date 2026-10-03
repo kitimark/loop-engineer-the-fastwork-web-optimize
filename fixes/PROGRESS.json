@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T03:45:00Z",
+ "updatedAt": "2026-10-03T04:45:00Z",
  "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T04:45:00Z", "text": "Countdown digit strips: the chosen version matches the original exactly in every picture check. One earlier hope is withdrawn: it does not save drawing while the page sits still. Its gains are less redrawing when the clock comes back into view, less graphics memory and fewer style changes." },
   { "at": "2026-10-03T03:45:00Z", "text": "Heat test done, both sessions agree: Fastwork warms the phone clearly more than apple.com, which stays close to an empty page. Today's best build already cools it without the countdown fix (roughly a third to three-fifths of the extra heat gone; a rough figure). Less work at rest is now a firm goal." },
   { "at": "2026-10-03T01:15:00Z", "text": "The F3 robot-finger test passed, but the review found a possible slowdown when the page holds at the end, and a case where a touch is missed. Both are checked before your F3 swipe test, which is postponed. The heat test runs now." },
   { "at": "2026-10-03T01:00:00Z", "text": "Explained: the extra long frames past the hero in the countdown test come from the avatar pill swapping its picture, the same with or without the countdown fix, so that fix is clear for wave 2. On today's best build an earlier fix already removed that swap." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T19:31:00Z", "text": "Your decision: timing tests are on hold. The team now finds out what work the page does and how often (Chrome call tree, style and layout counts, layers) and records Safari's layout and drawing work. The phone is only used for those recordings." },
   { "at": "2026-10-01T19:28:00Z", "text": "Carousel fix (st5) tested on the phone: the picture swap no longer re-lays out the page, but the start of each slide still does about half the time. Hitches at rest fell by more than half. Next step is the lead's call." },
   { "at": "2026-10-01T19:16:00Z", "text": "New work, the user's second priority: look for cheaper ways to draw effects that look the same, and show each one to the user to accept or reject." },
-  { "at": "2026-10-01T19:12:00Z", "text": "Two small items (the endless sweep animations and the image sizes) are parked until the bigger style fixes have phone results, so effort stays on the largest slow frames." },
-  { "at": "2026-10-01T19:03:00Z", "text": "Your two ideas checked: complex CSS is not the cause; the cost is how many elements each change touches. The images use more memory than needed but cost nothing per frame. Seven ranked fixes follow, scene-scope first." }
+  { "at": "2026-10-01T19:12:00Z", "text": "Two small items (the endless sweep animations and the image sizes) are parked until the bigger style fixes have phone results, so effort stays on the largest slow frames." }
  ],
  "items": [
   {
@@ -68,20 +68,21 @@
    "area": "hero",
    "state": "testing",
    "stage": "F",
-   "fixes": "Each countdown digit becomes one fixed strip of numbers that only slides, so Safari no longer redraws the digits on every tick, in the hero clock and in the menu panel's clock.",
+   "fixes": "Each countdown digit becomes one fixed strip of numbers that only slides, in the hero clock and in the menu panel's clock: less redrawing when the clock comes back into view, less graphics memory and fewer style changes.",
    "felt": {
     "answer": "not-yet",
     "text": "not built yet"
    },
    "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
-   "next": "In Chrome the top looks identical except one hero fade step; on the phone simulator the hero digit edges came out a shade lighter. The likely pick is the strip plus a layer per digit, if its last picture checks pass. Then the review and the wave-2 phone run.",
+   "next": "The version is chosen: it matches the original exactly in every picture check. Next: the independent review, then the wave-2 phone run.",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-070", "what": "wave-2 phone run: hero clock redraws gone, no new slow frames", "result": "" }],
    "details": [
     "de-gpu T-030 brief 1 (research/gpu-props/README.md section 6, 41563ad): removes WebKit digit repaints in the hero and morph-panel clocks; risk about 2 MB more memory per clock in WebKit; the morph gain needs the panel strips on their own layers (cdwc rule owner's OK).",
     "Lead approved fix-cd-strip's D proposal (10-03 00:2xZ): the strip replaces countdown-faces (a), (b) stays. Stacks on F3 (fix-nav-morph sent its nodes/2 line range).",
     "F-153 (fix-cd-strip, coupling): cd-strip supersedes countdown-faces (a) and illusion-digit-layers for the countdown; countdown-faces (b), the hidden-skip gate, must be rebuilt on cd-strip by de-countdown after cd-strip lands, on the lead's order (planned stack st6-rb2 -> cd-strip -> cd-roll-ca -> (b), 77c9f75). cdwc's panel .face rule matches nothing after cd-strip (arm b ships its own .strip will-change: auto retarget). __cdStripY is periodic: a strip driver keeps offsets in [0, 9].",
-    "Step 4 (10-03 02:3x-03:2xZ): remainder variant dropped; suspect was the backing size (visible cell only and per-cell layers both give 0 px in the Simulator). Lead: pick strip + cell layers if its last pixel rows pass. Chrome: identical except hero fade 0.9 (delta 1, beyond A/A, 7 shots)."
+    "Step 4 (10-03 02:3x-03:2xZ): remainder variant dropped; suspect was the backing size (visible cell only and per-cell layers both give 0 px in the Simulator). Lead: pick strip + cell layers if its last pixel rows pass. Chrome: identical except hero fade 0.9 (delta 1, beyond A/A, 7 shots).",
+    "Lead 10-03 04:4xZ: picked strip-rb (identical on all rows); idle-paint gain withdrawn; gains = re-entry Paint, backing MB, style writes. P-070's check text ('hero clock redraws gone') predates the withdrawal: owner to restate against the card."
    ]
   },
   {
@@ -119,12 +120,13 @@
     "text": "you judge it in a blind side-by-side look before it goes into a build"
    },
    "gate": "Within a fraction of a pixel of the original's motion (exact numbers at 60 and 120 Hz), and your blind side-by-side look on the phone, since it is not frame-for-frame identical.",
-   "next": "Built and reviewed: the third review passed. It waits for the digit strips (cd-strip) to land, then for your blind side-by-side look on the phone (you watch, no touching).",
+   "next": "Being rebuilt on the chosen digit strips, moving only the digit cells. Then a check, and your blind side-by-side look on the phone (you watch, no touching).",
    "owner": "fix-cd-roll-ca",
    "checks": [],
    "details": [
     "de-gpu T-030 brief 3: within about 0.08 px of the original's motion; the original itself differs by 3.3 px between 60 and 120 Hz. Parked under the identical-only rule, then started at the user's request (T-030 #10, 00:10Z). Stacks on cd-strip.",
-    "Review round 2 PASS with nits (a57444b, JS 673b110d), sign-off held for the hide-check re-analysis (108/247.9 -> 3.29/0.27 px); round 3 PASS (dbb113f, JS 2af461dc). Blind test after cd-strip lands (lead's phone order)."
+    "Review round 2 PASS with nits (a57444b, JS 673b110d), sign-off held for the hide-check re-analysis (108/247.9 -> 3.29/0.27 px); round 3 PASS (dbb113f, JS 2af461dc). Blind test after cd-strip lands (lead's phone order).",
+    "Lead 10-03 04:4xZ: rebuilds as 'cells-only' on cd-strip's strip-rb; the round-3 PASS (dbb113f) covered the earlier build."
    ]
   },
   {

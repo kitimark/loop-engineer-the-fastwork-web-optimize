@@ -9,6 +9,19 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **04:4xZ add7185 landed. cd-strip picked; cd-roll-ca rebuild; Sim gap rule; P-071 at D2.**
+  - **cd-strip** (lead): picked **strip-rb**, identical on all rows; the idle-paint gain is withdrawn; gains = re-entry
+    Paint, backing MB, style writes. PROGRESS `fixes`/`next` and a 04:45Z change line say so in plain words. Open:
+    P-070's check text ("hero clock redraws gone") predates the withdrawal; the owner restates it against the card
+    (asked the lead).
+  - **cd-roll-ca** rebuilds as "cells-only" on strip-rb; round-3 PASS (dbb113f) covered the earlier build.
+  - **Gap rule (lead):** one Simulator job per P-071 cooling gap, alternating cd-strip / hero-exit-threaded.
+  - **Pitfall (hero-exit-threaded posting it):** `lock.mjs wait --until released-by:<o>` is a state check, not an
+    event: it is met whenever <o> does not hold, also before <o> ever took the lock.
+  - **P-071 holds (holds.log):** S-open 03:59:11Z, C1 03:59:52-04:01:55, V1 04:12-04:15, D1 04:23-04:26, V2
+    04:34-04:38; D2 next (the lease label names the next run during cooling). ~11 min per run with cooling: counted
+    runs done ~05:35Z, then the end sentinel and the attribution runs (`gesture --timeline`, df55321).
+
 - **04:1xZ main df55321: 68dc897 (ops), fe3d1e5 (de-heat P-068 nits: D1 raw-slope wording, ledger share marked
   descriptive), df55321 (I-079 fix: `iphone.mjs gesture --timeline`, rebased from 2ff855d); lead runs npm test on
   df55321, then resolves I-079.**
