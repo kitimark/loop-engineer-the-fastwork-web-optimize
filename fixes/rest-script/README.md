@@ -553,9 +553,12 @@ Desk test (scratch, not committed): chainJ's own `hold()` text with the lock cal
 A parts row with the EN label in its crop (F-199) counts as VOID. The reduced-motion legs have no moving frames, so
 their minimum is 0.
 
-**Deviation, for mgmt to rule on:** the Chrome harness (rot2.mjs, unchanged) takes no separate `quiet` shot. Its
-`rest` is taken after a ≥ 2000 ms page quiet plus the 1200 ms settle. The quiet shot exists for F-200, which is
-WebKit's ImageQualityController and does not apply to Chrome. So the Chrome legs need rest and intoview, not quiet.
+**Deviation, ruled on by mgmt-ops-10 (accepted):** the Chrome harness (rot2.mjs, unchanged) takes no separate
+`quiet` shot. The Chrome legs need rest and intoview only, on one ground: rot2's rest shot is taken after a ≥ 2000 ms
+page quiet plus the 1200 ms settle, so ≥ 3.2 s after the last slide paint, far past F-200's 500 ms. (Whether Chrome
+still has an image-quality controller like WebKit's is **UNRESOLVED**: Blink inherited one from WebKit and nobody here
+has checked whether it still exists; the decisive check would be the current Blink source. The ruling does not rest on
+it.)
 
 **4. The A/A mask works both ways.** The registration's "conservative direction" sentence is corrected above. Where the
 st6 A/A caught the other render state, the mask (aa > 8) also hides the fix's own d > 8 pixels.
