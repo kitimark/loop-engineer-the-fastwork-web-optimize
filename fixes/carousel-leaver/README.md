@@ -335,11 +335,11 @@ and that the baseline paints over it: the scene overlay, the next slot, or an an
 
 | file | sha | what |
 |---|---|---|
-| `probe/hold87.sh` | `832803b059d0` | Chrome hold: 4 servers (A, S, E1, F1 snapshots), served hashes, then `clp.mjs` or `pord.mjs` over the given arms; deletes its Chrome profiles |
-| `probe/pord.mjs` | `6ea2ecb7461f` | Chrome paint order: DOMSnapshot paint-order relations + forced-opaque lens crops, per t (below) |
+| `probe/hold87.sh` | `d87b8f1c3d43` | Chrome hold: 4 servers (A, S, E1, F1 snapshots), served hashes, then `clp.mjs` or `pord.mjs` over the given arms; deletes its Chrome profiles; optional 5th argument `view` (C4/C5) |
+| `probe/pord.mjs` | `b81ea4a401d0` | Chrome paint order: DOMSnapshot paint-order relations + forced-opaque lens crops, per t (below); `--view` and the `VARIANT` line (C5) |
 | `probe/simcrop.mjs` | `26f548f2dcfe` | WebKit (Simulator) frozen crops: `Page.snapshotRect`, natural and forced-opaque lens, per t |
 | `probe/png.mjs` | `52d21ec3f1d5` | PNG decode/encode/crop and the pair metric (n8, any, max), the same as clp.mjs's |
-| `probe/clp.mjs` | `37b9e94812fa` | unchanged from P-086 (series, counts, pixels, paused) |
+| `probe/clp.mjs` | `07120dcca1ef` | P-086's (`37b9e94812fa`) plus `--view WxHxDPR[d]` only (default `430x932x3`, the P-086 setting; `d` = desktop: `mobile: false`, no touch emulation) |
 | `probe/simclp.mjs` | `56c422d5cfbc` | unchanged from P-086 (Sim Timeline layout roots + rAF series) |
 | `probe/score.mjs` | `fdbcae16946d` | unchanged (registered scorer, same frame index after slide start) |
 | `probe/shape.mjs` | `10520d556eba` | P-086's post-hoc equal-scale scorer, **registered here** as P3's Sim decider |
@@ -354,6 +354,9 @@ and that the baseline paints over it: the scene overlay, the next slot, or an an
 | C3 | `hold87.sh pord - <out>/c3` (probe) | A, S, F, A2, F2 | P2 Chrome |
 | W1 | `sim.mjs session --functional -- simcrop.mjs <out>/w1` (simulator) | base, S, F, base2, F2 | P1 WebKit, P2 WebKit |
 | W2 | `sim.mjs session --functional -- simclp.mjs <out>/w2` (simulator) | base, E, F, E2, F2 | P3 Sim, P4 Sim |
+| C4 | `hold87.sh clp pixels <out>/c4 … 1440x900x2d` (probe) | A, S, F, A2, F2 | P1 Chrome, desktop |
+| C5 | `hold87.sh pord - <out>/c5 … 1440x900x2d` (probe) | A, S, F, A2, F2 | P2 Chrome, desktop |
+| W3 | `sim.mjs --device fw-ipad session --functional -- simcrop.mjs <out>/w3` (simulator) | base, S, F, base2, F2 | P1/P2 WebKit, wide viewport |
 
 `<out>` = `out/carousel-leaver/p87`. Raw files stay there (gitignored).
 
@@ -496,6 +499,38 @@ per frame. Totals are always quoted next to the per-slide numbers.
 
 The scene reads `paused` away in every arm. The return series F~A is within A~A2 (score.mjs). The `pz` crop F~A n8 ≤
 A~A2. P(hit) 0.85.
+
+### P6: desktop width (addendum from the lead via the ops second read; PR-010 checks phone plus one desktop width)
+
+The carousel rules (`2.gBuqKVzi.css` L2856-2887) and the `is-carousel` markup (JS L11257) sit outside every media
+query, so the sliding variant is expected at desktop width too. The checks below confirm it per arm.
+
+- **Widths.**
+  - Chrome: 1440x900, DPR 2, `mobile: false`, no touch (`--view 1440x900x2d`). 1440x900 is the desktop width other fixes
+    used; DPR 2 crops finer than DPR 1.
+  - WebKit: the Simulator's `fw-ipad` (iPad Pro 13, portrait), Safari's default desktop-class viewport. Its CSS width
+    is whatever Safari gives (expected about 1032) and is recorded from `geo2.vw`. simcrop is unchanged; the session's
+    `--device` reaches its `sim.mjs open` through `FW_SIM_DEVICE`.
+- **Runs.** C4 (clp `pixels`, natural crops), C5 (pord, paint order + lens) and W3 (simcrop, natural + lens). All three
+  use the same t grid, post and post300, and the arms A/base, S, F, A2/base2, F2.
+- **Variant check first.**
+  - Chrome: pord logs one `VARIANT` line per arm (exists, display, visibility, w, h, img count, class, vw, vh, dpr).
+    WebKit: simcrop's `geo2` (vw, carousel box).
+  - If the carousel is missing, not displayed or 0-size in both baseline arms, the pass is replaced by that line,
+    recorded in the results. If both baseline arms catch no slide in 25 s (the rotator off at this width), the same
+    applies.
+  - In any other case a missing slide or carousel is VOID under the rules above.
+- **P6a (P1 at desktop).** Point: F~A and F2~A natural n8 = 0 at every t, post and post300 (Chrome C4). The same for
+  F~base and F2~base (WebKit W3). The A/A (A~A2, base~base2) is 0. P(hit) Chrome 0.8, WebKit 0.6.
+- **P6b (P2 at desktop).** Point: F~A `rel` differs 0 at every t and post, and `overLead` F = A (C5). Lens n8 F~A = 0
+  (C5) and F~base = 0 (W3). The A/A is 0. P(hit) Chrome 0.85, WebKit 0.65.
+- **Positive control** as P1 and P2: S differs from the baseline at t = 0, at this width.
+- **Rules.** The A/A-limited rule (P1 addendum) applies unchanged: a point with A/A > 0 is undecided, gets one re-run,
+  then goes to the lead. The only exception is Chrome clp `post300`, and it needs W3 `post300` with A/A 0 and F~base 0.
+  The void rules apply unchanged (served hashes in `served.txt`, inView, blank or unsettled crops, a crash; one re-run,
+  then the lead).
+- **Decision.** P6 counts with P1 and P2. A desktop miss with a phone hit means F is not offered as exact; I report
+  the desktop numbers to the lead as in "Chrome hits, WebKit misses".
 
 ### Decisions (if X then Y)
 

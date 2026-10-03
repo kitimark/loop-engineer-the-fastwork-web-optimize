@@ -1,12 +1,12 @@
 #!/bin/sh
 # carousel-leaver Chrome hold (P-087): baseline + 3 immutable snapshot arms (S, E1, F1), served hashes, then one probe.
 # node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner fix-carousel-leaver -- \
-#   sh fixes/carousel-leaver/probe/hold87.sh <clp|pord> <modes or -> <outdir> <arms, e.g. A=a,E=e,F=f,A2=a,F2=f>
+#   sh fixes/carousel-leaver/probe/hold87.sh <clp|pord> <modes or -> <outdir> <arms, e.g. A=a,E=e,F=f,A2=a,F2=f> [view]
 # Snapshots: $SNAP/S (st6-rb2), $SNAP/E1 (E), $SNAP/F1 (F); hashes in the README table. clp.mjs is P-086's, unchanged.
 set -u
 W=/Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-a468e571c76f341a1
 SNAP=/private/tmp/claude-501/-Users-<user>-source-fastwork-com-web-optimize/391f6dee-c7ee-40f4-93c3-f4c2dce764ec/scratchpad/carousel-leaver/snap
-TOOL=$1; MODES=$2; OUTD=$3; ARMSPEC=$4
+TOOL=$1; MODES=$2; OUTD=$3; ARMSPEC=$4; VIEW=${5:-430x932x3}   # optional 5th arg: --view for the probe (README P-087 C4/C5)
 cd $W && mkdir -p out/carousel-leaver "$OUTD"
 for k in a s e f; do rm -f out/carousel-leaver/serve-$k.json; done
 node tools/serve.mjs --root site-pretty --port auto --https --vendors=local --no-http-twin --no-cache --state out/carousel-leaver/serve-a.json > out/carousel-leaver/serve-a.log 2>&1 & P0=$!
@@ -26,9 +26,9 @@ done | tee "$OUTD/served.txt"
 # arms: A=a -> A=out/carousel-leaver/serve-a.json
 ARMS=$(echo "$ARMSPEC" | sed -e 's#=\([asef]\)#=out/carousel-leaver/serve-\1.json#g')
 if [ "$TOOL" = clp ]; then
-  node fixes/carousel-leaver/probe/clp.mjs --arms "$ARMS" --modes "$MODES" --out "$OUTD"
+  node fixes/carousel-leaver/probe/clp.mjs --arms "$ARMS" --modes "$MODES" --out "$OUTD" --view "$VIEW"
 else
-  node fixes/carousel-leaver/probe/pord.mjs --arms "$ARMS" --out "$OUTD"
+  node fixes/carousel-leaver/probe/pord.mjs --arms "$ARMS" --out "$OUTD" --view "$VIEW"
 fi
 R=$?
 kill $P0 $P1 $P2 $P3

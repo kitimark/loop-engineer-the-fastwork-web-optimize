@@ -25,6 +25,8 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? proces
 const ARMS = arg('--arms', '').split(',').filter(Boolean).map((s) => { const [k, f] = s.split('='); const st = JSON.parse(readFileSync(f, 'utf8')); return { k, url: st.url || `https://localhost:${st.port}/` }; });
 const OUT = arg('--out'); if (OUT) mkdirSync(OUT, { recursive: true });
 let TARGET = arg('--target', null);
+// --view WxHxDPR, optional trailing d = desktop (mobile false, no touch); default the phone setting all P-086 runs used
+const VIEW = arg('--view', '430x932x3'), DESK = VIEW.endsWith('d'); const [VW, VH, VD] = VIEW.replace(/d$/, '').split('x').map(Number);
 const TS = [0, 17, 33, 50, 67, 83, 100, 133, 167, 200, 220];
 const HOLD = `(() => { const st = window.setTimeout.bind(window); window.__hold = false; window.__held = [];
   window.setTimeout = function (fn, ms, ...a) { if (typeof fn !== 'function') return st(fn, ms, ...a);
@@ -42,6 +44,8 @@ const CATCH = (target, timeout) => `new Promise((res) => { const P = ${PATH}; co
     was = on; if (performance.now() - t0 > ${timeout}) return res({ ok: false }); requestAnimationFrame(tick); };
   requestAnimationFrame(tick); })`;
 const RAF2 = `new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(1))))`;
+// the sliding variant at this width? (desktop pass: a carousel that is missing, not displayed or 0-size replaces the pass, README P-087 C4/C5)
+const VARIANT = `JSON.stringify(((c) => { if (!c) return { exists: false }; const cs = getComputedStyle(c), r = c.getBoundingClientRect(); return { exists: true, display: cs.display, visibility: cs.visibility, w: r.width, h: r.height, imgs: c.querySelectorAll("img").length, cls: c.className, vw: innerWidth, vh: innerHeight, dpr: devicePixelRatio }; })(${CAR}))`;
 // VIS (page side): DOM path keys (pord's scheme) of the elements that can paint inside the carousel box right now:
 // effective opacity (product over ancestors) > 0, visibility visible, and the border-box rect clipped by every ancestor
 // with overflow other than visible or contain paint (up to a position: fixed element) overlaps the carousel's clipped
@@ -121,18 +125,20 @@ async function shot(page, file) {
 if (ARMS.length) {
   const chrome = await launchChrome({ port: 0, profileDir: tempProfileDir(join(WT, 'out/carousel-leaver'), 'pord'), headless: true, windowSize: '1440,900', args: ['--ignore-certificate-errors'] });
   const cdp = await CDP.connect(chrome.wsUrl);
-  const res = { tool: 'carousel-leaver pord (P-087)', at: new Date().toISOString(), browser: chrome.browser, ts: TS, arms: {} };
+  const res = { tool: 'carousel-leaver pord (P-087)', at: new Date().toISOString(), browser: chrome.browser, view: VIEW, ts: TS, arms: {} };
   const save = () => writeFileSync(join(OUT, 'pord.json'), JSON.stringify(res, null, 1));
   try {
     for (const arm of ARMS) {
       const R = (res.arms[arm.k] = { url: arm.url, rel: {}, nodes: {}, overLead: {}, lens: {} });
       const page = await cdp.newIsolatedPage();
       await page.send('Network.enable');
-      await page.send('Emulation.setDeviceMetricsOverride', { width: 430, height: 932, deviceScaleFactor: 3, mobile: true });
-      await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+      await page.send('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: VD, mobile: !DESK });
+      if (!DESK) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
       await page.send('Page.addScriptToEvaluateOnNewDocument', { source: HOLD });
       await gotoAndSettle(page, arm.url, { quietMs: 1500, maxMs: 45000 }); await sleep(1000);
       const center = `(() => { const c = ${CAR}; const r = c.getBoundingClientRect(); window.scrollBy({ top: r.top + r.height / 2 - 0.5 * innerHeight, behavior: 'instant' }); const q = c.getBoundingClientRect(); return { y: scrollY, carTop: q.top, carBottom: q.bottom, vh: innerHeight, inView: q.top >= 0 && q.bottom <= innerHeight }; })()`;
+      R.variant = JSON.parse(await page.eval(VARIANT)); console.log(arm.k, 'variant', JSON.stringify(R.variant));
+      if (!R.variant.exists || R.variant.display === 'none' || R.variant.visibility !== 'visible' || !(R.variant.w > 0 && R.variant.h > 0)) { R.void = 'NOT-VARIANT: no visible carousel at this width'; console.log(arm.k, R.void); save(); await page.close(); continue; }
       R.pos = await page.eval(center); await sleep(1500); R.pos2 = await page.eval(center); await sleep(600);
       if (!R.pos2.inView) { R.void = 'VOID: carousel not in view'; console.log(arm.k, R.void); save(); await page.close(); continue; }
       const c = await page.eval(CATCH(TARGET, 25000), { timeout: 35000 });

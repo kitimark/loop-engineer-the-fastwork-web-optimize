@@ -11,6 +11,8 @@ const ARMS = arg('--arms', '').split(',').filter(Boolean).map((s) => { const [k,
 const OUT = arg('--out'); mkdirSync(OUT, { recursive: true });
 const MODES = arg('--modes', 'series,counts,pixels,paused').split(',');
 let TARGET = arg('--target', null);
+// --view WxHxDPR, optional trailing d = desktop (mobile false, no touch); default the phone setting all P-086 runs used
+const VIEW = arg('--view', '430x932x3'), DESK = VIEW.endsWith('d'); const [VW, VH, VD] = VIEW.replace(/d$/, '').split('x').map(Number);
 const TS = [0, 17, 33, 50, 67, 83, 100, 133, 167, 200, 220];
 
 const HOLD = `(() => { const st = window.setTimeout.bind(window); window.__hold = false; window.__held = [];
@@ -62,7 +64,7 @@ if (!ARMS.length) process.exit(0);
 
 const chrome = await launchChrome({ port: 0, profileDir: tempProfileDir(join(WT, 'out/carousel-leaver'), 'clp'), headless: true, windowSize: '1440,900', args: ['--ignore-certificate-errors'] });
 const cdp = await CDP.connect(chrome.wsUrl);
-const res = { at: new Date().toISOString(), browser: chrome.browser, arms: {} };
+const res = { at: new Date().toISOString(), browser: chrome.browser, view: VIEW, arms: {} };
 const save = () => writeFileSync(join(OUT, 'clp.json'), JSON.stringify(res, null, 1));
 async function center(page, frac = 0.5) {
   // h4: the carousel itself at mid-view. Holds 1-3 used #future-heading at 0.5 vh, which left the carousel ~700 px BELOW
@@ -98,8 +100,8 @@ try {
     const R = (res.arms[arm.k] = { url: arm.url });
     const page = await cdp.newIsolatedPage();
     await page.send('Network.enable');
-    await page.send('Emulation.setDeviceMetricsOverride', { width: 430, height: 932, deviceScaleFactor: 3, mobile: true });
-    await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    await page.send('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: VD, mobile: !DESK });
+    if (!DESK) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
     await page.send('Page.addScriptToEvaluateOnNewDocument', { source: HOLD });
     await gotoAndSettle(page, arm.url, { quietMs: 1500, maxMs: 45000 }); await sleep(1000);
     R.pos = await center(page); await sleep(1500);
