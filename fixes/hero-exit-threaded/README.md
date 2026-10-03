@@ -5,9 +5,11 @@
 
 **Status:** F build done (rounds 4-8, "F rounds 4-8" below), measured by Simulator counts and frozen-frame pixels
 (no timing: timing A/Bs deferred, user 2026-10-02). Pixel decision: the user accepted PR-011 rev 1, option
-accept-both (2026-10-03 15:23Z; both items, see "Tiers under the wide rule"). Land candidate 5a8a96d (restacked on
-main + morph-inherit). Not ready to land: the gate is P-081 (the F phone block, ticket below; the iPhone is
-disconnected, T-047), then the finger swipe A/B (top-3 smoothness fix under the less-work rule).
+accept-both (2026-10-03 15:23Z; both items, see "Tiers under the wide rule"). P-081 (the F phone block) gave
+(a) in and frames no-worse, but b-fm OUT (b-ts load-sensitive, no verdict): the go-live-from-rest frames cost more
+than C's ("P-081 result").
+Per the ticket: not landable on this build; back to F, then a new build and ticket. 5a8a96d is this build restacked
+on main + morph-inherit.
 P-074 (V build, 30 ms timer grid) sent this back to F: touchstart OUT (+2 style recalcs), rest no data. The F build
 removes the touchstart style work (0 vs C 0), keeps the writer on wide layouts (R5), and parks the animations at rest.
 Both pixel items (the live-frame bits and the deck item R6) were decided by the user in PR-011 (accepted).
@@ -284,6 +286,94 @@ A Timeline attribution block with frame-gap counts, not a gain block. The predic
   - Pre-warm to Serious and any ceiling cool-down.
   - It fits in 3-4 holds of 900 s.
   - The user's finger A/B comes after the block and is not part of P-081.
+
+### P-081 result (scored 2026-10-03; one hold, all four counted runs)
+
+**Verdict under the ticket: b-fm OUT, so no landing on this build.** Per the ticket's rule "b-ts or b-fm OUT", the
+fix goes back to F, then a new build and a new ticket.
+
+| verdict | registered set (C1 F1 F2 C2) | sensitivity line (C1 vs F1 only) | reported |
+|---|---|---|---|
+| a-C | in (0.762, 0.774) | C1 0.762 in (1 run; no arm verdict) | **in** |
+| a-F | in (0.014, 0.017) | F1 0.014 in (1 run; no arm verdict) | **in** |
+| b-ts | OUT (pair 2 only) | in | **load-sensitive: no verdict claimed** |
+| b-fm | OUT (both pairs) | OUT | **OUT** |
+| f50, band (twins) | F − C +0.5 (−1 / +0.5): no-worse | +1 (0 / +1): no-worse | **no-worse** |
+| f34, band (twins) | −5.5 (−16.5 / −1): no-worse | −12 (−25 / +1): no-worse | **no-worse** |
+| b-rest (not a falsifier) | OUT | OUT | OUT (the accepted park trade-off) |
+| gesture scope (reported) | > 50 −2.5, > 34 −26.5: no-worse | > 50 −9, > 34 −53 | no-worse |
+
+- **Ops rulings.** mgmt-ops-10's ruling stands: no post-hoc void, all four runs count. The lead briefly voided F2 and
+  C2, then withdrew that.
+- **Sensitivity line.** It was pre-declared by ops before scoring, because an unleased `npm test` loaded the Mac
+  from about 16:01Z.
+  - A verdict that differs between the registered set and C1 vs F1 alone is "load-sensitive", and no verdict is
+    claimed for it.
+  - Only b-ts differs.
+- **Supplementary runs.** Any re-runs from iphone-runner are F3 / C3. They are reported apart and are not part of
+  the registered verdict.
+
+**Block.** iphone-runner, hold h155146.
+- Gates: start Serious, induced No, 39.9 → 40.0 °C, timer 30 ms. End Serious, induced No, 41.79 °C. Both PASS.
+- The hold's first start read was Fair and was re-tried in the same hold. An earlier hold, h154732, stopped at the
+  open with no runs.
+- Order: wC wF S1 C1 F1 F2 C2 S2, all exit 0.
+- Sentinels: S1 60.2 / 58.1 PASS, S2 60.1 / 58.5 PASS.
+- Every run: gesture `hero-pass-v1.json` sha256 `e3f31872b82f`, 0 errors, grid30, median dt 17 ms (no LPM).
+- Battery 40.0-41.8 °C, 80 %, not charging.
+- Builds C `7bf7c4657d21` / `f523598b2a24` and F `8e43f3792dbf` / `cc74cd980e72`, from read-only copies.
+- Data (gitignored): iphone-runner's worktree `out/p081/`. Scorer outputs: `out/hext/p081/`, namely `scoreF-V.json`,
+  `framesF.json`, and for the sensitivity line `scoreF-pair1.json` and `framesF-pair1.json`.
+
+| run | Mac load1 | gesture span, first stroke sent → last returned (WDA) | touch span (ops) |
+|---|---|---|---|
+| C1 | not in the run record; the hold started at 23.5 (shared jobs before it, 15:58Z), before the npm test | 24,610 ms | about 23.7-23.95 s |
+| F1 | not in the run record | 24,639 ms | about 23.7-23.95 s |
+| F2 | 4.27 → 20.43 (ops) | 24,928 ms (+300 ms) | 24.24 s |
+| C2 | 17.74 → 11.48 (ops) | 24,625 ms | about 23.7-23.95 s |
+
+The hold's end load1 was 7.6. WDA drives the gesture from the Mac, so F2's longer span may come from the load
+(OBSERVED, cause not proven).
+
+**Scorer invocation, one deviation from the ticket's text.** `scoreF.mjs` (sha256 `32ed5f4e81f9`, unchanged)
+hardcodes `V` as the claim arm. With the ticket's literal `F:` labels it scores each run but pairs nothing ("no V
+run"). The F runs were therefore passed as `V:`, with `--fn V:s=4497,heRest=4449`. No code or number changed, only
+the label; `scoreF.json` (F labels) is kept too. `framesF.mjs` (`40d0d302c3f1`) takes `F:` as registered.
+
+- **(a) per run.** Writer share: C1 0.762, F1 0.014, F2 0.017, C2 0.774. Paint area per moving band frame: C 176k /
+  194k px, F 65k / 67k px. y≈50 frame: writer in C, none in F.
+- **Frames: arm medians.**
+  - Band > 50: C 2, F 2.5.
+  - Band > 34: C 18, F 12.5.
+  - Gesture > 34: C 64.5, F 38.
+  - Per run, band > 50 / > 34: C1 2 / 22, F1 3 / 10, F2 2 / 15, C2 2 / 14.
+- **(b) hand-over units, F vs C.** Bounds: dRecalc ≤ 1, dLayout ≤ 0, dPaint ≤ 0.
+
+  | kind | pair 1 (F1 vs C1) | pair 2 (F2 vs C2) |
+  |---|---|---|
+  | touchstart 1, y0 | S1 L1 P1 vs S2 L2 P3: in | S2 L1 P1 vs S2 L1 P1: in |
+  | touchstart 2, y548 | S0 L0 P0 vs S0 L0 P0: in | **S1 L1 P2 vs S0 L0 P0: OUT** |
+  | touchstart 4, y547 | S2 L1 P1 vs S1 L1 P1: in | **S2 L1 P2 vs S1 L1 P1: OUT** |
+  | first-move 1, y3 | **S10 L16 P59 vs S8 L13 P59: OUT** (L +3) | **S9 L15 P59 vs S10 L14 P60: OUT** (L +1) |
+  | first-move 2, y≈550 | **S7 L6 P11 vs S7 L4 P4: OUT** | **S7 L7 P9 vs S6 L6 P5: OUT** |
+  | first-move 4, y≈545 | **S2 L2 P19 vs S4 L2 P2: OUT** | **S3 L2 P19 vs S4 L2 P2: OUT** |
+  | rest 1 / 3 / 4 | S5 L5 P60, S3 L1 P6, S3 L2 P6 vs about S2 L1 P1: OUT | S3 L3 P56, S3 L1 P6, S3 L2 P6 vs about S1-2 L1 P1: OUT |
+
+  The heRest fires past the hero end (y ≈ 1097) are no-op drops and were not scored.
+- **Reading (post hoc, a labelled diagnostic; the verdicts stand).**
+  - First-move 2 and 4 fail in both pairs, P 9-19 against C's 2-5. They are the first moving frames after a rest at
+    y≈548: the go-live from parked. Un-parking rebuilds the animated layers and repaints, the mirror of the park
+    repaint at rest.
+  - This was not predicted: the Simulator's first-move cases started from the top band, where F runs C's writer.
+  - First-move 1 (from the top, y3) is L +3 / +1 around the same whole-hero repaint (P59 in both arms).
+  - Hypothesis (OBSERVED, not attributed): the extra hand-over cost sits in park → live, not in the per-frame path.
+    The per-frame gains hold: writer share 0.015, about 63 % less paint area per moving frame, frames no-worse.
+- **Next (ticket rule "b-ts or b-fm OUT"):** back to F, on the lead's direction.
+  - Candidate direction: make go-live cheaper. Keep the animated layers alive while parked, or park only past the
+    band edge.
+  - Then a Simulator check of the go-live-from-rest frames (rev5 cases from a rest at y≈550), a new build and a new
+    ticket.
+  - 5a8a96d stays the restacked F7 build, not a land candidate.
 
 ### Restack on main + morph-inherit (build R: JS `e3b6fd558dbf`, CSS `cc74cd980e72`)
 
