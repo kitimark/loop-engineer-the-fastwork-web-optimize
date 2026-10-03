@@ -570,7 +570,8 @@ change after registration needs a new P-id. **Nothing timed runs until the lead 
   - The gate pair `research/phone-thermal-gate/thermal-gate.mjs` (sha256 `4604218c4041`, `--expect serious`,
     `--max-c 44`) at every hold's start and end; a hold counts only when both reads say Serious with Is Induced = No.
   - 900 s holds; stop at 44 °C battery or Critical and cool. Every gate failure goes to the lead; two strikes roll
-    back to A (the lead's standing rule).
+    back to A (the lead's standing rule). A start read that fails before any run (no step taken, no files) is not a
+    strike (the P-085 ruling, hold h165958).
   - One start method (pre-warm on the plain baseline page the same way for each arm). Logged per run: battery °C,
     charging state, timer-grid median, Mac load1 at start and end. A Low Power Mode run is dropped and re-run.
 - **Runs.** 3 arms, 3 counted runs each, Timeline on, in a rotated Latin square:
@@ -582,6 +583,8 @@ change after registration needs a new P-id. **Nothing timed runs until the lead 
   ≥ 58 fps and scroll ≥ 44 fps, at the block start and the block end.
   - A failing start sentinel: no counted run starts; cool, restart.
   - A failing end sentinel voids every counted run since the last passing one; cool, re-run those rows once.
+  - Cooling after a failing sentinel (protocol §5.3): `node tools/wait.mjs phone-temp --below <°C>`, down to the last
+    passing sentinel's battery °C minus 0.5 (38 if none today), at most 10 min. The sentinel still decides validity.
 - **Void rules:**
   - scoreF.mjs's own (gesture error or abort, Timeline errors or more than one epoch, over 10 % uncovered moving band
     frames) and LPM. A void run gets one in-place re-run; a second void at one position voids the block.
@@ -609,6 +612,20 @@ change after registration needs a new P-id. **Nothing timed runs until the lead 
     node fixes/hero-exit-threaded/pF/fm1F.mjs C:<d>/gesture-p088-C1.json Fb:<d>/gesture-p088-Fb1.json Fb:<d>/gesture-p088-Fb2.json C:<d>/gesture-p088-C2.json Fb:<d>/gesture-p088-Fb3.json C:<d>/gesture-p088-C3.json --edge 30 --after 9 --json out/hext/p088/fm1F-Fb.json
     ```
   - A re-run replaces its run's file in place, in the same position.
+  - **Read rules (registered; mgmt-ops-10's second read, must-fix).** scoreF's summary line pools every first-move
+    row, row 1 included, so it is not used for any (b) verdict. The (b) verdicts are read from scoreF's per-pair (b)
+    lines only:
+    - **b-ts:** the 'touchstart 1', 'touchstart 2' and 'touchstart 4' lines. In iff every such line of every valid
+      pair says in.
+    - **b-fm-rest:** the 'first-move 2' and 'first-move 4' lines. In iff every such line of every valid pair says in.
+    - **'first-move 1' lines:** not part of any count verdict. They are reported as fm1's named S / L residual; fm1
+      is decided by fm1F.mjs's frames.
+    - **b-rest:** the 'rest1', 'rest3' and 'rest4' lines. In iff every such line of every valid pair says in. It is a
+      falsifier for Fb only; for N it is reported.
+    - The summary line's 'touchstart', 'first-move' and 'rest' verdicts are printed but not used.
+  - **fm1F window parameters are frozen as registered: `--edge 30 --after 9`.** Disclosed: the values were the
+    script's defaults when the pre-registration check on P-081's F7 data was run, so its output was seen before
+    registration. F7 is not a P-088 arm, and the parameters are not changed after that check.
 - **The fm1 amendment (the lead's, 2026-10-03), an amendment to P-081's "b-fm OUT -> back to F":**
   - fm1 (first-move 1, the first move off the top through the 30 px band) stays a falsifier, but it is **judged on
     frames, not on record counts**: it fails when the claim arm adds a frame over 34 ms or over 50 ms against C at
