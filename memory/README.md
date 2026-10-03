@@ -14,6 +14,7 @@ Every agent:
 - [No camera access](no-camera-access.md): never open a Mac camera; screen recording only via `ioscap.mjs`
 - [Keep awake only during measurements](keep-awake-only-during-measurements.md): `caffeinate -i -s` inside measurement holds only
 - [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test
+- [Console steps only for actions](console-steps-only-for-actions.md): "Your steps" is only for what the user must do; answers, results and FYIs go in a thread (the lead opens it)
 - [Phone checks start warm](phone-checks-start-warm.md): start at 38-40 °C, one start method per block; LPM runs dropped, not tested; no countdown-only test page
 
 Lead:
