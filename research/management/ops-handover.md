@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-03 15:1xZ** (mgmt-ops-10; resume briefs section added).
+**10-03 14:5xZ** (mgmt-ops-10 digest).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -16,6 +16,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 14:5xZ **Digest.** I-092 (threads page lightbox blocking every click) fixed and landed d4117f1 (lead). **PR-010 rev 2 changes-requested 14:41Z** (T-042 pixel-tolerance rule): the user saw the avatar carousel animate differently in the Try-it panels for options B and C; de-pixel-rule checks phase offset vs a real st6/st6-rb2 change. If real, it touches the landed best build (hero-carousel, P-067; and every control on st6-rb2): ledger rows to flag then. Rev 3 must answer every point (proposal-decision-is-the-spec). fix-nav-morph running the P-085 Sim dry run (shared, 14:41Z); morph-inherit time series 44f522e landed.
 - 15:0xZ **morph-inherit landed** (b11f977 + 0ad5407, review ACCEPT). Lead: (1) WebKit morph numbers on stacks without it are void for the morph region (P-079 morph attribution, F3 step 1), re-measure on main; marked in PREDICTIONS P-079 and PROGRESS. (2) Restack: cd-strip, cd-roll-ca, countdown-faces and hero-exit-threaded build on main + morph-inherit from their next build; C-033 and P-081 stand (countdown; y <= 884). (3) Reviewer's panel countdown cells at m 0.9/1 differ from the baseline in WebKit (max 11, 52 px over 8), attributed to st6-rb2, OBSERVED: sent to fix-cd-strip and de-countdown. (4) P-085: Simulator time-series check first, then fix-nav-morph's ticket, then ops second read. PROGRESS item morph-inherit added (landed).
 - 14:3xZ **platform-idle landed** (501d9f7, lead): PROGRESS item platform-idle added as landed (L) with its P-077 numbers. The lead's line said "stays pixel-identical"; the README says not identical by a few LSB, accepted by the user (PR-009), so the plain line says "looking the way you accepted" (told the lead). Lead 14:2xZ: reduced-motion face-photo pixels are load noise, OBSERVED, cause unknown; PR-009 and the P-077 carry stand.
 - 14:1xZ **P-085 = morph-inherit** (lead): a short phone no-worse check of morph-inherit (c4228b8, JS 7c61fe7d0662) against the baseline at the morph, driver M or a push past the end, under T-039 B; queued after C-033 and the P-081 block. fix-nav-morph registers the ticket after review-morph-inherit accepts; ops second read before data. The lead cherry-picks c4228b8 if the review accepts (its gate scripts sit in 28c36e2). Hand-backs go straight to the lead.
