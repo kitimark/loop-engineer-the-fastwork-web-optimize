@@ -4,11 +4,13 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** F build done (rounds 4-8, "F rounds 4-8" below), measured by Simulator counts and frozen-frame pixels
-(no timing: timing A/Bs deferred, user 2026-10-02). Not ready to land. Next: the phone block on the F build under a
-new prediction (P-08x, registered by ops) in the normal condition, then the finger swipe A/B (lead, 2026-10-03).
+(no timing: timing A/Bs deferred, user 2026-10-02). Pixel decision: the user accepted PR-011 rev 1, option
+accept-both (2026-10-03 15:23Z; both items, see "Tiers under the wide rule"). Land candidate 5a8a96d (restacked on
+main + morph-inherit). Not ready to land: the gate is P-081 (the F phone block, ticket below; the iPhone is
+disconnected, T-047), then the finger swipe A/B (top-3 smoothness fix under the less-work rule).
 P-074 (V build, 30 ms timer grid) sent this back to F: touchstart OUT (+2 style recalcs), rest no data. The F build
 removes the touchstart style work (0 vs C 0), keeps the writer on wide layouts (R5), and parks the animations at rest.
-Open for the user: the deck item (R6, T3) and the PR-010 tier of the live-frame bits ("Pixel tiers").
+Both pixel items (the live-frame bits and the deck item R6) were decided by the user in PR-011 (accepted).
 Earlier rounds: review round 2 (NEEDS-FIX on 66d2abe), round 3 (ACCEPT-WITH-NOTES on e36423f, P-074 ticket read
 NEEDS-FIX). Current build: JS `8e43f3792dbf`, CSS `cc74cd980e72` (snapshot `out/snapshots/hext-V-8e43f3792dbf`).
 **Stage:** F (build card in "F rounds 4-8"). D: ST-1 accepted by the lead 2026-10-03 01:17Z as "partly LOCATED"
@@ -115,7 +117,7 @@ same C snapshot on its own server, a true A/A in the same session).** Tolerance 
 `research/pixel-tolerance/README.md` §1: area beyond A/A = pixels that differ where C2 vs C does not; ">8" = over 8
 levels; status-bar clock and countdown digit rows (in the A/A too) left out.
 
-| frame | F vs C beyond A/A | > 8 levels | max | edge / fill | A/A (C2 vs C) in that area | tier (PR-010, pending with the user) |
+| frame | F vs C beyond A/A | > 8 levels | max | edge / fill | A/A (C2 vs C) in that area | tier (PR-010 options, as read before the user chose "wide") |
 |---|---|---|---|---|---|---|
 | parked: at rest, y0, settle, drop, 300 / 700 / 1500 ms after a return to the top | 0 | 0 | 0 | | clock and digits only | T1 |
 | first scroll from the top (y0 → y6, the band) | 0 | 0 | 0 | | clock and digits only | T1 |
@@ -125,6 +127,34 @@ levels; status-bar clock and countdown digit rows (in the A/A too) left out.
 | live y36 | 8,565 px (0.237 %, 952 CSS px²), cue | 2,119 px (0.059 %, 235 CSS px²) | 17 | edge (fill max 2) | 0 | T2 under B (E 17 ≤ 64, 0.059 % ≤ 0.1 %, 235 ≤ 300 CSS px²); at any level 0.237 %: T3 under B, T2 under C |
 | R6: return to the top while live, frames 1 to ≥ 120 ms | 57,584 px (1.6 %, 6,398 CSS px²), deck cards | 5,332 px (0.148 %, 592 CSS px²) | 88 | edge (fill max 3) | 0 | **T3** (photos; E 88 > 64; > 8 area 0.148 % > 0.1 %) |
 
+**Tiers under the wide rule** (PR-010 rev 3 "wide", accepted 2026-10-03 15:21Z: fill ≤ 64, edge ≤ 128, ≤ 0.5 % of
+the screen beyond A/A, ≤ 2,000 CSS px² per element; motion-only differences stay with the user). The numbers were
+recomputed from the same frames (f7px1-3; scratchpad `tier.mjs`, F frame k vs C frame k+1, A/A = C2). Class is taken
+from C's 3x3 neighbourhood per changed pixel: fill means a range ≤ 2, texture 3-47, strong edge ≥ 48 (an outline).
+Countdown and clock rows are left out (the A/A shows them too). Both items were decided by the user anyway: PR-011
+rev 1, accept-both, 2026-10-03 15:23Z.
+
+| item | largest shade | share of screen beyond A/A (any level / > 8) | CSS px² per element (any / > 8) | edge or fill | static or moving | wide tier |
+|---|---|---|---|---|---|---|
+| 1, live y306 (frames 1-2) | 1 | 0.152 % / 0 | cue 485 / 0; headline lines ≤ 54 | cue glow fill (max 1) + glyph edges (max 1) | moving only (and ≤ 300 ms after) | numbers T2; motion-only, so the user's |
+| 1, live y57 | 2 | 0.163 % / 0 | cue 562 + chevron 92 / 0 | cue edge texture (max 2), fill max 1 | moving only | numbers T2; motion-only, so the user's |
+| 1, live y36 | 17 | 0.237 % / 0.059 % | cue 810 / 197, chevron 141 / 39 | label and chevron edges (max 17), fill max 3 | moving only | numbers T2; motion-only, so the user's |
+| 2, R6 deck at 120 ms after a return to the top while live | 88 | **1.597 %** / 0.148 % | left cards **3,894** / 470; right cards **2,505** / 122 | photo detail and card outlines: strong edge 12,953 px max 88, texture 35,931 px max 33, fill 8,700 px max 2 (> 8: 4,795 edge, 537 texture, 0 fill) | moving only (frames 1 to ≥ 120 ms, 0 from 300 ms) | **T3** |
+
+- **R6, the 88:** it is an edge level, not fill. It sits on strong-edge pixels (≤ 128 would pass E); texture reaches
+  33 and flat fill 2, both under F = 64. R6 is still T3, for three reasons:
+  - at any level it covers 1.6 % of the screen (X = 0.5 %) and 3,894 / 2,505 CSS px² per side (Y = 2,000);
+  - it is photo detail (texture plus card outlines), not only anti-aliased edges, and photos are T3 in the write-up;
+  - it shows only in motion.
+  With > 8-level area it would pass X and Y (0.148 %, 470 / 122 CSS px²), but the photo and motion clauses remain.
+- **Item 1** meets every T2 number under either area reading, plus T2's other conditions:
+  - glyph edges and the cue's glow gradient only;
+  - nothing moved, recoloured or re-worded;
+  - reduced motion runs C's code;
+  - Chrome runs C's code (computed styles 0 diff);
+  - Simulator checked against a true A/A;
+  - no path shift.
+  It shows only while the page moves, so by the motion clause it stays the user's decision.
 - No difference is "noise": the A/A arm shows none of them. The live-frame bits are motion-only: they show while
   the page scrolls and up to 300 ms after; parked frames are T1.
 - PR-010 (b) defines the area as pixels over 8 levels; under that definition the y306 and y57 bits have area 0. The
@@ -257,7 +287,8 @@ A Timeline attribution block with frame-gap counts, not a gain block. The predic
 
 ### Restack on main + morph-inherit (build R: JS `e3b6fd558dbf`, CSS `cc74cd980e72`)
 
-`patch.diff` is now baseline + st6-rb2 + morph-inherit + this fix. It is needed for the live Try-it of PR-011 rev 2.
+`patch.diff` is now baseline + st6-rb2 + morph-inherit + this fix. It was made for PR-011 rev 2's live Try-it, which
+was dropped when the user accepted rev 1. It is the land candidate.
 - **How it was made.** R = F7 plus the same morph-inherit delta (`fixes/morph-inherit/delta-vs-st6rb2.diff`) that
   turns C (st6-rb2, JS `7bf7c4657d21`) into morph-inherit (JS `7c61fe7d0662`).
   - That delta only adds the nav header's `__mkW` writer (JS about 13490 and 13611). CSS is unchanged.
