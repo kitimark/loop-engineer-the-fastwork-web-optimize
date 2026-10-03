@@ -163,10 +163,16 @@ Raw output in `out/` and the scratchpad is disposable, but the study's write-up 
   `fastworkDerived: true` (the report flags them MUST KEEP; Hard rule 3). Cap: 200 MB per topic; more needs the lead's OK.
   Before a worktree is removed, the lead copies its evidence to the same relative path in the main checkout (the
   report finds it there).
-- **Throwaway Chrome profiles** remove themselves: a profile made with `tempProfileDir()` and launched by
-  `launchChrome()` (`tools/lib/cdp.mjs`) is deleted at `close()`, on an error exit and on SIGINT/SIGTERM/SIGHUP; only a
-  SIGKILL leaves it (with a marker file). Probes use `tempProfileDir()` for every throwaway profile, never a fixed
-  `chrome-profile` folder; `FW_KEEP_PROFILE=1` (`check.mjs`, `bench.mjs mech`: `--keep-profile`) keeps one to debug.
-- **Report, read-only:** `node tools/space.mjs report [--list out/space.tsv]` lists leftover profiles, `out/` of
-  finished worktrees, scratch folders, the evidence and the free space; it deletes nothing. `lock.mjs status` and
-  `fix.mjs doctor` print a WARNING under 10 GB free. Deleting is the user's decision.
+- **Throwaway Chrome profiles** mostly remove themselves: a profile made with `tempProfileDir()` and launched by
+  `launchChrome()` (`tools/lib/cdp.mjs`) is deleted at `close()`, on an error exit and on SIGINT/SIGTERM/SIGHUP. A
+  SIGKILL leaves it (with a marker file), and that path is still common: a stopped shared or short `lock.mjs run`
+  (Ctrl-C, or a signal to the run) sends its command SIGKILL right after the signal, so the profile leaks there
+  (a grace period in `lock.mjs` is a separate fix). The `--max-seconds` stop (SIGTERM, then SIGKILL 3 s later) and a
+  normal hold's stop do leave time for the cleanup. Probes use `tempProfileDir()` for every throwaway profile, never a
+  fixed `chrome-profile` folder; `FW_KEEP_PROFILE=1` (`check.mjs`, `bench.mjs mech`: `--keep-profile`) keeps one to debug.
+- **Report, read-only:** `node tools/space.mjs report [--list out/space.tsv]` lists leftover throwaway profiles,
+  research-probe profiles (fixed names, apart), `out/` of finished worktrees (landed on main, or board rows
+  done/landed/dropped; parked counts as active), scratch folders, the evidence and the free space; it deletes nothing.
+  Its du/ps/lsof/git load the Mac for ~30 s, so it refuses beside anyone else's normal hold; run it in your own:
+  `node tools/lock.mjs run chrome-measure --owner <you> --no-timing --max-seconds 600 -- node tools/space.mjs report`.
+  `lock.mjs status` and `fix.mjs doctor` print a WARNING under 10 GB free. Deleting is the user's decision.

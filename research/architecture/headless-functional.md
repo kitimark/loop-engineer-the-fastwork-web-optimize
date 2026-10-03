@@ -202,6 +202,12 @@ side. Use it before queuing `fix.mjs ab`, and as the screenshot sanity check bef
 
 - **Profile:** `out/chrome-fn/<owner>-<pid>-<random>/`, made by a new `lib/cdp.mjs tempProfileDir()` and removed after
   `close()`, also on exit. This is safe because a dir is never shared.
+  - Correction (I-095, 2026-10-03): "also on exit" did not hold. Until I-095 the tools removed the dir after `close()`
+    and in a `process.on('exit')` hook, and a default SIGTERM (the lock's `--max-seconds` stop) skips that hook, so stopped
+    runs left 75-160 MB each (with probes, ~430 profiles and ~32 GB filled the disk). Since I-095 `launchChrome()` owns
+    the dir: it records it at creation (marker `.fw-temp-profile.json`) and removes it at `close()`, at exit and on
+    SIGINT/SIGTERM/SIGHUP. It still leaks on SIGKILL, which a stopped shared or short `lock.mjs run` sends right after
+    the signal; `node tools/space.mjs report` lists such leftovers (read-only).
 - **Ports:** `--remote-debugging-port=0` (DevToolsActivePort is read back, as today), and mirror servers on `--port 0`.
 - **Outputs:** a stamped `--out` dir.
 - r2 ran 3 such jobs at once with no collision.
