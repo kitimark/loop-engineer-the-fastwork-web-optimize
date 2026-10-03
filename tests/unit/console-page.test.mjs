@@ -21,7 +21,7 @@ class Node {
   getAttribute(k) { return this.attrs[k] ?? null; }
   addEventListener(e, f) { (this.listeners[e] ||= []).push(f); }
   appendChild(c) { this.children.push(c); return c; }
-  append(...c) { this.children.push(...c); }
+  append(...c) { this.children.push(...c.map((x) => (x === null || x === undefined ? new Node('#text', String(x)) : x))); } // as the DOM: a non-Node becomes text
   replaceChildren(...c) { this.children = c; }
   querySelector() { return null; }
   querySelectorAll() { return []; }
@@ -111,4 +111,20 @@ test('I-059 "Start over": two taps (Keep going backs out), then POST restart; th
   assert.match(again.textContent, /Open · try 2/);
   assert.match(again.textContent, /You started over \(try 2\)\./);
   assert.deepEqual(buttons(again), ['Start open', 'Start over', 'Skip / not now']);
+});
+
+test('I-085: answer buttons without --scale show no "null" text (DOM append() turns null into the text "null")', async () => {
+  for (const post of [{ kind: 'question', title: 'Smoother?' }, { kind: 'choice', title: 'Which?', options: 'a,b' }]) {
+    const s = await C.post({ by: 'r', ...post });
+    await C.start(s.id);
+    const open = await renderPage([C.publicView(C.get(s.id))]);
+    assert.ok(buttons(open).length >= 2, 'the answer buttons render');
+    assert.doesNotMatch(open.textContent, /null|undefined/, `${post.kind}: no stray text`);
+  }
+  const sc = await C.post({ by: 'r', kind: 'question', title: 'Rate', scale: '1-3' });
+  await C.start(sc.id);
+  const open = await renderPage([C.publicView(C.get(sc.id))]);
+  assert.match(open.textContent, /\(optional, choose before your pick\)/, 'with --scale the label and the scale still show');
+  assert.deepEqual(buttons(open).slice(0, 3), ['1', '2', '3']);
+  assert.doesNotMatch(open.textContent, /null|undefined/);
 });

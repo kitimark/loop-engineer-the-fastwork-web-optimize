@@ -266,8 +266,10 @@ function answerPanel(s) {
     var b = el('button', { class: 'primary', type: 'button', onclick: function () { act(s.id, 'answer', { value: o, notes: notes(s), scale: drafts[s.id + ':scale'] }, b); } }, o);
     opts.appendChild(b);
   });
-  box.append(el('h3', { text: s.parts.length ? 'Your pick' : 'Your answer' }),
-    sc ? el('label', { class: 'small', text: sc.label + ' (optional, choose before your pick)' }) : null, scaleRow, opts, notesBox(s));
+  // I-085: nulls skipped (no --scale: no label, no scale row); DOM append() would turn each null into the text "null"
+  [el('h3', { text: s.parts.length ? 'Your pick' : 'Your answer' }),
+    sc ? el('label', { class: 'small', text: sc.label + ' (optional, choose before your pick)' }) : null, scaleRow, opts, notesBox(s)]
+    .forEach(function (n) { if (n) box.appendChild(n); });
   return box;
 }
 
