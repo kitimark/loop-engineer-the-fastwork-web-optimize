@@ -14,6 +14,13 @@ phone width but **not exact** overall:
 - WebKit costs about 2.4 more carousel layouts per slide.
 - P5 misses on 8 quantities by up to 0.018 px.
 Not landable on P-087; the route is the lead's.
+**st6-rb2 follow-up (lead route on F-198, 2026-10-04): D2-D4 done (describes only). Nothing built.**
+- The WebKit difference is not geometry: every face sits at the same sub-pixel position and scale at rest.
+- It is image interpolation quality. Each slide puts the baseline into WebKit's page-wide Low-quality mode
+  (ImageQualityController, CONFIRMED in source; that it explains our numbers is OBSERVED, decisively checked). st6-rb2
+  never enters it.
+- At quiet rest, what remains is 523 px at max 81 from st6's no-flip slot values.
+- Options went to the lead (section "D4 result"). The exact option conflicts with st6's saving.
 **Base:** st6-rb2 (`fixes/st6-rb2/patch.diff`, JS `7bf7c4657d21`, CSS `f523598b2a24`). Deliverables: `patch.diff`
 (baseline-relative) and `delta-vs-st6rb2.diff` (for wi-best-build).
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (`.is-sliding` rules and `@keyframes avatars-exit`).
@@ -639,16 +646,16 @@ load-state.
 | prediction | result |
 |---|---|
 | P1 Chrome phone (C2) | **HIT.** F~A and F2~A n8 0 at all 13 points; A~A2 0 everywhere (post300 too); A~S 1043-18366 at t 0-200 |
-| P1 WebKit phone (W1) | **MISS.** F~base n8 2877 (t 0), 905-1263 (17-100), 356 (133-167), 0 (200), 356 (220/post/post300); max shade 141-157; base~base2 0, F~F2 0 |
+| P1 WebKit phone (W1) | **MISS.** F~base n8 2877 (t 0), 905-1263 (17-100), 356 (133-167), 0 (200), 356 (220/post/post300); max shade 141-157; base~base2 0, F~F2 0. *Measured under the settle loop (D4): base was in its slide-time Low-quality state from t 17 on* |
 | P2 Chrome phone (C3 re-run) | **MISS by the registered rule**; A~A2 0. See below |
-| P2 WebKit lens (W1) | **MISS.** lens n8 = natural n8 at every t, A/A 0 |
+| P2 WebKit lens (W1) | **MISS.** lens n8 = natural n8 at every t, A/A 0. *Measured under the settle loop (D4)* |
 | P3 Chrome (C1) | **HIT.** F~E max L.w 0.064, N.xr 0.072, N.w 0.051, all else ≤ 0.047 px / 0.0016, inside E~E2/F~F2 + 0.05; end offset -22/-2 in all 6 slides of every arm |
 | P3 Sim (W2, shape.mjs) | **HIT as registered (F~E); noise-limited: F~F2 and F2~E exceed the median limits** (ops ruling: the decider is F~E; F2 enters only the maxima clause through max(E~E2, F~F2); F2~E is not a registered quantity). Medians F~E L.w 0.030, V.x0 0.023, V.x1 0.057, F1.xr 0.059 against limits 0.120/0.084/0.162/0.144. F2~E 0.294/0.162/0.568/0.597. F~F2 medians 0.158/0.103/0.099/0.144. Maxima and end offsets inside |
 | P4 Chrome (C1) | **HIT.** 5 slides each. Layout E 68, E2 68, F 68, F2 69. UpdateLayoutTree 306 in all. Paint per slide 192/178/192/182. Writes per slide 2 class + 5 src in all |
 | P4 Sim (W2) | **MISS.** Carousel-rooted layouts per slide E 6.0, E2 6.2, F 8.4, F2 8.4 (limit 5.0-7.2). View-rooted per frame F 0.78/0.77 ≤ 0.83 (hit). Totals: layouts E 265/265, F 274/275; paints E 217/220, F 272/277 |
 | P5 (C2) | **MISS on 8 quantities by up to 0.018 px.** Scene `paused` away in all arms; pz F~A 0 = A~A2 0. Return series A~F vs A~A2: L.w 10.248 vs 10.232, L.o 0.2123 vs 0.2113, L.s 0.1375 vs 0.1374, F1/F2/F3.xr 5.078 vs 5.063, N.xr 9.230 vs 9.212, N.w 8.303 vs 8.297, N.s 0.2595 vs 0.2593 (ops re-score identical). A~F2 inside or equal on every quantity |
 | P6a Chrome 1440 (C4 + re-run) | **Undecided, to the lead.** A/A-limited at every point (A~A2 2715 at t 0, then 136-183, max shade 23-96; the re-run repeats it). A~F 1024-1809 (max 57-67) |
-| P6a WebKit iPad (W3, 1032 CSS px, DPR 2) | **MISS** against base~base2 0. F~base 470-2012; F's own load-to-load spread F~F2 248-1440 (687 at rest) |
+| P6a WebKit iPad (W3, 1032 CSS px, DPR 2) | **MISS** against base~base2 0. F~base 470-2012; F's own load-to-load spread F~F2 248-1440 (687 at rest). *Measured under the settle loop (D4)* |
 | P6b Chrome 1440 (C5 re-run) | **MISS by the registered rule** (the same 5/7 relations as at phone width); A~A2 rel 0; lens A/A-limited |
 
 **P2 Chrome in detail.** No relation that involves the leaver differs, and `overLead` is empty in A and F at every t.
@@ -671,9 +678,9 @@ Sim fw-sim, phone width, DPR 3. Each arm loaded twice: base~base2, E~E2 and S~S2
 
 | row | t 0 (moving) | t 100 (moving) | post (static, at rest) |
 |---|---|---|---|
-| E~base | max 231, 0.118 %, fill | max 179, 0.064 %, fill | **max 179, 0.029 % (862 px), fill**: 80/2/12/1 CSS px² per face |
+| E~base | max 231, 0.118 %, fill | max 179, 0.064 %, fill | **max 179, 0.029 % (862 px), fill**: 80/2/12/1 CSS px² per face (under the settle loop, D4) |
 | F~base | max 168, 0.086 %, fill | = E~base | **= E~base (862 px, identical)** |
-| S~base | max 230, 0.052 %, fill (49 % edge) | max 156, 0.135 %, fill | **max 157, 0.110 % (3303 px), fill**: 133/97/46/91 CSS px² per face (includes S's 2 px end offset) |
+| S~base | max 230, 0.052 %, fill (49 % edge) | max 156, 0.135 %, fill | **max 157, 0.110 % (3303 px), fill**: 133/97/46/91 CSS px² per face (the settle loop holds base at Low quality here; at quiet rest S~base is 523 px, max 81, D4) |
 
 - **E~F**: 1069, 492, 206, 59 and 17 px at t 0-67, then 0. This is F's z-index acting in WebKit, in the overlap lens,
   during the leaver's opaque part. At t 0 it reduces the difference from the baseline: 3541 → 2572 px.
@@ -900,6 +907,80 @@ checked after the hold.
 - Either way, nothing is built. The finding and the options go to the lead. The baseline's look then depends on a
   WebKit timing heuristic: low quality from a slide's start until 500 ms after its last scaled-image paint. Matching
   that frame by frame is a different job from "position and phase".
+
+### D4 result (2026-10-03 19:31:32-19:34:20Z, one hold, exit 0)
+
+The last pmset entry was at 17:57:12Z, so the hold did not overlap a sleep. Served hashes matched the D4 table. Every arm
+caught the same slide (the graphic-designer face leaving), with no blank or unsettled shot. Raw data:
+`out/carousel-leaver/d4/`.
+
+Each n8 row lists, in order: t 0 / 17 / 33 / 50 / 67 / 83 / 100 / 133 / 167 / 200 / 220 / post / post300 / quiet.
+
+| pair | n8 |
+|---|---|
+| base~base2 | 0 everywhere |
+| **base~Bs** (base vs base pinned Low) | 3421 / **0 from t 17 through post300** / 3501 at quiet |
+| **base~Bq** (base vs base pinned Default) | **0 at t 0** / 2719-3427 from t 17 through post300 / **0 at quiet** |
+| **S~Sq** (S vs S pinned Default) | **0 everywhere** |
+| base~S | 1568 / 3618-12714 moving / 3303 at post and post300 / **523 at quiet** |
+| Bq~Sq (both Default) | 1568 / 849-6585 moving / **523 at post, post300 and quiet** |
+| Bs~Ss (both Low) | 1944 / 1619-6794 moving / **971-1263 at rest** |
+
+**Five numbers at quiet rest** (`tier.mjs`): base~S = Bq~Sq is max **81**, 523 px (0.0174 % of the viewport), fill (41 %
+edge), static, on two faces (50.4 and 7.7 CSS px²). The A/A is 0.
+
+**Reading** (statuses kept separate, as ops asked):
+- **The mechanism is CONFIRMED in WebKit source**: `Source/WebCore/rendering/ImageQualityController.cpp`, WebKit
+  `main` as read on 2026-10-04 (raw.githubusercontent.com; no commit hash was shown).
+  - `chooseInterpolationQualityForBitmapOfSize(…, RenderBoxModelObject&, …)` returns `InterpolationQuality::Low` and
+    restarts the timer while `m_animatedResizeIsActive` is set.
+  - That flag is set when an object is painted at a second size while the 500 ms timer (`lowQualityTimeThreshold`) is
+    active.
+  - `highQualityRepaintTimerFired` clears it and repaints the tracked objects.
+  - `interpolationQualityFromStyle` maps `optimizeSpeed` to Low and `optimizeQuality` to Default.
+- **That it explains our numbers is OBSERVED in our setup**, now with a decisive local check:
+  - Base paints its faces at Low from its first resize frame (t 17) through post300. Under our 250 ms settle loop it
+    equals base pinned Low, 0 px.
+  - At t 0, and after 1.5 s with no snapshot, it equals base pinned Default, 0 px.
+  - S never leaves Default (S~Sq 0 everywhere): its leaver only scales, and its layout size never changes.
+- **Probe caveat** (ops): the settle loop's own snapshots are Low-quality paints that keep restarting the timer.
+  - Every P-087 / D1 / D3 WebKit number at post and post300 therefore shows base in its slide-time Low state, not its
+    quiet rest. This applies to W1 at phone width and W3 on the iPad: "measured under the settle loop".
+  - At quiet rest, st6-rb2 differs from base by 523 px at max 81, not 3303 at max 157.
+- **What remains with the quality matched is the slots' own painting:**
+  - At Default: 523 px, max 81.
+  - At Low: 971-1263 px, max 157.
+  - D3's Sw (S's slots at rest as base's imgs: transform none, opacity 1) paints exactly as base at Default (base~Sw at
+    rest 3501 = base~Bq; S~Sw 523 = Bq~Sq).
+  - So these pixels come from st6's no-flip rest values, `transform: scale(1)` and/or `opacity: 0.999`. Will-change
+    has no effect (D3 Sv). Which of the two it is has not been split.
+
+**What the baseline's look is**, in WebKit on screen (reasoned from the source, UNRESOLVED until checked on screen):
+- Each slide switches the whole page into Low-quality image interpolation from the leaver's second resized paint.
+- It switches back 500 ms after the last scaled-image paint, so roughly from 280 ms after the swap until the next slide
+  starts. Faces are drawn at Default quality for only about the last 300 ms of each 1.02 s cycle.
+- st6-rb2 draws them at Default throughout. F's leaver resizes again (E's layout keyframes), so F triggers the same mode.
+- But F's faces sit in their own composited layers. A follower moved by reflow need not repaint, so on screen F's faces
+  may keep their Default-quality backing stores through a slide.
+- `Page.snapshotRect` repaints everything in software, so it cannot show that difference. Only an on-screen capture can
+  (for example the Simulator's own screenshot of the composited frame, if one is allowed).
+
+**Options for the lead** (none built; the bar is the baseline's look, not a smoother picture, per ops):
+1. **G1 = F + base's rest values on the slots** (`transform: none; opacity: 1`, which is D3's Sw rule; will-change may
+   stay).
+   - Expected: the slot painting matches base (Sw = base at Default, 0 px). F already reproduces the Low-mode trigger.
+   - Cost: it removes st6's no-flip guarantee. The leaver and the next slot cross hasTransform / isOpaque at each slide
+     start and end, which brings back the whole-view Layouts st6 removed (`fixes/rotator-st6/README.md`: view Layout
+     71/71 → 1/36; S7 on the phone, idle dt > 34 at 19-27 per 20 s without st6, 0 with it).
+   - That is the exact-versus-cheap conflict the spawn rule sends to the user.
+2. **Split the 523 px first** (one describes-only arm pair: `transform: none` alone vs `opacity: 1` alone).
+   - If only one of the two values paints differently, G could keep the other and change only it.
+   - Either value still flips (st6's comment names both), so the conflict likely stays, but at half the cost.
+3. **Keep st6-rb2's look** (smooth faces through the slides).
+   - That is T3 at quiet rest (max 81 > fill 64), and larger during slides and the 500 ms after.
+   - It becomes a user proposal, together with the rm1440 question.
+4. **In any case**, checking G's on-screen look in WebKit needs an on-screen capture (option 1's composited slots
+   versus base's repainted faces), not `snapshotRect`. That is a method question for the lead.
 
 ## Deliverables
 
