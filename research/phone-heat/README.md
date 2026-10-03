@@ -334,6 +334,84 @@ Corrected slopes at 37.0 °C, per segment, °C/min:
 - **Falsifiers of the premise "Fastwork's always-on work heats the phone":** F not below B in a session, or B's idle
   slope ≤ F's idle slope in both sessions.
 
+## Result (H1 + H2, 10-03 01:33-03:34Z)
+
+iphone-runner ran both sessions with scorer `1ca63e2b4d11` at main 4fb3098. Tools did not change between the
+sessions. Both sessions ran as attempt 1, with the battery held at 80 % (never charging), and both passed the floor
+check. X was st6-rb2 alone (no stacked countdown build).
+
+The data stays local in iphone-runner's worktree, under `out/phone-heat/`:
+- `samples.jsonl`, sha256/12 `3c14bcd297ce`;
+- `score.json`, `61219d594ea6`;
+- `RUNLOG.txt`.
+
+de-heat re-scored `samples.jsonl` independently with the committed scorer and got identical numbers.
+
+**Verdicts (pre-registered rules):**
+
+| comparison | H1 dCorr | H2 dCorr | raw H1 / H2 | verdict |
+|---|---|---|---|---|
+| B − A (Fastwork vs apple.com) | +0.565 | +0.413 | +0.433 / +0.365 | **Fastwork heats more** (≥ 0.10 in both; raw signs agree) |
+| B − X (fixes vs baseline) | +0.428 | +0.162 | +0.337 / +0.141 | **the fixes cool the phone** (≥ 0.05 in both; raw signs agree) |
+
+**Corrected slopes (°C/min, H1 / H2) against the prediction:**
+
+| arm | H1 / H2 | predicted [interval] | in? |
+|---|---|---|---|
+| F | −0.085 / −0.105 | −0.10 [−0.25, +0.10] | yes |
+| A | +0.055 / −0.013 | 0.30 [0.10, 0.50] | **no, below**: apple.com barely heats the phone above the floor |
+| B | +0.620 / +0.400 | 0.45 [0.30, 0.60] | H1 above (see D2), H2 in |
+| X | +0.192 / +0.238 | 0.40 [0.25, 0.55] | **no, below** |
+
+**The other pre-registered predictions:**
+
+| prediction | measured | in? |
+|---|---|---|
+| B − A: +0.15 [−0.10, +0.35]; "Fastwork heats more" ~50 % | +0.565 / +0.413 | no, above the interval; the verdict was the predicted favourite |
+| B − X: "the fixes cool the phone" ~30 % | that verdict | it was the less likely outcome |
+| E_B / E_A: 1.5 [0.8, 2.5] | 0.705 / 0.140 = 5.0 (H1); 0.505 / 0.092 = 5.5 (H2) | no, far above |
+| Idle phase: B's idle slope above A's in both sessions, ~75 % | yes (0.82 vs −0.12; 0.26 vs −0.06) | yes |
+
+Excess over F, per session:
+- A: +0.14 / +0.09
+- B: +0.71 / +0.51
+- X: +0.28 / +0.34
+
+The fixes remove (B − X) / (B − F) = 61 % (H1) and 32 % (H2) of B's excess over the floor. This is descriptive.
+
+**Falsifiers** of "Fastwork's always-on work heats the phone" did not fire:
+- F is below B in both sessions.
+- B's idle slope is above F's in both sessions (0.82 and 0.26 against −0.10 and −0.10).
+
+**Deviations** (RUNLOG D1-D4) and whether they matter:
+- **D2: H1-3B was pre-warmed inside its hold.** It ran 3 uncounted W cycles on B, from 35.39 to 36.59 °C. Its idle
+  slope is 0.82 against H2-2B's 0.26, so the H1 B slope is likely inflated. Even so, both verdicts hold on H2 alone,
+  and they hold if H1's B is replaced by H2's 0.40: B − A would be +0.345 and B − X +0.208.
+- **D1: H1-2A started at 36.00 °C,** inside the window. A low start biases its corrected slope upward, which works
+  against "Fastwork heats more".
+- **D3: two holds started at Mac load1 23 and 26.8, both decaying.** The metric is phone-only, so this is flagged, not
+  voided.
+- **D4: B and X ran 4 cycles, F and A ran 5.** The ticket fixes time, not cycles. Fewer scroll cycles on the Fastwork
+  arms works against the "more" verdicts.
+
+**System power (descriptive only; units and meaning UNRESOLVED, no watts claimed).** These are SystemPowerIn medians
+over F, H1 / H2:
+- A −136 / +272
+- B +3368 / +2256
+- X +935 / +1591
+
+SystemLoad is similar. Power and temperature agree in direction for every arm. The battery's own power read about 0
+in every segment, as expected while held.
+
+**Outcome as pre-registered:**
+- Fastwork heats more: the page's own computation heats the phone, not the phone or the cable. Work at rest becomes a
+  ranked goal: countdown-faces, then the carousel.
+- The fixes cool the phone: this goes into PROGRESS as a heat gain, measured on st6-rb2 without the countdown fix.
+- Scope:
+  - one phone, on the cable at 80 % held, driver W;
+  - two sessions back to back on 10-03, with Auto-Lock off, fixed brightness and Low Power Mode off;
+  - apple.com measured live, so it is not frozen like the baseline.
+
 ## Tooling plan
 
 **What works today** (read from the code, not run on the phone; pre-flight step 2 is the check):
