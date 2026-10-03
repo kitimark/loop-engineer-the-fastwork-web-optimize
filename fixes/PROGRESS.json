@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T09:35:00Z",
+ "updatedAt": "2026-10-03T10:00:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T08:52:00Z", "text": "You accepted all five suggestions: fixes that make the page do less work can land on work counts plus one short phone no-worse check (the top three smoothness fixes keep the phone and your finger test); phone checks start warm, 38-40 °C." },
   { "at": "2026-10-03T08:35:00Z", "text": "F3's warm-phone test is done: no version showed the hitch, not even the original, so it can't tell whether F3 cures it. F3 doesn't land on this test; the next step is being decided." },
   { "at": "2026-10-03T07:20:00Z", "text": "Your 'land' choice on the countdown digit strips is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, and extra layout-shift reports). A corrected proposal comes to you, and you decide again." },
   { "at": "2026-10-03T07:01:00Z", "text": "You disconnected the iPhone at 07:01 and reconnected it at 07:09; phone tests carry on." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-02T11:30:00Z", "text": "The best build gains a seventh fix: the profile cards that are off screen are hidden while the people section starts to shrink. On the phone it removes one slow frame there (37 to 17 ms); the count of slow frames over the whole scroll did not drop." },
   { "at": "2026-10-02T10:45:00Z", "text": "New 'Best build' view: what today's best build (st6-rb) contains, what each fix gained on the phone, and what was tried and not applied, with the reason." },
   { "at": "2026-10-01T20:35:00Z", "text": "Carousel: the cause of the remaining layout is found. A build that avoids it (st6) removed it in 35 of 36 slide starts on the phone recording; it waits for timing tests to resume." },
-  { "at": "2026-10-01T20:20:00Z", "text": "Second style recording: one extra layout at the section switch can be removed, but another whole-page layout stays; the team is hunting its trigger before any fix is timed." },
-  { "at": "2026-10-01T20:08:00Z", "text": "Four cheaper look-alike proposals are ready for you to accept or reject; two more are coming. Your questions now have one thread per topic in the console." }
+  { "at": "2026-10-01T20:20:00Z", "text": "Second style recording: one extra layout at the section switch can be removed, but another whole-page layout stays; the team is hunting its trigger before any fix is timed." }
  ],
  "items": [
   {
@@ -551,6 +551,7 @@
   }
  ],
  "upcoming": [
+  { "title": "A 10-minute trial of the iPhone's own heat reading (thermal state, through Xcode) during a phone check (you agreed, T-029 #30)", "when": "being planned now" },
   { "title": "A rendering cost card for each fix: what each element costs to draw, from Chrome and the Simulator, using the phone less (you asked, T-029 #23)", "when": "the design is done and its method passed a check on the countdown; next, a small tool that makes the cards" },
   { "title": "Your new decision on the countdown digit strips (corrected proposal)", "when": "after one more check of the strips", "item": "cd-strip" },
   { "title": "Blind side-by-side look at the GPU countdown roll (cd-roll-ca)", "when": "once the digit strips (cd-strip) have landed (you asked for it, T-030 #10)", "item": "cd-roll-ca" },

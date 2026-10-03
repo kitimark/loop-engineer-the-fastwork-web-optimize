@@ -9,6 +9,19 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- **10:0xZ user accepted all 5 recommendations (T-029 #30, 08:52Z).** Memory notes are on main 03fb95e:
+  `memory/less-work-landing-rule.md` and `memory/phone-checks-start-warm.md`.
+  - (1) "Less work" fixes land on cost-card counts (per event, frame-driven counts from the full page) plus one short
+    phone no-worse check. The top-3 smoothness fixes (hero-exit, cd-strip, F3) keep the phone and the finger test.
+  - (2) Warm starts 38-40 °C, one start method per block.
+  - (3) One 10-min Xcode thermal-state trial; iphone-runner plans it. It is in PROGRESS upcoming.
+  - (4) LPM left out: record it, drop and re-run any LPM run.
+  - (5) No countdown-only test page.
+  - **Ops second reads from now on:** a less-work card names rule (1) as its gate. Every phone card names its start
+    band, and a block keeps one start method for every run. Signed D gates stay unless the lead re-signs them.
+  - Posted **F-170** (measurement, all) pointing at both notes. Told fix-platform-idle and fix-rest-script (the first
+    fixes under rule 1) that their D card names the rule. PROGRESS has a change line and the thermal trial in
+    upcoming.
 - **09:4xZ main b85af11** (my batch, rebased by the lead onto arch-isolated-measure's branch at 30d4c7f).
   - **I-083 opened, and ts-costcard spawned** (toolsmith, named, worktree). It builds `tools/costcard.mjs` from README
     §6; the first consumer is fix-nav-morph's F3 records. Added to the peer directory.
