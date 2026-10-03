@@ -994,6 +994,111 @@ edge), static, on two faces (50.4 and 7.7 CSS px²). The A/A is 0.
 4. **In any case**, checking G's on-screen look in WebKit needs an on-screen capture (option 1's composited slots
    versus base's repainted faces), not `snapshotRect`. That is a method question for the lead.
 
+## P-090: G attempt 1 (describes only; written before it runs)
+
+**Lead route (2026-10-04):**
+- Do option 2 now: split st6's two rest values at quiet rest, then look for a no-flip value of the culprit property
+  that paints like base. At most 3 candidates, five numbers at quiet rest each. This is G's attempt 1, and it targets
+  the quiet-rest 523 px only.
+- Don't build G1. The slide-time difference (base drops to Low quality, st6-rb2 stays Default) is a motion-only
+  difference, so it goes to the user whatever we build. Option 1 (st6's saving given back) goes to the user too.
+- On-screen check allowed: the Simulator's own screenshot of the composited frame (`xcrun simctl io <udid>
+  screenshot`, inside a `sim.mjs` session; not a camera, not the iPhone). Use it for one slide sequence, base vs S.
+- Then a proposal draft for the lead: (A) st6-rb2's look kept, plus a quiet-rest fix if one is found; (B) exact, with
+  st6's saving given back. Include the five numbers and the on-screen evidence.
+
+**Snapshot and builds.** Baseline snapshot `b1789284481295-4ad4a84a`. Base JS `4606120cf392`, CSS `27776f3d4138`. S
+= st6-rb2 (JS `7bf7c4657d21`, CSS `f523598b2a24`). Diagnostic overlays are read-only scratch copies of S (or base) with
+one CSS block appended. None is a candidate:
+
+| arm | build | appended rule | CSS sha |
+|---|---|---|---|
+| St | S | `img:not(.st5-next) { transform: none }` (opacity 0.999 kept) | `bc0a94f73bfe` |
+| So | S | `img:not(.st5-next) { opacity: 1 }` (scale(1) kept) | `d94cf79b7589` |
+| Sv | S | `img { will-change: auto !important }` (D3) | `dc4334967c89` |
+| Sw | S | all three: will-change auto, transform none, opacity 1 (D3) | `303e1050b81d` |
+| Bs | base | `image-rendering: optimizeSpeed` (Low, always; D4) | `f4a78b36b2af` |
+
+Selectors are under `.start-selling-avatars.is-carousel`. St/So/Sw keep `.st5-next`'s start state.
+
+**Probes** (`fixes/carousel-leaver/probe/`, hashes at registration):
+- `simquiet.mjs` `723236c5728b`. Per arm:
+  - catch the target slide (the first arm names it), jump it to its end, swap, hold the rotator;
+  - wait 1.5 s with no snapshot;
+  - take the **on-screen frame** first (`simctl io screenshot`, the whole device);
+  - then the `snapshotRect` crop, plus one more 250 ms later that must be identical (one pair, no settle loop);
+  - locate the snapshot in the screenshot (least SAD; VOID above 20 levels per channel) and crop the on-screen frame
+    to the same carousel ±4 CSS px rect;
+  - burst arms only: release the rotator and take a screenshot every 100 ms (at most 4 in flight) for 2.6 s, with an
+    in-page rAF log of slide start and end in `Date.now()`.
+- `tierq.mjs` `c36772776b4a`: tier.mjs's five numbers on the quiet crops (`scrc` on screen, `nat` snapshot).
+- `screenfaces.mjs` `6f16f68a1f81`: per burst shot, the inner disc of each face at rest slots 0-2 (radius 14 CSS px,
+  inside its own 24 px strip) against the same face in each reference arm's quiet crop (slot + 1, shifted 72 device
+  px): n8 and max. A shot matches a reference when n8 = 0 on all three discs.
+- `png.mjs` `52d21ec3f1d5`, unchanged.
+
+**F-199.** Every crop is the carousel ±4 CSS px (rect logged per arm), so the nav "EN" label is not in any crop.
+
+**Hold A, the split** (one shared-lane Sim hold, `caffeinate -i -s` inside, pmset after):
+- Arms in order: base, S, St, So, Sv, Sw, base2.
+- Readout: tierq for each arm vs base with aa base2, on screen (`scrc`, primary: what the user sees) and snapshot
+  (`nat`, comparable with D4); plus each arm vs S.
+- "X matches base" means base~X n8 ≤ base~base2 n8 on screen.
+- Decision (describes only):
+  - **S matches base on screen.** The 523 px is snapshot-only. There is no quiet-rest difference on screen, so no
+    candidate is needed and attempt 1 ends with that finding.
+  - **Exactly one of St / So / Sv matches.** That value is the culprit, and part 2 looks for a no-flip value of it.
+  - **Only Sw matches.** A combination is the culprit, and part 2 takes the pair.
+  - **None match.** The slot values don't explain the on-screen difference; report it, and no candidate follows.
+- Prediction, written before: snapshot as D4 (St or So carries the 523 px; source reading favours neither). On screen,
+  S's slots are composited (will-change), so the compositor applies opacity 0.999. In that case Sv may matter on screen
+  even though it does not in the snapshot (D3). P(S matches base on screen) 0.25.
+
+**Hold B, the on-screen slide sequence** (one shared-lane Sim hold, pmset after):
+- Arms base (burst), S (burst), Bs, base2.
+- Readout: `screenfaces.mjs <dir> base:base,Bs S:S`, the quiet pairs base~Bs, base~S and base~base2 on screen, and the
+  slide start and end times.
+- Expectation (reasoned from the ImageQualityController source; UNRESOLVED until this runs):
+  - base's shots at rest positions from the end of the slide (220 ms) to about 720 ms after its start match Bs (Low);
+    later shots match base's quiet crop (Default);
+  - S's shots at rest positions match S's quiet crop throughout.
+- Falsifier: base's rest-position shots in 220-720 ms matching base (Default), or S's not matching S.
+- Shots taken while the faces move match nothing (they are listed, not scored).
+
+**Part 2, candidates** (only if Hold A names a culprit):
+- At most 3 candidates. Each is a no-flip value of the culprit property only: hasTransform and opacity isOpaque stay
+  the same at rest, at slide start and at slide end (st6's invariant).
+- Each is one CSS block on S, named and hashed in an amendment sent to mgmt-ops-10 before its hold.
+- Scored in one hold (arms base, S, C1-C3, base2), tierq on screen and in the snapshot, against the bar below.
+- A candidate that reaches T2 on screen then needs, before any claim, each in its own hold and registered in the same
+  amendment:
+  - **Sim motion.** P-087's W2 form (`simclp.mjs` + `shape.mjs`). C~S medians of L.w, V.x0, V.x1 and F1.xr must stay
+    within S~S2's median + 0.05 px, and maxima within max(E~E2, F~F2) max + 0.5 px (P-087's interval, medians
+    reported). The candidate must not change st6-rb2's motion.
+  - **Sim reduced motion.** `sim.mjs session --reduce-motion on` (I-100, 0b082d16), `CL_NOSLIDE=1`: there is no slide
+    under reduced motion (JS L11346), so it is a quiet rest from load. matchMedia is recorded per arm (VOID if
+    false). Arms base, S, C, base2.
+  - **DPR 2 (fw-ipad).** C vs base at quiet rest against a load-to-load A/A of ≥ 3 loads per arm (de-breakpoints'
+    `probe-loads.mjs` design: alternating loads, classes of identical shots).
+  - **Chrome.** C~S at rest = 0 (Chrome stays 0), with P-087's Chrome rest crop and its A/A.
+
+**Bar** (ops):
+- WebKit T0 or T1, or T2 with the five numbers (fill max ≤ 64, edge max ≤ 128, ≤ 0.5 %), on screen at quiet rest,
+  against base, beyond the same hold's A/A. The look to match is the baseline's, not a smoother one: anything that
+  leaves S smoother than base is T3, a user proposal.
+- Chrome stays 0. Reduced motion is exact.
+
+**Stop.** This is attempt 1 of 2. If no candidate reaches T2, or no culprit is found, it is written up for the lead.
+The lead takes it to the user as a proposal with the rm1440 question. Attempt 2 runs only on the lead's route.
+
+**Statuses.** Every engine claim from these runs is OBSERVED in our setup until a source reference confirms it. The
+paint paths read so far (WebKit `789c0d1`):
+- `RenderLayer::paintLayerByApplyingTransform` (`RenderLayer.cpp` L4029-4057): device-pixel-snapped offset plus a
+  carried sub-pixel remainder;
+- `beginTransparencyLayers` (L2770-2805): an image-only layer is painted with `setAlpha`, anything else in a CG
+  transparency layer. Our imgs have a visible 1 px border, so they are not bitmap-only (`isBitmapOnly`, L6650-6668).
+Neither predicts max 81 by itself.
+
 ## Deliverables
 
 - `patch.diff`: baseline-relative, st6-rb2 + **F** (CSS `a984ae7b7715` and st6-rb2's JS `7bf7c4657d21`), regenerated
