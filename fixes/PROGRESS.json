@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T05:00:00Z",
+ "updatedAt": "2026-10-03T05:15:00Z",
  "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -74,7 +74,7 @@
     "text": "not built yet"
    },
    "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
-   "next": "The version is chosen: it matches the original exactly in every picture check. Next: the independent review, then the wave-2 phone run.",
+   "next": "One refinement first: the chosen version made more style changes while the menu opens and at the end of the page, so a wrapper now makes one change per step. Three short checks, a new prediction before any phone data, then the review and the wave-2 phone run.",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-072", "what": "wave-2 phone run of the chosen version: no new slow frames (prediction being written before any data)", "result": "" }],
    "details": [
@@ -82,7 +82,8 @@
     "Lead approved fix-cd-strip's D proposal (10-03 00:2xZ): the strip replaces countdown-faces (a), (b) stays. Stacks on F3 (fix-nav-morph sent its nodes/2 line range).",
     "F-153 (fix-cd-strip, coupling): cd-strip supersedes countdown-faces (a) and illusion-digit-layers for the countdown; countdown-faces (b), the hidden-skip gate, must be rebuilt on cd-strip by de-countdown after cd-strip lands, on the lead's order (planned stack st6-rb2 -> cd-strip -> cd-roll-ca -> (b), 77c9f75). cdwc's panel .face rule matches nothing after cd-strip (arm b ships its own .strip will-change: auto retarget). __cdStripY is periodic: a strip driver keeps offsets in [0, 9].",
     "Step 4 (10-03 02:3x-03:2xZ): remainder variant dropped; suspect was the backing size (visible cell only and per-cell layers both give 0 px in the Simulator). Lead: pick strip + cell layers if its last pixel rows pass. Chrome: identical except hero fade 0.9 (delta 1, beyond A/A, 7 shots).",
-    "Lead 10-03 04:4xZ: picked strip-rb (identical on all rows); idle-paint gain withdrawn; gains = re-entry Paint, backing MB, style writes. P-070 superseded before data (build changed strip-cl -> strip-rb, lead 04:4xZ; text unchanged, kept in the ledger); fix-cd-strip registers P-072 for strip-rb before any wave-2 or phone data."
+    "Lead 10-03 04:4xZ: picked strip-rb (identical on all rows); idle-paint gain withdrawn; gains = re-entry Paint, backing MB, style writes. P-070 superseded before data (build changed strip-cl -> strip-rb, lead 04:4xZ; text unchanged, kept in the ledger); fix-cd-strip registers P-072 for strip-rb before any wave-2 or phone data.",
+    "Lead 10-03 05:1xZ: strip-rw = strip-rb + a wrapper, one write per m change (strip-rb raised style writes at mid/end pin); 3-gap check plan (one Sim job per P-071 cooling gap); P-072 re-registered against strip-rw's card before data."
    ]
   },
   {
@@ -98,13 +99,14 @@
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position (an earlier version matched the original on your phone); first explain why that version made one frame about 11 ms slower where the hero ends.",
-   "next": "The change now applies only on Safari; Chrome keeps the original. A small leftover difference on Safari gets a repeat check and a hunt for an identical variant; if none, you get options. Its phone test waits until an extra paint cost found in testing is explained.",
+   "next": "The small Safari differences are explained: two come from the original page itself (its own two drawing states and a shadow at the card edge), one is the very first frame before the change switches on. A fix for that first frame is being tried; then the options.",
    "owner": "fix-hero-exit-threaded",
    "checks": [],
    "details": [
     "de-gpu T-030 brief 2: re-apply hero-exit-scroll-timeline v2 on st6-rb2; Safari 26.4+ runs scroll-driven animations on the compositor thread (CONFIRMED, WebKit blog and source). ST-1 Timeline split first: v2 once added about +11 ms at y about 700 (cause not yet named, OBSERVED).",
     "C-026 finger runs (F, one run per arm, OBSERVED): the first ~1000 px hold 63 of 81 moving long frames (>34 ms) in st6-rb2.",
-    "Lead 10-03 03:2xZ: Chrome path gated to WebKit only (approved); WebKit residual -> A/A, then a hunt, then user options; accent paints at 1.5x block its phone ticket."
+    "Lead 10-03 03:2xZ: Chrome path gated to WebKit only (approved); WebKit residual -> A/A, then a hunt, then user options; accent paints at 1.5x block its phone ticket.",
+    "Lead 05:1xZ: frozen frames done: R1 = C's own two raster states, R2 = deck-edge shadow, R3 = the unarmed first frame; trying a scroll-event re-add for R3. F-161 posted."
    ]
   },
   {
@@ -120,13 +122,14 @@
     "text": "you judge it in a blind side-by-side look before it goes into a build"
    },
    "gate": "Within a fraction of a pixel of the original's motion (exact numbers at 60 and 120 Hz), and your blind side-by-side look on the phone, since it is not frame-for-frame identical.",
-   "next": "Being rebuilt on the chosen digit strips, moving only the digit cells. Then a check, and your blind side-by-side look on the phone (you watch, no touching).",
+   "next": "Being rebuilt on the chosen digit strips (now with the wrapper), moving only the digit cells. Then a check, and your blind side-by-side look on the phone (you watch, no touching).",
    "owner": "fix-cd-roll-ca",
    "checks": [],
    "details": [
     "de-gpu T-030 brief 3: within about 0.08 px of the original's motion; the original itself differs by 3.3 px between 60 and 120 Hz. Parked under the identical-only rule, then started at the user's request (T-030 #10, 00:10Z). Stacks on cd-strip.",
     "Review round 2 PASS with nits (a57444b, JS 673b110d), sign-off held for the hide-check re-analysis (108/247.9 -> 3.29/0.27 px); round 3 PASS (dbb113f, JS 2af461dc). Blind test after cd-strip lands (lead's phone order).",
-    "Lead 10-03 04:4xZ: rebuilds as 'cells-only' on cd-strip's strip-rb; the round-3 PASS (dbb113f) covered the earlier build."
+    "Lead 10-03 04:4xZ: rebuilds as 'cells-only' on cd-strip's strip-rb; the round-3 PASS (dbb113f) covered the earlier build.",
+    "Lead 05:1xZ: adapts __crTops to cd-strip's strip-rw wrapper."
    ]
   },
   {

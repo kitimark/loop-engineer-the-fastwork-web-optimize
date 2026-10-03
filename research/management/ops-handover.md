@@ -9,6 +9,18 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **05:1xZ 7f00616 landed. cd-strip -> strip-rw; hero-exit frozen frames explained; P-071 on its last counted run.**
+  - **cd-strip** builds **strip-rw** (strip-rb + a wrapper, one write per m change; strip-rb raised style writes at
+    mid/end pin); 3-gap check plan (one Sim job per P-071 cooling gap); **P-072 re-registered against strip-rw's card
+    before data** (ops second read owed when fix-cd-strip sends the sha). cd-roll-ca adapts `__crTops` to the wrapper.
+  - **hero-exit-threaded:** frozen frames done: R1 = C's own two raster states, R2 = deck-edge shadow, R3 = the
+    unarmed first frame; trying a scroll-event re-add for R3, then the user options.
+  - **F-161** (pitfall, fix-hero-exit-threaded): `lock.mjs wait --until released-by:X` is met whenever X does not
+    hold; to queue after X's NEXT run chain `--until held-by:X` then `--until released-by:X`. Its 04:32Z Sim job
+    delayed P-071 V2.
+  - **P-071 holds:** D2 04:45, C2 04:54, D3 05:04, C3 05:14-05:16Z; **V3 (last counted) next**, then the end
+    sentinel and the attribution runs; counted done ~05:30Z.
+
 - **04:4xZ add7185 landed. cd-strip picked; cd-roll-ca rebuild; Sim gap rule; P-071 at D2.**
   - **cd-strip** (lead): picked **strip-rb**, identical on all rows; the idle-paint gain is withdrawn; gains = re-entry
     Paint, backing MB, style writes. PROGRESS `fixes`/`next` and a 04:45Z change line say so in plain words. **Lead's rule
