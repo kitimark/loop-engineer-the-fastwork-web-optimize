@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft. Behaviour checked in Chrome. P-071 phone block done (G, n = 3 per arm): D 0/3 collapse, listener churn not separated-worse, D2 flagged pending Timeline. B1 not reproduced at 37-38.6 °C (V 0/3); reopened by heat: hot-held block P-073 (card below, pre-data). D's land gate: D2 attribution + P-073.
+**Status:** draft. Behaviour checked in Chrome. P-071 phone block done (G, n = 3 per arm): D 0/3 collapse, listener churn not separated-worse, D2 flagged, then attributed (below). B1 not reproduced at 37-38.6 °C (V 0/3); reopened by heat: hot-held block P-073 (card below, pre-data). D2 attribution gate passed (same Composite-heavy frames in C, V and D; dispatch < 1 ms). D's land gate now: P-073.
 **Stage:** F (round 2 for review-f3-arm-scope: B2 fix, B1 open)
 **Device class / gate:** touch-only (G/F)
 **Driver(s) behind the claims:** Chrome CDP touch (behaviour), Simulator WDA-sim G (counts)
@@ -232,6 +232,56 @@ record is committed (N1). Scored from iphone-runner's `out/p071/score-p071.json`
 - The card's decision rule has no branch for "V clean, D clean". Whether D goes on to the P-036 confirmation and the
   F swipe is the lead's call.
 
+## D2 gate: Timeline attribution (iphone-runner, after P-071; uncounted, G pin-hold-v2 `--timeline`, I-079)
+
+All OBSERVED, in our setup: n = 1 per arm for C and V, 3 for D, Timeline on, no run collapsed. Derived numbers only
+(N1); the records and the runner's analyzers stay in its worktree (`out/p071/`, `out/iphone-runner/p071-tl.mjs`,
+`p071-comp.mjs`).
+
+- **The D2-like outlier came back on tD3** (arm max 93 ms), so it is not a one-off of D2.
+- **What a frame over 50 ms is, in every arm:** one WebKit `Composite` record of 35-80 ms (up to 318 ms in the worst
+  frames) carrying ~91-94 Paint children (4 normally); the Paint time inside one such Composite is mostly 1-2 ms, at most
+  3.2 / 4.0 / 8.0 / 10.6 / 7.0 ms (tD1 / tD2 / tD3 / tC / tV). The rest of such a frame: JS 1-9 ms (rAF
+  callbacks at JS :12684, :2671, :13282), style 3-15 ms, layout 1-6 ms, paint 1-3 ms. Touch/pointer event dispatch is
+  under 1 ms per frame. tD3's 93 ms arm frame: Composite 79.6 ms, JS 1.5 ms, style 2.9 ms.
+- **Arm windows, per-run max (frames > 50):** tD1 68 (7) / 63 (2), tD2 60 (3) / 63 (6), tD3 93 (6) / 60 (5), tC 66 (6)
+  / 65 (4), tV 68 (6) / 66 (7). Window totals per ~1.1 s are the same in D, C and V (JS 60-102 ms, style 87-100,
+  layout 27-30, paint 26-39, Composite 700-755).
+- **Disarm windows:** max 30-48 ms, no frame over 50 ms, in all five runs.
+- The worst frames of every arm fall in the closing down stroke (before the disarm window): Composite up to 117 (D),
+  318 (C), 216 ms (V). That is the cycle-phase dip P-071's C3 counted.
+- What `Composite` times beyond its Paint children (layer flush/commit) is UNRESOLVED (no WebKit source check yet).
+
+**Gate (lead, 05:5xZ): the attribution must not name D's listener add/remove or anything D changes in the long
+frames.** It does not: D's long frames are the same many-layer Composite frames as C's and V's, with event dispatch
+under 1 ms. **Gate passed; lead signed D2, 06:4xZ** (OBSERVED, n = 3 D / 1 C / 1 V). The outlier class recurs and is
+the many-layer Composite, not the listener add/remove.
+
+Caveats (review-f3-arm-scope, accepted with the signature):
+- Timeline did not capture D2's own frames (98 ms arm, 85 ms disarm); what was attributed is the same kind of frame on
+  tD3. **D2 itself is not explained.** Its 85 ms disarm frame did not recur in any Timeline run (disarm max 30-48 ms)
+  and stays unexplained (n = 1).
+- Timeline does not see the UI process, so a UI-process cost of updating touch event regions when D adds or removes
+  its window listeners is **UNRESOLVED**, like what Composite times beyond its Paint children.
+- In the land request, P-073 counts as the check that covers both (lead).
+
+**What the Paint children are (F-165, from the same Timeline files, no new run; OBSERVED, n = 3 D / 1 C / 1 V).**
+`fixes/morph-webkit/composite-faces.mjs` reads them. The records carry only page-coordinate clip quads (no layer or
+node id), so the mapping is by geometry and count:
+- 51 of the 64 Composites over 50 ms carry exactly 80 digit-sized Paint clips (17-18 x 36-37 px, 8 x-columns, 3 rows
+  of 32 / 8 / 40 faces) at page y 5211-5619, inside the end panel. Per run: tD1 10/12, tD2 10/10, tD3 11/12, tC 8/15,
+  tV 12/15.
+- 8 digits x 10 faces = one 8-digit clock with a layer per face (`.face { will-change: transform }`): the panel clock.
+  The other clips in the same Composites are the panel's own layers changing size frame to frame (e.g. 406x750 ->
+  403x476 -> 399x129 -> 399x58 at y ~5228), and the digit rows move with them: these are the panel's morph frames.
+- Each run has 51-57 such full face repaints, median Composite 33-35.5 ms, against ~3 ms with 1-69 digit clips and
+  ~7 ms with none; the Paint time inside them is ~1 ms (median). The same in every arm (arm-independent).
+- Exceptions (> 50 ms, no face repaint): tC 95.7-96.1 s (five, 59-106 ms, 4 small clips each, just before C's 318 ms
+  face-repaint Composite), tV 88.4-89.1 s (three, 55-72 ms), tD3 109.4 s (one, 51 ms), and mid-page ones at 7.6-13.5 s.
+- UNRESOLVED: what the Composite spends beyond its ~1-2 ms of Paint (a commit of ~80 repainted layers is a hypothesis
+  only), and why some morph frames repaint all 80 faces and others none. The decisive check is proposed below
+  ("Proposed attribution item after P-073").
+
 ## P-073 prediction card: B1 hot-held, C / V / D under arm-scope-touch-v1 (registered before any phone data)
 
 Asked by the lead after review round 2 (05:5xZ): P-071 ran at 37.1-38.6 °C, and P-036's V-only collapses ran at
@@ -282,6 +332,13 @@ our setup, cause unknown):
     ~0.5-0.9 °C (P-036 C1 +0.6, V1 +0.9), so between runs the phone is parked and cools with `wait.mjs phone-temp
     --below 41.0` (≤ 10 min), then is warmed again on the baseline page if it fell under 40.0. Each run records
     `start: direct | cooled | warmed`.
+  - **Temperature at pin arrival** is logged too (the battery read nearest the first frame at y ≥ 5200; P-036 V1
+    reached the pin ~55 s after its 40.29 °C start). Reported per run beside the start and end reads; the band rule
+    stays on the start read.
+  - **Heat ceiling (device safety; mgmt-ops-9).** At ≥ 42.5 °C on any battery read, or on any iOS thermal notice:
+    park at once, void the run, and cool with `wait.mjs phone-temp --below 41.0` before going on.
+  - **Charge state** (held or charging, as in P-068 `heat.mjs`) is recorded per run and kept the same for every arm;
+    a run whose charge state changed during the run is void.
   - **P-036's unparked dwell is not reproduced on purpose.** V1 collapsed with no dwell before it (C1 then V1 in
     one hold, 40.29 °C), so the dwell is not needed for the collapse; heat is the variable here, and it is brought in
     the same way for every arm, on a page that is no arm. Safari is parked after every run.
@@ -310,19 +367,69 @@ our setup, cause unknown):
     P-071's capped cool V 0 of 3 leaves heat and the zone strokes both open.)
   - D: any counted D run collapsed ~20 %. Given V collapses: D clean ~60 %.
   - All 9 counted runs inside the budget ~65 %.
-- **Decision (lead, registered before data).**
+- **Decision (lead, registered before data; read top to bottom, the first matching row wins).**
 
   | V | D | reading |
   |---|---|---|
+  | any | any counted run collapsed | F3 does not land as is (next: build E, window-only touch listeners during the morph; Simulator and Chrome review before any phone time) |
+  | any | fewer than 3 counted runs | inconclusive, to the lead, no landing |
   | collapses | clean | D fixes B1: on to the P-036 confirmation on D, then the F swipe, then the land request (with the D2 gate) |
   | clean | clean | heat does not reproduce B1 under this script; B1 stays UNRESOLVED; landing with B1 as a disclosed risk is the lead's call |
-  | any | any counted run collapsed | F3 does not land as is (next: build E, window-only touch listeners during the morph; Simulator and Chrome review before any phone time) |
-  | inconclusive (1 of 3) or not enough | clean | to the lead, no build decision |
+  | inconclusive (1 of 3) or fewer than 3 counted runs | clean | V's comparison is void (no positive control); to the lead, no build decision |
 
+  - C with fewer than 3 counted runs: the C comparison is void (no control); to the lead with whatever V and D show.
   - C collapses (≥ 2 of 3): the collapse is not V-specific; B1 is re-framed with the lead.
   - A rule-sensitive verdict goes to the lead with both readings.
+  - **An uncapped hot run that collapses** (any arm; listed, never in the verdict) is flagged to the lead explicitly:
+    it would refute "the collapse comes only with the capped state", which this card's framing rests on.
 - **n.** At most 3 counted per arm: a mechanism and regression check, not a gain block. Nothing from it goes to the
   user as fact without the attribution run.
+
+## Proposed attribution item after P-073: the panel clock's face layers (F-165; proposal, not registered)
+
+Asked by the lead (07:0xZ). An uncounted attribution pair at the pin, not a gain block; the lead fits it into the phone
+queue after P-073.
+
+**Which build lines have the 80-layer panel clock** (read from the CSS/JS, no run):
+
+| line | CSS | panel clock faces | layers at the pin |
+|---|---|---|---|
+| baseline (`site-pretty`, what `main` serves) | `.face.svelte-1quva9c { will-change: transform }` (baseline CSS 1408-1409), no panel override | 10 per digit, each with will-change | 80 |
+| F3 arms C / V / D (P-036, P-071, P-073) | c6aad94b455f (`aw1-10e`): the same `.face` rule (CSS 1414-1415), no panel override; the JS will-change gate (scroll-engine /10e, JS 2699-2702) leaves `.face` out | as baseline | 80 (the P-071 face repaints match) |
+| st6-rb2 ("optimize 2", the user's last finger run) | f523598b2a24: adds cdwc's P-017 rule `.start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c { will-change: auto; }` (CSS 11936-11938) | 10 per digit, no will-change in the panel | 0 (cd-strip G4: 0 panel clock layers at the pin, Simulator) |
+| wave-2 stack (st6-rb2 -> cd-strip -> cd-roll-ca -> countdown-faces (b)) | cd-strip keeps that rule and adds the same for `.strip` and `.cell` in the panel (its `patch.diff`); cd-roll-ca is hero-only and leaves the panel's rAF spring and layering as they are (fix-cd-roll-ca, 07:0xZ) | strips | 0 |
+
+So F3-D as it would land (JS 999c4497f37e on CSS c6aad94b455f) runs on a line whose panel clock has 80 face layers;
+the user's line (st6-rb2) and the wave-2 stack do not.
+
+**Pair (proposed).**
+- **A = D as measured:** JS 999c4497f37e, CSS c6aad94b455f (80 panel face layers).
+- **B = D with the panel faces unlayered.** Preferred: the same JS and CSS c6aad94b455f plus only the P-017 rule
+  above, byte-identical to st6-rb2's CSS 11932-11938 (comment and rule). This isolates the face layers: one CSS rule is the only
+  difference.
+  - The lead's other form, D ported onto st6-rb2 (D's JS delta applied over st6-rb2's JS 7bf7c4657d21), answers
+    "does D behave the same on the user's line". It also changes ~130 other CSS lines and the morph panel's own JS
+    (morph-panel-lazy-mount, scene-scope, rotator, the PMsweep gate), so it cannot say that the faces are the cost.
+    The port is not built yet and needs a conflict check.
+  - If the lead wants both questions answered, the one-rule B goes first.
+- **Before phone time:** a Simulator functional check of B (shared lane): 0 panel clock layers at the pin, the same
+  v1c pin exposure (9 pushes, end pushes prevented), and pixels at the pin equal to A apart from the countdown phase.
+- **Driver and phone:** G, v1c (0653995a35be), Timeline on (`Page.disable` -> `Page.enable` -> `Timeline.start`), a
+  cool phone (start ≤ 38.6 °C, the P-071 range, so heat is not a variable), Low Power Mode off, n = 2 per arm in the
+  order A B B A, each in the runner's own hold, parked between runs.
+- **Readout per run** (`composite-faces.mjs`): full face repaints (Composites with ≥ 70 digit clips), Composites over
+  50 / 34 ms, their median, and the median Composite of the morph frames at the pin (frames whose clips include the
+  panel's resizing layers).
+- **Predictions (before data).** B: 0 full face repaints (~90 %; P-017's phone data had 0 % layer repaints without
+  the will-change). Given that, B's morph-frame Composite median falls to ≤ 12 ms (~45 %), stays ≥ 25 ms (~35 %),
+  or lands in between (~20 %). B has fewer Composites over 50 ms than A in both runs: ~55 %.
+- **Reading.**
+  - Faces gone and the Composite near the no-digit ~7 ms median: the face layers are the cost of the closing-stroke
+    frames. This ties them to cdwc / cd-strip, and the frames are already gone on the user's line.
+  - Faces gone but Composites still ≥ 25 ms: the cost is the panel's own resizing layers, and the question moves to
+    the morph panel (UNRESOLVED, new item).
+  - Faces still repainted in B: the rule does not reach them on this line; back to the CSS (no phone time).
+- No landing decision rests on this pair. D's land gate stays P-073 (lead).
 
 ## Review round 1, non-blocking items: where each went
 
@@ -381,7 +488,7 @@ our setup, cause unknown):
    arm the window. A confirmation run of P-036 on D (≥2 V-arm runs against C) is the honest minimum before landing.
    - Outcome (P-071): V clean, so B1 was not reproduced at 37-38.6 °C. The lead (05:5xZ) reopened it on heat: the
      hot-held block P-073 (card above), C / V / D at 40-41 °C under arm-scope-touch-v1. D's gate before landing is
-     the D2 Timeline attribution plus P-073; item 2 waits for both.
+     the D2 Timeline attribution (passed, see "D2 gate") plus P-073; item 2 waits for P-073.
 3. The F swipe stays postponed until 1 and 2 are done.
 4. The Chrome regression A/B (`fix.mjs ab`) is not needed for the touch change: Chrome has no touch on the desktop
    A/B. It is deferred under the timing rule in any case.
