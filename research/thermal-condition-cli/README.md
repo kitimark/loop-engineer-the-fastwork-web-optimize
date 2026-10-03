@@ -156,3 +156,74 @@ Decisive local checks, cheapest first (all need the iPhone lease via the lead; n
   Source/WTF/Scripts/Preferences/UnifiedWebPreferences.yaml (https://github.com/WebKit/WebKit); commits 3088454, 984773a, a8c0b8f.
 - pymobiledevice3: pymobiledevice3/cli/developer/dvt/__init__.py, pymobiledevice3/services/dvt/instruments/condition_inducer.py
   (https://github.com/doronz88/pymobiledevice3).
+
+## Addendum (T-039 #23): can an installed command set or clear the Serious condition? Does it throttle like heat?
+
+Read-only, installed tools only (Xcode 26.6: `devicectl` 518.33, `xctrace` 16.0 17F113, `xcdevice`, `simctl`, `mcpbridge`,
+`sdef`), Apple files inside the Xcode bundle. Nothing was started on the phone; no device command was run.
+
+### Setting or clearing the condition from a command line
+- CONFIRMED NO (help text, run on this Mac): `xcrun devicectl help` lists `device`, `diagnose`, `list`, `manage`. `device` has
+  `copy, info, install, notification, orientation, process, reboot, sysdiagnose, uninstall`; `device info` has
+  `appIcon, apps, authListing, ddiServices, details, displays, files, lockState, processes`; `manage` has
+  `ddis, loggingProfile, pair, unpair`; `list` has `devices, preferredDDI`. No condition or thermal word anywhere.
+  `devicectl device notification post --device <id> --name <darwin-notification>` exists (posts a Darwin notification on
+  the phone). It is not a condition switch: the thermal level is not set by a notification name (UNRESOLVED, not tried and
+  not recommended; it would be an undocumented poke at the system).
+- CONFIRMED NO: `xcrun xctrace help record` options (`--template, --instrument, --device, --all-processes, --attach,
+  --launch, --time-limit, --package, --env ...`) have no condition option. `xctrace` can only RECORD, see below.
+- CONFIRMED NO: `xcrun simctl help` has no thermal or condition word (and it is for the Simulator only). `xcdevice`
+  (list, observe, wait, enable, disable, check) is about device attach and wireless debugging. `xcodebuild -help` and
+  Xcode's AppleScript dictionary (`sdef /Applications/Xcode.app`) have no "condition" or "thermal". `xcrun mcpbridge` is
+  Xcode's MCP bridge for coding agents (run-agent); its tool list was not enumerated (UNRESOLVED, not a documented
+  condition route). `instruments` is not installed.
+- OBSERVED (files in the Xcode bundle): the condition UI lives in Xcode's `IDEiPhoneSupport.framework`
+  (`DVTiPhoneConditionInducersSliceViewController.nib`, the Devices window part) and the on-device engine is a private
+  framework `ConditionInducer.framework` (its stub is in the macOS SDK, `.../PrivateFrameworks/ConditionInducer.framework/ConditionInducer.tbd`:
+  classes `COConditionSession`, `COStatusBar` (the status bar indicator), `SlowNetwork*`; keys `kCORequiresEntitlementsKey`,
+  `kCORequiresRootPrivilegesKey`, `kCOConditionPersistsAfterReboot`). These are private and entitlement-gated, not a CLI.
+- So: Apple documents Device Conditions only as an Xcode Devices-window / Instruments feature (WWDC19 412, Xcode help
+  "Test under adverse device conditions", both CONFIRMED earlier). No installed Apple command starts or stops it:
+  CONFIRMED by the help texts above. The only command-line control is the third-party route (pymobiledevice3, section Q2
+  above, needs the user's OK).
+- Phone unlocked or Developer Mode needed? UNRESOLVED for a CLI (there is none). Xcode's device features generally need
+  Developer Mode on and the developer disk image services mounted (`devicectl device info ddiServices --device <id>`
+  reports the services; read-only, not run). I did not find an Apple page that says the phone must be unlocked for the
+  condition itself.
+
+### Reading it from a command line: this part DOES exist, and has an "Is Induced" column
+- OBSERVED (the installed Instruments package `Thermal.instrdst`, `Contents/Documentation/fulldoc.html` and the
+  modeler rules in `Extensions/com.apple.device-thermal-state-modeler.dtac/*.clp`): the "Thermal State" instrument fills
+  a table with schema `device-thermal-state-intervals`: columns `start, duration, end, thermal-state, track-label,
+  is-induced, narrative`.
+- The state comes from kernel trace events (kdebug class 0x2b subclass 0x65 code 0x3, arguments previous pressure level,
+  new pressure level, level; labels 0 Nominal, 10 Fair, 20 Serious, 30-50 Critical), i.e. the system's thermal pressure
+  level changes, not an app's `ProcessInfo` call (OBSERVED from the rules text, inferred reading). The induced flag comes
+  from signposts of subsystem `com.apple.ConditionInducer.LowSeverity`, category `InduceCondition`, names
+  `induce-setup`, `induce`, `induce-teardown`, `ConditionsStateSignpost` ("Active Conditions: ..."), with names
+  ThermalNominal/ThermalFair/ThermalSerious/ThermalCritical.
+- So a record-and-export through the installed `xctrace` can show whether Serious was active, and whether the system's own
+  level moved, with no install (command form, UNRESOLVED until run on the phone; needs the phone lease, a quiet phone
+  window and the user toggling Serious in Xcode):
+  `xcrun xctrace record --instrument 'Thermal State' --device <name|UDID> --all-processes --time-limit 30s --output <file>.trace`
+  then `xcrun xctrace export --input <file>.trace --xpath '/trace-toc/run[@number="1"]/data/table[@schema="device-thermal-state-intervals"]'`
+  (syntax from `xctrace help record` / `help export`; the xpath form is the help's own example with this schema name).
+  Open: whether `--all-processes` on a physical iPhone needs the Instruments service over the cable and whether the device
+  must be unlocked (UNRESOLVED).
+
+### Does an induced condition throttle CPU/GPU like real heat, or only report the state?
+- UNRESOLVED from Apple's prose. WWDC19 412 says it "raises the thermal state" and "the device does not actually get
+  physically warmer"; it never says whether the system's own mitigation (CPU/GPU limits) follows. Xcode help says to use it to
+  check your own app's metrics.
+- Hint toward "the system level moves too" (OBSERVED, inferred): the Thermal State instrument's source is the kernel
+  pressure-level event stream, and it marks induced intervals, so the induced state shows up at that level, not only in an
+  app call. That would be the same level WebKit's `NSProcessInfo.thermalState` read follows (inferred). It does not
+  show that CPU/GPU clocks are reduced.
+- Our data: Serious on, no frame change in 4 runs (OBSERVED, iphone-runner). WebKit would not change rAF at Serious
+  anyway (Q3 above). So no test so far separates "state only" from "state plus throttling".
+- Decisive local check: during a Serious window, run a fixed CPU loop and a fixed GPU-bound animation on the phone with the
+  condition on and off, same warm start (38-40 C); if clocks were limited, the loop time grows. Plus the `xctrace` Thermal
+  State recording above to prove the window.
+
+What this means for our tests: you cannot start Serious from a command, only from Xcode's Devices window (so it cannot be
+scripted into a run), and our runs under it showed no slowdown, so keep treating it as "reports the state", not as heat.
