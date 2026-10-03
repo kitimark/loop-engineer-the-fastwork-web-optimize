@@ -918,6 +918,16 @@ swap's full-viewport Layout) slower, because the CPU sits at a lower performance
 4. **Decisive local check, only if a decision depends on it** (none does now: the fix target is the pill swap either
    way): one phone block of V vs V-with-a-fixed-2-ms-per-frame-rAF-load. If the load brings the burst's Layout ms
    down to C's, the clock explains it.
+5. **Scope (fix-pill-swap, F-152, 2026-10-03; OBSERVED on the Simulator, at rest).** The avatar swap behind the burst
+   exists only on the plain baseline, which both X1 arms and `f146.mjs` served (C = site-pretty).
+   - st6-rb2 already replaces it (rotator-st6: 5 persistent slots, src writes and an `.is-sliding` toggle, no
+     childList).
+   - Heavy rotator layouts per 4 s:
+     - baseline: 7-8 at every position;
+     - st6-rb2: 0 at top, 600, 900, pastHero and pill-centred.
+   - What is left per tick on st6-rb2 is a 104x32 subtree layout plus a near-empty view-rooted one.
+   - So a countdown arm stacked on st6-rb2 should not show the 1 Hz burst. The clock-down question applies only to
+     baseline-based arms, and no wave-2 decision depends on it.
 
 **Measurement caveat on face-layer repaints (fix-cd-strip, 2026-10-03; OBSERVED in its setup, not checked by me).**
 On the Simulator, the per-layer paintCount delta between two `layersForNode` censuses came out the same whether the
