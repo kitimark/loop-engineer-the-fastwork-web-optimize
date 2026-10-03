@@ -166,10 +166,155 @@ What the fix costs:
 - Builds that stack on st6-rb2 (cd-strip, cd-roll-ca, countdown-faces, platform-idle, hero-exit-threaded) carry the
   same defect in the morph region until this lands under them.
 
+## P-085: phone no-worse check against the baseline (registration; written before any P-085 phone data)
+
+A short no-worse check with a DOM read first, not a gain block. The prediction id is from mgmt-ops-10; the ops second
+read comes before any data. Queued after C-033 and P-081.
+- **Question (one).** On the iPhone at real thermal Serious, under the morph driver M at the page end, does the fixed
+  build (M) show the baseline's nav children (DOM read, earn fade timing) without more long frames than the baseline (B)?
+- **Builds** (immutable snapshot copies from `node fixes/morph-inherit/build.mjs`, re-checked by sha256 before the
+  block; served `nodes/2.DyWL8TcE.js` / `assets/2.gBuqKVzi.css`):
+  - M: `out/snapshots/mi-7c61fe7d0662`, `7c61fe7d0662` / `f523598b2a24` (on main as 0ad5407).
+  - The one control, B: `out/snapshots/bdrive-afd388b8945a`, `afd388b8945a` / `27776f3d4138`. The plain baseline
+    plus the phone driver `window.__fwMorphDrive`, which the baseline lacks. The driver text is copied byte for byte
+    from mi, with st6-rb2's two helpers replaced by the baseline's own expressions: `__pinMax()` by the page's max
+    scrollY and `__pinY()` by `window.scrollY`, as in the baseline's wheel handler. It runs only when called. The CSS
+    is the baseline's.
+  - Same base: site-pretty, the snapshot pinned by `baseline.json`.
+  - Checkout: main with this ticket's commit (main's tools; my old branch's `tools/` are behind main). Who runs it is
+    the lead's call: the isolation guard pins fix-nav-morph to its old worktree.
+- **Servers and ports**, one per arm: `node tools/serve.mjs --root site-pretty --overlay out/snapshots/<snapshot>
+  --port 0 --https --vendors=local --latency 150 --no-cache --state out/morph-inherit/p085/serve-<arm>.json`.
+  - The phone loads the plain http twin (I-003). Ports go in the block log, never 5173; no LAN address in any
+    committed file.
+- **Driver M.** `iphone.mjs run --driver morph --probe std` with the defaults hold 2000 ms and cycles 3. That is 6
+  tweens per run through `E(1)` / `E(0)`, the same path a push past the end takes, at the page's max scrollY.
+- **Condition** (user T-039 B, `memory/phone-checks-start-warm.md`), as P-081:
+  - Real thermal Serious. Every hold runs the gate pair `research/phone-thermal-gate/thermal-gate.mjs` (sha256
+    `4604218c4041`, `--expect serious --max-c 44 --url http://lan:<twin B>/`) at its start and end. A hold counts only
+    when both reads say Serious with Is Induced = No; otherwise it is re-run.
+  - Stop at 44 °C battery or Critical, and cool before the next hold.
+  - Every gate failure goes to the lead. Two failing holds in a row stop the block and switch to A (the lead's
+    switch, recorded in the block log).
+  - One start method: pre-warm on B's port (the baseline page; the driver is idle) the same way before every hold.
+  - Logged per run: battery °C, charging state, the timer-grid median.
+  - A Low Power Mode run or read is dropped and re-run.
+  - The phone parts run inside the runner's own `lock.mjs run chrome-measure --no-timing --max-seconds 600` hold, with the
+    `iphone` lease (I-056).
+- **Block**, three holds:
+  - H1: gate, start sentinel, phone read, warm-ups, gate.
+  - H2: gate, counted 1-4, gate.
+  - H3: gate, counted 5-8, end sentinel, gate. Then park Safari.
+  - `iphone.mjs open <twin URL>` before every run, since each run parks Safari.
+- **1. Phone read first** (`p085/phone-read.mjs`, sha256 `f7ae2c55677b`; uncounted, no frame verdict):
+  - Command: `--owner fix-nav-morph --arm B=http://lan:<twin B>/ --arm M=http://lan:<twin M>/ --arm M=... --arm B=...
+    --reads 2`. That is loads B M M B, with 2 open/close reads per load, so 4 reads per arm.
+  - Per read:
+    - 3 wheel events (deltaY ±120) on window at the page bottom, the user path.
+    - Recorded on rAF for 1600 ms: the header's m, and each child's computed `--morph`, x, width and opacity.
+    - The earn button's running CSS transitions, from `getAnimations()`.
+    - One more read 2000 ms after each dispatch: the held state.
+  - **DOM read**, judged before anything else:
+    - In both arms, every child's computed `--morph` is 1 at open + 2 s and 0 at close + 2 s (|d| ≤ 0.001).
+    - M equals B: logo and actions x, and earn width, within 0.5 px; logo, earn and panel opacity within 0.01.
+    - Every M read is compared with every B read.
+  - **Earn fade start relative to the m ≥ 0.2 frame, B vs M** (the lead's extra read). Tolerance: 2 frames at 60 Hz =
+    33.3 ms.
+    - tA = the first rAF sample with m ≥ 0.2.
+    - *start*, which decides: the running opacity transition's `startTime` + delay − tA, per arm the median of the
+      reads, d = M − B. `within` when |d| ≤ 33.3 ms.
+    - *visible*, which decides only when `beyond`: the first sample with earn opacity < 0.99, minus tA. The interval
+      starts at the sample before it. `within` or `beyond` only when the whole interval of d is on one side of the
+      tolerance; otherwise `undecided` (a sampling gap).
+    - **EARN `beyond`** (start or visible beyond) goes to the user as a pixel/timing proposal, through the lead. It is
+      never a silent pass.
+    - Width is descriptive: the first earn width < 78 px, and the max-width transition's start.
+  - Void read (the harness checks itself; P-084 lesson):
+    - the served hashes are not the arm's build;
+    - there is no header or earn button;
+    - fewer than 20 open samples;
+    - the open tween does not start at m ≤ 0.001 or never reaches m ≥ 0.999;
+    - the close never returns to m ≤ 0.001;
+    - the median sample gap is > 25 ms;
+    - B's children are not at the target.
+  - A void load gets one re-load. Fewer than 2 valid reads in an arm means NO DATA for that check.
+  - Pre-registration check on the Simulator, not a claim (functional session,
+    `out/morph-inherit/p085/read-2026-10-03T14-45-29-346Z.json`, B M M B, 4 reads per arm):
+    - DOM PASS.
+    - start: B 120, M 120 ms after tA (transition `startTime` = tA in every read), so d = 0, `within`.
+    - visible: d point −11.5, interval −63..+120.5, `undecided`: B's frame after tA is 140-190 ms in the Simulator.
+    - The `--drive-check` dry run showed bdrive's driver running (moving, atOne and atZero summaries returned).
+    - Simulator ms are never judged (F-084).
+- **2. Warm-ups:** one uncounted load per arm port: `iphone.mjs run --driver morph --arm B|M --warmup`.
+- **3. Counted runs:**
+  - n = 4 per arm, in the order B M M B B M M B: `iphone.mjs run --driver morph --probe std --owner fix-nav-morph
+    --block P085 --arm B|M --pos <1-8> --build bdrive-afd388b8945a|mi-7c61fe7d0662 --label p085-<arm>-<pos>`.
+  - The arm letters are B / M, not C, so no run is judged as the M heat sentinel. That criterion, held m=1 p95
+    ≤ 18 ms, was never validated on the baseline page, whose held m = 1 has the panel countdown running.
+- **Sentinel** (as P-081): an uncounted control run `iphone.mjs run --driver scroll --probe std --arm C --heat-sentinel`
+  on B's port, bottom ≥ 58 fps and scroll ≥ 44 fps, at the block start (H1) and the block end (H3).
+  - A failing start sentinel: no counted run starts; cool, restart the block.
+  - A failing end sentinel voids every counted run; cool, re-run the counted part once.
+  - Risk: the baseline page has never been sentinel-checked at Serious. Two failing start sentinels go to the lead
+    as a condition blocker (switch to A).
+- **Void run** (frames-p085.mjs's rules, plus LPM): a driver error, not driver M, Low Power Mode, served js/css not
+  the arm's build, no drive mark, no m seen by the probe, a tween-start count ≠ 6. One in-place re-run; a second void
+  at one position voids the block.
+  - **Files from a hold that failed either gate read are never passed to the scorers** (the block log lists them as
+    excluded).
+- **Scorers**, committed before data; every valid counted run is passed in block order:
+  - `p085/phone-read.mjs` sha256 `f7ae2c55677b`: the DOM and EARN verdicts. Re-score with `--analyse <read.json>`.
+  - `p085/frames-p085.mjs` sha256 `385eb00f1564`: frame gaps per run from the std probe's rAF rows inside the drive
+    mark.
+    - Scopes: 'moving' is scored: a frame whose m differs from the previous or next frame's m. 'drive' and 'held1'
+      are reported.
+    - Thresholds: dt > 50 and > 34, the ±4 ms twins (>46/>54, >30/>38), and near-band frames flagged.
+    - Per-arm medians, M − B. '>50' is no-worse at ≤ +1, '>34' at ≤ +2 (the less-work phone bound, as P-078 /
+      P-081). A threshold is threshold-sensitive when a twin's verdict differs.
+    - Pre-registration check only: on synthetic files with known counts it gave the expected deltas, the
+      threshold-sensitive flag and the served-hash void.
+    - There is no earlier driver-M phone run to re-score.
+- **Predictions**, as falsifiers, with P(hit) before data.
+  - The points for f50 and f34 come from the baseline's morph on the phone: moving p50 29-40 ms with driver M, cool,
+    in the de-morph post-mortem.
+  - The Simulator dry run is consistent with them: B moving p50 123-142 ms vs M 36 ms. That is Simulator ms, not
+    judged.
+
+  | # | prediction | point | interval (falsified outside) | P(hit) |
+  |---|---|---|---|---|
+  | dom | DOM read PASS (M's children at the target and equal to B, every valid read) | PASS | FAIL falsifies | 0.9 |
+  | earn-start | earn opacity transition start + delay − tA, M − B | 0 ms (120 vs 120) | \|d\| ≤ 33.3 ms | 0.9 |
+  | earn-vis | visible earn fade onset − tA, M − B | ~0 | not `beyond` | 0.75 |
+  | f50 | moving dt > 50, M − B | −2 | ≤ +1 (WORSE at ≥ +2); twins >46/>54 the same bound | 0.8 |
+  | f34 | moving dt > 34, M − B | −10 | ≤ +2 (WORSE at ≥ +3); twins >30/>38 the same bound | 0.8 |
+  | sent | start and end sentinels pass on the baseline page at Serious | pass | a fail costs a cool and a restart | 0.7 |
+
+- **Decisions** (if X then Y):
+  - **DOM FAIL:** stop before any counted run. The fix does not work on the device. The failing rows go to the lead,
+    then back to the fix (it is landed).
+  - **DOM PASS, EARN within, f50 and f34 no-worse:** morph-inherit passes its phone no-worse check. Reported to the
+    lead; F3 continues on main + morph-inherit. No further block for this question.
+  - **EARN beyond:** a user proposal (pixel/timing). It shows B's and M's fade onset and anchor per read, and says
+    whether the start or the visible form is beyond. The frame verdict is still reported. Landing stays as it is
+    until the user decides.
+  - **EARN NO DATA** (no transition data, or fewer than 2 valid reads in an arm): to the lead, with no EARN verdict.
+    One re-read only after the cause is named.
+  - **f50 or f34 WORSE (moving scope):** to the lead, with the slow moving frames per run (dt and m). The lead
+    decides: keep the fix (correctness), or my `inherits: true` variant as a candidate (README "What changed").
+  - **Threshold-sensitive f50 or f34:** to the lead, with no frame verdict.
+  - **Drive-scope WORSE with moving no-worse:** reported (frames outside the tweens), with no verdict on the fix.
+  - **Block void:** no claim. Cool and re-run once; a second void goes to the lead.
+- **Expected minutes:** about 30 (range 25-45).
+  - Pre-warm to Serious: about 10.
+  - H1: about 8 (the read takes about 2, the sentinel 1.5).
+  - H2: about 6 (4 runs at about 1.2 min).
+  - H3: about 8.
+  - About 1.5 min of gate reads per hold.
+
 ## Tools (this directory; self-contained)
 
 Run `node fixes/morph-inherit/build.mjs` first. It makes every snapshot the gates read (out/snapshots/: mi, c, mhook,
-chook, bhook) from the baseline plus `patch.diff` (or the overlay when present) and `delta-vs-st6rb2.diff`, and
+chook, bhook, bdrive) from the baseline plus `patch.diff` (or the overlay when present) and `delta-vs-st6rb2.diff`, and
 refuses any build whose hashes differ from the ones measured. Each gate script's header has its run command.
 
 - `build.mjs`: the snapshot copies.
@@ -182,6 +327,8 @@ refuses any build whose hashes differ from the ones measured. Each gate script's
 - `gates/tween-paint-sim.mjs` C / M, `gates/tween-paint-read.mjs`: gate (c), WebKit counts.
 - `gates/tween-series-sim.mjs` B / M / C, `gates/tween-series-read.mjs`: per-frame child state through an open and
   close tween (user path).
+- `p085/phone-read.mjs`, `p085/frames-p085.mjs`: P-085's phone read and frame scorer. bdrive (build.mjs) is its
+  control.
 
 Provenance: the data above were taken with the same scripts in `fixes/nav-morph/` (fix-nav-morph's F3 branch, commit
 28c36e2), which also carried F3 #4 prototype arms; the copies here drop those arms and write to `out/morph-inherit/`.

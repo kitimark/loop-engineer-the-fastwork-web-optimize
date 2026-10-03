@@ -5,6 +5,7 @@
 //   mhook-<js12>  = mi + the debug hook window.__fwMorphSet(m) (holds the morph at m; frozen frames only)
 //   chook-<js12>  = C + the same hook, byte for byte the text of the F3 #4 prototype's C build (f6f254402209)
 //   bhook-<js12>  = plain baseline + the same hook, adapted to the baseline's variables (no __pinY / __osb there)
+//   bdrive-<js12> = plain baseline + the phone morph driver window.__fwMorphDrive copied from mi (P-085 control, driver M)
 // Every build is checked against the hashes the gates were measured with (EXPECT) and refused on a mismatch.
 // The gate data in README.md were taken with the fixes/nav-morph/ copies of these scripts, whose snapshot dirs for C
 // were f3a-st6rb2 / st6-rb2-7bf7c4657d21 and f3r-chook-f6f254402209: the same bytes as c- and chook- here.
@@ -23,6 +24,7 @@ const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const EXPECT = {
   mi: ['7c61fe7d0662', 'f523598b2a24'], c: ['7bf7c4657d21', 'f523598b2a24'],
   mhook: ['d9898e0a2e15', 'f523598b2a24'], chook: ['f6f254402209', 'f523598b2a24'], bhook: ['a0945967a4fb', '27776f3d4138'],
+  bdrive: ['afd388b8945a', '27776f3d4138'],
 };
 const AT = '    let ne = dE(L, { manageAnimations: !1 });';
 const hook = (body, what = 'morph-inherit frozen frames): hold the morph at m (no spring).') => `    // DEBUG ONLY (${what}\n    window.__fwMorphSet = (m) => {\n      ${body};\n    };\n`;
@@ -61,3 +63,12 @@ put('c', cjs, ccss);
 put('mhook', addHook(mjs, C_HOOK), mcss);
 put('chook', addHook(cjs, C_HOOK_F3), ccss);
 put('bhook', addHook(readFileSync(join(BASE, NODE), 'utf8'), B_HOOK), readFileSync(join(BASE, CSS)));
+// P-085's control: the plain baseline + the phone morph driver window.__fwMorphDrive (driver M), copied byte for byte
+// from mi (st6-rb2's debug driver) with its two st6-rb2 helpers replaced by the baseline's own expressions (as in the
+// wheel handler A and B_HOOK): __pinMax() -> the page's max scrollY, __pinY() -> window.scrollY.
+const DRV0 = '    // DEBUG ONLY (morph-webkit phone driver';
+const drv = mjs.slice(mjs.indexOf(DRV0), mjs.indexOf(AT));
+if (mjs.split(DRV0).length !== 2 || !drv.includes('window.__fwMorphDrive')) throw new Error('driver not found in mi');
+const B_DRIVE = drv.replace('__pinMax()', 'Math.max(0, document.documentElement.scrollHeight - window.innerHeight)').replace('__pinY()', 'window.scrollY');
+if (/__pin/.test(B_DRIVE)) throw new Error('driver still uses an st6-rb2 helper');
+put('bdrive', addHook(readFileSync(join(BASE, NODE), 'utf8'), B_DRIVE), readFileSync(join(BASE, CSS)));
