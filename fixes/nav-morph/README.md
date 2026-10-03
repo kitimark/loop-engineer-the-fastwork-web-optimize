@@ -133,3 +133,98 @@ Platform claims for this card:
   ~0.5 paints per frame at the hold); no smoothness gain (the hold is already 17 ms p95 at Serious). Pixel class: T2,
   the user's near-identical decision would have to cover the panel clock. It stacks after cd-strip tc and cd-roll-ca;
   the panel clock's layering is fix-nav-morph's cdwc rule, so tell fix-nav-morph before changing it.
+
+## Draft ticket (NOT registered): F3 residual edge frames, attribution (fix-nav-morph, 2026-10-04)
+
+Asked by the lead (F3 replan). Draft only: no prediction id, no registration, nothing run. Timing holds stay paused under
+I-098 until the user answers T-052. Second read: mgmt-ops-10, then the lead.
+
+**Background.**
+- P-013 (arm-load) and P-022 (arm-scope, S, block B) removed the ~100 ms y≈1960 frame 4/4. That frame was NAMED: the
+  window touch listener add at the IO edge (na/nb split, `fixes/morph-webkit/README.md` "y≈1960").
+- Edge frames of 40-49 ms are left (P-013: 34/49/40/42; P-022: 49 @ y 2019), unnamed.
+- Best build at main = st6-rb2 (which carries arm-scope: touch listeners on #platform + header, armed at setup) +
+  platform-idle + morph-inherit.
+- In it, the IO edge still flips `b`. Best build JS lines below are in `nodes/2.DyWL8TcE.js` 65052c4a3902; the IO
+  callback is at 13378-13379, `rootMargin: 200% 0px`.
+- That `b` write sources the panel's 21 column images (`src`, l. 13518) and lifts `inert` from the pre-mounted panel
+  (l. 13577).
+- On aw1-10e, neither write was the ~100 ms cost (mw10e-src and mw10e-noinert, no win). With the listener add gone,
+  they are the leading candidates for the residual: na (noinert + src + listeners at setup) left only 34-35 ms frames
+  there.
+
+**Ticket draft.**
+
+```
+TICKET f3-edge-residual · best build (fixes/best-build/build.mjs --snapshot -> out/snapshots/best-65052c4a3902)
+  JS 65052c4a3902 / CSS e0f92804c521 · control: plain baseline 4606120cf392 / 27776f3d4138 (same base, site-pretty
+  at the snapshot baseline.json pins)
+driver G (gestures/arm-scope-touch-v1c.json, sha256/12 012758d97fe1, x 215, as P-073) · condition T-039 B (real
+  thermal Serious, gate pair per hold, 44 °C / Critical stop) · prediction <mgmt-ops-10 assigns at registration>
+question: in best build, which rendering-update phase owns the edge frames > 34 ms around the #platform IO crossing
+  (style, layout, paint or composite/commit), and at which crossing do they fall?
+probe set: std + Timeline in EVERY counted run (iphone.mjs gesture --timeline, re-armed per load: Page.disable ->
+  Page.enable -> Timeline.start, F-047); no Web Inspector, layersForNode or paint rects (§5.5)
+order: C V V C C V V C (8 counted) · warm-up: one uncounted load per arm's port, both arms (A3/U5)
+sentinel (§5.2, Timeline block): one uncounted Timeline-OFF S run on the control after the warm-ups and one at the
+  block end (bottom >= 58, scroll >= 44); a failing sentinel voids back to the last passing one
+per run: battery °C, charging state, thermal state (gate pair), LPM read (LPM run dropped)
+expected minutes: ~45 (3 holds <= 10 min each + gates; cooling by phone-temp only if a gate fails)
+```
+
+**What is read in each counted run** (scorer to be written and hashed before the block, data only):
+- **Crossing.** The rendering frame that carries the IO `ObserverCallback` from the callback lines 13378-13379 (best
+  build; the control's matching line is in its own file). Positions are compared by crossing, never by raw y.
+- **Edge frames.** Every frame with dt > 34 ms from 2 frames before the crossing to 10 frames after it. Report the
+  ±4 ms twins (dt > 30 / > 38) and flag the near band (30, 38].
+- **Phase split per edge frame.** From its `RenderingFrame` record's children:
+  - script: FunctionCall, ObserverCallback, FireAnimationFrame, EventDispatch;
+  - RecalculateStyles, with Layout nested inside it counted apart;
+  - Layout outside a style recalc;
+  - Paint;
+  - Composite, i.e. the commit.
+  - The owner is the largest part, and it "owns" the frame only at ≥ 50 % of the RenderingFrame. Below that the frame
+    is "split".
+- **Control check, which voids the block.** On the control, the crossing frame must again be the ~100 ms frame with
+  the signed card's shape (RecalculateStyles plus Composite as the main parts; card 10-01: 34.4 + 58 of 97.6 ms) in
+  ≥ 3 of 4 runs.
+  - If not, the G driver or the Timeline split does not reproduce the known frame, and no best-build verdict is drawn.
+
+**Decisions** (best build, 4 counted runs):
+- Fewer than 2 of 4 runs have an edge frame > 34 ms (and the twin agrees) → the residual does not appear on the touch
+  path. Close it for touch; F3 needs no edge fix. Threshold-sensitive if the > 30 / > 38 twin differs.
+- ≥ 3 of 4, owned by RecalculateStyles (with its nested Layout) at the crossing → the `inert` lift is the prime
+  candidate. F candidate: restack mw10e-noinert's delta (never inert; tabindex guard) on best build, with
+  `noinert-check.mjs` in Chrome first and a phone gain block later.
+- ≥ 3 of 4, owned by Paint or Composite at the crossing or within 3 frames after it → the 21 image sources (decode,
+  new backing stores) are the prime candidate. F candidate: restack mw10e-src's idle src staging on best build, with
+  `src-check.mjs` first.
+- The frames fall outside the crossing window, or no part owns them → name the nearest code threshold from the
+  frame's script records. No F candidate until it is named.
+- Any outcome is OBSERVED, n = 4 per arm, single driver. A fix built from it still needs its own gain block plus the
+  user's finger test, since F3 is a top-3 smoothness fix.
+
+**Open point for the lead: driver M.**
+- The replan named "M plus G". M (`__fwMorphDrive`) runs E(1)/E(0) at the page's max scrollY and never crosses the IO
+  edge, so it cannot show these frames.
+- I left M out. If M is meant for the end-pin hold, that is a second question and needs its own ticket (one question
+  per ticket).
+
+**Simulator check (no timing): does B1, the end-pin collapse, reproduce on main's build?**
+- B1 = P-036's capped runs, which collapsed to 5-21 fps at the pin in V. The earlier Simulator probe (`pinhold-sim.mjs`
+  + `pin-hold-v1.json`) reached the capped state but showed no collapse in any arm.
+- Constraint: `sim.mjs gesture` counts as timed. It is refused in a functional session (tools/sim.mjs, the `gesture`
+  branch: "Timed like record"), so a G pin hold in the Simulator is not a no-timing job under I-098.
+- What can run now: a functional session (shared lane, weight simulator, ≤ 300 s) on best build vs st6-rb2. The page
+  is brought to the pin through the wheel path, with synthetic wheel pushes at max scrollY (the release-sim method),
+  then held for 4 s. Read, counts only:
+  - the capped state: scrollY, m, `__osb`, the nav class;
+  - rAF, timer, scrollTo and mutation counts;
+  - Timeline record counts per type;
+  - the panel-clock layer census.
+- Verdict:
+  - The same counts in both builds → main's build adds no per-frame page work at the pin. B1 stays UNRESOLVED, with
+    G/F on the phone as the decisive check.
+  - More per-frame work in best build → name it before any phone time.
+- Limit: this reaches the pin by wheel, not touch. The touch-path collapse can only be checked with the G pin hold
+  (`pinhold-sim.mjs`, normal hold) once timing holds resume.
