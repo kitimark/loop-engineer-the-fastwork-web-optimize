@@ -186,3 +186,20 @@ Probe (one approved shared-lane Chrome hold; 430x932 DPR 3 mobile; rAF samples o
 - **Where it comes from.** platform-idle and hero-exit-threaded patches contain the same carousel code as st6-rb2 (they are stacked on it), so B in options B and C carries it; A (plain baseline) does not. Not tested: the scene `paused` case (scene-scope coupling).
 - **Earlier checks missed it** because the st6-rb2 pixel check compares frozen frames at rest ("0 px on the avatar imgs"), not mid-slide.
 - Rev 3 text: answers the note, states what B carries in each option; A = `fixes/morph-inherit/patch.diff` as the base waits for I-093.
+
+## 7. Does the console's "Try it" panel cause the slider difference? (T-042 #13-#14, 2026-10-03; OBSERVED, Chrome only)
+
+Question: the user saw the slider look wrong in the panel, but "proper" on the iPhone and in a new tab. Probe (shared-lane hold, counts only): the real console page
+(`/proposals#PR-010`, option tab "standard"), "Open both pages", then rAF samples (rect, opacity, transform, clip-path, animation play state, scene attribute) of the
+slider inside each iframe at the same time, versus the same two servers opened in their own tab at 1440x900 and 430x765. Console viewport 1440x900 (iframes 430x765, the
+`max-height: 85vh` rule) and 1000x800 (iframes 430x680). A = baseline, B = platform-idle on st6-rb2 (the rev 3 option).
+
+- **The panel does not change the slider.** In every iframe: scene `active` and `visible` throughout, 60 frames/s, no frame gap over 17 ms inside a slide, a slide every 1017-1033 ms
+  lasting 217-233 ms. The same numbers as in the own tab. The leaving face at 50 / 100 / 200 ms after the slide start: A 9.6 / 2.4 / 0.7 px wide in both; B 20.8 / 14.6 / 11.2 px in both (frame alignment moves A by about 1 px).
+- **The two frames are in step in the panel** (slide starts of A and B 0-33 ms apart, both loaded together); the 0.7 s phase offset I measured in rev 3 was between two separate loads.
+  So what a user sees side by side in the panel is exactly the st6-rb2 leaving-face change (and the baseline's 2 px end-of-slide jump), not a timing offset. In a tab alone there is nothing to compare
+  against, which fits "works properly in the new tab".
+- Chrome put the two iframes in their own processes (they appeared as separate CDP targets, sandboxed cross-origin frames), so the frames do not share one main thread.
+- Scroll sweep (430x765, heading from +900 to -1000 px, 2.3 s per stop, down then up): the slider runs at every stop in both A and B (2-3 slides per 2.3 s), scene always `active`; no difference in when it runs.
+- Not tested: Safari, the iPhone (the panel's frames point at localhost, so they cannot load on a phone), a console page scrolled so the frames are off screen, the scene `paused` case.
+- Probe scripts: scratchpad `probe11.mjs` (panel and tabs), `probe12.mjs` (sweep), `an11.mjs`; not committed.
