@@ -14,7 +14,8 @@ off-screen inline style writes (Chrome). Section "Review round 3 and PR-008 rev 
 timing run (timing A/Bs are deferred, user 2026-10-02); cd-strip is a top-3 fix, so it keeps a phone block and the
 user's finger test before landing (lead, T-029 #30). **Phone block P-079 done at real thermal Serious (user T-039 B),
 2026-10-03 10:45-12:03Z: hit** (top and pin frames no worse, re-entry clock repaint 53.5 → 21, clock backing 48 → 16
-layers; pin Layout not enough by the n rule, falsifier unreachable; ops second read PASS); section "Phone block P-079".
+layers; pin Layout not enough by the n rule, falsifier unreachable; ops second read PASS; the pin rows are void for
+the morph region after morph-inherit landed, the top, re-entry and backing results stand); section "Phone block P-079".
 Next: the user's finger swipe A/B, then the land request.
 **Stage:** V (BUILD card strip-tc below; review round 3 ACCEPT-WITH-NOTES; phone block P-079 hit; finger test next). D: LOCATED, signed by the lead on the fast path
 (2026-10-03 01:1xZ, no gain claim: the frame effect is measured only in the phone block, so no segment card now)
@@ -855,6 +856,17 @@ output). Raw files, gate log (`gates.jsonl`, `holds.jsonl`) and hold logs: iphon
 - C's backing MB (1.48) is above the Simulator's 1.18; the backed-layer counts match the Simulator exactly (48 / 16).
 - Verdict per the ticket's decisions: **hit** (re-entry, backing, frames in both windows), so strip-tc stays the base
   for cd-roll-ca; next the user's finger swipe A/B (C vs V), then the land request.
+- **Morph caveat (lead 15:0xZ, after morph-inherit landed, b11f977 + 0ad5407):** both arms ran on st6-rb2, where WebKit
+  left the nav children at --morph 0 and froze the panel fade at 0.924 (F-183/F-184, OBSERVED on phone + Sim). WebKit
+  morph-region numbers on stacks without morph-inherit are void: **the pin frames and pin Layout rows above are void
+  for the morph region; the top frames, re-entry and backing results stand.** cd-strip's next build stacks on main +
+  morph-inherit (its edits overlap none of this patch). The user's finger A/B C-033 stands (countdown region).
+- Reviewer note (review-morph-inherit, relayed by mgmt-ops-10): in WebKit the panel countdown cells differ from the
+  baseline at m 0.9 and 1 (max 11, 52 px over 8), attributed to st6-rb2, not to morph-inherit; OBSERVED, cause unknown.
+  Both P-079 arms share st6-rb2.
+- Runner deviations (iphone-runner's block log, `out/p079/BLOCKLOG.txt` in its worktree): servers on `--port 0` (its
+  `--port auto` slot was taken), served hashes checked at each hold start; holds 3 and 4 ran 900 s (lead exception);
+  I-091 (iphone.mjs run shortens the lease) did not touch the data. Every run: LPM off, rafHz 59, not charging, 79-80 %.
 
 ## Next
 

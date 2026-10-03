@@ -658,6 +658,9 @@
   "sentinel": "a3:C failed the M sentinel (p95 34 ms > 18); a2:V and a3:C held frames at about 30 Hz (p50 32-33 ms) at 39.0-39.3 C, a1 and a4-a6 at 17 ms; OBSERVED, cause unknown; a2, a3 VOID; no cool-down or restart after it",
   "verdict": "hit (re-entry, backing, frames top and pin); top Layout in band; pin Layout not enough, falsifier unreachable",
   "secondRead": "mgmt-ops-10 PASS, re-score from the raw files byte-identical; row 9ab03c1",
-  "rawFiles": "iphone-runner worktree out/p079/ (gitignored, local); score out/cd-strip/p079-score.json"
+  "rawFiles": "iphone-runner worktree out/p079/ (gitignored, local); score out/cd-strip/p079-score.json",
+  "morphCaveat": "lead 15:0xZ after morph-inherit landed (b11f977 + 0ad5407): both arms on st6-rb2 (WebKit nav children at --morph 0, panel fade frozen at 0.924; F-183/F-184, OBSERVED); pin frames and pin Layout void for the morph region; top frames, re-entry and backing stand; next build stacks on main + morph-inherit",
+  "reviewerNote": "review-morph-inherit: WebKit panel countdown cells differ from the baseline at m 0.9 and 1 (max 11, 52 px over 8), attributed to st6-rb2; OBSERVED, cause unknown; both arms share st6-rb2",
+  "runnerDeviations": "servers on --port 0 (port auto slot taken), served hashes checked each hold; holds 3 and 4 ran 900 s (lead exception); I-091 no effect on data; LPM off, rafHz 59, not charging, 79-80 %"
  }
 }
