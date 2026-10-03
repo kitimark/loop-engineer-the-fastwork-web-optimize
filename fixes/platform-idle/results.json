@@ -37,7 +37,7 @@
    "windowMs": 20000
   }
  },
- "outcome": "PASS: less-work gate met in both engines; next the short phone no-worse check (lead) and the pixel proposal (user)",
+ "outcome": "PASS + PASS (P-077): less-work gate met in both engines. Look accepted by the user (PR-009, option \"both\", 2026-10-03 10:31Z). Phone no-worse check (hold h121509, condition B): \"no worse, threshold-sensitive\" (twins carried by the shared onset frame, V1 only, n = 2), accepted by the lead. Re-ticket e0f92804c521 (G3 in @supports) carried by identity check (review round 1: V-new = V-old within the load-to-load floor, Chrome and WebKit).",
  "verdicts": {
   "chrome": "PASS",
   "sim": "PASS"
@@ -1907,7 +1907,7 @@
   "Sim session 2, first attempt: killed while still queued for the lock (my Bash job hit its 30-min default limit) before any load ran; no records were written. Re-run with the same command and order (V2 C2).",
   "Mac load1 was high during the Sim sessions (other agents); counts are not timing, recorded for completeness.",
   "Chrome V at y4660 keeps ~1200 style/prepaint per 20 s: other content in view there (agents typing / accent loops) runs its own per-frame loop; by the card that stop is no-worse only.",
-  "Pixels are NOT identical (WebKit dash edge up to 17/255 the whole time the glint is mounted; glint edges up to 64/255 Chrome and 33/255 WebKit while passing; sweep up to 23/255): landing needs the user proposal (option A) per the illusion rule.",
+  "Pixels are NOT identical to st6-rb2 (WebKit dash edge up to 17/255 the whole time the glint is mounted; glint edges up to 64/255 Chrome and 33/255 WebKit while passing; sweep up to 23/255). The user accepted this look as PR-009, option \"both\" (2026-10-03 10:31Z, README blob ec8bb40); those numbers are the exception's tolerances. Reduced motion: titles identical; the reduced-motion dash crop differs only in the two face photos, by load, in both arms alike (review1.reducedMotionDash).",
   "Review round 1: the G3 CSS is now inside @supports (-webkit-mask-clip: text) (CSS e0f92804c521). V-new = V-old within the load-to-load floor in Chrome (10 viewports) and WebKit (Simulator); P-077 and the phone block measured V-old and stand for V-new. No measurement code changed (tools/ untouched); topic-local harness changes: simcount.mjs gained a --morph-fade read (F-182), new idletriple.mjs and chlayers.mjs."
  ],
  "phoneBlock": {
@@ -3929,6 +3929,505 @@
      }
     }
    ]
+  },
+  "pixelsChromeT1024NvsP": {
+   "note": "N = V-new, O = V-old, P = a second load of V-old. The first run's 107-LSB patch (title 0, left clip edge, x 0-7) was in O and P alike; N~P there is 0. The repeat shows no such patch in any pair.",
+   "firstRunSavedFrames": {
+    "title0@2000": {
+     "NvsP": "0/0",
+     "NvsO": "124/107",
+     "PvsO": "124/107"
+    },
+    "title1@2000": {
+     "NvsP": "0/0",
+     "NvsO": "0/0",
+     "PvsO": "0/0"
+    },
+    "title2@2000": {
+     "NvsP": "0/0",
+     "NvsO": "473/1",
+     "PvsO": "473/1"
+    },
+    "title3@2000": {
+     "NvsP": "0/0",
+     "NvsO": "0/0",
+     "PvsO": "0/0"
+    }
+   },
+   "repeatRun": {
+    "file": "out/platform-idle/review/p9c/probe9-t1024.json (local), probe9b.mjs = probe9 + N~P",
+    "css": {
+     "N": "e0f92804c521",
+     "O": "d67d599ab034",
+     "P": "d67d599ab034",
+     "C": "f523598b2a24"
+    },
+    "sweep": {
+     "NvsO": {
+      "max": 1,
+      "px": 1906,
+      "per": [
+       "1@250:84/1",
+       "1@2000:332/1",
+       "2@250:181/1",
+       "2@1000:281/1",
+       "2@1500:330/1",
+       "2@2500:240/1",
+       "3@250:73/1",
+       "3@1000:385/1"
+      ]
+     },
+     "PvsO": {
+      "max": 1,
+      "px": 3378,
+      "per": [
+       "1@250:84/1",
+       "1@1000:266/1",
+       "1@1500:277/1",
+       "1@2000:332/1",
+       "2@250:181/1",
+       "2@1000:281/1",
+       "2@1500:330/1",
+       "2@2500:240/1",
+       "2@3000:211/1",
+       "2@3750:110/1",
+       "3@1000:385/1",
+       "3@1500:681/1"
+      ]
+     },
+     "NvsP": {
+      "max": 1,
+      "px": 1618,
+      "per": [
+       "1@1000:266/1",
+       "1@1500:277/1",
+       "2@3000:211/1",
+       "2@3750:110/1",
+       "3@250:73/1",
+       "3@1500:681/1"
+      ]
+     },
+     "NvsC": {
+      "max": 5,
+      "px": 64993
+     }
+    },
+    "glint": {
+     "NvsO": {
+      "max": 2,
+      "px": 1186,
+      "per": [
+       "0@0.1:328/2",
+       "0@0.25:4/1",
+       "0@0.4:362/2",
+       "0@0.5:4/1",
+       "0@0.6:4/1",
+       "0@0.75:4/1",
+       "0@0.9:4/1",
+       "0@2:4/1",
+       "0@3.25:4/1",
+       "0@3.5:4/1",
+       "0@3.75:4/1",
+       "1@1.4:460/2"
+      ]
+     },
+     "PvsO": {
+      "max": 2,
+      "px": 1266,
+      "per": [
+       "0@0.1:4/1",
+       "0@0.25:358/2",
+       "0@0.4:4/1",
+       "0@0.5:4/1",
+       "0@0.6:4/1",
+       "0@0.75:4/1",
+       "0@0.9:4/1",
+       "0@2:4/1",
+       "0@3.25:4/1",
+       "0@3.5:4/1",
+       "0@3.75:4/1",
+       "1@2.75:444/2",
+       "1@4.5:424/2"
+      ]
+     },
+     "NvsP": {
+      "max": 2,
+      "px": 2364,
+      "per": [
+       "0@0.1:324/2",
+       "0@0.25:354/2",
+       "0@0.4:358/2",
+       "1@1.4:460/2",
+       "1@2.75:444/2",
+       "1@4.5:424/2"
+      ]
+     },
+     "NvsC": {
+      "max": 23,
+      "px": 8025
+     }
+    },
+    "reduce": {
+     "NvsO": {
+      "max": 0,
+      "px": 0,
+      "per": []
+     },
+     "PvsO": {
+      "max": 0,
+      "px": 0,
+      "per": []
+     },
+     "NvsP": {
+      "max": 0,
+      "px": 0,
+      "per": []
+     },
+     "NvsC": {
+      "max": 0,
+      "px": 0
+     }
+    }
+   }
+  },
+  "reducedMotionDash": {
+   "tool": "out/platform-idle/probe10.mjs (local): reduced motion, probe9's \"dash\" crop (the first dash's parent, div.start-selling-platform-secure.is-network.is-static, inside #platform), loads C, N, C2, N2; each differing pixel mapped to the element under it (8 CSS px cells, elementsFromPoint)",
+   "finding": "every differing pixel is on the two face photos (img.start-selling-platform-secure-network-face) or their 1-cell rim, never the dashes or the glint. No animation or SMIL runs in the crop in reduced motion in either arm. The difference is per load: each load renders the photos in one of two states, in C and N alike (C~C2 differs at m375 and d861; N~N2 at m320, d861 and m430).",
+   "vps": {
+    "m320": {
+     "served": {
+      "C": {
+       "js": "7bf7c4657d21",
+       "css": "f523598b2a24"
+      },
+      "N": {
+       "js": "de29ff8aa622",
+       "css": "e0f92804c521"
+      }
+     },
+     "runningInCrop": {
+      "C": [],
+      "N": []
+     },
+     "pairs": {
+      "C~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~N2": {
+       "max": 11,
+       "px": 5041,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 4956,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 52,
+        "span.start-selling-platform-secure-network-dash < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 33
+       }
+      },
+      "N~C": {
+       "max": 11,
+       "px": 5041,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 4956,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 52,
+        "span.start-selling-platform-secure-network-dash < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 33
+       }
+      },
+      "N2~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~C2": {
+       "max": 11,
+       "px": 5041,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 4956,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 52,
+        "span.start-selling-platform-secure-network-dash < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 33
+       }
+      },
+      "N2~C": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      }
+     }
+    },
+    "m375": {
+     "served": {
+      "C": {
+       "js": "7bf7c4657d21",
+       "css": "f523598b2a24"
+      },
+      "N": {
+       "js": "de29ff8aa622",
+       "css": "e0f92804c521"
+      }
+     },
+     "runningInCrop": {
+      "C": [],
+      "N": []
+     },
+     "pairs": {
+      "C~C2": {
+       "max": 14,
+       "px": 17303,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 17178,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 125
+       }
+      },
+      "N~N2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~C": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N2~C2": {
+       "max": 14,
+       "px": 17303,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 17178,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 125
+       }
+      },
+      "N~C2": {
+       "max": 14,
+       "px": 17303,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 17178,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 125
+       }
+      },
+      "N2~C": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      }
+     }
+    },
+    "m430x2": {
+     "served": {
+      "C": {
+       "js": "7bf7c4657d21",
+       "css": "f523598b2a24"
+      },
+      "N": {
+       "js": "de29ff8aa622",
+       "css": "e0f92804c521"
+      }
+     },
+     "runningInCrop": {
+      "C": [],
+      "N": []
+     },
+     "pairs": {
+      "C~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~N2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~C": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N2~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N2~C": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      }
+     }
+    },
+    "d1440x1": {
+     "served": {
+      "C": {
+       "js": "7bf7c4657d21",
+       "css": "f523598b2a24"
+      },
+      "N": {
+       "js": "de29ff8aa622",
+       "css": "e0f92804c521"
+      }
+     },
+     "runningInCrop": {
+      "C": [],
+      "N": []
+     },
+     "pairs": {
+      "C~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~N2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~C": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N2~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N2~C": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      }
+     }
+    },
+    "d861": {
+     "served": {
+      "C": {
+       "js": "7bf7c4657d21",
+       "css": "f523598b2a24"
+      },
+      "N": {
+       "js": "de29ff8aa622",
+       "css": "e0f92804c521"
+      }
+     },
+     "runningInCrop": {
+      "C": [],
+      "N": []
+     },
+     "pairs": {
+      "C~C2": {
+       "max": 11,
+       "px": 5226,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 5088,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 138
+       }
+      },
+      "N~N2": {
+       "max": 11,
+       "px": 9189,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 9048,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 141
+       }
+      },
+      "N~C": {
+       "max": 11,
+       "px": 9189,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 9048,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 141
+       }
+      },
+      "N2~C2": {
+       "max": 11,
+       "px": 5226,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 5088,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 138
+       }
+      },
+      "N~C2": {
+       "max": 4,
+       "px": 3963,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 3960,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 3
+       }
+      },
+      "N2~C": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      }
+     }
+    },
+    "m430": {
+     "served": {
+      "C": {
+       "js": "7bf7c4657d21",
+       "css": "f523598b2a24"
+      },
+      "N": {
+       "js": "de29ff8aa622",
+       "css": "e0f92804c521"
+      }
+     },
+     "runningInCrop": {
+      "C": [],
+      "N": []
+     },
+     "pairs": {
+      "C~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~N2": {
+       "max": 13,
+       "px": 13130,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 13047,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 83
+       }
+      },
+      "N~C": {
+       "max": 13,
+       "px": 13130,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 13047,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 83
+       }
+      },
+      "N2~C2": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      },
+      "N~C2": {
+       "max": 13,
+       "px": 13130,
+       "byElement": {
+        "img.start-selling-platform-secure-network-face < div.start-selling-platform-secure < div.start-selling-platform-stage-artboard": 13047,
+        "div.start-selling-platform-secure < div.start-selling-platform-stage-artboard < div.start-selling-platform-stage-visual": 83
+       }
+      },
+      "N2~C": {
+       "max": 0,
+       "px": 0,
+       "byElement": {}
+      }
+     }
+    }
+   }
   }
  }
 }
