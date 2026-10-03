@@ -29,7 +29,8 @@ Not landable on P-087; the route is the lead's.
   - Source: the Hold B burst, one slide (slide 1 of the burst, 3 whole shots inside 220-720 ms and 2 after). From
     328 ms after that slide starts, base's faces equal its quiet Default pixels (0 px), not the Low reference.
   - At quiet rest, st6-rb2 differs from base by largest shade 50, fill (25 % edge), 1137 device px > 8 levels, which
-    is 0.0379 % of the page viewport (430x775 CSS at DPR 3). That is 126.3 CSS px² in all, 69.9 on the largest face.
+    is 0.0315 % of the screen (1290x2796; 0.0379 % of the page viewport). That is 126.3 CSS px² in all, 69.9 on
+    the largest face.
   - Conditions: Simulator (Mac GPU, not the iPhone), the simctl composited screenshot, 430 CSS px, DPR 3, ≥ 1.5 s
     after the last slide, A/A base~base2 over two loads = 0.
   - Those are within T2's static numbers. The snapshot path (OBSERVED, not what the screen shows) gives max 81 over
@@ -1193,8 +1194,8 @@ from it are worded that way and stay OBSERVED in our setup until a source refere
     - st6's leader rule wins over the appended `img:not(.st5-next)` rule there.
     - Sv's will-change override did apply to it (auto).
   - By item 3's text, **St, So and Sw are VOID**.
-  - The conclusion does not change: no arm matches base on screen, and S and Sv (valid) don't either. So no candidate
-    follows.
+  - The conclusion rests on the valid arms plus Hold B: S and Sv don't match base on screen (1137 and 998 px), so
+    no candidate follows. Hold B confirms base~S on screen (1137 px, max 50).
   - The leaver is invisible at rest (opacity 0, collapsed), so it likely adds 0 px. OBSERVED.
   - Base's slots are none / 1 / auto.
   - The St, So and Sw numbers below are kept as description only.
@@ -1288,8 +1289,8 @@ Against S on screen: S~St n8 0 (max 1), S~So 0 (max 0), S~Sv 249 (max 18), S~Sw 
 **Five numbers on screen, at quiet rest, S against base.** Conditions: Simulator fw-sim (Mac GPU, not the iPhone),
 the simctl composited screenshot, 430 CSS px, DPR 3, ≥ 1.5 s after the last slide, A/A base~base2 over two loads = 0.
 - largest shade 50;
-- share 0.0379 % of the page viewport beyond the A/A. The viewport is 430x775 CSS at DPR 3 = 2,999,250 device px; of
-  the whole 1290x2796 screen it would be 0.0315 %.
+- share **0.0315 % of the screen** (1137 / 1290x2796) beyond the A/A, per the lead's ruling. tierq's printed 0.0379 %
+  is the share of the page viewport, 430x775 CSS at DPR 3 = 2,999,250 device px.
 - area 1137 device px > 8 levels / 9 = 126.3 CSS px² in all. Per face: 2.7/38.6/15.2/69.9, so the largest face has
   69.9;
 - fill (25 % edge);
