@@ -135,6 +135,10 @@ v2 run list (chainB.sh, one shared probe hold at a time): Chrome identity 430, 1
 census 430, 375, 768, 1024, 1440, 430r; Simulator toolbar observer count (normal session, WDA), Simulator identity
 records st6/fix and replays; Simulator census reps 1 and 2.
 
+Repack (10:41Z, no probe or argument change): after ident 430, 1024 and 375, chainB was stopped and the rest of its
+list runs from chainC.sh 667b34b16545, which packs two short jobs per shared hold (ident 430r + items 430/1024;
+census 430 + 430r, 375 + 768, 1024 + 1440) to halve the queue entries. Same outputs, same overlay check.
+
 ## Why it lags
 
 (to follow with the data)
