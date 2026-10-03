@@ -1,7 +1,18 @@
 #!/usr/bin/env node
-// rot2.mjs (P-089) = the v4 rot.mjs (sha 327ac6201edb) plus one change: capture() also records each avatar slot's
-// border box and computed opacity / transform / clip-path / image-rendering (`parts`, for t2aux.mjs parts). Nothing
-// else differs: same recorder, logpoints, trials, clips, replays.
+// rot2.mjs (P-089) = the v4 rot.mjs (sha 327ac6201edb) plus: capture() also records each avatar slot's
+// border box and computed opacity / transform / clip-path / image-rendering (`parts`, for t2aux.mjs parts).
+// P-089 option A (lead, after mgmt-ops-10's correction; before any Chrome hold), mirroring simrot2.mjs's quiet rest:
+//   - quiet shot: after the rest shot, wait for a slide's end (logpoint), freeze the row at the next frame (timers held:
+//     no slide can start), no screenshot for QUIET = 2500 ms, then capture. Replays of quiet AND intoview shots settle QUIET ms (so the
+//     replay X is not transient-exposed either: it waits for its state, which may be reached right after a slide end). Reduced
+//     motion: no slide to wait for; freeze, QUIET, capture.
+//   - since: every capture (shots and replays) records { endMs, resizeMs }: ms from the last slide end and from the
+//     last change of any slot's border-box size (gBCR, transforms included, sampled in the per-frame recorder, list
+//     R.rs) to the capture, both read in the page at capture time; null when there was none.
+//   - the rest shot is kept and marked transientExposed (it is ~1.4 s after a slide end by design); a quiet or
+//     intoview record shot whose since.endMs or since.resizeMs is < QUIET_MIN = 1500 ms gets `void`, as does a quiet
+//     shot with no slide end seen (normal motion) or a mutation between its freeze and its capture.
+// Nothing else differs: same recorder frames, logpoints, trials, clips, replay matching.
 // rest-script item 1 identity harness (Chrome; functional, no timing claim).
 // One arm, one viewport. Logpoints (Debugger.setBreakpointByUrl, conditions that return false: the shipped code is not
 // changed) on the rotator's slide start / slide abort / slide end lines record the schedule. A recorder installed at
@@ -43,8 +54,8 @@ const INJECT = `(() => {
   window.setTimeout = function (fn, ms, ...a) { return ST.call(window, function () { if (window.__hold) window.__held.push(() => fn(...a)); else fn(...a); }, ms); };
   window.__release = () => { window.__hold = false; const h = window.__held.splice(0); for (const f of h) f(); return h.length; };
   window.__ev = []; window.__d = null;
-  window.__rl = (k, x, d) => { window.__ev.push([k, performance.now(), x]); if (d && !window.__d) window.__d = d.slice(); if (k === 'start' && window.__onStart) window.__onStart(performance.now()); };
-  const R = window.__rec = { f: [], mut: [], gate: [], frz: [] };
+  window.__rl = (k, x, d) => { window.__ev.push([k, performance.now(), x]); if (d && !window.__d) window.__d = d.slice(); if (k === 'start' && window.__onStart) window.__onStart(performance.now()); if (k === 'end' && window.__onEnd) window.__onEnd(performance.now()); };
+  const R = window.__rec = { f: [], mut: [], gate: [], frz: [], rs: [] };
   let row = null, sec = null, probe = null, T = 0, tn = 0, k = 0;
   const attach = () => {
     row = document.querySelector('#people .start-selling-avatars'); sec = document.querySelector('#people');
@@ -58,6 +69,8 @@ const INJECT = `(() => {
     new ResizeObserver(() => {
       if (!T) return; const t = T; T = 0;
       const r = row.getBoundingClientRect(); const vis = r.bottom > 0 && r.top < innerHeight && r.width > 0;
+      const sig = [...row.children].map((i) => { const b = i.getBoundingClientRect(); return b.width.toFixed(2) + 'x' + b.height.toFixed(2); }).join(',');
+      if (sig !== R.sig) { if (R.sig !== undefined) R.rs.push(+performance.now().toFixed(2)); R.sig = sig; }
       const rec = [t, +tn.toFixed(2), +performance.now().toFixed(2), vis ? 1 : 0, Math.round(scrollY)];
       if (vis) {
         rec.push(row.classList.contains('is-sliding') ? 1 : 0, [...row.children].map((i) => (i.getAttribute('src') ? new URL(i.getAttribute('src'), location.href).pathname : '')),
@@ -85,7 +98,7 @@ page.on((m) => { if (m.method === 'Runtime.exceptionThrown') errors.push((m.para
 const result = { arm: ARM, w: W, vh: VH, dpr: DPR, mobile: MOBILE, reduced: REDUCED, browser: chrome.browser, trials: [], shots: [], replays: [], docs: [] };
 const pullDoc = async (label) => {
   const rec = await page.eval('window.__rec');
-  result.docs.push({ label, frames: rec.f, mut: rec.mut, gate: rec.gate, frz: rec.frz, events: await page.eval('window.__ev'), d: await page.eval('window.__d') });
+  result.docs.push({ label, frames: rec.f, mut: rec.mut, gate: rec.gate, frz: rec.frz, rs: rec.rs, events: await page.eval('window.__ev'), d: await page.eval('window.__d') });
 };
 try {
   await page.send('Network.enable');
@@ -114,23 +127,29 @@ try {
   const midY = Math.round(geo.top - VH / 2);                            // row mid-viewport
   result.ys = { enterY, farY, pausedY, midY };
   const waitStart = (ms = 4000) => page.eval(`new Promise((res) => { window.__onStart = (t) => { window.__onStart = null; res(t); }; setTimeout(() => res(null), ${ms}); })`);
+  const waitEnd = (ms = 4000) => page.eval(`new Promise((res) => { window.__onEnd = (t) => { window.__onEnd = null; res(t); }; setTimeout(() => res(null), ${ms}); })`);
   const unfreeze = () => page.eval(`(() => { window.__frozen = null; const fz = window.__rec.frz.at(-1); if (fz && fz[1] === null) fz[1] = performance.now(); const row = document.querySelector('#people .start-selling-avatars'); for (const a of row.getAnimations({ subtree: true })) a.play(); return window.__release(); })()`);
   // capture the row where it is now (after the page's own scroll-linked motion settled): clip in document coordinates
   const capture = async (file) => {
-    const r = await page.eval(`(() => { const row = document.querySelector('#people .start-selling-avatars'), r = row.getBoundingClientRect(); return { left: r.left, top: r.top, w: r.width, h: r.height, y: scrollY,
+    const r = await page.eval(`(() => { const row = document.querySelector('#people .start-selling-avatars'), r = row.getBoundingClientRect(), now = performance.now();
+      let le = null; for (const e of window.__ev) if (e[0] === 'end' && e[1] <= now) le = e[1];
+      let lr = null; for (const t of window.__rec.rs) if (t <= now) lr = t;
+      return { left: r.left, top: r.top, w: r.width, h: r.height, y: scrollY, since: { endMs: le === null ? null : +(now - le).toFixed(1), resizeMs: lr === null ? null : +(now - lr).toFixed(1) },
       parts: [...row.children].map((i) => { const b = i.getBoundingClientRect(), cs = getComputedStyle(i); return [+b.left.toFixed(3), +b.top.toFixed(3), +b.width.toFixed(3), +b.height.toFixed(3), cs.opacity, cs.transform, cs.clipPath, cs.imageRendering]; }) }; })()`);
     const pad = 6;
     const clip = { x: Math.max(0, Math.floor(r.left) - pad), y: Math.floor(r.top + r.y) - pad, width: Math.ceil(r.w) + 2 * pad, height: Math.ceil(r.h) + 2 * pad, scale: 1 };
     const shot = await page.send('Page.captureScreenshot', { format: 'png', clip });
     writeFileSync(file, Buffer.from(shot.data, 'base64'));
-    return { clip, parts: r.parts, capTop: +r.top.toFixed(2), capLeft: +r.left.toFixed(2), yCap: Math.round(r.y) };
+    return { clip, parts: r.parts, since: r.since, capTop: +r.top.toFixed(2), capLeft: +r.left.toFixed(2), yCap: Math.round(r.y) };
   };
-  const SETTLE = 1200;
-  const freezeShot = async (label, extra) => {
+  const SETTLE = 1200, QUIET = 2500, QUIET_MIN = 1500;
+  result.settle = SETTLE; result.quiet = QUIET;
+  const sinceVoid = (s) => (s.mutAfter ? `row mutated ${s.mutAfter}x between freeze and capture` : [['endMs', 'slide end'], ['resizeMs', 'slot resize']].filter(([k]) => s.since && s.since[k] !== null && s.since[k] < QUIET_MIN).map(([k, w]) => `${w} ${s.since[k]} ms before capture (< ${QUIET_MIN})`).join('; ') || null);
+  const freezeShot = async (label, extra, settle = SETTLE) => {
     let fz = null;
     for (let i = 0; i < 150 && !fz; i++) { fz = await page.eval('window.__frozen'); if (!fz) await sleep(20); }
     if (!fz) return null;
-    await sleep(SETTLE);
+    await sleep(settle);
     const file = join(SHOTDIR, `${label}.png`);
     const s = { label, file, rec: fz.rec, y: fz.y, top: fz.top, ...extra, ...(await capture(file)) };
     s.mutAfter = await page.eval('window.__frozen.mutAfter');      // row mutations between the freeze and the capture
@@ -148,7 +167,13 @@ try {
     // a rest shot: a frame between two slides
     if (!REDUCED) { await waitStart(); await sleep(400); }
     await page.eval('window.__shotNext = true');
-    await freezeShot(`${ARM}-${W}-rest`, { kind: 'rest' });
+    await freezeShot(`${ARM}-${W}-rest`, { kind: 'rest', transientExposed: true });
+    await sleep(400);
+    // quiet rest (option A, as simrot2): freeze right after a slide's end, then QUIET ms with no screenshot, scroll or slide
+    const te = REDUCED ? null : await waitEnd(4000);
+    await page.eval('window.__shotNext = true');
+    const q = await freezeShot(`${ARM}-${W}-quiet`, { kind: 'quiet', lastEnd: te }, QUIET);
+    if (q) q.void = (te == null && !REDUCED) ? 'no slide end seen before the quiet shot' : sinceVoid(q);
     for (const kind of (REDUCED ? ['jump', 'far'] : KINDS)) {
       // far: the gate is paused there, the rotator is stalled (no phase to aim at): one trial
       for (const ph of (REDUCED || kind === 'far' ? [0] : kind === 'outin' ? [20, 60] : PHASES)) {
@@ -184,7 +209,8 @@ try {
     // anchor-like jump: scrollIntoView of the row from the gate-paused region (same scroll path as an anchor jump)
     await page.eval(`scrollTo({ top: ${pausedY}, behavior: 'instant' })`); await sleep(2200);
     await page.eval(`(() => { window.__shotNext = true; document.querySelector('#people .start-selling-avatars').scrollIntoView({ block: 'center', behavior: 'instant' }); })()`);
-    await freezeShot(`${ARM}-${W}-intoview`, { kind: 'intoview' });
+    const iv = await freezeShot(`${ARM}-${W}-intoview`, { kind: 'intoview' });
+    if (iv) iv.void = sinceVoid(iv);
     await sleep(1500);
     // a real fragment navigation onto the row's section (#people) from the gate-paused region
     if (!KINDS.includes('nohist')) {
@@ -246,7 +272,7 @@ try {
         await page.eval(`(() => { const row = document.querySelector('#people .start-selling-avatars');
           ${eff === null ? '' : `for (const a of row.getAnimations({ subtree: true })) a.currentTime = ${eff} + (+a.effect.getTiming().delay);`}
           scrollTo({ top: ${sh.yCap}, behavior: 'instant' }); })()`);
-        await sleep(SETTLE);
+        await sleep(sh.kind === 'quiet' || sh.kind === 'intoview' ? QUIET : SETTLE);
         const anNow = await page.eval(`(() => document.querySelector('#people .start-selling-avatars').getAnimations({ subtree: true }).map((a) => [a.animationName, a.currentTime, +a.effect.getTiming().delay, a.effect.getComputedTiming().progress]))()`);
         const file = join(SHOTDIR, `replay-${ARM}-${sh.label}.png`);
         const c = await capture(file);

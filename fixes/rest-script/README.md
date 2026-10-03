@@ -693,6 +693,72 @@ about 1.2-1.4 s after an st6 slide end. fw-sim intoview is T1 and fw-ipad intovi
 and mask OK. With Chrome 375/430/1024 from v4 (all within T2, the 1024 legs unmasked too), no T2 PASS is claimed yet.
 The Chrome 430r, 1440 and 1440r legs still have to run, under option A (below).
 
+### P-089 option A: a Chrome quiet shot (lead-approved, before any Chrome hold)
+
+The lead approved option A under the P-084 rule, through mgmt-ops-10. It is allowed because no Chrome hold had run and
+no result had been seen; it adds a measurement and drops none. The image-quality claim stays **UNRESOLVED** (no
+option C). The predictions stay as logged. The Sim chains (`sim`, `reduced`) ran under the 931d7ee6 hashes; these
+edits were written in a scratch copy and committed only after both chains and their scoring had ended.
+
+The lead's conditions, and how each is met:
+1. **The quiet shot mirrors simrot2's.** `rot2.mjs`, after the rest shot:
+   - waits for a slide's `end` logpoint;
+   - freezes the row at the next frame (animations paused, page timers held, so no slide can start);
+   - takes no screenshot and no scroll for QUIET = 2500 ms;
+   - then captures.
+
+   Replays of the quiet shot settle 2500 ms too. The st6 A/A gets its own quiet shot and replay, through the same
+   rec/rep steps. Under reduced motion there is no slide to wait for: freeze, wait 2500 ms, capture.
+2. **`since` on every capture** (record shots and replays). Both values are read in the page at capture time:
+   - `since.endMs`: ms since the last slide `end` logpoint;
+   - `since.resizeMs`: ms since the last change of any slot's border-box size. This is `getBoundingClientRect`, so
+     transforms count; the per-frame recorder samples it and keeps the list in `docs[].rs`.
+
+   The rest shot stays in the record, marked `transientExposed: true`. A quiet or intoview record shot is `void` when:
+   - either `since` value is under 1500 ms;
+   - no slide end was seen (normal motion);
+   - the row mutated between the freeze and the capture.
+
+   Replays of intoview shots now also settle 2500 ms. A replay waits for its state, which can come right after a slide
+   end, so this keeps the replay (t2score's X) from being transient-exposed too.
+3. **The verdict uses quiet and intoview.** `t2aux coverage` for the Chrome legs needs quiet and intoview, plus at
+   least 10 of the 12 moving frames at 1440. It also reads:
+   - the record run (`--run`): a record shot with `void` or a mutation after its freeze counts as VOID;
+   - the replays (`--replay`): a quiet or intoview replay whose `since` is under 1500 ms counts as VOID.
+
+   Rest is still scored and compared with quiet. A T3 on one side only prints `REST-QUIET DISAGREE`, which goes to the
+   lead and stays out of the verdict. Every rest, quiet and intoview row prints a `SINCE` line in the chain log.
+4. **mgmt-ops-10 reads the diff and re-hashes before any Chrome hold.** `chainJ.sh` now also appends a `HASHES` line
+   to every hold's log: the overlay, every tool, `p089.hashes` and itself. A line that differs from the one taken at
+   chain start makes the hold VOID (`hash-changed`).
+
+What did not change:
+- t2score, analyse, simrot2, pmcheck, p089-sim.sh, p089-chrome.sh;
+- the recorder frames;
+- the logpoints, trials, clips and replay matching.
+
+The Sim legs keep their registered coverage (rest, quiet, intoview). From now on `--run` and `--replay` apply to them
+as well. simrot2's replays carry no `since`, so they are not judged on it.
+
+Desk tests (scratch, not committed):
+- **`rot2test.mjs`** runs the INJECT recorder, the capture snippet and `sinceVoid` from rot2.mjs in a vm with a stub
+  DOM. It checks:
+  - a slot size change is logged once, with its frame time;
+  - an `end` logpoint calls `__onEnd`;
+  - `since` equals the time to the last end and the last resize, and ignores an end after the capture;
+  - void at 1400 ms and at 1499 ms, not void at 2600 ms or with no slide;
+  - void on a mutation;
+  - the quiet and intoview replay settle, and the rest label.
+- **`t2aux --selftest`** adds 9 cases for coverage with `--run` and `--replay`, and for rest vs quiet.
+- **`holdtest.mjs`** runs chainJ's own `hold()` with the lock stubbed out. To the earlier cases it adds two: a tool
+  edited during a hold makes the leg VOID with `hash-changed`, and every hold log carries its `HASHES` line.
+
+| file | sha256 | was |
+|---|---|---|
+| `rot2.mjs` | c21afe50502e | ed3ef131efd4 |
+| `t2aux.mjs` | 57a8090cddc2 | beeec0e6975a |
+| `chainJ.sh` | 751ec0244095 | 6cbe3fc2a4a0 |
+
 ## Why it lags
 
 Not a scroll-jank fix: a heat (rest work) fix, user T-029. Four small pieces of script keep the main thread busy

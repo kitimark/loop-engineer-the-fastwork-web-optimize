@@ -16,6 +16,13 @@
 #     moving frames in fw-sim, fw-ipad and Chrome 1440; else LEG VOID) and t2aux unmasked (MASK-DEPENDENT labels go
 #     to the lead, not into a PASS).
 # Every leg moves its previous output files to out/rest-script/chainJ/prev-<leg>-<epoch>/ before its first hold.
+# Option A (lead, P-089 Chrome legs; mgmt-ops-10):
+#   - every hold appends a HASHES line (overlay, every tool, p089.hashes, chainJ.sh itself) to its log after it ends;
+#     a line that differs from the one taken at chain start makes the hold VOID (hash-changed);
+#   - coverage also reads the record run and the replays: a record shot with `void` or mutAfter > 0 is VOID, and a
+#     quiet or intoview replay with since < 1500 ms (rot2 option A) is VOID;
+#   - Chrome legs need quiet and intoview (rest is transient-exposed: recorded, scored, compared with quiet, not in the
+#     verdict; REST-QUIET DISAGREE goes to the lead); Chrome 1440 also needs >= 10 of 12 moving frames.
 # usage: chainJ.sh sim | reduced | chrome | leg <fw-sim|fw-sim-pins|fw-ipad|fw-sim-rm|chrome-430r|chrome-1440|chrome-1440r>
 PART=$1
 WT=/Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-a326003adcb764633
@@ -36,6 +43,8 @@ reg() { sed -n "s/^$1=//p" $T/p089.hashes; }
 [ "$(h $T/p089-chrome.sh)" = "$(reg P089CHROME)" ] || { echo "p089-chrome.sh hash"; exit 1; }
 node $T/pmcheck.mjs --selftest > /dev/null || { echo "pmcheck.mjs selftest"; exit 1; }
 node $T/t2aux.mjs --selftest > /dev/null || { echo "t2aux.mjs selftest"; exit 1; }
+hashes() { echo "HASHES overlay=$(h fixes/rest-script/overlay/_app/immutable/nodes/2.DyWL8TcE.js) t2score=$(h $T/t2score.mjs) analyse=$(h $T/analyse.mjs) simrot2=$(h $T/simrot2.mjs) rot2=$(h $T/rot2.mjs) t2aux=$(h $T/t2aux.mjs) pmcheck=$(h $T/pmcheck.mjs) p089sim=$(h $T/p089-sim.sh) p089chrome=$(h $T/p089-chrome.sh) p089hashes=$(h $T/p089.hashes) chainJ=$(h $T/chainJ.sh)"; }
+H0=$(hashes); echo "$H0"
 
 # one hold, re-run once when VOID; returns 0 when a try passed, 1 when both were VOID
 hold() { # name, weight, doing, cmd...
@@ -56,6 +65,8 @@ hold() { # name, weight, doing, cmd...
     grep -q '^SIM2 .* VOID ' $L/$N.log && WHY="$WHY SIM2-VOID"
     [ $PMRC = 0 ] || WHY="$WHY pmset"
     echo "$PM" >> $L/$N.log
+    HN=$(hashes); echo "$HN" >> $L/$N.log
+    [ "$HN" = "$H0" ] || WHY="$WHY hash-changed"
     if [ -z "$WHY" ]; then
       echo "[$(date -u +%H:%M:%SZ)] end $N try $TRY OK ($PM, window $B-$E)"
       return 0
@@ -73,7 +84,7 @@ prev() { # leg, files...
 }
 # coverage + mask check of a scored leg; t2 json, parts json, need list, moving minimum, run, replay
 check() { # leg, t2, parts, need, moving, run, replay
-  node $T/t2aux.mjs coverage --t2 $2 --parts $3 --need $4 --moving $5 --out $L/$1-coverage.json || { legvoid $1 "coverage"; return 1; }
+  node $T/t2aux.mjs coverage --t2 $2 --parts $3 --run $6 --replay $7 --need $4 --moving $5 --out $L/$1-coverage.json || { legvoid $1 "coverage"; return 1; }
   node $T/t2aux.mjs unmasked --run $6 --replay $7 --t2 $2 --out $L/$1-unmasked.json | tail -1
   echo "LEG $1 SCORED"
 }
@@ -107,14 +118,14 @@ chromeleg() { # 430r | 1440 | 1440r
   case $1 in
     430r) prev chrome-430r $(chromefiles w430r chrome-430r)
       hold chrome-430r 2 "rest-script P-089: avatar row identity, width 430 reduced motion (headless, no timing)" sh $T/p089-chrome.sh 430 all --reduced || { legvoid chrome-430r "hold"; return 1; }
-      check chrome-430r $P/t2-w430r.json $P/parts-w430r.json rest,intoview 0 $P/fix-w430r.json $P/rep-fix-w430r.json ;;
+      check chrome-430r $P/t2-w430r.json $P/parts-w430r.json quiet,intoview 0 $P/fix-w430r.json $P/rep-fix-w430r.json ;;
     1440) prev chrome-1440 $(chromefiles w1440 chrome-1440)
       hold chrome-1440-rec 2 "rest-script P-089: avatar row record, width 1440 (headless, no timing)" sh $T/p089-chrome.sh 1440 rec || { legvoid chrome-1440 "rec hold"; return 1; }
       hold chrome-1440-rep 2 "rest-script P-089: avatar row replays + scoring, width 1440 (headless, no timing)" sh $T/p089-chrome.sh 1440 rep || { legvoid chrome-1440 "rep hold"; return 1; }
-      check chrome-1440 $P/t2-w1440.json $P/parts-w1440.json rest,intoview 10 $P/fix-w1440.json $P/rep-fix-w1440.json ;;
+      check chrome-1440 $P/t2-w1440.json $P/parts-w1440.json quiet,intoview 10 $P/fix-w1440.json $P/rep-fix-w1440.json ;;
     1440r) prev chrome-1440r $(chromefiles w1440r chrome-1440r)
       hold chrome-1440r 2 "rest-script P-089: avatar row identity, width 1440 reduced motion (headless, no timing)" sh $T/p089-chrome.sh 1440 all --reduced || { legvoid chrome-1440r "hold"; return 1; }
-      check chrome-1440r $P/t2-w1440r.json $P/parts-w1440r.json rest,intoview 0 $P/fix-w1440r.json $P/rep-fix-w1440r.json ;;
+      check chrome-1440r $P/t2-w1440r.json $P/parts-w1440r.json quiet,intoview 0 $P/fix-w1440r.json $P/rep-fix-w1440r.json ;;
   esac
 }
 case $PART in

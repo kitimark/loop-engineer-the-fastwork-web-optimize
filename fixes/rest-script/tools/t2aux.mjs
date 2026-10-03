@@ -15,7 +15,8 @@
 // usage: node t2aux.mjs parts --run fix.json --replay rep-fix.json [--labels a,b] [--out f.json]
 //        node t2aux.mjs pair --a repA.json --b repB.json [--labels a,b] [--out f.json]
 //        node t2aux.mjs unmasked --run fix.json --replay rep-fix.json --t2 t2.json [--out f.json]
-//        node t2aux.mjs coverage --t2 t2.json [--parts parts.json] --need rest,quiet,intoview --moving 10 [--out f.json]
+//        node t2aux.mjs coverage --t2 t2.json [--parts parts.json] [--run fix.json] [--replay rep-fix.json] --need quiet,intoview
+//               --moving 10 [--since quiet,intoview] [--out f.json]
 //        node t2aux.mjs --selftest
 // unmasked (P-089 addendum item 4): the A/A mask works both ways: where st6's own A/A caught a two-state, the mask also
 //   hides the fix's difference. Per label that t2score scored (non-VOID), the same X/Y crops are scored with no mask
@@ -24,6 +25,11 @@
 // coverage (addendum item 3): a leg is VOID unless every --need label is non-VOID in t2 (and in parts, when given) and
 //   at least --moving of the 12 moving labels (smooth and jump at 0/40/100/160/215, outin 20/60) are non-VOID in both
 //   (a parts row with enInCrop counts as VOID, F-199).
+//   Option A (lead, P-089 Chrome legs): with --run, a label whose record shot carries `void` (rot2/simrot2 shot-level
+//   void, e.g. a quiet shot too close to a slide) or mutAfter > 0 counts as VOID. With --replay, a --since label
+//   (default quiet,intoview) whose replay records `since` (rot2 option A) with endMs or resizeMs < 1500 counts as VOID;
+//   replays without `since` (simrot2) are not judged on it. When t2 scored both rest and quiet, rest (transient-exposed)
+//   is compared with quiet: a T3 on one side only is REST-QUIET DISAGREE, reported for the lead and not in the verdict.
 //   Exit 3 when VOID.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { calCrop, pngPixels, score, BAR } from './t2score.mjs';
@@ -55,11 +61,23 @@ export const MOVING = ['smooth', 'jump'].flatMap((k) => [0, 40, 100, 160, 215].m
 // the crop exactly as t2score.mjs builds it (Sim: calibration, DPR and screen from it; Chrome: clip, DPR and screen from the run)
 const cropFull = (r, run) => (r.cal ? calCrop(r.file, r.cal, r.rect) : { ...pngPixels(readFileSync(r.file)), dpr: run.dpr, screen: run.w * run.vh * run.dpr * run.dpr });
 export function breaksT2(five) { return five.largestShade.fill > BAR.fill || five.largestShade.edge > BAR.edge || five.sharePct > BAR.sharePct || five.areaCss > BAR.areaCss; }
-export function coverage(t2rows, partsRows, need, movingMin) {
-  const ok = (L) => { const a = t2rows.find((x) => x.label === L); if (!a || a.void) return false; if (!partsRows) return true; const p = partsRows.find((x) => x.label === L); return !!p && !p.void && !p.enInCrop; };
+export const SINCE_MIN = 1500;
+export function sinceShort(since) { return !!since && [since.endMs, since.resizeMs].some((v) => v !== null && v !== undefined && v < SINCE_MIN); }
+export function coverage(t2rows, partsRows, need, movingMin, { runShots = null, replays = null, sinceLabels = ['quiet', 'intoview'] } = {}) {
+  const why = {};
+  const ok = (L) => {
+    const a = t2rows.find((x) => x.label === L); if (!a || a.void) return (why[L] = 't2 VOID or missing'), false;
+    if (partsRows) { const p = partsRows.find((x) => x.label === L); if (!p || p.void || p.enInCrop) return (why[L] = 'parts VOID, missing or EN in crop'), false; }
+    const sh = runShots && runShots.find((x) => tail(x.label) === L);
+    if (runShots && (!sh || sh.void || sh.mutAfter > 0)) return (why[L] = 'record shot ' + (!sh ? 'missing' : sh.void || `mutAfter ${sh.mutAfter}`)), false;
+    if (replays && sinceLabels.includes(L)) { const rp = sh && replays.find((x) => x.label === sh.label); if (rp && sinceShort(rp.since)) return (why[L] = `replay since ${JSON.stringify(rp.since)} < ${SINCE_MIN} ms`), false; }
+    return true;
+  };
   const missingNeed = need.filter((L) => !ok(L)), movingOk = MOVING.filter(ok).length;
   const isVoid = missingNeed.length > 0 || movingOk < movingMin;
-  return { void: isVoid, missingNeed, movingOk, movingMin };
+  const rest = t2rows.find((x) => x.label === 'rest'), quiet = t2rows.find((x) => x.label === 'quiet');
+  const restQuiet = rest && quiet && !rest.void && !quiet.void ? { rest: rest.tier, quiet: quiet.tier, disagree: (rest.tier === 'T3') !== (quiet.tier === 'T3') } : null;
+  return { void: isVoid, missingNeed, why: Object.fromEntries(missingNeed.map((L) => [L, why[L]])), movingOk, movingMin, restQuiet };
 }
 const cropOf = (r, run) => (r.cal ? calCrop(r.file, r.cal, r.rect) : { ...pngPixels(readFileSync(r.file)), dpr: run.dpr });
 
@@ -75,6 +93,20 @@ function selftest() {
   const img = (v) => ({ w: 2, h: 1, px: Buffer.from([v, 0, 0, 0, 0, 0]) });
   const d = dmapCount(img(0), img(20)); ok(d.any === 1 && d.over8 === 1 && d.max === 20, 'pair counts');
   ok(MOVING.length === 12, '12 moving labels');
+  {
+    const t2 = ['rest', 'quiet', 'intoview'].map((label) => ({ label, tier: 'T2' }));
+    const shots = ['rest', 'quiet', 'intoview'].map((L) => ({ label: 'fix-1440-' + L }));
+    const reps = shots.map((x) => ({ label: x.label, since: { endMs: 2600, resizeMs: 2650 } }));
+    ok(!coverage(t2, null, ['quiet', 'intoview'], 0, { runShots: shots, replays: reps }).void, 'option A: clean quiet/intoview pass');
+    ok(coverage(t2, null, ['quiet'], 0, { runShots: shots.map((x) => (x.label.endsWith('quiet') ? { ...x, void: 'slide end 1400 ms before capture' } : x)), replays: reps }).void, 'record shot void fails');
+    ok(coverage(t2, null, ['intoview'], 0, { runShots: shots.map((x) => (x.label.endsWith('intoview') ? { ...x, mutAfter: 1 } : x)) }).void, 'mutAfter fails');
+    ok(coverage(t2, null, ['intoview'], 0, { runShots: shots, replays: reps.map((x) => (x.label.endsWith('intoview') ? { ...x, since: { endMs: 1210, resizeMs: 5000 } } : x)) }).void, 'replay since < 1500 fails');
+    ok(!coverage(t2, null, ['rest'], 0, { runShots: shots, replays: reps.map((x) => ({ ...x, since: { endMs: 100, resizeMs: 100 } })) }).void, 'rest is not judged on since');
+    ok(!coverage(t2, null, ['quiet'], 0, { runShots: shots, replays: reps.map((x) => { const { since, ...y } = x; return y; }) }).void, 'replays without since (simrot2) are not judged on it');
+    ok(!coverage(t2, null, ['quiet'], 0, { runShots: shots, replays: reps.map((x) => ({ ...x, since: { endMs: null, resizeMs: null } })) }).void, 'null since (reduced motion) passes');
+    ok(coverage([{ label: 'rest', tier: 'T3' }, { label: 'quiet', tier: 'T1' }], null, [], 0).restQuiet.disagree, 'rest T3 vs quiet T1: disagree');
+    ok(!coverage([{ label: 'rest', tier: 'T2' }, { label: 'quiet', tier: 'T0' }], null, [], 0).restQuiet.disagree, 'rest T2 vs quiet T0: agree (both within T2)');
+  }
   const rows = ['rest', 'quiet', 'intoview', ...MOVING.slice(0, 10)].map((label) => ({ label })).concat(MOVING.slice(10).map((label) => ({ label, void: 'x' })));
   ok(!coverage(rows, null, ['rest', 'quiet', 'intoview'], 10).void, 'coverage 10 of 12 passes');
   ok(coverage(rows, null, ['rest', 'quiet', 'intoview'], 11).void, 'coverage 11 needed fails');
@@ -137,9 +169,13 @@ function main() {
   } else if (cmd === 'coverage') {
     const t2 = J('--t2'), parts = arg('--parts') ? J('--parts') : null;
     const need = (arg('--need') || '').split(',').filter(Boolean), movingMin = Number(arg('--moving', '0'));
-    const c = coverage(t2.shots, parts && parts.rows, need, movingMin);
+    const runShots = arg('--run') ? J('--run').shots : null, replays = arg('--replay') ? J('--replay').replays : null;
+    const c = coverage(t2.shots, parts && parts.rows, need, movingMin, { runShots, replays, sinceLabels: arg('--since', 'quiet,intoview').split(',') });
     Object.assign(out, c);
-    console.log(c.void ? `COVERAGE VOID: missing ${c.missingNeed.join(',') || '-'}; moving ${c.movingOk}/12 (need ${movingMin})` : `COVERAGE OK: ${need.join(',')}; moving ${c.movingOk}/12 (need ${movingMin})`);
+    if (runShots) out.since = runShots.filter((x) => ['rest', 'quiet', 'intoview'].includes(tail(x.label))).map((x) => ({ label: tail(x.label), transientExposed: !!x.transientExposed, since: x.since ?? null, replaySince: (replays && replays.find((q) => q.label === x.label) || {}).since ?? null, void: x.void || null }));
+    if (out.since) for (const x of out.since) console.log(`SINCE ${x.label.padEnd(9)} record ${JSON.stringify(x.since)} replay ${JSON.stringify(x.replaySince)}${x.transientExposed ? ' transient-exposed (not in the verdict)' : ''}${x.void ? ' VOID ' + x.void : ''}`);
+    console.log(c.void ? `COVERAGE VOID: missing ${c.missingNeed.map((L) => `${L} (${c.why[L]})`).join(', ') || '-'}; moving ${c.movingOk}/12 (need ${movingMin})` : `COVERAGE OK: ${need.join(',')}; moving ${c.movingOk}/12 (need ${movingMin})`);
+    if (c.restQuiet) console.log(c.restQuiet.disagree ? `REST-QUIET DISAGREE: rest ${c.restQuiet.rest}, quiet ${c.restQuiet.quiet} (to the lead, not in the verdict)` : `REST-QUIET agree: rest ${c.restQuiet.rest}, quiet ${c.restQuiet.quiet}`);
     if (arg('--out')) writeFileSync(arg('--out'), JSON.stringify(out, null, 1));
     process.exit(c.void ? 3 : 0);
   } else { console.log('usage: t2aux.mjs parts|pair|unmasked|coverage ... | --selftest'); process.exit(1); }
