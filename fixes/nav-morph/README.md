@@ -15,6 +15,24 @@ Tools: `tween-paint-sim.mjs`, `tween-paint-read.mjs`, `tween-paint-sim2.mjs`; da
 V = C in every row (within ±1 paint). The Simulator's counts match the phone's P-079 attribution (hold ~4.1, open ~15,
 close 13.4-13.7 paints per frame).
 
+**Caveat, added 2026-10-03 (F-183): these counts were measured on a morph whose children were stale (WebKit).** In
+the Simulator, C's nav children never follow the header's `--morph` during a tween. Affected: nav bar, logo, actions,
+earn button and the panel. The cause is scene-scope R4b: `@property --morph { inherits: false }` plus
+`--morph: inherit` on those children. They re-resolve only when a header class flips:
+- the logo stays at the left;
+- "Join waitlist" stays visible at m = 1;
+- the panel's fade is frozen at the value from the `is-morphing` flip (~0.08, so opacity ~0), then jumps at the
+  `is-expanded` flip (m > 0.92).
+
+The plain baseline animates all of them. The control (`inherit-scroll-sim.mjs`, user path, a push past the end) shows:
+- baseline at m = 1: children `--morph` 1, logo x 169, earn width 0;
+- C at m = 1: children `--morph` 0, logo x 43, earn width 110.
+
+So the table below counts C's broken morph, not the motion the baseline shows. "The nav bar (logo moves)" below is
+really the bar's box. P-079 (phone) is affected the same way: the iPhone read by iphone-runner on 2026-10-03 (55922
+st6-rb2, 55926 strip-tc) shows children 0, logo x 43, earn width 110 and panel 0.924. Status OBSERVED, cause unknown;
+the reference is UNRESOLVED. The correction is `fixes/morph-inherit/`.
+
 | phase | paints / frame | layouts / frame | style recalcs / frame |
 |---|---|---|---|
 | hold m=0 / m=1 | 4.3 / 4.5 | 1.2 / 1.4 | 2.0 / 2.4 |

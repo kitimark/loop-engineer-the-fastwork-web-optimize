@@ -25,6 +25,10 @@ const SNAP = join(WT, 'out/snapshots');
 const ARMDEF = {
   C: { overlays: [join(SNAP, 'f3a-st6rb2')], js: '7bf7c4657d21', css: 'f523598b2a24' },
   V: { overlays: [join(SNAP, 'f3a-strip-tc')], js: '6fa0e1e8a221', css: '982a747d9263' },
+  // F3 #4 prototype (composited reveal on C; fixes/nav-morph/reveal-build.mjs)
+  P: { overlays: [join(SNAP, 'f3r-proto-1a3c97afd47b')], js: '1a3c97afd47b', css: '383fe4166c68' },
+  // morph-inherit: C + inline --morph on the nav children (fixes/morph-inherit/build.mjs)
+  M: { overlays: [join(SNAP, 'mi-7c61fe7d0662')], js: '7c61fe7d0662', css: 'f523598b2a24' },
 };
 const argv = process.argv.slice(2);
 const ARMS = (argv[0] && !argv[0].startsWith('--') ? argv[0] : 'C,V').split(',');
