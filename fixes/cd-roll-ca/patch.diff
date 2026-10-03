@@ -1,0 +1,146 @@
+# fastwork mirror fix: cd-roll-ca
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/cd-strip/overlay: apply cd-strip first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply cd-roll-ca --on cd-strip
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4030,6 +4030,60 @@
+   ),
+   /*cd-strip: the strip's offset in px for spring value v and cell height c (the one place that maps value to offset)*/
+   __cdStripY = (v, c) => -((((v % 10) + 10) % 10) * c),
++  /*cd-roll-ca: the roll as one Web Animation per digit instead of a rAF spring. __crPath(from, to) returns [ms, value]
++  points of the path the original shows at 60 Hz: the value at time x after the target change is what its rAF chain
++  (first step GE(x mod T), then whole 60 Hz frames) shows at a frame landing exactly at x. On [kT, kT+16] that is a
++  quadratic in the phase, so it is sampled from 33 phase lanes (0..16 ms, 0.5 ms apart) with as many points as keep
++  linear interpolation within 5e-4 cell, plus a point at every whole frame. Ends at the frame where every lane is
++  done (GE snaps to the target). null when it can't end on the target (the caller keeps the rAF spring).*/
++  __crPath = (f, t) => {
++    let T = 1e3 / 60,
++      L = [],
++      K = [[0, f]];
++    for (let j = 0; j <= 32; j++) L.push(GE({ value: f, velocity: 0 }, t, j / 2));
++    for (let k = 0; k < 600; k++) {
++      let v = L.map((x) => x.state.value),
++        q = Math.abs(v[0] - 2 * v[16] + v[32]) / 128,
++        m = 1,
++        w = L.every((x) => x.done);
++      for (; m < 32 && (q * (16 / m) ** 2) / 4 > 5e-4; ) m *= 2;
++      for (let j = 1; j <= m; j++) K.push([k * T + (16 * j) / m, v[(32 * j) / m]]);
++      L = L.map((x) => (x.done ? x : GE(x.state, t, T)));
++      K.push([(k + 1) * T, L[0].state.value]);
++      if (w) {
++        for (; K.length > 2 && K[K.length - 2][1] === t; ) K.splice(K.length - 2, 1);
++        return K.every(([, x]) => x >= 0 && x < 10) ? K : null;
++      }
++    }
++    return null;
++  },
++  /*cd-roll-ca: value of a path at x ms (linear between points, ends held)*/
++  __crAt = (K, x) => {
++    if (x <= K[0][0]) return K[0][1];
++    for (let j = 1; j < K.length; j++)
++      if (x < K[j][0]) return K[j - 1][1] + ((K[j][1] - K[j - 1][1]) * (x - K[j - 1][0])) / (K[j][0] - K[j - 1][0]);
++    return K[K.length - 1][1];
++  },
++  /*cd-roll-ca: the original's spring only moves on rendered frames. While the tab is hidden (and until the first frame
++  after it shows again) it holds the value of the last frame before the hide; __crHideAt / __crNoFrames track that,
++  registered before any countdown mounts, so these listeners run before the countdown's own visibilitychange tick*/
++  __crHideAt = null,
++  __crNoFrames = typeof document < `u` && document.hidden,
++  __crVis =
++    typeof document < `u` &&
++    document.addEventListener(`visibilitychange`, () => {
++      document.hidden
++        ? ((__crHideAt = performance.now()), (__crNoFrames = !0))
++        : requestAnimationFrame(() => {
++            document.hidden || (__crNoFrames = !1);
++          });
++    }),
++  /*cd-roll-ca: the time of the last frame the original would have run for a roll started at t0, seen at now*/
++  __crClock = (t0, now) => {
++    if (__crNoFrames) return __crHideAt === null || __crHideAt < t0 ? t0 : Math.min(now, __crHideAt);
++    let x = document.timeline?.currentTime;
++    return typeof x == `number` && x >= t0 && x <= now ? x : now;
++  },
+   QE = h(
+     `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
+   );
+@@ -4039,15 +4093,63 @@
+     a = N(I(o(() => s(i)))),
+     c = N(0),
+     /*countdown-idle-raf: false while the countdown is off-screen*/
+-    __cdAnimate = R(() => r.animate !== !1);
++    __cdAnimate = R(() => r.animate !== !1),
++    /*cd-roll-ca: the strip (set when it mounts) and the running roll {K: path, t0, A: its Animation}*/
++    __crEl = null,
++    __crRoll = null,
++    __crStop = () => {
++      __crRoll && (__crRoll.A?.cancel(), (__crRoll = null));
++    },
++    /*cd-roll-ca: (re)start the roll's animation at its own t0 (so a restart for a new cell height continues in place).
++    Keyword easing linear between the points: composited in Chrome and WebKit (no steps(), no linear() with points);
++    the strip's inline transform already holds the target, so the end needs no fill; fill backwards covers a frame
++    whose time is before t0*/
++    __crPlay = (C) => {
++      let Q = __crRoll;
++      if (!Q || !__crEl || !(C > 0)) return;
++      Q.A?.cancel();
++      let K = Q.K,
++        d = K[K.length - 1][0];
++      Q.A = __crEl.animate(
++        K.map(([x, v]) => ({ offset: x / d, transform: `translateY(${__cdStripY(v, C)}px)` })),
++        { duration: d, easing: `linear`, fill: `backwards` },
++      );
++      Q.A.startTime = Q.t0;
++    };
+   b(() => {
+     let e = s(i);
+     /*countdown-idle-raf: no spring while off-screen; snap like reduced motion*/
+     if (YE.current || !s(__cdAnimate)) {
++      __crStop();
+       z(a, e, !0);
+       return;
+     }
+-    let t = { value: o(() => s(a)), velocity: 0 },
++    /*cd-roll-ca: start value = what the original shows now: the running roll's path at its last frame, else a*/
++    let __crNow = performance.now(),
++      __crFrom = __crRoll ? __crAt(__crRoll.K, __crClock(__crRoll.t0, __crNow) - __crRoll.t0) : o(() => s(a)),
++      /*hero clock only: the panel clock (.countdown.inverse) paints its strips unlayered, and a running compositor
++        animation would layer them (other glyph rasterisation, whole-strip repaints while the morph scales it)*/
++      __crK =
++        __crEl && typeof __crEl.animate == `function` && __crFrom !== e && !__crEl.closest(`.inverse`)
++          ? __crPath(__crFrom, e)
++          : null;
++    __crStop();
++    if (__crK || (__crEl && __crFrom === e)) {
++      __crK && ((__crRoll = { K: __crK, t0: __crNow }), __crPlay(o(() => s(c))));
++      /*cd-roll-ca: the original's clock starts at its first frame's stamp when that frame began before the change
++        (GE(o - n) with o < n steps nothing and sets n = o); one rAF per roll moves the start there, never per frame*/
++      if (__crK) {
++        let R0 = __crRoll;
++        requestAnimationFrame((t) => {
++          R0 === __crRoll && t < R0.t0 && ((R0.t0 = t), R0.A && (R0.A.startTime = t));
++        });
++      }
++      z(a, e, !0);
++      return;
++    }
++    /*cd-roll-ca: no strip yet or no path: the original rAF spring, from the same start value*/
++    z(a, __crFrom, !0);
++    let t = { value: __crFrom, velocity: 0 },
+       n = performance.now(),
+       r = window.requestAnimationFrame(function i(o) {
+         let s = GE(t, e, o - n);
+@@ -4061,6 +4163,9 @@
+     g = (n) => {
+       var r = __cdStripT();
+       let o;
++      /*cd-roll-ca: the roll animates this strip; a new cell height re-keys a running roll at the same t0*/
++      __crEl = r;
++      l((e) => __crPlay(e), [() => s(c)]);
+       (l((e) => {
+         /*cd-strip: cell k at k*c px (c = the spacer's integer offsetHeight, as the original's face offsets use)*/
+         for (let t = 0; t < 11; t++) r.children[t].style.top = `${t * e}px`;
