@@ -26,10 +26,11 @@ in phone landscape (932x430) and with reduced motion (430 and 1440).
   - Why the first paint's raster is soft is UNRESOLVED.
   - Without reduced motion, no soft load occurs and S is within A/A at 1440 (§3.2.2).
   - It is not pixel-identical, so the decision is the lead's (§6).
-- **Counts.** st6-rb2's gains hold at every width measured (375-1280, touch and not): about 90 % fewer layouts at
+- **Counts.** st6-rb2's gains hold at every width measured (375-1920, touch and not, landscape, reduced motion): about 90 % fewer layouts at
   rest, about 40 % fewer layouts and 55-70 % fewer style recalcs while scrolling. Its known costs also hold: more
-  paint events at rest and 15-23 more layers. No width reverses a count (§3.3, 9 of 15 configs; the rest were
-  parked).
+  paint events at rest and 15-23 more layers. No width reverses a count (§3.3, all 15 configs). This includes
+  1280-1920, phone landscape and reduced motion, which were run on 2026-10-04. Under reduced motion st6-rb2 adds a
+  small rest cost: +4 style recalcs and +24 paint events in 4 s.
 
 For the fixes still in flight, the widths each one needs and who covers them are in §2. The gate every fix must
 pass before landing is in §5.
@@ -334,7 +335,7 @@ same A/A definition as rr5: B fast vs B fast):
 
 ### 3.3 Render and layout counts per width (census)
 
-Counts only, no timing; one load per arm; `sweep.mjs census`. "rest" = 4 s at the top after load, "scroll" = a rAF scroll to the end at vh/40 per frame, "end" = 1.5 s at rest at the end. L / R = LayoutCount / RecalcStyleCount deltas (Performance.getMetrics), P = trace Paint events, lay = LayerTree size. F3 cover = 8x12 hit-test grid at the end: cells on #platform / on the nav. Finished for 9 of 15 configs (the lead stopped further holds); the rest are listed in §4.
+Counts only, no timing; one load per arm; `sweep.mjs census`. "rest" = 4 s at the top after load, "scroll" = a rAF scroll to the end at vh/40 per frame, "end" = 1.5 s at rest at the end. L / R = LayoutCount / RecalcStyleCount deltas (Performance.getMetrics), P = trace Paint events, lay = LayerTree size. F3 cover = 8x12 hit-test grid at the end: cells on #platform / on the nav. Finished for all 15 configs: 9 at first, then the 6 the lead had parked (2026-10-04, below the table).
 
 | config/arm | rest L / R / P / lay | scroll L / R / P / max lay (frames) | end L / R / P | F3 cover at end: #platform / nav (of 96), O | err |
 |---|---|---|---|---|---|
@@ -362,10 +363,50 @@ Counts only, no timing; one load per arm; `sweep.mjs census`. "rest" = 4 s at th
 | c1024/B | 115 / 240 / 464 / 108 | 292 / 1482 / 1507 / 117 (386) | 1 / 90 / 213 | 88 / 8, true | 0/0/0 |
 | c1024/S | 10 / 240 / 608 / 123 | 196 / 655 / 1361 / 141 (386) | 1 / 90 / 184 | 88 / 8, true | 0/0/0 |
 | c1024/B2 | 147 / 240 / 457 / 103 | 247 / 1523 / 1496 / 119 (386) | 1 / 90 / 213 | 88 / 8, true | 0/0/0 |
+| c1280/B | 112 / 240 / 460 / 108 | 290 / 1495 / 1545 / 121 (389) | 1 / 90 / 192 | 90 / 6, true | 0/0/0 |
+| c1280/S | 9 / 240 / 549 / 118 | 197 / 651 / 1338 / 150 (389) | 1 / 90 / 184 | 90 / 6, true | 0/0/0 |
+| c1280/B2 | 106 / 241 / 525 / 103 | 266 / 1498 / 1541 / 122 (389) | 1 / 90 / 199 | 90 / 6, true | 0/0/0 |
+| c1440/B | 120 / 241 / 472 / 108 | 269 / 1411 / 1428 / 122 (368) | 1 / 90 / 207 | 90 / 6, true | 0/0/0 |
+| c1440/S | 9 / 240 / 610 / 123 | 187 / 620 / 1296 / 145 (368) | 1 / 90 / 197 | 90 / 6, true | 0/0/0 |
+| c1440/B2 | 115 / 241 / 462 / 108 | 273 / 1414 / 1419 / 120 (368) | 1 / 90 / 207 | 90 / 6, true | 0/0/0 |
+| c1920/B | 111 / 240 / 456 / 108 | 275 / 1359 / 1406 / 120 (348) | 1 / 90 / 210 | 92 / 4, true | 0/0/0 |
+| c1920/S | 10 / 240 / 606 / 123 | 188 / 603 / 1252 / 140 (348) | 1 / 90 / 184 | 92 / 4, true | 0/0/0 |
+| c1920/B2 | 115 / 240 / 462 / 108 | 271 / 1347 / 1394 / 120 (348) | 1 / 90 / 212 | 92 / 4, true | 0/0/0 |
+| c932l/B | 109 / 241 / 354 / 112 | 209 / 1864 / 1825 / 125 (509) | 0 / 90 / 211 | 80 / 16, true | 0/0/0 |
+| c932l/S | 7 / 196 / 644 / 128 | 131 / 585 / 1496 / 151 (509) | 0 / 90 / 182 | 80 / 16, true | 0/0/0 |
+| c932l/B2 | 114 / 240 / 466 / 112 | 205 / 1850 / 1822 / 129 (509) | 0 / 90 / 211 | 80 / 16, true | 0/0/0 |
+| rm430/B | 0 / 4 / 96 / 105 | 40 / 729 / 665 / 124 (233) | 1 / 3 / 10 | 88 / 8, true | 0/0/0 |
+| rm430/S | 0 / 8 / 121 / 124 | 25 / 242 / 442 / 126 (233) | 0 / 1 / 0 | 88 / 8, true | 0/0/0 |
+| rm430/B2 | 0 / 4 / 96 / 105 | 42 / 731 / 666 / 124 (233) | 0 / 2 / 10 | 88 / 8, true | 0/0/0 |
+| rm1440/B | 0 / 4 / 97 / 102 | 42 / 728 / 663 / 126 (241) | 0 / 1 / 5 | 90 / 6, true | 0/0/0 |
+| rm1440/S | 0 / 8 / 121 / 129 | 22 / 229 / 378 / 131 (241) | 0 / 2 / 6 | 90 / 6, true | 0/0/0 |
+| rm1440/B2 | 0 / 4 / 97 / 102 | 43 / 728 / 663 / 126 (241) | 0 / 1 / 5 | 90 / 6, true | 0/0/0 |
 
-What it shows, at every width measured (375 to 1280, touch and not):
+The parked rows (c1280 S and B2, c1440, c1920, c932l, rm430, rm1440) were run on 2026-10-04 in two shared probe
+holds (`hold25.log`, `hold26.log`; no sleep or wake in `pmset -g log`). c1280/B is from the earlier session.
+
+What the parked configs add:
+- **Wide (1280, 1440, 1920).** The same profile as below 1280:
+  - layouts at rest: 9-10 vs 106-120;
+  - during the scroll: layouts about 30 % fewer (187-197 vs 266-290), style recalcs about 55 % fewer (603-651 vs
+    1347-1498), paint events 8-13 % fewer;
+  - costs at rest: +24 to +150 paint events (c1280's two B loads differ: 460 and 525) and +10 to +15 layers.
+- **Phone landscape (932x430, touch, device-width 430).**
+  - At rest: layouts 7 vs 109-114.
+  - During the scroll: layouts 37 % fewer (131 vs 205-209), style recalcs 68 % fewer (585 vs 1850-1864), paint
+    events 18 % fewer.
+  - Costs at rest: +178 to +290 paint events (B's own two loads differ: 354 and 466) and +16 layers.
+  - Nav cover 16 of 96 in every arm.
+- **Reduced motion (rm430, rm1440).** The baseline is nearly idle at rest (0 layouts, 4 recalcs, 96-97 paints in 4 s).
+  - st6-rb2 adds a little work at rest: recalcs 8 vs 4, paints 121 vs 96-97, and +19 / +27 layers.
+  - During the scroll it does much less: layouts 22-25 vs 40-43, recalcs 229-242 vs 728-731, paints 378-442 vs
+    663-666.
+  - The small rest cost under reduced motion (+4 recalcs, +24-25 paint events in 4 s) is new information. It is
+    counts only, and the census cannot say which part causes it.
+
+What it shows, at every width measured (375 to 1920, touch and not, landscape, reduced motion):
 - st6-rb2 keeps its 430 profile. Layouts at rest drop from about 105-147 to 8-10. During the scroll, layouts drop by about 40 % and style recalcs by 55-70 %.
-- Its costs are the same at every width too: paint events at rest are higher (+120 to +270, e.g. 595 vs about 450 at 430; 771 vs about 486 at 768t), and there are 15-23 more layers at rest.
+- Its costs are the same at every width too: paint events at rest are higher (+120 to +270 in the first 9 configs, +24 to +290 over all 15 with motion, e.g. 595 vs about 450 at 430; 771 vs about 486 at 768t), and there are 10-27 more layers at rest (§3.3).
 - Coverage at the end is identical (88 / 8 of 96; 90 / 6 at 1280, in B), and there are no errors.
 - No width reverses a count. The higher paint count at rest is a property of st6-rb2, not of a width. The census cannot say which part causes it; it is reported to the lead as an open question.
 
@@ -448,7 +489,6 @@ changed, and the device was never rotated. After the session, sim.mjs shut fw-si
 - **Pixels inside the countdown and the accent word.** Both are masked or phase-random here. cd-strip, cd-roll-ca
   and countdown-faces check their own crops; the accent's geometry is checked by the accent probe.
 - **Parked by the lead (usage window), not run:**
-  - census for c1280 (S, B2), c1440, c1920, c932l, rm430 and rm1440;
   - the live-resize holds (§3.4);
   - the masked landscape re-check.
 - **Reduced motion in WebKit.** sim.mjs cannot set it (§3.2.1): UNRESOLVED.
@@ -467,7 +507,7 @@ changed, and the device was never rotated. After the session, sim.mjs shut fw-si
    - Same-state reading: T3 in a landed component, for the user.
    - Load-to-load reading: T1.
    - Evidence: `out/breakpoints/rr1` to `rr10` and `hold16.log` to `hold24.log` in this worktree.
-2. **st6-rb2 paints more at rest at every width** (+120 to +270 paint events in 4 s; +15-23 layers). This is not
+2. **st6-rb2 paints more at rest at every width** (+24 to +290 paint events in 4 s with motion, +24 under reduced motion; +10-27 layers). This is not
    width-specific, and it may already be a known cost of the stack. A single attribution probe at 430 would name
    the part.
 3. **hero-exit-threaded at 980 px on WebKit** (§3.6). Low-amplitude differences on the orbit cards beyond the
