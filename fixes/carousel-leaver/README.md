@@ -17,17 +17,24 @@ Not landable on P-087; the route is the lead's.
 **st6-rb2 follow-up (lead route on F-198, 2026-10-04): D2-D4 done (describes only). Nothing built.**
 - The WebKit difference is not geometry: every face sits at the same sub-pixel position and scale at rest.
 - It is image interpolation quality. Each slide puts the baseline into WebKit's page-wide Low-quality mode
-  (ImageQualityController, CONFIRMED in source; that it explains our numbers is OBSERVED, decisively checked). st6-rb2
-  never enters it.
+  (ImageQualityController, CONFIRMED in WebKit source `789c0d1be2b7`). That it explains our numbers is OBSERVED. The
+  check was D4's pinned arms in snapshots: base equals base pinned Low (`image-rendering: optimizeSpeed`) at 0 px from
+  t 17 through post300, and equals base pinned Default at 0 px at t 0 and at quiet rest. st6-rb2 never enters it.
+  This is the snapshot path. On the Sim's screen, Hold B (P-090) saw no Low window from 328 ms on.
 - At quiet rest, what remains is 523 px at max 81 from st6's no-flip slot values.
 - Options went to the lead (section "D4 result"). The exact option conflicts with st6's saving.
 **P-090, G attempt 1 (describes only), done 2026-10-03 20:22Z. No candidate; nothing built.**
 - Hold A: no single slot value is the culprit. Only giving back all of st6's values comes near base, which is option B.
-- Hold B, on the Sim's screen:
-  - base shows no Low-quality window from 328 ms after a slide starts;
-  - at quiet rest, st6-rb2 differs from base by max 50, fill, 126 CSS px². Those are T2's static numbers; the
-    snapshot gives max 81.
-- To the lead as a proposal draft.
+- Hold B, on the Sim's screen (OBSERVED):
+  - Source: the Hold B burst, one slide (slide 1 of the burst, 3 whole shots inside 220-720 ms and 2 after). From
+    328 ms after that slide starts, base's faces equal its quiet Default pixels (0 px), not the Low reference.
+  - At quiet rest, st6-rb2 differs from base by largest shade 50, fill (25 % edge), 1137 device px > 8 levels, which
+    is 0.0379 % of the page viewport (430x775 CSS at DPR 3). That is 126.3 CSS px² in all, 69.9 on the largest face.
+  - Conditions: Simulator (Mac GPU, not the iPhone), the simctl composited screenshot, 430 CSS px, DPR 3, ≥ 1.5 s
+    after the last slide, A/A base~base2 over two loads = 0.
+  - Those are within T2's static numbers. The snapshot path (OBSERVED, not what the screen shows) gives max 81 over
+    540 px, beyond T2's fill limit of 64.
+- Lead ruling: on screen governs T2 on WebKit. Amendment 1 adds reduced motion and iPad width before the proposal.
 **Base:** st6-rb2 (`fixes/st6-rb2/patch.diff`, JS `7bf7c4657d21`, CSS `f523598b2a24`). Deliverables: `patch.diff`
 (baseline-relative) and `delta-vs-st6rb2.diff` (for wi-best-build).
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (`.is-sliding` rules and `@keyframes avatars-exit`).
@@ -987,8 +994,18 @@ edge), static, on two faces (50.4 and 7.7 CSS px²). The A/A is 0.
    stay).
    - Expected: the slot painting matches base (Sw = base at Default, 0 px). F already reproduces the Low-mode trigger.
    - Cost: it removes st6's no-flip guarantee. The leaver and the next slot cross hasTransform / isOpaque at each slide
-     start and end, which brings back the whole-view Layouts st6 removed (`fixes/rotator-st6/README.md`: view Layout
-     71/71 → 1/36; S7 on the phone, idle dt > 34 at 19-27 per 20 s without st6, 0 with it).
+     start and end, which brings back the whole-view Layouts st6 removed. Sources, added on the ops read of P-090:
+     - **Layout count.** `fixes/rotator-st6/README.md` L37-46: slide-start ticks with a view-rooted Layout ≥ 10 ms in
+       tick..+260 ms, C 71/71 vs st6 1/36. Measured with phone Safari Timeline, driver W, idle 30 s at y 1500 with the
+       carousel on screen, one block, iphone-runner, 2026-10-01 20:20-20:30Z.
+       - C there is aw1-10e, an older base, not st6-rb2.
+       - It is a mechanism count, not slow frames.
+     - **Slow frames.** P-067, phone block S7 (`fixes/st6-rb2/README.md` "S7 result", 2026-10-02 22:48-22:59Z):
+       - Idle dt > 34 at the top: C 22/19/27/24 per 20 s vs V 0/0/0/0.
+       - Setup: scripted scroll (S) with `--idle 20`, at rest at the top, Timeline off. V = st6-rb2, C = st6-rb2
+         minus st6. n = 4 per arm, one block, one phone, OBSERVED.
+       - Measured at that day's thermal conditions (battery 37.4-38.8 °C), before the "phone checks start warm"
+         rule.
    - That is the exact-versus-cheap conflict the spawn rule sends to the user.
    - Whatever G is, it must close the quiet-rest difference too (ops, 2026-10-04): 523 px at max 81 is over T2's fill
      limit of 64, so without a quiet-rest match G cannot reach T0, T1 or T2.
@@ -1158,18 +1175,29 @@ from it are worded that way and stay OBSERVED in our setup until a source refere
 - The served hashes match the table above. Every arm caught the graphic-designer slide and reported reduced motion
   false.
 - Screenshots are 1290x2796. The locator found the carousel at dx 162, dy 1282 in every arm (SAD 1.3-1.9 per px).
-- VOID rule (addendum 1 item 3), from `slots`, every slot except `.st5-next`: every override applied, so no arm is
-  VOID.
+- VOID rule (addendum 1 item 3), from `slots`, every slot except `.st5-next`. Corrected on the ops read: **not every
+  override applied.**
+  - The three resting slots took every override:
 
-  | arm | transform | opacity | will-change |
-  |---|---|---|---|
-  | S | matrix(1,…) | 0.999 | `transform, translate, opacity` |
-  | St | none | 0.999 | `transform, translate, opacity` |
-  | So | matrix(1,…) | 1 | `transform, translate, opacity` |
-  | Sv | matrix(1,…) | 0.999 | auto |
-  | Sw | none | 1 | auto |
+    | arm | transform | opacity | will-change |
+    |---|---|---|---|
+    | S | matrix(1,…) | 0.999 | `transform, translate, opacity` |
+    | St | none | 0.999 | `transform, translate, opacity` |
+    | So | matrix(1,…) | 1 | `transform, translate, opacity` |
+    | Sv | matrix(1,…) | 0.999 | auto |
+    | Sw | none | 1 | auto |
 
-  Base's slots are none / 1 / auto.
+  - The `.st5-lead` slot did not. That is the collapsed leaver: x 52.67, w 11.2, `matrix(0.35, …)`, opacity 0. It is
+    not `.st5-next`, so item 3 covers it.
+    - It keeps `matrix(0.35)` in St and Sw, and opacity 0 in So and Sw.
+    - st6's leader rule wins over the appended `img:not(.st5-next)` rule there.
+    - Sv's will-change override did apply to it (auto).
+  - By item 3's text, **St, So and Sw are VOID**.
+  - The conclusion does not change: no arm matches base on screen, and S and Sv (valid) don't either. So no candidate
+    follows.
+  - The leaver is invisible at rest (opacity 0, collapsed), so it likely adds 0 px. OBSERVED.
+  - Base's slots are none / 1 / auto.
+  - The St, So and Sw numbers below are kept as description only.
 
 **Five numbers** (tierq, ref base, A/A base~base2 = 0 px, max 0 in both kinds; CSS px² per face, faces 0-3 left to
 right; every line is the unmasked count, since the A/A is 0):
@@ -1257,16 +1285,23 @@ Against S on screen: S~St n8 0 (max 1), S~So 0 (max 0), S~Sv 249 (max 18), S~Sw 
   - It is the same face-3 term as in Hold A (`.st5-next` with st6's values against base's `is-enter`). It shows up
     here as a step at each slide, within S itself. OBSERVED, cause unknown.
 
-**Five numbers on screen, at quiet rest, S against base** (Simulator, phone width, DPR 3):
+**Five numbers on screen, at quiet rest, S against base.** Conditions: Simulator fw-sim (Mac GPU, not the iPhone),
+the simctl composited screenshot, 430 CSS px, DPR 3, ≥ 1.5 s after the last slide, A/A base~base2 over two loads = 0.
 - largest shade 50;
-- 0.0379 % of the screen beyond the A/A (0);
-- 126 CSS px² (2.7/38.6/15.2/69.9 per face);
+- share 0.0379 % of the page viewport beyond the A/A. The viewport is 430x775 CSS at DPR 3 = 2,999,250 device px; of
+  the whole 1290x2796 screen it would be 0.0315 %.
+- area 1137 device px > 8 levels / 9 = 126.3 CSS px² in all. Per face: 2.7/38.6/15.2/69.9, so the largest face has
+  69.9;
 - fill (25 % edge);
 - static.
 
-These are within T2's static numbers (fill ≤ 64, ≤ 0.5 %, ≤ 2,000 CSS px per element). The snapshot path gives 540
-px, max 81, which is beyond them. The bar registered for P-090 is the on-screen one. Whether the on-screen or the
-snapshot number governs a T2 check is a method question for the lead and ops.
+These are within T2's static numbers (fill ≤ 64, ≤ 0.5 %, ≤ 2,000 CSS px per element). The snapshot path
+(`Page.snapshotRect`, OBSERVED, not what the screen shows) gives max 81 over 540 px, beyond T2's fill limit of 64.
+
+**Lead method ruling (2026-10-04):**
+- On screen (the simctl composited screenshot) governs a T2 check on WebKit.
+- The snapshot path is reported alongside, labelled OBSERVED.
+- Chrome's leg is unchanged.
 
 Static T2 is not the whole of T2. Still open:
 - reduced motion exact (not run; S keeps its slot values without slides, so the rest difference would likely stay);
@@ -1338,6 +1373,16 @@ served from the same read-only snapshots as Hold A, and simquiet checks the hash
 **Common rules.**
 - Addendum 1 items 2 (both directions, masked passes) and 4 (sleeps and kills) apply as written. Item 5 (Hold B's
   windows) does not apply.
+- **pmset** is read after each hold. A Sleep or DarkWake inside the hold's window voids that hold.
+- **Locator check per arm**: VOID above 20 levels per channel. dx, dy and SAD are logged per arm.
+- **Scorer**: tierq `c36772776b4a`, unchanged. A multi-load A/A is the largest of tierq's own pair lines, each run
+  with that pair's aa. No new scorer.
+- **F-199** (the nav "EN" label):
+  - Every crop is the carousel ±4 CSS px, so the label is not in any crop. The iPad rect is logged per arm to show
+    it.
+  - On the iPad the A/A also covers 3 loads per build.
+- **iPad width.** The lead named 1024 at DPR 2. fw-ipad's Safari gives its own desktop-class width (P-087 W3: 1032
+  CSS px), which is recorded from `geo2.vw`. No other iPad width is forced.
 - The masked-pass ruling stands: tierq subtracts counts and never masks. Each line prints the unmasked n8. Any A/A
   pixel inside a face disc is reported as such, with the unmasked counts.
 - The legs run one at a time: (a) first, then (b).
