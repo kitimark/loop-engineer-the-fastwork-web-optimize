@@ -5,7 +5,7 @@
 
 **Status:** **parked** (2026-10-03 13:3xZ): v4 (P-084, the last iteration) missed pixel identity on the WebKit
 Simulator; see "v4 result: parked" below. Not for landing. **P-089** (2026-10-04): v4 re-judged under PR-010 T2,
-registered at the desk ("P-089 registration"), no new data yet.
+registered at the desk ("P-089 registration" + "P-089 addendum", mgmt-ops-10's second read), no new data yet.
 **Stage:** F, stopped; D card registered below (P-078 → P-080 → P-083 → P-084, v4 last iteration)
 **Device class / gate:** less-work (heat) fix: cost-card counts, full page, Chrome + Simulator, plus one short phone
 no-worse check (memory/less-work-landing-rule.md, user T-029 #30). No timing A/B (deferred, user rule).
@@ -357,8 +357,10 @@ rest 10507/62 against an A/A rest of 0/0. That is an identity miss in the P-084 
 - **Not one counted pixel is fill.**
 - The st6 A/A itself has the same kind of difference (~10k px, max 49-65) on 9 of 19 labels. st6-rb2 renders the
   row at 1024 in one of two states per load or label, **OBSERVED in our setup, cause unknown** (compare F-199's two
-  sub-pixel states). A two-load A/A misses the other state, so it counts against the fix. That is the conservative
-  direction, and the numbers still pass.
+  sub-pixel states). ~~A two-load A/A misses the other state, so it counts against the fix. That is the conservative
+  direction, and the numbers still pass.~~ **Corrected (addendum item 4):** that holds only for labels where the A/A
+  missed the other state. Where the A/A caught it, the mask (aa > 8) also hides the fix's own differing pixels, which
+  favours the fix (smooth-160: 1208 px hidden, jump-215: 1334). Unmasked, every 1024 label still passes (addendum).
 - Model check (analyse.mjs): 0 mismatches. fix 27 slides (F1 26, both 1, none 0); st6 27, all F1; srcs map same.
 
 Chrome `ident4` at 430 and 375 (DPR 3): every shot T0 (20 of 20 labels apart from hash, VOID, blank crop). The
@@ -371,7 +373,7 @@ moving frames are pixel-identical. Model check 0 mismatches.
 - the parts check.
 
 **New harness, desk-written and hashed before any run** (`fixes/rest-script/tools/`; `p089.hashes` holds the hashes
-`chainJ.sh` 1072a0e01067 checks):
+`chainJ.sh` 1072a0e01067 checks; **superseded for t2aux.mjs and chainJ.sh by the addendum's table**):
 
 | file | sha256 | what |
 |---|---|---|
@@ -506,6 +508,120 @@ source, fit OBSERVED).**
 - `chainJ.sh chrome` (4 holds, `--weight 2`) comes after fix-morph-gpu's re-runs.
 - Every hold uses `--timeout 7200`, ≤ 300 s, and one Sim session; one queue entry at a time.
 - The score steps run outside any hold (file reads only).
+
+### P-089 addendum (mgmt-ops-10's second read of a79d3866), before any new data
+
+mgmt-ops-10 passed the registration subject to six items. Everything above stands except where this section says
+otherwise. No Sim or Chrome job has run since a79d3866.
+
+**1. Mac sleep inside a hold (I-098).** `chainJ.sh` runs `tools/pmcheck.mjs <start> <end>` after every hold:
+- The window runs from the command's start inside the hold (a stamp written by the hold's first command) to the end of
+  the hold.
+- pmcheck reads `pmset -g log` (read-only). A `Sleep`, `DarkWake` or `Maintenance` line within 5 s of the window makes
+  the hold VOID; so does an unreadable log. A plain `Wake` line alone does not.
+- `--selftest` passes. On the real log it VOIDs the I-098 window (2026-10-04 00:23 +0700: 3 events).
+
+**2. A failed hold stops its leg.** A hold is VOID when any of these is true:
+- rc ≠ 0 (124 = killed at 300 s, a lock timeout, any fatal);
+- no `EXIT 0` line;
+- a ` FATAL ` in the log;
+- a run-level `VOID` in a `SIM2` summary line;
+- pmcheck says VOID (item 1).
+
+A VOID hold is re-run once at once: it queues again, with the same hashes. A second VOID makes the **leg** VOID:
+- no further hold of that leg runs;
+- its score step does not run, so no partial files are scored;
+- the other legs go on.
+
+A VOID leg is re-run once in a later lane turn (`chainJ.sh leg <name>`). A second VOID leg goes to the lead with no
+claim. Each leg first moves its previous output files to `out/rest-script/chainJ/prev-<leg>-<epoch>/`, so a re-run
+never mixes files from two attempts. The pins leg runs only after a scored fw-sim leg. The mechanism checks still stop
+the chain, as registered.
+
+Desk test (scratch, not committed): chainJ's own `hold()` text with the lock call stubbed out. It shows:
+- a pass;
+- one retry that passes;
+- rc 124 twice stops the leg, so its second hold never runs;
+- FATAL, a SIM2 VOID and a missing EXIT 0 each make the leg VOID;
+- pmcheck runs on every hold.
+
+**3. Minimum coverage for a PASS.** After a leg is scored, `t2aux.mjs coverage` makes it VOID unless:
+- rest, quiet and intoview are non-VOID in t2score and in `parts`;
+- at least 10 of the 12 moving frames are non-VOID, in fw-sim, fw-ipad and Chrome 1440. The 12 are smooth and jump
+  at 0/40/100/160/215, plus outin 20/60.
+
+A parts row with the EN label in its crop (F-199) counts as VOID. The reduced-motion legs have no moving frames, so
+their minimum is 0.
+
+**Deviation, for mgmt to rule on:** the Chrome harness (rot2.mjs, unchanged) takes no separate `quiet` shot. Its
+`rest` is taken after a ≥ 2000 ms page quiet plus the 1200 ms settle. The quiet shot exists for F-200, which is
+WebKit's ImageQualityController and does not apply to Chrome. So the Chrome legs need rest and intoview, not quiet.
+
+**4. The A/A mask works both ways.** The registration's "conservative direction" sentence is corrected above. Where the
+st6 A/A caught the other render state, the mask (aa > 8) also hides the fix's own d > 8 pixels.
+
+The lead's ruling, word for word:
+
+> "A T2 PASS that holds only because the A/A mask hides the fix's own differing pixels is not a PASS. It is reported
+> to the lead as 'mask-dependent', with the unmasked counts (fill max, edge max, share, CSS px). The lead decides
+> whether it goes to the user as a proposal."
+
+How it is applied:
+- `t2aux.mjs unmasked` re-scores every non-VOID label on the same crops with no mask (A/A = X against itself, aa 0
+  everywhere). It reports the unmasked fill max, edge max, share, CSS px and counted px, and how many pixels the mask
+  hid.
+- A label whose unmasked numbers break a T2 number while its masked tier is T0-T2 is **MASK-DEPENDENT**. It goes to
+  the lead and does not count toward a PASS. The largest shade stays unmasked, as before.
+- chainJ runs this on every scored leg. Ops can recount the unmasked d > 8 pixels at the desk from
+  `out/rest-script/chainJ/<leg>-unmasked.json`.
+- **Chrome 1440:** an A/A over ≥ 3 loads would need a new tool, because t2score takes one A/A replay and rot2 one
+  replay per run. So the mask-dependent flag covers it.
+
+Run on the existing data (desk, file reads; outputs in `out/rest-script/t2/unmasked-*.json`):
+
+| leg | labels the mask hid pixels on (hidden px) | worst unmasked label | mask-dependent |
+|---|---|---|---|
+| Chrome 1024 | smooth-160 (1208), smooth-215 (976), jump-160 (789), jump-215 (1334) | far-0: edge 61, 1707 px, 426.75 CSS px, 0.0543 % (unchanged); worst moving jump-160: edge 55, 1546 px, 386.5 CSS px, 0.0491 % | none |
+| Chrome 430, 375 | none (every label T0) | none | none |
+| Sim sim4 | far-0 (974), intoview (456) | intoview: edge 49, 983 px, 109.22 CSS px, 0.0328 % | none |
+
+No unmasked fill pixel exceeds 4 levels. Every existing label stays within all four T2 numbers with no mask.
+
+**5. Moving frames say nothing about live quality.** Each frozen frame, moving or static, is shot after the 1200 ms
+settle. The row is frozen at its sampled state, with no further paint at a new size. So the shot comes more than
+500 ms after the last scaled paint, and WebKit's ImageQualityController has gone back to Default quality by then
+(F-200's mechanism). Both arms are therefore drawn at Default quality in every scored frame. The moving frames test
+the geometry and the Default-quality pixels of each sampled state. They do not test the live Low-quality transient
+during a slide. That transient stays with the framing question for the lead (F-200 above).
+
+**6. Predictions, written before any run** (for `PREDICTIONS.md`; mgmt logs them):
+
+| question | prediction |
+|---|---|
+| P(T2 PASS: every leg scored, nothing T3, nothing mask-dependent, the F-200 question not raised or answered) | **0.45**. P(a T3 somewhere) 0.35; P(no verdict: a leg VOID twice, or a mask-dependent label for the lead) 0.20. Main risks: fw-ipad at desktop width, the Sim moving frames (never scored in v4), and the parts check |
+| reading a (fix vs st6 pinned optimizeQuality is T0/T1) | expected **false**; P(true) 0.25 |
+| reading b (st6 vs st6 pinned optimizeSpeed has 0 pixels with d > 8) | expected **false** (the D4-consistent result: st6 is not at Low in the frozen shots, item 5); P(true) 0.15 |
+| reading c (st6 vs st6 pinned optimizeQuality has d > 8) | expected **false** (under D4, st6 is already at Default, so pinning optimizeQuality changes nothing); P(true) 0.20 |
+| P(quiet rest T0/T1) | **0.25**. The v4 Sim rest miss was already past the 500 ms window, so quiet should look like rest (T2) |
+| P(every reduced-motion leg T0/T1) | 0.75. The rotator does not start in either arm, so the rows should match |
+
+Correction to reading c's role: under D4, c is not the sanity check for a and b. The sanity check is **b being false**.
+It shows that a Low draw is visibly different from st6's own look, so the pins mean something, and that st6 was not
+at Low.
+
+**New hashes** (`p089.hashes`, checked by `chainJ.sh`, which also runs both selftests before its first hold):
+
+| file | sha256 | change |
+|---|---|---|
+| `t2aux.mjs` | beeec0e6975a | was 77583824fb67: adds `unmasked` and `coverage`; selftest extended. `parts` and `pair` unchanged |
+| `pmcheck.mjs` | d36bd7437b7c | new: the I-098 window check, `--selftest` |
+| `chainJ.sh` | 6cbe3fc2a4a0 | was 1072a0e01067: pmcheck per hold, hold VOID rules, one re-run, leg stop, no partial scoring, coverage + unmasked per leg, `leg <name>` re-runs, prev-file moves |
+| `t2score.mjs`, `analyse.mjs`, `simrot2.mjs`, `rot2.mjs`, `p089-sim.sh`, `p089-chrome.sh` | 3e236a71ef6b, 03b2df89340e, 4402c1a26160, ed3ef131efd4, 9883b649abab, 8efc59be0662 | unchanged |
+
+**Lane order (lead-approved):**
+- `chainJ.sh sim`, then `chainJ.sh reduced`, after fix-carousel-leaver's P-090 Holds A and B.
+- `chainJ.sh chrome` after fix-morph-gpu's re-runs.
+- These are non-timing shared-lane holds, allowed under the I-098 easing, with the pmset check per hold (item 1).
 
 ## Why it lags
 

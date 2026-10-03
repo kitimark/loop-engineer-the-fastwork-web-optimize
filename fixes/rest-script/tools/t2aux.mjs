@@ -14,9 +14,19 @@
 //   calibrated element crop (t2score.mjs calCrop, pad 6 device px). No tier: a diagnostic, not a T2 number.
 // usage: node t2aux.mjs parts --run fix.json --replay rep-fix.json [--labels a,b] [--out f.json]
 //        node t2aux.mjs pair --a repA.json --b repB.json [--labels a,b] [--out f.json]
+//        node t2aux.mjs unmasked --run fix.json --replay rep-fix.json --t2 t2.json [--out f.json]
+//        node t2aux.mjs coverage --t2 t2.json [--parts parts.json] --need rest,quiet,intoview --moving 10 [--out f.json]
 //        node t2aux.mjs --selftest
+// unmasked (P-089 addendum item 4): the A/A mask works both ways: where st6's own A/A caught a two-state, the mask also
+//   hides the fix's difference. Per label that t2score scored (non-VOID), the same X/Y crops are scored with no mask
+//   (A/A = [X, X]: aa 0 everywhere); a label whose unmasked share or area breaks a T2 number while the masked tier is
+//   T0-T2 is MASK-DEPENDENT: it goes to the lead and is not counted in a PASS. The shade is unmasked in both.
+// coverage (addendum item 3): a leg is VOID unless every --need label is non-VOID in t2 (and in parts, when given) and
+//   at least --moving of the 12 moving labels (smooth and jump at 0/40/100/160/215, outin 20/60) are non-VOID in both
+//   (a parts row with enInCrop counts as VOID, F-199).
+//   Exit 3 when VOID.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { calCrop, pngPixels } from './t2score.mjs';
+import { calCrop, pngPixels, score, BAR } from './t2score.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const tail = (l) => l.replace(/^[a-z0-9]+-(?:sim-|\d+-)/, '');
@@ -41,6 +51,16 @@ const dmapCount = (A, B) => {
   for (let i = 0; i < A.px.length; i += 3) { const d = Math.max(Math.abs(A.px[i] - B.px[i]), Math.abs(A.px[i + 1] - B.px[i + 1]), Math.abs(A.px[i + 2] - B.px[i + 2])); if (d) { any++; if (d > 8) over8++; if (d > max) max = d; } }
   return { any, over8, max };
 };
+export const MOVING = ['smooth', 'jump'].flatMap((k) => [0, 40, 100, 160, 215].map((p) => `${k}-${p}`)).concat(['outin-20', 'outin-60']);
+// the crop exactly as t2score.mjs builds it (Sim: calibration, DPR and screen from it; Chrome: clip, DPR and screen from the run)
+const cropFull = (r, run) => (r.cal ? calCrop(r.file, r.cal, r.rect) : { ...pngPixels(readFileSync(r.file)), dpr: run.dpr, screen: run.w * run.vh * run.dpr * run.dpr });
+export function breaksT2(five) { return five.largestShade.fill > BAR.fill || five.largestShade.edge > BAR.edge || five.sharePct > BAR.sharePct || five.areaCss > BAR.areaCss; }
+export function coverage(t2rows, partsRows, need, movingMin) {
+  const ok = (L) => { const a = t2rows.find((x) => x.label === L); if (!a || a.void) return false; if (!partsRows) return true; const p = partsRows.find((x) => x.label === L); return !!p && !p.void && !p.enInCrop; };
+  const missingNeed = need.filter((L) => !ok(L)), movingOk = MOVING.filter(ok).length;
+  const isVoid = missingNeed.length > 0 || movingOk < movingMin;
+  return { void: isVoid, missingNeed, movingOk, movingMin };
+}
 const cropOf = (r, run) => (r.cal ? calCrop(r.file, r.cal, r.rect) : { ...pngPixels(readFileSync(r.file)), dpr: run.dpr });
 
 function selftest() {
@@ -54,6 +74,17 @@ function selftest() {
   ok(partsCheck(null, [], 3).void, 'missing void');
   const img = (v) => ({ w: 2, h: 1, px: Buffer.from([v, 0, 0, 0, 0, 0]) });
   const d = dmapCount(img(0), img(20)); ok(d.any === 1 && d.over8 === 1 && d.max === 20, 'pair counts');
+  ok(MOVING.length === 12, '12 moving labels');
+  const rows = ['rest', 'quiet', 'intoview', ...MOVING.slice(0, 10)].map((label) => ({ label })).concat(MOVING.slice(10).map((label) => ({ label, void: 'x' })));
+  ok(!coverage(rows, null, ['rest', 'quiet', 'intoview'], 10).void, 'coverage 10 of 12 passes');
+  ok(coverage(rows, null, ['rest', 'quiet', 'intoview'], 11).void, 'coverage 11 needed fails');
+  ok(coverage(rows.filter((x) => x.label !== 'quiet'), null, ['rest', 'quiet'], 0).void, 'missing need fails');
+  ok(coverage(rows, rows.map((x) => (x.label === 'rest' ? { ...x, void: 'parts' } : x)), ['rest'], 0).void, 'parts VOID fails');
+  ok(coverage(rows, rows.map((x) => (x.label === 'rest' ? { ...x, enInCrop: true } : x)), ['rest'], 0).void, 'EN in crop fails');
+  const f5 = (fill, edge, share, area) => ({ largestShade: { fill, edge }, sharePct: share, areaCss: area });
+  ok(!breaksT2(f5(64, 128, 0.5, 2000)) && breaksT2(f5(0, 0, 0, 2000.01)) && breaksT2(f5(65, 0, 0, 0)) && breaksT2(f5(0, 0, 0.51, 0)), 'T2 bar edges');
+  const X = { w: 4, h: 1, px: Buffer.from([0, 0, 0, 50, 50, 50, 0, 0, 0, 0, 0, 0]) }, Y = { w: 4, h: 1, px: Buffer.from([0, 0, 0, 90, 50, 50, 0, 0, 0, 0, 0, 0]) };
+  ok(score(X, Y, [X, Y], { dpr: 1, screen: 100, moving: false }).counted === 0 && score(X, Y, [X, X], { dpr: 1, screen: 100, moving: false }).counted === 1, 'mask hides, no-mask counts');
   console.log('SELFTEST OK');
 }
 
@@ -88,7 +119,30 @@ function main() {
       out.rows.push({ label: L, ...res });
     }
     for (const r of out.rows) console.log(r.label.padEnd(14), r.void ? 'VOID ' + r.void : `any ${r.any} over8 ${r.over8} max ${r.max}`);
-  } else { console.log('usage: t2aux.mjs parts|pair ... | --selftest'); process.exit(1); }
+  } else if (cmd === 'unmasked') {
+    const run = J('--run'), rep = J('--replay'), t2 = J('--t2');
+    for (const m of t2.shots) {
+      if (m.void) { out.rows.push({ label: m.label, void: m.void }); continue; }
+      const s = run.shots.find((q) => tail(q.label) === m.label), rp = s && rep.replays.find((q) => q.label === s.label);
+      if (!s || !rp) { out.rows.push({ label: m.label, void: 'shot or replay missing' }); continue; }
+      const Y = cropFull(s, run), X = cropFull(rp, run);
+      const u = score(X, Y, [X, X], { dpr: Y.dpr, screen: Y.screen, moving: m.five.motion === 'moving' });
+      if (u.void) { out.rows.push({ label: m.label, void: u.void }); continue; }
+      const maskDependent = m.tier !== 'T3' && breaksT2(u.five);
+      out.rows.push({ label: m.label, maskedTier: m.tier, masked: { sharePct: m.five.sharePct, areaCss: m.five.areaCss, counted: m.counted }, unmasked: { fillMax: u.five.largestShade.fill, edgeMax: u.five.largestShade.edge, sharePct: u.five.sharePct, areaCss: u.five.areaCss, counted: u.counted, edgeFill: u.five.edgeFill }, maskHid: u.counted - m.counted, maskDependent });
+    }
+    for (const r of out.rows) console.log(r.label.padEnd(14), r.void ? 'VOID ' + r.void : `${r.maskedTier} masked ${r.masked.counted} px ${r.masked.areaCss} css ${r.masked.sharePct} %  unmasked fill/edge max ${r.unmasked.fillMax}/${r.unmasked.edgeMax} ${r.unmasked.counted} px ${r.unmasked.areaCss} css ${r.unmasked.sharePct} %  mask hid ${r.maskHid} px ${r.maskDependent ? 'MASK-DEPENDENT' : 'ok'}`);
+    out.maskDependent = out.rows.filter((r) => r.maskDependent).map((r) => r.label);
+    console.log(out.maskDependent.length ? `MASK-DEPENDENT: ${out.maskDependent.join(',')} (to the lead, not a PASS)` : 'MASK OK: no label passes only because of the A/A mask');
+  } else if (cmd === 'coverage') {
+    const t2 = J('--t2'), parts = arg('--parts') ? J('--parts') : null;
+    const need = (arg('--need') || '').split(',').filter(Boolean), movingMin = Number(arg('--moving', '0'));
+    const c = coverage(t2.shots, parts && parts.rows, need, movingMin);
+    Object.assign(out, c);
+    console.log(c.void ? `COVERAGE VOID: missing ${c.missingNeed.join(',') || '-'}; moving ${c.movingOk}/12 (need ${movingMin})` : `COVERAGE OK: ${need.join(',')}; moving ${c.movingOk}/12 (need ${movingMin})`);
+    if (arg('--out')) writeFileSync(arg('--out'), JSON.stringify(out, null, 1));
+    process.exit(c.void ? 3 : 0);
+  } else { console.log('usage: t2aux.mjs parts|pair|unmasked|coverage ... | --selftest'); process.exit(1); }
   if (arg('--out')) writeFileSync(arg('--out'), JSON.stringify(out, null, 1));
 }
 const direct = process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href;
