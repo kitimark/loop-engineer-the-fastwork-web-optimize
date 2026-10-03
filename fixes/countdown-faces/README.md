@@ -919,6 +919,22 @@ swap's full-viewport Layout) slower, because the CPU sits at a lower performance
    way): one phone block of V vs V-with-a-fixed-2-ms-per-frame-rAF-load. If the load brings the burst's Layout ms
    down to C's, the clock explains it.
 
+**Measurement caveat on face-layer repaints (fix-cd-strip, 2026-10-03; OBSERVED in its setup, not checked by me).**
+On the Simulator, the per-layer paintCount delta between two `layersForNode` censuses came out the same whether the
+censuses were 117 ms or 4 s apart, with or without Timeline. If so, the delta mostly counts the census itself, not
+the page.
+- What this touches: X1's "face-layer repaints" from the census:
+  - stage-1 S2: C 127, 129 / V 137, 130;
+  - the phone attribution runs: C 126 / V 134.
+  These numbers, and the stage-1 trigger (i) built on them, may be census artefacts.
+- What it does not touch:
+  - The Timeline-based counts: digit-sized Paint records, C 96-126 / V 4-27, in every Simulator and phone window at
+    top. They show V repainting the digits far less.
+  - The stage-2 decision rows, which are Timeline ms sums.
+  - The outcome: X1 still closes with "full".
+- To check it: two censuses back to back with no wait, compared with two 4 s apart, in one Simulator session.
+  fix-cd-strip's raw data is in its worktree, `out/cd-strip/sim/sim-2026-10-03T01-03-03-384Z.json`.
+
 **P-069 phone part:**
 - row 1 not separated: **in**; |median V − C| < 4 ms: **out** (19.2 ms, V lower);
 - row 2 V separated below: **in**; median V/C 0.62, in [0.3, 0.75];
