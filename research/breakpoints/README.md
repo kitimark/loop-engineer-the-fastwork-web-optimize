@@ -18,7 +18,13 @@ in phone landscape (932x430) and with reduced motion (430 and 1440).
   - When the images arrive late (cold server), both builds draw the same "sharp" picture.
   - On fast loads the baseline draws a "soft" one, 10 of 10 times; st6-rb2 draws the sharp one, 7 of 9 times
     (otherwise one in between).
-  - Forcing a re-raster changes neither arm, so the raster-scale hypothesis is REFUTED. The cause is UNRESOLVED.
+  - Forcing a re-raster changes neither arm, so the raster-scale hypothesis is REFUTED.
+  - The decode trace (§3.2.2) shows the same decode size, mips and filter quality in both builds.
+  - What differs is a later repaint. st6-rb2 (and every cold load) repaints the card photos after the first paint,
+    and the fast baseline load does not. An invisible repaint makes the baseline sharp too: after it, S vs B is
+    4 px², max 19 (OBSERVED).
+  - Why the first paint's raster is soft is UNRESOLVED.
+  - Without reduced motion, no soft load occurs and S is within A/A at 1440 (§3.2.2).
   - It is not pixel-identical, so the decision is the lead's (§6).
 - **Counts.** st6-rb2's gains hold at every width measured (375-1280, touch and not): about 90 % fewer layouts at
   rest, about 40 % fewer layouts and 55-70 % fewer style recalcs while scrolling. Its known costs also hold: more
@@ -234,6 +240,98 @@ Reading:
 - WebKit leg: not run. `tools/sim.mjs` cannot set reduced motion: there is no such option in sim.mjs or its libs, and
   `xcrun simctl ui` offers only appearance, increase_contrast and content_size. UNRESOLVED.
 
+### 3.2.2 rm1440: the image-decode trace, a repaint check, and the pair without reduced motion (2026-10-04)
+
+Five shared probe holds, nothing timed, headless Chrome through `tools/lib/cdp.mjs` (no MCP trace). No sleep or wake
+in `pmset -g log` during any of them. Cold and fast as in §3.2.1. Evidence (gitignored): `out/breakpoints/rr6` to
+`rr10`, `hold20.log` to `hold24.log`.
+
+**1. Decode size, mips and filter quality per hero photo: the same in both builds.**
+- rr7 (`probe-trace.mjs`, `CATS=layers`) took a detailed memory-infra dump at the end of one fast B load (soft) and one
+  fast S load (sharp).
+- rr9 (`probe-cmdlog.mjs`) read the Skia command log of every painted layer (CDP `LayerTree.snapshotCommandLog`)
+  for cold and fast loads of both builds.
+
+| photo (card) | natural size | drawn at (CSS px, DPR 1) | recorded sampling, all 4 loads | renderer decode cache (bytes, B = S) | GPU transfer cache (bytes, B = S) |
+|---|---|---|---|---|---|
+| chapavich, buttercup, slayalldeep, bold (cards 0, 1, 3, 4) | 656x656 | 193x181 to 236x222 | kLinear + mipmap kLinear | 645,504 each = full size, YUV 4:2:0 | 860,671 each = full size x 4/3 (with mips) |
+| leobeer (2) | 1200x1148 | 191x179 | the same | 2,066,400 | 2,755,200 (with mips) |
+| weng (5) | 1090x994 | 256x241 | the same | 1,638,112 | 2,166,919 (with mips) |
+| pakincht (6) | 956x1194 | 212x199 | the same | 1,719,360 | 2,282,928 (with mips) |
+| peter (7) | 1200x2133 | 191x179 | the same | 3,840,000 | 5,120,000 (with mips) |
+| mod (8) | 741x1047 | 188x175 | the same | 1,173,016 | 1,552,846 (with mips) |
+| nam (9) | 1200x1866 | 228x215 | the same | 3,358,800 | 4,478,400 (with mips) |
+
+- Every photo is drawn with `drawImageRect` and sampling {filter kLinear, mipmap kLinear} (Medium quality), from a
+  cropped source rect (object-fit cover, e.g. 0, 20.4 to 656, 635.6). This holds in every load, cold and fast, B and S.
+- Each card is its own composited layer (10 layers of 202x247 to 270x334) in both builds.
+- The decode caches hold every photo at full natural size, and the GPU side holds it with a mip chain. The entries
+  are byte for byte the same in the soft B load and the sharp S load (16,910,445 bytes in total on each side).
+- Why full size: Chromium's GPU image decode cache uploads a clipped draw at mip level 0 ("Images which are being
+  clipped will have color-bleeding if scaled", crbug.com/620899). It builds mips when the quality is at least Medium
+  and the draw is smaller than the upload. Source: `cc/tiles/gpu_image_decode_cache.cc` on main, read 2026-10-04:
+  `CalculateUploadScaleMipLevel` lines 1581-1602, `ShouldGenerateMips` lines 138-163, `needs_mips` before upload
+  lines 2114-2124. CONFIRMED.
+- Answer to the lead's question: S's photos do not decode at a different scale or quality than B's on fast loads.
+  Decode size, mips and recorded filter quality are identical. The difference is not in the decode.
+
+**2. What differs is when the cards are painted.**
+
+Raster tasks of the 10 card layers (rr6 broad trace; ms after the load's first raster task, "frame" = source frame
+number):
+
+| load | rendering | card rasters |
+|---|---|---|
+| fast B | soft | two: frame 2 (~225 ms) and frame 4 (~285 ms), then never again |
+| fast S | sharp | three: frames 2 and 4 as in B, and frame 38 (~820 ms) |
+| cold B | sharp | three: frame 3 (~3,200 ms, images arrive), frames 4-9, and frame 51 (~4,010 ms) |
+| cold S | sharp | three: the same pattern as cold B (frame 51 at ~3,920 ms) |
+
+- The third raster follows a main-thread repaint of the cards. In fast S, all 10 `.profile-cover` spans are painted
+  again at ~800 ms. In cold loads, the cards and the hero are painted again at ~4,000 ms. In fast B, no card paint
+  happens after ~200 ms.
+- **Repaint check** (rr10, `probe-loads.mjs REPAINT=1`, ORDER B,B,B,S,S at rm1440): after the "top" shot, each card
+  photo gets an invisible paint invalidation (inline `box-shadow: 0 0 0 0 transparent` on `.orbit-card .profile-cover`
+  and its img), then a second shot "top-rp".
+  - Before: fast B is soft 2 of 2 (sharpness 15.0); cold B, cold S and fast S are sharp (18.8).
+  - After: all five loads are sharp (18.83).
+  - S fast vs B fast after the repaint: largest shade 19, 4 CSS px² over 8 levels (card 2), 0 % of the frame. Before
+    the repaint, the same pair was 3.041 % (39,415 px², max 118), matching rr5.
+  - B fast vs B cold after the repaint: largest shade 4, 0 px².
+- Reading (OBSERVED, in our setup):
+  - The soft picture is the early raster of the cards' first paint, which the baseline never repaints on a fast load.
+  - Any later repaint of the photos gives the sharp picture, in either build.
+  - st6-rb2 repaints the card photos at ~0.8 s on a fast load, so it shows the baseline's repainted (sharp) state.
+    Which st6-rb2 change triggers that repaint was not traced.
+- Why the first paint's raster is soft is UNRESOLVED:
+  - At the end of the load, the recorded quality (Medium) and the decoded entries (full size with mips) are the same.
+    So the soft tiles come from a state before that, which we did not capture.
+  - Candidates: the photos were not yet decoded or uploaded with mips when frames 2 and 4 were rastered (the imgs are
+    `decoding="async"`), or a different quality was recorded at the first paint. Neither is confirmed by a trace
+    or a source reference.
+  - Observer effect: in rr9, `LayerTree.enable` plus the layer snapshots before the shot left fast B sharp (1 of 1).
+    So the command log could not be taken in the soft state; it probably forces a repaint itself.
+  - Our headless renderer emitted no `LayerTreeHostImpl` snapshots (only the browser UI did), so per-layer raster
+    scales stay unread.
+  - Decisive next check: a trace of a fast B load with `disabled-by-default-devtools.timeline.invalidationTracking`
+    plus a per-tile image-decode record (`GpuImageDecodeCache::GetTaskForImageAndRef` against the frame 2/4 raster
+    tasks), to see whether the first two rasters drew the photos before their decode with mips was ready.
+
+**3. The fast-load pair without reduced motion** (rr8, c1440, `MASK='.hero-title .script-accent'`, ORDER B,B,B,S,S,S;
+same A/A definition as rr5: B fast vs B fast):
+- No soft load occurred: all 6 loads (cold and fast, B and S) have the same card sharpness (18.37 top, 10.09 hero).
+
+| pair | largest shade | beyond A/A (> 8 levels) | CSS px² per element | edge or fill | static or moving |
+|---|---|---|---|---|---|
+| S fast vs B fast, top (A/A B fast vs B fast: max 55, the same moving spot in both) | 55 (A/A 55) | 0.000 % (2 px²) | card2 2 | 0 % flat (fill max 0, edge max 9) | orbit and accent frozen at currentTime 1000 per shot; the max 55 sits in content that also differs in the A/A |
+| S fast vs B fast, hero | 1 | 0 % (0 px²) | none | none | as above |
+| S cold vs B cold, top (A/A: B cold vs B fast; one server start per arm) | 56 (A/A 56) | 0.000 % (6 px²) | other 4, card2 2 | edge max 56 | as above |
+| S fast vs S fast, top (A/A: S fast vs B fast) | 56 (A/A 55) | 0 % | none | none | as above |
+
+- Without reduced motion, st6-rb2 at 1440 is within A/A on fast and cold loads: at most 6 CSS px² beyond the A/A,
+  0 % of the frame, no fill. The rm1440 difference is specific to reduced motion: the orbit cards are static there,
+  and nothing repaints them on a fast baseline load.
+
 ### 3.3 Render and layout counts per width (census)
 
 Counts only, no timing; one load per arm; `sweep.mjs census`. "rest" = 4 s at the top after load, "scroll" = a rAF scroll to the end at vh/40 per frame, "end" = 1.5 s at rest at the end. L / R = LayoutCount / RecalcStyleCount deltas (Performance.getMetrics), P = trace Paint events, lay = LayerTree size. F3 cover = 8x12 hit-test grid at the end: cells on #platform / on the nav. Finished for 9 of 15 configs (the lead stopped further holds); the rest are listed in §4.
@@ -361,9 +459,14 @@ changed, and the device was never rotated. After the session, sim.mjs shut fw-si
    frame, same-state A/A 0 %, 118 levels, up to 11,983 CSS px² per card, static.
    - The re-raster check (§3.2.1) changed nothing.
    - The sharp rendering is the baseline's own cold-load rendering.
+   - §3.2.2: decode and filter quality are identical. The baseline's soft picture is a stale first-paint raster that
+     any repaint of the photos replaces. After an invisible repaint, S vs B is 4 px², max 19. Without reduced motion
+     there is no soft load, and S is within A/A.
+   - Root cause in Chromium: UNRESOLVED (decisive check named in §3.2.2).
+   - Not traced: which st6-rb2 change repaints the photos at ~0.8 s.
    - Same-state reading: T3 in a landed component, for the user.
    - Load-to-load reading: T1.
-   - Evidence: `out/breakpoints/rr1` to `rr5` and `hold16.log` to `hold19.log` in this worktree.
+   - Evidence: `out/breakpoints/rr1` to `rr10` and `hold16.log` to `hold24.log` in this worktree.
 2. **st6-rb2 paints more at rest at every width** (+120 to +270 paint events in 4 s; +15-23 layers). This is not
    width-specific, and it may already be a known cost of the stack. A single attribution probe at 430 would name
    the part.
@@ -429,7 +532,9 @@ concrete:
   sweep). `summarize.mjs`: tables from the JSON.
 - `probe-anims.mjs` (animations running at a stop), `probe-accent.mjs` (accent word geometry over time),
   `probe-el.mjs` (what is drawn at a diff point), `probe-reraster.mjs` (will-change toggle before and after shots,
-  tolerance report), `probe-loads.mjs` (repeated loads, rendering classes, sharpness; `ORDER`, `IMGDELAY`, `NOCACHE`),
-  `tolrep.mjs` (the five numbers of §3.2.1 from probe-loads shots, offline).
+  tolerance report), `probe-loads.mjs` (repeated loads, rendering classes, sharpness; `ORDER`, `IMGDELAY`, `NOCACHE`,
+  `MASK`, `REPAINT`), `tolrep.mjs` (the five numbers of §3.2.1/§3.2.2 from probe-loads shots, offline),
+  `probe-trace.mjs` (Chrome trace per load with the image-decode categories, or `CATS=layers` with a detailed
+  memory-infra dump), `probe-cmdlog.mjs` (Skia command log of every painted layer: image sampling per draw).
 - `sim-vp.mjs` + `simvp.sh`: the fw-sim width-980 check.
 - Output (gitignored): `out/breakpoints/` (JSON, PNG, heat images, logs).

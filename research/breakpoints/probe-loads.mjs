@@ -3,7 +3,7 @@
 // at top and hero; then groups the shots into classes (two shots are in one class when no pixel outside the countdown
 // differs by more than 8 levels) and reports a sharpness score per shot (mean |Laplacian| of luminance over the
 // visible .orbit-card rects). Functional, shared lane (no timing).
-// usage: [ORDER=B,S,..] [IMGDELAY=ms] [NOCACHE=1] node research/breakpoints/probe-loads.mjs <config> <outdir> B=<url> S=<url>
+// usage: [ORDER=B,S,..] [IMGDELAY=ms] [NOCACHE=1] [MASK=<selectors>] [REPAINT=1] node research/breakpoints/probe-loads.mjs <config> <outdir> B=<url> S=<url>
 import { launchChrome, CDP, gotoAndSettle, sleep, tempProfileDir, headedUA } from '../../tools/lib/cdp.mjs';
 import { writeFileSync, readFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,7 +15,14 @@ const ORDER = (process.env.ORDER || 'B,S,B,S,B,S,B,S').split(',');
 const CFG = CONFIGS[cname];
 const SETTLE = Number(process.env.SETTLE || 2000);
 const IMGDELAY = Number(process.env.IMGDELAY || 0); // ms; 0 = off
+const MASKSEL = process.env.MASK || ''; // extra masked selectors, padded by 30 % of their height (as sweep.mjs)
 const NOCACHE = process.env.NOCACHE === '1'; // Network.setCacheDisabled in every tab (no memory or HTTP cache hit)
+// REPAINT=1: stops top and top-rp; before top-rp, an invisible paint invalidation of every card photo (inline
+// box-shadow 0 0 0 0 transparent on `.orbit-card .profile-cover` and its img): does a repaint turn a soft load sharp?
+const STOPLIST = process.env.REPAINT === '1' ? ['top', 'top-rp'] : ['top', 'hero'];
+const REPAINT_JS = `(async () => { const els = [...document.querySelectorAll('.orbit-card .profile-cover, .orbit-card img')];
+  for (const e of els) e.style.boxShadow = '0 0 0 0 rgba(0, 0, 0, 0)';
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); return els.length; })()`;
 mkdirSync(join(outdir, 'png'), { recursive: true });
 const STOPS = `(() => { const abs = (s, f = 0) => { const e = document.querySelector(s); return e ? Math.round(e.getBoundingClientRect().top + scrollY + f * innerHeight) : null; };
   return { top: 0, hero: abs('.hero-track', 0.5) }; })()`;
@@ -24,7 +31,7 @@ const walk = (y) => `(async () => { for (let i = 0; i < 400; i++) { const t = Ma
   return Math.round(scrollY); })()`;
 const R = (r) => ({ l: r.left, t: r.top, r: r.right, b: r.bottom });
 const STATE = `(() => { const R = ${R.toString()}, vis = (r) => r.width && r.height && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
-  return { y: Math.round(scrollY), dpr: devicePixelRatio, cd: [...document.querySelectorAll('.countdown')].map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height).map(R),
+  return { y: Math.round(scrollY), dpr: devicePixelRatio, cd: [...document.querySelectorAll('.countdown')].map((e) => [e.getBoundingClientRect(), 0]).concat(${JSON.stringify(MASKSEL)} ? [...document.querySelectorAll(${JSON.stringify(MASKSEL)})].map((e) => [e.getBoundingClientRect(), 0.3]) : []).filter(([r]) => r.width && r.height).map(([r, p]) => ({ l: r.left - p * r.height, t: r.top - p * r.height, r: r.right + p * r.height, b: r.bottom + p * r.height })),
     cards: [...document.querySelectorAll('.orbit-card')].map((e) => e.getBoundingClientRect()).filter(vis).map(R),
     imgs: [...document.querySelectorAll('.orbit-card img')].map((i) => { const t = performance.getEntriesByName(i.currentSrc)[0]; return t ? Math.round(t.responseEnd) : null; }),
     load: Math.round(performance.getEntriesByType('navigation')[0]?.loadEventEnd || 0), vis: document.visibilityState, focus: document.hasFocus() }; })()`;
@@ -50,8 +57,9 @@ try {
     }
     await gotoAndSettle(page, URLS[ORDER[i]]); await sleep(2500);
     const stops = await page.eval(STOPS);
-    for (const stop of ['top', 'hero']) {
-      await page.eval(walk(stops[stop])); await sleep(SETTLE);
+    for (const stop of STOPLIST) {
+      if (stop === 'top-rp') await page.eval(REPAINT_JS);
+      await page.eval(walk(stops[stop === 'top-rp' ? 'top' : stop])); await sleep(SETTLE);
       const st = await page.eval(FREEZE);
       const { data } = await page.send('Page.captureScreenshot', { format: 'png' });
       await page.eval(THAW);
@@ -65,7 +73,7 @@ try {
   await dp.send('Page.navigate', { url: 'about:blank' }); await sleep(300);
   const b64 = (f) => JSON.stringify(readFileSync(f).toString('base64'));
   // in-page: sharpness of one shot over card rects; pair diff (count > 8 outside the mask, max level)
-  for (const stop of ['top', 'hero']) {
+  for (const stop of STOPLIST) {
     const sh = res.shots.filter((s) => s.stop === stop);
     const mask = sh.flatMap((s) => s.cd), cards = sh[0].cards, dpr = sh[0].dpr;
     const out = await dp.eval(`(async () => { const load = async (s) => createImageBitmap(await (await fetch('data:image/png;base64,' + s)).blob());
