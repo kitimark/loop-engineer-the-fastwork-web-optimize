@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T07:30:00Z",
+ "updatedAt": "2026-10-03T08:10:00Z",
  "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -87,7 +87,8 @@
     "Lead 05:4xZ: the fade50 delta-1 digit class shows in both strip builds (strip-rb, strip-rw) above the A/A rate; goes to the user as a proposal (land with the residual or park) once its card is done; P-072 waits for that decision.",
     "fix-cd-strip 6ae6908 (06:4xZ): strip-rw JS 5e37af69bcc4, CSS 9b2f89ea58bd, patch 48bc7adf7f03, base st6-rb2. P-072 drafted in fixes/cd-strip/README.md (Cards), not in the ledger, held for the user's R-fade choice (land strip-rw vs park); on 'land' the row goes in against the BUILD card before any phone data. P-070 unedited, superseded before data (strip-cl -> strip-rb -> strip-rw).",
     "User accepted PR-008 land-strip 06:52:53Z (confirmed T-030 #18). review-cd-strip-r2 NEEDS-FIX: (1) hero .strip/.cell skipped st6-rb2's scene-pause will-change rule, so 96 hero clock layers stayed up in the paused-but-rendered band (faces: 0); (2) the R-fade rate was pooled across sessions; same sessions: strip-rw 3/26 vs A/A 1/26. New base after the CSS fix: patch 1f3c26a16563, JS 5e37af69bcc4 unchanged, CSS 40078cb2d9cf; re-check, re-card, review round 3, then land. P-072 registered against the new BUILD card before any phone data.",
-    "Lead 07:2xZ: acceptance held, nothing lands on it. G7: a Chrome delta-1 class at 0.9 fade (13-83 px; PR-008 said 'Chrome shows nothing') and 4-5 layout-shift deliveries per 5 s vs 2 for the faces (sources unrecorded). G8: 2 vs 2 entries and the same CLS 0.0011 in both arms, all from h1. PR-008 rev 2 after G9 (possibly a CLS-free third option); the user re-decides; P-072 waits; cd-roll-ca pauses queuing. ts-proposal-hold builds proposal hold/unhold and a 'stale: re-decide' state (T-030 #19)."
+    "Lead 07:2xZ: acceptance held, nothing lands on it. G7: a Chrome delta-1 class at 0.9 fade (13-83 px; PR-008 said 'Chrome shows nothing') and 4-5 layout-shift deliveries per 5 s vs 2 for the faces (sources unrecorded). G8: 2 vs 2 entries and the same CLS 0.0011 in both arms, all from h1. PR-008 rev 2 after G9 (possibly a CLS-free third option); the user re-decides; P-072 waits; cd-roll-ca pauses queuing. ts-proposal-hold builds proposal hold/unhold and a 'stale: re-decide' state (T-030 #19).",
+    "Lead 08:0xZ: S2 + G11 clean for strip-tc (no cdwrap layout shifts; backed layers 16 / 0.39 MB vs faces 48 / 1.18 MB; hero 0 px). G12, S3, G13, G14 next, then PR-008 rev 2's text goes to the lead. PR-008 stays on hold (proposal hold, cd966b7)."
    ]
   },
   {
@@ -549,7 +550,8 @@
   }
  ],
  "upcoming": [
-    { "title": "Your new decision on the countdown digit strips (corrected proposal)", "when": "after one more check of the strips", "item": "cd-strip" },
+  { "title": "A rendering cost card for each fix: what each element costs to draw, from Chrome and the Simulator, using the phone less (you asked, T-029 #23)", "when": "after the countdown isolation check now running" },
+  { "title": "Your new decision on the countdown digit strips (corrected proposal)", "when": "after one more check of the strips", "item": "cd-strip" },
   { "title": "Blind side-by-side look at the GPU countdown roll (cd-roll-ca)", "when": "once the digit strips (cd-strip) have landed (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the warm-phone test (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
   { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }

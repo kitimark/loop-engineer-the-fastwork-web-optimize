@@ -9,6 +9,22 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **08:1xZ main 86c6798 (my P-075 batch) landed.**
+  - **Open lead promise to the user (T-029 #23 / #24):** the user wants fixes judged by rendering complexity, element
+    by element, using the phone less. The lead promised a per-fix **"rendering cost card"** built from Chrome and the
+    Sim only: thread, layers and memory, repaint area × rate, layout, script. arch-isolated-measure designs it after
+    the pilot, as §6 of the isolated-measurement README. It is in PROGRESS upcoming. Track it until delivered.
+  - **P-075 second read: NEEDS-FIX, small, before any data is read.** Row and scorer at 6ac0a15; judge.mjs
+    8c7691299477, verified.
+    - Must-fix: (1) compute the family verdict; (2) the Sim AA silently becomes 0 when a C load is void, and the
+      Chrome AA becomes NaN when every C' FRZ load is void; (3) flag noise-sensitive on misses only, as the prereg says.
+    - Nits: compute the H9 Layout/Paint reading; say what a JS hash mismatch does; any confidence numbers are marked
+      as added after the slot started.
+    - The timing deviation is disclosed and fine: the row and scorer were added after the Chrome FULL slot started,
+      with no data read.
+  - **cd-strip** (lead): S2 + G11 clean for strip-tc. No cdwrap shifts; backed layers 16 / 0.39 MB vs faces 48 /
+    1.18 MB; hero 0 px. G12, S3, G13 and G14 come next, then rev 2's text goes to the lead. PR-008 stays on hold.
+
 - **08:0xZ main 1ed2419 on cd966b7 on ec7eb08 (my 07:3xZ log).**
   - **cd966b7** (user T-030 #19): console proposal hold/unhold, stale decisions on revise, decisionState. After npm
     test on main the lead restarts the console and puts PR-008 on hold, so the user's acceptance shows as "under
