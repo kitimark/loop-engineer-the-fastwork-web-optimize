@@ -312,6 +312,44 @@ read comes before any data. Queued after C-033 and P-081.
   - H3: about 8.
   - About 1.5 min of gate reads per hold.
 
+### P-085 result (2026-10-03, iPhone, driver M, condition T-039 B): PASS
+
+The block was run by iphone-runner as ticketed, starting 16:12Z. Its log is out/morph-inherit/p085/score/BLOCKLOG.txt
+(a copy).
+- Two deviations, both accepted:
+  - the runs carry `--owner iphone-runner`, because it held the lease;
+  - holds were 900 s long (the lead's condition-B rule).
+- Holds: H1 h161622, H2 h164019, H3 h170510, all valid. Every gate read was Serious with Is Induced No, battery
+  38.9-41.0 °C, timer grid 30 ms, rAF 59 Hz.
+  - h165958 failed its start read before any run and produced no files; ops ruled it not a strike.
+- Void runs: 0. Excluded files: none.
+- Sentinels on B's port: S1 60.2 / 52.3 PASS, S2 60.0 / 51.7 PASS.
+- Re-scored here with the committed scorers (phone-read `f7ae2c55677b`, frames-p085 `385eb00f1564`). The runner's
+  driver was out/iphone-runner/p085.mjs, sha256 `05cb22a59969`.
+
+| # | prediction | result | hit |
+|---|---|---|---|
+| dom | PASS | PASS (B 4 reads, M 4 reads) | yes |
+| earn-start | d = 0, \|d\| ≤ 33.3 ms | d = +1 ms (fade start tA + 119 for B, tA + 120 for M; delay 120 in every read) | yes |
+| earn-vis | not `beyond` | `within`, d = −11 ms, interval [−32, +17] | yes |
+| f50 | M − B = −2, ≤ +1 | moving > 50: B 21, M 0.5 → **−20.5** (twins > 46: −26.5, > 54: −11.5; not threshold-sensitive) | yes |
+| f34 | M − B = −10, ≤ +2 | moving > 34: B 56, M 1 → **−55** (twins > 30: −59.5, > 38: −45; not threshold-sensitive) | yes |
+| sent | pass | S1 and S2 pass | yes |
+
+- Moving frames scored per arm (median n): B 113, M 185.
+  - In the same tween time, M renders about 1.6 times as many frames.
+  - M's moving dt > 50 per run: 1, 0, 0, 1. B's: 18, 25, 3, 24.
+- Drive scope: > 50 is 25 → 0.5, > 34 is 65.5 → 2.
+- Held at m = 1: > 34 is 4 → 0.
+- Per-run slow frames (dt @ m) are in `out/morph-inherit/p085/score/frames-score.json`.
+- The point predictions for f50 and f34 were far too small. Both were set from cool baseline runs. B here is the
+  plain baseline: it has none of st6-rb2's earlier R-fixes, which are in mi. So **the delta is the whole st6-rb2 +
+  morph-inherit stack against the baseline, not morph-inherit alone**. This block answers "no worse than the
+  baseline", which is the question it was registered for. It gives no gain number for the morph-inherit delta
+  itself.
+- Decision, as registered: DOM PASS, EARN within, f50 and f34 no-worse → **morph-inherit passes its phone no-worse
+  check**. F3 continues on main + morph-inherit, and there is no further block for this question.
+
 ## Tools (this directory; self-contained)
 
 Run `node fixes/morph-inherit/build.mjs` first. It makes every snapshot the gates read (out/snapshots/: mi, c, mhook,
