@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T16:25:00Z",
+ "updatedAt": "2026-10-03T16:40:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -114,7 +114,7 @@
     "Lead 10-03 03:2xZ: Chrome path gated to WebKit only (approved); WebKit residual -> A/A, then a hunt, then user options; accent paints at 1.5x block its phone ticket.",
     "Lead 05:1xZ: frozen frames done: R1 = C's own two raster states, R2 = deck-edge shadow, R3 = the unarmed first frame; trying a scroll-event re-add for R3. F-161 posted.",
     "P-081 ticket d4f1f63: F build (JS 8e43f3792dbf, CSS cc74cd980e72) vs st6-rb2, G hero-pass-v1, C F F C n = 2, T-039 B gate per hold, scoreF 32ed5f4e81f9 + framesF 40d0d302c3f1; ops second read PASS 14:0xZ. Band y 1..780, clear of the page-end morph.",
-    "PR-010 wide 15:21Z; PR-011 rev 1 ACCEPTED (accept-both) 15:23:14Z after the user undid the 14:44Z changes-requested (no rev 2). Items 1 and 2 re-tiered for the record only; item 2 (R6, photo detail max 88): fill > 64 -> T3, or edge (<= 128); owner decides with the five numbers."
+    "PR-010 wide 15:21Z; PR-011 rev 1 ACCEPTED (accept-both) 15:23:14Z (no rev 2). Tiers for the record (e5bc982, Sim A/A): item 1 passes every T2 number (max 17 on edges, 0.059 % over 8 levels) but is motion-only, so the user's call; item 2 R6 = T3 (max 88 is an edge level, but 1.6 % of screen and 3,894 CSS px at any level, photo detail, motion-only). Both moot: accepted."
    ]
   },
   {
