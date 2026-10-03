@@ -424,7 +424,10 @@ in / in, a single run gives "not enough", rest with no heRest line gives "no dat
     second split goes to the lead as inconclusive.
   - (a) not enough valid runs in an arm: treated as a void block.
   - (b) OUT: name the rows. Only touchstart 1 (the top crossing): the known +1 Layout flip, reported as a residual
-    for the user decision, not a mechanism failure. Any other OUT row: V's hand-over costs more than C's; back to F.
+    for the user decision, not a mechanism failure. A rest row OUT: before any reading, report the heRest TimerFire's
+    own S/L/P next to the next unit's for that row, from the same Timeline file (a labeled post-hoc diagnostic; the
+    registered scorer is unchanged); it counts as a V cost only when the next unit alone is still out of bounds. Any
+    other OUT row: V's hand-over costs more than C's; back to F.
   - (b) no data for a kind: to the lead, no mechanism verdict on that kind; check marks and the heRest line on the
     same data before any re-run.
   - Block void (a failed sentinel, a second void at one position, Low Power Mode): no claim; cool, re-run the block
