@@ -5,7 +5,14 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-03 08:2xZ** (mgmt-ops-10 takeover).
+**10-03 15:1xZ** (mgmt-ops-10; resume briefs section added).
+
+## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
+
+Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and send it with the next real wake-up.
+
+- **fix-hero-exit-threaded** (wake: right after C-033, for the P-081 block): morph-inherit landed on main (b11f977 + 0ad5407). From its next build on, it stacks on main + morph-inherit (no overlap with its patches). P-081 stands as registered: its band is y <= 884, outside the morph.
+- **fix-cd-roll-ca** (wake: after cd-strip lands): morph-inherit landed on main (b11f977 + 0ad5407). Its next build stacks on main + morph-inherit + cd-strip (no overlap with its patches). WebKit morph numbers measured on stacks without morph-inherit are void for the morph region; re-measure there. The reviewer saw the panel countdown cells differ from the baseline at m 0.9 and 1 in WebKit (max 11, 52 px over 8), attributed to st6-rb2, OBSERVED. Its resume list still has the panel clock roll (#1, less-work, m-gate condition).
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
