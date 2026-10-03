@@ -289,6 +289,70 @@ What this changes for phone time:
 - P3: about 30 min of phone time, or 0 if skipped.
 - The pilot ends with a short readout appended to this README.
 
+### 4.4 Pilot readout (P-075, 2026-10-03)
+
+The plan was amended before any data; the record is in `pilot-prereg.md` (b89ec7f):
+- each build is judged against its own control (Vf − C, C6 − S, V7 − C6);
+- the vs-C rows are secondary and not judged;
+- the Simulator runs n = 2 and judges Vf and V7 only.
+
+Scorer: `judge.mjs` 73679603afcd. Data, scrubbed probe copies and the scorer output (`judge.json`): `p075-data/`. Re-running
+`node judge.mjs p075-data` reproduces `judge.json` byte for byte.
+
+**How it ran**
+- Chrome: two shared-lane probe slots, FULL then FRZ, 3 loads per arm and mode.
+  - No FRZ load was VOID: each one's clock check showed 2 changes in 3 screenshots, so the countdown kept running.
+- Simulator: one functional session, ticks 4 per window (V7: 8, its roll writes twice per tick).
+  - The first Sim slot was VOID because of my own harness bug: reopening a page left two tabs matching the same host.
+  - This readout uses a 4th slot that replaced it. Nothing from the void slot is used.
+  - Fix: each tab is parked on about:blank after its load.
+- AA comes from the baseline pair (C vs C2; in the Sim, C rep 1 vs rep 2) only. The noise of S and C6 as controls is not
+  covered by it. No count needed an AA flag: every AA came from both modes.
+
+**Verdicts (judged pairs).** "Low-power" means the tolerance is so wide that the check can't see small changes.
+
+| Engine | Count | AA | Verdict | Detail |
+|---|---|---|---|---|
+| Chrome | countdown FunctionCalls per 4 s | 11 | **family FAIL**, 3 of 3 missed | Vf − C: diff 34.7 vs tol 22, noise-sensitive. C6 − S: 32 vs 22, noise-sensitive. V7 − C6: 45.3 vs 22, scorer label H9-real-interaction. |
+| Chrome | style elements | 92.3 | family PASS, 0 of 3 | tol 185 for each pair, set by 2 × AA. Diffs: 158 (Vf − C), 13 (C6 − S), 102 (V7 − C6). **Low-power**: this pass can't see style changes much smaller than ~185 elements per window. |
+| Chrome | Layout | 2 | family PASS, 0 of 3 | tol 4: diffs 3.7, 2.7, 2.7. |
+| Chrome | Paint | 5.7 | family PASS, 0 of 3 | tol 11.3. Vf − C passes **on the tolerance boundary (11.3 vs 11.3)**; C6 − S 0.7; V7 − C6 9.0. |
+| Sim | RenderingFrame | 8 | family PASS, 1 of 2 missed | Vf − C passes (0.5 vs 16). V7 − C6 **misses**: FULL −20.5 vs FRZ −58.5, tol 16, label H9-real-interaction. |
+| Sim | RecalculateStyles | 5 | family PASS, 1 of 2 missed | Vf − C passes. V7 − C6 misses: −20 vs −66, tol 10, H9. |
+| Sim | Layout | 2 | family PASS, 0 of 2 | tol 4: diffs 3.0 and 1.0. |
+| Sim | Paint | 15 | family PASS, 0 of 2 | tol 30: diffs 4.0 and 2.5. Low-power (tol 30 on about 170 paints in FULL). |
+| Sim | Composite | 4 | family PASS, 1 of 2 missed | V7 − C6 misses: −19.5 vs −58.5, tol 8.8, H9. |
+| Sim | countdown rAF | 1 | family PASS, 0 of 2 | V7 − C6: −116 vs −112, tol 16.7. |
+
+The Sim's family rule needs 2 of 2 misses, so one judged miss leaves the family at PASS. The V7 misses are still a
+result; see "What it means".
+
+**The §2.4 Layout/Paint open item is settled.** Layout and Paint pass for every judged pair in both engines. The
+earlier −29 / +57 full-page mismatch (n = 1) was phase noise: within one arm, full-page loads spread by up to 26
+layouts and 74-88 paints per window in Chrome.
+
+**What it means** (my reading after seeing the data, post hoc unless marked)
+- **Countdown calls per window.** The FAIL stands as recorded and is not re-scored. Post hoc: the same build gave
+  108-215 calls per 4 s window, and C's FULL and FRZ distributions look alike. That suggests window-phase sampling
+  (how many rolls, and how much of the edge rolls, a window catches) rather than distortion by the freeze.
+  - V7 − C6 carries the scorer's H9 label: its FULL rows sit at 16/16/16, so the within-arm range is tiny. The spread
+    sits on the FRZ control side (C6 FRZ 150/115/215), which is why I read it as the same window noise.
+  - That reading is post hoc. **P-076** (`p076-prereg.md`) is the pre-registered test of it: calls per countdown second,
+    cut at the countdown's own interval fires, on new loads.
+- **Frames for a compositor-run element (Sim, V7 − C6).** Post hoc: with the rest of the page frozen, moving the roll
+  to the compositor (V7) cut main-thread rendering frames from about 110 to about 50 per window. On the full page the
+  other animations keep frames running anyway, so the same change saves only about 20.
+  - Chrome shows the same shape in its unjudged main-frame count: V7 − C6 is −40 in FULL and −72 in FRZ.
+  - So FRZ overstates frame, style-recalc and composite savings when the rest of the page keeps rendering. These
+    counts are page-wide in nature (H9) and come from FULL on the cost card (§6.2).
+- **The vs-C rows** (secondary, not judged) miss widely on Layout and Paint in both engines, all labelled H9. Example:
+  Chrome C6 − C paint is +193 in FULL against −97 in FRZ. st6-rb2 changes the rest of the page, which a frozen rest
+  can't show. This confirms the own-control amendment.
+- **V7 is cd-roll-ca's own effect only in V7 − C6.** V7 sits on cd-strip on st6-rb2.
+- **Known limit, found while writing P-076.** S, C6 and V7 have a second `[role=timer]` outside the kept subtree. FRZ
+  pauses its animations but not its JS, and its work is counted in both modes. This affects the C6 − S and V7 − C6
+  rows of both P-075 and P-076.
+
 ## 5. Open questions for the user (plain words)
 
 1. When a fix's benefit is "the page does less work", is this enough to land it? The proof would be fewer work
@@ -303,3 +367,173 @@ What this changes for phone time:
    tested as its own question, or left out?
 5. For the countdown, is a test page that shows only the countdown, looking exactly the same, fine as a test tool?
    It never ships. The cheaper option is to pause the rest of the real page, which we'd use by default.
+
+## 6. Rendering cost card (design, user ask T-029 #23)
+
+A per-fix card that describes each animated element's rendering cost before and after the fix. It is built from
+Chrome and the Simulator only, so no phone and no heat. Every fix owner attaches it at D. The phone still confirms
+at V (§4).
+
+### 6.1 Fields
+
+All counts are per **element event**: a tick, a roll, a moving frame or a scroll crossing. The window always
+contains whole events (§6.3).
+
+| # | Field | Chrome source | Simulator (WebKit) source | Status of the source |
+|---|---|---|---|---|
+| 1 | **Which thread runs it.** Values: compositor on its own, main thread every frame, or main thread per event. | Trace `Animation` events: a running animation that Blink could not put on the compositor carries a failure reason, listed in Chromium's `CompositorAnimations::FailureReason` (`kUnsupportedCSSProperty`, `kTargetHasInvalidCompositingState`, `kTransformRelatedPropertyCannotBeAcceleratedOnTarget` and others). A rAF/JS driver counts as main-thread work by definition, seen as FunctionCalls in the element's code range on its frames. | WebKit's protocol exposes no "accelerated" flag per animation. Read: (a) LayerTree `reasonsForCompositingLayer` (has an `animation` reason); (b) a behavioural test: while the element visibly moves, are there 0 RecalculateStyles and 0 element FunctionCalls per moving frame? | Chrome enum CONFIRMED (chromium `third_party/blink/renderer/core/animation/compositor_animations.h`, `FailureReason`). That the trace carries it per animation is UNRESOLVED; the decisive check is one trace of a known non-composited animation. WebKit reasons list CONFIRMED (WebKit `Source/JavaScriptCore/inspector/protocol/LayerTree.json`, `CompositingReasons`). The behavioural reading in (b) is a method, OBSERVED; there is no reference for "accelerated" in WebKit. |
+| 2 | **Layers and GPU memory** of the element's subtree: count, composited size, memory. | CDP `LayerTree.layerTreeDidChange` (layers with width, height, `drawsContent`, `paintCount`) and `LayerTree.compositingReasons`. Chrome reports **no memory field**, so memory is an estimate: drawing layers × w × h × DPR² × 4 bytes, labelled "estimate". | `LayerTree.layersForNode` gives `memory` (bytes), `paintCount` and `compositedBounds`. These are the Sim census already used by cd-strip and cd-roll-ca. | CONFIRMED: CDP `pdl/domains/LayerTree.pdl` (Layer has no memory field); WebKit `LayerTree.json` (Layer has `memory`). |
+| 3 | **Repaint area × rate**: device px² repainted per event, and paints per event. | Trace `Paint` events: `args.data.clip` (quad) and `layerId`, kept when they intersect the element's rect. | Timeline `Paint` records: `data.clip` (quad), the same filter. cd-roll-ca's `sim-counts.mjs` reads it. | Field names OBSERVED in our scripts. The reference check (Chrome trace event docs, WebKit `Timeline.json` / `InspectorTimelineAgent`) is owed. |
+| 4 | **Layout per event**: layouts, and the objects laid out. | Trace `Layout`: count, plus `beginData.dirtyObjects` / `totalObjects`. | Timeline `Layout` records: count. | Counts OBSERVED (pilot). Objects per layout: Chrome field names to confirm. |
+| 5 | **Script per event**: FunctionCalls in the element's code range, plus style elements recalculated. | Trace `FunctionCall` (url + line in range), `UpdateLayoutTree.elementCount`. | Timeline `FunctionCall` (`scriptName`, `scriptLine`) and `RecalculateStyles`. | OBSERVED (pilot). Self time is printed as ms but never judged, because ms are heat- and clock-dependent (§1.1). |
+
+### 6.2 Which numbers come from which harness
+
+- **Element fields** (1, 2, 3, and style elements in 5) come from **FRZ**: the rest of the page is frozen, and the
+  element subtree keeps running and is checked. These numbers belong to the element. Caveat: the P-075 Chrome style
+  pass is low-power (tol 185 elements per window, §4.4), so the card prints the FULL row beside it.
+- **Layout and Paint counts** come from FRZ too, with a FULL row beside them for context.
+  - They passed for every judged pair in both engines. That is P-075's answer to the §2.4 open item.
+  - One Chrome paint pair passed exactly on its tolerance.
+- **The element's own script calls** (field 5) come from FRZ only if P-076 passes: calls per countdown second, cut at
+  the element's own events. Otherwise they come from FULL. P-075's per-window count failed as a family.
+- **Frame-driven counts come from the FULL page**: rendering frames, style recalcs per frame, composites, main frames,
+  Layerize, PrePaint, IO per frame.
+  - P-075's Sim V7 − C6 shows why: moving the countdown roll to the compositor saved about 59 frames per window with
+    the rest frozen, but about 20 on the full page, where other animations keep frames running (§4.4).
+  - So these counts are never attributed to the element alone (H9). The card prints them as "the page around it".
+- **Event-driven counts must be normalised per event, never per window.** In P-075, the countdown's own FunctionCalls
+  per 4 s window varied 108-215 between page loads of the *same* build. That FAIL stands. Our reading, still post hoc,
+  is that the count depends on how many rolls a window catches. P-076 tests that reading.
+
+### 6.3 One command, two outputs
+
+Proposed:
+
+```
+node tools/costcard.mjs --topic <t> --control <overlay dir|-> --build <overlay dir> --element '<selector>'
+        [--event mutation|raf|frame] [--window-events 8] [--engines chrome,sim] [--loads 3]
+```
+
+The command:
+1. Serves both arms from immutable copies and hash-checks the served files. A mismatch is VOID, exit 3.
+2. Loads the page n times per arm, alternating arms, in Chrome (headless, CPU 1x, 430x932 DPR 3) and then in one
+   Simulator functional session.
+3. Installs FRZ scoped to `--element` and checks that the element still runs (clipped screenshots in Chrome,
+   mutation ticks in the Sim).
+4. Cuts the trace at the element's own events and drops the partial stretches at both ends. With T instances of the
+   element, one event span is [f_i, f_(i+T)). Events come from the trace (the element's timer or rAF callback), or
+   from a MutationObserver mark when the code has no callback of its own. It records until `--window-events` events
+   have passed and reports the median per event. P-076's `judge-tick.mjs` `perLoad()` is the reference
+   implementation.
+5. Writes `fixes/<t>/costcard.json`: fields 1-5 per arm and engine, per event, with load ranges, A/A-free.
+6. Writes `fixes/<t>/costcard.md`: a plain-words table, one row per field, before → after, and a one-line reading
+   such as "now runs on the compositor; 0 → 0 layouts per tick; repaint 1.2 → 0.0 Mpx per tick; 24 fewer layers".
+
+It runs in the shared lane, as a probe for Chrome and a simulator slot for the Sim, ≤ 300 s each.
+
+### 6.4 What it needs (tooling)
+
+It lives in `tools/`, so it is a toolsmith incident with tests (Hard rule 6). Most of the pieces exist:
+- `tools/lib/cdp.mjs`: Chrome trace;
+- `tools/lib/wip.mjs` and `tools/sim.mjs session`: Sim Timeline and LayerTree;
+- `serve.mjs --overlay`: arms.
+
+The scratch probes `iso-check.mjs` (in this folder), `pilot-sim.mjs` and cd-roll-ca's `sim-counts.mjs` hold the
+freeze, the screenshot check, the record walks and the Paint-clip filter.
+
+New code:
+- the event-aligned window (§6.2), ported from `judge-tick.mjs` (P-076) with its VOID rules;
+- the Paint-clip ∩ element-rect area sum;
+- Chrome layer-memory estimation;
+- the Chrome `Animation` failure-reason read (after the field-1 reference check);
+- the md table writer.
+
+Tests: unit tests on recorded fixture traces and Timeline dumps (parsing, normalisation, area sums, the VOID path),
+plus an e2e on the fixture baseline with fake Chrome, like the existing ones. A real-Chrome case goes in
+`test:chrome`.
+
+It is not measurement code for A/B timing (it judges no ms), but it counts what a D card cites, so the reviewer
+checks it the same way.
+
+### 6.5 What the card can't say
+
+- Frame time, smoothness, finger feel and hot-only behaviour. Those remain V/phone (§4.1).
+- Costs that come from the element's neighbours: a larger composited layer, a merged per-frame style or layout
+  (H9). The card's FULL context row hints at these but doesn't measure them.
+- Raster and GPU time. The memory and area numbers are a proxy, and Chrome's memory is an estimate.
+- Other instances of the same component outside the kept subtree. Examples are the second countdown timer in the
+  st6-rb2-based builds. FRZ pauses their animations but not their JS, so their script cost appears in both modes.
+
+## 7. Mac Safari / WebKit as a heat-free source (desk research, user ask T-029 #25)
+
+Desk research only: no Mac browser was run, nothing was installed or enabled, and no lock was taken. The sources are
+WebKit `main` and Playwright `main` source files, Apple developer docs and MDN browser-compat-data, all read on
+2026-10-03. Safari 26.2 on macOS 26.2 is the local version.
+
+**Short answer: no, for the cost card.**
+- Script and layout counts probably carry over between Mac and iOS WebKit. Layer census, tile and paint counts don't:
+  WebKit takes different code paths on the two platforms.
+- Without a person in Web Inspector, no path on this Mac returns Timeline or LayerTree data without installing
+  something.
+- The Simulator's own Web Inspector protocol already gives us both LayerTree (`layersForNode`, with memory and
+  paintCount) and Timeline (Layout, Paint, Composite, RenderingFrame, FunctionCall). We use them today, through
+  `sim.mjs session` and the debug proxy: cd-roll-ca's census and the P-075 Sim part.
+- So **Mac Safari would mainly add a second GPU path, the Mac's**, and that path isn't the phone's either. The
+  Simulator stays the WebKit source for the card.
+
+### 7.1 Fidelity: what differs between Mac and iOS WebKit (all CONFIRMED in WebKit source)
+
+- **Layers.**
+  - Mac adds scrollbar layers to every composited overflow scroller, and composited overflow-control layers to the
+    frame (`RenderLayerBacking.cpp` 2817-2823, `RenderLayerCompositor.cpp` 4758-4776). iOS doesn't.
+  - When memory is tight, iOS drops `will-change` compositing and Mac keeps it (`RenderLayerCompositor.cpp` 4059-4063,
+    policy at 694-728).
+  - Both platforms force compositing mode (`WebPage.cpp` 1309) and composite fixed/sticky elements
+    (`TiledCoreAnimationDrawingArea.mm` 243, `RemoteLayerTreeDrawingArea.mm` 210).
+- **Tiles.** The tile size is 512 on both (`TileController.h` 58).
+  - Mac page tiles cover 2× the visible width and 3× the height (`TileController.cpp` 444-466, 560-562).
+  - iOS sizes tile coverage from scroll velocity and shrinks it to the visible rect under memory pressure
+    (`TileController.cpp` 499-552).
+  - So tile and paint counts during a scroll differ.
+- **Preferences** (`UnifiedWebPreferences.yaml`).
+  - `TextAutosizingEnabled` is true on iOS and false on Mac (L6141). This one can change layout.
+  - `TemporaryTileCohortRetentionEnabled` (L6114) and `AllowMultipleCommitLayerTreePending` (L268) also differ.
+  - The 60 fps preference (L4843) and async overflow/frame scrolling (L540, L554) are the same on both.
+- **Scrolling.**
+  - iOS scrolls with UIScrollView (`ScrollingTreeScrollingNodeDelegateIOS.mm` 43, 77).
+  - Mac uses ScrollerPairMac and wheel handling on a scrolling thread (`ScrollingTreeScrollingNodeDelegateMac.mm` 50,
+    143; `RemoteScrollingTreeMac.mm` 67-68).
+- **Cadence.** On a 120 Hz display, both pick the rate nearest 60 Hz (`AnimationFrameRate.cpp` 47-65, `Page.cpp` 2990).
+- **Drawing area.** Trunk Mac uses RemoteLayerTree by default (`PlatformEnableCocoa.h` 824-826). Whether shipping
+  Safari 26.2 does the same is UNRESOLVED; the decisive check is a `sample` of Safari's WebContent process.
+- **Apple's own view.** Responsive Design Mode presets "don't represent exact layout, rendering, and behavior", and
+  Apple points to the Simulator for accuracy (Responsive Design Mode doc).
+- **Geometry.**
+  - Responsive Design Mode has a Pixel Ratio control. Whether it offers 3× is UNRESOLVED; the doc lists no values.
+  - Playwright WebKit accepts 430 px, DPR 3, mobile and touch (`wkPage.ts` 725-730, 216).
+  - Touch, the dynamic toolbar and visual-viewport resizes are emulation only, not proven faithful (UNRESOLVED).
+
+### 7.2 Yes / no per use
+
+| Use | Mac Safari 26.2 (safaridriver, Web Inspector) | Playwright WebKit (download, no admin) | Own WebKit build | Simulator (today) |
+|---|---|---|---|---|
+| Layer census (count, size, memory, reasons) | **no**: safaridriver is W3C WebDriver only, with no Timeline or LayerTree; Mac remote inspection has no public non-UI client | **unresolved**: LayerTree is in its protocol (`protocol.d.ts` 5125), but `newCDPSession` is Chromium-only (`class-browsercontext.md` 1012-1014), so access is an unsupported hack; Mac layers ≠ iOS layers (§7.1) | yes (`internals.layerTreeAsText`, LayerTree), but on Mac still Mac layers | **yes** (`LayerTree.layersForNode`) |
+| Paint (records, rects) | **no** | **unresolved** (Timeline Paint, same hack); Mac tiling ≠ iOS | yes (`startTrackingRepaints` / `repaintRectsAsText`) | **yes** (Timeline Paint with clip) |
+| Layout count | **no** | **unresolved** (Timeline Layout); text autosizing is off on Mac | partial (`styleRecalcCount`, `renderingUpdateCount`; Timeline for layout) | **yes** (Timeline Layout) |
+| Script (FunctionCall) | **no** (only in-page wrappers) | **unresolved** (Timeline FunctionCall) | yes (Timeline) | **yes** (Timeline FunctionCall) |
+| Install / admin | `safaridriver --enable` asks for admin authentication | a download, a user decision (lead asks via console) | Xcode + Metal toolchain + a long build | none |
+
+- In-page JS on Safari has no layout or paint counts: no Long Animation Frames, `longtask` or `layout-shift` entries
+  (MDN browser-compat-data).
+- Safari 27's `safaridriver --mcp` adds script, screenshots, input and a CSS-px viewport, still with no Timeline or
+  layers ("Connecting an AI agent to Safari"). This Mac has 26.2.
+
+**WebKit build, cost in one line.** A build (Mac, or `--ios-simulator` for the iOS code paths plus `window.internals`;
+WebKit ReadMe L59, L146) needs Xcode, its command line tools and the Metal toolchain, and a long, CPU-heavy compile in
+a `--no-timing` hold. The ReadMe gives no time or disk figure (UNRESOLVED). It is out of budget unless a census has to
+match the phone exactly and the Simulator's LayerTree isn't enough.
+
+**Recommendation.** Keep Chrome plus the Simulator as the cost card's sources (§6). Don't ask the user to install
+Playwright WebKit or Safari Technology Preview for this: neither gives the iOS code paths the Simulator already runs.
+Revisit only if a fix's question is specifically about the Mac GPU path.

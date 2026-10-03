@@ -1,0 +1,757 @@
+{
+ "tool": "scratch pilot-chrome.mjs (arch-isolated-measure)",
+ "browser": "Chrome/154.0.8037.97",
+ "seconds": 4,
+ "reps": 3,
+ "modes": [
+  "freeze"
+ ],
+ "builds": [
+  {
+   "label": "C",
+   "url": "http://localhost:52067/"
+  },
+  {
+   "label": "C2",
+   "url": "http://localhost:52072/"
+  },
+  {
+   "label": "Vf",
+   "url": "http://localhost:52077/"
+  },
+  {
+   "label": "S",
+   "url": "http://localhost:52087/"
+  },
+  {
+   "label": "C6",
+   "url": "http://localhost:52114/"
+  },
+  {
+   "label": "V7",
+   "url": "http://localhost:52129/"
+  }
+ ],
+ "results": [
+  {
+   "rep": 1,
+   "build": "C",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 14,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 156,
+    "updateLayoutTree": 147,
+    "styleElements": 1792,
+    "layout": 63,
+    "prePaint": 156,
+    "paint": 118,
+    "layerize": 156,
+    "io": 312,
+    "fireAnimationFrame": 174,
+    "countdownCalls": 178,
+    "timerFire": 15
+   }
+  },
+  {
+   "rep": 1,
+   "build": "C2",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 15,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 150,
+    "updateLayoutTree": 142,
+    "styleElements": 1159,
+    "layout": 64,
+    "prePaint": 150,
+    "paint": 118,
+    "layerize": 150,
+    "io": 300,
+    "fireAnimationFrame": 106,
+    "countdownCalls": 110,
+    "timerFire": 16
+   }
+  },
+  {
+   "rep": 1,
+   "build": "Vf",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 56
+   },
+   "freeze": {
+    "paused": 15,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 151,
+    "updateLayoutTree": 144,
+    "styleElements": 329,
+    "layout": 69,
+    "prePaint": 151,
+    "paint": 126,
+    "layerize": 151,
+    "io": 302,
+    "fireAnimationFrame": 106,
+    "countdownCalls": 110,
+    "timerFire": 15
+   }
+  },
+  {
+   "rep": 1,
+   "build": "S",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 22,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4211
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 135,
+    "updateLayoutTree": 120,
+    "styleElements": 383,
+    "layout": 7,
+    "prePaint": 135,
+    "paint": 27,
+    "layerize": 135,
+    "io": 270,
+    "fireAnimationFrame": 142,
+    "countdownCalls": 150,
+    "timerFire": 20
+   }
+  },
+  {
+   "rep": 1,
+   "build": "C6",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 22,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4222
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 131,
+    "updateLayoutTree": 119,
+    "styleElements": 221,
+    "layout": 21,
+    "prePaint": 131,
+    "paint": 52,
+    "layerize": 131,
+    "io": 262,
+    "fireAnimationFrame": 142,
+    "countdownCalls": 150,
+    "timerFire": 19
+   }
+  },
+  {
+   "rep": 1,
+   "build": "V7",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 22,
+    "keptRunning": 4,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4399
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 49,
+    "updateLayoutTree": 41,
+    "styleElements": 211,
+    "layout": 17,
+    "prePaint": 49,
+    "paint": 36,
+    "layerize": 49,
+    "io": 98,
+    "fireAnimationFrame": 4,
+    "countdownCalls": 16,
+    "timerFire": 19
+   }
+  },
+  {
+   "rep": 2,
+   "build": "C",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 175,
+    "updateLayoutTree": 168,
+    "styleElements": 1186,
+    "layout": 90,
+    "prePaint": 175,
+    "paint": 163,
+    "layerize": 175,
+    "io": 350,
+    "fireAnimationFrame": 106,
+    "countdownCalls": 110,
+    "timerFire": 16
+   }
+  },
+  {
+   "rep": 2,
+   "build": "C2",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 181,
+    "updateLayoutTree": 175,
+    "styleElements": 1205,
+    "layout": 98,
+    "prePaint": 181,
+    "paint": 179,
+    "layerize": 181,
+    "io": 362,
+    "fireAnimationFrame": 107,
+    "countdownCalls": 111,
+    "timerFire": 16
+   }
+  },
+  {
+   "rep": 2,
+   "build": "Vf",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 56
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 173,
+    "updateLayoutTree": 166,
+    "styleElements": 357,
+    "layout": 91,
+    "prePaint": 173,
+    "paint": 166,
+    "layerize": 173,
+    "io": 346,
+    "fireAnimationFrame": 106,
+    "countdownCalls": 110,
+    "timerFire": 16
+   }
+  },
+  {
+   "rep": 2,
+   "build": "S",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4211
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 118,
+    "updateLayoutTree": 106,
+    "styleElements": 289,
+    "layout": 8,
+    "prePaint": 118,
+    "paint": 25,
+    "layerize": 118,
+    "io": 236,
+    "fireAnimationFrame": 106,
+    "countdownCalls": 114,
+    "timerFire": 20
+   }
+  },
+  {
+   "rep": 2,
+   "build": "C6",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4222
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 119,
+    "updateLayoutTree": 108,
+    "styleElements": 181,
+    "layout": 14,
+    "prePaint": 119,
+    "paint": 39,
+    "layerize": 119,
+    "io": 238,
+    "fireAnimationFrame": 107,
+    "countdownCalls": 115,
+    "timerFire": 20
+   }
+  },
+  {
+   "rep": 2,
+   "build": "V7",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4399
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 53,
+    "updateLayoutTree": 45,
+    "styleElements": 230,
+    "layout": 20,
+    "prePaint": 53,
+    "paint": 41,
+    "layerize": 53,
+    "io": 106,
+    "fireAnimationFrame": 4,
+    "countdownCalls": 16,
+    "timerFire": 20
+   }
+  },
+  {
+   "rep": 3,
+   "build": "C",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 179,
+    "updateLayoutTree": 172,
+    "styleElements": 1190,
+    "layout": 94,
+    "prePaint": 179,
+    "paint": 171,
+    "layerize": 179,
+    "io": 358,
+    "fireAnimationFrame": 106,
+    "countdownCalls": 110,
+    "timerFire": 16
+   }
+  },
+  {
+   "rep": 3,
+   "build": "C2",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 181,
+    "updateLayoutTree": 175,
+    "styleElements": 1527,
+    "layout": 90,
+    "prePaint": 181,
+    "paint": 163,
+    "layerize": 181,
+    "io": 362,
+    "fireAnimationFrame": 140,
+    "countdownCalls": 144,
+    "timerFire": 16
+   }
+  },
+  {
+   "rep": 3,
+   "build": "Vf",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 56
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 180,
+    "updateLayoutTree": 174,
+    "styleElements": 432,
+    "layout": 97,
+    "prePaint": 180,
+    "paint": 185,
+    "layerize": 180,
+    "io": 360,
+    "fireAnimationFrame": 140,
+    "countdownCalls": 144,
+    "timerFire": 16
+   }
+  },
+  {
+   "rep": 3,
+   "build": "S",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4211
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 127,
+    "updateLayoutTree": 115,
+    "styleElements": 379,
+    "layout": 8,
+    "prePaint": 127,
+    "paint": 28,
+    "layerize": 127,
+    "io": 254,
+    "fireAnimationFrame": 142,
+    "countdownCalls": 150,
+    "timerFire": 20
+   }
+  },
+  {
+   "rep": 3,
+   "build": "C6",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4222
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 126,
+    "updateLayoutTree": 115,
+    "styleElements": 300,
+    "layout": 19,
+    "prePaint": 126,
+    "paint": 70,
+    "layerize": 126,
+    "io": 252,
+    "fireAnimationFrame": 207,
+    "countdownCalls": 215,
+    "timerFire": 20
+   }
+  },
+  {
+   "rep": 3,
+   "build": "V7",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 4,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4399
+   ],
+   "countdownScreenChanges": 2,
+   "counts": {
+    "mainFrames": 58,
+    "updateLayoutTree": 50,
+    "styleElements": 397,
+    "layout": 19,
+    "prePaint": 58,
+    "paint": 43,
+    "layerize": 58,
+    "io": 116,
+    "fireAnimationFrame": 5,
+    "countdownCalls": 18,
+    "timerFire": 20
+   }
+  }
+ ]
+}

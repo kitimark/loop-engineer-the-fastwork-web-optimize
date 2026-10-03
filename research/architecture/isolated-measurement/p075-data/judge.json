@@ -1,0 +1,1731 @@
+{
+ "chrome": {
+  "rows": [
+   {
+    "engine": "chrome",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "countdownCalls",
+    "fullB": [
+     108,
+     172,
+     146
+    ],
+    "fullC": [
+     132,
+     112,
+     112
+    ],
+    "frzB": [
+     110,
+     110,
+     144
+    ],
+    "frzC": [
+     178,
+     110,
+     110
+    ],
+    "dFULL": 23.33333333333333,
+    "dFRZ": -11.333333333333329,
+    "AA": 10.999999999999986,
+    "aaFlag": "",
+    "tol": 21.99999999999997,
+    "diff": 34.66666666666666,
+    "pass": false,
+    "noiseSensitive": true,
+    "fullWithinArmRange": 64,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "styleElements",
+    "fullB": [
+     1608,
+     1791,
+     1721
+    ],
+    "fullC": [
+     2670,
+     2514,
+     2512
+    ],
+    "frzB": [
+     329,
+     357,
+     432
+    ],
+    "frzC": [
+     1792,
+     1186,
+     1190
+    ],
+    "dFULL": -858.6666666666667,
+    "dFRZ": -1016.6666666666665,
+    "AA": 92.33333333333326,
+    "aaFlag": "",
+    "tol": 184.66666666666652,
+    "diff": 157.99999999999977,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 183,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "layout",
+    "fullB": [
+     103,
+     128,
+     125
+    ],
+    "fullC": [
+     102,
+     127,
+     128
+    ],
+    "frzB": [
+     69,
+     91,
+     97
+    ],
+    "frzC": [
+     63,
+     90,
+     94
+    ],
+    "dFULL": -0.3333333333333286,
+    "dFRZ": 3.333333333333343,
+    "AA": 2,
+    "aaFlag": "",
+    "tol": 4,
+    "diff": 3.6666666666666714,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 26,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "paint",
+    "fullB": [
+     356,
+     426,
+     411
+    ],
+    "fullC": [
+     330,
+     404,
+     400
+    ],
+    "frzB": [
+     126,
+     166,
+     185
+    ],
+    "frzC": [
+     118,
+     163,
+     171
+    ],
+    "dFULL": 19.666666666666686,
+    "dFRZ": 8.333333333333343,
+    "AA": 5.666666666666686,
+    "aaFlag": "",
+    "tol": 11.333333333333371,
+    "diff": 11.333333333333343,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 74,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "C6",
+    "ctrl": "S",
+    "judged": true,
+    "m": "countdownCalls",
+    "fullB": [
+     116,
+     112,
+     114
+    ],
+    "fullC": [
+     112,
+     148,
+     112
+    ],
+    "frzB": [
+     150,
+     115,
+     215
+    ],
+    "frzC": [
+     150,
+     114,
+     150
+    ],
+    "dFULL": -10,
+    "dFRZ": 22,
+    "AA": 10.999999999999986,
+    "aaFlag": "",
+    "tol": 21.99999999999997,
+    "diff": 32,
+    "pass": false,
+    "noiseSensitive": true,
+    "fullWithinArmRange": 36,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "C6",
+    "ctrl": "S",
+    "judged": true,
+    "m": "styleElements",
+    "fullB": [
+     1504,
+     1594,
+     1617
+    ],
+    "fullC": [
+     1602,
+     1817,
+     1684
+    ],
+    "frzB": [
+     221,
+     181,
+     300
+    ],
+    "frzC": [
+     383,
+     289,
+     379
+    ],
+    "dFULL": -129.33333333333326,
+    "dFRZ": -116.33333333333331,
+    "AA": 92.33333333333326,
+    "aaFlag": "",
+    "tol": 184.66666666666652,
+    "diff": 12.999999999999943,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 215,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "C6",
+    "ctrl": "S",
+    "judged": true,
+    "m": "layout",
+    "fullB": [
+     17,
+     17,
+     16
+    ],
+    "fullC": [
+     10,
+     9,
+     8
+    ],
+    "frzB": [
+     21,
+     14,
+     19
+    ],
+    "frzC": [
+     7,
+     8,
+     8
+    ],
+    "dFULL": 7.666666666666668,
+    "dFRZ": 10.333333333333332,
+    "AA": 2,
+    "aaFlag": "",
+    "tol": 4,
+    "diff": 2.6666666666666643,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 2,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "C6",
+    "ctrl": "S",
+    "judged": true,
+    "m": "paint",
+    "fullB": [
+     524,
+     578,
+     612
+    ],
+    "fullC": [
+     507,
+     564,
+     560
+    ],
+    "frzB": [
+     52,
+     39,
+     70
+    ],
+    "frzC": [
+     27,
+     25,
+     28
+    ],
+    "dFULL": 27.666666666666742,
+    "dFRZ": 26.999999999999996,
+    "AA": 5.666666666666686,
+    "aaFlag": "",
+    "tol": 11.333333333333371,
+    "diff": 0.666666666666746,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 88,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "countdownCalls",
+    "fullB": [
+     16,
+     16,
+     16
+    ],
+    "fullC": [
+     116,
+     112,
+     114
+    ],
+    "frzB": [
+     16,
+     16,
+     18
+    ],
+    "frzC": [
+     150,
+     115,
+     215
+    ],
+    "dFULL": -98,
+    "dFRZ": -143.33333333333334,
+    "AA": 10.999999999999986,
+    "aaFlag": "",
+    "tol": 21.99999999999997,
+    "diff": 45.33333333333334,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 4,
+    "realInteraction": true
+   },
+   {
+    "engine": "chrome",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "styleElements",
+    "fullB": [
+     1447,
+     1552,
+     1545
+    ],
+    "fullC": [
+     1504,
+     1594,
+     1617
+    ],
+    "frzB": [
+     211,
+     230,
+     397
+    ],
+    "frzC": [
+     221,
+     181,
+     300
+    ],
+    "dFULL": -57,
+    "dFRZ": 45.333333333333314,
+    "AA": 92.33333333333326,
+    "aaFlag": "",
+    "tol": 184.66666666666652,
+    "diff": 102.33333333333331,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 113,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "layout",
+    "fullB": [
+     20,
+     20,
+     20
+    ],
+    "fullC": [
+     17,
+     17,
+     16
+    ],
+    "frzB": [
+     17,
+     20,
+     19
+    ],
+    "frzC": [
+     21,
+     14,
+     19
+    ],
+    "dFULL": 3.333333333333332,
+    "dFRZ": 0.6666666666666679,
+    "AA": 2,
+    "aaFlag": "",
+    "tol": 4,
+    "diff": 2.6666666666666643,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 1,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "paint",
+    "fullB": [
+     494,
+     572,
+     580
+    ],
+    "fullC": [
+     524,
+     578,
+     612
+    ],
+    "frzB": [
+     36,
+     41,
+     43
+    ],
+    "frzC": [
+     52,
+     39,
+     70
+    ],
+    "dFULL": -22.666666666666742,
+    "dFRZ": -13.666666666666664,
+    "AA": 5.666666666666686,
+    "aaFlag": "",
+    "tol": 11.333333333333371,
+    "diff": 9.000000000000078,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 88,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "countdownCalls",
+    "fullB": [
+     116,
+     112,
+     114
+    ],
+    "fullC": [
+     132,
+     112,
+     112
+    ],
+    "frzB": [
+     150,
+     115,
+     215
+    ],
+    "frzC": [
+     178,
+     110,
+     110
+    ],
+    "dFULL": -4.666666666666671,
+    "dFRZ": 27.333333333333343,
+    "AA": 10.999999999999986,
+    "aaFlag": "",
+    "tol": 21.99999999999997,
+    "diff": 32.000000000000014,
+    "pass": false,
+    "noiseSensitive": true,
+    "fullWithinArmRange": 20,
+    "realInteraction": true
+   },
+   {
+    "engine": "chrome",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "styleElements",
+    "fullB": [
+     1504,
+     1594,
+     1617
+    ],
+    "fullC": [
+     2670,
+     2514,
+     2512
+    ],
+    "frzB": [
+     221,
+     181,
+     300
+    ],
+    "frzC": [
+     1792,
+     1186,
+     1190
+    ],
+    "dFULL": -993.6666666666667,
+    "dFRZ": -1155.3333333333333,
+    "AA": 92.33333333333326,
+    "aaFlag": "",
+    "tol": 184.66666666666652,
+    "diff": 161.66666666666652,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 158,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "layout",
+    "fullB": [
+     17,
+     17,
+     16
+    ],
+    "fullC": [
+     102,
+     127,
+     128
+    ],
+    "frzB": [
+     21,
+     14,
+     19
+    ],
+    "frzC": [
+     63,
+     90,
+     94
+    ],
+    "dFULL": -102.33333333333333,
+    "dFRZ": -64.33333333333333,
+    "AA": 2,
+    "aaFlag": "",
+    "tol": 9.649999999999999,
+    "diff": 38,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 26,
+    "realInteraction": true
+   },
+   {
+    "engine": "chrome",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "paint",
+    "fullB": [
+     524,
+     578,
+     612
+    ],
+    "fullC": [
+     330,
+     404,
+     400
+    ],
+    "frzB": [
+     52,
+     39,
+     70
+    ],
+    "frzC": [
+     118,
+     163,
+     171
+    ],
+    "dFULL": 193.33333333333337,
+    "dFRZ": -97,
+    "AA": 5.666666666666686,
+    "aaFlag": "",
+    "tol": 14.549999999999999,
+    "diff": 290.33333333333337,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 88,
+    "realInteraction": true
+   },
+   {
+    "engine": "chrome",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "countdownCalls",
+    "fullB": [
+     16,
+     16,
+     16
+    ],
+    "fullC": [
+     132,
+     112,
+     112
+    ],
+    "frzB": [
+     16,
+     16,
+     18
+    ],
+    "frzC": [
+     178,
+     110,
+     110
+    ],
+    "dFULL": -102.66666666666667,
+    "dFRZ": -115.99999999999999,
+    "AA": 10.999999999999986,
+    "aaFlag": "",
+    "tol": 21.99999999999997,
+    "diff": 13.333333333333314,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 20,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "styleElements",
+    "fullB": [
+     1447,
+     1552,
+     1545
+    ],
+    "fullC": [
+     2670,
+     2514,
+     2512
+    ],
+    "frzB": [
+     211,
+     230,
+     397
+    ],
+    "frzC": [
+     1792,
+     1186,
+     1190
+    ],
+    "dFULL": -1050.6666666666667,
+    "dFRZ": -1110,
+    "AA": 92.33333333333326,
+    "aaFlag": "",
+    "tol": 184.66666666666652,
+    "diff": 59.33333333333326,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 158,
+    "realInteraction": false
+   },
+   {
+    "engine": "chrome",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "layout",
+    "fullB": [
+     20,
+     20,
+     20
+    ],
+    "fullC": [
+     102,
+     127,
+     128
+    ],
+    "frzB": [
+     17,
+     20,
+     19
+    ],
+    "frzC": [
+     63,
+     90,
+     94
+    ],
+    "dFULL": -99,
+    "dFRZ": -63.66666666666666,
+    "AA": 2,
+    "aaFlag": "",
+    "tol": 9.549999999999999,
+    "diff": 35.33333333333334,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 26,
+    "realInteraction": true
+   },
+   {
+    "engine": "chrome",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "paint",
+    "fullB": [
+     494,
+     572,
+     580
+    ],
+    "fullC": [
+     330,
+     404,
+     400
+    ],
+    "frzB": [
+     36,
+     41,
+     43
+    ],
+    "frzC": [
+     118,
+     163,
+     171
+    ],
+    "dFULL": 170.66666666666663,
+    "dFRZ": -110.66666666666666,
+    "AA": 5.666666666666686,
+    "aaFlag": "",
+    "tol": 16.599999999999998,
+    "diff": 281.33333333333326,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 86,
+    "realInteraction": true
+   }
+  ],
+  "miss": {
+   "countdownCalls": [
+    "Vf",
+    "C6",
+    "V7"
+   ]
+  },
+  "aa": {
+   "countdownCalls": 10.999999999999986,
+   "styleElements": 92.33333333333326,
+   "layout": 2,
+   "paint": 5.666666666666686
+  },
+  "aaInfo": {
+   "countdownCalls": {
+    "v": 10.999999999999986,
+    "flag": ""
+   },
+   "styleElements": {
+    "v": 92.33333333333326,
+    "flag": ""
+   },
+   "layout": {
+    "v": 2,
+    "flag": ""
+   },
+   "paint": {
+    "v": 5.666666666666686,
+    "flag": ""
+   }
+  },
+  "family": {
+   "countdownCalls": "FAIL",
+   "styleElements": "PASS",
+   "layout": "PASS",
+   "paint": "PASS"
+  },
+  "nJudged": 3,
+  "need": 2,
+  "voidFrz": [],
+  "frzScreenChanges": "C:2 C2:2 Vf:2 S:2 C6:2 V7:2 C:2 C2:2 Vf:2 S:2 C6:2 V7:2 C:2 C2:2 Vf:2 S:2 C6:2 V7:2",
+  "n": {
+   "full": {
+    "C": 3,
+    "C2": 3,
+    "Vf": 3,
+    "S": 3,
+    "C6": 3,
+    "V7": 3
+   },
+   "freeze": {
+    "C": 3,
+    "C2": 3,
+    "Vf": 3,
+    "S": 3,
+    "C6": 3,
+    "V7": 3
+   }
+  },
+  "pageWide": {
+   "C": {
+    "full": {
+     "mainFrames": 240.33333333333334,
+     "layerize": 240.33333333333334,
+     "io": 480.6666666666667
+    },
+    "freeze": {
+     "mainFrames": 170,
+     "layerize": 170,
+     "io": 340
+    }
+   },
+   "C2": {
+    "full": {
+     "mainFrames": 240,
+     "layerize": 240,
+     "io": 480
+    },
+    "freeze": {
+     "mainFrames": 170.66666666666666,
+     "layerize": 170.66666666666666,
+     "io": 341.3333333333333
+    }
+   },
+   "Vf": {
+    "full": {
+     "mainFrames": 240.33333333333334,
+     "layerize": 240.33333333333334,
+     "io": 480.6666666666667
+    },
+    "freeze": {
+     "mainFrames": 168,
+     "layerize": 168,
+     "io": 336
+    }
+   },
+   "S": {
+    "full": {
+     "mainFrames": 200.66666666666666,
+     "layerize": 200.66666666666666,
+     "io": 401.3333333333333
+    },
+    "freeze": {
+     "mainFrames": 126.66666666666667,
+     "layerize": 126.66666666666667,
+     "io": 253.33333333333334
+    }
+   },
+   "C6": {
+    "full": {
+     "mainFrames": 202.33333333333334,
+     "layerize": 202,
+     "io": 404
+    },
+    "freeze": {
+     "mainFrames": 125.33333333333333,
+     "layerize": 125.33333333333333,
+     "io": 250.66666666666666
+    }
+   },
+   "V7": {
+    "full": {
+     "mainFrames": 161.66666666666666,
+     "layerize": 161.66666666666666,
+     "io": 323.3333333333333
+    },
+    "freeze": {
+     "mainFrames": 53.333333333333336,
+     "layerize": 53.333333333333336,
+     "io": 106.66666666666667
+    }
+   }
+  }
+ },
+ "sim": {
+  "rows": [
+   {
+    "engine": "sim",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "RenderingFrame",
+    "fullB": [
+     198,
+     210
+    ],
+    "fullC": [
+     199,
+     207
+    ],
+    "frzB": [
+     140,
+     145
+    ],
+    "frzC": [
+     140,
+     142
+    ],
+    "dFULL": 1,
+    "dFRZ": 1.5,
+    "AA": 8,
+    "aaFlag": "",
+    "tol": 16,
+    "diff": 0.5,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 12,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "RecalculateStyles",
+    "fullB": [
+     207,
+     218
+    ],
+    "fullC": [
+     210,
+     215
+    ],
+    "frzB": [
+     146,
+     152
+    ],
+    "frzC": [
+     147,
+     149
+    ],
+    "dFULL": 0,
+    "dFRZ": 1,
+    "AA": 5,
+    "aaFlag": "",
+    "tol": 10,
+    "diff": 1,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 11,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "Layout",
+    "fullB": [
+     188,
+     195
+    ],
+    "fullC": [
+     190,
+     192
+    ],
+    "frzB": [
+     69,
+     69
+    ],
+    "frzC": [
+     66,
+     65
+    ],
+    "dFULL": 0.5,
+    "dFRZ": 3.5,
+    "AA": 2,
+    "aaFlag": "",
+    "tol": 4,
+    "diff": 3,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 7,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "Paint",
+    "fullB": [
+     164,
+     172
+    ],
+    "fullC": [
+     165,
+     180
+    ],
+    "frzB": [
+     66,
+     67
+    ],
+    "frzC": [
+     67,
+     67
+    ],
+    "dFULL": -4.5,
+    "dFRZ": -0.5,
+    "AA": 15,
+    "aaFlag": "",
+    "tol": 30,
+    "diff": 4,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 15,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "Composite",
+    "fullB": [
+     201,
+     212
+    ],
+    "fullC": [
+     204,
+     208
+    ],
+    "frzB": [
+     140,
+     146
+    ],
+    "frzC": [
+     140,
+     143
+    ],
+    "dFULL": 0.5,
+    "dFRZ": 1.5,
+    "AA": 4,
+    "aaFlag": "",
+    "tol": 8,
+    "diff": 1,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 11,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "Vf",
+    "ctrl": "C",
+    "judged": true,
+    "m": "countdownRaf",
+    "fullB": [
+     99,
+     100
+    ],
+    "fullC": [
+     98,
+     99
+    ],
+    "frzB": [
+     102,
+     106
+    ],
+    "frzC": [
+     103,
+     104
+    ],
+    "dFULL": 1,
+    "dFRZ": 0.5,
+    "AA": 1,
+    "aaFlag": "",
+    "tol": 2,
+    "diff": 0.5,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 1,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "RenderingFrame",
+    "fullB": [
+     198,
+     185
+    ],
+    "fullC": [
+     210,
+     214
+    ],
+    "frzB": [
+     47,
+     54
+    ],
+    "frzC": [
+     101,
+     117
+    ],
+    "dFULL": -20.5,
+    "dFRZ": -58.5,
+    "AA": 8,
+    "aaFlag": "",
+    "tol": 16,
+    "diff": 38,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 13,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "RecalculateStyles",
+    "fullB": [
+     209,
+     197
+    ],
+    "fullC": [
+     221,
+     225
+    ],
+    "frzB": [
+     49,
+     55
+    ],
+    "frzC": [
+     109,
+     127
+    ],
+    "dFULL": -20,
+    "dFRZ": -66,
+    "AA": 5,
+    "aaFlag": "",
+    "tol": 10,
+    "diff": 46,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 12,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "Layout",
+    "fullB": [
+     171,
+     160
+    ],
+    "fullC": [
+     158,
+     171
+    ],
+    "frzB": [
+     16,
+     17
+    ],
+    "frzC": [
+     12,
+     17
+    ],
+    "dFULL": 1,
+    "dFRZ": 2,
+    "AA": 2,
+    "aaFlag": "",
+    "tol": 4,
+    "diff": 1,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 13,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "Paint",
+    "fullB": [
+     222,
+     214
+    ],
+    "fullC": [
+     178,
+     192
+    ],
+    "frzB": [
+     61,
+     62
+    ],
+    "frzC": [
+     22,
+     30
+    ],
+    "dFULL": 33,
+    "dFRZ": 35.5,
+    "AA": 15,
+    "aaFlag": "",
+    "tol": 30,
+    "diff": 2.5,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 14,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "Composite",
+    "fullB": [
+     199,
+     186
+    ],
+    "fullC": [
+     210,
+     214
+    ],
+    "frzB": [
+     47,
+     54
+    ],
+    "frzC": [
+     101,
+     117
+    ],
+    "dFULL": -19.5,
+    "dFRZ": -58.5,
+    "AA": 4,
+    "aaFlag": "",
+    "tol": 8.775,
+    "diff": 39,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 13,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C6",
+    "judged": true,
+    "m": "countdownRaf",
+    "fullB": [
+     6,
+     5
+    ],
+    "fullC": [
+     105,
+     138
+    ],
+    "frzB": [
+     5,
+     5
+    ],
+    "frzC": [
+     96,
+     137
+    ],
+    "dFULL": -116,
+    "dFRZ": -111.5,
+    "AA": 1,
+    "aaFlag": "",
+    "tol": 16.724999999999998,
+    "diff": 4.5,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 33,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "RenderingFrame",
+    "fullB": [
+     210,
+     214
+    ],
+    "fullC": [
+     199,
+     207
+    ],
+    "frzB": [
+     101,
+     117
+    ],
+    "frzC": [
+     140,
+     142
+    ],
+    "dFULL": 9,
+    "dFRZ": -32,
+    "AA": 8,
+    "aaFlag": "",
+    "tol": 16,
+    "diff": 41,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 8,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "RecalculateStyles",
+    "fullB": [
+     221,
+     225
+    ],
+    "fullC": [
+     210,
+     215
+    ],
+    "frzB": [
+     109,
+     127
+    ],
+    "frzC": [
+     147,
+     149
+    ],
+    "dFULL": 10.5,
+    "dFRZ": -30,
+    "AA": 5,
+    "aaFlag": "",
+    "tol": 10,
+    "diff": 40.5,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 5,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "Layout",
+    "fullB": [
+     158,
+     171
+    ],
+    "fullC": [
+     190,
+     192
+    ],
+    "frzB": [
+     12,
+     17
+    ],
+    "frzC": [
+     66,
+     65
+    ],
+    "dFULL": -26.5,
+    "dFRZ": -51,
+    "AA": 2,
+    "aaFlag": "",
+    "tol": 7.6499999999999995,
+    "diff": 24.5,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 13,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "Paint",
+    "fullB": [
+     178,
+     192
+    ],
+    "fullC": [
+     165,
+     180
+    ],
+    "frzB": [
+     22,
+     30
+    ],
+    "frzC": [
+     67,
+     67
+    ],
+    "dFULL": 12.5,
+    "dFRZ": -41,
+    "AA": 15,
+    "aaFlag": "",
+    "tol": 30,
+    "diff": 53.5,
+    "pass": false,
+    "noiseSensitive": true,
+    "fullWithinArmRange": 15,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "Composite",
+    "fullB": [
+     210,
+     214
+    ],
+    "fullC": [
+     204,
+     208
+    ],
+    "frzB": [
+     101,
+     117
+    ],
+    "frzC": [
+     140,
+     143
+    ],
+    "dFULL": 6,
+    "dFRZ": -32.5,
+    "AA": 4,
+    "aaFlag": "",
+    "tol": 8,
+    "diff": 38.5,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 4,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "C6",
+    "ctrl": "C",
+    "judged": false,
+    "m": "countdownRaf",
+    "fullB": [
+     105,
+     138
+    ],
+    "fullC": [
+     98,
+     99
+    ],
+    "frzB": [
+     96,
+     137
+    ],
+    "frzC": [
+     103,
+     104
+    ],
+    "dFULL": 23,
+    "dFRZ": 13,
+    "AA": 1,
+    "aaFlag": "",
+    "tol": 2,
+    "diff": 10,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 33,
+    "realInteraction": false
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "RenderingFrame",
+    "fullB": [
+     198,
+     185
+    ],
+    "fullC": [
+     199,
+     207
+    ],
+    "frzB": [
+     47,
+     54
+    ],
+    "frzC": [
+     140,
+     142
+    ],
+    "dFULL": -11.5,
+    "dFRZ": -90.5,
+    "AA": 8,
+    "aaFlag": "",
+    "tol": 16,
+    "diff": 79,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 13,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "RecalculateStyles",
+    "fullB": [
+     209,
+     197
+    ],
+    "fullC": [
+     210,
+     215
+    ],
+    "frzB": [
+     49,
+     55
+    ],
+    "frzC": [
+     147,
+     149
+    ],
+    "dFULL": -9.5,
+    "dFRZ": -96,
+    "AA": 5,
+    "aaFlag": "",
+    "tol": 14.399999999999999,
+    "diff": 86.5,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 12,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "Layout",
+    "fullB": [
+     171,
+     160
+    ],
+    "fullC": [
+     190,
+     192
+    ],
+    "frzB": [
+     16,
+     17
+    ],
+    "frzC": [
+     66,
+     65
+    ],
+    "dFULL": -25.5,
+    "dFRZ": -49,
+    "AA": 2,
+    "aaFlag": "",
+    "tol": 7.35,
+    "diff": 23.5,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 11,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "Paint",
+    "fullB": [
+     222,
+     214
+    ],
+    "fullC": [
+     165,
+     180
+    ],
+    "frzB": [
+     61,
+     62
+    ],
+    "frzC": [
+     67,
+     67
+    ],
+    "dFULL": 45.5,
+    "dFRZ": -5.5,
+    "AA": 15,
+    "aaFlag": "",
+    "tol": 30,
+    "diff": 51,
+    "pass": false,
+    "noiseSensitive": true,
+    "fullWithinArmRange": 15,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "Composite",
+    "fullB": [
+     199,
+     186
+    ],
+    "fullC": [
+     204,
+     208
+    ],
+    "frzB": [
+     47,
+     54
+    ],
+    "frzC": [
+     140,
+     143
+    ],
+    "dFULL": -13.5,
+    "dFRZ": -91,
+    "AA": 4,
+    "aaFlag": "",
+    "tol": 13.65,
+    "diff": 77.5,
+    "pass": false,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 13,
+    "realInteraction": true
+   },
+   {
+    "engine": "sim",
+    "b": "V7",
+    "ctrl": "C",
+    "judged": false,
+    "m": "countdownRaf",
+    "fullB": [
+     6,
+     5
+    ],
+    "fullC": [
+     98,
+     99
+    ],
+    "frzB": [
+     5,
+     5
+    ],
+    "frzC": [
+     103,
+     104
+    ],
+    "dFULL": -93,
+    "dFRZ": -98.5,
+    "AA": 1,
+    "aaFlag": "",
+    "tol": 14.774999999999999,
+    "diff": 5.5,
+    "pass": true,
+    "noiseSensitive": false,
+    "fullWithinArmRange": 1,
+    "realInteraction": false
+   }
+  ],
+  "miss": {
+   "RenderingFrame": [
+    "V7"
+   ],
+   "RecalculateStyles": [
+    "V7"
+   ],
+   "Composite": [
+    "V7"
+   ]
+  },
+  "aa": {
+   "RenderingFrame": 8,
+   "RecalculateStyles": 5,
+   "Layout": 2,
+   "Paint": 15,
+   "Composite": 4,
+   "countdownRaf": 1
+  },
+  "aaInfo": {
+   "RenderingFrame": {
+    "v": 8,
+    "flag": ""
+   },
+   "RecalculateStyles": {
+    "v": 5,
+    "flag": ""
+   },
+   "Layout": {
+    "v": 2,
+    "flag": ""
+   },
+   "Paint": {
+    "v": 15,
+    "flag": ""
+   },
+   "Composite": {
+    "v": 4,
+    "flag": ""
+   },
+   "countdownRaf": {
+    "v": 1,
+    "flag": ""
+   }
+  },
+  "family": {
+   "RenderingFrame": "PASS",
+   "RecalculateStyles": "PASS",
+   "Layout": "PASS",
+   "Paint": "PASS",
+   "Composite": "PASS",
+   "countdownRaf": "PASS"
+  },
+  "nJudged": 2,
+  "need": 2,
+  "ticks": "C/full/r1:4 C/freeze/r1:4 Vf/full/r1:4 Vf/freeze/r1:4 C6/full/r1:4 C6/freeze/r1:4 V7/full/r1:8 V7/freeze/r1:8 V7/freeze/r2:8 V7/full/r2:8 C6/freeze/r2:4 C6/full/r2:4 Vf/freeze/r2:4 Vf/full/r2:4 C/freeze/r2:4 C/full/r2:4"
+ }
+}
