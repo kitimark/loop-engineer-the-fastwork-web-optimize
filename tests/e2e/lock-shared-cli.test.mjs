@@ -150,11 +150,15 @@ test('deadline: a reader overrunning --max-seconds is hard-killed (exit 124) bef
   const pidFile = join(dir, 'pid');
   const child = `require('fs').writeFileSync(${JSON.stringify(pidFile)},String(process.pid));process.on('SIGTERM',()=>{});setInterval(()=>{},1000)`;
   const run = lockAsync('run', 'chrome-measure', '--shared', '--max-seconds', '2', '--owner', 'stuck', '--', process.execPath, '-e', child);
-  await until(() => holder()?.readers?.length === 1 && existsSync(pidFile));
+  // I-099: the file exists (writeFileSync's open) before its pid is written; reading it then gave pid 0, and
+  // kill(0, 0) signals this test's own process group, so "alive" was true for a dead command
+  const pidNow = () => { try { const s = readFileSync(pidFile, 'utf8'); return /^\d+$/.test(s) ? Number(s) : 0; } catch { return 0; } };
+  await until(() => holder()?.readers?.length === 1 && pidNow() > 1);
   const expiresAt = Date.parse(holder().expiresAt);
   const deadline = Date.parse(holder().readers[0].deadline); // acquiredAt + maxSec + killGraceSec (N3: the tighter bound)
   assert.ok(deadline < expiresAt);
-  const pid = Number(readFileSync(pidFile, 'utf8'));
+  const pid = pidNow();
+  assert.ok(pid > 1, `a real pid (${pid})`);
   const r = await run;
   assert.equal(r.code, 124, r.out);
   assert.equal(alive(pid), false, 'the SIGTERM-ignoring command is dead');

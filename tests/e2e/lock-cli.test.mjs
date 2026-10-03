@@ -3,7 +3,7 @@
 // code, releases after, and does not leave the command running when it is killed).
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, nodeAsync, startProc, tool, sleep, TESTS } from '../helpers.mjs';
 
@@ -281,6 +281,53 @@ test('a signal to a bounded run (--short) gives the command a 3 s grace for its 
   for (let i = 0; i < 40 && !(gone = left.every((x) => !alive(x))); i++) await sleep(50);
   for (const x of left) if (alive(x)) process.kill(x, 'SIGKILL');
   assert.ok(gone, 'no process of the short job outlives the signal and its grace (I-024)');
+});
+
+// I-099 (2026-10-04): `run` exited 124 and released its lock right after the hard kill, without confirming that the
+// killed tree was gone, so the next holder could start beside a dying process. FW_LOCK_TEST_KILL_DELAY_MS makes the
+// SIGKILL to a process outside the command's group land that late, as a kill not yet delivered would: `run` must wait
+// it out (at most 1.5 s) before it releases and exits, and name what still runs at that bound (stderr, holds.log).
+test('I-099: after the hard kill, run waits until the killed tree is gone before it releases; a survivor at the 1.5 s bound is named', async (t) => {
+  const pids = join(state, 'pids');
+  const gc = `process.on('SIGTERM', () => {}); require('fs').appendFileSync(${JSON.stringify(pids)}, process.pid + '\\n'); setInterval(() => {}, 1000);`;
+  // a SIGTERM-ignoring command with a SIGTERM-ignoring grandchild in its own process group
+  const cmd = `process.on('SIGTERM', () => {}); require('child_process').spawn(process.execPath, ['-e', ${JSON.stringify(gc)}], { stdio: 'ignore', detached: true });
+    const t = setInterval(() => { try { if (/^\\d+\\n$/.test(require('fs').readFileSync(${JSON.stringify(pids)}, 'utf8'))) { clearInterval(t); console.log('CHILD UP'); } } catch {} }, 20);
+    setInterval(() => {}, 1000);`;
+  const started = [];
+  t.after(() => { for (const x of started) try { process.kill(x, 'SIGKILL'); } catch {} }); // a failed assertion leaves no grandchild behind
+  const gcPid = () => { const s = readFileSync(pids, 'utf8'); assert.match(s, /^\d+\n$/); started.push(Number(s)); return Number(s); };
+  const lastHold = () => readFileSync(join(state, 'locks', 'holds.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).pop();
+  const kenv = (ms) => ({ env: { ...env, FW_LOCK_TEST_KILL_DELAY_MS: String(ms) } });
+  // max-seconds path: the grandchild's SIGKILL lands 700 ms late; run must not exit before it is gone
+  let r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '2', '--', process.execPath, '-e', cmd], kenv(700));
+  let p = gcPid();
+  assert.equal(alive(p), false, 'the grandchild is gone when run exits (no polling grace)');
+  assert.equal(r.code, 124, r.out);
+  assert.equal(holder('chrome-measure'), null, 'released');
+  assert.doesNotMatch(r.stderr, /still ran/);
+  assert.deepEqual([lastHold().code, lastHold().survivors], [124, undefined]);
+  // signal path: a SIGTERM to the run, its 3 s grace, the SIGKILL, then the same wait
+  rmSync(pids);
+  const s = await startProc(process.execPath, [LOCK, 'run', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '60', '--', process.execPath, '-e', cmd], { ...kenv(700), ready: (o) => /CHILD UP/.test(o) });
+  p = gcPid();
+  s.proc.kill('SIGTERM');
+  const e = await s.exited;
+  assert.equal(alive(p), false, 'signal path: the grandchild is gone when run exits');
+  assert.equal(e.code, 130);
+  assert.equal(holder('chrome-measure'), null, 'released');
+  assert.deepEqual([lastHold().code, lastHold().signal, lastHold().survivors], [130, 'SIGTERM', undefined]);
+  // a kill that does not land within the bound: run gives up after 1.5 s, says so, and records the survivor
+  rmSync(pids);
+  const t0 = Date.now();
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '2', '--', process.execPath, '-e', cmd], kenv(60000));
+  const took = Date.now() - t0;
+  p = gcPid();
+  assert.equal(r.code, 124, r.out);
+  assert.match(r.stderr, new RegExp(`1 process of the command's tree still ran 1500 ms after the SIGKILL \\(pid ${p}\\); releasing the lock anyway \\(I-099\\)`));
+  assert.deepEqual([lastHold().code, lastHold().survivors], [124, [p]]);
+  assert.equal(holder('chrome-measure'), null, 'released');
+  assert.ok(took < 12000, `bounded (${took} ms)`);
 });
 
 test('I-070 (C-024, narrows I-026): a timing hold runs under caffeinate: run (-i -s -w its pid), a lease (-t until expiry), ended on release; holds.log and status say so', async () => {

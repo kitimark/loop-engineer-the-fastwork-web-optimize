@@ -41,7 +41,7 @@
 // --short --max-seconds N (N <= 300; default 120): the short lane for jobs like `npm test` (~35 s).
 // Waits for the current holder, then is served before earlier normal waiters (queued short jobs run
 // back to back, all of them, while the run fits 900 s, SHORT_DRAIN_SEC (I-020); then a normal waiter; a normal
-// waiter the lead moved ahead of short jobs goes before them). The hold ends at N s: `run` kills the command (and its children) and
+// waiter the lead moved ahead of short jobs goes before them). The hold ends at N s: `run` kills the command (and its children), waits up to 1.5 s until they are gone (I-099), and
 // exits 124; a short lease just expires (it cannot be renewed). Keep polling while you wait (`run`
 // and `acquire --wait` do): a short queue place is dropped after 60 s without a retry.
 //
@@ -71,7 +71,7 @@
 // Every chrome-measure `run` hold (exclusive, short, no-timing, shared reader; not a re-entry) writes one JSON line to
 // locks/holds.log at its end (I-056 (d)): owner, mode, weight / maxSec (shared), acquiredAt, endedAt, durationSec and
 // the exit code (124 with killed: "max-seconds" when --max-seconds stopped it, 130 with the signal when `run` was
-// signalled). A timing or short hold's line also records the display on/off, FullWake/DarkWake, power source and whether a
+// signalled; survivors: [pid, ...] when a process of the killed tree still ran 1.5 s after the SIGKILL, I-099). A timing or short hold's line also records the display on/off, FullWake/DarkWake, power source and whether a
 // display-sleep-preventing assertion (caffeinate -d) was active at its start and end; it warns on stderr when no such assertion is active, the host is already asleep (display off or DarkWake) at the start, or the display / wake state changed (T8+, I-033).
 // A host sleep inside a gate window makes that window not quiet; the grant's gate record carries sleptSec / woke (I-033).
 //
@@ -133,7 +133,8 @@
 // (verify.mjs, fix.mjs ab, bench gain, a normal or --short run) is refused at once. Timing tools refuse --shared.
 // The lane is OFF unless the lead switched it on; while off, --shared runs as an exclusive --short job (same
 // --max-seconds; a notice on stderr) whose command gets FW_LOCK_SHARED too, so nothing timed starts inside it. `status` shows the group, its readers and the switch.
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
+import { psTable, descendants, treeState, waitTreeGone } from './lib/proc-tree.mjs'; // I-024, I-099: the command's tree, and the wait until it is gone
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct, handoverText } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
 import { appendFileSync } from 'node:fs';
@@ -171,6 +172,10 @@ const NORMAL_HOLD_SEC = 600; // a normal chrome-measure hold should end within ~
 // a bounded run's tree gets this long after SIGTERM (at --max-seconds, or a signal to the run) before the SIGKILL (I-024);
 // it stays inside a reader's recorded deadline grace (SHARED_LANE.killGraceSec, 5 s)
 const KILL_GRACE_MS = 3000;
+// I-099: after the SIGKILL, a bounded run waits up to this long until every process of the killed tree is gone (or a
+// zombie this process reaps) before it releases and exits; grace + this (4.5 s) stays inside killGraceSec (5 s).
+// A process still running at the bound is named on stderr and in the holds.log line (`survivors`).
+const TREE_GONE_MS = 1500;
 // a normal hold that declared its length (`run --max-seconds`, I-020) and passed it
 const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > Date.parse(h.acquiredAt) + h.meta.expectSec * 1000 ? ` OVERDUE (past its ${h.meta.expectSec} s; split long measurements into holds of 5-10 min, I-020)` : '');
 
@@ -423,18 +428,40 @@ async function main() {
     // command), and orphans lose their parent link once the command exits. So every kill also signals each
     // descendant seen so far (pid + its group, re-checked by pgid against pid reuse), not only the group.
     let seen = new Map();
+    // tests only (I-099): the SIGKILL to a process outside the command's own group lands this many ms late, as a kill
+    // not yet delivered would; confirmGone() delivers it when it is due
+    const killDelayMs = Number(process.env.FW_LOCK_TEST_KILL_DELAY_MS) || 0;
+    let deferred = null; // { at, targets: Map pid -> pgid }
+    const signalOne = (p, g, own, sig) => {
+      if (g !== own && g !== child.pid) { try { process.kill(-g, sig); } catch {} }
+      try { process.kill(p, sig); } catch {}
+    };
     const killTree = (sig) => {
-      const rows = psRows(), own = rows.find(([p]) => p === process.pid)?.[2];
+      const rows = psTable(), own = rows.find(([p]) => p === process.pid)?.[2];
       for (const [p, g] of descendants(rows, child.pid)) seen.set(p, g);
       const live = new Map(rows.map(([p, , g]) => [p, g]));
       try { process.kill(-child.pid, sig); } catch {}
       for (const [p, g] of seen) {
         if (live.get(p) !== g) continue; // gone (or the pid was reused)
-        if (g !== own && g !== child.pid) { try { process.kill(-g, sig); } catch {} }
-        try { process.kill(p, sig); } catch {}
+        if (sig === 'SIGKILL' && killDelayMs && g !== child.pid) { deferred ||= { at: Date.now() + killDelayMs, own, targets: new Map() }; deferred.targets.set(p, g); continue; }
+        signalOne(p, g, own, sig);
       }
     };
     const kill = (sig) => { try { if (bounded) killTree(sig); else child.kill(sig); } catch {} };
+    const deliverDeferred = () => {
+      if (!deferred || Date.now() < deferred.at) return;
+      for (const [p, g] of deferred.targets) signalOne(p, g, deferred.own, 'SIGKILL');
+      deferred = null;
+    };
+    // I-099: after the hard kill, wait (synchronously, at most TREE_GONE_MS) until every process of the killed tree is
+    // gone, so the lock is never released beside a dying process; what still runs at the bound is reported on stderr
+    // and returned for the holds.log line ({ survivors: [pid, ...] })
+    const confirmGone = () => {
+      const r = waitTreeGone(() => treeState(psTable(), child.pid, seen), { boundMs: TREE_GONE_MS, onPoll: deliverDeferred });
+      if (r.gone || !r.alive.length) return {};
+      console.error(`[lock ${resource}] ${r.alive.length} process${r.alive.length === 1 ? '' : 'es'} of the command's tree still ran ${TREE_GONE_MS} ms after the SIGKILL (pid ${r.alive.join(', ')}); releasing the lock anyway (I-099)`);
+      return { survivors: r.alive };
+    };
     // acquire() releases the lock and exits on these signals; stop the command first, or it would keep
     // running (e.g. a throttled measurement) after the lock was handed to the next waiter.
     // a bounded (short or shared) job then gets SIGKILL too, after its grace (graceKill below): acquire()'s handler releases the lock and exits right after this
@@ -452,16 +479,19 @@ async function main() {
     };
     // a bounded run's tree gets the max-seconds path's grace (KILL_GRACE_MS) to clean up (temp Chrome profiles, I-095)
     // before the SIGKILL that still reaches the whole tree (I-024); it waits synchronously: acquire()'s listener, which
-    // releases the lock and exits, runs right after this one, so the lock stays held until the tree is gone
+    // releases the lock and exits, runs right after this one, so the lock stays held until the tree is gone (I-099:
+    // confirmed after the SIGKILL too)
     const graceKill = () => {
-      for (const t = Date.now() + KILL_GRACE_MS; Date.now() < t && treeAlive(child.pid, seen);) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+      for (const t = Date.now() + KILL_GRACE_MS; Date.now() < t && treeState(psTable(), child.pid, seen).alive.length;) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
       kill('SIGKILL');
+      return confirmGone();
     };
-    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); if (bounded) graceKill(); logHold(Date.now(), { code: 130, signal: sig }); });
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); const left = bounded ? graceKill() : {}; logHold(Date.now(), { code: 130, signal: sig, ...left }); });
     // wall-clock deadlines checked every second (I-026): a timer's clock stalls while the Mac sleeps
     // (Maintenance Sleep / DarkWake), so after a wake the cap is enforced at once, not minutes later.
     // A reader counts from its own acquiredAt: its SIGKILL (deadline + 3 s) lands inside its recorded deadline
-    // (+ killGraceSec 5 s), which the group's expiresAt exceeds by 10 s, so old lock code never clears the group
+    // (+ killGraceSec 5 s), as does the wait until its tree is gone (+ TREE_GONE_MS 1.5 s, I-099), which the group's
+    // expiresAt exceeds by 10 s, so old lock code never clears the group
     // while this command can still run
     let overran = false;
     const deadline = (mode === 'shared' ? Date.parse(reader.acquiredAt) : Date.now()) + (maxSec || 0) * 1000;
@@ -478,8 +508,10 @@ async function main() {
     const endedAt = Date.now();
     clearInterval(timer);
     clearTimeout(warn);
-    if (overran) kill('SIGKILL'); // anything in the tree that ignored SIGTERM (or was orphaned when the command exited)
-    const exit = overran ? { code: 124, killed: 'max-seconds' } : { code };
+    // anything in the tree that ignored SIGTERM (or was orphaned when the command exited); I-099: then wait until it is gone
+    let left = {};
+    if (overran) { kill('SIGKILL'); left = confirmGone(); }
+    const exit = overran ? { code: 124, killed: 'max-seconds', ...left } : { code };
     if (powerStart) {
       const powerEnd = await hostPower();
       const hs = hostStateSummary([{ label: owner, run: 0, power: { start: powerStart, end: powerEnd } }]);
@@ -506,32 +538,6 @@ async function waitCmd() {
   if (r.result === 'met') { console.log(`MET ${what}: ${r.state}${holdSec ? ` (for ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return WAIT_EXIT.met; }
   console.log(`TIMEOUT ${what} after ${r.waitedSec} s: ${r.state}`);
   return WAIT_EXIT.timeout;
-}
-
-/** [pid, ppid, pgid] of every process (ps), or [] if ps fails. */
-function psRows() {
-  try { return execFileSync('ps', ['-A', '-o', 'pid=,ppid=,pgid='], { encoding: 'utf8' }).trim().split('\n').map((l) => l.trim().split(/\s+/).map(Number)); } catch { return []; }
-}
-/**
- * Whether the command `root` or a process of its tree seen so far (`seen`: pid -> pgid, as killTree collects it) still
- * runs: listed by ps, not a zombie (the command stays one until this process reaps it), same pgid (pid reuse).
- */
-function treeAlive(root, seen) {
-  let rows;
-  try { rows = execFileSync('ps', ['-A', '-o', 'pid=,ppid=,pgid=,stat='], { encoding: 'utf8' }).trim().split('\n').map((l) => l.trim().split(/\s+/)); } catch { return false; }
-  const live = new Map(rows.filter((x) => !String(x[3]).startsWith('Z')).map((x) => [Number(x[0]), Number(x[2])]));
-  if (live.has(root)) return true;
-  for (const [p, g] of descendants(rows.map((x) => x.slice(0, 3).map(Number)), root)) if (live.get(p) === g) return true;
-  for (const [p, g] of seen) if (live.get(p) === g) return true;
-  return false;
-}
-/** [pid, pgid] of every descendant of root in the ps rows. */
-function descendants(rows, root) {
-  const kids = new Map();
-  for (const [p, pp, g] of rows) { if (!kids.has(pp)) kids.set(pp, []); kids.get(pp).push([p, g]); }
-  const out = [], stack = [root];
-  while (stack.length) for (const [p, g] of kids.get(stack.pop()) || []) { out.push([p, g]); stack.push(p); }
-  return out;
 }
 
 main().then((c) => process.exit(c), (e) => { console.error(e.message || e); process.exit(1); });
