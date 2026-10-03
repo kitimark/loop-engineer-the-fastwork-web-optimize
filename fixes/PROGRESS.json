@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T15:05:00Z", "text": "The Try-it panels you used for the pixel rule and the hero change compared against the original page, so they also showed earlier changes; a tool fix lets each option show only its own change. Revised proposals follow." },
   { "at": "2026-10-03T15:05:00Z", "text": "Fixed a display bug on the iPhone where the top bar and menu stopped following the page past its end; now matches the original." },
   { "at": "2026-10-03T14:30:00Z", "text": "The idle-animation fix has landed: the shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted (PR-009); the phone check found it no worse." },
   { "at": "2026-10-03T14:06:00Z", "text": "The idle-animation fix was rebuilt so other browsers keep today's look; a check showed it draws exactly like the version the phone already tested, so that phone result carries over." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T00:12:00Z", "text": "GPU study done (T-030): most lag left is at the hero ending and the people cards; the toolbar resize is small. Three fixes now run at top priority: countdown digits as sliding strips, the hero ending off the main thread, and the GPU countdown roll (your call; you judge it blind)." },
   { "at": "2026-10-02T23:58:00Z", "text": "The F3 robot-finger test has a new plan, signed by the lead before any data: the check page that never passed under the robot finger is replaced by the usual scripted heat check. Phone order: the countdown timing test now, then the F3 robot-finger test, then the heat test." },
   { "at": "2026-10-02T23:50:00Z", "text": "The F3 robot-finger test stopped again before any counted run: the phone's check page was not smooth even on a cool phone, so this is not heat. It waits until fix-nav-morph finds the cause. The countdown timing test runs now, then the heat test." },
-  { "at": "2026-10-02T23:45:00Z", "text": "Blind swipe test done: you picked today's best build as smoother than the original, at the top and in the menu change. It still lags a little; de-gpu looks at whether the GPU can take more of the work. Next on the phone: the F3 robot-finger re-run." },
-  { "at": "2026-10-02T23:35:00Z", "text": "You chose the short phone timing test of the countdown fix on its own (about 20 minutes plus cooling). It runs after the F3 robot-finger re-run and before the heat test. A GPU-friendly look at the counting animation is a separate idea, kept out of that test." }
+  { "at": "2026-10-02T23:45:00Z", "text": "Blind swipe test done: you picked today's best build as smoother than the original, at the top and in the menu change. It still lags a little; de-gpu looks at whether the GPU can take more of the work. Next on the phone: the F3 robot-finger re-run." }
  ],
  "items": [
   {
@@ -105,7 +105,7 @@
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position (an earlier version matched the original on your phone); first explain why that version made one frame about 11 ms slower where the hero ends.",
-   "next": "The new build's phone test plan (P-081) is written and checked: a robot-finger trace with the phone at its real \"Serious\" heat state. Next: that phone block, then your look at the pictures and your finger test.",
+   "next": "You asked to try the hero change yourself before deciding on its look (PR-011): it is being rebuilt on today's base with a side-by-side Try-it, after a fix to the Try-it panel. Its phone test (P-081) runs after your countdown test.",
    "owner": "fix-hero-exit-threaded",
    "checks": [],
    "details": [
