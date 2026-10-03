@@ -510,11 +510,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            },
            [() => Math.round(s(b)), () => Math.round(s(x))],
          ),
-@@ -2670,9 +2671,58 @@
- function iE() {
+@@ -2671,8 +2672,57 @@
    tE = 0;
    for (let e of $T) e.active && e.callback();
-+}
+ }
 +// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
 +// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
 +// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
@@ -535,7 +534,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    break;
 +  }
 +  fwKick();
- }
++}
 +// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
 +// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
 +// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
@@ -776,7 +775,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      i = N(`idle`),
      a,
      o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
-@@ -3782,10 +3947,49 @@
+@@ -3782,9 +3947,48 @@
            bottom: s(o).paintBottom,
            left: s(o).paintLeft,
          })));
@@ -799,7 +798,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    e.animate([{ transform: `translateX(${x}em)` }, { transform: `none` }], o);
 +  for (let e = d.nextElementSibling; e; e = e.nextElementSibling)
 +    e.animate([{ transform: `translateX(${-x}em)` }, { transform: `none` }], o);
- }
++}
 +// layout-animations: the four gradient row titles sweep background-position forever (repaint every
 +// frame); the engine pauses them only per section (±1 viewport), so also pause each title while it is
 +// off-screen.
@@ -822,10 +821,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  PMpre(() => () => {
 +    for (let e of ts) PMsweepIO.unobserve(e);
 +  });
-+}
+ }
  var UE = { stiffness: 280, damping: 18, mass: 0.3 },
    WE = 16;
- function GE(e, t, n, r = UE) {
 @@ -3824,10 +4028,13 @@
    D(r, !0);
    let i = R(() => qE(r.value, r.place)),
@@ -1284,13 +1282,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    for (let r of document.elementsFromPoint(t, n))
 +      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
 +    return j(null);
-   }
++  }
 +  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
 +  let __navEls = {};
 +  function __navEl(e) {
 +    let t = __navEls[e];
 +    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
-+  }
+   }
    function ee() {
 -    let e = document.querySelector(`.start-selling-profile-sticky`);
 +    let e = __navEl(`.start-selling-profile-sticky`);
@@ -1487,7 +1485,32 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        }
      );
    });
-@@ -13140,7 +13673,7 @@
+@@ -13118,10 +13651,24 @@
+   var oe = V(ae, 2),
+     le = e(oe, !0);
+   (M(oe), M(ie), M(B));
++  // perf(morph-inherit, F-183): R4b registers --morph as non-inheriting and the children below take it with an
++  // explicit `--morph: inherit`. WebKit (Safari 26.5, Simulator and iPhone, OBSERVED) does not re-resolve those
++  // children when only the header's value changes, so they kept the value from the last class flip (logo not
++  // centred, earn button not hidden, panel fade frozen). The header's writer now also writes the same value inline
++  // on each of them: the same elements restyle as R4b intended, and nothing depends on WebKit's inherit tracking.
++  // Chrome resolves the same values either way.
++  var __mkP = null,
++    __mkV = null,
++    __mkW = (v) => {
++      if (v === __mkV) return;
++      __mkV = v;
++      for (let t of [B, re, ie, oe, __mkP]) t && t.style.setProperty(`--morph`, v);
++    };
+   var W = V(B, 2),
+     ue = (n) => {
+       var a = lN(),
+         u = e(a);
++      ((__mkP = a), __mkV !== null && a.style.setProperty(`--morph`, __mkV));
+       (_(
+         u,
+         21,
+@@ -13140,7 +13687,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -1496,7 +1519,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +13690,13 @@
+@@ -13157,7 +13704,13 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -1511,7 +1534,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +13732,8 @@
+@@ -13193,7 +13746,8 @@
          M(w),
          M(a),
          l(() => {
@@ -1521,7 +1544,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +13750,7 @@
+@@ -13210,7 +13764,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -1530,3 +1553,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
+@@ -13232,6 +13786,7 @@
+         })),
+           k(I, `aria-label`, s(o).header.primary),
+           (te = S(I, ``, te, e)),
++          __mkW(e[`--morph`]),
+           k(re, `href`, a()),
+           k(re, `aria-label`, s(o).header.home),
+           k(re, `data-selenium`, SE.header.home),

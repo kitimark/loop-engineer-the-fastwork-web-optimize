@@ -255,6 +255,45 @@ A Timeline attribution block with frame-gap counts, not a gain block. The predic
   - It fits in 3-4 holds of 900 s.
   - The user's finger A/B comes after the block and is not part of P-081.
 
+### Restack on main + morph-inherit (build R: JS `e3b6fd558dbf`, CSS `cc74cd980e72`)
+
+`patch.diff` is now baseline + st6-rb2 + morph-inherit + this fix. It is needed for the live Try-it of PR-011 rev 2.
+- **How it was made.** R = F7 plus the same morph-inherit delta (`fixes/morph-inherit/delta-vs-st6rb2.diff`) that
+  turns C (st6-rb2, JS `7bf7c4657d21`) into morph-inherit (JS `7c61fe7d0662`).
+  - That delta only adds the nav header's `__mkW` writer (JS about 13490 and 13611). CSS is unchanged.
+  - The hero-exit change lines are byte-identical on both bases.
+  - Main's morph-inherit `patch.diff` on the baseline gives `7c61fe7d0662` / `f523598b2a24`. This branch's
+    `patch.diff` gives R, `e3b6fd558dbf` / `cc74cd980e72`.
+- **P-081 is unchanged.** It stays on its registered snapshot F7 (JS `8e43f3792dbf`, `out/snapshots/hext-V-8e43f3792dbf`).
+  R has its own read-only snapshot, `out/snapshots/hext-R-e3b6fd558dbf`.
+- **Identity check.** It compares the hero region (y 0-884) of R against F7. F72 is F7 again on its own server, as the
+  A/A. All holds exited 0. The script is `chain-r.sh`; data is in `out/hext/rpar1`, `rpar2` and `rpx1`-`rpx3`.
+  - **Chrome, computed styles:**
+    - Scope: every `.hero` element at 22 frozen positions (y 0, 1, 2, 5, 6, 10, 25, 30, 36, 50, 57, 100, 150, 200,
+      300, 306, 400, 500, 600, 700, 800, 884), at the mobile, phone and desktop viewports.
+    - Result: R vs F7 has 0 differences, and so does the A/A.
+    - In Chrome both builds run C's hero code (the Safari gate is false).
+  - **Chrome, pixels:** this does not settle identity, because the harness's A/A is noisy. R's pixels beyond the A/A
+    all fall in the A/A's own noise classes: deck-photo raster, countdown cell corners, the RSVP border, and at
+    desktop a whole-hero level shift.
+
+    | Viewport | R vs F7 (px) | A/A (px) | R beyond A/A |
+    |---|---|---|---|
+    | mobile | 18,428 | 12,026 | 14,811 px, max 12 |
+    | phone | 24,228 | 24,771 | 17,139 px, max 52 |
+    | desktop | 2.78M | 2.14M | max 143, vs the A/A's level shifts up to 135 |
+
+  - **Simulator, frozen frames (`rev5.mjs --sync`, the F7 cases), the decisive check:**
+    - Cases: `readdN1@0`, `readdN1@30`, `topW300`, `topW700` (rpx1); `top0`, `top1`, `topS` (rpx2); `readdN`,
+      `readdN1`, `readdN2`, `readdN1@51` (rpx3). Each case also has its still-check shot.
+    - In every frame, R vs F7 differs only in two places, and the A/A differs in the same two:
+      - the status-bar clock (device rows 50-150);
+      - the countdown's minutes and seconds digits (device rows 1300-1400, x 795-1124, about CSS y 433-466).
+    - Everything else is 0 px.
+    - R's pixels beyond the A/A (800-1500 px per frame) all sit inside the seconds cell (device x 1027-1123), which
+      ticks between captures.
+  - **Verdict:** in the hero, R draws the same frames as F7. P-081's result on F7 carries over to R.
+
 ## What changed
 
 On WebKit, once the entrance is over (`d()`), the exit is a set of CSS scroll-driven animations on a `--hero-exit`
