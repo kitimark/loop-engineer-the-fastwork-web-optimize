@@ -3,7 +3,7 @@
 // Samples follow a Newton model, dT/dt = P - 0.045 (T - 32) °C/min, quantized to 0.1 °C like the battery sensor.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scoreSegments, verdicts, chargeState } from './heat.mjs';
+import { scoreSegments, verdicts, chargeState, pickBattery } from './heat.mjs';
 
 const POWER = { F: 0.35, A: 0.45, B: 0.75, X: 0.70 }; // °C/min at 32 °C: B − A ≈ +0.30 after correction, F lowest
 function makeSeg(lines, { session, attempt = 1, seg, arm, mode = 'held', power = POWER[arm], flipAt = null, startC = 37.0 }) {
@@ -103,4 +103,20 @@ test('a fallback session that never finished (gate TIMEOUT) gives incomplete', (
   session(L, 'H2', H2, { mode: 'charging' });
   const v = verdicts(scoreSegments(L));
   assert.match(v.fastworkVsApple.verdict, /^incomplete/);
+});
+
+test('the system-power amendment: PowerTelemetryData is kept as pt_* and reported descriptively; the verdict does not change', () => {
+  const d = { Temperature: 3700, IsCharging: false, ExternalConnected: true, PowerTelemetryData: { SystemPowerIn: 2500, SystemLoad: 1800, Name: 'x', Nested: { a: 1 } } };
+  assert.deepEqual(Object.keys(pickBattery(d)).filter((k) => k.startsWith('pt_')).sort(), ['pt_SystemLoad', 'pt_SystemPowerIn']);
+  const L = []; session(L, 'H1', H1); session(L, 'H2', H2);
+  const base = verdicts(scoreSegments(L));
+  const W = { F: 1000, A: 1400, B: 2600, X: 2400 };
+  const L2 = L.map((l) => (l.kind === 'sample' ? { ...l, pt_SystemPowerIn: W[l.arm], pt_SystemLoad: W[l.arm] / 2 } : l));
+  const v = verdicts(scoreSegments(L2));
+  assert.equal(v.fastworkVsApple.verdict, base.fastworkVsApple.verdict);
+  assert.equal(v.fixesVsBaseline.verdict, base.fixesVsBaseline.verdict);
+  assert.equal(v.systemPowerOverFloor.descriptiveOnly, true);
+  assert.deepEqual(v.systemPowerOverFloor.SystemPowerIn, { A: [400, 400], B: [1600, 1600], X: [1400, 1400] });
+  assert.deepEqual(v.systemPowerOverFloor.SystemLoad.B, [800, 800]);
+  assert.deepEqual(base.systemPowerOverFloor.SystemPowerIn.B, [null, null], 'no power keys logged: nulls, nothing else changes');
 });

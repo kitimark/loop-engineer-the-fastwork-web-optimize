@@ -84,6 +84,9 @@ export function pickBattery(d) {
   const o = {};
   for (const k of KEEP) if (typeof d[k] === 'number' || typeof d[k] === 'boolean') o[k] = d[k];
   if (typeof d.AdapterDetails?.Watts === 'number') o.AdapterWatts = d.AdapterDetails.Watts;
+  // PowerTelemetryData (pre-flight 10-03 01:11Z found it; the system-power amendment, descriptive only): its numeric values as pt_<key>
+  const pt = d.PowerTelemetryData;
+  if (pt && typeof pt === 'object' && !Array.isArray(pt)) for (const [k, v] of Object.entries(pt)) if (typeof v === 'number' && /^[A-Za-z]+$/.test(k)) o[`pt_${k}`] = v;
   if (typeof o.Temperature === 'number') o.tC = o.Temperature / 100;
   if (typeof o.VirtualTemperature === 'number') o.vtC = o.VirtualTemperature / 100;
   return o;
@@ -189,6 +192,11 @@ export function scoreSegments(lines, pre = PRE) {
       if (w.length >= 3) r[name] = round(ols(w.map((l) => [l.sNominal / 60, l.tC])).slope);
     }
     const pw = ss.filter((l) => typeof l.Voltage === 'number' && typeof (l.InstantAmperage ?? l.Amperage) === 'number').map((l) => (l.Voltage * (l.InstantAmperage ?? l.Amperage)) / 1e6);
+    // system power (system-power amendment): medians over the 60-360 s window of PowerTelemetryData's SystemPowerIn and SystemLoad;
+    // descriptive only, never a verdict input; units UNRESOLVED (Apple documents neither key)
+    const sp = {};
+    for (const k of ['SystemPowerIn', 'SystemLoad']) { const v = win.map((l) => l[`pt_${k}`]).filter((x) => typeof x === 'number'); if (v.length) sp[k] = round(median(v), 1); }
+    if (Object.keys(sp).length) r.systemPower = { ...sp, n: win.length, note: 'PowerTelemetryData medians over the fit window; descriptive only, units UNRESOLVED' };
     if (pw.length) r.batteryW = { median: round(median(pw), 2), n: pw.length, note: 'Voltage x InstantAmperage (else Amperage) / 1e6, units assumed mV and mA (UNRESOLVED until the pre-flight); battery share only on USB' };
     res.push(r);
   }
@@ -228,6 +236,10 @@ export function verdicts(segs, pre = PRE, markers = []) {
   out.floorCheck = ['H1', 'H2'].map((h) => { const f = get(h, 'F', 'corr'); const others = ['A', 'B', 'X'].map((a) => get(h, a, 'corr')).filter((x) => typeof x === 'number'); return f === undefined ? null : others.every((x) => x > f); });
   const ex = (a) => ['H1', 'H2'].map((h) => { const x = get(h, a, 'corr'), f = get(h, 'F', 'corr'); return typeof x === 'number' && typeof f === 'number' ? round(x - f) : null; });
   out.excessOverFloor = { A: ex('A'), B: ex('B'), X: ex('X') };
+  // the system-power amendment, descriptive only (no verdict): each arm's SystemPowerIn / SystemLoad median minus F's, per session
+  const spOf = (h, a, k) => ok.findLast((s) => s.session === h && s.arm === a)?.systemPower?.[k];
+  const exP = (k) => Object.fromEntries(['A', 'B', 'X'].map((a) => [a, ['H1', 'H2'].map((h) => { const x = spOf(h, a, k), f = spOf(h, 'F', k); return typeof x === 'number' && typeof f === 'number' ? round(x - f, 1) : null; })]));
+  out.systemPowerOverFloor = { descriptiveOnly: true, SystemPowerIn: exP('SystemPowerIn'), SystemLoad: exP('SystemLoad') };
   return out;
 }
 

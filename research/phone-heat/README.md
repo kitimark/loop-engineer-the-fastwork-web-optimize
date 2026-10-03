@@ -153,6 +153,18 @@ every within-session comparison.
     the 80 % limit or the load is UNRESOLVED). So battery watts are reported per segment, never decided on.
   - If `keys` shows a system-power key (a name with "SystemPower", "SystemLoad" or "PowerTelemetry"), report it to
     de-heat. Using it as a metric is a pre-data amendment, not a change made after data.
+  - **System-power amendment (pre-data, 10-03 01:1xZ).** At pre-flight step 1 (01:11Z), iphone-runner listed the key
+    names (no values) and found a `PowerTelemetryData` dict. It holds `SystemLoad`, `SystemPowerIn`, `SystemCurrentIn`,
+    `SystemVoltageIn`, `SystemEnergyConsumed`, `BatteryPower`, `WallEnergyEstimate` and `AdapterEfficiencyLoss`, plus
+    `Accumulated*` counters. Decision:
+    - `heat.mjs` keeps every numeric value of that dict as `pt_<key>`. They come from the same ioreg read, so the phone
+      is read no more often.
+    - The scorer reports `SystemPowerIn` and `SystemLoad` per segment: medians over the 60-360 s window, and each arm
+      minus F per session (`systemPowerOverFloor`). These are **descriptive only**: they decide no verdict and change no
+      rule. Apple documents neither key, so their units and meaning are UNRESOLVED.
+    - If power and temperature disagree, the report says so; the temperature verdict stands.
+    - Like the I-075 rule: if this amendment is on `main` before H1's first segment, both sessions log the keys.
+      Otherwise both run on `d1ec5c5345f7` and power is not logged.
 - **Charging confounder.** `IsCharging` is logged every 30 s. The phone stays on the USB cable the whole time: the
   Web Inspector link needs it. iOS decides when to charge (80 % limit / Optimized Charging; arch-unknowns U4), so
   charging cannot be switched from the Mac.
@@ -289,7 +301,8 @@ otherwise every verdict is "incomplete (the sessions differ in charge state)".
 - **Excess over the floor:** E_arm = corrected(arm) − corrected(F) per session; E_B / E_A is reported as "how much
   more the Fastwork page heats than apple.com, beyond the browser itself".
 - **Descriptive only:** the per-phase slopes (idle 60-180 s and cycles 210-360 s, 5 reads each, SE ≈ 0.06 °C/min:
-  too noisy to decide on), battery watts, and rAF rate per cycle.
+  too noisy to decide on), battery watts, rAF rate per cycle, and system power (`SystemPowerIn`, `SystemLoad` and
+  their excess over F; system-power amendment).
 
 **What each outcome means** (fixed now, one line to the user each):
 - **Fastwork heats more:** the page's own computation heats the phone, not the phone or the cable. Work at rest
@@ -409,7 +422,7 @@ placeholder, and no apple.com run records.
 
 ## Files
 
-- `heat.mjs`: battery reader, segment runner, pre-registered scorer. sha256/12 `d1ec5c5345f7` at this commit. Pre-data history: `38f81442ccad` (ticket, e9dcfce); `341a774801ae` (22:4xZ, charge mode, `charge-wait` gate, charge-state exclusion, 08b7978); `1280a97d9f6d` (22:5xZ, session attempts, last-attempt scoring, 98da974); `d1ec5c5345f7` (22:5xZ, the `attempt` marker).
+- `heat.mjs`: battery reader, segment runner, pre-registered scorer. sha256/12 `1ca63e2b4d11` at this commit. Pre-data history: `38f81442ccad` (ticket, e9dcfce); `341a774801ae` (22:4xZ, charge mode, `charge-wait` gate, charge-state exclusion, 08b7978); `1280a97d9f6d` (22:5xZ, session attempts, last-attempt scoring, 98da974); `d1ec5c5345f7` (22:5xZ, the `attempt` marker); `1ca63e2b4d11` (10-03 01:1xZ, system-power amendment: `pt_*` keys kept, descriptive `systemPower` and `systemPowerOverFloor`; verdict rules unchanged).
 - `floor/heat-floor.html`: the floor page. sha256/12 `30098372d8c1`.
-- `heat.check.mjs`: checks of the scorer on synthetic samples (held, exclusion over 0-360 s, end-of-session re-run, fallback restart with an aborted attempt, sessions in different charge states, fallback gate timeout before and after attempt 2 wrote a segment): `node --test research/phone-heat/heat.check.mjs`, 8 pass. The two fallback-restart checks fail on the 08b7978 scorer, and the marker check fails on the 98da974 scorer.
+- `heat.check.mjs`: checks of the scorer on synthetic samples (held, exclusion over 0-360 s, end-of-session re-run, fallback restart with an aborted attempt, sessions in different charge states, fallback gate timeout before and after attempt 2 wrote a segment, system power kept and reported without changing a verdict): `node --test research/phone-heat/heat.check.mjs`, 9 pass. The two fallback-restart checks fail on the 08b7978 scorer, and the marker check fails on the 98da974 scorer.
 - Results (after data): `results.json` and `samples.jsonl` (derived, LAN-scrubbed), plus a result section here.
