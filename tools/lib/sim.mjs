@@ -32,8 +32,33 @@ import { redact } from './redact.mjs';
 import { idleSec, readWarm, warmFile, keeperInfo, timingDemand, warmLine, warmState, keeperRetryMs, SIM_MJS } from './sim-warm.mjs';
 import * as BG from './sim-background.mjs';
 
-export const SIM_NAME = 'fw-sim 15 Pro Max';
-export const DEVICE_TYPE = 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro-Max';
+// I-087 (user T-040): named devices, one at a time. `fw-sim` (the default, unchanged for every caller: config.json,
+// the same name and type) stands in for the iPhone 15 Pro Max; the iPads are the real tablet case for pixel checks
+// (no timing). A non-default device is created on demand (`sim.mjs setup --device k`, or its first session) from an
+// installed device type on an installed iOS runtime: nothing is ever downloaded. Its config is sim/config-<key>.json.
+// The device a command drives: --device, else $FW_SIM_DEVICE (a session sets it for its <cmd>), else fw-sim (sim.mjs).
+export const DEVICES = Object.freeze(Object.fromEntries([
+  ['fw-sim', 'fw-sim 15 Pro Max', 'iPhone-15-Pro-Max', 'iphone'],
+  ['fw-ipad', 'fw-ipad Pro 13 M5', 'iPad-Pro-13-inch-M5-12GB', 'ipad'],
+  ['fw-ipad-a16', 'fw-ipad A16', 'iPad-A16', 'ipad'],
+  ['fw-ipad-mini', 'fw-ipad mini A17 Pro', 'iPad-mini-A17-Pro', 'ipad'],
+].map(([key, name, type, family]) => [key, Object.freeze({ key, name, deviceType: `com.apple.CoreSimulator.SimDeviceType.${type}`, family })])));
+export const DEFAULT_DEVICE = 'fw-sim';
+export const SIM_NAME = DEVICES[DEFAULT_DEVICE].name;
+export const DEVICE_TYPE = DEVICES[DEFAULT_DEVICE].deviceType;
+let currentKey = DEFAULT_DEVICE;
+/** The device key from a --device value / $FW_SIM_DEVICE (unset or empty: fw-sim); an unknown one throws, naming the known. */
+export function deviceKey(v) {
+  if (v === undefined || v === null || v === '') return DEFAULT_DEVICE;
+  if (!Object.hasOwn(DEVICES, v)) throw new Error(`unknown Simulator device "${v}" (known: ${Object.keys(DEVICES).join(', ')})`);
+  return v;
+}
+/** Make `key` the device this process drives (config, names, types); returns it. */
+export function useDevice(key) { currentKey = deviceKey(key); return DEVICES[currentKey]; }
+/** The device this process drives: {key, name, deviceType, family}. */
+export const device = () => DEVICES[currentKey];
+/** The label of a warm record's device (I-063 records before I-087 name none: fw-sim). */
+export const warmLabel = (w) => (w?.device && Object.hasOwn(DEVICES, w.device) ? w.device : DEFAULT_DEVICE);
 export const SIM_DEVICE = 'simulator';
 export const SAFARI = 'com.apple.mobilesafari';
 export const SIM_ID = 'SIMULATOR';
@@ -57,7 +82,8 @@ export function ports(env = process.env) {
 // ---- state (shared by every worktree: .git/fastwork-mirror/sim/) ----------------------------------------------
 export const simDir = () => join(sharedStateDir(), 'sim');
 const file = (n) => join(simDir(), n);
-export const configFile = () => file('config.json');
+/** fw-sim keeps config.json (unchanged); every other device sim/config-<key>.json. */
+export const configFile = (key = currentKey) => file(key === DEFAULT_DEVICE ? 'config.json' : `config-${deviceKey(key)}.json`);
 export const iwdpCfgFile = () => file('iwdp.cfg');
 export const sessionFile = () => file('session.json');
 const pidFile = (name) => file(`${name}.pid.json`);
@@ -68,8 +94,10 @@ function ensureDir() { mkdirSync(simDir(), { recursive: true, mode: 0o700 }); }
 const readJson = (f, d = null) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return d; } };
 function writePrivate(f, text) { ensureDir(); writeFileSync(f, text, { mode: 0o600 }); chmodSync(f, 0o600); }
 
-export const readConfig = () => readJson(configFile(), {});
-export function writeConfig(c) { writePrivate(configFile(), JSON.stringify(c, null, 1)); }
+export const readConfig = (key = currentKey) => readJson(configFile(key), {});
+export function writeConfig(c, key = currentKey) { writePrivate(configFile(key), JSON.stringify(c, null, 1)); }
+/** Every device with a config file: [{key, cfg}] (fw-sim first). */
+export const configuredDevices = () => Object.keys(DEVICES).map((key) => ({ key, cfg: readConfig(key) })).filter((x) => x.cfg.udid);
 export const readSession = () => readJson(sessionFile(), null);
 /** The session record if its process still runs, else null. */
 export function liveSession() { const s = readSession(); return s && pidAlive(s.pid) ? s : null; }
@@ -78,8 +106,7 @@ export function liveSession() { const s = readSession(); return s && pidAlive(s.
 /** Every id we know of: the Simulator's UDID (config) and the phone UDIDs in iwdp.cfg. */
 export function knownIds() {
   const ids = new Set();
-  const c = readConfig();
-  if (c.udid) ids.add(c.udid);
+  for (const { cfg } of configuredDevices()) ids.add(cfg.udid);
   try { for (const l of readFileSync(iwdpCfgFile(), 'utf8').split('\n')) { const m = l.match(/^([^:]+):-1$/); if (m) ids.add(m[1]); } } catch {}
   return [...ids];
 }
@@ -149,18 +176,19 @@ export function listDevices() {
   const j = JSON.parse(r.stdout);
   return Object.entries(j.devices || {}).flatMap(([runtimeId, ds]) => ds.map((d) => ({ udid: d.udid, name: d.name, state: d.state, deviceTypeIdentifier: d.deviceTypeIdentifier, isAvailable: d.isAvailable !== false, runtimeId })));
 }
-/** Available iOS runtimes, newest first: [{identifier, name, version, buildversion}]. */
+/** Available iOS runtimes, newest first: [{identifier, name, version, buildversion, supported}] (supported: the device type
+ *  ids the runtime lists in supportedDeviceTypes, null when simctl does not say). */
 export function listRuntimes() {
   const r = simctl(['list', '-j', 'runtimes']);
   if (r.status !== 0) throw new Error(`simctl list runtimes failed (${failText(r)})`);
   const vkey = (v) => String(v).split('.').map((x) => x.padStart(4, '0')).join('.');
   return (JSON.parse(r.stdout).runtimes || []).filter((x) => x.isAvailable !== false && (x.platform ? x.platform === 'iOS' : /iOS/.test(x.identifier)))
-    .map((x) => ({ identifier: x.identifier, name: x.name, version: x.version, buildversion: x.buildversion }))
+    .map((x) => ({ identifier: x.identifier, name: x.name, version: x.version, buildversion: x.buildversion, supported: Array.isArray(x.supportedDeviceTypes) ? x.supportedDeviceTypes.map((t) => t?.identifier).filter(Boolean) : null }))
     .sort((a, b) => vkey(b.version).localeCompare(vkey(a.version)));
 }
 /** The fw-sim device: the configured UDID if it still exists, else the first one named SIM_NAME of our type. */
 export function findDevice(cfg = readConfig(), devices = listDevices()) {
-  return (cfg.udid && devices.find((d) => d.udid === cfg.udid)) || devices.find((d) => d.name === SIM_NAME && d.deviceTypeIdentifier === DEVICE_TYPE) || null;
+  return (cfg.udid && devices.find((d) => d.udid === cfg.udid)) || devices.find((d) => d.name === device().name && d.deviceTypeIdentifier === device().deviceType) || null;
 }
 export function xcodeVersion() {
   const r = spawnSync(exe('FW_XCODEBUILD', 'xcodebuild'), ['-version'], { encoding: 'utf8', timeout: 30000 });
@@ -169,22 +197,30 @@ export function xcodeVersion() {
   return v ? `${v}${b ? ` (${b})` : ''}` : null;
 }
 
-/** `sim.mjs setup`: create the device if absent (newest iOS runtime, or `runtime`: identifier, name or version); store config. */
+/**
+ * `sim.mjs setup [--device k]`: create the device this process drives if absent (the newest installed iOS runtime that
+ * supports its device type, or `runtime`: identifier, name or version); store its config. I-087: never downloads a
+ * runtime or a device type; one that is not installed refuses.
+ */
 export function setup({ runtime = null, log = console.log } = {}) {
   const cfg = readConfig();
   const rts = listRuntimes();
   let dev = findDevice(cfg);
   if (!dev) {
-    const rt = runtime ? rts.find((x) => [x.identifier, x.name, x.version].includes(runtime)) : rts[0];
+    const type = device().deviceType;
+    const fits = (x) => !x.supported || x.supported.includes(type); // a runtime that does not list its types: simctl create decides
+    let rt = runtime ? rts.find((x) => [x.identifier, x.name, x.version].includes(runtime)) : rts.find(fits);
+    if (!rt && !runtime && rts.length) throw new Error(`no installed iOS runtime supports ${type.split('.').pop()} (${device().key}; installed: ${rts.map((x) => x.name).join(', ')}); a runtime or device type download is the user's decision`);
     if (!rt) throw new Error(runtime ? `no installed iOS runtime "${runtime}" (installed: ${rts.map((x) => x.name).join(', ') || 'none'}); a runtime download is the user's decision` : 'no iOS Simulator runtime installed (Xcode > Settings > Components); a runtime download is the user\'s decision');
-    const r = simctl(['create', SIM_NAME, DEVICE_TYPE, rt.identifier]);
+    if (!fits(rt)) throw new Error(`the iOS runtime ${rt.name} does not support ${type.split('.').pop()} (${device().key}); a runtime or device type download is the user's decision`);
+    const r = simctl(['create', device().name, device().deviceType, rt.identifier]);
     if (r.status !== 0) throw new Error(`simctl create failed (${failText(r)})`);
     dev = findDevice({ udid: r.stdout.trim() });
     if (!dev) throw new Error('simctl create succeeded, but the new device is not listed');
-    log(`created ${SIM_NAME} on ${rt.name}`);
-  } else log(`${SIM_NAME} exists (${dev.state})`);
+    log(`created ${device().name} on ${rt.name}`);
+  } else log(`${device().name} exists (${dev.state})`);
   const rt = rts.find((x) => x.identifier === dev.runtimeId);
-  const next = { ...cfg, udid: dev.udid, name: dev.name, runtime: rt?.name ?? dev.runtimeId, runtimeId: dev.runtimeId, runtimeBuild: rt?.buildversion ?? null, deviceType: dev.deviceTypeIdentifier, xcode: xcodeVersion(), setupAt: new Date().toISOString() };
+  const next = { ...cfg, device: device().key, udid: dev.udid, name: dev.name, runtime: rt?.name ?? dev.runtimeId, runtimeId: dev.runtimeId, runtimeBuild: rt?.buildversion ?? null, deviceType: dev.deviceTypeIdentifier, xcode: xcodeVersion(), setupAt: new Date().toISOString() };
   writeConfig(next);
   log(`config ${configFile()}: device ${mask(next.udid)}, ${next.runtime} (${next.runtimeBuild ?? '?'}), ${next.deviceType.split('.').pop()}, Xcode ${next.xcode ?? '?'}`);
   return next;
@@ -267,6 +303,8 @@ export function requireSession({ owner, timed = false } = {}) {
   const s = liveSession();
   if (!s) throw new Error(`no live Simulator session. Run it inside one:\n  ${holdCmd(owner)}`);
   if (process.env.FW_SIM_SESSION !== s.id) throw new Error(`this process is not inside the live Simulator session (owner "${s.owner}"): run your command as the session's <cmd>`);
+  const sk = s.device ?? DEFAULT_DEVICE; // I-087: a record before I-087 names none (fw-sim)
+  if (sk !== device().key) throw new Error(`the live Simulator session drives ${sk}, not ${device().key}: drop --device (inside a session its <cmd> inherits FW_SIM_DEVICE=${sk})`);
   if (timed && s.functional) throw new Error(`refusing: this is a functional Simulator session (sim.mjs session --functional, lock mode ${s.lock?.mode ?? '?'}): it takes no timing runs (scroll, record, run), so none of its numbers is ever pooled with a measured one. Run them in a normal hold:\n  ${holdCmd(s.owner)}`);
   // N6: nothing timed inside a functional slot (FW_LOCK_SHARED), whatever else the process inherits
   const refusal = timed ? timedInSlotRefusal('this Simulator run') : null;
@@ -374,7 +412,7 @@ export async function proxyCheck(p = ports()) {
 export async function startProxy({ owner, session = null, timeoutMs = 20000, log = () => {} } = {}) {
   const p = ports();
   const socket = findSocket();
-  if (!socket) throw new Error('no Simulator web inspector socket (lsof -aUc launchd_sim): is fw-sim booted with Safari running?');
+  if (!socket) throw new Error(`no Simulator web inspector socket (lsof -aUc launchd_sim): is ${device().key} booted with Safari running?`);
   const ids = phoneIds();
   const cfg = writeIwdpConfig(ids, p);
   await stopOne('proxy', log);
@@ -483,6 +521,24 @@ export async function settleDevice(udid, { maxSec = transitionWaitSec(), pollMs 
   }
   return { from, state, waitedSec: Math.round((Date.now() - t0) / 1000), settled: !isTransitional(state) };
 }
+/**
+ * The device `status`, `doctor` and a plain `shutdown` look at when no --device / $FW_SIM_DEVICE names one (I-087): the
+ * live session's; else a configured device that is not shut down (the warm one first); else the warm record's; else fw-sim.
+ */
+export function activeDevice() {
+  const live = liveSession();
+  if (live) return deviceKey(live.device);
+  const w = readWarm();
+  const conf = configuredDevices();
+  if (conf.length > 1) {
+    let list = null;
+    try { list = listDevices(); } catch {}
+    const up = list ? conf.filter(({ cfg }) => { const d = list.find((x) => x.udid === cfg.udid); return d && d.state !== 'Shutdown'; }).map((x) => x.key) : [];
+    if (up.length) return up.includes(warmLabel(w)) && w ? warmLabel(w) : up[0];
+  }
+  if (w) return warmLabel(w);
+  return DEFAULT_DEVICE;
+}
 
 // Safari's HTTP cache persists across sessions in the device's data (incident I-052, F-115): an origin seen before
 // (localhost:<port>, and serve.mjs --port auto hands the same ports to different overlays) gets its hashed
@@ -572,22 +628,22 @@ export async function bootDevice(udid, { abort, log = () => {}, bootTimeoutMs = 
   const safariCache = await clearSafariCache(udid, { abort, log });
   r = await simctlAsync(['launch', udid, SAFARI], { timeoutMs: 60000, abort });
   if (r.aborted) throw new Error('interrupted during the Safari launch');
-  if (r.status !== 0) throw new Error(`simctl launch Safari failed (exit ${r.status})`);
+  if (r.status !== 0) throw new Error(`simctl launch Safari failed (${r.timedOut ? 'timed out after 60 s' : r.signal ? `signal ${r.signal}` : `exit ${r.status}`})`);
   for (let i = 0; i < 60; i++) {
     if (abort?.aborted) throw new Error('interrupted while waiting for the inspector socket');
-    if (findSocket()) { log(`${warm ? 'reused the booted fw-sim (no boot), Safari relaunched' : 'booted'} in ${Math.round((Date.now() - t0) / 1000)} s, Safari running`); return { safariCache }; }
+    if (findSocket()) { log(`${warm ? `reused the booted ${device().key} (no boot), Safari relaunched` : 'booted'} in ${Math.round((Date.now() - t0) / 1000)} s, Safari running`); return { safariCache }; }
     await sleep(500);
   }
   throw new Error('Safari runs, but no web inspector socket appeared in 30 s');
 }
 /** Shut fw-sim down if it is not already (cleanup: always attempted, errors logged, never thrown). */
-export async function shutdownDevice(udid, { log = () => {} } = {}) {
+export async function shutdownDevice(udid, { log = () => {}, label = device().key } = {}) {
   let st = null;
   try { st = deviceState(udid); } catch (e) { log(`simctl list failed during cleanup: ${e.message}`); }
   if (st === 'Shutdown') return 'already shut down';
   const r = await simctlAsync(['shutdown', udid], { timeoutMs: 120000 });
   const res = r.status === 0 ? 'shut down' : `shutdown failed (exit ${r.status ?? r.signal}); run: node tools/sim.mjs doctor --fix`;
-  log(`fw-sim ${res}`);
+  log(`${label} ${res}`);
   return res;
 }
 
@@ -595,10 +651,16 @@ export async function shutdownDevice(udid, { log = () => {} } = {}) {
 export async function statusLines() {
   const out = [];
   const cfg = readConfig();
-  out.push(`config:   ${cfg.udid ? `device ${mask(cfg.udid)}, ${cfg.runtime} (${cfg.runtimeBuild ?? '?'}), Xcode ${cfg.xcode ?? '?'}, tip ${cfg.tip?.state ?? 'unchecked'}` : 'none (node tools/sim.mjs setup)'}`);
-  let dev = null, devState; // devState: the real state for the warm line (undefined: simctl failed, unchecked)
-  try { dev = findDevice(cfg); devState = dev?.state ?? null; } catch (e) { out.push(`device:   simctl failed (${e.message})`); }
-  if (dev || cfg.udid) out.push(`device:   ${dev ? `${dev.name}: ${dev.state}` : 'not found (node tools/sim.mjs setup)'}`);
+  const setupCmd = `node tools/sim.mjs setup${device().key === DEFAULT_DEVICE ? '' : ` --device ${device().key}`}`;
+  out.push(`config:   ${cfg.udid ? `device ${mask(cfg.udid)}, ${cfg.runtime} (${cfg.runtimeBuild ?? '?'}), Xcode ${cfg.xcode ?? '?'}, tip ${cfg.tip?.state ?? 'unchecked'}` : `none (${setupCmd}${device().key === DEFAULT_DEVICE ? '' : ', or its first session'})`}`);
+  let dev = null, devState, list = null; // devState: the real state for the warm line (undefined: simctl failed, unchecked)
+  try { list = listDevices(); dev = findDevice(cfg, list); devState = dev?.state ?? null; } catch (e) { out.push(`device:   simctl failed (${e.message})`); }
+  if (dev || cfg.udid) out.push(`device:   ${dev ? `${dev.name}: ${dev.state}` : `not found (${setupCmd})`}`);
+  // I-087: every configured device (fw-sim, iPads) when there is more than one; --device picks the one shown above
+  const conf = configuredDevices();
+  if (conf.length > 1 || device().key !== DEFAULT_DEVICE) out.push(`devices:  ${conf.map(({ key, cfg: c }) => `${key}${key === device().key ? ' (shown)' : ''} ${list ? (list.find((d) => d.udid === c.udid)?.state ?? 'not found') : '?'}`).join(', ') || 'none'}; known: ${Object.keys(DEVICES).join(', ')}`);
+  const wr = readWarm();
+  if (wr && wr.udid !== cfg.udid) devState = list ? (list.find((d) => d.udid === wr.udid)?.state ?? null) : undefined; // the warm line is about the warm device
   const s = readSession();
   out.push(`session:  ${s ? `${pidAlive(s.pid) ? 'live' : 'DEAD (stale record)'} pid ${s.pid}, owner ${s.owner}, window ${s.window}, since ${s.startedAt}${s.boot ? `, ${s.boot.mode} start (session ${s.boot.sessionsOnBoot} on this boot)` : ''}` : 'none'}`);
   out.push(`warm:     ${warmLine(undefined, undefined, { devState })?.replace(/^warm: /, '') ?? `none (idle timeout ${idleSec()} s after a functional session; FW_SIM_IDLE_SEC)`}`); // I-063
@@ -630,34 +692,37 @@ async function doctorRun({ fix, log }) {
   if (fix && !live && isTransitional(dev?.state)) {
     // I-078: a shutdown or boot in progress ends by itself: --fix waits for it (bounded) and judges the state it ends in
     const from = dev.state, s = await settleDevice(dev.udid);
-    log(`waited ${s.waitedSec} s for ${SIM_NAME} to finish ${from} (${s.settled ? `now ${s.state ?? 'gone'}` : `still ${s.state}`}; I-078)`);
+    log(`waited ${s.waitedSec} s for ${device().name} to finish ${from} (${s.settled ? `now ${s.state ?? 'gone'}` : `still ${s.state}`}; I-078)`);
     dev = findDevice(cfg);
   }
   const moving = !live && isTransitional(dev?.state); // I-078: in transition, not (yet) a leak; nothing to shut down
-  const warm = readWarm();
-  const keeper = pidInfo('keeper');
+  // I-087: a warm record (and its keeper) of ANOTHER device is that device's business: doctor --device <it> checks it
+  const warmAny = readWarm();
+  const otherWarm = !!(warmAny && cfg.udid && warmAny.udid && warmAny.udid !== cfg.udid);
+  const warm = otherWarm ? null : warmAny;
+  const keeper = otherWarm ? null : pidInfo('keeper');
   // the warm device, kept by its keeper (not one whose last shutdown failed: review-i063 B1)
   const kept = !live && warm && !warm.shutdownFailed && keeper?.ours && dev?.state === 'Booted' && warm.udid === dev.udid;
   const problems = [];
   if (!live && readSession()) problems.push('stale session record');
-  if (moving) problems.push(`${SIM_NAME} is ${dev.state} with no live session: a shutdown or boot in progress (it ends by itself; a session waits for it, I-078): run doctor again shortly${fix ? '' : ', or doctor --fix (waits for it)'}`);
-  else if (dev && dev.state !== 'Shutdown' && !live && !kept) problems.push(`LEAK: ${SIM_NAME} is ${dev.state} with no live session${warm ? ` (a warm record, but ${warm.shutdownFailed ? `its last shutdown FAILED: ${warm.shutdownFailed.why}` : `its keeper ${keeper ? (keeper.ours ? 'runs for another device' : 'is gone') : 'is missing'}`})` : ''}`);
-  if (warm && !kept && !(dev && dev.state !== 'Shutdown' && !live)) problems.push(`stale warm record (${live ? 'a live session owns the device' : `fw-sim is ${dev?.state ?? 'not found'}`})`);
+  if (moving) problems.push(`${device().name} is ${dev.state} with no live session: a shutdown or boot in progress (it ends by itself; a session waits for it, I-078): run doctor again shortly${fix ? '' : ', or doctor --fix (waits for it)'}`);
+  else if (dev && dev.state !== 'Shutdown' && !live && !kept) problems.push(`LEAK: ${device().name} is ${dev.state} with no live session${warm ? ` (a warm record, but ${warm.shutdownFailed ? `its last shutdown FAILED: ${warm.shutdownFailed.why}` : `its keeper ${keeper ? (keeper.ours ? 'runs for another device' : 'is gone') : 'is missing'}`})` : ''}`);
+  if (warm && !kept && !(dev && dev.state !== 'Shutdown' && !live)) problems.push(`stale warm record (${live ? 'a live session owns the device' : `${device().key} is ${dev?.state ?? 'not found'}`})`);
   for (const n of ['proxy', 'wda']) { const r = pidInfo(n); if (r && (!live || r.session !== live.id)) problems.push(`${n}: ${r.ours ? `running (pid ${r.pid}) outside a live session` : 'stale pidfile'}`); }
   if (keeper && !kept) problems.push(`keeper: ${keeper.ours ? `running (pid ${keeper.pid}) without a warm device to keep` : 'stale pidfile'}`);
-  if (!problems.length) { log(`ok: ${live ? `live session pid ${live.pid} (owner ${live.owner})` : kept ? warmLine() : 'no session, nothing booted, no proxy'}`); return 0; }
+  if (!problems.length) { log(`ok: ${live ? `live session pid ${live.pid} (owner ${live.owner})` : kept ? warmLine() : `no session, nothing booted, no proxy${otherWarm ? ` (${device().key}; the warm ${warmLabel(warmAny)}: node tools/sim.mjs doctor --device ${warmLabel(warmAny)})` : ''}`}`); return 0; }
   for (const p of problems) log(p);
-  if (!fix) { log('run: node tools/sim.mjs doctor --fix (stops our proxy / WDA-sim / keeper, shuts fw-sim down)'); return 3; }
-  for (const n of ['wda', 'proxy', 'keeper']) if (n !== 'keeper' || !kept) await stopOne(n, log);
-  if (moving) { rmSync(sessionFile(), { force: true }); log(`NOT fixed: ${SIM_NAME} is still ${dev.state} (never shut down mid-transition); retry, or check it in Simulator.app`); return 3; }
+  if (!fix) { log(`run: node tools/sim.mjs doctor --fix (stops our proxy / WDA-sim / keeper, shuts ${device().key} down)`); return 3; }
+  for (const n of ['wda', 'proxy', 'keeper']) if (n !== 'keeper' || (!kept && !otherWarm)) await stopOne(n, log);
+  if (moving) { rmSync(sessionFile(), { force: true }); log(`NOT fixed: ${device().name} is still ${dev.state} (never shut down mid-transition); retry, or check it in Simulator.app`); return 3; }
   if (dev && dev.state !== 'Shutdown' && !live && !kept) {
     await shutdownDevice(dev.udid, { log });
     // review-i063 B1: fixed only when the device IS shut down; the warm record (if any) stays for the next try
     const st = deviceState(dev.udid);
-    if (st !== null && st !== 'Shutdown') { if (!live) rmSync(sessionFile(), { force: true }); log(`NOT fixed: ${SIM_NAME} is still ${st} after the shutdown${warm ? ' (the warm record stays)' : ''}; retry, or shut it down in Simulator.app`); return 3; }
+    if (st !== null && st !== 'Shutdown') { if (!live) rmSync(sessionFile(), { force: true }); log(`NOT fixed: ${device().name} is still ${st} after the shutdown${warm ? ' (the warm record stays)' : ''}; retry, or shut it down in Simulator.app`); return 3; }
   }
   if (!live) rmSync(sessionFile(), { force: true });
-  if (!kept) rmSync(warmFile(), { force: true });
+  if (!kept && !otherWarm) rmSync(warmFile(), { force: true });
   log('fixed');
   return 0;
 }
@@ -672,9 +737,9 @@ function keeperEnv(env = process.env) {
 /** Is the Booted `dev` the warm device `w` recorded, of the configured type and runtime? Returns null if so, else why not. */
 export function warmMismatch(w, dev, cfg) {
   if (!w) return 'no warm record';
-  if (!dev || dev.state !== 'Booted') return `${SIM_NAME} is ${dev?.state ?? 'not found'}`;
+  if (!dev || dev.state !== 'Booted') return `${device().name} is ${dev?.state ?? 'not found'}`;
   if (w.udid !== dev.udid || dev.udid !== cfg.udid) return 'the warm record names another device';
-  if (dev.deviceTypeIdentifier !== DEVICE_TYPE || (cfg.deviceType && dev.deviceTypeIdentifier !== cfg.deviceType)) return 'another device type';
+  if (dev.deviceTypeIdentifier !== device().deviceType || (cfg.deviceType && dev.deviceTypeIdentifier !== cfg.deviceType)) return 'another device type';
   if ((cfg.runtimeId && dev.runtimeId !== cfg.runtimeId) || (w.runtimeId && w.runtimeId !== dev.runtimeId)) return 'another iOS runtime';
   return null;
 }
@@ -695,21 +760,22 @@ export async function shutdownWarm({ reason, by = 'sim', id = null, waitSec = 60
     if (!w) return { done: false, gone: true, why: 'the warm record was removed before this shutdown got the simulator lock (the keeper or another shutdown did it)' };
     const live = liveSession();
     if (live) return { done: false, busy: true, why: `a live session (pid ${live.pid}, owner "${live.owner}") owns the device` };
-    const cfg = readConfig();
-    const res = cfg.udid ? await shutdownDevice(cfg.udid, { log }) : 'no Simulator configured';
+    // I-087: the device the warm record names (fw-sim or an iPad), whatever device this process was started for
+    const udid = w.udid || readConfig(warmLabel(w)).udid;
+    const res = udid ? await shutdownDevice(udid, { log, label: warmLabel(w) }) : 'no Simulator configured';
     // done only when the device IS shut down now (review-i063 B1): a failed or timed-out `simctl shutdown` keeps the
     // record (marked) and the keeper, so status, doctor, the timed tools' reap and the phone NOTE still see the device
     let st = null;
-    if (cfg.udid) { try { st = deviceState(cfg.udid); } catch (e) { st = `unknown (${e.message})`; } }
-    if (cfg.udid && st !== null && st !== 'Shutdown') { // null: the device is gone, nothing booted
-      const why = `${res}; fw-sim is ${st}`;
+    if (udid) { try { st = deviceState(udid); } catch (e) { st = `unknown (${e.message})`; } }
+    if (udid && st !== null && st !== 'Shutdown') { // null: the device is gone, nothing booted
+      const why = `${res}; ${warmLabel(w)} is ${st}`;
       if (w) writePrivate(warmFile(), JSON.stringify({ ...w, shutdownFailed: { at: new Date().toISOString(), by, reason, why } }, null, 1));
       log(`SIM_WARM_SHUTDOWN_FAILED (${reason}; by ${by}): ${why}; the warm record stays: node tools/sim.mjs doctor`);
       return { done: false, failed: true, why };
     }
     if (!fromKeeper) await stopOne('keeper', log);
     rmSync(warmFile(), { force: true });
-    log(`SIM_WARM_SHUTDOWN (${reason}; by ${by}): fw-sim ${res}${w ? `, warm since ${w.lastSessionEndedAt ?? '?'}` : ''}`);
+    log(`SIM_WARM_SHUTDOWN (${reason}; by ${by}): ${warmLabel(w)} ${res}${w ? `, warm since ${w.lastSessionEndedAt ?? '?'}` : ''}`);
     return { done: true, why: res, already: res === 'already shut down' };
   } finally { await lk.release(); }
 }
@@ -739,7 +805,7 @@ export async function keeper({ id, pollMs = Number(process.env.FW_SIM_KEEPER_POL
         lastCheck = Date.now();
         let st;
         try { st = deviceState(w.udid); } catch {}
-        if (st !== undefined && st !== 'Booted') why = `fw-sim is ${st ?? 'gone'} (shut down outside the keeper)`;
+        if (st !== undefined && st !== 'Booted') why = `${warmLabel(w)} is ${st ?? 'gone'} (shut down outside the keeper)`;
       }
       if (why && Date.now() >= retryAt) {
         const r = await shutdownWarm({ reason: why, by: 'keeper', id, waitSec: 0, fromKeeper: true, log: once });
@@ -762,7 +828,7 @@ export async function warmOut({ udid, owner, boot, idle, log = () => {} }) {
   if (deviceState(udid) !== 'Booted') return null;
   const dev = findDevice({ udid });
   const now = Date.now();
-  const rec = { id: randomBytes(6).toString('hex'), udid, runtimeId: dev?.runtimeId ?? null, deviceType: dev?.deviceTypeIdentifier ?? null, bootedAt: boot.bootedAt, sessions: boot.sessionsOnBoot,
+  const rec = { id: randomBytes(6).toString('hex'), device: device().key, udid, runtimeId: dev?.runtimeId ?? null, deviceType: dev?.deviceTypeIdentifier ?? null, bootedAt: boot.bootedAt, sessions: boot.sessionsOnBoot,
     lastOwner: owner, lastSessionEndedAt: new Date(now).toISOString(), idleSec: idle, idleUntil: new Date(now + idle * 1000).toISOString(), safariQuit: t.status === 0 };
   await stopOne('keeper', log); // a stray one (none normally: the session took the device over)
   writePrivate(warmFile(), JSON.stringify(rec, null, 1));
@@ -844,10 +910,14 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   if (!gate.ok) throw new Error(`refusing sim session: ${gate.reason}`);
   const p = ports();
   const bgCfg = BG.config(); // I-082: a bad FW_SIM_SETTLE_SEC / FW_SIM_BG_* refuses before anything boots
-  const cfg = readConfig();
-  if (!cfg.udid) throw new Error('no Simulator configured: node tools/sim.mjs setup');
-  const dev = findDevice(cfg);
-  if (!dev || dev.udid !== cfg.udid) throw new Error(`${SIM_NAME} (configured) not found: node tools/sim.mjs setup`);
+  let cfg = readConfig();
+  // I-087: a device other than fw-sim is created at its first session (simctl create; no boot, nothing downloaded)
+  const onDemand = !cfg.udid && device().key !== DEFAULT_DEVICE;
+  if (!cfg.udid && !onDemand) throw new Error('no Simulator configured: node tools/sim.mjs setup');
+  if (!onDemand) {
+    const dev = findDevice(cfg);
+    if (!dev || dev.udid !== cfg.udid) throw new Error(`${device().name} (configured) not found: node tools/sim.mjs setup${device().key === DEFAULT_DEVICE ? '' : ` --device ${device().key}`}`);
+  }
   // one fw-sim: the `simulator` lock closes the race of two sessions reading "no live session" at once (two functional
   // sessions in a raised-cap group). Its wait leaves the boot, the command and the cleanup inside the hold.
   const left = Number.isFinite(gate.endsAt) ? (gate.endsAt - Date.now() - cleanupMs) / 1000 - 60 : 120;
@@ -855,7 +925,8 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   let rec, id, warm = null;
   try {
     const other = liveSession();
-    if (other) throw new Error(`a Simulator session is already running (pid ${other.pid}, owner "${other.owner}")`);
+    if (other) throw new Error(`a Simulator session is already running (pid ${other.pid}, owner "${other.owner}"${other.device && other.device !== device().key ? `, ${other.device}` : ''})`);
+    if (onDemand) cfg = setup({ log: err }); // under the simulator lock: two first sessions never create two devices
     // I-063: read the device again under the simulator lock (a keeper may have shut it down while this session waited);
     // a Booted fw-sim is taken over only when it is the warm device of warm.json (same device, type and runtime)
     let now = findDevice(cfg);
@@ -865,14 +936,30 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
       const room = Number.isFinite(gate.endsAt) ? Math.floor((gate.endsAt - Date.now() - cleanupMs) / 1000) - 60 : Infinity;
       const maxSec = Math.max(0, Math.min(transitionWaitSec(), room));
       const s = await settleDevice(now.udid, { maxSec });
-      if (!s.settled) throw new Error(`refusing: ${SIM_NAME} is still ${s.state} after waiting ${s.waitedSec} s for it to finish (I-078; a shutdown or boot that does not end: node tools/sim.mjs doctor)`);
-      err(`sim session: waited ${s.waitedSec} s for ${SIM_NAME} to finish ${now.state} (now ${s.state ?? 'gone'}; I-078)`);
+      if (!s.settled) throw new Error(`refusing: ${device().name} is still ${s.state} after waiting ${s.waitedSec} s for it to finish (I-078; a shutdown or boot that does not end: node tools/sim.mjs doctor)`);
+      err(`sim session: waited ${s.waitedSec} s for ${device().name} to finish ${now.state} (now ${s.state ?? 'gone'}; I-078)`);
       now = findDevice(cfg);
     }
-    const w = readWarm();
+    let w = readWarm();
+    if (w && w.udid !== cfg.udid) {
+      // I-087: the warm device is another one (fw-sim kept warm, this session drives an iPad, or the other way): one
+      // Simulator at a time (findSocket refuses two), so it is shut down here, under this session's simulator lock
+      const lbl = warmLabel(w);
+      const res = await shutdownDevice(w.udid, { label: lbl });
+      let st = null;
+      try { st = deviceState(w.udid); } catch (e) { st = `unknown (${e.message})`; }
+      if (st !== null && st !== 'Shutdown') {
+        writePrivate(warmFile(), JSON.stringify({ ...w, shutdownFailed: { at: new Date().toISOString(), by: owner, reason: `a ${device().key} session needs the Simulator`, why: `${res}; ${lbl} is ${st}` } }, null, 1));
+        throw new Error(`refusing: the warm ${lbl} did not shut down (${res}; it is ${st}), and ${device().key} can't boot beside it: node tools/sim.mjs doctor --fix --device ${lbl}`);
+      }
+      await stopOne('keeper', () => {});
+      rmSync(warmFile(), { force: true });
+      err(`sim session: the warm ${lbl} was shut down first (${res}): one Simulator at a time (I-087)`);
+      w = null;
+    }
     if (now?.state !== 'Shutdown') {
       const why = warmMismatch(w, now, cfg);
-      if (why) throw new Error(`refusing: ${SIM_NAME} is already ${now?.state ?? 'gone'} (booted by someone else, or a leaked session: node tools/sim.mjs doctor)${w ? `; the warm record does not match it (${why})` : ''}`);
+      if (why) throw new Error(`refusing: ${device().name} is already ${now?.state ?? 'gone'} (booted by someone else, or a leaked session: node tools/sim.mjs doctor)${w ? `; the warm record does not match it (${why})` : ''}`);
       warm = w;
     }
     await stopOne('keeper', () => {}); // the device is this session's now (a warm one), or the keeper's record is stale
@@ -883,8 +970,8 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
       const res = await shutdownDevice(cfg.udid);
       const st = deviceState(cfg.udid);
       if (st !== null && st !== 'Shutdown') {
-        writePrivate(warmFile(), JSON.stringify({ ...warm, shutdownFailed: { at: new Date().toISOString(), by: owner, reason: 'a timing session cold-boots', why: `${res}; fw-sim is ${st}` } }, null, 1));
-        throw new Error(`refusing: a timing session cold-boots, but the warm ${SIM_NAME} did not shut down (${res}; it is ${st}): node tools/sim.mjs doctor --fix`);
+        writePrivate(warmFile(), JSON.stringify({ ...warm, shutdownFailed: { at: new Date().toISOString(), by: owner, reason: 'a timing session cold-boots', why: `${res}; ${device().key} is ${st}` } }, null, 1));
+        throw new Error(`refusing: a timing session cold-boots, but the warm ${device().name} did not shut down (${res}; it is ${st}): node tools/sim.mjs doctor --fix`);
       }
       afterWarm = { lastSessionEndedAt: warm.lastSessionEndedAt ?? null, sessions: warm.sessions ?? null, shutDownAt: new Date().toISOString() };
       warm = null;
@@ -892,7 +979,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     rmSync(warmFile(), { force: true });
     id = randomBytes(6).toString('hex');
     const boot = warm ? { mode: 'warm', bootedAt: warm.bootedAt, sessionsOnBoot: (warm.sessions || 1) + 1, idleSec: Math.round((Date.now() - Date.parse(warm.lastSessionEndedAt)) / 1000) } : { mode: 'cold', bootedAt: null, sessionsOnBoot: 1, ...(afterWarm ? { afterWarm } : {}) };
-    rec = { id, pid: process.pid, owner, window, startedAt: new Date().toISOString(), proxyPorts: p, tipDismissed: cfg.tip?.state ?? 'unchecked', boot, ...(functional ? { functional: true, lock: { mode: gate.mode } } : {}) };
+    rec = { id, pid: process.pid, owner, device: device().key, window, startedAt: new Date().toISOString(), proxyPorts: p, tipDismissed: cfg.tip?.state ?? 'unchecked', boot, ...(functional ? { functional: true, lock: { mode: gate.mode } } : {}) };
   } catch (e) { await simLock.release(); throw e; }
   writePrivate(sessionFile(), JSON.stringify(rec, null, 1));
   const ac = new AbortController();
@@ -903,7 +990,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   const state = { appOpened: false, wdaStarted: false, ready: false };
   let code = 1, mon = null;
   try {
-    log(`sim session ${id} (owner ${owner}, window ${window}${functional ? `, functional, lock mode ${gate.mode}` : ''}): ${warm ? `reusing the booted ${SIM_NAME} (I-063: idle ${rec.boot.idleSec} s, session ${rec.boot.sessionsOnBoot} on this boot)` : `booting ${SIM_NAME}${rec.boot.afterWarm ? ' (a timing session cold-boots: the warm device was shut down first, I-063)' : ''}`}`);
+    log(`sim session ${id} (owner ${owner}, window ${window}${functional ? `, functional, lock mode ${gate.mode}` : ''}): ${warm ? `reusing the booted ${device().name} (I-063: idle ${rec.boot.idleSec} s, session ${rec.boot.sessionsOnBoot} on this boot)` : `booting ${device().name}${rec.boot.afterWarm ? ' (a timing session cold-boots: the warm device was shut down first, I-063)' : ''}`}`);
     if (warm) { await stopOne('wda', () => {}); await stopOne('proxy', () => {}); } // none normally: the last session stopped them
     const boot = await bootDevice(cfg.udid, { abort: ac.signal, log, warm: !!warm });
     if (!warm) rec.boot.bootedAt = new Date().toISOString();
@@ -924,7 +1011,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     BG.appendJsonl(backgroundFile(), { session: id, owner, kind: 'settle', boot: rec.boot?.mode ?? null, at: new Date().toISOString(), ...settled });
     if (interrupted) throw new Error(`interrupted by ${interrupted}`);
     mon = BG.monitor({ everySec: bgCfg.everySec, limitPct: bgCfg.limitPct, onWindow: (w) => BG.appendJsonl(backgroundFile(), { session: id, owner, kind: 'window', ...w }) });
-    const env = { ...process.env, FW_SIM_SESSION: id, FW_SIM_BACKGROUND_LOG: backgroundFile(), FW_SIM_PORT: String(p.tabs), FW_IPHONE_PORT: String(p.tabs), FW_SIM_DEVICE_PORT: String(p.list), FW_SIM_WDA_PORT: String(p.wda), FW_SIM_UDID: cfg.udid, ...(functional ? { FW_SIM_FUNCTIONAL: '1' } : {}) };
+    const env = { ...process.env, FW_SIM_SESSION: id, FW_SIM_BACKGROUND_LOG: backgroundFile(), FW_SIM_PORT: String(p.tabs), FW_IPHONE_PORT: String(p.tabs), FW_SIM_DEVICE_PORT: String(p.list), FW_SIM_WDA_PORT: String(p.wda), FW_SIM_UDID: cfg.udid, FW_SIM_DEVICE: device().key, ...(functional ? { FW_SIM_FUNCTIONAL: '1' } : {}) };
     const timeoutMs = Number.isFinite(gate.endsAt) ? Math.max(1000, gate.endsAt - Date.now() - cleanupMs) : 0;
     log(`SIM_READY tabs :${p.tabs}; running: ${scrub([cmd, ...args].join(' '))}${timeoutMs ? ` (stopped after ${Math.round(timeoutMs / 1000)} s, before your hold ends)` : ''}`);
     const ids = knownIds();
@@ -951,9 +1038,9 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     try {
       const idle = idleSec();
       const demand = functional && idle > 0 && state.ready && !interrupted ? timingDemand(lockStatus('chrome-measure')) : null;
-      if (demand) clog(`not keeping fw-sim booted: ${demand}`);
+      if (demand) clog(`not keeping ${device().key} booted: ${demand}`);
       else if (functional && idle > 0 && state.ready && !interrupted) kept = await warmOut({ udid: cfg.udid, owner, boot: rec.boot, idle, log: clog });
-    } catch (e) { clog(`keeping fw-sim booted failed (${e.message}): shutting it down`); try { await stopOne('keeper', clog); } catch {} rmSync(warmFile(), { force: true }); kept = null; }
+    } catch (e) { clog(`keeping ${device().key} booted failed (${e.message}): shutting it down`); try { await stopOne('keeper', clog); } catch {} rmSync(warmFile(), { force: true }); kept = null; }
     if (!kept) { try { await shutdownDevice(cfg.udid, { log: clog }); } catch (e) { clog(`shutdown failed: ${e.message}`); } }
     if (state.appOpened) {
       try { quitSimApp(); clog('Simulator.app quit'); } catch {}
@@ -962,7 +1049,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
       if (kept) {
         let st;
         try { st = deviceState(cfg.udid); } catch {}
-        if (st !== undefined && st !== 'Booted') { clog(`fw-sim is ${st ?? 'gone'} after Simulator.app quit: not kept`); try { await stopOne('keeper', clog); } catch {} rmSync(warmFile(), { force: true }); }
+        if (st !== undefined && st !== 'Booted') { clog(`${device().key} is ${st ?? 'gone'} after Simulator.app quit: not kept`); try { await stopOne('keeper', clog); } catch {} rmSync(warmFile(), { force: true }); }
       }
     }
     // I-078: a shutdown still in progress (Simulator.app shuts its devices down after the quit returns) ends before the
@@ -972,9 +1059,9 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
       if (isTransitional(st)) {
         const room = Number.isFinite(gate.endsAt) ? Math.floor((gate.endsAt - Date.now()) / 1000) - 10 : Infinity;
         const s = await settleDevice(cfg.udid, { maxSec: Math.max(0, Math.min(transitionWaitSec(), room)), abort: ac.signal });
-        clog(`waited ${s.waitedSec} s for fw-sim to finish ${st} (${s.settled ? `now ${s.state ?? 'gone'}` : `still ${s.state}: the next session waits for it`}; I-078)`);
+        clog(`waited ${s.waitedSec} s for ${device().key} to finish ${st} (${s.settled ? `now ${s.state ?? 'gone'}` : `still ${s.state}: the next session waits for it`}; I-078)`);
       }
-    } catch (e) { clog(`fw-sim state check failed: ${e.message}`); }
+    } catch (e) { clog(`${device().key} state check failed: ${e.message}`); }
     rmSync(sessionFile(), { force: true });
     try { await simLock.release(); } catch (e) { clog(`${SIM_LOCK} lock release failed: ${e.message}`); }
     for (const [s, h] of handlers) process.off(s, h);

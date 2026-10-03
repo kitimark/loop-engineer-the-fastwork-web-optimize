@@ -8,6 +8,8 @@
 //
 //   import { startFakeWda } from './fake-wda.mjs';  const w = await startFakeWda({ latencyMs: 5 });  w.url, w.calls
 // safari-restart's calls (POST /wda/apps/terminate, /wda/apps/launch, /url) switch the foreground app and call onApp(kind, body).
+// I-087: GET / POST /session/:id/orientation like FBOrientationCommands.m (PORTRAIT, LANDSCAPE, the two UIA_ names;
+// GET answers PORTRAIT or LANDSCAPE), state.orientation; `--orientation-fail` / {failOrientation: true} answers 500.
 //   node tests/fixtures/fake-wda.mjs --port=0 [--latency=MS] [--playback] [--fail-actions=N,M] [--foreground=<bundleId>]
 //     prints FAKE_WDA_PORT=<port>; env FAKE_WDA_LOG=<file> appends one JSON line per call.
 import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
@@ -33,11 +35,11 @@ export function validateActions(body) {
   return null;
 }
 
-export function startFakeWda({ port = 0, latencyMs = 0, playback = false, failActions = [], foreground = 'com.apple.mobilesafari', onStroke, onApp, failApp = null, log } = {}) {
+export function startFakeWda({ port = 0, latencyMs = 0, playback = false, failActions = [], foreground = 'com.apple.mobilesafari', onStroke, onApp, failApp = null, failOrientation = false, log } = {}) {
   const calls = [];
   const sessions = new Set();
   let nActions = 0, nSession = 0;
-  const state = { foreground, latencyMs, failActions: new Set(failActions), down: false, running: new Set([foreground]) };
+  const state = { foreground, latencyMs, failActions: new Set(failActions), down: false, running: new Set([foreground]), orientation: 'PORTRAIT' };
   const server = http.createServer((req, res) => {
     let raw = '';
     req.on('data', (d) => (raw += d));
@@ -89,6 +91,14 @@ export function startFakeWda({ port = 0, latencyMs = 0, playback = false, failAc
         if (playback) await sleep(total);
         return send(200, null, sid);
       }
+      if (sub === '/orientation' && (req.method === 'GET' || req.method === 'POST')) {
+        if (req.method === 'GET') return send(200, state.orientation.startsWith('LANDSCAPE') || state.orientation.endsWith('LANDSCAPERIGHT') ? 'LANDSCAPE' : 'PORTRAIT', sid);
+        const o = String(body?.orientation ?? '').toUpperCase();
+        if (!['PORTRAIT', 'LANDSCAPE', 'UIA_DEVICE_ORIENTATION_LANDSCAPERIGHT', 'UIA_DEVICE_ORIENTATION_PORTRAIT_UPSIDEDOWN'].includes(o)) return err(400, 'invalid argument', `Unable to perform requested orientation ${body?.orientation}`);
+        if (failOrientation) return err(500, 'unknown error', `Unable to change device orientation to ${o}`);
+        state.orientation = o;
+        return send(200, null, sid);
+      }
       if (req.method === 'DELETE' && sid && !sub) { sessions.delete(sid); return send(200, null); }
       call.forbidden = true;
       return err(404, 'unknown command', `Unhandled endpoint: ${req.url}`);
@@ -105,6 +115,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const w = await startFakeWda({
     port: Number(arg('port') || 0), latencyMs: Number(arg('latency') || 0), playback: process.argv.includes('--playback'),
     failActions: (arg('fail-actions') || '').split(',').filter(Boolean).map(Number), foreground: arg('foreground') || undefined, log: process.env.FAKE_WDA_LOG,
+    failOrientation: process.argv.includes('--orientation-fail'),
   });
   console.log(`FAKE_WDA_PORT=${w.port}`);
 }

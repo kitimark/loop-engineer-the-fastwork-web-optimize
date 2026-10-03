@@ -406,3 +406,59 @@ test('I-078: transitional device states (they end by themselves) and FW_SIM_TRAN
   assert.equal(transitionWaitSec({ FW_SIM_SETTLE_SEC: '1' }), 60, 'not the phone runs\' settle after a reap (I-063 N6)');
   for (const v of ['x', '-1', 'Infinity']) assert.throws(() => transitionWaitSec({ FW_SIM_TRANSITION_SEC: v }), /FW_SIM_TRANSITION_SEC must be a number of seconds >= 0/);
 });
+
+test('I-087 devices: fw-sim stays the default (name, type, config.json); deviceKey / useDevice pick a known key and refuse others; each device has its own config file; warmLabel / warmLine / reapResult name the warm device', async () => {
+  const S = await import('../../tools/lib/sim.mjs');
+  assert.equal(S.DEFAULT_DEVICE, 'fw-sim');
+  assert.equal(S.SIM_NAME, 'fw-sim 15 Pro Max');
+  assert.equal(DEVICE_TYPE, 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro-Max');
+  assert.deepEqual(Object.keys(S.DEVICES), ['fw-sim', 'fw-ipad', 'fw-ipad-a16', 'fw-ipad-mini']);
+  assert.deepEqual([S.DEVICES['fw-ipad'].name, S.DEVICES['fw-ipad'].deviceType, S.DEVICES['fw-ipad'].family], ['fw-ipad Pro 13 M5', 'com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB', 'ipad']);
+  for (const v of [undefined, null, '']) assert.equal(S.deviceKey(v), 'fw-sim');
+  assert.equal(S.deviceKey('fw-ipad'), 'fw-ipad');
+  for (const v of ['fw-tablet', 'FW-IPAD', '../x', 'constructor']) assert.throws(() => S.deviceKey(v), /unknown Simulator device/);
+  assert.equal(S.device().key, 'fw-sim', 'the default before any useDevice');
+  assert.match(S.configFile(), /[/\\]config\.json$/);
+  assert.match(S.configFile('fw-ipad'), /[/\\]config-fw-ipad\.json$/);
+  S.useDevice('fw-ipad');
+  try {
+    assert.equal(S.device().name, 'fw-ipad Pro 13 M5');
+    assert.match(S.configFile(), /config-fw-ipad\.json$/);
+    assert.match(S.configFile('fw-sim'), /[/\\]config\.json$/);
+  } finally { S.useDevice('fw-sim'); }
+  assert.throws(() => S.useDevice('nope'), /unknown Simulator device "nope"/);
+  assert.equal(S.device().key, 'fw-sim', 'a refused useDevice changes nothing');
+  assert.equal(S.warmLabel({ device: 'fw-ipad' }), 'fw-ipad');
+  for (const w of [{}, null, { device: 'fw-x' }, { device: 'toString' }]) assert.equal(S.warmLabel(w), 'fw-sim', 'an old or odd record is fw-sim\'s');
+  const now = Date.parse('2026-10-02T12:10:00Z');
+  const s = { warm: { device: 'fw-ipad', lastOwner: 'a', sessions: 1, bootedAt: 'b', lastSessionEndedAt: '2026-10-02T12:09:00Z', idleUntil: 'c' }, keeper: { pid: 1, alive: true } };
+  assert.match(warmLine(s, now), /^warm: fw-ipad booted, idle 60 s/);
+  assert.match(warmLine(s, now, { devState: 'Shutdown' }), /^warm: STALE record: fw-ipad is Shutdown/);
+  assert.match(warmLine({ ...s, warm: { ...s.warm, device: 'x; rm -rf' } }, now), /^warm: fw-sim booted/);
+  const stale = reapResult({ status: 0, stdout: 'SIM_WARM_SHUTDOWN (x; by verify): fw-ipad already shut down, warm since y\n', stderr: '' }, {});
+  assert.equal(stale.stale, true);
+  const done = reapResult({ status: 0, stdout: 'SIM_WARM_SHUTDOWN (x; by verify): fw-ipad shut down, warm since y\n', stderr: '' }, {});
+  assert.equal(done.shutDown, true);
+});
+
+test('I-087 sim-orient: orient() rotates through a WDA-sim session marked simulator, skips an orientation already in force, reads it back, refuses other values and the phone\'s port', async () => {
+  const { orient } = await import('../../tools/lib/sim-orient.mjs');
+  const { startFakeWda } = await import('../fixtures/fake-wda.mjs');
+  const w = await startFakeWda();
+  try {
+    const log = [];
+    const slept = [];
+    let r = await orient('landscape', { base: w.url, settleMs: 7, log: (m) => log.push(m), sleep: async (ms) => slept.push(ms) });
+    assert.deepEqual(r, { before: 'portrait', now: 'landscape' });
+    assert.deepEqual(slept, [7]);
+    r = await orient('LANDSCAPE', { base: w.url, settleMs: 0, log: (m) => log.push(m) });
+    assert.deepEqual(r, { before: 'landscape', now: 'landscape' });
+    assert.deepEqual(log, ['rotated portrait -> landscape (WDA-sim)', 'already landscape']);
+    assert.deepEqual(w.calls.filter((c) => c.method === 'POST' && /orientation$/.test(c.path)).map((c) => c.body.orientation), ['LANDSCAPE']);
+    assert.equal(w.sessions.size, 0, 'every session closed');
+    await assert.rejects(orient('upside-down', { base: w.url }), /orientation must be portrait or landscape/);
+    const n = w.calls.length;
+    await assert.rejects(orient('portrait', { base: 'http://127.0.0.1:8100', settleMs: 0 }), /port 8100 is the phone's/);
+    assert.equal(w.calls.length, n, 'nothing sent');
+  } finally { await w.close(); }
+});

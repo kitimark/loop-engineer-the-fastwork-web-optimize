@@ -12,7 +12,7 @@ import { openTab, pickTab, sleep } from './wip.mjs';
 import { REPO } from './paths.mjs';
 import { CERT_WARNING_TITLE } from './iphone-url.mjs';
 import { sample as hostSample } from './host.mjs';
-import { ports, proxyCheck, readConfig, SIM_DEVICE } from './sim.mjs';
+import { ports, proxyCheck, readConfig, SIM_DEVICE, device } from './sim.mjs';
 import { TOOL_FILES } from './iphone-run.mjs';
 import { TOOL_FILES as GESTURE_TOOL_FILES } from './gesture-run.mjs';
 
@@ -62,7 +62,8 @@ export const SIM_SETTINGS = Object.freeze({ lowPowerMode: 'n/a', batteryPct: 'n/
 /** meta.sim of every Simulator record (README §7 "Record schema"). */
 export function simMeta(session, { hostStart = null, hostEnd = null } = {}) {
   const c = readConfig();
-  return { runtime: c.runtime ?? null, runtimeBuild: c.runtimeBuild ?? null, deviceType: c.deviceType ?? null, xcode: c.xcode ?? null, window: session?.window ?? null, tipDismissed: session?.tipDismissed ?? null,
+  return { simDevice: device().key, deviceName: c.name ?? null, runtime: c.runtime ?? null, // I-087: fw-sim or an iPad (tools/lib/sim.mjs DEVICES)
+    runtimeBuild: c.runtimeBuild ?? null, deviceType: c.deviceType ?? null, xcode: c.xcode ?? null, window: session?.window ?? null, tipDismissed: session?.tipDismissed ?? null,
     lockdownMode: 'not read (Simulator default: off)', hostLoad: { start: hostStart, end: hostEnd }, proxyPorts: session?.proxyPorts ?? null,
     safariCache: session?.safariCache ?? null, // I-052: Safari's HTTP cache emptied at boot ({cleared, removedMB})
     boot: session?.boot ?? null, // I-063: {mode: cold | warm (a booted fw-sim reused), bootedAt, sessionsOnBoot}

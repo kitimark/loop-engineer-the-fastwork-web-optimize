@@ -78,12 +78,13 @@ export function warmLine(s = warmState(), now = Date.now(), { devState } = {}) {
   if (!s) return null;
   const w = s.warm, k = s.keeper;
   const clear = 'node tools/sim.mjs shutdown clears it';
-  if (devState !== undefined && devState !== 'Booted') return `warm: STALE record: fw-sim is ${devState ?? 'not found'} (the record of the session of "${w.lastOwner ?? '?'}" at ${w.lastSessionEndedAt ?? '?'}); ${clear}`;
-  if (s.stale && devState === undefined) return `warm: STALE record: the Mac restarted at ${new Date(macBootMs(now)).toISOString()}, after the session of "${w.lastOwner ?? '?'}" at ${w.lastSessionEndedAt ?? '?'} (fw-sim not booted since); ${clear}`;
+  const dev = typeof w.device === 'string' && /^fw-[a-z0-9-]+$/.test(w.device) ? w.device : 'fw-sim'; // I-087: the warm device's key
+  if (devState !== undefined && devState !== 'Booted') return `warm: STALE record: ${dev} is ${devState ?? 'not found'} (the record of the session of "${w.lastOwner ?? '?'}" at ${w.lastSessionEndedAt ?? '?'}); ${clear}`;
+  if (s.stale && devState === undefined) return `warm: STALE record: the Mac restarted at ${new Date(macBootMs(now)).toISOString()}, after the session of "${w.lastOwner ?? '?'}" at ${w.lastSessionEndedAt ?? '?'} (${dev} not booted since); ${clear}`;
   const idle = w.lastSessionEndedAt ? Math.max(0, Math.round((now - Date.parse(w.lastSessionEndedAt)) / 1000)) : null;
   const keeper = k?.alive ? `keeper pid ${k.pid}` : `keeper ${k ? `pid ${k.pid} DEAD` : 'MISSING'}: node tools/sim.mjs shutdown`;
   const failed = w.shutdownFailed ? `; its last shutdown FAILED (${w.shutdownFailed.at}, by ${w.shutdownFailed.by}): node tools/sim.mjs doctor --fix` : '';
-  return `warm: fw-sim ${devState === 'Booted' || k?.alive ? 'booted' : 'recorded as booted (state unchecked)'}, idle${idle != null ? ` ${idle} s` : ''} since the session of "${w.lastOwner ?? '?'}" (${w.sessions ?? '?'} session(s) on this boot since ${w.bootedAt ?? '?'}); shuts down by ${w.idleUntil ?? '?'} or when a timing hold is queued; ${keeper}${failed}`;
+  return `warm: ${dev} ${devState === 'Booted' || k?.alive ? 'booted' : 'recorded as booted (state unchecked)'}, idle${idle != null ? ` ${idle} s` : ''} since the session of "${w.lastOwner ?? '?'}" (${w.sessions ?? '?'} session(s) on this boot since ${w.bootedAt ?? '?'}); shuts down by ${w.idleUntil ?? '?'} or when a timing hold is queued; ${keeper}${failed}`;
 }
 /** The record field timed tools keep (verify.json host.simWarm, a phone run's mac.simWarm): null when no warm device. */
 export function warmSummary(s = warmState(), now = Date.now()) {
@@ -120,7 +121,7 @@ export const reapResult = (r, before) => {
   const out = `${r.stdout || ''}${r.stderr || ''}`;
   const ok = r.status === 0 && !/^SIM_WARM_SHUTDOWN_FAILED\b/m.test(out);
   const done = ok && /^SIM_WARM_SHUTDOWN\b/m.test(out);
-  const already = done && /^SIM_WARM_SHUTDOWN\b.*: fw-sim already shut down/m.test(out);
+  const already = done && /^SIM_WARM_SHUTDOWN\b.*: fw-[a-z0-9-]+ already shut down/m.test(out);
   // busy (review-i063 follow-up): the simulator lock or a live session held the device: not ok, but no failed shutdown
   const busy = !ok && /^SIM_WARM_BUSY\b/m.test(out);
   const action = busy ? 'busy (the simulator lock or a live session holds fw-sim)' : !ok ? 'shutdown FAILED' : already ? 'already shut down (a stale record, removed)' : done ? 'shut down' : 'gone before the shutdown (the keeper or a session took it)';
