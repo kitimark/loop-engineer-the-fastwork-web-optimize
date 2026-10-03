@@ -464,6 +464,14 @@ function liveTarget(p) {
   }
   return p.live ? { option: null, label: null, live: p.live } : null;
 }
+// I-093: what A is. The proposal's compare.a.label when the author set one; else "Original" (A = the plain baseline) or
+// "Base: fixes/<topic>/patch.diff" (A = the baseline + that patch, e.g. the current best build). A stored "Original"
+// next to an A patch is the default label, not the author's: it would call the base build the original.
+function aLabelOf(p, t) {
+  var l = p.compare && p.compare.a && p.compare.a.label;
+  if (l && !(t.live.a && l === 'Original')) return l;
+  return t.live.a ? 'Base: ' + t.live.a.patch : 'Original';
+}
 function stopBeat() { if (tryBeat) { clearInterval(tryBeat); tryBeat = null; } tryUrls = null; }
 function livePost(path, body) {
   return fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-console': '1' }, body: JSON.stringify(body || {}) })
@@ -477,15 +485,20 @@ function tryFrame(url, label) {
 function renderTryIt(p) {
   var box = document.getElementById('tryit');
   var t = p && liveTarget(p);
-  var key = t ? p.id + '|' + p.rev + '|' + (t.option || '') + '|' + t.live.version : '';
+  var key = t ? p.id + '|' + p.rev + '|' + (t.option || '') + '|' + t.live.version + '|' + (t.live.a ? t.live.a.version : '') : '';
   if (key === tryKey) return; // the frames stay loaded while the proposal refreshes around them
   tryKey = key;
   stopBeat();
   if (!t) { box.replaceChildren(); return; }
   var id = p.id;
+  var aLabel = aLabelOf(p, t);
+  var aFrame = aLabel === 'Original' ? 'A: original' : 'A: ' + aLabel;
+  var aShow = aLabel === 'Original' ? 'Show A (original)' : 'Show A (' + aLabel + ')';
+  var aText = !t.live.a ? 'A is the original page'
+    : 'A is ' + (aLabel === 'Base: ' + t.live.a.patch ? 'the original page' : '"' + aLabel + '": the original page') + ' plus ' + t.live.a.patch + ' (version ' + t.live.a.version + ')';
   var card = el('section', { class: 'card tryit', 'aria-label': 'Try it' });
   card.appendChild(el('h3', { text: 'Try it: scroll the real pages' + (t.label ? ' (option: ' + t.label + ')' : '') }));
-  card.appendChild(el('p', { class: 'hint', text: 'A is the original page, B has this proposal applied (' + t.live.patch + ', version ' + t.live.version + '). Both open on this Mac only (localhost), 430x932 like the phone; scroll inside each one. Desktop Chrome or Safari is not the iPhone, so judge the look here and leave smoothness to the phone tests.' }));
+  card.appendChild(el('p', { class: 'hint', text: aText + ', B has this proposal applied (' + t.live.patch + ', version ' + t.live.version + '). Both open on this Mac only (localhost), 430x932 like the phone; scroll inside each one. Desktop Chrome or Safari is not the iPhone, so judge the look here and leave smoothness to the phone tests.' }));
   var note = el('p', { class: 'trynote', role: 'status', text: TRY_NOTE });
   note.hidden = true;
   var err = el('p', { class: 'err', role: 'alert' });
@@ -508,7 +521,7 @@ function renderTryIt(p) {
     });
     showBar.hidden = !one;
     showBar.replaceChildren();
-    [['a', 'Show A (original)'], ['b', 'Show B (proposal)']].forEach(function (m) {
+    [['a', aShow], ['b', 'Show B (proposal)']].forEach(function (m) {
       var b = el('button', { type: 'button', 'aria-pressed': String(show === m[0]), text: m[1] });
       b.addEventListener('click', function () { tryShow[id] = m[0]; draw(); });
       showBar.appendChild(b);
@@ -519,7 +532,7 @@ function renderTryIt(p) {
     Array.prototype.slice.call(pair.children).forEach(function (f) { if (want.indexOf(f.getAttribute('data-side')) < 0) f.remove(); });
     want.forEach(function (s) {
       if (pair.querySelector('[data-side="' + s + '"]')) return;
-      var f = tryFrame(tryUrls[s], s === 'a' ? 'A: original' : 'B: proposal' + (t.label ? ' (' + t.label + ')' : ''));
+      var f = tryFrame(tryUrls[s], s === 'a' ? aFrame : 'B: proposal' + (t.label ? ' (' + t.label + ')' : ''));
       f.setAttribute('data-side', s);
       if (s === 'a') pair.insertBefore(f, pair.firstChild); else pair.appendChild(f);
     });

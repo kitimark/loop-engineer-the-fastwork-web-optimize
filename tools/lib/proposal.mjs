@@ -40,6 +40,11 @@
 // text in the console store by blob id (tools/lib/live.mjs); stored as {patch, ref, blob, base, files}. CLI:
 // post/revise --live-patch <path> [--live-ref <ref>] [--option <name>], and `proposal live <id>` (any state but
 // withdrawn; no new revision, the decision stands).
+// I-093: `live: {patch, ref?, a?: {patch, ref?}}`: `a` names A too (the baseline + that patch, e.g. the current best
+// build), read and stored like B, on the same base tree (refused otherwise); without `a`, A is the plain baseline.
+// CLI: --live-a-patch <path> [--live-a-ref <ref>] next to --live-patch; `proposal live` takes --a-patch/--a-ref (or
+// the same --live-a-* names). B should be built on A (its baseline-relative patch repeats A's changes); when some of A's
+// changed lines are missing from B, post/revise/live warn (not refuse: an option may rework part of A on purpose).
 // Hard rule 12: compare URLs must be localhost; every text field is scrubbed when stored (progress.mjs sanitize +
 // redact.mjs; localhost URLs are kept) and the scrubs are reported. The page renders text as text, never HTML.
 import { mkdirSync, readFileSync, statSync, openSync, readSync, closeSync, copyFileSync, existsSync } from 'node:fs';
@@ -49,7 +54,7 @@ import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs';
 import { sanitize, PERSONAL } from './progress.mjs';
 import { redact } from './redact.mjs';
-import { resolveLivePatch, storeLivePatch, storedLivePatch, patchBase, LIVE_PATCH, BLOB } from './live.mjs';
+import { resolveLivePatch, storeLivePatch, storedLivePatch, patchBase, liveNotCovered, notCoveredWarning, LIVE_PATCH, BLOB } from './live.mjs';
 import { patchHeader } from './bench-overlay.mjs';
 
 export const SCHEMA = 'fw-proposal/1';
@@ -369,16 +374,32 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
    * I-074: a live entry -> {patch, ref, blob, base, files[, text]} (text: freshly read from git, stored by persistLives),
    * or undefined. A stored entry (with blob) is re-checked against the store, not git.
    */
-  const liveOf = (v, path) => {
-    if (v === undefined || v === null || v === '') return undefined;
-    if (typeof v === 'string') v = { patch: v };
-    if (!isObj(v)) { E.push(`${path}: {patch: "fixes/<topic>/patch.diff", ref?: "HEAD"}`); return undefined; }
+  const LIVE_SHAPE = '{patch: "fixes/<topic>/patch.diff", ref?: "HEAD"}';
+  const liveEntry = (v, path) => {
     if (v.blob !== undefined) {
       const text = BLOB.test(String(v.blob)) && LIVE_PATCH.test(String(v.patch)) ? storedLivePatch(v.blob) : null;
       if (text === null) { E.push(`${path}.blob: not a patch in the console store; give {patch, ref} instead`); return undefined; }
       return { patch: v.patch, ref: typeof v.ref === 'string' ? v.ref : 'HEAD', blob: v.blob, base: patchBase(text), files: patchHeader(text).files };
     }
     try { return resolveLivePatch({ patch: v.patch, ref: v.ref ?? 'HEAD', repoDir }); } catch (e) { E.push(`${path}.patch: ${e.message}`); return undefined; }
+  };
+  /** I-093: B's entry, plus its own A (`v.a`, resolved the same way, on B's base tree) when given. */
+  const liveOf = (v, path, aPath = `${path}.a`) => {
+    if (v === undefined || v === null || v === '') return undefined;
+    if (typeof v === 'string') v = { patch: v };
+    if (!isObj(v)) { E.push(`${path}: ${LIVE_SHAPE}`); return undefined; }
+    const b = liveEntry(v, path);
+    if (v.a === undefined || v.a === null || v.a === '') return b;
+    const av = typeof v.a === 'string' ? { patch: v.a } : v.a;
+    if (!isObj(av)) { E.push(`${aPath}: ${LIVE_SHAPE}`); return b; }
+    if (av.a !== undefined && av.a !== null) { E.push(`${aPath}.a: A has no A of its own (A = the baseline + one patch)`); return b; }
+    const a = liveEntry(av, aPath);
+    if (!a || !b) return b;
+    if (a.base !== b.base) { E.push(`${aPath}: A (${a.patch}) was made on ${a.base}/, B (${b.patch}) on ${b.base}/: both must be on the same base tree (site-pretty or site)`); return b; }
+    // a warning, not an error: an option may rework part of A on purpose
+    const w = notCoveredWarning(liveNotCovered(a.text ?? storedLivePatch(a.blob) ?? '', b.text ?? storedLivePatch(b.blob) ?? ''), a.patch, b.patch);
+    if (w) warnings.push(`${aPath}: ${w}`);
+    return { ...b, a };
   };
   const c = isObj(raw.compare) ? raw.compare : (raw.compare === undefined ? {} : (E.push('compare: an object {a, b, shots, video, view}'), {}));
   const cli = { shotsA, shotsB, captions, video };
@@ -389,7 +410,7 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     if (cliOption !== undefined && cliOption !== null && cliOption !== '') E.push('--option: this proposal has no options (--option names the option that --shot-a/--shot-b/--video belong to)');
     if (raw.recommended !== undefined && raw.recommended !== null) E.push('recommended: only with options (it names the option you recommend)');
     Object.assign(f, solution(raw, ''));
-    const lv = liveOf(cliLive ?? raw.live, cliLive ? '--live-patch' : 'live');
+    const lv = liveOf(cliLive ?? raw.live, cliLive ? '--live-patch' : 'live', cliLive ? '--live-a-patch' : 'live.a');
     if (lv) f.live = lv;
     f.compare = {};
     for (const s of ['a', 'b']) { const v = side(c[s], `compare.${s}`, s === 'a' ? 'Original' : 'PoC'); if (v) f.compare[s] = v; }
@@ -432,7 +453,7 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     const b = side(oc.b, `${p}compare.b`, out.label);
     out.compare = { b };
     const mine = !!cliLive && target?.name === name;
-    const lv = liveOf(mine ? cliLive : o.live, mine ? '--live-patch' : `${p}live`);
+    const lv = liveOf(mine ? cliLive : o.live, mine ? '--live-patch' : `${p}live`, mine ? '--live-a-patch' : `${p}live.a`);
     if (lv) out.live = lv;
     f.options.push(out);
     optMedia.push(media(oc, p, target?.name === name ? cli : null));
@@ -489,6 +510,7 @@ function storeMedia(id, rev, media, pre = '') {
 function persistLives(f) {
   for (const x of [f, ...(f.options || [])]) {
     if (x.live && x.live.text !== undefined) { storeLivePatch(x.live.blob, x.live.text); delete x.live.text; }
+    if (x.live?.a && x.live.a.text !== undefined) { storeLivePatch(x.live.a.blob, x.live.a.text); delete x.live.a.text; } // I-093
   }
 }
 
@@ -688,8 +710,10 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
  * I-074: set (or with `clear`, remove) the live B of a proposal, or of one option (`option`, required on a proposal with
  * options): {patch: "fixes/<topic>/patch.diff", ref (default HEAD), repoDir (default cwd)}. Any state but withdrawn;
  * no new revision and the decision stands (it only adds what the "Try it" panel serves).
+ * I-093: `a: {patch, ref}` (or a patch path) sets A too: the baseline + that patch, on B's base tree. Without it the
+ * entry has no A (A = the plain baseline); --clear removes both.
  */
-export async function setLive(id, { by, option, patch, ref, clear = false, repoDir = process.cwd() } = {}) {
+export async function setLive(id, { by, option, patch, ref, a, clear = false, repoDir = process.cwd() } = {}) {
   const who = needBy(by);
   const cur = get(id);
   if (cur.state === 'withdrawn') throw new Error(`${cur.id} is withdrawn`);
@@ -699,7 +723,15 @@ export async function setLive(id, { by, option, patch, ref, clear = false, repoD
   if (names.length && !findOption(cur, option)) throw new Error(`no option "${option}" in ${cur.id} (options: ${names.join(', ')})`);
   if (!clear && (patch == null || patch === '')) throw new Error('--patch fixes/<topic>/patch.diff is required (or --clear)');
   let entry = null;
+  const av = typeof a === 'string' ? { patch: a } : a;
+  if (clear && av != null && av.patch != null && av.patch !== '') throw new Error('--clear removes B and its A: give no --a-patch with it');
   if (!clear) { try { entry = resolveLivePatch({ patch, ref: ref ?? 'HEAD', repoDir }); } catch (e) { throw new Error(`--patch: ${e.message}`); } }
+  let aEntry = null;
+  if (!clear && av != null && av.patch != null && av.patch !== '') {
+    try { aEntry = resolveLivePatch({ patch: av.patch, ref: av.ref ?? 'HEAD', repoDir }); } catch (e) { throw new Error(`--a-patch: ${e.message}`); }
+    if (aEntry.base !== entry.base) throw new Error(`--a-patch: A (${aEntry.patch}) was made on ${aEntry.base}/, B (${entry.patch}) on ${entry.base}/: both must be on the same base tree (site-pretty or site)`);
+  }
+  const keep = (x) => ({ patch: x.patch, ref: x.ref, blob: x.blob, base: x.base, files: x.files });
   return change(cur.id, who, 'live', (p) => {
     if (p.state === 'withdrawn') throw new Error(`${p.id} is withdrawn`);
     const target = p.options?.length ? findOption(p, option) : p;
@@ -707,10 +739,17 @@ export async function setLive(id, { by, option, patch, ref, clear = false, repoD
     if (clear) delete target.live;
     else {
       storeLivePatch(entry.blob, entry.text);
-      target.live = { patch: entry.patch, ref: entry.ref, blob: entry.blob, base: entry.base, files: entry.files };
+      if (aEntry) storeLivePatch(aEntry.blob, aEntry.text);
+      target.live = { ...keep(entry), ...(aEntry && { a: keep(aEntry) }) };
     }
-    return { ...(p.options?.length && { option: target.name }), note: clear ? 'live B removed' : `live B: ${entry.patch} @ ${entry.blob.slice(0, 12)}` };
+    return { ...(p.options?.length && { option: target.name }), note: clear ? 'live B removed' : `live B: ${entry.patch} @ ${entry.blob.slice(0, 12)}${aEntry ? `; A: ${aEntry.patch} @ ${aEntry.blob.slice(0, 12)}` : ''}` };
   });
+}
+
+/** I-093: a stored live entry's "B does not carry all of A's changes" warning (from the stored patches), or null. */
+export function liveAWarning(live) {
+  if (!live?.a) return null;
+  return notCoveredWarning(liveNotCovered(storedLivePatch(live.a.blob) ?? '', storedLivePatch(live.blob) ?? ''), live.a.patch, live.patch);
 }
 
 /** draft -> proposed (validated in full). */
@@ -1049,7 +1088,9 @@ const media = (id, name) => (name ? `/media/${id}/${name}` : undefined);
 const viewShots = (id, c) => (c.shots || []).map((s) => ({ caption: s.caption, a: media(id, s.a), b: media(id, s.b), aSize: s.aSize, bSize: s.bSize }));
 const viewVideo = (id, v) => (v ? { a: media(id, v.a), b: media(id, v.b), both: media(id, v.both) } : undefined);
 /** I-074: what the page needs to know about a live B (the console serves it; no paths beyond the patch name). */
-const viewLive = (l) => (l && BLOB.test(String(l.blob)) ? { patch: l.patch, version: l.blob.slice(0, 12), files: (l.files || []).length } : undefined);
+const viewLiveOne = (l) => (l && BLOB.test(String(l.blob)) ? { patch: l.patch, version: l.blob.slice(0, 12), files: (l.files || []).length } : undefined);
+/** I-093: plus `a` ({patch, version, files}) when the entry names its own A. */
+const viewLive = (l) => { const v = viewLiveOne(l); const a = v && viewLiveOne(l.a); return v && (a ? { ...v, a } : v); };
 
 const viewHold = (h) => ({ by: h.by, note: h.note, at: h.at, rev: h.rev });
 /**
@@ -1123,6 +1164,8 @@ function solutionText(s, ind) {
 }
 
 const liveText = (l) => `${l.patch} @ ${String(l.blob).slice(0, 12)} (${(l.files || []).length} file(s) on ${l.base || 'site-pretty'}; the console's "Try it" panel serves it)`;
+/** I-093: the `live A:` line when the entry names its own A (else A is the plain baseline: no line). */
+const liveAText = (l) => `${l.patch} @ ${String(l.blob).slice(0, 12)} (${(l.files || []).length} file(s) on ${l.base || 'site-pretty'}; the panel's A = the baseline + this patch)`;
 
 /** The text of `proposal show`. */
 export function showText(p) {
@@ -1139,6 +1182,7 @@ export function showText(p) {
   if (p.options?.length) L.push(`  options: ${p.options.map((o) => o.name).join(', ')}${p.recommended ? `; recommended: ${p.recommended.option} (${p.recommended.why})` : ''}`);
   L.push(`  A: ${c.a?.label}${c.a?.url ? ` ${c.a.url}` : ''}${p.options?.length ? '' : `   B: ${c.b?.label}${c.b?.url ? ` ${c.b.url}` : ''}`}${c.view ? `   view: ${c.view}` : ''}`);
   if (p.live) L.push(`  live B: ${liveText(p.live)}`);
+  if (p.live?.a) L.push(`  live A: ${liveAText(p.live.a)}`);
   for (const [i, s] of (c.shots || []).entries()) L.push(`  shot ${i + 1}${s.caption ? ` "${s.caption}"` : ''}: ${s.a} | ${s.b}`);
   if (c.video) L.push(`  video: ${Object.entries(c.video).map(([k, v]) => `${k}=${v}`).join(' ')}`);
   L.push(`  media: ${mediaDir(p.id)}`);
@@ -1151,6 +1195,7 @@ export function showText(p) {
     for (const x of shots.slice(1)) L.push(`    ${x}`);
     if (oc.video) L.push(`    video: ${Object.entries(oc.video).map(([k, v]) => `${k}=${v}`).join(' ')}`);
     if (o.live) L.push(`    live B: ${liveText(o.live)}`);
+    if (o.live?.a) L.push(`    live A: ${liveAText(o.live.a)}`);
   }
   if (p.decision) L.push(`  decision: ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''} (rev ${p.decision.rev}, ${p.decision.at}, ${p.decision.who})${p.decision.notes ? `: ${p.decision.notes}` : ''}`);
   L.push('  history:');

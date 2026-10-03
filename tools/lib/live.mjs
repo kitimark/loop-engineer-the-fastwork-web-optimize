@@ -11,6 +11,10 @@
 // --frame-ancestors <the console's origins>. It reuses them, restarts B for another patch, and kills them (only its
 // own children) after `idleMs` (10 min) without a panel open (the page pings every minute while it is open) and when
 // the console exits. measuringNow(): a timing hold on chrome-measure (the panel shows a note; it never blocks).
+// I-093: the entry may name its own A, {patch, ref?, a: {patch, ref?}}: A = the baseline + a.patch (e.g. the current
+// best build, so a fix stacked on it shows only its own changes in B). A is read, stored and built exactly like B
+// (same path/ref rules, blob store, drift check, no stacked patches), on the same base tree as B; open({aBlob}) serves
+// A from its overlay and restarts A when the A blob changes. Without `a`, A is the plain baseline as before.
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, renameSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -66,6 +70,52 @@ export function resolveLivePatch({ patch, ref = 'HEAD', repoDir = process.cwd() 
   const bad = h.files.find((f) => !f || f.startsWith('/') || f.split('/').includes('..'));
   if (bad) throw new Error(`${patch}: bad file path ${JSON.stringify(bad)}`);
   return { patch, ref, blob, base: patchBase(text), files: h.files, text };
+}
+
+/** A unified diff's changed lines per file: Map<file, {add: Map<line, n>, del: Map<line, n>}> (blank lines skipped). */
+function changedLines(text) {
+  const out = new Map();
+  let file = null, from = null, inHunk = false, cur = null;
+  const bump = (m, l) => { const k = l.replace(/\s+$/, ''); if (k.trim()) m.set(k, (m.get(k) || 0) + 1); };
+  for (const l of String(text).split('\n')) {
+    if (l.startsWith('diff --git ')) { inHunk = false; file = from = null; cur = null; continue; }
+    if (!inHunk) {
+      if (l.startsWith('--- ')) from = l.slice(4).replace(/^a\//, '');
+      else if (l.startsWith('+++ ')) file = l.slice(4) === '/dev/null' ? from : l.slice(4).replace(/^b\//, '');
+      else if (l.startsWith('@@') && file) {
+        inHunk = true;
+        if (!out.has(file)) out.set(file, { add: new Map(), del: new Map() });
+        cur = out.get(file);
+      }
+      continue;
+    }
+    if (l.startsWith('@@')) continue;
+    if (l.startsWith('+')) bump(cur.add, l.slice(1));
+    else if (l.startsWith('-')) bump(cur.del, l.slice(1));
+  }
+  return out;
+}
+
+/**
+ * I-093: does B's patch carry A's changes? Both are baseline-relative, so a B built on A repeats every line A adds or
+ * removes. Returns [{file, lines}] for the files where some of A's changed lines are missing from B (there the panel's
+ * B shows A's change undone or changed); [] when B is a superset of A. A check, not a proof: line multisets per file.
+ */
+export function liveNotCovered(aText, bText) {
+  const A = changedLines(aText), B = changedLines(bText), out = [];
+  for (const [file, a] of A) {
+    const b = B.get(file) || { add: new Map(), del: new Map() };
+    let n = 0;
+    for (const k of ['add', 'del']) for (const [l, c] of a[k]) n += Math.max(0, c - (b[k].get(l) || 0));
+    if (n) out.push({ file, lines: n });
+  }
+  return out;
+}
+/** The warning text for liveNotCovered's result, or null. */
+export function notCoveredWarning(miss, aPatch, bPatch) {
+  if (!miss.length) return null;
+  const list = miss.slice(0, 5).map((m) => `${m.file} (${m.lines} line(s))`).join(', ') + (miss.length > 5 ? `, … ${miss.length - 5} more` : '');
+  return `B (${bPatch}) does not carry all of A's (${aPatch}) changes: ${list}; there B shows A's change undone or changed (is B built on A?)`;
 }
 
 /** Keep a resolved patch's text in the store (once per blob). */
@@ -135,7 +185,7 @@ const idleFromEnv = () => { const s = Number(process.env.FW_CONSOLE_LIVE_IDLE_SE
 
 /**
  * The console's two page servers. opts: {origins: [console origins for --frame-ancestors], idleMs (default 10 min,
- * $FW_CONSOLE_LIVE_IDLE_SEC), sweepMs, serveScript, startTimeoutMs}. Returns {open({blob, base}) -> {a, b} URLs,
+ * $FW_CONSOLE_LIVE_IDLE_SEC), sweepMs, serveScript, startTimeoutMs}. Returns {open({blob, base, aBlob?}) -> {a, b} URLs,
  * ping(), sweep(), running(), stopAll(), close()}.
  */
 export function createLiveServers({ origins, idleMs = idleFromEnv(), sweepMs, serveScript = join(REPO, 'tools', 'serve.mjs'), startTimeoutMs = 30000 } = {}) {
@@ -191,14 +241,25 @@ export function createLiveServers({ origins, idleMs = idleFromEnv(), sweepMs, se
     return false;
   }
   return {
-    /** Start (or reuse) A = the baseline and B = the baseline + the overlay of `blob`. */
-    open({ blob, base = 'site-pretty' }) {
+    /**
+     * Start (or reuse) A = the baseline and B = the baseline + the overlay of `blob`. I-093: with `aBlob`, A = the
+     * baseline + the overlay of `aBlob` (e.g. the current best build), on the same base tree; A restarts when it changes.
+     */
+    open({ blob, base = 'site-pretty', aBlob = null }) {
       if (closed) return Promise.reject(new Error('the console is stopping'));
       if (!BASES.has(base)) return Promise.reject(new Error(`bad base ${base}`));
       lastSeen = Date.now();
       const run = chain.then(async () => {
+        let aOverlay = null;
+        if (aBlob != null) {
+          const aText = storedLivePatch(checkBlob(aBlob));
+          if (aText !== null && patchBase(aText) !== base) throw new Error(`A was made on ${patchBase(aText)}/, B on ${base}/: both must be on the same base tree`);
+          aOverlay = buildLiveOverlay(aBlob);
+        }
         const overlay = buildLiveOverlay(blob);
-        const a = await ensure('a', `base:${base}`, ['--root', base]);
+        const a = aOverlay
+          ? await ensure('a', `blob:${aBlob}:${base}`, ['--root', base, '--overlay', aOverlay])
+          : await ensure('a', `base:${base}`, ['--root', base]);
         const b = await ensure('b', `blob:${blob}:${base}`, ['--root', base, '--overlay', overlay]);
         lastSeen = Date.now();
         return { a: a.url, b: b.url };

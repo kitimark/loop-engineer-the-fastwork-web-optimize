@@ -197,6 +197,46 @@ test('proposal live: an accepted proposal with options gets a B per option; star
   urls = s;
 });
 
+test('I-093: a live A of its own (post --live-a-patch, live --a-patch): start serves A = baseline + that patch, says its version; without it A is the baseline again', async () => {
+  const posted = cli('post', '--by', 'de-x', '--file', writeProposal('p5.json', proposal({ title: 'On the best build' })), '--live-patch', 'fixes/demo/patch.diff', '--live-a-patch', 'fixes/other/patch.diff');
+  const id = postedId(posted);
+  // demo is not built on other: posted, with a warning
+  assert.match(posted.stderr, /^warning: --live-a-patch: B \(fixes\/demo\/patch\.diff\) does not carry all of A's \(fixes\/other\/patch\.diff\) changes: _app\/immutable\/nodes\/2\.fixture\.js \(1 line\(s\)\)/m);
+  assert.match(cli('show', id).stdout, /live A: fixes\/other\/patch\.diff @ [0-9a-f]{12} \(1 file\(s\) on site-pretty/);
+  const view = json(await request(new URL(`/api/proposals/${id}`, base).href)).proposal;
+  assert.deepEqual(Object.keys(view.live.a).sort(), ['files', 'patch', 'version']);
+  assert.equal(view.live.a.patch, 'fixes/other/patch.diff');
+  let s = json(await postJson(`/api/live/${id}/start`, {}));
+  assert.equal(s.aVersion, view.live.a.version);
+  assert.equal(s.version, view.live.version);
+  assert.equal((await request(s.a + PAGE_JS.slice(1))).headers['x-mirror-source'], 'overlay', 'A from its own overlay');
+  assert.equal((await request(s.a + PAGE_JS.slice(1))).text, fx.prettyFiles[PAGE_JS] + '/* PoC: other */\n');
+  assert.equal((await request(s.b + PAGE_JS.slice(1))).text, fx.prettyFiles[PAGE_JS] + '/* PoC: demo */\n');
+  // the CLI's refusals
+  let r = cli('post', '--by', 'de-x', '--file', writeProposal('p6.json', proposal()), '--live-a-patch', 'fixes/other/patch.diff');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /--live-a-patch \(A\) goes with --live-patch/);
+  r = cli('post', '--by', 'de-x', '--file', writeProposal('p7.json', proposal()), '--live-patch', 'fixes/demo/patch.diff', '--live-a-patch', 'fixes/nope/patch.diff');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /--live-a-patch\.patch: .*not committed/);
+  // proposal live swaps the sides; A restarts and serves the new A
+  r = cli('live', id, '--by', 'lead', '--patch', 'fixes/other/patch.diff', '--a-patch', 'fixes/demo/patch.diff');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, new RegExp(`^LIVE ${id}: B = baseline \\+ fixes/other/patch\\.diff @ [0-9a-f]{12} \\(1 file\\(s\\)\\); A = baseline \\+ fixes/demo/patch\\.diff @ [0-9a-f]{12} \\(1 file\\(s\\)\\)`, 'm'));
+  assert.match(r.stderr, /^warning: B \(fixes\/other\/patch\.diff\) does not carry all of A's \(fixes\/demo\/patch\.diff\) changes/m);
+  s = json(await postJson(`/api/live/${id}/start`, {}));
+  assert.equal((await request(s.a + PAGE_JS.slice(1))).text, fx.prettyFiles[PAGE_JS] + '/* PoC: demo */\n');
+  assert.equal((await request(s.b + PAGE_JS.slice(1))).text, fx.prettyFiles[PAGE_JS] + '/* PoC: other */\n');
+  // without A: the plain baseline again, no aVersion
+  r = cli('live', id, '--by', 'lead', '--patch', 'fixes/other/patch.diff');
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.stdout, /A = baseline/);
+  s = json(await postJson(`/api/live/${id}/start`, {}));
+  assert.equal(s.aVersion, undefined);
+  assert.equal((await request(s.a + PAGE_JS.slice(1))).text, fx.prettyFiles[PAGE_JS], 'A is the plain baseline');
+  urls = s;
+});
+
 test('the console\'s exit stops its page servers', async () => {
   json(await postJson('/api/live/ping', {}));
   assert.equal(await refused(urls.a), false);
