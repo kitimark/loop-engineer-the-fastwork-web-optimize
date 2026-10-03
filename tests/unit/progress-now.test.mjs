@@ -98,9 +98,9 @@ function row(o) {
 }
 const BOARD = [
   row({ id: 'phone-queue', title: 'Phone blocks (timing and attribution on the iPhone)', owner: 'iphone-runner', note: 'block B attribution now', next: 'A1 (PR-003, wi-stack), then G1b', derived: [{ kind: 'using', resource: 'phone', plain: 'on the phone now' }] }),
-  row({ id: 'best-stack', title: 'Stack test: five candidates', owner: 'iphone-runner', state: 'waiting', group: 'waiting', statePlain: 'stopped until something else happens', waiting: { plain: 'the Chrome slot: shared probe slot' }, updatedAt: '2026-10-02T09:55:00Z' }),
+  row({ id: 'best-stack', title: 'Stack test: five candidates', owner: 'iphone-runner', state: 'waiting', group: 'waiting', statePlain: 'waiting for: the Chrome slot: shared probe slot', waiting: { plain: 'the Chrome slot: shared probe slot' }, updatedAt: '2026-10-02T09:55:00Z' }),
   row({ id: 'phone-stack-test', title: 'Stack test RB vs stack5', owner: 'iphone-runner', state: 'parked', group: 'parked', statePlain: 'paused on purpose; may resume' }),
-  row({ id: 'fwreskip', title: 'A size write in the middle of the page', owner: 'fix-scroll-engine', state: 'waiting', group: 'waiting', statePlain: 'stopped until something else happens', note: 'idle until G1b', waiting: { plain: 'the phone: G1b third slot' }, derived: [{ kind: 'phone', plain: 'in line for the phone, #1 of 1' }] }),
+  row({ id: 'fwreskip', title: 'A size write in the middle of the page', owner: 'fix-scroll-engine', state: 'waiting', group: 'waiting', statePlain: 'waiting for: the phone: G1b third slot', note: 'idle until G1b', waiting: { plain: 'the phone: G1b third slot' }, derived: [{ kind: 'phone', plain: 'in line for the phone, #1 of 1' }] }),
   row({ id: 'hero-carousel', title: 'Avatar carousel', owner: 'fix-scroll-engine', state: 'parked', group: 'parked', statePlain: 'paused on purpose; may resume' }),
   row({ id: 'ts-i060', title: 'Progress page: what each device does', owner: 'ts-i060', state: 'implementing', statePlain: 'building the change', note: 'writing tests' }),
   row({ id: 'old-research', title: 'Old research line', owner: 'de-old', state: 'researching', statePlain: 'finding out where and why it is slow', stale: true, ageMin: 400 }),
@@ -180,6 +180,7 @@ test('agentsView: one line per working or waiting agent (its main row, what it w
   assert.deepEqual(r.also, ['Stack test: five candidates (waiting on the Chrome slot: shared probe slot)']);
   const f = a.agents[2];
   assert.equal(f.doing, 'A size write in the middle of the page: idle until G1b');
+  assert.equal(f.state, 'waiting for: the phone: G1b third slot', 'user T-044: a waiting row names its reason');
   assert.deepEqual([f.using, f.waits], [[], ['the phone: G1b third slot', 'in line for the phone, #1 of 1']]);
   assert.deepEqual(a.folded.map((x) => [x.owner, x.title, x.why]), [
     ['iphone-runner', 'Stack test RB vs stack5', 'parked'],

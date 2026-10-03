@@ -292,6 +292,29 @@ test('renderText: plain board, waiting-on-you first, finished hidden unless --al
   assert.equal(S.STATES.coordinating.group, 'working', 'ops items coordinate');
 });
 
+test('user T-044: a waiting row names its reason in its state line ("waiting for: …", "waiting (reason not given)"); the board text and the views carry it', () => {
+  const now = Date.parse('2026-10-02T12:00:00Z');
+  const mk = (id, state, waitingOn = null) => ({ id, title: id, kind: 'fix', owner: `o-${id}`, state, stateSince: '2026-10-02T11:50:00Z', updatedAt: '2026-10-02T11:50:00Z', priority: null, waitingOn });
+  const items = [
+    mk('on-agent', 'waiting', { kind: 'agent', target: 'fix-nav-morph', text: 'the morph patch' }),
+    mk('on-user', 'waiting', { kind: 'user', text: 'yes/no on the menu' }),
+    mk('legacy', 'waiting'), // a row from before `waiting` needed --waiting-on
+    mk('ready', 'ready-to-land', { kind: 'lead', text: 'land request' }),
+    mk('busy', 'implementing', { kind: 'chrome', text: 'A/B of st5' }),
+  ];
+  const v = S.buildStatusView({ items, live: {}, now });
+  const by = Object.fromEntries(v.items.map((x) => [x.id, x]));
+  assert.equal(by['on-agent'].statePlain, 'waiting for: fix-nav-morph: the morph patch');
+  assert.equal(by['on-user'].statePlain, 'waiting for: you: yes/no on the menu');
+  assert.equal(by.legacy.statePlain, 'waiting (reason not given)');
+  assert.equal(by.ready.statePlain, 'finished; waiting for the lead to land it', 'other states keep their words');
+  assert.equal(by.busy.statePlain, 'building the change');
+  assert.ok(!JSON.stringify(v).includes('something else happens'), 'the vague words are gone, the legend too');
+  assert.match(S.renderText(v), /on-agent {2}\[Fix\] on-agent\n {6}waiting for 10 min: waiting for: fix-nav-morph: the morph patch; owner o-on-agent/);
+  assert.match(S.renderText(v), /waiting for 10 min: waiting \(reason not given\); owner o-legacy/);
+  assert.equal(S.statePlain('measuring'), 'measuring it on Chrome or the phone');
+});
+
 test('seedPlan/applySeed: active PROGRESS items + a seed file; dry run writes nothing; existing ids skipped; no priority', async () => {
   const progress = { items: [
     { id: 'cdwc', title: 'Countdown fix', state: 'testing', stage: 'V', owner: 'fix-nav-morph' },

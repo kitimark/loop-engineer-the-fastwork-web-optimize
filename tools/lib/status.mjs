@@ -55,7 +55,8 @@ export const STATES = {
   measuring: { group: 'working', plain: 'measuring it on Chrome or the phone' },
   reviewing: { group: 'working', plain: "reviewing someone else's work" },
   coordinating: { group: 'working', plain: 'keeping the work moving (queues, landing, the summary)' },
-  waiting: { group: 'waiting', plain: 'stopped until something else happens' },
+  // user T-044: a row names its reason in the same line (itemView: "waiting for: <the waiting-on text>"); this is the legend
+  waiting: { group: 'waiting', plain: 'waiting for: what the owner names (or "reason not given")' },
   'ready-to-land': { group: 'waiting', plain: 'finished; waiting for the lead to land it' },
   parked: { group: 'parked', plain: 'paused on purpose; may resume' },
   landed: { group: 'finished', plain: 'on main (done)' },
@@ -346,6 +347,16 @@ const itemNames = (it) => new Set([it.owner, it.id, ...(it.aliases || [])].filte
 
 const minutes = (from, now) => (from ? Math.max(0, Math.round((now - Date.parse(from)) / 60000)) : null);
 
+/**
+ * The plain words for a row's state (user T-044: "stopped until something else happens" said nothing): a waiting row
+ * names its reason, "waiting for: <the waiting-on text>", or "waiting (reason not given)" without one; the board CLI,
+ * the /status page and the progress "now" view all show this.
+ */
+export function statePlain(state, st = STATES[state] || { plain: state }, waiting = null) {
+  if (state !== 'waiting') return st.plain;
+  return waiting?.plain ? `waiting for: ${waiting.plain}` : 'waiting (reason not given)';
+}
+
 export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), staleAfterMin = staleMin() } = {}) {
   const st = STATES[it.state] || { group: 'working', plain: it.state };
   const { derived, flags, liveWait } = derive(it, live, byId, now);
@@ -357,7 +368,7 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     id: it.id, title: s(it.title, LIMITS.title), kind: it.kind, kindLabel: KINDS[it.kind] || it.kind,
     owner: s(it.owner, 80), aliases: (it.aliases || []).map((a) => s(a, 80)), progress: it.progress || null, refs: (it.refs || []).map((r) => s(r, 20)),
     priority: Number.isInteger(it.priority) ? it.priority : null,
-    state: it.state, statePlain: st.plain, group: st.group, groupLabel: GROUPS[st.group] || st.group,
+    state: it.state, statePlain: statePlain(it.state, st, waiting), group: st.group, groupLabel: GROUPS[st.group] || st.group,
     stateSince: it.stateSince || null, stateForMin: minutes(it.stateSince, now),
     waiting, derived, flags, liveWait, unlinked: [...(it.unlinked || [])],
     waitingOnYou: waiting?.kind === 'user' || derived.some((d) => d.kind === 'user'),
