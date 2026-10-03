@@ -781,7 +781,10 @@ attribution (after the counted runs; driver M for the pin; Timeline on except st
   C sentinel voiding the runs since the last pass; LPM; a wrong served hash; re-entry and backing missed)
 scorer: fixes/cd-strip/p079/score079.mjs, sha256 302b608e09e7 (full 302b608e09e7b7b10a7b34f53f5472713e05c195d674495b4b613aacbd4bf874), committed before any phone data; run as
   `node fixes/cd-strip/p079/score079.mjs <arm>:<file> ... --json <out>` with every block file in block order (warm-ups
-  skipped, void runs reported and dropped). Windows, fixed before data:
+  skipped, void runs reported and dropped). Thermal gate filter (score079 has no gate input): the files of a hold that
+  fails the thermal gate (either read not Serious, or Is Induced = Yes) are left out of the scorer call and listed with
+  their two gate reads in the block log; only their re-runs are passed. score079's printed "start band" line (38-40 °C)
+  is descriptive only under B; the gate is the xctrace read. Windows, fixed before data:
   top frames: a W run's frames with t in [marks.idle start, marks.scroll end) and yEnd < 1000 (4 s of the clock rolling
     at y 0, then the W steps through the hero)
   pin frames: step 4's driver frames with m >= 0.999 from the first such frame + 100 ms to the last (the m = 1 hold;
