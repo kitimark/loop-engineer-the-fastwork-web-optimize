@@ -747,6 +747,82 @@ paintCount). `reasonsForCompositingLayer` runs for the carousel and each img tha
 - Either reading stays OBSERVED in our setup until a WebKit source or doc reference confirms the painting path
   (CLAUDE.md "Platform claims"). The research plan for that reference goes to the lead with the result.
 
+### D2 result (2026-10-03 19:15:42-19:18:10Z, one hold, exit 0)
+
+The last pmset sleep or dark-wake entry was at 17:57:12Z, so the hold did not overlap a sleep. Served hashes: base
+`4606120cf392`/`27776f3d4138`, S `7bf7c4657d21`/`f523598b2a24`, F `7bf7c4657d21`/`a984ae7b7715`. Every arm caught the
+same slide (the video-editor face leaving). Raw data: `out/carousel-leaver/d2/simgeo.json`.
+
+**At rest the geometry is identical.** This holds in base, S and F, at `rest0`, `post` and `post300`, with A/A equal:
+
+| face slot | rect left (CSS px) | device px origin (x, y) | fraction (x / y) | size | drawn / natural |
+|---|---|---|---|---|---|
+| 1-4 | 58.26563 + 24k | 174.79688 + 72k, 1114.17188 | 0.79688 / 0.17188 | 32 x 32 | 90 x 90 device px from 480 x 480 (one face 640 x 640) |
+
+- S/F's slot transform is `matrix(1, 0, 0, 1, 0, 0)` and base's is `none`. Neither has a translate, so the scale is 1
+  in both.
+- So no fractional offset and no scale tells S from base at rest.
+
+**What differs at rest is the painting path, not the geometry:**
+- **Layers.** Base has no layer for any face (12 layers under `#people`). S and F have one composited layer per slot
+  (17 layers). Their reasons are `willChange`, plus `stacking` for slots 2-5. The layers' `bounds` are 33 x 33 at whole
+  page px (x 58, 82, 106, 130), and `compositedBounds` are 32 x 32.
+- **The card ancestor.** `.start-selling-future-card` has opacity 0.999 and `filter: blur(0px)` in S and F (st6-rb2's
+  `re-keep-op` rest values), while base has 1 and `none`. Every face is painted inside it. Its transform is
+  `matrix(1, 0, 0, 1, 0, 0)` in both.
+- **The slots themselves** have opacity 0.999 in S and F, and 1 in base.
+
+**Mid-slide** (t 100), the followers differ by **0.00687 CSS px** (0.021 device px):
+- Base places them by reflow at 62.23438 + 24k, i.e. LayoutUnit-quantized (the leaver's width is 5.28125, a multiple of
+  1/64).
+- S places them by a continuous translate (-20.038113 px) at 62.22751 + 24k.
+- At t 0 and t 220 they agree.
+- The leaver differs by design (base narrows its box; S scales its full box). That is E/F's own matter.
+
+**Side observation** (OBSERVED, cause unknown, does not affect the at-rest reading): base's keyed swap creates new img
+elements. Two rAFs after the swap (`post`, and `t0` of the next slide), they report `naturalWidth` 0 and `complete`
+false; by `post300` and `t100` they are complete. S's persistent slots stay complete throughout.
+
+**Reading** (describes only):
+- **Geometry equal, layering differs.** Per the registration, no G is built on geometry.
+- Three suspects remain, all in how the faces are painted:
+  - the card's opacity 0.999 plus `blur(0px)`;
+  - the slot layers (will-change);
+  - the slots' own `scale(1)` / opacity 0.999.
+- D3 below splits them before a G is proposed to the lead.
+- The mid-slide 0.007 px offset is a separate, small quantity; P-090 can score it if G goes ahead.
+
+## st6-rb2 follow-up, D3 (describes only; written before it runs)
+
+**Question.** Which of the three painting suspects makes S's faces differ from base's at rest in WebKit?
+
+**Arms.** These are diagnostic overlays, never candidates. Each is S (`snap/S`) with one block appended to the CSS
+(sources in the scratchpad `d3-*.css`):
+
+| arm | change on top of S | CSS sha |
+|---|---|---|
+| Sc | the card back to the baseline's rest values: `.start-selling-future.is-visible > .start-selling-future-card { opacity: 1 !important; filter: none !important }` | `247e94f7b1cf` |
+| Sv | no slot layers: `.start-selling-avatars.is-carousel img { will-change: auto !important }` | `dc4334967c89` |
+| Sw | Sv, plus the slots at rest as base's imgs: `img:not(.st5-next) { transform: none; opacity: 1 }` (animations still override during a slide) | `303e1050b81d` |
+
+The JS is S's (`7bf7c4657d21`) in every arm.
+
+**Run.** One shared-lane Simulator hold with `probe/simcrop.mjs` (sha `26f548f2dcfe`, unchanged), arms in order base,
+S, Sc, Sv, Sw, base2. pmset is checked after the hold.
+
+**Readout.** For each arm against base:
+- n8 and max shade at `post` and `post300` (rest) and at t 100;
+- `tier.mjs`'s five numbers at `post`;
+- base~base2 as the A/A.
+
+**What it decides** (describes only):
+- An arm at rest equal to base (n8 = base~base2) names the suspect it removed. That suspect is what G must change.
+- If several arms do, the smallest change wins.
+- If none does, the cause is a combination (Sc and Sw together) or something else, and that is reported.
+- Whatever is found goes to the lead with a proposed G before anything is built. Sc touches st6-rb2's `re-keep-op`,
+  and Sv/Sw touch st6's no-flip mechanism; both are outside "position and phase". G's cost then needs P-090 to score
+  the gain those mechanisms bought.
+
 ## Deliverables
 
 - `patch.diff`: baseline-relative, st6-rb2 + **F** (CSS `a984ae7b7715` and st6-rb2's JS `7bf7c4657d21`), regenerated
