@@ -26,6 +26,7 @@ code (gate below). Evidence: Simulator counts and frozen-frame pixels, Chrome pa
   build) `heCss`, `heLive`, `heRT`, `heRest`, `heTS`, `heTE`, `heSc`, `heUp`, `hePE`, `heWrap`, `heOff`, `heArm`,
   `heSync`. Mode switch in `d()` and `p()`, the `dE` callback, cleanup.
 - `fixes/hero-exit-threaded/pF/scoreF.mjs`: the scorer for the F-build phone block (sha256 `32ed5f4e81f9`).
+- `fixes/hero-exit-threaded/pF/framesF.mjs`: frame-gap counts (dt > 50 / > 34 and twins) for P-081 (sha256 `40d0d302c3f1`).
 - `fixes/hero-exit-threaded/gestures/hero-pass-v1.json`: the WDA gesture of the phone attribution block (P-074).
 - `/_app/immutable/assets/2.gBuqKVzi.css`: one new `@supports (animation-timeline: view()) and (animation-range:
   contain 0% contain 100%)` block after the hero rules (overlay lines ~2158-2320).
@@ -50,7 +51,7 @@ WebKit can paint.
 
 The lead's F instructions after P-074: (1) remove the touchstart style recalc, pixel-identical in every frame;
 (2) explain or cut the rest repaint (accepted as a trade-off); (3) R5 at width 980 (accepted: wide layouts keep the
-writer, OBSERVED); (4) a scorer for the F block (`pF/scoreF.mjs`), registered by ops as P-08x.
+writer, OBSERVED); (4) a scorer for the F block (`pF/scoreF.mjs`), registered by ops as P-081 (ticket below).
 
 **Root cause of the per-frame style recalc (CONFIRMED, WebKit source, main `13a1f2916933547024ee020d94031096a41eb7cb`).**
 `WebAnimation::computeRelevance` counts an animation on a scroll timeline as relevant unless it is idle; the
@@ -156,6 +157,103 @@ levels; status-bar clock and countdown digit rows (in the A/A too) left out.
   trade-off).
 - Measurement code changed: none. a11y: unchanged from V (the `.he-bob` span only).
 - Data (gitignored): `out/hext/f7/` (cost card, rc), `out/hext/f7px1`-`f7px3`, `out/hext/f8px1` (pixels).
+
+### P-081: phone ticket for the F build (registration; written before any F phone data)
+
+A Timeline attribution block with frame-gap counts, not a gain block. The prediction id comes from mgmt-ops-10.
+- **Question (one).** On the iPhone at real thermal Serious, under a WDA finger drag (driver G), does F stop running the
+  per-frame JS writer on moving hero frames while C runs it, with touchstart and first-move frames that cost no more
+  than C's same-phase frames and no more long frames than C?
+- **Builds** (immutable snapshot copies, re-checked by sha256 before the block):
+  - F: `out/snapshots/hext-V-8e43f3792dbf`, served `nodes/2.DyWL8TcE.js` `8e43f3792dbf` and `assets/2.gBuqKVzi.css`
+    `cc74cd980e72`.
+  - The one control, C = st6-rb2: `out/snapshots/st6rb2-C-7bf7c4657d21`, `7bf7c4657d21` / `f523598b2a24`.
+  - Same base: site-pretty, the snapshot pinned by `baseline.json`.
+- **Servers and ports**, one per arm: `node tools/serve.mjs --root site-pretty --overlay out/snapshots/<snapshot>
+  --port 0 --https --vendors=local --latency 150 --no-cache --state out/hext/p081/serve-<arm>.json`. The phone loads
+  the plain http twin (I-003). Ports go in the block log, never 5173. One uncounted warm-up load per arm port (C and F).
+- **Driver G.** Gesture `gestures/hero-pass-v1.json` (sha256 `e3f31872b82f`, unchanged from P-074): two slow drags up
+  through the hero with 1 s rests, then two drags back down.
+  - **Clear of the nav morph:** the scorer band is y 1..780 and the whole gesture stays at or above the hero end
+    (y ≈ 884, rest2). The page-end nav morph (fix-nav-morph's `--morph` at 0 in WebKit, OBSERVED) is never reached;
+    none of this topic's Chrome, Simulator or pixel cases reach it either.
+- **Condition** (user T-039 B, `memory/phone-checks-start-warm.md`): real thermal Serious.
+  - Every hold runs the gate pair `research/phone-thermal-gate/thermal-gate.mjs` (sha256 `4604218c4041`,
+    `--expect serious`, `--max-c 44`) at its start and end. A hold counts only when both reads say Serious with
+    Is Induced = No; otherwise the hold is re-run.
+  - Holds are 900 s, back to back. Stop at 44 °C battery or Critical, and cool before the next hold.
+  - Every gate failure goes to the lead. Two failing holds in a row stop the block and switch to A (the lead's switch,
+    recorded in the block log).
+  - One start method for every run: pre-warm on the plain baseline page the same way for each arm.
+  - Logged per run: battery °C, charging state, the timer-grid median.
+  - A Low Power Mode run is dropped and re-run.
+- **Runs.**
+  - n = 2 counted runs per arm, Timeline on, in the order C F F C, after the warm-ups.
+  - Sentinel (as P-074): an uncounted Timeline-OFF control run on C with `iphone.mjs run --arm C --heat-sentinel`,
+    bottom ≥ 58 fps and scroll ≥ 44 fps, at the block start and the block end.
+  - A failing start sentinel: no counted run starts; cool, restart the block.
+  - A failing end sentinel voids every counted run of the block; cool, re-run the block once.
+  - A void run (scoreF.mjs's void rules: gesture error or abort, Timeline errors or more than one epoch, over 10 %
+    uncovered moving band frames; or LPM) gets one in-place re-run. A second void at one position voids the block.
+  - **Files from a hold that failed either gate read are never passed to the scorers** (the P-079 lesson); the block log
+    lists them as excluded.
+- **Scorers** (both committed before data; every valid counted run passed in block order):
+  - `pF/scoreF.mjs` sha256 `32ed5f4e81f9` with `--fn C:s=4391 --fn F:s=4497,heRest=4449`, band 1..780: (a) writer
+    share, (b) hand-over units, (c) the y≈50 frame and the timer grid, descriptive.
+  - `pF/framesF.mjs` sha256 `40d0d302c3f1`: frame gaps per run from the recorder's rAF stamps.
+    - Thresholds: dt > 50 and dt > 34, the ±4 ms twins (>46/>54, >30/>38), and near-band frames flagged.
+    - Scopes: 'band' (moving hero-band frames, the scored scope) and 'gesture' (drag1 to end, reported).
+    - Per-arm medians; F − C. A threshold is threshold-sensitive when a twin's verdict differs from it or from the
+      other twin.
+    - Pre-registration check only, not a claim: run on P-074's V/C files it gave band V − C >50 −0.5 and >34 −3, not
+      threshold-sensitive.
+- **Predictions**, written as falsifiers, with P(hit) before data:
+
+  | # | prediction | point | interval (falsified outside) | P(hit) |
+  |---|---|---|---|---|
+  | a-C | C writer share, every valid C run | ~0.8 | 0.3..1.0 | 0.85 |
+  | a-F | F writer share, every valid F run. The parked writer runs on moving frames inside y 1-30 by design. | 0.01-0.03 | 0..0.05 | 0.8 |
+  | b-ts | touchstart: every F unit dRecalc ≤ 1, dLayout ≤ 0, dPaint ≤ 0 vs C. F does no style work at touchstart (Simulator 0 recalcs, OBSERVED). | in | OUT falsifies | 0.8 |
+  | b-fm | first-move: same bounds. Inside the 30 px band F runs C's writer. | in | OUT falsifies | 0.75 |
+  | b-rest | rest: the park repaint, the accepted trade-off | OUT on paint | in or OUT; not a falsifier | 0.6 for OUT |
+  | f50 | band dt > 50, F − C | 0 | ≤ +1 (WORSE at ≥ +2); twins >46/>54 the same bound | 0.75 |
+  | f34 | band dt > 34, F − C | −2 | ≤ +2 (WORSE at ≥ +3); twins >30/>38 the same bound | 0.7 |
+  | grid | timer grid 30 ms in every counted run (descriptive; a run at ~4 ms has failed the gate anyway) | grid30 | none | — |
+
+- **Decisions** (if X then Y):
+  - **a-C in, a-F in, b-ts in, b-fm in, f50 and f34 no-worse:** the mechanism holds on the phone under G at Serious.
+    F goes to V with two items, and no further block runs for this question:
+    - the user's pixel decision (proposal: the live bits and R6);
+    - the user's finger A/B (console, through the lead, after the block).
+  - **b-rest OUT:** the trade-off the lead already accepted. It does not block landing.
+    - The README and the card report it with the heRest TimerFire's own S/L/P next to the next unit's, from the same
+      Timeline (a labelled post-hoc diagnostic; the scorer's verdict stands).
+    - Landing then rests on (a), b-ts, b-fm, the frame counts, the pixel decision and the finger A/B.
+    - b-rest in: reported.
+  - **b-ts or b-fm OUT:** F's hand-over costs more than C's. Name the rows, go back to F, then a new build and a new
+    ticket.
+  - **a-F out:** the CSS path is not active on the phone (gate or switch). Back to F, from the scorer's per-frame lines.
+  - **a-C out:** the measure failed, not the fix; no claim.
+    - Check the scorer on C's data, then an ops re-read, then a re-score.
+    - New runs only if that still fails.
+  - **Split in an arm** (runs on both sides of a range): no claim for that arm.
+    - At most one second block on the same ticket.
+    - A second split goes to the lead as inconclusive.
+    - Fewer than 2 valid runs in an arm counts as a void block.
+  - **f50 or f34 WORSE (band scope):** no landing on this build. To the lead, with the long frames' units (which
+    records hold them, from the same Timelines).
+  - **Threshold-sensitive f50 or f34:** to the lead, with no frame verdict.
+  - **Gesture-scope WORSE with band no-worse:** reported to the lead (frames outside the hero), with no verdict on the
+    fix.
+  - **No data for a (b) kind:** to the lead, with no verdict on that kind. Check marks and the heRest line before any
+    re-run.
+  - **Block void:** no claim. Cool and re-run once; a second void goes to the lead.
+- **Expected minutes:** about 40 (range 30-50).
+  - 8 runs (2 warm-ups, 2 sentinels, 4 counted) at about 1.5 min each.
+  - About 1.5 min of gate reads per hold.
+  - Pre-warm to Serious and any ceiling cool-down.
+  - It fits in 3-4 holds of 900 s.
+  - The user's finger A/B comes after the block and is not part of P-081.
 
 ## What changed
 
