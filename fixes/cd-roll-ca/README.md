@@ -181,7 +181,52 @@ callbacks and their script go. Running strip animations ≈ half the samples, at
 rolling digit. That WebKit runs them as Core Animation animations rests on the brief's CONFIRMED
 `KeyframeEffect::canBeAccelerated` reading (keyword `linear`, transform only); the halved rendering updates agree.
 
-## WebKit frames, layers and Timeline (round 4, Simulator; OBSERVED, Simulator, in our setup)
+## strip-tc (C8/V9): roll end and session A (round 4; OBSERVED, in our setup)
+
+**Roll end (review round 4 check: no one-frame jump when the animations are cancelled).** A = every hero roll paused
+at its own end (fill both: the last keyframe), A2 = the same again (noise floor), B = after `finish()` → `onfinish` →
+`__crStop` → `cancel()`, i.e. cd-strip's inline rest transform. Plus, per animated cell, |last keyframe − inline
+`style.transform`| in px.
+
+| | rolls / digit rolls / cells | last keyframe vs inline | anims left | A vs B | A vs A2 | rects A vs B |
+|---|---|---|---|---|---|---|
+| Chrome (`end-check.mjs`, headless 430x932 DPR 3; 4 natural, 4 forced multi-digit) | 8 / 18 / 77 | 0 px | 0 | 7 of 8 identical; 1: 4 px, delta 1 | same roll: 4 px, delta 1 | 0 px |
+| Simulator wrap (simpx, fade50, frozen clock) | 1 / 2 / 15 | 0 px | 0 | 73 px, delta 1 | 42 px, delta 1 | 0 px |
+| Simulator wrapUp | 1 / 2 / 15 | 0 px | 0 | 0 px | 42 px, delta 1 | 0 px |
+
+The Simulator wrap pair's 73 px: 42 are the A/A spot (css x 260-299 from the timer's left, the same 42 px in C8 vs
+C8-again), 31 lie at css x 160-209, on digits that had no animation in that pair (only the seconds rolled), so not at
+a cancelled cell; the same 1-shade A/A class. No jump at the roll end in either engine: the last keyframe and the
+rest transform are the same number, and the frames before and after the cancel match within the A/A noise.
+
+**Session A on C8/V9** (`out/cd-roll-ca/simpx/simpx-2026-10-03T10-33-01-524Z.json`; fade50, wrap + wrapUp, 90 shots per
+arm, then C8 again). The Simulator did not settle (I-082: background 115 % of a core at the start, `FW_SIM_SETTLE_SEC=30`,
+load1 up to 81-91): the frozen frames don't depend on it, the Timeline windows and the rate check do.
+
+| | A/A (C8 vs C8 again) | V9 vs C8 |
+|---|---|---|
+| shots differing | 28 of 90, max delta 1 | 90 of 90; max delta 5 (wrap), 6 (wrapUp); 1 at rest |
+| digit place (state) | 0 | ≤ 0.017 px |
+| cell rects (getBoundingClientRect) | 0 | ≤ 0.01636 px (1 shot ≥ 1/64), 0 unmatched |
+| shared startTime | | 79 / 79 digit rolls |
+| layers at rest / rest + 2 s | 14 backed, 0.329 MB | 14 backed, 0.329 MB (both) |
+| layers mid-roll | wrap 14 / 0.329, wrapUp 15 / 0.352 | equal; reason `animation` on the rolling cells only |
+| paused scene | will-change auto, 0 animations, 0 backed | the same |
+
+- The pixel deltas are the path's interpolation offset on the rolling digits (as on strip-rw: 87 of 90, max 5); at
+  rest max 1.
+- Rects include transforms; on tc the roll writes no `top`, so the rect difference is that same interpolation offset
+  (offline bound 0.0189 px), not layout. The one shot at 0.01636 px is over 1/64 px for that reason; on strip-rw the
+  check stood for the top/wrapper cancel and stayed ≤ 0.0151 px.
+- The extra backed cell at rest seen on strip-rw (2 of 4 runs) did not show on tc (V9 = C8 at rest and 2 s later,
+  1 run); cd-strip's own strip-tc census once had a transient +1 with no cd-roll-ca at all. Not a cost line on tc so
+  far.
+- Timeline, V9 paused vs running at rate 1e-6, mid-roll: recalcs 53 vs 50 (wrap), 53 vs 52 (wrapUp): no added recalc
+  while the compositor runs the roll.
+- Rate cross-check: 0.001 matched (max delta 1 at 0.45 of the bracket); rate 1 inconclusive (brackets of 305-311 ms
+  under the load, best max delta 121): to repeat in a quiet Simulator.
+
+## WebKit frames, layers and Timeline (round 4, Simulator; OBSERVED, Simulator, in our setup) (strip-rw, history)
 
 `simpx.mjs` (this folder), fw-sim 15 Pro Max, iOS 18.7 Mobile Safari, shared lane, `sim.mjs session --functional`,
 arms served from the snapshot copies (bodies hashed by the script). The page is frozen by a shim that makes the
@@ -483,9 +528,9 @@ patch.diff: base-sha256 6fa0e1e8a221…, +165 -2 lines (insertions; the two '-' 
 end and the spring's start value)
 design delta from cd-roll-ca-4 (strip-rw): no __crTops (no top writes); the animations override cd-strip's inline rest
 transforms, cancel() at the finish reveals them (last keyframe = rest transform)
-checks: none yet on tc (lead: review round 4 on the delta first, including no one-frame jump at the roll end, Chrome
-and Sim frozen frames); then the counted set from session A on C8/V9
-memory/layers: PENDING on tc (strip-tc control, cd-strip S2: 16-17 backed hero cells, 0.39-0.42 MB, one transient +1)
+checks on tc: roll end (Chrome end-check 8 rolls, Sim wrap/wrapUp): last keyframe = inline rest, 0 px; A vs B within A/A; session A
+(fade50 wrap,wrapUp + A/A): V9 vs C8 max delta 6, state <= 0.017 px, rects <= 0.01636 px, 0 unmatched, layers equal; rest of the counted set PENDING
+memory/layers (Simulator, fade50, session A): 84 layers, 14 backed, 0.329 MB at rest and rest+2s, C8 = V9; mid-roll equal
 debug hooks: none
 ```
 

@@ -16,7 +16,7 @@
 // (floor(n), a cell entering or leaving the clip), plus 10/30/50/70/90 % of the roll and frames 20/25/30/35. Every
 // arm is shot at those frames. LayerTree (cell/strip layer count, backing MB, per-cell memory) at rest and mid-roll.
 //   node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner cd-roll-ca -- \
-//     node tools/sim.mjs session --functional --owner cd-roll-ca -- node fixes/cd-roll-ca/simpx.mjs C6,V7 fade50 wrap
+//     node tools/sim.mjs session --functional --owner cd-roll-ca -- node fixes/cd-roll-ca/simpx.mjs C8,V9 fade50 wrap
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -28,7 +28,7 @@ const { openTab, sleep } = await import(join(WT, 'tools/lib/wip.mjs'));
 
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const SNAP = join(WT, 'out/cd-roll-ca/snap');
-const ARMS = (process.argv[2] || 'C6,V7').split(',');
+const ARMS = (process.argv[2] || 'C8,V9').split(',');
 const PASSES = (process.argv[3] || 'fade50').split(',');
 const SCENS = (process.argv[4] || 'wrap').split(',');
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
@@ -86,6 +86,12 @@ const HELP = `(() => { if (window.__px) return 'again'; ${READ}
     box: (i) => { const r = hero()[i].parentElement.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; },
     // after a scenario: hand every roll back to the build (finish -> onfinish -> rest tops)
     finishAll: () => window.__px.anims().reduce((m, A) => { A.forEach((a) => { a.playbackRate = 1; try { a.finish(); } catch {} }); return m + A.length; }, 0),
+    // roll-end check (review round 4, strip-tc): pause every hero roll at its own end (the fill-both end value); per
+    // digit: cells, max |last keyframe - inline transform| px (cd-strip's rest place; must be 0)
+    endPrep: () => window.__px.anims().map((A) => { if (!A.length) return null; const d = A[0].effect.getTiming().duration; let m = 0;
+      for (const a of A) { const k = a.effect.getKeyframes(), last = pxOf(k[k.length - 1].transform), inl = pxOf(a.effect.target.style.transform);
+        m = Math.max(m, Number.isFinite(last) && Number.isFinite(inl) ? Math.abs(last - inl) : Infinity); a.playbackRate = 1; a.pause(); a.currentTime = d; }
+      return { cells: A.length, d: +d.toFixed(3), kfInlineMaxPx: m }; }),
   };
   return 'ok'; })()`;
 const TARGET = Date.parse('2026-11-02T12:00:00+07:00');
@@ -104,6 +110,12 @@ const SCROLL = { hero: 0, fade50: 0.5, fade25: 0.25, fade75: 0.75 };
 const RATES = (process.env.SIMPX_RATES ?? '0.001,1,1').split(',').filter(Boolean).map(Number);
 const RATE_STEP = Number(process.env.SIMPX_RATE_STEP || 0.05);
 const RES = (process.env.SIMPX_RES || '334,347').split(',').map(Number);
+// SIMPX_NOEND=1 skips the roll-end pair (V arms)
+const NOEND = process.env.SIMPX_NOEND === '1';
+const bufd = (a, b) => { if (a.length !== b.length) return { sizeMismatch: [a.length, b.length] }; let n = 0, max = 0;
+  for (let i = 0; i < a.length; i += 3) { const d = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2])); if (d) n++; if (d > max) max = d; }
+  return { diffPixels: n, maxDelta: max }; };
+const rectd = (ra, rb) => { let m = 0, un = 0; ra.forEach((A, j) => { const B = new Map((rb[j] || []).map(([q, v]) => [q, v])); for (const [q, v] of A) { if (B.has(q)) m = Math.max(m, Math.abs(v - B.get(q))); else un++; B.delete(q); } un += B.size; }); return { maxPx: +m.toFixed(5), unmatched: un }; };
 
 function png(buf) {
   if (buf.readUInt32BE(12) !== 0x49484452) throw new Error('not a PNG');
@@ -191,7 +203,7 @@ function pickFrames(series) { // series[k] = n per digit at frame k (k = 0..K)
 
 async function run(c, arm, range, isV, first) {
   const ev = (e) => c.evaluate(e);
-  const res = { arm, shots: {}, state: {}, rects: {}, info: {}, v: {}, layers: {}, tl: {}, rate: [] };
+  const res = { arm, shots: {}, state: {}, rects: {}, info: {}, v: {}, layers: {}, tl: {}, rate: [], end: {} };
   const step = (t) => ev(`(window.__step(${t}), 0)`);
   const tick = async (t, r) => { await ev(`(window.__vt = ${t}, window.__vd = ${nowFor(r)}, document.dispatchEvent(new Event('visibilitychange')), 0)`); await sleep(40); };
   let T = 5e6;
@@ -255,6 +267,23 @@ async function run(c, arm, range, isV, first) {
       while (k < plan.rollFrames + 10) { k++; await step(G + k * FR); }
       await step(G + 1e5); T = G + 1e5;
       if (isV) { await ev('window.__px.finishAll()'); await sleep(80); }
+      // V: roll-end pair (review round 4, strip-tc), on a replay of the scenario (the frame plan above may have finished
+      // its rolls already): the change(s) stepped as above up to frame 3 (12 with a second change), then A = every roll
+      // paused at its own end (fill both), A2 = the same 150 ms later (noise floor), B = after finish() -> onfinish ->
+      // __crStop -> cancel(): cd-strip's inline rest transforms. A vs B must not differ (no jump at the roll end)
+      if (isV && !NOEND) {
+        await settle(r0); const G3 = T + 1e5; await tick(G3 + FR / 3, r1);
+        let k3 = 0; const upto = r2 !== undefined ? 12 : 3;
+        while (k3 < upto) { k3++; await step(G3 + k3 * FR); if (r2 !== undefined && k3 === 9) await tick(G3 + k3 * FR + FR / 3, r2); }
+        const pre = await ev('window.__px.endPrep()'); await sleep(150);
+        const A = crop(screenshot(`${arm}-${pass}-${sk}-endA`).img, box), rA = await ev('window.__px.rects()'), sA = await ev('window.__px.ty()');
+        await sleep(150); const A2 = crop(screenshot(`${arm}-${pass}-${sk}-endA2`).img, box);
+        await ev('window.__px.finishAll()'); await sleep(200);
+        const left = await ev('window.__px.anims().reduce((m, A) => m + A.length, 0)');
+        const B = crop(screenshot(`${arm}-${pass}-${sk}-endB`).img, box), rB = await ev('window.__px.rects()'), sB = await ev('window.__px.ty()');
+        res.end[id] = { digits: pre.filter(Boolean), animsLeft: left, AB: bufd(A, B), AA: bufd(A, A2), rectAB: rectd(rA, rB), stateABpx: +Math.max(0, ...sA.map((v, j) => Math.abs(v - sB[j]))).toFixed(4) };
+        await step(G3 + 1e5); T = G3 + 1e5;
+      }
       // V, first scenario of the first pass: a roll played for real (rate r) from its start, one screenshot, its local
       // time read just before and just after it; then paused shots over that bracket find the time whose drawing
       // matches the running shot best (only the longest-rolling digit's box). Shows whether the compositor draws at a
@@ -362,6 +391,7 @@ out.tl = Object.fromEntries(got.map((g) => [g.arm, g.tl]));
 out.rate = Object.fromEntries(got.filter((g) => g.isV).map((g) => [g.arm, g.rate]));
 out.v = Object.fromEntries(got.filter((g) => g.isV).map((g) => [g.arm, { check: vcheck(g), perFrame: g.v }]));
 out.paused = Object.fromEntries(got.filter((g) => g.paused).map((g) => [g.arm, g.paused]));
+out.end = Object.fromEntries(got.filter((g) => g.isV).map((g) => [g.arm, g.end]));
 out.compare = {};
 for (let i = 1; i < got.length; i++) out.compare[`${got[0].arm} vs ${got[i].arm}`] = cmp(got[0], got[i]);
 out.endedAt = new Date().toISOString();
@@ -373,4 +403,5 @@ for (const [k, v] of Object.entries(out.tl)) console.log('TL', k, JSON.stringify
 for (const [k, v] of Object.entries(out.rate)) console.log('RATE', k, JSON.stringify(v.map((r) => (r.error ? r : { rate: r.rate, digit: r.digit, bracket: r.bracket, nBracket: r.nBracket, best: { ct: r.best.ct, n: r.best.n, sum: r.best.sum, px: r.best.px, mx: r.best.mx }, bestRelBracket: r.bestRelBracket, shots: r.tried.length }))));
 for (const [k, v] of Object.entries(out.layers)) for (const [x, y] of Object.entries(v)) if (y.reasons) console.log('REASONS', k, x, JSON.stringify(y.reasons));
 for (const [k, v] of Object.entries(out.paused)) console.log('PAUSED', k, JSON.stringify({ ...v, layers: v.layers && (v.layers.error ? v.layers : { n: v.layers.n, MB: v.layers.memoryMB, cellLayers: v.layers.cells?.length, cellsWithBacking: v.layers.cells?.filter((q) => q[2] > 0).length }) }));
+for (const [k, v] of Object.entries(out.end)) for (const [x, y] of Object.entries(v || {})) console.log('END', k, x, JSON.stringify({ digits: y.digits.length, cells: y.digits.reduce((m, d) => m + d.cells, 0), kfInlineMaxPx: Math.max(0, ...y.digits.map((d) => d.kfInlineMaxPx)), animsLeft: y.animsLeft, AB: y.AB, AA: y.AA, rectAB: y.rectAB, stateABpx: y.stateABpx }));
 console.log('wrote', f);

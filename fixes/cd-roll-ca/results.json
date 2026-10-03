@@ -1959,16 +1959,156 @@
    "costLine": "+1 backed cell (+0.023 MB) at rest in V in 2 of 4 Sim runs (seconds ones cell 2, ~0.1 s after a roll); persistence not checked yet; OBSERVED"
   },
   "pending": [
-   "review round 4 on the tc delta (no one-frame jump at the roll end, Chrome + Sim frozen frames), then all items below on C8/V9 from session A",
-   "simpx carry,two,step fade50 + hero pass with A/A",
-   "sim-counts frozen 2 reps",
-   "sim-hide C6/V7 3 cycles",
-   "Paint records per roll",
-   "Chrome comp-check C6/V7, h60, hide-check, fix.mjs check on C6/V7",
-   "rest census +2 s",
-   "frozen-frame identity at c375 (DPR 3 touch) and c1440 (DPR 1) mid-roll + live resize across 400 mid-roll (T-034)"
+   "review round 4 (lead spawns it with session A data)",
+   "session B1 carry,two and B2 step at fade50 + A/A on C8/V9; session C hero pass + A/A",
+   "sim-counts frozen 2 reps C8,V9; sim-hide C8/V9 3 cycles",
+   "Chrome hold: comp-check C8/V9 (Paint per roll), h60 roll-probe, hide-check, fix.mjs check --on cd-strip",
+   "frozen-frame identity at c375 (DPR 3 touch) and c1440 (DPR 1) mid-roll + live resize across 400 mid-roll (T-034)",
+   "rate-1 cross-check in a quiet Sim"
   ],
-  "measuredOn": "strip-rw (C5/V6 dev, C6/V7); none yet on strip-tc (C8/V9)",
-  "tcDelta": "no __crTops: the roll writes no top; per-cell animations override cd-strip tc inline rest transforms (k-M)*c, cancel() at finish reveals them (last keyframe = rest transform)"
+  "measuredOn": "strip-rw (C5/V6 dev, C6/V7) and strip-tc (C8/V9: session A + Chrome roll-end check)",
+  "tcDelta": "no __crTops: the roll writes no top; per-cell animations override cd-strip tc inline rest transforms (k-M)*c, cancel() at finish reveals them (last keyframe = rest transform)",
+  "tc": {
+   "rollEndChrome": {
+    "file": "out/cd-roll-ca/end-check-V9.json",
+    "tool": "fixes/cd-roll-ca/end-check.mjs",
+    "served": {
+     "js": "582d120c9f8f",
+     "css": "982a747d9263"
+    },
+    "rolls": 8,
+    "forced": 4,
+    "digitRolls": 18,
+    "kfInlineMaxPx": 0,
+    "sharedStart": true,
+    "animsLeftAfterFinish": 0,
+    "AvsB": {
+     "differ": 1,
+     "maxDelta": 1,
+     "pixels": 4
+    },
+    "AvsA2": {
+     "differ": 1,
+     "maxDelta": 1,
+     "pixels": 4
+    },
+    "rectABMaxPx": 0,
+    "note": "A = rolls paused at their end (fill both), B = after finish() -> onfinish -> cancel(); the one A/B difference (4 px, delta 1) is the same as A vs A2 in that roll (noise); headless Chrome 430x932 DPR 3"
+   },
+   "sessionA_C8_V9": {
+    "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T10-33-01-524Z.json",
+    "log": "out/cd-roll-ca/simpx-countA-tc2.log",
+    "pass": "fade50",
+    "scenarios": [
+     "wrap",
+     "wrapUp"
+    ],
+    "shots": 90,
+    "simQuiet": "NOT settled after 28 s (FW_SIM_SETTLE_SEC=30; background 115 % of a core at start), SIM_BACKGROUND mean 20 % max 130 %, load1 max 81-91",
+    "aa": {
+     "differ": 28,
+     "maxDelta": 1,
+     "state": 0,
+     "rects": 0
+    },
+    "v": {
+     "differ": 90,
+     "maxDelta": {
+      "wrap": 5,
+      "wrapUp": 6
+     },
+     "stateMaxPx": 0.017,
+     "rectMaxPx": 0.01636,
+     "rectOverLayoutUnit": 1,
+     "unmatched": 0,
+     "sharedStart": "79/79",
+     "restMaxDelta": 1,
+     "note": "rects are getBoundingClientRect (transforms included); on tc no top is written, so the rect difference is the path interpolation offset (offline bound 0.0189 px), not layout; the 1 shot over 1/64 is that offset"
+    },
+    "layers": {
+     "restC": [
+      14,
+      0.329
+     ],
+     "restV": [
+      14,
+      0.329
+     ],
+     "rest2sC": [
+      14,
+      0.329
+     ],
+     "rest2sV": [
+      14,
+      0.329
+     ],
+     "midEqual": true,
+     "reasonsV": "animation on the rolling cells only"
+    },
+    "rollEndSim": {
+     "wrap": {
+      "cells": 15,
+      "kfInlineMaxPx": 0,
+      "animsLeft": 0,
+      "AvsB": [
+       73,
+       1
+      ],
+      "AvsA2": [
+       42,
+       1
+      ],
+      "rectAB": 0,
+      "stateABpx": 0,
+      "where": "42 px = the A/A spot (css x 260-299 from the timer, also in C8 vs C8-again); 31 px at css x 160-209, digits with no animation in this pair (the seconds rolled): not at the rolled cells"
+     },
+     "wrapUp": {
+      "cells": 15,
+      "kfInlineMaxPx": 0,
+      "animsLeft": 0,
+      "AvsB": [
+       0,
+       0
+      ],
+      "AvsA2": [
+       42,
+       1
+      ],
+      "rectAB": 0,
+      "stateABpx": 0
+     }
+    },
+    "pausedScene": {
+     "C8": {
+      "cellAnimations": 0,
+      "backedCells": 0,
+      "willChange": "auto"
+     },
+     "V9": {
+      "cellAnimations": 0,
+      "backedCells": 0,
+      "willChange": "auto"
+     }
+    },
+    "rate": {
+     "0.001": {
+      "maxDelta": 1,
+      "atBracket": 0.451
+     },
+     "1": "inconclusive: brackets 305-311 ms under load (load1 81-91), best max delta 121"
+    },
+    "tlRecalcV9PausedVsRunning": {
+     "wrap": [
+      53,
+      50
+     ],
+     "wrapUp": [
+      53,
+      52
+     ]
+    }
+   },
+   "costLineTc": "extra backed cell at rest: not seen on tc (V9 14 / 0.329 MB = C8, at rest and rest+2s, 1 run); on rw 2 of 4 runs (OBSERVED)"
+  }
  }
 }
