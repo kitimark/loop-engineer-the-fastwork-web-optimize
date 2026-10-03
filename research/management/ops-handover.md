@@ -19,8 +19,11 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
     > 50 at top not V-only. P-069 phone: row 1 in, |median diff| < 4 out (19), row 2 in, frames > 50 0-1 out,
     falsifier not met. **Open F-146** (post-hoc, OBSERVED, cause unknown): at pastHero at rest V has more long frames
     though less total work; the lead wants it explained before wave 2; de-countdown runs a Simulator `--lt` session.
-    D1 3251486 = the I-077 workaround (mechanics only, accepted pre-count). Ops second read of b44f58c (README "Stage 2
-    readout" + x1-stage2.json vs the P-069 card): PENDING, next batch.
+    D1 3251486 = the I-077 workaround (mechanics only, accepted pre-count). **Ops second read of b44f58c: PASS** (recomputed
+    from x1-stage2.json, counted runs 1-8 only, attribution runs excluded): served hashes C 4606120cf392 / V
+    638b8e03e81c (CSS 27776f3d4138 both) as on the card; 4 ticks in every window; row 1 median V - C -19.2, not
+    separated; row 2 V 619.1-645.8 vs C 877.5-1053.8, V below, V/C 0.618; resume and heroExit not separated; > 50 ms
+    counts as in the readout. Decisions follow the card as written.
   - **d8351b1:** de-gpu's gpu-props addendum (section 4: X1 stage 2 outcome and F-146); de-gpu's tip was a628a6c.
   - **630c700 memory move (user OK both, T-032 #7):** `memory/` (README index + 15 scrubbed notes), imported by
     CLAUDE.md (`@memory/README.md`); Serena rules/project_overview are pointers; the auto-memory folder stays with a
