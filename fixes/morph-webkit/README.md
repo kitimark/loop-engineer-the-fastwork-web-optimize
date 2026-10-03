@@ -818,6 +818,44 @@ took 33 ms at the same point.
 - **Decisive next check:** a G-driver release of st6-rb2 vs st6-rb2 minus `__osb`, with innerHeight and morph logged
   per frame (`--inject`). Board F-151.
 
+## C-026 panel-dvh: closed from existing phone data (2026-10-04; data only, no device)
+
+**Question (lead, user C-026):** does the open panel's `--panel-h: calc(100dvh - 40px)` (baseline CSS 11077, phones;
+the same line in st6-rb2 at 11177) cost layout on toolbar frames, as de-gpu's T-030 note suggested? A fix would be
+svh, or a px value set once.
+
+**Code:**
+- The panel's height is `pill + (panel − pill) × --morph` (CSS 10453).
+- The page can scroll only while C() is false (JS 13019 `w > 0.001 || r > 0.001`): M() (13055-13058) prevents every
+  touchmove while C() holds, and L() (13077-13078) scrolls back to the pin.
+- So the toolbar, which follows the scroll, can move only once the morph is at ≤ 0.001. At that point the dvh term
+  moves the panel by ≤ 0.001 × 40 px = 0.04 px per transition.
+
+**Data:**
+- Tools: `dvh-gscan.mjs` and `dvh-window.mjs` (this folder). The files read are iphone-runner's phone runs; the
+  scripts read them without changing them.
+- **G runs:** 54 gesture files (`out/*/gesture-*.json`: P-036 10, P-071 17, P-073 15, P-074 6, P-081 6), with 1136
+  innerHeight-change frames, 361 of them within 300 px of the end.
+  - **0** of those frames had a prevented touchmove in the 100 ms before it. The toolbar never moved while the jack
+    was active.
+- **C-026 finger pair** (`out/swipe31/C-26-p{1,2}-a1.json`; F, n = 1 per arm). These files log no touch or morph data.
+  - In st6-rb2, the 84 ms frame (y 5220 → 5141) is the first scroll frame after the pin, and innerHeight is still 815
+    there.
+  - The toolbar starts one frame later (815 → 812 at y 5062). The 42 and 66 ms frames follow at y 4862 / 4749, while
+    the morph is already closed.
+  - The ~0.4 s before the release ran at 31-40 ms per frame. That is the end-pin morph cost T-030 already counted (91
+    long frames held at the pin).
+  - The Original carries the same dvh rule. It runs the same release and toolbar transition at 33 ms, then 13-27 ms.
+
+**Verdict:**
+- **The panel-dvh hypothesis is REFUTED** for C-026's frames. The decisive check is the code path above plus 54 G runs
+  in which the toolbar never moved during the jack.
+- A change to `--panel-h` would save no layout. Its only effect is that the morph element drops out of WebKit's
+  viewport-unit style invalidation on toolbar frames, and only if a px value is used: svh or vh are invalidated
+  exactly like dvh (de-gpu T-030 §0.2, `StyleScope.cpp` l.885-920, CONFIRMED).
+- No fix is planned. C-026's 84/66/42 ms frames stay with F-151's candidates (`__osb` mid-gesture, the real touch
+  path, n = 1), and on main's build behind the pin cost before them.
+
 ## F3 round 2 (review-f3-arm-scope B1/B2), 2026-10-03
 
 - B2 fix: `fixes/mw10e-arm-scope-d/` (JS 999c4497f37e): window touch listeners while the morph is active.
