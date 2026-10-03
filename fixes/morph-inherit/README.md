@@ -86,15 +86,27 @@ Why inline writes rather than dropping `inherits: false` (the lead's preference)
   - The children's state (`--morph`, x, opacity) is identical to the baseline at every m.
   - Pixels are within max channel delta 2 of the baseline, except:
     - m 0.1: max 52, the same as the baseline A/A;
-    - m 0.9 and m 1: max 11 / 6, 52 / 0 px over 8, inside the panel's countdown cells (y 425-484). That is
-      anti-aliasing of the panel clock under the panel's scale. It is a C-vs-baseline difference, not part of this
-      fix: in Chrome, fixed C vs C is 0 px there.
+    - m 0.9 and m 1: max 11 / 6, 52 / 0 px over 8, inside the panel's countdown cells (y 425-484). Likely
+      anti-aliasing of the panel clock under the panel's scale, and likely a C-vs-baseline difference rather than
+      part of this fix. That attribution rests on Chrome only (fixed C vs C is 0 px there); there is no WebKit C-vs-M
+      frame at these m with live children to compare, so on WebKit it is OBSERVED, cause unknown.
 
 (b) Chrome (headless 430x932 DPR 3), `gates/reveal-frames.mjs --builds C,M,C2`,
 `out/f3r/frames-2026-10-03T14-00-03-524Z`:
 - fixed C vs C is 0 px at m 0.1, 0.75, 0.9 and 1, and max 1 at 0.25 and 0.5. The A/A is max 1 there too.
-- At m 0, 0.002 and the final 0, the only changes are in the platform noise band y 225.7-228. The A/A shows up to 141
-  in that band.
+- At m 0, 0.002 and the final 0, the only changes are in one band, y 225.7-228 (x 103-161 and 293-326): page
+  content, the hero's connector lines between the avatars and the shield, not the nav. Per frame (px over 8 / max
+  channel delta, `gates/reveal-diff.py <dir> --ref C`):
+
+  | frame | M vs C | A/A (C2 vs C) |
+  |---|---|---|
+  | k0, m 0 | 549 / 36 | 0 / 1 |
+  | k1, m 0.002 | 994 / 47 | 1021 / 141 |
+  | k8, final m 0 | 1021 / 94 | 0 / 2 |
+
+  So on k0 and k8 M differs from C there while the A/A does not; only k1 shows an A/A of the same size. The crops show
+  the lines' gradient at a different phase, so this is likely animation-phase noise in that band (OBSERVED, cause
+  unknown; the fix writes only the nav children's inline `--morph`, and nothing in the nav differs).
 - Counts: same as C, see (c).
 
 (c) Restyle and layout counts during the tween, C vs fixed C.
@@ -116,9 +128,9 @@ Data: `out/morph-inherit/restyle-chrome-2026-10-03T13-58-59-959Z.json`, `out/f3a
 
 What the fix costs:
 - No extra style recalc passes on either engine. Chrome restyles the same number of elements or slightly fewer.
-- In WebKit the corrected morph does about +1 layout and +1 paint per open-tween frame (+0.6 / +0.3 on close). That is
-  the motion C had skipped and the baseline does: the logo's `left` moves and the earn button's max-width / padding
-  transition runs.
+- In WebKit the corrected morph does about +1 layout and +1 paint per open-tween frame (+0.6 / +0.3 on close). Likely
+  the motion C had skipped: the logo's `left` moves and the earn button's max-width / padding transition runs. That
+  the baseline does the same work is unmeasured: tween-paint-sim had no baseline arm.
 - Simulator frames over 34 ms rose from 5/5 to 9/8 per open tween. Simulator ms are not judged (F-084), but on the
   phone this suggests C's morph timing was measured on a lighter morph than the baseline's (see "Consequences").
 
