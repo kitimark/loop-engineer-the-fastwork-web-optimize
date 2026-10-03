@@ -770,3 +770,50 @@ The plan:
 2. Chrome parity (short lane) for the chosen fix: morph start/stop and the pin on wheel in both directions.
    The logger-check above covers the basics.
 3. Land with or after #6 (same effect, same owner); the finger verdict decides.
+
+## C-026 pin release: Simulator release probe (2026-10-03 01:25Z; counts only, F-084)
+
+**Question (lead):** is the 84 ms frame where st6-rb2 starts scrolling back up from the pin a cost of the panel's
+`dvh` on the toolbar resize, or of the release? It is st6-rb2 only, n=1, with innerHeight still 815; the Original
+took 33 ms at the same point.
+
+**Setup:**
+- Tool: `release-sim.mjs` (this folder). One functional Simulator session in the shared lane, iOS 26.5 Simulator,
+  430x775 at DPR 3.
+- Order: Original, st6-rb2, st6-rb2, Original. Original = the baseline; st6-rb2 = the immutable copy
+  JS 7bf7c4657d21 / CSS f523598b2a24. Served hashes checked.
+- Each load ran three sequences, each under Timeline:
+  - **noMorph:** scroll up from the end.
+  - **release:** a synthetic wheel opens the morph and closes it again; the scroll starts in the first rAF at
+    `--morph` 0.
+  - **late:** as release, but the scroll starts 1 s after `--morph` 0.
+- The scroll is programmatic, so the toolbar never moves.
+- Logged: the rAF frames [scrollY, innerHeight, morph], plus a MutationObserver on html, the nav, #platform and the
+  header scene.
+
+**What it shows** (Simulator, synthetic input; OBSERVED):
+- **The page resumes before `--morph` reaches 0.** `C()` turns false at r < 0.001, and st6-rb2 writes its release
+  set 40-60 ms before `--morph` reaches 0:
+  - `html.style` (build g's `__osb`: overscrollBehaviorY reset);
+  - the header scene, set to `paused`;
+  - the nav class.
+  
+  A finger's touchmove stops being prevented at that same moment. The morph is then < 0.001, so the panel is ~46 px
+  (pill-sized) when the page scrolls back: the dvh term moves its height by < 0.02 px per 40 px of toolbar. This is
+  UNRESOLVED for the touch path until a G run logs it.
+- **The release frame has no extra main-thread records in st6-rb2.** First scroll frame:
+  - st6-rb2: RecalculateStyles 2-3, Layout 3, Paint 5;
+  - Original: 3, 4, 7.
+  
+  The noMorph and late sequences are the same in both arms, or lower in st6-rb2.
+- **After release, the Original rewrites nav `--morph=0` every scroll frame.** That shows as RecalculateStyles 4-5
+  per frame against 2 in st6-rb2.
+- **Conclusion:** the synthetic probe does not reproduce an st6-rb2-only release cost. The C-026 84 ms frame is still
+  UNRESOLVED. The candidates, none checked:
+  - `__osb`'s overscroll-behavior change in the middle of a live gesture (the scrolling-tree / UI-process side, which
+    a programmatic scroll can't show);
+  - the real touch path;
+  - n=1 noise.
+- **dvh:** stays parked. Nothing here points at it.
+- **Decisive next check:** a G-driver release of st6-rb2 vs st6-rb2 minus `__osb`, with innerHeight and morph logged
+  per frame (`--inject`). Board F-151.
