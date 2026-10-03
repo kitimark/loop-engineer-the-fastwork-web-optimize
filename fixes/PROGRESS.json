@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T18:40:00Z", "text": "End-of-page animation phone check (P-085) passed: today's build is no worse than the original there; in that run it had far fewer slow frames (the whole build against the original, one test, not one fix alone)." },
   { "at": "2026-10-03T18:10:00Z", "text": "Partly paused: the Mac keeps going to sleep (I-098). Timing measurements and phone tests wait for your answer in T-052 about keeping it awake; picture and count checks and tests run again, re-run if a sleep hits them. Your swipe test on the phone (C-035) still works." },
   { "at": "2026-10-03T16:30:00Z", "text": "Hero phone test (P-081): the new hero ending removes almost all of the per-frame script work and is no worse on slow frames, but restarting it after you pause mid-hero costs more than the original. Two cheaper restarts are being built and checked next (P-088)." },
   { "at": "2026-10-03T16:00:00Z", "text": "You disconnected the iPhone (T-047): all phone tests are paused until you reconnect it. Then the hero test runs first, then the end-of-page check, then your countdown finger test." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T07:01:00Z", "text": "You disconnected the iPhone at 07:01 and reconnected it at 07:09; phone tests carry on." },
   { "at": "2026-10-03T06:53:00Z", "text": "You chose to land the countdown digit strips, with the tiny fade difference. The review found one small style fix first: in one scroll band the new clock kept its layers where today's page drops them. That fix is being re-checked, then a last review and landing." },
   { "at": "2026-10-03T05:50:00Z", "text": "The menu fix (F3) made the pinned menu no worse in 9 robot-finger phone runs. The original's stall at the end of the page didn't show up this time, so whether the fix cures it is still open. One odd run of the landing version is being traced." },
-  { "at": "2026-10-03T04:45:00Z", "text": "Countdown digit strips: the chosen version matches the original exactly in every picture check. One earlier hope is withdrawn: it does not save drawing while the page sits still. Its gains are less redrawing when the clock comes back into view, less graphics memory and fewer style changes." },
-  { "at": "2026-10-03T03:45:00Z", "text": "Heat test done, both sessions agree: Fastwork warms the phone clearly more than apple.com, which stays close to an empty page. Today's best build already cools it without the countdown fix (roughly a third to three-fifths of the extra heat gone; a rough figure). Less work at rest is now a firm goal." }
+  { "at": "2026-10-03T04:45:00Z", "text": "Countdown digit strips: the chosen version matches the original exactly in every picture check. One earlier hope is withdrawn: it does not save drawing while the page sits still. Its gains are less redrawing when the clock comes back into view, less graphics memory and fewer style changes." }
  ],
  "items": [
   {
@@ -321,12 +321,13 @@
    "state": "landed",
    "stage": "L",
    "fixes": "On today's best build, Safari left the top bar, logo and buttons behind when you pushed past the end of the page, and froze the menu panel's fade. Now they follow the grow animation again, as on the original page.",
-   "gate": "Passed: matches the original in the Simulator, unchanged pixels in Chrome, and an independent review. A short phone check (P-085) comes next.",
-   "next": "Landed. Its short phone check against the original page (P-085) is planned and checked; it is second in the phone queue, after the hero test. A separate fix (morph-gpu) now looks at moving this animation onto the graphics chip.",
+   "gate": "Passed: matches the original in the Simulator, unchanged pixels in Chrome, an independent review, and its short phone check (P-085, no worse than the original).",
+   "next": "Done: landed and in today's best build, and its phone check passed. A separate fix (morph-gpu, your proposal PR-012) looks at moving this animation onto the graphics chip.",
    "owner": "fix-nav-morph",
    "details": [
     "F-183/F-184: WebKit ignores an explicit inherit of the non-inheriting @property --morph on the nav children (OBSERVED on phone + Sim; cause UNRESOLVED, WebKit main says it should re-resolve). Fix writes --morph inline on the children (JS 7c61fe7d0662, CSS unchanged). Correctness fix: about +1 layout and +1 paint per open-tween frame on WebKit, the motion st6-rb2 skipped.",
-    "Review ACCEPT (review-morph-inherit); landed b11f977 + 0ad5407. Reviewer (OBSERVED): panel countdown cells at m 0.9 and 1 differ from the baseline in WebKit (max 11, 52 px over 8), attributed to st6-rb2; passed to the countdown owners."
+    "Review ACCEPT (review-morph-inherit); landed b11f977 + 0ad5407. Reviewer (OBSERVED): panel countdown cells at m 0.9 and 1 differ from the baseline in WebKit (max 11, 52 px over 8), attributed to st6-rb2; passed to the countdown owners.",
+    "P-085 RESULT e22dd73 PASS (ops read, re-scored identical): DOM PASS, earn fade start d = +1 ms; moving frames >50 21 -> 0.5, >34 56 -> 1 at Serious, driver M. B = the plain baseline, so this is the whole build vs the original, not this fix alone."
    ]
   },
   {
