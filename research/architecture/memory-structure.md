@@ -2,6 +2,8 @@
 
 arch-memory, 2026-10-03, for console T-032 #3/#4. **Proposal only: nothing has moved.** The lead posts it to the user,
 and the notes move only after the user's OK.
+**Update 2026-10-03:** the user approved 5.1 and 5.3 (T-032 #7). Move-plan step 1 is done on this branch: `memory/` (index + 15
+notes generated from section 7), the CLAUDE.md section and Layout row, and the Serena pointers. Steps 2-3 are the lead's.
 
 ## 1. What Claude Code loads, and for whom (docs checked 2026-10-03)
 

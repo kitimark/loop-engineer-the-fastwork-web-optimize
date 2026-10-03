@@ -4,7 +4,7 @@ Personal, educational scroll-performance study of the public homepage https://fa
 local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling), `research/`
 (findings), `fixes/README.md` (per-fix workflow), `fixes/TOPICS.md` (what to fix, conflicts).
 
-## Layout: four kinds of things
+## Layout: five kinds of things
 
 | | path | in git? | who writes it |
 |---|---|---|---|
@@ -12,8 +12,17 @@ local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling
 | (b) research write-ups | `research/<nn-topic>/` (README, data, one-off tools) | yes | append new studies; don't rewrite history |
 | (c) baseline snapshot | `site/` (byte-identical), `site-pretty/` (Prettier 3.9.9 copy), pinned by `baseline.json`; agent worktrees are sparse and read the main checkout's | **yes, frozen on `main`** (local only, never pushed) | nobody; a new snapshot only by the user (`--new-snapshot`, then the authorized commit, "Baseline snapshot") |
 | (d) per-fix experiments | `fixes/<topic>/` `README.md`, `patch.diff`, `results.json` (+ gitignored `overlay/`) | deliverables only, local branches | one fix agent per topic, in its own worktree |
+| (e) project memory | `memory/` (`README.md` index + one note per user rule) | yes | the lead |
 
 `out/` (gitignored) holds per-checkout measurement output, Chrome profiles and certs.
+
+## Project memory: user rules and lessons
+
+Standing user rules and the lessons behind them live in `memory/`, one note per rule with its dated history.
+The index below is loaded for every agent; open the note before you act in its area. Only the lead adds or
+edits notes (scrubbed, Hard rule 12); send the lead what should be remembered.
+
+@memory/README.md
 
 <!-- BEGIN hard-rules: the single list of hard rules. Other docs link here instead of repeating them. -->
 ## Hard rules
