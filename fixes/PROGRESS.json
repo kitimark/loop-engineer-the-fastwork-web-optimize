@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T19:45:00Z", "text": "The sharper hero photos at 1440 px with reduce motion turned out to be within the original page's own range (the original sometimes keeps a soft first picture); closed unless you object in T-053." },
   { "at": "2026-10-03T19:25:00Z", "text": "The avatar slider fix (carousel-leaver) is not exact on Safari, and the check found the landed slider build itself draws the resting profile pictures slightly differently on Safari; one bounded attempt to make it exact comes next. The hero restart test (P-088) is ready for when timing resumes." },
   { "at": "2026-10-03T19:00:00Z", "text": "Planning only while the Mac sleep question (T-052) is open: the hero and avatar-slider picture checks run first; a re-check of the sharper 1440 hero photos with reduce motion is queued; the middle-of-page slow-frame test is drafted and waits for timing to resume." },
   { "at": "2026-10-03T18:40:00Z", "text": "End-of-page animation phone check (P-085) passed: today's build is no worse than the original there; in that run it had far fewer slow frames (the whole build against the original, one test, not one fix alone)." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T08:52:00Z", "text": "You accepted all five suggestions: fixes that make the page do less work can land on work counts plus one short phone no-worse check (the top three smoothness fixes keep the phone and your finger test); phone checks start warm, 38-40 °C." },
   { "at": "2026-10-03T08:35:00Z", "text": "F3's warm-phone test is done: no version showed the hitch, not even the original, so it can't tell whether F3 cures it. F3 doesn't land on this test; the next step is being decided." },
   { "at": "2026-10-03T07:20:00Z", "text": "Your 'land' choice on the countdown digit strips is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, and extra layout-shift reports). A corrected proposal comes to you, and you decide again." },
-  { "at": "2026-10-03T07:01:00Z", "text": "You disconnected the iPhone at 07:01 and reconnected it at 07:09; phone tests carry on." },
-  { "at": "2026-10-03T06:53:00Z", "text": "You chose to land the countdown digit strips, with the tiny fade difference. The review found one small style fix first: in one scroll band the new clock kept its layers where today's page drops them. That fix is being re-checked, then a last review and landing." }
+  { "at": "2026-10-03T07:01:00Z", "text": "You disconnected the iPhone at 07:01 and reconnected it at 07:09; phone tests carry on." }
  ],
  "items": [
   {
