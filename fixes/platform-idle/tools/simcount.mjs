@@ -7,6 +7,7 @@
 // Timeline.start, F-047) = 5 sweep cycles = 4 glint cycles. Counted anywhere in the record tree: RenderingFrame,
 // RecalculateStyles, Layout, Paint, Composite, FunctionCall, TimerFire, FireAnimationFrame. Then LayerTree.layersForNode on
 // the platform section: per layer paintCount growth over 5 s, memory, compositing reasons.
+// The per-window check also reads the platform section's inline --morph-fade, opacity and visibility (F-182 coupling).
 // Appends to <records.json> ({loads: [...]}, the ts-costcard (I-083) pre-cut shape, engine 'sim', windows kind 'idle').
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -29,7 +30,8 @@ const CHECK = `(() => { const vh = innerHeight, inView = (t) => { const r = t.ge
     glintActive: document.querySelectorAll('.start-selling-platform-secure-network-dash-glint.is-active').length,
     smilAnimate: dash.reduce((n, d) => n + d.querySelectorAll('animate').length, 0), dashInView: dash.filter(inView).length,
     sweepTitlesInView: [...document.querySelectorAll('.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized')].filter(inView).length,
-    sweepPaused: document.querySelectorAll('.start-selling-platform [data-sweep-paused]').length }; })()`;
+    sweepPaused: document.querySelectorAll('.start-selling-platform [data-sweep-paused]').length,
+    morphFade: (() => { const s = document.querySelector('.start-selling-platform'); return s ? { inline: s.style.getPropertyValue('--morph-fade'), opacity: getComputedStyle(s).opacity, visibility: getComputedStyle(s).visibility } : null; })() }; })()`;
 for (const L of order) {
   const [arm, rep] = L.split(':');
   const st = join(D, `serve-sim-${arm}.json`); rmSync(st, { force: true });

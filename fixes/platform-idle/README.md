@@ -4,20 +4,26 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** P-077 pre-registered runs made and scored: **PASS in Chrome and in the Simulator** (less-work gate met). Pixels
-are not identical, so the user decides the look (proposal PR-009 on the console, options both / sweep-only /
-glint-only, recommended both). Phone no-worse check, condition B: "no worse, threshold-sensitive (twins carried by
-the shared onset frame, V1 only, n = 2)". The lead accepted it; see "Phone no-worse block and the scroll-start check".
-**Stage:** F/V (D card P-077 signed by the lead; results below)
+are not identical, so the look went to the user as proposal PR-009: **accepted, option "both", 2026-10-03 10:31Z**, decided
+on README blob ec8bb40 (see "PR-009 decision"). Phone no-worse check, condition B: "no worse, threshold-sensitive (twins
+carried by the shared onset frame, V1 only, n = 2)". The lead accepted it; see "Phone no-worse block and the scroll-start
+check". Review round 1 (review-platform-idle, NEEDS-WORK) is answered in "Review round 1": the G3 rules now sit inside
+`@supports (-webkit-mask-clip: text)` (new CSS hash `e0f92804c521`), idle triple, layers and memory, docs.
+**Stage:** V done, ready to land after re-review (D card P-077 signed by the lead; results below)
 **Gate:** less-work landing rule (user T-029 #30, `memory/less-work-landing-rule.md`): fewer work counts on the full page
 in Chrome and the Simulator, plus one short phone no-worse check. The pixel-identical rule still applies, and both parts
-miss it by a few LSB (see "Pixels"), so the look goes to the user as a proposal (draft below, for the lead to post).
+miss it by a few LSB (see "Pixels"), so the look went to the user as a proposal; the user accepted it (PR-009).
 **Driver(s) behind the claims:** none timed. Chrome trace counts (headless, CPU 1x) and Simulator Timeline counts at rest.
 **Base:** st6-rb2 (`fix.mjs new platform-idle --on st6-rb2`); `patch.diff` is against the baseline and contains st6-rb2's
 changes too.
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`: the secure-network component NM (pretty 12447-12520 in the
 overlay: activation function and the each-callback). `/_app/immutable/assets/2.gBuqKVzi.css`: G1 block after the
 `.start-selling-platform-secure-network-dash-highlight.is-active` rule (overlay 6913-7000) and the reduced-motion
-selector; G3 block inside the `prefers-reduced-motion: no-preference` sweep rules (overlay 11293-11345).
+selector; G3 block inside the `prefers-reduced-motion: no-preference` sweep rules, wrapped in
+`@supports (-webkit-mask-clip: text)` (overlay 11293-11343, keyframes 11344-11351).
+**Not this topic's:** the `window.__fwMorphDrive` debug hook in `patch.diff` (hunk at patch lines ~1306-1331, "DEBUG ONLY
+… strip before landing") comes from the st6-rb2 base: `patch.diff` is against the baseline, and the st6-rb2 overlay
+carries the same hook. Stripping it is st6-rb2's (or the integrator's) job, not a change of this build.
 
 ## Why it works at rest today (R)
 
@@ -51,9 +57,16 @@ Paint to 0. So the two costs are:
   - `[data-sweep-paused]::after` pauses it, so PMsweepGate still works.
   - Everything sits inside the original `prefers-reduced-motion: no-preference` block, so reduced motion is unchanged
     (no band).
+  - The G3 rules sit inside `@supports (-webkit-mask-clip: text)` within that block (review round 1). Firefox does not
+    support `-webkit-mask-clip: text` (MDN browser-compat-data, CONFIRMED, see "Review round 1"); without the wrap it would
+    drop the title's own sweep and show the band as an unmasked rectangle (reasoned from the CSS; Firefox was not run). With
+    the wrap the whole G3 group is skipped there and the original sweep rules above it apply.
+- **Accessibility.** The glint span (and its svg, `aria-hidden="true"`) is appended inside MM's root
+  `<div aria-hidden="true">` (JS 12416), so it is outside the accessibility tree like the dash it decorates. The band is a
+  `::after` with `content: ""` (no text). The title text is unchanged; the mask changes only how it is painted.
 - Behaviour kept (lead's ask): the 1 s delay, stop on exit, reduced motion, and PMsweepGate.
 
-## Pixels (illusion rule): not identical, so this goes to the user
+## Pixels (illusion rule): not identical; the user accepted the look (PR-009)
 
 Served A/B (st6-rb2 vs this build) frozen frames in Chrome. Animations were paused and set to the same time;
 `svg.setCurrentTime` for SMIL. Probe: `out/platform-idle/probe8.mjs`, 9 viewports. Maximum per-channel difference (LSB):
@@ -66,23 +79,37 @@ Served A/B (st6-rb2 vs this build) frozen frames in Chrome. Animations were paus
 
 \* d1440 DPR 1: 6933 px of 1-15 LSB, all inside the two avatar photos (image decode), none in the dash band.
 
-- **Sweep.** The text coverage is identical: a white-gradient test gives 0 px of difference. The residual is the
-  gradient's phase.
-  - Blink snaps the original's background positioning area to device pixels.
-  - The composited band moves in about ¼ px steps.
-  - Together they leave a sub-device-pixel phase offset that depends on the title's position. In our setup the cause is
-    OBSERVED.
+- **Sweep.** The text coverage is identical: a white-gradient test gives 0 px of difference. The residual is in the
+  gradient's colour, and it is OBSERVED in our setup, cause unknown. Hypothesis (not checked against a reference): Blink
+  snaps the original's background positioning area to device pixels, while the composited band moves in about ¼ px steps,
+  which leaves a sub-device-pixel phase offset that depends on the title's position.
   - No CSS-only variant tried was bit-exact: mask-image tiles, snapped offsets, an SVG `<mask>`.
 - **Glint.** The interior is within ±1. The difference sits on the anti-aliased top and bottom edge rows, only in the
   visible phases (12 of 22 frames). Frames where the glint is off-stroke differ by ≤ 3, which is the A/A level.
-  - The original is a stroked line with round caps.
-  - The build is a `clip-path` of the same shape over a filled strip.
-  - Blink rasterises the two edges differently. In our setup the cause is OBSERVED.
+  OBSERVED in our setup, cause unknown. Hypothesis (not checked against a reference): the original is a stroked line with
+  round caps, the build is a `clip-path` of the same shape over a filled strip, and Blink anti-aliases the two edges
+  differently.
 - All sweep titles are single-line at every width tested (375-1440).
 - Simulator (WebKit) frozen frames: sweep ≤ 10, glint ≤ 33 in visible phases, and ≤ 17 on the grey dashes' bottom edge in
   every phase. See "Simulator" below.
 
-### Proposal draft (posted as PR-009 after P-077 was scored; the user decides)
+### PR-009 decision
+
+- **Accepted, option "both" (G1 + G3), 2026-10-03 10:31Z**, decided on README blob ec8bb40 (this file as it was then).
+- What "both" covers is the posted option's own list of differences, which are the tolerances of the exception:
+  - iPhone WebKit (Simulator): the grey dashes' bottom edge row differs by up to 17/255 the whole time the glint is mounted;
+  - the glint's top and bottom edge pixels differ while it passes, up to 64/255 in Chrome and 33/255 in WebKit, the inside
+    the same;
+  - the colour sweep inside the titles differs by up to 9/255 on phones, 23/255 on a 1440 px desktop, 10/255 in WebKit;
+  - reduced motion identical.
+- The decision named the lead's short phone no-worse check before landing; that check is done (see "Phone no-worse block").
+- The `@supports (-webkit-mask-clip: text)` wrap added in review round 1 leaves the rendering in Chrome and WebKit
+  unchanged (both engines support the condition, so the same rules apply): V-new equals V-old within the load-to-load
+  floor in every viewport, Chrome and Simulator (see "Review round 1"). So the decision covers the build as it lands. In
+  engines without text masks (Firefox) the titles keep today's sweep, so nothing outside the accepted list changes there.
+- The user's notes on the decision asked for follow-ups (threads opened by the lead); they are not part of this build.
+
+### Proposal draft (as drafted before posting; PR-009 named the options both / sweep-only / glint-only, and the user chose "both", draft option A)
 
 Title: "Platform section: glint and colour sweep on the GPU (looks almost the same)".
 - What it saves: at the bottom of the page, the platform tail stops making the page redraw at rest.
@@ -141,7 +168,9 @@ same comparison.
   write the ts-costcard (I-083) pre-cut record shape: `{loads: [{arm, rep, mode: 'full', engine, served, windows: [...]}]}`.
 - Scorer: `tools/score.mjs <chrome-records> <sim-records>`, sha256/12 `e86a19940a07`. Harness sha256/12:
   idlecount `f32c668d360b`, simcount `2797612a0347`, run-chrome.sh `24b706e6c2b5`. The scorer was smoke-tested on
-  synthetic records only (`out/platform-idle/fake/`).
+  synthetic records only (`out/platform-idle/fake/`). [Review note: after P-077, review round 1 added a `--morph-fade` /
+  opacity / visibility read to simcount's per-window check (F-182), so the committed simcount is now `b7da6dd02de0`; the
+  P-077 runs used `2797612a0347`. Nothing it counts changed.]
 
 **Loads and order.** Each engine runs 2 loads per arm, in the order C1 V1 V2 C2. Each engine also gets one B load, for
 context only.
@@ -178,7 +207,8 @@ reported.
 
 **Outcomes:**
 - **PASS + PASS:** the less-work gate is met. Next, the lead runs the phone no-worse check (below), and the user decides
-  the pixel proposal. The build lands only with the user's option A.
+  the pixel proposal. The build lands only with the user's option A. [Review note: PR-009 named this option "both"; the
+  user chose it, see "PR-009 decision".]
 - **Chrome PASS, Sim NOT-LOWER:** WebKit keeps main-thread work, so the card goes back to the lead. The build is no worse
   there and lower in Chrome; the lead and the user choose whether to land on the Chrome saving.
 - **Any WORSE, or Chrome NOT-LOWER:** do not land; redesign or drop.
@@ -194,10 +224,13 @@ reported.
 
 **Platform claims** (every one is the engine's, so the fast path does not apply):
 - (a) "Blink runs `transform` animations on the compositor with no main-thread style per frame; `background-position`
-  can't." CONFIRMED: Chromium `third_party/blink/renderer/core/animation/compositor_animations.cc` (main, read
-  2026-10-03), CheckCanStartEffectOnCompositor. Its property switch handles opacity, rotate, scale, translate,
-  transform, filter, backdrop-filter, background-color, clip-path and custom properties. Any other property falls to
-  DefaultToUnsupportedProperty (`kUnsupportedCSSProperty`), and background-position is not in the list. P-077's Chrome
+  can't." CONFIRMED: Chromium `third_party/blink/renderer/core/animation/compositor_animations.cc` at main
+  8a3e12e1babce2e865a1a0789a059c5e8ac5dfc4 (Cr-Commit-Position refs/heads/main@{#1705043}, the file's latest change, committed
+  2026-09-25, read 2026-10-03), https://source.chromium.org/chromium/chromium/src/+/8a3e12e1babce2e865a1a0789a059c5e8ac5dfc4:third_party/blink/renderer/core/animation/compositor_animations.cc;l=399
+  — CheckCanStartEffectOnCompositor (l. 256), per-keyframe property switch l. 399-455: opacity, rotate, scale,
+  translate, transform, filter, backdrop-filter, background-color, clip-path and custom properties; `default:` sets
+  property_not_supported (l. 453-454), which calls DefaultToUnsupportedProperty (l. 457-461 → l. 171-173,
+  `kUnsupportedCSSProperty`). background-position is not in the list. P-077's Chrome
   counts are the decisive local check either way.
 - (b) "WebKit accelerates a `transform` animation on a `::after` under an ancestor with `-webkit-mask-clip: text`", and
   (c) "the same inside a `clip-path` ancestor". UNRESOLVED.
@@ -208,7 +241,8 @@ reported.
   needed for the verdict, which compares counts directly.
 
 **Phone no-worse check** (the lead schedules it; this topic makes no phone use):
-- It runs only after PR-009 is decided, with option A or C. It queues after P-079.
+- It runs only after PR-009 is decided, with option A or C. It queues after P-079. [Review note: as posted, A = "both" and
+  C = "sweep-only" / "glint-only"; the user chose "both", and the check ran after that, in hold h121509.]
 - Driver S (`iphone.mjs scroll`), arms C and V, one uncounted warm-up per port.
   - Then 2 counted runs per arm in the order C V V C, if the lead's slot allows.
   - Otherwise 1 run per arm. The rule below is thin at n = 1.
@@ -232,8 +266,8 @@ README is exploratory: the comp-census runs, probe8 pixels, and the `simpi` Simu
 
 ## P-077 results (pre-registered runs, scored)
 
-**Outcome: PASS + PASS.** The less-work gate is met in both engines. Next: the user decides the look (proposal), then the
-lead runs the phone no-worse check.
+**Outcome: PASS + PASS.** The less-work gate is met in both engines. Then the user accepted the look (PR-009, "both") and
+the lead's phone no-worse check ran (below).
 - Pre-registration commit: 72d4ee1 (rebased from f5390bc; the same `fixes/platform-idle/` content). Scorer
   `tools/score.mjs` e86a19940a07, harness hashes as in the card.
 - Summary: `results.json` (scored counts, per-load windows, checks, layer census). Raw records stay local in
@@ -263,8 +297,11 @@ lead runs the phone no-worse check.
 - At y 4660 other content in view keeps its own per-frame loop (the agents typing and accent), so style and frames stay at
   one per frame in both arms. The paints still drop by about 40 %. The baseline paints less there than st6-rb2 (2767 vs
   ~6226). That is st6-rb2's own change and not this topic's.
-- BeginFrame and DrawFrame stay at 1200 at the bottom in V. A running compositor animation keeps the compositor drawing,
-  which the card expected.
+- BeginFrame and DrawFrame stay at 1200 at the bottom in V (OBSERVED, the counts). That a running compositor animation keeps
+  the compositor drawing every frame, as the card expected, is CONFIRMED: Chromium `cc/trees/layer_tree_host_impl.cc` at
+  8a3e12e1babce2e865a1a0789a059c5e8ac5dfc4, https://source.chromium.org/chromium/chromium/src/+/8a3e12e1babce2e865a1a0789a059c5e8ac5dfc4:cc/trees/layer_tree_host_impl.cc;l=5063
+  — AnimateLayers (l. 5063-5072) calls SetNeedsOneBeginImplFrame while a tick reports `needs_next_frame`, and
+  AnimateInternal (l. 843-869) calls SetNeedsRedraw when anything animated.
 
 **Simulator** (iOS 18.7 Simulator Safari, 430×775 DPR 3). Counts per 20 s window, as C1/C2 | V1/V2:
 
@@ -313,7 +350,8 @@ lead runs the phone no-worse check.
   - The sweep pause is st6-rb2's PMsweepGate (3974-3992, unchanged): an IO toggles `[data-sweep-paused]`, and the titles
     start paused.
   - CSS (`2.gBuqKVzi.css`): the glint animates only under `.is-active` (6910-6998). The band `::after` is paused by
-    `[data-sweep-paused]` (11293-11347). The reduced-motion selector is at 7374-7375.
+    `[data-sweep-paused]` (11293-11343, inside `@supports` since review round 1). The reduced-motion selector is at
+    7374-7375.
 - *Simulator counts* (`tools/startcount-sim.mjs`, sha256/12 dceb7825b766; exploratory, no timing):
   - It mimics the S driver: load, 8 s settle, then `scrollBy({top: 250, behavior: 'smooth'})` every 300 ms.
   - Timeline segments: pre = the last 1 s of idle, s1 = the first 300 ms of scroll (y 0 → 233), s2 = the next 300 ms.
@@ -334,8 +372,9 @@ lead runs the phone no-worse check.
   - At the top of the page, WebKit keeps 17 composited layers in #platform for V, against 0 for C. In the whole document
     that is 145 layers against 128.
   - All of them have backing memory 0, so nothing is painted or stored for them while they are off-screen.
-  - They come from the paused `::after` band animations: WebKit keeps a layer for a paused transform animation, and its
-    ancestors become composited too. This is OBSERVED in our setup.
+  - OBSERVED in our setup, cause unknown. Hypothesis (not checked against a reference): they come from the paused
+    `::after` band animations, because WebKit keeps a layer for a paused transform animation and its ancestors become
+    composited too.
   - The s1 Composite count is the same in both arms (12).
 
 ## Exploratory counts (not judged)
@@ -404,6 +443,121 @@ At y 4660 the a1/a2 windows vary with the agents-typing loop's phase (later wind
     (`transformWithCompositedDescendants`, because of the glint layers inside), and the grey dashes then rasterise at a
     different sub-pixel offset.
   - This is a WebKit-only residual that lasts while the glint is mounted. It goes into the proposal.
+
+## Review round 1 (review-platform-idle, NEEDS-WORK; answered 2026-10-03)
+
+Everything here is exploratory (not pre-registered): counts and frozen frames, no timing. Raw files stay local in
+`out/platform-idle/review/` (and `out/platform-idle/sim/`); the summaries are in `results.json` → `review1` and
+`phoneBlock`.
+
+### Firefox and the `@supports` wrap (re-ticket, not a new question)
+
+- `-webkit-mask-clip: text` in Firefox: not supported. CONFIRMED: MDN browser-compat-data 8.1.4
+  (`css.properties.mask-clip.text`, read from the npm package's `data.json` on 2026-10-03): firefox `version_added: false`.
+  https://developer.mozilla.org/docs/Web/CSS/mask-clip#browser_compatibility
+- So the G3 rules are wrapped in `@supports (-webkit-mask-clip: text)` inside the `prefers-reduced-motion: no-preference`
+  block. Without text masks the browser skips the whole group and keeps the original `background-clip: text` sweep above
+  it. Firefox itself was not run.
+- New CSS sha256/12 `e0f92804c521` (was `d67d599ab034`, "V-old"); the JS is unchanged (`de29ff8aa622`). C (st6-rb2) is
+  `7bf7c4657d21` / `f523598b2a24`.
+- **Identity check, V-new against V-old** (the lead's re-ticket rule: equal everywhere, so P-077 and the phone block carry
+  over; any difference would need a new P-id and a phone check):
+  - *Computed style* (`out/platform-idle/styledigest.mjs`, local): every element of `.start-selling-platform` (364) and
+    its `::before` / `::after`, animations paused at 0, page origin normalised. **Identical** in Chrome at m430, m320 and
+    d1440 (digests `f06e21ff2f32`, `3a2a0e0bd677`, `c4cecf81f431`), and in the Simulator (`a3ab4673a3f0`).
+    `CSS.supports('-webkit-mask-clip', 'text')` is true in every arm and engine.
+  - *Chrome frozen frames* (`out/platform-idle/probe9.mjs`, local; the 9 probe8 viewports plus 320 px). Arms: N = V-new,
+    O = V-old, P = a second load of V-old (the load-to-load floor), C = st6-rb2. Max LSB / differing px per viewport:
+
+    | | m430 | m390 | m375 | m320 | m430x2 | t1024 | d861 | d1000 | d1440 | d1440x1 |
+    |---|---|---|---|---|---|---|---|---|---|---|
+    | sweep N~O | 1/2848 | 1/2642 | 1/560 | 1/1597 | 1/974 | 107/3479 | 1/1290 | 1/684 | 1/1199 | 1/745 |
+    | sweep P~O (floor) | 1/4371 | 1/2624 | 1/2213 | 1/2148 | 1/1693 | 107/2599 | 1/784 | 1/572 | 1/760 | 1/259 |
+    | sweep N~C | 9 | 9 | 9 | 9 | 9 | 5 | 9 | 16 | 22 | 23 |
+    | glint N~O | 3/11930 | 2/2820 | 3/3085 | 1/72 | 3/3461 | 2/1560 | 1/1704 | 2/458 | 3/5954 | 3/3102 |
+    | glint P~O (floor) | 3/12436 | 2/3963 | 3/4262 | 1/461 | 3/2963 | 2/1292 | 1/1029 | 2/716 | 3/5941 | 3/2481 |
+    | glint N~C | 56 | 37 | 38 | 29 | 44 | 23 | 42 | 46 | 64 | 43 |
+
+    - N~O sits at the P~O floor everywhere. The t1024 107 patch is in O (both N~O and P~O show it) at the left clip edge
+      (x 0-7) of title 0; N~P is 0 there in frames 0-3.
+    - Reduced motion: titles 0 everywhere. The dash crop (the whole MM container, not frozen) reaches 12-16 in P~O too.
+    - N~C repeats probe8's numbers (the accepted PR-009 tolerances). Every title is one line at every width.
+  - *Simulator frozen frames* (`simpi.mjs --parts pixels`, 430×775 DPR 3). First session VO VN VO2: VO~VN max 1 LSB on 20 px
+    (4 sweep frames), VO~VO2 0. A repeat with both builds twice (VN VO VN2 VO2, sweep frames only, `simpi2.mjs`) shows that
+    the 1-LSB pixels are load-to-load: VN~VN2 1/33 px, VO~VO2 1/18 px, VN~VO 1/31, VN~VO2 1/13. The same frames flip
+    between loads of the same build. The glint frames were identical (0/0) in the first session.
+  - *Count loads*, one per arm per engine (counts per 20 s window; P-077's ranges in brackets):
+    - Chrome, 5346: C UpdateLayoutTree 1200, PrePaint 1200, Paint 2409; V-new 40 / 40 / 169 [V 40 / 40 / 163-169].
+      4660: C 1200 / 1201 / 6224; V-new 1200 / 1201 / 3822 [3825-3829].
+    - Simulator, bottom: C RecalculateStyles 2347, Layout 1144, Paint 4685, RenderingFrame 1200; V-new 40 / 40 / 21 / 59
+      [V 40 / 40 / 20 / 41-60]. y 4660: C 2376 / 1348 / 3820; V-new 583 / 403 / 327 [514-583 / 400 / 315-328].
+- **Verdict: V-new = V-old within the load-to-load floor in Chrome and in WebKit.** P-077 and the phone block (both
+  measured V-old) carry over: "carried by identity check, re-ticket `e0f92804c521`".
+- These checks ran as several shared holds (probe ≤ 300 s; Simulator weight 3, ≤ 300 s), not one: the 10 viewports × 4
+  arms alone take about 15 min. Each hold is in `holds.log` with its `--doing` line; per-hold logs `holdP.log`,
+  `holdS.log`, `simholds.log`, `simholds2.log`, `p9b/`.
+
+### Idle triple (C vs V, y 0 / parked 2620 / pin 5345)
+
+`tools/idletriple.mjs` (sha256/12 `17b2a1208fb9`; scene-scope's tool, import path fixed, served hashes read per row):
+headless Chrome 430×932 DPR 3, CPU 1x, WIN 5000 ms, ROUNDS 2 (C V, then V C). Per second, rounds 0 / 1; served hashes
+match (V = V-new):
+
+| spot | callbacks C | callbacks V | rAF C | rAF V | style writes C | style writes V | events C / V |
+|---|---|---|---|---|---|---|---|
+| top, y 0 | 58.6 / 45.4 | 38 / 37.6 | 47 / 33.8 | 26.4 / 26 | 112.2 / 78 | 59 / 58.4 | 19.2-18.6 / 19.8-18.6 |
+| parked, 2620 | 9.4 / 9.4 | 9.4 / 9.4 | 0 | 0 | 6 / 7.2 | 6 / 6 | 27.8-27.6 / 27.2-27.6 |
+| pin, 5345 | 7 / 7 | 7 / 7 | 0 | 0 | 6 / 7.2 | 6 / 7.2 | 0.6 / 1 |
+
+- Parked and pin: equal. The pin's 7 callbacks/s are all timer callbacks (timer 7/s in both); V adds none.
+- Top: the gap is not this build's. A follow-up (`out/platform-idle/toprAF.mjs`, local, same setting, rounds C V / V C /
+  C V) keyed every callback by its source: at y 0 **every** rAF is the countdown digit spring (JS 4041-4047, the
+  `function i` that calls `GE`), and the style writes are the digit faces (`span.face`). That code (JS 3990-4120) is
+  byte-identical in both overlays. Per 5 s: C 130 / 170 / 200 rAF, V 163 / 164 / 169. So the count follows the load's
+  countdown phase (how many digits roll in the window), not the arm. OBSERVED in our setup (the attribution is direct; why
+  the spring length varies by load is not checked).
+- **The Simulator "pre" V2 outlier** (startcount, FC 212 / ObserverCallback 69 against 142-145 / 34-35 in the other loads):
+  in that load the face style writes are 146 against 56-58, and the extra paint rects are digit-sized (18×37, ×8,
+  near the hero) plus a top-bar clock repaint 35 px wide against 17. The extra work is countdown faces, code shared by
+  both arms, the same mechanism as above. It did not repeat in V1, C1 or C2, and nothing in it is in #platform.
+
+### Layers and memory
+
+- **Simulator, bottom stop** (P-077 census, LayerTree on `.start-selling-platform`): C 9 layers, 50.11 MB (47.79 MiB);
+  V 26 layers, 54.07 MB (51.57 MiB): +17 layers, **+3.96 MB** of backing store.
+  - Overlap / stacking promotions: the two face images 108×108 (0.421 MB each) and the shield 194×214 (1.490 MB), together
+    **2.33 MB**. These are content that now sits above or next to a composited layer.
+  - The title masks and bands: 0.250 + 0.374 + 0.375 + 0.562 = 1.561 MB.
+  - Dashes and glint svgs: 0.011 × 2 + 0.023 × 2 = 0.068 MB.
+  - paintCount growth over 5 s: 0 on every V layer (C: the card and a stage artboard repaint every frame).
+  - At the top of the page the 17 extra layers have memory 0 (see the scroll-start check).
+- **Chrome LayerTree at y 5346** (`tools/chlayers.mjs`, sha256/12 `ca79777398e3`; settle 3 s, two snapshots 5 s apart):
+  - platform-subtree layers: C 26, V 40. Bounds-based estimate for drawing layers (w × h × 4 × DPR²): 130.37 → 133.15 MB
+    (+2.8 MB). This is an upper bound, not Chrome's real tile memory, which CDP does not report.
+  - paintCount growth in 5 s: C the card +300 and both dashes +300 (every frame); V 0 except the three in-view title mask
+    layers (65×40, 97×40, 144×40) +10 each and one glint svg +4.
+  - layerTreeDidChange events in the 5 s: C 300, V 10. Titles earn / secure / organized are in view and running at 5346 in
+    both arms, doc is out of view and paused.
+  - Whole-document layer counts vary per load (C 59-80, V 75-96), so only the platform subtree is compared.
+
+### F-182 (the morph pin)
+
+- simcount's per-window check now reads `.start-selling-platform`'s inline `--morph-fade`, opacity and visibility. At both
+  of its stops (4660 and the page bottom), in both arms, `--morph-fade` is unset, opacity 1 and visibility visible: these
+  are not m = 1 states.
+- So **this build at m = 1 is unverified.** F-182's point stands: at m = 1 the section is at opacity 0 and its idle
+  animations would keep running. This build's bands and glints run on the compositor and don't repaint, but their layers
+  still composite; gating visibility at fade 0 is nav-morph's (F3) call.
+
+### Scenarios not run
+
+- Firefox (the wrap is reasoned from the CSS and BCD); Chromium on Android; desktop Safari; iPad; landscape.
+- No phone run of V-new: the identity check stands in for it (the lead's re-ticket rule).
+- Finger (F) and WDA gesture (G) drivers; the M driver at m = 1 on the phone; the morph pin in general (F-182 above).
+- Reduced motion on the phone or in the Simulator (Chrome only: identical); `forced-colors`; zoom / text scaling.
+- Low Power Mode (dropped by the user's rule); the Fair / Nominal fallback A of condition B.
+- Long-run memory, tab hide / show, bfcache restore, and the countdown after its expiry.
+- Timing A/Bs (deferred by the user's rule; this lands on counts under the less-work rule).
 
 ## Risks, conflicts, follow-ups
 
