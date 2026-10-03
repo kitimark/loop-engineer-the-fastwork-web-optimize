@@ -30,7 +30,7 @@ one start method for every run, Low Power Mode runs dropped and re-run).
 |---|---|---|
 | census.mjs | b6bc0a5516cb | Chrome rest census per position (trace counts per 2 s, FunctionCalls by owner/fired-by) |
 | simcensus.mjs | 98eff8b1425e | Simulator rest census per position (Timeline record counts, F-047 order) |
-| tocard.mjs | 8291590f6176 | scorer: census -> costcard records (arms C, C2 = A/A, V) + per-event table |
+| tocard.mjs | ~~8291590f6176~~ v2 05daca3beb58 (committed: `fixes/rest-script/tools/tocard.mjs`) | scorer: census -> costcard records (arms C, C2 = A/A, V), position classes, pooled verdict |
 | rot.mjs / analyse.mjs | 68b7524c1dbf / 03b2df89340e | Chrome rotator identity (per-frame recorder, frozen shots, replays) and its scorer |
 | simrot.mjs | 3b24f27514c6 | the same on the WebKit Simulator (simctl shots, magenta calibration crop) |
 | simtb.mjs, stroke-up/down.json | 406a1d5e0f84, 660e9ae68d7c / 7ece659754c4 | Sim toolbar collapse/expand: ResizeObserver-on-html count |
@@ -40,7 +40,40 @@ one start method for every run, Low Power Mode runs dropped and re-run).
 | simcen.sh, chain3.sh (added 09:35Z, before their data) | 523ed2a01246, 5116f5fac1d1 | Sim census hold; post-registration chain (Sim census 2 reps, Chrome census 430 and 375 again) |
 
 Cost card: `tools/costcard.mjs` (ts-costcard, I-083) reads `tocard.mjs` records once it is on `main`; until then the
-`tocard.mjs` table is the reading. Saving = C − V greater than max(2 counts, |C − C2|).
+`tocard.mjs` table is the reading.
+
+**Second-read fixes (mgmt-ops-10, NEEDS-FIX at 22dd92e), committed before any post-registration census or Sim
+data was read** (the runs themselves were already queued or running; their output files were not opened):
+
+- *Aggregation (pooled over reps).* Per row (position or event) and count: C1, C2 = the two st6-rb2 reps of that run,
+  V = every rest-script rep. floor = max(2, |C1 − C2|). **SAVE** when min(C1, C2) − max(V) > floor; **MORE** when
+  min(V) − max(C1, C2) > floor; otherwise **SAME**. Chrome 430 and 375: only the post-registration run (`ic2/`) is
+  scored; the earlier run is a pre-registration check. Simulator: C1/C2/V from its two reps.
+- *Position classes (prediction 1)* from layout values recorded in the C rep 1 run at that position (rowTop = the
+  avatar row's viewport top, vh = Chrome's emulated height / the Sim's innerHeight, gate = `#people`
+  `data-start-selling-scene`, row height 32 px at every width): **paused** gate == paused (V = C predicted);
+  **far** gate active and (rowTop ≥ 1.5 vh + 50 or rowTop + 32 ≤ −0.5 vh − 50) (V < C on style recalcs and paints);
+  **near** gate active and rowTop < 1.5 vh − 50 and rowTop + 32 > −0.5 vh + 50 (V = C); **border** otherwise (within
+  50 px of the fix's 50 % band edge, or the gate differs between the C/C2/V runs): reported, not scored.
+  Implemented in tocard v2.
+- *Decisions.*
+  - All hit (1-4 as predicted, 5 no per-frame firing, 6 identical) → the short phone no-worse check below → land
+    under the less-work rule.
+  - 1 misses (no SAVE on style recalcs or paints at any far position) in both engines → drop the `mM` change from the
+    patch, keep the other items; in one engine only → keep it, the card names the engine that saves.
+  - 2 or 3 misses (no saving for that item) → drop that item from the patch.
+  - Any MORE (4, or at any position or count for any item) → find the cause; fix and re-register, or drop the item
+    responsible. No landing with a MORE.
+  - 5: fires per toolbar frame on the Sim → debounce into the scroll-path check, new registration. 6: a stale or
+    non-identical frame beyond the A/A floor → to the user before landing.
+- *Phone no-worse check (registered now, before any phone data).* iPhone under the lease, driver S
+  (`iphone.mjs scroll`, the full page), arms C = st6-rb2, V = rest-script, one uncounted warm-up per arm, then 4
+  counted runs in C V V C order; start band 38-40 °C (battery), one start method for every run, Low Power Mode runs
+  dropped and re-run. Bound: per arm median of frames dt > 50 ms and dt > 34 ms per run, V − C ≤ +1 (> 50) and ≤ +2
+  (> 34), judged also with the ±4 ms twins (dt > 46/54, dt > 30/38); a twin with another verdict makes it
+  threshold-sensitive and it goes to the lead. Pass → no-worse.
+- *Confidence (subjective, before the data):* 1: 0.75 Chrome, 0.65 Sim (far+active positions may be few); 2: 0.95;
+  3: 0.85; 4: 0.9; 5: idle 0 at 0.9, Sim toolbar per-frame firing 0.5 either way; 6: 0.85 Chrome, 0.6 Sim.
 
 **Predictions (ranges), C = st6-rb2, V = rest-script, same engine, width and position:**
 
