@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T14:30:00Z",
+ "updatedAt": "2026-10-03T15:05:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T15:05:00Z", "text": "Fixed a display bug on the iPhone where the top bar and menu stopped following the page past its end; now matches the original." },
   { "at": "2026-10-03T14:30:00Z", "text": "The idle-animation fix has landed: the shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted (PR-009); the phone check found it no worse." },
   { "at": "2026-10-03T14:06:00Z", "text": "The idle-animation fix was rebuilt so other browsers keep today's look; a check showed it draws exactly like the version the phone already tested, so that phone result carries over." },
   { "at": "2026-10-03T14:05:00Z", "text": "Found a display bug in today's best build on the iPhone: past the end of the page, the menu bar, logo and buttons don't follow the menu's grow animation (phone and simulator; cause not yet known). Comparisons still stand; the fix is being built." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-02T23:58:00Z", "text": "The F3 robot-finger test has a new plan, signed by the lead before any data: the check page that never passed under the robot finger is replaced by the usual scripted heat check. Phone order: the countdown timing test now, then the F3 robot-finger test, then the heat test." },
   { "at": "2026-10-02T23:50:00Z", "text": "The F3 robot-finger test stopped again before any counted run: the phone's check page was not smooth even on a cool phone, so this is not heat. It waits until fix-nav-morph finds the cause. The countdown timing test runs now, then the heat test." },
   { "at": "2026-10-02T23:45:00Z", "text": "Blind swipe test done: you picked today's best build as smoother than the original, at the top and in the menu change. It still lags a little; de-gpu looks at whether the GPU can take more of the work. Next on the phone: the F3 robot-finger re-run." },
-  { "at": "2026-10-02T23:35:00Z", "text": "You chose the short phone timing test of the countdown fix on its own (about 20 minutes plus cooling). It runs after the F3 robot-finger re-run and before the heat test. A GPU-friendly look at the counting animation is a separate idea, kept out of that test." },
-  { "at": "2026-10-02T23:30:00Z", "text": "You said yes to two phone tests: a blind swipe test of the original page against today's best build, now; and one full phone timing run of wave 2 once it is built and checked. Other timing stays paused. The F3 robot-finger test restarts after that (its first try did not count)." }
+  { "at": "2026-10-02T23:35:00Z", "text": "You chose the short phone timing test of the countdown fix on its own (about 20 minutes plus cooling). It runs after the F3 robot-finger re-run and before the heat test. A GPU-friendly look at the counting animation is a separate idea, kept out of that test." }
  ],
  "items": [
   {
@@ -89,7 +89,7 @@
     "User accepted PR-008 land-strip 06:52:53Z (confirmed T-030 #18). review-cd-strip-r2 NEEDS-FIX: (1) hero .strip/.cell skipped st6-rb2's scene-pause will-change rule, so 96 hero clock layers stayed up in the paused-but-rendered band (faces: 0); (2) the R-fade rate was pooled across sessions; same sessions: strip-rw 3/26 vs A/A 1/26. New base after the CSS fix: patch 1f3c26a16563, JS 5e37af69bcc4 unchanged, CSS 40078cb2d9cf; re-check, re-card, review round 3, then land. P-072 registered against the new BUILD card before any phone data.",
     "Lead 07:2xZ: acceptance held, nothing lands on it. G7: a Chrome delta-1 class at 0.9 fade (13-83 px; PR-008 said 'Chrome shows nothing') and 4-5 layout-shift deliveries per 5 s vs 2 for the faces (sources unrecorded). G8: 2 vs 2 entries and the same CLS 0.0011 in both arms, all from h1. PR-008 rev 2 after G9 (possibly a CLS-free third option); the user re-decides; P-072 waits; cd-roll-ca pauses queuing. ts-proposal-hold builds proposal hold/unhold and a 'stale: re-decide' state (T-030 #19).",
     "Lead 08:0xZ: S2 + G11 clean for strip-tc (no cdwrap layout shifts; backed layers 16 / 0.39 MB vs faces 48 / 1.18 MB; hero 0 px). G12, S3, G13, G14 next, then PR-008 rev 2's text goes to the lead. PR-008 stays on hold (proposal hold, cd966b7).",
-    "Morph caveat (lead 10-03 14:0xZ; F-183/F-184): on st6-rb2 in WebKit the nav bar, logo, actions and earn button stay at --morph 0 while the header reads 1, and the panel fade freezes at 0.924; OBSERVED on phone + Sim, cause UNRESOLVED (WebKit main says it should re-resolve); correction (morph-inherit) by fix-nav-morph. P-079's pin frames, pin Layout and morph attribution are absolute values on that morph; V - C comparisons stand (both arms share it)."
+    "Morph (lead 10-03 15:0xZ): morph-inherit landed (b11f977 + 0ad5407). Before it, st6-rb2 in WebKit left the nav children at --morph 0 and froze the panel fade at 0.924 (F-183/F-184, OBSERVED on phone + Sim). WebKit morph numbers measured on stacks without it are void for the morph region; re-measure on main. Next builds stack on main + morph-inherit. P-079's morph attribution is void there; its top, re-entry and backing results stand."
    ]
   },
   {
@@ -204,7 +204,7 @@
     "P-073 rev 2 (fix-nav-morph 38cd056): driver v1c 0653995a35be (forced cap; Simulator V/D/C 9 pin pushes, all prevented; settle 5212/5216/5220), settle bins low/high scored apart, budget 14 runs / 100 min. Second read mgmt-ops-9 07:1xZ NEEDS-FIX; rev 2.1 2746920 folds the points in (reading rule for n = 2, rows 1-8, scorer p073-score.mjs d4854dd7061f); re-read PASS with one scorer guard (V needs 3 counted runs outside the top-up) re-hashed before the first counted run (done: 4ece74c, scorer 30c16ec042c8, verified by ops); lead signed 07:2xZ.",
     "P-073 (iphone-runner, 07:40-08:35Z, G v1c 0653995a35be, scorer 30c16ec042c8; OBSERVED): 12 counted (9 + 3 V top-up), 0 void, sentinels PASS (60/58.1). No collapse in any arm, min 2 s window 46-51.5 fps. Settle low/high C 1/2, V 1/5, D 1/2: row 5, V not in condition, inconclusive, no landing on this block. Ops second read PASS (re-scored from the manifest, byte-identical). Next step: the lead, on fix-nav-morph's options.",
     "Lead 09:2xZ agreed fix-nav-morph's plan after P-073 row 5: the rendering cost card first (Chrome + Simulator), with a cold-first-pin row; no phone block, landing or parking until it reports. Uncounted, OBSERVED n=2: D's cold-port warm-ups collapsed in both blocks that had one (P-071 wD sustained, P-073 wD transient); C and V did not. P-073 output committed da0ef39 (byte-identical to the ops re-score).",
-    "Morph caveat (lead 10-03 14:0xZ; F-183/F-184): on st6-rb2 in WebKit the nav bar, logo, actions and earn button stay at --morph 0 while the header reads 1, and the panel fade freezes at 0.924; OBSERVED on phone + Sim, cause UNRESOLVED (WebKit main says it should re-resolve); correction (morph-inherit) by fix-nav-morph. Candidate A step 1's Simulator tween counts were measured on this morph: they count less motion than the baseline."
+    "Morph (lead 10-03 15:0xZ): morph-inherit landed (b11f977 + 0ad5407). Before it, st6-rb2 in WebKit left the nav children at --morph 0 and froze the panel fade at 0.924 (F-183/F-184, OBSERVED on phone + Sim). WebKit morph numbers measured on stacks without it are void for the morph region; re-measure on main. Next builds stack on main + morph-inherit. Candidate A step 1's Simulator tween counts are void; re-measure."
    ]
   },
   {
@@ -305,6 +305,22 @@
     "P-077 hit (PASS + PASS); phone hold h121509 under T-039 B: >50 V 2 vs C 1 + 1 no worse, fps 59.7 vs 60.2 - 2 no worse, twins >46/>54 WORSE carried by V1's 64 ms scroll-onset frame; lead 12:5xZ: (a) no worse, threshold-sensitive.",
     "Re-ticket e0f92804c521 (G3 inside @supports (-webkit-mask-clip: text)): carried by identity check, ops second read PASS 14:0xZ. Reduced-motion face-photo pixels flip load to load in C as well: lead 14:2xZ, load noise, OBSERVED, cause unknown; PR-009's 'reduced motion identical' stands.",
     "Pixels: not identical by a few LSB (sweep and glint), so the look went to the user as PR-009; accepted, option \"both\", 10-03 10:31Z. Landed on main 501d9f7 (fixes/platform-idle only)."
+   ]
+  },
+  {
+   "id": "morph-inherit",
+   "writeup": "fixes/morph-inherit/README.md",
+   "title": "Top bar and menu stop following the page past its end (iPhone display bug)",
+   "area": "end",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "On today's best build, Safari left the top bar, logo and buttons behind when you pushed past the end of the page, and froze the menu panel's fade. Now they follow the grow animation again, as on the original page.",
+   "gate": "Passed: matches the original in the Simulator, unchanged pixels in Chrome, and an independent review. A short phone check (P-085) comes next.",
+   "next": "Landed. A short phone check against the original page (P-085) follows, after a Simulator check.",
+   "owner": "fix-nav-morph",
+   "details": [
+    "F-183/F-184: WebKit ignores an explicit inherit of the non-inheriting @property --morph on the nav children (OBSERVED on phone + Sim; cause UNRESOLVED, WebKit main says it should re-resolve). Fix writes --morph inline on the children (JS 7c61fe7d0662, CSS unchanged). Correctness fix: about +1 layout and +1 paint per open-tween frame on WebKit, the motion st6-rb2 skipped.",
+    "Review ACCEPT (review-morph-inherit); landed b11f977 + 0ad5407. Reviewer (OBSERVED): panel countdown cells at m 0.9 and 1 differ from the baseline in WebKit (max 11, 52 px over 8), attributed to st6-rb2; passed to the countdown owners."
    ]
   },
   {
