@@ -15,6 +15,7 @@ Every agent:
 - [Keep awake only during measurements](keep-awake-only-during-measurements.md): `caffeinate -i -s` inside measurement holds only
 - [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test
 - [Console steps only for actions](console-steps-only-for-actions.md): "Your steps" is only for what the user must do; answers, results and FYIs go in a thread (the lead opens it)
+- [Milestone 2: heat profiles](milestone-2-heat-profiles.md): after fixes 1-3 are smooth at 38-40 °C, stay smooth under Xcode Serious and from a 42-44 °C start
 - [Phone checks start warm](phone-checks-start-warm.md): start at 38-40 °C, one start method per block; LPM runs dropped, not tested; no countdown-only test page
 
 Lead:
