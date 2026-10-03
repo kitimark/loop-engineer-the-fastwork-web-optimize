@@ -12,9 +12,11 @@ is a layout shift). Pixel identity in Chrome and WebKit (Simulator) except two d
 R-fade (Simulator, 50 % hero fade, mid-roll) and the Chrome 0.9-fade class (both strip builds). One count goes up:
 off-screen inline style writes (Chrome). Section "Review round 3 and PR-008 rev 2". WebKit counts on the Simulator; no
 timing run (timing A/Bs are deferred, user 2026-10-02); cd-strip is a top-3 fix, so it keeps a phone block and the
-user's finger test before landing (lead, T-029 #30), queued after the user's Xcode step and iphone-runner's grid check
-(thermal Serious gate, user T-039 B; PHONE TICKET rev 2).
-**Stage:** F (BUILD card strip-tc below), review round 3 next. D: LOCATED, signed by the lead on the fast path
+user's finger test before landing (lead, T-029 #30). **Phone block P-079 done at real thermal Serious (user T-039 B),
+2026-10-03 10:45-12:03Z: hit** (top and pin frames no worse, re-entry clock repaint 53.5 → 21, clock backing 48 → 16
+layers; pin Layout not enough by the n rule, falsifier unreachable; ops second read PASS); section "Phone block P-079".
+Next: the user's finger swipe A/B, then the land request.
+**Stage:** V (BUILD card strip-tc below; review round 3 ACCEPT-WITH-NOTES; phone block P-079 hit; finger test next). D: LOCATED, signed by the lead on the fast path
 (2026-10-03 01:1xZ, no gain claim: the frame effect is measured only in the phone block, so no segment card now)
 **Device class / gate:** render-bound / phone-only (WebKit paint and layer work; Chrome 6x can't stand in for it)
 **Driver(s) behind the claims:** Simulator Timeline + LayerTree (counts only), Chrome and Simulator frozen-frame pixel
@@ -824,6 +826,36 @@ queue: after the user's Xcode step and iphone-runner's grid check (ops 10:1xZ)
 **Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up · toolbar resize ·
 rubber band (all need a timed or phone run; the pixel harness covers the clock states, not these).
 
+## Phone block P-079 (iPhone 15 Pro Max, real thermal Serious, 2026-10-03 10:45-12:03Z)
+
+Run by iphone-runner exactly as ticketed (rev 2, head 99d4914; ops GO at fdb3145); scored with `score079.mjs`
+(302b608e09e7) by fix-cd-strip and re-scored from the raw files by mgmt-ops-10 (second read PASS, byte-identical
+output). Raw files, gate log (`gates.jsonl`, `holds.jsonl`) and hold logs: iphone-runner's worktree `out/p079/`; score:
+`out/cd-strip/p079-score.json` (both gitignored, local).
+
+- **Thermal gate (B):** hold 1 (h104636) gate fail, Fair ×3 at 35.2-37.1 °C, under-warmed, no counted runs. Holds
+  h110448 (wC), h112000 (wV, C1 V1 V2 C2 C3 V3 V4 C4) and h115101 (attribution a1-a6): start and end reads Serious,
+  Is Induced = No, timer grid 30 ms (grid30 0.85-0.90); battery 38.8-39.8 °C. No Low Power Mode run.
+- Files passed to the scorer, in block order: C1 V1 V2 C2 C3 V3 V4 C4 (W), then attr 1C 2V 3C 4V 5V 6C; warm-ups out.
+
+| gate (P-079) | C (st6-rb2) | V (strip-tc) | verdict |
+|---|---|---|---|
+| top frames, W, 4 + 4 runs (all C sentinels pass) | gt50 per run 0 1 0 1 | 1 1 2 1 | **hit**: median V−C gt50 +0.5, gt46 0, gt54 +0.5, gt34 0 (twins −0.5 / 0); not threshold-sensitive |
+| pin frames, m = 1 hold, Timeline off (valid C a1 a6, V a4 a5) | p95 17, no frame > 30 | p95 17, no frame > 30 | **hit**: every delta 0 |
+| re-entry, first 1 s clock Paint | 53.5 (53, 54) | 21 (21, 21) | **hit** (predicted C ~55, V ~23; falsifier V ≥ 38 or V ≥ C) |
+| clock backing (LayerTree) | 48 backed, 1.48 MB | 16 backed, 0.49 MB | **hit** (predicted 48 / 16; V MB in [0.3, 0.6]) |
+| top Layout per 4 s | 175 | 175 | in band [−10, +15] (delta 0) |
+| pin Layout per hold | 115, 110 (median 112.5) | 116 (+3.5), 123 (+10.5) | **not enough by the scorer's n rule (V 2 < 3); falsifier unreachable**: both valid V holds ≤ +14, and with any C median ≥ 110 at most 1 of 3 V holds could be above (lead and ops, no top-up) |
+| idle clock Paint per 4 s (descriptive) | 22 | 8 | −14, no claim |
+
+- **M sentinel:** a3:C failed (held m = 1 p95 34 ms > 18): its held frames, and a2:V's, ran at about 30 Hz (p50
+  32-33 ms, ~47 frames instead of ~78) at 39.0-39.3 °C, while a1 and a4-a6 ran at 17 ms at the same temperatures.
+  OBSERVED in our setup, cause unknown. a2:V and a3:C are VOID by the rule; the block had no cool-down or restart
+  after it (ops' row note).
+- C's backing MB (1.48) is above the Simulator's 1.18; the backed-layer counts match the Simulator exactly (48 / 16).
+- Verdict per the ticket's decisions: **hit** (re-entry, backing, frames in both windows), so strip-tc stays the base
+  for cd-roll-ca; next the user's finger swipe A/B (C vs V), then the land request.
+
 ## Next
 
 - Done: the user accepted PR-008 rev 2, land-strip-tc (09:31:49Z, final); strip-tc ported into the overlay, `patch.diff`
@@ -831,8 +863,10 @@ rubber band (all need a timed or phone run; the pixel harness covers the clock s
 - Done since: review round 3 ACCEPT-WITH-NOTES (review-cd-strip at 4cd9529; M1, N1, N2 answered in this README and
   `fixes/PREDICTIONS.md`, no code or hash change); P-079 registered by mgmt-ops-10; PHONE TICKET rev 2 (scorer and
   attribution script committed with their hashes, pin-hold pairing, P(hit), the user's thermal Serious gate).
-- Next, in order: ops' line check of the ticket rev 2; the ticket to iphone-runner; phone block after the user's Xcode
-  step and iphone-runner's grid check; the user's finger test; land request only after the block and the finger test.
+- Done since: ops' line check and GO (fdb3145; ports line 99d4914); attr079 Simulator retest on both arms (hash
+  unchanged); phone block P-079 under B, hit (section "Phone block P-079"); ops second read PASS (row 9ab03c1).
+- Next, in order: the user's finger swipe A/B (C vs V, posted by the lead through iphone-runner, after platform-idle's
+  hold); then the land request.
 - Phone: the frame effect is measured only in the P-079 block (D was signed on the fast path with no gain claim, so no
   separate phone segment card now).
 - P-032 (fix-nav-morph) is re-registered on the strip build after the D card.

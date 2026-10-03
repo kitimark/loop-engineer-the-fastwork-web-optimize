@@ -536,6 +536,128 @@
   "prediction": "P-079",
   "scorer": "fixes/cd-strip/p079/score079.mjs",
   "attribution": "fixes/cd-strip/p079/attr079.mjs",
-  "note": "hashes in the README PHONE TICKET; counted W runs Timeline off, every Timeline count in 6 attribution cycles C V C V V C; thermal Serious gate (user T-039 B, research/phone-thermal-gate/thermal-gate.mjs)"
+  "note": "hashes in the README PHONE TICKET; counted W runs Timeline off, every Timeline count in 6 attribution cycles C V C V V C; thermal Serious gate (user T-039 B, research/phone-thermal-gate/thermal-gate.mjs)",
+  "head": "99d4914",
+  "opsGo": "fdb3145 (mgmt-ops-10)"
+ },
+ "phoneBlockP079": {
+  "when": "2026-10-03T10:45Z..12:03Z",
+  "device": "iPhone 15 Pro Max",
+  "runner": "iphone-runner",
+  "thermal": "B: real Serious; hold 1 h104636 gate fail (Fair x3, 35.2-37.1 C, under-warmed, no counted runs); h110448, h112000, h115101 start+end Serious, Is Induced No, timer grid 30 ms; battery 38.8-39.8 C; no LPM run",
+  "scorer": "fixes/cd-strip/p079/score079.mjs sha256 302b608e09e7",
+  "probe": "fixes/cd-strip/p079/attr079.mjs sha256 dcaacf4a8170",
+  "files": [
+   "C1",
+   "V1",
+   "V2",
+   "C2",
+   "C3",
+   "V3",
+   "V4",
+   "C4",
+   "attr 1C",
+   "2V",
+   "3C",
+   "4V",
+   "5V",
+   "6C"
+  ],
+  "gates": {
+   "framesTop": {
+    "nC": 4,
+    "nV": 4,
+    "delta": {
+     "gt50": 0.5,
+     "gt46": 0,
+     "gt54": 0.5,
+     "gt34": 0,
+     "gt30": -0.5,
+     "gt38": 0
+    },
+    "gt50": "hit",
+    "thresholdSensitive": false,
+    "gt34band": "in [-1, +1]",
+    "gt34twins": [
+     "in",
+     "in"
+    ],
+    "verdict": "hit"
+   },
+   "framesPin": {
+    "nC": 2,
+    "nV": 2,
+    "delta": {
+     "gt50": 0,
+     "gt46": 0,
+     "gt54": 0,
+     "gt34": 0,
+     "gt30": 0,
+     "gt38": 0
+    },
+    "gt50": "hit",
+    "thresholdSensitive": false,
+    "gt34band": "in [-1, +1]",
+    "gt34twins": [
+     "in",
+     "in"
+    ],
+    "verdict": "hit"
+   },
+   "reentry": {
+    "C": 53.5,
+    "V": 21,
+    "verdict": "hit",
+    "predicted": "C ~55 [35, 75], V ~23 [12, 38]"
+   },
+   "backing": {
+    "backedC": 48,
+    "backedV": 16,
+    "mbC": 1.48,
+    "mbV": 0.49,
+    "verdict": "hit",
+    "predicted": "backed C 48, V 16 (+-4); MB C ~1.2, V ~0.4 [0.3, 0.6]"
+   },
+   "topLayout": {
+    "C": 175,
+    "V": 175,
+    "delta": 0,
+    "band": "[-10, +15]",
+    "verdict": "in band"
+   },
+   "pinLayout": {
+    "C": [
+     115,
+     110
+    ],
+    "medianC": 112.5,
+    "V": [
+     {
+      "Layout": 116,
+      "minusMedianC": 3.5,
+      "above": false
+     },
+     {
+      "Layout": 123,
+      "minusMedianC": 10.5,
+      "above": false
+     }
+    ],
+    "band": "[-6, +14]",
+    "verdict": "not enough (V 2, C 2)"
+   },
+   "idleClockPaint": {
+    "C": 22,
+    "V": 8,
+    "delta": -14,
+    "band": "[-8, +12]",
+    "note": "descriptive, no claim"
+   }
+  },
+  "pinLayoutRecorded": "not enough by the scorer n rule (V 2 < 3); falsifier unreachable: both valid V holds <= +14 and with any C median >= 110 at most 1 of 3 V holds could be above (lead and mgmt-ops-10, no top-up)",
+  "sentinel": "a3:C failed the M sentinel (p95 34 ms > 18); a2:V and a3:C held frames at about 30 Hz (p50 32-33 ms) at 39.0-39.3 C, a1 and a4-a6 at 17 ms; OBSERVED, cause unknown; a2, a3 VOID; no cool-down or restart after it",
+  "verdict": "hit (re-entry, backing, frames top and pin); top Layout in band; pin Layout not enough, falsifier unreachable",
+  "secondRead": "mgmt-ops-10 PASS, re-score from the raw files byte-identical; row 9ab03c1",
+  "rawFiles": "iphone-runner worktree out/p079/ (gitignored, local); score out/cd-strip/p079-score.json"
  }
 }
