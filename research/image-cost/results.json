@@ -1,0 +1,7141 @@
+{
+ "study": "research/image-cost",
+ "baselineSnapshot": "b1789284481295-4ad4a84a",
+ "setting": "iOS Simulator (iOS 26.5, WebKit), 430x775 CSS px, DPR 3; Timeline Paint/Composite records; ms are Mac-CPU ms, indicative only (F-084)",
+ "sources": {
+  "inv": "out/image-cost/inventory-1.json",
+  "cap": "out/image-cost/arms/cap2.json",
+  "pd": "out/image-cost/sim/mix-2026-10-03T16-06-05-499Z.json",
+  "idle": "out/image-cost/sim/mix-2026-10-03T16-24-44-134Z.json",
+  "walk": "out/image-cost/sim/mix-2026-10-03T18-04-33-514Z.json",
+  "pix": "out/image-cost/sim/mix-2026-10-03T17-57-45-293Z.json"
+ },
+ "inventory": {
+  "uniqueUrls": 97,
+  "rasterSeen": 42,
+  "decMBNatural": 95.8,
+  "decMBAt3x": 38.2,
+  "decMBAt2x": 21.9,
+  "over3x": 31,
+  "over2x": 35,
+  "moreThan2xOver3x": 20,
+  "withSrcset": 0,
+  "images": [
+   {
+    "p": "/selling/sellers/photographer/service-strawberry.jpg",
+    "fmt": "jpg",
+    "bytes": 424584,
+    "nat": [
+     1320,
+     1747
+    ],
+    "cssBox": [
+     175,
+     245
+    ],
+    "r3": 2.38,
+    "r2": 3.57,
+    "decMB": 8.8,
+    "dec3MB": 1.56,
+    "dec2MB": 0.69,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/sound-composer/post-orchestra.jpg",
+    "fmt": "jpg",
+    "bytes": 323367,
+    "nat": [
+     1600,
+     1067
+    ],
+    "cssBox": [
+     175,
+     117
+    ],
+    "r3": 3.04,
+    "r2": 4.56,
+    "decMB": 6.51,
+    "dec3MB": 0.7,
+    "dec2MB": 0.31,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/hero/leobeer-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 212309,
+    "nat": [
+     1200,
+     1148
+    ],
+    "cssBox": [
+     118,
+     111
+    ],
+    "r3": 3.39,
+    "r2": 5.08,
+    "decMB": 5.26,
+    "dec3MB": 0.46,
+    "dec2MB": 0.2,
+    "loading": "null",
+    "decoding": "undefined/async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/photographer/post-tuna-cut.jpg",
+    "fmt": "jpg",
+    "bytes": 305517,
+    "nat": [
+     1035,
+     1400
+    ],
+    "cssBox": [
+     175,
+     233
+    ],
+    "r3": 1.97,
+    "r2": 2.96,
+    "decMB": 5.53,
+    "dec3MB": 1.42,
+    "dec2MB": 0.63,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/photographer/post-tuna.jpg",
+    "fmt": "jpg",
+    "bytes": 324659,
+    "nat": [
+     988,
+     1400
+    ],
+    "cssBox": [
+     175,
+     245
+    ],
+    "r3": 1.88,
+    "r2": 2.82,
+    "decMB": 5.28,
+    "dec3MB": 1.49,
+    "dec2MB": 0.66,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/roles/graphic-designer.png",
+    "fmt": "png",
+    "bytes": 439555,
+    "nat": [
+     1282,
+     1282
+    ],
+    "cssBox": [
+     129.6,
+     335
+    ],
+    "r3": 1.28,
+    "r2": 1.91,
+    "decMB": 6.27,
+    "dec3MB": 3.85,
+    "dec2MB": 1.71,
+    "loading": "eager",
+    "decoding": "async",
+    "moving": "start-selling-morph-col-track"
+   },
+   {
+    "p": "/selling/sellers/photographer/post-football.jpg",
+    "fmt": "jpg",
+    "bytes": 194318,
+    "nat": [
+     1400,
+     846
+    ],
+    "cssBox": [
+     175,
+     105
+    ],
+    "r3": 2.67,
+    "r2": 4,
+    "decMB": 4.52,
+    "dec3MB": 0.64,
+    "dec2MB": 0.28,
+    "loading": "lazy",
+    "decoding": "async/undefined",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/hero/weng-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 56863,
+    "nat": [
+     1090,
+     994
+    ],
+    "cssBox": [
+     118,
+     111
+    ],
+    "r3": 2.98,
+    "r2": 4.48,
+    "decMB": 4.13,
+    "dec3MB": 0.46,
+    "dec2MB": 0.21,
+    "loading": "null",
+    "decoding": "undefined/async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/sound-composer/post-you-me-me.jpg",
+    "fmt": "jpg",
+    "bytes": 94988,
+    "nat": [
+     850,
+     1200
+    ],
+    "cssBox": [
+     175,
+     247
+    ],
+    "r3": 1.62,
+    "r2": 2.43,
+    "decMB": 3.89,
+    "dec3MB": 1.48,
+    "dec2MB": 0.66,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/sound-composer/cover.jpg",
+    "fmt": "jpg",
+    "bytes": 96664,
+    "nat": [
+     1280,
+     800
+    ],
+    "cssBox": [
+     388,
+     182
+    ],
+    "r3": 1.1,
+    "r2": 1.65,
+    "decMB": 3.91,
+    "dec3MB": 3.23,
+    "dec2MB": 1.44,
+    "loading": "lazy/null",
+    "decoding": "async/null",
+    "moving": "start-selling-future-card,record"
+   },
+   {
+    "p": "/selling/hero/mod-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 77147,
+    "nat": [
+     741,
+     1047
+    ],
+    "cssBox": [
+     159,
+     149
+    ],
+    "r3": 1.55,
+    "r2": 2.33,
+    "decMB": 2.96,
+    "dec3MB": 1.23,
+    "dec2MB": 0.55,
+    "loading": "null",
+    "decoding": "undefined/async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/optimized/media/post-5.avif",
+    "fmt": "avif",
+    "bytes": 71446,
+    "nat": [
+     735,
+     893
+    ],
+    "cssBox": [
+     84.7,
+     84.7
+    ],
+    "r3": 2.89,
+    "r2": 4.34,
+    "decMB": 2.5,
+    "dec3MB": 0.3,
+    "dec2MB": 0.13,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/photographer/avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 83341,
+    "nat": [
+     730,
+     732
+    ],
+    "cssBox": [
+     59,
+     59
+    ],
+    "r3": 4.12,
+    "r2": 6.19,
+    "decMB": 2.04,
+    "dec3MB": 0.12,
+    "dec2MB": 0.05,
+    "loading": "lazy",
+    "decoding": "async/undefined",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/sound-composer/post-maynila.jpg",
+    "fmt": "jpg",
+    "bytes": 286527,
+    "nat": [
+     683,
+     1024
+    ],
+    "cssBox": [
+     175,
+     263
+    ],
+    "r3": 1.3,
+    "r2": 1.95,
+    "decMB": 2.67,
+    "dec3MB": 1.58,
+    "dec2MB": 0.7,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/photographer/cover.jpg",
+    "fmt": "jpg",
+    "bytes": 184614,
+    "nat": [
+     1200,
+     669
+    ],
+    "cssBox": [
+     388,
+     182
+    ],
+    "r3": 1.03,
+    "r2": 1.55,
+    "decMB": 3.06,
+    "dec3MB": 2.88,
+    "dec2MB": 1.28,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/media/post-4.jpg",
+    "fmt": "jpg",
+    "bytes": 148211,
+    "nat": [
+     819,
+     1024
+    ],
+    "cssBox": [
+     129.6,
+     345.6
+    ],
+    "r3": 0.99,
+    "r2": 1.48,
+    "decMB": 3.2,
+    "dec3MB": 3.2,
+    "dec2MB": 1.46,
+    "loading": "eager",
+    "decoding": "async",
+    "moving": "start-selling-morph-col-track"
+   },
+   {
+    "p": "/selling/sellers/ux-ui-designer/avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 67305,
+    "nat": [
+     640,
+     640
+    ],
+    "cssBox": [
+     30,
+     30
+    ],
+    "r3": 7.11,
+    "r2": 10.67,
+    "decMB": 1.56,
+    "dec3MB": 0.03,
+    "dec2MB": 0.01,
+    "loading": "null",
+    "decoding": "undefined/async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/sound-composer/avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 30717,
+    "nat": [
+     640,
+     640
+    ],
+    "cssBox": [
+     59,
+     59
+    ],
+    "r3": 3.62,
+    "r2": 5.42,
+    "decMB": 1.56,
+    "dec3MB": 0.12,
+    "dec2MB": 0.05,
+    "loading": "lazy",
+    "decoding": "async/undefined",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/hero/bold-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 77242,
+    "nat": [
+     656,
+     656
+    ],
+    "cssBox": [
+     159,
+     149
+    ],
+    "r3": 1.38,
+    "r2": 2.06,
+    "decMB": 1.64,
+    "dec3MB": 0.87,
+    "dec2MB": 0.39,
+    "loading": "null",
+    "decoding": "undefined/async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/ai-video-editor/avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 28910,
+    "nat": [
+     480,
+     480
+    ],
+    "cssBox": [
+     22,
+     22
+    ],
+    "r3": 7.27,
+    "r2": 10.91,
+    "decMB": 0.88,
+    "dec3MB": 0.02,
+    "dec2MB": 0.01,
+    "loading": "null",
+    "decoding": "undefined/async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/ai-automation/avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 33686,
+    "nat": [
+     480,
+     480
+    ],
+    "cssBox": [
+     32,
+     32
+    ],
+    "r3": 5,
+    "r2": 7.5,
+    "decMB": 0.88,
+    "dec3MB": 0.04,
+    "dec2MB": 0.02,
+    "loading": "lazy",
+    "decoding": "async/undefined",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/graphic-designer/avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 43359,
+    "nat": [
+     480,
+     480
+    ],
+    "cssBox": [
+     32,
+     32
+    ],
+    "r3": 5,
+    "r2": 7.5,
+    "decMB": 0.88,
+    "dec3MB": 0.04,
+    "dec2MB": 0.02,
+    "loading": "lazy",
+    "decoding": "async/undefined",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/web-developer/avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 36449,
+    "nat": [
+     480,
+     480
+    ],
+    "cssBox": [
+     32,
+     32
+    ],
+    "r3": 5,
+    "r2": 7.5,
+    "decMB": 0.88,
+    "dec3MB": 0.04,
+    "dec2MB": 0.02,
+    "loading": "lazy",
+    "decoding": "async/undefined",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/media/cover-cafe.jpg",
+    "fmt": "jpg",
+    "bytes": 401736,
+    "nat": [
+     960,
+     539
+    ],
+    "cssBox": [
+     129.6,
+     203.5
+    ],
+    "r3": 0.88,
+    "r2": 1.32,
+    "decMB": 1.97,
+    "dec3MB": 1.97,
+    "dec2MB": 1.13,
+    "loading": "eager",
+    "decoding": "async",
+    "moving": "start-selling-morph-col-track"
+   },
+   {
+    "p": "/selling/work/work-c.jpg",
+    "fmt": "jpg",
+    "bytes": 86188,
+    "nat": [
+     735,
+     893
+    ],
+    "cssBox": [
+     129.6,
+     378.2
+    ],
+    "r3": 0.79,
+    "r2": 1.18,
+    "decMB": 2.5,
+    "dec3MB": 2.5,
+    "dec2MB": 1.8,
+    "loading": "eager",
+    "decoding": "async",
+    "moving": "start-selling-morph-col-track"
+   },
+   {
+    "p": "/selling/media/service-kitchen.png",
+    "fmt": "png",
+    "bytes": 374491,
+    "nat": [
+     410,
+     512
+    ],
+    "cssBox": [
+     96.3,
+     116.4
+    ],
+    "r3": 1.42,
+    "r2": 2.13,
+    "decMB": 0.8,
+    "dec3MB": 0.4,
+    "dec2MB": 0.18,
+    "loading": "lazy/eager",
+    "decoding": "async/undefined",
+    "moving": "start-selling-platform-profile-phone"
+   },
+   {
+    "p": "/selling/commission/client-avatar-2.png",
+    "fmt": "png",
+    "bytes": 26047,
+    "nat": [
+     349,
+     479
+    ],
+    "cssBox": [
+     28,
+     28
+    ],
+    "r3": 4.15,
+    "r2": 6.23,
+    "decMB": 0.64,
+    "dec3MB": 0.04,
+    "dec2MB": 0.02,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/commission/client-avatar-3.png",
+    "fmt": "png",
+    "bytes": 24553,
+    "nat": [
+     320,
+     480
+    ],
+    "cssBox": [
+     28,
+     28
+    ],
+    "r3": 3.81,
+    "r2": 5.71,
+    "decMB": 0.59,
+    "dec3MB": 0.04,
+    "dec2MB": 0.02,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-cred-card,start-selling-platform-profile-reviews-track"
+   },
+   {
+    "p": "/selling/commission/avatar-john.jpg",
+    "fmt": "jpg",
+    "bytes": 24246,
+    "nat": [
+     320,
+     480
+    ],
+    "cssBox": [
+     28.8,
+     28.8
+    ],
+    "r3": 3.7,
+    "r2": 5.56,
+    "decMB": 0.59,
+    "dec3MB": 0.04,
+    "dec2MB": 0.02,
+    "loading": "lazy",
+    "decoding": "undefined/async",
+    "moving": "fee-avatar,fee-visual-beat"
+   },
+   {
+    "p": "/selling/commission/client-avatar-1.png",
+    "fmt": "png",
+    "bytes": 24571,
+    "nat": [
+     319,
+     479
+    ],
+    "cssBox": [
+     28,
+     28
+    ],
+    "r3": 3.8,
+    "r2": 5.7,
+    "decMB": 0.58,
+    "dec3MB": 0.04,
+    "dec2MB": 0.02,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/platform/features/secure/network/portrait-left.png",
+    "fmt": "png",
+    "bytes": 24246,
+    "nat": [
+     320,
+     480
+    ],
+    "cssBox": [
+     58.5,
+     58.5
+    ],
+    "r3": 1.82,
+    "r2": 2.74,
+    "decMB": 0.59,
+    "dec3MB": 0.18,
+    "dec2MB": 0.08,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-face"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/portrait-right.png",
+    "fmt": "png",
+    "bytes": 38049,
+    "nat": [
+     320,
+     480
+    ],
+    "cssBox": [
+     58.5,
+     58.5
+    ],
+    "r3": 1.82,
+    "r2": 2.74,
+    "decMB": 0.59,
+    "dec3MB": 0.18,
+    "dec2MB": 0.08,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-face"
+   },
+   {
+    "p": "/selling/hero/weng-avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 19849,
+    "nat": [
+     320,
+     322
+    ],
+    "cssBox": [
+     22,
+     22
+    ],
+    "r3": 4.85,
+    "r2": 7.27,
+    "decMB": 0.39,
+    "dec3MB": 0.02,
+    "dec2MB": 0.01,
+    "loading": "null",
+    "decoding": "undefined/async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/reviewers/r5.jpg",
+    "fmt": "jpg",
+    "bytes": 17598,
+    "nat": [
+     320,
+     320
+    ],
+    "cssBox": [
+     24.4,
+     24.4
+    ],
+    "r3": 4.37,
+    "r2": 6.56,
+    "decMB": 0.39,
+    "dec3MB": 0.02,
+    "dec2MB": 0.01,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-cred-card,start-selling-platform-profile-reviews-track"
+   },
+   {
+    "p": "/selling/hero/mod-avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 11423,
+    "nat": [
+     300,
+     300
+    ],
+    "cssBox": [
+     30,
+     30
+    ],
+    "r3": 3.33,
+    "r2": 5,
+    "decMB": 0.34,
+    "dec3MB": 0.03,
+    "dec2MB": 0.01,
+    "loading": "null",
+    "decoding": "undefined/async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/chapavich-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 45110,
+    "nat": [
+     656,
+     656
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 1.64,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/chapavich-avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 3888,
+    "nat": [
+     113,
+     113
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0.05,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/profile/online.svg",
+    "fmt": "svg",
+    "bytes": 305,
+    "nat": [
+     7,
+     7
+    ],
+    "cssBox": [
+     8,
+     8
+    ],
+    "r3": 0.29,
+    "r2": 0.44,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "null",
+    "decoding": "undefined/null",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/buttercup-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 47008,
+    "nat": [
+     656,
+     656
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 1.64,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/buttercup-avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 8138,
+    "nat": [
+     250,
+     250
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0.24,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/slayalldeep-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 77946,
+    "nat": [
+     656,
+     656
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 1.64,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/slayalldeep-avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 16565,
+    "nat": [
+     320,
+     322
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0.39,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/pakincht-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 318010,
+    "nat": [
+     956,
+     1194
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 4.35,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/pakincht-avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 4166,
+    "nat": [
+     150,
+     150
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0.09,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/peter-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 351582,
+    "nat": [
+     1200,
+     2133
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 9.76,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/peter-avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 31401,
+    "nat": [
+     320,
+     480
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0.59,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/nam-cover.jpg",
+    "fmt": "jpg",
+    "bytes": 388272,
+    "nat": [
+     1200,
+     1866
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 8.54,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/hero/nam-avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 18867,
+    "nat": [
+     320,
+     427
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0.52,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "null",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/people-wordmark/o.svg",
+    "fmt": "svg",
+    "bytes": 1151,
+    "nat": [
+     19,
+     19
+    ],
+    "cssBox": [
+     19,
+     20
+    ],
+    "r3": 0.32,
+    "r2": 0.48,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/video-editor/avatar.jpg",
+    "fmt": "jpg",
+    "bytes": 74245,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     23,
+     23
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "async/undefined",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/icons/claim.svg",
+    "fmt": "svg",
+    "bytes": 339,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/icons/pin.svg",
+    "fmt": "svg",
+    "bytes": 310,
+    "nat": [
+     10,
+     13
+    ],
+    "cssBox": [
+     10,
+     13
+    ],
+    "r3": 0.33,
+    "r2": 0.5,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async/undefined",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/sound-composer/service-scoring.jpg",
+    "fmt": "jpg",
+    "bytes": 165829,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/sound-composer/service-feature.jpg",
+    "fmt": "jpg",
+    "bytes": 546320,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/sound-composer/service-ost.jpg",
+    "fmt": "jpg",
+    "bytes": 67349,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/photographer/post-runway.jpg",
+    "fmt": "jpg",
+    "bytes": 236622,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     175,
+     245
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/photographer/post-loreal.jpg",
+    "fmt": "jpg",
+    "bytes": 222435,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     175,
+     245
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-future-card"
+   },
+   {
+    "p": "/selling/sellers/photographer/post-ysl.jpg",
+    "fmt": "jpg",
+    "bytes": 380724,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/sellers/photographer/post-strawberry.jpg",
+    "fmt": "jpg",
+    "bytes": 300193,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/commission/compact-your-client-arrow.svg",
+    "fmt": "svg",
+    "bytes": 1440,
+    "nat": [
+     127,
+     91
+    ],
+    "cssBox": [
+     133,
+     91
+    ],
+    "r3": 0.33,
+    "r2": 0.5,
+    "decMB": 0.04,
+    "dec3MB": 0.04,
+    "dec2MB": 0.04,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/media/avatar-cat.png",
+    "fmt": "png",
+    "bytes": 297281,
+    "nat": [
+     341,
+     512
+    ],
+    "cssBox": [
+     129.6,
+     283.2
+    ],
+    "r3": 0.6,
+    "r2": 0.9,
+    "decMB": 0.67,
+    "dec3MB": 0.67,
+    "dec2MB": 0.67,
+    "loading": "lazy/eager",
+    "decoding": "async",
+    "moving": "start-selling-platform-profile-phone,start-selling-platform-cred-card,start-selling-platform-profile-reviews-track,start-selling-morph-col-track"
+   },
+   {
+    "p": "/selling/media/post-2.png",
+    "fmt": "png",
+    "bytes": 227403,
+    "nat": [
+     368,
+     460
+    ],
+    "cssBox": [
+     129.6,
+     345.6
+    ],
+    "r3": 0.44,
+    "r2": 0.67,
+    "decMB": 0.65,
+    "dec3MB": 0.65,
+    "dec2MB": 0.65,
+    "loading": "lazy/eager",
+    "decoding": "async",
+    "moving": "start-selling-platform-profile-phone,start-selling-morph-col-track"
+   },
+   {
+    "p": "/selling/media/post-3.png",
+    "fmt": "png",
+    "bytes": 272340,
+    "nat": [
+     341,
+     512
+    ],
+    "cssBox": [
+     129.6,
+     505.9
+    ],
+    "r3": 0.34,
+    "r2": 0.51,
+    "decMB": 0.67,
+    "dec3MB": 0.67,
+    "dec2MB": 0.67,
+    "loading": "lazy/eager",
+    "decoding": "async",
+    "moving": "start-selling-platform-profile-phone,start-selling-morph-col-track"
+   },
+   {
+    "p": "/selling/platform/features/credibility/star.svg",
+    "fmt": "svg",
+    "bytes": 869,
+    "nat": [
+     16,
+     15
+    ],
+    "cssBox": [
+     9.8,
+     9.8
+    ],
+    "r3": 0.54,
+    "r2": 0.82,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-cred-card,start-selling-platform-profile-reviews-track"
+   },
+   {
+    "p": "/selling/media/avatar-alt-2.jpg",
+    "fmt": "jpg",
+    "bytes": 79700,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     24.4,
+     24.4
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-cred-card,start-selling-platform-profile-reviews-track"
+   },
+   {
+    "p": "/selling/optimized/platform/service-bg.avif",
+    "fmt": "avif",
+    "bytes": 69450,
+    "nat": [
+     576,
+     1024
+    ],
+    "cssBox": [
+     390,
+     311
+    ],
+    "r3": 0.49,
+    "r2": 0.74,
+    "decMB": 2.25,
+    "dec3MB": 2.25,
+    "dec2MB": 2.25,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/optimized/external/lawyer-consult-cover-240.avif",
+    "fmt": "avif",
+    "bytes": 5684,
+    "nat": [
+     160,
+     240
+    ],
+    "cssBox": [
+     84.7,
+     84.7
+    ],
+    "r3": 0.63,
+    "r2": 0.94,
+    "decMB": 0.15,
+    "dec3MB": 0.15,
+    "dec2MB": 0.15,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": ""
+   },
+   {
+    "p": "/selling/platform/features/secure/network/hex-rings.svg",
+    "fmt": "svg",
+    "bytes": 9516,
+    "nat": [
+     542,
+     600
+    ],
+    "cssBox": [
+     343.5,
+     380.3
+    ],
+    "r3": 0.53,
+    "r2": 0.79,
+    "decMB": 1.24,
+    "dec3MB": 1.24,
+    "dec2MB": 1.24,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-rings"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/shield-fill.svg",
+    "fmt": "svg",
+    "bytes": 4830,
+    "nat": [
+     193,
+     212
+    ],
+    "cssBox": [
+     117.6,
+     129.8
+    ],
+    "r3": 0.54,
+    "r2": 0.82,
+    "decMB": 0.16,
+    "dec3MB": 0.16,
+    "dec2MB": 0.16,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-shield"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/shield-border.svg",
+    "fmt": "svg",
+    "bytes": 1751,
+    "nat": [
+     162,
+     178
+    ],
+    "cssBox": [
+     98.7,
+     108.5
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0.11,
+    "dec3MB": 0.11,
+    "dec2MB": 0.11,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-shield"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/shield-sheen.svg",
+    "fmt": "svg",
+    "bytes": 1815,
+    "nat": [
+     94,
+     186
+    ],
+    "cssBox": [
+     57.3,
+     113.3
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0.07,
+    "dec3MB": 0.07,
+    "dec2MB": 0.07,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-shield"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-kr-base.svg",
+    "fmt": "svg",
+    "bytes": 266,
+    "nat": [
+     40,
+     40
+    ],
+    "cssBox": [
+     24.4,
+     24.4
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0.01,
+    "dec3MB": 0.01,
+    "dec2MB": 0.01,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-kr-trigram-a.svg",
+    "fmt": "svg",
+    "bytes": 1997,
+    "nat": [
+     15,
+     33
+    ],
+    "cssBox": [
+     9.1,
+     20.7
+    ],
+    "r3": 0.53,
+    "r2": 0.8,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-kr-trigram-b.svg",
+    "fmt": "svg",
+    "bytes": 1033,
+    "nat": [
+     7,
+     33
+    ],
+    "cssBox": [
+     4.9,
+     20.1
+    ],
+    "r3": 0.48,
+    "r2": 0.71,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-us.svg",
+    "fmt": "svg",
+    "bytes": 8980,
+    "nat": [
+     36,
+     36
+    ],
+    "cssBox": [
+     21.9,
+     21.9
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-th.svg",
+    "fmt": "svg",
+    "bytes": 528,
+    "nat": [
+     40,
+     40
+    ],
+    "cssBox": [
+     24.4,
+     24.4
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0.01,
+    "dec3MB": 0.01,
+    "dec2MB": 0.01,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-jp.svg",
+    "fmt": "svg",
+    "bytes": 565,
+    "nat": [
+     54,
+     36
+    ],
+    "cssBox": [
+     21.9,
+     21.9
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0.01,
+    "dec3MB": 0.01,
+    "dec2MB": 0.01,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-eu.svg",
+    "fmt": "svg",
+    "bytes": 3215,
+    "nat": [
+     36,
+     36
+    ],
+    "cssBox": [
+     21.9,
+     21.9
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-uk.svg",
+    "fmt": "svg",
+    "bytes": 228,
+    "nat": [
+     36,
+     36
+    ],
+    "cssBox": [
+     21.9,
+     21.9
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-uk-2.svg",
+    "fmt": "svg",
+    "bytes": 352,
+    "nat": [
+     36,
+     36
+    ],
+    "cssBox": [
+     21.9,
+     21.9
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-uk-3.svg",
+    "fmt": "svg",
+    "bytes": 445,
+    "nat": [
+     36,
+     36
+    ],
+    "cssBox": [
+     21.9,
+     21.9
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-uk-4.svg",
+    "fmt": "svg",
+    "bytes": 263,
+    "nat": [
+     36,
+     36
+    ],
+    "cssBox": [
+     21.9,
+     21.9
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/flag-uk-5.svg",
+    "fmt": "svg",
+    "bytes": 265,
+    "nat": [
+     36,
+     36
+    ],
+    "cssBox": [
+     21.9,
+     21.9
+    ],
+    "r3": 0.55,
+    "r2": 0.82,
+    "decMB": 0,
+    "dec3MB": 0,
+    "dec2MB": 0,
+    "loading": "lazy",
+    "decoding": "async",
+    "moving": "start-selling-platform-secure-network-flag"
+   },
+   {
+    "p": "/selling/platform/service-quote/bg.png",
+    "fmt": "png",
+    "bytes": 171704,
+    "nat": [
+     0,
+     0
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "lazy",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/media/post-1.png",
+    "fmt": "png",
+    "bytes": 259368,
+    "nat": [
+     368,
+     447
+    ],
+    "cssBox": [
+     129.6,
+     345.6
+    ],
+    "r3": 0.43,
+    "r2": 0.65,
+    "decMB": 0.63,
+    "dec3MB": 0.63,
+    "dec2MB": 0.63,
+    "loading": "eager",
+    "decoding": "async",
+    "moving": "start-selling-morph-col-track"
+   },
+   {
+    "p": "/selling/work/work-a.jpg",
+    "fmt": "jpg",
+    "bytes": 129516,
+    "nat": [
+     736,
+     920
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 2.58,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/profile/portfolio-1.jpg",
+    "fmt": "jpg",
+    "bytes": 281809,
+    "nat": [
+     960,
+     540
+    ],
+    "cssBox": [
+     129.6,
+     345.6
+    ],
+    "r3": 0.52,
+    "r2": 0.78,
+    "decMB": 1.98,
+    "dec3MB": 1.98,
+    "dec2MB": 1.98,
+    "loading": "eager",
+    "decoding": "async",
+    "moving": "start-selling-morph-col-track"
+   },
+   {
+    "p": "/selling/roles/architect.png",
+    "fmt": "png",
+    "bytes": 324825,
+    "nat": [
+     1282,
+     1282
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 6.27,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/media/service-cafe.png",
+    "fmt": "png",
+    "bytes": 296930,
+    "nat": [
+     480,
+     270
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 0.49,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/roles/software-engineer.png",
+    "fmt": "png",
+    "bytes": 405102,
+    "nat": [
+     1282,
+     1282
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 6.27,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/media/post-5.jpg",
+    "fmt": "jpg",
+    "bytes": 86188,
+    "nat": [
+     735,
+     893
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 2.5,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/work/work-e.jpg",
+    "fmt": "jpg",
+    "bytes": 136879,
+    "nat": [
+     736,
+     1042
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 2.93,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/profile/portfolio-2.jpg",
+    "fmt": "jpg",
+    "bytes": 359883,
+    "nat": [
+     960,
+     540
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 1.98,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/roles/web-developer.png",
+    "fmt": "png",
+    "bytes": 366079,
+    "nat": [
+     1282,
+     1281
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 6.26,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/profile/portfolio-3.jpg",
+    "fmt": "jpg",
+    "bytes": 377609,
+    "nat": [
+     960,
+     540
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 1.98,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/work/work-f.jpg",
+    "fmt": "jpg",
+    "bytes": 91952,
+    "nat": [
+     600,
+     848
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 1.94,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   },
+   {
+    "p": "/selling/roles/project-manager.png",
+    "fmt": "png",
+    "bytes": 335935,
+    "nat": [
+     1282,
+     1281
+    ],
+    "cssBox": [
+     0,
+     0
+    ],
+    "r3": null,
+    "r2": null,
+    "decMB": 6.26,
+    "dec3MB": null,
+    "dec2MB": null,
+    "loading": "eager",
+    "decoding": "undefined",
+    "moving": ""
+   }
+  ]
+ },
+ "cap2": {
+  "files": 50,
+  "bytes": 7386223,
+  "bytesCap": 5542489,
+  "decMB": 140.79,
+  "decCapMB": 33.39,
+  "list": [
+   {
+    "p": "/selling/sellers/photographer/service-strawberry.jpg",
+    "nat": [
+     1320,
+     1747
+    ],
+    "cap": [
+     371,
+     491
+    ],
+    "box": [
+     175,
+     245
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/sound-composer/post-orchestra.jpg",
+    "nat": [
+     1600,
+     1067
+    ],
+    "cap": [
+     351,
+     234
+    ],
+    "box": [
+     175,
+     117
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/hero/leobeer-cover.jpg",
+    "nat": [
+     1200,
+     1148
+    ],
+    "cap": [
+     236,
+     226
+    ],
+    "box": [
+     118,
+     111
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/photographer/post-tuna-cut.jpg",
+    "nat": [
+     1035,
+     1400
+    ],
+    "cap": [
+     350,
+     473
+    ],
+    "box": [
+     175,
+     233
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/photographer/post-tuna.jpg",
+    "nat": [
+     988,
+     1400
+    ],
+    "cap": [
+     350,
+     496
+    ],
+    "box": [
+     175,
+     245
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/roles/graphic-designer.png",
+    "nat": [
+     1282,
+     1282
+    ],
+    "cap": [
+     671,
+     671
+    ],
+    "box": [
+     129.6,
+     335
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/photographer/post-football.jpg",
+    "nat": [
+     1400,
+     846
+    ],
+    "cap": [
+     350,
+     212
+    ],
+    "box": [
+     175,
+     105
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/hero/weng-cover.jpg",
+    "nat": [
+     1090,
+     994
+    ],
+    "cap": [
+     244,
+     223
+    ],
+    "box": [
+     118,
+     111
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/sound-composer/post-you-me-me.jpg",
+    "nat": [
+     850,
+     1200
+    ],
+    "cap": [
+     350,
+     494
+    ],
+    "box": [
+     175,
+     247
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/sound-composer/cover.jpg",
+    "nat": [
+     1280,
+     800
+    ],
+    "cap": [
+     776,
+     485
+    ],
+    "box": [
+     388,
+     182
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/hero/mod-cover.jpg",
+    "nat": [
+     741,
+     1047
+    ],
+    "cap": [
+     318,
+     449
+    ],
+    "box": [
+     159,
+     149
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/photographer/avatar.jpg",
+    "nat": [
+     730,
+     732
+    ],
+    "cap": [
+     118,
+     118
+    ],
+    "box": [
+     59,
+     59
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/sound-composer/post-maynila.jpg",
+    "nat": [
+     683,
+     1024
+    ],
+    "cap": [
+     351,
+     526
+    ],
+    "box": [
+     175,
+     263
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/photographer/cover.jpg",
+    "nat": [
+     1200,
+     669
+    ],
+    "cap": [
+     776,
+     433
+    ],
+    "box": [
+     388,
+     182
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/media/post-4.jpg",
+    "nat": [
+     819,
+     1024
+    ],
+    "cap": [
+     553,
+     691
+    ],
+    "box": [
+     129.6,
+     345.6
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/ux-ui-designer/avatar.jpg",
+    "nat": [
+     640,
+     640
+    ],
+    "cap": [
+     60,
+     60
+    ],
+    "box": [
+     30,
+     30
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/sound-composer/avatar.jpg",
+    "nat": [
+     640,
+     640
+    ],
+    "cap": [
+     118,
+     118
+    ],
+    "box": [
+     59,
+     59
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/hero/bold-cover.jpg",
+    "nat": [
+     656,
+     656
+    ],
+    "cap": [
+     318,
+     318
+    ],
+    "box": [
+     159,
+     149
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/ai-video-editor/avatar.jpg",
+    "nat": [
+     480,
+     480
+    ],
+    "cap": [
+     44,
+     44
+    ],
+    "box": [
+     22,
+     22
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/ai-automation/avatar.jpg",
+    "nat": [
+     480,
+     480
+    ],
+    "cap": [
+     64,
+     64
+    ],
+    "box": [
+     32,
+     32
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/graphic-designer/avatar.jpg",
+    "nat": [
+     480,
+     480
+    ],
+    "cap": [
+     64,
+     64
+    ],
+    "box": [
+     32,
+     32
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/web-developer/avatar.jpg",
+    "nat": [
+     480,
+     480
+    ],
+    "cap": [
+     64,
+     64
+    ],
+    "box": [
+     32,
+     32
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/media/cover-cafe.jpg",
+    "nat": [
+     960,
+     539
+    ],
+    "cap": [
+     725,
+     407
+    ],
+    "box": [
+     129.6,
+     203.5
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/work/work-c.jpg",
+    "nat": [
+     735,
+     893
+    ],
+    "cap": [
+     623,
+     757
+    ],
+    "box": [
+     129.6,
+     378.2
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/media/service-kitchen.png",
+    "nat": [
+     410,
+     512
+    ],
+    "cap": [
+     193,
+     241
+    ],
+    "box": [
+     96.3,
+     116.4
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/commission/client-avatar-2.png",
+    "nat": [
+     349,
+     479
+    ],
+    "cap": [
+     57,
+     78
+    ],
+    "box": [
+     28,
+     28
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/commission/client-avatar-3.png",
+    "nat": [
+     320,
+     480
+    ],
+    "cap": [
+     56,
+     84
+    ],
+    "box": [
+     28,
+     28
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/commission/avatar-john.jpg",
+    "nat": [
+     320,
+     480
+    ],
+    "cap": [
+     58,
+     87
+    ],
+    "box": [
+     28.8,
+     28.8
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/commission/client-avatar-1.png",
+    "nat": [
+     319,
+     479
+    ],
+    "cap": [
+     56,
+     84
+    ],
+    "box": [
+     28,
+     28
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/portrait-left.png",
+    "nat": [
+     320,
+     480
+    ],
+    "cap": [
+     117,
+     176
+    ],
+    "box": [
+     58.5,
+     58.5
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/platform/features/secure/network/portrait-right.png",
+    "nat": [
+     320,
+     480
+    ],
+    "cap": [
+     117,
+     176
+    ],
+    "box": [
+     58.5,
+     58.5
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/hero/weng-avatar.jpg",
+    "nat": [
+     320,
+     322
+    ],
+    "cap": [
+     44,
+     44
+    ],
+    "box": [
+     22,
+     22
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/sellers/reviewers/r5.jpg",
+    "nat": [
+     320,
+     320
+    ],
+    "cap": [
+     49,
+     49
+    ],
+    "box": [
+     24.4,
+     24.4
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/hero/mod-avatar.jpg",
+    "nat": [
+     300,
+     300
+    ],
+    "cap": [
+     60,
+     60
+    ],
+    "box": [
+     30,
+     30
+    ],
+    "from": "census"
+   },
+   {
+    "p": "/selling/hero/chapavich-cover.jpg",
+    "nat": [
+     656,
+     656
+    ],
+    "cap": [
+     318,
+     318
+    ],
+    "box": [
+     159,
+     149
+    ],
+    "from": "hero-card"
+   },
+   {
+    "p": "/selling/hero/chapavich-avatar.jpg",
+    "nat": [
+     113,
+     113
+    ],
+    "cap": [
+     61,
+     61
+    ],
+    "box": [
+     30,
+     30
+    ],
+    "from": "hero-avatar"
+   },
+   {
+    "p": "/selling/hero/buttercup-cover.jpg",
+    "nat": [
+     656,
+     656
+    ],
+    "cap": [
+     318,
+     318
+    ],
+    "box": [
+     159,
+     149
+    ],
+    "from": "hero-card"
+   },
+   {
+    "p": "/selling/hero/buttercup-avatar.jpg",
+    "nat": [
+     250,
+     250
+    ],
+    "cap": [
+     60,
+     60
+    ],
+    "box": [
+     30,
+     30
+    ],
+    "from": "hero-avatar"
+   },
+   {
+    "p": "/selling/hero/slayalldeep-cover.jpg",
+    "nat": [
+     656,
+     656
+    ],
+    "cap": [
+     318,
+     318
+    ],
+    "box": [
+     159,
+     149
+    ],
+    "from": "hero-card"
+   },
+   {
+    "p": "/selling/hero/slayalldeep-avatar.jpg",
+    "nat": [
+     320,
+     322
+    ],
+    "cap": [
+     60,
+     60
+    ],
+    "box": [
+     30,
+     30
+    ],
+    "from": "hero-avatar"
+   },
+   {
+    "p": "/selling/hero/pakincht-cover.jpg",
+    "nat": [
+     956,
+     1194
+    ],
+    "cap": [
+     318,
+     397
+    ],
+    "box": [
+     159,
+     149
+    ],
+    "from": "hero-card"
+   },
+   {
+    "p": "/selling/hero/pakincht-avatar.jpg",
+    "nat": [
+     150,
+     150
+    ],
+    "cap": [
+     60,
+     60
+    ],
+    "box": [
+     30,
+     30
+    ],
+    "from": "hero-avatar"
+   },
+   {
+    "p": "/selling/hero/peter-cover.jpg",
+    "nat": [
+     1200,
+     2133
+    ],
+    "cap": [
+     318,
+     565
+    ],
+    "box": [
+     159,
+     149
+    ],
+    "from": "hero-card"
+   },
+   {
+    "p": "/selling/hero/peter-avatar.jpg",
+    "nat": [
+     320,
+     480
+    ],
+    "cap": [
+     60,
+     90
+    ],
+    "box": [
+     30,
+     30
+    ],
+    "from": "hero-avatar"
+   },
+   {
+    "p": "/selling/hero/nam-cover.jpg",
+    "nat": [
+     1200,
+     1866
+    ],
+    "cap": [
+     318,
+     494
+    ],
+    "box": [
+     159,
+     149
+    ],
+    "from": "hero-card"
+   },
+   {
+    "p": "/selling/hero/nam-avatar.jpg",
+    "nat": [
+     320,
+     427
+    ],
+    "cap": [
+     60,
+     80
+    ],
+    "box": [
+     30,
+     30
+    ],
+    "from": "hero-avatar"
+   },
+   {
+    "p": "/selling/roles/architect.png",
+    "nat": [
+     1282,
+     1282
+    ],
+    "cap": [
+     1012,
+     1012
+    ],
+    "box": [
+     129.6,
+     505.9
+    ],
+    "from": "morph-column"
+   },
+   {
+    "p": "/selling/roles/software-engineer.png",
+    "nat": [
+     1282,
+     1282
+    ],
+    "cap": [
+     1012,
+     1012
+    ],
+    "box": [
+     129.6,
+     505.9
+    ],
+    "from": "morph-column"
+   },
+   {
+    "p": "/selling/roles/web-developer.png",
+    "nat": [
+     1282,
+     1281
+    ],
+    "cap": [
+     1013,
+     1012
+    ],
+    "box": [
+     129.6,
+     505.9
+    ],
+    "from": "morph-column"
+   },
+   {
+    "p": "/selling/roles/project-manager.png",
+    "nat": [
+     1282,
+     1281
+    ],
+    "cap": [
+     1013,
+     1012
+    ],
+    "box": [
+     129.6,
+     505.9
+    ],
+    "from": "morph-column"
+   }
+  ]
+ },
+ "decodeInPaint": {
+  "what": "a fresh copy of each image appended into an already-painted fixed will-change layer at mid page; Paint records in the 3 rAF + 150 ms window. \"decoded\" = the same image appended again after it was decoded (control).",
+  "arms": [
+   "base",
+   "cap2",
+   "base"
+  ],
+  "sums": [
+   {
+    "arm": "base",
+    "freshMs": 204.8,
+    "decodedMs": 19.8
+   },
+   {
+    "arm": "cap2",
+    "freshMs": 104.8,
+    "decodedMs": 19.3
+   },
+   {
+    "arm": "base",
+    "freshMs": 196.1,
+    "decodedMs": 19
+   }
+  ],
+  "images": [
+   {
+    "p": "/selling/sellers/photographer/service-strawberry.jpg",
+    "arms": [
+     {
+      "nat": [
+       1320,
+       1747
+      ],
+      "freshMax": 0.52,
+      "freshMs": 0.64,
+      "decodedMax": 0.11
+     },
+     {
+      "nat": [
+       371,
+       491
+      ],
+      "freshMax": 0.29,
+      "freshMs": 0.41,
+      "decodedMax": 0.11
+     },
+     {
+      "nat": [
+       1320,
+       1747
+      ],
+      "freshMax": 0.5,
+      "freshMs": 0.64,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/sound-composer/post-orchestra.jpg",
+    "arms": [
+     {
+      "nat": [
+       1600,
+       1067
+      ],
+      "freshMax": 6.75,
+      "freshMs": 7.57,
+      "decodedMax": 0.09
+     },
+     {
+      "nat": [
+       351,
+       234
+      ],
+      "freshMax": 0.91,
+      "freshMs": 1.96,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       1600,
+       1067
+      ],
+      "freshMax": 6.43,
+      "freshMs": 7.37,
+      "decodedMax": 0.1
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/leobeer-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       1200,
+       1148
+      ],
+      "freshMax": 5.32,
+      "freshMs": 6.42,
+      "decodedMax": 0.06
+     },
+     {
+      "nat": [
+       236,
+       226
+      ],
+      "freshMax": 0.59,
+      "freshMs": 1.16,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       1200,
+       1148
+      ],
+      "freshMax": 5,
+      "freshMs": 5.77,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/photographer/post-tuna-cut.jpg",
+    "arms": [
+     {
+      "nat": [
+       1035,
+       1400
+      ],
+      "freshMax": 6.64,
+      "freshMs": 6.73,
+      "decodedMax": 0.13
+     },
+     {
+      "nat": [
+       350,
+       473
+      ],
+      "freshMax": 1.07,
+      "freshMs": 1.19,
+      "decodedMax": 0.11
+     },
+     {
+      "nat": [
+       1035,
+       1400
+      ],
+      "freshMax": 5.9,
+      "freshMs": 6,
+      "decodedMax": 0.09
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/photographer/post-tuna.jpg",
+    "arms": [
+     {
+      "nat": [
+       988,
+       1400
+      ],
+      "freshMax": 6.34,
+      "freshMs": 6.37,
+      "decodedMax": 0.09
+     },
+     {
+      "nat": [
+       350,
+       496
+      ],
+      "freshMax": 1.7,
+      "freshMs": 2.63,
+      "decodedMax": 0.14
+     },
+     {
+      "nat": [
+       988,
+       1400
+      ],
+      "freshMax": 6.55,
+      "freshMs": 6.79,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/roles/graphic-designer.png",
+    "arms": [
+     {
+      "nat": [
+       1282,
+       1282
+      ],
+      "freshMax": 12.17,
+      "freshMs": 13.32,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       671,
+       671
+      ],
+      "freshMax": 8.79,
+      "freshMs": 9.94,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       1282,
+       1282
+      ],
+      "freshMax": 15.39,
+      "freshMs": 16.51,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/photographer/post-football.jpg",
+    "arms": [
+     {
+      "nat": [
+       1400,
+       846
+      ],
+      "freshMax": 4.55,
+      "freshMs": 5,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       350,
+       212
+      ],
+      "freshMax": 0.71,
+      "freshMs": 0.87,
+      "decodedMax": 0.09
+     },
+     {
+      "nat": [
+       1400,
+       846
+      ],
+      "freshMax": 4.49,
+      "freshMs": 5.05,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/weng-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       1090,
+       994
+      ],
+      "freshMax": 3.05,
+      "freshMs": 3.14,
+      "decodedMax": 0.11
+     },
+     {
+      "nat": [
+       244,
+       223
+      ],
+      "freshMax": 0.53,
+      "freshMs": 0.67,
+      "decodedMax": 0.09
+     },
+     {
+      "nat": [
+       1090,
+       994
+      ],
+      "freshMax": 3,
+      "freshMs": 3.08,
+      "decodedMax": 0.12
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/sound-composer/post-you-me-me.jpg",
+    "arms": [
+     {
+      "nat": [
+       850,
+       1200
+      ],
+      "freshMax": 3.14,
+      "freshMs": 3.69,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       350,
+       494
+      ],
+      "freshMax": 1.09,
+      "freshMs": 2,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       850,
+       1200
+      ],
+      "freshMax": 4.18,
+      "freshMs": 5.02,
+      "decodedMax": 0.1
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/sound-composer/cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       1280,
+       800
+      ],
+      "freshMax": 3.06,
+      "freshMs": 4.19,
+      "decodedMax": 0.05
+     },
+     {
+      "nat": [
+       776,
+       485
+      ],
+      "freshMax": 1.72,
+      "freshMs": 2.23,
+      "decodedMax": 0.07
+     },
+     {
+      "nat": [
+       1280,
+       800
+      ],
+      "freshMax": 3,
+      "freshMs": 3.83,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/mod-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       741,
+       1047
+      ],
+      "freshMax": 2.54,
+      "freshMs": 2.67,
+      "decodedMax": 0.12
+     },
+     {
+      "nat": [
+       318,
+       449
+      ],
+      "freshMax": 1.12,
+      "freshMs": 1.22,
+      "decodedMax": 0.12
+     },
+     {
+      "nat": [
+       741,
+       1047
+      ],
+      "freshMax": 2.91,
+      "freshMs": 2.99,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/photographer/avatar.jpg",
+    "arms": [
+     {
+      "nat": [
+       730,
+       732
+      ],
+      "freshMax": 2.09,
+      "freshMs": 2.29,
+      "decodedMax": 0.11
+     },
+     {
+      "nat": [
+       118,
+       118
+      ],
+      "freshMax": 0.26,
+      "freshMs": 0.71,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       730,
+       732
+      ],
+      "freshMax": 1.95,
+      "freshMs": 2.03,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/sound-composer/post-maynila.jpg",
+    "arms": [
+     {
+      "nat": [
+       683,
+       1024
+      ],
+      "freshMax": 3.95,
+      "freshMs": 4.8,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       351,
+       526
+      ],
+      "freshMax": 1.55,
+      "freshMs": 2.53,
+      "decodedMax": 0.03
+     },
+     {
+      "nat": [
+       683,
+       1024
+      ],
+      "freshMax": 4.45,
+      "freshMs": 5.49,
+      "decodedMax": 0.03
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/photographer/cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       1200,
+       669
+      ],
+      "freshMax": 3.51,
+      "freshMs": 3.6,
+      "decodedMax": 0.05
+     },
+     {
+      "nat": [
+       776,
+       433
+      ],
+      "freshMax": 1.97,
+      "freshMs": 2.49,
+      "decodedMax": 0.09
+     },
+     {
+      "nat": [
+       1200,
+       669
+      ],
+      "freshMax": 3.55,
+      "freshMs": 4,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/media/post-4.jpg",
+    "arms": [
+     {
+      "nat": [
+       819,
+       1024
+      ],
+      "freshMax": 4.78,
+      "freshMs": 4.88,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       553,
+       691
+      ],
+      "freshMax": 2.51,
+      "freshMs": 2.56,
+      "decodedMax": 0.11
+     },
+     {
+      "nat": [
+       819,
+       1024
+      ],
+      "freshMax": 5.03,
+      "freshMs": 5.1,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/ux-ui-designer/avatar.jpg",
+    "arms": [
+     {
+      "nat": [
+       640,
+       640
+      ],
+      "freshMax": 1.71,
+      "freshMs": 2.52,
+      "decodedMax": 0.1
+     },
+     {
+      "nat": [
+       60,
+       60
+      ],
+      "freshMax": 0.2,
+      "freshMs": 0.95,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       640,
+       640
+      ],
+      "freshMax": 1.77,
+      "freshMs": 2.27,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/sound-composer/avatar.jpg",
+    "arms": [
+     {
+      "nat": [
+       640,
+       640
+      ],
+      "freshMax": 1.62,
+      "freshMs": 2.27,
+      "decodedMax": 0.07
+     },
+     {
+      "nat": [
+       118,
+       118
+      ],
+      "freshMax": 0.28,
+      "freshMs": 1.03,
+      "decodedMax": 0.05
+     },
+     {
+      "nat": [
+       640,
+       640
+      ],
+      "freshMax": 1.67,
+      "freshMs": 2.61,
+      "decodedMax": 0.06
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/bold-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       656,
+       656
+      ],
+      "freshMax": 1.83,
+      "freshMs": 1.91,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       318,
+       318
+      ],
+      "freshMax": 0.87,
+      "freshMs": 0.95,
+      "decodedMax": 0.11
+     },
+     {
+      "nat": [
+       656,
+       656
+      ],
+      "freshMax": 2.22,
+      "freshMs": 2.32,
+      "decodedMax": 0.07
+     }
+    ]
+   },
+   {
+    "p": "/selling/media/cover-cafe.jpg",
+    "arms": [
+     {
+      "nat": [
+       960,
+       539
+      ],
+      "freshMax": 8.74,
+      "freshMs": 9.44,
+      "decodedMax": 0.09
+     },
+     {
+      "nat": [
+       725,
+       407
+      ],
+      "freshMax": 1.96,
+      "freshMs": 2.44,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       960,
+       539
+      ],
+      "freshMax": 4.89,
+      "freshMs": 4.98,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/work/work-c.jpg",
+    "arms": [
+     {
+      "nat": [
+       735,
+       893
+      ],
+      "freshMax": 6.38,
+      "freshMs": 7.58,
+      "decodedMax": 0.06
+     },
+     {
+      "nat": [
+       623,
+       757
+      ],
+      "freshMax": 5.85,
+      "freshMs": 6.73,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       735,
+       893
+      ],
+      "freshMax": 5.37,
+      "freshMs": 6.18,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/chapavich-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       656,
+       656
+      ],
+      "freshMax": 1.68,
+      "freshMs": 1.78,
+      "decodedMax": 0.13
+     },
+     {
+      "nat": [
+       318,
+       318
+      ],
+      "freshMax": 0.84,
+      "freshMs": 0.92,
+      "decodedMax": 0.12
+     },
+     {
+      "nat": [
+       656,
+       656
+      ],
+      "freshMax": 1.83,
+      "freshMs": 2.29,
+      "decodedMax": 0.16
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/buttercup-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       656,
+       656
+      ],
+      "freshMax": 1.76,
+      "freshMs": 1.85,
+      "decodedMax": 0.1
+     },
+     {
+      "nat": [
+       318,
+       318
+      ],
+      "freshMax": 0.73,
+      "freshMs": 1.03,
+      "decodedMax": 0.1
+     },
+     {
+      "nat": [
+       656,
+       656
+      ],
+      "freshMax": 1.89,
+      "freshMs": 1.98,
+      "decodedMax": 0.1
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/slayalldeep-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       656,
+       656
+      ],
+      "freshMax": 1.87,
+      "freshMs": 2.89,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       318,
+       318
+      ],
+      "freshMax": 0.74,
+      "freshMs": 1.56,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       656,
+       656
+      ],
+      "freshMax": 2.07,
+      "freshMs": 2.7,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/pakincht-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       956,
+       1194
+      ],
+      "freshMax": 5.23,
+      "freshMs": 5.64,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       318,
+       397
+      ],
+      "freshMax": 1.13,
+      "freshMs": 1.21,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       956,
+       1194
+      ],
+      "freshMax": 5.47,
+      "freshMs": 6.28,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/peter-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       1200,
+       2133
+      ],
+      "freshMax": 8.59,
+      "freshMs": 8.71,
+      "decodedMax": 0.12
+     },
+     {
+      "nat": [
+       318,
+       565
+      ],
+      "freshMax": 1.26,
+      "freshMs": 1.39,
+      "decodedMax": 0.1
+     },
+     {
+      "nat": [
+       1200,
+       2133
+      ],
+      "freshMax": 10.97,
+      "freshMs": 11.07,
+      "decodedMax": 0.1
+     }
+    ]
+   },
+   {
+    "p": "/selling/hero/nam-cover.jpg",
+    "arms": [
+     {
+      "nat": [
+       1200,
+       1866
+      ],
+      "freshMax": 10.18,
+      "freshMs": 11.27,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       318,
+       494
+      ],
+      "freshMax": 1.31,
+      "freshMs": 2.3,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       1200,
+       1866
+      ],
+      "freshMax": 8.41,
+      "freshMs": 8.49,
+      "decodedMax": 0.1
+     }
+    ]
+   },
+   {
+    "p": "/selling/roles/architect.png",
+    "arms": [
+     {
+      "nat": [
+       1282,
+       1282
+      ],
+      "freshMax": 17.44,
+      "freshMs": 18.11,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       1012,
+       1012
+      ],
+      "freshMax": 10.39,
+      "freshMs": 10.89,
+      "decodedMax": 0.05
+     },
+     {
+      "nat": [
+       1282,
+       1282
+      ],
+      "freshMax": 11.16,
+      "freshMs": 12.1,
+      "decodedMax": 0.06
+     }
+    ]
+   },
+   {
+    "p": "/selling/roles/software-engineer.png",
+    "arms": [
+     {
+      "nat": [
+       1282,
+       1282
+      ],
+      "freshMax": 11.6,
+      "freshMs": 11.7,
+      "decodedMax": 0.1
+     },
+     {
+      "nat": [
+       1012,
+       1012
+      ],
+      "freshMax": 11.15,
+      "freshMs": 11.23,
+      "decodedMax": 0.11
+     },
+     {
+      "nat": [
+       1282,
+       1282
+      ],
+      "freshMax": 11.95,
+      "freshMs": 12.29,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/roles/web-developer.png",
+    "arms": [
+     {
+      "nat": [
+       1282,
+       1281
+      ],
+      "freshMax": 11.68,
+      "freshMs": 12.42,
+      "decodedMax": 0.09
+     },
+     {
+      "nat": [
+       1013,
+       1012
+      ],
+      "freshMax": 11.09,
+      "freshMs": 11.97,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       1282,
+       1281
+      ],
+      "freshMax": 12.42,
+      "freshMs": 12.53,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/roles/project-manager.png",
+    "arms": [
+     {
+      "nat": [
+       1282,
+       1281
+      ],
+      "freshMax": 13.45,
+      "freshMs": 14.42,
+      "decodedMax": 0.05
+     },
+     {
+      "nat": [
+       1013,
+       1012
+      ],
+      "freshMax": 11.65,
+      "freshMs": 12.61,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       1282,
+       1281
+      ],
+      "freshMax": 12.13,
+      "freshMs": 12.9,
+      "decodedMax": 0.09
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/ai-video-editor/avatar.jpg",
+    "arms": [
+     {
+      "nat": [
+       480,
+       480
+      ],
+      "freshMax": 2.48,
+      "freshMs": 2.57,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       44,
+       44
+      ],
+      "freshMax": 0.23,
+      "freshMs": 0.31,
+      "decodedMax": 0.13
+     },
+     {
+      "nat": [
+       480,
+       480
+      ],
+      "freshMax": 2.37,
+      "freshMs": 3.41,
+      "decodedMax": 0.03
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/ai-automation/avatar.jpg",
+    "arms": [
+     {
+      "nat": [
+       480,
+       480
+      ],
+      "freshMax": 2.92,
+      "freshMs": 3,
+      "decodedMax": 0.1
+     },
+     {
+      "nat": [
+       64,
+       64
+      ],
+      "freshMax": 0.27,
+      "freshMs": 0.59,
+      "decodedMax": 0.11
+     },
+     {
+      "nat": [
+       480,
+       480
+      ],
+      "freshMax": 2.47,
+      "freshMs": 2.56,
+      "decodedMax": 0.08
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/graphic-designer/avatar.jpg",
+    "arms": [
+     {
+      "nat": [
+       480,
+       480
+      ],
+      "freshMax": 1.34,
+      "freshMs": 2.24,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       64,
+       64
+      ],
+      "freshMax": 0.21,
+      "freshMs": 1.22,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       480,
+       480
+      ],
+      "freshMax": 1.19,
+      "freshMs": 1.41,
+      "decodedMax": 0.09
+     }
+    ]
+   },
+   {
+    "p": "/selling/sellers/web-developer/avatar.jpg",
+    "arms": [
+     {
+      "nat": [
+       480,
+       480
+      ],
+      "freshMax": 1.37,
+      "freshMs": 2.07,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       64,
+       64
+      ],
+      "freshMax": 0.22,
+      "freshMs": 0.46,
+      "decodedMax": 0.04
+     },
+     {
+      "nat": [
+       480,
+       480
+      ],
+      "freshMax": 1.27,
+      "freshMs": 2.23,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/media/service-kitchen.png",
+    "arms": [
+     {
+      "nat": [
+       410,
+       512
+      ],
+      "freshMax": 5.01,
+      "freshMs": 5.13,
+      "decodedMax": 0.09
+     },
+     {
+      "nat": [
+       193,
+       241
+      ],
+      "freshMax": 1.3,
+      "freshMs": 1.39,
+      "decodedMax": 0.08
+     },
+     {
+      "nat": [
+       410,
+       512
+      ],
+      "freshMax": 3.98,
+      "freshMs": 4.18,
+      "decodedMax": 0.04
+     }
+    ]
+   },
+   {
+    "p": "/selling/commission/client-avatar-2.png",
+    "arms": [
+     {
+      "nat": [
+       349,
+       479
+      ],
+      "freshMax": 1.54,
+      "freshMs": 1.94,
+      "decodedMax": 0.09
+     },
+     {
+      "nat": [
+       57,
+       78
+      ],
+      "freshMax": 0.28,
+      "freshMs": 1.08,
+      "decodedMax": 0.12
+     },
+     {
+      "nat": [
+       349,
+       479
+      ],
+      "freshMax": 1.58,
+      "freshMs": 1.66,
+      "decodedMax": 0.11
+     }
+    ]
+   }
+  ]
+ },
+ "idle": {
+  "idleS": 18,
+  "runs": [
+   {
+    "arm": "base",
+    "frames": 926,
+    "frameP50": 16.6,
+    "frameP95": 28,
+    "paint": {
+     "n": 779,
+     "ms": 86,
+     "max": 0.4,
+     "over2": 0,
+     "over4": 0,
+     "areaDevMpx": 115.8
+    },
+    "composite": {
+     "n": 937,
+     "ms": 2570,
+     "max": 24.8
+    },
+    "layout": {
+     "n": 838,
+     "ms": 1901
+    },
+    "style": {
+     "n": 964,
+     "ms": 353
+    },
+    "imgChanges": 158
+   },
+   {
+    "arm": "cap2",
+    "frames": 926,
+    "frameP50": 16.6,
+    "frameP95": 31.4,
+    "paint": {
+     "n": 764,
+     "ms": 86,
+     "max": 0.7,
+     "over2": 0,
+     "over4": 0,
+     "areaDevMpx": 116
+    },
+    "composite": {
+     "n": 932,
+     "ms": 2405,
+     "max": 23.6
+    },
+    "layout": {
+     "n": 823,
+     "ms": 1963
+    },
+    "style": {
+     "n": 960,
+     "ms": 347
+    },
+    "imgChanges": 158
+   },
+   {
+    "arm": "cap2",
+    "frames": 931,
+    "frameP50": 16.6,
+    "frameP95": 30,
+    "paint": {
+     "n": 769,
+     "ms": 86,
+     "max": 0.5,
+     "over2": 0,
+     "over4": 0,
+     "areaDevMpx": 116.6
+    },
+    "composite": {
+     "n": 937,
+     "ms": 2493,
+     "max": 22.8
+    },
+    "layout": {
+     "n": 822,
+     "ms": 1965
+    },
+    "style": {
+     "n": 964,
+     "ms": 374
+    },
+    "imgChanges": 158
+   },
+   {
+    "arm": "base",
+    "frames": 927,
+    "frameP50": 16.6,
+    "frameP95": 34.3,
+    "paint": {
+     "n": 769,
+     "ms": 87,
+     "max": 0.4,
+     "over2": 0,
+     "over4": 0,
+     "areaDevMpx": 114.9
+    },
+    "composite": {
+     "n": 939,
+     "ms": 2613,
+     "max": 28.9
+    },
+    "layout": {
+     "n": 828,
+     "ms": 2081
+    },
+    "style": {
+     "n": 966,
+     "ms": 365
+    },
+    "imgChanges": 158
+   }
+  ],
+  "swapPaintMaxMs": [
+   0.3,
+   0.3,
+   0.3,
+   0.4
+  ]
+ },
+ "walk": {
+  "runs": [
+   {
+    "arm": "base",
+    "frames": 570,
+    "frameP50": 17.3,
+    "frameP95": 66.3,
+    "paint": {
+     "n": 3807,
+     "ms": 288,
+     "max": 6.6,
+     "over2": 12,
+     "over4": 5,
+     "areaDevMpx": 1859.2
+    },
+    "composite": {
+     "n": 631,
+     "ms": 8079,
+     "max": 77
+    },
+    "layout": {
+     "n": 2074,
+     "ms": 11001
+    },
+    "style": {
+     "n": 2426,
+     "ms": 1120
+    },
+    "memory": {
+     "samples": 42,
+     "imagesPeakMB": 13.7,
+     "imagesEndMB": 7.4,
+     "imagesMeanMB": 8.5,
+     "totalPeakMB": 235.2
+    }
+   },
+   {
+    "arm": "cap2",
+    "frames": 570,
+    "frameP50": 17.4,
+    "frameP95": 63.8,
+    "paint": {
+     "n": 3783,
+     "ms": 250,
+     "max": 10.3,
+     "over2": 6,
+     "over4": 2,
+     "areaDevMpx": 1837.1
+    },
+    "composite": {
+     "n": 630,
+     "ms": 7681,
+     "max": 60.9
+    },
+    "layout": {
+     "n": 2126,
+     "ms": 10875
+    },
+    "style": {
+     "n": 2495,
+     "ms": 1109
+    },
+    "memory": {
+     "samples": 41,
+     "imagesPeakMB": 6.7,
+     "imagesEndMB": 6.7,
+     "imagesMeanMB": 2.5,
+     "totalPeakMB": 174.3
+    }
+   },
+   {
+    "arm": "cap2",
+    "frames": 583,
+    "frameP50": 17.4,
+    "frameP95": 63.8,
+    "paint": {
+     "n": 3844,
+     "ms": 240,
+     "max": 3.4,
+     "over2": 4,
+     "over4": 0,
+     "areaDevMpx": 1875.1
+    },
+    "composite": {
+     "n": 643,
+     "ms": 7846,
+     "max": 65.9
+    },
+    "layout": {
+     "n": 2103,
+     "ms": 10977
+    },
+    "style": {
+     "n": 2451,
+     "ms": 1117
+    },
+    "memory": {
+     "samples": 41,
+     "imagesPeakMB": 3.4,
+     "imagesEndMB": 2.3,
+     "imagesMeanMB": 1.2,
+     "totalPeakMB": 172.7
+    }
+   },
+   {
+    "arm": "base",
+    "frames": 590,
+    "frameP50": 17.7,
+    "frameP95": 65.6,
+    "paint": {
+     "n": 3893,
+     "ms": 283,
+     "max": 7.1,
+     "over2": 11,
+     "over4": 6,
+     "areaDevMpx": 1891.1
+    },
+    "composite": {
+     "n": 646,
+     "ms": 8048,
+     "max": 73.8
+    },
+    "layout": {
+     "n": 2150,
+     "ms": 10944
+    },
+    "style": {
+     "n": 2501,
+     "ms": 1122
+    },
+    "memory": {
+     "samples": 42,
+     "imagesPeakMB": 16.8,
+     "imagesEndMB": 6.2,
+     "imagesMeanMB": 10.5,
+     "totalPeakMB": 198.1
+    }
+   }
+  ],
+  "perArm": {
+   "base": {
+    "paintMs": [
+     288,
+     283
+    ],
+    "paintMax": [
+     6.6,
+     7.1
+    ],
+    "paintOver2": [
+     12,
+     11
+    ],
+    "paintOver4": [
+     5,
+     6
+    ],
+    "compMs": [
+     8079,
+     8048
+    ],
+    "frameP95": [
+     66.3,
+     65.6
+    ],
+    "imagesPeakMB": [
+     13.7,
+     16.8
+    ],
+    "imagesMeanMB": [
+     8.5,
+     10.5
+    ]
+   },
+   "cap2": {
+    "paintMs": [
+     250,
+     240
+    ],
+    "paintMax": [
+     10.3,
+     3.4
+    ],
+    "paintOver2": [
+     6,
+     4
+    ],
+    "paintOver4": [
+     2,
+     0
+    ],
+    "compMs": [
+     7681,
+     7846
+    ],
+    "frameP95": [
+     63.8,
+     63.8
+    ],
+    "imagesPeakMB": [
+     6.7,
+     3.4
+    ],
+    "imagesMeanMB": [
+     2.5,
+     1.2
+    ]
+   }
+  }
+ },
+ "pixels": [
+  {
+   "arm": "both",
+   "rows": [
+    {
+     "u": "/selling/sellers/photographer/service-strawberry.jpg",
+     "dev": [
+      525,
+      735
+     ],
+     "nat": [
+      1320,
+      1747
+     ],
+     "cap": [
+      371,
+      491
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 385875
+      },
+      "ab": {
+       "max": 123,
+       "over8": 41348,
+       "over64": 306,
+       "px": 385875
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 385875
+      },
+      "ab": {
+       "max": 122,
+       "over8": 41402,
+       "over64": 305,
+       "px": 385875
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 385875
+     },
+     "ab": {
+      "max": 122,
+      "over8": 41402,
+      "over64": 305,
+      "px": 385875
+     }
+    },
+    {
+     "u": "/selling/sellers/sound-composer/post-orchestra.jpg",
+     "dev": [
+      525,
+      351
+     ],
+     "nat": [
+      1600,
+      1067
+     ],
+     "cap": [
+      351,
+      234
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 184275
+      },
+      "ab": {
+       "max": 135,
+       "over8": 31139,
+       "over64": 680,
+       "px": 184275
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 184275
+      },
+      "ab": {
+       "max": 135,
+       "over8": 31191,
+       "over64": 680,
+       "px": 184275
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 184275
+     },
+     "ab": {
+      "max": 135,
+      "over8": 31191,
+      "over64": 680,
+      "px": 184275
+     }
+    },
+    {
+     "u": "/selling/hero/leobeer-cover.jpg",
+     "dev": [
+      354,
+      333
+     ],
+     "nat": [
+      1200,
+      1148
+     ],
+     "cap": [
+      236,
+      226
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 117882
+      },
+      "ab": {
+       "max": 157,
+       "over8": 34542,
+       "over64": 1871,
+       "px": 117882
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 117882
+      },
+      "ab": {
+       "max": 157,
+       "over8": 34555,
+       "over64": 1870,
+       "px": 117882
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 117882
+     },
+     "ab": {
+      "max": 157,
+      "over8": 34555,
+      "over64": 1870,
+      "px": 117882
+     }
+    },
+    {
+     "u": "/selling/sellers/photographer/post-tuna-cut.jpg",
+     "dev": [
+      525,
+      699
+     ],
+     "nat": [
+      1035,
+      1400
+     ],
+     "cap": [
+      350,
+      473
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 366975
+      },
+      "ab": {
+       "max": 121,
+       "over8": 65101,
+       "over64": 278,
+       "px": 366975
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 366975
+      },
+      "ab": {
+       "max": 121,
+       "over8": 65153,
+       "over64": 277,
+       "px": 366975
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 366975
+     },
+     "ab": {
+      "max": 121,
+      "over8": 65153,
+      "over64": 277,
+      "px": 366975
+     }
+    },
+    {
+     "u": "/selling/sellers/photographer/post-tuna.jpg",
+     "dev": [
+      525,
+      735
+     ],
+     "nat": [
+      988,
+      1400
+     ],
+     "cap": [
+      350,
+      496
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 385875
+      },
+      "ab": {
+       "max": 143,
+       "over8": 57251,
+       "over64": 725,
+       "px": 385875
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 385875
+      },
+      "ab": {
+       "max": 143,
+       "over8": 57285,
+       "over64": 727,
+       "px": 385875
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 385875
+     },
+     "ab": {
+      "max": 143,
+      "over8": 57285,
+      "over64": 727,
+      "px": 385875
+     }
+    },
+    {
+     "u": "/selling/roles/graphic-designer.png",
+     "dev": [
+      389,
+      1005
+     ],
+     "nat": [
+      1282,
+      1282
+     ],
+     "cap": [
+      671,
+      671
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 390945
+      },
+      "ab": {
+       "max": 255,
+       "over8": 25999,
+       "over64": 1215,
+       "px": 390945
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 390945
+      },
+      "ab": {
+       "max": 255,
+       "over8": 25999,
+       "over64": 1215,
+       "px": 390945
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 390945
+     },
+     "ab": {
+      "max": 255,
+      "over8": 25999,
+      "over64": 1215,
+      "px": 390945
+     }
+    },
+    {
+     "u": "/selling/sellers/photographer/post-football.jpg",
+     "dev": [
+      525,
+      315
+     ],
+     "nat": [
+      1400,
+      846
+     ],
+     "cap": [
+      350,
+      212
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 165375
+      },
+      "ab": {
+       "max": 66,
+       "over8": 9073,
+       "over64": 2,
+       "px": 165375
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 165375
+      },
+      "ab": {
+       "max": 66,
+       "over8": 9081,
+       "over64": 2,
+       "px": 165375
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 165375
+     },
+     "ab": {
+      "max": 66,
+      "over8": 9081,
+      "over64": 2,
+      "px": 165375
+     }
+    },
+    {
+     "u": "/selling/hero/weng-cover.jpg",
+     "dev": [
+      354,
+      333
+     ],
+     "nat": [
+      1090,
+      994
+     ],
+     "cap": [
+      244,
+      223
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 117882
+      },
+      "ab": {
+       "max": 101,
+       "over8": 9924,
+       "over64": 18,
+       "px": 117882
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 117882
+      },
+      "ab": {
+       "max": 101,
+       "over8": 9923,
+       "over64": 18,
+       "px": 117882
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 117882
+     },
+     "ab": {
+      "max": 101,
+      "over8": 9923,
+      "over64": 18,
+      "px": 117882
+     }
+    },
+    {
+     "u": "/selling/sellers/sound-composer/post-you-me-me.jpg",
+     "dev": [
+      525,
+      741
+     ],
+     "nat": [
+      850,
+      1200
+     ],
+     "cap": [
+      350,
+      494
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 389025
+      },
+      "ab": {
+       "max": 133,
+       "over8": 47793,
+       "over64": 1347,
+       "px": 389025
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 389025
+      },
+      "ab": {
+       "max": 133,
+       "over8": 47851,
+       "over64": 1351,
+       "px": 389025
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 389025
+     },
+     "ab": {
+      "max": 133,
+      "over8": 47851,
+      "over64": 1351,
+      "px": 389025
+     }
+    },
+    {
+     "u": "/selling/sellers/sound-composer/cover.jpg",
+     "dev": [
+      1164,
+      546
+     ],
+     "nat": [
+      1280,
+      800
+     ],
+     "cap": [
+      776,
+      485
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 635544
+      },
+      "ab": {
+       "max": 74,
+       "over8": 86139,
+       "over64": 25,
+       "px": 635544
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 635544
+      },
+      "ab": {
+       "max": 74,
+       "over8": 86139,
+       "over64": 25,
+       "px": 635544
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 635544
+     },
+     "ab": {
+      "max": 74,
+      "over8": 86139,
+      "over64": 25,
+      "px": 635544
+     }
+    },
+    {
+     "u": "/selling/hero/mod-cover.jpg",
+     "dev": [
+      477,
+      447
+     ],
+     "nat": [
+      741,
+      1047
+     ],
+     "cap": [
+      318,
+      449
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 142,
+       "over8": 19890,
+       "over64": 1253,
+       "px": 213219
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 142,
+       "over8": 19897,
+       "over64": 1252,
+       "px": 213219
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 213219
+     },
+     "ab": {
+      "max": 142,
+      "over8": 19897,
+      "over64": 1252,
+      "px": 213219
+     }
+    },
+    {
+     "u": "/selling/sellers/photographer/avatar.jpg",
+     "dev": [
+      177,
+      177
+     ],
+     "nat": [
+      730,
+      732
+     ],
+     "cap": [
+      118,
+      118
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 31329
+      },
+      "ab": {
+       "max": 85,
+       "over8": 3307,
+       "over64": 10,
+       "px": 31329
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 31329
+      },
+      "ab": {
+       "max": 86,
+       "over8": 3308,
+       "over64": 11,
+       "px": 31329
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 31329
+     },
+     "ab": {
+      "max": 86,
+      "over8": 3308,
+      "over64": 11,
+      "px": 31329
+     }
+    },
+    {
+     "u": "/selling/sellers/sound-composer/post-maynila.jpg",
+     "dev": [
+      525,
+      789
+     ],
+     "nat": [
+      683,
+      1024
+     ],
+     "cap": [
+      351,
+      526
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 414225
+      },
+      "ab": {
+       "max": 116,
+       "over8": 77233,
+       "over64": 702,
+       "px": 414225
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 414225
+      },
+      "ab": {
+       "max": 116,
+       "over8": 77233,
+       "over64": 702,
+       "px": 414225
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 414225
+     },
+     "ab": {
+      "max": 116,
+      "over8": 77233,
+      "over64": 702,
+      "px": 414225
+     }
+    },
+    {
+     "u": "/selling/sellers/photographer/cover.jpg",
+     "dev": [
+      1164,
+      546
+     ],
+     "nat": [
+      1200,
+      669
+     ],
+     "cap": [
+      776,
+      433
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 635544
+      },
+      "ab": {
+       "max": 94,
+       "over8": 45659,
+       "over64": 69,
+       "px": 635544
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 635544
+      },
+      "ab": {
+       "max": 94,
+       "over8": 45659,
+       "over64": 69,
+       "px": 635544
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 635544
+     },
+     "ab": {
+      "max": 94,
+      "over8": 45659,
+      "over64": 69,
+      "px": 635544
+     }
+    },
+    {
+     "u": "/selling/media/post-4.jpg",
+     "dev": [
+      389,
+      1037
+     ],
+     "nat": [
+      819,
+      1024
+     ],
+     "cap": [
+      553,
+      691
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 403393
+      },
+      "ab": {
+       "max": 69,
+       "over8": 32137,
+       "over64": 3,
+       "px": 403393
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 403393
+      },
+      "ab": {
+       "max": 69,
+       "over8": 32137,
+       "over64": 3,
+       "px": 403393
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 403393
+     },
+     "ab": {
+      "max": 69,
+      "over8": 32137,
+      "over64": 3,
+      "px": 403393
+     }
+    },
+    {
+     "u": "/selling/sellers/ux-ui-designer/avatar.jpg",
+     "dev": [
+      90,
+      90
+     ],
+     "nat": [
+      640,
+      640
+     ],
+     "cap": [
+      60,
+      60
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 116,
+       "over8": 2872,
+       "over64": 104,
+       "px": 8100
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 97,
+       "over8": 2484,
+       "over64": 19,
+       "px": 8100
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 8100
+     },
+     "ab": {
+      "max": 97,
+      "over8": 2484,
+      "over64": 19,
+      "px": 8100
+     }
+    },
+    {
+     "u": "/selling/sellers/sound-composer/avatar.jpg",
+     "dev": [
+      177,
+      177
+     ],
+     "nat": [
+      640,
+      640
+     ],
+     "cap": [
+      118,
+      118
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 31329
+      },
+      "ab": {
+       "max": 74,
+       "over8": 2294,
+       "over64": 6,
+       "px": 31329
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 31329
+      },
+      "ab": {
+       "max": 74,
+       "over8": 2294,
+       "over64": 6,
+       "px": 31329
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 31329
+     },
+     "ab": {
+      "max": 74,
+      "over8": 2294,
+      "over64": 6,
+      "px": 31329
+     }
+    },
+    {
+     "u": "/selling/hero/bold-cover.jpg",
+     "dev": [
+      477,
+      447
+     ],
+     "nat": [
+      656,
+      656
+     ],
+     "cap": [
+      318,
+      318
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 85,
+       "over8": 48093,
+       "over64": 59,
+       "px": 213219
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 85,
+       "over8": 48141,
+       "over64": 59,
+       "px": 213219
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 213219
+     },
+     "ab": {
+      "max": 85,
+      "over8": 48141,
+      "over64": 59,
+      "px": 213219
+     }
+    },
+    {
+     "u": "/selling/sellers/ai-video-editor/avatar.jpg",
+     "dev": [
+      66,
+      66
+     ],
+     "nat": [
+      480,
+      480
+     ],
+     "cap": [
+      44,
+      44
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 4356
+      },
+      "ab": {
+       "max": 110,
+       "over8": 1071,
+       "over64": 51,
+       "px": 4356
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 4356
+      },
+      "ab": {
+       "max": 91,
+       "over8": 884,
+       "over64": 13,
+       "px": 4356
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 4356
+     },
+     "ab": {
+      "max": 91,
+      "over8": 884,
+      "over64": 13,
+      "px": 4356
+     }
+    },
+    {
+     "u": "/selling/sellers/ai-automation/avatar.jpg",
+     "dev": [
+      96,
+      96
+     ],
+     "nat": [
+      480,
+      480
+     ],
+     "cap": [
+      64,
+      64
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 9216
+      },
+      "ab": {
+       "max": 158,
+       "over8": 2623,
+       "over64": 114,
+       "px": 9216
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 9216
+      },
+      "ab": {
+       "max": 85,
+       "over8": 1895,
+       "over64": 7,
+       "px": 9216
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 9216
+     },
+     "ab": {
+      "max": 85,
+      "over8": 1895,
+      "over64": 7,
+      "px": 9216
+     }
+    },
+    {
+     "u": "/selling/sellers/graphic-designer/avatar.jpg",
+     "dev": [
+      96,
+      96
+     ],
+     "nat": [
+      480,
+      480
+     ],
+     "cap": [
+      64,
+      64
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 9216
+      },
+      "ab": {
+       "max": 145,
+       "over8": 2065,
+       "over64": 135,
+       "px": 9216
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 9216
+      },
+      "ab": {
+       "max": 96,
+       "over8": 1870,
+       "over64": 17,
+       "px": 9216
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 9216
+     },
+     "ab": {
+      "max": 96,
+      "over8": 1870,
+      "over64": 17,
+      "px": 9216
+     }
+    },
+    {
+     "u": "/selling/sellers/web-developer/avatar.jpg",
+     "dev": [
+      96,
+      96
+     ],
+     "nat": [
+      480,
+      480
+     ],
+     "cap": [
+      64,
+      64
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 9216
+      },
+      "ab": {
+       "max": 171,
+       "over8": 3314,
+       "over64": 237,
+       "px": 9216
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 9216
+      },
+      "ab": {
+       "max": 101,
+       "over8": 2750,
+       "over64": 50,
+       "px": 9216
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 9216
+     },
+     "ab": {
+      "max": 101,
+      "over8": 2750,
+      "over64": 50,
+      "px": 9216
+     }
+    },
+    {
+     "u": "/selling/media/cover-cafe.jpg",
+     "dev": [
+      389,
+      611
+     ],
+     "nat": [
+      960,
+      539
+     ],
+     "cap": [
+      725,
+      407
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 237679
+      },
+      "ab": {
+       "max": 62,
+       "over8": 22108,
+       "over64": 0,
+       "px": 237679
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 237679
+      },
+      "ab": {
+       "max": 62,
+       "over8": 22108,
+       "over64": 0,
+       "px": 237679
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 237679
+     },
+     "ab": {
+      "max": 62,
+      "over8": 22108,
+      "over64": 0,
+      "px": 237679
+     }
+    },
+    {
+     "u": "/selling/work/work-c.jpg",
+     "dev": [
+      389,
+      1135
+     ],
+     "nat": [
+      735,
+      893
+     ],
+     "cap": [
+      623,
+      757
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 441515
+      },
+      "ab": {
+       "max": 86,
+       "over8": 39043,
+       "over64": 60,
+       "px": 441515
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 441515
+      },
+      "ab": {
+       "max": 86,
+       "over8": 39043,
+       "over64": 60,
+       "px": 441515
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 441515
+     },
+     "ab": {
+      "max": 86,
+      "over8": 39043,
+      "over64": 60,
+      "px": 441515
+     }
+    },
+    {
+     "u": "/selling/media/service-kitchen.png",
+     "dev": [
+      289,
+      349
+     ],
+     "nat": [
+      410,
+      512
+     ],
+     "cap": [
+      193,
+      241
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 100861
+      },
+      "ab": {
+       "max": 103,
+       "over8": 17200,
+       "over64": 189,
+       "px": 100861
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 100861
+      },
+      "ab": {
+       "max": 77,
+       "over8": 15365,
+       "over64": 38,
+       "px": 100861
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 100861
+     },
+     "ab": {
+      "max": 77,
+      "over8": 15365,
+      "over64": 38,
+      "px": 100861
+     }
+    },
+    {
+     "u": "/selling/commission/client-avatar-2.png",
+     "dev": [
+      84,
+      84
+     ],
+     "nat": [
+      349,
+      479
+     ],
+     "cap": [
+      57,
+      78
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 7056
+      },
+      "ab": {
+       "max": 161,
+       "over8": 1984,
+       "over64": 208,
+       "px": 7056
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 7056
+      },
+      "ab": {
+       "max": 129,
+       "over8": 1912,
+       "over64": 96,
+       "px": 7056
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 7056
+     },
+     "ab": {
+      "max": 129,
+      "over8": 1912,
+      "over64": 96,
+      "px": 7056
+     }
+    },
+    {
+     "u": "/selling/commission/client-avatar-3.png",
+     "dev": [
+      84,
+      84
+     ],
+     "nat": [
+      320,
+      480
+     ],
+     "cap": [
+      56,
+      84
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 7056
+      },
+      "ab": {
+       "max": 85,
+       "over8": 1819,
+       "over64": 11,
+       "px": 7056
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 7056
+      },
+      "ab": {
+       "max": 61,
+       "over8": 1603,
+       "over64": 0,
+       "px": 7056
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 7056
+     },
+     "ab": {
+      "max": 61,
+      "over8": 1603,
+      "over64": 0,
+      "px": 7056
+     }
+    },
+    {
+     "u": "/selling/commission/avatar-john.jpg",
+     "dev": [
+      86,
+      86
+     ],
+     "nat": [
+      320,
+      480
+     ],
+     "cap": [
+      58,
+      87
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 7396
+      },
+      "ab": {
+       "max": 94,
+       "over8": 1971,
+       "over64": 43,
+       "px": 7396
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 7396
+      },
+      "ab": {
+       "max": 66,
+       "over8": 1747,
+       "over64": 1,
+       "px": 7396
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 7396
+     },
+     "ab": {
+      "max": 66,
+      "over8": 1747,
+      "over64": 1,
+      "px": 7396
+     }
+    },
+    {
+     "u": "/selling/commission/client-avatar-1.png",
+     "dev": [
+      84,
+      84
+     ],
+     "nat": [
+      319,
+      479
+     ],
+     "cap": [
+      56,
+      84
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 7056
+      },
+      "ab": {
+       "max": 123,
+       "over8": 1847,
+       "over64": 79,
+       "px": 7056
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 7056
+      },
+      "ab": {
+       "max": 109,
+       "over8": 1734,
+       "over64": 43,
+       "px": 7056
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 7056
+     },
+     "ab": {
+      "max": 109,
+      "over8": 1734,
+      "over64": 43,
+      "px": 7056
+     }
+    },
+    {
+     "u": "/selling/platform/features/secure/network/portrait-left.png",
+     "dev": [
+      176,
+      176
+     ],
+     "nat": [
+      320,
+      480
+     ],
+     "cap": [
+      117,
+      176
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 30976
+      },
+      "ab": {
+       "max": 77,
+       "over8": 4237,
+       "over64": 7,
+       "px": 30976
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 30976
+      },
+      "ab": {
+       "max": 77,
+       "over8": 4239,
+       "over64": 6,
+       "px": 30976
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 30976
+     },
+     "ab": {
+      "max": 77,
+      "over8": 4239,
+      "over64": 6,
+      "px": 30976
+     }
+    },
+    {
+     "u": "/selling/platform/features/secure/network/portrait-right.png",
+     "dev": [
+      176,
+      176
+     ],
+     "nat": [
+      320,
+      480
+     ],
+     "cap": [
+      117,
+      176
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 30976
+      },
+      "ab": {
+       "max": 87,
+       "over8": 8772,
+       "over64": 53,
+       "px": 30976
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 30976
+      },
+      "ab": {
+       "max": 87,
+       "over8": 8768,
+       "over64": 53,
+       "px": 30976
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 30976
+     },
+     "ab": {
+      "max": 87,
+      "over8": 8768,
+      "over64": 53,
+      "px": 30976
+     }
+    },
+    {
+     "u": "/selling/hero/weng-avatar.jpg",
+     "dev": [
+      66,
+      66
+     ],
+     "nat": [
+      320,
+      322
+     ],
+     "cap": [
+      44,
+      44
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 4356
+      },
+      "ab": {
+       "max": 112,
+       "over8": 1664,
+       "over64": 47,
+       "px": 4356
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 4356
+      },
+      "ab": {
+       "max": 71,
+       "over8": 1470,
+       "over64": 9,
+       "px": 4356
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 4356
+     },
+     "ab": {
+      "max": 71,
+      "over8": 1470,
+      "over64": 9,
+      "px": 4356
+     }
+    },
+    {
+     "u": "/selling/sellers/reviewers/r5.jpg",
+     "dev": [
+      73,
+      73
+     ],
+     "nat": [
+      320,
+      320
+     ],
+     "cap": [
+      49,
+      49
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 5329
+      },
+      "ab": {
+       "max": 94,
+       "over8": 1876,
+       "over64": 16,
+       "px": 5329
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 5329
+      },
+      "ab": {
+       "max": 67,
+       "over8": 1519,
+       "over64": 1,
+       "px": 5329
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 5329
+     },
+     "ab": {
+      "max": 67,
+      "over8": 1519,
+      "over64": 1,
+      "px": 5329
+     }
+    },
+    {
+     "u": "/selling/hero/mod-avatar.jpg",
+     "dev": [
+      90,
+      90
+     ],
+     "nat": [
+      300,
+      300
+     ],
+     "cap": [
+      60,
+      60
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 127,
+       "over8": 1781,
+       "over64": 88,
+       "px": 8100
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 100,
+       "over8": 1603,
+       "over64": 23,
+       "px": 8100
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 8100
+     },
+     "ab": {
+      "max": 100,
+      "over8": 1603,
+      "over64": 23,
+      "px": 8100
+     }
+    },
+    {
+     "u": "/selling/hero/chapavich-cover.jpg",
+     "dev": [
+      477,
+      447
+     ],
+     "nat": [
+      656,
+      656
+     ],
+     "cap": [
+      318,
+      318
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 94,
+       "over8": 15417,
+       "over64": 149,
+       "px": 213219
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 94,
+       "over8": 15433,
+       "over64": 150,
+       "px": 213219
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 213219
+     },
+     "ab": {
+      "max": 94,
+      "over8": 15433,
+      "over64": 150,
+      "px": 213219
+     }
+    },
+    {
+     "u": "/selling/hero/chapavich-avatar.jpg",
+     "dev": [
+      90,
+      90
+     ],
+     "nat": [
+      113,
+      113
+     ],
+     "cap": [
+      61,
+      61
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 62,
+       "over8": 3396,
+       "over64": 0,
+       "px": 8100
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 62,
+       "over8": 3396,
+       "over64": 0,
+       "px": 8100
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 8100
+     },
+     "ab": {
+      "max": 62,
+      "over8": 3396,
+      "over64": 0,
+      "px": 8100
+     }
+    },
+    {
+     "u": "/selling/hero/buttercup-cover.jpg",
+     "dev": [
+      477,
+      447
+     ],
+     "nat": [
+      656,
+      656
+     ],
+     "cap": [
+      318,
+      318
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 75,
+       "over8": 27163,
+       "over64": 13,
+       "px": 213219
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 75,
+       "over8": 27174,
+       "over64": 13,
+       "px": 213219
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 213219
+     },
+     "ab": {
+      "max": 75,
+      "over8": 27174,
+      "over64": 13,
+      "px": 213219
+     }
+    },
+    {
+     "u": "/selling/hero/buttercup-avatar.jpg",
+     "dev": [
+      90,
+      90
+     ],
+     "nat": [
+      250,
+      250
+     ],
+     "cap": [
+      60,
+      60
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 118,
+       "over8": 2662,
+       "over64": 84,
+       "px": 8100
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 123,
+       "over8": 2743,
+       "over64": 39,
+       "px": 8100
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 8100
+     },
+     "ab": {
+      "max": 123,
+      "over8": 2743,
+      "over64": 39,
+      "px": 8100
+     }
+    },
+    {
+     "u": "/selling/hero/slayalldeep-cover.jpg",
+     "dev": [
+      477,
+      447
+     ],
+     "nat": [
+      656,
+      656
+     ],
+     "cap": [
+      318,
+      318
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 177,
+       "over8": 48696,
+       "over64": 5624,
+       "px": 213219
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 178,
+       "over8": 48704,
+       "over64": 5643,
+       "px": 213219
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 213219
+     },
+     "ab": {
+      "max": 178,
+      "over8": 48704,
+      "over64": 5643,
+      "px": 213219
+     }
+    },
+    {
+     "u": "/selling/hero/slayalldeep-avatar.jpg",
+     "dev": [
+      90,
+      90
+     ],
+     "nat": [
+      320,
+      322
+     ],
+     "cap": [
+      60,
+      60
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 165,
+       "over8": 1918,
+       "over64": 249,
+       "px": 8100
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 106,
+       "over8": 1901,
+       "over64": 110,
+       "px": 8100
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 8100
+     },
+     "ab": {
+      "max": 106,
+      "over8": 1901,
+      "over64": 110,
+      "px": 8100
+     }
+    },
+    {
+     "u": "/selling/hero/pakincht-cover.jpg",
+     "dev": [
+      477,
+      447
+     ],
+     "nat": [
+      956,
+      1194
+     ],
+     "cap": [
+      318,
+      397
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 120,
+       "over8": 95379,
+       "over64": 721,
+       "px": 213219
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 120,
+       "over8": 95441,
+       "over64": 731,
+       "px": 213219
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 213219
+     },
+     "ab": {
+      "max": 120,
+      "over8": 95441,
+      "over64": 731,
+      "px": 213219
+     }
+    },
+    {
+     "u": "/selling/hero/pakincht-avatar.jpg",
+     "dev": [
+      90,
+      90
+     ],
+     "nat": [
+      150,
+      150
+     ],
+     "cap": [
+      60,
+      60
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 107,
+       "over8": 1503,
+       "over64": 8,
+       "px": 8100
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 68,
+       "over8": 1416,
+       "over64": 3,
+       "px": 8100
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 8100
+     },
+     "ab": {
+      "max": 68,
+      "over8": 1416,
+      "over64": 3,
+      "px": 8100
+     }
+    },
+    {
+     "u": "/selling/hero/peter-cover.jpg",
+     "dev": [
+      477,
+      447
+     ],
+     "nat": [
+      1200,
+      2133
+     ],
+     "cap": [
+      318,
+      565
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 161,
+       "over8": 65406,
+       "over64": 1323,
+       "px": 213219
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 161,
+       "over8": 65444,
+       "over64": 1327,
+       "px": 213219
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 213219
+     },
+     "ab": {
+      "max": 161,
+      "over8": 65444,
+      "over64": 1327,
+      "px": 213219
+     }
+    },
+    {
+     "u": "/selling/hero/peter-avatar.jpg",
+     "dev": [
+      90,
+      90
+     ],
+     "nat": [
+      320,
+      480
+     ],
+     "cap": [
+      60,
+      90
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 106,
+       "over8": 3467,
+       "over64": 9,
+       "px": 8100
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 51,
+       "over8": 2617,
+       "over64": 0,
+       "px": 8100
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 8100
+     },
+     "ab": {
+      "max": 51,
+      "over8": 2617,
+      "over64": 0,
+      "px": 8100
+     }
+    },
+    {
+     "u": "/selling/hero/nam-cover.jpg",
+     "dev": [
+      477,
+      447
+     ],
+     "nat": [
+      1200,
+      1866
+     ],
+     "cap": [
+      318,
+      494
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 110,
+       "over8": 45266,
+       "over64": 142,
+       "px": 213219
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 213219
+      },
+      "ab": {
+       "max": 110,
+       "over8": 45257,
+       "over64": 144,
+       "px": 213219
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 213219
+     },
+     "ab": {
+      "max": 110,
+      "over8": 45257,
+      "over64": 144,
+      "px": 213219
+     }
+    },
+    {
+     "u": "/selling/hero/nam-avatar.jpg",
+     "dev": [
+      90,
+      90
+     ],
+     "nat": [
+      320,
+      427
+     ],
+     "cap": [
+      60,
+      80
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 92,
+       "over8": 1313,
+       "over64": 56,
+       "px": 8100
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 8100
+      },
+      "ab": {
+       "max": 77,
+       "over8": 1330,
+       "over64": 10,
+       "px": 8100
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 8100
+     },
+     "ab": {
+      "max": 77,
+      "over8": 1330,
+      "over64": 10,
+      "px": 8100
+     }
+    },
+    {
+     "u": "/selling/roles/architect.png",
+     "dev": [
+      389,
+      1518
+     ],
+     "nat": [
+      1282,
+      1282
+     ],
+     "cap": [
+      1012,
+      1012
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 590502
+      },
+      "ab": {
+       "max": 255,
+       "over8": 11006,
+       "over64": 1707,
+       "px": 590502
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 590502
+      },
+      "ab": {
+       "max": 255,
+       "over8": 11006,
+       "over64": 1707,
+       "px": 590502
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 590502
+     },
+     "ab": {
+      "max": 255,
+      "over8": 11006,
+      "over64": 1707,
+      "px": 590502
+     }
+    },
+    {
+     "u": "/selling/roles/software-engineer.png",
+     "dev": [
+      389,
+      1518
+     ],
+     "nat": [
+      1282,
+      1282
+     ],
+     "cap": [
+      1012,
+      1012
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 590502
+      },
+      "ab": {
+       "max": 255,
+       "over8": 27924,
+       "over64": 739,
+       "px": 590502
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 590502
+      },
+      "ab": {
+       "max": 255,
+       "over8": 27924,
+       "over64": 739,
+       "px": 590502
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 590502
+     },
+     "ab": {
+      "max": 255,
+      "over8": 27924,
+      "over64": 739,
+      "px": 590502
+     }
+    },
+    {
+     "u": "/selling/roles/web-developer.png",
+     "dev": [
+      389,
+      1518
+     ],
+     "nat": [
+      1282,
+      1281
+     ],
+     "cap": [
+      1013,
+      1012
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 590502
+      },
+      "ab": {
+       "max": 255,
+       "over8": 11499,
+       "over64": 952,
+       "px": 590502
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 590502
+      },
+      "ab": {
+       "max": 255,
+       "over8": 11499,
+       "over64": 952,
+       "px": 590502
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 590502
+     },
+     "ab": {
+      "max": 255,
+      "over8": 11499,
+      "over64": 952,
+      "px": 590502
+     }
+    },
+    {
+     "u": "/selling/roles/project-manager.png",
+     "dev": [
+      389,
+      1518
+     ],
+     "nat": [
+      1282,
+      1281
+     ],
+     "cap": [
+      1013,
+      1012
+     ],
+     "low": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 590502
+      },
+      "ab": {
+       "max": 255,
+       "over8": 11979,
+       "over64": 858,
+       "px": 590502
+      }
+     },
+     "high": {
+      "aa": {
+       "max": 0,
+       "over8": 0,
+       "over64": 0,
+       "px": 590502
+      },
+      "ab": {
+       "max": 255,
+       "over8": 11979,
+       "over64": 858,
+       "px": 590502
+      }
+     },
+     "aa": {
+      "max": 0,
+      "over8": 0,
+      "over64": 0,
+      "px": 590502
+     },
+     "ab": {
+      "max": 255,
+      "over8": 11979,
+      "over64": 858,
+      "px": 590502
+     }
+    }
+   ]
+  }
+ ]
+}
