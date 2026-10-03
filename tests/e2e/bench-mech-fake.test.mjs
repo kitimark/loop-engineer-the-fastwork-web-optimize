@@ -290,7 +290,8 @@ test('ts-lock-share: mech is a functional job: with the shared lane on it holds 
   assert.equal(sw.code, 0, sw.out);
   const r = await bench('shared-lane', 'mech', 'fast-nav', '--repeat', '1');
   assert.equal(r.code, 0, r.out);
-  const lg = JSON.parse(readFileSync(join(env.FW_STATE_DIR, 'locks', 'chrome-measure.last-grant.json'), 'utf8'));
-  assert.deepEqual([lg.owner, lg.shared], ['(shared)', true], 'granted as a reader of the shared group');
+  assert.equal(results('fast-nav').mech.lock.mode, 'shared', 'granted as a reader of the shared group');
   assert.equal(existsSync(join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json')), false, 'the reader left and closed the group');
+  // I-080: the group ended with no exclusive waiter queued, so its last-grant record went with it
+  assert.equal(existsSync(join(env.FW_STATE_DIR, 'locks', 'chrome-measure.last-grant.json')), false, 'no group record left behind');
 });

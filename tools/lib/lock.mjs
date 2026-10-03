@@ -442,6 +442,22 @@ function withGuardSync(r, fn, maxMs = 2000) {
   try { return fn(); } finally { try { rmdirSync(g); } catch {} }
 }
 
+/**
+ * Inside the guard, as group `g` leaves the holder file (its last reader left, pruned, cleared as stale, or --force,
+ * I-080): its last-grant record (groupGrant: short, drain budget spent) exists only so that an exclusive waiter that
+ * waited through the group goes before later short-lane entries at the hand-over. With no exclusive (non-short) waiter
+ * queued it decides nothing (short-lane entries go FIFO with it or without it), and left behind on an idle lock it
+ * outlived its window (doctor: last-grant-short-outlived), so it is removed; with such a waiter queued it stays until
+ * that waiter's grant replaces it. Old lock code reads a missing record as new code does.
+ */
+export const queuedWriter = (q) => q.some((w) => !w.short);
+function endGroupGrant(r, g, now = Date.now()) {
+  const lg = readJson(lastGrantFile(r), null);
+  if (!lg || !lg.shared || !g?.token || lg.token !== g.token) return;
+  if (queuedWriter(pruneQueue(readJson(queueFile(r), []), now))) return;
+  try { unlinkSync(lastGrantFile(r)); } catch {}
+}
+
 /** Inside the guard: drop reader `token` from the group; the last one closes it. {closed, group, reader} or null. */
 function removeReader(r, token, now = Date.now()) {
   const h = readJson(holderFile(r), null);
@@ -449,7 +465,7 @@ function removeReader(r, token, now = Date.now()) {
   const reader = h.readers.find((x) => x.token === token);
   if (!reader) return null;
   const rest = h.readers.filter((x) => x.token !== token);
-  if (!rest.length) { try { unlinkSync(holderFile(r)); } catch {} return { closed: true, group: h, reader }; }
+  if (!rest.length) { try { unlinkSync(holderFile(r)); } catch {} endGroupGrant(r, h, now); return { closed: true, group: h, reader }; }
   const g = groupWith(h, rest);
   writeJson(holderFile(r), g);
   return { closed: false, group: g, reader };
@@ -470,6 +486,7 @@ function pruneGroup(r, h, now, by) {
   if (!live.length) {
     writeJson(join(lockDir(), `${r}.last-stale.json`), { ...h, staleBecause: `no live reader (${readerList(h)}: process gone or past its deadline)`, clearedAt: iso(now), clearedBy: by });
     try { unlinkSync(holderFile(r)); } catch {}
+    endGroupGrant(r, h, now);
     stopAwake(r, h.token);
     return null;
   }
@@ -656,6 +673,7 @@ export async function tryAcquire(r, opts) {
     if (h && reason) {
       writeJson(join(lockDir(), `${r}.last-stale.json`), { ...h, staleBecause: reason, clearedAt: new Date(now).toISOString(), clearedBy: owner });
       try { unlinkSync(holderFile(r)); } catch {}
+      if (isGroup(h)) endGroupGrant(r, h, now);
       h = null;
     }
     if (knownGroup(h)) h = pruneGroup(r, h, now, owner);
@@ -772,7 +790,8 @@ export function noTimingRefusal(r, h) {
  * `at` = the latest grant into the group keeps the record a live short grant until that reader's end + the hand-over
  * grace (lastGrantShort: 300 + 35 s after `at`, >= 30 s past any reader's maxSec + killGraceSec), and `runStart` one SHORT_DRAIN_SEC
  * back marks the short-drain budget spent, so at the hand-over after a group a normal waiter goes before every short-lane
- * entry (reader or exclusive short); with no normal waiter, the short-lane entries go FIFO.
+ * entry (reader or exclusive short); with no normal waiter, the short-lane entries go FIFO. When the group ends with no
+ * normal waiter queued, the record is removed (endGroupGrant, I-080); otherwise that waiter's grant replaces it.
  */
 export function groupGrant(g, now) {
   return { owner: GROUP_OWNER, short: true, shared: true, maxSec: SHARED_LANE.maxSec, at: iso(now), token: g.token, runStart: iso(now - SHORT_DRAIN_SEC * 1000) };
@@ -878,6 +897,7 @@ export async function release(r, { owner, force = false, shared = false } = {}) 
       if (!shared) {
         if (!force) throw new Error(`${r} is held by the shared group (readers ${readerList(h)}), not by "${owner}": a lease reader leaves with release --shared (node tools/lock.mjs release ${r} --shared --owner <it>), a process reader when its process ends (--force removes the whole group: only if those readers are really gone)`);
         unlinkSync(holderFile(r));
+        endGroupGrant(r, h);
         return h;
       }
       const mine = (h.readers || []).filter((x) => x.owner === owner);

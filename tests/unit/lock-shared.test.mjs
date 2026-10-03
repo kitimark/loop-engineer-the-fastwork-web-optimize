@@ -504,6 +504,90 @@ test('stale readers: a lease reader past its deadline is pruned; the group never
   assert.deepEqual(holder().readers.map((r) => r.owner), ['fn-b']);
 });
 
+// I-080: a group's last-grant record (groupGrant: short, drain budget spent) only sends an exclusive waiter that waited
+// through the group before later short-lane entries. A group that ended with no such waiter queued left it behind, and
+// with the lock idle doctor reported last-grant-short-outlived 335 s after the last join (twice on 2026-10-03).
+const lastGrant = () => (existsSync(lockFile(`${R}.last-grant.json`)) ? readJson(`${R}.last-grant.json`) : null);
+const outlived = () => LR.doctor(R, { now: Date.now() + ms(400) })[0].problems.map((p) => p.code).filter((c) => c.startsWith('last-grant'));
+const GATED_BUSY = { quiet: false, reasons: ['cpu'], sample: {} };
+
+test('I-080: the last reader out with no exclusive waiter queued removes the group\'s last-grant record; doctor stays clean', async () => {
+  await on();
+  const a = await rd('fn-a'), b = await rd('fn-b', { pid: livePid() });
+  assert.equal(lastGrant().owner, '(shared)');
+  await L.releaseReader(R, a.reader.token);
+  assert.equal(lastGrant()?.token, holder().token, 'the group lives on: its record stays');
+  const q = [{ owner: 'npm-x', kind: 'lease', checkout: REPO, since: new Date().toISOString(), lastSeen: new Date().toISOString(), queueTtlSec: 60, short: true, maxSec: 120 }];
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q));
+  const out = await L.releaseReader(R, b.reader.token);
+  assert.equal(out.closed, true);
+  assert.equal(holder(), null);
+  assert.equal(lastGrant(), null, 'only short-lane entries queued: the record decides nothing (FIFO either way)');
+  assert.equal(L.status(R).next, 'npm-x');
+  assert.deepEqual(outlived(), [], 'no last-grant-short-outlived once the lock stays idle');
+});
+
+test('I-080: with an exclusive waiter queued at the end, the group\'s record stays for that waiter (writer preference)', async () => {
+  await on();
+  const a = await rd('fn-a');
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', host: GATED_BUSY })).ok, false, 'a writer waits through the group');
+  assert.equal((await rd('fn-c', { pid: livePid() })).ok, false, 'joins closed');
+  await L.releaseReader(R, a.reader.token);
+  assert.equal(lastGrant()?.shared, true, 'kept: an exclusive waiter is queued');
+  assert.equal(L.status(R).next, 'ab', 'the writer before the reader queued after it');
+  const w = await L.tryAcquire(R, { owner: 'ab', kind: 'lease' });
+  assert.equal(w.ok, true);
+  assert.equal(lastGrant().owner, 'ab', 'its grant replaces the record');
+});
+
+test('I-080: a crashed reader: the group pruned for a dead pid takes its last-grant record along', async () => {
+  await on();
+  assert.equal((await rd('fn-a', { pid: deadPid() })).ok, true);
+  assert.equal(lastGrant().owner, '(shared)');
+  const g = await L.tryAcquire(R, { owner: 'ab', kind: 'lease', host: GATED_BUSY });
+  assert.equal(g.gated, true, 'the dead group is pruned; the writer that just arrived waits at the host gate');
+  assert.match(readJson(`${R}.last-stale.json`).staleBecause, /no live reader/);
+  assert.equal(lastGrant(), null);
+  await L.dequeue(R, 'ab');
+  assert.deepEqual(outlived(), []);
+});
+
+test('I-080: a group cleared as stale (past its expiry) or removed with release --force takes its last-grant record along', async () => {
+  await on();
+  const t0 = Date.now();
+  assert.equal((await L.tryAcquire(R, { owner: 'lease-a', kind: 'lease', shared: true, weight: 1, maxSec: 30, now: t0, load1: 0 })).ok, true);
+  assert.equal(lastGrant().owner, '(shared)');
+  const g = await L.tryAcquire(R, { owner: 'ab', kind: 'lease', host: GATED_BUSY, now: t0 + ms(30 + L.SHARED_LANE.expiryGraceSec + 1) });
+  assert.equal(g.gated, true);
+  assert.equal(lastGrant(), null, 'stale group');
+  await L.dequeue(R, 'ab');
+  assert.equal((await rd('fn-b', { pid: livePid() })).ok, true);
+  assert.equal(lastGrant().owner, '(shared)');
+  await L.release(R, { owner: 'lead', force: true });
+  assert.equal(holder(), null);
+  assert.equal(lastGrant(), null, 'release --force');
+  assert.deepEqual(outlived(), []);
+});
+
+test('I-080: repair of an empty group (its readers crashed, nobody polled) also removes its record unless a writer waits', async () => {
+  await on();
+  assert.equal((await rd('fn-a', { pid: livePid() })).ok, true);
+  const g = holder();
+  writeFileSync(lockFile(`${R}.json`), JSON.stringify({ ...g, readers: [{ ...g.readers[0], pid: deadPid() }] }));
+  assert.deepEqual(LR.doctor(R)[0].problems.map((p) => p.code), ['group-reader-dead', 'group-empty', 'last-grant-group-closed']);
+  await LR.repair(R, { by: 'lead', reason: 't', apply: true });
+  assert.equal(holder(), null);
+  assert.equal(lastGrant(), null);
+  assert.deepEqual(outlived(), []);
+  // with a writer queued, repair leaves the record to it (only the group goes)
+  assert.equal((await rd('fn-b', { pid: livePid() })).ok, true);
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', host: GATED_BUSY })).ok, false);
+  writeFileSync(lockFile(`${R}.json`), JSON.stringify({ ...holder(), readers: [{ ...holder().readers[0], pid: deadPid() }] }));
+  assert.deepEqual(LR.doctor(R)[0].problems.map((p) => p.code), ['group-reader-dead', 'group-empty']);
+  await LR.repair(R, { by: 'lead', reason: 't', apply: true });
+  assert.equal(lastGrant()?.shared, true);
+});
+
 test('re-entry (B1): FW_LOCK_SHARED re-enters the same reader slot, adds no weight', async () => {
   await on();
   const a = await rd('fn', { weight: 3 });
@@ -697,7 +781,8 @@ test('doctor / repair: dead reader, empty group, expiry below a deadline, unknow
   assert.equal(Date.parse(holder().expiresAt), Date.parse(holder().readers[0].deadline) + ms(10));
   assert.deepEqual(LR.doctor(R)[0].problems, []);
   writeFileSync(lockFile(`${R}.json`), JSON.stringify({ ...holder(), readers: [] }));
-  assert.deepEqual(LR.doctor(R)[0].problems.map((p) => p.code), ['group-empty']);
+  // I-080: the removed group was the last grant and no writer is queued: its record goes in the same repair
+  assert.deepEqual(LR.doctor(R)[0].problems.map((p) => p.code), ['group-empty', 'last-grant-group-closed']);
   await LR.repair(R, { by: 'lead', reason: 't', apply: true });
   assert.equal(holder(), null);
   writeFileSync(lockFile(`${R}.json`), JSON.stringify({ ...g, format: 'rw9' }));
@@ -769,11 +854,13 @@ old('old and new code agree on who is served next, or new code picks a reader th
     ['after a group, no normal waiter: short-lane entries FIFO', [rdr('fn-b', t(50)), short('npm-x', t(40))], 'fn-b', 'fn-b'],
     ['after a group, no normal waiter: short-lane entries FIFO (exclusive short first)', [short('npm-x', t(50)), rdr('fn-b', t(40))], 'npm-x', 'npm-x'],
   ];
-  // a real group: opened, then closed by its last reader (its last-grant record is what both versions read)
-  const a = await rd('fn-a');
-  await L.releaseReader(R, a.reader.token);
+  // a real group: opened, then closed by its last reader while these waiters queue (its last-grant record, or none when
+  // no exclusive waiter was queued at its end, I-080, is what both versions read)
   for (const [name, q, wantNew, wantOld] of cases) {
+    writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([]));
+    const a = await rd('fn-a');
     writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q));
+    await L.releaseReader(R, a.reader.token);
     assert.equal(L.status(R).next, wantNew, `new: ${name}`);
     assert.equal(OLD.status(R).next, wantOld, `old: ${name}`);
     if (wantNew !== wantOld) assert.equal(q.find((w) => w.owner === wantNew).shared, true, `new code's pick is a reader (new code): ${name}`);
