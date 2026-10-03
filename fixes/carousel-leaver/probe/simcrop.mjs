@@ -49,6 +49,8 @@ const LSTATE = `JSON.stringify((() => { const l = window.__lead; if (!l || !l.is
 const res = { tool: 'carousel-leaver simcrop (P-087)', note: 'Simulator: Page.snapshotRect crops (software paint); no timing', startedAt: new Date().toISOString(), ts: TS, arms: {} };
 const save = () => writeFileSync(join(OUT, 'simcrop.json'), JSON.stringify(res, null, 1));
 let TARGET = process.env.CL_TARGET || null;
+const QUIET = Number(process.env.CL_QUIET || 0);
+const POSTS = QUIET ? ['post', 'post300', 'quiet'] : ['post', 'post300'];
 for (const arm of ARMS) {
   const st = join(OUT, `serve-${arm.k}.json`); rmSync(st, { force: true });
   const ov = arm.dir ? ['--overlay', arm.dir] : [];
@@ -114,6 +116,9 @@ for (const arm of ARMS) {
     await ev(`(() => { window.__anims.forEach((a) => { a.currentTime = 220; }); window.__hold = false; const h = window.__held.splice(0); h.forEach((f) => f()); window.__hold = true; return h.length; })()`);
     await raf2(); R.shots.post = { nat: await snap('nat-post') };
     await sleep(300); R.shots.post300 = { nat: await snap('nat-post300') };
+    // D4 (CL_QUIET=<ms>): one more rest shot after <ms> with no snapshot in between (WebKit's ImageQualityController
+    // re-arms its 500 ms high-quality repaint timer on every low-quality paint, the settle loop's snapshots included)
+    if (QUIET) { await sleep(QUIET); R.shots.quiet = { nat: await snap('nat-quiet') }; }
     const blanks = Object.values(R.shots).filter((x) => x.nat.blank || (x.lens && x.lens.blank)).length;
     if (blanks) R.void = `VOID: ${blanks} blank shot(s)`;
     if (unsettled.length) R.void = (R.void ? R.void + '; ' : 'VOID: ') + `snapshot never settled: ${unsettled.join(',')}`;
@@ -125,10 +130,10 @@ for (const arm of ARMS) {
 const keys = ARMS.map((a) => a.k).filter((k) => !res.arms[k].void); res.cmp = {};
 for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) {
   const P = `${keys[i]}~${keys[j]}`; const o = (res.cmp[P] = { nat: {}, lens: {} });
-  for (const t of [...TS, 'post', 'post300']) {
+  for (const t of [...TS, ...POSTS]) {
     try { o.nat[t] = cmp(join(OUT, `nat-${t}-${keys[i]}.png`), join(OUT, `nat-${t}-${keys[j]}.png`)); } catch (e) { o.nat[t] = { error: String(e.message || e) }; }
     if (TS.includes(t)) try { o.lens[t] = cmp(join(OUT, `lens-${t}-${keys[i]}.png`), join(OUT, `lens-${t}-${keys[j]}.png`)); } catch (e) { o.lens[t] = { error: String(e.message || e) }; }
   }
-  console.log(`${P} nat n8 ${[...TS, 'post', 'post300'].map((t) => o.nat[t]?.n8 ?? 'x').join('/')} | lens n8 ${TS.map((t) => o.lens[t]?.n8 ?? 'x').join('/')}`);
+  console.log(`${P} nat n8 ${[...TS, ...POSTS].map((t) => o.nat[t]?.n8 ?? 'x').join('/')} | lens n8 ${TS.map((t) => o.lens[t]?.n8 ?? 'x').join('/')}`);
 }
 save(); console.log('EXIT-OK');

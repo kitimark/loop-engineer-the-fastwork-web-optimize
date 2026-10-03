@@ -823,6 +823,84 @@ S, Sc, Sv, Sw, base2. pmset is checked after the hold.
   and Sv/Sw touch st6's no-flip mechanism; both are outside "position and phase". G's cost then needs P-090 to score
   the gain those mechanisms bought.
 
+### D3 result (2026-10-03 19:22:11-19:24:25Z, one hold, exit 0)
+
+The last pmset entry was at 17:57:12Z, so the hold did not overlap a sleep. Served hashes matched the D3 table. Every arm
+caught the same slide (the graphic-designer face leaving), with no blank or unsettled shot. Raw data:
+`out/carousel-leaver/d3/`.
+
+| pair | n8 at t 0 / 100 / 220 / post / post300 |
+|---|---|
+| base~base2 | 0 everywhere |
+| base~S | 1568 / 7233 / 3303 / 3303 / 3303 |
+| base~Sc, base~Sv | **identical to base~S** (S~Sc = S~Sv = 0 at every point) |
+| base~Sw | 1045 / 7345 / 3500 / 3501 / 3501 (S~Sw about 520 at every point) |
+
+**None of the three suspects explains it.** The card's opacity/blur and the slot layers change nothing. Putting the
+slots' transform and opacity back to base's changes about 520 px, but away from base, not toward it.
+
+**What the pixels show** (side-by-side crops, scratchpad `d3-face*.png`; D1a's E crops the same way). The face
+geometry is equal, but the image content is resampled differently:
+- Base's faces are aliased: the glasses and hair edges are dotted, as from a cheap 480 → 90 px downscale.
+- S's faces are smooth.
+- In E (D1a), one face is smooth and the others are aliased like base's, differing from base only in thin column
+  stripes.
+
+**The suspect this points to.** WebKit's `ImageQualityController` (`Source/WebCore/rendering/ImageQualityController.cpp`,
+WebKit main, read 2026-10-04, CONFIRMED as source):
+- Each object's painted size is tracked per page view. When an image object is painted at two different sizes while
+  the 500 ms timer (`lowQualityTimeThreshold`) is active, the view sets `m_animatedResizeIsActive`.
+- While that flag is set, every scaled bitmap on the view paints at `InterpolationQuality::Low`, and each such paint
+  restarts the timer. When the timer fires, the flag clears and the tracked objects repaint at Default quality.
+- `image-rendering: optimizeSpeed` maps to Low and `optimizeQuality` to Default, both bypassing the history.
+
+How this fits what we saw (OBSERVED, in our setup, until D4):
+- Base's leaver changes its layout size every frame, so each slide puts the view into low-quality mode.
+- S's leaver only scales (its layout size never changes), so S never enters it.
+- E's leaver resizes again, so E is mostly low-quality, like base.
+- Our settle loop snapshots every 250 ms, and each snapshot is a low-quality paint, so the loop itself would hold the
+  flag set. Our rest shots may therefore show base's slide-time quality, not its quiet-rest quality.
+
+## st6-rb2 follow-up, D4 (describes only; written before it runs)
+
+**Question.**
+1. Is the whole at-rest difference interpolation quality?
+2. What does each build show after a quiet rest, with no snapshot for 1.5 s?
+
+**Arms.** Diagnostic overlays, never candidates. Each appends one block to the arm's CSS
+`.start-selling-avatars img { image-rendering: <value> }` (scratchpad `d4-q.css`, `d4-s.css`):
+
+| arm | build | value | CSS sha |
+|---|---|---|---|
+| Bq | base | optimizeQuality (Default, always) | `08b095262e9e` |
+| Sq | S | optimizeQuality | `ef77a221bb57` |
+| Bs | base | optimizeSpeed (Low, always) | `f4a78b36b2af` |
+| Ss | S | optimizeSpeed | `9fe2e88dac69` |
+
+The JS is base's (`4606120cf392`) for B* and S's (`7bf7c4657d21`) for S*.
+
+**Probe.** `probe/simcrop.mjs`, now at sha `809bc40fc2de`. The only change is an opt-in `CL_QUIET=<ms>`: after
+`post300` it waits that long with no snapshot, then takes one settled shot `nat-quiet`. Without the variable it
+behaves exactly as `26f548f2dcfe`.
+
+**Run.** One shared-lane Simulator hold with `CL_QUIET=1500`, arms in order base, S, Bq, Sq, Bs, Ss, base2. pmset is
+checked after the hold.
+
+**Readout:** n8 and max shade at every t and at post, post300 and quiet, for:
+- base~S;
+- Bq~Sq and Bs~Ss (the same quality forced in both builds);
+- base~Bs and S~Sq (each build against its own natural state);
+- base~base2 as the A/A.
+
+**What it decides** (describes only):
+- **Bq~Sq and Bs~Ss at rest = 0 (or the A/A).** Interpolation quality explains the whole at-rest difference, and the
+  slots' painting is otherwise exact.
+- **base~Bs = 0 at post** while **base~S ≠ 0.** Base's rest shots are in low-quality mode; at quiet, base~Bq tells
+  whether base returns to Default after 500 ms.
+- Either way, nothing is built. The finding and the options go to the lead. The baseline's look then depends on a
+  WebKit timing heuristic: low quality from a slide's start until 500 ms after its last scaled-image paint. Matching
+  that frame by frame is a different job from "position and phase".
+
 ## Deliverables
 
 - `patch.diff`: baseline-relative, st6-rb2 + **F** (CSS `a984ae7b7715` and st6-rb2's JS `7bf7c4657d21`), regenerated
