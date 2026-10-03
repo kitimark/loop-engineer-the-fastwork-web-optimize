@@ -1,51 +1,450 @@
 {
  "topic": "cd-strip",
- "kind": "frozen-frame pixel identity (Chrome) + WebKit Simulator counts (Timeline Paint records, LayerTree layers/memory); no timing A/B, no gain claim (timing deferred, user 2026-10-02)",
+ "kind": "frozen-frame pixel identity (Chrome + iOS Simulator) + WebKit Simulator counts (Timeline Paint/Layout records, LayerTree layers/memory) + Chrome idle triple (counts); no timing A/B, no gain claim (timing deferred, user 2026-10-02)",
  "base": "st6-rb2 (stacked: node tools/fix.mjs apply cd-strip --on st6-rb2)",
+ "build": "strip-rw: per digit one strip layer > one uncomposited wrapper at top -m*c > 11 cells (hero cells one layer each; panel cells unlayered)",
  "config": {
   "baselineSnapshot": "b1789284481295-4ad4a84a",
   "chromePixels": "headless Chrome, mobile 430x932 DPR3 touch, serve --https --latency 150 --vendors=local --no-cache, frozen countdown clocks, hand-stepped rAF with jitter, 60 and 120 Hz",
   "simulator": "iOS 26.5 Simulator (fw-sim 15 Pro Max), functional sessions in the shared lane; Simulator ms never count (F-084)",
-  "measurementCodeChanged": false
+  "measurementCodeChanged": false,
+  "chromeIdle": "headless Chrome 430x932 DPR3 CPU 1x, 5 s windows at top/mid/end, 2 rounds; LayoutCount/RecalcStyleCount via CDP Performance.getMetrics"
  },
- "servedSha256Prefix": {
-  "st6rb2": { "js": "7bf7c4657d21", "css": "f523598b2a24" },
-  "strip_b": { "js": "358cd8ae16b9", "css": "ce6beca745a0" },
-  "strip_a": { "js": "358cd8ae16b9", "css": "305b8a705d8b" }
- },
- "arms": {
-  "st6rb2": "control: st6-rb2 overlay (10 layered faces per digit; panel faces unlayered by cdwc)",
-  "strip_b": "cd-strip default: one 11-cell strip per digit, one transform; panel strips unlayered (cdwc rule retargeted)",
-  "strip_a": "rejected variant (fixes/cd-strip--a): panel strips layered"
+ "sha256": {
+  "patch": "48bc7adf7f03478622940d45d2daf9e9907f733db4350503151be97015b1dbfc",
+  "js": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5",
+  "css": "9b2f89ea58bd76cb9d3b09f1c31d2c3dd74183586002951c3ff07c561b1811da",
+  "base": {
+   "js": "7bf7c4657d21",
+   "css": "f523598b2a24"
+  },
+  "stepBefore_stripRb": {
+   "patch": "08bedca68ac7",
+   "js": "56c075242353",
+   "css": "9f90afa65888"
+  }
  },
  "pixels": {
-  "hero": { "raw": "out/cd-strip/pixels-2026-10-03T00-17-10-586Z.json", "shots": 259, "strip_b_shotsDifferPx": 0, "aa_shotsDifferPx": 0, "note": "state differences are 0.001 px readout rounding with identical bytes; first-visible frame index differs by one in A/B and A/A alike (IO timing), content identical" },
-  "panel": { "raw": "out/cd-strip/pixels-2026-10-03T00-37-14-365Z.json", "shots": 169, "morphHeldOpen": true, "strip_b_shotsDifferPx": 1, "strip_b_note": "whole-shot max channel delta 1 (16059 px), the A/A's noise class", "aa_shotsDifferPx": 2, "strip_a_shotsDifferPx": 67, "strip_a_note": "21-32 px per shot, max channel delta 131-204, moving frames only: layered glyph raster differs from st6-rb2's unlayered panel" }
+  "chrome": {
+   "raw": "out/cd-strip/pixels-2026-10-03T06-09-16-872Z.json",
+   "shots": 512,
+   "hero": 0,
+   "panel": 0,
+   "herofade": {
+    "strip": 6,
+    "aa": 7,
+    "note": "5 shots of the A/A 0.75-fade settling class in both; one 0.9-fade 23 px delta-1 shot identical in the A/A"
+   },
+   "panelBackgroundClassOddArm": {
+    "04-15Z stripRbCopy": [
+     1,
+     3,
+     0
+    ],
+    "04-56Z stripRbFinal": [
+     1,
+     1,
+     0
+    ],
+    "06-09Z stripRw": [
+     0,
+     0,
+     0
+    ],
+    "order": "faces, strip, faces again"
+   }
+  },
+  "simulator": {
+   "raw": [
+    "out/cd-strip/simpx/simpx-2026-10-03T05-17-45-723Z.json",
+    "out/cd-strip/simpx/simpx-2026-10-03T05-39-59-608Z.json"
+   ],
+   "hero": "0/17",
+   "fade90": "0/5",
+   "panel": "0/12",
+   "fade50xResidualRfade": {
+    "note": "delta 1 on the rolling seconds-ones digit (CSS x 361-374), mid-roll frames 10-30, clock opacity 0.55, one frame at a time; OBSERVED, cause unknown",
+    "pooledDigitRowShots": {
+     "aa": "4/65",
+     "stripRw": "3/26",
+     "stripRbFinal": "2/26"
+    },
+    "stripRwPerShot": [
+     "05-17Z two f14 13 px",
+     "05-17Z two f30 47 px",
+     "05-39Z two f10 11 px (A/A shows the same 11 px in two sessions)"
+    ],
+    "twoF30": {
+     "aa": "0/8",
+     "strips": "3/7"
+    },
+    "tool": "fixes/cd-strip/pool.mjs"
+   }
+  }
  },
- "functionalCheck": { "raw": "out/check/cd-strip/2026-10-03T00-15-54-504Z/check.json", "result": "ok", "morphReached": true, "consoleErrors": 0, "http4xx": 0 },
  "simulator": {
-  "raw": [
-   "out/cd-strip/sim/sim-2026-10-03T00-20-20-449Z.json",
-   "out/cd-strip/sim/sim-2026-10-03T00-47-25-402Z.json",
-   "out/cd-strip/sim/sim-2026-10-03T00-52-00-285Z.json",
-   "out/cd-strip/sim/sim-2026-10-03T01-03-03-384Z.json"
+  "raw": "out/cd-strip/sim/sim-2026-10-03T06-21-41-635Z.json",
+  "wrapperCensus": {
+   "raw": "out/cd-strip/sim/sim-2026-10-03T05-39-37-736Z.json",
+   "nodes": 16,
+   "layers": 0
+  },
+  "order": [
+   "faces",
+   "stripRw",
+   "facesAgain"
+  ],
+  "heroClockBackedLayers": [
+   48,
+   16,
+   48
+  ],
+  "heroClockBackingMB": [
+   1.18,
+   0.39,
+   1.18
+  ],
+  "heroClockLayers": [
+   80,
+   96,
+   80
+  ],
+  "reentryClockPaintFirst1s": [
+   54,
+   23,
+   55
+  ],
+  "reentryClockPaint1to3_5s": [
+   5,
+   3,
+   11
   ],
   "top4s": {
-   "heroClockPaintRecords": { "st6rb2": [13, 13], "strip_b": [0, 0], "strip_a": [0, 0] },
-   "panelClockPaintRecords": { "st6rb2": [3, 3], "strip_b": [3, 4], "strip_a": [0, 0] },
-   "clockLayers": { "st6rb2": 80, "strip_b": 8, "strip_a": 16 },
-   "pageLayers": { "st6rb2": 131, "strip_b": 55, "strip_a": 63 },
-   "clockBackingMB": { "st6rb2": 1.18, "strip_b": 2.1, "strip_a": 4.16 },
-   "pageLayerMemoryMB": { "st6rb2": 52.77, "strip_b": 53.69, "strip_a": 55.75 }
+   "Layout": [
+    178,
+    179,
+    180
+   ],
+   "RecalculateStyles": [
+    229,
+    228,
+    228
+   ],
+   "heroClockPaint": [
+    8,
+    17,
+    8
+   ]
   },
-  "morph": {
-   "tweenFirst450msFramesWithClockPaint": { "st6rb2": "0 of 12-15 (each of 4 tweens, 3 sessions)", "strip_b": "0 of 11-15", "strip_a": "6-12 of 10-12, all 8 strips per frame, rects follow the panel scale (17x382 -> 18x396)" },
-   "holdFramesWithClockPaint": { "st6rb2": "26-35 of 77-78", "strip_b": "14-27 of 75-79", "strip_a": "2 of 77-79" },
-   "holdClockPaintFrameDurMs_simOnly": { "st6rb2": "median 16.6-16.8, max 25-26", "strip_b": "median 16.9, max 26" },
-   "panelClockLayers": { "st6rb2": 0, "strip_b": 0, "strip_a": "8 (2.06 MB), reason willChange, also while the scene is paused" }
-  },
-  "censusArtefact": "LayerTree paintCount deltas between censuses are the same 117 ms and 4 s apart (st6-rb2 176/176/172, strip 24/24/24): they count the census, not rolls; not used as a repaint measure"
+  "morphTweenClockPaintFrames": [
+   0,
+   0,
+   0
+  ],
+  "morphHoldM1": {
+   "Layout": [
+    [
+     102,
+     102
+    ],
+    [
+     106,
+     114
+    ],
+    [
+     104,
+     106
+    ]
+   ],
+   "RecalculateStyles": [
+    [
+     179,
+     179
+    ],
+    [
+     184,
+     191
+    ],
+    [
+     182,
+     184
+    ]
+   ],
+   "clockPaintFrames": [
+    [
+     26,
+     27
+    ],
+    [
+     29,
+     34
+    ],
+    [
+     28,
+     30
+    ]
+   ],
+   "note": "1 of 2 strip-rw holds above the A/A range (+8 Layout, +7 RecalcStyle, +4 clock-paint frames), the other inside; n = 2 per arm; mechanism unchecked (OBSERVED)"
+  }
  },
- "verdict": "mechanism: hero clock WebKit Paint records 13 -> 0 per 4 s, clock layers 80 -> 8, panel tween paints 0 -> 0, pixel-identical to st6-rb2 (arm b). Frame gain: not measured (phone segment card needed). Arm a rejected (tween re-raster, not pixel-identical).",
- "regressions": { "memory": "+0.92 MB page layer memory at the top (Sim): WebKit backs the whole strip", "visual": "none (arm b)" }
+ "idleTriple": {
+  "raw": "out/cd-strip/idle-2026-10-03T06-25-10-812Z.json",
+  "unit": "per s, [round0, round1], faces / strip-rw",
+  "top": {
+   "styleWrites": [
+    [
+     76.4,
+     58.4
+    ],
+    [
+     39.8,
+     38.6
+    ]
+   ],
+   "layout": [
+    [
+     2.4,
+     2
+    ],
+    [
+     5,
+     5.2
+    ]
+   ],
+   "recalc": [
+    [
+     54.4,
+     54.4
+    ],
+    [
+     54.2,
+     53.8
+    ]
+   ],
+   "observers": [
+    [
+     1.6,
+     1.6
+    ],
+    [
+     2.2,
+     2.2
+    ]
+   ]
+  },
+  "mid": {
+   "styleWrites": [
+    [
+     7.2,
+     6
+    ],
+    [
+     2.8,
+     2
+    ]
+   ],
+   "layout": [
+    [
+     1,
+     1
+    ],
+    [
+     3,
+     2.8
+    ]
+   ],
+   "recalc": [
+    [
+     24.2,
+     36.2
+    ],
+    [
+     24,
+     31.8
+    ]
+   ]
+  },
+  "end": {
+   "styleWrites": [
+    [
+     6.6,
+     11.2
+    ],
+    [
+     2.2,
+     2
+    ]
+   ],
+   "layout": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "recalc": [
+    [
+     60,
+     60
+    ],
+    [
+     60,
+     60
+    ]
+   ]
+  }
+ },
+ "functionalCheck": {
+  "raw": "out/check/cd-strip/2026-10-03T06-29-13-833Z/check.json",
+  "result": "ok",
+  "morphReached": true,
+  "consoleErrors": 0,
+  "http4xx": 0,
+  "screenshotDiffPct": {
+   "top": 0.19,
+   "middle": 0,
+   "bottom": 0.53
+  },
+  "note": "diff against the plain baseline, not st6-rb2"
+ },
+ "verdict": "mechanism (Sim): hero clock backing 1.18 -> 0.39 MB (48 -> 16 backed layers), re-entry clock Paint first 1 s 54-55 -> 23; no idle-paint gain; Chrome style writes/s lower at every spot, LayoutCount/s +1 to +3. Pixels: Chrome identical beyond its A/A; Simulator identical except residual R-fade (delta 1, fade50 mid-roll, 3/26 vs A/A 4/65) -> user decision. Frame gain: not measured (P-072 draft).",
+ "regressions": {
+  "visual": "R-fade: delta-1 glyph-edge difference on the rolling seconds digit in single frames at 50 % hero fade (Simulator); user decision pending",
+  "layout": "Chrome +1 to +3 layouts per s (wrapper top write); Sim 1 of 2 m=1 pin holds +8 Layout over the A/A range",
+  "memory": "hero clock backing lower (0.39 vs 1.18 MB, Sim)"
+ },
+ "history": {
+  "note": "first build (one strip layer per digit; not pixel-identical in WebKit) and arm (a); see README",
+  "firstBuild": {
+   "servedSha256Prefix": {
+    "st6rb2": {
+     "js": "7bf7c4657d21",
+     "css": "f523598b2a24"
+    },
+    "strip_b": {
+     "js": "358cd8ae16b9",
+     "css": "ce6beca745a0"
+    },
+    "strip_a": {
+     "js": "358cd8ae16b9",
+     "css": "305b8a705d8b"
+    }
+   },
+   "arms": {
+    "st6rb2": "control: st6-rb2 overlay (10 layered faces per digit; panel faces unlayered by cdwc)",
+    "strip_b": "cd-strip default: one 11-cell strip per digit, one transform; panel strips unlayered (cdwc rule retargeted)",
+    "strip_a": "rejected variant (fixes/cd-strip--a): panel strips layered"
+   },
+   "pixels": {
+    "hero": {
+     "raw": "out/cd-strip/pixels-2026-10-03T00-17-10-586Z.json",
+     "shots": 259,
+     "strip_b_shotsDifferPx": 0,
+     "aa_shotsDifferPx": 0,
+     "note": "state differences are 0.001 px readout rounding with identical bytes; first-visible frame index differs by one in A/B and A/A alike (IO timing), content identical"
+    },
+    "panel": {
+     "raw": "out/cd-strip/pixels-2026-10-03T00-37-14-365Z.json",
+     "shots": 169,
+     "morphHeldOpen": true,
+     "strip_b_shotsDifferPx": 1,
+     "strip_b_note": "whole-shot max channel delta 1 (16059 px), the A/A's noise class",
+     "aa_shotsDifferPx": 2,
+     "strip_a_shotsDifferPx": 67,
+     "strip_a_note": "21-32 px per shot, max channel delta 131-204, moving frames only: layered glyph raster differs from st6-rb2's unlayered panel"
+    }
+   },
+   "functionalCheck": {
+    "raw": "out/check/cd-strip/2026-10-03T00-15-54-504Z/check.json",
+    "result": "ok",
+    "morphReached": true,
+    "consoleErrors": 0,
+    "http4xx": 0
+   },
+   "simulator": {
+    "raw": [
+     "out/cd-strip/sim/sim-2026-10-03T00-20-20-449Z.json",
+     "out/cd-strip/sim/sim-2026-10-03T00-47-25-402Z.json",
+     "out/cd-strip/sim/sim-2026-10-03T00-52-00-285Z.json",
+     "out/cd-strip/sim/sim-2026-10-03T01-03-03-384Z.json"
+    ],
+    "top4s": {
+     "heroClockPaintRecords": {
+      "st6rb2": [
+       13,
+       13
+      ],
+      "strip_b": [
+       0,
+       0
+      ],
+      "strip_a": [
+       0,
+       0
+      ]
+     },
+     "panelClockPaintRecords": {
+      "st6rb2": [
+       3,
+       3
+      ],
+      "strip_b": [
+       3,
+       4
+      ],
+      "strip_a": [
+       0,
+       0
+      ]
+     },
+     "clockLayers": {
+      "st6rb2": 80,
+      "strip_b": 8,
+      "strip_a": 16
+     },
+     "pageLayers": {
+      "st6rb2": 131,
+      "strip_b": 55,
+      "strip_a": 63
+     },
+     "clockBackingMB": {
+      "st6rb2": 1.18,
+      "strip_b": 2.1,
+      "strip_a": 4.16
+     },
+     "pageLayerMemoryMB": {
+      "st6rb2": 52.77,
+      "strip_b": 53.69,
+      "strip_a": 55.75
+     }
+    },
+    "morph": {
+     "tweenFirst450msFramesWithClockPaint": {
+      "st6rb2": "0 of 12-15 (each of 4 tweens, 3 sessions)",
+      "strip_b": "0 of 11-15",
+      "strip_a": "6-12 of 10-12, all 8 strips per frame, rects follow the panel scale (17x382 -> 18x396)"
+     },
+     "holdFramesWithClockPaint": {
+      "st6rb2": "26-35 of 77-78",
+      "strip_b": "14-27 of 75-79",
+      "strip_a": "2 of 77-79"
+     },
+     "holdClockPaintFrameDurMs_simOnly": {
+      "st6rb2": "median 16.6-16.8, max 25-26",
+      "strip_b": "median 16.9, max 26"
+     },
+     "panelClockLayers": {
+      "st6rb2": 0,
+      "strip_b": 0,
+      "strip_a": "8 (2.06 MB), reason willChange, also while the scene is paused"
+     }
+    },
+    "censusArtefact": "LayerTree paintCount deltas between censuses are the same 117 ms and 4 s apart (st6-rb2 176/176/172, strip 24/24/24): they count the census, not rolls; not used as a repaint measure"
+   },
+   "verdict": "mechanism: hero clock WebKit Paint records 13 -> 0 per 4 s, clock layers 80 -> 8, panel tween paints 0 -> 0, pixel-identical to st6-rb2 (arm b). Frame gain: not measured (phone segment card needed). Arm a rejected (tween re-raster, not pixel-identical)."
+  }
+ }
 }

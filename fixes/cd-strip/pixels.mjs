@@ -6,7 +6,7 @@
 //
 //   node fixes/cd-strip/pixels.mjs [arms=st6rb2,strip,strip-a] [clocks=hero,panel]
 // Arms: st6rb2 = fixes/st6-rb2/overlay (control), strip = fixes/cd-strip/overlay, strip-a = fixes/cd-strip--a/overlay,
-// orig = the baseline (no overlay). Counts lane only (no timing): run inside a chrome-measure hold, e.g.
+// strip-cl = out/cd-strip/snap/strip-cl (measurement arm: strip + one layer per cell), orig = the baseline (no overlay). Counts lane only (no timing): run inside a chrome-measure hold, e.g.
 //   node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner cd-strip -- node fixes/cd-strip/pixels.mjs
 // Output: out/cd-strip/pixels-<stamp>.json + PNGs under out/cd-strip/pixels-<stamp>/.
 import { spawn } from 'node:child_process';
@@ -23,7 +23,7 @@ const CLOCKS = (process.argv[3] || 'hero,panel').split(',');
 const OUT = join(WT, 'out/cd-strip'); mkdirSync(OUT, { recursive: true });
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
 const BASE = resolveTree('site-pretty');
-const DIRS = { orig: null, st6rb2: join(WT, 'fixes/st6-rb2/overlay'), strip: join(WT, 'fixes/cd-strip/overlay'), 'strip-a': join(WT, 'fixes/cd-strip--a/overlay') };
+const DIRS = { orig: null, st6rb2: join(WT, 'fixes/st6-rb2/overlay'), strip: join(WT, 'fixes/cd-strip/overlay'), 'strip-a': join(WT, 'fixes/cd-strip--a/overlay'), 'strip-cl': join(WT, 'out/cd-strip/snap/strip-cl'), 'strip-rb': join(WT, 'out/cd-strip/snap/strip-rb') };
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const log = (...a) => console.log(...a);
 const fileOf = (arm, f) => (DIRS[arm] && existsSync(join(DIRS[arm], f)) ? join(DIRS[arm], f) : join(BASE, f));
@@ -109,10 +109,15 @@ const POSITIONS = `(() => { const H = document.documentElement.scrollHeight, vh 
   const tb = t ? t.getBoundingClientRect().bottom + scrollY : 2 * vh;
   return { heroExit: Math.round(vh), pastHero: Math.round(tb + 1.2 * vh), end: Math.max(0, H - vh) }; })()`;
 const TIMER = { hero: `document.querySelector('.hero-copy [role=timer]')`, panel: `document.querySelector('.start-selling-morph-panel [role=timer]')` };
+// review round 1 (B2): the hero clock at partial exit opacity (scrolled to a fraction of vh) and the panel clock mid-tween
+// (--morph set by hand on the element that carries it, after the driven open; scale 0.96-1 and blur follow it)
+TIMER.herofade = TIMER.hero; TIMER.panelmid = TIMER.panel;
+const VARIANTS = { hero: [null], panel: [null], herofade: [0.25, 0.5, 0.75, 0.9], panelmid: [0.25, 0.5, 0.75] };
+const EXTRA_SCEN = [0, 2, 6]; // one step down, ones wrap + tens, two changes mid-roll; 60 Hz only in the extra passes
 // what the digits show: per digit, the faces/cells inside the cell (|offset| < 1 cell) as digit@offset px (3 decimals)
 const STATE = (which) => `(() => { const t = ${TIMER[which]}; if (!t) return null; return [...t.querySelectorAll('.digit.svelte-1quva9c')].map((d) => { const h = d.offsetHeight; let v;
     const st = d.querySelector('.strip.svelte-1quva9c');
-    if (st) { const T = Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(st.style.transform) || [])[1]); v = [...st.children].map((c) => [c.textContent, parseFloat(c.style.top) + T]); }
+    if (st) { const T = Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(st.style.transform) || [])[1]); v = [...st.querySelectorAll('.cell.svelte-1quva9c')].map((c) => [c.textContent, parseFloat(c.style.top) + (c.parentElement === st ? 0 : parseFloat(c.parentElement.style.top) || 0) + T]); }
     else v = [...d.querySelectorAll('.face.svelte-1quva9c')].map((f) => [f.textContent, Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(f.style.transform) || [])[1])]);
     return v.filter(([, y]) => Math.abs(y) < h - 0.001).map(([t, y]) => t + '@' + (Object.is(+y.toFixed(3), -0) ? 0 : +y.toFixed(3)).toFixed(3)).sort().join(' '); }).join(' | '); })()`;
 const OPACITY = (which) => `(() => { let op = 1; for (let e = ${TIMER[which]}; e && e.nodeType === 1; e = e.parentElement) op *= +getComputedStyle(e).opacity; return op; })()`;
@@ -130,33 +135,47 @@ async function run(cdp, arm, url, dir, range) {
   let T = 5e6;
   const settle = async (r) => { T += 1e6; await tick(T, r); await step(T + 1e4); await pause(30); await step(T + 2e4); await pause(30); };
   const pos = await page.eval(POSITIONS); info.pos = pos;
-  for (const which of CLOCKS) {
+  for (const which of CLOCKS) for (const variant of VARIANTS[which]) {
     let clip;
-    if (which === 'panel') {
+    const vkey = variant === null ? which : `${which} v=${variant}`;
+    if (which === 'panel' || (which === 'panelmid' && !info.panelReady)) {
       // mount the panel and open the morph (end pin), then freeze the page's CSS/WAAPI animations at t=0 in every arm
       await go(pos.end); await pause(3000); await go(pos.end); await pause(2500);
       // open the morph and keep it open (m = 1: panel opacity 1, scale 1, no blur) through the page's own driver path
       // (E(1) after the pin; the hold outlasts the pass). Without it the panel stays at m = 0, invisible (opacity 0).
       info.morphDriven = await page.eval(`(typeof window.__fwMorphDrive === 'function' && (window.__fwMorphDrive({ hold: 1e9, cycles: 1 }), true))`);
       await pause(3500);
+      // census of what gets frozen: kind, name (animation or transition property), target, play state
+      info.panelAnimCensus = await page.eval(`(() => { const m = {}; for (const x of document.getAnimations()) { const t = x.effect && x.effect.target; const k = [x.constructor.name, x.animationName || x.transitionProperty || x.id || '', t ? (t.tagName + '.' + String(t.className && t.className.baseVal !== undefined ? t.className.baseVal : t.className).split(' ').slice(0, 2).join('.')) : '-', x.playState].join(' '); m[k] = (m[k] || 0) + 1; } return m; })()`);
       info.panelAnims = await page.eval(`(() => { const a = document.getAnimations(); for (const x of a) { x.pause(); x.currentTime = 0; } return a.length; })()`);
+      await pause(300); info.panelReady = true;
+    } else if (which === 'herofade') { await go(Math.round(variant * pos.heroExit)); await pause(300); }
+    else if (which === 'hero') await go(0);
+    if (which === 'panelmid') {
+      // the open, frozen panel: set m by hand on the element that carries --morph, let any transition finish, freeze again
+      info[vkey + ' set'] = await page.eval(`(() => { const e = [...document.querySelectorAll('*')].find((x) => x.style.getPropertyValue('--morph') !== ''); if (!e) return null; e.style.setProperty('--morph', '${variant}'); return e.className.toString().slice(0, 60); })()`);
+      await pause(1500);
+      info[vkey + ' running'] = await page.eval(`(() => { const a = document.getAnimations().filter((x) => x.playState === 'running'); for (const x of a) { x.pause(); x.currentTime = 0; } return a.length; })()`);
       await pause(300);
-    } else await go(0);
-    info[which] = { opacity: await page.eval(OPACITY(which)), present: await page.eval(`!!${TIMER[which]}`) };
-    if (!info[which].present) { log(arm, which, 'timer not found'); continue; }
+    }
+    info[vkey] = { opacity: await page.eval(OPACITY(which)), present: await page.eval(`!!${TIMER[which]}`), scrollY: await page.eval('scrollY'),
+      panel: which.startsWith('panel') ? await page.eval(`(() => { const p = document.querySelector('.start-selling-morph-panel'); if (!p) return null; const s = getComputedStyle(p); return { transform: s.transform, filter: s.filter, opacity: s.opacity }; })()`) : undefined };
+    if (!info[vkey].present) { log(arm, vkey, 'timer not found'); continue; }
     clip = await page.eval(`(() => { const r = ${TIMER[which]}.getBoundingClientRect(); return { x: r.left + scrollX - 4, y: r.top + scrollY - 4, width: r.width + 8, height: r.height + 8, scale: 1 }; })()`);
-    info[which].clip = clip;
+    info[vkey].clip = clip;
+    const fname = variant === null ? which : `${which}${Math.round(variant * 100)}`;
     const shot = async (key, file) => {
       await page.eval(twoFrames);
       const { data } = await page.send('Page.captureScreenshot', { format: 'png', clip, captureBeyondViewport: false });
       shots[key] = data; state[key] = await page.eval(STATE(which));
-      writeFileSync(join(dir, `${arm}-${which}-${file}.png`), Buffer.from(data, 'base64'));
+      writeFileSync(join(dir, `${arm}-${fname}-${file}.png`), Buffer.from(data, 'base64'));
     };
     const fstep = async (key, t) => { await step(t); (frames[key] ||= []).push(await page.eval(STATE(which))); };
-    for (const [hz, FR, phases] of [[60, 1000 / 60, PHASES], [120, 1000 / 120, PHASES120]]) {
+    const extra = variant !== null;
+    for (const [hz, FR, phases] of extra ? [[60, 1000 / 60, [0, 2, 4, 8, 15, 30, 60]]] : [[60, 1000 / 60, PHASES], [120, 1000 / 120, PHASES120]]) {
       for (const [si, [name, r0, r1, r2]] of SCENARIOS.entries()) {
-        if (hz === 120 && si >= 4 && si !== 6) continue;
-        const key0 = `${which} @${hz}Hz ${name}`;
+        if (extra ? !EXTRA_SCEN.includes(si) : hz === 120 && si >= 4 && si !== 6) continue;
+        const key0 = `${vkey} @${hz}Hz ${name}`;
         await settle(r0);
         const G = T + 1e5; await tick(G + FR / 3, r1); // the change lands a third of a frame after a frame
         let k = 0;

@@ -26,8 +26,10 @@ const SNAP = join(WT, 'out/cd-strip/snap');
 const ARMS = (process.argv[2] || 'st6rb2,strip,strip-a').split(',');
 const WIN = 4000;
 const sha = (b) => createHash('sha256').update(b).digest('hex');
-const DIGITSEL = '.face.svelte-1quva9c, .strip.svelte-1quva9c';
-const HEROSEL = '.hero-copy [role=timer] .face.svelte-1quva9c, .hero-copy [role=timer] .strip.svelte-1quva9c';
+const DIGITSEL = '.face.svelte-1quva9c, .strip.svelte-1quva9c, .cell.svelte-1quva9c';
+const HEROSEL = '.hero-copy [role=timer] .face.svelte-1quva9c, .hero-copy [role=timer] .strip.svelte-1quva9c, .hero-copy [role=timer] .cell.svelte-1quva9c';
+// SIM_PHASES (default top,morph): top = idle rolls at y 0; scroll = one scroll out of the hero and back (F-142 re-entry); morph = the pin
+const PHASES = (process.env.SIM_PHASES || 'top,morph').split(',');
 
 const INSTALL = `(() => {
   const hero = document.querySelector('.hero-copy [role=timer]'); const nums = [...hero.querySelectorAll('.number')];
@@ -49,13 +51,18 @@ const ms = (r) => (r.endTime != null && r.startTime != null ? (r.endTime - r.sta
 // flatten: every record with its RenderingFrame index (or -1)
 function flatten(records) {
   const out = []; let fi = -1; const frames = [];
-  const walk = (r, f) => { out.push({ type: r.type, start: r.startTime * 1000, dur: ms(r), data: r.data, frame: f }); for (const c of r.children || []) walk(c, f); };
+  const SCRIPT = /^(FireAnimationFrame|TimerFire|FunctionCall|EventDispatch|EvaluateScript)$/;
+  const walk = (r, f, inScript = false) => { out.push({ type: r.type, start: r.startTime * 1000, dur: ms(r), data: r.data, frame: f, inScript }); for (const c of r.children || []) walk(c, f, inScript || SCRIPT.test(r.type)); };
   for (const r of records.slice().sort((a, b) => a.startTime - b.startTime)) { if (r.type === 'RenderingFrame') { fi = frames.length; frames.push({ start: r.startTime * 1000, dur: ms(r) }); walk(r, fi); } else walk(r, -1); }
   return { recs: out, frames };
 }
 function counts(recs, g) {
-  const c = { RecalculateStyles: 0, Layout: 0, Paint: 0, Composite: 0, digitPaint: 0, stripPaint: 0, otherPaint: 0, paintAreaPx: 0 };
-  for (const r of recs) { if (r.type in c) c[r.type]++; if (r.type === 'Paint') { const q = QB(r.data?.clip); c[sizeClass(q, g) + 'Paint']++; if (q) c.paintAreaPx += Math.round(q.w * q.h); } }
+  // script: top-level script records (rAF callbacks, timers, other function calls, events) and their summed Sim ms
+  // (orientation only, F-084)
+  const c = { RecalculateStyles: 0, Layout: 0, Paint: 0, Composite: 0, digitPaint: 0, stripPaint: 0, otherPaint: 0, paintAreaPx: 0,
+    FireAnimationFrame: 0, TimerFire: 0, FunctionCall: 0, EventDispatch: 0, scriptMs: 0 };
+  for (const r of recs) { if (r.type in c) c[r.type]++; if (/^(FireAnimationFrame|TimerFire|FunctionCall|EventDispatch|EvaluateScript)$/.test(r.type) && !r.inScript) { c.scriptMs += r.dur; c.scriptTop = (c.scriptTop || 0) + 1; } if (r.type === 'Paint') { const q = QB(r.data?.clip); c[sizeClass(q, g) + 'Paint']++; if (q) c.paintAreaPx += Math.round(q.w * q.h); } }
+  c.scriptMs = Math.round(c.scriptMs * 10) / 10;
   return c;
 }
 async function layers(c) {
@@ -69,16 +76,28 @@ async function layers(c) {
     // why WebKit composites the first non-hero digit layer (panel clock), if any: LayerTree.reasonsForCompositingLayer
     const pl = D.find((l) => !hn.has(l.nodeId));
     const panelReasons = pl ? await c.send('LayerTree.reasonsForCompositingLayer', { layerId: pl.layerId }).then((x) => Object.keys(x.compositingReasons || {}).filter((k) => x.compositingReasons[k]).join(',')).catch((e) => 'error ' + (e.message || JSON.stringify(e))) : null;
+    // strip-rw: is the cell wrapper (.cdwrap) composited? (it must not be: a wrapper layer at -m*c would bring back the
+    // large cancelling offsets in the layer tree)
+    const wn = new Set((await c.send('DOM.querySelectorAll', { nodeId: root, selector: '.cdwrap.svelte-1quva9c' })).nodeIds);
+    const WL = L.filter((l) => wn.has(l.nodeId));
+    const wrap = { nodes: wn.size, layers: WL.length, reasons: WL[0] ? await c.send('LayerTree.reasonsForCompositingLayer', { layerId: WL[0].layerId }).then((x) => Object.keys(x.compositingReasons || {}).filter((k) => x.compositingReasons[k]).join(',')).catch((e) => 'error ' + (e.message || JSON.stringify(e))) : null };
     const scene = await c.evaluate(`document.querySelector('[data-start-selling-scene]')?.dataset.startSellingScene ?? null`);
     return { t: Date.now(), scene, panelReasons, layers: L.length, digitNodes: dn.size, digitLayers: D.length, memory: L.reduce((a, l) => a + (l.memory || 0), 0), digitMemory: D.reduce((a, l) => a + (l.memory || 0), 0),
-      digitBounds: D.slice(0, 3).map((l) => [l.bounds?.width, l.bounds?.height]), paint: Object.fromEntries(L.map((l) => [l.layerId, l.paintCount || 0])), digitIds: D.map((l) => l.layerId), heroIds: D.filter((l) => hn.has(l.nodeId)).map((l) => l.layerId) };
+      digitBounds: D.slice(0, 3).map((l) => [l.bounds?.width, l.bounds?.height]), paint: Object.fromEntries(L.map((l) => [l.layerId, l.paintCount || 0])), digitIds: D.map((l) => l.layerId), heroIds: D.filter((l) => hn.has(l.nodeId)).map((l) => l.layerId),
+      // hero digit layers by composited size: count, how many hold a backing store, MB, bytes per device px (4 = 8-bit RGBA; the
+      // protocol names no backing format, so this ratio is the only hint)
+      heroBySize: (() => { const H = D.filter((l) => hn.has(l.nodeId)); const dpr = 3; const g = {};
+        for (const l of H) { const b = l.compositedBounds || l.bounds || {}; const k = `${Math.round(b.width)}x${Math.round(b.height)}`; const e = (g[k] ||= { n: 0, backed: 0, memory: 0, px: 0 });
+          e.n++; if (l.memory > 0) { e.backed++; e.memory += l.memory; e.px += b.width * b.height * dpr * dpr; } }
+        return Object.fromEntries(Object.entries(g).map(([k, e]) => [k, { n: e.n, backed: e.backed, MB: MB(e.memory), bytesPerDevPx: e.px ? Math.round((e.memory / e.px) * 100) / 100 : null }])); })(),
+      heroMemoryMB: MB(D.filter((l) => hn.has(l.nodeId)).reduce((a, l) => a + (l.memory || 0), 0)), heroBacked: D.filter((l) => hn.has(l.nodeId) && l.memory > 0).length, wrap };
   } finally { await c.send('LayerTree.disable').catch(() => {}); }
 }
 const MB = (x) => Math.round(x / 1e4) / 100;
 const ltDelta = (a, b) => ({ layers: [a.layers, b.layers], digitNodes: [a.digitNodes, b.digitNodes], digitLayers: [a.digitLayers, b.digitLayers], memoryMB: [MB(a.memory), MB(b.memory)], digitMemoryMB: [MB(a.digitMemory), MB(b.digitMemory)], digitBounds: b.digitBounds,
   digitPaints: b.digitIds.reduce((s, id) => s + Math.max(0, (b.paint[id] || 0) - (a.paint[id] || 0)), 0), digitPaintedLayers: b.digitIds.filter((id) => (b.paint[id] || 0) > (a.paint[id] || 0)).length,
   heroLayers: b.heroIds.length, heroPaints: b.heroIds.reduce((s, id) => s + Math.max(0, (b.paint[id] || 0) - (a.paint[id] || 0)), 0), heroPaintsPerLayer: b.heroIds.map((id) => (b.paint[id] || 0) - (a.paint[id] || 0)).join(' ') });
-const snapL = (l) => ({ scene: l.scene, panelReasons: l.panelReasons, layers: l.layers, digitNodes: l.digitNodes, digitLayers: l.digitLayers, memoryMB: MB(l.memory), digitMemoryMB: MB(l.digitMemory), digitBounds: l.digitBounds });
+const snapL = (l) => ({ scene: l.scene, panelReasons: l.panelReasons, wrap: l.wrap, layers: l.layers, digitNodes: l.digitNodes, digitLayers: l.digitLayers, memoryMB: MB(l.memory), digitMemoryMB: MB(l.digitMemory), digitBounds: l.digitBounds });
 
 async function sequence(c) {
   const ev = (e) => c.evaluate(e);
@@ -105,7 +124,33 @@ async function sequence(c) {
   res.top = { ticks, frames: ft.frames.length, ...counts(ft.recs, res.hero), lt: ltDelta(a0, a1), ltNoTimeline: ltDelta(a1, a2), ltBackToBack: { ms: a3.t - a2.t, ...ltDelta(a2, a3) },
     clockPaintClips: ft.recs.filter((r) => r.type === 'Paint' && sizeClass(QB(r.data?.clip), res.hero) !== 'other').map((r) => QB(r.data.clip)),
     biggestPaints: ft.recs.filter((r) => r.type === 'Paint').map((r) => QB(r.data?.clip)).filter(Boolean).sort((x, y) => y.w * y.h - x.w * x.h).slice(0, 5) };
+  res.top.heroBySize = [a0.heroBySize, a1.heroBySize]; res.top.heroMemoryMB = [a0.heroMemoryMB, a1.heroMemoryMB]; res.top.heroBacked = [a0.heroBacked, a1.heroBacked]; res.top.wrap = [a0.wrap, a1.wrap];
   console.log('top', JSON.stringify({ ...res.top, lt: { ...res.top.lt } }));
+  // 1b. scroll out of the hero and back in (F-142: a composited layer that left its clip / the viewport may drop its backing
+  // and repaint on re-entry). Timeline over: 1 s at y 0, scroll to 3 viewports down, 2.5 s there, back to y 0, 2.5 s.
+  if (PHASES.includes('scroll')) {
+    const before = await layers(c);
+    recs = []; const kw2 = await ev('__cs.ticks');
+    await c.send('Timeline.start', { maxCallStackDepth: 1 });
+    await ev(`(console.timeStamp('cdmark top'), 0)`); await sleep(1000);
+    await ev(`(console.timeStamp('cdmark out'), scrollTo({ top: innerHeight * 3, behavior: 'instant' }), 0)`); await sleep(1000);
+    const outRect = await ev(`JSON.stringify(document.querySelector('.hero-copy [role=timer]').getBoundingClientRect())`);
+    const mid = await layers(c); await sleep(1500);
+    await ev(`(console.timeStamp('cdmark in'), scrollTo({ top: 0, behavior: 'instant' }), 0)`); await sleep(2500);
+    await c.send('Timeline.stop');
+    const after = await layers(c);
+    const fs = flatten(recs);
+    const marks = Object.fromEntries(fs.recs.filter((r) => r.type === 'TimeStamp' && /^cdmark /.test(r.data?.message || '')).map((r) => [r.data.message.slice(7), r.start]));
+    const seg = (a, b) => counts(fs.recs.filter((r) => r.start >= a && r.start < b), res.hero);
+    res.scroll = { ticks: (await ev('__cs.ticks')) - kw2, outRect: JSON.parse(outRect), marks: Object.keys(marks),
+      atTop: marks.top != null ? seg(marks.top, marks.out) : null, away: marks.out != null ? seg(marks.out, marks.in) : null,
+      reentry1s: marks.in != null ? seg(marks.in, marks.in + 1000) : null, after1s: marks.in != null ? seg(marks.in + 1000, Infinity) : null,
+      all: counts(fs.recs, res.hero),
+      heroBacked: [before.heroBacked, mid.heroBacked, after.heroBacked], heroMemoryMB: [before.heroMemoryMB, mid.heroMemoryMB, after.heroMemoryMB],
+      heroPaintsLT: ltDelta(before, after).heroPaints, digitPaintsLT: ltDelta(before, after).digitPaints };
+    console.log('scroll', JSON.stringify(res.scroll));
+  }
+  if (!PHASES.includes('morph')) { await c.send('Timeline.disable').catch(() => {}); return res; }
   // 2. morph
   await ev("(scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }), 0)"); await sleep(3000);
   res.morphPaused = { ...snapL(await layers(c)), el: await ev(ELPROBE) };

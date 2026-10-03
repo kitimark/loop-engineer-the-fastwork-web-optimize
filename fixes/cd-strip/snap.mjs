@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { REPO as WT, resolveTree } from '../../tools/lib/paths.mjs';
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
-const ARMS = { st6rb2: 'fixes/st6-rb2/overlay', strip: 'fixes/cd-strip/overlay', 'strip-a': 'fixes/cd-strip--a/overlay' };
+const ARMS = { st6rb2: 'fixes/st6-rb2/overlay', strip: 'fixes/cd-strip/overlay', 'strip-a': 'fixes/cd-strip--a/overlay', 'strip-cl': 'out/cd-strip/arm-cl', 'strip-rb': 'out/cd-strip/arm-rb', 'strip-rbf': 'out/cd-strip/arm-rbf', st6rb2b: 'fixes/st6-rb2/overlay' };
 const SNAP = join(WT, 'out/cd-strip/snap');
 const sha = (f) => createHash('sha256').update(readFileSync(f)).digest('hex');
 const base = resolveTree('site-pretty');
