@@ -1,27 +1,24 @@
 {
  "topic": "cd-roll-ca",
  "kind": "counts-and-positions (no timing; timing A/Bs deferred by the user 2026-10-02)",
- "date": "2026-10-03T03:21:54.468Z",
+ "date": "2026-10-03T07:45:24Z",
  "config": {
   "baselineStatus": "snapshot   b1789284481295-4ad4a84a",
-  "stackedOn": "cd-strip (arm b) on st6-rb2",
-  "baseJsSha256": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
-  "buildJsSha256": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
+  "stackedOn": "cd-strip strip-rw (patch 1f3c26a16563, review round 2 CSS) on st6-rb2",
+  "baseJsSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5",
+  "buildJsSha256": "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec",
   "chrome": "Chrome/154.0.8037.97, 430x932 DPR 3 mobile, CPU 1x, served --vendors=local --latency 150 via fix.mjs serve",
   "webkit": "iOS Simulator fw-sim 15 Pro Max, Mobile Safari, Timeline counts (never times, F-084)",
   "buildJsSha256Round2": "673b110d118c",
   "buildJsSha256Round1": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
   "snapshots": {
-   "dir": "out/cd-roll-ca/snap/{C,V,V3} (V = round 2, V3 = round 3)",
+   "dir": "out/cd-roll-ca/snap/{C6,V7} (C6 = cd-strip final, V7 = C6 + this build); dev base C5/V6 (CSS 9b2f89ea58bd)",
    "hashes": [
-    "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830  C/_app/immutable/nodes/2.DyWL8TcE.js",
-    "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  C/_app/immutable/assets/2.gBuqKVzi.css",
-    "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5  V/_app/immutable/nodes/2.DyWL8TcE.js",
-    "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V/_app/immutable/assets/2.gBuqKVzi.css",
-    "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b  V3/_app/immutable/nodes/2.DyWL8TcE.js",
-    "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V3/_app/immutable/assets/2.gBuqKVzi.css"
-   ],
-   "serve": "sh out/cd-roll-ca/serve-snap.sh"
+    "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5  C6/_app/immutable/nodes/2.DyWL8TcE.js",
+    "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  C6/_app/immutable/assets/2.gBuqKVzi.css",
+    "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec  V7/_app/immutable/nodes/2.DyWL8TcE.js",
+    "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  V7/_app/immutable/assets/2.gBuqKVzi.css"
+   ]
   },
   "measurementCodeChanged": false,
   "probes": [
@@ -33,9 +30,28 @@
    "fixes/cd-roll-ca/sim-hide.mjs",
    "fixes/cd-roll-ca/sim-gaps.mjs"
   ],
-  "buildsMeasured": "counts (comp-check, sim-counts) and h60c on round 1 9ac52b08 (round 2 only adds the cancel of the start-frame rAF in __crStop and the hide time from document.timeline: no per-frame or per-tick change); h60d, headed2, hide-check V and fix.mjs check on round 2 673b110d; h60b and headed on an earlier pre-hero-only build; round 3 2af461dc (ran flag + __crWatch, roll clock only): hide-check V3, h60e, sim-hide C/V3; fix.mjs check not re-run for round 3"
+  "buildsMeasured": "counts (comp-check, sim-counts) and h60c on round 1 9ac52b08 (round 2 only adds the cancel of the start-frame rAF in __crStop and the hide time from document.timeline: no per-frame or per-tick change); h60d, headed2, hide-check V and fix.mjs check on round 2 673b110d; h60b and headed on an earlier pre-hero-only build; round 3 2af461dc (ran flag + __crWatch, roll clock only): hide-check V3, h60e, sim-hide C/V3; fix.mjs check not re-run for round 3",
+  "round3": {
+   "stackedOn": "cd-strip (arm b) on st6-rb2",
+   "baseJsSha256": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
+   "buildJsSha256": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
+   "snapshots": {
+    "dir": "out/cd-roll-ca/snap/{C,V,V3} (V = round 2, V3 = round 3)",
+    "hashes": [
+     "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830  C/_app/immutable/nodes/2.DyWL8TcE.js",
+     "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  C/_app/immutable/assets/2.gBuqKVzi.css",
+     "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5  V/_app/immutable/nodes/2.DyWL8TcE.js",
+     "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V/_app/immutable/assets/2.gBuqKVzi.css",
+     "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b  V3/_app/immutable/nodes/2.DyWL8TcE.js",
+     "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V3/_app/immutable/assets/2.gBuqKVzi.css"
+    ],
+    "serve": "sh out/cd-roll-ca/serve-snap.sh"
+   }
+  },
+  "baseCssSha256": "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe",
+  "patchDiffBaseSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5"
  },
- "verdict": "countdown rAF callbacks 108 -> 4 per 4 s at y 0 (Chrome) and 107-110 -> 4-5 (WebKit Sim); hero roll on normal ticks within 0.15 px of the original's ideal 60 Hz frames and 0.64 px on the same jittery stamps at CPU 1x (the original's own stamp-jitter variation on regular frames up to 0.80 px); forced (random-phase) rolls up to 0.84 px vs the ideal 60 Hz original (p95 0.036) and 0.30 px on the same stamps (its own 0.55 px); at 120 Hz (and, modelled, 80 Hz or after a late first frame) the build keeps the regular 60 Hz path (27.7 px max vs the original at 120 Hz, known and user-accepted); hidden tab (real, Chrome): pending rAF callbacks <= 2 like C (round 1: one more per hidden tick), start value on show = held value, first frame after show within 0.27 px of the original model; WebKit Simulator hidden page (app switch): no pile-up, 0 errors, but rAF stops ~0.4 s before the hidden event and resumes one frame before the visible event, so round 2 started gap rolls up to 23.8 px off and one show tick snapped instead of rolling; round 3 (2af461dc: a roll holds at its start until its start frame ran; a hide watch rAF ends the no-frames state at the first frame after the hide, also the pre-visible one) fixes both: tick starts within 1.39 px of the original, frame-wise within 2.02 px over the first second after the show, no snapped show tick; residual (OBSERVED, Simulator): a roll whose frames ran before WebKit stopped rAF is held at the hidden event's timeline time, 0.88 / 1.39 px from the original's last-frame value, snapped (not rolled) at the show; Chrome round 3: start 0 px, first frame after show 0.21 px, pending <= 3 (2 digits + the watch); normal ticks unchanged (h60e: 0.08 px vs ideal, 0.24 px on the same stamps, own jitter 0.32 px)",
+ "verdict": "round 4 (cells-only on strip-rw), counts only: Chrome countdown rAF 162 -> 8 per 6 s at y 0 (others frozen), WebKit Sim frames match C to <= 0.0151 px cell rects (0 >= 1/64, 0 unmatched), pixel max delta 5 on rolling digits (path interpolation <= 0.019 px), layers equal mid-roll; +1 backed cell (+0.023 MB) at rest in 2 of 4 Sim runs (OBSERVED); rest of the counted set PENDING (cd-strip PR-008 rev 2)",
  "chromeCounts": {
   "note": "4 s at y 0; p2 = every other animation frozen, p1 = paused once (the accent cycle restarts)",
   "base_frozen": {
@@ -1744,5 +1760,195 @@
   "out/cd-roll-ca/hide-V3.json",
   "out/cd-roll-ca/probe-build-h60e.json",
   "out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json"
- ]
+ ],
+ "round4": {
+  "design": "one Web Animation per moved cell (cells within 1.5 cells of the path), keyword linear easing, shared startTime; moved cells at top M*c inside cd-strip wrapper at -M*c; gap re-key on a first frame > 1 frame after the change; hidden-tab logic of round 3 unchanged",
+  "pathTolerance": {
+   "kept": 0.0005,
+   "keyframes5e-4": {
+    "oneStep": 144,
+    "zeroToNine": 343,
+    "median": 232
+   },
+   "keyframes1e-4": {
+    "oneStep": 268,
+    "zeroToNine": 520,
+    "median": 390
+   },
+   "maxErrPx36": {
+    "5e-4": 0.0189,
+    "1e-4": 0.0189
+   },
+   "meanErrPx36": {
+    "5e-4": 0.0054,
+    "1e-4": 0.0018
+   },
+   "note": "max is set by the 32-points-per-frame cap in the first frame; offline, all 90 pairs"
+  },
+  "chromeCompCheck6s": {
+   "C4_stripRb": {
+    "countdownRaf": 162,
+    "updateLayoutTree": 159,
+    "mainFrames": 170,
+    "inRollPer400ms": 24,
+    "outsidePer400ms": 3.4,
+    "layout": 23,
+    "paint": 47
+   },
+   "V5_stripRb": {
+    "countdownRaf": 7,
+    "updateLayoutTree": 79,
+    "mainFrames": 91,
+    "inRollPer400ms": 8.7,
+    "outsidePer400ms": 4.3,
+    "layout": 30,
+    "paint": 49,
+    "animations": 34,
+    "noDecision": 34
+   },
+   "V6_stripRwDev": {
+    "countdownRaf": 8,
+    "updateLayoutTree": 73,
+    "mainFrames": 82,
+    "inRollPer400ms": 7,
+    "outsidePer400ms": 4.6,
+    "layout": 30,
+    "paint": 67,
+    "animations": 40,
+    "noDecision": 40
+   },
+   "note": "C on strip-rw not run yet (PENDING); composited: OBSERVED, no decision recorded"
+  },
+  "positionsH60_V6": {
+   "errTickMaxPx": 0.2536,
+   "errTickP95Px": 0.0174,
+   "errForcedMaxPx": 0.2413,
+   "errForcedP95Px": 0.0199,
+   "vsIdealTickMaxPx": 0.0647,
+   "vsIdealForcedMaxPx": 0.2112,
+   "startValueMaxPx": 0.0165,
+   "origJitterTickPx": 0.2716,
+   "origJitterForcedPx": 0.267,
+   "baseFitC5": {
+    "rolls": 22,
+    "maxPx": 0
+   }
+  },
+  "hiddenTabChromeV6": {
+   "framesWhileHidden": 0,
+   "maxPending": 3,
+   "startErrPx": 0,
+   "firstFrameErrPx": 0.008,
+   "errors": 0
+  },
+  "fixCheckV6": {
+   "morph": "both",
+   "errors": 0,
+   "http4xx": 0,
+   "elements": 1558,
+   "pixelDiffPct": {
+    "top": 0.19,
+    "middle": 0,
+    "bottom": 0
+   }
+  },
+  "simFrames": {
+   "debugRuns_C5_V6": {
+    "rectMaxPx": 0.0151,
+    "rectOverLayoutUnit": 0,
+    "unmatched": 0,
+    "pixelMaxDelta": 5,
+    "aaMaxDelta": 1,
+    "timelineV6PausedVsRunning1e-6": {
+     "recalc": [
+      54,
+      55
+     ],
+     "rAF": [
+      0,
+      0
+     ]
+    },
+    "compositingReason": "animation on rolling cells (V only)",
+    "rate1Match": [
+     {
+      "maxDelta": 4,
+      "atBracket": 0.507
+     },
+     {
+      "maxDelta": 1,
+      "atBracket": 0.526
+     }
+    ],
+    "caLead": "UNRESOLVED"
+   },
+   "firstBuild_sessionA_C5_V6": {
+    "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T06-47-53-243Z.json",
+    "shots": 90,
+    "aaMaxDelta": 1,
+    "vMaxDelta": 5,
+    "rectMaxPx": 0.01508,
+    "restBacked": [
+     14,
+     14
+    ]
+   },
+   "counted_sessionA_C6_V7": {
+    "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T07-10-10-961Z.json",
+    "scenarios": [
+     "wrap",
+     "wrapUp"
+    ],
+    "pass": "fade50",
+    "shots": 90,
+    "aa": {
+     "differ": 36,
+     "maxDelta": 1,
+     "state": 0,
+     "rects": 0
+    },
+    "v": {
+     "differ": 87,
+     "maxDelta": 5,
+     "stateMaxPx": 0.015,
+     "rectMaxPx": 0.01508,
+     "rectOverLayoutUnit": 0,
+     "unmatched": 0,
+     "sharedStart": "79/79"
+    },
+    "layers": {
+     "restC": [
+      14,
+      0.329
+     ],
+     "restV": [
+      15,
+      0.352
+     ],
+     "midEqual": true
+    },
+    "pausedScene": {
+     "C6": {
+      "cellAnimations": 0,
+      "backedCells": 0,
+      "willChange": "auto"
+     },
+     "V7": {
+      "cellAnimations": 0,
+      "backedCells": 0,
+      "willChange": "auto"
+     }
+    }
+   },
+   "costLine": "+1 backed cell (+0.023 MB) at rest in V in 2 of 4 Sim runs (seconds ones cell 2, ~0.1 s after a roll); persistence not checked yet; OBSERVED"
+  },
+  "pending": [
+   "simpx carry,two,step fade50 + hero pass with A/A",
+   "sim-counts frozen 2 reps",
+   "sim-hide C6/V7 3 cycles",
+   "Paint records per roll",
+   "Chrome comp-check C6/V7, h60, hide-check, fix.mjs check on C6/V7",
+   "rest census +2 s"
+  ]
+ }
 }
