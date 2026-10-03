@@ -305,7 +305,7 @@ before mgmt-ops-10's second read passes.** The overlay stays v4 (520d5f1139c7): 
 
 A difference that shows only in motion, or that changes how something moves, is a proposal to the user (T3).
 
-**Scorer: `tools/t2score.mjs`, sha256 3e236a71ef6b.** Committed in c1e7f60e before it ran on any data, and unchanged
+**Scorer: `tools/t2score.mjs`, sha256 3e236a71ef6b.** Committed in 0b281698 (c1e7f60e before the rebase on 0b082d16) before it ran on any data, and unchanged
 since. For each frozen shot label L, on the element crop (the avatar row plus a 6 px pad):
 - X = st6-rb2 replaying the fix's state of L; Y = the fix's own shot of L.
 - A/A = st6-rb2's own shot of L against st6-rb2 replaying it.
@@ -330,7 +330,10 @@ DPR and screen size:
 - Sim: DPR = the magenta calibration's viewport width in device px / innerWidth, screen = the calibrated viewport.
 - `node t2score.mjs --selftest` passes.
 
-**Scores of the existing data** (scorer 3e236a71ef6b; outputs in `out/rest-script/t2/`):
+**Scores of the existing data** (scorer 3e236a71ef6b; outputs in `out/rest-script/t2/`). To re-run, from the
+worktree: `node fixes/rest-script/tools/t2score.mjs --run out/rest-script/sim4/fix-s4.json --replay
+out/rest-script/sim4/rep-fix-s4.json --aarun out/rest-script/sim4/st6-s4.json --aareplay out/rest-script/sim4/rep-st6-s4.json`.
+The Chrome legs use the same form, with `ident4/{fix,rep-fix,st6,rep-st6}-w<W>.json`.
 
 Sim `sim4` (fw-sim, 430 CSS px, DPR 3):
 
