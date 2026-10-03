@@ -601,11 +601,22 @@ the user's line (st6-rb2) and the wave-2 stack do not.
       - no abort, 0 errors.
     - Timeline over 4 s held at the pin: 85 digit paints, **0 full face composites** (Composites with ≥ 70 digit
       clips); frames gt50 0.
-    - Not done yet:
-      - The same census on A/D. The D run (v1c-h3) predates `panelLayers()`, so the 80 for A rests on the CSS read
-        and on P-071's face repaints (OBSERVED).
-      - The pin pixel compare A vs B.
-      - Both are one more Simulator hold, after the P-073 block, so it does not load the Mac during counted runs.
+    - **A/D census and pin pixels, 10-03 08:49Z** (one Simulator hold after the P-073 block,
+      `pinhold-sim.mjs D,B arm-scope-touch-v1c.json`, one session, D then B; counts only):
+      - Panel clock at the pin: D **80 of 84** `.face` nodes composited (reason willChange), 117 layers in the
+        page; B 0 of 84, 37 layers. So the A side's 80 is now measured, not only read from the CSS.
+      - Timeline over 4 s held at the pin: D 0 digit paints, 0 full face composites, gt50 0 (231 frames); B 104
+        digit paints, 0 full face composites, gt50 0 (238 frames); B logs 338 Layout records, D's top types list
+        none. Without the layers, the digits repaint in place and lay out each tick; with them, they move as
+        layers. Simulator ms never count (F-084).
+      - Settle: D y 5212, B y 5220 (max 5220).
+      - Pin pixels (`pin-pixels.mjs`, tol 8; two Simulator screenshots per arm, 1 s apart):
+        - within an arm, 1 s apart: D 4.20 %, B 2.52 %;
+        - D vs B at the same shot index: 6.36 % and 7.08 %.
+        - Every pair's regions lie in the same animated columns of the panel (x 36-416 and 876-1256 device px).
+          The cross-arm diff also carries D's 8 px (24 device px) higher settle. So the pixels neither show nor
+          rule out a visual change from the rule: **inconclusive**. A clean compare needs both arms at the same y
+          and the animations frozen, e.g. a FRZ-style still; that is not done.
 - **Driver and phone:** G, v1c (0653995a35be), Timeline on (`Page.disable` -> `Page.enable` -> `Timeline.start`), a
   cool phone (start ≤ 38.6 °C, the P-071 range, so heat is not a variable), Low Power Mode off, n = 2 per arm in the
   order A B B A, each in the runner's own hold, parked between runs.

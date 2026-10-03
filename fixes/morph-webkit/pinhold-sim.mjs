@@ -140,6 +140,15 @@ for (const arm of ARMS) {
       await c.send('Timeline.disable').catch(() => {});
       run.panelClock = await panelLayers(c).catch((e) => ({ error: String(e.message || e) }));
       console.log(`${arm} panel clock at pin: ${JSON.stringify(run.panelClock)}`);
+      // two Simulator screenshots at the pin, 1 s apart (the pair gives the countdown/orbit phase noise for pin-pixels.mjs)
+      run.shots = [];
+      for (const k of [1, 2]) {
+        const shot = join(OUT, `pin-${arm}-${res.startedAt.replace(/[:.]/g, '-')}-${k}.png`);
+        const r = spawnSync('xcrun', ['simctl', 'io', 'booted', 'screenshot', shot], { encoding: 'utf8' });
+        run.shots.push(r.status === 0 ? shot : null);
+        if (k === 1) await sleep(1000);
+      }
+      console.log(`${arm} pin screenshots ${run.shots.join(' ')}`);
       console.log(`${arm} at pin: before ${JSON.stringify(run.before)}`);
       console.log(`${arm} idle 4 s: frames ${run.idle.frames} gt34 ${run.idle.gt34} gt50 ${run.idle.gt50} max ${run.idle.maxDt} m ${run.idle.mRange} y ${run.idle.yRange} scrollTo ${P.scrollTo} scrollEv ${P.scrollEv}`);
       console.log(`  raf ${JSON.stringify(P.raf).slice(0, 600)}`);
