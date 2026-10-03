@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T19:25:00Z", "text": "The avatar slider fix (carousel-leaver) is not exact on Safari, and the check found the landed slider build itself draws the resting profile pictures slightly differently on Safari; one bounded attempt to make it exact comes next. The hero restart test (P-088) is ready for when timing resumes." },
   { "at": "2026-10-03T19:00:00Z", "text": "Planning only while the Mac sleep question (T-052) is open: the hero and avatar-slider picture checks run first; a re-check of the sharper 1440 hero photos with reduce motion is queued; the middle-of-page slow-frame test is drafted and waits for timing to resume." },
   { "at": "2026-10-03T18:40:00Z", "text": "End-of-page animation phone check (P-085) passed: today's build is no worse than the original there; in that run it had far fewer slow frames (the whole build against the original, one test, not one fix alone)." },
   { "at": "2026-10-03T18:10:00Z", "text": "Partly paused: the Mac keeps going to sleep (I-098). Timing measurements and phone tests wait for your answer in T-052 about keeping it awake; picture and count checks and tests run again, re-run if a sleep hits them. Your swipe test on the phone (C-035) still works." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T08:35:00Z", "text": "F3's warm-phone test is done: no version showed the hitch, not even the original, so it can't tell whether F3 cures it. F3 doesn't land on this test; the next step is being decided." },
   { "at": "2026-10-03T07:20:00Z", "text": "Your 'land' choice on the countdown digit strips is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, and extra layout-shift reports). A corrected proposal comes to you, and you decide again." },
   { "at": "2026-10-03T07:01:00Z", "text": "You disconnected the iPhone at 07:01 and reconnected it at 07:09; phone tests carry on." },
-  { "at": "2026-10-03T06:53:00Z", "text": "You chose to land the countdown digit strips, with the tiny fade difference. The review found one small style fix first: in one scroll band the new clock kept its layers where today's page drops them. That fix is being re-checked, then a last review and landing." },
-  { "at": "2026-10-03T05:50:00Z", "text": "The menu fix (F3) made the pinned menu no worse in 9 robot-finger phone runs. The original's stall at the end of the page didn't show up this time, so whether the fix cures it is still open. One odd run of the landing version is being traced." }
+  { "at": "2026-10-03T06:53:00Z", "text": "You chose to land the countdown digit strips, with the tiny fade difference. The review found one small style fix first: in one scroll band the new clock kept its layers where today's page drops them. That fix is being re-checked, then a last review and landing." }
  ],
  "items": [
   {
@@ -105,7 +105,7 @@
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position, or within your accepted pixel rule (PR-010); you accepted its look (PR-011, both items, 15:23Z); then its phone test and your finger test.",
-   "next": "Top priority (your T-046). Its phone test (P-081) showed it does the scrolling work it should, but restarting the animation after you stop and scroll again costs more than the original. Next: a cheaper restart (two options, P-088), then its phone test and your finger test.",
+   "next": "Top priority (your T-046). Phone test P-081: it does the scrolling work it should, but restarting after you stop and scroll again costs more than the original. Two cheaper restarts are built; their phone test (P-088) is checked and runs when timing resumes (T-052), then your finger test.",
    "owner": "fix-hero-exit-threaded",
    "checks": [],
    "details": [
@@ -344,13 +344,14 @@
    "stage": "L",
    "fixes": "The small rotating profile pictures near the top (the 'blinking small profiles' you noticed) cost a 25-30 ms whole-page layout about once a second, even when you are not scrolling.",
    "gate": "Passed: S7 on the phone (P-067), at rest at the top, with every run separated and the scroll guard held.",
-   "next": "Landed; the phone timing result (P-067) stands. Found later: a picture leaving the carousel looks different from the original (a bug; its earlier pixel checks only compared frames at rest). Being fixed while keeping the saving (fix-carousel-leaver).",
+   "next": "Landed; P-067 stands. Its landing pixel check was Chrome only (st6-rb2 README rows 57-60), so its WebKit pixel status is OPEN: on Safari the resting profile pictures differ slightly (F-198). fix-carousel-leaver tries an exact fix (two attempts), else a proposal to you.",
    "owner": "fix-scroll-engine with de-pm-hero",
    "checks": [ { "id": "P-067", "what": "phone test S7: fewer slow frames at rest at the top with st6, on today's best build?", "result": "Yes: 0 slow frames over 34 ms in every run with it vs 22, 19, 27, 24 without; carousel ticks with a slow frame 0 of 152 vs 103 of 152; scrolling not worse (OBSERVED, 6571b62)." }, { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "Yes. With the pictures kept in place, the whole-page layout at each tick was gone in 65 of 67 ticks (scripted scroll, OBSERVED). A layout boundary around the section removed the hitches over 50 ms at rest (11 to 0) but kept most frames over 34 ms; each layout got cheaper, not by half." }, { "id": "P-039", "what": "st5 phone test: does the real fix also stop the whole-page layout?", "result": "Partly. The picture swap no longer re-lays out the page (1 of 31 ticks), but the start of each slide still does in 15 of 33 ticks. At rest, hitches over 34 ms fell from 70 to 29 in 40 s, and over 50 ms from 4 to 0 (OBSERVED)." }, { "id": "P-044", "what": "phone recording: does the no-flip build (st6) stop the layout at the slide start?", "result": "Yes: 1 of 36 slide starts re-laid out the page, against 24 of 35 for st5 and every one for the original (OBSERVED)." } ],
    "details": [
     "P14 scored (fix-scroll-engine README 12859a5, de-pm-hero cross-checking; iphone-wave2 4o): sentinels bottom 60.2/60.2, scroll 56.6/56.5; 9/9 runs, 67 ticks per arm. V1 st4-noswap 2/67 view ticks, median tick Layout 0.1 vs 20.6 ms (HIT). V2 re-contain-js 61/67 rooted at #people, 11.7 ms = 0.57 of C (MISS on <= 0.5). Idle 40 s at y 1500, Timeline off, window driver: dt>50 C 11 / V1 0 / V2 0, dt>34 47 / 0 / 40. Scroll phase unchanged; the y~1960 rebuild frame is present in every arm. Lead signed D (swap path). V1 is a probe only (no slide animation), it never lands.",
     "Rest attribution (P-033 step 0, OBSERVED): 40/41 rotator callbacks dirty a whole-view Layout 1-5 ms later, 12.8-43.6 ms, median 25-26 ms.",
-    "P14 arms: C aw1-10e, V1 st4-noswap (pictures updated in place, no insert/remove; probe only), V2 re-contain-js (#people as a layout boundary). Pre-registered: V1 'gone' = 25 % or fewer view-rooted ticks."
+    "P14 arms: C aw1-10e, V1 st4-noswap (pictures updated in place, no insert/remove; probe only), V2 re-contain-js (#people as a layout boundary). Pre-registered: V1 'gone' = 25 % or fewer view-rooted ticks.",
+    "WebKit pixel status OPEN (lead 10-03 19:2xZ): st6-rb2 landing pixels were Chrome only (st6-rb2 README rows 57-60). P-087 D1 (Sim, DPR 3): E~base = F~base at rest 862 px, max shade 179, fill, static (T3), base~base2 0 (F-198). Route: bounded st6-rb2 follow-up G by fix-carousel-leaver (describes-only geometry, then G = st6-rb2 + exact slot position/phase with F on top, new P-id, WebKit T0/T1/T2 and Chrome 0, two attempts, else a user proposal with rm1440). best-build unchanged."
    ]
   },
   {
