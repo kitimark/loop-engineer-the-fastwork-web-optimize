@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T13:00:00Z",
+ "updatedAt": "2026-10-03T14:06:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,8 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T14:06:00Z", "text": "The idle-animation fix was rebuilt so other browsers keep today's look; a check showed it draws exactly like the version the phone already tested, so that phone result carries over." },
+  { "at": "2026-10-03T14:05:00Z", "text": "Found a display bug in today's best build on the iPhone: past the end of the page, the menu bar, logo and buttons don't follow the menu's grow animation (phone and simulator; cause not yet known). Comparisons still stand; the fix is being built." },
   { "at": "2026-10-03T12:55:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) passed its short phone check at the phone's real \"Serious\" heat state: no worse. One run had a slightly longer first scroll frame, which the fix does not touch." },
   { "at": "2026-10-03T12:20:00Z", "text": "The menu fix (F3) is dropped as a speed fix: what it changes sits in a thin strip at the screen edges, so on the phone it would feel the same as today. A new idea for the menu is being planned." },
   { "at": "2026-10-03T12:05:00Z", "text": "The countdown digit strips (strip-tc) passed their phone check at the phone's real \"Serious\" heat state: no new slow frames, and much less clock redrawing. Your finger test is next." },
@@ -36,9 +38,7 @@
   { "at": "2026-10-02T23:45:00Z", "text": "Blind swipe test done: you picked today's best build as smoother than the original, at the top and in the menu change. It still lags a little; de-gpu looks at whether the GPU can take more of the work. Next on the phone: the F3 robot-finger re-run." },
   { "at": "2026-10-02T23:35:00Z", "text": "You chose the short phone timing test of the countdown fix on its own (about 20 minutes plus cooling). It runs after the F3 robot-finger re-run and before the heat test. A GPU-friendly look at the counting animation is a separate idea, kept out of that test." },
   { "at": "2026-10-02T23:30:00Z", "text": "You said yes to two phone tests: a blind swipe test of the original page against today's best build, now; and one full phone timing run of wave 2 once it is built and checked. Other timing stays paused. The F3 robot-finger test restarts after that (its first try did not count)." },
-  { "at": "2026-10-02T23:20:00Z", "text": "The carousel fix (st6) passed its phone test on today's best build: resting at the top, no slow frames in any run with it, against about 20 per run without it. Scrolling did not get worse. The F3 robot-finger test is running now." },
-  { "at": "2026-10-02T22:45:00Z", "text": "The accent word test is done: on its own the word draws smoothly, so the slow frames there come from the rest of the page, and the word keeps today's drawing. Next on the phone: the carousel fix (st6), then F3, then the heat test (Fastwork vs apple.com, about 2 hours)." },
-  { "at": "2026-10-02T22:35:00Z", "text": "New goal, if your assumption holds: a heat test (P-068) compares how warm Fastwork and apple.com make the phone. If Fastwork heats it more, less work at rest becomes a goal next to smooth scrolling. Every fix now reports its work at rest." }
+  { "at": "2026-10-02T23:20:00Z", "text": "The carousel fix (st6) passed its phone test on today's best build: resting at the top, no slow frames in any run with it, against about 20 per run without it. Scrolling did not get worse. The F3 robot-finger test is running now." }
  ],
  "items": [
   {
@@ -88,7 +88,8 @@
     "fix-cd-strip 6ae6908 (06:4xZ): strip-rw JS 5e37af69bcc4, CSS 9b2f89ea58bd, patch 48bc7adf7f03, base st6-rb2. P-072 drafted in fixes/cd-strip/README.md (Cards), not in the ledger, held for the user's R-fade choice (land strip-rw vs park); on 'land' the row goes in against the BUILD card before any phone data. P-070 unedited, superseded before data (strip-cl -> strip-rb -> strip-rw).",
     "User accepted PR-008 land-strip 06:52:53Z (confirmed T-030 #18). review-cd-strip-r2 NEEDS-FIX: (1) hero .strip/.cell skipped st6-rb2's scene-pause will-change rule, so 96 hero clock layers stayed up in the paused-but-rendered band (faces: 0); (2) the R-fade rate was pooled across sessions; same sessions: strip-rw 3/26 vs A/A 1/26. New base after the CSS fix: patch 1f3c26a16563, JS 5e37af69bcc4 unchanged, CSS 40078cb2d9cf; re-check, re-card, review round 3, then land. P-072 registered against the new BUILD card before any phone data.",
     "Lead 07:2xZ: acceptance held, nothing lands on it. G7: a Chrome delta-1 class at 0.9 fade (13-83 px; PR-008 said 'Chrome shows nothing') and 4-5 layout-shift deliveries per 5 s vs 2 for the faces (sources unrecorded). G8: 2 vs 2 entries and the same CLS 0.0011 in both arms, all from h1. PR-008 rev 2 after G9 (possibly a CLS-free third option); the user re-decides; P-072 waits; cd-roll-ca pauses queuing. ts-proposal-hold builds proposal hold/unhold and a 'stale: re-decide' state (T-030 #19).",
-    "Lead 08:0xZ: S2 + G11 clean for strip-tc (no cdwrap layout shifts; backed layers 16 / 0.39 MB vs faces 48 / 1.18 MB; hero 0 px). G12, S3, G13, G14 next, then PR-008 rev 2's text goes to the lead. PR-008 stays on hold (proposal hold, cd966b7)."
+    "Lead 08:0xZ: S2 + G11 clean for strip-tc (no cdwrap layout shifts; backed layers 16 / 0.39 MB vs faces 48 / 1.18 MB; hero 0 px). G12, S3, G13, G14 next, then PR-008 rev 2's text goes to the lead. PR-008 stays on hold (proposal hold, cd966b7).",
+    "Morph caveat (lead 10-03 14:0xZ; F-183/F-184): on st6-rb2 in WebKit the nav bar, logo, actions and earn button stay at --morph 0 while the header reads 1, and the panel fade freezes at 0.924; OBSERVED on phone + Sim, cause UNRESOLVED (WebKit main says it should re-resolve); correction (morph-inherit) by fix-nav-morph. P-079's pin frames, pin Layout and morph attribution are absolute values on that morph; V - C comparisons stand (both arms share it)."
    ]
   },
   {
@@ -104,14 +105,15 @@
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position (an earlier version matched the original on your phone); first explain why that version made one frame about 11 ms slower where the hero ends.",
-   "next": "The phone trace (P-074) showed the per-frame script is gone on the phone, but the hand-over adds some style work when a touch starts. Back to the code; the next phone trace is a new test on the new build.",
+   "next": "The new build's phone test plan (P-081) is written and checked: a robot-finger trace with the phone at its real \"Serious\" heat state. Next: that phone block, then your look at the pictures and your finger test.",
    "owner": "fix-hero-exit-threaded",
    "checks": [],
    "details": [
     "de-gpu T-030 brief 2: re-apply hero-exit-scroll-timeline v2 on st6-rb2; Safari 26.4+ runs scroll-driven animations on the compositor thread (CONFIRMED, WebKit blog and source). ST-1 Timeline split first: v2 once added about +11 ms at y about 700 (cause not yet named, OBSERVED).",
     "C-026 finger runs (F, one run per arm, OBSERVED): the first ~1000 px hold 63 of 81 moving long frames (>34 ms) in st6-rb2.",
     "Lead 10-03 03:2xZ: Chrome path gated to WebKit only (approved); WebKit residual -> A/A, then a hunt, then user options; accent paints at 1.5x block its phone ticket.",
-    "Lead 05:1xZ: frozen frames done: R1 = C's own two raster states, R2 = deck-edge shadow, R3 = the unarmed first frame; trying a scroll-event re-add for R3. F-161 posted."
+    "Lead 05:1xZ: frozen frames done: R1 = C's own two raster states, R2 = deck-edge shadow, R3 = the unarmed first frame; trying a scroll-event re-add for R3. F-161 posted.",
+    "P-081 ticket d4f1f63: F build (JS 8e43f3792dbf, CSS cc74cd980e72) vs st6-rb2, G hero-pass-v1, C F F C n = 2, T-039 B gate per hold, scoreF 32ed5f4e81f9 + framesF 40d0d302c3f1; ops second read PASS 14:0xZ. Band y 1..780, clear of the page-end morph."
    ]
   },
   {
@@ -191,8 +193,7 @@
     { "id": "P-073", "what": "warm-phone robot-finger test, menu pinned at the end (40-41 °C)", "result": "no hitch in any version in 12 runs, the original included, so it couldn't show whether F3 cures it; inconclusive" }
    ],
    "details": [
-    "Chrome regression A/B within noise on every row, 0 errors/404s, 0.13 % pixel diff.",
-    "Strokes that start on the nav header are not covered by the robot test: only your finger test checks them.",
+    "Chrome regression A/B within noise on every row, 0 errors/404s, 0.13 % pixel diff. Strokes that start on the nav header are not covered by the robot test: only your finger test checks them.",
     "Review round 1 (review-f3-arm-scope, 10-03 01:4xZ): CHANGES REQUIRED. B1 (OBSERVED, cause unknown): V-only frame-rate drop at the end pin when the run settles at y 5215 (2/2 V vs 0/5 C). B2: touch-coverage gap mid-tween and at m=1, where the morph does not reverse. P-036 card part stands (scorer rerun identical, PASS without V2).",
     "B1/B2 outcome (fix-nav-morph 909747c, 10-03 02:2xZ): B2 fixed in build mw10e-arm-scope-d (JS 999c4497f37e; window touch listeners while the morph is active; Chrome gap cases V fail, C and D pass). B1 UNRESOLVED: Simulator G pin repro and Chrome pin counts show no collapse and no arm difference; phone ticket G pin-hold C/V/D + Timeline after P-068; D then needs a short P-036 confirmation before landing.",
     "P-036 G block 10-03 00:28-01:10Z (iphone-runner; scored by fix-nav-morph 6fb21b2, ops second read PASS): median touch-to-scroll C / V Z1 196.8 / 192, Z2 193 / 194.5, Z3 189 / 189 ms, every zone overlap; S-open 60 / 58.9, S-end 60.2 / 57.1 fps PASS; C2 re-run in place (void first try); V2 hot (42.6-43.3 C); Z1 dt>50 per run C 2,1,3,2 vs V 1,16,3,2 (16 = the hot run), OBSERVED, G driver.",
@@ -202,7 +203,8 @@
     "D2 gate signed (lead 06:4xZ) on fix-nav-morph's reading of iphone-runner's Timeline runs tD1-3/tC/tV (gesture --timeline, n=1 per arm, 3 for D; OBSERVED): no long frame names D's listener add/remove (event dispatch < 1 ms per frame); every >50 ms frame is one Composite with ~91-94 Paint children in every arm; Paint inside is ~1-2 ms, the rest of the Composite time UNRESOLVED. C3's collapse fits the down-stroke dip seen in all arms. D's land gate is now P-073 alone.",
     "P-073 rev 2 (fix-nav-morph 38cd056): driver v1c 0653995a35be (forced cap; Simulator V/D/C 9 pin pushes, all prevented; settle 5212/5216/5220), settle bins low/high scored apart, budget 14 runs / 100 min. Second read mgmt-ops-9 07:1xZ NEEDS-FIX; rev 2.1 2746920 folds the points in (reading rule for n = 2, rows 1-8, scorer p073-score.mjs d4854dd7061f); re-read PASS with one scorer guard (V needs 3 counted runs outside the top-up) re-hashed before the first counted run (done: 4ece74c, scorer 30c16ec042c8, verified by ops); lead signed 07:2xZ.",
     "P-073 (iphone-runner, 07:40-08:35Z, G v1c 0653995a35be, scorer 30c16ec042c8; OBSERVED): 12 counted (9 + 3 V top-up), 0 void, sentinels PASS (60/58.1). No collapse in any arm, min 2 s window 46-51.5 fps. Settle low/high C 1/2, V 1/5, D 1/2: row 5, V not in condition, inconclusive, no landing on this block. Ops second read PASS (re-scored from the manifest, byte-identical). Next step: the lead, on fix-nav-morph's options.",
-    "Lead 09:2xZ agreed fix-nav-morph's plan after P-073 row 5: the rendering cost card first (Chrome + Simulator), with a cold-first-pin row; no phone block, landing or parking until it reports. Uncounted, OBSERVED n=2: D's cold-port warm-ups collapsed in both blocks that had one (P-071 wD sustained, P-073 wD transient); C and V did not. P-073 output committed da0ef39 (byte-identical to the ops re-score)."
+    "Lead 09:2xZ agreed fix-nav-morph's plan after P-073 row 5: the rendering cost card first (Chrome + Simulator), with a cold-first-pin row; no phone block, landing or parking until it reports. Uncounted, OBSERVED n=2: D's cold-port warm-ups collapsed in both blocks that had one (P-071 wD sustained, P-073 wD transient); C and V did not. P-073 output committed da0ef39 (byte-identical to the ops re-score).",
+    "Morph caveat (lead 10-03 14:0xZ; F-183/F-184): on st6-rb2 in WebKit the nav bar, logo, actions and earn button stay at --morph 0 while the header reads 1, and the panel fade freezes at 0.924; OBSERVED on phone + Sim, cause UNRESOLVED (WebKit main says it should re-resolve); correction (morph-inherit) by fix-nav-morph. Candidate A step 1's Simulator tween counts were measured on this morph: they count less motion than the baseline."
    ]
   },
   {
