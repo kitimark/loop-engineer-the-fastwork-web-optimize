@@ -3,7 +3,7 @@
 // node clp.mjs --arms A=serve-a.json,S=serve-s.json,E=serve-e.json --out dir [--modes series,counts,pixels,paused] [--target /path.jpg]
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { inflateSync } from 'node:zlib';
+import { inflateSync, deflateSync } from 'node:zlib';
 const WT = '/Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-a468e571c76f341a1';
 const { launchChrome, CDP, gotoAndSettle, sleep, tempProfileDir } = await import(join(WT, 'tools/lib/cdp.mjs'));
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -65,13 +65,33 @@ const cdp = await CDP.connect(chrome.wsUrl);
 const res = { at: new Date().toISOString(), browser: chrome.browser, arms: {} };
 const save = () => writeFileSync(join(OUT, 'clp.json'), JSON.stringify(res, null, 1));
 async function center(page, frac = 0.5) {
-  return page.eval(`(() => { const h = document.querySelector('#future-heading'); const r = h.getBoundingClientRect(); window.scrollBy({ top: r.top - ${frac} * innerHeight, behavior: 'instant' }); return { y: scrollY, top: h.getBoundingClientRect().top }; })()`);
+  // h4: the carousel itself at mid-view. Holds 1-3 used #future-heading at 0.5 vh, which left the carousel ~700 px BELOW
+  // the viewport (its top at ~1634 CSS px of a 932 px view; found by hold 3's crop crash), not "in view" as registered.
+  return page.eval(`(() => { const c = ${CAR}; const r = c.getBoundingClientRect(); window.scrollBy({ top: r.top + r.height / 2 - ${frac} * innerHeight, behavior: 'instant' }); const q = c.getBoundingClientRect(); return { y: scrollY, carTop: q.top, carBottom: q.bottom, vh: innerHeight, inView: q.top >= 0 && q.bottom <= innerHeight }; })()`);
 }
+// h3 (P-086 re-run after hold 2's blank crops): capture the whole viewport (no CDP clip) and crop in Node at the
+// carousel's viewport rect x devicePixelRatio, rounded out to whole device px, ± 4 CSS px; the first shot per file
+// prefix also keeps the full viewport (<file>.full.png) for inspection. Returns the rect and a non-blank flag.
+const CRC = (() => { const t = new Int32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c; } return (b) => { let c = -1; for (const x of b) c = t[(c ^ x) & 255] ^ (c >>> 8); return (c ^ -1) >>> 0; }; })();
+function pngEncode(w, h, bpp, px) {
+  const chunk = (type, d) => { const l = Buffer.alloc(4); l.writeUInt32BE(d.length); const td = Buffer.concat([Buffer.from(type, 'ascii'), d]); const c = Buffer.alloc(4); c.writeUInt32BE(CRC(td)); return Buffer.concat([l, td, c]); };
+  const ih = Buffer.alloc(13); ih.writeUInt32BE(w, 0); ih.writeUInt32BE(h, 4); ih[8] = 8; ih[9] = bpp === 4 ? 6 : 2;
+  const raw = Buffer.alloc(h * (w * bpp + 1)); for (let y = 0; y < h; y++) px.copy(raw, y * (w * bpp + 1) + 1, y * w * bpp, (y + 1) * w * bpp);
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ih), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
+const fullKept = new Set();
 async function shot(page, file) {
-  const r = await page.eval(`(() => { const r = ${CAR}.getBoundingClientRect(); return { x: r.left + scrollX - 4, y: r.top + scrollY - 4, width: r.width + 8, height: r.height + 8 }; })()`);
-  const { data } = await page.send('Page.captureScreenshot', { format: 'png', clip: { ...r, scale: 1 }, captureBeyondViewport: false });
-  writeFileSync(file, Buffer.from(data, 'base64'));
-  return r;
+  const r = JSON.parse(await page.eval(`JSON.stringify((() => { const r = ${CAR}.getBoundingClientRect(); return { x: r.left - 4, y: r.top - 4, width: r.width + 8, height: r.height + 8, dpr: devicePixelRatio, vw: innerWidth, vh: innerHeight }; })())`));
+  const { data } = await page.send('Page.captureScreenshot', { format: 'png' });
+  const buf = Buffer.from(data, 'base64'); const P = pngPixels(buf); const k = P.w / r.vw;
+  const x0 = Math.floor(r.x * k), y0 = Math.floor(r.y * k), x1 = Math.ceil((r.x + r.width) * k), y1 = Math.ceil((r.y + r.height) * k);
+  if (x0 < 0 || y0 < 0 || x1 > P.w || y1 > P.h) throw new Error(`VOID: carousel crop ${[x0, y0, x1, y1]} outside the ${P.w}x${P.h} viewport capture (carousel not in view)`);
+  const w = x1 - x0, h = y1 - y0, out = Buffer.alloc(w * h * P.bpp);
+  for (let y = 0; y < h; y++) P.px.copy(out, y * w * P.bpp, ((y0 + y) * P.w + x0) * P.bpp, ((y0 + y) * P.w + x1) * P.bpp);
+  writeFileSync(file, pngEncode(w, h, P.bpp, out));
+  const pre = file.replace(/-[^-]*\.png$/, ''); if (!fullKept.has(pre)) { fullKept.add(pre); writeFileSync(file.replace(/\.png$/, '.full.png'), buf); }
+  let lo = 255, hi = 0; for (let i = 0; i < out.length; i += P.bpp) { lo = Math.min(lo, out[i]); hi = Math.max(hi, out[i]); }
+  return { ...r, k, crop: [x0, y0, w, h], blank: hi - lo < 16 };
 }
 try {
   for (const arm of ARMS) {
@@ -117,7 +137,7 @@ try {
         R.shots = {};
         for (const t of TS) {
           R.shots[t] = await page.eval(`(() => { window.__anims.forEach((a) => { a.currentTime = ${t}; }); return window.__anims.map((a) => a.animationName + ':' + Math.round(a.currentTime)).join(','); })()`);
-          await page.eval(RAF2); await shot(page, join(OUT, `px-${arm.k}-${t}.png`));
+          await page.eval(RAF2); R.shotRects = R.shotRects || {}; R.shotRects[t] = await shot(page, join(OUT, `px-${arm.k}-${t}.png`));
         }
         // the swap: release the held rotator timer (slide end -> rest with the next faces)
         await page.eval(`(() => { window.__anims.forEach((a) => { a.currentTime = 220; }); window.__hold = false; const h = window.__held.splice(0); h.forEach((f) => f()); return h.length; })()`);
@@ -139,8 +159,8 @@ try {
       await page.eval(`window.scrollTo({ top: ${y0}, behavior: 'instant' }); 1`);
       const back = await page.eval(SAMPLER(2500), { timeout: 10000 });
       writeFileSync(join(OUT, `paused-${arm.k}.json`), JSON.stringify({ catch: c, y0, away1, away2, back: JSON.parse(back) }));
-      await shot(page, join(OUT, `pz-${arm.k}-back.png`));
-      R.paused = { catch: c, y0, away1Scene: away1[0]?.scene, away2Scene: away2[0]?.scene };
+      const pzr = await shot(page, join(OUT, `pz-${arm.k}-back.png`));
+      R.paused = { pz: pzr, catch: c, y0, away1Scene: away1[0]?.scene, away2Scene: away2[0]?.scene };
       console.log(arm.k, 'paused', JSON.stringify(R.paused)); save();
     }
     await page.close();

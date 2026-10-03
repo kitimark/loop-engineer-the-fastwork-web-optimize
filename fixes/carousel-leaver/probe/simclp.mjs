@@ -74,27 +74,37 @@ for (const arm of ARMS) {
     const ev = (e) => c.evaluate(e);
     for (let i = 0; i < 40 && (await ev('document.readyState')) !== 'complete'; i++) await sleep(500);
     await sleep(4000);
-    const geo = JSON.parse(await ev(`JSON.stringify((() => { const h = document.querySelector('#future-heading'); const r = h.getBoundingClientRect(); window.scrollBy({ top: r.top - 0.5 * innerHeight, behavior: 'instant' }); return { vh: innerHeight, y: scrollY }; })())`));
+    // run 3: the carousel itself at mid-view (runs 1-2 put #future-heading there, which left the carousel below the view)
+    const geo = JSON.parse(await ev(`JSON.stringify((() => { const c = ${CAR}; const r = c.getBoundingClientRect(); window.scrollBy({ top: r.top + r.height / 2 - 0.5 * innerHeight, behavior: 'instant' }); const q = c.getBoundingClientRect(); return { vh: innerHeight, y: scrollY, carTop: q.top, inView: q.top >= 0 && q.bottom <= innerHeight }; })())`));
     await sleep(2500);
-    let recs = [];
-    c.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
-    await ev(MO_START);
-    await c.send('Page.disable'); await c.send('Page.enable');
-    await c.send('Timeline.enable'); await c.send('Timeline.setInstruments', { instruments: ['Timeline'] });
-    recs = [];
-    await c.send('Timeline.start', { maxCallStackDepth: 1 });
-    await sleep(WIN);
-    await c.send('Timeline.stop'); await c.send('Timeline.disable').catch(() => {});
-    const mo = await ev(MO_STOP);
-    const a = analyze(recs, geo.vh);
+    // sim run 1 (15:2xZ): the 2nd arm's Timeline.start timed out (15 s) and killed the run. Now a Timeline failure is
+    // recorded (timelineError), the tab is re-opened once and Timeline retried; the series window runs either way.
+    let recs = [], mo = null, a = { frames: 0, layouts: 0, view: 0, viewGe10: 0, car: 0, byRoot: {}, recalcStyles: 0, paints: 0, composites: 0, viewList: [] }, tlErr = null, c2 = c;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (attempt) { try { c2.close(); } catch {} c2 = await openTab(`localhost:${s.port}`); }
+        c2.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
+        await c2.evaluate(MO_START);
+        await c2.send('Page.disable'); await c2.send('Page.enable');
+        await c2.send('Timeline.enable'); await c2.send('Timeline.setInstruments', { instruments: ['Timeline'] });
+        recs = [];
+        await c2.send('Timeline.start', { maxCallStackDepth: 1 });
+        await sleep(WIN);
+        await c2.send('Timeline.stop'); await c2.send('Timeline.disable').catch(() => {});
+        mo = await c2.evaluate(MO_STOP);
+        a = analyze(recs, geo.vh); tlErr = null; break;
+      } catch (e) { tlErr = String(e.message || e).slice(0, 160); console.log(`${arm.k} timeline attempt ${attempt + 1} failed: ${tlErr}`); try { await c2.evaluate(MO_STOP); } catch {} }
+    }
+    if (tlErr) { try { c2.close(); } catch {} c2 = await openTab(`localhost:${s.port}`); }
+    const ev2 = (e) => c2.evaluate(e);
     await sleep(500);
     // series: wip evaluate has no awaitPromise; park the result on window and poll
-    await ev(`(window.__clS = null, (${SAMPLER(6500)}).then((s) => { window.__clS = s; }), 1)`);
-    let ser = null; for (let i = 0; i < 40 && !ser; i++) { await sleep(500); ser = await ev('window.__clS'); }
+    await ev2(`(window.__clS = null, (${SAMPLER(6500)}).then((s) => { window.__clS = s; }), 1)`);
+    let ser = null; for (let i = 0; i < 40 && !ser; i++) { await sleep(500); ser = await ev2('window.__clS'); }
     if (ser) writeFileSync(join(OUT, `series-sim-${arm.k}.json`), ser);
-    res.arms[arm.k] = { served, geo, mutations: mo, perSlide: mo && mo.slides ? { layouts: +(a.layouts / mo.slides).toFixed(2), view: +(a.view / mo.slides).toFixed(2), car: +(a.car / mo.slides).toFixed(2), recalcStyles: +(a.recalcStyles / mo.slides).toFixed(2), paints: +(a.paints / mo.slides).toFixed(2) } : null, ...a, seriesFrames: ser ? JSON.parse(ser).length : 0 };
+    res.arms[arm.k] = { served, geo, timelineError: tlErr, mutations: mo, perSlide: mo && mo.slides ? { layouts: +(a.layouts / mo.slides).toFixed(2), view: +(a.view / mo.slides).toFixed(2), car: +(a.car / mo.slides).toFixed(2), recalcStyles: +(a.recalcStyles / mo.slides).toFixed(2), paints: +(a.paints / mo.slides).toFixed(2) } : null, ...a, seriesFrames: ser ? JSON.parse(ser).length : 0 };
     console.log(`${arm.k} served ${JSON.stringify(served)} y ${geo.y} | mo ${JSON.stringify(mo)} | frames ${a.frames} L ${a.layouts} view ${a.view} (>=10ms ${a.viewGe10}) car ${a.car} RS ${a.recalcStyles} P ${a.paints} | roots ${JSON.stringify(a.byRoot)} | series ${res.arms[arm.k].seriesFrames}`);
-    c.close();
+    try { c2.close(); } catch {} try { c.close(); } catch {}
   } finally { p.kill(); }
   writeFileSync(join(OUT, 'simclp.json'), JSON.stringify(res, null, 1));
 }

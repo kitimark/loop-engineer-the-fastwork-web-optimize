@@ -115,6 +115,33 @@ sample 2.5 s, shot `pz` right after the return series.
 - (3) miss: report the paused-case difference with its cause; E is not offered until it is explained.
 - A void hold (served hash mismatch, blank shots, a failed catch) is re-run once; a second void goes to the lead.
 
+## Probe repairs and voids (written before re-running; ops rulings by mgmt-ops-10)
+
+| file | registered | now | why |
+|---|---|---|---|
+| `probe/clp.mjs` | `8c8558b0b706` | see the commit | (a) shots: whole viewport, cropped in Node (no CDP clip); (b) position: the carousel itself at 0.5 vh |
+| `probe/simclp.mjs` | `b63aa5821294` | see the commit | (a) Timeline failure recorded and retried once; (b) position as clp.mjs |
+| `probe/shape.mjs` | (new, **post hoc**) | | phase-free description: compares at equal leaver scale; decides nothing |
+| `probe/leavtab.mjs` | (new, **post hoc**) | | prints the leaver per frame for one slide; decides nothing |
+| `probe/pairs.mjs` | (new) | | runs the registered `score.mjs` over pairs and prints one line each |
+
+- **Hold 2 (pixels, paused): VOID.** Every crop was blank, including the positive control A vs S (0 px).
+- **Sim run 1: VOID.** The 2nd arm's `Timeline.start` timed out after 15 s and killed the run.
+- **Hold 3 (pixels, paused, after repair (a)): VOID, no data.** I ran it before committing clp.mjs, which was a
+  procedural miss. It crashed at its first shot with the crop outside the viewport capture. That crash showed the real
+  cause of hold 2's blank crops. The registered position, "`#future-heading` top at 0.5 of the viewport (the carousel
+  in view)", is wrong: at that position the carousel's top is at about 1634 CSS px in a 932 px view. That puts it about
+  700 px **below** the viewport, still inside the scene's active band (the `dE` IntersectionObserver uses rootMargin
+  100%). A CDP clip of an off-screen area with `captureBeyondViewport: false` is blank. The clip rect was not the cause,
+  as mgmt-ops-10 was first told.
+- **What this does to the data already taken.** Chrome hold 1 (series, counts) and Sim run 2 sampled an **off-screen**
+  carousel. Rects, opacity, scale and Layout and DOM-write counts are still taken from the live animation. Paint counts
+  are not about the carousel at all, and the Sim view-rooted layout counts may differ in view. These runs are reported
+  as "off-screen" data only. Every check is re-run with repair (b), and the in-view runs decide.
+- The crop region (border box ± 4 CSS px), the n8 metric, the t grid and every interval stay as registered. Only the
+  capture method and the scroll position change. Hold 3 was the one re-run the rules allow, so the re-runs with (b)
+  wait for the lead's OK (a second void goes to the lead).
+
 ## Results
 
 (none yet)
