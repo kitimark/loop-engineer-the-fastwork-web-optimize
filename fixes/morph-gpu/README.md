@@ -35,6 +35,21 @@ so it carries best-build too. Built by `node fixes/morph-gpu/build.mjs` → `rv-
   - `frames-2026-10-03T18-11-13-876Z`;
   - `restyle-chrome-2026-10-03T18-11-59-624Z.json`.
 - Every number below comes from the re-runs.
+- Confirmation re-run, asked for by the lead (main c5263022), one shared slot 19:23:14-19:26:15Z, no sleep or dark
+  wake (last pmset event 17:57:12Z): `frames-2026-10-03T19-23-15-219Z`, `frames-2026-10-03T19-24-30-786Z`,
+  `restyle-chrome-2026-10-03T19-25-14-368Z.json`. Same builds, same Chrome.
+  - Counts: equal within ±0.1 (moving: M 24.2-24.3, R 34.7-34.8 elements; layouts 1.77 both; Paint events 9.13-9.2 ->
+    9.84-9.95).
+  - Desktop: 0 px beyond A/A in every frame (the 6 px at the first m 0 is gone).
+  - Stepped, R against its own earlier frames: 0 px over 8 in 14 of 16 frames. The N+1 frame after the abrupt jump
+    (19 css px, max 53) and the top-of-page frame (19 css px) vary from run to run.
+  - Stepped, R against M in this run: the "EN" label in the nav sat a sub-pixel left or right per page load, in
+    either build (R in `…T15-27-09-865Z`, M and M2 here; 22 css px, edge shade up to 94; frame 0, before any
+    morph). Both A loads landed in the same state, so the two-load A/A mask missed it. With that strip left out
+    (y > 50 css): N+1 after the jump is 25 css px, max 10, as before. N+2 after the 0.99 step shows 23 css px,
+    max 18. That is the Chrome A/A two-state flip at m 1 (207 px over 8, max 19), which only R landed in here.
+  - OBSERVED, cause unknown: the EN label's per-load sub-pixel position. Seen in both builds, so not from this
+    change.
 
 ## Why it lags
 

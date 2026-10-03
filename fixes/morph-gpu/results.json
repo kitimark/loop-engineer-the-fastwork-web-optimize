@@ -245,7 +245,21 @@
       "frames-2026-10-03T17-38-38-388Z",
       "frames-2026-10-03T17-39-56-017Z",
       "restyle-chrome-2026-10-03T17-58-17-031Z"
-    ]
+    ],
+    "confirmRun": {
+      "askedBy": "lead, main c5263022",
+      "window": "2026-10-03T19:23:14Z/19:26:15Z, no sleep or dark wake (last pmset event 17:57:12Z)",
+      "outputs": [
+        "frames-2026-10-03T19-23-15-219Z",
+        "frames-2026-10-03T19-24-30-786Z",
+        "restyle-chrome-2026-10-03T19-25-14-368Z.json"
+      ],
+      "counts": "equal within 0.1 (moving elems M 24.2-24.3, R 34.7-34.8; layouts 1.77; paints 9.13-9.2 -> 9.84-9.95)",
+      "desktop": "0 px beyond A/A in every frame",
+      "steppedRvsOwnEarlier": "0 px over 8 in 14 of 16 frames; N+1 after the abrupt jump (19 css px max 53) and the top-of-page frame (19 css px) vary run to run",
+      "enLabelFlip": "OBSERVED, cause unknown: the nav EN label sits at one of two sub-pixel x positions per load in either build (22 css px, edge max 94, frame 0 before any morph); both A loads landed in the same state, so the A/A mask missed it",
+      "steppedBeyondAAExclEN": "N+1 after jump 25 css px max 10 (unchanged); N+2 after 0.99 step 23 css px max 18 = the Chrome A/A two-state flip at m 1, landed only in R this run"
+    }
   },
   "notes": "No measurement code changed (tools/ untouched). Gates are this topic's own scripts in fixes/morph-gpu/gates/."
 }
