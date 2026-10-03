@@ -232,7 +232,7 @@ shared infrastructure, covered by an automated test suite (`tests/`, Node's buil
 dependencies). The tests are the hardening, not permission prompts:
 
 ```sh
-npm test              # default: unit + e2e + hook tests on a tiny fixture baseline; no Chrome, network or iPhone (~3 min of wall time under load, ~60 CPU-s)
+npm test              # default: unit + e2e + hook tests on a tiny fixture baseline; no Chrome, network or iPhone (~165 s of wall time, ~285 CPU-s at --test-concurrency=6, I-076)
 npm run test:unit     # non-tooling roles: scope guard, then the unit tests only (~5 s, ~7 CPU-s)
 npm run test:scope    # the scope guard alone (node tools/scope.mjs)
 npm run test:chrome   # opt-in: real Chrome, short runs, queues on the real chrome-measure lock (~2 min)
@@ -250,7 +250,7 @@ npm run test:all      # both
   `FW_TOOLING=1 npm run test:unit` (or `node tools/scope.mjs --tooling`) passes the guard, and the
   full `npm test` below is still required.
   `npm run test:unit` costs about 7 CPU-s on at most 2 cores (unit tests at `--test-concurrency=2`;
-  the full suite is ~60 CPU-s and 2-3.5 min): run it directly, **not** through the short lane.
+  the full suite is ~285 CPU-s and ~165 s): run it directly, **not** through the short lane.
 
 - Agents **may fix bugs in `tools/`** (or work around them) when needed. Every change to `tools/`
   comes with a test that covers it (new or updated in `tests/`), and `npm test` must pass.
@@ -259,7 +259,7 @@ npm run test:all      # both
 - Tool fixes go in **their own commit**, separate from fix deliverables, and are reported to the lead
   as an incident, who lands them on main (rebase + ff-only) so every worktree gets them. The lead
   runs `npm test` on the exact commit in the **main checkout** too: it has `site/`, worktrees don't.
-- `npm test` is about 55 s of CPU and 195-220 s wall (I-021; ~986 tests, lane doc §11): while others may be measuring, run it under the lock in the
+- `npm test` is about 285 CPU-s and 160-165 s wall at concurrency 6, ~1.75 cores mean, bursts to 6 (I-076; ~1333 tests, lane doc §2/§11): while others may be measuring, run it under the lock in the
   shared lane, `node tools/lock.mjs run chrome-measure --owner <you> --shared --weight 2 --max-seconds 300 -- npm test`
   (not `test:chrome`: it takes the lock itself), and hold a shared lease around a commit whose hook
   runs it: `node tools/lock.mjs acquire chrome-measure --owner <you> --shared --weight 2 --max-seconds 300 --wait 1800`,
