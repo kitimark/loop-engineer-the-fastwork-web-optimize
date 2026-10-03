@@ -33,7 +33,8 @@
 //   GET  /api/proposals          {now, proposals: [summaries]} (waiting first; no drafts, no withdrawn ones)
 //   GET  /api/proposals/<id>     one proposal (proposal.mjs publicView: text, gain, compare with /media/ URLs; no history)
 //   POST /api/proposals/<id>/<act>  act = decide {value: accept|reject|change, notes, rev, option?} | undo {rev}
-//                                (option: I-053, the picked option's name on a proposal with options)
+//                                (option: I-053, the picked option's name on a proposal with options); 409 while the
+//                                proposal is on hold (T-030: "PR-008 is on hold (lead: …)"), or revised since `rev`
 //   GET  /media/<id>/<name>      a proposal's screenshot or video, from the store only (strict names; Range for video)
 //   POST /api/live/<id>/start    I-074 "Try it": {option?} -> {a, b, measuring, idleMin, version}: starts (or reuses) two
 //                                tools/serve.mjs children, A = the baseline, B = the baseline + the proposal's (option's)

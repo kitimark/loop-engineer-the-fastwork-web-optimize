@@ -1,5 +1,5 @@
-// `node tools/console.mjs proposal …` (ts-proposals): post, list, show, revise, publish, withdraw, decide and wait
-// for the user's decision on a design engineer's PoC. Library: ./proposal.mjs; page: /proposals on the console.
+// `node tools/console.mjs proposal …` (ts-proposals): post, list, show, revise, publish, withdraw, decide, hold,
+// unhold (T-030) and wait for the user's decision on a design engineer's PoC. Library: ./proposal.mjs; page: /proposals on the console.
 // Design: research/architecture/console-proposals.md.
 //
 //   proposal post --by <agent> --file <proposal.json|md> [--shot-a <img> --shot-b <img> [--caption "<where>"]]…
@@ -8,10 +8,21 @@
 //        # visualDiff, gain, risk and compare {b, shots, video} against the shared compare.a; "recommended":
 //        # {option, why}. --option <name>: the option the --shot-a/--shot-b/--video flags belong to (required then).
 //   proposal list [--waiting] [--all] [--by <agent>] [--json]   # waiting (proposed) first; --all adds withdrawn ones
-//   proposal show <id> [--json]
+//   proposal show <id> [--json]      # --json (and list --json) adds decisionState: final | under-review | stale | null
+//        # (T-030): act on a decision only when it is "final"; under-review = on hold, stale = revised since, re-decide
 //   proposal revise <id> --by <agent> --note "<what changed>" [--file …] [--shot-a … --shot-b …] [--video …] [--option <name>] [--publish]
+//        [--keep-decision] [--unhold]
 //        # options: the new file's list replaces the old one (add, change, drop options); an option without new shots
 //        # keeps those of the old option of the same name; --option <name> + --shot-a/--shot-b replaces that one's.
+//        # T-030: an accepted or rejected proposal can be revised too: the decision goes STALE (kept in the history,
+//        # state proposed, the page asks the user to decide again on the new revision). --keep-decision keeps it final:
+//        # only for a fix that does not change what the user decided on (a typo, wording); anything that changes a
+//        # number, a difference, the media or the risk goes stale. A hold stays unless --unhold (or --publish).
+//   proposal hold <id> --by <agent|lead> --note "<plain words, for the user>"     # HELD PR-008 …
+//        # T-030: the page shows the note on top of the proposal and turns the decision buttons off; decide and undo
+//        # refuse; not counted as waiting (badge, list --waiting); list/show say "on hold". On a decided proposal the
+//        # decision is kept but under review (decisionState under-review, not final). Again: replaces the note.
+//   proposal unhold <id> --by <agent|lead> [--note "..."]                          # UNHELD PR-008 …
 //   proposal live <id> --by <agent> [--option <name>] --patch fixes/<topic>/patch.diff [--ref <git ref, default HEAD>]
 //        # I-074: what the console's "Try it" panel serves as B (A = the baseline): a committed patch, read from git
 //        # here (`<ref>:<patch>` in this checkout) and kept in the console store; any state but withdrawn, no new
@@ -25,6 +36,9 @@
 //        # decided: met while it stands decided (at once if it already is); with --since: a decision made after it
 //        # that still stands (an undo alone does not wake it, the re-decision does). changed (--since default now):
 //        # any decision event after --since: a decision, an undo ("Change my decision"), a changed decision (I-045).
+//        # T-030: decided is met by a FINAL decision only (not on hold, not stale); a hold or a stale decision prints a
+//        # "note: …" line on stderr at the start and shows in the state; changed also wakes on held / unheld (of a
+//        # standing decision) and stale events (`PROPOSAL PR-008 decision stale (was accepted on rev 1): re-decide …`).
 //   proposal wait --any [--by <agent>] [--since <ISO>] [--timeout 3600] [--json] [--quiet]
 //        # every decision event after --since (default now) on the agent's proposals, or on ALL proposals without
 //        # --by (the lead); prints {decisions: [standing ones], events: [{id, event: decided|undecided, value, was,
@@ -38,7 +52,7 @@
 import { dirname, resolve } from 'node:path';
 import {
   loadProposalFile, postProposal, reviseProposal, publishProposal, withdrawProposal, decide, listProposals, get, setLive, findOption,
-  waitCondition, waitAnyCondition, line, showText, parseProposalId, proposalNewsText,
+  waitCondition, waitAnyCondition, line, showText, parseProposalId, proposalNewsText, holdProposal, unholdProposal, withDecisionState,
 } from './proposal.mjs';
 import { runningServer } from './console-server.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './wait.mjs';
@@ -108,7 +122,7 @@ export async function run(argv) {
   }
   if (sub === 'list') {
     const items = listProposals({ all: a.flag('all'), waiting: a.flag('waiting'), by: a.one('by', a.one('as')) });
-    if (a.flag('json')) console.log(JSON.stringify(items, null, 1));
+    if (a.flag('json')) console.log(JSON.stringify(items.map(withDecisionState), null, 1));
     else if (!items.length) console.log(a.flag('waiting') ? 'no proposals waiting for the user' : 'no proposals');
     else for (const p of items) console.log(line(p));
     return 0;
@@ -117,11 +131,34 @@ export async function run(argv) {
   if (sub === 'wait' && a.flag('any')) return wait(waitAnyCondition({ by: a.one('by', a.one('as')), since: a.one('since') }), a);
   if (!arg) throw new Error(`usage: node tools/console.mjs proposal ${sub} <id> … (see the header of tools/lib/proposal-cli.mjs)`);
   const id = parseProposalId(arg);
-  if (sub === 'show') { const p = get(id); console.log(a.flag('json') ? JSON.stringify(p, null, 1) : showText(p)); return 0; }
+  if (sub === 'show') { const p = get(id); console.log(a.flag('json') ? JSON.stringify(withDecisionState(p), null, 1) : showText(p)); return 0; }
   if (sub === 'revise') {
-    const r = await reviseProposal(id, { by: by(), note: a.one('note'), ...inputs(a), publish: a.flag('publish') });
+    const r = await reviseProposal(id, { by: by(), note: a.one('note'), ...inputs(a), publish: a.flag('publish'), keepDecision: a.flag('keep-decision'), unhold: a.flag('unhold') });
     report(r);
-    console.log(`REVISED ${line(r.proposal)}`);
+    const p = r.proposal;
+    console.log(`REVISED ${line(p)}`);
+    // T-030: what the revision did to a decision and a hold
+    const mine = p.history.filter((h) => h.at === p.updatedAt);
+    const stale = mine.find((h) => h.action === 'decision-stale');
+    const unheld = mine.some((h) => h.action === 'unheld');
+    const holdHint = p.hold ? ` (still on hold: proposal unhold ${p.id}, or revise --unhold)` : '';
+    if (stale) console.log(`  the decision ${stale.was} on rev ${stale.wasRev} is stale: the user decides again on rev ${p.rev}${holdHint}`);
+    else if (mine.some((h) => h.keptDecision)) console.log(`  the decision ${p.decision.value} (rev ${p.decision.rev}) is kept (--keep-decision): it stays final${p.hold ? '; under review while on hold' : ''}`);
+    else if (p.hold) console.log(`  still on hold: proposal unhold ${p.id} --by <you> (or revise --unhold) when the user may decide`);
+    if (unheld) console.log('  the hold is lifted');
+    return 0;
+  }
+  if (sub === 'hold') {
+    const p = await holdProposal(id, { by: by(), note: a.one('note') });
+    console.log(`HELD ${line(p)}`);
+    if (p.decision && p.history.at(-1).decision) console.log(`  the decision (${p.decision.value}, rev ${p.decision.rev}) is now under review: kept, but not final; \`proposal wait --until decided\` waits; a revise makes it stale (or --keep-decision)`);
+    console.log(`  the page shows the note and the decision buttons are off until: node tools/console.mjs proposal unhold ${p.id} --by <you> (or revise --unhold)`);
+    return 0;
+  }
+  if (sub === 'unhold') {
+    const p = await unholdProposal(id, { by: by(), note: a.one('note') });
+    console.log(`UNHELD ${line(p)}`);
+    console.log(p.decision && p.history.at(-1).decision ? `  the decision (${p.decision.value}, rev ${p.decision.rev}) is final again` : p.state === 'proposed' ? '  waiting for the user again' : `  ${p.state}`);
     return 0;
   }
   if (sub === 'live') {
@@ -147,6 +184,8 @@ async function wait(w, a) {
   const timeoutSec = a.one('timeout') !== undefined ? parseSec(a.one('timeout')) : 3600;
   if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${a.one('timeout')}`);
   const onChange = a.flag('quiet') ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
+  const note = w.note?.(); // T-030: held or stale at the start
+  if (note) console.error(note);
   startWait({ tool: 'console.mjs proposal wait', owner: a.one('by', a.one('as')), what: w.what, timeoutSec });
   const r = await pollUntil(w.check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
   if (r.result === 'met') {

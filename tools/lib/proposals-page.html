@@ -50,6 +50,13 @@ h2.section { font-size: 15px; color: var(--muted); font-weight: 650; margin: 24p
 .chip.rejected { background: var(--bad-soft); color: var(--bad); }
 .chip.changes-requested { background: var(--warn-soft); color: var(--warn); }
 .chip.muted { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+/* T-030: a proposal on hold (the note on top, the decision off) and a stale decision (decide again) */
+.chip.held { background: var(--warn); color: #fff; font-weight: 650; }
+.holdbanner, .stalebanner { border-radius: 12px; padding: 12px 16px; margin: 0 0 14px; border: 2px solid var(--warn); background: var(--warn-soft); }
+.holdbanner strong, .stalebanner strong { display: block; font-size: 17px; color: var(--warn); }
+.holdbanner p, .stalebanner p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.stalebanner { border-color: var(--accent); background: var(--accent-soft); }
+.stalebanner strong { color: var(--accent); }
 .detail h2.title { margin: 4px 0 6px; font-size: 24px; line-height: 1.25; }
 .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
 .block { margin: 16px 0 0; }
@@ -163,6 +170,9 @@ fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
 // Options (I-053): a proposal may carry several solutions (p.options), each with its own idea, visual difference,
 // gain, risk and B shots against the shared original A. The option cards are tabs; Accept asks which option, and
 // sends it as `option`. A proposal without options renders exactly as before.
+// Holds and stale decisions (T-030): p.hold {by, note, at} puts a banner with the note on top of the proposal and turns
+// the decision buttons off (the server refuses a decision too); a decision already made is shown "under review". A
+// revision after a decision makes it stale (p.decisionState 'stale', p.staleDecision): a banner asks to decide again.
 var ID = /^PR-\d{3,6}$/;
 var STATE_TEXT = { proposed: 'waiting for you', accepted: 'accepted', rejected: 'rejected', 'changes-requested': 'change requested' };
 var AREA_TEXT = { hero: 'Top of the page (hero)', middle: 'Middle of the page', end: 'End of the page', whole: 'Whole page' };
@@ -198,11 +208,13 @@ var optTab = {}, optPick = {}; // I-053: the option shown, and the option picked
 function renderList(items) {
   var box = document.getElementById('list');
   box.replaceChildren();
-  var waiting = items.filter(function (p) { return p.state === 'proposed'; });
-  var rest = items.filter(function (p) { return p.state !== 'proposed'; });
+  var waiting = items.filter(function (p) { return p.state === 'proposed' && !p.hold; });
+  var held = items.filter(function (p) { return !!p.hold; });
+  var rest = items.filter(function (p) { return p.state !== 'proposed' && !p.hold; });
   function row(p) {
-    var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id },
-      el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: STATE_TEXT[p.state] || p.state }),
+    var chip = p.hold ? el('span', { class: 'chip held', text: 'On hold' + (p.decision ? ' · ' + (STATE_TEXT[p.decision.value] || p.decision.value) + ', under review' : '') })
+      : el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: p.decisionState === 'stale' ? 'decide again' : (STATE_TEXT[p.state] || p.state) });
+    var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id }, chip,
       el('span', { class: 't', text: p.title }),
       el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') + (p.options ? ' · ' + p.options + ' options' : '') }));
     return a;
@@ -210,6 +222,10 @@ function renderList(items) {
   box.appendChild(el('h2', { class: 'section', text: 'Waiting for you (' + waiting.length + ')' }));
   if (!waiting.length) box.appendChild(el('p', { class: 'empty', text: 'Nothing waiting. New proposals show up here with a chime.' }));
   waiting.forEach(function (p) { box.appendChild(row(p)); });
+  if (held.length) {
+    box.appendChild(el('h2', { class: 'section', text: 'On hold, please don\'t decide yet (' + held.length + ')' }));
+    held.forEach(function (p) { box.appendChild(row(p)); });
+  }
   if (rest.length) {
     box.appendChild(el('h2', { class: 'section', text: 'Decided (' + rest.length + ')' }));
     rest.forEach(function (p) { box.appendChild(row(p)); });
@@ -321,31 +337,34 @@ function decisionBlock(p) {
   var box = el('div', { class: 'block card', style: 'margin-top:18px' });
   var err = el('p', { class: 'err', role: 'alert' });
   var opts = p.options || [];
+  var held = !!p.hold;
   if (p.state !== 'proposed') {
     var d = p.decision || {};
     box.appendChild(el('h3', { text: 'Your decision' }));
-    box.appendChild(el('div', { class: 'decision ' + p.state }, el('strong', { text: (STATE_TEXT[p.state] || p.state).replace(/^./, function (x) { return x.toUpperCase(); }) + (d.option ? ': ' + optLabel(p, d.option) : '') }),
-      el('span', { class: 'meta', text: ' ' + when(d.at) + (d.rev ? ' · revision ' + d.rev : '') }), d.notes ? el('p', { text: d.notes }) : null));
+    box.appendChild(el('div', { class: 'decision ' + p.state }, el('strong', { text: (STATE_TEXT[p.state] || p.state).replace(/^./, function (x) { return x.toUpperCase(); }) + (d.option ? ': ' + optLabel(p, d.option) : '') + (held ? ' (under review, not final)' : '') }),
+      el('span', { class: 'meta', text: ' ' + when(d.at) + (d.rev ? ' · revision ' + d.rev : '') + (d.keptThrough ? ' · kept through revision ' + d.keptThrough : '') }), d.notes ? el('p', { text: d.notes }) : null));
+    if (held) box.appendChild(el('p', { class: 'hint', text: 'On hold: this decision is kept, but it is not final while the proposal is checked. If it changes, you will be asked to decide again.' }));
     if (p.state === 'changes-requested') box.appendChild(el('p', { class: 'hint', text: p.by + ' will revise it; the new revision comes back here, waiting for you.' }));
-    var undo = el('button', { type: 'button', class: 'btn', text: 'Change my decision' });
+    var undo = el('button', { type: 'button', class: 'btn', text: 'Change my decision', disabled: held });
     undo.addEventListener('click', function () {
       undo.disabled = true;
-      post(p.id, 'undo', { rev: p.rev }).then(function () { detailSig = ''; load(); }).catch(function (e) { err.textContent = e.message; undo.disabled = false; });
+      post(p.id, 'undo', { rev: p.rev }).then(function () { detailSig = ''; load(); }).catch(function (e) { err.textContent = e.message; undo.disabled = false; if (/on hold|revised/.test(e.message)) { detailSig = ''; load(); } });
     });
     box.appendChild(el('div', { class: 'choices', style: 'margin-top:10px' }, undo));
     box.appendChild(err);
     return box;
   }
   box.appendChild(el('h3', { text: 'Your decision' }));
-  var choice = pick[p.id] || null;
+  var choice = held ? null : (pick[p.id] || null);
   var choices = el('div', { class: 'choices' });
   [['accept', 'ok'], ['reject', 'bad'], ['change', 'warn']].forEach(function (o) {
-    var b = el('button', { type: 'button', class: 'btn' + (choice === o[0] ? ' ' + o[1] : ''), 'aria-pressed': String(choice === o[0]), text: VERB[o[0]] });
+    var b = el('button', { type: 'button', class: 'btn' + (choice === o[0] ? ' ' + o[1] : ''), 'aria-pressed': String(choice === o[0]), text: VERB[o[0]], disabled: held });
     b.addEventListener('click', function () { pick[p.id] = o[0]; renderDetail(current, true); var t = document.getElementById('notes'); if (t) t.focus(); });
     choices.appendChild(b);
   });
   box.appendChild(choices);
-  if (choice) {
+  if (held) box.appendChild(el('p', { class: 'hint', text: 'On hold: the buttons come back when ' + p.hold.by + ' releases it (see the note at the top).' }));
+  else if (choice) {
     // options: Accept takes one of them (the one on screen, unless you pick another); a change request may name one
     var chosen = null, fs = null;
     function sendText() { return chosen ? VERB[choice] + ' "' + optLabel(p, chosen) + '" (revision ' + p.rev + ')' : VERB[choice] + ' revision ' + p.rev; }
@@ -378,7 +397,7 @@ function decisionBlock(p) {
       var body = { value: choice, notes: ta.value, rev: p.rev };
       if (chosen) body.option = chosen;
       post(p.id, 'decide', body).then(function () { delete drafts[p.id]; delete pick[p.id]; detailSig = ''; load(); })
-        .catch(function (e) { err.textContent = e.message; send.disabled = false; if (/revised/.test(e.message)) { detailSig = ''; load(); } });
+        .catch(function (e) { err.textContent = e.message; send.disabled = false; if (/on hold|revised/.test(e.message)) { detailSig = ''; load(); } });
     });
     if (fs) box.appendChild(fs);
     if (opts.length && choice === 'reject') box.appendChild(el('p', { class: 'hint', text: 'Reject turns down every option. To drop only some of them, request a change instead.' }));
@@ -563,17 +582,41 @@ function optionsBlock(p) {
   wrap.appendChild(panel);
   return wrap;
 }
+/** T-030: on hold. The note in plain words, who, since when; what it means for a decision already made. */
+function holdBanner(p) {
+  if (!p.hold) return null;
+  var d = p.decision;
+  return el('div', { class: 'holdbanner', role: 'status' },
+    el('strong', { text: 'On hold: please don\'t decide yet' }),
+    el('p', { text: p.hold.note }),
+    el('p', { class: 'meta', text: 'Put on hold by ' + p.hold.by + ' · ' + when(p.hold.at) + ' · revision ' + p.hold.rev }),
+    el('p', { text: d ? 'Your decision (' + (STATE_TEXT[d.value] || d.value) + (d.option ? ': ' + optLabel(p, d.option) : '') + ', revision ' + d.rev + ') is under review: it is kept, but it is not final until this is released. If the proposal changes, you will be asked to decide again.'
+      : 'The decision buttons are off until it is released. It comes back to "Waiting for you" then.' }));
+}
+/** T-030: a revision came after your decision: it no longer counts; decide again on this revision. */
+function staleBanner(p) {
+  if (p.decisionState !== 'stale' || !p.staleDecision) return null;
+  var s = p.staleDecision, revs = p.revisions || [], last = revs[revs.length - 1];
+  return el('div', { class: 'stalebanner', role: 'status' },
+    el('strong', { text: 'Please decide again on revision ' + p.rev }),
+    el('p', { text: 'You ' + (s.value === 'accepted' ? 'accepted' : s.value === 'rejected' ? 'rejected' : (STATE_TEXT[s.value] || s.value)) + (s.option ? ' "' + optLabel(p, s.option) + '"' : '') + ' revision ' + s.rev + ' on ' + when(s.at) + '. The proposal changed since, so that decision no longer counts (it stays in the history).' }),
+    last && last.rev === p.rev ? el('p', { text: 'What changed in revision ' + p.rev + ': ' + last.note }) : null);
+}
 function renderDetail(p, force) {
   var box = document.getElementById('detail');
   if (!p) { stopBlink(); box.replaceChildren(); renderTryIt(null); document.getElementById('decide').replaceChildren(); return; }
   var sig = JSON.stringify(p);
   if (!force && sig === detailSig) return;
-  if (!force && document.activeElement && document.activeElement.id === 'notes') return; // don't redraw under the user's typing
+  // don't redraw under the user's typing, except for a hold (T-030: the decision must turn off at once; the draft is kept)
+  if (!force && !p.hold && document.activeElement && document.activeElement.id === 'notes') return;
   detailSig = sig;
   stopBlink();
   var card = el('article', { class: 'card detail', 'data-id': p.id });
+  var hb = holdBanner(p), sb = staleBanner(p);
+  if (hb) card.appendChild(hb);
+  if (sb) card.appendChild(sb);
   card.appendChild(el('div', { class: 'meta' },
-    el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: STATE_TEXT[p.state] || p.state }),
+    p.hold ? el('span', { class: 'chip held', text: 'On hold' }) : el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: p.decisionState === 'stale' ? 'decide again' : (STATE_TEXT[p.state] || p.state) }),
     el('span', { text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + ' · revision ' + p.rev + ' · ' + when(p.proposedAt || p.createdAt) }),
     p.topic ? el('span', { class: 'chip muted', text: p.topic }) : null,
     p.thread && /^T-\d{1,6}$/.test(p.thread) ? el('a', { href: '/threads#' + p.thread, text: 'thread ' + p.thread }) : null));
@@ -603,7 +646,7 @@ function renderDetail(p, force) {
   var hist = el('details', { class: 'hist' }, el('summary', { text: 'History' }));
   var hl = el('ul');
   revs.forEach(function (r) { hl.appendChild(el('li', { text: when(r.at) + ' revision ' + r.rev + ' by ' + r.by + ': ' + r.note })); });
-  (p.decisions || []).forEach(function (d) { hl.appendChild(el('li', { text: when(d.at) + ' ' + (STATE_TEXT[d.value] || d.value) + (d.option ? ', option ' + optLabel(p, d.option) : '') + ' (revision ' + d.rev + ')' + (d.notes ? ': ' + d.notes : '') })); });
+  (p.decisions || []).forEach(function (d) { hl.appendChild(el('li', { text: when(d.at) + ' ' + (STATE_TEXT[d.value] || d.value) + (d.option ? ', option ' + optLabel(p, d.option) : '') + ' (revision ' + d.rev + ')' + (d.staleOnRev ? ' (stale since revision ' + d.staleOnRev + ')' : '') + (d.notes ? ': ' + d.notes : '') })); });
   hist.appendChild(hl);
   dec.appendChild(hist);
   box.replaceChildren(card);
@@ -618,7 +661,7 @@ function load() {
     var items = v.proposals || [];
     var s = JSON.stringify(items) + '|' + currentId();
     if (s !== listSig) { listSig = s; renderList(items); }
-    var waiting = items.filter(function (p) { return p.state === 'proposed'; }).length;
+    var waiting = items.filter(function (p) { return p.state === 'proposed' && !p.hold; }).length;
     setUpd(waiting ? waiting + ' waiting for you · live' : 'nothing waiting · live');
     var id = currentId();
     if (!id) { current = null; renderDetail(null); return; }

@@ -13,12 +13,23 @@ named **options** (§2.3), each with its own idea, visual difference, gain, risk
 original A; the user picks one when accepting, and every wait reports the pick as `option`. A proposal without
 options (every proposal before I-053) is stored, served and shown exactly as before.
 
+**Holds and stale decisions (T-030, ts-proposal-hold, 2026-10-03).** In console thread T-030 the user asked for
+tools that handle this case properly. PR-008 was posted. A review then found errors in its card, and the lead
+asked the user in a thread not to decide. Six minutes later the user accepted it on the Proposals page, where
+nothing said it was under revision. `revise` then refused the accepted proposal ("post a new proposal instead"),
+so the acceptance stayed tied to the incomplete card. Three additions handle this (§4.1):
+- An agent or the lead can put a proposal **on hold**: the page shows the note on top and switches the decision off.
+- A hold on a decided proposal puts that decision **under review**.
+- A revision after a decision makes the decision **stale**, and the user decides again on the new revision.
+
+A proposal that is never held, and never revised after a decision, is stored, served and shown exactly as before.
+
 ## 1. Pieces
 
 | piece | file | what it does |
 |---|---|---|
 | store, schema, state machine | `tools/lib/proposal.mjs` | `fw-proposal/1` validation, scrubbing, media copy, post / revise / decide / withdraw, wait condition |
-| CLI | `tools/lib/proposal-cli.mjs`, entered from `tools/console.mjs proposal …` | post, list, show, revise, publish, withdraw, decide (the lead, for a chat answer), wait |
+| CLI | `tools/lib/proposal-cli.mjs`, entered from `tools/console.mjs proposal …` | post, list, show, revise, publish, withdraw, decide (the lead, for a chat answer), hold, unhold, wait |
 | page | `tools/lib/proposals-page.html` at `/proposals` | list (waiting first), one proposal, compare views, the decision buttons |
 | HTTP | `tools/lib/console-server.mjs` (an additive block) | `GET /proposals`, `GET /api/proposals[/<id>]`, `GET /media/<id>/<file>`, `POST /api/proposals/<id>/decide` |
 | badge, banner | `console-notify.mjs` `waitingView().proposals`, `console-nav.js` | a "Proposals" menu badge (proposals waiting for a decision), a "New proposal" banner and chime, `--notify` |
@@ -84,6 +95,13 @@ An author writes a JSON file (or a Markdown file, §2.2); the tool assigns `id`,
 `{value: accepted|rejected|changes-requested, notes, at, who, rev}`, `decisions` (all of them, oldest first),
 `revisions` `[{rev, at, by, note}]`, and `history`. Media paths are rewritten to the stored names
 (`r1-a-1.png`, `r2-b-1.png`, `r1-video-a.mp4`, …).
+
+T-030 (§4.1) adds three stored fields and one computed value:
+- `hold` `{by, note, at, rev}`, present while the proposal is on hold.
+- `staleDecision`: the decision a revision made stale, plus `staleAt` and `staleOnRev`. It stays until the user
+  decides again. The same entry in `decisions` is marked too.
+- `decision.keptThrough`, set after `revise --keep-decision`.
+- `decisionState` is computed, never stored. `show --json`, `list --json` and the waits carry it.
 
 ### 2.2 Markdown form
 
@@ -168,6 +186,11 @@ node tools/console.mjs proposal show <id> [--json]
 node tools/console.mjs proposal revise <id> --by <agent> --note "<what changed>" [--file <new json|md>] [--shot-a … --shot-b …] [--video …] [--publish]
      # changes-requested | proposed -> proposed (rev+1); a draft stays a draft unless --publish. --file replaces all
      # text fields; without it the text stays. Shots or videos given replace all old ones; none keep them.
+     # T-030 (§4.1): accepted | rejected -> proposed (rev+1), and the decision goes STALE.
+     #   [--keep-decision] instead keeps it final (typo fixes only).
+     #   A hold stays, unless --unhold or --publish is given.
+node tools/console.mjs proposal hold <id> --by <agent|lead> --note "<plain words, for the user>"   # HELD PR-008 …
+node tools/console.mjs proposal unhold <id> --by <agent|lead> [--note "..."]                        # UNHELD PR-008 …
 node tools/console.mjs proposal publish <id> --by <agent>          # draft -> proposed
 node tools/console.mjs proposal withdraw <id> --by <agent> [--note "..."]   # no longer offered (wait: NEVER)
 node tools/console.mjs proposal decide <id> --by lead --value accept|reject|change [--option <name>] [--notes "..."]  # the user answered in chat
@@ -178,6 +201,9 @@ node tools/console.mjs proposal wait <id> [--until decided|changed] [--since <IS
      # stands (an undo alone does not wake it, the re-decision does). changed (--since default now): any decision
      # event after T, i.e. a decision, an undo, a changed decision; prints {id, state, decision, events}.
      # Every MET prints "Re-arm (wakes on an undo or a changed decision): … --until changed --since <last event>"
+     # T-030: only a FINAL decision meets `decided` (not one on hold, not a stale one). On a held or stale proposal
+     #   the wait starts with a "note: …" line on stderr, and its state says "on hold (lead: …)" or
+     #   "… is stale: re-decide on rev N". `changed` also wakes on held / unheld / stale events.
 node tools/console.mjs proposal wait --any [--by <agent>] [--since <ISO>] [--timeout 3600] [--json] [--quiet]
      # one background wait for all of an author's proposals, or for ALL proposals without --by (the lead): MET on
      # any decision event after --since (default: when the wait starts), prints {decisions: [standing decisions
@@ -218,13 +244,77 @@ draft | proposed | changes-requested --withdraw--> withdrawn
 
 - Only `proposed` waits for the user: it is counted in the badge and listed first.
 - A decision applies to the revision the user saw: the page sends `rev`, and a decision on an older revision is
-  refused (409, "it was revised; reload"). `accepted` and `rejected` are final; a new idea is a new proposal.
+  refused (409, "it was revised; reload"). `accepted` and `rejected` stay final until a hold or a revision (§4.1).
+  A new idea is still a new proposal.
 - The user can change their mind on the page until the agent acts: "Change my decision" on a decided proposal
   sets it back to `proposed` (history keeps both). `wait --until decided` returns at the first decision; an
   undo or a changed decision after it wakes `wait --until changed --since <that decision>`, `wait --any` and the
   lead's `thread wait --as lead` (I-045).
 - **Request change**: the notes are stored on the proposal (`decision.notes`). If the proposal names a `thread`,
   the page links it (`/threads#T-004`); creating a thread from the page waits for ts-console-threads to land.
+
+### 4.1 Holds and stale decisions (T-030)
+
+```
+proposed --hold--> proposed + hold   (not waiting: no badge, not in list --waiting; page: banner, decision off)
+accepted --hold--> accepted + hold   (decisionState under-review: kept, not final; wait --until decided not met)
+<any> + hold --unhold | revise --unhold | revise --publish--> without the hold (a standing decision is final again)
+accepted | rejected --revise--> proposed rev+1, decision null, staleDecision set (decisionState stale; re-decide)
+accepted | rejected --revise --keep-decision--> same state, rev+1, decision still final (keptThrough = rev+1)
+```
+
+**`decisionState`** takes one of four values:
+
+| value | meaning |
+|---|---|
+| `final` | a decision stands and the proposal is not on hold |
+| `under-review` | a decision stands and the proposal is on hold |
+| `stale` | no decision stands, because a revision replaced the one the user made |
+| `null` | never decided |
+
+- **Who reads it.** An agent acts on a decision only when it is `final`. `show --json` and `list --json` always
+  carry it. The page API carries it only when it is not final, so a never-held proposal is served byte for byte
+  as before.
+- **Hold.** The author or the lead runs `proposal hold <id> --by <you> --note "…"`. The note is scrubbed
+  (Hard rule 12). While the hold stands:
+  - the page puts a banner with the note at the top of that proposal ("On hold: please don't decide yet");
+  - it disables Accept, Reject, Request change and "Change my decision";
+  - the proposal moves under "On hold" in the list and out of the badge count;
+  - `decide` and `undo` refuse with "PR-008 is on hold (lead: …): …": 409 on the page API, exit 1 in the CLI;
+  - if the user is typing notes when the hold arrives, the page redraws anyway.
+
+  A second `hold` replaces the note. Drafts can't be held (the user doesn't see them), and neither can withdrawn
+  proposals. `unhold` lifts the hold.
+- **Under review.** A hold on a decided proposal keeps the decision (in `decision` and the history), but the
+  decision is not final:
+  - `wait --until decided` is not met, and `wait --any` leaves it out of `decisions`;
+  - a `held` event wakes `wait --until changed`, `wait --any` and `thread wait`. The lead's wait covers all
+    proposals; an author's covers only its own.
+
+  `unhold` without a revision makes the same decision final again and records an `unheld` event.
+  `wait --until decided --since T` is met when the release comes after T.
+- **Stale.** A revision of an accepted or rejected proposal changes what the user decided on. By default the
+  decision goes stale:
+  - the state goes back to `proposed` on the new revision, and `decision` is null;
+  - the old decision is kept in `staleDecision` and in `decisions` (marked `staleOnRev`);
+  - the page shows "Please decide again on revision N" with the revision note;
+  - a `stale` event wakes the waits above. Example line: `PROPOSAL PR-008 decision stale (was accepted on rev 1):
+    re-decide on rev 2, revised by …`.
+
+  `wait --until decided` waits for the re-decision, which arrives as a `decided` event whose `was` is the stale
+  decision. Before T-030, revise refused such a proposal ("post a new proposal instead").
+- **`--keep-decision`** is for a revision that does not change what the user decided on: a typo, a clearer word.
+  A revision that changes a number, a gain, a visual difference, the risk or the media must go stale (the
+  default). When in doubt, leave the flag off. It is refused on a proposal without a standing accepted or
+  rejected decision, because such a revision answers a change request.
+- **The PR-008 flow.**
+  1. As soon as a review finds an error in the card, the lead (or the author) holds the proposal instead of asking
+     in a thread, for example: `proposal hold PR-008 --by lead --note "A review found errors in the card; a
+     corrected revision follows. Please don't decide yet."`. A decision the user already made is now under review.
+  2. The author revises the card. The decision goes stale, and the hold stays while more checks run.
+  3. When the card is right, the author runs `proposal revise PR-008 … --unhold` (or the lead runs `proposal
+     unhold PR-008`).
+  4. The user decides again on the corrected revision. The author's `wait --until decided` returns only then.
 
 ## 5. Page
 
@@ -241,6 +331,15 @@ waiting proposals first (oldest first), then the decided ones (newest first). On
 4. "Try it yourself": links to A and B (`target=_blank`, `rel=noopener noreferrer`), with the note that they open
    on this Mac only (localhost), that the server may have stopped, and that the phone goes through the lead.
 5. Decision: **Accept**, **Reject**, **Request change**, each with the notes box (Request change needs a note).
+
+On hold (T-030, §4.1):
+- a banner with the note sits at the top of the proposal;
+- the decision buttons and "Change my decision" are disabled;
+- a decision already made reads "(under review, not final)";
+- the list shows the proposal in an "On hold" section.
+
+A stale decision gets a banner "Please decide again on revision N" that says what changed, and the list row reads
+"decide again".
 
 With options (I-053), items 2-4 become: the shared text, then "N ways to do it": one card per option side by side
 (label, "Recommended", the first gain row, the first visual difference), which are the tabs (click or arrow keys);
@@ -277,4 +376,6 @@ urgent the way a gated finger test is.
 out/proposal-<slug>.json` with screenshot pairs at matching scroll positions (localhost pages in Chrome, 430x932)
 and an honest `visualDiff`; arm `proposal wait <id> --until decided` in the background (after it, re-arm the
 printed `--until changed --since …` line so an undo or a changed decision reaches you); on
-`changes-requested` revise with `proposal revise <id> --note …`; never land a PoC the user has not accepted."
+`changes-requested` revise with `proposal revise <id> --note …`; never land a PoC the user has not accepted.
+When your card turns out wrong (a review, a later check), run `proposal hold <id> --note …` at once, then revise.
+Act on a decision only while `proposal show <id> --json` says `decisionState: "final"`."

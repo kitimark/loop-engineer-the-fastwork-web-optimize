@@ -192,7 +192,12 @@ test('decide: accept / reject / change; change needs notes; a stale revision is 
   const a = await P.decide(p.id, { value: 'accepted', notes: 'nice' });
   assert.equal(a.state, 'accepted');
   await assert.rejects(P.withdrawProposal(p.id, { by: 'de-a' }), /is accepted/);
-  await assert.rejects(P.reviseProposal(p.id, { by: 'de-a', note: 'x' }), /post a new proposal instead/);
+  // T-030 (intended change): revising an accepted proposal used to be refused ("post a new proposal instead"); now the
+  // decision goes stale and the user re-decides (tests/unit/proposal-hold.test.mjs). A withdrawn one still refuses.
+  assert.equal(P.decisionStateOf((await P.reviseProposal(p.id, { by: 'de-a', note: 'x' })).proposal), 'stale');
+  const { proposal: w } = await P.postProposal({ by: 'de-a', raw: sample(), baseDir: dir });
+  await P.withdrawProposal(w.id, { by: 'de-a' });
+  await assert.rejects(P.reviseProposal(w.id, { by: 'de-a', note: 'x' }), /post a new proposal instead/);
 });
 
 test('revise: changes-requested -> proposed, rev+1, new shots replace the old, none keep them; a note is required', async () => {

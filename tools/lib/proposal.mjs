@@ -19,7 +19,21 @@
 // r<rev>-o<k>-a-1.png. The user accepts ONE option (decision.option = its name); `decide --option`; the decision
 // events and waits carry `option`. A proposal without `options` is stored, served and shown exactly as before.
 // States: draft -> proposed -> accepted | rejected | changes-requested; changes-requested -> (revise) proposed;
-//   draft | proposed | changes-requested -> withdrawn. Only `proposed` waits for the user.
+//   draft | proposed | changes-requested -> withdrawn. Only `proposed` (and not on hold) waits for the user.
+// Holds and stale decisions (ts-proposal-hold, user T-030, 2026-10-03: PR-008 was accepted on the page six minutes
+// after the lead asked, in a thread, not to decide; nothing on the page said it was under revision, and `revise`
+// refused an accepted proposal, so the decision kept resting on the incomplete card):
+//   hold <id> --by --note   p.hold = {by, note, at, rev}; the page shows the note on top and disables the decision;
+//                           decide and undo refuse; not "waiting" (badge, list --waiting). On a decided proposal the
+//                           decision is kept but UNDER REVIEW (not final). unhold <id> lifts it (history: held/unheld).
+//   revise of a decided (accepted | rejected) proposal: by default the decision goes STALE: state proposed (rev+1),
+//                           decision null, p.staleDecision = the old one + staleAt/staleOnRev (also marked in
+//                           decisions[]); the page asks for a new decision. --keep-decision (a wording fix that does not
+//                           change what the user decided on) keeps it final (decision.keptThrough = the new rev).
+//                           A revise keeps a hold unless --unhold or --publish. (Before: refused, "post a new proposal".)
+//   decisionStateOf(p): final | under-review | stale | null (no decision). `wait --until decided` is met by a final one
+//                           only; `show --json`, `list --json`, the page API carry decisionState. Decision events add
+//                           held / unheld (only while a decision stands) and stale (what `thread wait` prints).
 // Live pages (I-074, user T-028): `live: {patch: "fixes/<topic>/patch.diff", ref?: "HEAD"}` on the proposal (one solution)
 // or on each option names what the console's "Try it" panel serves as B: the baseline + that committed patch (A is the
 // baseline). Validation reads the patch from git (`<ref>:<patch>` in the checkout the command runs in) and keeps its
@@ -43,6 +57,11 @@ export const AREAS = ['hero', 'middle', 'end', 'whole'];
 export const STATES = ['draft', 'proposed', 'accepted', 'rejected', 'changes-requested', 'withdrawn'];
 export const DECIDED = new Set(['accepted', 'rejected', 'changes-requested']);
 export const FINAL = new Set(['accepted', 'rejected', 'withdrawn']);
+/** T-030: the decisions a revision makes stale (a change request is answered by the revision instead). */
+const FINAL_DECISION = new Set(['accepted', 'rejected']);
+const REVISABLE = new Set(['draft', 'proposed', 'changes-requested', 'accepted', 'rejected']);
+/** What a decision is worth now (T-030): final | under-review (on hold) | stale (revised since; re-decide) | null. */
+export const DECISION_STATES = ['final', 'under-review', 'stale'];
 export const GAIN_TAGS = ['OBSERVED', 'CONFIRMED', 'estimate', 'UNRESOLVED', 'REFUTED'];
 export const VIEWS = ['side', 'slider', 'blink'];
 /** User words -> state. */
@@ -480,7 +499,7 @@ export function get(id) {
  */
 export function listProposals({ all = false, waiting = false, by } = {}) {
   let items = readAll(proposalsDir(), 'PR');
-  if (waiting) items = items.filter((p) => p.state === 'proposed');
+  if (waiting) items = items.filter((p) => p.state === 'proposed' && !p.hold);
   else if (!all) items = items.filter((p) => p.state !== 'withdrawn');
   if (by) items = items.filter((p) => p.by === by);
   const w = items.filter((p) => p.state === 'proposed').sort((a, b) => (a.proposedAt < b.proposedAt ? -1 : a.proposedAt > b.proposedAt ? 1 : 0));
@@ -571,12 +590,19 @@ export async function postProposal({ by, raw, baseDir, shotsA, shotsB, captions,
  * replace the old ones, none keep them. rev+1; a decision on the old revision is no longer possible.
  * Options (I-053): raw's options replace the old list (add, change, drop); an option with new shots or a video (in raw,
  * or the CLI's with `option` naming it) gets them, one without keeps the media of the old option of the same name.
+ * T-030: also from accepted | rejected. The decision then goes stale (state proposed, decision null, staleDecision =
+ * the old one, history `decision-stale`): the user re-decides on the new revision. `keepDecision` (a wording fix that
+ * does not change what the user decided on) keeps it final instead (decision.keptThrough = rev). A hold stays unless
+ * `unhold` or `publish` (history `unheld`).
  */
-export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], shotsB = [], captions = [], video = {}, option, live, repoDir, publish = false }) {
+export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], shotsB = [], captions = [], video = {}, option, live, repoDir, publish = false, keepDecision = false, unhold = false }) {
   const who = needBy(by);
   if (!note || !String(note).trim()) throw new Error('--note "<what changed, for the user>" is required');
   const cur = get(id);
-  if (!['draft', 'proposed', 'changes-requested'].includes(cur.state)) throw new Error(`${cur.id} is ${cur.state}: post a new proposal instead`);
+  if (!REVISABLE.has(cur.state)) throw new Error(`${cur.id} is ${cur.state}: post a new proposal instead`);
+  if (keepDecision && !['accepted', 'rejected'].includes(cur.state)) {
+    throw new Error(`--keep-decision: ${cur.id} is ${cur.state}: ${cur.state === 'changes-requested' ? 'a revision answers the change request, nothing to keep' : 'there is no decision to keep'}`);
+  }
   const toDraft = cur.state === 'draft' && !publish;
   // the new file's fields, or the current ones; media: the new ones, or the current ones kept
   const base = raw || storedRaw(cur);
@@ -613,12 +639,34 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
     }
     for (const k of ['topic', 'thread', 'recommended', 'idea', 'looksSame', 'risk', 'live']) if (n.fields[k] === undefined) delete p[k];
     p.rev = rev;
-    p.state = toDraft ? 'draft' : 'proposed';
-    if (!toDraft) p.proposedAt = now;
-    p.decision = null;
+    const old = FINAL_DECISION.has(p.state) && p.decision ? p.decision : null; // T-030: accepted | rejected
+    const entry = { at: now, who, action: 'revised', rev, note: nt.text };
+    const extra = [];
+    if (old && keepDecision) {
+      p.decision = { ...old, keptThrough: rev };
+      const last = p.decisions.at(-1);
+      if (last && last.at === old.at) last.keptThrough = rev;
+      entry.keptDecision = old.value;
+    } else {
+      p.state = toDraft ? 'draft' : 'proposed';
+      if (!toDraft) p.proposedAt = now;
+      p.decision = null;
+      if (old) {
+        // the user decided on the old card: kept as history, no longer counts; the page asks again
+        p.staleDecision = { ...old, staleAt: now, staleOnRev: rev };
+        const last = p.decisions.at(-1);
+        if (last && last.at === old.at) Object.assign(last, { staleAt: now, staleOnRev: rev });
+        extra.push({ at: now, who, action: 'decision-stale', rev, was: old.value, wasRev: old.rev, ...(old.option && { wasOption: old.option }), note: nt.text });
+      }
+    }
+    if (p.hold && (unhold || publish)) {
+      const stands = p.decision && DECIDED.has(p.state);
+      extra.push({ at: now, who, action: 'unheld', rev, note: 'released by the revision', ...(stands && { decision: p.decision.value, ...(p.decision.option && { option: p.decision.option }) }) });
+      delete p.hold;
+    }
     p.revisions.push({ rev, at: now, by: who, note: nt.text });
     p.updatedAt = now;
-    p.history.push({ at: now, who, action: 'revised', rev, note: nt.text });
+    p.history.push(entry, ...extra);
     writeJson(fileOf(p.id), p);
     return p;
   });
@@ -698,6 +746,7 @@ export async function decide(id, { value, notes, rev, option, who = 'user' } = {
   const want = option == null || String(option).trim() === '' ? undefined : String(option).trim().slice(0, 80);
   return change(id, String(who).slice(0, 80), 'decided', (p, now) => {
     if (rev !== undefined && rev !== null && rev !== '' && Number(rev) !== p.rev) throw new Error(`${p.id} was revised (now revision ${p.rev}, you saw ${rev}): reload the page`);
+    if (p.hold) throw new Error(heldMessage(p, 'no decision until it is released'));
     if (p.state !== 'proposed') throw new Error(`${p.id} is ${p.state}, not waiting for a decision`);
     let picked;
     if (p.options?.length) {
@@ -713,6 +762,7 @@ export async function decide(id, { value, notes, rev, option, who = 'user' } = {
     p.state = state;
     p.decision = d;
     p.decisions.push(d);
+    delete p.staleDecision; // T-030: the re-decision replaces the stale one (which stays in decisions[])
     return { value: state, rev: p.rev, note: nt, ...(picked && { option: picked }) };
   });
 }
@@ -722,11 +772,60 @@ export async function undoDecision(id, { rev, who = 'user' } = {}) {
   return change(id, String(who).slice(0, 80), 'undecided', (p) => {
     if (!DECIDED.has(p.state)) throw new Error(`${p.id} is ${p.state}: nothing to change`);
     if (rev !== undefined && rev !== null && rev !== '' && Number(rev) !== p.rev) throw new Error(`${p.id} was revised (now revision ${p.rev}): reload the page`);
+    if (p.hold) throw new Error(heldMessage(p, 'the decision stays as it is until it is released'));
     const was = p.state;
     const wasOption = p.decision?.option;
     p.state = 'proposed';
     p.decision = null;
     return { was, rev: p.rev, ...(wasOption && { wasOption }) };
+  });
+}
+
+// ---- holds (T-030) -----------------------------------------------------------------------------------
+
+/** One line for a refusal while held: "PR-008 is on hold (lead: <note>): <what>". */
+const clip = (s, n) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
+const heldMessage = (p, what) => `${p.id} is on hold (${p.hold.by}: ${clip(p.hold.note, 200)}): ${what}`;
+
+/** final | under-review | stale | null: what the standing (or last) decision is worth now. */
+export function decisionStateOf(p) {
+  if (p?.decision && DECIDED.has(p.state)) return p.hold ? 'under-review' : 'final';
+  if (p?.staleDecision) return 'stale';
+  return null;
+}
+
+/** A proposal with its decisionState, for `show --json`, `list --json` (not stored: always computed). */
+export const withDecisionState = (p) => ({ ...p, decisionState: decisionStateOf(p) });
+
+/**
+ * Hold a proposal (the lead or its author): {by, note}. The page shows the note on top and disables the decision;
+ * decide and undo refuse; it is not counted as waiting. On a decided proposal the decision is kept but under review.
+ * Holding a held proposal replaces the note. Not for drafts (not on the page) or withdrawn ones.
+ */
+export async function holdProposal(id, { by, note } = {}) {
+  const who = needBy(by);
+  if (!note || !String(note).trim()) throw new Error('--note "<why, in plain words, for the user>" is required');
+  const nt = scrubText(String(note).trim().slice(0, LIMITS.note)).text;
+  return change(id, who, 'held', (p, now) => {
+    if (p.state === 'draft') throw new Error(`${p.id} is a draft: the user does not see it, nothing to hold`);
+    if (p.state === 'withdrawn') throw new Error(`${p.id} is withdrawn`);
+    const fresh = !p.hold;
+    p.hold = { by: who, note: nt, at: now, rev: p.rev };
+    // a decision event only when a standing decision goes under review (not on a note update)
+    const stands = fresh && p.decision && DECIDED.has(p.state);
+    return { rev: p.rev, note: nt, ...(stands && { decision: p.decision.value, ...(p.decision.option && { option: p.decision.option }) }) };
+  });
+}
+
+/** Lift a hold: {by, note?}. A standing decision is final again; a waiting proposal waits for the user again. */
+export async function unholdProposal(id, { by, note } = {}) {
+  const who = needBy(by);
+  const nt = note == null || note === '' ? undefined : scrubText(String(note).trim().slice(0, LIMITS.note)).text;
+  return change(id, who, 'unheld', (p) => {
+    if (!p.hold) throw new Error(`${p.id} is not on hold`);
+    delete p.hold;
+    const stands = p.decision && DECIDED.has(p.state);
+    return { rev: p.rev, note: nt, ...(stands && { decision: p.decision.value, ...(p.decision.option && { option: p.decision.option }) }) };
   });
 }
 
@@ -752,6 +851,10 @@ const byAt = (a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0);
  * (the new state), was (the decision it replaced: for undecided the one undone, for decided the one undone just
  * before it on the same revision, else null), rev, notes, who, at, title, by (the author), option (I-053: the option
  * picked by this decision, else null), wasOption (the option of the decision in `was`, else null)}.
+ * T-030 adds: held (a hold put a standing decision under review: value "under-review", was the decision), unheld (the
+ * hold was lifted with a decision standing: value the decision, final again, was "under-review") and stale (a revision
+ * made the decision stale: value "proposed", was the decision, wasRev its revision, rev the new one, notes the
+ * revision note). A hold or unhold without a standing decision is no decision event.
  */
 export function decisionEvents(p) {
   const out = [];
@@ -761,8 +864,27 @@ export function decisionEvents(p) {
     if (h.action === 'decided') { out.push({ ...base, event: 'decided', value: h.value, was: undone, notes: h.note ?? null, option: h.option ?? null, wasOption: undone ? undoneOption : null }); undone = null; undoneOption = null; }
     else if (h.action === 'undecided') { out.push({ ...base, event: 'undecided', value: 'proposed', was: h.was ?? null, notes: null, option: null, wasOption: h.wasOption ?? null }); undone = h.was ?? null; undoneOption = h.wasOption ?? null; }
     else if (h.action === 'revised' || h.action === 'withdrawn') { undone = null; undoneOption = null; }
+    else if (h.action === 'decision-stale') {
+      out.push({ ...base, event: 'stale', value: 'proposed', was: h.was ?? null, wasRev: h.wasRev ?? null, notes: h.note ?? null, option: null, wasOption: h.wasOption ?? null });
+      undone = h.was ?? null; undoneOption = h.wasOption ?? null; // the re-decision says what it replaced
+    } else if (h.action === 'held' && h.decision) out.push({ ...base, event: 'held', value: 'under-review', was: h.decision, notes: h.note ?? null, option: null, wasOption: h.option ?? null });
+    else if (h.action === 'unheld' && h.decision) out.push({ ...base, event: 'unheld', value: h.decision, was: 'under-review', notes: h.note ?? null, option: h.option ?? null, wasOption: null });
   });
   return out;
+}
+
+/** When the standing decision became final: its own time, or a later unhold that released it (T-030). */
+function finalAt(p) {
+  let at = p.decision?.at;
+  for (const h of p.history || []) if (h.action === 'unheld' && h.decision && at && h.at > at) at = h.at;
+  return at;
+}
+
+/** The wait's state text: "accepted, rev 1, on hold (lead: …), decision under review" (T-030). */
+function stateText(p) {
+  const ds = decisionStateOf(p);
+  return `${p.state}, rev ${p.rev}${p.hold ? `, on hold (${p.hold.by}: ${clip(p.hold.note, 120)})` : ''}${ds === 'under-review' ? ', decision under review' : ''}`
+    + `${ds === 'stale' ? `, decision ${p.staleDecision.value} on rev ${p.staleDecision.rev} is stale: re-decide on rev ${p.rev}` : ''}`;
 }
 
 /** The decision events of `items` after `t0` (strictly), in time order. */
@@ -775,12 +897,14 @@ const decisionDetail = (p) => {
 
 /**
  * `proposal wait <id> [--until decided|changed] [--since ISO]`.
- *   decided            met while it stands decided (accepted / rejected / changes-requested): at once if it already is
- *   decided --since T  met on a decision made after T that still stands (an undo alone does not wake it; the
- *                      re-decision does); detail adds the events after T
- *   changed [--since T, default now]  met on any decision event after T: a decision, an undo, a changed decision
+ *   decided            met while it stands decided (accepted / rejected / changes-requested) and the decision is
+ *                      final (T-030: not on hold, not stale): at once if it already is
+ *   decided --since T  met on a decision that became final after T and still stands (made after T, or released from
+ *                      a hold after T; an undo alone does not wake it; the re-decision does); detail adds the events
+ *   changed [--since T, default now]  met on any decision event after T: a decision, an undo, a changed decision,
+ *                      a hold or release of a standing decision, a decision gone stale
  * NEVER when withdrawn (for changed: only if nothing changed first). rearm(detail): the command that waits for the next
- * change (`--until changed --since <the last event>`).
+ * change (`--until changed --since <the last event>`). `held`/`stale` in the result say why it is not met yet.
  */
 export function waitCondition(id, { until = 'decided', since } = {}) {
   if (until !== 'decided' && until !== 'changed') throw new Error(`--until must be decided or changed (got ${until})`);
@@ -791,23 +915,33 @@ export function waitCondition(id, { until = 'decided', since } = {}) {
   const rearm = (d) => `${CMD} ${pid} --until changed --since ${d.events?.at(-1)?.at || d.at || d.decision?.at || t0 || iso()}`;
   const check = () => {
     const p = get(pid);
+    const ds = decisionStateOf(p);
     if (until === 'changed') {
       const events = eventsSince([p], t0);
-      if (events.length) return { met: true, state: `${p.state}, rev ${p.rev}`, detail: JSON.stringify({ id: p.id, title: p.title, state: p.state, rev: p.rev, decision: p.decision ? decisionDetail(p) : null, events }) };
-    } else if (DECIDED.has(p.state) && p.decision && (!t0 || p.decision.at > t0)) {
+      if (events.length) return { met: true, state: stateText(p), detail: JSON.stringify({ id: p.id, title: p.title, state: p.state, rev: p.rev, decisionState: ds, ...(p.hold && { hold: p.hold }), decision: p.decision ? decisionDetail(p) : null, events }) };
+    } else if (ds === 'final' && (!t0 || finalAt(p) > t0)) {
       return { met: true, state: p.state, detail: JSON.stringify({ ...decisionDetail(p), ...(t0 && { events: eventsSince([p], t0) }) }) };
     }
     if (p.state === 'withdrawn') return { met: false, state: p.state, never: 'it was withdrawn' };
-    return { met: false, state: `${p.state}, rev ${p.rev}${t0 && DECIDED.has(p.state) ? ` (decided at ${p.decision?.at}, not after ${t0})` : ''}` };
+    return { met: false, state: `${stateText(p)}${t0 && ds === 'final' ? ` (decided at ${p.decision?.at}, not after ${t0})` : ''}`, ...(p.hold && { held: p.hold }), ...(ds === 'stale' && { stale: p.staleDecision }) };
   };
-  return { what, check, rearm };
+  /** T-030: one line for the start of a `decided` wait on a held or stale proposal (why it may not be met soon). */
+  const note = () => {
+    if (until !== 'decided') return null;
+    const p = get(pid);
+    if (p.hold) return `note: ${heldMessage(p, 'this wait is met only by a final decision, after it is released')}${p.decision && DECIDED.has(p.state) ? ` (the decision ${p.decision.value} is under review)` : ''}`;
+    if (decisionStateOf(p) === 'stale') return `note: ${p.id}'s decision ${p.staleDecision.value} on rev ${p.staleDecision.rev} is stale: this wait is met when the user decides again on rev ${p.rev}`;
+    return null;
+  };
+  return { what, check, rearm, note };
 }
 
 /**
  * `proposal wait --any [--by <agent>] [--since ISO]`: met on any decision event (a decision, an undo, a changed
  * decision) after `since` on the agent's proposals, or on ALL proposals without --by (the lead). detail:
  * {decisions: the standing decisions made after since, [{id, rev, value, notes, at, title, was}], events: [every
- * decision event after since, oldest first]}. rearm(detail): the same wait from the last event on.
+ * decision event after since, oldest first]}; T-030: decisions holds final ones only (not on hold), with decisionState.
+ * rearm(detail): the same wait from the last event on.
  */
 export function waitAnyCondition({ by, since } = {}) {
   const t0 = sinceIso(since ?? iso());
@@ -818,10 +952,10 @@ export function waitAnyCondition({ by, since } = {}) {
       const items = listProposals({ all: true, by });
       const events = eventsSince(items, t0);
       if (events.length) {
-        const decisions = items.filter((p) => p.decision && DECIDED.has(p.state) && p.decision.at > t0).map(decisionDetail).sort(byAt);
+        const decisions = items.filter((p) => decisionStateOf(p) === 'final' && p.decision.at > t0).map(decisionDetail).sort(byAt); // T-030: final ones only
         return { met: true, state: `${events.length} decision event(s)`, detail: JSON.stringify({ decisions, events }) };
       }
-      return { met: false, state: `${items.filter((p) => p.state === 'proposed').length} of ${items.length} waiting` };
+      return { met: false, state: `${items.filter((p) => p.state === 'proposed' && !p.hold).length} of ${items.length} waiting${items.some((p) => p.hold) ? `, ${items.filter((p) => p.hold).length} on hold` : ''}` };
     },
   };
 }
@@ -883,8 +1017,16 @@ const flat = (s) => String(s ?? '').replace(/[\u0000-\u0009\u000b-\u001f\u007f\u
 export function proposalNewsText(e) {
   const opt = (o) => (o ? `, option: ${flat(o)}` : '');
   const was = e.was ? ` (was ${e.was}${opt(e.wasOption)})` : '';
-  const head = `PROPOSAL ${e.id} ${e.event === 'decided' ? `decided ${e.value}${opt(e.option)}${was}` : `undecided${was || ` (was ${e.was})`}`} by ${flat(e.who)} at ${e.at}`;
-  const notes = e.event === 'decided' ? (e.notes ? flat(e.notes).split('\n') : []) : ['back to proposed, waiting for the user'];
+  // T-030: held / unheld (a standing decision under review, or final again) and stale (re-decide on the new revision)
+  const what = {
+    decided: () => `decided ${e.value}${opt(e.option)}${was}`,
+    undecided: () => `undecided${was || ` (was ${e.was})`}`,
+    held: () => `on hold, decision ${e.was}${opt(e.wasOption)} under review (not final)`,
+    unheld: () => `hold released, decision ${e.value}${opt(e.option)} final again`,
+    stale: () => `decision stale (was ${e.was} on rev ${e.wasRev}${opt(e.wasOption)}): re-decide on rev ${e.rev}, revised`,
+  }[e.event] || (() => flat(e.event));
+  const head = `PROPOSAL ${e.id} ${what()} by ${flat(e.who)} at ${e.at}`;
+  const notes = e.event === 'undecided' ? ['back to proposed, waiting for the user'] : (e.notes ? flat(e.notes).split('\n') : []);
   const L = [notes.length ? `${head}: ${notes[0]}` : head, ...notes.slice(1).map((l) => `  ${l}`)];
   L.push(`  "${flat(e.title).replace(/\n/g, ' ')}" rev ${e.rev} by ${flat(e.by)}; show: node tools/console.mjs proposal show ${e.id}`);
   return L.join('\n');
@@ -897,6 +1039,16 @@ const viewShots = (id, c) => (c.shots || []).map((s) => ({ caption: s.caption, a
 const viewVideo = (id, v) => (v ? { a: media(id, v.a), b: media(id, v.b), both: media(id, v.both) } : undefined);
 /** I-074: what the page needs to know about a live B (the console serves it; no paths beyond the patch name). */
 const viewLive = (l) => (l && BLOB.test(String(l.blob)) ? { patch: l.patch, version: l.blob.slice(0, 12), files: (l.files || []).length } : undefined);
+
+const viewHold = (h) => ({ by: h.by, note: h.note, at: h.at, rev: h.rev });
+/**
+ * T-030, for the page: {hold?, decisionState?}; decisionState only when the decision is not final (under-review, stale),
+ * so a proposal that was never held nor made stale is served byte for byte as before. (`show --json` always has it.)
+ */
+const viewDecisionState = (p) => {
+  const ds = decisionStateOf(p);
+  return { ...(p.hold && { hold: viewHold(p.hold) }), ...(ds && ds !== 'final' && { decisionState: ds }) };
+};
 
 /** What the page gets for one proposal: no history, media as /media/ URLs. Drafts and withdrawn: null. */
 export function publicView(p) {
@@ -919,6 +1071,8 @@ export function publicView(p) {
     })) : undefined,
     recommended: p.options?.length ? p.recommended : undefined,
     decision: p.decision, decisions: p.decisions, revisions: p.revisions,
+    // T-030: the hold (note on top, decision off) and what the decision is worth now; staleDecision: re-decide
+    ...viewDecisionState(p), ...(p.staleDecision && { staleDecision: p.staleDecision }),
     createdAt: p.createdAt, proposedAt: p.proposedAt, updatedAt: p.updatedAt,
   };
 }
@@ -930,13 +1084,18 @@ export function pageProposals() {
     decision: p.decision ? { value: p.decision.value, at: p.decision.at, ...(p.decision.option && { option: p.decision.option }) } : null,
     shots: (p.compare?.shots || []).length, proposedAt: p.proposedAt, updatedAt: p.updatedAt,
     ...(p.options?.length && { options: p.options.length }),
+    ...viewDecisionState(p), // T-030
+    ...(p.staleDecision && { staleDecision: { value: p.staleDecision.value, rev: p.staleDecision.rev, ...(p.staleDecision.option && { option: p.staleDecision.option }) } }),
   }));
 }
 
 /** One line for `proposal list`. */
 export function line(p) {
-  const d = p.decision ? ` -> ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''}${p.decision.notes ? ` (notes: ${String(p.decision.notes).split('\n')[0].slice(0, 120)})` : ''}` : '';
-  return `${p.id}  [${p.state} rev ${p.rev}]  ${p.area}  by ${p.by}: ${p.title}${p.options?.length ? ` (${p.options.length} options)` : ''}${d}`;
+  const ds = decisionStateOf(p);
+  const d = p.decision ? ` -> ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''}${ds === 'under-review' ? ' (under review: not final)' : ''}${p.decision.notes ? ` (notes: ${String(p.decision.notes).split('\n')[0].slice(0, 120)})` : ''}`
+    : ds === 'stale' ? ` -> stale: ${p.staleDecision.value}${p.staleDecision.option ? `, option: ${p.staleDecision.option}` : ''} on rev ${p.staleDecision.rev}, re-decide on rev ${p.rev}` : '';
+  const hold = p.hold ? ` ON HOLD (${p.hold.by}): ${clip(p.hold.note, 160)}` : ''; // T-030
+  return `${p.id}  [${p.state} rev ${p.rev}${p.hold ? ', on hold' : ''}]  ${p.area}  by ${p.by}: ${p.title}${p.options?.length ? ` (${p.options.length} options)` : ''}${d}${hold}`;
 }
 
 /** The text block of one solution (the proposal's own, or an option's) for `proposal show`, indented by `ind`. */
@@ -953,6 +1112,9 @@ const liveText = (l) => `${l.patch} @ ${String(l.blob).slice(0, 12)} (${(l.files
 /** The text of `proposal show`. */
 export function showText(p) {
   const L = [line(p)];
+  if (p.hold) L.push(`  ON HOLD by ${p.hold.by} since ${p.hold.at}: ${p.hold.note.replace(/\n/g, '\n    ')}`); // T-030
+  const ds = decisionStateOf(p);
+  if (ds && ds !== 'final') L.push(`  decisionState: ${ds}${ds === 'stale' ? ` (${p.staleDecision.value} on rev ${p.staleDecision.rev}; re-decide on rev ${p.rev})` : ds === 'under-review' ? ' (on hold: kept, not final)' : ''}`);
   if (p.topic) L.push(`  topic: ${p.topic}`);
   if (p.thread) L.push(`  thread: ${p.thread}`);
   for (const [k, label] of [['problem', 'problem'], ['idea', 'idea'], ['looksSame', 'looks the same'], ['risk', 'risk']]) if (p[k]) L.push(`  ${label}: ${p[k].replace(/\n/g, '\n    ')}`);
@@ -977,11 +1139,11 @@ export function showText(p) {
   }
   if (p.decision) L.push(`  decision: ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''} (rev ${p.decision.rev}, ${p.decision.at}, ${p.decision.who})${p.decision.notes ? `: ${p.decision.notes}` : ''}`);
   L.push('  history:');
-  for (const h of p.history) L.push(`    ${h.at} ${h.who} ${h.action}${h.rev ? ` rev ${h.rev}` : ''}${h.value ? ` ${h.value}` : ''}${h.option ? `, option: ${h.option}` : ''}${h.note ? `: ${h.note}` : ''}`);
+  for (const h of p.history) L.push(`    ${h.at} ${h.who} ${h.action}${h.rev ? ` rev ${h.rev}` : ''}${h.value ? ` ${h.value}` : ''}${h.action === 'decision-stale' ? ` (was ${h.was} on rev ${h.wasRev})` : ''}${h.decision ? ` (decision ${h.decision})` : ''}${h.keptDecision ? ` (kept ${h.keptDecision})` : ''}${h.option ? `, option: ${h.option}` : ''}${h.note ? `: ${h.note}` : ''}`);
   return L.join('\n');
 }
 
-/** The badge model: proposals waiting for the user (proposed), ids and scrubbed one-line titles only. */
+/** The badge model: proposals waiting for the user (proposed, not on hold), ids and scrubbed one-line titles only. */
 export function waitingProposals() {
   return listProposals({ waiting: true }).map((p) => ({
     id: /^PR-\d{1,6}$/.test(p.id) ? p.id : 'PR-?',

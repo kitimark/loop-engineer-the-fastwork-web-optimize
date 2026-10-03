@@ -77,6 +77,9 @@
 //        # changes-requested (was rejected) by user at …: <notes>` (--json: items with kind: "proposal"). Its read mark
 //        # starts when it is first armed (<console>/proposal-reads.json): older decisions are not news. On a proposal
 //        # with options (I-053) the line and the JSON name the picked one: `decided accepted, option: tiles`, option.
+//        # T-030: also a hold or release of a standing decision and a decision made stale by a revision:
+//        # `PROPOSAL PR-008 on hold, decision accepted under review (not final) by lead …`, `… hold released, decision
+//        # accepted final again …`, `… decision stale (was accepted on rev 1): re-decide on rev 2, revised by …`.
 //   node tools/console.mjs thread list [--unread --as <agent>] [--all] [--json]   # open threads (--all: closed too)
 //   node tools/console.mjs thread show <id> [--as <agent>] [--json]               # --as: marks it read for <agent>
 //   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask]
@@ -87,7 +90,9 @@
 //   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
 //
 // Proposals (ts-proposals): a design engineer's PoC for the user to compare and accept, reject or send back:
-//   node tools/console.mjs proposal post|list|show|revise|live|publish|withdraw|decide|wait …   (header of tools/lib/proposal-cli.mjs)
+//   node tools/console.mjs proposal post|list|show|revise|live|publish|withdraw|decide|wait|hold|unhold …   (header of tools/lib/proposal-cli.mjs)
+//        # T-030: `proposal hold <id> --by <you> --note "…"` stops the user deciding (banner, buttons off) while a card is
+//        # being corrected; a revise after a decision makes it stale (re-decide) unless --keep-decision.
 //
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';
