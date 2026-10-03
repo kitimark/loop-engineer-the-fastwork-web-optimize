@@ -37,11 +37,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .sizer.svelte-1fn2go6 {
    visibility: hidden;
    width: 100%;
-@@ -1519,6 +1525,31 @@
-   syntax: "<angle>";
+@@ -1520,6 +1526,31 @@
    inherits: false;
    initial-value: 0deg;
-+}
+ }
 +/* [scene-scope R4a] --morph-fade is written inline on .start-selling-platform (JS 13279) and read only by that
 +   element's own filter/opacity (this file, .start-selling-platform). Unregistered, it inherits, so every write
 +   restyles the whole platform subtree; registered non-inheriting, only the element itself changes. */
@@ -66,20 +65,19 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +.start-selling-morph-pill,
 +.start-selling-morph-panel {
 +  --morph: inherit;
- }
++}
  .hero-track.svelte-1p2vpne {
    background: #fff;
-@@ -2398,19 +2429,33 @@
-   transition:
-     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+   height: 200vh;
+@@ -2400,17 +2431,31 @@
      filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-+    visibility 0s linear 1.6s;
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+     visibility 0s linear 1.6s;
 +  transition:
 +    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
 +    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
-     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-     visibility 0s linear 1.6s;
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 1.6s;
    transform: translateY(48px);
  }
  .start-selling-future.is-visible > .start-selling-future-card {
@@ -185,17 +183,17 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      transform: scale(1);
    }
  }
-@@ -5798,6 +5884,10 @@
-     background-image: none;
+@@ -5799,6 +5885,10 @@
      animation: none;
    }
-+}
+ }
 +/* layout-animations: set by JS (PMsweepGate) while a sweeping title is off-screen */
 +.start-selling-platform [data-sweep-paused] {
 +  animation-play-state: paused !important;
- }
++}
  @keyframes start-selling-platform-i-doc-sweep {
    0% {
+     background-position: 100%;
 @@ -6513,16 +6603,24 @@
    opacity: 0;
  }
@@ -224,10 +222,13 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -6812,6 +6910,93 @@
-   opacity: 1;
-   transition: opacity 0.2s;
+@@ -6809,9 +6907,96 @@
+   opacity: 0;
  }
+ .start-selling-platform-secure-network-dash-highlight.is-active {
++  opacity: 1;
++  transition: opacity 0.2s;
++}
 +/* [platform-idle G1] the glint was an SMIL <animate> of the stroke gradient's x1/x2 (main-thread style + paint
 +   every frame). Now the same gradient (120 user units, same stops) slides as a compositor transform under a
 +   fixed clip of the same shape. The old 94x3.2 svg box is 94x3.1875 in layout (LayoutUnit), so its viewBox
@@ -245,9 +246,9 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  opacity: 0;
 +}
 +.start-selling-platform-secure-network-dash-glint.is-active {
-+  opacity: 1;
-+  transition: opacity 0.2s;
-+}
+   opacity: 1;
+   transition: opacity 0.2s;
+ }
 +.start-selling-platform-secure-network-dash-glint {
 +  pointer-events: none;
 +  width: 94px;
@@ -356,15 +357,19 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -11102,7 +11290,61 @@
+@@ -11101,8 +11289,66 @@
+     -webkit-background-clip: text;
      background-clip: text;
      animation: 4s linear infinite start-selling-platform-i-doc-sweep;
-   }
++  }
 +  /* [platform-idle G3] the sweep moves on the compositor: the word keeps its glyphs as a text mask
 +     (-webkit-mask-clip: text covers exactly what background-clip: text covered) and the same 300 % gradient
 +     slides under it as a ::after band, translateX(-2/3 of the band) -> 0 = background-position 100% -> 0%.
 +     No background-position animation, so no style recalc or repaint per frame. Same selectors as above
-+     (specificity 0,4,0 / 0,4,1), later in the file, so they win over the content:none rules. */
++     (specificity 0,4,0 / 0,4,1), later in the file, so they win over the content:none rules.
++     Inside @supports (-webkit-mask-clip: text): an engine without text masks (Firefox, MDN BCD) keeps the original
++     background-clip sweep above instead of showing the band as a solid rectangle. */
++  @supports (-webkit-mask-clip: text) {
 +  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc,
 +  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn,
 +  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure,
@@ -376,7 +381,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +    position: relative;
 +    -webkit-mask-image: linear-gradient(#000, #000);
 +    -webkit-mask-clip: text;
-+  }
+   }
 +  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc::after,
 +  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn::after,
 +  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure::after,
@@ -406,6 +411,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  .start-selling-platform [data-sweep-paused]::after {
 +    animation-play-state: paused !important;
 +  }
++  }
  }
 +@keyframes start-selling-platform-pi-sweep-band {
 +  0% {
@@ -418,7 +424,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling-language-switch-wrap.svelte-1lc7nmb {
    z-index: 2;
    position: relative;
-@@ -11751,11 +11993,71 @@
+@@ -11751,11 +11997,71 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -492,7 +498,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling [data-start-selling-render="deferred"] {
    contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
    content-visibility: auto;
-@@ -11768,3 +12070,26 @@
+@@ -11768,3 +12074,26 @@
      scroll-behavior: auto;
    }
  }
