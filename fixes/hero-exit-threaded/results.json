@@ -283,7 +283,8 @@
   "R0": "y0 cue, within A/A",
   "R3": "removed by heSc",
   "R4": "removed: the y884 paint burst came from the LayerTree census (acc20 without it: V 13 = C 13, C2 17)",
-  "C1": "closed: Chrome desktop y50 within the six-arm A/A spread (par14: V vs same state 4.9k px max 3; same-state A/A up to 7.3k px max 7, same hero-copy box)"
+  "C1": "closed: Chrome desktop y50 within the six-arm A/A spread (par14: V vs same state 4.9k px max 3; same-state A/A up to 7.3k px max 7, same hero-copy box)",
+  "R5": "WebKit width 980 (de-breakpoints, d48d224adcd4): orbit cards differ beyond A/A at y150-800 (0.2-0.65 % of frame, mostly 19-50 levels, one cell 121); OBSERVED, cause unknown; decisive check: cards computed translate/scale/filter V vs C at y150, y800"
  },
  "verdict": "mechanism win on the Simulator (no per-frame JS writer; full-hero repaints 21 -> 0, paint Mpx -66 %, layouts -25 %); pixel-identical except R1 (C-vs-C variation) and R2 (C session-dependent clip), for the user decision; R4 and C1 closed; review rounds 2-3 pass (build ACCEPT-WITH-NOTES; heHold now ready-based) (toolbar, hand-over, jump; switch frame: no flash in V, probe could not reproduce it in 66d2abe either); no phone run, no timing number",
  "regressions": {
@@ -356,5 +357,119 @@
   },
   "band800_r2j": "C, C2 (same st6-rb2 snapshot) and V d48d in one session: no y800-900 band (V vs C, V vs C2 at pgsR: clock, digits, 1 px; settle adds +-1-level bits max 1); C vs C2: clock, digits. The r2i band did not recur with the same V build: r2i C arm state, not a V difference (absent on re-run, not shown directly in C-vs-C)",
   "ticketStartBand": "38-40 C, one start method (pre-warm on the plain baseline page under 38, phone-temp --below 40 over 40), met temperature logged (F-169), LPM runs dropped and re-run (T-029 #30)"
+ },
+ "phone": {
+  "P074": {
+   "block": "Timeline attribution, driver G, gesture hero-pass-v1.json (e3f31872b82f, programHash c414f67158e3); runner iphone-runner; 2026-10-03 09:39-09:55Z",
+   "builds": {
+    "C": {
+     "js": "7bf7c4657d21",
+     "css": "f523598b2a24"
+    },
+    "V": {
+     "js": "d48d224adcd4",
+     "css": "55ba45f138c9"
+    }
+   },
+   "scorer": {
+    "path": "fixes/hero-exit-threaded/p074/score074.mjs",
+    "sha256": "1d1fc26908f1",
+    "args": "--fn C:s=4391 --fn V:s=4493,heRest=4446 --band 1:780"
+   },
+   "validity": {
+    "counted": [
+     "C1",
+     "V1",
+     "V2",
+     "C2"
+    ],
+    "voids": 0,
+    "sentinels": {
+     "open": "PASS 60/58.8",
+     "end": "PASS 60.2/58.4"
+    },
+    "startMethod": "pre-warm (all runs)",
+    "metC": {
+     "C1": 38.59,
+     "V1": 38.09,
+     "V2": 38.5,
+     "C2": 38.89
+    },
+    "lpm": "off (median dt 17 ms)",
+    "deviations": [
+     "block in 2 holds, 12 min gap after C1; 4 pre-warm cycles before V1 (same method, in band)",
+     "warm-up wV re-run in own hold (first try exit 1, not counted)"
+    ]
+   },
+   "a": {
+    "C1": 0.814,
+    "C2": 0.794,
+    "V1": 0,
+    "V2": 0,
+    "C": "in (positive control)",
+    "V": "in (claim)"
+   },
+   "b": {
+    "touchstart": "OUT",
+    "rest": "no data for rest",
+    "touchstartRows": {
+     "V1/C1 ts1 y0": "V S3 L1 P1 | C S2 L2 P3 in",
+     "V1/C1 ts2 y548": "V S2 L0 P0 | C S0 L0 P0 OUT (dS 2)",
+     "V1/C1 ts4 y547": "V S3 L1 P1 | C S1 L1 P1 OUT (dS 2)",
+     "V2/C2 ts1 y0": "V S3 L2 P3 | C S1 L1 P1 OUT (dS 2, dL 1, dP 2)",
+     "V2/C2 ts2 y548": "V S2 L0 P0 | C S0 L0 P0 OUT (dS 2)",
+     "V2/C2 ts4 y547": "V S2 L1 P1 | C S2 L1 P1 in"
+    }
+   },
+   "c": {
+    "y50": "all runs S3 L2 P1 (C2 S4); writer C1 false, C2 true, V false"
+   },
+   "perMovingBandFrame": {
+    "C1": {
+     "S": 2.4,
+     "L": 1.68,
+     "P": 2.69,
+     "Ppx": 180994
+    },
+    "C2": {
+     "S": 2.36,
+     "L": 1.69,
+     "P": 2.73,
+     "Ppx": 188762
+    },
+    "V1": {
+     "S": 1.74,
+     "L": 1.21,
+     "P": 2.63,
+     "Ppx": 62385
+    },
+    "V2": {
+     "S": 1.73,
+     "L": 1.19,
+     "P": 2.67,
+     "Ppx": 67183
+    }
+   },
+   "decisionByTicket": "(b) touchstart OUT on rows other than touchstart 1 -> back to F; (b) rest no data -> to the lead, check marks and the heRest line on the same data before any re-run",
+   "postHocDiagnostic": {
+    "label": "POST-HOC DIAGNOSTIC, changes no verdict",
+    "restNoData": "the phone Timeline nests TimerFire inside RenderingFrame (V1: 4 heRest fires, RenderingFrame>TimerFire line 4446:16); the registered scorer looks for top-level TimerFire only, so it found none. Marks and the heRest line are right.",
+    "nestedVerdict": "rest OUT (V2 rest3 only; V1 rest in); touchstart OUT unchanged",
+    "restPaintArea": "V hand-over next frame paints ~127-128k px (S3 L1 P1) where C paints ~2k px (P1): same paint count, far larger area, not caught by the registered S/L/P counts",
+    "nestedRestRows": {
+     "V1 rest1 y548": "timer S0 L0 P0 | next S3 L1 P1 vs C S2 L1 P1",
+     "V1 rest3 y547": "next S3 L0 P0 vs C S3 L2 P2 in",
+     "V1 rest4 y77": "next S3 L1 P1 vs C S2 L1 P1",
+     "V2 rest1 y548": "next S3 L1 P1 vs C S2 L1 P1",
+     "V2 rest3 y547": "next S4 L2 P2 (128k px) vs C S1 L0 P0 OUT (dS 3, dL 2, dP 2)",
+     "V2 rest4 y77": "next S3 L1 P1 vs C S2 L1 P1",
+     "rest2 (y848-856)": "labelled past-end by band 780, not scored"
+    },
+    "touchstartCause": "the OUT rows are +2 RecalculateStyles with no extra Layout/Paint (except V2 ts1 y0: +1 L +2 P, while V1 ts1 y0 was in); consistent with heTS -> heOn adding .he-tf at touchstart (JS 4458-4462; OBSERVED, not attributed record by record)"
+   },
+   "condition": "30 ms timer grid (WebKit DOM timer alignment, likely Xcode Serious left on; setInterval(1000) gap median 1020 ms vs 1005 in P-071, one-shot lateness p90 22-26 ms vs ~4; rAF 59 Hz, sentinels PASS); same in both arms",
+   "leadDecision": "scored as registered, labeled with the condition, counts as milestone-2 data; landing needs P-074b (normal-condition repeat, same ticket and scorer); finger swipe A/B waits for the normal condition",
+   "serversForP074b": "same serve.mjs command on out/snapshots/hext-V-d48d224adcd4 and st6rb2-C-7bf7c4657d21 (--port 0 --https --vendors=local --latency 150 --no-cache); ports are new on every start"
+  }
  }
 }

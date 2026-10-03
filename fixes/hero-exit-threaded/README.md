@@ -4,8 +4,12 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured by mechanism and pixels (no timing: timing A/Bs deferred, user 2026-10-02). Not ready to land:
-the residuals in "Options" need the user's decision, and the phone Timeline attribution block (P-074, driver G,
-gesture `gestures/hero-pass-v1.json`) has not run. Review round 2 (review-hero-exit, NEEDS-FIX on 66d2abe) is
+the phone Timeline attribution block P-074 ran on 2026-10-03 under the condition "30 ms timer grid" ("P-074 result"
+below; it counts as milestone-2 data). Landing needs P-074b, a repeat under normal conditions with the same ticket
+and scorer, and the finger swipe A/B waits for normal conditions too (lead, 2026-10-03). (a) is in for both arms: V runs
+no JS writer on moving frames on the phone. (b) touchstart is OUT on rows other than touchstart 1, so by the ticket
+this goes **back to F**. (b) rest has no data (a scorer limitation), and that goes to the lead. The residuals in
+"Options" (now including R5, WebKit at width 980) need the user's decision. Review round 2 (review-hero-exit, NEEDS-FIX on 66d2abe) is
 answered in "Review round 2" below; the delta re-review (ACCEPT-WITH-NOTES on e36423f) and the P-074 ticket read
 (NEEDS-FIX) in "Review round 3". Current build: JS `d48d224adcd4`, CSS `55ba45f138c9`.
 **Stage:** V (build card below). D: ST-1 accepted by the lead 2026-10-03 01:17Z as "partly LOCATED" (H2a and H2c
@@ -349,7 +353,8 @@ not reproduced, OBSERVED), item 3 (+1 Layout at the top crossing), item 6 (V0's 
 | the y≈800-900 band | r2j: the same probe with C, C2 (same st6-rb2 snapshot, own server) and V = `d48d224adcd4` in one session | the band is gone: V vs C and V vs C2 at pgsR show only the clock, the countdown digits and 1 px; C vs C2 shows clock and digits. At settle V vs C adds ±1-level bits (max 1, rows 700-1250, as in r2h). The band did not come back with the same V build, so it was the r2i C arm's state, not a V difference; C-vs-C did not reproduce it either (it is not shown directly, only absent on a re-run) |
 | functional | `fix.mjs check --viewport both` | ok: morph reached, 0 errors, 0 4xx, screenshot diff ≤ 0.54 % (headless) |
 | Chrome parity | not re-run: Chrome has no `GestureEvent`, `heCss` is false, `heHold` never runs | unchanged from par15 |
-| wide branch (de-breakpoints, Chrome with a `GestureEvent` stub, run on the round-2 build `301ec740291b`, not on `d48d224adcd4`; `heHold` only defers the drop) | frozen frames at 6 stops, 932x430 DPR 3, 1440, 1440 reduced motion; C2 = A/A | V vs C 0 px beyond A/A everywhere; `he-css` on at every stop in V; 0 errors. Blink only, scripted scroll. The WebKit run at width 980 is pending |
+| wide branch (de-breakpoints, Chrome with a `GestureEvent` stub, run on the round-2 build `301ec740291b`, not on `d48d224adcd4`; `heHold` only defers the drop) | frozen frames at 6 stops, 932x430 DPR 3, 1440, 1440 reduced motion; C2 = A/A | V vs C 0 px beyond A/A everywhere; `he-css` on at every stop in V; 0 errors. Blink only, scripted scroll |
+| WebKit at width 980 (de-breakpoints, fw-sim, test-only viewport meta `width=980` in both arms, `d48d224adcd4`; arms C, V, C2; hard freeze, instant scrollTo, 1.6 s, 1290x2796) | gate true (`GestureEvent`, width > 600, the 860 combo); V has `.he-css` and `he-bob` at every y, 14 scroll-timeline animations, C 0; hero-copy computed opacity and transform identical at every y | **not pixel-identical**: V vs C beyond C vs C2 at y150 (0.653 % vs 0.267 %), y300, y500, y800 (0.200 vs 0.044); y0 and y1400 within A/A. All of it in the tilted orbit cards (left and right columns), mostly 19-50 levels per cell, one cell 121 (y800). Center column identical apart from the countdown digits. Residual R5 |
 
 P-074 scorer (`p074/score074.mjs`, sha256 `1d1fc26908f1`), fixes from the review and the ops read:
 - V's rest hand-over frame = the heRest TimerFire record plus the next frame unit (the drop lands there), not the
@@ -373,6 +378,7 @@ in / in, a single run gives "not enough", rest with no heRest line gives "no dat
 |---|---|---|---|---|---|
 | R1 | y285 and y300 (y57, 114, 171, 228, 286, 342, 399, 466, 570: 0 px): copy text in two blocks [450,720 to 930,780] and [450,1080 to 870,1140] device px | ~1.2k px, max 1 level (+~150 px max 1) | while the page rests at such a position | **C shows the same difference between two of its own frames**: C at rest at y300 vs C's first frame after a scroll 300 → 306 (which still draws the y300 values, its writer is one rAF late) differ by exactly these pixels (630 + 537 px, max 1; same in C2). V at rest at y300 equals that C frame: 0 px outside the clock digits (frz14). So V draws one of C's own two raster states for the same values. Cause of C's two states UNRESOLVED (OBSERVED) | (a) accept as within C's own variation; (b) none found that makes V pick C's rest state |
 | R2 | y114-228, the screen-edge deck cards (x 0-90 and 1200-1290, y ~2100-2190 device px) | ~200 px per side, max 11 | while resting in y114-228, in sessions where C clips | fact: in 1 of 3 Simulator sessions C (and C2) drew the card-corner shadow clipped hard to an axis-aligned box, and V drew it smooth. In the other 2 sessions C was smooth and V vs C = 0 | (a) accept: V is identical to C's smooth state; (b) reproduce C's clip in V (not attempted: it is C's own session-dependent state) |
+| R5 | WebKit at width 980 (desktop layout, de-breakpoints), y150-800: the tilted orbit cards in the left and right columns | 0.2-0.65 % of the frame beyond A/A, mostly 19-50 levels, one cell 121 | while resting at y150-800 | OBSERVED, cause unknown: looks like a sub-pixel position or resampling difference of the cards (CSS view-timeline progress vs JS progress), not a layout or opacity change; nothing is missing or misplaced to the eye. Decisive check: the cards' computed translate, scale and filter in V vs C at y150 and y800 | to be decided after that check: (a) match the cards' values; (b) leave the cards on the JS path at this width |
 | ~~R3~~ | removed by `heSc`: the unarmed first frame (was 51k px, max 26, one frame) | 0 px vs C one frame later (sc16) | | | |
 | R0 | y0 cue | 2498 px max 112 vs C | at the top | within A/A (C2 vs C 2494 px max 106; bimodal cue state across sessions) | none needed |
 | ~~R4~~ | removed: the extra paint burst at y884 came from the LayerTree census (acc20 without it: V 13 = C 13, C2 17) | | | | |
@@ -392,7 +398,7 @@ in / in, a single run gives "not enough", rest with no heRest line gives "no dat
   references and their order; the span has no role.
 - Memory and layers: see the counts table.
 
-**Phone ticket P-074 (not run yet; a Timeline attribution block, not a gain block).**
+**Phone ticket P-074 (run 2026-10-03 09:39-09:55Z, result below; a Timeline attribution block, not a gain block).**
 - Question (one): on the iPhone, under a WDA finger drag (driver G), does V stop running the per-frame JS writer on
   moving hero frames while C runs it, with hand-over frames that cost no more than C's same-phase frames?
 - Builds (immutable snapshot copies): V `out/snapshots/hext-V-<js hash>` (JS and CSS hashes: "Review round 3"
@@ -434,6 +440,64 @@ in / in, a single run gives "not enough", rest with no heRest line gives "no dat
   - Block void (a failed sentinel, a second void at one position, Low Power Mode): no claim; cool, re-run the block
     once; a second void goes to the lead.
 - Ranges, void rules and decisions are registered as P-074 in `fixes/PREDICTIONS.md` (by mgmt-ops) before any data.
+
+**P-074 result (2026-10-03; runner iphone-runner; scored with the registered scorer `1d1fc26908f1`; condition: 30 ms
+timer grid).**
+- Condition (iphone-runner, from the Timelines; the lead's decision): every run had WebKit's 30 ms DOM timer
+  alignment on, the same in both arms. The likely cause is Xcode's Serious thermal condition left on.
+  - The setInterval(1000) gap median was 1020 ms, against 1005 ms in P-071.
+  - One-shot timer lateness p90 was 22-26 ms, against about 4 ms.
+  - rAF stayed at 59 Hz, the frame median dt at 17 ms, and the sentinels passed.
+  - Source: WebKit `Page::updateDOMTimerAlignmentInterval` sets 30 ms only under Low Power Mode or thermal
+    mitigation, and LPM was off.
+  - The result is scored exactly as registered and labeled with this condition. It counts as milestone-2 data.
+    Landing needs P-074b: a normal-condition repeat on the same ticket and scorer, registered by ops and run after
+    the user turns the condition off.
+  - Timer-driven pieces (`heRest`'s timer, the 600 ms `heT`) ran on that grid, so the rest rows' timing is
+    condition-specific.
+- Validity: 4 counted runs (C1, V1, V2, C2), no void runs. Sentinels passed: open 60 / 58.8, end 60.2 / 58.4.
+  Low Power Mode off (median dt 17 ms). One start method, pre-warm, for every run. Band met at C1 38.59, V1 38.09,
+  V2 38.5, C2 38.89 °C.
+- Deviations (from iphone-runner):
+  - the block ran in 2 holds, with a 12-minute gap after C1 and 4 pre-warm cycles before V1 (same method, in band);
+  - the V warm-up was re-run in its own hold (the first try exited 1 and was not counted).
+- (a) writer share on moving band frames (562-584 per run, 0 uncovered): C1 0.814, C2 0.794, V1 0, V2 0. **C in
+  (positive control), V in (claim).** Per moving frame: C S 2.4 L 1.7 P 2.7, painting about 181-189k px; V S 1.7
+  L 1.2 P 2.6, painting about 62-67k px.
+- (b) touchstart: **OUT**.
+
+  | pair | touchstart 1 (y0) | touchstart 2 (y548) | touchstart 4 (y547) |
+  |---|---|---|---|
+  | V1 / C1 | V S3 L1 P1, C S2 L2 P3: in | V S2 L0 P0, C S0 L0 P0: OUT | V S3 L1 P1, C S1 L1 P1: OUT |
+  | V2 / C2 | V S3 L2 P3, C S1 L1 P1: OUT | V S2 L0 P0, C S0 L0 P0: OUT | V S2 L1 P1, C S2 L1 P1: in |
+
+- (b) rest: **no data for rest**.
+- (c) the y≈50 frame: S3 L2 P1 in every run (C2 S4). The writer runs there in C2 only.
+- Decisions by the ticket:
+  - touchstart OUT on rows other than touchstart 1: V's hand-over costs more than C's, so back to F.
+  - No data for rest: to the lead, with no mechanism verdict on rest.
+- POST-HOC DIAGNOSTIC (labeled; it changes no verdict, and making it count would need a new registered prediction):
+  - Why rest had no data: on the phone Timeline, TimerFire is nested inside RenderingFrame. In V1, 4 heRest fires
+    sit under RenderingFrame > TimerFire at line 4446. The registered scorer looks only for top-level TimerFire.
+    The marks and the heRest line are right.
+  - A copy of the scorer that searches at any depth (scratch only, not registered) finds the heRest timer itself
+    at S0 L0 P0 every time. Comparing its next unit with C's frame:
+    - V1: rest1 in, rest3 in, rest4 in.
+    - V2: rest1 in, rest3 OUT (V S4 L2 P2 vs C S1 L0 P0), rest4 in.
+    - The past-the-end fire (y848-856) is not scored.
+  - V's rest next unit paints about 127-128k px; C's same-phase frame paints about 2k px. The paint count is the
+    same, the area is far larger. The registered S/L/P counts do not see area.
+  - The touchstart OUT rows are +2 RecalculateStyles with no extra Layout or Paint. The exception is V2's top
+    crossing (+1 L, +2 P), where V1 was in. This fits `heTS` → `heOn` adding `.he-tf` at touchstart (JS
+    4458-4462). OBSERVED, not attributed record by record.
+- Data: iphone-runner's `out/p074/` (gesture and Timeline files, `runs.jsonl`). Scores: this worktree's
+  `out/hext/p074/score-p074.json` (registered) and `diag-nested.json` (diagnostic). Both are gitignored.
+  `results.json` `phone.P074` holds the numbers.
+- Servers for P-074b: the immutable snapshots stay in this worktree's `out/snapshots/` (served JS
+  `hext-V-d48d224adcd4` and `st6rb2-C-7bf7c4657d21`, re-checked by sha256). Restart them identically, one per arm:
+  `node tools/serve.mjs --root site-pretty --overlay out/snapshots/<snapshot> --port 0 --https --vendors=local
+  --latency 150 --no-cache --state out/hext/p074/serve-<arm>.json`. The ports are new on every start (the plain
+  http twin always takes a free port), so the block log records them.
 
 **Scenarios not run:**
 - (idle after scroll is covered: the rest hold, Simulator counts and frozen frames above);
