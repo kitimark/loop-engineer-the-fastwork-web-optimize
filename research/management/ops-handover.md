@@ -2310,6 +2310,11 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `map-rest-script` (name; new 10-03 07:2xZ) | heat goal: read-only map of the middle-section script work at rest | alive |
 | `ts-proposal-hold` (name; 10-03 07:2xZ) | T-030 #19: console proposal hold/unhold and a "stale: re-decide" state on revise | done: cd966b7 landed |
 | `arch-isolated-measure` (name; ID a41fb01cae3b26082) | T-029 isolated measurement and heat plan (1ed2419); P-075 pilot and P-076 per-tick check done (landed 30d4c7f); cost card design README §6, Mac WebKit desk research §7 | alive (10-03 09:4xZ) |
+| `ts-lease-renew` (name; new 10-03 12:0xZ, toolsmith, worktree) | I-091: a lease renew that shortens a live lease | alive |
+| `ts-ipad-sim` (name; ID a06bca9b99e53bb60, toolsmith) | I-087 (iPad Simulator + rotation in sim.mjs, user T-040), I-088 (fw-sim left Booted, blocking cd-roll-ca) | alive |
+| `ts-thread-images` (name; ID ab47e809a72bc59ad, toolsmith) | I-089 (images in console threads, 525921c landed), I-090 (comment on any element, T-043) | alive |
+| `de-pixel-rule` (name) | T-042 pixel-tolerance rule: PR-010 drafts (5b74b50, rev 2 519610e) | alive |
+| rest-script fix owner (lock owner `rest-script`; ID a326003adcb764633) | heat goal: script work at rest, P-080 (v2; supersedes P-078) | alive |
 | `ts-costcard` (name; new 10-03 09:4xZ, toolsmith, worktree) | I-083: builds `tools/costcard.mjs` from isolated-measurement README §6 (event-aligned window, Paint-clip area, Chrome layer memory, Animation failure reasons, md writer, tests); first consumer: fix-nav-morph's F3 records | alive |
 | `ts-i082` (name) | I-082: Sim sessions in the Simulator's background CPU storm (fix 7e28dce on main, resolve pending) | alive |
 | `fix-pill-swap` (name) | pill-swap: community-pill avatar template swap, full-viewport Layout 2/s at pastHero (JS 11415-11447; from F-146), on st6-rb2 | done: dropped at D (9df12de, 10-03 01:3xZ) |
