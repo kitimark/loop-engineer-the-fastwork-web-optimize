@@ -214,25 +214,3 @@ coverage (Chrome, % of a 10 px viewport grid whose hit path has a non-passive to
   1. If D is kept alive, build D′: register M once (no duplicate entry), and run the passive-add check above. Re-run the Chrome half only.
   2. Any phone block for F3 comes after that, pre-registered: cold first loads counted, one start method, settle bin recorded and not conditioned on, starting warm (38-40 °C).
   3. F3 is a top-3 smoothness fix, so landing still needs the phone check plus the user's finger test (less-work-landing-rule does not apply: D does not do less work).
-
-## Lead decision (2026-10-03, after the card)
-
-- **D is parked; no D′ will be built.** The 29-Paint mechanism stays UNRESOLVED. Its decisive test is the passive-add check above, which is not scheduled.
-- **V goes forward to V.** Its only case is the lower non-passive coverage, a touch question, so any F3 phone block needs driver G or F, not S. The P-082 ticket is drafted with mgmt-ops-10.
-- 41a2829 / 14400e9 stay as they are and land with the fix.
-
-## Where V's coverage gap lies (covermap.mjs, Chrome DOM probe, no timing)
-
-`covermap.mjs` records every touchstart/touchmove listener add and remove with its passive flag (DOM default-passive rule for window, document, html and body). At each point of a 10 px grid it checks the `elementFromPoint` hit path for a non-passive touchmove listener. The probe runs at the end of the page (pre-morph) and after a start swipe (pin, m = 1), at 430x775, 430x815 and 430x932, with the served JS/CSS hashes checked. Raw output: out/costcard/covermap-2026-10-03T12-10-06-844Z.json (gitignored).
-
-| build | non-passive touchmove owners | pre-morph free | pin free (775 / 815 / 932) | where the free cells are at the pin |
-|---|---|---|---|---|
-| C aw1-10e (3e2f599a1632) | window | 0 % | 0 / 0 / 0 % | none |
-| V arm-scope-c (c6d3590576a7) | section#platform, header nav | 0 % | 7.2 / 7.1 / 6.8 % | the outer grid column on each side (x 0-10 and 420-430) plus the top and bottom 10 px row: a frame 5-15 px wide around `main` (the cells at x = 5 and 425 are free; x = 15 and 415 are covered) |
-
-Reading:
-- **V's 93 % coverage is a 5-15 px frame at the screen edges, not a region a stroke can aim at.** A 10 px grid cannot place the edge more precisely than that.
-- The G safe zone (x 140-290, y 200-760 screen points) never reaches it.
-- On iOS a touch that starts within a few px of the left or right edge belongs to the system edge gestures (Safari's back/forward swipe). That is OBSERVED here only, not checked against a reference, and the frame's top and bottom rows sit under the browser chrome.
-- Every stroke a finger or G can place starts on #platform (or the nav) in V, and on window in C. Both hit paths have a non-passive touchmove listener, so first-move dispatch is synchronous in both arms. WebKit EventTrackingRegions: `TrackingType::Synchronous`, CONFIRMED on WebKit main for the region type; the iOS 26 build is not verified.
-- Prediction for any reachable stroke: **V = C** on `firstMoveCancelable`, prevented share, touch-to-scroll and pin frames. P-071 and P-073 already measured this at x 215 (4 ms grid, priors only), and both arms matched there (fmc 1, pin touchmoves 47/47 prevented).
