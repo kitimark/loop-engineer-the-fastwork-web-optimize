@@ -368,11 +368,18 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   --note "<one plain line>" [--next "…"] [--waiting-on lead:"land request"|agent:<name>|incident:I-0NN|…]`. The board
   adds your Chrome/phone queue place, console steps and blocking incidents itself; only the lead sets priority.
 - **Threads** (`console.mjs thread`, console `/threads`): the user's questions, one thread per topic. The lead keeps
-  `node tools/console.mjs thread wait --as lead --timeout 3600` armed in the background (re-arm after each wake; it also wakes on proposal decisions, undos and changed decisions, I-045),
-  answers with `thread reply <id> --by lead --text "…" [--ask]` or hands a thread to the topic's agent with
-  `thread assign <id> --to <agent> --by lead`. An assigned agent arms `thread wait --as <you>` and answers in the
-  thread, not in chat; others are refused. The user's thread text is printed as typed: never copy it into committed
-  files unscrubbed (Hard rule 12).
+  `node tools/console.mjs thread wait --as lead --triage --timeout 3600` armed in the background (re-arm after each
+  wake). It wakes only for a message nobody listening owns, one the user ticked "For the lead", an escalation, a user
+  message unanswered for 10 min, and proposal decisions, undos and changed decisions (I-045); without `--triage` it
+  wakes on every message. The lead answers with `thread reply <id> --by lead --text "…" [--ask]` or hands a thread on
+  with `thread assign <id> --to <agent> --by lead`. **Every agent that owns a topic, a step or a proposal keeps
+  `thread wait --as <you>` armed**: the router (T-050) gives a user message whose assignees are not listening to the
+  first listening one of the commented item's owner, the lead's topic map (`thread topic set <tag> --owner <agent>
+  --by lead`), the status-board owner, the desk (`thread desk set <agent> --by lead`); listening = a live thread wait,
+  or a read or reply in the last 5 min. Answer in the thread, not in chat; hand a decision to the lead with
+  `thread escalate <id> --by <you> --note "…"`. Questions on a proposal (T-048) reach its author: `proposal talk <id>`
+  shows them, `thread reply` answers. Others are refused. The user's thread text is printed as typed: never copy it
+  into committed files unscrubbed (Hard rule 12).
 - **Ask the owner of the question directly.** mgmt-ops is the hub for the rest; the lead lands, resolves
   incidents, reorders locks, spawns and talks to the user.
 - Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
