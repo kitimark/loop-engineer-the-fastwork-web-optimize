@@ -1948,7 +1948,8 @@
    "sim-hide C6/V7 3 cycles",
    "Paint records per roll",
    "Chrome comp-check C6/V7, h60, hide-check, fix.mjs check on C6/V7",
-   "rest census +2 s"
+   "rest census +2 s",
+   "frozen-frame identity at c375 (DPR 3 touch) and c1440 (DPR 1) mid-roll + live resize across 400 mid-roll (T-034)"
   ]
  }
 }

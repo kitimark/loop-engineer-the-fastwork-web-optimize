@@ -267,7 +267,9 @@ open, lead 2026-10-03 ~07:10Z):
 
 PENDING (rest of the counted set, after cd-strip's rev 2 is decided): carry, two, step at fade50 and a hero pass,
 with A/A; sim-counts frozen, 2 reps; sim-hide C/V 3 cycles; Paint records per roll; Chrome comp-check C/V, h60,
-hide-check, fix.mjs check.
+hide-check, fix.mjs check; frozen-frame identity at the other cell sizes (T-034, de-breakpoints: c = 31 px at
+width <= 400, 52 px on desktop): c375 touch DPR 3 and c1440 DPR 1 mid-roll, and a live resize across 400 mid-roll (the
+roll re-keys from the new c at the same startTime; only 430 and the Sim's iPhone width are checked so far).
 
 ## Position identity (the user's rule: within the original's own frame-to-frame variation)
 
@@ -476,7 +478,7 @@ V6 (0 errors, 0 px start, 0.008 px first frame), fix.mjs check --on cd-strip mob
 1558 elements both, pixel diff top 0.19 / middle 0 / bottom 0 %; Simulator simpx debug runs 1-2 (wrap at fade50:
 rects ≤ 0.0151 px, 0 unmatched, layers equal, reason animation, no added recalc running)
 PENDING on cd-strip's final hash: counted simpx set + A/A, sim-counts, sim-hide C/V 3 cycles, Chrome comp-check C/V,
-h60, hide-check, fix.mjs check
+h60, hide-check, fix.mjs check, c375/c1440 frozen frames + live resize mid-roll (T-034)
 memory/layers (Simulator, fade50): 84 layers, 0.329 MB, 77 cell layers, 14 backed, at rest and mid-roll, same as C
 debug hooks: none
 ```
