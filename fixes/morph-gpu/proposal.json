@@ -8,12 +8,14 @@
   "looksSame": "At rest (closed pill, open panel, and after scrolling back to the top) it is pixel-identical to today's best build in Chrome and in the iOS Simulator. During the motion the shapes, sizes, colours and positions follow the same formulas, but text is moved instead of re-laid out each frame, so some edges land up to about one device pixel apart (T3, see the differences).",
   "visualDiff": [
     "During the motion, text inside the panel (title, buttons, countdown, logo) can sit up to about 1 device pixel off from today's. Largest shade 237 on text edges, 1.5 % of the screen in Chrome and 1.3 % in the Simulator at m 0.99. At m 0.5: 0.2-0.3 %, shade 175 (Chrome) / 131 (Simulator).",
-    "Mid-morph, the panel's lower side edges blur slightly differently (fill shade up to 22 in Chrome, 59 in the Simulator, a few hundred CSS px).",
+    "Mid-morph, the panel's lower side edges blur slightly differently (fill shade up to 28 in Chrome, 26 in the Simulator, a few hundred CSS px).",
+    "A/A (today's best build against itself, same session): Chrome m 0.5 max shade 1, 0 px over 8; m 0.99 max 33, 67 CSS px (0.017 %) of text edge; Simulator max 1, 0 px over 8 at both. Shares and areas above count only pixels more than 8 shades off that are not already off in this A/A.",
     "When the panel finishes opening (Simulator, phone width), two single frames show a shade-5 change over the panel: the switch-off frame and the blur-toggle frame two later (the blur is off for that frame). The frames between and after are exact. T2 fill limit is 64.",
-    "The same frames in Chrome at phone width are within shade 2. After an abrupt jump straight to open, the next frame shows 44 CSS px of button-text edge at shade 53 (T2); after a 0.99 -> 1 step it is exact. Desktop 1280 px: exact in every frame.",
+    "The same frames in Chrome at phone width are within shade 2. After an abrupt jump straight to open, the next frame shows 25 CSS px of button-text edge at shade 10 (T2); after a 0.99 -> 1 step it is exact. Desktop 1280 px: nothing beyond the A/A's own differences in any frame.",
     "Safari only (OBSERVED in the iOS Simulator, cause unknown): when the panel finished opening, Safari kept the last cut shape, so the open panel stayed cut at the bottom. The one-frame blur switch above clears it. It is a workaround, and the cause is UNRESOLVED.",
     "Not checked yet on the real iPhone. In real motion the last moving frame may be cut about 0.7 CSS px short at the bottom edge (an estimate, not measured frame by frame).",
-    "Nothing changes on desktop or tablets wider than 640 px, or at rest."
+    "Nothing changes on desktop or tablets wider than 640 px, or at rest.",
+    "Reduced motion: exact in Chrome. With reduced motion the morph jumps straight between closed and open, so the reveal never runs; every resting frame matches today's beyond A/A. Not run in the Simulator or on the phone."
   ],
   "gain": [
     {
@@ -56,7 +58,7 @@
       "needsPhone": true
     }
   ],
-  "risk": "Built on today's best build (js 65052c4a3902, css e0f92804c521), which includes the morph-inherit fix. That fix is being checked on the phone now (P-085): if it misses, the base changes and this has to be rebuilt and re-checked. The paint gain is Simulator counts only (OBSERVED); the phone gain is not measured yet. The end-of-open blur switch is a workaround for a Safari behaviour we observed but could not find in WebKit's bug tracker or explain from its source (UNRESOLVED). Another Safari version could need more or less. Phones only (<= 640 px); reduced motion behaves as today's morph.",
+  "risk": "Built on today's best build (js 65052c4a3902, css e0f92804c521), which includes the morph-inherit fix; that base passed its own iPhone check (P-085, on main). If the base changes again, this has to be rebuilt and re-checked. The paint gain is Simulator counts only (OBSERVED); the phone gain is not measured yet. The end-of-open blur switch is a workaround for a Safari behaviour we observed but could not find in WebKit's bug tracker or explain from its source (UNRESOLVED). Another Safari version could need more or less. Phones only (<= 640 px). Reduced motion was checked in Chrome only (exact), not in the Simulator or on the phone; by the code the reveal never runs then.",
   "compare": {
     "a": { "label": "Today's best build" },
     "b": { "label": "Reveal (this proposal)" },
@@ -67,7 +69,9 @@
       { "caption": "iOS Simulator, halfway (m 0.5)", "a": "../../out/morph-gpu/proposal/sim-m0.5-a.png", "b": "../../out/morph-gpu/proposal/sim-m0.5-b.png" },
       { "caption": "iOS Simulator, nearly open (m 0.99)", "a": "../../out/morph-gpu/proposal/sim-m0.99-a.png", "b": "../../out/morph-gpu/proposal/sim-m0.99-b.png" },
       { "caption": "Where they differ, Chrome m 0.99 (red: shade > 8, yellow: 1-8)", "a": "../../out/morph-gpu/proposal/chrome-m0.99-a.png", "b": "../../out/morph-gpu/proposal/chrome-m0.99-diff.png" },
-      { "caption": "Where they differ, Simulator m 0.99 (red: shade > 8, yellow: 1-8)", "a": "../../out/morph-gpu/proposal/sim-m0.99-a.png", "b": "../../out/morph-gpu/proposal/sim-m0.99-diff.png" }
+      { "caption": "Noise only: today vs today (A/A), Chrome m 0.99 (red: shade > 8, yellow: 1-8)", "a": "../../out/morph-gpu/proposal/chrome-m0.99-aa-a.png", "b": "../../out/morph-gpu/proposal/chrome-m0.99-aa-diff.png" },
+      { "caption": "Where they differ, Simulator m 0.99 (red: shade > 8, yellow: 1-8)", "a": "../../out/morph-gpu/proposal/sim-m0.99-a.png", "b": "../../out/morph-gpu/proposal/sim-m0.99-diff.png" },
+      { "caption": "Noise only: today vs today (A/A), Simulator m 0.99 (red: shade > 8, yellow: 1-8)", "a": "../../out/morph-gpu/proposal/sim-m0.99-aa-a.png", "b": "../../out/morph-gpu/proposal/sim-m0.99-aa-diff.png" }
     ]
   },
   "live": { "patch": "fixes/morph-gpu/patch.diff", "a": { "patch": "fixes/best-build/patch.diff" } }

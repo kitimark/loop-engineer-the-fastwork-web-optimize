@@ -7,6 +7,7 @@
 //   -- node fixes/morph-gpu/gates/frames.mjs [--builds M,R,M2] [--ms ...] [--steps-file f.json] [--width 430 --height 932 --dpr 3 --desktop]
 // --steps-file: a JSON list like --ms where a string is a page expression run before the shot (no m change).
 // --desktop: not mobile, no touch (with --width/--height/--dpr for a desktop window).
+// --reduced: emulate prefers-reduced-motion: reduce (Emulation.setEmulatedMedia) on every load.
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -34,6 +35,7 @@ const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] :
 const ORDER = arg('--builds', 'M,R,M2').split(',');
 const MS = argv.includes('--steps-file') ? JSON.parse(readFileSync(arg('--steps-file'), 'utf8')) : arg('--ms', '0,0.002,0.02,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99,1,0.6,0.15,0').split(',').map(Number);
 const VW = Number(arg('--width', '430')), VH = Number(arg('--height', '932')), DPR = Number(arg('--dpr', '3')), MOBILE = !argv.includes('--desktop');
+const REDUCED = argv.includes('--reduced'); // emulate prefers-reduced-motion: reduce on every load
 const tag = new Date().toISOString().replace(/[:.]/g, '-');
 const OUT = join(WT, 'out/morph-gpu', `frames-${tag}`); mkdirSync(OUT, { recursive: true });
 const BASE = resolveTree('site-pretty');
@@ -79,7 +81,7 @@ async function serve(label) {
 const profileDir = tempProfileDir(join(WT, 'out/morph-gpu/chrome'), 'rv');
 const chrome = await launchChrome({ port: 0, profileDir, headless: true, windowSize: `${VW},${VH}` });
 const cdp = await CDP.connect(chrome.wsUrl);
-const res = { tool: 'fix-morph-gpu frames (frozen frames, M vs R, M2 = A/A)', rvDir, viewport: { w: VW, h: VH, dpr: DPR, mobile: MOBILE }, browser: chrome.browser, ms: MS, out: OUT, builds: {} };
+const res = { tool: 'fix-morph-gpu frames (frozen frames, M vs R, M2 = A/A)', rvDir, viewport: { w: VW, h: VH, dpr: DPR, mobile: MOBILE, reducedMotion: REDUCED }, browser: chrome.browser, ms: MS, out: OUT, builds: {} };
 const shots = {};
 try {
   for (const b of ORDER) {
@@ -89,12 +91,14 @@ try {
     try {
       await page.send('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: DPR, mobile: MOBILE });
       if (MOBILE) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+      if (REDUCED) await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
       await page.send('Page.addScriptToEvaluateOnNewDocument', { source: INIT });
       await gotoAndSettle(page, srv.url, { quietMs: 1500, maxMs: 45000 });
       R.served = { js: sha(Buffer.from(await page.eval(`fetch('/${NODE}').then((r) => r.text())`))), css: sha(Buffer.from(await page.eval(`fetch('/${CSS}').then((r) => r.text())`))) };
       if (R.served.js !== BUILDS[b].js || R.served.css !== BUILDS[b].css) { R.void = JSON.stringify(R.served); console.log('VOID', b, R.void); continue; }
       await page.eval(`new Promise((res) => { let y = 0; const H = document.documentElement.scrollHeight; const step = () => { y += 200; window.scrollTo({ top: y, behavior: 'instant' }); y < H ? requestAnimationFrame(step) : setTimeout(res, 2500); }; requestAnimationFrame(step); })`, { timeout: 60000 });
       if (argv.includes('--anc')) console.log('ANC', b, await page.eval(ANC));
+      if (REDUCED) console.log('REDUCED', b, (R.reduced = await page.eval(`matchMedia('(prefers-reduced-motion: reduce)').matches`)));
       shots[b] = [];
       for (let k = 0; k < MS.length; k++) {
         const m = MS[k];
