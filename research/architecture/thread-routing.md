@@ -1,6 +1,6 @@
 # Thread routing: replies reach the owner, the lead only when needed (design)
 
-arch-thread-routing, 2026-10-03. Status: **proposal**, waiting for the user's OK in console thread T-050, then a
+arch-thread-routing, 2026-10-03. Status: **accepted** by the user in console thread T-050 (16:07Z); next a
 toolsmith builds it (brief at the end). Builds on `console-threads.md` (threads), I-084 (who reads a reply),
 I-090 (comments with anchors) and the waits registry (`tools/lib/waits.mjs`).
 
@@ -145,5 +145,24 @@ Files:
   not the lead's triage wait; after 10 min with no reply the lead's triage wait wakes with a line naming the thread
   and "unanswered 10 min (owner: <agent>)".
 
-Open questions for the lead: the 10-min backstop (5 / 10 / 15), whether the desk may assign, and whether phone
-notices should always wake the lead (they change the phone plan) or go to the phone owner (iphone-runner) first.
+### Decisions (user OK in T-050 2026-10-03 16:07Z; lead answers after landing df03d80)
+
+1. **Backstop: 10 min** (`TRIAGE_ESCALATE_MIN = 10`).
+2. **The desk may assign, only to a listening owner.** `assign --by <desk>` is refused when the target is not
+   `listening()`; the desk escalates instead (`thread escalate`). The lead may still assign anyone.
+3. **Phone notices do not wake the lead by themselves.** They route like any message (owner, else desk). The lead
+   gets them only through an escalation (a decision is needed) or a lost phone connection, which is a lead incident
+   (`incident.mjs open --class env`), not a thread wake.
+4. **The desk must be listening, or the lead is the desk** (gap the lead found: mgmt-ops is resumed on demand and
+   is not listening most of the time). The router treats the desk like any owner: it is used only while
+   `listening(desk)` is true; otherwise the message is unowned and the lead's `--triage` wait wakes at once. So a desk
+   that exits or forgets to re-arm costs nothing but the lead's load, never a lost message. The desk role, if the lead
+   runs one, is a long-lived agent whose loop is `thread wait --as <desk>` in the background, re-armed after every
+   wake. Tool support for the toolsmith:
+   - `thread desk show` prints the desk and its listening state ("mgmt-ops-10, not listening: the lead is the desk").
+   - The page's recipients line says "the lead" when the desk is set but not listening.
+   - Test 9: desk set but not listening (no live wait, no read or reply in 5 min) -> the router assigns nobody and
+     `--triage` wakes at once; the same desk with a live wait -> routed to the desk, `--triage` stays asleep.
+   - Test 10: the desk's `assign --to <owner>` is refused when the owner is not listening; allowed when it is.
+5. **Sequencing:** the toolsmith starts after ts-proposal-talk's console work (T-043/T-048) lands: the files overlap
+   (`console-threads.mjs`, `console-server.mjs`, the threads page).
