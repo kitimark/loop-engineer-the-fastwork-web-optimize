@@ -2,7 +2,7 @@
  "topic": "cd-strip",
  "kind": "frozen-frame pixel identity (Chrome + iOS Simulator) + WebKit Simulator counts (Timeline Paint/Layout records, LayerTree layers/memory) + Chrome idle triple (counts); no timing A/B, no gain claim (timing deferred, user 2026-10-02)",
  "base": "st6-rb2 (stacked: node tools/fix.mjs apply cd-strip --on st6-rb2)",
- "build": "strip-rw: per digit one strip layer > one uncomposited wrapper at top -m*c > 11 cells (hero cells one layer each; panel cells unlayered)",
+ "build": "strip-tc: per digit one strip layer > one unmoved uncomposited wrapper > 11 cells, cell k translateY((k-m)*c) by one effect on [c, m] (hero cells one layer each; panel cells unlayered); B1 scene-pause lines kept",
  "config": {
   "baselineSnapshot": "b1789284481295-4ad4a84a",
   "chromePixels": "headless Chrome, mobile 430x932 DPR3 touch, serve --https --latency 150 --vendors=local --no-cache, frozen countdown clocks, hand-stepped rAF with jitter, 60 and 120 Hz",
@@ -310,7 +310,7 @@
   },
   "note": "diff against the plain baseline, not st6-rb2"
  },
- "verdict": "mechanism (Sim): hero clock backing 1.18 -> 0.39 MB (48 -> 16 backed layers), re-entry clock Paint first 1 s 54-55 -> 23; no idle-paint gain; Chrome style writes/s lower at every spot, LayoutCount/s +1 to +3. Pixels: Chrome identical beyond its A/A; Simulator identical except residual R-fade (delta 1, fade50 mid-roll, 3/26 vs A/A 4/65) -> user decision. Frame gain: not measured (P-072 draft). | Review round 3: Chrome 0.9-fade delta-1 class in both strip builds (8-11/21 vs A/A 2-4/21); strip-rw wrapper layout shifts (tiny, not 0); strip-tc 0 clock shifts, Layout/RecalcStyle as faces, off-screen style writes up (22-31 vs 6-11/s). PR-008 rev 2 to the user.",
+ "verdict": "mechanism (Sim): hero clock backing 1.18 -> 0.39 MB (48 -> 16 backed layers), re-entry clock Paint first 1 s 54-55 -> 23; no idle-paint gain; Chrome style writes/s lower at every spot, LayoutCount/s +1 to +3. Pixels: Chrome identical beyond its A/A; Simulator identical except residual R-fade (delta 1, fade50 mid-roll, 3/26 vs A/A 4/65) -> user decision. Frame gain: not measured (P-072 draft). | Review round 3: Chrome 0.9-fade delta-1 class in both strip builds (8-11/21 vs A/A 2-4/21); strip-rw wrapper layout shifts (tiny, not 0); strip-tc 0 clock shifts, Layout/RecalcStyle as faces, off-screen style writes up (22-31 vs 6-11/s). PR-008 rev 2 to the user. | User decision PR-008 rev 2: land-strip-tc (final); patch.diff is strip-tc.",
  "regressions": {
   "visual": "R-fade: delta-1 glyph-edge difference on the rolling seconds digit in single frames at 50 % hero fade (Simulator); user decision pending",
   "layout": "Chrome +1 to +3 layouts per s (wrapper top write); Sim 1 of 2 m=1 pin holds +8 Layout over the A/A range",
@@ -514,5 +514,20 @@
    "pinHold": "tc 1.32-1.34 Layout per frame, rw 1.32-1.37 (not vs faces)"
   },
   "proposal": "PR-008 rev 2 posted 09:2xZ: land-strip-tc (recommended), land-strip, park; rev 1 acceptance stale; P-072 waits for the decision"
+ },
+ "decision": {
+  "proposal": "PR-008",
+  "rev": 2,
+  "value": "accepted",
+  "option": "land-strip-tc",
+  "at": "2026-10-03T09:31:49.142Z",
+  "decisionState": "final",
+  "supersedes": "rev 1 land-strip (06:52:53Z), held 07:54Z, stale with rev 2"
+ },
+ "sha256Final": {
+  "patch": "4f2ff4eb9afaab09c09207622af3aff73b932303fcc2f53f3e7b65e540b9e7a2",
+  "js": "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16",
+  "css": "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d",
+  "note": "strip-tc, --on st6-rb2; sha256 (the older field) is strip-rw"
  }
 }

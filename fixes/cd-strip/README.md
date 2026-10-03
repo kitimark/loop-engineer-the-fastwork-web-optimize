@@ -3,36 +3,41 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** final build **strip-rw** (per-cell layers in an uncomposited wrapper re-based by one write; lead
-decision 2026-10-03 05:0xZ after review round 2), plus review round 2's B1 fix (the scene-pause rule covers strips and
-cells, CSS only); pixel identity in Chrome and WebKit (Simulator) with one residual delta-1 class under the 50 % hero
-fade (R-fade). The user accepted it (PR-008 rev 1, option land-strip, 2026-10-03 06:52:53Z); **the lead put that on
-hold at 07:54Z** (the review round 3 checks found a Chrome delta-1 class at the 0.9 hero fade, which rev 1 did not
-state, and wrapper layout shifts in Chrome). A second build, **strip-tc** (cells moved by transform, wrapper never
-moves), has no clock layout shifts. **PR-008 rev 2 (posted 2026-10-03 09:2xZ): land-strip-tc (recommended), land-strip
-(strip-rw), park; the user decides again.** `patch.diff` stays strip-rw until then (section "Review round 3 and PR-008
-rev 2"). WebKit counts on the Simulator; no timing run (timing A/Bs are deferred, user 2026-10-02)
-**Stage:** F (build card below), review round 3 next. D: LOCATED, signed by the lead on the fast path (2026-10-03
-01:1xZ, no gain claim: the frame effect is measured only in the wave-2 phone run, so no phone segment card now)
+**Status:** final build **strip-tc** (per-cell layers in an unmoved, uncomposited wrapper; each cell moved by its own
+transform, re-based on the nearest whole cell m: cell k at `translateY((k − m)·c)`), with review round 2's B1 fix (the
+scene-pause rule covers strips and cells, CSS only). **The user accepted it: PR-008 rev 2, option land-strip-tc,
+2026-10-03 09:31:49Z (decisionState final)**; rev 1's acceptance of strip-rw (06:52:53Z) was held by the lead at 07:54Z
+and went stale with rev 2 (rev 1 had not stated the Chrome 0.9-fade delta-1 class, and strip-rw's wrapper `top` move
+is a layout shift). Pixel identity in Chrome and WebKit (Simulator) except two delta-1 classes the user accepted:
+R-fade (Simulator, 50 % hero fade, mid-roll) and the Chrome 0.9-fade class (both strip builds). One count goes up:
+off-screen inline style writes (Chrome). Section "Review round 3 and PR-008 rev 2". WebKit counts on the Simulator; no
+timing run (timing A/Bs are deferred, user 2026-10-02); cd-strip is a top-3 fix, so it keeps a phone block and the
+user's finger test before landing (lead, T-029 #30), queued after P-074.
+**Stage:** F (BUILD card strip-tc below), review round 3 next. D: LOCATED, signed by the lead on the fast path
+(2026-10-03 01:1xZ, no gain claim: the frame effect is measured only in the phone block, so no segment card now)
 **Device class / gate:** render-bound / phone-only (WebKit paint and layer work; Chrome 6x can't stand in for it)
 **Driver(s) behind the claims:** Simulator Timeline + LayerTree (counts only), Chrome and Simulator frozen-frame pixel
 harnesses, idle triple (headless Chrome, counts; Layout and RecalcStyle counts from CDP `Performance.getMetrics`)
-**Prediction:** P-072 in `fixes/PREDICTIONS.md`, against the strip-rw build card (with the B1 fix); registered after
-the user's decision and before any wave-2 or phone data, second read by mgmt-ops-9. P-070 (written 01:12Z
+**Prediction:** a new row by mgmt-ops-10 against the strip-tc build card, superseding P-072 (registered for an earlier
+build), before any phone data. P-070 (written 01:12Z
 for arm (b)) is **superseded before data: build changed (strip-cl → strip-rb → strip-rw, lead 04:4xZ and 05:0xZ)**;
 its text stays unchanged.
 **Topic:** G2 in `research/gpu-props/README.md` (F1 in its ranking; user T-030, highest priority). Base: **st6-rb2**
 (`--on st6-rb2`). Replaces countdown-faces part (a) (the 3 slots); countdown-faces part (b), the hidden gate, stays
 orthogonal (lead decision; de-countdown agrees).
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` (`$E`'s face snippet `g`, template `__cdStripT`, offset
-function `__cdStripY` and nearest-cell helper `__cdStripM` next to `ZE`; overlay lines 4024-4087),
-`/_app/immutable/assets/2.gBuqKVzi.css` (`.strip`/`.cdwrap`/`.cell` rules after `.face.svelte-1quva9c`, CSS 1422-1447;
-`.strip`/`.cell` added to st6-rb2's scene-pause rule, CSS ~11930-11932; the cdwc rule retargeted to `.strip` and the
-cell-layer rules, CSS ~11967-11980).
-**Final hashes (sha256):** `patch.diff` `1f3c26a1656347367ec1424165e8e9ec1105c0b01600c9347189c0558f37761c`; served JS
-`5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5`; served CSS
-`40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe` (base st6-rb2: JS `7bf7c4657d21`, CSS `f523598b2a24`).
-strip-rw before the B1 fix (the same JS; measured in the 05-17Z to 06-29Z runs below): `patch.diff` `48bc7adf7f03…`,
+function `__cdStripY` and nearest-cell helper `__cdStripM` next to `ZE`; overlay lines 4024-4083),
+`/_app/immutable/assets/2.gBuqKVzi.css` (`.strip`/`.cdwrap`/`.cell` rules after `.face.svelte-1quva9c`, CSS 1416-1451,
+with `.cell{top:0}`; `.strip`/`.cell` added to st6-rb2's scene-pause rule, CSS ~11931-11933; the cdwc rule retargeted
+to `.strip` and the cell-layer rules, CSS ~11966-11984).
+**Final hashes (sha256), strip-tc:** `patch.diff` `4f2ff4eb9afaab09c09207622af3aff73b932303fcc2f53f3e7b65e540b9e7a2`
+(`--on st6-rb2`, round-trips: `apply --reset` gives the hashes below); served JS
+`6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16`; served CSS
+`982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d` (base st6-rb2: JS `7bf7c4657d21`, CSS `f523598b2a24`);
+the same bytes as the measured snapshot `out/cd-strip/snap/strip-tc`. The template comment above `__cdStripT` still
+says "one wrapper write when m changes" (strip-rw's wording; strip-tc writes 11 cell transforms); left as measured, the
+effect's own comment is right. strip-rw (rev 1's build, not landed): `patch.diff` `1f3c26a16563…`, JS
+`5e37af69bcc4…`, CSS `40078cb2d9cf…`; copy in `out/cd-strip/overlay-rw/`. strip-rw before the B1 fix (the same JS; measured in the 05-17Z to 06-29Z runs below): `patch.diff` `48bc7adf7f03…`,
 CSS `9b2f89ea58bd…`. The CSS change only applies while the hero scene is paused, where the hero clock is off screen;
 the re-runs on `40078cb2` are in section "Review round 2 re-runs". The step before, strip-rb: `patch.diff`
 `08bedca68ac7…`, JS `56c075242353…`, CSS `9f90afa65888…`.
@@ -52,10 +57,13 @@ the re-runs on `40078cb2` are in section "Review round 2 re-runs". The step befo
 
 ## What changed
 
-One static strip per digit replaces the 10 faces (`patch.diff`, +75 −22 on st6-rb2). The final build is **strip-rw**
-(lead decision 2026-10-03 05:0xZ, review round 2). Steps before it: strip-rb (per-cell tops re-based, 11 writes per m
-change, lead pick 04:3xZ), then strip-rw (one wrapper write per m change). strip-rb's numbers stay below as the step
-before.
+One static strip per digit replaces the 10 faces (`patch.diff`, +73 −22 on st6-rb2). The final build is **strip-tc**
+(the user's pick, PR-008 rev 2, 09:31:49Z). Steps before it: strip-rb (per-cell tops re-based, 11 writes per m
+change, lead pick 04:3xZ), strip-rw (one wrapper `top` write per m change, lead 05:0xZ; rev 1's build: the `top` move
+is a layout shift and costs a layout), then strip-tc (each cell re-based by its own transform, 11 transform writes per
+m change, no layout move). The bullets below describe strip-rw; **strip-tc differs only in the re-base**: the wrapper
+never moves (`.cell{top:0}`), and one effect on [c, m] writes cell k `translateY((k − m)·c px)` (section "Review round 3
+and PR-008 rev 2", BUILD card strip-tc). strip-rb's numbers stay below as the step before.
 
 - `span.strip` (absolute, inset 0, `will-change: transform`) holds an uncomposited `span.cdwrap` of the same box, which
   holds 11 `span.cell`s `0 1 … 9 0`. Each cell is a face's box (absolute, `height: 100%`, glyph centred by the same
@@ -538,8 +546,8 @@ against the faces).
 **PR-008 rev 2** (posted 09:2xZ, `out/cd-strip/pr2/proposal.json`, filled by `pr2/fill.mjs` from `pr2/widths.json`): options
 land-strip-tc (recommended), land-strip (strip-rw), park; same-session rates first, then pooled; the Chrome 0.9 class
 in plain words in both build options, with rev 1's "Chrome shows nothing" corrected; tc's off-screen style-write cost
-side by side with rw's extra layouts. The rev 1 acceptance is stale; P-072 is not registered until the user decides
-again. If tc is chosen: port tc into the overlay, regenerate `patch.diff` and the hashes, tell fix-cd-roll-ca (C8/V9).
+side by side with rw's extra layouts. **User decision 09:31:49Z: accepted, option land-strip-tc (final, no note).**
+strip-tc is now `patch.diff` (BUILD card strip-tc).
 
 ## Review answers (where each point is answered)
 
@@ -609,7 +617,36 @@ ATTRIBUTION cd-strip · clusters: top window (hero clock), morph pin (panel cloc
 ```
 
 ```
-BUILD cd-strip strip-rw on base st6-rb2 · overlay snapshot out/cd-strip/snap/strip · 2026-10-03
+BUILD cd-strip strip-tc on base st6-rb2 · overlay snapshot out/cd-strip/snap/strip-tc · 2026-10-03 (the landed build)
+served hashes: JS 6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16,
+  CSS 982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d; patch.diff 4f2ff4eb9afa… (--on st6-rb2)
+  (base st6-rb2 JS 7bf7c4657d21, CSS f523598b2a24; snapshot b1789284481295-4ad4a84a); every tc row below ran on these
+  bytes
+structure: per digit one strip layer (will-change: transform, moved by __cdStripY + m*c, under one cell) > one
+  unmoved, uncomposited wrapper (Sim S2: 0 layers of 16 nodes) > 11 cells, cell k translateY((k - m)*c), written by
+  one effect on [c, m] (11 writes per change of c or m), .cell{top:0}; hero cells one layer each, panel cells
+  unlayered (cdwc retargeted); strips and cells in st6-rb2's scene-pause list (B1)
+parity: Chrome 430@3 hero + panel 0/428 (G12), panel m 0.25/0.5/0.75 0/63 (G17); herofade 0.25/0.5 0, 0.75 the
+  paragraph reveal only, 0.9 the delta-1 class of both strip builds (G13c: 8-11/21 vs A/A 2-4/21); widths 375@3,
+  412@2.625 fresh and 768@2, 1440@1, 1536@1.25 after a live resize: nothing beyond the A/A's own spots. Simulator: rest
+  0, fade90 0/5, panel 0/6; fade50x 2/13 vs A/A 3/13 same spots and 2/13 vs 1/13 (R-fade). Both delta-1 classes
+  accepted by the user (PR-008 rev 2, land-strip-tc)
+a11y diff: none (strips aria-hidden like the faces; timer labels unchanged; find-in-page "01234567890" per digit)
+mechanism delta (Sim, faces / strip-tc): hero clock layers 80 / 96, backed 48 / 16-17, 0.39-0.42 vs 1.18 MB (S2,
+  S5); paused band 0 / 0 hero layers (S2); clock Paint records in the first 1 s back at the top 55 / 23 (strip-rw 31,
+  S5), paint area 4.10 / 4.11 Mpx; morph pin m = 1 holds 1.32-1.34 Layout per frame (rw 1.32-1.37; not vs the faces)
+idle census (Chrome, G11 + G16, 5 s windows): clock layout shifts 0 (9 top, 6 mid, 5 end windows; the h1 rotator
+  0.001126 per 5 s in every build); LayoutCount/s top 1.8-2.2 vs 1.6-2.2, mid 1 vs 1, end 0 vs 0; RecalcStyleCount/s
+  equal; inline style writes/s top 50.4-75.8 vs 58.4-78, mid 22-26.4 vs 6-11.2, end 22-30.8 vs 6-7.2 (the 11-cell
+  write per m change, every tick while off-screen); Chrome layers 137-142 vs 126
+prediction: a new row (mgmt-ops-10) against this card, superseding P-072, before any phone data; phone block after
+  P-074 (warm start 38-40 °C, one start method), then the user's finger test
+debug hooks: none added (st6-rb2's __fwMorphDrive is inherited)
+```
+
+```
+BUILD cd-strip strip-rw on base st6-rb2 · overlay snapshot out/cd-strip/snap/strip · 2026-10-03 (rev 1's build, not
+landed: superseded by strip-tc, PR-008 rev 2)
 served hashes: JS 5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5,
   CSS 40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe; patch.diff 1f3c26a16563…
   (base st6-rb2 JS 7bf7c4657d21, CSS f523598b2a24; snapshot b1789284481295-4ad4a84a). Rows marked [9b2f] ran on the
@@ -701,11 +738,12 @@ rubber band (all need a timed or phone run; the pixel harness covers the clock s
 
 ## Next
 
-- PR-008 rev 2 waits for the user's new decision (the rev 1 acceptance of land-strip is stale). On a final decision:
-  tc -> port strip-tc into the overlay, regenerate `patch.diff` and the hashes, new BUILD card, fix-cd-roll-ca takes
-  its tc branch (C8/V9); rw -> `patch.diff` stays, fix-cd-roll-ca session B; park -> stop, fix-cd-roll-ca stops. Then
-  P-072 registered against the chosen build card before any phone data (mgmt-ops second read), review round 3, land
-  request.
+- Done: the user accepted PR-008 rev 2, land-strip-tc (09:31:49Z, final); strip-tc ported into the overlay, `patch.diff`
+  regenerated (round-trips), BUILD card strip-tc; fix-cd-roll-ca told (tc branch, C8/V9).
+- Next, in order (lead 09:3xZ): mgmt-ops-10 registers a new row superseding P-072 against the strip-tc card (hashes,
+  snapshots, same gates) before any phone data; review round 3 on strip-tc (review-cd-strip, spawned by the lead);
+  phone block after P-074 (warm start 38-40 °C, one start method) and the user's finger test; land request only after
+  the review and the finger test.
 - Phone: the frame effect is measured only in the wave-2 phone run against P-072 (D was signed on the fast path with
   no gain claim, so no separate phone segment card now).
 - P-032 (fix-nav-morph) is re-registered on the strip build after the D card.
@@ -713,22 +751,21 @@ rubber band (all need a timed or phone run; the pixel harness covers the clock s
 
 ## Risks, conflicts, follow-ups
 
-- R-fade, the Chrome 0.9-fade class and the possible pin cost: in PR-008 rev 2 for the user's decision; the pin cost
-  is checked in the wave-2 phone run (P-072).
+- R-fade and the Chrome 0.9-fade class: accepted by the user (PR-008 rev 2, land-strip-tc). The possible pin cost is
+  checked in the phone block (the row that supersedes P-072).
 - strip-tc writes 11 cell transforms per whole-cell step: off-screen inline style writes 22-31/s vs 6-11 (Chrome,
   RecalcStyle and Layout counts unchanged). Gating those writes while the scene is paused is a possible follow-up with
   its own count check (lead: not before the decision).
 - Scene pause: `.strip`/`.cell` must stay in st6-rb2's scene-pause list (scroll-engine /10b, scene-scope V1); dropping
   them keeps 96 hero clock layers in the paused-but-rendered band, where the faces have 0.
-- fix-cd-roll-ca relies on this build's shape: `w = r.firstChild` is the wrapper, cells are `w.children`; effect 1
-  (deps [c]) writes the cell tops and cd-roll-ca replaces its body; effect 2 writes the wrapper top on c and m; effect
-  3 (the strip transform) is unchanged. A change to any of these breaks cd-roll-ca (told).
+- fix-cd-roll-ca relies on this build's shape (strip-tc): `w = r.firstChild` is the unmoved wrapper, cells are
+  `w.children`; effect 1 (deps [c, m]) writes each cell's `translateY((k - m)*c)`; effect 2 (the strip transform,
+  `__cdStripY + m*c`) is unchanged. A change to either breaks cd-roll-ca (told; it takes its tc branch, C8/V9).
 - The wrapper must stay uncomposited (Sim: 0 layers). If a later rule gives it a layer (will-change, a transform,
   an animation), the cell layers sit under a composited parent with a large offset again, the geometry that showed
   the late-roll delta in strip-cl (OBSERVED, cause unknown).
-- Layout: the wrapper's `top` write appears to cost a layout, about once per roll per changed digit (Chrome
-  LayoutCount per s top 5-5.2 vs 2-2.4, mid 2.8-3 vs 1, end 1 vs 0; OBSERVED, not checked in source). The cost per
-  layout was not measured (timing deferred).
+- Layout (strip-rw only, not landed): the wrapper's `top` write appeared to cost a layout, about once per roll per
+  changed digit, and is a layout shift. strip-tc has no `top` write: LayoutCount as the faces, 0 clock shifts.
 - Memory: hero clock backing is lower (0.39 vs 1.18 MB, Sim); page layer count is higher (cells plus strips: 96 hero
   clock layers vs 80; page 143 vs 131), most of them unbacked. Chrome's layer memory was not measured.
 - countdown-faces (de-countdown): replaces its part (a). Its part (b) does not stack mechanically: its `patch.diff` is
@@ -740,7 +777,7 @@ rubber band (all need a timed or phone run; the pixel harness covers the clock s
 
 ## Files
 
-`patch.diff` (strip-rw), `../cd-strip--a/patch.diff` (arm a, rejected), `pixels.mjs` (Chrome frozen-frame harness;
+`patch.diff` (strip-tc; strip-rw kept in `out/cd-strip/overlay-rw/`), `../cd-strip--a/patch.diff` (arm a, rejected), `pixels.mjs` (Chrome frozen-frame harness;
 env `FADES` (herofade opacities), `ORDER` (an interleaved arm order, e.g. F rw tc F tc rw F, with all-pairs compares and
 runs labelled `<arm>-r<i>`), `FREEZE=1` (pause every `document.getAnimations()` at 0 before hero shots), `SETTLE` (ms
 after load), `RESIZE` (`WxHxDPR[x0]` list for the `heroresize` pass: a live `Emulation.setDeviceMetricsOverride` from
