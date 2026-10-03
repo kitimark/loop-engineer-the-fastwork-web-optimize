@@ -1,0 +1,49 @@
+{
+  "schema": "fw-proposal/1",
+  "title": "Avatar row and counters: keep the less-work change (not exact under reduced motion) or drop it",
+  "area": "whole",
+  "topic": "rest-script",
+  "problem": "Four small scripts keep working while nothing on screen changes. The worst is the 'people' avatar row: it starts a slide every second, even when the row is far off screen, so the page restyles and repaints that row about 30 times in 4 seconds for nothing. The rest-script change (v4) stops that work when the row can't be seen. The change has to look the same as today. It does in most places, within the agreed wide numbers (PR-010 T2). But with reduced motion turned on, it is not exact, and your rule says reduced motion must be exact. So by the rules this is a T3 result, and it needs your decision.",
+  "looksSame": "With normal motion it looks the same within the PR-010 wide numbers. Chrome at phone widths (375, 430) is identical. Chrome 1024, the iPhone Simulator and the iPad Simulator differ only on avatar outlines: at most 97 of 255 shades, over at most 427 CSS px, and at most 0.09 % of the screen (the largest values over all shots, not from one shot). The limits are fill 64 / edge 128 shades, 2000 CSS px and 0.5 %. With reduced motion it is NOT exact in Chrome at 430: every still shot differs evenly by at most 4 shades. Chrome 1440 (desktop) has no scored result for the row scrolled into view.",
+  "options": [
+    {
+      "name": "keep",
+      "label": "Keep the change",
+      "idea": "Keep rest-script v4. It would land only after the lead un-parks it and a short iPhone no-worse check passes (the less-work landing rule); that check has not run, and phone timing waits for T-052. Once landed, the row stops sliding while it is off screen, and the counters stop rewriting values that don't change. On screen it slides as before.",
+      "visualDiff": [
+        "Reduced motion, Chrome 430: NOT exact. All 5 still shots differ evenly by at most 4 shades (fill 3, edge 4) on 10325 device px. Nothing is over the counting threshold of 8, so share and area count as 0. Your rule needs exact here, so this is T3. Cause unknown (OBSERVED).",
+        "Same comparison elsewhere: Chrome 1440 reduced motion T1 (within its own run-to-run noise; edge max 6, unscored leg), Chrome 430 normal motion T0 (identical), iPhone Simulator reduced motion T1 (edge max 2).",
+        "Chrome 375 and 430, normal motion (v4 ident4, 2026-10-03): T0, identical on every shot.",
+        "Chrome 1024 (v4 ident4), largest over all shots: T2; fill 4, edge 65; share 0.0543 %; 426.75 CSS px (far-0); all counted pixels are edge; still and moving frames.",
+        "iPhone Simulator 430 (2026-10-03 20:22Z), largest over all shots: T2; fill 2; edge 97 (jump-0 and jump-215, 22 and 10 counted px); share 0.0887 % and 295.67 CSS px (outin-20, edge 57); all edge; still and moving.",
+        "iPad Simulator 1032 (2026-10-03), largest over all shots: T2; fill 1, edge 36; share 0.0166 %; 213.25 CSS px; all edge; still and moving. Rest and quiet shots identical.",
+        "Chrome 1440 and 1440 reduced motion: the shot of the row scrolled into view is UNSCORED in both. It was VOID because the row's boxes were still changing size 0.3-0.5 s before the shot, in both versions, on every run (OBSERVED, cause unknown). Desktop has no verdict.",
+        "When you would notice: the normal-motion differences are on avatar outlines, under the agreed limits; the reduced-motion one is a 4-shade shift on the still row. Nobody has judged either by eye."
+      ],
+      "gain": [
+        { "what": "Main frames, row far off screen, 4 s (Chrome 430)", "before": "31 / 32", "after": "17 / 17", "tag": "OBSERVED", "how": "ic5 census, Chrome 430x932, two runs per arm, 2026-10-03 about 13:10Z (tocard 05daca3beb58); mgmt-ops-10 reproduced it byte for byte. A count of work, not a timing." },
+        { "what": "Layouts, row far off screen, 4 s (Chrome 430)", "before": "4 / 4", "after": "0 / 0", "tag": "OBSERVED", "how": "Same ic5 census." },
+        { "what": "Paints, row far off screen, 4 s (Chrome 430)", "before": "34 / 39", "after": "0 / 3", "tag": "OBSERVED", "how": "Same ic5 census." },
+        { "what": "Main frames, fee section paused, 8 s (Chrome 430)", "before": "260 / 258", "after": "242 / 242", "tag": "OBSERVED", "how": "Same ic5 census; also pain section, 8 s: 234/232 -> 200/202, and y3728, 4 s: 158/158 -> 143/143. With the row on screen: no change (census SAME)." },
+        { "what": "Work saved with reduced motion on (Chrome 430)", "before": "as today", "after": "as today (none)", "tag": "OBSERVED", "how": "Census 430r: all SAME. With reduced motion the rotator doesn't run in either version, so nothing is saved, and the row is not exact." },
+        { "what": "Heat or battery on the iPhone", "before": "not measured", "after": "not measured", "tag": "UNRESOLVED", "how": "No phone timing or heat run (timing is deferred by your rule). The saving is in work counts only.", "needsPhone": true }
+      ],
+      "risk": "Reduced-motion users get a still avatar row that is not pixel-exact (up to 4 shades, cause unknown) and none of the saving: with reduced motion on, no work is saved (census 430r: all SAME). Desktop 1440 has no scored result for the scrolled-into-view row. In the iPhone Simulator the row still differs (T2) at the rest shot, about 1.4 s after a slide ends, and is identical 2.5 s after (OBSERVED, cause unknown); in the iPad Simulator the rest shot is already identical. Landing still needs the lead's un-park and a phone no-worse check.",
+      "compare": { "b": { "label": "rest-script v4 (overlay 520d5f1139c7)" } }
+    },
+    {
+      "name": "drop",
+      "label": "Drop the change",
+      "idea": "Don't land rest-script. The page stays as the current best build. The work saved above is not saved. No further versions: the topic is closed under the P-084 rule.",
+      "visualDiff": [
+        "Nothing changes: the page stays exactly as the current best build, reduced motion included."
+      ],
+      "gain": [
+        { "what": "Work saved", "before": "as today", "after": "as today (none)", "tag": "OBSERVED", "how": "No change to the page." }
+      ],
+      "risk": "The avatar row keeps restyling and repainting about 30 times every 4 s while it is far off screen, and the counters keep rewriting unchanged values. That work goes on.",
+      "compare": { "b": { "label": "The current best build, unchanged" } }
+    }
+  ],
+  "compare": { "a": { "label": "The current best build (st6-rb2), which already has the earlier fixes" } }
+}

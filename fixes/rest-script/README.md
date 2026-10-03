@@ -5,8 +5,12 @@
 
 **Status:** **parked** (2026-10-03 13:3xZ): v4 (P-084, the last iteration) missed pixel identity on the WebKit
 Simulator; see "v4 result: parked" below. Not for landing. **P-089** (2026-10-04): v4 re-judged under PR-010 T2,
-registered at the desk ("P-089 registration" + "P-089 addendum", mgmt-ops-10's second read). Simulator legs
-run 2026-10-03 20:22-20:46Z: all T0-T2, reduced motion exact ("P-089 Simulator results"); Chrome legs pending (option A).
+registered at the desk ("P-089 registration" + "P-089 addendum", mgmt-ops-10's second read).
+- Simulator legs (2026-10-03 20:22-20:46Z): all T0-T2, and reduced motion exact.
+- Chrome legs (21:16-21:37Z): chrome-430r is **T3 under rule 2**, because reduced motion is not exact (a uniform
+  shade-≤4 difference). chrome-1440 and chrome-1440r are unscored (coverage VOID on intoview).
+- **Parked again** (lead, P-084 lesson). The keep/drop decision goes to the user as a proposal draft,
+  `proposal-p089.json`, which the lead publishes.
 **Stage:** F, stopped; D card registered below (P-078 → P-080 → P-083 → P-084, v4 last iteration)
 **Device class / gate:** less-work (heat) fix: cost-card counts, full page, Chrome + Simulator, plus one short phone
 no-worse check (memory/less-work-landing-rule.md, user T-029 #30). No timing A/B (deferred, user rule).
@@ -799,8 +803,35 @@ Registered decision rule 2 requires every reduced-motion leg to be T0/T1 on ever
 "reduced motion beyond its A/A". By the registered rules this leg is therefore **T3**, not a pass; the prediction
 "every reduced-motion leg T0/T1" (P 0.75) failed here.
 
-The identical counts on every shot suggest a static difference of at most 4 shades over the same area. The cause is
-not examined (UNRESOLVED).
+**Lead ruling (2026-10-03, after mgmt-ops-10's read): chrome-430r is T3 under registered rule 2.** Reduced motion
+must be exact; that is the user's PR-010 wording, and the lead can't relax it.
+
+**What the 430r difference is** (OBSERVED in our setup, cause unknown):
+- it is the same in every shot: a uniform difference of at most 4 shades on the still row;
+- at Chrome 1440r the same comparison is T1 (`t2-w1440r.json`, five shots, edge max 6, nothing over the A/A);
+- at Chrome 430 without reduced motion (v4 `ident4`) every shot is T0.
+
+**The 1440 legs are unscored** (chrome-1440 and chrome-1440r). Both are coverage VOID on the intoview record shot,
+for the reason given below (slot sizes still changing 0.3-0.5 s before capture, in both arms, every run). Their t2
+files exist because the hold scores before coverage is checked; by the chainJ rules they are not read as a verdict.
+
+The lead ruled: no re-run, since a re-run can't change a T3 outcome. Option 2 (an intoview settle change) comes back
+only if the user's decision needs desktop numbers, and then only after a re-hash and mgmt-ops-10's diff read.
+
+**Predictions** (P-089, logged before any run):
+
+| prediction | P | outcome |
+|---|---|---|
+| T2 PASS (every leg scored, nothing T3, nothing mask-dependent) | 0.45 | MISS |
+| a T3 somewhere | 0.35 | **HIT** (chrome-430r, rule 2) |
+| no verdict (a leg VOID twice, or a mask-dependent label) | 0.20 | MISS |
+| readings a, b, c all false | expected | as expected (Simulator results above) |
+| quiet rest T0/T1 | 0.25 | happened: fw-sim and fw-ipad quiet T0 |
+| every reduced-motion leg T0/T1 | 0.75 | failed: chrome-430r T2 on every shot; fw-sim reduced T0/T1; chrome-1440r unscored |
+
+**Outcome: rest-script parks again under the P-084 lesson.** No v5, no re-runs, no harness change. The user decides
+from an unpublished proposal draft (`fixes/rest-script/proposal-p089.json`, two options: keep or drop). The lead
+publishes it after the user answers the open batch.
 
 **Keep-awake note.** From about 21:33:40Z to 21:36Z the holds (chrome-1440-rec try 2 and the start of chrome-1440-rep)
 ran under a `caffeinate -i -s` assertion that I attached to the chain. C-024 does not cover Chrome pixel holds; the
@@ -822,7 +853,7 @@ freeze at 26073.7 ms holds only the row's own animations and timers, so with SET
 At 430r there is no such change (`resizeMs` 24296). The `endMs` values (3913 / null) show it is not a slide end. It
 looks like an eased transform on an ancestor of the row at desktop width (not checked). It is the same in both arms
 and on every run, so a plain re-run would void again. The intoview replays (2500 ms settle) pass (1947 / 16773 ms).
-The next step is the lead's call, through mgmt-ops-10.
+The lead ruled: no remedy now (see the ruling above).
 
 ## Why it lags
 
