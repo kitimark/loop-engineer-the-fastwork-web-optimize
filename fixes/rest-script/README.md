@@ -138,6 +138,35 @@ records st6/fix and replays; Simulator census reps 1 and 2.
 Repack (10:41Z, no probe or argument change): after ident 430, 1024 and 375, chainB was stopped and the rest of its
 list runs from chainC.sh 667b34b16545, which packs two short jobs per shared hold (ident 430r + items 430/1024;
 census 430 + 430r, 375 + 768, 1024 + 1440) to halve the queue entries. Same outputs, same overlay check.
+chainD.sh 4ee1a69fafb1 is chainC from items-b on with a 2 h queue wait per hold (lead, 11:2xZ); no other change.
+
+### Registration v3 (P-080 rev 3, id from mgmt-ops; overlay 6c09e47961ba), before any v3 data
+
+The v2 census at 430 (ic3, scored under the registered rule) gave a **MORE** at the `far` position y 2796: rAF
+callbacks 0/0 (C1/C2) vs 4, 4 (V) and code calls 17/17 vs 20, 20, floor 2. Same window: main frames 34/34 vs 13, 13,
+style recalcs 34/34 vs 13, 13, layouts 4/4 vs 0, 0, paints 37/36 vs 3, 0 (all SAVE). Cause: v2 still requested one
+rAF per slide start while the row is far (`fwCap`), to stamp the slide's first frame for a later resume. Decision (as
+registered: "any MORE → fix and re-register"): chainD stopped (census 375 + 768 and later never ran), and the fix
+changed in one place:
+
+- `fwSetS` (slide starts, row far): instead of a stamping rAF, play an empty zero-length Web Animation
+  (`new Animation(new KeyframeEffect(null, null, 0), document.timeline)`). The engine resolves its start time in the
+  frame that starts it, like the slide's own CSS animations, and no script runs for it. The start is read only when
+  the row comes near during that slide (`fwStart()` in `fwSync`); `fwF0` (the real start read when the row leaves
+  mid-slide, v2) still wins. Teardown cancels it. `fwCap` is gone.
+
+Prediction (confidence 0.8): at far positions rAF callbacks and code calls SAME (0 extra per slide), main frames,
+style recalcs, layouts and paints still SAVE; near and paused positions unchanged from v2. Identity (0.85): the
+far-started resumes (smooth, jump, outin trials) still match C frame for frame. If the empty animation's start time
+is not the slide's frame in an engine, resumes from far show a phase mismatch there; that is a miss (prediction 1).
+
+Every v2 result (identity 430-1440 + 430r, items, rocount, census 430/430r) is now a pre-registration check of a
+superseded build; the claims rest on the v3 runs only. Probes, classes, the pooled rule, the decisions and the phone
+bound stay as registered (tocard v2 05daca3beb58; probe hashes as in v2 above, unchanged). Run list: chainE.sh
+e6821c987249 (refuses any overlay but 6c09e47961ba): Chrome identity 430, census 430 + 430r, identity 1024, 375,
+768, 1440, 430r + items 430/1024, pain sequences + rocount, census 375 + 768, 1024 + 1440; Simulator toolbar count,
+Simulator identity st6/fix + replays, Simulator census reps 1 and 2. Outputs `ident3`, `items3`, `ic4`, `sim3`,
+`simcen3`.
 
 ## Why it lags
 

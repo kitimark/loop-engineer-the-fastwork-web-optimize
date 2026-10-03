@@ -1,0 +1,320 @@
+# fastwork mirror fix: rest-script
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/st6-rb2/overlay: apply st6-rb2 first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply rest-script --on st6-rb2
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 7bf7c4657d21f1e94c666d582efccda65f20a5498626d22964bfbc5e35124f7a
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2429,6 +2429,7 @@
+       r = 0,
+       i,
+       a = [],
++      fwTo = 0,
+       l = (n) => !t && e && n === r,
+       f = (e, t) =>
+         new Promise((n) => {
+@@ -2441,7 +2442,7 @@
+         }),
+       m = () => {
+         for (let e of a.splice(0)) (window.clearTimeout(e.id), e.resolve(!1));
+-        (n && window.cancelAnimationFrame(n), (n = 0), i?.(!1), (i = void 0));
++        (n && window.cancelAnimationFrame(n), (n = 0), (fwTo &&= (window.clearTimeout(fwTo), 0)), i?.(!1), (i = void 0));
+       },
+       S = (e, t, r, a, o) =>
+         new Promise((s) => {
+@@ -2457,6 +2458,39 @@
+               }
+               let s = Math.min(1, (i - u) / a);
+               (o(t + (r - t) * T(s)), s < 1 ? (n = window.requestAnimationFrame(d)) : c(!0));
++            };
++          n = window.requestAnimationFrame(d);
++        }),
++      // [rest-script] S for a tween shown only as Math.round(value) (the % count, 18 -> 0): same clock, easing and
++      // per-frame math as S, but between two changes of the rounded value it sleeps (setTimeout) until 50 ms before
++      // the next change (or the end) instead of running rAF frames that draw nothing new. From the wake on it runs
++      // every frame again, so each change and the end land in the same frame as with S.
++      fwS2 = (e, t, r, a, o) =>
++        new Promise((s) => {
++          let c = (e) => {
++            (i === c && (i = void 0), s(e));
++          };
++          i = c;
++          let u = performance.now(),
++            d = (i) => {
++              if (!l(e)) {
++                c(!1);
++                return;
++              }
++              let s = Math.min(1, (i - u) / a),
++                p = t + (r - t) * T(s);
++              if ((o(p), s >= 1)) {
++                c(!0);
++                return;
++              }
++              let h = Math.round(p),
++                g = (t - (r < t ? h - 0.5 : h + 0.5)) / (t - r),
++                w = u + a * (g < 1 ? 1 - Math.cbrt(1 - g) : 1) - 50 - performance.now();
++              w > 0
++                ? (fwTo = window.setTimeout(() => {
++                    ((fwTo = 0), (n = window.requestAnimationFrame(d)));
++                  }, w))
++                : (n = window.requestAnimationFrame(d));
+             };
+           n = window.requestAnimationFrame(d);
+         }),
+@@ -2487,7 +2521,7 @@
+             (z(b, e, !0), z(C, e / 100));
+           })) ||
+           !(await f(120, e)) ||
+-          !(await S(e, 18, 0, 900, (e) => z(x, e, !0))) ||
++          !(await fwS2(e, 18, 0, 900, (e) => z(x, e, !0))) ||
+           !(await f(1600, e))
+             ? !1
+             : (z(v, !0), f(900, e))
+@@ -4917,12 +4951,29 @@
+   ne(() => {
+     let e = window.requestAnimationFrame(ce),
+       t = window.matchMedia(o),
+-      n = () => {
+-        F &&= (window.clearInterval(F), 0);
++      // [rest-script] le returns at once while (max-width: 860px) matches (notes hidden), so the 3 s interval is
++      // armed only on wider viewports. fwOn/fwT0 keep the original interval's life and phase: it is "on" from the
++      // first IO entry until n(), and on a switch to the wide layout the timer resumes on the same 3 s grid.
++      fwOn = !1,
++      fwT0 = 0,
++      n = () => {
++        ((fwOn = !1), (F &&= (window.clearInterval(F), 0)));
+       },
+       r = () => {
+-        F ||= window.setInterval(le, 3e3);
++        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
+       },
++      fwMq = () => {
++        t.matches
++          ? (F &&= (window.clearInterval(F), 0))
++          : fwOn &&
++            !F &&
++            (F = window.setTimeout(
++              () => {
++                ((F = window.setInterval(le, 3e3)), le());
++              },
++              3e3 - ((performance.now() - fwT0) % 3e3),
++            ));
++      },
+       i = new IntersectionObserver(
+         ([e]) => {
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
+@@ -4962,6 +5013,7 @@
+         e && e.getBoundingClientRect().top < window.innerHeight * 0.995 && z(T, [], !0);
+       };
+     (t.addEventListener(`change`, c),
++      t.addEventListener(`change`, fwMq),
+       window.addEventListener(`pointermove`, l),
+       window.addEventListener(`pointerup`, u),
+       window.addEventListener(`pointercancel`, u));
+@@ -4972,6 +5024,7 @@
+         i.disconnect(),
+         a.disconnect(),
+         t.removeEventListener(`change`, c),
++        t.removeEventListener(`change`, fwMq),
+         window.removeEventListener(`pointermove`, l),
+         window.removeEventListener(`pointerup`, u),
+         window.removeEventListener(`pointercancel`, u),
+@@ -11539,6 +11592,85 @@
+       a = !1,
+       o = 0,
+       c = !1,
++      // [rest-script] the rotator's clock (_ below, with the scene gate's stall and restart) is unchanged, but its
++      // state lives in fwX/fwS and is mirrored into x/S (the 5 slot srcs and .is-sliding) only while the avatar row
++      // is within half a viewport of the screen (fwIO). Coming near, the current state is written before the row
++      // can be seen; a slide in progress resumes at the phase the original shows in that frame: fwStart() is the
++      // start of the slide's first frame (away: the start time of an empty zero-length animation started with the
++      // slide, fwClk; near: the slide's own animations), and the resumed slide's CSS animations get it, set in the
++      // frame that first shows them (a microtask after Svelte's flush, before style/paint). The original's
++      // animations start at that frame's time, or one frame later when the compositor starts them late (Chrome);
++      // the resumed slide always takes the first. Going away, a running slide is ended (the row is half a
++      // viewport off screen by then).
++      fwX = 0,
++      fwS = !1,
++      fwF0 = 0,
++      fwClk = null,
++      fwNear = !0,
++      fwR = 0,
++      fwIO,
++      fwPin = (t, k = 0) =>
++        queueMicrotask(() => {
++          if (!fwNear || !fwS) return;
++          if (!me.classList.contains(`is-sliding`)) {
++            k < 3 && fwPin(t, k + 1);
++            return;
++          }
++          for (let e of me.getAnimations({ subtree: !0 })) e.startTime = t;
++        }),
++      fwSetX = (v) => {
++        ((fwX = v), fwNear && z(x, v));
++      },
++      fwSetS = (v) => {
++        // far away: an empty zero-length animation is started with the slide; the engine gives it the start time the
++        // slide's own animations would get (the frame that starts it), read only on a resume (fwStart), so no script
++        // runs per slide. Near: the DOM runs the slide, and its real start time is read when the row goes away
++        // mid-slide (fwNearChange).
++        (v &&
++          !fwS &&
++          ((fwF0 = 0), (fwClk = null), fwNear || ((fwClk = new Animation(new KeyframeEffect(null, null, 0), document.timeline)), fwClk.play())),
++          (fwS = v),
++          fwNear && z(S, v));
++      },
++      fwStart = () => fwF0 || (fwClk && typeof fwClk.startTime == `number` ? fwClk.startTime : 0),
++      fwSync = (b) => {
++        ((fwNear = !0), z(x, fwX), z(S, fwS));
++        fwS && b !== void 0 && fwPin(fwStart() || b);
++      },
++      // Jumps (scrollTo, anchors, history or find-in-page scroll, a resize or rotation) can bring the row from far
++      // away straight into view, where the IO would report it a frame late. Scroll and resize frames reach u in a
++      // rAF of the same rendering update (dE's scroll/resize listener), the ResizeObserver runs after layout and
++      // before paint: both check the row's cached document box (no layout read) and write the state in that frame.
++      fwTop = null,
++      fwH = 0,
++      fwRO,
++      fwCheck = () => {
++        if (fwNear || fwTop === null) return;
++        let t = fwTop - window.scrollY,
++          v = window.innerHeight;
++        t < v * 1.5 && t + fwH > v * -0.5 && fwSync(document.timeline.currentTime);
++      },
++      fwNearChange = (e) => {
++        let t = e[e.length - 1];
++        t && ((fwTop = t.boundingClientRect.top + window.scrollY), (fwH = t.boundingClientRect.height));
++        if (!t?.isIntersecting) {
++          if (fwNear && fwS && !fwF0) {
++            // leaving mid-slide: keep the slide's real start (the engine's own frame) for a resume
++            for (let a of me.getAnimations({ subtree: !0 })) if (typeof a.startTime == `number`) { fwF0 = a.startTime; break; }
++            fwF0 ||= document.timeline.currentTime || 0;
++          }
++          (fwR && (window.cancelAnimationFrame(fwR), (fwR = 0)),
++            fwNear && ((fwNear = !1), s(S) && z(S, !1)));
++          return;
++        }
++        fwNear ||
++          fwR ||
++          (fwS
++            ? (fwR = window.requestAnimationFrame((e) => {
++                ((fwR = 0), fwNear || fwSync(e));
++              }))
++            : fwSync());
++      },
+       l = () => {
+         i = 0;
+         let n = document.querySelector(`.hero-track`);
+@@ -11568,7 +11700,7 @@
+         }
+       },
+       u = () => {
+-        i ||= window.requestAnimationFrame(l);
++        (fwCheck(), (i ||= window.requestAnimationFrame(l)));
+       },
+       f = (e) =>
+         new Promise((t) => {
+@@ -11580,22 +11712,33 @@
+         }),
+       p = () => (c ? Promise.resolve() : new Promise((e) => r.push(e))),
+       m = (e) => {
+-        if (((c = e), e || z(S, !1), e)) {
++        // [rest-script] the original's state freezes while the scene is paused: write it now (the row is far away)
++        // so that a jump straight onto the row paints the frozen state, as the original does
++        if (((c = e), e || (fwSetS(!1), fwNear || z(x, fwX)), e)) {
+           for (let e of r) e();
+           r.length = 0;
+         }
+       },
+       _ = async () => {
+         if (!e.matches)
+-          for (; !a;) {
++          for (
++            fwIO = new IntersectionObserver(fwNearChange, { rootMargin: `50% 0px` }),
++              fwIO.observe(me),
++              (fwRO = new ResizeObserver(() => {
++                let e = me.getBoundingClientRect();
++                ((fwTop = e.top + window.scrollY), (fwH = e.height), fwCheck());
++              })),
++              fwRO.observe(document.documentElement);
++            !a;
++          ) {
+             if ((await p(), a || (await f(800), a))) return;
+             if (c) {
+-              if ((z(S, !0), await f(220), a)) return;
++              if ((fwSetS(!0), await f(220), a)) return;
+               if (!c) {
+-                z(S, !1);
++                fwSetS(!1);
+                 continue;
+               }
+-              (z(x, (s(x) + 1) % d.length), z(S, !1));
++              (fwSetX((fwX + 1) % d.length), fwSetS(!1));
+             }
+           }
+       },
+@@ -11610,6 +11753,7 @@
+         a = !0;
+         for (let e of r) e();
+         ((r.length = 0), i && window.cancelAnimationFrame(i));
++        (fwIO?.disconnect(), fwRO?.disconnect(), fwR && window.cancelAnimationFrame(fwR), fwClk?.cancel());
+         for (let e of n) window.clearTimeout(e);
+         ((n.length = 0),
+           C(),
+@@ -12246,28 +12390,41 @@
+   ne(() => {
+     let e = matchMedia(`(prefers-reduced-motion: reduce)`).matches,
+       t = 0,
+-      n = 0;
++      n = 0,
++      // [rest-script] the last four rounded values written to p: a frame whose rounded values are all unchanged
++      // skips the write (it would only make a new proxy object and re-run the text effects to write nothing).
++      fwLast = ``;
+     function r() {
+       if (e) {
+         z(p, i, !0);
+         return;
+       }
+       (z(p, { earnedK: 0, orders: 0, rehires: 0, reviews: 0 }, !0),
++        (fwLast = `0,0,0,0`),
+         (n = window.setTimeout(() => {
+           let e = 0,
+             n = (r) => {
+               e ||= r;
+-              let a = m(Math.min(1, (r - e) / 1080));
+-              (z(
+-                p,
+-                {
+-                  earnedK: Math.round(i.earnedK * a),
+-                  orders: Math.round(i.orders * a),
+-                  rehires: Math.round(i.rehires * a),
+-                  reviews: Math.round(i.reviews * a),
+-                },
+-                !0,
+-              ),
++              let a = m(Math.min(1, (r - e) / 1080)),
++                fwV = [
++                  Math.round(i.earnedK * a),
++                  Math.round(i.orders * a),
++                  Math.round(i.rehires * a),
++                  Math.round(i.reviews * a),
++                ],
++                fwK = fwV.join(`,`);
++              (fwK !== fwLast &&
++                ((fwLast = fwK),
++                z(
++                  p,
++                  {
++                    earnedK: fwV[0],
++                    orders: fwV[1],
++                    rehires: fwV[2],
++                    reviews: fwV[3],
++                  },
++                  !0,
++                )),
+                 a < 1 && (t = requestAnimationFrame(n)));
+             };
+           t = requestAnimationFrame(n);
