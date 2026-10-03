@@ -17,6 +17,9 @@
 //   - open resolves a `lan` placeholder host (https://lan:<port>/) to the Mac's LAN address before anything else, and
 //     scroll compares Safari's tab with the lease URL resolved the same way (I-073: the address changes on a Wi-Fi
 //     reconnect); a real address passes through unchanged, so what is opened and measured stays the same.
+//   - open first checks whether Safari is parked (I-077: only blank views listed after a park, I-047) and then loads the
+//     URL in the parked tab or restarts Safari (openParked, outside the block); with a web page listed it goes on
+//     exactly as before. open measures nothing.
 // The 2226d51 pins still hold for the blocks with those lines put back, so everything else in them stays pinned.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -72,9 +75,10 @@ const MARK = ['    const owner = leaseAndMark();', '    const owner = requireLea
 const LEASE_URL = ['    let leaseUrl = tryResolveLanUrl(holder.meta?.url); // a `lan` placeholder lease URL (I-073)', '    let leaseUrl = holder.meta?.url;'];
 const OPEN_LAN = ["    const url = resolveLanUrl(arg); // http://lan:<port>/ -> this Mac's LAN address now (I-073)\n    const info = await mirrorInfo(url);\n    const target = iphoneTarget(url, info, { keepHttps: flag('keep-https') });",
   "    const info = await mirrorInfo(arg);\n    const target = iphoneTarget(arg, info, { keepHttps: flag('keep-https') });"]; // I-073
+const OPEN_PARKED = ['\n    if (await openParked(url, target, info)) return; // Safari parked (I-047): its parked tab, or a Safari restart (I-077)', '']; // I-077
 const CHANGES = {
   scroll: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B], [GUARD, ''], [MAC, ''], MARK, LEASE_URL],
-  open: [OPEN_LAN],
+  open: [OPEN_LAN, OPEN_PARKED],
   record: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [GUARD, ''], [MAC, ''], MARK],
   status: [[STATUS_APPID, STATUS_83B7F7B]],
 };
@@ -82,7 +86,7 @@ const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49', s
 
 const PINS = {
   requireLease: '138ba8339515624d', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '43e304a76f1bf0c9', open: '3295744069dfcc04', scroll: 'ea6efe52e87761be', record: 'a22ece491910c1cb', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder)
+  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: 'ea6efe52e87761be', record: 'a22ece491910c1cb', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park)
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with

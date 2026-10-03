@@ -40,6 +40,11 @@
 // --stale-tab=<url> (incident I-050): a second Safari tab (PID:4242, page/5) restored from an earlier session, listed
 // BEFORE the live one as the Simulator's Safari did; a dead server's page: its websocket opens and has a page target,
 // but it never answers a command (logged as {staleConnected}); not listed while Safari is not running.
+// --parked-twin (incident I-077, the phone after a park, OBSERVED 2026-10-02 23:26Z): while Safari's tab shows about:blank,
+// /json also lists, BEFORE it, a second about:blank view of Safari's own app (page/6) that answers commands but says
+// document.visibilityState "hidden" (Safari's tab says "visible" unless hidden); a navigation sent to it is logged as
+// {twinNavigate: url} and changes nothing. --new-pid-on-launch: every Safari start gets a new pid (PID:4243, 4244, ...),
+// as on the phone (OBSERVED: one new pid per safari-restart / devicectl restart).
 // --resources=<file> (incident I-052): the page's Resource Timing entries (a JSON array, read at each request) for the
 // expression of tools/lib/sim.mjs RESOURCES_JS, answered as {origin, entries}.
 import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
@@ -83,6 +88,7 @@ async function evaluate(expr) {
   if (expr === 'location.href') return tab.url;
   if (expr === 'document.readyState') return 'complete';
   if (expr === 'document.title') return tab.title;
+  if (expr === 'document.visibilityState') return hidden ? 'hidden' : 'visible'; // I-077
   if (expr === '1') return 1;
   if (doc) {
     try { const v = vm.runInContext(expr, doc.ctx); return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); } catch (e) { return { __thrown: String(e) }; }
@@ -97,6 +103,18 @@ const WIDTH = Number(arg('width') || 430);
 const BLANK_VIEW = process.argv.includes('--blank-view');
 const EXTRA_TABS = process.argv.includes('--extra-tabs-after-reload');
 const ONE_CLIENT = process.argv.includes('--one-client-per-page');
+const PARKED_TWIN = process.argv.includes('--parked-twin'); // I-077
+const NEW_PID = process.argv.includes('--new-pid-on-launch');
+let safariPid = 4242;
+function twinEvaluate(expr) { // I-077: Safari's other blank view: answers, hidden, never navigates
+  const nav = expr.match(/location\.href = ("[^"]*")/);
+  if (nav) { log({ twinNavigate: JSON.parse(nav[1]) }); return 'ok'; }
+  log({ twinEvaluate: expr.slice(0, 80) });
+  if (expr === 'document.visibilityState') return 'hidden';
+  if (expr === 'location.href') return 'about:blank';
+  if (expr === '1') return 1;
+  return undefined;
+}
 const owner = new Map(); // page path -> the socket that holds the page
 const HIDE_AFTER = arg('hide-after-strokes') === null ? Infinity : Number(arg('hide-after-strokes'));
 let hidden = false, strokesPlayed = 0;
@@ -196,6 +214,7 @@ function onApp(kind, body = {}) {
     launching = false;
     if (pendingUrl) { const u = pendingUrl; pendingUrl = null; await load(u); } else if (LAUNCH_BLANK) return;
     tab.alive = true; tab.gen++; if (PAGE) doc = newDocument();
+    if (NEW_PID) safariPid++; // I-077: a new process, a new appId
   }, LAUNCH_MS);
 }
 if (PAGE && process.argv.includes('--jitter-at-end')) { // a sawtooth: 1 px per 10 ms over maxY-59..maxY, never still for 100 ms
@@ -221,11 +240,12 @@ const server = http.createServer((req, res) => {
     res.setHeader('content-type', 'application/json');
     if (!tab.alive) return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: `ws://127.0.0.1:${server.address().port}/devtools/page/2`, appId: 'PID:1304' }] : []));
     const ws = (n) => `ws://127.0.0.1:${server.address().port}/devtools/page/${n}`;
-    const safari = { url: tab.url, title: tab.title, webSocketDebuggerUrl: ws(1), appId: 'PID:4242' };
+    const safari = { url: tab.url, title: tab.title, webSocketDebuggerUrl: ws(1), appId: `PID:${safariPid}` };
+    const twin = PARKED_TWIN && tab.url === 'about:blank' ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: ws(6), appId: `PID:${safariPid}` }] : []; // I-077
     const extra = EXTRA_TABS && tab.gen > 1 ? [{ url: `${tab.url}copy/`, title: 'second copy', webSocketDebuggerUrl: ws(3), appId: 'PID:4242' },
       { url: 'http://192.168.0.9:8080/private/inbox', title: 'Private Inbox', webSocketDebuggerUrl: ws(4), appId: 'PID:4242' }] : [];
     const restored = stale ? [{ url: stale.url, title: stale.title, webSocketDebuggerUrl: ws(5), appId: 'PID:4242' }] : [];
-    return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: ws(2), appId: 'PID:1304' }, ...restored, safari, ...extra] : [...restored, safari, ...extra]));
+    return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: ws(2), appId: 'PID:1304' }, ...restored, ...twin, safari, ...extra] : [...restored, ...twin, safari, ...extra]));
   }
   res.statusCode = 404; res.end();
 });
@@ -242,7 +262,8 @@ server.on('upgrade', (req, sock) => {
   if (owner.has(req.url)) log({ pageTaken: req.url });
   owner.set(req.url, sock);
   sock.on('close', () => { if (owner.get(req.url) === sock) owner.delete(req.url); });
-  const targetId = `page-${tab.gen}`; // target ids change on every navigation, like iOS
+  const isTwin = req.url === '/devtools/page/6'; // I-077
+  const targetId = isTwin ? 'twin-1' : `page-${tab.gen}`; // target ids change on every navigation, like iOS
   send({ method: 'Target.targetCreated', params: { targetInfo: { targetId, type: 'page' } } });
   const handle = async (msg) => {
     if (msg.method !== 'Target.sendMessageToTarget') return send({ id: msg.id, result: {} });
@@ -250,7 +271,7 @@ server.on('upgrade', (req, sock) => {
     const inner = JSON.parse(msg.params.message);
     let result = {};
     if (inner.method === 'Runtime.evaluate') {
-      const v = await evaluate(inner.params.expression);
+      const v = isTwin ? twinEvaluate(inner.params.expression) : await evaluate(inner.params.expression);
       log({ evaluate: inner.params.expression.slice(0, 160), sha256: createHash('sha256').update(inner.params.expression).digest('hex') });
       result = v && typeof v === 'object' && '__thrown' in v ? { wasThrown: true, result: { type: 'string', value: v.__thrown } }
         : { result: v === undefined ? { type: 'undefined' } : { type: typeof v, value: v } };

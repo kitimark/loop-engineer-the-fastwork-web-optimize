@@ -5,7 +5,10 @@
 // Target ids change on every navigation, so reconnect (openTab) after navigating.
 // WebKit quirks seen on iOS 26.6.1: Runtime.evaluate ignores awaitPromise (returns the Promise object),
 // Page.navigate is not available (navigate with location.href), Timeline timestamps are all 0 over the proxy.
+import { mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { join } from 'node:path';
 import { lanSafeUrl, lanSafeText } from './iphone-url.mjs';
+import { sharedStateDir } from './paths.mjs';
 
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -187,9 +190,74 @@ export async function parkSafari({ port = Number(process.env.FW_IPHONE_PORT || 9
   for (;;) {
     await sleep(pollMs);
     const now = await list().catch(() => null);
-    if (Array.isArray(now) && !now.some((p) => p && p.url === tab.url && (!tab.appId || p.appId === tab.appId))) return { from: lanSafeUrl(tab.url) };
+    if (Array.isArray(now) && !now.some((p) => p && p.url === tab.url && (!tab.appId || p.appId === tab.appId))) {
+      recordSafariApp(tab.appId, port); // I-077: open finds the parked tab by it
+      return { from: lanSafeUrl(tab.url), appId: tab.appId ?? null };
+    }
     if (Date.now() - t0 >= timeoutMs) throw new Error(`Safari still lists ${lanSafeUrl(tab.url)} ${Math.round(timeoutMs / 1000)} s after location.href = ${PARK_URL}: not parked`);
   }
+}
+
+// Open a page after a park (incident I-077). Parked, the proxy lists only about:blank views, which pickTab never picks
+// (I-037), so `iphone.mjs open` failed with BLOCKED. On the phone after a park (lead, 2026-10-02 23:26Z, OBSERVED): two
+// about:blank views, both of Safari's app (one appId), no other app; Safari's appId ("PID:<pid>") changes on every Safari
+// start. ios_webkit_debug_proxy lists no bundle id or app name, only appId (iwdp_ipages_to_text: devtoolsFrontendUrl,
+// faviconUrl, thumbnailUrl, title, url, webSocketDebuggerUrl, appId; CONFIRMED, github.com/google/ios-webkit-debug-proxy
+// src/ios_webkit_debug_proxy.c, master, read 2026-10-03). So:
+//   - parkSafari records the appId of the tab it parked (Safari's), per proxy port, in the shared state dir;
+//   - parkedCandidates: with no web page listed, the blank views of that app (FW_IPHONE_APPID wins over the record);
+//     no record, or the recorded app not listed (Safari restarted since), is a reason, never a guess;
+//   - pickVisible: of those, the ONE whose document.visibilityState is "visible" (Safari's front tab; a page that is not
+//     shown is "hidden" per HTML Page Visibility; what Safari's second blank view says on the phone is UNRESOLVED until
+//     a real-phone check); none or several visible is a reason (I-037: never one of several).
+// The caller (iphone.mjs open) then loads the URL in that tab, or, given a reason (or when that tab did not load it),
+// restarts Safari (safari-restart).
+export const safariAppFile = () => join(sharedStateDir(), 'iphone', 'safari-app.json');
+/** Remember Safari's appId for the proxy on `port` (best effort: a record that can't be written never fails a park). */
+export function recordSafariApp(appId, port) {
+  if (!appId) return;
+  try {
+    const f = safariAppFile();
+    mkdirSync(join(f, '..'), { recursive: true });
+    writeFileSync(`${f}.${process.pid}.tmp`, JSON.stringify({ appId, port: Number(port), at: new Date().toISOString() }) + '\n');
+    renameSync(`${f}.${process.pid}.tmp`, f);
+  } catch {}
+}
+/** Safari's appId at the last park on the proxy at `port`, or null. */
+export function recordedSafariApp(port) {
+  try { const r = JSON.parse(readFileSync(safariAppFile(), 'utf8')); return r.port === Number(port) && typeof r.appId === 'string' ? r.appId : null; } catch { return null; }
+}
+/** {notParked} (a web page is listed: the usual path), {candidates: Safari's blank views} or {why}. */
+export function parkedCandidates(pages, appId) {
+  const all = (Array.isArray(pages) ? pages : []).filter((p) => p && p.webSocketDebuggerUrl);
+  if (all.some((p) => !isBlankUrl(p.url))) return { notParked: true };
+  if (!appId) return { why: 'no record of Safari\'s app (a park records it, I-077)' };
+  const c = all.filter((p) => p.appId === appId);
+  if (!c.length) return { why: `Safari's app at the last park (${appId}) is not listed: Safari restarted since (a new pid on every start), or it is not running` };
+  return { candidates: c };
+}
+/** The one candidate whose `state(p)` (document.visibilityState) is "visible": {tab} or {why}. */
+export async function pickVisible(candidates, state) {
+  const visible = [];
+  for (const p of candidates) { try { if ((await state(p)) === 'visible') visible.push(p); } catch {} }
+  if (visible.length === 1) return { tab: visible[0] };
+  return { why: visible.length ? `${visible.length} of Safari's blank views say they are visible: not picking one (I-037)` : `none of Safari's ${candidates.length} blank views is visible (Safari not in front, or the phone locked?)` };
+}
+/** document.visibilityState of a listed view (its own short connection). */
+export async function viewVisibility(p, { timeoutMs = 3000 } = {}) {
+  const c = await connect(p.webSocketDebuggerUrl, { timeoutMs });
+  try { return await c.evaluate('document.visibilityState', 'page', timeoutMs); } finally { c.close(); }
+}
+/** Safari's parked tab on the proxy at `port`: {tab}, {notParked} or {why} (see above). A proxy that does not answer
+ *  is {notParked}: the usual path reports it. */
+export async function findParkedTab({ port = Number(process.env.FW_IPHONE_PORT || 9222), appId = process.env.FW_IPHONE_APPID || null, state = viewVisibility } = {}) {
+  let pages;
+  try { pages = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json(); } catch { return { notParked: true }; }
+  const app = appId || recordedSafariApp(port);
+  const r = parkedCandidates(pages, app);
+  if (!r.candidates) return r;
+  const v = await pickVisible(r.candidates, state);
+  return v.tab ? { tab: v.tab, appId: app } : v;
 }
 
 // Run an async in-page expression that returns a Promise: stash the result on window, then poll.

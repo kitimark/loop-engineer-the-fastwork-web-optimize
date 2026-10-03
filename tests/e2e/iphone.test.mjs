@@ -15,7 +15,9 @@ import { makeFixtureHome } from '../fixtures/baseline.mjs';
 const IPHONE = tool('iphone.mjs'), LOCK = tool('lock.mjs');
 let env;
 before(async () => {
-  env = { FW_IPHONE_PORT: String(await freePort()), FW_IPHONE_DEVICE_PORT: String(await freePort()), FW_LOCK_LOAD1: '4.5' }; // load1: never the host's (I-056 records it, I-057)
+  env = { FW_IPHONE_PORT: String(await freePort()), FW_IPHONE_DEVICE_PORT: String(await freePort()), FW_LOCK_LOAD1: '4.5', // load1: never the host's (I-056 records it, I-057)
+    // open's restart fallback (I-077) never reaches the real WDA or the real phone: no WDA here, no device configured
+    FW_WDA_URL: `http://127.0.0.1:${await freePort()}`, FW_WDA_HOME: tempDir('fw-iphone-wdahome-'), FW_DEVICECTL: join(TESTS, 'fixtures', 'fake-devicectl.mjs') };
 });
 beforeEach(() => { env = { ...env, FW_STATE_DIR: tempDir('fw-iphone-') }; });
 const iphone = (...a) => node(IPHONE, a, { env, timeout: 20000 });
@@ -125,13 +127,17 @@ async function mirror(args) {
 }
 async function fakePhone(args = []) {
   const log = join(tempDir('fw-wip-'), 'wip.jsonl');
+  const wda = args.includes('--wda-port=0'); // also a fake WDA (safari-restart's driver, I-077)
   const p = await startProc(process.execPath, [join(TESTS, 'fixtures', 'fake-webkit-proxy.mjs'), '--port=0', '--url=http://127.0.0.1:9/start', ...args],
-    { env: { FAKE_WIP_LOG: log }, ready: (s) => s.match(/^FAKE_WIP_PORT=(\d+)$/m) });
+    { env: { FAKE_WIP_LOG: log, FAKE_WDA_LOG: `${log}.wda` }, ready: (s) => (wda ? /^FAKE_WDA_PORT=\d+$/m : /^FAKE_WIP_PORT=\d+$/m).test(s) });
   procs.push(p);
   const port = p.stdout().match(/^FAKE_WIP_PORT=(\d+)$/m)[1];
-  const navigations = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((e) => e.navigate).map((e) => e.navigate) : []);
+  const events = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
+  const navigations = () => events().filter((e) => e.navigate).map((e) => e.navigate);
   const blankConnects = () => (existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').filter((l) => l.includes('"blankViewConnected"')).length : 0);
-  return { env: { ...env, FW_IPHONE_PORT: port }, navigations, blankConnects };
+  const wdaCalls = () => (existsSync(`${log}.wda`) ? readFileSync(`${log}.wda`, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)).map((c) => `${c.method} ${c.path.replace(/FAKE-\d+/, ':id')}`) : []);
+  const wdaEnv = wda ? { FW_WDA_URL: `http://127.0.0.1:${p.stdout().match(/^FAKE_WDA_PORT=(\d+)$/m)[1]}` } : {};
+  return { env: { ...env, FW_IPHONE_PORT: port, ...wdaEnv }, port, navigations, blankConnects, events, wdaCalls };
 }
 const infoOf = async (s) => JSON.parse((await request(s.url + '__mirror/info')).text);
 const lan = (s) => s.url.replace('localhost', '127.0.0.1'); // what an agent passes: the LAN-style URL, not localhost
@@ -242,6 +248,61 @@ test('I-047: park needs the lease, navigates Safari\'s tab (not another app\'s b
   assert.equal(r.stdout, 'PARKED already: Safari shows no web page\n');
   assert.deepEqual(phone.navigations(), ['about:blank'], 'parked once');
   assert.match(iphone('dance').stdout, /\| park --owner <topic> \|/, 'the usage names park');
+});
+
+// ---- incident I-077: after a park the proxy lists only blank views; open used to fail with BLOCKED ----------------
+test('I-077: after a park, open loads the URL in Safari\'s parked tab (the visible one of Safari\'s blank views), never in another app\'s view or Safari\'s hidden one', async () => {
+  const s = await mirror([]);
+  const phone = await fakePhone(['--blank-view', '--parked-twin']);
+  lock('acquire', 'iphone', '--owner', 'me');
+  let r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
+  assert.equal(r.code, 0, r.out);
+  const st = await nodeAsync(IPHONE, ['status'], { env: phone.env, timeout: 20000 });
+  assert.match(st.stdout, /^tabs: \[\{"url":"about:blank","title":"","appId":"PID:1304"\},\{"url":"about:blank","title":"","appId":"PID:4242"\},\{"url":"about:blank","title":"","appId":"PID:4242"\}\]$/m, 'what the phone lists after a park: Safari\'s two blank views (and another app\'s)');
+  r = await nodeAsync(IPHONE, ['open', lan(s), '--owner', 'me'], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^Safari is parked \(only blank views listed, I-047\): loading the URL in Safari's parked tab \(PID:4242, I-077\)$/m);
+  assert.match(r.stdout, new RegExp(`^Safari now on ${lan(s).replace(/[./]/g, '\\$&')}$`, 'm'));
+  assert.deepEqual(phone.navigations(), ['about:blank', lan(s)]);
+  assert.deepEqual(phone.events().filter((e) => e.twinNavigate), [], 'Safari\'s hidden blank view was not navigated');
+  assert.equal(phone.blankConnects(), 0, 'the other app\'s blank view was never connected to (I-037)');
+  assert.doesNotMatch(r.out, /BLOCKED|openTab try 1:/);
+  assert.deepEqual(phone.wdaCalls(), [], 'no restart');
+});
+
+test('I-077: no record of Safari\'s app, or a stale one (Safari restarted since the park): open restarts Safari and loads the URL; --no-restart and a Simulator session refuse with what works', async () => {
+  const s = await mirror([]);
+  const phone = await fakePhone(['--blank-view', '--parked-twin', '--new-pid-on-launch', '--launch-ms=200', '--wda-port=0']);
+  const fresh = { ...phone.env, FW_STATE_DIR: tempDir('fw-iphone-') }; // no park recorded here
+  node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: fresh });
+  lock('acquire', 'iphone', '--owner', 'me');
+  let r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
+  assert.equal(r.code, 0, r.out);
+
+  r = await nodeAsync(IPHONE, ['open', lan(s), '--owner', 'me', '--no-restart'], { env: fresh, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /^Safari is parked \(only blank views listed, I-047\) and open can't use its tab: no record of Safari's app \(a park records it, I-077\)[^\n]*; without --no-restart, open restarts Safari and loads the URL \(iphone\.mjs safari-restart --owner me --url <url>\)$/m);
+  r = await nodeAsync(IPHONE, ['open', lan(s), '--owner', 'me'], { env: { ...fresh, FW_SIM_SESSION: 'sim-test' }, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /in a Simulator session: node tools\/sim\.mjs safari-restart --url <url>/);
+  assert.deepEqual(phone.navigations(), ['about:blank'], 'nothing navigated');
+  assert.deepEqual(phone.wdaCalls(), [], 'nothing restarted');
+
+  // Safari restarts (a new pid), the tab it restores is still about:blank: the recorded pid is stale
+  await request(`http://127.0.0.1:${phone.port}/__fake/app?kind=terminate`);
+  await request(`http://127.0.0.1:${phone.port}/__fake/app?kind=launch`);
+  for (let i = 0; i < 100 && !(await request(`http://127.0.0.1:${phone.port}/json`)).text.includes('PID:4243'); i++) await new Promise((r) => setTimeout(r, 50)); // --launch-ms=200
+  const st = await nodeAsync(IPHONE, ['status'], { env: phone.env, timeout: 20000 });
+  assert.match(st.stdout, /"appId":"PID:4243"/, st.out);
+  r = await nodeAsync(IPHONE, ['open', lan(s), '--owner', 'me', '--timeout', '9'], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^Safari is parked \(only blank views listed, I-047\) and open can't use its tab: Safari's app at the last park \(PID:4242\) is not listed: Safari restarted since[^\n]*; restarting Safari to load the URL \(I-077\)$/m);
+  assert.match(r.stdout, /^restarting Safari via wda, then loading /m);
+  assert.match(r.stdout, new RegExp(`^SAFARI_RESTARTED via wda in \\d+ ms: ${lan(s).replace(/[./]/g, '\\$&')}$`, 'm'));
+  assert.match(r.stdout, new RegExp(`^Safari now on ${lan(s).replace(/[./]/g, '\\$&')}$`, 'm'));
+  assert.deepEqual(phone.wdaCalls().filter((c) => /apps\/(terminate|launch)|\/url$/.test(c)), ['POST /session/:id/wda/apps/terminate', 'POST /session/:id/wda/apps/launch', 'POST /session/:id/url']);
+  assert.deepEqual(phone.events().filter((e) => e.twinNavigate), [], 'Safari\'s hidden blank view was not navigated');
+  assert.equal(phone.blankConnects(), 0, 'the other app\'s blank view was never connected to (I-037)');
 });
 
 test('I-060: a phone run marks the lease with what it runs (from --label, or --doing), clears it at its end; a killed run leaves a dead-pid marker the page ignores', async () => {

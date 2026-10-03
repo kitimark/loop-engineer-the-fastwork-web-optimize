@@ -31,7 +31,8 @@
 // has no such data), else meta.sentinel null. `wait.mjs phone-temp --below auto` reads it back.
 // Park (I-047): once the page was reloaded, the run ends with Safari on about:blank (wip.mjs parkSafari), also after
 // a failure, so an animating test page does not keep heating the phone; --no-park keeps the page. The next run on
-// the phone needs `iphone.mjs open <url>` first. The Simulator target never parks.
+// the phone needs `iphone.mjs open <url>` first, which loads it in the parked tab (or restarts Safari when that tab can't
+// be told apart, I-077). The Simulator target never parks.
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -79,7 +80,8 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--heat-sentinel]                                       judge the run as the heat sentinel (default for --arm C
                                                             without --warmup): meta.sentinel {driver, criterion, value, pass}
     [--no-park]                                             keep the page open after the run (default: Safari parks
-                                                            on about:blank, I-047; open <url> before the next run)`;
+                                                            on about:blank, I-047; iphone.mjs open <url> before the
+                                                            next run loads it in the parked tab or restarts Safari, I-077)`;
 
 /** Device settings that a page cannot read (U9, research/architecture/unknowns-validity.md): recorded as 'unknown'
  *  rather than left out, until a device-side reader (T2: WDA / lockdown) fills them in. */
@@ -261,7 +263,7 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
     if (rn.status !== 0) throw new Error(`could not renew the iphone lease: ${(rn.stderr || rn.stdout || '').trim()}`);
   } else await target.renew?.(need);
   const tabs = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
-  if (!target && Array.isArray(tabs) && tabs.length && tabs.every((p) => isBlankUrl(p.url))) throw new Error(`Safari shows no web page (parked after the last run or block, I-047?): node tools/iphone.mjs open <url> --owner ${owner} first`);
+  if (!target && Array.isArray(tabs) && tabs.length && tabs.every((p) => isBlankUrl(p.url))) throw new Error(`Safari shows no web page (parked after the last run or block, I-047?): node tools/iphone.mjs open <url> --owner ${owner} first (it loads the URL in the parked tab, or restarts Safari, I-077)`);
   const tab = safariTab(tabs); // never a blank web view of another app, never the first of several (I-037)
   if (CERT_WARNING_TITLE.test(tab.title || '')) throw new Error(`Safari shows its certificate warning ("${tab.title}") on ${tab.url}, not the page; run: node tools/iphone.mjs open <url> --owner ${owner} (incident I-003)`);
   const holder = target ? null : lockStatus('iphone').holder;
@@ -317,7 +319,7 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
 async function parkAfterRun(port, owner) {
   try {
     const r = await parkSafari({ port });
-    console.log(r.already ? 'parked: Safari shows no web page (--no-park keeps the page)' : `parked Safari on about:blank (--no-park keeps the page; open <url> before the next run)`);
+    console.log(r.already ? 'parked: Safari shows no web page (--no-park keeps the page)' : `parked Safari on about:blank (--no-park keeps the page); before the next run: node tools/iphone.mjs open <url> --owner ${owner} (it loads the URL in the parked tab, or restarts Safari, I-077)`);
   } catch (e) { console.error(`warning: could not park Safari (${e.message}); run: node tools/iphone.mjs park --owner ${owner}`); }
 }
 

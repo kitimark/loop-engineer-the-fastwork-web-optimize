@@ -239,14 +239,14 @@ test('I-047: a control run records the heat-sentinel verdict next to the battery
   assert.deepEqual([j.meta.sentinel.driver, j.meta.sentinel.criterion, typeof j.meta.sentinel.pass], ['S', 'bottom >= 58 fps and scroll >= 44 fps', 'boolean']);
   assert.deepEqual(j.meta.sentinel.value, { bottom: j.summary.phases.bottom.fps, scroll: j.summary.phases.scroll.fps });
   assert.match(r.stdout, /^ {2}heat sentinel \[S\]: (PASS|FAIL) .*; battery 30\.\d+ °C at the end$/m);
-  assert.match(r.stdout, /^parked Safari on about:blank/m);
+  assert.match(r.stdout, /^parked Safari on about:blank \(--no-park keeps the page\); before the next run: node tools\/iphone\.mjs open <url> --owner me \(it loads the URL in the parked tab, or restarts Safari, I-077\)$/m);
   assert.deepEqual(phone.events().filter((e) => e.navigate).map((e) => e.navigate), ['about:blank'], 'parked once, after the run');
   const ev = phone.events();
   assert.ok(ev.findIndex((e) => e.navigate) > ev.findLastIndex((e) => e.evaluate && e.evaluate.startsWith('window.__fwrState')), 'the park comes after the timed part');
 
   r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--out', join(dir, 'next.json')], phone.env);
   assert.equal(r.code, 1, r.out);
-  assert.match(r.stderr, /Safari shows no web page \(parked after the last run or block, I-047\?\): node tools\/iphone\.mjs open <url> --owner me first/);
+  assert.match(r.stderr, /Safari shows no web page \(parked after the last run or block, I-047\?\): node tools\/iphone\.mjs open <url> --owner me first \(it loads the URL in the parked tab, or restarts Safari, I-077\)$/m);
   assert.equal(phone.events().filter((e) => e.reload).length, 2, 'no reload of a parked tab');
   r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
   assert.equal(r.code, 0, r.out);

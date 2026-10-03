@@ -6,6 +6,9 @@
 //   node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://lan:<port>/
 //   node tools/iphone.mjs status                                  # device + open tab (no lease needed)
 //   node tools/iphone.mjs open  https://lan:<port>/ --owner <topic>   # navigate Safari (location.href)
+//        # also after a park (I-077): only blank views listed -> the URL loads in Safari's parked tab (the visible blank
+//        # view of the app the last park recorded), else open restarts Safari (safari-restart) and loads it; --no-restart
+//        # refuses instead
 //        # host `lan` (or `lan-host`): this Mac's LAN address, resolved at run time (lib/lan.mjs, `node tools/lan.mjs`
 //        # prints it; it changes on a Wi-Fi reconnect, I-073); also in the lease's --url and safari-restart --url
 //   node tools/iphone.mjs scroll --owner <topic> [--out out/iphone/<topic>-<label>.json] [--label patched]
@@ -52,7 +55,7 @@
 // crossing log, tool hashes) -> out/iphone/<owner>-run-<label>-<ts>.json (schema fw-iphone-run/1).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
-import { openTab, navigate, safariTab, sleep, parkSafari } from './lib/wip.mjs';
+import { openTab, navigate, safariTab, sleep, parkSafari, connect, findParkedTab } from './lib/wip.mjs';
 import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, describeHold } from './lib/lock.mjs';
 import { keepAwakeFor } from './lib/awake.mjs';
 import { parseJob, phoneRunText } from './lib/hold-job.mjs';
@@ -145,6 +148,51 @@ function summarize(res) {
   return out;
 }
 
+/** safari-restart (tools/lib/safari-restart.mjs): quit + relaunch Safari (WDA, else devicectl), load `url` if given. */
+async function restartSafari(url) {
+  const { safariRestart, wdaDriver, devicectlDriver } = await import('./lib/safari-restart.mjs');
+  const { readConfig } = await import('./lib/wda-runner.mjs');
+  const { WDA_URL } = await import('./lib/wda.mjs');
+  const known = readConfig();
+  return safariRestart({ drivers: [wdaDriver({ base: WDA_URL() }), devicectlDriver({ udid: known.udid })], via: opt('via', 'auto'), url, port: PORT,
+    timeoutMs: 1000 * Number(opt('timeout', 30)), known, keepHttps: flag('keep-https') });
+}
+
+/** Incident I-077: after a park (I-047, `run` parks by default) the proxy lists only blank views, which openTab never
+ *  picks (I-037), so `open` failed with BLOCKED. When no web page is listed: load the URL in Safari's parked tab (the one
+ *  visible blank view of the app the last park recorded, lib/wip.mjs findParkedTab), else restart Safari and load it
+ *  there (safari-restart; --no-restart refuses instead; a Simulator session points to sim.mjs safari-restart). Returns
+ *  false when Safari shows a web page: open goes on as before. */
+async function openParked(url, target, info) {
+  const p = await findParkedTab({ port: PORT });
+  if (p.notParked) return false;
+  let why = p.why;
+  if (p.tab) {
+    console.log(`Safari is parked (only blank views listed, I-047): loading the URL in Safari's parked tab (${p.appId}, I-077)`);
+    let c2;
+    try { c2 = await navigate(await connect(p.tab.webSocketDebuggerUrl, { timeoutMs: 8000 }), target.url, new URL(target.url).host); } catch (e) {
+      if (target.url.startsWith('https:')) e.message += ` (Safari never listed ${target.url}; if it shows "This Connection Is Not Private", that is the certificate warning: open the http:// URL instead, incident I-003)`;
+      why = `the parked tab did not load it (${e.message})`;
+    }
+    if (c2) {
+      const landed = await c2.evaluate(LANDED_JS);
+      c2.close();
+      const problem = landedProblem(landed, target.url, info);
+      if (problem) throw new Error(problem);
+      console.log(`Safari now on ${landed.href}`);
+      return true;
+    }
+  }
+  const owner = opt('owner', process.env.FW_LOCK_OWNER);
+  const head = `Safari is parked (only blank views listed, I-047) and open can't use its tab: ${why}`;
+  if (process.env.FW_SIM_SESSION) throw new Error(`${head}; in a Simulator session: node tools/sim.mjs safari-restart --url <url>`);
+  if (flag('no-restart')) throw new Error(`${head}; without --no-restart, open restarts Safari and loads the URL (iphone.mjs safari-restart --owner ${owner} --url <url>)`);
+  console.log(`${head}; restarting Safari to load the URL (I-077)`);
+  const r = await restartSafari(url);
+  console.log(`Safari now on ${r.href}`);
+  return true;
+}
+
 async function main() {
   // review-lock-share N5: a timing command never runs inside a functional slot (FW_LOCK_SHARED from `lock.mjs run
   // --shared`, in either switch state) or a functional Simulator session (FW_SIM_FUNCTIONAL, also via FW_IPHONE_PORT)
@@ -172,6 +220,7 @@ async function main() {
     const info = await mirrorInfo(url);
     const target = iphoneTarget(url, info, { keepHttps: flag('keep-https') });
     if (target.note) console.log(target.note);
+    if (await openParked(url, target, info)) return; // Safari parked (I-047): its parked tab, or a Safari restart (I-077)
     const c = await openTab(() => true);
     let c2;
     try { c2 = await navigate(c, target.url, new URL(target.url).host); } catch (e) {
@@ -259,15 +308,10 @@ async function main() {
   if (cmd === 'wda') return (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, requireLease });
   if (cmd === 'safari-restart') {
     requireLease();
-    const { safariRestart, wdaDriver, devicectlDriver } = await import('./lib/safari-restart.mjs');
-    const { readConfig } = await import('./lib/wda-runner.mjs');
-    const { WDA_URL } = await import('./lib/wda.mjs');
-    const known = readConfig();
-    await safariRestart({ drivers: [wdaDriver({ base: WDA_URL() }), devicectlDriver({ udid: known.udid })], via: opt('via', 'auto'), url: opt('url', null), port: PORT,
-      timeoutMs: 1000 * Number(opt('timeout', 30)), known, keepHttps: flag('keep-https') });
+    await restartSafari(opt('url', null));
     return;
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT });
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(0); }, async (e) => { console.error(e.message || e); await clearMark(); process.exit(1); });
