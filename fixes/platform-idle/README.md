@@ -208,10 +208,24 @@ reported.
   needed for the verdict, which compares counts directly.
 
 **Phone no-worse check** (the lead schedules it; this topic makes no phone use):
-- driver S (`iphone.mjs scroll`), arms C and V, one run each after one uncounted warm-up per port;
-- warm start, battery 38-40 °C; one start method (`iphone.mjs open` the arm's URL, then scroll);
+- It runs only after PR-009 is decided, with option A or C. It queues after P-079.
+- Driver S (`iphone.mjs scroll`), arms C and V, one uncounted warm-up per port.
+  - Then 2 counted runs per arm in the order C V V C, if the lead's slot allows.
+  - Otherwise 1 run per arm. The rule below is thin at n = 1.
+- One start method: `iphone.mjs open` the arm's URL, then scroll.
+- Heat condition B (user T-039, an experiment):
+  - The phone runs at real thermal Serious.
+  - The gate is `research/phone-thermal-gate/thermal-gate.mjs` (main f0b7b28, sha256/12 `4604218c4041`).
+  - The gate is read at the start and at the end of every hold. A hold counts only if both reads say Serious with
+    Is Induced = No; otherwise the hold is re-run.
+  - Holds run back to back, because a parked phone leaves Serious within about 3 min.
+  - Each run logs the timer-grid median and the battery °C. Stop at 44 °C or at Critical.
+  - Fallback A, at the lead's call: the same check from a Fair/Nominal start, with the same gate.
+  - This replaces the earlier "warm start, battery 38-40 °C" line (amended 2026-10-03 on mgmt-ops-10's request, before
+    any phone data).
 - Low Power Mode runs are dropped.
-- No worse means: V's dt > 50 count ≤ C's + 1, and V's bottom fps ≥ C's − 2.
+- No worse means: V's dt > 50 count ≤ C's + 1, and V's bottom fps ≥ C's − 2. With 2 runs per arm, the rule is applied
+  to V's worse run against C's better run.
 
 **Which runs are pre-registered.** Only the P-077 runs listed above, made after this commit. Everything else in this
 README is exploratory: the comp-census runs, probe8 pixels, and the `simpi` Simulator runs.
