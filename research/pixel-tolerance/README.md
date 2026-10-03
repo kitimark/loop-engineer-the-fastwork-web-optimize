@@ -52,8 +52,7 @@ Reading:
 - The PR-009 level numbers (56-64) are one-pixel-thick edge rows: 177-448 pixels in the worst frame. The 23 on desktop
   sweep is a 1-2 % luminance step inside a text fill. Neither is a "visible change" at 1x; both would show in an
   A/B flicker at 4x. That is a judgement for the user, not a measurement.
-- Gaps (cost new captures, not done): a true A/A for PR-009 (old build loaded twice; one shared probe hold, about 5
-  minutes); the Simulator crop sizes and A/A for PR-009's WebKit numbers; cd-roll-ca's counted set after its rebuild
+- Gaps (cost new captures): a true A/A for PR-009 (done for Chrome in §5, rev 2; Simulator still open); the Simulator crop sizes and A/A for PR-009's WebKit numbers; cd-roll-ca's counted set after its rebuild
   on strip-tc; rm1440's decisive check (toggle will-change off and on in both arms, then compare).
 - Re-run: scratch scripts `chromecmp.mjs` (PR-009 PNG pairs in `out/platform-idle/p8*/`), `frames.mjs` (full-frame
   pairs from `out/breakpoints/pix/png/rm1440/` and `out/breakpoints/simvp/`), `crops.mjs` (magnified crops). They use
@@ -120,3 +119,54 @@ How the tolerance rule changes this list: with B, candidate 1 and 2 land on a co
 typing-chunks lands; 4 and 5 stay user decisions because their difference is in motion, which the T2 numbers (frozen
 frames) cannot see. If the user wants 4 or 5, a motion criterion has to be agreed first (e.g. position within 1 px at
 every frame of a scripted scroll).
+
+## 5. Rev 2 of PR-010 (user decision on rev 1, 2026-10-03 10:52Z): full-page differential, Try it, size
+
+The user asked for more on "Try it: scroll the real pages", the full-page differential, the hero photo at 1:1 ("i feel
+the difference"), and noted that "if it small display in the website it may acceptable". Rev 2 (same PR-010) answers
+each point. Pictures live in the proposal (they cannot go in a thread yet); scratch scripts `fullpage.mjs`, `fp2-fp6.mjs`
+and the probe `probe9.mjs` are in the session scratchpad, not committed.
+
+**New capture (one shared-lane Chrome hold, screenshots only, no timing, frozen frames):** `probe9.mjs`: the old build
+(st6-rb2) loaded twice (A, A2) and the new one (platform-idle, B) once, at 430x932 DPR 3 and 1440x900 DPR 2, every
+animation paused at the same moment (sweep at 2000 ms, glint at 0.4/0.5/0.6 s), whole-viewport screenshots. Numbers use
+pixels where A vs A2 differs by 8 or less ("beyond A/A"), per CSS px max-pooled so thin lines stay.
+
+| frame (whole screen, real size) | A/A inside the changed boxes | max level | changed CSS px (over 8) | where |
+|---|---|---|---|---|
+| PR-009 glint, phone 430 | 3 (proxy said 3: confirmed in Chrome) | 56 | 94 = 0.024 % | one 50 x 3 px line (the dash edge rows) |
+| PR-009 glint, desktop 1440 | 1 | 31 | 360 = 0.028 % | dash 78 x 4, two bits of the title (9-10) |
+| PR-009 sweep, desktop, title 2 | 0 | 10 | 88 = 0.007 % | 8 x 22 px in the letters, 60 % flat fill |
+| PR-009 sweep, phone | 0 | 37 (letters of the off-centre title) | 59 = 0.015 % | a few letters; a 139 x 124 ring at the shield (2,295 px) is another animation at another moment, set aside |
+
+Caveat that the full frames added: a frozen frame is not a still page. Script-driven content (count-ups "192K" vs
+"200K", the review marquee, the shield rim, the status clock) is at a different moment in two loads, so the A vs B
+difference of a whole screen is much larger than PR-009's (desktop title 0: 8 % of pixels, all count-up). Those pixels
+are painted blue or excluded; the A/A (A vs A2) removes them only where the two old loads agree. Chrome only; the
+Simulator (WebKit) A/A for PR-009 is still missing.
+
+**cd-strip and cd-roll-ca: no whole-screen picture.** The saved whole-page shots (`check.mjs`) have a live clock and are
+not frozen; the clean comparison is the virtualised clock box (M4), 28 x 21 CSS px. Their rows stay as numbers (§2).
+
+**Size ladder** (frozen frames shrunk by box average; "1x" = one CSS px per screen px):
+
+| case | full res | 1x | half | third |
+|---|---|---|---|---|
+| glint phone (max level) | 56 | 19 | 9 | 6 |
+| glint desktop | 31 | 15 | 10 | 10 |
+| sweep desktop (fill step) | 10 | 9 | 10 | 9 |
+| hero photos rm1440, whole hero (max / % of screen over 8) | 118 / 1.33 % | same | 55 / 0.84 % | 53 / 0.51 % |
+| skyline photo card 212 x 212 (mean level) | 6.8 | 6.8 | 4.7 | 3.7 |
+| smooth photo cards (mean level) | 0.9 / 2.8 | | 0.7 / 2.1 | 0.6 / 1.7 |
+| WebKit hero cards y300, phone (max / px over 8) | 73 | 49 / 566 | 36 / 80 | 36 / 4 |
+
+Reading: T2 changes are thin lines or a ~4 % fill step on tens to hundreds of CSS px and shrink below 10 levels at 1x
+or half; a fill step does not shrink. The photo case does not vanish when shrunk (still 3.7 mean on the detailed
+photo at a third of the size) but exists only with reduced motion at desktop width (rm430, c430, c1440 all 0 %,
+research/breakpoints). Whether a given level is visible is for the user's eyes (general rule of thumb: a step of about
+1 % in a smooth area, 3 levels, is hard to see; UNRESOLVED on this page). "Small on the display" could become a T2 line
+(change after shrinking to the displayed size); offered in the proposal's risk note, not as a fourth option.
+
+**Which case did the user feel?** The sharper hero photos at 1440 with reduced motion (rm1440, st6-rb2): shown at 1:1
+as the first pair of option A. Try it per option: A serves st6-rb2 (cannot show it in the 430-wide frame; needs a wide
+window with Reduce motion), B serves PR-009 (platform-idle), C serves hero-exit-threaded (WebKit only).
