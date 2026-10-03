@@ -1,0 +1,275 @@
+// I-090 (user T-043, "comments like Claude artifacts"): comments on console items. The anchor model
+// (tools/lib/console-comments.mjs: pages, item id allowlist, caps, the link back, markers), the store (a comment is a
+// thread that carries its anchor, console-threads.mjs), and the browser side (tools/lib/console-comments.js) on a tiny
+// fake DOM: the Comment button on hover / click / selection, the box ("Your comment goes to: lead"), the POST, the
+// markers with their counts. Every test uses its own $FW_STATE_DIR. Fake addresses only (192.168.77.12).
+import { test, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { tempDir, TOOLS } from '../helpers.mjs';
+
+const C = await import('../../tools/lib/console-comments.mjs');
+const T = await import('../../tools/lib/console-threads.mjs');
+let state;
+beforeEach(() => { state = tempDir('fw-comments-'); process.env.FW_STATE_DIR = state; });
+
+test('anchor model: known pages, an allowlisted item id per page, caps; anything else refused', () => {
+  const ok = [
+    ['steps', 'step:C-032'], ['proposals', 'PR-009'], ['proposals', 'PR-009/option:both'], ['proposals', 'PR-009/option:both/shot:2'],
+    ['proposals', 'PR-009/video:b'], ['proposals', 'PR-012/option:gpu-roll.v2/video:both'], ['status', 'status:cd-strip'],
+    ['progress', 'progress:style-recalc'], ['build', 'progress:hero-exit'], ['threads', 'thread:T-003'], ['threads', 'thread:T-003/msg:4'],
+  ];
+  for (const [page, item] of ok) assert.deepEqual(C.normAnchor({ page, item }), { page, item }, `${page} ${item}`);
+  const bad = [
+    [{ page: 'admin', item: 'step:C-1' }, /anchor\.page must be one of/],
+    [{ page: 'steps', item: 'PR-009' }, /not an item of the steps page/],
+    [{ page: 'steps', item: 'step:C-032 ' }, /not an item/],
+    [{ page: 'proposals', item: 'PR-009/option:Both' }, /not an item/],
+    [{ page: 'proposals', item: 'PR-009/shot:2/option:x' }, /not an item/],
+    [{ page: 'status', item: 'status:../../etc' }, /not an item/],
+    [{ page: 'status', item: `status:${'a'.repeat(200)}` }, /not an item/],
+    [{ page: 'threads', item: 'thread:T-1/msg:1/x' }, /not an item/],
+    [{ page: 'threads', item: 7 }, /not an item/],
+    [{ page: 'steps', item: 'step:C-1', quote: { x: 1 } }, /anchor\.quote must be text/],
+    [null, /anchor must be an object/], [['steps'], /anchor must be an object/],
+  ];
+  for (const [a, re] of bad) assert.throws(() => C.normAnchor(a), re, JSON.stringify(a));
+  const long = C.normAnchor({ page: 'status', item: 'status:cd-strip', quote: `a\nb c ${'x'.repeat(400)}`, label: ' Countdown\tstrips ' });
+  assert.equal(long.quote.length, C.LIMITS.quote);
+  assert.ok(long.quote.startsWith('a b c x') && long.quote.endsWith('…'), 'one plain line, cut with …');
+  assert.equal(long.label, 'Countdown strips');
+  assert.deepEqual(Object.keys(C.normAnchor({ page: 'steps', item: 'step:C-1', quote: '  ', label: '' })), ['page', 'item'], 'empty quote and label are left out');
+});
+
+test('anchor model: the link back, the words for the item, the thread title', () => {
+  const u = (page, item) => C.anchorUrl({ page, item });
+  assert.equal(u('steps', 'step:C-032'), '/#C-032');
+  assert.equal(u('proposals', 'PR-009/option:both/shot:2'), '/proposals#PR-009');
+  assert.equal(u('status', 'status:cd-strip'), '/status#cd-strip');
+  assert.equal(u('progress', 'progress:style-recalc'), '/progress#style-recalc');
+  assert.equal(u('build', 'progress:hero-exit'), '/build#hero-exit');
+  assert.equal(u('threads', 'thread:T-003/msg:4'), '/threads#T-003');
+  assert.equal(u('steps', 'javascript:alert(1)'), null);
+  assert.equal(C.itemText({ page: 'proposals', item: 'PR-009/option:both/shot:2' }), 'PR-009 option both, shot 2');
+  assert.equal(C.itemText({ page: 'threads', item: 'thread:T-003/msg:4' }), 'T-003 #4');
+  assert.equal(C.itemText({ page: 'status', item: 'status:cd-strip' }), 'status cd-strip');
+  assert.equal(C.commentTitle({ page: 'steps', item: 'step:C-032', label: 'Swipe A/B' }, 'the second\none felt slower'),
+    'Comment on C-032 "Swipe A/B": the second one felt slower');
+  assert.ok(C.commentTitle({ page: 'steps', item: 'step:C-1' }, 'x'.repeat(500)).length <= 160);
+  assert.deepEqual(C.anchorView({ page: 'steps', item: 'step:C-1' }), { page: 'steps', item: 'step:C-1', url: '/#C-1', itemText: 'C-1' });
+  assert.equal(C.anchorView(undefined), undefined);
+});
+
+test('markers: counts per item on one page, open vs closed, newest last; proposal sub-items count for the proposal', () => {
+  const th = (id, page, item, status = 'open') => ({ id, status, anchor: { page, item } });
+  const list = [th('T-001', 'proposals', 'PR-009/option:both/shot:2'), th('T-002', 'proposals', 'PR-009', 'closed'),
+    th('T-003', 'steps', 'step:C-1'), { id: 'T-004', status: 'open' }, th('T-005', 'proposals', 'PR-009/option:both/shot:2'),
+    th('T-006', 'proposals', 'step:C-1')];
+  const m = C.markersFor('proposals', list, (t) => `s-${t.status}`);
+  assert.deepEqual(Object.keys(m.items).sort(), ['PR-009', 'PR-009/option:both/shot:2']);
+  assert.deepEqual(m.items['PR-009/option:both/shot:2'], { count: 2, open: 2, threads: [{ id: 'T-001', state: 's-open' }, { id: 'T-005', state: 's-open' }] });
+  assert.deepEqual(m.items['PR-009'].threads.map((t) => t.id), ['T-001', 'T-002', 'T-005']);
+  assert.equal(m.items['PR-009'].open, 2);
+  assert.deepEqual(C.markersFor('steps', list).items, { 'step:C-1': { count: 1, open: 1, threads: [{ id: 'T-003', state: 'open' }] } });
+  assert.deepEqual(C.markersFor('status', list).items, {});
+});
+
+test('store: a comment is a user thread with its anchor; plain threads keep their exact shape; agents cannot set one', async () => {
+  const anchor = { page: 'proposals', item: 'PR-009/option:both/shot:2', quote: 'the blur\nedge', label: 'Blur the strip' };
+  const { thread } = await T.createThread({ title: C.commentTitle(C.normAnchor(anchor), 'Looks soft on 192.168.77.12'), text: 'Looks soft on 192.168.77.12', fromPage: true, anchor });
+  const raw = JSON.parse(readFileSync(join(state, 'console', 'threads', `${thread.id}.json`), 'utf8'));
+  assert.deepEqual(raw.anchor, { page: 'proposals', item: 'PR-009/option:both/shot:2', quote: 'the blur edge', label: 'Blur the strip' });
+  assert.equal(raw.messages[0].text, 'Looks soft on 192.168.77.12', 'the user text as typed (local store)');
+  assert.equal(raw.title, 'Comment on PR-009 option both, shot 2 "Blur the strip": Looks soft on 192.168.77.12');
+  const view = T.pageThread(T.getThread(thread.id));
+  assert.deepEqual(view.anchor, { ...raw.anchor, url: '/proposals#PR-009', itemText: 'PR-009 option both, shot 2' });
+  assert.deepEqual(T.summary(T.getThread(thread.id)).anchor, view.anchor);
+  const plain = (await T.createThread({ title: 'x', text: 'y', fromPage: true })).thread;
+  const rawPlain = JSON.parse(readFileSync(join(state, 'console', 'threads', `${plain.id}.json`), 'utf8'));
+  assert.ok(!('anchor' in rawPlain) && !('anchor' in T.pageThread(rawPlain)) && !('anchor' in T.summary(rawPlain)), 'no anchor key without one');
+  await assert.rejects(T.createThread({ title: 'x', text: 'y', fromPage: true, anchor: { page: 'steps', item: 'PR-1' } }), /not an item of the steps page/);
+  await assert.rejects(T.createThread({ title: 'x', text: 'y', by: 'lead', anchor }), /only the user's comments carry an anchor/);
+  assert.equal(T.listThreads().length, 2, 'nothing stored by the refused ones');
+  // the lead's wait: the comment wakes it and names the item and the quote
+  const w = T.threadWaitCondition({ as: 'lead' }).check();
+  assert.ok(w.met);
+  const news = JSON.parse(w.detail);
+  assert.deepEqual(news.map((n) => [n.id, !!n.anchor]), [[thread.id, true], [plain.id, false]]);
+  const txt = T.newsText(news[0], 'lead');
+  assert.match(txt, new RegExp(`${thread.id} .*Comment on PR-009`));
+  assert.match(txt, /comment on PR-009 option both, shot 2 \(\/proposals#PR-009\): "the blur edge"/);
+});
+
+test('pages: every console page marks its items with an anchor id of its own page\'s pattern', () => {
+  const want = {
+    'console-page.html': [/'data-anchor': \/\^C-\\d\{1,6\}\$\/\.test\(s\.id\) \? 'step:' \+ s\.id : null/],
+    'status-page.html': [/'data-anchor': SLUG\.test\(v\.id\) \? 'status:' \+ v\.id : null/, /'data-comment-slot': true/],
+    'progress-page.html': [/'data-anchor': anchorId\(it\.id\)/, /'data-anchor': anchorId\(a\.id\)/, /\? 'progress:' \+ id : null/],
+    'proposals-page.html': [/'data-anchor': \/\^PR-\\d\{1,6\}\$\/\.test\(p\.id\) \? p\.id : null/, /p\.id \+ '\/option:' \+ o\.name/, /an \+ '\/shot:' \+ \(i \+ 1\)/, /an \+ '\/video:both'/],
+    'threads-page.html': [/'thread:' \+ t\.id \+ '\/msg:' \+ x\.n/, /id="tv-anchor"/],
+  };
+  for (const [f, res] of Object.entries(want)) {
+    const html = readFileSync(join(TOOLS, 'lib', f), 'utf8');
+    for (const re of res) assert.match(html, re, f);
+  }
+  const css = readFileSync(join(TOOLS, 'lib', 'console-nav.css'), 'utf8');
+  for (const c of ['.cmt-btn', '.cmt-box', 'a.cmt-marker', '.cmt-note']) assert.ok(css.includes(c), c);
+});
+
+/** console-comments.js on a tiny fake DOM: elements with attributes, closest/querySelector for the few selectors it uses. */
+function commentsPage({ page = 'steps', markers = {}, posted = { thread: { id: 'T-008', to: ['lead'] } } } = {}) {
+  const matches = (n, sel) => sel.split(',').some((s) => {
+    s = s.trim();
+    if (s[0] === '.') return (n.className || '').split(/\s+/).includes(s.slice(1));
+    if (s[0] === '[') return n.attrs && s.slice(1, -1) in n.attrs;
+    return n.tagName === s;
+  });
+  class N {
+    constructor(tag, attrs = {}, text = '') { this.tagName = tag; this.attrs = { ...attrs }; this.children = []; this.parentNode = null; this.listeners = {}; this._t = text; this.hidden = false; this.className = attrs.class || ''; this.style = {}; this.value = ''; this.nodeType = 1; }
+    get textContent() { return this._t + this.children.map((c) => c.textContent).join(''); }
+    set textContent(v) { this._t = String(v); this.children = []; }
+    getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }
+    setAttribute(k, v) { this.attrs[k] = String(v); }
+    get href() { return this.attrs.href; }
+    appendChild(c) { c.parentNode = this; this.children.push(c); return c; }
+    remove() { if (this.parentNode) this.parentNode.children = this.parentNode.children.filter((x) => x !== this); this.parentNode = null; }
+    addEventListener(e, f) { (this.listeners[e] ||= []).push(f); }
+    closest(sel) { for (let n = this; n && n.nodeType === 1; n = n.parentNode) if (matches(n, sel)) return n; return null; }
+    all() { return this.children.flatMap((c) => [c, ...c.all()]); }
+    querySelector(sel) { return this.all().find((n) => matches(n, sel)) || null; }
+    querySelectorAll(sel) { return this.all().filter((n) => matches(n, sel)); }
+    contains(n) { for (; n; n = n.parentNode) if (n === this) return true; return false; }
+    getBoundingClientRect() { return { top: 100, right: 400, bottom: 140, left: 20, width: 380 }; }
+    focus() {}
+  }
+  const body = new N('body');
+  const item = body.appendChild(new N('section', { 'data-anchor': 'step:C-032', 'data-anchor-label': 'Swipe A/B' }));
+  const words = item.appendChild(new N('p', {}, 'Swipe the first page, then the second'));
+  const own = item.appendChild(new N('button', {}, 'Start'));
+  const other = body.appendChild(new N('section', { 'data-anchor': 'step:C-033' }));
+  const otherWords = other.appendChild(new N('p', {}, 'Rate it'));
+  const docListeners = {};
+  const document = {
+    body, readyState: 'complete', currentScript: new N('script', { 'data-page': page }), documentElement: { clientWidth: 1200 },
+    createElement: (t) => new N(t), createTextNode: (t) => Object.assign(new N('#text', {}, t), { nodeType: 3 }),
+    addEventListener: (e, f) => (docListeners[e] ||= []).push(f), visibilityState: 'visible',
+    querySelectorAll: (sel) => body.querySelectorAll(sel),
+  };
+  // events bubble from the target to the document
+  const fire = (target, type, extra = {}) => {
+    const e = { type, target, preventDefault() {}, ...extra };
+    for (let n = target; n; n = n.parentNode) for (const f of n.listeners?.[type] || []) f(e);
+    for (const f of docListeners[type] || []) f(e);
+  };
+  const calls = [];
+  const res = (j, status = 200) => ({ ok: status < 400, status, json: async () => j });
+  const fetch = async (url, init) => {
+    calls.push({ url, init });
+    if (init?.method === 'POST') return posted.error ? res({ error: posted.error }, 409) : res(posted);
+    return res({ page, items: markers });
+  };
+  let selection = null;
+  const window = { scrollX: 0, scrollY: 0, getSelection: () => selection };
+  const src = readFileSync(join(TOOLS, 'lib', 'console-comments.js'), 'utf8');
+  new Function('window', 'document', 'fetch', 'setTimeout', 'clearTimeout', 'setInterval', src)(window, document, fetch, setTimeout, clearTimeout, () => 0);
+  const settle = async () => { for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0)); await new Promise((r) => setTimeout(r, 60)); };
+  const select = (text, a = words, b = a) => { selection = { isCollapsed: !text, rangeCount: text ? 1 : 0, anchorNode: a, focusNode: b, toString: () => text, getRangeAt: () => ({ getBoundingClientRect: () => ({ top: 10, right: 300, width: 120 }) }) }; };
+  return { window, document, body, item, words, own, other, otherWords, fire, calls, settle, select, btn: () => body.querySelector('.cmt-btn'), box: () => body.querySelector('.cmt-box') };
+}
+
+test('console-comments.js: hover shows Comment; the box says who gets it; Send POSTs the anchor with x-console; the note names the thread', async () => {
+  const p = commentsPage();
+  await p.settle();
+  assert.equal(p.window.ConsoleComments.page, 'steps');
+  assert.equal(p.btn().hidden, true);
+  p.fire(p.words, 'mouseover');
+  assert.equal(p.btn().hidden, false);
+  assert.equal(p.btn().textContent, 'Comment');
+  p.fire(p.btn(), 'click');
+  const box = p.box();
+  assert.equal(box.hidden, false);
+  assert.equal(box.querySelector('.cmt-what').textContent, 'Comment on Swipe A/B');
+  assert.equal(box.querySelector('.cmt-to').textContent, 'Your comment goes to: lead');
+  assert.equal(box.querySelector('.cmt-quote').hidden, true, 'no selection, no quote');
+  p.fire(box.querySelector('.cmt-send'), 'click');
+  assert.equal(box.querySelector('.cmt-msg').textContent, 'Write your comment first.');
+  assert.equal(p.calls.filter((c) => c.init?.method === 'POST').length, 0);
+  box.querySelector('textarea').value = '  The second one lagged  ';
+  p.fire(box.querySelector('.cmt-send'), 'click');
+  await p.settle();
+  const post = p.calls.find((c) => c.init?.method === 'POST');
+  assert.equal(post.url, '/api/comments');
+  assert.equal(post.init.headers['x-console'], '1');
+  assert.deepEqual(JSON.parse(post.init.body), { anchor: { page: 'steps', item: 'step:C-032', label: 'Swipe A/B' }, text: 'The second one lagged' });
+  assert.equal(box.hidden, true);
+  assert.equal(p.body.querySelector('.cmt-note').textContent, 'Sent to lead as T-008.');
+  assert.ok(p.calls.filter((c) => c.url === '/api/comments?page=steps').length >= 2, 'markers reloaded after sending');
+});
+
+test('console-comments.js: a selection inside one item becomes the quote; across two items, or on the item\'s own buttons, nothing', async () => {
+  const p = commentsPage();
+  await p.settle();
+  p.select('  the second\n page ');
+  p.fire(p.words, 'mouseup');
+  await p.settle();
+  assert.equal(p.btn().hidden, false);
+  assert.equal(p.btn().textContent, 'Comment on the selection');
+  p.fire(p.btn(), 'click');
+  assert.equal(p.box().querySelector('.cmt-quote').textContent, 'the second page');
+  p.box().querySelector('textarea').value = 'why?';
+  p.fire(p.box().querySelector('.cmt-send'), 'click');
+  await p.settle();
+  assert.deepEqual(JSON.parse(p.calls.find((c) => c.init?.method === 'POST').init.body).anchor, { page: 'steps', item: 'step:C-032', quote: 'the second page', label: 'Swipe A/B' });
+  // across two items: no single anchor
+  const q = commentsPage();
+  await q.settle();
+  q.select('first … Rate', q.words, q.otherWords);
+  q.fire(q.words, 'mouseup');
+  await q.settle();
+  assert.equal(q.btn().hidden, true);
+  // text selected while typing in a field (a step's answer box) is no quote
+  q.document.activeElement = { tagName: 'TEXTAREA' };
+  q.select('my answer');
+  q.fire(q.words, 'mouseup');
+  await q.settle();
+  assert.equal(q.btn().hidden, true);
+  q.document.activeElement = null;
+  // the item's own button works as before: a click on it shows no Comment button
+  q.select('');
+  q.fire(q.own, 'click');
+  assert.equal(q.btn().hidden, true);
+  q.fire(q.words, 'click');
+  assert.equal(q.btn().hidden, false, 'a click on the item itself (touch) shows it');
+  // Escape closes the box without sending
+  q.fire(q.btn(), 'click');
+  q.fire(q.box().querySelector('textarea'), 'keydown', { key: 'Escape' });
+  assert.equal(q.box().hidden, true);
+  assert.equal(q.calls.filter((c) => c.init?.method === 'POST').length, 0);
+});
+
+test('console-comments.js: markers show the count and link to the newest thread; a refused POST shows the server\'s words; unknown pages do nothing', async () => {
+  const p = commentsPage({ markers: { 'step:C-032': { count: 2, open: 1, threads: [{ id: 'T-004', state: 'closed' }, { id: 'T-007', state: 'open' }] }, 'step:C-033': { count: 1, open: 1, threads: [{ id: 'javascript:x' }] } }, posted: { error: 'anchor.item is not an item of the steps page' } });
+  await p.settle();
+  const m = p.item.querySelector('.cmt-marker');
+  assert.equal(m.textContent, '2 comments');
+  assert.equal(m.getAttribute('href'), '/threads#T-007');
+  assert.equal(m.title, 'Comments: T-004, T-007 (1 closed)');
+  assert.equal(p.other.querySelector('.cmt-marker').getAttribute('href'), '/threads', 'a bad id is never put in a link');
+  assert.equal(p.other.querySelector('.cmt-marker').textContent, '1 comment');
+  p.window.ConsoleComments.apply();
+  assert.equal(p.item.querySelectorAll('.cmt-marker').length, 1, 'applied twice, one marker');
+  p.window.ConsoleComments.open(p.item);
+  p.box().querySelector('textarea').value = 'x';
+  p.fire(p.box().querySelector('.cmt-send'), 'click');
+  await p.settle();
+  assert.equal(p.box().hidden, false, 'kept open with the text');
+  assert.equal(p.box().querySelector('.cmt-msg').textContent, 'anchor.item is not an item of the steps page');
+  const u = commentsPage({ page: 'admin' });
+  await u.settle();
+  assert.equal(u.window.ConsoleComments, undefined);
+  assert.equal(u.calls.length, 0);
+  const src = readFileSync(join(TOOLS, 'lib', 'console-comments.js'), 'utf8');
+  assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(/.test(src), 'no HTML sinks');
+  assert.ok(!/https?:\/\//.test(src), 'nothing external');
+});

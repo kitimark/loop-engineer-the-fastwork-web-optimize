@@ -31,6 +31,11 @@
 //                                these two POSTs take up to THREAD_BODY_MAX bytes, every other one 64 KB
 //   GET  /thread-media/<T-id>/<name>  a thread's image (m4-1.png), from the store only: strict names, and only a name
 //                                one of the thread's messages carries (console-threads.mjs threadMediaFile)
+//   GET  /console-comments.js    comments on console items (I-090, user T-043): every page loads it with the menu
+//   GET  /api/comments?page=<p>  {page, items: {<item>: {count, open, threads: [{id, state}]}}}: the markers of one page
+//   POST /api/comments           {anchor: {page, item, quote?, label?}, text}: the user's comment becomes a thread with
+//                                that anchor (console-comments.mjs normAnchor: a known page, an allowlisted item id,
+//                                caps); the lead reads it (thread wait). Same guards as the thread POSTs, 64 KB.
 //   Thread POSTs: like the step POSTs (localhost Host, x-console: 1), plus an Origin, when sent, must be this server's
 //   localhost origin, and a body over 64 KB gets 413.
 //   GET  /proposals              the proposals page (tools/lib/proposals-page.html, ts-proposals): PoCs to compare and decide
@@ -62,7 +67,8 @@ import { writeJson, readJson, iso } from './store.mjs';
 import { currentView, readWriteup } from './progress.mjs';
 import { currentStatusView } from './status.mjs';
 import { waitingView, stepWatcher, createNotifier, DEFAULT_REMIND_MIN } from './console-notify.mjs';
-import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER, threadMediaFile, LIMITS as THREAD_LIMITS } from './console-threads.mjs';
+import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, threadState, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER, threadMediaFile, LIMITS as THREAD_LIMITS } from './console-threads.mjs';
+import { PAGES as COMMENT_PAGES, normAnchor, commentTitle, markersFor } from './console-comments.mjs';
 import { pageProposals, publicView as proposalView, get as getProposal, decide as decideProposal, undoDecision, mediaFile, findOption } from './proposal.mjs';
 import { createLiveServers, measuringNow } from './live.mjs';
 import { statSync, createReadStream } from 'node:fs';
@@ -78,6 +84,7 @@ const PROPOSALS_PAGE_FILE = new URL('./proposals-page.html', import.meta.url);
 const proposalsPage = () => readFileSync(PROPOSALS_PAGE_FILE, 'utf8');
 const NAV_JS_FILE = new URL('./console-nav.js', import.meta.url);
 const NAV_CSS_FILE = new URL('./console-nav.css', import.meta.url);
+const COMMENTS_JS_FILE = new URL('./console-comments.js', import.meta.url);
 const THREADS_PAGE_FILE = new URL('./threads-page.html', import.meta.url);
 const threadsPage = () => readFileSync(THREADS_PAGE_FILE, 'utf8');
 
@@ -102,7 +109,9 @@ export function menuHtml(current) {
     + `</div></details></div></nav>`
     + `<div id="nav-banner" class="nav-banner" role="status" aria-live="polite" hidden></div>`;
 }
-const withMenu = (html, current) => html.replace('<!--console-menu-->', menuHtml(current));
+/** I-090: the Comment button, box and markers on every page (console-comments.js reads `data-page`). */
+export const commentsScript = (current) => `<script src="/console-comments.js" data-page="${current}" defer></script>`;
+const withMenu = (html, current) => html.replace('<!--console-menu-->', menuHtml(current) + commentsScript(current));
 
 const FINISHED_SHOWN = 40;
 const ACTIONS = {
@@ -350,6 +359,25 @@ async function threadRoute(req, res, u, port, feed) {
     if (!f) send(res, 404, { error: 'not found' }); else sendMedia(req, res, f);
     return true;
   }
+  // I-090: comments on console items
+  if (req.method === 'GET' && p === '/api/comments') {
+    const page = u.searchParams.get('page') || '';
+    if (!COMMENT_PAGES.includes(page)) { send(res, 400, { error: `page must be one of ${COMMENT_PAGES.join(', ')}` }); return true; }
+    send(res, 200, markersFor(page, listThreads(), threadState));
+    return true;
+  }
+  if (req.method === 'POST' && p === '/api/comments') {
+    const refused = threadPostRefusal(req, port);
+    if (refused) { send(res, 403, { error: refused }); return true; }
+    const b = await readJsonBody(req);
+    if (b.error) { send(res, b.status, { error: b.error }); return true; }
+    try {
+      const anchor = normAnchor(b.body.anchor), text = b.body.text;
+      const r = await createThread({ title: commentTitle(anchor, typeof text === 'string' ? text : ''), text, anchor, fromPage: true });
+      send(res, 200, { thread: pageThread(r.thread) });
+    } catch (e) { send(res, 409, { error: e.message }); }
+    return true;
+  }
   const act = p.match(/^\/api\/threads\/(T-\d{1,6})\/([a-z]+)$/);
   if (req.method === 'POST' && (p === '/api/threads' || act)) {
     const refused = threadPostRefusal(req, port);
@@ -374,6 +402,7 @@ export function handler(port, feed = null, live = null) {
       const u = new URL(req.url, 'http://localhost');
       if (req.method === 'GET' && (u.pathname === '/' || u.pathname === '/index.html')) return send(res, 200, withMenu(page(), 'steps'), 'text/html; charset=utf-8');
       if (req.method === 'GET' && u.pathname === '/console-nav.js') return send(res, 200, readFileSync(NAV_JS_FILE, 'utf8'), 'text/javascript; charset=utf-8');
+      if (req.method === 'GET' && u.pathname === '/console-comments.js') return send(res, 200, readFileSync(COMMENTS_JS_FILE, 'utf8'), 'text/javascript; charset=utf-8');
       if (req.method === 'GET' && u.pathname === '/console-nav.css') return send(res, 200, readFileSync(NAV_CSS_FILE, 'utf8'), 'text/css; charset=utf-8');
       if (req.method === 'GET' && u.pathname === '/api/waiting') return send(res, 200, feed ? feed.current() : waitingView());
       if (req.method === 'GET' && u.pathname === '/api/events') {

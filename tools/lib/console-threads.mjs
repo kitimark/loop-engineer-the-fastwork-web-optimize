@@ -18,6 +18,9 @@
 //   bytes (proposal.mjs sniffBytes: PNG, JPEG, GIF, WebP; never by name), held to LIMITS.imageBytes, and copied as is
 //   (nothing stripped). The stored metadata holds only the generated name, the caption (an agent's scrubbed), size and
 //   pixel size: no source path, host or device id. A message without images is stored and shown exactly as before.
+// Comments (I-090, user T-043): a thread the user starts from the Comment box on any console page carries
+//   `anchor: {page, item, quote?, label?}` (console-comments.mjs checks it: a known page, an allowlisted item id, caps).
+//   Only the user's page sets one; the views add the link back (anchorView). A thread without one has no anchor key.
 // Derived (never stored):
 //   state   closed | waiting-on-you (last message: an agent's, with ask) | answered (last: an agent's) | open (last: the user's)
 //   unread  for the user: agents' messages after reads.user; for an agent: the user's messages after reads[agent],
@@ -34,6 +37,7 @@ import { consoleDir, recipients } from './console.mjs';
 import { PERSONAL, sanitize } from './progress.mjs';
 import { redact } from './redact.mjs';
 import { sniffMedia, sniffBytes, MEDIA_TYPES, LIMITS as PROPOSAL_LIMITS } from './proposal.mjs';
+import { normAnchor, anchorView, itemText as anchorItemText, plainLine } from './console-comments.mjs';
 
 export const STATUSES = ['open', 'closed'];
 export const STATES = ['open', 'waiting-on-you', 'answered', 'closed'];
@@ -259,6 +263,7 @@ export function summary(t, reader = USER) {
     assignees: [...t.assignees],
     // I-084: who reads the user's reply: the lead always (it reads every thread), then the assignees
     to: recipients(LEAD, t.assignees || []),
+    ...(t.anchor && { anchor: anchorView(t.anchor) }), // I-090: a comment's item, with the link back
   };
 }
 
@@ -360,11 +365,14 @@ function addMessage(t, by, text, now, ask, images = []) {
 /**
  * A new thread. From the page: {title, text, topic, fromPage: true} (the user's text as typed). From the lead:
  * {by: 'lead', title, text, topic, ask, to} (scrubbed; `to`: agents to assign at once). `images` (I-089): see
- * prepareImages; with images the first message's text may be empty. Returns {thread, scrubbed}.
+ * prepareImages; with images the first message's text may be empty. `anchor` (I-090, the page's Comment box only):
+ * see console-comments.mjs normAnchor. Returns {thread, scrubbed}.
  */
-export async function createThread({ by, title, text, topic, ask, to, images, fromPage = false }) {
+export async function createThread({ by, title, text, topic, ask, to, images, anchor, fromPage = false }) {
+  if (anchor != null && !fromPage) throw new Error('only the user\'s comments carry an anchor (the Comment box on a console page)');
   const who = fromPage ? USER : needAgent(by);
   if (!fromPage && who !== LEAD) throw new Error(`only the lead starts threads (--by lead); ${who}: ask the lead to start one and assign you`);
+  const anc = anchor != null ? normAnchor(anchor) : null;
   const assignees = fromPage ? [] : agentList(to, false);
   if (assignees.length > LIMITS.assignees) throw new Error(`at most ${LIMITS.assignees} assignees`);
   let ttl = needText(title, 'the title', LIMITS.title).replace(/\s+/g, ' ');
@@ -381,7 +389,7 @@ export async function createThread({ by, title, text, topic, ask, to, images, fr
     mkdirSync(threadsDir(), { recursive: true });
     const now = iso();
     const t = {
-      id: nextId(listThreads(), 'T'), title: ttl, ...(tp && { topic: tp }), status: 'open', createdBy: who,
+      id: nextId(listThreads(), 'T'), title: ttl, ...(tp && { topic: tp }), ...(anc && { anchor: anc }), status: 'open', createdBy: who,
       createdAt: now, updatedAt: now, rev: 1, assignees, messages: [], reads: {}, history: [],
     };
     if (assignees.length) t.history.push({ at: now, who, action: 'assign', note: assignees.join(',') });
@@ -473,7 +481,7 @@ export function threadWaitCondition({ as, thread } = {}) {
     for (const t of ts) {
       const mark = t.reads?.[reader] || 0;
       const msgs = tid ? t.messages.filter((m) => m.by === USER && m.n > mark) : unreadFor(t, reader);
-      if (msgs.length) news.push({ id: t.id, title: t.title, ...(t.topic && { topic: t.topic }), state: threadState(t), messages: msgs.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.images?.length && { images: fileImages(t, m) }) })) });
+      if (msgs.length) news.push({ id: t.id, title: t.title, ...(t.topic && { topic: t.topic }), ...(t.anchor && { anchor: anchorView(t.anchor) }), state: threadState(t), messages: msgs.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.images?.length && { images: fileImages(t, m) }) })) });
     }
     if (news.length) return { met: true, state: `${news.length} thread(s) with news`, detail: JSON.stringify(news) };
     if (tid && ts[0].status === 'closed') return { met: false, state: 'closed', never: `${tid} was closed` };
@@ -487,11 +495,18 @@ export async function commitWait(reader, news) {
   for (const t of news) await markRead(t.id, reader, Math.max(...t.messages.map((m) => m.n)));
 }
 
+/** I-090: one line naming a comment's item: `(comment on PR-009 option both, shot 2 (/proposals#PR-009): "the quote")`. */
+export function anchorLine(a) {
+  const v = a.url ? a : anchorView(a);
+  return `(comment on ${anchorItemText(v)}${v.url ? ` (${v.url})` : ''}${v.quote ? `: "${plainLine(v.quote)}"` : ''})`;
+}
+
 /** The NEW block `thread wait` prints for one thread. */
 export function newsText(t, reader) {
   const L = [];
   for (const m of t.messages) {
     L.push(`NEW ${t.id} "${oneLine(t.title)}"${t.topic ? ` [${t.topic}]` : ''} #${m.n} by ${m.by} at ${m.at}:`);
+    if (m === t.messages[0] && t.anchor) L.push(`  ${anchorLine(t.anchor)}`); // I-090: what the comment is about
     if (m.text || !m.images?.length) for (const l of String(m.text).split('\n')) L.push(`  ${l}`);
     (m.images || []).forEach((x, i) => L.push(`  ${imagesLine(x, i)}`)); // I-089: the user's pictures, to open with Read
   }

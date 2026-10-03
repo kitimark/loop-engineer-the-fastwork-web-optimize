@@ -312,3 +312,60 @@ test('I-089 page: the user sends images with a reply or a new thread; sniffed an
   assert.equal(T_count(id), 2, 'nothing stored by the refused posts');
 });
 const T_count = (id) => JSON.parse(readFileSync(join(state, 'console', 'threads', `${id}.json`), 'utf8')).messages.length;
+
+// ---- I-090 (user T-043): comments on console items --------------------------------------------------------------------
+
+test('I-090: every page loads the comment script with its name; /console-comments.js served; GET /api/comments gives the markers', async () => {
+  for (const [p, name] of [['/', 'steps'], ['/status', 'status'], ['/progress', 'progress'], ['/build', 'build'], ['/threads', 'threads'], ['/proposals', 'proposals']]) {
+    const r = await req(p);
+    assert.equal(r.status, 200, p);
+    assert.ok(r.text.includes(`<script src="/console-comments.js" data-page="${name}" defer></script>`), p);
+  }
+  const js = await req('/console-comments.js');
+  assert.equal(js.status, 200);
+  assert.match(js.headers['content-type'], /^text\/javascript/);
+  assert.match(js.text, /Your comment goes to: /);
+  assert.equal((await req('/api/comments?page=admin')).status, 400);
+  assert.equal((await req('/api/comments')).status, 400);
+  const m = await req('/api/comments?page=status');
+  assert.equal(m.status, 200);
+  assert.deepEqual(m.json, { page: 'status', items: {} });
+});
+
+test('I-090: POST /api/comments starts a thread with the anchor; the lead\'s thread wait wakes and names the item; guards and anchor checks refuse', async () => {
+  cli('thread', 'wait', '--as', 'lead', '--timeout', '1', '--quiet'); // take what earlier tests left unread
+  const w = cliAsync('thread', 'wait', '--as', 'lead', '--timeout', '30', '--quiet');
+  await sleep(300);
+  const anchor = { page: 'status', item: 'status:cd-strip', quote: 'waiting for:\nthe phone', label: 'Countdown strips' };
+  const c = await userPost('/api/comments', { anchor, text: 'Why is this still waiting?' });
+  assert.equal(c.status, 200, c.text);
+  const t = c.json.thread;
+  assert.equal(t.title, 'Comment on status cd-strip "Countdown strips": Why is this still waiting?');
+  assert.deepEqual(t.anchor, { page: 'status', item: 'status:cd-strip', quote: 'waiting for: the phone', label: 'Countdown strips', url: '/status#cd-strip', itemText: 'status cd-strip' });
+  assert.deepEqual(t.to, ['lead']);
+  const out = await w;
+  assert.equal(out.code, 0, out.out);
+  assert.match(out.stdout, new RegExp(`NEW ${t.id} "Comment on status cd-strip[^\\n]*#1 by user at \\S+:\\n {2}\\(comment on status cd-strip \\(/status#cd-strip\\): "waiting for: the phone"\\)\\n {2}Why is this still waiting\\?`));
+  // the markers, the thread page API, thread show
+  const m = await req('/api/comments?page=status');
+  assert.deepEqual(m.json.items['status:cd-strip'], { count: 1, open: 1, threads: [{ id: t.id, state: 'open' }] });
+  assert.deepEqual((await req(`/api/threads/${t.id}`)).json.thread.anchor, t.anchor);
+  assert.ok((await req('/api/threads')).json.threads.find((x) => x.id === t.id).anchor);
+  assert.match(cli('thread', 'show', t.id).stdout, /^ {2}\(comment on status cd-strip \(\/status#cd-strip\): "waiting for: the phone"\)$/m);
+  // refused: no x-console, a foreign origin, a bad anchor, an empty comment, a big body, a foreign host; nothing stored
+  const n = (await req('/api/threads')).json.threads.length;
+  assert.equal((await req('/api/comments', { method: 'POST', body: { anchor, text: 'x' } })).status, 403);
+  const port = new URL(base).port;
+  assert.equal((await userPost('/api/comments', { anchor, text: 'x' }, { origin: 'http://evil.invalid' })).status, 403);
+  for (const [a, re] of [[{ page: 'status', item: 'status:../x' }, /not an item of the status page/], [{ page: 'admin', item: 'x' }, /anchor\.page must be one of/], [undefined, /anchor must be an object/]]) {
+    const r = await userPost('/api/comments', { anchor: a, text: 'x' });
+    assert.equal(r.status, 409, JSON.stringify(a));
+    assert.match(r.json.error, re);
+  }
+  assert.match((await userPost('/api/comments', { anchor, text: '  ' })).json.error, /empty/);
+  assert.equal((await userPost('/api/comments', { anchor, text: 'x'.repeat(70 * 1024) })).status, 413);
+  assert.equal((await req('/api/comments', { method: 'POST', body: { anchor, text: 'x' }, headers: { 'x-console': '1', host: `evil.invalid:${port}` } })).status, 421);
+  assert.equal((await req('/api/threads')).json.threads.length, n, 'nothing stored by the refused posts');
+  assert.equal((await userPost('/api/comments', { anchor, text: 'again' }, { origin: `http://localhost:${port}` })).status, 200, 'its own origin is fine');
+  assert.equal((await req('/api/comments?page=status')).json.items['status:cd-strip'].count, 2);
+});

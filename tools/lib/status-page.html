@@ -165,7 +165,7 @@ function waitChips(v) {
 
 function row(v) {
   var pr = v.priority ? el('span', { class: 'pr' + (v.priority === 1 ? ' p1' : ''), title: 'priority, set by the lead', text: '#' + v.priority }) : el('span', { class: 'pr none', title: 'not ranked yet', text: '–' });
-  var wk = el('td', { class: 'wk', 'data-label': 'Workstream' },
+  var wk = el('td', { class: 'wk', 'data-label': 'Workstream', 'data-comment-slot': true },
     el('div', { class: 'title', text: v.title }),
     el('div', { class: 'meta' }, el('span', { class: 'chip k', text: v.kindLabel }), el('span', { text: v.id }),
       v.progress && SLUG.test(v.progress) ? el('a', { href: '/progress#' + v.progress, text: 'fix progress' }) : null));
@@ -178,7 +178,7 @@ function row(v) {
   var upd = el('td', { class: 'upd', 'data-label': 'Updated' }, el('div', { text: ago(v.ageMin) }),
     v.updatedBy && v.updatedBy !== v.owner ? el('div', { class: 'plain', text: 'by ' + v.updatedBy }) : null,
     v.stale ? el('div', { class: 'stale', title: 'no update for more than ' + dur(last.staleAfterMin), text: 'not updated' }) : null);
-  return el('tr', { 'data-item': v.id },
+  return el('tr', { 'data-item': v.id, 'data-anchor': SLUG.test(v.id) ? 'status:' + v.id : null, 'data-anchor-label': v.title }, // I-090
     el('td', { class: 'prio', 'data-label': 'Priority' }, pr), wk, st,
     el('td', { 'data-label': 'Waiting on' }, waitChips(v)),
     el('td', { 'data-label': 'Owner', text: v.owner }), upd);

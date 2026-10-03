@@ -300,7 +300,8 @@ function openCard(s, first) {
         el('div', { class: 'row' }, yes, el('button', { type: 'button', onclick: function () { delete confirmOver[s.id]; render(); } }, 'Keep going')));
     } else overBtn = el('button', { class: 'quiet', type: 'button', onclick: function () { confirmOver[s.id] = true; render(); } }, 'Start over');
   }
-  return el('section', { class: 'card' + (first ? ' first' : ''), 'aria-label': s.title, 'data-id': s.id },
+  // I-090: the step can be commented (console-comments.js)
+  return el('section', { class: 'card' + (first ? ' first' : ''), 'aria-label': s.title, 'data-id': s.id, 'data-anchor': /^C-\d{1,6}$/.test(s.id) ? 'step:' + s.id : null, 'data-anchor-label': s.title },
     el('div', { class: 'meta' }, el('span', { class: 'pill', text: 'from ' + s.by }), el('span', { text: s.id }), el('span', { text: 'posted ' + ago(s.createdAt) })),
     el('h2', { text: s.title }),
     s.instructions ? el('p', { class: 'instr', text: s.instructions }) : null,
@@ -327,7 +328,7 @@ function render() {
   finished.forEach(function (s) {
     var r = s.result || {};
     var bring = s.status === 'skipped' ? el('button', { class: 'quiet', type: 'button', onclick: function () { act(s.id, 'reopen', {}, bring); } }, 'Bring back') : null;
-    list.appendChild(el('li', null,
+    list.appendChild(el('li', { 'data-anchor': /^C-\d{1,6}$/.test(s.id) ? 'step:' + s.id : null, 'data-anchor-label': s.title },
       el('span', { class: 'ans', text: s.status === 'skipped' ? 'skipped' : (r.value === undefined ? '' : String(r.value)) }),
       el('span', { class: 't' }, s.title, r.notes ? el('span', { class: 'who', text: ' — ' + r.notes }) : null),
       el('span', { class: 'who', text: s.id }),
