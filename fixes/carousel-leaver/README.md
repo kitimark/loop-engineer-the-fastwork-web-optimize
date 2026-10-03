@@ -425,6 +425,14 @@ every sliding frame plus the swap frame.
   - Falsifier: F~base or F2~base above the A/A at any t. P(hit) 0.6 (WebKit's snapshot of paused animations is untried
     here, and its border snaps to 0.67/0.33 px).
 
+- **A/A-limited rule, mechanical** (addendum from the ops second read, committed before any F data):
+  - A point (t 0-220, or post) whose A/A n8 is above 0, in either engine, is **undecided**. It is never a hit.
+  - The run containing that point gets one re-run. If the point is still A/A-limited, it goes to the lead, and F is
+    not offered as exact at that point.
+  - The one pre-declared exception is Chrome clp `post300` (P-086: A2 was already in its next slide). It is reported
+    as A/A-limited and does not block the T1 offer, provided WebKit `post300` has A/A 0 and F~base 0. The offer names
+    this exception.
+
 ### P2: paint order over the whole slide (follower, scene overlay, next slot, anything overlapping)
 
 - **Chrome, decides for Chrome** (C3, `pord.mjs` relations).
