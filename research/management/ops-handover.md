@@ -9,6 +9,17 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **06:4xZ main 915237a (I-080 fix: a shared group left its last-grant record on an idle lock; resolved).**
+  - **I-081** open, not blocking (ts-i080 reported): an exclusive `--short` grant also leaves a short last-grant
+    record on an idle lock (doctor: last-grant-short-outlived); owner **ts-i081** (worktree subagent, spawned 06:12Z).
+  - **Rotation (lead, all holds <= 300 s):** P-071 attribution tC (iphone-runner, Timeline, 06:19Z) -> cd-strip G4
+    (moved up: its card blocks the user's choice and cd-roll-ca) -> cd-roll-ca debug run 3 -> fix-nav-morph v1c Sim
+    holds 2-3 -> hero-exit-threaded (locating the y884 paints).
+  - **P-073 rev 2** (fix-nav-morph): ops points 1-4 and the reviewer's 3 nits are in (uncapped hot-run collapse flagged
+    to the lead; battery temp logged at pin arrival; "D collapses" row first, first matching row wins). v1c =
+    `fixes/morph-webkit/gestures/arm-scope-touch-v1c.json` 0653995a35be (55cfbec, v1 minus the end loop's
+    `until atEnd`). Rev 2 sha comes to ops after the v1c Sim result; ops re-reads, the lead signs.
+
 - **06:1xZ ef16659 landed. F3 ruling; P-073 assigned, second read NEEDS-FIX.**
   - **Lead's F3 ruling:** D proceeds on its own merit, gated on (1) the D2 Timeline attribution not naming D's
     listener add/remove or other D changes, (2) a new hot-held block. P-071 ran at 37-38.6 °C; P-036's V-only
