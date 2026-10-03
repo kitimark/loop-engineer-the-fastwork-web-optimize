@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T04:45:00Z",
+ "updatedAt": "2026-10-03T05:00:00Z",
  "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -76,13 +76,13 @@
    "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
    "next": "The version is chosen: it matches the original exactly in every picture check. Next: the independent review, then the wave-2 phone run.",
    "owner": "fix-cd-strip",
-   "checks": [{ "id": "P-070", "what": "wave-2 phone run: hero clock redraws gone, no new slow frames", "result": "" }],
+   "checks": [{ "id": "P-072", "what": "wave-2 phone run of the chosen version: no new slow frames (prediction being written before any data)", "result": "" }],
    "details": [
     "de-gpu T-030 brief 1 (research/gpu-props/README.md section 6, 41563ad): removes WebKit digit repaints in the hero and morph-panel clocks; risk about 2 MB more memory per clock in WebKit; the morph gain needs the panel strips on their own layers (cdwc rule owner's OK).",
     "Lead approved fix-cd-strip's D proposal (10-03 00:2xZ): the strip replaces countdown-faces (a), (b) stays. Stacks on F3 (fix-nav-morph sent its nodes/2 line range).",
     "F-153 (fix-cd-strip, coupling): cd-strip supersedes countdown-faces (a) and illusion-digit-layers for the countdown; countdown-faces (b), the hidden-skip gate, must be rebuilt on cd-strip by de-countdown after cd-strip lands, on the lead's order (planned stack st6-rb2 -> cd-strip -> cd-roll-ca -> (b), 77c9f75). cdwc's panel .face rule matches nothing after cd-strip (arm b ships its own .strip will-change: auto retarget). __cdStripY is periodic: a strip driver keeps offsets in [0, 9].",
     "Step 4 (10-03 02:3x-03:2xZ): remainder variant dropped; suspect was the backing size (visible cell only and per-cell layers both give 0 px in the Simulator). Lead: pick strip + cell layers if its last pixel rows pass. Chrome: identical except hero fade 0.9 (delta 1, beyond A/A, 7 shots).",
-    "Lead 10-03 04:4xZ: picked strip-rb (identical on all rows); idle-paint gain withdrawn; gains = re-entry Paint, backing MB, style writes. P-070's check text ('hero clock redraws gone') predates the withdrawal: owner to restate against the card."
+    "Lead 10-03 04:4xZ: picked strip-rb (identical on all rows); idle-paint gain withdrawn; gains = re-entry Paint, backing MB, style writes. P-070 superseded before data (build changed strip-cl -> strip-rb, lead 04:4xZ; text unchanged, kept in the ledger); fix-cd-strip registers P-072 for strip-rb before any wave-2 or phone data."
    ]
   },
   {

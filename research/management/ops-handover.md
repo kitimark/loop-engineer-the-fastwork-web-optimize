@@ -11,9 +11,12 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 - **04:4xZ add7185 landed. cd-strip picked; cd-roll-ca rebuild; Sim gap rule; P-071 at D2.**
   - **cd-strip** (lead): picked **strip-rb**, identical on all rows; the idle-paint gain is withdrawn; gains = re-entry
-    Paint, backing MB, style writes. PROGRESS `fixes`/`next` and a 04:45Z change line say so in plain words. Open:
-    P-070's check text ("hero clock redraws gone") predates the withdrawal; the owner restates it against the card
-    (asked the lead).
+    Paint, backing MB, style writes. PROGRESS `fixes`/`next` and a 04:45Z change line say so in plain words. **Lead's rule
+    (04:5xZ): a pre-registered prediction is never restated.** P-070 (made for strip-cl, no data) is "superseded before
+    data: build changed (strip-cl -> strip-rb, lead 04:4xZ); text unchanged" in cd-strip's ledger; fix-cd-strip
+    registers **P-072** (ops id, 04:5xZ) for strip-rb before any wave-2/phone data (re-entry Paint, backing MB, style
+    writes, no new slow frames; no idle-redraw claim unless meant); ops second-reads it. PROGRESS check line now
+    points at P-072; ledger "next free" P-073.
   - **cd-roll-ca** rebuilds as "cells-only" on strip-rb; round-3 PASS (dbb113f) covered the earlier build.
   - **Gap rule (lead):** one Simulator job per P-071 cooling gap, alternating cd-strip / hero-exit-threaded.
   - **Pitfall (hero-exit-threaded posting it):** `lock.mjs wait --until released-by:<o>` is a state check, not an
