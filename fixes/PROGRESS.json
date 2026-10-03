@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T16:40:00Z",
+ "updatedAt": "2026-10-03T17:50:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -10,6 +10,7 @@
  ],
  "changes": [
   { "at": "2026-10-03T16:00:00Z", "text": "You disconnected the iPhone (T-047): all phone tests are paused until you reconnect it. Then the hero test runs first, then the end-of-page check, then your countdown finger test." },
+  { "at": "2026-10-03T15:48:02Z", "text": "Today's best build now has every landed fix in one piece (base plus the idle-animation and menu display fixes). It is the \"before\" side of every Try-it and finger test from now on." },
   { "at": "2026-10-03T15:45:00Z", "text": "Your new priority (T-046): the hero and the end-of-page menu animation on the graphics chip come first. Phone order: hero test, then the end-of-page check, then your countdown finger test. A combined best build becomes the A side of every Try-it." },
   { "at": "2026-10-03T15:23:14Z", "text": "You accepted the hero change (PR-011, both items) under your new pixel rule; the avatar slider is looked into separately. Next for the hero: its phone test (P-081) and your finger test, once the iPhone is back." },
   { "at": "2026-10-03T15:21:00Z", "text": "You accepted the wide pixel rule (PR-010): a fix that differs only in edge pixels or tiny shade steps, within set limits checked in Chrome and the Simulator, lands without asking you; anything bigger, or seen only in motion, still comes to you. Open fixes are being re-checked against it." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T04:45:00Z", "text": "Countdown digit strips: the chosen version matches the original exactly in every picture check. One earlier hope is withdrawn: it does not save drawing while the page sits still. Its gains are less redrawing when the clock comes back into view, less graphics memory and fewer style changes." },
   { "at": "2026-10-03T03:45:00Z", "text": "Heat test done, both sessions agree: Fastwork warms the phone clearly more than apple.com, which stays close to an empty page. Today's best build already cools it without the countdown fix (roughly a third to three-fifths of the extra heat gone; a rough figure). Less work at rest is now a firm goal." },
   { "at": "2026-10-03T01:15:00Z", "text": "The F3 robot-finger test passed, but the review found a possible slowdown when the page holds at the end, and a case where a touch is missed. Both are checked before your F3 swipe test, which is postponed. The heat test runs now." },
-  { "at": "2026-10-03T01:00:00Z", "text": "Explained: the extra long frames past the hero in the countdown test come from the avatar pill swapping its picture, the same with or without the countdown fix, so that fix is clear for wave 2. On today's best build an earlier fix already removed that swap." },
-  { "at": "2026-10-03T00:30:00Z", "text": "Countdown timing test on the phone done, 8 runs valid: at the top the new countdown is no slower than the original, so the full fix stays; past the hero it does about 40 % less work. Open: past the hero it still shows a few more long frames; de-countdown traces why. Now: the F3 robot-finger test." }
+  { "at": "2026-10-03T01:00:00Z", "text": "Explained: the extra long frames past the hero in the countdown test come from the avatar pill swapping its picture, the same with or without the countdown fix, so that fix is clear for wave 2. On today's best build an earlier fix already removed that swap." }
  ],
  "items": [
   {
@@ -254,6 +254,7 @@
   },
   {
    "id": "platform-idle",
+   "inBuild": true,
    "writeup": "fixes/platform-idle/README.md",
    "title": "Shimmering security panel near the bottom: animate on the graphics chip",
    "area": "end",
@@ -312,6 +313,7 @@
   },
   {
    "id": "morph-inherit",
+   "inBuild": true,
    "writeup": "fixes/morph-inherit/README.md",
    "title": "Top bar and menu stop following the page past its end (iPhone display bug)",
    "area": "end",
@@ -639,10 +641,10 @@
   { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
  "build": {
-  "name": "st6-rb2: the wave-1 base plus seven fixes",
-  "since": "2026-10-02T11:49:57Z",
-  "summary": "The same fixes as before with the final version of the style fix; checked by mechanism and pixels, not timed on the phone as a whole. Each fix was measured on the phone on its own, but the whole build has not been compared with the original page in one full phone scroll.",
-  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c"],
+  "name": "Best build (T-046): st6-rb2 plus the idle-animation and menu display fixes",
+  "since": "2026-10-03T15:48:02Z",
+  "summary": "Every landed fix in one build: today's base (st6-rb2) plus the idle-animation fix and the menu display fix; checked by identity, pixels and function, not timed as a whole. It is the A side of the Try-it panels and of your finger tests.",
+  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c", "platform-idle", "morph-inherit"],
   "combined": [
    { "what": "style work while the people cards scroll by, per run (iPhone Timeline)", "before": "118-123 ms", "after": "59-65 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
    { "what": "style work in the middle of the page, per run (iPhone Timeline)", "before": "329-346 ms", "after": "207-222 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
