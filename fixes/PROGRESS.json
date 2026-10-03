@@ -79,7 +79,8 @@
    "checks": [{ "id": "P-070", "what": "wave-2 phone run: hero clock redraws gone, no new slow frames", "result": "" }],
    "details": [
     "de-gpu T-030 brief 1 (research/gpu-props/README.md section 6, 41563ad): removes WebKit digit repaints in the hero and morph-panel clocks; risk about 2 MB more memory per clock in WebKit; the morph gain needs the panel strips on their own layers (cdwc rule owner's OK).",
-    "Lead approved fix-cd-strip's D proposal (10-03 00:2xZ): the strip replaces countdown-faces (a), (b) stays. Stacks on F3 (fix-nav-morph sent its nodes/2 line range)."
+    "Lead approved fix-cd-strip's D proposal (10-03 00:2xZ): the strip replaces countdown-faces (a), (b) stays. Stacks on F3 (fix-nav-morph sent its nodes/2 line range).",
+    "F-153 (fix-cd-strip, coupling): cd-strip supersedes countdown-faces (a) and illusion-digit-layers for the countdown; countdown-faces (b), the hidden-skip gate, must be rebuilt on cd-strip by de-countdown after cd-strip lands, on the lead's order (planned stack st6-rb2 -> cd-strip -> cd-roll-ca -> (b), 77c9f75). cdwc's panel .face rule matches nothing after cd-strip (arm b ships its own .strip will-change: auto retarget). __cdStripY is periodic: a strip driver keeps offsets in [0, 9]."
    ]
   },
   {

@@ -9,6 +9,22 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **01:5xZ 3de2653 landed as 9b9c3ef (lead rebased it onto 5d656c3); main 77c9f75.** 5d656c3: de-countdown scopes the
+  clock-down hypothesis to baseline arms (F-152, fix-pill-swap: st6-rb2 has no avatar swap and no 1 Hz heavy layout;
+  OBSERVED, Simulator). 77c9f75: de-countdown plans the part (b) restack, stack order **st6-rb2 -> cd-strip ->
+  cd-roll-ca -> (b)**, gate/roll contract agreed with fix-cd-roll-ca (hold via `__crStop`, show via `z(a, held)`).
+  - **F-153 (fix-cd-strip, coupling; acked by de-countdown and fix-cd-roll-ca):** cd-strip supersedes countdown-faces
+    (a) (and illusion-digit-layers for the countdown); **(b), the hidden-skip gate, must be rebuilt on cd-strip by
+    de-countdown after cd-strip lands, on the lead's order.** cdwc's panel `.face` rule (CSS 11953) matches nothing after
+    cd-strip (arm b ships its own `.strip` will-change: auto retarget); `__cdStripY` is periodic, so a strip driver keeps
+    offsets in [0, 9] (cd-roll-ca applied it). PROGRESS cd-strip details carry it.
+  - Lead lands by rebasing ops commits itself when main moved: after a land, `git rebase main` drops the landed patch.
+  - **cd-roll-ca:** D signed (fast path); review-cd-roll-ca reviews 2625f49. The user's blind roll test (3 pairs, a
+    catch pair 2nd) is posted after P-068 and the review pass. (b) is rebuilt after cd-roll-ca lands.
+  - **I-077 CONFIRMED on the real phone** (lead): P-068 H1 segments 1 and 2 opened in the parked tab with no Safari
+    restart (793c8bc). The incident record note is the lead's (`incident.mjs update --by lead`).
+  - **P-068:** H1-1F done (5 cycles, 01:33-01:40Z); H1-2A running.
+
 - **01:4xZ F3 review CHANGES REQUIRED; pill-swap DROPPED; I-078 RESOLVED; P-068 running.** Rebased on main 9df12de
   (4fb3098: de-heat's P-068 system-power amendment, pre-data: PowerTelemetryData logged, reported descriptively,
   verdicts unchanged, scorer 1ca63e2b4d11; both ledger rows kept).
