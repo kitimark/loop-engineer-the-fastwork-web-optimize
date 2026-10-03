@@ -1,0 +1,43 @@
+{
+  "topic": "morph-gpu",
+  "kind": "counts and frozen frames only; no timing A/B (spawn rule: the phone timing block comes later through the lead and ops)",
+  "date": "2026-10-03",
+  "builds": {
+    "base": { "name": "best-build (main 60df1cf)", "js": "65052c4a3902", "css": "e0f92804c521" },
+    "fix": { "name": "rv (this fix, what would land)", "js": "372b99478871", "css": "257507365449" },
+    "gateHook": { "name": "rvhook (fix + __fwMorphSet hook + switch-off frame stepper; gates only)", "js": "81a43009c62d" },
+    "baseHook": { "name": "besthook (base + the same hook)", "js": "fef569e3c2e2" },
+    "delta": "fixes/morph-gpu/delta.diff (against best-build)",
+    "patch": "fixes/morph-gpu/patch.diff (baseline-relative, includes best-build)"
+  },
+  "simulatorPaint": {
+    "status": "OBSERVED (Simulator counts; Simulator ms not judged, F-084)",
+    "raw": "out/morph-gpu/tween-paint-2026-10-03T16-32-21-273Z.json, read: out/morph-gpu/tween-paint-read-1.json",
+    "note": "R arm was rv-ffec8ba18b56: the same motion code as rv-372b99478871 (only the m = 1 switch-off differs)",
+    "open": { "paintsPerFrame": [12.2, 12.4, 2.3, 2.3], "cssPxPerFrameMean": [1098316, 1086833, 38065, 36317], "totalMpxPerTween": [23.06, 23.91, 1.26, 1.16], "order": "M, M, R, R" },
+    "close": { "paintsPerFrame": [9.7, 9.9, 2.3, 2.2], "cssPxPerFrameMean": [546918, 578716, 67066, 66741], "totalMpxPerTween": [17.5, 17.36, 2.41, 2.4], "order": "M, M, R, R" },
+    "layoutsPerFrame": { "open": [2, 2], "close": [1.6, 1.6], "order": "M, R" },
+    "imageDecodeRepeat": "none: in R the photo columns paint once in the first reveal frame; frames 2-4 repaint only the 80x36 actions"
+  },
+  "chromeCounts": {
+    "raw": "out/morph-gpu/restyle-chrome-2026-10-03T17-58-17-031Z.json (M = best-build, R = rv-372b99478871, order M R M R, headless 430x932 DPR 3, no throttle)",
+    "moving": { "elementsRestyledPerFrame": { "M": [24.4, 24.7], "R": [34.8, 34.7] }, "layoutsPerFrame": { "M": [1.78, 1.77], "R": [1.77, 1.77] }, "paintEventsPerFrame": { "M": [9.13, 9.19], "R": [9.84, 9.93] } },
+    "atOne": { "elementsRestyledPerFrame": { "M": [11.8, 11.7], "R": [12.8, 12.6] }, "layoutsPerFrame": { "M": [0.17, 0.17], "R": [0.22, 0.2] } },
+    "atZero": { "elementsRestyledPerFrame": { "M": [12.4, 12.3], "R": [12.8, 12.8] }, "layoutsPerFrame": { "M": [0.79, 0.77], "R": [0.79, 0.79] } },
+    "verdict": "no Chrome gain (about 10 more elements restyled per moving frame: the reveal's inline writes)"
+  },
+  "frames": {
+    "rests": "exact: Chrome and Simulator at m 0 and m 1 (Simulator: only the status-bar clock, as A/A); desktop 1280x800 0 px over 8",
+    "motionT3": {
+      "chrome": { "m0.5": { "maxShade": 175, "screenPct": 0.22, "cssPx": 869, "kind": "edge (fill max 22)" }, "m0.99": { "maxShade": 237, "screenPct": 1.49, "cssPx": 5965, "kind": "edge (fill max 28)" }, "raw": "out/morph-gpu/frames-2026-10-03T16-58-45-896Z" },
+      "simulator": { "m0.5": { "maxShade": 131, "screenPct": 0.28, "cssPx": 1111, "kind": "edge (fill max 59)" }, "m0.99": { "maxShade": 233, "screenPct": 1.3, "cssPx": 5194, "kind": "edge (fill max 26)" }, "raw": "out/morph-gpu/simframes-2026-10-03T16-09-06-602Z" }
+    },
+    "switchOffAtM1": {
+      "simulator": "N: 0 over 8 max 5 (fill); N+1: exact; N+2 (toggle): 0 over 8 max 5; N+3: exact (simframes-2026-10-03T17-17-22-105Z)",
+      "chrome": "N, N+2: 0 over 8 max 2; N+1 after a 0.5 -> 1 jump: 44 css px edge max 53 beyond A/A, after 0.99: exact; N+3 exact (frames-2026-10-03T17-38-38-388Z)",
+      "desktop": "frames-2026-10-03T17-39-56-017Z: 0 over 8 at every m"
+    },
+    "staleClip": "OBSERVED in our setup (iOS Simulator), cause unknown; references UNRESOLVED; worked around by a 2-frame backdrop-filter toggle at m = 1"
+  },
+  "notes": "No measurement code changed (tools/ untouched). Gates are this topic's own scripts in fixes/morph-gpu/gates/."
+}

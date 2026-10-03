@@ -1,0 +1,72 @@
+{
+  "schema": "fw-proposal/1",
+  "title": "End-of-page menu morph: reveal a full-size panel instead of resizing it every frame (phones)",
+  "area": "end",
+  "topic": "morph-gpu",
+  "problem": "At the end of the page the small nav pill grows into the full dark panel (the 'morph'). On phones, every frame of that grow and shrink resizes the nav (width, height, corner radius, colour, blur) from one number. Safari then repaints everything inside the panel on every frame: the title, the three photo columns, the veil, the footer, the bar. In the iOS Simulator that is about 10-12 repaints and about 0.5-1.1 million CSS pixels painted per frame, for the whole grow or shrink.",
+  "idea": "On phones only, while the morph moves, the panel is placed at its final full size once and today's box is cut out of it with a clip shape that grows each frame. Everything inside slides to today's place by a GPU transform, and the dark colour fades in as a layer on top. The layers are painted once, and each frame only moves and cuts them. When the morph settles (fully open or fully closed), the extra styles are removed and the nav is exactly today's. Base: today's best build (js 65052c4a3902, css e0f92804c521); this change: js 372b99478871, css 257507365449.",
+  "looksSame": "At rest (closed pill, open panel, and after scrolling back to the top) it is pixel-identical to today's best build in Chrome and in the iOS Simulator. During the motion the shapes, sizes, colours and positions follow the same formulas, but text is moved instead of re-laid out each frame, so some edges land up to about one device pixel apart (T3, see the differences).",
+  "visualDiff": [
+    "During the motion, text inside the panel (title, buttons, countdown, logo) can sit up to about 1 device pixel off from today's. Largest shade 237 on text edges, 1.5 % of the screen in Chrome and 1.3 % in the Simulator at m 0.99. At m 0.5: 0.2-0.3 %, shade 175 (Chrome) / 131 (Simulator).",
+    "Mid-morph, the panel's lower side edges blur slightly differently (fill shade up to 22 in Chrome, 59 in the Simulator, a few hundred CSS px).",
+    "At the moment the panel finishes opening, two single frames get a shade-5 change over the panel in the Simulator (the blur is switched off for one frame each). Not visible; T2 fill limit is 64. In Chrome those frames match today's; after an abrupt jump to open, one frame shows 44 CSS px of button-text edge at shade 53 (T2).",
+    "Safari only (OBSERVED, cause unknown): when the panel finishes opening, Safari can keep the last cut shape for a frame. We clear it with the one-frame blur switch above, a workaround with UNRESOLVED status. Without it the open panel stayed cut. In real motion the frame before it may be cut about 0.7 CSS px short at the bottom edge (an estimate, not measured frame by frame).",
+    "Nothing changes on desktop or tablets wider than 640 px, or at rest."
+  ],
+  "gain": [
+    {
+      "what": "Repaints per frame while the menu opens (Simulator)",
+      "before": "12.2-12.4",
+      "after": "2.3",
+      "tag": "OBSERVED",
+      "how": "iOS Simulator, LayerTree paint counts per frame, morph driver, 2 open tweens per build; Simulator timing is not judged.",
+      "needsPhone": true
+    },
+    {
+      "what": "CSS px painted per frame while opening (Simulator)",
+      "before": "~1.1 million",
+      "after": "~37 thousand",
+      "tag": "OBSERVED",
+      "how": "Same run; sum of paint rects per frame, mean over the tween (median frame 1.17M -> 4k).",
+      "needsPhone": true
+    },
+    {
+      "what": "Repaints / CSS px per frame while closing (Simulator)",
+      "before": "9.8 / ~0.56 million",
+      "after": "2.3 / ~67 thousand",
+      "tag": "OBSERVED",
+      "how": "Same run, 2 close tweens per build.",
+      "needsPhone": true
+    },
+    {
+      "what": "Layouts and style recalcs per frame",
+      "before": "2 (open) / 1.6 (close)",
+      "after": "unchanged",
+      "tag": "OBSERVED",
+      "how": "Same run. The gain is paint only; Chrome shows no gain (moving frames restyle 24.5 -> 34.8 elements, layouts equal)."
+    },
+    {
+      "what": "Smoothness on the iPhone",
+      "before": "not measured",
+      "after": "pending",
+      "tag": "UNRESOLVED",
+      "how": "A pre-registered phone block (M driver, warm, condition B) after your decision, through the lead and ops.",
+      "needsPhone": true
+    }
+  ],
+  "risk": "Built on today's best build (js 65052c4a3902, css e0f92804c521), which includes the morph-inherit fix. That fix is being checked on the phone now (P-085): if it misses, the base changes and this has to be rebuilt and re-checked. The paint gain is Simulator counts only (OBSERVED); the phone gain is not measured yet. The end-of-open blur switch is a workaround for a Safari behaviour we observed but could not find in WebKit's bug tracker or explain from its source (UNRESOLVED). Another Safari version could need more or less. Phones only (<= 640 px); reduced motion behaves as today's morph.",
+  "compare": {
+    "a": { "label": "Today's best build" },
+    "b": { "label": "Reveal (this proposal)" },
+    "view": "side",
+    "shots": [
+      { "caption": "Chrome, halfway (m 0.5)", "a": "../../out/morph-gpu/proposal/chrome-m0.5-a.png", "b": "../../out/morph-gpu/proposal/chrome-m0.5-b.png" },
+      { "caption": "Chrome, nearly open (m 0.99)", "a": "../../out/morph-gpu/proposal/chrome-m0.99-a.png", "b": "../../out/morph-gpu/proposal/chrome-m0.99-b.png" },
+      { "caption": "iOS Simulator, halfway (m 0.5)", "a": "../../out/morph-gpu/proposal/sim-m0.5-a.png", "b": "../../out/morph-gpu/proposal/sim-m0.5-b.png" },
+      { "caption": "iOS Simulator, nearly open (m 0.99)", "a": "../../out/morph-gpu/proposal/sim-m0.99-a.png", "b": "../../out/morph-gpu/proposal/sim-m0.99-b.png" },
+      { "caption": "Where they differ, Chrome m 0.99 (red: shade > 8, yellow: 1-8)", "a": "../../out/morph-gpu/proposal/chrome-m0.99-a.png", "b": "../../out/morph-gpu/proposal/chrome-m0.99-diff.png" },
+      { "caption": "Where they differ, Simulator m 0.99 (red: shade > 8, yellow: 1-8)", "a": "../../out/morph-gpu/proposal/sim-m0.99-a.png", "b": "../../out/morph-gpu/proposal/sim-m0.99-diff.png" }
+    ]
+  },
+  "live": { "patch": "fixes/morph-gpu/patch.diff", "a": { "patch": "fixes/best-build/patch.diff" } }
+}
