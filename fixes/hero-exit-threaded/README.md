@@ -182,8 +182,8 @@ A Timeline attribution block with frame-gap counts, not a gain block. The predic
     `--expect serious`, `--max-c 44`) at its start and end. A hold counts only when both reads say Serious with
     Is Induced = No; otherwise the hold is re-run.
   - Holds are 900 s, back to back. Stop at 44 °C battery or Critical, and cool before the next hold.
-  - Every gate failure goes to the lead. Two failing holds in a row stop the block and switch to A (the lead's switch,
-    recorded in the block log).
+  - Every gate failure goes to the lead. Two strikes (two gate-failed holds, not necessarily in a row) roll back to A
+    (the lead's standing rule, 14:0xZ; the lead's switch, reported in T-039 and recorded in the block log).
   - One start method for every run: pre-warm on the plain baseline page the same way for each arm.
   - Logged per run: battery °C, charging state, the timer-grid median.
   - A Low Power Mode run is dropped and re-run.
