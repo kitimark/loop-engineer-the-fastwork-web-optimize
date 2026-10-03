@@ -441,6 +441,16 @@ test('I-087 devices: fw-sim stays the default (name, type, config.json); deviceK
   assert.equal(done.shutDown, true);
 });
 
+test('I-088 leakWaitSec: FW_SIM_LEAK_WAIT_SEC (default 30 s, 0 = no wait) bounds the wait for a shutdown in progress before a LEAK; a bad value throws', async () => {
+  const { leakWaitSec } = await import('../../tools/lib/sim.mjs');
+  assert.equal(leakWaitSec({}), 30);
+  assert.equal(leakWaitSec({ FW_SIM_LEAK_WAIT_SEC: '' }), 30);
+  assert.equal(leakWaitSec({ FW_SIM_LEAK_WAIT_SEC: '0' }), 0);
+  assert.equal(leakWaitSec({ FW_SIM_LEAK_WAIT_SEC: '1.5' }), 1.5);
+  assert.equal(leakWaitSec({ FW_SIM_TRANSITION_SEC: '1' }), 30, 'not the I-078 transition wait');
+  for (const v of ['x', '-1', 'Infinity']) assert.throws(() => leakWaitSec({ FW_SIM_LEAK_WAIT_SEC: v }), /FW_SIM_LEAK_WAIT_SEC must be a number of seconds >= 0/);
+});
+
 test('I-087 sim-orient: orient() rotates through a WDA-sim session marked simulator, skips an orientation already in force, reads it back, refuses other values and the phone\'s port', async () => {
   const { orient } = await import('../../tools/lib/sim-orient.mjs');
   const { startFakeWda } = await import('../fixtures/fake-wda.mjs');

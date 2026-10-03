@@ -356,18 +356,52 @@ test('session: refused when fw-sim is already booted (someone else\'s, or a leak
   const st = JSON.parse(readFileSync(env.FAKE_SIMCTL_STATE, 'utf8'));
   st.devices[0].state = 'Booted';
   writeFileSync(env.FAKE_SIMCTL_STATE, JSON.stringify(st));
-  const r = await inHold(childJs('0'));
+  const e = { ...env, FW_SIM_LEAK_WAIT_SEC: '1' }; // I-088: it stays Booted past the wait for a shutdown in progress
+  const r = await inHold(childJs('0'), { e });
   assert.notEqual(r.code, 0, r.out);
+  assert.match(r.stderr, /^sim session: fw-sim 15 Pro Max was Booted with no live session; waited 1 s for a shutdown in progress \(still Booted; I-088\)$/m);
   assert.match(r.stderr, /refusing: fw-sim 15 Pro Max is already Booted/);
   assert.equal(device().state, 'Booted');
   assert.ok(!simctlCalls().includes('shutdown'));
-  let d = node(SIM, ['doctor'], { env });
+  let d = node(SIM, ['doctor'], { env: e });
   assert.equal(d.code, 3, d.out);
+  assert.match(d.stdout, /^waited 1 s for fw-sim 15 Pro Max \(Booted with no live session\) to shut down by itself \(still Booted; I-088\)$/m);
   assert.match(d.stdout, /LEAK: fw-sim 15 Pro Max is Booted with no live session/);
-  d = node(SIM, ['doctor', '--fix'], { env });
+  d = node(SIM, ['doctor', '--fix'], { env: e });
   assert.equal(d.code, 0, d.out);
   assert.equal(device().state, 'Shutdown');
-  assert.match(node(SIM, ['doctor'], { env }).stdout, /^ok: no session/m);
+  assert.match(node(SIM, ['doctor'], { env: e }).stdout, /^ok: no session/m);
+});
+
+test('I-088 session: fw-sim still Booted with no live session (the last session\'s shutdown under way) is waited for, then booted as usual; doctor waits too and says ok, not LEAK', async () => {
+  const udid = setup();
+  devSet({ state: 'Booted' }); // stays Booted until the test lets the "shutdown in progress" end
+  const p = inHold(childJs('0'));
+  await simLockHeld();
+  await sleep(700); // the session polls the Booted device
+  devSet({ settleAt: Date.now(), settleTo: 'Shutdown' });
+  const r = await p;
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stderr, /^sim session: fw-sim 15 Pro Max was Booted with no live session; waited \d+ s for a shutdown in progress \(now Shutdown; I-088\)$/m);
+  assert.ok(!/refusing/.test(r.out), r.out);
+  assert.deepEqual(simctlCalls().filter((c) => ['boot', 'shutdown'].includes(c)), ['boot', 'shutdown'], 'booted by this session and shut down at its end; never shut down by the wait');
+  devSet({ state: 'Booted', settleAt: Date.now() + 2500, settleTo: 'Shutdown' });
+  const d = node(SIM, ['doctor'], { env });
+  assert.equal(d.code, 0, d.out);
+  assert.match(d.stdout, /^waited \d+ s for fw-sim 15 Pro Max \(Booted with no live session\) to shut down by itself \(now Shutdown; I-088\)$/m);
+  assert.match(d.stdout, /^ok: no session/m);
+  assert.ok(!/LEAK/.test(d.stdout), d.stdout);
+  devSet({ state: 'Booted', settleAt: Date.now() + 60000, settleTo: 'Shutdown' });
+  const t0 = Date.now();
+  const z = node(SIM, ['doctor'], { env: { ...env, FW_SIM_LEAK_WAIT_SEC: '0' } });
+  assert.equal(z.code, 3, z.out);
+  assert.ok(Date.now() - t0 < 10000, 'FW_SIM_LEAK_WAIT_SEC=0: no wait');
+  assert.ok(!/I-088/.test(z.stdout), z.stdout);
+  assert.match(z.stdout, /LEAK: fw-sim 15 Pro Max is Booted/);
+  const bad = node(SIM, ['doctor'], { env: { ...env, FW_SIM_LEAK_WAIT_SEC: 'soon' } });
+  assert.notEqual(bad.code, 0);
+  assert.match(bad.stderr, /FW_SIM_LEAK_WAIT_SEC must be a number of seconds >= 0 \(got soon\)/);
+  noIds(`${r.out}${d.out}${z.out}`, udid);
 });
 
 /** I-078: fake simctl device fields (state, settleAt, settleTo) */
@@ -386,7 +420,7 @@ async function simLockHeld(owner = 'me', ms = 30000) {
 test('I-078 session: fw-sim still Booting (someone else\'s boot) is waited out under the simulator lock, then the Booted device is refused as before; nothing shut down, never booted by us; one line says what it waited for', async () => {
   const udid = setup();
   devSet({ state: 'Booting' }); // stays in transition until the test lets it end
-  const p = inHold(childJs('0'));
+  const p = inHold(childJs('0'), { e: { ...env, FW_SIM_LEAK_WAIT_SEC: '1' } }); // I-088: then Booted past the leak wait
   await simLockHeld();
   await sleep(700); // the session polls the transition
   devSet({ settleAt: Date.now(), settleTo: 'Booted' });
