@@ -5,7 +5,15 @@
 // Chrome numbers, tools/lib/stats.mjs refuses that). Library: tools/lib/sim.mjs (privacy and phone-safety rules
 // in its header: phone UDIDs only in a mode-600 config file, the proxy never attaches to or navigates the phone).
 //
-//   node tools/sim.mjs setup [--runtime <iOS 26.5|id>]        create fw-sim if absent, store config (no boot)
+//   node tools/sim.mjs setup [--device k] [--runtime <iOS 26.5|id>]   create the device if absent, store config (no boot)
+//   --device fw-sim | fw-ipad | fw-ipad-a16 | fw-ipad-mini (I-087, user T-040): the Simulator a command drives. Default
+//        fw-sim (the iPhone 15 Pro Max stand-in; config.json; every caller unchanged); the iPads (fw-ipad: iPad Pro 13-inch
+//        M5, fw-ipad-a16: iPad A16, fw-ipad-mini: iPad mini A17 Pro) are the real tablet case, for pixel / layout checks
+//        (no timing). An iPad is created on demand (setup --device k, or its first session) from a device type and iOS
+//        runtime Xcode already has; nothing is downloaded (none installed: refused). One Simulator at a time: a session
+//        shuts a warm device of another key down first (I-063 warm reuse stays per device). Inside a session every
+//        command drives the session's device (FW_SIM_DEVICE in <cmd>'s env); status / doctor / shutdown without
+//        --device look at the live session's, else a booted configured device, else the warm one, else fw-sim.
 //   node tools/sim.mjs status                                 device, session, proxy, WDA-sim (UDIDs masked)
 //   node tools/sim.mjs doctor [--fix]                         a booted fw-sim without a live session = leak
 //   # the normal entry point: inside YOUR OWN NORMAL chrome-measure hold (≤ ~7 min; the Simulator loads the host)
@@ -54,6 +62,9 @@
 //   node tools/sim.mjs record [--seconds 25] [--label l]       iphone.mjs record's frame logger
 //   node tools/sim.mjs run --driver scroll|window|morph ...    iphone.mjs run (std probe, fw-iphone-run/1) -> out/sim/<owner>-run-<label>-<ts>.json
 //   node tools/sim.mjs wda start                               WDA-sim on :8101 (the session stops it); `wda stop`
+//   node tools/sim.mjs orient portrait|landscape [--settle-ms 1500]   rotate the Simulator through WDA-sim (start it first)
+//        and read it back (I-087; lib/wda.mjs sends orientation only to a Simulator WDA, never the phone's :8100); allowed
+//        in a functional session (no timing). Prints ORIENTATION <portrait|landscape>
 //   node tools/sim.mjs safari-restart [--url U] [--via auto|wda|simctl] [--timeout 30]   quit + relaunch Safari (WDA-sim if up,
 //        else simctl), open U, wait until it answers (tools/lib/safari-restart.mjs; iphone.mjs safari-restart on the phone)
 //   node tools/sim.mjs gesture <script.json> [--label l] [--variant v] [--param k=v]... [--morph-log f] [--dry-run]
@@ -77,13 +88,18 @@ const argv = dd >= 0 ? all.slice(0, dd) : all;
 const rest = dd >= 0 ? all.slice(dd + 1) : [];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout', '--url', '--via', '--variant', '--param', '--morph-log', '--log', '--reason', '--by'];
+const VALUED = ['--device', '--settle-ms', '--owner', '--out', '--label', '--seconds', '--window', '--runtime', '--timeout', '--url', '--via', '--variant', '--param', '--morph-log', '--log', '--reason', '--by'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const log = (s) => console.log(S.scrub(String(s)));
 const err = (s) => console.error(S.scrub(String(s)));
-const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | background [--seconds 3] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force | --warm-only] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
+const USAGE = 'usage: node tools/sim.mjs [--device fw-sim|fw-ipad|fw-ipad-a16|fw-ipad-mini] setup [--runtime r] | orient portrait|landscape | status | doctor [--fix] | background [--seconds 3] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force | --warm-only] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
 
 async function main() {
+  // I-087: which Simulator: --device, else FW_SIM_DEVICE (a session's <cmd>), else (status / doctor / plain shutdown) the
+  // live session's or a booted / warm one, else fw-sim
+  const named = opt('device', null) ?? (process.env.FW_SIM_DEVICE || null);
+  if (named !== null) S.useDevice(named);
+  else if (['status', 'doctor'].includes(cmd) || (cmd === 'shutdown' && !flag('warm-only'))) S.useDevice(S.activeDevice());
   if (cmd === 'setup') { S.setup({ runtime: opt('runtime', null), log }); return 0; }
   if (cmd === 'status') { for (const l of await S.statusLines()) log(l); return 0; }
   if (cmd === 'doctor') return S.doctor({ fix: flag('fix'), log });
@@ -131,7 +147,7 @@ async function main() {
       // status / doctor / the timed tools' reap still see the booted device
       let st = null;
       try { st = S.deviceState(cfg.udid); } catch (e) { st = `unknown (${e.message})`; }
-      if (st !== null && st !== 'Shutdown') { err(`fw-sim is still ${st} after the shutdown${readWarm() ? ' (the warm record stays)' : ''}: node tools/sim.mjs doctor`); return 3; }
+      if (st !== null && st !== 'Shutdown') { err(`${S.device().key} is still ${st} after the shutdown${readWarm() ? ' (the warm record stays)' : ''}: node tools/sim.mjs doctor`); return 3; }
       rmSync(warmFile(), { force: true });
       return 0;
     } finally { await lk?.release(); }
@@ -143,9 +159,9 @@ async function main() {
     const g = S.holdGate(undefined, undefined, { owner, what: `sim ${cmd}` });
     if (!g.ok) throw new Error(`refusing sim ${cmd}: ${g.reason}`);
     const cfg = S.readConfig();
-    if (!cfg.udid) throw new Error('no Simulator configured: node tools/sim.mjs setup');
+    if (!cfg.udid) throw new Error(`no Simulator configured: node tools/sim.mjs setup --device ${S.device().key}`);
     if (cmd === 'boot') {
-      if (S.deviceState(cfg.udid) !== 'Shutdown') throw new Error(`refusing: ${S.SIM_NAME} is already ${S.deviceState(cfg.udid)}`);
+      if (S.deviceState(cfg.udid) !== 'Shutdown') throw new Error(`refusing: ${S.device().name} is already ${S.deviceState(cfg.udid)}`);
       await S.bootDevice(cfg.udid, { log });
       log('BOOTED (debugging: nothing shuts it down for you; node tools/sim.mjs shutdown)');
       return 0;
@@ -161,6 +177,15 @@ async function main() {
     return S.wdaBuild({ owner, log });
   }
   if (cmd === 'wda' && arg === 'start') return S.wdaStart({ session: S.requireSession({ owner: opt('owner') }), log, timeoutMs: 1000 * Number(opt('timeout', 120)) });
+  if (cmd === 'orient') {
+    // I-087: device rotation, Simulator only (lib/wda.mjs refuses it for the phone); no timing, so a functional session may
+    if (!['portrait', 'landscape'].includes(arg)) throw new Error('usage: node tools/sim.mjs orient portrait|landscape (inside a session, after node tools/sim.mjs wda start)');
+    S.requireSession({ owner: opt('owner') });
+    const { orient } = await import('./lib/sim-orient.mjs');
+    const r = await orient(arg, { base: `http://127.0.0.1:${S.ports().wda}`, settleMs: Number(opt('settle-ms', 1500)), log });
+    log(`ORIENTATION ${r.now}`);
+    return 0;
+  }
   if (cmd === 'wda') throw new Error('usage: node tools/sim.mjs wda build --owner <o> (in your own normal hold) | start (inside a session) | stop');
   if (cmd === 'gesture') {
     // the phone's gesture runner (tools/lib/gesture-run.mjs) with the Simulator as its target: strokes to WDA-sim,

@@ -3,7 +3,7 @@
 // actions, errors and latency surface as WdaError, and accessibility snapshots are never requested.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { request, status, createSession, checkActions, actionsMs, WdaError, SESSION_SETTINGS, ALLOWED, allowed } from '../../tools/lib/wda.mjs';
+import { request, status, createSession, checkActions, actionsMs, WdaError, SESSION_SETTINGS, ALLOWED, allowed, SIM_ONLY, simulatorBase, PHONE_WDA_PORT } from '../../tools/lib/wda.mjs';
 import { compileStroke } from '../../tools/lib/gesture.mjs';
 import { startFakeWda } from '../fixtures/fake-wda.mjs';
 import { freePort } from '../helpers.mjs';
@@ -113,4 +113,51 @@ test('checkActions: one touch pointer, down before up, ends lifted', () => {
   assert.throws(() => checkActions(p([mv, { type: 'pointerUp' }, mv])), /pointerUp while up/);
   assert.throws(() => checkActions(p([{ type: 'pointerDown' }, { type: 'pointerDown' }, { type: 'pointerUp' }])), /pointerDown while down/);
   assert.throws(() => checkActions(p([mv, { type: 'keyDown' }, mv])), /unexpected action keyDown/);
+});
+
+test('I-087 orientation: Simulator only. A session marked simulator on a non-8100 WDA reads and sets PORTRAIT / LANDSCAPE; the physical iPhone (unmarked, or port 8100) is refused before any HTTP', async () => {
+  const sid = '8F3C2A10-1B2C-4D5E-9F00-0123456789AB';
+  for (const m of ['GET', 'POST']) {
+    assert.equal(allowed(m, `/session/${sid}/orientation`), false, `${m} orientation is not in the phone's allowlist`);
+    assert.equal(allowed(m, `/session/${sid}/orientation`, { simulator: true }), true, `${m} orientation for a Simulator`);
+  }
+  assert.equal(allowed('POST', `/session/${sid}/rotation`, { simulator: true }), false, 'only orientation, not rotation');
+  assert.equal(allowed('GET', `/session/${sid}/source`, { simulator: true }), false, 'simulator: true opens nothing else');
+  assert.equal(allowed('POST', '/orientation', { simulator: true }), false, 'only within a session');
+  assert.equal(SIM_ONLY.length, 2);
+  assert.equal(ALLOWED.length, 10, 'the phone allowlist is unchanged');
+  assert.equal(PHONE_WDA_PORT, 8100);
+  assert.equal(simulatorBase('http://127.0.0.1:8101'), true);
+  for (const b of ['http://127.0.0.1:8100', 'http://localhost:8100/', 'http://127.0.0.1', 'not a url']) assert.equal(simulatorBase(b), false, b);
+
+  // the simulator's WDA (any port but 8100): rotate and read back
+  const w = await fake();
+  assert.notEqual(w.port, 8100);
+  const s = await createSession({ base: w.url, simulator: true });
+  assert.equal(await s.orientation(), 'PORTRAIT');
+  await s.setOrientation('landscape');
+  assert.equal(w.calls.find((c) => c.method === 'POST' && c.path === `/session/${s.id}/orientation`).body.orientation, 'LANDSCAPE');
+  assert.equal(await s.orientation(), 'LANDSCAPE');
+  await s.setOrientation('PORTRAIT');
+  assert.equal(await s.orientation(), 'PORTRAIT');
+  await assert.rejects(s.setOrientation('sideways'), (e) => e instanceof WdaError && /orientation must be portrait or landscape/.test(e.message));
+  await s.close();
+
+  // the phone: a session not marked simulator never sends it, whatever port it talks to
+  const before = w.calls.length;
+  const p = await createSession({ base: w.url });
+  await assert.rejects(p.setOrientation('landscape'), (e) => e instanceof WdaError && /only on a Simulator's WDA \(I-087: the physical iPhone is never rotated; this target is not marked simulator\)/.test(e.message));
+  await assert.rejects(p.orientation(), (e) => e instanceof WdaError && /never rotated/.test(e.message));
+  await p.close();
+  assert.ok(!w.calls.slice(before).some((c) => c.path.endsWith('/orientation')), 'no orientation call reached WDA for an unmarked session');
+  // marked simulator but on the phone's port 8100 (iproxy): refused before any connection
+  await assert.rejects(request('POST', `/session/${sid}/orientation`, { orientation: 'LANDSCAPE' }, { base: 'http://127.0.0.1:8100', simulator: true }),
+    (e) => e instanceof WdaError && /is not a WDA-sim address \(port 8100 is the phone's\)/.test(e.message) && !e.message.includes(sid));
+  await assert.rejects(request('GET', `/session/${sid}/orientation`, undefined, { base: 'http://127.0.0.1:8100' }), (e) => e instanceof WdaError && /never rotated/.test(e.message));
+  // a WDA that refuses the rotation surfaces as WdaError
+  const f = await fake({ failOrientation: true });
+  const fs = await createSession({ base: f.url, simulator: true });
+  await assert.rejects(fs.setOrientation('landscape'), (e) => e instanceof WdaError && e.status === 500 && /Unable to change device orientation/.test(e.message));
+  await fs.close();
+  assert.ok(!f.calls.some((c) => c.forbidden));
 });

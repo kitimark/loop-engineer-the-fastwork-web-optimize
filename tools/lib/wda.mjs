@@ -14,6 +14,10 @@
 //   POST /session/:id/wda/apps/terminate|launch    quit / start Safari (safari-restart, tools/lib/safari-restart.mjs)
 //   POST /session/:id/url                          open a URL in Safari (XCUIDevice openUrl:withApplication:)
 //   DELETE /session/:id                            end the session
+//   GET|POST /session/:id/orientation              SIMULATOR ONLY (incident I-087): read / set PORTRAIT or LANDSCAPE
+//                                                  (FBOrientationCommands.m, XCUIDevice orientation); refused unless
+//                                                  the caller passes {simulator: true} AND the base is not the phone's
+//                                                  WDA port 8100 (iproxy), so the physical iPhone is never rotated
 // Never /source, element lookups or screenshots: an accessibility snapshot of Safari costs phone CPU while
 // we measure it. request() allows exactly the calls above (ALLOWED, method + path) and refuses anything else
 // before any HTTP traffic, so a new WDA call is a deliberate edit here, not an accident.
@@ -36,7 +40,23 @@ export const ALLOWED = Object.freeze([
   ['POST', `/session/${SID}/url`],
   ['DELETE', `/session/${SID}`],
 ].map(([m, p]) => [m, new RegExp(`^${p}$`)]));
-export const allowed = (method, path) => ALLOWED.some(([m, re]) => m === method && re.test(path));
+/** Simulator-only calls (I-087): the device rotation. Never on the phone (request() checks the target). */
+export const SIM_ONLY = Object.freeze([
+  ['GET', `/session/${SID}/orientation`],
+  ['POST', `/session/${SID}/orientation`],
+].map(([m, p]) => [m, new RegExp(`^${p}$`)]));
+/** WDA's orientation names (FBOrientationCommands.m FBWDOrientationValues; GET answers PORTRAIT or LANDSCAPE). */
+export const ORIENTATIONS = Object.freeze({ portrait: 'PORTRAIT', landscape: 'LANDSCAPE' });
+/** The phone's WDA port (iproxy 8100:8100, tools/lib/wda-runner.mjs); WDA-sim runs on 8101 (tools/lib/sim.mjs ports()). */
+export const PHONE_WDA_PORT = 8100;
+const simOnly = (method, path) => SIM_ONLY.some(([m, re]) => m === method && re.test(path));
+export const allowed = (method, path, { simulator = false } = {}) => ALLOWED.some(([m, re]) => m === method && re.test(path)) || (simulator === true && simOnly(method, path));
+/** Is `base` a WDA the Simulator may own: a URL whose port is not the phone's 8100 (no port: 80/443, not WDA-sim either). */
+export function simulatorBase(base) {
+  let u;
+  try { u = new URL(base); } catch { return false; }
+  return !!u.port && Number(u.port) !== PHONE_WDA_PORT;
+}
 
 export class WdaError extends Error {
   constructor(message, { status, error, path } = {}) { super(message); this.status = status; this.error = error; this.path = path; }
@@ -46,8 +66,9 @@ export class WdaError extends Error {
  * One HTTP call. Returns the response's `value` (WDA wraps every answer as {value, sessionId}).
  * Throws WdaError on a non-2xx status, a W3C error body, a refused connection or a timeout.
  */
-export async function request(method, path, body, { base = WDA_URL(), timeoutMs = 15000 } = {}) {
-  if (!allowed(method, path)) throw new WdaError(`wda.mjs never calls ${method} ${redact(String(path))}: not in its allowlist (no accessibility snapshots, element lookups or screenshots while measuring)`, { path });
+export async function request(method, path, body, { base = WDA_URL(), timeoutMs = 15000, simulator = false } = {}) {
+  if (simOnly(method, path) && !(simulator === true && simulatorBase(base))) throw new WdaError(`wda.mjs calls ${method} ${redact(String(path))} only on a Simulator's WDA (I-087: the physical iPhone is never rotated; ${simulator === true ? `${redact(String(base))} is not a WDA-sim address (port ${PHONE_WDA_PORT} is the phone's)` : 'this target is not marked simulator'})`, { path });
+  if (!allowed(method, path, { simulator })) throw new WdaError(`wda.mjs never calls ${method} ${redact(String(path))}: not in its allowlist (no accessibility snapshots, element lookups or screenshots while measuring)`, { path });
   let res, text;
   try {
     res = await fetch(base.replace(/\/$/, '') + path, {
@@ -92,6 +113,14 @@ export async function createSession(opts = {}) {
     terminate: (bundleId = SAFARI) => request('POST', `/session/${id}/wda/apps/terminate`, { bundleId }, { ...opts, timeoutMs: 30000 }),
     launch: (bundleId = SAFARI) => request('POST', `/session/${id}/wda/apps/launch`, { bundleId, shouldWaitForQuiescence: false }, { ...opts, timeoutMs: 60000 }),
     openUrl: (url, bundleId = SAFARI) => request('POST', `/session/${id}/url`, { url, bundleId }, { ...opts, timeoutMs: 30000 }),
+    /** Simulator only (I-087; request() refuses it on the phone): 'PORTRAIT' or 'LANDSCAPE'. */
+    orientation: () => request('GET', `/session/${id}/orientation`, undefined, opts),
+    /** Simulator only (I-087): rotate to 'portrait' | 'landscape' (or WDA's PORTRAIT / LANDSCAPE). */
+    setOrientation: (o) => {
+      const v = ORIENTATIONS[String(o).toLowerCase()];
+      if (!v) return Promise.reject(new WdaError(`orientation must be ${Object.keys(ORIENTATIONS).join(' or ')} (got ${redact(String(o))})`));
+      return request('POST', `/session/${id}/orientation`, { orientation: v }, { ...opts, timeoutMs: 30000 });
+    },
     /** Play one stroke; resolves when WDA has played it back. Returns {sentAt, returnedAt, ms} (Mac epoch ms). */
     async actions(payload, { timeoutMs } = {}) {
       checkActions(payload);
