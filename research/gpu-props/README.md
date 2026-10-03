@@ -271,6 +271,14 @@ but it keeps the per-frame script. **G4 (compositor roll)** removes the per-fram
 original's own frame-to-frame variation, so it needs the user's call. de-countdown got a heads-up (no edit to its
 overlay).
 
+Update from de-countdown after X1 stage 2 closed (0ab7f40):
+- countdown-faces (a)'s 3 slots showed no measurable cost on the phone (row 1 not separated). No G2/G4 variant was
+  in the arms.
+- Agreed with fix-cd-strip: the strip replaces (a) and keeps the hidden skip (b).
+- F-146 (OBSERVED, cause unknown): at pastHero, the hidden-skip build shows a bigger once-a-second Layout burst
+  (42-61 ms in a single frame vs 30-39 ms), even though it does 38 % less total work. The G2 owner should count
+  Layout records per tick at pastHero with and without (b).
+
 ## 5. Ranking
 
 Criterion (lead, after C-026): first what the finger feels on st6-rb2 (section 0: the top ~1000 px and the morph
