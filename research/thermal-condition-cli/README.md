@@ -227,3 +227,8 @@ Read-only, installed tools only (Xcode 26.6: `devicectl` 518.33, `xctrace` 16.0 
 
 What this means for our tests: you cannot start Serious from a command, only from Xcode's Devices window (so it cannot be
 scripted into a run), and our runs under it showed no slowdown, so keep treating it as "reports the state", not as heat.
+
+> **Lead note (2026-10-03 10:20Z).** Superseded in part: the xctrace Thermal State read was run on the phone by
+> iphone-runner at 10:02Z (Serious, Is Induced = No, at 38-40 °C battery), so reading works (OBSERVED on our phone). The
+> 4-run "no slowdown under Serious" trial most likely compared real Serious with real Serious. The test condition is
+> now the user's option B (real Serious, xctrace gate per hold; `memory/phone-checks-start-warm.md`), not 38-40 °C.
