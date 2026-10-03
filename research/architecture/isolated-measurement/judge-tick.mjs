@@ -1,8 +1,9 @@
 // P-076 scorer: countdown calls per countdown second, cut at the countdown's own 1 s interval fires (p076-prereg.md).
 // node judge-tick.mjs <data dir>   reads pilot-tick-full.json and pilot-tick-freeze.json, writes judge-tick.json.
-// Input record (one per load, written by the probe): { rep, build, mode, timers, fires: [trace ts us], cd: [trace ts us],
-//   countdownScreenChanges (freeze only) }. fires = main-thread FunctionCall of the interval callback `let e = () => {`
-// (z(c, Date.now(), !0)) in the served JS; cd = every main-thread FunctionCall in the countdown range (fires included).
+// Input record (one per load, written by tick-probe.mjs): { rep, build, mode, timers, fires0, fires1, cd (trace ts in us),
+//   countdownScreenChanges }. fires0 / fires1 = main-thread FunctionCalls at the interval callback's 0-based line
+// `let e = () => {` (z(c, Date.now(), !0)) and at the next line; cd = every main-thread FunctionCall in the countdown
+// range +-1 line (fires included). A record without fires0 and fires1 arrays is VOID.
 import fs from 'node:fs';
 const S = process.argv[2] || '.';
 const rd = (f) => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null);
@@ -19,13 +20,14 @@ const SPAN_US = [850e3, 1150e3]; // a fire-aligned second must span 1 s +- 150 m
 // metric = median over the load's seconds of the countdown calls whose ts falls in the second.
 export function perLoad(r) {
   if (r.void || r.hashMismatch) return { void: r.void || 'hash mismatch' };
-  if (r.mode === 'freeze' && r.countdownScreenChanges === 0) return { void: 'countdown stopped in FRZ' };
+  if (r.mode === 'freeze' && !(r.countdownScreenChanges > 0)) return { void: r.countdownScreenChanges === 0 ? 'countdown stopped in FRZ' : 'FRZ clock check missing' };
+  if (!Array.isArray(r.fires0) || !Array.isArray(r.fires1) || !Array.isArray(r.cd)) return { void: 'record lacks fires0/fires1/cd' };
   const T = TIMERS[r.build];
   if (r.timers !== T) return { void: `timers ${r.timers}, expected ${T}` };
   // The trace's FunctionCall line base is not pinned down here, so the probe keeps the calls at the callback's 0-based
   // line (fires0) and at the next line (fires1). The next line holds no function start (it is the callback body), so
   // at most one candidate can carry the interval: use the non-empty one; both non-empty = VOID.
-  const c0 = r.fires0 || r.fires || [], c1 = r.fires1 || [];
+  const c0 = r.fires0, c1 = r.fires1;
   if (c0.length && c1.length) return { void: 'ambiguous fire line' };
   const f = [...(c0.length ? c0 : c1)].sort((a, b) => a - b);
   if (!f.length) return { void: 'no interval fires found' };
@@ -47,7 +49,8 @@ function main() {
   const per = ['full', 'freeze'].map((mode) => Math.abs(mean(get('C', mode)) - mean(get('C2', mode)))).filter(Number.isFinite);
   const AA = per.length === 2 ? Math.max(...per) : per.length === 1 ? per[0] : NaN;
   const aaFlag = per.length === 2 ? '' : per.length === 1 ? 'AA from one mode' : 'AA UNKNOWN: verdict flagged to the lead';
-  const pairs = [['Vf', 'C', true], ['C6', 'S', true], ['V7', 'C6', true], ['C6', 'C', false], ['V7', 'C', false]];
+  // judged pairs only: the vs-C pairs (C6-C, V7-C) mix T = 2 and T = 1 arms, so their per-second counts don't compare (dropped)
+  const pairs = [['Vf', 'C', true], ['C6', 'S', true], ['V7', 'C6', true]];
   const rows = []; const miss = []; let scorable = 0;
   for (const [b, ctrl, judged] of pairs) {
     const fb = get(b, 'full'), fc = get(ctrl, 'full'), zb = get(b, 'freeze'), zc = get(ctrl, 'freeze');
