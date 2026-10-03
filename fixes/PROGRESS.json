@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T00:36:00Z",
+ "updatedAt": "2026-10-03T01:05:00Z",
  "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And, if the heat test (P-068) shows Fastwork heats the phone more than apple.com, less work at rest so the phone stays cooler.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T01:00:00Z", "text": "Explained: the extra long frames past the hero come from the small avatar pill swapping its picture twice a second, which re-lays out the whole screen with or without the countdown fix. So the countdown fix is clear for wave 2, and a new fix (pill-swap) takes the pill on." },
   { "at": "2026-10-03T00:30:00Z", "text": "Countdown timing test on the phone done, 8 runs valid: at the top the new countdown is no slower than the original, so the full fix stays; past the hero it does about 40 % less work. Open: past the hero it still shows a few more long frames; de-countdown traces why. Now: the F3 robot-finger test." },
   { "at": "2026-10-03T00:12:00Z", "text": "GPU study done (T-030): most lag left is at the hero ending and the people cards; the toolbar resize is small. Three fixes now run at top priority: countdown digits as sliding strips, the hero ending off the main thread, and the GPU countdown roll (your call; you judge it blind)." },
   { "at": "2026-10-02T23:58:00Z", "text": "The F3 robot-finger test has a new plan, signed by the lead before any data: the check page that never passed under the robot finger is replaced by the usual scripted heat check. Phone order: the countdown timing test now, then the F3 robot-finger test, then the heat test." },
@@ -37,10 +38,28 @@
   { "at": "2026-10-01T19:12:00Z", "text": "Two small items (the endless sweep animations and the image sizes) are parked until the bigger style fixes have phone results, so effort stays on the largest slow frames." },
   { "at": "2026-10-01T19:03:00Z", "text": "Your two ideas checked: complex CSS is not the cause; the cost is how many elements each change touches. The images use more memory than needed but cost nothing per frame. Seven ranked fixes follow, scene-scope first." },
   { "at": "2026-10-01T18:54:00Z", "text": "A fix for slow style recalculation is being built (fix-scene-scope): it narrows how the page pauses its hidden scenes. After a Chrome check it goes to the phone next." },
-  { "at": "2026-10-01T18:33:00Z", "text": "Your decision: style recalculation is now the top priority. The phone first records where style time goes in A and B; the robot-finger check and the other tests follow." },
-  { "at": "2026-10-01T18:31:00Z", "text": "Your sitting: on the hero and at the end of the page, the best build felt quite a bit smoother than the original. Your idea that style recalculation causes the lag is now being checked by a new helper." }
+  { "at": "2026-10-01T18:33:00Z", "text": "Your decision: style recalculation is now the top priority. The phone first records where style time goes in A and B; the robot-finger check and the other tests follow." }
  ],
  "items": [
+  {
+   "id": "pill-swap",
+   "title": "Avatar pill: picture swap re-lays out the whole screen",
+   "area": "hero",
+   "state": "diagnosing",
+   "stage": "I",
+   "fixes": "Just past the hero, the small pill of avatars swaps its picture twice a second, and each swap makes the whole screen lay out again. A fix keeps the swap to the pill itself.",
+   "felt": {
+    "answer": "not-yet",
+    "text": "not built yet"
+   },
+   "gate": "Looks identical, then a phone check that the twice-a-second layout is gone, and an independent review.",
+   "next": "The owner reads the pill code and plans the fix on today's best build (st6-rb2).",
+   "owner": "fix-pill-swap",
+   "checks": [],
+   "details": [
+    "F-146 explained (de-countdown bcb8ef5, Simulator probe): the 1/s pastHero Layout burst is the community-pill avatar template swap (JS 11415-11447), a full-viewport Layout twice a second, identical in both X1 arms; countdown-faces adds no write or invalidation while hidden. Phone: the same layouts run longer in V (CPU-clock hypothesis, UNRESOLVED; research plan 8529d59)."
+   ]
+  },
   {
    "id": "cd-strip",
    "writeup": "research/gpu-props/README.md",

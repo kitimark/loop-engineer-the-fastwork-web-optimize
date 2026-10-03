@@ -9,6 +9,21 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **01:0xZ 7bc3d42 landed; bcb8ef5 + 8529d59 landed (de-countdown): F-146 EXPLAINED, countdown-faces clear for wave 2.**
+  - **F-146:** the 1/s pastHero Layout burst is the community-pill avatar template swap (JS 11415-11447), a
+    full-viewport Layout twice a second, identical in every arm; the PoC adds no write or invalidation while hidden
+    (Simulator probe). On the phone the same layouts run longer in V: CPU-clock-down hypothesis, UNRESOLVED; research
+    plan 8529d59 (CLPC/XNU and WebKit idle references, four probe-artefact checks, a decisive phone check only if a
+    decision needs it). **New fix owner `fix-pill-swap`** (on st6-rb2) owns that component.
+  - **P-036 hold-2 SIGTERM explained (iphone-runner):** its own Bash job hit the 30-min background limit. Hold 2 ran
+    V2 (valid); C2 started 00:45:33, cut at stroke 7/16, VOID (aborted), re-run in place so the order stays C V V C C V
+    V C. Hold 1 (00:28-00:37): wC, wV, S-open PASS (bottom 60, scroll 58.9), C1, V1 valid. No counted run outside a
+    quiet hold. Remaining: hold 2b (C2, C3, V3), hold 3 (V4, C4, S-end). **Lead moved iphone-runner to chrome-measure
+    queue #1 (audited)** to keep the holds close. fix-nav-morph scores; iphone-runner sends ops the result.
+  - **I-078 triaged:** `ts-i078` spawned; workaround on the incident: wait for the Simulator shutdown to finish, retry.
+  - Lead signs the cd-strip D card and the hero-exit-threaded ST-1 card when they arrive.
+  - PROGRESS: change line 01:00Z (F-146 explained, countdown fix clear for wave 2, pill-swap fix), item pill-swap (I).
+
 - **00:5xZ bad68d3 landed (ops batch: X1 stage 2 + second read PASS). I-077 RESOLVED (793c8bc, npm test 1339/1339 on
   main):** `iphone.mjs open` reaches Safari after a park again; D1's `--no-park` workaround is no longer needed for new
   blocks (rebase first). **I-078 OPEN** (tool, de-countdown 00:43Z): `sim session` refuses when fw-sim is in the
@@ -1712,9 +1727,11 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `fix-cd-strip` (name) | cd-strip: countdown digits as sliding strips (T-030 F1, user priority #1); coordinates with de-countdown | alive (10-03 00:2xZ) |
 | `fix-hero-exit-threaded` (name) | hero-exit-threaded: hero exit as a scroll-driven animation, ST-1 split first (T-030 F2, user priority #1) | alive (10-03 00:2xZ) |
 | `fix-cd-roll-ca` (name) | cd-roll-ca: countdown roll on the GPU, stacks on cd-strip (T-030 #10, user priority #1) | alive (10-03 00:2xZ) |
+| `fix-pill-swap` (name) | pill-swap: community-pill avatar template swap, full-viewport Layout 2/s at pastHero (JS 11415-11447; from F-146), on st6-rb2 | alive (10-03 01:0xZ) |
+| `ts-i078` (name) | I-078: `sim session` refuses while fw-sim is "Shutting Down" (workaround: wait, retry) | alive (10-03 01:0xZ) |
 | `arch-memory` (name) | T-032: agent memory into the project (proposal cfe3693, waits on the user's two OKs) | alive (10-03 00:2xZ) |
 | `fix-nav-morph` ID | a277ea00c8773c1ea; also takes the morph panel dvh height after P-036 | – |
-| ts-i077 (UNNAMED: agent ID a46d520fdb1912d3c; the name does not resolve) | I-077 (open after park), talks to the lead | alive (10-03 00:0xZ) |
+| ts-i077 (UNNAMED: agent ID a46d520fdb1912d3c; the name does not resolve) | I-077 (open after park), talks to the lead | done: I-077 resolved 793c8bc (10-03 00:5xZ) |
 | `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger; P-065 scripts | alive: phone back (T-025 21:28Z); re-runs G2 from the warm-ups after the T-026 Wi-Fi change, then P-065 |
 | `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
