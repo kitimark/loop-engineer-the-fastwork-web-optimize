@@ -101,7 +101,8 @@ Served A/B (st6-rb2 vs this build) frozen frames in Chrome. Animations were paus
   - the glint's top and bottom edge pixels differ while it passes, up to 64/255 in Chrome and 33/255 in WebKit, the inside
     the same;
   - the colour sweep inside the titles differs by up to 9/255 on phones, 23/255 on a 1440 px desktop, 10/255 in WebKit;
-  - reduced motion identical.
+  - reduced motion identical. (Review: true for the titles, dashes and glint; the face photos next to the dashes vary
+    per load in both arms, see "Review round 1".)
 - The decision named the lead's short phone no-worse check before landing; that check is done (see "Phone no-worse block").
 - The `@supports (-webkit-mask-clip: text)` wrap added in review round 1 leaves the rendering in Chrome and WebKit
   unchanged (both engines support the condition, so the same rules apply): V-new equals V-old within the load-to-load
@@ -450,6 +451,12 @@ Everything here is exploratory (not pre-registered): counts and frozen frames, n
 `out/platform-idle/review/` (and `out/platform-idle/sim/`); the summaries are in `results.json` → `review1` and
 `phoneBlock`.
 
+**Caveat, every stop in this topic (P-077, the phone block, review round 1): m = 0.** All stops are scroll positions
+with no push past the end, so the nav morph never starts. "5345" / "5346" / "bottom" is the page end, not the morph
+hold (m = 1); the morph hold is unmeasured here (see "F-182"). F-183 / F-184 (in WebKit, nav children with
+`--morph: inherit` stay stale during a real morph on the C base) touch no number here: they need a morph, and the code
+behind them is st6-rb2's, shared by both arms.
+
 ### Firefox and the `@supports` wrap (re-ticket, not a new question)
 
 - `-webkit-mask-clip: text` in Firefox: not supported. CONFIRMED: MDN browser-compat-data 8.1.4
@@ -478,9 +485,20 @@ Everything here is exploratory (not pre-registered): counts and frozen frames, n
     | glint P~O (floor) | 3/12436 | 2/3963 | 3/4262 | 1/461 | 3/2963 | 2/1292 | 1/1029 | 2/716 | 3/5941 | 3/2481 |
     | glint N~C | 56 | 37 | 38 | 29 | 44 | 23 | 42 | 46 | 64 | 43 |
 
-    - N~O sits at the P~O floor everywhere. The t1024 107 patch is in O (both N~O and P~O show it) at the left clip edge
-      (x 0-7) of title 0; N~P is 0 there in frames 0-3.
-    - Reduced motion: titles 0 everywhere. The dash crop (the whole MM container, not frozen) reaches 12-16 in P~O too.
+    - N~O sits at the P~O floor everywhere. The t1024 107 patch is in O alone: N~O and P~O show it at the left clip edge
+      (x 0-7) of title 0, N~P is 0/0 in the saved frames (titles 0-3 at 2000 ms). A t1024 repeat with N~P compared in
+      every frame (`probe9b.mjs`, `results.json` → `review1.pixelsChromeT1024NvsP`): no 107 patch in any pair; sweep N~O
+      1/1906 px, P~O 1/3378, N~P 1/1618; glint N~O 2/1186, P~O 2/1266, N~P 2/2364; reduced motion 0 in all three.
+    - Reduced motion: the four titles are 0 in every pair at every viewport. The other reduced-motion crop ("dash": the
+      first dash's parent, `div.start-selling-platform-secure.is-network.is-static`, which is inside #platform) differs
+      in N~C at m320 (11 LSB, 5041 px), m375, m430x2, d861, d1440 and d1440x1, and in P~O / N~O at several viewports
+      too. `probe10.mjs` (one shared probe hold; loads C, N, C2, N2; each differing pixel mapped to the element under it)
+      places **every** differing pixel on the two face photos (`img.start-selling-platform-secure-network-face`) or
+      their one-cell rim, never on the dashes or the glint; nothing runs in that crop under reduced motion in either arm
+      (no CSS animation, no SMIL). Each load renders the photos in one of two states, in both arms alike: C~C2 14/17303 px
+      at m375 and 11/5226 at d861; N~N2 11/5041 at m320 (the same pixels as the review's N~C), 11/9189 at d861, 13/13130
+      at m430; 0 in every pair at m430x2 and d1440x1. OBSERVED in our setup, cause unknown (image raster state per load).
+      So "reduced motion identical" (PR-009) holds for everything this build touches.
     - N~C repeats probe8's numbers (the accepted PR-009 tolerances). Every title is one line at every width.
   - *Simulator frozen frames* (`simpi.mjs --parts pixels`, 430×775 DPR 3). First session VO VN VO2: VO~VN max 1 LSB on 20 px
     (4 sweep frames), VO~VO2 0. A repeat with both builds twice (VN VO VN2 VO2, sweep frames only, `simpi2.mjs`) shows that
@@ -497,7 +515,7 @@ Everything here is exploratory (not pre-registered): counts and frozen frames, n
   arms alone take about 15 min. Each hold is in `holds.log` with its `--doing` line; per-hold logs `holdP.log`,
   `holdS.log`, `simholds.log`, `simholds2.log`, `p9b/`.
 
-### Idle triple (C vs V, y 0 / parked 2620 / pin 5345)
+### Idle triple (C vs V, y 0 / parked 2620 / page end 5345)
 
 `tools/idletriple.mjs` (sha256/12 `17b2a1208fb9`; scene-scope's tool, import path fixed, served hashes read per row):
 headless Chrome 430×932 DPR 3, CPU 1x, WIN 5000 ms, ROUNDS 2 (C V, then V C). Per second, rounds 0 / 1; served hashes
@@ -507,9 +525,9 @@ match (V = V-new):
 |---|---|---|---|---|---|---|---|
 | top, y 0 | 58.6 / 45.4 | 38 / 37.6 | 47 / 33.8 | 26.4 / 26 | 112.2 / 78 | 59 / 58.4 | 19.2-18.6 / 19.8-18.6 |
 | parked, 2620 | 9.4 / 9.4 | 9.4 / 9.4 | 0 | 0 | 6 / 7.2 | 6 / 6 | 27.8-27.6 / 27.2-27.6 |
-| pin, 5345 | 7 / 7 | 7 / 7 | 0 | 0 | 6 / 7.2 | 6 / 7.2 | 0.6 / 1 |
+| page end, 5345 | 7 / 7 | 7 / 7 | 0 | 0 | 6 / 7.2 | 6 / 7.2 | 0.6 / 1 |
 
-- Parked and pin: equal. The pin's 7 callbacks/s are all timer callbacks (timer 7/s in both); V adds none.
+- Parked and page end: equal. The page end's 7 callbacks/s are all timer callbacks (timer 7/s in both); V adds none.
 - Top: the gap is not this build's. A follow-up (`out/platform-idle/toprAF.mjs`, local, same setting, rounds C V / V C /
   C V) keyed every callback by its source: at y 0 **every** rAF is the countdown digit spring (JS 4041-4047, the
   `function i` that calls `GE`), and the style writes are the digit faces (`span.face`). That code (JS 3990-4120) is
