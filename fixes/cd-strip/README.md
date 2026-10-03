@@ -518,7 +518,9 @@ of 84 shots in G7), so it is not the B1 fix.
 - Inline style writes/s (G16, same session): top tc 50.4-75.8 vs faces 58.4-78; **mid 22-26.4 vs 6-11.2, end 22-30.8 vs
   6-7.2**. Off-screen the faces snap once per tick; strip-tc writes 11 cell transforms per whole-cell step (m change),
   every tick there. strip-rw: mid 2-2.8, end 2-2.2 (06-25Z). tc's one count that goes up; stated in rev 2. G16 ran
-  past `--max-seconds 300` (exit 124, no JSON); the windows are recovered from its log lines (`idlelog.mjs`).
+  past `--max-seconds 300` (exit 124, no JSON); the windows are recovered from its log lines (`idlelog.mjs`). G16 has
+  no hash record (review round 3 N3): its build attribution rests on idle.mjs's folder mapping (DIRS: arm name to
+  snapshot folder) and the snapshot folder's file time (before the run); no served-hash check stands behind it.
 - Chrome layers (G11 layer census): page 126 (faces: 80 face layers) vs 137-142 (8 strips + 88 cells) for every strip
   build. Simulator (S2, S5): hero clock 96 layers vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; page 143-147 vs 131.
 
@@ -777,7 +779,9 @@ attribution (after the counted runs; driver M for the pin; Timeline on except st
   per arm (3 re-entries, 3 censuses, 3 pin holds). A C cycle whose held m = 1 p95 is > 18 ms (the M sentinel) voids
   every cycle since the last passing C cycle. Checked on the Simulator before the block (functional session, C arm,
   10:15Z: hero clock backed 48, 1.18 MB, re-entry 55 clock Paint, top 176 Layout per 4 s, every window stamp found;
-  Simulator ms never count); the scorer on a synthetic block (all hit; a top-frame rise; 2 V holds above +14; a failing
+  Simulator ms never count; both arms again 10:38Z with --page, probe hash unchanged: V backed 16, 0.39 MB, re-entry
+  22, top 175 Layout, clock Paint 8; C backed 48, re-entry 55, top 178; score079 read both files end to end, re-entry
+  and backing "hit", the rest "not enough" on one cycle); the scorer on a synthetic block (all hit; a top-frame rise; 2 V holds above +14; a failing
   C sentinel voiding the runs since the last pass; LPM; a wrong served hash; re-entry and backing missed)
 scorer: fixes/cd-strip/p079/score079.mjs, sha256 302b608e09e7 (full 302b608e09e7b7b10a7b34f53f5472713e05c195d674495b4b613aacbd4bf874), committed before any phone data; run as
   `node fixes/cd-strip/p079/score079.mjs <arm>:<file> ... --json <out>` with every block file in block order (warm-ups
