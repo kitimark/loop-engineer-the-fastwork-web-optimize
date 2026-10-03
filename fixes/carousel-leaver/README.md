@@ -1133,6 +1133,14 @@ Neither predicts max 81 by itself.
 7. **Part 2 bar, the five numbers.** tierq labels a whole diff fill or edge by majority. For the part-2 bar, any diff
    with fill pixels is read against max ≤ 64, whatever its majority label. Hold A's match rule (n8) is unchanged.
 
+**Probe repair 1** (2026-10-03, after Hold A's first run 20:13:05-20:16:11Z, exit 0):
+- Every arm went VOID on a page-side SyntaxError before any shot was taken, so no data exists.
+- The cause: the SLOTS read inlined the PATH arrow function as `src: ${PATH}(i)`, which is not a valid call inside an
+  object literal. It now reads `src: (${PATH})(i)`.
+- simquiet.mjs is now `7188a92a6782`; nothing else changed. Every page expression the probe sends was parse-checked
+  offline (scratchpad `t/exprtest.mjs`: 18 expressions, 0 bad; the old form fails it).
+- Hold A is re-run as registered, with the void run kept in `out/carousel-leaver/g1a-void1/`.
+
 **Scope.** "On screen" means the Simulator's composited frame (rendered on the Mac's GPU), not the iPhone's. Claims
 from it are worded that way and stay OBSERVED in our setup until a source reference backs them.
 

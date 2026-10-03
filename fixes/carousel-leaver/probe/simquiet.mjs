@@ -62,7 +62,7 @@ const CATCH = (target, timeout) => `(window.__cc = null, new Promise((res) => { 
   requestAnimationFrame(tick); }).then((r) => { window.__cc = JSON.stringify(r); }), 1)`;
 const RAF2 = `(window.__r2 = 0, requestAnimationFrame(() => requestAnimationFrame(() => { window.__r2 = 1; })), 1)`;
 const SLOTS = `JSON.stringify([...${CAR}.querySelectorAll('img')].map((i) => { const cs = getComputedStyle(i), r = i.getBoundingClientRect();
-  return { cls: i.className, src: ${PATH}(i), x: +r.left.toFixed(4), w: +r.width.toFixed(4), tr: cs.transform, tl: cs.translate, op: cs.opacity, wc: cs.willChange, ir: cs.imageRendering }; }))`;
+  return { cls: i.className, src: (${PATH})(i), x: +r.left.toFixed(4), w: +r.width.toFixed(4), tr: cs.transform, tl: cs.translate, op: cs.opacity, wc: cs.willChange, ir: cs.imageRendering }; }))`;
 // slide logger for the burst: start / end of every slide in Date.now() (shared clock with the Mac)
 const LOGGER = `(() => { window.__sl = []; window.__slStop = 0; let was = ${SLIDING}; const P = ${PATH};
   const tick = () => { const on = ${SLIDING}; if (on !== was) { const lead = ${LEAD}; window.__sl.push({ on, t: Date.now(), lead: lead ? P(lead) : null }); was = on; }
