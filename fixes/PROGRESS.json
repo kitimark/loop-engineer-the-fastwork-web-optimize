@@ -9,7 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
-  { "at": "2026-10-03T10:12:00Z", "text": "Your choice (T-039, B): phone tests now run with the phone in its real \"Serious\" heat state, checked at the start and end of every run, stopping at 44 °C. Each of the first three fixes also gets one short check on a cool phone before we call it done." },
+  { "at": "2026-10-03T10:12:00Z", "text": "Your choice (T-039, B, as a trial): phone tests run with the phone in its real \"Serious\" heat state, checked at each run's start and end, stopping at 44 °C. If the phone won't hold it, we switch to cool starts (A), as you approved." },
   { "at": "2026-10-03T10:05:00Z", "text": "The hero fix's phone trace: the per-frame script is gone on the phone, but a touch start adds some style work, so it goes back to the code. The phone was in its real \"Serious\" heat state, so this counts as hot-phone data." },
   { "at": "2026-10-03T09:31:00Z", "text": "You chose the strip-tc version of the countdown digit strips (corrected proposal). Its phone check and your finger test come after the hero fix's phone trace." },
   { "at": "2026-10-03T09:25:00Z", "text": "The hero fix's phone trace got the go-ahead: the build, the trace plan and the warm start all passed their checks. It shows where the hero work happens on the phone, not timing." },
