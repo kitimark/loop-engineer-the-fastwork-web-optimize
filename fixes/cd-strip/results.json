@@ -513,7 +513,8 @@
    "layers": "hero clock 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; page 143-147 vs 131",
    "pinHold": "tc 1.32-1.34 Layout per frame, rw 1.32-1.37 (not vs faces)"
   },
-  "proposal": "PR-008 rev 2 posted 09:2xZ: land-strip-tc (recommended), land-strip, park; rev 1 acceptance stale; P-072 waits for the decision"
+  "proposal": "PR-008 rev 2 posted 09:2xZ: land-strip-tc (recommended), land-strip, park; rev 1 acceptance stale; P-072 waits for the decision",
+  "outcome": "review-cd-strip round 3 on 4cd9529: ACCEPT-WITH-NOTES; M1 (stale CSS comment above .strip disclosed in the README, code untouched so the hashes stay), N1 (What changed reworded for strip-tc), N2 (P-070 row marked superseded) answered README-only"
  },
  "decision": {
   "proposal": "PR-008",
@@ -529,5 +530,12 @@
   "js": "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16",
   "css": "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d",
   "note": "strip-tc, --on st6-rb2; sha256 (the older field) is strip-rw"
+ },
+ "phoneTicket": {
+  "rev": 2,
+  "prediction": "P-079",
+  "scorer": "fixes/cd-strip/p079/score079.mjs",
+  "attribution": "fixes/cd-strip/p079/attr079.mjs",
+  "note": "hashes in the README PHONE TICKET; counted W runs Timeline off, every Timeline count in 6 attribution cycles C V C V V C; thermal Serious gate (user T-039 B, research/phone-thermal-gate/thermal-gate.mjs)"
  }
 }

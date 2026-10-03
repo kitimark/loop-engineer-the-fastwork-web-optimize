@@ -12,7 +12,8 @@ is a layout shift). Pixel identity in Chrome and WebKit (Simulator) except two d
 R-fade (Simulator, 50 % hero fade, mid-roll) and the Chrome 0.9-fade class (both strip builds). One count goes up:
 off-screen inline style writes (Chrome). Section "Review round 3 and PR-008 rev 2". WebKit counts on the Simulator; no
 timing run (timing A/Bs are deferred, user 2026-10-02); cd-strip is a top-3 fix, so it keeps a phone block and the
-user's finger test before landing (lead, T-029 #30), queued after P-074.
+user's finger test before landing (lead, T-029 #30), queued after the user's Xcode step and iphone-runner's grid check
+(thermal Serious gate, user T-039 B; PHONE TICKET rev 2).
 **Stage:** F (BUILD card strip-tc below), review round 3 next. D: LOCATED, signed by the lead on the fast path
 (2026-10-03 01:1xZ, no gain claim: the frame effect is measured only in the phone block, so no segment card now)
 **Device class / gate:** render-bound / phone-only (WebKit paint and layer work; Chrome 6x can't stand in for it)
@@ -35,9 +36,12 @@ to `.strip` and the cell-layer rules, CSS ~11966-11984).
 (`--on st6-rb2`, round-trips: `apply --reset` gives the hashes below); served JS
 `6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16`; served CSS
 `982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d` (base st6-rb2: JS `7bf7c4657d21`, CSS `f523598b2a24`);
-the same bytes as the measured snapshot `out/cd-strip/snap/strip-tc`. The template comment above `__cdStripT` still
-says "one wrapper write when m changes" (strip-rw's wording; strip-tc writes 11 cell transforms); left as measured, the
-effect's own comment is right. strip-rw (rev 1's build, not landed): `patch.diff` `1f3c26a16563…`, JS
+the same bytes as the measured snapshot `out/cd-strip/snap/strip-tc`. Two code comments still describe strip-rw (left
+as measured, so the hashes that C8 and P-079 pin stay; review round 3, M1): the JS template comment above `__cdStripT`
+says "one wrapper write when m changes" (strip-tc writes 11 cell transforms), and the CSS comment above `.strip` (CSS
+~1418-1420) says the wrapper sits "at top -m*c" and each cell "at top k*c in the wrapper (both set by the script)"
+(strip-tc: the wrapper never moves, every cell has `top: 0` and its own `translateY((k − m)·c)`). The effect's own
+comment in the JS is right. strip-rw (rev 1's build, not landed): `patch.diff` `1f3c26a16563…`, JS
 `5e37af69bcc4…`, CSS `40078cb2d9cf…`; copy in `out/cd-strip/overlay-rw/`. strip-rw before the B1 fix (the same JS; measured in the 05-17Z to 06-29Z runs below): `patch.diff` `48bc7adf7f03…`,
 CSS `9b2f89ea58bd…`. The CSS change only applies while the hero scene is paused, where the hero clock is off screen;
 the re-runs on `40078cb2` are in section "Review round 2 re-runs". The step before, strip-rb: `patch.diff`
@@ -62,14 +66,13 @@ One static strip per digit replaces the 10 faces (`patch.diff`, +73 −22 on st6
 (the user's pick, PR-008 rev 2, 09:31:49Z). Steps before it: strip-rb (per-cell tops re-based, 11 writes per m
 change, lead pick 04:3xZ), strip-rw (one wrapper `top` write per m change, lead 05:0xZ; rev 1's build: the `top` move
 is a layout shift and costs a layout), then strip-tc (each cell re-based by its own transform, 11 transform writes per
-m change, no layout move). The bullets below describe strip-rw; **strip-tc differs only in the re-base**: the wrapper
-never moves (`.cell{top:0}`), and one effect on [c, m] writes cell k `translateY((k − m)·c px)` (section "Review round 3
-and PR-008 rev 2", BUILD card strip-tc). strip-rb's numbers stay below as the step before.
+m change, no layout move). The bullets below describe strip-tc (review round 3, N1); strip-rb's numbers stay below as
+the step before.
 
-- `span.strip` (absolute, inset 0, `will-change: transform`) holds an uncomposited `span.cdwrap` of the same box, which
-  holds 11 `span.cell`s `0 1 … 9 0`. Each cell is a face's box (absolute, `height: 100%`, glyph centred by the same
-  flex rules) at `top: k·c px`, written once (and again only if c changes). `c` is the spacer's integer
-  `offsetHeight`, the same value the original multiplies `KE` by.
+- `span.strip` (absolute, inset 0, `will-change: transform`) holds an uncomposited `span.cdwrap` of the same box
+  (Sim S2: 0 layers of 16 nodes), which holds 11 `span.cell`s `0 1 … 9 0`. Each cell is a face's box (absolute,
+  `top: 0`, `height: 100%`, glyph centred by the same flex rules). `c` is the spacer's integer `offsetHeight`, the same
+  value the original multiplies `KE` by.
 - **Each hero cell is its own layer** (`.cell.svelte-1quva9c { will-change: transform }`; panel cells
   `will-change: auto`, next to cdwc's strip rule). WebKit rasterizes a text backing taller than one cell with glyph
   edges 1-3 levels lighter than a face's (OBSERVED, Simulator, cause unknown; section "Pixel identity … WebKit"). A
@@ -77,14 +80,16 @@ and PR-008 rev 2", BUILD card strip-tc). strip-rb's numbers stay below as the st
 - **Re-based geometry.** n = v mod 10 and m = `__cdStripM(v)` = round(n).
   - The strip moves by `translateY(__cdStripY(v, c) + m·c px)`, with `__cdStripY = (v, c) => -(((v % 10) + 10) % 10) * c`
     unchanged. That offset stays under one cell.
-  - The wrapper sits at `top: −m·c px`. It is the one write when m changes; Svelte's template effect compares its
-    derived inputs by equality, so the effect re-runs only when c or m changes.
+  - Each cell gets `translateY((k − m)·c px)` from one template effect on [c, m] (11 writes); Svelte's template effect
+    compares its derived inputs by equality, so it re-runs only when c or m changes. The wrapper is never written.
   - Each cell layer therefore sits (k − m)·c from the strip layer and lands at `(k − n)·c` on screen. That is the same
     place as a −n·c transform over tops k·c, without two large offsets cancelling in the layer tree. With them, WebKit
     showed a delta-1 glyph-edge difference under the hero's exit fade late in a long roll (OBSERVED, cause unknown).
-  - strip-rb did the re-base by rewriting all 11 cell tops to (k − m)·c. That is 11 style writes per m change, and m
-    changes on every tick while the clock is hidden (st6-rb2 snaps there). In Chrome it was 22-24 writes per s at the
-    end pin vs the faces' 6-7. The wrapper makes it one write.
+  - The steps before: strip-rb rewrote all 11 cell `top`s to (k − m)·c per m change; strip-rw moved the wrapper's `top`
+    to −m·c instead (one write, but a `top` move is a layout shift and cost a layout in Chrome). strip-tc moves the
+    cells by transform: no layout move, and 11 writes per m change. m changes on every tick while the clock is hidden
+    (st6-rb2 snaps there), so off-screen inline style writes are 22-31 per s in Chrome vs the faces' 6-11 (G16;
+    RecalcStyle and Layout counts unchanged; accepted with PR-008 rev 2).
 - For the two cells inside the digit, `(k − n)·c` is exactly `KE(k, v)·c`, the original face's offset. The 11th cell
   (`0`) is a guard only: `$E` restarts the spring at velocity 0 on every target
   change and its damping ratio is about 0.98, so the value never leaves [0, 9] (review-cd-strip checked every
@@ -96,8 +101,8 @@ and PR-008 rev 2", BUILD card strip-tc). strip-rb's numbers stay below as the st
   fewer Paint records on re-entry to the top (strip-rb: 48 → 16 backed, 1.18 → 0.39 MB, 54-55 → 23-41 in the first
   second; strip-rw: section "WebKit").
 - The spring (`GE`), its rAF loop, st6-rb2's pause/snap while hidden and the `animate`/`active` props are untouched.
-  The value → offset mapping lives in two functions (`__cdStripY`, `__cdStripM`) and three template effects (cell tops
-  on c; wrapper top on c and m; strip transform), so fix-cd-roll-ca can drive the strip from outside (JS 4067-4086).
+  The value → offset mapping lives in two functions (`__cdStripY`, `__cdStripM`) and two template effects (cell
+  transforms on c and m; strip transform), so fix-cd-roll-ca can drive the strip from outside (overlay JS 4065-4083).
 - Panel arms. **(b), the default:** cdwc's rule retargeted to the strip
   (`.start-selling-morph-panel .waitlist-closing-countdown .strip.svelte-1quva9c { will-change: auto; }`), so panel
   strips stay unlayered, as the faces are on st6-rb2. **(a), rejected:** `fixes/cd-strip--a/` (the same JS without
@@ -641,7 +646,7 @@ idle census (Chrome, G11 + G16, 5 s windows): clock layout shifts 0 (9 top, 6 mi
   equal; inline style writes/s top 50.4-75.8 vs 58.4-78, mid 22-26.4 vs 6-11.2, end 22-30.8 vs 6-7.2 (the 11-cell
   write per m change, every tick while off-screen); Chrome layers 137-142 vs 126
 prediction: P-079 (mgmt-ops-10) against this card, superseding P-072, before any phone data; phone block after
-  P-074 (warm start 38-40 °C, one start method), then the user's finger test
+  P-074 (thermal Serious gate per the PHONE TICKET rev 2, one start method), then the user's finger test
 debug hooks: none added (st6-rb2's __fwMorphDrive is inherited)
 ```
 
@@ -736,6 +741,9 @@ decisions: hit -> strip-rw stays wave 2's base for cd-roll-ca; re-entry or backi
 
 ```
 PHONE TICKET cd-strip strip-tc · prediction P-079 (mgmt-ops-10; supersedes P-072 before data) · 2026-10-03
+  rev 2 (10:2xZ, before any phone data): ops read NEEDS-FIX (scorer, pin pairing, P(hit)); the user's thermal gate
+  (T-039 B, #21); counted W runs are Timeline-off (iphone.mjs run has no Timeline for W), so every Timeline count moved
+  into the attribution cycles
 build: V = strip-tc on st6-rb2, JS 6fa0e1e8a221, CSS 982a747d9263, patch.diff 4f2ff4eb9afa; served from the immutable
   copy out/cd-strip/snap/strip-tc (fix-cd-strip worktree)
 control: C = st6-rb2, JS 7bf7c4657d21, CSS f523598b2a24; copy out/cd-strip/snap/st6rb2 (same base, mirror snapshot
@@ -744,25 +752,65 @@ question: on the phone, does strip-tc keep the Simulator's mechanism (fewer cloc
   clock backing) without new slow frames at the top or at the morph pin?
 ports: two, one per arm, each served from its copy (serve.mjs --root <copy> --port auto, plain http twin per I-003);
   one uncounted warm-up load per port (A3/U5)
-start: battery 38-40 °C at the block start, one start method for every run (T-029 #30); temperature and charging
-  state recorded per run (A4); Low Power Mode runs dropped
-block (driver W, Timeline on in counted runs): warm-up C, warm-up V, Timeline-OFF sentinel (C), counted C V V C C V V C
-  (n = 4 per arm), end sentinel (C, Timeline off); sentinel rule as CLAUDE.md "Phone blocks" (bottom >= 58 fps,
-  scroll >= 44 fps)
-attribution (after the end sentinel, uncounted for frames): per arm, in order C V C V V C: LayerTree census at the top
-  (hero clock layers, backed, MB), one scroll to 3 viewports and back (clock Paint records in the first 1 s at the top),
-  and one m = 1 pin hold via __fwMorphDrive (M driver; Layout records per hold): 3 holds per arm (the "2 of 3 holds"
-  gate), 3 re-entries per arm (median per arm)
-aggregation: frames > 50 and > 34 counted per run in the top window and the pin window (±4 ms twins); "rise by >= 2
-  per run" = median of V's 4 per-run counts minus median of C's 4 >= 2, in either window; Layout per 4 s at the top:
-  per counted run, V - C as the difference of the arm medians; re-entry and backing: arm medians over the attribution
-  runs
+thermal gate (user, T-039 B, #21; replaces the 38-40 °C start band as the gate): real thermal Serious. xctrace Thermal
+  State (iphone-runner's method, about 40 s) read at the start and end of every phone hold; a hold counts only if both
+  reads say Serious with Is Induced = No, otherwise it is re-run. Each hold logs the timer-grid median and the battery
+  °C (kept, as before). Stop at 44 °C or at Critical and let the phone cool first. B is an experiment: if the phone
+  won't hold Serious, or holds keep failing the gate, the lead switches to A (start only at Fair/Nominal, same xctrace
+  gate; approved by the user in advance; the block log records it). No pooling with 4 ms-grid blocks (P-071 and
+  earlier). One start method for every run (T-029 #30); temperature and charging state recorded per run (A4); Low Power
+  Mode runs dropped. Gate tool: research/phone-thermal-gate/thermal-gate.mjs (on main f0b7b28, sha256 4604218c4041), a
+  gate read at the start and at the end of every hold; holds run back to back (a parked phone leaves Serious within
+  about 3 min, between 39.0 and 37.8 °C battery: iphone-runner's cooling map), the lead moves iphone-runner to #1 for
+  each hold; ceiling 44 °C or Critical. The later Fair no-worse check (--expect fair after a 3-6 min cool-down) is not
+  part of this block
+block (counted runs: driver W, Timeline OFF): warm-up C, warm-up V, counted C V V C C V V C (n = 4 per arm), each
+  `iphone.mjs run --driver window --probe std --arm C|V --block P-079 --run <n> --label p079-<arm><n> --to 2400 --idle 4
+  --hold 2 --sentinel 3` (warm-ups with --warmup); every counted C run is the heat sentinel (bottom >= 58 fps and
+  scroll >= 44 fps, meta.sentinel; CLAUDE.md "Phone blocks"): a failing C run voids every run since the last passing one
+attribution (after the counted runs; driver M for the pin; Timeline on except step 4): 6 cycles in order C V C V V C,
+  each `node fixes/cd-strip/p079/attr079.mjs --arm C|V --cycle <n> --page <the arm's port> --out <file>` on the page iphone.mjs
+  open loaded
+  (probe sha256 dcaacf4a8170, full dcaacf4a8170b4dea57e0e73ff95dd3262b7a1c7d2cf52fe1800e92e27854373): one page load, then (1) LayerTree census at the top: hero clock layers, backed, MB;
+  (2) Timeline top window; (3) Timeline re-entry: 3 viewports down for 2.5 s and back; (4) one m = 1 pin hold via
+  __fwMorphDrive (hold 2000, cycles 1), Timeline OFF: pin frames; (5) the same hold, Timeline on: pin Layout. 3 cycles
+  per arm (3 re-entries, 3 censuses, 3 pin holds). A C cycle whose held m = 1 p95 is > 18 ms (the M sentinel) voids
+  every cycle since the last passing C cycle. Checked on the Simulator before the block (functional session, C arm,
+  10:15Z: hero clock backed 48, 1.18 MB, re-entry 55 clock Paint, top 176 Layout per 4 s, every window stamp found;
+  Simulator ms never count); the scorer on a synthetic block (all hit; a top-frame rise; 2 V holds above +14; a failing
+  C sentinel voiding the runs since the last pass; LPM; a wrong served hash; re-entry and backing missed)
+scorer: fixes/cd-strip/p079/score079.mjs, sha256 302b608e09e7 (full 302b608e09e7b7b10a7b34f53f5472713e05c195d674495b4b613aacbd4bf874), committed before any phone data; run as
+  `node fixes/cd-strip/p079/score079.mjs <arm>:<file> ... --json <out>` with every block file in block order (warm-ups
+  skipped, void runs reported and dropped). Windows, fixed before data:
+  top frames: a W run's frames with t in [marks.idle start, marks.scroll end) and yEnd < 1000 (4 s of the clock rolling
+    at y 0, then the W steps through the hero)
+  pin frames: step 4's driver frames with m >= 0.999 from the first such frame + 100 ms to the last (the m = 1 hold;
+    the tween's last frame excluded)
+  pin Layout: step 5, Layout records whose page time (TimeStamp 'cdcal' maps Timeline to page time) lies in the same
+    hold window of step 5's own driver frames
+  top Layout and idle clock Paint: step 2, records in [TimeStamp cdw0, cdw1): cdw0 650 ms after a seconds tick, cdw1
+    4000 ms later
+  re-entry "first 1 s": step 3, clock Paint records in [TimeStamp 'cdmark in', + 1000 ms); 'cdmark in' is stamped in
+    the page task that scrolls back to y 0
+  clock Paint record: a Paint whose clip is digit- or strip-sized (w <= 1.5 x digit width, h <= 12 x digit height; the
+    Simulator S5 measure)
+aggregation and pairing:
+  frames: dt > 50 (twins > 46, > 54) and > 34 (twins > 30, > 38) per run (top) and per hold (pin); "rise by >= 2" =
+    median of V's valid runs (holds) minus median of C's >= 2, per window; a twin with another verdict marks it
+    threshold-sensitive; > 34 is judged against [-1, +1], not a falsifier; >= 3 valid per arm (top), >= 2 (pin)
+  pin Layout: each V hold's Layout minus the median of C's 3 holds (no pairing by cycle); above the band = > +14;
+    falsified when >= 2 of the 3 V holds are above
+  re-entry, backing, top Layout, idle clock Paint: arm medians over the valid cycles
 decisions (P-079): hit -> strip-tc stays the base for cd-roll-ca, then the user's finger test; re-entry or backing
   missed -> back to the code; frames or pin Layout worse -> gate the 11 cell writes while the clock is hidden (own
   count check) or drop cd-strip from the wave
+confidence (fix-cd-strip, rough, for calibration, not a gate): P(re-entry hit) 0.7 (Sim 55 / 23; the phone's raster
+  timing may differ); P(backing hit) 0.8 (Sim 48 / 16-17); P(frames hit, both windows) 0.8; P(pin Layout hit) 0.7
+  (Sim tc holds 1.32-1.34 Layout per frame, never measured against the faces' holds)
 finger test: after the block, on the console (blind swipe A/B C vs V, lead/console protocol)
-minutes: ~35 (2 warm-ups ~3, 2 sentinels ~3, 8 counted ~14, attribution 6 cycles ~12, park and cool-down ~3)
-queue: after P-074 (lead 09:3xZ)
+minutes: ~30 plus the thermal reads (2 warm-ups ~2, 8 counted ~8, 6 attribution cycles ~8, park and the runner's
+  overhead ~5)
+queue: after the user's Xcode step and iphone-runner's grid check (ops 10:1xZ)
 ```
 
 **Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up · toolbar resize ·
@@ -772,12 +820,13 @@ rubber band (all need a timed or phone run; the pixel harness covers the clock s
 
 - Done: the user accepted PR-008 rev 2, land-strip-tc (09:31:49Z, final); strip-tc ported into the overlay, `patch.diff`
   regenerated (round-trips), BUILD card strip-tc; fix-cd-roll-ca told (tc branch, C8/V9).
-- Next, in order (lead 09:3xZ): mgmt-ops-10 registers a new row superseding P-072 against the strip-tc card (hashes,
-  snapshots, same gates) before any phone data; review round 3 on strip-tc (review-cd-strip, spawned by the lead);
-  phone block after P-074 (warm start 38-40 °C, one start method) and the user's finger test; land request only after
-  the review and the finger test.
-- Phone: the frame effect is measured only in the wave-2 phone run against P-072 (D was signed on the fast path with
-  no gain claim, so no separate phone segment card now).
+- Done since: review round 3 ACCEPT-WITH-NOTES (review-cd-strip at 4cd9529; M1, N1, N2 answered in this README and
+  `fixes/PREDICTIONS.md`, no code or hash change); P-079 registered by mgmt-ops-10; PHONE TICKET rev 2 (scorer and
+  attribution script committed with their hashes, pin-hold pairing, P(hit), the user's thermal Serious gate).
+- Next, in order: ops' line check of the ticket rev 2; the ticket to iphone-runner; phone block after the user's Xcode
+  step and iphone-runner's grid check; the user's finger test; land request only after the block and the finger test.
+- Phone: the frame effect is measured only in the P-079 block (D was signed on the fast path with no gain claim, so no
+  separate phone segment card now).
 - P-032 (fix-nav-morph) is re-registered on the strip build after the D card.
 - fix-cd-roll-ca stacks on this patch (hero clock only; WAAPI roll driven via the strip's transform).
 
@@ -820,4 +869,6 @@ LayerTree census in the paused-but-rendered band), `idle.mjs` (idle triple, adap
 and PerformanceObserver entries per entryType; layout-shift score per source set; a Chrome layer census; env `SPOTS`,
 `ROUNDS`, `LAYERS`; arms strip-tw and strip-tc), `simpx.mjs` also compares the test arm with the second control run,
 `snap.mjs` (immutable arm copies), `pool.mjs` (pools the Simulator fade50 shot differences by build and region:
-the R-fade table), `results.json`.
+the R-fade table), `p079/attr079.mjs` (P-079 attribution cycle on the open phone page: census, top window, re-entry,
+pin frames, pin Layout) and `p079/score079.mjs` (P-079 scorer; both named with their sha256 in the PHONE TICKET),
+`results.json`.
