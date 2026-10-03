@@ -99,8 +99,8 @@ tr.flash td { animation: row-flash 2.5s ease-out 1; }
 </head>
 <body>
 <!--console-menu-->
-<div class="wrap">
-  <header>
+<div class="wrap" id="page-part" data-anchor="part:page" data-anchor-label="Who is doing what"><!-- I-096: the page's fallback comment anchor -->
+  <header data-comment-slot>
     <h1>Who is doing what</h1>
     <span class="sub" id="upd">loading…</span>
   </header>
@@ -207,7 +207,7 @@ function render(v) {
       var what = [];
       if (x.waiting && x.waiting.kind === 'user') what.push(x.waiting.plain);
       x.derived.forEach(function (d) { if (d.kind === 'user') what.push(d.plain); });
-      ul.appendChild(el('li', null, el('b', { text: x.title + ': ' }), what.join('; ')));
+      ul.appendChild(el('li', { 'data-anchor': SLUG.test(x.id) ? 'status:' + x.id : null, 'data-anchor-label': x.title }, el('b', { text: x.title + ': ' }), what.join('; '))); // I-096
     });
     you.appendChild(el('section', { class: 'card you', 'aria-label': 'Waiting on you' }, el('h2', { text: 'Waiting on you' }), ul,
       el('div', { class: 'plain' }, 'Steps are on ', el('a', { href: '/', text: 'Your steps' }), '; anything else, tell the lead.')));

@@ -11,7 +11,8 @@
 //   page   steps | proposals | status | progress | build | threads
 //   item   per page (ITEM): steps "step:C-032"; proposals "PR-009", "PR-009/option:both", "PR-009/option:both/shot:2",
 //          "PR-009/video:b"; status "status:cd-strip"; progress and build "progress:style-recalc"; threads
-//          "thread:T-003" or "thread:T-003/msg:4"
+//          "thread:T-003" or "thread:T-003/msg:4"; and on every page "part:page" (I-096): anything on the page that is
+//          no item of its own (headings, filters, panels, list lines without an id); its quote is the line pointed at
 //   quote  the selected text, plain, one line, at most LIMITS.quote chars (longer selections are cut with "…")
 //   label  the item's own title as the page shows it (one line, at most LIMITS.label), for the thread title
 // The user's own words: stored as typed (the local store, like any thread text); never HTML (the pages use textContent).
@@ -21,15 +22,22 @@ export const LIMITS = Object.freeze({ item: 120, quote: 300, label: 120 });
 const SLUG = '[a-z0-9][a-z0-9-]{0,40}';
 const OPTION = '[a-z0-9][a-z0-9._-]{0,39}';
 const PR_ITEM = `PR-\\d{1,6}(?:\\/option:${OPTION})?(?:\\/(?:shot:\\d{1,2}|video:(?:a|b|both)))?`;
-/** The item ids each page may anchor: a whole-string pattern per page. */
+// I-096 (user T-043 #6/#8: "comment anywhere"): a part of a page that is no item of its own ("part:page", the whole
+// page: headings, filters, panels); the line the user pointed at goes along as the quote.
+const PART = `part:${SLUG}`;
+const withPart = (re) => new RegExp(`^(?:${re}|${PART})$`);
+/** The item ids each page may anchor: a whole-string pattern per page (every page also takes "part:<slug>"). */
 export const ITEM = Object.freeze({
-  steps: new RegExp('^step:C-\\d{1,6}$'),
-  proposals: new RegExp(`^${PR_ITEM}$`),
-  status: new RegExp(`^status:${SLUG}$`),
-  progress: new RegExp(`^progress:${SLUG}$`),
-  build: new RegExp(`^progress:${SLUG}$`),
-  threads: new RegExp('^thread:T-\\d{1,6}(?:\\/msg:\\d{1,3})?$'),
+  steps: withPart('step:C-\\d{1,6}'),
+  proposals: withPart(PR_ITEM),
+  status: withPart(`status:${SLUG}`),
+  progress: withPart(`progress:${SLUG}`),
+  build: withPart(`progress:${SLUG}`),
+  threads: withPart('thread:T-\\d{1,6}(?:\\/msg:\\d{1,3})?'),
 });
+/** The page's own name, as the menu says it. */
+export const PAGE_WORDS = Object.freeze({ steps: 'Your steps', proposals: 'Proposals', status: 'Status', progress: 'Progress', build: 'Best build', threads: 'Threads' });
+const isPart = (it) => /^part:/.test(it);
 
 /** One line of plain text: control characters and line breaks become spaces, runs of spaces one. */
 export const plainLine = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f\u2028\u2029]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -54,6 +62,7 @@ export function normAnchor(a) {
 export function anchorUrl(a) {
   if (!a || !PAGES.includes(a.page) || !ITEM[a.page]?.test(a.item)) return null;
   const it = a.item;
+  if (isPart(it)) return a.page === 'steps' ? '/' : `/${a.page}`; // a part: the page itself
   switch (a.page) {
     case 'steps': return `/#${it.slice('step:'.length)}`;
     case 'proposals': return `/proposals#${it.split('/')[0]}`;
@@ -68,6 +77,7 @@ export function anchorUrl(a) {
 /** Words for the item in a title or a chip: "C-032", "PR-009 option both, shot 2", "status cd-strip", "T-003 #4". */
 export function itemText(a) {
   const it = String(a?.item ?? '');
+  if (isPart(it) && PAGE_WORDS[a?.page]) return it === 'part:page' ? `the ${PAGE_WORDS[a.page]} page` : `${PAGE_WORDS[a.page]}: ${it.slice('part:'.length).replace(/-/g, ' ')}`;
   if (a?.page === 'steps') return it.slice('step:'.length);
   if (a?.page === 'threads') return it.slice('thread:'.length).replace('/msg:', ' #');
   if (a?.page === 'proposals') return it.split('/').map((p, i) => (i ? p.replace(':', ' ') : p)).join(', ').replace(', option ', ' option ');

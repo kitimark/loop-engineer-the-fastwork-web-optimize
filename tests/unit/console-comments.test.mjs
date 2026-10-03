@@ -109,16 +109,21 @@ test('pages: every console page marks its items with an anchor id of its own pag
     'proposals-page.html': [/'data-anchor': \/\^PR-\\d\{1,6\}\$\/\.test\(p\.id\) \? p\.id : null/, /p\.id \+ '\/option:' \+ o\.name/, /an \+ '\/shot:' \+ \(i \+ 1\)/, /an \+ '\/video:both'/],
     'threads-page.html': [/'thread:' \+ t\.id \+ '\/msg:' \+ x\.n/, /id="tv-anchor"/],
   };
+  // I-096: the list lines too (proposals, threads, "Waiting on you"), and every page's wrapper as its fallback
+  want['proposals-page.html'].push(/href: '#' \+ p\.id, 'data-anchor': \/\^PR-\\d\{1,6\}\$\/\.test\(p\.id\) \? p\.id : null/);
+  want['threads-page.html'].push(/li\.setAttribute\('data-anchor', 'thread:' \+ t\.id\)/, /<form id="new-form"[^>]* data-no-comment>/, /<form class="card" id="reply-form"[^>]* data-no-comment>/);
+  want['status-page.html'].push(/ul\.appendChild\(el\('li', \{ 'data-anchor': SLUG\.test\(x\.id\) \? 'status:' \+ x\.id : null/);
   for (const [f, res] of Object.entries(want)) {
     const html = readFileSync(join(TOOLS, 'lib', f), 'utf8');
     for (const re of res) assert.match(html, re, f);
+    assert.match(html, /<div class="wrap" id="page-part" data-anchor="part:page" data-anchor-label="[^"]+">[^\n]*\n {2}<header data-comment-slot>/, `${f}: the page is its own fallback anchor`);
   }
   const css = readFileSync(join(TOOLS, 'lib', 'console-nav.css'), 'utf8');
   for (const c of ['.cmt-btn', '.cmt-box', 'a.cmt-marker', '.cmt-note']) assert.ok(css.includes(c), c);
 });
 
 /** console-comments.js on a tiny fake DOM: elements with attributes, closest/querySelector for the few selectors it uses. */
-function commentsPage({ page = 'steps', markers = {}, posted = { thread: { id: 'T-008', to: ['lead'] } } } = {}) {
+function commentsPage({ page = 'steps', markers = {}, posted = { thread: { id: 'T-008', to: ['lead'] } }, build } = {}) {
   const matches = (n, sel) => sel.split(',').some((s) => {
     s = s.trim();
     if (s[0] === '.') return (n.className || '').split(/\s+/).includes(s.slice(1));
@@ -149,6 +154,7 @@ function commentsPage({ page = 'steps', markers = {}, posted = { thread: { id: '
   const own = item.appendChild(new N('button', {}, 'Start'));
   const other = body.appendChild(new N('section', { 'data-anchor': 'step:C-033' }));
   const otherWords = other.appendChild(new N('p', {}, 'Rate it'));
+  const extra = build ? build(body, N) : {};
   const docListeners = {};
   const document = {
     body, readyState: 'complete', currentScript: new N('script', { 'data-page': page }), documentElement: { clientWidth: 1200 },
@@ -175,7 +181,7 @@ function commentsPage({ page = 'steps', markers = {}, posted = { thread: { id: '
   new Function('window', 'document', 'fetch', 'setTimeout', 'clearTimeout', 'setInterval', src)(window, document, fetch, setTimeout, clearTimeout, () => 0);
   const settle = async () => { for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0)); await new Promise((r) => setTimeout(r, 60)); };
   const select = (text, a = words, b = a) => { selection = { isCollapsed: !text, rangeCount: text ? 1 : 0, anchorNode: a, focusNode: b, toString: () => text, getRangeAt: () => ({ getBoundingClientRect: () => ({ top: 10, right: 300, width: 120 }) }) }; };
-  return { window, document, body, item, words, own, other, otherWords, fire, calls, settle, select, btn: () => body.querySelector('.cmt-btn'), box: () => body.querySelector('.cmt-box') };
+  return { ...extra, window, document, body, item, words, own, other, otherWords, fire, calls, settle, select, btn: () => body.querySelector('.cmt-btn'), box: () => body.querySelector('.cmt-box') };
 }
 
 test('console-comments.js: hover shows Comment; the box says who gets it; Send POSTs the anchor with x-console; the note names the thread', async () => {
@@ -272,4 +278,90 @@ test('console-comments.js: markers show the count and link to the newest thread;
   const src = readFileSync(join(TOOLS, 'lib', 'console-comments.js'), 'utf8');
   assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(/.test(src), 'no HTML sinks');
   assert.ok(!/https?:\/\//.test(src), 'nothing external');
+});
+
+// ---- I-096 (user T-043 #6/#8: "comment anywhere"): every page part takes a comment ----
+
+test('anchor model: "part:<slug>" on every page (the page itself), with its link and words; other parts refused', () => {
+  for (const page of C.PAGES) {
+    assert.deepEqual(C.normAnchor({ page, item: 'part:page' }), { page, item: 'part:page' }, page);
+    assert.deepEqual(C.normAnchor({ page, item: 'part:waiting-on-you' }).item, 'part:waiting-on-you');
+  }
+  for (const item of ['part:', 'part:Page', 'part:a/b', 'part:page/msg:1', `part:${'a'.repeat(60)}`, 'parts:page']) assert.throws(() => C.normAnchor({ page: 'status', item }), /not an item/, item);
+  assert.equal(C.anchorUrl({ page: 'status', item: 'part:page' }), '/status');
+  assert.equal(C.anchorUrl({ page: 'steps', item: 'part:page' }), '/');
+  assert.equal(C.anchorUrl({ page: 'build', item: 'part:page' }), '/build');
+  assert.equal(C.itemText({ page: 'status', item: 'part:page' }), 'the Status page');
+  assert.equal(C.itemText({ page: 'progress', item: 'part:right-now' }), 'Progress: right now');
+  assert.equal(C.commentTitle({ page: 'status', item: 'part:page', label: 'Who is doing what' }, 'what is this?'), 'Comment on the Status page "Who is doing what": what is this?');
+  assert.equal(C.markersFor('status', [{ id: 'T-001', status: 'open', anchor: { page: 'status', item: 'part:page' } }]).items['part:page'].count, 1);
+});
+
+/** A page wrapper "part:page" with a header slot, two plain lines, an item with its own slot, a text field, a form. */
+function partPage(opts = {}) {
+  return commentsPage({ page: 'status', ...opts, build: (body, N) => {
+    const part = body.appendChild(new N('div', { class: 'wrap', 'data-anchor': 'part:page', 'data-anchor-label': 'Who is doing what' }));
+    const header = part.appendChild(new N('header', { 'data-comment-slot': '' }));
+    const h1 = header.appendChild(new N('h1', {}, 'Who is doing what'));
+    const ul = part.appendChild(new N('ul'));
+    const line1 = ul.appendChild(new N('li', {}, 'Countdown roll: you: C-033 swipe A/B'));
+    const line2 = ul.appendChild(new N('li', {}, 'Hero fade: you: rate it'));
+    const row = part.appendChild(new N('section', { 'data-anchor': 'status:cd-strip', 'data-anchor-label': 'Countdown strips' }));
+    const rowSlot = row.appendChild(new N('div', { 'data-comment-slot': '' }));
+    const rowWords = rowSlot.appendChild(new N('p', {}, 'building the strip'));
+    const field = part.appendChild(new N('textarea'));
+    const form = part.appendChild(new N('form', { 'data-no-comment': '' }));
+    const formWords = form.appendChild(new N('p', {}, 'Your reply'));
+    return { N, part, header, h1, line1, line2, row, rowSlot, rowWords, field, formWords };
+  } });
+}
+
+test('console-comments.js: a line in a page part shows Comment by that line and goes as the quote; an item inside wins; typing fields and [data-no-comment] show nothing', async () => {
+  const p = partPage();
+  await p.settle();
+  p.fire(p.line1, 'mouseover');
+  assert.equal(p.btn().hidden, false, 'a plain line takes a comment');
+  p.fire(p.btn(), 'click');
+  assert.equal(p.box().querySelector('.cmt-what').textContent, 'Comment on Who is doing what');
+  assert.equal(p.box().querySelector('.cmt-quote').textContent, 'Countdown roll: you: C-033 swipe A/B', 'the line pointed at is the quote');
+  p.box().querySelector('textarea').value = 'what does this wait for?';
+  p.fire(p.box().querySelector('.cmt-send'), 'click');
+  await p.settle();
+  assert.deepEqual(JSON.parse(p.calls.find((c) => c.init?.method === 'POST').init.body).anchor,
+    { page: 'status', item: 'part:page', quote: 'Countdown roll: you: C-033 swipe A/B', label: 'Who is doing what' });
+  // the next line in the same part: the button follows, the quote is that line
+  p.fire(p.line2, 'mouseover');
+  assert.equal(p.btn().hidden, false);
+  p.fire(p.btn(), 'click');
+  assert.equal(p.box().querySelector('.cmt-quote').textContent, 'Hero fade: you: rate it');
+  p.fire(p.box().querySelector('.cmt-cancel'), 'click');
+  // an item inside the part is a comment on that item, without a made-up quote
+  p.fire(p.rowWords, 'mouseover');
+  p.fire(p.btn(), 'click');
+  assert.equal(p.box().querySelector('.cmt-what').textContent, 'Comment on Countdown strips');
+  assert.equal(p.box().querySelector('.cmt-quote').hidden, true);
+  p.fire(p.box().querySelector('.cmt-cancel'), 'click');
+  // the user's own typing field and a [data-no-comment] form: nothing
+  const q = partPage();
+  await q.settle();
+  q.fire(q.field, 'mouseover');
+  assert.equal(q.btn().hidden, true, 'no Comment over a text field');
+  q.fire(q.formWords, 'mouseover');
+  assert.equal(q.btn().hidden, true, 'no Comment inside [data-no-comment]');
+  q.fire(q.formWords, 'click');
+  assert.equal(q.btn().hidden, true);
+});
+
+test('console-comments.js: the part\'s marker goes into its own slot (the header), not into an item\'s; a redrawn item is found again by its id', async () => {
+  const p = partPage({ markers: { 'part:page': { count: 1, open: 1, threads: [{ id: 'T-009', state: 'open' }] }, 'status:cd-strip': { count: 2, open: 2, threads: [{ id: 'T-010' }, { id: 'T-011' }] } } });
+  await p.settle();
+  assert.equal(p.header.querySelector('.cmt-marker').textContent, '1 comment');
+  assert.equal(p.rowSlot.querySelector('.cmt-marker').textContent, '2 comments');
+  assert.equal(p.rowSlot.querySelectorAll('.cmt-marker').length, 1, 'the part\'s marker is not put into the row');
+  // the page redraws the row between the hover and the click: the box opens on the new node
+  p.fire(p.rowWords, 'mouseover');
+  p.row.remove(); p.row.isConnected = false;
+  p.part.appendChild(new p.N('section', { 'data-anchor': 'status:cd-strip', 'data-anchor-label': 'Countdown strips (new)' }));
+  p.fire(p.btn(), 'click');
+  assert.equal(p.box().querySelector('.cmt-what').textContent, 'Comment on Countdown strips (new)');
 });

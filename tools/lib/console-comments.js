@@ -9,6 +9,10 @@
 //     the server checks the anchor (console-comments.mjs) and starts a thread the lead reads;
 //   - a marker on every item that has comments ("2 comments"), linking to its newest thread, from GET
 //     /api/comments?page=<page>; re-placed when the page redraws its items.
+// I-096 (user T-043: "comment anywhere"): each page's main wrapper is the anchor "part:page", so every line on the page
+// takes a comment; the innermost anchor wins (a row inside the page stays a comment on that row). In a page part the
+// button sits by the line pointed at and that line's text is the quote. A page that redrew its items while the box was
+// opening gets the item's new node (same id).
 // Text is set with textContent only; nothing loads from outside; only this server is asked.
 (function (root) {
   'use strict';
@@ -23,43 +27,81 @@
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
   function anchorOf(node) {
     while (node && node.nodeType !== 1) node = node.parentNode;
+    if (node && node.closest && node.closest('[data-no-comment]')) return null; // where the user writes to the agents (I-096)
     var a = node && node.closest ? node.closest('[data-anchor]') : null;
     return a && !a.closest('.cmt-box') ? a : null;
   }
   function itemOf(a) { return a.getAttribute('data-anchor'); }
-  function slotOf(a) { return a.querySelector('[data-comment-slot]') || a; }
+  /** The marker's place: the item's own [data-comment-slot] (not one of an item inside it), else the item. */
+  function slotOf(a) {
+    var s = a.querySelectorAll('[data-comment-slot]');
+    for (var i = 0; i < s.length; i++) if (s[i].closest('[data-anchor]') === a) return s[i];
+    return a;
+  }
+  // I-096: a page part ("part:page", the page's fallback) is big; the line pointed at in it is what the comment is
+  // about: the button sits by that line and its text goes along as the quote.
+  var BLOCK = 'li,tr,p,h1,h2,h3,h4,dt,dd,summary,figcaption,label,blockquote,pre,div,section,article,header,footer,details,table,ul,ol';
+  var TYPING = 'input,textarea,select,[contenteditable]';
+  function isPart(a) { return /^part:/.test(itemOf(a) || ''); }
+  function blockOf(node, a) {
+    while (node && node.nodeType !== 1) node = node.parentNode;
+    var b = node && node.closest ? node.closest(BLOCK) : null;
+    return b && a.contains(b) ? b : a;
+  }
+  function lineText(n) { var t = String((n && n.textContent) || '').replace(/\s+/g, ' ').trim(); return t.length > QUOTE_MAX ? t.slice(0, QUOTE_MAX - 1) + '…' : t; }
+  /** The item now on the page with this id: pages redraw their items (Status every 5 s), the old node is gone. */
+  function live(a) {
+    if (a.isConnected !== false) return a;
+    var id = itemOf(a), all = document.querySelectorAll('[data-anchor]');
+    for (var i = 0; i < all.length; i++) if (itemOf(all[i]) === id) return all[i];
+    return a;
+  }
 
   // ---- the floating "Comment" button ----
   var btn = el('button', 'cmt-btn', 'Comment');
   btn.type = 'button'; btn.hidden = true; btn.setAttribute('aria-label', 'Comment on this item');
-  var target = null, quote = '';
+  var target = null, quote = '', line = null;
   function place(node, rect) {
     var r = rect || node.getBoundingClientRect();
     node.style.top = Math.max(0, (root.scrollY || 0) + r.top - 4) + 'px';
     node.style.left = Math.max(0, (root.scrollX || 0) + Math.min(r.right, document.documentElement.clientWidth - 16) - 90) + 'px';
   }
-  function showBtn(a, q, rect) {
+  function showBtn(a, q, rect, at) {
     if (box && !box.hidden) return; // one comment at a time
-    target = a; quote = q || '';
+    target = a; quote = q || ''; line = at || null;
     btn.textContent = quote ? 'Comment on the selection' : 'Comment';
     btn.hidden = false;
-    place(btn, rect || a.getBoundingClientRect());
+    place(btn, rect || (line || a).getBoundingClientRect());
   }
-  function hideBtn() { btn.hidden = true; target = null; quote = ''; }
+  function hideBtn() { btn.hidden = true; target = null; quote = ''; line = null; }
+  /** Point at `node` (hover or tap): its item; in a page part, the line in it. */
+  function pointAt(node) {
+    var a = anchorOf(node);
+    if (!a) return false;
+    var el0 = node; while (el0 && el0.nodeType !== 1) el0 = el0.parentNode;
+    if (el0 && el0.closest && el0.closest(TYPING)) return true; // the user's own typing field is no line to comment on
+    if (!isPart(a)) { if (a !== target || line) showBtn(a); return true; }
+    var b = blockOf(node, a);
+    if (b === a && target === a) return true; // the gap between two lines: the button stays by the last line
+    if (a !== target || b !== line) showBtn(a, '', null, b);
+    return true;
+  }
   btn.addEventListener('mousedown', function (e) { e.preventDefault(); }); // keep the selection
-  btn.addEventListener('click', function () { if (target) openBox(target, quote); });
+  btn.addEventListener('click', function () { if (target) openBox(target, quote || (line && isPart(target) ? lineText(line) : '')); });
 
   // ---- the comment box ----
   var box = null, boxAnchor = null, boxQuote = '', sending = false;
   function openBox(a, q) {
     if (!box) build();
+    var at = line && isPart(a) && line.isConnected !== false ? line : null;
+    a = live(a);
     boxAnchor = a; boxQuote = (q || '').replace(/\s+/g, ' ').trim();
     if (boxQuote.length > QUOTE_MAX) boxQuote = boxQuote.slice(0, QUOTE_MAX - 1) + '…';
     box.querySelector('.cmt-what').textContent = 'Comment on ' + (a.getAttribute('data-anchor-label') || itemOf(a));
     var qn = box.querySelector('.cmt-quote'); qn.textContent = boxQuote; qn.hidden = !boxQuote;
     box.querySelector('.cmt-msg').textContent = '';
     box.hidden = false; btn.hidden = true;
-    place(box, a.getBoundingClientRect());
+    place(box, (at || a).getBoundingClientRect());
     box.style.left = Math.max(8, Math.min(parseFloat(box.style.left) - 220, document.documentElement.clientWidth - 360)) + 'px';
     var ta = box.querySelector('textarea'); ta.focus();
   }
@@ -114,8 +156,7 @@
   // ---- pointer, touch and selection ----
   document.addEventListener('mouseover', function (e) {
     if (e.target === btn || (box && !box.hidden)) return;
-    var a = anchorOf(e.target);
-    if (a && a !== target && !hasSelection()) showBtn(a);
+    if (!hasSelection()) pointAt(e.target);
   });
   document.addEventListener('click', function (e) {
     if (e.target === btn || (box && box.contains(e.target))) return;
@@ -123,7 +164,7 @@
     var a = anchorOf(e.target);
     if (!a) { if (!hasSelection()) hideBtn(); return; }
     if (e.target.closest && e.target.closest(INTERACTIVE)) return; // the item's own buttons and links work as before
-    if (!hasSelection()) showBtn(a);
+    if (!hasSelection()) pointAt(e.target);
   });
   function hasSelection() { var s = root.getSelection ? root.getSelection() : null; return !!(s && !s.isCollapsed && String(s).trim()); }
   function onSelect() {

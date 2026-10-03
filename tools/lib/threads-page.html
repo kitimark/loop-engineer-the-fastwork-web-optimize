@@ -115,8 +115,8 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
 </head>
 <body>
 <!--console-menu-->
-<div class="wrap">
-  <header>
+<div class="wrap" id="page-part" data-anchor="part:page" data-anchor-label="Threads"><!-- I-096: the page's fallback comment anchor -->
+  <header data-comment-slot>
     <h1>Threads</h1>
     <span class="sub">Ask the agents one topic per thread. Replies arrive here, so you can catch up topic by topic.</span>
     <span id="conn" class="status">connecting…</span>
@@ -125,7 +125,7 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
   <section id="list-view">
     <details class="new card" id="new">
       <summary>New thread</summary>
-      <form id="new-form" autocomplete="off">
+      <form id="new-form" autocomplete="off" data-no-comment>
         <label class="small" for="new-title">Topic, one line</label>
         <input type="text" id="new-title" maxlength="160" placeholder="e.g. Why does the hero still stutter on the phone?" required>
         <label class="small" for="new-text">Your question</label>
@@ -148,7 +148,7 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
     <div class="meta" id="tv-meta"></div>
     <div class="anchor" id="tv-anchor" hidden></div>
     <ol class="msgs" id="tv-msgs"></ol>
-    <form class="card" id="reply-form" autocomplete="off">
+    <form class="card" id="reply-form" autocomplete="off" data-no-comment>
       <label class="small" for="reply-text" id="reply-label">Your reply</label>
       <textarea id="reply-text" maxlength="8000" required></textarea>
       <div class="pending" id="reply-imgs"></div>
@@ -209,6 +209,7 @@ function api(method, path, body) {
 // ---- list ----
 function row(t) {
   var li = el('li'), a = el('a', 'trow' + (t.unread || t.state === 'waiting-on-you' ? ' news' : ''));
+  if (TID.test(t.id)) { li.setAttribute('data-anchor', 'thread:' + t.id); li.setAttribute('data-anchor-label', t.title); } // I-096
   a.href = '#' + t.id;
   a.appendChild(el('div', 't', t.title));
   var m = el('div', 'meta');
@@ -242,7 +243,7 @@ function loadList() {
 
 // ---- one thread ----
 /** I-090: the item a comment is about, quoted, with a link back (only to this console's own pages). */
-var ANCHOR_URL = /^\/(?:proposals|status|progress|build|threads)?#[A-Za-z0-9-]{1,48}$/;
+var ANCHOR_URL = /^\/(?:(?:proposals|status|progress|build|threads)?#[A-Za-z0-9-]{1,48}|(?:proposals|status|progress|build|threads)?)$/; // I-096: a page part links to its page
 function renderAnchor(a) {
   var box = $('tv-anchor'); box.replaceChildren();
   box.hidden = !a;
@@ -255,6 +256,7 @@ function renderAnchor(a) {
 function renderThread(t) {
   curThread = t;
   $('tv-title').textContent = t.title;
+  if (TID.test(t.id)) { $('thread-view').setAttribute('data-anchor', 'thread:' + t.id); $('thread-view').setAttribute('data-anchor-label', t.title); } // I-096: the open thread, around its messages
   var m = $('tv-meta'); m.replaceChildren();
   m.appendChild(el('span', 'pill ' + t.state, STATE[t.state] || t.state));
   m.appendChild(el('span', null, t.id));

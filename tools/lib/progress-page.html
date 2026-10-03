@@ -87,8 +87,8 @@ section[data-item] { scroll-margin-top: 80px; }
 </head>
 <body>
 <!--console-menu-->
-<div class="wrap">
-  <header>
+<div class="wrap" id="page-part" data-anchor="part:page" data-anchor-label="Fix progress"><!-- I-096: the page's fallback comment anchor -->
+  <header data-comment-slot>
     <h1 id="h1">Fix progress</h1>
     <span class="sub" id="upd">loading…</span>
   </header>
@@ -374,7 +374,7 @@ function load() {
   });
 }
 if (window.ConsoleNav) ConsoleNav.onChange = function () { load(); }; // a step came or went: refresh "Coming up for you"
-if (BUILD_PAGE) { var h1 = document.getElementById('h1'); if (h1) h1.textContent = 'Today’s best build'; document.title = 'Best build'; }
+if (BUILD_PAGE) { var h1 = document.getElementById('h1'); if (h1) h1.textContent = 'Today’s best build'; document.title = 'Best build'; var pp = document.getElementById('page-part'); if (pp) pp.setAttribute('data-anchor-label', 'Today’s best build'); }
 load();
 setInterval(load, 15000);
 </script>

@@ -93,8 +93,8 @@ h2.section { font-size: 16px; color: var(--muted); font-weight: 600; margin: 36p
 </head>
 <body>
 <!--console-menu-->
-<div class="wrap">
-  <header>
+<div class="wrap" id="page-part" data-anchor="part:page" data-anchor-label="Your steps"><!-- I-096: the page's fallback comment anchor -->
+  <header data-comment-slot>
     <h1>Your steps</h1>
     <span class="sub">What the agents need from you, oldest first. Click Start when you are ready.</span>
     <span id="conn" class="status">connecting…</span>

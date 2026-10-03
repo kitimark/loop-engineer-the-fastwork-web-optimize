@@ -151,8 +151,8 @@ fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
 </head>
 <body>
 <!--console-menu-->
-<div class="wrap">
-  <header>
+<div class="wrap" id="page-part" data-anchor="part:page" data-anchor-label="Proposals"><!-- I-096: the page's fallback comment anchor -->
+  <header data-comment-slot>
     <h1>Proposals</h1>
     <span class="sub" id="upd">loading…</span>
   </header>
@@ -217,7 +217,7 @@ function renderList(items) {
   function row(p) {
     var chip = p.hold ? el('span', { class: 'chip held', text: 'On hold' + (p.decision ? ' · ' + (STATE_TEXT[p.decision.value] || p.decision.value) + ', under review' : '') })
       : el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: p.decisionState === 'stale' ? 'decide again' : (STATE_TEXT[p.state] || p.state) });
-    var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id }, chip,
+    var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id, 'data-anchor': /^PR-\d{1,6}$/.test(p.id) ? p.id : null, 'data-anchor-label': p.title }, chip, // I-096
       el('span', { class: 't', text: p.title }),
       el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') + (p.options ? ' · ' + p.options + ' options' : '') + ' · to: ' + toNames(p) }));
     return a;

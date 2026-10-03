@@ -36,6 +36,8 @@
 //   POST /api/comments           {anchor: {page, item, quote?, label?}, text}: the user's comment becomes a thread with
 //                                that anchor (console-comments.mjs normAnchor: a known page, an allowlisted item id,
 //                                caps); the lead reads it (thread wait). Same guards as the thread POSTs, 64 KB.
+//                                I-096: every page is also its own anchor "part:page" (any line on it; the line goes
+//                                along as the quote), so the user can comment anywhere.
 //   Thread POSTs: like the step POSTs (localhost Host, x-console: 1), plus an Origin, when sent, must be this server's
 //   localhost origin, and a body over 64 KB gets 413.
 //   GET  /proposals              the proposals page (tools/lib/proposals-page.html, ts-proposals): PoCs to compare and decide
