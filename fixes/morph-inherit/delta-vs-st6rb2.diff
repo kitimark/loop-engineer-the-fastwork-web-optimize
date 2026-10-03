@@ -1,0 +1,35 @@
+--- st6-rb2/_app/immutable/nodes/2.DyWL8TcE.js
++++ morph-inherit/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13490,10 +13490,24 @@
+   var oe = V(ae, 2),
+     le = e(oe, !0);
+   (M(oe), M(ie), M(B));
++  // perf(morph-inherit, F-183): R4b registers --morph as non-inheriting and the children below take it with an
++  // explicit `--morph: inherit`. WebKit (Safari 26.5, Simulator and iPhone, OBSERVED) does not re-resolve those
++  // children when only the header's value changes, so they kept the value from the last class flip (logo not
++  // centred, earn button not hidden, panel fade frozen). The header's writer now also writes the same value inline
++  // on each of them: the same elements restyle as R4b intended, and nothing depends on WebKit's inherit tracking.
++  // Chrome resolves the same values either way.
++  var __mkP = null,
++    __mkV = null,
++    __mkW = (v) => {
++      if (v === __mkV) return;
++      __mkV = v;
++      for (let t of [B, re, ie, oe, __mkP]) t && t.style.setProperty(`--morph`, v);
++    };
+   var W = V(B, 2),
+     ue = (n) => {
+       var a = lN(),
+         u = e(a);
++      ((__mkP = a), __mkV !== null && a.style.setProperty(`--morph`, __mkV));
+       (_(
+         u,
+         21,
+@@ -13611,6 +13625,7 @@
+         })),
+           k(I, `aria-label`, s(o).header.primary),
+           (te = S(I, ``, te, e)),
++          __mkW(e[`--morph`]),
+           k(re, `href`, a()),
+           k(re, `aria-label`, s(o).header.home),
+           k(re, `data-selenium`, SE.header.home),
