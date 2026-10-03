@@ -567,6 +567,48 @@ query, so the sliding variant is expected at desktop width too. The checks below
 - C3 and C5 are re-run once each with the repaired probe (the void rule's one re-run). A second void goes to the lead.
 - Data already taken (C1, C2, C4, W1-W3) does not use pord and is unaffected.
 
+## P-087 diagnostic D1 (describes only; written before it runs; lead OK)
+
+**Why.** W1 (WebKit, phone width) missed P1, as recorded. F~base n8 is 2877 at t 0, 905-1263 at 17-100, 356 at rest, max
+shade 157. base~base2 and F~F2 are 0. The forced-opaque lens equals the natural crop, so the difference is not paint
+order. The n8 pixels are column-stripe resampling patterns on whole faces, plus a whole-face edge outline on the moving
+follower (OBSERVED in our setup, cause unknown).
+
+**Question.** Is this difference inherited from st6-rb2's persistent slots (will-change, `scale(1)`, `opacity .999`), or
+does F's `z-index` cause it?
+
+**Runs.** Each is a Simulator shared hold (`fw-sim`, phone width, simcrop `26f548f2dcfe` unchanged), with a pmset check
+after it.
+- D1a: base, E, F, E2, base2.
+- D1b: base, S, base2, S2.
+Raw files go to `out/carousel-leaver/p87/d1a` and `d1b`. The split keeps each hold under 300 s, and each hold has its own
+base A/A.
+
+**Load-state caveat** (de-breakpoints, rm1440 in Chrome, OBSERVED, cause UNRESOLVED): image sharpness there depends on
+when the images arrive relative to the first raster. It varied between loads of the same build, and both builds could
+give the identical picture. My data already shows signs of this:
+- W3 (iPad) F~F2 at rest is 687.
+- C4 (Chrome 1440) A~A2 is 151-2718, on one face.
+D1 therefore gives every arm it reads two loads (base/base2, E/E2, S/S2; F once, with F2 in W1). D1b adds S2 for this.
+A per-arm difference counts as a build trait only if both loads of each arm agree. Otherwise it is reported as
+load-state.
+
+**Read-out** (presentation only, `probe/tier.mjs` `9aadede8e7c7`):
+- Rows: E~base, F~base, E2~base (D1a) and S~base (D1b), each next to its hold's base~base2.
+- Points: t 0, one mid-slide point (t 100) and at rest (post).
+- The five numbers per row:
+  - largest shade (max channel difference);
+  - share of the Sim viewport's device px with n8 beyond the A/A;
+  - CSS px² per face: n8 px / DPR², faces split by the 24 CSS px slot pitch from the leaver's left;
+  - edge or fill: n8 within 1.5 CSS px of a face circle counts as edge, otherwise fill;
+  - static (at rest) or moving (mid-slide only).
+
+**Reading** (decides nothing for P-087, which is recorded as not exact):
+- If E~base ≈ F~base at rest, and S~base at rest is above 0 in the same face-resampling pattern (beyond S's known
+  end-offset difference), then the WebKit difference is inherited from st6-rb2. It becomes a st6-rb2 / best-build matter,
+  and the lead decides the route.
+- If E~base is 0 and F~base is not, F's `z-index` causes it.
+
 ## Deliverables
 
 - `patch.diff`: baseline-relative, st6-rb2 + E (CSS and st6-rb2's JS).
