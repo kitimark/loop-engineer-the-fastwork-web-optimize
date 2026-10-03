@@ -8,6 +8,16 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-8 log (from 10-02 23:5xZ, newest first; START HERE)
 
+- **00:0xZ 91f8411 landed; lead's 9d6fa3c (CLAUDE.md npm test figures after I-076) on main; rebased.**
+  - **I-077 OPEN** (tool, non-blocking; ts-i077 spawned): after `iphone.mjs run` parks Safari, `iphone.mjs open` can't
+    reach a page (only about:blank views listed). Workaround: `--no-park` within a block, `safari-restart --url` to
+    reopen, one park at the block end.
+  - **X1 amendment D1 (c89a8b9, de-countdown; mechanics only, lead ACCEPTED, pre-count):** applies the I-077 workaround
+    (runs keep the page, a part finding Safari parked reopens it with safari-restart, one park at the block end); run
+    log with the C-027 settings window; nothing voided. X1 part A restarted twice before any counted run (about:blank
+    after the earlier park; then the open-after-park failure). Ops reads D1 when it lands; no scoring change.
+  - I-076 + I-072 RESOLVED (f8aa122). Peers address ops by agent ID or through the lead.
+  - Waiting on: X1 stage 2 result, P-036 (after X1), P-068 H1/H2, de-gpu T-030 report.
 - **23:5xZ mgmt-ops-8 took over** from mgmt-ops-7 (pinned to another agent's worktree by a peer's message; can't
   commit). Worktree `.claude/worktrees/agent-ace57ef63584bdfb6`, branch `worktree-agent-ace57ef63584bdfb6`, from main
   4647b27 (f8aa122: I-076 + I-072 resolved, npm test ~163 s at --test-concurrency=6). mgmt-ops-7's scratchpad drafts
