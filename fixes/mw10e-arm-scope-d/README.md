@@ -122,7 +122,14 @@ card.
   - A run is **collapsed** when 2 consecutive windows are under 30 fps.
   - An arm **collapses** when ≥ 2 of 3 valid runs collapse, and is **clean** at 0 of 3. **1 of 3 is inconclusive.**
 - **Metric 2, arm/disarm frames** (cycle phase; phone ms thresholds only, G run, F-071):
-  - The arm window runs from the up stroke's first touchmove −50 ms to +250 ms.
+  - The arm window runs from the up stroke's first touchmove −50 ms to the stroke's lift +500 ms.
+    - It is this wide because of the Simulator check (02:47Z, counts only, D and C alike): cycle 1's up stroke starts
+      at y 5213 with the morph closed, so its touchmoves are not prevented (0/27-28). The page scrolls natively to
+      the end, with an overscroll bounce to y 5348, and the morph reopens there, mid-stroke or in the momentum after
+      it, not at the first touchmove.
+    - Cycle 2's up stroke starts at y 5254-5256 and is prevented from its first move (31/31).
+    - Both down strokes are prevented (33-34 of 33-34) and close the morph.
+    - Every run ends at m = 1, `is-expanded`.
   - The disarm window runs from the down stroke's lift +400 ms to +1200 ms, when the spring reaches 0 and D removes
     its window listeners.
   - The unit is **the per-run max dt over that run's 2 windows of a kind**, so n = 3 vs 3, arm and disarm separately.
