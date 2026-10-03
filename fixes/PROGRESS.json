@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T15:05:00Z",
+ "updatedAt": "2026-10-03T15:45:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T15:45:00Z", "text": "Your new priority (T-046): the hero and the end-of-page menu animation on the graphics chip come first. Phone order: hero test, then the end-of-page check, then your countdown finger test. A combined best build becomes the A side of every Try-it." },
   { "at": "2026-10-03T15:05:00Z", "text": "The Try-it panels you used for the pixel rule and the hero change compared against the original page, so they also showed earlier changes; a tool fix lets each option show only its own change. Revised proposals follow." },
   { "at": "2026-10-03T15:05:00Z", "text": "Fixed a display bug on the iPhone where the top bar and menu stopped following the page past its end; now matches the original." },
   { "at": "2026-10-03T14:30:00Z", "text": "The idle-animation fix has landed: the shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted (PR-009); the phone check found it no worse." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T00:30:00Z", "text": "Countdown timing test on the phone done, 8 runs valid: at the top the new countdown is no slower than the original, so the full fix stays; past the hero it does about 40 % less work. Open: past the hero it still shows a few more long frames; de-countdown traces why. Now: the F3 robot-finger test." },
   { "at": "2026-10-03T00:12:00Z", "text": "GPU study done (T-030): most lag left is at the hero ending and the people cards; the toolbar resize is small. Three fixes now run at top priority: countdown digits as sliding strips, the hero ending off the main thread, and the GPU countdown roll (your call; you judge it blind)." },
   { "at": "2026-10-02T23:58:00Z", "text": "The F3 robot-finger test has a new plan, signed by the lead before any data: the check page that never passed under the robot finger is replaced by the usual scripted heat check. Phone order: the countdown timing test now, then the F3 robot-finger test, then the heat test." },
-  { "at": "2026-10-02T23:50:00Z", "text": "The F3 robot-finger test stopped again before any counted run: the phone's check page was not smooth even on a cool phone, so this is not heat. It waits until fix-nav-morph finds the cause. The countdown timing test runs now, then the heat test." },
-  { "at": "2026-10-02T23:45:00Z", "text": "Blind swipe test done: you picked today's best build as smoother than the original, at the top and in the menu change. It still lags a little; de-gpu looks at whether the GPU can take more of the work. Next on the phone: the F3 robot-finger re-run." }
+  { "at": "2026-10-02T23:50:00Z", "text": "The F3 robot-finger test stopped again before any counted run: the phone's check page was not smooth even on a cool phone, so this is not heat. It waits until fix-nav-morph finds the cause. The countdown timing test runs now, then the heat test." }
  ],
  "items": [
   {
@@ -74,7 +74,7 @@
     "text": "not built yet"
    },
    "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
-   "next": "The phone check passed with the phone at its real \"Serious\" heat state: no new slow frames, and the clock redraws far less when you scroll back to the top. Next: your finger test (blind swipe A/B), after the idle-animation check.",
+   "next": "The phone check passed at the phone's real \"Serious\" heat state: no new slow frames, far less clock redrawing. It lands only after your finger test (blind swipe A/B), now third in the phone queue, after the hero and end-of-page checks.",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-079", "what": "phone block of strip-tc at the phone's real \"Serious\" heat state: no new slow frames, less clock redrawing", "result": "Yes: slow frames over 50 ms the same as without it (at the top and with the menu pinned); clock repaints in the first second back at the top 21 vs 54; 16 vs 48 clock layers kept in memory. One layout count could not be fully decided but cannot have failed." }],
    "details": [
@@ -105,7 +105,7 @@
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position (an earlier version matched the original on your phone); first explain why that version made one frame about 11 ms slower where the hero ends.",
-   "next": "You asked to try the hero change yourself before deciding on its look (PR-011): it is being rebuilt on today's base with a side-by-side Try-it, after a fix to the Try-it panel. Its phone test (P-081) runs after your countdown test.",
+   "next": "Top priority (your T-046). You asked to try the hero change yourself before deciding on its look (PR-011): it is rebuilt on the combined best build, with a Try-it against that build. Its phone test (P-081) is first in the phone queue.",
    "owner": "fix-hero-exit-threaded",
    "checks": [],
    "details": [
@@ -316,7 +316,7 @@
    "stage": "L",
    "fixes": "On today's best build, Safari left the top bar, logo and buttons behind when you pushed past the end of the page, and froze the menu panel's fade. Now they follow the grow animation again, as on the original page.",
    "gate": "Passed: matches the original in the Simulator, unchanged pixels in Chrome, and an independent review. A short phone check (P-085) comes next.",
-   "next": "Landed. A short phone check against the original page (P-085) follows, after a Simulator check.",
+   "next": "Landed. Its short phone check against the original page (P-085) is planned and checked; it is second in the phone queue, after the hero test. A separate fix (morph-gpu) now looks at moving this animation onto the graphics chip.",
    "owner": "fix-nav-morph",
    "details": [
     "F-183/F-184: WebKit ignores an explicit inherit of the non-inheriting @property --morph on the nav children (OBSERVED on phone + Sim; cause UNRESOLVED, WebKit main says it should re-resolve). Fix writes --morph inline on the children (JS 7c61fe7d0662, CSS unchanged). Correctness fix: about +1 layout and +1 paint per open-tween frame on WebKit, the motion st6-rb2 skipped.",
@@ -337,7 +337,7 @@
    "stage": "L",
    "fixes": "The small rotating profile pictures near the top (the 'blinking small profiles' you noticed) cost a 25-30 ms whole-page layout about once a second, even when you are not scrolling.",
    "gate": "Passed: S7 on the phone (P-067), at rest at the top, with every run separated and the scroll guard held.",
-   "next": "Done. The phone timing test S7 (P-067) confirmed it on today's best build: at rest at the top, 0 slow frames per run with it vs 19-27 without, and scrolling did not get worse. It stays in the best build.",
+   "next": "Landed; the phone timing result (P-067) stands. Found later: a picture leaving the carousel looks different from the original (a bug; its earlier pixel checks only compared frames at rest). Being fixed while keeping the saving (fix-carousel-leaver).",
    "owner": "fix-scroll-engine with de-pm-hero",
    "checks": [ { "id": "P-067", "what": "phone test S7: fewer slow frames at rest at the top with st6, on today's best build?", "result": "Yes: 0 slow frames over 34 ms in every run with it vs 22, 19, 27, 24 without; carousel ticks with a slow frame 0 of 152 vs 103 of 152; scrolling not worse (OBSERVED, 6571b62)." }, { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "Yes. With the pictures kept in place, the whole-page layout at each tick was gone in 65 of 67 ticks (scripted scroll, OBSERVED). A layout boundary around the section removed the hitches over 50 ms at rest (11 to 0) but kept most frames over 34 ms; each layout got cheaper, not by half." }, { "id": "P-039", "what": "st5 phone test: does the real fix also stop the whole-page layout?", "result": "Partly. The picture swap no longer re-lays out the page (1 of 31 ticks), but the start of each slide still does in 15 of 33 ticks. At rest, hitches over 34 ms fell from 70 to 29 in 40 s, and over 50 ms from 4 to 0 (OBSERVED)." }, { "id": "P-044", "what": "phone recording: does the no-flip build (st6) stop the layout at the slide start?", "result": "Yes: 1 of 36 slide starts re-laid out the page, against 24 of 35 for st5 and every one for the original (OBSERVED)." } ],
    "details": [
@@ -626,6 +626,8 @@
   }
  ],
  "upcoming": [
+  { "title": "Try-it: the original page next to today's combined best build", "when": "once the Try-it panel fix lands (I-093)" },
+  { "title": "Your blind finger test of the countdown strips (C-033)", "when": "after the hero (P-081) and end-of-page (P-085) phone checks", "item": "cd-strip" },
   { "title": "A check of the timer-driven parts with Xcode's \"Serious\" heat state on (you said yes, T-039)", "when": "after the hero fix's phone trace (P-074)" },
   { "title": "Milestone 2: the same checks with Xcode's \"Serious\" heat state on, and from a hot 42-44 °C start (you asked, T-039)", "when": "after the first three fixes are smooth at the phone's real \"Serious\" heat state" },
   { "title": "A rendering cost card for each fix: what each element costs to draw, from Chrome and the Simulator, using the phone less (you asked, T-029 #23)", "when": "the design is done and its method passed a check on the countdown; next, a small tool that makes the cards" },
