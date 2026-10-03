@@ -36,6 +36,10 @@ Not landable on P-087; the route is the lead's.
   - Those are within T2's static numbers. The snapshot path (OBSERVED, not what the screen shows) gives max 81 over
     540 px, beyond T2's fill limit of 64.
 - Lead ruling: on screen governs T2 on WebKit. Amendment 1 adds reduced motion and iPad width before the proposal.
+- Amendment 1 (2026-10-03 20:36-20:42Z):
+  - Reduced motion is **not exact**: S~base on screen is 1761 px, max 49, against base's own A/A of 1260.
+  - iPad width (1032, DPR 2) is within T2's static numbers: max 36, 61 CSS px².
+  - So the static part is not T2, and the proposal stands. Draft rev 3 is in "Proposal draft rev 3".
 **Base:** st6-rb2 (`fixes/st6-rb2/patch.diff`, JS `7bf7c4657d21`, CSS `f523598b2a24`). Deliverables: `patch.diff`
 (baseline-relative) and `delta-vs-st6rb2.diff` (for wi-best-build).
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (`.is-sliding` rules and `@keyframes avatars-exit`).
@@ -1403,7 +1407,97 @@ served from the same read-only snapshots as Hold A, and simquiet checks the hash
 - If (a) is exact and (b) meets T2, the static part is T2 on WebKit. Chrome is unchanged, and only the motion
   difference goes to the user.
 
-### Proposal draft rev 2 (for the lead to publish; leg results filled in after amendment 1 runs)
+### Amendment 1 leg (a) result: reduced motion (2026-10-03 20:36:04-20:38:32Z, one hold, exit 0)
+
+**Validity.**
+- pmset: the last Sleep/DarkWake was at 17:57Z, so the hold is valid.
+- Served hashes match: base and base2 `4606120cf392`/`27776f3d4138`, S and S2 `7bf7c4657d21`/`f523598b2a24`.
+- The session set Reduce Motion on and restored it afterwards (I-100).
+- Per arm, from the recorded fields (ops condition 1): every arm has `reducedMotion` true, 0 slides in the 2 s logger,
+  and an identical snapshot pair. The locator found every arm at dx 162, dy 1278 (SAD 1.6-2.1). No arm is VOID.
+- Slots at load:
+  - base: 4 imgs, none / 1 / auto.
+  - S and S2: `st5-lead` plus 3 slots at matrix(1,…) / 0.999 / st6's will-change; `.st5-next` at x 164.7, w 11.2,
+    matrix(0.35), opacity 0 (hidden).
+  - So under reduced motion the four visible faces are S's lead plus 3 slots, all with st6's values.
+
+**Five numbers** (tierq `c36772776b4a`; on screen governs, snapshot path OBSERVED; CSS px² per face 0-3):
+
+| pair | on screen (`scrc`) | snapshot path (`nat`) |
+|---|---|---|
+| base~base2 (A/A) | max 49, n8 1260, faces 0/0/103.1/36.9 | max 46, n8 685, faces 0/0/68.0/8.1 |
+| S~S2 (A/A) | 0 | 0 |
+| **S~base** | **max 49, n8 1761, faces 1.6/60.3/89.8/44.0, fill (18 % edge)** | max 59, n8 1216, faces 0/56.8/70.2/8.1, fill |
+| **S~base2** | **max 43, n8 640, faces 1.6/60.3/3.0/6.2, fill (19 % edge)** | max 59, n8 531, faces 0/56.8/2.2/0, fill |
+
+Shares, on screen (1290x2796 = 3,606,840 device px; tierq's page-viewport share in brackets):
+- S~base beyond the A/A: (1761 − 1260) / screen = 0.0139 % (0.0167 %).
+- Unmasked: S~base 0.0488 %, S~base2 0.0177 %.
+- Area unmasked: S~base 1761 / 9 = 195.7 CSS px², with the largest face at 89.8.
+
+**Reading, as registered:**
+- **Reduced motion is NOT exact.** S~base n8 1761 > A/A 1260. The both-directions rule fails; S~base2 640 ≤ 1260 alone
+  is not enough.
+- That one direction is also mask-dependent (lead ruling):
+  - The A/A's pixels sit on faces 2-3 (103.1 / 36.9 CSS px²).
+  - S's own difference sits on face 1 (60.3 CSS px² against both base loads), where the A/A has 0.
+  - Unmasked S~base2 is max 43, 640 px, 71.1 CSS px².
+- **T2's static numbers hold anyway:** fill max 49 ≤ 64, well under 0.5 %, well under 2,000 CSS px per element. But
+  T2 needs "reduced motion exact", so the static part is not T2.
+- **Base varies between its own loads here** (1260 px, max 49, faces 2-3). S does not (0 px). OBSERVED, cause unknown.
+  It fits de-breakpoints' load-state finding (image arrival vs first raster), which is UNRESOLVED. Hold A's phone
+  loads after a slide had base~base2 0.
+- **Predictions:**
+  - (a) exact, 0.1: did not happen.
+  - (a) within T2's static numbers, 0.7: happened.
+
+### Amendment 1 leg (b) result: iPad width (2026-10-03 20:38:49-20:41:59Z, one hold, exit 0)
+
+**Validity.**
+- pmset: the last entry was at 17:57Z, so the hold is valid.
+- Device fw-ipad (iPad Pro 13 M5, portrait), reused already booted, with no first-boot cap. Reduce Motion is off,
+  and every arm recorded `reducedMotion` false.
+- Safari's width is 1032 CSS px (the lead named 1024; this is the device's own), vh 1244, DPR 2. The screenshot is
+  2064x2752.
+- Served hashes match. Every arm caught the graphic-designer slide and gave an identical snapshot pair.
+- The locator found every arm at dx 544, dy 1468 (= 2 × rect; SAD 1.2-2.7). No arm is VOID.
+- F-199: each crop is the carousel ±4 CSS px (rect 272,602 113x41 CSS), far from the nav label.
+
+**Five numbers** (tierq; CSS px² per face 0-3; on screen governs, snapshot path OBSERVED):
+
+| pair | on screen (`scrc`) | snapshot path (`nat`) |
+|---|---|---|
+| base~base2, base~base3, base2~base3 (A/A) | 0 | 0 |
+| S~S2, S2~S3 (A/A) / S~S3 | 47, max 21, face 2 only (11.8) / 0 | 83, max 18 / 0 |
+| **S~base**, S3~base | **max 36, n8 197, faces 0/0/0/49.3, fill (6 % edge)** | max 108, n8 844, faces 0/122.8/14.8/73.5, fill |
+| **S2~base** | **max 36, n8 244, faces 0/0/11.8/49.3, fill (5 % edge)** | max 108, n8 927, fill |
+
+Shares, on screen (2064x2752 = 5,680,128 device px):
+- Beyond the A/A (47): S2~base (244 − 47) = 0.0035 %.
+- Unmasked: S~base 0.0035 % (197 px), S2~base 0.0043 % (244 px).
+- tierq's page-viewport shares (1032x1244 CSS at DPR 2): 0.0038 / 0.0048 %.
+- Area unmasked: 244 / 4 = 61 CSS px², with the largest face at 49.3. That face is the 4th (x ≈ 349), the
+  `.st5-next` face, as on the phone.
+
+**Reading, as registered:**
+- **Every S load is within T2's static numbers on screen** against base, beyond the 3-load A/A:
+  - fill max 36 ≤ 64;
+  - share far under 0.5 %;
+  - area far under 2,000 CSS px.
+  It also holds unmasked, so it is not mask-dependent.
+- The snapshot path (OBSERVED, not what the screen shows) gives max 108, which would be beyond 64.
+- Base's loads are identical here; S's loads differ from each other by 47 px on face 2.
+- **Predictions:**
+  - (b) every S load within T2's static numbers, 0.5: happened.
+  - (b) on-screen A/A > 0, 0.5: happened (S~S2 47; base's A/A 0).
+
+**Amendment 1 verdict:**
+- The static part is **not T2 on WebKit**. Reduced motion is not exact: S~base on screen is 1761 px against an A/A
+  of 1260, and S's own face-1 term of 60.3 CSS px² is outside any A/A pixel.
+- Phone width and iPad width are each within T2's static numbers on screen.
+- So the whole avatar difference stays a user proposal.
+
+### Proposal draft rev 3 (for the lead to publish; rev 2 is 6070bf5c)
 
 **Avatar slider: keep the cheaper slider, or match the original exactly?**
 
@@ -1422,19 +1516,29 @@ so that it does less work. It looks almost the same, but not exactly. Please cho
     - Scripted scroll test, 4 runs each, one session, OBSERVED (phone block S7, 2026-10-02,
       `fixes/st6-rb2/README.md` "S7 result").
     - Measured before our "phone checks start warm" rule.
-- **At rest, the faces differ slightly in shade.**
-  - On the iPhone Simulator's own screen (430 CSS px wide, rendered by the Mac's GPU, not the real phone): largest
-    shade 50 of 255, fill.
-  - The area is 126 CSS px² over 4 faces, with the largest face at 70 CSS px². That is about 0.03 % of the screen
-    (0.0315 %).
-  - Two loads of the original differ by 0 px.
-  - This is within our "near-identical" numbers for a still picture (P-090, `fixes/carousel-leaver/README.md`).
-  - A software snapshot of the same state shows max 81. It is OBSERVED and not what the screen shows.
-  - With reduced motion on: [leg (a)].
-  - At iPad width: [leg (b)].
-- **In Chrome at phone width** (DPR 3, frozen crops after a slide, P-086 hold 4b, `fixes/carousel-leaver/README.md`
-  L241-249): 0 px against the original at rest, with an A/A of 0 px. At 1440 wide, Chrome's own load-to-load noise
-  was too large to judge (README "Results (P-087)").
+- **At rest, the faces differ slightly in shade.** Measured on the iPhone Simulator's own screen, which is rendered
+  by the Mac's GPU and is not the real phone.
+  - **Phone width** (430 CSS px):
+    - largest shade 50 of 255, fill;
+    - 126 CSS px² over 4 faces, the largest face 70;
+    - about 0.03 % of the screen (0.0315 %);
+    - two loads of the original differ by 0 px.
+    This is within our near-identical numbers for a still picture at phone width on the Simulator's screen.
+  - **With reduced motion on, NOT exact,** so this option does not meet our near-identical rule:
+    - largest shade 49; 1761 device px (196 CSS px², largest face 90), 0.05 % of the screen;
+    - two loads of the original already differ by 1260 px there.
+    - One face (60 CSS px²) differs where the original's own loads never do.
+    The rule requires reduced motion to be exact.
+  - **iPad width** (1032 CSS px):
+    - largest shade 36; 61 CSS px² (largest face 49);
+    - 0.004 % of the screen, against 3 loads of each version.
+    This is within our near-identical numbers.
+  - A software snapshot of the same states shows larger differences (max 81 at phone width, 108 at iPad width). It
+    is OBSERVED and not what the screen shows.
+- **In Chrome at phone width** (DPR 3, frozen crops, P-086 hold 4b, `fixes/carousel-leaver/README.md` L241-249):
+  just after a slide, no pixel differs by more than 8 shades. The largest is 3, below the original's own
+  load-to-load noise of 5. At 1440 wide, Chrome's own load-to-load noise was too large to judge (README "Results
+  (P-087)").
 - **In motion it looks different.** These are moving-only differences, so they are your call; numbers can't approve
   them.
   - The leaving face is cropped and slides left, where the original narrows in place.
@@ -1445,18 +1549,21 @@ so that it does less work. It looks almost the same, but not exactly. Please cho
 
 **Option B: match the original exactly, giving the saving back.**
 - The exact match is the original slider code itself.
-- The page-wide layouts at slide starts and the 19-27 slower frames per 20 s at rest come back.
+- The page-wide layouts at slide starts and the 19-27 slower frames per 20 s at rest are expected to come back. That
+  was measured on S7's build without the change, not on the original code.
 - A halfway build (st6-rb2 with the original's resting values and a narrowing leaver) was not built or tested. Whether
   it would be exact is unknown.
 
-**Recommendation.** A. The at-rest saving is measured on the phone, while the still-picture difference is within our
-near-identical numbers on screen. The motion differences are small but real, and only you can judge them.
+**Recommendation.** A. The at-rest saving is measured on the phone, and the still-picture difference is small on
+screen (within our near-identical numbers at phone and iPad width, though not exact with reduced motion). The motion
+differences are small but real, and only you can judge them.
 
 **Statuses.**
 - The WebKit image-quality mechanism is CONFIRMED in source (ImageQualityController.cpp @789c0d1be2b7).
 - That it explains our snapshot numbers is OBSERVED, checked with pinned-quality builds.
 - That it does not show on the Simulator's screen from 328 ms after a slide is OBSERVED. The source is the Hold B
   burst, one slide.
+- That the original's loads differ under reduced motion is OBSERVED, cause unknown.
 
 ## Deliverables
 
