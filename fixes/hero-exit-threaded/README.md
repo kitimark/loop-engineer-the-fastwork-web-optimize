@@ -3,7 +3,11 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** F build done (rounds 4-8, "F rounds 4-8" below), measured by Simulator counts and frozen-frame pixels
+**Status (2026-10-03, F round 9):** two candidate builds for the P-081 b-fm miss, N and Fb ("F round 9"). Both
+pass their Simulator pixel checks; N also passes in Chrome. Fb's stubbed-Blink reading is a named residual,
+information only. The phone ticket P-088 (C / N / Fb) is registered with ops and waits for the timing pause to lift
+(I-098, T-052). Nothing timed has run.
+**Earlier status:** F build done (rounds 4-8, "F rounds 4-8" below), measured by Simulator counts and frozen-frame pixels
 (no timing: timing A/Bs deferred, user 2026-10-02). Pixel decision: the user accepted PR-011 rev 1, option
 accept-both (2026-10-03 15:23Z; both items, see "Tiers under the wide rule"). P-081 (the F phone block) gave
 (a) in and frames no-worse, but b-fm OUT (b-ts load-sensitive, no verdict): the go-live-from-rest frames cost more
@@ -121,7 +125,8 @@ levels; status-bar clock and countdown digit rows (in the A/A too) left out.
 
 | frame | F vs C beyond A/A | > 8 levels | max | edge / fill | A/A (C2 vs C) in that area | tier (PR-010 options, as read before the user chose "wide") |
 |---|---|---|---|---|---|---|
-| parked: at rest, y0, settle, drop, 300 / 700 / 1500 ms after a return to the top | 0 | 0 | 0 | | clock and digits only | T1 |
+| parked: at rest, y0, settle, drop, 300 / 700 / 1500 ms after a return to the top | 0 | 0 | 0 | | clock and digits only | T1 (rev5 harness; **corrected below for a fresh load at y0**) |
+| parked: at rest, y0, fresh load (simshot harness, F round 9, px10 / px11) | 1,969 px (0.055 %, 219 CSS px²), cue label | | 6 | edge | 0 | **T2** on the numbers, static. F7's own: F7, R, N and Fb draw it byte-identically. The rev5 row above ("T1") does not hold for this harness |
 | first scroll from the top (y0 → y6, the band) | 0 | 0 | 0 | | clock and digits only | T1 |
 | go-live pending frame, y306 | 4,368 px, cue | 0 | 1 | fill | 0 | T2 (B and C) |
 | live y306, frames 1-2 | 5,476 px (0.152 %, 608 CSS px²): copy glyph edges 1,058, cue 4,418 | 0 | 1 | copy edge, cue fill | 0 | T2 under the report's area (> 8: 0 %); counted at any level 0.152 % > X = 0.1 %: T3 under B, T2 under C |
@@ -414,6 +419,254 @@ was dropped when the user accepted rev 1. It is the land candidate.
     - R's pixels beyond the A/A (800-1500 px per frame) all sit inside the seconds cell (device x 1027-1123), which
       ticks between captures.
   - **Verdict:** in the hero, R draws the same frames as F7. P-081's result on F7 carries over to R.
+- **A static T2 difference R carries from F7** (found in F round 9, below): at y0 on a fresh load, at rest, the cue
+  label differs from C by 1,969 device px.
+  - Five numbers: largest shade 6, 0.055 % of the screen beyond A/A, 219 CSS px² (178 + 40), edge, static. A/A
+    (C2 vs C) 0.
+  - It is within T2 on the numbers.
+  - F7 (P-081's build), N, Fb and Fb2 draw it byte-identically, so it belongs to F7/R and to the P-081 record, not to
+    a P-088 arm.
+  - Cause OBSERVED, not attributed: probably the `.he-bob` wrap of the cue.
+  - Sent to mgmt-ops-10 for R's landing record (2026-10-03).
+
+## F round 9: go-live from rest (arms N and Fb; I-098 eased, non-timing jobs only)
+
+P-081 failed b-fm at the go-live from a rest at y≈548 (first-move 2 / 4: P 9-19 vs C 2-5). Two candidate builds
+change only that hand-over. Both are on F7 (st6-rb2 base, so P-081's C is still the control), CSS unchanged.
+
+| arm | snapshot (read-only) | JS / CSS sha256 | change vs F7 | scorer `--fn` |
+|---|---|---|---|---|
+| C (st6-rb2) | `out/snapshots/st6rb2-C-7bf7c4657d21` | `7bf7c4657d21` / `f523598b2a24` | control | `s=4391` |
+| F7 (P-081) | `out/snapshots/hext-V-8e43f3792dbf` | `8e43f3792dbf` / `cc74cd980e72` | — | `s=4497,heRest=4449` |
+| N | `out/snapshots/hext-N-dab6ad826209` | `dab6ad826209` / `cc74cd980e72` | `heUp` goes live without the `s()` write (the pending frame draws the stale inline value, equal at rest) | `s=4497,heRest=4449` |
+| Fb | `out/snapshots/hext-Fb-71f8872877e7` | `71f8872877e7` / `cc74cd980e72` | `heRest` parks only outside `top + 30 < y < end`: at rest inside the band the animations stay live, so there is no go-live from rest there | `s=4500,heRest=4450` |
+
+**Simulator counts** (functional sessions; counts, no timing verdict):
+- Go-live from rest at y548 (ho4a-c): first moving frame P 12 in N vs F7 93 vs C 60. Fb has no go-live there.
+- Crossing the 30 px band from the top (ho4c 'cross', y33..63, first frames): N S7 L19 P7 128k px, F7 the same,
+  Fb S6-7 L19 P7-8, C S5 L18 P6 124k px. The crossing costs about +2 S, +1 L in N, Fb and F7 alike.
+  - So fm1 (P-081's first-move 1, from y3) is likely OUT on counts in every arm. See the fm1 amendment in P-088.
+- Rest cost (rc9, timers cleared, per-frame style recalcs at rest):
+  - y548: Fb 13 recalcs per 13 frames (3.3 ms), C 0, N 0. This is WebKit's per-frame invalidation of a relevant
+    scroll-driven animation (CONFIRMED, WebKit main 13a1f2916933; see the code comment): the cost Fb trades for no
+    go-live.
+  - y300: the page restyles every frame in all arms. Fb's recalc there also carries the nested layout (684 ms over
+    36 frames, vs C 19.6 ms of recalc plus a separate layout).
+- No Fb+N arm: Fb never goes live from rest inside the band, so N's change does not act there, and the crossing
+  counts are equal for N / F7 / Fb. Fb+N would draw and count as Fb in every case measured. This rests on the
+  Simulator only (OBSERVED). If a phone row ever shows Fb at a go-live from rest, Fb+N comes back.
+
+**Pixels** (frozen frames at rest; five numbers per case; A/A = C2, the same C snapshot on its own server; wide rule
+PR-010 rev 3):
+
+| case | arm | largest shade | screen beyond A/A | CSS px² (largest element) | edge / fill | static / moving | tier |
+|---|---|---|---|---|---|---|---|
+| Sim phone y0, fresh load (px10, px11) | N, Fb, Fb2, F7 | 6 | 0.055 % | 219 (cue) | edge | static | T2, F7's own (above) |
+| Sim phone y15, y548 (px10) | N | 0 | 0 | 0 | | | T0 |
+| Sim phone y300 (px10) | N | 1 | | 150 | | static | T2 |
+| Sim width 980, y 0 / 300 / 548 / 900 (px980n) | N | ≤ 1 | within A/A | | | static | T1-T2 |
+| Sim phone y300 (px10) | Fb | 1 | 0.128 % | 514 | | static | T2 |
+| Sim phone y548 (px10) | Fb | 1 | 0.072 % | 290 | | static | T2 |
+| Sim phone y50 / y100 / y300, countdown digits and orbit cards (px12, lead condition 2) | Fb | see "Fb at y50 / y100 / y300" below | | | | | |
+| real Chrome, phone / mobile / desktop | N, Fb | | within A/A | | | | T1: the gate is false, C's code runs |
+
+**Stubbed Blink (Chrome with a `GestureEvent` stub, which forces the gate true): a named residual, information only,
+not a pass and not the PR-010 Chrome leg** (the lead's ruling, 2026-10-03).
+- Why it is not the Chrome leg: real Chrome has no `GestureEvent`, so it runs C's path and stays within A/A. Fb's own
+  path runs only in WebKit and is judged there (the Simulator rows; the phone).
+- N (parks at rest): max 1-14, at most 212 CSS px².
+- Fb (live at rest in the band), at y50 / y100 / y300:
+  - share of the screen beyond A/A 1.57 % / 1.44 % / 0.85 % (the T2 limit is 0.5 %);
+  - the side orbit cards 3,017 and 2,675 CSS px² (limit 2,000 per element), max 3-4 shades; the copy at y300
+    2,287 CSS px², max 1;
+  - at y50 two countdown glyphs (minutes and seconds, about 55 CSS px² each) drawn 1 device px off vertically,
+    185 shades.
+  - Computed values match C to about 1e-6 (translate −11.6516 vs −11.6526 px). Cause: sub-pixel raster of the
+    animated layers, OBSERVED (not attributed).
+- Data: `out/hext/parstub` (parity JSON and diff PNGs; scratchpad `parity.mjs --stub-gesture`).
+
+**Where the gate is true in a real browser** (lead condition 3). CSS mode needs all of: `GestureEvent` in window,
+scroll-driven animations (`animation-timeline: view()` with `animation-range`), and the phone layout (the
+`(max-width: 600px)` query at mount, JS 4385 / 4523; `heOff` leaves CSS mode when the layout widens).
+- `GestureEvent`, CONFIRMED: MDN browser-compat-data `api/GestureEvent.json` (Safari 9, Safari iOS 2, WebView iOS
+  mirrors iOS; Chrome, Edge, Firefox, WebView Android none). WebKit source (main at 5d643104e491):
+  `Source/WTF/wtf/PlatformEnableCocoa.h` lines 459-461 (`ENABLE_IOS_GESTURE_EVENTS` on `PLATFORM(IOS_FAMILY)` with the
+  Apple internal SDK) and 499-501 (`ENABLE_MAC_GESTURE_EVENTS` on `PLATFORM(MAC)`), and
+  `Source/WebCore/dom/mac/GestureEvents.cpp` (the macOS implementation behind `ENABLE(MAC_GESTURE_EVENTS)`, from
+  WebKitAdditions). So Apple's own builds expose it on iPhone, iPad and Mac.
+- Scroll-driven animations, CONFIRMED: MDN browser-compat-data `css/properties/animation-timeline.json`, Safari 26
+  (`view()` 26, Safari iOS mirrors).
+- So the gate is true in:
+  - iPhone Safari 26+ in portrait (430 CSS px here), and every iOS browser, because they all run WebKit (WebView iOS).
+    Landscape on the phones we use is wider than 600 CSS px, so it takes C's path.
+  - iPadOS Safari 26+ only in a window 600 CSS px wide or less (Split View, Slide Over, a resized window). Full
+    screen is 744 CSS px or more, so it takes C's path.
+  - macOS Safari 26+ (and macOS WKWebView apps) only in a window 600 CSS px wide or less, including a wider window
+    zoomed in until the layout is 600 CSS px or less.
+- Our tools drive neither macOS Safari nor an iPad window narrower than full screen (`sim.mjs --device fw-ipad*`
+  boots full-screen iPads, I-087). So no pixel check exists for those cases.
+- **Fb's landing gate (stated in P-088): the gate narrowed to touch phones.** If Fb is the arm that goes to V, its
+  land candidate adds `matchMedia('(hover: none) and (pointer: coarse)')` and a screen short side of 600 CSS px or less
+  to `heCss`, so iPad and Mac WebKit take C's path.
+  - That is a new build, so it gets a new P-id: the Simulator pixel set (px10, px12) and rc again, plus a short phone
+    no-worse check.
+  - It is not done before P-088: on the iPhone the narrowed gate is true, so P-088 measures the same path, and a
+    narrowing that lands only with Fb keeps P-088's builds as registered.
+  - N parks at rest, so at rest it draws C's frames on every device.
+  - N, F7 and R are also live **while scrolling** in those narrow Mac and iPad windows, which nobody has
+    pixel-checked. That is an open question for R's landing record and goes to the lead (not decided here).
+
+### Fb at y50 / y100 / y300 in the Simulator (lead condition 2)
+
+Run px12 (2026-10-03 18:46-18:48Z; one shared Simulator hold; pmset: no Sleep or DarkWake inside it).
+- Arms: C, Fb, C2 (the A/A: the same C snapshot on its own server), Fb2 (the Fb repeat on its own server).
+- Each arm loaded fresh, scrolled to y, timers stopped, frames frozen. Fb's track was live at every y
+  (`he-on he-css`), C's had neither class.
+- Every arm's still-check shot was 0 px.
+- Fb2's hero numbers equal Fb's at every y.
+- Numbers: scratchpad `tier.mjs` (hero rows 150+, countdown digit rows 1290-1409 apart) and `region.mjs` (a device-px
+  rectangle, with the best shift of −2..2 px).
+
+| y | largest shade | screen beyond A/A | CSS px² (largest element) | edge / fill | static / moving | orbit cards | countdown digits | tier |
+|---|---|---|---|---|---|---|---|---|
+| 50 | 0 | 0 % | 0 | — | static | 0 px | not moved (see below) | T0 outside the ticking cells |
+| 100 | 5 | 0.184 % | 738 in all; the cue 710 (max 2) | fill and texture (AA); strong edges 30 px, max 1 | static | two card corners, 15 and 12 CSS px², max 5 | not moved | T2 |
+| 300 | 1 | 0.166 % | 664 in all; the cue 514, copy lines 70 and 47 | fill and edge, max 1 | static | 0 px (the cards are at the screen edges, unchanged) | 5 px, max 1, at the cell edges | T2 |
+
+- **Countdown digits.** The minutes and seconds cells tick between captures, so their values differ in the A/A too:
+  the A/A's own max is 209 / 196 / 144 there. Position was checked where the values are equal:
+  - Days, hours and the minutes' tens digit: Fb vs C 0 px at y50 and y100. At y300, 5 px, max 1, with best shift 0.
+  - The minutes cell, where Fb and C2 show the same "12": 0 px at y50, y100 and y300.
+  - The seconds cell never had equal values in this run. The best shift is dx 0 dy 0 in every pair, so no shift
+    makes it closer.
+  - So in WebKit the digits are not moved: within 1 device px, in fact 0 at equal values.
+  - This is unlike the stubbed-Blink reading (a 1 device px vertical shift at y50, 185 shades). That reading stays
+    the named residual above.
+- **Orbit cards.** At y100, two card corners (CSS x 26-31 and 397-404, y 724-731), 12 and 15 CSS px², max 5, static.
+  At y50 and y300, 0. That is far under 2,000 CSS px² per element. Stubbed Blink gave 3,017 and 2,675 CSS px².
+- **Verdict:** at rest at y50 / y100 / y300 in the Simulator, Fb is T0-T2 under the wide rule. It has nothing moved
+  or recoloured and stays under 0.5 % of the screen and 2,000 CSS px² per element. Fb's WebKit pixel leg passes on the
+  phone layout.
+- Data (gitignored): `out/hext/px12`.
+
+### P-088: phone ticket for N and Fb (registration; written before any N or Fb phone data)
+
+A Timeline attribution block with frame-gap counts, as P-081. The prediction id P-088 comes from mgmt-ops-10. A build
+change after registration needs a new P-id. **Nothing timed runs until the lead lifts the timing pause (I-098, T-052).**
+- **Question (one): the P-081 b-fm miss.** On the iPhone at real thermal Serious, under driver G, does N or Fb make
+  the go-live from a rest at y≈548 cost no more than C's same-phase frames, while keeping F7's per-frame gain (a) and
+  touchstart (b-ts) and adding no long frame?
+- **Builds** (immutable snapshot copies, re-checked by sha256 before the block; same base: site-pretty, the snapshot
+  pinned by `baseline.json`):
+  - C = st6-rb2, `out/snapshots/st6rb2-C-7bf7c4657d21`: JS `7bf7c4657d21`, CSS `f523598b2a24`.
+  - N, `out/snapshots/hext-N-dab6ad826209`: JS `dab6ad826209`, CSS `cc74cd980e72`.
+  - Fb, `out/snapshots/hext-Fb-71f8872877e7`: JS `71f8872877e7`, CSS `cc74cd980e72`.
+- **Servers and ports:** as P-081, one per arm, `--overlay out/snapshots/<snapshot> --port 0 --https --vendors=local
+  --latency 150 --no-cache --state out/hext/p088/serve-<arm>.json`. The phone loads the plain http twin (I-003).
+  Ports go in the block log, never 5173. One uncounted warm-up load per arm port (C, N, Fb).
+- **Driver G:** `gestures/hero-pass-v1.json` (sha256 `e3f31872b82f`, unchanged from P-074 / P-081), band y 1..780,
+  clear of the nav morph (as P-081).
+- **Condition** (user T-039 B, `memory/phone-checks-start-warm.md`), as P-081:
+  - The gate pair `research/phone-thermal-gate/thermal-gate.mjs` (sha256 `4604218c4041`, `--expect serious`,
+    `--max-c 44`) at every hold's start and end; a hold counts only when both reads say Serious with Is Induced = No.
+  - 900 s holds; stop at 44 °C battery or Critical and cool. Every gate failure goes to the lead; two strikes roll
+    back to A (the lead's standing rule).
+  - One start method (pre-warm on the plain baseline page the same way for each arm). Logged per run: battery °C,
+    charging state, timer-grid median, Mac load1 at start and end. A Low Power Mode run is dropped and re-run.
+- **Runs.** 3 arms, 3 counted runs each, Timeline on, in a rotated Latin square:
+  - row 1: C1 N1 Fb1; row 2: N2 Fb2 C2; row 3: Fb3 C3 N3 (block order C1 N1 Fb1 N2 Fb2 C2 Fb3 C3 N3).
+  - The rows may fall in separate holds; a row never splits across two holds.
+  - Warm-ups (wC wN wFb) and the start sentinel come before row 1, in the first hold; the end sentinel after row 3, in
+    the last hold.
+- **Sentinels:** an uncounted Timeline-OFF control run on C (`iphone.mjs run --arm C --heat-sentinel`), bottom
+  ≥ 58 fps and scroll ≥ 44 fps, at the block start and the block end.
+  - A failing start sentinel: no counted run starts; cool, restart.
+  - A failing end sentinel voids every counted run since the last passing one; cool, re-run those rows once.
+- **Void rules:**
+  - scoreF.mjs's own (gesture error or abort, Timeline errors or more than one epoch, over 10 % uncovered moving band
+    frames) and LPM. A void run gets one in-place re-run; a second void at one position voids the block.
+  - **A hold that failed either gate read voids all of its runs.** Its files are never passed to the scorers (the
+    P-079 lesson); the block log lists them as excluded.
+  - **A Mac sleep or DarkWake inside a hold voids all of its runs** (I-098): after each hold,
+    `pmset -g log | grep -E '\s(Sleep|DarkWake)\s' | tail -2`; any entry inside the hold's window voids it. Re-run
+    that row in a new hold.
+- **Scorers, committed before data.** Every valid counted run passes in block order. Each claim arm is scored
+  separately against the same C runs. `<d>` is the runner's data directory (`out/p088/`); files are
+  `gesture-p088-<run>.json` and `tl-p088-<run>.json`.
+  - **Label deviation, registered now:** `scoreF.mjs` (sha256 `32ed5f4e81f9`) hardcodes `V` as the claim arm (the
+    P-081 lesson), so the claim arm's runs pass as `V:`. `framesF.mjs` (sha256 `40d0d302c3f1`) and `fm1F.mjs`
+    (sha256 `3a6ba376bc9b`) take the first non-C arm as the claim and get `N:` / `Fb:`.
+  - N, literal:
+    ```sh
+    node fixes/hero-exit-threaded/pF/scoreF.mjs C:<d>/gesture-p088-C1.json:<d>/tl-p088-C1.json V:<d>/gesture-p088-N1.json:<d>/tl-p088-N1.json V:<d>/gesture-p088-N2.json:<d>/tl-p088-N2.json C:<d>/gesture-p088-C2.json:<d>/tl-p088-C2.json C:<d>/gesture-p088-C3.json:<d>/tl-p088-C3.json V:<d>/gesture-p088-N3.json:<d>/tl-p088-N3.json --fn C:s=4391 --fn V:s=4497,heRest=4449 --band 1:780 --json out/hext/p088/scoreF-N.json
+    node fixes/hero-exit-threaded/pF/framesF.mjs C:<d>/gesture-p088-C1.json N:<d>/gesture-p088-N1.json N:<d>/gesture-p088-N2.json C:<d>/gesture-p088-C2.json C:<d>/gesture-p088-C3.json N:<d>/gesture-p088-N3.json --band 1:780 --json out/hext/p088/framesF-N.json
+    node fixes/hero-exit-threaded/pF/fm1F.mjs C:<d>/gesture-p088-C1.json N:<d>/gesture-p088-N1.json N:<d>/gesture-p088-N2.json C:<d>/gesture-p088-C2.json C:<d>/gesture-p088-C3.json N:<d>/gesture-p088-N3.json --edge 30 --after 9 --json out/hext/p088/fm1F-N.json
+    ```
+  - Fb, literal (pairs Fb1-C1, Fb2-C2, Fb3-C3):
+    ```sh
+    node fixes/hero-exit-threaded/pF/scoreF.mjs C:<d>/gesture-p088-C1.json:<d>/tl-p088-C1.json V:<d>/gesture-p088-Fb1.json:<d>/tl-p088-Fb1.json V:<d>/gesture-p088-Fb2.json:<d>/tl-p088-Fb2.json C:<d>/gesture-p088-C2.json:<d>/tl-p088-C2.json V:<d>/gesture-p088-Fb3.json:<d>/tl-p088-Fb3.json C:<d>/gesture-p088-C3.json:<d>/tl-p088-C3.json --fn C:s=4391 --fn V:s=4500,heRest=4450 --band 1:780 --json out/hext/p088/scoreF-Fb.json
+    node fixes/hero-exit-threaded/pF/framesF.mjs C:<d>/gesture-p088-C1.json Fb:<d>/gesture-p088-Fb1.json Fb:<d>/gesture-p088-Fb2.json C:<d>/gesture-p088-C2.json Fb:<d>/gesture-p088-Fb3.json C:<d>/gesture-p088-C3.json --band 1:780 --json out/hext/p088/framesF-Fb.json
+    node fixes/hero-exit-threaded/pF/fm1F.mjs C:<d>/gesture-p088-C1.json Fb:<d>/gesture-p088-Fb1.json Fb:<d>/gesture-p088-Fb2.json C:<d>/gesture-p088-C2.json Fb:<d>/gesture-p088-Fb3.json C:<d>/gesture-p088-C3.json --edge 30 --after 9 --json out/hext/p088/fm1F-Fb.json
+    ```
+  - A re-run replaces its run's file in place, in the same position.
+- **The fm1 amendment (the lead's, 2026-10-03), an amendment to P-081's "b-fm OUT -> back to F":**
+  - fm1 (first-move 1, the first move off the top through the 30 px band) stays a falsifier, but it is **judged on
+    frames, not on record counts**: it fails when the claim arm adds a frame over 34 ms or over 50 ms against C at
+    the top-band crossing (`fm1F.mjs`; window from the first moving frame after the first touchstart through the
+    10th frame counted from the first frame with y > 30). The twin rule applies (>46 / >54, >30 / >38); a twin that
+    disagrees makes it threshold-sensitive, with no verdict.
+  - Its S / L count excess (scoreF.mjs's first-move-1 row) is **reported as a named residual** in the result and in
+    anything that reaches the user, never dropped. It is the fix's own cost of crossing into CSS mode (Simulator:
+    about +2 S, +1 L in N, Fb and F7 alike).
+  - The lead's reason: moving a row P-081 scored OUT into "reported only" would read as moving the goalposts; the
+    +S / +L is the fix's own cost, so it is named, and the frames decide.
+  - b-fm-rest (the go-live from rest at y≈548: first-move rows 2 and 4, y > 30) is the main question and keeps
+    P-081's count bounds.
+  - Second read requested from mgmt-ops-10 before any data.
+  - **Pre-registration note, not a result:** `fm1F.mjs` on P-081's own F7 data (C1 F1 F2 C2) gives >50 +1 (F7 63 / 65
+    ms vs C 48 / 49 at y6→13), WORSE but threshold-sensitive (>46 −0.5, >54 +1), and >34 −1.5 no-worse
+    (`out/hext/fm1F-p081-check.json`). It is kept out of any claim.
+- **Predictions**, written as falsifiers, with P(hit) before data. Per arm; N and Fb are scored separately against
+  the same C runs.
+
+  | # | prediction | point | interval (falsified outside) | P(hit) |
+  |---|---|---|---|---|
+  | a-C | C writer share, every valid C run | ~0.8 | 0.3..1.0 | 0.85 |
+  | a-N, a-Fb | claim writer share, every valid run | 0.01-0.03 | 0..0.05 | 0.8 each |
+  | b-ts N | touchstart: every unit dRecalc ≤ 1, dLayout ≤ 0, dPaint ≤ 0 vs C | in | OUT falsifies | 0.65 |
+  | b-ts Fb | same bounds. Fb restyles every frame at rest in the band (rc9), and that lands in the touchstart unit | in | OUT falsifies | 0.4 |
+  | b-fm-rest N | first-move rows from a rest at y > 30 (P-081's first-move 2 / 4), same bounds | in | OUT falsifies | 0.45 |
+  | b-fm-rest Fb | same | in | OUT falsifies | 0.6 |
+  | fm1 N, fm1 Fb | fm1F.mjs frames at the top-band crossing, claim − C of arm medians | no-worse at >50 and >34 | WORSE at ≥ +1 falsifies; threshold-sensitive: no verdict | 0.5 each |
+  | b-rest N | rest: N still parks (the accepted trade-off) | OUT on paint | not a falsifier | 0.6 for OUT |
+  | b-rest Fb | rest inside the band: heRest is a no-op there, so no park repaint | in | OUT falsifies Fb's design | 0.55 |
+  | f50 | band dt > 50, claim − C | 0 | ≤ +1 (WORSE at ≥ +2); twins >46 / >54 the same bound | 0.75 |
+  | f34 | band dt > 34, claim − C | −2 | ≤ +2 (WORSE at ≥ +3); twins >30 / >38 the same bound | 0.7 |
+  | grid | timer grid 30 ms in every counted run (descriptive) | grid30 | none | — |
+
+- **Decisions** (if X then Y):
+  - **An arm passes** when a-C is in and, for that arm: a in, b-ts in, b-fm-rest in, fm1 frames no-worse, f50 and f34
+    no-worse (Fb: also b-rest in). Its fm1 S / L residual is reported with it.
+  - **N passes:** N goes to V (preferred even if Fb also passes: no per-frame cost at rest, C's frames at rest on
+    every device). V items: the user's pixel decision where needed and the finger A/B (console, through the lead).
+  - **Only Fb passes:** Fb goes to V **with its landing gate**: the gate narrowed to touch phones (see "Where the gate
+    is true"), a new build with a new P-id (Simulator pixel set + rc, a short phone no-worse check).
+  - **Neither passes:** back to F, naming the rows. No further block on these builds.
+  - **a-C out:** the measure failed, not the fix; no claim (scorer check, ops re-read, re-score; new runs only if
+    still failing).
+  - **a out for an arm:** the CSS path is not active on the phone for that arm; back to F from the per-frame lines.
+  - **Split in an arm** (runs on both sides of a range): no claim for that arm; at most one second block on this
+    ticket; a second split goes to the lead as inconclusive. Fewer than 2 valid runs in an arm: no verdict for it.
+  - **f50 / f34 WORSE (band):** no landing for that arm; to the lead with the long frames' units.
+  - **Threshold-sensitive f50, f34 or fm1:** to the lead, no frame verdict for that arm.
+  - **Gesture-scope WORSE with band no-worse:** reported, no verdict on the fix.
+  - **Load-sensitivity line (pre-declared):** if any counted run starts with Mac load1 > 8 or a hold carries an
+    unleased CPU job, each arm is also scored on the row(s) recorded at load1 ≤ 8. A verdict that differs between
+    the full set and that subset is "load-sensitive", with no verdict claimed.
+  - **Block void:** no claim; cool and re-run once; a second void goes to the lead.
+- **Expected minutes:** about 50 (range 40-70) in 4-5 holds of 900 s: 3 warm-ups, 2 sentinels and 9 counted runs at
+  about 1.5 min each, gate reads about 1.5 min per hold, pre-warm to Serious and any ceiling cool-down. The finger
+  A/B comes after and is not part of P-088.
 
 ## What changed
 
