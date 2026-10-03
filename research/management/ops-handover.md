@@ -9,6 +9,27 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- **09:2xZ lead decisions.**
+  - F3: the lead agreed fix-nav-morph's plan: the rendering cost card first, with a cold-first-pin row; no phone
+    block, landing or parking until it reports. PROGRESS f3-arm-scope next, detail and upcoming are updated.
+  - Posted **F-169** (pitfall, phone): `wait.mjs phone-temp --below X` is met at exactly X; for strictly below X,
+    pass X-0.1. It matches protocol §5.3's "at or below", so no tool change.
+- **09:2xZ P-073 committed da0ef39** (fix-nav-morph; `fixes/mw10e-arm-scope-d/p073/`). score.txt and score.json are
+  byte-identical to the ops re-score, and the ledger row has its outcome.
+  - **Flag sent to the lead:** D's cold-port warm-ups collapsed in both blocks that had one (P-071 wD sustained,
+    P-073 wD transient), and C and V did not. OBSERVED, n = 2, uncounted.
+  - Ops recommendation: the next F3 block carries a pre-registered cold-load arm on fresh ports, not a warm-up.
+- **09:1xZ main 7e5cb00 landed** (P-073 result, P-076 registration, P-075 data). The lead forwards ops notes (a) and
+  (b) to fix-nav-morph (low-bin runs clustered in time; start method confounded with arm).
+- **09:1xZ P-074 second read: NEEDS-FIX, small, pre-data** (fix-hero-exit-threaded e36423f).
+  - Verified: score074.mjs aaf93e3c485e, gesture hero-pass-v1 e3f31872b82f, snapshot JS V 301ec740291b and
+    C 7bf7c4657d21. The --fn lines are 1-based and right: V s 4493, heRest 4446; C s 4391.
+  - Must-fix: (1) the ticket lacks the decision for each outcome, the one question, confidence, minutes, ports and
+    C's CSS hash; (2) void runs enter the (b) pairing, and an arm with < 2 valid runs still gets in/out; (3) (b) says
+    OUT when no hand-over unit is found.
+  - Nits: the writer match ignores the script name; the rest pairing uses +400 ms (not in the card) and pairs by index
+    instead of by time; a `Cs[0]` fallback; the (a) verdict combines arms.
+  - The phone GO needs ops PASS plus review-hero-exit's ACCEPT (the lead).
 - **09:0xZ P-075 data commit f6614fa** (arch-isolated-measure; README §4.4, `p075-data/`, P-076 PREDICTIONS row).
   - Ops re-ran judge.mjs 73679603afcd on p075-data: judge.json is byte-identical (36a24aa02ea3).
   - Chrome: countdownCalls family FAIL, 3 of 3; style, layout and paint PASS. Style is labelled low-power (tol 185),
