@@ -1,0 +1,452 @@
+{
+ "tool": "scratch iso-check.mjs (arch-isolated-measure)",
+ "browser": "Chrome/154.0.8037.97",
+ "seconds": 4,
+ "builds": [
+  {
+   "label": "C",
+   "url": "http://localhost:<port>/",
+   "js": "nodes/2.DyWL8TcE.js sha256/12 4606120cf392 (baseline)"
+  },
+  {
+   "label": "V",
+   "url": "http://localhost:<port>/",
+   "js": "nodes/2.DyWL8TcE.js sha256/12 638b8e03e81c (countdown-faces X1 V overlay)"
+  }
+ ],
+ "results": [
+  {
+   "build": "C",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": "{\"x\":27,\"y\":396.765625,\"width\":376,\"height\":88,\"top\":396.765625,\"right\":403,\"bottom\":484.765625,\"left\":27}"
+   },
+   "freeze": null,
+   "hide": null,
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "counts": {
+    "mainFrames": 241,
+    "updateLayoutTree": 241,
+    "styleElements": 2483,
+    "layout": 138,
+    "prePaint": 241,
+    "paint": 495,
+    "layerize": 241,
+    "commit": 0,
+    "io": 482,
+    "fireAnimationFrame": 104,
+    "countdownCalls": 108,
+    "timerFire": 16
+   },
+   "ms": {
+    "updateLayoutTree": 41.1,
+    "layout": 18.1,
+    "prePaint": 30.7,
+    "paint": 26.8,
+    "layerize": 60.4,
+    "commit": 0,
+    "io": 15.5,
+    "functionCall": 21.6
+   },
+   "perFrame": {
+    "updateLayoutTree": 0.171,
+    "layout": 0.075,
+    "prePaint": 0.127,
+    "paint": 0.111,
+    "layerize": 0.251,
+    "commit": 0,
+    "io": 0.064,
+    "functionCall": 0.09
+   }
+  },
+  {
+   "build": "C",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": "{\"x\":27,\"y\":396.765625,\"width\":376,\"height\":88,\"top\":396.765625,\"right\":403,\"bottom\":484.765625,\"left\":27}"
+   },
+   "freeze": {
+    "paused": 14,
+    "smil": 0
+   },
+   "hide": null,
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "counts": {
+    "mainFrames": 149,
+    "updateLayoutTree": 141,
+    "styleElements": 1158,
+    "layout": 63,
+    "prePaint": 149,
+    "paint": 118,
+    "layerize": 149,
+    "commit": 0,
+    "io": 298,
+    "fireAnimationFrame": 106,
+    "countdownCalls": 110,
+    "timerFire": 16
+   },
+   "ms": {
+    "updateLayoutTree": 16.7,
+    "layout": 6.9,
+    "prePaint": 10,
+    "paint": 9,
+    "layerize": 27.2,
+    "commit": 0,
+    "io": 8.5,
+    "functionCall": 17
+   },
+   "perFrame": {
+    "updateLayoutTree": 0.112,
+    "layout": 0.046,
+    "prePaint": 0.067,
+    "paint": 0.06,
+    "layerize": 0.183,
+    "commit": 0,
+    "io": 0.057,
+    "functionCall": 0.114
+   }
+  },
+  {
+   "build": "C",
+   "mode": "hide",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": "{\"x\":27,\"y\":396.765625,\"width\":376,\"height\":88,\"top\":396.765625,\"right\":403,\"bottom\":484.765625,\"left\":27}"
+   },
+   "freeze": null,
+   "hide": {
+    "hidden": 15,
+    "rect": "{\"x\":27,\"y\":192.515625,\"width\":376,\"height\":88,\"top\":192.515625,\"right\":403,\"bottom\":280.515625,\"left\":27}",
+    "docH": 1864,
+    "nodesShown": 118
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "counts": {
+    "mainFrames": 109,
+    "updateLayoutTree": 105,
+    "styleElements": 1050,
+    "layout": 0,
+    "prePaint": 109,
+    "paint": 0,
+    "layerize": 109,
+    "commit": 0,
+    "io": 218,
+    "fireAnimationFrame": 109,
+    "countdownCalls": 113,
+    "timerFire": 4
+   },
+   "ms": {
+    "updateLayoutTree": 7.5,
+    "layout": 0,
+    "prePaint": 6.4,
+    "paint": 0,
+    "layerize": 16.4,
+    "commit": 0,
+    "io": 2.9,
+    "functionCall": 14.1
+   },
+   "perFrame": {
+    "updateLayoutTree": 0.069,
+    "layout": 0,
+    "prePaint": 0.059,
+    "paint": 0,
+    "layerize": 0.15,
+    "commit": 0,
+    "io": 0.027,
+    "functionCall": 0.129
+   }
+  },
+  {
+   "build": "C",
+   "mode": "hidefreeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": "{\"x\":27,\"y\":396.765625,\"width\":376,\"height\":88,\"top\":396.765625,\"right\":403,\"bottom\":484.765625,\"left\":27}"
+   },
+   "freeze": {
+    "paused": 14,
+    "smil": 0
+   },
+   "hide": {
+    "hidden": 15,
+    "rect": "{\"x\":27,\"y\":192.515625,\"width\":376,\"height\":88,\"top\":192.515625,\"right\":403,\"bottom\":280.515625,\"left\":27}",
+    "docH": 1864,
+    "nodesShown": 118
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "counts": {
+    "mainFrames": 108,
+    "updateLayoutTree": 104,
+    "styleElements": 1040,
+    "layout": 0,
+    "prePaint": 108,
+    "paint": 0,
+    "layerize": 108,
+    "commit": 0,
+    "io": 216,
+    "fireAnimationFrame": 108,
+    "countdownCalls": 112,
+    "timerFire": 4
+   },
+   "ms": {
+    "updateLayoutTree": 13.8,
+    "layout": 0,
+    "prePaint": 6.3,
+    "paint": 0,
+    "layerize": 14.4,
+    "commit": 0,
+    "io": 2.9,
+    "functionCall": 15.2
+   },
+   "perFrame": {
+    "updateLayoutTree": 0.128,
+    "layout": 0,
+    "prePaint": 0.058,
+    "paint": 0,
+    "layerize": 0.133,
+    "commit": 0,
+    "io": 0.027,
+    "functionCall": 0.141
+   }
+  },
+  {
+   "build": "V",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": "{\"x\":27,\"y\":396.765625,\"width\":376,\"height\":88,\"top\":396.765625,\"right\":403,\"bottom\":484.765625,\"left\":27}"
+   },
+   "freeze": null,
+   "hide": null,
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "counts": {
+    "mainFrames": 240,
+    "updateLayoutTree": 240,
+    "styleElements": 1621,
+    "layout": 109,
+    "prePaint": 240,
+    "paint": 552,
+    "layerize": 240,
+    "commit": 0,
+    "io": 480,
+    "fireAnimationFrame": 104,
+    "countdownCalls": 108,
+    "timerFire": 16
+   },
+   "ms": {
+    "updateLayoutTree": 44.6,
+    "layout": 20.6,
+    "prePaint": 41.4,
+    "paint": 33.6,
+    "layerize": 62.4,
+    "commit": 0,
+    "io": 21,
+    "functionCall": 21.4
+   },
+   "perFrame": {
+    "updateLayoutTree": 0.186,
+    "layout": 0.086,
+    "prePaint": 0.172,
+    "paint": 0.14,
+    "layerize": 0.26,
+    "commit": 0,
+    "io": 0.087,
+    "functionCall": 0.089
+   }
+  },
+  {
+   "build": "V",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": "{\"x\":27,\"y\":396.765625,\"width\":376,\"height\":88,\"top\":396.765625,\"right\":403,\"bottom\":484.765625,\"left\":27}"
+   },
+   "freeze": {
+    "paused": 14,
+    "smil": 0
+   },
+   "hide": null,
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "counts": {
+    "mainFrames": 150,
+    "updateLayoutTree": 142,
+    "styleElements": 332,
+    "layout": 67,
+    "prePaint": 150,
+    "paint": 124,
+    "layerize": 150,
+    "commit": 0,
+    "io": 300,
+    "fireAnimationFrame": 107,
+    "countdownCalls": 111,
+    "timerFire": 16
+   },
+   "ms": {
+    "updateLayoutTree": 14.2,
+    "layout": 7.4,
+    "prePaint": 10.6,
+    "paint": 8.3,
+    "layerize": 21.4,
+    "commit": 0,
+    "io": 9.1,
+    "functionCall": 18
+   },
+   "perFrame": {
+    "updateLayoutTree": 0.095,
+    "layout": 0.049,
+    "prePaint": 0.071,
+    "paint": 0.055,
+    "layerize": 0.143,
+    "commit": 0,
+    "io": 0.061,
+    "functionCall": 0.12
+   }
+  },
+  {
+   "build": "V",
+   "mode": "hide",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": "{\"x\":27,\"y\":396.765625,\"width\":376,\"height\":88,\"top\":396.765625,\"right\":403,\"bottom\":484.765625,\"left\":27}"
+   },
+   "freeze": null,
+   "hide": {
+    "hidden": 15,
+    "rect": "{\"x\":27,\"y\":192.515625,\"width\":376,\"height\":88,\"top\":192.515625,\"right\":403,\"bottom\":280.515625,\"left\":27}",
+    "docH": 1864,
+    "nodesShown": 62
+   },
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "counts": {
+    "mainFrames": 109,
+    "updateLayoutTree": 103,
+    "styleElements": 210,
+    "layout": 4,
+    "prePaint": 109,
+    "paint": 8,
+    "layerize": 109,
+    "commit": 0,
+    "io": 218,
+    "fireAnimationFrame": 106,
+    "countdownCalls": 110,
+    "timerFire": 4
+   },
+   "ms": {
+    "updateLayoutTree": 9.2,
+    "layout": 0.7,
+    "prePaint": 9.5,
+    "paint": 0.6,
+    "layerize": 13.2,
+    "commit": 0,
+    "io": 5.5,
+    "functionCall": 20.1
+   },
+   "perFrame": {
+    "updateLayoutTree": 0.084,
+    "layout": 0.006,
+    "prePaint": 0.087,
+    "paint": 0.006,
+    "layerize": 0.121,
+    "commit": 0,
+    "io": 0.05,
+    "functionCall": 0.184
+   }
+  },
+  {
+   "build": "V",
+   "mode": "hidefreeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": "{\"x\":27,\"y\":396.765625,\"width\":376,\"height\":88,\"top\":396.765625,\"right\":403,\"bottom\":484.765625,\"left\":27}"
+   },
+   "freeze": {
+    "paused": 14,
+    "smil": 0
+   },
+   "hide": {
+    "hidden": 15,
+    "rect": "{\"x\":27,\"y\":192.515625,\"width\":376,\"height\":88,\"top\":192.515625,\"right\":403,\"bottom\":280.515625,\"left\":27}",
+    "docH": 1864,
+    "nodesShown": 62
+   },
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "counts": {
+    "mainFrames": 108,
+    "updateLayoutTree": 104,
+    "styleElements": 212,
+    "layout": 4,
+    "prePaint": 108,
+    "paint": 8,
+    "layerize": 108,
+    "commit": 0,
+    "io": 216,
+    "fireAnimationFrame": 108,
+    "countdownCalls": 112,
+    "timerFire": 4
+   },
+   "ms": {
+    "updateLayoutTree": 12.8,
+    "layout": 0.5,
+    "prePaint": 7.7,
+    "paint": 0.4,
+    "layerize": 11.3,
+    "commit": 0,
+    "io": 3.8,
+    "functionCall": 17.5
+   },
+   "perFrame": {
+    "updateLayoutTree": 0.119,
+    "layout": 0.005,
+    "prePaint": 0.071,
+    "paint": 0.004,
+    "layerize": 0.105,
+    "commit": 0,
+    "io": 0.035,
+    "functionCall": 0.162
+   }
+  }
+ ],
+ "note": "2026-10-03, one shared-lane hold, headless Chrome 154, CPU 1x, 430x932 DPR 3 mobile+touch, y 0, one page load per build x mode, 4 s trace window. Counts only; ms are descriptive (host load1 ~80 at the time)."
+}
