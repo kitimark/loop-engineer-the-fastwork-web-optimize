@@ -12,9 +12,9 @@
 //   4. nat-quiet-<arm>.png: Page.snapshotRect of the carousel +- 4 CSS px; a second one 250 ms later must be identical
 //      (settle check: one pair, no loop; not identical -> the arm is VOID);
 //   5. the on-screen crop: the snapshot is located in the screenshot by the least sum of absolute differences over
-//      integer offsets (x within +-12 device px of 3 * rect.x, y from 3 * rect.y - 60 to 3 * rect.y + 600; VOID when the
+//      integer offsets (x within +-CL_XWIN (default 12) device px of dpr * rect.x, y from dpr * rect.y - 60 to + 600; VOID when the
 //      mean absolute difference per channel is > 20 levels; the snapshot's device-px
-//      size must equal 3 x its CSS rect), saved as scrc-quiet-<arm>.png with the same size as nat-quiet;
+//      size must equal dpr x its CSS rect; dpr from geo2, P-090 amendment 1), saved as scrc-quiet-<arm>.png with the same size as nat-quiet;
 //   6. burst arms only (CL_BURST=a,b): an in-page rAF logger records each slide's start and end in Date.now() (the
 //      Simulator and the Mac share one clock), the held timer is released (the next slide starts at once), and for
 //      BURST_MS (default 2600) a simctl screenshot is started every 100 ms with at most 4 in flight; each records its
@@ -39,6 +39,7 @@ const OUT = process.argv[2]; mkdirSync(join(OUT, 'burst'), { recursive: true });
 const ARMS = process.argv[3].split(',').map((s) => { const [k, d] = s.split('='); return { k, dir: d || null }; });
 const BURST = new Set((process.env.CL_BURST || '').split(',').filter(Boolean));
 const QUIET = Number(process.env.CL_QUIET || 1500), BURST_MS = Number(process.env.BURST_MS || 2600);
+const XWIN = Number(process.env.CL_XWIN || 12); // locate's x window, device px either side (P-090 amendment 1: 60 on fw-ipad)
 const NOSLIDE = process.env.CL_NOSLIDE === '1'; // reduced-motion leg (sim.mjs session --reduce-motion on): no slide to catch
 const UDID = process.env.FW_SIM_UDID;
 if (!UDID) throw new Error('FW_SIM_UDID not set: run inside sim.mjs session');
@@ -87,11 +88,11 @@ const cropOf = (P, x0, y0, w, h) => { const out = Buffer.alloc(w * h * P.bpp);
   for (let y = 0; y < h; y++) P.px.copy(out, y * w * P.bpp, ((y0 + y) * P.w + x0) * P.bpp, ((y0 + y) * P.w + x0 + w) * P.bpp);
   return { w, h, bpp: P.bpp, px: out }; };
 // locate template T (snapshot crop) in screenshot S: least SAD of RGB over integer offsets; coarse (every 3rd px), then full
-function locate(S, T, x0, y0, y1) {
+function locate(S, T, x0, y0, y1, xw = 12) {
   const sad = (dx, dy, step) => { let s = 0; for (let y = 0; y < T.h; y += step) for (let x = 0; x < T.w; x += step) {
     const i = (y * T.w + x) * T.bpp, j = ((dy + y) * S.w + dx + x) * S.bpp; s += Math.abs(T.px[i] - S.px[j]) + Math.abs(T.px[i + 1] - S.px[j + 1]) + Math.abs(T.px[i + 2] - S.px[j + 2]); } return s; };
   let best = null;
-  for (let dy = Math.max(0, y0); dy <= Math.min(y1, S.h - T.h); dy++) for (let dx = Math.max(0, x0 - 12); dx <= Math.min(x0 + 12, S.w - T.w); dx++) {
+  for (let dy = Math.max(0, y0); dy <= Math.min(y1, S.h - T.h); dy++) for (let dx = Math.max(0, x0 - xw); dx <= Math.min(x0 + xw, S.w - T.w); dx++) {
     const s = sad(dx, dy, 3); if (!best || s < best.s) best = { dx, dy, s }; }
   const cands = [];
   for (let dy = best.dy - 2; dy <= best.dy + 2; dy++) for (let dx = best.dx - 2; dx <= best.dx + 2; dx++) if (dy >= 0 && dx >= 0 && dy + T.h <= S.h && dx + T.w <= S.w) cands.push({ dx, dy, s: sad(dx, dy, 1) });
@@ -160,11 +161,12 @@ for (const arm of ARMS) {
     R.natSettled = P1.w === P2.w && P1.h === P2.h && P1.px.equals(P2.px);
     writeFileSync(join(OUT, `nat-quiet-${arm.k}.png`), b1);
     if (!R.natSettled) throw new Error('VOID: snapshot pair not identical at quiet rest');
-    if (P1.w !== rect.width * 3 || P1.h !== rect.height * 3) throw new Error(`VOID: snapshot ${P1.w}x${P1.h} is not 3 x rect ${rect.width}x${rect.height}`);
+    const D = R.geo2.dpr; // P-090 amendment 1 (probe repair 2): the device's DPR (3 on fw-sim, 2 on fw-ipad), was a literal 3
+    if (P1.w !== rect.width * D || P1.h !== rect.height * D) throw new Error(`VOID: snapshot ${P1.w}x${P1.h} is not ${D} x rect ${rect.width}x${rect.height}`);
     const S = pngAny(readFileSync(scrFile)); R.scrSize = [S.w, S.h, S.depth16 ? 16 : 8];
     const T = { ...P1, px: P1.bpp === S.bpp ? P1.px : null };
     if (!T.px) { const px = Buffer.alloc(P1.w * P1.h * S.bpp); for (let i = 0; i < P1.w * P1.h; i++) for (let k = 0; k < 3; k++) px[i * S.bpp + k] = P1.px[i * P1.bpp + k]; T.px = px; T.bpp = S.bpp; }
-    R.loc = locate(S, T, rect.x * 3, rect.y * 3 - 60, rect.y * 3 + 600);
+    R.loc = locate(S, T, rect.x * D, rect.y * D - 60, rect.y * D + 600, XWIN);
     if (R.loc.sadPerPx > 20) throw new Error(`VOID: carousel not found on screen ${JSON.stringify(R.loc)}`);
     const scrc = cropOf(S, R.loc.dx, R.loc.dy, P1.w, P1.h);
     writeFileSync(join(OUT, `scrc-quiet-${arm.k}.png`), pngEncode(scrc.w, scrc.h, scrc.bpp, scrc.px));

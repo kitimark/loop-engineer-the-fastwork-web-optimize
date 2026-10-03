@@ -1274,6 +1274,87 @@ Static T2 is not the whole of T2. Still open:
   translate instead of the narrowing ellipse, and no 2 px end snap. It is motion-only, so it goes to the user;
 - desktop width and DPR 2.
 
+### P-090 amendment 1: reduced motion and iPad width (describes only; written before either leg runs)
+
+**Lead ruling (2026-10-04), the method:**
+- For WebKit, a T2 check is governed by the on-screen frame.
+- Snapshot-path numbers are still reported beside it, labelled "snapshot path, OBSERVED, not what the screen shows".
+- Chrome's leg is unchanged (a real Chrome screenshot).
+
+**Lead request.** Before the proposal is published, the static part needs reduced motion exact plus one desktop
+width. So: one more Simulator leg per condition under P-090, on screen at quiet rest, st6-rb2 vs base, each with its
+own A/A. This is an amendment, not a new attempt. No G1 and no Sw arm; F stays parked.
+
+**Builds.** base (JS `4606120cf392`, CSS `27776f3d4138`) and S = st6-rb2 (`7bf7c4657d21`, `f523598b2a24`). Both are
+served from the same read-only snapshots as Hold A, and simquiet checks the hashes per arm.
+
+**Probe repair 2** (simquiet `7188a92a6782` → `7c7c8353ccce`; nothing else changed):
+- The snapshot-size check and `locate()`'s search box used a literal device-pixel ratio of 3. They now use `geo2.dpr`,
+  which is 3 on fw-sim, so the phone legs behave exactly as before.
+- `locate()`'s x window is now `CL_XWIN` device px either side, default 12 as before. It is 60 on fw-ipad, where
+  Safari's content offset on screen has not been measured.
+- Offline checks still pass: 18 page expressions, 0 bad; loctest 3/3 exact.
+
+**Leg (a): reduced motion.**
+- Setup: fw-sim at 430 wide, DPR 3, `sim.mjs session --reduce-motion on`, `CL_NOSLIDE=1`. Arms in order: base, S,
+  base2, S2. One shared-lane hold, pmset after.
+- Under reduced motion the rotator never runs (JS L11346 in base and L11589 in S, `if (!e.matches)`). So every arm
+  shows its load state, and there is no slide to catch.
+- VOID per arm if:
+  - matchMedia `(prefers-reduced-motion: reduce)` is false;
+  - a slide starts in the 2 s logger window;
+  - the snapshot pair is not identical.
+- Readout:
+  - tierq on screen (`scrc`, governs) and in the snapshot (`nat`, the snapshot path).
+  - S~base and S2~base. The A/A is the larger of base~base2 and S~S2; both are reported.
+  - The slots table per arm.
+- Bar: **exact**. S~base n8 ≤ the A/A in both directions (S~base and S~base2), on screen. Memory rule:
+  "reduced motion exact".
+
+**Leg (b): iPad width.**
+- Setup: `sim.mjs --device fw-ipad` (iPad Pro 13, portrait, Safari's desktop-class viewport, expected about 1032 CSS
+  px, DPR 2), `--reduce-motion off`, `CL_XWIN=60`.
+- Arms in order: base, S, base2, S2, base3, S3. That is 3 loads each, per the registered part-2 rule for DPR 2
+  (P-087 W3 saw a load-to-load spread on this device). One shared-lane hold, pmset after.
+- Same flow as Hold A: catch the first arm's slide target, jump to its end, swap, hold, 1.5 s quiet, on-screen
+  frame first, then the snapshot pair.
+- VOID per arm if:
+  - the carousel is missing, not in view, or no slide is caught in 30 s;
+  - the snapshot pair is not identical;
+  - the on-screen locate is above 20 levels per channel.
+  If both base arms catch no slide, the leg reports that line instead.
+- Readout:
+  - tierq for S, S2 and S3 against base, on screen and in the snapshot.
+  - The A/A is the largest of base~base2, base~base3, base2~base3, S~S2, S~S3 and S2~S3 on screen; all are
+    reported.
+  - Load classes (groups of identical shots) per build.
+- Bar: **T2's static numbers** on screen against base, beyond that A/A:
+  - fill max ≤ 64 for any diff with fill pixels (addendum 1 item 7);
+  - edge max ≤ 128;
+  - ≤ 0.5 % of the screen;
+  - ≤ 2,000 CSS px per element.
+  Every S load must meet it.
+
+**Common rules.**
+- Addendum 1 items 2 (both directions, masked passes) and 4 (sleeps and kills) apply as written. Item 5 (Hold B's
+  windows) does not apply.
+- The masked-pass ruling stands: tierq subtracts counts and never masks. Each line prints the unmasked n8. Any A/A
+  pixel inside a face disc is reported as such, with the unmasked counts.
+- The legs run one at a time: (a) first, then (b).
+
+**Predictions** (scoreable, written before):
+- (a) P(S~base on screen ≤ A/A, i.e. reduced motion exact) = **0.1**. st6's rest values (will-change, `scale(1)`,
+  0.999) apply without slides too, so I expect Hold A's kind of difference at load.
+- (a) P(S~base on screen within T2's static numbers) = **0.7**.
+- (b) P(every S load within T2's static numbers on screen) = **0.5**.
+- (b) P(the on-screen A/A is above 0 on the iPad) = **0.5**.
+
+**What follows (describes only):**
+- If (a) is not exact, the static part cannot be T2, whatever (b) shows. The whole avatar difference stays a user
+  proposal, with (a)'s five numbers added.
+- If (a) is exact and (b) meets T2, the static part is T2 on WebKit. Chrome is unchanged, and only the motion
+  difference goes to the user.
+
 ## Deliverables
 
 - `patch.diff`: baseline-relative, st6-rb2 + **F** (CSS `a984ae7b7715` and st6-rb2's JS `7bf7c4657d21`), regenerated
